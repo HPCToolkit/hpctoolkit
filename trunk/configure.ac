@@ -478,24 +478,24 @@ AC_MSG_NOTICE([INFO: Exit: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}]
 #
 # If specified, then use PATH as the root of the external prereqs tree
 # and the file PATH/externs.conf for the locations of binutils, open
-# analysis, xerces, etc.  Default is not to use this.
+# analysis, xerces, etc.  Default is to look in the externals subdir.
 #-------------------------------------------------
 
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
     [AS_HELP_STRING([--with-externals=PATH],
-	    [path to external prereqs tree (default no)])],
-    [],
-    [with_externals=no])
+	    [path to external prereqs tree])],
+    [error_if_missing=yes],
+    [with_externals="${srcdir}/externals"])
 
 use_externals=no
 if test "x$with_externals" != xno ; then
     ext_file="${with_externals}/externs.conf"
     if test -f "$ext_file" ; then
-	AC_MSG_NOTICE([using externals file: $ext_file])
+	AC_MSG_NOTICE([using externals tree: $with_externals])
 	. "$ext_file"
 	use_externals=yes
-    else
+    elif test "x$error_if_missing" = xyes ; then
 	AC_MSG_ERROR([missing externals file: $ext_file])
     fi
 fi
