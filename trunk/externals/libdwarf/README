@@ -1,0 +1,26 @@
+=====================
+Libdwarf Build Notes
+=====================
+
+Home: http://reality.sgiweb.org/davea/dwarf.html
+
+Download: http://reality.sgiweb.org/davea/libdwarf-20080615.tar.gz
+
+License: LGPL (libdwarf), GPL (dwarfdump)
+
+Uses Autoconf, but not Automake.
+
+./configure CC=gcc CFLAGS='-g -O2 -fPIC'  \
+    --enable-shared --disable-nonshared
+make
+manually copy files
+
+Note: The dwarf tarball includes both dwarfdump and libdwarf, but we
+only use libdwarf.
+
+Note: Doesn't build both static and shared libraries in the same
+build.  They require different CFLAGS (-fPIC), so it takes two builds
+to make both static and shared.
+
+Note: Makefile has no install target.
+

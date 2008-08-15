@@ -1,0 +1,19 @@
+========================
+Old Monitor Build Notes
+========================
+
+Home: http://icl.cs.utk.edu/~mucci/monitor/
+
+Download: cvs -d :pserver:anonymous@cvs.cs.utk.edu:/cvs/homes/ospat co monitor
+
+License: LGPL
+
+No configure script, uses custom Makefile.
+
+make PREFIX=/path
+make PREFIX=/path install
+
+This is Phil Mucci's monitor from Univ of Tennessee.
+Hpcrun with flat profiling still uses this version
+and has nnot yet switched to new SciDAC libmonitor.
+

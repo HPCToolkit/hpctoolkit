@@ -1,0 +1,19 @@
+=====================
+Binutils Build Notes
+=====================
+
+Home: http://sourceware.org/binutils/
+      http://www.hpc.svn.rice.edu/
+
+Download: svn co http://hpc.svn.rice.edu/r/binutils/tags/version-binutils-2.17
+
+License: GPL and LGPL
+
+Native binutils uses Autoconf and Autogen Makefile template.
+This version uses a Makefile wrapper.
+
+make all
+
+This is a patched version of binutils with some necessary changes to
+support Rice HPCToolkit.
+

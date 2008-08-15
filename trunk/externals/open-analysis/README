@@ -1,0 +1,21 @@
+==========================
+Open Analysis Build Notes
+==========================
+
+Home: http://openanalysis.berlios.de/
+      http://developer.berlios.de/projects/openanalysis
+
+Download: http://download.berlios.de/openanalysis/OpenAnalysis-0.3a1.tgz
+	  svn co http://hpc.svn.rice.edu/r/open-analysis/tags/version-0.4pre
+
+License: BSD
+
+Uses Autoconf and Automake and Makefile.quick wrapper.
+
+./configure --enable-libcross --disable-libnative
+make
+make install
+
+Originally written at Rice University as part of HPCToolkit, now
+maintained by Michelle Strout at Colorado State.
+

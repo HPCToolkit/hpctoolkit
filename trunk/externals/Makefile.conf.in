@@ -1,0 +1,6 @@
+#
+# Parameters passed from configure to Makefile.
+#
+
+SYMTABAPI_PLATFORM = @symtabAPI_platform@
+

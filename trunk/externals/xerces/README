@@ -1,0 +1,21 @@
+=====================
+Xerces-C Build Notes
+=====================
+
+Home: http://xerces.apache.org/index.html
+
+Download: http://mirror.olnevhost.net/pub/apache/xerces/c/sources/
+	  xerces-c-src_2_8_0.tar.gz
+
+License: Apache
+
+Build: http://xerces.apache.org/xerces-c/build-winunix.html
+
+Uses Autoconf with custom runConfigure wrapper.
+No Automake, no vpath build.
+
+export XERCESCROOT=/path/to/xerces-c-src_2_8_0
+./runConfigure -p linux -P <prefix>
+make
+make install
+
