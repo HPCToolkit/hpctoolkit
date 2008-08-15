@@ -1,0 +1,21 @@
+===================
+Libelf Build Notes
+===================
+
+Home: http://www.mr511.de/software/english.html
+
+Download: http://www.mr511.de/software/libelf-0.8.10.tar.gz
+
+License: LGPL
+
+Uses Autoconf, but not Automake.
+Supports vpath build directory.
+
+CC=gcc CFLAGS='...' ./configure --prefix=PATH
+make
+make install
+
+Note: configure does not accept CC and CFLAGS on the command line
+after the ./configure command.  It misinterprets those as trying to
+set the host type.  CC and CFLAGS, if used, must be given as
+environment variables before the ./configure command.
