@@ -147,6 +147,7 @@ CilkOverhead = {
     'CILK2C_INIT_FRAME',
     'CILK2C_PUSH_FRAME',
 
+    'CILK2C_XPOP_FRAME_RESULT',
     'CILK2C_XPOP_FRAME_NORESULT',
 
     'CILK2C_SET_NORESULT',
@@ -242,14 +243,14 @@ class REDesc:
     # ------------------------------
 
     def make_overhead(self, fn, overhead_ty):
-        cilk2c_pre  = r';\s*'
+        cilk2c_pre  = r'' #r';\s*'
         cilk2c_post = r'[^;]*\s*;'
         old_re = r"%s(%s%s)" % (cilk2c_pre, fn, cilk2c_post);
         self.set_oldRE(re.compile(old_re));
 
         lush_mark   = r'#line %s "lush:%s-overhead"' % ("%d", overhead_ty)
         lush_unmark = r'#line %d "%s"'; # line cilk-fnm
-        self.set_newRE(r";\n%s\n  \1\n%s\n  " % (lush_mark, lush_unmark));
+        self.set_newRE(r"\n%s\n  \1\n%s\n  " % (lush_mark, lush_unmark));
 
     def make_cilk_import(self):
         old_re = r"(^.*_cilk\w+_import\(.+$)";
