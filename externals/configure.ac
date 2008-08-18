@@ -53,6 +53,7 @@ AC_SUBST([build_os])
 AC_SUBST([host_cpu])
 AC_SUBST([host_os])
 
+AC_SUBST([prefix])
 AC_SUBST([stage_prefix])
 
 AC_SUBST([binutils_prefix])
@@ -85,19 +86,19 @@ AC_CANONICAL_HOST
 nobuild_cookie=.dont-build
 
 #
-# Option: --enable-stage=PATH
+# Option: --enable-stage-dir=PATH
 #
 # If set, use PATH for the prefix of the staging area, else create a
 # subdirectory in the current directory.
 #
 copy_externs_file=no
-AC_ARG_ENABLE([stage],
-    [AS_HELP_STRING([--enable-stage=PATH],
+AC_ARG_ENABLE([stage-dir],
+    [AS_HELP_STRING([--enable-stage-dir=PATH],
 	[prefix of staging area (default host cpu-os)])],
     [copy_externs_file=yes],
-    [enable_stage="`pwd`/${host_cpu}-${host_os}"])
+    [enable_stage_dir="`pwd`/${host_cpu}-${host_os}"])
 
-stage_prefix="$enable_stage"
+stage_prefix="$enable_stage_dir"
 case "$stage_prefix" in
     /* )
 	;;
