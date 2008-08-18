@@ -1,6 +1,10 @@
 #
-# Parameters passed from configure to Makefile.
+#  This file passes configure variables to Makefiles.
+#  It is rewritten on configure.
 #
+
+STAGE_PREFIX = @stage_prefix@
+INSTALL_PREFIX = @prefix@
 
 SYMTABAPI_PLATFORM = @symtabAPI_platform@
 

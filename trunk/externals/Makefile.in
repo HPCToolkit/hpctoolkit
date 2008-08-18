@@ -38,7 +38,8 @@ PACKAGES = binutils libdwarf libelf libmonitor libxml2  \
 	old-monitor open-analysis symtabAPI xed2 xerces
 
 .PHONY: all install install-all $(PACKAGES)
-.PHONY: fetch fetch-all clean clean-all distclean distclean-all
+.PHONY: fetch fetch-all copy copy-all
+.PHONY: clean clean-all distclean distclean-all
 
 all install install-all: $(PACKAGES)
 
@@ -53,6 +54,9 @@ fetch fetch-all:
 	@for pkg in $(PACKAGES) ; do  \
 		$(MAKE) -C $$pkg fetch || exit 2 ;  \
 	done
+
+copy copy-all:
+	@cd build-utils && ./copy-libs.sh
 
 clean clean-all:
 	@for pkg in $(PACKAGES) ; do  \

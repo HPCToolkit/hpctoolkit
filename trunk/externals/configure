@@ -1238,7 +1238,7 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-stage=PATH     prefix of staging area (default host cpu-os)
+  --enable-stage-dir=PATH prefix of staging area (default host cpu-os)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1739,6 +1739,7 @@ ac_config_files="$ac_config_files Makefile.conf"
 ac_config_files="$ac_config_files externs.conf"
 
 ac_config_files="$ac_config_files options.conf"
+
 
 
 
@@ -3145,21 +3146,21 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 nobuild_cookie=.dont-build
 
 #
-# Option: --enable-stage=PATH
+# Option: --enable-stage-dir=PATH
 #
 # If set, use PATH for the prefix of the staging area, else create a
 # subdirectory in the current directory.
 #
 copy_externs_file=no
-# Check whether --enable-stage was given.
-if test "${enable_stage+set}" = set; then
-  enableval=$enable_stage; copy_externs_file=yes
+# Check whether --enable-stage-dir was given.
+if test "${enable_stage_dir+set}" = set; then
+  enableval=$enable_stage_dir; copy_externs_file=yes
 else
-  enable_stage="`pwd`/${host_cpu}-${host_os}"
+  enable_stage_dir="`pwd`/${host_cpu}-${host_os}"
 fi
 
 
-stage_prefix="$enable_stage"
+stage_prefix="$enable_stage_dir"
 case "$stage_prefix" in
     /* )
 	;;

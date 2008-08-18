@@ -1,8 +1,11 @@
 #
-#  Top-level configure variables.
+#  This file passes configure variables to shell scripts.
+#  It is rewritten on configure.
 #
+
+stage_prefix="@stage_prefix@"
+install_prefix="@prefix@"
 prefix="@stage_prefix@"
-copy_prefix="@prefix@"
 
 CC="@CC@"
 CFLAGS="@CFLAGS@"
