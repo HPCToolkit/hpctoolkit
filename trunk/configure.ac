@@ -709,7 +709,11 @@ AC_SUBST([XED2_LIB])
 
 AC_MSG_CHECKING([for XercesC])
 
-XERCES="${hpctoolkit_top}/../xercesc/${HPCTOOLKIT_PLATFORM}"
+if test "$use_externals" = yes ; then
+  XERCES="$ext_xerces_prefix"
+else
+  XERCES="${hpctoolkit_top}/../xercesc/${HPCTOOLKIT_PLATFORM}"
+fi
 
 AC_ARG_WITH([xerces],
   AS_HELP_STRING([--with-xerces=<XercesC path>],
@@ -718,10 +722,6 @@ AC_ARG_WITH([xerces],
      XERCES=${withval}
    fi],
   [])
-
-if test "$use_externals" = yes ; then
-  XERCES="$ext_xerces_prefix"
-fi
 
 XERCES_IFLAGS="-I${XERCES}/include"
 XERCES_LDFLAGS="-L${XERCES}/lib -lxerces-c"
@@ -738,7 +738,11 @@ AC_SUBST([XERCES_LDFLAGS])
 
 AC_MSG_CHECKING([for OpenAnalysis])
 
-OA="${hpctoolkit_top}/../open-analysis/${HPCTOOLKIT_PLATFORM}"
+if test "$use_externals" = yes ; then
+  OA="$ext_open_analysis_prefix"
+else
+  OA="${hpctoolkit_top}/../open-analysis/${HPCTOOLKIT_PLATFORM}"
+fi
 
 AC_ARG_WITH([oa],
   AS_HELP_STRING([--with-oa=<OpenAnalysis path>],
@@ -747,10 +751,6 @@ AC_ARG_WITH([oa],
      OA=${withval}
    fi],
   [])
-
-if test "$use_externals" = yes ; then
-  OA="$ext_open_analysis_prefix"
-fi
 
 OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
 OA_LDFLAGS="-L${OA}/lib -lOAsz64"
@@ -767,7 +767,11 @@ AC_SUBST([OA_LDFLAGS])
 
 AC_MSG_CHECKING([for GNU binutils])
 
-GNUBINUTILS="${hpctoolkit_top}/../binutils/${HPCTOOLKIT_PLATFORM}"
+if test "$use_externals" = yes ; then
+  GNUBINUTILS="$ext_binutils_prefix"
+else
+  GNUBINUTILS="${hpctoolkit_top}/../binutils/${HPCTOOLKIT_PLATFORM}"
+fi
 
 AC_ARG_WITH([binutils],
   AS_HELP_STRING([--with-binutils=<GNU binutils path>],
@@ -776,10 +780,6 @@ AC_ARG_WITH([binutils],
      GNUBINUTILS=${withval}
    fi],
   [])
-
-if test "$use_externals" = yes ; then
-  GNUBINUTILS="$ext_binutils_prefix"
-fi
 
 # The binutils installer (2.16.1, 2.17) creates libbfd.la and
 # libopcodes.la but only libiberty.a.  Apparently, not having
@@ -816,7 +816,12 @@ MONITOR_LIBS=
 HPC_MONITOR=
 
 # Use monitor by default
-if test "${HOST_OS}" = "Linux"; then
+
+if test "$use_externals" = yes ; then
+  OPT_WITH_MONITOR=yes
+  OPT_INSTALL_MONITOR=no
+  MONITOR="$ext_old_monitor_prefix"
+elif test "${HOST_OS}" = "Linux"; then
   OPT_WITH_MONITOR=yes
   OPT_INSTALL_MONITOR=yes
   MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
@@ -833,12 +838,6 @@ AC_ARG_WITH([monitor],
      OPT_WITH_MONITOR=no
    fi],
   [])
-
-if test "$use_externals" = yes ; then
-  OPT_WITH_MONITOR=yes
-  OPT_INSTALL_MONITOR=no
-  MONITOR="$ext_old_monitor_prefix"
-fi
 
 for lib in ${LIB_SEARCH_PATH} ; do
   if test -r "${MONITOR}/${lib}/libmonitor.so"; then
