@@ -86,6 +86,16 @@ AC_CANONICAL_HOST
 nobuild_cookie=.dont-build
 
 #
+# Option: --enable-build-all
+#
+AC_ARG_ENABLE([dummy-blank-line], [AS_HELP_STRING([ ], [ ])])
+AC_ARG_ENABLE([build-all],
+    [AS_HELP_STRING([--enable-build-all],
+	[do not use system installed packages (default no)])],
+    [],
+    [enable_build_all=no])
+
+#
 # Option: --enable-stage-dir=PATH
 #
 # If set, use PATH for the prefix of the staging area, else create a
@@ -179,6 +189,11 @@ AC_ARG_WITH([libdwarf],
 
 AC_MSG_CHECKING([libdwarf])
 
+if test "$enable_build_all" = yes && test "$with_libdwarf" = search
+then
+    with_libdwarf=build
+fi
+
 libdwarf_avail=no
 case "$with_libdwarf" in
     build )
@@ -263,6 +278,11 @@ valid_libelf_dir()
 }
 
 AC_MSG_CHECKING([libelf])
+
+if test "$enable_build_all" = yes && test "$with_libelf" = search
+then
+    with_libelf=build
+fi
 
 libelf_avail=no
 case "$with_libelf" in
@@ -389,6 +409,11 @@ valid_libxml2_dir()
 }
 
 AC_MSG_CHECKING([libxml2])
+
+if test "$enable_build_all" = yes && test "$with_libxml2" = search
+then
+    with_libxml2=build
+fi
 
 libxml2_avail=no
 case "$with_libxml2" in

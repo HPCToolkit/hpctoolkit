@@ -1238,6 +1238,8 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+
+  --enable-build-all      do not use system installed packages (default no)
   --enable-stage-dir=PATH prefix of staging area (default host cpu-os)
 
 Optional Packages:
@@ -3146,6 +3148,22 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 nobuild_cookie=.dont-build
 
 #
+# Option: --enable-build-all
+#
+# Check whether --enable-dummy-blank-line was given.
+if test "${enable_dummy_blank_line+set}" = set; then
+  enableval=$enable_dummy_blank_line;
+fi
+
+# Check whether --enable-build-all was given.
+if test "${enable_build_all+set}" = set; then
+  enableval=$enable_build_all;
+else
+  enable_build_all=no
+fi
+
+
+#
 # Option: --enable-stage-dir=PATH
 #
 # If set, use PATH for the prefix of the staging area, else create a
@@ -3264,6 +3282,11 @@ fi
 { echo "$as_me:$LINENO: checking libdwarf" >&5
 echo $ECHO_N "checking libdwarf... $ECHO_C" >&6; }
 
+if test "$enable_build_all" = yes && test "$with_libdwarf" = search
+then
+    with_libdwarf=build
+fi
+
 libdwarf_avail=no
 case "$with_libdwarf" in
     build )
@@ -3361,6 +3384,11 @@ valid_libelf_dir()
 
 { echo "$as_me:$LINENO: checking libelf" >&5
 echo $ECHO_N "checking libelf... $ECHO_C" >&6; }
+
+if test "$enable_build_all" = yes && test "$with_libelf" = search
+then
+    with_libelf=build
+fi
 
 libelf_avail=no
 case "$with_libelf" in
@@ -3509,6 +3537,11 @@ valid_libxml2_dir()
 
 { echo "$as_me:$LINENO: checking libxml2" >&5
 echo $ECHO_N "checking libxml2... $ECHO_C" >&6; }
+
+if test "$enable_build_all" = yes && test "$with_libxml2" = search
+then
+    with_libxml2=build
+fi
 
 libxml2_avail=no
 case "$with_libxml2" in
