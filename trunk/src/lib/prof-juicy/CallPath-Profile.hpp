@@ -93,6 +93,11 @@ public:
     { return m_metricdesc[i]; }
   const SampledMetricDescVec& metricDesc() const 
     { return m_metricdesc; }
+  uint addMetric(SampledMetricDesc* m) {
+    m_metricdesc.push_back(m);
+    uint m_id = numMetrics() - 1;
+    return m_id;
+  }
 
   CCT::Tree*  cct() const 
     { return m_cct; }

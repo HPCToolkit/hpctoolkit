@@ -171,7 +171,7 @@ realmain(int argc, char* const* argv)
       }
     }
     
-    Analysis::CallPath::normalize(prof);
+    Analysis::CallPath::normalize(prof, args.lush_agent);
   }
   catch (...) {
     DIAG_EMsg("While preparing CSPROFILE...");

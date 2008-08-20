@@ -666,24 +666,54 @@ CSProfNode::merge_fixup(const SampledMetricDescVec* new_mdesc,
 }
 
 
+// merge y into 'this' = x
+void
+CSProfNode::merge_node(CSProfNode* y)
+{
+  CSProfNode* x = this;
+  
+  // 1. copy y's metrics into x
+  Prof::IDynNode* x_dyn = dynamic_cast<Prof::IDynNode*>(x);
+  if (x_dyn) {
+    Prof::IDynNode* y_dyn = dynamic_cast<Prof::IDynNode*>(y);
+    DIAG_Assert(y_dyn, "");
+    x_dyn->mergeMetrics(*y_dyn);
+  }
+  
+  // 2. copy y's children into x
+  for (Prof::CSProfNodeChildIterator it(y); it.Current(); /* */) {
+    Prof::CSProfNode* y_child = it.CurNode();
+    it++; // advance iterator -- it is pointing at 'y_child'
+    y_child->Unlink();
+    y_child->Link(x);
+  }
+  
+  y->Unlink();
+  delete y;
+}
+
 //**********************************************************************
 // CSProfNode, etc: CodeName methods
 //**********************************************************************
 
+// NOTE: tallent: used for lush_cilkNormalize
+
 string
-CSProfLoopNode::CodeName() const
-{
-  string self = NodeTypeToName(GetType());
-  self += " " + CSProfCodeNode::ToDumpString();
+CSProfCodeNode::codeName() const
+{ 
+  string self = NodeTypeToName(GetType()) + " "
+    + GetFile() + ":" 
+    + StrUtil::toStr(begLine) + "-" + StrUtil::toStr(endLine);
   return self;
 }
 
-
 string
-CSProfStmtRangeNode::CodeName() const
-{
-  string self = NodeTypeToName(GetType());
-  self += " " + CSProfCodeNode::ToDumpString();
+CSProfProcedureFrameNode::codeName() const
+{ 
+  string self = NodeTypeToName(GetType()) + " "
+    + GetProc() + " @ "
+    + GetFile() + ":" 
+    + StrUtil::toStr(begLine) + "-" + StrUtil::toStr(endLine);
   return self;
 }
 

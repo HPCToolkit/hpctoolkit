@@ -213,7 +213,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       int lush_metric_id = csprof_new_metric();
       assert(num_lush_metrics == 1 && lush_metric_id == 1);
-      csprof_set_metric_info_and_period(lush_metric_id, "P non-work (ms)",
+      csprof_set_metric_info_and_period(lush_metric_id, "idleness",
 					HPCFILE_METRIC_FLAG_ASYNC | HPCFILE_METRIC_FLAG_REAL,
 					self->evl.events[i].thresh);
     }
