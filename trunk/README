@@ -12,12 +12,14 @@ This is the README for HPCToolkit.
 
 Contents:
   0. What is HPCToolkit
-  1. For More Information
+  1. Getting HPCToolkit
+  2. Building HPCToolkit
+  3. For More Information
 
 =============================================================================
 
-0. What is HPCToolkit:
---------------------
+0. What is HPCToolkit
+---------------------
 
 HPCToolkit is a multi-platform package with tools for 1) collecting
 raw profile information, 2) converting various types of profiling
@@ -38,10 +40,63 @@ National Computational Science Alliance.
 
 =============================================================================
 
-1. For More Information:
---------------------
+1. Getting HPCToolkit
+---------------------
+
+HPCtoolkit is available via anonymous svn download from Rice's HPC
+repository.
+
+  svn co http://hpc.svn.rice.edu/r/hpctoolkit/trunk
+
+However, its new home will soon be the SciDAC Outreach Center.
+
+  https://outreach.scidac.gov/projects/hpctoolkit/
+
+=============================================================================
+
+2. Building HPCToolkit
+----------------------
+
+Building HPCToolkit is done in two phases.  Phase one builds the
+external packages that are needed as prerequisites, and then phase two
+builds HPCToolkit proper.
+
+Phase one is built in the externals subdirectory.  Normally, this step
+doesn't require any special options, just let configure decide what
+packages need to be built (usually most or all), build them and then
+clean up the tree.
+
+   cd externals
+   ./configure
+   make all
+   make distclean
+
+Once this step finishes successfully, then it can be cleaned up (with
+make distclean) and left alone.  The README file in the externals
+subdirectory has more details and advanced options for this step.
+
+Phase two uses the externals tree to build HPCToolkit proper and uses
+the autoconf and automake build procedure.  Return to the hpctoolkit
+root directory and configure and build HPCToolkit.
+
+   cd hpctoolkit
+   ./configure --prefix=PATH --with-papi=PATH
+   make
+   make install
+
+The externals tree provides a development tree for all of HPCToolkit's
+prerequisites except for PAPI.  PAPI requires a kernel patch, so if
+the patch is not yet installed, then externals can't add it in
+userland.  Anyway, PAPI is highly recommended, and if it is available
+on your system, then specify its install directory with the
+--with-papi option.
+
+=============================================================================
+
+3. For More Information
+-----------------------
 
 HPCToolkit documentation (including instructions for build/installation)
   Point your browser to ${HPCTOOLKIT}/doc/index.html
 
-HPCToolkit Website: http://www.hipersoft.rice.edu/hpctoolkit
+HPCToolkit Website: http://hpctoolkit.org/
