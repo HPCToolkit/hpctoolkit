@@ -117,6 +117,9 @@ Options: Output:\n\
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
+  {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
   // Source structure correlation options
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
@@ -252,6 +255,9 @@ Args::parse(int argc, const char* const argv[])
     }
 
     // Check for other options: Correlation options
+    if (parser.isOpt("agent-cilk")) {
+      lush_agent = "cilk magic"; // non-empty
+    }
     if (parser.isOpt("include")) {
       string str = parser.getOptArg("include");
       StrUtil::tokenize_str(str, CLP_SEPARATOR, searchPaths);

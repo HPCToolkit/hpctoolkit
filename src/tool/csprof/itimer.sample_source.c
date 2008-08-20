@@ -169,7 +169,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
     if (lush_metrics == 1) {
       int lush_metric_id = csprof_new_metric();
       assert(lush_metric_id == 1);
-      csprof_set_metric_info_and_period(lush_metric_id, "P non-work (ms)",
+      csprof_set_metric_info_and_period(lush_metric_id, "idleness (ms)",
 					HPCFILE_METRIC_FLAG_ASYNC | HPCFILE_METRIC_FLAG_REAL,
 					sample_period);
     }

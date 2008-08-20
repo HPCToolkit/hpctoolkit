@@ -111,7 +111,7 @@ Profile::merge(Profile& y)
   uint x_numMetrics = numMetrics();
   for (uint i = 0; i < y.numMetrics(); ++i) {
     const SampledMetricDesc* m = y.metric(i);
-    m_metricdesc.push_back(new SampledMetricDesc(*m));
+    addMetric(new SampledMetricDesc(*m));
   }
   
   // -------------------------------------------------------

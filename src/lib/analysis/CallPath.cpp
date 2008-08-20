@@ -92,6 +92,7 @@ using namespace xml;
 #define DEB_NORM_SEARCH_PATH  0
 #define DEB_MKDIR_SRC_DIR 0
 
+typedef std::set<Prof::CSProfCodeNode*> CSProfCodeNodeSet;
 
 //****************************************************************************
 // Dump a CSProfTree 
@@ -514,7 +515,7 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
 //  
 // FIXME
 // If pc values from the leaves map to the same source file info,
-// coalese these leaves into one.
+// coalesce these leaves into one.
 
 void 
 Analysis::CallPath::
@@ -679,14 +680,23 @@ addSymbolicInfo(Prof::IDynNode* n_dyn, binutils::LM* lm)
 
 bool coalesceCallsiteLeaves(Prof::CallPath::Profile* prof);
 void removeEmptyScopes(Prof::CallPath::Profile* prof);
+void lush_cilkNormalize(Prof::CallPath::Profile* prof);
+void lush_makeParallelOverhead(Prof::CallPath::Profile* prof);
+
 
 bool 
-Analysis::CallPath::normalize(Prof::CallPath::Profile* prof)
+Analysis::CallPath::normalize(Prof::CallPath::Profile* prof, 
+			      string lush_agent)
 {
-  // Remove duplicate/inplied file and procedure information from tree
   coalesceCallsiteLeaves(prof);
+
+  if (!lush_agent.empty()) {
+    lush_cilkNormalize(prof);
+    lush_makeParallelOverhead(prof);
+  }
+
   removeEmptyScopes(prof);
-  
+
   return (true);
 }
 
@@ -759,7 +769,7 @@ coalesceCallsiteLeaves(Prof::CSProfNode* node)
 }
 
 
-
+// FIXME: Should be ANode::pruneByMetrics (cf. prof-juicy/Struct-Tree.cpp)
 void 
 removeEmptyScopes(Prof::CSProfNode* node);
 
@@ -795,6 +805,327 @@ removeEmptyScopes(Prof::CSProfNode* node)
   }
 }
 
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+struct ParallelOverhead
+{
+  static const string s_tag;
+
+  static inline bool 
+  is_overhead(Prof::CSProfCodeNode* x)
+  {
+    if (x->GetType() == Prof::CSProfNode::PROCEDURE_FRAME) {
+      const string& x_fnm = x->GetFile();
+      if (x_fnm.length() >= s_tag.length()) {
+	size_t tag_beg = x_fnm.length() - s_tag.length();
+	return (x_fnm.compare(tag_beg, s_tag.length(), s_tag) == 0);
+      }
+      // fall through
+    }
+    return false;
+  }
+
+  static inline bool 
+  is_metric_src(Prof::SampledMetricDesc* mdesc)
+  {
+    const string& nm = mdesc->name();
+    return (nm == "PAPI_TOT_CYC" || nm == "WALLCLOCK");
+  }
+};
+
+const string ParallelOverhead::s_tag = "lush:parallel-overhead";
+
+
+struct CilkCanonicalizer
+{
+  static const string s_proc_pfx;
+  static const string s_slow_pfx;
+  static const string s_slow_sfx;
+
+  static string 
+  normalizeName(Prof::CSProfCodeNode* x) 
+  {
+    string x_nm = x->codeName();
+    
+    // if '_cilk' is a prefix of x_nm, normalize
+    if (x->GetType() == Prof::CSProfNode::PROCEDURE_FRAME) {
+      //int pfx = s_proc_pfx.length();
+      //size_t mrk_x = x_nm.find_first_of('@');
+      //string x_procnm = x.substr(pfx, mrk_x - 1 - pfx);
+      const string& x_procnm = x->GetProc();
+
+      string xtra = "";
+      if (ParallelOverhead::is_overhead(x)) {
+	xtra = "@" + ParallelOverhead::s_tag;
+      }
+
+      // 1. _cilk_cilk_main_import --> invoke_main_slow
+      if (x_procnm == "_cilk_cilk_main_import") {
+	return "invoke_main_slow" + xtra;
+      }
+
+      // 2. _cilk_x_slow --> x [_cilk_cilk_main_slow --> cilk_main]
+      if (is_slow_pfx(x_procnm)) {
+	int len = x_procnm.length() - s_slow_pfx.length() - s_slow_sfx.length();
+	string x_basenm = 
+	  x_procnm.substr(s_slow_pfx.length(), len);
+	return x_basenm + xtra;
+      }
+
+      return x_procnm + xtra;
+    }
+    return x_nm;
+  }
+
+  static inline bool 
+  is_proc_pfx(const string& x)
+  {
+    return (x.compare(0, s_proc_pfx.length(), s_proc_pfx) == 0);
+  }
+
+  static inline bool 
+  is_slow_pfx(const string& x)
+  {
+    return (x.compare(0, s_slow_pfx.length(), s_slow_pfx) == 0);
+  }
+
+  static inline bool 
+  is_slow_proc(Prof::CSProfCodeNode* x)
+  {
+    const string& x_procnm = x->GetProc();
+    return is_slow_pfx(x_procnm);
+  }
+
+};
+
+const string CilkCanonicalizer::s_proc_pfx = "PROCEDURE_FRAME ";
+const string CilkCanonicalizer::s_slow_pfx = "_cilk_";
+const string CilkCanonicalizer::s_slow_sfx = "_slow";
+
+
+
+//***************************************************************************
+// lush_cilkNormalize
+//***************************************************************************
+
+
+void lush_cilkNormalize(Prof::CSProfNode* node);
+void lush_cilkNormalizeByFrame(Prof::CSProfNode* node);
+
+
+// Notes: Match frames, and use those matches to merge callsites.
+
+void 
+lush_cilkNormalize(Prof::CallPath::Profile* prof)
+{
+  Prof::CCT::Tree* cct = prof->cct();
+  if (!cct) { return; }
+
+  lush_cilkNormalize(cct->root());
+}
+
+
+typedef std::map<string, Prof::CSProfCodeNode*> CilkMergeMap;
+
+
+// - Preorder Visit
+void 
+lush_cilkNormalize(Prof::CSProfNode* node)
+{
+  if (!node) { return; }
+
+  // ------------------------------------------------------------
+  // Visit node
+  // ------------------------------------------------------------
+  if (node->GetType() == Prof::CSProfNode::PROCEDURE_FRAME) {
+    lush_cilkNormalizeByFrame(node);
+
+    // normalize routines not normalized by merging...
+    Prof::CSProfCodeNode* x = dynamic_cast<Prof::CSProfCodeNode*>(node);
+    x->SetProc(CilkCanonicalizer::normalizeName(x));
+  }
+
+  // ------------------------------------------------------------
+  // Recur
+  // ------------------------------------------------------------
+  for (Prof::CSProfNodeChildIterator it(node); it.Current(); ++it) {
+    Prof::CSProfNode* x = it.CurNode();
+    lush_cilkNormalize(x);
+  }
+}
+
+
+void 
+lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
+{
+  DIAG_MsgIf(0, "====> (" << node << ") " << node->codeName());
+  
+  // ------------------------------------------------------------
+  // Gather (grand) children frames (skip one level)
+  // ------------------------------------------------------------
+  CSProfCodeNodeSet frameSet;
+  
+  for (Prof::CSProfNodeChildIterator it(node); it.Current(); ++it) {
+    Prof::CSProfNode* child = it.CurNode();
+
+    for (Prof::CSProfNodeChildIterator it(child); it.Current(); ++it) {
+      Prof::CSProfCodeNode* x = 
+	dynamic_cast<Prof::CSProfCodeNode*>(it.CurNode());
+      
+      if (x->GetType() == Prof::CSProfNode::PROCEDURE_FRAME) {
+	frameSet.insert(x);
+      }
+    }
+  }
+
+
+  // ------------------------------------------------------------
+  // Merge against (grand) children frames
+  // ------------------------------------------------------------
+
+  CilkMergeMap mergeMap;
+
+  for (CSProfCodeNodeSet::iterator it = frameSet.begin(); 
+       it != frameSet.end(); ++it) {
+    
+    Prof::CSProfCodeNode* x = *it;
+
+    string x_nm = CilkCanonicalizer::normalizeName(x);
+    DIAG_MsgIf(0, "\tins: " << x->codeName() << "\n" 
+	       << "\tas : " << x_nm << " --> " << x);
+    CilkMergeMap::iterator it = mergeMap.find(x_nm);
+    if (it != mergeMap.end()) {
+      // found -- we have a duplicate
+      Prof::CSProfCodeNode* y = (*it).second;
+
+      // keep the version without the "_cilk_" prefix
+      Prof::CSProfCodeNode* tokeep = y, *todel = x;
+      if (y->GetType() == Prof::CSProfNode::PROCEDURE_FRAME 
+	  && CilkCanonicalizer::is_slow_proc(y)) {
+        tokeep = x;
+	todel = y;
+	mergeMap[x_nm] = x;
+      } 
+      
+      Prof::CSProfNode* par_tokeep = tokeep->Parent();
+      Prof::CSProfNode* par_todel  = todel->Parent();
+
+      DIAG_MsgIf(0, "\tkeep (" << tokeep << "): " << tokeep->codeName() << "\n"
+		 << "\tdel  (" << todel  << "): " << todel->codeName());
+
+      // merge parents, if necessary
+      if (par_tokeep != par_todel) {
+	par_tokeep->merge_node(par_todel); // unlinks and deletes par_todel
+      }
+
+      // merge parents, if necessary
+      tokeep->merge_node(todel); // unlinks and deletes todel
+    }
+    else { 
+      mergeMap.insert(std::make_pair(x_nm, x));
+    }
+  }
+}
+
+
+//***************************************************************************
+
+void 
+lush_makeParallelOverhead(Prof::CSProfNode* node, 
+			  const std::vector<uint>& m_src, 
+			  const std::vector<uint>& m_dst, 
+			  bool is_overhead_ctxt);
+
+
+
+void 
+lush_makeParallelOverhead(Prof::CallPath::Profile* prof)
+{
+  Prof::CCT::Tree* cct = prof->cct();
+  if (!cct) { return; }
+
+  // ------------------------------------------------------------
+  // Create parallel overhead metric descriptor
+  // Create mapping from source metrics to overhead metrics
+  // ------------------------------------------------------------
+  std::vector<uint> metric_src;
+  std::vector<uint> metric_dst;
+
+  for (uint m_id = 0; m_id < prof->numMetrics(); ++m_id) {
+    Prof::SampledMetricDesc* m_desc = prof->metric(m_id);
+    if (ParallelOverhead::is_metric_src(m_desc)) {
+      metric_src.push_back(m_id);
+
+      Prof::SampledMetricDesc* m_new = 
+	new Prof::SampledMetricDesc("overhead", "parallel overhead", 
+				    m_desc->period());
+      uint m_new_id = prof->addMetric(m_new);
+      metric_dst.push_back(m_new_id);
+    }
+  }
+
+  // ------------------------------------------------------------
+  // Create space for metric values
+  // ------------------------------------------------------------
+  uint n_new_metrics = metric_dst.size();
+
+  for (Prof::CSProfNodeIterator it(cct->root()); it.Current(); ++it) {
+    Prof::CSProfNode* x = it.CurNode();
+    Prof::IDynNode* x_dyn = dynamic_cast<Prof::IDynNode*>(x);
+    if (x_dyn) {
+      x_dyn->expandMetrics_after(n_new_metrics);
+    }
+  }
+
+  lush_makeParallelOverhead(cct->root(), metric_src, metric_dst, false);
+}
+
+
+void 
+lush_makeParallelOverhead(Prof::CSProfNode* node, 
+			  const std::vector<uint>& m_src, 
+			  const std::vector<uint>& m_dst, 
+			  bool is_overhead_ctxt)
+{
+  if (!node) { return; }
+
+  // ------------------------------------------------------------
+  // Visit node
+  // ------------------------------------------------------------
+  if (is_overhead_ctxt) {
+    for (Prof::CSProfNodeChildIterator it(node); it.Current(); ++it) {
+      Prof::CSProfNode* x = it.CurNode();
+      Prof::IDynNode* x_dyn = dynamic_cast<Prof::IDynNode*>(x);
+      if (x_dyn) {
+	for (uint i = 0; i < m_src.size(); ++i) {
+	  uint src_idx = m_src[i];
+	  uint dst_idx = m_dst[i];
+	  hpcfile_metric_data_t mval = x_dyn->metric(src_idx);
+
+	  x_dyn->metricDecr(src_idx, mval);
+	  x_dyn->metricIncr(dst_idx, mval);
+	}
+      }
+    }
+  }
+
+  // ------------------------------------------------------------
+  // Recur
+  // ------------------------------------------------------------
+
+  if (node->GetType() == Prof::CSProfNode::PROCEDURE_FRAME) {
+    Prof::CSProfCodeNode* x = dynamic_cast<Prof::CSProfCodeNode*>(node);
+    is_overhead_ctxt = ParallelOverhead::is_overhead(x);
+  }
+
+  for (Prof::CSProfNodeChildIterator it(node); it.Current(); ++it) {
+    Prof::CSProfNode* x = it.CurNode();
+    lush_makeParallelOverhead(x, m_src, m_dst, is_overhead_ctxt);
+  }
+}
 
 //***************************************************************************
 // 

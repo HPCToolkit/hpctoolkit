@@ -83,7 +83,7 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
 		binutils::LM* lm);
 
 bool 
-normalize(Prof::CallPath::Profile* prof);
+normalize(Prof::CallPath::Profile* prof, string lush_agent);
 
 void 
 writeInDatabase(Prof::CallPath::Profile* prof, const std::string& filenm);

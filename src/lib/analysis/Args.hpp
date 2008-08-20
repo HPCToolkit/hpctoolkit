@@ -123,6 +123,9 @@ public:
   // hpcviewer?)... perhaps this should only be an output option.
   bool metrics_computeInteriorValues;
 
+  // LUSH agent (prototype)
+  std::string lush_agent;
+
   // -------------------------------------------------------
   // Output arguments: database output
   // -------------------------------------------------------

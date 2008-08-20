@@ -277,6 +277,11 @@ public:
   findDynChild(lush_assoc_info_t as_info, 
 	       Epoch::LM_id_t lm_id, VMA ip, lush_lip_t* lip);
 
+
+  // merge y into 'this'
+  void 
+  merge_node(CSProfNode* y);
+
   // --------------------------------------------------------
   // Dump contents for inspection
   // --------------------------------------------------------
@@ -299,6 +304,9 @@ public:
   
   void DDump();
   void DDumpSort();
+
+  virtual std::string codeName() const { return ""; }
+
 
 protected:
   void merge_fixup(const SampledMetricDescVec* mdesc, int metric_offset);
@@ -368,6 +376,9 @@ public:
   
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
+
+  virtual std::string codeName() const;
+
     
 protected: 
   void Relocate();
@@ -543,6 +554,12 @@ public:
   uint numMetrics() const 
     { return m_metrics.size(); }
 
+  void metricIncr(int i, hpcfile_metric_data_t incr)  
+    { IDynNode::metricIncr((*m_metricdesc)[i], &m_metrics[i], incr); }
+  void metricDecr(int i, hpcfile_metric_data_t decr)  
+    { IDynNode::metricDecr((*m_metricdesc)[i], &m_metrics[i], decr); }
+
+
   const SampledMetricDescVec* metricdesc() const 
     { return m_metricdesc; }
   void metricdesc(const SampledMetricDescVec* x) 
@@ -572,6 +589,18 @@ public:
     }
   }
   
+  static inline void
+  metricDecr(const SampledMetricDesc* mdesc, 
+	     hpcfile_metric_data_t* x, hpcfile_metric_data_t decr)
+  {
+    if (hpcfile_csprof_metric_is_flag(mdesc->flags(), 
+				      HPCFILE_METRIC_FLAG_REAL)) {
+      x->r -= decr.r;
+    }
+    else {
+      x->i -= decr.i;
+    }
+  }
 
   // -------------------------------------------------------
   // Dump contents for inspection
@@ -829,6 +858,8 @@ public:
 
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
+
+  virtual std::string codeName() const;
  
 private: 
   // source file info
@@ -849,9 +880,10 @@ public:
   CSProfLoopNode(CSProfNode* _parent, SrcFile::ln begLn, SrcFile::ln endLn,
 		 uint sId = 0);
   ~CSProfLoopNode();
-  
+
+  virtual const std::string& GetFile() const { return BOGUS; }
+
   // Dump contents for inspection
-  virtual std::string CodeName() const;
   virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const; 
   
 private:
@@ -871,8 +903,9 @@ public:
   ~CSProfStmtRangeNode();
   
   // Dump contents for inspection
-  virtual std::string CodeName() const;
   virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
+
+  virtual const std::string& GetFile() const { return BOGUS; }
 };
 
 #ifndef xDEBUG
