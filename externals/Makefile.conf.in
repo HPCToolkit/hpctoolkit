@@ -3,6 +3,11 @@
 #  It is rewritten on configure.
 #
 
+CC = @CC@
+CFLAGS = @CFLAGS@
+CXX = @CXX@
+CXXFLAGS = @CXXFLAGS@
+
 STAGE_PREFIX = @stage_prefix@
 INSTALL_PREFIX = @prefix@
 
