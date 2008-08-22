@@ -43,6 +43,7 @@ BAK = .bak
 
 PATCH_DIR ?=  patches
 BUILD_DIR ?=  work
+DISTDIR  = ../distfiles
 
 FETCH_CMD ?=    true
 PATCH_CMD ?= 	default
@@ -81,6 +82,18 @@ refetch:
 	@case "$(FETCH_CMD)" in  \
 		ftp* | http* )  \
 			$(FETCH_FTP) "$(FETCH_CMD)" "$(FETCH_TARFILE)"  \
+			;;  \
+		*.tar )  \
+			echo tar xvf "$(DISTDIR)/$(FETCH_CMD)" ;  \
+			tar xvf "$(DISTDIR)/$(FETCH_CMD)"  \
+			;;  \
+		*.tar.gz | *.tgz )  \
+			echo tar xvzf "$(DISTDIR)/$(FETCH_CMD)" ;  \
+			tar xvzf "$(DISTDIR)/$(FETCH_CMD)"  \
+			;;  \
+		*.tar.bz | *.tar.bz2 | *.tbz )  \
+			echo tar xvjf "$(DISTDIR)/$(FETCH_CMD)" ;  \
+			tar xvjf "$(DISTDIR)/$(FETCH_CMD)"  \
 			;;  \
 		* )  \
 			echo "$(FETCH_CMD)" ;  \
