@@ -7,7 +7,7 @@
 PKG_NAME = libmonitor
 SRC_DIR = libmonitor
 
-FETCH_CMD = svn co https://outreach.scidac.gov/svn/libmonitor/trunk $(SRC_DIR)
+FETCH_CMD = svn co -r 92 https://outreach.scidac.gov/svn/libmonitor/trunk $(SRC_DIR)
 
 include ../build-utils/Makefile.inc
 
