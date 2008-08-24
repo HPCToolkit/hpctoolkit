@@ -134,25 +134,62 @@ myinstall-monitor:
 
 
 ############################################################
-# WebDocs
-#   The following extracts the various files that will appear on
-#   the Web site as documentation for the current version.
-#   The tarfile should be extracted in the "documentation" sub-directory
-#   of the Web site.
-#   Eventually, this could perhaps be done with 'make dist'...
+# Dist
 ############################################################
 
-# GNUtar
+dist-hook: my-dist
+
+my-dist:
+	rm -rf `find $(distdir) -name CVS -o -name ".svn"`
+
+.PHONY: my-dist
+
+
+############################################################
+# Create hpctoolkit distribution
+# 
+# (Requires GNU tar)
+#
+# PACKAGE_NAME, PACKAGE_TARNAME, PACKAGE_VERSION
+############################################################
+
 MYTAR = tar
-MYTARFILE = @abs_top_builddir@/@PACKAGE_NAME@-@PACKAGE_VERSION@-webdocs.tar
+MYTOUCH = @abs_top_srcdir@/config/hpcautotouch
 MYSRC = @abs_top_srcdir@
+MYINFO = @abs_top_srcdir@/configure
+MYPREFIX = @abs_top_builddir@
 
-hpc_webdocs: 
-#	Exclude CVS or .svn metadata
-	cd $(srcdir)/.. ; \
-	${MYTAR} cvf $(MYTARFILE) --exclude=CVS --exclude=".svn" \
-	 hpctoolkit/README* hpctoolkit/Sourceme* \
-	 hpctoolkit/doc \
-	 hpctoolkit/lib/dtd/*.dtd
+hpc-dist:
+	ver=`grep "PACKAGE_VERSION=" $(MYINFO) | awk -F"'" '{print $$2}'` ; \
+	top_dir=`$(SHELL) -c "cd $(MYSRC) && pwd"` ; \
+	nm_cur=`basename $${top_dir}` ; \
+	nm_new="hpctoolkit-$${ver}" ; \
+	\
+	cd $${top_dir}/.. ; \
+	ln -s $${nm_cur} $${nm_new} ; \
+	\
+        $(MYTAR) zcvf $(MYPREFIX)/$${nm_new}.tar.gz \
+	  --dereference --exclude="CVS" --exclude=".svn" \
+	  \
+	  $${nm_new}/aclocal.m4 \
+	  $${nm_new}/autogen \
+	  $${nm_new}/configure* \
+	  $${nm_new}/Makefile* \
+	  $${nm_new}/README* \
+	  $${nm_new}/Sourceme-* \
+	  \
+	  $${nm_new}/config \
+	  \
+          $${nm_new}/doc \
+	  $${nm_new}/examples \
+          $${nm_new}/externals \
+          $${nm_new}/lib \
+          $${nm_new}/src \
+	  $${nm_new}/tools \
+	  ; \
+	\
+	rm $${nm_new} 
 
-.PHONY: hpc_webdocs
+.PHONY: hpc-dist
+
+############################################################

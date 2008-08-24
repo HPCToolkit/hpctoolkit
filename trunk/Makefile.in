@@ -296,18 +296,17 @@ pkglibexec_SCRIPTS = $(MYSCRIPTS)
 dist_doc_DATA = $(MYDATA)
 
 ############################################################
-# WebDocs
-#   The following extracts the various files that will appear on
-#   the Web site as documentation for the current version.
-#   The tarfile should be extracted in the "documentation" sub-directory
-#   of the Web site.
-#   Eventually, this could perhaps be done with 'make dist'...
+# Create hpctoolkit distribution
+# 
+# (Requires GNU tar)
+#
+# PACKAGE_NAME, PACKAGE_TARNAME, PACKAGE_VERSION
 ############################################################
-
-# GNUtar
 MYTAR = tar
-MYTARFILE = @abs_top_builddir@/@PACKAGE_NAME@-@PACKAGE_VERSION@-webdocs.tar
+MYTOUCH = @abs_top_srcdir@/config/hpcautotouch
 MYSRC = @abs_top_srcdir@
+MYINFO = @abs_top_srcdir@/configure
+MYPREFIX = @abs_top_builddir@
 all: all-recursive
 
 .SUFFIXES:
@@ -571,6 +570,9 @@ distdir: $(DISTFILES)
 	      || exit 1; \
 	  fi; \
 	done
+	$(MAKE) $(AM_MAKEFLAGS) \
+	  top_distdir="$(top_distdir)" distdir="$(distdir)" \
+	  dist-hook
 	-find $(distdir) -type d ! -perm -777 -exec chmod a+rwx {} \; -o \
 	  ! -type d ! -perm -444 -links 1 -exec chmod a+r {} \; -o \
 	  ! -type d ! -perm -400 -exec chmod a+r {} \; -o \
@@ -770,14 +772,14 @@ uninstall-am: uninstall-dist_docDATA uninstall-pkglibexecSCRIPTS
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
 	all all-am am--refresh check check-am clean clean-generic \
 	clean-libtool ctags ctags-recursive dist dist-all dist-bzip2 \
-	dist-gzip dist-lzma dist-shar dist-tarZ dist-zip distcheck \
-	distclean distclean-generic distclean-libtool distclean-tags \
-	distcleancheck distdir distuninstallcheck dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-data-local install-dist_docDATA \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am \
+	dist-gzip dist-hook dist-lzma dist-shar dist-tarZ dist-zip \
+	distcheck distclean distclean-generic distclean-libtool \
+	distclean-tags distcleancheck distdir distuninstallcheck dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-data-local \
+	install-dist_docDATA install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
 	install-pkglibexecSCRIPTS install-ps install-ps-am \
 	install-strip installcheck installcheck-am installdirs \
 	installdirs-am maintainer-clean maintainer-clean-generic \
@@ -829,15 +831,51 @@ myinstall-monitor:
 
 .PHONY : myinstall-xerces myinstall-monitor
 
-hpc_webdocs: 
-#	Exclude CVS or .svn metadata
-	cd $(srcdir)/.. ; \
-	${MYTAR} cvf $(MYTARFILE) --exclude=CVS --exclude=".svn" \
-	 hpctoolkit/README* hpctoolkit/Sourceme* \
-	 hpctoolkit/doc \
-	 hpctoolkit/lib/dtd/*.dtd
+############################################################
+# Dist
+############################################################
 
-.PHONY: hpc_webdocs
+dist-hook: my-dist
+
+my-dist:
+	rm -rf `find $(distdir) -name CVS -o -name ".svn"`
+
+.PHONY: my-dist
+
+hpc-dist:
+	ver=`grep "PACKAGE_VERSION=" $(MYINFO) | awk -F"'" '{print $$2}'` ; \
+	top_dir=`$(SHELL) -c "cd $(MYSRC) && pwd"` ; \
+	nm_cur=`basename $${top_dir}` ; \
+	nm_new="hpctoolkit-$${ver}" ; \
+	\
+	cd $${top_dir}/.. ; \
+	ln -s $${nm_cur} $${nm_new} ; \
+	\
+        $(MYTAR) zcvf $(MYPREFIX)/$${nm_new}.tar.gz \
+	  --dereference --exclude="CVS" --exclude=".svn" \
+	  \
+	  $${nm_new}/aclocal.m4 \
+	  $${nm_new}/autogen \
+	  $${nm_new}/configure* \
+	  $${nm_new}/Makefile* \
+	  $${nm_new}/README* \
+	  $${nm_new}/Sourceme-* \
+	  \
+	  $${nm_new}/config \
+	  \
+          $${nm_new}/doc \
+	  $${nm_new}/examples \
+          $${nm_new}/externals \
+          $${nm_new}/lib \
+          $${nm_new}/src \
+	  $${nm_new}/tools \
+	  ; \
+	\
+	rm $${nm_new} 
+
+.PHONY: hpc-dist
+
+############################################################
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
