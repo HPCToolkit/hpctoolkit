@@ -9,7 +9,7 @@
 #
 
 PKG_NAME=old-monitor
-temp=monitor/temp-install
+temp=monitor-080825/temp-install
 
 . ../build-utils/configure.inc
 pre_install

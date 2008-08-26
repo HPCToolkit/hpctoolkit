@@ -6,7 +6,7 @@
 #
 
 PKG_NAME=libmonitor
-SRC=libmonitor
+src=libmonitor-r92
 
 . ../build-utils/configure.inc
 pre_configure
@@ -19,7 +19,7 @@ make_work_dir
 cd work || die "unable to cd: work"
 
 echo configure "$@"
-../${SRC}/configure "$@"
+../${src}/configure "$@"
 test $? -eq 0 || die "configure failed"
 
 post_configure
