@@ -7,7 +7,7 @@
 PKG_NAME = open-analysis
 SRC_DIR = version-0.4pre
 
-FETCH_CMD = svn co http://hpc.svn.rice.edu/r/open-analysis/tags/$(SRC_DIR)
+FETCH_CMD = http://www.cs.rice.edu/~krentel/hpc-distfiles/OpenAnalysis-0.4pre.tar.gz
 
 include ../build-utils/Makefile.inc
 
