@@ -1,8 +1,10 @@
 ##
-##  Csprof src/Makefile.am.
+##  Csprof Makefile.am.
 ##
 ##  $Id$
 ##
+
+include $(top_srcdir)/src/Makeinclude.config
 
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
@@ -14,6 +16,8 @@ SYMTABAPI_INC =  @SYMTABAPI_INC@
 
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
+
+PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
 
 CSPROF_BASE_FILES =			\
 	utilities/first_func.c		\
@@ -44,7 +48,6 @@ CSPROF_BASE_FILES =			\
 	lush/lush-backtrace.c		\
 	lush/lush.c			\
 	lush/lushi-cb.c			\
-	lush/lush-support.c		\
 	lush/lush-support-rt.c		\
 	memory/list.c			\
 	memory/mem.c			\
@@ -58,12 +61,7 @@ CSPROF_BASE_FILES =			\
 	utilities/executable-path.c	\
 	utilities/spinlock.c		\
 	utilities/tokenize.c		\
-	utilities/unlink.c 		\
-	\
-	hpcfile/hpcfile_csprof.c	\
-	hpcfile/hpcfile_cstree.c	\
-	hpcfile/hpcfile_general.c	
-# tallent: moved hpcfile to end since it should be DEPRECATED
+	utilities/unlink.c
 
 CSPROF_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_dynamic.c	\
@@ -102,7 +100,6 @@ CSPROF_CPP_DEFINES =			\
 CSPROF_INCLUDE_DIRS =			\
 	-I$(srcdir)/Dbg			\
 	-I$(srcdir)/fnbounds		\
-	-I$(srcdir)/hpcfile		\
 	-I$(srcdir)/lush		\
 	-I$(srcdir)/lush-agents		\
 	-I$(srcdir)/memory		\
@@ -111,7 +108,9 @@ CSPROF_INCLUDE_DIRS =			\
 	-I$(srcdir)/sampling/types/callstack	\
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
+	$(HPC_IFLAGS)			\
 	-I$(LIBMONITOR_INC)		\
+	-I$(PROF_LEAN_INC)		\
 	-I$(SYMTABAPI_INC)
 
 CSPROF_PPC_INCLUDE_DIRS = 		\
@@ -123,7 +122,7 @@ CSPROF_X86_INCLUDE_DIRS =		\
 	-I$(XED2_INC)
 
 # FIXME: tallent: added empty pkglib
-pkglib_LTLIBRARIES = 
+pkglib_LTLIBRARIES =
 lib_LTLIBRARIES = libcsprof.la
 libexec_PROGRAMS = libcsprof.o
 
@@ -149,6 +148,9 @@ libcsprof_o_CPPFLAGS =			\
 
 libcsprof_la_CFLAGS = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS)
 libcsprof_o_CFLAGS  = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS)
+
+libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
+libcsprof_o_LDADD   = $(HPC_LIBPROFLEAN)
 
 libcsprof_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread
@@ -190,6 +192,7 @@ libcsprof_la_SOURCES += utilities/last_func.c
 libcsprof_o_SOURCES  += utilities/last_func.c
 
 
+# FIXME: This is specific to Rice.
 MY_CILK_INSTALL = /home/eraxxon/develop/cilk/cilk-install
 
 MY_CILK_AGENT_SOURCES = \
