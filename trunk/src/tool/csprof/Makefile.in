@@ -14,6 +14,29 @@
 
 @SET_MAKE@
 
+# -*-Mode: makefile;-*-
+# $Id: Makeinclude.config 1317 2008-05-15 17:16:34Z eraxxon $
+
+#############################################################################
+#
+# File:
+#   $Source$
+#
+# Description:
+#   Include file for package Makefile.in
+# 
+#   *Assumes presence of Automake variables!*
+#
+#############################################################################
+
+#############################################################################
+# HPCTOOLKIT Components and Settings
+#############################################################################
+
+############################################################
+# Local includes
+############################################################
+
 
 
 VPATH = @srcdir@
@@ -34,6 +57,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(top_srcdir)/src/Makeinclude.config TODO
 libexec_PROGRAMS = libcsprof.o$(EXEEXT)
 @HOST_OS_LINUX_TRUE@am__append_1 = $(CSPROF_LINUX_DYNAMIC_FILES)
 @HOST_CPU_PPC_TRUE@am__append_2 = $(CSPROF_PPC_FILES)
@@ -56,7 +81,6 @@ libexec_PROGRAMS = libcsprof.o$(EXEEXT)
 @OPT_HAVE_PAPI_TRUE@am__append_19 = $(PAPI_LD_FLGS)
 @OPT_ENABLE_LUSH_TRUE@am__append_20 = libagent-cilk.la
 subdir = src/tool/csprof
-DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in TODO
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/configure.ac
@@ -88,7 +112,7 @@ libagent_cilk_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libagent_cilk_la_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 @OPT_ENABLE_LUSH_TRUE@am_libagent_cilk_la_rpath = -rpath $(pkglibdir)
-libcsprof_la_LIBADD =
+libcsprof_la_DEPENDENCIES = $(HPC_LIBPROFLEAN)
 am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	all_sample_sources.c common.sample_source.c csprof_options.c \
 	csproflib.c data.c env.c epoch.c files.c handling_sample.c \
@@ -97,16 +121,14 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	segv_handler.c state.c system_server.c thread_data.c trace.c \
 	unsafe.c Dbg/pmsg.c fnbounds/fnbounds_common.c \
 	lush/lush-backtrace.c lush/lush.c lush/lushi-cb.c \
-	lush/lush-support.c lush/lush-support-rt.c memory/list.c \
-	memory/mem.c sampling/types/callstack/cct.c \
+	lush/lush-support-rt.c memory/list.c memory/mem.c \
+	sampling/types/callstack/cct.c \
 	sampling/types/callstack/dump_backtraces.c \
 	unwind/common/backtrace.c unwind/common/intervals.c \
 	unwind/common/splay.c unwind/common/stack_troll.c \
 	unwind/common/unwind.c utilities/executable-path.c \
 	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
-	hpcfile/hpcfile_csprof.c hpcfile/hpcfile_cstree.c \
-	hpcfile/hpcfile_general.c fnbounds/fnbounds_dynamic.c \
-	csprof_dlfns.c os/linux/dylib.c \
+	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
 	unwind/ppc64/ppc64-build-intervals.c \
 	unwind/ppc64/ppc64-context.c \
 	unwind/ppc64/ppc64-unwind-support.c \
@@ -131,15 +153,13 @@ am__objects_2 = libcsprof_la-first_func.lo \
 	libcsprof_la-unsafe.lo libcsprof_la-pmsg.lo \
 	libcsprof_la-fnbounds_common.lo libcsprof_la-lush-backtrace.lo \
 	libcsprof_la-lush.lo libcsprof_la-lushi-cb.lo \
-	libcsprof_la-lush-support.lo libcsprof_la-lush-support-rt.lo \
-	libcsprof_la-list.lo libcsprof_la-mem.lo libcsprof_la-cct.lo \
+	libcsprof_la-lush-support-rt.lo libcsprof_la-list.lo \
+	libcsprof_la-mem.lo libcsprof_la-cct.lo \
 	libcsprof_la-dump_backtraces.lo libcsprof_la-backtrace.lo \
 	libcsprof_la-intervals.lo libcsprof_la-splay.lo \
 	libcsprof_la-stack_troll.lo libcsprof_la-unwind.lo \
 	libcsprof_la-executable-path.lo libcsprof_la-spinlock.lo \
-	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo \
-	libcsprof_la-hpcfile_csprof.lo libcsprof_la-hpcfile_cstree.lo \
-	libcsprof_la-hpcfile_general.lo
+	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
 am__objects_3 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_4 = libcsprof_la-dylib.lo
@@ -173,15 +193,14 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c \
 	segv_handler.c state.c system_server.c thread_data.c trace.c \
 	unsafe.c Dbg/pmsg.c fnbounds/fnbounds_common.c \
 	lush/lush-backtrace.c lush/lush.c lush/lushi-cb.c \
-	lush/lush-support.c lush/lush-support-rt.c memory/list.c \
-	memory/mem.c sampling/types/callstack/cct.c \
+	lush/lush-support-rt.c memory/list.c memory/mem.c \
+	sampling/types/callstack/cct.c \
 	sampling/types/callstack/dump_backtraces.c \
 	unwind/common/backtrace.c unwind/common/intervals.c \
 	unwind/common/splay.c unwind/common/stack_troll.c \
 	unwind/common/unwind.c utilities/executable-path.c \
 	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
-	hpcfile/hpcfile_csprof.c hpcfile/hpcfile_cstree.c \
-	hpcfile/hpcfile_general.c fnbounds/fnbounds_static.c \
+	fnbounds/fnbounds_static.c \
 	unwind/ppc64/ppc64-build-intervals.c \
 	unwind/ppc64/ppc64-context.c \
 	unwind/ppc64/ppc64-unwind-support.c \
@@ -212,7 +231,6 @@ am__objects_12 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-fnbounds_common.$(OBJEXT) \
 	libcsprof_o-lush-backtrace.$(OBJEXT) \
 	libcsprof_o-lush.$(OBJEXT) libcsprof_o-lushi-cb.$(OBJEXT) \
-	libcsprof_o-lush-support.$(OBJEXT) \
 	libcsprof_o-lush-support-rt.$(OBJEXT) \
 	libcsprof_o-list.$(OBJEXT) libcsprof_o-mem.$(OBJEXT) \
 	libcsprof_o-cct.$(OBJEXT) \
@@ -222,10 +240,7 @@ am__objects_12 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-stack_troll.$(OBJEXT) libcsprof_o-unwind.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
 	libcsprof_o-spinlock.$(OBJEXT) libcsprof_o-tokenize.$(OBJEXT) \
-	libcsprof_o-unlink.$(OBJEXT) \
-	libcsprof_o-hpcfile_csprof.$(OBJEXT) \
-	libcsprof_o-hpcfile_cstree.$(OBJEXT) \
-	libcsprof_o-hpcfile_general.$(OBJEXT)
+	libcsprof_o-unlink.$(OBJEXT)
 am__objects_13 = libcsprof_o-fnbounds_static.$(OBJEXT)
 am__objects_14 = libcsprof_o-ppc64-build-intervals.$(OBJEXT) \
 	libcsprof_o-ppc64-context.$(OBJEXT) \
@@ -243,7 +258,7 @@ am_libcsprof_o_OBJECTS = $(am__objects_12) $(am__objects_13) \
 	$(am__objects_15) $(am__objects_17) $(am__objects_19) \
 	libcsprof_o-last_func.$(OBJEXT)
 libcsprof_o_OBJECTS = $(am_libcsprof_o_OBJECTS)
-libcsprof_o_LDADD = $(LDADD)
+libcsprof_o_DEPENDENCIES = $(HPC_LIBPROFLEAN)
 libcsprof_o_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libcsprof_o_CFLAGS) \
 	$(CFLAGS) $(libcsprof_o_LDFLAGS) $(LDFLAGS) -o $@
@@ -423,8 +438,34 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+HPC_IFLAGS = -I@abs_top_srcdir@/src
+
+############################################################
+# Local libraries
+############################################################
+
+# Linking dependencies:
+#   HPC_LIBBANALYSIS  : HPC_LIBPROFJUICYX...
+#   HPC_LIBBANAL      : HPC_LIBPROFJUICY HPC_LIBBINUTILS
+#   HPC_LIBPROFJUICY  : HPC_LIBBINUTILS HPC_LIBSUPPORT
+#   HPC_LIBPROFJUICYX : HPC_LIBPROFJUICY HPC_LIBBINUTILS HPC_LIBSUPPORT
+#   HPC_LIBPROFLEAN   :
+#   HPC_LIBBINUTILS   : HPC_LIBISA HPC_LIBSUPPORT
+#   HPC_LIBISA        : HPC_LIBSUPPORT
+#   HPC_LIBXML        : HPC_LIBSUPPORT
+#   HPC_LIBSUPPORT    :
+HPC_LIBANALYSIS = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
+HPC_LIBBANAL = $(top_builddir)/src/lib/banal/libHPCbanal.la
+HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
+HPC_LIBPROFJUICYX = $(top_builddir)/src/lib/prof-juicy-x/libHPCprof-juicy-x.la
+HPC_LIBPROFLEAN = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
+HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPC_LIBISA = $(top_builddir)/src/lib/isa/libHPCisa.la
+HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
+HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
+PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
 CSPROF_BASE_FILES = \
 	utilities/first_func.c		\
 	all_sample_sources.c		\
@@ -454,7 +495,6 @@ CSPROF_BASE_FILES = \
 	lush/lush-backtrace.c		\
 	lush/lush.c			\
 	lush/lushi-cb.c			\
-	lush/lush-support.c		\
 	lush/lush-support-rt.c		\
 	memory/list.c			\
 	memory/mem.c			\
@@ -468,13 +508,8 @@ CSPROF_BASE_FILES = \
 	utilities/executable-path.c	\
 	utilities/spinlock.c		\
 	utilities/tokenize.c		\
-	utilities/unlink.c 		\
-	\
-	hpcfile/hpcfile_csprof.c	\
-	hpcfile/hpcfile_cstree.c	\
-	hpcfile/hpcfile_general.c	
+	utilities/unlink.c
 
-# tallent: moved hpcfile to end since it should be DEPRECATED
 CSPROF_DYNAMIC_FILES = \
 	fnbounds/fnbounds_dynamic.c	\
 	csprof_dlfns.c
@@ -512,7 +547,6 @@ CSPROF_CPP_DEFINES = \
 CSPROF_INCLUDE_DIRS = \
 	-I$(srcdir)/Dbg			\
 	-I$(srcdir)/fnbounds		\
-	-I$(srcdir)/hpcfile		\
 	-I$(srcdir)/lush		\
 	-I$(srcdir)/lush-agents		\
 	-I$(srcdir)/memory		\
@@ -521,7 +555,9 @@ CSPROF_INCLUDE_DIRS = \
 	-I$(srcdir)/sampling/types/callstack	\
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
+	$(HPC_IFLAGS)			\
 	-I$(LIBMONITOR_INC)		\
+	-I$(PROF_LEAN_INC)		\
 	-I$(SYMTABAPI_INC)
 
 CSPROF_PPC_INCLUDE_DIRS = \
@@ -553,9 +589,13 @@ libcsprof_la_CFLAGS = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS) \
 	$(am__append_6)
 libcsprof_o_CFLAGS = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS) \
 	$(am__append_7)
+libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
+libcsprof_o_LDADD = $(HPC_LIBPROFLEAN)
 libcsprof_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread $(am__append_12) $(am__append_18)
 libcsprof_o_LDFLAGS = $(am__append_13) $(am__append_19)
+
+# FIXME: This is specific to Rice.
 MY_CILK_INSTALL = /home/eraxxon/develop/cilk/cilk-install
 MY_CILK_AGENT_SOURCES = \
 	lush-agents/agent-cilk.h lush-agents/agent-cilk.c \
@@ -572,7 +612,7 @@ all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -755,9 +795,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-fnbounds_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-fnbounds_dynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-handling_sample.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-hpcfile_csprof.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-hpcfile_cstree.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-hpcfile_general.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-intervals.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-itimer.sample_source.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-last.Plo@am__quote@
@@ -766,7 +803,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-support-rt.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-support.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lushi-cb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-mem.Plo@am__quote@
@@ -813,9 +849,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-fnbounds_common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-fnbounds_static.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-handling_sample.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-hpcfile_csprof.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-hpcfile_cstree.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-hpcfile_general.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-intervals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-itimer.sample_source.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-last.Po@am__quote@
@@ -824,7 +857,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-list.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-support-rt.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-support.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lushi-cb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mem.Po@am__quote@
@@ -1087,13 +1119,6 @@ libcsprof_la-lushi-cb.lo: lush/lushi-cb.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-lushi-cb.lo `test -f 'lush/lushi-cb.c' || echo '$(srcdir)/'`lush/lushi-cb.c
 
-libcsprof_la-lush-support.lo: lush/lush-support.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-lush-support.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-lush-support.Tpo -c -o libcsprof_la-lush-support.lo `test -f 'lush/lush-support.c' || echo '$(srcdir)/'`lush/lush-support.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-lush-support.Tpo $(DEPDIR)/libcsprof_la-lush-support.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-support.c' object='libcsprof_la-lush-support.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-lush-support.lo `test -f 'lush/lush-support.c' || echo '$(srcdir)/'`lush/lush-support.c
-
 libcsprof_la-lush-support-rt.lo: lush/lush-support-rt.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-lush-support-rt.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-lush-support-rt.Tpo -c -o libcsprof_la-lush-support-rt.lo `test -f 'lush/lush-support-rt.c' || echo '$(srcdir)/'`lush/lush-support-rt.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-lush-support-rt.Tpo $(DEPDIR)/libcsprof_la-lush-support-rt.Plo
@@ -1191,27 +1216,6 @@ libcsprof_la-unlink.lo: utilities/unlink.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/unlink.c' object='libcsprof_la-unlink.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-unlink.lo `test -f 'utilities/unlink.c' || echo '$(srcdir)/'`utilities/unlink.c
-
-libcsprof_la-hpcfile_csprof.lo: hpcfile/hpcfile_csprof.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-hpcfile_csprof.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-hpcfile_csprof.Tpo -c -o libcsprof_la-hpcfile_csprof.lo `test -f 'hpcfile/hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile/hpcfile_csprof.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-hpcfile_csprof.Tpo $(DEPDIR)/libcsprof_la-hpcfile_csprof.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile/hpcfile_csprof.c' object='libcsprof_la-hpcfile_csprof.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-hpcfile_csprof.lo `test -f 'hpcfile/hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile/hpcfile_csprof.c
-
-libcsprof_la-hpcfile_cstree.lo: hpcfile/hpcfile_cstree.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-hpcfile_cstree.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-hpcfile_cstree.Tpo -c -o libcsprof_la-hpcfile_cstree.lo `test -f 'hpcfile/hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile/hpcfile_cstree.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-hpcfile_cstree.Tpo $(DEPDIR)/libcsprof_la-hpcfile_cstree.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile/hpcfile_cstree.c' object='libcsprof_la-hpcfile_cstree.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-hpcfile_cstree.lo `test -f 'hpcfile/hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile/hpcfile_cstree.c
-
-libcsprof_la-hpcfile_general.lo: hpcfile/hpcfile_general.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-hpcfile_general.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-hpcfile_general.Tpo -c -o libcsprof_la-hpcfile_general.lo `test -f 'hpcfile/hpcfile_general.c' || echo '$(srcdir)/'`hpcfile/hpcfile_general.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-hpcfile_general.Tpo $(DEPDIR)/libcsprof_la-hpcfile_general.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile/hpcfile_general.c' object='libcsprof_la-hpcfile_general.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-hpcfile_general.lo `test -f 'hpcfile/hpcfile_general.c' || echo '$(srcdir)/'`hpcfile/hpcfile_general.c
 
 libcsprof_la-fnbounds_dynamic.lo: fnbounds/fnbounds_dynamic.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-fnbounds_dynamic.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-fnbounds_dynamic.Tpo -c -o libcsprof_la-fnbounds_dynamic.lo `test -f 'fnbounds/fnbounds_dynamic.c' || echo '$(srcdir)/'`fnbounds/fnbounds_dynamic.c
@@ -1703,20 +1707,6 @@ libcsprof_o-lushi-cb.obj: lush/lushi-cb.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lushi-cb.obj `if test -f 'lush/lushi-cb.c'; then $(CYGPATH_W) 'lush/lushi-cb.c'; else $(CYGPATH_W) '$(srcdir)/lush/lushi-cb.c'; fi`
 
-libcsprof_o-lush-support.o: lush/lush-support.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lush-support.o -MD -MP -MF $(DEPDIR)/libcsprof_o-lush-support.Tpo -c -o libcsprof_o-lush-support.o `test -f 'lush/lush-support.c' || echo '$(srcdir)/'`lush/lush-support.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lush-support.Tpo $(DEPDIR)/libcsprof_o-lush-support.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-support.c' object='libcsprof_o-lush-support.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lush-support.o `test -f 'lush/lush-support.c' || echo '$(srcdir)/'`lush/lush-support.c
-
-libcsprof_o-lush-support.obj: lush/lush-support.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lush-support.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-lush-support.Tpo -c -o libcsprof_o-lush-support.obj `if test -f 'lush/lush-support.c'; then $(CYGPATH_W) 'lush/lush-support.c'; else $(CYGPATH_W) '$(srcdir)/lush/lush-support.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lush-support.Tpo $(DEPDIR)/libcsprof_o-lush-support.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-support.c' object='libcsprof_o-lush-support.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lush-support.obj `if test -f 'lush/lush-support.c'; then $(CYGPATH_W) 'lush/lush-support.c'; else $(CYGPATH_W) '$(srcdir)/lush/lush-support.c'; fi`
-
 libcsprof_o-lush-support-rt.o: lush/lush-support-rt.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lush-support-rt.o -MD -MP -MF $(DEPDIR)/libcsprof_o-lush-support-rt.Tpo -c -o libcsprof_o-lush-support-rt.o `test -f 'lush/lush-support-rt.c' || echo '$(srcdir)/'`lush/lush-support-rt.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lush-support-rt.Tpo $(DEPDIR)/libcsprof_o-lush-support-rt.Po
@@ -1912,48 +1902,6 @@ libcsprof_o-unlink.obj: utilities/unlink.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/unlink.c' object='libcsprof_o-unlink.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-unlink.obj `if test -f 'utilities/unlink.c'; then $(CYGPATH_W) 'utilities/unlink.c'; else $(CYGPATH_W) '$(srcdir)/utilities/unlink.c'; fi`
-
-libcsprof_o-hpcfile_csprof.o: hpcfile/hpcfile_csprof.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcfile_csprof.o -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcfile_csprof.Tpo -c -o libcsprof_o-hpcfile_csprof.o `test -f 'hpcfile/hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile/hpcfile_csprof.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcfile_csprof.Tpo $(DEPDIR)/libcsprof_o-hpcfile_csprof.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile/hpcfile_csprof.c' object='libcsprof_o-hpcfile_csprof.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcfile_csprof.o `test -f 'hpcfile/hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile/hpcfile_csprof.c
-
-libcsprof_o-hpcfile_csprof.obj: hpcfile/hpcfile_csprof.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcfile_csprof.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcfile_csprof.Tpo -c -o libcsprof_o-hpcfile_csprof.obj `if test -f 'hpcfile/hpcfile_csprof.c'; then $(CYGPATH_W) 'hpcfile/hpcfile_csprof.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile/hpcfile_csprof.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcfile_csprof.Tpo $(DEPDIR)/libcsprof_o-hpcfile_csprof.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile/hpcfile_csprof.c' object='libcsprof_o-hpcfile_csprof.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcfile_csprof.obj `if test -f 'hpcfile/hpcfile_csprof.c'; then $(CYGPATH_W) 'hpcfile/hpcfile_csprof.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile/hpcfile_csprof.c'; fi`
-
-libcsprof_o-hpcfile_cstree.o: hpcfile/hpcfile_cstree.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcfile_cstree.o -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcfile_cstree.Tpo -c -o libcsprof_o-hpcfile_cstree.o `test -f 'hpcfile/hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile/hpcfile_cstree.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcfile_cstree.Tpo $(DEPDIR)/libcsprof_o-hpcfile_cstree.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile/hpcfile_cstree.c' object='libcsprof_o-hpcfile_cstree.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcfile_cstree.o `test -f 'hpcfile/hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile/hpcfile_cstree.c
-
-libcsprof_o-hpcfile_cstree.obj: hpcfile/hpcfile_cstree.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcfile_cstree.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcfile_cstree.Tpo -c -o libcsprof_o-hpcfile_cstree.obj `if test -f 'hpcfile/hpcfile_cstree.c'; then $(CYGPATH_W) 'hpcfile/hpcfile_cstree.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile/hpcfile_cstree.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcfile_cstree.Tpo $(DEPDIR)/libcsprof_o-hpcfile_cstree.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile/hpcfile_cstree.c' object='libcsprof_o-hpcfile_cstree.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcfile_cstree.obj `if test -f 'hpcfile/hpcfile_cstree.c'; then $(CYGPATH_W) 'hpcfile/hpcfile_cstree.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile/hpcfile_cstree.c'; fi`
-
-libcsprof_o-hpcfile_general.o: hpcfile/hpcfile_general.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcfile_general.o -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcfile_general.Tpo -c -o libcsprof_o-hpcfile_general.o `test -f 'hpcfile/hpcfile_general.c' || echo '$(srcdir)/'`hpcfile/hpcfile_general.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcfile_general.Tpo $(DEPDIR)/libcsprof_o-hpcfile_general.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile/hpcfile_general.c' object='libcsprof_o-hpcfile_general.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcfile_general.o `test -f 'hpcfile/hpcfile_general.c' || echo '$(srcdir)/'`hpcfile/hpcfile_general.c
-
-libcsprof_o-hpcfile_general.obj: hpcfile/hpcfile_general.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcfile_general.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcfile_general.Tpo -c -o libcsprof_o-hpcfile_general.obj `if test -f 'hpcfile/hpcfile_general.c'; then $(CYGPATH_W) 'hpcfile/hpcfile_general.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile/hpcfile_general.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcfile_general.Tpo $(DEPDIR)/libcsprof_o-hpcfile_general.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile/hpcfile_general.c' object='libcsprof_o-hpcfile_general.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcfile_general.obj `if test -f 'hpcfile/hpcfile_general.c'; then $(CYGPATH_W) 'hpcfile/hpcfile_general.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile/hpcfile_general.c'; fi`
 
 libcsprof_o-fnbounds_static.o: fnbounds/fnbounds_static.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-fnbounds_static.o -MD -MP -MF $(DEPDIR)/libcsprof_o-fnbounds_static.Tpo -c -o libcsprof_o-fnbounds_static.o `test -f 'fnbounds/fnbounds_static.c' || echo '$(srcdir)/'`fnbounds/fnbounds_static.c
@@ -2317,6 +2265,8 @@ uninstall-am: uninstall-binSCRIPTS uninstall-libLTLIBRARIES \
 	uninstall-libexecPROGRAMS uninstall-libexecSCRIPTS \
 	uninstall-pkglibLTLIBRARIES
 
+
+#############################################################################
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
