@@ -47,7 +47,6 @@ BUILD_COOKIE=.build-done
 INSTALL_COOKIE=.install-done
 NOBUILD_COOKIE=.dont-build
 OPTIONS_FILE=../options.conf
-EXTERNS_FILE=../externs.conf
 MAKE=gmake
 
 ORIG_PKG_DIR=`pwd`
@@ -127,7 +126,4 @@ fi
 #
 test -f "$OPTIONS_FILE" || die "must run top-level configure first"
 . "$OPTIONS_FILE"
-
-test -f "$EXTERNS_FILE" || die "must run top-level configure first"
-. "$EXTERNS_FILE"
 
