@@ -7,7 +7,8 @@
 PKG_NAME = libmonitor
 SRC_DIR = libmonitor-r92
 
-FETCH_CMD = http://www.cs.rice.edu/~krentel/hpc-distfiles/libmonitor-r92.tar.gz
+FETCH_TARFILE = $(SRC_DIR).tar.gz
+FETCH_URL_1 = http://www.cs.rice.edu/~krentel/hpc-distfiles/$(FETCH_TARFILE)
 
 include ../build-utils/Makefile.inc
 

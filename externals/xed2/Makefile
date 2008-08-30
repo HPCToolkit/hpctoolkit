@@ -6,9 +6,10 @@
 
 PKG_NAME = xed2
 SRC_DIR = pin-2.4-19012-gcc.4.0.0-ia32e-linux
-FETCH_TARFILE = pin-2.4-19012-gcc.4.0.0-ia32e-linux.tar.gz
 
-FETCH_CMD = http://rogue.colorado.edu/cgi-bin/Pin/download.pl?file=$(FETCH_TARFILE)
+FETCH_TARFILE = pin-2.4-19012-gcc.4.0.0-ia32e-linux.tar.gz
+FETCH_URL_1 = http://rogue.colorado.edu/cgi-bin/Pin/download.pl?file=$(FETCH_TARFILE)
+
 CONFIG_CMD = true
 BUILD_CMD = true
 INSTALL_CMD = ./install

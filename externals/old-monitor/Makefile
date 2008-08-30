@@ -11,7 +11,8 @@ PKG_NAME = old-monitor
 SRC_DIR = monitor-080825
 TEMP_INSTALL := $(shell pwd)/$(SRC_DIR)/temp-install
 
-FETCH_CMD = http://www.cs.rice.edu/~krentel/hpc-distfiles/monitor-080825.tar.gz
+FETCH_TARFILE = monitor-080825.tar.gz
+FETCH_URL_1 = http://www.cs.rice.edu/~krentel/hpc-distfiles/$(FETCH_TARFILE)
 
 CONFIG_CMD =  true
 BUILD_CMD =   cd $(SRC_DIR) && $(MAKE) PREFIX=$(TEMP_INSTALL) install
