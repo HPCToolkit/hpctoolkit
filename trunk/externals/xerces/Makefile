@@ -11,7 +11,8 @@ BUILD_DIR = $(SRC_DIR)/src/xercesc
 XERCESCROOT = $(shell pwd)/$(SRC_DIR)
 export XERCESCROOT
 
-FETCH_CMD = http://mirror.olnevhost.net/pub/apache/xerces/c/sources/$(SRC_DIR).tar.gz
+FETCH_TARFILE = $(SRC_DIR).tar.gz
+FETCH_URL_1 = http://mirror.olnevhost.net/pub/apache/xerces/c/sources/$(FETCH_TARFILE)
 
 include ../build-utils/Makefile.inc
 

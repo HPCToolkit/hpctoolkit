@@ -43,7 +43,6 @@ BAK = .bak
 
 PATCH_DIR ?=  patches
 BUILD_DIR ?=  work
-DISTDIR  = ../distfiles
 
 FETCH_CMD ?=    true
 PATCH_CMD ?= 	default
@@ -68,7 +67,6 @@ prereqs:
 refetch:
 	@echo ; echo "===> ($(PKG_NAME)) make fetch ..."
 	@test x != "x$(SRC_DIR)"
-	@test x != "x$(FETCH_CMD)"
 	@if test -d "$(SRC_DIR)$(BAK)" ; then  \
 		echo rm -rf "$(SRC_DIR)$(BAK)" ;  \
 		rm -rf "$(SRC_DIR)$(BAK)" ;  \
@@ -79,27 +77,20 @@ refetch:
 	fi
 	@rm -f $(FETCH_COOKIE) $(CONFIG_COOKIE)
 	@rm -f $(BUILD_COOKIE) $(INSTALL_COOKIE)
-	@case "$(FETCH_CMD)" in  \
-		ftp* | http* )  \
-			$(FETCH_FTP) "$(FETCH_CMD)" "$(FETCH_TARFILE)"  \
-			;;  \
-		*.tar )  \
-			echo tar xvf "$(DISTDIR)/$(FETCH_CMD)" ;  \
-			tar xvf "$(DISTDIR)/$(FETCH_CMD)"  \
-			;;  \
-		*.tar.gz | *.tgz )  \
-			echo tar xvzf "$(DISTDIR)/$(FETCH_CMD)" ;  \
-			tar xvzf "$(DISTDIR)/$(FETCH_CMD)"  \
-			;;  \
-		*.tar.bz | *.tar.bz2 | *.tbz )  \
-			echo tar xvjf "$(DISTDIR)/$(FETCH_CMD)" ;  \
-			tar xvjf "$(DISTDIR)/$(FETCH_CMD)"  \
-			;;  \
-		* )  \
-			echo "$(FETCH_CMD)" ;  \
-			$(FETCH_CMD)  \
-			;;  \
-	esac
+	@if test "x$(FETCH_TARFILE)" != x ; then  \
+		$(FETCH_FTP)  \
+			"$(FETCH_TARFILE)"  \
+			"$(FETCH_URL_1)"    \
+			"$(FETCH_URL_2)"    \
+			"$(FETCH_URL_3)"    \
+			"$(FETCH_URL_4)" ;  \
+	elif test "x$(FETCH_CMD)" != x ; then  \
+		echo "$(FETCH_CMD)" ;  \
+		$(FETCH_CMD) ;  \
+	else  \
+		echo "missing FETCH_CMD" ;  \
+		exit 2 ;  \
+	fi
 	@if test "x$(PATCH_CMD)" != xdefault ; then  \
 		echo ; echo "===> ($(PKG_NAME)) patching ..." ;  \
 		$(PATCH_CMD) ;  \
