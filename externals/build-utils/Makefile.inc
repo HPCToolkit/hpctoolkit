@@ -169,7 +169,6 @@ distclean:
 		rm -rf "$(SRC_DIR)" "$(BUILD_DIR)" ;  \
 		rm -f $(FETCH_COOKIE) $(CONFIG_COOKIE) ;  \
 		rm -f $(BUILD_COOKIE) $(INSTALL_COOKIE) ;  \
-		rm -f $(NOBUILD_COOKIE) ;  \
 	else  \
 		echo "$(DISTCLEAN_CMD)" ;  \
 		$(DISTCLEAN_CMD) ;  \
