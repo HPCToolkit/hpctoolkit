@@ -37,9 +37,12 @@
 PACKAGES = binutils libdwarf libelf libmonitor libxml2  \
 	old-monitor open-analysis symtabAPI xed2 xerces
 
+NOBUILD_COOKIE = .dont-build
+
 .PHONY: all install install-all $(PACKAGES)
 .PHONY: fetch fetch-all copy copy-all
 .PHONY: clean clean-all distclean distclean-all
+.PHONY: distclean-plus
 
 all install install-all: $(PACKAGES)
 
@@ -64,12 +67,21 @@ clean clean-all:
 	done
 
 #
-# Technically, externs.conf is part of the install, so don't remove it
-# on distclean.
+# We use distclean to undo everything in each package directory but
+# leave the top-level configure intact, and use distclean-plus to
+# also erase the top-level files.  The no-build cookies are part of
+# the top-level configure.
+#
+# Also, externs.conf is part of the install, so never delete it.
 #
 distclean distclean-all:
 	@for pkg in $(PACKAGES) ; do  \
 		$(MAKE) -C $$pkg distclean ;  \
+	done
+
+distclean-plus: distclean-all
+	@for pkg in $(PACKAGES) ; do  \
+		rm -f "$$pkg/$(NOBUILD_COOKIE)" ;  \
 	done
 	rm -f config.log config.status options.conf
 	rm -f Makefile.conf Makefile
