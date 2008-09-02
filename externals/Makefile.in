@@ -1,0 +1,88 @@
+#
+#  Externals Makefile.
+#
+#  Copyright (c) 2008, Rice University.
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are
+#  met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+#  * Neither the name of Rice University (RICE) nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+#  This software is provided by RICE and contributors "as is" and any
+#  express or implied warranties, including, but not limited to, the
+#  implied warranties of merchantability and fitness for a particular
+#  purpose are disclaimed. In no event shall RICE or contributors be
+#  liable for any direct, indirect, incidental, special, exemplary, or
+#  consequential damages (including, but not limited to, procurement of
+#  substitute goods or services; loss of use, data, or profits; or
+#  business interruption) however caused and on any theory of liability,
+#  whether in contract, strict liability, or tort (including negligence
+#  or otherwise) arising in any way out of the use of this software, even
+#  if advised of the possibility of such damage.
+#
+#  $Id: Makefile.in 1569 2008-08-31 19:50:26Z krentel $
+#
+
+PACKAGES = binutils libdwarf libelf libmonitor libxml2  \
+	old-monitor open-analysis symtabAPI xed2 xerces
+
+NOBUILD_COOKIE = .dont-build
+
+.PHONY: all install install-all $(PACKAGES)
+.PHONY: fetch fetch-all copy copy-all
+.PHONY: clean clean-all distclean distclean-all
+.PHONY: distclean-plus
+
+all install install-all: $(PACKAGES)
+
+$(PACKAGES):
+	$(MAKE) -C $@ install
+
+libdwarf: libelf
+
+symtabAPI: libdwarf libelf libxml2
+
+fetch fetch-all:
+	@for pkg in $(PACKAGES) ; do  \
+		$(MAKE) -C $$pkg fetch || exit 2 ;  \
+	done
+
+copy copy-all:
+	@cd build-utils && ./copy-libs.sh
+
+clean clean-all:
+	@for pkg in $(PACKAGES) ; do  \
+		$(MAKE) -C $$pkg clean ;  \
+	done
+
+#
+# We use distclean to undo everything in each package directory but
+# leave the top-level configure intact, and use distclean-plus to
+# also erase the top-level files.  The no-build cookies are part of
+# the top-level configure.
+#
+# Also, externs.conf is part of the install, so never delete it.
+#
+distclean distclean-all:
+	@for pkg in $(PACKAGES) ; do  \
+		$(MAKE) -C $$pkg distclean ;  \
+	done
+
+distclean-plus: distclean-all
+	@for pkg in $(PACKAGES) ; do  \
+		rm -f "$$pkg/$(NOBUILD_COOKIE)" ;  \
+	done
+	rm -f config.log config.status options.conf
+	rm -f Makefile.conf Makefile
+

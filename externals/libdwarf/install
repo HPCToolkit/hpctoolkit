@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+#  Libdwarf install.
+#
+#  $Id: install 1553 2008-08-15 21:06:33Z krentel $
+#
+
+PKG_NAME=libdwarf
+SRC=dwarf-20080615/libdwarf
+WORK=work
+
+. ../build-utils/configure.inc
+pre_install
+
+mkdir -p "$prefix/lib" || die "unable to mkdir: $prefix/lib"
+mkdir -p "$prefix/include" || die "unable to mkdir: $prefix/include"
+
+cp "$WORK/libdwarf.so" "$prefix/lib/" || die "unable to install libdwarf.so"
+cp "$SRC/dwarf.h" "$prefix/include/" || die "unable to install dwarf.h"
+cp "$SRC/libdwarf.h" "$prefix/include/" || die "unable to install libdwarf.h"
+
+post_install
+

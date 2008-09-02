@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+#  Binutils install.
+#
+#  $Id: install 1553 2008-08-15 21:06:33Z krentel $
+#
+
+PKG_NAME=binutils
+src=version-binutils-2.17
+
+. ../build-utils/configure.inc
+pre_install
+
+cd "$src" || die "unable to cd: $src"
+src_dir=`pwd`
+
+cd config || die "unable to cd: config"
+install_dir=`./hpcplatform`
+
+cd "$src_dir" || die "unable to cd: $src_dir"
+cd "$install_dir" || die "unable to cd: $install_dir"
+
+mkdir -p "$prefix" || die "unable to mkdir: $prefix"
+
+tar cf - include lib* | ( cd "$prefix" && tar xvf - )
+test $? -eq 0 || die "install failed"
+
+post_install

@@ -1,0 +1,34 @@
+#!/bin/sh
+#
+#  Libdwarf configure.
+#
+#  Note: libdwarf searches for the libelf header files (but not
+#  libraries) in autoconf via CPPFLAGS and in custom Makefile via
+#  CFLAGS, and so, we need to set both.
+#
+#  $Id: configure 1567 2008-08-28 22:03:51Z krentel $
+#
+
+PKG_NAME=libdwarf
+SRC=dwarf-20080615/libdwarf
+
+. ../build-utils/configure.inc
+pre_configure
+
+elf_inc="${libelfdir}/include"
+
+set -- CC=gcc  \
+    CFLAGS="-g -O2 -fPIC -I${elf_inc}"  \
+    CPPFLAGS="-I${elf_inc}"  \
+    --prefix="$prefix"  \
+    --enable-shared  \
+    --disable-nonshared "$@"
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+echo configure "$@"
+../${SRC}/configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure

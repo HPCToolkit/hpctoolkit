@@ -1,0 +1,108 @@
+=====================
+HPCToolkit Externals
+=====================
+
+$Id: README 1553 2008-08-15 21:06:33Z krentel $
+
+HPCToolkit has many prerequisites.  Some, like libelf and libxml2 are
+commonly found on Linux systems, but not always.  Others, like Open
+Analysis and SymtabAPI are almost never available.  And then there's
+binutils.  HPCToolkit uses a heavily-patched and incompatible version
+of binutils, so the only place you'll find it is in a Rice subversion
+repository.
+
+The externals tree is an attempt to deal with these prerequisites.  It
+scans your system to identify which packages available and attempts to
+build the ones that are missing.  It is very much a work in progress.
+
+This approach works in two phases: first build all necessary packages,
+and then build HPCToolkit.  The idea is to build the externals tree
+once, and then work solely in the HPCToolkit tree.
+
+=============
+NORMAL USAGE
+=============
+
+Normally, externals doesn't require any special options, just let
+configure decide what packages need to be built (usually most or all),
+build them and then clean up the tree.
+
+   cd externals
+   ./configure --prefix=PATH
+   make all
+   make distclean
+
+This build creates a staging area in a subdirectory named after the
+host cpu and os.  The staging area is a development directory, that
+is, it contains the full installation of each package, including the
+header files needed to compile other programs.  This is the directory
+HPCToolkit uses to build itself, so it is important to finish the
+externals build before configuring hpctoolkit.
+
+After building the externals files, then return to the hpctoolkit root
+directory and configure and build HPCToolkit.
+
+   cd hpctoolkit
+   ./configure --prefix=PATH
+   make
+   make install
+
+Note: the externals tree is designed to be a one-time build step.
+After building the external packages, then its tree can be cleaned up
+(with make distclean) and hpctoolkit can be configured and built
+several times with the same externals tree.  That is, reconfiguring or
+rebuilding hpctoolkit does not require rebuilding the externals tree.
+
+Note: The location for the externals tree is a subdirectory of
+hpctoolkit, however, it can be checked out and built in a separate
+directory.  If you build the externals in its default location, then
+hpctoolkit will find it automatically.  If you wish to build it
+elsewhere, then use the --with-externals option to tell hpctoolkit
+where it is.
+
+   ./configure --with-externals=PATH
+
+where PATH is the root of the externals tree.
+
+Note: If you wish to use the externals tree in a different location,
+then check it out or copy it to that location before building it.  The
+file externs.conf uses absolute paths to locate each package, so
+copying it after building it will not work well.  [I'm working on
+fixing that.]
+
+==================
+Configure Options
+==================
+
+Although externals is designed to build the missing packages itself,
+it is also possible to build any of them separately or use an existing
+installation.  The following configure options may be used to specify
+an alternate install directory for these packages.
+
+   --with-binutils=PATH    path to binutils install directory (default build)
+   --with-libdwarf=PATH    path to libdwarf install directory (default search)
+   --with-libelf=PATH      path to libelf install directory (default search)
+   --with-libmonitor=PATH  path to libmonitor install directory (default build)
+   --with-libxml2=PATH     path to libxml2 install directory (default search)
+   --with-old-monitor=PATH path to open analysis install directory (default
+                           build)
+   --with-open-analysis=PATH
+                           path to open analysis install directory (default
+                           build)
+   --with-symtabAPI=PATH   path to symtabAPI install directory (default build)
+   --with-xed2=PATH        path to xed2 install directory (default build)
+   --with-xerces=PATH      path to xerces/c install directory (default build)
+
+WHAT ABOUT PAPI?
+
+Although PAPI is an recommended package for HPCToolkit, it is not
+included in the externals tree.  PAPI requires a kernel patch
+(perfmon2 or perfctr) and if the patch is not already installed, then
+it's not possible to fix that in user land.
+
+To use PAPI, include this option to hpctoolkit's configure.
+
+   ./configure --with-papi=PATH
+
+where PATH is the absolute path to the PAPI install directory.
+

@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+#  Libxml2 configure.
+#
+#  $Id: configure 1553 2008-08-15 21:06:33Z krentel $
+#
+
+PKG_NAME=libxml2
+src=libxml2-2.6.32
+
+. ../build-utils/configure.inc
+pre_configure
+
+set -- --prefix="$prefix" "$@"
+set -- CC="$CC" CFLAGS="$CFLAGS" "$@"
+. ../build-utils/dup-args.sh
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+echo configure "$@"
+../${src}/configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure

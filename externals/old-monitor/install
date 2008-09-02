@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+#  Old Monitor install.
+#
+#  These file names conflict with SciDAC libmonitor, so we put them in
+#  a separate directory.
+#
+#  $Id: install 1565 2008-08-26 16:23:46Z krentel $
+#
+
+PKG_NAME=old-monitor
+temp=monitor-080825/temp-install
+
+. ../build-utils/configure.inc
+pre_install
+
+install="${prefix}/old-monitor"
+mkdir -p "$install" || die "unable to mkdir: $install"
+
+cd "$temp" || die "unable to cd: $temp"
+
+tar cf - include lib* | ( cd "$install" && tar xvf - )
+test $? -eq 0 || die "install failed"
+
+post_install

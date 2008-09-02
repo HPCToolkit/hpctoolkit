@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+#  Xerces-C configure.
+#
+#  $Id: configure 1553 2008-08-15 21:06:33Z krentel $
+#
+
+PKG_NAME=xerces
+build_dir=xerces-c-src_2_8_0/src/xercesc
+
+. ../build-utils/configure.inc
+pre_configure
+
+set -- -m inmem -n socket -r pthread -t native "$@"
+set -- -c "$CC" -x "$CXX" "$@"
+set -- -P "$prefix" -p "$xerces_platform" "$@"
+
+cd "$build_dir" || die "unable to cd: $build_dir"
+
+echo runConfigure "$@"
+./runConfigure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure

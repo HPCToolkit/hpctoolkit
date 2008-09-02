@@ -1,0 +1,22 @@
+#!/bin/sh
+#
+#  Xed2 install.
+#
+#  $Id: install 1553 2008-08-15 21:06:33Z krentel $
+#
+
+PKG_NAME=xed2
+XED2=pin-2.4-19012-gcc.4.0.0-ia32e-linux/XED2
+
+. ../build-utils/configure.inc
+pre_install
+
+mkdir -p "$prefix" || die "unable to mkdir: $prefix"
+
+cd "$XED2" || die "unable to cd: $XED2"
+test -d lib || die "missing lib directory: $XED2"
+
+tar cf - bin include lib | ( cd "$prefix" && tar xvf - )
+test $? -eq 0 || die "tar copy failed"
+
+post_install

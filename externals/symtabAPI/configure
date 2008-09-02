@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+#  SymtabAPI configure.
+#
+#  $Id: configure 1553 2008-08-15 21:06:33Z krentel $
+#
+
+PKG_NAME=symtabAPI
+work=symtabAPI/src/core
+config=make.config.local
+orig="${config}.orig"
+
+. ../build-utils/configure.inc
+pre_configure
+
+cd "$work" || die "unable to cd: $work"
+
+test -f "$orig" || mv -f "$config" "$orig"
+test -f "$orig" || die "missing config file: $config"
+rm -f "$config"
+
+cat "$orig" |
+    sed \
+	-e "s,^LIBELFDIR.*\$,LIBELFDIR = $libelfdir," \
+	-e "s,^LIBELF_LIB.*\$,LIBELF_LIB = $libelf_lib," \
+	-e "s,^LIBELF_INC.*\$,LIBELF_INC = $libelf_inc," \
+	-e "s,^LIBDWARFDIR.*\$,LIBDWARFDIR = $libdwarfdir,"  \
+	-e "s,^LIBDWARF_LIB.*\$,LIBDWARF_LIB = $libdwarf_lib,"  \
+	-e "s,^LIBDWARF_INC.*\$,LIBDWARF_INC = $libdwarf_inc,"  \
+	-e "s,^LIBXML2DIR.*\$,LIBXML2DIR = $libxml2dir," \
+	-e "s,^LIBXML2_LIB.*\$,LIBXML2_LIB = $libxml2_lib," \
+	-e "s,^LIBXML2_INC.*\$,LIBXML2_INC = $libxml2_inc," \
+	> "$config"
+
+test $? -eq 0 || die "configure failed"
+
+post_configure

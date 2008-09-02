@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+#  Open Analysis configure.
+#
+#  $Id: configure 1553 2008-08-15 21:06:33Z krentel $
+#
+
+PKG_NAME=open-analysis
+SRC=version-0.4pre
+
+. ../build-utils/configure.inc
+pre_configure
+
+set -- CXX="$CXX"  \
+    CXXFLAGS="$CXXFLAGS"  \
+    --prefix="$prefix"  \
+    --enable-libcross  \
+    --disable-libnative "$@"
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+echo configure "$@"
+../${SRC}/configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure

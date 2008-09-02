@@ -1,0 +1,16 @@
+=================
+Xed2 Build Notes
+=================
+
+Home: http://rogue.colorado.edu/pin/
+
+Download: http://rogue.colorado.edu/cgi-bin/Pin/download.pl?
+	  file=pin-2.4-19012-gcc.4.0.0-ia32e-linux.tar.gz
+
+Intel 64-bit x86, Linux, rev 19012, gcc 4.0.
+
+License: Intel Open Source License (BSD-like)
+
+Binary sub-package as part of Pin.
+Tar-copy bin, include and lib to the install directory.
+

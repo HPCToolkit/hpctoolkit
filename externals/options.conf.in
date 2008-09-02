@@ -1,0 +1,34 @@
+#
+#  This file passes configure variables to shell scripts.
+#  It is rewritten on configure.
+#
+
+stage_prefix="@stage_prefix@"
+install_prefix="@prefix@"
+prefix="@stage_prefix@"
+
+CC="@CC@"
+CFLAGS="@CFLAGS@"
+CXX="@CXX@"
+CXXFLAGS="@CXXFLAGS@"
+
+build_cpu="@build_cpu@"
+build_os="@build_os@"
+host_cpu="@host_cpu@"
+host_os="@host_os@"
+
+libdwarfdir="@libdwarf_prefix@"
+libdwarf_inc="@libdwarf_inc@"
+libdwarf_lib="@libdwarf_lib@"
+
+libelfdir="@libelf_prefix@"
+libelf_inc="@libelf_inc@"
+libelf_lib="@libelf_lib@"
+
+libxml2dir="@libxml2_prefix@"
+libxml2_inc="@libxml2_inc@"
+libxml2_lib="@libxml2_lib@"
+
+symtabAPI_platform="@symtabAPI_platform@"
+xerces_platform="@xerces_platform@"
+

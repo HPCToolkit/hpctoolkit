@@ -1,0 +1,16 @@
+====================
+Libxml2 Build Notes
+====================
+
+Home: http://xmlsoft.org/
+
+Download: ftp://xmlsoft.org/libxml2/libxml2-sources-2.6.32.tar.gz
+
+License: MIT
+
+Uses Autoconf and Automake.
+
+./configure --prefix=PATH
+make
+make install
+

@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+#  Libelf configure.
+#
+#  Note: libelf's configure won't accept CC and CFLAGS as command-line
+#  arguments, only as environment settings before the command.
+#  Probably a result of not using Automake.
+#
+#  $Id: configure 1553 2008-08-15 21:06:33Z krentel $
+#
+
+PKG_NAME=libelf
+SRC=libelf-0.8.10
+
+. ../build-utils/configure.inc
+pre_configure
+
+set -- --prefix="$prefix" "$@"
+. ../build-utils/dup-args.sh
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+echo configure "$@"
+../${SRC}/configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure
