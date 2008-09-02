@@ -31,7 +31,7 @@
 #  or otherwise) arising in any way out of the use of this software, even
 #  if advised of the possibility of such damage.
 #
-#  $Id: Makefile.inc 1569 2008-08-31 19:50:26Z krentel $
+#  $Id$
 #
 
 FETCH_COOKIE =   .fetch-done

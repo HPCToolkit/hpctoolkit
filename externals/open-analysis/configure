@@ -2,7 +2,7 @@
 #
 #  Open Analysis configure.
 #
-#  $Id: configure 1553 2008-08-15 21:06:33Z krentel $
+#  $Id$
 #
 
 PKG_NAME=open-analysis

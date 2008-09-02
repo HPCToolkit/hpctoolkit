@@ -6,7 +6,7 @@
 #  arguments, only as environment settings before the command.
 #  Probably a result of not using Automake.
 #
-#  $Id: configure 1553 2008-08-15 21:06:33Z krentel $
+#  $Id$
 #
 
 PKG_NAME=libelf

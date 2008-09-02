@@ -4,7 +4,7 @@
 #  For some reason, make -C doesn't seem to work here, so use cd
 #  instead.
 #
-#  $Id: Makefile 1570 2008-09-02 05:36:30Z krentel $
+#  $Id$
 #
 
 PKG_NAME = old-monitor

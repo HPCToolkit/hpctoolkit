@@ -31,7 +31,7 @@ dnl  whether in contract, strict liability, or tort (including negligence
 dnl  or otherwise) arising in any way out of the use of this software, even
 dnl  if advised of the possibility of such damage.
 dnl
-dnl  $Id: configure.ac 1558 2008-08-19 19:29:45Z krentel $
+dnl  $Id$
 dnl
 
 AC_INIT([externals], [0.x])

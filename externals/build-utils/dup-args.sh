@@ -5,7 +5,7 @@
 #  This needs to be a separate script and sourced, it won't work as a
 #  function.
 #
-#  $Id: dup-args.sh 1553 2008-08-15 21:06:33Z krentel $
+#  $Id$
 #
 mark='x--x--x'
 

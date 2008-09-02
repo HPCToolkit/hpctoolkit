@@ -11,7 +11,7 @@
 #
 #  Usage: fetch-ftp.sh FETCH_TARFILE FETCH_URL_1 ...
 #
-#  $Id: fetch-ftp.sh 1568 2008-08-30 19:46:47Z krentel $
+#  $Id$
 #
 
 default_distdir=../distfiles

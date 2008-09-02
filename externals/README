@@ -2,7 +2,7 @@
 HPCToolkit Externals
 =====================
 
-$Id: README 1553 2008-08-15 21:06:33Z krentel $
+$Id$
 
 HPCToolkit has many prerequisites.  Some, like libelf and libxml2 are
 commonly found on Linux systems, but not always.  Others, like Open

@@ -6,7 +6,7 @@
 #  libraries) in autoconf via CPPFLAGS and in custom Makefile via
 #  CFLAGS, and so, we need to set both.
 #
-#  $Id: configure 1567 2008-08-28 22:03:51Z krentel $
+#  $Id$
 #
 
 PKG_NAME=libdwarf

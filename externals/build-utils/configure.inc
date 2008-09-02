@@ -31,7 +31,7 @@
 #  or otherwise) arising in any way out of the use of this software, even
 #  if advised of the possibility of such damage.
 #
-#  $Id: configure.inc 1567 2008-08-28 22:03:51Z krentel $
+#  $Id$
 #
 #  Define pre and post helper functions for configure, build and
 #  install scripts, and source the top-level config vars.

@@ -3,7 +3,7 @@
 #  Copy files from stage_prefix to PREFIX or install_prefix.
 #  Run this script from the build-utils directory.
 #
-#  $Id: copy-libs.sh 1556 2008-08-18 16:45:21Z krentel $
+#  $Id$
 #
 
 options_file=../options.conf

@@ -2,7 +2,7 @@
 #
 #  Libmonitor configure.
 #
-#  $Id: configure 1565 2008-08-26 16:23:46Z krentel $
+#  $Id$
 #
 
 PKG_NAME=libmonitor

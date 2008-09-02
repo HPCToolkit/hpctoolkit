@@ -1,7 +1,7 @@
 #
 #  Binutils Makefile.
 #
-#  $Id: Makefile 1570 2008-09-02 05:36:30Z krentel $
+#  $Id$
 #
 include ../Makefile.conf
 

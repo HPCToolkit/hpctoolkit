@@ -1,7 +1,7 @@
 #
 #  SymtabAPI Makefile.
 #
-#  $Id: Makefile 1568 2008-08-30 19:46:47Z krentel $
+#  $Id$
 #
 include ../Makefile.conf
 
