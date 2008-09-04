@@ -66,13 +66,15 @@
 class DocHandlerArgs {
 public:
   DocHandlerArgs() { }
-  
   ~DocHandlerArgs() { }
   
-  virtual string ReplacePath(const char* oldpath) const { return oldpath; };
+  virtual std::string 
+  replacePath(const char* oldpath) const 
+    { return oldpath; }
   
-  std::string ReplacePath(const std::string& oldpath) const
-    { return ReplacePath(oldpath.c_str()); }
+  std::string 
+  replacePath(const std::string& oldpath) const
+    { return replacePath(oldpath.c_str()); }
   
 private:
 };

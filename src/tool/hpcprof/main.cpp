@@ -78,7 +78,7 @@ static Prof::CallPath::Profile*
 readProfileData(std::vector<string>& profileFiles);
 
 static Prof::Struct::Tree*
-readStructure(std::vector<string>& structureFiles);
+readStructure(const Analysis::Args& args);
 
 static void
 dumpProfileData(std::ostream& os, std::vector<string>& profileFiles);
@@ -140,11 +140,9 @@ realmain(int argc, char* const* argv)
   // Add source file info
   // ------------------------------------------------------------
 
-  Prof::Struct::Tree* scopeTree = NULL;
-  Prof::Struct::Pgm* pgmScope = NULL;
+  Prof::Struct::Tree* structure = NULL;
   if (!args.structureFiles.empty()) {
-    scopeTree = readStructure(args.structureFiles);
-    pgmScope = scopeTree->GetRoot();
+    structure = readStructure(args);
   }
   
   try { 
@@ -156,8 +154,9 @@ realmain(int argc, char* const* argv)
       if (epoch_lm->isUsed()) { // FIXME
 	const string& lm_fnm = epoch_lm->name();
 	Prof::Struct::LM* lmStrct = NULL;
-	if (pgmScope) {
-	  lmStrct = pgmScope->findLM(lm_fnm);
+	if (structure) {
+	  Prof::Struct::Pgm* pgmStrct = structure->GetRoot();
+	  lmStrct = pgmStrct->findLM(lm_fnm);
 	}
 	
 	if (lmStrct) {
@@ -178,7 +177,7 @@ realmain(int argc, char* const* argv)
     throw;
   }
   
-  delete scopeTree;
+  delete structure;
 
   // ------------------------------------------------------------
   // Dump
@@ -231,9 +230,8 @@ readProfileFile(const string& prof_fnm)
 {
   Prof::CallPath::Profile* prof = NULL;
   try {
-    //prof = TheProfileReader.ReadProfileFile(args.profFnm /*type*/);
     prof = Prof::CallPath::Profile::make(prof_fnm.c_str());
-  } 
+  }
   catch (...) {
     DIAG_EMsg("While reading profile '" << prof_fnm << "'...");
     throw;
@@ -244,29 +242,31 @@ readProfileFile(const string& prof_fnm)
 
 //****************************************************************************
 
-  
-class MyDocHandlerArgs : public DocHandlerArgs {
-public:
-  MyDocHandlerArgs()  { }
-  ~MyDocHandlerArgs() { }
-  
-  virtual string ReplacePath(const char* oldpath) const { return oldpath; }
-};
+static string 
+searchPathStr(const Analysis::Args& args)
+{
+  // cf. Driver::searchPathStr (Flat-SrcCorrelation.*)
+  string path = ".";
+  for (uint i = 0; i < args.searchPaths.size(); ++i) { 
+    path += string(":") + args.searchPaths[i];
+  }
+  return path;
+}
 
 
 static Prof::Struct::Tree*
-readStructure(std::vector<string>& structureFiles)
+readStructure(const Analysis::Args& args)
 {
+  string searchPath = searchPathStr(args);
 
-  string searchPath = "."; // FIXME
-  Prof::Struct::Pgm* pgm = new Prof::Struct::Pgm("");
-  Prof::Struct::Tree* structure = new Prof::Struct::Tree("", pgm);
-  Prof::Struct::TreeInterface structIF(pgm, searchPath);
-  MyDocHandlerArgs docargs; // FIXME
+  Prof::Struct::Pgm* pgmStrct = new Prof::Struct::Pgm("");
+  Prof::Struct::Tree* structure = new Prof::Struct::Tree("", pgmStrct);
 
-  Prof::Struct::readStructure(structIF, structureFiles, 
+  Prof::Struct::TreeInterface structIF(structure->GetRoot(), searchPath);
+  DocHandlerArgs docargs; // NOTE: override for replacePath()
+
+  Prof::Struct::readStructure(structIF, args.structureFiles, 
 			      PGMDocHandler::Doc_STRUCT, docargs);
-  
   return structure;
 }
 
