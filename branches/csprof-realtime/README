@@ -1,0 +1,16 @@
+Special code for real time sample generation
+
+use itimer_real instead of itimer_prof,
+
+handle both sigalrm and sigprof:
+
+   1)itimer_real (generates sigalrm) goes to some arbitrary thread.
+   2)sigalrm handler will process it's own signal (using csprof_handle_sample),
+     then call monitor_broadcast_signal to send every other thread a 'sigprof' signal.
+
+monitor_broadcast_signal functionality (and monitor.h interface) in the libmonitor portion of this
+
+itimer_real stuff handled in itimer.sample_source.c
+
+
+     
