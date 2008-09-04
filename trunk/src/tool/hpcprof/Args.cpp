@@ -299,6 +299,7 @@ Args::parse(int argc, const char* const argv[])
   // Postprocess
   // -------------------------------------------------------
 
+  // FIXME: obsolete
   char cwd[MAX_PATH_SIZE+1];
   getcwd(cwd, MAX_PATH_SIZE);
 

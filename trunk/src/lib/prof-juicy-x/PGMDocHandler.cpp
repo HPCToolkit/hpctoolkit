@@ -310,7 +310,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   // LM (load module)
   else if (XMLString::equals(name, elemLM)) {
     string lm = getAttr(attributes, attrName); // must exist
-    lm = m_args.ReplacePath(lm);
+    lm = m_args.replacePath(lm);
     DIAG_Assert(currentLmName.empty(), "Parse or internal error!");
     currentLmName = lm;
     
@@ -324,7 +324,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   // F(ile)
   else if (XMLString::equals(name, elemFile)) {
     string fnm = getAttr(attributes, attrName);
-    fnm = m_args.ReplacePath(fnm);
+    fnm = m_args.replacePath(fnm);
 
     // if the source file name is the same as the previous one, error.
     // otherwise find another one; it should not be the same as the
@@ -398,7 +398,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     
     string nm = getAttr(attributes, attrName); 
     string fnm = getAttr(attributes, attrAlienFile);
-    fnm = m_args.ReplacePath(fnm);
+    fnm = m_args.replacePath(fnm);
 
     SrcFile::ln begLn = ln_NULL, endLn = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
