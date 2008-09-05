@@ -260,7 +260,13 @@ Args::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("include")) {
       string str = parser.getOptArg("include");
+
+      std::vector<std::string> searchPaths;
       StrUtil::tokenize_str(str, CLP_SEPARATOR, searchPaths);
+
+      for (uint i = 0; i < searchPaths.size(); ++i) {
+	searchPathTpls.push_back(Analysis::PathTuple(searchPaths[i], "src"));
+      }
     }
     if (parser.isOpt("structure")) {
       string str = parser.getOptArg("structure");
@@ -293,43 +299,6 @@ Args::parse(int argc, const char* const argv[])
   catch (const CmdLineParser::Exception& x) {
     DIAG_EMsg(x.message());
     exit(1);
-  }
-
-  // -------------------------------------------------------
-  // Postprocess
-  // -------------------------------------------------------
-
-  // FIXME: obsolete
-  char cwd[MAX_PATH_SIZE+1];
-  getcwd(cwd, MAX_PATH_SIZE);
-
-  for (std::vector<string>::iterator it = searchPaths.begin(); 
-       it != searchPaths.end(); /* */) {
-    string& x = *it; // current path
-    std::vector<string>::iterator x_it = it;
-    
-    ++it; // advance iterator 
-    
-    if (chdir(x.c_str()) == 0) {
-      char norm_x[MAX_PATH_SIZE+1];
-      getcwd(norm_x, MAX_PATH_SIZE);
-      x = norm_x; // replace x with norm_x
-    }
-    else {
-      DIAG_Msg(1, "Discarding search path: " << x);
-      searchPaths.erase(x_it);
-    }
-    chdir(cwd);
-  }
-  
-  
-  DIAG_Msg(2, "profile[0]: " << profileFiles[0] << "\n"
-	   << "output: " << db_dir);
-  if (searchPaths.size() > 0) {
-    DIAG_Msg(2, "search paths:");
-    for (int i = 0; i < searchPaths.size(); ++i) {
-      DIAG_Msg(2, "  " << searchPaths[i]);
-    }
   }
 }
 

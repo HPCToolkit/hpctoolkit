@@ -124,7 +124,7 @@ realmain(int argc, char* const* argv)
   else {
     metricMgr.makeRawMetrics(args.profileFiles);
   }
-  
+
   //-------------------------------------------------------
   // Correlate metrics with program structure and Generate output
   //-------------------------------------------------------

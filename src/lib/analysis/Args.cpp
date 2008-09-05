@@ -55,6 +55,8 @@
 #include <string>
 using std::string;
 
+#include <limits.h> /* for 'PATH_MAX' */
+
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
@@ -125,6 +127,54 @@ void
 Analysis::Args::ddump() const
 {
   dump(std::cerr);
+}
+
+
+//***************************************************************************
+
+void
+Analysis::Args::normalizeSearchPaths()
+{
+  char cwd[PATH_MAX+1];
+  getcwd(cwd, PATH_MAX);
+
+  for (PathTupleVec::iterator it = searchPathTpls.begin(); 
+       it != searchPathTpls.end(); /* */) {
+    string& x = it->first; // current path
+    PathTupleVec::iterator x_it = it;
+    
+    ++it; // advance iterator 
+    
+    if (chdir(x.c_str()) == 0) {
+      char norm_x[PATH_MAX+1];
+      getcwd(norm_x, PATH_MAX);
+      x = norm_x; // replace x with norm_x
+    }
+    else {
+      DIAG_Msg(1, "Discarding search path: " << x);
+      searchPathTpls.erase(x_it);
+    }
+    chdir(cwd);
+  }
+  
+  if (searchPathTpls.size() > 0) {
+    DIAG_Msg(2, "search paths:");
+    for (uint i = 0; i < searchPathTpls.size(); ++i) {
+      DIAG_Msg(2, "  " << searchPathTpls[i].first);
+    }
+  }
+}
+
+
+std::string 
+Analysis::Args::searchPathStr() const
+{
+  // cf. Driver::searchPathStr (Flat-SrcCorrelation.*)
+  string path = ".";
+  for (uint i = 0; i < searchPathTpls.size(); ++i) { 
+    path += string(":") + searchPathTpls[i].first;
+  }
+  return path;
 }
 
 

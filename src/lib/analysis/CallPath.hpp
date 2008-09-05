@@ -62,6 +62,8 @@
 
 #include <include/general.h> 
 
+#include "Args.hpp"
+
 #include <lib/binutils/LM.hpp>
 
 #include <lib/prof-juicy/CallPath-Profile.hpp>
@@ -93,7 +95,7 @@ write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint = true);
 
 void 
 copySourceFiles(Prof::CallPath::Profile *prof, 
-		std::vector<std::string>& searchPaths,
+		Analysis::PathTupleVec& pathVec,
 		const std::string& dest_dir);  
 
 } // namespace CallPath
@@ -103,8 +105,6 @@ copySourceFiles(Prof::CallPath::Profile *prof,
 //****************************************************************************
 
 // FIXME: move to lib/support
-#define MAX_PATH_SIZE 2048 
-/** Normalizes a file path.*/
 std::string normalizeFilePath(const std::string& filePath);
 std::string normalizeFilePath(const std::string& filePath, 
 			      std::stack<std::string>& pathSegmentsStack);

@@ -493,11 +493,11 @@ Driver::write_config(std::ostream &os) const
   os << "<TITLE name=\"" << m_args.title << "\"/>\n\n";
 
   // search paths
-  for (uint i = 0; i < m_args.searchPaths.size(); ++i) { 
+  for (uint i = 0; i < m_args.searchPathTpls.size(); ++i) { 
     const Analysis::PathTuple& x = m_args.searchPathTpls[i];
     os << "<PATH name=\"" << x.first << "\" viewname=\"" << x.second <<"\"/>\n";
   }
-  if (!m_args.searchPaths.empty()) { os << "\n"; }
+  if (!m_args.searchPathTpls.empty()) { os << "\n"; }
   
   // structure files
   for (uint i = 0; i < m_args.structureFiles.size(); ++i) { 
@@ -565,7 +565,8 @@ namespace Flat {
 void
 Driver::populatePgmStructure(Prof::Struct::Tree& structure)
 {
-  Prof::Struct::TreeInterface structIF(structure.GetRoot(), searchPathStr());
+  Prof::Struct::TreeInterface structIF(structure.GetRoot(), 
+				       m_args.searchPathStr());
   DriverDocHandlerArgs docargs(this);
   
   //-------------------------------------------------------
@@ -608,7 +609,8 @@ Driver::correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
 void
 Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure) 
 {
-  Prof::Struct::TreeInterface structIF(structure.GetRoot(), searchPathStr());
+  Prof::Struct::TreeInterface structIF(structure.GetRoot(), 
+				       m_args.searchPathStr());
   StringToBoolMap hasStructureTbl;
   
   const Prof::Metric::Mgr::StringPerfMetricVecMap& fnameToFMetricMap = 
@@ -973,18 +975,6 @@ Driver::openLM(const string& fnm)
 }
 
 
-string 
-Driver::searchPathStr() const
-{
-  string path = ".";
-  
-  for (uint i = 0; i < m_args.searchPathTpls.size(); ++i) { 
-    path += string(":") + m_args.searchPathTpls[i].first;
-  }
-
-  return path;
-}
-
 } // namespace Flat
 
 } // namespace Analysis
@@ -1004,10 +994,10 @@ CSF_ScopeFilter(const Prof::Struct::ANode& x, long type)
   return (x.Type() == Prof::Struct::ANode::TyFILE || x.Type() == Prof::Struct::ANode::TyALIEN);
 }
 
-// 'copySourceFiles': For every file Prof::Struct::File and Prof::Struct::Alien in
-// 'pgmScope' that can be reached with paths in 'pathVec', copy F to
-// its appropriate viewname path and update F's path to be relative to
-// this location.
+// copySourceFiles: For every Prof::Struct::File and
+// Prof::Struct::Alien x in 'pgmScope' that can be reached with paths in
+// 'pathVec', copy x to its appropriate viewname path and update x's
+// path to be relative to this location.
 static bool
 copySourceFiles(Prof::Struct::Pgm* structure, 
 		const Analysis::PathTupleVec& pathVec,

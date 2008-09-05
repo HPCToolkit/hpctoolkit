@@ -177,9 +177,6 @@ private:
   binutils::LM*
   openLM(const string& fnm);
 
-  std::string 
-  searchPathStr() const;
-
   // -------------------------------------------------------
 
   void write_txt_secSummary(std::ostream& os, 
