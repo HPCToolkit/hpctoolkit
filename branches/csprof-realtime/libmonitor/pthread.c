@@ -434,6 +434,7 @@ monitor_broadcast_signal (int signum)
 	return;
     }
 
+    MONITOR_THREAD_LOCK;
     /*
      * Walk through the list of threads and send a signum signal to 
      * each one.
@@ -451,6 +452,7 @@ monitor_broadcast_signal (int signum)
        if (tn->tn_appl_started && !tn->tn_fini_started)
           (*real_pthread_kill)(tn->tn_self, signum);
     }
+    MONITOR_THREAD_UNLOCK;
 }
 
 /*

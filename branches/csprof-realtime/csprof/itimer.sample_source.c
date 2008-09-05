@@ -154,6 +154,7 @@ METHOD_FN(process_event_list,int lush_metrics)
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
+  struct sigaction act;
   int ret = csprof_set_max_metrics(1 + lush_metrics);
   
   if (ret > 0) {
@@ -178,8 +179,11 @@ METHOD_FN(gen_event_set,int lush_metrics)
   thread_data_t *td = csprof_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD; // Event sets not relevant for itimer
 
-  monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_real_signal_handler, 0, NULL);
-  monitor_sigaction(SIGPROF, &csprof_itimer_signal_handler, 0, NULL);
+  sigemptyset (&act.sa_mask);
+  sigaddset (&act.sa_mask, SIGPROF);
+  sigaddset (&act.sa_mask, SIGALRM);
+  monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_real_signal_handler, 0, &act);
+  monitor_sigaction(SIGPROF, &csprof_itimer_signal_handler, 0, &act);
 }
 
 /***************************************************************************
