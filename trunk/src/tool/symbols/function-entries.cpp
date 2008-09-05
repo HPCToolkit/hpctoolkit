@@ -72,11 +72,10 @@ dump_reachable_functions()
     ++i;
 
     const char *name;
+    if (!is_possible_fn(f->address)) continue;
     if (f->comment) {
       name = f->comment->c_str();
     } else {
-      if (!is_possible_fn(f->address)) continue;
-
       // inferred functions must be at least 16 bytes long
       if (i != function_entries.end()) {
         Function *nextf = (*i).second;
