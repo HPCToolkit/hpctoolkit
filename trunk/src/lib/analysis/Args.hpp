@@ -103,8 +103,8 @@ public:
   std::string title;
 
   // Search paths
-  std::vector<std::string> searchPaths;
-  PathTupleVec             searchPathTpls;
+  //std::vector<std::string> searchPaths;
+  PathTupleVec searchPathTpls;
 
   // Structure files
   std::vector<std::string> structureFiles;
@@ -168,6 +168,17 @@ public:
 
   bool txt_srcAnnotation;
   std::vector<std::string> txt_srcFileGlobs;
+
+
+public:
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  void normalizeSearchPaths();
+
+  std::string searchPathStr() const;
+  
 
 private:
   void Ctor();

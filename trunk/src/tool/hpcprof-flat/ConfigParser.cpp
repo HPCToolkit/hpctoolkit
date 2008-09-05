@@ -460,7 +460,7 @@ canonicalizePaths(string& inPath, string& outPath)
   // equality, to make sure that the last directory in the path is not
   // a prefix of the tested path.  
   // If we need to add a '/' to the in path, then add one to the out
-  // path, too because when is time to replace we don't know if we
+  // path, too because when it is time to replace we don't know if we
   // added one or not to the IN path.
   if (!inPath.empty() && inPath[inPath.length()-1] != '/') {
     inPath += '/';

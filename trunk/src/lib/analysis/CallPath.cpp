@@ -61,11 +61,13 @@ using std::dec;
 #include <string>
 using std::string;
 
+#include <cstring>
+
+#include <limits.h> /* for 'PATH_MAX' */
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/errno.h>
-
-#include <cstring>
 
 //*************************** User Include Files ****************************
 
@@ -1132,11 +1134,11 @@ lush_makeParallelOverhead(Prof::CSProfNode* node,
 //***************************************************************************
 
 void copySourceFiles(Prof::CSProfNode* node, 
-		     std::vector<string>& searchPaths,
+		     Analysis::PathTupleVec& pathVec,
 		     const string& dest_dir);
 
 void innerCopySourceFiles(Prof::CSProfNode* node, 
-			  std::vector<string>& searchPaths,
+			  Analysis::PathTupleVec& pathVec,
 			  const string& dest_dir);
 
 
@@ -1144,13 +1146,13 @@ void innerCopySourceFiles(Prof::CSProfNode* node,
     directory. */
 void 
 Analysis::CallPath::copySourceFiles(Prof::CallPath::Profile* prof, 
-				    std::vector<string>& searchPaths,
+				    Analysis::PathTupleVec& pathVec,
 				    const string& dest_dir) 
 {
   Prof::CCT::Tree* cct = prof->cct();
   if (!cct) { return ; }
 
-  copySourceFiles(cct->root(), searchPaths, dest_dir);
+  copySourceFiles(cct->root(), pathVec, dest_dir);
 }
 
 
@@ -1159,7 +1161,7 @@ Analysis::CallPath::copySourceFiles(Prof::CallPath::Profile* prof,
     directory. */
 void 
 copySourceFiles(Prof::CSProfNode* node, 
-		std::vector<string>& searchPaths,
+		Analysis::PathTupleVec& pathVec,
 		const string& dest_dir) 
 {
   xDEBUG(DEB_MKDIR_SRC_DIR, 
@@ -1172,16 +1174,16 @@ copySourceFiles(Prof::CSProfNode* node,
   // For each immediate child of this node...
   for (Prof::CSProfNodeChildIterator it(node); it.CurNode(); it++) {
     // recur 
-    copySourceFiles(it.CurNode(), searchPaths, dest_dir);
+    copySourceFiles(it.CurNode(), pathVec, dest_dir);
   }
 
-  innerCopySourceFiles(node, searchPaths, dest_dir);
+  innerCopySourceFiles(node, pathVec, dest_dir);
 }
 
 
 void 
 innerCopySourceFiles(Prof::CSProfNode* node, 
-		     std::vector<string>& searchPaths,
+		     Analysis::PathTupleVec& pathVec,
 		     const string& dest_dir)
 {
   bool inspect; 
@@ -1257,13 +1259,13 @@ innerCopySourceFiles(Prof::CSProfNode* node,
       //    copy the file (use system syscall)
       int ii;
       bool searchDone = false;
-      for (ii=0; !searchDone && ii<searchPaths.size(); ii++) {
+      for (ii=0; !searchDone && ii<pathVec.size(); ii++) {
 	string testPath;
 	if ( nodeSourceFile[0] == '/') {
 	  testPath = nodeSourceFile;
 	  searchDone = true;
 	}  else {
-	  testPath = searchPaths[ii]+"/"+nodeSourceFile;
+	  testPath = pathVec[ii].first +"/"+nodeSourceFile;
 	}
 	xDEBUG(DEB_MKDIR_SRC_DIR,
 	       cerr << "search test path " << testPath << std::endl;);
@@ -1279,7 +1281,7 @@ innerCopySourceFiles(Prof::CSProfNode* node,
 	  FILE *sourceFileHandle = fopen(normTestPath.c_str(), "rt");
 	  if (sourceFileHandle != NULL) {
 	    searchDone = true;
-	    char normTestPathChr[MAX_PATH_SIZE+1];
+	    char normTestPathChr[PATH_MAX+1];
 	    strcpy(normTestPathChr, normTestPath.c_str());
 	    relativeSourceFile = normTestPathChr+1;
 	    sourceFileWasCopied = true;
@@ -1312,7 +1314,7 @@ innerCopySourceFiles(Prof::CSProfNode* node,
 	      xDEBUG(DEB_MKDIR_SRC_DIR,
 		     cerr << "converted stack to vector" << std::endl;);
 
-	      char filePathChr[MAX_PATH_SIZE +1];
+	      char filePathChr[PATH_MAX +1];
 	      strcpy(filePathChr, dest_dir.c_str());
 	      chdir(filePathChr);
 
@@ -1404,12 +1406,12 @@ string
 normalizeFilePath(const string& filePath, 
 		  std::stack<string>& pathSegmentsStack)
 {
-  char cwdName[MAX_PATH_SIZE +1];
-  getcwd(cwdName, MAX_PATH_SIZE);
+  char cwdName[PATH_MAX +1];
+  getcwd(cwdName, PATH_MAX);
   string crtDir=cwdName; 
   
   string filePathString = filePath;
-  char filePathChr[MAX_PATH_SIZE +1];
+  char filePathChr[PATH_MAX +1];
   strcpy(filePathChr, filePathString.c_str());
 
   // ~/...
@@ -1426,7 +1428,7 @@ normalizeFilePath(const string& filePath,
     } else {
       // parse the beginning of the filePath to determine the other username
       int filePos = 0;
-      char userHome[MAX_PATH_SIZE+1]; 
+      char userHome[PATH_MAX+1]; 
       for ( ;
 	    ( filePathChr[filePos] != '\0' &&
 	      filePathChr[filePos] != '/');
@@ -1435,8 +1437,8 @@ normalizeFilePath(const string& filePath,
       }
       userHome[filePos]='\0';
       if (chdir (userHome) == 0 ) {
-	char userHomeDir[MAX_PATH_SIZE +1];
-	getcwd(userHomeDir, MAX_PATH_SIZE);
+	char userHomeDir[PATH_MAX +1];
+	getcwd(userHomeDir, PATH_MAX);
 	filePathString = userHomeDir;
 	filePathString = filePathString + (filePathChr + filePos);
 	xDEBUG(DEB_NORM_SEARCH_PATH, 
@@ -1477,7 +1479,7 @@ normalizeFilePath(const string& filePath,
   strcpy(filePathChr, filePathString.c_str());
 
   int crtPos=0;
-  char crtSegment[MAX_PATH_SIZE+1];
+  char crtSegment[PATH_MAX+1];
   int crtSegmentPos=0;
   crtSegment[crtSegmentPos]='\0';
 

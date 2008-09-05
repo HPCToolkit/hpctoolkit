@@ -324,6 +324,8 @@ Args::parse(int argc, const char* const argv[])
     // Check for other options: Correlation options
     if (parser.isOpt("include")) {
       string str = parser.getOptArg("include");
+
+      std::vector<std::string> searchPaths;
       StrUtil::tokenize_str(str, CLP_SEPARATOR, searchPaths);
       
       for (uint i = 0; i < searchPaths.size(); ++i) {

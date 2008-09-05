@@ -99,3 +99,9 @@ Analysis::Util::getProfileType(const std::string& filenm)
   return ProfType_FLAT;
 }
 
+
+//****************************************************************************
+
+// Old code to test whether a search path exists
+
+//****************************************************************************

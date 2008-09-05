@@ -193,7 +193,7 @@ realmain(int argc, char* const* argv)
     DIAG_Die("could not create database source code directory " << dbSrcDir);
   }
   
-  Analysis::CallPath::copySourceFiles(prof, args.searchPaths, dbSrcDir);
+  Analysis::CallPath::copySourceFiles(prof, args.searchPathTpls, dbSrcDir);
   
   string experiment_fnm = args.db_dir + "/" + args.out_db_experiment;
   Analysis::CallPath::writeInDatabase(prof, experiment_fnm);
@@ -242,22 +242,11 @@ readProfileFile(const string& prof_fnm)
 
 //****************************************************************************
 
-static string 
-searchPathStr(const Analysis::Args& args)
-{
-  // cf. Driver::searchPathStr (Flat-SrcCorrelation.*)
-  string path = ".";
-  for (uint i = 0; i < args.searchPaths.size(); ++i) { 
-    path += string(":") + args.searchPaths[i];
-  }
-  return path;
-}
-
 
 static Prof::Struct::Tree*
 readStructure(const Analysis::Args& args)
 {
-  string searchPath = searchPathStr(args);
+  string searchPath = args.searchPathStr();
 
   Prof::Struct::Pgm* pgmStrct = new Prof::Struct::Pgm("");
   Prof::Struct::Tree* structure = new Prof::Struct::Tree("", pgmStrct);
@@ -265,7 +254,7 @@ readStructure(const Analysis::Args& args)
   Prof::Struct::TreeInterface structIF(structure->GetRoot(), searchPath);
   DocHandlerArgs docargs; // NOTE: override for replacePath()
 
-  Prof::Struct::readStructure(structIF, args.structureFiles, 
+  Prof::Struct::readStructure(structIF, args.structureFiles,
 			      PGMDocHandler::Doc_STRUCT, docargs);
   return structure;
 }
