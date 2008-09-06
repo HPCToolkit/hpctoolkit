@@ -160,6 +160,9 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 #define DIAG_Msg(level, streamArgs)                                 \
   DIAG_MsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
 
+#define DIAG_MsgCtd(level, streamArgs)                              \
+  DIAG_MsgIfCtd((level <= DIAG_DBG_LVL_PUB), streamArgs)
+
 
 #define DIAG_DevMsgIf(ifexpr, streamArgs)		            \
   DIAG_MsgIf_GENERIC("msg*: ", ifexpr, streamArgs)
