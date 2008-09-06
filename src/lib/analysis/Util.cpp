@@ -579,6 +579,10 @@ breakPathIntoSegments(const string& normFilePath,
 static std::pair<int, string>
 matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec);
 
+static string
+copySourceFile(const string& filenm, const string& dstDir, 
+	       const Analysis::PathTuple& pathTpl);
+
 
 static bool 
 CSF_ScopeFilter(const Prof::Struct::ANode& x, long type)
@@ -634,50 +638,7 @@ Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure,
       int idx = fnd.first;
 
       if (idx >= 0) {
-
-	string  path_fnd = pathVec[idx].first; // a real copy
-	string& fnm_fnd  = fnd.second;         // just an alias
-	const string& viewnm   = pathVec[idx].second;
-
-	// canonicalize path_fnd and fnm_fnd
-	if (is_recursive_path(path_fnd.c_str())) {
-	  path_fnd[path_fnd.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
-	}
-	path_fnd = RealPath(path_fnd.c_str());
-	fnm_fnd = RealPath(fnm_fnd.c_str());
-
-	// INVARIANT 1: fnm_fnd is an absolute path
-	// INVARIANT 2: path_fnd must be a prefix of fnm_fnd
-	  
-	// find (fnm_fnd - path_fnd)
-	char* path_sfx = const_cast<char*>(fnm_fnd.c_str());
-	path_sfx = &path_sfx[path_fnd.length()];
-	while (path_sfx[0] != '/') { --path_sfx; } // should start with '/'
-	
-	// Create new file name and copy commands
-	fnm_new = "./" + viewnm + path_sfx;
-	
-	string fnm_to;
-	if (dstDir[0]  != '/') {
-	  fnm_to = "./";
-	}
-	fnm_to = fnm_to + dstDir + "/" + viewnm + path_sfx;
-	string dir_to(fnm_to); // need to strip off ending filename to 
-	uint end;              // get full path for 'fnm_to'
-	for (end = dir_to.length() - 1; dir_to[end] != '/'; end--) { }
-	dir_to[end] = '\0';    // should not end with '/'
-	
-	string cmdMkdir = "mkdir -p " + dir_to;
-	string cmdCp    = "cp -f " + fnm_fnd + " " + fnm_to;
-	//cerr << cmdCp << std::endl;
-	
-	// could use CopyFile; see StaticFiles::Copy
-	if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
-	  DIAG_Msg(1, "  " << fnm_to);
-	} 
-	else {
-	  DIAG_EMsg("copying: '" << fnm_to);
-	}
+	fnm_new = copySourceFile(fnd.second, dstDir, pathVec[idx]);
       }
     }
 
@@ -758,6 +719,73 @@ matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec)
     }
   }
   return make_pair(foundIndex, foundFnm);
+}
+
+
+// Given a file 'filenm' a destination directory 'dstDir' and a
+// PathTuple, form a database file name, copy 'filenm' into the
+// database and return the database file name.
+static string
+copySourceFile(const string& filenm, const string& dstDir, 
+	       const Analysis::PathTuple& pathTpl)
+{
+#define SEARCHPATH_IS_SUFFIX_OF_FILE 0
+
+  string fnm_fnd = RealPath(filenm.c_str());
+  const string& viewnm = pathTpl.second;
+
+#if (SEARCHPATH_IS_SUFFIX_OF_FILE) 
+  // canonicalize path_fnd
+  string path_fnd = pathTpl.first; // a real copy
+  if (is_recursive_path(path_fnd.c_str())) {
+    path_fnd[path_fnd.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
+  }
+  path_fnd = RealPath(path_fnd.c_str());
+
+  // INVARIANT 1: fnm_fnd is an absolute path
+  // INVARIANT 2: path_fnd must be a prefix of fnm_fnd
+
+  // tallent: actually #2 may not be true with symbolic links and '..':
+  //   path_fnd: /.../codes/NAMD_2.6_Source/charm-5.9/mpi-linux-amd64
+  //   filenm:   /.../codes/NAMD_2.6_Source/charm-5.9/mpi-linux-amd64/../bin/../include/LBComm.h
+  //   fnm_fnd:  /.../codes/NAMD_2.6_Source/charm-5.9/src/ck-ldb/LBComm.h
+
+
+  // find (fnm_fnd - path_fnd)
+  const char* path_sfx = fnm_fnd.c_str();
+  path_sfx = &path_sfx[path_fnd.length()];
+  while (path_sfx[0] != '/') { --path_sfx; } // should start with '/'
+#else
+  // INVARIANT: fnm_fnd.length() > 1
+  const char* path_sfx = fnm_fnd.c_str();
+#endif
+	
+  // Create new file name and copy commands
+  string fnm_new = "./" + viewnm + path_sfx;
+	
+  string fnm_to;
+  if (dstDir[0]  != '/') {
+    fnm_to = "./";
+  }
+  fnm_to = fnm_to + dstDir + "/" + viewnm + path_sfx;
+  string dir_to(fnm_to); // need to strip off ending filename to 
+  uint end;              // get full path for 'fnm_to'
+  for (end = dir_to.length() - 1; dir_to[end] != '/'; end--) { }
+  dir_to[end] = '\0';    // should not end with '/'
+	
+  string cmdMkdir = "mkdir -p " + dir_to;
+  string cmdCp    = "cp -f " + fnm_fnd + " " + fnm_to;
+  //cerr << cmdCp << std::endl;
+	
+  // could use CopyFile; see StaticFiles::Copy
+  if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
+    DIAG_Msg(1, "  " << fnm_to);
+  } 
+  else {
+    DIAG_EMsg("copying: '" << fnm_to);
+  }
+
+  return fnm_new;
 }
 
 
