@@ -193,7 +193,7 @@ TreeInterface::MoveToFile(const char* name)
   // Invalidate any previous proc
   currentProc = NULL;
 
-  DIAG_Msg(2, msg << filePath); // debug path replacement
+  DIAG_Msg(3, msg << filePath); // debug path replacement
   return f;
 }
 
