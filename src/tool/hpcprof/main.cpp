@@ -163,11 +163,11 @@ realmain(int argc, char* const* argv)
 	}
 	
 	if (lmStrct) {
-	  DIAG_Msg(1, "Using STRUCTURE for: " << lm_fnm);
+	  DIAG_Msg(1, "STRUCTURE: " << lm_fnm);
 	  processCallingCtxtTree(prof, epoch_lm, lmStrct);
 	}
 	else {
-	  DIAG_Msg(1, "Using debug info for: " << lm_fnm);
+	  DIAG_Msg(1, "Line map : " << lm_fnm);
 	  processCallingCtxtTree(prof, epoch_lm);
 	}
       }

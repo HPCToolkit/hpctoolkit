@@ -203,7 +203,7 @@ Profile::make(const char* fnm)
   
   uint num_metrics = metadata.num_metrics;
   
-  DIAG_Msg(2, "Metrics found: " << num_metrics);
+  DIAG_Msg(3, fnm << ": metrics found: " << num_metrics);
 
   CallPath::Profile* prof = new CallPath::Profile(num_metrics);
   ret = hpcfile_cstree_read(fs, prof->cct(), num_metrics,
