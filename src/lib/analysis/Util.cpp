@@ -114,13 +114,11 @@ Analysis::Util::getProfileType(const std::string& filenm)
 // 
 //***************************************************************************
 
-
-static std::pair<int, string>
-matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec);
-
 static string
-copySourceFile(const string& filenm, const string& dstDir, 
-	       const Analysis::PathTuple& pathTpl);
+driver_copySourceFile(const string& fnm_orig,
+		      std::map<string, string>& processedFiles,
+		      const Analysis::PathTupleVec& pathVec,
+		      const string& dstDir);
 
 
 static bool 
@@ -144,7 +142,7 @@ Analysis::Util::copySourceFiles(Prof::CallPath::Profile* prof,
   if (!cct) { return; }
 
   // Prevent multiple copies of the same file
-  std::map<string, string> copiedFiles;
+  std::map<string, string> processedFiles;
 
   Prof::CSProfNodeFilter filter(CallPath_Filter, "CallPath_Filter", 0);
 
@@ -154,22 +152,12 @@ Analysis::Util::copySourceFiles(Prof::CallPath::Profile* prof,
     if (!x_code) { continue; }
 
     const string& fnm_orig = x_code->GetFile(); // may not be absolute
-    string fnm_new;
 
     // ------------------------------------------------------
     // Given fnm_orig, attempt to find and copy fnm_new
     // ------------------------------------------------------
-    std::map<string, string>::iterator it = copiedFiles.find(fnm_orig);
-    if (it != copiedFiles.end()) {
-      fnm_new = it->second;
-    }
-    else {
-      std::pair<int, string> fnd = matchFileWithPath(fnm_orig, pathVec);
-      int idx = fnd.first;
-      if (idx >= 0) {
-	fnm_new = copySourceFile(fnd.second, dstDir, pathVec[idx]);
-      }
-    }
+    string fnm_new =
+      driver_copySourceFile(fnm_orig, processedFiles, pathVec, dstDir);
 
     // ------------------------------------------------------
     // Update dynamic/static structure
@@ -177,8 +165,6 @@ Analysis::Util::copySourceFiles(Prof::CallPath::Profile* prof,
     if (!fnm_new.empty()) {
       x_code->SetFile(fnm_new);
     }
-    
-    copiedFiles.insert(make_pair(fnm_orig, fnm_new));
   }
 }
 
@@ -200,7 +186,7 @@ Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure,
 				const string& dstDir)
 {
   // Prevent multiple copies of the same file (Alien scopes)
-  std::map<string, string> copiedFiles;
+  std::map<string, string> processedFiles;
 
   Prof::Struct::ANodeFilter filter(Flat_Filter, "Flat_Filter", 0);
   for (Prof::Struct::ANodeIterator it(structure, &filter); it.Current(); ++it) {
@@ -223,23 +209,12 @@ Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure,
       DIAG_Die(DIAG_Unimplemented);
     }
     
-    string fnm_new;
-
     // ------------------------------------------------------
     // Given fnm_orig, attempt to find and copy fnm_new
     // ------------------------------------------------------
-    std::map<string, string>::iterator it = copiedFiles.find(fnm_orig);
-    if (it != copiedFiles.end()) {
-      fnm_new = it->second;
-    }
-    else {
-      std::pair<int, string> fnd = matchFileWithPath(fnm_orig, pathVec);
-      int idx = fnd.first;
-      if (idx >= 0) {
-	fnm_new = copySourceFile(fnd.second, dstDir, pathVec[idx]);
-      }
-    }
-
+    string fnm_new =
+      driver_copySourceFile(fnm_orig, processedFiles, pathVec, dstDir);
+    
     // ------------------------------------------------------
     // Update static structure
     // ------------------------------------------------------
@@ -251,9 +226,47 @@ Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure,
 	alienStrct->fileName(fnm_new);
       }
     }
-    
-    copiedFiles.insert(make_pair(fnm_orig, fnm_new));
   }
+}
+
+
+
+static std::pair<int, string>
+matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec);
+
+static string
+copySourceFile(const string& filenm, const string& dstDir, 
+	       const Analysis::PathTuple& pathTpl);
+
+static string
+driver_copySourceFile(const string& fnm_orig,
+		      std::map<string, string>& processedFiles,
+		      const Analysis::PathTupleVec& pathVec,
+		      const string& dstDir)
+{
+  string fnm_new;
+  
+  std::map<string, string>::iterator it = processedFiles.find(fnm_orig);
+  if (it != processedFiles.end()) {
+    fnm_new = it->second;
+  }
+  else {
+    std::pair<int, string> fnd = matchFileWithPath(fnm_orig, pathVec);
+    int idx = fnd.first;
+    if (idx >= 0) {
+      fnm_new = copySourceFile(fnd.second, dstDir, pathVec[idx]);
+    }
+    
+    if (fnm_new.empty()) {
+      DIAG_WMsg(2, "lost: " << fnm_orig);
+    }
+    else {
+      DIAG_Msg(2, "  cp:" << fnm_orig << " -> " << fnm_new);
+    }
+    processedFiles.insert(make_pair(fnm_orig, fnm_new));
+  }
+  
+  return fnm_new;
 }
 
 
@@ -379,7 +392,7 @@ copySourceFile(const string& filenm, const string& dstDir,
 	
   // could use CopyFile; see StaticFiles::Copy
   if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
-    DIAG_Msg(2, "  " << fnm_to);
+    DIAG_DevMsgIf(0, "cp " << fnm_to);
   } 
   else {
     DIAG_EMsg("copying: '" << fnm_to);
