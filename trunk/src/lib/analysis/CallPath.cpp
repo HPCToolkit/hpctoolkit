@@ -750,8 +750,20 @@ coalesceCallsiteLeaves(Prof::CSProfNode* node)
 }
 
 
-// FIXME: Cannot easily do this since metrics have not been accumulated.
-// really removeEmptyScopes
+// pruneByMetrics: 
+// 
+// Background: This function name should be surprising since we have
+// not computed metrics for interior nodes yet.  
+//
+// Observe that he fully dynamic CCT is sparse in the sense that every
+// node must have some non-zero inclusive metric value.  This is true
+// because every leaf node represents a sample point.  However, when
+// static structure is added, the CCT may contain 'spurious' static
+// scopes.  Since such scopes will not have STATEMENT nodes as
+// children, we can prune them by removing empty scopes rather than
+// computing inclusive values and pruning nodes whose metric values
+// are all zero.
+
 void 
 pruneByMetrics(Prof::CSProfNode* node);
 
@@ -771,18 +783,18 @@ pruneByMetrics(Prof::CSProfNode* node)
   if (!node) { return; }
 
   for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    Prof::CSProfNode* child = it.CurNode();
-    it++; // advance iterator -- it is pointing at 'child'
+    Prof::CSProfNode* x = it.CurNode();
+    it++; // advance iterator -- it is pointing at 'x'
 
     // 1. Recursively do any trimming for this tree's children
-    pruneByMetrics(child);
+    pruneByMetrics(x);
 
     // 2. Trim this node if necessary
-    bool remove = (child->IsLeaf() 
-		   && child->GetType() == Prof::CSProfNode::PROCEDURE_FRAME);
-    if (remove) {
-      child->Unlink(); // unlink 'child' from tree
-      delete child;
+    bool isTy = (x->GetType() == Prof::CSProfNode::PROCEDURE_FRAME || 
+		 x->GetType() == Prof::CSProfNode::LOOP);
+    if (x->IsLeaf() && isTy) {
+      x->Unlink(); // unlink 'x' from tree
+      delete x;
     }
   }
 }
