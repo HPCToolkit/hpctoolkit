@@ -66,11 +66,14 @@ using std::string;
 #include "Args.hpp"
 
 #include <lib/analysis/CallPath.hpp>
+#include <lib/analysis/Util.hpp>
 
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 #include <lib/prof-juicy-x/PGMReader.hpp>
 
 #include <lib/binutils/LM.hpp>
+
+#include <lib/support/realpath.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -180,25 +183,22 @@ realmain(int argc, char* const* argv)
   delete structure;
 
   // ------------------------------------------------------------
-  // Dump
+  // Generate Experiment database
   // ------------------------------------------------------------
 
-  // prepare output directory 
-  std::pair<string, bool> ret = FileUtil::mkdirUnique(args.db_dir);
-  args.db_dir = ret.first;  // // exits on failure...
+  // prepare output directory (N.B.: chooses a unique name!)
+  string db_dir = args.db_dir; // make copy
+  std::pair<string, bool> ret = FileUtil::mkdirUnique(db_dir);
+  db_dir = RealPath(ret.first.c_str());  // exits on failure...
     
-  string dbSrcDir = args.db_dir + "/src";
-  if (mkdir(dbSrcDir.c_str(),
-	    S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0) {
-    DIAG_Die("could not create database source code directory " << dbSrcDir);
-  }
-  
-  Analysis::CallPath::copySourceFiles(prof, args.searchPathTpls, dbSrcDir);
-  
-  string experiment_fnm = args.db_dir + "/" + args.out_db_experiment;
-  Analysis::CallPath::writeInDatabase(prof, experiment_fnm);
-  //Analysis::CallPath::write(prof, std::cout, /* prettyPrint */ true);
-  
+  DIAG_Msg(1, "Copying source files reached by PATH option to " << db_dir);
+  // NOTE: makes file names in prof relative to database
+  Analysis::Util::copySourceFiles(prof, args.searchPathTpls, db_dir);
+
+  string experiment_fnm = db_dir + "/" + args.out_db_experiment;
+  std::ostream* os = IOUtil::OpenOStream(experiment_fnm.c_str());
+  Analysis::CallPath::write(prof, *os, true);
+  IOUtil::CloseStream(os);
 
   delete prof;
   return (0);

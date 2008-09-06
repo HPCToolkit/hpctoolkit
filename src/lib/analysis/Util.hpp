@@ -58,7 +58,13 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h> 
+#include <include/general.h>
+
+#include "Args.hpp"
+
+#include <lib/prof-juicy/CallPath-Profile.hpp>
+
+#include <lib/prof-juicy/Struct-Tree.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -77,6 +83,18 @@ enum ProfType_t {
 ProfType_t
 getProfileType(const std::string& filenm);
 
+
+// ------------------------------------------------------------
+
+void 
+copySourceFiles(Prof::CallPath::Profile* prof, 
+		Analysis::PathTupleVec& pathVec,
+		const std::string& dstDir);
+
+void 
+copySourceFiles(Prof::Struct::Pgm* structure, 
+		const Analysis::PathTupleVec& pathVec, 
+		const string& dstDir);
 
 } // namespace Util
 
