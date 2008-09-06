@@ -99,8 +99,10 @@ Options: General:\n\
 \n\
 Options: Source Structure Correlation:\n\
   -I <path>, --include <path>\n\
-                       Use <path> when searching for source files. May pass\n\
-                       multiple times.\n\
+                       Use <path> when searching for source files. For a\n\
+                       recursive search, append a '*' after the last slash,\n\
+                       e.g., '/mypath/*' (quote or escape to protect from\n\
+                       the shell.) May pass multiple times.\n\
   -S <file>, --structure <file>\n\
                        Use hpcstruct structure file <file> for correlation.\n\
                        May pass multiple times (e.g., for shared libraries).\n\

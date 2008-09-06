@@ -120,6 +120,9 @@ Analysis::Util::getProfileType(const std::string& filenm)
 // 
 //***************************************************************************
 
+
+#if 0
+
 #include <stack>
 
 #define DEB_NORM_SEARCH_PATH  0
@@ -570,6 +573,7 @@ breakPathIntoSegments(const string& normFilePath,
   string resultPath = normalizeFilePath(normFilePath, pathSegmentsStack);
 }
 
+#endif
 
 //***************************************************************************
 // 
@@ -585,25 +589,85 @@ copySourceFile(const string& filenm, const string& dstDir,
 
 
 static bool 
-CSF_ScopeFilter(const Prof::Struct::ANode& x, long type)
+CallPath_Filter(const Prof::CSProfNode& x, long type)
 {
-  return (x.Type() == Prof::Struct::ANode::TyFILE || x.Type() == Prof::Struct::ANode::TyALIEN);
+  return (x.GetType() == Prof::CSProfNode::PROCEDURE_FRAME 
+	  || x.GetType() == Prof::CSProfNode::CALLSITE
+	  || x.GetType() == Prof::CSProfNode::STATEMENT);
+}
+
+
+// copySourceFiles: For every filename x in 'prof' that can be reached
+// with paths in 'pathVec', copy x to its appropriate viewname path
+// and update x's path to be relative to this location.
+void 
+Analysis::Util::copySourceFiles(Prof::CallPath::Profile* prof, 
+				Analysis::PathTupleVec& pathVec,
+				const string& dstDir) 
+{
+  Prof::CCT::Tree* cct = prof->cct();
+  if (!cct) { return; }
+
+  // Prevent multiple copies of the same file
+  std::map<string, string> copiedFiles;
+
+  Prof::CSProfNodeFilter filter(CallPath_Filter, "CallPath_Filter", 0);
+
+  for (Prof::CSProfNodeIterator it(cct->root(), &filter); it.Current(); ++it) {
+    Prof::CSProfNode* x = it.CurNode();
+    Prof::CSProfCodeNode* x_code = dynamic_cast<Prof::CSProfCodeNode*>(x);
+    if (!x_code) { continue; }
+
+    const string& fnm_orig = x_code->GetFile(); // may not be absolute
+    string fnm_new;
+
+    // ------------------------------------------------------
+    // Given fnm_orig, attempt to find and copy fnm_new
+    // ------------------------------------------------------
+    std::map<string, string>::iterator it = copiedFiles.find(fnm_orig);
+    if (it != copiedFiles.end()) {
+      fnm_new = it->second;
+    }
+    else {
+      std::pair<int, string> fnd = matchFileWithPath(fnm_orig, pathVec);
+      int idx = fnd.first;
+      if (idx >= 0) {
+	fnm_new = copySourceFile(fnd.second, dstDir, pathVec[idx]);
+      }
+    }
+
+    // ------------------------------------------------------
+    // Update dynamic/static structure
+    // ------------------------------------------------------
+    if (!fnm_new.empty()) {
+      x_code->SetFile(fnm_new);
+    }
+    
+    copiedFiles.insert(make_pair(fnm_orig, fnm_new));
+  }
+}
+
+
+static bool 
+Flat_Filter(const Prof::Struct::ANode& x, long type)
+{
+  return (x.Type() == Prof::Struct::ANode::TyFILE 
+	  || x.Type() == Prof::Struct::ANode::TyALIEN);
 }
 
 // copySourceFiles: For every Prof::Struct::File and
-// Prof::Struct::Alien x in 'pgmScope' that can be reached with paths in
-// 'pathVec', copy x to its appropriate viewname path and update x's
-// path to be relative to this location.
+// Prof::Struct::Alien x in 'pgmScope' that can be reached with paths
+// in 'pathVec', copy x to its appropriate viewname path and update
+// x's path to be relative to this location.
 void
 Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure, 
 				const Analysis::PathTupleVec& pathVec,
 				const string& dstDir)
 {
-  // Alien scopes mean that we may attempt to copy the same file many
-  // times.  Prevent multiple copies of the same file.
+  // Prevent multiple copies of the same file (Alien scopes)
   std::map<string, string> copiedFiles;
 
-  Prof::Struct::ANodeFilter filter(CSF_ScopeFilter, "CSF_ScopeFilter", 0);
+  Prof::Struct::ANodeFilter filter(Flat_Filter, "Flat_Filter", 0);
   for (Prof::Struct::ANodeIterator it(structure, &filter); it.Current(); ++it) {
     Prof::Struct::ANode* strct = it.CurScope();
     Prof::Struct::File* fileStrct = NULL;
@@ -627,7 +691,7 @@ Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure,
     string fnm_new;
 
     // ------------------------------------------------------
-    // Given fnm_orig, find fnm_new. (Use PATH information.)
+    // Given fnm_orig, attempt to find and copy fnm_new
     // ------------------------------------------------------
     std::map<string, string>::iterator it = copiedFiles.find(fnm_orig);
     if (it != copiedFiles.end()) {
@@ -636,14 +700,13 @@ Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure,
     else {
       std::pair<int, string> fnd = matchFileWithPath(fnm_orig, pathVec);
       int idx = fnd.first;
-
       if (idx >= 0) {
 	fnm_new = copySourceFile(fnd.second, dstDir, pathVec[idx]);
       }
     }
 
     // ------------------------------------------------------
-    // Use find fnm_new
+    // Update static structure
     // ------------------------------------------------------
     if (!fnm_new.empty()) {
       if (fileStrct) {
@@ -658,6 +721,8 @@ Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure,
   }
 }
 
+
+//***************************************************************************
 
 // matchFileWithPath: Given a file name 'filenm' and a vector of paths
 // 'pathVec', use 'pathfind_r' to determine which path in 'pathVec',
@@ -742,13 +807,12 @@ copySourceFile(const string& filenm, const string& dstDir,
   }
   path_fnd = RealPath(path_fnd.c_str());
 
-  // INVARIANT 1: fnm_fnd is an absolute path
-  // INVARIANT 2: path_fnd must be a prefix of fnm_fnd
+  // INVARIANT: path_fnd must be a prefix of fnm_fnd (both are abs. paths)
 
-  // tallent: actually #2 may not be true with symbolic links and '..':
-  //   path_fnd: /.../codes/NAMD_2.6_Source/charm-5.9/mpi-linux-amd64
-  //   filenm:   /.../codes/NAMD_2.6_Source/charm-5.9/mpi-linux-amd64/../bin/../include/LBComm.h
-  //   fnm_fnd:  /.../codes/NAMD_2.6_Source/charm-5.9/src/ck-ldb/LBComm.h
+  // tallent: actually this may not be true with symbolic links and '..':
+  //   path_fnd: /.../NAMD_2.6/charm-5.9/linux-amd64
+  //   filenm:   /.../NAMD_2.6/charm-5.9/linux-amd64/../bin/../include/LBComm.h
+  //   fnm_fnd:  /.../NAMD_2.6/charm-5.9/src/ck-ldb/LBComm.h
 
 
   // find (fnm_fnd - path_fnd)
@@ -756,7 +820,6 @@ copySourceFile(const string& filenm, const string& dstDir,
   path_sfx = &path_sfx[path_fnd.length()];
   while (path_sfx[0] != '/') { --path_sfx; } // should start with '/'
 #else
-  // INVARIANT: fnm_fnd.length() > 1
   const char* path_sfx = fnm_fnd.c_str();
 #endif
 	
@@ -776,6 +839,8 @@ copySourceFile(const string& filenm, const string& dstDir,
   string cmdMkdir = "mkdir -p " + dir_to;
   string cmdCp    = "cp -f " + fnm_fnd + " " + fnm_to;
   //cerr << cmdCp << std::endl;
+  // mkdir(x, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
+
 	
   // could use CopyFile; see StaticFiles::Copy
   if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {

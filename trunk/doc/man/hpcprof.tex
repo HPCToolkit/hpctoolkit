@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/07/09}
+\setDate{ 2008/09/06}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -73,17 +73,26 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: General}
 
 \begin{Description}
-\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}] Verbose: generate progress messages to stderr at verbosity level \Arg{n}.  \{1\} 
-\item[\Opt{-V}, \Opt{--version}] Print version information.
-\item[\Opt{-h}, \Opt{--help}] Print help.
-\item[\OptoArg{--debug}{n}]   Debug: use debug level \Arg{n}. \{1\}
+\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}]
+Verbose: generate progress messages to stderr at verbosity level \Arg{n}.  \{1\} 
+\item[\Opt{-V}, \Opt{--version}]
+Print version information.
+
+\item[\Opt{-h}, \Opt{--help}]
+Print help.
+
+\item[\OptoArg{--debug}{n}]
+Debug: use debug level \Arg{n}. \{1\}
 \end{Description}
 
 \subsection{Options: Source Structure Correlation}
 
 \begin{Description}
-\item[\OptArg{-I}{path}, \OptArg{--include}{path}] Use \Arg{path} when searching for source files. May pass multiple times.
-\item[\OptArg{-S}{file}, \OptArg{--structure}{file}] Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
+\item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
+Use \Arg{path} when searching for source files. For a recursive search, append a '*' after the last slash, e.g., \verb+'/mypath/*'+ (quote or escape to protect from the shell). May pass multiple times.
+
+\item[\OptArg{-S}{file}, \OptArg{--structure}{file}] 
+Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
 \end{Description}
 
 \subsection{Options: Output}
