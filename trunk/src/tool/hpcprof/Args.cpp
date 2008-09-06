@@ -280,7 +280,6 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("db")) {
       db_dir = parser.getOptArg("db");
     }
-    db_dir = normalizeFilePath(db_dir);
 
     // Check for required arguments
     uint numArgs = parser.getNumArgs();

@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_Util_hpp 
-#define Analysis_Util_hpp
+#ifndef Analysis_TextUtil_hpp 
+#define Analysis_TextUtil_hpp
 
 //************************* System Include Files ****************************
 

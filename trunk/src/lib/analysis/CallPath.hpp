@@ -88,28 +88,11 @@ bool
 normalize(Prof::CallPath::Profile* prof, string lush_agent);
 
 void 
-writeInDatabase(Prof::CallPath::Profile* prof, const std::string& filenm);
-
-void 
 write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint = true);
-
-void 
-copySourceFiles(Prof::CallPath::Profile *prof, 
-		Analysis::PathTupleVec& pathVec,
-		const std::string& dest_dir);  
 
 } // namespace CallPath
 
 } // namespace Analysis
-
-//****************************************************************************
-
-// FIXME: move to lib/support
-std::string normalizeFilePath(const std::string& filePath);
-std::string normalizeFilePath(const std::string& filePath, 
-			      std::stack<std::string>& pathSegmentsStack);
-void breakPathIntoSegments(const std::string& normFilePath, 
-			   std::stack<std::string>& pathSegmentsStack);
 
 //****************************************************************************
 
