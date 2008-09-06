@@ -932,8 +932,7 @@ ANode::pruneByMetrics()
 {
   std::vector<ANode*> toBeRemoved;
   
-  ANodeChildIterator it(this, NULL);
-  for ( ; it.Current(); it++) {
+  for (ANodeChildIterator it(this, NULL); it.Current(); ++it) {
     ANode* si = it.CurScope();
     if (si->HasPerfData()) {
       si->pruneByMetrics();

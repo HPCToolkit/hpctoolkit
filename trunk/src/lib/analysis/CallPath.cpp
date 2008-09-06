@@ -660,7 +660,7 @@ addSymbolicInfo(Prof::IDynNode* n_dyn, binutils::LM* lm)
 //***************************************************************************
 
 bool coalesceCallsiteLeaves(Prof::CallPath::Profile* prof);
-void removeEmptyScopes(Prof::CallPath::Profile* prof);
+void pruneByMetrics(Prof::CallPath::Profile* prof);
 void lush_cilkNormalize(Prof::CallPath::Profile* prof);
 void lush_makeParallelOverhead(Prof::CallPath::Profile* prof);
 
@@ -676,7 +676,7 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile* prof,
     lush_makeParallelOverhead(prof);
   }
 
-  removeEmptyScopes(prof);
+  pruneByMetrics(prof);
 
   return (true);
 }
@@ -750,31 +750,32 @@ coalesceCallsiteLeaves(Prof::CSProfNode* node)
 }
 
 
-// FIXME: Should be ANode::pruneByMetrics (cf. prof-juicy/Struct-Tree.cpp)
+// FIXME: Cannot easily do this since metrics have not been accumulated.
+// really removeEmptyScopes
 void 
-removeEmptyScopes(Prof::CSProfNode* node);
+pruneByMetrics(Prof::CSProfNode* node);
 
 void 
-removeEmptyScopes(Prof::CallPath::Profile* prof)
+pruneByMetrics(Prof::CallPath::Profile* prof)
 {
   Prof::CCT::Tree* cct = prof->cct();
   if (!cct) { return; }
   
-  removeEmptyScopes(cct->root());
+  pruneByMetrics(cct->root());
 }
 
 
 void 
-removeEmptyScopes(Prof::CSProfNode* node)
+pruneByMetrics(Prof::CSProfNode* node)
 {
   if (!node) { return; }
 
   for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
     Prof::CSProfNode* child = it.CurNode();
     it++; // advance iterator -- it is pointing at 'child'
-    
+
     // 1. Recursively do any trimming for this tree's children
-    removeEmptyScopes(child);
+    pruneByMetrics(child);
 
     // 2. Trim this node if necessary
     bool remove = (child->IsLeaf() 
