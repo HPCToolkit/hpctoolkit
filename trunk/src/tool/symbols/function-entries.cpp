@@ -21,10 +21,11 @@ using namespace std;
 
 class Function {
 public:
-  Function(void *_address, string *_comment);
+  Function(void *_address, string *_comment, bool _isglobal);
   void AppendComment(const string *c);
   void *address;
   string *comment;
+  bool isglobal;
   int operator<(Function *right);
 };
 
@@ -34,7 +35,7 @@ public:
  * forward declarations
  *****************************************************************************/
 
-static void new_function_entry(void *addr, string *comment);
+static void new_function_entry(void *addr, string *comment, bool isglobal);
 
 
 
@@ -72,7 +73,7 @@ dump_reachable_functions()
     ++i;
 
     const char *name;
-    if (!is_possible_fn(f->address)) continue;
+    if (!f->isglobal && !is_possible_fn(f->address)) continue;
     if (f->comment) {
       name = f->comment->c_str();
     } else {
@@ -98,18 +99,18 @@ add_stripped_function_entry(void *addr)
 {
   // only add the function if it hasn't been specifically excluded 
   if (excluded_function_entries.find(addr) == excluded_function_entries.end())  {
-    add_function_entry(addr, NULL);
+    add_function_entry(addr, NULL, false);
   }
 }
 
 
 void 
-add_function_entry(void *addr, const string *comment)
+add_function_entry(void *addr, const string *comment, bool isglobal)
 {
   FunctionSet::iterator it = function_entries.find(addr); 
 
   if (it == function_entries.end()) {
-    new_function_entry(addr, comment ? new string(*comment) : NULL);
+    new_function_entry(addr, comment ? new string(*comment) : NULL, isglobal);
   } else if (comment) {
     Function *f = (*it).second;
     f->AppendComment(comment);
@@ -131,9 +132,9 @@ bool contains_function_entry(void *address)
  *****************************************************************************/
 
 static void 
-new_function_entry(void *addr, string *comment)
+new_function_entry(void *addr, string *comment, bool isglobal)
 {
-  Function *f = new Function(addr, comment);
+  Function *f = new Function(addr, comment, isglobal);
   function_entries.insert(pair<void*, Function*>(addr, f));
 }
 
@@ -152,10 +153,11 @@ add_branch_range(void *start, void *end)
 }
 
 
-Function::Function(void *_address, string *_comment) 
+Function::Function(void *_address, string *_comment, bool _isglobal) 
 { 
   address = _address; 
   comment = _comment; 
+  isglobal = _isglobal; 
 }
 
 

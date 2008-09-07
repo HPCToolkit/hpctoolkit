@@ -2,7 +2,7 @@
 
 using namespace std;
 
-void add_function_entry(void *address, const string *comment);
+void add_function_entry(void *address, const string *comment, bool isglobal);
 void add_stripped_function_entry(void *function_entry);
 bool contains_function_entry(void *address);
 

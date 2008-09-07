@@ -133,8 +133,8 @@ note_code_range(Section *s, long memaddr, bool discover)
   string ntmp;
   new_code_range(start, end, memaddr, discover);
 
-  add_function_entry(start, code_range_comment(ntmp, s->getSecName(), "start"));
-  add_function_entry(end, code_range_comment(ntmp, s->getSecName(), "end"));
+  add_function_entry(start, code_range_comment(ntmp, s->getSecName(), "start"), true /* global */);
+  add_function_entry(end, code_range_comment(ntmp, s->getSecName(), "end"), true /* global */);
 }
 
 
@@ -171,7 +171,7 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
   //-----------------------------------------------------------------
   for (int i = 0; i < symvec.size(); i++) {
     Symbol *s = symvec[i];
-    if (report_symbol(s)) add_function_entry((void *) s->getAddr(), &s->getName());
+    if (report_symbol(s)) add_function_entry((void *) s->getAddr(), &s->getName(), (s->getLinkage() == Symbol::SL_GLOBAL));
   }
 
   process_code_ranges();
