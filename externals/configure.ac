@@ -54,7 +54,6 @@ AC_SUBST([host_cpu])
 AC_SUBST([host_os])
 
 AC_SUBST([prefix])
-AC_SUBST([stage_prefix])
 
 AC_SUBST([binutils_prefix])
 AC_SUBST([libdwarf_prefix])
@@ -86,42 +85,12 @@ AC_CANONICAL_HOST
 nobuild_cookie=.dont-build
 
 #
-# Option: --enable-build-all
+# Default prefix: local subdir with host cpu-os.
 #
-AC_ARG_ENABLE([dummy-blank-line], [AS_HELP_STRING([ ], [ ])])
-AC_ARG_ENABLE([build-all],
-    [AS_HELP_STRING([--enable-build-all],
-	[do not use system installed packages (default no)])],
-    [],
-    [enable_build_all=no])
-
+# AC requires this to be absolute path.
 #
-# Option: --enable-stage-dir=PATH
-#
-# If set, use PATH for the prefix of the staging area, else create a
-# subdirectory in the current directory.
-#
-copy_externs_file=no
-AC_ARG_ENABLE([stage-dir],
-    [AS_HELP_STRING([--enable-stage-dir=PATH],
-	[prefix of staging area (default host cpu-os)])],
-    [copy_externs_file=yes],
-    [enable_stage_dir="`pwd`/${host_cpu}-${host_os}"])
-
-stage_prefix="$enable_stage_dir"
-case "$stage_prefix" in
-    /* )
-	;;
-    * )
-	AC_MSG_ERROR([staging area must be absolute path: $stage_prefix])
-	;;
-esac
-
-if test ! -d "$stage_prefix" ; then
-    if mkdir -p "$stage_prefix" ; then :
-    else
-	AC_MSG_ERROR([unable to mkdir: $stage_prefix])
-    fi
+if test "x$prefix" = xNONE ; then
+    prefix="`pwd`/${host_cpu}-${host_os}"
 fi
 
 #
@@ -154,7 +123,7 @@ rm -f "$cookie"
 case "$with_binutils" in
     build )
 	binutils_avail=build
-	binutils_prefix="$stage_prefix"
+	binutils_prefix="$prefix"
 	;;
     /* )
 	if test -f "${with_binutils}/include/bfd.h" ; then
@@ -183,16 +152,11 @@ fi
 #
 AC_ARG_WITH([libdwarf],
     [AS_HELP_STRING([--with-libdwarf=PATH],
-	[path to libdwarf install directory (default search)])],
+	[path to libdwarf install directory (default build)])],
     [],
-    [with_libdwarf=search])
+    [with_libdwarf=build])
 
 AC_MSG_CHECKING([libdwarf])
-
-if test "$enable_build_all" = yes && test "$with_libdwarf" = search
-then
-    with_libdwarf=build
-fi
 
 libdwarf_avail=no
 case "$with_libdwarf" in
@@ -235,7 +199,7 @@ cookie="${srcdir}/libdwarf/${nobuild_cookie}"
 rm -f "$cookie"
 case "$libdwarf_avail" in
     build )
-	libdwarf_prefix="$stage_prefix"
+	libdwarf_prefix="$prefix"
 	libdwarf_inc="${libdwarf_prefix}/include"
 	libdwarf_lib="${libdwarf_prefix}/lib"
 	;;
@@ -268,9 +232,9 @@ esac
 #
 AC_ARG_WITH([libelf],
     [AS_HELP_STRING([--with-libelf=PATH],
-	[path to libelf install directory (default search)])],
+	[path to libelf install directory (default build)])],
     [],
-    [with_libelf=search])
+    [with_libelf=build])
 
 valid_libelf_dir()
 {
@@ -278,11 +242,6 @@ valid_libelf_dir()
 }
 
 AC_MSG_CHECKING([libelf])
-
-if test "$enable_build_all" = yes && test "$with_libelf" = search
-then
-    with_libelf=build
-fi
 
 libelf_avail=no
 case "$with_libelf" in
@@ -325,7 +284,7 @@ cookie="${srcdir}/libelf/${nobuild_cookie}"
 rm -f "$cookie"
 case "$libelf_avail" in
     build )
-	libelf_prefix="$stage_prefix"
+	libelf_prefix="$prefix"
 	libelf_inc="${libelf_prefix}/include/libelf"
 	libelf_lib="${libelf_prefix}/lib"
 	;;
@@ -373,7 +332,7 @@ rm -f "$cookie"
 case "$with_libmonitor" in
     build )
 	libmonitor_avail=build
-	libmonitor_prefix="$stage_prefix"
+	libmonitor_prefix="$prefix"
 	;;
     /* )
 	if test -f "${with_libmonitor}/include/monitor.h" ; then
@@ -399,9 +358,9 @@ AC_MSG_RESULT([$libmonitor_avail])
 #
 AC_ARG_WITH([libxml2],
     [AS_HELP_STRING([--with-libxml2=PATH],
-	[path to libxml2 install directory (default search)])],
+	[path to libxml2 install directory (default build)])],
     [],
-    [with_libxml2=search])
+    [with_libxml2=build])
 
 valid_libxml2_dir()
 {
@@ -409,11 +368,6 @@ valid_libxml2_dir()
 }
 
 AC_MSG_CHECKING([libxml2])
-
-if test "$enable_build_all" = yes && test "$with_libxml2" = search
-then
-    with_libxml2=build
-fi
 
 libxml2_avail=no
 case "$with_libxml2" in
@@ -456,7 +410,7 @@ cookie="${srcdir}/libxml2/${nobuild_cookie}"
 rm -f "$cookie"
 case "$libxml2_avail" in
     build )
-	libxml2_prefix="$stage_prefix"
+	libxml2_prefix="$prefix"
 	libxml2_inc="${libxml2_prefix}/include/libxml2"
 	libxml2_lib="${libxml2_prefix}/lib"
 	;;
@@ -498,7 +452,7 @@ rm -f "$cookie"
 case "$with_old_monitor" in
     build )
 	old_monitor_avail=build
-	old_monitor_prefix="${stage_prefix}/old-monitor"
+	old_monitor_prefix="${prefix}/old-monitor"
 	;;
     /* )
 	if test -d "${with_old_monitor}/include/monitor.h" ; then
@@ -537,7 +491,7 @@ rm -f "$cookie"
 case "$with_open_analysis" in
     build )
 	open_analysis_avail=build
-	open_analysis_prefix="$stage_prefix"
+	open_analysis_prefix="$prefix"
 	;;
     /* )
 	if test -d "${with_open_analysis}/include/OpenAnalysis" ; then
@@ -600,7 +554,7 @@ case "$with_symtabAPI" in
 	esac
 	if test "$symtabAPI_platform" != no ; then
 	    symtabAPI_avail=build
-	    symtabAPI_prefix="$stage_prefix"
+	    symtabAPI_prefix="$prefix"
 	else
 	    echo "not available on this platform" > "$cookie"
 	fi
@@ -645,7 +599,7 @@ case "$with_xed2" in
 	case "$host_cpu" in
 	    *x86* | *i*86* )
 		xed2_avail=build
-		xed2_prefix="$stage_prefix"
+		xed2_prefix="$prefix"
 		;;
 	    * )
 		echo "not used on this platform" > "$cookie"
@@ -689,7 +643,7 @@ rm -f "$cookie"
 case "$with_xerces" in
     build )
 	xerces_avail=build
-	xerces_prefix="$stage_prefix"
+	xerces_prefix="$prefix"
 	;;
     /* )
 	if test -f "${with_xerces}/include/xercesc/dom/DOM.hpp" ; then
@@ -715,21 +669,11 @@ xerces_platform=linux
 AC_OUTPUT
 
 #
-# If the user specified a staging path, then copy the externs.conf
-# file there.  This must come after AC-OUTPUT.
-#
-if test "$copy_externs_file" = yes ; then
-    AC_MSG_NOTICE([copying externs.conf to $stage_prefix])
-    cp -f externs.conf "${stage_prefix}/externs.conf"
-fi
-
-#
 # Display a summary of the config options.
 #
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([Externals summary])
 AC_MSG_NOTICE([prefix: $prefix])
-AC_MSG_NOTICE([stage: $stage_prefix])
 if test "x$build" != "x$host" ; then
     AC_MSG_NOTICE([build: $build])
 fi

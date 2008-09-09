@@ -3,14 +3,12 @@
 #  It is rewritten on configure.
 #
 
-stage_prefix="@stage_prefix@"
-install_prefix="@prefix@"
-prefix="@stage_prefix@"
-
 CC="@CC@"
 CFLAGS="@CFLAGS@"
 CXX="@CXX@"
 CXXFLAGS="@CXXFLAGS@"
+
+prefix="@prefix@"
 
 build_cpu="@build_cpu@"
 build_os="@build_os@"

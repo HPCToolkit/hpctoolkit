@@ -621,7 +621,6 @@ build_cpu
 build_os
 host_cpu
 host_os
-stage_prefix
 binutils_prefix
 libdwarf_prefix
 libelf_prefix
@@ -1235,22 +1234,15 @@ if test -n "$ac_init_help"; then
    esac
   cat <<\_ACEOF
 
-Optional Features:
-  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
-  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-
-  --enable-build-all      do not use system installed packages (default no)
-  --enable-stage-dir=PATH prefix of staging area (default host cpu-os)
-
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
 
   --with-binutils=PATH    path to binutils install directory (default build)
-  --with-libdwarf=PATH    path to libdwarf install directory (default search)
-  --with-libelf=PATH      path to libelf install directory (default search)
+  --with-libdwarf=PATH    path to libdwarf install directory (default build)
+  --with-libelf=PATH      path to libelf install directory (default build)
   --with-libmonitor=PATH  path to libmonitor install directory (default build)
-  --with-libxml2=PATH     path to libxml2 install directory (default search)
+  --with-libxml2=PATH     path to libxml2 install directory (default build)
   --with-old-monitor=PATH path to open analysis install directory (default
                           build)
   --with-open-analysis=PATH
@@ -1741,7 +1733,6 @@ ac_config_files="$ac_config_files Makefile.conf"
 ac_config_files="$ac_config_files externs.conf"
 
 ac_config_files="$ac_config_files options.conf"
-
 
 
 
@@ -3148,54 +3139,12 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 nobuild_cookie=.dont-build
 
 #
-# Option: --enable-build-all
+# Default prefix: local subdir with host cpu-os.
 #
-# Check whether --enable-dummy-blank-line was given.
-if test "${enable_dummy_blank_line+set}" = set; then
-  enableval=$enable_dummy_blank_line;
-fi
-
-# Check whether --enable-build-all was given.
-if test "${enable_build_all+set}" = set; then
-  enableval=$enable_build_all;
-else
-  enable_build_all=no
-fi
-
-
+# AC requires this to be absolute path.
 #
-# Option: --enable-stage-dir=PATH
-#
-# If set, use PATH for the prefix of the staging area, else create a
-# subdirectory in the current directory.
-#
-copy_externs_file=no
-# Check whether --enable-stage-dir was given.
-if test "${enable_stage_dir+set}" = set; then
-  enableval=$enable_stage_dir; copy_externs_file=yes
-else
-  enable_stage_dir="`pwd`/${host_cpu}-${host_os}"
-fi
-
-
-stage_prefix="$enable_stage_dir"
-case "$stage_prefix" in
-    /* )
-	;;
-    * )
-	{ { echo "$as_me:$LINENO: error: staging area must be absolute path: $stage_prefix" >&5
-echo "$as_me: error: staging area must be absolute path: $stage_prefix" >&2;}
-   { (exit 1); exit 1; }; }
-	;;
-esac
-
-if test ! -d "$stage_prefix" ; then
-    if mkdir -p "$stage_prefix" ; then :
-    else
-	{ { echo "$as_me:$LINENO: error: unable to mkdir: $stage_prefix" >&5
-echo "$as_me: error: unable to mkdir: $stage_prefix" >&2;}
-   { (exit 1); exit 1; }; }
-    fi
+if test "x$prefix" = xNONE ; then
+    prefix="`pwd`/${host_cpu}-${host_os}"
 fi
 
 #
@@ -3237,7 +3186,7 @@ rm -f "$cookie"
 case "$with_binutils" in
     build )
 	binutils_avail=build
-	binutils_prefix="$stage_prefix"
+	binutils_prefix="$prefix"
 	;;
     /* )
 	if test -f "${with_binutils}/include/bfd.h" ; then
@@ -3275,17 +3224,12 @@ fi
 if test "${with_libdwarf+set}" = set; then
   withval=$with_libdwarf;
 else
-  with_libdwarf=search
+  with_libdwarf=build
 fi
 
 
 { echo "$as_me:$LINENO: checking libdwarf" >&5
 echo $ECHO_N "checking libdwarf... $ECHO_C" >&6; }
-
-if test "$enable_build_all" = yes && test "$with_libdwarf" = search
-then
-    with_libdwarf=build
-fi
 
 libdwarf_avail=no
 case "$with_libdwarf" in
@@ -3333,7 +3277,7 @@ cookie="${srcdir}/libdwarf/${nobuild_cookie}"
 rm -f "$cookie"
 case "$libdwarf_avail" in
     build )
-	libdwarf_prefix="$stage_prefix"
+	libdwarf_prefix="$prefix"
 	libdwarf_inc="${libdwarf_prefix}/include"
 	libdwarf_lib="${libdwarf_prefix}/lib"
 	;;
@@ -3373,7 +3317,7 @@ esac
 if test "${with_libelf+set}" = set; then
   withval=$with_libelf;
 else
-  with_libelf=search
+  with_libelf=build
 fi
 
 
@@ -3384,11 +3328,6 @@ valid_libelf_dir()
 
 { echo "$as_me:$LINENO: checking libelf" >&5
 echo $ECHO_N "checking libelf... $ECHO_C" >&6; }
-
-if test "$enable_build_all" = yes && test "$with_libelf" = search
-then
-    with_libelf=build
-fi
 
 libelf_avail=no
 case "$with_libelf" in
@@ -3436,7 +3375,7 @@ cookie="${srcdir}/libelf/${nobuild_cookie}"
 rm -f "$cookie"
 case "$libelf_avail" in
     build )
-	libelf_prefix="$stage_prefix"
+	libelf_prefix="$prefix"
 	libelf_inc="${libelf_prefix}/include/libelf"
 	libelf_lib="${libelf_prefix}/lib"
 	;;
@@ -3492,7 +3431,7 @@ rm -f "$cookie"
 case "$with_libmonitor" in
     build )
 	libmonitor_avail=build
-	libmonitor_prefix="$stage_prefix"
+	libmonitor_prefix="$prefix"
 	;;
     /* )
 	if test -f "${with_libmonitor}/include/monitor.h" ; then
@@ -3526,7 +3465,7 @@ echo "${ECHO_T}$libmonitor_avail" >&6; }
 if test "${with_libxml2+set}" = set; then
   withval=$with_libxml2;
 else
-  with_libxml2=search
+  with_libxml2=build
 fi
 
 
@@ -3537,11 +3476,6 @@ valid_libxml2_dir()
 
 { echo "$as_me:$LINENO: checking libxml2" >&5
 echo $ECHO_N "checking libxml2... $ECHO_C" >&6; }
-
-if test "$enable_build_all" = yes && test "$with_libxml2" = search
-then
-    with_libxml2=build
-fi
 
 libxml2_avail=no
 case "$with_libxml2" in
@@ -3589,7 +3523,7 @@ cookie="${srcdir}/libxml2/${nobuild_cookie}"
 rm -f "$cookie"
 case "$libxml2_avail" in
     build )
-	libxml2_prefix="$stage_prefix"
+	libxml2_prefix="$prefix"
 	libxml2_inc="${libxml2_prefix}/include/libxml2"
 	libxml2_lib="${libxml2_prefix}/lib"
 	;;
@@ -3637,7 +3571,7 @@ rm -f "$cookie"
 case "$with_old_monitor" in
     build )
 	old_monitor_avail=build
-	old_monitor_prefix="${stage_prefix}/old-monitor"
+	old_monitor_prefix="${prefix}/old-monitor"
 	;;
     /* )
 	if test -d "${with_old_monitor}/include/monitor.h" ; then
@@ -3685,7 +3619,7 @@ rm -f "$cookie"
 case "$with_open_analysis" in
     build )
 	open_analysis_avail=build
-	open_analysis_prefix="$stage_prefix"
+	open_analysis_prefix="$prefix"
 	;;
     /* )
 	if test -d "${with_open_analysis}/include/OpenAnalysis" ; then
@@ -3757,7 +3691,7 @@ case "$with_symtabAPI" in
 	esac
 	if test "$symtabAPI_platform" != no ; then
 	    symtabAPI_avail=build
-	    symtabAPI_prefix="$stage_prefix"
+	    symtabAPI_prefix="$prefix"
 	else
 	    echo "not available on this platform" > "$cookie"
 	fi
@@ -3811,7 +3745,7 @@ case "$with_xed2" in
 	case "$host_cpu" in
 	    *x86* | *i*86* )
 		xed2_avail=build
-		xed2_prefix="$stage_prefix"
+		xed2_prefix="$prefix"
 		;;
 	    * )
 		echo "not used on this platform" > "$cookie"
@@ -3864,7 +3798,7 @@ rm -f "$cookie"
 case "$with_xerces" in
     build )
 	xerces_avail=build
-	xerces_prefix="$stage_prefix"
+	xerces_prefix="$prefix"
 	;;
     /* )
 	if test -f "${with_xerces}/include/xercesc/dom/DOM.hpp" ; then
@@ -4568,7 +4502,6 @@ build_cpu!$build_cpu$ac_delim
 build_os!$build_os$ac_delim
 host_cpu!$host_cpu$ac_delim
 host_os!$host_os$ac_delim
-stage_prefix!$stage_prefix$ac_delim
 binutils_prefix!$binutils_prefix$ac_delim
 libdwarf_prefix!$libdwarf_prefix$ac_delim
 libelf_prefix!$libelf_prefix$ac_delim
@@ -4601,7 +4534,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 76; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 75; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -4930,16 +4863,6 @@ fi
 
 
 #
-# If the user specified a staging path, then copy the externs.conf
-# file there.  This must come after AC-OUTPUT.
-#
-if test "$copy_externs_file" = yes ; then
-    { echo "$as_me:$LINENO: copying externs.conf to $stage_prefix" >&5
-echo "$as_me: copying externs.conf to $stage_prefix" >&6;}
-    cp -f externs.conf "${stage_prefix}/externs.conf"
-fi
-
-#
 # Display a summary of the config options.
 #
 { echo "$as_me:$LINENO: " >&5
@@ -4948,8 +4871,6 @@ echo "$as_me: " >&6;}
 echo "$as_me: Externals summary" >&6;}
 { echo "$as_me:$LINENO: prefix: $prefix" >&5
 echo "$as_me: prefix: $prefix" >&6;}
-{ echo "$as_me:$LINENO: stage: $stage_prefix" >&5
-echo "$as_me: stage: $stage_prefix" >&6;}
 if test "x$build" != "x$host" ; then
     { echo "$as_me:$LINENO: build: $build" >&5
 echo "$as_me: build: $build" >&6;}
