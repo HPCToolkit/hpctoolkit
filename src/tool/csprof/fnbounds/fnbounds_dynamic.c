@@ -18,8 +18,9 @@
 //*******************************************************************************
 
 #include <dlfcn.h>     // for dlopen/dlclose
-#include <string.h>    // for strcmp
+#include <string.h>    // for strcmp, strerror
 #include <stdlib.h>    // for getenv
+#include <errno.h>     // for errno
 #include <sys/param.h> // for PATH_MAX
 #include <sys/stat.h>  // mkdir
 #include <sys/types.h>
@@ -496,12 +497,19 @@ mybasename(const char *string)
 static int 
 fnbounds_tmpdir_create()
 {
-  int result;
-  sprintf(fnbounds_tmpdir,"%s/%d", tmproot, (int) getpid());
-  result = mkdir(fnbounds_tmpdir, 0777);
-  if (result) 
-    EMSG("fatal error: unable to make temporary directory %s\n", 
-          fnbounds_tmpdir);
+  int i, result;
+  // try multiple times to create a temporary directory 
+  // with the aim of avoiding failure
+  for (i = 0; i < 10; i++) {
+    sprintf(fnbounds_tmpdir,"%s/%d-%d", tmproot, (int) getpid(),i);
+    result = mkdir(fnbounds_tmpdir, 0777);
+    if (result == 0) break;
+  }
+  if (result)  {
+    char buffer[1024];
+    EMSG("fatal error: unable to make temporary directory %s (error = %s)\n", 
+          fnbounds_tmpdir, strerror_r(errno, buffer, 1024));
+  } 
   return result;
 }
 
