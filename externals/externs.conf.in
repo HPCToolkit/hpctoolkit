@@ -2,6 +2,8 @@
 #  Install prefixes for external prerequisites.
 #
 
+ext_version=7
+
 ext_binutils_prefix='@binutils_prefix@'
 ext_libdwarf_prefix='@libdwarf_prefix@'
 ext_libelf_prefix='@libelf_prefix@'

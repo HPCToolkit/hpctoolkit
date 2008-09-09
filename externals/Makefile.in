@@ -40,9 +40,8 @@ PACKAGES = binutils libdwarf libelf libmonitor libxml2  \
 NOBUILD_COOKIE = .dont-build
 
 .PHONY: all install install-all $(PACKAGES)
-.PHONY: fetch fetch-all copy copy-all
-.PHONY: clean clean-all distclean distclean-all
-.PHONY: distclean-plus
+.PHONY: fetch fetch-all clean clean-all
+.PHONY: distclean distclean-all distclean-plus
 
 all install install-all: $(PACKAGES)
 
@@ -57,9 +56,6 @@ fetch fetch-all:
 	@for pkg in $(PACKAGES) ; do  \
 		$(MAKE) -C $$pkg fetch || exit 2 ;  \
 	done
-
-copy copy-all:
-	@cd build-utils && ./copy-libs.sh
 
 clean clean-all:
 	@for pkg in $(PACKAGES) ; do  \
