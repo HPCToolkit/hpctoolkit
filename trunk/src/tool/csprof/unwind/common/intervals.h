@@ -65,6 +65,10 @@ extern "C" {
 
   void link_ui(unwind_interval *current, unwind_interval *next);
   void dump_ui(unwind_interval *u, int dump_to_stdout);
+  long ui_count();
+
+  long suspicious_count();
+  void suspicious_interval(void *pc);
 
 #ifdef __cplusplus
 };
