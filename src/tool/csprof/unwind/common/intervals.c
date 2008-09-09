@@ -5,6 +5,7 @@
 #include "csprof-malloc.h"
 #include "intervals.h"
 #include "pmsg.h"
+#include "atomic-ops.h"
 
 #define STR(s) case s: return #s
 
@@ -36,9 +37,33 @@ const unwind_interval poison_ui = {
 
 
 
+long ui_cnt = 0;
+long suspicious_cnt = 0;
+
+
 /*************************************************************************************
  * interface operations 
  ************************************************************************************/
+
+long 
+ui_count() 
+{
+  return ui_cnt;
+}
+
+long 
+suspicious_count() 
+{
+  return suspicious_cnt;
+}
+
+
+void
+suspicious_interval(void *pc) 
+{
+  EMSG("suspicous interval for pc = %p", pc);
+  fetch_and_add(&suspicious_cnt,1);
+}
 
 unwind_interval *
 new_ui(char *startaddr, ra_loc ra_status, unsigned int sp_ra_pos,
@@ -46,6 +71,8 @@ new_ui(char *startaddr, ra_loc ra_status, unsigned int sp_ra_pos,
        unwind_interval *prev)
 {
   unwind_interval *u = (unwind_interval *) csprof_malloc(sizeof(unwind_interval)); 
+
+  (void) fetch_and_add(&ui_cnt, 1);
 
   u->startaddr = startaddr;
   u->endaddr = 0;

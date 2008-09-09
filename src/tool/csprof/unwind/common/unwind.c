@@ -47,7 +47,7 @@ static int DEBUG_NO_LONGJMP = 0;
  * forward declarations 
  ***************************************************************************************/
 
-static void update_cursor_with_troll(unw_cursor_t *cursor);
+static void update_cursor_with_troll(unw_cursor_t *cursor, int offset);
 
 static int csprof_check_fence(void *ip);
 
@@ -84,7 +84,7 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
 
     PMSG(TROLL,"UNW INIT calls stack troll");
 
-    update_cursor_with_troll(cursor);
+    update_cursor_with_troll(cursor, 0);
   } 
 
   if (debug_unw) {
@@ -163,7 +163,7 @@ unw_step (unw_cursor_t *cursor)
 	next_bp = bp;
     }
     next_sp += 1;
-    cursor->intvl = csprof_addr_to_interval(next_pc);
+    cursor->intvl = csprof_addr_to_interval(((char *)next_pc) - 1);
   }
 
   if ((cursor->intvl == NULL) && 
@@ -179,7 +179,7 @@ unw_step (unw_cursor_t *cursor)
     if ((unsigned long) next_sp > (unsigned long) sp) { 
       // this condition is a weak correctness check. only
       // try building an interval for the return address again if it succeeds
-      cursor->intvl = csprof_addr_to_interval(next_pc);
+      cursor->intvl = csprof_addr_to_interval(((char *)next_pc) - 1);
     }
   }
 
@@ -196,7 +196,7 @@ unw_step (unw_cursor_t *cursor)
       while(DEBUG_WAIT_BEFORE_TROLLING);  // spin wait for developer to attach a debugger and clear the flag 
     }
 
-    update_cursor_with_troll(cursor);
+    update_cursor_with_troll(cursor, 1);
   } else {
     cursor->pc = next_pc;
     cursor->bp = next_bp;
@@ -231,7 +231,7 @@ drop_sample(void)
 
 
 static void 
-update_cursor_with_troll(unw_cursor_t *cursor)
+update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 {
   unsigned int tmp_ra_offset;
 
@@ -244,7 +244,7 @@ update_cursor_with_troll(unw_cursor_t *cursor)
 
     next_sp += 1;
 
-    cursor->intvl = csprof_addr_to_interval(next_pc);
+    cursor->intvl = csprof_addr_to_interval(((char *)next_pc) + offset);
     if (cursor->intvl) {
       PMSG(TROLL,"Trolling advances cursor to pc = %p,sp = %p", next_pc, next_sp);
       PMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc);

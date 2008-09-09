@@ -22,32 +22,43 @@ process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr,
   unwind_interval *current = *current_ptr;
   char *ins = *ins_ptr;
   unwind_interval *next = current;
+  unwind_interval *c = NULL; 
   if (current->bp_status == BP_SAVED) {
+     suspicious_interval(ins);
+#if 0
      unwind_interval *ui = current;
      while (ui && ui->restored_canonical == 0) ui = ui->prev;
      if (ui && ui->restored_canonical) {
-        *canonical_interval = ui->prev_canonical;
-        ui->prev_canonical = ui->prev_canonical->prev_canonical; 
         ui->next = NULL;
-
-        ui->ra_status = (*canonical_interval)->ra_status;
-        ui->bp_status = (*canonical_interval)->bp_status;
-
-        ui->sp_ra_pos = (*canonical_interval)->sp_ra_pos;
-        ui->sp_bp_pos = (*canonical_interval)->sp_bp_pos;
-
-        ui->bp_ra_pos = (*canonical_interval)->bp_ra_pos;
-        ui->bp_bp_pos = (*canonical_interval)->bp_bp_pos;
-
-	*current_ptr = ui->prev;
 	*bp_frames_found = 0;
         highwatermark->uwi = NULL;
+	*current_ptr = ui->prev;
+
+        *canonical_interval = ui->prev_canonical;
+
+        if (*canonical_interval) c = *canonical_interval;
+        else  { 
+          c = first; /* this may help. */
+          ui->restored_canonical = 0; /* don't back up again */
+        }
+
+        ui->prev_canonical = c->prev_canonical; 
+
+        ui->ra_status = c->ra_status;
+        ui->bp_status = c->bp_status;
+
+        ui->sp_ra_pos = c->sp_ra_pos;
+        ui->sp_bp_pos = c->sp_bp_pos;
+
+        ui->bp_ra_pos = c->bp_ra_pos;
+        ui->bp_bp_pos = c->bp_bp_pos;
 
         // restart at the end of the first interval that we just patched
-        *ins_ptr = ((char *) ui->prev->endaddr) - xed_decoded_inst_get_length(xptr); // gabriel's hack
+        *ins_ptr = ((char *) ui->prev->endaddr) - xed_decoded_inst_get_length(xptr); 
         return ui;
         // FIXME
      }
+#endif
   }
   if (ins + xed_decoded_inst_get_length(xptr) < end) {
     //-------------------------------------------------------------------------
