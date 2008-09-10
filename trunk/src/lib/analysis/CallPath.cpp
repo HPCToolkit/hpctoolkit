@@ -659,10 +659,17 @@ addSymbolicInfo(Prof::IDynNode* n_dyn, binutils::LM* lm)
 // Routines for normalizing the ScopeTree
 //***************************************************************************
 
-bool coalesceCallsiteLeaves(Prof::CallPath::Profile* prof);
-void pruneByMetrics(Prof::CallPath::Profile* prof);
-void lush_cilkNormalize(Prof::CallPath::Profile* prof);
-void lush_makeParallelOverhead(Prof::CallPath::Profile* prof);
+static void 
+coalesceCallsiteLeaves(Prof::CallPath::Profile* prof);
+
+static void 
+pruneByMetrics(Prof::CallPath::Profile* prof);
+
+static void 
+lush_cilkNormalize(Prof::CallPath::Profile* prof);
+
+static void 
+lush_makeParallelOverhead(Prof::CallPath::Profile* prof);
 
 
 bool 
@@ -685,27 +692,26 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile* prof,
 // FIXME
 // If pc values from the leaves map to the same source file info,
 // coalese these leaves into one.
-bool coalesceCallsiteLeaves(Prof::CSProfNode* node);
+static void 
+coalesceCallsiteLeaves(Prof::CSProfNode* node);
 
-bool 
+static void 
 coalesceCallsiteLeaves(Prof::CallPath::Profile* prof)
 {
   Prof::CCT::Tree* cct = prof->cct();
-  if (!cct) { return true; }
+  if (!cct) { return; }
   
-  return coalesceCallsiteLeaves(cct->root());
+  coalesceCallsiteLeaves(cct->root());
 }
 
 
 // FIXME
 typedef std::map<string, Prof::CSProfStatementNode*> StringToCallSiteMap;
 
-bool 
+static void 
 coalesceCallsiteLeaves(Prof::CSProfNode* node)
 {
-  bool noError = true;
-  
-  if (!node) { return noError; }
+  if (!node) { return; }
 
   // FIXME: Use this set to determine if we have a duplicate source line
   StringToCallSiteMap sourceInfoMap;
@@ -742,11 +748,9 @@ coalesceCallsiteLeaves(Prof::CSProfNode* node)
     } 
     else if (!child->IsLeaf()) {
       // Recur:
-      noError = noError && coalesceCallsiteLeaves(child);
+      coalesceCallsiteLeaves(child);
     }
   } 
-  
-  return noError;
 }
 
 
@@ -755,7 +759,7 @@ coalesceCallsiteLeaves(Prof::CSProfNode* node)
 // Background: This function name should be surprising since we have
 // not computed metrics for interior nodes yet.  
 //
-// Observe that he fully dynamic CCT is sparse in the sense that every
+// Observe that the fully dynamic CCT is sparse in the sense that *every*
 // node must have some non-zero inclusive metric value.  This is true
 // because every leaf node represents a sample point.  However, when
 // static structure is added, the CCT may contain 'spurious' static
@@ -764,10 +768,10 @@ coalesceCallsiteLeaves(Prof::CSProfNode* node)
 // computing inclusive values and pruning nodes whose metric values
 // are all zero.
 
-void 
+static void 
 pruneByMetrics(Prof::CSProfNode* node);
 
-void 
+static void 
 pruneByMetrics(Prof::CallPath::Profile* prof)
 {
   Prof::CCT::Tree* cct = prof->cct();
@@ -777,7 +781,7 @@ pruneByMetrics(Prof::CallPath::Profile* prof)
 }
 
 
-void 
+static void 
 pruneByMetrics(Prof::CSProfNode* node)
 {
   if (!node) { return; }
@@ -906,13 +910,16 @@ const string CilkCanonicalizer::s_slow_sfx = "_slow";
 //***************************************************************************
 
 
-void lush_cilkNormalize(Prof::CSProfNode* node);
-void lush_cilkNormalizeByFrame(Prof::CSProfNode* node);
+static void 
+lush_cilkNormalize(Prof::CSProfNode* node);
+
+static void 
+lush_cilkNormalizeByFrame(Prof::CSProfNode* node);
 
 
 // Notes: Match frames, and use those matches to merge callsites.
 
-void 
+static void 
 lush_cilkNormalize(Prof::CallPath::Profile* prof)
 {
   Prof::CCT::Tree* cct = prof->cct();
@@ -926,7 +933,7 @@ typedef std::map<string, Prof::CSProfCodeNode*> CilkMergeMap;
 
 
 // - Preorder Visit
-void 
+static void 
 lush_cilkNormalize(Prof::CSProfNode* node)
 {
   if (!node) { return; }
@@ -952,7 +959,7 @@ lush_cilkNormalize(Prof::CSProfNode* node)
 }
 
 
-void 
+static void 
 lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
 {
   DIAG_MsgIf(0, "====> (" << node << ") " << node->codeName());
@@ -1027,7 +1034,7 @@ lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
 
 //***************************************************************************
 
-void 
+static void 
 lush_makeParallelOverhead(Prof::CSProfNode* node, 
 			  const std::vector<uint>& m_src, 
 			  const std::vector<uint>& m_dst, 
@@ -1035,7 +1042,7 @@ lush_makeParallelOverhead(Prof::CSProfNode* node,
 
 
 
-void 
+static void 
 lush_makeParallelOverhead(Prof::CallPath::Profile* prof)
 {
   Prof::CCT::Tree* cct = prof->cct();
@@ -1078,7 +1085,7 @@ lush_makeParallelOverhead(Prof::CallPath::Profile* prof)
 }
 
 
-void 
+static void 
 lush_makeParallelOverhead(Prof::CSProfNode* node, 
 			  const std::vector<uint>& m_src, 
 			  const std::vector<uint>& m_dst, 
