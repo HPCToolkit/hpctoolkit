@@ -96,6 +96,19 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
 
     case XED_ICLASS_JMP: 
     case XED_ICLASS_JMP_FAR:
+      if (xed_decoded_inst_noperands(xptr) == 2) {
+	const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+	const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+	const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
+	xed_operand_type_enum_t op0_type = xed_operand_type(op0);
+	xed_operand_type_enum_t op1_type = xed_operand_type(op1);
+        if ((op0_type == XED_OPERAND_TYPE_NT_LOOKUP_FN) && 
+	    (op1_type == XED_OPERAND_TYPE_NT_LOOKUP_FN)) {
+           // idiom for a switch using a jump table: 
+           // don't consider the instruction afterward a potential function start
+	   break;
+        }
+      }
       if (fn_discovery  && !is_call_iclass(prev_xiclass)) {
         // regarding use of !is_call above: don't infer function start 
         // if we run into code from C++ that consists of a call followed 
