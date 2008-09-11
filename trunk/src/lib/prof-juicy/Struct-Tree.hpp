@@ -268,8 +268,10 @@ public:
   // --------------------------------------------------------
   // General Interface to fields 
   // --------------------------------------------------------
-  ANodeTy Type() const         { return type; }
-  uint      UniqueId() const     { return uid; }
+  ANodeTy Type() const { return type; }
+
+  // id: a unique id; 0 is reserved for a NULL value
+  uint id() const { return uid; }
 
   // name: 
   // nameQual: qualified name [built dynamically]
