@@ -188,7 +188,7 @@ CSProfNode::CSProfNode(NodeType t, CSProfNode* _parent)
 { 
   DIAG_Assert((type == PGM) || (AncestorPgm() == NULL) || 
 	      !AncestorPgm()->IsFrozen(), "");
-  static uint uniqueId = 0; 
+  static uint uniqueId = 1;
   uid = uniqueId++; 
   xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	 if (type==STATEMENT) {
@@ -728,7 +728,7 @@ CSProfNode::ToDumpString(int dmpFlag) const
   string self;
   self = NodeTypeToName(GetType());
   if ((dmpFlag & CCT::Tree::XML_TRUE) == CCT::Tree::XML_FALSE) {
-    self = self + " uid" + xml::MakeAttrNum(GetUniqueId());
+    self = self + " uid" + xml::MakeAttrNum(id());
   }
   return self;
 } 

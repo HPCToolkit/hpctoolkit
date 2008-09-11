@@ -96,7 +96,7 @@ using namespace xml;
 namespace Prof {
 namespace Struct {
 
-uint ANode::s_nextUniqueId = 0;
+uint ANode::s_nextUniqueId = 1;
 
 const std::string Tree::UnknownFileNm = "~~~<unknown-file>~~~";
 
@@ -1261,7 +1261,7 @@ string
 ANode::toString_id(int dmpFlag) const
 { 
   string str = "<" + ANodeTyToName(Type()) + " uid=" 
-    + StrUtil::toStr(UniqueId()) + ">";
+    + StrUtil::toStr(id()) + ">";
   return str;
 }
 
@@ -1450,8 +1450,7 @@ ANode::toStringXML(int dmpFlag, const char* pre) const
 string 
 ANode::toXML(int dmpFlag) const
 {
-  string self = ANodeTyToXMLelement(Type())
-    + " id" + MakeAttrNum(UniqueId());
+  string self = ANodeTyToXMLelement(Type()) + " id" + MakeAttrNum(id());
   return self;
 }
 

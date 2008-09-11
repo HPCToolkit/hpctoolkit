@@ -220,11 +220,21 @@ public:
   CSProfNode(NodeType t, CSProfNode* _parent);
   virtual ~CSProfNode();
   
+  // shallow copy (in the sense the children are not copied)
+  CSProfNode(const CSProfNode& x)
+    : type(x.type)
+      // do not copy 'uid'
+  { 
+    ZeroLinks();
+  }
+
   // --------------------------------------------------------
   // General Interface to fields 
   // --------------------------------------------------------
   NodeType GetType() const     { return type; }
-  uint     GetUniqueId() const { return uid; }
+
+  // id: a unique id; 0 is reserved for a NULL value
+  uint id() const { return uid; }
 
   // 'GetName()' is overridden by some derived classes
   virtual const std::string& GetName() const { return NodeTypeToName(GetType()); }
@@ -328,6 +338,14 @@ protected:
 		 SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL,
 		 uint sId = 0);
   
+  // shallow copy (in the sense the children are not copied)
+  CSProfCodeNode(const CSProfCodeNode& x)
+    : CSProfNode(x),
+      begLine(x.begLine),
+      endLine(x.endLine),
+      m_sId(x.m_sId) 
+    { }
+
 public: 
   virtual ~CSProfCodeNode();
   
@@ -371,8 +389,10 @@ public:
   virtual void SetSrcInfoDone(bool bi) 
     { DIAG_Die(DIAG_Unimplemented); }
 
-  uint  structureId() const { return m_sId; }
-  uint& structureId()       { return m_sId; }
+  // structureId: static structure id for this node; the same static
+  // structure will have the same structureId().
+  uint structureId() const  { return m_sId; }
+  void structureId(uint id) { m_sId = id; }
   
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
@@ -382,6 +402,8 @@ public:
     
 protected: 
   void Relocate();
+
+protected:
   SrcFile::ln begLine;
   SrcFile::ln endLine;
   uint m_sId;  // static structure id
@@ -837,6 +859,16 @@ public:
   // Constructor/Destructor
   CSProfProcedureFrameNode(CSProfNode* _parent);
   virtual ~CSProfProcedureFrameNode();
+
+  // shallow copy (in the sense the children are not copied)
+  CSProfProcedureFrameNode(const CSProfProcedureFrameNode& x)
+    : CSProfCodeNode(x),
+      file(x.file),
+      fileistext(x.fileistext),
+      proc(x.proc),
+      m_alien(x.m_alien) 
+    { }
+
   
   // Node data
   const std::string& GetFile() const { return file; }
