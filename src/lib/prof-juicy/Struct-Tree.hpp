@@ -273,6 +273,9 @@ public:
   // id: a unique id; 0 is reserved for a NULL value
   uint id() const { return uid; }
 
+  // maxId: the maximum id of all structure nodes
+  static uint maxId() { return s_nextUniqueId - 1; }
+
   // name: 
   // nameQual: qualified name [built dynamically]
   virtual const std::string& name() const { return ANodeTyToName(Type()); }
@@ -706,8 +709,8 @@ public:
   }
 
   const std::string& name() const { return m_name; }
-  void               SetName(const char* n) { m_name = n; }
-  void               SetName(const std::string& n) { m_name = n; }
+  void               name(const char* n) { m_name = n; }
+  void               name(const std::string& n) { m_name = n; }
   
   LM* 
   findLM(const char* nm) const // find by 'realpath'
@@ -733,7 +736,6 @@ public:
   Group* 
   findGroup(const std::string& nm) const
     { return findGroup(nm.c_str()); }
-
 
   void Freeze() { frozen = true;} // disallow additions to/deletions from tree
   bool IsFrozen() const { return frozen; }
@@ -773,8 +775,8 @@ private:
   bool frozen;
   std::string m_name; // the program name
 
-  GroupMap*     groupMap;
-  LMMap*   lmMap;     // mapped by 'realpath'
+  GroupMap* groupMap;
+  LMMap*    lmMap; // mapped by 'realpath'
 };
 
 
