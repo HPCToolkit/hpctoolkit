@@ -23,6 +23,10 @@ libelfdir="@libelf_prefix@"
 libelf_inc="@libelf_inc@"
 libelf_lib="@libelf_lib@"
 
+libunwinddir="@libunwind_prefix@"
+libunwind_inc="@libunwind_inc@"
+libunwind_lib="@libunwind_lib@"
+
 libxml2dir="@libxml2_prefix@"
 libxml2_inc="@libxml2_inc@"
 libxml2_lib="@libxml2_lib@"

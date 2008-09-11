@@ -636,6 +636,8 @@ libdwarf_inc
 libdwarf_lib
 libelf_inc
 libelf_lib
+libunwind_inc
+libunwind_lib
 libxml2_inc
 libxml2_lib
 symtabAPI_platform
@@ -1735,6 +1737,8 @@ ac_config_files="$ac_config_files Makefile.conf"
 ac_config_files="$ac_config_files externs.conf"
 
 ac_config_files="$ac_config_files options.conf"
+
+
 
 
 
@@ -3477,8 +3481,14 @@ fi
 { echo "$as_me:$LINENO: checking libunwind" >&5
 echo $ECHO_N "checking libunwind... $ECHO_C" >&6; }
 
+#
+# Much of this could be done in symtabAPI's configure, if symtabAPI
+# had a native configure script.
+#
 libunwind_avail=no
 libunwind_prefix=no
+libunwind_inc=no
+libunwind_lib=no
 cookie="${srcdir}/libunwind/${nobuild_cookie}"
 rm -f "$cookie"
 case "$with_libunwind" in
@@ -3487,6 +3497,8 @@ case "$with_libunwind" in
 	    *ia64* | *IA64* )
 		libunwind_avail=build
 		libunwind_prefix="$prefix"
+		libunwind_inc="${libunwind_prefix}/include"
+		libunwind_lib="${libunwind_prefix}/lib"
 		;;
 	    * )
 		echo "not used on this platform" > "$cookie"
@@ -3494,15 +3506,25 @@ case "$with_libunwind" in
 	esac
 	;;
     /* )
-	if test -f "${with_libunwind}/include/libunwind.h" ; then
-	    libunwind_avail="$with_libunwind"
-	    libunwind_prefix="$with_libunwind"
+	libunwind_avail="$with_libunwind"
+	libunwind_prefix="$with_libunwind"
+	if test -f "${libunwind_prefix}/include/libunwind.h" ; then
+	    libunwind_inc="${libunwind_prefix}/include"
 	else
-	    { { echo "$as_me:$LINENO: error: invalid libunwind directory: $with_libunwind" >&5
-echo "$as_me: error: invalid libunwind directory: $with_libunwind" >&2;}
+	    { { echo "$as_me:$LINENO: error: libunwind search failed: $libunwind_prefix" >&5
+echo "$as_me: error: libunwind search failed: $libunwind_prefix" >&2;}
    { (exit 1); exit 1; }; }
 	fi
-	echo "installed in: $with_libunwind" > "$cookie"
+	if test -f "${libunwind_prefix}/lib64/libunwind.so" ; then
+	    libunwind_lib="${libunwind_prefix}/lib64"
+	elif test -f "${libunwind_prefix}/lib/libunwind.so" ; then
+	    libunwind_lib="${libunwind_prefix}/lib"
+	else
+	    { { echo "$as_me:$LINENO: error: libunwind search failed: $libunwind_prefix" >&5
+echo "$as_me: error: libunwind search failed: $libunwind_prefix" >&2;}
+   { (exit 1); exit 1; }; }
+	fi
+	echo "installed in: $libunwind_avail" > "$cookie"
 	;;
     no )
 	echo "not available" > "$cookie"
@@ -4577,6 +4599,8 @@ libdwarf_inc!$libdwarf_inc$ac_delim
 libdwarf_lib!$libdwarf_lib$ac_delim
 libelf_inc!$libelf_inc$ac_delim
 libelf_lib!$libelf_lib$ac_delim
+libunwind_inc!$libunwind_inc$ac_delim
+libunwind_lib!$libunwind_lib$ac_delim
 libxml2_inc!$libxml2_inc$ac_delim
 libxml2_lib!$libxml2_lib$ac_delim
 symtabAPI_platform!$symtabAPI_platform$ac_delim
@@ -4595,7 +4619,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 76; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 78; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

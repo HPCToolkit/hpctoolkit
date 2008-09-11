@@ -30,6 +30,9 @@ cat "$orig" |
 	-e "s,^LIBXML2DIR.*\$,LIBXML2DIR = $libxml2dir," \
 	-e "s,^LIBXML2_LIB.*\$,LIBXML2_LIB = $libxml2_lib," \
 	-e "s,^LIBXML2_INC.*\$,LIBXML2_INC = $libxml2_inc," \
+	-e "s,^LIBUNWINDDIR.*\$,LIBUNWINDDIR = $libunwinddir," \
+	-e "s,^LIBUNWIND_LIB.*\$,LIBUNWIND_LIB = $libunwind_lib," \
+	-e "s,^LIBUNWIND_INC.*\$,LIBUNWIND_INC = $libunwind_inc," \
 	> "$config"
 
 test $? -eq 0 || die "configure failed"

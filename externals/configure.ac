@@ -71,6 +71,8 @@ AC_SUBST([libdwarf_inc])
 AC_SUBST([libdwarf_lib])
 AC_SUBST([libelf_inc])
 AC_SUBST([libelf_lib])
+AC_SUBST([libunwind_inc])
+AC_SUBST([libunwind_lib])
 AC_SUBST([libxml2_inc])
 AC_SUBST([libxml2_lib])
 
@@ -367,8 +369,14 @@ AC_ARG_WITH([libunwind],
 
 AC_MSG_CHECKING([libunwind])
 
+#
+# Much of this could be done in symtabAPI's configure, if symtabAPI
+# had a native configure script.
+#
 libunwind_avail=no
 libunwind_prefix=no
+libunwind_inc=no
+libunwind_lib=no
 cookie="${srcdir}/libunwind/${nobuild_cookie}"
 rm -f "$cookie"
 case "$with_libunwind" in
@@ -377,6 +385,8 @@ case "$with_libunwind" in
 	    *ia64* | *IA64* )
 		libunwind_avail=build
 		libunwind_prefix="$prefix"
+		libunwind_inc="${libunwind_prefix}/include"
+		libunwind_lib="${libunwind_prefix}/lib"
 		;;
 	    * )
 		echo "not used on this platform" > "$cookie"
@@ -384,13 +394,21 @@ case "$with_libunwind" in
 	esac
 	;;
     /* )
-	if test -f "${with_libunwind}/include/libunwind.h" ; then
-	    libunwind_avail="$with_libunwind"
-	    libunwind_prefix="$with_libunwind"
+	libunwind_avail="$with_libunwind"
+	libunwind_prefix="$with_libunwind"
+	if test -f "${libunwind_prefix}/include/libunwind.h" ; then
+	    libunwind_inc="${libunwind_prefix}/include"
 	else
-	    AC_MSG_ERROR([invalid libunwind directory: $with_libunwind])
+	    AC_MSG_ERROR([libunwind search failed: $libunwind_prefix])
 	fi
-	echo "installed in: $with_libunwind" > "$cookie"
+	if test -f "${libunwind_prefix}/lib64/libunwind.so" ; then
+	    libunwind_lib="${libunwind_prefix}/lib64"
+	elif test -f "${libunwind_prefix}/lib/libunwind.so" ; then
+	    libunwind_lib="${libunwind_prefix}/lib"
+	else
+	    AC_MSG_ERROR([libunwind search failed: $libunwind_prefix])
+	fi
+	echo "installed in: $libunwind_avail" > "$cookie"
 	;;
     no )
 	echo "not available" > "$cookie"

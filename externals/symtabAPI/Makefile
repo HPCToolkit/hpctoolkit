@@ -9,7 +9,7 @@ PKG_NAME = symtabAPI
 SRC_DIR =  symtabAPI
 BUILD_DIR = symtabAPI/src/core
 
-PREREQS = libdwarf libelf libxml2
+PREREQS = libdwarf libelf libunwind libxml2
 
 DYNINST_ROOT := $(shell pwd)/symtabAPI/src
 PLATFORM := $(SYMTABAPI_PLATFORM)
