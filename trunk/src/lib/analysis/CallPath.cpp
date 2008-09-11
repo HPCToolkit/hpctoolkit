@@ -539,10 +539,12 @@ public:
   }
 
   static uint 
+  minId()
+  { return s_nextUniqueId + 1; }
+
+  static uint 
   getNextStructureId() 
-  {
-    return s_nextUniqueId--;
-  }
+  { return s_nextUniqueId--; }
   
 private:
   binutils::LM* m_lm; // does not own
@@ -584,6 +586,9 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
 
   DIAG_MsgIf(DBG_NORM_PROC_FRAME, "start normalizing same procedure children");
   inferCallFrames(prof, cct->root(), epoch_lm, frameMgr);
+
+  DIAG_Assert(Prof::Struct::ANode::maxId() < StaticStructureMgr::minId(), 
+	      "There are more than " << UINT_MAX << " structure nodes!");
 }
 
 
