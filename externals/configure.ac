@@ -35,8 +35,8 @@ dnl  $Id$
 dnl
 
 AC_INIT([externals], [0.x])
-
 AC_CONFIG_AUX_DIR([config])
+AC_PREREQ(2.61)
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Makefile.conf])
@@ -59,6 +59,7 @@ AC_SUBST([binutils_prefix])
 AC_SUBST([libdwarf_prefix])
 AC_SUBST([libelf_prefix])
 AC_SUBST([libmonitor_prefix])
+AC_SUBST([libunwind_prefix])
 AC_SUBST([libxml2_prefix])
 AC_SUBST([old_monitor_prefix])
 AC_SUBST([open_analysis_prefix])
@@ -352,6 +353,54 @@ case "$with_libmonitor" in
 esac
 
 AC_MSG_RESULT([$libmonitor_avail])
+
+#
+# Option: --with-libunwind=PATH
+#
+# Used on ia64.
+#
+AC_ARG_WITH([libunwind],
+    [AS_HELP_STRING([--with-libunwind=PATH],
+	[path to libunwind install directory (default build)])],
+    [],
+    [with_libunwind=build])
+
+AC_MSG_CHECKING([libunwind])
+
+libunwind_avail=no
+libunwind_prefix=no
+cookie="${srcdir}/libunwind/${nobuild_cookie}"
+rm -f "$cookie"
+case "$with_libunwind" in
+    build )
+	case "$host_cpu" in
+	    *ia64* | *IA64* )
+		libunwind_avail=build
+		libunwind_prefix="$prefix"
+		;;
+	    * )
+		echo "not used on this platform" > "$cookie"
+		;;
+	esac
+	;;
+    /* )
+	if test -f "${with_libunwind}/include/libunwind.h" ; then
+	    libunwind_avail="$with_libunwind"
+	    libunwind_prefix="$with_libunwind"
+	else
+	    AC_MSG_ERROR([invalid libunwind directory: $with_libunwind])
+	fi
+	echo "installed in: $with_libunwind" > "$cookie"
+	;;
+    no )
+	echo "not available" > "$cookie"
+	;;
+    * )
+	AC_MSG_ERROR([libunwind directory must be absolute path: $with_libunwind])
+	;;
+esac
+
+AC_MSG_RESULT([$libunwind_avail])
 
 #
 # Option: --with-libxml2=PATH
@@ -684,6 +733,7 @@ AC_MSG_NOTICE([binutils: $binutils_avail])
 AC_MSG_NOTICE([libdwarf: $libdwarf_avail])
 AC_MSG_NOTICE([libelf: $libelf_avail])
 AC_MSG_NOTICE([libmonitor: $libmonitor_avail])
+AC_MSG_NOTICE([libunwind: $libunwind_avail])
 AC_MSG_NOTICE([libxml2: $libxml2_avail])
 AC_MSG_NOTICE([old-monitor: $old_monitor_avail])
 AC_MSG_NOTICE([open-analysis: $open_analysis_avail])

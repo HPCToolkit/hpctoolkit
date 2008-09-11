@@ -1,0 +1,18 @@
+======================
+Libunwind Build Notes
+======================
+
+Home: http://www.nongnu.org/libunwind/
+
+Download: http://download.savannah.gnu.org/releases/libunwind/
+
+License: MIT
+
+Uses Autoconf and Automake.
+
+./configure --prefix=PATH
+make
+make install
+
+Used on ia64 platform.
+

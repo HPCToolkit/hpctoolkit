@@ -34,7 +34,7 @@
 #  $Id$
 #
 
-PACKAGES = binutils libdwarf libelf libmonitor libxml2  \
+PACKAGES = binutils libdwarf libelf libmonitor libunwind libxml2  \
 	old-monitor open-analysis symtabAPI xed2 xerces
 
 NOBUILD_COOKIE = .dont-build
@@ -50,7 +50,7 @@ $(PACKAGES):
 
 libdwarf: libelf
 
-symtabAPI: libdwarf libelf libxml2
+symtabAPI: libdwarf libelf libunwind libxml2
 
 fetch fetch-all:
 	@for pkg in $(PACKAGES) ; do  \

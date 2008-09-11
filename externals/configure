@@ -625,6 +625,7 @@ binutils_prefix
 libdwarf_prefix
 libelf_prefix
 libmonitor_prefix
+libunwind_prefix
 libxml2_prefix
 old_monitor_prefix
 open_analysis_prefix
@@ -1242,6 +1243,7 @@ Optional Packages:
   --with-libdwarf=PATH    path to libdwarf install directory (default build)
   --with-libelf=PATH      path to libelf install directory (default build)
   --with-libmonitor=PATH  path to libmonitor install directory (default build)
+  --with-libunwind=PATH   path to libunwind install directory (default build)
   --with-libxml2=PATH     path to libxml2 install directory (default build)
   --with-old-monitor=PATH path to open analysis install directory (default
                           build)
@@ -1693,7 +1695,6 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-
 ac_aux_dir=
 for ac_dir in config "$srcdir"/config; do
   if test -f "$ac_dir/install-sh"; then
@@ -1726,6 +1727,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
+
 ac_config_files="$ac_config_files Makefile"
 
 ac_config_files="$ac_config_files Makefile.conf"
@@ -1733,6 +1735,7 @@ ac_config_files="$ac_config_files Makefile.conf"
 ac_config_files="$ac_config_files externs.conf"
 
 ac_config_files="$ac_config_files options.conf"
+
 
 
 
@@ -3458,6 +3461,63 @@ esac
 echo "${ECHO_T}$libmonitor_avail" >&6; }
 
 #
+# Option: --with-libunwind=PATH
+#
+# Used on ia64.
+#
+
+# Check whether --with-libunwind was given.
+if test "${with_libunwind+set}" = set; then
+  withval=$with_libunwind;
+else
+  with_libunwind=build
+fi
+
+
+{ echo "$as_me:$LINENO: checking libunwind" >&5
+echo $ECHO_N "checking libunwind... $ECHO_C" >&6; }
+
+libunwind_avail=no
+libunwind_prefix=no
+cookie="${srcdir}/libunwind/${nobuild_cookie}"
+rm -f "$cookie"
+case "$with_libunwind" in
+    build )
+	case "$host_cpu" in
+	    *ia64* | *IA64* )
+		libunwind_avail=build
+		libunwind_prefix="$prefix"
+		;;
+	    * )
+		echo "not used on this platform" > "$cookie"
+		;;
+	esac
+	;;
+    /* )
+	if test -f "${with_libunwind}/include/libunwind.h" ; then
+	    libunwind_avail="$with_libunwind"
+	    libunwind_prefix="$with_libunwind"
+	else
+	    { { echo "$as_me:$LINENO: error: invalid libunwind directory: $with_libunwind" >&5
+echo "$as_me: error: invalid libunwind directory: $with_libunwind" >&2;}
+   { (exit 1); exit 1; }; }
+	fi
+	echo "installed in: $with_libunwind" > "$cookie"
+	;;
+    no )
+	echo "not available" > "$cookie"
+	;;
+    * )
+	{ { echo "$as_me:$LINENO: error: libunwind directory must be absolute path: $with_libunwind" >&5
+echo "$as_me: error: libunwind directory must be absolute path: $with_libunwind" >&2;}
+   { (exit 1); exit 1; }; }
+	;;
+esac
+
+{ echo "$as_me:$LINENO: result: $libunwind_avail" >&5
+echo "${ECHO_T}$libunwind_avail" >&6; }
+
+#
 # Option: --with-libxml2=PATH
 #
 
@@ -4506,6 +4566,7 @@ binutils_prefix!$binutils_prefix$ac_delim
 libdwarf_prefix!$libdwarf_prefix$ac_delim
 libelf_prefix!$libelf_prefix$ac_delim
 libmonitor_prefix!$libmonitor_prefix$ac_delim
+libunwind_prefix!$libunwind_prefix$ac_delim
 libxml2_prefix!$libxml2_prefix$ac_delim
 old_monitor_prefix!$old_monitor_prefix$ac_delim
 open_analysis_prefix!$open_analysis_prefix$ac_delim
@@ -4534,7 +4595,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 75; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 76; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -4889,6 +4950,8 @@ echo "$as_me: libdwarf: $libdwarf_avail" >&6;}
 echo "$as_me: libelf: $libelf_avail" >&6;}
 { echo "$as_me:$LINENO: libmonitor: $libmonitor_avail" >&5
 echo "$as_me: libmonitor: $libmonitor_avail" >&6;}
+{ echo "$as_me:$LINENO: libunwind: $libunwind_avail" >&5
+echo "$as_me: libunwind: $libunwind_avail" >&6;}
 { echo "$as_me:$LINENO: libxml2: $libxml2_avail" >&5
 echo "$as_me: libxml2: $libxml2_avail" >&6;}
 { echo "$as_me:$LINENO: old-monitor: $old_monitor_avail" >&5

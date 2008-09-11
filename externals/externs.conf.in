@@ -2,12 +2,13 @@
 #  Install prefixes for external prerequisites.
 #
 
-ext_version=7
+ext_version=1603
 
 ext_binutils_prefix='@binutils_prefix@'
 ext_libdwarf_prefix='@libdwarf_prefix@'
 ext_libelf_prefix='@libelf_prefix@'
 ext_libmonitor_prefix='@libmonitor_prefix@'
+ext_libunwind_prefix='@libunwind_prefix@'
 ext_libxml2_prefix='@libxml2_prefix@'
 ext_old_monitor_prefix='@old_monitor_prefix@'
 ext_open_analysis_prefix='@open_analysis_prefix@'
