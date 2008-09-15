@@ -21,34 +21,33 @@ Contents:
 0. What is HPCToolkit
 ---------------------
 
-HPCToolkit is a multi-platform package with tools for 1) collecting
-raw profile information, 2) converting various types of profiling
-information into platform independent XML formats and 3) synthesizing
-browsable representations that correlate performance metrics gathered
-from multiple sources with program source code.  It was formerly
-released under the name HPCView and includes code once named 'hpcprof'
-and 'papiprof'.
+HPCToolkit is a multi-platform package with tools for 1) measuring 
+the performance of fully-optimized parallel programs using statistical 
+sampling, 2) analyzing application performance to identify performance
+bottlenecks, 3) mapping performance information back to program source
+code, and 4) synthesizing a browable representation that includes
+performance metrics and source code.
 
-HPCToolkit is an effort of the Center for High Performance Software
+HPCToolkit is a project of the Center for High Performance Software
 Research (HiPerSoft) at Rice University.
 
-Development was supported in part though the Department of Energy
-Accelerated Strategic Computing Initiative (LLNL Subcontract B347884),
-the Department of Defense CEWES ERDC MSRC Programming Environment and
-Training program, the Los Alamos Computer Science Institute, and the
-National Computational Science Alliance.
+Currently, the development of HPCToolkit is being supported by 
+the Department of Energy's Office of Science through two projects in
+the SciDAC program: the Performance Engineering Research Institute and
+the Center for Scalable Application Development Software.
+In the past, development of HPCToolkit was supported in part by 
+the Los Alamos Computer Science Institute, the Department of Energy 
+Accelerated Strategic Computing Initiative (LLNL Subcontract B347884), 
+the Department of Defense CEWES ERDC MSRC Programming Environment and 
+Training program, and the National Computational Science Alliance.
 
 =============================================================================
 
 1. Getting HPCToolkit
 ---------------------
 
-HPCtoolkit is available via anonymous svn download from Rice's HPC
-repository.
-
-  svn co http://hpc.svn.rice.edu/r/hpctoolkit/trunk
-
-However, its new home will soon be the SciDAC Outreach Center.
+HPCtoolkit is available via anonymous svn download from the SciDAC Outreach 
+Center.
 
   https://outreach.scidac.gov/projects/hpctoolkit/
 
