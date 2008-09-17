@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 1571 2008-08-24 02:30:37Z eraxxon $
+# $Id: Makefile.am 1609 2008-09-17 22:04:09Z krentel $
 
 #############################################################################
 #
@@ -840,13 +840,13 @@ install-data-local: myinstall-xerces myinstall-monitor
 myinstall-xerces:
 	if test 1; then \
 	  $(mkinstalldirs) $(MYXERCESCDIR) ; \
-	  cp -R @XERCES@/lib/* $(MYXERCESCDIR)/ ; \
+	  cp -R @XERCES@/lib/libxerces* $(MYXERCESCDIR)/ ; \
 	fi
 
 myinstall-monitor:
 	if test "@OPT_INSTALL_MONITOR@" = "yes"; then \
 	  $(mkinstalldirs) $(MYMONITORDIR) ; \
-	  cp -R @MONITOR@/lib*/* $(MYMONITORDIR)/ ; \
+	  cp -R @MONITOR@/lib*/libmonitor* $(MYMONITORDIR)/ ; \
 	fi
 
 .PHONY : myinstall-xerces myinstall-monitor
