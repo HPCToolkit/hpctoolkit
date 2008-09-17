@@ -96,9 +96,20 @@ cmd_to_profile=""
 
 cmd="$0"
 
-monitor_prefix='@libmonitor_prefix@'
+ext_libs_dir='@hpc_ext_libs_dir@'
+monitor_dir='@LIBMONITOR_RUN_DIR@'
 papi_prefix='@OPT_PAPI@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
+
+# Relative paths are relative to CSPROF_ROOT.
+case "$ext_libs_dir" in
+  /* ) ;;
+  * ) ext_libs_dir="${CSPROF_ROOT}/${ext_libs_dir}" ;;
+esac
+case "$monitor_dir" in
+  /* ) ;;
+  * ) monitor_dir="${CSPROF_ROOT}/${monitor_dir}" ;;
+esac
 
 f_usage()
 {
@@ -151,11 +162,6 @@ EOF
 
 f_checkenv()
 {
-  case "$monitor_prefix" in
-     /* ) monitor_dir="${monitor_prefix}/lib" ;;
-     *  ) monitor_dir="$CSPROF_LIB" ;;
-  esac
-
   RLD_LIB="${CSPROF_LIB}/libcsprof.so.0:${monitor_dir}/libmonitor.so"
 
   # preload our library first before loading all of those specified in

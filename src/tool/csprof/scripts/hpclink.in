@@ -15,13 +15,16 @@
 #  $Id$
 #
 
-libmonitor_libdir="@LIBMONITOR_LIB@"
-papi_libdir="@OPT_PAPI_LIBPATH@"
-papi_extra_libs="@papi_extra_libs@"
-symtabAPI_libdir="@SYMTABAPI_LIB@"
-xed2_libdir="@XED2_LIB@"
+# If this script can't find its own install prefix, or if the script
+# is moved elsewhere, then set HPCTOOLKIT here.
+# HPCTOOLKIT=/path/to/install/prefix
 
-my_bindir=`dirname $0`
+# Relative paths are relative to HPCTOOLKIT.
+ext_pkg_libs='@hpc_ext_libs_dir@'
+libmonitor_dir='@LIBMONITOR_RUN_DIR@'
+papi_dir='@OPT_PAPI_LIBPATH@'
+papi_extra_libs='@papi_extra_libs@'
+xed2_dir='@XED2_RUN_DIR@'
 
 # FIXME: The wrap list should come from monitor.
 wrap1="main exit _exit dlopen dlclose fork vfork system"
@@ -36,11 +39,10 @@ CC=gcc
 hello="_hpc_hello_$$"
 nm_addrs="_hpc_nm_addrs_$$"
 
-stapi="${my_bindir}/../libexec/stapi_syms"
-LD_LIBRARY_PATH="${symtabAPI_libdir}:${LD_LIBRARY_PATH}"
-
 # Space-separated list of symbol names to force undefined.
 undef_names=
+
+##################################################
 
 die()
 {
@@ -64,7 +66,34 @@ EOF
     exit 0
 }
 
+hpc_path_to_root=..
+@export_hpctoolkit@
+
+# Relative paths are relative to HPCTOOLKIT.
+case "$ext_pkg_libs" in
+    /* ) ;;
+    * )  ext_pkg_libs="${HPCTOOLKIT}/${ext_pkg_libs}" ;;
+esac
+case "$libmonitor_dir" in
+    /* ) ;;
+    * )  libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
+esac
+case "$papi_dir" in
+    /* ) ;;
+    * )  papi_dir="${HPCTOOLKIT}/${papi_dir}" ;;
+esac
+case "$libxed2_dir" in
+    /* ) ;;
+    * )  libxed2_dir="${HPCTOOLKIT}/${libxed2_dir}" ;;
+esac
+
+libcsprof_dir="${HPCTOOLKIT}/libexec"
+stapi="${HPCTOOLKIT}/libexec/stapi_syms"
+
 test -x "$stapi" || die "missing stapi_syms: $stapi"
+
+LD_LIBRARY_PATH="${ext_pkg_libs}:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH
 
 #
 # Step 1 -- Parse linker options, our options first.
@@ -148,20 +177,20 @@ do
 done
 set -- $wrap_args "$@"
 
-libcsprof="${my_bindir}/../libexec/libcsprof.o"
+libcsprof="${libcsprof_dir}/libcsprof.o"
 test -f "$libcsprof" || die "no such file: $libcsprof"
 set -- "$@" "$libcsprof" "${nm_addrs}.o"
 
-libmonitor="${libmonitor_libdir}/libmonitor_wrap.a"
+libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
 test -f "$libmonitor" || die "no such file: $libmonitor"
 set -- "$@" "$libmonitor"
 
-if test -d "$papi_libdir" ; then
-    set -- "$@" "-L${papi_libdir}" -lpapi $papi_extra_libs
+if test -d "$papi_dir" ; then
+    set -- "$@" "-L${papi_dir}" -lpapi $papi_extra_libs
 fi
 
-if test -d "$xed2_libdir" ; then
-    set -- "$@" "-L${xed2_libdir}" -lxed
+if test -d "$xed2_dir" ; then
+    set -- "$@" "-L${xed2_dir}" -lxed
 fi
 
 # FIXME: shouldn't always need pthread, and shoudn't ever need dl.

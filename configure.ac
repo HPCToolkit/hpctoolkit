@@ -474,6 +474,14 @@ AC_MSG_NOTICE([INFO: Exit: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}]
 # Prerequisites: external libraries
 #----------------------------------------------------------------------------
 
+#
+# Directory relative to hpctoolkit's prefix where we put external
+# package libraries, if we want to copy them.
+#
+hpc_ext_libs_dir=lib/hpctoolkit/ext-libs
+AC_SUBST([hpc_ext_libs_dir])
+
+
 #-------------------------------------------------
 # Option: --with-externals=PATH
 #
@@ -514,7 +522,7 @@ fi
 AC_ARG_WITH([libdwarf],
     [AS_HELP_STRING([--with-libdwarf=PATH],
 	    [path to libdwarf install directory])],
-    [LIBDWARF=$withval],
+    [LIBDWARF="$withval"],
     [])
 
 AC_MSG_CHECKING([for libdwarf])
@@ -525,8 +533,10 @@ case "$LIBDWARF" in
 	else
 	    AC_MSG_ERROR([invalid libdwarf directory: $LIBDWARF])
 	fi
+	LIBDWARF_COPY=yes
 	;;
     no )
+	LIBDWARF_COPY=no
 	;;
     * )
 	AC_MSG_ERROR([libdwarf directory must be absolute path: $LIBDWARF])
@@ -536,7 +546,9 @@ esac
 LIBDWARF_LIB="${LIBDWARF}/lib"
 
 AC_MSG_RESULT([$LIBDWARF])
+
 AC_SUBST([LIBDWARF_LIB])
+AC_SUBST([LIBDWARF_COPY])
 
 
 #-------------------------------------------------
@@ -551,7 +563,7 @@ fi
 AC_ARG_WITH([libelf],
     [AS_HELP_STRING([--with-libelf=PATH],
 	    [path to libelf install directory])],
-    [LIBELF=$withval],
+    [LIBELF="$withval"],
     [])
 
 AC_MSG_CHECKING([for libelf])
@@ -567,8 +579,10 @@ case "$LIBELF" in
 	else
 	    AC_MSG_ERROR([invalid libelf directory: $LIBELF])
 	fi
+	LIBELF_COPY=yes
 	;;
     no )
+	LIBELF_COPY=no
 	;;
     * )
 	AC_MSG_ERROR([libelf directory must be absolute path: $LIBELF])
@@ -578,7 +592,9 @@ esac
 LIBELF_LIB="${LIBELF}/lib"
 
 AC_MSG_RESULT([$LIBELF])
+
 AC_SUBST([LIBELF_LIB])
+AC_SUBST([LIBELF_COPY])
 
 
 #-------------------------------------------------
@@ -593,33 +609,41 @@ fi
 AC_ARG_WITH([libmonitor],
     [AS_HELP_STRING([--with-libmonitor=PATH],
 	    [path to libmonitor install directory])],
-    [LIBMONITOR=$withval],
+    [LIBMONITOR="$withval"],
     [])
 
 AC_MSG_CHECKING([for libmonitor])
 
 case "$LIBMONITOR" in
     /* )
-	if test -f "${LIBMONITOR}/include/monitor.h" ; then :
+	LIBMONITOR_INC="${LIBMONITOR}/include"
+	if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
 	else
 	    AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
 	fi
+	LIBMONITOR_LIB="${LIBMONITOR}/lib"
+	if test -f "${LIBMONITOR_LIB}/libmonitor.so" ; then :
+	else
+	    AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
+	fi
+	LIBMONITOR_COPY=yes
+	LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
 	;;
     no )
+	LIBMONITOR_COPY=no
+	LIBMONITOR_RUN_DIR=no
 	;;
     * )
 	AC_MSG_ERROR([libmonitor directory must be absolute path: $LIBMONITOR])
 	;;
 esac
 
-LIBMONITOR_INC="${LIBMONITOR}/include"
-LIBMONITOR_LIB="${LIBMONITOR}/lib"
-libmonitor_prefix="$LIBMONITOR"
-
 AC_MSG_RESULT([$LIBMONITOR])
+
 AC_SUBST([LIBMONITOR_INC])
 AC_SUBST([LIBMONITOR_LIB])
-AC_SUBST([libmonitor_prefix])
+AC_SUBST([LIBMONITOR_COPY])
+AC_SUBST([LIBMONITOR_RUN_DIR])
 
 
 #-------------------------------------------------
@@ -634,7 +658,7 @@ fi
 AC_ARG_WITH([symtabAPI],
     [AS_HELP_STRING([--with-symtabAPI=PATH],
 	    [path to symtabAPI install directory])],
-    [SYMTABAPI=$withval],
+    [SYMTABAPI="$withval"],
     [])
 
 AC_MSG_CHECKING([for symtabAPI])
@@ -645,8 +669,12 @@ case "$SYMTABAPI" in
 	else
 	    AC_MSG_ERROR([invalid symtabAPI directory: $SYMTABAPI])
 	fi
+	SYMTABAPI_COPY=yes
+	SYMTABAPI_RUN_DIR="$hpc_ext_libs_dir"
 	;;
     no )
+	SYMTABAPI_COPY=no
+	SYMTABAPI_RUN_DIR=no
 	;;
     * )
 	AC_MSG_ERROR([symtabAPI directory must be absolute path: $SYMTABAPI])
@@ -657,8 +685,11 @@ SYMTABAPI_INC="${SYMTABAPI}/include"
 SYMTABAPI_LIB="${SYMTABAPI}/lib"
 
 AC_MSG_RESULT([$SYMTABAPI])
+
 AC_SUBST([SYMTABAPI_INC])
 AC_SUBST([SYMTABAPI_LIB])
+AC_SUBST([SYMTABAPI_COPY])
+AC_SUBST([SYMTABAPI_RUN_DIR])
 
 
 #-------------------------------------------------
@@ -673,7 +704,7 @@ fi
 AC_ARG_WITH([xed2],
     [AS_HELP_STRING([--with-xed2=PATH],
 	    [path to xed2 install directory])],
-    [XED2=$withval],
+    [XED2="$withval"],
     [])
 
 AC_MSG_CHECKING([for xed2])
@@ -684,8 +715,12 @@ case "$XED2" in
 	else
 	    AC_MSG_ERROR([invalid xed2 directory: $XED2])
 	fi
+	XED2_COPY=yes
+	XED2_RUN_DIR="$hpc_ext_libs_dir"
 	;;
     no )
+	XED2_COPY=no
+	XED2_RUN_DIR=no
 	;;
     * )
 	AC_MSG_ERROR([xed2 directory must be absolute path: $XED2])
@@ -696,8 +731,11 @@ XED2_INC="${XED2}/include"
 XED2_LIB="${XED2}/lib"
 
 AC_MSG_RESULT([$XED2])
+
 AC_SUBST([XED2_INC])
 AC_SUBST([XED2_LIB])
+AC_SUBST([XED2_COPY])
+AC_SUBST([XED2_RUN_DIR])
 
 
 #-------------------------------------------------
@@ -727,10 +765,19 @@ AC_ARG_WITH([xerces],
 XERCES_IFLAGS="-I${XERCES}/include"
 XERCES_LDFLAGS="-L${XERCES}/lib -lxerces-c"
 
+if test "$XERCES" = no ; then
+  XERCES_COPY=no
+else
+  XERCES_COPY=yes
+  XERCES_LIB="${XERCES}/lib"
+fi
+
 AC_MSG_RESULT([${XERCES}])
 AC_SUBST([XERCES])
 AC_SUBST([XERCES_IFLAGS])
 AC_SUBST([XERCES_LDFLAGS])
+AC_SUBST([XERCES_COPY])
+AC_SUBST([XERCES_LIB])
 
 
 #-------------------------------------------------
@@ -820,7 +867,7 @@ HPC_MONITOR=
 
 if test "$use_externals" = yes ; then
   OPT_WITH_MONITOR=yes
-  OPT_INSTALL_MONITOR=no
+  OPT_INSTALL_MONITOR=yes
   MONITOR="$ext_old_monitor_prefix"
 elif test "${HOST_OS}" = "Linux"; then
   OPT_WITH_MONITOR=yes
@@ -1123,6 +1170,7 @@ rm -f "$src" "$obj"
 
 AC_SUBST([csprof_libcpp_path])
 
+
 #-------------------------------------------------
 # enable-devtools: Tools of interest to developers
 #-------------------------------------------------
@@ -1258,6 +1306,9 @@ AC_CONFIG_FILES([src/tool/csprof/scripts/hpclink],
 AC_CONFIG_FILES([src/tool/csprof/scripts/csprof_syms],
   [chmod +x src/tool/csprof/scripts/csprof_syms])
 
+AC_SUBST_FILE([export_hpctoolkit])
+export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
+
 AC_CONFIG_COMMANDS()
 
 AC_OUTPUT()
@@ -1265,9 +1316,9 @@ AC_OUTPUT()
 #
 # Summary of the config options.
 #
-AC_MSG_NOTICE([])
+AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([HPCToolkit summary])
-AC_MSG_NOTICE([---------------------------------------------------------------])
+AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  host: $host])
 AC_MSG_NOTICE([  CC, CFLAGS: $CC $CFLAGS ${HOST_CFLAGS}])

@@ -2,6 +2,7 @@
 
 symtabAPI_libdir='@SYMTABAPI_LIB@'
 libcpp_path='@csprof_libcpp_path@'
+ext_libs_dir='@hpc_ext_libs_dir@'
 
 ############ UTILITY FUNCTIONS #################
 
@@ -14,7 +15,7 @@ dbg()
 
 run_stapi_syms()
 {
-   lib_path="${libcpp_path}:${libdir}"
+   lib_path="${ext_libs_dir}:${libcpp_path}:${libdir}"
    case "$symtabAPI_libdir" in
       /* ) lib_path="${lib_path}:${symtabAPI_libdir}" ;;
    esac
@@ -39,6 +40,8 @@ else
    rootdir=`dirname ${libexecdir}`
 fi
 libdir=${rootdir}/lib
+
+ext_libs_dir="${rootdir}/${ext_libs_dir}"
 
 # output directory
 if test "$2"x == "x"; then

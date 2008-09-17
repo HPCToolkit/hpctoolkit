@@ -100,7 +100,32 @@ dist_doc_DATA = $(MYDATA)
 # Note: *-local and *-hook are special automake versions of the
 # regular target. *-hook runs *after* install has completed
 
+#
+# Copy the libraries in pattern ($3) from absolute directory ($2) to a
+# local directory below prefix, and do the copy if ($1) is 'yes'.
+# It's up to configure to decide if the library exists, whether to
+# copy it and where to put it, so we don't treat errors as fatal here.
+#
+EXT_LIBS_DIR = $(prefix)/@hpc_ext_libs_dir@
+
+define copy-libs
+    @if test "$1" = yes ; then \
+	( cd "$2" && tar cf - $3 ) | ( cd "$(EXT_LIBS_DIR)" && tar xvf - ) ; \
+	true ; \
+    fi
+endef
+
 install-data-local: myinstall-xerces myinstall-monitor
+	@echo "Copying external package libraries ..."
+	$(mkinstalldirs) "$(EXT_LIBS_DIR)"
+	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
+	$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
+	$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
+	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind*)
+	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
+	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
+	$(call copy-libs,$(XED2_COPY),$(XED2_LIB),libxed*)
+	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 
 myinstall-xerces:
 	if test 1; then \
@@ -113,22 +138,6 @@ myinstall-monitor:
 	  $(mkinstalldirs) $(MYMONITORDIR) ; \
 	  cp -R @MONITOR@/lib*/* $(MYMONITORDIR)/ ; \
 	fi
-
-
-# A list of {file ! installation directory} pairs.
-#MYSCRIPTPAIRS = \
-#	config/hpcguess!config \
-#	config/hpcplatform!config \
-#	config/config.guess!config 
-#
-#myinstall-scripts:
-#	for pair in $(MYSCRIPTPAIRS); do \
-#	  src=`echo $${pair} | awk -F'!' '{print $$1}'` ; \
-#	  dir=`echo $${pair} | awk -F'!' '{print $$2}'` ; \
-#	  destdir=$(MYINSTALLDIR)/$${dir} ; \
-#	  $(mkinstalldirs) $${destdir} ; \
-#	  $(INSTALL_SCRIPT) $(srcdir)/$${src} $${destdir} ; \
-#	done
 
 .PHONY : myinstall-xerces myinstall-monitor
 
