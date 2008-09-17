@@ -130,13 +130,13 @@ install-data-local: myinstall-xerces myinstall-monitor
 myinstall-xerces:
 	if test 1; then \
 	  $(mkinstalldirs) $(MYXERCESCDIR) ; \
-	  cp -R @XERCES@/lib/* $(MYXERCESCDIR)/ ; \
+	  cp -R @XERCES@/lib/libxerces* $(MYXERCESCDIR)/ ; \
 	fi
 
 myinstall-monitor:
 	if test "@OPT_INSTALL_MONITOR@" = "yes"; then \
 	  $(mkinstalldirs) $(MYMONITORDIR) ; \
-	  cp -R @MONITOR@/lib*/* $(MYMONITORDIR)/ ; \
+	  cp -R @MONITOR@/lib*/libmonitor* $(MYMONITORDIR)/ ; \
 	fi
 
 .PHONY : myinstall-xerces myinstall-monitor
