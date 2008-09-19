@@ -50,24 +50,20 @@
 
 #############################################################################
 
+# If this script can't find its own install prefix, or if the script
+# is moved elsewhere, then set HPCTOOLKIT here.
+# HPCTOOLKIT=/path/to/install/prefix
+
+# Relative paths are relative to HPCTOOLKIT.
+csprof_syms_dir='libexec/hpctoolkit'
+libcsprof_dir='lib/hpctoolkit'
+libmonitor_dir='@LIBMONITOR_RUN_DIR@'
+papi_libdir='@OPT_PAPI_LIBPATH@'
+
 # umask -S g=rwx,o=rwx # temporary check
 # umask -S -p # see change
 
 ulimit_works='' # default to NO on jacquard
-
-CSPROF_VERSION="1.0"
-
-CSPROF_DIR="`dirname $0`"
-if test ${CSPROF_DIR}x == "$0"x; then
-   CSPROF_DIR=.
-fi
-if test ${CSPROF_DIR} == "."; then
-   CSPROF_ROOT=..
-else
-   CSPROF_ROOT=`dirname ${CSPROF_DIR}`
-fi
-CSPROF_LIB=${CSPROF_ROOT}/lib/hpctoolkit
-CSPROF_LIBEXEC=${CSPROF_ROOT}/libexec/hpctoolkit
 
 # One can set personal defaults here, instead of changing source code.
 # These values will be overriden by commandline options.
@@ -96,19 +92,25 @@ cmd_to_profile=""
 
 cmd="$0"
 
-ext_libs_dir='@hpc_ext_libs_dir@'
-monitor_dir='@LIBMONITOR_RUN_DIR@'
-papi_prefix='@OPT_PAPI@'
-papi_libdir='@OPT_PAPI_LIBPATH@'
+hpc_path_to_root=..
+@export_hpctoolkit@
 
-# Relative paths are relative to CSPROF_ROOT.
-case "$ext_libs_dir" in
+# Relative paths are relative to HPCTOOLKIT.
+case "$csprof_syms_dir" in
   /* ) ;;
-  * ) ext_libs_dir="${CSPROF_ROOT}/${ext_libs_dir}" ;;
+  * ) csprof_syms_dir="${HPCTOOLKIT}/${csprof_syms_dir}" ;;
 esac
-case "$monitor_dir" in
+case "$libcsprof_dir" in
   /* ) ;;
-  * ) monitor_dir="${CSPROF_ROOT}/${monitor_dir}" ;;
+  * ) libcsprof_dir="${HPCTOOLKIT}/${libcsprof_dir}" ;;
+esac
+case "$libmonitor_dir" in
+  /* ) ;;
+  * ) libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
+esac
+case "$papi_libdir" in
+  /* ) ;;
+  * ) papi_libdir="${HPCTOOLKIT}/${papi_libdir}" ;;
 esac
 
 f_usage()
@@ -162,7 +164,7 @@ EOF
 
 f_checkenv()
 {
-  RLD_LIB="${CSPROF_LIB}/libcsprof.so.0:${monitor_dir}/libmonitor.so"
+  RLD_LIB="${libcsprof_dir}/libcsprof.so:${libmonitor_dir}/libmonitor.so"
 
   # preload our library first before loading all of those specified in
   # the application binary (signified by DEFAULT).
@@ -274,7 +276,7 @@ f_prepareenv()
     export LD_PRELOAD
   fi
 
-  export CSPROF_NM_COMMAND="${CSPROF_LIBEXEC}/csprof_syms"
+  export CSPROF_NM_COMMAND="${csprof_syms_dir}/csprof_syms"
 
   # export profiler options
   if [ -n "${opt_lush_agents}" ]; then
@@ -323,7 +325,7 @@ f_prepareenv()
   export PATH=".:${PATH}" 
 
   # set up the LD_LIBRARY_PATH
-  case "$papi_prefix" in
+  case "$papi_libdir" in
       /* )
 	  LD_LIBRARY_PATH="${papi_libdir}:$LD_LIBRARY_PATH"
 	  ;;
