@@ -59,7 +59,7 @@ build_triplet = @build@
 host_triplet = @host@
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config TODO
-libexec_PROGRAMS = libcsprof.o$(EXEEXT)
+pkglib_PROGRAMS = libcsprof.o$(EXEEXT)
 @HOST_OS_LINUX_TRUE@am__append_1 = $(CSPROF_LINUX_DYNAMIC_FILES)
 @HOST_CPU_PPC_TRUE@am__append_2 = $(CSPROF_PPC_FILES)
 @HOST_CPU_PPC_TRUE@am__append_3 = $(CSPROF_PPC_FILES)
@@ -94,12 +94,10 @@ am__vpath_adj = case $$p in \
     *) f=$$p;; \
   esac;
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkglibdir)" \
-	"$(DESTDIR)$(libexecdir)" "$(DESTDIR)$(bindir)" \
-	"$(DESTDIR)$(libexecdir)"
-libLTLIBRARIES_INSTALL = $(INSTALL)
+am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)" \
+	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkglibexecdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
-LTLIBRARIES = $(lib_LTLIBRARIES) $(pkglib_LTLIBRARIES)
+LTLIBRARIES = $(pkglib_LTLIBRARIES)
 libagent_cilk_la_LIBADD =
 am__libagent_cilk_la_SOURCES_DIST = lush-agents/agent-cilk.h \
 	lush-agents/agent-cilk.c lush/lush-support-rt.h \
@@ -183,8 +181,8 @@ libcsprof_la_OBJECTS = $(am_libcsprof_la_OBJECTS)
 libcsprof_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libcsprof_la_CFLAGS) \
 	$(CFLAGS) $(libcsprof_la_LDFLAGS) $(LDFLAGS) -o $@
-libexecPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
-PROGRAMS = $(libexec_PROGRAMS)
+pkglibPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
+PROGRAMS = $(pkglib_PROGRAMS)
 am__libcsprof_o_SOURCES_DIST = utilities/first_func.c \
 	all_sample_sources.c common.sample_source.c csprof_options.c \
 	csproflib.c data.c env.c epoch.c files.c handling_sample.c \
@@ -263,8 +261,8 @@ libcsprof_o_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libcsprof_o_CFLAGS) \
 	$(CFLAGS) $(libcsprof_o_LDFLAGS) $(LDFLAGS) -o $@
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
-libexecSCRIPT_INSTALL = $(INSTALL_SCRIPT)
-SCRIPTS = $(bin_SCRIPTS) $(libexec_SCRIPTS)
+pkglibexecSCRIPT_INSTALL = $(INSTALL_SCRIPT)
+SCRIPTS = $(bin_SCRIPTS) $(pkglibexec_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -473,6 +471,10 @@ HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
 HPC_LIBISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglib_LTLIBRARIES = libcsprof.la $(am__append_20)
+bin_SCRIPTS = scripts/hpcrun scripts/hpclink
+pkglibexec_SCRIPTS = scripts/csprof_syms
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
@@ -578,12 +580,6 @@ CSPROF_X86_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
 
-
-# FIXME: tallent: added empty pkglib
-pkglib_LTLIBRARIES = $(am__append_20)
-lib_LTLIBRARIES = libcsprof.la
-bin_SCRIPTS = scripts/hpcrun scripts/hpclink
-libexec_SCRIPTS = scripts/csprof_syms
 libcsprof_la_SOURCES = $(CSPROF_BASE_FILES) $(CSPROF_DYNAMIC_FILES) \
 	$(am__append_1) $(am__append_2) $(am__append_8) \
 	$(am__append_14) utilities/last_func.c
@@ -651,33 +647,6 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-install-libLTLIBRARIES: $(lib_LTLIBRARIES)
-	@$(NORMAL_INSTALL)
-	test -z "$(libdir)" || $(MKDIR_P) "$(DESTDIR)$(libdir)"
-	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
-	  if test -f $$p; then \
-	    f=$(am__strip_dir) \
-	    echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(libLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) '$$p' '$(DESTDIR)$(libdir)/$$f'"; \
-	    $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(libLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) "$$p" "$(DESTDIR)$(libdir)/$$f"; \
-	  else :; fi; \
-	done
-
-uninstall-libLTLIBRARIES:
-	@$(NORMAL_UNINSTALL)
-	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
-	  p=$(am__strip_dir) \
-	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(libdir)/$$p'"; \
-	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(libdir)/$$p"; \
-	done
-
-clean-libLTLIBRARIES:
-	-test -z "$(lib_LTLIBRARIES)" || rm -f $(lib_LTLIBRARIES)
-	@list='$(lib_LTLIBRARIES)'; for p in $$list; do \
-	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
-	  test "$$dir" != "$$p" || dir=.; \
-	  echo "rm -f \"$${dir}/so_locations\""; \
-	  rm -f "$${dir}/so_locations"; \
-	done
 install-pkglibLTLIBRARIES: $(pkglib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
 	test -z "$(pkglibdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibdir)"
@@ -708,31 +677,31 @@ clean-pkglibLTLIBRARIES:
 libagent-cilk.la: $(libagent_cilk_la_OBJECTS) $(libagent_cilk_la_DEPENDENCIES) 
 	$(libagent_cilk_la_LINK) $(am_libagent_cilk_la_rpath) $(libagent_cilk_la_OBJECTS) $(libagent_cilk_la_LIBADD) $(LIBS)
 libcsprof.la: $(libcsprof_la_OBJECTS) $(libcsprof_la_DEPENDENCIES) 
-	$(libcsprof_la_LINK) -rpath $(libdir) $(libcsprof_la_OBJECTS) $(libcsprof_la_LIBADD) $(LIBS)
-install-libexecPROGRAMS: $(libexec_PROGRAMS)
+	$(libcsprof_la_LINK) -rpath $(pkglibdir) $(libcsprof_la_OBJECTS) $(libcsprof_la_LIBADD) $(LIBS)
+install-pkglibPROGRAMS: $(pkglib_PROGRAMS)
 	@$(NORMAL_INSTALL)
-	test -z "$(libexecdir)" || $(MKDIR_P) "$(DESTDIR)$(libexecdir)"
-	@list='$(libexec_PROGRAMS)'; for p in $$list; do \
+	test -z "$(pkglibdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibdir)"
+	@list='$(pkglib_PROGRAMS)'; for p in $$list; do \
 	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
 	  if test -f $$p \
 	     || test -f $$p1 \
 	  ; then \
 	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
-	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(libexecPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(libexecdir)/$$f'"; \
-	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(libexecPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(libexecdir)/$$f" || exit 1; \
+	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(pkglibPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(pkglibdir)/$$f'"; \
+	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(pkglibPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(pkglibdir)/$$f" || exit 1; \
 	  else :; fi; \
 	done
 
-uninstall-libexecPROGRAMS:
+uninstall-pkglibPROGRAMS:
 	@$(NORMAL_UNINSTALL)
-	@list='$(libexec_PROGRAMS)'; for p in $$list; do \
+	@list='$(pkglib_PROGRAMS)'; for p in $$list; do \
 	  f=`echo "$$p" | sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
-	  echo " rm -f '$(DESTDIR)$(libexecdir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(libexecdir)/$$f"; \
+	  echo " rm -f '$(DESTDIR)$(pkglibdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(pkglibdir)/$$f"; \
 	done
 
-clean-libexecPROGRAMS:
-	@list='$(libexec_PROGRAMS)'; for p in $$list; do \
+clean-pkglibPROGRAMS:
+	@list='$(pkglib_PROGRAMS)'; for p in $$list; do \
 	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
@@ -759,24 +728,24 @@ uninstall-binSCRIPTS:
 	  echo " rm -f '$(DESTDIR)$(bindir)/$$f'"; \
 	  rm -f "$(DESTDIR)$(bindir)/$$f"; \
 	done
-install-libexecSCRIPTS: $(libexec_SCRIPTS)
+install-pkglibexecSCRIPTS: $(pkglibexec_SCRIPTS)
 	@$(NORMAL_INSTALL)
-	test -z "$(libexecdir)" || $(MKDIR_P) "$(DESTDIR)$(libexecdir)"
-	@list='$(libexec_SCRIPTS)'; for p in $$list; do \
+	test -z "$(pkglibexecdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibexecdir)"
+	@list='$(pkglibexec_SCRIPTS)'; for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
 	  if test -f $$d$$p; then \
 	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	    echo " $(libexecSCRIPT_INSTALL) '$$d$$p' '$(DESTDIR)$(libexecdir)/$$f'"; \
-	    $(libexecSCRIPT_INSTALL) "$$d$$p" "$(DESTDIR)$(libexecdir)/$$f"; \
+	    echo " $(pkglibexecSCRIPT_INSTALL) '$$d$$p' '$(DESTDIR)$(pkglibexecdir)/$$f'"; \
+	    $(pkglibexecSCRIPT_INSTALL) "$$d$$p" "$(DESTDIR)$(pkglibexecdir)/$$f"; \
 	  else :; fi; \
 	done
 
-uninstall-libexecSCRIPTS:
+uninstall-pkglibexecSCRIPTS:
 	@$(NORMAL_UNINSTALL)
-	@list='$(libexec_SCRIPTS)'; for p in $$list; do \
+	@list='$(pkglibexec_SCRIPTS)'; for p in $$list; do \
 	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	  echo " rm -f '$(DESTDIR)$(libexecdir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(libexecdir)/$$f"; \
+	  echo " rm -f '$(DESTDIR)$(pkglibexecdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(pkglibexecdir)/$$f"; \
 	done
 
 mostlyclean-compile:
@@ -2164,7 +2133,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS)
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(libexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libexecdir)"; do \
+	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkglibexecdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -2193,8 +2162,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libLTLIBRARIES clean-libexecPROGRAMS \
-	clean-libtool clean-pkglibLTLIBRARIES mostlyclean-am
+clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
+	clean-pkglibPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -2216,9 +2185,8 @@ install-data-am:
 
 install-dvi: install-dvi-am
 
-install-exec-am: install-binSCRIPTS install-libLTLIBRARIES \
-	install-libexecPROGRAMS install-libexecSCRIPTS \
-	install-pkglibLTLIBRARIES
+install-exec-am: install-binSCRIPTS install-pkglibLTLIBRARIES \
+	install-pkglibPROGRAMS install-pkglibexecSCRIPTS
 
 install-html: install-html-am
 
@@ -2250,30 +2218,27 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binSCRIPTS uninstall-libLTLIBRARIES \
-	uninstall-libexecPROGRAMS uninstall-libexecSCRIPTS \
-	uninstall-pkglibLTLIBRARIES
+uninstall-am: uninstall-binSCRIPTS uninstall-pkglibLTLIBRARIES \
+	uninstall-pkglibPROGRAMS uninstall-pkglibexecSCRIPTS
 
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libLTLIBRARIES clean-libexecPROGRAMS clean-libtool \
-	clean-pkglibLTLIBRARIES ctags distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-binSCRIPTS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am \
-	install-libLTLIBRARIES install-libexecPROGRAMS \
-	install-libexecSCRIPTS install-man install-pdf install-pdf-am \
-	install-pkglibLTLIBRARIES install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binSCRIPTS uninstall-libLTLIBRARIES \
-	uninstall-libexecPROGRAMS uninstall-libexecSCRIPTS \
-	uninstall-pkglibLTLIBRARIES
+	clean-libtool clean-pkglibLTLIBRARIES clean-pkglibPROGRAMS \
+	ctags distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-binSCRIPTS \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-pkglibLTLIBRARIES \
+	install-pkglibPROGRAMS install-pkglibexecSCRIPTS install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-binSCRIPTS uninstall-pkglibLTLIBRARIES \
+	uninstall-pkglibPROGRAMS uninstall-pkglibexecSCRIPTS
 
 
 #############################################################################

@@ -32,7 +32,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-libexec_PROGRAMS = stapi_syms$(EXEEXT)
+pkglibexec_PROGRAMS = stapi_syms$(EXEEXT)
 @HOST_CPU_X86_TRUE@am__append_1 = x86-process-ranges.cpp
 @HOST_CPU_X86_TRUE@am__append_2 = -I$(XED2_INC)
 @HOST_CPU_X86_TRUE@am__append_3 = $(XED2_LIB)/libxed.a
@@ -46,9 +46,9 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(libexecdir)"
-libexecPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
-PROGRAMS = $(libexec_PROGRAMS)
+am__installdirs = "$(DESTDIR)$(pkglibexecdir)"
+pkglibexecPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
+PROGRAMS = $(pkglibexec_PROGRAMS)
 am__stapi_syms_SOURCES_DIST = code-ranges.cpp function-entries.cpp \
 	intervals.cpp symbols.cpp x86-process-ranges.cpp \
 	generic-process-ranges.cpp
@@ -245,6 +245,7 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
 SYMBOLS_BASE_FILES = \
     code-ranges.cpp		\
     function-entries.cpp	\
@@ -291,30 +292,30 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-install-libexecPROGRAMS: $(libexec_PROGRAMS)
+install-pkglibexecPROGRAMS: $(pkglibexec_PROGRAMS)
 	@$(NORMAL_INSTALL)
-	test -z "$(libexecdir)" || $(MKDIR_P) "$(DESTDIR)$(libexecdir)"
-	@list='$(libexec_PROGRAMS)'; for p in $$list; do \
+	test -z "$(pkglibexecdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibexecdir)"
+	@list='$(pkglibexec_PROGRAMS)'; for p in $$list; do \
 	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
 	  if test -f $$p \
 	     || test -f $$p1 \
 	  ; then \
 	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
-	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(libexecPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(libexecdir)/$$f'"; \
-	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(libexecPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(libexecdir)/$$f" || exit 1; \
+	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(pkglibexecPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(pkglibexecdir)/$$f'"; \
+	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(pkglibexecPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(pkglibexecdir)/$$f" || exit 1; \
 	  else :; fi; \
 	done
 
-uninstall-libexecPROGRAMS:
+uninstall-pkglibexecPROGRAMS:
 	@$(NORMAL_UNINSTALL)
-	@list='$(libexec_PROGRAMS)'; for p in $$list; do \
+	@list='$(pkglibexec_PROGRAMS)'; for p in $$list; do \
 	  f=`echo "$$p" | sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
-	  echo " rm -f '$(DESTDIR)$(libexecdir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(libexecdir)/$$f"; \
+	  echo " rm -f '$(DESTDIR)$(pkglibexecdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(pkglibexecdir)/$$f"; \
 	done
 
-clean-libexecPROGRAMS:
-	@list='$(libexec_PROGRAMS)'; for p in $$list; do \
+clean-pkglibexecPROGRAMS:
+	@list='$(pkglibexec_PROGRAMS)'; for p in $$list; do \
 	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
@@ -524,7 +525,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(PROGRAMS)
 installdirs:
-	for dir in "$(DESTDIR)$(libexecdir)"; do \
+	for dir in "$(DESTDIR)$(pkglibexecdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -553,7 +554,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libexecPROGRAMS clean-libtool \
+clean-am: clean-generic clean-libtool clean-pkglibexecPROGRAMS \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -576,7 +577,7 @@ install-data-am:
 
 install-dvi: install-dvi-am
 
-install-exec-am: install-libexecPROGRAMS
+install-exec-am: install-pkglibexecPROGRAMS
 
 install-html: install-html-am
 
@@ -608,23 +609,23 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-libexecPROGRAMS
+uninstall-am: uninstall-pkglibexecPROGRAMS
 
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libexecPROGRAMS clean-libtool ctags distclean \
+	clean-libtool clean-pkglibexecPROGRAMS ctags distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-dvi \
 	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am \
-	install-libexecPROGRAMS install-man install-pdf install-pdf-am \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-pkglibexecPROGRAMS \
 	install-ps install-ps-am install-strip installcheck \
 	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-libexecPROGRAMS
+	tags uninstall uninstall-am uninstall-pkglibexecPROGRAMS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

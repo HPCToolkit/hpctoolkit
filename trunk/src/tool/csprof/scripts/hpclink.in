@@ -20,10 +20,12 @@
 # HPCTOOLKIT=/path/to/install/prefix
 
 # Relative paths are relative to HPCTOOLKIT.
-ext_pkg_libs='@hpc_ext_libs_dir@'
+ext_libs_dir='@hpc_ext_libs_dir@'
+libcsprof_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 papi_dir='@OPT_PAPI_LIBPATH@'
 papi_extra_libs='@papi_extra_libs@'
+stapi_syms_dir='libexec/hpctoolkit'
 xed2_dir='@XED2_RUN_DIR@'
 
 # FIXME: The wrap list should come from monitor.
@@ -70,9 +72,13 @@ hpc_path_to_root=..
 @export_hpctoolkit@
 
 # Relative paths are relative to HPCTOOLKIT.
-case "$ext_pkg_libs" in
+case "$ext_libs_dir" in
     /* ) ;;
-    * )  ext_pkg_libs="${HPCTOOLKIT}/${ext_pkg_libs}" ;;
+    * )  ext_libs_dir="${HPCTOOLKIT}/${ext_libs_dir}" ;;
+esac
+case "$libcsprof_dir" in
+    /* ) ;;
+    * )  libcsprof_dir="${HPCTOOLKIT}/${libcsprof_dir}" ;;
 esac
 case "$libmonitor_dir" in
     /* ) ;;
@@ -82,17 +88,19 @@ case "$papi_dir" in
     /* ) ;;
     * )  papi_dir="${HPCTOOLKIT}/${papi_dir}" ;;
 esac
+case "$stapi_syms_dir" in
+    /* ) ;;
+    * )  stapi_syms_dir="${HPCTOOLKIT}/${stapi_syms_dir}" ;;
+esac
 case "$libxed2_dir" in
     /* ) ;;
     * )  libxed2_dir="${HPCTOOLKIT}/${libxed2_dir}" ;;
 esac
 
-libcsprof_dir="${HPCTOOLKIT}/libexec"
-stapi="${HPCTOOLKIT}/libexec/stapi_syms"
-
+stapi="${stapi_syms_dir}/stapi_syms"
 test -x "$stapi" || die "missing stapi_syms: $stapi"
 
-LD_LIBRARY_PATH="${ext_pkg_libs}:${LD_LIBRARY_PATH}"
+LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
 export LD_LIBRARY_PATH
 
 #

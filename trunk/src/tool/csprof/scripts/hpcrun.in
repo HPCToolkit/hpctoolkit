@@ -66,8 +66,8 @@ if test ${CSPROF_DIR} == "."; then
 else
    CSPROF_ROOT=`dirname ${CSPROF_DIR}`
 fi
-CSPROF_LIB=${CSPROF_ROOT}/lib
-CSPROF_LIBEXEC=${CSPROF_ROOT}/libexec
+CSPROF_LIB=${CSPROF_ROOT}/lib/hpctoolkit
+CSPROF_LIBEXEC=${CSPROF_ROOT}/libexec/hpctoolkit
 
 # One can set personal defaults here, instead of changing source code.
 # These values will be overriden by commandline options.

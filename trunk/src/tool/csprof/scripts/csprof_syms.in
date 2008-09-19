@@ -1,8 +1,11 @@
 #!/bin/sh
 
-symtabAPI_libdir='@SYMTABAPI_LIB@'
-libcpp_path='@csprof_libcpp_path@'
+# Relative paths are relative to HPCTOOLKIT.
 ext_libs_dir='@hpc_ext_libs_dir@'
+stapi_syms_dir='libexec/hpctoolkit'
+
+# Should be absolute path.
+libcpp_path='@csprof_libcpp_path@'
 
 ############ UTILITY FUNCTIONS #################
 
@@ -15,12 +18,10 @@ dbg()
 
 run_stapi_syms()
 {
-   lib_path="${ext_libs_dir}:${libcpp_path}:${libdir}"
-   case "$symtabAPI_libdir" in
-      /* ) lib_path="${lib_path}:${symtabAPI_libdir}" ;;
-   esac
-   if LD_LIBRARY_PATH=${lib_path} ${libexecdir}/stapi_syms $1 > ${prog_file}; then
-     success=1 # effectively a no-op
+   lib_path="${ext_libs_dir}:${libcpp_path}"
+
+   if LD_LIBRARY_PATH="$lib_path" "${stapi_syms_dir}/stapi_syms" $1 > "$prog_file"
+   then :
    else
      rm -f $prog_file
    fi
@@ -29,19 +30,20 @@ run_stapi_syms()
 
 ############ MAIN CODE ###################
 
-libexecdir=`dirname $0`
-base=`basename $1`
-if test ${libexecdir}x == "$0"x; then
-   libexecdir=.
-fi
-if test ${libexecdir} == "."; then
-   rootdir=..
-else
-   rootdir=`dirname ${libexecdir}`
-fi
-libdir=${rootdir}/lib
+hpc_path_to_root=../..
+@export_hpctoolkit@
 
-ext_libs_dir="${rootdir}/${ext_libs_dir}"
+# Relative paths are relative to HPCTOOLKIT.
+case "$ext_libs_dir" in
+    /* ) ;;
+    * )  ext_libs_dir="${HPCTOOLKIT}/${ext_libs_dir}" ;;
+esac
+case "$stapi_syms_dir" in
+    /* ) ;;
+    * )  stapi_syms_dir="${HPCTOOLKIT}/${stapi_syms_dir}" ;;
+esac
+
+base=`basename $1`
 
 # output directory
 if test "$2"x == "x"; then
