@@ -4,12 +4,14 @@
 ##  $Id$
 ##
 
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
+
+pkglibexec_PROGRAMS = stapi_syms
+
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_LIB = @LIBELF_LIB@
-
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
-
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
@@ -18,8 +20,6 @@ SYMBOLS_BASE_FILES = 		\
     function-entries.cpp	\
     intervals.cpp		\
     symbols.cpp
-
-libexec_PROGRAMS = stapi_syms
 
 stapi_syms_SOURCES = $(SYMBOLS_BASE_FILES)
 

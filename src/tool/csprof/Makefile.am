@@ -6,14 +6,18 @@
 
 include $(top_srcdir)/src/Makeinclude.config
 
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
+
+pkglib_LTLIBRARIES = libcsprof.la
+pkglib_PROGRAMS = libcsprof.o
+bin_SCRIPTS = scripts/hpcrun scripts/hpclink
+pkglibexec_SCRIPTS = scripts/csprof_syms
+
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
-
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =  @OPT_PAPI_LDFLAGS@
-
 SYMTABAPI_INC =  @SYMTABAPI_INC@
-
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
@@ -120,14 +124,6 @@ CSPROF_X86_INCLUDE_DIRS =		\
 	-I$(srcdir)/processor/x86-64	\
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
-
-# FIXME: tallent: added empty pkglib
-pkglib_LTLIBRARIES =
-lib_LTLIBRARIES = libcsprof.la
-libexec_PROGRAMS = libcsprof.o
-
-bin_SCRIPTS = scripts/hpcrun scripts/hpclink
-libexec_SCRIPTS = scripts/csprof_syms
 
 libcsprof_la_SOURCES = 			\
 	$(CSPROF_BASE_FILES)		\
