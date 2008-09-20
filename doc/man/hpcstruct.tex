@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/07/09}
+\setDate{ 2008/09/20}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -131,10 +131,12 @@ To do this, execute:
 \item For best results, an application binary should be compiled with debugging information.
 To generate debugging information while also enabling optimizations, use the appropriate variant of \verb+-g+ for the following compilers:
 \begin{itemize}
-\item GNU, Intel and PathScale compilers: \verb+-g+
+\item GNU compilers: \verb+-g+
+\item Intel compilers: \verb+-g -debug inline_debug_info+
+\item PathScale compilers: \verb+-g+
 \item PGI compilers: \verb+-gopt+
-\item Compaq and SGI MIPSpro compilers: \verb+-g3+
-\item Sun Compilers: \verb+-g -xs+
+%\item Compaq and SGI MIPSpro compilers: \verb+-g3+
+%\item Sun Compilers: \verb+-g -xs+
 \end{itemize}
 
 \item While \Prog{hpcstruct} attempts to guard against inaccurate debugging information, some compilers (notably PGI's) often generate invalid and inconsistent debugging information.
