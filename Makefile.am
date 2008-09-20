@@ -57,9 +57,7 @@ AUTOMAKE_OPTIONS = foreign
 
 MYDATA = \
 	README \
-	README.Contact \
-	README.Index \
-	README.License
+	README.License \
 	README.ReleaseNotes
 
 MYSCRIPTS = \

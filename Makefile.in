@@ -278,9 +278,8 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 MYDATA = \
 	README \
-	README.Contact \
-	README.Index \
-	README.License
+	README.License \
+	README.ReleaseNotes
 
 MYSCRIPTS = \
 	Sourceme-csh \
@@ -816,7 +815,6 @@ uninstall-am: uninstall-dist_docDATA uninstall-pkglibexecSCRIPTS
 	ps ps-am tags tags-recursive uninstall uninstall-am \
 	uninstall-dist_docDATA uninstall-pkglibexecSCRIPTS
 
-	README.ReleaseNotes
 
 define copy-libs
     @if test "$1" = yes ; then \
