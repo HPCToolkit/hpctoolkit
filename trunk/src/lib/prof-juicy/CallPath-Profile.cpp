@@ -240,7 +240,12 @@ Profile::make(const char* fnm)
   }
   epoch_table__free_data(&epochtbl, hpcfile_free_CB);
 
-  epoch->compute_relocAmt();
+  try {
+    epoch->compute_relocAmt();
+  }
+  catch (const Diagnostics::Exception& x) {
+    DIAG_EMsg("While reading profile '" << fnm << "': Cannot fully process samples from unavailable load modules:\n" << x.what());
+  }
   prof->epoch(epoch);
 
   // ------------------------------------------------------------

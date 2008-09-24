@@ -103,7 +103,7 @@ public:
       { m_name = x; }
     void name(const char* x) 
       { m_name = (x) ? x: ""; }
-    
+
     VMA loadAddr() const 
       { return m_loadAddr; }
     void loadAddr(VMA x) 
@@ -114,6 +114,14 @@ public:
     void size(size_t x) 
       { m_size = x; }
 
+    // isAvail: this Epoch::LM is active in the sense that the
+    // associated load module is available and relocation information
+    // is accurate.
+    const bool isAvail() const
+      { return m_isAvail; }
+    void isAvail(bool x)
+      { m_isAvail = x; }
+
     // relocate_VMA - relocAmt() = unrelocated_VMA
     VMA relocAmt() const
       { return m_relocAmt; }
@@ -122,6 +130,8 @@ public:
     
     void compute_relocAmt();
 
+
+    // isUsed: does this this Epoch::LM have data in the CCT
     // tallent: FIXME: should not be located here
     bool isUsed() const { return m_isUsed; }
     void isUsed(bool x) { m_isUsed = x; }
@@ -141,6 +151,7 @@ public:
     std::string m_name;
     VMA m_loadAddr;
     size_t m_size;
+    size_t m_isAvail;
 
     VMA m_relocAmt;
     

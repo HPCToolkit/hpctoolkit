@@ -135,8 +135,19 @@ Epoch::lm_find(VMA ip) const
 void 
 Epoch::compute_relocAmt()
 {
+  std::string errors;
+
   for (uint i = 0; i < lm_size(); ++i) {
-    lm(i)->compute_relocAmt();
+    try {
+      lm(i)->compute_relocAmt();
+    }
+    catch (const Diagnostics::Exception& x) {
+      errors += "  " + x.what();
+    }
+  }
+  
+  if (!errors.empty()) {
+    DIAG_Throw(errors);
   }
 }
 
@@ -171,6 +182,8 @@ Epoch::merge(const Epoch& y)
       lm_insert(x_lm);
       mergeChg.push_back(MergeChange(y_lm->id(), x_lm->id()));
     }
+
+    DIAG_Assert(x_lm->isAvail() == y_lm->isAvail(), "Epoch::merge: two Epoch::LM of the same name must both be (un)available: " << x_lm->name());
 
     x_lm->isUsedMrg(y_lm->isUsed());
   }
@@ -214,7 +227,8 @@ Epoch::ddump() const
 
 Epoch::LM::LM(const char* nm, VMA loadAddr, size_t size)
   : m_id(LM_id_NULL), m_name((nm) ? nm: ""), 
-    m_loadAddr(loadAddr), m_size(size),
+    m_loadAddr(loadAddr), m_size(size), 
+    m_isAvail(true),
     m_relocAmt(0),
     m_isUsed(false)
 {
@@ -229,8 +243,8 @@ Epoch::LM::~LM()
 void 
 Epoch::LM::compute_relocAmt()
 {
+  binutils::LM* lm = new binutils::LM();
   try {
-    binutils::LM* lm = new binutils::LM();
     lm->open(m_name.c_str());
     if (lm->doUnrelocate(m_loadAddr)) {
       m_relocAmt = m_loadAddr;
@@ -238,8 +252,9 @@ Epoch::LM::compute_relocAmt()
     delete lm;
   }
   catch (...) {
-    DIAG_EMsg("While reading '" << m_name << "'...");
-    throw;
+    delete lm;
+    m_isAvail = false;
+    DIAG_Throw("Cannot open '" << m_name << "'");
   }
 }
 

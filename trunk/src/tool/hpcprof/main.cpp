@@ -154,7 +154,8 @@ realmain(int argc, char* const* argv)
 	 it != epoch->lm_end(); ++it) {
       Prof::Epoch::LM* epoch_lm = *it;
 
-      if (epoch_lm->isUsed()) { // FIXME
+      // tallent (FIXME): See note on Epoch::LM::isUsed()
+      if (epoch_lm->isAvail() && epoch_lm->isUsed()) {
 	const string& lm_fnm = epoch_lm->name();
 	Prof::Struct::LM* lmStrct = NULL;
 	if (structure) {

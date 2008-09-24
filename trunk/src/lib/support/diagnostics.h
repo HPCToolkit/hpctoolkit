@@ -176,7 +176,7 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 
 
 #define DIAG_WMsgIf(ifexpr, streamArgs)                              \
-  DIAG_MsgIf_GENERIC("warning: ", ifexpr, streamArgs)
+  DIAG_MsgIf_GENERIC("WARNING: ", ifexpr, streamArgs)
 
 #define DIAG_WMsgIfCtd(ifexpr, streamArgs)                           \
   DIAG_MsgIf_GENERIC("", ifexpr, streamArgs)
@@ -186,7 +186,7 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 
 
 #define DIAG_EMsg(streamArgs)                                       \
-  { DIAG_CERR << "error: " << streamArgs << DIAG_ENDL;              \
+  { DIAG_CERR << "ERROR: " << streamArgs << DIAG_ENDL;              \
     if (DIAG_DBG_LVL_PUB) {                                         \
       DIAG_CERR << "\t[" << __FILE__ << ":" << __LINE__ << "]" << DIAG_ENDL; } \
   }
@@ -239,7 +239,7 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
     fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
 
 #define DIAG_EMsg(...)                                              \
-  { fputs("error: ", stderr);                                       \
+  { fputs("ERROR: ", stderr);                                       \
     fprintf(stderr, __VA_ARGS__); fputs("\n", stderr);              \
     if (DIAG_DBG_LVL_PUB) {                                         \
       fprintf(stderr, "\t[%s:%d]\n", __FILE__, __LINE__); }         \
