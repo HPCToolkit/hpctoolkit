@@ -75,7 +75,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [TRUNK-4.9.1=1605], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([hpctoolkit], [TRUNK-4.9.1=1620], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -139,12 +139,19 @@ HPC_ENSURE_DEFINED_CFLAGS()
 # Check for programs.
 # Note: libtool makes PROG_RANLIB obsolete
 AC_PROG_LIBTOOL()
+
 AC_PROG_CXX(HPC_CXX_LIST)
+
 AC_PROG_CC(HPC_CC_LIST)
-AC_PROG_CC_STDC()
+AC_PROG_CC_C99()
+if test "${ac_cv_prog_cc_c99}" = "no" ; then
+  AC_MSG_ERROR([${CC} ${CFLAGS} does not support C99 mode!])
+fi
+AM_PROG_CC_C_O()
+
 AC_PROG_CXXCPP()
+
 AC_PROG_INSTALL()
-AM_PROG_CC_C_O
 
 AC_MSG_NOTICE([INFO: ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
 AC_MSG_NOTICE([INFO: ac_prog: CC=${CC} CFLAGS=${CFLAGS}])
