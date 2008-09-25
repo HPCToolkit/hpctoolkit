@@ -543,6 +543,10 @@ public:
   { return s_nextUniqueId + 1; }
 
   static uint 
+  maxId()
+  { return s_uniqueIdMax; }
+
+  static uint 
   getNextStructureId() 
   { return s_nextUniqueId--; }
   
@@ -551,10 +555,12 @@ private:
   StringToProcFrameMap m_frameMap;
 
   static uint s_nextUniqueId;
+
+  // tallent: hpcviewer (Java) requires that this be INT_MAX or LONG_MAX
+  static const uint s_uniqueIdMax = INT_MAX;
 };
 
-uint StaticStructureMgr::s_nextUniqueId = UINT_MAX;
-
+uint StaticStructureMgr::s_nextUniqueId = StaticStructureMgr::s_uniqueIdMax;
 
 
 void 
@@ -588,7 +594,7 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
   inferCallFrames(prof, cct->root(), epoch_lm, frameMgr);
 
   DIAG_Assert(Prof::Struct::ANode::maxId() < StaticStructureMgr::minId(), 
-	      "There are more than " << UINT_MAX << " structure nodes!");
+	      "There are more than " << StaticStructureMgr::maxId() << " structure nodes!");
 }
 
 
