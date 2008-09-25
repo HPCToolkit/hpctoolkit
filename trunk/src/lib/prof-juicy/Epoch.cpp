@@ -142,7 +142,7 @@ Epoch::compute_relocAmt()
       lm(i)->compute_relocAmt();
     }
     catch (const Diagnostics::Exception& x) {
-      errors += "  " + x.what();
+      errors += "  " + x.what() + "\n";
     }
   }
   
