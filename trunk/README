@@ -46,49 +46,28 @@ Training program, and the National Computational Science Alliance.
 1. Getting HPCToolkit
 ---------------------
 
-HPCtoolkit is available via anonymous svn download from the SciDAC Outreach 
-Center.
+The HPCToolkit project, including subversion repository and bug
+tracking system, is hosted at the SciDAC Outreach Center.
 
-  https://outreach.scidac.gov/projects/hpctoolkit/
+   https://outreach.scidac.gov/projects/hpctoolkit/
+
+The HPCToolkit source files come in two trees: one for HPCToolkit
+proper and one for all of its prerequisites.  Both are available via
+anonymous subversion checkout.  The normal usage is to download (or
+unpack) both trees in side-by-side directories.
+
+   svn co https://outreach.scidac.gov/svn/hpctoolkit/externals
+   svn co https://outreach.scidac.gov/svn/hpctoolkit/trunk hpctoolkit
+
+Note that SciDAC uses https for anonymous checkout.
 
 =============================================================================
 
 2. Building HPCToolkit
 ----------------------
 
-Building HPCToolkit is done in two phases.  Phase one builds the
-external packages that are needed as prerequisites, and then phase two
-builds HPCToolkit proper.
-
-Phase one is built in the externals subdirectory.  Normally, this step
-doesn't require any special options, just let configure decide what
-packages need to be built (usually most or all), build them and then
-clean up the tree.
-
-   cd externals
-   ./configure
-   make all
-   make distclean
-
-Once this step finishes successfully, then it can be cleaned up (with
-make distclean) and left alone.  The README file in the externals
-subdirectory has more details and advanced options for this step.
-
-Phase two uses the externals tree to build HPCToolkit proper and uses
-the autoconf and automake build procedure.  Return to the hpctoolkit
-root directory and configure and build HPCToolkit.
-
-   cd hpctoolkit
-   ./configure --prefix=PATH --with-papi=PATH
-   make
-   make install
-
-The externals tree provides a development tree for all of HPCToolkit's
-prerequisites except for PAPI.  PAPI requires a kernel patch, so if
-the patch is not yet installed, then externals can't add it in
-userland.  Anyway, PAPI is highly recommended, and if it is available
-on your system, then specify its install directory with the
---with-papi option.
+See the file README.Externals for directions on building HPCToolkit
+and its externals prerequisites.
 
 =============================================================================
 
@@ -99,3 +78,6 @@ HPCToolkit documentation (including instructions for build/installation)
   Point your browser to ${HPCTOOLKIT}/doc/index.html
 
 HPCToolkit Website: http://hpctoolkit.org/
+
+The email address for HPCToolkit and Externals is hpc@cs.rice.edu.
+
