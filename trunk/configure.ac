@@ -1040,6 +1040,13 @@ OPT_LIBUNWIND_LDFLAGS=
 OPT_LIBUNWIND_LIBSO=
 OPT_LIBUNWIND_LIBA=
 
+if test "$use_externals" = yes ; then
+  OPT_LIBUNWIND="$ext_libunwind_prefix"
+  case "$OPT_LIBUNWIND" in
+    /* ) OPT_HAVE_LIBUNWIND=yes ;;
+  esac
+fi
+
 AC_ARG_WITH([libunwind],
   AS_HELP_STRING([--with-libunwind=<libunwind_install_path>],
                  [use given LIBUNWIND installation (absolute path) with csprof (default is NO)]),

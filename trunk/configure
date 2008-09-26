@@ -23925,6 +23925,13 @@ OPT_LIBUNWIND_LDFLAGS=
 OPT_LIBUNWIND_LIBSO=
 OPT_LIBUNWIND_LIBA=
 
+if test "$use_externals" = yes ; then
+  OPT_LIBUNWIND="$ext_libunwind_prefix"
+  case "$OPT_LIBUNWIND" in
+    /* ) OPT_HAVE_LIBUNWIND=yes ;;
+  esac
+fi
+
 
 # Check whether --with-libunwind was given.
 if test "${with_libunwind+set}" = set; then
