@@ -75,7 +75,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [TRUNK-4.9.1-r1626], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([hpctoolkit], [TRUNK-4.9.1-r1628], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -519,6 +519,45 @@ fi
 
 
 #-------------------------------------------------
+# Check for GNU's binutils (binary interface)
+#-------------------------------------------------
+# cf. enable-hpc-binutils
+
+AC_MSG_CHECKING([for GNU binutils])
+
+if test "$use_externals" = yes ; then
+  GNUBINUTILS="$ext_binutils_prefix"
+else
+  GNUBINUTILS="${hpctoolkit_top}/../binutils/${HPCTOOLKIT_PLATFORM}"
+fi
+
+AC_ARG_WITH([binutils],
+  AS_HELP_STRING([--with-binutils=PATH],
+                 [use given GNU binutils installation]),
+  [if test $withval != no; then
+     GNUBINUTILS=${withval}
+   fi],
+  [])
+
+# The binutils installer (2.16.1, 2.17) creates libbfd.la and
+# libopcodes.la but only libiberty.a.  Apparently, not having
+# libiberty.la can cause libtool (1.5.20, 1.5.22) to prefer a system
+# library (without a .la!) -- thus ignoring the -L directive.  So we
+# provide an absolute reference.
+GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
+GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes ${GNUBINUTILS}/lib/libiberty.a"
+
+# on non-Linux systems we build libintl
+if test "${HOST_OS}" != "Linux"; then
+   GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} ${GNUBINUTILS}/lib/libintl.a"
+fi
+
+AC_MSG_RESULT([${GNUBINUTILS}])
+AC_SUBST([GNUBINUTILS_IFLAGS])
+AC_SUBST([GNUBINUTILS_LDFLAGS])
+
+
+#-------------------------------------------------
 # Option: --with-libdwarf=PATH
 #-------------------------------------------------
 
@@ -655,6 +694,250 @@ AC_SUBST([LIBMONITOR_RUN_DIR])
 
 
 #-------------------------------------------------
+# with-libunwind
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether configured with libunwind])
+
+OPT_HAVE_LIBUNWIND=no
+OPT_LIBUNWIND=
+OPT_LIBUNWIND_IFLAGS=
+OPT_LIBUNWIND_LIBPATH=
+OPT_LIBUNWIND_LDFLAGS=
+OPT_LIBUNWIND_LIBSO=
+OPT_LIBUNWIND_LIBA=
+
+if test "$use_externals" = yes ; then
+  OPT_LIBUNWIND="$ext_libunwind_prefix"
+  case "$OPT_LIBUNWIND" in
+    /* ) OPT_HAVE_LIBUNWIND=yes ;;
+  esac
+fi
+
+AC_ARG_WITH([libunwind],
+  AS_HELP_STRING([--with-libunwind=PATH],
+                 [use given LIBUNWIND installation (absolute path) with csprof (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_LIBUNWIND=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-libunwind requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_LIBUNWIND=${withval}
+   fi],
+  [])
+
+# Check for LIBUNWIND > .9xxx [skip for now]
+
+if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then 
+  AC_MSG_RESULT([yes (${OPT_LIBUNWIND_LIBSO})])
+else
+  AC_MSG_RESULT([no])
+fi
+
+AM_CONDITIONAL(OPT_HAVE_LIBUNWIND, test "${OPT_HAVE_LIBUNWIND}" = "yes")
+AC_SUBST(OPT_LIBUNWIND_IFLAGS)
+AC_SUBST(OPT_LIBUNWIND_LIBPATH)
+AC_SUBST(OPT_LIBUNWIND_LDFLAGS)
+AC_SUBST(OPT_LIBUNWIND_LIBSO)
+AC_SUBST(OPT_LIBUNWIND_LIBA)
+
+
+#-------------------------------------------------
+# with-monitor
+#-------------------------------------------------
+
+AC_MSG_CHECKING([for monitor])
+
+OPT_WITH_MONITOR=no
+OPT_INSTALL_MONITOR=no
+MONITOR=
+MONITOR_LIBS=
+HPC_MONITOR=
+
+# Use monitor by default
+
+if test "$use_externals" = yes ; then
+  OPT_WITH_MONITOR=yes
+  OPT_INSTALL_MONITOR=yes
+  MONITOR="$ext_old_monitor_prefix"
+elif test "${HOST_OS}" = "Linux"; then
+  OPT_WITH_MONITOR=yes
+  OPT_INSTALL_MONITOR=yes
+  MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
+fi
+
+AC_ARG_WITH([monitor],
+  AS_HELP_STRING([--with-monitor=PATH],
+                 [use given (old) libmonitor installation]),
+  [if test $withval != no; then
+     OPT_WITH_MONITOR=yes
+     OPT_INSTALL_MONITOR=no
+     MONITOR=${withval}
+   else
+     OPT_WITH_MONITOR=no
+   fi],
+  [])
+
+for lib in ${LIB_SEARCH_PATH} ; do
+  if test -r "${MONITOR}/${lib}/libmonitor.so"; then
+    MONITOR_LIBS="${MONITOR_LIBS} ${MONITOR}/${lib}/libmonitor.so"
+  fi
+done
+MONITOR_LIBS=`echo ${MONITOR_LIBS}`
+
+MONITOR_IFLAGS="-I${MONITOR}/include"
+MONITOR_LDFLAGS="... -lmonitor"
+if test "${OPT_INSTALL_MONITOR}" = "yes" ; then
+  HPC_MONITOR="hpctoolkit/monitor"  # lib/...
+else 
+  HPC_MONITOR="${MONITOR}"
+fi
+
+if test "${OPT_WITH_MONITOR}" = "yes" ; then
+  AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
+  AC_MSG_RESULT([yes (${MONITOR_LIBS})])
+else
+  AC_MSG_RESULT([no (not needed)])
+fi
+
+AC_SUBST([MONITOR])
+AC_SUBST([HPC_MONITOR])
+AC_SUBST([OPT_INSTALL_MONITOR])
+
+
+#-------------------------------------------------
+# Check for Open Analysis (CFG builder, etc.)
+#-------------------------------------------------
+
+AC_MSG_CHECKING([for OpenAnalysis])
+
+if test "$use_externals" = yes ; then
+  OA="$ext_open_analysis_prefix"
+else
+  OA="${hpctoolkit_top}/../open-analysis/${HPCTOOLKIT_PLATFORM}"
+fi
+
+AC_ARG_WITH([open-analysis],
+  AS_HELP_STRING([--with-open-analysis=PATH],
+                 [use given OpenAnalysis installation]),
+  [if test $withval != no; then
+     OA=${withval}
+   fi],
+  [])
+
+OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
+OA_LDFLAGS="-L${OA}/lib -lOAsz64"
+
+AC_MSG_RESULT([${OA}])
+AC_SUBST([OA_IFLAGS])
+AC_SUBST([OA_LDFLAGS])
+
+
+#-------------------------------------------------
+# with-papi
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether configured with PAPI])
+
+HPC_DEF_CHECK_CXX_PAPI_LINK
+
+OPT_HAVE_PAPI=no
+OPT_PAPI=
+OPT_PAPI_IFLAGS=
+OPT_PAPI_LDFLAGS=
+OPT_PAPI_LIBPATH=
+OPT_PAPI_LIB=
+
+AC_ARG_WITH([papi],
+  AS_HELP_STRING([--with-papi=PATH],
+                 [use given PAPI installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_PAPI=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-papi requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_PAPI=${withval}
+   fi],
+  [if test -f /usr/local/papi/include/papi.h; then
+    OPT_HAVE_PAPI=yes
+    OPT_PAPI=/usr/local/papi
+   elif test -f /usr/local/include/papi.h; then
+    OPT_HAVE_PAPI=yes
+    OPT_PAPI=/usr/local
+  fi])
+
+
+# Allow <papi_install_path> to either point to a true installation or
+# simply a build.  In the latter case, the papi library and header
+# will have a different location.
+#   <papi-install-path>/ include/papi.h
+#                        lib/libpapi.so
+#                        lib64/libpapi.so
+#   <papi-build-path>/ papi.h
+#                      libpapi.so
+# Note: same test is in hpctoolkit-oss's Makefile.quick
+if test "$OPT_HAVE_PAPI" = "yes" ; then
+  if test -f "${OPT_PAPI}/include/papi.h"; then
+    OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
+  else
+    OPT_PAPI_IFLAGS="-I${OPT_PAPI}"
+  fi
+  
+  for lib in ${LIB_SEARCH_PATH} ; do
+    if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
+      if HPC_check_cxx_papi_link ${OPT_PAPI_IFLAGS} ${OPT_PAPI}/${lib} ; then
+        OPT_PAPI_LIBPATH="${OPT_PAPI}/${lib}"
+        OPT_PAPI_LIB="${OPT_PAPI_LIBPATH}/libpapi.so"
+        OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
+        break;
+      fi
+    fi
+  done
+
+  #for lib in ${LIB_SEARCH_PATH} ; do
+  #  if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
+  #    OPT_PAPI_LIB="${OPT_PAPI_LIB} ${OPT_PAPI}/${lib}/libpapi.so"
+  #  fi
+  #done
+  #OPT_PAPI_LIB=`echo ${OPT_PAPI_LIB}`
+
+fi
+
+# Check for PAPI > 3.0 [skip for now]
+
+if test "${OPT_HAVE_PAPI}" = "yes"; then 
+  if test -n "${OPT_PAPI_LIB}" ; then
+    AC_MSG_RESULT([yes (${OPT_PAPI_LIB})])
+  else
+    AC_MSG_ERROR([cannot find usable PAPI in '${LIB_SEARCH_PATH}'])
+  fi
+else
+  AC_MSG_RESULT([no])
+fi
+
+papi_extra_libs=
+so_file="${OPT_PAPI_LIBPATH}/libpapi.so"
+if test -f "$so_file" ; then
+  ldd "$so_file" | grep libperfctr >/dev/null 2>&1
+  if test $? = 0 ; then
+    papi_extra_libs="${papi_extra_libs} -lperfctr"
+  fi
+  ldd "$so_file" | grep libpfm >/dev/null 2>&1
+  if test $? = 0 ; then
+    papi_extra_libs="${papi_extra_libs} -lpfm"
+  fi
+fi
+
+AM_CONDITIONAL(OPT_HAVE_PAPI, test "${OPT_HAVE_PAPI}" = "yes")
+AC_SUBST(OPT_PAPI)
+AC_SUBST(OPT_PAPI_IFLAGS)
+AC_SUBST(OPT_PAPI_LDFLAGS)
+AC_SUBST(OPT_PAPI_LIBPATH)
+AC_SUBST(OPT_PAPI_LIB)
+AC_SUBST([papi_extra_libs])
+
+
+#-------------------------------------------------
 # Option: --with-symtabAPI=PATH
 #-------------------------------------------------
 
@@ -763,7 +1046,7 @@ else
 fi
 
 AC_ARG_WITH([xerces],
-  AS_HELP_STRING([--with-xerces=<XercesC path>],
+  AS_HELP_STRING([--with-xerces=PATH],
                  [use given XercesC installation]),
   [if test $withval != no; then
      XERCES=${withval}
@@ -788,292 +1071,9 @@ AC_SUBST([XERCES_COPY])
 AC_SUBST([XERCES_LIB])
 
 
-#-------------------------------------------------
-# Check for Open Analysis (CFG builder, etc.)
-#-------------------------------------------------
-
-AC_MSG_CHECKING([for OpenAnalysis])
-
-if test "$use_externals" = yes ; then
-  OA="$ext_open_analysis_prefix"
-else
-  OA="${hpctoolkit_top}/../open-analysis/${HPCTOOLKIT_PLATFORM}"
-fi
-
-AC_ARG_WITH([oa],
-  AS_HELP_STRING([--with-oa=<OpenAnalysis path>],
-                 [use given OpenAnalysis installation]),
-  [if test $withval != no; then
-     OA=${withval}
-   fi],
-  [])
-
-OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
-OA_LDFLAGS="-L${OA}/lib -lOAsz64"
-
-AC_MSG_RESULT([${OA}])
-AC_SUBST([OA_IFLAGS])
-AC_SUBST([OA_LDFLAGS])
-
-
-#-------------------------------------------------
-# Check for GNU's binutils (binary interface)
-#-------------------------------------------------
-# cf. enable-hpc-binutils
-
-AC_MSG_CHECKING([for GNU binutils])
-
-if test "$use_externals" = yes ; then
-  GNUBINUTILS="$ext_binutils_prefix"
-else
-  GNUBINUTILS="${hpctoolkit_top}/../binutils/${HPCTOOLKIT_PLATFORM}"
-fi
-
-AC_ARG_WITH([binutils],
-  AS_HELP_STRING([--with-binutils=<GNU binutils path>],
-                 [use given GNU binutils installation]),
-  [if test $withval != no; then
-     GNUBINUTILS=${withval}
-   fi],
-  [])
-
-# The binutils installer (2.16.1, 2.17) creates libbfd.la and
-# libopcodes.la but only libiberty.a.  Apparently, not having
-# libiberty.la can cause libtool (1.5.20, 1.5.22) to prefer a system
-# library (without a .la!) -- thus ignoring the -L directive.  So we
-# provide an absolute reference.
-GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
-GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes ${GNUBINUTILS}/lib/libiberty.a"
-
-# on non-Linux systems we build libintl
-if test "${HOST_OS}" != "Linux"; then
-   GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} ${GNUBINUTILS}/lib/libintl.a"
-fi
-
-AC_MSG_RESULT([${GNUBINUTILS}])
-AC_SUBST([GNUBINUTILS_IFLAGS])
-AC_SUBST([GNUBINUTILS_LDFLAGS])
-
-
 #----------------------------------------------------------------------------
 # Options
 #----------------------------------------------------------------------------
-
-#-------------------------------------------------
-# with-monitor
-#-------------------------------------------------
-
-AC_MSG_CHECKING([for monitor])
-
-OPT_WITH_MONITOR=no
-OPT_INSTALL_MONITOR=no
-MONITOR=
-MONITOR_LIBS=
-HPC_MONITOR=
-
-# Use monitor by default
-
-if test "$use_externals" = yes ; then
-  OPT_WITH_MONITOR=yes
-  OPT_INSTALL_MONITOR=yes
-  MONITOR="$ext_old_monitor_prefix"
-elif test "${HOST_OS}" = "Linux"; then
-  OPT_WITH_MONITOR=yes
-  OPT_INSTALL_MONITOR=yes
-  MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
-fi
-
-AC_ARG_WITH([monitor],
-  AS_HELP_STRING([--with-monitor=<libmonitor path>],
-                 [use given libmonitor installation]),
-  [if test $withval != no; then
-     OPT_WITH_MONITOR=yes
-     OPT_INSTALL_MONITOR=no
-     MONITOR=${withval}
-   else
-     OPT_WITH_MONITOR=no
-   fi],
-  [])
-
-for lib in ${LIB_SEARCH_PATH} ; do
-  if test -r "${MONITOR}/${lib}/libmonitor.so"; then
-    MONITOR_LIBS="${MONITOR_LIBS} ${MONITOR}/${lib}/libmonitor.so"
-  fi
-done
-MONITOR_LIBS=`echo ${MONITOR_LIBS}`
-
-MONITOR_IFLAGS="-I${MONITOR}/include"
-MONITOR_LDFLAGS="... -lmonitor"
-if test "${OPT_INSTALL_MONITOR}" = "yes" ; then
-  HPC_MONITOR="hpctoolkit/monitor"  # lib/...
-else 
-  HPC_MONITOR="${MONITOR}"
-fi
-
-if test "${OPT_WITH_MONITOR}" = "yes" ; then
-  AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
-  AC_MSG_RESULT([yes (${MONITOR_LIBS})])
-else
-  AC_MSG_RESULT([no (not needed)])
-fi
-
-AC_SUBST([MONITOR])
-AC_SUBST([HPC_MONITOR])
-AC_SUBST([OPT_INSTALL_MONITOR])
-
-
-#-------------------------------------------------
-# with-papi
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether configured with PAPI])
-
-HPC_DEF_CHECK_CXX_PAPI_LINK
-
-OPT_HAVE_PAPI=no
-OPT_PAPI=
-OPT_PAPI_IFLAGS=
-OPT_PAPI_LDFLAGS=
-OPT_PAPI_LIBPATH=
-OPT_PAPI_LIB=
-
-AC_ARG_WITH([papi],
-  AS_HELP_STRING([--with-papi=<papi_install_path>],
-                 [use given PAPI installation (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_PAPI=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-papi requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_PAPI=${withval}
-   fi],
-  [if test -f /usr/local/papi/include/papi.h; then
-    OPT_HAVE_PAPI=yes
-    OPT_PAPI=/usr/local/papi
-   elif test -f /usr/local/include/papi.h; then
-    OPT_HAVE_PAPI=yes
-    OPT_PAPI=/usr/local
-  fi])
-
-
-# Allow <papi_install_path> to either point to a true installation or
-# simply a build.  In the latter case, the papi library and header
-# will have a different location.
-#   <papi-install-path>/ include/papi.h
-#                        lib/libpapi.so
-#                        lib64/libpapi.so
-#   <papi-build-path>/ papi.h
-#                      libpapi.so
-# Note: same test is in hpctoolkit-oss's Makefile.quick
-if test "$OPT_HAVE_PAPI" = "yes" ; then
-  if test -f "${OPT_PAPI}/include/papi.h"; then
-    OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
-  else
-    OPT_PAPI_IFLAGS="-I${OPT_PAPI}"
-  fi
-  
-  for lib in ${LIB_SEARCH_PATH} ; do
-    if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
-      if HPC_check_cxx_papi_link ${OPT_PAPI_IFLAGS} ${OPT_PAPI}/${lib} ; then
-        OPT_PAPI_LIBPATH="${OPT_PAPI}/${lib}"
-        OPT_PAPI_LIB="${OPT_PAPI_LIBPATH}/libpapi.so"
-        OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
-        break;
-      fi
-    fi
-  done
-
-  #for lib in ${LIB_SEARCH_PATH} ; do
-  #  if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
-  #    OPT_PAPI_LIB="${OPT_PAPI_LIB} ${OPT_PAPI}/${lib}/libpapi.so"
-  #  fi
-  #done
-  #OPT_PAPI_LIB=`echo ${OPT_PAPI_LIB}`
-
-fi
-
-# Check for PAPI > 3.0 [skip for now]
-
-if test "${OPT_HAVE_PAPI}" = "yes"; then 
-  if test -n "${OPT_PAPI_LIB}" ; then
-    AC_MSG_RESULT([yes (${OPT_PAPI_LIB})])
-  else
-    AC_MSG_ERROR([cannot find usable PAPI in '${LIB_SEARCH_PATH}'])
-  fi
-else
-  AC_MSG_RESULT([no])
-fi
-
-papi_extra_libs=
-so_file="${OPT_PAPI_LIBPATH}/libpapi.so"
-if test -f "$so_file" ; then
-  ldd "$so_file" | grep libperfctr >/dev/null 2>&1
-  if test $? = 0 ; then
-    papi_extra_libs="${papi_extra_libs} -lperfctr"
-  fi
-  ldd "$so_file" | grep libpfm >/dev/null 2>&1
-  if test $? = 0 ; then
-    papi_extra_libs="${papi_extra_libs} -lpfm"
-  fi
-fi
-
-AM_CONDITIONAL(OPT_HAVE_PAPI, test "${OPT_HAVE_PAPI}" = "yes")
-AC_SUBST(OPT_PAPI)
-AC_SUBST(OPT_PAPI_IFLAGS)
-AC_SUBST(OPT_PAPI_LDFLAGS)
-AC_SUBST(OPT_PAPI_LIBPATH)
-AC_SUBST(OPT_PAPI_LIB)
-AC_SUBST([papi_extra_libs])
-
-
-#-------------------------------------------------
-# with-libunwind
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether configured with libunwind])
-
-OPT_HAVE_LIBUNWIND=no
-OPT_LIBUNWIND=
-OPT_LIBUNWIND_IFLAGS=
-OPT_LIBUNWIND_LIBPATH=
-OPT_LIBUNWIND_LDFLAGS=
-OPT_LIBUNWIND_LIBSO=
-OPT_LIBUNWIND_LIBA=
-
-if test "$use_externals" = yes ; then
-  OPT_LIBUNWIND="$ext_libunwind_prefix"
-  case "$OPT_LIBUNWIND" in
-    /* ) OPT_HAVE_LIBUNWIND=yes ;;
-  esac
-fi
-
-AC_ARG_WITH([libunwind],
-  AS_HELP_STRING([--with-libunwind=<libunwind_install_path>],
-                 [use given LIBUNWIND installation (absolute path) with csprof (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_LIBUNWIND=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-libunwind requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_LIBUNWIND=${withval}
-   fi],
-  [])
-
-# Check for LIBUNWIND > .9xxx [skip for now]
-
-if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then 
-  AC_MSG_RESULT([yes (${OPT_LIBUNWIND_LIBSO})])
-else
-  AC_MSG_RESULT([no])
-fi
-
-AM_CONDITIONAL(OPT_HAVE_LIBUNWIND, test "${OPT_HAVE_LIBUNWIND}" = "yes")
-AC_SUBST(OPT_LIBUNWIND_IFLAGS)
-AC_SUBST(OPT_LIBUNWIND_LIBPATH)
-AC_SUBST(OPT_LIBUNWIND_LDFLAGS)
-AC_SUBST(OPT_LIBUNWIND_LIBSO)
-AC_SUBST(OPT_LIBUNWIND_LIBA)
-
 
 #-------------------------------------------------
 # enable-hpcrun: Only build hpcrun if on Linux and PAPI is present
