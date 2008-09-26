@@ -75,7 +75,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [TRUNK-4.9.1=1620], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([hpctoolkit], [TRUNK-4.9.1-r1626], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -509,6 +509,7 @@ if test "x$with_externals" != xno ; then
     ext_file="${with_externals}/externs.conf"
     if test -f "$ext_file" ; then
 	AC_MSG_NOTICE([using externals tree: $with_externals])
+	externals_root=`( cd "$with_externals" && pwd )`
 	. "$ext_file"
 	use_externals=yes
     elif test "x$error_if_missing" = xyes ; then
