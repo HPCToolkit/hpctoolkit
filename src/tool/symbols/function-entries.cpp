@@ -21,11 +21,11 @@ using namespace std;
 
 class Function {
 public:
-  Function(void *_address, string *_comment, bool _isglobal);
+  Function(void *_address, string *_comment, bool _isvisible);
   void AppendComment(const string *c);
   void *address;
   string *comment;
-  bool isglobal;
+  bool isvisible;
   int operator<(Function *right);
 };
 
@@ -35,7 +35,7 @@ public:
  * forward declarations
  *****************************************************************************/
 
-static void new_function_entry(void *addr, string *comment, bool isglobal);
+static void new_function_entry(void *addr, string *comment, bool isvisible);
 
 
 
@@ -73,7 +73,7 @@ dump_reachable_functions()
     ++i;
 
     const char *name;
-    if (!f->isglobal && !is_possible_fn(f->address)) continue;
+    if (!f->isvisible && !is_possible_fn(f->address)) continue;
     if (f->comment) {
       name = f->comment->c_str();
     } else {
@@ -105,15 +105,19 @@ add_stripped_function_entry(void *addr)
 
 
 void 
-add_function_entry(void *addr, const string *comment, bool isglobal)
+add_function_entry(void *addr, const string *comment, bool isvisible)
 {
   FunctionSet::iterator it = function_entries.find(addr); 
 
   if (it == function_entries.end()) {
-    new_function_entry(addr, comment ? new string(*comment) : NULL, isglobal);
-  } else if (comment) {
+    new_function_entry(addr, comment ? new string(*comment) : NULL, isvisible);
+  } else {
     Function *f = (*it).second;
-    f->AppendComment(comment);
+    if (comment) {
+      f->AppendComment(comment);
+    } else if (f->comment) {
+      f->isvisible = true;
+    }
   }
 }
 
@@ -132,9 +136,9 @@ bool contains_function_entry(void *address)
  *****************************************************************************/
 
 static void 
-new_function_entry(void *addr, string *comment, bool isglobal)
+new_function_entry(void *addr, string *comment, bool isvisible)
 {
-  Function *f = new Function(addr, comment, isglobal);
+  Function *f = new Function(addr, comment, isvisible);
   function_entries.insert(pair<void*, Function*>(addr, f));
 }
 
@@ -146,18 +150,28 @@ is_possible_fn(void *addr)
 }
 
 
+// test if an address is within a range rather than at its start
+int 
+inside_protected_range(void *addr)
+{
+  std::pair<void *const, void *> *interval = cbranges.contains(addr);
+  if (interval != NULL && (addr > interval->first)) return 1;
+  return 0;
+}
+
+
 void 
-add_branch_range(void *start, void *end)
+add_protected_range(void *start, void *end)
 {
   cbranges.insert(start,end);
 }
 
 
-Function::Function(void *_address, string *_comment, bool _isglobal) 
+Function::Function(void *_address, string *_comment, bool _isvisible) 
 { 
   address = _address; 
   comment = _comment; 
-  isglobal = _isglobal; 
+  isvisible = _isvisible; 
 }
 
 
