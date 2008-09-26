@@ -20,7 +20,9 @@ extern "C" {
  * macros
  *****************************************************************************/
 
-#define is_aligned(addr) ((((unsigned long) (addr)) & 0x3) == 0) 
+//#define is_aligned(addr) ((((unsigned long) (addr)) & 0x3) == 0) 
+#define is_aligned(addr) (1) 
+
 
 
 #define is_call_iclass(x) \
@@ -41,6 +43,21 @@ static void after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr
 
 static bool invalid_routine_start(unsigned char *ins);
 
+static void addsub(char *ins, xed_decoded_inst_t *xptr, xed_iclass_enum_t iclass, 
+		   long ins_offset);
+
+static void process_move(char *ins, xed_decoded_inst_t *xptr, long ins_offset);
+
+static void process_push(char *ins, xed_decoded_inst_t *xptr, long ins_offset);
+
+static void process_pop(char *ins, xed_decoded_inst_t *xptr, long ins_offset);
+
+static void process_enter(char *ins, long ins_offset);
+
+static void process_leave(char *ins, long ins_offset);
+
+static bool bkwd_jump_into_protected_range(char *ins, long offset, 
+					   xed_decoded_inst_t *xptr);
 
 /******************************************************************************
  * local variables 
@@ -49,6 +66,10 @@ static bool invalid_routine_start(unsigned char *ins);
 static xed_state_t xed_machine_state_x86_64 = { XED_MACHINE_MODE_LONG_64, 
 						XED_ADDRESS_WIDTH_64b,
 						XED_ADDRESS_WIDTH_64b };
+
+static char *prologue_start = NULL;
+static char *set_rbp = NULL;
+static char *push_rbp = NULL;
 
 
 /******************************************************************************
@@ -89,6 +110,10 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
 
     xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
     switch(xiclass) {
+    case XED_ICLASS_ADD:
+    case XED_ICLASS_SUB:
+      addsub(ins, xptr, xiclass, offset);
+      break;
     case XED_ICLASS_CALL_FAR:
     case XED_ICLASS_CALL_NEAR:
       /* if (fn_discovery) */ process_call(ins, offset, xptr, vstart, vend);
@@ -102,13 +127,22 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
 	const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
 	xed_operand_type_enum_t op0_type = xed_operand_type(op0);
 	xed_operand_type_enum_t op1_type = xed_operand_type(op1);
-        if ((op0_type == XED_OPERAND_TYPE_NT_LOOKUP_FN) && 
-	    (op1_type == XED_OPERAND_TYPE_NT_LOOKUP_FN)) {
-           // idiom for a switch using a jump table: 
-           // don't consider the instruction afterward a potential function start
-	   break;
-        }
+	if ((xed_operand_name(op0) == XED_OPERAND_MEM0) && 
+	    (xed_operand_name(op1) == XED_OPERAND_REG0) && 
+	    (xed_operand_nonterminal_name(op1) == XED_NONTERMINAL_RIP)) {
+	  // idiom for GOT indexing in PLT 
+	  // don't consider the instruction afterward a potential function start
+	  break;
+	}
+	if ((xed_operand_name(op0) == XED_OPERAND_REG0) && 
+	    (xed_operand_name(op1) == XED_OPERAND_REG1) && 
+	    (xed_operand_nonterminal_name(op1) == XED_NONTERMINAL_RIP)) {
+	  // idiom for a switch using a jump table: 
+	  // don't consider the instruction afterward a potential function start
+	  break;
+	}
       }
+      bkwd_jump_into_protected_range(ins, offset, xptr);
       if (fn_discovery  && !is_call_iclass(prev_xiclass)) {
         // regarding use of !is_call above: don't infer function start 
         // if we run into code from C++ that consists of a call followed 
@@ -141,6 +175,32 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
       if (fn_discovery) process_branch(ins, offset , xptr);
       break;
 
+    case XED_ICLASS_PUSH: 
+    case XED_ICLASS_PUSHFQ: 
+    case XED_ICLASS_PUSHFD: 
+    case XED_ICLASS_PUSHF:  
+      process_push(ins, xptr, offset);
+      break;
+
+    case XED_ICLASS_POP:   
+    case XED_ICLASS_POPF:  
+    case XED_ICLASS_POPFD: 
+    case XED_ICLASS_POPFQ: 
+      process_pop(ins, xptr, offset);
+      break;
+
+    case XED_ICLASS_ENTER:
+      process_enter(ins, offset);
+      break;
+
+    case XED_ICLASS_MOV: 
+      process_move(ins, xptr, offset);
+      break;
+
+    case XED_ICLASS_LEAVE:
+      process_leave(ins, offset);
+      break;
+
     default:
       break;
     }
@@ -163,6 +223,11 @@ is_padding(int c)
 }
 
 
+//----------------------------------------------------------------------------
+// code that is unreachable after a return or an unconditional jump is a 
+// potential function entry point. try to screen out the cases that don't 
+// make sense. infer function entry points for the rest.
+//----------------------------------------------------------------------------
 static void 
 after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr)
 {
@@ -171,17 +236,21 @@ after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr)
   unsigned char *potential_function_addr = uins + offset;
   for (; is_padding(*uins); uins++); // skip remaining padding 
 
-  // only infer a function entry before padding bytes if there isn't already one after padding bytes
+  //--------------------------------------------------------------------
+  // only infer a function entry before padding bytes if there isn't 
+  // already one after padding bytes
+  //--------------------------------------------------------------------
   if (contains_function_entry(uins + offset) == false) {
     if (is_aligned(uins + offset) && !invalid_routine_start(uins)) {
-      add_stripped_function_entry(potential_function_addr); // potential function entry point
+      add_stripped_function_entry(potential_function_addr); 
     }
   }
 }
 
 
 static void *
-get_branch_target(char *ins, xed_decoded_inst_t *xptr, xed_operand_values_t *vals)
+get_branch_target(char *ins, xed_decoded_inst_t *xptr, 
+		  xed_operand_values_t *vals)
 {
   int bytes = xed_operand_values_get_branch_displacement_length(vals);
   int offset = 0;
@@ -202,7 +271,8 @@ get_branch_target(char *ins, xed_decoded_inst_t *xptr, xed_operand_values_t *val
 
 
 static void 
-process_call(char *ins, long offset, xed_decoded_inst_t *xptr, void *start, void *end)
+process_call(char *ins, long offset, xed_decoded_inst_t *xptr, 
+	     void *start, void *end)
 { 
   const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
   const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
@@ -215,10 +285,42 @@ process_call(char *ins, long offset, xed_decoded_inst_t *xptr, void *start, void
 
     if (xed_operand_values_has_branch_displacement(vals)) {
       void *vaddr = get_branch_target(ins + offset,xptr,vals);
-      if (consider_possible_fn_address(vaddr)) add_stripped_function_entry(vaddr);
+      if (consider_possible_fn_address(vaddr)) {
+	add_stripped_function_entry(vaddr);
+      }
     }
 
   }
+}
+
+
+static bool 
+bkwd_jump_into_protected_range(char *ins, long offset, xed_decoded_inst_t *xptr)
+{ 
+  char *relocated_ins = ins + offset; 
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+  xed_operand_enum_t   op0_name = xed_operand_name(op0);
+  xed_operand_type_enum_t op0_type = xed_operand_type(op0);
+
+  if (op0_name == XED_OPERAND_RELBR && 
+      op0_type == XED_OPERAND_TYPE_IMM_CONST) {
+    xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
+
+    if (xed_operand_values_has_branch_displacement(vals)) {
+      char *target = (char *) get_branch_target(relocated_ins, xptr, vals);
+      void *start, *end;
+      if (target < relocated_ins) {
+	start = target;
+	end = relocated_ins; 
+	if (inside_protected_range(target)) {
+	  add_protected_range(start, end);
+	  return true;
+	}
+      } 
+    }
+  }
+  return false;
 }
 
 
@@ -240,16 +342,21 @@ process_branch(char *ins, long offset, xed_decoded_inst_t *xptr)
       void *start, *end;
       if (target < relocated_ins) {
         unsigned char *tloc = (unsigned char *) target - offset;
-        for (; is_padding(*(tloc-1)); tloc--) { // extend branch range to before padding
-            target--;
+        for (; is_padding(*(tloc-1)); tloc--) { 
+	  // extend branch range to before padding
+	  target--;
 	}
 	start = target;
 	end = relocated_ins; 
       } else {
 	start = relocated_ins;
-	end = ((char *) target) + 1; // add one to ensure that the branch target is part of the "covered" range
+	//-----------------------------------------------------
+	// add one to ensure that the branch target is part of 
+	// the "covered" range
+	//-----------------------------------------------------
+	end = ((char *) target) + 1; 
       }
-      add_branch_range(start, end);
+      add_protected_range(start, end);
     }
   }
 }
@@ -258,15 +365,14 @@ static int
 mem_below_rsp_or_rbp(xed_decoded_inst_t *xptr, int oindex)
 {
       xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, oindex);
-      if (basereg == XED_REG_RSP || basereg == XED_REG_RBP) {
-         int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, oindex);
-#if 0
+      if (basereg == XED_REG_RBP)  {
+	return 1;
+      } else if (basereg == XED_REG_RSP) {
+         int64_t offset = 
+	   xed_decoded_inst_get_memory_displacement(xptr, oindex);
          if (offset > 0) {
-#endif
-	    return 1;
-#if 0
+	   return 1;
 	 }
-#endif
      } else if (basereg == XED_REG_RAX) {
 	return 1;
      }
@@ -297,32 +403,32 @@ inst_accesses_callers_mem(xed_decoded_inst_t *xptr)
 static bool
 from_rax_eax(xed_decoded_inst_t *xptr)
 {
-	int noperands = xed_decoded_inst_noperands(xptr);
-	if (noperands == 2) {
-		const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
-		const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
-		xed_operand_enum_t   op1_name = xed_operand_name(op1);
+  int noperands = xed_decoded_inst_noperands(xptr);
+  if (noperands == 2) {
+    const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+    const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
+    xed_operand_enum_t   op1_name = xed_operand_name(op1);
 
 #if 0
-		if ((xed_decoded_inst_get_iclass(xptr) == XED_ICLASS_MOV) || 
-				(xed_decoded_inst_get_iclass(xptr) == XED_ICLASS_MOVSXD)) {
+    if ((xed_decoded_inst_get_iclass(xptr) == XED_ICLASS_MOV) || 
+	(xed_decoded_inst_get_iclass(xptr) == XED_ICLASS_MOVSXD)) {
 #endif
-			if ((op1_name == XED_OPERAND_REG1) && 
-					((xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_RAX) ||
-					 (xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_EAX))) {
-				return true;
-			}
+      if ((op1_name == XED_OPERAND_REG1) && 
+	  ((xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_RAX) ||
+	   (xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_EAX))) {
+	return true;
+      }
 #if 0
-		}
+    }
 #endif
-	}
+  }
 
-	return false;
+  return false;
 }
 
 
-// prefetches are commonly outlined from loops. don't infer them as function starts
-// after unconditional control flow
+// prefetches are commonly outlined from loops. don't infer them as 
+// function starts after unconditional control flow
 static bool
 is_prefetch(xed_decoded_inst_t *xptr)
 {
@@ -377,3 +483,124 @@ void x86_dump_ins(void *ins)
          xed_iclass_enum_t2str(xed_decoded_inst_get_iclass(xptr)), inst_buf);
 }
 
+// #define DEBUG_ADDSUB
+
+static void
+addsub(char *ins, xed_decoded_inst_t *xptr, xed_iclass_enum_t iclass, long ins_offset)
+{
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t* op0 = xed_inst_operand(xi,0);
+  const xed_operand_t* op1 = xed_inst_operand(xi,1);
+  xed_operand_enum_t   op0_name = xed_operand_name(op0);
+  static long prologue_offset = 0;
+
+  if ((op0_name == XED_OPERAND_REG0) &&
+      (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RSP)) {
+
+    if (xed_operand_name(op1) == XED_OPERAND_IMM0) {
+      //---------------------------------------------------------------------------
+      // we are adjusting the stack pointer by a constant offset
+      //---------------------------------------------------------------------------
+      int sign = (iclass == XED_ICLASS_ADD) ? 1 : -1;
+      long immedv = sign * xed_decoded_inst_get_signed_immediate(xptr);
+      if (immedv < 0) {
+	prologue_start = ins;
+	prologue_offset = -immedv;
+#ifdef DEBUG_ADDSUB
+	fprintf(stderr,"prologue %ld\n", immedv);
+#endif
+      } else {
+#ifdef DEBUG_ADDSUB
+	fprintf(stderr,"epilogue %ld\n", immedv);
+#endif
+	if (immedv == prologue_offset) {
+	  // add one to both endpoints
+	  // -- ensure that add/sub in the prologue IS NOT part of the range 
+	  //    (it may be the first instruction in the function - we don't want 
+	  //     to prevent it from starting a function) 
+	  // -- ensure that add/sub in the epilogue IS part of the range 
+	  char *end = ins + 1; 
+	  add_protected_range(prologue_start + ins_offset + 1, 
+			      ins + ins_offset + 1);
+#ifdef DEBUG_ADDSUB
+	  fprintf(stderr,"range [%p, %p] offset %ld\n", 
+		  prologue_start + ins_offset, end + ins_offset, immedv);
+#endif
+	}
+      }
+    }
+  }
+}
+
+
+// don't track the push, track the move rsp to rbp or esp to ebp
+static void 
+process_move(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
+{ 
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+  const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
+  
+  xed_operand_enum_t   op0_name = xed_operand_name(op0);
+  xed_operand_enum_t   op1_name = xed_operand_name(op1);
+  
+  if ((op0_name == XED_OPERAND_REG0) && (op1_name == XED_OPERAND_REG1)) { 
+    //-------------------------------------------------------------------------
+    // register-to-register move 
+    //-------------------------------------------------------------------------
+    xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
+    xed_reg_enum_t reg1 = xed_decoded_inst_get_reg(xptr, op1_name);
+    if (((reg0 == XED_REG_RBP) || (reg0 == XED_REG_EBP)) &&
+	((reg1 == XED_REG_RSP) || (reg1 == XED_REG_ESP))) {
+      //=========================================================================
+      // instruction: initialize BP with value of SP to set up a frame pointer
+      //=========================================================================
+      set_rbp = ins;
+    }
+  }
+}
+
+
+static void 
+process_push(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
+{
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+  xed_operand_enum_t   op0_name = xed_operand_name(op0);
+
+  if (op0_name == XED_OPERAND_REG0) { 
+    xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
+    if (regname == XED_REG_RBP) {
+      push_rbp = ins;
+    }
+  }
+}
+
+
+static void 
+process_pop(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
+{
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+  xed_operand_enum_t   op0_name = xed_operand_name(op0);
+
+  if (op0_name == XED_OPERAND_REG0) { 
+    xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
+    if (regname == XED_REG_RBP) {
+      add_protected_range(push_rbp + ins_offset + 1, ins + ins_offset + 1);
+    }
+  }
+}
+
+
+static void 
+process_enter(char *ins, long ins_offset)
+{
+  set_rbp = ins;
+}
+
+static void 
+process_leave(char *ins, long ins_offset)
+{
+  add_protected_range(set_rbp + ins_offset + 1, ins + ins_offset + 1);
+}

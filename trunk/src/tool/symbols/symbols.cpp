@@ -171,7 +171,11 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
   //-----------------------------------------------------------------
   for (int i = 0; i < symvec.size(); i++) {
     Symbol *s = symvec[i];
-    if (report_symbol(s)) add_function_entry((void *) s->getAddr(), &s->getName(), (s->getLinkage() == Symbol::SL_GLOBAL));
+    Symbol::SymbolLinkage sl = s->getLinkage();
+    if (report_symbol(s)) 
+      add_function_entry((void *) s->getAddr(), &s->getName(), 
+			 ((sl & Symbol::SL_GLOBAL) ||
+			  (sl & Symbol::SL_WEAK)));
   }
 
   process_code_ranges();
@@ -202,7 +206,7 @@ dump_file_info(const char *filename, bool fn_discovery)
   string sfile(filename);
   vector<Symbol *> symvec;
   Symtab::openFile(syms, sfile);
-  int stripped = 1;
+  int stripped = 0;
 #if 0
   // be conservative with function discovery: only apply it to stripped objects
   fn_discovery &=  file_is_stripped(syms);
@@ -210,10 +214,7 @@ dump_file_info(const char *filename, bool fn_discovery)
 
   syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
   if (syms->getObjectType() != obj_Unknown) {
-    if (symvec.size() > 0) {
-      dump_file_symbols(syms, symvec, fn_discovery);
-      stripped = 0;
-    }
+    dump_file_symbols(syms, symvec, fn_discovery);
     int relocatable = syms->isExec() ? 0 : 1;
     printf("unsigned int csprof_relocatable = %d;\n", relocatable);
   }
