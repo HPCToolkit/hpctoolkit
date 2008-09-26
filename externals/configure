@@ -1247,7 +1247,7 @@ Optional Packages:
   --with-libmonitor=PATH  path to libmonitor install directory (default build)
   --with-libunwind=PATH   path to libunwind install directory (default build)
   --with-libxml2=PATH     path to libxml2 install directory (default build)
-  --with-old-monitor=PATH path to open analysis install directory (default
+  --with-old-monitor=PATH path to old monitor install directory (default
                           build)
   --with-open-analysis=PATH
                           path to open analysis install directory (default

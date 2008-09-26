@@ -127,7 +127,7 @@ packages.
    --with-libmonitor=PATH     path to libmonitor install directory
    --with-libunwind=PATH      path to libunwind install directory
    --with-libxml2=PATH        path to libxml2 install directory
-   --with-old-monitor=PATH    path to open analysis install directory
+   --with-old-monitor=PATH    path to old monitor install directory
    --with-open-analysis=PATH  path to open analysis install directory
    --with-symtabAPI=PATH      path to symtabAPI install directory
    --with-xed2=PATH           path to xed2 install directory

@@ -506,7 +506,7 @@ esac
 #
 AC_ARG_WITH([old-monitor],
     [AS_HELP_STRING([--with-old-monitor=PATH],
-	[path to open analysis install directory (default build)])],
+	[path to old monitor install directory (default build)])],
     [],
     [with_old_monitor=build])
 
