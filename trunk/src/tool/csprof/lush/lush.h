@@ -63,8 +63,8 @@ struct lush_agent_pool {
   POOL_DECL(LUSHI_step_bichord);
   POOL_DECL(LUSHI_step_pnote);
   POOL_DECL(LUSHI_step_lnote);
-  POOL_DECL(LUSHI_has_concurrency);
-  POOL_DECL(LUSHI_get_concurrency);
+  POOL_DECL(LUSHI_has_idleness);
+  POOL_DECL(LUSHI_get_idleness);
 
 #undef POOL_DECL
 };
