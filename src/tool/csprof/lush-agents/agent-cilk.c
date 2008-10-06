@@ -530,7 +530,7 @@ LUSHI_lip_write()
 // **************************************************************************
 
 extern int
-LUSHI_has_concurrency()
+LUSHI_has_idleness()
 {
   CilkWorkerState* ws = 
     (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
@@ -539,7 +539,7 @@ LUSHI_has_concurrency()
 }
 
 extern double
-LUSHI_get_concurrency()
+LUSHI_get_idleness()
 {
   // INVARIANT: at least one thread is working
   // INVARIANT: ws is non-NULL
@@ -551,8 +551,14 @@ LUSHI_get_concurrency()
   double n_working = (double)CILK_Threads_Working;
   double n_not_working = n - n_working;
 
-  double c = n_not_working / n_working;
-  return c;
+  double idleness = 0.0;
+
+  // NOTE: if n_working == 0, then Cilk should be in the process of
+  // exiting.  Protect against samples in this timing window.
+  if (n_working > 0) {
+    idleness = n_not_working / n_working;
+  }
+  return idleness;
 }
 
 // **************************************************************************
