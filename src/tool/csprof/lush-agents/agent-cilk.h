@@ -127,7 +127,7 @@ enum unw_flg_e {
   UNW_FLG_NULL       = 0x00,
   UNW_FLG_SEEN_USER  = 0x01, // user code has been seen (inter)
   UNW_FLG_HAVE_LCTXT = 0x02, // logical context has been obtained (inter)
-  UNW_FLG_BEG_LNOTE  = 0x04, // past beginning note an an lchord
+  UNW_FLG_BEG_LNOTE  = 0x04, // past beginning note of an lchord
 };
 
 
