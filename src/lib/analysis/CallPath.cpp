@@ -871,8 +871,24 @@ public:
   is_metric_src(Prof::SampledMetricDesc* mdesc)
   {
     const string& nm = mdesc->name();
-    return (nm == "PAPI_TOT_CYC" || nm == "WALLCLOCK");
+    return ((nm.find("PAPI_TOT_CYC") == 0) || (nm.find("WALLCLOCK") == 0));
   }
+
+  static void
+  convertToWorkMetric(Prof::SampledMetricDesc* mdesc)
+  {
+    const string& nm = mdesc->name();
+    if (nm.find("PAPI_TOT_CYC") == 0) {
+      mdesc->name("work (cyc)");
+    }
+    else if (nm.find("WALLCLOCK") == 0) {
+      mdesc->name("work (ms)");
+    }
+    else {
+      DIAG_Die(DIAG_Unimplemented);
+    }
+  }
+
 };
 
 const string ParallelOverhead::s_tag = "lush:parallel-overhead";
@@ -1096,16 +1112,19 @@ lush_makeParallelOverhead(Prof::CallPath::Profile* prof)
   // ------------------------------------------------------------
   std::vector<uint> metric_src;
   std::vector<uint> metric_dst;
-
-  for (uint m_id = 0; m_id < prof->numMetrics(); ++m_id) {
+  
+  uint numMetrics_orig = prof->numMetrics();
+  for (uint m_id = 0; m_id < numMetrics_orig; ++m_id) {
     Prof::SampledMetricDesc* m_desc = prof->metric(m_id);
     if (ParallelOverhead::is_metric_src(m_desc)) {
+      ParallelOverhead::convertToWorkMetric(m_desc);
       metric_src.push_back(m_id);
 
       Prof::SampledMetricDesc* m_new = 
 	new Prof::SampledMetricDesc("overhead", "parallel overhead", 
 				    m_desc->period());
       uint m_new_id = prof->addMetric(m_new);
+      DIAG_Assert(m_new_id >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
       metric_dst.push_back(m_new_id);
     }
   }
