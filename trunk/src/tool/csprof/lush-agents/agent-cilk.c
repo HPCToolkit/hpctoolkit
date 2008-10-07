@@ -383,6 +383,16 @@ LUSHI_step_pnote(lush_cursor_t* cursor)
 }
 
 
+#define SET_LIP_AND_TY(cl, lip, ty)				\
+  if (!cl) {							\
+    cilk_ip_init(lip, NULL /*0*/);				\
+    ty = LUSH_STEP_END_CHORD;					\
+  }								\
+  else {							\
+    cilk_ip_init(lip, CILKFRM_PROC(cl->frame) /*cl->status*/);	\
+    ty = LUSH_STEP_CONT;					\
+  } 
+
 extern lush_step_t
 LUSHI_step_lnote(lush_cursor_t* cursor)
 {
@@ -408,20 +418,15 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
   else if (as == LUSH_ASSOC_1_to_M) {
     // INVARIANT: csr->u.cilk_closure is non-NULL
     Closure* cl = csr->u.cilk_closure;
-    if (csr_is_flag(csr, UNW_FLG_BEG_LNOTE)) {
+    if (csr_is_flag(csr, UNW_FLG_BEG_LNOTE)) { // past begining of lchord
+      // advance to next closure
       cl = csr->u.cilk_closure = cl->parent;
-      if (!cl) {
-	cilk_ip_init(lip, NULL /*0*/);
-	ty = LUSH_STEP_END_CHORD;
-      }
-      else {
-	cilk_ip_init(lip, CILKFRM_PROC(cl->frame) /*cl->status*/);
-	ty = LUSH_STEP_CONT;
-      }
+      SET_LIP_AND_TY(cl, lip, ty);
     }
     else {
-      cilk_ip_init(lip, CILKFRM_PROC(cl->frame) /*cl->status*/);
-      ty = LUSH_STEP_CONT;
+      // skip the top closure; it is identical to the outermost stack frame
+      cl = csr->u.cilk_closure = cl->parent;
+      SET_LIP_AND_TY(cl, lip, ty);
       csr_set_flag(csr, UNW_FLG_BEG_LNOTE);
     }
   }
