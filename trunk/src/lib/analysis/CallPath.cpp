@@ -77,8 +77,9 @@ using namespace xml;
 
 //*************************** Forward Declarations ***************************
 
-#define FIXME_ADD_ASSOC_TAGS 0
 #define DBG_NORM_PROC_FRAME 0
+#define DBG_LUSH_PROC_FRAME 0
+
 
 typedef std::set<Prof::CSProfCodeNode*> CSProfCodeNodeSet;
 
@@ -444,7 +445,7 @@ addSymbolicInfo(Prof::CSProfCodeNode* n, Prof::IDynNode* n_dyn,
       callingCtxt->AncFile()->name();
 
     n->SetFile(fnm);
-#if (FIXME_ADD_ASSOC_TAGS)
+#if (DBG_LUSH_PROC_FRAME)
     std::string nm = callingCtxt->name();
     if (n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
       nm += " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
@@ -672,7 +673,7 @@ addSymbolicInfo(Prof::IDynNode* n_dyn, binutils::LM* lm)
   SrcFile::ln srcLn;
   lm->GetSourceFileInfo(n_dyn->ip(), n_dyn->opIndex(), func, file, srcLn);
   func = GetBestFuncName(func);
-#if (FIXME_ADD_ASSOC_TAGS)
+#if (DBG_LUSH_PROC_FRAME)
   if (!func.empty() && n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
     func +=  " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
       + ", " + n_dyn->lip_str() + ") [" + n_dyn->assocInfo_str() + "]";
