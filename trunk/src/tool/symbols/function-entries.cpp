@@ -104,6 +104,16 @@ add_stripped_function_entry(void *addr)
 }
 
 
+bool 
+query_function_entry(void *addr)
+{
+  FunctionSet::iterator it = function_entries.find(addr); 
+
+  if (it == function_entries.end()) return false;
+  else return true;
+}
+
+
 void 
 add_function_entry(void *addr, const string *comment, bool isvisible)
 {
@@ -120,6 +130,24 @@ add_function_entry(void *addr, const string *comment, bool isvisible)
     }
   }
 }
+
+void
+entries_in_range(void *start, void *end, vector<void *> &result)
+{
+#ifdef DEBUG_ENTRIES_IN_RANGE
+  printf("function entries for range [%p, %p]\n", start, end);
+#endif
+  FunctionSet::iterator it = function_entries.find(start); 
+  for (; it != function_entries.end(); it++) {
+    void *addr = (*it).first;
+    if (addr > end) return;  
+#ifdef DEBUG_ENTRIES_IN_RANGE
+    printf("  %p\n", addr);
+#endif
+    result.push_back(addr);
+  }
+}
+
 
 
 bool contains_function_entry(void *address)
