@@ -20,11 +20,6 @@ extern "C" {
  * macros
  *****************************************************************************/
 
-//#define is_aligned(addr) ((((unsigned long) (addr)) & 0x3) == 0) 
-#define is_aligned(addr) (1) 
-
-
-
 #define is_call_iclass(x) \
    ((x == XED_ICLASS_CALL_FAR) || (x == XED_ICLASS_CALL_NEAR))
 
@@ -59,6 +54,9 @@ static void process_leave(char *ins, long ins_offset);
 static bool bkwd_jump_into_protected_range(char *ins, long offset, 
 					   xed_decoded_inst_t *xptr);
 
+static bool validate_tail_call_from_jump(char *ins, long offset, 
+					 xed_decoded_inst_t *xptr);
+
 /******************************************************************************
  * local variables 
  *****************************************************************************/
@@ -82,6 +80,7 @@ process_range_init()
   xed_tables_init();
 }
 
+#define RELOCATE(u, offset) (((char *) (u)) - (offset)) 
 
 void 
 process_range(long offset, void *vstart, void *vend, bool fn_discovery)
@@ -89,15 +88,44 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
   xed_decoded_inst_t xedd;
   xed_decoded_inst_t *xptr = &xedd;
   xed_error_enum_t xed_error;
+
   int error_count = 0;
   char *ins = (char *) vstart;
   char *end = (char *) vend;
+  vector<void *> fstarts;
+  entries_in_range(ins + offset, end + offset, fstarts);
   
 
   xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
   xed_iclass_enum_t prev_xiclass = XED_ICLASS_INVALID;
 
+  void **fstart = &fstarts[0];
+  char *guidepost = RELOCATE(*fstart, offset);
+
   while (ins < end) {
+
+    if (ins >= guidepost) {
+      if (ins > guidepost) {
+	//--------------------------------------------------------------
+	// we missed a guidepost; disassembly was not properly aligned.
+	// realign ins  to match the guidepost
+	//--------------------------------------------------------------
+#ifdef DEBUG_GUIDEPOST
+	printf("resetting ins to guidepost %p from %p\n", 
+	       guidepost + offset, ins + offset);
+#endif
+	ins = guidepost;
+      }
+      //----------------------------------------------------------------
+      // all is well; our disassembly is properly aligned.
+      // advance to the next guidepost
+      //
+      // NOTE: since the vector of fstarts contains end, 
+      // the fstart pointer will never go past the end of the 
+      // fstarts array.
+      //----------------------------------------------------------------
+      fstart++; guidepost = RELOCATE(*fstart, offset);
+    }
 
     xed_decoded_inst_zero_keep_mode(xptr);
     xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
@@ -147,7 +175,9 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
         // regarding use of !is_call above: don't infer function start 
         // if we run into code from C++ that consists of a call followed 
         // by an unconditional jump
-	after_unconditional(ins, offset, xptr);
+	if (validate_tail_call_from_jump(ins, offset, xptr)) {
+	  after_unconditional(ins, offset, xptr);
+	}
       }
       break;
     case XED_ICLASS_RET_FAR:
@@ -241,7 +271,7 @@ after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr)
   // already one after padding bytes
   //--------------------------------------------------------------------
   if (contains_function_entry(uins + offset) == false) {
-    if (is_aligned(uins + offset) && !invalid_routine_start(uins)) {
+    if (!invalid_routine_start(uins)) {
       add_stripped_function_entry(potential_function_addr); 
     }
   }
@@ -322,6 +352,76 @@ bkwd_jump_into_protected_range(char *ins, long offset, xed_decoded_inst_t *xptr)
   }
   return false;
 }
+
+
+static bool 
+validate_tail_call_from_jump(char *ins, long offset, xed_decoded_inst_t *xptr)
+{ 
+  char *relocated_ins = ins + offset; 
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+  xed_operand_enum_t   op0_name = xed_operand_name(op0);
+  xed_operand_type_enum_t op0_type = xed_operand_type(op0);
+
+  if (op0_name == XED_OPERAND_RELBR && 
+      op0_type == XED_OPERAND_TYPE_IMM_CONST) {
+    xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
+
+    if (xed_operand_values_has_branch_displacement(vals)) {
+      char *target = (char *) get_branch_target(relocated_ins, xptr, vals);
+      if (target < relocated_ins) {
+	// backward jump; if this is a tail call, it should fall on a function
+	// entry already in the function entries table
+	if (query_function_entry(target)) return true;
+      } else {
+	// forward jump; if this is a tail call, it should 
+	xed_decoded_inst_t xedd_tmp;
+	xed_decoded_inst_t *xptr = &xedd_tmp;
+	xed_error_enum_t xed_error;
+
+	xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
+	xed_iclass_enum_t prev_xiclass = XED_ICLASS_INVALID;
+
+	while (ins < target) {
+
+	  xed_decoded_inst_zero_keep_mode(xptr);
+	  xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+
+	  if (xed_error != XED_ERROR_NONE) {
+	    ins++;         /* skip this byte      */
+	    continue;      /* continue onward ... */
+	  }
+
+	  xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+	  switch(xiclass) {
+	    // unconditional jump
+	  case XED_ICLASS_JMP:      case XED_ICLASS_JMP_FAR:
+
+	    // return
+	  case XED_ICLASS_RET_FAR:  case XED_ICLASS_RET_NEAR:
+
+	    // conditional branch
+	  case XED_ICLASS_JB:       case XED_ICLASS_JBE: 
+	  case XED_ICLASS_JL:       case XED_ICLASS_JLE: 
+	  case XED_ICLASS_JNB:      case XED_ICLASS_JNBE: 
+	  case XED_ICLASS_JNL:      case XED_ICLASS_JNLE: 
+	  case XED_ICLASS_JNO:      case XED_ICLASS_JNP:
+	  case XED_ICLASS_JNS:      case XED_ICLASS_JNZ:
+	  case XED_ICLASS_JO:       case XED_ICLASS_JP:
+	  case XED_ICLASS_JRCXZ:    case XED_ICLASS_JS:
+	  case XED_ICLASS_JZ:
+	    return true;
+
+	  default:
+	    break;
+	  }
+	  ins += xed_decoded_inst_get_length(xptr);
+	}
+      }
+    }
+  }
+  return false;
+}  
 
 
 static void 
