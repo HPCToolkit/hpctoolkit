@@ -59,7 +59,7 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	    //              BP_UNCHANGED
 	    //=====================================================================
 	    next = new_ui(ins + xed_decoded_inst_get_length(xptr),
-			  current->ra_status, current->sp_ra_pos, 
+			  RA_SP_RELATIVE, current->sp_ra_pos, 
 			  current->bp_ra_pos, BP_UNCHANGED, current->sp_bp_pos, 
 			  current->bp_bp_pos, current);
 	  }
