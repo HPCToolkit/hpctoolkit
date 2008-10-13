@@ -43,6 +43,7 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
   unwind_interval *prev = NULL, *current = NULL, *next = NULL, *first = NULL;
 
   highwatermark_t highwatermark = { NULL, NULL, HW_NONE };
+  char *rax_rbp_equivalent_at = 0;
   unwind_interval *canonical_interval = 0;
   int error_count = 0;
 
@@ -71,7 +72,7 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
     }
 
     next = process_inst(xptr, &ins, end, &current, first, &bp_just_pushed, 
-			&highwatermark, &canonical_interval, &bp_frames_found);
+			&highwatermark, &canonical_interval, &bp_frames_found, &rax_rbp_equivalent_at);
     
     if (next == &poison_ui) {
       set_status(&status, ins, -1, NULL);
