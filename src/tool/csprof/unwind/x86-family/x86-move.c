@@ -2,7 +2,7 @@
 
 unwind_interval *
 process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi, 
-	     unwind_interval *current, highwatermark_t *highwatermark)
+	     unwind_interval *current, highwatermark_t *highwatermark, char **rax_rbp_equivalent_at)
 {
   unwind_interval *next = current;
   if (xed_decoded_inst_get_base_reg(xptr, 0) == XED_REG_RSP) {
@@ -19,9 +19,11 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
       //-------------------------------------------------------------------------
       // storing a register to memory 
       //-------------------------------------------------------------------------
-      if (xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_RBP)  {
+      if ((xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_RBP) ||  
+          ((xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_RAX) && 
+	   (*rax_rbp_equivalent_at == ins)))  {
 	//-------------------------------------------------------------------------
-	// register being stored is BP
+	// register being stored is BP (or a copy in RAX)
 	//-------------------------------------------------------------------------
 	if (current->bp_status != BP_SAVED){
 	  //=======================================================================
@@ -103,7 +105,13 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 		      current->sp_bp_pos, current->sp_bp_pos, current); 
 	highwatermark->uwi = next;
 	highwatermark->type = HW_CREATE_STD;
-      }
+      } else if ((xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_RBP) &&
+	         (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RAX)) {
+	//=========================================================================
+	// instruction: copy BP to RAX
+	//=========================================================================
+        *rax_rbp_equivalent_at = ins + xed_decoded_inst_get_length(xptr);
+      } 
     }
   }
   return next;

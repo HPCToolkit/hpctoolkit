@@ -15,7 +15,7 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, char **ins_ptr, char *en
 			      bool *bp_just_pushed, 
 			      highwatermark_t *highwatermark,
 			      unwind_interval **canonical_interval, 
-			      bool *bp_frames_found)
+			      bool *bp_frames_found, char **rax_rbp_equivalent_at)
 {
   char *ins = *ins_ptr;
   unwind_interval *current = *current_ptr;
@@ -69,7 +69,7 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, char **ins_ptr, char *en
 
 
   case XED_ICLASS_MOV: 
-    next = process_move(ins, xptr, xi, current, highwatermark);
+    next = process_move(ins, xptr, xi, current, highwatermark, rax_rbp_equivalent_at);
     break;
 
   case XED_ICLASS_ENTER:
