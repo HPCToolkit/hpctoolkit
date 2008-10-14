@@ -733,13 +733,40 @@ AC_MSG_RESULT([$xerces_avail])
 
 xerces_platform=linux
 
+#
+# Option: --with-mpi=PATH
+#
+# Pass the MPI path to libmonitor.
+#
+AC_ARG_WITH([mpi],
+    [AS_HELP_STRING([--with-mpi=PATH],
+	[pass the MPI path to libmonitor (default no)])],
+    [],
+    [with_mpi=no])
+
+case "$with_mpi" in
+    /* )
+	if test ! -f "${with_mpi}/include/mpi.h" ; then
+	    AC_MSG_ERROR([invalid mpi directory: $with_mpi])
+	fi
+	;;
+    no )
+	;;
+    * )
+	AC_MSG_ERROR([mpi directory must be absolute path: $with_mpi])
+	;;
+esac
+
+AC_SUBST([with_mpi])
+
 AC_OUTPUT
 
 #
 # Display a summary of the config options.
 #
-AC_MSG_NOTICE([])
+AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([Externals summary])
+AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([prefix: $prefix])
 if test "x$build" != "x$host" ; then
     AC_MSG_NOTICE([build: $build])
@@ -758,4 +785,5 @@ AC_MSG_NOTICE([open-analysis: $open_analysis_avail])
 AC_MSG_NOTICE([symtabAPI: $symtabAPI_avail])
 AC_MSG_NOTICE([xed2: $xed2_avail])
 AC_MSG_NOTICE([xerces: $xerces_avail])
+AC_MSG_NOTICE([mpi: $with_mpi])
 

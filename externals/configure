@@ -652,6 +652,7 @@ build
 build_vendor
 host
 host_vendor
+with_mpi
 LIBOBJS
 LTLIBOBJS'
 ac_subst_files=''
@@ -1255,6 +1256,7 @@ Optional Packages:
   --with-symtabAPI=PATH   path to symtabAPI install directory (default build)
   --with-xed2=PATH        path to xed2 install directory (default build)
   --with-xerces=PATH      path to xerces/c install directory (default build)
+  --with-mpi=PATH         pass the MPI path to libmonitor (default no)
 
 Some influential environment variables:
   CC          C compiler command
@@ -3908,6 +3910,39 @@ echo "${ECHO_T}$xerces_avail" >&6; }
 
 xerces_platform=linux
 
+#
+# Option: --with-mpi=PATH
+#
+# Pass the MPI path to libmonitor.
+#
+
+# Check whether --with-mpi was given.
+if test "${with_mpi+set}" = set; then
+  withval=$with_mpi;
+else
+  with_mpi=no
+fi
+
+
+case "$with_mpi" in
+    /* )
+	if test ! -f "${with_mpi}/include/mpi.h" ; then
+	    { { echo "$as_me:$LINENO: error: invalid mpi directory: $with_mpi" >&5
+echo "$as_me: error: invalid mpi directory: $with_mpi" >&2;}
+   { (exit 1); exit 1; }; }
+	fi
+	;;
+    no )
+	;;
+    * )
+	{ { echo "$as_me:$LINENO: error: mpi directory must be absolute path: $with_mpi" >&5
+echo "$as_me: error: mpi directory must be absolute path: $with_mpi" >&2;}
+   { (exit 1); exit 1; }; }
+	;;
+esac
+
+
+
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -4615,11 +4650,12 @@ build!$build$ac_delim
 build_vendor!$build_vendor$ac_delim
 host!$host$ac_delim
 host_vendor!$host_vendor$ac_delim
+with_mpi!$with_mpi$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 78; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 79; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -4950,10 +4986,12 @@ fi
 #
 # Display a summary of the config options.
 #
-{ echo "$as_me:$LINENO: " >&5
-echo "$as_me: " >&6;}
+{ echo "$as_me:$LINENO: ------------------" >&5
+echo "$as_me: ------------------" >&6;}
 { echo "$as_me:$LINENO: Externals summary" >&5
 echo "$as_me: Externals summary" >&6;}
+{ echo "$as_me:$LINENO: ------------------" >&5
+echo "$as_me: ------------------" >&6;}
 { echo "$as_me:$LINENO: prefix: $prefix" >&5
 echo "$as_me: prefix: $prefix" >&6;}
 if test "x$build" != "x$host" ; then
@@ -4988,4 +5026,6 @@ echo "$as_me: symtabAPI: $symtabAPI_avail" >&6;}
 echo "$as_me: xed2: $xed2_avail" >&6;}
 { echo "$as_me:$LINENO: xerces: $xerces_avail" >&5
 echo "$as_me: xerces: $xerces_avail" >&6;}
+{ echo "$as_me:$LINENO: mpi: $with_mpi" >&5
+echo "$as_me: mpi: $with_mpi" >&6;}
 

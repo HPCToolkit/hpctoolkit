@@ -34,3 +34,5 @@ libxml2_lib="@libxml2_lib@"
 symtabAPI_platform="@symtabAPI_platform@"
 xerces_platform="@xerces_platform@"
 
+opt_with_mpi="@with_mpi@"
+
