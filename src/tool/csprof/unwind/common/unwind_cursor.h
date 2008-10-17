@@ -8,6 +8,7 @@ typedef struct _unw_c_t {
   void **bp;
   void **sp;
   unwind_interval *intvl;
+  int trolling_used;
 } unw_cursor_t;
 
 #endif

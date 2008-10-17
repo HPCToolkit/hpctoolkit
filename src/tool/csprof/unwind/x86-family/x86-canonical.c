@@ -49,8 +49,8 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
          *canonical_interval = hw_uwi;
       }
 #endif
-      if (hw_uwi && hw_uwi->bp_status == BP_SAVED)  
-	if (crhs->bp_status != BP_SAVED) {
+      if (hw_uwi && hw_uwi->bp_status != BP_UNCHANGED)
+	if (crhs->bp_status == BP_UNCHANGED) {
          set_ui_canonical(hw_uwi, *canonical_interval);
          *canonical_interval = hw_uwi;
       }

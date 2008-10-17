@@ -67,6 +67,9 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, char **ins_ptr, char *en
     next = current;
     break;
 
+  case XED_ICLASS_LEA: 
+    next = process_lea(ins, xptr, xi, current, highwatermark);
+    break;
 
   case XED_ICLASS_MOV: 
     next = process_move(ins, xptr, xi, current, highwatermark, rax_rbp_equivalent_at);

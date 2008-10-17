@@ -35,8 +35,11 @@ csprof_process_event_list(const char *evl,event_info *info)
     if (use_wallclock){
       char *_p = strchr(event,':');
       if (! _p){
+        csprof_abort("Syntax for wallclock event is: WALLCLOCK:_Your_Period_Here");
+#if 0
         EMSG("Syntax for wallclock event is: WALLCLOCK:_Your_Period_Here");
         abort();
+#endif
       }
       period = strtol(_p+1,NULL,10);
       info->sample_period = period;
@@ -44,8 +47,11 @@ csprof_process_event_list(const char *evl,event_info *info)
     }
     use_papi = use_papi || ! use_wallclock;
     if (use_wallclock && use_papi) {
+      csprof_abort("Simultaneous wallclock and papi NOT allowed");
+#if 0
       EMSG("Simultaneous wallclock and papi NOT allowed");
       abort();
+#endif
     }
   }
   info->sample_source = use_wallclock ? ITIMER : PAPI;

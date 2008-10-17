@@ -25,7 +25,7 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	//-------------------------------------------------------------------------
 	// register being stored is BP (or a copy in RAX)
 	//-------------------------------------------------------------------------
-	if (current->bp_status != BP_SAVED){
+	if (current->bp_status == BP_UNCHANGED){
 	  //=======================================================================
 	  // instruction: save caller's BP into the stack  
 	  // action:      create a new interval with 
@@ -52,7 +52,7 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	//-------------------------------------------------------------------------
 	// register being loaded is BP
 	//-------------------------------------------------------------------------
-	if (current->bp_status == BP_SAVED) {
+	if (current->bp_status != BP_UNCHANGED) {
 	  int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
 	  if (offset == current->sp_bp_pos) { 
 	    //=====================================================================
@@ -65,6 +65,17 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 			  current->bp_ra_pos, BP_UNCHANGED, current->sp_bp_pos, 
 			  current->bp_bp_pos, current);
 	  }
+          else {
+	    //=====================================================================
+	    // instruction: BP is loaded from a memory address DIFFERENT from its saved location in the stack
+	    // action:      create a new interval with BP status reset to 
+	    //              BP_HOSED
+	    //=====================================================================
+	    next = new_ui(ins + xed_decoded_inst_get_length(xptr),
+			  RA_SP_RELATIVE, current->sp_ra_pos, 
+			  current->bp_ra_pos, BP_HOSED, current->sp_bp_pos,
+			  current->bp_bp_pos, current);
+          }
 	}
       }
     }
@@ -96,11 +107,7 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	// action:      begin a new SP_RELATIVE interval 
 	//=========================================================================
 	next = new_ui(ins + xed_decoded_inst_get_length(xptr), 
-#if PREFER_BP_FRAME
-		      RA_BP_FRAME,
-#else
 		      RA_STD_FRAME,
-#endif
 		      current->sp_ra_pos, current->sp_ra_pos, BP_SAVED,
 		      current->sp_bp_pos, current->sp_bp_pos, current); 
 	highwatermark->uwi = next;

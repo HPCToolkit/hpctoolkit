@@ -34,8 +34,11 @@ add_source(sample_source_t *ss)
   if (n_sources == MAX_SAMPLE_SOURCES){
     // check to see is ss already present
     if (! in_sources(ss)){
+      csprof_abort("Too many sample sources");
+#if 0
       EMSG("Too many sample sources");
       abort();
+#endif
     }
     return;
   }
@@ -86,6 +89,8 @@ _AS0(stop)
 _AS0(shutdown)
 _ASB(started)
 
+#define csprof_event_abort(...) csprof_abort_w_info(csprof_registered_sources_list,__VA_ARGS__)
+
 void
 csprof_sample_sources_from_eventlist(char *evl)
 {
@@ -100,8 +105,11 @@ csprof_sample_sources_from_eventlist(char *evl)
       METHOD_CALL(s,add_event,event);
     }
     else {
+      csprof_event_abort("Requested event %s is not supported!",event);
+#if 0
       EMSG("Requested event %s is not supported!",event);
       abort();
+#endif
     }
   }
 }

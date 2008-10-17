@@ -94,8 +94,11 @@ files_set_directory()
   if (path == NULL || strlen(path) == 0) path = ".";
 
   if (os_realpath(path, output_directory) == NULL) {
+    csprof_abort("could not access path `%s': %s", path, strerror(errno));
+#if 0
     EMSG("could not access path `%s': %s", path, strerror(errno));
     abort();
+#endif
   }
 }
 

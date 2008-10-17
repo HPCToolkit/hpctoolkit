@@ -86,8 +86,11 @@ METHOD_FN(init)
   TMSG(PAPI,"PAPI_library_init = %d", ret);
   TMSG(PAPI,"PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
   if (ret != PAPI_VER_CURRENT){
+    csprof_abort("Failed: PAPI_library_init");
+#if 0
     EMSG("Failed: PAPI_library_init\n");
     abort();
+#endif
   }
 
 #if 0
@@ -110,8 +113,11 @@ METHOD_FN(start)
   TMSG(PAPI,"starting PAPI w event set %d",eventSet);
   int ret = PAPI_start(eventSet);
   if (ret != PAPI_OK){
+    csprof_abort("Failed to start papi f eventset %, ret = %d",eventSet,ret);
+#if 0
     EMSG("Failed to start papi f eventset %, ret = %d",eventSet,ret);
     abort();
+#endif
   }
 
   TD_GET(ss_state)[self->evset_idx] = START;
@@ -232,8 +238,11 @@ METHOD_FN(gen_event_set,int lush_metrics)
   ret = PAPI_create_eventset(&eventSet);
   PMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret,eventSet);
   if (ret != PAPI_OK){
+    csprof_abort("Failure: PAPI_create_eventset: %d", ret);
+#if 0
     EMSG("Failure: PAPI_create_eventset: %d", ret);
     abort();
+#endif
   }
 
   int nevents = (self->evl).nevents;
@@ -243,8 +252,11 @@ METHOD_FN(gen_event_set,int lush_metrics)
     if (ret != PAPI_OK){
       char nm[256];
       PAPI_event_code_to_name(evcode,nm);
+      csprof_abort("Failure: PAPI_add_event:, trying to add event %s, got ret code = %d", nm, ret);
+#if 0
       EMSG("Failure: PAPI_add_event:, trying to add event %s, got ret code = %d", nm, ret);
       abort();
+#endif
     }
   }
   for(i=0;i < nevents;i++){
@@ -255,8 +267,11 @@ METHOD_FN(gen_event_set,int lush_metrics)
 			papi_event_handler);
     TMSG(PAPI,"PAPI_overflow = %d", ret);
     if (ret != PAPI_OK){
+      csprof_abort("Failure: PAPI_overflow: %d", ret);
+#if 0
       EMSG("Failure: PAPI_overflow: %d", ret);
       abort();
+#endif
     }
   }
   thread_data_t *td = csprof_get_thread_data();
@@ -370,8 +385,11 @@ extract_and_check_event(char *in,int *ec,long *th)
 
   extract_ev_thresh(in,sizeof(evbuf),evbuf,th);
   if (! event_name_to_code(evbuf,ec)){
+    csprof_abort("PAPI event spec %s failed!",in);
+#if 0
     EMSG("PAPI event spec %s failed!",in);
     abort();
+#endif
   }
 }
 
