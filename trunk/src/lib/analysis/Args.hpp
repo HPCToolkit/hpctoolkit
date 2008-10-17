@@ -68,10 +68,12 @@
 namespace Analysis {
 
 // PathTuple: a {path, viewname} pair.
-//   PathTuple.first = path; PathTuple.second = viewname
+//   PathTuple.first = path; PathTuple.second = path target or viewname
 // PathTupleVec: the vector of all 'PathTuple'
 typedef std::pair<std::string, std::string> PathTuple;
 typedef std::vector<PathTuple> PathTupleVec;
+
+const std::string DefaultPathTupleTarget = "src";
 
 } // namespace Analysis
 

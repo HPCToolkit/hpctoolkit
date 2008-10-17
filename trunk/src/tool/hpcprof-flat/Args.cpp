@@ -329,7 +329,8 @@ Args::parse(int argc, const char* const argv[])
       StrUtil::tokenize_str(str, CLP_SEPARATOR, searchPaths);
       
       for (uint i = 0; i < searchPaths.size(); ++i) {
-	searchPathTpls.push_back(Analysis::PathTuple(searchPaths[i], "src"));
+	searchPathTpls.push_back(Analysis::PathTuple(searchPaths[i], 
+						     Analysis::DefaultPathTupleTarget));
       }
     }
     if (parser.isOpt("structure")) {
