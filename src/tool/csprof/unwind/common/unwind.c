@@ -51,6 +51,8 @@ static void update_cursor_with_troll(unw_cursor_t *cursor, int offset);
 
 static int csprof_check_fence(void *ip);
 
+static int unw_step_prefer_sp(void);
+
 
 /****************************************************************************************
  * interface functions
@@ -62,11 +64,11 @@ unw_init(void)
 {
   unw_init_arch();
   csprof_interval_tree_init();
-  if (ENABLED(PREFER_BP)){
-    NMSG(UNW_CONFIG,"**NOTE**:std frames will unwind prefering BP strategy");
+  if (unw_step_prefer_sp()){
+    NMSG(UNW_CONFIG,"**NOTE**:std frames will unwind prefering SP strategy");
   }
   else {
-    NMSG(UNW_CONFIG,"**NOTE**:std frames will unwind prefering SP strategy");
+    NMSG(UNW_CONFIG,"**NOTE**:std frames will unwind prefering BP strategy");
   }
 }
 
@@ -113,13 +115,16 @@ unw_get_reg(unw_cursor_t *cursor, int reg_id,void **reg_value)
 
 // FIXME: make this a selectable paramter, so that all manner of strategies can be selected
 static int
+#if 0
 unw_step_prefer_sp(unw_cursor_t *cursor)
+#endif
+unw_step_prefer_sp(void)
 {
-  if (ENABLED(PREFER_BP)){
-    return 0;
+  if (ENABLED(PREFER_SP)){
+    return 1;
   }
   else {
-    return 1;
+    return 0;
   }
   // return cursor->trolling_used;
 }
@@ -260,7 +265,7 @@ unw_step_std(unw_cursor_t *cursor)
 {
   int unw_res;
 
-  if (unw_step_prefer_sp(cursor)){
+  if (unw_step_prefer_sp()){
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with SP");
     unw_res = unw_step_sp(cursor);
     if (unw_res == -1) {
