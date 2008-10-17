@@ -23,7 +23,7 @@ process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr,
   char *ins = *ins_ptr;
   unwind_interval *next = current;
   unwind_interval *c = NULL; 
-  if (current->bp_status == BP_SAVED) {
+  if (current->bp_status != BP_UNCHANGED) {
      suspicious_interval(ins);
 #if 0
      unwind_interval *ui = current;

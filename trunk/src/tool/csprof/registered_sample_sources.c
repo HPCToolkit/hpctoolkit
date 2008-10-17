@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "pmsg.h"
@@ -39,5 +40,14 @@ csprof_registered_sources_init(void)
   for (int i=0;i<nregs;i++){
     METHOD_CALL(registered_sample_sources[i],init);
     NMSG(SS_COMMON,"sample source \"%s\": init",registered_sample_sources[i]->name);
+  }
+}
+
+void
+csprof_registered_sources_list(void)
+{
+  fprintf(stderr,"Registered Sample Sources:\n");
+  for (int i=0;i<nregs;i++){
+    fprintf(stderr,"    %s\n",registered_sample_sources[i]->name);
   }
 }

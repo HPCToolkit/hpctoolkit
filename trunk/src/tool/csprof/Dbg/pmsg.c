@@ -54,7 +54,8 @@ dbg_get_flag(pmsg_category flag)
 #define N_CATEGORIES (sizeof(tbl)/sizeof(tbl[0]))
 
 static int defaults[] = {
-  DBG_PREFIX(TROLL)
+  DBG_PREFIX(TROLL),
+  DBG_PREFIX(UNW_CONFIG)
 };
 #define NDEFAULTS (sizeof(defaults)/sizeof(defaults[0]))
 
@@ -217,6 +218,27 @@ csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
   va_start(args,fmt);
   _msg(fmt,args);
   abort();
+}
+
+void
+csprof_abort_w_info(void (*info)(void),const char *fmt,...)
+{
+  va_list args;
+  va_start(args,fmt);
+  _msg(fmt,args);
+
+  va_start(args,fmt);
+  vfprintf(stderr,fmt,args);
+  va_end(args);
+  fprintf(stderr,"\n");
+  info();
+  abort();
+}
+
+void
+__csprof_dc(void)
+{
+  ;
 }
 
 void

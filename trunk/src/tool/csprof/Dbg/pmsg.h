@@ -26,6 +26,10 @@ extern void csprof_exit_on_error(int ret, int ret_expected, const char *fmt,...)
 extern int  csprof_dbg(pmsg_category flag);
 extern int  csprof_logfile_fd(void);
 
+extern void csprof_abort_w_info(void (*info)(void),const char *fmt,...);
+extern void __csprof_dc(void);
+
+
 #define EMSG csprof_emsg
 #define AMSG csprof_amsg
 #define PMSG(f,...) csprof_pmsg(DBG_PREFIX(f),__VA_ARGS__)
@@ -35,6 +39,9 @@ extern int  csprof_logfile_fd(void);
 #define DBG(f)      csprof_dbg(DBG_PREFIX(f))
 #define IF_NOT_DISABLED(f) if ( ! DBG(f) )
 #define IF_ENABLED(f)      if ( DBG(f) )
+#define ENABLED(f)         DBG(f)
+
+#define csprof_abort(...) csprof_abort_w_info(__csprof_dc,__VA_ARGS__)
 
 #endif // PMSG_H
 

@@ -62,6 +62,12 @@ unw_init(void)
 {
   unw_init_arch();
   csprof_interval_tree_init();
+  if (ENABLED(PREFER_BP)){
+    NMSG(UNW_CONFIG,"**NOTE**:std frames will unwind prefering BP strategy");
+  }
+  else {
+    NMSG(UNW_CONFIG,"**NOTE**:std frames will unwind prefering SP strategy");
+  }
 }
 
 
@@ -76,6 +82,7 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
   PMSG(UNW,"UNW_INIT: frame pc = %p, frame bp = %p, frame sp = %p", 
        cursor->pc, cursor->bp, cursor->sp);
 
+  cursor->trolling_used = 0;
   cursor->intvl = csprof_addr_to_interval(cursor->pc);
 
   if (!cursor->intvl) {
@@ -104,14 +111,28 @@ unw_get_reg(unw_cursor_t *cursor, int reg_id,void **reg_value)
    return 0;
 }
 
+// FIXME: make this a selectable paramter, so that all manner of strategies can be selected
+static int
+unw_step_prefer_sp(unw_cursor_t *cursor)
+{
+  if (ENABLED(PREFER_BP)){
+    return 0;
+  }
+  else {
+    return 1;
+  }
+  // return cursor->trolling_used;
+}
 
-int 
-unw_step (unw_cursor_t *cursor)
+int
+unw_step_sp(unw_cursor_t *cursor)
 {
   void *sp, **bp, *pc; 
   void **next_sp, **next_bp, *next_pc;
 
   unwind_interval *uw;
+
+  TMSG(UNW_STRATEGY,"Using SP step");
 
   // current frame
   bp = cursor->bp;
@@ -119,84 +140,45 @@ unw_step (unw_cursor_t *cursor)
   pc = cursor->pc;
   uw = cursor->intvl;
 
-  //-----------------------------------------------------------
-  // check if we have reached the end of our unwind, which is
-  // demarcated with a fence. 
-  //-----------------------------------------------------------
-  if (csprof_check_fence(pc)) return 0;
-  
-  //-----------------------------------------------------------
-  // 
-  //-----------------------------------------------------------
-  cursor->intvl = NULL;
+  next_sp  = ((void **)((unsigned long) sp + uw->sp_ra_pos));
+  next_pc  = *next_sp;
+  if (uw->bp_status == BP_UNCHANGED){
+    next_bp = bp;
+  } else {
+    //-----------------------------------------------------------
+    // reload the candidate value for the caller's BP from the 
+    // save area in the activation frame according to the unwind 
+    // information produced by binary analysis
+    //-----------------------------------------------------------
+    next_bp = (void **)((unsigned long) sp + uw->sp_bp_pos);
+    next_bp  = *next_bp; 
 
-  if ((cursor->intvl == NULL) && 
-      (uw->ra_status == RA_SP_RELATIVE || uw->ra_status == RA_STD_FRAME)) {
-    next_sp  = ((void **)((unsigned long) sp + uw->sp_ra_pos));
-    next_pc  = *next_sp;
-    if (uw->bp_status == BP_UNCHANGED){
-      next_bp = bp;
-    } else {
-      //-----------------------------------------------------------
-      // reload the candidate value for the caller's BP from the 
-      // save area in the activation frame according to the unwind 
-      // information produced by binary analysis
-      //-----------------------------------------------------------
-      next_bp = (void **)((unsigned long) sp + uw->sp_bp_pos);
-      next_bp  = *next_bp; 
-
-      //-----------------------------------------------------------
-      // if value of BP reloaded from the save area does not point 
-      // into the stack, then it cannot possibly be useful as a frame 
-      // pointer in the caller or any of its ancesters.
-      //
-      // if the value in the BP register points into the stack, then 
-      // it might be useful as a frame pointer. in this case, we have 
-      // nothing to lose by assuming that our binary analysis for 
+    //-----------------------------------------------------------
+    // if value of BP reloaded from the save area does not point 
+    // into the stack, then it cannot possibly be useful as a frame 
+    // pointer in the caller or any of its ancesters.
+    //
+    // if the value in the BP register points into the stack, then 
+    // it might be useful as a frame pointer. in this case, we have 
+    // nothing to lose by assuming that our binary analysis for 
       // unwinding might have been mistaken and that the value in 
       // the register is the one we might want. 
       //
       // 19 December 2007 - John Mellor-Crummey
       //-----------------------------------------------------------
-      if (((unsigned long) next_bp < (unsigned long) sp) && 
-	  ((unsigned long) bp > (unsigned long) sp)) 
-	next_bp = bp;
-    }
-    next_sp += 1;
-    cursor->intvl = csprof_addr_to_interval(((char *)next_pc) - 1);
+    if (((unsigned long) next_bp < (unsigned long) sp) && 
+        ((unsigned long) bp > (unsigned long) sp)) 
+      next_bp = bp;
   }
-
-  if ((cursor->intvl == NULL) && 
-      ((uw->ra_status == RA_BP_FRAME) || 
-       ((uw->ra_status == RA_STD_FRAME) && 
-	((unsigned long) bp >= (unsigned long) sp)))) {
-    // bp relative
-    next_sp  = ((void **)((unsigned long) bp + uw->bp_bp_pos));
-    next_bp  = *next_sp;
-    next_sp  = ((void **)((unsigned long) bp + uw->bp_ra_pos));
-    next_pc  = *next_sp;
-    next_sp += 1;
-    if ((unsigned long) next_sp > (unsigned long) sp) { 
-      // this condition is a weak correctness check. only
-      // try building an interval for the return address again if it succeeds
-      cursor->intvl = csprof_addr_to_interval(((char *)next_pc) - 1);
-    }
-  }
+  next_sp += 1;
+  cursor->intvl = csprof_addr_to_interval(((char *)next_pc) - 1);
 
   if (! cursor->intvl){
-    if (((void *)next_sp) >= monitor_stack_bottom()) return 0; 
-    
-    PMSG(TROLL,"UNW STEP FAILURE :candidate pc = %p, cursor pc = %p, cursor bp = %p, cursor sp = %p", next_pc, pc, bp, sp);
-    PMSG(TROLL,"UNW STEP calls stack troll");
-
-    IF_ENABLED(TROLL_WAIT) {
-      fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
-	             "Maybe call dbg_set_flag(DBG_TROLL_WAIT,0) after attached\n",getpid());
-
-      while(DEBUG_WAIT_BEFORE_TROLLING);  // spin wait for developer to attach a debugger and clear the flag 
+    if (((void *)next_sp) >= monitor_stack_bottom()){
+      return 0;
+    } else {
+      return -1;
     }
-
-    update_cursor_with_troll(cursor, 1);
   } else {
     cursor->pc = next_pc;
     cursor->bp = next_bp;
@@ -210,6 +192,147 @@ unw_step (unw_cursor_t *cursor)
 
   PMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
 
+  return 1;
+}
+
+int
+unw_step_bp(unw_cursor_t *cursor)
+{
+  void *sp, **bp, *pc; 
+  void **next_sp, **next_bp, *next_pc;
+
+  unwind_interval *uw;
+
+  TMSG(UNW_STRATEGY,"Using BP step");
+  // current frame
+  bp = cursor->bp;
+  sp = cursor->sp;
+  pc = cursor->pc;
+  uw = cursor->intvl;
+  if ((unsigned long) bp >= (unsigned long) sp) {
+    // bp relative
+    next_sp  = ((void **)((unsigned long) bp + uw->bp_bp_pos));
+    next_bp  = *next_sp;
+    next_sp  = ((void **)((unsigned long) bp + uw->bp_ra_pos));
+    next_pc  = *next_sp;
+    next_sp += 1;
+    if ((unsigned long) next_sp > (unsigned long) sp) { 
+      // this condition is a weak correctness check. only
+      // try building an interval for the return address again if it succeeds
+      uw = csprof_addr_to_interval(((char *)next_pc) - 1);
+      if (! uw){
+        if (((void *)next_sp) >= monitor_stack_bottom()) {
+          TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom, next_sp = %p",next_sp);
+          return 0;
+        }
+        TMSG(UNW_STRATEGY,"BP cannot build interval for next_pc(%p)",next_pc);
+        return -1;
+      }
+      else {
+        cursor->pc    = next_pc;
+        cursor->bp    = next_bp;
+        cursor->sp    = next_sp;
+        cursor->intvl = uw;
+        if (debug_unw) {
+          TMSG(UNW,"dumping the found interval");
+          dump_ui(cursor->intvl,1); // debug for now
+        }
+        TMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
+        return 1;
+      }
+    }
+    else {
+      TMSG(UNW_STRATEGY,"BP unwind fails: next_sp(%p) <= current sp(%p)",next_sp,sp);
+      return -1;
+    }
+
+  }
+  else {
+    TMSG(UNW_STRATEGY,"BP unwind fails: bp (%lx) < sp (%lx)",bp,sp);
+    return -1;
+  }
+  EMSG("FALL Through BP unwind: shouldn't happen");
+  return -1;
+}
+
+int
+unw_step_std(unw_cursor_t *cursor)
+{
+  int unw_res;
+
+  if (unw_step_prefer_sp(cursor)){
+    TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with SP");
+    unw_res = unw_step_sp(cursor);
+    if (unw_res == -1) {
+      TMSG(UNW_STRATEGY,"--STD_FRAME: SP failed, RETRY w BP");
+      unw_res = unw_step_bp(cursor);
+    }
+  } else {
+    TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with BP");
+    unw_res = unw_step_bp(cursor);
+    if (unw_res == -1) {
+      TMSG(UNW_STRATEGY,"--STD_FRAME: BP failed, RETRY w SP");
+      unw_res = unw_step_sp(cursor);
+    }
+  }
+  return unw_res;
+}
+int 
+unw_step (unw_cursor_t *cursor)
+{
+
+  //-----------------------------------------------------------
+  // check if we have reached the end of our unwind, which is
+  // demarcated with a fence. 
+  //-----------------------------------------------------------
+  if (csprof_check_fence(cursor->pc)) return 0;
+
+  void *sp, **bp, *pc; 
+  void **next_sp, **next_bp, *next_pc;
+
+  unwind_interval *uw;
+
+  // current frame
+  bp = cursor->bp;
+  sp = cursor->sp;
+  pc = cursor->pc;
+  uw = cursor->intvl;
+
+  int unw_res;
+
+  switch (uw->ra_status){
+  case RA_SP_RELATIVE:
+    unw_res = unw_step_sp(cursor);
+    break;
+    
+  case RA_BP_FRAME:
+    unw_res = unw_step_bp(cursor);
+    break;
+    
+  case RA_STD_FRAME:
+       unw_res = unw_step_std(cursor);
+       break;
+
+  default:
+    EMSG("ILLEGAL UNWIND INTERVAL");
+    dump_ui(cursor->intvl,1); // debug for now
+    assert(0);
+  }
+  if (unw_res != -1){
+    TMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
+    return unw_res;
+  }
+  TMSG(TROLL,"UNW STEP FAILURE : cursor pc = %p, cursor bp = %p, cursor sp = %p", pc, bp, sp);
+  TMSG(TROLL,"UNW STEP calls stack troll");
+
+  IF_ENABLED(TROLL_WAIT) {
+    fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
+            "Maybe call dbg_set_flag(DBG_TROLL_WAIT,0) after attached\n",getpid());
+    
+    while(DEBUG_WAIT_BEFORE_TROLLING);  // spin wait for developer to attach a debugger and clear the flag 
+  }
+  
+  update_cursor_with_troll(cursor, 1);
   return 1;
 }
 
@@ -253,6 +376,7 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
       cursor->bp = next_bp;
       cursor->sp = next_sp;
 
+      cursor->trolling_used = 1;
       return; // success!
     }
     PMSG(TROLL, "No interval found for trolled pc, dropping sample,cursor pc = %p", cursor->pc);

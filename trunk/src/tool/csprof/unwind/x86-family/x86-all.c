@@ -14,6 +14,7 @@
 #include "x86-decoder.c"
 #include "x86-enter.c"
 #include "x86-jump.c"
+#include "x86-lea.c"
 #include "x86-leave.c"
 #include "x86-move.c"
 #include "x86-process-inst.c"

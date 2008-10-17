@@ -79,6 +79,13 @@ opt_papi=""
 opt_ev_list=''
 opt_trace=""
 
+#######################
+
+# Use mechanism below to turn on default -dd options
+
+#dd_list="UNW_CONFIG PREFER_BP"
+#L2="$dd_list "
+
 #####################
 
 # These option variables cannot be modified with personal defaults.
