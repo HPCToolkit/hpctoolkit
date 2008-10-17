@@ -254,9 +254,18 @@ driver_copySourceFile(const string& fnm_orig,
     std::pair<int, string> fnd = matchFileWithPath(fnm_orig, pathVec);
     int idx = fnd.first;
     if (idx >= 0) {
+      // fnm_orig explicitly matches a <search-path, path-view> tuple
       fnm_new = copySourceFile(fnd.second, dstDir, pathVec[idx]);
     }
-    
+    else if (fnm_orig[0] == '/' && FileUtil::isReadable(fnm_orig.c_str())) {
+      // fnm_orig does not match a pathVec tuple; but if it is an
+      // absolute path that is readable, use the default <search-path,
+      // path-view> tuple.
+      static const Analysis::PathTuple 
+	defaultTpl("/", Analysis::DefaultPathTupleTarget);
+      fnm_new = copySourceFile(fnm_orig, dstDir, defaultTpl);
+    }
+
     if (fnm_new.empty()) {
       DIAG_WMsg(2, "lost: " << fnm_orig);
     }
