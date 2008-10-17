@@ -232,7 +232,7 @@ csprof_abort_w_info(void (*info)(void),const char *fmt,...)
   va_end(args);
   fprintf(stderr,"\n");
   info();
-  abort();
+  exit(-1);
 }
 
 void
