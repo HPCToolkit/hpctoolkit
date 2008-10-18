@@ -220,6 +220,7 @@ typedef struct hpcfile_csprof_data_s {
   char* target;               // name of profiling target
   uint32_t num_metrics;       // number of metrics recorded
   hpcfile_csprof_metric_t *metrics;
+  uint32_t num_ccts;          // number of CCTs
   
 } hpcfile_csprof_data_t;
 

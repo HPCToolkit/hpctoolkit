@@ -409,8 +409,8 @@ void csprof_print_backtrace(csprof_state_t *state)
 
 /* writing profile data */
 
-int csprof_write_profile_data(csprof_state_t *state){
-
+int csprof_write_profile_data(csprof_state_t *state)
+{
   int ret = CSPROF_OK, ret1, ret2;
   FILE* fs;
 
@@ -449,20 +449,20 @@ int csprof_write_profile_data(csprof_state_t *state){
   /* write profile states out to disk */
   {
     csprof_state_t *runner = state;
-    unsigned int nstates = 0;
-    unsigned long tsamps = 0;
+    unsigned int num_ccts = 0;
+    unsigned long num_tramp_samps = 0;
 
     /* count states */
     while(runner != NULL) {
       if(runner->epoch != NULL) {
-	nstates++;
-	tsamps += runner->trampoline_samples;
+	num_ccts++;
+	num_tramp_samps += runner->trampoline_samples;
       }
       runner = runner->next;
     }
 
-    hpc_fwrite_le4(&nstates, fs);
-    hpc_fwrite_le8(&tsamps, fs);
+    hpc_fwrite_le4(&num_ccts, fs);
+    hpc_fwrite_le8(&num_tramp_samps, fs);
 
     /* write states */
     runner = state;

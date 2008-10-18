@@ -155,6 +155,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   hpcfile_str_t str;
   hpcfile_num8_t num8;
   uint32_t tag;
+  size_t sz;
   int ret;
 
   if (!fs) { return HPCFILE_ERR; }
@@ -230,10 +231,10 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   }
 
 
-#if 0  
+#if 0
   size_t sz;
   // Read data chunks (except epoch)
-  for (i = 0; i < fhdr.num_data-1; ++i) {  
+  for (i = 0; i < fhdr.num_data-1; ++i) {
     // Read data tag
     sz = hpc_fread_le4(&tag, fs);
     if (sz != sizeof(tag)) { return HPCFILE_ERR; }
@@ -269,10 +270,8 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 	return HPCFILE_ERR; 
 	break;
     }
-#endif
     
     // Interpret the data: FIXME sanity check
-#if 0 
     switch (tag) {
     case HPCFILE_TAG__CSPROF_TARGET: 
       data->target = str.str; 
@@ -293,52 +292,62 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   // 3. Epochs
   // ----------------------------------------------------------
 
-  // processing the epoch part here to reach the trees part--FMZ
-  {
-    uint32_t num_epoch;
+  // read number of epochs
+  uint32_t num_epoch;
+  sz = hpc_fread_le4(&num_epoch, fs);
+  if (sz != sizeof(num_epoch)) { 
+    return HPCFILE_ERR; 
+  }
+
+  // read epochs 
+  epochtbl->num_epoch = num_epoch; 
+  epochtbl->epoch_modlist = alloc_fn(num_epoch * sizeof(epoch_entry_t));
+
+  for (int i = 0; i < num_epoch; ++i) {
     uint32_t num_modules;
-    uint32_t num_trees;
-    uint64_t tsamps;
-    //size_t namelen;
-    //char module_name[256];
-    int i,jj;
-    uint64_t vaddr,mapaddr;
-    //read number of epochs
-    hpc_fread_le4(&num_epoch, fs);
-    //read in all epochs 
-    epochtbl->num_epoch = num_epoch; 
-    epochtbl->epoch_modlist=alloc_fn(num_epoch*sizeof(epoch_entry_t));
-    for (i=0;i<num_epoch;i++) {
-      hpc_fread_le4(&num_modules, fs); 
-      epochtbl->epoch_modlist[i].num_loadmodule=num_modules; 
-      epochtbl->epoch_modlist[i].loadmodule=alloc_fn(num_modules*sizeof(ldmodule_t));
-      for (jj=0; jj<num_modules; jj++) { 
-	str.str=NULL; 
-	if (hpcfile_str__fread(&str, fs, alloc_fn) != HPCFILE_OK) {
-	  free_fn(str.str);
-	  return HPCFILE_ERR;
-	} 
-	epochtbl->epoch_modlist[i].loadmodule[jj].name=str.str;
-	hpc_fread_le8(&vaddr, fs);
-	hpc_fread_le8(&mapaddr, fs); 
-	epochtbl->epoch_modlist[i].loadmodule[jj].vaddr=vaddr;
-	epochtbl->epoch_modlist[i].loadmodule[jj].mapaddr=mapaddr;
-      } //read in modules
-    }//read in epoch
+    hpc_fread_le4(&num_modules, fs); 
+
+    epochtbl->epoch_modlist[i].num_loadmodule = num_modules; 
+    epochtbl->epoch_modlist[i].loadmodule = 
+      alloc_fn(num_modules * sizeof(ldmodule_t));
     
-    //skip some info before into the trees
-    hpc_fread_le4(&num_trees,fs);
-    hpc_fread_le8(&tsamps,fs); 
-    
-  } // processing epoch table
+    for (int j = 0; j < num_modules; ++j) { 
+      uint64_t vaddr, mapaddr;
+      str.str = NULL; 
+      if (hpcfile_str__fread(&str, fs, alloc_fn) != HPCFILE_OK) {
+	free_fn(str.str);
+	return HPCFILE_ERR;
+      }
+      epochtbl->epoch_modlist[i].loadmodule[j].name = str.str;
+      hpc_fread_le8(&vaddr, fs);
+      hpc_fread_le8(&mapaddr, fs); 
+      epochtbl->epoch_modlist[i].loadmodule[j].vaddr = vaddr;
+      epochtbl->epoch_modlist[i].loadmodule[j].mapaddr = mapaddr;
+    }
+  }
+  
+  // ----------------------------------------------------------
+  // 4. 
+  // ----------------------------------------------------------
+  uint64_t num_tramp_samples;
+  
+  sz = hpc_fread_le4(&data->num_ccts, fs);
+  if (sz != sizeof(data->num_ccts)) { 
+    return HPCFILE_ERR; 
+  }
+
+  sz = hpc_fread_le8(&num_tramp_samples, fs);
+  if (sz != sizeof(num_tramp_samples)) { 
+    return HPCFILE_ERR; 
+  }
+
+  // ----------------------------------------------------------
+  // 
+  // ----------------------------------------------------------
   
   // Success! Note: We assume that it is possible for other data to
   // exist beyond this point in the stream; don't check for EOF.
   ret = HPCFILE_OK;
-  
-  // Cleanup after error
-  // cleanup_after_error:
-
   return ret;
 }
 
@@ -352,7 +361,9 @@ hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data)
   ret = hpcfile_csprof_read(infs, data, &epochtbl, 
 			    (hpcfile_cb__alloc_fn_t)malloc,
 			    (hpcfile_cb__free_fn_t)free);
-  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
+  if (ret != HPCFILE_OK) { 
+    return HPCFILE_ERR; 
+  }
 
   // Print header
   //-- hpcfile_csprof_id__fprint();
