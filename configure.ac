@@ -1291,6 +1291,7 @@ AC_CONFIG_FILES([ \
   \
   src/Makefile \
   src/tool/Makefile \
+  src/tool/hpcbounds/Makefile \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-flat/Makefile \
@@ -1299,7 +1300,6 @@ AC_CONFIG_FILES([ \
   src/tool/hpcrun-flat/Makefile \
   src/tool/hpcstruct/Makefile \
   src/tool/misc/Makefile \
-  src/tool/symbols/Makefile \
   src/tool/xprof/Makefile \
   src/lib/Makefile \
   src/lib/analysis/Makefile \

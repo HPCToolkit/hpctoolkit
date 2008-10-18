@@ -37,7 +37,7 @@ pkglibexec_PROGRAMS = stapi_syms$(EXEEXT)
 @HOST_CPU_X86_TRUE@am__append_2 = -I$(XED2_INC)
 @HOST_CPU_X86_TRUE@am__append_3 = $(XED2_LIB)/libxed.a
 @HOST_CPU_X86_FALSE@am__append_4 = generic-process-ranges.cpp
-subdir = src/tool/symbols
+subdir = src/tool/hpcbounds
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -272,9 +272,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  src/tool/symbols/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  src/tool/hpcbounds/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  src/tool/symbols/Makefile
+	  $(AUTOMAKE) --gnu  src/tool/hpcbounds/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
