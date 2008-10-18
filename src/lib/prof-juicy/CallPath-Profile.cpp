@@ -202,18 +202,21 @@ Profile::make(const char* fnm)
   }
   
   uint num_metrics = metadata.num_metrics;
+  uint num_ccts = metadata.num_ccts;
   
   DIAG_Msg(3, fnm << ": metrics found: " << num_metrics);
+  DIAG_Msg(3, fnm << ": ccts found: " << num_ccts);
 
   CallPath::Profile* prof = new CallPath::Profile(num_metrics);
-  ret = hpcfile_cstree_read(fs, prof->cct(), num_metrics,
-			    cstree_create_node_CB, cstree_link_parent_CB,
-			    hpcfile_alloc_CB, hpcfile_free_CB);
-  if (ret != HPCFILE_OK) {
-    DIAG_Throw(fnm << ": error reading calling context tree (HPC_CSTREE)."
-	       << " (Or no samples were taken.) [FIXME: should not have been lumped together!]");
-    delete prof;
-    return NULL;
+  if (num_ccts > 0) {
+    ret = hpcfile_cstree_read(fs, prof->cct(), num_metrics,
+			      cstree_create_node_CB, cstree_link_parent_CB,
+			      hpcfile_alloc_CB, hpcfile_free_CB);
+    if (ret != HPCFILE_OK) {
+      DIAG_Throw(fnm << ": error reading calling context tree (HPC_CSTREE).");
+      delete prof;
+      return NULL;
+    }
   }
 
   hpcfile_close(fs);

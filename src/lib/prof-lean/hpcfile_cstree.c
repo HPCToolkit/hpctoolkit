@@ -142,7 +142,8 @@ hpcfile_cstree_read(FILE* fs, void* tree,
   if (!fs) { return HPCFILE_ERR; }
   
   // Open file for reading; read and sanity check header
-  if (hpcfile_cstree_read_hdr(fs, &fhdr) != HPCFILE_OK) { 
+  ret = hpcfile_cstree_read_hdr(fs, &fhdr);
+  if (ret != HPCFILE_OK) { 
     return HPCFILE_ERR; 
   }
 
@@ -443,20 +444,32 @@ int
 hpcfile_cstree_hdr__fread(hpcfile_cstree_hdr_t* x, FILE* fs)
 {
   size_t sz;
-    
-  if (hpcfile_cstree_id__fread(&x->fid, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
+  int ret;
+
+  ret = hpcfile_cstree_id__fread(&x->fid, fs);
+  if (ret != HPCFILE_OK) { 
+    return HPCFILE_ERR; 
+  }
   
   sz = hpc_fread_le4(&x->vma_sz, fs);
-  if (sz != sizeof(x->vma_sz)) { return HPCFILE_ERR; }
+  if (sz != sizeof(x->vma_sz)) { 
+    return HPCFILE_ERR; 
+  }
   
   sz = hpc_fread_le4(&x->uint_sz, fs);
-  if (sz != sizeof(x->uint_sz)) { return HPCFILE_ERR; }
+  if (sz != sizeof(x->uint_sz)) { 
+    return HPCFILE_ERR; 
+  }
   
   sz = hpc_fread_le8(&x->num_nodes, fs);
-  if (sz != sizeof(x->num_nodes)) { return HPCFILE_ERR; }
+  if (sz != sizeof(x->num_nodes)) { 
+    return HPCFILE_ERR; 
+  }
 
   sz = hpc_fread_le4(&x->epoch, fs);
-  if (sz != sizeof(x->epoch)) { return HPCFILE_ERR; }
+  if (sz != sizeof(x->epoch)) { 
+    return HPCFILE_ERR; 
+  }
 
   return HPCFILE_OK;
 }
@@ -465,20 +478,32 @@ int
 hpcfile_cstree_hdr__fwrite(hpcfile_cstree_hdr_t* x, FILE* fs)
 {
   size_t sz;
-  
-  if (hpcfile_cstree_id__fwrite(&x->fid, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
+  int ret;
+
+  ret = hpcfile_cstree_id__fwrite(&x->fid, fs);
+  if (ret != HPCFILE_OK) { 
+    return HPCFILE_ERR; 
+  }
 
   sz = hpc_fwrite_le4(&x->vma_sz, fs);
-  if (sz != sizeof(x->vma_sz)) { return HPCFILE_ERR; }
+  if (sz != sizeof(x->vma_sz)) { 
+    return HPCFILE_ERR; 
+  }
  
   sz = hpc_fwrite_le4(&x->uint_sz, fs);
-  if (sz != sizeof(x->uint_sz)) { return HPCFILE_ERR; }
+  if (sz != sizeof(x->uint_sz)) { 
+    return HPCFILE_ERR; 
+  }
 
   sz = hpc_fwrite_le8(&x->num_nodes, fs);
-  if (sz != sizeof(x->num_nodes)) { return HPCFILE_ERR; }
+  if (sz != sizeof(x->num_nodes)) { 
+    return HPCFILE_ERR; 
+  }
 
   sz = hpc_fwrite_le4(&x->epoch, fs);
-  if (sz != sizeof(x->epoch)) { return HPCFILE_ERR; }
+  if (sz != sizeof(x->epoch)) { 
+    return HPCFILE_ERR; 
+  }
 
   return HPCFILE_OK;
 }
