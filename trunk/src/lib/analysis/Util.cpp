@@ -149,7 +149,9 @@ Analysis::Util::copySourceFiles(Prof::CallPath::Profile* prof,
   for (Prof::CSProfNodeIterator it(cct->root(), &filter); it.Current(); ++it) {
     Prof::CSProfNode* x = it.CurNode();
     Prof::CSProfCodeNode* x_code = dynamic_cast<Prof::CSProfCodeNode*>(x);
-    if (!x_code) { continue; }
+    if ( !(x_code && x_code->FileIsText()) ) { 
+      continue; 
+    }
 
     const string& fnm_orig = x_code->GetFile(); // may not be absolute
 
