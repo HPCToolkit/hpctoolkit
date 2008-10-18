@@ -716,7 +716,7 @@ fi
 
 AC_ARG_WITH([libunwind],
   AS_HELP_STRING([--with-libunwind=PATH],
-                 [use given LIBUNWIND installation (absolute path) with csprof (default is NO)]),
+                 [use given LIBUNWIND installation (absolute path) with hpcrun (default is NO)]),
   [if test $withval != no; then
      OPT_HAVE_LIBUNWIND=yes
      if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
@@ -1091,81 +1091,81 @@ AM_CONDITIONAL(OPT_ENABLE_HPCRUN_FLAT, test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes")
 
 
 #-------------------------------------------------
-# enable-csprof:
-# enable-csprof-sync: 
-# enable-csprof-async: 
+# enable-hpcrun:
+# enable-hpcrun-sync: 
+# enable-hpcrun-async: 
 #   - on Linux, requires libunwind
 #-------------------------------------------------
 
-AC_ARG_ENABLE([csprof],
-  [AS_HELP_STRING([--enable-csprof],
-	  [build csprof (default yes)])],
+AC_ARG_ENABLE([hpcrun],
+  [AS_HELP_STRING([--enable-hpcrun],
+	  [build hpcrun (default yes)])],
   [],
-  [enable_csprof=yes])
+  [enable_hpcrun=yes])
 
-AC_MSG_CHECKING([whether to build csprof])
+AC_MSG_CHECKING([whether to build hpcrun])
 
-OPT_ENABLE_CSPROF=yes
-enable_csprof_mesg=yes
-if test "$enable_csprof" = no ; then
-  OPT_ENABLE_CSPROF=no
-  enable_csprof_mesg='no (disabled)'
+OPT_ENABLE_HPCRUN=yes
+enable_hpcrun_mesg=yes
+if test "$enable_hpcrun" = no ; then
+  OPT_ENABLE_HPCRUN=no
+  enable_hpcrun_mesg='no (disabled)'
 elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
      test "$LIBMONITOR" = no || test "$SYMTABAPI" = no
 then
-  OPT_ENABLE_CSPROF=no
-  enable_csprof_mesg='no (missing prerequisites)'
+  OPT_ENABLE_HPCRUN=no
+  enable_hpcrun_mesg='no (missing prerequisites)'
 fi
 if test "$hpc_cpu_x86" = yes && test "$XED2" = no ; then
-  OPT_ENABLE_CSPROF=no
-  enable_csprof_mesg='no (missing prerequisites)'
+  OPT_ENABLE_HPCRUN=no
+  enable_hpcrun_mesg='no (missing prerequisites)'
 fi
 
-AC_MSG_RESULT([$enable_csprof_mesg])
-AM_CONDITIONAL([OPT_ENABLE_CSPROF], [test "$OPT_ENABLE_CSPROF" = yes])
+AC_MSG_RESULT([$enable_hpcrun_mesg])
+AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "$OPT_ENABLE_HPCRUN" = yes])
 
 
-AC_MSG_CHECKING([whether to build csprof (synchronous)])
+AC_MSG_CHECKING([whether to build hpcrun (synchronous)])
 
-OPT_ENABLE_CSPROF_SYNC=no
+OPT_ENABLE_HPCRUN_SYNC=no
 
-AC_ARG_ENABLE([csprof-sync],
-  AS_HELP_STRING([--enable-csprof-sync],
-                 [Build csprof (synchronous)]),
+AC_ARG_ENABLE([hpcrun-sync],
+  AS_HELP_STRING([--enable-hpcrun-sync],
+                 [Build hpcrun (synchronous)]),
   [case "${enableval}" in
-     yes) OPT_ENABLE_CSPROF_SYNC="yes" ;;
-     no)  OPT_ENABLE_CSPROF_SYNC="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-csprof-sync]) ;;
+     yes) OPT_ENABLE_HPCRUN_SYNC="yes" ;;
+     no)  OPT_ENABLE_HPCRUN_SYNC="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-hpcrun-sync]) ;;
    esac],
-  [OPT_ENABLE_CSPROF_SYNC=no])
+  [OPT_ENABLE_HPCRUN_SYNC=no])
 
-AC_MSG_RESULT([${OPT_ENABLE_CSPROF_SYNC}])
-AM_CONDITIONAL(OPT_ENABLE_CSPROF_SYNC, test "${OPT_ENABLE_CSPROF_SYNC}" = "yes")
+AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_SYNC}])
+AM_CONDITIONAL(OPT_ENABLE_HPCRUN_SYNC, test "${OPT_ENABLE_HPCRUN_SYNC}" = "yes")
 
+# FIXME: tallent: this should be redundant with the default build
+AC_MSG_CHECKING([whether to build hpcrun (asynchronous)])
 
-AC_MSG_CHECKING([whether to build csprof (asynchronous)])
+OPT_ENABLE_HPCRUN_ASYNC=no
 
-OPT_ENABLE_CSPROF_ASYNC=no
-
-AC_ARG_ENABLE([csprof-async],
-  AS_HELP_STRING([--enable-csprof-async],
-                 [Build csprof (synchronous)]),
+AC_ARG_ENABLE([hpcrun-async],
+  AS_HELP_STRING([--enable-hpcrun-async],
+                 [Build hpcrun (synchronous)]),
   [case "${enableval}" in
-     yes) OPT_ENABLE_CSPROF_ASYNC="yes" ;;
-     no)  OPT_ENABLE_CSPROF_ASYNC="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-csprof-async]) ;;
+     yes) OPT_ENABLE_HPCRUN_ASYNC="yes" ;;
+     no)  OPT_ENABLE_HPCRUN_ASYNC="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-hpcrun-async]) ;;
    esac],
-  [OPT_ENABLE_CSPROF_ASYNC=no])
+  [OPT_ENABLE_HPCRUN_ASYNC=no])
 
-AC_MSG_RESULT([${OPT_ENABLE_CSPROF_ASYNC}])
-AM_CONDITIONAL(OPT_ENABLE_CSPROF_ASYNC, test "${OPT_ENABLE_CSPROF_ASYNC}" = "yes")
+AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_ASYNC}])
+AM_CONDITIONAL(OPT_ENABLE_HPCRUN_ASYNC, test "${OPT_ENABLE_HPCRUN_ASYNC}" = "yes")
 
 
 # On Linux, verify we have libunwind!!!
-if test "${OPT_ENABLE_CSPROF_SYNC}" = "yes" || 
-   test "${OPT_ENABLE_CSPROF_ASYNC}" = "yes" ; then
+if test "${OPT_ENABLE_HPCRUN_SYNC}" = "yes" || 
+   test "${OPT_ENABLE_HPCRUN_ASYNC}" = "yes" ; then
   if test "${OPT_HAVE_LIBUNWIND}" = "no" && test "${HOST_OS}" = "Linux"; then
-    AC_MSG_ERROR([libunwind is needed to build csprof on Linux])
+    AC_MSG_ERROR([libunwind is needed to build hpcrun on Linux])
   fi
 fi
 
@@ -1179,11 +1179,11 @@ cat <<EOF > "$src"
 main(){}
 EOF
 g++ -o "$obj" "$src"
-csprof_libcpp_path=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
-csprof_libcpp_path=`dirname $csprof_libcpp_path`
+hpcrun_libcpp_path=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
+hpcrun_libcpp_path=`dirname $hpcrun_libcpp_path`
 rm -f "$src" "$obj"
 
-AC_SUBST([csprof_libcpp_path])
+AC_SUBST([hpcrun_libcpp_path])
 
 
 #-------------------------------------------------
@@ -1295,7 +1295,7 @@ AC_CONFIG_FILES([ \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-flat/Makefile \
   src/tool/hpcproftt/Makefile \
-  src/tool/csprof/Makefile \
+  src/tool/hpcrun/Makefile \
   src/tool/hpcrun-flat/Makefile \
   src/tool/hpcstruct/Makefile \
   src/tool/misc/Makefile \
@@ -1314,12 +1314,12 @@ AC_CONFIG_FILES([ \
   src/lib/xml/Makefile \
 ])
 
-AC_CONFIG_FILES([src/tool/csprof/scripts/hpcrun],
-  [chmod +x src/tool/csprof/scripts/hpcrun])
-AC_CONFIG_FILES([src/tool/csprof/scripts/hpclink],
-  [chmod +x src/tool/csprof/scripts/hpclink])
-AC_CONFIG_FILES([src/tool/csprof/scripts/csprof_syms],
-  [chmod +x src/tool/csprof/scripts/csprof_syms])
+AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcrun],
+  [chmod +x src/tool/hpcrun/scripts/hpcrun])
+AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpclink],
+  [chmod +x src/tool/hpcrun/scripts/hpclink])
+AC_CONFIG_FILES([src/tool/hpcrun/scripts/csprof_syms],
+  [chmod +x src/tool/hpcrun/scripts/csprof_syms])
 
 AC_SUBST_FILE([export_hpctoolkit])
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"
@@ -1349,7 +1349,7 @@ AC_MSG_NOTICE([  papi: $OPT_PAPI])
 AC_MSG_NOTICE([  symtabAPI: $SYMTABAPI])
 AC_MSG_NOTICE([  xed2: $XED2])
 AC_MSG_NOTICE([  xerces: $XERCES])
-AC_MSG_NOTICE([  build hpcrun: $enable_csprof_mesg])
+AC_MSG_NOTICE([  build hpcrun: $enable_hpcrun_mesg])
 AC_MSG_NOTICE([  build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  use lush: $enable_lush])
 

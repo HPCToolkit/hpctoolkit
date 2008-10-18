@@ -944,13 +944,13 @@ XERCES_COPY
 XERCES_LIB
 OPT_ENABLE_HPCRUN_FLAT_TRUE
 OPT_ENABLE_HPCRUN_FLAT_FALSE
-OPT_ENABLE_CSPROF_TRUE
-OPT_ENABLE_CSPROF_FALSE
-OPT_ENABLE_CSPROF_SYNC_TRUE
-OPT_ENABLE_CSPROF_SYNC_FALSE
-OPT_ENABLE_CSPROF_ASYNC_TRUE
-OPT_ENABLE_CSPROF_ASYNC_FALSE
-csprof_libcpp_path
+OPT_ENABLE_HPCRUN_TRUE
+OPT_ENABLE_HPCRUN_FALSE
+OPT_ENABLE_HPCRUN_SYNC_TRUE
+OPT_ENABLE_HPCRUN_SYNC_FALSE
+OPT_ENABLE_HPCRUN_ASYNC_TRUE
+OPT_ENABLE_HPCRUN_ASYNC_FALSE
+hpcrun_libcpp_path
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_LUSH_TRUE
@@ -1563,9 +1563,9 @@ Optional Features:
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
   --disable-libtool-lock  avoid locking (might break parallel builds)
-  --enable-csprof         build csprof (default yes)
-  --enable-csprof-sync    Build csprof (synchronous)
-  --enable-csprof-async   Build csprof (synchronous)
+  --enable-hpcrun         build hpcrun (default yes)
+  --enable-hpcrun-sync    Build hpcrun (synchronous)
+  --enable-hpcrun-async   Build hpcrun (synchronous)
   --enable-devtools       Build development tools (enable debugging)
   --enable-hpc-binutils   Enable extra HPCToolkit GNU binutils functionality
   --enable-lush           use lush backtrace in hpcrun
@@ -1584,7 +1584,7 @@ Optional Packages:
   --with-libelf=PATH      path to libelf install directory
   --with-libmonitor=PATH  path to libmonitor install directory
   --with-libunwind=PATH   use given LIBUNWIND installation (absolute path)
-                          with csprof (default is NO)
+                          with hpcrun (default is NO)
   --with-monitor=PATH     use given (old) libmonitor installation
   --with-open-analysis=PATH
                           use given OpenAnalysis installation
@@ -23992,119 +23992,119 @@ fi
 
 
 #-------------------------------------------------
-# enable-csprof:
-# enable-csprof-sync:
-# enable-csprof-async:
+# enable-hpcrun:
+# enable-hpcrun-sync:
+# enable-hpcrun-async:
 #   - on Linux, requires libunwind
 #-------------------------------------------------
 
-# Check whether --enable-csprof was given.
-if test "${enable_csprof+set}" = set; then
-  enableval=$enable_csprof;
+# Check whether --enable-hpcrun was given.
+if test "${enable_hpcrun+set}" = set; then
+  enableval=$enable_hpcrun;
 else
-  enable_csprof=yes
+  enable_hpcrun=yes
 fi
 
 
-{ echo "$as_me:$LINENO: checking whether to build csprof" >&5
-echo $ECHO_N "checking whether to build csprof... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking whether to build hpcrun" >&5
+echo $ECHO_N "checking whether to build hpcrun... $ECHO_C" >&6; }
 
-OPT_ENABLE_CSPROF=yes
-enable_csprof_mesg=yes
-if test "$enable_csprof" = no ; then
-  OPT_ENABLE_CSPROF=no
-  enable_csprof_mesg='no (disabled)'
+OPT_ENABLE_HPCRUN=yes
+enable_hpcrun_mesg=yes
+if test "$enable_hpcrun" = no ; then
+  OPT_ENABLE_HPCRUN=no
+  enable_hpcrun_mesg='no (disabled)'
 elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
      test "$LIBMONITOR" = no || test "$SYMTABAPI" = no
 then
-  OPT_ENABLE_CSPROF=no
-  enable_csprof_mesg='no (missing prerequisites)'
+  OPT_ENABLE_HPCRUN=no
+  enable_hpcrun_mesg='no (missing prerequisites)'
 fi
 if test "$hpc_cpu_x86" = yes && test "$XED2" = no ; then
-  OPT_ENABLE_CSPROF=no
-  enable_csprof_mesg='no (missing prerequisites)'
+  OPT_ENABLE_HPCRUN=no
+  enable_hpcrun_mesg='no (missing prerequisites)'
 fi
 
-{ echo "$as_me:$LINENO: result: $enable_csprof_mesg" >&5
-echo "${ECHO_T}$enable_csprof_mesg" >&6; }
- if test "$OPT_ENABLE_CSPROF" = yes; then
-  OPT_ENABLE_CSPROF_TRUE=
-  OPT_ENABLE_CSPROF_FALSE='#'
+{ echo "$as_me:$LINENO: result: $enable_hpcrun_mesg" >&5
+echo "${ECHO_T}$enable_hpcrun_mesg" >&6; }
+ if test "$OPT_ENABLE_HPCRUN" = yes; then
+  OPT_ENABLE_HPCRUN_TRUE=
+  OPT_ENABLE_HPCRUN_FALSE='#'
 else
-  OPT_ENABLE_CSPROF_TRUE='#'
-  OPT_ENABLE_CSPROF_FALSE=
+  OPT_ENABLE_HPCRUN_TRUE='#'
+  OPT_ENABLE_HPCRUN_FALSE=
 fi
 
 
 
-{ echo "$as_me:$LINENO: checking whether to build csprof (synchronous)" >&5
-echo $ECHO_N "checking whether to build csprof (synchronous)... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking whether to build hpcrun (synchronous)" >&5
+echo $ECHO_N "checking whether to build hpcrun (synchronous)... $ECHO_C" >&6; }
 
-OPT_ENABLE_CSPROF_SYNC=no
+OPT_ENABLE_HPCRUN_SYNC=no
 
-# Check whether --enable-csprof-sync was given.
-if test "${enable_csprof_sync+set}" = set; then
-  enableval=$enable_csprof_sync; case "${enableval}" in
-     yes) OPT_ENABLE_CSPROF_SYNC="yes" ;;
-     no)  OPT_ENABLE_CSPROF_SYNC="no" ;;
-     *) { { echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-csprof-sync" >&5
-echo "$as_me: error: bad value ${enableval} for --enable-csprof-sync" >&2;}
+# Check whether --enable-hpcrun-sync was given.
+if test "${enable_hpcrun_sync+set}" = set; then
+  enableval=$enable_hpcrun_sync; case "${enableval}" in
+     yes) OPT_ENABLE_HPCRUN_SYNC="yes" ;;
+     no)  OPT_ENABLE_HPCRUN_SYNC="no" ;;
+     *) { { echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-hpcrun-sync" >&5
+echo "$as_me: error: bad value ${enableval} for --enable-hpcrun-sync" >&2;}
    { (exit 1); exit 1; }; } ;;
    esac
 else
-  OPT_ENABLE_CSPROF_SYNC=no
+  OPT_ENABLE_HPCRUN_SYNC=no
 fi
 
 
-{ echo "$as_me:$LINENO: result: ${OPT_ENABLE_CSPROF_SYNC}" >&5
-echo "${ECHO_T}${OPT_ENABLE_CSPROF_SYNC}" >&6; }
- if test "${OPT_ENABLE_CSPROF_SYNC}" = "yes"; then
-  OPT_ENABLE_CSPROF_SYNC_TRUE=
-  OPT_ENABLE_CSPROF_SYNC_FALSE='#'
+{ echo "$as_me:$LINENO: result: ${OPT_ENABLE_HPCRUN_SYNC}" >&5
+echo "${ECHO_T}${OPT_ENABLE_HPCRUN_SYNC}" >&6; }
+ if test "${OPT_ENABLE_HPCRUN_SYNC}" = "yes"; then
+  OPT_ENABLE_HPCRUN_SYNC_TRUE=
+  OPT_ENABLE_HPCRUN_SYNC_FALSE='#'
 else
-  OPT_ENABLE_CSPROF_SYNC_TRUE='#'
-  OPT_ENABLE_CSPROF_SYNC_FALSE=
+  OPT_ENABLE_HPCRUN_SYNC_TRUE='#'
+  OPT_ENABLE_HPCRUN_SYNC_FALSE=
 fi
 
 
+# FIXME: tallent: this should be redundant with the default build
+{ echo "$as_me:$LINENO: checking whether to build hpcrun (asynchronous)" >&5
+echo $ECHO_N "checking whether to build hpcrun (asynchronous)... $ECHO_C" >&6; }
 
-{ echo "$as_me:$LINENO: checking whether to build csprof (asynchronous)" >&5
-echo $ECHO_N "checking whether to build csprof (asynchronous)... $ECHO_C" >&6; }
+OPT_ENABLE_HPCRUN_ASYNC=no
 
-OPT_ENABLE_CSPROF_ASYNC=no
-
-# Check whether --enable-csprof-async was given.
-if test "${enable_csprof_async+set}" = set; then
-  enableval=$enable_csprof_async; case "${enableval}" in
-     yes) OPT_ENABLE_CSPROF_ASYNC="yes" ;;
-     no)  OPT_ENABLE_CSPROF_ASYNC="no" ;;
-     *) { { echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-csprof-async" >&5
-echo "$as_me: error: bad value ${enableval} for --enable-csprof-async" >&2;}
+# Check whether --enable-hpcrun-async was given.
+if test "${enable_hpcrun_async+set}" = set; then
+  enableval=$enable_hpcrun_async; case "${enableval}" in
+     yes) OPT_ENABLE_HPCRUN_ASYNC="yes" ;;
+     no)  OPT_ENABLE_HPCRUN_ASYNC="no" ;;
+     *) { { echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-hpcrun-async" >&5
+echo "$as_me: error: bad value ${enableval} for --enable-hpcrun-async" >&2;}
    { (exit 1); exit 1; }; } ;;
    esac
 else
-  OPT_ENABLE_CSPROF_ASYNC=no
+  OPT_ENABLE_HPCRUN_ASYNC=no
 fi
 
 
-{ echo "$as_me:$LINENO: result: ${OPT_ENABLE_CSPROF_ASYNC}" >&5
-echo "${ECHO_T}${OPT_ENABLE_CSPROF_ASYNC}" >&6; }
- if test "${OPT_ENABLE_CSPROF_ASYNC}" = "yes"; then
-  OPT_ENABLE_CSPROF_ASYNC_TRUE=
-  OPT_ENABLE_CSPROF_ASYNC_FALSE='#'
+{ echo "$as_me:$LINENO: result: ${OPT_ENABLE_HPCRUN_ASYNC}" >&5
+echo "${ECHO_T}${OPT_ENABLE_HPCRUN_ASYNC}" >&6; }
+ if test "${OPT_ENABLE_HPCRUN_ASYNC}" = "yes"; then
+  OPT_ENABLE_HPCRUN_ASYNC_TRUE=
+  OPT_ENABLE_HPCRUN_ASYNC_FALSE='#'
 else
-  OPT_ENABLE_CSPROF_ASYNC_TRUE='#'
-  OPT_ENABLE_CSPROF_ASYNC_FALSE=
+  OPT_ENABLE_HPCRUN_ASYNC_TRUE='#'
+  OPT_ENABLE_HPCRUN_ASYNC_FALSE=
 fi
 
 
 
 # On Linux, verify we have libunwind!!!
-if test "${OPT_ENABLE_CSPROF_SYNC}" = "yes" ||
-   test "${OPT_ENABLE_CSPROF_ASYNC}" = "yes" ; then
+if test "${OPT_ENABLE_HPCRUN_SYNC}" = "yes" ||
+   test "${OPT_ENABLE_HPCRUN_ASYNC}" = "yes" ; then
   if test "${OPT_HAVE_LIBUNWIND}" = "no" && test "${HOST_OS}" = "Linux"; then
-    { { echo "$as_me:$LINENO: error: libunwind is needed to build csprof on Linux" >&5
-echo "$as_me: error: libunwind is needed to build csprof on Linux" >&2;}
+    { { echo "$as_me:$LINENO: error: libunwind is needed to build hpcrun on Linux" >&5
+echo "$as_me: error: libunwind is needed to build hpcrun on Linux" >&2;}
    { (exit 1); exit 1; }; }
   fi
 fi
@@ -24119,8 +24119,8 @@ cat <<EOF > "$src"
 main(){}
 EOF
 g++ -o "$obj" "$src"
-csprof_libcpp_path=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
-csprof_libcpp_path=`dirname $csprof_libcpp_path`
+hpcrun_libcpp_path=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
+hpcrun_libcpp_path=`dirname $hpcrun_libcpp_path`
 rm -f "$src" "$obj"
 
 
@@ -24256,14 +24256,14 @@ echo "${ECHO_T}yes (${OPT_OBJCOPY})" >&6; }
 # Makefiles to create
 #----------------------------------------------------------------------------
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/csprof/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/symbols/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/symbols/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
 
 
-ac_config_files="$ac_config_files src/tool/csprof/scripts/hpcrun"
+ac_config_files="$ac_config_files src/tool/hpcrun/scripts/hpcrun"
 
-ac_config_files="$ac_config_files src/tool/csprof/scripts/hpclink"
+ac_config_files="$ac_config_files src/tool/hpcrun/scripts/hpclink"
 
-ac_config_files="$ac_config_files src/tool/csprof/scripts/csprof_syms"
+ac_config_files="$ac_config_files src/tool/hpcrun/scripts/csprof_syms"
 
 
 
@@ -24496,24 +24496,24 @@ echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN_FLAT\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${OPT_ENABLE_CSPROF_TRUE}" && test -z "${OPT_ENABLE_CSPROF_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_CSPROF\" was never defined.
+if test -z "${OPT_ENABLE_HPCRUN_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_HPCRUN\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OPT_ENABLE_CSPROF\" was never defined.
+echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${OPT_ENABLE_CSPROF_SYNC_TRUE}" && test -z "${OPT_ENABLE_CSPROF_SYNC_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_CSPROF_SYNC\" was never defined.
+if test -z "${OPT_ENABLE_HPCRUN_SYNC_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_SYNC_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_HPCRUN_SYNC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OPT_ENABLE_CSPROF_SYNC\" was never defined.
+echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN_SYNC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${OPT_ENABLE_CSPROF_ASYNC_TRUE}" && test -z "${OPT_ENABLE_CSPROF_ASYNC_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_CSPROF_ASYNC\" was never defined.
+if test -z "${OPT_ENABLE_HPCRUN_ASYNC_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_ASYNC_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_HPCRUN_ASYNC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OPT_ENABLE_CSPROF_ASYNC\" was never defined.
+echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN_ASYNC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -24996,7 +24996,7 @@ do
     "src/tool/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/Makefile" ;;
     "src/tool/hpcprof-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/Makefile" ;;
     "src/tool/hpcproftt/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/Makefile" ;;
-    "src/tool/csprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/csprof/Makefile" ;;
+    "src/tool/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/Makefile" ;;
     "src/tool/hpcrun-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun-flat/Makefile" ;;
     "src/tool/hpcstruct/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/Makefile" ;;
     "src/tool/misc/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/misc/Makefile" ;;
@@ -25013,9 +25013,9 @@ do
     "src/lib/prof-lean/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/prof-lean/Makefile" ;;
     "src/lib/support/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/support/Makefile" ;;
     "src/lib/xml/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/xml/Makefile" ;;
-    "src/tool/csprof/scripts/hpcrun") CONFIG_FILES="$CONFIG_FILES src/tool/csprof/scripts/hpcrun" ;;
-    "src/tool/csprof/scripts/hpclink") CONFIG_FILES="$CONFIG_FILES src/tool/csprof/scripts/hpclink" ;;
-    "src/tool/csprof/scripts/csprof_syms") CONFIG_FILES="$CONFIG_FILES src/tool/csprof/scripts/csprof_syms" ;;
+    "src/tool/hpcrun/scripts/hpcrun") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpcrun" ;;
+    "src/tool/hpcrun/scripts/hpclink") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpclink" ;;
+    "src/tool/hpcrun/scripts/csprof_syms") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/csprof_syms" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -25302,13 +25302,13 @@ XERCES_COPY!$XERCES_COPY$ac_delim
 XERCES_LIB!$XERCES_LIB$ac_delim
 OPT_ENABLE_HPCRUN_FLAT_TRUE!$OPT_ENABLE_HPCRUN_FLAT_TRUE$ac_delim
 OPT_ENABLE_HPCRUN_FLAT_FALSE!$OPT_ENABLE_HPCRUN_FLAT_FALSE$ac_delim
-OPT_ENABLE_CSPROF_TRUE!$OPT_ENABLE_CSPROF_TRUE$ac_delim
-OPT_ENABLE_CSPROF_FALSE!$OPT_ENABLE_CSPROF_FALSE$ac_delim
-OPT_ENABLE_CSPROF_SYNC_TRUE!$OPT_ENABLE_CSPROF_SYNC_TRUE$ac_delim
-OPT_ENABLE_CSPROF_SYNC_FALSE!$OPT_ENABLE_CSPROF_SYNC_FALSE$ac_delim
-OPT_ENABLE_CSPROF_ASYNC_TRUE!$OPT_ENABLE_CSPROF_ASYNC_TRUE$ac_delim
-OPT_ENABLE_CSPROF_ASYNC_FALSE!$OPT_ENABLE_CSPROF_ASYNC_FALSE$ac_delim
-csprof_libcpp_path!$csprof_libcpp_path$ac_delim
+OPT_ENABLE_HPCRUN_TRUE!$OPT_ENABLE_HPCRUN_TRUE$ac_delim
+OPT_ENABLE_HPCRUN_FALSE!$OPT_ENABLE_HPCRUN_FALSE$ac_delim
+OPT_ENABLE_HPCRUN_SYNC_TRUE!$OPT_ENABLE_HPCRUN_SYNC_TRUE$ac_delim
+OPT_ENABLE_HPCRUN_SYNC_FALSE!$OPT_ENABLE_HPCRUN_SYNC_FALSE$ac_delim
+OPT_ENABLE_HPCRUN_ASYNC_TRUE!$OPT_ENABLE_HPCRUN_ASYNC_TRUE$ac_delim
+OPT_ENABLE_HPCRUN_ASYNC_FALSE!$OPT_ENABLE_HPCRUN_ASYNC_FALSE$ac_delim
+hpcrun_libcpp_path!$hpcrun_libcpp_path$ac_delim
 OPT_ENABLE_DEVTOOLS_TRUE!$OPT_ENABLE_DEVTOOLS_TRUE$ac_delim
 OPT_ENABLE_DEVTOOLS_FALSE!$OPT_ENABLE_DEVTOOLS_FALSE$ac_delim
 OPT_ENABLE_LUSH_TRUE!$OPT_ENABLE_LUSH_TRUE$ac_delim
@@ -25754,9 +25754,9 @@ echo "$as_me: error: cannot create directory $as_dir" >&2;}
   done
 done
  ;;
-    "src/tool/csprof/scripts/hpcrun":F) chmod +x src/tool/csprof/scripts/hpcrun ;;
-    "src/tool/csprof/scripts/hpclink":F) chmod +x src/tool/csprof/scripts/hpclink ;;
-    "src/tool/csprof/scripts/csprof_syms":F) chmod +x src/tool/csprof/scripts/csprof_syms ;;
+    "src/tool/hpcrun/scripts/hpcrun":F) chmod +x src/tool/hpcrun/scripts/hpcrun ;;
+    "src/tool/hpcrun/scripts/hpclink":F) chmod +x src/tool/hpcrun/scripts/hpclink ;;
+    "src/tool/hpcrun/scripts/csprof_syms":F) chmod +x src/tool/hpcrun/scripts/csprof_syms ;;
 
   esac
 done # for ac_tag
@@ -25829,8 +25829,8 @@ echo "$as_me:   symtabAPI: $SYMTABAPI" >&6;}
 echo "$as_me:   xed2: $XED2" >&6;}
 { echo "$as_me:$LINENO:   xerces: $XERCES" >&5
 echo "$as_me:   xerces: $XERCES" >&6;}
-{ echo "$as_me:$LINENO:   build hpcrun: $enable_csprof_mesg" >&5
-echo "$as_me:   build hpcrun: $enable_csprof_mesg" >&6;}
+{ echo "$as_me:$LINENO:   build hpcrun: $enable_hpcrun_mesg" >&5
+echo "$as_me:   build hpcrun: $enable_hpcrun_mesg" >&6;}
 { echo "$as_me:$LINENO:   build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}" >&5
 echo "$as_me:   build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
 { echo "$as_me:$LINENO:   use lush: $enable_lush" >&5
