@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 1645 2008-10-18 16:20:32Z tallent $
+# $Id: Makefile.am 1646 2008-10-18 16:45:06Z tallent $
 
 #############################################################################
 #
@@ -48,7 +48,10 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @OPT_ENABLE_HPCRUN_FLAT_TRUE@am__append_1 = hpcrun-flat
-@OPT_ENABLE_HPCRUN_TRUE@am__append_2 = hpcrun symbols
+@OPT_ENABLE_HPCRUN_TRUE@am__append_2 = \
+@OPT_ENABLE_HPCRUN_TRUE@	hpcrun \
+@OPT_ENABLE_HPCRUN_TRUE@	hpcbounds
+
 subdir = src/tool
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -72,7 +75,7 @@ RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump xprof \
-	misc hpcrun-flat hpcrun symbols
+	misc hpcrun-flat hpcrun hpcbounds
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@

@@ -76,7 +76,9 @@ if OPT_ENABLE_HPCRUN_FLAT
 endif
 
 if OPT_ENABLE_HPCRUN
-  SUBDIRS += hpcrun symbols
+  SUBDIRS += \
+	hpcrun \
+	hpcbounds
 endif
 
 #if OPT_ENABLE_HPCRUN_SYNC
