@@ -71,8 +71,8 @@ SUBDIRS = \
 	misc
 
 
-if OPT_ENABLE_HPCRUN
-  SUBDIRS += hpcrun
+if OPT_ENABLE_HPCRUN_FLAT
+  SUBDIRS += hpcrun-flat
 endif
 
 if OPT_ENABLE_CSPROF

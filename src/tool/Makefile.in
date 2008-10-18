@@ -47,7 +47,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@OPT_ENABLE_HPCRUN_TRUE@am__append_1 = hpcrun
+@OPT_ENABLE_HPCRUN_FLAT_TRUE@am__append_1 = hpcrun-flat
 @OPT_ENABLE_CSPROF_TRUE@am__append_2 = csprof symbols
 subdir = src/tool
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
@@ -72,7 +72,7 @@ RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump xprof \
-	misc hpcrun csprof symbols
+	misc hpcrun-flat csprof symbols
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@

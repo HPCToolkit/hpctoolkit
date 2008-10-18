@@ -942,8 +942,8 @@ XERCES_IFLAGS
 XERCES_LDFLAGS
 XERCES_COPY
 XERCES_LIB
-OPT_ENABLE_HPCRUN_TRUE
-OPT_ENABLE_HPCRUN_FALSE
+OPT_ENABLE_HPCRUN_FLAT_TRUE
+OPT_ENABLE_HPCRUN_FLAT_FALSE
 OPT_ENABLE_CSPROF_TRUE
 OPT_ENABLE_CSPROF_FALSE
 OPT_ENABLE_CSPROF_SYNC_TRUE
@@ -23974,19 +23974,19 @@ echo "${ECHO_T}${XERCES}" >&6; }
 { echo "$as_me:$LINENO: checking whether to build hpcrun-flat" >&5
 echo $ECHO_N "checking whether to build hpcrun-flat... $ECHO_C" >&6; }
 
-OPT_ENABLE_HPCRUN="no"
+OPT_ENABLE_HPCRUN_FLAT="no"
 if test "${OPT_HAVE_PAPI}" = "yes" && test "${HOST_OS}" = "Linux"; then
-  OPT_ENABLE_HPCRUN="yes"
+  OPT_ENABLE_HPCRUN_FLAT="yes"
 fi
 
-{ echo "$as_me:$LINENO: result: ${OPT_ENABLE_HPCRUN}" >&5
-echo "${ECHO_T}${OPT_ENABLE_HPCRUN}" >&6; }
- if test "${OPT_ENABLE_HPCRUN}" = "yes"; then
-  OPT_ENABLE_HPCRUN_TRUE=
-  OPT_ENABLE_HPCRUN_FALSE='#'
+{ echo "$as_me:$LINENO: result: ${OPT_ENABLE_HPCRUN_FLAT}" >&5
+echo "${ECHO_T}${OPT_ENABLE_HPCRUN_FLAT}" >&6; }
+ if test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes"; then
+  OPT_ENABLE_HPCRUN_FLAT_TRUE=
+  OPT_ENABLE_HPCRUN_FLAT_FALSE='#'
 else
-  OPT_ENABLE_HPCRUN_TRUE='#'
-  OPT_ENABLE_HPCRUN_FALSE=
+  OPT_ENABLE_HPCRUN_FLAT_TRUE='#'
+  OPT_ENABLE_HPCRUN_FLAT_FALSE=
 fi
 
 
@@ -24256,7 +24256,7 @@ echo "${ECHO_T}yes (${OPT_OBJCOPY})" >&6; }
 # Makefiles to create
 #----------------------------------------------------------------------------
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/csprof/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/symbols/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/csprof/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/symbols/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
 
 
 ac_config_files="$ac_config_files src/tool/csprof/scripts/hpcrun"
@@ -24489,10 +24489,10 @@ echo "$as_me: error: conditional \"OPT_HAVE_PAPI\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${OPT_ENABLE_HPCRUN_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_HPCRUN\" was never defined.
+if test -z "${OPT_ENABLE_HPCRUN_FLAT_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FLAT_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_HPCRUN_FLAT\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN\" was never defined.
+echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN_FLAT\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -24992,12 +24992,12 @@ do
     "lib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/tool/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/Makefile" ;;
-    "src/tool/csprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/csprof/Makefile" ;;
     "src/tool/hpclump/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpclump/Makefile" ;;
     "src/tool/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/Makefile" ;;
     "src/tool/hpcprof-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/Makefile" ;;
     "src/tool/hpcproftt/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/Makefile" ;;
-    "src/tool/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/Makefile" ;;
+    "src/tool/csprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/csprof/Makefile" ;;
+    "src/tool/hpcrun-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun-flat/Makefile" ;;
     "src/tool/hpcstruct/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/Makefile" ;;
     "src/tool/misc/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/misc/Makefile" ;;
     "src/tool/symbols/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/symbols/Makefile" ;;
@@ -25300,8 +25300,8 @@ XERCES_IFLAGS!$XERCES_IFLAGS$ac_delim
 XERCES_LDFLAGS!$XERCES_LDFLAGS$ac_delim
 XERCES_COPY!$XERCES_COPY$ac_delim
 XERCES_LIB!$XERCES_LIB$ac_delim
-OPT_ENABLE_HPCRUN_TRUE!$OPT_ENABLE_HPCRUN_TRUE$ac_delim
-OPT_ENABLE_HPCRUN_FALSE!$OPT_ENABLE_HPCRUN_FALSE$ac_delim
+OPT_ENABLE_HPCRUN_FLAT_TRUE!$OPT_ENABLE_HPCRUN_FLAT_TRUE$ac_delim
+OPT_ENABLE_HPCRUN_FLAT_FALSE!$OPT_ENABLE_HPCRUN_FLAT_FALSE$ac_delim
 OPT_ENABLE_CSPROF_TRUE!$OPT_ENABLE_CSPROF_TRUE$ac_delim
 OPT_ENABLE_CSPROF_FALSE!$OPT_ENABLE_CSPROF_FALSE$ac_delim
 OPT_ENABLE_CSPROF_SYNC_TRUE!$OPT_ENABLE_CSPROF_SYNC_TRUE$ac_delim
@@ -25831,8 +25831,8 @@ echo "$as_me:   xed2: $XED2" >&6;}
 echo "$as_me:   xerces: $XERCES" >&6;}
 { echo "$as_me:$LINENO:   build hpcrun: $enable_csprof_mesg" >&5
 echo "$as_me:   build hpcrun: $enable_csprof_mesg" >&6;}
-{ echo "$as_me:$LINENO:   build hpcrun-flat: ${OPT_ENABLE_HPCRUN}" >&5
-echo "$as_me:   build hpcrun-flat: ${OPT_ENABLE_HPCRUN}" >&6;}
+{ echo "$as_me:$LINENO:   build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}" >&5
+echo "$as_me:   build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
 { echo "$as_me:$LINENO:   use lush: $enable_lush" >&5
 echo "$as_me:   use lush: $enable_lush" >&6;}
 

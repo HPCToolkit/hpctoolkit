@@ -1081,13 +1081,13 @@ AC_SUBST([XERCES_LIB])
 
 AC_MSG_CHECKING([whether to build hpcrun-flat])
 
-OPT_ENABLE_HPCRUN="no"
+OPT_ENABLE_HPCRUN_FLAT="no"
 if test "${OPT_HAVE_PAPI}" = "yes" && test "${HOST_OS}" = "Linux"; then
-  OPT_ENABLE_HPCRUN="yes"
+  OPT_ENABLE_HPCRUN_FLAT="yes"
 fi
 
-AC_MSG_RESULT([${OPT_ENABLE_HPCRUN}])
-AM_CONDITIONAL(OPT_ENABLE_HPCRUN, test "${OPT_ENABLE_HPCRUN}" = "yes")
+AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_FLAT}])
+AM_CONDITIONAL(OPT_ENABLE_HPCRUN_FLAT, test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes")
 
 
 #-------------------------------------------------
@@ -1291,12 +1291,12 @@ AC_CONFIG_FILES([ \
   \
   src/Makefile \
   src/tool/Makefile \
-  src/tool/csprof/Makefile \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-flat/Makefile \
   src/tool/hpcproftt/Makefile \
-  src/tool/hpcrun/Makefile \
+  src/tool/csprof/Makefile \
+  src/tool/hpcrun-flat/Makefile \
   src/tool/hpcstruct/Makefile \
   src/tool/misc/Makefile \
   src/tool/symbols/Makefile \
@@ -1350,6 +1350,6 @@ AC_MSG_NOTICE([  symtabAPI: $SYMTABAPI])
 AC_MSG_NOTICE([  xed2: $XED2])
 AC_MSG_NOTICE([  xerces: $XERCES])
 AC_MSG_NOTICE([  build hpcrun: $enable_csprof_mesg])
-AC_MSG_NOTICE([  build hpcrun-flat: ${OPT_ENABLE_HPCRUN}])
+AC_MSG_NOTICE([  build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  use lush: $enable_lush])
 
