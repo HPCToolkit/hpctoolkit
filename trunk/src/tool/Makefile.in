@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 1550 2008-08-11 05:13:36Z krentel $
+# $Id: Makefile.am 1645 2008-10-18 16:20:32Z tallent $
 
 #############################################################################
 #
@@ -48,7 +48,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @OPT_ENABLE_HPCRUN_FLAT_TRUE@am__append_1 = hpcrun-flat
-@OPT_ENABLE_CSPROF_TRUE@am__append_2 = csprof symbols
+@OPT_ENABLE_HPCRUN_TRUE@am__append_2 = hpcrun symbols
 subdir = src/tool
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -72,7 +72,7 @@ RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump xprof \
-	misc hpcrun-flat csprof symbols
+	misc hpcrun-flat hpcrun symbols
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -202,7 +202,6 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
-csprof_libcpp_path = @csprof_libcpp_path@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -214,6 +213,7 @@ host_cpu = @host_cpu@
 host_os = @host_os@
 host_vendor = @host_vendor@
 hpc_ext_libs_dir = @hpc_ext_libs_dir@
+hpcrun_libcpp_path = @hpcrun_libcpp_path@
 htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
@@ -563,8 +563,8 @@ uninstall-am:
 	uninstall uninstall-am
 
 
-#if OPT_ENABLE_CSPROF_ASYNC
-#  SUBDIRS += csprof 
+#if OPT_ENABLE_HPCRUN_SYNC
+#  SUBDIRS += hpcrun 
 #endif
 
 #if OPT_ENABLE_DEVTOOLS

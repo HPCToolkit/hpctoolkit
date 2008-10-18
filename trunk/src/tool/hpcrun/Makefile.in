@@ -80,7 +80,7 @@ pkglib_PROGRAMS = libcsprof.o$(EXEEXT)
 @OPT_HAVE_PAPI_TRUE@am__append_18 = $(PAPI_LD_FLGS)
 @OPT_HAVE_PAPI_TRUE@am__append_19 = $(PAPI_LD_FLGS)
 @OPT_ENABLE_LUSH_TRUE@am__append_20 = libagent-cilk.la
-subdir = src/tool/csprof
+subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/configure.ac
@@ -411,7 +411,6 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
-csprof_libcpp_path = @csprof_libcpp_path@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -423,6 +422,7 @@ host_cpu = @host_cpu@
 host_os = @host_os@
 host_vendor = @host_vendor@
 hpc_ext_libs_dir = @hpc_ext_libs_dir@
+hpcrun_libcpp_path = @hpcrun_libcpp_path@
 htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
@@ -627,9 +627,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  src/tool/csprof/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  src/tool/hpcrun/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  src/tool/csprof/Makefile
+	  $(AUTOMAKE) --gnu  src/tool/hpcrun/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

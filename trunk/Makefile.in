@@ -53,9 +53,9 @@ subdir = .
 DIST_COMMON = README $(am__configure_deps) $(dist_doc_DATA) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/configure \
-	$(top_srcdir)/src/tool/csprof/scripts/csprof_syms.in \
-	$(top_srcdir)/src/tool/csprof/scripts/hpclink.in \
-	$(top_srcdir)/src/tool/csprof/scripts/hpcrun.in config/compile \
+	$(top_srcdir)/src/tool/hpcrun/scripts/csprof_syms.in \
+	$(top_srcdir)/src/tool/hpcrun/scripts/hpclink.in \
+	$(top_srcdir)/src/tool/hpcrun/scripts/hpcrun.in config/compile \
 	config/config.guess config/config.sub config/depcomp \
 	config/install-sh config/ltmain.sh config/missing \
 	config/mkinstalldirs
@@ -67,9 +67,9 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
-CONFIG_CLEAN_FILES = src/tool/csprof/scripts/hpcrun \
-	src/tool/csprof/scripts/hpclink \
-	src/tool/csprof/scripts/csprof_syms
+CONFIG_CLEAN_FILES = src/tool/hpcrun/scripts/hpcrun \
+	src/tool/hpcrun/scripts/hpclink \
+	src/tool/hpcrun/scripts/csprof_syms
 am__installdirs = "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(docdir)"
 pkglibexecSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(pkglibexec_SCRIPTS)
@@ -234,7 +234,6 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
-csprof_libcpp_path = @csprof_libcpp_path@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -246,6 +245,7 @@ host_cpu = @host_cpu@
 host_os = @host_os@
 host_vendor = @host_vendor@
 hpc_ext_libs_dir = @hpc_ext_libs_dir@
+hpcrun_libcpp_path = @hpcrun_libcpp_path@
 htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
@@ -371,11 +371,11 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(srcdir) && $(AUTOCONF)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
-src/tool/csprof/scripts/hpcrun: $(top_builddir)/config.status $(top_srcdir)/src/tool/csprof/scripts/hpcrun.in
+src/tool/hpcrun/scripts/hpcrun: $(top_builddir)/config.status $(top_srcdir)/src/tool/hpcrun/scripts/hpcrun.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-src/tool/csprof/scripts/hpclink: $(top_builddir)/config.status $(top_srcdir)/src/tool/csprof/scripts/hpclink.in
+src/tool/hpcrun/scripts/hpclink: $(top_builddir)/config.status $(top_srcdir)/src/tool/hpcrun/scripts/hpclink.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-src/tool/csprof/scripts/csprof_syms: $(top_builddir)/config.status $(top_srcdir)/src/tool/csprof/scripts/csprof_syms.in
+src/tool/hpcrun/scripts/csprof_syms: $(top_builddir)/config.status $(top_srcdir)/src/tool/hpcrun/scripts/csprof_syms.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-pkglibexecSCRIPTS: $(pkglibexec_SCRIPTS)
 	@$(NORMAL_INSTALL)
