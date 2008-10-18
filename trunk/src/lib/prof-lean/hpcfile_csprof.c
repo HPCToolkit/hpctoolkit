@@ -586,10 +586,11 @@ int
 hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, FILE* fs)
 {
   fputs("{csprof_data:\n", fs);
-  
-  if (x->target) { fprintf(fs, "  target: %s\n", x->target); }
+
+  char* tgt = (x->target) ? x->target : "";
+  fprintf(fs, "  target: %s\n", tgt);
+
   fprintf(fs, "  metrics: %d\n", x->num_metrics);
-  
   for (int i = 0; i < x->num_metrics; ++i) {
     hpcfile_csprof_metric_t metric = x->metrics[i];
     
@@ -599,6 +600,8 @@ hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, FILE* fs)
   }
   fputs("  }\n", fs);
   
+  fprintf(fs, "  num CCTs: %d\n", x->num_ccts);
+
   return HPCFILE_OK;
 }
 
