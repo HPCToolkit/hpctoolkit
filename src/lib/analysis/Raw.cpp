@@ -105,10 +105,13 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   }
   
   uint num_metrics = metadata.num_metrics;
-  
-  ret = hpcfile_cstree_fprint(fs, num_metrics, stdout);
-  if (ret != HPCFILE_OK) { 
-    DIAG_Throw(filenm << ": error reading HPC_CSTREE.");
+  uint num_ccts = metadata.num_ccts;
+
+  if (num_ccts > 0) {
+    ret = hpcfile_cstree_fprint(fs, num_metrics, stdout);
+    if (ret != HPCFILE_OK) { 
+      DIAG_Throw(filenm << ": error reading HPC_CSTREE.");
+    }
   }
 
   hpcfile_close(fs);
