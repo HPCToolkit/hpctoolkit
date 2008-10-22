@@ -61,8 +61,6 @@ MYDATA = \
 	README.ReleaseNotes
 
 MYSCRIPTS = \
-	Sourceme-csh \
-	Sourceme-sh \
 	config/hpcguess \
 	config/hpcplatform \
 	config/config.guess
@@ -183,13 +181,11 @@ hpc-dist:
 	  $${nm_new}/configure* \
 	  $${nm_new}/Makefile* \
 	  $${nm_new}/README* \
-	  $${nm_new}/Sourceme-* \
 	  \
 	  $${nm_new}/config \
 	  \
           $${nm_new}/doc \
 	  $${nm_new}/examples \
-          $${nm_new}/externals \
           $${nm_new}/lib \
           $${nm_new}/src \
 	  $${nm_new}/tools \
