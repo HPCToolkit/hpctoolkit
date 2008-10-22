@@ -46,17 +46,17 @@ Building Externals
 ===================
 
 Building HPCToolkit is done in two phases: first build all necessary
-prerequisite packages (externals), and then build HPCToolkit.  The
-idea is to build the externals tree once, and then work solely in the
-HPCToolkit tree.  Technically, the externals tree is not necessary to
-build HPCToolkit, but then you would need to build all of HPCToolkit's
-prerequisites manually.
+prerequisite packages (hpctoolkit-externals), and then build
+HPCToolkit.  The idea is to build the externals tree once, and then
+work solely in the HPCToolkit tree.  Technically, the externals tree
+is not necessary to build HPCToolkit, but then you would need to build
+all of HPCToolkit's prerequisites manually.
 
 Normally, externals does not require any special options, just let
 configure decide what packages need to be built (usually most or all),
 build them and then clean up the tree.
 
-   cd externals
+   cd hpctoolkit-externals
    ./configure
    make all
    make distclean
