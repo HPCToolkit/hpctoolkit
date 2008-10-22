@@ -98,7 +98,6 @@ Some vendor compilers that support GNU extensions also work.
 
 <li>
 <p><span class="hpctool">hpcrun</span>, a tool for collecting performance data on Linux, requires an installation of <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> 3.0 or greater.
-To learn more about installing PAPI on your system consult our <a href="hwctools.html#papi">PAPI notes</a>.
 
 <li>
 <p><span class="hpctool">hpcviewer</span> is a Rich Client application that can be used on a variety of platforms.  It needs a Java 1.5 runtime environment (JRE) and gtk (on Linux).
@@ -124,23 +123,20 @@ succssfully used versions 5.6.x, 5.8.x.
 <h2>Downloading the Sources</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
-<ol class="noindent">
+<p>
+<a href="software.html">Download</a> and extract the following:
+<ol>
+  <li><p>An HPCToolkit tarball
 
-<li>
-<p><a href="software.html">Download</a> a HPCToolkit one-stop-shopping tarball and untar it:
-<div class="indent">
-  <code>tar zxvf hpctoolkit-one-stop-shopping-x.y.z.tar</code><br>
-</div>
+  <li><p>An HPCToolkit externals tarball.  This contains several external libraries, e.g., OpenAnalysis, Xerces-C++ and GNU binutils.  In some cases it may be possible to use versions of these libraries that are already installed on your system. However, we do not support such configurations.
 
-<li>
-<p><a href="software.html">Download</a> a <span class="hpctool">hpcviewer</span> build.
-
+  <li><p>An <span class="hpctool">hpcviewer</span> build.
 </ol>
 
-
-<p>(Note: The one-stop-shopping tarball contains several external libraries, e.g., OpenAnalysis, Xerces-C++ and GNU binutils.
-In some cases it may be possible to use versions of these libraries that are already installed on your system.
-However, we do not support such configurations.)</p>
+<p>To extract the tarball <i>zoo.tar.gz</i>, execute:
+<div class="indent">
+  <code>tar zxvf <i>zoo.tar.gz</i></code>
+</div>
 
 
 <!-- ********************************************************************** -->
@@ -151,28 +147,37 @@ However, we do not support such configurations.)</p>
 <h2>Building and Installing</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
-<p>The easiest way to build HPCToolkit is to use <code>Makefile.quick</code>, which is simply a wrapper for running <code>configure ; make ; make install</code>.
-If you want to build HPCToolkit's <span class=hpctool>hpcrun</span>, you will need to use the <code>PAPI</code> option.  For a brief description, list of supported options and the default installation path, execute the following.
-<div class="indent">
-  <code>make -f Makefile.quick help</code><br>
-</div>
+<p>The build and install follows autotools conventions (<code>./configure && make && make install</code>).
+In each case, more options are available by executing <code>./configure --help</code>.
+See the README file for more details.
 
+<p>The typical build is as follows:
 <ol class="noindent">
 
 <li>
-<p>Change to the top-level hpctoolkit-one-stop-shopping-x.y.z directory.
-
-<li>
-<p>Configure, build and install. Since this will produce a lot of
-output, you may want to redirect it to a file.  Make sure to use the
-<code>CXX</code> and <code>CC</code> options if you do not wish to use
-the GNU compiler:
-
+<p>Build and install HPCToolkit's externals, which typically does not require any special options:
 <div class="indent">
-  <code>make -f Makefile.quick&nbsp;[PAPI=&lt;install_path&gt;]&nbsp;[CXX=&lt;C++&nbsp;compiler&gt;]&nbsp;[CC=&lt;C&nbsp;compiler&gt;]&nbsp;all</code><br>
+  <code>cd hpctoolkit-externals</code><br>
+  <code>./configure</code><br>
+  <code>make all</code><br>
+  <code>make distclean</code><br>
 </div>
 
-<p>For example:
+<li>
+<p>Build and install HPCToolkit:
+<div class="indent">
+  <code>cd hpctoolkit</code><br>
+  <code>./configure --prefix=PATH --with-externals=PATH --with-papi=PATH</code><br>
+  <code>make install</code><br>
+</div>
+
+<p>This will build and install HPCToolkit in the paths given above.
+Because the installation is compact and self-contained, you may rename
+or move it to another location.  All source code may be removed.
+
+   <!-- &nbsp; -->
+
+   <!--
    <ul class="noindent">
      <li>Linux-*: <i>(using the GNU compiler and Intel compiler,
                   respectively)</i>
@@ -180,7 +185,6 @@ the GNU compiler:
          <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;PAPI=&lt;papi&gt;&nbsp;CXX=g++&nbsp;CC=gcc&nbsp;all</code>
          <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;PAPI=&lt;papi&gt;&nbsp;CXX=icc&nbsp;CC=icc&nbsp;all</code>
        </ul>
-     <!--
      <li>IRIX64-mips: <i>(using the SGI MIPSpro compiler)</i>
        <ul class="noindent">
          <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=CC&nbsp;CC=cc&nbsp;all</code>
@@ -192,17 +196,14 @@ the GNU compiler:
      <li>Tru64-alpha: <i>(using the Compaq comiler)</i>
        <ul class="noindent">
          <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=cxx&nbsp;CC=cc&nbsp;all</code>
-       -->
        </ul>
    </ul>
+   -->
 
 </ol>
 
-<p>This will build and install HPCToolkit in the paths given above.
-Because the installation is compact and self-contained, you may rename
-or move it to another location.  All source code may be removed.
 
-<p class="lastupdated">Page last updated: 2008/07/09</p>
+<p class="lastupdated">Page last updated: 2008/10/22</p>
 
 <!-- ********************************************************************** -->
 
