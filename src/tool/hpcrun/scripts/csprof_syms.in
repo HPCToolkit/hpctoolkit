@@ -5,7 +5,7 @@ ext_libs_dir='@hpc_ext_libs_dir@'
 stapi_syms_dir='libexec/hpctoolkit'
 
 # Should be absolute path.
-libcpp_path='@csprof_libcpp_path@'
+libcpp_path='@hpcrun_libcpp_path@'
 
 ############ UTILITY FUNCTIONS #################
 
