@@ -53,7 +53,7 @@ subdir = .
 DIST_COMMON = README $(am__configure_deps) $(dist_doc_DATA) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/configure \
-	$(top_srcdir)/src/tool/hpcrun/scripts/csprof_syms.in \
+	$(top_srcdir)/src/tool/hpcrun/scripts/hpcfnbounds.in \
 	$(top_srcdir)/src/tool/hpcrun/scripts/hpclink.in \
 	$(top_srcdir)/src/tool/hpcrun/scripts/hpcrun.in config/compile \
 	config/config.guess config/config.sub config/depcomp \
@@ -69,7 +69,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES = src/tool/hpcrun/scripts/hpcrun \
 	src/tool/hpcrun/scripts/hpclink \
-	src/tool/hpcrun/scripts/csprof_syms
+	src/tool/hpcrun/scripts/hpcfnbounds
 am__installdirs = "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(docdir)"
 pkglibexecSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(pkglibexec_SCRIPTS)
@@ -373,7 +373,7 @@ src/tool/hpcrun/scripts/hpcrun: $(top_builddir)/config.status $(top_srcdir)/src/
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 src/tool/hpcrun/scripts/hpclink: $(top_builddir)/config.status $(top_srcdir)/src/tool/hpcrun/scripts/hpclink.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-src/tool/hpcrun/scripts/csprof_syms: $(top_builddir)/config.status $(top_srcdir)/src/tool/hpcrun/scripts/csprof_syms.in
+src/tool/hpcrun/scripts/hpcfnbounds: $(top_builddir)/config.status $(top_srcdir)/src/tool/hpcrun/scripts/hpcfnbounds.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-pkglibexecSCRIPTS: $(pkglibexec_SCRIPTS)
 	@$(NORMAL_INSTALL)
