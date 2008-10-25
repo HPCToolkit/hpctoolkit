@@ -64,12 +64,6 @@ unw_init(void)
 {
   unw_init_arch();
   csprof_interval_tree_init();
-  if (unw_step_prefer_sp()){
-    NMSG(UNW_CONFIG,"**NOTE**:std frames will unwind prefering SP strategy");
-  }
-  else {
-    NMSG(UNW_CONFIG,"**NOTE**:std frames will unwind prefering BP strategy");
-  }
 }
 
 

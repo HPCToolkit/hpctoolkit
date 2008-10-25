@@ -5,7 +5,7 @@ const char* CSPROF_FNM_PFX          = "csprof.";   /* general filename prefix */
 const char* CSPROF_PSTATE_FNM_SFX   = ".cspstate"; /* pstate filename suffix */
 const char* CSPROF_PROFILE_FNM_SFX  = "csp";       /* profile filename suffix */
 const char* CSPROF_TRACE_FNM_SFX    = "cst";       /* trace filename suffix */
-const char* CSPROF_LOG_FNM_SFX      = "csl";       /* debug log filename suffix */
+const char* CSPROF_LOG_FNM_SFX      = "log";       /* debug log filename suffix */
 
 const char* CSPROF_OPT_LUSH_AGENTS   = "CSPROF_OPT_LUSH_AGENTS";
 
