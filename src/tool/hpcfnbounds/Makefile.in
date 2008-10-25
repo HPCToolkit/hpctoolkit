@@ -32,12 +32,12 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-pkglibexec_PROGRAMS = stapi_syms$(EXEEXT)
+pkglibexec_PROGRAMS = hpcfnbounds-bin$(EXEEXT)
 @HOST_CPU_X86_TRUE@am__append_1 = x86-process-ranges.cpp
 @HOST_CPU_X86_TRUE@am__append_2 = -I$(XED2_INC)
 @HOST_CPU_X86_TRUE@am__append_3 = $(XED2_LIB)/libxed.a
 @HOST_CPU_X86_FALSE@am__append_4 = generic-process-ranges.cpp
-subdir = src/tool/hpcbounds
+subdir = src/tool/hpcfnbounds
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -49,22 +49,23 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(pkglibexecdir)"
 pkglibexecPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(pkglibexec_PROGRAMS)
-am__stapi_syms_SOURCES_DIST = code-ranges.cpp function-entries.cpp \
-	intervals.cpp symbols.cpp x86-process-ranges.cpp \
-	generic-process-ranges.cpp
-am__objects_1 = stapi_syms-code-ranges.$(OBJEXT) \
-	stapi_syms-function-entries.$(OBJEXT) \
-	stapi_syms-intervals.$(OBJEXT) stapi_syms-symbols.$(OBJEXT)
-@HOST_CPU_X86_TRUE@am__objects_2 =  \
-@HOST_CPU_X86_TRUE@	stapi_syms-x86-process-ranges.$(OBJEXT)
-@HOST_CPU_X86_FALSE@am__objects_3 = stapi_syms-generic-process-ranges.$(OBJEXT)
-am_stapi_syms_OBJECTS = $(am__objects_1) $(am__objects_2) \
+am__hpcfnbounds_bin_SOURCES_DIST = code-ranges.cpp \
+	function-entries.cpp intervals.cpp symbols.cpp \
+	x86-process-ranges.cpp generic-process-ranges.cpp
+am__objects_1 = hpcfnbounds_bin-code-ranges.$(OBJEXT) \
+	hpcfnbounds_bin-function-entries.$(OBJEXT) \
+	hpcfnbounds_bin-intervals.$(OBJEXT) \
+	hpcfnbounds_bin-symbols.$(OBJEXT)
+@HOST_CPU_X86_TRUE@am__objects_2 = hpcfnbounds_bin-x86-process-ranges.$(OBJEXT)
+@HOST_CPU_X86_FALSE@am__objects_3 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
+am_hpcfnbounds_bin_OBJECTS = $(am__objects_1) $(am__objects_2) \
 	$(am__objects_3)
-stapi_syms_OBJECTS = $(am_stapi_syms_OBJECTS)
-stapi_syms_LDADD = $(LDADD)
-stapi_syms_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(stapi_syms_CXXFLAGS) \
-	$(CXXFLAGS) $(stapi_syms_LDFLAGS) $(LDFLAGS) -o $@
+hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
+hpcfnbounds_bin_LDADD = $(LDADD)
+hpcfnbounds_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) \
+	$(hpcfnbounds_bin_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -77,8 +78,8 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(stapi_syms_SOURCES)
-DIST_SOURCES = $(am__stapi_syms_SOURCES_DIST)
+SOURCES = $(hpcfnbounds_bin_SOURCES)
+DIST_SOURCES = $(am__hpcfnbounds_bin_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -252,11 +253,11 @@ SYMBOLS_BASE_FILES = \
     intervals.cpp		\
     symbols.cpp
 
-stapi_syms_SOURCES = $(SYMBOLS_BASE_FILES) $(am__append_1) \
+hpcfnbounds_bin_SOURCES = $(SYMBOLS_BASE_FILES) $(am__append_1) \
 	$(am__append_4)
-stapi_syms_CPPFLAGS = -I$(SYMTABAPI_INC) $(am__append_2)
-stapi_syms_CXXFLAGS = $(CXXFLAGS) $(HOST_CXXFLAGS)
-stapi_syms_LDFLAGS = -L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon \
+hpcfnbounds_bin_CPPFLAGS = -I$(SYMTABAPI_INC) $(am__append_2)
+hpcfnbounds_bin_CXXFLAGS = $(CXXFLAGS) $(HOST_CXXFLAGS)
+hpcfnbounds_bin_LDFLAGS = -L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon \
 	-L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf \
 	$(am__append_3)
 all: all-am
@@ -272,9 +273,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  src/tool/hpcbounds/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  src/tool/hpcfnbounds/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  src/tool/hpcbounds/Makefile
+	  $(AUTOMAKE) --gnu  src/tool/hpcfnbounds/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -320,9 +321,9 @@ clean-pkglibexecPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-stapi_syms$(EXEEXT): $(stapi_syms_OBJECTS) $(stapi_syms_DEPENDENCIES) 
-	@rm -f stapi_syms$(EXEEXT)
-	$(stapi_syms_LINK) $(stapi_syms_OBJECTS) $(stapi_syms_LDADD) $(LIBS)
+hpcfnbounds-bin$(EXEEXT): $(hpcfnbounds_bin_OBJECTS) $(hpcfnbounds_bin_DEPENDENCIES) 
+	@rm -f hpcfnbounds-bin$(EXEEXT)
+	$(hpcfnbounds_bin_LINK) $(hpcfnbounds_bin_OBJECTS) $(hpcfnbounds_bin_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -330,12 +331,12 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stapi_syms-code-ranges.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stapi_syms-function-entries.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stapi_syms-generic-process-ranges.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stapi_syms-intervals.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stapi_syms-symbols.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stapi_syms-x86-process-ranges.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-code-ranges.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-function-entries.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-intervals.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-symbols.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-x86-process-ranges.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -358,89 +359,89 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-stapi_syms-code-ranges.o: code-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-code-ranges.o -MD -MP -MF $(DEPDIR)/stapi_syms-code-ranges.Tpo -c -o stapi_syms-code-ranges.o `test -f 'code-ranges.cpp' || echo '$(srcdir)/'`code-ranges.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-code-ranges.Tpo $(DEPDIR)/stapi_syms-code-ranges.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='code-ranges.cpp' object='stapi_syms-code-ranges.o' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-code-ranges.o: code-ranges.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-code-ranges.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-code-ranges.Tpo -c -o hpcfnbounds_bin-code-ranges.o `test -f 'code-ranges.cpp' || echo '$(srcdir)/'`code-ranges.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-code-ranges.Tpo $(DEPDIR)/hpcfnbounds_bin-code-ranges.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='code-ranges.cpp' object='hpcfnbounds_bin-code-ranges.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-code-ranges.o `test -f 'code-ranges.cpp' || echo '$(srcdir)/'`code-ranges.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-code-ranges.o `test -f 'code-ranges.cpp' || echo '$(srcdir)/'`code-ranges.cpp
 
-stapi_syms-code-ranges.obj: code-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-code-ranges.obj -MD -MP -MF $(DEPDIR)/stapi_syms-code-ranges.Tpo -c -o stapi_syms-code-ranges.obj `if test -f 'code-ranges.cpp'; then $(CYGPATH_W) 'code-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/code-ranges.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-code-ranges.Tpo $(DEPDIR)/stapi_syms-code-ranges.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='code-ranges.cpp' object='stapi_syms-code-ranges.obj' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-code-ranges.obj: code-ranges.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-code-ranges.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-code-ranges.Tpo -c -o hpcfnbounds_bin-code-ranges.obj `if test -f 'code-ranges.cpp'; then $(CYGPATH_W) 'code-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/code-ranges.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-code-ranges.Tpo $(DEPDIR)/hpcfnbounds_bin-code-ranges.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='code-ranges.cpp' object='hpcfnbounds_bin-code-ranges.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-code-ranges.obj `if test -f 'code-ranges.cpp'; then $(CYGPATH_W) 'code-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/code-ranges.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-code-ranges.obj `if test -f 'code-ranges.cpp'; then $(CYGPATH_W) 'code-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/code-ranges.cpp'; fi`
 
-stapi_syms-function-entries.o: function-entries.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-function-entries.o -MD -MP -MF $(DEPDIR)/stapi_syms-function-entries.Tpo -c -o stapi_syms-function-entries.o `test -f 'function-entries.cpp' || echo '$(srcdir)/'`function-entries.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-function-entries.Tpo $(DEPDIR)/stapi_syms-function-entries.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='function-entries.cpp' object='stapi_syms-function-entries.o' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-function-entries.o: function-entries.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-function-entries.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-function-entries.Tpo -c -o hpcfnbounds_bin-function-entries.o `test -f 'function-entries.cpp' || echo '$(srcdir)/'`function-entries.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-function-entries.Tpo $(DEPDIR)/hpcfnbounds_bin-function-entries.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='function-entries.cpp' object='hpcfnbounds_bin-function-entries.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-function-entries.o `test -f 'function-entries.cpp' || echo '$(srcdir)/'`function-entries.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-function-entries.o `test -f 'function-entries.cpp' || echo '$(srcdir)/'`function-entries.cpp
 
-stapi_syms-function-entries.obj: function-entries.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-function-entries.obj -MD -MP -MF $(DEPDIR)/stapi_syms-function-entries.Tpo -c -o stapi_syms-function-entries.obj `if test -f 'function-entries.cpp'; then $(CYGPATH_W) 'function-entries.cpp'; else $(CYGPATH_W) '$(srcdir)/function-entries.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-function-entries.Tpo $(DEPDIR)/stapi_syms-function-entries.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='function-entries.cpp' object='stapi_syms-function-entries.obj' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-function-entries.obj: function-entries.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-function-entries.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-function-entries.Tpo -c -o hpcfnbounds_bin-function-entries.obj `if test -f 'function-entries.cpp'; then $(CYGPATH_W) 'function-entries.cpp'; else $(CYGPATH_W) '$(srcdir)/function-entries.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-function-entries.Tpo $(DEPDIR)/hpcfnbounds_bin-function-entries.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='function-entries.cpp' object='hpcfnbounds_bin-function-entries.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-function-entries.obj `if test -f 'function-entries.cpp'; then $(CYGPATH_W) 'function-entries.cpp'; else $(CYGPATH_W) '$(srcdir)/function-entries.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-function-entries.obj `if test -f 'function-entries.cpp'; then $(CYGPATH_W) 'function-entries.cpp'; else $(CYGPATH_W) '$(srcdir)/function-entries.cpp'; fi`
 
-stapi_syms-intervals.o: intervals.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-intervals.o -MD -MP -MF $(DEPDIR)/stapi_syms-intervals.Tpo -c -o stapi_syms-intervals.o `test -f 'intervals.cpp' || echo '$(srcdir)/'`intervals.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-intervals.Tpo $(DEPDIR)/stapi_syms-intervals.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='intervals.cpp' object='stapi_syms-intervals.o' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-intervals.o: intervals.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-intervals.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-intervals.Tpo -c -o hpcfnbounds_bin-intervals.o `test -f 'intervals.cpp' || echo '$(srcdir)/'`intervals.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-intervals.Tpo $(DEPDIR)/hpcfnbounds_bin-intervals.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='intervals.cpp' object='hpcfnbounds_bin-intervals.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-intervals.o `test -f 'intervals.cpp' || echo '$(srcdir)/'`intervals.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-intervals.o `test -f 'intervals.cpp' || echo '$(srcdir)/'`intervals.cpp
 
-stapi_syms-intervals.obj: intervals.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-intervals.obj -MD -MP -MF $(DEPDIR)/stapi_syms-intervals.Tpo -c -o stapi_syms-intervals.obj `if test -f 'intervals.cpp'; then $(CYGPATH_W) 'intervals.cpp'; else $(CYGPATH_W) '$(srcdir)/intervals.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-intervals.Tpo $(DEPDIR)/stapi_syms-intervals.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='intervals.cpp' object='stapi_syms-intervals.obj' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-intervals.obj: intervals.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-intervals.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-intervals.Tpo -c -o hpcfnbounds_bin-intervals.obj `if test -f 'intervals.cpp'; then $(CYGPATH_W) 'intervals.cpp'; else $(CYGPATH_W) '$(srcdir)/intervals.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-intervals.Tpo $(DEPDIR)/hpcfnbounds_bin-intervals.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='intervals.cpp' object='hpcfnbounds_bin-intervals.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-intervals.obj `if test -f 'intervals.cpp'; then $(CYGPATH_W) 'intervals.cpp'; else $(CYGPATH_W) '$(srcdir)/intervals.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-intervals.obj `if test -f 'intervals.cpp'; then $(CYGPATH_W) 'intervals.cpp'; else $(CYGPATH_W) '$(srcdir)/intervals.cpp'; fi`
 
-stapi_syms-symbols.o: symbols.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-symbols.o -MD -MP -MF $(DEPDIR)/stapi_syms-symbols.Tpo -c -o stapi_syms-symbols.o `test -f 'symbols.cpp' || echo '$(srcdir)/'`symbols.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-symbols.Tpo $(DEPDIR)/stapi_syms-symbols.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='symbols.cpp' object='stapi_syms-symbols.o' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-symbols.o: symbols.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-symbols.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-symbols.Tpo -c -o hpcfnbounds_bin-symbols.o `test -f 'symbols.cpp' || echo '$(srcdir)/'`symbols.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-symbols.Tpo $(DEPDIR)/hpcfnbounds_bin-symbols.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='symbols.cpp' object='hpcfnbounds_bin-symbols.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-symbols.o `test -f 'symbols.cpp' || echo '$(srcdir)/'`symbols.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-symbols.o `test -f 'symbols.cpp' || echo '$(srcdir)/'`symbols.cpp
 
-stapi_syms-symbols.obj: symbols.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-symbols.obj -MD -MP -MF $(DEPDIR)/stapi_syms-symbols.Tpo -c -o stapi_syms-symbols.obj `if test -f 'symbols.cpp'; then $(CYGPATH_W) 'symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/symbols.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-symbols.Tpo $(DEPDIR)/stapi_syms-symbols.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='symbols.cpp' object='stapi_syms-symbols.obj' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-symbols.obj: symbols.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-symbols.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-symbols.Tpo -c -o hpcfnbounds_bin-symbols.obj `if test -f 'symbols.cpp'; then $(CYGPATH_W) 'symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/symbols.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-symbols.Tpo $(DEPDIR)/hpcfnbounds_bin-symbols.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='symbols.cpp' object='hpcfnbounds_bin-symbols.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-symbols.obj `if test -f 'symbols.cpp'; then $(CYGPATH_W) 'symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/symbols.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-symbols.obj `if test -f 'symbols.cpp'; then $(CYGPATH_W) 'symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/symbols.cpp'; fi`
 
-stapi_syms-x86-process-ranges.o: x86-process-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-x86-process-ranges.o -MD -MP -MF $(DEPDIR)/stapi_syms-x86-process-ranges.Tpo -c -o stapi_syms-x86-process-ranges.o `test -f 'x86-process-ranges.cpp' || echo '$(srcdir)/'`x86-process-ranges.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-x86-process-ranges.Tpo $(DEPDIR)/stapi_syms-x86-process-ranges.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='x86-process-ranges.cpp' object='stapi_syms-x86-process-ranges.o' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-x86-process-ranges.o: x86-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-x86-process-ranges.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-x86-process-ranges.Tpo -c -o hpcfnbounds_bin-x86-process-ranges.o `test -f 'x86-process-ranges.cpp' || echo '$(srcdir)/'`x86-process-ranges.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-x86-process-ranges.Tpo $(DEPDIR)/hpcfnbounds_bin-x86-process-ranges.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='x86-process-ranges.cpp' object='hpcfnbounds_bin-x86-process-ranges.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-x86-process-ranges.o `test -f 'x86-process-ranges.cpp' || echo '$(srcdir)/'`x86-process-ranges.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-x86-process-ranges.o `test -f 'x86-process-ranges.cpp' || echo '$(srcdir)/'`x86-process-ranges.cpp
 
-stapi_syms-x86-process-ranges.obj: x86-process-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-x86-process-ranges.obj -MD -MP -MF $(DEPDIR)/stapi_syms-x86-process-ranges.Tpo -c -o stapi_syms-x86-process-ranges.obj `if test -f 'x86-process-ranges.cpp'; then $(CYGPATH_W) 'x86-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/x86-process-ranges.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-x86-process-ranges.Tpo $(DEPDIR)/stapi_syms-x86-process-ranges.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='x86-process-ranges.cpp' object='stapi_syms-x86-process-ranges.obj' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-x86-process-ranges.obj: x86-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-x86-process-ranges.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-x86-process-ranges.Tpo -c -o hpcfnbounds_bin-x86-process-ranges.obj `if test -f 'x86-process-ranges.cpp'; then $(CYGPATH_W) 'x86-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/x86-process-ranges.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-x86-process-ranges.Tpo $(DEPDIR)/hpcfnbounds_bin-x86-process-ranges.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='x86-process-ranges.cpp' object='hpcfnbounds_bin-x86-process-ranges.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-x86-process-ranges.obj `if test -f 'x86-process-ranges.cpp'; then $(CYGPATH_W) 'x86-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/x86-process-ranges.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-x86-process-ranges.obj `if test -f 'x86-process-ranges.cpp'; then $(CYGPATH_W) 'x86-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/x86-process-ranges.cpp'; fi`
 
-stapi_syms-generic-process-ranges.o: generic-process-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-generic-process-ranges.o -MD -MP -MF $(DEPDIR)/stapi_syms-generic-process-ranges.Tpo -c -o stapi_syms-generic-process-ranges.o `test -f 'generic-process-ranges.cpp' || echo '$(srcdir)/'`generic-process-ranges.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-generic-process-ranges.Tpo $(DEPDIR)/stapi_syms-generic-process-ranges.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='generic-process-ranges.cpp' object='stapi_syms-generic-process-ranges.o' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-generic-process-ranges.o: generic-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-generic-process-ranges.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Tpo -c -o hpcfnbounds_bin-generic-process-ranges.o `test -f 'generic-process-ranges.cpp' || echo '$(srcdir)/'`generic-process-ranges.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Tpo $(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='generic-process-ranges.cpp' object='hpcfnbounds_bin-generic-process-ranges.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-generic-process-ranges.o `test -f 'generic-process-ranges.cpp' || echo '$(srcdir)/'`generic-process-ranges.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-generic-process-ranges.o `test -f 'generic-process-ranges.cpp' || echo '$(srcdir)/'`generic-process-ranges.cpp
 
-stapi_syms-generic-process-ranges.obj: generic-process-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-generic-process-ranges.obj -MD -MP -MF $(DEPDIR)/stapi_syms-generic-process-ranges.Tpo -c -o stapi_syms-generic-process-ranges.obj `if test -f 'generic-process-ranges.cpp'; then $(CYGPATH_W) 'generic-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/generic-process-ranges.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-generic-process-ranges.Tpo $(DEPDIR)/stapi_syms-generic-process-ranges.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='generic-process-ranges.cpp' object='stapi_syms-generic-process-ranges.obj' libtool=no @AMDEPBACKSLASH@
+hpcfnbounds_bin-generic-process-ranges.obj: generic-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-generic-process-ranges.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Tpo -c -o hpcfnbounds_bin-generic-process-ranges.obj `if test -f 'generic-process-ranges.cpp'; then $(CYGPATH_W) 'generic-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/generic-process-ranges.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Tpo $(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='generic-process-ranges.cpp' object='hpcfnbounds_bin-generic-process-ranges.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-generic-process-ranges.obj `if test -f 'generic-process-ranges.cpp'; then $(CYGPATH_W) 'generic-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/generic-process-ranges.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-generic-process-ranges.obj `if test -f 'generic-process-ranges.cpp'; then $(CYGPATH_W) 'generic-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/generic-process-ranges.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

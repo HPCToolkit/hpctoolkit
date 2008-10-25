@@ -1291,7 +1291,7 @@ AC_CONFIG_FILES([ \
   \
   src/Makefile \
   src/tool/Makefile \
-  src/tool/hpcbounds/Makefile \
+  src/tool/hpcfnbounds/Makefile \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-flat/Makefile \
@@ -1318,8 +1318,8 @@ AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcrun],
   [chmod +x src/tool/hpcrun/scripts/hpcrun])
 AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpclink],
   [chmod +x src/tool/hpcrun/scripts/hpclink])
-AC_CONFIG_FILES([src/tool/hpcrun/scripts/csprof_syms],
-  [chmod +x src/tool/hpcrun/scripts/csprof_syms])
+AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcfnbounds],
+  [chmod +x src/tool/hpcrun/scripts/hpcfnbounds])
 
 AC_SUBST_FILE([export_hpctoolkit])
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"

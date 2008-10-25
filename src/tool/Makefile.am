@@ -78,7 +78,7 @@ endif
 if OPT_ENABLE_HPCRUN
   SUBDIRS += \
 	hpcrun \
-	hpcbounds
+	hpcfnbounds
 endif
 
 #if OPT_ENABLE_HPCRUN_SYNC

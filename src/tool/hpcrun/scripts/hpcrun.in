@@ -55,7 +55,7 @@
 # HPCTOOLKIT=/path/to/install/prefix
 
 # Relative paths are relative to HPCTOOLKIT.
-csprof_syms_dir='libexec/hpctoolkit'
+hpcfnbounds_dir='libexec/hpctoolkit'
 libcsprof_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
@@ -103,9 +103,9 @@ hpc_path_to_root=..
 @export_hpctoolkit@
 
 # Relative paths are relative to HPCTOOLKIT.
-case "$csprof_syms_dir" in
+case "$hpcfnbounds_dir" in
   /* ) ;;
-  * ) csprof_syms_dir="${HPCTOOLKIT}/${csprof_syms_dir}" ;;
+  * ) hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
 esac
 case "$libcsprof_dir" in
   /* ) ;;
@@ -283,7 +283,7 @@ f_prepareenv()
     export LD_PRELOAD
   fi
 
-  export CSPROF_NM_COMMAND="${csprof_syms_dir}/csprof_syms"
+  export CSPROF_NM_COMMAND="${hpcfnbounds_dir}/hpcfnbounds"
 
   # export profiler options
   if [ -n "${opt_lush_agents}" ]; then
