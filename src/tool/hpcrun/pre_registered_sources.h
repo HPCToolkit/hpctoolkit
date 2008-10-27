@@ -1,8 +1,8 @@
 #ifndef PRE_REGISTERED_SOURCES_H
 #define PRE_REGISTERED_SOURCES_H
 
-#include "itimer.sample_source.h"
-#include "papi.sample_source.h"
+#include "sample_source_itimer.h"
+#include "sample_source_papi.h"
 #include "sample_source.h"
 
 static sample_source_t *pre_registered_sources[] = {

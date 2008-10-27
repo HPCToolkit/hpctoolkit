@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "all_sample_sources.h"
+#include "samples_sources_all.h"
 #include "csprof_options.h"
 #include "files.h"
 #include "process_event_list.h"

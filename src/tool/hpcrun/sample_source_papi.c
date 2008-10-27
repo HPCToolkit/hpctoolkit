@@ -34,7 +34,7 @@
  * csprof
  *--------------------------*/
 
-#include "common.sample_source.h"
+#include "sample_source_common.h"
 #include "csprof_options.h"
 #include "hpcfile_csprof.h"
 #include "metrics.h"
