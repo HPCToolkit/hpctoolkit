@@ -6,7 +6,7 @@
 
 #include <setjmp.h>
 
-#include "registered_sample_sources.h"
+#include "sample_sources_registered.h"
 #include "mem.h"
 #include "state.h"
 

@@ -6,11 +6,11 @@
 
 #include <stdlib.h>
 
-#include "samples_sources_all.h"
 #include "pmsg.h"
-#include "registered_sample_sources.h"
 #include "simple_oo.h"
 #include "sample_source.h"
+#include "sample_sources_all.h"
+#include "sample_sources_registered.h"
 #include "tokenize.h"
 
 static sample_source_t *sample_sources[MAX_SAMPLE_SOURCES];

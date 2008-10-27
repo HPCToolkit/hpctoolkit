@@ -4,14 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "samples_sources_all.h"
 #include "csprof_options.h"
 #include "files.h"
 #include "process_event_list.h"
 #include "csprof_misc_fn_stat.h"
 #include "env.h"
 #include "pmsg.h"
-#include "registered_sample_sources.h"
+#include "sample_sources_all.h"
+#include "sample_sources_registered.h"
 
 /* option handling */
 /* FIXME: this needs to be split up a little bit for different backends */

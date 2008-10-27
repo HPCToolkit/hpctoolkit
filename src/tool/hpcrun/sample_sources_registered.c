@@ -5,7 +5,7 @@
 #if 0
 #include "pre_registered_sources.h"
 #endif
-#include "registered_sample_sources.h"
+#include "sample_sources_registered.h"
 #include "sample_source.h"
 
 static sample_source_t *registered_sample_sources[MAX_POSSIBLE_SAMPLE_SOURCES];

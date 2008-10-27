@@ -25,7 +25,7 @@ PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
 
 CSPROF_BASE_FILES =			\
 	utilities/first_func.c		\
-	samples_sources_all.c		\
+	sample_sources_all.c		\
 	sample_source_common.c		\
 	csprof_options.c		\
 	csproflib.c			\
@@ -39,7 +39,7 @@ CSPROF_BASE_FILES =			\
 	libmonitor_upcalls.c		\
 	metrics.c			\
 	name.c				\
-	registered_sample_sources.c	\
+	sample_sources_registered.c	\
 	sample_event.c			\
 	segv_handler.c			\
 	state.c				\

@@ -29,13 +29,13 @@
 /*---------------------------
  * csprof
  *--------------------------*/
-#include "sample_source_common.h"
 #include "csprof_options.h"
 #include "metrics.h"
 #include "pmsg.h"
-#include "registered_sample_sources.h"
 #include "sample_event.h"
 #include "sample_source.h"
+#include "sample_source_common.h"
+#include "sample_sources_registered.h"
 #include "simple_oo.h"
 #include "thread_data.h"
 
