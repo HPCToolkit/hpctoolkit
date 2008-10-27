@@ -97,7 +97,6 @@
 #include "pmsg.h"
 #include "unwind.h"
 #include "fnbounds_interface.h"
-#include "dbg_extra.h"
 #include "intervals.h"
 
 #include <lush/lush.h>
@@ -127,11 +126,6 @@ int lush_metrics = 0; // FIXME: global variable for now
 void
 csprof_init_internal(void)
 {
-# ifdef DBG_EXTRA
-    dbg_init();
-# endif                 // DBG_EXTRA
-
-
   /* private memory store for the initial thread is done below */
 
   csprof_thread_data_init(0,CSPROF_MEM_SZ_DEFAULT,0);
