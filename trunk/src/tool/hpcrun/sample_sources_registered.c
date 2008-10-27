@@ -2,9 +2,6 @@
 #include <stdlib.h>
 
 #include "pmsg.h"
-#if 0
-#include "pre_registered_sources.h"
-#endif
 #include "sample_sources_registered.h"
 #include "sample_source.h"
 
