@@ -25,8 +25,8 @@ PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
 
 CSPROF_BASE_FILES =			\
 	utilities/first_func.c		\
-	all_sample_sources.c		\
-	common.sample_source.c		\
+	samples_sources_all.c		\
+	sample_source_common.c		\
 	csprof_options.c		\
 	csproflib.c			\
 	data.c				\
@@ -34,7 +34,7 @@ CSPROF_BASE_FILES =			\
 	epoch.c				\
 	files.c				\
 	handling_sample.c		\
-	itimer.sample_source.c		\
+	sample_source_itimer.c		\
 	last.c				\
 	libmonitor_upcalls.c		\
 	metrics.c			\
@@ -91,7 +91,7 @@ CSPROF_X86_FILES =					\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
 
 CSPROF_PAPI_FILES = 			\
-	papi.sample_source.c
+	sample_source_papi.c
 
 CSPROF_CPP_DEFINES =			\
 	-D_GNU_SOURCE			\

@@ -20,7 +20,7 @@
 
 #include "monitor.h"
 
-#include "all_sample_sources.h"
+#include "samples_sources_all.h"
 #include "files.h"
 #include "general.h"
 #include "name.h"

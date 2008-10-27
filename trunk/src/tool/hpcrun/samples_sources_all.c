@@ -6,7 +6,7 @@
 
 #include <stdlib.h>
 
-#include "all_sample_sources.h"
+#include "samples_sources_all.h"
 #include "pmsg.h"
 #include "registered_sample_sources.h"
 #include "simple_oo.h"

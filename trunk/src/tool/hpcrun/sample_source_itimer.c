@@ -29,7 +29,7 @@
 /*---------------------------
  * csprof
  *--------------------------*/
-#include "common.sample_source.h"
+#include "sample_source_common.h"
 #include "csprof_options.h"
 #include "metrics.h"
 #include "pmsg.h"
