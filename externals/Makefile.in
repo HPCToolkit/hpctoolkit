@@ -34,14 +34,22 @@
 #  $Id$
 #
 
+NAME = @PACKAGE_NAME@
+VERSION = @PACKAGE_VERSION@
+TARNAME = @PACKAGE_TARNAME@
+
 PACKAGES = binutils libdwarf libelf libmonitor libunwind libxml2  \
 	old-monitor open-analysis symtabAPI xed2 xerces
+
+DIST_FILES = LICENSE Makefile.conf.in Makefile.in README*  \
+	configure configure.ac externs.conf.in options.conf.in  \
+	build-utils config distfiles
 
 NOBUILD_COOKIE = .dont-build
 
 .PHONY: all install install-all $(PACKAGES)
 .PHONY: fetch fetch-all clean clean-all
-.PHONY: distclean distclean-all distclean-plus
+.PHONY: distclean distclean-all distclean-plus dist
 
 all install install-all: $(PACKAGES)
 
@@ -81,4 +89,20 @@ distclean-plus: distclean-all
 	done
 	rm -f config.log config.status options.conf
 	rm -f Makefile.conf Makefile
+
+#
+# Make a tar file of the source tree.
+#
+MY_DIST_DIR = $(NAME)-$(VERSION)
+MY_TAR_FILE = $(TARNAME)-$(VERSION).tar
+
+dist: distclean
+	rm -f "$(MY_DIST_DIR)" "$(MY_TAR_FILE)" "$(MY_TAR_FILE).gz"
+	ln -s . "$(MY_DIST_DIR)"
+	tar cf "$(MY_TAR_FILE)" --exclude .svn  \
+		$(addprefix $(MY_DIST_DIR)/,$(PACKAGES))  \
+		$(addprefix $(MY_DIST_DIR)/,$(DIST_FILES))
+	rm -f "$(MY_DIST_DIR)"
+	gzip "$(MY_TAR_FILE)"
+	@ls -l "$(MY_TAR_FILE).gz"
 
