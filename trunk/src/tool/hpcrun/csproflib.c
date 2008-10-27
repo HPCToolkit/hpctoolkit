@@ -66,7 +66,7 @@
 
 /* user include files */
 
-#include "samples_sources_all.h"
+#include "sample_sources_all.h"
 #include "atomic.h"
 #include "files.h"
 #include "libc.h"

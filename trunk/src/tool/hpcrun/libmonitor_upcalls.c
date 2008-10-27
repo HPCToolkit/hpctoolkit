@@ -20,7 +20,6 @@
 
 #include "monitor.h"
 
-#include "samples_sources_all.h"
 #include "files.h"
 #include "general.h"
 #include "name.h"
@@ -29,7 +28,8 @@
 #include "sample_event.h"
 #include "csprof_monitor_callbacks.h"
 #include "pmsg.h"
-#include "registered_sample_sources.h"
+#include "sample_sources_registered.h"
+#include "sample_sources_all.h"
 #include "csprof_dlfns.h"
 #include "fnbounds_interface.h"
 #include "trace.h"
