@@ -2,7 +2,7 @@
 #  Install prefixes for external prerequisites.
 #
 
-ext_version=1638
+ext_version='@svn_revision@'
 
 ext_binutils_prefix='@binutils_prefix@'
 ext_libdwarf_prefix='@libdwarf_prefix@'

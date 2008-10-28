@@ -43,7 +43,7 @@ PACKAGES = binutils libdwarf libelf libmonitor libunwind libxml2  \
 
 DIST_FILES = LICENSE Makefile.conf.in Makefile.in README*  \
 	configure configure.ac externs.conf.in options.conf.in  \
-	build-utils config distfiles
+	.svn-revision build-utils config distfiles
 
 NOBUILD_COOKIE = .dont-build
 
@@ -99,7 +99,9 @@ MY_TAR_FILE = $(TARNAME)-$(VERSION).tar
 dist: distclean
 	rm -f "$(MY_DIST_DIR)" "$(MY_TAR_FILE)" "$(MY_TAR_FILE).gz"
 	ln -s . "$(MY_DIST_DIR)"
-	tar cf "$(MY_TAR_FILE)" --exclude .svn  \
+	tar cf "$(MY_TAR_FILE)"  \
+		--exclude .svn  \
+		--exclude $(NOBUILD_COOKIE)  \
 		$(addprefix $(MY_DIST_DIR)/,$(PACKAGES))  \
 		$(addprefix $(MY_DIST_DIR)/,$(DIST_FILES))
 	rm -f "$(MY_DIST_DIR)"
