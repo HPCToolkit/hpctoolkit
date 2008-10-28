@@ -385,7 +385,6 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
     PMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc);
     // fall through for error handling
   }
-
   // assert(0);
   drop_sample();
 }

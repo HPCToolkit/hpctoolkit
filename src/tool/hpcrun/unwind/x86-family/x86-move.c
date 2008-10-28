@@ -66,15 +66,18 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 			  current->bp_bp_pos, current);
 	  }
           else {
-	    //=====================================================================
-	    // instruction: BP is loaded from a memory address DIFFERENT from its saved location in the stack
-	    // action:      create a new interval with BP status reset to 
-	    //              BP_HOSED
-	    //=====================================================================
-	    next = new_ui(ins + xed_decoded_inst_get_length(xptr),
-			  RA_SP_RELATIVE, current->sp_ra_pos, 
-			  current->bp_ra_pos, BP_HOSED, current->sp_bp_pos,
-			  current->bp_bp_pos, current);
+            if (current->bp_status != BP_HOSED){
+              //=====================================================================
+              // instruction: BP is loaded from a memory address DIFFERENT from its saved location in the stack
+              // state:       BP not HOSED
+              // action:      create a new interval with BP status reset to 
+              //              BP_HOSED
+              //=====================================================================
+              next = new_ui(ins + xed_decoded_inst_get_length(xptr),
+                            RA_SP_RELATIVE, current->sp_ra_pos, 
+                            current->bp_ra_pos, BP_HOSED, current->sp_bp_pos,
+                            current->bp_bp_pos, current);
+            }
           }
 	}
       }
@@ -118,7 +121,19 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	// instruction: copy BP to RAX
 	//=========================================================================
         *rax_rbp_equivalent_at = ins + xed_decoded_inst_get_length(xptr);
-      } 
+      } else if (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RBP) {
+        if (current->bp_status != BP_HOSED){
+          //=========================================================================
+          // instruction: move some NON-special register to BP
+          // state:       bp_status is NOT BP_HOSED
+          // action:      begin a new RA_SP_RELATIVE,BP_HOSED interval
+          //=========================================================================
+          next = new_ui(ins + xed_decoded_inst_get_length(xptr), 
+                        RA_SP_RELATIVE,
+                        current->sp_ra_pos, current->sp_ra_pos, BP_HOSED,
+                        current->sp_bp_pos, current->sp_bp_pos, current);
+        }
+      }
     }
   }
   return next;
