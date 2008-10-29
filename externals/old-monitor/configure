@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+#  Old Monitor configure.
+#
+#  $Id$
+#
+
+PKG_NAME=old-monitor
+src=monitor-080825
+make=Makefile
+orig="${make}.orig"
+
+. ../build-utils/configure.inc
+pre_configure
+
+cd "$src" || die "unable to cd: $src"
+
+#
+# Edit Makefile to pass MPI option from top-level configure.
+#
+test -f "$orig" || mv -f "$make" "$orig"
+test -f "$orig" || die "missing make file: $make"
+rm -f "$make"
+
+case "$opt_with_mpi" in
+    /* )
+	cat "$orig" |
+	    sed -e "s,^\\(DEFINES.*\\)\$,\\1 -I ${opt_with_mpi}/include," \
+	    > "$make"
+	;;
+    * )
+	cat "$orig" |
+	    sed -e "s,-DHAVE_MPI,," \
+	    > "$make"
+	;;
+esac
+test $? -eq 0 || die "configure failed"
+
+post_configure

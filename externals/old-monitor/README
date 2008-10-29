@@ -13,7 +13,12 @@ No configure script, uses custom Makefile.
 make PREFIX=/path
 make PREFIX=/path install
 
+Has build problems with some non-gcc compilers.
+
+Setting CFLAGS on the make line conflicts with its setting in
+tests/src/Makefile.
+
 This is Phil Mucci's monitor from Univ of Tennessee.
 Hpcrun with flat profiling still uses this version
-and has nnot yet switched to new SciDAC libmonitor.
+and has not yet switched to new SciDAC libmonitor.
 
