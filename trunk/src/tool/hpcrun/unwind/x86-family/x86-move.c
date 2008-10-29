@@ -66,17 +66,20 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 			  current->bp_bp_pos, current);
 	  }
           else {
-            if (current->bp_status != BP_HOSED){
-              //=====================================================================
-              // instruction: BP is loaded from a memory address DIFFERENT from its saved location in the stack
-              // state:       BP not HOSED
-              // action:      create a new interval with BP status reset to 
-              //              BP_HOSED
-              //=====================================================================
-              next = new_ui(ins + xed_decoded_inst_get_length(xptr),
-                            RA_SP_RELATIVE, current->sp_ra_pos, 
-                            current->bp_ra_pos, BP_HOSED, current->sp_bp_pos,
-                            current->bp_bp_pos, current);
+	    //=====================================================================
+	    // instruction: BP is loaded from a memory address DIFFERENT from its saved location in the stack
+	    // action:      create a new interval with BP status reset to 
+	    //              BP_HOSED
+	    //=====================================================================
+	    if (current->bp_status != BP_HOSED) {
+	      next = new_ui(ins + xed_decoded_inst_get_length(xptr),
+			    RA_SP_RELATIVE, current->sp_ra_pos, 
+			    current->bp_ra_pos, BP_HOSED, current->sp_bp_pos,
+			    current->bp_bp_pos, current);
+	      if ((highwatermark->type == HW_BPSAVE_AFTER_SUB || highwatermark->type  == HW_BPSAVE) && (highwatermark->uwi->sp_ra_pos == next->sp_ra_pos)) {
+	        highwatermark->uwi = next;
+                highwatermark->type = HW_BPHOSED;
+              }
             }
           }
 	}
@@ -113,8 +116,10 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 		      RA_STD_FRAME,
 		      current->sp_ra_pos, current->sp_ra_pos, BP_SAVED,
 		      current->sp_bp_pos, current->sp_bp_pos, current); 
-	highwatermark->uwi = next;
-	highwatermark->type = HW_CREATE_STD;
+	if (highwatermark->type == HW_BPSAVE_AFTER_SUB || highwatermark->type  == HW_BPSAVE) {
+	  highwatermark->uwi = next;
+	  highwatermark->type = HW_CREATE_STD;
+        }
       } else if ((xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_RBP) &&
 	         (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RAX)) {
 	//=========================================================================
@@ -132,6 +137,10 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
                         RA_SP_RELATIVE,
                         current->sp_ra_pos, current->sp_ra_pos, BP_HOSED,
                         current->sp_bp_pos, current->sp_bp_pos, current);
+	  if ((highwatermark->type == HW_BPSAVE_AFTER_SUB || highwatermark->type  == HW_BPSAVE) && (highwatermark->uwi->sp_ra_pos == next->sp_ra_pos)) {
+	    highwatermark->uwi = next;
+            highwatermark->type = HW_BPHOSED;
+          }
         }
       }
     }

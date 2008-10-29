@@ -312,7 +312,7 @@ csprof_fini_internal(void)
       lush_agent_pool__fini(lush_agents);
     }
 
-    AMSG("%d samples, %d filtered, %d dropped (%d segvs), %ld intervals %ld suspicious",
+    AMSG(" %d samples, %d filtered, %d dropped (%d segvs), %ld intervals %ld suspicious",
 	 samples_taken, filtered_samples, bad_unwind_count, segv_count, ui_count(), suspicious_count());
 
     pmsg_fini();

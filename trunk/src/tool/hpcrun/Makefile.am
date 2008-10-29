@@ -142,8 +142,8 @@ libcsprof_o_CPPFLAGS =			\
 	$(CSPROF_CPP_DEFINES)		\
 	$(CSPROF_INCLUDE_DIRS)
 
-libcsprof_la_CFLAGS = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS)
-libcsprof_o_CFLAGS  = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS)
+libcsprof_la_CFLAGS = -std=c99 $(CFLAGS) $(HOST_CFLAGS)
+libcsprof_o_CFLAGS  = -std=c99 $(CFLAGS) $(HOST_CFLAGS)
 
 libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
 libcsprof_o_LDADD   = $(HPC_LIBPROFLEAN)

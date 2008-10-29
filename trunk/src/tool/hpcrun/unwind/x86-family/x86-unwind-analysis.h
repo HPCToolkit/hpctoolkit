@@ -13,7 +13,7 @@
  *****************************************************************************/
 
 typedef enum {HW_NONE, HW_BRANCH, HW_CALL, HW_BPSAVE, HW_SPSUB, HW_CREATE_STD, 
-	      HW_BPSAVE_AFTER_SUB} 
+	      HW_BPSAVE_AFTER_SUB, HW_BPHOSED} 
   hw_type;
 
 typedef struct highwatermark_s {

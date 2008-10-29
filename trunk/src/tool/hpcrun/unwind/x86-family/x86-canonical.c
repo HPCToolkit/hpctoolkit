@@ -50,7 +50,7 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
       }
 #endif
       if (hw_uwi && hw_uwi->bp_status != BP_UNCHANGED)
-	if (crhs->bp_status == BP_UNCHANGED) {
+	if (crhs->bp_status == BP_UNCHANGED || (crhs->bp_status == BP_SAVED  && hw_uwi->bp_status == BP_HOSED)) {
          set_ui_canonical(hw_uwi, *canonical_interval);
          *canonical_interval = hw_uwi;
       }
@@ -71,22 +71,27 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
     }
     {
 #if 0
-      ra_loc istatus =  
+      ra_loc ra_status =  
 	(first->ra_status == RA_STD_FRAME) ? RA_BP_FRAME : first->ra_status;
 #else
-      ra_loc istatus = first->ra_status;
+      ra_loc ra_status = first->ra_status;
+      bp_loc bp_status = (current->bp_status == BP_HOSED) ? BP_HOSED : first->bp_status;
 #endif
-      if ((current->ra_status != istatus) ||
-	  (current->bp_status != first->bp_status) ||
+      if ((current->ra_status != ra_status) ||
+	  (current->bp_status != bp_status) ||
 	  (current->sp_ra_pos != first->sp_ra_pos) ||
 	  (current->bp_ra_pos != first->bp_ra_pos) ||
 	  (current->bp_bp_pos != first->bp_bp_pos) ||
 	  (current->sp_bp_pos != first->sp_bp_pos)) {
 	*next = new_ui(ins + xed_decoded_inst_get_length(xptr),
-		       istatus, first->sp_ra_pos, first->bp_ra_pos,
-		       first->bp_status, first->sp_bp_pos, first->bp_bp_pos,
+		       ra_status, first->sp_ra_pos, first->bp_ra_pos,
+		       bp_status, first->sp_bp_pos, first->bp_bp_pos,
 		       current);
         set_ui_restored_canonical(*next, (*canonical_interval)->prev_canonical);
+        if (first->bp_status != BP_HOSED && bp_status == BP_HOSED) {
+          set_ui_canonical(*next, *canonical_interval);
+          *canonical_interval = *next;
+        }
 	return;
       }
     }

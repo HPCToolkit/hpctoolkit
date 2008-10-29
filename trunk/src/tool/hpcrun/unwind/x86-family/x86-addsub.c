@@ -44,7 +44,7 @@ process_addsub(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 		    current->bp_bp_pos, current);
 
       if (immedv > 0) {
-	if (highwatermark->type != HW_SPSUB && highwatermark->type != HW_BPSAVE_AFTER_SUB) {
+	if (highwatermark->type != HW_SPSUB && highwatermark->type != HW_BPSAVE_AFTER_SUB && highwatermark->type != HW_BPHOSED) {
 	  //-------------------------------------------------------------------------
 	  // set the highwatermark and canonical interval upon seeing the FIRST
 	  // subtract from SP; take no action on subsequent subtracts.
