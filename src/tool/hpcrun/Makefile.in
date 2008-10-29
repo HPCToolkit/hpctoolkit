@@ -591,10 +591,9 @@ libcsprof_la_CPPFLAGS = $(CSPROF_CPP_DEFINES) $(CSPROF_INCLUDE_DIRS) \
 libcsprof_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(CSPROF_CPP_DEFINES) \
 	$(CSPROF_INCLUDE_DIRS) $(am__append_5) $(am__append_11) \
 	$(am__append_17)
-libcsprof_la_CFLAGS = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS) \
+libcsprof_la_CFLAGS = -std=c99 $(CFLAGS) $(HOST_CFLAGS) \
 	$(am__append_6)
-libcsprof_o_CFLAGS = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_7)
+libcsprof_o_CFLAGS = -std=c99 $(CFLAGS) $(HOST_CFLAGS) $(am__append_7)
 libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
 libcsprof_o_LDADD = $(HPC_LIBPROFLEAN)
 libcsprof_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \

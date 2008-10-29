@@ -22,6 +22,11 @@ process_lea(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 		      RA_SP_RELATIVE, current->sp_ra_pos, current->bp_ra_pos,
                       BP_HOSED, current->sp_bp_pos, current->bp_bp_pos,
 		      current);
+	if ((highwatermark->type == HW_BPSAVE_AFTER_SUB || highwatermark->type  == HW_BPSAVE) && (highwatermark->uwi->sp_ra_pos == next->sp_ra_pos)) {
+          highwatermark->uwi = next;
+          highwatermark->type = HW_BPHOSED;
+        }
+
     }
   }
   return next;
