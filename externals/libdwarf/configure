@@ -2,9 +2,9 @@
 #
 #  Libdwarf configure.
 #
-#  Note: libdwarf searches for the libelf header files (but not
-#  libraries) in autoconf via CPPFLAGS and in custom Makefile via
-#  CFLAGS, and so, we need to set both.
+#  Note: libdwarf's configure has no --with-libelf option, so we pass
+#  the libelf dirs via CFLAGS, CPPFLAGS and LDFLAGS.  The autoconf
+#  tests use CPPFLAGS and LDFLAGS, and Makefile uses CFLAGS.
 #
 #  $Id$
 #
@@ -20,6 +20,7 @@ elf_inc="${libelfdir}/include"
 set -- CC=gcc  \
     CFLAGS="-g -O2 -fPIC -I${elf_inc}"  \
     CPPFLAGS="-I${elf_inc}"  \
+    LDFLAGS="-L${libelf_lib}"  \
     --prefix="$prefix"  \
     --enable-shared  \
     --disable-nonshared "$@"
