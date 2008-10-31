@@ -93,7 +93,7 @@ distclean-plus: distclean-all
 #
 # Make a tar file of the source tree.
 #
-MY_DIST_DIR = $(NAME)-$(VERSION)
+MY_DIST_DIR = $(TARNAME)-$(VERSION)
 MY_TAR_FILE = $(TARNAME)-$(VERSION).tar
 
 dist: distclean
