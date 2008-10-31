@@ -54,6 +54,9 @@ DISTCLEAN_CMD ?=  default
 
 FETCH_FTP =  ../build-utils/fetch-ftp.sh
 
+# Pass make to configure scripts.
+export MAKE
+
 .PHONY: all prereqs fetch refetch config reconfig build rebuild
 .PHONY: install reinstall clean distclean
 

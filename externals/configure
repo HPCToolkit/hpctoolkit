@@ -655,6 +655,7 @@ build_vendor
 host
 host_vendor
 svn_revision
+gnu_make
 with_mpi
 LIBOBJS
 LTLIBOBJS'
@@ -3153,6 +3154,15 @@ nobuild_cookie=.dont-build
 version_file="${srcdir}/.svn-revision"
 
 #
+# Default prefix: local subdir with host cpu-os.
+#
+# AC requires this to be absolute path.
+#
+if test "x$prefix" = xNONE ; then
+    prefix="`pwd`/${host_cpu}-${host_os}"
+fi
+
+#
 # Append svn revision to PACKAGE_VERSION.
 #
 # If this directory is an svn sandbox, then use svn info (and store
@@ -3160,6 +3170,9 @@ version_file="${srcdir}/.svn-revision"
 # Note: svn update changes the revision number, so svn info must take
 # precedence over the file.
 #
+{ echo "$as_me:$LINENO: checking for svn revision" >&5
+echo $ECHO_N "checking for svn revision... $ECHO_C" >&6; }
+
 svn_revision=`svn info $srcdir 2>/dev/null | grep -e '^Revision' | awk '{ print $2 }'`
 if test "x$svn_revision" != x ; then
     PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
@@ -3170,6 +3183,12 @@ elif test -f "$version_file" ; then
     PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
 else
     svn_revision=0
+fi
+
+{ echo "$as_me:$LINENO: result: $svn_revision" >&5
+echo "${ECHO_T}$svn_revision" >&6; }
+
+if test "$svn_revision" = 0 ; then
     { echo "$as_me:$LINENO: WARNING: unable to find svn revision" >&5
 echo "$as_me: WARNING: unable to find svn revision" >&2;}
 fi
@@ -3177,13 +3196,33 @@ fi
 
 
 #
-# Default prefix: local subdir with host cpu-os.
+# Try to find GNU make.  Amazingly, AC doesn't have a macro for this.
+# We only use this value when running configure scripts directly.
+# When starting from a make target, MAKE is exported to the scripts.
+# Thus, it's not fatal if we can't find gnu make here, as long as you
+# later run a gnu-compatible make.
 #
-# AC requires this to be absolute path.
-#
-if test "x$prefix" = xNONE ; then
-    prefix="`pwd`/${host_cpu}-${host_os}"
+{ echo "$as_me:$LINENO: checking for gnu make" >&5
+echo $ECHO_N "checking for gnu make... $ECHO_C" >&6; }
+
+if gmake --version 2>&1 | grep -i gnu >/dev/null 2>&1 ; then
+    gnu_make=gmake
+elif make --version 2>&1 | grep -i gnu >/dev/null 2>&1 ; then
+    gnu_make=make
+else
+    gnu_make=no
 fi
+
+{ echo "$as_me:$LINENO: result: $gnu_make" >&5
+echo "${ECHO_T}$gnu_make" >&6; }
+
+if test "$gnu_make" = no ; then
+    { echo "$as_me:$LINENO: WARNING: unable to find gnu make" >&5
+echo "$as_me: WARNING: unable to find gnu make" >&2;}
+    gnu_make=make
+fi
+
+
 
 #
 # Specify packages as:  --with-pkg=PATH
@@ -4680,12 +4719,13 @@ build_vendor!$build_vendor$ac_delim
 host!$host$ac_delim
 host_vendor!$host_vendor$ac_delim
 svn_revision!$svn_revision$ac_delim
+gnu_make!$gnu_make$ac_delim
 with_mpi!$with_mpi$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 80; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 81; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

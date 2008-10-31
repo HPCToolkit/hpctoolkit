@@ -47,7 +47,6 @@ BUILD_COOKIE=.build-done
 INSTALL_COOKIE=.install-done
 NOBUILD_COOKIE=.dont-build
 OPTIONS_FILE=../options.conf
-MAKE=gmake
 
 ORIG_PKG_DIR=`pwd`
 
@@ -127,3 +126,10 @@ fi
 test -f "$OPTIONS_FILE" || die "must run top-level configure first"
 . "$OPTIONS_FILE"
 
+#
+# MAKE is either exported from Makefile.inc, or else passed from
+# top-level configure via options.conf.
+#
+if test "x$MAKE" = x ; then
+    MAKE="$gnu_make"
+fi

@@ -90,6 +90,15 @@ nobuild_cookie=.dont-build
 version_file="${srcdir}/.svn-revision"
 
 #
+# Default prefix: local subdir with host cpu-os.
+#
+# AC requires this to be absolute path.
+#
+if test "x$prefix" = xNONE ; then
+    prefix="`pwd`/${host_cpu}-${host_os}"
+fi
+
+#
 # Append svn revision to PACKAGE_VERSION.
 #
 # If this directory is an svn sandbox, then use svn info (and store
@@ -97,6 +106,8 @@ version_file="${srcdir}/.svn-revision"
 # Note: svn update changes the revision number, so svn info must take
 # precedence over the file.
 #
+AC_MSG_CHECKING([for svn revision])
+
 svn_revision=`svn info $srcdir 2>/dev/null | grep -e '^Revision' | awk '{ print $2 }'`
 if test "x$svn_revision" != x ; then
     PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
@@ -107,19 +118,41 @@ elif test -f "$version_file" ; then
     PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
 else
     svn_revision=0
+fi
+
+AC_MSG_RESULT([$svn_revision])
+
+if test "$svn_revision" = 0 ; then
     AC_MSG_WARN([unable to find svn revision])
 fi
 
 AC_SUBST([svn_revision])
 
 #
-# Default prefix: local subdir with host cpu-os.
+# Try to find GNU make.  Amazingly, AC doesn't have a macro for this.
+# We only use this value when running configure scripts directly.
+# When starting from a make target, MAKE is exported to the scripts.
+# Thus, it's not fatal if we can't find gnu make here, as long as you
+# later run a gnu-compatible make.
 #
-# AC requires this to be absolute path.
-#
-if test "x$prefix" = xNONE ; then
-    prefix="`pwd`/${host_cpu}-${host_os}"
+AC_MSG_CHECKING([for gnu make])
+
+if gmake --version 2>&1 | grep -i gnu >/dev/null 2>&1 ; then
+    gnu_make=gmake
+elif make --version 2>&1 | grep -i gnu >/dev/null 2>&1 ; then
+    gnu_make=make
+else
+    gnu_make=no
 fi
+
+AC_MSG_RESULT([$gnu_make])
+
+if test "$gnu_make" = no ; then
+    AC_MSG_WARN([unable to find gnu make])
+    gnu_make=make
+fi
+
+AC_SUBST([gnu_make])
 
 #
 # Specify packages as:  --with-pkg=PATH

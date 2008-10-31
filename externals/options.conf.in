@@ -9,6 +9,7 @@ CXX="@CXX@"
 CXXFLAGS="@CXXFLAGS@"
 
 prefix="@prefix@"
+gnu_make="@gnu_make@"
 
 build_cpu="@build_cpu@"
 build_os="@build_os@"
