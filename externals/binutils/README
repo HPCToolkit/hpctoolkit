@@ -12,7 +12,9 @@ License: GPL and LGPL
 Native binutils uses Autoconf and Autogen Makefile template.
 This version uses a Makefile wrapper.
 
-make all
+make configure
+make build
+make install
 
 This is a patched version of binutils with some necessary changes to
 support Rice HPCToolkit.
