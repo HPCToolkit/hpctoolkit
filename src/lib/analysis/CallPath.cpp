@@ -59,6 +59,7 @@ using std::dec;
 #include <string>
 using std::string;
 
+#include <climits>
 #include <cstring>
 
 
