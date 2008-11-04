@@ -10,8 +10,8 @@ pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
 pkglib_LTLIBRARIES = libcsprof.la
 pkglib_PROGRAMS = libcsprof.o
-bin_SCRIPTS = scripts/hpcrun scripts/hpclink scripts/elog
-pkglibexec_SCRIPTS = scripts/hpcfnbounds
+bin_SCRIPTS = scripts/hpcrun scripts/hpclink 
+pkglibexec_SCRIPTS = scripts/hpcfnbounds scripts/hpclog
 
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
