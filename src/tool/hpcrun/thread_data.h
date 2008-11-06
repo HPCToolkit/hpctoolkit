@@ -27,6 +27,7 @@ typedef struct _td_t {
   int             handling_sample;
   int             handling_synchronous_sample;
   int             splay_lock;
+  int             suspend_sampling;
   FILE*           trace_file;
 } thread_data_t;
 
