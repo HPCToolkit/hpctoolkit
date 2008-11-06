@@ -37,12 +37,22 @@ int samples_taken    = 0;
 int bad_unwind_count = 0;
 int filtered_samples = 0; // global variable to count filtered samples
 
+void
+csprof_suspend_sampling(int val)
+{
+  thread_data_t *td = csprof_get_thread_data();
+  td->suspend_sampling = val;
+}
+
 csprof_cct_node_t*
 csprof_sample_event(void *context, int metric_id, size_t sample_count)
 {
   PMSG(SAMPLE,"Handling sample");
 
   thread_data_t *td = csprof_get_thread_data();
+
+  if (td->suspend_sampling) return;
+
   sigjmp_buf_t *it = &(td->bad_unwind);
 
   samples_taken++;
