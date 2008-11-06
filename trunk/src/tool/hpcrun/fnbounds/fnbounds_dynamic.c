@@ -26,6 +26,12 @@
 #include <sys/types.h>
 #include <unistd.h>    // getpid
 
+#include "spinlock.h"
+
+/* locking functions to ensure that dynamic bounds data structures 
+   are consistent */
+
+static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
 
 //*******************************************************************************
 // local includes 
@@ -151,6 +157,8 @@ fnbounds_init()
 int
 fnbounds_enclosing_addr(void *pc, void **start, void **end)
 {
+  spinlock_lock(&fnbounds_lock);
+
   int ret = 1; // failure unless otherwise reset to 0 below
 
   dso_info_t *r = fnbounds_dso_info_get(pc);
@@ -171,6 +179,8 @@ fnbounds_enclosing_addr(void *pc, void **start, void **end)
       *end   = PERFORM_RELOCATION(*end  , r->start_addr);
     }
   }
+
+  spinlock_unlock(&fnbounds_lock);
 
   return ret;
 }
@@ -198,6 +208,8 @@ fnbounds_map_open_dsos()
 void
 fnbounds_unmap_closed_dsos()
 {
+  spinlock_lock(&fnbounds_lock);
+
   dso_info_t *dso_info, *next;
   for (dso_info = dso_open_list; dso_info; dso_info = next) {
     next = dso_info->next;
@@ -212,6 +224,8 @@ fnbounds_unmap_closed_dsos()
       monitor_real_dlclose(dso_info->handle);
     }
   }
+
+  spinlock_unlock(&fnbounds_lock);
 }
 
 
@@ -226,12 +240,19 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
   //-----------------------------------------------------------------------------
   if (strncmp(fnbounds_tmpdir, module_name, strlen(fnbounds_tmpdir)) == 0) {
     success = 1; // it is one of ours, no processing needed. indicate success.
-  } else if (fnbounds_dso_info_query(start, dso_open_list)) {
-    success = 1; // already mapped
   } else {
-    dso_info_t *dso_info = fnbounds_dso_handle_open(module_name, start, end);
-    success =  (dso_info ? 1 : 0); 
-  } 
+
+    spinlock_lock(&fnbounds_lock);
+    dso_info_t *tmp = fnbounds_dso_info_query(start, dso_open_list);
+    spinlock_unlock(&fnbounds_lock);
+
+    if (tmp) {
+      success = 1; // already mapped
+    } else {
+      dso_info_t *dso_info = fnbounds_dso_handle_open(module_name, start, end);
+      success =  (dso_info ? 1 : 0); 
+    } 
+  }
 
   return success;
 }
@@ -240,7 +261,9 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
 int
 fnbounds_module_domap(const char *incoming_filename, void *start, void *end)
 {
+  spinlock_lock(&fnbounds_lock);
   return (fnbounds_compute(incoming_filename, start, end) != NULL);
+  spinlock_unlock(&fnbounds_lock);
 }
 
 
@@ -347,6 +370,8 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
 void 
 fnbounds_epoch_finalize()
 {
+  spinlock_lock(&fnbounds_lock);
+
   dso_info_t * dso_info;
   for (dso_info = dso_open_list; dso_info; dso_info = dso_info->next) {
     csprof_epoch_add_module(dso_info->name, NULL /* no vaddr */, dso_info->start_addr, 
@@ -362,6 +387,8 @@ fnbounds_epoch_finalize()
     dso_info_free(dso_info);
     dso_info = next;
   } 
+
+  spinlock_unlock(&fnbounds_lock);
 }
 
 
@@ -384,7 +411,10 @@ fnbounds_dso_info_query(void *pc, dso_info_t * dl_list)
 static dso_info_t *
 fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
 {
+  spinlock_lock(&fnbounds_lock);
+
   dso_info_t *dso_info = fnbounds_dso_info_query(start, dso_closed_list);
+
   // the address range of the module, which does not have an open mapping
   // was found to conflict with the address range of a module on the closed
   // list. 
@@ -410,11 +440,16 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
       // at present.
     } else {
       // the entry on the closed list was not the same module
+      spinlock_unlock(&fnbounds_lock);
       fnbounds_epoch_finalize();
+      spinlock_lock(&fnbounds_lock);
       csprof_epoch_new();
     }
   }
   dso_info = fnbounds_compute(module_name, start, end);
+
+  spinlock_unlock(&fnbounds_lock);
+
   return dso_info;
 }
 
@@ -441,7 +476,10 @@ fnbounds_dso_info_get(void *pc)
       addr = (unsigned long long) pc;
       
       if (dylib_find_module_containing_addr(addr, module_name, &mstart, &mend)) {
-	dso_open = fnbounds_dso_handle_open(module_name, (void *) mstart, (void *) mend);
+	spinlock_unlock(&fnbounds_lock);
+	dso_open = fnbounds_dso_handle_open(module_name, (void *) mstart, 
+					    (void *) mend);
+	spinlock_lock(&fnbounds_lock);
       }
     }
   }
