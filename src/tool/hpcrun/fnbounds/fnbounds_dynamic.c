@@ -198,8 +198,9 @@ fnbounds_map_open_dsos()
 void
 fnbounds_unmap_closed_dsos()
 {
-  dso_info_t *dso_info;
-  for (dso_info = dso_open_list; dso_info; dso_info = dso_info->next) {
+  dso_info_t *dso_info, *next;
+  for (dso_info = dso_open_list; dso_info; dso_info = next) {
+    next = dso_info->next;
     if (!dylib_addr_is_mapped((unsigned long long) dso_info->start_addr)) {
       
       // remove from open list of DSOs
