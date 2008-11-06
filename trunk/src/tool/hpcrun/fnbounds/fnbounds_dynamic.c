@@ -208,7 +208,7 @@ fnbounds_unmap_closed_dsos()
       // add to closed list of DSOs 
       dso_list_add(&dso_closed_list, dso_info);
 
-      dlclose(dso_info->handle);
+      monitor_real_dlclose(dso_info->handle);
     }
   }
 }
