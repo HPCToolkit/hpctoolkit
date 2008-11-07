@@ -1,21 +1,23 @@
-//===============================================
+//=====================================================================
 // File: fnbounds_dynamic.c  
 // 
-//     provide information about function bounds for functions in dynamically 
-//     linked load modules. use an extra "server" process to handle computing the
-//     symbols to insulate the client process from the complexity of this task, 
-//     including use of the system command to fork new processes. having the
-//     server process enables use to avoid dealing with forking off new processes
-//     with system when there might be multiple threads active with sampling  
-//     enabled.
+//     provide information about function bounds for functions in
+//     dynamically linked load modules. use an extra "server" process
+//     to handle computing the symbols to insulate the client process
+//     from the complexity of this task, including use of the system
+//     command to fork new processes. having the server process
+//     enables use to avoid dealing with forking off new processes
+//     with system when there might be multiple threads active with
+//     sampling enabled.
 //
 //  Modification history:
 //     2008 April 28 - created John Mellor-Crummey
-//===============================================
+//=====================================================================
 
-//*******************************************************************************
-// system includes 
-//*******************************************************************************
+
+//*********************************************************************
+// system includes
+//*********************************************************************
 
 #include <dlfcn.h>     // for dlopen/dlclose
 #include <string.h>    // for strcmp, strerror
@@ -33,9 +35,10 @@
 
 static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
 
-//*******************************************************************************
-// local includes 
-//*******************************************************************************
+
+//*********************************************************************
+// local includes
+//*********************************************************************
 
 #include "csprof_dlfns.h"
 #include "dylib.h"
@@ -48,10 +51,9 @@ static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
 #include "unlink.h"
 
 
-
-/******************************************************************************
- * local types
- *****************************************************************************/
+//*********************************************************************
+// local types
+//*********************************************************************
 
 typedef struct dso_info_s {
   char *name;
@@ -74,10 +76,9 @@ typedef struct dso_info_s {
 	((void *) (((unsigned long) addr) + ((unsigned long) length)))
 
 
-
-/******************************************************************************
- * local variables
- *****************************************************************************/
+//*********************************************************************
+// local variables
+//*********************************************************************
 
 // FIXME: tmproot should be overridable with an option.
 static char *tmproot = "/tmp";
@@ -90,23 +91,25 @@ static dso_info_t *dso_closed_list;
 static dso_info_t *dso_free_list;
 
 
-
-//*******************************************************************************
+//*********************************************************************
 // forward declarations
-//*******************************************************************************
+//*********************************************************************
 
 static void        fnbounds_tmpdir_remove();
 static int         fnbounds_tmpdir_create();
 static char *      fnbounds_tmpdir_get();
 
 static dso_info_t *fnbounds_dso_info_get(void *pc);
-static dso_info_t *fnbounds_compute(const char *filename, void *start, void *end);
+static dso_info_t *fnbounds_compute(const char *filename,
+				    void *start, void *end);
 static dso_info_t *fnbounds_dso_info_query(void *pc, dso_info_t * dl_list);
-static dso_info_t *fnbounds_dso_handle_open(const char *module_name, void *start, void *end);
-static void   fnbounds_map_executable();
+static dso_info_t *fnbounds_dso_handle_open(const char *module_name,
+					    void *start, void *end);
+static void        fnbounds_map_executable();
 
-static dso_info_t *new_dso_info_t(const char *name, void **table, int nsymbols, int relocate, 
-				  void *startaddr, void *endaddr, void *dl_handle);
+static dso_info_t *new_dso_info_t(const char *name, void **table, int nsymbols,
+				  int relocate, void *startaddr, void *endaddr,
+				  void *dl_handle);
 
 static const char *mybasename(const char *string);
 
@@ -119,22 +122,24 @@ static void        dso_info_free(dso_info_t *unused);
 
 static char *nm_command = 0;
 
-//*******************************************************************************
-// interface operations  
-//*******************************************************************************
 
-//-------------------------------------------------------------------------------
+//*********************************************************************
+// interface operations
+//*********************************************************************
+
+//---------------------------------------------------------------------
 // function fnbounds_init: 
 // 
-//     for dynamically-linked executables, start an fnbounds server process to 
-//     that will compute function bounds information upon demand for 
-//     dynamically-linked load modules.
+//     for dynamically-linked executables, start an fnbounds server
+//     process to that will compute function bounds information upon
+//     demand for dynamically-linked load modules.
 //
 //     return code = 0 upon success, otherwise fork failed 
 //
-//     NOTE: don't make this routine idempotent: it may be needed to start a 
-//                 new server if the process forks
-//-------------------------------------------------------------------------------
+//     NOTE: don't make this routine idempotent: it may be needed to
+//     start a new server if the process forks
+//---------------------------------------------------------------------
+
 int 
 fnbounds_init()
 {
@@ -186,12 +191,13 @@ fnbounds_enclosing_addr(void *pc, void **start, void **end)
 }
 
 
-//-------------------------------------------------------------------------------
+//---------------------------------------------------------------------
 // Function: fnbounds_map_open_dsos
 // Purpose:  
 //     identify any new dsos that have been mapped.
 //     analyze them and add their information to the open list.
-//-------------------------------------------------------------------------------
+//---------------------------------------------------------------------
+
 void
 fnbounds_map_open_dsos()
 {
@@ -199,12 +205,13 @@ fnbounds_map_open_dsos()
 }
 
 
-//-------------------------------------------------------------------------------
+//---------------------------------------------------------------------
 // Function: fnbounds_unmap_closed_dsos
 // Purpose:  
 //     identify any dsos that are no longer mapped.
-//     move them from the open to the closed list. 
-//-------------------------------------------------------------------------------
+//     move them from the open to the closed list.
+//---------------------------------------------------------------------
+
 void
 fnbounds_unmap_closed_dsos()
 {
@@ -234,10 +241,12 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
 {
   int success;
 
-  //-----------------------------------------------------------------------------
-  // check if the file is a dso containing fnbounds information that we mapped
-  // by checking to see if the mapped file is in csprof's temporary directory.
-  //-----------------------------------------------------------------------------
+  //-------------------------------------------------------------------
+  // check if the file is a dso containing fnbounds information that
+  // we mapped by checking to see if the mapped file is in csprof's
+  // temporary directory.
+  //-------------------------------------------------------------------
+
   if (strncmp(fnbounds_tmpdir, module_name, strlen(fnbounds_tmpdir)) == 0) {
     success = 1; // it is one of ours, no processing needed. indicate success.
   } else {
@@ -256,7 +265,7 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
 
   return success;
 }
-  
+
 
 int
 fnbounds_module_domap(const char *incoming_filename, void *start, void *end)
@@ -267,11 +276,13 @@ fnbounds_module_domap(const char *incoming_filename, void *start, void *end)
 }
 
 
-//-------------------------------------------------------------------------------
+//---------------------------------------------------------------------
 // function fnbounds_fini: 
 // 
-//     for dynamically-linked executables, shut down  the fnbounds server process 
-//-------------------------------------------------------------------------------
+//     for dynamically-linked executables, shut down the fnbounds
+//     server process
+//---------------------------------------------------------------------
+
 void 
 fnbounds_fini()
 {
@@ -280,10 +291,9 @@ fnbounds_fini()
 }
 
 
-
-/******************************************************************************
- * private operations
- *****************************************************************************/
+//*********************************************************************
+// private operations
+//*********************************************************************
 
 static dso_info_t *
 fnbounds_compute(const char *incoming_filename, void *start, void *end)
@@ -374,14 +384,16 @@ fnbounds_epoch_finalize()
 
   dso_info_t * dso_info;
   for (dso_info = dso_open_list; dso_info; dso_info = dso_info->next) {
-    csprof_epoch_add_module(dso_info->name, NULL /* no vaddr */, dso_info->start_addr, 
-	dso_info->end_addr - dso_info->start_addr);
+    csprof_epoch_add_module(dso_info->name, NULL /* no vaddr */,
+			    dso_info->start_addr, 
+			    dso_info->end_addr - dso_info->start_addr);
   } 
 
   dso_info_t *next;
   for (dso_info = dso_closed_list; dso_info;) {
-    csprof_epoch_add_module(dso_info->name, NULL /* no vaddr */, dso_info->start_addr, 
-	dso_info->end_addr - dso_info->start_addr);
+    csprof_epoch_add_module(dso_info->name, NULL /* no vaddr */,
+			    dso_info->start_addr, 
+			    dso_info->end_addr - dso_info->start_addr);
     next = dso_info->next;
     dso_list_remove(&dso_closed_list, dso_info);
     dso_info_free(dso_info);
@@ -397,10 +409,11 @@ fnbounds_dso_info_query(void *pc, dso_info_t * dl_list)
 {
   dso_info_t *dso_info = dl_list;
 
-  //-----------------------------------------------------------------------------
-  // see if we already have function bounds information computed for a dso 
-  // containing this pc
-  //-----------------------------------------------------------------------------
+  //-------------------------------------------------------------------
+  // see if we already have function bounds information computed for a
+  // dso containing this pc
+  //-------------------------------------------------------------------
+
   while (dso_info && (pc < dso_info->start_addr || pc > dso_info->end_addr)) 
     dso_info = dso_info->next; 
 
@@ -460,17 +473,20 @@ fnbounds_dso_info_get(void *pc)
   dso_info_t *dso_open = fnbounds_dso_info_query(pc, dso_open_list);
 
   if (!dso_open) {
-    //--------------------------------------------------------------------------
+
+    //-----------------------------------------------------------------
     // we don't have any function bounds information for an open dso 
     // containing this pc.
-    //--------------------------------------------------------------------------
+    //-----------------------------------------------------------------
 
     if (csprof_dlopen_pending()) {
-      //------------------------------------------------------------------------
+
+      //---------------------------------------------------------------
       // a new dso might have been just mapped without our knowledge.
       // see if we can locate the name and address range of a dso 
-      // containing this pc 
-      //------------------------------------------------------------------------
+      // containing this pc.
+      //---------------------------------------------------------------
+
       char module_name[PATH_MAX];
       unsigned long long addr, mstart, mend;
       addr = (unsigned long long) pc;
@@ -529,9 +545,9 @@ mybasename(const char *string)
 }
 
 
-/******************************************************************************
- * temporary directory
- *****************************************************************************/
+//*********************************************************************
+// temporary directory
+//*********************************************************************
 
 static int 
 fnbounds_tmpdir_create()
@@ -569,9 +585,9 @@ fnbounds_tmpdir_remove()
 }
 
 
-/******************************************************************************
- * list operations 
- *****************************************************************************/
+//*********************************************************************
+// list operations
+//*********************************************************************
 
 static dso_info_t * 
 dso_list_head(dso_info_t *dso_list)
@@ -610,9 +626,9 @@ dso_list_remove(dso_info_t **dso_list, dso_info_t *self)
 }
 
 
-/******************************************************************************
- * allocation/deallocation of dso_info_t records
- *****************************************************************************/
+//*********************************************************************
+// allocation/deallocation of dso_info_t records
+//*********************************************************************
 
 static dso_info_t *
 dso_info_allocate()
@@ -635,14 +651,15 @@ dso_info_free(dso_info_t *unused)
 }
 
 
-/******************************************************************************
- * debugging support
- *****************************************************************************/
+//*********************************************************************
+// debugging support
+//*********************************************************************
 
 void 
 dump_dso_info_t(dso_info_t *r)
 {
-  printf("%p-%p %s [dso_info_t *%p, table=%p, nsymbols=%d, relocatable=%d]\n", r->start_addr, r->end_addr, r->name, 
+  printf("%p-%p %s [dso_info_t *%p, table=%p, nsymbols=%d, relocatable=%d]\n",
+	 r->start_addr, r->end_addr, r->name, 
          r, r->table, r->nsymbols, r->relocate);
 #if 0
   printf("record addr = %p: name = '%s', table = %p, nsymbols = 0x%x, "
@@ -651,6 +668,7 @@ dump_dso_info_t(dso_info_t *r)
 	 r->end_addr, r->relocate);
 #endif
 }
+
 
 void 
 dump_dso_list(dso_info_t *dl_list)
