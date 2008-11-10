@@ -41,7 +41,7 @@ void
 csprof_suspend_sampling(int val)
 {
   thread_data_t *td = csprof_get_thread_data();
-  td->suspend_sampling = val;
+  td->suspend_sampling += val;
 }
 
 csprof_cct_node_t*
@@ -89,8 +89,11 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
          state->unwind_pc);
     dump_backtraces(state, state->unwind);
     bad_unwind_count++;
-    if (TD_GET(splay_lock)){
+    if (TD_GET(splay_lock)) {
       csprof_release_splay_lock();
+    }
+    if (TD_GET(fnbounds_lock)) {
+      fnbounds_release_lock();
     }
   }
 

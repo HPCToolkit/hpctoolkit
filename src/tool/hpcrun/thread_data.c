@@ -1,3 +1,7 @@
+//
+// $Id$
+//
+
 #include <stdlib.h>
 
 #include "pmsg.h"
@@ -34,6 +38,8 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
   TD_GET(memstore) = csprof_malloc_init(sz,sz_tmp);
   TD_GET(state)    = NULL;
   TD_GET(trace_file)  = NULL;
+  TD_GET(fnbounds_lock) = 0;
+  TD_GET(splay_lock) = 0;
 
   csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
 

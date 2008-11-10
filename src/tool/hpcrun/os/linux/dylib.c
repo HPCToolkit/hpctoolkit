@@ -1,3 +1,6 @@
+//
+// $Id$
+//
 //***********************************************************************************
 // system includes
 //***********************************************************************************
@@ -45,7 +48,10 @@ struct dylib_fmca_s {
 
 #define SEG_SIZE(info, seg) ((info)->dlpi_phdr[seg].p_memsz)
 
-#define SEG_IS_EXECUTABLE(info, seg) ((info)->dlpi_phdr[seg].p_flags & PF_X)
+#define SEG_IS_EXECUTABLE(info, seg)	\
+    (((info) != NULL) &&		\
+     ((info)->dlpi_phdr != NULL) &&	\
+     ((info)->dlpi_phdr[seg].p_flags & PF_X))
 
 
 

@@ -1,3 +1,7 @@
+//
+// $Id$
+//
+
 #ifndef THREAD_DATA_H
 #define THREAD_DATA_H
 
@@ -27,6 +31,7 @@ typedef struct _td_t {
   int             handling_sample;
   int             handling_synchronous_sample;
   int             splay_lock;
+  int             fnbounds_lock;
   int             suspend_sampling;
   FILE*           trace_file;
 } thread_data_t;

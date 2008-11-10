@@ -1,3 +1,7 @@
+//
+// $Id$
+//
+
 int fnbounds_init();
 
 int fnbounds_enclosing_addr(void *addr, void **start, void **end); 
@@ -10,6 +14,8 @@ void fnbounds_unmap_closed_dsos();
 
 void fnbounds_epoch_finalize();
 void fnbounds_fini();
+
+void fnbounds_release_lock(void);
 
 // support routine
 int fnbounds_table_lookup(void **table, int length, void *pc, void **start, void **end);

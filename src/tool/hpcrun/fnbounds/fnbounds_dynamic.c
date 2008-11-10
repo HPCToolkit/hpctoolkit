@@ -12,6 +12,8 @@
 //
 //  Modification history:
 //     2008 April 28 - created John Mellor-Crummey
+//
+// $Id$
 //=====================================================================
 
 
@@ -28,13 +30,6 @@
 #include <sys/types.h>
 #include <unistd.h>    // getpid
 
-#include "spinlock.h"
-
-/* locking functions to ensure that dynamic bounds data structures 
-   are consistent */
-
-static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
-
 
 //*********************************************************************
 // local includes
@@ -49,6 +44,8 @@ static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
 #include "structs.h"
 #include "system_server.h"
 #include "unlink.h"
+#include "spinlock.h"
+#include "thread_data.h"
 
 
 //*********************************************************************
@@ -90,6 +87,21 @@ static dso_info_t *dso_closed_list;
 
 static dso_info_t *dso_free_list;
 
+// locking functions to ensure that dynamic bounds data structures 
+// are consistent.
+
+static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
+
+#define FNBOUNDS_LOCK  do {			\
+	spinlock_lock(&fnbounds_lock);		\
+	TD_GET(fnbounds_lock) = 1;		\
+} while (0)
+
+#define FNBOUNDS_UNLOCK  do {			\
+	spinlock_unlock(&fnbounds_lock);	\
+	TD_GET(fnbounds_lock) = 0;		\
+} while (0)
+
 
 //*********************************************************************
 // forward declarations
@@ -106,6 +118,7 @@ static dso_info_t *fnbounds_dso_info_query(void *pc, dso_info_t * dl_list);
 static dso_info_t *fnbounds_dso_handle_open(const char *module_name,
 					    void *start, void *end);
 static void        fnbounds_map_executable();
+static void        fnbounds_epoch_finalize_locked();
 
 static dso_info_t *new_dso_info_t(const char *name, void **table, int nsymbols,
 				  int relocate, void *startaddr, void *endaddr,
@@ -162,7 +175,7 @@ fnbounds_init()
 int
 fnbounds_enclosing_addr(void *pc, void **start, void **end)
 {
-  spinlock_lock(&fnbounds_lock);
+  FNBOUNDS_LOCK;
 
   int ret = 1; // failure unless otherwise reset to 0 below
 
@@ -185,7 +198,7 @@ fnbounds_enclosing_addr(void *pc, void **start, void **end)
     }
   }
 
-  spinlock_unlock(&fnbounds_lock);
+  FNBOUNDS_UNLOCK;
 
   return ret;
 }
@@ -215,7 +228,7 @@ fnbounds_map_open_dsos()
 void
 fnbounds_unmap_closed_dsos()
 {
-  spinlock_lock(&fnbounds_lock);
+  FNBOUNDS_LOCK;
 
   dso_info_t *dso_info, *next;
   for (dso_info = dso_open_list; dso_info; dso_info = next) {
@@ -232,7 +245,7 @@ fnbounds_unmap_closed_dsos()
     }
   }
 
-  spinlock_unlock(&fnbounds_lock);
+  FNBOUNDS_UNLOCK;
 }
 
 
@@ -251,9 +264,8 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
     success = 1; // it is one of ours, no processing needed. indicate success.
   } else {
 
-    spinlock_lock(&fnbounds_lock);
+    FNBOUNDS_LOCK;
     dso_info_t *tmp = fnbounds_dso_info_query(start, dso_open_list);
-    spinlock_unlock(&fnbounds_lock);
 
     if (tmp) {
       success = 1; // already mapped
@@ -261,6 +273,7 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
       dso_info_t *dso_info = fnbounds_dso_handle_open(module_name, start, end);
       success =  (dso_info ? 1 : 0); 
     } 
+    FNBOUNDS_UNLOCK;
   }
 
   return success;
@@ -270,9 +283,13 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
 int
 fnbounds_module_domap(const char *incoming_filename, void *start, void *end)
 {
-  spinlock_lock(&fnbounds_lock);
-  return (fnbounds_compute(incoming_filename, start, end) != NULL);
-  spinlock_unlock(&fnbounds_lock);
+  int ret;
+
+  FNBOUNDS_LOCK;
+  ret = (fnbounds_compute(incoming_filename, start, end) != NULL);
+  FNBOUNDS_UNLOCK;
+
+  return (ret);
 }
 
 
@@ -291,8 +308,26 @@ fnbounds_fini()
 }
 
 
+void
+fnbounds_epoch_finalize()
+{
+  FNBOUNDS_LOCK;
+  fnbounds_epoch_finalize_locked();
+  FNBOUNDS_UNLOCK;
+}
+
+void
+fnbounds_release_lock(void)
+{
+  FNBOUNDS_UNLOCK;  
+}
+
+
 //*********************************************************************
 // private operations
+//
+// Note: the private operations should all assume that fnbounds_lock
+// is already locked (mostly).
 //*********************************************************************
 
 static dso_info_t *
@@ -377,12 +412,11 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
 }
 
 
-void 
-fnbounds_epoch_finalize()
+static void
+fnbounds_epoch_finalize_locked()
 {
-  spinlock_lock(&fnbounds_lock);
+  dso_info_t *dso_info;
 
-  dso_info_t * dso_info;
   for (dso_info = dso_open_list; dso_info; dso_info = dso_info->next) {
     csprof_epoch_add_module(dso_info->name, NULL /* no vaddr */,
 			    dso_info->start_addr, 
@@ -399,8 +433,6 @@ fnbounds_epoch_finalize()
     dso_info_free(dso_info);
     dso_info = next;
   } 
-
-  spinlock_unlock(&fnbounds_lock);
 }
 
 
@@ -424,8 +456,6 @@ fnbounds_dso_info_query(void *pc, dso_info_t * dl_list)
 static dso_info_t *
 fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
 {
-  spinlock_lock(&fnbounds_lock);
-
   dso_info_t *dso_info = fnbounds_dso_info_query(start, dso_closed_list);
 
   // the address range of the module, which does not have an open mapping
@@ -453,15 +483,11 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
       // at present.
     } else {
       // the entry on the closed list was not the same module
-      spinlock_unlock(&fnbounds_lock);
-      fnbounds_epoch_finalize();
-      spinlock_lock(&fnbounds_lock);
+      fnbounds_epoch_finalize_locked();
       csprof_epoch_new();
     }
   }
   dso_info = fnbounds_compute(module_name, start, end);
-
-  spinlock_unlock(&fnbounds_lock);
 
   return dso_info;
 }
@@ -492,10 +518,8 @@ fnbounds_dso_info_get(void *pc)
       addr = (unsigned long long) pc;
       
       if (dylib_find_module_containing_addr(addr, module_name, &mstart, &mend)) {
-	spinlock_unlock(&fnbounds_lock);
 	dso_open = fnbounds_dso_handle_open(module_name, (void *) mstart, 
 					    (void *) mend);
-	spinlock_lock(&fnbounds_lock);
       }
     }
   }
