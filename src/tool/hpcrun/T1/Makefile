@@ -1,10 +1,18 @@
+#
+# $Id$
+#
+
 CC     := gcc -std=c99
 CXX    := g++
+MPICC  := mpicc
 
 CFLAGS := -g -I..
 
 tmpi: tmpi.c
-	mpicc $< -lm -o $@
+	$(MPICC) $< -lm -o $@
+
+mpi: mpi.c
+	$(MPICC) -o $@ -g -O $<
 
 t1: t1.o
 	$(CC) -g $< -lm -o $@
@@ -12,6 +20,8 @@ t1: t1.o
 fib: fib.o
 	$(CC) -g $< -o $@
 
+dlopen: dlopen.c
+	$(CC) -o $@ -g -O $< -ldl
 
 dlopen-test: dlopen-test.c
 	gcc -o dlopen-test -g dlopen-test.c -ldl
