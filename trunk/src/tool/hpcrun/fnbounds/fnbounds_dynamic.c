@@ -280,19 +280,6 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
 }
 
 
-int
-fnbounds_module_domap(const char *incoming_filename, void *start, void *end)
-{
-  int ret;
-
-  FNBOUNDS_LOCK;
-  ret = (fnbounds_compute(incoming_filename, start, end) != NULL);
-  FNBOUNDS_UNLOCK;
-
-  return (ret);
-}
-
-
 //---------------------------------------------------------------------
 // function fnbounds_fini: 
 // 
