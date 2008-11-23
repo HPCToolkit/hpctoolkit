@@ -150,9 +150,12 @@ realmain(int argc, char* const* argv)
   
   try { 
     Prof::Epoch* epoch = prof->epoch();
-    for (Prof::Epoch::LMSet::iterator it = epoch->lm_begin();
-	 it != epoch->lm_end(); ++it) {
-      Prof::Epoch::LM* epoch_lm = *it;
+    for (uint i = 0; i < epoch->lm_size(); ++i) {
+      // NOTE(tallent): This method will not iterate over all load modules if
+      // two map to the same load address (such as may happen in a
+      // scalability study)...
+      // Prof::Epoch::LMSet::iterator it = epoch->lm_begin(); it != epoch->lm_end(); ++it
+      Prof::Epoch::LM* epoch_lm = epoch->lm(i); // *it;
 
       // tallent (FIXME): See note on Epoch::LM::isUsed()
       if (epoch_lm->isAvail() && epoch_lm->isUsed()) {
