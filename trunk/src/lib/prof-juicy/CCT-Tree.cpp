@@ -959,25 +959,30 @@ CSProfNode::DumpSelfBefore(ostream& os, int dmpFlag, const char *prefix) const
 
   const IDynNode* this_dyn = dynamic_cast<const IDynNode*>(this);
   if (this_dyn) {
-    os << endl;
+    os << endl; // should only emit if there exist non-zero metrics
     this_dyn->writeMetrics_xml(os, dmpFlag, prefix);
   }
 
-  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { os << endl; }
+  //if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { os << endl; }
 }
 
 void
 CSProfNode::DumpSelfAfter(ostream &os, int dmpFlag, const char *prefix) const
 {
   os << prefix << "</" << NodeTypeToName(GetType()) << ">";
-  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { os << endl; }
+
+  //if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { os << endl; }
 }
 
 void
 CSProfNode::Dump(ostream &os, int dmpFlag, const char *pre) const 
 {
   string indent = "  ";
-  if (dmpFlag & CCT::Tree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
+  if (dmpFlag & CCT::Tree::COMPRESSED_OUTPUT) { 
+    pre = ""; 
+    indent = ""; 
+  } 
+
   if (/*(dmpFlag & CCT::Tree::XML_TRUE) &&*/ IsLeaf()) { 
     dmpFlag |= CCT::Tree::XML_EMPTY_TAG; 
   }
@@ -1008,7 +1013,11 @@ void
 CSProfNode::DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const 
 {
   string indent = "  ";
-  if (dmpFlag & CCT::Tree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
+  if (dmpFlag & CCT::Tree::COMPRESSED_OUTPUT) { 
+    pre = ""; 
+    indent = ""; 
+  }
+
   if ( /*(dmpFlag & CCT::Tree::XML_TRUE) &&*/ IsLeaf()) { 
     dmpFlag |= CCT::Tree::XML_EMPTY_TAG; 
   }
