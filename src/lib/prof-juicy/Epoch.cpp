@@ -92,8 +92,17 @@ Epoch::lm_insert(Epoch::LM* x)
   x->id(id);
   m_lm_byId.push_back(x);
   
-  m_lm_byName.insert(x);
-  m_lm_byVMA.insert(x);
+  m_lm_byName.insert(x); // multiset insert always successful 
+
+  std::pair<LMSet::iterator, bool> ret = m_lm_byVMA.insert(x);
+  if (!ret.second) {
+    const Epoch::LM* y = *(ret.first);
+    if (x->name() != y->name()) {
+      // Possibly perform additional checking to see y can be folded into x
+      DIAG_WMsg(1, "New Epoch::LM '" << x->toString()
+		<< "' conflicts with existing '" << y->toString() << "'");
+    }
+  }
 }
 
 
@@ -131,7 +140,7 @@ Epoch::lm_find(VMA ip) const
   }
 }
 
-  
+
 void 
 Epoch::compute_relocAmt()
 {
@@ -165,18 +174,22 @@ Epoch::merge(const Epoch& y)
     std::pair<Epoch::LMSet_nm::iterator, Epoch::LMSet_nm::iterator> x_fnd = 
       x.lm_find(y_lm->name());
 
-    Epoch::LM* x_lm = (x_fnd.first != lm_end_nm()) ? *(x_fnd.first) : NULL;
+    Epoch::LM* x_lm = (x_fnd.first != x_fnd.second) ? *(x_fnd.first) : NULL;
     bool is_x_lm_uniq = (x_lm && (x_fnd.first == --(x_fnd.second)));
 
-    if (is_x_lm_uniq && x_lm->id() == y_lm->id()) {
-      ; // nothing
-    }
-    else if (is_x_lm_uniq && x_lm->id() != y_lm->id()) {
-      // y_lm->id() is replaced by x_lm->id()
-      mergeChg.push_back(MergeChange(y_lm->id(), x_lm->id()));
+    if (is_x_lm_uniq) { // y_lm matches exactly one x_lm
+      if (x_lm->id() == y_lm->id()) {
+	; // perfect match; nothing to do (common case)
+      }
+      else { // (x_lm->id() != y_lm->id()) 
+	// y_lm->id() is replaced by x_lm->id()
+	mergeChg.push_back(MergeChange(y_lm->id(), x_lm->id()));
+      }
     }
     else {
-      // Create and insert x_lm.  y_lm->id() is replaced by x_lm->id().
+      // y_lm matches zero or greater than one x_lm
+
+      // Create x_lm for y_lm.  y_lm->id() is replaced by x_lm->id().
       x_lm = new Epoch::LM(y_lm->name().c_str(), y_lm->loadAddr(), 
 			   y_lm->size());
       lm_insert(x_lm);
@@ -189,6 +202,15 @@ Epoch::merge(const Epoch& y)
   }
   
   return mergeChg;
+}
+
+
+std::string
+Epoch::toString() const
+{
+  std::ostringstream os;
+  dump(os);
+  return os.str();
 }
 
 
@@ -208,9 +230,7 @@ Epoch::dump(std::ostream& os) const
 
   for (LMSet::const_iterator it = lm_begin(); it != lm_end(); ++it) {
     LM* lm = *it;
-    os << pre;
-    lm->dump(os);
-    os << std::endl;
+    os << pre << lm->toString() << std::endl;
   }
   os << "}\n";
 }
@@ -258,13 +278,22 @@ Epoch::LM::compute_relocAmt()
   }
 }
 
+std::string
+Epoch::LM::toString() const
+{
+  std::ostringstream os;
+  dump(os);
+  return os.str();
+}
 
 void 
 Epoch::LM::dump(std::ostream& os) const
 { 
   using namespace std;
-  os << "0x" << hex << m_loadAddr << dec << " (+" << m_relocAmt <<  "): " 
-     << m_name;
+  os << "0x" << hex << m_loadAddr << dec 
+     << " (+" << m_relocAmt << " = " 
+     << hex << (m_loadAddr + m_relocAmt) << dec << "): " 
+     << m_name << " [" << m_id << "]";
 }
 
 

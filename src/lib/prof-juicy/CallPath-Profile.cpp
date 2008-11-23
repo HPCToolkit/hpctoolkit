@@ -69,6 +69,8 @@ using namespace xml;
 
 //*************************** Forward Declarations **************************
 
+#define DBG 0
+
 //***************************************************************************
 
 
@@ -243,6 +245,8 @@ Profile::make(const char* fnm)
   }
   epoch_table__free_data(&epochtbl, hpcfile_free_CB);
 
+  DIAG_MsgIf(DBG, epoch->toString());
+
   try {
     epoch->compute_relocAmt();
   }
@@ -292,7 +296,7 @@ Profile::cct_canonicalize()
     Prof::CSProfNode* n = it.CurNode();
 
     Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
-    if (n_dyn) {
+    if (n_dyn) { // n_dyn->lm_id() == Prof::Epoch::LM_id_NULL
       VMA ip = n_dyn->IDynNode::ip();
       Prof::Epoch::LM* lm = epoch()->lm_find(ip);
       VMA ip_ur = ip - lm->relocAmt();

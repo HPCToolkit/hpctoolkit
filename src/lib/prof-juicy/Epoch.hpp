@@ -136,7 +136,10 @@ public:
     bool isUsed() const { return m_isUsed; }
     void isUsed(bool x) { m_isUsed = x; }
     void isUsedMrg(bool x) { m_isUsed = (m_isUsed || x); }
+
     
+    std::string toString() const;
+
     void dump(std::ostream& os = std::cerr) const;
     void ddump() const;
 
@@ -198,20 +201,23 @@ public:
 
   // ------------------------------------------------------------
   // Access by name
+  // 
+  // NOTE: this is a multiset since different portions of the same
+  // load module may be loaded at different places
   // ------------------------------------------------------------
   std::pair<LMSet_nm::iterator, LMSet_nm::iterator>
   lm_find(const std::string& nm) const;
 
-  LMSet::iterator lm_begin_nm() 
+  LMSet_nm::iterator lm_begin_nm() 
   { return m_lm_byName.begin(); }
 
-  LMSet::const_iterator lm_begin_nm() const 
+  LMSet_nm::const_iterator lm_begin_nm() const 
   { return m_lm_byName.begin(); }
 
-  LMSet::iterator lm_end_nm() 
+  LMSet_nm::iterator lm_end_nm() 
   { return m_lm_byName.end(); }
 
-  LMSet::const_iterator lm_end_nm() const 
+  LMSet_nm::const_iterator lm_end_nm() const 
   { return m_lm_byName.end(); }
 
 
@@ -267,6 +273,9 @@ public:
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
+
+  std::string toString() const;
+
   void dump(std::ostream& os = std::cerr) const;
   void ddump() const;
 
