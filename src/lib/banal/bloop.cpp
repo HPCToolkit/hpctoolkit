@@ -258,8 +258,8 @@ private:
 static string OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 static string InferredProcedure     = Prof::Struct::Tree::UnknownProcNm;
 
-static const char *PGMdtd =
-#include <lib/xml/PGM.dtd.h>
+static const char* structureDTD =
+#include <lib/xml/hpc-structure.dtd.h>
 
 //****************************************************************************
 // Set of routines to write a structure tree
@@ -271,7 +271,7 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
 			     bool prettyPrint)
 {
   os << "<?xml version=\"1.0\"?>" << std::endl;
-  os << "<!DOCTYPE PGM [\n" << PGMdtd << "]>" << std::endl;
+  os << "<!DOCTYPE hpc-structure [\n" << structureDTD << "]>" << std::endl;
   os.flush();
 
   int dumpFlags = (Struct::Tree::XML_TRUE); // Struct::ANode::XML_NO_ESC_CHARS

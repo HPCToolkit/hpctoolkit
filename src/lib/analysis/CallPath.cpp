@@ -88,8 +88,8 @@ typedef std::set<Prof::CSProfCodeNode*> CSProfCodeNodeSet;
 // Dump a CSProfTree 
 //****************************************************************************
 
-const char *CSPROFILEdtd =
-#include <lib/xml/CSPROFILE.dtd.h>
+const char *experimentDTD =
+#include <lib/xml/hpc-experiment.dtd.h>
 
 
 namespace Analysis {
@@ -102,7 +102,7 @@ write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint)
   using namespace Prof;
 
   os << "<?xml version=\"1.0\"?>" << std::endl;
-  os << "<!DOCTYPE CSPROFILE [\n" << CSPROFILEdtd << "]>" << std::endl;
+  os << "<!DOCTYPE hpc-experiment [\n" << experimentDTD << "]>" << std::endl;
   os.flush();
   os << "<CSPROFILE version=\"1.0.2\">\n";
   os << "<CSPROFILEHDR>\n</CSPROFILEHDR>\n"; 

@@ -65,9 +65,11 @@ MYSOURCES = \
 	xml.hpp xml.cpp
 
 MYDTDHEADERS = \
-	$(srcdir)/PROFILE.dtd.h \
-	$(srcdir)/CSPROFILE.dtd.h \
-	$(srcdir)/PGM.dtd.h
+	$(srcdir)/hpc-experiment.dtd.h \
+	$(srcdir)/hpc-structure.dtd.h \
+	\
+	$(srcdir)/PROFILE.dtd.h
+
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
