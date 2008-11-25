@@ -1,12 +1,19 @@
+//
+// $Id$
+//
+
 #include <assert.h>
+#include "epoch.h"
+#include "files.h"
 #include "fnbounds_interface.h"
 
 //-------------------------------------------------------------------------
 // the external variables below will be defined in a 
 // machine-generated file
 //-------------------------------------------------------------------------
+
 extern void *csprof_nm_addrs[];
-extern int      csprof_nm_addrs_len;
+extern int   csprof_nm_addrs_len;
 
 int 
 fnbounds_init()
@@ -34,9 +41,9 @@ fnbounds_add(char *module_name, void *start, void *end)
 int 
 fnbounds_enclosing_addr(void *addr, void **start, void **end)
 {
-    int failure =  fnbounds_table_lookup( csprof_nm_addrs, 
-					 csprof_nm_addrs_len,  addr,  start, end);
-    return failure;
+  return
+    fnbounds_table_lookup(csprof_nm_addrs, csprof_nm_addrs_len,
+			  addr, start, end);
 }
 
 
@@ -49,8 +56,15 @@ fnbounds_fini()
 void 
 fnbounds_epoch_finalize()
 {
-  csprof_epoch_add_module(files_executable_name(), 0 /* no vaddr */, 
-			  csprof_nm_addrs[0], 
-			  csprof_nm_addrs[csprof_nm_addrs_len - 1]);
+  void *start = csprof_nm_addrs[0];
+  void *end = csprof_nm_addrs[csprof_nm_addrs_len - 1];
+
+  csprof_epoch_add_module(files_executable_name(), 0 /* no vaddr */,
+			  start, end - start);
 } 
 
+
+void
+fnbounds_release_lock(void)
+{
+}
