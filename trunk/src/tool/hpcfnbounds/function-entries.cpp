@@ -1,8 +1,12 @@
+//
+// $Id$
+//
 /******************************************************************************
  * include files
  *****************************************************************************/
 
 #include <stdio.h>
+#include <unistd.h>
 #include <string>
 
 #include "code-ranges.h"
@@ -30,13 +34,13 @@ public:
 };
 
 
-
 /******************************************************************************
  * forward declarations
  *****************************************************************************/
 
 static void new_function_entry(void *addr, string *comment, bool isvisible);
-
+static void dump_function_entry(void *addr, const char *comment);
+static void end_of_function_entries(void);
 
 
 /******************************************************************************
@@ -50,6 +54,13 @@ static FunctionSet function_entries;
 static ExcludedFunctionSet excluded_function_entries;
 
 static intervals cbranges;
+
+#define ADDR_BUF_SIZE  1024
+
+static void *addr_buf[ADDR_BUF_SIZE];
+static long num_entries_in_buf = 0;
+static long num_entries_total = 0;
+
 
 /******************************************************************************
  * interface operations 
@@ -67,7 +78,7 @@ dump_reachable_functions()
 {
   char buffer[1024];
   FunctionSet::iterator i = function_entries.begin();
-  int first = 1;
+
   for (; i != function_entries.end();) {
     Function *f = (*i).second;
     ++i;
@@ -86,11 +97,9 @@ dump_reachable_functions()
       sprintf(buffer,"stripped_%p", f->address);
       name = buffer;
     }
-    if (first) printf("   %p /* %s */", f->address, name);
-    else printf(",\n   %p /* %s */", f->address, name);
-    first = 0;
+    dump_function_entry(f->address, name);
   }
-  if (!first) printf("\n");
+  end_of_function_entries();
 }
 
 
@@ -131,6 +140,7 @@ add_function_entry(void *addr, const string *comment, bool isvisible)
   }
 }
 
+
 void
 entries_in_range(void *start, void *end, vector<void *> &result)
 {
@@ -149,7 +159,6 @@ entries_in_range(void *start, void *end, vector<void *> &result)
 }
 
 
-
 bool contains_function_entry(void *address)
 {
   FunctionSet::iterator it = function_entries.find(address); 
@@ -158,10 +167,45 @@ bool contains_function_entry(void *address)
 }
 
 
+long num_function_entries(void)
+{
+  return (num_entries_total);
+}
+
 
 /******************************************************************************
  * private operations 
  *****************************************************************************/
+
+//
+// Write one function entry to stdout, either as C array source or in
+// binary format, depending on -b flag.  The binary format is buffered.
+//
+static void
+dump_function_entry(void *addr, const char *comment)
+{
+  num_entries_total++;
+  if (binary_format()) {
+    addr_buf[num_entries_in_buf] = addr;
+    num_entries_in_buf++;
+    if (num_entries_in_buf == ADDR_BUF_SIZE) {
+      write(1, addr_buf, num_entries_in_buf * sizeof(void *));
+      num_entries_in_buf = 0;
+    }
+  } else {
+    printf("  %p,  /* %s */\n", addr, comment);
+  }
+}
+
+static void
+end_of_function_entries(void)
+{
+  if (binary_format() && num_entries_in_buf > 0) {
+    write(1, addr_buf, num_entries_in_buf * sizeof(void *));
+    num_entries_in_buf = 0;
+  }
+}
+
 
 static void 
 new_function_entry(void *addr, string *comment, bool isvisible)

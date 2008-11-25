@@ -38,17 +38,14 @@ int samples_taken    = 0;
 int bad_unwind_count = 0;
 int filtered_samples = 0; // global variable to count filtered samples
 
-static long process_wide_suspend = 0;
 
-
-// FIXME: Turn sampling off process-wide until we rework how we load
-// function addresses into memory not to use dlopen.
-//
 void
 csprof_suspend_sampling(int val)
 {
-  fetch_and_add(&process_wide_suspend, (long)val);
+  thread_data_t *td = csprof_get_thread_data();
+  td->suspend_sampling += val;
 }
+
 
 csprof_cct_node_t*
 csprof_sample_event(void *context, int metric_id, size_t sample_count)
@@ -57,7 +54,8 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
 
   thread_data_t *td = csprof_get_thread_data();
 
-  if (process_wide_suspend) return;
+  if (td->suspend_sampling)
+    return (NULL);
 
   sigjmp_buf_t *it = &(td->bad_unwind);
 
