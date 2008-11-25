@@ -963,7 +963,9 @@ CSProfNode::DumpSelfBefore(ostream& os, int dmpFlag, const char *prefix) const
     this_dyn->writeMetrics_xml(os, dmpFlag, prefix);
   }
 
-  //if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { os << endl; }
+  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { 
+    os << endl; 
+  }
 }
 
 void
@@ -971,7 +973,9 @@ CSProfNode::DumpSelfAfter(ostream &os, int dmpFlag, const char *prefix) const
 {
   os << prefix << "</" << NodeTypeToName(GetType()) << ">";
 
-  //if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { os << endl; }
+  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { 
+    os << endl; 
+  }
 }
 
 void

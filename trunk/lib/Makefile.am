@@ -56,10 +56,11 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 MYDTD = \
-	dtd/CSPROFILE.dtd \
+	dtd/hpc-experiment.dtd \
+	dtd/hpc-structure.dtd \
+	\
 	dtd/Experiment.dtd \
 	dtd/HPCView.dtd \
-	dtd/PGM.dtd \
 	dtd/PROFILE.dtd \
 	\
 	dtd/mathml/xhtml1-transitional-mathml.dtd \

@@ -1,39 +1,39 @@
-# -*-Mode: autoconf;-*-
-# $Id$
+dnl -*-Mode: autoconf;-*-
+dnl $Id$
 
-## * BeginRiceCopyright *****************************************************
-## 
-## Copyright ((c)) 2002-2007, Rice University 
-## All rights reserved.
-## 
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-## 
-## * Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-## 
-## * Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in the
-##   documentation and/or other materials provided with the distribution.
-## 
-## * Neither the name of Rice University (RICE) nor the names of its
-##   contributors may be used to endorse or promote products derived from
-##   this software without specific prior written permission.
-## 
-## This software is provided by RICE and contributors "as is" and any
-## express or implied warranties, including, but not limited to, the
-## implied warranties of merchantability and fitness for a particular
-## purpose are disclaimed. In no event shall RICE or contributors be
-## liable for any direct, indirect, incidental, special, exemplary, or
-## consequential damages (including, but not limited to, procurement of
-## substitute goods or services; loss of use, data, or profits; or
-## business interruption) however caused and on any theory of liability,
-## whether in contract, strict liability, or tort (including negligence
-## or otherwise) arising in any way out of the use of this software, even
-## if advised of the possibility of such damage. 
-## 
-## ******************************************************* EndRiceCopyright *
+dnl * BeginRiceCopyright *****************************************************
+dnl 
+dnl Copyright ((c)) 2002-2007, Rice University 
+dnl All rights reserved.
+dnl 
+dnl Redistribution and use in source and binary forms, with or without
+dnl modification, are permitted provided that the following conditions are
+dnl met:
+dnl 
+dnl * Redistributions of source code must retain the above copyright
+dnl   notice, this list of conditions and the following disclaimer.
+dnl 
+dnl * Redistributions in binary form must reproduce the above copyright
+dnl   notice, this list of conditions and the following disclaimer in the
+dnl   documentation and/or other materials provided with the distribution.
+dnl 
+dnl * Neither the name of Rice University (RICE) nor the names of its
+dnl   contributors may be used to endorse or promote products derived from
+dnl   this software without specific prior written permission.
+dnl 
+dnl This software is provided by RICE and contributors "as is" and any
+dnl express or implied warranties, including, but not limited to, the
+dnl implied warranties of merchantability and fitness for a particular
+dnl purpose are disclaimed. In no event shall RICE or contributors be
+dnl liable for any direct, indirect, incidental, special, exemplary, or
+dnl consequential damages (including, but not limited to, procurement of
+dnl substitute goods or services; loss of use, data, or profits; or
+dnl business interruption) however caused and on any theory of liability,
+dnl whether in contract, strict liability, or tort (including negligence
+dnl or otherwise) arising in any way out of the use of this software, even
+dnl if advised of the possibility of such damage. 
+dnl 
+dnl ******************************************************* EndRiceCopyright *
 
 #############################################################################
 #
@@ -75,7 +75,8 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [TRUNK-4.9.2-r1650], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([hpctoolkit], [TRUNK-4.9.2], 
+        [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -99,6 +100,44 @@ hpctoolkit_top=`cd ${srcdir} && pwd`
 hpctoolkit_build=`pwd`
 HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
+
+
+#----------------------------------------------------------------------------
+# SVN version
+#----------------------------------------------------------------------------
+
+# NOTE: Mark's code from hpctoolkit-externals
+
+# Append svn revision to PACKAGE_VERSION.
+#
+# If this directory is an svn sandbox, then use svn info (and store
+# the result in a file), else expect the answer to be in the file.
+# Note: svn update changes the revision number, so svn info must take
+# precedence over the file.
+
+version_file="${srcdir}/.svn-revision"
+
+AC_MSG_CHECKING([for svn revision])
+
+svn_revision=`svn info $srcdir 2>/dev/null | grep -e '^Revision' | awk '{ print $2 }'`
+if test "x$svn_revision" != x ; then
+    PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
+    rm -f "$version_file"
+    echo "$svn_revision" > "$version_file"
+elif test -f "$version_file" ; then
+    svn_revision=`cat $version_file`
+    PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
+else
+    svn_revision=0
+fi
+
+AC_MSG_RESULT([$svn_revision])
+
+if test "$svn_revision" = 0 ; then
+    AC_MSG_WARN([unable to find svn revision])
+fi
+
+dnl AC_SUBST([svn_revision])
 
 
 #----------------------------------------------------------------------------
@@ -1334,6 +1373,7 @@ AC_OUTPUT()
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([HPCToolkit summary])
 AC_MSG_NOTICE([-------------------])
+AC_MSG_NOTICE([  HPCToolkit version: $PACKAGE_VERSION])
 AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  host: $host])
 AC_MSG_NOTICE([  CC, CFLAGS: $CC $CFLAGS ${HOST_CFLAGS}])
