@@ -1,10 +1,16 @@
+//
+// $Id$
+//
+
 #include <vector>
 #include <string>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "code-ranges.h"
 #include "process-ranges.h"
 #include "function-entries.h"
+#include "fnbounds-file-header.h"
 #include "Symtab.h"
 #include "Symbol.h"
 
@@ -12,7 +18,9 @@ using namespace std;
 using namespace Dyninst;
 using namespace SymtabAPI;
 
-#define NO_DISCOVERY_ARGUMENT "-d" // don't perform function discovery
+#define BINARY_FORMAT_ARG  "-b"  // write output in binary format
+#define NO_DISCOVERY_ARG   "-d"  // don't perform function discovery
+#define HELP_ARG           "-h"
 
 #define SECTION_SYMTAB ".symtab"
 #define SECTION_INIT   ".init"
@@ -22,7 +30,6 @@ using namespace SymtabAPI;
 
 #define PATHSCALE_EXCEPTION_HANDLER_PREFIX "Handler."
 #define STRLEN(s) (sizeof(s) - 1)
-
 
 static void usage(char *command);
 static void dump_file_info(const char *filename, bool fn_discovery);
@@ -39,6 +46,7 @@ return strdup(s);
 
 };
 
+static int use_binary_format = 0;
 
 
 //*****************************************************************
@@ -49,18 +57,31 @@ int
 main(int argc, char **argv)
 {
   bool fn_discovery = 1;
-  if (argc < 2) usage(argv[0]);
+  int n;
 
-  const char *file = argv[--argc];
-
-  if (argc == 2) {
-    const char *arg = argv[--argc];
-    if (strcmp(arg, NO_DISCOVERY_ARGUMENT) == 0) fn_discovery = 0;
-    else usage(argv[0]);
+  for (n = 1; n < argc; n++) {
+    if (strcmp(argv[n], BINARY_FORMAT_ARG) == 0)
+      use_binary_format = 1;
+    else if (strcmp(argv[n], NO_DISCOVERY_ARG) == 0)
+      fn_discovery = 0;
+    else if (strcmp(argv[n], HELP_ARG) == 0)
+      usage(argv[0]);
+    else
+      break;
   }
 
-  dump_file_info(file, fn_discovery);
+  if (n >= argc)
+    usage(argv[0]);
+
+  dump_file_info(argv[n], fn_discovery);
+
   return 0;
+}
+
+int
+binary_format(void)
+{
+  return (use_binary_format);
 }
 
 
@@ -81,9 +102,14 @@ static void
 usage(char *command)
 {
   fprintf(stderr, 
-	 "Usage: %s [%s] object-file\n"
-	 "\t%s\tdon't perform function discovery on stripped code\n",
-	 command, NO_DISCOVERY_ARGUMENT, NO_DISCOVERY_ARGUMENT);
+	  "Usage: %s [%s] [%s] [%s] object-file\n"
+	  "\t%s\twrite output in binary format\n"
+	  "\t%s\tdon't perform function discovery on stripped code\n"
+	  "\t%s\tprint this help message and exit\n",
+	  command, BINARY_FORMAT_ARG, NO_DISCOVERY_ARG, HELP_ARG,
+	  BINARY_FORMAT_ARG, NO_DISCOVERY_ARG, HELP_ARG);
+
+  exit(0);
 }
 
 
@@ -190,12 +216,35 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
 static void 
 dump_file_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
 {
-  printf("unsigned long csprof_nm_addrs[] = {\n");
+  if (! binary_format()) {
+    printf("unsigned long csprof_nm_addrs[] = {\n");
+  }
 
   dump_symbols(syms, symvec, fn_discovery);
 
-  printf("};\nint csprof_nm_addrs_len = "
-	 "sizeof(csprof_nm_addrs) / sizeof(csprof_nm_addrs[0]);\n");
+  if (! binary_format()) {
+    printf("};\nint csprof_nm_addrs_len = "
+	   "sizeof(csprof_nm_addrs) / sizeof(csprof_nm_addrs[0]);\n");
+  }
+}
+
+
+static void
+dump_header_info(int relocatable, int stripped)
+{
+  struct fnbounds_file_header fh;
+
+  if (binary_format()) {
+    memset(&fh, 0, sizeof(fh));
+    fh.magic = FNBOUNDS_MAGIC;
+    fh.num_entries = num_function_entries();
+    fh.relocatable = relocatable;
+    fh.stripped = stripped;
+    write(1, &fh, sizeof(fh));
+  } else {
+    printf("unsigned int csprof_relocatable = %d;\n", relocatable);
+    printf("unsigned int csprof_stripped = %d;\n", stripped);
+  }
 }
 
 
@@ -206,7 +255,9 @@ dump_file_info(const char *filename, bool fn_discovery)
   string sfile(filename);
   vector<Symbol *> symvec;
   Symtab::openFile(syms, sfile);
+  int relocatable = 0;
   int stripped = 0;
+
 #if 0
   // be conservative with function discovery: only apply it to stripped objects
   fn_discovery &=  file_is_stripped(syms);
@@ -215,8 +266,7 @@ dump_file_info(const char *filename, bool fn_discovery)
   syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
   if (syms->getObjectType() != obj_Unknown) {
     dump_file_symbols(syms, symvec, fn_discovery);
-    int relocatable = syms->isExec() ? 0 : 1;
-    printf("unsigned int csprof_relocatable = %d;\n", relocatable);
+    relocatable = syms->isExec() ? 0 : 1;
   }
-  printf("unsigned int csprof_stripped = %d;\n", stripped);
+  dump_header_info(relocatable, stripped);
 }

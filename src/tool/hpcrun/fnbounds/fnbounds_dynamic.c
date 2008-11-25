@@ -25,10 +25,12 @@
 #include <string.h>    // for strcmp, strerror
 #include <stdlib.h>    // for getenv
 #include <errno.h>     // for errno
+#include <sys/mman.h>
 #include <sys/param.h> // for PATH_MAX
 #include <sys/stat.h>  // mkdir
 #include <sys/types.h>
 #include <unistd.h>    // getpid
+#include <fcntl.h>
 
 
 //*********************************************************************
@@ -38,6 +40,7 @@
 #include "csprof_dlfns.h"
 #include "dylib.h"
 #include "epoch.h"
+#include "fnbounds-file-header.h"
 #include "fnbounds_interface.h"
 #include "monitor.h"
 #include "pmsg.h"
@@ -56,13 +59,10 @@ typedef struct dso_info_s {
   char *name;
   void *start_addr;
   void *end_addr;
-  int relocate;
-
   void **table;
-  int nsymbols;
-
-  void *handle;
-
+  long map_size;
+  int  nsymbols;
+  int  relocate;
   struct dso_info_s *next, *prev;
 } dso_info_t;
 
@@ -120,9 +120,10 @@ static dso_info_t *fnbounds_dso_handle_open(const char *module_name,
 static void        fnbounds_map_executable();
 static void        fnbounds_epoch_finalize_locked();
 
-static dso_info_t *new_dso_info_t(const char *name, void **table, int nsymbols,
-				  int relocate, void *startaddr, void *endaddr,
-				  void *dl_handle);
+static dso_info_t *new_dso_info_t(const char *name, void **table,
+				  struct fnbounds_file_header *fh,
+				  void *startaddr, void *endaddr,
+				  long map_size);
 
 static const char *mybasename(const char *string);
 
@@ -241,7 +242,8 @@ fnbounds_unmap_closed_dsos()
       // add to closed list of DSOs 
       dso_list_add(&dso_closed_list, dso_info);
 
-      monitor_real_dlclose(dso_info->handle);
+      // Free the table memory.
+      munmap(dso_info->table, dso_info->map_size);
     }
   }
 
@@ -317,85 +319,145 @@ fnbounds_release_lock(void)
 // is already locked (mostly).
 //*********************************************************************
 
+//
+// Read the binary file of function addresses from hpcfnbounds-bin and
+// load into memory as an array of void *.
+//
+// Returns: pointer to array on success and fills in map_size and file
+//          header, else NULL on failure.
+//
+static void *
+fnbounds_read_nm_file(const char *file, long *map_size,
+		      struct fnbounds_file_header *fh)
+{
+  struct stat st;
+  char *table;
+  long pagesize, len, ret;
+  int fd;
+
+  if (file == NULL || fh == NULL) {
+    EMSG("passed NULL to fnbounds_read_nm_file");
+    return (NULL);
+  }
+  if (stat(file, &st) != 0) {
+    EMSG("stat failed on fnbounds file: %s", file);
+    return (NULL);
+  }
+  if (st.st_size < sizeof(*fh)) {
+    EMSG("fnbounds file too small (%ld bytes): %s",
+	 (long)st.st_size, file);
+    return (NULL);
+  }
+  //
+  // Round up map_size to multiple of page size and mmap().
+  //
+  pagesize = getpagesize();
+  *map_size = (st.st_size/pagesize + 1)*pagesize;
+  table = mmap(NULL, *map_size, PROT_READ | PROT_WRITE,
+	       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (table == NULL) {
+    EMSG("mmap failed on fnbounds file: %s", file);
+    return (NULL);
+  }
+  //
+  // Read the file into memory.  Note: we read() the file instead of
+  // mmap()ing it directly, so we can close() it immediately.
+  //
+  fd = open(file, O_RDONLY);
+  if (fd < 0) {
+    EMSG("open failed on fnbounds file: %s", file);
+    return (NULL);
+  }
+  len = 0;
+  while (len < st.st_size) {
+    ret = read(fd, table + len, st.st_size - len);
+    if (ret <= 0) {
+      EMSG("read failed on fnbounds file: %s", file);
+      close (fd);
+      return (NULL);
+    }
+    len += ret;
+  }
+  close(fd);
+
+  memcpy(fh, table + st.st_size - sizeof(*fh), sizeof(*fh));
+  if (fh->magic != FNBOUNDS_MAGIC) {
+    EMSG("bad magic in fnbounds file: %s", file);
+    return (NULL);
+  }
+  if (st.st_size < fh->num_entries * sizeof(void *)) {
+    EMSG("fnbounds file too small (%ld bytes, %ld entries): %s",
+	 (long)st.st_size, (long)fh->num_entries, file);
+    return (NULL);
+  }
+  return (void *)table;
+}
+
+
 static dso_info_t *
 fnbounds_compute(const char *incoming_filename, void *start, void *end)
 {
   char filename[PATH_MAX];
+  char command[MAXPATHLEN+1024];
+  char dlname[MAXPATHLEN];
+
+  if (nm_command == NULL || incoming_filename == NULL)
+    return (NULL);
+
   realpath(incoming_filename, filename);
+  sprintf(dlname, "%s/%s.nm.so", fnbounds_tmpdir_get(), mybasename(filename));
 
-  if (nm_command) {
-    char command[MAXPATHLEN+1024];
-    char dlname[MAXPATHLEN];
-    char redir[64] = {'\0'};
+  int logfile_fd = csprof_logfile_fd();
+  char redir[64] = {'\0'};
+  sprintf(redir,"1>&%d 2>&%d", logfile_fd, logfile_fd);
 
-    //    IF_NOT_DISABLED(DL_BOUND_REDIR) {
-    // }
+  char *script_debug = "";
+  IF_ENABLED(DL_BOUND_SCRIPT_DEBUG) {
+    script_debug = "DBG";
+  }
 
-    int logfile_fd = csprof_logfile_fd();
-    sprintf(redir,"1>&%d 2>&%d",logfile_fd, logfile_fd);
+  sprintf(command, "%s %s %s %s %s\n", nm_command, filename,
+	  fnbounds_tmpdir_get(), script_debug, redir);
+  TMSG(DL_BOUND, "system command = %s", command);
 
-    sprintf(dlname, "%s/%s.nm.so", fnbounds_tmpdir_get(), mybasename(filename));
-    char *script_debug = "";
-    IF_ENABLED(DL_BOUND_SCRIPT_DEBUG) {
-      script_debug = "DBG";
+  int result = system_server_execute_command(command);
+  if (result) {
+    EMSG("fnbounds server command failed for file %s, aborting", filename);
+    monitor_real_exit(1);
+  }
+
+  long map_size;
+  struct fnbounds_file_header fh;
+  void **nm_table = (void **)fnbounds_read_nm_file(dlname, &map_size, &fh);
+  if (nm_table == NULL) {
+    EMSG("fnbounds computed bogus symbols for file %s, aborting",filename);
+    monitor_real_exit(1);
+  }
+
+  if (fh.num_entries < 1)
+    return (NULL);
+
+  //
+  // Note: we no longer care if binary is stripped.
+  //
+  if (fh.relocatable) {
+    if (nm_table[0] >= start && nm_table[0] <= end) {
+      // segment loaded at its preferred address
+      fh.relocatable = 0;
     }
-
-    sprintf(command, "%s %s %s %s %s\n", nm_command, filename, 
-            fnbounds_tmpdir_get(), script_debug, redir);
-    TMSG(DL_BOUND,"system command = %s",command);
-
-    int result = system_server_execute_command(command);
-    if (result) {
-      EMSG("fnbounds server command failed for file %s, aborting", filename);
-      abort();
+  } else {
+    char executable_name[PATH_MAX];
+    unsigned long long mstart, mend;
+    if (dylib_find_module_containing_addr((unsigned long long) nm_table[0],
+					  executable_name, &mstart, &mend)) {
+      start = (void *) mstart;
+      end = (void *) mend;
     } else {
-      int nsymbols = 0; // default is that there are no symbols
-      int relocate = 0; // default is no relocation
-      int addmapping = 0; // default is omit
-      void *dlhandle = monitor_real_dlopen(dlname, RTLD_LAZY | RTLD_LOCAL);
-      int *bogus = dlsym(dlhandle,"BOGUS");
-      if (bogus){
-	EMSG("fnbounds computed bogus symbols for file %s, aborting",filename);
-	abort();
-      }
-      void **nm_table = dlsym(dlhandle, "csprof_nm_addrs");
-      int *nm_table_len = (int *) dlsym(dlhandle, "csprof_nm_addrs_len");
-      int *is_relocatable = (int *) dlsym(dlhandle, "csprof_relocatable");
-      int *stripped = (int *) dlsym(dlhandle, "csprof_stripped");
-      if (stripped && *stripped == 0 && nm_table_len && is_relocatable) {
-	// file is not stripped. the number of symbols and relocation 
-	// information are available. in this case, we can consider using
-	// symbols values available in the table.
-	nsymbols = *nm_table_len;
-        relocate = *is_relocatable;
-	if (nsymbols >= 1) {
-	  if (relocate) {
-	    if (nm_table[0] >= start && nm_table[0] <= end)
-	       relocate = 0; // segment loaded at its preferred address
-          } else {
-             char executable_name[PATH_MAX];
-	     unsigned long long mstart, mend;
-             if (dylib_find_module_containing_addr(
-                     (unsigned long long) nm_table[0], 
-		     executable_name, &mstart, &mend)) {
-                start = (void *) mstart;
-                end = (void *) mend;
-             } else {
-                start = nm_table[0];
-                end = nm_table[nsymbols - 1];
-             } 
-          }
-          addmapping = 1;
-	}
-      }
-      if (addmapping) {
-	dso_info_t *r = new_dso_info_t(filename, nm_table, nsymbols, relocate, 
-                                       start, end, dlhandle);
-         return r;
-      }
+      start = nm_table[0];
+      end = nm_table[fh.num_entries - 1];
     }
   }
-  return 0;
+  return new_dso_info_t(filename, nm_table, &fh, start, end, map_size);
 }
 
 
@@ -523,23 +585,20 @@ fnbounds_map_executable()
 
 
 static dso_info_t *
-new_dso_info_t(const char *name, void **table, int nsymbols, int relocate, 
-	       void *startaddr, void *endaddr, void *dl_handle) 
+new_dso_info_t(const char *name, void **table, struct fnbounds_file_header *fh,
+	       void *startaddr, void *endaddr, long map_size)
 {
   int namelen = strlen(name) + 1;
   dso_info_t *r  = dso_info_allocate();
   
   r->name = (char *) csprof_malloc(namelen);
   strcpy(r->name, name);
-
   r->table = table;
-  r->nsymbols = nsymbols;
-
-  r->relocate = relocate;
+  r->map_size = map_size;
+  r->nsymbols = fh->num_entries;
+  r->relocate = fh->relocatable;
   r->start_addr = startaddr;
   r->end_addr = endaddr;
-
-  r->handle = dl_handle;
 
   dso_list_add(&dso_open_list, r);
 

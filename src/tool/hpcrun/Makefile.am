@@ -10,23 +10,22 @@ pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
 pkglib_LTLIBRARIES = libcsprof.la
 pkglib_PROGRAMS = libcsprof.o
-bin_SCRIPTS = scripts/hpcrun scripts/hpclink 
+bin_SCRIPTS = scripts/hpcrun scripts/hpclink
 pkglibexec_SCRIPTS = scripts/hpcfnbounds scripts/hpclog
 
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
-PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
-PAPI_LD_FLGS =  @OPT_PAPI_LDFLAGS@
+PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
+PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 SYMTABAPI_INC =  @SYMTABAPI_INC@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
+HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
 
 CSPROF_BASE_FILES =			\
 	utilities/first_func.c		\
-	sample_sources_all.c		\
-	sample_source_common.c		\
 	csprof_options.c		\
 	csproflib.c			\
 	data.c				\
@@ -34,13 +33,15 @@ CSPROF_BASE_FILES =			\
 	epoch.c				\
 	files.c				\
 	handling_sample.c		\
-	sample_source_itimer.c		\
 	last.c				\
 	libmonitor_upcalls.c		\
 	metrics.c			\
 	name.c				\
-	sample_sources_registered.c	\
 	sample_event.c			\
+	sample_sources_all.c		\
+	sample_source_common.c		\
+	sample_source_itimer.c		\
+	sample_sources_registered.c	\
 	segv_handler.c			\
 	state.c				\
 	system_server.c			\
@@ -113,6 +114,7 @@ CSPROF_INCLUDE_DIRS =			\
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
+	-I$(HPCFNBOUNDS_INC)		\
 	-I$(LIBMONITOR_INC)		\
 	-I$(PROF_LEAN_INC)		\
 	-I$(SYMTABAPI_INC)

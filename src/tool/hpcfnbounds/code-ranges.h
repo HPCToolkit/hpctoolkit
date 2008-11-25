@@ -6,3 +6,6 @@ bool consider_possible_fn_address(void *addr);
 void new_code_range(void *start, void *end, long offset, bool discover);
 
 void process_code_ranges();
+
+long num_function_entries(void);
+int binary_format(void);
