@@ -72,7 +72,7 @@ csprof_epoch_t *csprof_get_epoch();
 void csprof_epoch_add_module(const char *module_name, 
 	void *vaddr,                /* the preferred virtual address */
   	void *mapaddr,              /* the actual mapped address */
-        size_t size);               /* just what it sounds like */
+	size_t size);               /* end addr minus start addr */
 
 /* avoid weird dynamic loading conflicts */
 void csprof_epoch_lock();

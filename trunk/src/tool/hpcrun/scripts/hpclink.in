@@ -21,11 +21,11 @@
 
 # Relative paths are relative to HPCTOOLKIT.
 ext_libs_dir='@hpc_ext_libs_dir@'
+hpcfnbounds_dir='libexec/hpctoolkit'
 libcsprof_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 papi_dir='@OPT_PAPI_LIBPATH@'
 papi_extra_libs='@papi_extra_libs@'
-stapi_syms_dir='libexec/hpctoolkit'
 xed2_dir='@XED2_RUN_DIR@'
 
 # FIXME: The wrap list should come from monitor.
@@ -76,6 +76,10 @@ case "$ext_libs_dir" in
     /* ) ;;
     * )  ext_libs_dir="${HPCTOOLKIT}/${ext_libs_dir}" ;;
 esac
+case "$hpcfnbounds_dir" in
+    /* ) ;;
+    * )  hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
+esac
 case "$libcsprof_dir" in
     /* ) ;;
     * )  libcsprof_dir="${HPCTOOLKIT}/${libcsprof_dir}" ;;
@@ -88,17 +92,13 @@ case "$papi_dir" in
     /* ) ;;
     * )  papi_dir="${HPCTOOLKIT}/${papi_dir}" ;;
 esac
-case "$stapi_syms_dir" in
+case "$xed2_dir" in
     /* ) ;;
-    * )  stapi_syms_dir="${HPCTOOLKIT}/${stapi_syms_dir}" ;;
-esac
-case "$libxed2_dir" in
-    /* ) ;;
-    * )  libxed2_dir="${HPCTOOLKIT}/${libxed2_dir}" ;;
+    * )  xed2_dir="${HPCTOOLKIT}/${xed2_dir}" ;;
 esac
 
-stapi="${stapi_syms_dir}/stapi_syms"
-test -x "$stapi" || die "missing stapi_syms: $stapi"
+hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds-bin"
+test -x "$hpcfnbounds" || die "missing hpcfnbounds: $hpcfnbounds"
 
 LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
 export LD_LIBRARY_PATH
@@ -169,6 +169,7 @@ done
 #
 if test "$verbose" = yes ; then
     echo "original command line: $command $@"
+    echo
 fi
 
 undef_args=
@@ -207,6 +208,7 @@ set -- "$@" $appl_libs
 
 if test "$verbose" = yes ; then
     echo "new command line: $command $@"
+    echo
 fi
 
 #
@@ -222,7 +224,7 @@ EOF
 $CC -o "$hello" "${hello}.c"
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
-$stapi "$hello" > "${nm_addrs}.c" || die "stapi_syms failed on $hello"
+$hpcfnbounds "$hello" > "${nm_addrs}.c" || die "hpcfnbounds failed on $hello"
 $CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 $command "$@" || die "compile #1 failed: $command $@"
 test -f "$appl_out" || die "compile #1 failed: $command $@"
@@ -232,7 +234,7 @@ rm -f "${hello}.c" "$hello"
 # Step 4 -- Link with real nm file.
 #
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
-$stapi "$appl_out" > "${nm_addrs}.c" || die "stapi_syms failed on $appl_out"
+$hpcfnbounds "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
 $CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 $command "$@" || die "compile #2 failed: $command $@"
 test -f "$appl_out" || die "compile #2 failed: $command $@"

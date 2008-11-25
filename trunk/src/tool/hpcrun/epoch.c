@@ -77,7 +77,7 @@ void
 csprof_epoch_add_module(const char *module_name, 
 	void *vaddr,                /* the preferred virtual address */
   	void *mapaddr,              /* the actual mapped address */
-        size_t size)                /* just what it sounds like */
+	size_t size)                /* end addr minus start addr */
 {
   csprof_epoch_module_t *m = (csprof_epoch_module_t *) csprof_malloc(sizeof(csprof_epoch_module_t));
 
