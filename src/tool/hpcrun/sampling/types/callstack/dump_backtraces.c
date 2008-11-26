@@ -20,58 +20,43 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t* unwind)
   char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
   char lip_str[LUSH_LIP_STR_MIN_LEN];
 
-#if 0
-  EMSG("in dump_backtraces(0x%lx, 0x%lx)",(unsigned long int) state, (unsigned long int) unwind);
-
-  EMSG( ""); 
-#endif
-
   if (state->bufstk != state->bufend) {
-    EMSG( "--------Cached backtrace (innermost first)-----"); 
+    PMSG_LIMIT(EMSG( "--------Cached backtrace (innermost first)-----")); 
     cnt = 0;
     for (x = state->bufstk; x < state->bufend; ++x) {
       lush_assoc_info_sprintf(as_str, x->as_info);
       lush_lip_sprintf(lip_str, x->lip);
-      EMSG( "%s: ip %p | lip %s | sp %p", as_str, x->ip, lip_str, x->sp);
+      PMSG_LIMIT(EMSG( "%s: ip %p | lip %s | sp %p", as_str, x->ip, lip_str, x->sp));
 
       /* MWF: added to prevent long backtrace printout */
       cnt++;
       if (cnt > DUMP_LIMIT) {
-        EMSG("!!! Hit Dump Limit !!! ");
+        PMSG_LIMIT(EMSG("!!! Hit Dump Limit !!! "));
         break;
       }
     }
-    EMSG("--------End cached backtrace-----------");
+    PMSG_LIMIT(EMSG("--------End cached backtrace-----------"));
   }
   
   cnt = 0;
-  EMSG(""); /* space */
+  PMSG_LIMIT(EMSG("")); /* space */
   if (unwind) {
 
-    EMSG( "-----New backtrace (innermost first)-----");
+    PMSG_LIMIT(EMSG( "-----New backtrace (innermost first)-----"));
     for (x = state->btbuf; x < unwind; ++x) {
       lush_assoc_info_sprintf(as_str, x->as_info);
       lush_lip_sprintf(lip_str, x->lip);
-      EMSG( "%s: ip %p | lip %s | sp %p", as_str, x->ip, lip_str, x->sp);
+      PMSG_LIMIT(EMSG( "%s: ip %p | lip %s | sp %p", as_str, x->ip, lip_str, x->sp));
       /* MWF: added to prevent long backtrace printout */
       cnt++;
       if (cnt > DUMP_LIMIT) {
-        EMSG("!!! Hit Dump Limit !!! ");
+        PMSG_LIMIT(EMSG("!!! Hit Dump Limit !!! "));
         break;
       }
     }
-    EMSG( "-----End new backtrace---------------"); 
+    PMSG_LIMIT(EMSG( "-----End new backtrace---------------"));
   }
   else {
-    EMSG( "No bt_end backtrace to dump");
+    PMSG_LIMIT(EMSG( "No bt_end backtrace to dump"));
   }
-
-#if 0
-  EMSG( "");
-
-  EMSG( "other state information "); 
-  EMSG( "------------------------"); 
-  EMSG( "swizzle_return = 0x%lx",state->swizzle_return);
-  EMSG( "last_pc = 0x%lx", state->last_pc);
-#endif
 }

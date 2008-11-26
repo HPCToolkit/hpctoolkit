@@ -53,6 +53,8 @@ static int csprof_check_fence(void *ip);
 
 static int unw_step_prefer_sp(void);
 
+static void drop_sample(void);
+
 
 /****************************************************************************************
  * interface functions
@@ -109,9 +111,6 @@ unw_get_reg(unw_cursor_t *cursor, int reg_id,void **reg_value)
 
 // FIXME: make this a selectable paramter, so that all manner of strategies can be selected
 static int
-#if 0
-unw_step_prefer_sp(unw_cursor_t *cursor)
-#endif
 unw_step_prefer_sp(void)
 {
   if (ENABLED(PREFER_SP)){
@@ -123,7 +122,7 @@ unw_step_prefer_sp(void)
   // return cursor->trolling_used;
 }
 
-int
+step_state
 unw_step_sp(unw_cursor_t *cursor)
 {
   void *sp, **bp, *pc; 
@@ -174,9 +173,9 @@ unw_step_sp(unw_cursor_t *cursor)
 
   if (! cursor->intvl){
     if (((void *)next_sp) >= monitor_stack_bottom()){
-      return 0;
+      return STEP_STOP;
     } else {
-      return -1;
+      return STEP_ERROR;
     }
   } else {
     cursor->pc = next_pc;
@@ -191,10 +190,10 @@ unw_step_sp(unw_cursor_t *cursor)
 
   PMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
 
-  return 1;
+  return STEP_OK;
 }
 
-int
+step_state
 unw_step_bp(unw_cursor_t *cursor)
 {
   void *sp, **bp, *pc; 
@@ -222,10 +221,10 @@ unw_step_bp(unw_cursor_t *cursor)
       if (! uw){
         if (((void *)next_sp) >= monitor_stack_bottom()) {
           TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom, next_sp = %p",next_sp);
-          return 0;
+          return STEP_STOP;
         }
         TMSG(UNW_STRATEGY,"BP cannot build interval for next_pc(%p)",next_pc);
-        return -1;
+        return STEP_ERROR;
       }
       else {
         cursor->pc    = next_pc;
@@ -237,24 +236,24 @@ unw_step_bp(unw_cursor_t *cursor)
           dump_ui(cursor->intvl,1); // debug for now
         }
         TMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
-        return 1;
+        return STEP_OK;
       }
     }
     else {
       TMSG(UNW_STRATEGY,"BP unwind fails: next_sp(%p) <= current sp(%p)",next_sp,sp);
-      return -1;
+      return STEP_ERROR;
     }
 
   }
   else {
     TMSG(UNW_STRATEGY,"BP unwind fails: bp (%lx) < sp (%lx)",bp,sp);
-    return -1;
+    return STEP_ERROR;
   }
   EMSG("FALL Through BP unwind: shouldn't happen");
-  return -1;
+  return STEP_ERROR;
 }
 
-int
+step_state
 unw_step_std(unw_cursor_t *cursor)
 {
   int unw_res;
@@ -262,29 +261,59 @@ unw_step_std(unw_cursor_t *cursor)
   if (unw_step_prefer_sp()){
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with SP");
     unw_res = unw_step_sp(cursor);
-    if (unw_res == -1) {
+    if (unw_res == STEP_ERROR) {
       TMSG(UNW_STRATEGY,"--STD_FRAME: SP failed, RETRY w BP");
       unw_res = unw_step_bp(cursor);
     }
   } else {
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with BP");
     unw_res = unw_step_bp(cursor);
-    if (unw_res == -1) {
+    if (unw_res == STEP_ERROR) {
       TMSG(UNW_STRATEGY,"--STD_FRAME: BP failed, RETRY w SP");
       unw_res = unw_step_sp(cursor);
     }
   }
   return unw_res;
 }
-int 
+
+// special steppers to artificially introduce error conditions
+static step_state
+t1_dbg_unw_step(unw_cursor_t *cursor)
+{
+  // return STEP_ERROR;
+  drop_sample();
+}
+
+static step_state
+t2_dbg_unw_step(unw_cursor_t *cursor)
+{
+  static int s = 0;
+  step_state rv;
+  if (s == 0){
+    unwind_cursor_with_troll(cursor, 1);
+    rv = STEP_TROLL;
+  }
+  else {
+    rv = STEP_STOP;
+  }
+  s =(s+1) %2;
+  return rv;
+}
+
+static step_state (*dbg_unw_step)(unw_cursor_t *cursor) = t1_dbg_unw_step;
+
+step_state
 unw_step (unw_cursor_t *cursor)
 {
+  if ( ENABLED(DBG_UNW_STEP) ){
+    return dbg_unw_step(cursor);
+  }
 
   //-----------------------------------------------------------
   // check if we have reached the end of our unwind, which is
   // demarcated with a fence. 
   //-----------------------------------------------------------
-  if (csprof_check_fence(cursor->pc)) return 0;
+  if (csprof_check_fence(cursor->pc)) return STEP_STOP;
 
   void *sp, **bp, *pc; 
   void **next_sp, **next_bp, *next_pc;
@@ -321,8 +350,8 @@ unw_step (unw_cursor_t *cursor)
     TMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
     return unw_res;
   }
-  TMSG(TROLL,"UNW STEP FAILURE : cursor pc = %p, cursor bp = %p, cursor sp = %p", pc, bp, sp);
-  TMSG(TROLL,"UNW STEP calls stack troll");
+  PMSG_LIMIT(TMSG(TROLL,"UNW STEP FAILURE : cursor pc = %p, cursor bp = %p, cursor sp = %p", pc, bp, sp));
+  PMSG_LIMIT(TMSG(TROLL,"UNW STEP calls stack troll"));
 
   IF_ENABLED(TROLL_WAIT) {
     fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
@@ -332,10 +361,15 @@ unw_step (unw_cursor_t *cursor)
   }
   
   update_cursor_with_troll(cursor, 1);
-  return 1;
+  return STEP_TROLL;
 }
 
-
+// public interface to local drop sample
+void
+csprof_drop_sample(void)
+{
+  drop_sample();
+}
 
 /****************************************************************************************
  * private operations
@@ -346,7 +380,11 @@ drop_sample(void)
 {
   if (DEBUG_NO_LONGJMP) return;
 
-  dump_backtraces(TD_GET(state),0);
+  if (csprof_below_pmsg_threshold())
+    dump_backtraces(TD_GET(state),0);
+
+  csprof_up_pmsg_count();
+
   sigjmp_buf_t *it = &(TD_GET(bad_unwind));
   siglongjmp(it->jb,9);
 }
@@ -368,8 +406,8 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 
     cursor->intvl = csprof_addr_to_interval(((char *)next_pc) + offset);
     if (cursor->intvl) {
-      PMSG(TROLL,"Trolling advances cursor to pc = %p,sp = %p", next_pc, next_sp);
-      PMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc);
+      PMSG_LIMIT(PMSG(TROLL,"Trolling advances cursor to pc = %p,sp = %p", next_pc, next_sp));
+      PMSG_LIMIT(PMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc));
 
       cursor->pc = next_pc;
       cursor->bp = next_bp;
@@ -378,11 +416,11 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
       cursor->trolling_used = 1;
       return; // success!
     }
-    PMSG(TROLL, "No interval found for trolled pc, dropping sample,cursor pc = %p", cursor->pc);
+    PMSG_LIMIT(PMSG(TROLL, "No interval found for trolled pc, dropping sample,cursor pc = %p", cursor->pc));
     // fall through for error handling
   } else {
-    PMSG(TROLL, "Troll failed: dropping sample,cursor pc = %p", cursor->pc);
-    PMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc);
+    PMSG_LIMIT(PMSG(TROLL, "Troll failed: dropping sample,cursor pc = %p", cursor->pc));
+    PMSG_LIMIT(PMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc));
     // fall through for error handling
   }
   // assert(0);

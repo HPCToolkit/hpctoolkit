@@ -285,3 +285,27 @@ csprof_logfile_fd(void)
 {
   return fileno(log_file);
 }
+
+//
+// Log output may be throttled by using the message limiting mechanism
+//
+
+static int global_msg_count = 0;
+
+//
+// how many unwind msg blocks to permit (500 is reasonable choice
+// FIXME: make this an option
+//
+static int const threshold = 500;
+
+int
+csprof_below_pmsg_threshold(void)
+{
+  return (global_msg_count < threshold);
+}
+
+void
+csprof_up_pmsg_count(void)
+{
+  global_msg_count++;
+}

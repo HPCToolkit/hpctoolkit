@@ -8,7 +8,10 @@
 #include "sample_event.h"
 
 static long dlopens_pending = 0;
+static long dlcloses_pending = 0;
 
+// FIXME: look into fetch_and_add optimization for the dlclose side
+//        also
 
 // FIXME: Turn sampling off around the real dlopen until we rework how
 // we load function addresses into memory not to use dlopen.
@@ -26,7 +29,6 @@ csprof_dlopen_pending()
 {
   return dlopens_pending;
 }
-
 
 void 
 csprof_dlopen(const char *module_name, int flags, void *handle)

@@ -114,6 +114,7 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 {
   unw_word_t ip;
   int ret;
+  int backtrace_trolled = 0;
 
   //--------------------------------------------------------------------
   // note: these variables are not local variables so that if a SIGSEGV 
@@ -142,13 +143,17 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
     unw_len++;
 
     ret = unw_step(cursor);
+    backtrace_trolled = (ret == STEP_TROLL);
     if (ret <= 0) {
       MSG(1,"Hit unw_step break");
       break;
     }
   }
-  MSG(1,"BTIP------------");
-  debug_dump_backtraces(state,state->unwind);
+  if (backtrace_trolled){
+    csprof_up_pmsg_count();
+  }
+  // MSG(1,"BTIP------------");
+  // dump_backtraces(state,state->unwind);
   
   IF_NOT_DISABLED(SAMPLE_FILTERING){
     if (csprof_sample_filter(unw_len,state->btbuf,state->unwind - 1)){

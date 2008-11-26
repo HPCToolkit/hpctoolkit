@@ -15,8 +15,12 @@
 #include "pmsg.h"
 #include "thread_data.h"
 
-static const offset_t CSPROF_MEM_INIT_SZ     = 2 * 1024 * 1024; // 2 Mb
-static const offset_t CSPROF_MEM_INIT_SZ_TMP = 128 * 1024;  // 128 Kb, (rarely used, so small)
+// static const offset_t CSPROF_MEM_INIT_SZ     = 2 * 1024 * 1024; // 2 Mb
+static const offset_t CSPROF_MEM_INIT_SZ     = 1024; // test small size
+
+// static const offset_t CSPROF_MEM_INIT_SZ_TMP = 128 * 1024;  // 128 Kb, (rarely used, so small)
+
+static const offset_t CSPROF_MEM_INIT_SZ_TMP = 128;  // test small size
 
 /* the system malloc is good about rounding odd amounts to be aligned.
    we need to do the same thing.
@@ -77,8 +81,8 @@ csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
 
   mmsz = mmsz_base + sizeof(csprof_mmap_info_t);
 
-  PMSG(MEM, "creating new %s memory store of %lu bytes", 
-      csprof_mem_store__str(st), mmsz_base);
+  TMSG(MEM, "creating new %s memory store of %lu bytes", 
+       csprof_mem_store__str(st), mmsz_base);
 
 #ifdef NO_MMAP
   PMSG(MEM,"mem grow about to call malloc");
@@ -251,6 +255,7 @@ csprof_malloc_init(offset_t sz, offset_t sz_tmp)
   if(sz_tmp == 1) { sz_tmp = CSPROF_MEM_INIT_SZ_TMP; }
   
   // MSG(1,"csprof malloc init calls csprof_mem__init");
+  TMSG(MEM,"csprof malloc called with sz = %ld, sz_tmp = %ld",sz, sz_tmp);
   int status = csprof_mem__init(memstore, sz, sz_tmp);
 
   if(status == CSPROF_ERR) {

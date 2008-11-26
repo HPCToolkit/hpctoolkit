@@ -29,6 +29,10 @@ extern int  csprof_logfile_fd(void);
 extern void csprof_abort_w_info(void (*info)(void),const char *fmt,...);
 extern void __csprof_dc(void);
 
+extern int csprof_below_pmsg_threshold(void);
+extern void csprof_up_pmsg_count(void);
+
+#define PMSG_LIMIT(C) if (csprof_below_pmsg_threshold()) C
 
 #define EMSG csprof_emsg
 #define AMSG csprof_amsg
