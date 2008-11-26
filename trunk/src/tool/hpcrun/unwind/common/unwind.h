@@ -65,6 +65,13 @@ int unw_get_reg(unw_cursor_t *c, int reg_id, void **reg_value);
 
 typedef void *unw_word_t;
 
+typedef enum {
+  STEP_ERROR = -1,
+  STEP_STOP  = 0,
+  STEP_OK    = 1,
+  STEP_TROLL = 2,
+} step_state;
+
 #define UNW_REG_IP 1
 
 #endif

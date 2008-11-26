@@ -89,10 +89,11 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
     }
   }
   else {
-    EMSG("got bad unwind: context_pc = %p, unwind_pc = %p\n\n",state->context_pc,
-         state->unwind_pc);
+    PMSG_LIMIT(EMSG("got bad unwind: context_pc = %p, unwind_pc = %p\n\n",state->context_pc, \
+		    state->unwind_pc));
     dump_backtraces(state, state->unwind);
     bad_unwind_count++;
+    csprof_up_pmsg_count();
     if (TD_GET(splay_lock)) {
       csprof_release_splay_lock();
     }
@@ -105,7 +106,6 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
 
   return node;
 }
-
 
 static csprof_cct_node_t*
 csprof_take_profile_sample(csprof_state_t *state, void *context,

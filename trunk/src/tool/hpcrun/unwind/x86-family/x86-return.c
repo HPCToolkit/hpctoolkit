@@ -41,7 +41,6 @@ process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr,
           c = first; /* this may help. */
           ui->restored_canonical = 0; /* don't back up again */
         }
-
         ui->prev_canonical = c->prev_canonical; 
 
         ui->ra_status = c->ra_status;

@@ -23,7 +23,8 @@ typedef struct csprof_options_s {
 #define CSPROF_OUT_PATH          "."
 #define CSPROF_EVENT       "microseconds"
 #define CSPROF_SMPL_PERIOD 1000UL /* microseconds */
-#define CSPROF_MEM_SZ_INIT       32 * 1024 * 1024 /* FIXME: 1024 */
+// #define CSPROF_MEM_SZ_INIT       32 * 1024 * 1024 /* FIXME: 1024 */
+#define CSPROF_MEM_SZ_INIT       128 // small for mem stress test
 #define CSPROF_MEM_SZ_DEFAULT  CSPROF_MEM_SZ_INIT
 
 int csprof_options__init(csprof_options_t* x);
