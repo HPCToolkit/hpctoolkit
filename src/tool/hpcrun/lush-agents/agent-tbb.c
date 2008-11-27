@@ -96,6 +96,9 @@ LUSHI_reg_dlopen()
 extern bool 
 LUSHI_ismycode(void* addr)
 {
+  // NOTE: Currently, this does not prevent our LUSHI_has_idleness
+  // from being called, but it may not be quite right in the context
+  // of multiple agents.
   return false; // force LUSH to use the identity logical unwind
 }
 
