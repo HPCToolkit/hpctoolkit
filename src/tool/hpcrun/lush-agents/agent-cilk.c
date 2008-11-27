@@ -103,8 +103,7 @@ LUSHI_fini()
 extern char* 
 LUSHI_strerror(int code)
 {
-  // STUB
-  return "";
+  return ""; // STUB
 }
 
 
@@ -115,8 +114,7 @@ LUSHI_strerror(int code)
 extern int 
 LUSHI_reg_dlopen()
 {
-  // FIXME: what should we do here...
-  return 0;
+  return 0; // FIXME: coordinate with dylib stuff
 }
 
 
@@ -150,96 +148,6 @@ is_cilkprogram(void* addr, char* lm_name /*helper storage*/)
   }
   return false;
 }
-
-
-#if 0
-typedef struct {
-  void* beg; // [low, high)
-  void* end;
-} addr_pair_t;
-
-#define tablecilk_sz 5
-addr_pair_t tablecilk[tablecilk_sz];
-
-#define tableother_sz 200
-addr_pair_t tableother[tableother_sz];
-
-int 
-determine_code_ranges()
-{
-  LUSHCB_epoch_t* epoch;
-  CB_get_loadmap(&epoch);
-
-  // Initialize
-  for (int i = 0; i < tablecilk_sz; ++i) {
-    tablecilk[i].beg = NULL;
-    tablecilk[i].end = NULL;
-  }
-  
-  for (int i = 0; i < tableother_sz; ++i) {
-    tableother[i].beg = NULL;
-    tableother[i].end = NULL;
-  }
-
-  // Fill interval table
-  int i_cilk = 0;
-  int i_other = 0;
-  csprof_epoch_module_t* mod;
-  for (mod = epoch->loaded_modules; mod != NULL; mod = mod->next) {
-
-    if (strstr(mod->module_name, libcilk_str)) {
-      tablecilk[i_cilk].beg = mod->mapaddr;
-      tablecilk[i_cilk].end = mod->mapaddr + mod->size;
-      i_cilk++;
-
-      if ( !(i_cilk < tablecilk_sz) ) {
-	fprintf(stderr, "FIXME: libcilk has too many address intervals\n");
-	i_cilk = tablecilk_sz - 1;
-      }
-    }
-
-    if (strstr(mod->module_name, lib_str)
-	|| strstr(mod->module_name, ld_str)) {
-      tableother[i_other].beg = mod->mapaddr;
-      tableother[i_other].end = mod->mapaddr + mod->size;
-      i_other++;
-
-      if ( !(i_other < tableother_sz) ) {
-	fprintf(stderr, "FIXME: too many load modules\n");
-	i_other = tableother_sz - 1;
-      }
-    }
-  }
-
-  return 0;
-}
-
-
-bool
-is_libcilk(void* addr)
-{
-  for (int i = 0; i < tablecilk_sz; ++i) {
-    if (!tablecilk[i].beg) { break; }
-    if (tablecilk[i].beg <= addr && addr < tablecilk[i].end) {
-      return true;
-    }
-  }
-  return false;
-}
-
-
-bool
-is_cilkprogram(void* addr)
-{
-  for (int i = 0; i < tableother_sz; ++i) {
-    if (!tableother[i].beg) { break; }
-    if (tableother[i].beg <= addr && addr < tableother[i].end) {
-      return false;
-    }
-  }
-  return true;
-}
-#endif
 
 
 // **************************************************************************
@@ -441,8 +349,7 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
 extern int 
 LUSHI_set_active_frame_marker(/*ctxt, cb*/)
 {
-  // STUB
-  return 0;
+  return 0; // STUB
 }
 
 
@@ -501,32 +408,28 @@ init_lcursor(lush_cursor_t* cursor)
 extern int
 LUSHI_lip_destroy(lush_lip_t* lip)
 {
-  // STUB
-  return 0;
+  return 0; // STUB
 }
 
 
 extern int 
 LUSHI_lip_eq(lush_lip_t* lip)
 {
-  // STUB
-  return 0;
+  return 0; // STUB
 }
 
 
 extern int
 LUSHI_lip_read()
 {
-  // STUB
-  return 0;
+  return 0; // STUB
 }
 
 
 extern int
 LUSHI_lip_write()
 {
-  // STUB
-  return 0;
+  return 0; // STUB
 }
 
 
