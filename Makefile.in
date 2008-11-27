@@ -329,6 +329,7 @@ EXT_LIBS_DIR = $(prefix)/@hpc_ext_libs_dir@
 # PACKAGE_NAME, PACKAGE_TARNAME, PACKAGE_VERSION
 ############################################################
 MYTAR = tar
+MYDIST = @PACKAGE_TARNAME@-@PACKAGE_VERSION@
 MYTOUCH = @abs_top_srcdir@/config/hpcautotouch
 MYSRC = @abs_top_srcdir@
 MYINFO = @abs_top_srcdir@/configure
@@ -859,10 +860,9 @@ my-dist:
 .PHONY: my-dist
 
 hpc-dist:
-	ver=`grep "PACKAGE_VERSION=" $(MYINFO) | awk -F"'" '{print $$2}'` ; \
 	top_dir=`$(SHELL) -c "cd $(MYSRC) && pwd"` ; \
 	nm_cur=`basename $${top_dir}` ; \
-	nm_new="hpctoolkit-$${ver}" ; \
+	nm_new="$(MYDIST)" ; \
 	\
 	cd $${top_dir}/.. ; \
 	ln -s $${nm_cur} $${nm_new} ; \
@@ -870,6 +870,7 @@ hpc-dist:
         $(MYTAR) zcvf $(MYPREFIX)/$${nm_new}.tar.gz \
 	  --dereference --exclude="CVS" --exclude=".svn" \
 	  \
+	  $${nm_new}/.svn-revision \
 	  $${nm_new}/aclocal.m4 \
 	  $${nm_new}/autogen \
 	  $${nm_new}/configure* \
