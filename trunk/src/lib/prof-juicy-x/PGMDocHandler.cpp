@@ -204,7 +204,8 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
     m_args(args),
   
     // element names
-    elemPgm(XMLString::transcode("PGM")), 
+    elemStructure(XMLString::transcode("HPCStructure")), 
+    elemPgm(XMLString::transcode("PGM")), // FIXME: obsolete
     elemLM(XMLString::transcode("LM")),
     elemFile(XMLString::transcode("F")),
     elemProc(XMLString::transcode("P")),
@@ -244,7 +245,8 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
 PGMDocHandler::~PGMDocHandler() 
 {
   // element names
-  XMLString::release((XMLCh**)&elemPgm);;
+  XMLString::release((XMLCh**)&elemStructure);
+  XMLString::release((XMLCh**)&elemPgm);
   XMLString::release((XMLCh**)&elemLM);
   XMLString::release((XMLCh**)&elemFile);
   XMLString::release((XMLCh**)&elemProc);
@@ -290,7 +292,8 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   // -----------------------------------------------------------------
   // PGM
   // -----------------------------------------------------------------
-  if (XMLString::equals(name, elemPgm)) {
+  if (XMLString::equals(name, elemStructure) 
+      || XMLString::equals(name, elemPgm)) {
     string verStr = getAttr(attributes, attrVer);
     double ver = StrUtil::toDbl(verStr);
 
@@ -513,7 +516,8 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
 {
 
   // PGM
-  if (XMLString::equals(name, elemPgm)) {
+  if (XMLString::equals(name, elemStructure) 
+      || XMLString::equals(name, elemPgm)) {
   }
 
   // LM (load module)

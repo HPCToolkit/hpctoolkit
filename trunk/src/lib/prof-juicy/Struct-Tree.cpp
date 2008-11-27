@@ -125,10 +125,10 @@ Tree::CollectCrossReferences()
 
 
 void 
-Tree::xml_dump(ostream& os, int dmpFlags) const
+Tree::writeXML(ostream& os, int dmpFlags) const
 {
   if (root) {
-    root->XML_DumpLineSorted(os, dmpFlags);
+    root->writeXML(os, dmpFlags);
   }
 }
 
@@ -136,7 +136,7 @@ Tree::xml_dump(ostream& os, int dmpFlags) const
 void 
 Tree::dump(ostream& os, int dmpFlags) const
 {
-  xml_dump(os, dmpFlags);
+  writeXML(os, dmpFlags);
 }
 
 
@@ -1303,7 +1303,7 @@ ANode::dump(ostream& os, int dmpFlag, const char* pre) const
 void
 ANode::ddump() const
 { 
-  //XML_DumpLineSorted(std::cerr, 0, "");
+  //writeXML(std::cerr, 0, "");
   dump(std::cerr, 0, "");
 }
 
@@ -1428,7 +1428,7 @@ LM::dumpmaps() const
 //***************************************************************************
 
 static const string XMLelements[ANode::TyNUMBER] = {
-  "PGM", "G", "LM", "F", "P", "A", "L", "S", "REF", "ANY"
+  "HPCToolkitStructure", "G", "LM", "F", "P", "A", "L", "S", "REF", "ANY"
 };
 
 const string&
@@ -1442,7 +1442,7 @@ string
 ANode::toStringXML(int dmpFlag, const char* pre) const
 { 
   std::ostringstream os;
-  XML_DumpLineSorted(os, dmpFlag, pre);
+  writeXML(os, dmpFlag, pre);
   return os.str();
 }
 
@@ -1569,7 +1569,7 @@ Ref::toXML(int dmpFlag) const
 
 
 bool 
-ANode::XML_DumpSelfBefore(ostream& os, int dmpFlag, 
+ANode::writeXML_pre(ostream& os, int dmpFlag, 
 			      const char* prefix) const
 {
   bool attemptToDumpMetrics = true;
@@ -1613,7 +1613,7 @@ ANode::XML_DumpSelfBefore(ostream& os, int dmpFlag,
 
 
 void
-ANode::XML_DumpSelfAfter(ostream& os, int dmpFlag, const char* prefix) const
+ANode::writeXML_post(ostream& os, int dmpFlag, const char* prefix) const
 {
   if (!(dmpFlag & Tree::XML_EMPTY_TAG)) {
     os << prefix << "</" << ANodeTyToXMLelement(Type()) << ">";
@@ -1623,85 +1623,67 @@ ANode::XML_DumpSelfAfter(ostream& os, int dmpFlag, const char* prefix) const
 
 
 void
-ANode::XML_dump(ostream& os, int dmpFlag, const char* pre) const 
+ANode::writeXML(ostream& os, int dmpFlag, const char* pre) const 
 {
   string indent = "  ";
-  if (dmpFlag & Tree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
-  if (IsLeaf()) { 
-    dmpFlag |= Tree::XML_EMPTY_TAG;
+  if (dmpFlag & Tree::COMPRESSED_OUTPUT) { 
+    pre = ""; 
+    indent = ""; 
   }
-
-  bool dumpedMetrics = XML_DumpSelfBefore(os, dmpFlag, pre);
-  if (dumpedMetrics) {
-    dmpFlag &= ~Tree::XML_EMPTY_TAG; // clear empty flag
-  }
-  string prefix = pre + indent;
-  for (ANodeChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->XML_dump(os, dmpFlag, prefix.c_str());
-  }
-  XML_DumpSelfAfter(os, dmpFlag, pre);
-}
-
-
-void
-ANode::XML_DumpLineSorted(ostream& os, int dmpFlag, const char* pre) const 
-{
-  string indent = "  ";
-  if (dmpFlag & Tree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
   if (IsLeaf()) {
     dmpFlag |= Tree::XML_EMPTY_TAG;
   }
   
-  bool dumpedMetrics = XML_DumpSelfBefore(os, dmpFlag, pre);
+  bool dumpedMetrics = writeXML_pre(os, dmpFlag, pre);
   if (dumpedMetrics) {
     dmpFlag &= ~Tree::XML_EMPTY_TAG; // clear empty flag
   }
   string prefix = pre + indent;
   for (ANodeLineSortedChildIterator it(this); it.Current(); it++) {
-    it.Current()->XML_DumpLineSorted(os, dmpFlag, prefix.c_str());
+    it.Current()->writeXML(os, dmpFlag, prefix.c_str());
   }
-  XML_DumpSelfAfter(os, dmpFlag, pre);
+  writeXML_post(os, dmpFlag, pre);
 }
 
 
 void
-ANode::xml_ddump() const
+ANode::ddumpXML() const
 {
-  XML_DumpLineSorted();
+  writeXML();
 }
 
 
 void
-Pgm::XML_DumpLineSorted(ostream& os, int dmpFlag, const char* pre) const
+Pgm::writeXML(ostream& os, int dmpFlag, const char* pre) const
 {
   // N.B.: Typically LM are children
   string indent = "  ";
   if (dmpFlag & Tree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
 
-  ANode::XML_DumpSelfBefore(os, dmpFlag, pre);
+  ANode::writeXML_pre(os, dmpFlag, pre);
   string prefix = pre + indent;
   for (ANodeNameSortedChildIterator it(this); it.Current(); it++) { 
     ANode* scope = it.Current();
-    scope->XML_DumpLineSorted(os, dmpFlag, prefix.c_str());
+    scope->writeXML(os, dmpFlag, prefix.c_str());
   }
-  ANode::XML_DumpSelfAfter(os, dmpFlag, pre);
+  ANode::writeXML_post(os, dmpFlag, pre);
 }
 
 
 void
-LM::XML_DumpLineSorted(ostream& os, int dmpFlag, const char* pre) const
+LM::writeXML(ostream& os, int dmpFlag, const char* pre) const
 {
   // N.B.: Typically Files are children
   string indent = "  ";
   if (dmpFlag & Tree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
 
-  ANode::XML_DumpSelfBefore(os, dmpFlag, pre);
+  ANode::writeXML_pre(os, dmpFlag, pre);
   string prefix = pre + indent;
   for (ANodeNameSortedChildIterator it(this); it.Current(); it++) {
     ANode* scope = it.Current();
-    scope->XML_DumpLineSorted(os, dmpFlag, prefix.c_str());
+    scope->writeXML(os, dmpFlag, prefix.c_str());
   }
-  ANode::XML_DumpSelfAfter(os, dmpFlag, pre);
+  ANode::writeXML_post(os, dmpFlag, pre);
 }
 
 
