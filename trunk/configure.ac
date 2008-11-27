@@ -106,8 +106,6 @@ AC_SUBST([HPCTOOLKIT_PLATFORM])
 # SVN version
 #----------------------------------------------------------------------------
 
-# NOTE: Mark's code from hpctoolkit-externals
-
 # Append svn revision to PACKAGE_VERSION.
 #
 # If this directory is an svn sandbox, then use svn info (and store
@@ -137,7 +135,10 @@ if test "$svn_revision" = 0 ; then
     AC_MSG_WARN([unable to find svn revision])
 fi
 
-dnl AC_SUBST([svn_revision])
+# NOTE (tallent): Setting PACKAGE_VERSION in this way does not affect
+# the corresponding -D that is automatically placed on the compilation
+# line!  We add our own because 
+AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION], "${PACKAGE_VERSION}", [])
 
 
 #----------------------------------------------------------------------------
