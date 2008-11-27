@@ -191,21 +191,49 @@ libcsprof_o_SOURCES  += utilities/last_func.c
 
 
 # FIXME: This is specific to Rice.
+
+MY_AGENT_RTSUPPORT = lush/lush-support-rt.h lush/lush-support-rt.c
+
 MY_CILK_INSTALL = /home/eraxxon/develop/cilk/cilk-install
 
-MY_CILK_AGENT_SOURCES = \
+MY_AGENT_CILK_SOURCES = \
 	lush-agents/agent-cilk.h lush-agents/agent-cilk.c \
-	lush/lush-support-rt.h   lush/lush-support-rt.c
+	$(MY_AGENT_RTSUPPORT)
 
-MY_CILK_AGENT_IFLAGS = -I$(MY_CILK_INSTALL)/include
+MY_AGENT_CILK_IFLAGS = -I$(MY_CILK_INSTALL)/include
 
-MY_CILK_AGENT_CFLAGS = \
-	$(MY_CILK_AGENT_IFLAGS) \
+MY_AGENT_CILK_CFLAGS = \
+	$(MY_AGENT_CILK_IFLAGS) \
 	$(CSPROF_INCLUDE_DIRS)
+
+
+MY_AGENT_PTHREAD_SOURCES = \
+	lush-agents/agent-pthread.h lush-agents/agent-pthread.c \
+	$(MY_AGENT_RTSUPPORT)
+
+MY_AGENT_PTHREAD_CFLAGS = \
+	$(CSPROF_INCLUDE_DIRS)
+
+
+MY_AGENT_TBB_SOURCES = \
+	lush-agents/agent-tbb.h lush-agents/agent-tbb.c \
+	$(MY_AGENT_RTSUPPORT)
+
+MY_AGENT_TBB_CFLAGS = \
+	$(CSPROF_INCLUDE_DIRS)
+
 
 if OPT_ENABLE_LUSH
   pkglib_LTLIBRARIES       += libagent-cilk.la
-  libagent_cilk_la_SOURCES  = $(MY_CILK_AGENT_SOURCES)
-  libagent_cilk_la_CFLAGS   = $(MY_CILK_AGENT_CFLAGS)
+  libagent_cilk_la_SOURCES  = $(MY_AGENT_CILK_SOURCES)
+  libagent_cilk_la_CFLAGS   = $(MY_AGENT_CILK_CFLAGS)
+
+  pkglib_LTLIBRARIES       += libagent-pthread.la
+  libagent_pthread_la_SOURCES  = $(MY_AGENT_PTHREAD_SOURCES)
+  libagent_pthread_la_CFLAGS   = $(MY_AGENT_PTHREAD_CFLAGS)
+
+  pkglib_LTLIBRARIES       += libagent-tbb.la
+  libagent_tbb_la_SOURCES  = $(MY_AGENT_TBB_SOURCES)
+  libagent_tbb_la_CFLAGS   = $(MY_AGENT_TBB_CFLAGS)
 endif
 

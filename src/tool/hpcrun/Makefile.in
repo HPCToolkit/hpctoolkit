@@ -79,7 +79,8 @@ pkglib_PROGRAMS = libcsprof.o$(EXEEXT)
 @OPT_HAVE_PAPI_TRUE@am__append_17 = $(PAPI_INC_FLGS)
 @OPT_HAVE_PAPI_TRUE@am__append_18 = $(PAPI_LD_FLGS)
 @OPT_HAVE_PAPI_TRUE@am__append_19 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_LUSH_TRUE@am__append_20 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_20 = libagent-cilk.la \
+@OPT_ENABLE_LUSH_TRUE@	libagent-pthread.la libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -102,14 +103,41 @@ libagent_cilk_la_LIBADD =
 am__libagent_cilk_la_SOURCES_DIST = lush-agents/agent-cilk.h \
 	lush-agents/agent-cilk.c lush/lush-support-rt.h \
 	lush/lush-support-rt.c
-am__objects_1 = libagent_cilk_la-agent-cilk.lo \
-	libagent_cilk_la-lush-support-rt.lo
-@OPT_ENABLE_LUSH_TRUE@am_libagent_cilk_la_OBJECTS = $(am__objects_1)
+am__objects_1 = libagent_cilk_la-lush-support-rt.lo
+am__objects_2 = libagent_cilk_la-agent-cilk.lo $(am__objects_1)
+@OPT_ENABLE_LUSH_TRUE@am_libagent_cilk_la_OBJECTS = $(am__objects_2)
 libagent_cilk_la_OBJECTS = $(am_libagent_cilk_la_OBJECTS)
 libagent_cilk_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libagent_cilk_la_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 @OPT_ENABLE_LUSH_TRUE@am_libagent_cilk_la_rpath = -rpath $(pkglibdir)
+libagent_pthread_la_LIBADD =
+am__libagent_pthread_la_SOURCES_DIST = lush-agents/agent-pthread.h \
+	lush-agents/agent-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c
+am__objects_3 = libagent_pthread_la-lush-support-rt.lo
+am__objects_4 = libagent_pthread_la-agent-pthread.lo $(am__objects_3)
+@OPT_ENABLE_LUSH_TRUE@am_libagent_pthread_la_OBJECTS =  \
+@OPT_ENABLE_LUSH_TRUE@	$(am__objects_4)
+libagent_pthread_la_OBJECTS = $(am_libagent_pthread_la_OBJECTS)
+libagent_pthread_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(libagent_pthread_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@OPT_ENABLE_LUSH_TRUE@am_libagent_pthread_la_rpath = -rpath \
+@OPT_ENABLE_LUSH_TRUE@	$(pkglibdir)
+libagent_tbb_la_LIBADD =
+am__libagent_tbb_la_SOURCES_DIST = lush-agents/agent-tbb.h \
+	lush-agents/agent-tbb.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c
+am__objects_5 = libagent_tbb_la-lush-support-rt.lo
+am__objects_6 = libagent_tbb_la-agent-tbb.lo $(am__objects_5)
+@OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_OBJECTS = $(am__objects_6)
+libagent_tbb_la_OBJECTS = $(am_libagent_tbb_la_OBJECTS)
+libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libagent_tbb_la_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+@OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
 libcsprof_la_DEPENDENCIES = $(HPC_LIBPROFLEAN)
 am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	csprof_options.c csproflib.c data.c env.c epoch.c files.c \
@@ -136,7 +164,7 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	sample_source_papi.c utilities/last_func.c
-am__objects_2 = libcsprof_la-first_func.lo \
+am__objects_7 = libcsprof_la-first_func.lo \
 	libcsprof_la-csprof_options.lo libcsprof_la-csproflib.lo \
 	libcsprof_la-data.lo libcsprof_la-env.lo libcsprof_la-epoch.lo \
 	libcsprof_la-files.lo libcsprof_la-handling_sample.lo \
@@ -159,25 +187,25 @@ am__objects_2 = libcsprof_la-first_func.lo \
 	libcsprof_la-stack_troll.lo libcsprof_la-unwind.lo \
 	libcsprof_la-executable-path.lo libcsprof_la-spinlock.lo \
 	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
-am__objects_3 = libcsprof_la-fnbounds_dynamic.lo \
+am__objects_8 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
-am__objects_4 = libcsprof_la-dylib.lo
-@HOST_OS_LINUX_TRUE@am__objects_5 = $(am__objects_4)
-am__objects_6 = libcsprof_la-ppc64-build-intervals.lo \
+am__objects_9 = libcsprof_la-dylib.lo
+@HOST_OS_LINUX_TRUE@am__objects_10 = $(am__objects_9)
+am__objects_11 = libcsprof_la-ppc64-build-intervals.lo \
 	libcsprof_la-ppc64-context.lo \
 	libcsprof_la-ppc64-unwind-support.lo
-@HOST_CPU_PPC_TRUE@am__objects_7 = $(am__objects_6)
-am__objects_8 = libcsprof_la-processor-libc.lo libcsprof_la-swizzle.lo \
-	libcsprof_la-x86-all.lo \
+@HOST_CPU_PPC_TRUE@am__objects_12 = $(am__objects_11)
+am__objects_13 = libcsprof_la-processor-libc.lo \
+	libcsprof_la-swizzle.lo libcsprof_la-x86-all.lo \
 	libcsprof_la-x86-unwind-interval-fixup.lo \
 	libcsprof_la-x86-unwind-support.lo \
 	libcsprof_la-x86-linux-dlresolver.lo
-@HOST_CPU_X86_TRUE@am__objects_9 = $(am__objects_8)
-am__objects_10 = libcsprof_la-sample_source_papi.lo
-@OPT_HAVE_PAPI_TRUE@am__objects_11 = $(am__objects_10)
-am_libcsprof_la_OBJECTS = $(am__objects_2) $(am__objects_3) \
-	$(am__objects_5) $(am__objects_7) $(am__objects_9) \
-	$(am__objects_11) libcsprof_la-last_func.lo
+@HOST_CPU_X86_TRUE@am__objects_14 = $(am__objects_13)
+am__objects_15 = libcsprof_la-sample_source_papi.lo
+@OPT_HAVE_PAPI_TRUE@am__objects_16 = $(am__objects_15)
+am_libcsprof_la_OBJECTS = $(am__objects_7) $(am__objects_8) \
+	$(am__objects_10) $(am__objects_12) $(am__objects_14) \
+	$(am__objects_16) libcsprof_la-last_func.lo
 libcsprof_la_OBJECTS = $(am_libcsprof_la_OBJECTS)
 libcsprof_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libcsprof_la_CFLAGS) \
@@ -209,7 +237,7 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	sample_source_papi.c utilities/last_func.c
-am__objects_12 = libcsprof_o-first_func.$(OBJEXT) \
+am__objects_17 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-csprof_options.$(OBJEXT) \
 	libcsprof_o-csproflib.$(OBJEXT) libcsprof_o-data.$(OBJEXT) \
 	libcsprof_o-env.$(OBJEXT) libcsprof_o-epoch.$(OBJEXT) \
@@ -240,21 +268,21 @@ am__objects_12 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
 	libcsprof_o-spinlock.$(OBJEXT) libcsprof_o-tokenize.$(OBJEXT) \
 	libcsprof_o-unlink.$(OBJEXT)
-am__objects_13 = libcsprof_o-fnbounds_static.$(OBJEXT)
-am__objects_14 = libcsprof_o-ppc64-build-intervals.$(OBJEXT) \
+am__objects_18 = libcsprof_o-fnbounds_static.$(OBJEXT)
+am__objects_19 = libcsprof_o-ppc64-build-intervals.$(OBJEXT) \
 	libcsprof_o-ppc64-context.$(OBJEXT) \
 	libcsprof_o-ppc64-unwind-support.$(OBJEXT)
-@HOST_CPU_PPC_TRUE@am__objects_15 = $(am__objects_14)
-am__objects_16 = libcsprof_o-processor-libc.$(OBJEXT) \
+@HOST_CPU_PPC_TRUE@am__objects_20 = $(am__objects_19)
+am__objects_21 = libcsprof_o-processor-libc.$(OBJEXT) \
 	libcsprof_o-swizzle.$(OBJEXT) libcsprof_o-x86-all.$(OBJEXT) \
 	libcsprof_o-x86-unwind-interval-fixup.$(OBJEXT) \
 	libcsprof_o-x86-unwind-support.$(OBJEXT) \
 	libcsprof_o-x86-linux-dlresolver.$(OBJEXT)
-@HOST_CPU_X86_TRUE@am__objects_17 = $(am__objects_16)
-am__objects_18 = libcsprof_o-sample_source_papi.$(OBJEXT)
-@OPT_HAVE_PAPI_TRUE@am__objects_19 = $(am__objects_18)
-am_libcsprof_o_OBJECTS = $(am__objects_12) $(am__objects_13) \
-	$(am__objects_15) $(am__objects_17) $(am__objects_19) \
+@HOST_CPU_X86_TRUE@am__objects_22 = $(am__objects_21)
+am__objects_23 = libcsprof_o-sample_source_papi.$(OBJEXT)
+@OPT_HAVE_PAPI_TRUE@am__objects_24 = $(am__objects_23)
+am_libcsprof_o_OBJECTS = $(am__objects_17) $(am__objects_18) \
+	$(am__objects_20) $(am__objects_22) $(am__objects_24) \
 	libcsprof_o-last_func.$(OBJEXT)
 libcsprof_o_OBJECTS = $(am_libcsprof_o_OBJECTS)
 libcsprof_o_DEPENDENCIES = $(HPC_LIBPROFLEAN)
@@ -276,9 +304,12 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libagent_cilk_la_SOURCES) $(libcsprof_la_SOURCES) \
+SOURCES = $(libagent_cilk_la_SOURCES) $(libagent_pthread_la_SOURCES) \
+	$(libagent_tbb_la_SOURCES) $(libcsprof_la_SOURCES) \
 	$(libcsprof_o_SOURCES)
 DIST_SOURCES = $(am__libagent_cilk_la_SOURCES_DIST) \
+	$(am__libagent_pthread_la_SOURCES_DIST) \
+	$(am__libagent_tbb_la_SOURCES_DIST) \
 	$(am__libcsprof_la_SOURCES_DIST) \
 	$(am__libcsprof_o_SOURCES_DIST)
 ETAGS = etags
@@ -604,18 +635,37 @@ libcsprof_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 libcsprof_o_LDFLAGS = $(am__append_13) $(am__append_19)
 
 # FIXME: This is specific to Rice.
+MY_AGENT_RTSUPPORT = lush/lush-support-rt.h lush/lush-support-rt.c
 MY_CILK_INSTALL = /home/eraxxon/develop/cilk/cilk-install
-MY_CILK_AGENT_SOURCES = \
+MY_AGENT_CILK_SOURCES = \
 	lush-agents/agent-cilk.h lush-agents/agent-cilk.c \
-	lush/lush-support-rt.h   lush/lush-support-rt.c
+	$(MY_AGENT_RTSUPPORT)
 
-MY_CILK_AGENT_IFLAGS = -I$(MY_CILK_INSTALL)/include
-MY_CILK_AGENT_CFLAGS = \
-	$(MY_CILK_AGENT_IFLAGS) \
+MY_AGENT_CILK_IFLAGS = -I$(MY_CILK_INSTALL)/include
+MY_AGENT_CILK_CFLAGS = \
+	$(MY_AGENT_CILK_IFLAGS) \
 	$(CSPROF_INCLUDE_DIRS)
 
-@OPT_ENABLE_LUSH_TRUE@libagent_cilk_la_SOURCES = $(MY_CILK_AGENT_SOURCES)
-@OPT_ENABLE_LUSH_TRUE@libagent_cilk_la_CFLAGS = $(MY_CILK_AGENT_CFLAGS)
+MY_AGENT_PTHREAD_SOURCES = \
+	lush-agents/agent-pthread.h lush-agents/agent-pthread.c \
+	$(MY_AGENT_RTSUPPORT)
+
+MY_AGENT_PTHREAD_CFLAGS = \
+	$(CSPROF_INCLUDE_DIRS)
+
+MY_AGENT_TBB_SOURCES = \
+	lush-agents/agent-tbb.h lush-agents/agent-tbb.c \
+	$(MY_AGENT_RTSUPPORT)
+
+MY_AGENT_TBB_CFLAGS = \
+	$(CSPROF_INCLUDE_DIRS)
+
+@OPT_ENABLE_LUSH_TRUE@libagent_cilk_la_SOURCES = $(MY_AGENT_CILK_SOURCES)
+@OPT_ENABLE_LUSH_TRUE@libagent_cilk_la_CFLAGS = $(MY_AGENT_CILK_CFLAGS)
+@OPT_ENABLE_LUSH_TRUE@libagent_pthread_la_SOURCES = $(MY_AGENT_PTHREAD_SOURCES)
+@OPT_ENABLE_LUSH_TRUE@libagent_pthread_la_CFLAGS = $(MY_AGENT_PTHREAD_CFLAGS)
+@OPT_ENABLE_LUSH_TRUE@libagent_tbb_la_SOURCES = $(MY_AGENT_TBB_SOURCES)
+@OPT_ENABLE_LUSH_TRUE@libagent_tbb_la_CFLAGS = $(MY_AGENT_TBB_CFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -678,6 +728,10 @@ clean-pkglibLTLIBRARIES:
 	done
 libagent-cilk.la: $(libagent_cilk_la_OBJECTS) $(libagent_cilk_la_DEPENDENCIES) 
 	$(libagent_cilk_la_LINK) $(am_libagent_cilk_la_rpath) $(libagent_cilk_la_OBJECTS) $(libagent_cilk_la_LIBADD) $(LIBS)
+libagent-pthread.la: $(libagent_pthread_la_OBJECTS) $(libagent_pthread_la_DEPENDENCIES) 
+	$(libagent_pthread_la_LINK) $(am_libagent_pthread_la_rpath) $(libagent_pthread_la_OBJECTS) $(libagent_pthread_la_LIBADD) $(LIBS)
+libagent-tbb.la: $(libagent_tbb_la_OBJECTS) $(libagent_tbb_la_DEPENDENCIES) 
+	$(libagent_tbb_la_LINK) $(am_libagent_tbb_la_rpath) $(libagent_tbb_la_OBJECTS) $(libagent_tbb_la_LIBADD) $(LIBS)
 libcsprof.la: $(libcsprof_la_OBJECTS) $(libcsprof_la_DEPENDENCIES) 
 	$(libcsprof_la_LINK) -rpath $(pkglibdir) $(libcsprof_la_OBJECTS) $(libcsprof_la_LIBADD) $(LIBS)
 install-pkglibPROGRAMS: $(pkglib_PROGRAMS)
@@ -758,6 +812,10 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_cilk_la-agent-cilk.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_cilk_la-lush-support-rt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_pthread_la-agent-pthread.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_pthread_la-lush-support-rt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_tbb_la-agent-tbb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_tbb_la-lush-support-rt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-cct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-csprof_dlfns.Plo@am__quote@
@@ -903,6 +961,34 @@ libagent_cilk_la-lush-support-rt.lo: lush/lush-support-rt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-support-rt.c' object='libagent_cilk_la-lush-support-rt.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libagent_cilk_la_CFLAGS) $(CFLAGS) -c -o libagent_cilk_la-lush-support-rt.lo `test -f 'lush/lush-support-rt.c' || echo '$(srcdir)/'`lush/lush-support-rt.c
+
+libagent_pthread_la-agent-pthread.lo: lush-agents/agent-pthread.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libagent_pthread_la_CFLAGS) $(CFLAGS) -MT libagent_pthread_la-agent-pthread.lo -MD -MP -MF $(DEPDIR)/libagent_pthread_la-agent-pthread.Tpo -c -o libagent_pthread_la-agent-pthread.lo `test -f 'lush-agents/agent-pthread.c' || echo '$(srcdir)/'`lush-agents/agent-pthread.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libagent_pthread_la-agent-pthread.Tpo $(DEPDIR)/libagent_pthread_la-agent-pthread.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush-agents/agent-pthread.c' object='libagent_pthread_la-agent-pthread.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libagent_pthread_la_CFLAGS) $(CFLAGS) -c -o libagent_pthread_la-agent-pthread.lo `test -f 'lush-agents/agent-pthread.c' || echo '$(srcdir)/'`lush-agents/agent-pthread.c
+
+libagent_pthread_la-lush-support-rt.lo: lush/lush-support-rt.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libagent_pthread_la_CFLAGS) $(CFLAGS) -MT libagent_pthread_la-lush-support-rt.lo -MD -MP -MF $(DEPDIR)/libagent_pthread_la-lush-support-rt.Tpo -c -o libagent_pthread_la-lush-support-rt.lo `test -f 'lush/lush-support-rt.c' || echo '$(srcdir)/'`lush/lush-support-rt.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libagent_pthread_la-lush-support-rt.Tpo $(DEPDIR)/libagent_pthread_la-lush-support-rt.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-support-rt.c' object='libagent_pthread_la-lush-support-rt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libagent_pthread_la_CFLAGS) $(CFLAGS) -c -o libagent_pthread_la-lush-support-rt.lo `test -f 'lush/lush-support-rt.c' || echo '$(srcdir)/'`lush/lush-support-rt.c
+
+libagent_tbb_la-agent-tbb.lo: lush-agents/agent-tbb.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libagent_tbb_la_CFLAGS) $(CFLAGS) -MT libagent_tbb_la-agent-tbb.lo -MD -MP -MF $(DEPDIR)/libagent_tbb_la-agent-tbb.Tpo -c -o libagent_tbb_la-agent-tbb.lo `test -f 'lush-agents/agent-tbb.c' || echo '$(srcdir)/'`lush-agents/agent-tbb.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libagent_tbb_la-agent-tbb.Tpo $(DEPDIR)/libagent_tbb_la-agent-tbb.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush-agents/agent-tbb.c' object='libagent_tbb_la-agent-tbb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libagent_tbb_la_CFLAGS) $(CFLAGS) -c -o libagent_tbb_la-agent-tbb.lo `test -f 'lush-agents/agent-tbb.c' || echo '$(srcdir)/'`lush-agents/agent-tbb.c
+
+libagent_tbb_la-lush-support-rt.lo: lush/lush-support-rt.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libagent_tbb_la_CFLAGS) $(CFLAGS) -MT libagent_tbb_la-lush-support-rt.lo -MD -MP -MF $(DEPDIR)/libagent_tbb_la-lush-support-rt.Tpo -c -o libagent_tbb_la-lush-support-rt.lo `test -f 'lush/lush-support-rt.c' || echo '$(srcdir)/'`lush/lush-support-rt.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libagent_tbb_la-lush-support-rt.Tpo $(DEPDIR)/libagent_tbb_la-lush-support-rt.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-support-rt.c' object='libagent_tbb_la-lush-support-rt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libagent_tbb_la_CFLAGS) $(CFLAGS) -c -o libagent_tbb_la-lush-support-rt.lo `test -f 'lush/lush-support-rt.c' || echo '$(srcdir)/'`lush/lush-support-rt.c
 
 libcsprof_la-first_func.lo: utilities/first_func.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-first_func.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-first_func.Tpo -c -o libcsprof_la-first_func.lo `test -f 'utilities/first_func.c' || echo '$(srcdir)/'`utilities/first_func.c
