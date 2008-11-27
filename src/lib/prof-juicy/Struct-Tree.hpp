@@ -175,7 +175,7 @@ public:
   void CollectCrossReferences();
 
   virtual void 
-  xml_dump(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
+  writeXML(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
 
 
   // Dump contents for inspection (use flags from ANode)
@@ -467,18 +467,11 @@ public:
   
   virtual std::string toXML(int dmpFlag = 0) const;
 
-  bool XML_DumpSelfBefore(std::ostream& os = std::cout,
-			  int dmpFlag = 0, const char* prefix = "") const;
-  void XML_DumpSelfAfter (std::ostream& os = std::cout,
-			  int dmpFlag = 0, const char* prefix = "") const;
-  void XML_dump(std::ostream& os = std::cout,
-		int dmpFlag = 0, const char* pre = "") const;
-  
-  virtual void XML_DumpLineSorted(std::ostream& os = std::cout,
-				  int dmpFlag = 0,
-				  const char* pre = "") const;
+  virtual void writeXML(std::ostream& os = std::cout,
+			int dmpFlag = 0,
+			const char* pre = "") const;
 
-  void xml_ddump() const;
+  void ddumpXML() const;
 
   // --------------------------------------------------------
   // Other output
@@ -511,6 +504,11 @@ public:
 			       int dmpFlag = 0,
 			       const char* pre = "") const;
 
+protected:
+  bool writeXML_pre(std::ostream& os = std::cout,
+		    int dmpFlag = 0, const char* prefix = "") const;
+  void writeXML_post(std::ostream& os = std::cout,
+		     int dmpFlag = 0, const char* prefix = "") const;
 private:
   void ctorCheck() const;
   void dtorCheck() const;
@@ -748,9 +746,9 @@ public:
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
-  virtual void XML_DumpLineSorted(std::ostream& os = std::cout, 
-				  int dmpFlag = 0, 
-				  const char* pre = "") const;
+  virtual void writeXML(std::ostream& os = std::cout, 
+			int dmpFlag = 0, 
+			const char* pre = "") const;
   void CSV_TreeDump(std::ostream& os = std::cout) const;
 
   // --------------------------------------------------------
@@ -899,9 +897,9 @@ public:
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
-  virtual void XML_DumpLineSorted(std::ostream& os = std::cout, 
-				  int dmpFlag = 0, 
-				  const char* pre = "") const;
+  virtual void writeXML(std::ostream& os = std::cout, 
+			int dmpFlag = 0, 
+			const char* pre = "") const;
 
   // --------------------------------------------------------
   // debugging

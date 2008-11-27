@@ -275,9 +275,11 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
   os.flush();
 
   int dumpFlags = (Struct::Tree::XML_TRUE); // Struct::ANode::XML_NO_ESC_CHARS
-  if (!prettyPrint) { dumpFlags |= Struct::Tree::COMPRESSED_OUTPUT; }
+  if (!prettyPrint) { 
+    dumpFlags |= Struct::Tree::COMPRESSED_OUTPUT; 
+  }
   
-  strctTree->xml_dump(os, dumpFlags);
+  strctTree->writeXML(os, dumpFlags);
 }
 
 //****************************************************************************

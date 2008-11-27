@@ -248,7 +248,7 @@ Driver::write_experiment(std::ostream &os) const
   os << pre << "<SCOPETREE>" << endl;
   int dumpFlags = ((m_args.metrics_computeInteriorValues) 
 		   ? 0 : Prof::Struct::Tree::DUMP_LEAF_METRICS);
-  m_structure.GetRoot()->XML_DumpLineSorted(os, dumpFlags, pre.c_str());
+  m_structure.GetRoot()->writeXML(os, dumpFlags, pre.c_str());
   os << pre << "</SCOPETREE>" << endl;
 
   os << pre << "</HPCVIEWER>" << endl;

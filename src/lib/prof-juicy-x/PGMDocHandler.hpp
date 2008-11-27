@@ -191,7 +191,8 @@ private:
   // first.
 
   // element names
-  const XMLCh *const elemPgm;
+  const XMLCh *const elemStructure;
+  const XMLCh *const elemPgm; // FIXME: obsolete
   const XMLCh *const elemLM; 
   const XMLCh *const elemFile; 
   const XMLCh *const elemProc; 
