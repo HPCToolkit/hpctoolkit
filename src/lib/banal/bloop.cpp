@@ -271,7 +271,7 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
 			     bool prettyPrint)
 {
   os << "<?xml version=\"1.0\"?>" << std::endl;
-  os << "<!DOCTYPE hpc-structure [\n" << structureDTD << "]>" << std::endl;
+  os << "<!DOCTYPE HPCToolkitStructure [\n" << structureDTD << "]>" << std::endl;
   os.flush();
 
   int dumpFlags = (Struct::Tree::XML_TRUE); // Struct::ANode::XML_NO_ESC_CHARS
