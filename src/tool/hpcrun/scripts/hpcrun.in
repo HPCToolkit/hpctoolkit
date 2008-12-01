@@ -127,45 +127,100 @@ Usage:
    hpcrun [-t] [-o outpath] [-e EVENT:PERIOD]* cmd
 
    -o outpath
-      Directory in which to store profiler output data.
-      Defaults to the current directory.
 
-   -e EVENT:PERIOD EVENT_NAME:PERIOD,(can have more than 1)
+      The directory in which to store profiles collected with hpcrun.
+      By default, hpcrun stores call stack profile files (suffix .csp)
+      and log files (suffix .log) in a subdirectory of the current 
+      directory. 
 
-      If no events are specified, the default is WALLCLOCK:5000
-      (every 5000 microseconds).
+      If PBS or the Sun Grid Engine is being used for job control, the 
+      default subdirectory name will have the form 
+      hpctoolkit-<yourappname>-measurements-<jobid>, where <yourappname>
+      is the name of your executable, and <jobid> corresponds
+      to a job identifier from PBS or the Sun Grid Engine.
 
-      Currently only PAPI events, and the special WALLCLOCK event are
-      supported.
-      CAVEAT: You *cannot* use both PAPI events and the WALLCLOCK event.
-              You may, however, use multiple PAPI events
+      If you are not using PBS or the Sun Grid Engine for job control, 
+      then the name of the default output directory will have the form 
+      hpctoolkit-<yourappname>-measurements. 
 
-      PAPI events use the hardware performance counters as the
-      sampling source (via the PAPI interface). The "PERIOD" component of a
-      PAPI event specfication is a count of the number of events.
+      If you measure multiple runs of the same executable with hpcrun 
+      from within the same working directory without specifying an output 
+      path using -o or running under a batch system's job control, profiles 
+      from multiple runs will be placed in the same output directory.  The 
+      only way to distinguish profiles from multiple runs will be by their 
+      creation times or the measurement data that the profiles contain.
 
-      For a list of PAPI events, you can run the papi_avail utility that is
-      in the bin directory of the PAPI software package.
+   -e EVENT:PERIOD
+
+      This argument is used to specify an event that hpcrun should
+      use as the basis for statistical sampling along with the event 
+      period.  This argument may be used multiple times to specify that 
+      multiple events should be used as sample sources. Each event can 
+      have a distinct period.
+
+      If no event is specified, the default event specification is
+      WALLCLOCK:5000 (a sample event every 5000 microseconds). You may
+      specify a shorter or longer period for WALLCLOCK events. Your 
+      operating system may silently ensure that your period is not too 
+      short and round your specified period up to the system's minimum. 
+      If you want to know your system's minimum period, check the man 
+      page for setitimer for further information. 
+
+      Besides the WALLCLOCK event, one can also use hardware performance
+      counter events to measure execution behavior. hpcrun uses the PAPI 
+      library to provide access to hardware performance counter events.  
+      If you have not configured HPCToolkit to use the PAPI library, you 
+      will be unable to measure hardware performance counter events.
+
+      The PAPI library supports a large collection of hardware counter 
+      events.  Some events have standard names across all platforms, e.g. 
+      PAPI_TOT_CYC, the event that measures total cycles. In addition to 
+      events whose names begin with the PAPI_ prefix, platforms also 
+      provide access to a set of native events with names that are 
+      specific to the platform's processor. A complete list of events
+      supported by the PAPI library for your platform may be obtained by 
+      running the command "hpcrun-flat -L". Any event whose name begins
+      with the PAPI_ prefix that is listed as "Profilable" can be used
+      as an event in a -e specification. Any native event may be used as
+      a sampling source. For hardware performance counter events, the
+      PERIOD component of a -e specification indicates the sampling period 
+      in terms of the number of events between samples.
+
+      Restrictions:
+      
+      hpcrun supports only the WALLCLOCK event based on the Linux interval 
+      timer and hardware performance counter events supported by the PAPI 
+      library.
 
       The WALLCLOCK event is triggered by the Unix itimer feature. The "PERIOD"
       component of the WALLCLOCK event is the number of microseconds between
-      samples
+      samples.
+
+      In a single execution, you cannot measure both the WALLCLOCK event
+      and PAPI events; you may however measure multiple PAPI events in a
+      single execution.
 
       EXAMPLE
         hpcrun -e PAPI_TOT_INS:1000000 -e PAPI_FP_INS:100000 A_PROGRAM
 
-        The above command line would sample A_PROGRAM every 1000000 instructions
-        OR every 1000000 floating point instructions.
+        The above command line would sample A_PROGRAM every 1,000,000 instructions
+        and every 100,000 floating point instructions.
 
-    -t record a call path trace in addition to call path profile
+   -t 
+
+      Record a call path trace in addition to call path profile. Each trace
+      record is 12 bytes in length (4 bytes to hold the identify of a call path, and
+      8 bytes to hold a time stamp). [ 1 Dec 2008  - Recording and visualizing 
+      call path traces is an experimental capability. ] 
 
   NOTES:
-     hpcrun uses preloaded shared libraries to initiate profiling;      
-     modifications to the hpcrun launcher script will be necessary      
-     to profile programs that use library preloading
 
-     hpcrun cannot be used to profile setuid commands as preloading
-     shared libraries is not permitted for them.
+     hpcrun uses preloaded shared libraries to initiate profiling. For this reason,
+     Modifications to the hpcrun launcher script will be necessary to profile 
+     programs that use library preloading
+
+     hpcrun cannot be used to profile setuid commands since preloading of shared
+     libraries is not permitted for setuid programs.
 EOF
 }
 
