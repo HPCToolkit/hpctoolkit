@@ -137,7 +137,9 @@ pathscale_filter(Symbol *sym)
 static bool 
 report_symbol(Symbol *sym)
 {
+#if 1
   if (pathscale_filter(sym)) return false;
+#endif
   return true;
 }
 
@@ -258,10 +260,29 @@ dump_file_info(const char *filename, bool fn_discovery)
   int relocatable = 0;
   int stripped = 0;
 
+
 #if 0
-  // be conservative with function discovery: only apply it to stripped objects
-  fn_discovery &=  file_is_stripped(syms);
+  // SymtabAPI isn't yet providing reliable ExceptionBlock information for 
+  // binaries created with PGI, Pathscale, and g++ compilers on x85_64
+  //
+  // ensure that we don't infer function starts within try blocks or
+  // at the start of catch blocks
+  vector<ExceptionBlock *> exvec;
+  syms->getAllExceptions(exvec);
+  for (int i = 0; i < exvec.size(); i++) {
+    ExceptionBlock *e = exvec[i];
+
+#if 0
+    printf("tryStart = %p tryEnd = %p, catchStart = %p\n", e->tryStart(), 
+	   e->tryEnd(), e->catchStart()); 
 #endif
+    add_protected_range((void *) e->tryStart(), (void *) e->tryEnd());
+    
+    long cs = e->catchStart(); 
+    add_protected_range((void *) cs, (void *) (cs + 1));
+  }
+#endif
+
 
   syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
   if (syms->getObjectType() != obj_Unknown) {

@@ -501,7 +501,7 @@ inst_accesses_callers_mem(xed_decoded_inst_t *xptr)
 }
 
 static bool
-from_rax_eax(xed_decoded_inst_t *xptr)
+from_ax_reg(xed_decoded_inst_t *xptr)
 {
   int noperands = xed_decoded_inst_noperands(xptr);
   if (noperands == 2) {
@@ -515,7 +515,8 @@ from_rax_eax(xed_decoded_inst_t *xptr)
 #endif
       if ((op1_name == XED_OPERAND_REG1) && 
 	  ((xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_RAX) ||
-	   (xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_EAX))) {
+	   (xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_EAX) ||
+	   (xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_AX))) {
 	return true;
       }
 #if 0
@@ -527,27 +528,15 @@ from_rax_eax(xed_decoded_inst_t *xptr)
 }
 
 
-// prefetches are commonly outlined from loops. don't infer them as 
-// function starts after unconditional control flow
 static bool
-is_prefetch(xed_decoded_inst_t *xptr)
+is_null(unsigned char *ins, int n)
 {
-  switch(xed_decoded_inst_get_iclass(xptr)) {
-  case XED_ICLASS_PREFETCHNTA:
-  case XED_ICLASS_PREFETCHT0:
-  case XED_ICLASS_PREFETCHT1:
-  case XED_ICLASS_PREFETCHT2:
-  case XED_ICLASS_PREFETCH_EXCLUSIVE:
-  case XED_ICLASS_PREFETCH_MODIFIED:
-  case XED_ICLASS_PREFETCH_RESERVED:
-    return true;
-  default: 
-    return false;
-  }
+	unsigned char result = 0;
+	unsigned char *end = ins + n;
+	while (ins < end) result |= *ins++;
+	if (result == 0) return true;
+	else return false;
 }
-
-
-
 
 static bool
 invalid_routine_start(unsigned char *ins)
@@ -558,9 +547,9 @@ invalid_routine_start(unsigned char *ins)
 	xed_error_enum_t xed_error = xed_decode(&xdi, (uint8_t*) ins, 15);
 
 	if (xed_error == XED_ERROR_NONE) { 
+	        if (is_null(ins, xed_decoded_inst_get_length(&xdi))) return true;
 		if (inst_accesses_callers_mem(&xdi)) return true;
-		if (from_rax_eax(&xdi)) return true;
-		if (is_prefetch(&xdi)) return true;
+		if (from_ax_reg(&xdi)) return true;
 	}
 
 	return false;

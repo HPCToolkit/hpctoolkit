@@ -8,6 +8,8 @@
 #include <stdlib.h>  // realpath
 #include <string.h>  // strerror
 #include <unistd.h>  // gethostid
+#include <sys/types.h>  // struct stat
+#include <sys/stat.h>   // stat 
 
 
 
@@ -47,6 +49,7 @@ static char *os_realpath(const char *inpath, char *outpath);
 // local data 
 //***************************************************************
 
+char default_path[PATH_MAX];
 char output_directory[PATH_MAX];
 char *executable_name = 0;
 
@@ -85,21 +88,43 @@ files_log_name(char *filename, int len)
 	  os_pid(), CSPROF_LOG_FNM_SFX);
 }
 
+void files_set_job_id() 
+{
+}
+
 
 void 
 files_set_directory()
 {  
   char *path = getenv(CSPROF_OPT_OUT_PATH);
 
-  if (path == NULL || strlen(path) == 0) path = ".";
-
-  if (os_realpath(path, output_directory) == NULL) {
-    csprof_abort("could not access path `%s': %s", path, strerror(errno));
-#if 0
-    EMSG("could not access path `%s': %s", path, strerror(errno));
-    abort();
-#endif
+  if (path == NULL || strlen(path) == 0) {
+    char *jid = NULL;
+    if (jid == NULL) {
+      jid = getenv("PBS_JOBID"); /* check for PBS job id */
+    }
+    if (jid == NULL) {
+      jid = getenv("JOB_ID"); /* check for Sun Grid Engine job id */
+    }
+    if (jid == NULL) {
+      sprintf(default_path,"./hpctoolkit-%s-measurements", executable_name);
+    } else {
+      sprintf(default_path,"./hpctoolkit-%s-measurements-%s", executable_name, jid);
+    }
+    path = default_path;
+    int dircode = mkdir(default_path, 0755);
+    /* no error checking needed here, errors will be picked up by realpath below */
   }
+
+  int dir_error = 0;
+  if (os_realpath(path, output_directory) == NULL) dir_error = 1;
+  else {
+    struct stat sbuf;
+    int sresult = stat(output_directory, &sbuf);
+    if ((sresult != 0) || (S_ISDIR(sbuf.st_rdev) != 0)) dir_error = 1;
+  }
+
+  if (dir_error) csprof_abort("hpcrun: could not access path `%s': %s", path, strerror(errno));
 }
 
 

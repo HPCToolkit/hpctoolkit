@@ -66,8 +66,8 @@ monitor_init_process(int *argc, char **argv, void *data)
     while(DEBUGGER_WAIT);
   }
 
-  files_set_directory();
   files_set_executable(process_name);
+  files_set_directory();
 
   pmsg_init();
   NMSG(PROCESS,"init");
