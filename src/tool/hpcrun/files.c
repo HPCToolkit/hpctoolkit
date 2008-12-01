@@ -101,6 +101,9 @@ files_set_directory()
   if (path == NULL || strlen(path) == 0) {
     char *jid = NULL;
     if (jid == NULL) {
+      jid = getenv("COBALT_JOBID"); /* check for Cobalt job id */
+    }
+    if (jid == NULL) {
       jid = getenv("PBS_JOBID"); /* check for PBS job id */
     }
     if (jid == NULL) {
