@@ -139,7 +139,7 @@ fi
 # the corresponding -D that is automatically placed on the compilation
 # line!  We add our own because 
 AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION], "${PACKAGE_VERSION}", [])
-
+dnl AC_SUBST([HPCTOOLKIT_VERSION])
 
 #----------------------------------------------------------------------------
 # Special Options that should be tested first
@@ -1374,7 +1374,7 @@ AC_OUTPUT()
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([HPCToolkit summary])
 AC_MSG_NOTICE([-------------------])
-AC_MSG_NOTICE([  HPCToolkit version: $PACKAGE_VERSION])
+AC_MSG_NOTICE([  HPCToolkit version: ${PACKAGE_VERSION}])
 AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  host: $host])
 AC_MSG_NOTICE([  CC, CFLAGS: $CC $CFLAGS ${HOST_CFLAGS}])
