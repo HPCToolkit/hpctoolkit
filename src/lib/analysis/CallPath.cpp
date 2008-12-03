@@ -104,31 +104,40 @@ write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint)
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE hpc-experiment [\n" << experimentDTD << "]>" << std::endl;
   os.flush();
-  os << "<CSPROFILE version=\"1.0.2\">\n";
-  os << "<CSPROFILEHDR>\n</CSPROFILEHDR>\n"; 
-  os << "<CSPROFILEPARAMS>\n";
-  os << "<TARGET name"; WriteAttrStr(os, prof->name()); os << "/>\n";
 
-  // write out metrics
+  os << "<HPCToolkitExperiment version=\"1.5\">\n";
+  os << "<Header nm" << MakeAttrStr(prof->name()) << ">\n";
+  os << "  <Info/>\n";
+  os << "</Header>\n";
+
+  os << "<SecCallPathProfile id=\"0\" nm" << MakeAttrStr(prof->name()) << ">\n";
+
+  os << "<SecHeader>\n";
+  os << "  <MetricTable>\n";
   uint n_metrics = prof->numMetrics();
   for (uint i = 0; i < n_metrics; i++) {
     const SampledMetricDesc* metric = prof->metric(i);
-    os << "<METRIC shortName" << MakeAttrNum(i)
-       << " nativeName" << MakeAttrStr(metric->name())
-       << " period" << MakeAttrNum(metric->period())
-       << " flags" << MakeAttrNum(metric->flags(), 16)
-       << "/>\n";
+    os << "    <Metric id" << MakeAttrNum(i) 
+       << " nm" << MakeAttrStr(metric->name()) << ">\n";
+    os << "      <Info>" 
+       << "<NV n=\"period\" v" << MakeAttrNum(metric->period()) << "/>"
+       << "<NV n=\"flags\" v" << MakeAttrNum(metric->flags(), 16) << "/>"
+       << "</Info>\n";
+    os << "    </Metric>\n";
   }
-  os << "</CSPROFILEPARAMS>\n";
+  os << "  </MetricTable>\n";
+  os << "  <Info/>\n";
+  os << "</SecHeader>\n";
 
   os.flush();
   
   int dumpFlags = (CCT::Tree::XML_TRUE); // CCT::Tree::XML_NO_ESC_CHARS
   if (!prettyPrint) { dumpFlags |= CCT::Tree::COMPRESSED_OUTPUT; }
   
-  prof->cct()->dump(os, dumpFlags);
+  prof->cct()->writeXML(os, dumpFlags);
 
-  os << "</CSPROFILE>\n";
+  os << "</SecCallPathProfile>\n";
+  os << "</HPCToolkitExperiment>\n";
   os.flush();
 }
 
