@@ -115,23 +115,15 @@ Tree::merge(const Tree* y,
 }
 
 
-void 
-Tree::writeXML(std::ostream& os, int dmpFlag) const
-{
-  os << "<CallPathProfileData>\n";
-  if (m_root) {
-    m_root->writeXML(os, dmpFlag);
-  }
-  os << "</CallPathProfileData>\n";
-}
-
 
 void 
 Tree::dump(std::ostream& os, int dmpFlag) const
 {
+  os << "<CSPROFILETREE>\n";
   if (m_root) {
-    m_root->writeXML(os, dmpFlag);
+    m_root->DumpLineSorted(os, dmpFlag);
   }
+  os << "</CSPROFILETREE>\n";
 }
 
 
@@ -169,7 +161,7 @@ namespace Prof {
 //***************************************************************************
 
 const string CSProfNode::NodeNames[CSProfNode::NUMBER_OF_TYPES] = {
-  "PGM", "G", "C", "L", "S", "P", "S", "ANY"
+  "PGM", "G", "CALLSITE", "L", "S", "PROCEDURE_FRAME", "STATEMENT", "ANY"
 };
 
 const string&
@@ -731,7 +723,7 @@ CSProfProcedureFrameNode::codeName() const
 //**********************************************************************
 
 string 
-CSProfNode::toString_me(int dmpFlag) const
+CSProfNode::ToDumpString(int dmpFlag) const
 { 
   string self;
   self = NodeTypeToName(GetType());
@@ -770,8 +762,8 @@ IDynNode::lip_str() const
 
 
 void 
-IDynNode::writeMetricsXML(std::ostream& os, 
-			  int dmpFlag, const char* prefix) const
+IDynNode::writeMetrics_xml(std::ostream& os, 
+			   int dmpFlag, const char* prefix) const
 {
   bool wasMetricWritten = false;
 
@@ -812,42 +804,37 @@ IDynNode::ddump() const
 
 
 string
-CSProfCodeNode::toString_me(int dmpFlag) const
+CSProfCodeNode::ToDumpString(int dmpFlag) const
 { 
-  string line = StrUtil::toStr(begLine);
-  if (begLine != endLine) {
-    line += "-" + StrUtil::toStr(endLine);
-  }
-
-  string self = CSProfNode::toString_me(dmpFlag)
-    + " s" + xml::MakeAttrNum(m_sId)
-    + " l" + xml::MakeAttrStr(line);
+  string self = CSProfNode::ToDumpString(dmpFlag)
+    + " sid" + xml::MakeAttrNum(m_sId)
+    + " b" + xml::MakeAttrNum(begLine) + " e" + xml::MakeAttrNum(endLine);
   return self;
 }
 
 
 string
-CSProfPgmNode::toString_me(int dmpFlag) const
+CSProfPgmNode::ToDumpString(int dmpFlag) const
 { 
-  string self = CSProfNode::toString_me(dmpFlag) + " n" +
+  string self = CSProfNode::ToDumpString(dmpFlag) + " n" +
     xml::MakeAttrStr(name, CCT::Tree::AddXMLEscapeChars(dmpFlag));
   return self;
 }
 
 
 string 
-CSProfGroupNode::toString_me(int dmpFlag) const
+CSProfGroupNode::ToDumpString(int dmpFlag) const
 {
-  string self = CSProfNode::toString_me(dmpFlag) + " n" +
+  string self = CSProfNode::ToDumpString(dmpFlag) + " n" +
     xml::MakeAttrStr(name, CCT::Tree::AddXMLEscapeChars(dmpFlag));
   return self;
 }
 
 
 string
-CSProfCallSiteNode::toString_me(int dmpFlag) const
+CSProfCallSiteNode::ToDumpString(int dmpFlag) const
 {
-  string self = CSProfCodeNode::toString_me(dmpFlag);
+  string self = CSProfNode::ToDumpString(dmpFlag);
   
   if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
     self = self 
@@ -857,22 +844,25 @@ CSProfCallSiteNode::toString_me(int dmpFlag) const
       + " lip" + xml::MakeAttrStr(lip_str());
   } 
 
-  if (dmpFlag & CCT::Tree::DBG_OUTPUT) {
-    if (!file.empty()) { 
-      if (fileistext)
+  if (!file.empty()) { 
+     if (fileistext)
         self = self + " f" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag));
-      else 
+     else 
         self = self + " lm" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag));
-    } 
+   } 
 
-    if (!proc.empty()) {
-      self = self + " p" + xml::MakeAttrStr(proc, CCT::Tree::AddXMLEscapeChars(dmpFlag));
-    } 
-    else {
-      self = self + " ip" + xml::MakeAttrNum(ip(), 16);
-    }
+  if (!proc.empty()) {
+    self = self + " p" + xml::MakeAttrStr(proc, CCT::Tree::AddXMLEscapeChars(dmpFlag));
+  } 
+  else {
+    self = self + " ip" + xml::MakeAttrNum(ip(), 16);
   }
   
+
+  if (GetBegLine() != ln_NULL) {
+    self = self + " l" + xml::MakeAttrNum(GetBegLine());
+  }  
+
   if (cpid() != 0) {
     self = self + " cpid" + xml::MakeAttrNum(cpid());
   }  
@@ -882,9 +872,9 @@ CSProfCallSiteNode::toString_me(int dmpFlag) const
 
 
 string
-CSProfStatementNode::toString_me(int dmpFlag) const
+CSProfStatementNode::ToDumpString(int dmpFlag) const
 {
-  string self = CSProfNode::toString_me(dmpFlag);
+  string self = CSProfNode::ToDumpString(dmpFlag);
   
   if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
     self = self + " ip" + xml::MakeAttrNum(ip(), 16) 
@@ -918,9 +908,9 @@ CSProfStatementNode::toString_me(int dmpFlag) const
 
 
 string
-CSProfProcedureFrameNode::toString_me(int dmpFlag) const
+CSProfProcedureFrameNode::ToDumpString(int dmpFlag) const
 {
-  string self = CSProfCodeNode::toString_me(dmpFlag);
+  string self = CSProfCodeNode::ToDumpString(dmpFlag);
   
   if (!file.empty()) { 
      if (fileistext)
@@ -934,31 +924,97 @@ CSProfProcedureFrameNode::toString_me(int dmpFlag) const
   } else {
     self = self + " p" + xml::MakeAttrStr("unknown", CCT::Tree::AddXMLEscapeChars(dmpFlag)) ; 
   }
+
+  if (GetBegLine() != ln_NULL) {
+    self = self + " l" + xml::MakeAttrNum(GetBegLine());
+  }
   
-  const char* alien = isAlien() ? "1" : "0";
-  self = self + " a" + xml::MakeAttrStr(alien);
+  const char* alien = isAlien() ? "true" : "false";
+  self = self + " alien" + xml::MakeAttrStr(alien, CCT::Tree::AddXMLEscapeChars(dmpFlag)); 
 
   return self; 
 } 
 
 
 string 
-CSProfLoopNode::toString_me(int dmpFlag) const
+CSProfLoopNode::ToDumpString(int dmpFlag) const
 {
-  string self = CSProfCodeNode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
+  string self = CSProfCodeNode::ToDumpString(dmpFlag); //+ " i" + MakeAttr(id);
   return self;
 }
 
 string
-CSProfStmtRangeNode::toString_me(int dmpFlag) const
+CSProfStmtRangeNode::ToDumpString(int dmpFlag) const
 {
-  string self = CSProfCodeNode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
+  string self = CSProfCodeNode::ToDumpString(dmpFlag); //+ " i" + MakeAttr(id);
   return self;
 }
 
 
 void
-CSProfNode::writeXML(ostream &os, int dmpFlag, const char *pre) const 
+CSProfNode::DumpSelfBefore(ostream& os, int dmpFlag, const char *prefix) const
+{
+  os << prefix << "<" << ToDumpString(dmpFlag);
+  os << ">"; 
+
+  const IDynNode* this_dyn = dynamic_cast<const IDynNode*>(this);
+  if (this_dyn) {
+    os << endl; // should only emit if there exist non-zero metrics
+    this_dyn->writeMetrics_xml(os, dmpFlag, prefix);
+  }
+
+  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { 
+    os << endl; 
+  }
+}
+
+void
+CSProfNode::DumpSelfAfter(ostream &os, int dmpFlag, const char *prefix) const
+{
+  os << prefix << "</" << NodeTypeToName(GetType()) << ">";
+
+  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { 
+    os << endl; 
+  }
+}
+
+void
+CSProfNode::Dump(ostream &os, int dmpFlag, const char *pre) const 
+{
+  string indent = "  ";
+  if (dmpFlag & CCT::Tree::COMPRESSED_OUTPUT) { 
+    pre = ""; 
+    indent = ""; 
+  } 
+
+  if (/*(dmpFlag & CCT::Tree::XML_TRUE) &&*/ IsLeaf()) { 
+    dmpFlag |= CCT::Tree::XML_EMPTY_TAG; 
+  }
+  
+  DumpSelfBefore(os, dmpFlag, pre); 
+  string prefix = pre + indent;
+  for (CSProfNodeChildIterator it(this); it.Current(); it++) {
+    it.CurNode()->Dump(os, dmpFlag, prefix.c_str()); 
+  }
+  DumpSelfAfter(os, dmpFlag, pre);
+}
+
+// circumvent pain caused by debuggers that choke on default arguments
+// or that remove all traces of functions defined in the class declaration.
+void
+CSProfNode::DDump()
+{
+  Dump(std::cerr, CCT::Tree::XML_TRUE, ""); 
+} 
+
+void
+CSProfNode::DDumpSort()
+{
+  DumpLineSorted(std::cerr, CCT::Tree::XML_TRUE, ""); 
+}
+
+void
+CSProfNode::DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const 
 {
   string indent = "  ";
   if (dmpFlag & CCT::Tree::COMPRESSED_OUTPUT) { 
@@ -970,92 +1026,38 @@ CSProfNode::writeXML(ostream &os, int dmpFlag, const char *pre) const
     dmpFlag |= CCT::Tree::XML_EMPTY_TAG; 
   }
   
-  writeXML_pre(os, dmpFlag, pre); 
+  DumpSelfBefore(os, dmpFlag, pre); 
   string prefix = pre + indent;
-  for (CSProfNodeSortedChildIterator it(this, CSProfNodeSortedIterator::cmpByStructureId); 
-       it.Current(); it++) {
+  for (CSProfNodeLineSortedChildIterator it(this); it.Current(); it++) {
     CSProfNode* n = it.Current();
-    n->writeXML(os, dmpFlag, prefix.c_str());
+    n->DumpLineSorted(os, dmpFlag, prefix.c_str());
   }   
-  writeXML_post(os, dmpFlag, pre);
+  DumpSelfAfter(os, dmpFlag, pre);
 }
-
-
-void
-CSProfNode::dump(ostream &os, int dmpFlag, const char *pre) const 
-{
-  writeXML(os, dmpFlag, pre); 
-}
-
-
-void
-CSProfNode::ddump() const
-{
-  writeXML(std::cerr, CCT::Tree::XML_TRUE, ""); 
-} 
-
-
-void
-CSProfNode::writeXML_pre(ostream& os, int dmpFlag, const char *prefix) const
-{
-  // tallent: Pgm has no representation
-  if (GetType() == CSProfNode::PGM) {
-    return;
-  }
-
-  os << prefix << "<" << toString_me(dmpFlag) << ">";
-
-  const IDynNode* this_dyn = dynamic_cast<const IDynNode*>(this);
-  if (this_dyn) {
-    os << endl; // should only emit if there exist non-zero metrics
-    this_dyn->writeMetricsXML(os, dmpFlag, prefix);
-  }
-
-  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { 
-    os << endl; 
-  }
-}
-
-
-void
-CSProfNode::writeXML_post(ostream &os, int dmpFlag, const char *prefix) const
-{
-  // tallent: Pgm has no representation
-  if (GetType() == CSProfNode::PGM) {
-    return; 
-  }
-
-  os << prefix << "</" << NodeTypeToName(GetType()) << ">";
-
-  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { 
-    os << endl; 
-  }
-}
-
 
 string 
-CSProfNode::Types() const
+CSProfNode::Types() 
 {
   string types; 
-  if (dynamic_cast<const CSProfNode*>(this)) {
+  if (dynamic_cast<CSProfNode*>(this)) {
     types += "CSProfNode "; 
   } 
-  if (dynamic_cast<const CSProfCodeNode*>(this)) {
+  if (dynamic_cast<CSProfCodeNode*>(this)) {
     types += "CSProfCodeNode "; 
   } 
-  if (dynamic_cast<const CSProfPgmNode*>(this)) {
+  if (dynamic_cast<CSProfPgmNode*>(this)) {
     types += "CSProfPgmNode "; 
   } 
-  if (dynamic_cast<const CSProfGroupNode*>(this)) {
+  if (dynamic_cast<CSProfGroupNode*>(this)) {
     types += "CSProfGroupNode "; 
   } 
-  if (dynamic_cast<const CSProfCallSiteNode*>(this)) {
+  if (dynamic_cast<CSProfCallSiteNode*>(this)) {
     types += "CSProfCallSiteNode "; 
   } 
-  if (dynamic_cast<const CSProfLoopNode*>(this)) {
+  if (dynamic_cast<CSProfLoopNode*>(this)) {
     types += "CSProfLoopNode "; 
   } 
-  if (dynamic_cast<const CSProfStmtRangeNode*>(this)) {
+  if (dynamic_cast<CSProfStmtRangeNode*>(this)) {
     types += "CSProfStmtRangeNode "; 
   } 
   return types; 

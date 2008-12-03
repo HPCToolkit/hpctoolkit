@@ -1,81 +1,69 @@
 <!-- ******************************************************************** -->
-<!-- HPCToolkit Experiment DTD						  -->
-<!-- Version 1.5							  -->
+<!-- Experiment DTD                                                       -->
+<!--   Correlates profiling info with program structure.                  -->
+<!--   Version: 0.5                                                       -->
 <!-- ******************************************************************** -->
-<!ELEMENT HPCToolkitExperiment (Header, (SecCallPathProfile|SecFlatProfile)*)>
-<!ATTLIST HPCToolkitExperiment
-	  version CDATA #REQUIRED>
 
-  <!-- <!ELEMENT HPCToolkitExperiment (Header, %Sections;)> -->
+<!ELEMENT Experiment (Header, (FlatProfile|CCProfile)+)>
+<!-- <!ELEMENT Experiment (Header, %Sections;)> -->
+
+<!ATTLIST Experiment
+          version CDATA #REQUIRED>
+
+  <!-- ****************************************************************** -->
+
+  <!-- TagInfo/Tag provides for optional information -->
+  <!ELEMENT TagInfo (Tag*)>
+  <!ELEMENT Tag EMPTY>
+  <!ATTLIST Tag
+            name  CDATA #REQUIRED
+            type  CDATA #REQUIRED
+            val   CDATA #REQUIRED>
+
+  <!-- ****************************************************************** -->
+  <!-- Header                                                             -->
+  <!-- ****************************************************************** -->
+  <!ELEMENT Header (TagInfo)>
+  <!ATTLIST Header
+            name CDATA #REQUIRED>
+
+  <!-- ****************************************************************** -->
+  <!-- Section profile data                                               -->
+  <!-- ****************************************************************** -->
+
+  <!-- The 'vma' attribute below is a set of VMA ranges, e.g.:  -->
+  <!--  vma="{[0xbeef-0xdead) [0x1beef-0x1dead)}"               -->
+
   <!-- <!ENTITY % Sections "(FlatProfile|CCProfile)+"> -->
 
-  <!-- ****************************************************************** -->
+  <!ELEMENT SecHdr (TagInfo, Metrics, Groups)>
 
-  <!-- TgDt/Dt: flexible tagged data: (n)ame, (t)ype, (v)alue -->
-  <!ELEMENT TgDt (Dt*)>
-  <!ELEMENT Dt EMPTY>
-  <!ATTLIST Dt
-	    n CDATA #REQUIRED
-	    t CDATA #IMPLIED
-	    v CDATA #REQUIRED>
+    <!-- Metrics for this section. -->
+    <!ELEMENT Metrics (Metric|MetricComputed)*>
 
-  <!-- ****************************************************************** -->
-  <!-- Header								  -->
-  <!-- ****************************************************************** -->
-  <!ELEMENT Header (TgDt)>
-  <!ATTLIST Header
-	    nm CDATA #REQUIRED>
-
-  <!-- ****************************************************************** -->
-  <!-- Section Header							  -->
-  <!-- ****************************************************************** -->
-  <!ELEMENT SecHeader (MetricTable?, LoadModuleTable?, ProcedureTable?, FileTable?, TgDt)>
-
-    <!-- MetricTable defines Metrics for this section -->
-    <!ELEMENT MetricTable (Metric)*>
-
-    <!ELEMENT Metric (MetricFormula?, TgDt?) >
+    <!-- Metric information.  The tag info could contain period or units. -->
+    <!--   propagate: Metric data are typically at the leaves and must    -->
+    <!--     be propagated to higher levels (true); sometimes it may      -->
+    <!--     already be propagated (false).                               -->
+    <!ELEMENT Metric (TagInfo?)>
     <!ATTLIST Metric
-	      id      CDATA #REQUIRED
-	      nm      CDATA #REQUIRED
-	      fmt     CDATA #IMPLIED
-	      show    (1|0) "1">
+              id          CDATA #REQUIRED
+              name        CDATA #REQUIRED
+              propagate   (true|false) "true"
+              format      CDATA #IMPLIED
+              percent     (true|false) "true"
+              hidden      (true|false) "false">
 
-    <!-- MetricFormula represents derived metrics -->
-    <!ELEMENT MetricFormula (TgDt)?>
-    <!ATTLIST MetricFormula
-	      form    CDATA #REQUIRED
-	      type    CDATA #REQUIRED>
-
-    <!-- Metric data, used in sections: (n)ame [from MetricTable]; (v)alue -->
-    <!ELEMENT M EMPTY>
-    <!ATTLIST M
-	      n  CDATA #REQUIRED
-	      v  CDATA #REQUIRED>
-
-    <!-- LoadModuleTable assigns a short name to a load module -->
-    <!ELEMENT LoadModuleTable (LoadModule)*>
-
-    <!ELEMENT LoadModule (TgDt?) >
-    <!ATTLIST LoadModule
-	      id      CDATA #REQUIRED
-	      nm      CDATA #REQUIRED>
-
-    <!-- ProcedureTable assigns a short name to a load module -->
-    <!ELEMENT ProcedureTable (Procedure)*>
-
-    <!ELEMENT Procedure (TgDt?) >
-    <!ATTLIST Procedure
-	      id      CDATA #REQUIRED
-	      nm      CDATA #REQUIRED>
-
-    <!-- FileTable assigns a short name to a load module -->
-    <!ELEMENT FileTable (File)*>
-
-    <!ELEMENT File (TgDt?) >
-    <!ATTLIST File
-	      id      CDATA #REQUIRED
-	      nm      CDATA #REQUIRED>
+    <!-- Computed metric. Refer to other metrics by 'id'. -->
+    <!--   FIXME: what does propagate mean here?          -->
+    <!ELEMENT MetricComputed (TagInfo?, math)>
+    <!ATTLIST MetricComputed
+              id          CDATA #REQUIRED
+              name        CDATA #REQUIRED
+              propagate   (true|false) "true"
+              format      CDATA #IMPLIED
+              percent     (true|false) "true"
+              hidden      (true|false) "false">
 
     <!ENTITY % mathml-include PUBLIC "mathml definitions" "mathml/mathml.dtd">
     %mathml-include;
@@ -85,102 +73,21 @@
 
     <!ELEMENT GroupStructure (G|LM|F|P|S)+>
     <!ATTLIST GroupStructure
-              id  CDATA #REQUIRED
-              nm  CDATA #REQUIRED>
+              id          CDATA #REQUIRED
+              name        CDATA #REQUIRED>
 
     <!ELEMENT GroupCallPathRefinement (#PCDATA)>
     <!ATTLIST GroupCallPathRefinement
-              id  CDATA #REQUIRED
-              nm  CDATA #REQUIRED>
+              id          CDATA #REQUIRED
+              name        CDATA #REQUIRED>
 
   <!-- ****************************************************************** -->
-  <!-- Section: Call path profile					  -->
+  <!-- Section: Flat profile                                              -->
   <!-- ****************************************************************** -->
-  <!ELEMENT SecCallPathProfile (SecHeader, SecCallPathProfileData)>
-  <!ATTLIST SecCallPathProfile
-	    id  CDATA #REQUIRED
-	    nm  CDATA #REQUIRED>
-
-    <!ELEMENT SecCallPathProfileData (P)*>
-      <!-- Procedure frame/activation -->
-      <!--   (i)d: unique identifier for cross referencing -->
-      <!--   (s)tatic scope id -->
-      <!--   (n)ame: a string or an id in ProcedureTable -->
-      <!--   (lm) load module: a string or an id in LoadModuleTable -->
-      <!--   (f)ile name: a string or an id in LoadModuleTable -->
-      <!--   (l)ine range: "beg-end" -->
-      <!--   (a)lien: whether frame is alien to enclosing P -->
-      <!--   (v)ma-range-set: "{[beg-end), [beg-end)}" -->
-      <!ELEMENT P (L|C|S|M)*>
-      <!ATTLIST P
-		i  CDATA #IMPLIED
-		s  CDATA #IMPLIED
-		n  CDATA #REQUIRED
-		lm CDATA #IMPLIED
-		f  CDATA #IMPLIED
-		l  CDATA #IMPLIED
-		a  (1|0) "0"
-		v  CDATA #IMPLIED>
-      <!-- Loop -->
-      <!ELEMENT L (L|CS|S|M)*>
-      <!ATTLIST L
-		i  CDATA #IMPLIED
-		s  CDATA #IMPLIED
-		l  CDATA #IMPLIED
-		v  CDATA #IMPLIED>
-      <!-- Statement Range -->
-      <!ELEMENT S (S|M)*>
-      <!ATTLIST S
-		i  CDATA #IMPLIED
-		s  CDATA #IMPLIED
-		l  CDATA #IMPLIED
-		v  CDATA #IMPLIED>
-      <!-- Callsite (a special StatementRange) -->
-      <!ELEMENT C (P)*>
-      <!ATTLIST C
-		i  CDATA #IMPLIED
-		s  CDATA #IMPLIED
-		l  CDATA #IMPLIED
-		v  CDATA #IMPLIED>
-
-  <!-- ****************************************************************** -->
-  <!-- Section: Flat profile						  -->
-  <!-- ****************************************************************** -->
-  <!ELEMENT SecFlatProfile (SecHeader, SecFlatProfileData)>
-  <!ATTLIST SecFlatProfile
-	    id  CDATA #REQUIRED
-	    nm  CDATA #REQUIRED>
-
-    <!ELEMENT SecFlatProfileData (LM|F|Ps|M)*>
-      <!-- Load module: (n)ame, (v)ma-range-set -->
-      <!ELEMENT LM (F|Ps|M)*>
-      <!ATTLIST LM
-                i  CDATA #IMPLIED
-                n  CDATA #REQUIRED
-		v  CDATA #IMPLIED>
-      <!-- File: (n)ame -->
-      <!ELEMENT F (Ps|L|S|M)*>
-      <!ATTLIST F
-                i  CDATA #IMPLIED
-                n  CDATA #REQUIRED>
-      <!-- Procedure, static: (l)ine range: "beg-end" -->
-      <!ELEMENT Ps (Ps|L|S|A|M)*>
-      <!ATTLIST Ps
-                i  CDATA #IMPLIED
-                n  CDATA #REQUIRED
-                l  CDATA #IMPLIED
-		v  CDATA #IMPLIED>
-      <!-- Alien: (f)ile name -->
-      <!ELEMENT A (A|L|S|M)*>
-      <!ATTLIST A
-                f  CDATA #IMPLIED
-                n  CDATA #IMPLIED
-                l  CDATA #IMPLIED
-		v  CDATA #IMPLIED>
-      <!-- Loop: use L -->
-      <!-- Statement Range: use S -->
-
-    <!-- with GROUPS -->
+  <!ELEMENT FlatProfile (SecHdr, FlatProfileData)>
+  <!ATTLIST FlatProfile
+            id    CDATA #REQUIRED
+            name  CDATA #REQUIRED>
 
     <!ELEMENT FlatProfileData (LM|F|P|G|M)*>
       <!-- Load module (e.g., DSOs, exe) -->
@@ -204,7 +111,7 @@
                 e   CDATA #IMPLIED
 		vma CDATA #IMPLIED>
       <!-- Loop -->
-      <!ELEMENT L (L|S|G|A|M)*>
+      <!ELEMENT L (L|S|G|A||M)*>
       <!ATTLIST L
                 id  CDATA #REQUIRED
                 b   CDATA #IMPLIED
@@ -230,6 +137,35 @@
       <!ATTLIST A
                 f   CDATA #IMPLIED
                 n   CDATA #IMPLIED
+                b   CDATA #IMPLIED
+                e   CDATA #IMPLIED
+		vma CDATA #IMPLIED>
+
+  <!-- ****************************************************************** -->
+  <!-- Section: Calling context profile                                   -->
+  <!-- ****************************************************************** -->
+  <!ELEMENT CCProfile (SecHdr, CCProfileData)>
+  <!ATTLIST CCProfile
+            id    CDATA #REQUIRED
+            name  CDATA #REQUIRED>
+
+    <!ELEMENT CCProfileData (PROC)*>
+      <!-- Procedure: the caller or callee (a special Procedure) -->
+      <!ELEMENT PROC (CALL|L|S|M)*>
+      <!ATTLIST PROC
+                lm  CDATA #IMPLIED
+                f   CDATA #IMPLIED
+                n   CDATA #IMPLIED
+                ln  CDATA #IMPLIED
+                b   CDATA #IMPLIED
+                e   CDATA #IMPLIED
+		vma CDATA #IMPLIED>
+      <!-- Callsite (a special StatementRange) -->
+      <!ELEMENT CALL (CALL|PROC|L|S|M)*>
+      <!ATTLIST CALL
+                lm  CDATA #IMPLIED
+                f   CDATA #IMPLIED
+                p   CDATA #IMPLIED
                 b   CDATA #IMPLIED
                 e   CDATA #IMPLIED
 		vma CDATA #IMPLIED>
