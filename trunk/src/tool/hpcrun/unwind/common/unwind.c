@@ -159,11 +159,11 @@ unw_step_sp(unw_cursor_t *cursor)
     // if the value in the BP register points into the stack, then 
     // it might be useful as a frame pointer. in this case, we have 
     // nothing to lose by assuming that our binary analysis for 
-    // unwinding might have been mistaken and that the value in 
-    // the register is the one we might want. 
-    //
-    // 19 December 2007 - John Mellor-Crummey
-    //-----------------------------------------------------------
+      // unwinding might have been mistaken and that the value in 
+      // the register is the one we might want. 
+      //
+      // 19 December 2007 - John Mellor-Crummey
+      //-----------------------------------------------------------
     if (((unsigned long) next_bp < (unsigned long) sp) && 
         ((unsigned long) bp > (unsigned long) sp)) 
       next_bp = bp;

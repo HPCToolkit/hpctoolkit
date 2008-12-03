@@ -116,8 +116,6 @@ public:
 
     COMPRESSED_OUTPUT = (1 << 1),  /* Use compressed output format */
 
-    DBG_OUTPUT = (1 << 2),         /* show soure line info for loops/stmts */
-
     // Not-generally-user-level bit flags
     XML_NO_ESC_CHARS = (1 << 10), /* don't substitute XML escape characters */
 
@@ -154,9 +152,6 @@ public:
   // -------------------------------------------------------
   // Dump contents for inspection
   // -------------------------------------------------------
-  virtual void writeXML(std::ostream& os = std::cerr, 
-			int dmpFlag = XML_TRUE) const;
-
   virtual void dump(std::ostream& os = std::cerr, 
 		    int dmpFlag = XML_TRUE) const;
   virtual void ddump() const;
@@ -300,32 +295,30 @@ public:
   // --------------------------------------------------------
   // Dump contents for inspection
   // --------------------------------------------------------
-  virtual std::string Types() const; // this instance's base and derived types
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const; 
 
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const; 
+  virtual std::string Types(); // lists this instance's base and derived types 
   
-  void writeXML(std::ostream& os = std::cerr, 
-		int dmpFlag = CCT::Tree::XML_TRUE,
-		const char *pre = "") const;
-
-  void dump(std::ostream& os = std::cerr, 
-	    int dmpFlag = CCT::Tree::XML_TRUE,
-	    const char *pre = "") const;
-
-  void ddump() const;
+  void DumpSelfBefore(std::ostream& os = std::cerr, 
+		      int dmpFlag = CCT::Tree::XML_TRUE,
+		      const char *prefix = "") const;
+  void DumpSelfAfter (std::ostream& os = std::cerr, 
+		      int dmpFlag = CCT::Tree::XML_TRUE,
+		      const char *prefix = "") const;
+  void Dump          (std::ostream& os = std::cerr, 
+		      int dmpFlag = CCT::Tree::XML_TRUE,
+		      const char *pre = "") const;
+  void DumpLineSorted(std::ostream& os = std::cerr, 
+		      int dmpFlag = CCT::Tree::XML_TRUE,
+		      const char *pre = "") const;
   
+  void DDump();
+  void DDumpSort();
+
   virtual std::string codeName() const { return ""; }
 
 
 protected:
-
-  void writeXML_pre(std::ostream& os = std::cerr, 
-		    int dmpFlag = CCT::Tree::XML_TRUE,
-		    const char *prefix = "") const;
-  void writeXML_post(std::ostream& os = std::cerr, 
-		     int dmpFlag = CCT::Tree::XML_TRUE,
-		     const char *prefix = "") const;
-
   void merge_fixup(const SampledMetricDescVec* mdesc, int metric_offset);
   
 protected:
@@ -402,7 +395,7 @@ public:
   void structureId(uint id) { m_sId = id; }
   
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
 
   virtual std::string codeName() const;
 
@@ -640,9 +633,9 @@ public:
   std::string assocInfo_str() const;
   std::string lip_str() const;
 
-  // writeMetricsXML: write metrics (sparsely)
-  virtual void writeMetricsXML(std::ostream& os, 
-			       int dmpFlag = 0, const char* prefix = "") const;
+  // writeMetrics_xml: write metrics (sparsely)
+  virtual void writeMetrics_xml(std::ostream& os, 
+				int dmpFlag = 0, const char* prefix = "") const;
 
   struct WriteMetricInfo_ {
     const SampledMetricDesc* mdesc;
@@ -661,7 +654,6 @@ public:
   
   virtual void dump(std::ostream& os = std::cerr, 
 		    const char* pre = "") const;
-
   virtual void ddump() const;
 
 private:
@@ -718,7 +710,7 @@ public:
   bool IsFrozen() const { return frozen; }
   
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
   
 protected: 
 private: 
@@ -743,7 +735,7 @@ public:
   const std::string& GetName() const { return name; }
   
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
 
 private: 
   std::string name; 
@@ -800,7 +792,7 @@ public:
   void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
   
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
  
 protected: 
   // source file info
@@ -845,7 +837,7 @@ class CSProfStatementNode: public CSProfCodeNode, public IDynNode {
   void SetSrcInfoDone(bool bi) { donewithsrcinfproc = bi; }
   
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
 
 protected: 
 
@@ -897,7 +889,7 @@ public:
   bool& isAlien()       { return m_alien; } 
 
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
 
   virtual std::string codeName() const;
  
@@ -924,7 +916,7 @@ public:
   virtual const std::string& GetFile() const { return BOGUS; }
 
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const; 
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const; 
   
 private:
 };
@@ -943,7 +935,7 @@ public:
   ~CSProfStmtRangeNode();
   
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
 
   virtual const std::string& GetFile() const { return BOGUS; }
 };
