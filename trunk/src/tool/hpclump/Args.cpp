@@ -184,7 +184,7 @@ void
 Args::printError(std::ostream& os, const char* msg) const
 {
   os << getCmd() << ": " << msg << endl
-     << "Try `" << getCmd() << " --help' for more information." << endl;
+     << "Try '" << getCmd() << " --help' for more information." << endl;
 }
 
 void 
