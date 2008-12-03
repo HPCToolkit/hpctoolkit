@@ -107,6 +107,12 @@ Options: Source Structure Correlation:\n\
                        Use hpcstruct structure file <file> for correlation.\n\
                        May pass multiple times (e.g., for shared libraries).\n\
 \n\
+Options: Special:\n\
+  --force              Currently, hpcprof permits at most 16 profile-files\n\
+                       to prevent unmanageably large Experiment databases.\n\
+                       Use this option to remove this limit.  We are working\n\
+                       on solutions.\n\
+\n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
@@ -132,6 +138,10 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
      NULL },
   {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
+  // Special options for now
+  {  0 , "force",           CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // General
@@ -293,6 +303,11 @@ Args::parse(int argc, const char* const argv[])
     profileFiles.resize(numArgs);
     for (uint i = 0; i < numArgs; ++i) {
       profileFiles[i] = parser.getArg(i);
+    }
+
+    // TEMPORARY
+    if (profileFiles.size() > 16 && !parser.isOpt("force")) {
+      ARG_ERROR("Currently, hpcprof permits at most 16 profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.  We are working on solutions.");
     }
   }
   catch (const CmdLineParser::ParseError& x) {
