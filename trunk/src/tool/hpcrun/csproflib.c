@@ -221,7 +221,7 @@ csprof_thread_pre_create(void)
 
   // insert into CCT as a placeholder
   csprof_cct_node_t* n;
-  n = csprof_sample_event(&context, metric_id, 0 /*sample_count*/);
+  n = csprof_sample_event(&context, metric_id, 0 /* metric_units_consumed */);
 
   // tallent: only drop one to account for inlining.
   if (n) { n = n->parent; }

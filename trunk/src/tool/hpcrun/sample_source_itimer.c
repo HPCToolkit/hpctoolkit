@@ -16,6 +16,8 @@
 #include <ucontext.h>           /* struct ucontext */
 #include <assert.h>
 
+#define USE_THREAD_USAGE_FOR_WALLCLOCK
+
 
 /******************************************************************************
  * local includes
@@ -52,6 +54,9 @@
 #define CSPROF_PROFILE_TIMER ITIMER_REAL
 #endif
 
+#define SECONDS_TO_MICROSECONDS(s) ((s) * 1000000)
+
+#define ITIMER_METRIC_ID 0
 
 /******************************************************************************
  * forward declarations 
@@ -59,6 +64,8 @@
 
 static int
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
+
+static unsigned long long thread_usage_in_microseconds();
 
 
 
@@ -83,6 +90,10 @@ METHOD_FN(start)
   setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
 
   TD_GET(ss_state)[self->evset_idx] = START;
+
+#ifdef USE_THREAD_USAGE_FOR_WALLCLOCK
+  TD_GET(last_us_usage) = thread_usage_in_microseconds();
+#endif
 
   // int rv = setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
   // return rv
@@ -156,7 +167,11 @@ METHOD_FN(gen_event_set,int lush_metrics)
   int ret = csprof_set_max_metrics(1 + lush_metrics);
   
   if (ret > 0) {
+#ifdef USE_THREAD_USAGE_FOR_WALLCLOCK
+    long sample_period = 1;
+#else
     long sample_period = self->evl.events[0].thresh;
+#endif
 
     int metric_id = csprof_new_metric();
     TMSG(ITIMER_CTL,"setting metric id = %d,period = %ld",metric_id,sample_period);
@@ -212,9 +227,11 @@ sample_source_t _itimer_obj = {
   .state = UNINIT
 };
 
+
 /******************************************************************************
  * constructor 
  *****************************************************************************/
+
 static void itimer_obj_reg(void) __attribute__ ((constructor));
 
 static void
@@ -223,19 +240,47 @@ itimer_obj_reg(void)
   csprof_ss_register(&_itimer_obj);
 }
 
+
+
 /******************************************************************************
  * private operations 
  *****************************************************************************/
 
-#define ITIMER_METRIC_ID 0
+static unsigned long long
+thread_usage_in_microseconds()
+{
+  struct timespec ts;
+  long notime = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+
+  if(notime != 0) {
+    EMSG("thread_usage_in_microseconds: clock_gettime failed!"); 
+    abort();
+  }
+
+  unsigned long long usage = (ts.tv_nsec/1000) + 
+    SECONDS_TO_MICROSECONDS(ts.tv_sec);
+
+  return usage;
+}
+
+
 static int
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
   if (!csprof_handling_synchronous_sample_p()) {
     TMSG(ITIMER_HANDLER,"Itimer sample event");
-    csprof_sample_event(context, ITIMER_METRIC_ID, 1 /*sample_count*/);
+
+#ifdef USE_THREAD_USAGE_FOR_WALLCLOCK
+    unsigned long long current_us_usage = thread_usage_in_microseconds();
+    unsigned long long time_value = current_us_usage - TD_GET(last_us_usage);  /* time in us */
+#else
+    unsigned long long time_value = 1; /* time in samples */
+#endif
+
+    csprof_sample_event(context, ITIMER_METRIC_ID, time_value);
   }
   METHOD_CALL(&_itimer_obj,start);
 
   return 0; /* tell monitor that the signal has been handled */
 }
+
