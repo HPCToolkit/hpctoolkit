@@ -27,7 +27,7 @@
 
 static csprof_cct_node_t*
 csprof_take_profile_sample(csprof_state_t *state, void *context,
-			   int metric_id, size_t sample_count);
+			   int metric_id, unsigned long long metric_units_consumed);
 
 //***************************************************************************
 
@@ -48,7 +48,7 @@ csprof_suspend_sampling(int val)
 
 
 csprof_cct_node_t*
-csprof_sample_event(void *context, int metric_id, size_t sample_count)
+csprof_sample_event(void *context, int metric_id, unsigned long long metric_units_consumed)
 {
   PMSG(SAMPLE,"Handling sample");
 
@@ -69,7 +69,7 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
   if (!sigsetjmp(it->jb,1)){
 
     if (state != NULL) {
-      node = csprof_take_profile_sample(state, context, metric_id, sample_count);
+      node = csprof_take_profile_sample(state, context, metric_id, metric_units_consumed);
 
       if (trace_isactive()) {
 	void *pc = context_pc(context);
@@ -109,7 +109,7 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
 
 static csprof_cct_node_t*
 csprof_take_profile_sample(csprof_state_t *state, void *context,
-			   int metric_id, size_t sample_count)
+			   int metric_id, unsigned long long metric_units_consumed)
 {
   void *pc = context_pc(context);
 
@@ -147,7 +147,7 @@ csprof_take_profile_sample(csprof_state_t *state, void *context,
 #endif
   
   csprof_cct_node_t* n;
-  n = csprof_sample_callstack(state, context, metric_id, sample_count);
+  n = csprof_sample_callstack(state, context, metric_id, metric_units_consumed);
 
   // FIXME: n == -1 if sample is filtered
 #if 0

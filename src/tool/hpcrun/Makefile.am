@@ -151,7 +151,7 @@ libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
 libcsprof_o_LDADD   = $(HPC_LIBPROFLEAN)
 
 libcsprof_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-L$(LIBMONITOR_LIB) -lmonitor -lpthread
+	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt
 
 libcsprof_o_LDFLAGS =
 

@@ -631,7 +631,7 @@ libcsprof_o_CFLAGS = -std=c99 $(CFLAGS) $(HOST_CFLAGS) $(am__append_7)
 libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
 libcsprof_o_LDADD = $(HPC_LIBPROFLEAN)
 libcsprof_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread $(am__append_12) $(am__append_18)
+	-lpthread -lrt $(am__append_12) $(am__append_18)
 libcsprof_o_LDFLAGS = $(am__append_13) $(am__append_19)
 
 # FIXME: This is specific to Rice.

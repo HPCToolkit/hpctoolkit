@@ -34,6 +34,7 @@ typedef struct _td_t {
   int             fnbounds_lock;
   int             suspend_sampling;
   FILE*           trace_file;
+  unsigned long long last_us_usage;
 } thread_data_t;
 
 #define TD_GET(field) csprof_get_thread_data()->field
