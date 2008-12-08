@@ -74,8 +74,8 @@ RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump xprof \
-	misc hpcrun-flat hpcrun hpcfnbounds
+DIST_SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump misc \
+	hpcrun-flat hpcrun hpcfnbounds
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -251,7 +251,7 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 # Automake rules
 #############################################################################
-SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump xprof misc \
+SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump misc \
 	$(am__append_1) $(am__append_2)
 all: all-recursive
 

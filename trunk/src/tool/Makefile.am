@@ -67,7 +67,6 @@ SUBDIRS = \
 	\
 	hpclump \
 	\
-	xprof \
 	misc
 
 

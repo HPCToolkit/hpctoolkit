@@ -16,35 +16,13 @@
 # Find where we were called from
 #############################################################################
 
-# Note: HPCTOOLKIT must be absolute.  We could have autoconf/automake
-# insert the installation dir and the platform
+@export_hpctoolkit@
 
-BINDIR=`dirname $0`
-
-if [ ${BINDIR} = '.' ]; then 
-    ROOTDIR_REL='..';
-else
-    ROOTDIR_REL=`dirname ${BINDIR}`;
-fi
-
-ROOTDIR=`cd ${ROOTDIR_REL} && pwd`
-
-HPCTOOLKIT=${ROOTDIR}
-BINARY="$0-bin" # ${HPCTOOLKIT}/bin/ `basename $0` bin
-
-unset BINDIR
-unset ROOTDIR
-unset ROOTDIR_REL
-
-#echo "--> $0"
-#echo "--> ${HPCTOOLKIT}"
-#echo "--> ${BINARY}"
+BINARY="${HPCTOOLKIT}/libexec/hpctoolkit/hpcprof-flat-bin"
 
 #############################################################################
 # Set environment for process
 #############################################################################
-
-export HPCTOOLKIT
 
 #HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/libexec/hpctoolkit && ./hpcplatform`
 #export HPCTOOLKIT_PLATFORM
