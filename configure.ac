@@ -1358,8 +1358,8 @@ AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcrun],
   [chmod +x src/tool/hpcrun/scripts/hpcrun])
 AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpclink],
   [chmod +x src/tool/hpcrun/scripts/hpclink])
-AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcfnbounds],
-  [chmod +x src/tool/hpcrun/scripts/hpcfnbounds])
+AC_CONFIG_FILES([src/tool/hpcfnbounds/hpcfnbounds],
+  [chmod +x src/tool/hpcfnbounds/hpcfnbounds])
 
 AC_SUBST_FILE([export_hpctoolkit])
 export_hpctoolkit="${srcdir}/config/export-hpctoolkit"

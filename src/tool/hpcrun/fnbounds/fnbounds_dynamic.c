@@ -335,7 +335,7 @@ fnbounds_read_nm_file(const char *file, long *map_size,
   long pagesize, len, ret;
   int fd;
 
-  if (file == NULL || fh == NULL) {
+  if (file == NULL || map_size == NULL || fh == NULL) {
     EMSG("passed NULL to fnbounds_read_nm_file");
     return (NULL);
   }
@@ -400,24 +400,17 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
   char filename[PATH_MAX];
   char command[MAXPATHLEN+1024];
   char dlname[MAXPATHLEN];
+  int  logfile_fd = csprof_logfile_fd();
 
   if (nm_command == NULL || incoming_filename == NULL)
     return (NULL);
 
   realpath(incoming_filename, filename);
-  sprintf(dlname, "%s/%s.nm.so", fnbounds_tmpdir_get(), mybasename(filename));
+  sprintf(dlname, FNBOUNDS_BINARY_FORMAT, fnbounds_tmpdir_get(), mybasename(filename));
 
-  int logfile_fd = csprof_logfile_fd();
-  char redir[64] = {'\0'};
-  sprintf(redir,"1>&%d 2>&%d", logfile_fd, logfile_fd);
-
-  char *script_debug = "";
-  IF_ENABLED(DL_BOUND_SCRIPT_DEBUG) {
-    script_debug = "DBG";
-  }
-
-  sprintf(command, "%s %s %s %s %s\n", nm_command, filename,
-	  fnbounds_tmpdir_get(), script_debug, redir);
+  sprintf(command, "%s -b %s %s %s 1>&%d 2>&%d\n",
+	  nm_command, ENABLED(DL_BOUND_SCRIPT_DEBUG) ? "-t -v" : "",
+	  filename, fnbounds_tmpdir_get(), logfile_fd, logfile_fd);
   TMSG(DL_BOUND, "system command = %s", command);
 
   int result = system_server_execute_command(command);

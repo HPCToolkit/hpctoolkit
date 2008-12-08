@@ -178,32 +178,45 @@ long num_function_entries(void)
  *****************************************************************************/
 
 //
-// Write one function entry to stdout, either as C array source or in
-// binary format, depending on -b flag.  The binary format is buffered.
+// Write one function entry, possibly to multiple files.
+// The binary format is buffered.
 //
 static void
 dump_function_entry(void *addr, const char *comment)
 {
   num_entries_total++;
-  if (binary_format()) {
+
+  if (binary_fmt_fd() >= 0) {
     addr_buf[num_entries_in_buf] = addr;
     num_entries_in_buf++;
     if (num_entries_in_buf == ADDR_BUF_SIZE) {
-      write(1, addr_buf, num_entries_in_buf * sizeof(void *));
+      write(binary_fmt_fd(), addr_buf, num_entries_in_buf * sizeof(void *));
       num_entries_in_buf = 0;
     }
-  } else {
-    printf("  %p,  /* %s */\n", addr, comment);
+  }
+
+  if (c_fmt_fp() != NULL) {
+    if (num_entries_total > 1)
+      fprintf(c_fmt_fp(), ",\n");
+    fprintf(c_fmt_fp(), "   %p /* %s */", addr, comment);
+  }
+
+  if (text_fmt_fp() != NULL) {
+    fprintf(text_fmt_fp(), "%p    %s\n", addr, comment);
   }
 }
+
 
 static void
 end_of_function_entries(void)
 {
-  if (binary_format() && num_entries_in_buf > 0) {
-    write(1, addr_buf, num_entries_in_buf * sizeof(void *));
+  if (binary_fmt_fd() >= 0 && num_entries_in_buf > 0) {
+    write(binary_fmt_fd(), addr_buf, num_entries_in_buf * sizeof(void *));
     num_entries_in_buf = 0;
   }
+
+  if (c_fmt_fp() != NULL && num_entries_total > 0)
+    fprintf(c_fmt_fp(), "\n");
 }
 
 

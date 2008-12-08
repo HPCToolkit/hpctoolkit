@@ -24307,7 +24307,7 @@ ac_config_files="$ac_config_files src/tool/hpcrun/scripts/hpcrun"
 
 ac_config_files="$ac_config_files src/tool/hpcrun/scripts/hpclink"
 
-ac_config_files="$ac_config_files src/tool/hpcrun/scripts/hpcfnbounds"
+ac_config_files="$ac_config_files src/tool/hpcfnbounds/hpcfnbounds"
 
 
 
@@ -25059,7 +25059,7 @@ do
     "src/lib/xml/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/xml/Makefile" ;;
     "src/tool/hpcrun/scripts/hpcrun") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpcrun" ;;
     "src/tool/hpcrun/scripts/hpclink") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpclink" ;;
-    "src/tool/hpcrun/scripts/hpcfnbounds") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpcfnbounds" ;;
+    "src/tool/hpcfnbounds/hpcfnbounds") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds/hpcfnbounds" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -25800,7 +25800,7 @@ done
  ;;
     "src/tool/hpcrun/scripts/hpcrun":F) chmod +x src/tool/hpcrun/scripts/hpcrun ;;
     "src/tool/hpcrun/scripts/hpclink":F) chmod +x src/tool/hpcrun/scripts/hpclink ;;
-    "src/tool/hpcrun/scripts/hpcfnbounds":F) chmod +x src/tool/hpcrun/scripts/hpcfnbounds ;;
+    "src/tool/hpcfnbounds/hpcfnbounds":F) chmod +x src/tool/hpcfnbounds/hpcfnbounds ;;
 
   esac
 done # for ac_tag

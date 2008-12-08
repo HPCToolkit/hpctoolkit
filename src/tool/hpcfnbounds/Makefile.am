@@ -7,6 +7,7 @@
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
 pkglibexec_PROGRAMS = hpcfnbounds-bin
+pkglibexec_SCRIPTS =  hpcfnbounds
 
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_LIB = @LIBELF_LIB@
@@ -27,7 +28,7 @@ hpcfnbounds_bin_CPPFLAGS = -I$(SYMTABAPI_INC)
 
 hpcfnbounds_bin_CXXFLAGS = $(CXXFLAGS) $(HOST_CXXFLAGS)
 
-hpcfnbounds_bin_LDFLAGS = 				\
+hpcfnbounds_bin_LDFLAGS = 			\
     -L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon	\
     -L$(LIBDWARF_LIB) -ldwarf			\
     -L$(LIBELF_LIB) -lelf
