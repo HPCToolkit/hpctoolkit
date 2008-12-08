@@ -85,9 +85,11 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
+
 bin_SCRIPTS = hpcprof-flat
 
-bin_PROGRAMS = hpcprof-flat-bin
+pkglibexec_PROGRAMS = hpcprof-flat-bin
 
 hpcprof_flat_bin_SOURCES  = $(MYSOURCES)
 hpcprof_flat_bin_CFLAGS   = $(MYCFLAGS)
