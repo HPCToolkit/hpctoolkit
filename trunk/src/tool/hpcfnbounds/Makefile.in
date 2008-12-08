@@ -14,6 +14,7 @@
 
 @SET_MAKE@
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -38,15 +39,17 @@ pkglibexec_PROGRAMS = hpcfnbounds-bin$(EXEEXT)
 @HOST_CPU_X86_TRUE@am__append_3 = $(XED2_LIB)/libxed.a
 @HOST_CPU_X86_FALSE@am__append_4 = generic-process-ranges.cpp
 subdir = src/tool/hpcfnbounds
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/hpcfnbounds.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
-CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(pkglibexecdir)"
+CONFIG_CLEAN_FILES = hpcfnbounds
+am__installdirs = "$(DESTDIR)$(pkglibexecdir)" \
+	"$(DESTDIR)$(pkglibexecdir)"
 pkglibexecPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(pkglibexec_PROGRAMS)
 am__hpcfnbounds_bin_SOURCES_DIST = code-ranges.cpp \
@@ -66,6 +69,8 @@ hpcfnbounds_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) \
 	$(hpcfnbounds_bin_LDFLAGS) $(LDFLAGS) -o $@
+pkglibexecSCRIPT_INSTALL = $(INSTALL_SCRIPT)
+SCRIPTS = $(pkglibexec_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -247,6 +252,7 @@ target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibexec_SCRIPTS = hpcfnbounds
 SYMBOLS_BASE_FILES = \
     code-ranges.cpp		\
     function-entries.cpp	\
@@ -293,6 +299,8 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+hpcfnbounds: $(top_builddir)/config.status $(srcdir)/hpcfnbounds.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 install-pkglibexecPROGRAMS: $(pkglibexec_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(pkglibexecdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibexecdir)"
@@ -324,6 +332,25 @@ clean-pkglibexecPROGRAMS:
 hpcfnbounds-bin$(EXEEXT): $(hpcfnbounds_bin_OBJECTS) $(hpcfnbounds_bin_DEPENDENCIES) 
 	@rm -f hpcfnbounds-bin$(EXEEXT)
 	$(hpcfnbounds_bin_LINK) $(hpcfnbounds_bin_OBJECTS) $(hpcfnbounds_bin_LDADD) $(LIBS)
+install-pkglibexecSCRIPTS: $(pkglibexec_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	test -z "$(pkglibexecdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibexecdir)"
+	@list='$(pkglibexec_SCRIPTS)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  if test -f $$d$$p; then \
+	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	    echo " $(pkglibexecSCRIPT_INSTALL) '$$d$$p' '$(DESTDIR)$(pkglibexecdir)/$$f'"; \
+	    $(pkglibexecSCRIPT_INSTALL) "$$d$$p" "$(DESTDIR)$(pkglibexecdir)/$$f"; \
+	  else :; fi; \
+	done
+
+uninstall-pkglibexecSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(pkglibexec_SCRIPTS)'; for p in $$list; do \
+	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	  echo " rm -f '$(DESTDIR)$(pkglibexecdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(pkglibexecdir)/$$f"; \
+	done
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -524,9 +551,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS)
+all-am: Makefile $(PROGRAMS) $(SCRIPTS)
 installdirs:
-	for dir in "$(DESTDIR)$(pkglibexecdir)"; do \
+	for dir in "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(pkglibexecdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -578,7 +605,7 @@ install-data-am:
 
 install-dvi: install-dvi-am
 
-install-exec-am: install-pkglibexecPROGRAMS
+install-exec-am: install-pkglibexecPROGRAMS install-pkglibexecSCRIPTS
 
 install-html: install-html-am
 
@@ -610,7 +637,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-pkglibexecPROGRAMS
+uninstall-am: uninstall-pkglibexecPROGRAMS uninstall-pkglibexecSCRIPTS
 
 .MAKE: install-am install-strip
 
@@ -622,11 +649,12 @@ uninstall-am: uninstall-pkglibexecPROGRAMS
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am install-man \
 	install-pdf install-pdf-am install-pkglibexecPROGRAMS \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-pkglibexecPROGRAMS
+	install-pkglibexecSCRIPTS install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-pkglibexecPROGRAMS uninstall-pkglibexecSCRIPTS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
