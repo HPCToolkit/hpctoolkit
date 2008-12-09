@@ -27,7 +27,7 @@ BINARY="${HPCTOOLKIT}/libexec/hpctoolkit/hpcproftt-bin"
 #HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/libexec/hpctoolkit && ./hpcplatform`
 #export HPCTOOLKIT_PLATFORM
 
-XERCESC_PATH="${HPCTOOLKIT}/lib/hpctoolkit/xercesc"
+XERCESC_PATH="${HPCTOOLKIT}/lib/hpctoolkit/ext-libs"
 
 if test -z "${LD_LIBRARY_PATH}" ; then
   LD_LIBRARY_PATH=${XERCESC_PATH}
