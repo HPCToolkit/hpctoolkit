@@ -65,8 +65,6 @@ MYSCRIPTS = \
 	config/hpcplatform \
 	config/config.guess
 
-MYXERCESCDIR = $(pkglibdir)/xercesc
-
 MYMONITORDIR = $(pkglibdir)/monitor
 
 #############################################################################
@@ -111,7 +109,7 @@ define copy-libs
     fi
 endef
 
-install-data-local: myinstall-xerces myinstall-monitor
+install-data-local: myinstall-monitor
 	@echo "Copying external package libraries ..."
 	$(mkinstalldirs) "$(EXT_LIBS_DIR)"
 	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
@@ -123,19 +121,13 @@ install-data-local: myinstall-xerces myinstall-monitor
 	$(call copy-libs,$(XED2_COPY),$(XED2_LIB),libxed*)
 	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 
-myinstall-xerces:
-	if test 1; then \
-	  $(mkinstalldirs) $(MYXERCESCDIR) ; \
-	  cp -R @XERCES@/lib/libxerces* $(MYXERCESCDIR)/ ; \
-	fi
-
 myinstall-monitor:
 	if test "@OPT_INSTALL_MONITOR@" = "yes"; then \
 	  $(mkinstalldirs) $(MYMONITORDIR) ; \
 	  cp -R @MONITOR@/lib*/libmonitor* $(MYMONITORDIR)/ ; \
 	fi
 
-.PHONY : myinstall-xerces myinstall-monitor
+.PHONY: myinstall-monitor
 
 
 ############################################################
