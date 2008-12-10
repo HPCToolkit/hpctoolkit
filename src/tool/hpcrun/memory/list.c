@@ -33,6 +33,7 @@
 
 #include "general.h"
 #include "mem.h"
+#include "pmsg.h"
 
 #include "list.h"
 
@@ -48,6 +49,7 @@ csprof_list_pool_new(unsigned int initial_size)
     csprof_list_pool_t *pool;
 
     /* initialize pool */
+    TMSG(MALLOC," list_pool_new");
     pool = csprof_malloc(sizeof(csprof_list_pool_t));
 
     if(pool == NULL) {
@@ -68,6 +70,7 @@ csprof_list_pool_grow(csprof_list_pool_t *pool, unsigned int numnodes)
     csprof_list_node_t *node_storage;
     int i;
 
+    TMSG(MALLOC," list_pool_grow");
     node_storage = csprof_malloc(numnodes * sizeof(csprof_list_node_t));
 
     if(node_storage == NULL) {

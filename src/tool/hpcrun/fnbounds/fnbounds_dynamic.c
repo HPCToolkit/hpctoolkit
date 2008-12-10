@@ -584,6 +584,7 @@ new_dso_info_t(const char *name, void **table, struct fnbounds_file_header *fh,
   int namelen = strlen(name) + 1;
   dso_info_t *r  = dso_info_allocate();
   
+  TMSG(MALLOC," new_dso_info_t");
   r->name = (char *) csprof_malloc(namelen);
   strcpy(r->name, name);
   r->table = table;
@@ -701,6 +702,7 @@ dso_info_allocate()
   if (new) {
     dso_list_remove(&dso_free_list, new);
   } else {
+    TMSG(MALLOC," dso_info_allocate");
     new = (dso_info_t *) csprof_malloc(sizeof(dso_info_t));
   }
   return new;

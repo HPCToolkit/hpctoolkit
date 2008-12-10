@@ -290,7 +290,7 @@ t2_dbg_unw_step(unw_cursor_t *cursor)
   static int s = 0;
   step_state rv;
   if (s == 0){
-    unwind_cursor_with_troll(cursor, 1);
+    update_cursor_with_troll(cursor, 1);
     rv = STEP_TROLL;
   }
   else {
@@ -366,7 +366,7 @@ unw_step (unw_cursor_t *cursor)
 
 // public interface to local drop sample
 void
-csprof_drop_sample(void)
+csprof_unwind_drop_sample(void)
 {
   drop_sample();
 }

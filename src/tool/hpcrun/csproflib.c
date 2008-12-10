@@ -151,6 +151,7 @@ csprof_init_internal(void)
   // Initialize LUSH agents
   if (opts.lush_agent_paths[0] != '\0') {
     csprof_state_t* state = TD_GET(state);
+    TMSG(MALLOC," -init_internal-: lush allocation");
     lush_agents = (lush_agent_pool_t*)csprof_malloc(sizeof(lush_agent_pool_t));
     lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
     MSG(0xfeed, "***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
@@ -230,6 +231,7 @@ csprof_thread_pre_create(void)
     //for(int i = 0; i < 2 ; i++) { }
 
   TMSG(THREAD,"before lush malloc");
+  TMSG(MALLOC," -thread_precreate: lush malloc");
   lush_cct_ctxt_t* thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
   TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
   thr_ctxt->context = n;
@@ -348,6 +350,7 @@ csprof_check_for_new_epoch(csprof_state_t *state)
   csprof_epoch_t *current = csprof_get_epoch();
 
   if(state->epoch != current) {
+    TMSG(MALLOC," -new_epoch-");
     csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
 
     MSG(CSPROF_MSG_EPOCH, "Creating new epoch...");

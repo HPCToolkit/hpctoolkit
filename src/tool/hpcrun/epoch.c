@@ -35,6 +35,7 @@
 #include "interface.h"
 #include "epoch.h"
 #include "mem.h"
+#include "pmsg.h"
 #include "csprof_csdata.h"
 #include "general.h"
 #include "fnbounds_interface.h"
@@ -79,6 +80,7 @@ csprof_epoch_add_module(const char *module_name,
   	void *mapaddr,              /* the actual mapped address */
 	size_t size)                /* end addr minus start addr */
 {
+  TMSG(MALLOC," epoch_add_module");
   csprof_epoch_module_t *m = (csprof_epoch_module_t *) csprof_malloc(sizeof(csprof_epoch_module_t));
 
   // fill in the fields of the structure
@@ -98,6 +100,7 @@ csprof_epoch_add_module(const char *module_name,
 csprof_epoch_t *
 csprof_epoch_new()
 {
+  TMSG(MALLOC," epoch-new");
   csprof_epoch_t *e = csprof_malloc(sizeof(csprof_epoch_t));
 
   if(e == NULL) {
@@ -227,6 +230,7 @@ csprof_check_for_new_epoch(csprof_state_t *state)
   csprof_epoch_t *current = csprof_get_epoch();
 
   if(state->epoch != current) {
+    TMSG(MALLOC," NOTYET check for new epoch");
     csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
 
     MSG(CSPROF_MSG_EPOCH, "Creating new epoch...");

@@ -20,7 +20,6 @@ static int csprof_max_metrics = 0;
 /* information about tracked metrics */
 hpcfile_csprof_data_t metric_data;
 
-
 /* setting the total number of metrics to track */
 static int has_set_max_metrics = 0;
 
@@ -41,6 +40,7 @@ int csprof_set_max_metrics(int max_metrics)
     csprof_max_metrics = max_metrics;
     hpcfile_csprof_data__init(&metric_data);
     metric_data.target = "--FIXME--target_name";
+    TMSG(MALLOC," set_max_metrics");
     metric_data.metrics = csprof_malloc(max_metrics * sizeof(hpcfile_csprof_metric_t));
     return max_metrics;
   }
