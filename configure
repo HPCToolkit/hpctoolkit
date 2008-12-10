@@ -23261,8 +23261,15 @@ hpc_ext_libs_dir=lib/hpctoolkit/ext-libs
 #
 # If specified, then use PATH as the root of the external prereqs tree
 # and the file PATH/externs.conf for the locations of binutils, open
-# analysis, xerces, etc.  Default is to look in the externals subdir.
+# analysis, xerces, etc.  May be absolute or relative path.
+#
+# Note: using externals is not strictly necessary, but if not used,
+# then you'll need to build all of hpctoolkit's prereqs manually and
+# pass them all to configure.
 #-------------------------------------------------
+
+# External's minimum svn rev number, or else a fatal error.
+EXTERNALS_MIN_REV=1600
 
 
 # Check whether --with-dummy-blank-line was given.
@@ -23273,26 +23280,37 @@ fi
 
 # Check whether --with-externals was given.
 if test "${with_externals+set}" = set; then
-  withval=$with_externals; error_if_missing=yes
+  withval=$with_externals;
 else
-  with_externals="${srcdir}/externals"
+  with_externals=no
 fi
 
 
-use_externals=no
-if test "x$with_externals" != xno ; then
+if test "x$with_externals" != xno
+then
     ext_file="${with_externals}/externs.conf"
-    if test -f "$ext_file" ; then
-	{ echo "$as_me:$LINENO: using externals tree: $with_externals" >&5
-echo "$as_me: using externals tree: $with_externals" >&6;}
-	externals_root=`( cd "$with_externals" && pwd )`
-	. "$ext_file"
-	use_externals=yes
-    elif test "x$error_if_missing" = xyes ; then
+    if test ! -f "$ext_file" ; then
 	{ { echo "$as_me:$LINENO: error: missing externals file: $ext_file" >&5
 echo "$as_me: error: missing externals file: $ext_file" >&2;}
    { (exit 1); exit 1; }; }
     fi
+    { echo "$as_me:$LINENO: using externals tree: $with_externals" >&5
+echo "$as_me: using externals tree: $with_externals" >&6;}
+    externals_root=`( cd "$with_externals" && pwd )`
+    . "$ext_file"
+    if test "$ext_version" -ge "$EXTERNALS_MIN_REV" ; then :
+    else
+	{ { echo "$as_me:$LINENO: error: externals tree too old, update to rev $EXTERNALS_MIN_REV" >&5
+echo "$as_me: error: externals tree too old, update to rev $EXTERNALS_MIN_REV" >&2;}
+   { (exit 1); exit 1; }; }
+    fi
+    use_externals=yes
+    externals_mesg="$ext_version"
+else
+    { echo "$as_me:$LINENO: WARNING: not using --with-externals" >&5
+echo "$as_me: WARNING: not using --with-externals" >&2;}
+    use_externals=no
+    externals_mesg=no
 fi
 
 
@@ -23304,10 +23322,9 @@ fi
 { echo "$as_me:$LINENO: checking for GNU binutils" >&5
 echo $ECHO_N "checking for GNU binutils... $ECHO_C" >&6; }
 
+GNUBINUTILS=no
 if test "$use_externals" = yes ; then
   GNUBINUTILS="$ext_binutils_prefix"
-else
-  GNUBINUTILS="${hpctoolkit_top}/../binutils/${HPCTOOLKIT_PLATFORM}"
 fi
 
 
@@ -23578,10 +23595,6 @@ if test "$use_externals" = yes ; then
   OPT_WITH_MONITOR=yes
   OPT_INSTALL_MONITOR=yes
   MONITOR="$ext_old_monitor_prefix"
-elif test "${HOST_OS}" = "Linux"; then
-  OPT_WITH_MONITOR=yes
-  OPT_INSTALL_MONITOR=yes
-  MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
 fi
 
 
@@ -23637,10 +23650,9 @@ fi
 { echo "$as_me:$LINENO: checking for OpenAnalysis" >&5
 echo $ECHO_N "checking for OpenAnalysis... $ECHO_C" >&6; }
 
+OA=no
 if test "$use_externals" = yes ; then
   OA="$ext_open_analysis_prefix"
-else
-  OA="${hpctoolkit_top}/../open-analysis/${HPCTOOLKIT_PLATFORM}"
 fi
 
 
@@ -23973,10 +23985,9 @@ echo "${ECHO_T}$XED2" >&6; }
 { echo "$as_me:$LINENO: checking for XercesC" >&5
 echo $ECHO_N "checking for XercesC... $ECHO_C" >&6; }
 
+XERCES=no
 if test "$use_externals" = yes ; then
   XERCES="$ext_xerces_prefix"
-else
-  XERCES="${hpctoolkit_top}/../xercesc/${HPCTOOLKIT_PLATFORM}"
 fi
 
 
@@ -25857,6 +25868,8 @@ echo "$as_me: HPCToolkit summary" >&6;}
 echo "$as_me: -------------------" >&6;}
 { echo "$as_me:$LINENO:   HPCToolkit version: ${PACKAGE_VERSION}" >&5
 echo "$as_me:   HPCToolkit version: ${PACKAGE_VERSION}" >&6;}
+{ echo "$as_me:$LINENO:   Externals revision: $externals_mesg" >&5
+echo "$as_me:   Externals revision: $externals_mesg" >&6;}
 { echo "$as_me:$LINENO:   prefix: $prefix" >&5
 echo "$as_me:   prefix: $prefix" >&6;}
 { echo "$as_me:$LINENO:   host: $host" >&5
