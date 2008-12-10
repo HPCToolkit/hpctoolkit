@@ -1,6 +1,9 @@
 //
 // $Id$
 //
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
 #include <vector>
 #include <string>
@@ -13,6 +16,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+
+//*****************************************************************************
+// local includes
+//*****************************************************************************
+
 #include "code-ranges.h"
 #include "process-ranges.h"
 #include "function-entries.h"
@@ -24,6 +33,12 @@ using namespace std;
 using namespace Dyninst;
 using namespace SymtabAPI;
 
+
+
+//*****************************************************************************
+// macros
+//*****************************************************************************
+
 #define SECTION_SYMTAB ".symtab"
 #define SECTION_INIT   ".init"
 #define SECTION_FINI   ".fini"
@@ -31,22 +46,23 @@ using namespace SymtabAPI;
 #define SECTION_PLT    ".plt"
 
 #define PATHSCALE_EXCEPTION_HANDLER_PREFIX "Handler."
+#define USE_PATHSCALE_SYMBOL_FILTER
+
 #define STRLEN(s) (sizeof(s) - 1)
+
+
+
+//*****************************************************************************
+// forward declarations
+//*****************************************************************************
 
 static void usage(char *command, int status);
 static void dump_file_info(const char *filename, bool fn_discovery);
 
-extern "C" {
 
-// we don't care about demangled names. define
-// a no-op that meets symtabAPI semantic needs only
-char *
-cplus_demangle(char *s, int opts)
-{
-return strdup(s);
-}  
-
-};
+//*****************************************************************************
+// local variables
+//*****************************************************************************
 
 // We write() the binary format to a file descriptor and fprintf() the
 // text and classic C formats to a FILE pointer.
@@ -152,11 +168,13 @@ main(int argc, char **argv)
   return 0;
 }
 
+
 int
 binary_fmt_fd(void)
 {
   return (the_binary_fd);
 }
+
 
 FILE *
 c_fmt_fp(void)
@@ -164,11 +182,25 @@ c_fmt_fp(void)
   return (the_c_fp);
 }
 
+
 FILE *
 text_fmt_fp(void)
 {
   return (the_text_fp);
 }
+
+
+extern "C" {
+
+// we don't care about demangled names. define
+// a no-op that meets symtabAPI semantic needs only
+char *
+cplus_demangle(char *s, int opts)
+{
+return strdup(s);
+}  
+
+};
 
 
 //*****************************************************************
@@ -219,7 +251,7 @@ pathscale_filter(Symbol *sym)
 static bool 
 report_symbol(Symbol *sym)
 {
-#if 1
+#ifdef USE_PATHSCALE_SYMBOL_FILTER
   if (pathscale_filter(sym)) return false;
 #endif
   return true;
@@ -349,24 +381,29 @@ dump_file_info(const char *filename, bool fn_discovery)
   Symtab::openFile(syms, sfile);
   int relocatable = 0;
 
-
-#if 0
-  // SymtabAPI isn't yet providing reliable ExceptionBlock information for 
-  // binaries created with PGI, Pathscale, and g++ compilers on x85_64
-  //
+#ifdef USE_SYMTABAPI_EXCEPTION_BLOCKS 
+  //-----------------------------------------------------------------
   // ensure that we don't infer function starts within try blocks or
   // at the start of catch blocks
+  //-----------------------------------------------------------------
   vector<ExceptionBlock *> exvec;
   syms->getAllExceptions(exvec);
   for (int i = 0; i < exvec.size(); i++) {
     ExceptionBlock *e = exvec[i];
 
-#if 0
+#ifdef DUMP_EXCEPTION_BLOCK_INFO
     printf("tryStart = %p tryEnd = %p, catchStart = %p\n", e->tryStart(), 
 	   e->tryEnd(), e->catchStart()); 
 #endif
+    //-----------------------------------------------------------------
+    // prevent inference of function starts within the try block
+    //-----------------------------------------------------------------
     add_protected_range((void *) e->tryStart(), (void *) e->tryEnd());
     
+    //-----------------------------------------------------------------
+    // prevent inference of a function start at the beginning of a
+    // catch block. the extent of the catch block is unknown.
+    //-----------------------------------------------------------------
     long cs = e->catchStart(); 
     add_protected_range((void *) cs, (void *) (cs + 1));
   }
@@ -380,3 +417,5 @@ dump_file_info(const char *filename, bool fn_discovery)
   }
   dump_header_info(relocatable);
 }
+
+
