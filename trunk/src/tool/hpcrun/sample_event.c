@@ -46,25 +46,45 @@ csprof_suspend_sampling(int val)
   td->suspend_sampling += val;
 }
 
+static int _sampling_disabled = 0;
+
+void
+csprof_disable_sampling(void)
+{
+  _sampling_disabled = 1;
+}
+
+void
+csprof_drop_sample(void)
+{
+  sigjmp_buf_t *it = &(TD_GET(bad_unwind));
+  siglongjmp(it->jb,9);
+}
 
 csprof_cct_node_t*
 csprof_sample_event(void *context, int metric_id, unsigned long long metric_units_consumed)
 {
-  PMSG(SAMPLE,"Handling sample");
+  TMSG(SAMPLE,"Handling sample");
+  if (_sampling_disabled){
+    TMSG(SUSPENDED_SAMPLE,"global");
+    return NULL;
+  }
 
   thread_data_t *td = csprof_get_thread_data();
 
-  if (td->suspend_sampling)
+  if (td->suspend_sampling){
+    TMSG(SUSPENDED_SAMPLE,"thread");
     return (NULL);
+  }
 
   sigjmp_buf_t *it = &(td->bad_unwind);
 
   samples_taken++;
 
-  csprof_set_handling_sample(td);
-
   csprof_cct_node_t* node = NULL;
   csprof_state_t *state = td->state;
+
+  csprof_set_handling_sample(td);
 
   if (!sigsetjmp(it->jb,1)){
 
@@ -104,7 +124,7 @@ csprof_sample_event(void *context, int metric_id, unsigned long long metric_unit
 
   csprof_clear_handling_sample(td);
 
-  return node;
+  return NULL;
 }
 
 static csprof_cct_node_t*

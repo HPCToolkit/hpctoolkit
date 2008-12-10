@@ -26,18 +26,25 @@
 static FILE *log_file;
 static spinlock_t pmsg_lock = SPINLOCK_UNLOCKED;
 
-#define N_DBG_FLAGS 200
-static int dbg_flags[N_DBG_FLAGS];
-
 static char *tbl[] = {
 # undef E
-# undef D
 # define E(s) #s
-# define D(s) E(s)
 # include "pmsg.src"
 # undef E
+};
+
+#define N_PMSG_FLAGS sizeof(tbl)/sizeof(tbl[0])
+static int dbg_flags[N_PMSG_FLAGS];
+
+static char *ctl_tbl[] = {
+# undef D
+# define D(s) #s
+# include "ctl.src"
 # undef D
 };
+
+#define N_CTL_CATEGORIES sizeof(ctl_tbl)/sizeof(ctl_tbl[0])
+static int ctl_flags[N_CTL_CATEGORIES];
 
 void
 dbg_set_flag(pmsg_category flag,int val)
@@ -62,8 +69,16 @@ static int defaults[] = {
 static void
 flag_fill(int v)
 {
-  for(int i=0; i < N_DBG_FLAGS; i++){
+  for(int i=0; i < N_PMSG_FLAGS; i++){
     dbg_flags[i] = v;
+  }
+}
+
+static void
+ctl_flag_fill(int v)
+{
+  for(int i=0; i < N_CTL_CATEGORIES; i++){
+    ctl_flags[i] = v;
   }
 }
 
@@ -76,11 +91,6 @@ lookup(char *s)
     }
   }
   return -1;
-}
-
-static void
-turn_on_all(void)
-{
 }
 
 static void
@@ -103,11 +113,10 @@ csprof_dbg_init(char *in)
   }
 }
 
-
 static void
 dump(void)
 {
-  for (int i=0; i < N_DBG_FLAGS; i++){
+  for (int i=0; i < N_PMSG_FLAGS; i++){
     if (i < N_CATEGORIES){
       fprintf(stderr,"dbg_flags[%s] = %d\n",tbl[i],dbg_flags[i]);
     } else {
@@ -132,6 +141,7 @@ pmsg_init()
   for (int i=0; i < NDEFAULTS; i++){
     dbg_flags[defaults[i]] = 1;
   }
+  ctl_flag_fill(0);
 
   char *s = getenv("CSPROF_DD");
   if(s){
@@ -192,7 +202,6 @@ _nmsg(const char *fmt,va_list args)
   va_end(args);
 }
 
-
 void
 csprof_emsg_valist(const char *fmt, va_list args)
 {
@@ -235,6 +244,20 @@ csprof_abort_w_info(void (*info)(void),const char *fmt,...)
   exit(-1);
 }
 
+// message to log file, also echo on stderr
+void
+csprof_stderr_msg(const char *fmt,...)
+{
+  va_list args;
+  va_start(args,fmt);
+  _msg(fmt,args);
+
+  va_start(args,fmt);
+  vfprintf(stderr,fmt,args);
+  va_end(args);
+  fprintf(stderr,"\n");
+}
+
 void
 __csprof_dc(void)
 {
@@ -274,9 +297,9 @@ csprof_amsg(const char *fmt,...)
 
 // interface to the debug flags
 int
-csprof_dbg(pmsg_category flag)
+csprof_dbg(ctl_category flag)
 {
-  return dbg_flags[flag];
+  return ctl_flags[flag];
 }
 
 

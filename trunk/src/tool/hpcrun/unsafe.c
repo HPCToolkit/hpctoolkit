@@ -268,12 +268,14 @@ csprof_add_unsafe_addresses_from_file(char *filename)
 
     n_addr_bytes = n_addrs * sizeof(void *);
 
+    TMSG(MALLOC," invalid procedure start (shouldn't be called)");
     invalid_loaded_procedures_start = csprof_malloc(n_addr_bytes);
 
     if(invalid_loaded_procedures_start == NULL) {
         goto clean_fd;
     }
 
+    TMSG(MALLOC," invalid procedure end (shouldn't be called)");
     invalid_loaded_procedures_end = csprof_malloc(n_addr_bytes);
 
     if(invalid_loaded_procedures_end == NULL) {

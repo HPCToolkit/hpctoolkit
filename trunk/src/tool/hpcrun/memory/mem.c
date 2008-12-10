@@ -11,8 +11,11 @@
 
 /* user include files */
 
+#include "handling_sample.h"
+#include "unwind.h"
 #include "mem.h"
 #include "pmsg.h"
+#include "sample_event.h"
 #include "thread_data.h"
 
 static const offset_t CSPROF_MEM_INIT_SZ     = 2 * 1024 * 1024; // 2 Mb
@@ -30,9 +33,23 @@ static size_t csprof_align_malloc_request(size_t size){
   return (size + (8 - 1)) & (~(8 - 1));
 }
 
+static void
+_drop_sample(void)
+{
+  if (csprof_is_handling_sample()){
+    csprof_drop_sample();
+  }
+}
 
-/* debugging aid */
+void
+csprof_handle_memory_error(void)
+{
+  csprof_disable_sampling();
+  EEMSG("Sampling disabled due to memory allocation failure");
+  _drop_sample();
+}
 
+// debugging aid
 static const char *
 csprof_mem_store__str(csprof_mem_store_t st)
 {
@@ -62,7 +79,7 @@ csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
   offset_t *sz_next = NULL;
 
   // Setup pointers
-  if(st == CSPROF_MEM_STORE) {    
+  if(st == CSPROF_MEM_STORE) {
     mmsz_base = x->sz_next;
     store = &(x->store);
     allocinf = &(x->allocinf);
@@ -74,24 +91,16 @@ csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
     sz_next = &(x->sz_next_tmp);
   } else {
     EMSG("MEM_GROW programming error");
-    abort();
+    csprof_handle_memory_error();
   }
 
   if(sz > mmsz_base) { mmsz_base = sz; } // max of 'mmsz_base' and 'sz'
 
   mmsz = mmsz_base + sizeof(csprof_mmap_info_t);
 
-  TMSG(MEM, "creating new %s memory store of %lu bytes", 
+  TMSG(MMAP, "creating new %s memory store of %lu bytes", 
        csprof_mem_store__str(st), mmsz_base);
 
-#ifdef NO_MMAP
-  PMSG(MEM,"mem grow about to call malloc");
-  mmbeg = malloc(mmsz);
-  if (!mmbeg){
-    EMSG("mem grow malloc failed!");
-    return CSPROF_ERR;
-  }
-#else
   // Open a new memory map for storage: Create a mmap using swap space
   // as the shared object.
   // FIXME: Linux had MAP_NORESERVE here; no equivalent on Alpha
@@ -106,7 +115,7 @@ csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
     EMSG("mem grow mmap failed");
     return CSPROF_ERR;
   }
-#endif  
+
   // Allocate some space at the beginning of the map to store
   // 'mminfo', add to mmap list and reset allocation information.
   mminfo = (csprof_mmap_info_t*)mmbeg;
@@ -138,7 +147,8 @@ csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
 // disabled.  Returns CSPROF_OK upon success; CSPROF_ERR on error.
 
 static int
-csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp){
+csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp)
+{
   if(sz == 0 && sz_tmp == 0) { return CSPROF_ERR; }
 
   memset(x, 0, sizeof(*x));
@@ -146,7 +156,7 @@ csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp){
   x->sz_next     = sz;
   x->sz_next_tmp = sz_tmp;
   
-  // MSG(1,"csprof mem init about to call grow");
+  TMSG(MEM,"csprof mem init about to call grow");
   if(sz != 0
      && csprof_mem__grow(x, sz, CSPROF_MEM_STORE) != CSPROF_OK) {
     EMSG("** MEM GROW for main store failed");
@@ -173,8 +183,6 @@ csprof_mem__alloc(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
   void* m, *new_mem;
   csprof_mmap_alloc_info_t *allocinf = NULL;
 
-  // MSG(1,"csprof mem alloc: sz = %ld",sz);
-
   // Setup pointers
   switch (st) {
     case CSPROF_MEM_STORE:    allocinf = &(x->allocinf); break;
@@ -182,18 +190,20 @@ csprof_mem__alloc(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
     default: DIE("programming error", __FILE__, __LINE__);
   }
 
+  TMSG(MEM__ALLOC,"Mem alloc requesting %ld",sz);
   // Sanity check
   if(sz <= 0) { return NULL; }
   if(!allocinf->mmap) { DIE("programming error", __FILE__, __LINE__); }
 
   // Check for space
   m = VPTR_ADD(allocinf->next, sz);
-  if(m >= allocinf->end) { return NULL; }
+  if(m >= allocinf->end) { TMSG(MEM__ALLOC,"request for %ld bytes failed",sz); return NULL; }
 
   // Allocate the memory
   new_mem = allocinf->next;
   allocinf->next = m;        // bump the 'next' pointer
   
+  TMSG(MEM__ALLOC,"request succeeds");
   return new_mem;
 }
 
@@ -254,15 +264,13 @@ csprof_malloc_init(offset_t sz, offset_t sz_tmp)
   if(sz == 1) { sz = CSPROF_MEM_INIT_SZ; }
   if(sz_tmp == 1) { sz_tmp = CSPROF_MEM_INIT_SZ_TMP; }
   
-  // MSG(1,"csprof malloc init calls csprof_mem__init");
-  TMSG(MEM,"csprof malloc called with sz = %ld, sz_tmp = %ld",sz, sz_tmp);
+  TMSG(MEM,"csprof_malloc_init called with sz = %ld, sz_tmp = %ld",sz, sz_tmp);
   int status = csprof_mem__init(memstore, sz, sz_tmp);
 
   if(status == CSPROF_ERR) {
     return NULL;
   }
 
-  // MSG(1,"malloc_init returns %p",memstore);
   return memstore;
 }
 
@@ -279,23 +287,26 @@ csprof_malloc_threaded(csprof_mem_t *memstore, size_t size)
   if(size <= 0) { EMSG("CSPROF_MALLOC: size <=0");return NULL; } // check to prevent an infinite loop!
 
   size = csprof_align_malloc_request(size);
+  TMSG(CSP_MALLOC,"requested size after alignment = %ld",size);
 
   // Try to allocate the memory (should loop at most once)
   while ((mem = csprof_mem__alloc(memstore, size, CSPROF_MEM_STORE)) == NULL) {
 
+    TMSG(CSP_MALLOC,"--inside mem__alloc loop");
     if((csprof_mem__grow(memstore, size, CSPROF_MEM_STORE) != CSPROF_OK)) {
       EMSG("could not allocate swap space for memory manager");
-      abort();
+      csprof_handle_memory_error();  // used to abort
     }
   }
 
   return mem;
 }
 
-void *csprof_malloc(size_t size){
+void *
+csprof_malloc(size_t size)
+{
+  TMSG(CSP_MALLOC,"requesting size %ld",size);
   csprof_mem_t *memstore = TD_GET(memstore);
-
-  // MSG(1,"csprof malloc memstore = %p",memstore);
   return csprof_malloc_threaded(memstore, size);
 }
 

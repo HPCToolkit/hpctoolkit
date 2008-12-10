@@ -39,13 +39,15 @@ void  unw_init_arch(void);
 void  unw_init_cursor_arch(void* context, unw_cursor_t *cursor);
 int   unw_get_reg_arch(unw_cursor_t *c, int reg_id, void **reg_value);
 
+extern int unw_step(unw_cursor_t *c);
+extern int unw_get_reg(unw_cursor_t *c, int reg_id, void **reg_value);
+extern void csprof_unwind_drop_sample(void);
 
 //********************************************************************
 // interface to architecture independent operations
 //********************************************************************
 
 void unw_init(void);
-
 void unw_init_cursor(void* context, unw_cursor_t* cursor);
 
 //---------------------------------------------------------------------
@@ -59,10 +61,6 @@ void unw_init_cursor(void* context, unw_cursor_t* cursor);
 //         0 : previous frame was the end of the unwind
 //       < 0 : error condition
 //---------------------------------------------------------------------
-int unw_step(unw_cursor_t *c);
-
-int unw_get_reg(unw_cursor_t *c, int reg_id, void **reg_value);
-
 typedef void *unw_word_t;
 
 typedef enum {
