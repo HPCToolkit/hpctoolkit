@@ -534,27 +534,42 @@ AC_SUBST([hpc_ext_libs_dir])
 #
 # If specified, then use PATH as the root of the external prereqs tree
 # and the file PATH/externs.conf for the locations of binutils, open
-# analysis, xerces, etc.  Default is to look in the externals subdir.
+# analysis, xerces, etc.  May be absolute or relative path.
+#
+# Note: using externals is not strictly necessary, but if not used,
+# then you'll need to build all of hpctoolkit's prereqs manually and
+# pass them all to configure.
 #-------------------------------------------------
+
+# External's minimum svn rev number, or else a fatal error.
+EXTERNALS_MIN_REV=1600
 
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
     [AS_HELP_STRING([--with-externals=PATH],
 	    [path to external prereqs tree])],
-    [error_if_missing=yes],
-    [with_externals="${srcdir}/externals"])
+    [],
+    [with_externals=no])
 
-use_externals=no
-if test "x$with_externals" != xno ; then
+if test "x$with_externals" != xno
+then
     ext_file="${with_externals}/externs.conf"
-    if test -f "$ext_file" ; then
-	AC_MSG_NOTICE([using externals tree: $with_externals])
-	externals_root=`( cd "$with_externals" && pwd )`
-	. "$ext_file"
-	use_externals=yes
-    elif test "x$error_if_missing" = xyes ; then
+    if test ! -f "$ext_file" ; then
 	AC_MSG_ERROR([missing externals file: $ext_file])
     fi
+    AC_MSG_NOTICE([using externals tree: $with_externals])
+    externals_root=`( cd "$with_externals" && pwd )`
+    . "$ext_file"
+    if test "$ext_version" -ge "$EXTERNALS_MIN_REV" ; then :
+    else
+	AC_MSG_ERROR([externals tree too old, update to rev $EXTERNALS_MIN_REV])
+    fi
+    use_externals=yes
+    externals_mesg="$ext_version"
+else
+    AC_MSG_WARN([not using --with-externals])
+    use_externals=no
+    externals_mesg=no
 fi
 
 
@@ -565,10 +580,9 @@ fi
 
 AC_MSG_CHECKING([for GNU binutils])
 
+GNUBINUTILS=no
 if test "$use_externals" = yes ; then
   GNUBINUTILS="$ext_binutils_prefix"
-else
-  GNUBINUTILS="${hpctoolkit_top}/../binutils/${HPCTOOLKIT_PLATFORM}"
 fi
 
 AC_ARG_WITH([binutils],
@@ -800,10 +814,6 @@ if test "$use_externals" = yes ; then
   OPT_WITH_MONITOR=yes
   OPT_INSTALL_MONITOR=yes
   MONITOR="$ext_old_monitor_prefix"
-elif test "${HOST_OS}" = "Linux"; then
-  OPT_WITH_MONITOR=yes
-  OPT_INSTALL_MONITOR=yes
-  MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
 fi
 
 AC_ARG_WITH([monitor],
@@ -851,10 +861,9 @@ AC_SUBST([OPT_INSTALL_MONITOR])
 
 AC_MSG_CHECKING([for OpenAnalysis])
 
+OA=no
 if test "$use_externals" = yes ; then
   OA="$ext_open_analysis_prefix"
-else
-  OA="${hpctoolkit_top}/../open-analysis/${HPCTOOLKIT_PLATFORM}"
 fi
 
 AC_ARG_WITH([open-analysis],
@@ -1079,10 +1088,9 @@ AC_SUBST([XED2_RUN_DIR])
 
 AC_MSG_CHECKING([for XercesC])
 
+XERCES=no
 if test "$use_externals" = yes ; then
   XERCES="$ext_xerces_prefix"
-else
-  XERCES="${hpctoolkit_top}/../xercesc/${HPCTOOLKIT_PLATFORM}"
 fi
 
 AC_ARG_WITH([xerces],
@@ -1381,6 +1389,7 @@ AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([HPCToolkit summary])
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([  HPCToolkit version: ${PACKAGE_VERSION}])
+AC_MSG_NOTICE([  Externals revision: $externals_mesg])
 AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  host: $host])
 AC_MSG_NOTICE([  CC, CFLAGS: $CC $CFLAGS ${HOST_CFLAGS}])
