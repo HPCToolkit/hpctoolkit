@@ -6,14 +6,10 @@
 #
 
 PKG_NAME=libmonitor
-src=libmonitor-r92
+src=libmonitor-r97
 
 . ../build-utils/configure.inc
 pre_configure
-
-case "$opt_with_mpi" in
-    /* ) set -- --with-mpi="$opt_with_mpi" "$@" ;;
-esac
 
 set -- CC="$CC"  \
     CFLAGS="$CFLAGS"  \
