@@ -6,7 +6,7 @@
 #
 
 PKG_NAME=binutils
-src=version-binutils-2.17
+src=version-binutils-2.17/binutils-2.17
 
 . ../build-utils/configure.inc
 pre_install
@@ -14,15 +14,16 @@ pre_install
 cd "$src" || die "unable to cd: $src"
 src_dir=`pwd`
 
-cd config || die "unable to cd: config"
-install_dir=`./hpcplatform`
+#
+# Copy extra headers: demangle.h plus its dependencies
+#
+dir_from=${src_dir}
+dir_to="${prefix}/include/"
+to_copy="include/demangle.h include/libiberty.h include/ansidecl.h"
 
-cd "$src_dir" || die "unable to cd: $src_dir"
-cd "$install_dir" || die "unable to cd: $install_dir"
-
-mkdir -p "$prefix" || die "unable to mkdir: $prefix"
-
-tar cf - include lib* | ( cd "$prefix" && tar xvf - )
-test $? -eq 0 || die "install failed"
+mkdir -p "${dir_to}" || die "unable to mkdir: ${dir_to}"
+for fnm in ${to_copy} ; do
+    cp "${dir_from}/${fnm}" ${dir_to} || die "cannot cp: ${dir_from}/${fnm}"
+done
 
 post_install

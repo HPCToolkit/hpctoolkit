@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+#  Binutils configure.
+#
+#  $Id$
+#
+
+PKG_NAME=binutils
+src=version-binutils-2.17/binutils-2.17
+
+. ../build-utils/configure.inc
+pre_configure
+
+CC="$CC"
+CFLAGS="$CFLAGS"
+set -- \
+    --prefix="$prefix" \
+    --enable-targets='mips64-sgi-irix6, alpha-*-linux-gnu, alpha-*-osf, sparc32-*-elf, sparc64-*-solaris2, i386-*-linux-gnu, x86_64-*-linux-gnu, ia64-*-linux-gnu, powerpc64-*-linux-gnu' \
+    "$@"
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+echo configure "$@"
+../${src}/configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure
