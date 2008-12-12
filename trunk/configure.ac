@@ -542,34 +542,34 @@ AC_SUBST([hpc_ext_libs_dir])
 #-------------------------------------------------
 
 # External's minimum svn rev number, or else a fatal error.
-EXTERNALS_MIN_REV=1600
+EXTERNALS_MIN_REV=1714
 
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
-    [AS_HELP_STRING([--with-externals=PATH],
-	    [path to external prereqs tree])],
-    [],
-    [with_externals=no])
+  [AS_HELP_STRING([--with-externals=PATH],
+	  [path to external prereqs tree])],
+  [],
+  [with_externals=no])
 
 if test "x$with_externals" != xno
 then
-    ext_file="${with_externals}/externs.conf"
-    if test ! -f "$ext_file" ; then
-	AC_MSG_ERROR([missing externals file: $ext_file])
-    fi
-    AC_MSG_NOTICE([using externals tree: $with_externals])
-    externals_root=`( cd "$with_externals" && pwd )`
-    . "$ext_file"
-    if test "$ext_version" -ge "$EXTERNALS_MIN_REV" ; then :
-    else
-	AC_MSG_ERROR([externals tree too old, update to rev $EXTERNALS_MIN_REV])
-    fi
-    use_externals=yes
-    externals_mesg="$ext_version"
+  ext_file="${with_externals}/externs.conf"
+  if test ! -f "$ext_file" ; then
+    AC_MSG_ERROR([missing externals file: $ext_file])
+  fi
+  AC_MSG_NOTICE([using externals tree: $with_externals])
+  externals_root=`( cd "$with_externals" && pwd )`
+  . "$ext_file"
+  if test "$ext_version" -ge "$EXTERNALS_MIN_REV" ; then :
+  else
+    AC_MSG_ERROR([externals tree too old, update to revision $EXTERNALS_MIN_REV or later])
+  fi
+  use_externals=yes
+  externals_mesg="$ext_version"
 else
-    AC_MSG_WARN([not using --with-externals])
-    use_externals=no
-    externals_mesg=no
+  AC_MSG_WARN([not using --with-externals])
+  use_externals=no
+  externals_mesg=no
 fi
 
 
