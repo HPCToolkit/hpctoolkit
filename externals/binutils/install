@@ -19,8 +19,11 @@ cd "../${SRC}" || die "unable to cd: ${SRC}"
 SRC=`pwd`
 
 
-for x in ${BINUTILS_DIRS}; do
-    echo "=> ${x}/install $@"
+# NOTE: this is necessary only becuase we selectively build subdirs
+# (see configure)
+dirs="libiberty bfd opcodes binutils"
+for x in ${dirs}; do
+    echo "=> ${x}/install"
     cd ${WORK}/${x}
     $MAKE install || die "install in ${x} failed"
 done
@@ -33,6 +36,8 @@ dir_to="${prefix}/include/"
 to_copy="${SRC}/include/demangle.h \
          ${SRC}/include/libiberty.h \
          ${SRC}/include/ansidecl.h"
+
+echo "=> cp ${to_copy}"
 
 mkdir -p "${dir_to}" || die "unable to mkdir: ${dir_to}"
 for x in ${to_copy} ; do

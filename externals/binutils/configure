@@ -40,7 +40,8 @@ SRC=`pwd`
 #../${SRC}/configure "$@"
 #test $? -eq 0 || die "configure failed"
 
-for x in . ${BINUTILS_DIRS}; do
+dirs="libiberty bfd opcodes binutils"
+for x in . ${dirs}; do
     echo "=> ${x}/configure $@"
     mkdir -p ${WORK}/${x} || die "unable to mkdir: ${WORK}/${x}"
     cd ${WORK}/${x}
