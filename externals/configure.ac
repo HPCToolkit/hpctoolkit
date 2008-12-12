@@ -49,10 +49,13 @@ AC_SUBST([CFLAGS])
 AC_SUBST([CXX])
 AC_SUBST([CXXFLAGS])
 
+AC_SUBST([build])
 AC_SUBST([build_cpu])
 AC_SUBST([build_os])
+AC_SUBST([host])
 AC_SUBST([host_cpu])
 AC_SUBST([host_os])
+AC_SUBST([is_cross_compile])
 
 AC_SUBST([prefix])
 
@@ -85,6 +88,20 @@ AC_PROG_CXX
 
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
+
+#
+# is_cross_compile: non-empty string if cross-compiling
+#
+is_cross_compile=""
+if test "x$build" != "x$host" ; then
+   is_cross_compile=${host}
+fi
+
+
+if test "x$prefix" = xNONE ; then
+    prefix="`pwd`/${host_cpu}-${host_os}"
+fi
+
 
 nobuild_cookie=.dont-build
 version_file="${srcdir}/.svn-revision"
@@ -826,7 +843,7 @@ AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([Externals summary])
 AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([prefix: $prefix])
-if test "x$build" != "x$host" ; then
+if test -n "${is_cross_compile}" ; then
     AC_MSG_NOTICE([build: $build])
 fi
 AC_MSG_NOTICE([host: $host])

@@ -6,23 +6,47 @@
 #
 
 PKG_NAME=binutils
-src=version-binutils-2.17/binutils-2.17
+SRC=version-binutils-2.17/binutils-2.17
 
 . ../build-utils/configure.inc
 pre_configure
+
+targets='mips64-sgi-irix6, alpha-*-linux-gnu, alpha-*-osf, sparc32-*-elf, sparc64-*-solaris2, i386-*-linux-gnu, x86_64-*-linux-gnu, ia64-*-linux-gnu, powerpc64-*-linux-gnu'
 
 CC="$CC"
 CFLAGS="$CFLAGS"
 set -- \
     --prefix="$prefix" \
-    --enable-targets='mips64-sgi-irix6, alpha-*-linux-gnu, alpha-*-osf, sparc32-*-elf, sparc64-*-solaris2, i386-*-linux-gnu, x86_64-*-linux-gnu, ia64-*-linux-gnu, powerpc64-*-linux-gnu' \
+    --enable-targets="${targets}" \
     "$@"
+if test -n "${is_cross_compile}" ; then
+    set -- --host="${host}" "$@"
+fi
 
 make_work_dir
 cd work || die "unable to cd: work"
+WORK=`pwd`
 
-echo configure "$@"
-../${src}/configure "$@"
-test $? -eq 0 || die "configure failed"
+# NOTE: this must come after 'make_work_dir' or 'make_work_dir' breaks
+cd "../${SRC}" || die "unable to cd: ${SRC}"
+SRC=`pwd`
+
+
+# The top-level configure for binutils 2.17 does *not* pass along
+# --host to its sub-configures.  Erg!  So instead of just doing one
+# top-level configure, we configure for each subdir.
+
+#echo configure "$@"
+#../${SRC}/configure "$@"
+#test $? -eq 0 || die "configure failed"
+
+for x in . ${BINUTILS_DIRS}; do
+    echo "=> ${x}/configure $@"
+    mkdir -p ${WORK}/${x} || die "unable to mkdir: ${WORK}/${x}"
+    cd ${WORK}/${x}
+    ${SRC}/${x}/configure "$@"
+    test $? -eq 0 || die "configure in ${x} failed"
+done
+
 
 post_configure

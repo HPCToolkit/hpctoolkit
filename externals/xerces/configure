@@ -14,6 +14,9 @@ pre_configure
 set -- -m inmem -n socket -r pthread -t native "$@"
 set -- -c "$CC" -x "$CXX" "$@"
 set -- -P "$prefix" -p "$xerces_platform" "$@"
+if test -n "${is_cross_compile}" ; then
+    set -- -C --host="${host}" "$@"
+fi
 
 cd "$build_dir" || die "unable to cd: $build_dir"
 

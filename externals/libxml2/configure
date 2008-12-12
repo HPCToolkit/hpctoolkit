@@ -13,6 +13,9 @@ pre_configure
 
 set -- --prefix="$prefix" "$@"
 set -- CC="$CC" CFLAGS="$CFLAGS" "$@"
+if test -n "${is_cross_compile}" ; then
+    set -- --host="${host}" "$@"
+fi
 . ../build-utils/dup-args.sh
 
 make_work_dir

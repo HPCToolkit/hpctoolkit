@@ -12,3 +12,6 @@ PREFIX = @prefix@
 
 SYMTABAPI_PLATFORM = @symtabAPI_platform@
 
+BUILD = @build@
+HOST = @host@
+IS_CROSS_COMPILE = @is_cross_compile@

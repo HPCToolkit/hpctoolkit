@@ -6,24 +6,37 @@
 #
 
 PKG_NAME=binutils
-src=version-binutils-2.17/binutils-2.17
+SRC=version-binutils-2.17/binutils-2.17
 
 . ../build-utils/configure.inc
 pre_install
 
-cd "$src" || die "unable to cd: $src"
-src_dir=`pwd`
+cd work || die "unable to cd: work"
+WORK=`pwd`
+
+# NOTE: this must come after 'make_work_dir' or 'make_work_dir' breaks
+cd "../${SRC}" || die "unable to cd: ${SRC}"
+SRC=`pwd`
+
+
+for x in ${BINUTILS_DIRS}; do
+    echo "=> ${x}/install $@"
+    cd ${WORK}/${x}
+    $MAKE install || die "install in ${x} failed"
+done
+
 
 #
 # Copy extra headers: demangle.h plus its dependencies
 #
-dir_from=${src_dir}
 dir_to="${prefix}/include/"
-to_copy="include/demangle.h include/libiberty.h include/ansidecl.h"
+to_copy="${SRC}/include/demangle.h \
+         ${SRC}/include/libiberty.h \
+         ${SRC}/include/ansidecl.h"
 
 mkdir -p "${dir_to}" || die "unable to mkdir: ${dir_to}"
-for fnm in ${to_copy} ; do
-    cp "${dir_from}/${fnm}" ${dir_to} || die "cannot cp: ${dir_from}/${fnm}"
+for x in ${to_copy} ; do
+    cp ${x} ${dir_to} || die "unable to install: ${x}"
 done
 
 post_install

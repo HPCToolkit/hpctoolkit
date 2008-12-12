@@ -16,6 +16,9 @@ SRC=libelf-0.8.10
 pre_configure
 
 set -- --prefix="$prefix" "$@"
+if test -n "${is_cross_compile}" ; then
+    set -- --host="${host}" "$@"
+fi
 . ../build-utils/dup-args.sh
 
 make_work_dir

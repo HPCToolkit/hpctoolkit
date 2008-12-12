@@ -12,6 +12,7 @@ PKG_NAME = old-monitor
 SRC_DIR = monitor-080825
 TEMP_INSTALL := $(shell pwd)/$(SRC_DIR)/temp-install
 
+# FIXME: tallent: dangerous (see libdwarf/configure) but I have a work-around
 override CC = gcc
 override CFLAGS = -g -O2
 

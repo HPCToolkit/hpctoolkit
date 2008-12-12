@@ -11,10 +11,13 @@ CXXFLAGS="@CXXFLAGS@"
 prefix="@prefix@"
 gnu_make="@gnu_make@"
 
+build="@build@"
 build_cpu="@build_cpu@"
 build_os="@build_os@"
+host="@host@"
 host_cpu="@host_cpu@"
 host_os="@host_os@"
+is_cross_compile="@is_cross_compile@"
 
 libdwarfdir="@libdwarf_prefix@"
 libdwarf_inc="@libdwarf_inc@"

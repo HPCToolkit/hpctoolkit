@@ -619,10 +619,13 @@ CC
 CFLAGS
 CXX
 CXXFLAGS
+build
 build_cpu
 build_os
+host
 host_cpu
 host_os
+is_cross_compile
 binutils_prefix
 libdwarf_prefix
 libelf_prefix
@@ -650,9 +653,7 @@ ac_ct_CC
 EXEEXT
 OBJEXT
 ac_ct_CXX
-build
 build_vendor
-host
 host_vendor
 svn_revision
 gnu_make
@@ -1744,6 +1745,9 @@ ac_config_files="$ac_config_files Makefile.conf"
 ac_config_files="$ac_config_files externs.conf"
 
 ac_config_files="$ac_config_files options.conf"
+
+
+
 
 
 
@@ -3148,6 +3152,20 @@ host_os=$*
 IFS=$ac_save_IFS
 case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
+
+
+#
+# is_cross_compile: non-empty string if cross-compiling
+#
+is_cross_compile=""
+if test "x$build" != "x$host" ; then
+   is_cross_compile=${host}
+fi
+
+
+if test "x$prefix" = xNONE ; then
+    prefix="`pwd`/${host_cpu}-${host_os}"
+fi
 
 
 nobuild_cookie=.dont-build
@@ -4683,10 +4701,13 @@ CC!$CC$ac_delim
 CFLAGS!$CFLAGS$ac_delim
 CXX!$CXX$ac_delim
 CXXFLAGS!$CXXFLAGS$ac_delim
+build!$build$ac_delim
 build_cpu!$build_cpu$ac_delim
 build_os!$build_os$ac_delim
+host!$host$ac_delim
 host_cpu!$host_cpu$ac_delim
 host_os!$host_os$ac_delim
+is_cross_compile!$is_cross_compile$ac_delim
 binutils_prefix!$binutils_prefix$ac_delim
 libdwarf_prefix!$libdwarf_prefix$ac_delim
 libelf_prefix!$libelf_prefix$ac_delim
@@ -4714,9 +4735,7 @@ ac_ct_CC!$ac_ct_CC$ac_delim
 EXEEXT!$EXEEXT$ac_delim
 OBJEXT!$OBJEXT$ac_delim
 ac_ct_CXX!$ac_ct_CXX$ac_delim
-build!$build$ac_delim
 build_vendor!$build_vendor$ac_delim
-host!$host$ac_delim
 host_vendor!$host_vendor$ac_delim
 svn_revision!$svn_revision$ac_delim
 gnu_make!$gnu_make$ac_delim
@@ -4725,7 +4744,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 81; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 82; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -5064,7 +5083,7 @@ echo "$as_me: Externals summary" >&6;}
 echo "$as_me: ------------------" >&6;}
 { echo "$as_me:$LINENO: prefix: $prefix" >&5
 echo "$as_me: prefix: $prefix" >&6;}
-if test "x$build" != "x$host" ; then
+if test -n "${is_cross_compile}" ; then
     { echo "$as_me:$LINENO: build: $build" >&5
 echo "$as_me: build: $build" >&6;}
 fi
