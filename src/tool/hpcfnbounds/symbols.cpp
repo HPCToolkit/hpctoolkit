@@ -47,6 +47,7 @@ using namespace SymtabAPI;
 
 #define PATHSCALE_EXCEPTION_HANDLER_PREFIX "Handler."
 #define USE_PATHSCALE_SYMBOL_FILTER
+#define USE_SYMTABAPI_EXCEPTION_BLOCKS
 
 #define STRLEN(s) (sizeof(s) - 1)
 
