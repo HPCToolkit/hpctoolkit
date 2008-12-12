@@ -9,20 +9,20 @@
 # subdirs (see configure)
 
 PKG_NAME=binutils
-SRC=version-binutils-2.17/binutils-2.17
+src=version-binutils-2.17/binutils-2.17
 
 . ../build-utils/configure.inc
 pre_build
 
 cd work || die "unable to cd: work"
-WORK=`pwd`
+work_dir=`pwd`
 
 
 dirs="libiberty bfd opcodes binutils"
 for x in ${dirs}; do
     echo "=> ${x}/build"
-    cd ${WORK}/${x}
-    $MAKE || die "build in ${x} failed"
+    cd ${work_dir}/${x}
+    $MAKE || die "unable to build ${x}"
 done
 
 
