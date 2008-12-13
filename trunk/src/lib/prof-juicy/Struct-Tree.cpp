@@ -1109,8 +1109,7 @@ File::FindProc(const char* nm, const char* lnm) const
 string
 ACodeNode::LineRange() const
 {
-  string self = "b=" + StrUtil::toStr(m_begLn) 
-    + " e=" + StrUtil::toStr(m_endLn);
+  string self = "l=" + StrUtil::toStr(m_begLn) + " -" + StrUtil::toStr(m_endLn);
   return self;
 }
 
@@ -1450,7 +1449,7 @@ ANode::toStringXML(int dmpFlag, const char* pre) const
 string 
 ANode::toXML(int dmpFlag) const
 {
-  string self = ANodeTyToXMLelement(Type()) + " id" + MakeAttrNum(id());
+  string self = ANodeTyToXMLelement(Type()) + " i" + MakeAttrNum(id());
   return self;
 }
 
@@ -1468,7 +1467,12 @@ ACodeNode::toXML(int dmpFlag) const
 string
 ACodeNode::XMLLineRange(int dmpFlag) const
 {
-  string self = "b" + MakeAttrNum(m_begLn) + " e" + MakeAttrNum(m_endLn);
+  string line = StrUtil::toStr(begLine());
+  if (begLine() != endLine()) {
+    line += "-" + StrUtil::toStr(endLine());
+  }
+
+  string self = "l" + xml::MakeAttrStr(line);
   return self;
 }
 
@@ -1476,7 +1480,7 @@ ACodeNode::XMLLineRange(int dmpFlag) const
 string
 ACodeNode::XMLVMAIntervals(int dmpFlag) const
 {
-  string self = "vma" + MakeAttrStr(m_vmaSet.toString(), xml::ESC_FALSE);
+  string self = "v" + MakeAttrStr(m_vmaSet.toString(), xml::ESC_FALSE);
   return self;
 }
 
@@ -1485,7 +1489,7 @@ string
 Pgm::toXML(int dmpFlag) const
 {
   string self = ANode::toXML(dmpFlag)
-    + " version=\"4.5\""
+    + " version=\"4.6\""
     + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(dmpFlag));
   return self;
 }

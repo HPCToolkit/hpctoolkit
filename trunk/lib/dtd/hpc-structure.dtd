@@ -1,60 +1,59 @@
 <!-- ******************************************************************** -->
 <!-- HPCToolkit Structure DTD                                             -->
-<!-- Version 4.5                                                          -->
-<!--                                                                      -->
-<!-- Represents static program structure                                  -->
+<!-- Version 4.6                                                          -->
 <!-- ******************************************************************** -->
 
-<!ELEMENT HPCToolkitStructure (G|LM|F)+>
+<!ELEMENT HPCToolkitStructure (LM)*>
 <!ATTLIST HPCToolkitStructure
 	version CDATA #REQUIRED
-	id CDATA #REQUIRED
-	n  CDATA #IMPLIED>
-  <!-- Groups create arbitrary sets of other elements except PGM. -->
-  <!ELEMENT G (G|LM|F|P|L|S)*>
-  <!ATTLIST G
-	id  CDATA #REQUIRED
-	n   CDATA #REQUIRED>
-  <!-- Load module (e.g., DSOs, exe) -->
-  <!ELEMENT LM (G|F)*>
+	i       CDATA #REQUIRED
+	n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!ELEMENT LM (F|P)*>
   <!ATTLIST LM
-	id  CDATA #REQUIRED
-	n   CDATA #REQUIRED
-	vma CDATA #IMPLIED>
-  <!-- Files contain procedures and source line info -->
-  <!ELEMENT F (G|P|L|S)*>
+	i CDATA #REQUIRED
+	n CDATA #REQUIRED
+	v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
   <!ATTLIST F
-	id CDATA #REQUIRED
-	n  CDATA #REQUIRED>
-  <!-- Procedure: n=processed name; ln=link name -->
-  <!ELEMENT P (G|A|L|S)*>
+	i CDATA #REQUIRED
+	n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
   <!ATTLIST P
-	id  CDATA #REQUIRED
-	n   CDATA #REQUIRED
-	ln  CDATA #IMPLIED
-	b   CDATA #IMPLIED
-	e   CDATA #IMPLIED
-	vma CDATA #IMPLIED>
-  <!-- Alien: f: filename; n: name -->
-  <!ELEMENT A (G|A|L|S)*>
+	i  CDATA #REQUIRED
+	n  CDATA #REQUIRED
+	ln CDATA #IMPLIED
+	l  CDATA #IMPLIED
+	v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
   <!ATTLIST A
-	id  CDATA #REQUIRED
-	f   CDATA #IMPLIED
-	n   CDATA #IMPLIED
-	b   CDATA #IMPLIED
-	e   CDATA #IMPLIED
-	vma CDATA #IMPLIED>
-  <!-- Loops -->
-  <!ELEMENT L (G|A|L|S)*>
+	i CDATA #REQUIRED
+	f CDATA #IMPLIED
+	n CDATA #IMPLIED
+	l CDATA #IMPLIED
+	v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
   <!ATTLIST L
-	id  CDATA #REQUIRED
-	b   CDATA #IMPLIED
-	e   CDATA #IMPLIED
-	vma CDATA #IMPLIED>
-  <!-- Statement/Statement range -->
-  <!ELEMENT S EMPTY>
+	i CDATA #REQUIRED
+	l CDATA #REQUIRED
+	v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S (S)*>
   <!ATTLIST S
-	id  CDATA #REQUIRED
-	b   CDATA #REQUIRED
-	e   CDATA #IMPLIED
-	vma CDATA #IMPLIED>
+	i CDATA #REQUIRED
+	l CDATA #REQUIRED
+	v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C EMPTY>
+  <!ATTLIST C
+	i CDATA #REQUIRED
+	l CDATA #REQUIRED
+	v CDATA #IMPLIED>
