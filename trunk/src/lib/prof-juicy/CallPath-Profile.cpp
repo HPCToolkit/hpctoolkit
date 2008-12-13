@@ -133,7 +133,17 @@ Profile::merge(Profile& y)
 void 
 Profile::dump(std::ostream& os) const
 {
-  // FIXME
+  os << m_name << std::endl;
+
+  //m_metricdesc.dump(os);
+
+  if (m_epoch) {
+    m_epoch->dump(os);
+  }
+
+  if (m_cct) {
+    m_cct->dump(os);
+  }
 }
 
 
@@ -211,11 +221,17 @@ Profile::make(const char* fnm)
 
   CallPath::Profile* prof = new CallPath::Profile(num_metrics);
   if (num_ccts > 0) {
+    const int errSz = 128;
+    char errbuf[errSz];
+
     ret = hpcfile_cstree_read(fs, prof->cct(), num_metrics,
 			      cstree_create_node_CB, cstree_link_parent_CB,
-			      hpcfile_alloc_CB, hpcfile_free_CB);
+			      hpcfile_alloc_CB, hpcfile_free_CB,
+			      errbuf, errSz);
+    
     if (ret != HPCFILE_OK) {
-      DIAG_Throw(fnm << ": error reading calling context tree (HPC_CSTREE).");
+      DIAG_Throw(fnm << ": error reading calling context tree (HPC_CSTREE). [" 
+		 << errbuf << "]");
       delete prof;
       return NULL;
     }
