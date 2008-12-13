@@ -84,6 +84,11 @@ public:
   void startElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname, const XERCES_CPP_NAMESPACE::Attributes& attributes);
   void endElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname);
 
+
+  void
+  getLineAttr(SrcFile::ln& begLn, SrcFile::ln& endLn, 
+	      const XERCES_CPP_NAMESPACE::Attributes& attributes);
+
   //--------------------------------------
   // SAX2 error handler interface
   //--------------------------------------
@@ -173,13 +178,13 @@ private:
   DocHandlerArgs& m_args;
   
   // variables for constant values during file processing
-  double pgmVersion;     // initialized to a negative
+  double m_version;     // initialized to a negative
 
   // variables for transient values during file processing
-  std::string currentLmName;    // only one LM on the stack at a time
-  std::string currentFileName;  // only one File on the stack at a time
-  std::string currentFuncName;
-  Prof::Struct::Proc* currentFuncScope;
+  std::string m_curLmNm;    // only one LM on the stack at a time
+  std::string m_curFileNm;  // only one File on the stack at a time
+  std::string m_curProcNm;
+  Prof::Struct::Proc* m_curProc;
   unsigned groupNestingLvl;
 
   // stack of StackEntry_t representing current scope context.  Top of
@@ -202,14 +207,16 @@ private:
   const XMLCh *const elemGroup; 
 
   // attribute names
-  const XMLCh *const attrVer; 
-  const XMLCh *const attrId; 
-  const XMLCh *const attrName; 
-  const XMLCh *const attrAlienFile; 
-  const XMLCh *const attrLnName; 
-  const XMLCh *const attrBegin; 
-  const XMLCh *const attrEnd; 
+  const XMLCh *const attrVer;
+  const XMLCh *const attrId;
+  const XMLCh *const attrName;
+  const XMLCh *const attrAlienFile;
+  const XMLCh *const attrLnName;
+  const XMLCh *const attrLine;
+  const XMLCh *const attrBegin; // FIXME: obsolete
+  const XMLCh *const attrEnd;   // FIXME: obsolete
   const XMLCh *const attrVMA;
+  const XMLCh *const attrVMALong; // FIXME: obsolete
 };
 
 //****************************************************************************
@@ -224,7 +231,7 @@ public:
   { }
 
   virtual std::string message() const { 
-    return "PGM file error [PGMException]: " + what();
+    return "HPCToolkitStructure file error [STRUCTException]: " + what();
   }
 
 private:

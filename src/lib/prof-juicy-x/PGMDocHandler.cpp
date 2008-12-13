@@ -216,21 +216,23 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
 
     // attribute names
     attrVer(XMLString::transcode("version")),
-    attrId(XMLString::transcode("id")),
+    attrId(XMLString::transcode("i")),
     attrName(XMLString::transcode("n")),
     attrAlienFile(XMLString::transcode("f")),
     attrLnName(XMLString::transcode("ln")),
-    attrBegin(XMLString::transcode("b")),
-    attrEnd(XMLString::transcode("e")),
-    attrVMA(XMLString::transcode("vma"))
+    attrLine(XMLString::transcode("l")),
+    attrBegin(XMLString::transcode("b")),  // FIXME:OBSOLETE
+    attrEnd(XMLString::transcode("e")),    // FIXME:OBSOLETE
+    attrVMA(XMLString::transcode("v")),
+    attrVMALong(XMLString::transcode("vma"))   // FIXME:OBSOLETE
 {
   // trace = 1;
-  pgmVersion = -1;
+  m_version = -1;
     
-  currentLmName= "";
-  currentFileName = "";
-  currentFuncName = "";
-  currentFuncScope = NULL; 
+  m_curLmNm= "";
+  m_curFileNm = "";
+  m_curProcNm = "";
+  m_curProc = NULL; 
   groupNestingLvl = 0;
 }
 
@@ -261,9 +263,11 @@ PGMDocHandler::~PGMDocHandler()
   XMLString::release((XMLCh**)&attrName);
   XMLString::release((XMLCh**)&attrAlienFile);
   XMLString::release((XMLCh**)&attrLnName);
+  XMLString::release((XMLCh**)&attrLine);
   XMLString::release((XMLCh**)&attrBegin);
   XMLString::release((XMLCh**)&attrEnd);
-  XMLString::release((XMLCh**)&attrVMA);  
+  XMLString::release((XMLCh**)&attrVMA);
+  XMLString::release((XMLCh**)&attrVMALong);
 
   DIAG_Assert(scopeStack.Depth() == 0, "Invalid state reading PGM.");
 }
@@ -287,41 +291,37 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
 				  const XMLCh* const qname, 
 				  const XERCES_CPP_NAMESPACE::Attributes& attributes)
 { 
-  Struct::ANode* currentScope = NULL;
+  Struct::ANode* curStrct = NULL;
   
-  // -----------------------------------------------------------------
-  // PGM
-  // -----------------------------------------------------------------
+  // Structure
   if (XMLString::equals(name, elemStructure) 
       || XMLString::equals(name, elemPgm)) {
     string verStr = getAttr(attributes, attrVer);
     double ver = StrUtil::toDbl(verStr);
 
-    pgmVersion = ver;
-    if (pgmVersion < 4.5) {
-      string error = "Found file format version " + StrUtil::toStr(pgmVersion)
-	+ ": This format is outdated; please regenerate the file."; 
-      throw PGMException(error);
+    m_version = ver;
+    if (m_version < 4.5) {
+      PGM_Throw("Found file format version " << m_version << ": This format is outdated; please regenerate the file.");
     }
 
     Struct::Pgm* root = m_structIF->GetRoot();
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << root->toString_me());
 
-    currentScope = root;
+    curStrct = root;
   }
   
   // LM (load module)
   else if (XMLString::equals(name, elemLM)) {
     string lm = getAttr(attributes, attrName); // must exist
     lm = m_args.replacePath(lm);
-    DIAG_Assert(currentLmName.empty(), "Parse or internal error!");
-    currentLmName = lm;
+    DIAG_Assert(m_curLmNm.empty(), "Parse or internal error!");
+    m_curLmNm = lm;
     
-    Struct::LM* lmscope = m_structIF->MoveToLM(currentLmName);
+    Struct::LM* lmscope = m_structIF->MoveToLM(m_curLmNm);
     DIAG_Assert(lmscope != NULL, "");
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << lmscope->toString_me());
     
-    currentScope = lmscope;
+    curStrct = lmscope;
   }
   
   // F(ile)
@@ -332,14 +332,14 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     // if the source file name is the same as the previous one, error.
     // otherwise find another one; it should not be the same as the
     // previous one
-    DIAG_Assert(fnm != currentFileName, "");
+    DIAG_Assert(fnm != m_curFileNm, "");
     
-    currentFileName = fnm;
-    Struct::File* fileScope = m_structIF->MoveToFile(currentFileName);
+    m_curFileNm = fnm;
+    Struct::File* fileScope = m_structIF->MoveToFile(m_curFileNm);
     DIAG_Assert(fileScope != NULL, "");
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << fileScope->toString_me());
     
-    currentScope = fileScope;
+    curStrct = fileScope;
   }
 
   // P(roc)
@@ -349,38 +349,35 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     string name  = getAttr(attributes, attrName);   // must exist
     string lname = getAttr(attributes, attrLnName); // optional
     
-    SrcFile::ln lnB = ln_NULL, lnE = ln_NULL;
-    string lineB = getAttr(attributes, attrBegin);
-    string lineE = getAttr(attributes, attrEnd);
-    if (!lineB.empty()) { lnB = (SrcFile::ln)StrUtil::toLong(lineB); }
-    if (!lineE.empty()) { lnE = (SrcFile::ln)StrUtil::toLong(lineE); }
+    SrcFile::ln begLn, endLn;
+    getLineAttr(begLn, endLn, attributes);
     
     string vma = getAttr(attributes, attrVMA);
+    if (vma.empty()) { vma = getAttr(attributes, attrVMALong); }
     
     // Find enclosing File scope
     Struct::File* curFile = FindCurrentFile();
     if (!curFile) {
-      string error = "No F(ile) scope for P(roc) scope '" + name + "'";
-      throw PGMException(error);
+      PGM_Throw("No F(ile) scope for P(roc) scope '" << name << "'");
     }
 
     // -----------------------------------------------------
     // Find/Create the procedure.
     // -----------------------------------------------------
-    currentFuncScope = curFile->FindProc(name);
-    if (currentFuncScope) {
+    m_curProc = curFile->FindProc(name);
+    if (m_curProc) {
       // STRUCTURE files usually have qualifying VMA information.
       // Assume that VMA information fully qualifies procedures.
-      if (m_docty == Doc_STRUCT && !currentFuncScope->vmaSet().empty() 
+      if (m_docty == Doc_STRUCT && !m_curProc->vmaSet().empty() 
 	  && !vma.empty()) {
-	currentFuncScope = NULL;
+	m_curProc = NULL;
       }
     }
 
-    if (!currentFuncScope) {
-      currentFuncScope = new Struct::Proc(name, curFile, lname, false, lnB, lnE);
+    if (!m_curProc) {
+      m_curProc = new Struct::Proc(name, curFile, lname, false, begLn, endLn);
       if (!vma.empty()) {
-	currentFuncScope->vmaSet().fromString(vma.c_str());
+	m_curProc->vmaSet().fromString(vma.c_str());
       }
     }
     else {
@@ -389,9 +386,9 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
 	DIAG_Msg(0, "Warning: Found procedure '" << name << "' multiple times within file '" << curFile->name() << "'; information for this procedure will be aggregated. If you do not want this, edit the STRUCTURE file and adjust the names by hand.");
       }
     }
-    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << currentFuncScope->toString_me());
+    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << m_curProc->toString_me());
     
-    currentScope = currentFuncScope;
+    curStrct = m_curProc;
   }
   
   // A(lien)
@@ -403,11 +400,8 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     string fnm = getAttr(attributes, attrAlienFile);
     fnm = m_args.replacePath(fnm);
 
-    SrcFile::ln begLn = ln_NULL, endLn = ln_NULL;
-    string lineB = getAttr(attributes, attrBegin);
-    string lineE = getAttr(attributes, attrEnd);
-    if (!lineB.empty()) { begLn = (SrcFile::ln)StrUtil::toLong(lineB); }
-    if (!lineE.empty()) { endLn = (SrcFile::ln)StrUtil::toLong(lineE); }
+    SrcFile::ln begLn, endLn;
+    getLineAttr(begLn, endLn, attributes);
 
     Struct::ACodeNode* enclScope = 
       dynamic_cast<Struct::ACodeNode*>(GetCurrentScope()); // enclosing scope
@@ -416,7 +410,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
       new Struct::Alien(enclScope, fnm, nm, begLn, endLn);
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << alien->toString_me());
 
-    currentScope = alien;
+    curStrct = alien;
   }
 
   // L(oop)
@@ -427,20 +421,17 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     int numAttr = attributes.getLength();
     DIAG_Assert(0 <= numAttr && numAttr <= 4, DIAG_UnexpectedInput);
     
-    SrcFile::ln lnB = ln_NULL, lnE = ln_NULL;
-    string lineB = getAttr(attributes, attrBegin);
-    string lineE = getAttr(attributes, attrEnd);
-    if (!lineB.empty()) { lnB = (SrcFile::ln)StrUtil::toLong(lineB); }
-    if (!lineE.empty()) { lnE = (SrcFile::ln)StrUtil::toLong(lineE); }
+    SrcFile::ln begLn, endLn;
+    getLineAttr(begLn, endLn, attributes);
 
     // by now the file and function names should have been found
     Struct::ACodeNode* enclScope = 
       dynamic_cast<Struct::ACodeNode*>(GetCurrentScope()); // enclosing scope
 
-    Struct::ACodeNode* loopNode = new Struct::Loop(enclScope, lnB, lnE);
+    Struct::ACodeNode* loopNode = new Struct::Loop(enclScope, begLn, endLn);
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << loopNode->toString_me());
 
-    currentScope = loopNode;
+    curStrct = loopNode;
   }
   
   // S(tmt)
@@ -450,34 +441,27 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     // 'begin' is required but 'end' is implied (and can be in any order)
     DIAG_Assert(1 <= numAttr && numAttr <= 4, DIAG_UnexpectedInput);
     
-    SrcFile::ln lnB = ln_NULL, lnE = ln_NULL;
-    string lineB = getAttr(attributes, attrBegin);
-    string lineE = getAttr(attributes, attrEnd);
-    if (!lineB.empty()) { lnB = (SrcFile::ln)StrUtil::toLong(lineB); }
-    if (!lineE.empty()) { lnE = (SrcFile::ln)StrUtil::toLong(lineE); }
-    //DIAG_Assert(lnB != ln_NULL, "S beg line is " << ln_NULL);
+    SrcFile::ln begLn, endLn;
+    getLineAttr(begLn, endLn, attributes);
 
-    // Check that lnB and lnE are valid line numbers:
-    //   if lineE is undefined, set it to lineB
-    if (lnE == ln_NULL) { lnE = lnB; }
-
-    // for now insist that lnB and lnE are equal
-    DIAG_Assert(lnB == lnE, "S beg/end lines not equal: b=" << lnB << " e=" << lnE);
+    // for now insist that line range include one line (since we don't nest S)
+    DIAG_Assert(begLn == endLn, "S line range [" << begLn << ", " << endLn << "]");
     
     string vma = getAttr(attributes, attrVMA);
+    if (vma.empty()) { vma = getAttr(attributes, attrVMALong); }
 
     // by now the file and function names should have been found
     Struct::ACodeNode* enclScope = 
       dynamic_cast<Struct::ACodeNode*>(GetCurrentScope()); // enclosing scope
-    DIAG_Assert(currentFuncScope != NULL, "");
+    DIAG_Assert(m_curProc != NULL, "");
 
-    Struct::Stmt* stmtNode = new Struct::Stmt(enclScope, lnB, lnE);
+    Struct::Stmt* stmtNode = new Struct::Stmt(enclScope, begLn, endLn);
     if (!vma.empty()) {
       stmtNode->vmaSet().fromString(vma.c_str());
     }
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << stmtNode->toString_me());
 
-    currentScope = stmtNode;
+    curStrct = stmtNode;
   }
   
   // G(roup)
@@ -491,7 +475,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << grpscope->toString_me());
 
     groupNestingLvl++;
-    currentScope = grpscope;
+    curStrct = grpscope;
   }
 
   
@@ -506,7 +490,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     entry->SetLeaf(false);
   }
 
-  PushCurrentScope(currentScope);
+  PushCurrentScope(curStrct);
 }
 
 
@@ -524,22 +508,22 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
   else if (XMLString::equals(name, elemLM)) {
     DIAG_Assert(scopeStack.Depth() >= 1, "");
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
-    currentLmName = "";
+    m_curLmNm = "";
   }
 
   // F(ile)
   else if (XMLString::equals(name, elemFile)) {
     DIAG_Assert(scopeStack.Depth() >= 2, ""); // at least has LM
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
-    currentFileName = "";
+    m_curFileNm = "";
   }
 
   // P(roc)
   else if (XMLString::equals(name, elemProc)) {
     DIAG_Assert(scopeStack.Depth() >= 3, ""); // at least has File, LM
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
-    currentFuncName = "";
-    currentFuncScope = NULL;
+    m_curProcNm = "";
+    m_curProc = NULL;
   }
 
   // A(lien)
@@ -570,6 +554,48 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
   }
 
   PopCurrentScope();
+}
+
+
+void 
+PGMDocHandler::getLineAttr(SrcFile::ln& begLn, SrcFile::ln& endLn, 
+			   const XERCES_CPP_NAMESPACE::Attributes& attributes)
+{
+  begLn = ln_NULL;
+  endLn = ln_NULL;
+
+  string begStr, endStr;
+
+  // 1. Obtain string representation of begin and end line
+  string lineStr = getAttr(attributes, attrLine);
+  if (!lineStr.empty()) {
+    size_t dashpos = lineStr.find_first_of('-');
+    if (dashpos == std::string::npos) {
+      begStr = lineStr;
+    }
+    else {
+      begStr = lineStr.substr(0, dashpos);
+      endStr = lineStr.substr(dashpos+1);
+    }
+  }
+  else {
+    // old format
+    begStr = getAttr(attributes, attrBegin);
+    endStr = getAttr(attributes, attrEnd);
+  }
+
+  // 2. Parse begin and end line strings
+  if (!begStr.empty()) { 
+    begLn = (SrcFile::ln)StrUtil::toLong(begStr); 
+  }
+  if (!endStr.empty()) { 
+    endLn = (SrcFile::ln)StrUtil::toLong(endStr); 
+  }
+  
+  // 3. Sanity check
+  if (endLn == ln_NULL) { 
+    endLn = begLn; 
+  }
 }
 
 
@@ -681,4 +707,6 @@ PGMDocHandler::ProcessGroupDocEndTag()
     topNode->Link(parentNode);
   }
 }
+
+
 
