@@ -59,9 +59,7 @@ MYDTD = \
 	dtd/hpc-experiment.dtd \
 	dtd/hpc-structure.dtd \
 	\
-	dtd/Experiment.dtd \
 	dtd/HPCView.dtd \
-	dtd/PROFILE.dtd \
 	\
 	dtd/mathml/xhtml1-transitional-mathml.dtd \
 	dtd/mathml/mathml.dtd \
