@@ -92,6 +92,8 @@ using namespace Prof;
 #include <lib/binutils/Proc.hpp>
 #include <lib/binutils/BinUtils.hpp>
 
+#include <lib/xml/xml.hpp> 
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/pathfind.h>
 #include <lib/support/Logic.hpp>
@@ -258,8 +260,6 @@ private:
 static string OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 static string InferredProcedure     = Prof::Struct::Tree::UnknownProcNm;
 
-static const char* structureDTD =
-#include <lib/xml/hpc-structure.dtd.h>
 
 //****************************************************************************
 // Set of routines to write a structure tree
@@ -270,6 +270,9 @@ void
 banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree, 
 			     bool prettyPrint)
 {
+  static const char* structureDTD =
+#include <lib/xml/hpc-structure.dtd.h>
+
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE HPCToolkitStructure [\n" << structureDTD << "]>" << std::endl;
   os.flush();
@@ -279,7 +282,10 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
     dumpFlags |= Struct::Tree::COMPRESSED_OUTPUT; 
   }
   
+  os << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n"
+     << xml::MakeAttrStr(strctTree->name()) << ">\n";
   strctTree->writeXML(os, dumpFlags);
+  os << "</HPCToolkitStructure>\n";
 }
 
 //****************************************************************************

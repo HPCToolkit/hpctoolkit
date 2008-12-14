@@ -161,18 +161,21 @@ public:
   
 public:
   // Constructor/Destructor
-  Tree(const char* name, Pgm* _root = NULL);
-  Tree(const std::string& name, Pgm* _root = NULL)
-    { Tree(name.c_str(), _root); }
+  Tree(const char* name, Pgm* root = NULL);
+
+  Tree(const std::string& name, Pgm* root = NULL)
+    { Tree(name.c_str(), root); }
 
   virtual ~Tree();
 
   // Tree data
-  Pgm* GetRoot() const { return root; }
-  void SetRoot(Pgm* x) { root = x; }
-  bool IsEmpty() const { return (root == NULL); }
+  Pgm* GetRoot() const { return m_root; }
+  void SetRoot(Pgm* x) { m_root = x; }
+  bool IsEmpty() const { return (m_root == NULL); }
   
   void CollectCrossReferences();
+
+  std::string name() const;
 
   virtual void 
   writeXML(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
@@ -186,7 +189,7 @@ public:
   ddump() const;
  
 private:
-  Pgm* root;
+  Pgm* m_root;
 };
 
 } // namespace Struct
