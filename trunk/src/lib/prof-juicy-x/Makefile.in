@@ -15,7 +15,6 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 1326 2008-05-15 18:40:33Z eraxxon $
 
 #############################################################################
 #
@@ -356,8 +355,6 @@ MYSOURCES = \
 	\
 	MathMLExprParser.hpp MathMLExprParser.cpp
 
-
-# Obsolete: PROFILEDocHandler.hpp PROFILEDocHandler.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

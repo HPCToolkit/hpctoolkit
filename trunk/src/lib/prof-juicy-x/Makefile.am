@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-# $Id$
+## $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -71,8 +71,6 @@ MYSOURCES = \
 	PGMDocHandler.hpp PGMDocHandler.cpp \
 	\
 	MathMLExprParser.hpp MathMLExprParser.cpp
-
-# Obsolete: PROFILEDocHandler.hpp PROFILEDocHandler.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
