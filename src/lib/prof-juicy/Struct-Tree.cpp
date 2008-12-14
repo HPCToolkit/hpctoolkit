@@ -103,32 +103,38 @@ const std::string Tree::UnknownFileNm = "~~~<unknown-file>~~~";
 const std::string Tree::UnknownProcNm = "~<unknown-proc>~";
 
 
-Tree::Tree(const char* name, Pgm* _root)
-  : root(_root)
+Tree::Tree(const char* name, Pgm* root)
+  : m_root(root)
 {
 }
 
 
 Tree::~Tree()
 {
-  delete root;
+  delete m_root;
 }
 
+string 
+Tree::name() const 
+{
+  string nm = (m_root) ? std::string(m_root->name()) : "";
+  return nm;
+}
 
 void 
 Tree::CollectCrossReferences() 
 { 
-  root->NoteHeight();
-  root->NoteDepth();
-  root->CollectCrossReferences();
+  m_root->NoteHeight();
+  m_root->NoteDepth();
+  m_root->CollectCrossReferences();
 }
 
 
 void 
 Tree::writeXML(ostream& os, int dmpFlags) const
 {
-  if (root) {
-    root->writeXML(os, dmpFlags);
+  if (m_root) {
+    m_root->writeXML(os, dmpFlags);
   }
 }
 
@@ -1488,8 +1494,7 @@ ACodeNode::XMLVMAIntervals(int dmpFlag) const
 string
 Pgm::toXML(int dmpFlag) const
 {
-  string self = ANode::toXML(dmpFlag)
-    + " version=\"4.6\""
+  string self = ANode::toXML(dmpFlag) 
     + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(dmpFlag));
   return self;
 }
@@ -1573,8 +1578,7 @@ Ref::toXML(int dmpFlag) const
 
 
 bool 
-ANode::writeXML_pre(ostream& os, int dmpFlag, 
-			      const char* prefix) const
+ANode::writeXML_pre(ostream& os, int dmpFlag, const char* pfx) const
 {
   bool attemptToDumpMetrics = true;
   if ((dmpFlag & Tree::DUMP_LEAF_METRICS) && Type() != TySTMT) {
@@ -1591,62 +1595,85 @@ ANode::writeXML_pre(ostream& os, int dmpFlag,
     }
   }
 
-  os << prefix << "<" << toXML(dmpFlag);
+
+  bool doSilent = (Type() == TyPGM); // short-circuit
+
+  if (!doSilent) { 
+    os << pfx << "<" << toXML(dmpFlag);
+  }
+
+  string pfx2 = pfx;
+  if (!doSilent) { pfx2 += "  "; }
+
   if (dumpMetrics) {
     // by definition this element is not empty
-    os << ">";
+    if (!doSilent) {
+      os << ">";
+    }
     for (uint i = 0; i < NumPerfData(); i++) {
       if (HasPerfData(i)) {
 	if (!(dmpFlag & Tree::COMPRESSED_OUTPUT)) { os << endl; }
-	os << prefix << "  <M n=\"" << i << "\" v=\"" << PerfData(i) << "\"/>";
+	os << pfx2 << "<M n=\"" << i << "\" v=\"" << PerfData(i) << "\"/>";
       }
     }
   }
   else {
-    if (dmpFlag & Tree::XML_EMPTY_TAG) {
-      os << "/>";
-    } 
-    else { 
-      os << ">";
+    if (!doSilent) {
+      if (dmpFlag & Tree::XML_EMPTY_TAG) {
+	os << "/>";
+      }
+      else { 
+	os << ">";
+      }
     }
   }
-  if (!(dmpFlag & Tree::COMPRESSED_OUTPUT)) { os << endl; }
+  if (dumpMetrics || !doSilent) {
+    if (!(dmpFlag & Tree::COMPRESSED_OUTPUT)) { 
+      os << endl; 
+    }
+  }
 
   return (dumpMetrics);
 }
 
 
 void
-ANode::writeXML_post(ostream& os, int dmpFlag, const char* prefix) const
+ANode::writeXML_post(ostream& os, int dmpFlag, const char* pfx) const
 {
+  if (Type() == TyPGM) {
+    return; // short-circuit
+  }
+  
   if (!(dmpFlag & Tree::XML_EMPTY_TAG)) {
-    os << prefix << "</" << ANodeTyToXMLelement(Type()) << ">";
-    if (!(dmpFlag & Tree::COMPRESSED_OUTPUT)) { os << endl; }
+    os << pfx << "</" << ANodeTyToXMLelement(Type()) << ">";
+    if (!(dmpFlag & Tree::COMPRESSED_OUTPUT)) { 
+      os << endl; 
+    }
   } 
 }
 
 
 void
-ANode::writeXML(ostream& os, int dmpFlag, const char* pre) const 
+ANode::writeXML(ostream& os, int dmpFlag, const char* pfx) const 
 {
   string indent = "  ";
   if (dmpFlag & Tree::COMPRESSED_OUTPUT) { 
-    pre = ""; 
+    pfx = ""; 
     indent = ""; 
   }
   if (IsLeaf()) {
     dmpFlag |= Tree::XML_EMPTY_TAG;
   }
   
-  bool dumpedMetrics = writeXML_pre(os, dmpFlag, pre);
+  bool dumpedMetrics = writeXML_pre(os, dmpFlag, pfx);
   if (dumpedMetrics) {
     dmpFlag &= ~Tree::XML_EMPTY_TAG; // clear empty flag
   }
-  string prefix = pre + indent;
+  string pfx_new = pfx + indent;
   for (ANodeLineSortedChildIterator it(this); it.Current(); it++) {
-    it.Current()->writeXML(os, dmpFlag, prefix.c_str());
+    it.Current()->writeXML(os, dmpFlag, pfx_new.c_str());
   }
-  writeXML_post(os, dmpFlag, pre);
+  writeXML_post(os, dmpFlag, pfx);
 }
 
 
@@ -1658,19 +1685,18 @@ ANode::ddumpXML() const
 
 
 void
-Pgm::writeXML(ostream& os, int dmpFlag, const char* pre) const
+Pgm::writeXML(ostream& os, int dmpFlag, const char* pfx) const
 {
   // N.B.: Typically LM are children
   string indent = "  ";
-  if (dmpFlag & Tree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
+  if (dmpFlag & Tree::COMPRESSED_OUTPUT) { pfx = ""; indent = ""; }
 
-  ANode::writeXML_pre(os, dmpFlag, pre);
-  string prefix = pre + indent;
+  ANode::writeXML_pre(os, dmpFlag, pfx);
   for (ANodeNameSortedChildIterator it(this); it.Current(); it++) { 
     ANode* scope = it.Current();
-    scope->writeXML(os, dmpFlag, prefix.c_str());
+    scope->writeXML(os, dmpFlag, pfx);
   }
-  ANode::writeXML_post(os, dmpFlag, pre);
+  ANode::writeXML_post(os, dmpFlag, pfx);
 }
 
 

@@ -67,6 +67,9 @@ using std::vector;
 
 #include <lib/binutils/LM.hpp>
 
+#include <lib/xml/xml.hpp>
+using namespace xml;
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
 #include <lib/support/Files.hpp>
@@ -209,49 +212,59 @@ Driver::replacePath(const char* oldpath)
 void
 Driver::write_experiment(std::ostream &os) const
 {
-  string pre  = "";
-  string pre1 = pre + "  ";
-  string pre2 = string(pre1) + "  ";
+  static const char* experimentDTD =
+#include <lib/xml/hpc-experiment.dtd.h>
   
-  os << pre << "<HPCVIEWER>" << endl;
+  os << "<?xml version=\"1.0\"?>" << std::endl;
+  os << "<!DOCTYPE hpc-experiment [\n" << experimentDTD << "]>" << std::endl;
+  os << "<HPCToolkitExperiment version=\"2.0\">\n";
+  os << "<Header n" << MakeAttrStr(m_args.title) << ">\n";
+  os << "  <Info/>\n";
+  os << "</Header>\n";
+
+  os << "<SecFlatProfile i=\"0\" n" << MakeAttrStr(m_args.title) << ">\n";
 
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
-  os << pre << "<CONFIG>" << endl;
+  os << "<SecHeader>\n";
 
-  os << pre1 << "<TITLE name=\"" << m_args.title << "\"/>" << endl;
+  os << "  <MetricTable>\n";
+  for (uint i = 0; i < m_mMgr.size(); ++i) {
+    const PerfMetric* m = m_mMgr.metric(i);
+    os << "    <Metric i" << MakeAttrNum(i)
+       << " n" << MakeAttrStr(m->DisplayInfo().Name())
+       << " show=\"" << ((m->Display()) ? "1" : "0") << "\"/>";
+    os << "<Info>"
+       << "<NV n=\"percent\" v=\"" << ((m->dispPercent()) ? "1" : "0") << "\"/>"
+       << "</Info>\n";
+  }
+  os << "  </MetricTable>\n";
 
+  os << "  <Info n=\"SearchPaths\">\n";
   const Analysis::PathTupleVec& searchPaths = m_args.searchPathTpls;
   for (uint i = 0; i < searchPaths.size(); i++) {
     const string& path = searchPaths[i].first;
-    os << pre1 << "<PATH name=\"" << path << "\"/>" << endl;
+    os << "    <NV n" << MakeAttrNum(i) << " v" << MakeAttrStr(path) << "/>\n";
   }
-  
-  os << pre1 << "<METRICS>" << endl;
-  for (uint i = 0; i < m_mMgr.size(); ++i) {
-    const PerfMetric* metric = m_mMgr.metric(i); 
-    os << pre2 << "<METRIC shortName=\"" << i
-       << "\" nativeName=\""  << metric->NativeName()
-       << "\" displayName=\"" << metric->DisplayInfo().Name()
-       << "\" display=\"" << ((metric->Display()) ? "true" : "false")
-       << "\" percent=\"" << ((metric->dispPercent()) ? "true" : "false")
-      //<< "\" sortBy=\""  << ((metric->SortBy())  ? "true" : "false")
-       << "\"/>" << endl;
-  }
-  os << pre1 << "</METRICS>" << endl;
-  os << pre << "</CONFIG>" << endl;
+  os << "  </Info>\n";
 
+  os << "</SecHeader>\n";
+  os.flush();
+  
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
-  os << pre << "<SCOPETREE>" << endl;
   int dumpFlags = ((m_args.metrics_computeInteriorValues) 
 		   ? 0 : Prof::Struct::Tree::DUMP_LEAF_METRICS);
-  m_structure.GetRoot()->writeXML(os, dumpFlags, pre.c_str());
-  os << pre << "</SCOPETREE>" << endl;
 
-  os << pre << "</HPCVIEWER>" << endl;
+  os << "<SecFlatProfileData>\n";
+  m_structure.GetRoot()->writeXML(os, dumpFlags);
+  os << "</SecFlatProfileData>\n";
+
+  os << "</SecFlatProfile>\n";
+  os << "</HPCToolkitExperiment>\n";
+  os.flush();
 }
 
 
