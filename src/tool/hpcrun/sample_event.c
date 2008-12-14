@@ -124,7 +124,7 @@ csprof_sample_event(void *context, int metric_id, unsigned long long metric_unit
 
   csprof_clear_handling_sample(td);
 
-  return NULL;
+  return node;
 }
 
 static csprof_cct_node_t*
