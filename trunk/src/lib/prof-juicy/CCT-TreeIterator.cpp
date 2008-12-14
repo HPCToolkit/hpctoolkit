@@ -165,13 +165,14 @@ CSProfNodeIterator::Current() const
 } 
 
 //*****************************************************************************
-// CSProfNodeLineSortedIterator
+// CSProfNodeSortedIterator
 //*****************************************************************************
 
-CSProfNodeLineSortedIterator::
-CSProfNodeLineSortedIterator(const CSProfCodeNode* file,
-			     const CSProfNodeFilter* filterFunc,
-			     bool leavesOnly)
+CSProfNodeSortedIterator::
+CSProfNodeSortedIterator(const CSProfCodeNode* file,
+			 CSProfNodeSortedIterator::cmp_fptr_t compare_fn,
+			 const CSProfNodeFilter* filterFunc,
+			 bool leavesOnly)
 {
   CSProfNodeIterator it(file, filterFunc, leavesOnly); 
   CSProfNode *cur; 
@@ -179,16 +180,16 @@ CSProfNodeLineSortedIterator(const CSProfCodeNode* file,
     scopes.Add((unsigned long) cur); 
     it++; 
   }
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByLine); 
+  ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn); 
 }
 
-CSProfNodeLineSortedIterator::~CSProfNodeLineSortedIterator() 
+CSProfNodeSortedIterator::~CSProfNodeSortedIterator() 
 {
   delete ptrSetIt; 
 }
  
 CSProfCodeNode* 
-CSProfNodeLineSortedIterator::Current() const
+CSProfNodeSortedIterator::Current() const
 {
   CSProfCodeNode *cur = NULL; 
   if (ptrSetIt->Current()) {
@@ -199,24 +200,36 @@ CSProfNodeLineSortedIterator::Current() const
 } 
 
 void 
-CSProfNodeLineSortedIterator::DumpAndReset(ostream& os)
+CSProfNodeSortedIterator::DumpAndReset(ostream& os)
 {
-  os << "CSProfNodeLineSortedIterator: " << endl; 
+  os << "CSProfNodeSortedIterator: " << endl; 
   while (Current()) {
-    os << Current()->ToDumpString() << endl; 
+    os << Current()->toString_me() << endl; 
     (*this)++; 
   } 
   Reset(); 
 }
 
 void 
-CSProfNodeLineSortedIterator::Reset()
+CSProfNodeSortedIterator::Reset()
 {
   ptrSetIt->Reset(); 
 }
 
-static int
-CompareByLine(const void* a, const void* b) 
+
+int 
+CSProfNodeSortedIterator::cmpByName(const void* a, const void* b)
+{
+  CSProfNode* x = (*(CSProfNode**)a); 
+  CSProfNode* y = (*(CSProfNode**)b); 
+  DIAG_Assert (x != NULL, "");
+  DIAG_Assert (y != NULL, "");
+  return strcmp(x->GetName().c_str(), y->GetName().c_str()); 
+}
+
+
+int
+CSProfNodeSortedIterator::cmpByLine(const void* a, const void* b) 
 {
   CSProfCodeNode* x = (*(CSProfCodeNode**)a); 
   CSProfCodeNode* y = (*(CSProfCodeNode**)b); 
@@ -225,13 +238,25 @@ CompareByLine(const void* a, const void* b)
   return CSProfCodeNodeLineComp(x, y);
 }
 
+
+int
+CSProfNodeSortedIterator::cmpByStructureId(const void* a, const void* b) 
+{
+  CSProfCodeNode* x = (*(CSProfCodeNode**)a);
+  CSProfCodeNode* y = (*(CSProfCodeNode**)b);
+  DIAG_Assert(x != NULL, "");
+  DIAG_Assert(y != NULL, "");
+  return (x->structureId() - y->structureId());
+}
+
 //*****************************************************************************
-// CSProfNodeLineSortedChildIterator
+// CSProfNodeSortedChildIterator
 //*****************************************************************************
 
-CSProfNodeLineSortedChildIterator::
-CSProfNodeLineSortedChildIterator(const CSProfNode *scope, 
-				  const CSProfNodeFilter * f)
+CSProfNodeSortedChildIterator::
+CSProfNodeSortedChildIterator(const CSProfNode* scope, 
+			      CSProfNodeSortedIterator::cmp_fptr_t compare_fn,
+			      const CSProfNodeFilter* f)
 {
   CSProfNodeChildIterator it(scope, f); 
   CSProfNode *cur; 
@@ -239,16 +264,16 @@ CSProfNodeLineSortedChildIterator(const CSProfNode *scope,
     scopes.Add((unsigned long) cur); 
     it++; 
   }
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByLine); 
+  ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn); 
 }
 
-CSProfNodeLineSortedChildIterator::~CSProfNodeLineSortedChildIterator() 
+CSProfNodeSortedChildIterator::~CSProfNodeSortedChildIterator() 
 {
   delete ptrSetIt; 
 }
  
 CSProfCodeNode* 
-CSProfNodeLineSortedChildIterator::Current() const
+CSProfNodeSortedChildIterator::Current() const
 {
   CSProfCodeNode *cur = NULL; 
   if (ptrSetIt->Current()) {
@@ -259,69 +284,20 @@ CSProfNodeLineSortedChildIterator::Current() const
 }
 
 void 
-CSProfNodeLineSortedChildIterator::Reset()
+CSProfNodeSortedChildIterator::Reset()
 {
   ptrSetIt->Reset(); 
 }
 
 void
-CSProfNodeLineSortedChildIterator::DumpAndReset(ostream& os)
+CSProfNodeSortedChildIterator::DumpAndReset(ostream& os)
 {
-  os << "CSProfNodeLineSortedChildIterator: " << endl; 
+  os << "CSProfNodeSortedChildIterator: " << endl; 
   while (Current()) {
-    os << Current()->ToDumpString() << endl; 
+    os << Current()->toString_me() << endl; 
     (*this)++; 
   } 
   Reset(); 
-}
-
-//*****************************************************************************
-// CSProfNodeNameSortedChildIterator
-//*****************************************************************************
-
-CSProfNodeNameSortedChildIterator::
-CSProfNodeNameSortedChildIterator(const CSProfNode *scope, 
-				  const CSProfNodeFilter * f)
-{
-  CSProfNodeChildIterator it(scope, f); 
-  CSProfNode *cur; 
-  for (; (cur = it.CurNode()); ) {
-    scopes.Add((unsigned long) cur); 
-    it++; 
-  }
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByName); 
-}
-
-CSProfNodeNameSortedChildIterator::~CSProfNodeNameSortedChildIterator() 
-{
-  delete ptrSetIt; 
-}
- 
-CSProfCodeNode* 
-CSProfNodeNameSortedChildIterator::Current() const
-{
-  CSProfCodeNode *cur = NULL; 
-  if (ptrSetIt->Current()) {
-    cur = (CSProfCodeNode*) (*ptrSetIt->Current()); 
-    DIAG_Assert(cur != NULL, "");
-  }
-  return cur; 
-}
-
-void 
-CSProfNodeNameSortedChildIterator::Reset()
-{
-  ptrSetIt->Reset(); 
-}
-
-int 
-CSProfNodeNameSortedChildIterator::CompareByName(const void* a, const void* b)
-{
-  CSProfNode* x = (*(CSProfNode**)a); 
-  CSProfNode* y = (*(CSProfNode**)b); 
-  DIAG_Assert (x != NULL, "");
-  DIAG_Assert (y != NULL, "");
-  return strcmp(x->GetName().c_str(), y->GetName().c_str()); 
 }
 
 //***************************************************************************

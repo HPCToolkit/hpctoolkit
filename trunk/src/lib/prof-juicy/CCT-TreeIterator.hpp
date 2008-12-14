@@ -147,13 +147,11 @@ private:
 
 
 //*****************************************************************************
-// CSProfNodeLineSortedIterator
+// CSProfNodeSortedIterator
 //
-// CSProfNodeLineSortedChildIterator
-//    behaves as CSProfNodeIterator (PreOrder), 
-//    except that it gurantees LineOrder among siblings  
+// CSProfNodeSortedChildIterator
 //
-// LineOrder: CSProfCodeNode* a is enumerated before b 
+// cmpByLine: CSProfCodeNode* a is enumerated before b 
 //                    iff a->StartLine() < b->StartLine() 
 //
 // NOTE: the implementation was generalized so that it no longer assumes
@@ -162,12 +160,22 @@ private:
 //       of the set in sorted order. -- johnmc 5/31/00
 //*****************************************************************************
 
-class CSProfNodeLineSortedIterator {
+class CSProfNodeSortedIterator {
+public:
+  // return -1, 0, or 1 for x < y, x = y, or x > y, respectively
+  typedef int (*cmp_fptr_t) (const void* x, const void* y);
+
+  static int cmpByName(const void* x, const void* y);
+  static int cmpByLine(const void* y, const void* y);
+  static int cmpByStructureId(const void* x, const void* y);
+
 public: 
-  CSProfNodeLineSortedIterator(const CSProfCodeNode* file, 
-			       const CSProfNodeFilter* filterFunc = NULL, 
-			       bool leavesOnly = true);
-  ~CSProfNodeLineSortedIterator();
+  CSProfNodeSortedIterator(const CSProfCodeNode* file, 
+			   cmp_fptr_t compare_fn,
+			   const CSProfNodeFilter* filterFunc = NULL, 
+			   bool leavesOnly = true);
+  
+  ~CSProfNodeSortedIterator();
   
   CSProfCodeNode* Current() const; 
   void operator++(int)   { (*ptrSetIt)++; }
@@ -179,11 +187,13 @@ private:
   WordSetSortedIterator* ptrSetIt;
 };
 
-class CSProfNodeLineSortedChildIterator {
+
+class CSProfNodeSortedChildIterator {
 public: 
-  CSProfNodeLineSortedChildIterator(const CSProfNode* root,
-				    const CSProfNodeFilter* filterFunc = NULL);
-  ~CSProfNodeLineSortedChildIterator(); 
+  CSProfNodeSortedChildIterator(const CSProfNode* root,
+				CSProfNodeSortedIterator::cmp_fptr_t compare_fn,
+				const CSProfNodeFilter* filterFunc = NULL);
+  ~CSProfNodeSortedChildIterator(); 
   
   CSProfCodeNode* Current() const; 
   void operator++(int)   { (*ptrSetIt)++; }
@@ -193,28 +203,6 @@ public:
 private:
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator* ptrSetIt;  
-};
-
-//*****************************************************************************
-// CSProfNodeNameSortedChildIterator
-//    behaves as CSProfNodeChildIterator, except that it gurantees NameOrder 
-//    NameOrder: a is enumerated before b iff a->Name() < b->Name() 
-//*****************************************************************************
-
-class CSProfNodeNameSortedChildIterator {
-public: 
-  CSProfNodeNameSortedChildIterator(const CSProfNode* root, 
-				    const CSProfNodeFilter* filterFunc = NULL);
-  ~CSProfNodeNameSortedChildIterator(); 
-  
-  CSProfCodeNode* Current() const; 
-  void operator++(int)   { (*ptrSetIt)++; }
-  void Reset(); 
-
-private:
-  static int CompareByName(const void *a, const void *b); 
-  WordSet scopes;  // the scopes we want to have sorted
-  WordSetSortedIterator *ptrSetIt;  
 };
 
 } // namespace Prof

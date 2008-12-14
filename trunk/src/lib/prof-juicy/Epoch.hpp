@@ -131,7 +131,7 @@ public:
     void compute_relocAmt();
 
 
-    // isUsed: does this this Epoch::LM have data in the CCT
+    // isUsed: does this Epoch::LM have data in the CCT
     // tallent: FIXME: should not be located here
     bool isUsed() const { return m_isUsed; }
     void isUsed(bool x) { m_isUsed = x; }

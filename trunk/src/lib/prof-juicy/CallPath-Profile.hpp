@@ -99,7 +99,7 @@ public:
     return m_id;
   }
 
-  CCT::Tree*  cct() const 
+  CCT::Tree* cct() const 
     { return m_cct; }
 
   Epoch* epoch() const
