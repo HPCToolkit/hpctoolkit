@@ -88,10 +88,6 @@ typedef std::set<Prof::CSProfCodeNode*> CSProfCodeNodeSet;
 // Dump a CSProfTree 
 //****************************************************************************
 
-const char *experimentDTD =
-#include <lib/xml/hpc-experiment.dtd.h>
-
-
 namespace Analysis {
 
 namespace CallPath {
@@ -99,37 +95,55 @@ namespace CallPath {
 void
 write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint)
 {
+  static const char* experimentDTD =
+#include <lib/xml/hpc-experiment.dtd.h>
+
   using namespace Prof;
 
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE hpc-experiment [\n" << experimentDTD << "]>" << std::endl;
-  os.flush();
-  os << "<CSPROFILE version=\"1.0.2\">\n";
-  os << "<CSPROFILEHDR>\n</CSPROFILEHDR>\n"; 
-  os << "<CSPROFILEPARAMS>\n";
-  os << "<TARGET name"; WriteAttrStr(os, prof->name()); os << "/>\n";
+  os << "<HPCToolkitExperiment version=\"2.0\">\n";
+  os << "<Header n" << MakeAttrStr(prof->name()) << ">\n";
+  os << "  <Info/>\n";
+  os << "</Header>\n";
 
-  // write out metrics
+  os << "<SecCallPathProfile i=\"0\" n" << MakeAttrStr(prof->name()) << ">\n";
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+  os << "<SecHeader>\n";
+  os << "  <MetricTable>\n";
   uint n_metrics = prof->numMetrics();
   for (uint i = 0; i < n_metrics; i++) {
     const SampledMetricDesc* metric = prof->metric(i);
-    os << "<METRIC shortName" << MakeAttrNum(i)
-       << " nativeName" << MakeAttrStr(metric->name())
-       << " period" << MakeAttrNum(metric->period())
-       << " flags" << MakeAttrNum(metric->flags(), 16)
-       << "/>\n";
+    os << "    <Metric i" << MakeAttrNum(i) 
+       << " n" << MakeAttrStr(metric->name()) << ">\n";
+    os << "      <Info>" 
+       << "<NV n=\"period\" v" << MakeAttrNum(metric->period()) << "/>"
+       << "<NV n=\"flags\" v" << MakeAttrNum(metric->flags(), 16) << "/>"
+       << "</Info>\n";
+    os << "    </Metric>\n";
   }
-  os << "</CSPROFILEPARAMS>\n";
-
+  os << "  </MetricTable>\n";
+  os << "  <Info/>\n";
+  os << "</SecHeader>\n";
   os.flush();
-  
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
   int dumpFlags = (CCT::Tree::XML_TRUE); // CCT::Tree::XML_NO_ESC_CHARS
   if (!prettyPrint) { dumpFlags |= CCT::Tree::COMPRESSED_OUTPUT; }
-  
-  prof->cct()->dump(os, dumpFlags);
 
-  os << "</CSPROFILE>\n";
+  os << "<SecCallPathProfileData>\n";
+  prof->cct()->writeXML(os, dumpFlags);
+  os << "</SecCallPathProfileData>\n";
+
+  os << "</SecCallPathProfile>\n";
+  os << "</HPCToolkitExperiment>\n";
   os.flush();
+
 }
 
 } // namespace CallPath
@@ -481,7 +495,7 @@ typedef std::map<uint, Prof::CSProfProcedureFrameNode*> UintToProcFrameMap;
 // structure.  
 // 
 // NOTE: hpcstruct's scope ids begin at 0 and increase.
-// StaticStructureMgr's scope ids begin at and decrease.
+// StaticStructureMgr's scope ids begin at s_uniqueIdMax and decrease.
 class StaticStructureMgr
 {
 public:
