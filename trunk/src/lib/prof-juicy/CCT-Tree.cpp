@@ -936,9 +936,9 @@ CSProfProcedureFrameNode::toString_me(int dmpFlag) const
    } 
 
   if (!proc.empty()) {
-    self = self + " p" + xml::MakeAttrStr(proc, CCT::Tree::AddXMLEscapeChars(dmpFlag));
+    self = self + " n" + xml::MakeAttrStr(proc, CCT::Tree::AddXMLEscapeChars(dmpFlag));
   } else {
-    self = self + " p" + xml::MakeAttrStr("unknown", CCT::Tree::AddXMLEscapeChars(dmpFlag)) ; 
+    self = self + " n" + xml::MakeAttrStr("unknown", CCT::Tree::AddXMLEscapeChars(dmpFlag)) ; 
   }
   
   if (isAlien()) {
