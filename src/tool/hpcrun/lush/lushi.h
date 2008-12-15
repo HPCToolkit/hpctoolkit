@@ -129,7 +129,7 @@ LUSHI_DECL(int, LUSHI_lip_write, ());
 // Concurrency
 // --------------------------------------------------------------------------
 
-LUSHI_DECL(int, LUSHI_has_idleness, ());
+LUSHI_DECL(int, LUSHI_do_backtrace, ());
 LUSHI_DECL(double, LUSHI_get_idleness, ());
 
 
