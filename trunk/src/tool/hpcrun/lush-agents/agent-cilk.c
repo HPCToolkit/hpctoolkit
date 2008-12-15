@@ -438,8 +438,9 @@ LUSHI_lip_write()
 // **************************************************************************
 
 extern int
-LUSHI_has_idleness()
+LUSHI_do_backtrace()
 {
+  // Do the unwind if this is a working thread
   CilkWorkerState* ws = 
     (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
   

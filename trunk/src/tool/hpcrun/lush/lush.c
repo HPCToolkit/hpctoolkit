@@ -67,7 +67,7 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
   CALL_DLSYM(pool, LUSHI_step_bichord, id, x->dlhandle);
   CALL_DLSYM(pool, LUSHI_step_pnote,   id, x->dlhandle);
   CALL_DLSYM(pool, LUSHI_step_lnote,   id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_has_idleness, id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_do_backtrace, id, x->dlhandle);
   CALL_DLSYM(pool, LUSHI_get_idleness, id, x->dlhandle);
 
 #undef CALL_DLSYM
@@ -133,7 +133,7 @@ lush_agent_pool__init(lush_agent_pool_t* x, const char* path)
   FN_TBL_ALLOC(x, LUSHI_step_bichord,    num_agents + 1);
   FN_TBL_ALLOC(x, LUSHI_step_pnote,      num_agents + 1);
   FN_TBL_ALLOC(x, LUSHI_step_lnote,      num_agents + 1);
-  FN_TBL_ALLOC(x, LUSHI_has_idleness, num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_do_backtrace, num_agents + 1);
   FN_TBL_ALLOC(x, LUSHI_get_idleness,    num_agents + 1);
 
 #undef FN_TBL_ALLOC
@@ -163,7 +163,7 @@ lush_agent_pool__fini(lush_agent_pool_t* x)
   FN_TBL_FREE(x, LUSHI_step_bichord);
   FN_TBL_FREE(x, LUSHI_step_pnote);
   FN_TBL_FREE(x, LUSHI_step_lnote);
-  FN_TBL_FREE(x, LUSHI_has_idleness);
+  FN_TBL_FREE(x, LUSHI_do_backtrace);
   FN_TBL_FREE(x, LUSHI_get_idleness);
 
 #undef FN_TBL_FREE

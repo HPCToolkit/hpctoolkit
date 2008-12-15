@@ -72,6 +72,27 @@ csprof_cct_node_t*
 lush_backtrace(csprof_state_t* state, ucontext_t* context,
 	       int metric_id, size_t sample_count)
 {
+  lush_agentid_t do_agent_metrics = lush_agentid_NULL;
+
+  lush_agentid_t aid = 1;
+  if (lush_agents->LUSHI_do_backtrace[aid]()) {
+    do_agent_metrics = aid;
+  }
+
+  // TODO: Multiple agents? We perform a backtrace if there exists an
+  // agent for which the predicate is true.  Or the agent at top of stack?
+  //
+  // We also perform a backtrace if sample_count == 0, assuming this
+  // is a directive to collect something like 'creation context'.
+  if ( !(sample_count == 0 || do_agent_metrics) ) {
+    return NULL;
+  }
+
+
+  // ---------------------------------------------------------
+  // Perform the backtrace
+  // ---------------------------------------------------------
+
   lush_cursor_t cursor;
   lush_init_unw(&cursor, lush_agents, context);
 
@@ -90,7 +111,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
 
     DBGMSG_PUB(CSPROF_DBG_UNWINDING, "Chord: aid:%d assoc:%d", aid, as);
   
-    // FIXME: short circuit unwind if we hit the trampoline
+    // FIXME: short circuit unwind if we hit the 'active return'
 
     csprof_state_ensure_buffer_avail(state, state->unwind);
     csprof_frame_t* chord_beg = state->unwind; // innermost note
@@ -148,29 +169,28 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   }
 
   // ---------------------------------------------------------
-  // insert backtrace into calling context tree
+  // insert backtrace into calling context tree 
   // ---------------------------------------------------------
   csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
   csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
 
+  const int work = sample_count;
+  
   //dump_backtraces(state, state->unwind);
   csprof_cct_node_t* node = NULL;
   node = csprof_state_insert_backtrace(state, metric_id, 
 				       bt_end, bt_beg, 
-				       (cct_metric_data_t){.i = sample_count});
+				       (cct_metric_data_t){.i = work});
   
-  // FIXME: register active marker
+  // FIXME: register active return
 
-  if (node) {
-    // look at concurrency for agent at top of stack
-    lush_agentid_t aid = 1; // FIXME: choose agent at top of stack (if any)
-    if (lush_agents->LUSHI_has_idleness[aid]()) {
-      double scale = lush_agents->LUSHI_get_idleness[aid]();
+  if (node && do_agent_metrics) {
+    double idleness_fraction = lush_agents->LUSHI_get_idleness[aid]();
+    double idleness = work * idleness_fraction;
 
-      int mid = lush_agents->metric_id;
-      cct_metric_data_increment(mid, &node->metrics[mid], 
-				(cct_metric_data_t){.r = sample_count * scale});
-    }
+    int mid = lush_agents->metric_id;
+    cct_metric_data_increment(mid, &node->metrics[mid], 
+			      (cct_metric_data_t){.r = idleness});
   }
 
   return node;
