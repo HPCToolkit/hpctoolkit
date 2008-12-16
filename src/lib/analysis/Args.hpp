@@ -129,7 +129,7 @@ public:
   std::string lush_agent;
 
   // -------------------------------------------------------
-  // Output arguments: database output
+  // Output arguments: experiment database output
   // -------------------------------------------------------
 
 #define Analysis_OUT_DB_EXPERIMENT "experiment.xml"
@@ -141,6 +141,8 @@ public:
 
   std::string db_dir;            // disable: ""
   bool db_copySrcFiles;
+
+  std::string out_db_config;     // disable: "", stdout: "-"
 
   // -------------------------------------------------------
   // Output arguments: textual output

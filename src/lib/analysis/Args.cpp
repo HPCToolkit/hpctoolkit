@@ -90,6 +90,7 @@ Analysis::Args::Ctor()
   out_db_csv        = "";
   db_dir            = Analysis_DB_DIR;
   db_copySrcFiles   = true;
+  out_db_config     = "";
 
   out_txt           = Analysis_OUT_TXT;
   txt_summary       = TxtSum_NULL;
