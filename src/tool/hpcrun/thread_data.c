@@ -36,7 +36,9 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
   NMSG(THREAD_SPECIFIC,"init thread specific data for %d",id);
   thread_data_t *td = csprof_get_thread_data();
 
-  memset(td, 0xfe, sizeof(thread_data_t));
+  // initialize thread_data with known bogus bit pattern so that missing
+  // initializations will be apparent.
+  memset(td, 0xfe, sizeof(thread_data_t)); 
 
   td->id                          = id;
   td->memstore                    = csprof_malloc_init(sz, sz_tmp);
