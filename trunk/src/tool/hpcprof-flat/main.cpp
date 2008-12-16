@@ -132,13 +132,6 @@ realmain(int argc, char* const* argv)
 
   Analysis::Flat::Driver driver(args, metricMgr, structure);
   int ret = driver.run();
-
-  if (!args.configurationFileMode) {
-    string configfnm = args.db_dir + "/config.xml";
-    std::ostream* os = IOUtil::OpenOStream(configfnm.c_str());
-    driver.write_config(*os);
-    IOUtil::CloseStream(os);
-  }
   
   return ret;
 } 

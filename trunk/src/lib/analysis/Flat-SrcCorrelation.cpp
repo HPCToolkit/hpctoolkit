@@ -152,12 +152,12 @@ Driver::run()
 				    db_dir);
   }
 
-  string fpath = (db_use) ? (db_dir + "/") : "";
+  const string out_path = (db_use) ? (db_dir + "/") : "";
 
   if (!m_args.out_db_experiment.empty()) {
     const string& fnm = m_args.out_db_experiment;
     DIAG_Msg(1, "Writing final scope tree (in XML) to " << fnm);
-    fpath += fnm;
+    string fpath = out_path + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
     write_experiment(*os);
@@ -167,7 +167,7 @@ Driver::run()
   if (!m_args.out_db_csv.empty()) {
     const string& fnm = m_args.out_db_csv;
     DIAG_Msg(1, "Writing final scope tree (in CSV) to " << fnm);
-    fpath += fnm;
+    string fpath = out_path + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
     write_csv(*os);
@@ -176,10 +176,22 @@ Driver::run()
 
   if (!m_args.out_txt.empty()) {
     const string& fnm = m_args.out_txt;
-    fpath += fnm;
+    string fpath = out_path + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
     write_txt(*os);
+    IOUtil::CloseStream(os);
+  }
+
+  // configuration file
+  if (!m_args.out_db_config.empty()) {
+    const string& fnm = m_args.out_db_config;
+    string fpath = out_path + fnm;
+    DIAG_Msg(1, "Writing configuration file to " << fpath);
+
+    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    write_config(*os);
     IOUtil::CloseStream(os);
   }
 

@@ -225,6 +225,8 @@ Args::Ctor()
   setHPCHome(); 
   Diagnostics_SetDiagnosticFilterLevel(1);
 
+  configurationFileMode = false;
+
   // override Analysis::Args defaults
   metrics_computeInteriorValues = true; // dump metrics on interior nodes
 }
@@ -320,6 +322,10 @@ Args::parse(int argc, const char* const argv[])
       configurationFile = parser.getOptArg("config");
     }
     configurationFileMode = (!configurationFile.empty());
+
+    if (!configurationFileMode) {
+      out_db_config = "config.xml"; // Analysis::Args
+    }
 
     // Check for other options: Correlation options
     if (parser.isOpt("include")) {
