@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-#define LIMIT_OUTER 100
+#define LIMIT_OUTER 1000
 #define LIMIT 100
 
 #include <pthread.h>
