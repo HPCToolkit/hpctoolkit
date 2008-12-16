@@ -34,12 +34,29 @@ void
 csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
 {
   NMSG(THREAD_SPECIFIC,"init thread specific data for %d",id);
-  TD_GET(id)       = id;
-  TD_GET(memstore) = csprof_malloc_init(sz,sz_tmp);
-  TD_GET(state)    = NULL;
-  TD_GET(trace_file)  = NULL;
-  TD_GET(fnbounds_lock) = 0;
-  TD_GET(splay_lock) = 0;
+  thread_data_t *td = csprof_get_thread_data();
+
+  memset(td, 0xfe, sizeof(thread_data_t));
+
+  td->id                          = id;
+  td->memstore                    = csprof_malloc_init(sz, sz_tmp);
+  td->state                       = NULL;
+
+  // locks
+  td->fnbounds_lock               = 0;
+  td->splay_lock                  = 0;
+
+  // sampling control variables
+  td->suspend_sampling            = 0;
+  td->handling_synchronous_sample = 0;
+  csprof_init_handling_sample(td,0);
+
+  td->trace_file                  = NULL;
+  td->last_us_usage               = 0;
+
+  memset(&td->bad_unwind, 0, sizeof(td->bad_unwind));
+  memset(&td->eventSet, 0, sizeof(td->eventSet));
+  memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
 
   TMSG(MALLOC," thread_data_init state");
   csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
@@ -47,7 +64,8 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
   csprof_set_state(state);
   csprof_state_init(state);
   csprof_state_alloc(state);
-  csprof_init_handling_sample(csprof_get_thread_data(),0);
+
+  return;
 }
 
 #ifdef CSPROF_THREADS
