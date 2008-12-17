@@ -25872,8 +25872,10 @@ echo "$as_me:   HPCToolkit version: ${PACKAGE_VERSION}" >&6;}
 echo "$as_me:   Externals revision: $externals_mesg" >&6;}
 { echo "$as_me:$LINENO:   prefix: $prefix" >&5
 echo "$as_me:   prefix: $prefix" >&6;}
-{ echo "$as_me:$LINENO:   host: $host" >&5
-echo "$as_me:   host: $host" >&6;}
+{ echo "$as_me:$LINENO:   build: $build" >&5
+echo "$as_me:   build: $build" >&6;}
+{ echo "$as_me:$LINENO:   host:  $host" >&5
+echo "$as_me:   host:  $host" >&6;}
 { echo "$as_me:$LINENO:   CC, CFLAGS: $CC $CFLAGS ${HOST_CFLAGS}" >&5
 echo "$as_me:   CC, CFLAGS: $CC $CFLAGS ${HOST_CFLAGS}" >&6;}
 { echo "$as_me:$LINENO:   CXX, CXXFLAGS: $CXX $CXXFLAGS ${HOST_CXXFLAGS}" >&5
