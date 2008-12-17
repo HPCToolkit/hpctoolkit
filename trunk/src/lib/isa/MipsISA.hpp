@@ -68,7 +68,7 @@
 // MipsISA
 //***************************************************************************
 
-// 'MipsISA': Implements the Alpha Instruction Set Architecture.
+// 'MipsISA': Implements the MIPS Instruction Set Architecture.
 // See 'ISA.h' for comments on the interface
 
 class MipsISA : public ISA {
