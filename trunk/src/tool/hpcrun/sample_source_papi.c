@@ -186,7 +186,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // FIXME:LUSH: inadequacy compounded by inadequacy of metric
   // interface.  Cf. itimer version.
-  bool num_lush_metrics = 0;
+  int num_lush_metrics = 0;
 
   char *evlist = self->evl.evl_spec;
   for(event = start_tok(evlist); more_tok(); event = next_tok()){
