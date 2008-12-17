@@ -12,7 +12,6 @@ XERCESCROOT = $(shell pwd)/$(SRC_DIR)
 export XERCESCROOT
 
 FETCH_TARFILE = $(SRC_DIR).tar.gz
-FETCH_URL_1 = http://mirror.olnevhost.net/pub/apache/xerces/c/sources/$(FETCH_TARFILE)
 
 include ../build-utils/Makefile.inc
 

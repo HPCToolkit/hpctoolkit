@@ -16,7 +16,6 @@ PLATFORM := $(SYMTABAPI_PLATFORM)
 export DYNINST_ROOT PLATFORM
 
 FETCH_TARFILE = symtab_src_2.1.tar.gz
-FETCH_URL_1 = ftp://ftp.cs.wisc.edu/paradyn/releases/release5.2/$(FETCH_TARFILE)
 
 INSTALL_CMD = ./install
 
