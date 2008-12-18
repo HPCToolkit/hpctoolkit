@@ -1,5 +1,8 @@
---- src/core/symtabAPI/src/Object-elf.C.orig	2008-04-11 15:46:40.000000000 -0500
-+++ src/core/symtabAPI/src/Object-elf.C	2008-12-11 16:07:43.000000000 -0600
+Fix exception block handling.
+
+diff -Naurb symtabAPI.orig/src/core/symtabAPI/src/Object-elf.C symtabAPI/src/core/symtabAPI/src/Object-elf.C
+--- symtabAPI.orig/src/core/symtabAPI/src/Object-elf.C	2008-04-11 15:46:40.000000000 -0500
++++ symtabAPI/src/core/symtabAPI/src/Object-elf.C	2008-12-18 14:56:20.000000000 -0600
 @@ -75,6 +75,7 @@
  bool Object::truncateLineFilenames = true;
  #if defined(os_linux) && (defined(arch_x86) || defined(arch_x86_64))
@@ -558,10 +561,9 @@
        if (e1.tryStart() < e2.tryStart())
           return true;
 -      else if (e1.tryStart() > e2.tryStart())
--         return false;
+          return false;
 -      else
 -         return true;
-+      return false;
     }
  };
  

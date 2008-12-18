@@ -102,7 +102,7 @@ refetch:
 		for p in $(PATCH_DIR)/patch-* ; do  \
 			if test -f "$$p" ; then  \
 				echo `basename $$p` ;  \
-				patch -d "$(SRC_DIR)" -p0 <"$$p" || exit 2 ;  \
+				patch -d "$(SRC_DIR)" -p1 <"$$p" || exit 2 ;  \
 			fi ;  \
 		done ;  \
 	fi

@@ -1,7 +1,8 @@
 The -L paths don't work well with multilib here.
 
---- src/xercesc/Makefile.incl.orig	2007-08-30 07:10:20.000000000 -0500
-+++ src/xercesc/Makefile.incl	2008-07-18 12:43:37.000000000 -0500
+diff -Naurb xerces-c-src_2_8_0.orig/src/xercesc/Makefile.incl xerces-c-src_2_8_0/src/xercesc/Makefile.incl
+--- xerces-c-src_2_8_0.orig/src/xercesc/Makefile.incl	2007-08-30 07:10:20.000000000 -0500
++++ xerces-c-src_2_8_0/src/xercesc/Makefile.incl	2008-12-18 14:45:23.000000000 -0600
 @@ -521,7 +521,7 @@
        ifeq (${TRANSCODER}, ICU)
          ALLLIBS = ${LIBS} -L/usr/lib64 -L/usr/lib -L/usr/local/lib -L/usr/ccs/lib -licuuc -licudata

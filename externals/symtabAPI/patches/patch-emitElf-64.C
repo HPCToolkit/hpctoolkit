@@ -1,5 +1,8 @@
---- src/core/symtabAPI/src/emitElf-64.C.orig	2008-02-20 16:52:15.000000000 -0600
-+++ src/core/symtabAPI/src/emitElf-64.C	2008-07-15 15:09:32.000000000 -0500
+Fix a #define'd constant name on powerPC/64.
+
+diff -Naurb symtabAPI.orig/src/core/symtabAPI/src/emitElf-64.C symtabAPI/src/core/symtabAPI/src/emitElf-64.C
+--- symtabAPI.orig/src/core/symtabAPI/src/emitElf-64.C	2008-02-20 16:52:15.000000000 -0600
++++ symtabAPI/src/core/symtabAPI/src/emitElf-64.C	2008-12-18 14:56:20.000000000 -0600
 @@ -1110,7 +1110,11 @@
  #elif defined(arch_x86_64)
              rels[i].r_info = ELF64_R_INFO(dynSymNameMapping[newRels[i].name()], R_X86_64_64);
