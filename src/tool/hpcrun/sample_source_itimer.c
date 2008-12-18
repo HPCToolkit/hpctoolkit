@@ -84,7 +84,7 @@ METHOD_FN(init)
 }
 
 static void
-METHOD_FN(start)
+METHOD_FN(_start)
 {
   TMSG(ITIMER_CTL,"starting itimer");
   setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
@@ -206,11 +206,12 @@ sample_source_t _itimer_obj = {
   .store_event   = csprof_ss_store_event,
   .get_event_str = csprof_ss_get_event_str,
   .started       = csprof_ss_started,
+  .start         = csprof_ss_start,
 
   // specific methods
 
   .init = init,
-  .start = start,
+  ._start = _start,
   .stop  = stop,
   .shutdown = shutdown,
   .supports_event = supports_event,
@@ -263,6 +264,7 @@ thread_usage_in_microseconds()
   return usage;
 }
 
+extern int sampling_is_disabled(void);
 
 static int
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
@@ -279,7 +281,12 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 
     csprof_sample_event(context, ITIMER_METRIC_ID, time_value);
   }
+  if (sampling_is_disabled()){
+    TMSG(SPECIAL,"No itimer restart, due to disabled sampling");
+    return;
+  }
   METHOD_CALL(&_itimer_obj,start);
+    
 
   return 0; /* tell monitor that the signal has been handled */
 }

@@ -419,30 +419,37 @@ int csprof_write_profile_data(csprof_state_t *state)
   if (rank < 0) rank = 0;
   files_profile_name(fnm, rank, CSPROF_FNM_SZ);
 
-  MSG(CSPROF_MSG_DATAFILE, "CSPROF write_profile_data: Writing %s", fnm);
+  sigjmp_buf_t *it = &(TD_GET(mem_error));
+
+  if (sigsetjmp(it->jb,1)){
+    EEMSG("***hpcrun failed to write profile data due to memory allocation failure***");
+    return CSPROF_ERR;
+  }
+
+  TMSG(DATA_WRITE, "CSPROF write_profile_data: Writing %s", fnm);
 
   /* Open file for writing; fail if the file already exists. */
   fs = hpcfile_open_for_write(fnm, /* overwrite */ 0);
 
   hpcfile_csprof_data_t *tmp = csprof_get_metric_data();
-  NMSG(DATA_WRITE,"metric data target = %s",tmp->target);
-  NMSG(DATA_WRITE,"metric data num metrics = %d",tmp->num_metrics);
+  TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
+  TMSG(DATA_WRITE,"metric data num metrics = %d",tmp->num_metrics);
   hpcfile_csprof_metric_t *tmp1 = tmp->metrics;
   for (int i=0;i<tmp->num_metrics;i++,tmp1++){
-    NMSG(DATA_WRITE,"--metric %s period = %ld",tmp1->metric_name,tmp1->sample_period);
+    TMSG(DATA_WRITE,"--metric %s period = %ld",tmp1->metric_name,tmp1->sample_period);
   }
   ret1 = hpcfile_csprof_write(fs, tmp);
 
-  MSG(CSPROF_MSG_DATAFILE, "Done writing metric data");
+  TMSG(DATA_WRITE, "Done writing metric data");
 
   if(ret1 != HPCFILE_OK) {
     goto error;
   }
 
-  MSG(CSPROF_MSG_DATAFILE, "Preparing to write epochs");
+  TMSG(DATA_WRITE, "Preparing to write epochs");
   csprof_write_all_epochs(fs);
 
-  MSG(CSPROF_MSG_DATAFILE, "Done writing epochs");
+  TMSG(DATA_WRITE, "Done writing epochs");
   /* write profile states out to disk */
   {
     csprof_state_t *runner = state;
@@ -466,21 +473,21 @@ int csprof_write_profile_data(csprof_state_t *state)
 
     while(runner != NULL) {
       if(runner->epoch != NULL) {
-	MSG(CSPROF_MSG_DATAFILE, "Writing %ld nodes", runner->csdata.num_nodes);
+	TMSG(DATA_WRITE, "Writing %ld nodes", runner->csdata.num_nodes);
 	ret2 = csprof_csdata__write_bin(fs, runner->epoch->id, 
 					&runner->csdata, runner->csdata_ctxt);
           
 	if(ret2 != CSPROF_OK) {
-	  MSG(CSPROF_MSG_DATAFILE, "Error writing tree %#lx", &runner->csdata);
-	  MSG(CSPROF_MSG_DATAFILE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
-	  ERRMSG("could not save profile data to file '%s'", __FILE__, __LINE__, fnm);
+	  TMSG(DATA_WRITE, "Error writing tree %#lx", &runner->csdata);
+	  TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
+	  EMSG("could not save profile data to file '%s'", __FILE__, __LINE__, fnm);
 	  perror("write_profile_data");
 	  ret = CSPROF_ERR;
 	}
       }
       else {
-	MSG(CSPROF_MSG_DATAFILE, "Not writing tree %#lx; null epoch", &runner->csdata);
-	MSG(CSPROF_MSG_DATAFILE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
+	TMSG(DATA_WRITE, "Not writing tree %#lx; null epoch", &runner->csdata);
+	TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
       }
 
       runner = runner->next;
@@ -488,7 +495,7 @@ int csprof_write_profile_data(csprof_state_t *state)
   }
           
   if(ret1 == HPCFILE_OK && ret2 == CSPROF_OK) {
-    MSG(CSPROF_MSG_DATAFILE, "saved profile data to file '%s'", fnm);
+    TMSG(DATA_WRITE, "saved profile data to file '%s'", fnm);
   }
   /* if we've gotten this far, there haven't been any fatal errors */
   goto end;

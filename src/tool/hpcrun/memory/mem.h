@@ -39,9 +39,7 @@ typedef struct csprof_mmap_info_s {
 
 } csprof_mmap_info_t;
 
-int csprof_mmap_info__init(csprof_mmap_info_t* x);
-// int csprof_mmap_info__fini(csprof_mmap_info_t* x);
-
+extern int csprof_mmap_info__init(csprof_mmap_info_t* x);
 
 // ---------------------------------------------------------
 // csprof_mmap_alloc_info_t: Store information about memory allocation
@@ -57,8 +55,7 @@ typedef struct _mmap_alloc_info_s {
 
 } csprof_mmap_alloc_info_t;
 
-int csprof_mmap_alloc_info__init(csprof_mmap_alloc_info_t* x);
-  // int csprof_mmap_alloc_info__fini(csprof_mmap_alloc_info_t* x);
+extern int csprof_mmap_alloc_info__init(csprof_mmap_alloc_info_t* x);
 
 //***************************************************************************
 // csprof_mem: (quasi-class)
@@ -101,7 +98,20 @@ typedef struct _mem_s {
 
 } csprof_mem_t;
 
-  // typedef csprof_mem_t *get_memstore_f(void);
+// Creates a new pool of memory that is at least as
+// large as 'sz' bytes for the mem store specified by 'st' and returns
+// CSPROF_OK; otherwise returns CSPROF_ERR.
+
+extern int csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st);
+
+// Initialize and prepare memory stores for use,
+// using 'sz' and 'sz_tmp' as the initial sizes (in bytes) of the
+// respective stores.  If either size is 0, the respective store is
+// disabled; however it is an error for both stores to be
+// disabled.  Returns CSPROF_OK upon success; CSPROF_ERR on error.
+
+extern int csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp);
+extern void *csprof_mem_alloc_main(csprof_mem_t *x, size_t sz);
 
 //***************************************************************************
 //
@@ -123,11 +133,9 @@ typedef struct _mem_s {
 // CSPROF_OK upon success; CSPROF_ERR on error.
 //
 // * Must be called before any allocations are performed! *
-csprof_mem_t *csprof_malloc_init(offset_t sz, offset_t sz_tmp);
+extern csprof_mem_t *csprof_malloc_init(offset_t sz, offset_t sz_tmp);
 
-// csprof_malloc_fini: Cleanup and deallocate memory stores.  Returns
-// CSPROF_OK upon success; CSPROF_ERR on error.
-// int csprof_malloc_fini(csprof_mem_t *);
+extern csprof_mem_t *csprof_malloc2_init(offset_t sz, offset_t sz_tmp);
 
 // csprof_malloc: Returns a pointer to a block of memory of the
 // *exact* size (in bytes) requested.  If there is insufficient
@@ -135,27 +143,11 @@ csprof_mem_t *csprof_malloc_init(offset_t sz, offset_t sz_tmp);
 // possible, an error is printed and the program is terminated.
 // 
 // * This memory cannot be freed! *
-void* csprof_malloc(size_t size);
+extern void* csprof_malloc(size_t size);
+
+extern void* csprof_malloc2(size_t size);
+
 // void* csprof_malloc_threaded(csprof_mem_t *, size_t size);
-
-// csprof_tmalloc: Returns a pointer to a block of temporary memory of
-// the *exact* size (in bytes) requested.  If there is insufficient
-// memory, *no attempt* will be made to allocate more and NULL is
-// returned. Temporary memory is allocated analagous to a stack; it
-// may be freed using 'csprof_tfree' but it *must be* freed in the
-// reverse order of allocation.
-//
-// csprof_tfree: Frees a block of temporary memory allocated with
-// 'csprof_tmalloc'.
-//
-// * Be very careful when using. *
-//void* csprof_tmalloc(size_t size);
-//void* csprof_tmalloc_threaded(csprof_mem_t *, size_t size);
-//void csprof_tfree(void *, size_t);
-//void  csprof_tfree_threaded(csprof_mem_t *, void* mem, size_t size);
-
-//get_memstore_f *csprof_get_memstore;
-//void mem_threaded(void);
 
 #if defined(__cplusplus)
 } /* extern "C" */

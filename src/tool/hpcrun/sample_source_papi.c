@@ -105,7 +105,7 @@ METHOD_FN(init)
 }
 
 static void
-METHOD_FN(start)
+METHOD_FN(_start)
 {
   thread_data_t *td = csprof_get_thread_data();
   int eventSet = td->eventSet[self->evset_idx];
@@ -289,11 +289,12 @@ sample_source_t _papi_obj = {
   .store_event = csprof_ss_store_event,
   .get_event_str = csprof_ss_get_event_str,
   .started       = csprof_ss_started,
+  .start         = csprof_ss_start,
 
   // specific methods
 
   .init = init,
-  .start = start,
+  ._start = _start,
   .stop  = stop,
   .shutdown = shutdown,
   .supports_event = supports_event,

@@ -8,6 +8,7 @@
 #include <sys/mman.h>           /* for mmap() */
 #include <sys/stat.h>
 // #include <sys/types.h>          /* for pthreads */
+#include <setjmp.h>
 
 /* user include files */
 
@@ -18,12 +19,7 @@
 #include "sample_event.h"
 #include "thread_data.h"
 
-static const offset_t CSPROF_MEM_INIT_SZ     = 2 * 1024 * 1024; // 2 Mb
-// static const offset_t CSPROF_MEM_INIT_SZ     = 1024; // test small size
-
-static const offset_t CSPROF_MEM_INIT_SZ_TMP = 128 * 1024;  // 128 Kb, (rarely used, so small)
-
-// static const offset_t CSPROF_MEM_INIT_SZ_TMP = 128;  // test small size
+#include "mem_const.h"
 
 /* the system malloc is good about rounding odd amounts to be aligned.
    we need to do the same thing.
@@ -34,10 +30,16 @@ static size_t csprof_align_malloc_request(size_t size){
 }
 
 static void
-_drop_sample(void)
+_stop_activity(void)
 {
   if (csprof_is_handling_sample()){
+    TMSG(MALLOC,"memory allocation failure during sampling. Dropping Sample");
     csprof_drop_sample();
+  }
+  else {
+    TMSG(MALLOC,"memory allocation failure, NOT sampling. Doing whatever cleanup is necessary");
+    sigjmp_buf_t *it = &(TD_GET(mem_error));
+    siglongjmp(it->jb,9);
   }
 }
 
@@ -46,7 +48,7 @@ csprof_handle_memory_error(void)
 {
   csprof_disable_sampling();
   EEMSG("Sampling disabled due to memory allocation failure");
-  _drop_sample();
+  _stop_activity();
 }
 
 // debugging aid
@@ -65,7 +67,7 @@ csprof_mem_store__str(csprof_mem_store_t st)
 // csprof_mem__grow: Creates a new pool of memory that is at least as
 // large as 'sz' bytes for the mem store specified by 'st' and returns
 // CSPROF_OK; otherwise returns CSPROF_ERR.
-static int
+int
 csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
 {
   // Note: we cannot use our memory stores until we have allocated more mem
@@ -146,7 +148,7 @@ csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
 // disabled; however it is an error for both stores to be
 // disabled.  Returns CSPROF_OK upon success; CSPROF_ERR on error.
 
-static int
+int
 csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp)
 {
   if(sz == 0 && sz_tmp == 0) { return CSPROF_ERR; }
@@ -207,6 +209,12 @@ csprof_mem__alloc(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
   return new_mem;
 }
 
+void *
+csprof_mem_alloc_main(csprof_mem_t *x, size_t sz)
+{
+  return csprof_mem__alloc(x,sz,CSPROF_MEM_STORE);
+}
+
 // csprof_mem__free: Attempts to free 'sz' bytes in the store
 // specified by 'st'.  Returns CSPROF_OK upon success; CSPROF_ERR on
 // error.
@@ -260,11 +268,30 @@ csprof_malloc_init(offset_t sz, offset_t sz_tmp)
 {
   csprof_mem_t *memstore = &(TD_GET(_mem));
 
-  if(memstore == NULL) { return NULL; }
+  if(memstore == NULL) { TMSG(MEM,"malloc_init returns NULL"); return NULL; }
   if(sz == 1) { sz = CSPROF_MEM_INIT_SZ; }
   if(sz_tmp == 1) { sz_tmp = CSPROF_MEM_INIT_SZ_TMP; }
   
   TMSG(MEM,"csprof_malloc_init called with sz = %ld, sz_tmp = %ld",sz, sz_tmp);
+  int status = csprof_mem__init(memstore, sz, sz_tmp);
+
+  if(status == CSPROF_ERR) {
+    return NULL;
+  }
+
+  return memstore;
+}
+
+csprof_mem_t *
+csprof_malloc2_init(offset_t sz, offset_t sz_tmp)
+{
+  csprof_mem_t *memstore = &(TD_GET(_mem2));
+
+  if(memstore == NULL) { TMSG(MEM2,"malloc_init returns NULL"); return NULL; }
+  if(sz == 1) { sz = CSPROF_MEM_INIT_SZ; }
+  if(sz_tmp == 1) { sz_tmp = CSPROF_MEM_INIT_SZ_TMP; }
+  
+  TMSG(MEM2,"csprof_malloc2_init called with sz = %ld, sz_tmp = %ld",sz, sz_tmp);
   int status = csprof_mem__init(memstore, sz, sz_tmp);
 
   if(status == CSPROF_ERR) {
@@ -307,6 +334,14 @@ csprof_malloc(size_t size)
 {
   TMSG(CSP_MALLOC,"requesting size %ld",size);
   csprof_mem_t *memstore = TD_GET(memstore);
+  return csprof_malloc_threaded(memstore, size);
+}
+
+void *
+csprof_malloc2(size_t size)
+{
+  TMSG(CSP_MALLOC,"requesting size %ld",size);
+  csprof_mem_t *memstore = TD_GET(memstore2);
   return csprof_malloc_threaded(memstore, size);
 }
 

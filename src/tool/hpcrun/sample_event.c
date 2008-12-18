@@ -20,7 +20,9 @@
 #include "handling_sample.h"
 #include "fnbounds_interface.h"
 #include "unwind.h"
-
+#include "csprof-malloc.h"
+#include "intervals.h"
+#include "sample_sources_all.h"
 
 
 //*************************** Forward Declarations **************************
@@ -48,15 +50,23 @@ csprof_suspend_sampling(int val)
 
 static int _sampling_disabled = 0;
 
+int
+sampling_is_disabled(void)
+{
+  return _sampling_disabled;
+}
+
 void
 csprof_disable_sampling(void)
 {
+  TMSG(SPECIAL,"Sampling disabled");
   _sampling_disabled = 1;
 }
 
 void
 csprof_drop_sample(void)
 {
+  TMSG(SPECIAL,"Dropping sample from sample event");
   sigjmp_buf_t *it = &(TD_GET(bad_unwind));
   siglongjmp(it->jb,9);
 }
@@ -64,9 +74,13 @@ csprof_drop_sample(void)
 csprof_cct_node_t*
 csprof_sample_event(void *context, int metric_id, unsigned long long metric_units_consumed)
 {
+  samples_taken++;
+
   TMSG(SAMPLE,"Handling sample");
   if (_sampling_disabled){
-    TMSG(SUSPENDED_SAMPLE,"global");
+    TMSG(SAMPLE,"global suspension");
+    csprof_all_sources_stop();
+    //    csprof_all_sources_hard_stop();
     return NULL;
   }
 
@@ -79,8 +93,7 @@ csprof_sample_event(void *context, int metric_id, unsigned long long metric_unit
 
   sigjmp_buf_t *it = &(td->bad_unwind);
 
-  samples_taken++;
-
+  
   csprof_cct_node_t* node = NULL;
   csprof_state_t *state = td->state;
 
@@ -133,7 +146,7 @@ csprof_take_profile_sample(csprof_state_t *state, void *context,
 {
   void *pc = context_pc(context);
 
-  PMSG(SAMPLE,"csprof take profile sample");
+  TMSG(SAMPLE,"csprof take profile sample");
 #ifdef USE_TRAMP
   if(/* trampoline isn't exactly active during exception handling */
      csprof_state_flag_isset(state, CSPROF_EXC_HANDLING)
@@ -150,7 +163,7 @@ csprof_take_profile_sample(csprof_state_t *state, void *context,
   }
 #endif
   state->context_pc = pc;
-  PMSG(SAMPLE, "Signalled at %#lx", pc);
+  TMSG(SAMPLE, "Signalled at %#lx", pc);
 
   /* check to see if shared library state has changed out from under us */
   state = csprof_check_for_new_epoch(state);

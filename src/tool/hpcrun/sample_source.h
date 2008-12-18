@@ -21,7 +21,8 @@ typedef enum {
   UNINIT,
   INIT,
   START,
-  STOP
+  STOP,
+  HARD_STOP
 } source_state_t;
 
 typedef enum {
@@ -36,11 +37,14 @@ typedef struct _obj_s {
   VMETHOD_DEF(store_event,int event_id,long thresh);
   METHOD_DEF(char *,get_event_str);
   METHOD_DEF(int,started);
+  VMETHOD_DEF(hard_stop);
+  VMETHOD_DEF(start);
+  
 
   // specific methods
 
   VMETHOD_DEF(init);
-  VMETHOD_DEF(start);
+  VMETHOD_DEF(_start);
   VMETHOD_DEF(stop);
   VMETHOD_DEF(shutdown);
   METHOD_DEF(int,supports_event,const char *ev_str);

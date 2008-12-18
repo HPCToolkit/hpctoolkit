@@ -81,7 +81,7 @@ csprof_epoch_add_module(const char *module_name,
 	size_t size)                /* end addr minus start addr */
 {
   TMSG(MALLOC," epoch_add_module");
-  csprof_epoch_module_t *m = (csprof_epoch_module_t *) csprof_malloc(sizeof(csprof_epoch_module_t));
+  csprof_epoch_module_t *m = (csprof_epoch_module_t *) csprof_malloc2(sizeof(csprof_epoch_module_t));
 
   // fill in the fields of the structure
   m->module_name = module_name;
@@ -101,7 +101,7 @@ csprof_epoch_t *
 csprof_epoch_new()
 {
   TMSG(MALLOC," epoch-new");
-  csprof_epoch_t *e = csprof_malloc(sizeof(csprof_epoch_t));
+  csprof_epoch_t *e = csprof_malloc2(sizeof(csprof_epoch_t));
 
   if(e == NULL) {
     /* memory subsystem hasn't been initialized yet (happens sometimes

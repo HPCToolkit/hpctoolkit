@@ -43,3 +43,18 @@ METHOD_FN(csprof_ss_get_event_str)
 {
   return (self->evl).evl_spec;
 }
+
+void
+METHOD_FN(csprof_ss_start)
+{
+  if (self->state != HARD_STOP){
+    METHOD_CALL(self,_start);
+  }
+}
+
+void
+METHOD_FN(csprof_ss_hard_stop)
+{
+  METHOD_CALL(self,stop);
+  self->state = HARD_STOP;
+}

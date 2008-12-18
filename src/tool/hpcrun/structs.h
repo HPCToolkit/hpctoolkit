@@ -10,7 +10,7 @@
 
 #include "csprof_csdata.h"
 #include "epoch.h"
-#include "list.h"
+// #include "list.h"
 
 #include <lush/lush.h>
 
@@ -75,8 +75,6 @@ typedef struct csprof_state_s {
   csprof_frame_t *bufend;     // 
   csprof_frame_t *bufstk;     // innermost frame in cached backtrace
   void *treenode;             /* cached pointer into the tree */
-
-  csprof_list_pool_t *pool;
 
   /* how many bogus samples we took */
   unsigned long trampoline_samples;

@@ -30,11 +30,14 @@ csprof_unthreaded_data(void)
 }
 
 
+static offset_t emergency_sz = 4 * 1024 * 1024; // 1 Meg for emergency
+
 void
 csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
 {
   NMSG(THREAD_SPECIFIC,"init thread specific data for %d",id);
   thread_data_t *td = csprof_get_thread_data();
+  TD_GET(suspend_sampling) = 0;
 
   // initialize thread_data with known bogus bit pattern so that missing
   // initializations will be apparent.
@@ -42,6 +45,7 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
 
   td->id                          = id;
   td->memstore                    = csprof_malloc_init(sz, sz_tmp);
+  td->memstore2                   = csprof_malloc2_init(emergency_sz,0);
   td->state                       = NULL;
 
   // locks
@@ -57,6 +61,7 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
   td->last_us_usage               = 0;
 
   memset(&td->bad_unwind, 0, sizeof(td->bad_unwind));
+  memset(&td->mem_error, 0, sizeof(td->mem_error));
   memset(&td->eventSet, 0, sizeof(td->eventSet));
   memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
 
