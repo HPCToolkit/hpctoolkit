@@ -32,45 +32,5 @@
 #ifndef CSPROF_LIST_H
 #define CSPROF_LIST_H
 
-#include "mem.h"
-
-/* doubly linked lists in private memory */
-struct csprof_list_node {
-    struct csprof_list_node *next;
-    struct csprof_list_node *prev;
-    void *ip;                   /* the PC of a procedure */
-    void *sp;                   /* its stack pointer, to distingush
-                                   different recursive calls */
-    void *node;                 /* a vdegree tree node */
-};
-
-/* list pool management */
-struct csprof_list_pool {
-    struct csprof_list_node *freelist;
-    unsigned int count;
-};
-
-typedef struct csprof_list_node csprof_list_t;
-typedef struct csprof_list_node csprof_list_node_t;
-typedef struct csprof_list_pool csprof_list_pool_t;
-
-/* function prototypes */
-csprof_list_pool_t *csprof_list_pool_new(unsigned int);
-
-csprof_list_t *csprof_list_new(csprof_list_pool_t *);
-void csprof_list_destroy(csprof_list_pool_t *, csprof_list_t *);
-
-int csprof_list_isempty(csprof_list_t *);
-
-/* places `list2' at the end of `list1' */
-void csprof_list_append(csprof_list_t *, csprof_list_t *);
-
-void csprof_list_remove_head(csprof_list_pool_t *, csprof_list_t *);
-void csprof_list_remove_tail(csprof_list_pool_t *, csprof_list_t *);
-
-void csprof_list_add_head(csprof_list_pool_t *, csprof_list_t *,
-                          void *, void *, void *);
-void csprof_list_add_tail(csprof_list_pool_t *, csprof_list_t *,
-                          void *, void *, void *);
 
 #endif /* CSPROF_LIST_H */

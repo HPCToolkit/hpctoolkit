@@ -22,10 +22,15 @@ typedef struct {
 
 typedef struct _td_t {
   int id;
+  //  main memory store
   csprof_mem_t    _mem;
-  csprof_state_t  *state;
   csprof_mem_t    *memstore;
+  // aux data store (mainly for data output when samples exhausted)
+  csprof_mem_t    _mem2;
+  csprof_mem_t    *memstore2;
+  csprof_state_t  *state;
   sigjmp_buf_t    bad_unwind;
+  sigjmp_buf_t    mem_error;
   int             eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
   source_state_t  ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
   int             handling_sample;

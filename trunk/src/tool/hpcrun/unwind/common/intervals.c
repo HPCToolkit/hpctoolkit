@@ -72,6 +72,8 @@ new_ui(char *startaddr, ra_loc ra_status, unsigned int sp_ra_pos,
 {
   unwind_interval *u = (unwind_interval *) csprof_malloc(sizeof(unwind_interval)); 
 
+# include "mem_error_gen.h" // **** SPECIAL PURPOSE CODE TO INDUCE MEM FAILURE (conditionally included) ***
+
   (void) fetch_and_add(&ui_cnt, 1);
 
   u->startaddr = startaddr;

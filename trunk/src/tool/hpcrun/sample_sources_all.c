@@ -35,10 +35,6 @@ add_source(sample_source_t *ss)
     // check to see is ss already present
     if (! in_sources(ss)){
       csprof_abort("Too many sample sources");
-#if 0
-      EMSG("Too many sample sources");
-      abort();
-#endif
     }
     return;
   }
@@ -52,6 +48,7 @@ void                                                          \
 csprof_all_sources_ ##n(void)                                 \
 {                                                             \
   for(int i=0;i < n_sources;i++) {                            \
+    TMSG(AS_MAP,"sample source %d (%s) method call: %s",i,sample_sources[i]->name,#n); \
     METHOD_CALL(sample_sources[i],n);                  \
   }                                                           \
 }
@@ -86,6 +83,7 @@ _AS0(init)
 _AS1(gen_event_set,int,lush_metrics)
 _AS0(start)
 _AS0(stop)
+_AS0(hard_stop)
 _AS0(shutdown)
 _ASB(started)
 
@@ -106,10 +104,6 @@ csprof_sample_sources_from_eventlist(char *evl)
     }
     else {
       csprof_event_abort("Requested event %s is not supported!",event);
-#if 0
-      EMSG("Requested event %s is not supported!",event);
-      abort();
-#endif
     }
   }
 }
