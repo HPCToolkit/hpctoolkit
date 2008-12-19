@@ -806,6 +806,7 @@ Driver::correlateRaw(PerfMetric* metric,
       string procnm, filenm;
       SrcFile::ln line;
       lm->GetSourceFileInfo(vma_ur, 0 /*opIdx*/, procnm, filenm, line);
+      procnm = GetBestFuncName(procnm);
 
       if (filenm.empty()) {
 	filenm = Prof::Struct::Tree::UnknownFileNm;
