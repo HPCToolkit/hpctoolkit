@@ -203,7 +203,7 @@ if test -d "$xed2_dir" ; then
 fi
 
 # FIXME: shouldn't always need pthread, and shoudn't ever need dl.
-set -- "$@" -lpthread -ldl
+set -- "$@" -lpthread -ldl -lrt
 set -- "$@" $appl_libs
 
 if test "$verbose" = yes ; then
@@ -224,7 +224,7 @@ EOF
 $CC -o "$hello" "${hello}.c"
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
-$hpcfnbounds "$hello" > "${nm_addrs}.c" || die "hpcfnbounds failed on $hello"
+$hpcfnbounds -c "$hello" > "${nm_addrs}.c" || die "hpcfnbounds failed on $hello"
 $CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 $command "$@" || die "compile #1 failed: $command $@"
 test -f "$appl_out" || die "compile #1 failed: $command $@"
@@ -234,7 +234,7 @@ rm -f "${hello}.c" "$hello"
 # Step 4 -- Link with real nm file.
 #
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
-$hpcfnbounds "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
+$hpcfnbounds -c "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
 $CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 $command "$@" || die "compile #2 failed: $command $@"
 test -f "$appl_out" || die "compile #2 failed: $command $@"
