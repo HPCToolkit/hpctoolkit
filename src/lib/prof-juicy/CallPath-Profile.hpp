@@ -107,6 +107,13 @@ public:
   void epoch(Epoch* x) 
     { m_epoch = x; }
 
+  
+  Prof::Struct::Tree* structure() const
+    { return m_structure; }
+  void structure(Prof::Struct::Tree* x)
+    { m_structure = x; }
+
+
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
@@ -128,7 +135,6 @@ public:
   virtual void ddump() const;
 
 private:
-
   // 1. annotate CCT::Tree nodes with associated Prof::Epoch::LM_id_t 
   // 2. normalize CCT::Tree node IPs (unrelocate)
   void 
@@ -143,6 +149,7 @@ private:
   CCT::Tree* m_cct;
   SampledMetricDescVec m_metricdesc;
   Epoch* m_epoch;
+  Prof::Struct::Tree* m_structure;
 };
 
 } // namespace CallPath

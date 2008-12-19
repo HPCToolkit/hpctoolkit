@@ -91,6 +91,7 @@ Profile::Profile(uint numMetrics)
   }
   m_cct = new CCT::Tree(this);
   m_epoch = NULL;
+  m_structure = NULL;
 }
 
 
@@ -101,12 +102,15 @@ Profile::~Profile()
   }
   delete m_cct;
   delete m_epoch;
+  delete m_structure;
 }
 
 
 void 
 Profile::merge(Profile& y)
 {
+  DIAG_Assert(!m_structure && !y.m_structure, "Profile::merge: profiles should not have structure yet!");
+
   // -------------------------------------------------------
   // merge metrics
   // -------------------------------------------------------
