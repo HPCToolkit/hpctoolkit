@@ -139,15 +139,14 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   Prof::CallPath::Profile* prof = readProfileData(args.profileFiles);
 
-  // ------------------------------------------------------------
-  // Add source file info
-  // ------------------------------------------------------------
-
-  Prof::Struct::Tree* structure = NULL;
   if (!args.structureFiles.empty()) {
-    structure = readStructure(args);
+    Prof::Struct::Tree* strct = readStructure(args);
+    prof->structure(strct);
   }
-  
+
+  // ------------------------------------------------------------
+  // Add static structure to dynamic call paths
+  // ------------------------------------------------------------
   try { 
     Prof::Epoch* epoch = prof->epoch();
     for (uint i = 0; i < epoch->lm_size(); ++i) {
@@ -160,6 +159,8 @@ realmain(int argc, char* const* argv)
       // tallent (FIXME): See note on Epoch::LM::isUsed()
       if (epoch_lm->isAvail() && epoch_lm->isUsed()) {
 	const string& lm_fnm = epoch_lm->name();
+
+	Prof::Struct::Tree* structure = prof->structure();
 	Prof::Struct::LM* lmStrct = NULL;
 	if (structure) {
 	  Prof::Struct::Pgm* pgmStrct = structure->GetRoot();
@@ -184,8 +185,6 @@ realmain(int argc, char* const* argv)
     throw;
   }
   
-  delete structure;
-
   // ------------------------------------------------------------
   // Generate Experiment database
   // ------------------------------------------------------------
