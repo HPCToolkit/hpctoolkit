@@ -189,7 +189,20 @@ monitor_fini_thread(void *init_thread_data)
   trace_close();
 }
 
-#endif
+
+#define MEG  (1024 * 1024)
+size_t
+monitor_reset_stacksize(size_t old_size)
+{
+  size_t new_size = old_size + MEG;
+
+  if (new_size < 2 * MEG)
+    new_size = 2 * MEG;
+
+  return new_size;
+}
+
+#endif  /* CSPROF_THREADS */
 
 
 #ifndef HPCRUN_STATIC_LINK
