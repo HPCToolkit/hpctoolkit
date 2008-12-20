@@ -686,7 +686,7 @@ int ACodeNodeLineComp(const ACodeNode* x, const ACodeNode* y);
 class Pgm: public ANode {
 protected:
   Pgm(const Pgm& x) 
-    : ANode(x.type), m_realpathMgr(RealPathMgr::singleton())
+    : ANode(x.type)
   { 
     *this = x; 
   }
@@ -695,13 +695,13 @@ protected:
 
 public: 
   Pgm(const char* nm)
-    : ANode(TyPGM, NULL), m_realpathMgr(RealPathMgr::singleton())
+    : ANode(TyPGM, NULL)
   { 
     Ctor(nm);
   }
   
   Pgm(const std::string& nm)
-    : ANode(TyPGM, NULL), m_realpathMgr(RealPathMgr::singleton())
+    : ANode(TyPGM, NULL)
   { 
     Ctor(nm.c_str());
   }
@@ -773,10 +773,11 @@ private:
 private:
   bool frozen;
   std::string m_name; // the program name
-  RealPathMgr& m_realpathMgr;
 
   GroupMap* groupMap;
   LMMap*    lmMap; // mapped by 'realpath'
+
+  static RealPathMgr& s_realpathMgr;
 };
 
 
@@ -841,15 +842,13 @@ protected:
 
 public: 
   LM(const char* nm, ANode* parent)
-    : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0),
-      m_realpathMgr(RealPathMgr::singleton())
+    : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0)
   { 
     Ctor(nm, parent);
   }
 
   LM(const std::string& nm, ANode* parent)
-    : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0),
-      m_realpathMgr(RealPathMgr::singleton())
+    : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0)
   {
     Ctor(nm.c_str(), parent);
   }
@@ -930,11 +929,11 @@ protected:
 private:
   std::string m_name; // the load module name
 
-  RealPathMgr& m_realpathMgr;
-
-  FileMap*      fileMap;   // mapped by RealPathMgr
+  FileMap*           fileMap; // mapped by RealPathMgr
   VMAToProcMap*      procMap;
   VMAToStmtRangeMap* stmtMap;
+
+  static RealPathMgr& s_realpathMgr;
 };
 
 
@@ -1177,6 +1176,8 @@ private:
 private:
   std::string m_filenm;
   std::string m_name;
+
+  static RealPathMgr& s_realpathMgr;
 };
 
 
