@@ -63,6 +63,7 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	bloop.hpp bloop.cpp \
+	bloop-simple.hpp bloop-simple.cpp \
 	bloop_LocationMgr.hpp bloop_LocationMgr.cpp \
 	\
 	OAInterface.hpp OAInterface.cpp

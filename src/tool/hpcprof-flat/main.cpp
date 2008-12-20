@@ -110,6 +110,7 @@ int
 realmain(int argc, char* const* argv) 
 {
   Args args(argc, argv);  // exits if error on command line
+  RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   NaN_init();
 

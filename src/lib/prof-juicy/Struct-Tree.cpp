@@ -78,7 +78,6 @@ using std::string;
 #include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
 #include <lib/support/StrUtil.hpp>
-#include <lib/support/realpath.h>
 
 //*************************** Forward Declarations **************************
 
@@ -332,6 +331,7 @@ Pgm::Ctor(const char* nm)
   DIAG_Assert(nm, "");
   frozen = false;
   m_name = nm;
+  m_realpathMgr = RealPathMgr::singleton();
   groupMap = new GroupMap();
   lmMap = new LMMap();
 }
@@ -348,6 +348,17 @@ Pgm::operator=(const Pgm& x)
     lmMap    = NULL;
   }
   return *this;
+}
+
+
+LM* 
+Pgm::findLM(const char* nm) const
+{
+  std::string nm_real = nm;
+  m_realpathMgr.realpath(nm_real);
+  LMMap::iterator it = lmMap->find(nm_real);
+  LM* x = (it != lmMap->end()) ? it->second : NULL;
+  return x;
 }
 
 
@@ -372,6 +383,7 @@ LM::Ctor(const char* nm, ANode* parent)
   DIAG_Assert((parent == NULL) || (t == TyPGM) || (t == TyGROUP), "");
 
   m_name = nm;
+  m_realpathMgr = RealPathMgr::singleton();
   fileMap = new FileMap();
   procMap = NULL;
   stmtMap = NULL;
@@ -423,14 +435,14 @@ File::operator=(const File& x)
 
 
 File* 
-File::findOrCreate(LM* lmScope, const string& filenm)
+File::findOrCreate(LM* lm, const string& filenm)
 {
-  File* fScope = lmScope->FindFile(filenm);
-  if (fScope == NULL) {
+  File* file = lm->FindFile(filenm);
+  if (file == NULL) {
     bool fileIsReadable = FileUtil::isReadable(filenm.c_str());
-    fScope = new File(filenm, fileIsReadable, lmScope);
+    file = new File(filenm, fileIsReadable, lm);
   }
-  return fScope; // guaranteed to be a valid pointer
+  return file; // guaranteed to be a valid pointer
 }
 
 
@@ -464,22 +476,21 @@ Proc::operator=(const Proc& x)
     m_name     = x.m_name;
     m_linkname = x.m_linkname;
     m_hasSym   = x.m_hasSym;
-    stmtMap = new StmtMap();
+    stmtMap    = new StmtMap();
   }
   return *this;
 }
 
 
 Proc*
-Proc::findOrCreate(File* fScope, const string& procnm, 
-			SrcFile::ln line)
+Proc::findOrCreate(File* file, const string& procnm, SrcFile::ln line)
 {
-  DIAG_Die("The Proc is always created as non-symbolic...");
-  Proc* pScope = fScope->FindProc(procnm);
-  if (!pScope) {
-    pScope = new Proc(procnm, fScope, procnm, false, line, line);
+  // NOTE: The Proc is always created as non-symbolic...
+  Proc* proc = file->FindProc(procnm);
+  if (!proc) {
+    proc = new Proc(procnm, file, procnm, false, line, line);
   }
-  return pScope;
+  return proc;
 }
 
 
@@ -972,9 +983,10 @@ Pgm::AddToGroupMap(Group* grp)
 void 
 Pgm::AddToLoadModMap(LM* lm)
 {
-  string lmName = RealPath(lm->name().c_str());
+  string nm_real = lm->name();
+  m_realpathMgr.realpath(nm_real);
   std::pair<LMMap::iterator, bool> ret = 
-    lmMap->insert(std::make_pair(lmName, lm));
+    lmMap->insert(std::make_pair(nm_real, lm));
   DIAG_Assert(ret.second, "Duplicate!");
 }
 
@@ -982,10 +994,11 @@ Pgm::AddToLoadModMap(LM* lm)
 void 
 LM::AddToFileMap(File* f)
 {
-  string fName = RealPath(f->name().c_str());
-  DIAG_DevMsg(2, "LM: mapping file name '" << fName << "' to File* " << f);
+  string nm_real = f->name();
+  m_realpathMgr.realpath(nm_real);
+  DIAG_DevMsg(2, "LM: mapping file name '" << nm_real << "' to File* " << f);
   std::pair<FileMap::iterator, bool> ret = 
-    fileMap->insert(std::make_pair(fName, f));
+    fileMap->insert(std::make_pair(nm_real, f));
   DIAG_Assert(ret.second, "Duplicate instance: " << f->name() << "\n" << toStringXML());
 }
 
@@ -1002,7 +1015,19 @@ File::AddToProcMap(Proc* p)
 void 
 Proc::AddToStmtMap(Stmt* stmt)
 {
+  // FIXME: multiple statments may map to same line with inlining
   (*stmtMap)[stmt->begLine()] = stmt;
+}
+
+
+File*
+LM::FindFile(const char* nm) const
+{
+  string nm_real = nm;
+  m_realpathMgr.realpath(nm_real);
+  FileMap::iterator it = fileMap->find(nm_real);
+  File* x = (it != fileMap->end()) ? it->second : NULL;
+  return x;
 }
 
 

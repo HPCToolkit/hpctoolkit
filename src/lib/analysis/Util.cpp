@@ -64,6 +64,7 @@ using std::string;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/pathfind.h>
+#include <lib/support/realpath.h>
 
 //*************************** Forward Declarations **************************
 
@@ -196,8 +197,8 @@ Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure,
     Prof::Struct::File* fileStrct = NULL;
     Prof::Struct::Alien* alienStrct = NULL;
 
-    // Note: 'fnm_orig' will be not be absolute if it is not possible to find
-    // the file on the current filesystem. (cf. TreeInterface::MoveToFile)
+    // Note: 'fnm_orig' will be not be absolute if it is not possible
+    // to resolve it on the current filesystem. (cf. RealPathMgr)
     string fnm_orig;
     if (strct->Type() == Prof::Struct::ANode::TyFILE) {
       fileStrct = dynamic_cast<Prof::Struct::File*>(strct);
@@ -338,7 +339,7 @@ matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec)
       if (update) {
 	foundIndex = i;
 	foundPathLn = realPathLn;
-	foundFnm = fnd_fnm;
+	foundFnm = RealPath(fnd_fnm);
       }
     }
   }
@@ -349,47 +350,22 @@ matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec)
 // Given a file 'filenm' a destination directory 'dstDir' and a
 // PathTuple, form a database file name, copy 'filenm' into the
 // database and return the database file name.
+// NOTE: assume filenm is already a 'real path'
 static string
 copySourceFile(const string& filenm, const string& dstDir, 
 	       const Analysis::PathTuple& pathTpl)
 {
-#define SEARCHPATH_IS_SUFFIX_OF_FILE 0
-
-  string fnm_fnd = RealPath(filenm.c_str());
+  const string& fnm_fnd = filenm;
   const string& viewnm = pathTpl.second;
 
-#if (SEARCHPATH_IS_SUFFIX_OF_FILE) 
-  // canonicalize path_fnd
-  string path_fnd = pathTpl.first; // a real copy
-  if (is_recursive_path(path_fnd.c_str())) {
-    path_fnd[path_fnd.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
-  }
-  path_fnd = RealPath(path_fnd.c_str());
-
-  // INVARIANT: path_fnd must be a prefix of fnm_fnd (both are abs. paths)
-
-  // tallent: actually this may not be true with symbolic links and '..':
-  //   path_fnd: /.../NAMD_2.6/charm-5.9/linux-amd64
-  //   filenm:   /.../NAMD_2.6/charm-5.9/linux-amd64/../bin/../include/LBComm.h
-  //   fnm_fnd:  /.../NAMD_2.6/charm-5.9/src/ck-ldb/LBComm.h
-
-
-  // find (fnm_fnd - path_fnd)
-  const char* path_sfx = fnm_fnd.c_str();
-  path_sfx = &path_sfx[path_fnd.length()];
-  while (path_sfx[0] != '/') { --path_sfx; } // should start with '/'
-#else
-  const char* path_sfx = fnm_fnd.c_str();
-#endif
-	
   // Create new file name and copy commands
-  string fnm_new = "./" + viewnm + path_sfx;
+  string fnm_new = "./" + viewnm + fnm_fnd;
 	
   string fnm_to;
   if (dstDir[0]  != '/') {
     fnm_to = "./";
   }
-  fnm_to = fnm_to + dstDir + "/" + viewnm + path_sfx;
+  fnm_to = fnm_to + dstDir + "/" + viewnm + fnm_fnd;
   string dir_to(fnm_to); // need to strip off ending filename to 
   uint end;              // get full path for 'fnm_to'
   for (end = dir_to.length() - 1; dir_to[end] != '/'; end--) { }

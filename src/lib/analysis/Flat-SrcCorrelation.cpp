@@ -59,6 +59,8 @@ using std::vector;
 #include "TextUtil.hpp"
 #include "Util.hpp"
 
+#include <lib/banal/bloop-simple.hpp>
+
 #include <lib/prof-juicy-x/PGMReader.hpp>
 
 #include <lib/prof-juicy/Struct-TreeInterface.hpp>
@@ -202,6 +204,8 @@ Driver::run()
 string 
 Driver::replacePath(const char* oldpath)
 {
+  // TODO: move to RealPathMgr
+
   DIAG_Assert(m_args.replaceInPath.size() == m_args.replaceOutPath.size(), "");
   for (uint i = 0 ; i<m_args.replaceInPath.size() ; i++ ) {
     uint length = m_args.replaceInPath[i].length();
@@ -803,30 +807,7 @@ Driver::correlateRaw(PerfMetric* metric,
       }
     }
     else {
-      string procnm, filenm;
-      SrcFile::ln line;
-      lm->GetSourceFileInfo(vma_ur, 0 /*opIdx*/, procnm, filenm, line);
-      procnm = GetBestFuncName(procnm);
-
-      if (filenm.empty()) {
-	filenm = Prof::Struct::Tree::UnknownFileNm;
-      }
-      if (procnm.empty()) {
-	procnm = Prof::Struct::Tree::UnknownProcNm;
-      }
-      
-      structIF.MoveToFile(filenm);
-      Prof::Struct::Proc* procStrct = structIF.MoveToProc(procnm);
-      if (SrcFile::isValid(line)) {
-	Prof::Struct::Stmt* stmtStrct = procStrct->findStmt(line);
-	if (!stmtStrct) {
-	  stmtStrct = new Prof::Struct::Stmt(procStrct, line, line, 0, 0);
-	}
-	strct = stmtStrct;
-      }
-      else {
-	strct = procStrct;
-      }
+      strct = banal::bloop::makeStructureSimple(lmStrct, lm, vma_ur);
     }
 
     strct->SetPerfData(metric->Index(), events); // implicit add!

@@ -38,108 +38,45 @@
 //***************************************************************************
 //
 // File:
-//   $Source$
+//    $Source$
 //
 // Purpose:
-//   [The purpose of this file]
+//    [The purpose of this file]
 //
 // Description:
-//   [The set of functions, macros, etc. defined in the file]
+//    [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
+#ifndef banal_bloop_simple_hpp
+#define banal_bloop_simple_hpp
+
 //************************* System Include Files ****************************
-
-#include <iostream>
-using std::cerr;
-using std::endl;
-
-#include <fstream>
-#include <new>
 
 //*************************** User Include Files ****************************
 
-#include "Args.hpp"
+#include <include/general.h> 
 
-#include <lib/banal/bloop.hpp>
-
+#include <lib/prof-juicy/Struct-Tree.hpp>
 #include <lib/binutils/LM.hpp>
-
-#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
-int
-real_main(int argc, char* argv[]);
+namespace banal {
+
+namespace bloop {
+
+  // NOTE: Since hpcprof/hpcprof-flat only invoke this routine we keep
+  // it separate.  Invoking the full structure recovery pulls in a
+  // bunch of other stuff as well as OA, etc.
+
+  Prof::Struct::Stmt*
+  makeStructureSimple(Prof::Struct::LM* lmStrct, binutils::LM* lm, VMA vma);
+
+} // namespace bloop
+
+} // namespace banal
 
 //****************************************************************************
 
-int
-main(int argc, char* argv[])
-{
-  try {
-    return real_main(argc, argv);
-  }
-  catch (const Diagnostics::Exception& x) {
-    DIAG_EMsg(x.message());
-    exit(1);
-  } 
-  catch (const std::bad_alloc& x) {
-    DIAG_EMsg("[std::bad_alloc] " << x.what());
-    exit(1);
-  } 
-  catch (const std::exception& x) {
-    DIAG_EMsg("[std::exception] " << x.what());
-    exit(1);
-  } 
-  catch (...) {
-    DIAG_EMsg("Unknown exception encountered!");
-    exit(2);
-  }
-}
-
-
-int
-real_main(int argc, char* argv[])
-{
-  Args args(argc, argv);
-  
-  // ------------------------------------------------------------
-  // Read executable
-  // ------------------------------------------------------------
-  binutils::LM* lm = NULL;
-  try {
-    lm = new binutils::LM();
-    lm->open(args.inputFile.c_str());
-    lm->read(binutils::LM::ReadFlg_ALL);
-  } 
-  catch (...) {
-    DIAG_EMsg("Exception encountered while reading " << args.inputFile);
-    throw;
-  }
-  
-  // ------------------------------------------------------------
-  // Build and print the ScopeTree
-  // ------------------------------------------------------------
-  { 
-    using namespace banal::bloop;
-    Prof::Struct::Tree* strctTree =
-      makeStructure(lm, args.canonicalPathList.c_str(),
-		    args.normalizeScopeTree, 
-		    args.unsafeNormalizations,
-		    args.irreducibleIntervalIsLoop,
-		    args.forwardSubstitutionOff,
-		    args.dbgProcGlob);
-    
-    writeStructure(std::cout, strctTree, args.prettyPrintOutput);
-    delete strctTree;
-  }
-  
-  // Cleanup
-  delete lm;
-  
-  return (0);
-}
-
-//****************************************************************************
-
+#endif // banal_bloop_simple_hpp

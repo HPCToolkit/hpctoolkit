@@ -63,8 +63,6 @@
 
 #include <include/general.h>
 
-#include "realpath.h"
-
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
@@ -81,14 +79,24 @@ public:
   RealPathMgr();
   ~RealPathMgr();
 
+  static RealPathMgr& singleton();
+
   // -------------------------------------------------------
-  // debugging
+  // 
   // -------------------------------------------------------
 
-  // realpath: Given 'fnm', convert it to its 'realpath' and return true;
-  // otherwise perform no converstion and return false.
+  // realpath: Given 'fnm', convert it to its 'realpath' (if possible)
+  // and return true.  Return true if 'fnm' is as fully resolved as it
+  // can be (which does not necessarily mean it exists); otherwise
+  // return false.
   bool realpath(std::string& fnm);
   
+  const std::string& searchPaths()
+    { return m_searchPaths; }
+
+  void searchPaths(const std::string& x)
+    { m_searchPaths = x; }
+
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
@@ -102,8 +110,10 @@ public:
 private:
   typedef std::map<std::string, std::string> MyMap;
   
+  std::string m_searchPaths;
   MyMap m_realpath_map;
 };
+
 
 
 //***************************************************************************

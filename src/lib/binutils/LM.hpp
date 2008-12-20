@@ -71,8 +71,8 @@
 #include <lib/isa/ISA.hpp>
 
 #include <lib/support/Exception.hpp>
-#include <lib/support/SrcFile.hpp>
 #include <lib/support/RealPathMgr.hpp>
+#include <lib/support/SrcFile.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -337,9 +337,6 @@ public:
   bool 
   GetProcFirstLineInfo(VMA vma, ushort opIndex, SrcFile::ln& line) const;
 
-  bool realpath(std::string& fnm) { m_realpath_mgr.realpath(fnm); }
-
-
   // -------------------------------------------------------
   // BFD details
   // -------------------------------------------------------
@@ -401,7 +398,7 @@ public:
   
 protected:
   // Should not be used
-  LM(const LM& lm) { }
+  LM(const LM& lm) : m_realpathMgr(RealPathMgr::singleton()) { }
   LM& operator=(const LM& lm) { return *this; }
 
 private: 
@@ -463,7 +460,7 @@ private:
   asymbol** m_bfdSymTabSort; // Sorted BFD symbol table
   uint      m_bfdSymTabSz;   // Number of syms in table.
 
-  RealPathMgr m_realpath_mgr;
+  RealPathMgr& m_realpathMgr;
 };
 
 } // namespace binutils
