@@ -51,95 +51,74 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::cout;
 using std::cerr;
 using std::endl;
 
+#include <iomanip>
+
 #include <fstream>
-#include <new>
+#include <sstream>
+
+#include <string>
+using std::string;
+
+#include <map>
+#include <list>
+#include <vector>
+
+#include <algorithm>
+
+#include <cstring>
 
 //*************************** User Include Files ****************************
 
-#include "Args.hpp"
+#include "bloop-simple.hpp"
 
-#include <lib/banal/bloop.hpp>
+#include <lib/prof-juicy/Struct-Tree.hpp>
+using namespace Prof;
 
 #include <lib/binutils/LM.hpp>
+#include <lib/binutils/Insn.hpp>
 
 #include <lib/support/diagnostics.h>
 
+
 //*************************** Forward Declarations ***************************
 
-int
-real_main(int argc, char* argv[]);
-
+//****************************************************************************
+// 
 //****************************************************************************
 
-int
-main(int argc, char* argv[])
+// makeStructureSimple: Uses the line map to make structure
+Struct::Stmt*
+banal::bloop::makeStructureSimple(Struct::LM* lmStrct, 
+				  binutils::LM* lm, VMA vma)
 {
-  try {
-    return real_main(argc, argv);
+  string procnm, filenm;
+  SrcFile::ln line;
+  lm->GetSourceFileInfo(vma, 0 /*opIdx*/, procnm, filenm, line);
+  procnm = GetBestFuncName(procnm);
+  
+  if (filenm.empty()) {
+    filenm = Struct::Tree::UnknownFileNm;
   }
-  catch (const Diagnostics::Exception& x) {
-    DIAG_EMsg(x.message());
-    exit(1);
-  } 
-  catch (const std::bad_alloc& x) {
-    DIAG_EMsg("[std::bad_alloc] " << x.what());
-    exit(1);
-  } 
-  catch (const std::exception& x) {
-    DIAG_EMsg("[std::exception] " << x.what());
-    exit(1);
-  } 
-  catch (...) {
-    DIAG_EMsg("Unknown exception encountered!");
-    exit(2);
+  if (procnm.empty()) {
+    procnm = Struct::Tree::UnknownProcNm;
   }
+  
+  Struct::File* fileStrct = Struct::File::findOrCreate(lmStrct, filenm);
+  Struct::Proc* procStrct = Struct::Proc::findOrCreate(fileStrct, procnm, line);
+  Struct::Stmt* stmtStrct = procStrct->findStmt(line);
+  if (!stmtStrct) {
+    VMA begVMA = vma;
+
+    binutils::Insn* insn = lm->findInsn(vma, 0 /*opIdx*/);
+    VMA endVMA = (insn) ? insn->endVMA() : vma + 1;
+
+    stmtStrct = new Struct::Stmt(procStrct, line, line, begVMA, endVMA);
+  }
+
+  return stmtStrct;
 }
-
-
-int
-real_main(int argc, char* argv[])
-{
-  Args args(argc, argv);
-  
-  // ------------------------------------------------------------
-  // Read executable
-  // ------------------------------------------------------------
-  binutils::LM* lm = NULL;
-  try {
-    lm = new binutils::LM();
-    lm->open(args.inputFile.c_str());
-    lm->read(binutils::LM::ReadFlg_ALL);
-  } 
-  catch (...) {
-    DIAG_EMsg("Exception encountered while reading " << args.inputFile);
-    throw;
-  }
-  
-  // ------------------------------------------------------------
-  // Build and print the ScopeTree
-  // ------------------------------------------------------------
-  { 
-    using namespace banal::bloop;
-    Prof::Struct::Tree* strctTree =
-      makeStructure(lm, args.canonicalPathList.c_str(),
-		    args.normalizeScopeTree, 
-		    args.unsafeNormalizations,
-		    args.irreducibleIntervalIsLoop,
-		    args.forwardSubstitutionOff,
-		    args.dbgProcGlob);
-    
-    writeStructure(std::cout, strctTree, args.prettyPrintOutput);
-    delete strctTree;
-  }
-  
-  // Cleanup
-  delete lm;
-  
-  return (0);
-}
-
-//****************************************************************************
 

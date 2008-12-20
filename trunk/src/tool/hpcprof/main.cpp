@@ -133,6 +133,7 @@ int
 realmain(int argc, char* const* argv) 
 {
   Args args(argc, argv);
+  RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   // ------------------------------------------------------------
   // Read 'profData', the profiling data file

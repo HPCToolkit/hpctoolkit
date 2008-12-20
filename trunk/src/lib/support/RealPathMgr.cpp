@@ -58,8 +58,10 @@ using std::string;
 
 #include "RealPathMgr.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/Logic.hpp>
+#include "diagnostics.h"
+#include "Logic.hpp"
+#include "pathfind.h"
+#include "realpath.h"
 
 //*************************** Forward Declarations **************************
 
@@ -69,6 +71,7 @@ using std::string;
 // RealPathMgr
 //***************************************************************************
 
+static RealPathMgr s_singleton;
 
 RealPathMgr::RealPathMgr()
 {
@@ -77,6 +80,12 @@ RealPathMgr::RealPathMgr()
 
 RealPathMgr::~RealPathMgr()
 {
+}
+
+
+RealPathMgr& RealPathMgr::singleton()
+{
+  return s_singleton;
 }
 
 
@@ -91,20 +100,34 @@ RealPathMgr::realpath(string& fnm)
 
   // INVARIANT: all entries in the map are non-empty
   MyMap::iterator it = m_realpath_map.find(fnm);
-  
+ 
   if (it != m_realpath_map.end()) {
-    const string& real_fnm = it->second;
-    if (real_fnm[0] == '/') { // only copy if realpath was found
-      fnm = real_fnm;
+    // use cached value
+    const string& fnm_real = it->second;
+    if (fnm_real[0] == '/') { // only copy if realpath was found
+      fnm = fnm_real;
     }
   }
   else {
-    string real_fnm = RealPath(fnm.c_str());
-    fnm = real_fnm;
-    m_realpath_map.insert(make_pair(fnm, real_fnm));
+    string fnm_real;
+
+    const char* pf = fnm.c_str();
+    if (!m_searchPaths.empty()) {
+      pf = pathfind_r(m_searchPaths.c_str(), fnm.c_str(), "r");
+    }
+    if (pf) { 
+      fnm_real = RealPath(pf);
+      fnm = fnm_real;
+    }
+    else {
+      // 'pf' is NULL iff pathfind_r failed -- RealPath won't do any better
+      fnm_real = fnm;
+    }
+
+    m_realpath_map.insert(make_pair(fnm, fnm_real));
   }
 
-  return (fnm[0] == '/'); // absolute path means realpath was found
+  return (fnm[0] == '/'); // fully resolved
 }
 
 

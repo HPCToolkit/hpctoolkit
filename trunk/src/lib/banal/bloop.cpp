@@ -95,8 +95,8 @@ using namespace Prof;
 #include <lib/xml/xml.hpp> 
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/pathfind.h>
 #include <lib/support/Logic.hpp>
+#include <lib/support/pathfind.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -292,7 +292,7 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
 // Set of routines to build a scope tree
 //****************************************************************************
 
-// buildLMStructure: Builds a scope tree -- with a focus on loop nest
+// makeStructure: Builds a scope tree -- with a focus on loop nest
 //   recovery -- representing program source code from the load module
 //   'lm'.
 // A load module represents binary code, which is essentially
@@ -304,14 +304,16 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
 //   to 'clean up' the resulting scope tree.  Among other things, the
 //   normalizer employs heuristics to reverse certain compiler
 //   optimizations such as loop unrolling.
+
+// FIXME:: this should return Prof::Struct::LM*
 Prof::Struct::Tree*
-banal::bloop::buildLMStructure(binutils::LM* lm, 
-			       const char* canonicalPathList, 
-			       bool normalizeScopeTree,
-			       bool unsafeNormalizations,
-			       bool irreducibleIntervalIsLoop,
-			       bool forwardSubstitutionOff,
-			       const std::string& dbgProcGlob)
+banal::bloop::makeStructure(binutils::LM* lm, 
+			    const char* canonicalPathList, 
+			    bool normalizeScopeTree,
+			    bool unsafeNormalizations,
+			    bool irreducibleIntervalIsLoop,
+			    bool forwardSubstitutionOff,
+			    const std::string& dbgProcGlob)
 {
   DIAG_Assert(lm, DIAG_UnexpectedInput);
 
@@ -454,7 +456,6 @@ findOrCreateFileNode(Struct::LM* lmStrct, binutils::Proc* p)
 {
   // Attempt to find filename for procedure
   string filenm = p->filename();
-  p->lm()->realpath(filenm);
   
   if (filenm.empty()) {
     string procnm;
@@ -510,7 +511,7 @@ findOrCreateProcNode(Struct::File* fStrct, binutils::Proc* p)
   Struct::Proc* pStrct = fStrct->FindProc(procNm, procLnNm);
   if (!pStrct) {
     pStrct = new Struct::Proc(procNm, fStrct, procLnNm, p->hasSymbolic(),
-			   begLn, endLn);
+			      begLn, endLn);
   }
   else {
     // Assume the procedure was split.  Fuse it together.
@@ -1053,7 +1054,7 @@ findOrCreateStmtNode(std::map<SrcFile::ln, Struct::Stmt*>& stmtMap,
   Struct::Stmt* stmt = stmtMap[line];
   if (!stmt) {
     stmt = new Struct::Stmt(enclosingStrct, line, line, 
-			      vmaint.beg(), vmaint.end());
+			    vmaint.beg(), vmaint.end());
     stmtMap.insert(make_pair(line, stmt));
   }
   else {

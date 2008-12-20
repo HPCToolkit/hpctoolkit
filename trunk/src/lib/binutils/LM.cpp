@@ -105,7 +105,8 @@ binutils::LM::LM()
   : m_type(TypeNULL), m_readFlags(ReadFlg_NULL),
     m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
     m_textBegReloc(0), m_unrelocDelta(0),
-    m_bfd(NULL), m_bfdSymTab(NULL), m_bfdSymTabSort(NULL), m_bfdSymTabSz(0)
+    m_bfd(NULL), m_bfdSymTab(NULL), m_bfdSymTabSort(NULL), m_bfdSymTabSz(0),
+    m_realpathMgr(RealPathMgr::singleton())
 {
 }
 
@@ -164,7 +165,7 @@ binutils::LM::open(const char* filenm)
   }
   
   m_name = filenm;
-  realpath(m_name);
+  m_realpathMgr.realpath(m_name);
   
   // -------------------------------------------------------
   // 2. Collect data from BFD
@@ -331,7 +332,7 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
     }
     if (bfd_file) { 
       file = bfd_file;
-      m_realpath_mgr.realpath(file);
+      m_realpathMgr.realpath(file);
     }
     line = (SrcFile::ln)bfd_line;
   }

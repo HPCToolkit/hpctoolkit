@@ -72,11 +72,11 @@
 #include <lib/support/Files.hpp>
 #include <lib/support/Logic.hpp>
 #include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/support/RealPathMgr.hpp>
 #include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
 #include <lib/support/Unique.hpp>
 #include <lib/support/VectorTmpl.hpp>
-#include <lib/support/realpath.h>
 
 //*************************** Forward Declarations **************************
 
@@ -179,7 +179,6 @@ public:
 
   virtual void 
   writeXML(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
-
 
   // Dump contents for inspection (use flags from ANode)
   virtual void 
@@ -686,18 +685,23 @@ int ACodeNodeLineComp(const ACodeNode* x, const ACodeNode* y);
 // --------------------------------------------------------------------------
 class Pgm: public ANode {
 protected:
-  Pgm(const Pgm& x) : ANode(x.type) { *this = x; }
+  Pgm(const Pgm& x) 
+    : ANode(x.type), m_realpathMgr(RealPathMgr::singleton())
+  { 
+    *this = x; 
+  }
+  
   Pgm& operator=(const Pgm& x);
 
 public: 
   Pgm(const char* nm)
-    : ANode(TyPGM, NULL) 
+    : ANode(TyPGM, NULL), m_realpathMgr(RealPathMgr::singleton())
   { 
     Ctor(nm);
   }
   
   Pgm(const std::string& nm)
-    : ANode(TyPGM, NULL)
+    : ANode(TyPGM, NULL), m_realpathMgr(RealPathMgr::singleton())
   { 
     Ctor(nm.c_str());
   }
@@ -713,17 +717,10 @@ public:
   void               name(const char* n) { m_name = n; }
   void               name(const std::string& n) { m_name = n; }
   
-  LM* 
-  findLM(const char* nm) const // find by 'realpath'
-  {
-    std::string lmName = RealPath(nm);
-    LMMap::iterator it = lmMap->find(lmName);
-    LM* x = (it != lmMap->end()) ? it->second : NULL;
-    return x;
-  }
-  
-  LM* 
-  findLM(const std::string& nm) const 
+  // find by RealPathMgr
+  LM* findLM(const char* nm) const;
+
+  LM* findLM(const std::string& nm) const 
     { return findLM(nm.c_str()); }
 
   Group* 
@@ -776,6 +773,7 @@ private:
 private:
   bool frozen;
   std::string m_name; // the program name
+  RealPathMgr& m_realpathMgr;
 
   GroupMap* groupMap;
   LMMap*    lmMap; // mapped by 'realpath'
@@ -843,13 +841,15 @@ protected:
 
 public: 
   LM(const char* nm, ANode* parent)
-    : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0)
+    : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0),
+      m_realpathMgr(RealPathMgr::singleton())
   { 
     Ctor(nm, parent);
   }
 
   LM(const std::string& nm, ANode* parent)
-    : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0)
+    : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0),
+      m_realpathMgr(RealPathMgr::singleton())
   {
     Ctor(nm.c_str(), parent);
   }
@@ -869,16 +869,9 @@ public:
 
   virtual ANode* Clone() { return new LM(*this); }
 
-  File*    FindFile(const char* nm) const    // find by 'realpath'
-  {
-    std::string fName = RealPath(nm);
-    FileMap::iterator it = fileMap->find(fName);
-    File* x = (it != fileMap->end()) ? it->second : NULL;
-    return x;
-  }
-
-  File*    FindFile(const std::string& nm) const
-    { return FindFile(nm.c_str()); }
+  // find using RealPathMgr
+  File* FindFile(const char* nm) const;
+  File* FindFile(const std::string& nm) const { return FindFile(nm.c_str()); }
 
   // find scope by *unrelocated* VMA
   ACodeNode* findByVMA(VMA vma);
@@ -937,7 +930,9 @@ protected:
 private:
   std::string m_name; // the load module name
 
-  FileMap*      fileMap;   // mapped by 'realpath'
+  RealPathMgr& m_realpathMgr;
+
+  FileMap*      fileMap;   // mapped by RealPathMgr
   VMAToProcMap*      procMap;
   VMAToStmtRangeMap* stmtMap;
 };
@@ -979,7 +974,7 @@ public:
 
 
   static File* 
-  findOrCreate(LM* lmScope, const std::string& filenm);
+  findOrCreate(LM* lm, const std::string& filenm);
 
 
  // fileNameWithPath from constructor 
@@ -1047,9 +1042,8 @@ protected:
   Proc& operator=(const Proc& x);
 
 public: 
-  Proc(const char* name, ACodeNode* parent, 
-	    const char* linkname, bool hasSym,
-	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+  Proc(const char* name, ACodeNode* parent, const char* linkname, bool hasSym,
+       SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyPROC, parent, begLn, endLn, 0, 0)
   {
     Ctor(name, parent, linkname, hasSym);
@@ -1071,7 +1065,7 @@ public:
   bool hasSymbolic() const { return m_hasSym; }
   
   static Proc*
-  findOrCreate(File* fScope, const std::string& procnm, SrcFile::ln line);
+  findOrCreate(File* file, const std::string& procnm, SrcFile::ln line);
   
   
   virtual const std::string& name() const     { return m_name; }
@@ -1235,11 +1229,11 @@ public:
       m_sortId((int)begLn)
   {
     ANodeTy t = (parent) ? parent->Type() : TyANY;
-    DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyFILE) || (t == TyPROC)
-		|| (t == TyALIEN) || (t == TyLOOP), "");
+    DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyFILE)
+		|| (t == TyPROC) || (t == TyALIEN) || (t == TyLOOP), "");
     Proc* p = AncProc();
     if (p) { 
-      p->AddToStmtMap(this); 
+      p->AddToStmtMap(this);
       //DIAG_DevIf(0) { LoadMod()->verifyStmtMap(); }
     }
     //DIAG_DevMsg(3, "Stmt::Stmt: " << toString_me());

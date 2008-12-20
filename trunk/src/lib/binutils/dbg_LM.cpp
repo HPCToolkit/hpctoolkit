@@ -71,6 +71,7 @@ using std::dec;
 #include "dbg_Proc.hpp"
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/RealPathMgr.hpp>
 #include <lib/support/SrcFile.hpp>
 
 //*************************** Forward Declarations **************************
@@ -193,6 +194,10 @@ binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
   pinfo->name = name;
   pinfo->filenm = filenm;
   pinfo->begLine = (SrcFile::ln)begLine;
+
+  // normalize file names -- sometimes filenames are of different
+  // forms within same load module
+  RealPathMgr::singleton().realpath(pinfo->filenm);
 
   // We are not guaranteed to see parent routines before children.
   // Save begVMA for future processing.
