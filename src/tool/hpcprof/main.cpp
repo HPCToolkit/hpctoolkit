@@ -80,21 +80,16 @@ using std::string;
 static Prof::CallPath::Profile* 
 readProfileData(std::vector<string>& profileFiles);
 
-static Prof::Struct::Tree*
-readStructure(const Analysis::Args& args);
+static void
+readStructure(const Prof::Struct::Tree* structure, const Analysis::Args& args);
 
 static void
 dumpProfileData(std::ostream& os, std::vector<string>& profileFiles);
 
 static void
-processCallingCtxtTree(Prof::CallPath::Profile* prof, 
+overlayStaticStructure(Prof::CallPath::Profile* prof, 
 		       Prof::Epoch::LM* epoch_lm,
 		       Prof::Struct::LM* lmStrct);
-
-static void
-processCallingCtxtTree(Prof::CallPath::Profile* prof, 
-		       Prof::Epoch::LM* epoch_lm);
-
 
 //****************************************************************************
 
@@ -136,14 +131,18 @@ realmain(int argc, char* const* argv)
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   // ------------------------------------------------------------
-  // Read 'profData', the profiling data file
+  // Read profile data
   // ------------------------------------------------------------
   Prof::CallPath::Profile* prof = readProfileData(args.profileFiles);
 
+  // ------------------------------------------------------------
+  // Seed structure information
+  // ------------------------------------------------------------
+  Prof::Struct::Tree* structure = new Prof::Struct::Tree("");
   if (!args.structureFiles.empty()) {
-    Prof::Struct::Tree* strct = readStructure(args);
-    prof->structure(strct);
+    readStructure(structure, args);
   }
+  prof->structure(structure);
 
   // ------------------------------------------------------------
   // Add static structure to dynamic call paths
@@ -158,24 +157,15 @@ realmain(int argc, char* const* argv)
       Prof::Epoch::LM* epoch_lm = epoch->lm(i); // *it;
 
       // tallent (FIXME): See note on Epoch::LM::isUsed()
+      // FIXME: emit warning if not available, but process anyway
       if (epoch_lm->isAvail() && epoch_lm->isUsed()) {
-	const string& lm_fnm = epoch_lm->name();
+	const string& lm_nm = epoch_lm->name();
 
 	Prof::Struct::Tree* structure = prof->structure();
-	Prof::Struct::LM* lmStrct = NULL;
-	if (structure) {
-	  Prof::Struct::Pgm* pgmStrct = structure->GetRoot();
-	  lmStrct = pgmStrct->findLM(lm_fnm);
-	}
+	Prof::Struct::Pgm* pgmStrct = structure->GetRoot();
+	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(pgmStrct, lm_nm);
 	
-	if (lmStrct) {
-	  DIAG_Msg(1, "STRUCTURE: " << lm_fnm);
-	  processCallingCtxtTree(prof, epoch_lm, lmStrct);
-	}
-	else {
-	  DIAG_Msg(1, "Line map : " << lm_fnm);
-	  processCallingCtxtTree(prof, epoch_lm);
-	}
+	overlayStaticStructure(prof, epoch_lm, lmStrct);
       }
     }
     
@@ -248,48 +238,45 @@ readProfileFile(const string& prof_fnm)
 //****************************************************************************
 
 
-static Prof::Struct::Tree*
-readStructure(const Analysis::Args& args)
+static void
+readStructure(const Prof::Struct::Tree* structure, const Analysis::Args& args)
 {
   string searchPath = args.searchPathStr();
-
-  Prof::Struct::Pgm* pgmStrct = new Prof::Struct::Pgm("");
-  Prof::Struct::Tree* structure = new Prof::Struct::Tree("", pgmStrct);
 
   Prof::Struct::TreeInterface structIF(structure->GetRoot(), searchPath);
   DocHandlerArgs docargs; // NOTE: override for replacePath()
 
   Prof::Struct::readStructure(structIF, args.structureFiles,
 			      PGMDocHandler::Doc_STRUCT, docargs);
-  return structure;
 }
 
 //****************************************************************************
 
 static void
-processCallingCtxtTree(Prof::CallPath::Profile* prof, 
+overlayStaticStructure(Prof::CallPath::Profile* prof, 
 		       Prof::Epoch::LM* epoch_lm,
 		       Prof::Struct::LM* lmStrct)
 {
-  Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmStrct);
-}
+  const string& lm_nm = epoch_lm->name();
 
-
-static void
-processCallingCtxtTree(Prof::CallPath::Profile* prof, 
-		       Prof::Epoch::LM* epoch_lm)
-{
-  binutils::LM* lm = NULL;
-  try {
-    lm = new binutils::LM();
-    lm->open(epoch_lm->name().c_str());
-    lm->read(binutils::LM::ReadFlg_Proc);
+  if (lmStrct->ChildCount() > 0) {
+    DIAG_Msg(1, "STRUCTURE: " << lm_nm);
+    Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmStrct);
   }
-  catch (...) {
-    DIAG_EMsg("While reading '" << epoch_lm->name() << "'...");
-    throw;
-  }
-  Analysis::CallPath::inferCallFrames(prof, epoch_lm, lm);
-  delete lm;
-}
+  else {
+    DIAG_Msg(1, "Line map : " << lm_nm);
 
+    binutils::LM* lm = NULL;
+    try {
+      lm = new binutils::LM();
+      lm->open(lm_nm.c_str());
+      lm->read(binutils::LM::ReadFlg_Proc);
+    }
+    catch (...) {
+      DIAG_EMsg("While reading '" << lm_nm << "'...");
+      throw;
+    }
+    Analysis::CallPath::inferCallFrames(prof, epoch_lm, lm);
+    delete lm;
+  }
+}

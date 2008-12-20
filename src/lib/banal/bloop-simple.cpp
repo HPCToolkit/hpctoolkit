@@ -107,8 +107,8 @@ banal::bloop::makeStructureSimple(Struct::LM* lmStrct,
     procnm = Struct::Tree::UnknownProcNm;
   }
   
-  Struct::File* fileStrct = Struct::File::findOrCreate(lmStrct, filenm);
-  Struct::Proc* procStrct = Struct::Proc::findOrCreate(fileStrct, procnm, line);
+  Struct::File* fileStrct = Struct::File::demand(lmStrct, filenm);
+  Struct::Proc* procStrct = Struct::Proc::demand(fileStrct, procnm, line);
   Struct::Stmt* stmtStrct = procStrct->findStmt(line);
   if (!stmtStrct) {
     VMA begVMA = vma;

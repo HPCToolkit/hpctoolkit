@@ -105,6 +105,9 @@ const std::string Tree::UnknownProcNm = "~<unknown-proc>~";
 Tree::Tree(const char* name, Pgm* root)
   : m_root(root)
 {
+  if (!m_root) {
+    m_root = new Pgm(name);
+  }
 }
 
 
@@ -408,6 +411,17 @@ LM::operator=(const LM& x)
 }
 
 
+LM* 
+LM::demand(Pgm* pgm, const string& lm_nm)
+{
+  LM* lm = pgm->findLM(lm_nm);
+  if (!lm) {
+    lm = new LM(lm_nm, pgm);
+  }
+  return lm;
+}
+
+
 void
 File::Ctor(const char* srcFileWithPath, bool srcIsReadble_, 
 		ANode* parent)
@@ -437,14 +451,14 @@ File::operator=(const File& x)
 
 
 File* 
-File::findOrCreate(LM* lm, const string& filenm)
+File::demand(LM* lm, const string& filenm)
 {
   File* file = lm->FindFile(filenm);
-  if (file == NULL) {
+  if (!file) {
     bool fileIsReadable = FileUtil::isReadable(filenm.c_str());
     file = new File(filenm, fileIsReadable, lm);
   }
-  return file; // guaranteed to be a valid pointer
+  return file;
 }
 
 
@@ -485,7 +499,7 @@ Proc::operator=(const Proc& x)
 
 
 Proc*
-Proc::findOrCreate(File* file, const string& procnm, SrcFile::ln line)
+Proc::demand(File* file, const string& procnm, SrcFile::ln line)
 {
   // NOTE: The Proc is always created as non-symbolic...
   Proc* proc = file->FindProc(procnm);
