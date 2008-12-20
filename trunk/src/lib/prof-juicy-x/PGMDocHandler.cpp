@@ -310,7 +310,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     curStrct = root;
   }
   
-  // LM (load module)
+  // Load Module
   else if (XMLString::equals(name, elemLM)) {
     string lm = getAttr(attributes, attrName); // must exist
     lm = m_args.replacePath(lm);
@@ -324,7 +324,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     curStrct = lmscope;
   }
   
-  // F(ile)
+  // File
   else if (XMLString::equals(name, elemFile)) {
     string fnm = getAttr(attributes, attrName);
     fnm = m_args.replacePath(fnm);
@@ -342,7 +342,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     curStrct = fileScope;
   }
 
-  // P(roc)
+  // Proc
   else if (XMLString::equals(name, elemProc)) {
     DIAG_Assert(scopeStack.Depth() >= 2, ""); // at least has File, LM
     
@@ -358,7 +358,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     // Find enclosing File scope
     Struct::File* curFile = FindCurrentFile();
     if (!curFile) {
-      PGM_Throw("No F(ile) scope for P(roc) scope '" << name << "'");
+      PGM_Throw("No F(ile) for P(roc) '" << name << "'");
     }
 
     // -----------------------------------------------------
@@ -391,7 +391,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     curStrct = m_curProc;
   }
   
-  // A(lien)
+  // Alien
   else if (XMLString::equals(name, elemAlien)) {
     int numAttr = attributes.getLength();
     DIAG_Assert(0 <= numAttr && numAttr <= 6, DIAG_UnexpectedInput);
@@ -413,7 +413,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     curStrct = alien;
   }
 
-  // L(oop)
+  // Loop
   else if (XMLString::equals(name, elemLoop)) {
     DIAG_Assert(scopeStack.Depth() >= 3, ""); // at least has Proc, File, LM
 
@@ -434,7 +434,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     curStrct = loopNode;
   }
   
-  // S(tmt)
+  // Stmt
   else if (XMLString::equals(name, elemStmt)) {
     int numAttr = attributes.getLength();
     
@@ -464,7 +464,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     curStrct = stmtNode;
   }
   
-  // G(roup)
+  // Group
   else if (XMLString::equals(name, elemGroup)) {
     string grpnm = getAttr(attributes, attrName); // must exist
     DIAG_Assert(!grpnm.empty(), "");
@@ -504,21 +504,21 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
       || XMLString::equals(name, elemPgm)) {
   }
 
-  // LM (load module)
+  // Load Module
   else if (XMLString::equals(name, elemLM)) {
     DIAG_Assert(scopeStack.Depth() >= 1, "");
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
     m_curLmNm = "";
   }
 
-  // F(ile)
+  // File
   else if (XMLString::equals(name, elemFile)) {
     DIAG_Assert(scopeStack.Depth() >= 2, ""); // at least has LM
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
     m_curFileNm = "";
   }
 
-  // P(roc)
+  // Proc
   else if (XMLString::equals(name, elemProc)) {
     DIAG_Assert(scopeStack.Depth() >= 3, ""); // at least has File, LM
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
@@ -526,26 +526,26 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
     m_curProc = NULL;
   }
 
-  // A(lien)
+  // Alien
   else if (XMLString::equals(name, elemAlien)) {
     // stack depth should be at least 4
     DIAG_Assert(scopeStack.Depth() >= 4, "");
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
   }
   
-  // L(oop)
+  // Loop
   else if (XMLString::equals(name, elemLoop)) {
     // stack depth should be at least 4
     DIAG_Assert(scopeStack.Depth() >= 4, "");
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
   }
   
-  // S(tmt)
+  // Stmt
   else if (XMLString::equals(name, elemStmt)) {
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
   }
 
-  // G(roup)
+  // Group
   else if (XMLString::equals(name, elemGroup)) {
     DIAG_Assert(scopeStack.Depth() >= 1, "");
     DIAG_Assert(groupNestingLvl >= 1, "");
