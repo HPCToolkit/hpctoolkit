@@ -130,6 +130,8 @@ TreeInterface::MoveToLM(const char* name)
 {
   DIAG_Assert(name, "");
 
+  // REPLACE: LM::findOrCreate
+
   LM* lm = root->findLM(name);
   if (lm == NULL) {
     lm = new LM(name, root);
@@ -157,6 +159,8 @@ TreeInterface::MoveToFile(const char* name)
     currentLM = MoveToLM(root->name());
   } 
 #endif
+
+  // REPLACE: File::findOrCreate
 
   // -------------------------------------------------------
   // Obtain a 'canonical' file name

@@ -467,7 +467,7 @@ findOrCreateFileNode(Struct::LM* lmStrct, binutils::Proc* p)
   }
   
   // Obtain corresponding Struct::File
-  return Struct::File::findOrCreate(lmStrct, filenm);
+  return Struct::File::demand(lmStrct, filenm);
 } 
 
 

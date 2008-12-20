@@ -860,6 +860,9 @@ public:
     delete stmtMap;
   }
 
+  static LM* 
+  demand(Pgm* pgm, const std::string& lm_fnm);
+
   virtual std::string BaseName() const  { return FileUtil::basename(m_name); }
 
   const std::string& name() const { return m_name; }
@@ -973,7 +976,7 @@ public:
 
 
   static File* 
-  findOrCreate(LM* lm, const std::string& filenm);
+  demand(LM* lm, const std::string& filenm);
 
 
  // fileNameWithPath from constructor 
@@ -1064,7 +1067,7 @@ public:
   bool hasSymbolic() const { return m_hasSym; }
   
   static Proc*
-  findOrCreate(File* file, const std::string& procnm, SrcFile::ln line);
+  demand(File* file, const std::string& procnm, SrcFile::ln line);
   
   
   virtual const std::string& name() const     { return m_name; }
