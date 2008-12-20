@@ -325,13 +325,14 @@ ACodeNode::LinkAndSetLineRange(ACodeNode* parent)
 }
 
 
+RealPathMgr& Pgm::s_realpathMgr = RealPathMgr::singleton();
+
 void
 Pgm::Ctor(const char* nm)
 {
   DIAG_Assert(nm, "");
   frozen = false;
   m_name = nm;
-  m_realpathMgr = RealPathMgr::singleton();
   groupMap = new GroupMap();
   lmMap = new LMMap();
 }
@@ -355,7 +356,7 @@ LM*
 Pgm::findLM(const char* nm) const
 {
   std::string nm_real = nm;
-  m_realpathMgr.realpath(nm_real);
+  s_realpathMgr.realpath(nm_real);
   LMMap::iterator it = lmMap->find(nm_real);
   LM* x = (it != lmMap->end()) ? it->second : NULL;
   return x;
@@ -375,6 +376,8 @@ Group::Ctor(const char* nm, ANode* parent)
 }
 
 
+RealPathMgr& LM::s_realpathMgr = RealPathMgr::singleton();
+
 void
 LM::Ctor(const char* nm, ANode* parent)
 {
@@ -383,7 +386,6 @@ LM::Ctor(const char* nm, ANode* parent)
   DIAG_Assert((parent == NULL) || (t == TyPGM) || (t == TyGROUP), "");
 
   m_name = nm;
-  m_realpathMgr = RealPathMgr::singleton();
   fileMap = new FileMap();
   procMap = NULL;
   stmtMap = NULL;
@@ -494,6 +496,8 @@ Proc::findOrCreate(File* file, const string& procnm, SrcFile::ln line)
 }
 
 
+RealPathMgr& Alien::s_realpathMgr = RealPathMgr::singleton();
+
 void
 Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm)
 {
@@ -502,6 +506,8 @@ Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm)
 	      || (t == TyPROC) || (t == TyLOOP), "");
 
   m_filenm = (filenm) ? filenm : "";
+  s_realpathMgr.realpath(m_filenm);
+
   m_name   = (nm) ? nm : "";
 }
 
@@ -984,7 +990,7 @@ void
 Pgm::AddToLoadModMap(LM* lm)
 {
   string nm_real = lm->name();
-  m_realpathMgr.realpath(nm_real);
+  s_realpathMgr.realpath(nm_real);
   std::pair<LMMap::iterator, bool> ret = 
     lmMap->insert(std::make_pair(nm_real, lm));
   DIAG_Assert(ret.second, "Duplicate!");
@@ -995,7 +1001,7 @@ void
 LM::AddToFileMap(File* f)
 {
   string nm_real = f->name();
-  m_realpathMgr.realpath(nm_real);
+  s_realpathMgr.realpath(nm_real);
   DIAG_DevMsg(2, "LM: mapping file name '" << nm_real << "' to File* " << f);
   std::pair<FileMap::iterator, bool> ret = 
     fileMap->insert(std::make_pair(nm_real, f));
@@ -1024,7 +1030,7 @@ File*
 LM::FindFile(const char* nm) const
 {
   string nm_real = nm;
-  m_realpathMgr.realpath(nm_real);
+  s_realpathMgr.realpath(nm_real);
   FileMap::iterator it = fileMap->find(nm_real);
   File* x = (it != fileMap->end()) ? it->second : NULL;
   return x;
