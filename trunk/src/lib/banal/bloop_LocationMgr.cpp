@@ -551,9 +551,9 @@ LocationMgr::fixContextStack(const Struct::ACodeNode* proposed_scope)
   // FIXME: a big hack!
   m_ctxtStack.clear();
 
-  Struct::ACodeNode* x = proposed_scope->AncCallingCtxt();
+  Struct::ACodeNode* x = proposed_scope->ancestorProcCtxt();
   for ( ; x->Type() != Struct::ANode::TyPROC; 
-	x = x->Parent()->AncCallingCtxt()) {
+	x = x->Parent()->ancestorProcCtxt()) {
     m_ctxtStack.push_back(Ctxt(x));
   }
   m_ctxtStack.push_back(Ctxt(x)); // add the TyPROC

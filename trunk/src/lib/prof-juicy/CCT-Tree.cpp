@@ -197,11 +197,6 @@ CSProfNode::CSProfNode(NodeType t, CSProfNode* _parent)
 	      !AncestorPgm()->IsFrozen(), "");
   static uint uniqueId = 1;
   uid = uniqueId++; 
-  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	 if (type==STATEMENT) {
-	   fprintf(stderr, " CSProfNode constructor: copying callsite into statement node\n");
-	   )
-	 }
 }
 
 
@@ -221,15 +216,11 @@ CSProfNode::~CSProfNode()
 
 CSProfCodeNode::CSProfCodeNode(NodeType t, CSProfNode* _parent, 
 			       SrcFile::ln begLn, SrcFile::ln endLn,
-			       uint sId) 
+			       Struct::ACodeNode* strct) 
   : CSProfNode(t, _parent), 
-    begLine(ln_NULL), endLine(ln_NULL), m_sId(sId) 
+    begLine(ln_NULL), endLine(ln_NULL), m_strct(strct) 
 { 
   SetLineRange(begLn, endLn); 
-  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	 if (type==STATEMENT) {
-	   fprintf(stderr, " CSProfCodeNode constructor: copying callsite into statement node\n");
-	 })
 }
 
 
@@ -332,9 +323,6 @@ CSProfStatementNode::operator=(const CSProfStatementNode& x)
     file = x.GetFile();
     proc = x.GetProc();
     SetLine(x.GetLine());
-    
-    xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	   fprintf(stderr, " copied metrics\n"));
     fileistext = x.FileIsText();
   }
 }
@@ -367,8 +355,9 @@ CSProfProcedureFrameNode::~CSProfProcedureFrameNode()
 
 
 CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent, 
-			       SrcFile::ln begLn, SrcFile::ln endLn, uint sId)
-  : CSProfCodeNode(LOOP, _parent, begLn, endLn, sId)
+			       SrcFile::ln begLn, SrcFile::ln endLn, 
+			       Struct::ACodeNode* strct)
+  : CSProfCodeNode(LOOP, _parent, begLn, endLn, strct)
 {
   DIAG_Assert((_parent == NULL) || (_parent->GetType() == GROUP) 
 	      || (_parent->GetType() == CALLSITE) 
@@ -382,8 +371,8 @@ CSProfLoopNode::~CSProfLoopNode()
 
 CSProfStmtRangeNode::CSProfStmtRangeNode(CSProfNode* _parent, 
 					 SrcFile::ln begLn, SrcFile::ln endLn, 
-					 uint sId)
-  : CSProfCodeNode(STMT_RANGE, _parent, begLn, endLn, sId)
+					 Struct::ACodeNode* strct)
+  : CSProfCodeNode(STMT_RANGE, _parent, begLn, endLn, strct)
 {
   DIAG_Assert((_parent == NULL) || (_parent->GetType() == GROUP)
 	      || (_parent->GetType() == CALLSITE)
@@ -826,8 +815,9 @@ CSProfCodeNode::toString_me(int dmpFlag) const
     line += "-" + StrUtil::toStr(endLine);
   }
 
+  uint sId = (m_strct) ? m_strct->id() : 0;
   string self = CSProfNode::toString_me(dmpFlag)
-    + " s" + xml::MakeAttrNum(m_sId)
+    + " s" + xml::MakeAttrNum(sId)
     + " l" + xml::MakeAttrStr(line);
   return self;
 }
@@ -852,38 +842,61 @@ CSProfGroupNode::toString_me(int dmpFlag) const
 
 
 string
+CSProfProcedureFrameNode::toString_me(int dmpFlag) const
+{
+  string self = CSProfCodeNode::toString_me(dmpFlag);
+
+  bool flg = CCT::Tree::AddXMLEscapeChars(dmpFlag);
+
+  if (m_strct)  {
+    Struct::Proc*  pStrct = dynamic_cast<Struct::Proc*>(m_strct);
+    Struct::Alien* aStrct = dynamic_cast<Struct::Alien*>(m_strct);
+    Struct::LM*    lmStrct = NULL;
+    Struct::File*  fStrct = NULL;
+
+    DIAG_Assert(pStrct || aStrct, DIAG_UnexpectedInput);
+
+    if (isAlien()) {
+      lmStrct = aStrct->AncLM();
+    }
+    else {
+      fStrct = pStrct->AncFile();      
+      lmStrct = fStrct->AncLM();
+    }
+
+    const string& lm_nm = lmStrct->name();
+    const string& fnm   = (isAlien()) ? aStrct->fileName() : fStrct->name();
+    const string& pnm   = (isAlien()) ? aStrct->name() : pStrct->name();
+
+    if (fileistext) {
+      self += " f" + xml::MakeAttrStr(fnm, flg);
+    }
+    else {
+      self += " lm" + xml::MakeAttrStr(lm_nm, flg);
+    }
+    
+    self += " n" + xml::MakeAttrStr(pnm, flg);
+    
+    if (isAlien()) {
+      self = self + " a=\"1\"";
+    }
+  }
+
+  return self; 
+}
+
+
+string
 CSProfCallSiteNode::toString_me(int dmpFlag) const
 {
   string self = CSProfCodeNode::toString_me(dmpFlag);
   
   if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
-    self = self 
-      + " assoc" + xml::MakeAttrStr(assocInfo_str()) 
+    self += " assoc" + xml::MakeAttrStr(assocInfo_str()) 
       + " ip_real" + xml::MakeAttrNum(ip_real(), 16)
       + " op" + xml::MakeAttrNum(opIndex())
       + " lip" + xml::MakeAttrStr(lip_str());
-  } 
-
-  if (dmpFlag & CCT::Tree::DBG_OUTPUT) { // FIXME: remove
-    if (!file.empty()) { 
-      if (fileistext)
-        self = self + " f" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag));
-      else 
-        self = self + " lm" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag));
-    } 
-
-    if (!proc.empty()) {
-      self = self + " p" + xml::MakeAttrStr(proc, CCT::Tree::AddXMLEscapeChars(dmpFlag));
-    } 
-    else {
-      self = self + " ip" + xml::MakeAttrNum(ip(), 16);
-    }
-
-    if (cpid() != 0) {
-      self = self + " cpid" + xml::MakeAttrNum(cpid());
-    }  
   }
-  
 
   return self; 
 } 
@@ -893,58 +906,10 @@ string
 CSProfStatementNode::toString_me(int dmpFlag) const
 {
   string self = CSProfCodeNode::toString_me(dmpFlag);
-  
+
   if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
-    self = self + " ip" + xml::MakeAttrNum(ip(), 16) 
+    self += " ip" + xml::MakeAttrNum(ip(), 16) 
       + " op" + xml::MakeAttrNum(opIndex());
-  } 
-
-  if (dmpFlag & CCT::Tree::DBG_OUTPUT) { // FIXME: remove
-    if (!file.empty()) { 
-      if (fileistext)
-        self = self + " f" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag)); 
-      else 
-        self = self + " lm" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag)); 
-    } 
-
-    if (!proc.empty()) {
-      self = self + " p" + xml::MakeAttrStr(proc, CCT::Tree::AddXMLEscapeChars(dmpFlag));
-    } 
-    else {
-      self = self + " ip" + xml::MakeAttrNum(ip(), 16);
-    }
-  
-    if (cpid() != 0) {
-      self = self + " cpid" + xml::MakeAttrNum(cpid());
-    }  
-  }
-
-  return self; 
-} 
-
-
-string
-CSProfProcedureFrameNode::toString_me(int dmpFlag) const
-{
-  string self = CSProfCodeNode::toString_me(dmpFlag);
-  
-  if (!file.empty()) { 
-     if (fileistext)
-        self = self + " f" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag)); 
-     else 
-        self = self + " lm" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag)); 
-   } 
-
-  if (!proc.empty()) {
-    self = self + " n" + xml::MakeAttrStr(proc, CCT::Tree::AddXMLEscapeChars(dmpFlag));
-  } else {
-    self = self + " n" + xml::MakeAttrStr("unknown", CCT::Tree::AddXMLEscapeChars(dmpFlag)) ; 
-  }
-  
-  if (isAlien()) {
-    // const char* alien = isAlien() ? "1" : "0";
-    // xml::MakeAttrStr(alien);
-    self = self + " a=\"1\"";
   }
 
   return self; 
@@ -957,6 +922,7 @@ CSProfLoopNode::toString_me(int dmpFlag) const
   string self = CSProfCodeNode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
   return self;
 }
+
 
 string
 CSProfStmtRangeNode::toString_me(int dmpFlag) const

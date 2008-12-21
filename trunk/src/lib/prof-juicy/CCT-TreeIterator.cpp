@@ -244,9 +244,10 @@ CSProfNodeSortedIterator::cmpByStructureId(const void* a, const void* b)
 {
   CSProfCodeNode* x = (*(CSProfCodeNode**)a);
   CSProfCodeNode* y = (*(CSProfCodeNode**)b);
-  DIAG_Assert(x != NULL, "");
-  DIAG_Assert(y != NULL, "");
-  return (x->structureId() - y->structureId());
+  DIAG_Assert(x && y , "");
+  uint x_id = x->structure() ? x->structure()->id() : 0;
+  uint y_id = y->structure() ? y->structure()->id() : 0;
+  return (x_id - y_id);
 }
 
 //*****************************************************************************

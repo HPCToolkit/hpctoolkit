@@ -385,7 +385,7 @@ public:
   Loop*  AncLoop() const;   // return Ancestor(TyLOOP)
   Stmt*  AncStmt() const;   // return Ancestor(TySTMT)
 
-  ACodeNode* AncCallingCtxt() const; // return Ancestor(TyALIEN|TyPROC)
+  ACodeNode* ancestorProcCtxt() const; // return Ancestor(TyALIEN|TyPROC)
 
 
   // LeastCommonAncestor: Given two ANode nodes, return the least

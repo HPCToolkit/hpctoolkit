@@ -166,9 +166,7 @@ driver_copySourceFile(const string& fnm_orig,
 static bool 
 CallPath_Filter(const Prof::CSProfNode& x, long type)
 {
-  return (x.GetType() == Prof::CSProfNode::PROCEDURE_FRAME 
-	  || x.GetType() == Prof::CSProfNode::CALLSITE
-	  || x.GetType() == Prof::CSProfNode::STATEMENT);
+  return (x.GetType() == Prof::CSProfNode::PROCEDURE_FRAME);
 }
 
 
