@@ -76,9 +76,10 @@ namespace Analysis {
 
 namespace CallPath {
 
+  // lm is optional and may be NULL
 void 
 inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
-		Prof::Struct::LM* lmStrct);
+		Prof::Struct::LM* lmStrct, binutils::LM* lm);
 
 void 
 inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,

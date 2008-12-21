@@ -83,6 +83,12 @@ enum ProfType_t {
 ProfType_t
 getProfileType(const std::string& filenm);
 
+// ------------------------------------------------------------
+
+Prof::Struct::ACodeNode*
+demandStructure(VMA vma, Prof::Struct::LM* lmStrct, binutils::LM* lm, 
+		bool useStruct);
+
 
 // ------------------------------------------------------------
 
