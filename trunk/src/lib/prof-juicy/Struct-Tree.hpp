@@ -1067,7 +1067,7 @@ public:
   bool hasSymbolic() const { return m_hasSym; }
   
   static Proc*
-  demand(File* file, const std::string& procnm, SrcFile::ln line);
+  demand(File* file, const std::string& procnm, SrcFile::ln line = 0);
   
   
   virtual const std::string& name() const     { return m_name; }

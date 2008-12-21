@@ -62,6 +62,8 @@ using std::string;
 
 #include "Util.hpp"
 
+#include <lib/banal/bloop-simple.hpp>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
@@ -108,6 +110,45 @@ Analysis::Util::getProfileType(const std::string& filenm)
 #endif
   
   return ProfType_FLAT;
+}
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+
+// Always consult the load module's structure information
+// (Struct::LM) and perform a lookup by VMA first.  If this fails:
+//
+//   - If the structure was seeded by full structure by
+//     bloop::makeStructure (useStruct), then use the "unknown" file
+//     and procedures.
+//
+//   - Otherwise, create structure using banal::bloop::makeStructureSimple
+//
+// This policy assumes that when full structure has been provided,
+// banal::bloop::makeStructureSimple could have undesirable effects.  One
+// example of a problem is that for simple structure, a line ->
+// Struct::Stmt map is consulted which is ambiguous in the presence of
+// inlinine (Struct::Alien).
+Prof::Struct::ACodeNode*
+Analysis::Util::demandStructure(VMA vma, Prof::Struct::LM* lmStrct, binutils::LM* lm, bool useStruct)
+{
+  Prof::Struct::ACodeNode* strct = lmStrct->findByVMA(vma);
+  if (!strct) {
+    if (useStruct) {
+      Prof::Struct::File* fileStrct = 
+	Prof::Struct::File::demand(lmStrct, 
+				   Prof::Struct::Tree::UnknownFileNm);
+      strct = Prof::Struct::Proc::demand(fileStrct, 
+					 Prof::Struct::Tree::UnknownProcNm);
+    }
+    else {
+      strct = banal::bloop::makeStructureSimple(lmStrct, lm, vma);
+    }
+  }
+  return strct;
 }
 
 

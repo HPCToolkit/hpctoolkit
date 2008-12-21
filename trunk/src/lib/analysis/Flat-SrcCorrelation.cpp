@@ -59,8 +59,6 @@ using std::vector;
 #include "TextUtil.hpp"
 #include "Util.hpp"
 
-#include <lib/banal/bloop-simple.hpp>
-
 #include <lib/prof-juicy-x/PGMReader.hpp>
 
 #include <lib/prof-juicy/Struct-TreeInterface.hpp>
@@ -797,18 +795,8 @@ Driver::correlateRaw(PerfMetric* metric,
     VMA vma_ur = (doUnrelocate) ? (vma - lm_load_addr) : vma;
 	
     // 2. Find associated scope and insert into scope tree
-    Prof::Struct::ANode* strct = NULL;
-
-    if (useStruct) {
-      strct = lmStrct->findByVMA(vma_ur);
-      if (!strct) {
-	structIF.MoveToFile(Prof::Struct::Tree::UnknownFileNm);
-	strct = structIF.MoveToProc(Prof::Struct::Tree::UnknownProcNm);
-      }
-    }
-    else {
-      strct = banal::bloop::makeStructureSimple(lmStrct, lm, vma_ur);
-    }
+    Prof::Struct::ANode* strct = 
+      Util::demandStructure(vma_ur, lmStrct, lm, useStruct);
 
     strct->SetPerfData(metric->Index(), events); // implicit add!
     DIAG_DevMsg(6, "Metric associate: " 
@@ -816,7 +804,7 @@ Driver::correlateRaw(PerfMetric* metric,
 		<< " --> +" << events << "=" 
 		<< strct->PerfData(metric->Index()) << " :: " 
 		<< strct->toXML());
-  }  
+  }
 }
 
 

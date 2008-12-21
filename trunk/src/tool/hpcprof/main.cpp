@@ -258,15 +258,16 @@ overlayStaticStructure(Prof::CallPath::Profile* prof,
 		       Prof::Struct::LM* lmStrct)
 {
   const string& lm_nm = epoch_lm->name();
+  binutils::LM* lm = NULL;
 
-  if (lmStrct->ChildCount() > 0) {
+  bool useStruct = (lmStrct->ChildCount() > 0);
+
+  if (useStruct) {
     DIAG_Msg(1, "STRUCTURE: " << lm_nm);
-    Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmStrct);
   }
   else {
     DIAG_Msg(1, "Line map : " << lm_nm);
 
-    binutils::LM* lm = NULL;
     try {
       lm = new binutils::LM();
       lm->open(lm_nm.c_str());
@@ -276,7 +277,19 @@ overlayStaticStructure(Prof::CallPath::Profile* prof,
       DIAG_EMsg("While reading '" << lm_nm << "'...");
       throw;
     }
-    Analysis::CallPath::inferCallFrames(prof, epoch_lm, lm);
-    delete lm;
   }
+
+
+#if (0)
+  Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmStrct, lm);
+#else
+  if (useStruct) {
+    Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmStrct, lm);
+  }
+  else {
+    Analysis::CallPath::inferCallFrames(prof, epoch_lm, lm);
+  }
+#endif
+
+  delete lm;
 }

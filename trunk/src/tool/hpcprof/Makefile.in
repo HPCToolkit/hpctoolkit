@@ -15,7 +15,6 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 1709 2008-12-08 22:53:18Z krentel $
 
 #############################################################################
 #
@@ -31,7 +30,6 @@
 #############################################################################
 
 # -*-Mode: makefile;-*-
-# $Id: Makeinclude.config 1324 2008-05-15 17:16:34Z eraxxon $
 
 #############################################################################
 #
@@ -113,9 +111,10 @@ PROGRAMS = $(pkglibexec_PROGRAMS)
 am__objects_1 = hpcprof_bin-main.$(OBJEXT) hpcprof_bin-Args.$(OBJEXT)
 am_hpcprof_bin_OBJECTS = $(am__objects_1)
 hpcprof_bin_OBJECTS = $(am_hpcprof_bin_OBJECTS)
-am__DEPENDENCIES_1 = $(HPC_LIBANALYSIS) $(HPC_LIBPROFJUICYX) \
-	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) \
-	$(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT)
+am__DEPENDENCIES_1 = $(HPC_LIBANALYSIS) $(HPC_LIBBANAL) \
+	$(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) \
+	$(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) \
+	$(HPC_LIBSUPPORT)
 hpcprof_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
 hpcprof_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcprof_bin_CXXFLAGS) \
@@ -356,7 +355,7 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
 MYLDFLAGS = @HOST_CXXFLAGS@
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBANALYSIS) $(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	$(HPC_LIBANALYSIS) $(HPC_LIBBANAL) $(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
 	@HOST_HPCPROF_LDFLAGS@ \
 	-lm

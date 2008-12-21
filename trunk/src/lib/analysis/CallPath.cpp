@@ -66,6 +66,7 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include "CallPath.hpp"
+#include "Util.hpp"
 
 #include <lib/binutils/LM.hpp>
 
@@ -180,18 +181,18 @@ addSymbolicInfo(Prof::CSProfCodeNode* n, Prof::IDynNode* n_dyn,
 		Prof::Struct::ACodeNode* scope);
 
 Prof::CSProfProcedureFrameNode*
-findOrCreateProcFrame(Prof::IDynNode* node,
-		      Prof::Struct::LM* lmStrct, 
-		      Prof::Struct::ACodeNode* callingCtxt,
-		      Prof::Struct::Loop* loop,
-		      VMA curr_ip,
-		      ACodeNodeToProcFrameMap& frameMap,
-		      ProcFrameAndLoopToCSLoopMap& loopMap);
+demandProcFrame(Prof::IDynNode* node,
+		Prof::Struct::LM* lmStrct, 
+		Prof::Struct::ACodeNode* callingCtxt,
+		Prof::Struct::Loop* loop,
+		VMA curr_ip,
+		ACodeNodeToProcFrameMap& frameMap,
+		ProcFrameAndLoopToCSLoopMap& loopMap);
 
 void
-createFrameForProc(Prof::Struct::Proc* proc, Prof::IDynNode* dyn_node,
-		    ACodeNodeToProcFrameMap& frameMap,
-		    ProcFrameAndLoopToCSLoopMap& loopMap);
+makeProcFrame(Prof::Struct::Proc* proc, Prof::IDynNode* dyn_node,
+	      ACodeNodeToProcFrameMap& frameMap,
+	      ProcFrameAndLoopToCSLoopMap& loopMap);
 
 void
 loopifyFrame(Prof::CSProfProcedureFrameNode* frame, 
@@ -202,7 +203,8 @@ loopifyFrame(Prof::CSProfProcedureFrameNode* frame,
 
 void 
 inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
-		Prof::Epoch::LM* epoch_lm, Prof::Struct::LM* lmStrct);
+		Prof::Epoch::LM* epoch_lm, 
+		Prof::Struct::LM* lmStrct, binutils::LM* lm);
 
 
 // inferCallFrames: Effectively create equivalence classes of frames
@@ -211,23 +213,26 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
 void
 Analysis::CallPath::
 inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm, 
-		Prof::Struct::LM* lmStrct)
+		Prof::Struct::LM* lmStrct, binutils::LM* lm)
 {
   Prof::CCT::Tree* cct = prof->cct();
   if (!cct) { return; }
   
-  inferCallFrames(prof, cct->root(), epoch_lm, lmStrct);
+  inferCallFrames(prof, cct->root(), epoch_lm, lmStrct, lm);
 }
 
 
 void 
 inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
-		Prof::Epoch::LM* epoch_lm, Prof::Struct::LM* lmStrct)
+		Prof::Epoch::LM* epoch_lm, 
+		Prof::Struct::LM* lmStrct, binutils::LM* lm)
 {
   // INVARIANT: The parent of 'node' has been fully processed and
   // lives within a correctly located procedure frame.
   
   if (!node) { return; }
+
+  bool useStruct = (!lm);
 
   ACodeNodeToProcFrameMap frameMap;
   ProcFrameAndLoopToCSLoopMap loopMap;
@@ -239,7 +244,9 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
     
     it++; // advance iterator -- it is pointing at 'n' 
     
+    // ---------------------------------------------------
     // process this node
+    // ---------------------------------------------------
     Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
     if (n_dyn && (n_dyn->lm_id() == epoch_lm->id())) {
       VMA ip_ur = n_dyn->ip();
@@ -247,63 +254,64 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
 	Prof::CSProfCallSiteNode* p = node->AncestorCallSite();
 	DIAG_DevMsg(0, "inferCallFrames: " << hex << ((p) ? p->ip() : 0) << " --> " << ip_ur << dec);
       }
+
+      // 1. Find associated structure
+      using namespace Prof;
       
-      Prof::Struct::ACodeNode* scope = lmStrct->findByVMA(ip_ur);
-      Prof::Struct::ACodeNode* ctxt = NULL;
-      Prof::Struct::Loop* loop = NULL;
-      if (scope) {
-	using namespace Prof::Struct;
-	ctxt = scope->AncCallingCtxt();
-	// FIXME: should include PROC (for nested procs)
-	ANode* x = scope->Ancestor(ANode::TyLOOP, ANode::TyALIEN);
-	loop = dynamic_cast<Prof::Struct::Loop*>(x);
-      }
+      Struct::ACodeNode* strct = 
+	Analysis::Util::demandStructure(ip_ur, lmStrct, lm, useStruct);
 
-      // Add symbolic information to 'n'
-      addSymbolicInfo(n, n_dyn, lmStrct, ctxt, scope);
+      Struct::ACodeNode* ctxt = strct->AncCallingCtxt();
+      
+       // FIXME: should include PROC (for nested procs)
+      Struct::ANode* t = strct->Ancestor(Struct::ANode::TyLOOP, 
+					 Struct::ANode::TyALIEN);
+      Struct::Loop* loop = dynamic_cast<Struct::Loop*>(t);
 
-      // Find (or create) a procedure frame for 'n'.
+      // 2. Add symbolic information to 'n'
+      addSymbolicInfo(n, n_dyn, lmStrct, ctxt, strct);
+
+      // 3. Demand a procedure frame for 'n'.
       Prof::CSProfProcedureFrameNode* frame = 
-	findOrCreateProcFrame(n_dyn, lmStrct, ctxt, loop, ip_ur, 
-			      frameMap, loopMap);
+	demandProcFrame(n_dyn, lmStrct, ctxt, loop, ip_ur, frameMap, loopMap);
       
-      // Find appropriate (new) parent context for 'node': the frame
-      // or a loop within the frame
+      // 4. Find new parent context for 'n': the frame itself or a
+      // loop within the frame
       Prof::CSProfCodeNode* newParent = frame;
       if (loop) {
 	ProcFrameAndLoop toFind(frame, loop);
 	ProcFrameAndLoopToCSLoopMap::iterator it = loopMap.find(toFind);
-	DIAG_Assert(it != loopMap.end(), "Cannot find corresponding loop scope:\n" << loop->toStringXML());
+	DIAG_Assert(it != loopMap.end(), "Cannot find corresponding loop structure:\n" << loop->toStringXML());
 	newParent = (*it).second;
       }
       
-      // Link 'n' to its frame
+      // 5. Link 'n' to its frame
       n->Unlink();
       n->Link(newParent);
     }
     
     // recur 
     if (!n->IsLeaf()) {
-      inferCallFrames(prof, n, epoch_lm, lmStrct);
+      inferCallFrames(prof, n, epoch_lm, lmStrct, lm);
     }
   }
 }
 
 
-// findOrCreateProcFrame: Find or create a procedure frame for 'node'
+// demandProcFrame: Find or create a procedure frame for 'node'
 // given it's corresponding load module structure (lmStrct), calling
 // context structure (callingCtxt, a Struct::Proc or Struct::Alien) and
 // statement-type scope.
 // 
 // Assumes that symbolic information has been added to node.
 Prof::CSProfProcedureFrameNode*
-findOrCreateProcFrame(Prof::IDynNode* node,
-		      Prof::Struct::LM* lmStrct, 
-		      Prof::Struct::ACodeNode* callingCtxt,
-		      Prof::Struct::Loop* loop,
-		      VMA ip_ur,
-		      ACodeNodeToProcFrameMap& frameMap,
-		      ProcFrameAndLoopToCSLoopMap& loopMap)
+demandProcFrame(Prof::IDynNode* node,
+		Prof::Struct::LM* lmStrct, 
+		Prof::Struct::ACodeNode* callingCtxt,
+		Prof::Struct::Loop* loop,
+		VMA ip_ur,
+		ACodeNodeToProcFrameMap& frameMap,
+		ProcFrameAndLoopToCSLoopMap& loopMap)
 {
   Prof::CSProfProcedureFrameNode* frame = NULL;
 
@@ -319,7 +327,7 @@ findOrCreateProcFrame(Prof::IDynNode* node,
     // Find and create the frame.
     if (callingCtxt) {
       Prof::Struct::Proc* proc = callingCtxt->AncProc();
-      createFrameForProc(proc, node, frameMap, loopMap);
+      makeProcFrame(proc, node, frameMap, loopMap);
 
       // frame should now be in map
       ACodeNodeToProcFrameMap::iterator it = frameMap.find(toFind);
@@ -343,9 +351,9 @@ findOrCreateProcFrame(Prof::IDynNode* node,
 
 
 void 
-createFrameForProc(Prof::Struct::Proc* proc, Prof::IDynNode* node_dyn,
-		   ACodeNodeToProcFrameMap& frameMap,
-		   ProcFrameAndLoopToCSLoopMap& loopMap)
+makeProcFrame(Prof::Struct::Proc* proc, Prof::IDynNode* node_dyn,
+	      ACodeNodeToProcFrameMap& frameMap,
+	      ProcFrameAndLoopToCSLoopMap& loopMap)
 {
   Prof::CSProfProcedureFrameNode* frame;
   
