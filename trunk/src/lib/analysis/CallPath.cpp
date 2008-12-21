@@ -80,8 +80,6 @@ using namespace xml;
 //*************************** Forward Declarations ***************************
 
 #define DBG_NORM_PROC_FRAME 0
-#define DBG_LUSH_PROC_FRAME 0
-
 
 typedef std::set<Prof::CSProfCodeNode*> CSProfCodeNodeSet;
 
@@ -174,11 +172,6 @@ typedef std::map<ProcFrameAndLoop, Prof::CSProfLoopNode*> ProcFrameAndLoopToCSLo
 
 
 
-void
-addSymbolicInfo(Prof::CSProfCodeNode* n, Prof::IDynNode* n_dyn,
-		Prof::Struct::ACodeNode* pctxtStrct, 
-		Prof::Struct::ACodeNode* scope);
-
 Prof::CSProfProcedureFrameNode*
 demandProcFrame(Prof::IDynNode* node,
 		Prof::Struct::ACodeNode* pctxtStrct,
@@ -265,9 +258,10 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
       Struct::Loop* loopStrct = dynamic_cast<Struct::Loop*>(t);
 
       // 2. Add symbolic information to 'n'
-      addSymbolicInfo(n, n_dyn, pctxtStrct, strct);
+      n->structure(strct);
 
       // 3. Demand a procedure frame for 'n'.
+
       Prof::CSProfProcedureFrameNode* frame = 
 	demandProcFrame(n_dyn, pctxtStrct, frameMap, loopMap);
       
@@ -335,7 +329,7 @@ makeProcFrame(Prof::IDynNode* node, Prof::Struct::Proc* procStrct,
 {
   Prof::CSProfProcedureFrameNode* frame 
     = new Prof::CSProfProcedureFrameNode(NULL);
-  addSymbolicInfo(frame, node, procStrct, procStrct);
+  frame->structure(procStrct);
   frame->Link(node->proxy()->Parent());
   frameMap.insert(std::make_pair(procStrct, frame));
 
@@ -404,8 +398,7 @@ loopifyFrame(Prof::CSProfCodeNode* mirrorNode,
     else if (n->Type() == Prof::Struct::ANode::TyALIEN) {
       Prof::CSProfProcedureFrameNode* fr = 
 	new Prof::CSProfProcedureFrameNode(NULL);
-      addSymbolicInfo(fr, NULL, n, n);
-      fr->isAlien() = true;
+      fr->structure(n);
       frameMap.insert(std::make_pair(n, fr));
       DIAG_DevMsgIf(0, hex << fr->GetProc() << " [" << n << " -> " << fr << "]" << dec);
       
@@ -424,46 +417,6 @@ loopifyFrame(Prof::CSProfCodeNode* mirrorNode,
   }
 }
   
-
-//***************************************************************************
-
-// Add symbolic information to 'n', given its associated procedure
-// context 'pctxtStrct' and structure 'strct' (e.g., Proc, Alien, Loop, Stmt)
-void 
-addSymbolicInfo(Prof::CSProfCodeNode* n, Prof::IDynNode* n_dyn,
-		Prof::Struct::ACodeNode* pctxtStrct, 
-		Prof::Struct::ACodeNode* strct)
-{
-  if (!n) {
-    return;
-  }
-
-  bool isAlien = (pctxtStrct->Type() == Prof::Struct::ANode::TyALIEN);
-
-  const std::string& fnm = (isAlien) ? 
-    dynamic_cast<Prof::Struct::Alien*>(pctxtStrct)->fileName() :
-    pctxtStrct->AncFile()->name();
-
-#if 0
-  n->SetFile(fnm);
-#if (DBG_LUSH_PROC_FRAME)
-  std::string nm = pctxtStrct->name();
-  if (n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
-    nm += " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
-      + ", " + n_dyn->lip_str() + ") [" + n_dyn->assocInfo_str() + "]";
-  }
-  n->SetProc(nm);
-#else
-  n->SetProc(pctxtStrct->name());
-#endif
-#endif
-
-  n->SetLine(strct->begLine());
-  n->SetFileIsText(true);
-
-  n->structure(strct);
-}
-
 
 
 //***************************************************************************
@@ -540,7 +493,7 @@ coalesceCallsiteLeaves(Prof::CSProfNode* node)
       // This child is a leaf. Test for duplicate source line info.
       Prof::CSProfStatementNode* c = dynamic_cast<Prof::CSProfStatementNode*>(child);
       string mykey = string(c->GetFile()) + string(c->GetProc()) 
-	+ StrUtil::toStr(c->GetLine());
+	+ StrUtil::toStr(c->GetBegLine());
       
       StringToCallSiteMap::iterator it = sourceInfoMap.find(mykey);
       if (it != sourceInfoMap.end()) {
