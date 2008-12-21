@@ -176,21 +176,17 @@ typedef std::map<ProcFrameAndLoop, Prof::CSProfLoopNode*> ProcFrameAndLoopToCSLo
 
 void
 addSymbolicInfo(Prof::CSProfCodeNode* n, Prof::IDynNode* n_dyn,
-		Prof::Struct::LM* lmStrct, 
-		Prof::Struct::ACodeNode* callingCtxt, 
+		Prof::Struct::ACodeNode* pctxtStrct, 
 		Prof::Struct::ACodeNode* scope);
 
 Prof::CSProfProcedureFrameNode*
 demandProcFrame(Prof::IDynNode* node,
-		Prof::Struct::LM* lmStrct, 
-		Prof::Struct::ACodeNode* callingCtxt,
-		Prof::Struct::Loop* loop,
-		VMA curr_ip,
+		Prof::Struct::ACodeNode* pctxtStrct,
 		ACodeNodeToProcFrameMap& frameMap,
 		ProcFrameAndLoopToCSLoopMap& loopMap);
 
 void
-makeProcFrame(Prof::Struct::Proc* proc, Prof::IDynNode* dyn_node,
+makeProcFrame(Prof::IDynNode* node, Prof::Struct::Proc* proc, 
 	      ACodeNodeToProcFrameMap& frameMap,
 	      ProcFrameAndLoopToCSLoopMap& loopMap);
 
@@ -261,27 +257,27 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
       Struct::ACodeNode* strct = 
 	Analysis::Util::demandStructure(ip_ur, lmStrct, lm, useStruct);
 
-      Struct::ACodeNode* ctxt = strct->AncCallingCtxt();
-      
-       // FIXME: should include PROC (for nested procs)
+      Struct::ACodeNode* pctxtStrct = strct->ancestorProcCtxt();
+
       Struct::ANode* t = strct->Ancestor(Struct::ANode::TyLOOP, 
 					 Struct::ANode::TyALIEN);
-      Struct::Loop* loop = dynamic_cast<Struct::Loop*>(t);
+                                      // FIXME: include PROC (for nested procs)
+      Struct::Loop* loopStrct = dynamic_cast<Struct::Loop*>(t);
 
       // 2. Add symbolic information to 'n'
-      addSymbolicInfo(n, n_dyn, lmStrct, ctxt, strct);
+      addSymbolicInfo(n, n_dyn, pctxtStrct, strct);
 
       // 3. Demand a procedure frame for 'n'.
       Prof::CSProfProcedureFrameNode* frame = 
-	demandProcFrame(n_dyn, lmStrct, ctxt, loop, ip_ur, frameMap, loopMap);
+	demandProcFrame(n_dyn, pctxtStrct, frameMap, loopMap);
       
       // 4. Find new parent context for 'n': the frame itself or a
       // loop within the frame
       Prof::CSProfCodeNode* newParent = frame;
-      if (loop) {
-	ProcFrameAndLoop toFind(frame, loop);
+      if (loopStrct) {
+	ProcFrameAndLoop toFind(frame, loopStrct);
 	ProcFrameAndLoopToCSLoopMap::iterator it = loopMap.find(toFind);
-	DIAG_Assert(it != loopMap.end(), "Cannot find corresponding loop structure:\n" << loop->toStringXML());
+	DIAG_Assert(it != loopMap.end(), "Cannot find corresponding loop structure:\n" << loopStrct->toStringXML());
 	newParent = (*it).second;
       }
       
@@ -298,52 +294,34 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
 }
 
 
-// demandProcFrame: Find or create a procedure frame for 'node'
-// given it's corresponding load module structure (lmStrct), calling
-// context structure (callingCtxt, a Struct::Proc or Struct::Alien) and
-// statement-type scope.
+// demandProcFrame: Find or create a procedure frame for 'node' given
+// its corresponding procedure context 'pctxtStrct' (Struct::Proc or
+// Struct::Alien)
 // 
 // Assumes that symbolic information has been added to node.
 Prof::CSProfProcedureFrameNode*
 demandProcFrame(Prof::IDynNode* node,
-		Prof::Struct::LM* lmStrct, 
-		Prof::Struct::ACodeNode* callingCtxt,
-		Prof::Struct::Loop* loop,
-		VMA ip_ur,
+		Prof::Struct::ACodeNode* pctxtStrct,
 		ACodeNodeToProcFrameMap& frameMap,
 		ProcFrameAndLoopToCSLoopMap& loopMap)
 {
   Prof::CSProfProcedureFrameNode* frame = NULL;
-
-  Prof::Struct::ACodeNode* toFind = (callingCtxt) ? callingCtxt : lmStrct;
   
-  ACodeNodeToProcFrameMap::iterator it = frameMap.find(toFind);
+  ACodeNodeToProcFrameMap::iterator it = frameMap.find(pctxtStrct);
   if (it != frameMap.end()) {
     frame = (*it).second;
   }
   else {
+    // Find and create the frame.
     // INVARIANT: 'node' has symbolic information
 
-    // Find and create the frame.
-    if (callingCtxt) {
-      Prof::Struct::Proc* proc = callingCtxt->AncProc();
-      makeProcFrame(proc, node, frameMap, loopMap);
+    Prof::Struct::Proc* procStrct = pctxtStrct->AncProc();
+    makeProcFrame(node, procStrct, frameMap, loopMap);
 
-      // frame should now be in map
-      ACodeNodeToProcFrameMap::iterator it = frameMap.find(toFind);
-      DIAG_Assert(it != frameMap.end(), "");
-      frame = (*it).second;
-    }
-    else {
-      frame = new Prof::CSProfProcedureFrameNode(NULL);
-      addSymbolicInfo(frame, node, lmStrct, NULL, NULL);
-      frame->Link(node->proxy()->Parent());
-
-      string nm = "<unknown(struct)>:contains" + StrUtil::toStr(ip_ur, 16);
-      frame->SetProc(nm);
-      
-      frameMap.insert(std::make_pair(toFind, frame));
-    }
+    // frame should now be in map
+    ACodeNodeToProcFrameMap::iterator it = frameMap.find(pctxtStrct);
+    DIAG_Assert(it != frameMap.end(), "");
+    frame = (*it).second;
   }
   
   return frame;
@@ -351,18 +329,17 @@ demandProcFrame(Prof::IDynNode* node,
 
 
 void 
-makeProcFrame(Prof::Struct::Proc* proc, Prof::IDynNode* node_dyn,
+makeProcFrame(Prof::IDynNode* node, Prof::Struct::Proc* procStrct, 
 	      ACodeNodeToProcFrameMap& frameMap,
 	      ProcFrameAndLoopToCSLoopMap& loopMap)
 {
-  Prof::CSProfProcedureFrameNode* frame;
-  
-  frame = new Prof::CSProfProcedureFrameNode(NULL);
-  addSymbolicInfo(frame, node_dyn, NULL, proc, proc);
-  frame->Link(node_dyn->proxy()->Parent());
-  frameMap.insert(std::make_pair(proc, frame));
+  Prof::CSProfProcedureFrameNode* frame 
+    = new Prof::CSProfProcedureFrameNode(NULL);
+  addSymbolicInfo(frame, node, procStrct, procStrct);
+  frame->Link(node->proxy()->Parent());
+  frameMap.insert(std::make_pair(procStrct, frame));
 
-  loopifyFrame(frame, proc, frameMap, loopMap);
+  loopifyFrame(frame, procStrct, frameMap, loopMap);
 }
 
 
@@ -417,8 +394,7 @@ loopifyFrame(Prof::CSProfCodeNode* mirrorNode,
     if (n->Type() == Prof::Struct::ANode::TyLOOP) {
       // loops are always children of the current root (loop or frame)
       Prof::CSProfLoopNode* lp = 
-	new Prof::CSProfLoopNode(mirrorNode, n->begLine(), n->endLine(), 
-				 n->id());
+	new Prof::CSProfLoopNode(mirrorNode, n->begLine(), n->endLine(), n);
       loopMap.insert(std::make_pair(ProcFrameAndLoop(frame, n), lp));
       DIAG_DevMsgIf(0, hex << "(" << frame << " " << n << ") -> (" << lp << ")" << dec);
 
@@ -426,8 +402,9 @@ loopifyFrame(Prof::CSProfCodeNode* mirrorNode,
       nxt_enclLoop = lp;
     }
     else if (n->Type() == Prof::Struct::ANode::TyALIEN) {
-      Prof::CSProfProcedureFrameNode* fr = new Prof::CSProfProcedureFrameNode(NULL);
-      addSymbolicInfo(fr, NULL, NULL, n, n);
+      Prof::CSProfProcedureFrameNode* fr = 
+	new Prof::CSProfProcedureFrameNode(NULL);
+      addSymbolicInfo(fr, NULL, n, n);
       fr->isAlien() = true;
       frameMap.insert(std::make_pair(n, fr));
       DIAG_DevMsgIf(0, hex << fr->GetProc() << " [" << n << " -> " << fr << "]" << dec);
@@ -450,272 +427,43 @@ loopifyFrame(Prof::CSProfCodeNode* mirrorNode,
 
 //***************************************************************************
 
+// Add symbolic information to 'n', given its associated procedure
+// context 'pctxtStrct' and structure 'strct' (e.g., Proc, Alien, Loop, Stmt)
 void 
 addSymbolicInfo(Prof::CSProfCodeNode* n, Prof::IDynNode* n_dyn,
-		Prof::Struct::LM* lmStrct, 
-		Prof::Struct::ACodeNode* callingCtxt, 
-		Prof::Struct::ACodeNode* scope)
+		Prof::Struct::ACodeNode* pctxtStrct, 
+		Prof::Struct::ACodeNode* strct)
 {
   if (!n) {
     return;
   }
 
-  //Diag_Assert(logic::equiv(callingCtxt == NULL, scope == NULL));
-  if (scope) {
-    bool isAlien = (callingCtxt->Type() == Prof::Struct::ANode::TyALIEN);
-    const std::string& fnm = (isAlien) ? 
-      dynamic_cast<Prof::Struct::Alien*>(callingCtxt)->fileName() :
-      callingCtxt->AncFile()->name();
+  bool isAlien = (pctxtStrct->Type() == Prof::Struct::ANode::TyALIEN);
 
-    n->SetFile(fnm);
+  const std::string& fnm = (isAlien) ? 
+    dynamic_cast<Prof::Struct::Alien*>(pctxtStrct)->fileName() :
+    pctxtStrct->AncFile()->name();
+
+#if 0
+  n->SetFile(fnm);
 #if (DBG_LUSH_PROC_FRAME)
-    std::string nm = callingCtxt->name();
-    if (n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
-      nm += " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
-	+ ", " + n_dyn->lip_str() + ") [" + n_dyn->assocInfo_str() + "]";
-    }
-    n->SetProc(nm);
-#else
-    n->SetProc(callingCtxt->name());
-#endif
-    n->SetLine(scope->begLine());
-    n->SetFileIsText(true);
-    n->structureId(scope->id());
-  }
-  else {
-    n->SetFile(lmStrct->name());
-    n->SetLine(0);
-    n->SetFileIsText(false);
-    n->structureId(lmStrct->id());
-  }
-}
-
-
-//***************************************************************************
-// Routines for Inferring Call Frames (without STRUCTURE, based on LM)
-//***************************************************************************
-
-typedef std::map<string, Prof::CSProfProcedureFrameNode*> StringToProcFrameMap;
-typedef std::map<uint, Prof::CSProfProcedureFrameNode*> UintToProcFrameMap;
-
-
-// StaticStructureMgr: Manages (on demand) creation of static
-// structure.  
-// 
-// NOTE: hpcstruct's scope ids begin at 0 and increase.
-// StaticStructureMgr's scope ids begin at s_uniqueIdMax and decrease.
-class StaticStructureMgr
-{
-public:
-  StaticStructureMgr(binutils::LM* lm) : m_lm(lm) { }
-  
-  ~StaticStructureMgr() 
-  {
-    for (StringToProcFrameMap::iterator it = m_frameMap.begin(); 
-	 it != m_frameMap.end(); ++it) {
-      delete it->second;
-    }
-  }
-  
-  binutils::LM* 
-  lm() const { return m_lm; }
-  
-  const Prof::CSProfProcedureFrameNode* 
-  getFrame(Prof::IDynNode* n_dyn)
-  {
-    Prof::CSProfCodeNode* n = n_dyn->proxy();
-    VMA ip_ur = n_dyn->ip();
-
-    string key = n->GetFile() + n->GetProc();
-
-    StringToProcFrameMap::iterator it = m_frameMap.find(key);
-    Prof::CSProfProcedureFrameNode* frame;
-    if (it != m_frameMap.end()) { 
-      frame = (*it).second; // found
-    }
-    else {
-      // no entry found -- add
-      frame = new Prof::CSProfProcedureFrameNode(NULL);
-
-      string func = n->GetProc();
-      if (func.empty()) {
-	func = "<unknown(~struct)>:contains-" + StrUtil::toStr(ip_ur, 16);
-      } 
-      DIAG_MsgIf(DBG_NORM_PROC_FRAME, "frame name: " << n->GetProc() 
-		 << " --> " << func);
-	
-      SrcFile::ln begLn = 0;
-      if (n->FileIsText()) {
-	// determine the first line of the enclosing procedure
-	m_lm->GetProcFirstLineInfo(ip_ur, n_dyn->opIndex(), begLn);
-      }
-
-      frame->SetFile(n->GetFile());
-      frame->SetProc(func);
-      frame->SetFileIsText(n->FileIsText());
-      frame->SetLine(begLn);
-      frame->structureId(getNextStructureId());
-
-      m_frameMap.insert(std::make_pair(key, frame));
-    }
-
-    return frame;
-  }
-
-  static uint 
-  minId()
-  { return s_nextUniqueId + 1; }
-
-  static uint 
-  maxId()
-  { return s_uniqueIdMax; }
-
-  static uint 
-  getNextStructureId() 
-  { return s_nextUniqueId--; }
-  
-private:
-  binutils::LM* m_lm; // does not own
-  StringToProcFrameMap m_frameMap;
-
-  static uint s_nextUniqueId;
-
-  // tallent: hpcviewer (Java) requires that this be INT_MAX or LONG_MAX
-  static const uint s_uniqueIdMax = INT_MAX;
-};
-
-uint StaticStructureMgr::s_nextUniqueId = StaticStructureMgr::s_uniqueIdMax;
-
-
-void 
-addSymbolicInfo(Prof::IDynNode* n, binutils::LM* lm);
-
-
-void 
-inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
-		Prof::Epoch::LM* epoch_lm, StaticStructureMgr& frameMgr);
-
-// Without STRUCTURE information, procedure frames must be naively
-// inferred from the line map.
-//   
-//          main                     main
-//         /    \        =====>        |  
-//        /      \                   foo:<start line foo>
-//       foo:1  foo:2                 /   \
-//                                   /     \
-//                                foo:1   foo:2 
-void 
-Analysis::CallPath::
-inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm, 
-		binutils::LM* lm)
-{
-  Prof::CCT::Tree* cct = prof->cct();
-  if (!cct) { return; }
-
-  StaticStructureMgr frameMgr(lm);
-
-  DIAG_MsgIf(DBG_NORM_PROC_FRAME, "start normalizing same procedure children");
-  inferCallFrames(prof, cct->root(), epoch_lm, frameMgr);
-
-  DIAG_Assert(Prof::Struct::ANode::maxId() < StaticStructureMgr::minId(), 
-	      "There are more than " << StaticStructureMgr::maxId() << " structure nodes!");
-}
-
-
-void 
-inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
-		Prof::Epoch::LM* epoch_lm, StaticStructureMgr& frameMgr)
-{
-  if (!node) { return; }
-
-  // To determine when a callsite and leaves share the *same* frame
-  UintToProcFrameMap frameMap;
-
-  // For each immediate child of this node...
-  for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    Prof::CSProfCodeNode* n = dynamic_cast<Prof::CSProfCodeNode*>(it.CurNode());
-    DIAG_Assert(n, "Unexpected node type");
-    
-    it++; // advance iterator -- it is pointing at 'n' 
-
-    // ------------------------------------------------------------
-    // recur 
-    // ------------------------------------------------------------
-    if (!n->IsLeaf()) {
-      inferCallFrames(prof, n, epoch_lm, frameMgr);
-    }
-
-    // ------------------------------------------------------------
-    // process this node if within the current load module
-    //   (and of the correct type: Prof::IDynNode!)
-    // ------------------------------------------------------------
-    Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
-    if (n_dyn && (n_dyn->lm_id() == epoch_lm->id())) {
-      VMA ip_ur = n_dyn->ip();
-      DIAG_MsgIf(DBG_NORM_PROC_FRAME, "analyzing node " << n->GetProc()
-		 << hex << " " << ip_ur);
-      
-      addSymbolicInfo(n_dyn, frameMgr.lm());
-      
-      const Prof::CSProfProcedureFrameNode* uniq_frame = 
-	frameMgr.getFrame(n_dyn);
-
-      uint key = uniq_frame->structureId();
-      UintToProcFrameMap::iterator it = frameMap.find(key);
-
-      Prof::CSProfProcedureFrameNode* frame;
-      if (it != frameMap.end()) { 
-	frame = it->second; // found
-      } 
-      else {
-	// no entry found -- add
-	frame = new Prof::CSProfProcedureFrameNode(*uniq_frame);
-	frame->Link(node);
-	frameMap.insert(std::make_pair(key, frame));
-      }
-      
-      n->Unlink();
-      n->Link(frame);
-    }
-  }
-}
-
-
-//***************************************************************************
-
-void 
-addSymbolicInfo(Prof::IDynNode* n_dyn, binutils::LM* lm)
-{
-  if (!n_dyn) {
-    return;
-  }
-
-  Prof::CSProfCodeNode* n = n_dyn->proxy();
-
-  string func, file;
-  SrcFile::ln srcLn;
-  lm->GetSourceFileInfo(n_dyn->ip(), n_dyn->opIndex(), func, file, srcLn);
-  func = GetBestFuncName(func);
-#if (DBG_LUSH_PROC_FRAME)
-  if (!func.empty() && n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
-    func +=  " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
+  std::string nm = pctxtStrct->name();
+  if (n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
+    nm += " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
       + ", " + n_dyn->lip_str() + ") [" + n_dyn->assocInfo_str() + "]";
   }
+  n->SetProc(nm);
+#else
+  n->SetProc(pctxtStrct->name());
+#endif
 #endif
 
-  n->SetFile(file);
-  n->SetProc(func);
-  n->SetLine(srcLn);
+  n->SetLine(strct->begLine());
   n->SetFileIsText(true);
-  n->structureId(0); // FIXME
-  
-  // if file name is missing then using load module name. 
-  if (file.empty() || func.empty()) {
-    n->SetFile(lm->name());
-    n->SetLine(0); //don't need to have line number for loadmodule
-    n->SetFileIsText(false);
-  }
+
+  n->structure(strct);
 }
+
 
 
 //***************************************************************************

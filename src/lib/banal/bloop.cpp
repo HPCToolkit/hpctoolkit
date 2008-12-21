@@ -1149,7 +1149,7 @@ mergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
       Struct::Alien* alien = dynamic_cast<Struct::Alien*>(child);
       Struct::ACodeNode* parent = alien->ACodeNodeParent();
       
-      Struct::ACodeNode* callCtxt = parent->AncCallingCtxt();
+      Struct::ACodeNode* callCtxt = parent->ancestorProcCtxt();
       const string& callCtxtFnm = (callCtxt->Type() == Struct::ANode::TyALIEN) ?
 	dynamic_cast<Struct::Alien*>(callCtxt)->fileName() : file->name();
       

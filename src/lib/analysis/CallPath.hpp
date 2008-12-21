@@ -81,10 +81,6 @@ void
 inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
 		Prof::Struct::LM* lmStrct, binutils::LM* lm);
 
-void 
-inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
-		binutils::LM* lm);
-
 bool 
 normalize(Prof::CallPath::Profile* prof, string lush_agent);
 

@@ -703,7 +703,7 @@ ANode::AncStmt() const
 
 
 ACodeNode*
-ANode::AncCallingCtxt() const 
+ANode::ancestorProcCtxt() const 
 {
   return dynamic_cast<ACodeNode*>(Ancestor(TyPROC, TyALIEN));
 }
@@ -747,7 +747,7 @@ ANode::NextScope() const
     DIAG_Assert(ci, "");
     return ci;
   }
-  return NULL;  
+  return NULL;
 }
 
 

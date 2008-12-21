@@ -343,14 +343,14 @@ class CSProfCodeNode : public CSProfNode {
 protected: 
   CSProfCodeNode(NodeType t, CSProfNode* _parent, 
 		 SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL,
-		 uint sId = 0);
+		 Struct::ACodeNode* strct = NULL);
   
   // shallow copy (in the sense the children are not copied)
   CSProfCodeNode(const CSProfCodeNode& x)
     : CSProfNode(x),
       begLine(x.begLine),
       endLine(x.endLine),
-      m_sId(x.m_sId) 
+      m_strct(x.m_strct) 
     { }
 
 public: 
@@ -396,10 +396,10 @@ public:
   virtual void SetSrcInfoDone(bool bi) 
     { DIAG_Die(DIAG_Unimplemented); }
 
-  // structureId: static structure id for this node; the same static
-  // structure will have the same structureId().
-  uint structureId() const  { return m_sId; }
-  void structureId(uint id) { m_sId = id; }
+  // structure: static structure id for this node; the same static
+  // structure will have the same structure().
+  Struct::ACodeNode* structure() const  { return m_strct; }
+  void structure(Struct::ACodeNode* strct) { m_strct = strct; }
   
   // Dump contents for inspection
   virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
@@ -413,7 +413,7 @@ protected:
 protected:
   SrcFile::ln begLine;
   SrcFile::ln endLine;
-  uint m_sId;  // static structure id
+  Struct::ACodeNode* m_strct; // static structure 
   static std::string BOGUS;
 }; 
 
@@ -786,7 +786,6 @@ public:
   const std::string& GetProc() const { return proc; }
   SrcFile::ln        GetLine() const { return begLine; }
 
-
   void SetFile(const char* fnm) { file = fnm; }
   void SetFile(const std::string& fnm) { file = fnm; }
 
@@ -879,9 +878,33 @@ public:
 
   
   // Node data
-  const std::string& GetFile() const { return file; }
-  void SetFile(const char* fnm) { file = fnm; }
-  void SetFile(const std::string& fnm) { file = fnm; }
+  //const std::string& GetFile() const { return file; }
+  const std::string& GetFile() const {
+    if (m_strct) {
+      return (isAlien()) ? 
+	dynamic_cast<Struct::Alien*>(m_strct)->fileName() :
+	m_strct->AncFile()->name();
+    }
+    else { 
+      return file; 
+    }
+  }
+
+  //void SetFile(const char* fnm) { file = fnm; }
+  //void SetFile(const std::string& fnm) { file = fnm; }
+
+  void SetFile(const char* fnm) {
+    if (m_strct) { 
+      if (isAlien()) { dynamic_cast<Struct::Alien*>(m_strct)->fileName(fnm); }
+      else { m_strct->AncFile()->SetName(fnm); }
+    }
+    else { 
+      file = fnm; 
+    }
+  }
+
+  void SetFile(const std::string& fnm) 
+    { CSProfProcedureFrameNode::SetFile(fnm.c_str()); }
 
   const std::string& GetProc() const { return proc; }
   void SetProc(const char* pnm) { proc = pnm; }
@@ -918,7 +941,7 @@ class CSProfLoopNode: public CSProfCodeNode {
 public: 
   // Constructor/Destructor
   CSProfLoopNode(CSProfNode* _parent, SrcFile::ln begLn, SrcFile::ln endLn,
-		 uint sId = 0);
+		 Struct::ACodeNode* strct = NULL);
   ~CSProfLoopNode();
 
   virtual const std::string& GetFile() const { return BOGUS; }
@@ -939,7 +962,7 @@ public:
   // Constructor/Destructor
   CSProfStmtRangeNode(CSProfNode* _parent, 
 		      SrcFile::ln begLn, SrcFile::ln endLn, 
-		      uint sId = 0);
+		      Struct::ACodeNode* strct = NULL);
   ~CSProfStmtRangeNode();
   
   // Dump contents for inspection
