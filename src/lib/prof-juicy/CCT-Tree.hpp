@@ -84,6 +84,7 @@ using SrcFile::ln_NULL;
 
 // Hack for interpreting Cilk-like LIPs.
 #define FIXME_CILK_LIP_HACK
+#define DBG_LUSH_PROC_FRAME 0
 
 inline std::ostream&
 operator<<(std::ostream& os, const hpcfile_metric_data_t x)
@@ -357,9 +358,19 @@ public:
   virtual ~CSProfCodeNode();
   
   // Node data
-  SrcFile::ln GetBegLine() const { return begLine; } // in source code
-  SrcFile::ln GetEndLine() const { return endLine; } // in source code
+  SrcFile::ln GetBegLine() const { 
+    return (m_strct) ? m_strct->begLine() : ln_NULL;
+    //return begLine;
+  }
+
+  SrcFile::ln GetEndLine() const { 
+    return (m_strct) ? m_strct->endLine() : ln_NULL;
+  }
+
+  //void SetLine(SrcFile::ln ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
   
+  // FIXME: add endLine, see CSProfCodeNode::toString_me
+
   bool            ContainsLine(SrcFile::ln ln) const; 
   CSProfCodeNode* CSProfCodeNodeWithLine(SrcFile::ln ln) const;
 
@@ -384,9 +395,6 @@ public:
   virtual void SetProc(const std::string& pnm)
     { DIAG_Die(DIAG_Unimplemented); }
 
-  virtual void SetLine(SrcFile::ln ln) 
-    { DIAG_Die(DIAG_Unimplemented); } 
- 
   virtual bool FileIsText() const
     { DIAG_Die(DIAG_Unimplemented); return false; }
   virtual void SetFileIsText(bool bi) 
@@ -784,7 +792,6 @@ public:
   
   const std::string& GetFile() const { return file; }
   const std::string& GetProc() const { return proc; }
-  SrcFile::ln        GetLine() const { return begLine; }
 
   void SetFile(const char* fnm) { file = fnm; }
   void SetFile(const std::string& fnm) { file = fnm; }
@@ -792,7 +799,6 @@ public:
   void SetProc(const char* pnm) { proc = pnm; }
   void SetProc(const std::string& pnm) { proc = pnm; }
 
-  void SetLine(SrcFile::ln ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
   bool FileIsText() const {return fileistext;} 
   void SetFileIsText(bool bi) {fileistext = bi;}
   bool GotSrcInfo() const {return donewithsrcinfproc;} 
@@ -828,7 +834,6 @@ class CSProfStatementNode: public CSProfCodeNode, public IDynNode {
   // Node data
   const std::string& GetFile() const { return file; }
   const std::string& GetProc() const { return proc; }
-  SrcFile::ln        GetLine() const { return begLine; }
 
 
   void SetFile(const char* fnm) { file = fnm; }
@@ -837,7 +842,6 @@ class CSProfStatementNode: public CSProfCodeNode, public IDynNode {
   void SetProc(const char* pnm) { proc = pnm; }
   void SetProc(const std::string& pnm) { proc = pnm; }
 
-  void SetLine(SrcFile::ln ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
   bool FileIsText() const { return fileistext; }
   void SetFileIsText(bool bi) { fileistext = bi; }
   bool GotSrcInfo() const { return donewithsrcinfproc; }
@@ -878,46 +882,73 @@ public:
 
   
   // Node data
-  //const std::string& GetFile() const { return file; }
+  // m_strct is either Struct::Proc or Struct::Alien
+
   const std::string& GetFile() const {
     if (m_strct) {
       return (isAlien()) ? 
 	dynamic_cast<Struct::Alien*>(m_strct)->fileName() :
 	m_strct->AncFile()->name();
     }
-    else { 
-      return file; 
+    else {
+      return BOGUS; 
     }
   }
 
-  //void SetFile(const char* fnm) { file = fnm; }
-  //void SetFile(const std::string& fnm) { file = fnm; }
-
   void SetFile(const char* fnm) {
     if (m_strct) { 
-      if (isAlien()) { dynamic_cast<Struct::Alien*>(m_strct)->fileName(fnm); }
-      else { m_strct->AncFile()->SetName(fnm); }
-    }
-    else { 
-      file = fnm; 
+      if (isAlien()) { 
+	dynamic_cast<Struct::Alien*>(m_strct)->fileName(fnm); 
+      }
+      else { 
+	m_strct->AncFile()->SetName(fnm); 
+      }
     }
   }
 
   void SetFile(const std::string& fnm) 
     { CSProfProcedureFrameNode::SetFile(fnm.c_str()); }
 
-  const std::string& GetProc() const { return proc; }
-  void SetProc(const char* pnm) { proc = pnm; }
-  void SetProc(const std::string& pnm) { proc = pnm; }
+  const std::string& GetProc() const { 
+    if (m_strct) { 
+      return m_strct->name();
+    }
+    else {
+      return BOGUS; 
+    }
+  }
 
-  SrcFile::ln GetLine() const { return begLine; }
-  void SetLine(SrcFile::ln ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
-  bool FileIsText() const {return fileistext;}
-  void SetFileIsText(bool bi) {fileistext = bi;}
+  //void SetProc(const char* pnm) { proc = pnm; }
+  //void SetProc(const std::string& pnm) { proc = pnm; }
+
+  const std::string& lmname() const { 
+    if (m_strct) { 
+      return m_strct->AncLM()->name();
+    }
+    else {
+      return BOGUS; 
+    }
+  }
+
+
+#if 0
+#if (DBG_LUSH_PROC_FRAME)
+  std::string nm = pctxtStrct->name();
+  if (n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
+    nm += " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
+      + ", " + n_dyn->lip_str() + ") [" + n_dyn->assocInfo_str() + "]";
+  }
+  n->SetProc(nm);
+#endif
+#endif
+
+  bool FileIsText() const { return true; }
 
   // Alien
-  bool  isAlien() const { return m_alien; }
-  bool& isAlien()       { return m_alien; } 
+  bool  isAlien() const {
+    return (m_strct && m_strct->Type() == Struct::ANode::TyALIEN);
+  }
+  //bool& isAlien()       { return m_alien; } 
 
   // Dump contents for inspection
   virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;

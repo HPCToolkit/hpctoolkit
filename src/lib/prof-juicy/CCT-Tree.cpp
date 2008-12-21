@@ -322,7 +322,6 @@ CSProfStatementNode::operator=(const CSProfStatementNode& x)
 
     file = x.GetFile();
     proc = x.GetProc();
-    SetLine(x.GetLine());
     fileistext = x.FileIsText();
   }
 }
@@ -335,7 +334,6 @@ CSProfStatementNode::operator=(const CSProfCallSiteNode& x)
   
   file = x.GetFile();
   proc = x.GetProc();
-  SetLine(x.GetLine());
   
   fileistext = x.FileIsText();
   donewithsrcinfproc = x.GotSrcInfo();
@@ -810,10 +808,12 @@ IDynNode::ddump() const
 string
 CSProfCodeNode::toString_me(int dmpFlag) const
 { 
-  string line = StrUtil::toStr(begLine);
-  if (begLine != endLine) {
-    line += "-" + StrUtil::toStr(endLine);
-  }
+  SrcFile::ln lnBeg = GetBegLine();
+  string line = StrUtil::toStr(lnBeg);
+  //SrcFile::ln lnEnd = GetEndLine();
+  //if (lnBeg != lnEnd) {
+  //  line += "-" + StrUtil::toStr(lnEnd);
+  //}
 
   uint sId = (m_strct) ? m_strct->id() : 0;
   string self = CSProfNode::toString_me(dmpFlag)
@@ -847,35 +847,15 @@ CSProfProcedureFrameNode::toString_me(int dmpFlag) const
   string self = CSProfCodeNode::toString_me(dmpFlag);
 
   bool flg = CCT::Tree::AddXMLEscapeChars(dmpFlag);
-
+  
   if (m_strct)  {
-    Struct::Proc*  pStrct = dynamic_cast<Struct::Proc*>(m_strct);
-    Struct::Alien* aStrct = dynamic_cast<Struct::Alien*>(m_strct);
-    Struct::LM*    lmStrct = NULL;
-    Struct::File*  fStrct = NULL;
+    const string& lm_nm = lmname();
+    const string& fnm   = GetFile();
+    const string& pnm   = GetProc();
 
-    DIAG_Assert(pStrct || aStrct, DIAG_UnexpectedInput);
-
-    if (isAlien()) {
-      lmStrct = aStrct->AncLM();
-    }
-    else {
-      fStrct = pStrct->AncFile();      
-      lmStrct = fStrct->AncLM();
-    }
-
-    const string& lm_nm = lmStrct->name();
-    const string& fnm   = (isAlien()) ? aStrct->fileName() : fStrct->name();
-    const string& pnm   = (isAlien()) ? aStrct->name() : pStrct->name();
-
-    if (fileistext) {
-      self += " f" + xml::MakeAttrStr(fnm, flg);
-    }
-    else {
-      self += " lm" + xml::MakeAttrStr(lm_nm, flg);
-    }
-    
-    self += " n" + xml::MakeAttrStr(pnm, flg);
+    self += " lm" + xml::MakeAttrStr(lm_nm, flg)
+      + " f" + xml::MakeAttrStr(fnm, flg)
+      + " n" + xml::MakeAttrStr(pnm, flg);
     
     if (isAlien()) {
       self = self + " a=\"1\"";
