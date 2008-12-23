@@ -78,8 +78,8 @@ namespace CallPath {
 
   // lm is optional and may be NULL
 void 
-inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
-		Prof::Struct::LM* lmStrct, binutils::LM* lm);
+overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
+		       Prof::Struct::LM* lmStrct, binutils::LM* lm);
 
 bool 
 normalize(Prof::CallPath::Profile* prof, string lush_agent);

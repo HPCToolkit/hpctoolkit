@@ -279,7 +279,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof,
     }
   }
 
-  Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmStrct, lm);
+  Analysis::CallPath::overlayStaticStructure(prof, epoch_lm, lmStrct, lm);
 
   delete lm;
 }

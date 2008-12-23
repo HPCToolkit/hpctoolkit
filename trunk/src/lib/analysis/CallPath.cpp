@@ -154,8 +154,7 @@ write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint)
 // Routines for Inferring Call Frames (based on STRUCTURE information)
 //****************************************************************************
 
-typedef std::map<Prof::Struct::ACodeNode*, 
-		 Prof::CSProfProcedureFrameNode*> ACodeNodeToProcFrameMap;
+typedef std::map<Prof::Struct::ACodeNode*, Prof::CSProfProcedureFrameNode*> ACodeNodeToProcFrameMap;
 
 
 typedef std::pair<Prof::CSProfProcedureFrameNode*, 
@@ -172,49 +171,50 @@ typedef std::map<ProcFrameAndLoop, Prof::CSProfLoopNode*> ProcFrameAndLoopToCSLo
 
 
 
-Prof::CSProfProcedureFrameNode*
+static Prof::CSProfProcedureFrameNode*
 demandProcFrame(Prof::IDynNode* node,
 		Prof::Struct::ACodeNode* pctxtStrct,
 		ACodeNodeToProcFrameMap& frameMap,
 		ProcFrameAndLoopToCSLoopMap& loopMap);
 
-void
+static void
 makeProcFrame(Prof::IDynNode* node, Prof::Struct::Proc* proc, 
 	      ACodeNodeToProcFrameMap& frameMap,
 	      ProcFrameAndLoopToCSLoopMap& loopMap);
 
-void
+static void
 loopifyFrame(Prof::CSProfProcedureFrameNode* frame, 
 	     Prof::Struct::ACodeNode* ctxtScope,
 	     ACodeNodeToProcFrameMap& frameMap,
 	     ProcFrameAndLoopToCSLoopMap& loopMap);
 
 
-void 
-inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
-		Prof::Epoch::LM* epoch_lm, 
-		Prof::Struct::LM* lmStrct, binutils::LM* lm);
+static void 
+overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
+		       Prof::Epoch::LM* epoch_lm, 
+		       Prof::Struct::LM* lmStrct, binutils::LM* lm);
 
 
-// inferCallFrames: Effectively create equivalence classes of frames
+// overlayStaticStructure: Effectively create equivalence classes of frames
 // for all the return addresses found under.
 //
 void
 Analysis::CallPath::
-inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm, 
-		Prof::Struct::LM* lmStrct, binutils::LM* lm)
+overlayStaticStructure(Prof::CallPath::Profile* prof, 
+		       Prof::Epoch::LM* epoch_lm, 
+		       Prof::Struct::LM* lmStrct, binutils::LM* lm)
 {
   Prof::CCT::Tree* cct = prof->cct();
   if (!cct) { return; }
   
-  inferCallFrames(prof, cct->root(), epoch_lm, lmStrct, lm);
+  overlayStaticStructure(prof, cct->root(), epoch_lm, lmStrct, lm);
 }
 
 
-void 
-inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
-		Prof::Epoch::LM* epoch_lm, 
-		Prof::Struct::LM* lmStrct, binutils::LM* lm)
+static void 
+overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
+		       Prof::Epoch::LM* epoch_lm, 
+		       Prof::Struct::LM* lmStrct, binutils::LM* lm)
 {
   // INVARIANT: The parent of 'node' has been fully processed and
   // lives within a correctly located procedure frame.
@@ -241,10 +241,10 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
       VMA ip_ur = n_dyn->ip();
       DIAG_DevIf(50) {
 	Prof::CSProfCallSiteNode* p = node->AncestorCallSite();
-	DIAG_DevMsg(0, "inferCallFrames: " << hex << ((p) ? p->ip() : 0) << " --> " << ip_ur << dec);
+	DIAG_DevMsg(0, "overlayStaticStructure: " << hex << ((p) ? p->ip() : 0) << " --> " << ip_ur << dec);
       }
 
-      // 1. Find associated structure
+      // 1. Add symbolic information to 'n'
       using namespace Prof;
       
       Struct::ACodeNode* strct = 
@@ -257,16 +257,14 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
                                       // FIXME: include PROC (for nested procs)
       Struct::Loop* loopStrct = dynamic_cast<Struct::Loop*>(t);
 
-      // 2. Add symbolic information to 'n'
       n->structure(strct);
 
-      // 3. Demand a procedure frame for 'n'.
-
+      // 2. Demand a procedure frame for 'n', complete with loop structure
       Prof::CSProfProcedureFrameNode* frame = 
 	demandProcFrame(n_dyn, pctxtStrct, frameMap, loopMap);
       
-      // 4. Find new parent context for 'n': the frame itself or a
-      // loop within the frame
+      // 3. Determine parent context for 'n': the procedure frame
+      // itself or loop within
       Prof::CSProfCodeNode* newParent = frame;
       if (loopStrct) {
 	ProcFrameAndLoop toFind(frame, loopStrct);
@@ -275,14 +273,14 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
 	newParent = (*it).second;
       }
       
-      // 5. Link 'n' to its frame
+      // 4. Link 'n' to its parent
       n->Unlink();
       n->Link(newParent);
     }
     
     // recur 
     if (!n->IsLeaf()) {
-      inferCallFrames(prof, n, epoch_lm, lmStrct, lm);
+      overlayStaticStructure(prof, n, epoch_lm, lmStrct, lm);
     }
   }
 }
@@ -293,7 +291,7 @@ inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
 // Struct::Alien)
 // 
 // Assumes that symbolic information has been added to node.
-Prof::CSProfProcedureFrameNode*
+static Prof::CSProfProcedureFrameNode*
 demandProcFrame(Prof::IDynNode* node,
 		Prof::Struct::ACodeNode* pctxtStrct,
 		ACodeNodeToProcFrameMap& frameMap,
@@ -322,8 +320,8 @@ demandProcFrame(Prof::IDynNode* node,
 }
 
 
-void 
-makeProcFrame(Prof::IDynNode* node, Prof::Struct::Proc* procStrct, 
+static void 
+makeProcFrame(Prof::IDynNode* node, Prof::Struct::Proc* procStrct,
 	      ACodeNodeToProcFrameMap& frameMap,
 	      ProcFrameAndLoopToCSLoopMap& loopMap)
 {
@@ -337,8 +335,7 @@ makeProcFrame(Prof::IDynNode* node, Prof::Struct::Proc* procStrct,
 }
 
 
-
-void
+static void
 loopifyFrame(Prof::CSProfCodeNode* mirrorNode, Prof::Struct::ACodeNode* node,
 	     Prof::CSProfProcedureFrameNode* frame,
 	     Prof::CSProfLoopNode* enclLoop,
@@ -349,7 +346,7 @@ loopifyFrame(Prof::CSProfCodeNode* mirrorNode, Prof::Struct::ACodeNode* node,
 // Given a procedure frame 'frame' and its associated context scope
 // 'ctxtScope' (Struct::Proc or Struct::Alien), mirror ctxtScope's loop and
 // context structure and add entries to 'frameMap' and 'loopMap.'
-void
+static void
 loopifyFrame(Prof::CSProfProcedureFrameNode* frame, 
 	     Prof::Struct::ACodeNode* ctxtScope,
 	     ACodeNodeToProcFrameMap& frameMap,
@@ -361,7 +358,7 @@ loopifyFrame(Prof::CSProfProcedureFrameNode* frame,
 
 // 'frame' is the enclosing frame
 // 'loop' is the enclosing loop
-void
+static void
 loopifyFrame(Prof::CSProfCodeNode* mirrorNode, 
 	     Prof::Struct::ACodeNode* node,
 	     Prof::CSProfProcedureFrameNode* frame,
@@ -424,7 +421,7 @@ loopifyFrame(Prof::CSProfCodeNode* mirrorNode,
 //***************************************************************************
 
 static void 
-coalesceCallsiteLeaves(Prof::CallPath::Profile* prof);
+coalesceStmts(Prof::CallPath::Profile* prof);
 
 static void 
 pruneByMetrics(Prof::CallPath::Profile* prof);
@@ -440,7 +437,7 @@ bool
 Analysis::CallPath::normalize(Prof::CallPath::Profile* prof, 
 			      string lush_agent)
 {
-  coalesceCallsiteLeaves(prof);
+  coalesceStmts(prof);
 
   if (!lush_agent.empty()) {
     lush_cilkNormalize(prof);
@@ -453,50 +450,59 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile* prof,
 }
 
 
-// FIXME
-// If pc values from the leaves map to the same source file info,
-// coalese these leaves into one.
-static void 
-coalesceCallsiteLeaves(Prof::CSProfNode* node);
+//***************************************************************************
 
 static void 
-coalesceCallsiteLeaves(Prof::CallPath::Profile* prof)
+coalesceStmts(Prof::CSProfNode* node);
+
+
+static void 
+coalesceStmts(Prof::CallPath::Profile* prof)
 {
   Prof::CCT::Tree* cct = prof->cct();
   if (!cct) { return; }
   
-  coalesceCallsiteLeaves(cct->root());
+  coalesceStmts(cct->root());
 }
 
 
-// FIXME
-typedef std::map<string, Prof::CSProfStatementNode*> StringToCallSiteMap;
-
+// coalesceStmts: In the CCT collected by hpcrun, leaf nodes are
+// distinct according to instruction pointer.  We wish to coalesce all
+// nodes belonging to the same line.  One way of doing this 
+//
+// NOTE: We assume that prior normalizations have been applied.  This
+// means that statement nodes have already been separated by procedure
+// frame (including Alien frames).  This means that all of a node's
+// child statement nodes obey the non-overlapping principle of a
+// source code.
 static void 
-coalesceCallsiteLeaves(Prof::CSProfNode* node)
+coalesceStmts(Prof::CSProfNode* node)
 {
-  if (!node) { return; }
+  // Since hpcstruct distinguishes callsites from statements, use
+  // SrcFile::ln instead of Prof::Struct::ACodeNode*.
+  typedef std::map<SrcFile::ln, Prof::CSProfStatementNode*> StructToStmtMap;
 
-  // FIXME: Use this set to determine if we have a duplicate source line
-  StringToCallSiteMap sourceInfoMap;
+  if (!node) { 
+    return; 
+  }
+
+  StructToStmtMap stmtMap;
   
   // For each immediate child of this node...
   for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
     Prof::CSProfCodeNode* child = dynamic_cast<Prof::CSProfCodeNode*>(it.CurNode());
-    DIAG_Assert(child, ""); // always true (FIXME)
+    DIAG_Assert(child, "Always true");
     it++; // advance iterator -- it is pointing at 'child'
     
     bool inspect = (child->IsLeaf() 
 		    && (child->GetType() == Prof::CSProfNode::STATEMENT));
-    
+
     if (inspect) {
       // This child is a leaf. Test for duplicate source line info.
       Prof::CSProfStatementNode* c = dynamic_cast<Prof::CSProfStatementNode*>(child);
-      string mykey = string(c->GetFile()) + string(c->GetProc()) 
-	+ StrUtil::toStr(c->GetBegLine());
-      
-      StringToCallSiteMap::iterator it = sourceInfoMap.find(mykey);
-      if (it != sourceInfoMap.end()) {
+      SrcFile::ln line = c->GetBegLine();
+      StructToStmtMap::iterator it = stmtMap.find(line);
+      if (it != stmtMap.end()) {
 	// found -- we have a duplicate
 	Prof::CSProfStatementNode* c1 = (*it).second;
 	c1->mergeMetrics(*c);
@@ -507,16 +513,18 @@ coalesceCallsiteLeaves(Prof::CSProfNode* node)
       } 
       else { 
 	// no entry found -- add
-	sourceInfoMap.insert(std::make_pair(mykey, c));
+	stmtMap.insert(std::make_pair(line, c));
       }
     } 
     else if (!child->IsLeaf()) {
-      // Recur:
-      coalesceCallsiteLeaves(child);
+      // Recur
+      coalesceStmts(child);
     }
   } 
 }
 
+
+//***************************************************************************
 
 // pruneByMetrics: 
 // 
