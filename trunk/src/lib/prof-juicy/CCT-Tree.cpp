@@ -962,13 +962,13 @@ CSProfNode::writeXML_pre(ostream& os, int dmpFlag, const char *prefix) const
 
   const IDynNode* this_dyn = dynamic_cast<const IDynNode*>(this);
   if (this_dyn) {
-    os << endl; // should only emit if there exist non-zero metrics
-    this_dyn->writeMetricsXML(os, dmpFlag, prefix);
+    if (this_dyn->hasMetrics()) {
+      os << endl;
+      this_dyn->writeMetricsXML(os, dmpFlag, prefix);
+    }
   }
 
-  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { 
-    os << endl; 
-  }
+  os << endl; 
 }
 
 
@@ -991,9 +991,7 @@ CSProfNode::writeXML_post(ostream &os, int dmpFlag, const char *prefix) const
     os << prefix << "</" << NodeTypeToName(GetType()) << ">";
   }
 
-  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { 
-    os << endl; 
-  }
+  os << endl; 
 }
 
 

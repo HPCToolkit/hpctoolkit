@@ -115,9 +115,8 @@ public:
     XML_FALSE =	(0 << 0),	/* No XML format */
     XML_TRUE  =	(1 << 0),	/* XML format */
 
-    COMPRESSED_OUTPUT = (1 << 1),  /* Use compressed output format */
-
-    DBG_OUTPUT = (1 << 2),         /* show soure line info for loops/stmts */
+    COMPRESSED_OUTPUT = (1 << 1),  /* no indentation */
+    DBG_OUTPUT = (1 << 2),         /* show source line info for loops/stmts */
 
     // Not-generally-user-level bit flags
     XML_NO_ESC_CHARS = (1 << 10), /* don't substitute XML escape characters */
@@ -647,6 +646,18 @@ public:
 
   std::string assocInfo_str() const;
   std::string lip_str() const;
+
+  bool 
+  hasMetrics() const 
+  {
+    for (uint i = 0; i < numMetrics(); i++) {
+      hpcfile_metric_data_t m = metric(i);
+      if (!hpcfile_metric_data_iszero(m)) {
+	return true;
+      }
+    }
+    return false;
+  }
 
   // writeMetricsXML: write metrics (sparsely)
   virtual void writeMetricsXML(std::ostream& os, 
