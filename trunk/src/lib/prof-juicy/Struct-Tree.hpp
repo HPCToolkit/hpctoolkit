@@ -991,6 +991,8 @@ public:
 
  // fileNameWithPath from constructor 
   const std::string& name() const { return m_name; }
+  void name(const char* fname) { m_name = fname; }
+  void name(const std::string& fname) { m_name = fname; }
 
   // FindProc: Attempt to find the procedure within the multimap.  If
   // 'lnm' is provided, require that link names match.
@@ -1000,11 +1002,7 @@ public:
       const char* x = lnm.c_str();
       return FindProc(nm.c_str(), (x[0] == '\0') ? NULL : x);
     }
-  
-                                        
-  void SetName(const char* fname) { m_name = fname; }
-  void SetName(const std::string& fname) { m_name = fname; }
-    
+                                           
   virtual std::string BaseName() const  { return FileUtil::basename(m_name); }
   virtual std::string codeName() const;
 
@@ -1081,6 +1079,9 @@ public:
   
   
   virtual const std::string& name() const     { return m_name; }
+  void                       name(const char* n) { m_name = n; }
+  void                       name(const std::string& n) { m_name = n; }
+
   virtual const std::string& LinkName() const { return m_linkname; }
 
   virtual       std::string codeName() const;
@@ -1163,6 +1164,8 @@ public:
   void fileName(const std::string& fnm) { m_filenm = fnm; }
 
   virtual const std::string& name() const { return m_name; }
+  void                       name(const char* n) { m_name = n; }
+  void                       name(const std::string& n) { m_name = n; }
   
   virtual       std::string codeName() const;
 

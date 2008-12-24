@@ -483,7 +483,6 @@ cstree_create_node_CB(void* tree,
   Prof::CSProfCallSiteNode* n = 
     new Prof::CSProfCallSiteNode(NULL, data->as_info, ip, opIdx, data->lip.ptr, data->cpid,
 				 &my_tree->metadata()->metricDesc(), metricVec);
-  n->SetSrcInfoDone(false);
   
   // Initialize the tree, if necessary
   if (my_tree->empty()) {
