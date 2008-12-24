@@ -151,7 +151,7 @@ private:
 //
 // CSProfNodeSortedChildIterator
 //
-// cmpByLine: CSProfCodeNode* a is enumerated before b 
+// cmpByLine: CSProfNode* a is enumerated before b 
 //                    iff a->StartLine() < b->StartLine() 
 //
 // NOTE: the implementation was generalized so that it no longer assumes
@@ -170,14 +170,14 @@ public:
   static int cmpByStructureId(const void* x, const void* y);
 
 public: 
-  CSProfNodeSortedIterator(const CSProfCodeNode* file, 
+  CSProfNodeSortedIterator(const CSProfNode* node, 
 			   cmp_fptr_t compare_fn,
 			   const CSProfNodeFilter* filterFunc = NULL, 
 			   bool leavesOnly = true);
   
   ~CSProfNodeSortedIterator();
   
-  CSProfCodeNode* Current() const; 
+  CSProfNode* Current() const; 
   void operator++(int)   { (*ptrSetIt)++; }
   void Reset(); 
   void DumpAndReset(std::ostream &os = std::cerr); 
@@ -195,7 +195,7 @@ public:
 				const CSProfNodeFilter* filterFunc = NULL);
   ~CSProfNodeSortedChildIterator(); 
   
-  CSProfCodeNode* Current() const; 
+  CSProfNode* Current() const; 
   void operator++(int)   { (*ptrSetIt)++; }
   void Reset();
   void DumpAndReset(std::ostream &os = std::cerr);
