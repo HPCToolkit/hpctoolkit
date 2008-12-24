@@ -79,7 +79,7 @@ using namespace xml;
 
 //*************************** Forward Declarations ***************************
 
-#define DBG_NORM_PROC_FRAME 0
+#define DBG_LUSH 0
 
 typedef std::set<Prof::CSProfCodeNode*> CSProfCodeNodeSet;
 
@@ -580,16 +580,12 @@ public:
   static const string s_tag;
 
   static inline bool 
-  is_overhead(Prof::CSProfCodeNode* x)
+  is_overhead(Prof::CSProfProcedureFrameNode* x)
   {
-    Prof::CSProfProcedureFrameNode* pfrm = dynamic_cast<Prof::CSProfProcedureFrameNode*>(x);
-    if (pfrm) {
-      const string& x_fnm = pfrm->GetFile();
-      if (x_fnm.length() >= s_tag.length()) {
-	size_t tag_beg = x_fnm.length() - s_tag.length();
-	return (x_fnm.compare(tag_beg, s_tag.length(), s_tag) == 0);
-      }
-      // fall through
+    const string& x_fnm = x->GetFile();
+    if (x_fnm.length() >= s_tag.length()) {
+      size_t tag_beg = x_fnm.length() - s_tag.length();
+      return (x_fnm.compare(tag_beg, s_tag.length(), s_tag) == 0);
     }
     return false;
   }
@@ -624,50 +620,36 @@ const string ParallelOverhead::s_tag = "lush:parallel-overhead";
 class CilkCanonicalizer
 {
 public:
-  static const string s_proc_pfx;
   static const string s_slow_pfx;
   static const string s_slow_sfx;
 
   static string 
-  normalizeName(Prof::CSProfCodeNode* x) 
+  normalizeName(Prof::CSProfProcedureFrameNode* x) 
   {
-    string x_nm = x->codeName();
+    //string x_nm = x.substr(pfx, mrk_x - 1 - pfx);
+    const string& x_nm = x->GetProc();
+    
+    string xtra = "";
+
+    size_t mrk_x = x_nm.find(ParallelOverhead::s_tag);
+    if (mrk_x == string::npos && ParallelOverhead::is_overhead(x)) {
+      xtra = "@" + ParallelOverhead::s_tag;
+    }
     
     // if '_cilk' is a prefix of x_nm, normalize
-    Prof::CSProfProcedureFrameNode* pfrm = dynamic_cast<Prof::CSProfProcedureFrameNode*>(x);
-    if (pfrm) {
-      //int pfx = s_proc_pfx.length();
-      //size_t mrk_x = x_nm.find_first_of('@');
-      //string x_procnm = x.substr(pfx, mrk_x - 1 - pfx);
-      const string& x_procnm = pfrm->GetProc();
-
-      string xtra = "";
-      if (ParallelOverhead::is_overhead(x)) {
-	xtra = "@" + ParallelOverhead::s_tag;
-      }
-
+    if (x_nm == "_cilk_cilk_main_import") {
       // 1. _cilk_cilk_main_import --> invoke_main_slow
-      if (x_procnm == "_cilk_cilk_main_import") {
-	return "invoke_main_slow" + xtra;
-      }
-
-      // 2. _cilk_x_slow --> x [_cilk_cilk_main_slow --> cilk_main]
-      if (is_slow_pfx(x_procnm)) {
-	int len = x_procnm.length() - s_slow_pfx.length() - s_slow_sfx.length();
-	string x_basenm = 
-	  x_procnm.substr(s_slow_pfx.length(), len);
-	return x_basenm + xtra;
-      }
-
-      return x_procnm + xtra;
+      return "invoke_main_slow" + xtra;
     }
-    return x_nm;
-  }
-
-  static inline bool 
-  is_proc_pfx(const string& x)
-  {
-    return (x.compare(0, s_proc_pfx.length(), s_proc_pfx) == 0);
+    else if (is_slow_pfx(x_nm)) {
+      // 2. _cilk_x_slow --> x [_cilk_cilk_main_slow --> cilk_main]
+      int len = x_nm.length() - s_slow_pfx.length() - s_slow_sfx.length();
+      string x_basenm = x_nm.substr(s_slow_pfx.length(), len);
+      return x_basenm + xtra;
+    }
+    else {
+      return x_nm + xtra;
+    }
   }
 
   static inline bool 
@@ -685,7 +667,6 @@ public:
 
 };
 
-const string CilkCanonicalizer::s_proc_pfx = "PROCEDURE_FRAME ";
 const string CilkCanonicalizer::s_slow_pfx = "_cilk_";
 const string CilkCanonicalizer::s_slow_sfx = "_slow";
 
@@ -727,12 +708,12 @@ lush_cilkNormalize(Prof::CSProfNode* node)
   // ------------------------------------------------------------
   // Visit node
   // ------------------------------------------------------------
-  Prof::CSProfProcedureFrameNode* pfrm = dynamic_cast<Prof::CSProfProcedureFrameNode*>(node);
-  if (pfrm) {
+  Prof::CSProfProcedureFrameNode* proc = dynamic_cast<Prof::CSProfProcedureFrameNode*>(node);
+  if (proc) {
     lush_cilkNormalizeByFrame(node);
 
     // normalize routines not normalized by merging...
-    pfrm->SetProc(CilkCanonicalizer::normalizeName(pfrm));
+    proc->SetProc(CilkCanonicalizer::normalizeName(proc));
   }
 
   // ------------------------------------------------------------
@@ -748,7 +729,7 @@ lush_cilkNormalize(Prof::CSProfNode* node)
 static void 
 lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
 {
-  DIAG_MsgIf(0, "====> (" << node << ") " << node->codeName());
+  DIAG_MsgIf(DBG_LUSH, "====> (" << node << ") " << node->codeName());
   
   // ------------------------------------------------------------
   // Gather (grand) children frames (skip one level)
@@ -780,7 +761,7 @@ lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
     Prof::CSProfProcedureFrameNode* x = dynamic_cast<Prof::CSProfProcedureFrameNode*>(*it);
 
     string x_nm = CilkCanonicalizer::normalizeName(x);
-    DIAG_MsgIf(0, "\tins: " << x->codeName() << "\n" 
+    DIAG_MsgIf(DBG_LUSH, "\tins: " << x->codeName() << "\n" 
 	       << "\tas : " << x_nm << " --> " << x);
     CilkMergeMap::iterator it = mergeMap.find(x_nm);
     if (it != mergeMap.end()) {
@@ -790,18 +771,17 @@ lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
       // keep the version without the "_cilk_" prefix
       Prof::CSProfCodeNode* tokeep = y, *todel = x;
       
-      if (y->GetType() == Prof::CSProfNode::PROCEDURE_FRAME 
-	  && CilkCanonicalizer::is_slow_proc(y)) {
+      if (CilkCanonicalizer::is_slow_proc(y)) {
         tokeep = x;
 	todel = y;
 	mergeMap[x_nm] = x;
-      } 
+      }
       
       Prof::CSProfNode* par_tokeep = tokeep->Parent();
       Prof::CSProfNode* par_todel  = todel->Parent();
 
-      DIAG_MsgIf(0, "\tkeep (" << tokeep << "): " << tokeep->codeName() << "\n"
-		 << "\tdel  (" << todel  << "): " << todel->codeName());
+      DIAG_MsgIf(DBG_LUSH, "\tkeep (" << tokeep << "): " << tokeep->codeName() 
+		 << "\n" << "\tdel  (" << todel  << "): " << todel->codeName());
 
       // merge parents, if necessary
       if (par_tokeep != par_todel) {
@@ -907,7 +887,7 @@ lush_makeParallelOverhead(Prof::CSProfNode* node,
   // ------------------------------------------------------------
 
   if (node->GetType() == Prof::CSProfNode::PROCEDURE_FRAME) {
-    Prof::CSProfCodeNode* x = dynamic_cast<Prof::CSProfCodeNode*>(node);
+    Prof::CSProfProcedureFrameNode* x = dynamic_cast<Prof::CSProfProcedureFrameNode*>(node);
     is_overhead_ctxt = ParallelOverhead::is_overhead(x);
   }
 
