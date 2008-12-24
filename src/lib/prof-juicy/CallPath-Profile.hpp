@@ -131,8 +131,16 @@ public:
   // -------------------------------------------------------
   // Dump contents for inspection
   // -------------------------------------------------------
-  virtual void dump(std::ostream& os = std::cerr) const;
+
+  std::ostream& 
+  writeXML_hdr(std::ostream& os = std::cerr, const char *pre = "") const;
+
+  //std::ostream& writeXML_cct(...) const;
+
+  virtual std::ostream& dump(std::ostream& os = std::cerr) const;
   virtual void ddump() const;
+
+  static const int StructMetricIdFlg = 0;
 
 private:
   // 1. annotate CCT::Tree nodes with associated Prof::Epoch::LM_id_t 

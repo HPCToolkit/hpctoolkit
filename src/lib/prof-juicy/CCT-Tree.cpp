@@ -116,21 +116,23 @@ Tree::merge(const Tree* y,
 }
 
 
-void 
+std::ostream&
 Tree::writeXML(std::ostream& os, int dmpFlag) const
 {
   if (m_root) {
     m_root->writeXML(os, dmpFlag);
   }
+  return os;
 }
 
 
-void 
+std::ostream& 
 Tree::dump(std::ostream& os, int dmpFlag) const
 {
   if (m_root) {
     m_root->writeXML(os, dmpFlag);
   }
+  return os;
 }
 
 
@@ -846,17 +848,23 @@ CSProfProcedureFrameNode::toString_me(int dmpFlag) const
 {
   string self = CSProfCodeNode::toString_me(dmpFlag);
 
-  bool flg = CCT::Tree::AddXMLEscapeChars(dmpFlag);
-  
   if (m_strct)  {
-    const string& lm_nm = lmname();
+#if (FIXME_WRITE_CCT_DICTIONARIES)
+    self += " lm" + xml::MakeAttrNum(lmId())
+      + " f" + xml::MakeAttrNum(fileId())
+      + " n" + xml::MakeAttrNum(procId());
+#else
+    bool flg = CCT::Tree::AddXMLEscapeChars(dmpFlag);
+
+    const string& lm_nm = lmName();
     const string& fnm   = GetFile();
     const string& pnm   = GetProc();
 
     self += " lm" + xml::MakeAttrStr(lm_nm, flg)
       + " f" + xml::MakeAttrStr(fnm, flg)
       + " n" + xml::MakeAttrStr(pnm, flg);
-    
+#endif
+
     if (isAlien()) {
       self = self + " a=\"1\"";
     }
@@ -912,7 +920,7 @@ CSProfStmtRangeNode::toString_me(int dmpFlag) const
 }
 
 
-void
+std::ostream&
 CSProfNode::writeXML(ostream &os, int dmpFlag, const char *pre) const 
 {
   string indent = "  ";
@@ -933,13 +941,15 @@ CSProfNode::writeXML(ostream &os, int dmpFlag, const char *pre) const
     n->writeXML(os, dmpFlag, prefix.c_str());
   }   
   writeXML_post(os, dmpFlag, pre);
+  return os;
 }
 
 
-void
+std::ostream&
 CSProfNode::dump(ostream &os, int dmpFlag, const char *pre) const 
 {
   writeXML(os, dmpFlag, pre); 
+  return os;
 }
 
 

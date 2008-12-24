@@ -131,8 +131,7 @@ public:
 
   // filter == NULL enumerate all entries
   // otherwise: only entries with filter->fct(e) == true
-  ANodeChildIterator(const ANode* root, 
-			 const ANodeFilter* filter = NULL)
+  ANodeChildIterator(const ANode* root, const ANodeFilter* filter = NULL)
     : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false),
       filter(filter)
   { }
@@ -202,9 +201,9 @@ public:
    // filter == NULL enumerate all entries
    // otherwise: only entries with filter->fct(e) == true
    ANodeIterator(const ANode *root,
-		     const ANodeFilter* filter = NULL,
-		     bool leavesOnly = false,
-		     TraversalOrder torder = PreOrder)
+		 const ANodeFilter* filter = NULL,
+		 bool leavesOnly = false,
+		 TraversalOrder torder = PreOrder)
      : NonUniformDegreeTreeIterator(root, torder, 
 			(leavesOnly) ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
 				 : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES),
@@ -262,8 +261,8 @@ private:
 class ANodeLineSortedIterator {
 public: 
   ANodeLineSortedIterator(const ACodeNode *file, 
-			      const ANodeFilter* filterFunc = NULL, 
-			      bool leavesOnly = true);
+			  const ANodeFilter* filterFunc = NULL, 
+			  bool leavesOnly = true);
   ~ANodeLineSortedIterator();
   
   ACodeNode* Current() const
@@ -293,7 +292,7 @@ private:
 class ANodeLineSortedChildIterator {
 public: 
   ANodeLineSortedChildIterator(const ANode *root, 
-				   const ANodeFilter* filterFunc = NULL);
+			       const ANodeFilter* filterFunc = NULL);
   ~ANodeLineSortedChildIterator();
 
   ACodeNode* Current() const

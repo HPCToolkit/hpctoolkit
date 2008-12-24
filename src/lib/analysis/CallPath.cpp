@@ -112,19 +112,7 @@ write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint)
   // 
   // ------------------------------------------------------------
   os << "<SecHeader>\n";
-  os << "  <MetricTable>\n";
-  uint n_metrics = prof->numMetrics();
-  for (uint i = 0; i < n_metrics; i++) {
-    const SampledMetricDesc* metric = prof->metric(i);
-    os << "    <Metric i" << MakeAttrNum(i) 
-       << " n" << MakeAttrStr(metric->name()) << ">\n";
-    os << "      <Info>" 
-       << "<NV n=\"period\" v" << MakeAttrNum(metric->period()) << "/>"
-       << "<NV n=\"flags\" v" << MakeAttrNum(metric->flags(), 16) << "/>"
-       << "</Info>\n";
-    os << "    </Metric>\n";
-  }
-  os << "  </MetricTable>\n";
+  prof->writeXML_hdr(os);
   os << "  <Info/>\n";
   os << "</SecHeader>\n";
   os.flush();
@@ -258,6 +246,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
       Struct::Loop* loopStrct = dynamic_cast<Struct::Loop*>(t);
 
       n->structure(strct);
+      strct->SetPerfData(CallPath::Profile::StructMetricIdFlg, 1.0);
 
       // 2. Demand a procedure frame for 'n', complete with loop structure
       Prof::CSProfProcedureFrameNode* frame = 
@@ -327,7 +316,10 @@ makeProcFrame(Prof::IDynNode* node, Prof::Struct::Proc* procStrct,
 {
   Prof::CSProfProcedureFrameNode* frame 
     = new Prof::CSProfProcedureFrameNode(NULL);
+
   frame->structure(procStrct);
+  procStrct->SetPerfData(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
+
   frame->Link(node->proxy()->Parent());
   frameMap.insert(std::make_pair(procStrct, frame));
 
@@ -395,7 +387,10 @@ loopifyFrame(Prof::CSProfCodeNode* mirrorNode,
     else if (n->Type() == Prof::Struct::ANode::TyALIEN) {
       Prof::CSProfProcedureFrameNode* fr = 
 	new Prof::CSProfProcedureFrameNode(NULL);
+
       fr->structure(n);
+      n->SetPerfData(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
+
       frameMap.insert(std::make_pair(n, fr));
       DIAG_DevMsgIf(0, hex << fr->GetProc() << " [" << n << " -> " << fr << "]" << dec);
       
