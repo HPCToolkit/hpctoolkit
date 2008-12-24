@@ -1084,7 +1084,7 @@ removeOrphanedProcedureRepository(Prof::Struct::Tree* strctTree)
 {
   bool changed = false;
   
-  Struct::Pgm* pgmStrct = strctTree->GetRoot();
+  Struct::Pgm* pgmStrct = strctTree->root();
   if (!pgmStrct) { return changed; }
   
   for (Struct::ANodeIterator it(pgmStrct, 
@@ -1115,7 +1115,7 @@ mergeBogusAlienStrct(Prof::Struct::Tree* strctTree)
 {
   bool changed = false;
   
-  Struct::Pgm* pgmStrct = strctTree->GetRoot();
+  Struct::Pgm* pgmStrct = strctTree->root();
   if (!pgmStrct) { return changed; }
   
   for (Struct::ANodeIterator it(pgmStrct, 
@@ -1233,7 +1233,7 @@ coalesceDuplicateStmts(Prof::Struct::Tree* strctTree,
 {
   bool changed = false;
   CDS_unsafeNormalizations = unsafeNormalizations;
-  Struct::Pgm* pgmStrct = strctTree->GetRoot();
+  Struct::Pgm* pgmStrct = strctTree->root();
   SortIdToStmtMap stmtMap;    // line to statement data map
   Struct::ANodeSet visitedScopes; // all children of a scope have been visited
   Struct::ANodeSet toDelete;      // nodes to delete
@@ -1462,7 +1462,7 @@ mergePerfectlyNestedLoops(Struct::ANode* node);
 static bool 
 mergePerfectlyNestedLoops(Prof::Struct::Tree* strctTree)
 {
-  return mergePerfectlyNestedLoops(strctTree->GetRoot());
+  return mergePerfectlyNestedLoops(strctTree->root());
 }
 
 
@@ -1523,7 +1523,7 @@ static bool
 removeEmptyNodes(Prof::Struct::Tree* strctTree)
 {
   // Always maintain the top level PGM scope, even if empty
-  return removeEmptyNodes(strctTree->GetRoot());
+  return removeEmptyNodes(strctTree->root());
 }
 
 
@@ -1586,7 +1586,7 @@ filterFilesFromStrctTree(Prof::Struct::Tree* strctTree,
 {
   bool changed = false;
   
-  Struct::Pgm* pgmStrct = strctTree->GetRoot();
+  Struct::Pgm* pgmStrct = strctTree->root();
   if (!pgmStrct) { return changed; }
   
   for (Struct::ANodeIterator it(pgmStrct, 

@@ -132,19 +132,21 @@ Tree::CollectCrossReferences()
 }
 
 
-void 
+ostream& 
 Tree::writeXML(ostream& os, int dmpFlags) const
 {
   if (m_root) {
     m_root->writeXML(os, dmpFlags);
   }
+  return os;
 }
 
 
-void 
+ostream& 
 Tree::dump(ostream& os, int dmpFlags) const
 {
   writeXML(os, dmpFlags);
+  return os;
 }
 
 
@@ -1698,7 +1700,7 @@ ANode::writeXML_post(ostream& os, int dmpFlag, const char* pfx) const
 }
 
 
-void
+ostream& 
 ANode::writeXML(ostream& os, int dmpFlag, const char* pfx) const 
 {
   string indent = "  ";
@@ -1719,6 +1721,7 @@ ANode::writeXML(ostream& os, int dmpFlag, const char* pfx) const
     it.Current()->writeXML(os, dmpFlag, pfx_new.c_str());
   }
   writeXML_post(os, dmpFlag, pfx);
+  return os;
 }
 
 
@@ -1729,7 +1732,7 @@ ANode::ddumpXML() const
 }
 
 
-void
+ostream& 
 Pgm::writeXML(ostream& os, int dmpFlag, const char* pfx) const
 {
   // N.B.: Typically LM are children
@@ -1742,10 +1745,11 @@ Pgm::writeXML(ostream& os, int dmpFlag, const char* pfx) const
     scope->writeXML(os, dmpFlag, pfx);
   }
   ANode::writeXML_post(os, dmpFlag, pfx);
+  return os;
 }
 
 
-void
+ostream& 
 LM::writeXML(ostream& os, int dmpFlag, const char* pre) const
 {
   // N.B.: Typically Files are children
@@ -1759,6 +1763,7 @@ LM::writeXML(ostream& os, int dmpFlag, const char* pre) const
     scope->writeXML(os, dmpFlag, prefix.c_str());
   }
   ANode::writeXML_post(os, dmpFlag, pre);
+  return os;
 }
 
 

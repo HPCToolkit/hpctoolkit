@@ -126,7 +126,7 @@ Driver::run()
   DIAG_Msg(2, "Creating and correlating metrics with program structure: ...");
   correlateMetricsWithStructure(m_mMgr, m_structure);
   
-  m_structure.GetRoot()->Freeze();      // disallow further additions to tree 
+  m_structure.root()->Freeze();         // disallow further additions to tree 
   m_structure.CollectCrossReferences(); // collect cross referencing information
 
   DIAG_If(3) {
@@ -147,8 +147,7 @@ Driver::run()
   if (db_use && m_args.db_copySrcFiles) {
     DIAG_Msg(1, "Copying source files reached by PATH/REPLACE options to " << db_dir);
     // NOTE: makes file names in m_structure relative to database
-    Analysis::Util::copySourceFiles(m_structure.GetRoot(), 
-				    m_args.searchPathTpls, 
+    Analysis::Util::copySourceFiles(m_structure.root(), m_args.searchPathTpls, 
 				    db_dir);
   }
 
@@ -273,7 +272,7 @@ Driver::write_experiment(std::ostream &os) const
 		   ? 0 : Prof::Struct::Tree::DUMP_LEAF_METRICS);
 
   os << "<SecFlatProfileData>\n";
-  m_structure.GetRoot()->writeXML(os, dumpFlags);
+  m_structure.root()->writeXML(os, dumpFlags);
   os << "</SecFlatProfileData>\n";
 
   os << "</SecFlatProfile>\n";
@@ -295,7 +294,7 @@ Driver::write_csv(std::ostream &os) const
   os << endl;
   
   // Dump SCOPETREE
-  m_structure.GetRoot()->CSV_TreeDump(os);
+  m_structure.root()->CSV_TreeDump(os);
 }
 
 
@@ -311,7 +310,7 @@ Driver::write_txt(std::ostream &os) const
   PerfMetric* m_sortby = m_mMgr.findSortBy();
   DIAG_Assert(m_sortby, "INVARIANT: at least on sort-by metric must exist");
 
-  Struct::Pgm* pgmStrct = m_structure.GetRoot();
+  Struct::Pgm* pgmStrct = m_structure.root();
 
   ColumnFormatter colFmt(m_mMgr, os, 2, 0);
 
@@ -360,7 +359,7 @@ Driver::write_txt(std::ostream &os) const
     bool hasFnmGlobs = !fnmGlobs.empty();
 
     Struct::ANodeIterator 
-      it(m_structure.GetRoot(), &ANodeTyFilter[Struct::ANode::TyFILE]);
+      it(m_structure.root(), &ANodeTyFilter[Struct::ANode::TyFILE]);
     for (Struct::ANode* strct = NULL; (strct = it.CurScope()); it++) {
       Struct::File* fileStrct = dynamic_cast<Struct::File*>(strct);
       const string& fnm = fileStrct->name();
@@ -383,7 +382,7 @@ Driver::write_txt_secSummary(std::ostream& os,
 
   write_txt_hdr(os, title);
 
-  Prof::Struct::Pgm* pgmStrct = m_structure.GetRoot();
+  Prof::Struct::Pgm* pgmStrct = m_structure.root();
   PerfMetric* m_sortby = m_mMgr.findSortBy();
 
   if (!filter) {
@@ -446,7 +445,7 @@ Driver::write_txt_annotateFile(std::ostream& os,
   //
   //-------------------------------------------------------
 
-  Prof::Struct::Pgm* pgmStrct = m_structure.GetRoot();
+  Prof::Struct::Pgm* pgmStrct = m_structure.root();
   const uint linew = 5;
   string linetxt;
   SrcFile::ln ln_file = 1; // line number *after* next getline
@@ -589,7 +588,7 @@ namespace Flat {
 void
 Driver::populatePgmStructure(Prof::Struct::Tree& structure)
 {
-  Prof::Struct::TreeInterface structIF(structure.GetRoot(), 
+  Prof::Struct::TreeInterface structIF(structure.root(), 
 				       m_args.searchPathStr());
   DriverDocHandlerArgs docargs(this);
   
@@ -622,7 +621,7 @@ Driver::correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
   // every value of a raw metric, potentially creating 'unprunable'
   // nodes from those that would otherwise be prunable.  However, any
   // sane computed metric will not have this property.
-  structure.GetRoot()->pruneByMetrics();
+  structure.root()->pruneByMetrics();
 
   computeDerivedMetrics(mMgr, structure);
 }
@@ -633,8 +632,7 @@ Driver::correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
 void
 Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure) 
 {
-  Prof::Struct::TreeInterface structIF(structure.GetRoot(), 
-				       m_args.searchPathStr());
+  Prof::Struct::TreeInterface structIF(structure.root(), m_args.searchPathStr());
   StringToBoolMap hasStructureTbl;
   
   const Prof::Metric::Mgr::StringPerfMetricVecMap& fnameToFMetricMap = 
@@ -703,8 +701,8 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
     for (VMAIntervalSet::iterator it = ivalset.begin(); 
 	 it != ivalset.end(); ++it) {
       const VMAInterval& ival = *it;
-      structIF.GetRoot()->accumulateMetrics((uint)ival.beg(), 
-					    (uint)ival.end() - 1); // [ ]
+      structIF.root()->accumulateMetrics((uint)ival.beg(), 
+					 (uint)ival.end() - 1); // [ ]
     }
   }
 }
@@ -909,9 +907,9 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
 			    const Prof::Metric::AExpr** mExprVec,
 			    uint mBegId, uint mEndId)
 {
-  Prof::Struct::Pgm* pgmStrct = structure.GetRoot();
-  Prof::Struct::ANodeIterator it(pgmStrct, NULL /*filter*/, false /*leavesOnly*/,
-		       IteratorStack::PostOrder);
+  Prof::Struct::Pgm* pgmStrct = structure.root();
+  Prof::Struct::ANodeIterator it(pgmStrct, NULL/*filter*/, false/*leavesOnly*/,
+				 IteratorStack::PostOrder);
       
   for (; it.Current(); it++) {
     for (uint mId = mBegId; mId <= mEndId; ++mId) {

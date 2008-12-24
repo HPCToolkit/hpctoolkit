@@ -128,10 +128,12 @@ public:
   };
 
 public:
+  // -------------------------------------------------------
   // Constructor/Destructor
+  // -------------------------------------------------------
+  
+  Tree(const CallPath::Profile* metadata); // FIXME: metrics and epoch
 
-  // FIXME: metadata should be metrics and epoch, not 
-  Tree(const CallPath::Profile* metadata);
   virtual ~Tree();
 
   // -------------------------------------------------------
@@ -143,7 +145,6 @@ public:
   bool empty() const { return (m_root == NULL); }
 
   const CallPath::Profile* metadata() { return m_metadata; }
-
   
   // -------------------------------------------------------
   // Given a Tree, merge into 'this'
@@ -153,7 +154,7 @@ public:
 	     uint x_numMetrics, uint y_numMetrics);
 
   // -------------------------------------------------------
-  // Dump contents for inspection
+  // Write contents
   // -------------------------------------------------------
   std::ostream& 
   writeXML(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;

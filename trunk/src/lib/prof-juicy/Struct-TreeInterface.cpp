@@ -102,9 +102,9 @@ namespace Prof {
 namespace Struct {
 
 TreeInterface::TreeInterface(Pgm* _root, const string& p) 
-  : root(_root), currentLM(NULL), currentFile(NULL), currentProc(NULL), path(p)
+  : m_root(_root), currentLM(NULL), currentFile(NULL), currentProc(NULL), path(p)
 {
-  DIAG_Assert(root != NULL, "");
+  DIAG_Assert(m_root != NULL, "");
   DIAG_Assert(!p.empty(), "");
 }
 
@@ -117,7 +117,7 @@ TreeInterface::MoveToGroup(ANode* parent, const char* name)
 {
   DIAG_Assert(parent && name, "");
   
-  Group* grp = root->findGroup(name);
+  Group* grp = m_root->findGroup(name);
   if (grp == NULL) {
     grp = new Group(name, parent);
     DIAG_DevMsg(3, "TreeInterface::MoveToGroup new Group: " << name);
@@ -132,9 +132,9 @@ TreeInterface::MoveToLM(const char* name)
 
   // REPLACE: LM::findOrCreate
 
-  LM* lm = root->findLM(name);
+  LM* lm = m_root->findLM(name);
   if (lm == NULL) {
-    lm = new LM(name, root);
+    lm = new LM(name, m_root);
     DIAG_DevMsg(3, "TreeInterface::MoveToLM new LM: " << name);
   } 
   currentLM = lm; 
@@ -156,7 +156,7 @@ TreeInterface::MoveToFile(const char* name)
   // If the file is not found, a load module will be created, if
   // needed, with the same name as the root.
   if (!currentLM) {
-    currentLM = MoveToLM(root->name());
+    currentLM = MoveToLM(m_root->name());
   } 
 #endif
 

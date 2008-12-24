@@ -160,7 +160,9 @@ public:
   static const std::string UnknownProcNm;
   
 public:
+  // -------------------------------------------------------
   // Constructor/Destructor
+  // -------------------------------------------------------
   Tree(const char* name, Pgm* root = NULL);
 
   Tree(const std::string& name, Pgm* root = NULL)
@@ -168,23 +170,29 @@ public:
 
   virtual ~Tree();
 
+  // -------------------------------------------------------
   // Tree data
-  Pgm* GetRoot() const { return m_root; }
-  void SetRoot(Pgm* x) { m_root = x; }
-  bool IsEmpty() const { return (m_root == NULL); }
+  // -------------------------------------------------------
+  Pgm* root() const { return m_root; }
+  void root(Pgm* x) { m_root = x; }
+  bool empty() const { return (m_root == NULL); }
   
-  void CollectCrossReferences();
-
   std::string name() const;
 
-  virtual void 
+  void CollectCrossReferences();
+
+
+  // -------------------------------------------------------
+  // Write contents
+  // -------------------------------------------------------
+  std::ostream& 
   writeXML(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
 
   // Dump contents for inspection (use flags from ANode)
-  virtual void 
+  std::ostream& 
   dump(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
   
-  virtual void 
+  void 
   ddump() const;
  
 private:
@@ -465,13 +473,15 @@ public:
   // XML output
   // --------------------------------------------------------
 
-  std::string toStringXML(int dmpFlag = 0, const char* pre = "") const;
+  std::string 
+  toStringXML(int dmpFlag = 0, const char* pre = "") const;
   
-  virtual std::string toXML(int dmpFlag = 0) const;
+  virtual std::string 
+  toXML(int dmpFlag = 0) const;
 
-  virtual void writeXML(std::ostream& os = std::cout,
-			int dmpFlag = 0,
-			const char* pre = "") const;
+  virtual std::ostream& 
+  writeXML(std::ostream& os = std::cout, int dmpFlag = 0,
+	   const char* pre = "") const;
 
   void ddumpXML() const;
 
@@ -746,9 +756,9 @@ public:
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
-  virtual void writeXML(std::ostream& os = std::cout, 
-			int dmpFlag = 0, 
-			const char* pre = "") const;
+  virtual std::ostream&
+  writeXML(std::ostream& os = std::cout, int dmpFlag = 0, 
+	   const char* pre = "") const;
 
   void CSV_TreeDump(std::ostream& os = std::cout) const;
 
@@ -896,9 +906,9 @@ public:
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
-  virtual void writeXML(std::ostream& os = std::cout, 
-			int dmpFlag = 0, 
-			const char* pre = "") const;
+  virtual std::ostream&
+  writeXML(std::ostream& os = std::cout, int dmpFlag = 0, 
+	   const char* pre = "") const;
 
   // --------------------------------------------------------
   // debugging
