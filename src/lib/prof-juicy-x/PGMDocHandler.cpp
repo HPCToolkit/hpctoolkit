@@ -304,7 +304,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
       PGM_Throw("Found file format version " << m_version << ": This format is outdated; please regenerate the file.");
     }
 
-    Struct::Pgm* root = m_structIF->GetRoot();
+    Struct::Pgm* root = m_structIF->root();
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << root->toString_me());
 
     curStrct = root;

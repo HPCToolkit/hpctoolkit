@@ -143,7 +143,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 	      Struct::Tree* structure, const Struct::ANodeFilter* filter,
 	      int type)
 {
-  Struct::ANode* root = structure ? structure->GetRoot() : NULL;
+  Struct::ANode* root = structure ? structure->root() : NULL;
   if (!root) {
     return;
   }
@@ -213,10 +213,10 @@ Profile::writeXML_hdr(std::ostream& os, const char* pre) const
   os << "  </MetricTable>\n";
 
 #if (FIXME_WRITE_CCT_DICTIONARIES)
-  Struct::ANode* rootStrct = (m_structure) ? m_structure->GetRoot() : NULL;
+  Struct::ANode* rootStrct = (m_structure) ? m_structure->root() : NULL;
   if (rootStrct) {
     // Note: A non-zero metric value means the structure value was used!
-    rootStrct->accumulateMetrics(0, 0); // [ ]
+    rootStrct->accumulateMetrics(StructMetricIdFlg, StructMetricIdFlg); // [ ]
   }
 
   os << "  <LoadModuleTable>\n";

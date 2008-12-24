@@ -74,7 +74,7 @@ public:
   TreeInterface(Pgm* root, const std::string& path); 
   ~TreeInterface();
   
-  Pgm* GetRoot() const { return root; }; 
+  Pgm* root() const { return m_root; }; 
 
   // get/make group scope with given parent and name.  We need a
   // parent scope for now because a Group can be a child of basically
@@ -104,7 +104,7 @@ public:
     { return MoveToProc(name.c_str()); }
 
 private:
-  Pgm* root;
+  Pgm* m_root;
   LM* currentLM;
   File* currentFile;
   Proc* currentProc;

@@ -162,7 +162,7 @@ realmain(int argc, char* const* argv)
 	const string& lm_nm = epoch_lm->name();
 
 	Prof::Struct::Tree* structure = prof->structure();
-	Prof::Struct::Pgm* pgmStrct = structure->GetRoot();
+	Prof::Struct::Pgm* pgmStrct = structure->root();
 	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(pgmStrct, lm_nm);
 	
 	overlayStaticStructure(prof, epoch_lm, lmStrct);
@@ -243,7 +243,7 @@ readStructure(const Prof::Struct::Tree* structure, const Analysis::Args& args)
 {
   string searchPath = args.searchPathStr();
 
-  Prof::Struct::TreeInterface structIF(structure->GetRoot(), searchPath);
+  Prof::Struct::TreeInterface structIF(structure->root(), searchPath);
   DocHandlerArgs docargs; // NOTE: override for replacePath()
 
   Prof::Struct::readStructure(structIF, args.structureFiles,
