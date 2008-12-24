@@ -376,8 +376,7 @@ loopifyFrame(Prof::CSProfCodeNode* mirrorNode,
 
     if (n->Type() == Prof::Struct::ANode::TyLOOP) {
       // loops are always children of the current root (loop or frame)
-      Prof::CSProfLoopNode* lp = 
-	new Prof::CSProfLoopNode(mirrorNode, n->begLine(), n->endLine(), n);
+      Prof::CSProfLoopNode* lp = new Prof::CSProfLoopNode(mirrorNode, n);
       loopMap.insert(std::make_pair(ProcFrameAndLoop(frame, n), lp));
       DIAG_DevMsgIf(0, hex << "(" << frame << " " << n << ") -> (" << lp << ")" << dec);
 
@@ -510,7 +509,7 @@ coalesceStmts(Prof::CSProfNode* node)
 	// no entry found -- add
 	stmtMap.insert(std::make_pair(line, c));
       }
-    } 
+    }
     else if (!child->IsLeaf()) {
       // Recur
       coalesceStmts(child);
@@ -583,8 +582,9 @@ public:
   static inline bool 
   is_overhead(Prof::CSProfCodeNode* x)
   {
-    if (x->GetType() == Prof::CSProfNode::PROCEDURE_FRAME) {
-      const string& x_fnm = x->GetFile();
+    Prof::CSProfProcedureFrameNode* pfrm = dynamic_cast<Prof::CSProfProcedureFrameNode*>(x);
+    if (pfrm) {
+      const string& x_fnm = pfrm->GetFile();
       if (x_fnm.length() >= s_tag.length()) {
 	size_t tag_beg = x_fnm.length() - s_tag.length();
 	return (x_fnm.compare(tag_beg, s_tag.length(), s_tag) == 0);
@@ -634,11 +634,12 @@ public:
     string x_nm = x->codeName();
     
     // if '_cilk' is a prefix of x_nm, normalize
-    if (x->GetType() == Prof::CSProfNode::PROCEDURE_FRAME) {
+    Prof::CSProfProcedureFrameNode* pfrm = dynamic_cast<Prof::CSProfProcedureFrameNode*>(x);
+    if (pfrm) {
       //int pfx = s_proc_pfx.length();
       //size_t mrk_x = x_nm.find_first_of('@');
       //string x_procnm = x.substr(pfx, mrk_x - 1 - pfx);
-      const string& x_procnm = x->GetProc();
+      const string& x_procnm = pfrm->GetProc();
 
       string xtra = "";
       if (ParallelOverhead::is_overhead(x)) {
@@ -676,7 +677,7 @@ public:
   }
 
   static inline bool 
-  is_slow_proc(Prof::CSProfCodeNode* x)
+  is_slow_proc(Prof::CSProfProcedureFrameNode* x)
   {
     const string& x_procnm = x->GetProc();
     return is_slow_pfx(x_procnm);
@@ -726,12 +727,12 @@ lush_cilkNormalize(Prof::CSProfNode* node)
   // ------------------------------------------------------------
   // Visit node
   // ------------------------------------------------------------
-  if (node->GetType() == Prof::CSProfNode::PROCEDURE_FRAME) {
+  Prof::CSProfProcedureFrameNode* pfrm = dynamic_cast<Prof::CSProfProcedureFrameNode*>(node);
+  if (pfrm) {
     lush_cilkNormalizeByFrame(node);
 
     // normalize routines not normalized by merging...
-    Prof::CSProfCodeNode* x = dynamic_cast<Prof::CSProfCodeNode*>(node);
-    x->SetProc(CilkCanonicalizer::normalizeName(x));
+    pfrm->SetProc(CilkCanonicalizer::normalizeName(pfrm));
   }
 
   // ------------------------------------------------------------
@@ -758,10 +759,9 @@ lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
     Prof::CSProfNode* child = it.CurNode();
 
     for (Prof::CSProfNodeChildIterator it(child); it.Current(); ++it) {
-      Prof::CSProfCodeNode* x = 
-	dynamic_cast<Prof::CSProfCodeNode*>(it.CurNode());
-      
-      if (x->GetType() == Prof::CSProfNode::PROCEDURE_FRAME) {
+      Prof::CSProfProcedureFrameNode* x = 
+	dynamic_cast<Prof::CSProfProcedureFrameNode*>(it.CurNode());
+      if (x) {
 	frameSet.insert(x);
       }
     }
@@ -777,7 +777,7 @@ lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
   for (CSProfCodeNodeSet::iterator it = frameSet.begin(); 
        it != frameSet.end(); ++it) {
     
-    Prof::CSProfCodeNode* x = *it;
+    Prof::CSProfProcedureFrameNode* x = dynamic_cast<Prof::CSProfProcedureFrameNode*>(*it);
 
     string x_nm = CilkCanonicalizer::normalizeName(x);
     DIAG_MsgIf(0, "\tins: " << x->codeName() << "\n" 
@@ -785,10 +785,11 @@ lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
     CilkMergeMap::iterator it = mergeMap.find(x_nm);
     if (it != mergeMap.end()) {
       // found -- we have a duplicate
-      Prof::CSProfCodeNode* y = (*it).second;
+      Prof::CSProfProcedureFrameNode* y = dynamic_cast<Prof::CSProfProcedureFrameNode*>((*it).second);
 
       // keep the version without the "_cilk_" prefix
       Prof::CSProfCodeNode* tokeep = y, *todel = x;
+      
       if (y->GetType() == Prof::CSProfNode::PROCEDURE_FRAME 
 	  && CilkCanonicalizer::is_slow_proc(y)) {
         tokeep = x;

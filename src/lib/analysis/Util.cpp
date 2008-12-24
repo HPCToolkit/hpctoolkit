@@ -187,13 +187,9 @@ Analysis::Util::copySourceFiles(Prof::CallPath::Profile* prof,
   Prof::CSProfNodeFilter filter(CallPath_Filter, "CallPath_Filter", 0);
 
   for (Prof::CSProfNodeIterator it(cct->root(), &filter); it.Current(); ++it) {
-    Prof::CSProfNode* x = it.CurNode();
-    Prof::CSProfCodeNode* x_code = dynamic_cast<Prof::CSProfCodeNode*>(x);
-    if ( !(x_code && x_code->FileIsText()) ) { 
-      continue; 
-    }
+    Prof::CSProfProcedureFrameNode* x_proc = dynamic_cast<Prof::CSProfProcedureFrameNode*>(it.CurNode());
 
-    const string& fnm_orig = x_code->GetFile(); // may not be absolute
+    const string& fnm_orig = x_proc->GetFile(); // may not be absolute
 
     // ------------------------------------------------------
     // Given fnm_orig, attempt to find and copy fnm_new
@@ -205,7 +201,7 @@ Analysis::Util::copySourceFiles(Prof::CallPath::Profile* prof,
     // Update dynamic/static structure
     // ------------------------------------------------------
     if (!fnm_new.empty()) {
-      x_code->SetFile(fnm_new);
+      x_proc->SetFile(fnm_new);
     }
   }
 }
@@ -262,7 +258,7 @@ Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure,
     // ------------------------------------------------------
     if (!fnm_new.empty()) {
       if (fileStrct) {
-	fileStrct->SetName(fnm_new);
+	fileStrct->name(fnm_new);
       }
       else {
 	alienStrct->fileName(fnm_new);

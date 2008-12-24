@@ -170,7 +170,7 @@ namespace Prof {
 //***************************************************************************
 
 const string CSProfNode::NodeNames[CSProfNode::NUMBER_OF_TYPES] = {
-  "PGM", "G", "C", "L", "S", "P", "S", "ANY"
+  "PGM", "C", "L", "S", "P", "S", "ANY"
 };
 
 const string&
@@ -189,8 +189,6 @@ CSProfNode::IntToNodeType(long i)
 //***************************************************************************
 // CSProfNode, etc: constructors/destructors
 //***************************************************************************
-
-string CSProfCodeNode::BOGUS;
 
 CSProfNode::CSProfNode(NodeType t, CSProfNode* _parent) 
   : NonUniformDegreeTreeNode(_parent), type(t)
@@ -217,12 +215,9 @@ CSProfNode::~CSProfNode()
 
 
 CSProfCodeNode::CSProfCodeNode(NodeType t, CSProfNode* _parent, 
-			       SrcFile::ln begLn, SrcFile::ln endLn,
 			       Struct::ACodeNode* strct) 
-  : CSProfNode(t, _parent), 
-    begLine(ln_NULL), endLine(ln_NULL), m_strct(strct) 
+  : CSProfNode(t, _parent), m_strct(strct) 
 { 
-  SetLineRange(begLn, endLn); 
 }
 
 
@@ -246,29 +241,11 @@ CSProfPgmNode::~CSProfPgmNode()
 }
 
 
-CSProfGroupNode::CSProfGroupNode(CSProfNode* _parent, const char* nm) 
-  : CSProfNode(GROUP, _parent)
-{
-  DIAG_Assert(nm, "");
-  DIAG_Assert((_parent == NULL) || (_parent->GetType() == PGM)
-	      || (_parent->GetType() == GROUP) 
-	      || (_parent->GetType() == CALLSITE) 
-	      || (_parent->GetType() == LOOP), "");
-  name = nm;
-}
-
-
-CSProfGroupNode::~CSProfGroupNode()
-{
-}
-
-
 static void
 CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent) 
 {
   DIAG_Assert((_parent == NULL) 
 	      || (_parent->GetType() == CSProfNode::PGM)
-	      || (_parent->GetType() == CSProfNode::GROUP) 
 	      || (_parent->GetType() == CSProfNode::LOOP) 
 	      || (_parent->GetType() == CSProfNode::PROCEDURE_FRAME) 
 	      || (_parent->GetType() == CSProfNode::CALLSITE), "");
@@ -278,7 +255,7 @@ CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent)
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
 				       uint32_t cpid,
 				       const SampledMetricDescVec* metricdesc)
-  : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL),
+  : CSProfCodeNode(CALLSITE, _parent),
     IDynNode(this, cpid, metricdesc)
 {
   CSProfCallSiteNode_Check(this, _parent);
@@ -292,7 +269,7 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
 				       uint32_t cpid,
 				       const SampledMetricDescVec* metricdesc,
 				       std::vector<hpcfile_metric_data_t>& metrics)
-  : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL), 
+  : CSProfCodeNode(CALLSITE, _parent), 
     IDynNode(this, as_info, ip, opIndex, lip, cpid, metricdesc, metrics)
 {
   CSProfCallSiteNode_Check(this, _parent);
@@ -306,7 +283,7 @@ CSProfCallSiteNode::~CSProfCallSiteNode()
 CSProfStatementNode::CSProfStatementNode(CSProfNode* _parent, 
 					 uint32_t cpid,
 					 const SampledMetricDescVec* metricdesc)
-  :  CSProfCodeNode(STATEMENT, _parent, ln_NULL, ln_NULL),
+  :  CSProfCodeNode(STATEMENT, _parent),
      IDynNode(this, cpid, metricdesc)
 {
 }
@@ -321,10 +298,6 @@ CSProfStatementNode::operator=(const CSProfStatementNode& x)
 {
   if (this != &x) {
     IDynNode::operator=(x);
-
-    file = x.GetFile();
-    proc = x.GetProc();
-    fileistext = x.FileIsText();
   }
 }
 
@@ -333,18 +306,13 @@ void
 CSProfStatementNode::operator=(const CSProfCallSiteNode& x)
 {
   IDynNode::operator=(x);
-  
-  file = x.GetFile();
-  proc = x.GetProc();
-  
-  fileistext = x.FileIsText();
-  donewithsrcinfproc = x.GotSrcInfo();
 }
 
 
+string CSProfProcedureFrameNode::BOGUS;
+
 CSProfProcedureFrameNode::CSProfProcedureFrameNode(CSProfNode* _parent)
-  : CSProfCodeNode(PROCEDURE_FRAME, _parent, ln_NULL, ln_NULL),
-    fileistext(false), m_alien(false)
+  : CSProfCodeNode(PROCEDURE_FRAME, _parent)
 {
   CSProfCallSiteNode_Check(NULL, _parent);
 }
@@ -354,12 +322,10 @@ CSProfProcedureFrameNode::~CSProfProcedureFrameNode()
 }
 
 
-CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent, 
-			       SrcFile::ln begLn, SrcFile::ln endLn, 
-			       Struct::ACodeNode* strct)
-  : CSProfCodeNode(LOOP, _parent, begLn, endLn, strct)
+CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent, Struct::ACodeNode* strct)
+  : CSProfCodeNode(LOOP, _parent, strct)
 {
-  DIAG_Assert((_parent == NULL) || (_parent->GetType() == GROUP) 
+  DIAG_Assert((_parent == NULL)
 	      || (_parent->GetType() == CALLSITE) 
 	      || (_parent->GetType() == PROCEDURE_FRAME) 
 	      || (_parent->GetType() == LOOP), "");
@@ -369,12 +335,10 @@ CSProfLoopNode::~CSProfLoopNode()
 {
 }
 
-CSProfStmtRangeNode::CSProfStmtRangeNode(CSProfNode* _parent, 
-					 SrcFile::ln begLn, SrcFile::ln endLn, 
-					 Struct::ACodeNode* strct)
-  : CSProfCodeNode(STMT_RANGE, _parent, begLn, endLn, strct)
+CSProfStmtRangeNode::CSProfStmtRangeNode(CSProfNode* _parent, Struct::ACodeNode* strct)
+  : CSProfCodeNode(STMT_RANGE, _parent, strct)
 {
-  DIAG_Assert((_parent == NULL) || (_parent->GetType() == GROUP)
+  DIAG_Assert((_parent == NULL)
 	      || (_parent->GetType() == CALLSITE)
 	      || (_parent->GetType() == LOOP), "");
 }
@@ -455,13 +419,6 @@ CSProfNode::AncestorPgm() const
   }  else { 
     dyn_cast_return(CSProfNode, CSProfPgmNode, Ancestor(PGM));
   }
-}
-
-
-CSProfGroupNode*
-CSProfNode::AncestorGroup() const 
-{
-  dyn_cast_return(CSProfNode, CSProfGroupNode, Ancestor(GROUP)); 
 }
 
 
@@ -697,8 +654,8 @@ string
 CSProfCodeNode::codeName() const
 { 
   string self = NodeTypeToName(GetType()) + " "
-    + GetFile() + ":" 
-    + StrUtil::toStr(begLine) + "-" + StrUtil::toStr(endLine);
+    //+ GetFile() + ":" 
+    + StrUtil::toStr(GetBegLine()) + "-" + StrUtil::toStr(GetEndLine());
   return self;
 }
 
@@ -708,7 +665,7 @@ CSProfProcedureFrameNode::codeName() const
   string self = NodeTypeToName(GetType()) + " "
     + GetProc() + " @ "
     + GetFile() + ":" 
-    + StrUtil::toStr(begLine) + "-" + StrUtil::toStr(endLine);
+    + StrUtil::toStr(GetBegLine()) + "-" + StrUtil::toStr(GetEndLine());
   return self;
 }
 
@@ -833,14 +790,6 @@ CSProfPgmNode::toString_me(int dmpFlag) const
   return self;
 }
 
-
-string 
-CSProfGroupNode::toString_me(int dmpFlag) const
-{
-  string self = CSProfNode::toString_me(dmpFlag) + " n" +
-    xml::MakeAttrStr(name, CCT::Tree::AddXMLEscapeChars(dmpFlag));
-  return self;
-}
 
 
 string
@@ -1018,9 +967,6 @@ CSProfNode::Types() const
   if (dynamic_cast<const CSProfPgmNode*>(this)) {
     types += "CSProfPgmNode "; 
   } 
-  if (dynamic_cast<const CSProfGroupNode*>(this)) {
-    types += "CSProfGroupNode "; 
-  } 
   if (dynamic_cast<const CSProfCallSiteNode*>(this)) {
     types += "CSProfCallSiteNode "; 
   } 
@@ -1038,101 +984,6 @@ CSProfNode::Types() const
 // CSProfCodeNode specific methods 
 //**********************************************************************
 
-void 
-CSProfCodeNode::SetLineRange(SrcFile::ln start, SrcFile::ln end) 
-{
-  // Sanity Checking
-  DIAG_Assert(start <= end, "");   // start <= end
-
-  if (start == ln_NULL) {
-    DIAG_Assert(end == ln_NULL, "");
-    // simply relocate at beginning of sibling list 
-    // no range update in parents is necessary
-    DIAG_Assert((begLine == ln_NULL) && (endLine == ln_NULL), ""); 
-    //if (Parent() != NULL) Relocate(); 
-  } 
-  else {
-    bool changed = false; 
-    if (begLine == ln_NULL) {
-      DIAG_Assert(endLine == ln_NULL, ""); 
-      // initialize range
-      begLine = start; 
-      endLine = end; 
-      changed = true;
-    } 
-    else {
-      DIAG_Assert((begLine != ln_NULL) && (endLine != ln_NULL), "");
-      // expand range ?
-      if (start < begLine) { begLine = start; changed = true; }
-      if (end   > endLine) { endLine = end; changed = true; }
-    }
-    CSProfCodeNode* _parent = dynamic_cast<CSProfCodeNode*>(Parent()); 
-    if (changed && (_parent != NULL)) {
-      //Relocate(); 
-      //_parent->SetLineRange(begLine, endLine); 
-    }
-  }
-}
-  
-void
-CSProfCodeNode::Relocate() 
-{
-  CSProfCodeNode* prev = dynamic_cast<CSProfCodeNode*>(PrevSibling());
-  CSProfCodeNode* next = dynamic_cast<CSProfCodeNode*>(NextSibling());
-  if (((!prev) || (prev->endLine <= begLine)) && 
-      ((!next) || (next->begLine >= endLine))) {
-     return; 
-  } 
-  CSProfNode* _parent = Parent(); 
-  Unlink(); 
-  if (_parent->FirstChild() == NULL) {
-    Link(_parent); 
-  }
-  else if (begLine == ln_NULL) {
-    // insert as first child
-    LinkBefore(_parent->FirstChild()); 
-  } else {
-    // insert after sibling with sibling->endLine < begLine 
-    // or iff that does not exist insert as first in sibling list
-    CSProfCodeNode *sibling = NULL;
-    for (sibling = dynamic_cast<CSProfCodeNode*>(_parent->LastChild());
-	 sibling; 
-	 sibling = dynamic_cast<CSProfCodeNode*>(sibling->PrevSibling())) {
-      if (sibling->endLine < begLine)  
-	break; 
-    } 
-    if (sibling != NULL) {
-      LinkAfter(sibling); 
-    } else {
-      LinkBefore(_parent->FirstChild()); 
-    } 
-  }
-}
-
-bool
-CSProfCodeNode::ContainsLine(SrcFile::ln ln) const
-{
-  DIAG_Assert(ln != ln_NULL, ""); 
-  return ((begLine >= 1) && (begLine <= ln) && (ln <= endLine)); 
-} 
-
-CSProfCodeNode* 
-CSProfCodeNode::CSProfCodeNodeWithLine(SrcFile::ln ln) const
-{
-  DIAG_Assert(ln != ln_NULL, ""); 
-  CSProfCodeNode *ci; 
-  // ln > endLine means there is no child that contains ln
-  if (ln <= endLine) {
-    for (CSProfNodeChildIterator it(this); it.Current(); it++) {
-      ci = dynamic_cast<CSProfCodeNode*>(it.Current()); 
-      DIAG_Assert(ci, ""); 
-      if  (ci->ContainsLine(ln)) {
-	return ci->CSProfCodeNodeWithLine(ln); 
-      } 
-    }
-  }
-  return (CSProfCodeNode*) this; // base case
-}
 
 int CSProfCodeNodeLineComp(CSProfCodeNode* x, CSProfCodeNode* y)
 {
