@@ -54,11 +54,15 @@
 using std::hex;
 using std::dec;
 
+#include <string>
+using std::string;
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
 
 #include "CallPath-Profile.hpp"
+#include "Struct-Tree.hpp"
 
 #include <lib/xml/xml.hpp>
 using namespace xml;
@@ -135,6 +139,104 @@ Profile::merge(Profile& y)
 
 
 void 
+writeXML_help(std::ostream& os, const char* entry_nm, 
+	      Struct::Tree* structure, const Struct::ANodeFilter* filter,
+	      int type)
+{
+  Struct::ANode* root = structure ? structure->GetRoot() : NULL;
+  if (!root) {
+    return;
+  }
+
+  for (Struct::ANodeIterator it(root, filter); it.Current(); ++it) {
+    Struct::ANode* strct = it.CurScope();
+    
+    if (!strct->HasPerfData(CallPath::Profile::StructMetricIdFlg)) {
+      continue;
+    }
+
+    uint id = strct->id();
+    const char* nm = NULL;
+    
+    if (type == 1) { // LoadModule
+      nm = strct->name().c_str();
+    }
+    else if (type == 2) { // File
+      nm = ((strct->Type() == Struct::ANode::TyALIEN) ? 
+	    dynamic_cast<Struct::Alien*>(strct)->fileName().c_str() :
+	    dynamic_cast<Struct::File*>(strct)->name().c_str());
+    }
+    else if (type == 3) { // Proc
+      nm = strct->name().c_str();
+    }
+    else {
+      DIAG_Die(DIAG_UnexpectedInput);
+    }
+
+    os << "    <" << entry_nm << " i" << MakeAttrNum(id) 
+       << " n" << MakeAttrStr(nm) << "/>\n";
+  }
+}
+
+
+static bool 
+writeXML_FileFilter(const Struct::ANode& x, long type)
+{
+  return (x.Type() == Struct::ANode::TyFILE 
+	  || x.Type() == Struct::ANode::TyALIEN);
+}
+
+
+static bool 
+writeXML_ProcFilter(const Struct::ANode& x, long type)
+{
+  return (x.Type() == Struct::ANode::TyPROC 
+	  || x.Type() == Struct::ANode::TyALIEN);
+}
+
+
+std::ostream& 
+Profile::writeXML_hdr(std::ostream& os, const char* pre) const
+{
+  os << "  <MetricTable>\n";
+  uint n_metrics = numMetrics();
+  for (uint i = 0; i < n_metrics; i++) {
+    const SampledMetricDesc* m = metric(i);
+    os << "    <Metric i" << MakeAttrNum(i) 
+       << " n" << MakeAttrStr(m->name()) << ">\n";
+    os << "      <Info>" 
+       << "<NV n=\"period\" v" << MakeAttrNum(m->period()) << "/>"
+       << "<NV n=\"flags\" v" << MakeAttrNum(m->flags(), 16) << "/>"
+       << "</Info>\n";
+    os << "    </Metric>\n";
+  }
+  os << "  </MetricTable>\n";
+
+#if (FIXME_WRITE_CCT_DICTIONARIES)
+  Struct::ANode* rootStrct = (m_structure) ? m_structure->GetRoot() : NULL;
+  if (rootStrct) {
+    // Note: A non-zero metric value means the structure value was used!
+    rootStrct->accumulateMetrics(0, 0); // [ ]
+  }
+
+  os << "  <LoadModuleTable>\n";
+  writeXML_help(os, "LoadModule", m_structure, &Struct::ANodeTyFilter[Struct::ANode::TyLM], 1);
+  os << "  </LoadModuleTable>\n";
+
+  os << "  <FileTable>\n";
+  Struct::ANodeFilter filt1(writeXML_FileFilter, "FileTable", 0);
+  writeXML_help(os, "File", m_structure, &filt1, 2);
+  os << "  </FileTable>\n";
+
+  os << "  <ProcedureTable>\n";
+  Struct::ANodeFilter filt2(writeXML_ProcFilter, "ProcTable", 0);
+  writeXML_help(os, "Procedure", m_structure, &filt2, 3);
+  os << "  </ProcedureTable>\n";
+#endif
+}
+
+
+std::ostream&
 Profile::dump(std::ostream& os) const
 {
   os << m_name << std::endl;
@@ -148,6 +250,7 @@ Profile::dump(std::ostream& os) const
   if (m_cct) {
     m_cct->dump(os);
   }
+  return os;
 }
 
 
@@ -310,15 +413,15 @@ Profile::make(const char* fnm)
 void
 Profile::cct_canonicalize()
 {
-  Prof::CSProfNode* root = cct()->root();
+  CSProfNode* root = cct()->root();
   
-  for (Prof::CSProfNodeIterator it(root); it.CurNode(); ++it) {
-    Prof::CSProfNode* n = it.CurNode();
+  for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
+    CSProfNode* n = it.CurNode();
 
-    Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
-    if (n_dyn) { // n_dyn->lm_id() == Prof::Epoch::LM_id_NULL
+    IDynNode* n_dyn = dynamic_cast<IDynNode*>(n);
+    if (n_dyn) { // n_dyn->lm_id() == Epoch::LM_id_NULL
       VMA ip = n_dyn->IDynNode::ip();
-      Prof::Epoch::LM* lm = epoch()->lm_find(ip);
+      Epoch::LM* lm = epoch()->lm_find(ip);
       VMA ip_ur = ip - lm->relocAmt();
       DIAG_MsgIf(0, "cct_canonicalize: " << hex << ip << dec << " -> " << lm->id());
 
@@ -333,12 +436,12 @@ Profile::cct_canonicalize()
 void 
 Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
 {
-  Prof::CSProfNode* root = cct()->root();
+  CSProfNode* root = cct()->root();
   
-  for (Prof::CSProfNodeIterator it(root); it.CurNode(); ++it) {
-    Prof::CSProfNode* n = it.CurNode();
+  for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
+    CSProfNode* n = it.CurNode();
     
-    Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
+    IDynNode* n_dyn = dynamic_cast<IDynNode*>(n);
     if (n_dyn) {
 
       Epoch::LM_id_t y_lm_id = n_dyn->lm_id();

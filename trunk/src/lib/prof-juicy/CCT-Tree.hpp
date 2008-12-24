@@ -93,6 +93,7 @@ operator<<(std::ostream& os, const hpcfile_metric_data_t x)
   return os;
 }
 
+#define FIXME_WRITE_CCT_DICTIONARIES 0
 
 //***************************************************************************
 // Tree
@@ -154,12 +155,13 @@ public:
   // -------------------------------------------------------
   // Dump contents for inspection
   // -------------------------------------------------------
-  virtual void writeXML(std::ostream& os = std::cerr, 
-			int dmpFlag = XML_TRUE) const;
+  std::ostream& 
+  writeXML(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
 
-  virtual void dump(std::ostream& os = std::cerr, 
-		    int dmpFlag = XML_TRUE) const;
-  virtual void ddump() const;
+  std::ostream& 
+  dump(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
+  
+  void ddump() const;
 
 
   // Given a set of flags 'dmpFlag', determines whether we need to
@@ -304,13 +306,13 @@ public:
 
   virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const; 
   
-  void writeXML(std::ostream& os = std::cerr, 
-		int dmpFlag = CCT::Tree::XML_TRUE,
-		const char *pre = "") const;
+  std::ostream& 
+  writeXML(std::ostream& os = std::cerr, int dmpFlag = CCT::Tree::XML_TRUE,
+	   const char *pre = "") const;
 
-  void dump(std::ostream& os = std::cerr, 
-	    int dmpFlag = CCT::Tree::XML_TRUE,
-	    const char *pre = "") const;
+  std::ostream& 
+  dump(std::ostream& os = std::cerr, int dmpFlag = CCT::Tree::XML_TRUE,
+       const char *pre = "") const;
 
   void ddump() const;
   
@@ -407,6 +409,8 @@ public:
   // structure will have the same structure().
   Struct::ACodeNode* structure() const  { return m_strct; }
   void structure(Struct::ACodeNode* strct) { m_strct = strct; }
+
+  uint structureId() const { return (m_strct) ? m_strct->id() : 0; }
   
   // Dump contents for inspection
   virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
@@ -906,6 +910,14 @@ public:
     }
   }
 
+  uint fileId() const {
+    uint id = 0;
+    if (m_strct) {
+      id = (isAlien()) ? m_strct->id() : m_strct->AncFile()->id();
+    }
+    return id;
+  }
+
   void SetFile(const char* fnm) {
     if (m_strct) { 
       if (isAlien()) { 
@@ -921,6 +933,7 @@ public:
     { CSProfProcedureFrameNode::SetFile(fnm.c_str()); }
 
   const std::string& GetProc() const { 
+    // Struct::Proc or Struct::Alien
     if (m_strct) { 
       return m_strct->name();
     }
@@ -929,16 +942,24 @@ public:
     }
   }
 
+  uint procId() const { 
+    return (m_strct) ? m_strct->id() : 0;
+  }
+
   //void SetProc(const char* pnm) { proc = pnm; }
   //void SetProc(const std::string& pnm) { proc = pnm; }
 
-  const std::string& lmname() const { 
+  const std::string& lmName() const { 
     if (m_strct) { 
       return m_strct->AncLM()->name();
     }
     else {
       return BOGUS; 
     }
+  }
+
+  uint lmId() const { 
+    return (m_strct) ? m_strct->AncLM()->id() : 0;
   }
 
 
