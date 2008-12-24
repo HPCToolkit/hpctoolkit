@@ -190,13 +190,14 @@ CSProfNode::IntToNodeType(long i)
 // CSProfNode, etc: constructors/destructors
 //***************************************************************************
 
-CSProfNode::CSProfNode(NodeType t, CSProfNode* _parent) 
-  : NonUniformDegreeTreeNode(_parent), type(t)
+CSProfNode::CSProfNode(NodeType ty, CSProfNode* _parent, 
+		       Struct::ACodeNode* strct)
+  : NonUniformDegreeTreeNode(_parent), m_type(ty), m_strct(strct)
 { 
-  DIAG_Assert((type == PGM) || (AncestorPgm() == NULL) || 
+  DIAG_Assert((m_type == PGM) || (AncestorPgm() == NULL) || 
 	      !AncestorPgm()->IsFrozen(), "");
   static uint uniqueId = 1;
-  uid = uniqueId++; 
+  m_uid = uniqueId++; 
 }
 
 
@@ -211,18 +212,6 @@ OkToDelete(CSProfNode* x)
 CSProfNode::~CSProfNode() 
 {
   DIAG_Assert(OkToDelete(this), ""); 
-}
-
-
-CSProfCodeNode::CSProfCodeNode(NodeType t, CSProfNode* _parent, 
-			       Struct::ACodeNode* strct) 
-  : CSProfNode(t, _parent), m_strct(strct) 
-{ 
-}
-
-
-CSProfCodeNode::~CSProfCodeNode() 
-{
 }
 
 
@@ -255,7 +244,7 @@ CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent)
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
 				       uint32_t cpid,
 				       const SampledMetricDescVec* metricdesc)
-  : CSProfCodeNode(CALLSITE, _parent),
+  : CSProfNode(CALLSITE, _parent),
     IDynNode(this, cpid, metricdesc)
 {
   CSProfCallSiteNode_Check(this, _parent);
@@ -269,7 +258,7 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
 				       uint32_t cpid,
 				       const SampledMetricDescVec* metricdesc,
 				       std::vector<hpcfile_metric_data_t>& metrics)
-  : CSProfCodeNode(CALLSITE, _parent), 
+  : CSProfNode(CALLSITE, _parent), 
     IDynNode(this, as_info, ip, opIndex, lip, cpid, metricdesc, metrics)
 {
   CSProfCallSiteNode_Check(this, _parent);
@@ -283,7 +272,7 @@ CSProfCallSiteNode::~CSProfCallSiteNode()
 CSProfStatementNode::CSProfStatementNode(CSProfNode* _parent, 
 					 uint32_t cpid,
 					 const SampledMetricDescVec* metricdesc)
-  :  CSProfCodeNode(STATEMENT, _parent),
+  :  CSProfNode(STATEMENT, _parent),
      IDynNode(this, cpid, metricdesc)
 {
 }
@@ -312,7 +301,7 @@ CSProfStatementNode::operator=(const CSProfCallSiteNode& x)
 string CSProfProcedureFrameNode::BOGUS;
 
 CSProfProcedureFrameNode::CSProfProcedureFrameNode(CSProfNode* _parent)
-  : CSProfCodeNode(PROCEDURE_FRAME, _parent)
+  : CSProfNode(PROCEDURE_FRAME, _parent)
 {
   CSProfCallSiteNode_Check(NULL, _parent);
 }
@@ -323,7 +312,7 @@ CSProfProcedureFrameNode::~CSProfProcedureFrameNode()
 
 
 CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent, Struct::ACodeNode* strct)
-  : CSProfCodeNode(LOOP, _parent, strct)
+  : CSProfNode(LOOP, _parent, strct)
 {
   DIAG_Assert((_parent == NULL)
 	      || (_parent->GetType() == CALLSITE) 
@@ -336,7 +325,7 @@ CSProfLoopNode::~CSProfLoopNode()
 }
 
 CSProfStmtRangeNode::CSProfStmtRangeNode(CSProfNode* _parent, Struct::ACodeNode* strct)
-  : CSProfCodeNode(STMT_RANGE, _parent, strct)
+  : CSProfNode(STMT_RANGE, _parent, strct)
 {
   DIAG_Assert((_parent == NULL)
 	      || (_parent->GetType() == CALLSITE)
@@ -651,7 +640,7 @@ CSProfNode::merge_node(CSProfNode* y)
 // NOTE: tallent: used for lush_cilkNormalize
 
 string
-CSProfCodeNode::codeName() const
+CSProfNode::codeName() const
 { 
   string self = NodeTypeToName(GetType()) + " "
     //+ GetFile() + ":" 
@@ -663,8 +652,8 @@ string
 CSProfProcedureFrameNode::codeName() const
 { 
   string self = NodeTypeToName(GetType()) + " "
-    + GetProc() + " @ "
-    + GetFile() + ":" 
+    + procName() + " @ "
+    + fileName() + ":" 
     + StrUtil::toStr(GetBegLine()) + "-" + StrUtil::toStr(GetEndLine());
   return self;
 }
@@ -687,12 +676,23 @@ CSProfNode::toString_me(int dmpFlag) const
     self = fr->isAlien() ? "Pr" : "PF";
   }
 
+  SrcFile::ln lnBeg = GetBegLine();
+  string line = StrUtil::toStr(lnBeg);
+  //SrcFile::ln lnEnd = GetEndLine();
+  //if (lnBeg != lnEnd) {
+  //  line += "-" + StrUtil::toStr(lnEnd);
+  //}
+
+  uint sId = (m_strct) ? m_strct->id() : 0;
+  self += " s" + xml::MakeAttrNum(sId)
+    + " l" + xml::MakeAttrStr(line);
 
   if ((dmpFlag & CCT::Tree::XML_TRUE) == CCT::Tree::XML_FALSE) {
     self = self + " uid" + xml::MakeAttrNum(id());
   }
   return self;
 }
+
 
 
 string
@@ -765,24 +765,6 @@ IDynNode::ddump() const
 
 
 string
-CSProfCodeNode::toString_me(int dmpFlag) const
-{ 
-  SrcFile::ln lnBeg = GetBegLine();
-  string line = StrUtil::toStr(lnBeg);
-  //SrcFile::ln lnEnd = GetEndLine();
-  //if (lnBeg != lnEnd) {
-  //  line += "-" + StrUtil::toStr(lnEnd);
-  //}
-
-  uint sId = (m_strct) ? m_strct->id() : 0;
-  string self = CSProfNode::toString_me(dmpFlag)
-    + " s" + xml::MakeAttrNum(sId)
-    + " l" + xml::MakeAttrStr(line);
-  return self;
-}
-
-
-string
 CSProfPgmNode::toString_me(int dmpFlag) const
 { 
   string self = CSProfNode::toString_me(dmpFlag) + " n" +
@@ -795,7 +777,7 @@ CSProfPgmNode::toString_me(int dmpFlag) const
 string
 CSProfProcedureFrameNode::toString_me(int dmpFlag) const
 {
-  string self = CSProfCodeNode::toString_me(dmpFlag);
+  string self = CSProfNode::toString_me(dmpFlag);
 
   if (m_strct)  {
 #if (FIXME_WRITE_CCT_DICTIONARIES)
@@ -806,8 +788,8 @@ CSProfProcedureFrameNode::toString_me(int dmpFlag) const
     bool flg = CCT::Tree::AddXMLEscapeChars(dmpFlag);
 
     const string& lm_nm = lmName();
-    const string& fnm   = GetFile();
-    const string& pnm   = GetProc();
+    const string& fnm   = fileName();
+    const string& pnm   = procName();
 
     self += " lm" + xml::MakeAttrStr(lm_nm, flg)
       + " f" + xml::MakeAttrStr(fnm, flg)
@@ -826,7 +808,7 @@ CSProfProcedureFrameNode::toString_me(int dmpFlag) const
 string
 CSProfCallSiteNode::toString_me(int dmpFlag) const
 {
-  string self = CSProfCodeNode::toString_me(dmpFlag);
+  string self = CSProfNode::toString_me(dmpFlag);
   
   if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
     self += " assoc" + xml::MakeAttrStr(assocInfo_str()) 
@@ -842,7 +824,7 @@ CSProfCallSiteNode::toString_me(int dmpFlag) const
 string
 CSProfStatementNode::toString_me(int dmpFlag) const
 {
-  string self = CSProfCodeNode::toString_me(dmpFlag);
+  string self = CSProfNode::toString_me(dmpFlag);
 
   if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
     self += " ip" + xml::MakeAttrNum(ip(), 16) 
@@ -856,7 +838,7 @@ CSProfStatementNode::toString_me(int dmpFlag) const
 string 
 CSProfLoopNode::toString_me(int dmpFlag) const
 {
-  string self = CSProfCodeNode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
+  string self = CSProfNode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
   return self;
 }
 
@@ -864,7 +846,7 @@ CSProfLoopNode::toString_me(int dmpFlag) const
 string
 CSProfStmtRangeNode::toString_me(int dmpFlag) const
 {
-  string self = CSProfCodeNode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
+  string self = CSProfNode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
   return self;
 }
 
@@ -961,9 +943,6 @@ CSProfNode::Types() const
   if (dynamic_cast<const CSProfNode*>(this)) {
     types += "CSProfNode "; 
   } 
-  if (dynamic_cast<const CSProfCodeNode*>(this)) {
-    types += "CSProfCodeNode "; 
-  } 
   if (dynamic_cast<const CSProfPgmNode*>(this)) {
     types += "CSProfPgmNode "; 
   } 
@@ -981,14 +960,14 @@ CSProfNode::Types() const
 
 
 //**********************************************************************
-// CSProfCodeNode specific methods 
+// 
 //**********************************************************************
 
 
-int CSProfCodeNodeLineComp(CSProfCodeNode* x, CSProfCodeNode* y)
+int CSProfNodeLineComp(CSProfNode* x, CSProfNode* y)
 {
   if (x->GetBegLine() == y->GetBegLine()) {
-    // Given two CSProfCodeNode's with identical endpoints consider two
+    // Given two CSProfNode's with identical endpoints consider two
     // special cases:
     bool endLinesEqual = (x->GetEndLine() == y->GetEndLine());
     

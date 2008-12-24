@@ -140,10 +140,10 @@ CSProfNodeIterator::CSProfNodeIterator(const CSProfNode* root,
   : NonUniformDegreeTreeIterator(root, torder, 
 	             (leavesOnly) ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
 				 : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES),
-  filter(f)
-
+    filter(f)
 {
 }
+
 
 NonUniformDegreeTreeNode* 
 CSProfNodeIterator::Current() const
@@ -166,12 +166,12 @@ CSProfNodeIterator::Current() const
 //*****************************************************************************
 
 CSProfNodeSortedIterator::
-CSProfNodeSortedIterator(const CSProfCodeNode* file,
+CSProfNodeSortedIterator(const CSProfNode* node,
 			 CSProfNodeSortedIterator::cmp_fptr_t compare_fn,
 			 const CSProfNodeFilter* filterFunc,
 			 bool leavesOnly)
 {
-  CSProfNodeIterator it(file, filterFunc, leavesOnly); 
+  CSProfNodeIterator it(node, filterFunc, leavesOnly); 
   CSProfNode *cur; 
   for (; (cur = it.CurNode()); ) {
     scopes.Add((unsigned long) cur); 
@@ -185,12 +185,12 @@ CSProfNodeSortedIterator::~CSProfNodeSortedIterator()
   delete ptrSetIt; 
 }
  
-CSProfCodeNode* 
+CSProfNode* 
 CSProfNodeSortedIterator::Current() const
 {
-  CSProfCodeNode *cur = NULL; 
+  CSProfNode *cur = NULL; 
   if (ptrSetIt->Current()) {
-    cur = (CSProfCodeNode*) (*ptrSetIt->Current()); 
+    cur = (CSProfNode*) (*ptrSetIt->Current()); 
     DIAG_Assert(cur != NULL, ""); 
   }
   return cur; 
@@ -228,19 +228,19 @@ CSProfNodeSortedIterator::cmpByName(const void* a, const void* b)
 int
 CSProfNodeSortedIterator::cmpByLine(const void* a, const void* b) 
 {
-  CSProfCodeNode* x = (*(CSProfCodeNode**)a); 
-  CSProfCodeNode* y = (*(CSProfCodeNode**)b); 
+  CSProfNode* x = (*(CSProfNode**)a); 
+  CSProfNode* y = (*(CSProfNode**)b); 
   DIAG_Assert(x != NULL, "");
   DIAG_Assert(y != NULL, "");
-  return CSProfCodeNodeLineComp(x, y);
+  return CSProfNodeLineComp(x, y);
 }
 
 
 int
 CSProfNodeSortedIterator::cmpByStructureId(const void* a, const void* b) 
 {
-  CSProfCodeNode* x = (*(CSProfCodeNode**)a);
-  CSProfCodeNode* y = (*(CSProfCodeNode**)b);
+  CSProfNode* x = (*(CSProfNode**)a);
+  CSProfNode* y = (*(CSProfNode**)b);
   DIAG_Assert(x && y , "");
   uint x_id = x->structure() ? x->structure()->id() : 0;
   uint y_id = y->structure() ? y->structure()->id() : 0;
@@ -257,7 +257,7 @@ CSProfNodeSortedChildIterator(const CSProfNode* scope,
 			      const CSProfNodeFilter* f)
 {
   CSProfNodeChildIterator it(scope, f); 
-  CSProfNode *cur; 
+  CSProfNode* cur; 
   for (; (cur = it.CurNode()); ) {
     scopes.Add((unsigned long) cur); 
     it++; 
@@ -270,12 +270,12 @@ CSProfNodeSortedChildIterator::~CSProfNodeSortedChildIterator()
   delete ptrSetIt; 
 }
  
-CSProfCodeNode* 
+CSProfNode* 
 CSProfNodeSortedChildIterator::Current() const
 {
-  CSProfCodeNode *cur = NULL; 
+  CSProfNode *cur = NULL; 
   if (ptrSetIt->Current()) {
-    cur = (CSProfCodeNode*) (*ptrSetIt->Current()); 
+    cur = (CSProfNode*) (*ptrSetIt->Current()); 
     DIAG_Assert(cur != NULL, "");
   }
   return cur; 

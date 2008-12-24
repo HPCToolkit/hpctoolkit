@@ -577,9 +577,9 @@ cct_fixLeaves(Prof::CSProfNode* node)
 
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());
+    CSProfNode* child = it.CurNode();
     IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
-    DIAG_Assert(child && child_dyn, "");
+    DIAG_Assert(child_dyn, "");
     it++; // advance iterator -- it is pointing at 'child'
 
     DIAG_DevMsgIf(0, "cct_fixLeaves: " << hex << child_dyn->ip() << dec);
