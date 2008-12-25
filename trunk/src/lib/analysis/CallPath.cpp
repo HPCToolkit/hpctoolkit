@@ -81,7 +81,7 @@ using namespace xml;
 
 #define DBG_LUSH 0
 
-typedef std::set<Prof::CSProfNode*> CSProfNodeSet;
+typedef std::set<Prof::CCT::ANode*> CCTANodeSet;
 
 //****************************************************************************
 // Dump a CSProfTree 
@@ -142,10 +142,10 @@ write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint)
 // Routines for Inferring Call Frames (based on STRUCTURE information)
 //****************************************************************************
 
-typedef std::map<Prof::Struct::ACodeNode*, Prof::CSProfProcedureFrameNode*> ACodeNodeToProcFrameMap;
+typedef std::map<Prof::Struct::ACodeNode*, Prof::CCT::ProcFrm*> ACodeNodeToProcFrameMap;
 
 
-typedef std::pair<Prof::CSProfProcedureFrameNode*, 
+typedef std::pair<Prof::CCT::ProcFrm*, 
 		  Prof::Struct::ACodeNode*> ProcFrameAndLoop;
 inline bool 
 operator<(const ProcFrameAndLoop& x, const ProcFrameAndLoop& y) 
@@ -154,31 +154,31 @@ operator<(const ProcFrameAndLoop& x, const ProcFrameAndLoop& y)
 	  ((x.first == y.first) && (x.second < y.second)));
 }
 
-typedef std::map<ProcFrameAndLoop, Prof::CSProfLoopNode*> ProcFrameAndLoopToCSLoopMap;
+typedef std::map<ProcFrameAndLoop, Prof::CCT::Loop*> ProcFrameAndLoopToCSLoopMap;
 
 
 
 
-static Prof::CSProfProcedureFrameNode*
-demandProcFrame(Prof::IDynNode* node,
+static Prof::CCT::ProcFrm*
+demandProcFrame(Prof::CCT::IDynNode* node,
 		Prof::Struct::ACodeNode* pctxtStrct,
 		ACodeNodeToProcFrameMap& frameMap,
 		ProcFrameAndLoopToCSLoopMap& loopMap);
 
 static void
-makeProcFrame(Prof::IDynNode* node, Prof::Struct::Proc* proc, 
+makeProcFrame(Prof::CCT::IDynNode* node, Prof::Struct::Proc* proc, 
 	      ACodeNodeToProcFrameMap& frameMap,
 	      ProcFrameAndLoopToCSLoopMap& loopMap);
 
 static void
-loopifyFrame(Prof::CSProfProcedureFrameNode* frame, 
+loopifyFrame(Prof::CCT::ProcFrm* frame, 
 	     Prof::Struct::ACodeNode* ctxtScope,
 	     ACodeNodeToProcFrameMap& frameMap,
 	     ProcFrameAndLoopToCSLoopMap& loopMap);
 
 
 static void 
-overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
+overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 		       Prof::Epoch::LM* epoch_lm, 
 		       Prof::Struct::LM* lmStrct, binutils::LM* lm);
 
@@ -200,7 +200,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof,
 
 
 static void 
-overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
+overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node, 
 		       Prof::Epoch::LM* epoch_lm, 
 		       Prof::Struct::LM* lmStrct, binutils::LM* lm)
 {
@@ -215,19 +215,19 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
   ProcFrameAndLoopToCSLoopMap loopMap;
 
   // For each immediate child of this node...
-  for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    Prof::CSProfNode* n = it.CurNode();
+  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
+    Prof::CCT::ANode* n = it.CurNode();
     
     it++; // advance iterator -- it is pointing at 'n' 
     
     // ---------------------------------------------------
     // process this node
     // ---------------------------------------------------
-    Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
+    Prof::CCT::IDynNode* n_dyn = dynamic_cast<Prof::CCT::IDynNode*>(n);
     if (n_dyn && (n_dyn->lm_id() == epoch_lm->id())) {
       VMA ip_ur = n_dyn->ip();
       DIAG_DevIf(50) {
-	Prof::CSProfCallSiteNode* p = node->AncestorCallSite();
+	Prof::CCT::Call* p = node->ancestorCall();
 	DIAG_DevMsg(0, "overlayStaticStructure: " << hex << ((p) ? p->ip() : 0) << " --> " << ip_ur << dec);
       }
 
@@ -248,12 +248,12 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
       strct->SetPerfData(CallPath::Profile::StructMetricIdFlg, 1.0);
 
       // 2. Demand a procedure frame for 'n', complete with loop structure
-      Prof::CSProfProcedureFrameNode* frame = 
-	demandProcFrame(n_dyn, pctxtStrct, frameMap, loopMap);
+      Prof::CCT::ProcFrm* frame = demandProcFrame(n_dyn, pctxtStrct, 
+						  frameMap, loopMap);
       
       // 3. Determine parent context for 'n': the procedure frame
       // itself or loop within
-      Prof::CSProfNode* newParent = frame;
+      Prof::CCT::ANode* newParent = frame;
       if (loopStrct) {
 	ProcFrameAndLoop toFind(frame, loopStrct);
 	ProcFrameAndLoopToCSLoopMap::iterator it = loopMap.find(toFind);
@@ -279,13 +279,13 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CSProfNode* node,
 // Struct::Alien)
 // 
 // Assumes that symbolic information has been added to node.
-static Prof::CSProfProcedureFrameNode*
-demandProcFrame(Prof::IDynNode* node,
+static Prof::CCT::ProcFrm*
+demandProcFrame(Prof::CCT::IDynNode* node,
 		Prof::Struct::ACodeNode* pctxtStrct,
 		ACodeNodeToProcFrameMap& frameMap,
 		ProcFrameAndLoopToCSLoopMap& loopMap)
 {
-  Prof::CSProfProcedureFrameNode* frame = NULL;
+  Prof::CCT::ProcFrm* frame = NULL;
   
   ACodeNodeToProcFrameMap::iterator it = frameMap.find(pctxtStrct);
   if (it != frameMap.end()) {
@@ -309,12 +309,11 @@ demandProcFrame(Prof::IDynNode* node,
 
 
 static void 
-makeProcFrame(Prof::IDynNode* node, Prof::Struct::Proc* procStrct,
+makeProcFrame(Prof::CCT::IDynNode* node, Prof::Struct::Proc* procStrct,
 	      ACodeNodeToProcFrameMap& frameMap,
 	      ProcFrameAndLoopToCSLoopMap& loopMap)
 {
-  Prof::CSProfProcedureFrameNode* frame 
-    = new Prof::CSProfProcedureFrameNode(NULL);
+  Prof::CCT::ProcFrm* frame = new Prof::CCT::ProcFrm(NULL);
 
   frame->structure(procStrct);
   procStrct->SetPerfData(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
@@ -327,9 +326,9 @@ makeProcFrame(Prof::IDynNode* node, Prof::Struct::Proc* procStrct,
 
 
 static void
-loopifyFrame(Prof::CSProfNode* mirrorNode, Prof::Struct::ACodeNode* node,
-	     Prof::CSProfProcedureFrameNode* frame,
-	     Prof::CSProfLoopNode* enclLoop,
+loopifyFrame(Prof::CCT::ANode* mirrorNode, Prof::Struct::ACodeNode* node,
+	     Prof::CCT::ProcFrm* frame,
+	     Prof::CCT::Loop* enclLoop,
 	     ACodeNodeToProcFrameMap& frameMap,
 	     ProcFrameAndLoopToCSLoopMap& loopMap);
 
@@ -338,7 +337,7 @@ loopifyFrame(Prof::CSProfNode* mirrorNode, Prof::Struct::ACodeNode* node,
 // 'ctxtScope' (Struct::Proc or Struct::Alien), mirror ctxtScope's loop and
 // context structure and add entries to 'frameMap' and 'loopMap.'
 static void
-loopifyFrame(Prof::CSProfProcedureFrameNode* frame, 
+loopifyFrame(Prof::CCT::ProcFrm* frame, 
 	     Prof::Struct::ACodeNode* ctxtScope,
 	     ACodeNodeToProcFrameMap& frameMap,
 	     ProcFrameAndLoopToCSLoopMap& loopMap)
@@ -350,10 +349,10 @@ loopifyFrame(Prof::CSProfProcedureFrameNode* frame,
 // 'frame' is the enclosing frame
 // 'loop' is the enclosing loop
 static void
-loopifyFrame(Prof::CSProfNode* mirrorNode, 
+loopifyFrame(Prof::CCT::ANode* mirrorNode, 
 	     Prof::Struct::ACodeNode* node,
-	     Prof::CSProfProcedureFrameNode* frame,
-	     Prof::CSProfLoopNode* enclLoop,
+	     Prof::CCT::ProcFrm* frame,
+	     Prof::CCT::Loop* enclLoop,
 	     ACodeNodeToProcFrameMap& frameMap,
 	     ProcFrameAndLoopToCSLoopMap& loopMap)
 {
@@ -369,13 +368,13 @@ loopifyFrame(Prof::CSProfNode* mirrorNode,
     // - Presume that alien frames derive from callsites in the parent
     // frame, but flatten any nesting.
 
-    Prof::CSProfNode* mirrorRoot = mirrorNode;
-    Prof::CSProfProcedureFrameNode* nxt_frame = frame;
-    Prof::CSProfLoopNode* nxt_enclLoop = enclLoop;
+    Prof::CCT::ANode* mirrorRoot = mirrorNode;
+    Prof::CCT::ProcFrm* nxt_frame = frame;
+    Prof::CCT::Loop* nxt_enclLoop = enclLoop;
 
     if (n->Type() == Prof::Struct::ANode::TyLOOP) {
       // loops are always children of the current root (loop or frame)
-      Prof::CSProfLoopNode* lp = new Prof::CSProfLoopNode(mirrorNode, n);
+      Prof::CCT::Loop* lp = new Prof::CCT::Loop(mirrorNode, n);
       loopMap.insert(std::make_pair(ProcFrameAndLoop(frame, n), lp));
       DIAG_DevMsgIf(0, hex << "(" << frame << " " << n << ") -> (" << lp << ")" << dec);
 
@@ -383,8 +382,7 @@ loopifyFrame(Prof::CSProfNode* mirrorNode,
       nxt_enclLoop = lp;
     }
     else if (n->Type() == Prof::Struct::ANode::TyALIEN) {
-      Prof::CSProfProcedureFrameNode* fr = 
-	new Prof::CSProfProcedureFrameNode(NULL);
+      Prof::CCT::ProcFrm* fr = new Prof::CCT::ProcFrm(NULL);
 
       fr->structure(n);
       n->SetPerfData(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
@@ -446,7 +444,7 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile* prof,
 //***************************************************************************
 
 static void 
-coalesceStmts(Prof::CSProfNode* node);
+coalesceStmts(Prof::CCT::ANode* node);
 
 
 static void 
@@ -469,11 +467,11 @@ coalesceStmts(Prof::CallPath::Profile* prof)
 // child statement nodes obey the non-overlapping principle of a
 // source code.
 static void 
-coalesceStmts(Prof::CSProfNode* node)
+coalesceStmts(Prof::CCT::ANode* node)
 {
   // Since hpcstruct distinguishes callsites from statements, use
   // SrcFile::ln instead of Prof::Struct::ACodeNode*.
-  typedef std::map<SrcFile::ln, Prof::CSProfStatementNode*> StructToStmtMap;
+  typedef std::map<SrcFile::ln, Prof::CCT::Stmt*> StructToStmtMap;
 
   if (!node) { 
     return; 
@@ -482,21 +480,20 @@ coalesceStmts(Prof::CSProfNode* node)
   StructToStmtMap stmtMap;
   
   // For each immediate child of this node...
-  for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    Prof::CSProfNode* child = it.CurNode();
+  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
+    Prof::CCT::ANode* child = it.CurNode();
     it++; // advance iterator -- it is pointing at 'child'
     
-    bool inspect = (child->IsLeaf() 
-		    && (child->type() == Prof::CSProfNode::STATEMENT));
+    bool inspect = (child->IsLeaf() && (child->type() == Prof::CCT::ANode::TyStmt));
 
     if (inspect) {
       // This child is a leaf. Test for duplicate source line info.
-      Prof::CSProfStatementNode* c = dynamic_cast<Prof::CSProfStatementNode*>(child);
+      Prof::CCT::Stmt* c = dynamic_cast<Prof::CCT::Stmt*>(child);
       SrcFile::ln line = c->begLine();
       StructToStmtMap::iterator it = stmtMap.find(line);
       if (it != stmtMap.end()) {
 	// found -- we have a duplicate
-	Prof::CSProfStatementNode* c1 = (*it).second;
+	Prof::CCT::Stmt* c1 = (*it).second;
 	c1->mergeMetrics(*c);
 	
 	// remove 'child' from tree
@@ -533,7 +530,7 @@ coalesceStmts(Prof::CSProfNode* node)
 // are all zero.
 
 static void 
-pruneByMetrics(Prof::CSProfNode* node);
+pruneByMetrics(Prof::CCT::ANode* node);
 
 static void 
 pruneByMetrics(Prof::CallPath::Profile* prof)
@@ -546,20 +543,20 @@ pruneByMetrics(Prof::CallPath::Profile* prof)
 
 
 static void 
-pruneByMetrics(Prof::CSProfNode* node)
+pruneByMetrics(Prof::CCT::ANode* node)
 {
   if (!node) { return; }
 
-  for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    Prof::CSProfNode* x = it.CurNode();
+  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
+    Prof::CCT::ANode* x = it.CurNode();
     it++; // advance iterator -- it is pointing at 'x'
 
     // 1. Recursively do any trimming for this tree's children
     pruneByMetrics(x);
 
     // 2. Trim this node if necessary
-    bool isTy = (x->type() == Prof::CSProfNode::PROCEDURE_FRAME || 
-		 x->type() == Prof::CSProfNode::LOOP);
+    bool isTy = (x->type() == Prof::CCT::ANode::TyProcFrm || 
+		 x->type() == Prof::CCT::ANode::TyLoop);
     if (x->IsLeaf() && isTy) {
       x->Unlink(); // unlink 'x' from tree
       delete x;
@@ -578,7 +575,7 @@ public:
   static const string s_tag;
 
   static inline bool 
-  is_overhead(Prof::CSProfProcedureFrameNode* x)
+  is_overhead(Prof::CCT::ProcFrm* x)
   {
     const string& x_fnm = x->fileName();
     if (x_fnm.length() >= s_tag.length()) {
@@ -622,7 +619,7 @@ public:
   static const string s_slow_sfx;
 
   static string 
-  normalizeName(Prof::CSProfProcedureFrameNode* x) 
+  normalizeName(Prof::CCT::ProcFrm* x) 
   {
     //string x_nm = x.substr(pfx, mrk_x - 1 - pfx);
     const string& x_nm = x->procName();
@@ -657,7 +654,7 @@ public:
   }
 
   static inline bool 
-  is_slow_proc(Prof::CSProfProcedureFrameNode* x)
+  is_slow_proc(Prof::CCT::ProcFrm* x)
   {
     const string& x_procnm = x->procName();
     return is_slow_pfx(x_procnm);
@@ -676,10 +673,10 @@ const string CilkCanonicalizer::s_slow_sfx = "_slow";
 
 
 static void 
-lush_cilkNormalize(Prof::CSProfNode* node);
+lush_cilkNormalize(Prof::CCT::ANode* node);
 
 static void 
-lush_cilkNormalizeByFrame(Prof::CSProfNode* node);
+lush_cilkNormalizeByFrame(Prof::CCT::ANode* node);
 
 
 // Notes: Match frames, and use those matches to merge callsites.
@@ -694,19 +691,19 @@ lush_cilkNormalize(Prof::CallPath::Profile* prof)
 }
 
 
-typedef std::map<string, Prof::CSProfNode*> CilkMergeMap;
+typedef std::map<string, Prof::CCT::ANode*> CilkMergeMap;
 
 
 // - Preorder Visit
 static void 
-lush_cilkNormalize(Prof::CSProfNode* node)
+lush_cilkNormalize(Prof::CCT::ANode* node)
 {
   if (!node) { return; }
 
   // ------------------------------------------------------------
   // Visit node
   // ------------------------------------------------------------
-  Prof::CSProfProcedureFrameNode* proc = dynamic_cast<Prof::CSProfProcedureFrameNode*>(node);
+  Prof::CCT::ProcFrm* proc = dynamic_cast<Prof::CCT::ProcFrm*>(node);
   if (proc) {
     lush_cilkNormalizeByFrame(node);
 
@@ -717,29 +714,28 @@ lush_cilkNormalize(Prof::CSProfNode* node)
   // ------------------------------------------------------------
   // Recur
   // ------------------------------------------------------------
-  for (Prof::CSProfNodeChildIterator it(node); it.Current(); ++it) {
-    Prof::CSProfNode* x = it.CurNode();
+  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
+    Prof::CCT::ANode* x = it.CurNode();
     lush_cilkNormalize(x);
   }
 }
 
 
 static void 
-lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
+lush_cilkNormalizeByFrame(Prof::CCT::ANode* node)
 {
   DIAG_MsgIf(DBG_LUSH, "====> (" << node << ") " << node->codeName());
   
   // ------------------------------------------------------------
   // Gather (grand) children frames (skip one level)
   // ------------------------------------------------------------
-  CSProfNodeSet frameSet;
+  CCTANodeSet frameSet;
   
-  for (Prof::CSProfNodeChildIterator it(node); it.Current(); ++it) {
-    Prof::CSProfNode* child = it.CurNode();
+  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
+    Prof::CCT::ANode* child = it.CurNode();
 
-    for (Prof::CSProfNodeChildIterator it(child); it.Current(); ++it) {
-      Prof::CSProfProcedureFrameNode* x = 
-	dynamic_cast<Prof::CSProfProcedureFrameNode*>(it.CurNode());
+    for (Prof::CCT::ANodeChildIterator it(child); it.Current(); ++it) {
+      Prof::CCT::ProcFrm* x = dynamic_cast<Prof::CCT::ProcFrm*>(it.CurNode());
       if (x) {
 	frameSet.insert(x);
       }
@@ -753,9 +749,9 @@ lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
 
   CilkMergeMap mergeMap;
 
-  for (CSProfNodeSet::iterator it = frameSet.begin(); it != frameSet.end(); ++it) {
+  for (CCTANodeSet::iterator it = frameSet.begin(); it != frameSet.end(); ++it) {
     
-    Prof::CSProfProcedureFrameNode* x = dynamic_cast<Prof::CSProfProcedureFrameNode*>(*it);
+    Prof::CCT::ProcFrm* x = dynamic_cast<Prof::CCT::ProcFrm*>(*it);
 
     string x_nm = CilkCanonicalizer::normalizeName(x);
     DIAG_MsgIf(DBG_LUSH, "\tins: " << x->codeName() << "\n" 
@@ -763,10 +759,10 @@ lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
     CilkMergeMap::iterator it = mergeMap.find(x_nm);
     if (it != mergeMap.end()) {
       // found -- we have a duplicate
-      Prof::CSProfProcedureFrameNode* y = dynamic_cast<Prof::CSProfProcedureFrameNode*>((*it).second);
+      Prof::CCT::ProcFrm* y = dynamic_cast<Prof::CCT::ProcFrm*>((*it).second);
 
       // keep the version without the "_cilk_" prefix
-      Prof::CSProfNode* tokeep = y, *todel = x;
+      Prof::CCT::ANode* tokeep = y, *todel = x;
       
       if (CilkCanonicalizer::is_slow_proc(y)) {
         tokeep = x;
@@ -774,8 +770,8 @@ lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
 	mergeMap[x_nm] = x;
       }
       
-      Prof::CSProfNode* par_tokeep = tokeep->Parent();
-      Prof::CSProfNode* par_todel  = todel->Parent();
+      Prof::CCT::ANode* par_tokeep = tokeep->Parent();
+      Prof::CCT::ANode* par_todel  = todel->Parent();
 
       DIAG_MsgIf(DBG_LUSH, "\tkeep (" << tokeep << "): " << tokeep->codeName() 
 		 << "\n" << "\tdel  (" << todel  << "): " << todel->codeName());
@@ -798,7 +794,7 @@ lush_cilkNormalizeByFrame(Prof::CSProfNode* node)
 //***************************************************************************
 
 static void 
-lush_makeParallelOverhead(Prof::CSProfNode* node, 
+lush_makeParallelOverhead(Prof::CCT::ANode* node, 
 			  const std::vector<uint>& m_src, 
 			  const std::vector<uint>& m_dst, 
 			  bool is_overhead_ctxt);
@@ -839,9 +835,9 @@ lush_makeParallelOverhead(Prof::CallPath::Profile* prof)
   // ------------------------------------------------------------
   uint n_new_metrics = metric_dst.size();
 
-  for (Prof::CSProfNodeIterator it(cct->root()); it.Current(); ++it) {
-    Prof::CSProfNode* x = it.CurNode();
-    Prof::IDynNode* x_dyn = dynamic_cast<Prof::IDynNode*>(x);
+  for (Prof::CCT::ANodeIterator it(cct->root()); it.Current(); ++it) {
+    Prof::CCT::ANode* x = it.CurNode();
+    Prof::CCT::IDynNode* x_dyn = dynamic_cast<Prof::CCT::IDynNode*>(x);
     if (x_dyn) {
       x_dyn->expandMetrics_after(n_new_metrics);
     }
@@ -852,7 +848,7 @@ lush_makeParallelOverhead(Prof::CallPath::Profile* prof)
 
 
 static void 
-lush_makeParallelOverhead(Prof::CSProfNode* node, 
+lush_makeParallelOverhead(Prof::CCT::ANode* node, 
 			  const std::vector<uint>& m_src, 
 			  const std::vector<uint>& m_dst, 
 			  bool is_overhead_ctxt)
@@ -863,9 +859,9 @@ lush_makeParallelOverhead(Prof::CSProfNode* node,
   // Visit node
   // ------------------------------------------------------------
   if (is_overhead_ctxt) {
-    for (Prof::CSProfNodeChildIterator it(node); it.Current(); ++it) {
-      Prof::CSProfNode* x = it.CurNode();
-      Prof::IDynNode* x_dyn = dynamic_cast<Prof::IDynNode*>(x);
+    for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
+      Prof::CCT::ANode* x = it.CurNode();
+      Prof::CCT::IDynNode* x_dyn = dynamic_cast<Prof::CCT::IDynNode*>(x);
       if (x_dyn) {
 	for (uint i = 0; i < m_src.size(); ++i) {
 	  uint src_idx = m_src[i];
@@ -883,13 +879,13 @@ lush_makeParallelOverhead(Prof::CSProfNode* node,
   // Recur
   // ------------------------------------------------------------
 
-  if (node->type() == Prof::CSProfNode::PROCEDURE_FRAME) {
-    Prof::CSProfProcedureFrameNode* x = dynamic_cast<Prof::CSProfProcedureFrameNode*>(node);
+  if (node->type() == Prof::CCT::ANode::TyProcFrm) {
+    Prof::CCT::ProcFrm* x = dynamic_cast<Prof::CCT::ProcFrm*>(node);
     is_overhead_ctxt = ParallelOverhead::is_overhead(x);
   }
 
-  for (Prof::CSProfNodeChildIterator it(node); it.Current(); ++it) {
-    Prof::CSProfNode* x = it.CurNode();
+  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
+    Prof::CCT::ANode* x = it.CurNode();
     lush_makeParallelOverhead(x, m_src, m_dst, is_overhead_ctxt);
   }
 }

@@ -103,10 +103,11 @@ namespace Prof {
 namespace CallPath {
   class Profile;
 }
-class CSProfNode;
+
 
 namespace CCT {
 
+class ANode;
 
 class Tree: public Unique {
 public:
@@ -138,8 +139,8 @@ public:
   // -------------------------------------------------------
   // Tree data
   // -------------------------------------------------------
-  CSProfNode* root() const { return m_root; }
-  void        root(CSProfNode* x) { m_root = x; }
+  ANode* root() const { return m_root; }
+  void   root(ANode* x) { m_root = x; }
 
   bool empty() const { return (m_root == NULL); }
 
@@ -170,7 +171,7 @@ public:
   static int doXMLEscape(int dmpFlag);
  
 private:
-  CSProfNode* m_root;
+  ANode* m_root;
   const CallPath::Profile* m_metadata; // does not own
 };
 
@@ -181,52 +182,52 @@ private:
 
 
 //***************************************************************************
-// CSProfNode
+// ANode
 //***************************************************************************
 
 namespace Prof {
 
-  //namespace CCT {
+namespace CCT {
 
 
-class CSProfNode;     // Everyone's base class 
+class ANode;     // Everyone's base class 
 
-class CSProfPgmNode; 
-class CSProfCallSiteNode;
-class CSProfLoopNode; 
-class CSProfStmtRangeNode; 
+class Root; 
 
-class CSProfProcedureFrameNode;
-class CSProfStatementNode;
+class ProcFrm;
+class Proc; 
+class Loop; 
+class Stmt;
+class Call;
 
 // ---------------------------------------------------------
-// CSProfNode: The base node for a call stack profile tree.
+// ANode: The base node for a call stack profile tree.
 // ---------------------------------------------------------
-class CSProfNode: public NonUniformDegreeTreeNode, public Unique {
+class ANode: public NonUniformDegreeTreeNode, public Unique {
 public:
   enum NodeType {
-    PGM,
-    PROCEDURE_FRAME,
-    LOOP,
-    STATEMENT,
-    CALLSITE,
-    STMT_RANGE,
-    ANY,
-    NUMBER_OF_TYPES
+    TyRoot = 0,
+    TyProcFrm,
+    TyProc,
+    TyLoop,
+    TyStmt,
+    TyCall,
+    TyANY,
+    TyNUMBER
   };
   
   static const std::string& NodeTypeToName(NodeType tp);
   static NodeType           IntToNodeType(long i);
 
 private:
-  static const std::string NodeNames[NUMBER_OF_TYPES];
+  static const std::string NodeNames[TyNUMBER];
   
 public:
-  CSProfNode(NodeType t, CSProfNode* _parent, Struct::ACodeNode* strct = NULL);
-  virtual ~CSProfNode();
+  ANode(NodeType t, ANode* _parent, Struct::ACodeNode* strct = NULL);
+  virtual ~ANode();
   
   // shallow copy (in the sense the children are not copied)
-  CSProfNode(const CSProfNode& x)
+  ANode(const ANode& x)
     : m_type(x.m_type), m_strct(x.m_strct) // do not copy 'm_uid'
   { 
     ZeroLinks();
@@ -246,19 +247,17 @@ public:
   // --------------------------------------------------------
   // Tree navigation 
   // --------------------------------------------------------
-  CSProfNode* Parent() const 
-    { return dynamic_cast<CSProfNode*>(NonUniformDegreeTreeNode::Parent()); }
+  ANode* Parent() const 
+    { return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::Parent()); }
 
-  CSProfNode* FirstChild() const
-    { return dynamic_cast<CSProfNode*>
-	(NonUniformDegreeTreeNode::FirstChild()); }
+  ANode* FirstChild() const
+    { return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::FirstChild()); }
 
-  CSProfNode* LastChild() const
-    { return dynamic_cast<CSProfNode*>
-	(NonUniformDegreeTreeNode::LastChild()); }
+  ANode* LastChild() const
+    { return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::LastChild()); }
 
-  CSProfNode* NextSibling() const;
-  CSProfNode* PrevSibling() const;
+  ANode* NextSibling() const;
+  ANode* PrevSibling() const;
 
   bool IsLeaf() const { return (FirstChild() == NULL); }
   
@@ -266,14 +265,14 @@ public:
   // Ancestor: find first node in path from this to root with given type
   // --------------------------------------------------------
   // a node may be an ancestor of itself
-  CSProfNode*          Ancestor(NodeType tp) const;
+  ANode*   Ancestor(NodeType tp) const;
   
-  CSProfPgmNode*       AncestorPgm() const;
-  CSProfCallSiteNode*  AncestorCallSite() const;
-  CSProfLoopNode*      AncestorLoop() const;
-  CSProfStmtRangeNode* AncestorStmtRange() const;
-  CSProfProcedureFrameNode* AncestorProcedureFrame() const; // CC
-  CSProfStatementNode* AncestorStatement() const; // CC
+  Root*    ancestorRoot() const;
+  ProcFrm* ancestorProcFrm() const;
+  Proc*    ancestorProc() const;
+  Loop*    ancestorLoop() const;
+  Stmt*    ancestorStmt() const;
+  Call*    ancestorCall() const;
 
 
   // --------------------------------------------------------
@@ -284,17 +283,17 @@ public:
   merge_prepare(uint numMetrics);
 
   void 
-  merge(CSProfNode* y, const SampledMetricDescVec* new_mdesc,
+  merge(ANode* y, const SampledMetricDescVec* new_mdesc,
 	uint x_numMetrics, uint y_numMetrics);
 
-  CSProfNode* 
+  ANode* 
   findDynChild(lush_assoc_info_t as_info, 
 	       Epoch::LM_id_t lm_id, VMA ip, lush_lip_t* lip);
 
 
   // merge y into 'this'
   void 
-  merge_node(CSProfNode* y);
+  merge_node(ANode* y);
 
 
   // --------------------------------------------------------
@@ -358,7 +357,7 @@ protected:
 
 
 // - if x < y; 0 if x == y; + otherwise
-int CSProfNodeLineComp(CSProfNode* x, CSProfNode* y);
+int ANodeLineComp(ANode* x, ANode* y);
 
 
 //***************************************************************************
@@ -374,7 +373,7 @@ public:
   // 
   // -------------------------------------------------------
   
-  IDynNode(CSProfNode* proxy, 
+  IDynNode(ANode* proxy, 
 	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc)
     : m_proxy(proxy),
@@ -383,7 +382,7 @@ public:
       m_metricdesc(metricdesc)
     { }
 
-  IDynNode(CSProfNode* proxy, 
+  IDynNode(ANode* proxy, 
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc)
@@ -393,7 +392,7 @@ public:
       m_metricdesc(metricdesc)
     { }
 
-  IDynNode(CSProfNode* proxy, 
+  IDynNode(ANode* proxy, 
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc,
@@ -441,7 +440,7 @@ public:
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
-  CSProfNode* proxy() const { return m_proxy; }
+  ANode* proxy() const { return m_proxy; }
 
   // -------------------------------------------------------
   // 
@@ -617,7 +616,7 @@ public:
   virtual void ddump() const;
 
 private:
-  CSProfNode* m_proxy;
+  ANode* m_proxy;
 
   lush_assoc_info_t m_as_info;
 
@@ -656,14 +655,14 @@ operator<<(std::ostream& os, const IDynNode::WriteMetricInfo_& info)
 //***************************************************************************
 
 // --------------------------------------------------------------------------
-// CSProfPgmNode
+// Root
 // --------------------------------------------------------------------------
 
-class CSProfPgmNode: public CSProfNode {
+class Root: public ANode {
 public: 
   // Constructor/Destructor
-  CSProfPgmNode(const char* nm);
-  virtual ~CSProfPgmNode();
+  Root(const char* nm);
+  virtual ~Root();
 
   const std::string& name() const { return m_name; }
                                         
@@ -671,7 +670,8 @@ public:
   bool IsFrozen() const { return frozen; }
   
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  virtual std::string 
+  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
   
 protected: 
 private: 
@@ -681,18 +681,18 @@ private:
 
 
 // --------------------------------------------------------------------------
-// CSProfProcedureFrameNode
+// ProcFrm
 // --------------------------------------------------------------------------
 
-class CSProfProcedureFrameNode: public CSProfNode {
+class ProcFrm: public ANode {
 public:
   // Constructor/Destructor
-  CSProfProcedureFrameNode(CSProfNode* _parent);
-  virtual ~CSProfProcedureFrameNode();
+  ProcFrm(ANode* _parent);
+  virtual ~ProcFrm();
 
   // shallow copy (in the sense the children are not copied)
-  CSProfProcedureFrameNode(const CSProfProcedureFrameNode& x)
-    : CSProfNode(x)
+  ProcFrm(const ProcFrm& x)
+    : ANode(x)
     { }
 
   // -------------------------------------------------------
@@ -798,9 +798,11 @@ public:
   //
   // -------------------------------------------------------
 
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  virtual std::string 
+  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
 
-  virtual std::string codeName() const;
+  virtual std::string 
+  codeName() const;
  
 private: 
   static std::string BOGUS;
@@ -808,60 +810,74 @@ private:
 
 
 // --------------------------------------------------------------------------
-// CSProfLoopNode
+// Proc: FIXME: Not used!
 // --------------------------------------------------------------------------
 
-class CSProfLoopNode: public CSProfNode {
+class Proc: public ANode {
 public: 
   // Constructor/Destructor
-  CSProfLoopNode(CSProfNode* _parent, Struct::ACodeNode* strct = NULL);
-  ~CSProfLoopNode();
+  Proc(ANode* _parent, Struct::ACodeNode* strct = NULL);
+  ~Proc();
+  
+  // Dump contents for inspection
+  virtual std::string 
+  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+};
+
+
+// --------------------------------------------------------------------------
+// Loop
+// --------------------------------------------------------------------------
+
+class Loop: public ANode {
+public: 
+  // Constructor/Destructor
+  Loop(ANode* _parent, Struct::ACodeNode* strct = NULL);
+  ~Loop();
 
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const; 
+  virtual std::string 
+  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const; 
   
 private:
 };
 
 
 // --------------------------------------------------------------------------
-// CSProfStatementNode
+// Stmt
 // --------------------------------------------------------------------------
   
-class CSProfStatementNode: public CSProfNode, public IDynNode {
+class Stmt: public ANode, public IDynNode {
  public:
   // Constructor/Destructor
-  CSProfStatementNode(CSProfNode* _parent, 
-		      uint32_t cpid,
-		      const SampledMetricDescVec* metricdesc);
-  virtual ~CSProfStatementNode();
+  Stmt(ANode* _parent, uint32_t cpid, const SampledMetricDescVec* metricdesc);
+  virtual ~Stmt();
 
-  void operator=(const CSProfStatementNode& x);
-  void operator=(const CSProfCallSiteNode& x);
+  void operator=(const Stmt& x);
+  void operator=(const Call& x);
 
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  virtual std::string 
+  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
 };
 
 
 // --------------------------------------------------------------------------
-// CSProfCallSiteNode
+// Call
 // --------------------------------------------------------------------------
 
-class CSProfCallSiteNode: public CSProfNode, public IDynNode {
+class Call: public ANode, public IDynNode {
 public:
   // Constructor/Destructor
-  CSProfCallSiteNode(CSProfNode* _parent,
-		     uint32_t cpid,
-		     const SampledMetricDescVec* metricdesc);
-  CSProfCallSiteNode(CSProfNode* _parent, 
-		     lush_assoc_info_t as_info,
-		     VMA ip, ushort opIdx, 
-		     lush_lip_t* lip,
-		     uint32_t cpid,
-		     const SampledMetricDescVec* metricdesc,
-		     std::vector<hpcfile_metric_data_t>& metrics);
-  virtual ~CSProfCallSiteNode();
+  Call(ANode* _parent, uint32_t cpid, const SampledMetricDescVec* metricdesc);
+  Call(ANode* _parent, 
+       lush_assoc_info_t as_info,
+       VMA ip, ushort opIdx, 
+       lush_lip_t* lip,
+       uint32_t cpid,
+       const SampledMetricDescVec* metricdesc,
+       std::vector<hpcfile_metric_data_t>& metrics);
+  virtual ~Call();
   
   // Node data
   virtual VMA ip() const 
@@ -875,27 +891,13 @@ public:
   VMA ra() const { return IDynNode::ip_real(); }
     
   // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  virtual std::string 
+  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
 
 };
 
 
-// --------------------------------------------------------------------------
-// CSProfStmtRangeNode: FIXME: Not used!
-// --------------------------------------------------------------------------
-
-class CSProfStmtRangeNode: public CSProfNode {
-public: 
-  // Constructor/Destructor
-  CSProfStmtRangeNode(CSProfNode* _parent, Struct::ACodeNode* strct = NULL);
-  ~CSProfStmtRangeNode();
-  
-  // Dump contents for inspection
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
-};
-
-
-  //} // namespace CCT
+} // namespace CCT
 
 } // namespace Prof
 

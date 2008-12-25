@@ -286,7 +286,7 @@ static void
 cct_fixRoot(Prof::CCT::Tree* tree, const char* progName);
 
 static void
-cct_fixLeaves(Prof::CSProfNode* node);
+cct_fixLeaves(Prof::CCT::ANode* node);
 
 
 
@@ -413,14 +413,14 @@ Profile::make(const char* fnm)
 void
 Profile::cct_canonicalize()
 {
-  CSProfNode* root = cct()->root();
+  CCT::ANode* root = cct()->root();
   
-  for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
-    CSProfNode* n = it.CurNode();
+  for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
+    CCT::ANode* n = it.CurNode();
 
-    IDynNode* n_dyn = dynamic_cast<IDynNode*>(n);
+    CCT::IDynNode* n_dyn = dynamic_cast<CCT::IDynNode*>(n);
     if (n_dyn) { // n_dyn->lm_id() == Epoch::LM_id_NULL
-      VMA ip = n_dyn->IDynNode::ip();
+      VMA ip = n_dyn->CCT::IDynNode::ip();
       Epoch::LM* lm = epoch()->lm_find(ip);
       VMA ip_ur = ip - lm->relocAmt();
       DIAG_MsgIf(0, "cct_canonicalize: " << hex << ip << dec << " -> " << lm->id());
@@ -436,12 +436,12 @@ Profile::cct_canonicalize()
 void 
 Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
 {
-  CSProfNode* root = cct()->root();
+  CCT::ANode* root = cct()->root();
   
-  for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
-    CSProfNode* n = it.CurNode();
+  for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
+    CCT::ANode* n = it.CurNode();
     
-    IDynNode* n_dyn = dynamic_cast<IDynNode*>(n);
+    CCT::IDynNode* n_dyn = dynamic_cast<CCT::IDynNode*>(n);
     if (n_dyn) {
 
       Epoch::LM_id_t y_lm_id = n_dyn->lm_id();
@@ -465,10 +465,11 @@ Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
 
 
 static void* 
-cstree_create_node_CB(void* tree, 
-		      hpcfile_cstree_nodedata_t* data)
+cstree_create_node_CB(void* tree, hpcfile_cstree_nodedata_t* data)
 {
-  Prof::CCT::Tree* my_tree = (Prof::CCT::Tree*)tree; 
+  using namespace Prof;
+
+  CCT::Tree* my_tree = (CCT::Tree*)tree; 
   
   VMA ip;
   ushort opIdx;
@@ -480,9 +481,9 @@ cstree_create_node_CB(void* tree,
   }
 
   DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);
-  Prof::CSProfCallSiteNode* n = 
-    new Prof::CSProfCallSiteNode(NULL, data->as_info, ip, opIdx, data->lip.ptr, data->cpid,
-				 &my_tree->metadata()->metricDesc(), metricVec);
+  CCT::Call* n = new CCT::Call(NULL, data->as_info, ip, opIdx, data->lip.ptr,
+			       data->cpid, &my_tree->metadata()->metricDesc(), 
+			       metricVec);
   
   // Initialize the tree, if necessary
   if (my_tree->empty()) {
@@ -496,8 +497,10 @@ cstree_create_node_CB(void* tree,
 static void  
 cstree_link_parent_CB(void* tree, void* node, void* parent)
 {
-  Prof::CSProfCallSiteNode* p = (Prof::CSProfCallSiteNode*)parent;
-  Prof::CSProfCallSiteNode* n = (Prof::CSProfCallSiteNode*)node;
+  using namespace Prof;
+
+  CCT::Call* p = (CCT::Call*)parent;
+  CCT::Call* n = (CCT::Call*)node;
   n->Link(p);
 }
 
@@ -540,17 +543,19 @@ convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
 static void
 cct_fixRoot(Prof::CCT::Tree* tree, const char* progName)
 {
+  using namespace Prof;
+
   // Add PGM node
-  Prof::CSProfNode* oldroot = tree->root();
-  if (!oldroot || oldroot->type() != Prof::CSProfNode::PGM) {
-    Prof::CSProfNode* newroot = new Prof::CSProfPgmNode(progName);
+  CCT::ANode* oldroot = tree->root();
+  if (!oldroot || oldroot->type() != CCT::ANode::TyRoot) {
+    CCT::ANode* newroot = new CCT::Root(progName);
 
     if (oldroot) { 
       //oldroot->Link(newroot); // 'newroot' is parent of 'n'
 
       // Move all children of 'oldroot' to 'newroot'
-      for (Prof::CSProfNodeChildIterator it(oldroot); it.Current(); /* */) {
-	Prof::CSProfNode* n = it.CurNode();
+      for (CCT::ANodeChildIterator it(oldroot); it.Current(); /* */) {
+	CCT::ANode* n = it.CurNode();
 	it++; // advance iterator -- it is pointing at 'n'
 	n->Unlink();
 	n->Link(newroot);
@@ -564,30 +569,30 @@ cct_fixRoot(Prof::CCT::Tree* tree, const char* progName)
 }
 
 
-// Convert leaves (CSProfCallSiteNode) to Prof::CSProfStatementNodes
+// Convert leaves (CCT::Call) to CCT::Stmt
 //
 // FIXME: There should be a better way of doing this.  Can it be
 // avoided altogether, by reading the tree in correctly?
 static void
-cct_fixLeaves(Prof::CSProfNode* node)
+cct_fixLeaves(Prof::CCT::ANode* node)
 {
   using namespace Prof;
 
   if (!node) { return; }
 
   // For each immediate child of this node...
-  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    CSProfNode* child = it.CurNode();
-    IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
+  for (CCT::ANodeChildIterator it(node); it.Current(); /* */) {
+    CCT::ANode* child = it.CurNode();
+    CCT::IDynNode* child_dyn = dynamic_cast<CCT::IDynNode*>(child);
     DIAG_Assert(child_dyn, "");
     it++; // advance iterator -- it is pointing at 'child'
 
     DIAG_DevMsgIf(0, "cct_fixLeaves: " << hex << child_dyn->ip() << dec);
-    if (child->IsLeaf() && child->type() == CSProfNode::CALLSITE) {
+    if (child->IsLeaf() && child->type() == CCT::ANode::TyCall) {
       // This child is a leaf. Convert.
-      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
+      CCT::Call* c = dynamic_cast<CCT::Call*>(child);
       
-      CSProfStatementNode* newc = new CSProfStatementNode(NULL, c->cpid(), c->metricdesc());
+      CCT::Stmt* newc = new CCT::Stmt(NULL, c->cpid(), c->metricdesc());
       *newc = *c;
       
       newc->LinkBefore(node->FirstChild()); // do not break iteration!

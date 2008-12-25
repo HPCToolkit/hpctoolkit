@@ -105,8 +105,8 @@ Tree::merge(const Tree* y,
 	    const SampledMetricDescVec* new_mdesc,		  
 	    uint x_numMetrics, uint y_numMetrics)
 {
-  CSProfPgmNode* x_root = dynamic_cast<CSProfPgmNode*>(root());
-  CSProfPgmNode* y_root = dynamic_cast<CSProfPgmNode*>(y->root());
+  Root* x_root = dynamic_cast<Root*>(root());
+  Root* y_root = dynamic_cast<Root*>(y->root());
 
   DIAG_Assert(x_root && y_root && x_root->name() == y_root->name(),
 	      "Unexpected root!");
@@ -164,61 +164,62 @@ Tree::doXMLEscape(int dmpFlag)
 
 namespace Prof {
 
+namespace CCT {
+
 //***************************************************************************
 // NodeType `methods' (could completely replace with dynamic typing)
 //***************************************************************************
 
-const string CSProfNode::NodeNames[CSProfNode::NUMBER_OF_TYPES] = {
-  "PGM", "P", "L", "S", "C", "StmtRange", "ANY"
+const string ANode::NodeNames[ANode::TyNUMBER] = {
+  "Root", "P", "Pr", "L", "S", "C", "Any"
 };
 
 
 const string&
-CSProfNode::NodeTypeToName(NodeType tp)
+ANode::NodeTypeToName(NodeType tp)
 {
   return NodeNames[tp]; 
 }
 
 
-CSProfNode::NodeType
-CSProfNode::IntToNodeType(long i) 
+ANode::NodeType
+ANode::IntToNodeType(long i) 
 {
-  DIAG_Assert((i >= 0) && (i < NUMBER_OF_TYPES), "");
+  DIAG_Assert((i >= 0) && (i < TyNUMBER), "");
   return (NodeType)i;
 }
 
 
 //***************************************************************************
-// CSProfNode, etc: constructors/destructors
+// ANode, etc: constructors/destructors
 //***************************************************************************
 
-CSProfNode::CSProfNode(NodeType ty, CSProfNode* _parent, 
-		       Struct::ACodeNode* strct)
+ANode::ANode(NodeType ty, ANode* _parent, Struct::ACodeNode* strct)
   : NonUniformDegreeTreeNode(_parent), m_type(ty), m_strct(strct)
 { 
-  DIAG_Assert((m_type == PGM) || (AncestorPgm() == NULL) || 
-	      !AncestorPgm()->IsFrozen(), "");
+  DIAG_Assert((m_type == TyRoot) || (ancestorRoot() == NULL) || 
+	      !ancestorRoot()->IsFrozen(), "");
   static uint uniqueId = 1;
   m_uid = uniqueId++; 
 }
 
 
 static bool
-OkToDelete(CSProfNode* x) 
+OkToDelete(ANode* x) 
 {
-  CSProfPgmNode* pgm = x->AncestorPgm(); 
+  Root* pgm = x->ancestorRoot(); 
   return ((pgm == NULL) || !(pgm->IsFrozen())); 
 } 
 
 
-CSProfNode::~CSProfNode() 
+ANode::~ANode() 
 {
   DIAG_Assert(OkToDelete(this), ""); 
 }
 
 
-CSProfPgmNode::CSProfPgmNode(const char* nm) 
-  : CSProfNode(PGM, NULL) 
+Root::Root(const char* nm) 
+  : ANode(TyRoot, NULL) 
 { 
   DIAG_Assert(nm, "");
   frozen = false;
@@ -226,96 +227,107 @@ CSProfPgmNode::CSProfPgmNode(const char* nm)
 }
 
 
-CSProfPgmNode::~CSProfPgmNode() 
+Root::~Root() 
 {
   frozen = false;
 }
 
 
-string CSProfProcedureFrameNode::BOGUS;
+string ProcFrm::BOGUS;
 
 static void
-CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent) 
+Call_Check(Call* n, ANode* _parent) 
 {
   DIAG_Assert((_parent == NULL) 
-	      || (_parent->type() == CSProfNode::PGM)
-	      || (_parent->type() == CSProfNode::LOOP) 
-	      || (_parent->type() == CSProfNode::PROCEDURE_FRAME) 
-	      || (_parent->type() == CSProfNode::CALLSITE), "");
+	      || (_parent->type() == ANode::TyRoot)
+	      || (_parent->type() == ANode::TyLoop) 
+	      || (_parent->type() == ANode::TyProcFrm) 
+	      || (_parent->type() == ANode::TyCall), "");
 }
 
 
-CSProfProcedureFrameNode::CSProfProcedureFrameNode(CSProfNode* _parent)
-  : CSProfNode(PROCEDURE_FRAME, _parent)
+ProcFrm::ProcFrm(ANode* _parent)
+  : ANode(TyProcFrm, _parent)
 {
-  CSProfCallSiteNode_Check(NULL, _parent);
+  Call_Check(NULL, _parent);
 }
 
 
-CSProfProcedureFrameNode::~CSProfProcedureFrameNode()
+ProcFrm::~ProcFrm()
 {
 }
 
 
-CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent, Struct::ACodeNode* strct)
-  : CSProfNode(LOOP, _parent, strct)
+Proc::Proc(ANode* _parent, Struct::ACodeNode* strct)
+  : ANode(TyProc, _parent, strct)
 {
   DIAG_Assert((_parent == NULL)
-	      || (_parent->type() == CALLSITE) 
-	      || (_parent->type() == PROCEDURE_FRAME) 
-	      || (_parent->type() == LOOP), "");
+	      || (_parent->type() == TyCall)
+	      || (_parent->type() == TyLoop), "");
 }
 
-CSProfLoopNode::~CSProfLoopNode()
+Proc::~Proc()
+{
+}
+
+
+Loop::Loop(ANode* _parent, Struct::ACodeNode* strct)
+  : ANode(TyLoop, _parent, strct)
+{
+  DIAG_Assert((_parent == NULL)
+	      || (_parent->type() == TyCall) 
+	      || (_parent->type() == TyProcFrm) 
+	      || (_parent->type() == TyLoop), "");
+}
+
+Loop::~Loop()
 {
 }
 
 
 
 
-CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
-				       uint32_t cpid,
-				       const SampledMetricDescVec* metricdesc)
-  : CSProfNode(CALLSITE, _parent),
+Call::Call(ANode* _parent, uint32_t cpid,
+	   const SampledMetricDescVec* metricdesc)
+  : ANode(TyCall, _parent),
     IDynNode(this, cpid, metricdesc)
 {
-  CSProfCallSiteNode_Check(this, _parent);
+  Call_Check(this, _parent);
 }
 
 
-CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, 
-				       lush_assoc_info_t as_info,
-				       VMA ip, ushort opIndex, 
-				       lush_lip_t* lip,
-				       uint32_t cpid,
-				       const SampledMetricDescVec* metricdesc,
-				       std::vector<hpcfile_metric_data_t>& metrics)
-  : CSProfNode(CALLSITE, _parent), 
+Call::Call(ANode* _parent, 
+	   lush_assoc_info_t as_info,
+	   VMA ip, ushort opIndex, 
+	   lush_lip_t* lip,
+	   uint32_t cpid,
+	   const SampledMetricDescVec* metricdesc,
+	   std::vector<hpcfile_metric_data_t>& metrics)
+  : ANode(TyCall, _parent), 
     IDynNode(this, as_info, ip, opIndex, lip, cpid, metricdesc, metrics)
 {
-  CSProfCallSiteNode_Check(this, _parent);
+  Call_Check(this, _parent);
 }
 
-CSProfCallSiteNode::~CSProfCallSiteNode()
+Call::~Call()
 {
 }
 
 
-CSProfStatementNode::CSProfStatementNode(CSProfNode* _parent, 
-					 uint32_t cpid,
-					 const SampledMetricDescVec* metricdesc)
-  :  CSProfNode(STATEMENT, _parent),
+Stmt::Stmt(ANode* _parent, uint32_t cpid,
+	   const SampledMetricDescVec* metricdesc)
+  :  ANode(TyStmt, _parent),
      IDynNode(this, cpid, metricdesc)
 {
 }
 
-CSProfStatementNode::~CSProfStatementNode()
+Stmt::~Stmt()
 {
 }
 
 
 void 
-CSProfStatementNode::operator=(const CSProfStatementNode& x)
+Stmt::operator=(const Stmt& x)
 {
   if (this != &x) {
     IDynNode::operator=(x);
@@ -324,45 +336,33 @@ CSProfStatementNode::operator=(const CSProfStatementNode& x)
 
 
 void 
-CSProfStatementNode::operator=(const CSProfCallSiteNode& x)
+Stmt::operator=(const Call& x)
 {
   IDynNode::operator=(x);
 }
 
 
-CSProfStmtRangeNode::CSProfStmtRangeNode(CSProfNode* _parent, Struct::ACodeNode* strct)
-  : CSProfNode(STMT_RANGE, _parent, strct)
-{
-  DIAG_Assert((_parent == NULL)
-	      || (_parent->type() == CALLSITE)
-	      || (_parent->type() == LOOP), "");
-}
-
-CSProfStmtRangeNode::~CSProfStmtRangeNode()
-{
-}
-
 //***************************************************************************
-// CSProfNode, etc: Tree Navigation 
+// ANode, etc: Tree Navigation 
 //***************************************************************************
 
-CSProfNode* 
-CSProfNode::NextSibling() const
+ANode* 
+ANode::NextSibling() const
 { 
   // siblings are linked in a circular list
   if ((Parent()->LastChild() != this)) {
-    return dynamic_cast<CSProfNode*>(NextSibling()); 
+    return dynamic_cast<ANode*>(NextSibling()); 
   } 
   return NULL;  
 }
 
 
-CSProfNode* 
-CSProfNode::PrevSibling() const
+ANode* 
+ANode::PrevSibling() const
 { 
   // siblings are linked in a circular list
   if ((Parent()->FirstChild() != this)) {
-    return dynamic_cast<CSProfNode*>(PrevSibling()); 
+    return dynamic_cast<ANode*>(PrevSibling()); 
   } 
   return NULL;
 }
@@ -378,10 +378,10 @@ CSProfNode::PrevSibling() const
     }
 
 
-CSProfNode* 
-CSProfNode::Ancestor(NodeType tp) const
+ANode* 
+ANode::Ancestor(NodeType tp) const
 {
-  CSProfNode* s = const_cast<CSProfNode*>(this); 
+  ANode* s = const_cast<ANode*>(this); 
   while (s && s->type() != tp) {
     s = s->Parent(); 
   } 
@@ -391,9 +391,9 @@ CSProfNode::Ancestor(NodeType tp) const
 
 #if 0
 
-int IsAncestorOf(CSProfNode* _parent, CSProfNode *son, int difference)
+int IsAncestorOf(ANode* _parent, ANode *son, int difference)
 {
-  CSProfNode *iter = son;
+  ANode *iter = son;
   while (iter && difference > 0 && iter != _parent) {
     iter = iter->Parent();
     difference--;
@@ -406,45 +406,44 @@ int IsAncestorOf(CSProfNode* _parent, CSProfNode *son, int difference)
 #endif
 
 
-CSProfPgmNode*
-CSProfNode::AncestorPgm() const 
+Root*
+ANode::ancestorRoot() const 
 {
   if (Parent() == NULL) {
     return NULL;
   }  else { 
-    dyn_cast_return(CSProfNode, CSProfPgmNode, Ancestor(PGM));
+    dyn_cast_return(ANode, Root, Ancestor(TyRoot));
   }
 }
 
 
-CSProfCallSiteNode*
-CSProfNode::AncestorCallSite() const
+ProcFrm*
+ANode::ancestorProcFrm() const
 {
-  dyn_cast_return(CSProfNode, CSProfCallSiteNode, Ancestor(CALLSITE)); 
+  dyn_cast_return(ANode, ProcFrm, Ancestor(TyProcFrm)); 
 }
 
 
-CSProfProcedureFrameNode*
-CSProfNode::AncestorProcedureFrame() const
+Loop*
+ANode::ancestorLoop() const 
 {
-  dyn_cast_return(CSProfNode, 
-		  CSProfProcedureFrameNode,
-		  Ancestor(PROCEDURE_FRAME)); 
+  dyn_cast_return(ANode, Loop, Ancestor(TyLoop));
 }
 
 
-CSProfLoopNode*
-CSProfNode::AncestorLoop() const 
+Stmt*
+ANode::ancestorStmt() const 
 {
-  dyn_cast_return(CSProfNode, CSProfLoopNode, Ancestor(LOOP));
+  dyn_cast_return(ANode, Stmt, Ancestor(TyStmt));
 }
 
 
-CSProfStmtRangeNode*
-CSProfNode::AncestorStmtRange() const 
+Call*
+ANode::ancestorCall() const
 {
-  dyn_cast_return(CSProfNode, CSProfStmtRangeNode, Ancestor(STMT_RANGE));
+  dyn_cast_return(ANode, Call, Ancestor(TyCall)); 
 }
+
 
 //**********************************************************************
 // 
@@ -502,7 +501,7 @@ IDynNode::expandMetrics_after(uint offset)
 
 
 void
-CSProfNode::merge_prepare(uint numMetrics)
+ANode::merge_prepare(uint numMetrics)
 {
   IDynNode* dyn = dynamic_cast<IDynNode*>(this);
   if (dyn) {
@@ -511,8 +510,8 @@ CSProfNode::merge_prepare(uint numMetrics)
   }
 
   // Recur on children
-  for (CSProfNodeChildIterator it(this); it.Current(); ++it) {
-    CSProfNode* child = it.CurNode();
+  for (ANodeChildIterator it(this); it.Current(); ++it) {
+    ANode* child = it.CurNode();
     child->merge_prepare(numMetrics);
   }
 }
@@ -523,11 +522,10 @@ CSProfNode::merge_prepare(uint numMetrics)
 // NOTE: assume we can destroy y...
 // NOTE: assume x already has space to store merged metrics
 void
-CSProfNode::merge(CSProfNode* y, 
-		  const SampledMetricDescVec* new_mdesc,
-		  uint x_numMetrics, uint y_numMetrics)
+ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
+	     uint x_numMetrics, uint y_numMetrics)
 {
-  CSProfNode* x = this;
+  ANode* x = this;
   
   // ------------------------------------------------------------
   // 0. If y is childless, return.
@@ -543,16 +541,16 @@ CSProfNode::merge(CSProfNode* y,
   // 2. If a child d of y _does_ have a corresponding child c of x,
   //    merge [the metrics of] d into c and recur.
   // ------------------------------------------------------------  
-  for (CSProfNodeChildIterator it(y); it.Current(); /* */) {
-    CSProfNode* y_child = it.CurNode();
+  for (ANodeChildIterator it(y); it.Current(); /* */) {
+    ANode* y_child = it.CurNode();
     IDynNode* y_child_dyn = dynamic_cast<IDynNode*>(y_child);
     DIAG_Assert(y_child_dyn, "");
     it++; // advance iterator -- it is pointing at 'child'
 
-    CSProfNode* x_child = findDynChild(y_child_dyn->assocInfo(),
-				       y_child_dyn->lm_id(),
-				       y_child_dyn->ip_real(),
-				       y_child_dyn->lip());
+    ANode* x_child = findDynChild(y_child_dyn->assocInfo(),
+				  y_child_dyn->lm_id(),
+				  y_child_dyn->ip_real(),
+				  y_child_dyn->lip());
     if (!x_child) {
       y_child->Unlink();
       y_child->merge_fixup(new_mdesc, x_numMetrics);
@@ -560,7 +558,7 @@ CSProfNode::merge(CSProfNode* y,
     }
     else {
       IDynNode* x_child_dyn = dynamic_cast<IDynNode*>(x_child);
-      DIAG_MsgIf(0, "CSProfNode::merge: Merging y into x:\n"
+      DIAG_MsgIf(0, "ANode::merge: Merging y into x:\n"
 		 << "  y: " << y_child_dyn->toString()
 		 << "  x: " << x_child_dyn->toString());
       x_child_dyn->mergeMetrics(*y_child_dyn, x_numMetrics);
@@ -570,12 +568,12 @@ CSProfNode::merge(CSProfNode* y,
 }
 
 
-CSProfNode* 
-CSProfNode::findDynChild(lush_assoc_info_t as_info, 
-			 Epoch::LM_id_t lm_id, VMA ip, lush_lip_t* lip)
+ANode* 
+ANode::findDynChild(lush_assoc_info_t as_info, 
+		    Epoch::LM_id_t lm_id, VMA ip, lush_lip_t* lip)
 {
-  for (CSProfNodeChildIterator it(this); it.Current(); ++it) {
-    CSProfNode* child = it.CurNode();
+  for (ANodeChildIterator it(this); it.Current(); ++it) {
+    ANode* child = it.CurNode();
     IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
     
     lush_assoc_t as = lush_assoc_info__get_assoc(as_info);
@@ -594,8 +592,7 @@ CSProfNode::findDynChild(lush_assoc_info_t as_info,
 
 
 void
-CSProfNode::merge_fixup(const SampledMetricDescVec* new_mdesc, 
-			int metric_offset)
+ANode::merge_fixup(const SampledMetricDescVec* new_mdesc, int metric_offset)
 {
   IDynNode* x_dyn = dynamic_cast<IDynNode*>(this);
   if (x_dyn) {
@@ -603,8 +600,8 @@ CSProfNode::merge_fixup(const SampledMetricDescVec* new_mdesc,
     x_dyn->metricdesc(new_mdesc);
   }
 
-  for (CSProfNodeChildIterator it(this); it.Current(); ++it) {
-    CSProfNode* child = it.CurNode();
+  for (ANodeChildIterator it(this); it.Current(); ++it) {
+    ANode* child = it.CurNode();
     IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
     if (child_dyn) {
       child->merge_fixup(new_mdesc, metric_offset);
@@ -615,21 +612,21 @@ CSProfNode::merge_fixup(const SampledMetricDescVec* new_mdesc,
 
 // merge y into 'this' = x
 void
-CSProfNode::merge_node(CSProfNode* y)
+ANode::merge_node(ANode* y)
 {
-  CSProfNode* x = this;
+  ANode* x = this;
   
   // 1. copy y's metrics into x
-  Prof::IDynNode* x_dyn = dynamic_cast<Prof::IDynNode*>(x);
+  IDynNode* x_dyn = dynamic_cast<IDynNode*>(x);
   if (x_dyn) {
-    Prof::IDynNode* y_dyn = dynamic_cast<Prof::IDynNode*>(y);
+    IDynNode* y_dyn = dynamic_cast<IDynNode*>(y);
     DIAG_Assert(y_dyn, "");
     x_dyn->mergeMetrics(*y_dyn);
   }
   
   // 2. copy y's children into x
-  for (Prof::CSProfNodeChildIterator it(y); it.Current(); /* */) {
-    Prof::CSProfNode* y_child = it.CurNode();
+  for (ANodeChildIterator it(y); it.Current(); /* */) {
+    ANode* y_child = it.CurNode();
     it++; // advance iterator -- it is pointing at 'y_child'
     y_child->Unlink();
     y_child->Link(x);
@@ -640,13 +637,13 @@ CSProfNode::merge_node(CSProfNode* y)
 }
 
 //**********************************************************************
-// CSProfNode, etc: CodeName methods
+// ANode, etc: CodeName methods
 //**********************************************************************
 
 // NOTE: tallent: used for lush_cilkNormalize
 
 string
-CSProfNode::codeName() const
+ANode::codeName() const
 { 
   string self = NodeTypeToName(type()) + " "
     //+ GetFile() + ":" 
@@ -655,7 +652,7 @@ CSProfNode::codeName() const
 }
 
 string
-CSProfProcedureFrameNode::codeName() const
+ProcFrm::codeName() const
 { 
   string self = NodeTypeToName(type()) + " "
     + procName() + " @ "
@@ -666,19 +663,19 @@ CSProfProcedureFrameNode::codeName() const
 
 
 //**********************************************************************
-// CSProfNode, etc: Dump contents for inspection
+// ANode, etc: Dump contents for inspection
 //**********************************************************************
 
 string 
-CSProfNode::toString_me(int dmpFlag) const
+ANode::toString_me(int dmpFlag) const
 { 
   string self;
   self = NodeTypeToName(type());
 
   // FIXME: tallent: temporary override
-  if (type() == CSProfNode::PROCEDURE_FRAME) {
-    const CSProfProcedureFrameNode* fr = 
-      dynamic_cast<const CSProfProcedureFrameNode*>(this);
+  if (type() == ANode::TyProcFrm) {
+    const ProcFrm* fr = 
+      dynamic_cast<const ProcFrm*>(this);
     self = fr->isAlien() ? "Pr" : "PF";
   }
 
@@ -771,9 +768,9 @@ IDynNode::ddump() const
 
 
 string
-CSProfPgmNode::toString_me(int dmpFlag) const
+Root::toString_me(int dmpFlag) const
 { 
-  string self = CSProfNode::toString_me(dmpFlag) + " n" +
+  string self = ANode::toString_me(dmpFlag) + " n" +
     xml::MakeAttrStr(m_name, CCT::Tree::doXMLEscape(dmpFlag));
   return self;
 }
@@ -781,9 +778,9 @@ CSProfPgmNode::toString_me(int dmpFlag) const
 
 
 string
-CSProfProcedureFrameNode::toString_me(int dmpFlag) const
+ProcFrm::toString_me(int dmpFlag) const
 {
-  string self = CSProfNode::toString_me(dmpFlag);
+  string self = ANode::toString_me(dmpFlag);
 
   if (m_strct)  {
 #if (FIXME_WRITE_CCT_DICTIONARIES)
@@ -812,9 +809,9 @@ CSProfProcedureFrameNode::toString_me(int dmpFlag) const
 
 
 string
-CSProfCallSiteNode::toString_me(int dmpFlag) const
+Call::toString_me(int dmpFlag) const
 {
-  string self = CSProfNode::toString_me(dmpFlag);
+  string self = ANode::toString_me(dmpFlag);
   
   if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
     self += " assoc" + xml::MakeAttrStr(assocInfo_str()) 
@@ -824,13 +821,13 @@ CSProfCallSiteNode::toString_me(int dmpFlag) const
   }
 
   return self; 
-} 
+}
 
 
 string
-CSProfStatementNode::toString_me(int dmpFlag) const
+Stmt::toString_me(int dmpFlag) const
 {
-  string self = CSProfNode::toString_me(dmpFlag);
+  string self = ANode::toString_me(dmpFlag);
 
   if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
     self += " ip" + xml::MakeAttrNum(ip(), 16) 
@@ -842,23 +839,23 @@ CSProfStatementNode::toString_me(int dmpFlag) const
 
 
 string 
-CSProfLoopNode::toString_me(int dmpFlag) const
+Loop::toString_me(int dmpFlag) const
 {
-  string self = CSProfNode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
+  string self = ANode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
   return self;
 }
 
 
 string
-CSProfStmtRangeNode::toString_me(int dmpFlag) const
+Proc::toString_me(int dmpFlag) const
 {
-  string self = CSProfNode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
+  string self = ANode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
   return self;
 }
 
 
 std::ostream&
-CSProfNode::writeXML(ostream &os, int dmpFlag, const char *pre) const 
+ANode::writeXML(ostream &os, int dmpFlag, const char *pre) const 
 {
   string indent = "  ";
   if (dmpFlag & CCT::Tree::COMPRESSED_OUTPUT) { 
@@ -872,9 +869,9 @@ CSProfNode::writeXML(ostream &os, int dmpFlag, const char *pre) const
   
   writeXML_pre(os, dmpFlag, pre); 
   string prefix = pre + indent;
-  for (CSProfNodeSortedChildIterator it(this, CSProfNodeSortedIterator::cmpByStructureId); 
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureId); 
        it.Current(); it++) {
-    CSProfNode* n = it.Current();
+    ANode* n = it.Current();
     n->writeXML(os, dmpFlag, prefix.c_str());
   }   
   writeXML_post(os, dmpFlag, pre);
@@ -883,7 +880,7 @@ CSProfNode::writeXML(ostream &os, int dmpFlag, const char *pre) const
 
 
 std::ostream&
-CSProfNode::dump(ostream &os, int dmpFlag, const char *pre) const 
+ANode::dump(ostream &os, int dmpFlag, const char *pre) const 
 {
   writeXML(os, dmpFlag, pre); 
   return os;
@@ -891,17 +888,17 @@ CSProfNode::dump(ostream &os, int dmpFlag, const char *pre) const
 
 
 void
-CSProfNode::ddump() const
+ANode::ddump() const
 {
   writeXML(std::cerr, CCT::Tree::XML_TRUE, ""); 
 } 
 
 
 void
-CSProfNode::writeXML_pre(ostream& os, int dmpFlag, const char *prefix) const
+ANode::writeXML_pre(ostream& os, int dmpFlag, const char *prefix) const
 {
   // tallent: Pgm has no representation
-  if (type() == CSProfNode::PGM) {
+  if (type() == ANode::TyRoot) {
     return;
   }
 
@@ -920,17 +917,16 @@ CSProfNode::writeXML_pre(ostream& os, int dmpFlag, const char *prefix) const
 
 
 void
-CSProfNode::writeXML_post(ostream &os, int dmpFlag, const char *prefix) const
+ANode::writeXML_post(ostream &os, int dmpFlag, const char *prefix) const
 {
   // tallent: Pgm has no representation
-  if (type() == CSProfNode::PGM) {
+  if (type() == ANode::TyRoot) {
     return; 
   }
 
   // FIXME: tallent: temporary override
-  if (type() == CSProfNode::PROCEDURE_FRAME) {
-    const CSProfProcedureFrameNode* fr = 
-      dynamic_cast<const CSProfProcedureFrameNode*>(this);
+  if (type() == ANode::TyProcFrm) {
+    const ProcFrm* fr = dynamic_cast<const ProcFrm*>(this);
     string tag = fr->isAlien() ? "Pr" : "PF";
     os << prefix << "</" << tag << ">";
   }
@@ -943,23 +939,29 @@ CSProfNode::writeXML_post(ostream &os, int dmpFlag, const char *prefix) const
 
 
 string 
-CSProfNode::Types() const
+ANode::Types() const
 {
   string types; 
-  if (dynamic_cast<const CSProfNode*>(this)) {
-    types += "CSProfNode "; 
+  if (dynamic_cast<const ANode*>(this)) {
+    types += "ANode "; 
   } 
-  if (dynamic_cast<const CSProfPgmNode*>(this)) {
-    types += "CSProfPgmNode "; 
+  if (dynamic_cast<const Root*>(this)) {
+    types += "Root "; 
   } 
-  if (dynamic_cast<const CSProfCallSiteNode*>(this)) {
-    types += "CSProfCallSiteNode "; 
+  if (dynamic_cast<const ProcFrm*>(this)) {
+    types += "ProcFrm "; 
   } 
-  if (dynamic_cast<const CSProfLoopNode*>(this)) {
-    types += "CSProfLoopNode "; 
+  if (dynamic_cast<const Proc*>(this)) {
+    types += "Proc "; 
   } 
-  if (dynamic_cast<const CSProfStmtRangeNode*>(this)) {
-    types += "CSProfStmtRangeNode "; 
+  if (dynamic_cast<const Loop*>(this)) {
+    types += "Loop "; 
+  } 
+  if (dynamic_cast<const Stmt*>(this)) {
+    types += "Stmt "; 
+  } 
+  if (dynamic_cast<const Call*>(this)) {
+    types += "Call "; 
   } 
   return types; 
 } 
@@ -970,10 +972,10 @@ CSProfNode::Types() const
 //**********************************************************************
 
 
-int CSProfNodeLineComp(CSProfNode* x, CSProfNode* y)
+int ANodeLineComp(ANode* x, ANode* y)
 {
   if (x->begLine() == y->begLine()) {
-    // Given two CSProfNode's with identical endpoints consider two
+    // Given two ANode's with identical endpoints consider two
     // special cases:
     bool endLinesEqual = (x->endLine() == y->endLine());
     
@@ -991,6 +993,8 @@ int CSProfNodeLineComp(CSProfNode* x, CSProfNode* y)
   }
 }
 
+
+} // namespace CCT
 
 } // namespace Prof
 

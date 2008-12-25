@@ -164,9 +164,9 @@ driver_copySourceFile(const string& fnm_orig,
 
 
 static bool 
-CallPath_Filter(const Prof::CSProfNode& x, long type)
+CallPath_Filter(const Prof::CCT::ANode& x, long type)
 {
-  return (x.type() == Prof::CSProfNode::PROCEDURE_FRAME);
+  return (x.type() == Prof::CCT::ANode::TyProcFrm);
 }
 
 
@@ -184,10 +184,10 @@ Analysis::Util::copySourceFiles(Prof::CallPath::Profile* prof,
   // Prevent multiple copies of the same file
   std::map<string, string> processedFiles;
 
-  Prof::CSProfNodeFilter filter(CallPath_Filter, "CallPath_Filter", 0);
+  Prof::CCT::ANodeFilter filter(CallPath_Filter, "CallPath_Filter", 0);
 
-  for (Prof::CSProfNodeIterator it(cct->root(), &filter); it.Current(); ++it) {
-    Prof::CSProfProcedureFrameNode* x_proc = dynamic_cast<Prof::CSProfProcedureFrameNode*>(it.CurNode());
+  for (Prof::CCT::ANodeIterator it(cct->root(), &filter); it.Current(); ++it) {
+    Prof::CCT::ProcFrm* x_proc = dynamic_cast<Prof::CCT::ProcFrm*>(it.CurNode());
 
     const string& fnm_orig = x_proc->fileName(); // may not be absolute
 

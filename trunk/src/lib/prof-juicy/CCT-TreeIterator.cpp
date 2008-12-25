@@ -50,6 +50,11 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::ostream;
+using std::endl;
+
+
 //*************************** User Include Files ****************************
 
 #include "CCT-Tree.hpp"
@@ -58,85 +63,77 @@
 
 //*************************** Forward Declarations ***************************
 
-using std::ostream;
-using std::endl;
-
 //****************************************************************************
 
 namespace Prof {
+
+namespace CCT {
+
 
 static int CompareByLine(const void *a, const void *b);
 
 
 //*****************************************************************************
-// CSProfNodeFilter support
+// ANodeFilter support
 //*****************************************************************************
 
-bool HasNodeType(const CSProfNode& sinfo, long type)
+bool HasNodeType(const ANode& sinfo, long type)
 {
-  return (type == CSProfNode::ANY) 
-    || (sinfo.type() == CSProfNode::IntToNodeType(type)); 
+  return (type == ANode::TyANY) || (sinfo.type() == ANode::IntToNodeType(type)); 
 }
 
 
-const CSProfNodeFilter NodeTypeFilter[CSProfNode::NUMBER_OF_TYPES] = {
-  CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::PGM).c_str(),
-		   CSProfNode::PGM),
-  CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::CALLSITE).c_str(),
-		   CSProfNode::CALLSITE),
-  CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::LOOP).c_str(),
-		   CSProfNode::LOOP),
-  CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::STMT_RANGE).c_str(),
-		   CSProfNode::STMT_RANGE),
-  CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::PROCEDURE_FRAME).c_str(),
-		   CSProfNode::PROCEDURE_FRAME),
-  CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::STATEMENT).c_str(),
-		   CSProfNode::STATEMENT),
-  CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::ANY).c_str(),
-		   CSProfNode::ANY)
+const ANodeFilter NodeTypeFilter[ANode::TyNUMBER] = {
+  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyRoot).c_str(),
+	      ANode::TyRoot),
+  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyProcFrm).c_str(),
+	      ANode::TyProcFrm),
+  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyProc).c_str(),
+	      ANode::TyProc),
+  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyLoop).c_str(),
+	      ANode::TyLoop),
+  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyStmt).c_str(),
+	      ANode::TyStmt),
+  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyCall).c_str(),
+	      ANode::TyCall),
+  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyANY).c_str(),
+	      ANode::TyANY)
 };
 
 //*****************************************************************************
-// CSProfNodeChildIterator
+// ANodeChildIterator
 //*****************************************************************************
 
-CSProfNodeChildIterator::CSProfNodeChildIterator(const CSProfNode* root,
-						 const CSProfNodeFilter* f)
+ANodeChildIterator::ANodeChildIterator(const ANode* root,
+				       const ANodeFilter* f)
   : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false),
     filter(f)
 {
 }
 
 NonUniformDegreeTreeNode* 
-CSProfNodeChildIterator::Current() const
+ANodeChildIterator::Current() const
 {
   NonUniformDegreeTreeNode *s; 
-  CSProfNode *si; 
+  ANode *si; 
   while ( (s = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
-    si = dynamic_cast<CSProfNode*>(s);  
+    si = dynamic_cast<ANode*>(s);  
     if ((filter == NULL) || filter->Apply(*si)) { 
       break; 	
     }
-    ((CSProfNodeChildIterator*) this)->operator++(); 
+    ((ANodeChildIterator*) this)->operator++(); 
   } 
-  return dynamic_cast<CSProfNode*>(s); 
+  return dynamic_cast<ANode*>(s); 
 } 
 
 //*****************************************************************************
 // CSProfTreeIterator
 //*****************************************************************************
 
-CSProfNodeIterator::CSProfNodeIterator(const CSProfNode* root, 
-				       const CSProfNodeFilter* f, 
-				       bool leavesOnly, 
-				       TraversalOrder torder)
+ANodeIterator::ANodeIterator(const ANode* root, 
+			     const ANodeFilter* f, 
+			     bool leavesOnly, 
+			     TraversalOrder torder)
   : NonUniformDegreeTreeIterator(root, torder, 
 	             (leavesOnly) ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
 				 : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES),
@@ -146,33 +143,33 @@ CSProfNodeIterator::CSProfNodeIterator(const CSProfNode* root,
 
 
 NonUniformDegreeTreeNode* 
-CSProfNodeIterator::Current() const
+ANodeIterator::Current() const
 {
   NonUniformDegreeTreeNode *s; 
-  CSProfNode *si; 
+  ANode *si; 
   while ( (s = NonUniformDegreeTreeIterator::Current()) ) {
-    si = dynamic_cast<CSProfNode*>(s); 
+    si = dynamic_cast<ANode*>(s); 
     DIAG_Assert(si != NULL, ""); 
     if ((filter == NULL) || filter->Apply(*si)) { 
       break; 	
     }
-    ((CSProfNodeIterator*) this)->operator++(); 
+    ((ANodeIterator*) this)->operator++(); 
   } 
-  return dynamic_cast<CSProfNode*>(s); 
+  return dynamic_cast<ANode*>(s); 
 } 
 
 //*****************************************************************************
-// CSProfNodeSortedIterator
+// ANodeSortedIterator
 //*****************************************************************************
 
-CSProfNodeSortedIterator::
-CSProfNodeSortedIterator(const CSProfNode* node,
-			 CSProfNodeSortedIterator::cmp_fptr_t compare_fn,
-			 const CSProfNodeFilter* filterFunc,
-			 bool leavesOnly)
+ANodeSortedIterator::
+ANodeSortedIterator(const ANode* node,
+		    ANodeSortedIterator::cmp_fptr_t compare_fn,
+		    const ANodeFilter* filterFunc,
+		    bool leavesOnly)
 {
-  CSProfNodeIterator it(node, filterFunc, leavesOnly); 
-  CSProfNode *cur; 
+  ANodeIterator it(node, filterFunc, leavesOnly); 
+  ANode *cur; 
   for (; (cur = it.CurNode()); ) {
     scopes.Add((unsigned long) cur); 
     it++; 
@@ -180,26 +177,26 @@ CSProfNodeSortedIterator(const CSProfNode* node,
   ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn); 
 }
 
-CSProfNodeSortedIterator::~CSProfNodeSortedIterator() 
+ANodeSortedIterator::~ANodeSortedIterator() 
 {
   delete ptrSetIt; 
 }
  
-CSProfNode* 
-CSProfNodeSortedIterator::Current() const
+ANode* 
+ANodeSortedIterator::Current() const
 {
-  CSProfNode *cur = NULL; 
+  ANode *cur = NULL; 
   if (ptrSetIt->Current()) {
-    cur = (CSProfNode*) (*ptrSetIt->Current()); 
+    cur = (ANode*) (*ptrSetIt->Current()); 
     DIAG_Assert(cur != NULL, ""); 
   }
   return cur; 
 } 
 
 void 
-CSProfNodeSortedIterator::DumpAndReset(ostream& os)
+ANodeSortedIterator::DumpAndReset(ostream& os)
 {
-  os << "CSProfNodeSortedIterator: " << endl; 
+  os << "ANodeSortedIterator: " << endl; 
   while (Current()) {
     os << Current()->toString_me() << endl; 
     (*this)++; 
@@ -208,17 +205,17 @@ CSProfNodeSortedIterator::DumpAndReset(ostream& os)
 }
 
 void 
-CSProfNodeSortedIterator::Reset()
+ANodeSortedIterator::Reset()
 {
   ptrSetIt->Reset(); 
 }
 
 
 int 
-CSProfNodeSortedIterator::cmpByName(const void* a, const void* b)
+ANodeSortedIterator::cmpByName(const void* a, const void* b)
 {
-  CSProfNode* x = (*(CSProfNode**)a); 
-  CSProfNode* y = (*(CSProfNode**)b); 
+  ANode* x = (*(ANode**)a); 
+  ANode* y = (*(ANode**)b); 
   DIAG_Assert (x != NULL, "");
   DIAG_Assert (y != NULL, "");
   return strcmp(x->name().c_str(), y->name().c_str()); 
@@ -226,21 +223,21 @@ CSProfNodeSortedIterator::cmpByName(const void* a, const void* b)
 
 
 int
-CSProfNodeSortedIterator::cmpByLine(const void* a, const void* b) 
+ANodeSortedIterator::cmpByLine(const void* a, const void* b) 
 {
-  CSProfNode* x = (*(CSProfNode**)a); 
-  CSProfNode* y = (*(CSProfNode**)b); 
+  ANode* x = (*(ANode**)a); 
+  ANode* y = (*(ANode**)b); 
   DIAG_Assert(x != NULL, "");
   DIAG_Assert(y != NULL, "");
-  return CSProfNodeLineComp(x, y);
+  return ANodeLineComp(x, y);
 }
 
 
 int
-CSProfNodeSortedIterator::cmpByStructureId(const void* a, const void* b) 
+ANodeSortedIterator::cmpByStructureId(const void* a, const void* b) 
 {
-  CSProfNode* x = (*(CSProfNode**)a);
-  CSProfNode* y = (*(CSProfNode**)b);
+  ANode* x = (*(ANode**)a);
+  ANode* y = (*(ANode**)b);
   DIAG_Assert(x && y , "");
   uint x_id = x->structure() ? x->structure()->id() : 0;
   uint y_id = y->structure() ? y->structure()->id() : 0;
@@ -248,16 +245,16 @@ CSProfNodeSortedIterator::cmpByStructureId(const void* a, const void* b)
 }
 
 //*****************************************************************************
-// CSProfNodeSortedChildIterator
+// ANodeSortedChildIterator
 //*****************************************************************************
 
-CSProfNodeSortedChildIterator::
-CSProfNodeSortedChildIterator(const CSProfNode* scope, 
-			      CSProfNodeSortedIterator::cmp_fptr_t compare_fn,
-			      const CSProfNodeFilter* f)
+ANodeSortedChildIterator::
+ANodeSortedChildIterator(const ANode* scope, 
+			 ANodeSortedIterator::cmp_fptr_t compare_fn,
+			 const ANodeFilter* f)
 {
-  CSProfNodeChildIterator it(scope, f); 
-  CSProfNode* cur; 
+  ANodeChildIterator it(scope, f); 
+  ANode* cur; 
   for (; (cur = it.CurNode()); ) {
     scopes.Add((unsigned long) cur); 
     it++; 
@@ -265,32 +262,32 @@ CSProfNodeSortedChildIterator(const CSProfNode* scope,
   ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn); 
 }
 
-CSProfNodeSortedChildIterator::~CSProfNodeSortedChildIterator() 
+ANodeSortedChildIterator::~ANodeSortedChildIterator() 
 {
   delete ptrSetIt; 
 }
  
-CSProfNode* 
-CSProfNodeSortedChildIterator::Current() const
+ANode* 
+ANodeSortedChildIterator::Current() const
 {
-  CSProfNode *cur = NULL; 
+  ANode *cur = NULL; 
   if (ptrSetIt->Current()) {
-    cur = (CSProfNode*) (*ptrSetIt->Current()); 
+    cur = (ANode*) (*ptrSetIt->Current()); 
     DIAG_Assert(cur != NULL, "");
   }
   return cur; 
 }
 
 void 
-CSProfNodeSortedChildIterator::Reset()
+ANodeSortedChildIterator::Reset()
 {
   ptrSetIt->Reset(); 
 }
 
 void
-CSProfNodeSortedChildIterator::DumpAndReset(ostream& os)
+ANodeSortedChildIterator::DumpAndReset(ostream& os)
 {
-  os << "CSProfNodeSortedChildIterator: " << endl; 
+  os << "ANodeSortedChildIterator: " << endl; 
   while (Current()) {
     os << Current()->toString_me() << endl; 
     (*this)++; 
@@ -299,5 +296,7 @@ CSProfNodeSortedChildIterator::DumpAndReset(ostream& os)
 }
 
 //***************************************************************************
+
+} // namespace CCT
 
 } // namespace Prof
