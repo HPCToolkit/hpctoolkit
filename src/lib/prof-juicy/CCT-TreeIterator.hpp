@@ -69,89 +69,91 @@
 
 namespace Prof {
 
+namespace CCT {
+
+
 //*****************************************************************************
-// CSProfNodeFilter: Filters are used in iterators to make sure only
-//   desirable CSProfNodes are iterated
+// ANodeFilter: Filters are used in iterators to make sure only
+//   desirable ANodes are iterated
 // NodeTypeFilter is an array of globally defined filters that return true 
-//   for CSProfNodes with a given type only 
+//   for ANodes with a given type only 
 // HasNodeType: global fct used in filters from NodeTypeFilter array
 //*****************************************************************************
 
-typedef bool (*CSProfNodeFilterFct)(const CSProfNode& x, long addArg);
+typedef bool (*ANodeFilterFct)(const ANode& x, long addArg);
 
-class CSProfNodeFilter {
+class ANodeFilter {
 public:
-  CSProfNodeFilter(CSProfNodeFilterFct f, const char* n, long a)
+  ANodeFilter(ANodeFilterFct f, const char* n, long a)
     : fct(f), arg(a), name(n) { }
-  virtual ~CSProfNodeFilter() { }
+  virtual ~ANodeFilter() { }
 
-  bool Apply(const CSProfNode& s) const { return fct(s, arg); }
+  bool Apply(const ANode& s) const { return fct(s, arg); }
 
   const char* GetName() const { return name; }
 
 private:
-   const CSProfNodeFilterFct fct; 
+   const ANodeFilterFct fct; 
    long arg; 
    const char* name; 
 };
 
 // HasNodeType(s,tp) == ((tp == ANY) || (s.Type() == tp));
-extern bool HasNodeType(const CSProfNode &sinfo, long type); 
+extern bool HasNodeType(const ANode &sinfo, long type); 
 
 // NodeTypeFile[tp].Apply(s) == HasNodeType(s,tp) 
-extern const CSProfNodeFilter NodeTypeFilter[CSProfNode::NUMBER_OF_TYPES];
+extern const ANodeFilter NodeTypeFilter[ANode::TyNUMBER];
 
 
 //*****************************************************************************
-// CSProfNodeChildIterator: Iterates over all children of a CSProfNode
+// ANodeChildIterator: Iterates over all children of a ANode
 //   that pass the given filter; a NULL filter matches all children.
 //   No particular order is guaranteed.
 //*****************************************************************************
-class CSProfNodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
+class ANodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
   // If filter == NULL enumerate all entries; otherwise, only entries
   // with filter->fct(e) == true
-  CSProfNodeChildIterator(const CSProfNode* root, 
-			  const CSProfNodeFilter* filter = NULL); 
-  virtual NonUniformDegreeTreeNode* Current() const; // really CSProfNode
+  ANodeChildIterator(const ANode* root, const ANodeFilter* filter = NULL); 
+  virtual NonUniformDegreeTreeNode* Current() const; // really ANode
   
-  CSProfNode* CurNode() const { return dynamic_cast<CSProfNode*>(Current()); }
+  ANode* CurNode() const { return dynamic_cast<ANode*>(Current()); }
 private: 
-   const CSProfNodeFilter* filter; 
+   const ANodeFilter* filter; 
 };  
 
 
 //*****************************************************************************
-// CSProfNodeIterator: Iterates over all CSProfNodes in the tree
-//   rooted at a given CSProfNode that pass the given filter; a NULL
+// ANodeIterator: Iterates over all ANodes in the tree
+//   rooted at a given ANode that pass the given filter; a NULL
 //   filter matches all nodes.  No particular order is guaranteed,
 //   unless stated explicitly, i.e. the default value for 'torder' is
 //   changed.
 //*****************************************************************************
 
-class CSProfNodeIterator : public NonUniformDegreeTreeIterator {
+class ANodeIterator : public NonUniformDegreeTreeIterator {
 public: 
   // If filter == NULL enumerate all entries; otherwise, only entries
   // with filter->fct(e) == true
-  CSProfNodeIterator(const CSProfNode* root, 
-		     const CSProfNodeFilter* filter = NULL, 
-                     bool leavesOnly = false, 
-		     TraversalOrder torder = PreOrder); 
+  ANodeIterator(const ANode* root, 
+		const ANodeFilter* filter = NULL, 
+		bool leavesOnly = false, 
+		TraversalOrder torder = PreOrder); 
   
-  virtual NonUniformDegreeTreeNode* Current() const; // really CSProfNode
+  virtual NonUniformDegreeTreeNode* Current() const; // really ANode
   
-  CSProfNode* CurNode() const { return dynamic_cast<CSProfNode*>(Current()); }
+  ANode* CurNode() const { return dynamic_cast<ANode*>(Current()); }
 private: 
-  const CSProfNodeFilter* filter; 
+  const ANodeFilter* filter; 
 };  
 
 
 //*****************************************************************************
-// CSProfNodeSortedIterator
+// ANodeSortedIterator
 //
-// CSProfNodeSortedChildIterator
+// ANodeSortedChildIterator
 //
-// cmpByLine: CSProfNode* a is enumerated before b 
+// cmpByLine: ANode* a is enumerated before b 
 //                    iff a->StartLine() < b->StartLine() 
 //
 // NOTE: the implementation was generalized so that it no longer assumes
@@ -160,7 +162,7 @@ private:
 //       of the set in sorted order. -- johnmc 5/31/00
 //*****************************************************************************
 
-class CSProfNodeSortedIterator {
+class ANodeSortedIterator {
 public:
   // return -1, 0, or 1 for x < y, x = y, or x > y, respectively
   typedef int (*cmp_fptr_t) (const void* x, const void* y);
@@ -170,14 +172,14 @@ public:
   static int cmpByStructureId(const void* x, const void* y);
 
 public: 
-  CSProfNodeSortedIterator(const CSProfNode* node, 
-			   cmp_fptr_t compare_fn,
-			   const CSProfNodeFilter* filterFunc = NULL, 
-			   bool leavesOnly = true);
+  ANodeSortedIterator(const ANode* node, 
+		      cmp_fptr_t compare_fn,
+		      const ANodeFilter* filterFunc = NULL, 
+		      bool leavesOnly = true);
   
-  ~CSProfNodeSortedIterator();
+  ~ANodeSortedIterator();
   
-  CSProfNode* Current() const; 
+  ANode* Current() const; 
   void operator++(int)   { (*ptrSetIt)++; }
   void Reset(); 
   void DumpAndReset(std::ostream &os = std::cerr); 
@@ -188,14 +190,14 @@ private:
 };
 
 
-class CSProfNodeSortedChildIterator {
+class ANodeSortedChildIterator {
 public: 
-  CSProfNodeSortedChildIterator(const CSProfNode* root,
-				CSProfNodeSortedIterator::cmp_fptr_t compare_fn,
-				const CSProfNodeFilter* filterFunc = NULL);
-  ~CSProfNodeSortedChildIterator(); 
+  ANodeSortedChildIterator(const ANode* root,
+			   ANodeSortedIterator::cmp_fptr_t compare_fn,
+			   const ANodeFilter* filterFunc = NULL);
+  ~ANodeSortedChildIterator(); 
   
-  CSProfNode* Current() const; 
+  ANode* Current() const; 
   void operator++(int)   { (*ptrSetIt)++; }
   void Reset();
   void DumpAndReset(std::ostream &os = std::cerr);
@@ -204,6 +206,9 @@ private:
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator* ptrSetIt;  
 };
+
+
+} // namespace CCT
 
 } // namespace Prof
 
