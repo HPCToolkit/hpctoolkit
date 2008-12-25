@@ -542,7 +542,7 @@ cct_fixRoot(Prof::CCT::Tree* tree, const char* progName)
 {
   // Add PGM node
   Prof::CSProfNode* oldroot = tree->root();
-  if (!oldroot || oldroot->GetType() != Prof::CSProfNode::PGM) {
+  if (!oldroot || oldroot->type() != Prof::CSProfNode::PGM) {
     Prof::CSProfNode* newroot = new Prof::CSProfPgmNode(progName);
 
     if (oldroot) { 
@@ -583,7 +583,7 @@ cct_fixLeaves(Prof::CSProfNode* node)
     it++; // advance iterator -- it is pointing at 'child'
 
     DIAG_DevMsgIf(0, "cct_fixLeaves: " << hex << child_dyn->ip() << dec);
-    if (child->IsLeaf() && child->GetType() == CSProfNode::CALLSITE) {
+    if (child->IsLeaf() && child->type() == CSProfNode::CALLSITE) {
       // This child is a leaf. Convert.
       CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
       

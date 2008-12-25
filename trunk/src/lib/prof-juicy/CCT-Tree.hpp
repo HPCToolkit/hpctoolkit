@@ -167,7 +167,7 @@ public:
   // Given a set of flags 'dmpFlag', determines whether we need to
   // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
   // or xml::ESC_FALSE. 
-  static int AddXMLEscapeChars(int dmpFlag);
+  static int doXMLEscape(int dmpFlag);
  
 private:
   CSProfNode* m_root;
@@ -206,11 +206,11 @@ class CSProfNode: public NonUniformDegreeTreeNode, public Unique {
 public:
   enum NodeType {
     PGM,
-    CALLSITE,
-    LOOP,
-    STMT_RANGE,
     PROCEDURE_FRAME,
+    LOOP,
     STATEMENT,
+    CALLSITE,
+    STMT_RANGE,
     ANY,
     NUMBER_OF_TYPES
   };
@@ -227,8 +227,7 @@ public:
   
   // shallow copy (in the sense the children are not copied)
   CSProfNode(const CSProfNode& x)
-    : m_type(x.m_type), m_strct(x.m_strct) 
-      // do not copy 'm_uid'
+    : m_type(x.m_type), m_strct(x.m_strct) // do not copy 'm_uid'
   { 
     ZeroLinks();
   }
@@ -236,13 +235,13 @@ public:
   // --------------------------------------------------------
   // General Interface to fields 
   // --------------------------------------------------------
-  NodeType GetType() const { return m_type; }
+  NodeType type() const { return m_type; }
 
   // id: a unique id; 0 is reserved for a NULL value
   uint id() const { return m_uid; }
 
-  // 'GetName()' is overridden by some derived classes
-  virtual const std::string& GetName() const { return NodeTypeToName(GetType()); }
+  // 'name()' is overridden by some derived classes
+  virtual const std::string& name() const { return NodeTypeToName(type()); }
   
   // --------------------------------------------------------
   // Tree navigation 
@@ -276,6 +275,7 @@ public:
   CSProfProcedureFrameNode* AncestorProcedureFrame() const; // CC
   CSProfStatementNode* AncestorStatement() const; // CC
 
+
   // --------------------------------------------------------
   // 
   // --------------------------------------------------------
@@ -298,25 +298,25 @@ public:
 
 
   // --------------------------------------------------------
-  // 
+  // Static structure
   // --------------------------------------------------------
-
-  // Node data
-  SrcFile::ln GetBegLine() const { 
-    return (m_strct) ? m_strct->begLine() : ln_NULL;
-    //return begLine;
-  }
-
-  SrcFile::ln GetEndLine() const { 
-    return (m_strct) ? m_strct->endLine() : ln_NULL;
-  }
 
   // structure: static structure id for this node; the same static
   // structure will have the same structure().
-  Struct::ACodeNode* structure() const  { return m_strct; }
-  void structure(Struct::ACodeNode* strct) { m_strct = strct; }
+  Struct::ACodeNode* 
+  structure() const  { return m_strct; }
 
-  uint structureId() const { return (m_strct) ? m_strct->id() : 0; }
+  void 
+  structure(Struct::ACodeNode* strct) { m_strct = strct; }
+
+  uint 
+  structureId() const { return (m_strct) ? m_strct->id() : 0; }
+
+  SrcFile::ln 
+  begLine() const { return (m_strct) ? m_strct->begLine() : ln_NULL; }
+
+  SrcFile::ln 
+  endLine() const { return (m_strct) ? m_strct->endLine() : ln_NULL;  }
 
 
   // --------------------------------------------------------
@@ -655,16 +655,17 @@ operator<<(std::ostream& os, const IDynNode::WriteMetricInfo_& info)
 // 
 //***************************************************************************
 
-// ---------------------------------------------------------
-// CSProfPgmNode is root of the call stack tree
-// ---------------------------------------------------------
+// --------------------------------------------------------------------------
+// CSProfPgmNode
+// --------------------------------------------------------------------------
+
 class CSProfPgmNode: public CSProfNode {
 public: 
   // Constructor/Destructor
   CSProfPgmNode(const char* nm);
   virtual ~CSProfPgmNode();
 
-  const std::string& GetName() const { return name; }
+  const std::string& name() const { return m_name; }
                                         
   void Freeze() { frozen = true;} // disallow additions to/deletions from tree
   bool IsFrozen() const { return frozen; }
@@ -675,16 +676,14 @@ public:
 protected: 
 private: 
   bool frozen;
-  std::string name; // the program name
+  std::string m_name; // the program name
 }; 
 
 
-// ---------------------------------------------------------
-// CSProfProcedureFrameNode is  
-// children of: CSProfPgmNode, CSProfCallSiteNode
-// children: CSProfCallSiteNode, CSProfStatementNode
-// ---------------------------------------------------------
-  
+// --------------------------------------------------------------------------
+// CSProfProcedureFrameNode
+// --------------------------------------------------------------------------
+
 class CSProfProcedureFrameNode: public CSProfNode {
 public:
   // Constructor/Destructor
@@ -696,9 +695,26 @@ public:
     : CSProfNode(x)
     { }
 
-  
-  // Node data
-  // m_strct is either Struct::Proc or Struct::Alien
+  // -------------------------------------------------------
+  // Static structure
+  // -------------------------------------------------------
+  // NOTE: m_strct is either Struct::Proc or Struct::Alien
+
+  const std::string& 
+  lmName() const { 
+    if (m_strct) { 
+      return m_strct->AncLM()->name();
+    }
+    else {
+      return BOGUS; 
+    }
+  }
+
+  uint 
+  lmId() const { 
+    return (m_strct) ? m_strct->AncLM()->id() : 0;
+  }
+
 
   const std::string& 
   fileName() const {
@@ -733,6 +749,7 @@ public:
     }
   }
 
+
   const std::string& 
   procName() const { 
     // Struct::Proc or Struct::Alien
@@ -743,6 +760,15 @@ public:
       return BOGUS; 
     }
   }
+
+#if (DBG_LUSH_PROC_FRAME)
+      std::string nm = pctxtStrct->name();
+      if (n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
+	nm += " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
+	  + ", " + n_dyn->lip_str() + ") [" + n_dyn->assocInfo_str() + "]";
+      }
+#endif
+
 
   void
   procNameXXX(const std::string& pnm) const { 
@@ -762,37 +788,16 @@ public:
     return (m_strct) ? m_strct->id() : 0;
   }
 
-  const std::string& lmName() const { 
-    if (m_strct) { 
-      return m_strct->AncLM()->name();
-    }
-    else {
-      return BOGUS; 
-    }
-  }
-
-  uint lmId() const { 
-    return (m_strct) ? m_strct->AncLM()->id() : 0;
-  }
-
-
-#if 0
-#if (DBG_LUSH_PROC_FRAME)
-  std::string nm = pctxtStrct->name();
-  if (n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
-    nm += " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
-      + ", " + n_dyn->lip_str() + ") [" + n_dyn->assocInfo_str() + "]";
-  }
-  n->SetProc(nm);
-#endif
-#endif
 
   // Alien
-  bool  isAlien() const {
+  bool isAlien() const {
     return (m_strct && m_strct->Type() == Struct::ANode::TyALIEN);
   }
 
-  // Dump contents for inspection
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
+
   virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
 
   virtual std::string codeName() const;
@@ -802,11 +807,10 @@ private:
 };
 
 
-// ---------------------------------------------------------
-// CSProfLoopNode:
-// children of: CSProfCallSiteNode or CSProfLoopNode
-// children: CSProfLoopNode or CSProfStmtRangeNode
-// ---------------------------------------------------------
+// --------------------------------------------------------------------------
+// CSProfLoopNode
+// --------------------------------------------------------------------------
+
 class CSProfLoopNode: public CSProfNode {
 public: 
   // Constructor/Destructor
@@ -820,10 +824,9 @@ private:
 };
 
 
-// ---------------------------------------------------------
-// CSProfStatementNode correspond to leaf nodes in the call stack tree 
-// children of: CSProfPgmNode, CSProfCallSiteNode
-// ---------------------------------------------------------
+// --------------------------------------------------------------------------
+// CSProfStatementNode
+// --------------------------------------------------------------------------
   
 class CSProfStatementNode: public CSProfNode, public IDynNode {
  public:
@@ -841,12 +844,9 @@ class CSProfStatementNode: public CSProfNode, public IDynNode {
 };
 
 
-// ---------------------------------------------------------
-// CSProfCallSiteNode is the back-bone of the call stack tree
-// children of: CSProfPgmNode, CSProfCallSiteNode
-// children: CSProfCallSiteNode, CSProfLoopNode,
-//   CSProfStmtRangeNode
-// ---------------------------------------------------------
+// --------------------------------------------------------------------------
+// CSProfCallSiteNode
+// --------------------------------------------------------------------------
 
 class CSProfCallSiteNode: public CSProfNode, public IDynNode {
 public:
@@ -880,11 +880,10 @@ public:
 };
 
 
-// ---------------------------------------------------------
-// CSProfStmtRangeNode:
-// children of: CSProfCallSiteNode, or CSProfLoopNode
-// children: none
-// ---------------------------------------------------------
+// --------------------------------------------------------------------------
+// CSProfStmtRangeNode: FIXME: Not used!
+// --------------------------------------------------------------------------
+
 class CSProfStmtRangeNode: public CSProfNode {
 public: 
   // Constructor/Destructor

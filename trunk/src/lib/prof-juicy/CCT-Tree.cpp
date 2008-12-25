@@ -108,7 +108,7 @@ Tree::merge(const Tree* y,
   CSProfPgmNode* x_root = dynamic_cast<CSProfPgmNode*>(root());
   CSProfPgmNode* y_root = dynamic_cast<CSProfPgmNode*>(y->root());
 
-  DIAG_Assert(x_root && y_root && x_root->GetName() == y_root->GetName(),
+  DIAG_Assert(x_root && y_root && x_root->name() == y_root->name(),
 	      "Unexpected root!");
 
   x_root->merge_prepare(y_numMetrics);
@@ -144,10 +144,9 @@ Tree::ddump() const
 
 
 int 
-Tree::AddXMLEscapeChars(int dmpFlag)
+Tree::doXMLEscape(int dmpFlag)
 {
-  if ((dmpFlag & Tree::XML_TRUE) &&
-      !(dmpFlag & Tree::XML_NO_ESC_CHARS)) {
+  if ((dmpFlag & Tree::XML_TRUE) && !(dmpFlag & Tree::XML_NO_ESC_CHARS)) {
     return xml::ESC_TRUE;
   } 
   else {
@@ -170,8 +169,9 @@ namespace Prof {
 //***************************************************************************
 
 const string CSProfNode::NodeNames[CSProfNode::NUMBER_OF_TYPES] = {
-  "PGM", "C", "L", "S", "P", "S", "ANY"
+  "PGM", "P", "L", "S", "C", "StmtRange", "ANY"
 };
+
 
 const string&
 CSProfNode::NodeTypeToName(NodeType tp)
@@ -179,12 +179,14 @@ CSProfNode::NodeTypeToName(NodeType tp)
   return NodeNames[tp]; 
 }
 
+
 CSProfNode::NodeType
 CSProfNode::IntToNodeType(long i) 
 {
   DIAG_Assert((i >= 0) && (i < NUMBER_OF_TYPES), "");
   return (NodeType)i;
 }
+
 
 //***************************************************************************
 // CSProfNode, etc: constructors/destructors
@@ -220,7 +222,7 @@ CSProfPgmNode::CSProfPgmNode(const char* nm)
 { 
   DIAG_Assert(nm, "");
   frozen = false;
-  name = nm; 
+  m_name = nm; 
 }
 
 
@@ -230,15 +232,45 @@ CSProfPgmNode::~CSProfPgmNode()
 }
 
 
+string CSProfProcedureFrameNode::BOGUS;
+
 static void
 CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent) 
 {
   DIAG_Assert((_parent == NULL) 
-	      || (_parent->GetType() == CSProfNode::PGM)
-	      || (_parent->GetType() == CSProfNode::LOOP) 
-	      || (_parent->GetType() == CSProfNode::PROCEDURE_FRAME) 
-	      || (_parent->GetType() == CSProfNode::CALLSITE), "");
+	      || (_parent->type() == CSProfNode::PGM)
+	      || (_parent->type() == CSProfNode::LOOP) 
+	      || (_parent->type() == CSProfNode::PROCEDURE_FRAME) 
+	      || (_parent->type() == CSProfNode::CALLSITE), "");
 }
+
+
+CSProfProcedureFrameNode::CSProfProcedureFrameNode(CSProfNode* _parent)
+  : CSProfNode(PROCEDURE_FRAME, _parent)
+{
+  CSProfCallSiteNode_Check(NULL, _parent);
+}
+
+
+CSProfProcedureFrameNode::~CSProfProcedureFrameNode()
+{
+}
+
+
+CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent, Struct::ACodeNode* strct)
+  : CSProfNode(LOOP, _parent, strct)
+{
+  DIAG_Assert((_parent == NULL)
+	      || (_parent->type() == CALLSITE) 
+	      || (_parent->type() == PROCEDURE_FRAME) 
+	      || (_parent->type() == LOOP), "");
+}
+
+CSProfLoopNode::~CSProfLoopNode()
+{
+}
+
+
 
 
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
@@ -298,38 +330,12 @@ CSProfStatementNode::operator=(const CSProfCallSiteNode& x)
 }
 
 
-string CSProfProcedureFrameNode::BOGUS;
-
-CSProfProcedureFrameNode::CSProfProcedureFrameNode(CSProfNode* _parent)
-  : CSProfNode(PROCEDURE_FRAME, _parent)
-{
-  CSProfCallSiteNode_Check(NULL, _parent);
-}
-
-CSProfProcedureFrameNode::~CSProfProcedureFrameNode()
-{
-}
-
-
-CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent, Struct::ACodeNode* strct)
-  : CSProfNode(LOOP, _parent, strct)
-{
-  DIAG_Assert((_parent == NULL)
-	      || (_parent->GetType() == CALLSITE) 
-	      || (_parent->GetType() == PROCEDURE_FRAME) 
-	      || (_parent->GetType() == LOOP), "");
-}
-
-CSProfLoopNode::~CSProfLoopNode()
-{
-}
-
 CSProfStmtRangeNode::CSProfStmtRangeNode(CSProfNode* _parent, Struct::ACodeNode* strct)
   : CSProfNode(STMT_RANGE, _parent, strct)
 {
   DIAG_Assert((_parent == NULL)
-	      || (_parent->GetType() == CALLSITE)
-	      || (_parent->GetType() == LOOP), "");
+	      || (_parent->type() == CALLSITE)
+	      || (_parent->type() == LOOP), "");
 }
 
 CSProfStmtRangeNode::~CSProfStmtRangeNode()
@@ -376,7 +382,7 @@ CSProfNode*
 CSProfNode::Ancestor(NodeType tp) const
 {
   CSProfNode* s = const_cast<CSProfNode*>(this); 
-  while (s && s->GetType() != tp) {
+  while (s && s->type() != tp) {
     s = s->Parent(); 
   } 
   return s;
@@ -642,19 +648,19 @@ CSProfNode::merge_node(CSProfNode* y)
 string
 CSProfNode::codeName() const
 { 
-  string self = NodeTypeToName(GetType()) + " "
+  string self = NodeTypeToName(type()) + " "
     //+ GetFile() + ":" 
-    + StrUtil::toStr(GetBegLine()) + "-" + StrUtil::toStr(GetEndLine());
+    + StrUtil::toStr(begLine()) + "-" + StrUtil::toStr(endLine());
   return self;
 }
 
 string
 CSProfProcedureFrameNode::codeName() const
 { 
-  string self = NodeTypeToName(GetType()) + " "
+  string self = NodeTypeToName(type()) + " "
     + procName() + " @ "
     + fileName() + ":" 
-    + StrUtil::toStr(GetBegLine()) + "-" + StrUtil::toStr(GetEndLine());
+    + StrUtil::toStr(begLine()) + "-" + StrUtil::toStr(endLine());
   return self;
 }
 
@@ -667,18 +673,18 @@ string
 CSProfNode::toString_me(int dmpFlag) const
 { 
   string self;
-  self = NodeTypeToName(GetType());
+  self = NodeTypeToName(type());
 
   // FIXME: tallent: temporary override
-  if (GetType() == CSProfNode::PROCEDURE_FRAME) {
+  if (type() == CSProfNode::PROCEDURE_FRAME) {
     const CSProfProcedureFrameNode* fr = 
       dynamic_cast<const CSProfProcedureFrameNode*>(this);
     self = fr->isAlien() ? "Pr" : "PF";
   }
 
-  SrcFile::ln lnBeg = GetBegLine();
+  SrcFile::ln lnBeg = begLine();
   string line = StrUtil::toStr(lnBeg);
-  //SrcFile::ln lnEnd = GetEndLine();
+  //SrcFile::ln lnEnd = endLine();
   //if (lnBeg != lnEnd) {
   //  line += "-" + StrUtil::toStr(lnEnd);
   //}
@@ -768,7 +774,7 @@ string
 CSProfPgmNode::toString_me(int dmpFlag) const
 { 
   string self = CSProfNode::toString_me(dmpFlag) + " n" +
-    xml::MakeAttrStr(name, CCT::Tree::AddXMLEscapeChars(dmpFlag));
+    xml::MakeAttrStr(m_name, CCT::Tree::doXMLEscape(dmpFlag));
   return self;
 }
 
@@ -785,7 +791,7 @@ CSProfProcedureFrameNode::toString_me(int dmpFlag) const
       + " f" + xml::MakeAttrNum(fileId())
       + " n" + xml::MakeAttrNum(procId());
 #else
-    bool flg = CCT::Tree::AddXMLEscapeChars(dmpFlag);
+    bool flg = CCT::Tree::doXMLEscape(dmpFlag);
 
     const string& lm_nm = lmName();
     const string& fnm   = fileName();
@@ -895,7 +901,7 @@ void
 CSProfNode::writeXML_pre(ostream& os, int dmpFlag, const char *prefix) const
 {
   // tallent: Pgm has no representation
-  if (GetType() == CSProfNode::PGM) {
+  if (type() == CSProfNode::PGM) {
     return;
   }
 
@@ -917,19 +923,19 @@ void
 CSProfNode::writeXML_post(ostream &os, int dmpFlag, const char *prefix) const
 {
   // tallent: Pgm has no representation
-  if (GetType() == CSProfNode::PGM) {
+  if (type() == CSProfNode::PGM) {
     return; 
   }
 
   // FIXME: tallent: temporary override
-  if (GetType() == CSProfNode::PROCEDURE_FRAME) {
+  if (type() == CSProfNode::PROCEDURE_FRAME) {
     const CSProfProcedureFrameNode* fr = 
       dynamic_cast<const CSProfProcedureFrameNode*>(this);
     string tag = fr->isAlien() ? "Pr" : "PF";
     os << prefix << "</" << tag << ">";
   }
   else {
-    os << prefix << "</" << NodeTypeToName(GetType()) << ">";
+    os << prefix << "</" << NodeTypeToName(type()) << ">";
   }
 
   os << endl; 
@@ -966,10 +972,10 @@ CSProfNode::Types() const
 
 int CSProfNodeLineComp(CSProfNode* x, CSProfNode* y)
 {
-  if (x->GetBegLine() == y->GetBegLine()) {
+  if (x->begLine() == y->begLine()) {
     // Given two CSProfNode's with identical endpoints consider two
     // special cases:
-    bool endLinesEqual = (x->GetEndLine() == y->GetEndLine());
+    bool endLinesEqual = (x->endLine() == y->endLine());
     
     // 1. Otherwise: rank a leaf node before a non-leaf node
     if (endLinesEqual && !(x->IsLeaf() && y->IsLeaf())) {
@@ -978,10 +984,10 @@ int CSProfNodeLineComp(CSProfNode* x, CSProfNode* y)
     }
     
     // 2. General case
-    return SrcFile::compare(x->GetEndLine(), y->GetEndLine());
+    return SrcFile::compare(x->endLine(), y->endLine());
   }
   else {
-    return SrcFile::compare(x->GetBegLine(), y->GetBegLine());
+    return SrcFile::compare(x->begLine(), y->begLine());
   }
 }
 

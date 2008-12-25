@@ -75,7 +75,7 @@ static int CompareByLine(const void *a, const void *b);
 bool HasNodeType(const CSProfNode& sinfo, long type)
 {
   return (type == CSProfNode::ANY) 
-    || (sinfo.GetType() == CSProfNode::IntToNodeType(type)); 
+    || (sinfo.type() == CSProfNode::IntToNodeType(type)); 
 }
 
 
@@ -221,7 +221,7 @@ CSProfNodeSortedIterator::cmpByName(const void* a, const void* b)
   CSProfNode* y = (*(CSProfNode**)b); 
   DIAG_Assert (x != NULL, "");
   DIAG_Assert (y != NULL, "");
-  return strcmp(x->GetName().c_str(), y->GetName().c_str()); 
+  return strcmp(x->name().c_str(), y->name().c_str()); 
 }
 
 
