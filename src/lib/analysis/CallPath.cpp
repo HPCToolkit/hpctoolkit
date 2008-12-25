@@ -487,12 +487,12 @@ coalesceStmts(Prof::CSProfNode* node)
     it++; // advance iterator -- it is pointing at 'child'
     
     bool inspect = (child->IsLeaf() 
-		    && (child->GetType() == Prof::CSProfNode::STATEMENT));
+		    && (child->type() == Prof::CSProfNode::STATEMENT));
 
     if (inspect) {
       // This child is a leaf. Test for duplicate source line info.
       Prof::CSProfStatementNode* c = dynamic_cast<Prof::CSProfStatementNode*>(child);
-      SrcFile::ln line = c->GetBegLine();
+      SrcFile::ln line = c->begLine();
       StructToStmtMap::iterator it = stmtMap.find(line);
       if (it != stmtMap.end()) {
 	// found -- we have a duplicate
@@ -558,8 +558,8 @@ pruneByMetrics(Prof::CSProfNode* node)
     pruneByMetrics(x);
 
     // 2. Trim this node if necessary
-    bool isTy = (x->GetType() == Prof::CSProfNode::PROCEDURE_FRAME || 
-		 x->GetType() == Prof::CSProfNode::LOOP);
+    bool isTy = (x->type() == Prof::CSProfNode::PROCEDURE_FRAME || 
+		 x->type() == Prof::CSProfNode::LOOP);
     if (x->IsLeaf() && isTy) {
       x->Unlink(); // unlink 'x' from tree
       delete x;
@@ -883,7 +883,7 @@ lush_makeParallelOverhead(Prof::CSProfNode* node,
   // Recur
   // ------------------------------------------------------------
 
-  if (node->GetType() == Prof::CSProfNode::PROCEDURE_FRAME) {
+  if (node->type() == Prof::CSProfNode::PROCEDURE_FRAME) {
     Prof::CSProfProcedureFrameNode* x = dynamic_cast<Prof::CSProfProcedureFrameNode*>(node);
     is_overhead_ctxt = ParallelOverhead::is_overhead(x);
   }
