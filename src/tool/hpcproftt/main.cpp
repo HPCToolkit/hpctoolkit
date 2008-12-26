@@ -140,6 +140,7 @@ static int
 main_srcCorrelation(const Args& args)
 {
   NaN_init();
+  RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   //-------------------------------------------------------
   // Create metric descriptors

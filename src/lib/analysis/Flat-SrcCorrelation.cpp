@@ -61,7 +61,6 @@ using std::vector;
 
 #include <lib/prof-juicy-x/PGMReader.hpp>
 
-#include <lib/prof-juicy/Struct-TreeInterface.hpp>
 #include <lib/prof-juicy/Struct-Tree.hpp>
 #include <lib/prof-juicy/Flat-ProfileData.hpp>
 
@@ -588,22 +587,20 @@ namespace Flat {
 void
 Driver::populatePgmStructure(Prof::Struct::Tree& structure)
 {
-  Prof::Struct::TreeInterface structIF(structure.root(), 
-				       m_args.searchPathStr());
   DriverDocHandlerArgs docargs(this);
   
   //-------------------------------------------------------
   // if a PGM/Structure document has been provided, use it to 
   // initialize the structure of the scope tree
   //-------------------------------------------------------
-  Prof::Struct::readStructure(structIF, m_args.structureFiles,
+  Prof::Struct::readStructure(structure, m_args.structureFiles,
 			      PGMDocHandler::Doc_STRUCT, docargs);
   
   //-------------------------------------------------------
   // if a PGM/Group document has been provided, use it to form the 
   // group partitions (as wall as initialize/extend the scope tree)
   //-------------------------------------------------------
-  Prof::Struct::readStructure(structIF, m_args.groupFiles,
+  Prof::Struct::readStructure(structure, m_args.groupFiles,
 			      PGMDocHandler::Doc_GROUP, docargs);
 }
 
@@ -632,7 +629,6 @@ Driver::correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
 void
 Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure) 
 {
-  Prof::Struct::TreeInterface structIF(structure.root(), m_args.searchPathStr());
   StringToBoolMap hasStructureTbl;
   
   const Prof::Metric::Mgr::StringPerfMetricVecMap& fnameToFMetricMap = 
@@ -673,8 +669,8 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
 
       const string lmname = replacePath(lmname_orig);
       
-      bool useStruct = hasStructure(lmname, structIF, hasStructureTbl);
-      computeRawBatchJob_LM(lmname, lmname_orig, structIF, batchJob, useStruct);
+      bool useStruct = hasStructure(lmname, structure, hasStructureTbl);
+      computeRawBatchJob_LM(lmname, lmname_orig, structure, batchJob, useStruct);
     }
     
     clearRawBatch(batchJob);
@@ -701,8 +697,8 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
     for (VMAIntervalSet::iterator it = ivalset.begin(); 
 	 it != ivalset.end(); ++it) {
       const VMAInterval& ival = *it;
-      structIF.root()->accumulateMetrics((uint)ival.beg(), 
-					 (uint)ival.end() - 1); // [ ]
+      structure.root()->accumulateMetrics((uint)ival.beg(), 
+					  (uint)ival.end() - 1); // [ ]
     }
   }
 }
@@ -710,7 +706,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
 
 void
 Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
-			      Prof::Struct::TreeInterface& structIF,
+			      Prof::Struct::Tree& structure,
 			      ProfToMetricsTupleVec& profToMetricsVec,
 			      bool useStruct)
 {
@@ -723,7 +719,8 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
     lm->read(binutils::LM::ReadFlg_Seg);
   }
 
-  Prof::Struct::LM* lmStrct = structIF.MoveToLM(lmname);
+  Prof::Struct::LM* lmStrct = 
+    Prof::Struct::LM::demand(structure.root(), lmname);
 
   for (uint i = 0; i < profToMetricsVec.size(); ++i) {
 
@@ -759,7 +756,7 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
 	m->rawdesc(profevent.mdesc());
 	
 	correlateRaw(m, profevent, proflm->load_addr(), 
-		     structIF, lmStrct, lm, useStruct);
+		     structure, lmStrct, lm, useStruct);
       }
     }
   }
@@ -775,7 +772,7 @@ void
 Driver::correlateRaw(PerfMetric* metric,
 		     const Prof::Flat::EventData& profevent,
 		     VMA lm_load_addr,
-		     Prof::Struct::TreeInterface& structIF,
+		     Prof::Struct::Tree& structure,
 		     Prof::Struct::LM* lmStrct,
 		     /*const*/ binutils::LM* lm,
 		     bool useStruct)
@@ -844,7 +841,7 @@ Driver::clearRawBatch(ProfToMetricsTupleVec& batchJob)
 
 
 bool
-Driver::hasStructure(const string& lmname, Prof::Struct::TreeInterface& structIF,
+Driver::hasStructure(const string& lmname, Prof::Struct::Tree& structure,
 		     StringToBoolMap& hasStructureTbl)
 {
   // hasStructure's test depdends on the *initial* structure information
@@ -853,7 +850,8 @@ Driver::hasStructure(const string& lmname, Prof::Struct::TreeInterface& structIF
     return it->second; // memoized answer
   }
   else {
-    Prof::Struct::LM* lmStrct = structIF.MoveToLM(lmname);
+    Prof::Struct::LM* lmStrct = 
+      Prof::Struct::LM::demand(structure.root(), lmname);
     bool hasStruct = (lmStrct->ChildCount() > 0);
     hasStructureTbl.insert(make_pair(lmname, hasStruct));
     if (!hasStruct && !m_args.structureFiles.empty()) {

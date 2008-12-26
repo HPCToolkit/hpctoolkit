@@ -60,7 +60,7 @@
 #include "PGMDocHandler.hpp"
 #include "DocHandlerArgs.hpp"
 
-#include <lib/prof-juicy/Struct-TreeInterface.hpp>
+#include <lib/prof-juicy/Struct-Tree.hpp>
 
 //************************ Forward Declarations ******************************
 
@@ -69,13 +69,13 @@ namespace Prof {
 namespace Struct {
 
 void
-readStructure(TreeInterface& structIF, 
+readStructure(Tree& structure, 
 	      const std::vector<string>& structureFiles,
 	      PGMDocHandler::Doc_t docty, 
 	      DocHandlerArgs& docargs);
 
 void
-read_PGM(TreeInterface& structIF,
+read_PGM(Tree& structure,
 	 const char* filenm,
 	 PGMDocHandler::Doc_t docty,
 	 DocHandlerArgs& docHandlerArgs);

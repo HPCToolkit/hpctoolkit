@@ -80,7 +80,7 @@ namespace Struct {
 
 
 void
-readStructure(Struct::TreeInterface& structIF, 
+readStructure(Struct::Tree& structure, 
 	      const std::vector<string>& structureFiles,
 	      PGMDocHandler::Doc_t docty, 
 	      DocHandlerArgs& docargs)
@@ -91,7 +91,7 @@ readStructure(Struct::TreeInterface& structIF,
 
   for (uint i = 0; i < structureFiles.size(); ++i) {
     const string& fnm = structureFiles[i];
-    read_PGM(structIF, fnm.c_str(), docty, docargs);
+    read_PGM(structure, fnm.c_str(), docty, docargs);
   }
 
   FiniXerces();
@@ -100,7 +100,7 @@ readStructure(Struct::TreeInterface& structIF,
 
 
 void
-read_PGM(Struct::TreeInterface& structIF,
+read_PGM(Struct::Tree& structure,
 	 const char* filenm,
 	 PGMDocHandler::Doc_t docty,
 	 DocHandlerArgs& docHandlerArgs)
@@ -119,7 +119,7 @@ read_PGM(Struct::TreeInterface& structIF,
       parser->setFeature(XMLUni::fgXercesDynamic, true);
       parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
       
-      PGMDocHandler* handler = new PGMDocHandler(docty, &structIF, 
+      PGMDocHandler* handler = new PGMDocHandler(docty, &structure, 
 						 docHandlerArgs);
       parser->setContentHandler(handler);
       parser->setErrorHandler(handler);

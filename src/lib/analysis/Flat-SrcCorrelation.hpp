@@ -130,7 +130,7 @@ private:
 
   void
   computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
-			Prof::Struct::TreeInterface& structIF,
+			Prof::Struct::Tree& structure,
 			ProfToMetricsTupleVec& profToMetricsVec,
 			bool useStruct);
 
@@ -138,7 +138,7 @@ private:
   correlateRaw(PerfMetric* metric,
 	       const Prof::Flat::EventData& profevent,
 	       VMA lm_load_addr,
-	       Prof::Struct::TreeInterface& structIF,
+	       Prof::Struct::Tree& structure,
 	       Prof::Struct::LM* lmStrct,
 	       /*const*/ binutils::LM* lm,
 	       bool useStruct);
@@ -152,7 +152,7 @@ private:
   clearRawBatch(ProfToMetricsTupleVec& batchJob);
 
   bool
-  hasStructure(const string& lmname, Prof::Struct::TreeInterface& structIF,
+  hasStructure(const string& lmname, Prof::Struct::Tree& structure,
 	       StringToBoolMap& hasStructureTbl);
 
   // -------------------------------------------------------

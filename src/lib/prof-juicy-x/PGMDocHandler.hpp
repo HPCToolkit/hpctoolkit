@@ -61,7 +61,6 @@
 #include "XercesSAX2.hpp"
 #include "DocHandlerArgs.hpp"
 
-#include <lib/prof-juicy/Struct-TreeInterface.hpp>
 #include <lib/prof-juicy/Struct-Tree.hpp>
 
 #include <lib/support/PointerStack.hpp>
@@ -77,7 +76,7 @@ public:
 
 public:
 
-  PGMDocHandler(Doc_t ty, Prof::Struct::TreeInterface* const retriever, 
+  PGMDocHandler(Doc_t ty, Prof::Struct::Tree* structure, 
 		DocHandlerArgs& args);
   ~PGMDocHandler();
 
@@ -174,17 +173,18 @@ private:
   
 private:
   Doc_t m_docty;
-  Prof::Struct::TreeInterface* m_structIF;
   DocHandlerArgs& m_args;
+  Prof::Struct::Tree* m_structure;
   
   // variables for constant values during file processing
   double m_version;     // initialized to a negative
 
-  // variables for transient values during file processing
-  std::string m_curLmNm;    // only one LM on the stack at a time
-  std::string m_curFileNm;  // only one File on the stack at a time
-  std::string m_curProcNm;
+  // current static context
+  Prof::Struct::Pgm*  m_curRoot;
+  Prof::Struct::LM*   m_curLM;
+  Prof::Struct::File* m_curFile;
   Prof::Struct::Proc* m_curProc;
+
   unsigned groupNestingLvl;
 
   // stack of StackEntry_t representing current scope context.  Top of

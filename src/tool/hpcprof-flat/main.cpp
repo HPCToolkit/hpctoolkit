@@ -110,7 +110,6 @@ int
 realmain(int argc, char* const* argv) 
 {
   Args args(argc, argv);  // exits if error on command line
-  RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   NaN_init();
 
@@ -129,6 +128,8 @@ realmain(int argc, char* const* argv)
   //-------------------------------------------------------
   // Correlate metrics with program structure and Generate output
   //-------------------------------------------------------
+  RealPathMgr::singleton().searchPaths(args.searchPathStr());
+
   Prof::Struct::Tree structure("", new Prof::Struct::Pgm(""));
 
   Analysis::Flat::Driver driver(args, metricMgr, structure);
