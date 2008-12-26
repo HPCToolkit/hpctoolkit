@@ -71,7 +71,6 @@ using XERCES_CPP_NAMESPACE::XMLString;
 #include "XercesUtil.hpp"
 #include "XercesErrorHandler.hpp"
 
-#include <lib/prof-juicy/Struct-TreeInterface.hpp>
 #include <lib/prof-juicy/Struct-Tree.hpp>
 using namespace Prof;
 
@@ -83,7 +82,7 @@ using SrcFile::ln_NULL;
 
 //************************ Forward Declarations ******************************
 
-#define DBG_ME 0
+#define DBG 0
 
 //****************************************************************************
 
@@ -188,23 +187,16 @@ using SrcFile::ln_NULL;
 
 //****************************************************************************
 
-// ----------------------------------------------------------------------
-// -- PGMDocHandler(Struct::TreeInterface* const retriever) --
-//   Constructor.
-//
-//   -- arguments --
-//     retriever:        a const pointer to a Struct::TreeInterface object
-// ----------------------------------------------------------------------
 
 PGMDocHandler::PGMDocHandler(Doc_t ty,
-			     Struct::TreeInterface* const retriever,
+			     Struct::Tree* structure,
 			     DocHandlerArgs& args) 
   : m_docty(ty),
-    m_structIF(retriever),
     m_args(args),
+    m_structure(structure),
   
     // element names
-    elemStructure(XMLString::transcode("HPCStructure")), 
+    elemStructure(XMLString::transcode("HPCToolkitStructure")), 
     elemPgm(XMLString::transcode("PGM")), // FIXME: obsolete
     elemLM(XMLString::transcode("LM")),
     elemFile(XMLString::transcode("F")),
@@ -221,28 +213,20 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
     attrAlienFile(XMLString::transcode("f")),
     attrLnName(XMLString::transcode("ln")),
     attrLine(XMLString::transcode("l")),
-    attrBegin(XMLString::transcode("b")),  // FIXME:OBSOLETE
-    attrEnd(XMLString::transcode("e")),    // FIXME:OBSOLETE
+    attrBegin(XMLString::transcode("b")),      // FIXME:OBSOLETE
+    attrEnd(XMLString::transcode("e")),        // FIXME:OBSOLETE
     attrVMA(XMLString::transcode("v")),
     attrVMALong(XMLString::transcode("vma"))   // FIXME:OBSOLETE
 {
-  // trace = 1;
   m_version = -1;
-    
-  m_curLmNm= "";
-  m_curFileNm = "";
-  m_curProcNm = "";
-  m_curProc = NULL; 
+  
+  m_curLM   = NULL;
+  m_curFile = NULL;
+  m_curProc = NULL;
+
   groupNestingLvl = 0;
 }
 
-// ----------------------------------------------------------------------
-// -- ~PGMDocHandler() --
-//   Destructor.
-//
-//   -- arguments --
-//     None
-// ----------------------------------------------------------------------
 
 PGMDocHandler::~PGMDocHandler() 
 {
@@ -269,27 +253,15 @@ PGMDocHandler::~PGMDocHandler()
   XMLString::release((XMLCh**)&attrVMA);
   XMLString::release((XMLCh**)&attrVMALong);
 
-  DIAG_Assert(scopeStack.Depth() == 0, "Invalid state reading PGM.");
+  DIAG_Assert(scopeStack.Depth() == 0, "Invalid state reading HPCStructure.");
 }
 
 
-// ----------------------------------------------------------------------
-// -- startElement(const XMLCh* const uri, 
-//                 const XMLCh* const name, 
-//                 const XMLCh* const qname, 
-//                 const Attributes& attributes)
-//   Process the element start tag and extract out attributes.
-//
-//   -- arguments --
-//     name:         element name
-//     attributes:   attributes
-// ----------------------------------------------------------------------
-
-#define s_c_XMLCh_c static const XMLCh* const
-void PGMDocHandler:: startElement(const XMLCh* const uri, 
-				  const XMLCh* const name, 
-				  const XMLCh* const qname, 
-				  const XERCES_CPP_NAMESPACE::Attributes& attributes)
+void 
+PGMDocHandler::startElement(const XMLCh* const uri, 
+			    const XMLCh* const name, 
+			    const XMLCh* const qname, 
+			    const XERCES_CPP_NAMESPACE::Attributes& attributes)
 { 
   Struct::ANode* curStrct = NULL;
   
@@ -304,78 +276,72 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
       PGM_Throw("Found file format version " << m_version << ": This format is outdated; please regenerate the file.");
     }
 
-    Struct::Pgm* root = m_structIF->root();
-    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << root->toString_me());
+    m_curRoot = m_structure->root();
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curRoot->toString_me());
 
-    curStrct = root;
+    curStrct = m_curRoot;
   }
   
   // Load Module
   else if (XMLString::equals(name, elemLM)) {
-    string lm = getAttr(attributes, attrName); // must exist
-    lm = m_args.replacePath(lm);
-    DIAG_Assert(m_curLmNm.empty(), "Parse or internal error!");
-    m_curLmNm = lm;
+    string nm = getAttr(attributes, attrName); // must exist
+    DIAG_Assert(m_curRoot && !m_curLM, "Parse error!");
+
+    nm = m_args.replacePath(nm);
+    m_curLM = Prof::Struct::LM::demand(m_curRoot, nm);
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curLM->toString_me());
+
+    m_curFile = NULL;
+    m_curProc = NULL;
     
-    Struct::LM* lmscope = m_structIF->MoveToLM(m_curLmNm);
-    DIAG_Assert(lmscope != NULL, "");
-    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << lmscope->toString_me());
-    
-    curStrct = lmscope;
+    curStrct = m_curLM;
   }
   
   // File
   else if (XMLString::equals(name, elemFile)) {
-    string fnm = getAttr(attributes, attrName);
-    fnm = m_args.replacePath(fnm);
+    string nm = getAttr(attributes, attrName);
+    DIAG_Assert(m_curLM && !m_curFile, "Parse error!");
+    
+    nm = m_args.replacePath(nm);
+    m_curFile = Struct::File::demand(m_curLM, nm);
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curFile->toString_me());
 
-    // if the source file name is the same as the previous one, error.
-    // otherwise find another one; it should not be the same as the
-    // previous one
-    DIAG_Assert(fnm != m_curFileNm, "");
+    m_curProc = NULL;
     
-    m_curFileNm = fnm;
-    Struct::File* fileScope = m_structIF->MoveToFile(m_curFileNm);
-    DIAG_Assert(fileScope != NULL, "");
-    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << fileScope->toString_me());
-    
-    curStrct = fileScope;
+    curStrct = m_curFile;
   }
 
   // Proc
   else if (XMLString::equals(name, elemProc)) {
-    DIAG_Assert(scopeStack.Depth() >= 2, ""); // at least has File, LM
-    
     string name  = getAttr(attributes, attrName);   // must exist
     string lname = getAttr(attributes, attrLnName); // optional
-    
+
     SrcFile::ln begLn, endLn;
     getLineAttr(begLn, endLn, attributes);
-    
+
     string vma = getAttr(attributes, attrVMA);
     if (vma.empty()) { vma = getAttr(attributes, attrVMALong); }
-    
-    // Find enclosing File scope
-    Struct::File* curFile = FindCurrentFile();
-    if (!curFile) {
-      PGM_Throw("No F(ile) for P(roc) '" << name << "'");
-    }
 
+    DIAG_Assert(m_curLM && m_curFile && !m_curProc, "Parse error!");
+    
     // -----------------------------------------------------
     // Find/Create the procedure.
     // -----------------------------------------------------
-    m_curProc = curFile->FindProc(name);
+
+    //m_curProc = Struct::Proc::demand(m_curFile, procnm, line);
+
+    m_curProc = m_curFile->FindProc(name);
     if (m_curProc) {
       // STRUCTURE files usually have qualifying VMA information.
       // Assume that VMA information fully qualifies procedures.
-      if (m_docty == Doc_STRUCT && !m_curProc->vmaSet().empty() 
-	  && !vma.empty()) {
+      if (m_docty == Doc_STRUCT 
+	  && !m_curProc->vmaSet().empty() && !vma.empty()) {
 	m_curProc = NULL;
       }
     }
 
     if (!m_curProc) {
-      m_curProc = new Struct::Proc(name, curFile, lname, false, begLn, endLn);
+      m_curProc = new Struct::Proc(name, m_curFile, lname, false, begLn, endLn);
       if (!vma.empty()) {
 	m_curProc->vmaSet().fromString(vma.c_str());
       }
@@ -383,10 +349,11 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     else {
       if (m_docty == Doc_STRUCT) {
 	// If a proc with the same name already exists, print a warning.
-	DIAG_Msg(0, "Warning: Found procedure '" << name << "' multiple times within file '" << curFile->name() << "'; information for this procedure will be aggregated. If you do not want this, edit the STRUCTURE file and adjust the names by hand.");
+	DIAG_Msg(0, "Warning: Found procedure '" << name << "' multiple times within file '" << m_curFile->name() << "'; information for this procedure will be aggregated. If you do not want this, edit the STRUCTURE file and adjust the names by hand.");
       }
     }
-    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << m_curProc->toString_me());
+
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curProc->toString_me());
     
     curStrct = m_curProc;
   }
@@ -403,12 +370,10 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     SrcFile::ln begLn, endLn;
     getLineAttr(begLn, endLn, attributes);
 
-    Struct::ACodeNode* enclScope = 
-      dynamic_cast<Struct::ACodeNode*>(GetCurrentScope()); // enclosing scope
+    Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(GetCurrentScope());
 
-    Struct::ACodeNode* alien = 
-      new Struct::Alien(enclScope, fnm, nm, begLn, endLn);
-    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << alien->toString_me());
+    Struct::ACodeNode* alien = new Struct::Alien(parent, fnm, nm, begLn, endLn);
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << alien->toString_me());
 
     curStrct = alien;
   }
@@ -425,11 +390,10 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     getLineAttr(begLn, endLn, attributes);
 
     // by now the file and function names should have been found
-    Struct::ACodeNode* enclScope = 
-      dynamic_cast<Struct::ACodeNode*>(GetCurrentScope()); // enclosing scope
+    Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(GetCurrentScope());
 
-    Struct::ACodeNode* loopNode = new Struct::Loop(enclScope, begLn, endLn);
-    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << loopNode->toString_me());
+    Struct::ACodeNode* loopNode = new Struct::Loop(parent, begLn, endLn);
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << loopNode->toString_me());
 
     curStrct = loopNode;
   }
@@ -451,15 +415,14 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     if (vma.empty()) { vma = getAttr(attributes, attrVMALong); }
 
     // by now the file and function names should have been found
-    Struct::ACodeNode* enclScope = 
-      dynamic_cast<Struct::ACodeNode*>(GetCurrentScope()); // enclosing scope
+    Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(GetCurrentScope());
     DIAG_Assert(m_curProc != NULL, "");
 
-    Struct::Stmt* stmtNode = new Struct::Stmt(enclScope, begLn, endLn);
+    Struct::Stmt* stmtNode = new Struct::Stmt(parent, begLn, endLn);
     if (!vma.empty()) {
       stmtNode->vmaSet().fromString(vma.c_str());
     }
-    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << stmtNode->toString_me());
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << stmtNode->toString_me());
 
     curStrct = stmtNode;
   }
@@ -469,13 +432,13 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     string grpnm = getAttr(attributes, attrName); // must exist
     DIAG_Assert(!grpnm.empty(), "");
 
-    Struct::ANode* enclScope = GetCurrentScope(); // enclosing scope
-    Struct::Group* grpscope = m_structIF->MoveToGroup(enclScope, grpnm);
-    DIAG_Assert(grpscope != NULL, "");
-    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << grpscope->toString_me());
+    Struct::ANode* parent = GetCurrentScope(); // enclosing scope
+    Struct::Group* grpStrct
+      = Prof::Struct::Group::demand(m_curRoot, grpnm, parent);
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << grpStrct->toString_me());
 
     groupNestingLvl++;
-    curStrct = grpscope;
+    curStrct = grpStrct;
   }
 
   
@@ -494,35 +457,36 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
 }
 
 
-void PGMDocHandler::endElement(const XMLCh* const uri, 
-			       const XMLCh* const name, 
-			       const XMLCh* const qname)
+void 
+PGMDocHandler::endElement(const XMLCh* const uri, 
+			  const XMLCh* const name, 
+			  const XMLCh* const qname)
 {
 
-  // PGM
+  // Structure
   if (XMLString::equals(name, elemStructure) 
       || XMLString::equals(name, elemPgm)) {
+    m_curRoot = NULL;
   }
 
   // Load Module
   else if (XMLString::equals(name, elemLM)) {
     DIAG_Assert(scopeStack.Depth() >= 1, "");
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
-    m_curLmNm = "";
+    m_curLM = NULL;
   }
 
   // File
   else if (XMLString::equals(name, elemFile)) {
     DIAG_Assert(scopeStack.Depth() >= 2, ""); // at least has LM
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
-    m_curFileNm = "";
+    m_curFile = NULL;
   }
 
   // Proc
   else if (XMLString::equals(name, elemProc)) {
     DIAG_Assert(scopeStack.Depth() >= 3, ""); // at least has File, LM
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
-    m_curProcNm = "";
     m_curProc = NULL;
   }
 
@@ -616,29 +580,28 @@ PGMDocHandler::ToString(Doc_t m_docty)
 
 
 // ---------------------------------------------------------------------------
-//  implementation of SAX2 ErrorHandler interface
+//  SAX2 ErrorHandler interface
 // ---------------------------------------------------------------------------
 
 void 
 PGMDocHandler::error(const SAXParseException& e)
 {
-  XercesErrorHandler::report(cerr, "PGM non-fatal error", 
-			     ToString(m_docty), e);
+  XercesErrorHandler::report(cerr, "HPCStructure non-fatal error", ToString(m_docty), e);
 }
+
 
 void 
 PGMDocHandler::fatalError(const SAXParseException& e)
 {
-  XercesErrorHandler::report(cerr, "PGM fatal error", 
-			     ToString(m_docty), e);
+  XercesErrorHandler::report(cerr, "HPCStructure fatal error", ToString(m_docty), e);
   exit(1);
 }
+
 
 void 
 PGMDocHandler::warning(const SAXParseException& e)
 {
-  XercesErrorHandler::report(cerr, "PGM warning", 
-			     ToString(m_docty), e);
+  XercesErrorHandler::report(cerr, "HPCStructure warning", ToString(m_docty), e);
 }
 
 
@@ -658,6 +621,7 @@ PGMDocHandler::FindCurrentFile()
   return NULL;
 }
 
+
 unsigned int
 PGMDocHandler::FindEnclosingGroupScopeDepth() 
 {
@@ -669,6 +633,7 @@ PGMDocHandler::FindEnclosingGroupScopeDepth()
   }
   return 0;
 }
+
 
 // For processing the GROUP file
 void 
@@ -707,6 +672,4 @@ PGMDocHandler::ProcessGroupDocEndTag()
     topNode->Link(parentNode);
   }
 }
-
-
 

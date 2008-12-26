@@ -802,7 +802,7 @@ private:
 class Group: public ACodeNode {
 public: 
   Group(const char* nm, ANode* parent,
-	     int begLn = ln_NULL, int endLn = ln_NULL)
+	int begLn = ln_NULL, int endLn = ln_NULL)
     : ACodeNode(TyGROUP, parent, begLn, endLn, 0, 0)
   {
     Ctor(nm, parent);
@@ -817,6 +817,9 @@ public:
   
   virtual ~Group() { }
   
+  static Group* 
+  demand(Pgm* pgm, const std::string& nm, ANode* _parent);
+
   const std::string& name() const { return m_name; } // same as grpName
 
   virtual std::string codeName() const;
@@ -963,20 +966,18 @@ protected:
 public: 
   // fileNameWithPath/parent must not be NULL
   // srcIsReadable == fopen(fileNameWithPath, "r") works 
-  File(const char* srcFileWithPath, bool srcIsReadable_, 
-	    ANode *parent, 
-	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+  File(const char* filenm, bool isReadable, ANode *parent, 
+       SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyFILE, parent, begLn, endLn, 0, 0)
   {
-    Ctor(srcFileWithPath, srcIsReadable_, parent);
+    Ctor(filenm, isReadable, parent);
   }
   
-  File(const std::string& srcFileWithPath, bool srcIsReadable_, 
-	    ANode *parent, 
-	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+  File(const std::string& filenm, bool isReadable, ANode *parent, 
+       SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyFILE, parent, begLn, endLn, 0, 0)
   {
-    Ctor(srcFileWithPath.c_str(), srcIsReadable_, parent);
+    Ctor(filenm.c_str(), isReadable, parent);
   }
   
   virtual ~File()
@@ -1026,8 +1027,7 @@ public:
 			       const char* pre = "") const;
 
 private: 
-  void Ctor(const char* srcFileWithPath, bool srcIsReadble_, 
-	    ANode* parent);
+  void Ctor(const char* filenm, bool srcIsReadble_, ANode* parent);
 
   void AddToProcMap(Proc* proc);
   friend class Proc;
@@ -1036,6 +1036,8 @@ private:
   bool srcIsReadable;
   std::string m_name; // the file name including the path 
   ProcMap* procMap;
+
+  static RealPathMgr& s_realpathMgr;
 };
 
 
@@ -1241,7 +1243,7 @@ public:
 class Stmt: public ACodeNode {
 public: 
   Stmt(ACodeNode* parent, SrcFile::ln begLn, SrcFile::ln endLn,
-		 VMA begVMA = 0, VMA endVMA = 0)
+       VMA begVMA = 0, VMA endVMA = 0)
     : ACodeNode(TySTMT, parent, begLn, endLn, begVMA, endVMA),
       m_sortId((int)begLn)
   {

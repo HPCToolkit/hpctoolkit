@@ -86,6 +86,8 @@ static int AddXMLEscapeChars(int dmpFlag);
 
 using namespace xml;
 
+#define DBG_FILE 0
+
 //***************************************************************************
 
 //***************************************************************************
@@ -381,6 +383,17 @@ Group::Ctor(const char* nm, ANode* parent)
 }
 
 
+Group* 
+Group::demand(Pgm* pgm, const string& nm, ANode* _parent)
+{
+  Group* grp = pgm->findGroup(nm);
+  if (!grp) {
+    grp = new Group(nm, _parent);
+  }
+  return grp;
+}
+
+
 RealPathMgr& LM::s_realpathMgr = RealPathMgr::singleton();
 
 void
@@ -424,16 +437,17 @@ LM::demand(Pgm* pgm, const string& lm_nm)
 }
 
 
+RealPathMgr& File::s_realpathMgr = RealPathMgr::singleton();
+
 void
-File::Ctor(const char* srcFileWithPath, bool srcIsReadble_, 
-		ANode* parent)
+File::Ctor(const char* fname, bool isReadable, ANode* parent)
 {
-  DIAG_Assert(srcFileWithPath, "");
+  DIAG_Assert(fname, "");
   ANodeTy t = (parent) ? parent->Type() : TyANY;
   DIAG_Assert((parent == NULL) || (t == TyPGM) || (t == TyGROUP) || (t == TyLM), "");
 
-  srcIsReadable = srcIsReadble_;
-  m_name = srcFileWithPath;
+  srcIsReadable = isReadable;
+  m_name = fname;
   AncLM()->AddToFileMap(this);
   procMap = new ProcMap();
 }
@@ -455,11 +469,20 @@ File::operator=(const File& x)
 File* 
 File::demand(LM* lm, const string& filenm)
 {
-  File* file = lm->FindFile(filenm);
+  const char* note = "(found)";
+
+  string nm_real = filenm;
+  File::s_realpathMgr.realpath(nm_real);
+
+  File* file = lm->FindFile(nm_real);
   if (!file) {
-    bool fileIsReadable = FileUtil::isReadable(filenm.c_str());
-    file = new File(filenm, fileIsReadable, lm);
+    note = "(created)";
+    bool isReadable = FileUtil::isReadable(nm_real.c_str());
+    file = new File(nm_real, isReadable, lm);
   }
+  DIAG_DevMsgIf(DBG_FILE, "Struct::File::demand: " << note << endl 
+		<< "\tin : " << filenm << endl
+		<< "\tout: " << file->name());
   return file;
 }
 

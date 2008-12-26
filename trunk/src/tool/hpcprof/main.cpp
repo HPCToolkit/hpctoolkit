@@ -81,7 +81,7 @@ static Prof::CallPath::Profile*
 readProfileData(std::vector<string>& profileFiles);
 
 static void
-readStructure(const Prof::Struct::Tree* structure, const Analysis::Args& args);
+readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 
 static void
 dumpProfileData(std::ostream& os, std::vector<string>& profileFiles);
@@ -239,14 +239,11 @@ readProfileFile(const string& prof_fnm)
 
 
 static void
-readStructure(const Prof::Struct::Tree* structure, const Analysis::Args& args)
+readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args)
 {
-  string searchPath = args.searchPathStr();
-
-  Prof::Struct::TreeInterface structIF(structure->root(), searchPath);
   DocHandlerArgs docargs; // NOTE: override for replacePath()
 
-  Prof::Struct::readStructure(structIF, args.structureFiles,
+  Prof::Struct::readStructure(*structure, args.structureFiles,
 			      PGMDocHandler::Doc_STRUCT, docargs);
 }
 
