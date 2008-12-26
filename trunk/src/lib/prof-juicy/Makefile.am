@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-# $Id$
+## $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -72,7 +72,6 @@ MYSOURCES = \
 	\
 	Struct-Tree.hpp Struct-Tree.cpp \
 	Struct-TreeIterator.hpp Struct-TreeIterator.cpp \
-	Struct-TreeInterface.hpp Struct-TreeInterface.cpp \
 	\
 	CCT-Tree.hpp CCT-Tree.cpp \
 	CCT-TreeIterator.hpp CCT-TreeIterator.cpp \
