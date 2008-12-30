@@ -57,6 +57,8 @@ using std::dec;
 #include <string>
 using std::string;
 
+#include <typeinfo>
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
@@ -182,16 +184,14 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 static bool 
 writeXML_FileFilter(const Struct::ANode& x, long type)
 {
-  return (x.Type() == Struct::ANode::TyFILE 
-	  || x.Type() == Struct::ANode::TyALIEN);
+  return (x.Type() == Struct::ANode::TyFILE || x.Type() == Struct::ANode::TyALIEN);
 }
 
 
 static bool 
 writeXML_ProcFilter(const Struct::ANode& x, long type)
 {
-  return (x.Type() == Struct::ANode::TyPROC 
-	  || x.Type() == Struct::ANode::TyALIEN);
+  return (x.Type() == Struct::ANode::TyPROC || x.Type() == Struct::ANode::TyALIEN);
 }
 
 
@@ -418,9 +418,9 @@ Profile::cct_canonicalize()
   for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
     CCT::ANode* n = it.CurNode();
 
-    CCT::IDynNode* n_dyn = dynamic_cast<CCT::IDynNode*>(n);
+    CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
     if (n_dyn) { // n_dyn->lm_id() == Epoch::LM_id_NULL
-      VMA ip = n_dyn->CCT::IDynNode::ip();
+      VMA ip = n_dyn->CCT::ADynNode::ip();
       Epoch::LM* lm = epoch()->lm_find(ip);
       VMA ip_ur = ip - lm->relocAmt();
       DIAG_MsgIf(0, "cct_canonicalize: " << hex << ip << dec << " -> " << lm->id());
@@ -441,7 +441,7 @@ Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
   for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
     CCT::ANode* n = it.CurNode();
     
-    CCT::IDynNode* n_dyn = dynamic_cast<CCT::IDynNode*>(n);
+    CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
     if (n_dyn) {
 
       Epoch::LM_id_t y_lm_id = n_dyn->lm_id();
@@ -465,15 +465,16 @@ Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
 
 
 static void* 
-cstree_create_node_CB(void* tree, hpcfile_cstree_nodedata_t* data)
+cstree_create_node_CB(void* a_tree, hpcfile_cstree_nodedata_t* data)
 {
   using namespace Prof;
 
-  CCT::Tree* my_tree = (CCT::Tree*)tree; 
+  CCT::Tree* tree = (CCT::Tree*)a_tree; 
   
   VMA ip;
   ushort opIdx;
   convertOpIPToIP((VMA)data->ip, ip, opIdx);
+
   std::vector<hpcfile_metric_data_t> metricVec;
   metricVec.clear();
   for (uint i = 0; i < data->num_metrics; i++) {
@@ -482,12 +483,12 @@ cstree_create_node_CB(void* tree, hpcfile_cstree_nodedata_t* data)
 
   DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);
   CCT::Call* n = new CCT::Call(NULL, data->as_info, ip, opIdx, data->lip.ptr,
-			       data->cpid, &my_tree->metadata()->metricDesc(), 
+			       data->cpid, &tree->metadata()->metricDesc(), 
 			       metricVec);
   
   // Initialize the tree, if necessary
-  if (my_tree->empty()) {
-    my_tree->root(n);
+  if (tree->empty()) {
+    tree->root(n);
   }
   
   return n;
@@ -502,6 +503,9 @@ cstree_link_parent_CB(void* tree, void* node, void* parent)
   CCT::Call* p = (CCT::Call*)parent;
   CCT::Call* n = (CCT::Call*)node;
   n->Link(p);
+  
+  DIAG_DevMsgIf(0, "cstree_link_parent_CB: parent(" << hex << p << ") child(" 
+		<< n << ")" << dec);
 }
 
 
@@ -582,25 +586,23 @@ cct_fixLeaves(Prof::CCT::ANode* node)
 
   // For each immediate child of this node...
   for (CCT::ANodeChildIterator it(node); it.Current(); /* */) {
-    CCT::ANode* child = it.CurNode();
-    CCT::IDynNode* child_dyn = dynamic_cast<CCT::IDynNode*>(child);
-    DIAG_Assert(child_dyn, "");
-    it++; // advance iterator -- it is pointing at 'child'
+    CCT::ADynNode* x = dynamic_cast<CCT::ADynNode*>(it.CurNode());
+    DIAG_Assert(x, "");
+    it++; // advance iterator -- it is pointing at 'x'
 
-    DIAG_DevMsgIf(0, "cct_fixLeaves: " << hex << child_dyn->ip() << dec);
-    if (child->IsLeaf() && child->type() == CCT::ANode::TyCall) {
-      // This child is a leaf. Convert.
-      CCT::Call* c = dynamic_cast<CCT::Call*>(child);
+    DIAG_DevMsgIf(0, "cct_fixLeaves: parent(" << hex << node << ") child(" << x
+		  << "): " << x->ip() << dec);
+    if (x->IsLeaf() && typeid(*x) == typeid(CCT::Call)) {
+      // This x is a leaf. Convert.
+      CCT::Stmt* x_new = new CCT::Stmt(NULL, x->cpid(), x->metricdesc());
+      *x_new = *(dynamic_cast<CCT::Call*>(x));
       
-      CCT::Stmt* newc = new CCT::Stmt(NULL, c->cpid(), c->metricdesc());
-      *newc = *c;
-      
-      newc->LinkBefore(node->FirstChild()); // do not break iteration!
-      c->Unlink();
-      delete c;
-    } 
-    else if (!child->IsLeaf()) {
-      cct_fixLeaves(child);
+      x_new->Link(node);
+      x->Unlink();
+      delete x;
+    }
+    else if (!x->IsLeaf()) {
+      cct_fixLeaves(x);
     }
   }
 }

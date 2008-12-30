@@ -157,18 +157,18 @@ public:
   // Write contents
   // -------------------------------------------------------
   std::ostream& 
-  writeXML(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
+  writeXML(std::ostream& os = std::cerr, int flags = XML_TRUE) const;
 
   std::ostream& 
-  dump(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
+  dump(std::ostream& os = std::cerr, int flags = XML_TRUE) const;
   
   void ddump() const;
 
 
-  // Given a set of flags 'dmpFlag', determines whether we need to
+  // Given a set of flags 'flags', determines whether we need to
   // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
   // or xml::ESC_FALSE. 
-  static int doXMLEscape(int dmpFlag);
+  static int doXMLEscape(int flags);
  
 private:
   ANode* m_root;
@@ -223,7 +223,7 @@ private:
   static const std::string NodeNames[TyNUMBER];
   
 public:
-  ANode(NodeType t, ANode* _parent, Struct::ACodeNode* strct = NULL);
+  ANode(NodeType type, ANode* _parent, Struct::ACodeNode* strct = NULL);
   virtual ~ANode();
   
   // shallow copy (in the sense the children are not copied)
@@ -232,6 +232,16 @@ public:
   { 
     ZeroLinks();
   }
+
+  ANode& operator=(const ANode& x) {
+    if (this != &x) {
+      m_type = x.m_type;
+      m_strct = x.m_strct;
+      // do not copy 'm_uid'
+    }
+    return *this;
+  }
+
 
   // --------------------------------------------------------
   // General Interface to fields 
@@ -321,29 +331,36 @@ public:
   // --------------------------------------------------------
   // Dump contents for inspection
   // --------------------------------------------------------
-  virtual std::string Types() const; // this instance's base and derived types
+  virtual std::string 
+  Types() const; // this instance's base and derived types
 
-  virtual std::string toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const; 
-  
+  std::string 
+  toString(int flags = CCT::Tree::XML_TRUE, const char* pre = "") const;
+
+  virtual std::string 
+  toString_me(int flags = CCT::Tree::XML_TRUE) const; 
+
   std::ostream& 
-  writeXML(std::ostream& os = std::cerr, int dmpFlag = CCT::Tree::XML_TRUE,
+  writeXML(std::ostream& os = std::cerr, int flags = CCT::Tree::XML_TRUE,
 	   const char *pre = "") const;
 
   std::ostream& 
-  dump(std::ostream& os = std::cerr, int dmpFlag = CCT::Tree::XML_TRUE,
+  dump(std::ostream& os = std::cerr, int flags = CCT::Tree::XML_TRUE,
        const char *pre = "") const;
 
   void ddump() const;
+
+  void ddump_me() const;
   
   virtual std::string codeName() const;
 
 protected:
 
   void writeXML_pre(std::ostream& os = std::cerr, 
-		    int dmpFlag = CCT::Tree::XML_TRUE,
+		    int flags = CCT::Tree::XML_TRUE,
 		    const char *prefix = "") const;
   void writeXML_post(std::ostream& os = std::cerr, 
-		     int dmpFlag = CCT::Tree::XML_TRUE,
+		     int flags = CCT::Tree::XML_TRUE,
 		     const char *prefix = "") const;
 
   void merge_fixup(const SampledMetricDescVec* mdesc, int metric_offset);
@@ -361,55 +378,55 @@ int ANodeLineComp(ANode* x, ANode* y);
 
 
 //***************************************************************************
-// IDynNode
+// ADynNode
 //***************************************************************************
 
-// IDynNode: a mixin interface representing dynamic nodes
-
-class IDynNode {
+// ---------------------------------------------------------
+// ANode: represents dynamic nodes
+// ---------------------------------------------------------
+class ADynNode : public ANode {
 public:
 
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
   
-  IDynNode(ANode* proxy, 
-	   uint32_t cpid,
-	   const SampledMetricDescVec* metricdesc)
-    : m_proxy(proxy),
+  ADynNode(NodeType type, ANode* _parent, Struct::ACodeNode* strct,
+	   uint32_t cpid, const SampledMetricDescVec* metricdesc)
+    : ANode(type, _parent, strct),
       m_as_info(lush_assoc_info_NULL), 
       m_lmId(Epoch::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL), m_cpid(cpid),
       m_metricdesc(metricdesc)
     { }
 
-  IDynNode(ANode* proxy, 
+  ADynNode(NodeType type, ANode* _parent, Struct::ACodeNode* strct,
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc)
-    : m_proxy(proxy), 
+    : ANode(type, _parent, strct),
       m_as_info(as_info), 
       m_lmId(Epoch::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), m_cpid(cpid),
       m_metricdesc(metricdesc)
     { }
 
-  IDynNode(ANode* proxy, 
+  ADynNode(NodeType type, ANode* _parent, Struct::ACodeNode* strct,
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc,
 	   std::vector<hpcfile_metric_data_t>& metrics)
-    : m_proxy(proxy),
+    : ANode(type, _parent, strct),
       m_as_info(as_info), 
       m_lmId(Epoch::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), m_cpid(cpid),
       m_metricdesc(metricdesc), m_metrics(metrics) 
     { }
 
-  virtual ~IDynNode() {
+  virtual ~ADynNode() {
     delete_lip(m_lip);
   }
    
-  // deep copy
-  IDynNode(const IDynNode& x)
-    : //m_proxy(x.m_proxy),
+  // deep copy of internals (but without children)
+  ADynNode(const ADynNode& x)
+    : ANode(x),
       m_as_info(x.m_as_info), 
       m_lmId(x.m_lmId),
       m_ip(x.m_ip), m_opIdx(x.m_opIdx), 
@@ -419,10 +436,10 @@ public:
       m_metrics(x.m_metrics) 
     { }
 
-  // deep copy
-  IDynNode& operator=(const IDynNode& x) {
+  // deep copy of internals (but without children)
+  ADynNode& operator=(const ADynNode& x) {
     if (this != &x) {
-      //m_proxy = x.m_proxy;
+      ANode::operator=(x);
       m_as_info = x.m_as_info;
       m_lmId = x.m_lmId;
       m_ip = x.m_ip;
@@ -436,11 +453,6 @@ public:
     return *this;
   }
 
-
-  // -------------------------------------------------------
-  // 
-  // -------------------------------------------------------
-  ANode* proxy() const { return m_proxy; }
 
   // -------------------------------------------------------
   // 
@@ -523,9 +535,9 @@ public:
     { return m_metrics.size(); }
 
   void metricIncr(int i, hpcfile_metric_data_t incr)  
-    { IDynNode::metricIncr((*m_metricdesc)[i], &m_metrics[i], incr); }
+    { ADynNode::metricIncr((*m_metricdesc)[i], &m_metrics[i], incr); }
   void metricDecr(int i, hpcfile_metric_data_t decr)  
-    { IDynNode::metricDecr((*m_metricdesc)[i], &m_metrics[i], decr); }
+    { ADynNode::metricDecr((*m_metricdesc)[i], &m_metrics[i], decr); }
 
 
   const SampledMetricDescVec* metricdesc() const 
@@ -538,11 +550,23 @@ public:
   // 
   // -------------------------------------------------------
 
-  void mergeMetrics(const IDynNode& y, uint beg_idx = 0);
-  void appendMetrics(const IDynNode& y);
+  void mergeMetrics(const ADynNode& y, uint beg_idx = 0);
+  void appendMetrics(const ADynNode& y);
 
   void expandMetrics_before(uint offset);
   void expandMetrics_after(uint offset);
+
+  bool 
+  hasMetrics() const 
+  {
+    for (uint i = 0; i < numMetrics(); i++) {
+      hpcfile_metric_data_t m = metric(i);
+      if (!hpcfile_metric_data_iszero(m)) {
+	return true;
+      }
+    }
+    return false;
+  }
 
   static inline void
   metricIncr(const SampledMetricDesc* mdesc, 
@@ -574,26 +598,16 @@ public:
   // Dump contents for inspection
   // -------------------------------------------------------
 
-  virtual std::string toString(const char* pre = "") const;
-
   std::string assocInfo_str() const;
   std::string lip_str() const;
 
-  bool 
-  hasMetrics() const 
-  {
-    for (uint i = 0; i < numMetrics(); i++) {
-      hpcfile_metric_data_t m = metric(i);
-      if (!hpcfile_metric_data_iszero(m)) {
-	return true;
-      }
-    }
-    return false;
-  }
+  void 
+  writeDyn(std::ostream& os, int flags = 0, const char* prefix = "") const;
 
   // writeMetricsXML: write metrics (sparsely)
-  virtual void writeMetricsXML(std::ostream& os, 
-			       int dmpFlag = 0, const char* prefix = "") const;
+  void 
+  writeMetricsXML(std::ostream& os, int flags = 0, 
+		  const char* prefix = "") const;
 
   struct WriteMetricInfo_ {
     const SampledMetricDesc* mdesc;
@@ -608,16 +622,8 @@ public:
     info.x = x;
     return info;
   }
-  
-  
-  virtual void dump(std::ostream& os = std::cerr, 
-		    const char* pre = "") const;
-
-  virtual void ddump() const;
 
 private:
-  ANode* m_proxy;
-
   lush_assoc_info_t m_as_info;
 
   Epoch::LM_id_t m_lmId; // Epoch::LM id
@@ -629,7 +635,7 @@ private:
   uint32_t m_cpid; // call path node handle for tracing
 
   // FIXME: convert to metric-id a la Metric::Mgr
-  const SampledMetricDescVec*        m_metricdesc; // does not own memory
+  const SampledMetricDescVec* m_metricdesc; // does not own memory
 
   // FIXME: a vector of doubles, a la ScopeInfo
   std::vector<hpcfile_metric_data_t> m_metrics;
@@ -637,7 +643,7 @@ private:
 
 
 inline std::ostream&
-operator<<(std::ostream& os, const IDynNode::WriteMetricInfo_& info)
+operator<<(std::ostream& os, const ADynNode::WriteMetricInfo_& info)
 {
   if (hpcfile_csprof_metric_is_flag(info.mdesc->flags(), 
 				    HPCFILE_METRIC_FLAG_REAL)) {
@@ -671,7 +677,7 @@ public:
   
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  toString_me(int flags = CCT::Tree::XML_TRUE) const;
   
 protected: 
 private: 
@@ -799,7 +805,7 @@ public:
   // -------------------------------------------------------
 
   virtual std::string 
-  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  toString_me(int flags = CCT::Tree::XML_TRUE) const;
 
   virtual std::string 
   codeName() const;
@@ -817,11 +823,11 @@ class Proc: public ANode {
 public: 
   // Constructor/Destructor
   Proc(ANode* _parent, Struct::ACodeNode* strct = NULL);
-  ~Proc();
+  virtual ~Proc();
   
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  toString_me(int flags = CCT::Tree::XML_TRUE) const;
 };
 
 
@@ -833,11 +839,12 @@ class Loop: public ANode {
 public: 
   // Constructor/Destructor
   Loop(ANode* _parent, Struct::ACodeNode* strct = NULL);
-  ~Loop();
+
+  virtual ~Loop();
 
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const; 
+  toString_me(int flags = CCT::Tree::XML_TRUE) const; 
   
 private:
 };
@@ -847,29 +854,41 @@ private:
 // Stmt
 // --------------------------------------------------------------------------
   
-class Stmt: public ANode, public IDynNode {
+class Stmt: public ADynNode {
  public:
   // Constructor/Destructor
-  Stmt(ANode* _parent, uint32_t cpid, const SampledMetricDescVec* metricdesc);
-  virtual ~Stmt();
+  Stmt(ANode* _parent, uint32_t cpid, const SampledMetricDescVec* metricdesc)
+    : ADynNode(TyStmt, _parent, NULL, cpid, metricdesc)
+  { }
 
-  void operator=(const Stmt& x);
-  void operator=(const Call& x);
+  virtual ~Stmt()
+  { }
+
+  Stmt& operator=(const Stmt& x) 
+  {
+    if (this != &x) {
+      ADynNode::operator=(x);
+    }
+    return *this;
+  }
+
+  Stmt& operator=(const Call& x);
 
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  toString_me(int flags = CCT::Tree::XML_TRUE) const;
 };
 
 
 // --------------------------------------------------------------------------
-// Call
+// Call (callsite)
 // --------------------------------------------------------------------------
 
-class Call: public ANode, public IDynNode {
+class Call: public ADynNode {
 public:
   // Constructor/Destructor
   Call(ANode* _parent, uint32_t cpid, const SampledMetricDescVec* metricdesc);
+
   Call(ANode* _parent, 
        lush_assoc_info_t as_info,
        VMA ip, ushort opIdx, 
@@ -877,7 +896,9 @@ public:
        uint32_t cpid,
        const SampledMetricDescVec* metricdesc,
        std::vector<hpcfile_metric_data_t>& metrics);
-  virtual ~Call();
+
+  virtual ~Call() 
+  { }
   
   // Node data
   virtual VMA ip() const 
@@ -885,14 +906,14 @@ public:
 #ifdef FIXME_CILK_LIP_HACK
     if (lip_cilk_isvalid()) { return lip_cilk(); }
 #endif    
-    return (IDynNode::ip_real() - 1); 
+    return (ADynNode::ip_real() - 1); 
   }
   
-  VMA ra() const { return IDynNode::ip_real(); }
+  VMA ra() const { return ADynNode::ip_real(); }
     
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int dmpFlag = CCT::Tree::XML_TRUE) const;
+  toString_me(int flags = CCT::Tree::XML_TRUE) const;
 
 };
 

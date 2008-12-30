@@ -507,14 +507,15 @@ public:
   std::string toString_me(int dmpFlag = 0, const char* pre = "") const;
 
   // dump
-  std::ostream& dump(std::ostream& os = std::cerr, 
-		     int dmpFlag = 0, const char* pre = "") const;
+  std::ostream& 
+  dump(std::ostream& os = std::cerr, int dmpFlag = 0, 
+       const char* pre = "") const;
   
   void ddump() const;
 
-  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int dmpFlag = 0,
-			       const char* pre = "") const;
+  virtual std::ostream& 
+  dumpme(std::ostream& os = std::cerr, int dmpFlag = 0, 
+	 const char* pre = "") const;
 
 protected:
   bool writeXML_pre(std::ostream& os = std::cout,
