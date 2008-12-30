@@ -359,7 +359,7 @@ Driver::write_txt(std::ostream &os) const
 
     Struct::ANodeIterator 
       it(m_structure.root(), &ANodeTyFilter[Struct::ANode::TyFILE]);
-    for (Struct::ANode* strct = NULL; (strct = it.CurScope()); it++) {
+    for (Struct::ANode* strct = NULL; (strct = it.CurNode()); it++) {
       Struct::File* fileStrct = dynamic_cast<Struct::File*>(strct);
       const string& fnm = fileStrct->name();
       if (fnm != Struct::Tree::UnknownFileNm 
@@ -912,9 +912,9 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
   for (; it.Current(); it++) {
     for (uint mId = mBegId; mId <= mEndId; ++mId) {
       const Prof::Metric::AExpr* expr = mExprVec[mId];
-      double val = expr->eval(it.CurScope());
+      double val = expr->eval(it.CurNode());
       // if (!Prof::Metric::AExpr::isok(val)) ...
-      it.CurScope()->SetPerfData(mId, val);
+      it.CurNode()->SetPerfData(mId, val);
     }
   }
 }

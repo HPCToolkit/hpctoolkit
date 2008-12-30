@@ -354,7 +354,7 @@ loopifyFrame(Prof::CCT::ANode* mirrorNode,
 	     ProcFrameAndLoopToCSLoopMap& loopMap)
 {
   for (Prof::Struct::ACodeNodeChildIterator it(node); it.Current(); ++it) {
-    Prof::Struct::ACodeNode* n = it.CurACodeNode();
+    Prof::Struct::ACodeNode* n = it.CurNode();
 
     // Done: if we reach the natural base case or embedded proceedure
     if (n->IsLeaf() || n->Type() == Prof::Struct::ANode::TyPROC) {

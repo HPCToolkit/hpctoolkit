@@ -104,59 +104,11 @@ const ANodeFilter NodeTypeFilter[ANode::TyNUMBER] = {
 // ANodeChildIterator
 //*****************************************************************************
 
-ANodeChildIterator::ANodeChildIterator(const ANode* root,
-				       const ANodeFilter* f)
-  : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false),
-    filter(f)
-{
-}
-
-NonUniformDegreeTreeNode* 
-ANodeChildIterator::Current() const
-{
-  NonUniformDegreeTreeNode *s; 
-  ANode *si; 
-  while ( (s = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
-    si = dynamic_cast<ANode*>(s);  
-    if ((filter == NULL) || filter->Apply(*si)) { 
-      break; 	
-    }
-    ((ANodeChildIterator*) this)->operator++(); 
-  } 
-  return dynamic_cast<ANode*>(s); 
-} 
 
 //*****************************************************************************
-// CSProfTreeIterator
+// ANodeIterator
 //*****************************************************************************
 
-ANodeIterator::ANodeIterator(const ANode* root, 
-			     const ANodeFilter* f, 
-			     bool leavesOnly, 
-			     TraversalOrder torder)
-  : NonUniformDegreeTreeIterator(root, torder, 
-	             (leavesOnly) ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
-				 : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES),
-    filter(f)
-{
-}
-
-
-NonUniformDegreeTreeNode* 
-ANodeIterator::Current() const
-{
-  NonUniformDegreeTreeNode *s; 
-  ANode *si; 
-  while ( (s = NonUniformDegreeTreeIterator::Current()) ) {
-    si = dynamic_cast<ANode*>(s); 
-    DIAG_Assert(si != NULL, ""); 
-    if ((filter == NULL) || filter->Apply(*si)) { 
-      break; 	
-    }
-    ((ANodeIterator*) this)->operator++(); 
-  } 
-  return dynamic_cast<ANode*>(s); 
-} 
 
 //*****************************************************************************
 // ANodeSortedIterator

@@ -228,7 +228,7 @@ Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure,
 
   Prof::Struct::ANodeFilter filter(Flat_Filter, "Flat_Filter", 0);
   for (Prof::Struct::ANodeIterator it(structure, &filter); it.Current(); ++it) {
-    Prof::Struct::ANode* strct = it.CurScope();
+    Prof::Struct::ANode* strct = it.CurNode();
     Prof::Struct::File* fileStrct = NULL;
     Prof::Struct::Alien* alienStrct = NULL;
 

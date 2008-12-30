@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -72,44 +72,42 @@
 // tallent: For performance tuning; see usage below.  Unnecessary
 // dynamic casting -- every NonUniformDegreeTreeNode is a ANode --
 // was consuming 15-20% of execution time.
-#define PGM_SCOPE_TREE__USE_DYNAMIC_CAST 0
-#if (PGM_SCOPE_TREE__USE_DYNAMIC_CAST)
-# define PST_USELESS_DCAST(t, x) dynamic_cast<t>(x)
+#define PROF_STRUCT_TREE__USE_DYNAMIC_CAST 0
+#if (PROF_STRUCT_TREE__USE_DYNAMIC_CAST)
+# define STRUCT_USELESS_DCAST(t, x) dynamic_cast<t>(x)
 #else
-# define PST_USELESS_DCAST(t, x) (t)(x)
+# define STRUCT_USELESS_DCAST(t, x) (t)(x)
 #endif
 
 
 //***************************************************************************
 
 namespace Prof {
+
 namespace Struct {
 
 //***************************************************************************
 // ANodeFilter
-//    filters are used in iterators to make sure only desirable ANodes 
-//    are iterated 
-// ANodeTyFilter is an array of globally defined filters that return true 
-//    for ANodes with a given type only 
-// HasANodeTy 
-//    global fct used in filters from ANodeTyFilter array
 //***************************************************************************
 
-typedef bool (*ANodeFilterFct)(const ANode &info, long addArg);
+typedef bool (*ANodeFilterFct)(const ANode& x, long addArg);
 
 class ANodeFilter {
 public:
-   ANodeFilter(ANodeFilterFct f, const char* n, long a) 
-     : fct(f), name(n), arg(a) { }
+  ANodeFilter(ANodeFilterFct f, const char* n, long a) 
+    : fct(f), name(n), arg(a) 
+  { }
+  
+  virtual ~ANodeFilter() { }
 
-   virtual ~ANodeFilter() { }
-   bool Apply(const ANode& s) const { return fct(s, arg); }
-   const char* Name() const { return name; }
+  bool Apply(const ANode& s) const { return fct(s, arg); }
+
+  const char* Name() const { return name; }
 
 private:
-   const ANodeFilterFct fct;
-   const char* name;
-   long arg;
+  const ANodeFilterFct fct;
+  const char* name;
+  long arg;
 };
 
 // HasANodeTy(s,tp) == ((tp == ANY) || (s.Type() == tp));
@@ -119,120 +117,117 @@ extern bool HasANodeTy(const ANode &sinfo, long type);
 extern const ANodeFilter ANodeTyFilter[ANode::TyNUMBER];
 
 
-//***************************************************************************
-// ANodeChildIterator
-//    iterates over all children of a ANode that pass the given 
-//    filter or if a NULL filter was given over all children 
-//    no particular order is garanteed 
-//***************************************************************************
+//*****************************************************************************
+// ANodeChildIterator: Iterates over all children of a ANode that pass
+//   the given filter; a NULL filter matches all children.  No
+//   particular order is guaranteed.
+//*****************************************************************************
+
+// NOTE: To support insertion and deletion of nodes during the lifetime of a
+// ANodeChildIterator using Link() and Unlink(), use *reverse* iteration.
+//   Link()   : new_node->LinkAfter(node_parent->LastChild())
+//   Unlink() : won't disturb FirstChild() pointer (until one node is left)
 
 class ANodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
 
-  // filter == NULL enumerate all entries
-  // otherwise: only entries with filter->fct(e) == true
-  ANodeChildIterator(const ANode* root, const ANodeFilter* filter = NULL)
-    : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false),
-      filter(filter)
+  // If filter == NULL enumerate all entries; otherwise, only entries
+  // with filter->fct(e) == true
+  ANodeChildIterator(const ANode* root, const ANodeFilter* _filter = NULL)
+    : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/false), 
+      filter(_filter)
   { }
 
-  
+
   // NOTE: really ANode
   virtual NonUniformDegreeTreeNode* 
-  Current() const 
+  Current() const
   {
-    NonUniformDegreeTreeNode* s;
-    ANode* si = NULL;
-    while ( (s = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
-      si = PST_USELESS_DCAST(ANode*, s);
-      if ((filter == NULL) || filter->Apply(*si)) { 
-	break; 	
+    NonUniformDegreeTreeNode* x_base;
+    ANode* x = NULL;
+    while ( (x_base = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
+      x = STRUCT_USELESS_DCAST(ANode*, x_base);
+      if ((filter == NULL) || filter->Apply(*x)) {
+	break;
       }
       ((ANodeChildIterator*)this)->operator++();
     } 
-    return PST_USELESS_DCAST(ANode*, s);
+    return STRUCT_USELESS_DCAST(ANode*, x_base);
   }
   
-  
+
   ANode* 
-  CurScope() const 
+  CurNode() const 
   {
-    return PST_USELESS_DCAST(ANode*, Current());
+    return STRUCT_USELESS_DCAST(ANode*, Current());
   }
 
 private: 
-  const ANodeFilter *filter;
+  const ANodeFilter* filter; 
 };
 
 
-//***************************************************************************
-// ACodeNodeChildIterator
-//    iterates over all children of a ANode that pass the given 
-//    filter or if a NULL filter was given over all children 
-//    no particular order is garanteed 
-//***************************************************************************
-
 class ACodeNodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
-  ACodeNodeChildIterator(const ACodeNode *root)
-    : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false)
+  ACodeNodeChildIterator(const ACodeNode* root)
+    : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/false)
   { }
 
   ACodeNode* 
-  CurACodeNode() const 
+  CurNode() const 
   { 
     return dynamic_cast<ACodeNode*>(Current()); 
   }
 
-};  
+};
 
 
 //***************************************************************************
-// ANodeIterator
-//    iterates over all ANodes in the tree rooted at a given ANode 
-//    that pass the given filter or if a NULL filter was given over all 
-//    ANodes in the tree.
-//    no particular order is garanteed, unless stated explicitly , i.e. we 
-//    may change the default value for torder
+// ANodeIterator: Iterates over all ANodes in the tree
+//   rooted at a given ANode that pass the given filter; a NULL
+//   filter matches all nodes.  No particular order is guaranteed,
+//   unless stated explicitly, i.e. the default value for 'torder' is
+//   changed.
 //***************************************************************************
 
 class ANodeIterator : public NonUniformDegreeTreeIterator {
 public: 
-   // filter == NULL enumerate all entries
-   // otherwise: only entries with filter->fct(e) == true
-   ANodeIterator(const ANode *root,
-		 const ANodeFilter* filter = NULL,
-		 bool leavesOnly = false,
-		 TraversalOrder torder = PreOrder)
-     : NonUniformDegreeTreeIterator(root, torder, 
-			(leavesOnly) ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
-				 : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES),
-       filter(filter)
+  // If filter == NULL enumerate all entries; otherwise, only entries
+  // with filter->fct(e) == true
+  ANodeIterator(const ANode* root,
+		const ANodeFilter* _filter = NULL,
+		bool leavesOnly = false,
+		TraversalOrder torder = PreOrder)
+    : NonUniformDegreeTreeIterator(root, torder, 
+				   ((leavesOnly) 
+				    ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
+				    : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES)),
+      filter(_filter)
   {
   }
 
 
   // Note: really ANode
-  virtual NonUniformDegreeTreeNode* 
+  virtual NonUniformDegreeTreeNode*
   Current() const
   {
-    NonUniformDegreeTreeNode* s;
-    ANode* si = NULL;
-    while ( (s = NonUniformDegreeTreeIterator::Current()) ) {
-      si = PST_USELESS_DCAST(ANode*, s);
-      if ((filter == NULL) || filter->Apply(*si)) { 
+    NonUniformDegreeTreeNode* x_base;
+    ANode* x = NULL;
+    while ( (x_base = NonUniformDegreeTreeIterator::Current()) ) {
+      x = STRUCT_USELESS_DCAST(ANode*, x_base);
+      if ((filter == NULL) || filter->Apply(*x)) { 
 	break; 	
       }
       ((ANodeIterator*)this)->operator++();
     } 
-    return PST_USELESS_DCAST(ANode*, s);
+    return STRUCT_USELESS_DCAST(ANode*, x_base);
   }
 
-  
+
   ANode* 
-  CurScope() const 
+  CurNode() const 
   { 
-    return PST_USELESS_DCAST(ANode*, Current());
+    return STRUCT_USELESS_DCAST(ANode*, Current());
   }
 
 private: 
@@ -289,6 +284,7 @@ private:
   WordSetSortedIterator *ptrSetIt;  
 };
 
+
 class ANodeLineSortedChildIterator {
 public: 
   ANodeLineSortedChildIterator(const ANode *root, 
@@ -314,13 +310,15 @@ public:
   void DumpAndReset(std::ostream &os = std::cerr);
 
   // both of these are buried in other parts of the HPCView code :-(
-  ACodeNode* CurScope() const { return dynamic_cast<ACodeNode*>(Current()); }
+  ACodeNode* CurNode() const { return dynamic_cast<ACodeNode*>(Current()); }
+
   ACodeNode* CurCode()  const { return dynamic_cast<ACodeNode*>(Current()); }
 
 private:
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator* ptrSetIt;
 };
+
 
 //***************************************************************************
 // ACodeNodeLine
@@ -530,6 +528,7 @@ int CompareByMetricId(const void* a, const void *b);
 extern int CompareByMetricId_mId;
 
 } // namespace Struct
+
 } // namespace Prof
 
 #endif /* prof_juicy_Prof_Struct_TreeIterator_hpp */

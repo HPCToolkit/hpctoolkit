@@ -214,7 +214,7 @@ void
 ANode::CollectCrossReferences() 
 {
   for (ANodeChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->CollectCrossReferences();
+    it.CurNode()->CollectCrossReferences();
   } 
 
   ACodeNode* self = dynamic_cast<ACodeNode*>(this);  
@@ -228,7 +228,7 @@ ANode::CollectCrossReferences()
       int minline = INT_MAX;
       int maxline = -1;
       for (ANodeChildIterator it(this); it.Current(); it++) {
-	ACodeNode* child = dynamic_cast<ACodeNode*>(it.CurScope());
+	ACodeNode* child = dynamic_cast<ACodeNode*>(it.CurNode());
 	int cmin = child->begLine();
 	int cmax = child->endLine();
 	if (cmin < minline) {
@@ -254,7 +254,7 @@ ANode::NoteHeight()
   else {
     height = 0;
     for (ANodeChildIterator it(this); it.Current(); it++) {
-      int childHeight = it.CurScope()->NoteHeight();
+      int childHeight = it.CurNode()->NoteHeight();
       height = std::max(height, childHeight + 1);
     } 
   }
@@ -273,7 +273,7 @@ ANode::NoteDepth()
     depth = 0;
   }
   for (ANodeChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->NoteDepth();
+    it.CurNode()->NoteDepth();
   } 
 }
 
@@ -966,7 +966,7 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, double* valVec)
 {
   ANodeChildIterator it(this); 
   for (; it.Current(); it++) { 
-    it.CurScope()->accumulateMetrics(mBegId, mEndId, valVec);
+    it.CurNode()->accumulateMetrics(mBegId, mEndId, valVec);
   }
 
   it.Reset(); 
@@ -978,7 +978,7 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, double* valVec)
 
     for (; it.Current(); it++) { 
       for (uint i = mBegId; i <= mEndId; ++i) {
-	valVec[i] += it.CurScope()->PerfData(i);
+	valVec[i] += it.CurNode()->PerfData(i);
       }
     } 
     
@@ -995,7 +995,7 @@ ANode::pruneByMetrics()
   std::vector<ANode*> toBeRemoved;
   
   for (ANodeChildIterator it(this, NULL); it.Current(); ++it) {
-    ANode* si = it.CurScope();
+    ANode* si = it.CurNode();
     if (si->HasPerfData()) {
       si->pruneByMetrics();
     }
@@ -1369,7 +1369,7 @@ ANode::dump(ostream& os, int dmpFlag, const char* pre) const
   }
   
   for (ANodeChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->dump(os, dmpFlag, prefix.c_str());
+    it.CurNode()->dump(os, dmpFlag, prefix.c_str());
   } 
   return os;
 }
@@ -1857,7 +1857,7 @@ Proc::CSV_dump(const Pgm &root, ostream& os,
      << ",0";
   CSV_DumpSelf(root, os);
   for (ANodeLineSortedChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->CSV_dump(root, os, file_name, name().c_str(), 1);
+    it.CurNode()->CSV_dump(root, os, file_name, name().c_str(), 1);
   } 
 }
 
@@ -1888,7 +1888,7 @@ ACodeNode::CSV_dump(const Pgm &root, ostream& os,
     os << lLevel;
   CSV_DumpSelf(root, os);
   for (ANodeLineSortedChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->CSV_dump(root, os, file_name, proc_name, lLevel+1);
+    it.CurNode()->CSV_dump(root, os, file_name, proc_name, lLevel+1);
   } 
 }
 
