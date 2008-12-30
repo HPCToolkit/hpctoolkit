@@ -28,10 +28,10 @@ inline static int store_conditional(volatile unsigned long *ptr, unsigned long v
 
 #if defined (LL_BODY) && defined(SC_BODY) && !defined(CAS_BODY)
 
-#define CAS_BODY                                                                    \
-  for(;;) {                                                                         \
-    prev = load_linked(ptr);                                                        \
-    if (prev != old || store_conditional(ptr, new)) break;                          \
+#define CAS_BODY                                                            \
+  for(;;) {                                                                 \
+    prev = load_linked(ptr);                                                \
+    if (prev != old || store_conditional(ptr, new)) break;                  \
   }
 
 #endif
@@ -61,12 +61,12 @@ compare_and_swap(volatile void *ptr, unsigned long old, unsigned long new)
 
 #else
 
-#define read_modify_write(type, addr, expn, result) {                              \
-    type __new;                                                                    \
-    do {                                                                           \
-      result = *addr;                                                              \
-      __new = expn;                                                                \
-    } while (compare_and_swap(addr, result, __new) != result);                     \
+#define read_modify_write(type, addr, expn, result) {                        \
+    type __new;                                                              \
+    do {                                                                     \
+      result = *addr;                                                        \
+      __new = expn;                                                          \
+    } while (compare_and_swap(addr, result, __new) != result);               \
 }
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef atomic_op_bodies_h
 #define atomic_op_bodies_h
 
+// FIXME: At the very least, these platform switches should be based on the autoconf host.
+
 #if defined(__i386__) 
 
 #define CAS_BODY                                                                    \
@@ -24,25 +26,48 @@
                           : "=r"(prev) : "r"(ptr), "r"(new) : "memory");            \
 }
 
+#elif defined(__mips64)
+
+  // ll r_dest, addr_offset(r_addr)
+  // sc r_src,  addr_offset(r_addr) [sets r_src to 1 (success) or 0]
+
+  // (lld/scd for 64 bit version)
+
+#define LL_BODY                      \
+  __asm__ __volatile__(              \
+        "ll %0,0(%1)"                \
+               	: "=r" (result)      \
+               	: "r"(ptr))
+
+#define SC_BODY                      \
+  __asm__ __volatile__(              \
+       	"sc   %2,0(%1) \n\t"         \
+       	"move %0,%2"                 \
+               	: "=&r" (result)     \
+               	: "r"(ptr), "r"(val) \
+               	: "memory")
 
 #elif defined(__ppc64__)
 
-#define LL_BODY \
-   __asm__ __volatile__(                                                            \
-       "   lwarx %0,0,%1"                                                           \
-               : "=r" (result)                                                      \
-               : "r"(ptr))
+  // lwarx r_dest, addr_offset, r_addr
+  // stwcx r_src,  addr_offset, r_addr
 
-#define SC_BODY \
-   __asm__ __volatile__(                                                            \
-       "   stwcx. %2,0,%1          \n"                                              \
-       "   bne    $+12             \n"                                              \
-       "   li     %0,1             \n"                                              \
-       "   b      $+8              \n"                                              \
-       "   li     %0,0"                                                             \
-               : "=&r" (result)                                                     \
-               : "r"(ptr), "r"(val)                                                 \
-               : "cr0", "memory")
+#define LL_BODY                      \
+  __asm__ __volatile__(              \
+        "lwarx %0,0,%1"              \
+               	: "=r" (result)      \
+               	: "r"(ptr))
+
+#define SC_BODY                      \
+  __asm__ __volatile__(              \
+       	"stwcx. %2,0,%1 \n\t"        \
+       	"bne    $+12    \n\t"        \
+       	"li     %0,1    \n\t"        \
+       	"b      $+8     \n\t"        \
+       	"li     %0,0"                \
+       	        : "=&r" (result)     \
+                : "r"(ptr), "r"(val) \
+                : "cr0", "memory")
 #else
 #error "unknown processor"
 #endif

@@ -1,10 +1,35 @@
-##
-##  Csprof Makefile.am.
-##
-##  $Id$
-##
+# -*-Mode: makefile;-*-
+## $Id$
+
+#############################################################################
+#
+# File:
+#   $Source$
+#
+# Description:
+#   *Process with automake to produce Makefile.in*
+#   
+#   Note: All local variables are prefixed with MY to prevent name
+#   clashes with automatic automake variables.
+#
+#############################################################################
+
+# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
+AUTOMAKE_OPTIONS = foreign
+
+#############################################################################
+# Common settings
+#############################################################################
 
 include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
+# Local settings
+#############################################################################
+
+#############################################################################
+# Automake rules
+#############################################################################
 
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
@@ -24,7 +49,7 @@ XED2_LIB = @XED2_LIB@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
 
-CSPROF_BASE_FILES =			\
+MY_BASE_FILES =			\
 	utilities/first_func.c		\
 	csprof_options.c		\
 	csproflib.c			\
@@ -68,22 +93,25 @@ CSPROF_BASE_FILES =			\
 	utilities/tokenize.c		\
 	utilities/unlink.c
 
-CSPROF_DYNAMIC_FILES = 			\
+MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_dynamic.c	\
 	csprof_dlfns.c
 
-CSPROF_STATIC_FILES = 			\
+MY_STATIC_FILES = 			\
 	fnbounds/fnbounds_static.c
 
-CSPROF_LINUX_DYNAMIC_FILES = 		\
+MY_LINUX_DYNAMIC_FILES = 		\
 	os/linux/dylib.c
 
-CSPROF_PPC_FILES =				\
+
+MY_MIPS_FILES =
+
+MY_PPC_FILES =				\
 	unwind/ppc64/ppc64-build-intervals.c	\
 	unwind/ppc64/ppc64-context.c		\
 	unwind/ppc64/ppc64-unwind-support.c
 
-CSPROF_X86_FILES =					\
+MY_X86_FILES =					\
 	processor/x86-64/processor-libc.c		\
 	processor/x86-64/swizzle.c			\
 	unwind/x86-family/x86-all.c			\
@@ -91,10 +119,11 @@ CSPROF_X86_FILES =					\
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
 
-CSPROF_PAPI_FILES = 			\
+
+MY_PAPI_FILES = 			\
 	sample_source_papi.c
 
-CSPROF_CPP_DEFINES =			\
+MY_CPP_DEFINES =			\
 	-D_GNU_SOURCE			\
 	-DCSPROF_LAST_EDGE_ONLY=1	\
 	-DCSPROF_PERF=1			\
@@ -102,7 +131,7 @@ CSPROF_CPP_DEFINES =			\
 	-DCSPROF_THREADS=1		\
 	-DINLINE_FN=1
 
-CSPROF_INCLUDE_DIRS =			\
+MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/Dbg			\
 	-I$(srcdir)/fnbounds		\
 	-I$(srcdir)/lush		\
@@ -119,30 +148,36 @@ CSPROF_INCLUDE_DIRS =			\
 	-I$(PROF_LEAN_INC)		\
 	-I$(SYMTABAPI_INC)
 
-CSPROF_PPC_INCLUDE_DIRS = 		\
+
+MY_MIPS_INCLUDE_DIRS =		        \
+	-I$(srcdir)/processor/mips64	\
+	-I$(srcdir)/unwind/mips64
+
+MY_PPC_INCLUDE_DIRS = 		\
 	-I$(srcdir)/unwind/ppc64
 
-CSPROF_X86_INCLUDE_DIRS =		\
+MY_X86_INCLUDE_DIRS =		\
 	-I$(srcdir)/processor/x86-64	\
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
 
+
 libcsprof_la_SOURCES = 			\
-	$(CSPROF_BASE_FILES)		\
-	$(CSPROF_DYNAMIC_FILES)
+	$(MY_BASE_FILES)		\
+	$(MY_DYNAMIC_FILES)
 
 libcsprof_o_SOURCES = 			\
-	$(CSPROF_BASE_FILES)		\
-	$(CSPROF_STATIC_FILES)
+	$(MY_BASE_FILES)		\
+	$(MY_STATIC_FILES)
 
 libcsprof_la_CPPFLAGS =			\
-	$(CSPROF_CPP_DEFINES)		\
-	$(CSPROF_INCLUDE_DIRS)
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
 
 libcsprof_o_CPPFLAGS =			\
 	-DHPCRUN_STATIC_LINK		\
-	$(CSPROF_CPP_DEFINES)		\
-	$(CSPROF_INCLUDE_DIRS)
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
 
 libcsprof_la_CFLAGS = -std=c99 $(CFLAGS) $(HOST_CFLAGS)
 libcsprof_o_CFLAGS  = -std=c99 $(CFLAGS) $(HOST_CFLAGS)
@@ -156,30 +191,39 @@ libcsprof_la_LDFLAGS = -Wl,-Bsymbolic 	\
 libcsprof_o_LDFLAGS =
 
 if HOST_OS_LINUX
-    libcsprof_la_SOURCES += $(CSPROF_LINUX_DYNAMIC_FILES)
+    libcsprof_la_SOURCES += $(MY_LINUX_DYNAMIC_FILES)
+endif
+
+
+if HOST_CPU_MIPS
+    libcsprof_la_SOURCES  += $(MY_MIPS_FILES)
+    libcsprof_o_SOURCES   += $(MY_MIPS_FILES)
+    libcsprof_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+    libcsprof_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
 endif
 
 if HOST_CPU_PPC
-    libcsprof_la_SOURCES  += $(CSPROF_PPC_FILES)
-    libcsprof_o_SOURCES   += $(CSPROF_PPC_FILES)
-    libcsprof_la_CPPFLAGS += $(CSPROF_PPC_INCLUDE_DIRS)
-    libcsprof_o_CPPFLAGS  += $(CSPROF_PPC_INCLUDE_DIRS)
+    libcsprof_la_SOURCES  += $(MY_PPC_FILES)
+    libcsprof_o_SOURCES   += $(MY_PPC_FILES)
+    libcsprof_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+    libcsprof_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
     libcsprof_la_CFLAGS += -D__ppc64__
     libcsprof_o_CFLAGS  += -D__ppc64__
 endif
 
 if HOST_CPU_X86
-    libcsprof_la_SOURCES  += $(CSPROF_X86_FILES)
-    libcsprof_o_SOURCES   += $(CSPROF_X86_FILES)
-    libcsprof_la_CPPFLAGS += $(CSPROF_X86_INCLUDE_DIRS)
-    libcsprof_o_CPPFLAGS  += $(CSPROF_X86_INCLUDE_DIRS)
+    libcsprof_la_SOURCES  += $(MY_X86_FILES)
+    libcsprof_o_SOURCES   += $(MY_X86_FILES)
+    libcsprof_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+    libcsprof_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
     libcsprof_la_LDFLAGS  += $(XED2_LIB)/libxed.a
     libcsprof_o_LDFLAGS   += $(XED2_LIB)/libxed.a
 endif
 
+
 if OPT_HAVE_PAPI
-    libcsprof_la_SOURCES  += $(CSPROF_PAPI_FILES)
-    libcsprof_o_SOURCES   += $(CSPROF_PAPI_FILES)
+    libcsprof_la_SOURCES  += $(MY_PAPI_FILES)
+    libcsprof_o_SOURCES   += $(MY_PAPI_FILES)
     libcsprof_la_CPPFLAGS += $(PAPI_INC_FLGS)
     libcsprof_o_CPPFLAGS  += $(PAPI_INC_FLGS)
     libcsprof_la_LDFLAGS  += $(PAPI_LD_FLGS)
@@ -204,7 +248,7 @@ MY_AGENT_CILK_IFLAGS = -I$(MY_CILK_INSTALL)/include
 
 MY_AGENT_CILK_CFLAGS = \
 	$(MY_AGENT_CILK_IFLAGS) \
-	$(CSPROF_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS)
 
 
 MY_AGENT_PTHREAD_SOURCES = \
@@ -212,7 +256,7 @@ MY_AGENT_PTHREAD_SOURCES = \
 	$(MY_AGENT_RTSUPPORT)
 
 MY_AGENT_PTHREAD_CFLAGS = \
-	$(CSPROF_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS)
 
 
 MY_AGENT_TBB_SOURCES = \
@@ -220,7 +264,7 @@ MY_AGENT_TBB_SOURCES = \
 	$(MY_AGENT_RTSUPPORT)
 
 MY_AGENT_TBB_CFLAGS = \
-	$(CSPROF_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS)
 
 
 if OPT_ENABLE_LUSH
@@ -237,3 +281,9 @@ if OPT_ENABLE_LUSH
   libagent_tbb_la_CFLAGS   = $(MY_AGENT_TBB_CFLAGS)
 endif
 
+
+#############################################################################
+# Common rules
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules

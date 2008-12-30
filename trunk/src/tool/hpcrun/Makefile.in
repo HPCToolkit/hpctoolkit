@@ -22,6 +22,21 @@
 #   $Source$
 #
 # Description:
+#   *Process with automake to produce Makefile.in*
+#   
+#   Note: All local variables are prefixed with MY to prevent name
+#   clashes with automatic automake variables.
+#
+#############################################################################
+
+# -*-Mode: makefile;-*-
+
+#############################################################################
+#
+# File:
+#   $Source$
+#
+# Description:
 #   Include file for package Makefile.in
 # 
 #   *Assumes presence of Automake variables!*
@@ -34,6 +49,29 @@
 
 ############################################################
 # Local includes
+############################################################
+
+# -*-Mode: makefile;-*-
+# $Id: Makeinclude.rules 1296 2008-05-12 21:31:58Z eraxxon $
+
+#############################################################################
+#
+# File:
+#   $Source$
+#
+# Description:
+#   Include file for package Makefile.in
+# 
+#   *Assumes presence of Automake variables!*
+#
+#############################################################################
+
+#############################################################################
+# HPCTOOLKIT Extra rules
+#############################################################################
+
+############################################################
+# C Preprocessor
 ############################################################
 
 
@@ -57,28 +95,33 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(top_srcdir)/src/Makeinclude.config TODO
+	$(top_srcdir)/src/Makeinclude.config \
+	$(top_srcdir)/src/Makeinclude.rules TODO
 pkglib_PROGRAMS = libcsprof.o$(EXEEXT)
-@HOST_OS_LINUX_TRUE@am__append_1 = $(CSPROF_LINUX_DYNAMIC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_2 = $(CSPROF_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_3 = $(CSPROF_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_4 = $(CSPROF_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_5 = $(CSPROF_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_6 = -D__ppc64__
-@HOST_CPU_PPC_TRUE@am__append_7 = -D__ppc64__
-@HOST_CPU_X86_TRUE@am__append_8 = $(CSPROF_X86_FILES)
-@HOST_CPU_X86_TRUE@am__append_9 = $(CSPROF_X86_FILES)
-@HOST_CPU_X86_TRUE@am__append_10 = $(CSPROF_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_TRUE@am__append_11 = $(CSPROF_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_TRUE@am__append_12 = $(XED2_LIB)/libxed.a
-@HOST_CPU_X86_TRUE@am__append_13 = $(XED2_LIB)/libxed.a
-@OPT_HAVE_PAPI_TRUE@am__append_14 = $(CSPROF_PAPI_FILES)
-@OPT_HAVE_PAPI_TRUE@am__append_15 = $(CSPROF_PAPI_FILES)
-@OPT_HAVE_PAPI_TRUE@am__append_16 = $(PAPI_INC_FLGS)
-@OPT_HAVE_PAPI_TRUE@am__append_17 = $(PAPI_INC_FLGS)
-@OPT_HAVE_PAPI_TRUE@am__append_18 = $(PAPI_LD_FLGS)
-@OPT_HAVE_PAPI_TRUE@am__append_19 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_LUSH_TRUE@am__append_20 = libagent-cilk.la \
+@HOST_OS_LINUX_TRUE@am__append_1 = $(MY_LINUX_DYNAMIC_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_2 = $(MY_MIPS_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_3 = $(MY_MIPS_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_4 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_5 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_6 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_7 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_8 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_9 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_10 = -D__ppc64__
+@HOST_CPU_PPC_TRUE@am__append_11 = -D__ppc64__
+@HOST_CPU_X86_TRUE@am__append_12 = $(MY_X86_FILES)
+@HOST_CPU_X86_TRUE@am__append_13 = $(MY_X86_FILES)
+@HOST_CPU_X86_TRUE@am__append_14 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_TRUE@am__append_15 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_TRUE@am__append_16 = $(XED2_LIB)/libxed.a
+@HOST_CPU_X86_TRUE@am__append_17 = $(XED2_LIB)/libxed.a
+@OPT_HAVE_PAPI_TRUE@am__append_18 = $(MY_PAPI_FILES)
+@OPT_HAVE_PAPI_TRUE@am__append_19 = $(MY_PAPI_FILES)
+@OPT_HAVE_PAPI_TRUE@am__append_20 = $(PAPI_INC_FLGS)
+@OPT_HAVE_PAPI_TRUE@am__append_21 = $(PAPI_INC_FLGS)
+@OPT_HAVE_PAPI_TRUE@am__append_22 = $(PAPI_LD_FLGS)
+@OPT_HAVE_PAPI_TRUE@am__append_23 = $(PAPI_LD_FLGS)
+@OPT_ENABLE_LUSH_TRUE@am__append_24 = libagent-cilk.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-pthread.la libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -190,21 +233,23 @@ am__objects_8 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_9 = libcsprof_la-dylib.lo
 @HOST_OS_LINUX_TRUE@am__objects_10 = $(am__objects_9)
-am__objects_11 = libcsprof_la-ppc64-build-intervals.lo \
+am__objects_11 =
+@HOST_CPU_MIPS_TRUE@am__objects_12 = $(am__objects_11)
+am__objects_13 = libcsprof_la-ppc64-build-intervals.lo \
 	libcsprof_la-ppc64-context.lo \
 	libcsprof_la-ppc64-unwind-support.lo
-@HOST_CPU_PPC_TRUE@am__objects_12 = $(am__objects_11)
-am__objects_13 = libcsprof_la-processor-libc.lo \
+@HOST_CPU_PPC_TRUE@am__objects_14 = $(am__objects_13)
+am__objects_15 = libcsprof_la-processor-libc.lo \
 	libcsprof_la-swizzle.lo libcsprof_la-x86-all.lo \
 	libcsprof_la-x86-unwind-interval-fixup.lo \
 	libcsprof_la-x86-unwind-support.lo \
 	libcsprof_la-x86-linux-dlresolver.lo
-@HOST_CPU_X86_TRUE@am__objects_14 = $(am__objects_13)
-am__objects_15 = libcsprof_la-sample_source_papi.lo
-@OPT_HAVE_PAPI_TRUE@am__objects_16 = $(am__objects_15)
+@HOST_CPU_X86_TRUE@am__objects_16 = $(am__objects_15)
+am__objects_17 = libcsprof_la-sample_source_papi.lo
+@OPT_HAVE_PAPI_TRUE@am__objects_18 = $(am__objects_17)
 am_libcsprof_la_OBJECTS = $(am__objects_7) $(am__objects_8) \
 	$(am__objects_10) $(am__objects_12) $(am__objects_14) \
-	$(am__objects_16) libcsprof_la-last_func.lo
+	$(am__objects_16) $(am__objects_18) libcsprof_la-last_func.lo
 libcsprof_la_OBJECTS = $(am_libcsprof_la_OBJECTS)
 libcsprof_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libcsprof_la_CFLAGS) \
@@ -236,7 +281,7 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	sample_source_papi.c utilities/last_func.c
-am__objects_17 = libcsprof_o-first_func.$(OBJEXT) \
+am__objects_19 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-csprof_options.$(OBJEXT) \
 	libcsprof_o-csproflib.$(OBJEXT) libcsprof_o-data.$(OBJEXT) \
 	libcsprof_o-env.$(OBJEXT) libcsprof_o-epoch.$(OBJEXT) \
@@ -267,22 +312,22 @@ am__objects_17 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
 	libcsprof_o-spinlock.$(OBJEXT) libcsprof_o-tokenize.$(OBJEXT) \
 	libcsprof_o-unlink.$(OBJEXT)
-am__objects_18 = libcsprof_o-fnbounds_static.$(OBJEXT)
-am__objects_19 = libcsprof_o-ppc64-build-intervals.$(OBJEXT) \
+am__objects_20 = libcsprof_o-fnbounds_static.$(OBJEXT)
+am__objects_21 = libcsprof_o-ppc64-build-intervals.$(OBJEXT) \
 	libcsprof_o-ppc64-context.$(OBJEXT) \
 	libcsprof_o-ppc64-unwind-support.$(OBJEXT)
-@HOST_CPU_PPC_TRUE@am__objects_20 = $(am__objects_19)
-am__objects_21 = libcsprof_o-processor-libc.$(OBJEXT) \
+@HOST_CPU_PPC_TRUE@am__objects_22 = $(am__objects_21)
+am__objects_23 = libcsprof_o-processor-libc.$(OBJEXT) \
 	libcsprof_o-swizzle.$(OBJEXT) libcsprof_o-x86-all.$(OBJEXT) \
 	libcsprof_o-x86-unwind-interval-fixup.$(OBJEXT) \
 	libcsprof_o-x86-unwind-support.$(OBJEXT) \
 	libcsprof_o-x86-linux-dlresolver.$(OBJEXT)
-@HOST_CPU_X86_TRUE@am__objects_22 = $(am__objects_21)
-am__objects_23 = libcsprof_o-sample_source_papi.$(OBJEXT)
-@OPT_HAVE_PAPI_TRUE@am__objects_24 = $(am__objects_23)
-am_libcsprof_o_OBJECTS = $(am__objects_17) $(am__objects_18) \
-	$(am__objects_20) $(am__objects_22) $(am__objects_24) \
-	libcsprof_o-last_func.$(OBJEXT)
+@HOST_CPU_X86_TRUE@am__objects_24 = $(am__objects_23)
+am__objects_25 = libcsprof_o-sample_source_papi.$(OBJEXT)
+@OPT_HAVE_PAPI_TRUE@am__objects_26 = $(am__objects_25)
+am_libcsprof_o_OBJECTS = $(am__objects_19) $(am__objects_20) \
+	$(am__objects_12) $(am__objects_22) $(am__objects_24) \
+	$(am__objects_26) libcsprof_o-last_func.$(OBJEXT)
 libcsprof_o_OBJECTS = $(am_libcsprof_o_OBJECTS)
 libcsprof_o_DEPENDENCIES = $(HPC_LIBPROFLEAN)
 libcsprof_o_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -477,6 +522,9 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+
+# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
+AUTOMAKE_OPTIONS = foreign
 HPC_IFLAGS = -I@abs_top_srcdir@/src
 
 ############################################################
@@ -502,15 +550,27 @@ HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
 HPC_LIBISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
+
+#############################################################################
+# Automake rules
+#############################################################################
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
-pkglib_LTLIBRARIES = libcsprof.la $(am__append_20)
+pkglib_LTLIBRARIES = libcsprof.la $(am__append_24)
 bin_SCRIPTS = scripts/hpcrun scripts/hpclink
 pkglibexec_SCRIPTS = scripts/hpclog
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
-CSPROF_BASE_FILES = \
+MY_BASE_FILES = \
 	utilities/first_func.c		\
 	csprof_options.c		\
 	csproflib.c			\
@@ -554,22 +614,23 @@ CSPROF_BASE_FILES = \
 	utilities/tokenize.c		\
 	utilities/unlink.c
 
-CSPROF_DYNAMIC_FILES = \
+MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_dynamic.c	\
 	csprof_dlfns.c
 
-CSPROF_STATIC_FILES = \
+MY_STATIC_FILES = \
 	fnbounds/fnbounds_static.c
 
-CSPROF_LINUX_DYNAMIC_FILES = \
+MY_LINUX_DYNAMIC_FILES = \
 	os/linux/dylib.c
 
-CSPROF_PPC_FILES = \
+MY_MIPS_FILES = 
+MY_PPC_FILES = \
 	unwind/ppc64/ppc64-build-intervals.c	\
 	unwind/ppc64/ppc64-context.c		\
 	unwind/ppc64/ppc64-unwind-support.c
 
-CSPROF_X86_FILES = \
+MY_X86_FILES = \
 	processor/x86-64/processor-libc.c		\
 	processor/x86-64/swizzle.c			\
 	unwind/x86-family/x86-all.c			\
@@ -577,10 +638,10 @@ CSPROF_X86_FILES = \
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
 
-CSPROF_PAPI_FILES = \
+MY_PAPI_FILES = \
 	sample_source_papi.c
 
-CSPROF_CPP_DEFINES = \
+MY_CPP_DEFINES = \
 	-D_GNU_SOURCE			\
 	-DCSPROF_LAST_EDGE_ONLY=1	\
 	-DCSPROF_PERF=1			\
@@ -588,7 +649,7 @@ CSPROF_CPP_DEFINES = \
 	-DCSPROF_THREADS=1		\
 	-DINLINE_FN=1
 
-CSPROF_INCLUDE_DIRS = \
+MY_INCLUDE_DIRS = \
 	-I$(srcdir)/Dbg			\
 	-I$(srcdir)/fnbounds		\
 	-I$(srcdir)/lush		\
@@ -605,33 +666,39 @@ CSPROF_INCLUDE_DIRS = \
 	-I$(PROF_LEAN_INC)		\
 	-I$(SYMTABAPI_INC)
 
-CSPROF_PPC_INCLUDE_DIRS = \
+MY_MIPS_INCLUDE_DIRS = \
+	-I$(srcdir)/processor/mips64	\
+	-I$(srcdir)/unwind/mips64
+
+MY_PPC_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/ppc64
 
-CSPROF_X86_INCLUDE_DIRS = \
+MY_X86_INCLUDE_DIRS = \
 	-I$(srcdir)/processor/x86-64	\
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
 
-libcsprof_la_SOURCES = $(CSPROF_BASE_FILES) $(CSPROF_DYNAMIC_FILES) \
-	$(am__append_1) $(am__append_2) $(am__append_8) \
-	$(am__append_14) utilities/last_func.c
-libcsprof_o_SOURCES = $(CSPROF_BASE_FILES) $(CSPROF_STATIC_FILES) \
-	$(am__append_3) $(am__append_9) $(am__append_15) \
-	utilities/last_func.c
-libcsprof_la_CPPFLAGS = $(CSPROF_CPP_DEFINES) $(CSPROF_INCLUDE_DIRS) \
-	$(am__append_4) $(am__append_10) $(am__append_16)
-libcsprof_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(CSPROF_CPP_DEFINES) \
-	$(CSPROF_INCLUDE_DIRS) $(am__append_5) $(am__append_11) \
-	$(am__append_17)
+libcsprof_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
+	$(am__append_1) $(am__append_2) $(am__append_6) \
+	$(am__append_12) $(am__append_18) utilities/last_func.c
+libcsprof_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
+	$(am__append_3) $(am__append_7) $(am__append_13) \
+	$(am__append_19) utilities/last_func.c
+libcsprof_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
+	$(am__append_4) $(am__append_8) $(am__append_14) \
+	$(am__append_20)
+libcsprof_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
+	$(MY_INCLUDE_DIRS) $(am__append_5) $(am__append_9) \
+	$(am__append_15) $(am__append_21)
 libcsprof_la_CFLAGS = -std=c99 $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_6)
-libcsprof_o_CFLAGS = -std=c99 $(CFLAGS) $(HOST_CFLAGS) $(am__append_7)
+	$(am__append_10)
+libcsprof_o_CFLAGS = -std=c99 $(CFLAGS) $(HOST_CFLAGS) \
+	$(am__append_11)
 libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
 libcsprof_o_LDADD = $(HPC_LIBPROFLEAN)
 libcsprof_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(am__append_12) $(am__append_18)
-libcsprof_o_LDFLAGS = $(am__append_13) $(am__append_19)
+	-lpthread -lrt $(am__append_16) $(am__append_22)
+libcsprof_o_LDFLAGS = $(am__append_17) $(am__append_23)
 
 # FIXME: This is specific to Rice.
 MY_AGENT_RTSUPPORT = lush/lush-support-rt.h lush/lush-support-rt.c
@@ -643,21 +710,21 @@ MY_AGENT_CILK_SOURCES = \
 MY_AGENT_CILK_IFLAGS = -I$(MY_CILK_INSTALL)/include
 MY_AGENT_CILK_CFLAGS = \
 	$(MY_AGENT_CILK_IFLAGS) \
-	$(CSPROF_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS)
 
 MY_AGENT_PTHREAD_SOURCES = \
 	lush-agents/agent-pthread.h lush-agents/agent-pthread.c \
 	$(MY_AGENT_RTSUPPORT)
 
 MY_AGENT_PTHREAD_CFLAGS = \
-	$(CSPROF_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS)
 
 MY_AGENT_TBB_SOURCES = \
 	lush-agents/agent-tbb.h lush-agents/agent-tbb.c \
 	$(MY_AGENT_RTSUPPORT)
 
 MY_AGENT_TBB_CFLAGS = \
-	$(CSPROF_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS)
 
 @OPT_ENABLE_LUSH_TRUE@libagent_cilk_la_SOURCES = $(MY_AGENT_CILK_SOURCES)
 @OPT_ENABLE_LUSH_TRUE@libagent_cilk_la_CFLAGS = $(MY_AGENT_CILK_CFLAGS)
@@ -665,11 +732,21 @@ MY_AGENT_TBB_CFLAGS = \
 @OPT_ENABLE_LUSH_TRUE@libagent_pthread_la_CFLAGS = $(MY_AGENT_PTHREAD_CFLAGS)
 @OPT_ENABLE_LUSH_TRUE@libagent_tbb_la_SOURCES = $(MY_AGENT_TBB_SOURCES)
 @OPT_ENABLE_LUSH_TRUE@libagent_tbb_la_CFLAGS = $(MY_AGENT_TBB_CFLAGS)
+
+# Assumes includer sets MYCXXFLAGS and MYCFLAGS
+# cf. CXXCOMPILE (automatically generated by automake)
+MYCPPFLAGS_CXX = $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) \
+	$(MYCXXFLAGS)
+
+MYCPPFLAGS_CC = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
+	$(MYCFLAGS)
+
 all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -678,9 +755,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  src/tool/hpcrun/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/tool/hpcrun/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  src/tool/hpcrun/Makefile
+	  $(AUTOMAKE) --foreign  src/tool/hpcrun/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -2328,6 +2405,18 @@ uninstall-am: uninstall-binSCRIPTS uninstall-pkglibLTLIBRARIES \
 	uninstall-pkglibPROGRAMS uninstall-pkglibexecSCRIPTS
 
 
+#############################################################################
+
+%.cpp.pp : %.cpp
+	$(CXXCPP) $(MYCPPFLAGS_CXX) $< > $@
+
+%.c.pp : %.c
+	$(CXXCPP) $(MYCPPFLAGS_CC) $< > $@
+
+#############################################################################
+
+#############################################################################
+# Common rules
 #############################################################################
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
