@@ -114,10 +114,10 @@ static ProcStrctToProcMap*
 buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm);
 
 static Struct::File*
-findOrCreateFileNode(Struct::LM* lmStrct, binutils::Proc* p);
+demandFileNode(Struct::LM* lmStrct, binutils::Proc* p);
 
 static Struct::Proc*
-findOrCreateProcNode(Struct::File* fStrct, binutils::Proc* p);
+demandProcNode(Struct::File* fStrct, binutils::Proc* p);
 
 
 static Struct::Proc*
@@ -143,9 +143,9 @@ findLoopBegLineInfo(binutils::Proc* p,
 
 #if 0
 static Struct::Stmt*
-findOrCreateStmtNode(std::map<SrcFile::ln, Struct::Stmt*>& stmtMap,
-		     Struct::ACodeNode* enclosingStrct, SrcFile::ln line, 
-		     VMAInterval& vmaint);
+demandStmtNode(std::map<SrcFile::ln, Struct::Stmt*>& stmtMap,
+	       Struct::ACodeNode* enclosingStrct, SrcFile::ln line, 
+	       VMAInterval& vmaint);
 #endif
 
 // Cannot make this a local class because it is used as a template
@@ -415,8 +415,8 @@ buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm)
        it != lm->procs().end(); ++it) {
     binutils::Proc* p = it->second;
     if (p->size() != 0) {
-      Struct::File* fStrct = findOrCreateFileNode(lmStrct, p);
-      Struct::Proc* pStrct = findOrCreateProcNode(fStrct, p);
+      Struct::File* fStrct = demandFileNode(lmStrct, p);
+      Struct::Proc* pStrct = demandProcNode(fStrct, p);
       mp->insert(make_pair(pStrct, p));
     }
   }
@@ -450,9 +450,9 @@ buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm)
 }
 
 
-// findOrCreateFileNode: 
+// demandFileNode: 
 static Struct::File* 
-findOrCreateFileNode(Struct::LM* lmStrct, binutils::Proc* p)
+demandFileNode(Struct::LM* lmStrct, binutils::Proc* p)
 {
   // Attempt to find filename for procedure
   string filenm = p->filename();
@@ -471,10 +471,10 @@ findOrCreateFileNode(Struct::LM* lmStrct, binutils::Proc* p)
 } 
 
 
-// findOrCreateProcNode: Build skeletal Struct::Proc.  We can assume that
+// demandProcNode: Build skeletal Struct::Proc.  We can assume that
 // the parent is always a Struct::File.
 static Struct::Proc*
-findOrCreateProcNode(Struct::File* fStrct, binutils::Proc* p)
+demandProcNode(Struct::File* fStrct, binutils::Proc* p)
 {
   // Find VMA boundaries: [beg, end)
   VMA endVMA = p->begVMA() + p->size();
@@ -1045,11 +1045,12 @@ findLoopBegLineInfo(binutils::Proc* p,
 
 
 #if 0
-// findOrCreateStmtNode: Build a Struct::Stmt.  Unlike LocateStmt,
+// demandStmtNode: Build a Struct::Stmt.  Unlike LocateStmt,
 // assumes that procedure boundaries do not need to be expanded.
 static Struct::Stmt*
-findOrCreateStmtNode(std::map<SrcFile::ln, Struct::Stmt*>& stmtMap,
-		     Struct::ACodeNode* enclosingStrct, SrcFile::ln line, VMAInterval& vmaint)
+demandStmtNode(std::map<SrcFile::ln, Struct::Stmt*>& stmtMap,
+	       Struct::ACodeNode* enclosingStrct, SrcFile::ln line, 
+	       VMAInterval& vmaint)
 {
   Struct::Stmt* stmt = stmtMap[line];
   if (!stmt) {
