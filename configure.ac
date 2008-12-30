@@ -254,15 +254,16 @@ HPC_DEF_CXXCMP()
 # sections.
 
 HOST_OS=
-host_cpu_ppc=no
-host_cpu_x86=no
+HOST_CPU_MIPS=no
+HOST_CPU_PPC=no
+HOST_CPU_X86=no
 
 case ${host} in
   # Linux
   i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux*)
     # __i386 / __x86_64 && __linux
     HOST_OS="Linux"
-    host_cpu_x86=yes
+    HOST_CPU_X86=yes
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
 
@@ -275,6 +276,7 @@ case ${host} in
   mips64*-*-linux*)
     # __mips64 && __linux / _MIPS_SIM == _ABIN32 / _MIPS_SIM == _ABI64
     HOST_OS="Linux"
+    HOST_CPU_MIPS=yes
     AC_DEFINE([HOST_PLATFORM_MIPS64LE_LINUX], [], [])
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
@@ -282,7 +284,7 @@ case ${host} in
   powerpc64*-*-linux*)
     # []
     HOST_OS="Linux"
-    host_cpu_ppc=yes
+    HOST_CPU_PPC=yes
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
 
@@ -290,13 +292,13 @@ case ${host} in
   powerpc*-*-darwin*)
     # __ppc__ / __MACH__
     HOST_OS="MacOS"
-    host_cpu_ppc=yes
+    HOST_CPU_PPC=yes
     AC_DEFINE([HOST_OS_MACOS], [], [])
     ;;
 
   i386*-*-darwin* | i686*-*-darwin*)
     HOST_OS="MacOS"
-    host_cpu_x86=yes
+    HOST_CPU_X86=yes
     AC_DEFINE([HOST_OS_MACOS], [], [])
     ;;
 
@@ -306,6 +308,7 @@ case ${host} in
     # _MIPS_ISA == _MIPS_ISA_MIPS1 | _MIPS_ISA == _MIPS_ISA_MIPS2
     # _MIPS_ISA == _MIPS_ISA_MIPS3 | _MIPS_ISA == _MIPS_ISA_MIPS4
     HOST_OS="IRIX"
+    HOST_CPU_MIPS=yes
     AC_DEFINE([HOST_OS_IRIX], [], [])
     ;;
 
@@ -328,9 +331,11 @@ case ${host} in
     ;;
 esac
 
+
 AM_CONDITIONAL([HOST_OS_LINUX], [test "$HOST_OS" = Linux])
-AM_CONDITIONAL([HOST_CPU_PPC],  [test "$host_cpu_ppc" = yes])
-AM_CONDITIONAL([HOST_CPU_X86],  [test "$host_cpu_x86" = yes])
+AM_CONDITIONAL([HOST_CPU_MIPS], [test "$HOST_CPU_MIPS" = yes])
+AM_CONDITIONAL([HOST_CPU_PPC],  [test "$HOST_CPU_PPC" = yes])
+AM_CONDITIONAL([HOST_CPU_X86],  [test "$HOST_CPU_X86" = yes])
 
 
 #-------------------------------------------------

@@ -881,6 +881,8 @@ ac_ct_F77
 LIBTOOL
 HOST_OS_LINUX_TRUE
 HOST_OS_LINUX_FALSE
+HOST_CPU_MIPS_TRUE
+HOST_CPU_MIPS_FALSE
 HOST_CPU_PPC_TRUE
 HOST_CPU_PPC_FALSE
 HOST_CPU_X86_TRUE
@@ -4567,7 +4569,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4570 "configure"' > conftest.$ac_ext
+  echo '#line 4572 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7624,11 +7626,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7627: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7629: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7631: \$? = $ac_status" >&5
+   echo "$as_me:7633: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7914,11 +7916,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7917: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7919: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7921: \$? = $ac_status" >&5
+   echo "$as_me:7923: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8018,11 +8020,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8021: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8023: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8025: \$? = $ac_status" >&5
+   echo "$as_me:8027: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10382,7 +10384,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10385 "configure"
+#line 10387 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10482,7 +10484,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10485 "configure"
+#line 10487 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12883,11 +12885,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12886: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12888: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:12890: \$? = $ac_status" >&5
+   echo "$as_me:12892: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -12987,11 +12989,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12990: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12992: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:12994: \$? = $ac_status" >&5
+   echo "$as_me:12996: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14570,11 +14572,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14573: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14575: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14577: \$? = $ac_status" >&5
+   echo "$as_me:14579: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14674,11 +14676,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14677: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14679: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14681: \$? = $ac_status" >&5
+   echo "$as_me:14683: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16881,11 +16883,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16884: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16886: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16888: \$? = $ac_status" >&5
+   echo "$as_me:16890: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17171,11 +17173,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17174: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17176: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17178: \$? = $ac_status" >&5
+   echo "$as_me:17180: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17275,11 +17277,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17278: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17280: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17282: \$? = $ac_status" >&5
+   echo "$as_me:17284: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -22919,15 +22921,16 @@ MYcxxcmp()
 # sections.
 
 HOST_OS=
-host_cpu_ppc=no
-host_cpu_x86=no
+HOST_CPU_MIPS=no
+HOST_CPU_PPC=no
+HOST_CPU_X86=no
 
 case ${host} in
   # Linux
   i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux*)
     # __i386 / __x86_64 && __linux
     HOST_OS="Linux"
-    host_cpu_x86=yes
+    HOST_CPU_X86=yes
     cat >>confdefs.h <<\_ACEOF
 #define HOST_OS_LINUX
 _ACEOF
@@ -22946,6 +22949,7 @@ _ACEOF
   mips64*-*-linux*)
     # __mips64 && __linux / _MIPS_SIM == _ABIN32 / _MIPS_SIM == _ABI64
     HOST_OS="Linux"
+    HOST_CPU_MIPS=yes
     cat >>confdefs.h <<\_ACEOF
 #define HOST_PLATFORM_MIPS64LE_LINUX
 _ACEOF
@@ -22959,7 +22963,7 @@ _ACEOF
   powerpc64*-*-linux*)
     # []
     HOST_OS="Linux"
-    host_cpu_ppc=yes
+    HOST_CPU_PPC=yes
     cat >>confdefs.h <<\_ACEOF
 #define HOST_OS_LINUX
 _ACEOF
@@ -22970,7 +22974,7 @@ _ACEOF
   powerpc*-*-darwin*)
     # __ppc__ / __MACH__
     HOST_OS="MacOS"
-    host_cpu_ppc=yes
+    HOST_CPU_PPC=yes
     cat >>confdefs.h <<\_ACEOF
 #define HOST_OS_MACOS
 _ACEOF
@@ -22979,7 +22983,7 @@ _ACEOF
 
   i386*-*-darwin* | i686*-*-darwin*)
     HOST_OS="MacOS"
-    host_cpu_x86=yes
+    HOST_CPU_X86=yes
     cat >>confdefs.h <<\_ACEOF
 #define HOST_OS_MACOS
 _ACEOF
@@ -22992,6 +22996,7 @@ _ACEOF
     # _MIPS_ISA == _MIPS_ISA_MIPS1 | _MIPS_ISA == _MIPS_ISA_MIPS2
     # _MIPS_ISA == _MIPS_ISA_MIPS3 | _MIPS_ISA == _MIPS_ISA_MIPS4
     HOST_OS="IRIX"
+    HOST_CPU_MIPS=yes
     cat >>confdefs.h <<\_ACEOF
 #define HOST_OS_IRIX
 _ACEOF
@@ -23025,6 +23030,7 @@ echo "$as_me: error: HPCToolkit is not configured for HOST=${host}!" >&2;}
     ;;
 esac
 
+
  if test "$HOST_OS" = Linux; then
   HOST_OS_LINUX_TRUE=
   HOST_OS_LINUX_FALSE='#'
@@ -23033,7 +23039,15 @@ else
   HOST_OS_LINUX_FALSE=
 fi
 
- if test "$host_cpu_ppc" = yes; then
+ if test "$HOST_CPU_MIPS" = yes; then
+  HOST_CPU_MIPS_TRUE=
+  HOST_CPU_MIPS_FALSE='#'
+else
+  HOST_CPU_MIPS_TRUE='#'
+  HOST_CPU_MIPS_FALSE=
+fi
+
+ if test "$HOST_CPU_PPC" = yes; then
   HOST_CPU_PPC_TRUE=
   HOST_CPU_PPC_FALSE='#'
 else
@@ -23041,7 +23055,7 @@ else
   HOST_CPU_PPC_FALSE=
 fi
 
- if test "$host_cpu_x86" = yes; then
+ if test "$HOST_CPU_X86" = yes; then
   HOST_CPU_X86_TRUE=
   HOST_CPU_X86_FALSE='#'
 else
@@ -24515,6 +24529,13 @@ echo "$as_me: error: conditional \"HOST_OS_LINUX\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${HOST_CPU_MIPS_TRUE}" && test -z "${HOST_CPU_MIPS_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"HOST_CPU_MIPS\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"HOST_CPU_MIPS\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${HOST_CPU_PPC_TRUE}" && test -z "${HOST_CPU_PPC_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"HOST_CPU_PPC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -25303,6 +25324,8 @@ ac_ct_F77!$ac_ct_F77$ac_delim
 LIBTOOL!$LIBTOOL$ac_delim
 HOST_OS_LINUX_TRUE!$HOST_OS_LINUX_TRUE$ac_delim
 HOST_OS_LINUX_FALSE!$HOST_OS_LINUX_FALSE$ac_delim
+HOST_CPU_MIPS_TRUE!$HOST_CPU_MIPS_TRUE$ac_delim
+HOST_CPU_MIPS_FALSE!$HOST_CPU_MIPS_FALSE$ac_delim
 HOST_CPU_PPC_TRUE!$HOST_CPU_PPC_TRUE$ac_delim
 HOST_CPU_PPC_FALSE!$HOST_CPU_PPC_FALSE$ac_delim
 HOST_CPU_X86_TRUE!$HOST_CPU_X86_TRUE$ac_delim
@@ -25382,7 +25405,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 95; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -25401,7 +25424,7 @@ fi
 
 cat >>$CONFIG_STATUS <<_ACEOF
 cat >"\$tmp/subs-2.sed" <<\CEOF$ac_eof
-/@[a-zA-Z_][a-zA-Z_0-9]*@/!b end
+/@[a-zA-Z_][a-zA-Z_0-9]*@/!b
 _ACEOF
 sed '
 s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g
@@ -25414,8 +25437,6 @@ N; s/^.*\n//; s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g; b n
 ' >>$CONFIG_STATUS <conf$$subs.sed
 rm -f conf$$subs.sed
 cat >>$CONFIG_STATUS <<_ACEOF
-:end
-s/|#_!!_#|//g
 CEOF$ac_eof
 _ACEOF
 
@@ -25669,7 +25690,7 @@ s&@abs_top_builddir@&$ac_abs_top_builddir&;t t
 s&@INSTALL@&$ac_INSTALL&;t t
 s&@MKDIR_P@&$ac_MKDIR_P&;t t
 $ac_datarootdir_hack
-" $ac_file_inputs | sed -f "$tmp/subs-1.sed" | sed -f "$tmp/subs-2.sed" >$tmp/out
+" $ac_file_inputs | sed -f "$tmp/subs-1.sed" | sed -f "$tmp/subs-2.sed" | sed 's/|#_!!_#|//g' >$tmp/out
 
 test -z "$ac_datarootdir_hack$ac_datarootdir_seen" &&
   { ac_out=`sed -n '/\${datarootdir}/p' "$tmp/out"`; test -n "$ac_out"; } &&
