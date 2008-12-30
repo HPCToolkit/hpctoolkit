@@ -3744,7 +3744,7 @@ case "$with_old_monitor" in
 	old_monitor_prefix="${prefix}/old-monitor"
 	;;
     /* )
-	if test -d "${with_old_monitor}/include/monitor.h" ; then
+	if test -f "${with_old_monitor}/include/monitor.h" ; then
 	    old_monitor_avail="$with_old_monitor"
 	    old_monitor_prefix="$with_old_monitor"
 	else
