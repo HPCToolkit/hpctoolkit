@@ -180,8 +180,8 @@ protected:
 class NonUniformDegreeTreeNodeChildIterator : public StackableIterator {
 public:
   NonUniformDegreeTreeNodeChildIterator(const NonUniformDegreeTreeNode* _parent,
-					bool firstToLast = true)
-    : parent(_parent), currentChild(0), forward(firstToLast)
+					bool _forward = true)
+    : parent(_parent), currentChild(0), forward(_forward)
   {
     Reset();
   }

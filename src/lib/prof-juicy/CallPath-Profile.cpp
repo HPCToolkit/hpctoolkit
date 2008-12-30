@@ -151,7 +151,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
   }
 
   for (Struct::ANodeIterator it(root, filter); it.Current(); ++it) {
-    Struct::ANode* strct = it.CurScope();
+    Struct::ANode* strct = it.CurNode();
     
     if (!strct->HasPerfData(CallPath::Profile::StructMetricIdFlg)) {
       continue;

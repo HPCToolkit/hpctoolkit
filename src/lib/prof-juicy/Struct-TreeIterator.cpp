@@ -137,7 +137,7 @@ ANodeLineSortedIterator(const ACodeNode *file,
 {
   ANodeIterator it(file, filterFunc, leavesOnly);
   ANode *cur;
-  for (; (cur = it.CurScope()); ) {
+  for (; (cur = it.CurNode()); ) {
     scopes.Add((unsigned long) cur);
     it++;
   }
@@ -183,7 +183,7 @@ ANodeLineSortedChildIterator(const ANode *scope,
 {
   ANodeChildIterator it(scope, f);
   ANode *cur;
-  for (; (cur = it.CurScope()); ) {
+  for (; (cur = it.CurNode()); ) {
     scopes.Add((unsigned long) cur);
     it++;
   }
@@ -220,7 +220,7 @@ ANodeLineSortedIteratorForLargeScopes::ANodeLineSortedIteratorForLargeScopes(
 {
   ANodeIterator it(file, filterFunc, leavesOnly);
   ANode *cur;
-  for (; (cur = it.CurScope()); ) {
+  for (; (cur = it.CurNode()); ) {
     ACodeNodeLine *cur1 = new ACodeNodeLine(dynamic_cast<ACodeNode*>(cur), 
                          IS_BEG_LINE);
     scopes.Add((unsigned long) cur1);
@@ -284,7 +284,7 @@ ANodeNameSortedChildIterator(const ANode *scope,
 {
   ANodeChildIterator it(scope, f);
   ANode *cur;
-  for (; (cur = it.CurScope()); ) {
+  for (; (cur = it.CurNode()); ) {
     scopes.Add((unsigned long) cur);
     it++;
   }
@@ -336,7 +336,7 @@ ANodeMetricSortedIterator::ANodeMetricSortedIterator(const Pgm* pgm,
 
   ANodeIterator it(pgm, filterFunc, false);
   ANode *cur;
-  for (; (cur = it.CurScope()); ) {
+  for (; (cur = it.CurNode()); ) {
     scopes.Add((unsigned long) cur);
     it++;
   }
@@ -368,7 +368,7 @@ void ANodeMetricSortedChildIterator::AddChildren
   
   ANodeChildIterator it(scope, filterFunc);
   ANode *cur;
-  for (; (cur = it.CurScope()); ) {
+  for (; (cur = it.CurNode()); ) {
     if ((curDepth == depth) || cur->IsLeaf()) {
       scopes.Add((unsigned long) cur);
     } else {
