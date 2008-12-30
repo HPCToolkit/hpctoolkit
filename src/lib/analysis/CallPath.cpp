@@ -160,13 +160,12 @@ typedef std::map<ProcFrameAndLoop, Prof::CCT::Loop*> ProcFrameAndLoopToCSLoopMap
 
 
 static Prof::CCT::ProcFrm*
-demandProcFrame(Prof::CCT::IDynNode* node,
-		Prof::Struct::ACodeNode* pctxtStrct,
+demandProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::ACodeNode* pctxtStrct,
 		ACodeNodeToProcFrameMap& frameMap,
 		ProcFrameAndLoopToCSLoopMap& loopMap);
 
 static void
-makeProcFrame(Prof::CCT::IDynNode* node, Prof::Struct::Proc* proc, 
+makeProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* proc, 
 	      ACodeNodeToProcFrameMap& frameMap,
 	      ProcFrameAndLoopToCSLoopMap& loopMap);
 
@@ -217,13 +216,12 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
   // For each immediate child of this node...
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
     Prof::CCT::ANode* n = it.CurNode();
-    
     it++; // advance iterator -- it is pointing at 'n' 
     
     // ---------------------------------------------------
-    // process this node
+    // process Prof::CCT::ADynNode nodes
     // ---------------------------------------------------
-    Prof::CCT::IDynNode* n_dyn = dynamic_cast<Prof::CCT::IDynNode*>(n);
+    Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
     if (n_dyn && (n_dyn->lm_id() == epoch_lm->id())) {
       VMA ip_ur = n_dyn->ip();
       DIAG_DevIf(50) {
@@ -280,8 +278,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 // 
 // Assumes that symbolic information has been added to node.
 static Prof::CCT::ProcFrm*
-demandProcFrame(Prof::CCT::IDynNode* node,
-		Prof::Struct::ACodeNode* pctxtStrct,
+demandProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::ACodeNode* pctxtStrct,
 		ACodeNodeToProcFrameMap& frameMap,
 		ProcFrameAndLoopToCSLoopMap& loopMap)
 {
@@ -309,7 +306,7 @@ demandProcFrame(Prof::CCT::IDynNode* node,
 
 
 static void 
-makeProcFrame(Prof::CCT::IDynNode* node, Prof::Struct::Proc* procStrct,
+makeProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
 	      ACodeNodeToProcFrameMap& frameMap,
 	      ProcFrameAndLoopToCSLoopMap& loopMap)
 {
@@ -318,7 +315,7 @@ makeProcFrame(Prof::CCT::IDynNode* node, Prof::Struct::Proc* procStrct,
   frame->structure(procStrct);
   procStrct->SetPerfData(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
 
-  frame->Link(node->proxy()->Parent());
+  frame->Link(node->Parent());
   frameMap.insert(std::make_pair(procStrct, frame));
 
   loopifyFrame(frame, procStrct, frameMap, loopMap);
@@ -837,7 +834,7 @@ lush_makeParallelOverhead(Prof::CallPath::Profile* prof)
 
   for (Prof::CCT::ANodeIterator it(cct->root()); it.Current(); ++it) {
     Prof::CCT::ANode* x = it.CurNode();
-    Prof::CCT::IDynNode* x_dyn = dynamic_cast<Prof::CCT::IDynNode*>(x);
+    Prof::CCT::ADynNode* x_dyn = dynamic_cast<Prof::CCT::ADynNode*>(x);
     if (x_dyn) {
       x_dyn->expandMetrics_after(n_new_metrics);
     }
@@ -861,7 +858,7 @@ lush_makeParallelOverhead(Prof::CCT::ANode* node,
   if (is_overhead_ctxt) {
     for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
       Prof::CCT::ANode* x = it.CurNode();
-      Prof::CCT::IDynNode* x_dyn = dynamic_cast<Prof::CCT::IDynNode*>(x);
+      Prof::CCT::ADynNode* x_dyn = dynamic_cast<Prof::CCT::ADynNode*>(x);
       if (x_dyn) {
 	for (uint i = 0; i < m_src.size(); ++i) {
 	  uint src_idx = m_src[i];

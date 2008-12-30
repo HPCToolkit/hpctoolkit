@@ -117,20 +117,20 @@ Tree::merge(const Tree* y,
 
 
 std::ostream&
-Tree::writeXML(std::ostream& os, int dmpFlag) const
+Tree::writeXML(std::ostream& os, int flags) const
 {
   if (m_root) {
-    m_root->writeXML(os, dmpFlag);
+    m_root->writeXML(os, flags);
   }
   return os;
 }
 
 
 std::ostream& 
-Tree::dump(std::ostream& os, int dmpFlag) const
+Tree::dump(std::ostream& os, int flags) const
 {
   if (m_root) {
-    m_root->writeXML(os, dmpFlag);
+    m_root->writeXML(os, flags);
   }
   return os;
 }
@@ -144,9 +144,9 @@ Tree::ddump() const
 
 
 int 
-Tree::doXMLEscape(int dmpFlag)
+Tree::doXMLEscape(int flags)
 {
-  if ((dmpFlag & Tree::XML_TRUE) && !(dmpFlag & Tree::XML_NO_ESC_CHARS)) {
+  if ((flags & Tree::XML_TRUE) && !(flags & Tree::XML_NO_ESC_CHARS)) {
     return xml::ESC_TRUE;
   } 
   else {
@@ -194,8 +194,8 @@ ANode::IntToNodeType(long i)
 // ANode, etc: constructors/destructors
 //***************************************************************************
 
-ANode::ANode(NodeType ty, ANode* _parent, Struct::ACodeNode* strct)
-  : NonUniformDegreeTreeNode(_parent), m_type(ty), m_strct(strct)
+ANode::ANode(NodeType type, ANode* _parent, Struct::ACodeNode* strct)
+  : NonUniformDegreeTreeNode(_parent), m_type(type), m_strct(strct)
 { 
   DIAG_Assert((m_type == TyRoot) || (ancestorRoot() == NULL) || 
 	      !ancestorRoot()->IsFrozen(), "");
@@ -280,17 +280,27 @@ Loop::Loop(ANode* _parent, Struct::ACodeNode* strct)
 	      || (_parent->type() == TyLoop), "");
 }
 
+
 Loop::~Loop()
 {
 }
 
 
+Stmt& 
+Stmt::operator=(const Call& x) 
+{
+  ADynNode::operator=(x);
+
+  // NOTE: the above copies the type field -- reset it
+  m_type = TyStmt;
+
+  return *this;
+}
 
 
 Call::Call(ANode* _parent, uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc)
-  : ANode(TyCall, _parent),
-    IDynNode(this, cpid, metricdesc)
+  : ADynNode(TyCall, _parent, NULL, cpid, metricdesc)
 {
   Call_Check(this, _parent);
 }
@@ -303,42 +313,10 @@ Call::Call(ANode* _parent,
 	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc,
 	   std::vector<hpcfile_metric_data_t>& metrics)
-  : ANode(TyCall, _parent), 
-    IDynNode(this, as_info, ip, opIndex, lip, cpid, metricdesc, metrics)
+  : ADynNode(TyCall, _parent, NULL, 
+	     as_info, ip, opIndex, lip, cpid, metricdesc, metrics)
 {
   Call_Check(this, _parent);
-}
-
-Call::~Call()
-{
-}
-
-
-Stmt::Stmt(ANode* _parent, uint32_t cpid,
-	   const SampledMetricDescVec* metricdesc)
-  :  ANode(TyStmt, _parent),
-     IDynNode(this, cpid, metricdesc)
-{
-}
-
-Stmt::~Stmt()
-{
-}
-
-
-void 
-Stmt::operator=(const Stmt& x)
-{
-  if (this != &x) {
-    IDynNode::operator=(x);
-  }
-}
-
-
-void 
-Stmt::operator=(const Call& x)
-{
-  IDynNode::operator=(x);
 }
 
 
@@ -451,7 +429,7 @@ ANode::ancestorCall() const
 
 
 void 
-IDynNode::mergeMetrics(const IDynNode& y, uint beg_idx)
+ADynNode::mergeMetrics(const ADynNode& y, uint beg_idx)
 {
 #if 0
   if (numMetrics() != y.numMetrics()) {
@@ -474,7 +452,7 @@ IDynNode::mergeMetrics(const IDynNode& y, uint beg_idx)
 
 
 void 
-IDynNode::appendMetrics(const IDynNode& y)
+ADynNode::appendMetrics(const ADynNode& y)
 {
   for (int i = 0; i < y.numMetrics(); ++i) {
     m_metrics.push_back(y.metric(i));
@@ -483,7 +461,7 @@ IDynNode::appendMetrics(const IDynNode& y)
 
 
 void 
-IDynNode::expandMetrics_before(uint offset)
+ADynNode::expandMetrics_before(uint offset)
 {
   for (int i = 0; i < offset; ++i) {
     m_metrics.insert(m_metrics.begin(), hpcfile_metric_data_ZERO);
@@ -492,7 +470,7 @@ IDynNode::expandMetrics_before(uint offset)
 
 
 void 
-IDynNode::expandMetrics_after(uint offset)
+ADynNode::expandMetrics_after(uint offset)
 {
   for (int i = 0; i < offset; ++i) {
     m_metrics.push_back(hpcfile_metric_data_ZERO);
@@ -503,7 +481,7 @@ IDynNode::expandMetrics_after(uint offset)
 void
 ANode::merge_prepare(uint numMetrics)
 {
-  IDynNode* dyn = dynamic_cast<IDynNode*>(this);
+  ADynNode* dyn = dynamic_cast<ADynNode*>(this);
   if (dyn) {
     dyn->expandMetrics_after(numMetrics);
     DIAG_MsgIf(0, "Expanding " << hex << dyn << dec << " +" << numMetrics << " -> " << dyn->numMetrics());
@@ -543,7 +521,7 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
   // ------------------------------------------------------------  
   for (ANodeChildIterator it(y); it.Current(); /* */) {
     ANode* y_child = it.CurNode();
-    IDynNode* y_child_dyn = dynamic_cast<IDynNode*>(y_child);
+    ADynNode* y_child_dyn = dynamic_cast<ADynNode*>(y_child);
     DIAG_Assert(y_child_dyn, "");
     it++; // advance iterator -- it is pointing at 'child'
 
@@ -557,7 +535,7 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
       y_child->Link(x);
     }
     else {
-      IDynNode* x_child_dyn = dynamic_cast<IDynNode*>(x_child);
+      ADynNode* x_child_dyn = dynamic_cast<ADynNode*>(x_child);
       DIAG_MsgIf(0, "ANode::merge: Merging y into x:\n"
 		 << "  y: " << y_child_dyn->toString()
 		 << "  x: " << x_child_dyn->toString());
@@ -574,7 +552,7 @@ ANode::findDynChild(lush_assoc_info_t as_info,
 {
   for (ANodeChildIterator it(this); it.Current(); ++it) {
     ANode* child = it.CurNode();
-    IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
+    ADynNode* child_dyn = dynamic_cast<ADynNode*>(child);
     
     lush_assoc_t as = lush_assoc_info__get_assoc(as_info);
 
@@ -594,7 +572,7 @@ ANode::findDynChild(lush_assoc_info_t as_info,
 void
 ANode::merge_fixup(const SampledMetricDescVec* new_mdesc, int metric_offset)
 {
-  IDynNode* x_dyn = dynamic_cast<IDynNode*>(this);
+  ADynNode* x_dyn = dynamic_cast<ADynNode*>(this);
   if (x_dyn) {
     x_dyn->expandMetrics_before(metric_offset);
     x_dyn->metricdesc(new_mdesc);
@@ -602,7 +580,7 @@ ANode::merge_fixup(const SampledMetricDescVec* new_mdesc, int metric_offset)
 
   for (ANodeChildIterator it(this); it.Current(); ++it) {
     ANode* child = it.CurNode();
-    IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
+    ADynNode* child_dyn = dynamic_cast<ADynNode*>(child);
     if (child_dyn) {
       child->merge_fixup(new_mdesc, metric_offset);
     }
@@ -617,9 +595,9 @@ ANode::merge_node(ANode* y)
   ANode* x = this;
   
   // 1. copy y's metrics into x
-  IDynNode* x_dyn = dynamic_cast<IDynNode*>(x);
+  ADynNode* x_dyn = dynamic_cast<ADynNode*>(x);
   if (x_dyn) {
-    IDynNode* y_dyn = dynamic_cast<IDynNode*>(y);
+    ADynNode* y_dyn = dynamic_cast<ADynNode*>(y);
     DIAG_Assert(y_dyn, "");
     x_dyn->mergeMetrics(*y_dyn);
   }
@@ -667,7 +645,16 @@ ProcFrm::codeName() const
 //**********************************************************************
 
 string 
-ANode::toString_me(int dmpFlag) const
+ANode::toString(int flags, const char* pre) const
+{
+  std::ostringstream os;
+  writeXML(os, flags, pre);
+  return os.str();
+}
+
+
+string 
+ANode::toString_me(int flags) const
 { 
   string self;
   self = NodeTypeToName(type());
@@ -690,25 +677,15 @@ ANode::toString_me(int dmpFlag) const
   self += " s" + xml::MakeAttrNum(sId)
     + " l" + xml::MakeAttrStr(line);
 
-  if ((dmpFlag & CCT::Tree::XML_TRUE) == CCT::Tree::XML_FALSE) {
+  if ((flags & CCT::Tree::XML_TRUE) == CCT::Tree::XML_FALSE) {
     self = self + " uid" + xml::MakeAttrNum(id());
   }
   return self;
 }
 
 
-
-string
-IDynNode::toString(const char* pre) const
-{
-  std::ostringstream os;
-  dump(os, pre);
-  return os.str();
-}
-
-
 std::string 
-IDynNode::assocInfo_str() const
+ADynNode::assocInfo_str() const
 {
   char str[LUSH_ASSOC_INFO_STR_MIN_LEN];
   lush_assoc_info_sprintf(str, m_as_info);
@@ -717,7 +694,7 @@ IDynNode::assocInfo_str() const
 
 
 std::string 
-IDynNode::lip_str() const
+ADynNode::lip_str() const
 {
   char str[LUSH_LIP_STR_MIN_LEN];
   lush_lip_sprintf(str, m_lip);
@@ -725,26 +702,8 @@ IDynNode::lip_str() const
 }
 
 
-void 
-IDynNode::writeMetricsXML(std::ostream& os, 
-			  int dmpFlag, const char* prefix) const
-{
-  bool wasMetricWritten = false;
-
-  for (uint i = 0; i < numMetrics(); i++) {
-    hpcfile_metric_data_t m = metric(i);
-    if (!hpcfile_metric_data_iszero(m)) {
-      os << ((!wasMetricWritten) ? prefix : "");
-      os << "<M " << "n" << xml::MakeAttrNum(i) 
-	 << " v" << writeMetric((*m_metricdesc)[i], m) << "/>";
-      wasMetricWritten = true;
-    }
-  }
-}
-
-
 void
-IDynNode::dump(std::ostream& o, const char* pre) const
+ADynNode::writeDyn(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
 
@@ -760,27 +719,37 @@ IDynNode::dump(std::ostream& o, const char* pre) const
 }
 
 
-void
-IDynNode::ddump() const
+void 
+ADynNode::writeMetricsXML(std::ostream& os, 
+			  int flags, const char* prefix) const
 {
-  dump(std::cerr);
+  bool wasMetricWritten = false;
+
+  for (uint i = 0; i < numMetrics(); i++) {
+    hpcfile_metric_data_t m = metric(i);
+    if (!hpcfile_metric_data_iszero(m)) {
+      os << ((!wasMetricWritten) ? prefix : "");
+      os << "<M " << "n" << xml::MakeAttrNum(i) 
+	 << " v" << writeMetric((*m_metricdesc)[i], m) << "/>";
+      wasMetricWritten = true;
+    }
+  }
 }
 
 
 string
-Root::toString_me(int dmpFlag) const
+Root::toString_me(int flags) const
 { 
-  string self = ANode::toString_me(dmpFlag) + " n" +
-    xml::MakeAttrStr(m_name, CCT::Tree::doXMLEscape(dmpFlag));
+  string self = ANode::toString_me(flags) + " n" +
+    xml::MakeAttrStr(m_name, CCT::Tree::doXMLEscape(flags));
   return self;
 }
 
 
-
 string
-ProcFrm::toString_me(int dmpFlag) const
+ProcFrm::toString_me(int flags) const
 {
-  string self = ANode::toString_me(dmpFlag);
+  string self = ANode::toString_me(flags);
 
   if (m_strct)  {
 #if (FIXME_WRITE_CCT_DICTIONARIES)
@@ -788,7 +757,7 @@ ProcFrm::toString_me(int dmpFlag) const
       + " f" + xml::MakeAttrNum(fileId())
       + " n" + xml::MakeAttrNum(procId());
 #else
-    bool flg = CCT::Tree::doXMLEscape(dmpFlag);
+    bool flg = CCT::Tree::doXMLEscape(flags);
 
     const string& lm_nm = lmName();
     const string& fnm   = fileName();
@@ -809,11 +778,12 @@ ProcFrm::toString_me(int dmpFlag) const
 
 
 string
-Call::toString_me(int dmpFlag) const
+Call::toString_me(int flags) const
 {
-  string self = ANode::toString_me(dmpFlag);
+  string self = ANode::toString_me(flags);
   
-  if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
+  if (!(flags & CCT::Tree::XML_TRUE)) {
+    // writeDyn();
     self += " assoc" + xml::MakeAttrStr(assocInfo_str()) 
       + " ip_real" + xml::MakeAttrNum(ip_real(), 16)
       + " op" + xml::MakeAttrNum(opIndex())
@@ -825,11 +795,11 @@ Call::toString_me(int dmpFlag) const
 
 
 string
-Stmt::toString_me(int dmpFlag) const
+Stmt::toString_me(int flags) const
 {
-  string self = ANode::toString_me(dmpFlag);
+  string self = ANode::toString_me(flags);
 
-  if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
+  if (!(flags & CCT::Tree::XML_TRUE)) {
     self += " ip" + xml::MakeAttrNum(ip(), 16) 
       + " op" + xml::MakeAttrNum(opIndex());
   }
@@ -839,50 +809,50 @@ Stmt::toString_me(int dmpFlag) const
 
 
 string 
-Loop::toString_me(int dmpFlag) const
+Loop::toString_me(int flags) const
 {
-  string self = ANode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
+  string self = ANode::toString_me(flags); //+ " i" + MakeAttr(id);
   return self;
 }
 
 
 string
-Proc::toString_me(int dmpFlag) const
+Proc::toString_me(int flags) const
 {
-  string self = ANode::toString_me(dmpFlag); //+ " i" + MakeAttr(id);
+  string self = ANode::toString_me(flags); //+ " i" + MakeAttr(id);
   return self;
 }
 
 
 std::ostream&
-ANode::writeXML(ostream &os, int dmpFlag, const char *pre) const 
+ANode::writeXML(ostream &os, int flags, const char *pre) const 
 {
   string indent = "  ";
-  if (dmpFlag & CCT::Tree::COMPRESSED_OUTPUT) { 
+  if (flags & CCT::Tree::COMPRESSED_OUTPUT) { 
     pre = ""; 
     indent = ""; 
   }
 
-  if ( /*(dmpFlag & CCT::Tree::XML_TRUE) &&*/ IsLeaf()) { 
-    dmpFlag |= CCT::Tree::XML_EMPTY_TAG; 
+  if ( /*(flags & CCT::Tree::XML_TRUE) &&*/ IsLeaf()) { 
+    flags |= CCT::Tree::XML_EMPTY_TAG; 
   }
   
-  writeXML_pre(os, dmpFlag, pre); 
+  writeXML_pre(os, flags, pre); 
   string prefix = pre + indent;
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureId); 
        it.Current(); it++) {
     ANode* n = it.Current();
-    n->writeXML(os, dmpFlag, prefix.c_str());
+    n->writeXML(os, flags, prefix.c_str());
   }   
-  writeXML_post(os, dmpFlag, pre);
+  writeXML_post(os, flags, pre);
   return os;
 }
 
 
 std::ostream&
-ANode::dump(ostream &os, int dmpFlag, const char *pre) const 
+ANode::dump(ostream &os, int flags, const char *pre) const 
 {
-  writeXML(os, dmpFlag, pre); 
+  writeXML(os, flags, pre); 
   return os;
 }
 
@@ -895,20 +865,28 @@ ANode::ddump() const
 
 
 void
-ANode::writeXML_pre(ostream& os, int dmpFlag, const char *prefix) const
+ANode::ddump_me() const
+{
+  string str = toString_me(CCT::Tree::XML_TRUE); 
+  std::cerr << str;
+}
+
+
+void
+ANode::writeXML_pre(ostream& os, int flags, const char *prefix) const
 {
   // tallent: Pgm has no representation
   if (type() == ANode::TyRoot) {
     return;
   }
 
-  os << prefix << "<" << toString_me(dmpFlag) << ">";
+  os << prefix << "<" << toString_me(flags) << ">";
 
-  const IDynNode* this_dyn = dynamic_cast<const IDynNode*>(this);
+  const ADynNode* this_dyn = dynamic_cast<const ADynNode*>(this);
   if (this_dyn) {
     if (this_dyn->hasMetrics()) {
       os << endl;
-      this_dyn->writeMetricsXML(os, dmpFlag, prefix);
+      this_dyn->writeMetricsXML(os, flags, prefix);
     }
   }
 
@@ -917,7 +895,7 @@ ANode::writeXML_pre(ostream& os, int dmpFlag, const char *prefix) const
 
 
 void
-ANode::writeXML_post(ostream &os, int dmpFlag, const char *prefix) const
+ANode::writeXML_post(ostream &os, int flags, const char *prefix) const
 {
   // tallent: Pgm has no representation
   if (type() == ANode::TyRoot) {
