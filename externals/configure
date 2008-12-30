@@ -3852,6 +3852,9 @@ case "$with_symtabAPI" in
 	    *ia64* )
 		symtabAPI_platform=ia64-unknown-linux2.4
 		;;
+	    *mips64* )
+		symtabAPI_platform=mips64_linux
+		;;
 	    *power*64* | *ppc*64* )
 		symtabAPI_platform=ppc64_linux
 		;;
