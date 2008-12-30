@@ -7,19 +7,37 @@
 
 PKG_NAME=symtabAPI
 work=symtabAPI/src/core
-config=make.config.local
-orig="${config}.orig"
+
+config=make.config
+config_orig="${config}.orig"
+
+config_lcl=make.config.local
+config_lcl_orig="${config_lcl}.orig"
 
 . ../build-utils/configure.inc
 pre_configure
 
 cd "$work" || die "unable to cd: $work"
 
-test -f "$orig" || mv -f "$config" "$orig"
-test -f "$orig" || die "missing config file: $config"
+
+test -f "$config_orig" || mv -f "$config" "$config_orig"
+test -f "$config_orig" || die "missing config file: $config"
 rm -f "$config"
 
-cat "$orig" |
+cat "$config_orig" |
+    sed \
+	-e "s,^GCC *=.*\$,GCC = $CC," \
+	-e "s,^GXX *=.*\$,GXX = $CXX," \
+	> "$config"
+
+test $? -eq 0 || die "configure failed"
+
+
+test -f "$config_lcl_orig" || mv -f "$config_lcl" "$config_lcl_orig"
+test -f "$config_lcl_orig" || die "missing config file: $config_lcl"
+rm -f "$config_lcl"
+
+cat "$config_lcl_orig" |
     sed \
 	-e "s,^LIBELFDIR.*\$,LIBELFDIR = $libelfdir," \
 	-e "s,^LIBELF_LIB.*\$,LIBELF_LIB = $libelf_lib," \
@@ -33,7 +51,7 @@ cat "$orig" |
 	-e "s,^LIBUNWINDDIR.*\$,LIBUNWINDDIR = $libunwinddir," \
 	-e "s,^LIBUNWIND_LIB.*\$,LIBUNWIND_LIB = $libunwind_lib," \
 	-e "s,^LIBUNWIND_INC.*\$,LIBUNWIND_INC = $libunwind_inc," \
-	> "$config"
+	> "$config_lcl"
 
 test $? -eq 0 || die "configure failed"
 
