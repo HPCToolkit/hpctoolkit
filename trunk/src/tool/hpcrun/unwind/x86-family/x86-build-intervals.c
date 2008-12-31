@@ -1,3 +1,10 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
+//************************* System Include Files ****************************
+
+//*************************** User Include Files ****************************
+
 #include "pmsg.h"
 #include "intervals.h"
 
@@ -10,8 +17,9 @@
  * forward declarations 
  *****************************************************************************/
 
-static void set_status(interval_status *status, char *fui, int errcode, 
-			 unwind_interval *first);
+static void 
+set_status(interval_status *status, char *fui, int errcode, 
+	   unwind_interval *first);
 
 interval_status 
 x86_build_intervals(char *ins, unsigned int len, int noisy);

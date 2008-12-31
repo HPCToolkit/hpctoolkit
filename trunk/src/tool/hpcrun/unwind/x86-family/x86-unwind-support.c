@@ -1,12 +1,21 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
+//************************* System Include Files ****************************
+
 #include <ucontext.h>
 #include <assert.h>
+
+//*************************** User Include Files ****************************
 
 #include "x86-decoder.h"
 #include "unwind.h"
 
-//*************************************************************************
+//*************************** Forward Declarations **************************
+
+//***************************************************************************
 // macros
-//*************************************************************************
+//***************************************************************************
 
 #if defined(__LIBCATAMOUNT__)
 #undef __CRAYXT_CATAMOUNT_TARGET
@@ -37,9 +46,10 @@
 
 
 
-//*************************************************************************
+//***************************************************************************
 // interface functions
-//*************************************************************************
+//***************************************************************************
+
 void
 unw_init_arch(void)
 {
@@ -47,7 +57,7 @@ unw_init_arch(void)
 }
 
 
-void *
+void*
 context_pc(void* context)
 {
   mcontext_t *mc = GET_MCONTEXT(context);
@@ -57,7 +67,7 @@ context_pc(void* context)
 
 
 void 
-unw_init_cursor_arch(void* context, unw_cursor_t *cursor)
+unw_init_cursor_arch(void* context, unw_cursor_t* cursor)
 {
   mcontext_t *mc = GET_MCONTEXT(context);
 
