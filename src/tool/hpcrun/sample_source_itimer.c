@@ -283,7 +283,7 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
   }
   if (sampling_is_disabled()){
     TMSG(SPECIAL,"No itimer restart, due to disabled sampling");
-    return;
+    return 0;
   }
   METHOD_CALL(&_itimer_obj,start);
     
