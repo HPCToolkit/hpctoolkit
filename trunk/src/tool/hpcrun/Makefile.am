@@ -104,14 +104,16 @@ MY_LINUX_DYNAMIC_FILES = 		\
 	os/linux/dylib.c
 
 
-MY_MIPS_FILES =
+MY_MIPS_FILES = \
+	unwind/mips64/mips64-build-intervals.c	\
+	unwind/mips64/mips64-unwind-support.c
 
-MY_PPC_FILES =				\
+MY_PPC_FILES = \
 	unwind/ppc64/ppc64-build-intervals.c	\
 	unwind/ppc64/ppc64-context.c		\
 	unwind/ppc64/ppc64-unwind-support.c
 
-MY_X86_FILES =					\
+MY_X86_FILES = \
 	processor/x86-64/processor-libc.c		\
 	processor/x86-64/swizzle.c			\
 	unwind/x86-family/x86-all.c			\
