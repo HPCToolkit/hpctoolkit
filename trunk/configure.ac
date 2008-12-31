@@ -86,6 +86,7 @@ AM_INIT_AUTOMAKE(1.10.1)
 AM_MAINTAINER_MODE()
 # Require libtool 1.5.26
 
+AC_CANONICAL_BUILD()
 AC_CANONICAL_HOST()
 
 AC_MSG_NOTICE([INFO: Entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
@@ -102,9 +103,9 @@ HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
 
 
-#----------------------------------------------------------------------------
+#-------------------------------------------------
 # SVN version
-#----------------------------------------------------------------------------
+#-------------------------------------------------
 
 # Append svn revision to PACKAGE_VERSION.
 #
@@ -140,6 +141,17 @@ fi
 # line!  We add our own because 
 AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION], "${PACKAGE_VERSION}", [])
 dnl AC_SUBST([HPCTOOLKIT_VERSION])
+
+
+#-------------------------------------------------
+# is_cross_compile: non-empty string if cross-compiling
+#-------------------------------------------------
+
+is_cross_compile=""
+if test "x$build" != "x$host" ; then
+   is_cross_compile=${host}
+fi
+
 
 #----------------------------------------------------------------------------
 # Special Options that should be tested first
@@ -1222,21 +1234,30 @@ if test "${OPT_ENABLE_HPCRUN_SYNC}" = "yes" ||
   fi
 fi
 
+
 #
 # Find location of libstdc++.
+#
 # FIXME -- Is there an Autoconf macro for this?
 #
-src="/tmp/hello.$$.cc"
-obj="/tmp/hello.$$.out"
-cat <<EOF > "$src"
+if test -n "${is_cross_compile}" ; then
+  # For now, assume GCC.  We cannot use the more general test because
+  # 'ldd' cannot execute in cross-compile mode.
+  HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
+else
+  src="/tmp/hello.$$.cc"
+  obj="/tmp/hello.$$.out"
+  cat <<EOF > "$src"
 main(){}
 EOF
-g++ -o "$obj" "$src"
-hpcrun_libcpp_path=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
-hpcrun_libcpp_path=`dirname $hpcrun_libcpp_path`
-rm -f "$src" "$obj"
+  ${CXX} -o "$obj" "$src"
+  HPCRUN_LIBCXX_PATH=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
+  rm -f "$src" "$obj"
+fi
 
-AC_SUBST([hpcrun_libcpp_path])
+HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
+
+AC_SUBST([HPCRUN_LIBCXX_PATH])
 
 
 #-------------------------------------------------
