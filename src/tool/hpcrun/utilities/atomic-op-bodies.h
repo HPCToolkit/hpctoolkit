@@ -1,7 +1,17 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 #ifndef atomic_op_bodies_h
 #define atomic_op_bodies_h
 
-// FIXME: At the very least, these platform switches should be based on the autoconf host.
+//************************* System Include Files ****************************
+
+//*************************** User Include Files ****************************
+
+//***************************************************************************
+
+// FIXME: tallent: These platform switches should be based on the
+// autoconf host.
 
 #if defined(__i386__) 
 

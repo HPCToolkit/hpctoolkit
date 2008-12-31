@@ -1,7 +1,16 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 #ifndef atomic_ops_h
 #define atomic_ops_h
 
+//************************* System Include Files ****************************
+
+//*************************** User Include Files ****************************
+
 #include "atomic-op-bodies.h"
+
+//***************************************************************************
 
 #if defined(LL_BODY)
 
