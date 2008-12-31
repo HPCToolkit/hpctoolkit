@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 797 2007-05-12 21:09:13Z eraxxon $
+## $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 
