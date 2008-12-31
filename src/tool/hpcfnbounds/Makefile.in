@@ -14,6 +14,66 @@
 
 @SET_MAKE@
 
+# -*-Mode: makefile;-*-
+
+#############################################################################
+#
+# File:
+#   $Source$
+#
+# Description:
+#   *Process with automake to produce Makefile.in*
+#   
+#   Note: All local variables are prefixed with MY to prevent name
+#   clashes with automatic automake variables.
+#
+#############################################################################
+
+# -*-Mode: makefile;-*-
+
+#############################################################################
+#
+# File:
+#   $Source$
+#
+# Description:
+#   Include file for package Makefile.in
+# 
+#   *Assumes presence of Automake variables!*
+#
+#############################################################################
+
+#############################################################################
+# HPCTOOLKIT Components and Settings
+#############################################################################
+
+############################################################
+# Local includes
+############################################################
+
+# -*-Mode: makefile;-*-
+# $Id: Makeinclude.rules 1296 2008-05-12 21:31:58Z eraxxon $
+
+#############################################################################
+#
+# File:
+#   $Source$
+#
+# Description:
+#   Include file for package Makefile.in
+# 
+#   *Assumes presence of Automake variables!*
+#
+#############################################################################
+
+#############################################################################
+# HPCTOOLKIT Extra rules
+#############################################################################
+
+############################################################
+# C Preprocessor
+############################################################
+
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -33,14 +93,15 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/hpcfnbounds.in $(top_srcdir)/src/Makeinclude.config \
+	$(top_srcdir)/src/Makeinclude.rules
 pkglibexec_PROGRAMS = hpcfnbounds-bin$(EXEEXT)
 @HOST_CPU_X86_TRUE@am__append_1 = x86-process-ranges.cpp
 @HOST_CPU_X86_TRUE@am__append_2 = -I$(XED2_INC)
 @HOST_CPU_X86_TRUE@am__append_3 = $(XED2_LIB)/libxed.a
 @HOST_CPU_X86_FALSE@am__append_4 = generic-process-ranges.cpp
 subdir = src/tool/hpcfnbounds
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(srcdir)/hpcfnbounds.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/configure.ac
@@ -52,13 +113,13 @@ am__installdirs = "$(DESTDIR)$(pkglibexecdir)" \
 	"$(DESTDIR)$(pkglibexecdir)"
 pkglibexecPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(pkglibexec_PROGRAMS)
-am__hpcfnbounds_bin_SOURCES_DIST = code-ranges.cpp \
-	function-entries.cpp intervals.cpp symbols.cpp \
-	x86-process-ranges.cpp generic-process-ranges.cpp
-am__objects_1 = hpcfnbounds_bin-code-ranges.$(OBJEXT) \
+am__hpcfnbounds_bin_SOURCES_DIST = main.cpp code-ranges.cpp \
+	function-entries.cpp intervals.cpp x86-process-ranges.cpp \
+	generic-process-ranges.cpp
+am__objects_1 = hpcfnbounds_bin-main.$(OBJEXT) \
+	hpcfnbounds_bin-code-ranges.$(OBJEXT) \
 	hpcfnbounds_bin-function-entries.$(OBJEXT) \
-	hpcfnbounds_bin-intervals.$(OBJEXT) \
-	hpcfnbounds_bin-symbols.$(OBJEXT)
+	hpcfnbounds_bin-intervals.$(OBJEXT)
 @HOST_CPU_X86_TRUE@am__objects_2 = hpcfnbounds_bin-x86-process-ranges.$(OBJEXT)
 @HOST_CPU_X86_FALSE@am__objects_3 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
 am_hpcfnbounds_bin_OBJECTS = $(am__objects_1) $(am__objects_2) \
@@ -251,13 +312,54 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+
+# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
+AUTOMAKE_OPTIONS = foreign
+HPC_IFLAGS = -I@abs_top_srcdir@/src
+
+############################################################
+# Local libraries
+############################################################
+
+# Linking dependencies:
+#   HPC_LIBBANALYSIS  : HPC_LIBPROFJUICYX...
+#   HPC_LIBBANAL      : HPC_LIBPROFJUICY HPC_LIBBINUTILS
+#   HPC_LIBPROFJUICY  : HPC_LIBBINUTILS HPC_LIBSUPPORT
+#   HPC_LIBPROFJUICYX : HPC_LIBPROFJUICY HPC_LIBBINUTILS HPC_LIBSUPPORT
+#   HPC_LIBPROFLEAN   :
+#   HPC_LIBBINUTILS   : HPC_LIBISA HPC_LIBSUPPORT
+#   HPC_LIBISA        : HPC_LIBSUPPORT
+#   HPC_LIBXML        : HPC_LIBSUPPORT
+#   HPC_LIBSUPPORT    :
+HPC_LIBANALYSIS = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
+HPC_LIBBANAL = $(top_builddir)/src/lib/banal/libHPCbanal.la
+HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
+HPC_LIBPROFJUICYX = $(top_builddir)/src/lib/prof-juicy-x/libHPCprof-juicy-x.la
+HPC_LIBPROFLEAN = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
+HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPC_LIBISA = $(top_builddir)/src/lib/isa/libHPCisa.la
+HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
+HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
+
+#############################################################################
+# Automake rules
+#############################################################################
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
 pkglibexec_SCRIPTS = hpcfnbounds
 SYMBOLS_BASE_FILES = \
-    code-ranges.cpp		\
-    function-entries.cpp	\
-    intervals.cpp		\
-    symbols.cpp
+	main.cpp \
+	\
+	code-ranges.cpp \
+	function-entries.cpp \
+	intervals.cpp
 
 hpcfnbounds_bin_SOURCES = $(SYMBOLS_BASE_FILES) $(am__append_1) \
 	$(am__append_4)
@@ -266,11 +368,21 @@ hpcfnbounds_bin_CXXFLAGS = $(CXXFLAGS) $(HOST_CXXFLAGS)
 hpcfnbounds_bin_LDFLAGS = -L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon \
 	-L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf \
 	$(am__append_3)
+
+# Assumes includer sets MYCXXFLAGS and MYCFLAGS
+# cf. CXXCOMPILE (automatically generated by automake)
+MYCPPFLAGS_CXX = $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) \
+	$(MYCXXFLAGS)
+
+MYCPPFLAGS_CC = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
+	$(MYCFLAGS)
+
 all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .cpp .lo .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -279,9 +391,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  src/tool/hpcfnbounds/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/tool/hpcfnbounds/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  src/tool/hpcfnbounds/Makefile
+	  $(AUTOMAKE) --foreign  src/tool/hpcfnbounds/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -362,7 +474,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-function-entries.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-intervals.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-symbols.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-x86-process-ranges.Po@am__quote@
 
 .cpp.o:
@@ -385,6 +497,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
+
+hpcfnbounds_bin-main.o: main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-main.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-main.Tpo -c -o hpcfnbounds_bin-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-main.Tpo $(DEPDIR)/hpcfnbounds_bin-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpcfnbounds_bin-main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+
+hpcfnbounds_bin-main.obj: main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-main.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-main.Tpo -c -o hpcfnbounds_bin-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-main.Tpo $(DEPDIR)/hpcfnbounds_bin-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpcfnbounds_bin-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
 
 hpcfnbounds_bin-code-ranges.o: code-ranges.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-code-ranges.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-code-ranges.Tpo -c -o hpcfnbounds_bin-code-ranges.o `test -f 'code-ranges.cpp' || echo '$(srcdir)/'`code-ranges.cpp
@@ -427,20 +553,6 @@ hpcfnbounds_bin-intervals.obj: intervals.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='intervals.cpp' object='hpcfnbounds_bin-intervals.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-intervals.obj `if test -f 'intervals.cpp'; then $(CYGPATH_W) 'intervals.cpp'; else $(CYGPATH_W) '$(srcdir)/intervals.cpp'; fi`
-
-hpcfnbounds_bin-symbols.o: symbols.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-symbols.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-symbols.Tpo -c -o hpcfnbounds_bin-symbols.o `test -f 'symbols.cpp' || echo '$(srcdir)/'`symbols.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-symbols.Tpo $(DEPDIR)/hpcfnbounds_bin-symbols.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='symbols.cpp' object='hpcfnbounds_bin-symbols.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-symbols.o `test -f 'symbols.cpp' || echo '$(srcdir)/'`symbols.cpp
-
-hpcfnbounds_bin-symbols.obj: symbols.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-symbols.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-symbols.Tpo -c -o hpcfnbounds_bin-symbols.obj `if test -f 'symbols.cpp'; then $(CYGPATH_W) 'symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/symbols.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcfnbounds_bin-symbols.Tpo $(DEPDIR)/hpcfnbounds_bin-symbols.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='symbols.cpp' object='hpcfnbounds_bin-symbols.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-symbols.obj `if test -f 'symbols.cpp'; then $(CYGPATH_W) 'symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/symbols.cpp'; fi`
 
 hpcfnbounds_bin-x86-process-ranges.o: x86-process-ranges.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-x86-process-ranges.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-x86-process-ranges.Tpo -c -o hpcfnbounds_bin-x86-process-ranges.o `test -f 'x86-process-ranges.cpp' || echo '$(srcdir)/'`x86-process-ranges.cpp
@@ -656,6 +768,20 @@ uninstall-am: uninstall-pkglibexecPROGRAMS uninstall-pkglibexecSCRIPTS
 	pdf pdf-am ps ps-am tags uninstall uninstall-am \
 	uninstall-pkglibexecPROGRAMS uninstall-pkglibexecSCRIPTS
 
+
+#############################################################################
+
+%.cpp.pp : %.cpp
+	$(CXXCPP) $(MYCPPFLAGS_CXX) $< > $@
+
+%.c.pp : %.c
+	$(CXXCPP) $(MYCPPFLAGS_CC) $< > $@
+
+#############################################################################
+
+#############################################################################
+# Common rules
+#############################################################################
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

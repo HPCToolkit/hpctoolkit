@@ -1,8 +1,35 @@
-##
-##  Symbols Makefile.am.
-##
-##  $Id$
-##
+# -*-Mode: makefile;-*-
+## $Id$
+
+#############################################################################
+#
+# File:
+#   $Source$
+#
+# Description:
+#   *Process with automake to produce Makefile.in*
+#   
+#   Note: All local variables are prefixed with MY to prevent name
+#   clashes with automatic automake variables.
+#
+#############################################################################
+
+# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
+AUTOMAKE_OPTIONS = foreign
+
+#############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
+# Local settings
+#############################################################################
+
+#############################################################################
+# Automake rules
+#############################################################################
 
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
@@ -16,11 +43,12 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
-SYMBOLS_BASE_FILES = 		\
-    code-ranges.cpp		\
-    function-entries.cpp	\
-    intervals.cpp		\
-    symbols.cpp
+SYMBOLS_BASE_FILES = \
+	main.cpp \
+	\
+	code-ranges.cpp \
+	function-entries.cpp \
+	intervals.cpp
 
 hpcfnbounds_bin_SOURCES = $(SYMBOLS_BASE_FILES)
 
@@ -41,3 +69,8 @@ else
     hpcfnbounds_bin_SOURCES += generic-process-ranges.cpp
 endif
 
+#############################################################################
+# Common rules
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules
