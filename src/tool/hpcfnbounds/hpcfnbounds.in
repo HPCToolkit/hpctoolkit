@@ -18,7 +18,7 @@ ext_libs_dir='@hpc_ext_libs_dir@'
 hpcfnbounds_dir='libexec/hpctoolkit'
 
 # Should be absolute path.
-libcpp_path='@hpcrun_libcpp_path@'
+libcxx_path='@HPCRUN_LIBCXX_PATH@'
 
 ################################################################
 
@@ -66,7 +66,7 @@ if test "x$dir" != x && test ! -d "$dir" ; then
     mkdir -p "$dir"
 fi
 
-LD_LIBRARY_PATH="${ext_libs_dir}:${libcpp_path}" \
+LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}" \
     "${hpcfnbounds_dir}/hpcfnbounds-bin" "$@"
 
 ret=$?
