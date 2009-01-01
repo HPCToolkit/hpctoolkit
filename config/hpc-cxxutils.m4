@@ -50,14 +50,23 @@
 #---------------------------------------------------------------
 
 # Order of preference:
-# 1. Non-GNU vendor compiler (on Linux the GNU compiler is technically
-#    the system compiler)
-#    - Sun|SGI|Compaq/Alpha, PGI, Intel
-# 2. GNU compiler
+# 1. GNU-compatible compiler: GCC, Intel, Pathscale
+# 2. Non-GNU compiler: PGI, Sun
 
-define([HPC_CXX_LIST], [CC  cxx  pgCC  icpc ecpc icc ecc  g++ gcc c++])dnl
+define([HPC_CXX_LIST], [g++    \
+                        icpc   \
+                        pathCC \
+                        pgCC   \
+                        CC     \
+                        c++    \
+                        ])dnl
 
-define([HPC_CC_LIST], [cc  pgcc  icc ecc  gcc])dnl
+define([HPC_CC_LIST], [gcc    \
+                       icc    \
+                       pathcc \
+                       pgcc   \
+                       cc     \
+                       ])dnl
 
 
 #---------------------------------------------------------------
