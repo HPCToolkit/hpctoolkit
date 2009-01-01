@@ -1,5 +1,5 @@
 $Id$
 
-autoconf 2.61
-automake 1.10.1
-libtool  1.5.26
+autoconf 2.63
+automake 1.10.2
+libtool  2.2.6a

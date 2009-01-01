@@ -79,12 +79,13 @@ AC_INIT([hpctoolkit], [TRUNK-4.9.2],
         [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_MACRO_DIR([config])
 
 # NOTE: please update config/README.version
-AC_PREREQ(2.61)
-AM_INIT_AUTOMAKE(1.10.1)
+AC_PREREQ(2.63)
+AM_INIT_AUTOMAKE(1.10.2)
+LT_PREREQ([2.2.6])
 AM_MAINTAINER_MODE()
-# Require libtool 1.5.26
 
 AC_CANONICAL_BUILD()
 AC_CANONICAL_HOST()
@@ -1239,6 +1240,12 @@ fi
 # Find location of libstdc++.
 #
 # FIXME -- Is there an Autoconf macro for this?
+# 
+# FIXME (tallent): Actually, this is completely broken for
+# cross-compiling (there is no reason for the paths to be persistent)
+# and generally suspect.  This is used to set LD_LIBRARY_PATH and we
+# should not be responsible for configuring runtime paths for
+# libstdc++.
 #
 if test -n "${is_cross_compile}" ; then
   # For now, assume GCC.  We cannot use the more general test because
