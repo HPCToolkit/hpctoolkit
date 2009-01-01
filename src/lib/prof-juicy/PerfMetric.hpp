@@ -117,7 +117,7 @@ public:
   void Index(uint id)  { m_id = id; } 
   
   bool Display() const                { return display; }
-  bool Display(bool display_)         { display = display_; }
+  void Display(bool display_)         { display = display_; }
 
   // display as a percentage
   bool dispPercent() const            { return m_dispPercent; }

@@ -70,9 +70,6 @@ namespace Prof {
 namespace CCT {
 
 
-static int CompareByLine(const void *a, const void *b);
-
-
 //*****************************************************************************
 // ANodeFilter support
 //*****************************************************************************

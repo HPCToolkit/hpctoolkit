@@ -117,7 +117,7 @@ public:
     // isAvail: this Epoch::LM is active in the sense that the
     // associated load module is available and relocation information
     // is accurate.
-    const bool isAvail() const
+    bool isAvail() const
       { return m_isAvail; }
     void isAvail(bool x)
       { m_isAvail = x; }
@@ -125,7 +125,7 @@ public:
     // relocate_VMA - relocAmt() = unrelocated_VMA
     VMA relocAmt() const
       { return m_relocAmt; }
-    VMA relocAmt(VMA x)
+    void relocAmt(VMA x)
       { m_relocAmt = x; }
     
     void compute_relocAmt();

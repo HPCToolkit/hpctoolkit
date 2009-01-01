@@ -1477,8 +1477,6 @@ void
 LM::dumpmaps() const 
 {
   ostream& os = std::cerr;
-  int dmpFlag = 0;
-  const char* pre = "";
   
   os << "Procedure map\n";
   for (VMAToProcMap::const_iterator it = procMap->begin(); 

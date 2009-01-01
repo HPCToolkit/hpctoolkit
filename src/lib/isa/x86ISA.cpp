@@ -208,8 +208,6 @@ x86ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
 VMA
 x86ISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
 {
-  static const bfd_vma M32 = 0xffffffff;
-  
   if (CacheLookup(mi) == NULL) {
     ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
     CacheSet(mi, size);

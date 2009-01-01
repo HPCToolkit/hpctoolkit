@@ -233,6 +233,8 @@ Profile::writeXML_hdr(std::ostream& os, const char* pre) const
   writeXML_help(os, "Procedure", m_structure, &filt2, 3);
   os << "  </ProcedureTable>\n";
 #endif
+
+  return os;
 }
 
 
@@ -317,7 +319,7 @@ Profile::make(const char* fnm)
 			     hpcfile_free_CB);
   if (ret != HPCFILE_OK) {
     DIAG_Throw(fnm << ": error reading header (HPC_CSPROF)");
-    return NULL;
+    //return NULL;
   }
   
   uint num_metrics = metadata.num_metrics;
@@ -337,10 +339,10 @@ Profile::make(const char* fnm)
 			      errbuf, errSz);
     
     if (ret != HPCFILE_OK) {
+      delete prof;
       DIAG_Throw(fnm << ": error reading calling context tree (HPC_CSTREE). [" 
 		 << errbuf << "]");
-      delete prof;
-      return NULL;
+      //return NULL;
     }
   }
 

@@ -236,7 +236,7 @@ public:
   typedef int (*cmp_fptr_t) (const void* x, const void* y);
 
   static int cmpByName(const void* x, const void* y);
-  static int cmpByLine(const void* y, const void* y);
+  static int cmpByLine(const void* x, const void* y);
   static int cmpByStructureId(const void* x, const void* y);
 
 public: 
