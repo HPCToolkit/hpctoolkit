@@ -37,7 +37,7 @@ dnl
 AC_INIT([externals], [TRUNK-4.9.2],
         [hpc@cs.rice.edu], [hpctoolkit-externals])
 AC_CONFIG_AUX_DIR([config])
-AC_PREREQ(2.61)
+AC_PREREQ(2.63)
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([Makefile.conf])
