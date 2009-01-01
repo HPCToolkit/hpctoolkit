@@ -372,7 +372,7 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
       // Case 3b: erase [lb + 1, ub + 1): insert [x.end(), ub->end())
       VMAIntervalSet::iterator beg = lb;
       VMAIntervalSet::iterator end = ub;
-      My_t::erase(++lb, ++ub);
+      My_t::erase(++beg, ++end);
       if (x.end() < ub_end) {
 	My_t::insert( VMAInterval(x.end(), ub_end) );
       }

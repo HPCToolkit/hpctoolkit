@@ -36,6 +36,7 @@ using std::string;
 
 #include <sys/types.h> /* for wait() */
 #include <sys/wait.h>  /* for wait() */
+#include <unistd.h>    /* for getpid(), fork(), etc. */
 
 //*************************** User Include Files ****************************
 
@@ -178,7 +179,6 @@ static int
 prepare_env_for_profiling(const char* installpath, const Args& args)
 {  
   char buf[PATH_MAX] = "";
-  int sz;
 
   // -------------------------------------------------------
   // Prepare LD_LIBRARY_PATH (in reverse order)

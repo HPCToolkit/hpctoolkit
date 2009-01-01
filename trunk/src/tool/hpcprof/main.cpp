@@ -84,9 +84,6 @@ static void
 readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 
 static void
-dumpProfileData(std::ostream& os, std::vector<string>& profileFiles);
-
-static void
 overlayStaticStructure(Prof::CallPath::Profile* prof, 
 		       Prof::Epoch::LM* epoch_lm,
 		       Prof::Struct::LM* lmStrct);

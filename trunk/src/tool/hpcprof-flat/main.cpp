@@ -45,12 +45,7 @@ using std::string;
 
 #include <exception>
 
-#ifdef NO_STD_CHEADERS
-# include <string.h>
-#else
-# include <cstring>
-using namespace std; // For compatibility with non-std C headers
-#endif
+#include <unistd.h> /* for unlink() */
 
 //*********************** Xerces Include Files *******************************
 

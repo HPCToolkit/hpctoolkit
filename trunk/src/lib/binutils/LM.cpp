@@ -612,7 +612,7 @@ binutils::LM::readSymbolTables()
     m_bfdSymTab = new asymbol*[bytesNeeded];
     m_bfdSymTabSz = bfd_canonicalize_dynamic_symtab(m_bfd, m_bfdSymTab);
   }
-  DIAG_Assert(m_bfdSymTab && m_bfdSymTabSz >= 0, "");
+  DIAG_Assert(m_bfdSymTab && m_bfdSymTabSz >= 1, "");
 
   // Make a scratch copy of the symbol table.
   m_bfdSymTabSort = new asymbol*[bytesNeeded];

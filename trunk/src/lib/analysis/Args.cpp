@@ -57,6 +57,8 @@ using std::string;
 
 #include <limits.h> /* for 'PATH_MAX' */
 
+#include <unistd.h> /* for getcwd() */
+
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"

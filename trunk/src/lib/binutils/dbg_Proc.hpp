@@ -101,6 +101,7 @@ public:
       filenm    = x.filenm;
       begLine   = x.begLine;
     }
+    return *this;
   }
   
 
