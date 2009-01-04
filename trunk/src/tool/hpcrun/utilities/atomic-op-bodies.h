@@ -41,17 +41,17 @@
   // ll r_dest, addr_offset(r_addr)
   // sc r_src,  addr_offset(r_addr) [sets r_src to 1 (success) or 0]
 
-  // (lld/scd for 64 bit version)
+  // (lld/scd for 64 bit versions)
 
 #define LL_BODY                      \
   __asm__ __volatile__(              \
-        "ll %0,0(%1)"                \
+        "lld %0,0(%1)"               \
                	: "=r" (result)      \
                	: "r"(ptr))
 
 #define SC_BODY                      \
   __asm__ __volatile__(              \
-       	"sc   %2,0(%1) \n\t"         \
+       	"scd  %2,0(%1) \n\t"         \
        	"move %0,%2"                 \
                	: "=&r" (result)     \
                	: "r"(ptr), "r"(val) \
