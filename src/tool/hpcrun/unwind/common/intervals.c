@@ -66,8 +66,9 @@ suspicious_interval(void *pc)
 }
 
 unwind_interval *
-new_ui(char *startaddr, ra_loc ra_status, unsigned int sp_ra_pos,
-       int bp_ra_pos, bp_loc bp_status, int sp_bp_pos, int bp_bp_pos,
+new_ui(char *startaddr, 
+       ra_loc ra_status, unsigned int sp_ra_pos, int bp_ra_pos, 
+       bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
        unwind_interval *prev)
 {
   unwind_interval *u = (unwind_interval *) csprof_malloc(sizeof(unwind_interval)); 
