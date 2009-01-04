@@ -211,7 +211,7 @@ MipsISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 	}
       break;
 
-    // Normal instruction class
+    // Normal instruction class (OPNormal)
     case LB:   // Byte                  // Instructions from Table A-3
     case LBU:  // Byte Unsigned         //  Table A-4, Table A-5, Table A-6
     case LH:   // Halfword
