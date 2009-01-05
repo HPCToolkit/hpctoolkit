@@ -87,7 +87,6 @@ MY_BASE_FILES =			\
 	unwind/common/intervals.c	\
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
-	unwind/common/unwind.c		\
 	utilities/executable-path.c	\
 	utilities/spinlock.c		\
 	utilities/tokenize.c		\
@@ -118,6 +117,7 @@ MY_X86_FILES = \
 	processor/x86-64/swizzle.c			\
 	unwind/x86-family/x86-all.c			\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
+	unwind/x86-family/x86-unwind.c		        \
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
 
