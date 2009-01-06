@@ -1649,8 +1649,9 @@ bool
 ANode::writeXML_pre(ostream& os, int flags, const char* pfx) const
 {
   bool doTag = (Type() != TyRoot);
-  bool hasMetrics = HasPerfData();
-  bool isXMLLeaf = IsLeaf() && !hasMetrics;
+  bool doMetrics = ((flags & Tree::WFlg_LeafMetricsOnly) ? 
+		    HasPerfData() && IsLeaf() : HasPerfData());
+  bool isXMLLeaf = IsLeaf() && !doMetrics;
 
   // 1. Write element name
   if (doTag) {
@@ -1663,7 +1664,7 @@ ANode::writeXML_pre(ostream& os, int flags, const char* pfx) const
   }
 
   // 2. Write associated metrics
-  if (hasMetrics) {
+  if (doMetrics) {
     writeMetricsXML(os, flags, pfx);
     os << endl;
   }
@@ -1687,7 +1688,7 @@ ostream&
 ANode::writeXML(ostream& os, int flags, const char* pfx) const 
 {
   string indent = "  ";
-  if (flags & Tree::COMPRESSED_OUTPUT) { 
+  if (flags & Tree::WFlg_Compressed) { 
     pfx = ""; 
     indent = ""; 
   }
@@ -1733,7 +1734,7 @@ Root::writeXML(ostream& os, int flags, const char* pfx) const
 {
   // N.B.: Typically LM are children
   string indent = "  ";
-  if (flags & Tree::COMPRESSED_OUTPUT) { 
+  if (flags & Tree::WFlg_Compressed) { 
     pfx = ""; 
     indent = ""; 
   }
@@ -1755,7 +1756,7 @@ LM::writeXML(ostream& os, int flags, const char* pre) const
 {
   // N.B.: Typically Files are children
   string indent = "  ";
-  if (flags & Tree::COMPRESSED_OUTPUT) { 
+  if (flags & Tree::WFlg_Compressed) { 
     pre = ""; 
     indent = ""; 
   }

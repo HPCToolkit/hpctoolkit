@@ -279,7 +279,7 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
 
   int dumpFlags = (Struct::Tree::XML_TRUE); // Struct::ANode::XML_NO_ESC_CHARS
   if (!prettyPrint) { 
-    dumpFlags |= Struct::Tree::COMPRESSED_OUTPUT; 
+    dumpFlags |= Struct::Tree::WFlg_Compressed; 
   }
   
   os << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n"

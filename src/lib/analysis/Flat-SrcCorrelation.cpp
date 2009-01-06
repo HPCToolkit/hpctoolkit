@@ -267,11 +267,10 @@ Driver::write_experiment(std::ostream &os) const
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
-  int dumpFlags = ((m_args.metrics_computeInteriorValues) 
-		   ? 0 : Prof::Struct::Tree::DUMP_LEAF_METRICS);
+  int wFlgs = 0; // Prof::Struct::Tree::WFlg_LeafMetricsOnly;
 
   os << "<SecFlatProfileData>\n";
-  m_structure.root()->writeXML(os, dumpFlags);
+  m_structure.root()->writeXML(os, wFlgs);
   os << "</SecFlatProfileData>\n";
 
   os << "</SecFlatProfile>\n";
