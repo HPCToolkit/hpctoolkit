@@ -92,7 +92,7 @@ operator<<(std::ostream& os, const hpcfile_metric_data_t x)
   return os;
 }
 
-#define FIXME_WRITE_CCT_DICTIONARIES 0
+#define FIXME_WRITE_CCT_DICTIONARIES 1
 
 //***************************************************************************
 // Tree
