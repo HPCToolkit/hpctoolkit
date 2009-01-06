@@ -277,14 +277,14 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
   os << "<!DOCTYPE HPCToolkitStructure [\n" << structureDTD << "]>" << std::endl;
   os.flush();
 
-  int dumpFlags = (Struct::Tree::XML_TRUE); // Struct::ANode::XML_NO_ESC_CHARS
+  int oFlags = 0;
   if (!prettyPrint) { 
-    dumpFlags |= Struct::Tree::WFlg_Compressed; 
+    oFlags |= Struct::Tree::OFlg_Compressed; 
   }
   
   os << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n"
      << xml::MakeAttrStr(strctTree->name()) << ">\n";
-  strctTree->writeXML(os, dumpFlags);
+  strctTree->writeXML(os, oFlags);
   os << "</HPCToolkitStructure>\n";
 }
 

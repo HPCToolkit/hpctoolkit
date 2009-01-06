@@ -117,20 +117,20 @@ Tree::merge(const Tree* y,
 
 
 std::ostream&
-Tree::writeXML(std::ostream& os, int flags) const
+Tree::writeXML(std::ostream& os, int oFlags) const
 {
   if (m_root) {
-    m_root->writeXML(os, flags);
+    m_root->writeXML(os, oFlags);
   }
   return os;
 }
 
 
 std::ostream& 
-Tree::dump(std::ostream& os, int flags) const
+Tree::dump(std::ostream& os, int oFlags) const
 {
   if (m_root) {
-    m_root->writeXML(os, flags);
+    m_root->writeXML(os, oFlags);
   }
   return os;
 }
@@ -139,21 +139,8 @@ Tree::dump(std::ostream& os, int flags) const
 void 
 Tree::ddump() const
 {
-  dump(std::cerr, XML_FALSE);
+  dump(std::cerr, 0/*oFlags*/);
 }
-
-
-int 
-Tree::doXMLEscape(int flags)
-{
-  if ((flags & Tree::XML_TRUE) && !(flags & Tree::XML_NO_ESC_CHARS)) {
-    return xml::ESC_TRUE;
-  } 
-  else {
-    return xml::ESC_FALSE;
-  }
-}
-
 
 
 } // namespace CCT
@@ -645,16 +632,16 @@ ProcFrm::codeName() const
 //**********************************************************************
 
 string 
-ANode::toString(int flags, const char* pre) const
+ANode::toString(int oFlags, const char* pre) const
 {
   std::ostringstream os;
-  writeXML(os, flags, pre);
+  writeXML(os, oFlags, pre);
   return os.str();
 }
 
 
 string 
-ANode::toString_me(int flags) const
+ANode::toString_me(int oFlags) const
 { 
   string self;
   self = NodeTypeToName(type());
@@ -676,7 +663,7 @@ ANode::toString_me(int flags) const
   self += " s" + xml::MakeAttrNum(sId)
     + " l" + xml::MakeAttrStr(line);
 
-  if ((flags & CCT::Tree::XML_TRUE) == CCT::Tree::XML_FALSE) {
+  if (oFlags & Tree::OFlg_Debug) {
     self = self + " uid" + xml::MakeAttrNum(id());
   }
   return self;
@@ -702,7 +689,7 @@ ADynNode::lip_str() const
 
 
 void
-ADynNode::writeDyn(std::ostream& o, int flags, const char* pre) const
+ADynNode::writeDyn(std::ostream& o, int oFlags, const char* pre) const
 {
   string p(pre);
 
@@ -719,7 +706,7 @@ ADynNode::writeDyn(std::ostream& o, int flags, const char* pre) const
 
 
 std::ostream&
-ADynNode::writeMetricsXML(std::ostream& os, int flags, const char* pfx) const
+ADynNode::writeMetricsXML(std::ostream& os, int oFlags, const char* pfx) const
 {
   bool wasMetricWritten = false;
 
@@ -738,18 +725,17 @@ ADynNode::writeMetricsXML(std::ostream& os, int flags, const char* pfx) const
 
 
 string
-Root::toString_me(int flags) const
+Root::toString_me(int oFlags) const
 { 
-  string self = ANode::toString_me(flags) + " n" +
-    xml::MakeAttrStr(m_name, CCT::Tree::doXMLEscape(flags));
+  string self = ANode::toString_me(oFlags) + " n" + xml::MakeAttrStr(m_name);
   return self;
 }
 
 
 string
-ProcFrm::toString_me(int flags) const
+ProcFrm::toString_me(int oFlags) const
 {
-  string self = ANode::toString_me(flags);
+  string self = ANode::toString_me(oFlags);
 
   if (m_strct)  {
 #if (FIXME_WRITE_CCT_DICTIONARIES)
@@ -757,15 +743,13 @@ ProcFrm::toString_me(int flags) const
       + " f" + xml::MakeAttrNum(fileId())
       + " n" + xml::MakeAttrNum(procId());
 #else
-    bool flg = CCT::Tree::doXMLEscape(flags);
-
     const string& lm_nm = lmName();
     const string& fnm   = fileName();
     const string& pnm   = procName();
 
-    self += " lm" + xml::MakeAttrStr(lm_nm, flg)
-      + " f" + xml::MakeAttrStr(fnm, flg)
-      + " n" + xml::MakeAttrStr(pnm, flg);
+    self += " lm" + xml::MakeAttrStr(lm_nm)
+      + " f" + xml::MakeAttrStr(fnm)
+      + " n" + xml::MakeAttrStr(pnm);
 #endif
 
     if (isAlien()) {
@@ -778,11 +762,11 @@ ProcFrm::toString_me(int flags) const
 
 
 string
-Call::toString_me(int flags) const
+Call::toString_me(int oFlags) const
 {
-  string self = ANode::toString_me(flags);
+  string self = ANode::toString_me(oFlags);
   
-  if (!(flags & CCT::Tree::XML_TRUE)) {
+  if (oFlags & CCT::Tree::OFlg_Debug) {
     // writeDyn();
     self += " assoc" + xml::MakeAttrStr(assocInfo_str()) 
       + " ip_real" + xml::MakeAttrNum(ip_real(), 16)
@@ -795,11 +779,11 @@ Call::toString_me(int flags) const
 
 
 string
-Stmt::toString_me(int flags) const
+Stmt::toString_me(int oFlags) const
 {
-  string self = ANode::toString_me(flags);
+  string self = ANode::toString_me(oFlags);
 
-  if (!(flags & CCT::Tree::XML_TRUE)) {
+  if (oFlags & CCT::Tree::OFlg_Debug) {
     self += " ip" + xml::MakeAttrNum(ip(), 16) 
       + " op" + xml::MakeAttrNum(opIndex());
   }
@@ -809,48 +793,48 @@ Stmt::toString_me(int flags) const
 
 
 string 
-Loop::toString_me(int flags) const
+Loop::toString_me(int oFlags) const
 {
-  string self = ANode::toString_me(flags); //+ " i" + MakeAttr(id);
+  string self = ANode::toString_me(oFlags); //+ " i" + MakeAttr(id);
   return self;
 }
 
 
 string
-Proc::toString_me(int flags) const
+Proc::toString_me(int oFlags) const
 {
-  string self = ANode::toString_me(flags); //+ " i" + MakeAttr(id);
+  string self = ANode::toString_me(oFlags); //+ " i" + MakeAttr(id);
   return self;
 }
 
 
 std::ostream&
-ANode::writeXML(ostream &os, int flags, const char *pre) const 
+ANode::writeXML(ostream &os, int oFlags, const char *pre) const 
 {
   string indent = "  ";
-  if (flags & CCT::Tree::WFlg_Compressed) { 
+  if (oFlags & CCT::Tree::OFlg_Compressed) { 
     pre = ""; 
     indent = ""; 
   }
   
-  bool doPost = writeXML_pre(os, flags, pre);
+  bool doPost = writeXML_pre(os, oFlags, pre);
   string prefix = pre + indent;
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureId); 
        it.Current(); it++) {
     ANode* n = it.Current();
-    n->writeXML(os, flags, prefix.c_str());
+    n->writeXML(os, oFlags, prefix.c_str());
   }
   if (doPost) {
-    writeXML_post(os, flags, pre);
+    writeXML_post(os, oFlags, pre);
   }
   return os;
 }
 
 
 std::ostream&
-ANode::dump(ostream &os, int flags, const char *pre) const 
+ANode::dump(ostream &os, int oFlags, const char *pre) const 
 {
-  writeXML(os, flags, pre); 
+  writeXML(os, oFlags, pre); 
   return os;
 }
 
@@ -858,20 +842,20 @@ ANode::dump(ostream &os, int flags, const char *pre) const
 void
 ANode::ddump() const
 {
-  writeXML(std::cerr, CCT::Tree::XML_TRUE, ""); 
+  writeXML(std::cerr, 0/*oFlags*/, "");
 } 
 
 
 void
 ANode::ddump_me() const
 {
-  string str = toString_me(CCT::Tree::XML_TRUE); 
+  string str = toString_me(0/*oFlags*/);
   std::cerr << str;
 }
 
 
 bool
-ANode::writeXML_pre(ostream& os, int flags, const char *prefix) const
+ANode::writeXML_pre(ostream& os, int oFlags, const char *prefix) const
 {
   const ADynNode* this_dyn = dynamic_cast<const ADynNode*>(this);
 
@@ -882,16 +866,16 @@ ANode::writeXML_pre(ostream& os, int flags, const char *prefix) const
   // 1. Write element name
   if (doTag) {
     if (isXMLLeaf) {
-      os << prefix << "<" << toString_me(flags) << "/>" << endl;
+      os << prefix << "<" << toString_me(oFlags) << "/>" << endl;
     }
     else {
-      os << prefix << "<" << toString_me(flags) << ">" << endl;
+      os << prefix << "<" << toString_me(oFlags) << ">" << endl;
     }
   }
 
   // 2. Write associated metrics
   if (hasMetrics) {
-    this_dyn->writeMetricsXML(os, flags, prefix);
+    this_dyn->writeMetricsXML(os, oFlags, prefix);
     os << endl;
   }
 
@@ -900,7 +884,7 @@ ANode::writeXML_pre(ostream& os, int flags, const char *prefix) const
 
 
 void
-ANode::writeXML_post(ostream &os, int flags, const char *prefix) const
+ANode::writeXML_post(ostream &os, int oFlags, const char *prefix) const
 {
   bool doTag = (type() != ANode::TyRoot);
   if (!doTag) {
