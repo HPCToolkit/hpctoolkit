@@ -150,10 +150,6 @@ public:
     
     // Not-generally-user-level bit flags
     XML_NO_ESC_CHARS = (1 << 10), /* don't substitute XML escape characters */
-
-    // Private bit flags
-    XML_EMPTY_TAG    = (1 << 15)  /* this is an empty XML tag */
-    
   };
 
   static const std::string UnknownFileNm;
@@ -186,11 +182,11 @@ public:
   // Write contents
   // -------------------------------------------------------
   std::ostream& 
-  writeXML(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
+  writeXML(std::ostream& os = std::cerr, int flags = XML_TRUE) const;
 
   // Dump contents for inspection (use flags from ANode)
   std::ostream& 
-  dump(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
+  dump(std::ostream& os = std::cerr, int flags = XML_TRUE) const;
   
   void 
   ddump() const;
@@ -307,7 +303,7 @@ public:
   HasPerfData() const 
   {
     uint end = NumPerfData();
-    for (int i = 0; i < end; ++i) {
+    for (uint i = 0; i < end; ++i) {
       if (HasPerfData(i)) {
 	return true;
       }
@@ -474,14 +470,18 @@ public:
   // --------------------------------------------------------
 
   std::string 
-  toStringXML(int dmpFlag = 0, const char* pre = "") const;
+  toStringXML(int flags = 0, const char* pre = "") const;
   
   virtual std::string 
-  toXML(int dmpFlag = 0) const;
+  toXML(int flags = 0) const;
 
   virtual std::ostream& 
-  writeXML(std::ostream& os = std::cout, int dmpFlag = 0,
+  writeXML(std::ostream& os = std::cout, int flags = 0,
 	   const char* pre = "") const;
+
+  std::ostream& 
+  writeMetricsXML(std::ostream& os = std::cout, int flags = 0, 
+		  const char* prefix = "") const;
 
   void ddumpXML() const;
 
@@ -501,27 +501,27 @@ public:
 
   virtual std::string Types() const; // instance's base and derived types 
 
-  std::string toString(int dmpFlag = 0, const char* pre = "") const;
+  std::string toString(int flags = 0, const char* pre = "") const;
 
-  std::string toString_id(int dmpFlag = 0) const;
-  std::string toString_me(int dmpFlag = 0, const char* pre = "") const;
+  std::string toString_id(int flags = 0) const;
+  std::string toString_me(int flags = 0, const char* pre = "") const;
 
   // dump
   std::ostream& 
-  dump(std::ostream& os = std::cerr, int dmpFlag = 0, 
+  dump(std::ostream& os = std::cerr, int flags = 0, 
        const char* pre = "") const;
   
   void ddump() const;
 
   virtual std::ostream& 
-  dumpme(std::ostream& os = std::cerr, int dmpFlag = 0, 
+  dumpme(std::ostream& os = std::cerr, int flags = 0, 
 	 const char* pre = "") const;
 
 protected:
-  bool writeXML_pre(std::ostream& os = std::cout,
-		    int dmpFlag = 0, const char* prefix = "") const;
+  void writeXML_pre(std::ostream& os = std::cout,
+		    int flags = 0, const char* prefix = "") const;
   void writeXML_post(std::ostream& os = std::cout,
-		     int dmpFlag = 0, const char* prefix = "") const;
+		     int flags = 0, const char* prefix = "") const;
 private:
   void ctorCheck() const;
   void dtorCheck() const;
@@ -640,10 +640,10 @@ public:
   // XML output
   // --------------------------------------------------------
 
-  virtual std::string toXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int flags = 0) const;
 
-  virtual std::string XMLLineRange(int dmpFlag) const;
-  virtual std::string XMLVMAIntervals(int dmpFlag) const;
+  virtual std::string XMLLineRange(int flags) const;
+  virtual std::string XMLVMAIntervals(int flags) const;
 
   virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
                const char* file_name = NULL, const char* proc_name = NULL,
@@ -654,7 +654,7 @@ public:
   // --------------------------------------------------------
   
   virtual std::ostream& dumpme(std::ostream& os = std::cerr,
-			       int dmpFlag = 0,
+			       int flags = 0,
 			       const char* pre = "") const;
 
 protected: 
@@ -755,10 +755,10 @@ public:
   // XML output
   // --------------------------------------------------------
 
-  virtual std::string toXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int flags = 0) const;
 
   virtual std::ostream&
-  writeXML(std::ostream& os = std::cout, int dmpFlag = 0, 
+  writeXML(std::ostream& os = std::cout, int flags = 0, 
 	   const char* pre = "") const;
 
   void CSV_TreeDump(std::ostream& os = std::cout) const;
@@ -768,7 +768,7 @@ public:
   // --------------------------------------------------------
   
   virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int dmpFlag = 0,
+			       int flags = 0,
 			       const char* pre = "") const;
    
 protected: 
@@ -827,14 +827,14 @@ public:
 
   virtual ANode* Clone() { return new Group(*this); }
 
-  virtual std::string toXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int flags = 0) const;
 
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
   
   virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int dmpFlag = 0,
+			       int flags = 0,
 			       const char* pre = "") const;
 
 private:
@@ -908,10 +908,10 @@ public:
     return (it != stmtMap->end()) ? it->second : NULL;
   }
 
-  virtual std::string toXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int flags = 0) const;
 
   virtual std::ostream&
-  writeXML(std::ostream& os = std::cout, int dmpFlag = 0, 
+  writeXML(std::ostream& os = std::cout, int flags = 0, 
 	   const char* pre = "") const;
 
   // --------------------------------------------------------
@@ -919,7 +919,7 @@ public:
   // --------------------------------------------------------
   
   virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int dmpFlag = 0,
+			       int flags = 0,
 			       const char* pre = "") const;
   void dumpmaps() const;
 
@@ -1012,7 +1012,7 @@ public:
 
   virtual ANode* Clone() { return new File(*this); }
 
-  virtual std::string toXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int flags = 0) const;
 
   virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
@@ -1024,7 +1024,7 @@ public:
   // --------------------------------------------------------
   
   virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int dmpFlag = 0,
+			       int flags = 0,
 			       const char* pre = "") const;
 
 private: 
@@ -1099,7 +1099,7 @@ public:
     return x;
   }
 
-  virtual std::string toXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int flags = 0) const;
 
   virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
@@ -1111,7 +1111,7 @@ public:
   // --------------------------------------------------------
   
   virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int dmpFlag = 0,
+			       int flags = 0,
 			       const char* pre = "") const;
 
 private:
@@ -1174,7 +1174,7 @@ public:
 
   virtual ANode* Clone() { return new Alien(*this); }
 
-  virtual std::string toXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int flags = 0) const;
 
   virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
@@ -1186,7 +1186,7 @@ public:
   // --------------------------------------------------------
   
   virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int dmpFlag = 0,
+			       int flags = 0,
 			       const char* pre = "") const;
 
 private:
@@ -1223,14 +1223,14 @@ public:
 
   virtual ANode* Clone() { return new Loop(*this); }
 
-  virtual std::string toXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int flags = 0) const;
 
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
   
   virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int dmpFlag = 0,
+			       int flags = 0,
 			       const char* pre = "") const;
 
 };
@@ -1270,14 +1270,14 @@ public:
   int  sortId() { return m_sortId; }
   void sortId(int x) { m_sortId = x; }
 
-  virtual std::string toXML(int dmpFlag = 0) const;  
+  virtual std::string toXML(int flags = 0) const;  
 
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
   
   virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int dmpFlag = 0,
+			       int flags = 0,
 			       const char* pre = "") const;
 
 private:
@@ -1303,14 +1303,14 @@ public:
 
   virtual ANode* Clone() { return new Ref(*this); }
 
-  virtual std::string toXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int flags = 0) const;
 
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
   
   virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int dmpFlag = 0,
+			       int flags = 0,
 			       const char* pre = "") const;
 
 private: 
