@@ -719,21 +719,22 @@ ADynNode::writeDyn(std::ostream& o, int flags, const char* pre) const
 }
 
 
-void 
-ADynNode::writeMetricsXML(std::ostream& os, 
-			  int flags, const char* prefix) const
+std::ostream&
+ADynNode::writeMetricsXML(std::ostream& os, int flags, const char* pfx) const
 {
   bool wasMetricWritten = false;
 
   for (uint i = 0; i < numMetrics(); i++) {
     hpcfile_metric_data_t m = metric(i);
     if (!hpcfile_metric_data_iszero(m)) {
-      os << ((!wasMetricWritten) ? prefix : "");
+      os << ((!wasMetricWritten) ? pfx : "");
       os << "<M " << "n" << xml::MakeAttrNum(i) 
 	 << " v" << writeMetric((*m_metricdesc)[i], m) << "/>";
       wasMetricWritten = true;
     }
   }
+
+  return os;
 }
 
 
@@ -875,44 +876,39 @@ ANode::ddump_me() const
 void
 ANode::writeXML_pre(ostream& os, int flags, const char *prefix) const
 {
-  // tallent: Pgm has no representation
-  if (type() == ANode::TyRoot) {
-    return;
+  bool doSilent = (type() == TyRoot);
+  
+  // 1. Write element name
+  if (!doSilent) {
+    os << prefix << "<" << toString_me(flags) << ">" << endl;
   }
 
-  os << prefix << "<" << toString_me(flags) << ">";
-
+  // 2. Write associated metrics
   const ADynNode* this_dyn = dynamic_cast<const ADynNode*>(this);
-  if (this_dyn) {
-    if (this_dyn->hasMetrics()) {
-      os << endl;
-      this_dyn->writeMetricsXML(os, flags, prefix);
-    }
+  if (this_dyn && this_dyn->hasMetrics()) {
+    this_dyn->writeMetricsXML(os, flags, prefix);
+    os << endl;
   }
-
-  os << endl; 
 }
 
 
 void
 ANode::writeXML_post(ostream &os, int flags, const char *prefix) const
 {
-  // tallent: Pgm has no representation
-  if (type() == ANode::TyRoot) {
-    return; 
+  bool doSilent = (type() == ANode::TyRoot);
+  if (doSilent) {
+    return;
   }
-
-  // FIXME: tallent: temporary override
+  
   if (type() == ANode::TyProcFrm) {
+    // FIXME: tallent: temporary override
     const ProcFrm* fr = dynamic_cast<const ProcFrm*>(this);
     string tag = fr->isAlien() ? "Pr" : "PF";
-    os << prefix << "</" << tag << ">";
+    os << prefix << "</" << tag << ">" << endl;
   }
   else {
-    os << prefix << "</" << NodeTypeToName(type()) << ">";
+    os << prefix << "</" << NodeTypeToName(type()) << ">" << endl;
   }
-
-  os << endl; 
 }
 
 

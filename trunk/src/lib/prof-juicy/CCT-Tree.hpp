@@ -605,7 +605,7 @@ public:
   writeDyn(std::ostream& os, int flags = 0, const char* prefix = "") const;
 
   // writeMetricsXML: write metrics (sparsely)
-  void 
+  std::ostream& 
   writeMetricsXML(std::ostream& os, int flags = 0, 
 		  const char* prefix = "") const;
 
