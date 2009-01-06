@@ -197,7 +197,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
   
     // element names
     elemStructure(XMLString::transcode("HPCToolkitStructure")), 
-    elemPgm(XMLString::transcode("PGM")), // FIXME: obsolete
+    elemRoot(XMLString::transcode("PGM")), // FIXME: obsolete
     elemLM(XMLString::transcode("LM")),
     elemFile(XMLString::transcode("F")),
     elemProc(XMLString::transcode("P")),
@@ -232,7 +232,7 @@ PGMDocHandler::~PGMDocHandler()
 {
   // element names
   XMLString::release((XMLCh**)&elemStructure);
-  XMLString::release((XMLCh**)&elemPgm);
+  XMLString::release((XMLCh**)&elemRoot);
   XMLString::release((XMLCh**)&elemLM);
   XMLString::release((XMLCh**)&elemFile);
   XMLString::release((XMLCh**)&elemProc);
@@ -267,7 +267,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
   
   // Structure
   if (XMLString::equals(name, elemStructure) 
-      || XMLString::equals(name, elemPgm)) {
+      || XMLString::equals(name, elemRoot)) {
     string verStr = getAttr(attributes, attrVer);
     double ver = StrUtil::toDbl(verStr);
 
@@ -465,7 +465,7 @@ PGMDocHandler::endElement(const XMLCh* const uri,
 
   // Structure
   if (XMLString::equals(name, elemStructure) 
-      || XMLString::equals(name, elemPgm)) {
+      || XMLString::equals(name, elemRoot)) {
     m_curRoot = NULL;
   }
 

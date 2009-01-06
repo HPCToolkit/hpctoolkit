@@ -219,7 +219,7 @@ Flat_Filter(const Prof::Struct::ANode& x, long type)
 // in 'pathVec', copy x to its appropriate viewname path and update
 // x's path to be relative to this location.
 void
-Analysis::Util::copySourceFiles(Prof::Struct::Pgm* structure, 
+Analysis::Util::copySourceFiles(Prof::Struct::Root* structure, 
 				const Analysis::PathTupleVec& pathVec,
 				const string& dstDir)
 {

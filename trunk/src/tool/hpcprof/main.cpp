@@ -159,8 +159,8 @@ realmain(int argc, char* const* argv)
 	const string& lm_nm = epoch_lm->name();
 
 	Prof::Struct::Tree* structure = prof->structure();
-	Prof::Struct::Pgm* pgmStrct = structure->root();
-	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(pgmStrct, lm_nm);
+	Prof::Struct::Root* rootStrct = structure->root();
+	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
 	
 	overlayStaticStructure(prof, epoch_lm, lmStrct);
       }

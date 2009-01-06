@@ -111,7 +111,7 @@ Driver::run()
   // 1. Initialize static program structure
   //-------------------------------------------------------
   DIAG_Msg(2, "Initializing structure...");
-  populatePgmStructure(m_structure);
+  populateStructure(m_structure);
 
   DIAG_If(3) {
     DIAG_Msg(3, "Initial structure:");
@@ -309,7 +309,7 @@ Driver::write_txt(std::ostream &os) const
   PerfMetric* m_sortby = m_mMgr.findSortBy();
   DIAG_Assert(m_sortby, "INVARIANT: at least on sort-by metric must exist");
 
-  Struct::Pgm* pgmStrct = m_structure.root();
+  Struct::Root* rootStrct = m_structure.root();
 
   ColumnFormatter colFmt(m_mMgr, os, 2, 0);
 
@@ -319,7 +319,7 @@ Driver::write_txt(std::ostream &os) const
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fPgm) { 
     string nm = "Program summary (row 1: sample count for raw metrics): "
-      + pgmStrct->name();
+      + rootStrct->name();
     write_txt_secSummary(os, colFmt, nm, NULL);
   }
 
@@ -381,7 +381,7 @@ Driver::write_txt_secSummary(std::ostream& os,
 
   write_txt_hdr(os, title);
 
-  Prof::Struct::Pgm* pgmStrct = m_structure.root();
+  Prof::Struct::Root* rootStrct = m_structure.root();
   PerfMetric* m_sortby = m_mMgr.findSortBy();
 
   if (!filter) {
@@ -391,7 +391,7 @@ Driver::write_txt_secSummary(std::ostream& os,
       const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
       if (mm) {
 	const Prof::SampledMetricDesc& desc = mm->rawdesc();
-	double smpl = pgmStrct->PerfData(i) / (double)desc.period();
+	double smpl = rootStrct->PerfData(i) / (double)desc.period();
 	colFmt.genCol(i, smpl);
       }
       else {
@@ -402,16 +402,16 @@ Driver::write_txt_secSummary(std::ostream& os,
 
     // Program metric summary
     for (uint i = 0; i < m_mMgr.size(); ++i) {
-      colFmt.genCol(i, pgmStrct->PerfData(i));
+      colFmt.genCol(i, rootStrct->PerfData(i));
     }
     os << std::endl;
   }
   else {
-    Prof::Struct::ANodeMetricSortedIterator it(pgmStrct, m_sortby->Index(), filter);
+    Prof::Struct::ANodeMetricSortedIterator it(rootStrct, m_sortby->Index(), filter);
     for (; it.Current(); it++) {
       Prof::Struct::ANode* strct = it.Current();
       for (uint i = 0; i < m_mMgr.size(); ++i) {
-	colFmt.genCol(i, strct->PerfData(i), pgmStrct->PerfData(i));
+	colFmt.genCol(i, strct->PerfData(i), rootStrct->PerfData(i));
       }
       os << " " << strct->nameQual() << std::endl;
     } 
@@ -444,7 +444,7 @@ Driver::write_txt_annotateFile(std::ostream& os,
   //
   //-------------------------------------------------------
 
-  Prof::Struct::Pgm* pgmStrct = m_structure.root();
+  Prof::Struct::Root* rootStrct = m_structure.root();
   const uint linew = 5;
   string linetxt;
   SrcFile::ln ln_file = 1; // line number *after* next getline
@@ -469,7 +469,7 @@ Driver::write_txt_annotateFile(std::ostream& os,
     // Generate columns for ln_metric
     os << std::setw(linew) << std::setfill(' ') << ln_metric;
     for (uint i = 0; i < m_mMgr.size(); ++i) {
-      colFmt.genCol(i, strct->PerfData(i), pgmStrct->PerfData(i));
+      colFmt.genCol(i, strct->PerfData(i), rootStrct->PerfData(i));
     }
 
     // Generate source file line for ln_metric, if necessary
@@ -585,18 +585,19 @@ namespace Flat {
 
 
 void
-Driver::populatePgmStructure(Prof::Struct::Tree& structure)
+Driver::populateStructure(Prof::Struct::Tree& structure)
 {
   DriverDocHandlerArgs docargs(this);
   
   //-------------------------------------------------------
-  // if a PGM/Structure document has been provided, use it to 
-  // initialize the structure of the scope tree
+  // if Structure has been provided, use it to initialize the
+  // structure of the scope tree
   //-------------------------------------------------------
   Prof::Struct::readStructure(structure, m_args.structureFiles,
 			      PGMDocHandler::Doc_STRUCT, docargs);
   
   //-------------------------------------------------------
+  // FIXME: OBSOLETE
   // if a PGM/Group document has been provided, use it to form the 
   // group partitions (as wall as initialize/extend the scope tree)
   //-------------------------------------------------------
@@ -905,8 +906,8 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
 			    const Prof::Metric::AExpr** mExprVec,
 			    uint mBegId, uint mEndId)
 {
-  Prof::Struct::Pgm* pgmStrct = structure.root();
-  Prof::Struct::ANodeIterator it(pgmStrct, NULL/*filter*/, false/*leavesOnly*/,
+  Prof::Struct::Root* strct = structure.root();
+  Prof::Struct::ANodeIterator it(strct, NULL/*filter*/, false/*leavesOnly*/,
 				 IteratorStack::PostOrder);
       
   for (; it.Current(); it++) {

@@ -98,7 +98,7 @@ copySourceFiles(Prof::CallPath::Profile* prof,
 		const std::string& dstDir);
 
 void 
-copySourceFiles(Prof::Struct::Pgm* structure, 
+copySourceFiles(Prof::Struct::Root* structure, 
 		const Analysis::PathTupleVec& pathVec, 
 		const string& dstDir);
 

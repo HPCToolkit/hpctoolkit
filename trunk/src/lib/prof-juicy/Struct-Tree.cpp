@@ -104,11 +104,11 @@ const std::string Tree::UnknownFileNm = "~~~<unknown-file>~~~";
 const std::string Tree::UnknownProcNm = "~<unknown-proc>~";
 
 
-Tree::Tree(const char* name, Pgm* root)
+Tree::Tree(const char* name, Root* root)
   : m_root(root)
 {
   if (!m_root) {
-    m_root = new Pgm(name);
+    m_root = new Root(name);
   }
 }
 
@@ -281,7 +281,7 @@ ANode::NoteDepth()
 void
 ANode::ctorCheck() const
 {
-  bool isOK = ((type == TyPGM) || (AncPgm() == NULL) || !AncPgm()->IsFrozen());
+  bool isOK = ((type == TyRoot) || (AncRoot() == NULL) || !AncRoot()->IsFrozen());
   DIAG_Assert(isOK, "");
 } 
 
@@ -293,12 +293,12 @@ ANode::dtorCheck() const
 		<< " " << std::hex << this << std::dec);
   bool isOK = false;
 
-  Pgm* pgm = AncPgm();
-  if (pgm && pgm->Type() != TyPGM) {
+  Root* pgm = AncRoot();
+  if (pgm && pgm->Type() != TyRoot) {
     isOK = true;
   }
   else {
-    DIAG_Assert(pgm == NULL || pgm->Type() == TyPGM, "");
+    DIAG_Assert(pgm == NULL || pgm->Type() == TyRoot, "");
     isOK = ((pgm == NULL) || !(pgm->IsFrozen()));
   }
   
@@ -332,10 +332,10 @@ ACodeNode::LinkAndSetLineRange(ACodeNode* parent)
 }
 
 
-RealPathMgr& Pgm::s_realpathMgr = RealPathMgr::singleton();
+RealPathMgr& Root::s_realpathMgr = RealPathMgr::singleton();
 
 void
-Pgm::Ctor(const char* nm)
+Root::Ctor(const char* nm)
 {
   DIAG_Assert(nm, "");
   frozen = false;
@@ -345,8 +345,8 @@ Pgm::Ctor(const char* nm)
 }
 
 
-Pgm& 
-Pgm::operator=(const Pgm& x) 
+Root& 
+Root::operator=(const Root& x) 
 {
   // shallow copy
   if (&x != this) {
@@ -360,7 +360,7 @@ Pgm::operator=(const Pgm& x)
 
 
 LM* 
-Pgm::findLM(const char* nm) const
+Root::findLM(const char* nm) const
 {
   std::string nm_real = nm;
   s_realpathMgr.realpath(nm_real);
@@ -375,16 +375,16 @@ Group::Ctor(const char* nm, ANode* parent)
 {
   DIAG_Assert(nm, "");
   ANodeTy t = (parent) ? parent->Type() : TyANY;
-  DIAG_Assert((parent == NULL) || (t == TyPGM) || (t == TyGROUP) || (t == TyLM) 
+  DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGROUP) || (t == TyLM) 
 	      || (t == TyFILE) || (t == TyPROC) || (t == TyALIEN) 
 	      || (t == TyLOOP), "");
   m_name = nm;
-  AncPgm()->AddToGroupMap(this);
+  AncRoot()->AddToGroupMap(this);
 }
 
 
 Group* 
-Group::demand(Pgm* pgm, const string& nm, ANode* _parent)
+Group::demand(Root* pgm, const string& nm, ANode* _parent)
 {
   Group* grp = pgm->findGroup(nm);
   if (!grp) {
@@ -401,14 +401,14 @@ LM::Ctor(const char* nm, ANode* parent)
 {
   DIAG_Assert(nm, "");
   ANodeTy t = (parent) ? parent->Type() : TyANY;
-  DIAG_Assert((parent == NULL) || (t == TyPGM) || (t == TyGROUP), "");
+  DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGROUP), "");
 
   m_name = nm;
   fileMap = new FileMap();
   procMap = NULL;
   stmtMap = NULL;
 
-  AncPgm()->AddToLoadModMap(this);
+  AncRoot()->AddToLoadModMap(this);
 }
 
 
@@ -427,7 +427,7 @@ LM::operator=(const LM& x)
 
 
 LM* 
-LM::demand(Pgm* pgm, const string& lm_nm)
+LM::demand(Root* pgm, const string& lm_nm)
 {
   LM* lm = pgm->findLM(lm_nm);
   if (!lm) {
@@ -444,7 +444,7 @@ File::Ctor(const char* fname, bool isReadable, ANode* parent)
 {
   DIAG_Assert(fname, "");
   ANodeTy t = (parent) ? parent->Type() : TyANY;
-  DIAG_Assert((parent == NULL) || (t == TyPGM) || (t == TyGROUP) || (t == TyLM), "");
+  DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGROUP) || (t == TyLM), "");
 
   srcIsReadable = isReadable;
   m_name = fname;
@@ -660,20 +660,20 @@ ANode::LeastCommonAncestor(ANode* n1, ANode* n2)
 }
 
 
-Pgm*
-ANode::AncPgm() const 
+Root*
+ANode::AncRoot() const 
 {
-  // iff this is called during ANode construction within the Pgm 
+  // iff this is called during ANode construction within the Root 
   // construction dyn_cast does not do the correct thing
   if (Parent() == NULL) {
-    // eraxxon: This cannot be a good thing to do!  Pgm() was being
+    // eraxxon: This cannot be a good thing to do!  Root() was being
     //   called on a LoopInfo object; then the resulting pointer
-    //   (the LoopInfo itself) was queried for PgmInfo member data.  Ouch!
-    // eraxxon: return (Pgm*) this;
+    //   (the LoopInfo itself) was queried for Root member data.  Ouch!
+    // eraxxon: return (Root*) this;
     return NULL;
   } 
   else { 
-    dyn_cast_return(ANode, Pgm, Ancestor(TyPGM));
+    dyn_cast_return(ANode, Root, Ancestor(TyRoot));
   }
 }
 
@@ -1017,7 +1017,7 @@ ANode::pruneByMetrics()
 //***************************************************************************
 
 void 
-Pgm::AddToGroupMap(Group* grp) 
+Root::AddToGroupMap(Group* grp) 
 {
   std::pair<GroupMap::iterator, bool> ret = 
     groupMap->insert(std::make_pair(grp->name(), grp));
@@ -1026,7 +1026,7 @@ Pgm::AddToGroupMap(Group* grp)
 
 
 void 
-Pgm::AddToLoadModMap(LM* lm)
+Root::AddToLoadModMap(LM* lm)
 {
   string nm_real = lm->name();
   s_realpathMgr.realpath(nm_real);
@@ -1292,8 +1292,8 @@ ANode::Types() const
   if (dynamic_cast<const ACodeNode*>(this)) {
     types += "ACodeNode ";
   } 
-  if (dynamic_cast<const Pgm*>(this)) {
-    types += "Pgm ";
+  if (dynamic_cast<const Root*>(this)) {
+    types += "Root ";
   } 
   if (dynamic_cast<const Group*>(this)) {
     types += "Group ";
@@ -1401,7 +1401,7 @@ ACodeNode::dumpme(ostream& os, int flags, const char* prefix) const
 
 
 ostream&
-Pgm::dumpme(ostream& os, int flags, const char* prefix) const
+Root::dumpme(ostream& os, int flags, const char* prefix) const
 { 
   os << prefix << toString_id(flags) << " n=" << m_name;
   return os;
@@ -1560,7 +1560,7 @@ ACodeNode::XMLVMAIntervals(int flags) const
 
 
 string
-Pgm::toXML(int flags) const
+Root::toXML(int flags) const
 {
   string self = ANode::toXML(flags) 
     + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(flags));
@@ -1648,7 +1648,7 @@ Ref::toXML(int flags) const
 void 
 ANode::writeXML_pre(ostream& os, int flags, const char* pfx) const
 {
-  bool doSilent = (Type() == TyPGM);
+  bool doSilent = (Type() == TyRoot);
 
   // 1. Write element name
   if (!doSilent) { 
@@ -1666,7 +1666,7 @@ ANode::writeXML_pre(ostream& os, int flags, const char* pfx) const
 void
 ANode::writeXML_post(ostream& os, int flags, const char* pfx) const
 {
-  bool doSilent = (Type() == TyPGM);
+  bool doSilent = (Type() == TyRoot);
 
   if (!doSilent) {
     os << pfx << "</" << ANodeTyToXMLelement(Type()) << ">" << endl;
@@ -1718,7 +1718,7 @@ ANode::ddumpXML() const
 
 
 ostream& 
-Pgm::writeXML(ostream& os, int flags, const char* pfx) const
+Root::writeXML(ostream& os, int flags, const char* pfx) const
 {
   // N.B.: Typically LM are children
   string indent = "  ";
@@ -1757,7 +1757,7 @@ LM::writeXML(ostream& os, int flags, const char* pre) const
 //***************************************************************************
 
 void 
-ANode::CSV_DumpSelf(const Pgm &root, ostream& os) const
+ANode::CSV_DumpSelf(const Root& root, ostream& os) const
 { 
   char temp[32];
   for (uint i = 0; i < NumPerfData(); i++) {
@@ -1782,9 +1782,9 @@ ANode::CSV_DumpSelf(const Pgm &root, ostream& os) const
 
 
 void
-ANode::CSV_dump(const Pgm &root, ostream& os, 
-		    const char* file_name, const char* proc_name,
-		    int lLevel) const 
+ANode::CSV_dump(const Root& root, ostream& os, 
+		const char* file_name, const char* proc_name,
+		int lLevel) const 
 {
   // print file name, routine name, start and end line, loop level
   os << name() << ",,,,";
@@ -1796,9 +1796,9 @@ ANode::CSV_dump(const Pgm &root, ostream& os,
 
 
 void
-File::CSV_dump(const Pgm &root, ostream& os, 
-		    const char* file_name, const char* proc_name,
-		    int lLevel) const 
+File::CSV_dump(const Root& root, ostream& os, 
+	       const char* file_name, const char* proc_name,
+	       int lLevel) const 
 {
   // print file name, routine name, start and end line, loop level
   os << BaseName() << ",," << m_begLn << "," << m_endLn << ",";
@@ -1810,9 +1810,9 @@ File::CSV_dump(const Pgm &root, ostream& os,
 
 
 void
-Proc::CSV_dump(const Pgm &root, ostream& os, 
-		    const char* file_name, const char* proc_name,
-		    int lLevel) const 
+Proc::CSV_dump(const Root& root, ostream& os, 
+	       const char* file_name, const char* proc_name,
+	       int lLevel) const 
 {
   // print file name, routine name, start and end line, loop level
   os << file_name << "," << name() << "," << m_begLn << "," << m_endLn 
@@ -1825,16 +1825,16 @@ Proc::CSV_dump(const Pgm &root, ostream& os,
 
 
 void
-Alien::CSV_dump(const Pgm &root, ostream& os, 
-		     const char* file_name, const char* proc_name,
-		     int lLevel) const 
+Alien::CSV_dump(const Root& root, ostream& os, 
+		const char* file_name, const char* proc_name,
+		int lLevel) const 
 {
   DIAG_Die(DIAG_Unimplemented);
 }
 
 
 void
-ACodeNode::CSV_dump(const Pgm &root, ostream& os, 
+ACodeNode::CSV_dump(const Root& root, ostream& os, 
 		    const char* file_name, const char* proc_name,
 		    int lLevel) const 
 {
@@ -1856,7 +1856,7 @@ ACodeNode::CSV_dump(const Pgm &root, ostream& os,
 
 
 void
-Pgm::CSV_TreeDump(ostream& os) const
+Root::CSV_TreeDump(ostream& os) const
 {
   ANode::CSV_dump(*this, os);
 }

@@ -92,7 +92,7 @@ HasANodeTy(const ANode& node, long type)
 
 const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
   ANodeFilter(HasANodeTy, 
-	      ANode::ANodeTyToName(ANode::TyPGM).c_str(), ANode::TyPGM),
+	      ANode::ANodeTyToName(ANode::TyRoot).c_str(), ANode::TyRoot),
   ANodeFilter(HasANodeTy, 
 	      ANode::ANodeTyToName(ANode::TyGROUP).c_str(), ANode::TyGROUP),
   ANodeFilter(HasANodeTy,
@@ -327,14 +327,14 @@ ANodeNameSortedChildIterator::CompareByName(const void* a, const void *b)
 // ANodeMetricSortedIterator
 //***************************************************************************
 
-ANodeMetricSortedIterator::ANodeMetricSortedIterator(const Pgm* pgm,
+ANodeMetricSortedIterator::ANodeMetricSortedIterator(const Root* root,
 						     uint metricId,
 						     const ANodeFilter* filterFunc)
   : m_metricId(metricId)
 {
-  DIAG_Assert(pgm != NULL, "");
+  DIAG_Assert(root != NULL, "");
 
-  ANodeIterator it(pgm, filterFunc, false);
+  ANodeIterator it(root, filterFunc, false);
   ANode *cur;
   for (; (cur = it.CurNode()); ) {
     scopes.Add((unsigned long) cur);

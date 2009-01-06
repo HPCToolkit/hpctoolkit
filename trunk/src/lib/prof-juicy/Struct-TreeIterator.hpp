@@ -430,7 +430,7 @@ private:
 
 class ANodeMetricSortedIterator {
 public:
-  ANodeMetricSortedIterator(const Pgm* scope, 
+  ANodeMetricSortedIterator(const Root* scope, 
 			    uint metricId, 
 			    const ANodeFilter* filterFunc = NULL);
 

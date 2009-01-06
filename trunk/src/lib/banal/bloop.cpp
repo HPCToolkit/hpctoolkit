@@ -318,16 +318,16 @@ banal::bloop::makeStructure(binutils::LM* lm,
   DIAG_Assert(lm, DIAG_UnexpectedInput);
 
   Struct::Tree* strctTree = NULL;
-  Struct::Pgm* pgmStrct = NULL;
+  Struct::Root* rootStrct = NULL;
 
   // FIXME (minor): relocate
   OrphanedProcedureFile = "~~~" + lm->name() + ":<unknown-file>~~~";
 
   // Assume lm->Read() has been performed
-  pgmStrct = new Struct::Pgm("");
-  strctTree = new Struct::Tree("", pgmStrct);
+  rootStrct = new Struct::Root("");
+  strctTree = new Struct::Tree("", rootStrct);
 
-  Struct::LM* lmStrct = new Struct::LM(lm->name(), pgmStrct);
+  Struct::LM* lmStrct = new Struct::LM(lm->name(), rootStrct);
 
   // 1. Build Struct::File/Struct::Proc skeletal structure
   ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm);
@@ -1085,10 +1085,10 @@ removeOrphanedProcedureRepository(Prof::Struct::Tree* strctTree)
 {
   bool changed = false;
   
-  Struct::Pgm* pgmStrct = strctTree->root();
-  if (!pgmStrct) { return changed; }
+  Struct::Root* rootStrct = strctTree->root();
+  if (!rootStrct) { return changed; }
   
-  for (Struct::ANodeIterator it(pgmStrct, 
+  for (Struct::ANodeIterator it(rootStrct, 
 				&Struct::ANodeTyFilter[Struct::ANode::TyFILE]); 
        it.Current(); /* */) {
     Struct::File* file = dynamic_cast<Struct::File*>(it.Current());
@@ -1116,10 +1116,10 @@ mergeBogusAlienStrct(Prof::Struct::Tree* strctTree)
 {
   bool changed = false;
   
-  Struct::Pgm* pgmStrct = strctTree->root();
-  if (!pgmStrct) { return changed; }
+  Struct::Root* rootStrct = strctTree->root();
+  if (!rootStrct) { return changed; }
   
-  for (Struct::ANodeIterator it(pgmStrct, 
+  for (Struct::ANodeIterator it(rootStrct, 
 				&Struct::ANodeTyFilter[Struct::ANode::TyPROC]);
        it.Current(); ++it) {
     Struct::Proc* proc = dynamic_cast<Struct::Proc*>(it.Current());
@@ -1234,7 +1234,7 @@ coalesceDuplicateStmts(Prof::Struct::Tree* strctTree,
 {
   bool changed = false;
   CDS_unsafeNormalizations = unsafeNormalizations;
-  Struct::Pgm* pgmStrct = strctTree->root();
+  Struct::Root* rootStrct = strctTree->root();
   SortIdToStmtMap stmtMap;    // line to statement data map
   Struct::ANodeSet visitedScopes; // all children of a scope have been visited
   Struct::ANodeSet toDelete;      // nodes to delete
@@ -1246,7 +1246,7 @@ coalesceDuplicateStmts(Prof::Struct::Tree* strctTree,
   // Struct::Alien's are skipped.)
 
   Struct::ANodeFilter filter(CDS_ScopeFilter, "CDS_ScopeFilter", 0);
-  for (Struct::ANodeIterator it(pgmStrct, &filter); it.Current(); ++it) {
+  for (Struct::ANodeIterator it(rootStrct, &filter); it.Current(); ++it) {
     Struct::ACodeNode* scope = dynamic_cast<Struct::ACodeNode*>(it.Current());
     changed |= coalesceDuplicateStmts(scope, &stmtMap, &visitedScopes,
 				      &toDelete, 1);
@@ -1511,7 +1511,7 @@ mergePerfectlyNestedLoops(Struct::ANode* node)
 //****************************************************************************
 
 // removeEmptyNodes: Removes certain 'empty' scopes from the tree,
-// always maintaining the top level Struct::Pgm (PGM) scope.  See the
+// always maintaining the top level Struct::Root (PGM) scope.  See the
 // predicate 'removeEmptyNodes_isEmpty' for details.
 static bool 
 removeEmptyNodes(Struct::ANode* node);
@@ -1587,10 +1587,10 @@ filterFilesFromStrctTree(Prof::Struct::Tree* strctTree,
 {
   bool changed = false;
   
-  Struct::Pgm* pgmStrct = strctTree->root();
-  if (!pgmStrct) { return changed; }
+  Struct::Root* rootStrct = strctTree->root();
+  if (!rootStrct) { return changed; }
   
-  for (Struct::ANodeIterator it(pgmStrct, 
+  for (Struct::ANodeIterator it(rootStrct, 
 				&Struct::ANodeTyFilter[Struct::ANode::TyFILE]); 
        it.Current(); /* */) {
     Struct::File* file = dynamic_cast<Struct::File*>(it.Current());

@@ -180,7 +180,7 @@ private:
   double m_version;     // initialized to a negative
 
   // current static context
-  Prof::Struct::Pgm*  m_curRoot;
+  Prof::Struct::Root* m_curRoot;
   Prof::Struct::LM*   m_curLM;
   Prof::Struct::File* m_curFile;
   Prof::Struct::Proc* m_curProc;
@@ -197,7 +197,7 @@ private:
 
   // element names
   const XMLCh *const elemStructure;
-  const XMLCh *const elemPgm; // FIXME: obsolete
+  const XMLCh *const elemRoot; // FIXME: obsolete
   const XMLCh *const elemLM; 
   const XMLCh *const elemFile; 
   const XMLCh *const elemProc; 

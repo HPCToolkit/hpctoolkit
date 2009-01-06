@@ -116,7 +116,7 @@ public:
 
 private:
   void 
-  populatePgmStructure(Prof::Struct::Tree& structure);
+  populateStructure(Prof::Struct::Tree& structure);
 
   void 
   correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
