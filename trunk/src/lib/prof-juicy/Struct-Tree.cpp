@@ -1645,30 +1645,39 @@ Ref::toXML(int flags) const
 }
 
 
-void 
+bool 
 ANode::writeXML_pre(ostream& os, int flags, const char* pfx) const
 {
-  bool doSilent = (Type() == TyRoot);
+  bool doTag = (Type() != TyRoot);
+  bool hasMetrics = HasPerfData();
+  bool isXMLLeaf = IsLeaf() && !hasMetrics;
 
   // 1. Write element name
-  if (!doSilent) { 
-    os << pfx << "<" << toXML(flags) << ">" << endl;
+  if (doTag) {
+    if (isXMLLeaf) {
+      os << pfx << "<" << toXML(flags) << "/>" << endl;
+    }
+    else {
+      os << pfx << "<" << toXML(flags) << ">" << endl;
+    }
   }
 
   // 2. Write associated metrics
-  if (HasPerfData()) {
+  if (hasMetrics) {
     writeMetricsXML(os, flags, pfx);
     os << endl;
   }
+  
+  return !isXMLLeaf; // whether to execute writeXML_post()
 }
 
 
 void
 ANode::writeXML_post(ostream& os, int flags, const char* pfx) const
 {
-  bool doSilent = (Type() == TyRoot);
+  bool doTag = (Type() != TyRoot);
 
-  if (!doSilent) {
+  if (doTag) {
     os << pfx << "</" << ANodeTyToXMLelement(Type()) << ">" << endl;
   }
 }
@@ -1683,12 +1692,14 @@ ANode::writeXML(ostream& os, int flags, const char* pfx) const
     indent = ""; 
   }
   
-  writeXML_pre(os, flags, pfx);
+  bool doPost = writeXML_pre(os, flags, pfx);
   string pfx_new = pfx + indent;
   for (ANodeLineSortedChildIterator it(this); it.Current(); it++) {
     it.Current()->writeXML(os, flags, pfx_new.c_str());
   }
-  writeXML_post(os, flags, pfx);
+  if (doPost) {
+    writeXML_post(os, flags, pfx);
+  }
   return os;
 }
 
@@ -1722,14 +1733,19 @@ Root::writeXML(ostream& os, int flags, const char* pfx) const
 {
   // N.B.: Typically LM are children
   string indent = "  ";
-  if (flags & Tree::COMPRESSED_OUTPUT) { pfx = ""; indent = ""; }
+  if (flags & Tree::COMPRESSED_OUTPUT) { 
+    pfx = ""; 
+    indent = ""; 
+  }
 
-  ANode::writeXML_pre(os, flags, pfx);
+  bool doPost = ANode::writeXML_pre(os, flags, pfx);
   for (ANodeNameSortedChildIterator it(this); it.Current(); it++) { 
     ANode* scope = it.Current();
     scope->writeXML(os, flags, pfx);
   }
-  ANode::writeXML_post(os, flags, pfx);
+  if (doPost) {
+    ANode::writeXML_post(os, flags, pfx);
+  }
   return os;
 }
 
@@ -1739,15 +1755,20 @@ LM::writeXML(ostream& os, int flags, const char* pre) const
 {
   // N.B.: Typically Files are children
   string indent = "  ";
-  if (flags & Tree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
+  if (flags & Tree::COMPRESSED_OUTPUT) { 
+    pre = ""; 
+    indent = ""; 
+  }
 
-  ANode::writeXML_pre(os, flags, pre);
+  bool doPost = ANode::writeXML_pre(os, flags, pre);
   string prefix = pre + indent;
   for (ANodeNameSortedChildIterator it(this); it.Current(); it++) {
     ANode* scope = it.Current();
     scope->writeXML(os, flags, prefix.c_str());
   }
-  ANode::writeXML_post(os, flags, pre);
+  if (doPost) {
+    ANode::writeXML_post(os, flags, pre);
+  }
   return os;
 }
 

@@ -121,9 +121,6 @@ public:
 
     // Not-generally-user-level bit flags
     XML_NO_ESC_CHARS = (1 << 10), /* don't substitute XML escape characters */
-
-    // Private bit flags
-    XML_EMPTY_TAG    = (1 << 15)  /* this is an empty XML tag */
     
   };
 
@@ -356,7 +353,7 @@ public:
 
 protected:
 
-  void writeXML_pre(std::ostream& os = std::cerr, 
+  bool writeXML_pre(std::ostream& os = std::cerr, 
 		    int flags = CCT::Tree::XML_TRUE,
 		    const char *prefix = "") const;
   void writeXML_post(std::ostream& os = std::cerr, 

@@ -519,7 +519,7 @@ public:
 	 const char* pre = "") const;
 
 protected:
-  void writeXML_pre(std::ostream& os = std::cout,
+  bool writeXML_pre(std::ostream& os = std::cout,
 		    int flags = 0, const char* prefix = "") const;
   void writeXML_post(std::ostream& os = std::cout,
 		     int flags = 0, const char* prefix = "") const;

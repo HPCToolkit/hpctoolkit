@@ -661,8 +661,7 @@ ANode::toString_me(int flags) const
 
   // FIXME: tallent: temporary override
   if (type() == ANode::TyProcFrm) {
-    const ProcFrm* fr = 
-      dynamic_cast<const ProcFrm*>(this);
+    const ProcFrm* fr = dynamic_cast<const ProcFrm*>(this);
     self = fr->isAlien() ? "Pr" : "PF";
   }
 
@@ -833,19 +832,17 @@ ANode::writeXML(ostream &os, int flags, const char *pre) const
     pre = ""; 
     indent = ""; 
   }
-
-  if ( /*(flags & CCT::Tree::XML_TRUE) &&*/ IsLeaf()) { 
-    flags |= CCT::Tree::XML_EMPTY_TAG; 
-  }
   
-  writeXML_pre(os, flags, pre); 
+  bool doPost = writeXML_pre(os, flags, pre);
   string prefix = pre + indent;
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureId); 
        it.Current(); it++) {
     ANode* n = it.Current();
     n->writeXML(os, flags, prefix.c_str());
-  }   
-  writeXML_post(os, flags, pre);
+  }
+  if (doPost) {
+    writeXML_post(os, flags, pre);
+  }
   return os;
 }
 
@@ -873,30 +870,40 @@ ANode::ddump_me() const
 }
 
 
-void
+bool
 ANode::writeXML_pre(ostream& os, int flags, const char *prefix) const
 {
-  bool doSilent = (type() == TyRoot);
-  
+  const ADynNode* this_dyn = dynamic_cast<const ADynNode*>(this);
+
+  bool doTag = (type() != TyRoot);
+  bool hasMetrics = (this_dyn && this_dyn->hasMetrics());
+  bool isXMLLeaf = IsLeaf() && !hasMetrics;
+
   // 1. Write element name
-  if (!doSilent) {
-    os << prefix << "<" << toString_me(flags) << ">" << endl;
+  if (doTag) {
+    if (isXMLLeaf) {
+      os << prefix << "<" << toString_me(flags) << "/>" << endl;
+    }
+    else {
+      os << prefix << "<" << toString_me(flags) << ">" << endl;
+    }
   }
 
   // 2. Write associated metrics
-  const ADynNode* this_dyn = dynamic_cast<const ADynNode*>(this);
-  if (this_dyn && this_dyn->hasMetrics()) {
+  if (hasMetrics) {
     this_dyn->writeMetricsXML(os, flags, prefix);
     os << endl;
   }
+
+  return !isXMLLeaf; // whether to execute writeXML_post()
 }
 
 
 void
 ANode::writeXML_post(ostream &os, int flags, const char *prefix) const
 {
-  bool doSilent = (type() == ANode::TyRoot);
-  if (doSilent) {
+  bool doTag = (type() != ANode::TyRoot);
+  if (!doTag) {
     return;
   }
   
