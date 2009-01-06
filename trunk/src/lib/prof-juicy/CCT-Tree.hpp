@@ -113,17 +113,10 @@ class Tree: public Unique {
 public:
 
   enum {
-    // Write flags, user level
-    XML_FALSE =	(0 << 0),	/* No XML format */
-    XML_TRUE  =	(1 << 0),	/* XML format */
-
-    WFlg_Compressed      = (1 << 1), // Write in compressed format
-    WFlg_LeafMetricsOnly = (1 << 2), // Write metrics only at leaves
-
-    WFlg_Debug           = (1 << 3), // Debug: show xtra source line info
-
-    // Not-generally-user-level bit flags
-    XML_NO_ESC_CHARS = (1 << 10), // don't substitute XML escape characters
+    // Output flags
+    OFlg_Compressed      = (1 << 1), // Write in compressed format
+    OFlg_LeafMetricsOnly = (1 << 2), // Write metrics only at leaves
+    OFlg_Debug           = (1 << 3), // Debug: show xtra source line info
   };
 
 public:
@@ -156,10 +149,10 @@ public:
   // Write contents
   // -------------------------------------------------------
   std::ostream& 
-  writeXML(std::ostream& os = std::cerr, int flags = XML_TRUE) const;
+  writeXML(std::ostream& os = std::cerr, int oFlags = 0) const;
 
   std::ostream& 
-  dump(std::ostream& os = std::cerr, int flags = XML_TRUE) const;
+  dump(std::ostream& os = std::cerr, int oFlags = 0) const;
   
   void ddump() const;
 
@@ -167,7 +160,7 @@ public:
   // Given a set of flags 'flags', determines whether we need to
   // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
   // or xml::ESC_FALSE. 
-  static int doXMLEscape(int flags);
+  static int doXMLEscape(int oFlags);
  
 private:
   ANode* m_root;
@@ -334,18 +327,17 @@ public:
   Types() const; // this instance's base and derived types
 
   std::string 
-  toString(int flags = CCT::Tree::XML_TRUE, const char* pre = "") const;
+  toString(int oFlags = 0, const char* pre = "") const;
 
   virtual std::string 
-  toString_me(int flags = CCT::Tree::XML_TRUE) const; 
+  toString_me(int oFlags = 0) const; 
 
   std::ostream& 
-  writeXML(std::ostream& os = std::cerr, int flags = CCT::Tree::XML_TRUE,
+  writeXML(std::ostream& os = std::cerr, int oFlags = 0,
 	   const char *pre = "") const;
 
   std::ostream& 
-  dump(std::ostream& os = std::cerr, int flags = CCT::Tree::XML_TRUE,
-       const char *pre = "") const;
+  dump(std::ostream& os = std::cerr, int oFlags = 0, const char *pre = "") const;
 
   void ddump() const;
 
@@ -355,11 +347,9 @@ public:
 
 protected:
 
-  bool writeXML_pre(std::ostream& os = std::cerr, 
-		    int flags = CCT::Tree::XML_TRUE,
+  bool writeXML_pre(std::ostream& os = std::cerr, int oFlags = 0,
 		    const char *prefix = "") const;
-  void writeXML_post(std::ostream& os = std::cerr, 
-		     int flags = CCT::Tree::XML_TRUE,
+  void writeXML_post(std::ostream& os = std::cerr, int oFlags = 0, 
 		     const char *prefix = "") const;
 
   void merge_fixup(const SampledMetricDescVec* mdesc, int metric_offset);
@@ -601,11 +591,11 @@ public:
   std::string lip_str() const;
 
   void 
-  writeDyn(std::ostream& os, int flags = 0, const char* prefix = "") const;
+  writeDyn(std::ostream& os, int oFlags = 0, const char* prefix = "") const;
 
   // writeMetricsXML: write metrics (sparsely)
   std::ostream& 
-  writeMetricsXML(std::ostream& os, int flags = 0, 
+  writeMetricsXML(std::ostream& os, int oFlags = 0, 
 		  const char* prefix = "") const;
 
   struct WriteMetricInfo_ {
@@ -676,7 +666,7 @@ public:
   
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int flags = CCT::Tree::XML_TRUE) const;
+  toString_me(int oFlags = 0) const;
   
 protected: 
 private: 
@@ -804,7 +794,7 @@ public:
   // -------------------------------------------------------
 
   virtual std::string 
-  toString_me(int flags = CCT::Tree::XML_TRUE) const;
+  toString_me(int oFlags = 0) const;
 
   virtual std::string 
   codeName() const;
@@ -826,7 +816,7 @@ public:
   
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int flags = CCT::Tree::XML_TRUE) const;
+  toString_me(int oFlags = 0) const;
 };
 
 
@@ -843,7 +833,7 @@ public:
 
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int flags = CCT::Tree::XML_TRUE) const; 
+  toString_me(int oFlags = 0) const; 
   
 private:
 };
@@ -875,7 +865,7 @@ class Stmt: public ADynNode {
 
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int flags = CCT::Tree::XML_TRUE) const;
+  toString_me(int oFlags = 0) const;
 };
 
 
@@ -912,7 +902,7 @@ public:
     
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int flags = CCT::Tree::XML_TRUE) const;
+  toString_me(int oFlags = 0) const;
 
 };
 

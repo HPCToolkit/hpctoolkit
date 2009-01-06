@@ -82,7 +82,6 @@ using SrcFile::ln_NULL;
 //*************************** Forward Declarations **************************
 
 static int SimpleLineCmp(SrcFile::ln x, SrcFile::ln y);
-static int AddXMLEscapeChars(int flags);
 
 using namespace xml;
 
@@ -135,19 +134,19 @@ Tree::CollectCrossReferences()
 
 
 ostream& 
-Tree::writeXML(ostream& os, int flags) const
+Tree::writeXML(ostream& os, int oFlags) const
 {
   if (m_root) {
-    m_root->writeXML(os, flags);
+    m_root->writeXML(os, oFlags);
   }
   return os;
 }
 
 
 ostream& 
-Tree::dump(ostream& os, int flags) const
+Tree::dump(ostream& os, int oFlags) const
 {
-  writeXML(os, flags);
+  writeXML(os, oFlags);
   return os;
 }
 
@@ -1324,16 +1323,16 @@ ANode::Types() const
 
 
 string 
-ANode::toString(int flags, const char* pre) const
+ANode::toString(int oFlags, const char* pre) const
 { 
   std::ostringstream os;
-  dump(os, flags, pre);
+  dump(os, oFlags, pre);
   return os.str();
 }
 
 
 string
-ANode::toString_id(int flags) const
+ANode::toString_id(int oFlags) const
 { 
   string str = "<" + ANodeTyToName(Type()) + " uid=" 
     + StrUtil::toStr(id()) + ">";
@@ -1342,20 +1341,20 @@ ANode::toString_id(int flags) const
 
 
 string
-ANode::toString_me(int flags, const char* prefix) const
+ANode::toString_me(int oFlags, const char* prefix) const
 { 
   std::ostringstream os;
-  dumpme(os, flags, prefix);
+  dumpme(os, oFlags, prefix);
   return os.str();
 }
 
 
 std::ostream&
-ANode::dump(ostream& os, int flags, const char* pre) const 
+ANode::dump(ostream& os, int oFlags, const char* pre) const 
 {
   string prefix = string(pre) + "  ";
 
-  dumpme(os, flags, pre);
+  dumpme(os, oFlags, pre);
 
   for (uint i = 0; i < NumPerfData(); i++) {
     os << i << " = " ;
@@ -1369,7 +1368,7 @@ ANode::dump(ostream& os, int flags, const char* pre) const
   }
   
   for (ANodeChildIterator it(this); it.Current(); it++) {
-    it.CurNode()->dump(os, flags, prefix.c_str());
+    it.CurNode()->dump(os, oFlags, prefix.c_str());
   } 
   return os;
 }
@@ -1384,90 +1383,90 @@ ANode::ddump() const
 
 
 ostream&
-ANode::dumpme(ostream& os, int flags, const char* prefix) const
+ANode::dumpme(ostream& os, int oFlags, const char* prefix) const
 { 
-  os << prefix << toString_id(flags) << endl;
+  os << prefix << toString_id(oFlags) << endl;
   return os;
 }
 
 
 ostream&
-ACodeNode::dumpme(ostream& os, int flags, const char* prefix) const
+ACodeNode::dumpme(ostream& os, int oFlags, const char* prefix) const
 { 
-  os << prefix << toString_id(flags) << " " 
+  os << prefix << toString_id(oFlags) << " " 
      << LineRange() << " " << m_vmaSet.toString();
   return os;
 }
 
 
 ostream&
-Root::dumpme(ostream& os, int flags, const char* prefix) const
+Root::dumpme(ostream& os, int oFlags, const char* prefix) const
 { 
-  os << prefix << toString_id(flags) << " n=" << m_name;
+  os << prefix << toString_id(oFlags) << " n=" << m_name;
   return os;
 }
 
 
 ostream& 
-Group::dumpme(ostream& os, int flags, const char* prefix) const
+Group::dumpme(ostream& os, int oFlags, const char* prefix) const
 {
-  os << prefix << toString_id(flags) << " n=" << m_name;
+  os << prefix << toString_id(oFlags) << " n=" << m_name;
   return os;
 }
 
 
 ostream& 
-LM::dumpme(ostream& os, int flags, const char* prefix) const
+LM::dumpme(ostream& os, int oFlags, const char* prefix) const
 {
-  os << prefix << toString_id(flags) << " n=" << m_name;
+  os << prefix << toString_id(oFlags) << " n=" << m_name;
   return os;
 }
 
 
 ostream&
-File::dumpme(ostream& os, int flags, const char* prefix) const
+File::dumpme(ostream& os, int oFlags, const char* prefix) const
 { 
-  ACodeNode::dumpme(os, flags, prefix) << " n=" <<  m_name;
+  ACodeNode::dumpme(os, oFlags, prefix) << " n=" <<  m_name;
   return os;
 }
 
 
 ostream& 
-Proc::dumpme(ostream& os, int flags, const char* prefix) const
+Proc::dumpme(ostream& os, int oFlags, const char* prefix) const
 { 
-  ACodeNode::dumpme(os, flags, prefix) << " n=" << m_name;
+  ACodeNode::dumpme(os, oFlags, prefix) << " n=" << m_name;
   return os;
 }
 
 
 ostream& 
-Alien::dumpme(ostream& os, int flags, const char* prefix) const
+Alien::dumpme(ostream& os, int oFlags, const char* prefix) const
 { 
-  ACodeNode::dumpme(os, flags, prefix);
+  ACodeNode::dumpme(os, oFlags, prefix);
   return os;
 }
 
 
 ostream& 
-Loop::dumpme(ostream& os, int flags, const char* prefix) const
+Loop::dumpme(ostream& os, int oFlags, const char* prefix) const
 {
-  ACodeNode::dumpme(os, flags, prefix);
+  ACodeNode::dumpme(os, oFlags, prefix);
   return os;
 }
 
 
 ostream&
-Stmt::dumpme(ostream& os, int flags, const char* prefix) const
+Stmt::dumpme(ostream& os, int oFlags, const char* prefix) const
 {
-  ACodeNode::dumpme(os, flags, prefix);
+  ACodeNode::dumpme(os, oFlags, prefix);
   return os;
 }
 
 
 ostream&
-Ref::dumpme(ostream& os, int flags, const char* prefix) const
+Ref::dumpme(ostream& os, int oFlags, const char* prefix) const
 { 
-  ACodeNode::dumpme(os, flags, prefix);
+  ACodeNode::dumpme(os, oFlags, prefix);
   os << " pos:"  << begPos << "-" << endPos;
   return os;
 }
@@ -1512,16 +1511,16 @@ ANode::ANodeTyToXMLelement(ANodeTy tp)
 
 
 string 
-ANode::toStringXML(int flags, const char* pre) const
+ANode::toStringXML(int oFlags, const char* pre) const
 { 
   std::ostringstream os;
-  writeXML(os, flags, pre);
+  writeXML(os, oFlags, pre);
   return os.str();
 }
 
 
 string 
-ANode::toXML(int flags) const
+ANode::toXML(int oFlags) const
 {
   string self = ANodeTyToXMLelement(Type()) + " i" + MakeAttrNum(id());
   return self;
@@ -1529,17 +1528,16 @@ ANode::toXML(int flags) const
 
 
 string
-ACodeNode::toXML(int flags) const
+ACodeNode::toXML(int oFlags) const
 { 
-  string self = ANode::toXML(flags) 
-    + " " + XMLLineRange(flags)
-    + " " + XMLVMAIntervals(flags);
+  string self = ANode::toXML(oFlags) 
+    + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
   return self;
 }
 
 
 string
-ACodeNode::XMLLineRange(int flags) const
+ACodeNode::XMLLineRange(int oFlags) const
 {
   string line = StrUtil::toStr(begLine());
   if (begLine() != endLine()) {
@@ -1552,7 +1550,7 @@ ACodeNode::XMLLineRange(int flags) const
 
 
 string
-ACodeNode::XMLVMAIntervals(int flags) const
+ACodeNode::XMLVMAIntervals(int oFlags) const
 {
   string self = "v" + MakeAttrStr(m_vmaSet.toString(), xml::ESC_FALSE);
   return self;
@@ -1560,112 +1558,106 @@ ACodeNode::XMLVMAIntervals(int flags) const
 
 
 string
-Root::toXML(int flags) const
+Root::toXML(int oFlags) const
 {
-  string self = ANode::toXML(flags) 
-    + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(flags));
+  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
   return self;
 }
 
 
 string 
-Group::toXML(int flags) const
+Group::toXML(int oFlags) const
 {
-  string self = ANode::toXML(flags) 
-    + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(flags));
+  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
   return self;
 }
 
 
 string 
-LM::toXML(int flags) const
+LM::toXML(int oFlags) const
 {
-  string self = ANode::toXML(flags) 
-    + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(flags))
-    + " " + XMLVMAIntervals(flags);
+  string self = ANode::toXML(oFlags) 
+    + " n" + MakeAttrStr(m_name) + " " + XMLVMAIntervals(oFlags);
   return self;
 }
 
 
 string
-File::toXML(int flags) const
+File::toXML(int oFlags) const
 {
-  string self = ANode::toXML(flags) 
-    + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(flags));
+  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
   return self;
 }
 
 
 string 
-Proc::toXML(int flags) const
+Proc::toXML(int oFlags) const
 { 
-  string self = ANode::toXML(flags) 
-    + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(flags));
+  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
   if (m_name != m_linkname) { // if different, print both
-    self = self + " ln" + MakeAttrStr(m_linkname, AddXMLEscapeChars(flags));
+    self = self + " ln" + MakeAttrStr(m_linkname);
   }
-  self = self + " " + XMLLineRange(flags) + " " + XMLVMAIntervals(flags);
+  self = self + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
   return self;
 }
 
 
 string 
-Alien::toXML(int flags) const
+Alien::toXML(int oFlags) const
 { 
-  string self = ANode::toXML(flags) 
-    + " f" + MakeAttrStr(m_filenm, AddXMLEscapeChars(flags))
-    + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(flags));
-  self = self + " " + XMLLineRange(flags) + " " + XMLVMAIntervals(flags);
+  string self = ANode::toXML(oFlags) 
+    + " f" + MakeAttrStr(m_filenm) + " n" + MakeAttrStr(m_name);
+  self = self + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
   return self;
 }
 
 
 string 
-Loop::toXML(int flags) const
+Loop::toXML(int oFlags) const
 {
-  string self = ACodeNode::toXML(flags);
+  string self = ACodeNode::toXML(oFlags);
   return self;
 }
 
 
 string
-Stmt::toXML(int flags) const
+Stmt::toXML(int oFlags) const
 {
-  string self = ACodeNode::toXML(flags);
+  string self = ACodeNode::toXML(oFlags);
   return self;
 }
 
 
 string
-Ref::toXML(int flags) const
+Ref::toXML(int oFlags) const
 { 
-  string self = ACodeNode::toXML(flags) 
+  string self = ACodeNode::toXML(oFlags) 
     + " b" + MakeAttrNum(begPos) + " e" + MakeAttrNum(endPos);
   return self;
 }
 
 
 bool 
-ANode::writeXML_pre(ostream& os, int flags, const char* pfx) const
+ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
 {
   bool doTag = (Type() != TyRoot);
-  bool doMetrics = ((flags & Tree::WFlg_LeafMetricsOnly) ? 
+  bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ? 
 		    HasPerfData() && IsLeaf() : HasPerfData());
   bool isXMLLeaf = IsLeaf() && !doMetrics;
 
   // 1. Write element name
   if (doTag) {
     if (isXMLLeaf) {
-      os << pfx << "<" << toXML(flags) << "/>" << endl;
+      os << pfx << "<" << toXML(oFlags) << "/>" << endl;
     }
     else {
-      os << pfx << "<" << toXML(flags) << ">" << endl;
+      os << pfx << "<" << toXML(oFlags) << ">" << endl;
     }
   }
 
   // 2. Write associated metrics
   if (doMetrics) {
-    writeMetricsXML(os, flags, pfx);
+    writeMetricsXML(os, oFlags, pfx);
     os << endl;
   }
   
@@ -1674,7 +1666,7 @@ ANode::writeXML_pre(ostream& os, int flags, const char* pfx) const
 
 
 void
-ANode::writeXML_post(ostream& os, int flags, const char* pfx) const
+ANode::writeXML_post(ostream& os, int oFlags, const char* pfx) const
 {
   bool doTag = (Type() != TyRoot);
 
@@ -1685,28 +1677,28 @@ ANode::writeXML_post(ostream& os, int flags, const char* pfx) const
 
 
 ostream& 
-ANode::writeXML(ostream& os, int flags, const char* pfx) const 
+ANode::writeXML(ostream& os, int oFlags, const char* pfx) const 
 {
   string indent = "  ";
-  if (flags & Tree::WFlg_Compressed) { 
+  if (oFlags & Tree::OFlg_Compressed) { 
     pfx = ""; 
     indent = ""; 
   }
   
-  bool doPost = writeXML_pre(os, flags, pfx);
+  bool doPost = writeXML_pre(os, oFlags, pfx);
   string pfx_new = pfx + indent;
   for (ANodeLineSortedChildIterator it(this); it.Current(); it++) {
-    it.Current()->writeXML(os, flags, pfx_new.c_str());
+    it.Current()->writeXML(os, oFlags, pfx_new.c_str());
   }
   if (doPost) {
-    writeXML_post(os, flags, pfx);
+    writeXML_post(os, oFlags, pfx);
   }
   return os;
 }
 
 
 ostream& 
-ANode::writeMetricsXML(ostream& os, int flags, const char* pfx) const 
+ANode::writeMetricsXML(ostream& os, int oFlags, const char* pfx) const 
 {
   bool wasMetricWritten = false;
   
@@ -1730,45 +1722,45 @@ ANode::ddumpXML() const
 
 
 ostream& 
-Root::writeXML(ostream& os, int flags, const char* pfx) const
+Root::writeXML(ostream& os, int oFlags, const char* pfx) const
 {
   // N.B.: Typically LM are children
   string indent = "  ";
-  if (flags & Tree::WFlg_Compressed) { 
+  if (oFlags & Tree::OFlg_Compressed) { 
     pfx = ""; 
     indent = ""; 
   }
 
-  bool doPost = ANode::writeXML_pre(os, flags, pfx);
+  bool doPost = ANode::writeXML_pre(os, oFlags, pfx);
   for (ANodeNameSortedChildIterator it(this); it.Current(); it++) { 
     ANode* scope = it.Current();
-    scope->writeXML(os, flags, pfx);
+    scope->writeXML(os, oFlags, pfx);
   }
   if (doPost) {
-    ANode::writeXML_post(os, flags, pfx);
+    ANode::writeXML_post(os, oFlags, pfx);
   }
   return os;
 }
 
 
 ostream& 
-LM::writeXML(ostream& os, int flags, const char* pre) const
+LM::writeXML(ostream& os, int oFlags, const char* pre) const
 {
   // N.B.: Typically Files are children
   string indent = "  ";
-  if (flags & Tree::WFlg_Compressed) { 
+  if (oFlags & Tree::OFlg_Compressed) { 
     pre = ""; 
     indent = ""; 
   }
 
-  bool doPost = ANode::writeXML_pre(os, flags, pre);
+  bool doPost = ANode::writeXML_pre(os, oFlags, pre);
   string prefix = pre + indent;
   for (ANodeNameSortedChildIterator it(this); it.Current(); it++) {
     ANode* scope = it.Current();
-    scope->writeXML(os, flags, prefix.c_str());
+    scope->writeXML(os, oFlags, prefix.c_str());
   }
   if (doPost) {
-    ANode::writeXML_post(os, flags, pre);
+    ANode::writeXML_post(os, oFlags, pre);
   }
   return os;
 }
@@ -2140,20 +2132,6 @@ SimpleLineCmp(SrcFile::ln x, SrcFile::ln y)
   if (x < y)       { return -1; }
   else if (x == y) { return 0; }
   else             { return 1; }
-}
-
-
-// Returns a flag indicating whether XML escape characters should be used
-// not modify 'str'
-static int 
-AddXMLEscapeChars(int flags)
-{
-  if (flags & Prof::Struct::Tree::XML_NO_ESC_CHARS) {
-    return xml::ESC_FALSE;
-  }
-  else {
-    return xml::ESC_TRUE;
-  }
 }
 
 //***************************************************************************

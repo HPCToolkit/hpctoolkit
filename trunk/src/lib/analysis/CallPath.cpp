@@ -120,11 +120,13 @@ write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint)
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
-  int dumpFlags = (CCT::Tree::XML_TRUE); // CCT::Tree::XML_NO_ESC_CHARS
-  if (!prettyPrint) { dumpFlags |= CCT::Tree::WFlg_Compressed; }
+  int oFlags = 0;
+  if (!prettyPrint) { 
+    oFlags |= CCT::Tree::OFlg_Compressed;
+  }
 
   os << "<SecCallPathProfileData>\n";
-  prof->cct()->writeXML(os, dumpFlags);
+  prof->cct()->writeXML(os, oFlags);
   os << "</SecCallPathProfileData>\n";
 
   os << "</SecCallPathProfile>\n";
