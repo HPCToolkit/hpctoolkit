@@ -135,7 +135,7 @@ class StmtMap : public std::map<SrcFile::ln, Stmt*> { };
 namespace Prof {
 namespace Struct {
 
-class Pgm;
+class Root;
 
 class Tree : public Unique {
 public:
@@ -159,9 +159,9 @@ public:
   // -------------------------------------------------------
   // Constructor/Destructor
   // -------------------------------------------------------
-  Tree(const char* name, Pgm* root = NULL);
+  Tree(const char* name, Root* root = NULL);
 
-  Tree(const std::string& name, Pgm* root = NULL)
+  Tree(const std::string& name, Root* root = NULL)
     { Tree(name.c_str(), root); }
 
   virtual ~Tree();
@@ -169,8 +169,9 @@ public:
   // -------------------------------------------------------
   // Tree data
   // -------------------------------------------------------
-  Pgm* root() const { return m_root; }
-  void root(Pgm* x) { m_root = x; }
+  Root* root() const { return m_root; }
+  void  root(Root* x) { m_root = x; }
+
   bool empty() const { return (m_root == NULL); }
   
   std::string name() const;
@@ -192,7 +193,7 @@ public:
   ddump() const;
  
 private:
-  Pgm* m_root;
+  Root* m_root;
 };
 
 } // namespace Struct
@@ -208,13 +209,13 @@ namespace Struct {
 
 // FIXME: It would make more sense for Group and LM to
 // simply be ANodes and not ACodeNodes, but the assumption that
-// *only* a Pgm is not a ACodeNode is deeply embedded and would
+// *only* a Root is not a ACodeNode is deeply embedded and would
 // take a while to untangle.
 
 class ANode;     // Base class for all nodes
 class ACodeNode; // Base class for everyone but TyPGM
 
-class Pgm;       // Tree root
+class Root;
 class Group;
 class LM;
 class File;
@@ -230,7 +231,7 @@ class Ref;
 class ANode: public NonUniformDegreeTreeNode {
 public:
   enum ANodeTy {
-    TyPGM = 0,
+    TyRoot = 0,
     TyGROUP,
     TyLM,
     TyFILE,
@@ -380,7 +381,7 @@ public:
   ANode* Ancestor(ANodeTy type) const;
   ANode* Ancestor(ANodeTy tp1, ANodeTy tp2) const;
   
-  Pgm*   AncPgm() const;    // return Ancestor(TyPGM)
+  Root*  AncRoot() const;   // return Ancestor(TyRoot)
   Group* AncGroup() const;  // return Ancestor(TyGROUP)
   LM*    AncLM() const;     // return Ancestor(TyLM)
   File*  AncFile() const;   // return Ancestor(TyFILE)
@@ -399,8 +400,8 @@ public:
   // --------------------------------------------------------
   // Tree navigation 
   //   1) all ANodes contain ACodeNodes as children 
-  //   2) PgmRoot is the only ANode type that is not also a ACodeNode;
-  //      since Pgms have no siblings, it is safe to make Next/PrevScope 
+  //   2) Root is the only ANode type that is not also a ACodeNode;
+  //      since Roots have no siblings, it is safe to make Next/PrevScope 
   //      return ACodeNode pointers 
   // --------------------------------------------------------
   ACodeNode* FirstEnclScope() const;      // return  FirstChild()
@@ -489,8 +490,8 @@ public:
   // Other output
   // --------------------------------------------------------
 
-  void CSV_DumpSelf(const Pgm &root, std::ostream& os = std::cout) const;
-  virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
+  void CSV_DumpSelf(const Root &root, std::ostream& os = std::cout) const;
+  virtual void CSV_dump(const Root &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
@@ -538,7 +539,7 @@ protected:
 
 
 // --------------------------------------------------------------------------
-// ACodeNode is a base class for all scopes other than TyPGM and TyLM.
+// ACodeNode is a base class for all scopes other than TyRoot and TyLM.
 // Describes some kind of code, i.e. Files, Procedures, Loops...
 // --------------------------------------------------------------------------
 class ACodeNode : public ANode {
@@ -645,7 +646,7 @@ public:
   virtual std::string XMLLineRange(int flags) const;
   virtual std::string XMLVMAIntervals(int flags) const;
 
-  virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
+  virtual void CSV_dump(const Root &root, std::ostream& os = std::cout, 
                const char* file_name = NULL, const char* proc_name = NULL,
                int lLevel = 0) const;
 
@@ -687,37 +688,37 @@ int ACodeNodeLineComp(const ACodeNode* x, const ACodeNode* y);
 
 
 //***************************************************************************
-// Pgm, Group, LM, File, Proc, Loop,
+// Root, Group, LM, File, Proc, Loop,
 // Stmt
 //***************************************************************************
 
 // --------------------------------------------------------------------------
-// Pgm is root of the scope tree
+// Root is root of the scope tree
 // --------------------------------------------------------------------------
-class Pgm: public ANode {
+class Root: public ANode {
 protected:
-  Pgm(const Pgm& x) 
+  Root(const Root& x) 
     : ANode(x.type)
   { 
     *this = x; 
   }
   
-  Pgm& operator=(const Pgm& x);
+  Root& operator=(const Root& x);
 
 public: 
-  Pgm(const char* nm)
-    : ANode(TyPGM, NULL)
+  Root(const char* nm)
+    : ANode(TyRoot, NULL)
   { 
     Ctor(nm);
   }
   
-  Pgm(const std::string& nm)
-    : ANode(TyPGM, NULL)
+  Root(const std::string& nm)
+    : ANode(TyRoot, NULL)
   { 
     Ctor(nm.c_str());
   }
 
-  virtual ~Pgm()
+  virtual ~Root()
   {
     frozen = false;
     delete groupMap;
@@ -749,7 +750,7 @@ public:
   void Freeze() { frozen = true;} // disallow additions to/deletions from tree
   bool IsFrozen() const { return frozen; }
 
-  virtual ANode* Clone() { return new Pgm(*this); }
+  virtual ANode* Clone() { return new Root(*this); }
 
   // --------------------------------------------------------
   // XML output
@@ -793,7 +794,7 @@ private:
 
 
 // --------------------------------------------------------------------------
-// Groups are children of Pgm's, Group's, LMs's, 
+// Groups are children of Root's, Group's, LMs's, 
 //   File's, Proc's, Loop's
 // children: Group's, LM's, File's, Proc's,
 //   Loop's, Stmts,
@@ -819,7 +820,7 @@ public:
   virtual ~Group() { }
   
   static Group* 
-  demand(Pgm* pgm, const std::string& nm, ANode* _parent);
+  demand(Root* pgm, const std::string& nm, ANode* _parent);
 
   const std::string& name() const { return m_name; } // same as grpName
 
@@ -846,7 +847,7 @@ private:
 
 
 // --------------------------------------------------------------------------
-// LMs are children of Pgm's or Group's
+// LMs are children of Root's or Group's
 // children: Group's, File's
 // --------------------------------------------------------------------------
 // FIXME: See note about LM above.
@@ -875,7 +876,7 @@ public:
   }
 
   static LM* 
-  demand(Pgm* pgm, const std::string& lm_fnm);
+  demand(Root* pgm, const std::string& lm_fnm);
 
   virtual std::string BaseName() const  { return FileUtil::basename(m_name); }
 
@@ -955,7 +956,7 @@ private:
 
 
 // --------------------------------------------------------------------------
-// Files are children of Pgm's, Group's and LM's.
+// Files are children of Root's, Group's and LM's.
 // children: Group's, Proc's, Loop's, or Stmt's.
 // Files may refer to an unreadable file
 // --------------------------------------------------------------------------
@@ -1014,7 +1015,7 @@ public:
 
   virtual std::string toXML(int flags = 0) const;
 
-  virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
+  virtual void CSV_dump(const Root &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
@@ -1101,7 +1102,7 @@ public:
 
   virtual std::string toXML(int flags = 0) const;
 
-  virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
+  virtual void CSV_dump(const Root &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
@@ -1176,7 +1177,7 @@ public:
 
   virtual std::string toXML(int flags = 0) const;
 
-  virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
+  virtual void CSV_dump(const Root &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;

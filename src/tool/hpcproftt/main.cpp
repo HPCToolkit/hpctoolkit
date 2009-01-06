@@ -152,7 +152,7 @@ main_srcCorrelation(const Args& args)
   //-------------------------------------------------------
   // Correlate metrics with program structure and Generate output
   //-------------------------------------------------------
-  Prof::Struct::Tree structure("", new Prof::Struct::Pgm(""));
+  Prof::Struct::Tree structure("", new Prof::Struct::Root(""));
 
   Analysis::Flat::Driver driver(args, metricMgr, structure);
   int ret = driver.run();

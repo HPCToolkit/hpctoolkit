@@ -125,7 +125,7 @@ realmain(int argc, char* const* argv)
   //-------------------------------------------------------
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
-  Prof::Struct::Tree structure("", new Prof::Struct::Pgm(""));
+  Prof::Struct::Tree structure("", new Prof::Struct::Root(""));
 
   Analysis::Flat::Driver driver(args, metricMgr, structure);
   int ret = driver.run();
