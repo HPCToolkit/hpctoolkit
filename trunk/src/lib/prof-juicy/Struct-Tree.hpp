@@ -139,14 +139,14 @@ class Root;
 
 class Tree : public Unique {
 public:
+
   enum {
-    // User-level bit flags
+    // Write flags, user level
     XML_FALSE =	(0 << 0),	/* No XML format */
     XML_TRUE  =	(1 << 0),	/* XML format */
     
-    COMPRESSED_OUTPUT = (1 << 1),  /* Use compressed output format */
-
-    DUMP_LEAF_METRICS = (1 << 2),  /* Dump only leaf metrics */
+    WFlg_Compressed      = (1 << 1), // Write in compressed format
+    WFlg_LeafMetricsOnly = (1 << 2), // Write metrics only at leaves
     
     // Not-generally-user-level bit flags
     XML_NO_ESC_CHARS = (1 << 10), /* don't substitute XML escape characters */

@@ -111,17 +111,19 @@ class ANode;
 
 class Tree: public Unique {
 public:
+
   enum {
-    // User-level bit flags
+    // Write flags, user level
     XML_FALSE =	(0 << 0),	/* No XML format */
     XML_TRUE  =	(1 << 0),	/* XML format */
 
-    COMPRESSED_OUTPUT = (1 << 1),  /* no indentation */
-    DBG_OUTPUT = (1 << 2),         /* show source line info for loops/stmts */
+    WFlg_Compressed      = (1 << 1), // Write in compressed format
+    WFlg_LeafMetricsOnly = (1 << 2), // Write metrics only at leaves
+
+    WFlg_Debug           = (1 << 3), // Debug: show xtra source line info
 
     // Not-generally-user-level bit flags
-    XML_NO_ESC_CHARS = (1 << 10), /* don't substitute XML escape characters */
-    
+    XML_NO_ESC_CHARS = (1 << 10), // don't substitute XML escape characters
   };
 
 public:

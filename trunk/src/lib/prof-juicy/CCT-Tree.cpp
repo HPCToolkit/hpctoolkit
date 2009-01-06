@@ -828,7 +828,7 @@ std::ostream&
 ANode::writeXML(ostream &os, int flags, const char *pre) const 
 {
   string indent = "  ";
-  if (flags & CCT::Tree::COMPRESSED_OUTPUT) { 
+  if (flags & CCT::Tree::WFlg_Compressed) { 
     pre = ""; 
     indent = ""; 
   }
