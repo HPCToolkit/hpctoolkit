@@ -210,71 +210,6 @@ ANodeLineSortedChildIterator::DumpAndReset(ostream &os)
 
 
 //***************************************************************************
-// ANodeLineSortedIteratorForLargeScopes
-//***************************************************************************
-
-ANodeLineSortedIteratorForLargeScopes::ANodeLineSortedIteratorForLargeScopes(
-					const ACodeNode *file, 
-					const ANodeFilter *filterFunc, 
-					bool leavesOnly)
-{
-  ANodeIterator it(file, filterFunc, leavesOnly);
-  ANode *cur;
-  for (; (cur = it.CurNode()); ) {
-    ACodeNodeLine *cur1 = new ACodeNodeLine(dynamic_cast<ACodeNode*>(cur), 
-                         IS_BEG_LINE);
-    scopes.Add((unsigned long) cur1);
-    if (cur->type() == ANode::TyLOOP)
-    {  // create a ACodeNodeLine object for both begin and end line
-       // only for Loops. For PROCs we are interested only in BegLine
-      ACodeNodeLine *cur2 = new ACodeNodeLine(dynamic_cast<ACodeNode*>(cur), 
-                         IS_END_LINE);
-      scopes.Add((unsigned long) cur2);
-    }
-    it++;
-  }
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByLine);
-}
-
-
-ANodeLineSortedIteratorForLargeScopes::~ANodeLineSortedIteratorForLargeScopes() 
-{
-  // First deallocate all ACodeNodeLine objects created
-  ptrSetIt->Reset();
-  for ( ; ptrSetIt->Current() ; (*ptrSetIt)++ )
-    delete ((ACodeNodeLine*) (*ptrSetIt->Current()));
-  delete ptrSetIt;
-}
- 
-ACodeNodeLine* 
-ANodeLineSortedIteratorForLargeScopes::Current() const
-{
-  ACodeNodeLine *cur = NULL;
-  if (ptrSetIt->Current()) {
-    cur = (ACodeNodeLine*) (*ptrSetIt->Current());
-    DIAG_Assert(cur != NULL, "");
-  }
-  return cur;
-} 
-
-void 
-ANodeLineSortedIteratorForLargeScopes::DumpAndReset(std::ostream &os)
-{
-  os << "ANodeLineSortedIteratorForLargeScopes: " << endl;
-  while (Current()) {
-    os << Current()->GetACodeNode()->ToString() << endl;
-    (*this)++;
-  } 
-  Reset();
-}
-
-void 
-ANodeLineSortedIteratorForLargeScopes::Reset()
-{
-  ptrSetIt->Reset();
-}
-
-//***************************************************************************
 // ANodeNameSortedChildIterator
 //***************************************************************************
 
@@ -346,6 +281,7 @@ ANodeMetricSortedIterator::ANodeMetricSortedIterator(const Root* root,
 
 
 
+#if 0
 //***************************************************************************
 // ANodeMetricSortedChildIterator
 //***************************************************************************
@@ -377,6 +313,8 @@ void ANodeMetricSortedChildIterator::AddChildren
     it++;
   }
 }
+#endif
+
 
 //***************************************************************************
 // static functions

@@ -106,11 +106,11 @@ private:
   long arg;
 };
 
-// HasNodeType(s,tp) == ((tp == ANY) || (s.Type() == tp));
-extern bool HasNodeType(const ANode &sinfo, long type); 
+// HasANodeTy(s,tp) == ((tp == ANY) || (s.Type() == tp));
+extern bool HasANodeTy(const ANode &sinfo, long type);
 
-// NodeTypeFile[tp].Apply(s) == HasNodeType(s,tp) 
-extern const ANodeFilter NodeTypeFilter[ANode::TyNUMBER];
+// ANodeTyFilter[tp].Apply(s) == HasANodeTy(s,tp)
+extern const ANodeFilter ANodeTyFilter[ANode::TyNUMBER];
 
 
 //*****************************************************************************
@@ -220,14 +220,6 @@ private:
 // ANodeSortedIterator
 //
 // ANodeSortedChildIterator
-//
-// cmpByLine: ANode* a is enumerated before b 
-//                    iff a->StartLine() < b->StartLine() 
-//
-// NOTE: the implementation was generalized so that it no longer assumes
-//       that children in the tree contain non-overlapping ranges. all
-//       lines are gathered into a set, sorted, and then enumerated out
-//       of the set in sorted order. -- johnmc 5/31/00
 //*****************************************************************************
 
 class ANodeSortedIterator {

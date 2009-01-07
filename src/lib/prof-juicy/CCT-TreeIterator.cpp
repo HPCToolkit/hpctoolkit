@@ -74,26 +74,26 @@ namespace CCT {
 // ANodeFilter support
 //*****************************************************************************
 
-bool HasNodeType(const ANode& sinfo, long type)
+bool HasANodeTy(const ANode& sinfo, long type)
 {
   return (type == ANode::TyANY) || (sinfo.type() == ANode::IntToNodeType(type)); 
 }
 
 
-const ANodeFilter NodeTypeFilter[ANode::TyNUMBER] = {
-  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyRoot).c_str(),
+const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
+  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyRoot).c_str(),
 	      ANode::TyRoot),
-  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyProcFrm).c_str(),
+  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyProcFrm).c_str(),
 	      ANode::TyProcFrm),
-  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyProc).c_str(),
+  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyProc).c_str(),
 	      ANode::TyProc),
-  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyLoop).c_str(),
+  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyLoop).c_str(),
 	      ANode::TyLoop),
-  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyStmt).c_str(),
+  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyStmt).c_str(),
 	      ANode::TyStmt),
-  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyCall).c_str(),
+  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyCall).c_str(),
 	      ANode::TyCall),
-  ANodeFilter(HasNodeType, ANode::NodeTypeToName(ANode::TyANY).c_str(),
+  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyANY).c_str(),
 	      ANode::TyANY)
 };
 
