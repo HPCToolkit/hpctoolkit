@@ -232,20 +232,40 @@ public:
   static int cmpByStructureId(const void* x, const void* y);
 
 public: 
-  ANodeSortedIterator(const ANode* node, 
+  ANodeSortedIterator(const ANode* node,
 		      cmp_fptr_t compare_fn,
-		      const ANodeFilter* filterFunc = NULL, 
+		      const ANodeFilter* filterFunc = NULL,
 		      bool leavesOnly = true);
-  
-  ~ANodeSortedIterator();
-  
-  ANode* Current() const; 
-  void operator++(int)   { (*ptrSetIt)++; }
-  void Reset(); 
-  void DumpAndReset(std::ostream &os = std::cerr); 
+
+  ~ANodeSortedIterator()
+  {
+    delete ptrSetIt;
+  }
+
+  ANode*
+  Current() const
+  {
+    ANode* cur = NULL;
+    if (ptrSetIt->Current()) {
+      cur = (ANode*) (*ptrSetIt->Current());
+    }
+    return cur;
+  }
+
+  void operator++(int)
+  {
+    (*ptrSetIt)++;
+  }
+
+  void Reset()
+  {
+    ptrSetIt->Reset();
+  }
+
+  void DumpAndReset(std::ostream &os = std::cerr);
 
 private:
-  WordSet scopes;  // the scopes we want to have sorted
+  WordSet scopes;
   WordSetSortedIterator* ptrSetIt;
 };
 
@@ -255,11 +275,30 @@ public:
   ANodeSortedChildIterator(const ANode* root,
 			   ANodeSortedIterator::cmp_fptr_t compare_fn,
 			   const ANodeFilter* filterFunc = NULL);
-  ~ANodeSortedChildIterator(); 
   
-  ANode* Current() const; 
-  void operator++(int)   { (*ptrSetIt)++; }
-  void Reset();
+  ~ANodeSortedChildIterator()
+  {
+    delete ptrSetIt;
+  }
+
+  ANode* Current() const
+  {
+    ANode *cur = NULL;
+    if (ptrSetIt->Current()) {
+      cur = (ANode*) (*ptrSetIt->Current());
+      DIAG_Assert(cur != NULL, "");
+    }
+    return cur;
+  }
+
+  void operator++(int)
+  { (*ptrSetIt)++; }
+
+  void Reset()
+  {
+    ptrSetIt->Reset();
+  }
+
   void DumpAndReset(std::ostream &os = std::cerr);
 
 private:

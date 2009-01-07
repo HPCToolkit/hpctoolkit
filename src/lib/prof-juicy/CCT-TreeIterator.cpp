@@ -61,22 +61,23 @@ using std::endl;
 
 #include <lib/support/diagnostics.h>
 
-//*************************** Forward Declarations ***************************
+//*************************** Forward Declarations **************************
 
-//****************************************************************************
+//***************************************************************************
 
 namespace Prof {
 
 namespace CCT {
 
 
-//*****************************************************************************
+//***************************************************************************
 // ANodeFilter support
-//*****************************************************************************
+//***************************************************************************
 
-bool HasANodeTy(const ANode& sinfo, long type)
+bool
+HasANodeTy(const ANode& node, long type)
 {
-  return (type == ANode::TyANY) || (sinfo.type() == ANode::IntToNodeType(type)); 
+  return (type == ANode::TyANY || node.type() == ANode::IntToNodeType(type));
 }
 
 
@@ -97,19 +98,20 @@ const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
 	      ANode::TyANY)
 };
 
-//*****************************************************************************
+  
+//***************************************************************************
 // ANodeChildIterator
-//*****************************************************************************
+//***************************************************************************
 
 
-//*****************************************************************************
+//***************************************************************************
 // ANodeIterator
-//*****************************************************************************
+//***************************************************************************
 
 
-//*****************************************************************************
+//***************************************************************************
 // ANodeSortedIterator
-//*****************************************************************************
+//***************************************************************************
 
 ANodeSortedIterator::
 ANodeSortedIterator(const ANode* node,
@@ -117,67 +119,42 @@ ANodeSortedIterator(const ANode* node,
 		    const ANodeFilter* filterFunc,
 		    bool leavesOnly)
 {
-  ANodeIterator it(node, filterFunc, leavesOnly); 
-  ANode *cur; 
+  ANodeIterator it(node, filterFunc, leavesOnly);
+  ANode *cur;
   for (; (cur = it.CurNode()); ) {
-    scopes.Add((unsigned long) cur); 
-    it++; 
+    scopes.Add((unsigned long) cur);
+    it++;
   }
-  ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn); 
+  ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
 }
 
-ANodeSortedIterator::~ANodeSortedIterator() 
-{
-  delete ptrSetIt; 
-}
- 
-ANode* 
-ANodeSortedIterator::Current() const
-{
-  ANode *cur = NULL; 
-  if (ptrSetIt->Current()) {
-    cur = (ANode*) (*ptrSetIt->Current()); 
-    DIAG_Assert(cur != NULL, ""); 
-  }
-  return cur; 
-} 
 
-void 
+void
 ANodeSortedIterator::DumpAndReset(ostream& os)
 {
-  os << "ANodeSortedIterator: " << endl; 
+  os << "ANodeSortedIterator: " << endl;
   while (Current()) {
-    os << Current()->toString_me() << endl; 
-    (*this)++; 
+    os << Current()->toString_me() << endl;
+    (*this)++;
   } 
-  Reset(); 
-}
-
-void 
-ANodeSortedIterator::Reset()
-{
-  ptrSetIt->Reset(); 
+  Reset();
 }
 
 
-int 
+int
 ANodeSortedIterator::cmpByName(const void* a, const void* b)
 {
-  ANode* x = (*(ANode**)a); 
-  ANode* y = (*(ANode**)b); 
-  DIAG_Assert (x != NULL, "");
-  DIAG_Assert (y != NULL, "");
+  ANode* x = (*(ANode**)a);
+  ANode* y = (*(ANode**)b);
   return strcmp(x->name().c_str(), y->name().c_str()); 
 }
 
 
 int
-ANodeSortedIterator::cmpByLine(const void* a, const void* b) 
+ANodeSortedIterator::cmpByLine(const void* a, const void* b)
 {
-  ANode* x = (*(ANode**)a); 
-  ANode* y = (*(ANode**)b); 
-  DIAG_Assert(x != NULL, "");
-  DIAG_Assert(y != NULL, "");
+  ANode* x = (*(ANode**)a);
+  ANode* y = (*(ANode**)b);
   return ANodeLineComp(x, y);
 }
 
@@ -187,15 +164,15 @@ ANodeSortedIterator::cmpByStructureId(const void* a, const void* b)
 {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
-  DIAG_Assert(x && y , "");
   uint x_id = x->structure() ? x->structure()->id() : 0;
   uint y_id = y->structure() ? y->structure()->id() : 0;
   return (x_id - y_id);
 }
 
-//*****************************************************************************
+
+//***************************************************************************
 // ANodeSortedChildIterator
-//*****************************************************************************
+//***************************************************************************
 
 ANodeSortedChildIterator::
 ANodeSortedChildIterator(const ANode* scope, 
@@ -206,32 +183,11 @@ ANodeSortedChildIterator(const ANode* scope,
   ANode* cur; 
   for (; (cur = it.CurNode()); ) {
     scopes.Add((unsigned long) cur); 
-    it++; 
+    it++;
   }
   ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn); 
 }
-
-ANodeSortedChildIterator::~ANodeSortedChildIterator() 
-{
-  delete ptrSetIt; 
-}
  
-ANode* 
-ANodeSortedChildIterator::Current() const
-{
-  ANode *cur = NULL; 
-  if (ptrSetIt->Current()) {
-    cur = (ANode*) (*ptrSetIt->Current()); 
-    DIAG_Assert(cur != NULL, "");
-  }
-  return cur; 
-}
-
-void 
-ANodeSortedChildIterator::Reset()
-{
-  ptrSetIt->Reset(); 
-}
 
 void
 ANodeSortedChildIterator::DumpAndReset(ostream& os)
