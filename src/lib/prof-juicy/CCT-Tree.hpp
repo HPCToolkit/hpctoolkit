@@ -215,8 +215,15 @@ private:
   static const std::string NodeNames[TyNUMBER];
   
 public:
-  ANode(NodeType type, ANode* _parent, Struct::ACodeNode* strct = NULL);
-  virtual ~ANode();
+  ANode(NodeType type, ANode* _parent, Struct::ACodeNode* strct = NULL)
+    : NonUniformDegreeTreeNode(_parent), m_type(type), m_strct(strct)
+  { 
+    static uint uniqueId = 1;
+    m_uid = uniqueId++; 
+  }
+
+  virtual ~ANode()
+  { }
   
   // shallow copy (in the sense the children are not copied)
   ANode(const ANode& x)
@@ -225,7 +232,8 @@ public:
     ZeroLinks();
   }
 
-  ANode& operator=(const ANode& x) {
+  ANode& operator=(const ANode& x) 
+  {
     if (this != &x) {
       m_type = x.m_type;
       m_strct = x.m_strct;
@@ -660,17 +668,13 @@ public:
   virtual ~Root();
 
   const std::string& name() const { return m_name; }
-                                        
-  void Freeze() { frozen = true;} // disallow additions to/deletions from tree
-  bool IsFrozen() const { return frozen; }
   
   // Dump contents for inspection
-  virtual std::string 
+  virtual std::string
   toString_me(int oFlags = 0) const;
   
 protected: 
 private: 
-  bool frozen;
   std::string m_name; // the program name
 }; 
 

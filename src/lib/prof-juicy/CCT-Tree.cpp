@@ -181,42 +181,17 @@ ANode::IntToNodeType(long i)
 // ANode, etc: constructors/destructors
 //***************************************************************************
 
-ANode::ANode(NodeType type, ANode* _parent, Struct::ACodeNode* strct)
-  : NonUniformDegreeTreeNode(_parent), m_type(type), m_strct(strct)
-{ 
-  DIAG_Assert((m_type == TyRoot) || (ancestorRoot() == NULL) || 
-	      !ancestorRoot()->IsFrozen(), "");
-  static uint uniqueId = 1;
-  m_uid = uniqueId++; 
-}
-
-
-static bool
-OkToDelete(ANode* x) 
-{
-  Root* pgm = x->ancestorRoot(); 
-  return ((pgm == NULL) || !(pgm->IsFrozen())); 
-} 
-
-
-ANode::~ANode() 
-{
-  DIAG_Assert(OkToDelete(this), ""); 
-}
-
 
 Root::Root(const char* nm) 
   : ANode(TyRoot, NULL) 
 { 
   DIAG_Assert(nm, "");
-  frozen = false;
   m_name = nm; 
 }
 
 
 Root::~Root() 
 {
-  frozen = false;
 }
 
 

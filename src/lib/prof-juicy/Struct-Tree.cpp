@@ -124,14 +124,6 @@ Tree::name() const
   return nm;
 }
 
-void 
-Tree::CollectCrossReferences() 
-{ 
-  m_root->NoteHeight();
-  m_root->NoteDepth();
-  m_root->CollectCrossReferences();
-}
-
 
 ostream& 
 Tree::writeXML(ostream& os, int oFlags) const
@@ -199,121 +191,9 @@ ANode::operator=(const ANode& x)
   if (&x != this) {
     m_type    = x.m_type;
     m_uid     = x.m_uid;
-    height    = 0;
-    depth     = 0;
     m_metrics = x.m_metrics;
     
     ZeroLinks(); // NonUniformDegreeTreeNode
-  }
-  return *this;
-}
-
-
-void 
-ANode::CollectCrossReferences() 
-{
-  for (ANodeChildIterator it(this); it.Current(); it++) {
-    it.CurNode()->CollectCrossReferences();
-  } 
-
-  ACodeNode* self = dynamic_cast<ACodeNode*>(this);  
-  if (self) {
-    if (IsLeaf()) {
-      self->first = self->last = self;
-    } 
-    else {
-      self->first = self->last = 0;
-
-      int minline = INT_MAX;
-      int maxline = -1;
-      for (ANodeChildIterator it(this); it.Current(); it++) {
-	ACodeNode* child = dynamic_cast<ACodeNode*>(it.CurNode());
-	int cmin = child->begLine();
-	int cmax = child->endLine();
-	if (cmin < minline) {
-	  minline = cmin;
-	  self->first = child->first;
-	}
-	if (cmax > maxline) {
-	  maxline = cmax;
-	  self->last = child->last;
-	} 
-      }
-    }
-  }
-}
-
-
-int 
-ANode::NoteHeight() 
-{
-  if (IsLeaf()) {
-    height = 0;
-  } 
-  else {
-    height = 0;
-    for (ANodeChildIterator it(this); it.Current(); it++) {
-      int childHeight = it.CurNode()->NoteHeight();
-      height = std::max(height, childHeight + 1);
-    } 
-  }
-  return height;
-}
-
-
-void 
-ANode::NoteDepth() 
-{
-  ANode* p = Parent();
-  if (p) {
-    depth = p->depth + 1;
-  } 
-  else {
-    depth = 0;
-  }
-  for (ANodeChildIterator it(this); it.Current(); it++) {
-    it.CurNode()->NoteDepth();
-  } 
-}
-
-
-void
-ANode::ctorCheck() const
-{
-  bool isOK = ((type() == TyRoot) || (AncRoot() == NULL) || !AncRoot()->IsFrozen());
-  DIAG_Assert(isOK, "");
-} 
-
-
-void
-ANode::dtorCheck() const
-{
-  DIAG_DevMsgIf(0, "~ANode::ANode: " << toString_id()
-		<< " " << std::hex << this << std::dec);
-  bool isOK = false;
-
-  Root* pgm = AncRoot();
-  if (pgm && pgm->type() != TyRoot) {
-    isOK = true;
-  }
-  else {
-    DIAG_Assert(pgm == NULL || pgm->type() == TyRoot, "");
-    isOK = ((pgm == NULL) || !(pgm->IsFrozen()));
-  }
-  
-  DIAG_Assert(isOK, "ANode '" << this << " " << ToString() 
-	      << "' is not ready for deletion!");
-} 
-
-
-ACodeNode& 
-ACodeNode::operator=(const ACodeNode& x) 
-{
-  // shallow copy
-  if (&x != this) {
-    m_begLn = x.m_begLn;
-    m_endLn = x.m_endLn;
-    first = last = NULL;
   }
   return *this;
 }
@@ -337,7 +217,6 @@ void
 Root::Ctor(const char* nm)
 {
   DIAG_Assert(nm, "");
-  frozen = false;
   m_name = nm;
   groupMap = new GroupMap();
   lmMap = new LMMap();
@@ -349,8 +228,7 @@ Root::operator=(const Root& x)
 {
   // shallow copy
   if (&x != this) {
-    frozen   = x.frozen;
-    m_name     = x.m_name;
+    m_name   = x.m_name;
     groupMap = NULL;
     lmMap    = NULL;
   }
