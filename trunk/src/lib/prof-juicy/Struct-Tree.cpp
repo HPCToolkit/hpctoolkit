@@ -197,11 +197,11 @@ ANode::operator=(const ANode& x)
 {
   // shallow copy
   if (&x != this) {
-    type     = x.type;
-    uid      = x.uid;
-    height   = 0;
-    depth    = 0;
-    perfData = x.perfData;
+    m_type    = x.m_type;
+    m_uid     = x.m_uid;
+    height    = 0;
+    depth     = 0;
+    m_metrics = x.m_metrics;
     
     ZeroLinks(); // NonUniformDegreeTreeNode
   }
@@ -280,7 +280,7 @@ ANode::NoteDepth()
 void
 ANode::ctorCheck() const
 {
-  bool isOK = ((type == TyRoot) || (AncRoot() == NULL) || !AncRoot()->IsFrozen());
+  bool isOK = ((type() == TyRoot) || (AncRoot() == NULL) || !AncRoot()->IsFrozen());
   DIAG_Assert(isOK, "");
 } 
 
@@ -293,11 +293,11 @@ ANode::dtorCheck() const
   bool isOK = false;
 
   Root* pgm = AncRoot();
-  if (pgm && pgm->Type() != TyRoot) {
+  if (pgm && pgm->type() != TyRoot) {
     isOK = true;
   }
   else {
-    DIAG_Assert(pgm == NULL || pgm->Type() == TyRoot, "");
+    DIAG_Assert(pgm == NULL || pgm->type() == TyRoot, "");
     isOK = ((pgm == NULL) || !(pgm->IsFrozen()));
   }
   
@@ -373,7 +373,7 @@ void
 Group::Ctor(const char* nm, ANode* parent)
 {
   DIAG_Assert(nm, "");
-  ANodeTy t = (parent) ? parent->Type() : TyANY;
+  ANodeTy t = (parent) ? parent->type() : TyANY;
   DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGROUP) || (t == TyLM) 
 	      || (t == TyFILE) || (t == TyPROC) || (t == TyALIEN) 
 	      || (t == TyLOOP), "");
@@ -399,7 +399,7 @@ void
 LM::Ctor(const char* nm, ANode* parent)
 {
   DIAG_Assert(nm, "");
-  ANodeTy t = (parent) ? parent->Type() : TyANY;
+  ANodeTy t = (parent) ? parent->type() : TyANY;
   DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGROUP), "");
 
   m_name = nm;
@@ -442,7 +442,7 @@ void
 File::Ctor(const char* fname, bool isReadable, ANode* parent)
 {
   DIAG_Assert(fname, "");
-  ANodeTy t = (parent) ? parent->Type() : TyANY;
+  ANodeTy t = (parent) ? parent->type() : TyANY;
   DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGROUP) || (t == TyLM), "");
 
   srcIsReadable = isReadable;
@@ -490,7 +490,7 @@ void
 Proc::Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym)
 {
   DIAG_Assert(n, "");
-  ANodeTy t = (parent) ? parent->Type() : TyANY;
+  ANodeTy t = (parent) ? parent->type() : TyANY;
   DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyFILE), "");
 
   m_name = (n) ? n : "";
@@ -539,7 +539,7 @@ RealPathMgr& Alien::s_realpathMgr = RealPathMgr::singleton();
 void
 Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm)
 {
-  ANodeTy t = (parent) ? parent->Type() : TyANY;
+  ANodeTy t = (parent) ? parent->type() : TyANY;
   DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyALIEN) 
 	      || (t == TyPROC) || (t == TyLOOP), "");
 
@@ -565,7 +565,7 @@ Alien::operator=(const Alien& x)
 Ref::Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName) 
   : ACodeNode(TyREF, parent, parent->begLine(), parent->begLine(), 0, 0)
 {
-  DIAG_Assert(parent->Type() == TySTMT, "");
+  DIAG_Assert(parent->type() == TySTMT, "");
   begPos = _begPos;
   endPos = _endPos;
   m_name = refName;
@@ -601,7 +601,7 @@ ANode*
 ANode::Ancestor(ANodeTy tp) const
 {
   const ANode* s = this;
-  while (s && s->Type() != tp) {
+  while (s && s->type() != tp) {
     s = s->Parent();
   } 
   return (ANode*) s;
@@ -612,7 +612,7 @@ ANode *
 ANode::Ancestor(ANodeTy tp1, ANodeTy tp2) const
 {
   const ANode* s = this;
-  while (s && s->Type() != tp1 && s->Type() != tp2) {
+  while (s && s->type() != tp1 && s->type() != tp2) {
     s = s->Parent();
   }
   return (ANode*) s;
@@ -937,7 +937,7 @@ ANode::Merge(ANode* toNode, ANode* fromNode)
 bool 
 ANode::IsMergable(ANode* toNode, ANode* fromNode)
 {
-  ANode::ANodeTy toTy = toNode->Type(), fromTy = fromNode->Type();
+  ANode::ANodeTy toTy = toNode->type(), fromTy = fromNode->type();
 
   // 1. For now, merges are only defined on TyLOOPs and TyGROUPs
   bool goodTy = (toTy == TyLOOP || toTy == TyGROUP);
@@ -977,12 +977,12 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, double* valVec)
 
     for (; it.Current(); it++) { 
       for (uint i = mBegId; i <= mEndId; ++i) {
-	valVec[i] += it.CurNode()->PerfData(i);
+	valVec[i] += it.CurNode()->metric(i);
       }
     } 
     
     for (uint i = mBegId; i <= mEndId; ++i) {
-      SetPerfData(i, valVec[i]);
+      metricIncr(i, valVec[i]);
     }
   }
 }
@@ -995,7 +995,7 @@ ANode::pruneByMetrics()
   
   for (ANodeChildIterator it(this, NULL); it.Current(); ++it) {
     ANode* si = it.CurNode();
-    if (si->HasPerfData()) {
+    if (si->hasMetrics()) {
       si->pruneByMetrics();
     }
     else {
@@ -1216,7 +1216,7 @@ ACodeNode::codeName_LM_F() const
 string
 Group::codeName() const 
 {
-  string self = ANodeTyToName(Type()) + " " + ACodeNode::codeName();
+  string self = ANodeTyToName(type()) + " " + ACodeNode::codeName();
   return self;
 }
 
@@ -1334,7 +1334,7 @@ ANode::toString(int oFlags, const char* pre) const
 string
 ANode::toString_id(int oFlags) const
 { 
-  string str = "<" + ANodeTyToName(Type()) + " uid=" 
+  string str = "<" + ANodeTyToName(type()) + " uid=" 
     + StrUtil::toStr(id()) + ">";
   return str;
 }
@@ -1356,10 +1356,10 @@ ANode::dump(ostream& os, int oFlags, const char* pre) const
 
   dumpme(os, oFlags, pre);
 
-  for (uint i = 0; i < NumPerfData(); i++) {
+  for (uint i = 0; i < numMetrics(); i++) {
     os << i << " = " ;
-    if (HasPerfData(i)) {
-      os << PerfData(i);
+    if (hasMetric(i)) {
+      os << metric(i);
     } 
     else {
       os << "UNDEF";
@@ -1522,7 +1522,7 @@ ANode::toStringXML(int oFlags, const char* pre) const
 string 
 ANode::toXML(int oFlags) const
 {
-  string self = ANodeTyToXMLelement(Type()) + " i" + MakeAttrNum(id());
+  string self = ANodeTyToXMLelement(type()) + " i" + MakeAttrNum(id());
   return self;
 }
 
@@ -1640,9 +1640,9 @@ Ref::toXML(int oFlags) const
 bool 
 ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
 {
-  bool doTag = (Type() != TyRoot);
+  bool doTag = (type() != TyRoot);
   bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ? 
-		    HasPerfData() && IsLeaf() : HasPerfData());
+		    hasMetrics() && IsLeaf() : hasMetrics());
   bool isXMLLeaf = IsLeaf() && !doMetrics;
 
   // 1. Write element name
@@ -1668,10 +1668,10 @@ ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
 void
 ANode::writeXML_post(ostream& os, int oFlags, const char* pfx) const
 {
-  bool doTag = (Type() != TyRoot);
+  bool doTag = (type() != TyRoot);
 
   if (doTag) {
-    os << pfx << "</" << ANodeTyToXMLelement(Type()) << ">" << endl;
+    os << pfx << "</" << ANodeTyToXMLelement(type()) << ">" << endl;
   }
 }
 
@@ -1702,10 +1702,10 @@ ANode::writeMetricsXML(ostream& os, int oFlags, const char* pfx) const
 {
   bool wasMetricWritten = false;
   
-  for (uint i = 0; i < NumPerfData(); i++) {
-    if (HasPerfData(i)) {
+  for (uint i = 0; i < numMetrics(); i++) {
+    if (hasMetric(i)) {
       os << ((!wasMetricWritten) ? pfx : "");
-      os << "<M n=\"" << i << "\" v=\"" << PerfData(i) << "\"/>";
+      os << "<M n=\"" << i << "\" v=\"" << metric(i) << "\"/>";
       wasMetricWritten = true;
     }
   }
@@ -1774,8 +1774,8 @@ void
 ANode::CSV_DumpSelf(const Root& root, ostream& os) const
 { 
   char temp[32];
-  for (uint i = 0; i < NumPerfData(); i++) {
-    double val = (HasPerfData(i) ? PerfData(i) : 0);
+  for (uint i = 0; i < numMetrics(); i++) {
+    double val = (hasMetric(i) ? metric(i) : 0);
     os << "," << val;
 #if 0
     // FIXME: tallent: Conversioon from static perf-table to MetricDescMgr
@@ -1786,7 +1786,7 @@ ANode::CSV_DumpSelf(const Root& root, ostream& os) const
 #endif
 
     if (percent) {
-      double percVal = val / root.PerfData(i) * 100;
+      double percVal = val / root.metric(i) * 100;
       sprintf(temp, "%5.2lf", percVal);
       os << "," << temp;
     }
@@ -1852,7 +1852,7 @@ ACodeNode::CSV_dump(const Root& root, ostream& os,
 		    const char* file_name, const char* proc_name,
 		    int lLevel) const 
 {
-  ANodeTy myANodeTy = this->Type();
+  ANodeTy myANodeTy = this->type();
   // do not display info for single lines
   if (myANodeTy == TySTMT)
     return;
@@ -1892,7 +1892,7 @@ ACodeNode::SetLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 
   // never propagate changes outside an Alien
   if (propagate && begLn != ln_NULL 
-      && ACodeNodeParent() && Type() != ANode::TyALIEN) {
+      && ACodeNodeParent() && type() != ANode::TyALIEN) {
     ACodeNodeParent()->ExpandLineRange(m_begLn, m_endLn);
   }
 }
@@ -1923,7 +1923,7 @@ ACodeNode::ExpandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
     if (changed) {
       // never propagate changes outside an Alien
       RelocateIf();
-      if (propagate && ACodeNodeParent() && Type() != ANode::TyALIEN) {
+      if (propagate && ACodeNodeParent() && type() != ANode::TyALIEN) {
         ACodeNodeParent()->ExpandLineRange(m_begLn, m_endLn);
       }
     }
@@ -2007,7 +2007,7 @@ ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
       ci = dynamic_cast<ACodeNode*>(it.Current());
       DIAG_Assert(ci, "");
       if  (ci->containsLine(ln)) {
-	if (ci->Type() == TySTMT) {  
+	if (ci->type() == TySTMT) {  
 	  return ci; // never look inside LINE_SCOPEs 
 	} 
 	
@@ -2019,7 +2019,7 @@ ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
       } 
     }
   }
-  if (ci->Type() == TyPROC) return (ACodeNode*) this;
+  if (ci->type() == TyPROC) return (ACodeNode*) this;
   else return 0;
 }
 
@@ -2033,7 +2033,7 @@ ACodeNodeLineComp(const ACodeNode* x, const ACodeNode* y)
       // We have two ACodeNode's with identical line intervals...
       
       // Use lexicographic comparison for procedures
-      if (x->Type() == ANode::TyPROC && y->Type() == ANode::TyPROC) {
+      if (x->type() == ANode::TyPROC && y->type() == ANode::TyPROC) {
 	Proc *px = (Proc*)x, *py = (Proc*)y;
 	int cmp1 = px->name().compare(py->name());
 	if (cmp1 != 0) { return cmp1; }

@@ -614,7 +614,7 @@ PGMDocHandler::FindCurrentFile()
 {
   for (unsigned int i = 0; i < scopeStack.Depth(); ++i) {
     Struct::ANode* s = GetScope(i);
-    if (s->Type() == Struct::ANode::TyFILE) {
+    if (s->type() == Struct::ANode::TyFILE) {
       return dynamic_cast<Struct::File*>(s);
     }
   }
@@ -627,7 +627,7 @@ PGMDocHandler::FindEnclosingGroupScopeDepth()
 {
   for (unsigned int i = 1; i < scopeStack.Depth(); ++i) {
     Struct::ANode* s = GetScope(i);
-    if (s->Type() == Struct::ANode::TyGROUP) {
+    if (s->type() == Struct::ANode::TyGROUP) {
       return i + 1; // depth is index + 1
     }
   }

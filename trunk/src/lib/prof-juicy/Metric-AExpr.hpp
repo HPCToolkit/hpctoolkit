@@ -231,7 +231,7 @@ public:
 
   double eval(const Struct::ANode* si) const
   {
-    return si->PerfData(index);
+    return si->metric(index);
   }
   
   std::ostream& dump(std::ostream& os = std::cout) const;

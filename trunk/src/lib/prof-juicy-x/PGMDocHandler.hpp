@@ -115,7 +115,7 @@ private:
     void SetLeaf(bool x) { isLeaf = x; }
 
     bool IsGroupScope() 
-      { return (entry->Type() == Prof::Struct::ANode::TyGROUP); }
+      { return (entry->type() == Prof::Struct::ANode::TyGROUP); }
     bool IsNonGroupLeaf() 
       { return (IsLeaf() && !IsGroupScope()); }
 

@@ -87,7 +87,7 @@ bool
 HasANodeTy(const ANode& node, long type)
 {
   return (type == ANode::TyANY
-	  || node.Type() == ANode::IntToANodeTy(type));
+	  || node.type() == ANode::IntToANodeTy(type));
 }
 
 const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
@@ -224,7 +224,7 @@ ANodeLineSortedIteratorForLargeScopes::ANodeLineSortedIteratorForLargeScopes(
     ACodeNodeLine *cur1 = new ACodeNodeLine(dynamic_cast<ACodeNode*>(cur), 
                          IS_BEG_LINE);
     scopes.Add((unsigned long) cur1);
-    if (cur->Type() == ANode::TyLOOP)
+    if (cur->type() == ANode::TyLOOP)
     {  // create a ACodeNodeLine object for both begin and end line
        // only for Loops. For PROCs we are interested only in BegLine
       ACodeNodeLine *cur2 = new ACodeNodeLine(dynamic_cast<ACodeNode*>(cur), 
@@ -391,12 +391,12 @@ int CompareByMetricId(const void* a, const void *b)
   DIAG_Assert(x != NULL, "");
   DIAG_Assert(y != NULL, "");
   double vx = 0.0;
-  if (x->HasPerfData(CompareByMetricId_mId)) {
-    vx = x->PerfData(CompareByMetricId_mId);
+  if (x->hasMetric(CompareByMetricId_mId)) {
+    vx = x->metric(CompareByMetricId_mId);
   }
   double vy = 0.0;
-  if (y->HasPerfData(CompareByMetricId_mId)) {
-    vy = y->PerfData(CompareByMetricId_mId);
+  if (y->hasMetric(CompareByMetricId_mId)) {
+    vy = y->metric(CompareByMetricId_mId);
   }
   double difference = vy - vx;
   
