@@ -113,7 +113,7 @@ private:
 // HasANodeTy(s,tp) == ((tp == ANY) || (s.Type() == tp));
 extern bool HasANodeTy(const ANode &sinfo, long type);
 
-// ANodeTyFile[tp].Apply(s) == HasANodeTy(s,tp) 
+// ANodeTyFilter[tp].Apply(s) == HasANodeTy(s,tp)
 extern const ANodeFilter ANodeTyFilter[ANode::TyNUMBER];
 
 
@@ -320,6 +320,7 @@ private:
 };
 
 
+#if 0
 //***************************************************************************
 // ACodeNodeLine
 //  is a dummy class used just for the large scopes iterators.
@@ -355,45 +356,8 @@ private:
   int _forEndLine;
   ANode::ANodeTy _type;
 };
+#endif
 
-//***************************************************************************
-// ANodeLineSortedIteratorForLargeScopes
-//
-//   behaves as ANodeLineSortedIterator, but it consider both the
-//   StartLine and the EndLine for scopes such as LOOPs or PROCs or
-//   even GROUPs.
-//    -- mgabi 08/18/01
-//   it gurantees LineOrder among siblings  
-//
-// LineOrder: ACodeNode* a is enumerated before b 
-//                    iff a->StartLine() < b->StartLine() 
-//            RefInfo * a is enumerated before b 
-//                    iff a->StartPos() < b->StartPos() 
-//
-// NOTE: the implementation was generalized so that it no longer assumes
-//       that children in the tree contain non-overlapping ranges. all
-//       lines are gathered into a set, sorted, and then enumerated out
-//       of the set in sorted order. -- johnmc 5/31/00
-//
-// FIXME: do we need this?
-//***************************************************************************
-
-class ANodeLineSortedIteratorForLargeScopes {
-public: 
-  ANodeLineSortedIteratorForLargeScopes(const ACodeNode *file, 
-			      const ANodeFilter *filterFunc = NULL, 
-			      bool leavesOnly = true);
-  ~ANodeLineSortedIteratorForLargeScopes();
-  
-  ACodeNodeLine* Current() const;
-  void  operator++(int)   { (*ptrSetIt)++;}
-  void Reset();
-  void DumpAndReset(std::ostream &os = std::cerr);
-
-private:
-  WordSet scopes;  // the scopes we want to have sorted
-  WordSetSortedIterator *ptrSetIt;  
-};
 
 //***************************************************************************
 // ANodeNameSortedChildIterator
@@ -416,6 +380,7 @@ private:
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator *ptrSetIt;  
 };
+
 
 //***************************************************************************
 // ANodeMetricSortedIterator
@@ -460,6 +425,7 @@ private:
 };
 
 
+#if 0
 //***************************************************************************
 // ANodeMetricSortedChildIterator
 //    behaves as ANodeChildIterator, except that it guarantees children in 
@@ -505,7 +471,7 @@ private:
   WordSetSortedIterator *ptrSetIt;
   int depth;
 };
-
+#endif
 
 //***************************************************************************
 // Function CompareByPerfInfo
