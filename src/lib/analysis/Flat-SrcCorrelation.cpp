@@ -390,7 +390,7 @@ Driver::write_txt_secSummary(std::ostream& os,
       const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
       if (mm) {
 	const Prof::SampledMetricDesc& desc = mm->rawdesc();
-	double smpl = rootStrct->PerfData(i) / (double)desc.period();
+	double smpl = rootStrct->metric(i) / (double)desc.period();
 	colFmt.genCol(i, smpl);
       }
       else {
@@ -401,7 +401,7 @@ Driver::write_txt_secSummary(std::ostream& os,
 
     // Program metric summary
     for (uint i = 0; i < m_mMgr.size(); ++i) {
-      colFmt.genCol(i, rootStrct->PerfData(i));
+      colFmt.genCol(i, rootStrct->metric(i));
     }
     os << std::endl;
   }
@@ -410,7 +410,7 @@ Driver::write_txt_secSummary(std::ostream& os,
     for (; it.Current(); it++) {
       Prof::Struct::ANode* strct = it.Current();
       for (uint i = 0; i < m_mMgr.size(); ++i) {
-	colFmt.genCol(i, strct->PerfData(i), rootStrct->PerfData(i));
+	colFmt.genCol(i, strct->metric(i), rootStrct->metric(i));
       }
       os << " " << strct->nameQual() << std::endl;
     } 
@@ -468,7 +468,7 @@ Driver::write_txt_annotateFile(std::ostream& os,
     // Generate columns for ln_metric
     os << std::setw(linew) << std::setfill(' ') << ln_metric;
     for (uint i = 0; i < m_mMgr.size(); ++i) {
-      colFmt.genCol(i, strct->PerfData(i), rootStrct->PerfData(i));
+      colFmt.genCol(i, strct->metric(i), rootStrct->metric(i));
     }
 
     // Generate source file line for ln_metric, if necessary
@@ -793,11 +793,11 @@ Driver::correlateRaw(PerfMetric* metric,
     Prof::Struct::ANode* strct = 
       Util::demandStructure(vma_ur, lmStrct, lm, useStruct);
 
-    strct->SetPerfData(metric->Index(), events); // implicit add!
+    strct->metricIncr(metric->Index(), events); // implicit add!
     DIAG_DevMsg(6, "Metric associate: " 
 		<< metric->Name() << ":0x" << hex << vma_ur << dec 
 		<< " --> +" << events << "=" 
-		<< strct->PerfData(metric->Index()) << " :: " 
+		<< strct->metric(metric->Index()) << " :: " 
 		<< strct->toXML());
   }
 }
@@ -914,7 +914,7 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
       const Prof::Metric::AExpr* expr = mExprVec[mId];
       double val = expr->eval(it.CurNode());
       // if (!Prof::Metric::AExpr::isok(val)) ...
-      it.CurNode()->SetPerfData(mId, val);
+      it.CurNode()->metricIncr(mId, val);
     }
   }
 }

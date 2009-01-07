@@ -786,7 +786,7 @@ public:
 
   // Alien
   bool isAlien() const {
-    return (m_strct && m_strct->Type() == Struct::ANode::TyALIEN);
+    return (m_strct && m_strct->type() == Struct::ANode::TyALIEN);
   }
 
   // -------------------------------------------------------

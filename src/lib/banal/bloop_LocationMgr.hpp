@@ -86,7 +86,7 @@ namespace bloop {
     using namespace Prof;
     bool t1 = ctxtNameEqFuzzy(callCtxt->name(), x);
     bool t2 = false;
-    if (callCtxt->Type() == Struct::ANode::TyPROC) {
+    if (callCtxt->type() == Struct::ANode::TyPROC) {
       const Struct::Proc* pStrct = dynamic_cast<const Struct::Proc*>(callCtxt);
       t2 = ctxtNameEqFuzzy(pStrct->LinkName(), x);
     }
@@ -252,7 +252,7 @@ private:
     bool containsLine(SrcFile::ln line) const;
     
     bool isAlien() const 
-    { return (m_ctxt->Type() == Prof::Struct::ANode::TyALIEN); }
+    { return (m_ctxt->type() == Prof::Struct::ANode::TyALIEN); }
     
     int  level() const { return m_level; }
     int& level()       { return m_level; }

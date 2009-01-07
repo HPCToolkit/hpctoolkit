@@ -245,7 +245,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
       Struct::Loop* loopStrct = dynamic_cast<Struct::Loop*>(t);
 
       n->structure(strct);
-      strct->SetPerfData(CallPath::Profile::StructMetricIdFlg, 1.0);
+      strct->metricIncr(CallPath::Profile::StructMetricIdFlg, 1.0);
 
       // 2. Demand a procedure frame for 'n', complete with loop structure
       Prof::CCT::ProcFrm* frame = demandProcFrame(n_dyn, pctxtStrct, 
@@ -315,7 +315,7 @@ makeProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
   Prof::CCT::ProcFrm* frame = new Prof::CCT::ProcFrm(NULL);
 
   frame->structure(procStrct);
-  procStrct->SetPerfData(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
+  procStrct->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
 
   frame->Link(node->Parent());
   frameMap.insert(std::make_pair(procStrct, frame));
@@ -359,7 +359,7 @@ loopifyFrame(Prof::CCT::ANode* mirrorNode,
     Prof::Struct::ACodeNode* n = it.CurNode();
 
     // Done: if we reach the natural base case or embedded proceedure
-    if (n->IsLeaf() || n->Type() == Prof::Struct::ANode::TyPROC) {
+    if (n->IsLeaf() || n->type() == Prof::Struct::ANode::TyPROC) {
       continue;
     }
 
@@ -371,7 +371,7 @@ loopifyFrame(Prof::CCT::ANode* mirrorNode,
     Prof::CCT::ProcFrm* nxt_frame = frame;
     Prof::CCT::Loop* nxt_enclLoop = enclLoop;
 
-    if (n->Type() == Prof::Struct::ANode::TyLOOP) {
+    if (n->type() == Prof::Struct::ANode::TyLOOP) {
       // loops are always children of the current root (loop or frame)
       Prof::CCT::Loop* lp = new Prof::CCT::Loop(mirrorNode, n);
       loopMap.insert(std::make_pair(ProcFrameAndLoop(frame, n), lp));
@@ -380,11 +380,11 @@ loopifyFrame(Prof::CCT::ANode* mirrorNode,
       mirrorRoot = lp;
       nxt_enclLoop = lp;
     }
-    else if (n->Type() == Prof::Struct::ANode::TyALIEN) {
+    else if (n->type() == Prof::Struct::ANode::TyALIEN) {
       Prof::CCT::ProcFrm* fr = new Prof::CCT::ProcFrm(NULL);
 
       fr->structure(n);
-      n->SetPerfData(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
+      n->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
 
       frameMap.insert(std::make_pair(n, fr));
       DIAG_DevMsgIf(0, hex << fr->procName() << " [" << n << " -> " << fr << "]" << dec);

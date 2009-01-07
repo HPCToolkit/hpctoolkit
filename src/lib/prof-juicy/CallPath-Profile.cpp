@@ -153,7 +153,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
   for (Struct::ANodeIterator it(root, filter); it.Current(); ++it) {
     Struct::ANode* strct = it.CurNode();
     
-    if (!strct->HasPerfData(CallPath::Profile::StructMetricIdFlg)) {
+    if (!strct->hasMetric(CallPath::Profile::StructMetricIdFlg)) {
       continue;
     }
 
@@ -164,7 +164,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       nm = strct->name().c_str();
     }
     else if (type == 2) { // File
-      nm = ((strct->Type() == Struct::ANode::TyALIEN) ? 
+      nm = ((strct->type() == Struct::ANode::TyALIEN) ? 
 	    dynamic_cast<Struct::Alien*>(strct)->fileName().c_str() :
 	    dynamic_cast<Struct::File*>(strct)->name().c_str());
     }
@@ -184,14 +184,14 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 static bool 
 writeXML_FileFilter(const Struct::ANode& x, long type)
 {
-  return (x.Type() == Struct::ANode::TyFILE || x.Type() == Struct::ANode::TyALIEN);
+  return (x.type() == Struct::ANode::TyFILE || x.type() == Struct::ANode::TyALIEN);
 }
 
 
 static bool 
 writeXML_ProcFilter(const Struct::ANode& x, long type)
 {
-  return (x.Type() == Struct::ANode::TyPROC || x.Type() == Struct::ANode::TyALIEN);
+  return (x.type() == Struct::ANode::TyPROC || x.type() == Struct::ANode::TyALIEN);
 }
 
 

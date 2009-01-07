@@ -210,8 +210,8 @@ Analysis::Util::copySourceFiles(Prof::CallPath::Profile* prof,
 static bool 
 Flat_Filter(const Prof::Struct::ANode& x, long type)
 {
-  return (x.Type() == Prof::Struct::ANode::TyFILE 
-	  || x.Type() == Prof::Struct::ANode::TyALIEN);
+  return (x.type() == Prof::Struct::ANode::TyFILE 
+	  || x.type() == Prof::Struct::ANode::TyALIEN);
 }
 
 // copySourceFiles: For every Prof::Struct::File and
@@ -235,11 +235,11 @@ Analysis::Util::copySourceFiles(Prof::Struct::Root* structure,
     // Note: 'fnm_orig' will be not be absolute if it is not possible
     // to resolve it on the current filesystem. (cf. RealPathMgr)
     string fnm_orig;
-    if (strct->Type() == Prof::Struct::ANode::TyFILE) {
+    if (strct->type() == Prof::Struct::ANode::TyFILE) {
       fileStrct = dynamic_cast<Prof::Struct::File*>(strct);
       fnm_orig = fileStrct->name();
     }
-    else if (strct->Type() == Prof::Struct::ANode::TyALIEN) {
+    else if (strct->type() == Prof::Struct::ANode::TyALIEN) {
       alienStrct = dynamic_cast<Prof::Struct::Alien*>(strct);
       fnm_orig = alienStrct->fileName();
     }

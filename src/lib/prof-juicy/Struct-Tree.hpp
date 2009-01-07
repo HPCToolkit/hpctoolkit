@@ -208,7 +208,7 @@ namespace Struct {
 // take a while to untangle.
 
 class ANode;     // Base class for all nodes
-class ACodeNode; // Base class for everyone but TyPGM
+class ACodeNode; // Base class for everyone but Root
 
 class Root;
 class Group;
@@ -252,35 +252,35 @@ private:
 
 public:
   ANode(ANodeTy ty, ANode* parent = NULL)
-    : NonUniformDegreeTreeNode(parent), type(ty)
+    : NonUniformDegreeTreeNode(parent), m_type(ty)
   { 
     if (0) { ctorCheck(); }
-    uid = s_nextUniqueId++;
+    m_uid = s_nextUniqueId++;
     height = 0;
     depth = 0;
-    perfData = new DoubleVector();
+    m_metrics = new DoubleVector();
   }
 
   virtual ~ANode()
   {
     if (0) { dtorCheck(); }
-    delete perfData;
+    delete m_metrics;
   }
   
   // --------------------------------------------------------
   // General Interface to fields 
   // --------------------------------------------------------
-  ANodeTy Type() const { return type; }
+  ANodeTy type() const { return m_type; }
 
   // id: a unique id; 0 is reserved for a NULL value
-  uint id() const { return uid; }
+  uint id() const { return m_uid; }
 
   // maxId: the maximum id of all structure nodes
   static uint maxId() { return s_nextUniqueId - 1; }
 
   // name: 
   // nameQual: qualified name [built dynamically]
-  virtual const std::string& name() const { return ANodeTyToName(Type()); }
+  virtual const std::string& name() const { return ANodeTyToName(type()); }
   virtual std::string nameQual() const { return name(); }
 
   void CollectCrossReferences();
@@ -296,11 +296,11 @@ public:
   // --------------------------------------------------------
 
   bool 
-  HasPerfData() const 
+  hasMetrics() const 
   {
-    uint end = NumPerfData();
+    uint end = numMetrics();
     for (uint i = 0; i < end; ++i) {
-      if (HasPerfData(i)) {
+      if (hasMetric(i)) {
 	return true;
       }
     }
@@ -308,29 +308,29 @@ public:
   }
 
   bool 
-  HasPerfData(int mId) const 
+  hasMetric(int mId) const 
   {
-    double x = (*perfData)[mId];
+    double x = (*m_metrics)[mId];
     return (x != 0.0);
   }
   
   double 
-  PerfData(int mId) const 
+  metric(int mId) const 
   {
-    return (*perfData)[mId];
+    return (*m_metrics)[mId];
   }
 
   void 
-  SetPerfData(int mId, double d) 
+  metricIncr(int mId, double d) 
   {
     // NOTE: VectorTmpl::operator[] automatically 'adds' the index if necessary
-    (*perfData)[mId] += d;
+    (*m_metrics)[mId] += d;
   }
 
   uint 
-  NumPerfData() const 
+  numMetrics() const 
   {
-    return perfData->GetNumElements();
+    return m_metrics->GetNumElements();
   }
 
   // accumulates metrics from children. [mBegId, mEndId] forms an
@@ -525,11 +525,11 @@ private:
   static uint s_nextUniqueId;
   
 protected:
-  ANodeTy type;
-  uint uid;
+  ANodeTy m_type;
+  uint m_uid;
   int height; // cross reference information
   int depth;
-  DoubleVector* perfData;
+  DoubleVector* m_metrics;
 };
 
 
@@ -551,7 +551,9 @@ protected:
     }
   }
 
-  ACodeNode(const ACodeNode& x) : ANode(x.type) { *this = x; }
+  ACodeNode(const ACodeNode& x) 
+    : ANode(x.m_type) 
+  { *this = x; }
 
   ACodeNode& operator=(const ACodeNode& x);
 
@@ -658,7 +660,7 @@ protected:
   void Relocate();
   
   void RelocateIf() {
-    if (Parent() && Type() == ANode::TyPROC) {
+    if (Parent() && type() == ANode::TyPROC) {
       Relocate();
     }
   }
@@ -693,7 +695,7 @@ int ACodeNodeLineComp(const ACodeNode* x, const ACodeNode* y);
 class Root: public ANode {
 protected:
   Root(const Root& x) 
-    : ANode(x.type)
+    : ANode(x.m_type)
   { 
     *this = x; 
   }
@@ -957,7 +959,7 @@ private:
 // --------------------------------------------------------------------------
 class File: public ACodeNode {
 protected:
-  File(const File& x) : ACodeNode(x.type) { *this = x; }
+  File(const File& x) : ACodeNode(x.m_type) { *this = x; }
   File& operator=(const File& x);
 
 public: 
@@ -1047,7 +1049,7 @@ private:
 // --------------------------------------------------------------------------
 class Proc: public ACodeNode {
 protected:
-  Proc(const Proc& x) : ACodeNode(x.type) { *this = x; }
+  Proc(const Proc& x) : ACodeNode(x.m_type) { *this = x; }
   Proc& operator=(const Proc& x);
 
 public: 
@@ -1137,7 +1139,7 @@ private:
 // --------------------------------------------------------------------------
 class Alien: public ACodeNode {
 protected:
-  Alien(const Alien& x) : ACodeNode(x.type) { *this = x; }
+  Alien(const Alien& x) : ACodeNode(x.m_type) { *this = x; }
   Alien& operator=(const Alien& x);
 
 public: 
@@ -1207,7 +1209,7 @@ public:
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyLOOP, parent, begLn, endLn, 0, 0)
   {
-    ANodeTy t = (parent) ? parent->Type() : TyANY;
+    ANodeTy t = (parent) ? parent->type() : TyANY;
     DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyFILE) || (t == TyPROC) 
 		|| (t == TyALIEN) || (t == TyLOOP), "");
   }
@@ -1244,7 +1246,7 @@ public:
     : ACodeNode(TySTMT, parent, begLn, endLn, begVMA, endVMA),
       m_sortId((int)begLn)
   {
-    ANodeTy t = (parent) ? parent->Type() : TyANY;
+    ANodeTy t = (parent) ? parent->type() : TyANY;
     DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyFILE)
 		|| (t == TyPROC) || (t == TyALIEN) || (t == TyLOOP), "");
     Proc* p = AncProc();
@@ -1288,7 +1290,7 @@ private:
 class Ref: public ACodeNode {
 public: 
   Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName);
-  // parent->Type() == TySTMT 
+  // parent->type() == TySTMT 
   
   uint BegPos() const { return begPos; };
   uint EndPos() const   { return endPos; };

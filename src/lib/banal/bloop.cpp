@@ -719,7 +719,7 @@ buildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
 				  tarj, cfg, qnode.fgNode, irrIvalIsLoop);
       isNodeProcessed[qnode.fgNode] = true;
       qnode.scope = myScope;
-      if (myScope->Type() == Struct::ANode::TyLOOP) {
+      if (myScope->type() == Struct::ANode::TyLOOP) {
 	nLoops++;
       }
     }
@@ -738,7 +738,7 @@ buildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
       myScope = buildLoopAndStmts(locMgr, qnode.scope, p, 
 				  tarj, cfg, kid, irrIvalIsLoop);
       isNodeProcessed[kid] = true;
-      if (myScope->Type() == Struct::ANode::TyLOOP) {
+      if (myScope->type() == Struct::ANode::TyLOOP) {
 	nLoops++;
       }
       
@@ -1146,12 +1146,12 @@ mergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
     changed |= mergeBogusAlienStrct(child, file);
     
     // 2. Merge an alien node if it is redundant with its calling context
-    if (child->Type() == Struct::ANode::TyALIEN) {
+    if (child->type() == Struct::ANode::TyALIEN) {
       Struct::Alien* alien = dynamic_cast<Struct::Alien*>(child);
       Struct::ACodeNode* parent = alien->ACodeNodeParent();
       
       Struct::ACodeNode* callCtxt = parent->ancestorProcCtxt();
-      const string& callCtxtFnm = (callCtxt->Type() == Struct::ANode::TyALIEN) ?
+      const string& callCtxtFnm = (callCtxt->type() == Struct::ANode::TyALIEN) ?
 	dynamic_cast<Struct::Alien*>(callCtxt)->fileName() : file->name();
       
       // FIXME: Looking at this again, don't we know that 'callCtxtFnm' is alien?
@@ -1224,8 +1224,8 @@ CDS_InspectStmt(Struct::Stmt* stmt1, SortIdToStmtMap* stmtMap,
 static bool 
 CDS_ScopeFilter(const Struct::ANode& x, long type)
 {
-  return (x.Type() == Struct::ANode::TyPROC 
-	  || x.Type() == Struct::ANode::TyALIEN);
+  return (x.type() == Struct::ANode::TyPROC 
+	  || x.type() == Struct::ANode::TyALIEN);
 }
 
 static bool
@@ -1361,7 +1361,7 @@ CDS_Main(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap, Struct::ANodeSet* v
     
     if (toDelete->find(child) != toDelete->end()) { continue; }
     
-    if (child->Type() == Struct::ANode::TyALIEN) { continue; }
+    if (child->type() == Struct::ANode::TyALIEN) { continue; }
     
     DIAG_DevMsgIf(DBG_CDS, "CDS: " << child);
 
@@ -1370,7 +1370,7 @@ CDS_Main(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap, Struct::ANodeSet* v
 				      level + 1);
     
     // 2. Examine 'child'
-    if (child->Type() == Struct::ANode::TySTMT) {
+    if (child->type() == Struct::ANode::TySTMT) {
       // Note: 'child' may be deleted or a restart exception may be thrown
       Struct::Stmt* stmt = dynamic_cast<Struct::Stmt*>(child);
       changed |= CDS_InspectStmt(stmt, stmtMap, toDelete, level);
@@ -1491,8 +1491,8 @@ mergePerfectlyNestedLoops(Struct::ANode* node)
     // Perfectly nested test: child is a loop; parent is a loop; and
     //   this is only child.  
     Struct::ACodeNode* n_CI = dynamic_cast<Struct::ACodeNode*>(node); 
-    bool perfNested = (child->Type() == Struct::ANode::TyLOOP &&
-		       node->Type() == Struct::ANode::TyLOOP &&
+    bool perfNested = (child->type() == Struct::ANode::TyLOOP &&
+		       node->type() == Struct::ANode::TyLOOP &&
 		       node->ChildCount() == 1);
     if (perfNested && SrcFile::isValid(child->begLine(), child->endLine()) &&
 	child->begLine() == n_CI->begLine() &&
@@ -1563,13 +1563,13 @@ removeEmptyNodes(Struct::ANode* node)
 static bool 
 removeEmptyNodes_isEmpty(const Struct::ANode* node)
 {
-  if ((node->Type() == Struct::ANode::TyFILE 
-       || node->Type() == Struct::ANode::TyALIEN)
+  if ((node->type() == Struct::ANode::TyFILE 
+       || node->type() == Struct::ANode::TyALIEN)
       && node->ChildCount() == 0) {
     return true;
   }
-  if ((node->Type() == Struct::ANode::TyPROC 
-       || node->Type() == Struct::ANode::TyLOOP)
+  if ((node->type() == Struct::ANode::TyPROC 
+       || node->type() == Struct::ANode::TyLOOP)
       && node->ChildCount() == 0) {
     const Struct::ACodeNode* n = dynamic_cast<const Struct::ACodeNode*>(node);
     return n->vmaSet().empty();

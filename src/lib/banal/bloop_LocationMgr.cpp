@@ -187,7 +187,7 @@ LocationMgr::containsLineFzy(Struct::ACodeNode* x, SrcFile::ln line, bool loopIs
 {
   int beg_epsilon = 0, end_epsilon = 0;
   
-  switch (x->Type()) {
+  switch (x->type()) {
     // procedure begin lines are very accurate (with debug info)
     // procedure end lines are not very accurate
     // loop begin lines are somewhat accurate
@@ -229,7 +229,7 @@ LocationMgr::containsIntervalFzy(Struct::ACodeNode* x,
 {
   int beg_epsilon = 0, end_epsilon = 0;
   
-  switch (x->Type()) {
+  switch (x->type()) {
     // see assumptions above.
     case Struct::ANode::TyPROC: 
       {
@@ -552,7 +552,7 @@ LocationMgr::fixContextStack(const Struct::ACodeNode* proposed_scope)
   m_ctxtStack.clear();
 
   Struct::ACodeNode* x = proposed_scope->ancestorProcCtxt();
-  for ( ; x->Type() != Struct::ANode::TyPROC; 
+  for ( ; x->type() != Struct::ANode::TyPROC; 
 	x = x->Parent()->ancestorProcCtxt()) {
     m_ctxtStack.push_back(Ctxt(x));
   }
@@ -580,11 +580,11 @@ LocationMgr::fixContextStack(const Struct::ACodeNode* proposed_scope)
 static void
 fixScopeTree_init(Struct::ACodeNode*& cur_ctxt, Struct::ACodeNode*& cur_scope)
 {
-  DIAG_Assert(cur_scope->Type() != Struct::ANode::TyPROC, DIAG_UnexpectedInput << "will return the wrong answer!");
+  DIAG_Assert(cur_scope->type() != Struct::ANode::TyPROC, DIAG_UnexpectedInput << "will return the wrong answer!");
   while (true) {
     Struct::ACodeNode* xxx = cur_scope->ACodeNodeParent();
-    if (xxx->Type() == Struct::ANode::TyPROC 
-	|| xxx->Type() == Struct::ANode::TyALIEN) {
+    if (xxx->type() == Struct::ANode::TyPROC 
+	|| xxx->type() == Struct::ANode::TyALIEN) {
       cur_ctxt = xxx;
       break;
     }
@@ -619,13 +619,13 @@ LocationMgr::fixScopeTree(Struct::ACodeNode* from_scope,
     //           ..                       ..
     //             cur1_scope               cur1_scope [bounds]
     DIAG_Assert(Logic::implies(cur_ctxt != true_ctxt, 
-			       cur_ctxt->Type() == Struct::ANode::TyALIEN), "");
+			       cur_ctxt->type() == Struct::ANode::TyALIEN), "");
     
     // 1. cur2_scope becomes a sibling of cur_ctxt
     cur2_scope->Unlink();
     cur2_scope->Link(cur_ctxt->Parent());
 
-    if (cur_ctxt->Type() == Struct::ANode::TyALIEN) {
+    if (cur_ctxt->type() == Struct::ANode::TyALIEN) {
       // for [cur1_scope ... cur2_scope] (which we know is non-empty)
       //   adjust bounds of scope
       //   replicate cur_ctxt where necessary
@@ -665,7 +665,7 @@ LocationMgr::alienateScopeTree(Struct::ACodeNode* scope, Struct::Alien* alien,
     Struct::ACodeNode* child = it.CurNode();
     it++; // advance iterator -- it is pointing at 'child'
 
-    if (child->Type() != Struct::ANode::TyALIEN && child != exclude
+    if (child->type() != Struct::ANode::TyALIEN && child != exclude
 	&& !scope->containsInterval(child->begLine(), child->endLine())) {
       child->Unlink();
       child->Link(clone);

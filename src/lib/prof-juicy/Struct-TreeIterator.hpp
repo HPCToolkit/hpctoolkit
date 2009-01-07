@@ -335,7 +335,7 @@ class ACodeNodeLine
 {
 public:
   ACodeNodeLine( ACodeNode* ci, int forEndLine ) 
-    : _ci(ci), _forEndLine(forEndLine), _type(ci->Type())
+    : _ci(ci), _forEndLine(forEndLine), _type(ci->type())
   {
   }
   
