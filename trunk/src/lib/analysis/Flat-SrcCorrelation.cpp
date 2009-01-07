@@ -445,8 +445,10 @@ Driver::write_txt_annotateFile(std::ostream& os,
   string linetxt;
   SrcFile::ln ln_file = 1; // line number *after* next getline
 
-  Prof::Struct::ANodeLineSortedIterator 
-    it(fileStrct, &Prof::Struct::ANodeTyFilter[Prof::Struct::ANode::TySTMT]);
+  Prof::Struct::ANodeSortedIterator 
+    it(fileStrct, 
+       Prof::Struct::ANodeSortedIterator::cmpByLine, 
+       &Prof::Struct::ANodeTyFilter[Prof::Struct::ANode::TySTMT]);
   for (Prof::Struct::ACodeNode* strct = NULL; (strct = it.Current()); it++) {
     SrcFile::ln ln_metric = strct->begLine();
 

@@ -235,42 +235,45 @@ private:
 };  
 
 
-//***************************************************************************
-// ANodeLineSortedIterator
+//*****************************************************************************
+// ANodeSortedIterator
 //
-// ANodeLineSortedChildIterator
-//    behaves as ANodeIterator (PreOrder), 
-//    except that it gurantees LineOrder among siblings  
-//
-// LineOrder: ACodeNode* a is enumerated before b 
-//                    iff a->StartLine() < b->StartLine() 
-//            RefInfo * a is enumerated before b 
-//                    iff a->StartPos() < b->StartPos() 
-//
-// NOTE: the implementation was generalized so that it no longer assumes
-//       that children in the tree contain non-overlapping ranges. all
-//       lines are gathered into a set, sorted, and then enumerated out
-//       of the set in sorted order. -- johnmc 5/31/00
-//***************************************************************************
+// ANodeSortedChildIterator
+//*****************************************************************************
 
-class ANodeLineSortedIterator {
+class ANodeSortedIterator {
+public:
+  // return -1, 0, or 1 for x < y, x = y, or x > y, respectively
+  typedef int (*cmp_fptr_t) (const void* x, const void* y);
+
+  static int cmpByName(const void* x, const void* y);
+  static int cmpByLine(const void* x, const void* y);
+  static int cmpById(const void* x, const void* y);
+
 public: 
-  ANodeLineSortedIterator(const ACodeNode *file, 
-			  const ANodeFilter* filterFunc = NULL, 
-			  bool leavesOnly = true);
-  ~ANodeLineSortedIterator();
-  
+  ANodeSortedIterator(const ACodeNode* node,
+		      cmp_fptr_t compare_fn,
+		      const ANodeFilter* filterFunc = NULL,
+		      bool leavesOnly = true);
+
+  ~ANodeSortedIterator()
+  {
+    delete ptrSetIt;
+  }
+
   ACodeNode* Current() const
   {
-    ACodeNode *cur = NULL;
+    ACodeNode* cur = NULL;
     if (ptrSetIt->Current()) {
       cur = (ACodeNode*) (*ptrSetIt->Current());
     }
     return cur;
-  } 
+  }
 
-
-  void  operator++(int)   { (*ptrSetIt)++;}
+  void operator++(int)
+  {
+    (*ptrSetIt)++;
+  }
 
   void Reset()
   {
@@ -280,8 +283,8 @@ public:
   void DumpAndReset(std::ostream &os = std::cerr);
 
 private:
-  WordSet scopes;  // the scopes we want to have sorted
-  WordSetSortedIterator *ptrSetIt;  
+  WordSet scopes;
+  WordSetSortedIterator* ptrSetIt;
 };
 
 
@@ -318,45 +321,6 @@ private:
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator* ptrSetIt;
 };
-
-
-#if 0
-//***************************************************************************
-// ACodeNodeLine
-//  is a dummy class used just for the large scopes iterators.
-//  the instance can be created either for the start line or for the end line
-//
-// FIXME: do we need this?
-//***************************************************************************
-
-#define IS_BEG_LINE 0
-#define IS_END_LINE 1
-
-class ACodeNodeLine
-{
-public:
-  ACodeNodeLine( ACodeNode* ci, int forEndLine ) 
-    : _ci(ci), _forEndLine(forEndLine), _type(ci->type())
-  {
-  }
-  
-  int IsEndLine()    { return _forEndLine; }
-  
-  ACodeNode* GetACodeNode()  { return _ci; }
-  
-  SrcFile::ln GetLine()
-  { 
-      return (_forEndLine ? _ci->endLine() : _ci->begLine());
-  }
-  
-  ANode::ANodeTy Type()   { return _type; }
-  
-private:
-  ACodeNode* _ci;
-  int _forEndLine;
-  ANode::ANodeTy _type;
-};
-#endif
 
 
 //***************************************************************************
@@ -424,54 +388,6 @@ private:
   WordSetSortedIterator* ptrSetIt;
 };
 
-
-#if 0
-//***************************************************************************
-// ANodeMetricSortedChildIterator
-//    behaves as ANodeChildIterator, except that it guarantees children in 
-//    PerformanceOrder.
-//
-//    PerformanceOrder:
-//          a is enumerated before b
-//          iff a->PerfInfos().GetVal(i) > b->PerfInfos().GetVal(i)
-//             where GetVal(i) retrieves the value for the performace
-//             statistic that the iterator is to sort for
-//
-//***************************************************************************
-
-class ANodeMetricSortedChildIterator {
-public:
-  ANodeMetricSortedChildIterator(const ANode *scope, int flattenDepth,
-				     int compare(const void* a, const void *b),
-				     const ANodeFilter *filterFunc = NULL);
-  
-  virtual ~ANodeMetricSortedChildIterator()
-  {
-    delete ptrSetIt;
-  }
-
-  ANode* Current() const
-  {
-    ANode* cur = NULL;
-    if (ptrSetIt->Current()) {
-      cur = (ANode*) (*ptrSetIt->Current());
-    }
-    return cur;
-  }
-
-  void operator++(int)   { (*ptrSetIt)++;}
-
-  void Reset() { ptrSetIt->Reset(); }
-
-private:
-  void AddChildren(const ANode *scope, int curDepth,
-		   const ANodeFilter *filterFunc);
-private:
-  WordSet scopes;  // the scopes we want to have sorted
-  WordSetSortedIterator *ptrSetIt;
-  int depth;
-};
-#endif
 
 //***************************************************************************
 // Function CompareByPerfInfo

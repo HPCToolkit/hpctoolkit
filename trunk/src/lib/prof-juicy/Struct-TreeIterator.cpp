@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -52,43 +52,34 @@
 
 #include <iostream>
 using std::ostream;
-using std::cerr;
 using std::endl;
 
-#include <vector>
 
 //*************************** User Include Files ****************************
 
 #include "Struct-Tree.hpp"
-#include "PerfMetric.hpp"
 
 #include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
 
-
-namespace Prof {
-namespace Struct {
-  static int CompareByLine(const void *a, const void *b);
-} // namespace Struct
-} // namespace Prof
-
-
 //***************************************************************************
 
 namespace Prof {
+
 namespace Struct {
+
 
 //***************************************************************************
 // ANodeFilter support
 //***************************************************************************
 
-bool 
+bool
 HasANodeTy(const ANode& node, long type)
 {
-  return (type == ANode::TyANY
-	  || node.type() == ANode::IntToANodeTy(type));
+  return (type == ANode::TyANY || node.type() == ANode::IntToANodeTy(type));
 }
+
 
 const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
   ANodeFilter(HasANodeTy, 
@@ -112,49 +103,42 @@ const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
   ANodeFilter(HasANodeTy,
 	      ANode::ANodeTyToName(ANode::TyANY).c_str(), ANode::TyANY)
 };
-  
+
   
 //***************************************************************************
 // ANodeChildIterator
 //***************************************************************************
 
-//***************************************************************************
-// ACodeNodeChildIterator
-//***************************************************************************
 
 //***************************************************************************
 // ANodeIterator
 //***************************************************************************
 
+
 //***************************************************************************
-// ANodeLineSortedIterator
+// ANodeSortedIterator
 //***************************************************************************
 
-ANodeLineSortedIterator::
-ANodeLineSortedIterator(const ACodeNode *file, 
-			    const ANodeFilter *filterFunc, 
-			    bool leavesOnly)
+ANodeSortedIterator::
+ANodeSortedIterator(const ACodeNode* node, 
+		    ANodeSortedIterator::cmp_fptr_t compare_fn,
+		    const ANodeFilter* filterFunc, 
+		    bool leavesOnly)
 {
-  ANodeIterator it(file, filterFunc, leavesOnly);
+  ANodeIterator it(node, filterFunc, leavesOnly);
   ANode *cur;
   for (; (cur = it.CurNode()); ) {
     scopes.Add((unsigned long) cur);
     it++;
   }
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByLine);
+  ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
 }
 
 
-ANodeLineSortedIterator::~ANodeLineSortedIterator() 
+void
+ANodeSortedIterator::DumpAndReset(ostream& os)
 {
-  delete ptrSetIt;
-} 
-
-
-void 
-ANodeLineSortedIterator::DumpAndReset(ostream &os)
-{
-  os << "ANodeLineSortedIterator: " << endl;
+  os << "ANodeSortedIterator: " << endl;
   while (Current()) {
     os << Current()->ToString() << endl;
     (*this)++;
@@ -163,23 +147,31 @@ ANodeLineSortedIterator::DumpAndReset(ostream &os)
 }
 
 
-static int 
-CompareByLine(const void* a, const void *b) 
+int
+ANodeSortedIterator::cmpByName(const void* a, const void* b)
 {
+  ANode* x = (*(ANode**)a);
+  ANode* y = (*(ANode**)b);
+  return strcmp(x->name().c_str(), y->name().c_str()); 
+}
+
+
+int
+ANodeSortedIterator::cmpByLine(const void* a, const void* b)
+{
+  // WARNING: this assumes it will only see ACodeNodes!
   ACodeNode* x = (*(ACodeNode**)a);
   ACodeNode* y = (*(ACodeNode**)b);
-  DIAG_Assert (x != NULL, "");
-  DIAG_Assert (y != NULL, "");
   return ACodeNodeLineComp(x, y);
 }
 
+
 //***************************************************************************
-// ANodeLineSortedChildIterator
+// ANodeSortedChildIterator
 //***************************************************************************
 
 ANodeLineSortedChildIterator::
-ANodeLineSortedChildIterator(const ANode *scope, 
-				 const ANodeFilter * f)
+ANodeLineSortedChildIterator(const ANode *scope, const ANodeFilter * f)
 {
   ANodeChildIterator it(scope, f);
   ANode *cur;
@@ -187,7 +179,7 @@ ANodeLineSortedChildIterator(const ANode *scope,
     scopes.Add((unsigned long) cur);
     it++;
   }
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByLine);
+  ptrSetIt = new WordSetSortedIterator(&scopes, ANodeSortedIterator::cmpByLine);
 }
 
 
@@ -214,8 +206,7 @@ ANodeLineSortedChildIterator::DumpAndReset(ostream &os)
 //***************************************************************************
 
 ANodeNameSortedChildIterator::
-ANodeNameSortedChildIterator(const ANode *scope, 
-				 const ANodeFilter * f)
+ANodeNameSortedChildIterator(const ANode *scope, const ANodeFilter * f)
 {
   ANodeChildIterator it(scope, f);
   ANode *cur;
@@ -258,6 +249,7 @@ ANodeNameSortedChildIterator::CompareByName(const void* a, const void *b)
   return x->name().compare(y->name());
 }
 
+
 //***************************************************************************
 // ANodeMetricSortedIterator
 //***************************************************************************
@@ -278,42 +270,6 @@ ANodeMetricSortedIterator::ANodeMetricSortedIterator(const Root* root,
   CompareByMetricId_mId = m_metricId;
   ptrSetIt = new WordSetSortedIterator(&scopes, CompareByMetricId);
 }
-
-
-
-#if 0
-//***************************************************************************
-// ANodeMetricSortedChildIterator
-//***************************************************************************
-
-ANodeMetricSortedChildIterator::ANodeMetricSortedChildIterator
-(const ANode *scope, int flattenDepth, 
- int compare(const void* a, const void *b),
- const ANodeFilter *filterFunc)
-{
-  depth = flattenDepth;
-  AddChildren(scope, 0, filterFunc);
-  ptrSetIt = new WordSetSortedIterator(&scopes, compare);
-}
-
-
-void ANodeMetricSortedChildIterator::AddChildren
-(const ANode *scope, int curDepth, const ANodeFilter *filterFunc)
-{
-  DIAG_Assert(scope != NULL, "");
-  
-  ANodeChildIterator it(scope, filterFunc);
-  ANode *cur;
-  for (; (cur = it.CurNode()); ) {
-    if ((curDepth == depth) || cur->IsLeaf()) {
-      scopes.Add((unsigned long) cur);
-    } else {
-      AddChildren(cur, curDepth+1, filterFunc);
-    }
-    it++;
-  }
-}
-#endif
 
 
 //***************************************************************************
