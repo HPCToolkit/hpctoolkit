@@ -124,9 +124,6 @@ Driver::run()
   //-------------------------------------------------------
   DIAG_Msg(2, "Creating and correlating metrics with program structure: ...");
   correlateMetricsWithStructure(m_mMgr, m_structure);
-  
-  m_structure.root()->Freeze();         // disallow further additions to tree 
-  m_structure.CollectCrossReferences(); // collect cross referencing information
 
   DIAG_If(3) {
     DIAG_Msg(3, "Final structure:");

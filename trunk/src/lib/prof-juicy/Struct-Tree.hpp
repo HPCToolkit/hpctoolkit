@@ -161,6 +161,7 @@ public:
 
   virtual ~Tree();
 
+
   // -------------------------------------------------------
   // Tree data
   // -------------------------------------------------------
@@ -170,8 +171,6 @@ public:
   bool empty() const { return (m_root == NULL); }
   
   std::string name() const;
-
-  void CollectCrossReferences();
 
 
   // -------------------------------------------------------
@@ -254,16 +253,14 @@ public:
   ANode(ANodeTy ty, ANode* parent = NULL)
     : NonUniformDegreeTreeNode(parent), m_type(ty)
   { 
-    if (0) { ctorCheck(); }
     m_uid = s_nextUniqueId++;
-    height = 0;
-    depth = 0;
     m_metrics = new DoubleVector();
   }
 
   virtual ~ANode()
   {
-    if (0) { dtorCheck(); }
+    DIAG_DevMsgIf(0, "~ANode::ANode: " << toString_id()
+		  << " " << std::hex << this << std::dec);
     delete m_metrics;
   }
   
@@ -282,13 +279,6 @@ public:
   // nameQual: qualified name [built dynamically]
   virtual const std::string& name() const { return ANodeTyToName(type()); }
   virtual std::string nameQual() const { return name(); }
-
-  void CollectCrossReferences();
-  int  NoteHeight();
-  void NoteDepth();
-
-  int ScopeHeight() const { return height; }
-  int ScopeDepth() const { return depth; }
 
 
   // --------------------------------------------------------
@@ -527,8 +517,6 @@ private:
 protected:
   ANodeTy m_type;
   uint m_uid;
-  int height; // cross reference information
-  int depth;
   DoubleVector* m_metrics;
 };
 
@@ -551,11 +539,24 @@ protected:
     }
   }
 
+
   ACodeNode(const ACodeNode& x) 
     : ANode(x.m_type) 
   { *this = x; }
 
-  ACodeNode& operator=(const ACodeNode& x);
+
+  ACodeNode& 
+  operator=(const ACodeNode& x)
+  {
+    // shallow copy
+    if (&x != this) {
+      ANode::operator=(x);
+      m_begLn = x.m_begLn;
+      m_endLn = x.m_endLn;
+      // m_vmaSet
+    }
+    return *this;
+  }
 
 public: 
   virtual ~ACodeNode()
@@ -630,9 +631,6 @@ public:
 
   virtual ANode* Clone() { return new ACodeNode(*this); }
 
-  // FIXME: not needed?
-  //ACodeNode* GetFirst() const { return first; }
-  //ACodeNode* GetLast() const { return last; } 
 
   // --------------------------------------------------------
   // XML output
@@ -671,10 +669,6 @@ protected:
   SrcFile::ln m_begLn;
   SrcFile::ln m_endLn;
   VMAIntervalSet m_vmaSet;
-
-  ACodeNode* first; // FIXME: only used in ANode::CollectCrossReferences...
-  ACodeNode* last;  //   what about NonUniformDegreeTree...
-  friend void ANode::CollectCrossReferences();
 };
 
 
@@ -717,7 +711,6 @@ public:
 
   virtual ~Root()
   {
-    frozen = false;
     delete groupMap;
     delete lmMap;
   }
@@ -744,10 +737,8 @@ public:
   findGroup(const std::string& nm) const
     { return findGroup(nm.c_str()); }
 
-  void Freeze() { frozen = true;} // disallow additions to/deletions from tree
-  bool IsFrozen() const { return frozen; }
-
   virtual ANode* Clone() { return new Root(*this); }
+
 
   // --------------------------------------------------------
   // XML output
@@ -780,7 +771,6 @@ private:
   friend class LM;
 
 private:
-  bool frozen;
   std::string m_name; // the program name
 
   GroupMap* groupMap;
