@@ -64,8 +64,6 @@
 
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/PtrSetIterator.hpp>
-#include <lib/support/SrcFile.hpp>
-
 
 //*************************** Forward Declarations **************************
 
@@ -248,10 +246,20 @@ public:
 
   static int cmpByName(const void* x, const void* y);
   static int cmpByLine(const void* x, const void* y);
-  static int cmpById(const void* x, const void* y);
+  static int cmpById(const void* a, const void* b);
+
+  static cmp_fptr_t 
+  cmpByMetric(uint mId)
+  {
+    cmpByMetric_mId = mId;
+    return cmpByMetric_fn;
+  }
+  static int cmpByMetric_fn(const void* a, const void *b);
+  static int cmpByMetric_mId; // need a fuctor/closure to avoid this
+
 
 public: 
-  ANodeSortedIterator(const ACodeNode* node,
+  ANodeSortedIterator(const ANode* node,
 		      cmp_fptr_t compare_fn,
 		      const ANodeFilter* filterFunc = NULL,
 		      bool leavesOnly = true);
@@ -261,11 +269,12 @@ public:
     delete ptrSetIt;
   }
 
-  ACodeNode* Current() const
+  ANode*
+  Current() const
   {
-    ACodeNode* cur = NULL;
+    ANode* cur = NULL;
     if (ptrSetIt->Current()) {
-      cur = (ACodeNode*) (*ptrSetIt->Current());
+      cur = (ANode*) (*ptrSetIt->Current());
     }
     return cur;
   }
@@ -288,22 +297,28 @@ private:
 };
 
 
-class ANodeLineSortedChildIterator {
+class ANodeSortedChildIterator {
 public: 
-  ANodeLineSortedChildIterator(const ANode *root, 
-			       const ANodeFilter* filterFunc = NULL);
-  ~ANodeLineSortedChildIterator();
+  ANodeSortedChildIterator(const ANode* root,
+			   ANodeSortedIterator::cmp_fptr_t compare_fn,
+			   const ANodeFilter* filterFunc = NULL);
 
-  ACodeNode* Current() const
+  ~ANodeSortedChildIterator()
   {
-    ACodeNode *cur = NULL;
+    delete ptrSetIt;
+  }
+
+  ANode* Current() const
+  {
+    ANode* cur = NULL;
     if (ptrSetIt->Current()) {
-      cur = (ACodeNode*) (*ptrSetIt->Current());
+      cur = (ANode*) (*ptrSetIt->Current());
     }
     return cur;
   }
 
-  void  operator++(int)   { (*ptrSetIt)++;}
+  void operator++(int)
+  { (*ptrSetIt)++; }
 
   void Reset()
   {
@@ -318,96 +333,10 @@ public:
   ACodeNode* CurCode()  const { return dynamic_cast<ACodeNode*>(Current()); }
 
 private:
-  WordSet scopes;  // the scopes we want to have sorted
+  WordSet scopes;
   WordSetSortedIterator* ptrSetIt;
 };
 
-
-//***************************************************************************
-// ANodeNameSortedChildIterator
-//    behaves as ANodeChildIterator, except that it gurantees NameOrder 
-//    NameOrder: a is enumerated before b iff a->Name() < b->Name() 
-//***************************************************************************
-
-class ANodeNameSortedChildIterator {
-public: 
-  ANodeNameSortedChildIterator(const ANode *root,
-				   const ANodeFilter* filterFunc = NULL);
-  ~ANodeNameSortedChildIterator();
-  
-  ACodeNode* Current() const;
-  void  operator++(int)   { (*ptrSetIt)++;}
-  void Reset();
-
-private:
-  static int CompareByName(const void *a, const void *b);
-  WordSet scopes;  // the scopes we want to have sorted
-  WordSetSortedIterator *ptrSetIt;  
-};
-
-
-//***************************************************************************
-// ANodeMetricSortedIterator
-//    behaves as ANodeIterator, except that it gurantees PerformanceOrder
-//    PerformanceOrder:
-//          a is enumerated before b
-//          iff a->PerfInfos().GetVal(i) > b->PerfInfos().GetVal(i)
-//             where GetVal(i) retrieves the value for the performace
-//             statistic that the iterator is to sort for
-//
-//***************************************************************************
-
-class ANodeMetricSortedIterator {
-public:
-  ANodeMetricSortedIterator(const Root* scope, 
-			    uint metricId, 
-			    const ANodeFilter* filterFunc = NULL);
-
-  virtual ~ANodeMetricSortedIterator()
-  {
-    delete ptrSetIt;
-  }  
-  
-  ANode* Current() const
-  {
-    ANode* cur = NULL;
-    if (ptrSetIt->Current()) {
-      cur = (ANode*) (*ptrSetIt->Current());
-    }
-    return cur;
-  }
-
-  void operator++(int) { (*ptrSetIt)++; }
-
-  void Reset() { ptrSetIt->Reset(); }
-
-private:
-  uint m_metricId; // sort key
-
-  WordSet scopes;  // the scopes we want to have sorted
-  WordSetSortedIterator* ptrSetIt;
-};
-
-
-//***************************************************************************
-// Function CompareByPerfInfo
-//
-// Description:
-//   helper function used by sorting iterators to sort by a particular
-//   performance metric.
-// 
-//   CompareByPerfInfo compares by the performance metric whose index is 
-//   specified by the global variable  
-// 
-//   All sorting iterators use the comparison function only in the 
-//   constructor, so the value of CompareByPerfInfo_MetricIndex needs only 
-//   to remain constant for the duration of the constructor to which 
-//   CompareByPerfInfo is passed.
-//
-//***************************************************************************
-
-int CompareByMetricId(const void* a, const void *b);
-extern int CompareByMetricId_mId;
 
 } // namespace Struct
 

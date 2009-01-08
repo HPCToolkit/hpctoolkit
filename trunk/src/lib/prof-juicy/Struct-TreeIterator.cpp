@@ -120,16 +120,14 @@ const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
 //***************************************************************************
 
 ANodeSortedIterator::
-ANodeSortedIterator(const ACodeNode* node, 
+ANodeSortedIterator(const ANode* node,
 		    ANodeSortedIterator::cmp_fptr_t compare_fn,
-		    const ANodeFilter* filterFunc, 
+		    const ANodeFilter* filterFunc,
 		    bool leavesOnly)
 {
   ANodeIterator it(node, filterFunc, leavesOnly);
-  ANode *cur;
-  for (; (cur = it.CurNode()); ) {
+  for (ANode* cur = NULL; (cur = it.CurNode()); it++) {
     scopes.Add((unsigned long) cur);
-    it++;
   }
   ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
 }
@@ -152,7 +150,7 @@ ANodeSortedIterator::cmpByName(const void* a, const void* b)
 {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
-  return strcmp(x->name().c_str(), y->name().c_str()); 
+  return x->name().compare(y->name()); // strcmp(x, y)
 }
 
 
@@ -166,132 +164,25 @@ ANodeSortedIterator::cmpByLine(const void* a, const void* b)
 }
 
 
-//***************************************************************************
-// ANodeSortedChildIterator
-//***************************************************************************
-
-ANodeLineSortedChildIterator::
-ANodeLineSortedChildIterator(const ANode *scope, const ANodeFilter * f)
-{
-  ANodeChildIterator it(scope, f);
-  ANode *cur;
-  for (; (cur = it.CurNode()); ) {
-    scopes.Add((unsigned long) cur);
-    it++;
-  }
-  ptrSetIt = new WordSetSortedIterator(&scopes, ANodeSortedIterator::cmpByLine);
-}
-
-
-ANodeLineSortedChildIterator::~ANodeLineSortedChildIterator()
-{
-  delete ptrSetIt;
-}
-
-
-void
-ANodeLineSortedChildIterator::DumpAndReset(ostream &os)
-{
-  os << "ANodeLineSortedChildIterator: " << endl;
-  while (Current()) {
-    os << Current()->ToString() << endl;
-    (*this)++;
-  }
-  Reset();
-}
-
-
-//***************************************************************************
-// ANodeNameSortedChildIterator
-//***************************************************************************
-
-ANodeNameSortedChildIterator::
-ANodeNameSortedChildIterator(const ANode *scope, const ANodeFilter * f)
-{
-  ANodeChildIterator it(scope, f);
-  ANode *cur;
-  for (; (cur = it.CurNode()); ) {
-    scopes.Add((unsigned long) cur);
-    it++;
-  }
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByName);
-}
-
-ANodeNameSortedChildIterator::~ANodeNameSortedChildIterator() 
-{
-  delete ptrSetIt;
-}
- 
-ACodeNode* 
-ANodeNameSortedChildIterator::Current() const
-{
-  ACodeNode *cur = NULL;
-  if (ptrSetIt->Current()) {
-    cur = (ACodeNode*) (*ptrSetIt->Current());
-    DIAG_Assert(cur != NULL, "");
-  }
-  return cur;
-}
-
-void 
-ANodeNameSortedChildIterator::Reset()
-{
-  ptrSetIt->Reset();
-}
-
-int 
-ANodeNameSortedChildIterator::CompareByName(const void* a, const void *b) 
+int
+ANodeSortedIterator::cmpById(const void* a, const void* b)
 {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
-  DIAG_Assert (x != NULL, "");
-  DIAG_Assert (y != NULL, "");
-  return x->name().compare(y->name());
+  return (x->id() - y->id());
 }
 
 
-//***************************************************************************
-// ANodeMetricSortedIterator
-//***************************************************************************
+int ANodeSortedIterator::cmpByMetric_mId = -1;
 
-ANodeMetricSortedIterator::ANodeMetricSortedIterator(const Root* root,
-						     uint metricId,
-						     const ANodeFilter* filterFunc)
-  : m_metricId(metricId)
-{
-  DIAG_Assert(root != NULL, "");
-
-  ANodeIterator it(root, filterFunc, false);
-  ANode *cur;
-  for (; (cur = it.CurNode()); ) {
-    scopes.Add((unsigned long) cur);
-    it++;
-  }
-  CompareByMetricId_mId = m_metricId;
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByMetricId);
-}
-
-
-//***************************************************************************
-// static functions
-//***************************************************************************
-
-int CompareByMetricId_mId = -1;
-
-int CompareByMetricId(const void* a, const void *b)
+int 
+ANodeSortedIterator::cmpByMetric_fn(const void* a, const void *b)
 {
   ANode* x = *(ANode**) a;
   ANode* y = *(ANode**) b;
-  DIAG_Assert(x != NULL, "");
-  DIAG_Assert(y != NULL, "");
-  double vx = 0.0;
-  if (x->hasMetric(CompareByMetricId_mId)) {
-    vx = x->metric(CompareByMetricId_mId);
-  }
-  double vy = 0.0;
-  if (y->hasMetric(CompareByMetricId_mId)) {
-    vy = y->metric(CompareByMetricId_mId);
-  }
+
+  double vx = x->hasMetric(cmpByMetric_mId) ? x->metric(cmpByMetric_mId) : 0.0;
+  double vy = y->hasMetric(cmpByMetric_mId) ? y->metric(cmpByMetric_mId) : 0.0;
   double difference = vy - vx;
   
   if (difference < 0) return -1;	
@@ -300,5 +191,36 @@ int CompareByMetricId(const void* a, const void *b)
 }
 
 
+//***************************************************************************
+// ANodeSortedChildIterator
+//***************************************************************************
+
+ANodeSortedChildIterator::
+ANodeSortedChildIterator(const ANode* node,
+			 ANodeSortedIterator::cmp_fptr_t compare_fn,
+			 const ANodeFilter* f)
+{
+  ANodeChildIterator it(node, f);
+  for (ANode* cur = NULL; (cur = it.CurNode()); it++) {
+    scopes.Add((unsigned long) cur);
+  }
+  ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
+}
+
+
+void
+ANodeSortedChildIterator::DumpAndReset(ostream& os)
+{
+  os << "ANodeSortedChildIterator: " << endl;
+  while (Current()) {
+    os << Current()->ToString() << endl;
+    (*this)++;
+  }
+  Reset();
+}
+
+//***************************************************************************
+
 } // namespace Struct
+
 } // namespace Prof

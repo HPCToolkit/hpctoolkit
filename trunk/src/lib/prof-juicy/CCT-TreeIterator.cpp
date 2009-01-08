@@ -120,10 +120,8 @@ ANodeSortedIterator(const ANode* node,
 		    bool leavesOnly)
 {
   ANodeIterator it(node, filterFunc, leavesOnly);
-  ANode *cur;
-  for (; (cur = it.CurNode()); ) {
+  for (ANode* cur = NULL; (cur = it.CurNode()); it++) {
     scopes.Add((unsigned long) cur);
-    it++;
   }
   ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
 }
@@ -146,7 +144,7 @@ ANodeSortedIterator::cmpByName(const void* a, const void* b)
 {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
-  return strcmp(x->name().c_str(), y->name().c_str()); 
+  return x->name().compare(y->name()); // strcmp(x, y)
 }
 
 
@@ -160,7 +158,7 @@ ANodeSortedIterator::cmpByLine(const void* a, const void* b)
 
 
 int
-ANodeSortedIterator::cmpByStructureId(const void* a, const void* b) 
+ANodeSortedIterator::cmpByStructureId(const void* a, const void* b)
 {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
@@ -175,29 +173,27 @@ ANodeSortedIterator::cmpByStructureId(const void* a, const void* b)
 //***************************************************************************
 
 ANodeSortedChildIterator::
-ANodeSortedChildIterator(const ANode* scope, 
+ANodeSortedChildIterator(const ANode* node,
 			 ANodeSortedIterator::cmp_fptr_t compare_fn,
 			 const ANodeFilter* f)
 {
-  ANodeChildIterator it(scope, f); 
-  ANode* cur; 
-  for (; (cur = it.CurNode()); ) {
-    scopes.Add((unsigned long) cur); 
-    it++;
+  ANodeChildIterator it(node, f);
+  for (ANode* cur = NULL; (cur = it.CurNode()); it++) {
+    scopes.Add((unsigned long) cur);
   }
-  ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn); 
+  ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
 }
- 
+
 
 void
 ANodeSortedChildIterator::DumpAndReset(ostream& os)
 {
-  os << "ANodeSortedChildIterator: " << endl; 
+  os << "ANodeSortedChildIterator: " << endl;
   while (Current()) {
-    os << Current()->toString_me() << endl; 
-    (*this)++; 
-  } 
-  Reset(); 
+    os << Current()->toString_me() << endl;
+    (*this)++;
+  }
+  Reset();
 }
 
 //***************************************************************************

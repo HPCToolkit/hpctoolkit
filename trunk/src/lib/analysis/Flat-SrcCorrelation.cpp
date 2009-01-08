@@ -403,7 +403,7 @@ Driver::write_txt_secSummary(std::ostream& os,
     os << std::endl;
   }
   else {
-    Prof::Struct::ANodeMetricSortedIterator it(rootStrct, m_sortby->Index(), filter);
+    Prof::Struct::ANodeSortedIterator it(rootStrct, Prof::Struct::ANodeSortedIterator::cmpByMetric(m_sortby->Index()), filter, false/*leavesOnly*/);
     for (; it.Current(); it++) {
       Prof::Struct::ANode* strct = it.Current();
       for (uint i = 0; i < m_mMgr.size(); ++i) {
@@ -449,7 +449,9 @@ Driver::write_txt_annotateFile(std::ostream& os,
     it(fileStrct, 
        Prof::Struct::ANodeSortedIterator::cmpByLine, 
        &Prof::Struct::ANodeTyFilter[Prof::Struct::ANode::TySTMT]);
-  for (Prof::Struct::ACodeNode* strct = NULL; (strct = it.Current()); it++) {
+  for (Prof::Struct::ANode* node = NULL; (node = it.Current()); it++) {
+    Prof::Struct::ACodeNode* strct = 
+      dynamic_cast<Prof::Struct::ACodeNode*>(node); // always true
     SrcFile::ln ln_metric = strct->begLine();
 
     // Advance ln_file to just before ln_metric, if necessary
