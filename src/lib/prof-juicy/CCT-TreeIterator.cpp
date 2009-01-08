@@ -162,8 +162,8 @@ ANodeSortedIterator::cmpByStructureId(const void* a, const void* b)
 {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
-  uint x_id = x->structure() ? x->structure()->id() : 0;
-  uint y_id = y->structure() ? y->structure()->id() : 0;
+  uint x_id = x->structureId();
+  uint y_id = y->structureId();
   return (x_id - y_id);
 }
 

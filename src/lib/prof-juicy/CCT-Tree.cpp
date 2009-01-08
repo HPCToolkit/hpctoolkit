@@ -794,7 +794,7 @@ ANode::writeXML(ostream &os, int oFlags, const char *pre) const
   
   bool doPost = writeXML_pre(os, oFlags, pre);
   string prefix = pre + indent;
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureId); 
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureId);
        it.Current(); it++) {
     ANode* n = it.Current();
     n->writeXML(os, oFlags, prefix.c_str());
