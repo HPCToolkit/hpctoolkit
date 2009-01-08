@@ -126,7 +126,7 @@ ConfigParser::parse(Analysis::Args& args, Prof::Metric::Mgr& mMgr)
 // 
 //***************************************************************************
 
-static void ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr);
+static void ProcessHPCPROF(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr);
 static void ProcessELEMENT(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr);
 static void ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr);
 static void ProcessFILE(DOMNode *fileNode, Analysis::Args& args, Prof::Metric::Mgr& mMgr, 
@@ -158,24 +158,24 @@ static void
 ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr)
 {
   DOMNode *child = node->getFirstChild();
-  ProcessHPCVIEW(child, args, mMgr);
+  ProcessHPCPROF(child, args, mMgr);
 }
 
 
 static void 
-ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr)
+ProcessHPCPROF(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr)
 {
   DIAG_DevMsgIf(DBG, "CONFIG: " << node);
 
   if ((node == NULL) ||
-      (node->getNodeType() != DOMNode::DOCUMENT_TYPE_NODE) ){ 
-    ConfigParser_Throw("CONFIGURATION file does not begin with <HPCVIEW>");
+      (node->getNodeType() != DOMNode::DOCUMENT_TYPE_NODE)) { 
+    ConfigParser_Throw("CONFIGURATION file does not begin with <HPCPROF>");
   };
   
   node = node->getNextSibling();
   DIAG_DevMsgIf(DBG, "CONFIG: " << node);
 
-  if ( (node == NULL)
+  if ((node == NULL)
        || (node->getNodeType() != DOMNode::ELEMENT_NODE)) {
     ConfigParser_Throw("No DOCUMENT_NODE found in CONFIGURATION file.");
   };

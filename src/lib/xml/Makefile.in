@@ -351,9 +351,7 @@ MYSOURCES = \
 
 MYDTDHEADERS = \
 	$(srcdir)/hpc-experiment.dtd.h \
-	$(srcdir)/hpc-structure.dtd.h \
-	\
-	$(srcdir)/PROFILE.dtd.h
+	$(srcdir)/hpc-structure.dtd.h
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
