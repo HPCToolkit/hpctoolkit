@@ -1,5 +1,7 @@
-#ifndef intervals_h
-#define intervals_h
+#ifndef INTERVALS_H
+#define INTERVALS_H
+
+#include "splay-interval.h"
 
 /*************************************************************************************
  * type declarations 
@@ -13,8 +15,7 @@ typedef enum {
 } bp_loc;
 
 struct unwind_interval_t {
-  void * startaddr;
-  void * endaddr;
+  struct splay_interval_s common; // common splay tree fields
 
   ra_loc ra_status; /* how to find the return address */
 
@@ -26,8 +27,6 @@ struct unwind_interval_t {
   int bp_ra_pos; /* return address offset from bp */
   int bp_bp_pos; /* (caller's) BP offset from bp */
 
-  struct unwind_interval_t *next;
-  struct unwind_interval_t *prev;
   struct unwind_interval_t *prev_canonical;
   int restored_canonical;
 };
@@ -36,14 +35,6 @@ struct unwind_interval_t {
 #define lendaddr ((unsigned long) endaddr)
 
 typedef struct unwind_interval_t unwind_interval;
-
-typedef struct interval_status_t {
-  char *first_undecoded_ins;
-  unwind_interval *first;
-  int errcode;
-} interval_status;
-
-
 
 /*************************************************************************************
  * global variables 
@@ -88,4 +79,4 @@ extern "C" {
 
 
 
-#endif
+#endif // INTERVALS_H

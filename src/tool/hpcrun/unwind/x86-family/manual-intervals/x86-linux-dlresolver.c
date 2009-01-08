@@ -1,5 +1,6 @@
 #include <string.h>
 #include "x86-unwind-interval-fixup.h"
+#include "x86-unwind-interval.h"
 
 static int _dl_runtime_resolve_signature[] = { 
   0x38ec8348,      0x24048948,      0x244c8948,      0x54894808,
@@ -16,10 +17,10 @@ adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, interval_status *
 
   if (len > siglen && strncmp((char *)_dl_runtime_resolve_signature, ins, siglen) == 0) {
     // signature matched 
-    unwind_interval *ui = stat->first;
+    unwind_interval *ui = (unwind_interval *) stat->first;
     while(ui) {
 	ui->sp_ra_pos += 16;
-	ui = ui->next;
+	ui = (unwind_interval *)(ui->common).next;
     }
     return 1;
   } 

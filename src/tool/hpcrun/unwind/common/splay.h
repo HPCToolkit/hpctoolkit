@@ -7,7 +7,8 @@
 #ifndef _SPLAY_H_
 #define _SPLAY_H_
 
-#include "intervals.h"
+#include "splay-interval.h"
+
 
 /*
  * As a slicky trick, interval_tree_node overlays with
@@ -15,32 +16,24 @@
  * (May not want to keep this.)
  */
 
-#ifdef DUPLICATE_CODE
-struct interval_tree_node {
-    unsigned long start;
-    unsigned long end;
-    ra_loc ra_status;
-    unsigned int ra_pos;
-    struct interval_tree_node *right;
-    struct interval_tree_node *left;
-};
-#else
-#define interval_tree_node unwind_interval_t
+typedef struct splay_interval_s interval_tree_node;
 
-#define START(n) n->startaddr
-#define END(n)   n->endaddr
+#define START(n) n->start
+#define END(n)   n->end
 #define RIGHT(n) n->next
 #define LEFT(n)  n->prev
 
 #define SRIGHT(n) n.next
 #define SLEFT(n)  n.prev
-#endif
 
-typedef struct interval_tree_node *interval_tree_node_t;
+// FIXME: STOP embedding pointer info in type!! 
+//
+typedef interval_tree_node *interval_tree_node_t;
 
-extern void             csprof_interval_tree_init(void);
-extern void             csprof_release_splay_lock(void);
-extern unwind_interval *csprof_addr_to_interval(void *addr);
+
+extern void                csprof_interval_tree_init(void);
+extern void                csprof_release_splay_lock(void);
+extern interval_tree_node *csprof_addr_to_interval(void *addr);
 
 extern void             csprof_print_interval_tree(void);
 

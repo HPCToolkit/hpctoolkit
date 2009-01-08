@@ -84,7 +84,6 @@ MY_BASE_FILES =			\
 	sampling/types/callstack/cct.c	\
 	sampling/types/callstack/dump_backtraces.c	\
 	unwind/common/backtrace.c	\
-	unwind/common/intervals.c	\
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
 	utilities/executable-path.c	\
@@ -116,6 +115,7 @@ MY_X86_FILES = \
 	processor/x86-64/processor-libc.c		\
 	processor/x86-64/swizzle.c			\
 	unwind/x86-family/x86-all.c			\
+	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
 	unwind/x86-family/x86-unwind.c		        \
 	unwind/x86-family/x86-unwind-support.c		\

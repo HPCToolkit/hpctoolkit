@@ -2,9 +2,7 @@
 #define x86_unwind_analysis_h
 
 #include "xed-interface.h"
-
-#include "intervals.h"
-
+#include "x86-unwind-interval.h"
 #include "csprof-malloc.h"
 
 

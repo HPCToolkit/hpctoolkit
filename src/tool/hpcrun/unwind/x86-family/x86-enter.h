@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 #include "xed-interface.h"
-#include "intervals.h"
+#include "x86-unwind-interval.h"
 #include "x86-unwind-analysis.h"
 
 

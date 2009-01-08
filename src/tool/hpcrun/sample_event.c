@@ -21,7 +21,7 @@
 #include "fnbounds_interface.h"
 #include "unwind.h"
 #include "csprof-malloc.h"
-#include "intervals.h"
+#include "splay-interval.h"
 #include "sample_sources_all.h"
 
 

@@ -1,6 +1,6 @@
 #include "x86-unwind-analysis.h"
 #include "x86-decoder.h"
-#include "intervals.h"
+#include "x86-unwind-interval.h"
 #include "pmsg.h"
 
 /******************************************************************************
@@ -109,16 +109,16 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
 unwind_interval *
 find_first_bp_frame(unwind_interval *first)
 {
-  while (first && (first->ra_status != RA_BP_FRAME)) first = first->next;
+  while (first && (first->ra_status != RA_BP_FRAME)) first = (unwind_interval *)(first->common).next;
   return first;
 }
 
 unwind_interval *
 find_first_non_decr(unwind_interval *first, unwind_interval *highwatermark)
 {
-  while (first && first->next && (first->sp_ra_pos <= first->next->sp_ra_pos) && 
+  while (first && (first->common).next && (first->sp_ra_pos <= ((unwind_interval *)((first->common).next))->sp_ra_pos) && 
 	 (first != highwatermark)) {
-    first = first->next;
+    first = (unwind_interval *)(first->common).next;
   }
   return first;
 }
