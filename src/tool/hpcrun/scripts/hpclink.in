@@ -40,15 +40,22 @@ monitor_wrap_names="${wrap1} ${wrap2} ${wrap3}"
 CC=gcc
 hello="_hpc_hello_$$"
 nm_addrs="_hpc_nm_addrs_$$"
+cmd_out="_hpc_output_$$"
 
 # Space-separated list of symbol names to force undefined.
 undef_names=
 
 ##################################################
 
+cleanup()
+{
+    rm -f _hpc_*$$*
+}
+
 die()
 {
     echo "$0: error: $*" 1>&2
+    cleanup
     exit 1
 }
 
@@ -206,11 +213,6 @@ fi
 set -- "$@" -lpthread -ldl -lrt
 set -- "$@" $appl_libs
 
-if test "$verbose" = yes ; then
-    echo "new command line: $command $@"
-    echo
-fi
-
 #
 # Step 3 -- Link with dummy nm file.
 #
@@ -226,22 +228,42 @@ $CC -o "$hello" "${hello}.c"
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
 $hpcfnbounds -c "$hello" > "${nm_addrs}.c" || die "hpcfnbounds failed on $hello"
 $CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
-$command "$@" || die "compile #1 failed: $command $@"
-test -f "$appl_out" || die "compile #1 failed: $command $@"
-rm -f "${hello}.c" "$hello"
+
+#
+# Some compiler scripts add extra function calls to the end of the
+# link line that fail to trigger --wrap.  So, if the first compile
+# fails with undefined references to __wrap_foo, then add those names
+# to the undef list and try again.
+#
+$command "$@" >"$cmd_out" 2>&1
+if test $? -ne 0
+then
+    exec <"$cmd_out"
+    while read line
+    do
+        if echo "$line" | grep -E -e 'undef.*__wrap_' >/dev/null 2>&1
+	then
+	    name=`expr "$line" : '.*\(__wrap_[A-Za-z0-9_]*\)'`
+	    set -- "-Wl,-u,${name}" "$@"
+	fi
+    done
+    $command "$@" || die "compile #1 failed: $command $@"
+    test -f "$appl_out" || die "compile #1 failed: $command $@"
+fi
 
 #
 # Step 4 -- Link with real nm file.
 #
+if test "$verbose" = yes ; then
+    echo "new command line: $command $@"
+    echo
+fi
+
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
 $hpcfnbounds -c "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
 $CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 $command "$@" || die "compile #2 failed: $command $@"
 test -f "$appl_out" || die "compile #2 failed: $command $@"
 
-rm -f "${nm_addrs}.o"
-if test "$verbose" != yes ; then
-    rm -f "${nm_addrs}.c"
-fi
-
+cleanup
 exit 0
