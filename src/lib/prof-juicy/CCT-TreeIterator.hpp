@@ -275,7 +275,7 @@ public:
   ANodeSortedChildIterator(const ANode* root,
 			   ANodeSortedIterator::cmp_fptr_t compare_fn,
 			   const ANodeFilter* filterFunc = NULL);
-  
+
   ~ANodeSortedChildIterator()
   {
     delete ptrSetIt;
@@ -283,10 +283,9 @@ public:
 
   ANode* Current() const
   {
-    ANode *cur = NULL;
+    ANode* cur = NULL;
     if (ptrSetIt->Current()) {
       cur = (ANode*) (*ptrSetIt->Current());
-      DIAG_Assert(cur != NULL, "");
     }
     return cur;
   }
@@ -302,8 +301,8 @@ public:
   void DumpAndReset(std::ostream &os = std::cerr);
 
 private:
-  WordSet scopes;  // the scopes we want to have sorted
-  WordSetSortedIterator* ptrSetIt;  
+  WordSet scopes;
+  WordSetSortedIterator* ptrSetIt;
 };
 
 

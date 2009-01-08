@@ -1565,7 +1565,8 @@ ANode::writeXML(ostream& os, int oFlags, const char* pfx) const
   
   bool doPost = writeXML_pre(os, oFlags, pfx);
   string pfx_new = pfx + indent;
-  for (ANodeLineSortedChildIterator it(this); it.Current(); it++) {
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
+       it.Current(); it++) {
     it.Current()->writeXML(os, oFlags, pfx_new.c_str());
   }
   if (doPost) {
@@ -1602,15 +1603,14 @@ ANode::ddumpXML() const
 ostream& 
 Root::writeXML(ostream& os, int oFlags, const char* pfx) const
 {
-  // N.B.: Typically LM are children
-  string indent = "  ";
   if (oFlags & Tree::OFlg_Compressed) { 
     pfx = ""; 
-    indent = ""; 
   }
 
+  // N.B.: Assume that my children are LM's
   bool doPost = ANode::writeXML_pre(os, oFlags, pfx);
-  for (ANodeNameSortedChildIterator it(this); it.Current(); it++) { 
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
+       it.Current(); it++) {
     ANode* scope = it.Current();
     scope->writeXML(os, oFlags, pfx);
   }
@@ -1624,16 +1624,17 @@ Root::writeXML(ostream& os, int oFlags, const char* pfx) const
 ostream& 
 LM::writeXML(ostream& os, int oFlags, const char* pre) const
 {
-  // N.B.: Typically Files are children
   string indent = "  ";
   if (oFlags & Tree::OFlg_Compressed) { 
     pre = ""; 
     indent = ""; 
   }
 
+  // N.B.: Assume my children are Files
   bool doPost = ANode::writeXML_pre(os, oFlags, pre);
   string prefix = pre + indent;
-  for (ANodeNameSortedChildIterator it(this); it.Current(); it++) {
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
+       it.Current(); it++) {
     ANode* scope = it.Current();
     scope->writeXML(os, oFlags, prefix.c_str());
   }
@@ -1681,7 +1682,8 @@ ANode::CSV_dump(const Root& root, ostream& os,
   // print file name, routine name, start and end line, loop level
   os << name() << ",,,,";
   CSV_DumpSelf(root, os);
-  for (ANodeNameSortedChildIterator it(this); it.Current(); it++) {
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
+       it.Current(); it++) {
     it.Current()->CSV_dump(root, os);
   }
 }
@@ -1695,7 +1697,8 @@ File::CSV_dump(const Root& root, ostream& os,
   // print file name, routine name, start and end line, loop level
   os << BaseName() << ",," << m_begLn << "," << m_endLn << ",";
   CSV_DumpSelf(root, os);
-  for (ANodeNameSortedChildIterator it(this); it.Current(); it++) {
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
+       it.Current(); it++) {
     it.Current()->CSV_dump(root, os, BaseName().c_str());
   }
 }
@@ -1710,7 +1713,8 @@ Proc::CSV_dump(const Root& root, ostream& os,
   os << file_name << "," << name() << "," << m_begLn << "," << m_endLn 
      << ",0";
   CSV_DumpSelf(root, os);
-  for (ANodeLineSortedChildIterator it(this); it.Current(); it++) {
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
+       it.Current(); it++) {
     it.CurNode()->CSV_dump(root, os, file_name, name().c_str(), 1);
   } 
 }
@@ -1741,7 +1745,8 @@ ACodeNode::CSV_dump(const Root& root, ostream& os,
   if (lLevel)
     os << lLevel;
   CSV_DumpSelf(root, os);
-  for (ANodeLineSortedChildIterator it(this); it.Current(); it++) {
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
+       it.Current(); it++) {
     it.CurNode()->CSV_dump(root, os, file_name, proc_name, lLevel+1);
   } 
 }
