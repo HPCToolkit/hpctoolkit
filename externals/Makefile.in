@@ -52,6 +52,7 @@ NOBUILD_COOKIE = .dont-build
 .PHONY: distclean distclean-all distclean-plus dist
 
 all install install-all: $(PACKAGES)
+	@echo "Externals build complete at `date`"
 
 $(PACKAGES):
 	$(MAKE) -C $@ install
