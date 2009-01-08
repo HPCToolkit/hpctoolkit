@@ -57,7 +57,7 @@ unw_init_arch(void)
 }
 
 
-void*
+void *
 context_pc(void* context)
 {
   mcontext_t *mc = GET_MCONTEXT(context);

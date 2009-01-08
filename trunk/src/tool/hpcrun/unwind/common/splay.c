@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <err.h>
 #include <stdio.h>
-#include "intervals.h"
+#include "splay-interval.h"
 #include "spinlock.h"
 #include "splay.h"
 #include "pmsg.h"
@@ -18,29 +18,13 @@
 
 static interval_tree_node_t csprof_interval_tree_root = NULL;
 static spinlock_t csprof_interval_tree_lock;
-#if 0
-static spinlock_t xed_spinlock = SPINLOCK_UNLOCKED;
-#ifdef CSPROF_THREADS
-#include <pthread.h>
-#include <sys/types.h>
-
-pthread_mutex_t xedlock = PTHREAD_MUTEX_INITIALIZER;
-
-#endif
-
-#endif
 
 void
 csprof_interval_tree_init(void)
 {
-  PMSG(SPLAY,"SPLAY:interval splay tree init");
+  TMSG(SPLAY,"interval splay tree init");
   csprof_interval_tree_root = NULL;
   spinlock_unlock(&csprof_interval_tree_lock);
-#if 0
-#ifdef CSPROF_THREADS
-  pthread_mutex_init(&xedlock,NULL);
-#endif
-#endif
 }
 
 void
@@ -48,27 +32,6 @@ csprof_release_splay_lock(void)
 {
   spinlock_unlock(&csprof_interval_tree_lock);
 }
-
-#if 0
-// utility to lock the xed library
-static interval_status build_intervals(char *ins, unsigned int len){
-  interval_status rv;
-
-#ifdef CSPROF_THREADS
-  pthread_mutex_lock(&xedlock);
-#endif
-
-  spinlock_lock(&xed_spinlock);
-  PMSG(SPLAY,"SPLAY: calling l_build_intervals");
-  rv = l_build_intervals(ins,len);
-  spinlock_unlock(&xed_spinlock);
-
-#ifdef CSPROF_THREADS
-  pthread_mutex_unlock(&xedlock);
-#endif
-  return rv;
-}
-#endif
 
 /*
  * The Sleator-Tarjan top-down splay algorithm.  Rotate the interval
@@ -81,7 +44,7 @@ static interval_status build_intervals(char *ins, unsigned int len){
 static interval_tree_node_t
 interval_tree_splay(interval_tree_node_t root, void *addr)
 {
-    struct interval_tree_node dummy;
+    interval_tree_node dummy;
     interval_tree_node_t ltree_max, rtree_min, y;
 
     if (root == NULL)
@@ -132,13 +95,6 @@ interval_tree_splay(interval_tree_node_t root, void *addr)
     return (root);
 }
 
-#ifdef DEBUG_TARGET
-
-#define TARGET_ADDR ((unsigned long) 0x400310)
-int debugflag;
-int debugonce = 1; 
-#endif 
-
 /*
  * Lookup the PC address in the interval tree and return a pointer to
  * the interval containing that address (the new root).  Grow the tree
@@ -146,6 +102,7 @@ int debugonce = 1;
  *
  * Returns: pointer to unwind_interval struct if found, else NULL.
  */
+// FIXME  --- this is dangerous and sucks
 #define root  csprof_interval_tree_root
 #define lock  csprof_interval_tree_lock
 
@@ -159,14 +116,15 @@ int debugonce = 1;
     TD_GET(splay_lock) = 0; } while(0);
 
 
-unwind_interval *
+splay_interval_t *
 csprof_addr_to_interval(void *addr)
 {
     void *fcn_start, *fcn_end;
     interval_status istat;
     interval_tree_node_t first, last, p, lroot;
-    unwind_interval *ans;
+    splay_interval_t *ans;
     int ret;
+    extern interval_status build_intervals(char *ins, unsigned int len);
 
     SPINLOCK(&lock);
 
@@ -175,19 +133,15 @@ csprof_addr_to_interval(void *addr)
     if (root != NULL && START(root) <= addr && addr < END(root)) {
 	lroot = root;
 	SPINUNLOCK(&lock);
-	PMSG(SPLAY,"SPLAY:found %lx already in tree",addr);
-	return (unwind_interval *)lroot;
+	TMSG(SPLAY,"found %lx already in tree",addr);
+	return (splay_interval_t *)lroot;
     }
-
-#ifdef DEBUG_TARGET
-    if (addr == TARGET_ADDR) debugflag = debugonce;
-#endif
 
     /* Get list of new intervals to insert into the tree. */
     ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end);
     if (ret != SUCCESS) {
 	SPINUNLOCK(&lock);
-	PMSG(SPLAY,"SPLAY: no enclosing bounds found");
+	TMSG(SPLAY,"no enclosing bounds found");
 	return (NULL);
     }
     assert(fcn_start <= addr && addr < fcn_end);
@@ -196,7 +150,7 @@ csprof_addr_to_interval(void *addr)
 
     if (istat.first == NULL) {
 	SPINUNLOCK(&lock);
-	PMSG(SPLAY,"SPLAY: build intervals failed");
+	TMSG(SPLAY,"build intervals failed");
 	return (NULL);
     }
 
@@ -210,20 +164,11 @@ csprof_addr_to_interval(void *addr)
     for (p = first; p != NULL; p = RIGHT(p)) {
 	LEFT(p) = NULL;
 	if (START(p) <= addr && addr < END(p))
-	    ans = (unwind_interval *)p;
+	    ans = p;
 	last = p;
     }
     assert(fcn_start <= START(first));
     assert(END(last) <= fcn_end);
-
-#ifdef DEBUG_TARGET
-    if (debugflag) {
-       unwind_interval *u;
-       for(u = istat.first; u; u = NEXT(u)) {
-         idump(u);
-       }
-    }
-#endif
 
     /*
      * Always link the new nodes into the tree whether we found the
@@ -265,13 +210,6 @@ csprof_addr_to_interval(void *addr)
     }
 
     SPINUNLOCK(&lock);
-
-#ifdef DEBUG_TARGET
-    if (addr == TARGET_ADDR) {
-	debugonce = 0;
-	debugflag = debugonce;
-    }
-#endif
 
     PMSG(SPLAY,"SPLAY: returning interval = %p",ans);
     return (ans);

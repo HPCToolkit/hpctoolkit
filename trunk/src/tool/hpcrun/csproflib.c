@@ -97,7 +97,8 @@
 #include "pmsg.h"
 #include "unwind.h"
 #include "fnbounds_interface.h"
-#include "intervals.h"
+#include "splay-interval.h"
+#include "interval-interface.h"
 
 #include <lush/lush.h>
 #include <lush/lush-backtrace.h>

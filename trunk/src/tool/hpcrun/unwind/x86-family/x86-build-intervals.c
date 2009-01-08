@@ -6,7 +6,8 @@
 //*************************** User Include Files ****************************
 
 #include "pmsg.h"
-#include "intervals.h"
+#include "splay-interval.h"
+#include "x86-unwind-interval.h"
 
 #include "x86-decoder.h"
 #include "x86-process-inst.h"
@@ -100,10 +101,10 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
       if (noisy) dump_ui(current, true);
     }
     ins += xed_decoded_inst_get_length(xptr);
-    current->endaddr = ins;
+    (current->common).end = ins;
   }
 
-  current->endaddr = end;
+  (current->common).end = end;
 
   set_status(&status, ins, error_count, first);
 
@@ -122,6 +123,6 @@ static void set_status(interval_status *status, char *fui, int errcode,
 {
   status->first_undecoded_ins = fui;
   status->errcode = errcode;
-  status->first   = first;
+  status->first   = (splay_interval_t *)first;
 }
 

@@ -3,7 +3,7 @@
 #include <assert.h>
 
 #include "csprof-malloc.h"
-#include "intervals.h"
+#include "x86-unwind-interval.h"
 #include "pmsg.h"
 #include "atomic-ops.h"
 
@@ -23,16 +23,21 @@ static const char *bp_status_string(bp_loc l);
  ************************************************************************************/
 
 const unwind_interval poison_ui = {
-  0L,
-  0L,
-  POISON,
-  0,
-  0,
-  BP_HOSED,
-  0,
-  0,
-  NULL,
-  NULL
+  .common    = {
+    .next  = NULL,
+    .prev  = NULL
+  },
+
+  .ra_status = POISON,
+  .sp_ra_pos = 0,
+  .sp_bp_pos = 0,
+
+  .bp_status = BP_HOSED,
+  .bp_ra_pos = 0,
+  .bp_bp_pos = 0,
+
+  .prev_canonical     = NULL,
+  .restored_canonical = 0
 };
 
 
@@ -46,13 +51,13 @@ long suspicious_cnt = 0;
  ************************************************************************************/
 
 long 
-ui_count() 
+ui_count(void)
 {
   return ui_cnt;
 }
 
 long 
-suspicious_count() 
+suspicious_count(void)
 {
   return suspicious_cnt;
 }
@@ -66,7 +71,7 @@ suspicious_interval(void *pc)
 }
 
 unwind_interval *
-new_ui(char *startaddr, 
+new_ui(char *start, 
        ra_loc ra_status, unsigned int sp_ra_pos, int bp_ra_pos, 
        bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
        unwind_interval *prev)
@@ -77,8 +82,8 @@ new_ui(char *startaddr,
 
   (void) fetch_and_add(&ui_cnt, 1);
 
-  u->startaddr = startaddr;
-  u->endaddr = 0;
+  u->common.start = start;
+  u->common.end = 0;
 
   u->ra_status = ra_status;
   u->sp_ra_pos = sp_ra_pos;
@@ -88,8 +93,8 @@ new_ui(char *startaddr,
   u->bp_bp_pos = bp_bp_pos;
   u->bp_ra_pos = bp_ra_pos;
 
-  u->prev = prev;
-  u->next = NULL;
+  u->common.prev = (splay_interval_t *) prev;
+  u->common.next = NULL;
   u->prev_canonical = NULL;
   u->restored_canonical = 0;
 
@@ -116,14 +121,14 @@ fluke_ui(char *loc,unsigned int pos)
 {
   unwind_interval *u = (unwind_interval *) csprof_malloc(sizeof(unwind_interval)); 
 
-  u->startaddr = loc;
-  u->endaddr = loc;
+  u->common.start = loc;
+  u->common.end = loc;
 
   u->ra_status = RA_SP_RELATIVE;
   u->sp_ra_pos = pos;
 
-  u->next = NULL;
-  u->prev = NULL;
+  u->common.next = NULL;
+  u->common.prev = NULL;
 
   return u; 
 }
@@ -131,8 +136,8 @@ fluke_ui(char *loc,unsigned int pos)
 void 
 link_ui(unwind_interval *current, unwind_interval *next)
 {
-  current->endaddr = next->startaddr;
-  current->next= next;
+  current->common.end = next->common.start;
+  current->common.next= (splay_interval_t *)next;
 }
 
 
@@ -143,15 +148,12 @@ dump_ui(unwind_interval *u, int dump_to_stdout)
 
   sprintf(buf, "start=%p end =%p ra_status=%s sp_ra_pos=%d sp_bp_pos=%d bp_status=%s "
 	  "bp_ra_pos = %d bp_bp_pos=%d next=%p prev=%p prev_canonical=%p rest_canon=%d\n", 
-	  (void *) u->startaddr, (void *) u->endaddr, ra_status_string(u->ra_status),
+	  (void *) u->common.start, (void *) u->common.end, ra_status_string(u->ra_status),
 	  u->sp_ra_pos, u->sp_bp_pos, 
 	  bp_status_string(u->bp_status),
 	  u->bp_ra_pos, u->bp_bp_pos,
-	  u->next, u->prev, u->prev_canonical, u->restored_canonical); 
+	  u->common.next, u->common.prev, u->prev_canonical, u->restored_canonical); 
 
-#if 0
-  PMSG(INTV,buf);
-#endif
   EMSG(buf);
   if (dump_to_stdout) { 
     fprintf(stderr, "%s", buf);

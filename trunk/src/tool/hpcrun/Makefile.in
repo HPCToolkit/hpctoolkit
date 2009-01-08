@@ -192,10 +192,9 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	lush/lush-support-rt.c memory/list.c memory/mem.c \
 	sampling/types/callstack/cct.c \
 	sampling/types/callstack/dump_backtraces.c \
-	unwind/common/backtrace.c unwind/common/intervals.c \
-	unwind/common/splay.c unwind/common/stack_troll.c \
-	utilities/executable-path.c utilities/spinlock.c \
-	utilities/tokenize.c utilities/unlink.c \
+	unwind/common/backtrace.c unwind/common/splay.c \
+	unwind/common/stack_troll.c utilities/executable-path.c \
+	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
 	unwind/mips64/mips64-build-intervals.c \
 	unwind/mips64/mips64-unwind-support.c \
@@ -204,6 +203,7 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	unwind/ppc64/ppc64-unwind-support.c \
 	processor/x86-64/processor-libc.c processor/x86-64/swizzle.c \
 	unwind/x86-family/x86-all.c \
+	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-unwind-support.c \
@@ -228,10 +228,9 @@ am__objects_7 = libcsprof_la-first_func.lo \
 	libcsprof_la-lushi-cb.lo libcsprof_la-lush-support-rt.lo \
 	libcsprof_la-list.lo libcsprof_la-mem.lo libcsprof_la-cct.lo \
 	libcsprof_la-dump_backtraces.lo libcsprof_la-backtrace.lo \
-	libcsprof_la-intervals.lo libcsprof_la-splay.lo \
-	libcsprof_la-stack_troll.lo libcsprof_la-executable-path.lo \
-	libcsprof_la-spinlock.lo libcsprof_la-tokenize.lo \
-	libcsprof_la-unlink.lo
+	libcsprof_la-splay.lo libcsprof_la-stack_troll.lo \
+	libcsprof_la-executable-path.lo libcsprof_la-spinlock.lo \
+	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
 am__objects_8 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_9 = libcsprof_la-dylib.lo
@@ -245,6 +244,7 @@ am__objects_13 = libcsprof_la-ppc64-build-intervals.lo \
 @HOST_CPU_PPC_TRUE@am__objects_14 = $(am__objects_13)
 am__objects_15 = libcsprof_la-processor-libc.lo \
 	libcsprof_la-swizzle.lo libcsprof_la-x86-all.lo \
+	libcsprof_la-x86-unwind-interval.lo \
 	libcsprof_la-x86-unwind-interval-fixup.lo \
 	libcsprof_la-x86-unwind.lo libcsprof_la-x86-unwind-support.lo \
 	libcsprof_la-x86-linux-dlresolver.lo
@@ -271,10 +271,9 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	lush/lush-support-rt.c memory/list.c memory/mem.c \
 	sampling/types/callstack/cct.c \
 	sampling/types/callstack/dump_backtraces.c \
-	unwind/common/backtrace.c unwind/common/intervals.c \
-	unwind/common/splay.c unwind/common/stack_troll.c \
-	utilities/executable-path.c utilities/spinlock.c \
-	utilities/tokenize.c utilities/unlink.c \
+	unwind/common/backtrace.c unwind/common/splay.c \
+	unwind/common/stack_troll.c utilities/executable-path.c \
+	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_static.c \
 	unwind/mips64/mips64-build-intervals.c \
 	unwind/mips64/mips64-unwind-support.c \
@@ -283,6 +282,7 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	unwind/ppc64/ppc64-unwind-support.c \
 	processor/x86-64/processor-libc.c processor/x86-64/swizzle.c \
 	unwind/x86-family/x86-all.c \
+	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-unwind-support.c \
@@ -313,8 +313,7 @@ am__objects_19 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-list.$(OBJEXT) libcsprof_o-mem.$(OBJEXT) \
 	libcsprof_o-cct.$(OBJEXT) \
 	libcsprof_o-dump_backtraces.$(OBJEXT) \
-	libcsprof_o-backtrace.$(OBJEXT) \
-	libcsprof_o-intervals.$(OBJEXT) libcsprof_o-splay.$(OBJEXT) \
+	libcsprof_o-backtrace.$(OBJEXT) libcsprof_o-splay.$(OBJEXT) \
 	libcsprof_o-stack_troll.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
 	libcsprof_o-spinlock.$(OBJEXT) libcsprof_o-tokenize.$(OBJEXT) \
@@ -329,6 +328,7 @@ am__objects_23 = libcsprof_o-ppc64-build-intervals.$(OBJEXT) \
 @HOST_CPU_PPC_TRUE@am__objects_24 = $(am__objects_23)
 am__objects_25 = libcsprof_o-processor-libc.$(OBJEXT) \
 	libcsprof_o-swizzle.$(OBJEXT) libcsprof_o-x86-all.$(OBJEXT) \
+	libcsprof_o-x86-unwind-interval.$(OBJEXT) \
 	libcsprof_o-x86-unwind-interval-fixup.$(OBJEXT) \
 	libcsprof_o-x86-unwind.$(OBJEXT) \
 	libcsprof_o-x86-unwind-support.$(OBJEXT) \
@@ -623,7 +623,6 @@ MY_BASE_FILES = \
 	sampling/types/callstack/cct.c	\
 	sampling/types/callstack/dump_backtraces.c	\
 	unwind/common/backtrace.c	\
-	unwind/common/intervals.c	\
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
 	utilities/executable-path.c	\
@@ -654,6 +653,7 @@ MY_X86_FILES = \
 	processor/x86-64/processor-libc.c		\
 	processor/x86-64/swizzle.c			\
 	unwind/x86-family/x86-all.c			\
+	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
 	unwind/x86-family/x86-unwind.c		        \
 	unwind/x86-family/x86-unwind-support.c		\
@@ -929,7 +929,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-fnbounds_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-fnbounds_dynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-handling_sample.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-intervals.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-last.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-last_func.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-libmonitor_upcalls.Plo@am__quote@
@@ -969,6 +968,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-linux-dlresolver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-unwind-interval-fixup.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-unwind-support.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-backtrace.Po@am__quote@
@@ -985,7 +985,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-fnbounds_common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-fnbounds_static.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-handling_sample.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-intervals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-last.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-last_func.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-libmonitor_upcalls.Po@am__quote@
@@ -1025,6 +1024,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-linux-dlresolver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-unwind-interval-fixup.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-unwind-support.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-unwind.Po@am__quote@
 
@@ -1329,13 +1329,6 @@ libcsprof_la-backtrace.lo: unwind/common/backtrace.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
 
-libcsprof_la-intervals.lo: unwind/common/intervals.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-intervals.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-intervals.Tpo -c -o libcsprof_la-intervals.lo `test -f 'unwind/common/intervals.c' || echo '$(srcdir)/'`unwind/common/intervals.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-intervals.Tpo $(DEPDIR)/libcsprof_la-intervals.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/common/intervals.c' object='libcsprof_la-intervals.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-intervals.lo `test -f 'unwind/common/intervals.c' || echo '$(srcdir)/'`unwind/common/intervals.c
-
 libcsprof_la-splay.lo: unwind/common/splay.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-splay.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-splay.Tpo -c -o libcsprof_la-splay.lo `test -f 'unwind/common/splay.c' || echo '$(srcdir)/'`unwind/common/splay.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-splay.Tpo $(DEPDIR)/libcsprof_la-splay.Plo
@@ -1454,6 +1447,13 @@ libcsprof_la-x86-all.lo: unwind/x86-family/x86-all.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/x86-all.c' object='libcsprof_la-x86-all.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-x86-all.lo `test -f 'unwind/x86-family/x86-all.c' || echo '$(srcdir)/'`unwind/x86-family/x86-all.c
+
+libcsprof_la-x86-unwind-interval.lo: unwind/x86-family/x86-unwind-interval.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-x86-unwind-interval.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-x86-unwind-interval.Tpo -c -o libcsprof_la-x86-unwind-interval.lo `test -f 'unwind/x86-family/x86-unwind-interval.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-interval.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-x86-unwind-interval.Tpo $(DEPDIR)/libcsprof_la-x86-unwind-interval.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/x86-unwind-interval.c' object='libcsprof_la-x86-unwind-interval.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-x86-unwind-interval.lo `test -f 'unwind/x86-family/x86-unwind-interval.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-interval.c
 
 libcsprof_la-x86-unwind-interval-fixup.lo: unwind/x86-family/x86-unwind-interval-fixup.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-x86-unwind-interval-fixup.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-x86-unwind-interval-fixup.Tpo -c -o libcsprof_la-x86-unwind-interval-fixup.lo `test -f 'unwind/x86-family/x86-unwind-interval-fixup.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-interval-fixup.c
@@ -1973,20 +1973,6 @@ libcsprof_o-backtrace.obj: unwind/common/backtrace.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-backtrace.obj `if test -f 'unwind/common/backtrace.c'; then $(CYGPATH_W) 'unwind/common/backtrace.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/backtrace.c'; fi`
 
-libcsprof_o-intervals.o: unwind/common/intervals.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-intervals.o -MD -MP -MF $(DEPDIR)/libcsprof_o-intervals.Tpo -c -o libcsprof_o-intervals.o `test -f 'unwind/common/intervals.c' || echo '$(srcdir)/'`unwind/common/intervals.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-intervals.Tpo $(DEPDIR)/libcsprof_o-intervals.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/common/intervals.c' object='libcsprof_o-intervals.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-intervals.o `test -f 'unwind/common/intervals.c' || echo '$(srcdir)/'`unwind/common/intervals.c
-
-libcsprof_o-intervals.obj: unwind/common/intervals.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-intervals.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-intervals.Tpo -c -o libcsprof_o-intervals.obj `if test -f 'unwind/common/intervals.c'; then $(CYGPATH_W) 'unwind/common/intervals.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/intervals.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-intervals.Tpo $(DEPDIR)/libcsprof_o-intervals.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/common/intervals.c' object='libcsprof_o-intervals.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-intervals.obj `if test -f 'unwind/common/intervals.c'; then $(CYGPATH_W) 'unwind/common/intervals.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/intervals.c'; fi`
-
 libcsprof_o-splay.o: unwind/common/splay.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-splay.o -MD -MP -MF $(DEPDIR)/libcsprof_o-splay.Tpo -c -o libcsprof_o-splay.o `test -f 'unwind/common/splay.c' || echo '$(srcdir)/'`unwind/common/splay.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-splay.Tpo $(DEPDIR)/libcsprof_o-splay.Po
@@ -2196,6 +2182,20 @@ libcsprof_o-x86-all.obj: unwind/x86-family/x86-all.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/x86-all.c' object='libcsprof_o-x86-all.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-x86-all.obj `if test -f 'unwind/x86-family/x86-all.c'; then $(CYGPATH_W) 'unwind/x86-family/x86-all.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/x86-all.c'; fi`
+
+libcsprof_o-x86-unwind-interval.o: unwind/x86-family/x86-unwind-interval.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-x86-unwind-interval.o -MD -MP -MF $(DEPDIR)/libcsprof_o-x86-unwind-interval.Tpo -c -o libcsprof_o-x86-unwind-interval.o `test -f 'unwind/x86-family/x86-unwind-interval.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-interval.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-x86-unwind-interval.Tpo $(DEPDIR)/libcsprof_o-x86-unwind-interval.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/x86-unwind-interval.c' object='libcsprof_o-x86-unwind-interval.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-x86-unwind-interval.o `test -f 'unwind/x86-family/x86-unwind-interval.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-interval.c
+
+libcsprof_o-x86-unwind-interval.obj: unwind/x86-family/x86-unwind-interval.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-x86-unwind-interval.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-x86-unwind-interval.Tpo -c -o libcsprof_o-x86-unwind-interval.obj `if test -f 'unwind/x86-family/x86-unwind-interval.c'; then $(CYGPATH_W) 'unwind/x86-family/x86-unwind-interval.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/x86-unwind-interval.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-x86-unwind-interval.Tpo $(DEPDIR)/libcsprof_o-x86-unwind-interval.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/x86-unwind-interval.c' object='libcsprof_o-x86-unwind-interval.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-x86-unwind-interval.obj `if test -f 'unwind/x86-family/x86-unwind-interval.c'; then $(CYGPATH_W) 'unwind/x86-family/x86-unwind-interval.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/x86-unwind-interval.c'; fi`
 
 libcsprof_o-x86-unwind-interval-fixup.o: unwind/x86-family/x86-unwind-interval-fixup.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-x86-unwind-interval-fixup.o -MD -MP -MF $(DEPDIR)/libcsprof_o-x86-unwind-interval-fixup.Tpo -c -o libcsprof_o-x86-unwind-interval-fixup.o `test -f 'unwind/x86-family/x86-unwind-interval-fixup.c' || echo '$(srcdir)/'`unwind/x86-family/x86-unwind-interval-fixup.c

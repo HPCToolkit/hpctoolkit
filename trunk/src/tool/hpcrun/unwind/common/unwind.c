@@ -24,7 +24,6 @@
 #include "splay.h"
 
 #include "thread_data.h"
-#include "x86-unwind-interval.h"
 
 /****************************************************************************************
  * global data 
@@ -73,7 +72,6 @@ unw_init(void)
 void 
 unw_init_cursor(void* context, unw_cursor_t *cursor)
 {
-  extern void dump_ui(unwind_interval *u, int dump_to_stdout);
 
   PMSG(UNW,"init prim unw called with context = %p, cursor_p = %p\n",context, cursor);
 
@@ -96,7 +94,7 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
 
   if (debug_unw) {
     PMSG(UNW,"dumping the found interval");
-    dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
+    dump_ui(cursor->intvl,1); // debug for now
   }
   PMSG(UNW,"UNW_INIT: returned interval = %p",cursor->intvl);
 }
@@ -138,7 +136,7 @@ unw_step_sp(unw_cursor_t *cursor)
   bp = cursor->bp;
   sp = cursor->sp;
   pc = cursor->pc;
-  uw = (unwind_interval *)cursor->intvl;
+  uw = cursor->intvl;
 
   next_sp  = ((void **)((unsigned long) sp + uw->sp_ra_pos));
   next_pc  = *next_sp;
@@ -187,7 +185,7 @@ unw_step_sp(unw_cursor_t *cursor)
 
   if (debug_unw) {
     PMSG(UNW,"dumping the found interval");
-    dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
+    dump_ui(cursor->intvl,1); // debug for now
   }
 
   PMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
@@ -208,7 +206,7 @@ unw_step_bp(unw_cursor_t *cursor)
   bp = cursor->bp;
   sp = cursor->sp;
   pc = cursor->pc;
-  uw = (unwind_interval *)cursor->intvl;
+  uw = cursor->intvl;
   if ((unsigned long) bp >= (unsigned long) sp) {
     // bp relative
     next_sp  = ((void **)((unsigned long) bp + uw->bp_bp_pos));
@@ -219,7 +217,7 @@ unw_step_bp(unw_cursor_t *cursor)
     if ((unsigned long) next_sp > (unsigned long) sp) { 
       // this condition is a weak correctness check. only
       // try building an interval for the return address again if it succeeds
-      uw = (unwind_interval *)csprof_addr_to_interval(((char *)next_pc) - 1);
+      uw = csprof_addr_to_interval(((char *)next_pc) - 1);
       if (! uw){
         if (((void *)next_sp) >= monitor_stack_bottom()) {
           TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom, next_sp = %p",next_sp);
@@ -232,10 +230,10 @@ unw_step_bp(unw_cursor_t *cursor)
         cursor->pc    = next_pc;
         cursor->bp    = next_bp;
         cursor->sp    = next_sp;
-        cursor->intvl = (splay_interval_t *)uw;
+        cursor->intvl = uw;
         if (debug_unw) {
           TMSG(UNW,"dumping the found interval");
-          dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
+          dump_ui(cursor->intvl,1); // debug for now
         }
         TMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
         return STEP_OK;
@@ -328,7 +326,7 @@ unw_step (unw_cursor_t *cursor)
   bp = cursor->bp;
   sp = cursor->sp;
   pc = cursor->pc;
-  uw = (unwind_interval *)cursor->intvl;
+  uw = cursor->intvl;
 
   int unw_res;
 
@@ -347,7 +345,7 @@ unw_step (unw_cursor_t *cursor)
 
   default:
     EMSG("ILLEGAL UNWIND INTERVAL");
-    dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
+    dump_ui(cursor->intvl,1); // debug for now
     assert(0);
   }
   if (unw_res != -1){
