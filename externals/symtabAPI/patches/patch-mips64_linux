@@ -1,8 +1,6 @@
-Support for mips64-linux.
-
-diff -r -u -b -N symtabAPI/src/core/common/mips64_linux/Makefile symtabAPI.mips64/src/core/common/mips64_linux/Makefile
---- symtabAPI/src/core/common/mips64_linux/Makefile	1969-12-31 19:00:00.000000000 -0500
-+++ symtabAPI.mips64/src/core/common/mips64_linux/Makefile	2008-12-15 17:40:16.000000000 -0500
+diff -Naurb symtabAPI.orig/src/core/common/mips64_linux/Makefile symtabAPI.mips64-Linux/src/core/common/mips64_linux/Makefile
+--- symtabAPI.orig/src/core/common/mips64_linux/Makefile	1969-12-31 19:00:00.000000000 -0500
++++ symtabAPI.mips64-Linux/src/core/common/mips64_linux/Makefile	2009-01-08 13:08:10.204815000 -0500
 @@ -0,0 +1,39 @@
 +# Define any symbols needed to invoke configuration changes in make.config
 +
@@ -43,9 +41,9 @@ diff -r -u -b -N symtabAPI/src/core/common/mips64_linux/Makefile symtabAPI.mips6
 +# common targets like "clean", "install", etc.
 +
 +include ../../make.library.tmpl
-diff -r -u -b -N symtabAPI/src/core/make.config symtabAPI.mips64/src/core/make.config
---- symtabAPI/src/core/make.config	2008-03-07 19:51:56.000000000 -0500
-+++ symtabAPI.mips64/src/core/make.config	2008-12-15 15:28:54.000000000 -0500
+diff -Naurb symtabAPI.orig/src/core/make.config symtabAPI.mips64-Linux/src/core/make.config
+--- symtabAPI.orig/src/core/make.config	2008-03-07 19:51:56.000000000 -0500
++++ symtabAPI.mips64-Linux/src/core/make.config	2009-01-08 13:08:10.234815000 -0500
 @@ -47,6 +47,9 @@
  ifneq (,$(findstring x86_64,$(CURPLAT)))
  PLATFORM = x86_64-unknown-linux2.4cv
@@ -71,9 +69,9 @@ diff -r -u -b -N symtabAPI/src/core/make.config symtabAPI.mips64/src/core/make.c
  #
  
  # Combine all the #defines for ease of use
-diff -r -u -b -N symtabAPI/src/core/symtabAPI/mips64_linux/Makefile symtabAPI.mips64/src/core/symtabAPI/mips64_linux/Makefile
---- symtabAPI/src/core/symtabAPI/mips64_linux/Makefile	1969-12-31 19:00:00.000000000 -0500
-+++ symtabAPI.mips64/src/core/symtabAPI/mips64_linux/Makefile	2008-12-15 15:34:26.000000000 -0500
+diff -Naurb symtabAPI.orig/src/core/symtabAPI/mips64_linux/Makefile symtabAPI.mips64-Linux/src/core/symtabAPI/mips64_linux/Makefile
+--- symtabAPI.orig/src/core/symtabAPI/mips64_linux/Makefile	1969-12-31 19:00:00.000000000 -0500
++++ symtabAPI.mips64-Linux/src/core/symtabAPI/mips64_linux/Makefile	2009-01-08 13:08:10.282860000 -0500
 @@ -0,0 +1,61 @@
 +# Define any symbols needed to invoke configuration changes in make.config
 +
@@ -136,9 +134,9 @@ diff -r -u -b -N symtabAPI/src/core/symtabAPI/mips64_linux/Makefile symtabAPI.mi
 +# common targets like "clean", "install", etc.
 +
 +include ../../make.library.tmpl
-diff -r -u -b -N symtabAPI/src/core/symtabAPI/src/Elf_X.h symtabAPI.mips64/src/core/symtabAPI/src/Elf_X.h
---- symtabAPI/src/core/symtabAPI/src/Elf_X.h	2008-02-04 13:23:03.000000000 -0500
-+++ symtabAPI.mips64/src/core/symtabAPI/src/Elf_X.h	2008-12-15 15:42:39.000000000 -0500
+diff -Naurb symtabAPI.orig/src/core/symtabAPI/src/Elf_X.h symtabAPI.mips64-Linux/src/core/symtabAPI/src/Elf_X.h
+--- symtabAPI.orig/src/core/symtabAPI/src/Elf_X.h	2008-02-04 13:23:03.000000000 -0500
++++ symtabAPI.mips64-Linux/src/core/symtabAPI/src/Elf_X.h	2009-01-08 13:08:10.298860000 -0500
 @@ -86,56 +86,6 @@
  };
  #endif
@@ -247,9 +245,9 @@ diff -r -u -b -N symtabAPI/src/core/symtabAPI/src/Elf_X.h symtabAPI.mips64/src/c
  
      bool isValid() { return data; }
  
-diff -r -u -b -N symtabAPI/src/core/symtabAPI/src/Object-elf.C symtabAPI.mips64/src/core/symtabAPI/src/Object-elf.C
---- symtabAPI/src/core/symtabAPI/src/Object-elf.C	2008-04-11 16:46:40.000000000 -0400
-+++ symtabAPI.mips64/src/core/symtabAPI/src/Object-elf.C	2008-12-15 17:26:30.000000000 -0500
+diff -Naurb symtabAPI.orig/src/core/symtabAPI/src/Object-elf.C symtabAPI.mips64-Linux/src/core/symtabAPI/src/Object-elf.C
+--- symtabAPI.orig/src/core/symtabAPI/src/Object-elf.C	2008-04-11 16:46:40.000000000 -0400
++++ symtabAPI.mips64-Linux/src/core/symtabAPI/src/Object-elf.C	2009-01-08 13:10:02.392897000 -0500
 @@ -39,7 +39,7 @@
  
  #include "emitElf.h"
@@ -259,6 +257,15 @@ diff -r -u -b -N symtabAPI/src/core/symtabAPI/src/Object-elf.C symtabAPI.mips64/
  #include "emitElf-64.h"
  #endif
  
+@@ -539,7 +539,7 @@
+ 	    Elf_X_Rela rela = reldata.get_rela();
+ 	    const char *strs = strdata.get_string();
+ 
+-	    if (sym.isValid() && (rel.isValid() || rela.isValid()) && strs) {
++	    if (sym.isValid() && (rel.isValid() || rela.isValid()) && strs && rel_entry_size_) {
+     		/* Iterate over the entries. */
+ 	    	for( u_int i = 0; i < (rel_size_/rel_entry_size_); ++i ) {
+ 		        long offset;
 @@ -563,7 +563,9 @@
      	    		// We should never reach this case.
  	    	    	return false;
@@ -279,4 +286,3 @@ diff -r -u -b -N symtabAPI/src/core/symtabAPI/src/Object-elf.C symtabAPI.mips64/
     else if (elfHdr.e_ident()[EI_CLASS] == 2) {
        emitElf64 *em = new emitElf64(elfHdr, isStripped, flag, err_func_);
        em->checkIfStripped(obj ,functions, variables, mods, notypes, relocation_table_, fbt_); 
-Files symtabAPI/src/core/symtabAPI/tests/dynNM and symtabAPI.mips64/src/core/symtabAPI/tests/dynNM differ
