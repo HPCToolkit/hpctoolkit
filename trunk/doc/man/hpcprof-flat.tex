@@ -125,14 +125,14 @@ Select different output formats and optionally specify the output filename \Arg{
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Configuration File}
 
-A \Prog{hpcprof-flat} configuration file is an XML document of type \texttt{HPCVIEW}.
+A \Prog{hpcprof-flat} configuration file is an XML document of type \texttt{HPCPROF}.
 The following briefly describes its syntax.
 
 \begin{itemize}
 
 \item Begin document type.
   \begin{itemize}
-  \verb+<HPCVIEW>+
+  \verb+<HPCPROF>+
   \end{itemize}
 
 \item (Optional) Use \Arg{my-title} to name the Experiment database.
@@ -204,7 +204,7 @@ The two metric types are
 
 There is one important difference in how each type is handled.  HPCRUN files are correlated to source code using the object code addresses annotations of STRUCTURE files; thus, they require valid STRUCTURE information.  In contrast, PROFILE files are correlated by source line level information.
 
-  \item \textbf{Derived or COMPUTE metrics.} Derived metrics are specified by a \texttt{COMPUTE} element containing a MathML equation in terms of metrics defined earlier in the HPCVIEW document.  \Prog{hpcprof-flat} supports the following operands
+  \item \textbf{Derived or COMPUTE metrics.} Derived metrics are specified by a \texttt{COMPUTE} element containing a MathML equation in terms of metrics defined earlier in the HPCPROF document.  \Prog{hpcprof-flat} supports the following operands
   \begin{itemize}
     \item \textbf{constants}: \verb+<cn>2</cn>+
     \item \textbf{variables}: \verb+<ci>m1</ci>+ (used to refer to other metrics)
@@ -242,7 +242,7 @@ and the following MathML operators (used within \verb+<apply>+):
 
 \item End document type.
   \begin{itemize}
-  \verb+</HPCVIEW>+
+  \verb+</HPCPROF>+
   \end{itemize}
 
 \end{itemize}

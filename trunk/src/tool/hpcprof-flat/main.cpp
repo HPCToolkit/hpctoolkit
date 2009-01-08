@@ -191,22 +191,22 @@ buildConfFile(const string& hpcHome, const string& confFile)
   if (hpcloc[hpcloc.length()-1] != '/') {
     hpcloc += "/";
   }
-  std::ofstream tmp(tmpFile.c_str(), std::ios_base::out);
+  std::ofstream os(tmpFile.c_str(), std::ios_base::out);
 
-  if (tmp.fail()) {
+  if (os.fail()) {
     DIAG_Throw("Unable to write temporary file: " << tmpFile);
   }
   
   // the number of lines added below must equal NUM_PREFIX_LINES
-  tmp << "<?xml version=\"1.0\"?>" << std::endl 
-      << "<!DOCTYPE HPCVIEW SYSTEM \"" << hpcloc // has trailing '/'
-      << "share/hpctoolkit/dtd/HPCView.dtd\">" << std::endl;
+  os << "<?xml version=\"1.0\"?>" << std::endl 
+     << "<!DOCTYPE HPCPROF SYSTEM \"" << hpcloc // has trailing '/'
+     << "share/hpctoolkit/dtd/hpcprof-config.dtd\">" << std::endl;
 
   //std::cout << "TMP DTD file: '" << tmpFile << "'" << std::std::endl;
   //std::cout << "  " << hpcloc << std::endl;
 
-  appendContents(tmp, confFile.c_str());
-  tmp.close();
+  appendContents(os, confFile.c_str());
+  os.close();
   return tmpFile; 
 }
 
