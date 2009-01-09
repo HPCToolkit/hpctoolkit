@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "mips-unwind-interval.h"
+
 #include "csprof-malloc.h"
-#include "x86-unwind-interval.h"
 #include "pmsg.h"
 #include "atomic-ops.h"
 
@@ -172,8 +173,7 @@ ra_status_string(ra_loc l)
 {
   switch(l) {
    STR(RA_SP_RELATIVE);
-   STR(RA_STD_FRAME);
-   STR(RA_BP_FRAME);
+   STR(RA_BP_RELATIVE);
    STR(RA_REGISTER);
    STR(POISON);
   default:

@@ -10,7 +10,18 @@
 
 #include <include/general.h>
 
+#include "general.h"
+#include "mem.h"
+#include "pmsg.h"
+#include "monitor.h"
+
 #include "unwind.h"
+#include "splay.h"
+#include "splay-interval.h"
+#include "stack_troll.h"
+
+#include "mips-unwind-interval.h"
+
 
 // FIXME: Abuse the isa library by cherry-picking this special header.
 // One possibility is to simply use the ISA lib -- doesn't xed
@@ -19,7 +30,7 @@
 
 //*************************** Forward Declarations **************************
 
-#define DBG 0
+#define MYDBG 0
 
 static inline greg_t
 ucontext_getreg(ucontext_t* context, int reg)
@@ -28,28 +39,30 @@ ucontext_getreg(ucontext_t* context, int reg)
 
 static inline void*
 ucontext_pc(ucontext_t* context)
-{ return context->uc_mcontext.pc; }
+{ return (void*)context->uc_mcontext.pc; }
 
 
 static inline void*
-ucontext_ra(ucontext_t* context, int reg)
-{ return (void*)ucontext_getreg(context, MIPS_RA); }
+ucontext_ra(ucontext_t* context)
+{ return (void*)ucontext_getreg(context, REG_RA); }
 
 
 static inline void**
-ucontext_sp(ucontext_t* context, int reg)
-{ return (void*)ucontext_getreg(context, MIPS_SP); }
+ucontext_sp(ucontext_t* context)
+{ return (void**)ucontext_getreg(context, REG_SP); }
 
 
 static inline void**
-ucontext_fp(ucontext_t* context, int reg)
-{ return (void*)ucontext_getreg(context, MIPS_FP); }
+ucontext_bp(ucontext_t* context)
+{ return (void**)ucontext_getreg(context, REG_FP); }
+
 
 static inline void*
 getRAFromSP(void** sp, int offset)
 { return (*(sp + offset)); }
 
-static inline void*
+
+static inline void**
 getSPFromSP(void** sp, int offset)
 { return (sp + offset); }
 
@@ -78,19 +91,19 @@ unw_init_cursor(void* context, unw_cursor_t* cursor)
 {
   ucontext_t* ctxt = (ucontext_t*)context;
 
-  cursor->pc = context_pc(ctxt);
-  cursor->ra = context_ra(ctxt);
-  cursor->sp = context_sp(ctxt);
-  cursor->fp = context_fp(ctxt);
+  cursor->pc = ucontext_pc(ctxt);
+  cursor->ra = ucontext_ra(ctxt);
+  cursor->sp = ucontext_sp(ctxt);
+  cursor->bp = ucontext_bp(ctxt);
 
   cursor->intvl = csprof_addr_to_interval(cursor->pc);
 
   // FIXME: if SP is register-relative... obtain
-  // FIXME: if FP is active, 
+  // FIXME: if BP is active, 
 
   TMSG(UNW_INIT,"frame pc = %p, frame sp = %p, frame ra = %p", 
        cursor->pc, cursor->sp, cursor->ra);
-  if (DBG) { dump_ui(cursor->intvl, 1); }
+  if (MYDBG) { dump_ui((unwind_interval*)cursor->intvl, 1); }
   TMSG(UNW_INIT,"returned interval = %p", cursor->intvl);
 }
 
@@ -102,31 +115,32 @@ unw_step(unw_cursor_t *cursor)
   void*  pc = cursor->pc;
   void** ra = cursor->ra;
   void** sp = cursor->sp;
-  void** fp = cursor->fp;
+  void** bp = cursor->bp;
+  unwind_interval* intvl = (unwind_interval*)cursor->intvl;
 
   // next frame
   void*  next_pc = 0;
   void** next_sp = 0;
-  void** next_fp = 0;
+  void** next_bp = 0;
 
   //-----------------------------------------------------------
   // check for outermost frame
   //-----------------------------------------------------------
   if (monitor_in_start_func_wide(pc)) {
-    TMSG(UNWIND,"monitor in start func wide, pc=%p", pc);
+    TMSG(UNW,"monitor in start func wide, pc=%p", pc);
     return 0;
   }
   
   //-----------------------------------------------------------
   // compute the return address for the caller's frame
   //-----------------------------------------------------------
-  if (cursor->intvl->ra_status == RA_REGISTER) {
+  if (intvl->ra_status == RA_REGISTER) {
     next_pc = cursor->ra;
   }
-  else if (cursor->intvl->ra_status == RA_SP_RELATIVE) {
+  else if (intvl->ra_status == RA_SP_RELATIVE) {
     next_pc = getRAFromSP(cursor->sp, intvl->sp_ra_pos);
   }
-  else if (cursor->intvl->ra_status == RA_FP_RELATIVE) {
+  else if (intvl->ra_status == RA_BP_RELATIVE) {
     assert(0); // FIXME
   }
 
@@ -139,9 +153,9 @@ unw_step(unw_cursor_t *cursor)
   // on the stack
 
 
-  TMSG(UNWIND,"candidate next_pc = %p, candidate next_sp = %p", next_pc, next_sp);
+  TMSG(UNW,"candidate next_pc = %p, candidate next_sp = %p", next_pc, next_sp);
   if ( !(next_sp > sp) ) {
-    TMSG(UNWIND,"next sp = %p < current sp = %p", next_sp, sp);
+    TMSG(UNW,"next sp = %p < current sp = %p", next_sp, sp);
     return 0;
   }
 
@@ -154,9 +168,9 @@ unw_step(unw_cursor_t *cursor)
   // the pc is invalid if no unwind information is  available
   //-----------------------------------------------------------
   if (!cursor->intvl) {
-    TMSG(UNWIND,"next_pc = %p has no valid interval, continuing to look ...", next_pc);
-    if (next_sp >= monitor_stack_bottom()) {
-      TMSG(UNWIND,"next sp (%p) >= monitor_stack_bottom (%p)", next_sp, monitor_stack_bottom());
+    TMSG(UNW,"next_pc = %p has no valid interval, continuing to look ...", next_pc);
+    if ((void*)next_sp >= monitor_stack_bottom()) {
+      TMSG(UNW,"next sp (%p) >= monitor_stack_bottom (%p)", next_sp, monitor_stack_bottom());
       return 0;
     }
 
@@ -166,13 +180,15 @@ unw_step(unw_cursor_t *cursor)
     //
     // NOTE: this should only happen in the top frame on the stack.
     //-------------------------------------------------------------------
-    next_pc = PC_FROM_FRAME_FP(*next_fp);
-    TMSG(UNWIND,"skipping up one frame f candidate fp = %p ==> next pc = %p", next_fp, next_pc);
+#if 0
+    next_pc = PC_FROM_FRAME_BP(*next_bp);
+    TMSG(UNW,"skipping up one frame f candidate bp = %p ==> next pc = %p", next_bp, next_pc);
     cursor->intvl = csprof_addr_to_interval(next_pc);
+#endif
   }
 
   if (!cursor->intvl) {
-    TMSG(UNWIND,"candidate next_pc = %p did not have an interval",next_pc);
+    TMSG(UNW,"candidate next_pc = %p did not have an interval",next_pc);
     return 0;
   }
 
@@ -180,7 +196,7 @@ unw_step(unw_cursor_t *cursor)
   cursor->sp = next_sp;
   cursor->ra = NULL; // always NULL after unw_step() completes
 
-  TMSG(UNWIND,"step goes forward w pc = %p, fp = %p",next_pc,next_fp);
+  TMSG(UNW,"step goes forward w pc = %p, bp = %p",next_pc,next_bp);
   return 1;
 }
 

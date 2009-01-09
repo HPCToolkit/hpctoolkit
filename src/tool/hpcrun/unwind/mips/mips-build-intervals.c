@@ -16,7 +16,10 @@
 #include <lib/isa/instructionSets/mips.h>
 
 #include "pmsg.h"
-#include "intervals.h"
+
+#include "splay-interval.h"
+
+#include "mips-unwind-interval.h"
 
 //*************************** Forward Declarations **************************
 
@@ -220,17 +223,18 @@ mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
   }
 #endif
 
-  ui->endaddr = INSN(end_insn);
+  ui->common.end = INSN(end_insn);
 
   interval_status stat;
 
   stat.first_undecoded_ins = NULL;
   stat.errcode = 0;
-  stat.first = beg_ui;
+  stat.first = (splay_interval_t*)beg_ui;
 
 
   if (verbose) {
-    for (unwind_interval* x = stat.first; x; x = x->next) {
+    for (unwind_interval* x = (unwind_interval*)stat.first; 
+	 x; x = (unwind_interval*)x->common.next) {
       dump_ui(x, 0);
     }
   }
