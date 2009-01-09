@@ -7,7 +7,7 @@
  * type declarations 
  ************************************************************************************/
 typedef enum {
-  RA_SP_RELATIVE, RA_STD_FRAME, RA_BP_FRAME, RA_REGISTER, POISON
+  RA_SP_RELATIVE, RA_BP_RELATIVE, RA_REGISTER, POISON
 } ra_loc;
 
 typedef enum {
@@ -21,6 +21,7 @@ struct unwind_interval_t {
 
   int sp_ra_pos; /* return address offset from sp */
   int sp_bp_pos; /* BP offset from sp */
+  int sp_sp_pos; // FIXME
 
   bp_loc bp_status; /* how to find the bp register */
 

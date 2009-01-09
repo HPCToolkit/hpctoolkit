@@ -103,8 +103,9 @@ MY_LINUX_DYNAMIC_FILES = 		\
 
 
 MY_MIPS_FILES = \
-	unwind/mips64/mips64-build-intervals.c	\
-	unwind/mips64/mips64-unwind-support.c
+	unwind/mips/mips-unwind.c \
+	unwind/mips/mips-build-intervals.c \
+	unwind/mips/mips-unwind-interval.c
 
 MY_PPC_FILES = \
 	unwind/ppc64/ppc64-build-intervals.c	\
@@ -151,9 +152,9 @@ MY_INCLUDE_DIRS =			\
 	-I$(SYMTABAPI_INC)
 
 
-MY_MIPS_INCLUDE_DIRS =		        \
-	-I$(srcdir)/processor/mips64	\
-	-I$(srcdir)/unwind/mips64
+MY_MIPS_INCLUDE_DIRS = \
+	-I$(srcdir)/processor/mips \
+	-I$(srcdir)/unwind/mips
 
 MY_PPC_INCLUDE_DIRS = 		\
 	-I$(srcdir)/unwind/ppc64
