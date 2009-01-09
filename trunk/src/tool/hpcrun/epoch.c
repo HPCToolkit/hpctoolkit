@@ -100,6 +100,7 @@ csprof_epoch_add_module(const char *module_name,
 csprof_epoch_t *
 csprof_epoch_new()
 {
+  TMSG(EPOCH,"new epoch created");
   TMSG(MALLOC," epoch-new");
   csprof_epoch_t *e = csprof_malloc2(sizeof(csprof_epoch_t));
 

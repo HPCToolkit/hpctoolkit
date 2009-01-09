@@ -20,6 +20,7 @@
  E(DBG),
  E(THREAD),
  E(PROCESS),
+ E(EPOCH),
  E(HANDLING_SAMPLE),
  E(MEM),
  E(MEM2),
