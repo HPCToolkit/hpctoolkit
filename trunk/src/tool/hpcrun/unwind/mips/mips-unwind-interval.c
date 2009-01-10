@@ -57,7 +57,7 @@ unw_interval_t* new_ui(char* start_addr, framety_t ty, frameflg_t flgs,
 
 
 void 
-dump_ui(unw_interval_t* u, int dump_to_stdout)
+ui_dump(unw_interval_t* u, int dump_to_stdout)
 {
   char buf[256];
   
@@ -99,7 +99,7 @@ suspicious_interval(void *pc)
 
 
 void 
-link_ui(unw_interval_t* current, unw_interval_t* next)
+ui_link(unw_interval_t* current, unw_interval_t* next)
 {
   current->common.end = next->common.start;
   current->common.next= (splay_interval_t *)next;
