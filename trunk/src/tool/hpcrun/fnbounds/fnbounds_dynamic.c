@@ -234,7 +234,7 @@ fnbounds_unmap_closed_dsos()
   dso_info_t *dso_info, *next;
   for (dso_info = dso_open_list; dso_info; dso_info = next) {
     next = dso_info->next;
-    if (!dylib_addr_is_mapped((unsigned long long) dso_info->start_addr)) {
+    if (!dylib_addr_is_mapped(dso_info->start_addr)) {
       
       // remove from open list of DSOs
       dso_list_remove(&dso_open_list, dso_info);
@@ -440,8 +440,9 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
     }
   } else {
     char executable_name[PATH_MAX];
-    unsigned long long mstart, mend;
-    if (dylib_find_module_containing_addr((unsigned long long) nm_table[0],
+    void *mstart; 
+    void *mend;
+    if (dylib_find_module_containing_addr(nm_table[0],
 					  executable_name, &mstart, &mend)) {
       start = (void *) mstart;
       end = (void *) mend;
@@ -556,10 +557,10 @@ fnbounds_dso_info_get(void *pc)
       //---------------------------------------------------------------
 
       char module_name[PATH_MAX];
-      unsigned long long addr, mstart, mend;
-      addr = (unsigned long long) pc;
+      void *mstart; 
+      void *mend;
       
-      if (dylib_find_module_containing_addr(addr, module_name, &mstart, &mend)) {
+      if (dylib_find_module_containing_addr(pc, module_name, &mstart, &mend)) {
 	dso_open = fnbounds_dso_handle_open(module_name, (void *) mstart, 
 					    (void *) mend);
       }
