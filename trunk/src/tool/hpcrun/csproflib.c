@@ -66,6 +66,8 @@
 
 /* user include files */
 
+#include <include/general.h>
+
 #include "sample_sources_all.h"
 #include "atomic.h"
 #include "files.h"
@@ -453,8 +455,8 @@ int csprof_write_profile_data(csprof_state_t *state)
   /* write profile states out to disk */
   {
     csprof_state_t *runner = state;
-    unsigned int num_ccts = 0;
-    unsigned long num_tramp_samps = 0;
+    uint32_t num_ccts = 0;
+    uint64_t num_tramp_samps = 0;
 
     /* count states */
     while(runner != NULL) {
