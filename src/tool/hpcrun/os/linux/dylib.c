@@ -12,36 +12,35 @@
 
 
 
-//***********************************************************************************
+//*****************************************************************************
 // local includes
-//***********************************************************************************
+//*****************************************************************************
 
 #include "fnbounds_interface.h"
 #include "pmsg.h"
 
 
 
-//***********************************************************************************
+//*****************************************************************************
 // type declarations
-//***********************************************************************************
+//*****************************************************************************
 
-// tallent: FIXME(double check): why not use a void* or uintptr_t instead of a 'long long'?  The latter tends to only bring trouble during ports.
 struct dylib_seg_bounds_s {
-  unsigned long long start;
-  unsigned long long end;
+  void *start;
+  void *end;
 };
 
 struct dylib_fmca_s {
-  unsigned long long addr;
+  void *addr;
   const char *module_name;
   struct dylib_seg_bounds_s bounds;
 };
 
 
 
-//***********************************************************************************
+//*****************************************************************************
 // macro declarations
-//***********************************************************************************
+//*****************************************************************************
 
 #define SEG_START_ADDR(info, seg) \
     ((char *) (info)->dlpi_addr + (info)->dlpi_phdr[seg].p_vaddr)
@@ -55,21 +54,21 @@ struct dylib_fmca_s {
 
 
 
-//***********************************************************************************
+//*****************************************************************************
 // forward declarations
-//***********************************************************************************
+//*****************************************************************************
 
-static int dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size, void *);
+static int dylib_map_open_dsos_callback
+(struct dl_phdr_info *info, size_t size, void *);
 
-static int dylib_find_module_containing_addr_callback(struct dl_phdr_info *info, 
-						      size_t size, 
-                                                      void *fargs_v);
+static int dylib_find_module_containing_addr_callback
+(struct dl_phdr_info *info, size_t size, void *fargs_v);
 
 
 
-//***********************************************************************************
+//*****************************************************************************
 // interface operations
-//***********************************************************************************
+//*****************************************************************************
 
 //------------------------------------------------------------------
 // ensure bounds information computed for all open shared libraries
@@ -93,7 +92,7 @@ dylib_map_executable()
 
 
 int 
-dylib_addr_is_mapped(unsigned long long addr) 
+dylib_addr_is_mapped(void *addr) 
 {
   struct dylib_fmca_s arg;
 
@@ -104,10 +103,10 @@ dylib_addr_is_mapped(unsigned long long addr)
 
 
 int 
-dylib_find_module_containing_addr(unsigned long long addr, 
+dylib_find_module_containing_addr(void *addr, 
 				  char *module_name,
-				  unsigned long long *start, 
-				  unsigned long long *end)
+				  void **start, 
+				  void **end)
 {
   int retval = 0; // not found
   struct dylib_fmca_s arg;
@@ -131,9 +130,9 @@ dylib_find_module_containing_addr(unsigned long long addr,
 
 
 
-//***********************************************************************************
+//*****************************************************************************
 // private operations
-//***********************************************************************************
+//*****************************************************************************
 
 void 
 dylib_get_segment_bounds(struct dl_phdr_info *info, 
@@ -155,18 +154,19 @@ dylib_get_segment_bounds(struct dl_phdr_info *info,
     }
   }
 
-  bounds->start = (unsigned long long) start;
-  bounds->end = (unsigned long long) end;
+  bounds->start = start;
+  bounds->end = end;
 }
 
 
 static int
-dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size, void *unused)
+dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size, 
+			     void *unused)
 {
   if (strcmp(info->dlpi_name,"") != 0) {
     struct dylib_seg_bounds_s bounds;
     dylib_get_segment_bounds(info, &bounds);
-    fnbounds_note_module(info->dlpi_name, (void *) bounds.start, (void *) bounds.end);
+    fnbounds_note_module(info->dlpi_name, bounds.start, bounds.end);
   }
 
   return 0;
@@ -183,8 +183,8 @@ dylib_find_module_containing_addr_callback(struct dl_phdr_info *info,
   //------------------------------------------------------------------------
   // if addr is in within the segment bounds
   //------------------------------------------------------------------------
-  if (fargs->addr >= (long long) fargs->bounds.start && 
-      fargs->addr <  (long long) fargs->bounds.end) {
+  if (fargs->addr >= fargs->bounds.start && 
+      fargs->addr < fargs->bounds.end) {
     fargs->module_name = info->dlpi_name;
     return 1;
   }
