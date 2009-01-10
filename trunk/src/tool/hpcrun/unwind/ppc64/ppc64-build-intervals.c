@@ -1,7 +1,7 @@
 #include "assert.h"
 
 #include "pmsg.h"
-#include "intervals.h"
+#include "ppc64-unwind-interval.h"
 #include "fnbounds_interface.h"
 
 /******************************************************************************
@@ -145,7 +145,7 @@ ppc64_build_intervals(char *ins, unsigned int len)
     cur_ins++;
   }
 
-  ui->endaddr = end_ins;
+  ui->common.end = end_ins;
 
   stat.first_undecoded_ins = NULL;
   stat.errcode = 0;
@@ -184,7 +184,7 @@ build_intervals(char *ins, unsigned int len)
 
    stat = ppc64_build_intervals(ins, len);
 
-  for(u = stat.first; u; u = u->next) {
+  for(u = stat.first; u; u = u->common.next) {
     dump_ui(u, 0);
   }
 
@@ -194,7 +194,7 @@ build_intervals(char *ins, unsigned int len)
    ppc64_dump_intervals(ins);
 
    unwind_interval *ui = new_ui(ins, RA_BP_FRAME, 0, 16, BP_SAVED, 0, 0, NULL);
-   ui->endaddr = ins + len;
+   ui->common.end = ins + len;
 
    stat.first_undecoded_ins = NULL;
    stat.errcode = 0;
