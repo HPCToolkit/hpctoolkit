@@ -4,7 +4,6 @@
 #include "backtrace.h"
 #include "general.h"
 #include "list.h"
-#include "libc.h"
 #include "csprof_csdata.h"
 #include "pmsg.h"
 
