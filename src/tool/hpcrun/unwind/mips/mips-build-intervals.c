@@ -24,7 +24,7 @@
 //*************************** Forward Declarations **************************
 
 static interval_status 
-mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose);
+mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose);
 
 
 //***************************************************************************
@@ -38,7 +38,7 @@ build_intervals(char* insn_beg, unsigned int len)
   uint32_t* my_insn_beg = (uint32_t*)(insn_beg);
   uint32_t* my_insn_end = (uint32_t*)(insn_beg + len);
 
-  interval_status x = mips64_build_intervals(my_insn_beg, my_insn_end, 0);
+  interval_status x = mips_build_intervals(my_insn_beg, my_insn_end, 0);
   return x;
 }
 
@@ -112,6 +112,19 @@ isJumpToReg(uint32_t insn, int reg_to)
 
 //***************************************************************************
 
+static inline void 
+checkSPPos(int* pos, int alt_pos)
+{
+  // SP-relative position: must be positive
+  if (*pos < 0) {
+    EMSG("INTERVALS: SP-relative pos'n not positive (%d)", *pos);
+    *pos = alt_pos;
+  }
+}
+
+
+//***************************************************************************
+
 // MIPS is very regular. 
 // - Calls (JAL/JALR/B*AL) store the return address in REG_RA.  (JALR
 //   may be used to store the return address in a different register.)
@@ -121,7 +134,7 @@ isJumpToReg(uint32_t insn, int reg_to)
 //   and before a return is reloaded.
 
 static interval_status 
-mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
+mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 {
   unw_interval_t* beg_ui = new_ui(INSN(beg_insn), FrmTy_SP, FrmFlg_RAReg,
 				  0, 0, REG_RA, NULL);
@@ -140,15 +153,17 @@ mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
       int amnt = getAdjustSPByConstAmnt(*cur_insn);
       
       int sp_pos = ui->sp_pos + amnt;
+      checkSPPos(&sp_pos, ui->sp_pos);
       
       int ra_arg = ui->ra_arg;
       if (!frameflg_isset(ui->flgs, FrmFlg_RAReg)) {
 	ra_arg += amnt;
+	checkSPPos(&ra_arg, ui->ra_arg);
       }
 
       nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, ui->flgs, 
 		      sp_pos, ui->bp_pos, ra_arg, ui);
-      link_ui(ui, nxt_ui); ui = nxt_ui;
+      ui_link(ui, nxt_ui); ui = nxt_ui;
     }
     //--------------------------------------------------
     // store return address into SP frame
@@ -157,7 +172,7 @@ mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
       int ra_pos = getStoreRegInFrameOffset(*cur_insn);
       nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, FrmFlg_NULL,
 		      ui->sp_pos, ui->bp_pos, ra_pos, ui);
-      link_ui(ui, nxt_ui); ui = nxt_ui;
+      ui_link(ui, nxt_ui); ui = nxt_ui;
 
       if (canon_ui == beg_ui) {
 	canon_ui = nxt_ui;
@@ -169,7 +184,7 @@ mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
     else if (isLoadRegFromFrame(*cur_insn, REG_SP, REG_RA)) {
       nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, FrmFlg_RAReg,
 		      ui->sp_pos, ui->bp_pos, REG_RA, ui);
-      link_ui(ui, nxt_ui); ui = nxt_ui;
+      ui_link(ui, nxt_ui); ui = nxt_ui;
     }
     //--------------------------------------------------
     // interior epilogues/returns
@@ -181,7 +196,8 @@ mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 	nxt_ui = new_ui(nextInsn(cur_insn + 1/*delay slot*/), 
 			canon_ui->ty, canon_ui->flgs, canon_ui->sp_pos, 
 			canon_ui->bp_pos, canon_ui->ra_arg, ui);
-	link_ui(ui, nxt_ui); ui = nxt_ui;
+	ui_link(ui, nxt_ui); ui = nxt_ui;
+	cur_insn++; // skip delay slot to align new interval
       }
     }
     //--------------------------------------------------
@@ -221,7 +237,7 @@ mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
   if (verbose) {
     for (unw_interval_t* x = (unw_interval_t*)stat.first; 
 	 x; x = (unw_interval_t*)x->common.next) {
-      dump_ui(x, 0);
+      ui_dump(x, 0);
     }
   }
 

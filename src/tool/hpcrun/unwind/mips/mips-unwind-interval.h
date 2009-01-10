@@ -94,12 +94,12 @@ ui_cmp(unw_interval_t* x, unw_interval_t* y)
 	  (x->ra_arg == y->ra_arg));
 }
 
-void dump_ui(unw_interval_t* u, int dump_to_stdout);
+void ui_dump(unw_interval_t* u, int dump_to_stdout);
 
 long ui_count();                    // FIXME:interface
 long suspicious_count();            // FIXME:interface
 void suspicious_interval(void *pc); // FIXME:interface
-void link_ui(unw_interval_t* current, unw_interval_t* next); // FIXME: INTERFACE
+void ui_link(unw_interval_t* current, unw_interval_t* next); // FIXME: INTERFACE
 
 #ifdef __cplusplus
 };

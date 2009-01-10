@@ -151,10 +151,16 @@ unw_step(unw_cursor_t* cursor)
   unw_interval_t* nxt_intvl = NULL;
   
   //-----------------------------------------------------------
-  // check for outermost frame
+  // check for outermost frame (return STEP_STOP only after outermost
+  // frame has been identified as valid)
   //-----------------------------------------------------------
   if (monitor_in_start_func_wide(pc)) {
     TMSG(UNW, "stop: monitor_in_start_func_wide, pc=%p", pc);
+    return STEP_STOP;
+  }
+
+  if ( (void*)sp >= monitor_stack_bottom() ) {
+    TMSG(UNW,"stop: sp (%p) >= monitor_stack_bottom", sp);
     return STEP_STOP;
   }
   
@@ -200,17 +206,14 @@ unw_step(unw_cursor_t* cursor)
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
+
   if (!nxt_pc) {
     // Allegedly, MIPS API promises NULL RA for outermost frame
+    // NOTE: we are already past the last valid PC
     TMSG(UNW,"stop: pc=%p", nxt_pc);
     return STEP_STOP;
   }
   
-  if ( (void*)nxt_sp >= monitor_stack_bottom() ) {
-    TMSG(UNW,"stop: sp (%p) >= monitor_stack_bottom", nxt_sp);
-    return STEP_STOP;
-  }
-
   bool didTroll = false;
   nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
 
