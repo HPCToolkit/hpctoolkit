@@ -6,6 +6,8 @@ CC     := gcc -std=c99
 CXX    := g++
 MPICC  := mpicc
 
+LINK.cc := $(LINKPRE) $(CC)
+
 CFLAGS := -g -I..
 
 tmpi: tmpi.c
@@ -15,7 +17,7 @@ mpi: mpi.c
 	$(MPICC) -o $@ -g -O $<
 
 t1: t1.o
-	$(CC) -g $< -lm -o $@
+	$(LINK.cc) -g $< -lm -o $@
 
 fib: fib.o
 	$(CC) -g $< -o $@

@@ -6,6 +6,7 @@
 #include "splay.h"
 #include "unwind.h"
 #include "unwind_cursor.h"
+#include "ppc64-unwind-interval.h"
 
 
 #define RA_OFFSET_FROM_BP 1
@@ -33,9 +34,9 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
 
   ucontext_t *ctx = (ucontext_t *) context;
 
-  if (cursor->intvl->ra_status == RA_REGISTER) { 
-      if (cursor->intvl->bp_ra_pos != REGISTER_R0) ra = ctx->uc_mcontext.regs->gpr[0];
-      else if (cursor->intvl->bp_ra_pos != REGISTER_LR) ra = ctx->uc_mcontext.regs->link;
+  if (((unwind_interval *)cursor->intvl)->ra_status == RA_REGISTER) { 
+      if (((unwind_interval *)cursor->intvl)->bp_ra_pos != REGISTER_R0) ra = ctx->uc_mcontext.regs->gpr[0];
+      else if (((unwind_interval *)cursor->intvl)->bp_ra_pos != REGISTER_LR) ra = ctx->uc_mcontext.regs->link;
       else assert(0);
   }
 
@@ -45,8 +46,8 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
        cursor->pc, cursor->bp, cursor->ra);
 
   if (debug_unw) {
-    TMSG(UNWIND,"dumping the found interval");
-    dump_ui(cursor->intvl,1); // debug for now
+    TMSG(UNW,"dumping the found interval");
+    dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
   }
 
   TMSG(UNW_INIT,"returned interval = %p",cursor->intvl);
@@ -69,14 +70,14 @@ unw_step(unw_cursor_t *cursor)
   // if we fail this check, we are done with the unwind.
   //-----------------------------------------------------------
   if (monitor_in_start_func_wide(pc)) {
-    TMSG(UNWIND,"monitor in start func wide, pc=%p",pc);
+    TMSG(UNW,"monitor in start func wide, pc=%p",pc);
     return 0;
   }
   
   //-----------------------------------------------------------
   // compute the return address for the caller's frame
   //-----------------------------------------------------------
-  if (cursor->intvl->ra_status == RA_REGISTER) {
+  if (((unwind_interval *)cursor->intvl)->ra_status == RA_REGISTER) {
     //-----------------------------------------------------------
     // return address is in a register, either lr or r0. this can 
     // only be the case for the top frame. it and has been copied 
@@ -89,7 +90,7 @@ unw_step(unw_cursor_t *cursor)
     // return address is saved in my caller's stack frame.
     // pick up the return address from my caller's frame. 
     //-----------------------------------------------------------
-    if (cursor->intvl->bp_status != BP_SAVED) {
+    if (((unwind_interval *)cursor->intvl)->bp_status != BP_SAVED) {
       //-----------------------------------------------------------
       // bp points to my caller's stack frame. pick up the 
       // return address from the current frame.
@@ -108,7 +109,7 @@ unw_step(unw_cursor_t *cursor)
   //-----------------------------------------------------------
   // compute the base pointer for the caller's frame.
   //-----------------------------------------------------------
-  if (cursor->intvl->bp_status != BP_SAVED) {
+  if (((unwind_interval *)cursor->intvl)->bp_status != BP_SAVED) {
     //-----------------------------------------------------------
     // bp already points to my caller's stack frame. leave it 
     // where it is.
@@ -122,9 +123,9 @@ unw_step(unw_cursor_t *cursor)
     next_bp = *bp;
   }
 
-  TMSG(UNWIND,"candidate next_pc = %p, candidate next_bp = %p", next_pc, next_bp);
+  TMSG(UNW,"candidate next_pc = %p, candidate next_bp = %p", next_pc, next_bp);
   if ((unsigned long) next_bp < (unsigned long) bp){
-    TMSG(UNWIND,"next bp = %p < current bp = %p", next_bp, bp);
+    TMSG(UNW,"next bp = %p < current bp = %p", next_bp, bp);
     return 0;
   }
 
@@ -137,9 +138,9 @@ unw_step(unw_cursor_t *cursor)
   // the pc is invalid if no unwind information is  available
   //-----------------------------------------------------------
   if (!cursor->intvl) {
-    TMSG(UNWIND,"next_pc = %p has no valid interval, continuing to look ...", next_pc);
+    TMSG(UNW,"next_pc = %p has no valid interval, continuing to look ...", next_pc);
     if (((void *)next_bp) >= monitor_stack_bottom()){
-      TMSG(UNWIND,"next bp (%p) >= monitor_stack_bottom (%p)",next_bp,monitor_stack_bottom());
+      TMSG(UNW,"next bp (%p) >= monitor_stack_bottom (%p)",next_bp,monitor_stack_bottom());
       return 0;
     }
 
@@ -150,12 +151,12 @@ unw_step(unw_cursor_t *cursor)
     // NOTE: this should only happen in the top frame on the stack.
     //-------------------------------------------------------------------
     next_pc = PC_FROM_FRAME_BP(*next_bp);
-    TMSG(UNWIND,"skipping up one frame f candidate bp = %p ==> next pc = %p", next_bp, next_pc);
+    TMSG(UNW,"skipping up one frame f candidate bp = %p ==> next pc = %p", next_bp, next_pc);
     cursor->intvl = csprof_addr_to_interval(next_pc);
   }
 
   if (!cursor->intvl){
-    TMSG(UNWIND,"candidate next_pc = %p did not have an interval",next_pc);
+    TMSG(UNW,"candidate next_pc = %p did not have an interval",next_pc);
     return 0;
   }
 
@@ -170,6 +171,6 @@ unw_step(unw_cursor_t *cursor)
   //-------------------------------------------------------------------
   cursor->ra = 0; 
 
-  TMSG(UNWIND,"step goes forward w pc = %p, bp = %p",next_pc,next_bp);
+  TMSG(UNW,"step goes forward w pc = %p, bp = %p",next_pc,next_bp);
   return 1;
 }
