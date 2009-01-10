@@ -24,9 +24,11 @@ ext_libs_dir='@hpc_ext_libs_dir@'
 hpcfnbounds_dir='libexec/hpctoolkit'
 libcsprof_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
+xed2_dir='@XED2_RUN_DIR@'
+
+# Absolute path or empty.
 papi_dir='@OPT_PAPI_LIBPATH@'
 papi_extra_libs='@papi_extra_libs@'
-xed2_dir='@XED2_RUN_DIR@'
 
 # FIXME: The wrap list should come from monitor.
 wrap1="main exit _exit dlopen dlclose fork vfork system"
@@ -94,10 +96,6 @@ esac
 case "$libmonitor_dir" in
     /* ) ;;
     * )  libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
-esac
-case "$papi_dir" in
-    /* ) ;;
-    * )  papi_dir="${HPCTOOLKIT}/${papi_dir}" ;;
 esac
 case "$xed2_dir" in
     /* ) ;;
