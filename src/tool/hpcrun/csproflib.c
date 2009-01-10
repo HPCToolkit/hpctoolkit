@@ -69,7 +69,6 @@
 #include "sample_sources_all.h"
 #include "atomic.h"
 #include "files.h"
-#include "libc.h"
 #include "csproflib.h"
 #include "csproflib_private.h"
 #include "csprof_monitor_callbacks.h"

@@ -6,14 +6,6 @@
 
 extern void *__libc_start_main;
 
-void *
-csprof_get_pc(void *context)
-{
-    mcontext_t *ctx = (mcontext_t *)context;
-
-    return (void *)ctx->gregs[REG_RIP];
-}
-
 #ifdef CSPROF_TRAMPOLINE_BACKEND
 
 int

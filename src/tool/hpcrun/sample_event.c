@@ -6,7 +6,6 @@
 
 #include "atomic-ops.h"
 #include "dump_backtraces.h"
-#include "getregs.h"
 #include "metrics_types.h"
 #include "pmsg.h"
 #include "segv_handler.h"
