@@ -149,7 +149,7 @@ ppc64_build_intervals(char *ins, unsigned int len)
 
   stat.first_undecoded_ins = NULL;
   stat.errcode = 0;
-  stat.first = first;
+  stat.first = (splay_interval_t *) first;
 
   return stat; 
 }
@@ -184,7 +184,8 @@ build_intervals(char *ins, unsigned int len)
 
    stat = ppc64_build_intervals(ins, len);
 
-  for(u = stat.first; u; u = u->common.next) {
+  for(u = (unwind_interval *) stat.first; u; 
+      u = (unwind_interval *) u->common.next) {
     dump_ui(u, 0);
   }
 
