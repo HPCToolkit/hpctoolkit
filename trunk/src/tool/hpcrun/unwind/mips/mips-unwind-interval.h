@@ -1,83 +1,111 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 #ifndef INTERVALS_H
 #define INTERVALS_H
 
+//************************* System Include Files ****************************
+
+#include <stdbool.h>
+
+//*************************** User Include Files ****************************
+
 #include "splay-interval.h"
 
-/*************************************************************************************
- * type declarations 
- ************************************************************************************/
-typedef enum {
-  RA_SP_RELATIVE, RA_BP_RELATIVE, RA_REGISTER, POISON
-} ra_loc;
+//*************************** Forward Declarations **************************
 
-typedef enum {
-  BP_UNCHANGED, BP_SAVED, BP_HOSED
-} bp_loc;
-
-struct unwind_interval_t {
-  struct splay_interval_s common; // common splay tree fields
-
-  ra_loc ra_status; /* how to find the return address */
-
-  int sp_ra_pos; /* return address offset from sp */
-  int sp_bp_pos; /* BP offset from sp */
-  int sp_sp_pos; // FIXME
-
-  bp_loc bp_status; /* how to find the bp register */
-
-  int bp_ra_pos; /* return address offset from bp */
-  int bp_bp_pos; /* (caller's) BP offset from bp */
-
-  struct unwind_interval_t *prev_canonical;
-  int restored_canonical;
-};
-
-#define lstartaddr ((unsigned long) startaddr)
-#define lendaddr ((unsigned long) endaddr)
-
-typedef struct unwind_interval_t unwind_interval;
-
-/*************************************************************************************
- * global variables 
- ************************************************************************************/
-extern const unwind_interval poison_ui;
-
-
-/*************************************************************************************
- * interface operations
- ************************************************************************************/
+//***************************************************************************
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+//***************************************************************************
+// 
+//***************************************************************************
 
-  void set_ui_canonical(unwind_interval *u, unwind_interval *value);
+typedef enum {
+  FrmTy_NULL = 0,
+  FrmTy_SP,   // Parent's SP/BP are SP-based; RA is SP-based (or reg)
+  FrmTy_BP,   // Parent's SP/BP are BP-based; RA is BP-based (or reg)
 
-  void set_ui_restored_canonical(unwind_interval *u, unwind_interval *value);
+} framety_t;
+
+typedef enum {
+  FrmFlg_NULL    = 0x0,
+  FrmFlg_RAReg   = 0x1, // RA is in a register (otherwise, in the frame)
+
+} frameflg_t;
 
 
-  interval_status build_intervals(char  *ins, unsigned int len);
+static inline bool 
+frameflg_isset(int flags, frameflg_t flg)
+{
+  return (flags & flg);
+}
 
-  unwind_interval *
-  new_ui(char *startaddr, 
-	 ra_loc ra_status, unsigned int sp_ra_pos, int bp_ra_pos, 
-	 bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
-	 unwind_interval *prev);
+#if 0
+static inline void 
+frameflg_set(int* flags, flagsflg_t flg)
+{
+  *flags = (*flags | flg);
+}
 
-  unwind_interval *fluke_ui(char *pc,unsigned int sp_ra_pos);
 
-  void link_ui(unwind_interval *current, unwind_interval *next);
-  void dump_ui(unwind_interval *u, int dump_to_stdout);
-  long ui_count();
+static inline void 
+frameflg_unset(int* flags, flagsflg_t flg)
+{
+  *flags = (*flags & ~flg);
+}
+#endif
 
-  long suspicious_count();
-  void suspicious_interval(void *pc);
+//***************************************************************************
+// 
+//***************************************************************************
+
+struct unw_interval_s {
+  struct splay_interval_s common; // common splay tree fields
+
+  framety_t  ty   : 16;
+  frameflg_t flgs : 16;
+
+  int sp_pos; // parent's SP position
+  int bp_pos; // parent's BP position
+  int ra_arg; // RA position or register
+};
+
+typedef struct unw_interval_s unw_interval_t;
+
+
+interval_status build_intervals(char* ins, unsigned int len);
+
+unw_interval_t* new_ui(char* start_addr, 
+		       framety_t ty, frameflg_t flgs, 
+		       int sp_pos, int bp_pos, int ra_arg,
+		       unw_interval_t* prev);
+
+static inline bool 
+ui_cmp(unw_interval_t* x, unw_interval_t* y)
+{
+  return ((x->ty == y->ty) && 
+	  (x->flgs == y->flgs) &&
+	  (x->sp_pos == y->sp_pos) &&
+	  (x->bp_pos == y->bp_pos) &&
+	  (x->ra_arg == y->ra_arg));
+}
+
+void dump_ui(unw_interval_t* u, int dump_to_stdout);
+
+long ui_count();                    // FIXME:interface
+long suspicious_count();            // FIXME:interface
+void suspicious_interval(void *pc); // FIXME:interface
+void link_ui(unw_interval_t* current, unw_interval_t* next); // FIXME: INTERFACE
 
 #ifdef __cplusplus
 };
 #endif
 
 
+//***************************************************************************
 
 #endif // INTERVALS_H

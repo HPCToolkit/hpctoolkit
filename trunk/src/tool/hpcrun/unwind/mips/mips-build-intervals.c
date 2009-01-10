@@ -47,10 +47,11 @@ build_intervals(char* insn_beg, unsigned int len)
 //
 //***************************************************************************
 
-#define INSN(insn) ((char*)insn)
+#define INSN(insn) ((char*)(insn))
 
 static inline char*
-nextInsn(uint32_t* insn) { return INSN(insn + 1); }
+nextInsn(uint32_t* insn) 
+{ return INSN(insn + 1); }
 
 
 static inline bool 
@@ -122,22 +123,11 @@ isJumpToReg(uint32_t insn, int reg_to)
 static interval_status 
 mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 {
-#if 0
-  unwind_interval* beg_ui = new_ui(INSN(beg_insn),
-				   RA_SP_RELATIVE, 0, 0,
-				   BP_HOSED, 0, 0, NULL);
-  unwind_interval* ui = beg_ui;
-  
-#else 
-
-  unwind_interval* beg_ui = new_ui(INSN(beg_insn),
-				   RA_REGISTER, 0, REG_RA/*FIXME:abuse*/,
-				   BP_UNCHANGED, 0, 0, NULL);
-  unwind_interval* ui = beg_ui;
-  unwind_interval* nxt_ui = NULL;
-  unwind_interval* canon_ui = beg_ui;
-
-  int frame_sz = 0;
+  unw_interval_t* beg_ui = new_ui(INSN(beg_insn), FrmTy_SP, FrmFlg_RAReg,
+				  0, 0, REG_RA, NULL);
+  unw_interval_t* ui = beg_ui;
+  unw_interval_t* nxt_ui = NULL;
+  unw_interval_t* canon_ui = beg_ui;
 
   uint32_t* cur_insn = beg_insn;
   while (cur_insn < end_insn) {
@@ -148,26 +138,25 @@ mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
     //--------------------------------------------------
     if (isAdjustSPByConst(*cur_insn)) {
       int amnt = getAdjustSPByConstAmnt(*cur_insn);
-      frame_sz += amnt;
-
-      int sp_ra_pos = ui->sp_ra_pos;
-      if (ui->ra_status == RA_SP_RELATIVE) {
-	sp_ra_pos += amnt;
+      
+      int sp_pos = ui->sp_pos + amnt;
+      
+      int ra_arg = ui->ra_arg;
+      if (!frameflg_isset(ui->flgs, FrmFlg_RAReg)) {
+	ra_arg += amnt;
       }
 
-      nxt_ui = new_ui(nextInsn(cur_insn), 
-		      ui->ra_status, sp_ra_pos, ui->bp_ra_pos,
-		      BP_UNCHANGED, ui->sp_bp_pos, ui->bp_bp_pos, ui);
+      nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, ui->flgs, 
+		      sp_pos, ui->bp_pos, ra_arg, ui);
       link_ui(ui, nxt_ui); ui = nxt_ui;
     }
     //--------------------------------------------------
     // store return address into SP frame
     //--------------------------------------------------
     else if (isStoreRegInFrame(*cur_insn, REG_SP, REG_RA)) {
-      int sp_ra_pos = getStoreRegInFrameOffset(*cur_insn);
-      nxt_ui = new_ui(nextInsn(cur_insn),
-		      RA_SP_RELATIVE, sp_ra_pos, 0,
-		      BP_UNCHANGED, ui->sp_bp_pos, ui->bp_bp_pos, ui);
+      int ra_pos = getStoreRegInFrameOffset(*cur_insn);
+      nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, FrmFlg_NULL,
+		      ui->sp_pos, ui->bp_pos, ra_pos, ui);
       link_ui(ui, nxt_ui); ui = nxt_ui;
 
       if (canon_ui == beg_ui) {
@@ -178,9 +167,8 @@ mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
     // load return address from SP frame
     //--------------------------------------------------
     else if (isLoadRegFromFrame(*cur_insn, REG_SP, REG_RA)) {
-      nxt_ui = new_ui(nextInsn(cur_insn),
-		      RA_REGISTER, 0, REG_RA/*FIXME:abuse*/,
-		      BP_UNCHANGED, ui->sp_bp_pos, ui->bp_bp_pos, ui);
+      nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, FrmFlg_RAReg,
+		      ui->sp_pos, ui->bp_pos, REG_RA, ui);
       link_ui(ui, nxt_ui); ui = nxt_ui;
     }
     //--------------------------------------------------
@@ -189,12 +177,10 @@ mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
     else if (isJumpToReg(*cur_insn, REG_RA)
 	&& ((cur_insn + 1/*delay slot*/ + 1) < end_insn)) {
       // An interior return.  Restore the canonical interval if necessary.
-      if ((ui->ra_status != canon_ui->ra_status) &&
-	  (ui->bp_ra_pos != canon_ui->bp_ra_pos) &&
-          (ui->bp_status != canon_ui->bp_status)) {
-	nxt_ui = new_ui(nextInsn(cur_insn),
-			canon_ui->ra_status, canon_ui->sp_ra_pos, canon_ui->bp_ra_pos,
-			canon_ui->bp_status, canon_ui->sp_bp_pos, canon_ui->bp_bp_pos, ui);
+      if (!ui_cmp(ui, canon_ui)) {
+	nxt_ui = new_ui(nextInsn(cur_insn + 1/*delay slot*/), 
+			canon_ui->ty, canon_ui->flgs, canon_ui->sp_pos, 
+			canon_ui->bp_pos, canon_ui->ra_arg, ui);
 	link_ui(ui, nxt_ui); ui = nxt_ui;
       }
     }
@@ -203,25 +189,25 @@ mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
     //--------------------------------------------------
 
     // FIXME/alloca: BP-relative
-    //   move    s8,sp      [save SP]
+    //   sd      s8=fp,56(sp)
+    //   move    s8=fp,sp   [save SP --> BP based]
 
     //   dsubu   sp,sp,v0   [alloca space]  --> the alloca flag
     //   sd      sp,24(s8)  [store SP]
 
-    //   move    sp,s8      [dealloca space and restore stack pointer]
+    //   move    sp,s8=fp   [dealloca space and restore stack pointer]
 
     // FIXME/alloca: store/restore the SP; store/retore into BP frame
 
 
 
     // FIXME:
-    // void set_ui_canonical(unwind_interval *u, unwind_interval *value);
-    // void set_ui_restored_canonical(unwind_interval *u, unwind_interval *value);
+    // void set_ui_canonical(unw_interval_t *u, unw_interval_t *value);
+    // void set_ui_restored_canonical(unw_interval_t *u, unw_interval_t *value);
 
 
     cur_insn++;
   }
-#endif
 
   ui->common.end = INSN(end_insn);
 
@@ -233,8 +219,8 @@ mips64_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 
 
   if (verbose) {
-    for (unwind_interval* x = (unwind_interval*)stat.first; 
-	 x; x = (unwind_interval*)x->common.next) {
+    for (unw_interval_t* x = (unw_interval_t*)stat.first; 
+	 x; x = (unw_interval_t*)x->common.next) {
       dump_ui(x, 0);
     }
   }

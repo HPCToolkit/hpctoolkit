@@ -32,6 +32,8 @@
 
 #define MYDBG 0
 
+//***************************************************************************
+
 static inline greg_t
 ucontext_getreg(ucontext_t* context, int reg)
 { return context->uc_mcontext.gregs[reg]; }
@@ -57,28 +59,52 @@ ucontext_bp(ucontext_t* context)
 { return (void**)ucontext_getreg(context, REG_FP); }
 
 
-static inline void*
-getRAFromSP(void** sp, int offset)
-{ return (*(sp + offset)); }
-
+//***************************************************************************
 
 static inline void**
 getSPFromSP(void** sp, int offset)
-{ return (sp + offset); }
+{ return (void**)((uintptr_t)sp + offset); }
+
+
+static inline void*
+getRAFromSP(void** sp, int offset)
+{ return *getSPFromSP(sp, offset); }
+
+
+static inline void*
+getRAFromBP(void** bp, int offset)
+{ return *(void**)((uintptr_t)bp - offset); }
+
+
+static inline bool
+isPossibleParentSP(void** sp, void** parent_sp)
+{
+  // Stacks grow down, so outer frames are at higher addresses
+  return (parent_sp > sp);
+}
 
 
 //***************************************************************************
 // interface functions
 //***************************************************************************
 
+void*
+context_pc(void* context)
+{ 
+  ucontext_t* ctxt = context;
+  return ucontext_pc(ctxt);
+}
+
+
 void
-unw_init_arch(void)
+unw_init(void)
 {
+  csprof_interval_tree_init();
 }
 
 
 int 
-unw_get_reg_arch(unw_cursor_t* cursor, int reg_id, void **reg_value)
+unw_get_reg(unw_cursor_t* cursor, int reg_id, void **reg_value)
 {
   assert(reg_id == UNW_REG_IP);
   *reg_value = cursor->pc;
@@ -97,106 +123,137 @@ unw_init_cursor(void* context, unw_cursor_t* cursor)
   cursor->bp = ucontext_bp(ctxt);
 
   cursor->intvl = csprof_addr_to_interval(cursor->pc);
+  unw_interval_t* intvl = (unw_interval_t*)cursor->intvl;
 
-  // FIXME: if SP is register-relative... obtain
-  // FIXME: if BP is active, 
+  if (intvl->flgs == FrmFlg_RAReg) {
+    cursor->ra = (void*)ucontext_getreg(context, intvl->ra_arg);
+  }
 
-  TMSG(UNW_INIT,"frame pc = %p, frame sp = %p, frame ra = %p", 
-       cursor->pc, cursor->sp, cursor->ra);
-  if (MYDBG) { dump_ui((unwind_interval*)cursor->intvl, 1); }
-  TMSG(UNW_INIT,"returned interval = %p", cursor->intvl);
+  TMSG(UNW_INIT,"pc=%p, ra=%p, sp=%p, bp=%p (intvl: %p)", 
+       cursor->pc, cursor->ra, cursor->sp, cursor->bp, intvl);
+  if (MYDBG) { dump_ui(intvl, 1); }
 }
 
 
 int 
-unw_step(unw_cursor_t *cursor)
+unw_step(unw_cursor_t* cursor)
 {
-  // current frame
+  // current frame:
   void*  pc = cursor->pc;
-  void** ra = cursor->ra;
   void** sp = cursor->sp;
   void** bp = cursor->bp;
-  unwind_interval* intvl = (unwind_interval*)cursor->intvl;
+  unw_interval_t* intvl = (unw_interval_t*)cursor->intvl;
 
-  // next frame
-  void*  next_pc = 0;
-  void** next_sp = 0;
-  void** next_bp = 0;
-
+  // next (parent) frame
+  void*  nxt_pc = 0;
+  void** nxt_sp = 0;
+  void** nxt_bp = 0;
+  unw_interval_t* nxt_intvl = NULL;
+  
   //-----------------------------------------------------------
   // check for outermost frame
   //-----------------------------------------------------------
   if (monitor_in_start_func_wide(pc)) {
-    TMSG(UNW,"monitor in start func wide, pc=%p", pc);
-    return 0;
+    TMSG(UNW, "stop: monitor_in_start_func_wide, pc=%p", pc);
+    return STEP_STOP;
   }
   
   //-----------------------------------------------------------
-  // compute the return address for the caller's frame
+  // compute RA (return address) for the caller's frame
   //-----------------------------------------------------------
-  if (intvl->ra_status == RA_REGISTER) {
-    next_pc = cursor->ra;
+  if (intvl->flgs == FrmFlg_RAReg) {
+    // RA should be in a register only on the first call to unw_step()
+    nxt_pc = cursor->ra;
   }
-  else if (intvl->ra_status == RA_SP_RELATIVE) {
-    next_pc = getRAFromSP(cursor->sp, intvl->sp_ra_pos);
+  else if (intvl->ty == FrmTy_SP) {
+    nxt_pc = getRAFromSP(sp, intvl->ra_arg);
   }
-  else if (intvl->ra_status == RA_BP_RELATIVE) {
+  else if (intvl->ty == FrmTy_BP) {
+    nxt_pc = getRAFromBP(bp, intvl->ra_arg);
     assert(0); // FIXME
   }
-
-  //-----------------------------------------------------------
-  // compute the stack pointer for the caller's frame.
-  //-----------------------------------------------------------
-  // fixed size
-  next_sp = getSPFromSP(cursor->sp, intvl->sp_sp_pos);
-  // in a register
-  // on the stack
-
-
-  TMSG(UNW,"candidate next_pc = %p, candidate next_sp = %p", next_pc, next_sp);
-  if ( !(next_sp > sp) ) {
-    TMSG(UNW,"next sp = %p < current sp = %p", next_sp, sp);
-    return 0;
+  else {
+    assert(0);
   }
+
+  //-----------------------------------------------------------
+  // compute SP (stack pointer) for the caller's frame.
+  //-----------------------------------------------------------
+  if (intvl->ty == FrmTy_SP) {
+    nxt_sp = getSPFromSP(sp, intvl->sp_pos);
+  }
+  else if (intvl->ty == FrmTy_BP) {
+    //nxt_sp = getSPFromBP(bp, intvl->ra_arg);
+    assert(0); // FIXME
+  }
+  else {
+    assert(0);
+  }
+
+  //-----------------------------------------------------------
+  // compute BP (frame pointer) for the caller's frame.
+  //-----------------------------------------------------------
+  // FIXME
+
+
 
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
-  cursor->intvl = csprof_addr_to_interval(next_pc);
+  if (!nxt_pc) {
+    // Allegedly, MIPS API promises NULL RA for outermost frame
+    TMSG(UNW,"stop: pc=%p", nxt_pc);
+    return STEP_STOP;
+  }
+  
+  if ( (void*)nxt_sp >= monitor_stack_bottom() ) {
+    TMSG(UNW,"stop: sp (%p) >= monitor_stack_bottom", nxt_sp);
+    return STEP_STOP;
+  }
 
-  //-----------------------------------------------------------
-  // the pc is invalid if no unwind information is  available
-  //-----------------------------------------------------------
-  if (!cursor->intvl) {
-    TMSG(UNW,"next_pc = %p has no valid interval, continuing to look ...", next_pc);
-    if ((void*)next_sp >= monitor_stack_bottom()) {
-      TMSG(UNW,"next sp (%p) >= monitor_stack_bottom (%p)", next_sp, monitor_stack_bottom());
-      return 0;
+  bool didTroll = false;
+  nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
+
+  if (!nxt_intvl) {
+    // nxt_pc is invalid for some reason... try trolling
+    
+    uint troll_pc_pos;
+    uint ret = stack_troll((char**)sp, &troll_pc_pos);
+    if (!ret) {
+      TMSG(UNW,"error: troll failed");
+      return STEP_ERROR;
     }
+    void** troll_sp = (void**)getSPFromSP(sp, troll_pc_pos);
+    
+    nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(*troll_sp);
+    if (!nxt_intvl) {
+      TMSG(UNW,"error: nxt_pc=%p troll_pc=%p sp=%p", nxt_pc, *troll_sp, sp);
+      return STEP_ERROR;
+    }
+    didTroll = true;
 
-    //-------------------------------------------------------------------
-    // there isn't a valid PC saved in the return address slot in my 
-    // caller's frame.  try one frame deeper. 
-    //
-    // NOTE: this should only happen in the top frame on the stack.
-    //-------------------------------------------------------------------
-#if 0
-    next_pc = PC_FROM_FRAME_BP(*next_bp);
-    TMSG(UNW,"skipping up one frame f candidate bp = %p ==> next pc = %p", next_bp, next_pc);
-    cursor->intvl = csprof_addr_to_interval(next_pc);
-#endif
+    nxt_pc = *troll_sp;
+    if (troll_sp > nxt_sp) {
+      nxt_sp = troll_sp + 1;
+    }
+  }
+  // INVARIANT: At this point, 'nxt_intvl' is valid
+
+  if (!isPossibleParentSP(sp, nxt_sp)) {
+    // FIXME try trolling and update sp...
+    TMSG(UNW,"error: nxt_sp=%p < sp=%p", nxt_sp, sp);
+    return STEP_ERROR;
   }
 
-  if (!cursor->intvl) {
-    TMSG(UNW,"candidate next_pc = %p did not have an interval",next_pc);
-    return 0;
-  }
+  TMSG(UNW_INIT,"next: pc=%p, sp=%p, bp=%p (intvl: %p)", 
+       nxt_pc, nxt_sp, nxt_bp, nxt_intvl);
 
-  cursor->pc = next_pc;
-  cursor->sp = next_sp;
+  cursor->pc = nxt_pc;
+  cursor->sp = nxt_sp;
+  cursor->bp = nxt_bp;
   cursor->ra = NULL; // always NULL after unw_step() completes
+  cursor->intvl = (splay_interval_t*)nxt_intvl;
 
-  TMSG(UNW,"step goes forward w pc = %p, bp = %p",next_pc,next_bp);
-  return 1;
+  return (didTroll) ? STEP_TROLL : STEP_OK;
 }
 
