@@ -6,14 +6,17 @@
 #include <ucontext.h>
 #include <assert.h>
 
+//************************ libmonitor Include Files *************************
+
+#include <monitor.h>
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
 
 #include "general.h"
-#include "mem.h"
+#include <memory/mem.h>
 #include "pmsg.h"
-#include "monitor.h"
 
 #include "unwind.h"
 #include "splay.h"
@@ -62,18 +65,18 @@ ucontext_bp(ucontext_t* context)
 //***************************************************************************
 
 static inline void**
-getSPFromSP(void** sp, int offset)
+getPtrFromSP(void** sp, int offset)
 { return (void**)((uintptr_t)sp + offset); }
 
 
 static inline void*
-getRAFromSP(void** sp, int offset)
-{ return *getSPFromSP(sp, offset); }
+getValFromSP(void** sp, int offset)
+{ return *getPtrFromSP(sp, offset); }
 
 
 static inline void*
-getRAFromBP(void** bp, int offset)
-{ return *(void**)((uintptr_t)bp - offset); }
+getValFromBP(void** bp, int offset)
+{ return *getPtrFromSP(bp, offset); }
 
 
 static inline bool
@@ -81,6 +84,28 @@ isPossibleParentSP(void** sp, void** parent_sp)
 {
   // Stacks grow down, so outer frames are at higher addresses
   return (parent_sp > sp);
+}
+
+
+static inline bool
+isPossibleFP(void** sp, void** fp)
+{
+  // Stacks grow down, so frame pointer is at a higher address
+  return (fp > sp);
+}
+
+
+//***************************************************************************
+
+static inline void
+computeNext_SPFrame(void** * nxt_sp, void** * nxt_bp,
+		    unw_interval_t* intvl, void** sp)
+{
+  *nxt_sp = getPtrFromSP(sp, intvl->sp_pos);
+
+  if (intvl->bp_pos != unwpos_NULL) {
+    *nxt_bp = getPtrFromSP(sp, intvl->bp_pos);
+  }
 }
 
 
@@ -129,9 +154,9 @@ unw_init_cursor(void* context, unw_cursor_t* cursor)
     cursor->ra = (void*)ucontext_getreg(context, intvl->ra_arg);
   }
 
-  TMSG(UNW_INIT,"pc=%p, ra=%p, sp=%p, bp=%p (intvl: %p)", 
+  TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, bp=%p (intvl: %p)", 
        cursor->pc, cursor->ra, cursor->sp, cursor->bp, intvl);
-  if (MYDBG) { dump_ui(intvl, 1); }
+  if (MYDBG) { ui_dump(intvl, 1); }
 }
 
 
@@ -145,9 +170,9 @@ unw_step(unw_cursor_t* cursor)
   unw_interval_t* intvl = (unw_interval_t*)cursor->intvl;
 
   // next (parent) frame
-  void*  nxt_pc = 0;
-  void** nxt_sp = 0;
-  void** nxt_bp = 0;
+  void*  nxt_pc = NULL;
+  void** nxt_sp = NULL;
+  void** nxt_bp = NULL;
   unw_interval_t* nxt_intvl = NULL;
   
   //-----------------------------------------------------------
@@ -160,7 +185,7 @@ unw_step(unw_cursor_t* cursor)
   }
 
   if ( (void*)sp >= monitor_stack_bottom() ) {
-    TMSG(UNW,"stop: sp (%p) >= monitor_stack_bottom", sp);
+    TMSG(UNW, "stop: sp (%p) >= monitor_stack_bottom", sp);
     return STEP_STOP;
   }
   
@@ -172,83 +197,91 @@ unw_step(unw_cursor_t* cursor)
     nxt_pc = cursor->ra;
   }
   else if (intvl->ty == FrmTy_SP) {
-    nxt_pc = getRAFromSP(sp, intvl->ra_arg);
+    nxt_pc = getValFromSP(sp, intvl->ra_arg);
   }
   else if (intvl->ty == FrmTy_BP) {
-    nxt_pc = getRAFromBP(bp, intvl->ra_arg);
-    assert(0); // FIXME
+    nxt_pc = getValFromBP(bp, intvl->ra_arg);
   }
   else {
     assert(0);
   }
-
-  //-----------------------------------------------------------
-  // compute SP (stack pointer) for the caller's frame.
-  //-----------------------------------------------------------
-  if (intvl->ty == FrmTy_SP) {
-    nxt_sp = getSPFromSP(sp, intvl->sp_pos);
-  }
-  else if (intvl->ty == FrmTy_BP) {
-    //nxt_sp = getSPFromBP(bp, intvl->ra_arg);
-    assert(0); // FIXME
-  }
-  else {
-    assert(0);
-  }
-
-  //-----------------------------------------------------------
-  // compute BP (frame pointer) for the caller's frame.
-  //-----------------------------------------------------------
-  // FIXME
-
-
-
-  //-----------------------------------------------------------
-  // compute unwind information for the caller's pc
-  //-----------------------------------------------------------
+  // INVARIANT: nxt_pc has been overwritten
 
   if (!nxt_pc) {
     // Allegedly, MIPS API promises NULL RA for outermost frame
     // NOTE: we are already past the last valid PC
-    TMSG(UNW,"stop: pc=%p", nxt_pc);
+    TMSG(UNW, "stop: pc=%p", nxt_pc);
     return STEP_STOP;
   }
+
+  //-----------------------------------------------------------
+  // compute SP (stack pointer) and BP (frame pointer) for the caller's frame.
+  //-----------------------------------------------------------
+  if (intvl->ty == FrmTy_SP) {
+    computeNext_SPFrame(&nxt_sp, &nxt_bp, intvl, sp);
+  }
+  else if (intvl->ty == FrmTy_BP) {
+    // Be suspicious of bp, since this is our weak spot.
+    if (isPossibleFP(sp, bp)) {
+      nxt_sp = bp;
+      if (intvl->bp_pos != unwpos_NULL) {
+	nxt_bp = getValFromBP(bp, intvl->bp_pos);
+      }
+    }
+  }
+  else {
+    assert(0);
+  }
   
+  if (!isPossibleParentSP(sp, nxt_sp)) {
+    TMSG(UNW, "adjust sp: nxt_sp=%p < sp=%p", nxt_sp, sp);
+    nxt_sp = sp + 1; // should cause trolling on next unw_step
+  }
+  
+  // sanity check: bp > sp and nxt_bp > nxt_sp.  However this is only valid if we know bp is valid.
+
+  //-----------------------------------------------------------
+  // compute unwind information for the caller's pc
+  //-----------------------------------------------------------  
+
   bool didTroll = false;
   nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
 
   if (!nxt_intvl) {
     // nxt_pc is invalid for some reason... try trolling
     
+    //TMSG(UNW, "troll: nxt_sp=%p < sp=%p", nxt_sp, sp);
+
     uint troll_pc_pos;
     uint ret = stack_troll((char**)sp, &troll_pc_pos);
     if (!ret) {
-      TMSG(UNW,"error: troll failed");
+      TMSG(UNW, "error: troll failed");
       return STEP_ERROR;
     }
-    void** troll_sp = (void**)getSPFromSP(sp, troll_pc_pos);
+    void** troll_sp = (void**)getPtrFromSP(sp, troll_pc_pos);
     
     nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(*troll_sp);
     if (!nxt_intvl) {
-      TMSG(UNW,"error: nxt_pc=%p troll_pc=%p sp=%p", nxt_pc, *troll_sp, sp);
+      TMSG(UNW, "error: nxt_pc=%p troll_pc=%p sp=%p", nxt_pc, *troll_sp, sp);
       return STEP_ERROR;
     }
     didTroll = true;
 
     nxt_pc = *troll_sp;
-    if (troll_sp > nxt_sp) {
-      nxt_sp = troll_sp + 1;
+
+    if (intvl->ty == FrmTy_SP && !frameflg_isset(intvl->flgs, FrmFlg_RAReg) &&
+	intvl->ra_arg != unwpos_NULL) {
+      // realign sp and recompute nxt_sp, nxt_bp
+      sp = troll_sp - intvl->ra_arg;
+      computeNext_SPFrame(&nxt_sp, &nxt_bp, intvl, sp);
+    }
+    else if (troll_sp >= nxt_sp) {
+      nxt_sp = troll_sp + 1; // wild guess; hopefully will eventually realign
     }
   }
   // INVARIANT: At this point, 'nxt_intvl' is valid
 
-  if (!isPossibleParentSP(sp, nxt_sp)) {
-    // FIXME try trolling and update sp...
-    TMSG(UNW,"error: nxt_sp=%p < sp=%p", nxt_sp, sp);
-    return STEP_ERROR;
-  }
-
-  TMSG(UNW_INIT,"next: pc=%p, sp=%p, bp=%p (intvl: %p)", 
+  TMSG(UNW,"next: pc=%p, sp=%p, bp=%p (intvl: %p)", 
        nxt_pc, nxt_sp, nxt_bp, nxt_intvl);
 
   cursor->pc = nxt_pc;

@@ -59,7 +59,7 @@ isAdjustSPByConst(uint32_t insn)
 {
   // example: daddiu sp,sp,-96
   uint32_t op = (insn & OP_MASK);
-  if (op == DADDIU || op == ADDIU || op == ADDI || op == DADDI) {
+  if (op == DADDIU || op == ADDIU || op == DADDI || op == ADDI) {
     // The non-'U' probably never occur since they trap on overflow.
     return (REG_S(insn) == REG_SP) && (REG_T(insn) == REG_SP);
   }
@@ -69,6 +69,19 @@ isAdjustSPByConst(uint32_t insn)
 // positive value means frame allocation
 static inline int
 getAdjustSPByConstAmnt(uint32_t insn) { return - (int16_t)IMM(insn); }
+
+
+static inline bool 
+isAdjustSPByVar(uint32_t insn)
+{
+  // example: dsubu sp,sp,v0
+  uint32_t op = (insn & OP_MASK);
+  if (op == DSUBU || op == SUBU || op == DSUB || op == SUB) {
+    // The non-'U' probably never occur since they trap on overflow.
+    return (REG_D(insn) == REG_SP) && (REG_S(insn) == REG_SP);
+  }
+  return false;
+}
 
 
 static inline bool 
@@ -110,6 +123,23 @@ isJumpToReg(uint32_t insn, int reg_to)
 }
 
 
+static inline bool 
+isMoveReg(uint32_t insn, int reg_dst, int reg_src)
+{
+  // move rd, rs ==> addu rd, rs, rt=R0
+  uint32_t op = (insn & OP_MASK);
+  uint32_t op_spc = (insn & OPSpecial_MASK);
+  if (op == OPSpecial && 
+      (op_spc == DADDU || op_spc == ADDU || op_spc == DADD || op_spc == ADD)) {
+    // The non-'U' probably never occur since they trap on overflow.
+    return ((REG_D(insn) == reg_dst) && (REG_S(insn) == reg_src) &&
+	    (REG_T(insn) == REG_0));
+  }
+  return false;
+}
+
+
+
 //***************************************************************************
 
 static inline void 
@@ -117,9 +147,28 @@ checkSPPos(int* pos, int alt_pos)
 {
   // SP-relative position: must be positive
   if (*pos < 0) {
-    EMSG("INTERVALS: SP-relative pos'n not positive (%d)", *pos);
+    EMSG("build_intervals: SP-relative pos'n not positive (%d)", *pos);
     *pos = alt_pos;
   }
+}
+
+
+static inline void
+checkUI(unw_interval_t* ui, framety_t ty, uint32_t* insn)
+{
+  if (ui->ty != ty) {
+    EMSG("build_intervals: At pc=%p [0x%x], unexpected interval type %s", 
+	 insn, *insn, framety_string(ty));
+    ui_dump(ui, 0);
+  }
+}
+
+
+static inline int
+convertSPToBPPos(int frame_sz, int sp_rel)
+{
+  int bp_rel = (sp_rel == unwpos_NULL) ? 0 : -(frame_sz - sp_rel);
+  return bp_rel;
 }
 
 
@@ -133,28 +182,65 @@ checkSPPos(int* pos, int alt_pos)
 // - If a call is made, REG_RA is stored in the frame; after the call
 //   and before a return is reloaded.
 
+// Typical SP frame: GCC and Pathscale
+//   daddiu  sp,sp,-96   ! allocate frame
+//                       ! possibly allocate add'tl space
+//   sd      ra,40(sp)   ! store RA before a call
+//   jalr    t9          ! call
+//   ld      ra,40(sp)   ! restore RA
+//   jr      ra          ! return
+//   daddiu  sp,sp,96    ! deallocate frame (in delay slot)
+
+// Typical FP frame: GCC [note fp = s8]
+//   daddiu  sp,sp,-96   ! allocate basic frame
+//   sd      fp,56(sp)   ! preserve parent's FP
+//   move    fp,sp       ! setup FP
+//   sd      ra,64(sp)   ! store RA
+//   dsubu   sp,sp,v0    ! allocate more frame             [COMMON]
+//                       ! store SP?
+//   move    sp,fp       ! restore SP and deallocate frame [COMMON]
+//   ld      ra,64(sp)   ! restore RA
+//   ld      fp,56(sp)   ! restore FP
+// 
+// Typical FP frame: Pathscale [note fp = s8]              
+//   move    v0,fp       ! [a] store parent's FP           [???]
+//   daddiu  sp,sp,-96   ! allocate SP-frame               [COMMON]
+//   daddiu  fp,sp,96    ! setup FP
+//   sd      v0,-32(fp)  ! [a] store parent's FP
+//   sd      ra,-64(fp)  ! store RA
+//   sd      sp,-48(fp)  ! store SP
+//   dsubu   sp,sp,v0    ! allocate more frame             [COMMON]
+//   ld      ra,-64(fp)  ! restore RA
+//   ld      at,-32(fp)  | [b] restore parent's FP         [???]
+//   move    sp,fp       ! restore SP and deallocate frame [COMMON]
+//   jr      ra
+//   move    fp,at       ! [b] restore parent's FP
+
+
 static interval_status 
 mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 {
   unw_interval_t* beg_ui = new_ui(INSN(beg_insn), FrmTy_SP, FrmFlg_RAReg,
-				  0, 0, REG_RA, NULL);
+				  0, unwpos_NULL, REG_RA, NULL);
   unw_interval_t* ui = beg_ui;
   unw_interval_t* nxt_ui = NULL;
   unw_interval_t* canon_ui = beg_ui;
 
   uint32_t* cur_insn = beg_insn;
   while (cur_insn < end_insn) {
-    //printf("trying 0x%x [%p,%p\n",*cur_insn, cur_insn, end_insn);
+    //printf("trying 0x%x [%p,%p)\n",*cur_insn, cur_insn, end_insn);
 
     //--------------------------------------------------
-    // allocate/deallocate frame by adjusting stack pointer a fixed amount
+    // SP-frame --> SP-frame: alloc/dealloc constant-sized frame
     //--------------------------------------------------
     if (isAdjustSPByConst(*cur_insn)) {
+      checkUI(ui, FrmTy_SP, cur_insn);
+
       int amnt = getAdjustSPByConstAmnt(*cur_insn);
       
       int sp_pos = ui->sp_pos + amnt;
       checkSPPos(&sp_pos, ui->sp_pos);
-      
+
       int ra_arg = ui->ra_arg;
       if (!frameflg_isset(ui->flgs, FrmFlg_RAReg)) {
 	ra_arg += amnt;
@@ -166,28 +252,44 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
       ui_link(ui, nxt_ui); ui = nxt_ui;
     }
     //--------------------------------------------------
-    // store return address into SP frame
+    // SP-frame --> SP-frame: store RA/FP
+    // *** canonical frame ***
     //--------------------------------------------------
     else if (isStoreRegInFrame(*cur_insn, REG_SP, REG_RA)) {
+      checkUI(ui, FrmTy_SP, cur_insn);
+
+      // store return address
       int ra_pos = getStoreRegInFrameOffset(*cur_insn);
       nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, FrmFlg_NULL,
 		      ui->sp_pos, ui->bp_pos, ra_pos, ui);
       ui_link(ui, nxt_ui); ui = nxt_ui;
 
-      if (canon_ui == beg_ui) {
-	canon_ui = nxt_ui;
-      }
+      canon_ui = nxt_ui;
+    }
+    else if (isStoreRegInFrame(*cur_insn, REG_SP, REG_FP)) {
+      checkUI(ui, FrmTy_SP, cur_insn);
+
+      // store frame pointer (N.B. fp may be used as saved reg s8)
+      int bp_pos = getStoreRegInFrameOffset(*cur_insn);
+      nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, ui->flgs,
+		      ui->sp_pos, bp_pos, ui->ra_arg, ui);
+      ui_link(ui, nxt_ui); ui = nxt_ui;
+
+      canon_ui = nxt_ui;
     }
     //--------------------------------------------------
-    // load return address from SP frame
+    // SP-frame --> SP-frame: load RA
     //--------------------------------------------------
     else if (isLoadRegFromFrame(*cur_insn, REG_SP, REG_RA)) {
+      checkUI(ui, FrmTy_SP, cur_insn);
+
       nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, FrmFlg_RAReg,
 		      ui->sp_pos, ui->bp_pos, REG_RA, ui);
       ui_link(ui, nxt_ui); ui = nxt_ui;
     }
+
     //--------------------------------------------------
-    // interior epilogues/returns
+    // General: interior returns (epilogues)
     //--------------------------------------------------
     else if (isJumpToReg(*cur_insn, REG_RA)
 	&& ((cur_insn + 1/*delay slot*/ + 1) < end_insn)) {
@@ -200,28 +302,70 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 	cur_insn++; // skip delay slot to align new interval
       }
     }
+
+
+    // FIXME: It is difficult to detect beginning of a FP frames.  For
+    // now we use the following.
+
     //--------------------------------------------------
-    // allocate/deallocate frame by adjusting stack pointer a variable amount
+    // SP-frame --> FP-frame: store RA by FP
+    // *** canonical frame ***
     //--------------------------------------------------
+    else if (isStoreRegInFrame(*cur_insn, REG_FP, REG_RA)) {
+      checkUI(ui, FrmTy_SP, cur_insn);
 
-    // FIXME/alloca: BP-relative
-    //   sd      s8=fp,56(sp)
-    //   move    s8=fp,sp   [save SP --> BP based]
+      int bp_pos = convertSPToBPPos(ui->sp_pos, ui->bp_pos);
+      int ra_pos = getStoreRegInFrameOffset(*cur_insn);
+      nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_BP, FrmFlg_NULL,
+		      0, bp_pos, ra_pos, ui);
+      ui_link(ui, nxt_ui); ui = nxt_ui;
 
-    //   dsubu   sp,sp,v0   [alloca space]  --> the alloca flag
-    //   sd      sp,24(s8)  [store SP]
+      canon_ui = nxt_ui;
+    }
+    /* else if (store-parent's-FP): FIXME */
 
-    //   move    sp,s8=fp   [dealloca space and restore stack pointer]
+    //--------------------------------------------------
+    // *-frame --> FP-frame: allocate variable-sized frame
+    // *** canonical frame ***
+    //--------------------------------------------------
+    else if (isAdjustSPByVar(*cur_insn)) {
+      if (canon_ui != beg_ui && canon_ui->ty == FrmTy_SP) {
+	int bp_pos = convertSPToBPPos(canon_ui->sp_pos, canon_ui->bp_pos);
+	int ra_pos = convertSPToBPPos(canon_ui->sp_pos, canon_ui->ra_arg);
+	nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_BP, ui->flgs, 
+			0, bp_pos, ra_pos, ui);
+	ui_link(ui, nxt_ui); ui = nxt_ui;
 
-    // FIXME/alloca: store/restore the SP; store/retore into BP frame
-
-
-
-    // FIXME:
-    // void set_ui_canonical(unw_interval_t *u, unw_interval_t *value);
-    // void set_ui_restored_canonical(unw_interval_t *u, unw_interval_t *value);
-
-
+	canon_ui = nxt_ui;
+      }
+    }
+    //--------------------------------------------------
+    // FP-frame --> FP-frame: load RA by FP
+    //--------------------------------------------------
+    else if (isLoadRegFromFrame(*cur_insn, REG_FP, REG_RA)) {
+      checkUI(ui, FrmTy_BP, cur_insn);
+      nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_BP, FrmFlg_RAReg,
+		      ui->sp_pos, ui->bp_pos, REG_RA, ui);
+      ui_link(ui, nxt_ui); ui = nxt_ui;
+    }
+    /* else if (load-parent's-FP): FIXME */
+    
+    //--------------------------------------------------
+    // FP-frame --> SP-frame: deallocate frame by restoring SP
+    //--------------------------------------------------
+    else if (isMoveReg(*cur_insn, REG_SP, REG_FP)) {
+      if (ui->ty == FrmTy_BP) {
+	nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, FrmFlg_RAReg, 
+			0, unwpos_NULL, REG_RA, ui);
+	ui_link(ui, nxt_ui); ui = nxt_ui;
+      }
+      else {
+	// wierd code, e.g., monitor_main! Assume rest of frame will
+	// be deallocated normally.  Could restore a canonical frame
+	// (FIXME).
+      }
+    }
+    
     cur_insn++;
   }
 

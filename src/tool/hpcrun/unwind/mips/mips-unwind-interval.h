@@ -59,9 +59,16 @@ frameflg_unset(int* flags, flagsflg_t flg)
 }
 #endif
 
+
+const char* 
+framety_string(framety_t ty);
+
+
 //***************************************************************************
 // 
 //***************************************************************************
+
+#define unwpos_NULL (-1)  /* an invalid position (note: 0 may be valid) */
 
 struct unw_interval_s {
   struct splay_interval_s common; // common splay tree fields
@@ -69,9 +76,9 @@ struct unw_interval_s {
   framety_t  ty   : 16;
   frameflg_t flgs : 16;
 
-  int sp_pos; // parent's SP position
-  int bp_pos; // parent's BP position
-  int ra_arg; // RA position or register
+  int sp_pos; // parent's SP position; init to unwpos_NULL
+  int bp_pos; // parent's BP position; init to unwpos_NULL
+  int ra_arg; // RA position or register; init to unwpos_NULL
 };
 
 typedef struct unw_interval_s unw_interval_t;
