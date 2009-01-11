@@ -602,9 +602,12 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 
   // tallent:FIXME: for now I have inlined what was the get_data_fn
   tmp_node->data.as_info = node->as_info;
-  tmp_node->data.ip = (hpcfile_vma_t)node->ip;
+
+  // double casts to avoid warnings when pointer is < 64 bits 
+  tmp_node->data.ip = (hpcfile_vma_t) (unsigned long) node->ip;
   tmp_node->data.lip.id = id_lip;
-  tmp_node->data.sp = (hpcfile_uint_t)node->sp;
+  tmp_node->data.sp = (hpcfile_uint_t)(unsigned long) node->sp;
+
   tmp_node->data.cpid = node->cpid;
   memcpy(tmp_node->data.metrics, node->metrics, 
 	 tmp_node->data.num_metrics * sizeof(cct_metric_data_t));
