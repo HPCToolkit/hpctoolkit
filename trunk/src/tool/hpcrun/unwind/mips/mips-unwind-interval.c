@@ -11,13 +11,11 @@
 
 #include "mips-unwind-interval.h"
 
-#include "csprof-malloc.h"
+#include <memory/mem.h>
 #include "pmsg.h"
 #include "atomic-ops.h"
 
 //*************************** Forward Declarations **************************
-
-static const char* frame_ty_string(framety_t ty); 
 
 
 //***************************************************************************
@@ -63,7 +61,7 @@ ui_dump(unw_interval_t* u, int dump_to_stdout)
   
   sprintf(buf, "start=%p end=%p ty=%s flgs=%d sp_pos=%d bp_pos=%d ra_arg=%d next=%p prev=%p\n",
 	  (void*)u->common.start, (void*)u->common.end,
-	  frame_ty_string(u->ty), u->flgs, u->sp_pos, u->bp_pos, u->ra_arg,
+	  framety_string(u->ty), u->flgs, u->sp_pos, u->bp_pos, u->ra_arg,
 	  u->common.next, u->common.prev);
 
   EMSG(buf);
@@ -110,8 +108,8 @@ ui_link(unw_interval_t* current, unw_interval_t* next)
 // private operations 
 //***************************************************************************
 
-static const char*
-frame_ty_string(framety_t ty)
+const char*
+framety_string(framety_t ty)
 {
 #define frame_ty_string_STR(s) case s: return #s
 
