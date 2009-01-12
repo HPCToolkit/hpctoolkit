@@ -15,26 +15,29 @@
  */
 
 #include <stdlib.h>
+
+#include <include/general.h>
+
 #include "pmsg.h"
 #include "stack_troll.h"
 #include "fnbounds_interface.h"
 
-unsigned int stack_troll(char **sp, unsigned int *ra_pos){
-  int i;
-  char **tmp_sp;
+uint stack_troll(void **start_sp, uint *ra_pos)
+{
+  void **sp = start_sp;
 
-  PMSG(TROLL,"stack trolling initiated at sp = %p",sp);
-  tmp_sp = sp;
-  for (i = 0; i < TROLL_LIMIT; i++){
-    void *s, *e;
-    if (!fnbounds_enclosing_addr(*tmp_sp , &s, &e)) { 
-      PMSG(TROLL,"found valid address %p at sp = %p",*tmp_sp,tmp_sp);
-      *ra_pos = (unsigned long) tmp_sp - (unsigned long) sp;
+  for (int i = 0; i < TROLL_LIMIT; i++) {
+    void *beg, *end;
+    if (!fnbounds_enclosing_addr(*sp, &beg, &end)) {
+      PMSG(TROLL,"troll(sp=%p): found valid address %p at sp=%p", 
+	   start_sp, *sp, sp);
+      *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
       return 1;
     }
-    tmp_sp++;
+    sp++;
   }
-  PMSG(TROLL,"stack troll failed");
+  
+  PMSG(TROLL,"troll(sp=%p): failed using limit %d", start_sp, TROLL_LIMIT);
   *ra_pos = -1;
   return 0;
 }

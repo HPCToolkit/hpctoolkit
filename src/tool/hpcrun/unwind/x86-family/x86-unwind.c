@@ -399,7 +399,7 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 {
   unsigned int tmp_ra_offset;
 
-  if (stack_troll((char **)cursor->sp, &tmp_ra_offset)) {
+  if (stack_troll(cursor->sp, &tmp_ra_offset)) {
     void  **next_sp = ((void **)((unsigned long) cursor->sp + tmp_ra_offset));
     void *next_pc = *next_sp;
 
