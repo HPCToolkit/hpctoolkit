@@ -110,6 +110,7 @@ MY_MIPS_FILES = \
 MY_PPC_FILES = \
 	unwind/ppc64/ppc64-build-intervals.c	\
 	unwind/ppc64/ppc64-context.c		\
+	unwind/ppc64/ppc64-unwind-interval.c    \
 	unwind/ppc64/ppc64-unwind-support.c
 
 MY_X86_FILES = \

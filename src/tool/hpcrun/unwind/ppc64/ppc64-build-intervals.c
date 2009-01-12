@@ -57,7 +57,8 @@ ppc64_build_intervals(char *ins, unsigned int len)
 {
   interval_status stat;
 
-  unwind_interval *first = new_ui(ins, RA_REGISTER, 0, REGISTER_LR, BP_UNCHANGED, 0, 0, NULL);
+  unwind_interval *first = new_ui(ins, RA_REGISTER, REGISTER_LR, 
+				  BP_UNCHANGED,  NULL);
   unwind_interval *ui = first;
   unwind_interval *next = NULL;
   unwind_interval *canonical = first;
@@ -76,7 +77,7 @@ ppc64_build_intervals(char *ins, unsigned int len)
     // move return address from LR to R0
     //--------------------------------------------------
     if (MFLR_R0(*cur_ins)) {
-      next = new_ui(NEXT_INS, RA_REGISTER, 0, REGISTER_R0, ui->bp_status, 0, 0, ui);
+      next = new_ui(NEXT_INS, RA_REGISTER, REGISTER_R0, ui->bp_status, ui);
       link_ui(ui, next); ui = next;
     }
 
@@ -88,7 +89,7 @@ ppc64_build_intervals(char *ins, unsigned int len)
     if (STW_R0_R1(*cur_ins)) {
       short ra_disp = DISP(*cur_ins);
       if ((frame_size + 4 == (int) ra_disp) && (ra_disp > 4)) {
-        next = new_ui(NEXT_INS, RA_BP_FRAME, 0, 0, BP_SAVED, 0, 0, ui);
+        next = new_ui(NEXT_INS, RA_BP_FRAME, 0, BP_SAVED, ui);
         if (canonical == first) canonical = next;
         link_ui(ui, next); ui = next;
       }
@@ -100,7 +101,7 @@ ppc64_build_intervals(char *ins, unsigned int len)
     //       it was in before 
     //--------------------------------------------------
     if (STWU_R1_R1(*cur_ins)) {
-      next = new_ui(NEXT_INS, RA_REGISTER, 0, ui->bp_ra_pos, BP_SAVED, 0, 0, ui);
+      next = new_ui(NEXT_INS, RA_REGISTER, ui->bp_ra_pos, BP_SAVED, ui);
       frame_size = - DISP(*cur_ins);
       link_ui(ui, next); ui = next;
     }
@@ -109,16 +110,18 @@ ppc64_build_intervals(char *ins, unsigned int len)
     // move return address from R0 to LR
     //--------------------------------------------------
     if (MTLR_R0(*cur_ins)) {
-      next = new_ui(NEXT_INS, RA_REGISTER, 0, REGISTER_LR, ui->bp_status, 0, 0, ui);
+      next = new_ui(NEXT_INS, RA_REGISTER, REGISTER_LR, ui->bp_status, ui);
       link_ui(ui, next); ui = next;
     }
 
     //--------------------------------------------------
     // reset frame pointer to caller's frame
     //--------------------------------------------------
-    if (MR_R1(*cur_ins) || (ADDI_R1(*cur_ins) && (DISP(*cur_ins) == frame_size))) {
-      // assume the mr restores the proper value; we would have to track register values to be sure.
-      next = new_ui(NEXT_INS, ui->ra_status, 0, ui->bp_ra_pos, BP_UNCHANGED, 0, 0, ui);
+    if (MR_R1(*cur_ins) || (ADDI_R1(*cur_ins) && (DISP(*cur_ins) == frame_size)))
+    {
+      // assume the mr restores the proper value; we would have to track 
+      // register values to be sure.
+      next = new_ui(NEXT_INS, ui->ra_status, ui->bp_ra_pos, BP_UNCHANGED, ui);
       link_ui(ui, next); ui = next;
     }
 
@@ -126,7 +129,7 @@ ppc64_build_intervals(char *ins, unsigned int len)
     // load return address into R0 from caller's frame
     //--------------------------------------------------
     if (LWZ_R0_R1(*cur_ins) && DISP(*cur_ins) == ra_disp) {
-      next = new_ui(NEXT_INS, RA_REGISTER, 0, REGISTER_R0, ui->bp_status, 0, 0, ui);
+      next = new_ui(NEXT_INS, RA_REGISTER, REGISTER_R0, ui->bp_status, ui);
       link_ui(ui, next); ui = next;
     }
     if (BLR(*cur_ins) && (cur_ins + 1 < end_ins)) {
@@ -135,8 +138,8 @@ ppc64_build_intervals(char *ins, unsigned int len)
           (ui->bp_ra_pos !=  canonical->bp_ra_pos) &&
           (ui->bp_status !=  canonical->bp_status)) {
          // don't make a new interval if it is the same as the present one.
-         next = new_ui(NEXT_INS, canonical->ra_status, 0, canonical->bp_ra_pos, 
-                       canonical->bp_status, 0, 0, ui);
+         next = new_ui(NEXT_INS, canonical->ra_status, canonical->bp_ra_pos, 
+                       canonical->bp_status, ui);
          link_ui(ui, next); ui = next;
       }
     }
@@ -155,7 +158,6 @@ ppc64_build_intervals(char *ins, unsigned int len)
 }
 
 
-#if 0
 void ppc64_dump_intervals(char  *addr) 
 {
   void *s, *e;
@@ -169,11 +171,11 @@ void ppc64_dump_intervals(char  *addr)
   printf("build intervals from %p to %p %d\n",s,e,llen);
   intervals = ppc64_build_intervals(s, (unsigned int) llen);
 
-  for(u = intervals.first; u; u = u->next) {
+  for(u = (unwind_interval *) intervals.first; u; 
+      u = (unwind_interval *) u->common.next) {
     dump_ui(u, 1);
   }
 }
-#endif
 
 
 interval_status 
@@ -194,7 +196,7 @@ build_intervals(char *ins, unsigned int len)
 
    ppc64_dump_intervals(ins);
 
-   unwind_interval *ui = new_ui(ins, RA_BP_FRAME, 0, 16, BP_SAVED, 0, 0, NULL);
+   unwind_interval *ui = new_ui(ins, RA_BP_FRAME, 16, BP_SAVED, NULL);
    ui->common.end = ins + len;
 
    stat.first_undecoded_ins = NULL;
