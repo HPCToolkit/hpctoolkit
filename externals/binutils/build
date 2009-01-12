@@ -17,13 +17,11 @@ pre_build
 cd work || die "unable to cd: work"
 work_dir=`pwd`
 
-
-dirs="libiberty bfd opcodes binutils"
+dirs="libiberty bfd opcodes intl binutils"
 for x in ${dirs}; do
     echo "=> ${x}/build"
     cd ${work_dir}/${x}
     $MAKE || die "unable to build ${x}"
 done
-
 
 post_build

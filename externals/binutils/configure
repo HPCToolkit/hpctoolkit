@@ -31,16 +31,11 @@ work_dir=`pwd`
 cd "../${src}" || die "unable to cd: ${src}"
 src=`pwd`
 
-
 # The top-level configure for binutils 2.17 does *not* pass along
 # --host to its sub-configures.  Erg!  So instead of just doing one
 # top-level configure, we configure for each subdir.
 
-#echo configure "$@"
-#../${src}/configure "$@"
-#test $? -eq 0 || die "configure failed"
-
-dirs="libiberty bfd opcodes binutils"
+dirs="libiberty bfd opcodes intl binutils"
 for x in . ${dirs}; do
     echo "=> ${x}/configure $@"
     mkdir -p ${work_dir}/${x} || die "unable to mkdir: ${work_dir}/${x}"
@@ -48,6 +43,5 @@ for x in . ${dirs}; do
     ${src}/${x}/configure "$@"
     test $? -eq 0 || die "configure in ${x} failed"
 done
-
 
 post_configure
