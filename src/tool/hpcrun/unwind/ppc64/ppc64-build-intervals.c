@@ -1,8 +1,21 @@
-#include "assert.h"
+/******************************************************************************
+ * global include files
+ *****************************************************************************/
+
+#include <stdio.h>
+#include <assert.h>
+
+
+
+/******************************************************************************
+ * local include files
+ *****************************************************************************/
 
 #include "pmsg.h"
 #include "ppc64-unwind-interval.h"
 #include "fnbounds_interface.h"
+
+
 
 /******************************************************************************
  * macros
@@ -26,6 +39,8 @@
 #define BLR(x)          ((x) == 0x4e800020)
 
 #define NEXT_INS        ((char *) (cur_ins + 1))
+
+
 
 /******************************************************************************
  * states
@@ -70,8 +85,8 @@ ppc64_build_intervals(char *ins, unsigned int len)
   int *end_ins = (int *) (ins + len);
 
   while (cur_ins < end_ins) {
-#if 0
-    printf("trying 0x%x [%p,%p\n",*cur_ins, cur_ins, end_ins);
+#if 1
+    printf("trying 0x%x [%p,%p)\n",*cur_ins, cur_ins, end_ins);
 #endif
     //--------------------------------------------------
     // move return address from LR to R0
@@ -158,7 +173,19 @@ ppc64_build_intervals(char *ins, unsigned int len)
 }
 
 
-void ppc64_dump_intervals(char  *addr) 
+static void 
+ppc64_print_interval_set(unwind_interval *first) 
+{
+  unwind_interval *u;
+
+  for(u = first; u; u = (unwind_interval *) u->common.next) {
+    dump_ui(u, 1);
+  }
+}
+
+
+void 
+ppc64_dump_intervals(char  *addr) 
 {
   void *s, *e;
   unwind_interval *u;
@@ -171,39 +198,17 @@ void ppc64_dump_intervals(char  *addr)
   printf("build intervals from %p to %p %d\n",s,e,llen);
   intervals = ppc64_build_intervals(s, (unsigned int) llen);
 
-  for(u = (unwind_interval *) intervals.first; u; 
-      u = (unwind_interval *) u->common.next) {
-    dump_ui(u, 1);
-  }
+  ppc64_print_interval_set((unwind_interval *) intervals.first);
 }
 
 
 interval_status 
 build_intervals(char *ins, unsigned int len)
 {
-   interval_status stat;
-   unwind_interval *u;
+  interval_status stat = ppc64_build_intervals(ins, len);
 
-   stat = ppc64_build_intervals(ins, len);
-
-  for(u = (unwind_interval *) stat.first; u; 
-      u = (unwind_interval *) u->common.next) {
-    dump_ui(u, 0);
-  }
+  ppc64_print_interval_set((unwind_interval *) stat.first);
 
   return stat;
-#if 0
-
-   ppc64_dump_intervals(ins);
-
-   unwind_interval *ui = new_ui(ins, RA_BP_FRAME, 16, BP_SAVED, NULL);
-   ui->common.end = ins + len;
-
-   stat.first_undecoded_ins = NULL;
-   stat.errcode = 0;
-   stat.first = ui;
-
-   return stat; 
-#endif
 }
 
