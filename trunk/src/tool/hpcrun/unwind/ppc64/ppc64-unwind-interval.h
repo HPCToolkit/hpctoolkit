@@ -19,16 +19,9 @@ struct unwind_interval_t {
 
   ra_loc ra_status; /* how to find the return address */
 
-  int sp_ra_pos; /* return address offset from sp */
-  int sp_bp_pos; /* BP offset from sp */
-
   bp_loc bp_status; /* how to find the bp register */
 
   int bp_ra_pos; /* return address offset from bp */
-  int bp_bp_pos; /* (caller's) BP offset from bp */
-
-  struct unwind_interval_t *prev_canonical;
-  int restored_canonical;
 };
 
 #define lstartaddr ((unsigned long) startaddr)
@@ -50,24 +43,16 @@ extern const unwind_interval poison_ui;
 extern "C" {
 #endif
 
-
-  void set_ui_canonical(unwind_interval *u, unwind_interval *value);
-
-  void set_ui_restored_canonical(unwind_interval *u, unwind_interval *value);
-
-
   interval_status build_intervals(char  *ins, unsigned int len);
 
   unwind_interval *
-  new_ui(char *startaddr, 
-	 ra_loc ra_status, unsigned int sp_ra_pos, int bp_ra_pos, 
-	 bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
-	 unwind_interval *prev);
+  new_ui(char *startaddr, ra_loc ra_status, int bp_ra_pos, 
+	 bp_loc bp_status, unwind_interval *prev);
 
-  unwind_interval *fluke_ui(char *pc,unsigned int sp_ra_pos);
 
   void link_ui(unwind_interval *current, unwind_interval *next);
   void dump_ui(unwind_interval *u, int dump_to_stdout);
+
   long ui_count();
 
   long suspicious_count();

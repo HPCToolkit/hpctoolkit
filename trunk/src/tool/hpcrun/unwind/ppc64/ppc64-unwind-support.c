@@ -1,6 +1,17 @@
+//***************************************************************************
+// global include files
+//***************************************************************************
+
 #include "assert.h"
 #include "context.h"
 #include "ucontext.h"
+
+
+
+//***************************************************************************
+// local include files
+//***************************************************************************
+
 #include "monitor.h"
 #include "pmsg.h"
 #include "splay.h"
@@ -9,19 +20,36 @@
 #include "ppc64-unwind-interval.h"
 
 
+
+//***************************************************************************
+// macros
+//***************************************************************************
+
 #define RA_OFFSET_FROM_BP 1
 #define PC_FROM_FRAME_BP(bp) (*((void **) bp + RA_OFFSET_FROM_BP))
 
 
-void
-unw_init_arch(void)
-{
-}
-
 #define REGISTER_R0 ((unsigned int) -5)
 #define REGISTER_LR ((unsigned int) -3)
 
+
+
+//***************************************************************************
+// local variables
+//***************************************************************************
 static int debug_unw = 1;
+
+
+
+//***************************************************************************
+// interface operations
+//***************************************************************************
+
+void
+unw_init(void)
+{
+}
+
 
 void 
 unw_init_cursor(void* context, unw_cursor_t *cursor)
@@ -35,8 +63,10 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
   ucontext_t *ctx = (ucontext_t *) context;
 
   if (((unwind_interval *)cursor->intvl)->ra_status == RA_REGISTER) { 
-      if (((unwind_interval *)cursor->intvl)->bp_ra_pos != REGISTER_R0) ra = ctx->uc_mcontext.regs->gpr[0];
-      else if (((unwind_interval *)cursor->intvl)->bp_ra_pos != REGISTER_LR) ra = ctx->uc_mcontext.regs->link;
+      if (((unwind_interval *)cursor->intvl)->bp_ra_pos != REGISTER_R0) 
+	  ra = ctx->uc_mcontext.regs->gpr[0];
+      else if (((unwind_interval *)cursor->intvl)->bp_ra_pos != REGISTER_LR) 
+	  ra = ctx->uc_mcontext.regs->link;
       else assert(0);
   }
 
@@ -52,7 +82,6 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
 
   TMSG(UNW_INIT,"returned interval = %p",cursor->intvl);
 }
-
 
 
 int 
@@ -138,9 +167,11 @@ unw_step(unw_cursor_t *cursor)
   // the pc is invalid if no unwind information is  available
   //-----------------------------------------------------------
   if (!cursor->intvl) {
-    TMSG(UNW,"next_pc = %p has no valid interval, continuing to look ...", next_pc);
+    TMSG(UNW,"next_pc = %p has no valid interval, continuing to look ...", 
+	 next_pc);
     if (((void *)next_bp) >= monitor_stack_bottom()){
-      TMSG(UNW,"next bp (%p) >= monitor_stack_bottom (%p)",next_bp,monitor_stack_bottom());
+      TMSG(UNW,"next bp (%p) >= monitor_stack_bottom (%p)",
+	   next_bp, monitor_stack_bottom());
       return 0;
     }
 
@@ -151,7 +182,8 @@ unw_step(unw_cursor_t *cursor)
     // NOTE: this should only happen in the top frame on the stack.
     //-------------------------------------------------------------------
     next_pc = PC_FROM_FRAME_BP(*next_bp);
-    TMSG(UNW,"skipping up one frame f candidate bp = %p ==> next pc = %p", next_bp, next_pc);
+    TMSG(UNW,"skipping up one frame f candidate bp = %p ==> next pc = %p", 
+	 next_bp, next_pc);
     cursor->intvl = csprof_addr_to_interval(next_pc);
   }
 
@@ -173,4 +205,14 @@ unw_step(unw_cursor_t *cursor)
 
   TMSG(UNW,"step goes forward w pc = %p, bp = %p",next_pc,next_bp);
   return 1;
+}
+
+
+int 
+unw_get_reg(unw_cursor_t *cursor, int reg_id, void **reg_value)
+{
+  assert(reg_id == UNW_REG_IP);
+  *reg_value = cursor->pc;
+
+  return 0;
 }
