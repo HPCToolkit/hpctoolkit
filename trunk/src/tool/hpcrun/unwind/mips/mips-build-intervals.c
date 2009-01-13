@@ -76,7 +76,9 @@ isAdjustSPByVar(uint32_t insn)
 {
   // example: dsubu sp,sp,v0
   uint32_t op = (insn & OP_MASK);
-  if (op == DSUBU || op == SUBU || op == DSUB || op == SUB) {
+  uint32_t op_spc = (insn & OPSpecial_MASK);
+  if (op == OPSpecial &&
+      (op_spc == DSUBU || op_spc == SUBU || op_spc == DSUB || op_spc == SUB)) {
     // The non-'U' probably never occur since they trap on overflow.
     return (REG_D(insn) == REG_SP) && (REG_S(insn) == REG_SP);
   }
@@ -224,7 +226,12 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 				  0, unwpos_NULL, REG_RA, NULL);
   unw_interval_t* ui = beg_ui;
   unw_interval_t* nxt_ui = NULL;
-  unw_interval_t* canon_ui = beg_ui;
+
+  // canonical intervals
+  unw_interval_t* canon_ui   = beg_ui;
+  unw_interval_t* canonSP_ui = beg_ui;
+  unw_interval_t* canonFP_ui = NULL;
+
 
   uint32_t* cur_insn = beg_insn;
   while (cur_insn < end_insn) {
@@ -264,7 +271,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 		      ui->sp_pos, ui->bp_pos, ra_pos, ui);
       ui_link(ui, nxt_ui); ui = nxt_ui;
 
-      canon_ui = nxt_ui;
+      canon_ui = canonSP_ui = nxt_ui;
     }
     else if (isStoreRegInFrame(*cur_insn, REG_SP, REG_FP)) {
       checkUI(ui, FrmTy_SP, cur_insn);
@@ -275,10 +282,10 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 		      ui->sp_pos, bp_pos, ui->ra_arg, ui);
       ui_link(ui, nxt_ui); ui = nxt_ui;
 
-      canon_ui = nxt_ui;
+      canon_ui = canonSP_ui = nxt_ui;
     }
     //--------------------------------------------------
-    // SP-frame --> SP-frame: load RA
+    // SP-frame --> SP-frame: load RA by SP
     //--------------------------------------------------
     else if (isLoadRegFromFrame(*cur_insn, REG_SP, REG_RA)) {
       checkUI(ui, FrmTy_SP, cur_insn);
@@ -292,7 +299,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
     // General: interior returns (epilogues)
     //--------------------------------------------------
     else if (isJumpToReg(*cur_insn, REG_RA)
-	&& ((cur_insn + 1/*delay slot*/ + 1) < end_insn)) {
+	     && ((cur_insn + 1/*delay slot*/ + 1) < end_insn)) {
       // An interior return.  Restore the canonical interval if necessary.
       if (!ui_cmp(ui, canon_ui)) {
 	nxt_ui = new_ui(nextInsn(cur_insn + 1/*delay slot*/), 
@@ -320,7 +327,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 		      0, bp_pos, ra_pos, ui);
       ui_link(ui, nxt_ui); ui = nxt_ui;
 
-      canon_ui = nxt_ui;
+      canon_ui = canonFP_ui = nxt_ui;
     }
     /* else if (store-parent's-FP): FIXME */
 
@@ -336,7 +343,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 			0, bp_pos, ra_pos, ui);
 	ui_link(ui, nxt_ui); ui = nxt_ui;
 
-	canon_ui = nxt_ui;
+	canon_ui = canonFP_ui = nxt_ui;
       }
     }
     //--------------------------------------------------
@@ -349,14 +356,20 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
       ui_link(ui, nxt_ui); ui = nxt_ui;
     }
     /* else if (load-parent's-FP): FIXME */
-    
+
     //--------------------------------------------------
-    // FP-frame --> SP-frame: deallocate frame by restoring SP
+    // FP-frame --> SP-frame: deallocate (all/part of) frame by restoring SP
     //--------------------------------------------------
     else if (isMoveReg(*cur_insn, REG_SP, REG_FP)) {
       if (ui->ty == FrmTy_BP) {
-	nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, FrmFlg_RAReg, 
-			0, unwpos_NULL, REG_RA, ui);
+	bool isFullDealloc = (!frameflg_isset(canon_ui->flgs, FrmFlg_RAReg)
+			      && frameflg_isset(ui->flgs, FrmFlg_RAReg));
+	frameflg_t flgs = (isFullDealloc) ? FrmFlg_RAReg : canonSP_ui->flgs;
+	int sp_pos      = (isFullDealloc) ? 0            : canonSP_ui->sp_pos;
+	int bp_pos      = (isFullDealloc) ? unwpos_NULL  : canonSP_ui->bp_pos;
+	int ra_arg      = (isFullDealloc) ? REG_RA       : canonSP_ui->ra_arg;
+	nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, flgs, 
+			sp_pos, bp_pos, ra_arg, ui);
 	ui_link(ui, nxt_ui); ui = nxt_ui;
       }
       else {
