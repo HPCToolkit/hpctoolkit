@@ -93,7 +93,7 @@ static inline bool
 isPossibleFP(void** sp, void** fp)
 {
   // Stacks grow down, so frame pointer is at a higher address
-  return (monitor_stack_bottom() > fp && fp > sp);
+  return (monitor_stack_bottom() >= fp && fp >= sp);
 }
 
 
@@ -101,12 +101,16 @@ isPossibleFP(void** sp, void** fp)
 
 static inline void
 computeNext_SPFrame(void** * nxt_sp, void** * nxt_bp,
-		    unw_interval_t* intvl, void** sp)
+		    unw_interval_t* intvl, void** sp, void** bp)
 {
   *nxt_sp = getPtrFromSP(sp, intvl->sp_pos);
 
   if (intvl->bp_pos != unwpos_NULL) {
     *nxt_bp = getPtrFromSP(sp, intvl->bp_pos);
+  }
+  else if (bp) {
+    // preserve BP for use with parent frame (child may save parent's bp)
+    *nxt_bp = bp;
   }
 }
 
@@ -234,7 +238,7 @@ unw_step(unw_cursor_t* cursor)
   // compute SP (stack pointer) and BP (frame pointer) for the caller's frame.
   //-----------------------------------------------------------
   if (intvl->ty == FrmTy_SP) {
-    computeNext_SPFrame(&nxt_sp, &nxt_bp, intvl, sp);
+    computeNext_SPFrame(&nxt_sp, &nxt_bp, intvl, sp, bp);
   }
   else if (intvl->ty == FrmTy_BP) {
     if (isPossibleFP(sp, bp)) { // BP is our weak spot
@@ -280,7 +284,7 @@ unw_step(unw_cursor_t* cursor)
       // realign sp/bp and recompute nxt_sp, nxt_bp
       if (intvl->ty == FrmTy_SP) {
 	void** new_sp = getPtrFromSP(troll_sp, -intvl->ra_arg);
-	computeNext_SPFrame(&nxt_sp, &nxt_bp, intvl, new_sp);
+	computeNext_SPFrame(&nxt_sp, &nxt_bp, intvl, new_sp, NULL);
 	TMSG(UNW, "troll align/sp: troll_sp=%p, new sp=%p: nxt sp=%p, bp=%p",
 	     troll_sp, new_sp, nxt_sp, nxt_bp);
       }
