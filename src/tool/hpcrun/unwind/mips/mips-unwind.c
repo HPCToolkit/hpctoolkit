@@ -35,6 +35,8 @@
 
 #define MYDBG 0
 
+#define pc_NULL ((void*)(intptr_t)(-1)) /* NULL may identify outmost frame */
+
 //***************************************************************************
 
 static inline greg_t
@@ -91,7 +93,7 @@ static inline bool
 isPossibleFP(void** sp, void** fp)
 {
   // Stacks grow down, so frame pointer is at a higher address
-  return (fp > sp);
+  return (monitor_stack_bottom() > fp && fp > sp);
 }
 
 
@@ -182,7 +184,7 @@ unw_step(unw_cursor_t* cursor)
   unw_interval_t* intvl = (unw_interval_t*)cursor->intvl;
 
   // next (parent) frame
-  void*  nxt_pc = NULL;
+  void*  nxt_pc = pc_NULL;
   void** nxt_sp = NULL;
   void** nxt_bp = NULL;
   unw_interval_t* nxt_intvl = NULL;
@@ -212,14 +214,16 @@ unw_step(unw_cursor_t* cursor)
     nxt_pc = getValFromSP(sp, intvl->ra_arg);
   }
   else if (intvl->ty == FrmTy_BP) {
-    nxt_pc = getValFromBP(bp, intvl->ra_arg);
+    if (isPossibleFP(sp, bp)) { // BP is our weak spot
+      nxt_pc = getValFromBP(bp, intvl->ra_arg);
+    }
   }
   else {
     assert(0);
   }
-  // INVARIANT: nxt_pc has been overwritten
+  // INVARIANT: nxt_pc has been overwritten or is pc_NULL
 
-  if (!nxt_pc) {
+  if (nxt_pc == NULL) {
     // Allegedly, MIPS API promises NULL RA for outermost frame
     // NOTE: we are already past the last valid PC
     TMSG(UNW, "stop: pc=%p", nxt_pc);
@@ -233,8 +237,7 @@ unw_step(unw_cursor_t* cursor)
     computeNext_SPFrame(&nxt_sp, &nxt_bp, intvl, sp);
   }
   else if (intvl->ty == FrmTy_BP) {
-    // Be suspicious of bp, since this is our weak spot.
-    if (isPossibleFP(sp, bp)) {
+    if (isPossibleFP(sp, bp)) { // BP is our weak spot
       computeNext_BPFrame(&nxt_sp, &nxt_bp, intvl, bp);
     }
   }
@@ -242,27 +245,21 @@ unw_step(unw_cursor_t* cursor)
     assert(0);
   }
 
-  // Ensure we always make progress unwinding the stack...
-  bool frameSizeMayBe0 = frameflg_isset(intvl->flgs, FrmFlg_RAReg);
-  if (!frameSizeMayBe0 && !isPossibleParentSP(sp, nxt_sp)) {
-    TMSG(UNW, "warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
-    nxt_sp = sp + 1; // should cause trolling on next unw_step
-  }
-  // if bp is valid, bp > sp and nxt_bp > nxt_sp; but hard to implement
-
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------  
 
   bool didTroll = false;
-  nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
+  if (nxt_pc != pc_NULL) {
+    nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
+  }
 
   if (!nxt_intvl) {
     // nxt_pc is invalid for some reason... try trolling
-    TMSG(UNW, "trolling from sp=%p to correct pc=%p...", sp, nxt_pc);
+    TMSG(UNW, "troll: bad pc=%p; cur sp=%p, bp=%p...", nxt_pc, sp, bp);
 
     uint troll_pc_pos;
-    uint ret = stack_troll((char**)sp, &troll_pc_pos);
+    uint ret = stack_troll(sp, &troll_pc_pos);
     if (!ret) {
       TMSG(UNW, "error: troll failed");
       return STEP_ERROR;
@@ -282,23 +279,35 @@ unw_step(unw_cursor_t* cursor)
 	&& intvl->ra_arg != unwpos_NULL) {
       // realign sp/bp and recompute nxt_sp, nxt_bp
       if (intvl->ty == FrmTy_SP) {
-	sp = troll_sp - intvl->ra_arg;
-	computeNext_SPFrame(&nxt_sp, &nxt_bp, intvl, sp);
+	void** new_sp = getPtrFromSP(troll_sp, -intvl->ra_arg);
+	computeNext_SPFrame(&nxt_sp, &nxt_bp, intvl, new_sp);
+	TMSG(UNW, "troll align/sp: troll_sp=%p, new sp=%p: nxt sp=%p, bp=%p",
+	     troll_sp, new_sp, nxt_sp, nxt_bp);
       }
       else if (intvl->ty == FrmTy_BP) {
-	bp = troll_sp + -(intvl->ra_arg);
-	computeNext_BPFrame(&nxt_sp, &nxt_bp, intvl, bp);
+	void** new_bp = getPtrFromSP(troll_sp, -intvl->ra_arg);
+	computeNext_BPFrame(&nxt_sp, &nxt_bp, intvl, new_bp);
+	TMSG(UNW, "troll align/bp: troll_sp=%p, new bp=%p: nxt sp=%p, bp=%p",
+	     troll_sp, new_bp, nxt_sp, nxt_bp);
       }
       else {
 	assert(0);
       }
-      TMSG(UNW, "trolling realigns sp/bp: sp=%p, bp=%p", nxt_sp, nxt_bp);
     }
     else if (troll_sp >= nxt_sp) {
-      nxt_sp = troll_sp + 1; // wild guess; hopefully forces realignment
+      nxt_sp = troll_sp + 1; // ensure progress is made
     }
   }
   // INVARIANT: At this point, 'nxt_intvl' is valid
+
+
+  // INVARIANT: Ensure we always make progress unwinding the stack...
+  bool frameSizeMayBe0 = frameflg_isset(intvl->flgs, FrmFlg_RAReg);
+  if (!frameSizeMayBe0 && !isPossibleParentSP(sp, nxt_sp)) {
+    TMSG(UNW, "warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
+    nxt_sp = sp + 1; // should cause trolling on next unw_step
+  }
+
 
   TMSG(UNW, "next: pc=%p, sp=%p, bp=%p", nxt_pc, nxt_sp, nxt_bp);
   if (MYDBG) { ui_dump(nxt_intvl, 1); }
