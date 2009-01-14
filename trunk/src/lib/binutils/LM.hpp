@@ -264,6 +264,9 @@ public:
   // findInsn: Similar to the above except returns an 'Insn',
   // not the bits.
   //
+  // findInsnNear: find the first instruction equal or greater than
+  // given 'vma'
+  //
   // insertInsn: Add an instruction to the map
   // -------------------------------------------------------
   MachInsn*
@@ -279,6 +282,17 @@ public:
     VMA opvma = isa->ConvertVMAToOpVMA(vma_ur, opIndex);
     
     InsnMap::const_iterator it = m_insnMap.find(opvma);
+    Insn* insn = (it != m_insnMap.end()) ? it->second : NULL;
+    return insn;
+  }
+
+  Insn*
+  findInsnNear(VMA vma, ushort opIndex) const
+  {
+    VMA vma_ur = unrelocate(vma);
+    VMA opvma = isa->ConvertVMAToOpVMA(vma_ur, opIndex);
+    
+    InsnMap::const_iterator it = m_insnMap.lower_bound(opvma);
     Insn* insn = (it != m_insnMap.end()) ? it->second : NULL;
     return insn;
   }
