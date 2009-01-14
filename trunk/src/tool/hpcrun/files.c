@@ -49,9 +49,9 @@ static char *os_realpath(const char *inpath, char *outpath);
 // local data 
 //***************************************************************
 
-char default_path[PATH_MAX];
-char output_directory[PATH_MAX];
-char *executable_name = 0;
+static char default_path[PATH_MAX];
+static char output_directory[PATH_MAX];
+static char *executable_name = 0;
 
 
 
@@ -178,8 +178,8 @@ files_name(char *filename, unsigned int mpi, const char *suffix)
   thread_data_t *td = csprof_get_thread_data();
 
   sprintf(filename, "%s/%s-%06lu-%03lu-%lx-%u.%s", 
-	  output_directory, executable_name, mpi, 
-	  td->state->pstate.thrid,
+          output_directory, executable_name, mpi, 
+          td->state->pstate.thrid,
           os_hostid(), os_pid(), suffix); 
 
   return filename;

@@ -186,11 +186,11 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	handling_sample.c last.c libmonitor_upcalls.c metrics.c name.c \
 	sample_event.c sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_sources_registered.c \
-	segv_handler.c state.c system_server.c thread_data.c trace.c \
-	unsafe.c Dbg/pmsg.c fnbounds/fnbounds_common.c \
-	lush/lush-backtrace.c lush/lush.c lush/lushi-cb.c \
-	lush/lush-support-rt.c memory/list.c memory/mem.c \
-	sampling/types/callstack/cct.c \
+	segv_handler.c state.c system_server.c thread_data.c \
+	thread_use.c trace.c unsafe.c Dbg/pmsg.c \
+	fnbounds/fnbounds_common.c lush/lush-backtrace.c lush/lush.c \
+	lush/lushi-cb.c lush/lush-support-rt.c memory/list.c \
+	memory/mem.c sampling/types/callstack/cct.c \
 	sampling/types/callstack/dump_backtraces.c \
 	unwind/common/backtrace.c unwind/common/splay.c \
 	unwind/common/stack_troll.c utilities/executable-path.c \
@@ -223,11 +223,12 @@ am__objects_7 = libcsprof_la-first_func.lo \
 	libcsprof_la-sample_sources_registered.lo \
 	libcsprof_la-segv_handler.lo libcsprof_la-state.lo \
 	libcsprof_la-system_server.lo libcsprof_la-thread_data.lo \
-	libcsprof_la-trace.lo libcsprof_la-unsafe.lo \
-	libcsprof_la-pmsg.lo libcsprof_la-fnbounds_common.lo \
-	libcsprof_la-lush-backtrace.lo libcsprof_la-lush.lo \
-	libcsprof_la-lushi-cb.lo libcsprof_la-lush-support-rt.lo \
-	libcsprof_la-list.lo libcsprof_la-mem.lo libcsprof_la-cct.lo \
+	libcsprof_la-thread_use.lo libcsprof_la-trace.lo \
+	libcsprof_la-unsafe.lo libcsprof_la-pmsg.lo \
+	libcsprof_la-fnbounds_common.lo libcsprof_la-lush-backtrace.lo \
+	libcsprof_la-lush.lo libcsprof_la-lushi-cb.lo \
+	libcsprof_la-lush-support-rt.lo libcsprof_la-list.lo \
+	libcsprof_la-mem.lo libcsprof_la-cct.lo \
 	libcsprof_la-dump_backtraces.lo libcsprof_la-backtrace.lo \
 	libcsprof_la-splay.lo libcsprof_la-stack_troll.lo \
 	libcsprof_la-executable-path.lo libcsprof_la-spinlock.lo \
@@ -268,11 +269,11 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	last.c libmonitor_upcalls.c metrics.c name.c sample_event.c \
 	sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_sources_registered.c \
-	segv_handler.c state.c system_server.c thread_data.c trace.c \
-	unsafe.c Dbg/pmsg.c fnbounds/fnbounds_common.c \
-	lush/lush-backtrace.c lush/lush.c lush/lushi-cb.c \
-	lush/lush-support-rt.c memory/list.c memory/mem.c \
-	sampling/types/callstack/cct.c \
+	segv_handler.c state.c system_server.c thread_data.c \
+	thread_use.c trace.c unsafe.c Dbg/pmsg.c \
+	fnbounds/fnbounds_common.c lush/lush-backtrace.c lush/lush.c \
+	lush/lushi-cb.c lush/lush-support-rt.c memory/list.c \
+	memory/mem.c sampling/types/callstack/cct.c \
 	sampling/types/callstack/dump_backtraces.c \
 	unwind/common/backtrace.c unwind/common/splay.c \
 	unwind/common/stack_troll.c utilities/executable-path.c \
@@ -308,7 +309,8 @@ am__objects_19 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-sample_sources_registered.$(OBJEXT) \
 	libcsprof_o-segv_handler.$(OBJEXT) libcsprof_o-state.$(OBJEXT) \
 	libcsprof_o-system_server.$(OBJEXT) \
-	libcsprof_o-thread_data.$(OBJEXT) libcsprof_o-trace.$(OBJEXT) \
+	libcsprof_o-thread_data.$(OBJEXT) \
+	libcsprof_o-thread_use.$(OBJEXT) libcsprof_o-trace.$(OBJEXT) \
 	libcsprof_o-unsafe.$(OBJEXT) libcsprof_o-pmsg.$(OBJEXT) \
 	libcsprof_o-fnbounds_common.$(OBJEXT) \
 	libcsprof_o-lush-backtrace.$(OBJEXT) \
@@ -616,6 +618,7 @@ MY_BASE_FILES = \
 	state.c				\
 	system_server.c			\
 	thread_data.c			\
+	thread_use.c			\
 	trace.c				\
 	unsafe.c			\
 	Dbg/pmsg.c			\
@@ -971,6 +974,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-swizzle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-system_server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-thread_data.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-thread_use.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-tokenize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-trace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-unlink.Plo@am__quote@
@@ -1029,6 +1033,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-swizzle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-system_server.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-thread_data.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-thread_use.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-tokenize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-trace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-unlink.Po@am__quote@
@@ -1249,6 +1254,13 @@ libcsprof_la-thread_data.lo: thread_data.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='thread_data.c' object='libcsprof_la-thread_data.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-thread_data.lo `test -f 'thread_data.c' || echo '$(srcdir)/'`thread_data.c
+
+libcsprof_la-thread_use.lo: thread_use.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-thread_use.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-thread_use.Tpo -c -o libcsprof_la-thread_use.lo `test -f 'thread_use.c' || echo '$(srcdir)/'`thread_use.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-thread_use.Tpo $(DEPDIR)/libcsprof_la-thread_use.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='thread_use.c' object='libcsprof_la-thread_use.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-thread_use.lo `test -f 'thread_use.c' || echo '$(srcdir)/'`thread_use.c
 
 libcsprof_la-trace.lo: trace.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-trace.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-trace.Tpo -c -o libcsprof_la-trace.lo `test -f 'trace.c' || echo '$(srcdir)/'`trace.c
@@ -1816,6 +1828,20 @@ libcsprof_o-thread_data.obj: thread_data.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='thread_data.c' object='libcsprof_o-thread_data.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-thread_data.obj `if test -f 'thread_data.c'; then $(CYGPATH_W) 'thread_data.c'; else $(CYGPATH_W) '$(srcdir)/thread_data.c'; fi`
+
+libcsprof_o-thread_use.o: thread_use.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-thread_use.o -MD -MP -MF $(DEPDIR)/libcsprof_o-thread_use.Tpo -c -o libcsprof_o-thread_use.o `test -f 'thread_use.c' || echo '$(srcdir)/'`thread_use.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-thread_use.Tpo $(DEPDIR)/libcsprof_o-thread_use.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='thread_use.c' object='libcsprof_o-thread_use.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-thread_use.o `test -f 'thread_use.c' || echo '$(srcdir)/'`thread_use.c
+
+libcsprof_o-thread_use.obj: thread_use.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-thread_use.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-thread_use.Tpo -c -o libcsprof_o-thread_use.obj `if test -f 'thread_use.c'; then $(CYGPATH_W) 'thread_use.c'; else $(CYGPATH_W) '$(srcdir)/thread_use.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-thread_use.Tpo $(DEPDIR)/libcsprof_o-thread_use.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='thread_use.c' object='libcsprof_o-thread_use.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-thread_use.obj `if test -f 'thread_use.c'; then $(CYGPATH_W) 'thread_use.c'; else $(CYGPATH_W) '$(srcdir)/thread_use.c'; fi`
 
 libcsprof_o-trace.o: trace.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-trace.o -MD -MP -MF $(DEPDIR)/libcsprof_o-trace.Tpo -c -o libcsprof_o-trace.o `test -f 'trace.c' || echo '$(srcdir)/'`trace.c

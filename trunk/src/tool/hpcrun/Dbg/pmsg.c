@@ -164,7 +164,7 @@ _msg(const char *fmt,va_list args)
   int n;
 
   fstr[0] = '\0';
-  if (csprof_using_threads){
+  if (csprof_using_threads_p()){
     sprintf(fstr,"[%d]: ",TD_GET(id));
   }
   IF_ENABLED(PID){

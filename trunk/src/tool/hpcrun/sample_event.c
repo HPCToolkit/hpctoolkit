@@ -12,7 +12,6 @@
 #include "splay.h"
 #include "state.h"
 #include "thread_data.h"
-#include "thread_use.h"
 #include "trace.h"
 #include "backtrace.h"
 #include "csprof_csdata.h"

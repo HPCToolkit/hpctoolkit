@@ -89,7 +89,6 @@
 
 #include "monitor.h"
 
-#include "thread_use.h"
 #include "thread_data.h"
 
 #include "name.h"

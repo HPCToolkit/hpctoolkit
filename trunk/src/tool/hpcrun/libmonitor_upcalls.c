@@ -32,19 +32,8 @@
 #include "sample_sources_all.h"
 #include "csprof_dlfns.h"
 #include "fnbounds_interface.h"
+#include "thread_use.h"
 #include "trace.h"
-
-
-
-//***************************************************************************
-// global variables 
-//***************************************************************************
-
-// --------------------------------------------------------------------------
-// default is single threaded. monitor_init_thread_support sets this variable
-// to 1 if threads are used.
-// --------------------------------------------------------------------------
-int csprof_using_threads = 0;
 
 
 
@@ -69,8 +58,11 @@ monitor_init_process(int *argc, char **argv, void *data)
     while(DEBUGGER_WAIT);
   }
 
+  csprof_set_using_threads(0);
+
   files_set_executable(process_name);
   files_set_directory();
+
 
   pmsg_init();
   NMSG(PROCESS,"init");
@@ -140,7 +132,7 @@ monitor_init_thread_support(void)
 {
   NMSG(THREAD,"REALLY init_thread_support ---");
   csprof_init_thread_support();
-  csprof_using_threads = 1;
+  csprof_set_using_threads(1);
   NMSG(THREAD,"Init thread support done");
 }
 
