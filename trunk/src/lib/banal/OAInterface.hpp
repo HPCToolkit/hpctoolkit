@@ -71,6 +71,7 @@
  
 #include <lib/isa/ISA.hpp>
 
+#include <lib/binutils/LM.hpp>
 #include <lib/binutils/Proc.hpp>
 #include <lib/binutils/Insn.hpp>
 
@@ -173,8 +174,8 @@ public:
 
   // Note: We assume each instantiation of the IRInterface represents
   // one procedure!
-  OAInterface (binutils::Proc* _p);
-  virtual ~OAInterface ();
+  OAInterface(binutils::Proc* proc);
+  virtual ~OAInterface();
   
   
   //-------------------------------------------------------------------------
@@ -275,11 +276,27 @@ public:
   OA::SymHandle getProcSymHandle(OA::ProcHandle h);
   
 private:
-  OAInterface () { DIAG_Die(DIAG_Unimplemented); }
+  OAInterface() { DIAG_Die(DIAG_Unimplemented); }
+
+  // Given a VMA 'vma', compute the closest actual target VMA.
+  // Technically, this should never be necessary, because decoding
+  // should be correct.  However, this is much easier than upgrading
+  // to the next version of binutils every time new x86_64
+  // instructions are added.
+  VMA normalizeTarget(VMA vma) const
+  {
+    VMA vma_norm = vma;
+    binutils::Insn* insn = m_proc->lm()->findInsnNear(vma, 0);
+    if (insn) {
+      // could check that (vma_norm - vma) is no greater than a few bytes
+      vma_norm = insn->vma();
+    }
+    return vma_norm;
+  }
 
 private:
-  binutils::Proc* proc;
-  std::set<VMA> branchTargetSet;
+  binutils::Proc* m_proc;
+  std::set<VMA> m_branchTargetSet;
 };
 
 } // namespace banal
