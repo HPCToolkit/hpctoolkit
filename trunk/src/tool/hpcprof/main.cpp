@@ -189,7 +189,7 @@ realmain(int argc, char* const* argv)
   string experiment_fnm = db_dir + "/" + args.out_db_experiment;
   std::ostream* os = IOUtil::OpenOStream(experiment_fnm.c_str());
   bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);
-  Analysis::CallPath::write(prof, *os, prettyPrint);
+  Analysis::CallPath::write(prof, *os, args.title, prettyPrint);
   IOUtil::CloseStream(os);
 
   delete prof;

@@ -85,7 +85,8 @@ bool
 normalize(Prof::CallPath::Profile* prof, string lush_agent);
 
 void 
-write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint = true);
+write(Prof::CallPath::Profile* prof, std::ostream& os, 
+      std::string& title, bool prettyPrint = true);
 
 } // namespace CallPath
 
