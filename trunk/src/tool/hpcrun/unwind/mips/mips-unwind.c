@@ -66,6 +66,12 @@ ucontext_bp(ucontext_t* context)
 
 //***************************************************************************
 
+static inline void*
+getCallFromRA(void* ra)
+{
+  return (void*)((uintptr_t)ra - 4 /*delay slot*/ - 4 /*next insn*/);
+}
+
 static inline void**
 getPtrFromSP(void** sp, int offset)
 { return (void**)((uintptr_t)sp + offset); }
@@ -93,7 +99,7 @@ static inline bool
 isPossibleFP(void** sp, void** fp)
 {
   // Stacks grow down, so frame pointer is at a higher address
-  return (monitor_stack_bottom() >= fp && fp >= sp);
+  return ((void**)monitor_stack_bottom() >= fp && fp >= sp);
 }
 
 
@@ -202,7 +208,7 @@ unw_step(unw_cursor_t* cursor)
     return STEP_STOP;
   }
 
-  if ( (void*)sp >= monitor_stack_bottom() ) {
+  if ( sp >= (void**)monitor_stack_bottom() ) {
     TMSG(UNW, "stop: sp (%p) >= monitor_stack_bottom", sp);
     return STEP_STOP;
   }
@@ -255,7 +261,7 @@ unw_step(unw_cursor_t* cursor)
 
   bool didTroll = false;
   if (nxt_pc != pc_NULL) {
-    nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
+    nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(getCallFromRA(nxt_pc));
   }
 
   if (!nxt_intvl) {
@@ -270,7 +276,7 @@ unw_step(unw_cursor_t* cursor)
     }
     void** troll_sp = (void**)getPtrFromSP(sp, troll_pc_pos);
     
-    nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(*troll_sp);
+    nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(getCallFromRA(*troll_sp));
     if (!nxt_intvl) {
       TMSG(UNW, "error: troll_pc=%p failed", *troll_sp);
       return STEP_ERROR;
