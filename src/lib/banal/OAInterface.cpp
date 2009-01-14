@@ -92,11 +92,11 @@ using namespace binutils;
 // OAInterface: We assume each instantiation of the IRInterface
 // represents one procedure.  We then need to find all the possible
 // branch targets.
-banal::OAInterface::OAInterface (Proc* _p) 
-  : proc(_p)
+banal::OAInterface::OAInterface (Proc* proc)
+  : m_proc(proc)
 {
-  branchTargetSet.clear();
-  for (ProcInsnIterator pii(*proc); pii.IsValid(); ++pii) {
+  m_branchTargetSet.clear();
+  for (ProcInsnIterator pii(*m_proc); pii.IsValid(); ++pii) {
     Insn* insn = pii.Current();
     VMA curr_oppc = pii.CurrentVMA(); // the 'operation VMA'
     
@@ -104,7 +104,7 @@ banal::OAInterface::OAInterface (Proc* _p)
     // the branch target set.
     ISA::InsnDesc d = insn->desc();
     if (d.IsBrRel()) {
-      branchTargetSet.insert(insn->targetVMA(insn->vma()));
+      m_branchTargetSet.insert(normalizeTarget(insn->targetVMA(insn->vma())));
     }
   }
 }
@@ -112,7 +112,7 @@ banal::OAInterface::OAInterface (Proc* _p)
 
 banal::OAInterface::~OAInterface()
 { 
-  branchTargetSet.clear();
+  m_branchTargetSet.clear();
 }
 
 
@@ -127,6 +127,7 @@ banal::OAInterface::toString(const OA::ProcHandle h)
   oss << h.hval();
   return oss.str();
 }
+
 
 string
 banal::OAInterface::toString(const OA::CallHandle h)
@@ -221,13 +222,13 @@ banal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
   os << showbase << hex << pc << dec << ": " << d.ToString();
   
   // Output other qualifiers
-  if (branchTargetSet.find(pc) != branchTargetSet.end()) {
+  if (m_branchTargetSet.find(pc) != m_branchTargetSet.end()) {
     os << " [branch target]";
   }
   if (d.IsBrRel()) {
     VMA targ = insn->targetVMA(pc);
     os << " <" << hex << targ << dec << ">";
-    if (proc->isIn(targ) == false) {
+    if (m_proc->isIn(targ) == false) {
       os << " [out of procedure -- treated as SIMPLE]";
     }
   } 
@@ -259,7 +260,7 @@ OA::OA_ptr<OA::IRRegionStmtIterator>
 banal::OAInterface::procBody(OA::ProcHandle h)
 {
   Proc* p = IRHNDL_TO_TY(h, Proc*);
-  DIAG_Assert(p == proc, "");
+  DIAG_Assert(p == m_proc, "");
   OA::OA_ptr<OA::IRRegionStmtIterator> it;
   it = new RegionStmtIterator(*p);
   return it;
@@ -284,7 +285,7 @@ banal::OAInterface::getCFGStmtType(OA::StmtHandle h)
     // procedure, then we just ignore it.  For bloop this is fine
     // since the branch won't create any loops.
     br_targ = insn->targetVMA(insn->vma());
-    if (proc->isIn(br_targ)) {
+    if (m_proc->isIn(br_targ)) {
       ty = OA::CFG::UNCONDITIONAL_JUMP;
     } 
     else {
@@ -301,7 +302,7 @@ banal::OAInterface::getCFGStmtType(OA::StmtHandle h)
     // outside of its procedure, then we just ignore it.  For bloop
     // this is fine since the branch won't create any loops.
     br_targ = insn->targetVMA(insn->vma());
-    if (proc->isIn(br_targ)) {
+    if (m_proc->isIn(br_targ)) {
       ty = OA::CFG::USTRUCT_TWOWAY_CONDITIONAL_T;
     }
     else {
@@ -335,7 +336,7 @@ banal::OAInterface::getLabel(OA::StmtHandle h)
 {
   OA::StmtLabel lbl = 0;
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
-  if (branchTargetSet.find(insn->vma()) != branchTargetSet.end()) {
+  if (m_branchTargetSet.find(insn->vma()) != m_branchTargetSet.end()) {
     lbl = insn->vma();
   } 
   return lbl;
@@ -468,8 +469,8 @@ banal::OAInterface::getTargetLabel(OA::StmtHandle h, int n)
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
   ISA::InsnDesc d = insn->desc();
   if (d.IsBrRel()) {
-    lbl = insn->targetVMA(insn->vma());
-  } 
+    lbl = normalizeTarget(insn->targetVMA(insn->vma()));
+  }
   else {
     lbl = 0; // FIXME: We're seeing indirect branches.
   }
@@ -533,7 +534,7 @@ OA::SymHandle
 banal::OAInterface::getProcSymHandle(OA::ProcHandle h)
 { 
   Proc* p = IRHNDL_TO_TY(h, Proc*);
-  DIAG_Assert(p == proc, "");
+  DIAG_Assert(p == m_proc, "");
 
   const string& name = p->name(); // this gives us persistent data!
   const char* nm = name.c_str();
