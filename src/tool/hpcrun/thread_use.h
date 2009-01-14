@@ -1,6 +1,7 @@
-#ifndef THREAD_USE_H
-#define THREAD_USE_H
+#ifndef thread_use_h
+#define thread_use_h
 
-extern int csprof_using_threads;
+void csprof_set_using_threads(int flag);
+int csprof_using_threads_p();
 
-#endif // !defined(THREAD_USE_H)
+#endif // thread_use_h

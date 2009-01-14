@@ -71,6 +71,7 @@ MY_BASE_FILES =			\
 	state.c				\
 	system_server.c			\
 	thread_data.c			\
+	thread_use.c			\
 	trace.c				\
 	unsafe.c			\
 	Dbg/pmsg.c			\
