@@ -92,21 +92,24 @@ namespace Analysis {
 namespace CallPath {
 
 void
-write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint)
+write(Prof::CallPath::Profile* prof, std::ostream& os, 
+      string& title, bool prettyPrint)
 {
   static const char* experimentDTD =
 #include <lib/xml/hpc-experiment.dtd.h>
 
   using namespace Prof;
 
+  string name = (title.empty()) ? prof->name() : title;
+
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE hpc-experiment [\n" << experimentDTD << "]>" << std::endl;
   os << "<HPCToolkitExperiment version=\"2.0\">\n";
-  os << "<Header n" << MakeAttrStr(prof->name()) << ">\n";
+  os << "<Header n" << MakeAttrStr(name) << ">\n";
   os << "  <Info/>\n";
   os << "</Header>\n";
 
-  os << "<SecCallPathProfile i=\"0\" n" << MakeAttrStr(prof->name()) << ">\n";
+  os << "<SecCallPathProfile i=\"0\" n" << MakeAttrStr(name) << ">\n";
 
   // ------------------------------------------------------------
   // 

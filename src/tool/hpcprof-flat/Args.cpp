@@ -120,6 +120,8 @@ Options: General:\n\
   --debug [<n>]        Debug: use debug level <n>. {1}\n\
 \n\
 Options: Source Structure Correlation:\n\
+  --name <name>, --title <name>\n\
+                       Set the database's name (title) to <name>.\n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. For a\n\
                        recursive search, append a '*' after the last slash,\n\
@@ -165,6 +167,11 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      NULL },
 
   // Source structure correlation options
+  {  0 , "name",            CLP::ARG_REQ,  CLP::DUPOPT_CLOB, CLP_SEPARATOR,
+     NULL },
+  {  0 , "title",           CLP::ARG_REQ,  CLP::DUPOPT_CLOB, CLP_SEPARATOR,
+     NULL },
+
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
   { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
@@ -328,6 +335,12 @@ Args::parse(int argc, const char* const argv[])
     }
 
     // Check for other options: Correlation options
+    if (parser.isOpt("name")) {
+      title = parser.getOptArg("name");
+    }
+    if (parser.isOpt("title")) {
+      title = parser.getOptArg("title");
+    }
     if (parser.isOpt("include")) {
       string str = parser.getOptArg("include");
 
