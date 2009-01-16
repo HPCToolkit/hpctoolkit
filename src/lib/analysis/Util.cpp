@@ -229,27 +229,18 @@ Analysis::Util::copySourceFiles(Prof::Struct::Root* structure,
   Prof::Struct::ANodeFilter filter(Flat_Filter, "Flat_Filter", 0);
   for (Prof::Struct::ANodeIterator it(structure, &filter); it.Current(); ++it) {
     Prof::Struct::ANode* strct = it.CurNode();
-    Prof::Struct::File* fileStrct = NULL;
-    Prof::Struct::Alien* alienStrct = NULL;
 
     // Note: 'fnm_orig' will be not be absolute if it is not possible
     // to resolve it on the current filesystem. (cf. RealPathMgr)
-    string fnm_orig;
-    if (strct->type() == Prof::Struct::ANode::TyFILE) {
-      fileStrct = dynamic_cast<Prof::Struct::File*>(strct);
-      fnm_orig = fileStrct->name();
-    }
-    else if (strct->type() == Prof::Struct::ANode::TyALIEN) {
-      alienStrct = dynamic_cast<Prof::Struct::Alien*>(strct);
-      fnm_orig = alienStrct->fileName();
-    }
-    else {
-      DIAG_Die(DIAG_Unimplemented);
-    }
+
+    // DIAG_Assert( , DIAG_UnexpectedInput);
+    const string& fnm_orig = (typeid(*strct) == typeid(Prof::Struct::Alien)) ?
+      dynamic_cast<Prof::Struct::Alien*>(strct)->fileName() : strct->name();
     
     // ------------------------------------------------------
     // Given fnm_orig, attempt to find and copy fnm_new
     // ------------------------------------------------------
+    // (!strct->hasMetric(CallPath::Profile::StructMetricIdFlg))
     string fnm_new =
       driver_copySourceFile(fnm_orig, processedFiles, pathVec, dstDir);
     
@@ -257,11 +248,11 @@ Analysis::Util::copySourceFiles(Prof::Struct::Root* structure,
     // Update static structure
     // ------------------------------------------------------
     if (!fnm_new.empty()) {
-      if (fileStrct) {
-	fileStrct->name(fnm_new);
+      if (typeid(*strct) == typeid(Prof::Struct::Alien)) {
+	dynamic_cast<Prof::Struct::Alien*>(strct)->fileName(fnm_new);
       }
       else {
-	alienStrct->fileName(fnm_new);
+	dynamic_cast<Prof::Struct::File*>(strct)->name(fnm_new);
       }
     }
   }

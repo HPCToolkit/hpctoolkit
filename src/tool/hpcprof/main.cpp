@@ -144,8 +144,12 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Add static structure to dynamic call paths
   // ------------------------------------------------------------
+
   try { 
     Prof::Epoch* epoch = prof->epoch();
+    Prof::Struct::Tree* structure = prof->structure();
+    Prof::Struct::Root* rootStrct = structure->root();
+
     for (uint i = 0; i < epoch->lm_size(); ++i) {
       // NOTE(tallent): This method will not iterate over all load modules if
       // two map to the same load address (such as may happen in a
@@ -158,13 +162,14 @@ realmain(int argc, char* const* argv)
       if (epoch_lm->isAvail() && epoch_lm->isUsed()) {
 	const string& lm_nm = epoch_lm->name();
 
-	Prof::Struct::Tree* structure = prof->structure();
-	Prof::Struct::Root* rootStrct = structure->root();
 	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
-	
 	overlayStaticStructure(prof, epoch_lm, lmStrct);
       }
     }
+
+    // Note: Use StructMetricIdFlg to flag that static structure is used
+    rootStrct->accumulateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
+    rootStrct->pruneByMetrics();
     
     Analysis::CallPath::normalize(prof, args.lush_agent);
   }
@@ -183,8 +188,9 @@ realmain(int argc, char* const* argv)
   db_dir = RealPath(ret.first.c_str());  // exits on failure...
     
   DIAG_Msg(1, "Copying source files reached by PATH option to " << db_dir);
-  // NOTE: makes file names in prof relative to database
-  Analysis::Util::copySourceFiles(prof, args.searchPathTpls, db_dir);
+  // NOTE: makes file names in structure relative to database
+  Analysis::Util::copySourceFiles(prof->structure()->root(), 
+				  args.searchPathTpls, db_dir);
 
   string experiment_fnm = db_dir + "/" + args.out_db_experiment;
   std::ostream* os = IOUtil::OpenOStream(experiment_fnm.c_str());
