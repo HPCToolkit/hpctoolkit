@@ -166,12 +166,12 @@ realmain(int argc, char* const* argv)
 	overlayStaticStructure(prof, epoch_lm, lmStrct);
       }
     }
+    
+    Analysis::CallPath::normalize(prof, args.lush_agent);
 
     // Note: Use StructMetricIdFlg to flag that static structure is used
     rootStrct->accumulateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
     rootStrct->pruneByMetrics();
-    
-    Analysis::CallPath::normalize(prof, args.lush_agent);
   }
   catch (...) {
     DIAG_EMsg("While preparing hpc-experiment...");
