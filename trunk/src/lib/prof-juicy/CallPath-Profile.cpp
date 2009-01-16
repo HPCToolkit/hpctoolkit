@@ -153,10 +153,6 @@ writeXML_help(std::ostream& os, const char* entry_nm,
   for (Struct::ANodeIterator it(root, filter); it.Current(); ++it) {
     Struct::ANode* strct = it.CurNode();
     
-    if (!strct->hasMetric(CallPath::Profile::StructMetricIdFlg)) {
-      continue;
-    }
-
     uint id = strct->id();
     const char* nm = NULL;
     
@@ -213,12 +209,6 @@ Profile::writeXML_hdr(std::ostream& os, const char* pre) const
   os << "  </MetricTable>\n";
 
 #if (FIXME_WRITE_CCT_DICTIONARIES)
-  Struct::ANode* rootStrct = (m_structure) ? m_structure->root() : NULL;
-  if (rootStrct) {
-    // Note: A non-zero metric value means the structure value was used!
-    rootStrct->accumulateMetrics(StructMetricIdFlg, StructMetricIdFlg); // [ ]
-  }
-
   os << "  <LoadModuleTable>\n";
   writeXML_help(os, "LoadModule", m_structure, &Struct::ANodeTyFilter[Struct::ANode::TyLM], 1);
   os << "  </LoadModuleTable>\n";
