@@ -93,11 +93,6 @@ demandStructure(VMA vma, Prof::Struct::LM* lmStrct, binutils::LM* lm,
 // ------------------------------------------------------------
 
 void 
-copySourceFiles(Prof::CallPath::Profile* prof, 
-		Analysis::PathTupleVec& pathVec,
-		const std::string& dstDir);
-
-void 
 copySourceFiles(Prof::Struct::Root* structure, 
 		const Analysis::PathTupleVec& pathVec, 
 		const string& dstDir);

@@ -736,18 +736,6 @@ public:
     return id;
   }
 
-  void 
-  fileNameXXX(const std::string& fnm) {
-    if (m_strct) { 
-      if (isAlien()) { 
-	dynamic_cast<Struct::Alien*>(m_strct)->fileName(fnm); 
-      }
-      else { 
-	m_strct->AncFile()->name(fnm);
-      }
-    }
-  }
-
 
   const std::string& 
   procName() const { 
