@@ -208,8 +208,8 @@ Call_Check(Call* n, ANode* _parent)
 }
 
 
-ProcFrm::ProcFrm(ANode* _parent)
-  : ANode(TyProcFrm, _parent)
+ProcFrm::ProcFrm(ANode* _parent, Struct::ACodeNode* strct)
+  : ANode(TyProcFrm, _parent, strct)
 {
   Call_Check(NULL, _parent);
 }

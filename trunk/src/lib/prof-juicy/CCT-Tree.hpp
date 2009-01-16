@@ -686,7 +686,8 @@ private:
 class ProcFrm: public ANode {
 public:
   // Constructor/Destructor
-  ProcFrm(ANode* _parent);
+  ProcFrm(ANode* _parent, Struct::ACodeNode* strct = NULL);
+
   virtual ~ProcFrm();
 
   // shallow copy (in the sense the children are not copied)
