@@ -157,55 +157,10 @@ Analysis::Util::demandStructure(VMA vma, Prof::Struct::LM* lmStrct, binutils::LM
 //***************************************************************************
 
 static string
-driver_copySourceFile(const string& fnm_orig,
-		      std::map<string, string>& processedFiles,
-		      const Analysis::PathTupleVec& pathVec,
-		      const string& dstDir);
-
-
-static bool 
-CallPath_Filter(const Prof::CCT::ANode& x, long type)
-{
-  return (x.type() == Prof::CCT::ANode::TyProcFrm);
-}
-
-
-// copySourceFiles: For every filename x in 'prof' that can be reached
-// with paths in 'pathVec', copy x to its appropriate viewname path
-// and update x's path to be relative to this location.
-void 
-Analysis::Util::copySourceFiles(Prof::CallPath::Profile* prof, 
-				Analysis::PathTupleVec& pathVec,
-				const string& dstDir) 
-{
-  Prof::CCT::Tree* cct = prof->cct();
-  if (!cct) { return; }
-
-  // Prevent multiple copies of the same file
-  std::map<string, string> processedFiles;
-
-  Prof::CCT::ANodeFilter filter(CallPath_Filter, "CallPath_Filter", 0);
-
-  for (Prof::CCT::ANodeIterator it(cct->root(), &filter); it.Current(); ++it) {
-    Prof::CCT::ProcFrm* x_proc = dynamic_cast<Prof::CCT::ProcFrm*>(it.CurNode());
-
-    const string& fnm_orig = x_proc->fileName(); // may not be absolute
-
-    // ------------------------------------------------------
-    // Given fnm_orig, attempt to find and copy fnm_new
-    // ------------------------------------------------------
-    string fnm_new =
-      driver_copySourceFile(fnm_orig, processedFiles, pathVec, dstDir);
-
-    // ------------------------------------------------------
-    // Update dynamic/static structure
-    // ------------------------------------------------------
-    if (!fnm_new.empty()) {
-      x_proc->fileNameXXX(fnm_new);
-    }
-  }
-}
-
+copySourceFileMain(const string& fnm_orig,
+		   std::map<string, string>& processedFiles,
+		   const Analysis::PathTupleVec& pathVec,
+		   const string& dstDir);
 
 static bool 
 Flat_Filter(const Prof::Struct::ANode& x, long type)
@@ -214,8 +169,9 @@ Flat_Filter(const Prof::Struct::ANode& x, long type)
 	  || x.type() == Prof::Struct::ANode::TyALIEN);
 }
 
+
 // copySourceFiles: For every Prof::Struct::File and
-// Prof::Struct::Alien x in 'pgmScope' that can be reached with paths
+// Prof::Struct::Alien x in 'structure' that can be reached with paths
 // in 'pathVec', copy x to its appropriate viewname path and update
 // x's path to be relative to this location.
 void
@@ -240,9 +196,8 @@ Analysis::Util::copySourceFiles(Prof::Struct::Root* structure,
     // ------------------------------------------------------
     // Given fnm_orig, attempt to find and copy fnm_new
     // ------------------------------------------------------
-    // (!strct->hasMetric(CallPath::Profile::StructMetricIdFlg))
     string fnm_new =
-      driver_copySourceFile(fnm_orig, processedFiles, pathVec, dstDir);
+      copySourceFileMain(fnm_orig, processedFiles, pathVec, dstDir);
     
     // ------------------------------------------------------
     // Update static structure
@@ -268,10 +223,10 @@ copySourceFile(const string& filenm, const string& dstDir,
 	       const Analysis::PathTuple& pathTpl);
 
 static string
-driver_copySourceFile(const string& fnm_orig,
-		      std::map<string, string>& processedFiles,
-		      const Analysis::PathTupleVec& pathVec,
-		      const string& dstDir)
+copySourceFileMain(const string& fnm_orig,
+		   std::map<string, string>& processedFiles,
+		   const Analysis::PathTupleVec& pathVec,
+		   const string& dstDir)
 {
   string fnm_new;
   
