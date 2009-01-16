@@ -315,9 +315,7 @@ makeProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
 	      ACodeNodeToProcFrameMap& frameMap,
 	      ProcFrameAndLoopToCSLoopMap& loopMap)
 {
-  Prof::CCT::ProcFrm* frame = new Prof::CCT::ProcFrm(NULL);
-
-  frame->structure(procStrct);
+  Prof::CCT::ProcFrm* frame = new Prof::CCT::ProcFrm(NULL, procStrct);
   procStrct->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
 
   frame->Link(node->Parent());
@@ -335,9 +333,14 @@ loopifyFrame(Prof::CCT::ANode* mirrorNode, Prof::Struct::ACodeNode* node,
 	     ProcFrameAndLoopToCSLoopMap& loopMap);
 
 
-// Given a procedure frame 'frame' and its associated context scope
-// 'ctxtScope' (Struct::Proc or Struct::Alien), mirror ctxtScope's loop and
-// context structure and add entries to 'frameMap' and 'loopMap.'
+// loopifyFrame: Given a procedure frame 'frame' and its associated
+// context scope 'ctxtScope' (Struct::Proc or Struct::Alien), mirror
+// ctxtScope's loop and context structure and add entries to
+// 'frameMap' and 'loopMap.'
+// 
+// NOTE: this *eagerly* adds structure to a frame that may later be
+// pruned by pruneByMetrics().  We could be a little smarter, but on
+// another day.
 static void
 loopifyFrame(Prof::CCT::ProcFrm* frame, 
 	     Prof::Struct::ACodeNode* ctxtScope,
@@ -384,13 +387,9 @@ loopifyFrame(Prof::CCT::ANode* mirrorNode,
       nxt_enclLoop = lp;
     }
     else if (n->type() == Prof::Struct::ANode::TyALIEN) {
-      Prof::CCT::ProcFrm* fr = new Prof::CCT::ProcFrm(NULL);
-
-      fr->structure(n);
-      n->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
-
+      Prof::CCT::ProcFrm* fr = new Prof::CCT::ProcFrm(NULL, n);
       frameMap.insert(std::make_pair(n, fr));
-      DIAG_DevMsgIf(0, hex << fr->procName() << " [" << n << " -> " << fr << "]" << dec);
+      DIAG_DevMsgIf(0, "loopifyFrame: " << fr->procName() << " (sid: " << fr->procId() << ")" << hex << " [" << n << " -> " << fr << "]" << dec);
       
       if (enclLoop) {
 	fr->Link(enclLoop);
@@ -561,7 +560,15 @@ pruneByMetrics(Prof::CCT::ANode* node)
 		 x->type() == Prof::CCT::ANode::TyLoop);
     if (x->IsLeaf() && isTy) {
       x->Unlink(); // unlink 'x' from tree
+      DIAG_DevMsgIf(0, "pruneByMetrics: " << hex << x << dec << " (sid: " << x->structureId() << ")");
       delete x;
+    }
+    else {
+      // We are keeping the node -- set the static structure flag
+      Prof::Struct::ACodeNode* strct = x->structure();
+      if (strct) {
+	strct->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
+      }
     }
   }
 }
