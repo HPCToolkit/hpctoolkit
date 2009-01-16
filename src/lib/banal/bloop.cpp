@@ -258,7 +258,6 @@ private:
 #define DBG_CDS  0 /* debug coalesceDuplicateStmts */
 
 static string OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
-static string InferredProcedure     = Prof::Struct::Tree::UnknownProcNm;
 
 
 //****************************************************************************
@@ -321,7 +320,7 @@ banal::bloop::makeStructure(binutils::LM* lm,
   Struct::Root* rootStrct = NULL;
 
   // FIXME (minor): relocate
-  OrphanedProcedureFile = "~~~" + lm->name() + ":<unknown-file>~~~";
+  //OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm + lm->name();
 
   // Assume lm->Read() has been performed
   rootStrct = new Struct::Root("");
@@ -1145,18 +1144,18 @@ mergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
     // 1. Recursively do any merging for this tree's children
     changed |= mergeBogusAlienStrct(child, file);
     
-    // 2. Merge an alien node if it is redundant with its calling context
+    // 2. Merge an alien node if it is redundant with its procedure context
     if (child->type() == Struct::ANode::TyALIEN) {
       Struct::Alien* alien = dynamic_cast<Struct::Alien*>(child);
       Struct::ACodeNode* parent = alien->ACodeNodeParent();
       
-      Struct::ACodeNode* callCtxt = parent->ancestorProcCtxt();
-      const string& callCtxtFnm = (callCtxt->type() == Struct::ANode::TyALIEN) ?
-	dynamic_cast<Struct::Alien*>(callCtxt)->fileName() : file->name();
+      Struct::ACodeNode* procCtxt = parent->ancestorProcCtxt();
+      const string& procCtxtFnm = (procCtxt->type() == Struct::ANode::TyALIEN) ?
+	dynamic_cast<Struct::Alien*>(procCtxt)->fileName() : file->name();
       
-      // FIXME: Looking at this again, don't we know that 'callCtxtFnm' is alien?
-      if (alien->fileName() == callCtxtFnm
-	  && ctxtNameEqFuzzy(callCtxt, alien->name())
+      // FIXME: Looking at this again, don't we know that 'procCtxtFnm' is alien?
+      if (alien->fileName() == procCtxtFnm
+	  && ctxtNameEqFuzzy(procCtxt, alien->name())
 	  && LocationMgr::containsIntervalFzy(parent, alien->begLine(), 
 					      alien->endLine()))  {
 	// Move all children of 'alien' into 'parent'
