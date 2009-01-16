@@ -98,9 +98,9 @@ namespace Struct {
 
 uint ANode::s_nextUniqueId = 1;
 
-const std::string Tree::UnknownFileNm = "~~~<unknown-file>~~~";
+const std::string Tree::UnknownFileNm = "!unknown-file!";
 
-const std::string Tree::UnknownProcNm = "~<unknown-proc>~";
+const std::string Tree::UnknownProcNm = "!unknown-proc!";
 
 
 Tree::Tree(const char* name, Root* root)
