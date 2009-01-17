@@ -20,7 +20,7 @@ static int csprof_using_threads;
 void
 csprof_set_using_threads(int flag)
 {
-  return csprof_using_threads = flag;
+  csprof_using_threads = flag;
 }
 
 
