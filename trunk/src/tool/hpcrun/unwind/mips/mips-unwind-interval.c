@@ -11,9 +11,9 @@
 
 #include "mips-unwind-interval.h"
 
-#include <memory/mem.h>
 #include "pmsg.h"
 #include "atomic-ops.h"
+#include <memory/mem.h>
 
 //*************************** Forward Declarations **************************
 
@@ -30,9 +30,9 @@ long suspicious_cnt = 0;
 // interface operations 
 //***************************************************************************
 
-unw_interval_t* new_ui(char* start_addr, framety_t ty, frameflg_t flgs,
-		       int sp_pos, int bp_pos, int ra_arg,
-		       unw_interval_t* prev)
+unw_interval_t* 
+new_ui(char* start_addr, framety_t ty, frameflg_t flgs,
+       int sp_pos, int fp_pos, int ra_arg, unw_interval_t* prev)
 {
   unw_interval_t* u = (unw_interval_t*)csprof_malloc(sizeof(unw_interval_t));
 
@@ -44,9 +44,9 @@ unw_interval_t* new_ui(char* start_addr, framety_t ty, frameflg_t flgs,
   u->ty   = ty;
   u->flgs = flgs;
 
-  u->sp_pos  = sp_pos;
-  u->bp_pos  = bp_pos;
-  u->ra_arg  = ra_arg;
+  u->sp_pos = sp_pos;
+  u->fp_pos = fp_pos;
+  u->ra_arg = ra_arg;
 
   fetch_and_add(&ui_cnt, 1);
 
@@ -59,9 +59,9 @@ ui_dump(unw_interval_t* u, int dump_to_stdout)
 {
   char buf[256];
   
-  sprintf(buf, "start=%p end=%p ty=%s flgs=%d sp_pos=%d bp_pos=%d ra_arg=%d next=%p prev=%p\n",
+  sprintf(buf, "start=%p end=%p ty=%s flgs=%d sp_pos=%d fp_pos=%d ra_arg=%d next=%p prev=%p\n",
 	  (void*)u->common.start, (void*)u->common.end,
-	  framety_string(u->ty), u->flgs, u->sp_pos, u->bp_pos, u->ra_arg,
+	  framety_string(u->ty), u->flgs, u->sp_pos, u->fp_pos, u->ra_arg,
 	  u->common.next, u->common.prev);
 
   EMSG(buf);
@@ -99,26 +99,28 @@ suspicious_interval(void *pc)
 void 
 ui_link(unw_interval_t* current, unw_interval_t* next)
 {
-  current->common.end = next->common.start;
-  current->common.next= (splay_interval_t *)next;
+  current->common.end  = next->common.start;
+  current->common.next = (splay_interval_t*)next;
 }
 
 
 //***************************************************************************
-// private operations 
+// 
 //***************************************************************************
 
 const char*
 framety_string(framety_t ty)
 {
-#define frame_ty_string_STR(s) case s: return #s
+#define framety_string_STR(s) case s: return #s
 
   switch (ty) {
-    frame_ty_string_STR(FrmTy_NULL);
-    frame_ty_string_STR(FrmTy_SP);
-    frame_ty_string_STR(FrmTy_BP);
+    framety_string_STR(FrmTy_NULL);
+    framety_string_STR(FrmTy_SP);
+    framety_string_STR(FrmTy_FP);
     default:
       assert(0);
   }
   return NULL;
+
+#undef framety_string_STR
 }

@@ -35,6 +35,7 @@
 
 void *context_pc(void *context);
 
+// tallent: FIXME: These are OBSOLETE!
 void  unw_init_arch(void);
 void  unw_init_cursor_arch(void* context, unw_cursor_t *cursor);
 int   unw_get_reg_arch(unw_cursor_t *c, int reg_id, void **reg_value);
