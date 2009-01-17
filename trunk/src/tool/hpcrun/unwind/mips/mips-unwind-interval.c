@@ -41,6 +41,10 @@ new_ui(char* start_addr, framety_t ty, frameflg_t flgs,
   u->common.prev = (splay_interval_t*)prev;
   u->common.next = NULL;
 
+  if (prev) {
+    ui_link(prev, u);
+  }
+
   u->ty   = ty;
   u->flgs = flgs;
 
