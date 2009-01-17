@@ -21,6 +21,14 @@ extern "C" {
 #endif
 
 //***************************************************************************
+// external interface
+//***************************************************************************
+
+interval_status 
+build_intervals(char* ins, unsigned int len);
+
+
+//***************************************************************************
 // framety_t and frameflg_t
 //***************************************************************************
 
@@ -85,12 +93,13 @@ typedef struct {
 } unw_interval_t;
 
 
-interval_status 
-build_intervals(char* ins, unsigned int len);
-
 unw_interval_t* 
 new_ui(char* start_addr, framety_t ty, frameflg_t flgs, 
        int sp_pos, int fp_pos, int ra_arg, unw_interval_t* prev);
+
+#define NEW_UI(start_addr, ty, flgs, sp_pos, fp_pos, ra_arg, prev) \
+  (unw_interval_t){.ty = ty, .flgs = flgs, \
+                   .sp_pos = sp_pos, .fp_pos = fp_pos, .ra_arg = ra_arg }
 
 static inline bool 
 ui_cmp(unw_interval_t* x, unw_interval_t* y)

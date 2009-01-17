@@ -259,7 +259,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 
       nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, ui->flgs, 
 		      sp_pos, ui->fp_pos, ra_arg, ui);
-      ui_link(ui, nxt_ui); ui = nxt_ui;
+      ui = nxt_ui;
     }
     //--------------------------------------------------
     // SP-frame --> SP-frame: store RA/FP
@@ -272,7 +272,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
       int ra_pos = getStoreRegInFrameOffset(*cur_insn);
       nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, FrmFlg_NULL,
 		      ui->sp_pos, ui->fp_pos, ra_pos, ui);
-      ui_link(ui, nxt_ui); ui = nxt_ui;
+      ui = nxt_ui;
 
       canon_ui = canonSP_ui = nxt_ui;
     }
@@ -283,7 +283,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
       int fp_pos = getStoreRegInFrameOffset(*cur_insn);
       nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, ui->flgs,
 		      ui->sp_pos, fp_pos, ui->ra_arg, ui);
-      ui_link(ui, nxt_ui); ui = nxt_ui;
+      ui = nxt_ui;
 
       canon_ui = canonSP_ui = nxt_ui;
     }
@@ -295,7 +295,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 
       nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, FrmFlg_RAReg,
 		      ui->sp_pos, ui->fp_pos, REG_RA, ui);
-      ui_link(ui, nxt_ui); ui = nxt_ui;
+      ui = nxt_ui;
     }
 
     //--------------------------------------------------
@@ -308,13 +308,13 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 	nxt_ui = new_ui(nextInsn(cur_insn + 1/*delay slot*/), 
 			canon_ui->ty, canon_ui->flgs, canon_ui->sp_pos, 
 			canon_ui->fp_pos, canon_ui->ra_arg, ui);
-	ui_link(ui, nxt_ui); ui = nxt_ui;
+	ui = nxt_ui;
 	cur_insn++; // skip delay slot to align new interval
       }
     }
 
 
-    // FIXME: It is difficult to detect beginning of a FP frames.  For
+    // N.B.: It is difficult to detect beginning of a FP frame.  For
     // now we use the following.
 
     //--------------------------------------------------
@@ -328,7 +328,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
       int ra_pos = getStoreRegInFrameOffset(*cur_insn);
       nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_FP, FrmFlg_NULL,
 		      0, fp_pos, ra_pos, ui);
-      ui_link(ui, nxt_ui); ui = nxt_ui;
+      ui = nxt_ui;
 
       canon_ui = canonFP_ui = nxt_ui;
     }
@@ -344,7 +344,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 	int ra_pos = convertSPToFPPos(canon_ui->sp_pos, canon_ui->ra_arg);
 	nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_FP, ui->flgs, 
 			0, fp_pos, ra_pos, ui);
-	ui_link(ui, nxt_ui); ui = nxt_ui;
+	ui = nxt_ui;
 
 	canon_ui = canonFP_ui = nxt_ui;
       }
@@ -356,7 +356,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
       checkUI(ui, FrmTy_FP, cur_insn);
       nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_FP, FrmFlg_RAReg,
 		      ui->sp_pos, ui->fp_pos, REG_RA, ui);
-      ui_link(ui, nxt_ui); ui = nxt_ui;
+      ui = nxt_ui;
     }
     /* else if (load-parent's-FP): FIXME */
 
@@ -373,7 +373,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, int verbose)
 	int ra_arg      = (isFullDealloc) ? REG_RA       : canonSP_ui->ra_arg;
 	nxt_ui = new_ui(nextInsn(cur_insn), FrmTy_SP, flgs, 
 			sp_pos, fp_pos, ra_arg, ui);
-	ui_link(ui, nxt_ui); ui = nxt_ui;
+	ui = nxt_ui;
       }
       else {
 	// wierd code, e.g., monitor_main! Assume rest of frame will
