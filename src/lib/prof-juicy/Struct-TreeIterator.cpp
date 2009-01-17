@@ -160,7 +160,7 @@ ANodeSortedIterator::cmpByLine(const void* a, const void* b)
   // WARNING: this assumes it will only see ACodeNodes!
   ACodeNode* x = (*(ACodeNode**)a);
   ACodeNode* y = (*(ACodeNode**)b);
-  return ACodeNodeLineComp(x, y);
+  return ACodeNode::compare(x, y);
 }
 
 

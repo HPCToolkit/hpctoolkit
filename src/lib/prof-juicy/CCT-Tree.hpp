@@ -244,7 +244,7 @@ public:
 
 
   // --------------------------------------------------------
-  // General Interface to fields 
+  // General data
   // --------------------------------------------------------
   NodeType type() const { return m_type; }
 
@@ -253,24 +253,60 @@ public:
 
   // 'name()' is overridden by some derived classes
   virtual const std::string& name() const { return NodeTypeToName(type()); }
+
+
+  // structure: static structure id for this node; the same static
+  // structure will have the same structure().
+  Struct::ACodeNode* 
+  structure() const  { return m_strct; }
+
+  void 
+  structure(Struct::ACodeNode* strct) { m_strct = strct; }
+
+  uint 
+  structureId() const { return (m_strct) ? m_strct->id() : 0; }
+
+  SrcFile::ln 
+  begLine() const { return (m_strct) ? m_strct->begLine() : ln_NULL; }
+
+  SrcFile::ln 
+  endLine() const { return (m_strct) ? m_strct->endLine() : ln_NULL;  }
   
+
   // --------------------------------------------------------
   // Tree navigation 
   // --------------------------------------------------------
-  ANode* Parent() const 
-    { return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::Parent()); }
+  ANode* parent() const 
+  { return static_cast<ANode*>(NonUniformDegreeTreeNode::Parent()); }
 
-  ANode* FirstChild() const
-    { return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::FirstChild()); }
+  ANode* firstChild() const
+  { return static_cast<ANode*>(NonUniformDegreeTreeNode::FirstChild()); }
 
-  ANode* LastChild() const
-    { return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::LastChild()); }
+  ANode* lastChild() const
+  { return static_cast<ANode*>(NonUniformDegreeTreeNode::LastChild()); }
 
-  ANode* NextSibling() const;
-  ANode* PrevSibling() const;
+  ANode* nextSibling() const
+  {
+    // siblings are linked in a circular list
+    if ((parent()->lastChild() != this)) {
+      return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::NextSibling()); 
+    }
+    return NULL;  
+  }
 
-  bool IsLeaf() const { return (FirstChild() == NULL); }
+  ANode* prevSibling() const
+  {
+    // siblings are linked in a circular list
+    if ((parent()->firstChild() != this)) {
+      return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::PrevSibling()); 
+    }
+    return NULL;
+  }
+
+  bool isLeaf() const 
+  { return (NonUniformDegreeTreeNode::FirstChild() == NULL); }
   
+
   // --------------------------------------------------------
   // Ancestor: find first node in path from this to root with given type
   // --------------------------------------------------------
@@ -286,7 +322,7 @@ public:
 
 
   // --------------------------------------------------------
-  // 
+  // merging
   // --------------------------------------------------------
 
   void 
@@ -307,29 +343,7 @@ public:
 
 
   // --------------------------------------------------------
-  // Static structure
-  // --------------------------------------------------------
-
-  // structure: static structure id for this node; the same static
-  // structure will have the same structure().
-  Struct::ACodeNode* 
-  structure() const  { return m_strct; }
-
-  void 
-  structure(Struct::ACodeNode* strct) { m_strct = strct; }
-
-  uint 
-  structureId() const { return (m_strct) ? m_strct->id() : 0; }
-
-  SrcFile::ln 
-  begLine() const { return (m_strct) ? m_strct->begLine() : ln_NULL; }
-
-  SrcFile::ln 
-  endLine() const { return (m_strct) ? m_strct->endLine() : ln_NULL;  }
-
-
-  // --------------------------------------------------------
-  // Dump contents for inspection
+  // Output
   // --------------------------------------------------------
   virtual std::string 
   Types() const; // this instance's base and derived types

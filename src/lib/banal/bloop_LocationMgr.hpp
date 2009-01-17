@@ -527,11 +527,10 @@ private:
 
   // Find or create an Struct::Alien
   Prof::Struct::Alien* 
-  findOrCreateAlienStrct(Prof::Struct::ACodeNode* parent_scope,
-			 const std::string& filenm,
-			 const std::string& procnm, 
-			 SrcFile::ln line,
-			 bool tosOnCreate = true);
+  demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
+		   const std::string& filenm, const std::string& procnm, 
+		   SrcFile::ln line,
+		   bool tosOnCreate = true);
   
 private: 
   MyStack     m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]

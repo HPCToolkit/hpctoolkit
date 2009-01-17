@@ -81,8 +81,6 @@ using SrcFile::ln_NULL;
 
 //*************************** Forward Declarations **************************
 
-static int SimpleLineCmp(SrcFile::ln x, SrcFile::ln y);
-
 using namespace xml;
 
 #define DBG_FILE 0
@@ -467,33 +465,32 @@ Ref::Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName)
       } \
     }
 
-
 ACodeNode* 
 ANode::ACodeNodeParent() const
-{
-  dyn_cast_return(ANode, ACodeNode, Parent());
+{ 
+  return dynamic_cast<ACodeNode*>(parent()); 
 }
 
 
 ANode*
 ANode::Ancestor(ANodeTy tp) const
 {
-  const ANode* s = this;
-  while (s && s->type() != tp) {
-    s = s->Parent();
+  const ANode* x = this;
+  while (x && x->type() != tp) {
+    x = x->parent();
   } 
-  return (ANode*) s;
+  return const_cast<ANode*>(x);
 } 
 
 
 ANode *
 ANode::Ancestor(ANodeTy tp1, ANodeTy tp2) const
 {
-  const ANode* s = this;
-  while (s && s->type() != tp1 && s->type() != tp2) {
-    s = s->Parent();
+  const ANode* x = this;
+  while (x && x->type() != tp1 && x->type() != tp2) {
+    x = x->parent();
   }
-  return (ANode*) s;
+  return const_cast<ANode*>(x);
 } 
 
 
@@ -518,10 +515,10 @@ ANode::LeastCommonAncestor(ANode* n1, ANode* n2)
   // Collect all ancestors of n1 and n2.  The root will be at the front
   // of the ancestor list.
   ANodeList anc1, anc2;
-  for (ANode* a = n1->Parent(); (a); a = a->Parent()) {
+  for (ANode* a = n1->parent(); (a); a = a->parent()) {
     anc1.push_front(a);
   }
-  for (ANode* a = n2->Parent(); (a); a = a->Parent()) {
+  for (ANode* a = n2->parent(); (a); a = a->parent()) {
     anc2.push_front(a);
   }
   
@@ -611,76 +608,6 @@ ANode::ancestorProcCtxt() const
 }
 
 
-
-//***************************************************************************
-// ANode: Tree Navigation
-//***************************************************************************
-
-ACodeNode* 
-ANode::FirstEnclScope() const
-{
-  dyn_cast_return(NonUniformDegreeTreeNode, ACodeNode, FirstChild());
-}
-
-
-ACodeNode*
-ANode::LastEnclScope() const
-{
-  dyn_cast_return(NonUniformDegreeTreeNode, ACodeNode, LastChild());
-}
-
-
-// ----------------------------------------------------------------------
-// siblings are linked in a circular list
-// Parent()->FirstChild()->PrevSibling() == Parent->LastChild() and 
-// Parent()->LastChild()->NextSibling()  == Parent->FirstChild()
-// ----------------------------------------------------------------------
-
-ACodeNode*
-ANode::NextScope() const
-{
-  // siblings are linked in a circular list, 
-  NonUniformDegreeTreeNode* next = NULL;
-  if (dynamic_cast<ANode*>(Parent()->LastChild()) != this) {
-    next = NextSibling();
-  } 
-  if (next) { 
-    ACodeNode* ci = dynamic_cast<ACodeNode*>(next);
-    DIAG_Assert(ci, "");
-    return ci;
-  }
-  return NULL;
-}
-
-
-ACodeNode*
-ANode::PrevScope() const
-{
-  NonUniformDegreeTreeNode* prev = NULL;
-  if (dynamic_cast<ANode*>(Parent()->FirstChild()) != this) { 
-    prev = PrevSibling();
-  } 
-  if (prev) { 
-    ACodeNode* ci = dynamic_cast<ACodeNode*>(prev);
-    DIAG_Assert(ci, "");
-    return ci;
-  }
-  return NULL;
-}
-
-
-ACodeNode*
-ANode::nextScopeNonOverlapping() const
-{
-  const ACodeNode* x = dynamic_cast<const ACodeNode*>(this);
-  if (!x) { return NULL; }
-  
-  ACodeNode* z = NextScope();
-  for (; z && x->containsLine(z->begLine()); z = z->NextScope()) { }
-  return z;
-}
-
-
 //***************************************************************************
 // ANode: Paths and Merging
 //***************************************************************************
@@ -689,7 +616,7 @@ int
 ANode::Distance(ANode* anc, ANode* desc)
 {
   int distance = 0;
-  for (ANode* x = desc; x != NULL; x = x->Parent()) {
+  for (ANode* x = desc; x != NULL; x = x->parent()) {
     if (x == anc) {
       return distance;
     }
@@ -717,7 +644,7 @@ ANode::ArePathsOverlapping(ANode* lca, ANode* desc1,
   
   // Iterate over the longest path (d1 -> lca) searching for d2.  Stop
   // when x is NULL or lca.
-  for (ANode* x = d1; (x && x != lca); x = x->Parent()) {
+  for (ANode* x = d1; (x && x != lca); x = x->parent()) {
     if (x == d2) { 
       return true;
     }
@@ -737,10 +664,10 @@ ANode::MergePaths(ANode* lca, ANode* toDesc, ANode* fromDesc)
   // Collect nodes along paths between 'lca' and 'toDesc', 'fromDesc'.
   // The descendent nodes will be at the end of the list.
   ANodeList toPath, fromPath;
-  for (ANode* x = toDesc; x != lca; x = x->Parent()) {
+  for (ANode* x = toDesc; x != lca; x = x->parent()) {
     toPath.push_front(x);
   }
-  for (ANode* x = fromDesc; x != lca; x = x->Parent()) {
+  for (ANode* x = fromDesc; x != lca; x = x->parent()) {
     fromPath.push_front(x);
   }
   DIAG_Assert(toPath.size() > 0 && fromPath.size() > 0, "");
@@ -835,7 +762,7 @@ ANode::IsMergable(ANode* toNode, ANode* fromNode)
 
 
 //***************************************************************************
-// Metric Data
+// ANode Metric Data
 //***************************************************************************
 
 void
@@ -1056,6 +983,219 @@ File::FindProc(const char* nm, const char* lnm) const
 
 
 //***************************************************************************
+// ACodeNode methods 
+//***************************************************************************
+
+void 
+ACodeNode::SetLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate) 
+{
+  checkLineRange(begLn, endLn);
+  
+  m_begLn = begLn;
+  m_endLn = endLn;
+  
+  RelocateIf();
+
+  // never propagate changes outside an Alien
+  if (propagate && begLn != ln_NULL 
+      && ACodeNodeParent() && type() != ANode::TyALIEN) {
+    ACodeNodeParent()->ExpandLineRange(m_begLn, m_endLn);
+  }
+}
+
+
+void 
+ACodeNode::ExpandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
+{
+  checkLineRange(begLn, endLn);
+
+  if (begLn == ln_NULL) {
+    DIAG_Assert(m_begLn == ln_NULL, "");
+    // simply relocate at beginning of sibling list 
+    RelocateIf();
+  } 
+  else {
+    bool changed = false;
+    if (m_begLn == ln_NULL) {
+      m_begLn = begLn;
+      m_endLn = endLn;
+      changed = true;
+    } 
+    else {
+      if (begLn < m_begLn) { m_begLn = begLn; changed = true; }
+      if (endLn > m_endLn) { m_endLn = endLn; changed = true; }
+    }
+
+    if (changed) {
+      // never propagate changes outside an Alien
+      RelocateIf();
+      if (propagate && ACodeNodeParent() && type() != ANode::TyALIEN) {
+        ACodeNodeParent()->ExpandLineRange(m_begLn, m_endLn);
+      }
+    }
+  }
+}
+
+
+void
+ACodeNode::Relocate() 
+{
+  ACodeNode* prev = dynamic_cast<ACodeNode*>(prevSibling());
+  ACodeNode* next = dynamic_cast<ACodeNode*>(nextSibling());
+
+  // NOTE: Technically should check for ln_NULL
+  if ((!prev || (prev->begLine() <= m_begLn)) 
+      && (!next || (m_begLn <= next->begLine()))) {
+    return;
+  } 
+  
+  // INVARIANT: The parent scope contains at least two children
+  DIAG_Assert(parent()->ChildCount() >= 2, "");
+
+  ANode* prnt = parent();
+  Unlink();
+
+  //if (prnt->FirstChild() == NULL) {
+  //  Link(prnt);
+  //}
+  if (m_begLn == ln_NULL) {
+    // insert as first child
+    LinkBefore(prnt->FirstChild());
+  } 
+  else {
+    // insert after sibling with sibling->begLine() <= begLine() 
+    // or iff that does not exist insert as first in sibling list
+    ACodeNode* sibling = NULL;
+    for (sibling = dynamic_cast<ACodeNode*>(prnt->lastChild()); sibling;
+	 sibling = dynamic_cast<ACodeNode*>(sibling->prevSibling())) {
+      if (sibling->begLine() <= m_begLn) {
+	break;
+      }
+    } 
+    if (sibling != NULL) {
+      LinkAfter(sibling);
+    } 
+    else {
+      LinkBefore(prnt->FirstChild());
+    } 
+  }
+}
+
+
+bool
+ACodeNode::containsLine(SrcFile::ln ln, int beg_epsilon, int end_epsilon) const
+{
+  // We assume it makes no sense to compare against ln_NULL
+  if (m_begLn != ln_NULL) {
+    if (containsLine(ln)) {
+      return true;
+    }
+    else if (beg_epsilon != 0 || end_epsilon != 0) {
+      // INVARIANT: 'ln' is strictly outside the range of this context
+      int beg_delta = begLine() - ln; // > 0 if line is before beg
+      int end_delta = ln - endLine(); // > 0 if end is before line
+      return ((beg_delta > 0 && beg_delta <= beg_epsilon)
+	      || (end_delta > 0 && end_delta <= end_epsilon));
+    }
+  }
+  return false;
+}
+
+
+ACodeNode* 
+ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
+{
+  DIAG_Assert(ln != ln_NULL, "ACodeNode::ACodeNodeWithLine: invalid line");
+  ACodeNode* ci;
+  // ln > m_endLn means there is no child that contains ln
+  if (ln <= m_endLn) {
+    for (ANodeChildIterator it(this); it.Current(); it++) {
+      ci = dynamic_cast<ACodeNode*>(it.Current());
+      DIAG_Assert(ci, "");
+      if  (ci->containsLine(ln)) {
+	if (ci->type() == TySTMT) {  
+	  return ci; // never look inside LINE_SCOPEs 
+	} 
+	
+	// desired line might be in inner scope; however, it might be
+	// elsewhere because optimization left procedure with 
+	// non-contiguous line ranges in scopes at various levels.
+	ACodeNode* inner = ci->ACodeNodeWithLine(ln);
+	if (inner) return inner;
+      } 
+    }
+  }
+  if (ci->type() == TyPROC) return (ACodeNode*) this;
+  else return 0;
+}
+
+
+int 
+ACodeNode::compare(const ACodeNode* x, const ACodeNode* y)
+{
+  if (x->begLine() == y->begLine()) {
+    bool endLinesEqual = (x->endLine() == y->endLine());
+    if (endLinesEqual) {
+      // We have two ACodeNode's with identical line intervals...
+      
+      // Use lexicographic comparison for procedures
+      if (x->type() == ANode::TyPROC && y->type() == ANode::TyPROC) {
+	Proc *px = (Proc*)x, *py = (Proc*)y;
+	int cmp1 = px->name().compare(py->name());
+	if (cmp1 != 0) { return cmp1; }
+	int cmp2 = px->LinkName().compare(py->LinkName());
+	if (cmp2 != 0) { return cmp2; }
+      }
+      
+      // Use VMAInterval sets otherwise.
+      bool x_lt_y = (x->vmaSet() < y->vmaSet());
+      bool y_lt_x = (y->vmaSet() < x->vmaSet());
+      bool vmaSetsEqual = (!x_lt_y && !y_lt_x);
+
+      if (vmaSetsEqual) {
+	// Try ranking a leaf node before a non-leaf node
+	if ( !(x->isLeaf() && y->isLeaf())) {
+	  if      (x->isLeaf()) { return -1; } // x < y
+	  else if (y->isLeaf()) { return  1; } // x > y
+	}
+	
+	// Give up!
+	return 0;
+      }
+      else if (x_lt_y) { return -1; }
+      else if (y_lt_x) { return  1; }
+      else {
+	DIAG_Die(DIAG_Unimplemented);
+      }
+    }
+    else {
+      return SrcFile::compare(x->endLine(), y->endLine());
+    }
+  }
+  else {
+    return SrcFile::compare(x->begLine(), y->begLine());
+  }
+}
+
+
+ACodeNode*
+ACodeNode::nextSiblingNonOverlapping() const
+{
+  const ACodeNode* x = this;
+
+  // FIXME: possibly convert this to static_cast
+  const ACodeNode* y = dynamic_cast<ACodeNode*>(nextSibling()); // sorted
+  while (y) {
+    if (!x->containsLine(y->begLine())) {
+      break;
+    }
+    y = dynamic_cast<const ACodeNode*>(y->nextSibling());
+  }
+  return const_cast<ACodeNode*>(y);
+}
+
+
+//***************************************************************************
 // ACodeNode, etc: CodeName methods
 //***************************************************************************
 
@@ -1152,6 +1292,392 @@ string
 Ref::codeName() const 
 {
   return m_name + " " + ACodeNode::codeName();
+}
+
+
+//***************************************************************************
+// ANode, etc: XML output
+//***************************************************************************
+
+static const string XMLelements[ANode::TyNUMBER] = {
+  "HPCToolkitStructure", "G", "LM", "F", "P", "A", "L", "S", "REF", "ANY"
+};
+
+const string&
+ANode::ANodeTyToXMLelement(ANodeTy tp)
+{
+   return XMLelements[tp];
+}
+
+
+string 
+ANode::toStringXML(int oFlags, const char* pre) const
+{ 
+  std::ostringstream os;
+  writeXML(os, oFlags, pre);
+  return os.str();
+}
+
+
+string 
+ANode::toXML(int oFlags) const
+{
+  string self = ANodeTyToXMLelement(type()) + " i" + MakeAttrNum(id());
+  return self;
+}
+
+
+string
+ACodeNode::toXML(int oFlags) const
+{ 
+  string self = ANode::toXML(oFlags) 
+    + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
+  return self;
+}
+
+
+string
+ACodeNode::XMLLineRange(int oFlags) const
+{
+  string line = StrUtil::toStr(begLine());
+  if (begLine() != endLine()) {
+    line += "-" + StrUtil::toStr(endLine());
+  }
+
+  string self = "l" + xml::MakeAttrStr(line);
+  return self;
+}
+
+
+string
+ACodeNode::XMLVMAIntervals(int oFlags) const
+{
+  string self = "v" + MakeAttrStr(m_vmaSet.toString(), xml::ESC_FALSE);
+  return self;
+}
+
+
+string
+Root::toXML(int oFlags) const
+{
+  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
+  return self;
+}
+
+
+string 
+Group::toXML(int oFlags) const
+{
+  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
+  return self;
+}
+
+
+string 
+LM::toXML(int oFlags) const
+{
+  string self = ANode::toXML(oFlags) 
+    + " n" + MakeAttrStr(m_name) + " " + XMLVMAIntervals(oFlags);
+  return self;
+}
+
+
+string
+File::toXML(int oFlags) const
+{
+  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
+  return self;
+}
+
+
+string 
+Proc::toXML(int oFlags) const
+{ 
+  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
+  if (m_name != m_linkname) { // if different, print both
+    self = self + " ln" + MakeAttrStr(m_linkname);
+  }
+  self = self + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
+  return self;
+}
+
+
+string 
+Alien::toXML(int oFlags) const
+{ 
+  string self = ANode::toXML(oFlags) 
+    + " f" + MakeAttrStr(m_filenm) + " n" + MakeAttrStr(m_name);
+  self = self + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
+  return self;
+}
+
+
+string 
+Loop::toXML(int oFlags) const
+{
+  string self = ACodeNode::toXML(oFlags);
+  return self;
+}
+
+
+string
+Stmt::toXML(int oFlags) const
+{
+  string self = ACodeNode::toXML(oFlags);
+  return self;
+}
+
+
+string
+Ref::toXML(int oFlags) const
+{ 
+  string self = ACodeNode::toXML(oFlags) 
+    + " b" + MakeAttrNum(begPos) + " e" + MakeAttrNum(endPos);
+  return self;
+}
+
+
+bool 
+ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
+{
+  bool doTag = (type() != TyRoot);
+  bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ? 
+		    hasMetrics() && isLeaf() : hasMetrics());
+  bool isXMLLeaf = isLeaf() && !doMetrics;
+
+  // 1. Write element name
+  if (doTag) {
+    if (isXMLLeaf) {
+      os << pfx << "<" << toXML(oFlags) << "/>" << endl;
+    }
+    else {
+      os << pfx << "<" << toXML(oFlags) << ">" << endl;
+    }
+  }
+
+  // 2. Write associated metrics
+  if (doMetrics) {
+    writeMetricsXML(os, oFlags, pfx);
+    os << endl;
+  }
+  
+  return !isXMLLeaf; // whether to execute writeXML_post()
+}
+
+
+void
+ANode::writeXML_post(ostream& os, int oFlags, const char* pfx) const
+{
+  bool doTag = (type() != TyRoot);
+
+  if (doTag) {
+    os << pfx << "</" << ANodeTyToXMLelement(type()) << ">" << endl;
+  }
+}
+
+
+ostream& 
+ANode::writeXML(ostream& os, int oFlags, const char* pfx) const 
+{
+  string indent = "  ";
+  if (oFlags & Tree::OFlg_Compressed) { 
+    pfx = ""; 
+    indent = ""; 
+  }
+  
+  bool doPost = writeXML_pre(os, oFlags, pfx);
+  string pfx_new = pfx + indent;
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
+       it.Current(); it++) {
+    it.Current()->writeXML(os, oFlags, pfx_new.c_str());
+  }
+  if (doPost) {
+    writeXML_post(os, oFlags, pfx);
+  }
+  return os;
+}
+
+
+ostream& 
+ANode::writeMetricsXML(ostream& os, int oFlags, const char* pfx) const 
+{
+  bool wasMetricWritten = false;
+  
+  for (uint i = 0; i < numMetrics(); i++) {
+    if (hasMetric(i)) {
+      os << ((!wasMetricWritten) ? pfx : "");
+      os << "<M n=\"" << i << "\" v=\"" << metric(i) << "\"/>";
+      wasMetricWritten = true;
+    }
+  }
+  
+  return os;
+}
+
+
+void
+ANode::ddumpXML() const
+{
+  writeXML();
+}
+
+
+ostream& 
+Root::writeXML(ostream& os, int oFlags, const char* pfx) const
+{
+  if (oFlags & Tree::OFlg_Compressed) { 
+    pfx = ""; 
+  }
+
+  // N.B.: Assume that my children are LM's
+  bool doPost = ANode::writeXML_pre(os, oFlags, pfx);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
+       it.Current(); it++) {
+    ANode* scope = it.Current();
+    scope->writeXML(os, oFlags, pfx);
+  }
+  if (doPost) {
+    ANode::writeXML_post(os, oFlags, pfx);
+  }
+  return os;
+}
+
+
+ostream& 
+LM::writeXML(ostream& os, int oFlags, const char* pre) const
+{
+  string indent = "  ";
+  if (oFlags & Tree::OFlg_Compressed) { 
+    pre = ""; 
+    indent = ""; 
+  }
+
+  // N.B.: Assume my children are Files
+  bool doPost = ANode::writeXML_pre(os, oFlags, pre);
+  string prefix = pre + indent;
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
+       it.Current(); it++) {
+    ANode* scope = it.Current();
+    scope->writeXML(os, oFlags, prefix.c_str());
+  }
+  if (doPost) {
+    ANode::writeXML_post(os, oFlags, pre);
+  }
+  return os;
+}
+
+
+//***************************************************************************
+// ANode, etc: CSV output
+//***************************************************************************
+
+void 
+ANode::CSV_DumpSelf(const Root& root, ostream& os) const
+{ 
+  char temp[32];
+  for (uint i = 0; i < numMetrics(); i++) {
+    double val = (hasMetric(i) ? metric(i) : 0);
+    os << "," << val;
+#if 0
+    // FIXME: tallent: Conversioon from static perf-table to MetricDescMgr
+    const PerfMetric& metric = IndexToPerfDataInfo(i);
+    bool percent = metric.Percent();
+#else
+    bool percent = true;
+#endif
+
+    if (percent) {
+      double percVal = val / root.metric(i) * 100;
+      sprintf(temp, "%5.2lf", percVal);
+      os << "," << temp;
+    }
+  }
+  os << endl;
+}
+
+
+void
+ANode::CSV_dump(const Root& root, ostream& os, 
+		const char* file_name, const char* proc_name,
+		int lLevel) const 
+{
+  // print file name, routine name, start and end line, loop level
+  os << name() << ",,,,";
+  CSV_DumpSelf(root, os);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
+       it.Current(); it++) {
+    it.Current()->CSV_dump(root, os);
+  }
+}
+
+
+void
+File::CSV_dump(const Root& root, ostream& os, 
+	       const char* file_name, const char* proc_name,
+	       int lLevel) const 
+{
+  // print file name, routine name, start and end line, loop level
+  os << BaseName() << ",," << m_begLn << "," << m_endLn << ",";
+  CSV_DumpSelf(root, os);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
+       it.Current(); it++) {
+    it.Current()->CSV_dump(root, os, BaseName().c_str());
+  }
+}
+
+
+void
+Proc::CSV_dump(const Root& root, ostream& os, 
+	       const char* file_name, const char* proc_name,
+	       int lLevel) const 
+{
+  // print file name, routine name, start and end line, loop level
+  os << file_name << "," << name() << "," << m_begLn << "," << m_endLn 
+     << ",0";
+  CSV_DumpSelf(root, os);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
+       it.Current(); it++) {
+    it.CurNode()->CSV_dump(root, os, file_name, name().c_str(), 1);
+  } 
+}
+
+
+void
+Alien::CSV_dump(const Root& root, ostream& os, 
+		const char* file_name, const char* proc_name,
+		int lLevel) const 
+{
+  DIAG_Die(DIAG_Unimplemented);
+}
+
+
+void
+ACodeNode::CSV_dump(const Root& root, ostream& os, 
+		    const char* file_name, const char* proc_name,
+		    int lLevel) const 
+{
+  ANodeTy myANodeTy = this->type();
+  // do not display info for single lines
+  if (myANodeTy == TySTMT)
+    return;
+  // print file name, routine name, start and end line, loop level
+  os << (file_name ? file_name : name().c_str()) << "," 
+     << (proc_name ? proc_name : "") << "," 
+     << m_begLn << "," << m_endLn << ",";
+  if (lLevel)
+    os << lLevel;
+  CSV_DumpSelf(root, os);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
+       it.Current(); it++) {
+    it.CurNode()->CSV_dump(root, os, file_name, proc_name, lLevel+1);
+  } 
+}
+
+
+void
+Root::CSV_TreeDump(ostream& os) const
+{
+  ANode::CSV_dump(*this, os);
 }
 
 
@@ -1374,648 +1900,50 @@ LM::dumpmaps() const
 
 
 //***************************************************************************
-// ANode, etc: XML output support
-//***************************************************************************
-
-static const string XMLelements[ANode::TyNUMBER] = {
-  "HPCToolkitStructure", "G", "LM", "F", "P", "A", "L", "S", "REF", "ANY"
-};
-
-const string&
-ANode::ANodeTyToXMLelement(ANodeTy tp)
-{
-   return XMLelements[tp];
-}
-
-
-string 
-ANode::toStringXML(int oFlags, const char* pre) const
-{ 
-  std::ostringstream os;
-  writeXML(os, oFlags, pre);
-  return os.str();
-}
-
-
-string 
-ANode::toXML(int oFlags) const
-{
-  string self = ANodeTyToXMLelement(type()) + " i" + MakeAttrNum(id());
-  return self;
-}
-
-
-string
-ACodeNode::toXML(int oFlags) const
-{ 
-  string self = ANode::toXML(oFlags) 
-    + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
-  return self;
-}
-
-
-string
-ACodeNode::XMLLineRange(int oFlags) const
-{
-  string line = StrUtil::toStr(begLine());
-  if (begLine() != endLine()) {
-    line += "-" + StrUtil::toStr(endLine());
-  }
-
-  string self = "l" + xml::MakeAttrStr(line);
-  return self;
-}
-
-
-string
-ACodeNode::XMLVMAIntervals(int oFlags) const
-{
-  string self = "v" + MakeAttrStr(m_vmaSet.toString(), xml::ESC_FALSE);
-  return self;
-}
-
-
-string
-Root::toXML(int oFlags) const
-{
-  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
-  return self;
-}
-
-
-string 
-Group::toXML(int oFlags) const
-{
-  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
-  return self;
-}
-
-
-string 
-LM::toXML(int oFlags) const
-{
-  string self = ANode::toXML(oFlags) 
-    + " n" + MakeAttrStr(m_name) + " " + XMLVMAIntervals(oFlags);
-  return self;
-}
-
-
-string
-File::toXML(int oFlags) const
-{
-  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
-  return self;
-}
-
-
-string 
-Proc::toXML(int oFlags) const
-{ 
-  string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
-  if (m_name != m_linkname) { // if different, print both
-    self = self + " ln" + MakeAttrStr(m_linkname);
-  }
-  self = self + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
-  return self;
-}
-
-
-string 
-Alien::toXML(int oFlags) const
-{ 
-  string self = ANode::toXML(oFlags) 
-    + " f" + MakeAttrStr(m_filenm) + " n" + MakeAttrStr(m_name);
-  self = self + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
-  return self;
-}
-
-
-string 
-Loop::toXML(int oFlags) const
-{
-  string self = ACodeNode::toXML(oFlags);
-  return self;
-}
-
-
-string
-Stmt::toXML(int oFlags) const
-{
-  string self = ACodeNode::toXML(oFlags);
-  return self;
-}
-
-
-string
-Ref::toXML(int oFlags) const
-{ 
-  string self = ACodeNode::toXML(oFlags) 
-    + " b" + MakeAttrNum(begPos) + " e" + MakeAttrNum(endPos);
-  return self;
-}
-
-
-bool 
-ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
-{
-  bool doTag = (type() != TyRoot);
-  bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ? 
-		    hasMetrics() && IsLeaf() : hasMetrics());
-  bool isXMLLeaf = IsLeaf() && !doMetrics;
-
-  // 1. Write element name
-  if (doTag) {
-    if (isXMLLeaf) {
-      os << pfx << "<" << toXML(oFlags) << "/>" << endl;
-    }
-    else {
-      os << pfx << "<" << toXML(oFlags) << ">" << endl;
-    }
-  }
-
-  // 2. Write associated metrics
-  if (doMetrics) {
-    writeMetricsXML(os, oFlags, pfx);
-    os << endl;
-  }
-  
-  return !isXMLLeaf; // whether to execute writeXML_post()
-}
-
-
-void
-ANode::writeXML_post(ostream& os, int oFlags, const char* pfx) const
-{
-  bool doTag = (type() != TyRoot);
-
-  if (doTag) {
-    os << pfx << "</" << ANodeTyToXMLelement(type()) << ">" << endl;
-  }
-}
-
-
-ostream& 
-ANode::writeXML(ostream& os, int oFlags, const char* pfx) const 
-{
-  string indent = "  ";
-  if (oFlags & Tree::OFlg_Compressed) { 
-    pfx = ""; 
-    indent = ""; 
-  }
-  
-  bool doPost = writeXML_pre(os, oFlags, pfx);
-  string pfx_new = pfx + indent;
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
-       it.Current(); it++) {
-    it.Current()->writeXML(os, oFlags, pfx_new.c_str());
-  }
-  if (doPost) {
-    writeXML_post(os, oFlags, pfx);
-  }
-  return os;
-}
-
-
-ostream& 
-ANode::writeMetricsXML(ostream& os, int oFlags, const char* pfx) const 
-{
-  bool wasMetricWritten = false;
-  
-  for (uint i = 0; i < numMetrics(); i++) {
-    if (hasMetric(i)) {
-      os << ((!wasMetricWritten) ? pfx : "");
-      os << "<M n=\"" << i << "\" v=\"" << metric(i) << "\"/>";
-      wasMetricWritten = true;
-    }
-  }
-  
-  return os;
-}
-
-
-void
-ANode::ddumpXML() const
-{
-  writeXML();
-}
-
-
-ostream& 
-Root::writeXML(ostream& os, int oFlags, const char* pfx) const
-{
-  if (oFlags & Tree::OFlg_Compressed) { 
-    pfx = ""; 
-  }
-
-  // N.B.: Assume that my children are LM's
-  bool doPost = ANode::writeXML_pre(os, oFlags, pfx);
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
-       it.Current(); it++) {
-    ANode* scope = it.Current();
-    scope->writeXML(os, oFlags, pfx);
-  }
-  if (doPost) {
-    ANode::writeXML_post(os, oFlags, pfx);
-  }
-  return os;
-}
-
-
-ostream& 
-LM::writeXML(ostream& os, int oFlags, const char* pre) const
-{
-  string indent = "  ";
-  if (oFlags & Tree::OFlg_Compressed) { 
-    pre = ""; 
-    indent = ""; 
-  }
-
-  // N.B.: Assume my children are Files
-  bool doPost = ANode::writeXML_pre(os, oFlags, pre);
-  string prefix = pre + indent;
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
-       it.Current(); it++) {
-    ANode* scope = it.Current();
-    scope->writeXML(os, oFlags, prefix.c_str());
-  }
-  if (doPost) {
-    ANode::writeXML_post(os, oFlags, pre);
-  }
-  return os;
-}
-
-
-//***************************************************************************
-// ANode, etc: 
-//***************************************************************************
-
-void 
-ANode::CSV_DumpSelf(const Root& root, ostream& os) const
-{ 
-  char temp[32];
-  for (uint i = 0; i < numMetrics(); i++) {
-    double val = (hasMetric(i) ? metric(i) : 0);
-    os << "," << val;
-#if 0
-    // FIXME: tallent: Conversioon from static perf-table to MetricDescMgr
-    const PerfMetric& metric = IndexToPerfDataInfo(i);
-    bool percent = metric.Percent();
-#else
-    bool percent = true;
-#endif
-
-    if (percent) {
-      double percVal = val / root.metric(i) * 100;
-      sprintf(temp, "%5.2lf", percVal);
-      os << "," << temp;
-    }
-  }
-  os << endl;
-}
-
-
-void
-ANode::CSV_dump(const Root& root, ostream& os, 
-		const char* file_name, const char* proc_name,
-		int lLevel) const 
-{
-  // print file name, routine name, start and end line, loop level
-  os << name() << ",,,,";
-  CSV_DumpSelf(root, os);
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
-       it.Current(); it++) {
-    it.Current()->CSV_dump(root, os);
-  }
-}
-
-
-void
-File::CSV_dump(const Root& root, ostream& os, 
-	       const char* file_name, const char* proc_name,
-	       int lLevel) const 
-{
-  // print file name, routine name, start and end line, loop level
-  os << BaseName() << ",," << m_begLn << "," << m_endLn << ",";
-  CSV_DumpSelf(root, os);
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
-       it.Current(); it++) {
-    it.Current()->CSV_dump(root, os, BaseName().c_str());
-  }
-}
-
-
-void
-Proc::CSV_dump(const Root& root, ostream& os, 
-	       const char* file_name, const char* proc_name,
-	       int lLevel) const 
-{
-  // print file name, routine name, start and end line, loop level
-  os << file_name << "," << name() << "," << m_begLn << "," << m_endLn 
-     << ",0";
-  CSV_DumpSelf(root, os);
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
-       it.Current(); it++) {
-    it.CurNode()->CSV_dump(root, os, file_name, name().c_str(), 1);
-  } 
-}
-
-
-void
-Alien::CSV_dump(const Root& root, ostream& os, 
-		const char* file_name, const char* proc_name,
-		int lLevel) const 
-{
-  DIAG_Die(DIAG_Unimplemented);
-}
-
-
-void
-ACodeNode::CSV_dump(const Root& root, ostream& os, 
-		    const char* file_name, const char* proc_name,
-		    int lLevel) const 
-{
-  ANodeTy myANodeTy = this->type();
-  // do not display info for single lines
-  if (myANodeTy == TySTMT)
-    return;
-  // print file name, routine name, start and end line, loop level
-  os << (file_name ? file_name : name().c_str()) << "," 
-     << (proc_name ? proc_name : "") << "," 
-     << m_begLn << "," << m_endLn << ",";
-  if (lLevel)
-    os << lLevel;
-  CSV_DumpSelf(root, os);
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
-       it.Current(); it++) {
-    it.CurNode()->CSV_dump(root, os, file_name, proc_name, lLevel+1);
-  } 
-}
-
-
-void
-Root::CSV_TreeDump(ostream& os) const
-{
-  ANode::CSV_dump(*this, os);
-}
-
-
-//***************************************************************************
-// ACodeNode specific methods 
-//***************************************************************************
-
-void 
-ACodeNode::SetLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate) 
-{
-  checkLineRange(begLn, endLn);
-  
-  m_begLn = begLn;
-  m_endLn = endLn;
-  
-  RelocateIf();
-
-  // never propagate changes outside an Alien
-  if (propagate && begLn != ln_NULL 
-      && ACodeNodeParent() && type() != ANode::TyALIEN) {
-    ACodeNodeParent()->ExpandLineRange(m_begLn, m_endLn);
-  }
-}
-
-
-void 
-ACodeNode::ExpandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
-{
-  checkLineRange(begLn, endLn);
-
-  if (begLn == ln_NULL) {
-    DIAG_Assert(m_begLn == ln_NULL, "");
-    // simply relocate at beginning of sibling list 
-    RelocateIf();
-  } 
-  else {
-    bool changed = false;
-    if (m_begLn == ln_NULL) {
-      m_begLn = begLn;
-      m_endLn = endLn;
-      changed = true;
-    } 
-    else {
-      if (begLn < m_begLn) { m_begLn = begLn; changed = true; }
-      if (endLn > m_endLn) { m_endLn = endLn; changed = true; }
-    }
-
-    if (changed) {
-      // never propagate changes outside an Alien
-      RelocateIf();
-      if (propagate && ACodeNodeParent() && type() != ANode::TyALIEN) {
-        ACodeNodeParent()->ExpandLineRange(m_begLn, m_endLn);
-      }
-    }
-  }
-}
-
-
-void
-ACodeNode::Relocate() 
-{
-  ACodeNode* prev = PrevScope();
-  ACodeNode* next = NextScope();
-
-  // NOTE: Technically should check for ln_NULL
-  if ((!prev || (prev->begLine() <= m_begLn)) 
-      && (!next || (m_begLn <= next->begLine()))) {
-    return;
-  } 
-  
-  // INVARIANT: The parent scope contains at least two children
-  DIAG_Assert(parent->ChildCount() >= 2, "");
-
-  ANode* parent = Parent();
-  Unlink();
-
-  //if (parent->FirstChild() == NULL) {
-  //  Link(parent);
-  //}
-  if (m_begLn == ln_NULL) {
-    // insert as first child
-    LinkBefore(parent->FirstChild());
-  } 
-  else {
-    // insert after sibling with sibling->begLine() <= begLine() 
-    // or iff that does not exist insert as first in sibling list
-    ACodeNode* sibling = NULL;
-    for (sibling = parent->LastEnclScope(); sibling;
-	 sibling = sibling->PrevScope()) {
-      if (sibling->begLine() <= m_begLn) {
-	break;
-      }
-    } 
-    if (sibling != NULL) {
-      LinkAfter(sibling);
-    } 
-    else {
-      LinkBefore(parent->FirstChild());
-    } 
-  }
-}
-
-
-bool
-ACodeNode::containsLine(SrcFile::ln ln, int beg_epsilon, int end_epsilon) const
-{
-  // We assume it makes no sense to compare against ln_NULL
-  if (m_begLn != ln_NULL) {
-    if (containsLine(ln)) {
-      return true;
-    }
-    else if (beg_epsilon != 0 || end_epsilon != 0) {
-      // INVARIANT: 'ln' is strictly outside the range of this context
-      int beg_delta = begLine() - ln; // > 0 if line is before beg
-      int end_delta = ln - endLine(); // > 0 if end is before line
-      return ((beg_delta > 0 && beg_delta <= beg_epsilon)
-	      || (end_delta > 0 && end_delta <= end_epsilon));
-    }
-  }
-  return false;
-}
-
-
-ACodeNode* 
-ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
-{
-  DIAG_Assert(ln != ln_NULL, "ACodeNode::ACodeNodeWithLine: invalid line");
-  ACodeNode* ci;
-  // ln > m_endLn means there is no child that contains ln
-  if (ln <= m_endLn) {
-    for (ANodeChildIterator it(this); it.Current(); it++) {
-      ci = dynamic_cast<ACodeNode*>(it.Current());
-      DIAG_Assert(ci, "");
-      if  (ci->containsLine(ln)) {
-	if (ci->type() == TySTMT) {  
-	  return ci; // never look inside LINE_SCOPEs 
-	} 
-	
-	// desired line might be in inner scope; however, it might be
-	// elsewhere because optimization left procedure with 
-	// non-contiguous line ranges in scopes at various levels.
-	ACodeNode* inner = ci->ACodeNodeWithLine(ln);
-	if (inner) return inner;
-      } 
-    }
-  }
-  if (ci->type() == TyPROC) return (ACodeNode*) this;
-  else return 0;
-}
-
-
-int 
-ACodeNodeLineComp(const ACodeNode* x, const ACodeNode* y)
-{
-  if (x->begLine() == y->begLine()) {
-    bool endLinesEqual = (x->endLine() == y->endLine());
-    if (endLinesEqual) {
-      // We have two ACodeNode's with identical line intervals...
-      
-      // Use lexicographic comparison for procedures
-      if (x->type() == ANode::TyPROC && y->type() == ANode::TyPROC) {
-	Proc *px = (Proc*)x, *py = (Proc*)y;
-	int cmp1 = px->name().compare(py->name());
-	if (cmp1 != 0) { return cmp1; }
-	int cmp2 = px->LinkName().compare(py->LinkName());
-	if (cmp2 != 0) { return cmp2; }
-      }
-      
-      // Use VMAInterval sets otherwise.
-      bool x_lt_y = (x->vmaSet() < y->vmaSet());
-      bool y_lt_x = (y->vmaSet() < x->vmaSet());
-      bool vmaSetsEqual = (!x_lt_y && !y_lt_x);
-
-      if (vmaSetsEqual) {
-	// Try ranking a leaf node before a non-leaf node
-	if ( !(x->IsLeaf() && y->IsLeaf())) {
-	  if      (x->IsLeaf()) { return -1; } // x < y
-	  else if (y->IsLeaf()) { return  1; } // x > y
-	}
-	
-	// Give up!
-	return 0;
-      }
-      else if (x_lt_y) { return -1; }
-      else if (y_lt_x) { return  1; }
-      else {
-	DIAG_Die(DIAG_Unimplemented);
-      }
-    }
-    else {
-      return SimpleLineCmp(x->endLine(), y->endLine());
-    }
-  }
-  else {
-    return SimpleLineCmp(x->begLine(), y->begLine());
-  }
-}
-
-
-//***************************************************************************
 // Ref specific methods 
 //***************************************************************************
 
 void
 Ref::RelocateRef() 
 {
-  Ref* prev = dynamic_cast<Ref*>(PrevScope());
-  Ref* next = dynamic_cast<Ref*>(NextScope());
-  DIAG_Assert((PrevScope() == prev) && (NextScope() == next), "");
+  Ref* prev = dynamic_cast<Ref*>(prevSibling());
+  Ref* next = dynamic_cast<Ref*>(nextSibling());
+  DIAG_Assert((prevSibling() == prev) && (nextSibling() == next), "");
   if (((!prev) || (prev->endPos <= begPos)) && 
       ((!next) || (next->begPos >= endPos))) {
     return;
   } 
-  ANode* parent = Parent();
+  ANode* prnt = parent();
   Unlink();
-  if (parent->FirstChild() == NULL) {
-    Link(parent);
+  if (prnt->firstChild() == NULL) {
+    Link(prnt);
   } 
   else {
     // insert after sibling with sibling->endPos < begPos 
     // or iff that does not exist insert as first in sibling list
     ACodeNode* sibling;
-    for (sibling = parent->LastEnclScope();
-	 sibling;
-	 sibling = sibling->PrevScope()) {
+    for (sibling = dynamic_cast<ACodeNode*>(prnt->lastChild());
+	 sibling; sibling = dynamic_cast<ACodeNode*>(sibling->prevSibling())) {
       Ref *ref = dynamic_cast<Ref*>(sibling);
       DIAG_Assert(ref == sibling, "");
       if (ref->endPos < begPos)  
 	break;
       } 
     if (sibling != NULL) {
-      Ref *nxt = dynamic_cast<Ref*>(sibling->NextScope());
+      Ref *nxt = dynamic_cast<Ref*>(sibling->nextSibling());
       DIAG_Assert((nxt == NULL) || (nxt->begPos > endPos), "");
       LinkAfter(sibling);
     } 
     else {
-      LinkBefore(parent->FirstChild());
+      LinkBefore(prnt->FirstChild());
     } 
   }
 }
 
+//***************************************************************************
 
 } // namespace Struct
 } // namespace Prof
 
-//***************************************************************************
 
-// - if x < y; 0 if x == y; + otherwise
-static int 
-SimpleLineCmp(SrcFile::ln x, SrcFile::ln y)
-{
-  // We would typically wish to use the following for this simple
-  // comparison, but it fails if the the differences are greater than
-  // an 'int'
-  // return (x - y)
-
-  if (x < y)       { return -1; }
-  else if (x == y) { return 0; }
-  else             { return 1; }
-}
-
-//***************************************************************************
 

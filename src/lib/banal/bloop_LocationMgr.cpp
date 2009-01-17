@@ -198,7 +198,7 @@ LocationMgr::containsLineFzy(Struct::ACodeNode* x, SrcFile::ln line, bool loopIs
 
 	// Procedure specialization (e.g. template instantiation)
 	// violates non-overlapping principle.
-	Struct::ACodeNode* next = x->nextScopeNonOverlapping(); // sorted
+	Struct::ACodeNode* next = x->nextSiblingNonOverlapping(); // sorted
 	if (next) {
 	  end_epsilon = (int)(next->begLine() - 1 - x->endLine());
 	}
@@ -234,7 +234,7 @@ LocationMgr::containsIntervalFzy(Struct::ACodeNode* x,
     case Struct::ANode::TyPROC: 
       {
 	beg_epsilon = 2;  end_epsilon = 100;
-	Struct::ACodeNode* next = x->nextScopeNonOverlapping(); // sorted
+	Struct::ACodeNode* next = x->nextSiblingNonOverlapping(); // sorted
 	if (next) {
 	  end_epsilon = (int)(next->begLine() - 1 - x->endLine());
 	}
@@ -527,9 +527,9 @@ LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
     // Find or create the alien scope
     Struct::Alien* alien =
 #if (BLOOP_NEST_ALIEN_CONTEXTS)
-      findOrCreateAlienStrct(proposed_scope, filenm, procnm, line, true);
+      demandAlienStrct(proposed_scope, filenm, procnm, line, true);
 #else
-      findOrCreateAlienStrct(proposed_scope, filenm, procnm, line, false);
+      demandAlienStrct(proposed_scope, filenm, procnm, line, false);
     if (topCtxtRef().isAlien()) {
       m_ctxtStack.pop_front();
     }
@@ -553,7 +553,7 @@ LocationMgr::fixContextStack(const Struct::ACodeNode* proposed_scope)
 
   Struct::ACodeNode* x = proposed_scope->ancestorProcCtxt();
   for ( ; x->type() != Struct::ANode::TyPROC; 
-	x = x->Parent()->ancestorProcCtxt()) {
+	x = x->parent()->ancestorProcCtxt()) {
     m_ctxtStack.push_back(Ctxt(x));
   }
   m_ctxtStack.push_back(Ctxt(x)); // add the TyPROC
@@ -656,8 +656,8 @@ LocationMgr::alienateScopeTree(Struct::ACodeNode* scope, Struct::Alien* alien,
 {
   // create new alien context based on 'alien'
   Struct::ACodeNode* clone = 
-    findOrCreateAlienStrct(scope, alien->fileName(), alien->name(), 
-			   alien->begLine(), /*tosOnCreate*/ false);
+    demandAlienStrct(scope, alien->fileName(), alien->name(), 
+		     alien->begLine(), /*tosOnCreate*/ false);
   clone->SetLineRange(alien->begLine(), alien->endLine(), 0 /*propagate*/);
   
   // move non-alien children of 'scope' into 'clone'
@@ -807,11 +807,11 @@ LocationMgr::findCtxt(FindCtxt_MatchOp& op,
 
 
 Struct::Alien* 
-LocationMgr::findOrCreateAlienStrct(Struct::ACodeNode* parent_scope,
-				    const std::string& filenm,
-				    const std::string& procnm, 
-				    SrcFile::ln line,
-				    bool tosOnCreate)
+LocationMgr::demandAlienStrct(Struct::ACodeNode* parent_scope,
+			      const std::string& filenm,
+			      const std::string& procnm, 
+			      SrcFile::ln line,
+			      bool tosOnCreate)
 {
   // INVARIANT: 'parent_scope' should either be the top of the stack
   // or the first first enclosing LOOP or PROC of the top of the
