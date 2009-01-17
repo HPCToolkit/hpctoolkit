@@ -14,13 +14,10 @@
 
 #include <include/general.h>
 
-#include "general.h"
-#include <memory/mem.h>
 #include "pmsg.h"
 
 #include "unwind.h"
 #include "splay.h"
-#include "splay-interval.h"
 #include "stack_troll.h"
 
 #include "mips-unwind-interval.h"
@@ -37,6 +34,9 @@
 
 #define pc_NULL ((void*)(intptr_t)(-1)) /* NULL may identify outmost frame */
 
+
+//***************************************************************************
+// private operations
 //***************************************************************************
 
 static inline greg_t
@@ -60,7 +60,7 @@ ucontext_sp(ucontext_t* context)
 
 
 static inline void**
-ucontext_bp(ucontext_t* context)
+ucontext_fp(ucontext_t* context)
 { return (void**)ucontext_getreg(context, REG_FP); }
 
 
@@ -71,6 +71,7 @@ getCallFromRA(void* ra)
 {
   return (void*)((uintptr_t)ra - 4 /*delay slot*/ - 4 /*next insn*/);
 }
+
 
 static inline void**
 getPtrFromSP(void** sp, int offset)
@@ -83,8 +84,8 @@ getValFromSP(void** sp, int offset)
 
 
 static inline void*
-getValFromBP(void** bp, int offset)
-{ return *getPtrFromSP(bp, offset); }
+getValFromFP(void** fp, int offset)
+{ return *getPtrFromSP(fp, offset); }
 
 
 static inline bool
@@ -106,29 +107,29 @@ isPossibleFP(void** sp, void** fp)
 //***************************************************************************
 
 static inline void
-computeNext_SPFrame(void** * nxt_sp, void** * nxt_bp,
-		    unw_interval_t* intvl, void** sp, void** bp)
+computeNext_SPFrame(void** * nxt_sp, void** * nxt_fp,
+		    unw_interval_t* intvl, void** sp, void** fp)
 {
   *nxt_sp = getPtrFromSP(sp, intvl->sp_pos);
 
-  if (intvl->bp_pos != unwpos_NULL) {
-    *nxt_bp = getPtrFromSP(sp, intvl->bp_pos);
+  if (intvl->sp_pos != unwpos_NULL) {
+    *nxt_fp = getPtrFromSP(sp, intvl->sp_pos);
   }
-  else if (bp) {
-    // preserve BP for use with parent frame (child may save parent's bp)
-    *nxt_bp = bp;
+  else if (fp) {
+    // preserve FP for use with parent frame (child may save parent's FP)
+    *nxt_fp = fp;
   }
 }
 
 
 static inline void
-computeNext_BPFrame(void** * nxt_sp, void** * nxt_bp,
-		    unw_interval_t* intvl, void** bp)
+computeNext_FPFrame(void** * nxt_sp, void** * nxt_fp,
+		    unw_interval_t* intvl, void** fp)
 {
-  *nxt_sp = bp;
+  *nxt_sp = fp;
   
-  if (intvl->bp_pos != unwpos_NULL) {
-    *nxt_bp = getValFromBP(bp, intvl->bp_pos);
+  if (intvl->sp_pos != unwpos_NULL) {
+    *nxt_fp = getValFromFP(fp, intvl->sp_pos);
   }
 }
 
@@ -169,7 +170,7 @@ unw_init_cursor(void* context, unw_cursor_t* cursor)
   cursor->pc = ucontext_pc(ctxt);
   cursor->ra = ucontext_ra(ctxt);
   cursor->sp = ucontext_sp(ctxt);
-  cursor->bp = ucontext_bp(ctxt);
+  cursor->bp = ucontext_fp(ctxt);
 
   cursor->intvl = csprof_addr_to_interval(cursor->pc);
   unw_interval_t* intvl = (unw_interval_t*)cursor->intvl;
@@ -178,7 +179,7 @@ unw_init_cursor(void* context, unw_cursor_t* cursor)
     cursor->ra = (void*)ucontext_getreg(context, intvl->ra_arg);
   }
 
-  TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, bp=%p", 
+  TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
        cursor->pc, cursor->ra, cursor->sp, cursor->bp);
   if (MYDBG) { ui_dump(intvl, 1); }
 }
@@ -190,13 +191,13 @@ unw_step(unw_cursor_t* cursor)
   // current frame:
   void*  pc = cursor->pc;
   void** sp = cursor->sp;
-  void** bp = cursor->bp;
+  void** fp = cursor->bp;
   unw_interval_t* intvl = (unw_interval_t*)cursor->intvl;
 
   // next (parent) frame
   void*  nxt_pc = pc_NULL;
   void** nxt_sp = NULL;
-  void** nxt_bp = NULL;
+  void** nxt_fp = NULL;
   unw_interval_t* nxt_intvl = NULL;
   
   //-----------------------------------------------------------
@@ -223,9 +224,9 @@ unw_step(unw_cursor_t* cursor)
   else if (intvl->ty == FrmTy_SP) {
     nxt_pc = getValFromSP(sp, intvl->ra_arg);
   }
-  else if (intvl->ty == FrmTy_BP) {
-    if (isPossibleFP(sp, bp)) { // BP is our weak spot
-      nxt_pc = getValFromBP(bp, intvl->ra_arg);
+  else if (intvl->ty == FrmTy_FP) {
+    if (isPossibleFP(sp, fp)) { // FP is our weak spot
+      nxt_pc = getValFromFP(fp, intvl->ra_arg);
     }
   }
   else {
@@ -241,14 +242,14 @@ unw_step(unw_cursor_t* cursor)
   }
 
   //-----------------------------------------------------------
-  // compute SP (stack pointer) and BP (frame pointer) for the caller's frame.
+  // compute SP (stack pointer) and FP (frame pointer) for the caller's frame.
   //-----------------------------------------------------------
   if (intvl->ty == FrmTy_SP) {
-    computeNext_SPFrame(&nxt_sp, &nxt_bp, intvl, sp, bp);
+    computeNext_SPFrame(&nxt_sp, &nxt_fp, intvl, sp, fp);
   }
-  else if (intvl->ty == FrmTy_BP) {
-    if (isPossibleFP(sp, bp)) { // BP is our weak spot
-      computeNext_BPFrame(&nxt_sp, &nxt_bp, intvl, bp);
+  else if (intvl->ty == FrmTy_FP) {
+    if (isPossibleFP(sp, fp)) { // FP is our weak spot
+      computeNext_FPFrame(&nxt_sp, &nxt_fp, intvl, fp);
     }
   }
   else {
@@ -266,7 +267,7 @@ unw_step(unw_cursor_t* cursor)
 
   if (!nxt_intvl) {
     // nxt_pc is invalid for some reason... try trolling
-    TMSG(UNW, "troll: bad pc=%p; cur sp=%p, bp=%p...", nxt_pc, sp, bp);
+    TMSG(UNW, "troll: bad pc=%p; cur sp=%p, fp=%p...", nxt_pc, sp, fp);
 
     uint troll_pc_pos;
     uint ret = stack_troll(sp, &troll_pc_pos);
@@ -287,18 +288,18 @@ unw_step(unw_cursor_t* cursor)
 
     if (!frameflg_isset(intvl->flgs, FrmFlg_RAReg) 
 	&& intvl->ra_arg != unwpos_NULL) {
-      // realign sp/bp and recompute nxt_sp, nxt_bp
+      // realign sp/fp and recompute nxt_sp, nxt_fp
       if (intvl->ty == FrmTy_SP) {
 	void** new_sp = getPtrFromSP(troll_sp, -intvl->ra_arg);
-	computeNext_SPFrame(&nxt_sp, &nxt_bp, intvl, new_sp, NULL);
-	TMSG(UNW, "troll align/sp: troll_sp=%p, new sp=%p: nxt sp=%p, bp=%p",
-	     troll_sp, new_sp, nxt_sp, nxt_bp);
+	computeNext_SPFrame(&nxt_sp, &nxt_fp, intvl, new_sp, NULL);
+	TMSG(UNW, "troll align/sp: troll_sp=%p, new sp=%p: nxt sp=%p, fp=%p",
+	     troll_sp, new_sp, nxt_sp, nxt_fp);
       }
-      else if (intvl->ty == FrmTy_BP) {
-	void** new_bp = getPtrFromSP(troll_sp, -intvl->ra_arg);
-	computeNext_BPFrame(&nxt_sp, &nxt_bp, intvl, new_bp);
-	TMSG(UNW, "troll align/bp: troll_sp=%p, new bp=%p: nxt sp=%p, bp=%p",
-	     troll_sp, new_bp, nxt_sp, nxt_bp);
+      else if (intvl->ty == FrmTy_FP) {
+	void** new_fp = getPtrFromSP(troll_sp, -intvl->ra_arg);
+	computeNext_FPFrame(&nxt_sp, &nxt_fp, intvl, new_fp);
+	TMSG(UNW, "troll align/fp: troll_sp=%p, new fp=%p: nxt sp=%p, fp=%p",
+	     troll_sp, new_fp, nxt_sp, nxt_fp);
       }
       else {
 	assert(0);
@@ -319,12 +320,12 @@ unw_step(unw_cursor_t* cursor)
   }
 
 
-  TMSG(UNW, "next: pc=%p, sp=%p, bp=%p", nxt_pc, nxt_sp, nxt_bp);
+  TMSG(UNW, "next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
   if (MYDBG) { ui_dump(nxt_intvl, 1); }
 
   cursor->pc = nxt_pc;
   cursor->sp = nxt_sp;
-  cursor->bp = nxt_bp;
+  cursor->bp = nxt_fp;
   cursor->ra = NULL; // always NULL after unw_step() completes
   cursor->intvl = (splay_interval_t*)nxt_intvl;
 
