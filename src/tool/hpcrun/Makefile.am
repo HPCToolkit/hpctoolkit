@@ -105,7 +105,6 @@ MY_LINUX_DYNAMIC_FILES = 		\
 
 MY_MIPS_FILES = \
 	unwind/mips/mips-unwind.c \
-	unwind/mips/mips-build-intervals.c \
 	unwind/mips/mips-unwind-interval.c
 
 MY_PPC_FILES = \

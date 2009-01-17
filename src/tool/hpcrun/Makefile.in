@@ -196,8 +196,7 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	unwind/common/stack_troll.c utilities/executable-path.c \
 	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
-	unwind/mips/mips-unwind.c unwind/mips/mips-build-intervals.c \
-	unwind/mips/mips-unwind-interval.c \
+	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-build-intervals.c \
 	unwind/ppc64/ppc64-context.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -238,7 +237,6 @@ am__objects_8 = libcsprof_la-fnbounds_dynamic.lo \
 am__objects_9 = libcsprof_la-dylib.lo
 @HOST_OS_LINUX_TRUE@am__objects_10 = $(am__objects_9)
 am__objects_11 = libcsprof_la-mips-unwind.lo \
-	libcsprof_la-mips-build-intervals.lo \
 	libcsprof_la-mips-unwind-interval.lo
 @HOST_CPU_MIPS_TRUE@am__objects_12 = $(am__objects_11)
 am__objects_13 = libcsprof_la-ppc64-build-intervals.lo \
@@ -279,7 +277,6 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	unwind/common/stack_troll.c utilities/executable-path.c \
 	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_static.c unwind/mips/mips-unwind.c \
-	unwind/mips/mips-build-intervals.c \
 	unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-build-intervals.c \
 	unwind/ppc64/ppc64-context.c \
@@ -326,7 +323,6 @@ am__objects_19 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-unlink.$(OBJEXT)
 am__objects_20 = libcsprof_o-fnbounds_static.$(OBJEXT)
 am__objects_21 = libcsprof_o-mips-unwind.$(OBJEXT) \
-	libcsprof_o-mips-build-intervals.$(OBJEXT) \
 	libcsprof_o-mips-unwind-interval.$(OBJEXT)
 @HOST_CPU_MIPS_TRUE@am__objects_22 = $(am__objects_21)
 am__objects_23 = libcsprof_o-ppc64-build-intervals.$(OBJEXT) \
@@ -651,7 +647,6 @@ MY_LINUX_DYNAMIC_FILES = \
 
 MY_MIPS_FILES = \
 	unwind/mips/mips-unwind.c \
-	unwind/mips/mips-build-intervals.c \
 	unwind/mips/mips-unwind-interval.c
 
 MY_PPC_FILES = \
@@ -950,7 +945,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lushi-cb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-mem.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-metrics.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-mips-build-intervals.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-mips-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-mips-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-name.Plo@am__quote@
@@ -1009,7 +1003,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lushi-cb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-metrics.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mips-build-intervals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mips-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mips-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-name.Po@am__quote@
@@ -1422,13 +1415,6 @@ libcsprof_la-mips-unwind.lo: unwind/mips/mips-unwind.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/mips/mips-unwind.c' object='libcsprof_la-mips-unwind.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-mips-unwind.lo `test -f 'unwind/mips/mips-unwind.c' || echo '$(srcdir)/'`unwind/mips/mips-unwind.c
-
-libcsprof_la-mips-build-intervals.lo: unwind/mips/mips-build-intervals.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-mips-build-intervals.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-mips-build-intervals.Tpo -c -o libcsprof_la-mips-build-intervals.lo `test -f 'unwind/mips/mips-build-intervals.c' || echo '$(srcdir)/'`unwind/mips/mips-build-intervals.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-mips-build-intervals.Tpo $(DEPDIR)/libcsprof_la-mips-build-intervals.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/mips/mips-build-intervals.c' object='libcsprof_la-mips-build-intervals.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-mips-build-intervals.lo `test -f 'unwind/mips/mips-build-intervals.c' || echo '$(srcdir)/'`unwind/mips/mips-build-intervals.c
 
 libcsprof_la-mips-unwind-interval.lo: unwind/mips/mips-unwind-interval.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-mips-unwind-interval.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-mips-unwind-interval.Tpo -c -o libcsprof_la-mips-unwind-interval.lo `test -f 'unwind/mips/mips-unwind-interval.c' || echo '$(srcdir)/'`unwind/mips/mips-unwind-interval.c
@@ -2136,20 +2122,6 @@ libcsprof_o-mips-unwind.obj: unwind/mips/mips-unwind.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/mips/mips-unwind.c' object='libcsprof_o-mips-unwind.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-mips-unwind.obj `if test -f 'unwind/mips/mips-unwind.c'; then $(CYGPATH_W) 'unwind/mips/mips-unwind.c'; else $(CYGPATH_W) '$(srcdir)/unwind/mips/mips-unwind.c'; fi`
-
-libcsprof_o-mips-build-intervals.o: unwind/mips/mips-build-intervals.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-mips-build-intervals.o -MD -MP -MF $(DEPDIR)/libcsprof_o-mips-build-intervals.Tpo -c -o libcsprof_o-mips-build-intervals.o `test -f 'unwind/mips/mips-build-intervals.c' || echo '$(srcdir)/'`unwind/mips/mips-build-intervals.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-mips-build-intervals.Tpo $(DEPDIR)/libcsprof_o-mips-build-intervals.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/mips/mips-build-intervals.c' object='libcsprof_o-mips-build-intervals.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-mips-build-intervals.o `test -f 'unwind/mips/mips-build-intervals.c' || echo '$(srcdir)/'`unwind/mips/mips-build-intervals.c
-
-libcsprof_o-mips-build-intervals.obj: unwind/mips/mips-build-intervals.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-mips-build-intervals.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-mips-build-intervals.Tpo -c -o libcsprof_o-mips-build-intervals.obj `if test -f 'unwind/mips/mips-build-intervals.c'; then $(CYGPATH_W) 'unwind/mips/mips-build-intervals.c'; else $(CYGPATH_W) '$(srcdir)/unwind/mips/mips-build-intervals.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-mips-build-intervals.Tpo $(DEPDIR)/libcsprof_o-mips-build-intervals.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/mips/mips-build-intervals.c' object='libcsprof_o-mips-build-intervals.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-mips-build-intervals.obj `if test -f 'unwind/mips/mips-build-intervals.c'; then $(CYGPATH_W) 'unwind/mips/mips-build-intervals.c'; else $(CYGPATH_W) '$(srcdir)/unwind/mips/mips-build-intervals.c'; fi`
 
 libcsprof_o-mips-unwind-interval.o: unwind/mips/mips-unwind-interval.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-mips-unwind-interval.o -MD -MP -MF $(DEPDIR)/libcsprof_o-mips-unwind-interval.Tpo -c -o libcsprof_o-mips-unwind-interval.o `test -f 'unwind/mips/mips-unwind-interval.c' || echo '$(srcdir)/'`unwind/mips/mips-unwind-interval.c
