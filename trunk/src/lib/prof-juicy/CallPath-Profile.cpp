@@ -584,7 +584,7 @@ cct_fixLeaves(Prof::CCT::ANode* node)
 
     DIAG_DevMsgIf(0, "cct_fixLeaves: parent(" << hex << node << ") child(" << x
 		  << "): " << x->ip() << dec);
-    if (x->IsLeaf() && typeid(*x) == typeid(CCT::Call)) {
+    if (x->isLeaf() && typeid(*x) == typeid(CCT::Call)) {
       // This x is a leaf. Convert.
       CCT::Stmt* x_new = new CCT::Stmt(NULL, x->cpid(), x->metricdesc());
       *x_new = *(dynamic_cast<CCT::Call*>(x));
@@ -593,7 +593,7 @@ cct_fixLeaves(Prof::CCT::ANode* node)
       x->Unlink();
       delete x;
     }
-    else if (!x->IsLeaf()) {
+    else if (!x->isLeaf()) {
       cct_fixLeaves(x);
     }
   }

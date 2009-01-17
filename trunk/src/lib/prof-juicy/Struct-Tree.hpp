@@ -250,6 +250,9 @@ private:
   static const std::string ScopeNames[TyNUMBER];
 
 public:
+  // --------------------------------------------------------
+  // Constructor/Destructor
+  // --------------------------------------------------------
   ANode(ANodeTy ty, ANode* parent = NULL)
     : NonUniformDegreeTreeNode(parent), m_type(ty)
   { 
@@ -264,8 +267,17 @@ public:
     delete m_metrics;
   }
   
+
   // --------------------------------------------------------
-  // General Interface to fields 
+  // cloning
+  // --------------------------------------------------------
+  
+  // Clone: return a shallow copy, unlinked from the tree
+  virtual ANode* Clone() { return new ANode(*this); }
+
+
+  // --------------------------------------------------------
+  // General data
   // --------------------------------------------------------
   ANodeTy type() const { return m_type; }
 
@@ -282,7 +294,62 @@ public:
 
 
   // --------------------------------------------------------
-  // Metric data
+  // Tree navigation 
+  // --------------------------------------------------------
+  ANode* parent() const 
+  { return static_cast<ANode*>(NonUniformDegreeTreeNode::Parent()); }
+
+  ANode* firstChild() const
+  { return static_cast<ANode*>(NonUniformDegreeTreeNode::FirstChild()); }
+
+  ANode* lastChild() const
+  { return static_cast<ANode*>(NonUniformDegreeTreeNode::LastChild()); }
+
+  ANode* nextSibling() const
+  {
+    // siblings are linked in a circular list
+    if ((parent()->lastChild() != this)) {
+      return static_cast<ANode*>(NonUniformDegreeTreeNode::NextSibling()); 
+    }
+    return NULL;  
+  }
+  
+  ANode* prevSibling() const
+  { 
+    // siblings are linked in a circular list
+    if ((parent()->firstChild() != this)) {
+      return static_cast<ANode*>(NonUniformDegreeTreeNode::PrevSibling()); 
+    }
+    return NULL;
+  }
+  
+  bool isLeaf() const 
+  { return (NonUniformDegreeTreeNode::FirstChild() == NULL); }
+
+
+  // --------------------------------------------------------
+  // Ancestor: find first ANode in path from this to root with given type
+  // (Note: We assume that a node *can* be an ancestor of itself.)
+  // --------------------------------------------------------
+  ANode* Ancestor(ANodeTy type) const;
+  ANode* Ancestor(ANodeTy tp1, ANodeTy tp2) const;
+
+  Root*  AncRoot() const;   // return Ancestor(TyRoot)
+  Group* AncGroup() const;  // return Ancestor(TyGROUP)
+  LM*    AncLM() const;     // return Ancestor(TyLM)
+  File*  AncFile() const;   // return Ancestor(TyFILE)
+  Proc*  AncProc() const;   // return Ancestor(TyPROC)
+  Alien* AncAlien() const;  // return Ancestor(TyALIEN)
+  Loop*  AncLoop() const;   // return Ancestor(TyLOOP)
+  Stmt*  AncStmt() const;   // return Ancestor(TySTMT)
+
+  ACodeNode* ancestorProcCtxt() const; // return Ancestor(TyALIEN|TyPROC)
+
+  ACodeNode* ACodeNodeParent() const;
+
+
+  // --------------------------------------------------------
+  // Metrics
   // --------------------------------------------------------
 
   bool 
@@ -342,64 +409,25 @@ public:
     accumulateMetrics(mBegId, mBegId);
   }
 
+  // traverses the tree and removes all nodes for which HasPerfData() is false
+  void 
+  pruneByMetrics();
+
+
 private:
   void
   accumulateMetrics(uint mBegId, uint mEndId, double* valVec);
 
 public:
 
-  // traverses the tree and removes all nodes for which HasPerfData() is false
-  void pruneByMetrics();
-
   // --------------------------------------------------------
-  // Parent
+  // Paths and Merging
   // --------------------------------------------------------
-  ANode* Parent() const 
-  { return (ANode*)NonUniformDegreeTreeNode::Parent(); }
-  
-  ACodeNode* ACodeNodeParent() const;  // return dyn_cast<ACodeNode*>(Parent())
-  
-  // --------------------------------------------------------
-  // Ancestor: find first ANode in path from this to root with given type
-  // (Note: We assume that a node *can* be an ancestor of itself.)
-  // --------------------------------------------------------
-  ANode* Ancestor(ANodeTy type) const;
-  ANode* Ancestor(ANodeTy tp1, ANodeTy tp2) const;
-  
-  Root*  AncRoot() const;   // return Ancestor(TyRoot)
-  Group* AncGroup() const;  // return Ancestor(TyGROUP)
-  LM*    AncLM() const;     // return Ancestor(TyLM)
-  File*  AncFile() const;   // return Ancestor(TyFILE)
-  Proc*  AncProc() const;   // return Ancestor(TyPROC)
-  Alien* AncAlien() const;  // return Ancestor(TyALIEN)
-  Loop*  AncLoop() const;   // return Ancestor(TyLOOP)
-  Stmt*  AncStmt() const;   // return Ancestor(TySTMT)
-
-  ACodeNode* ancestorProcCtxt() const; // return Ancestor(TyALIEN|TyPROC)
-
 
   // LeastCommonAncestor: Given two ANode nodes, return the least
   // common ancestor (deepest nested common ancestor) or NULL.
   static ANode* LeastCommonAncestor(ANode* n1, ANode* n2);
 
-  // --------------------------------------------------------
-  // Tree navigation 
-  //   1) all ANodes contain ACodeNodes as children 
-  //   2) Root is the only ANode type that is not also a ACodeNode;
-  //      since Roots have no siblings, it is safe to make Next/PrevScope 
-  //      return ACodeNode pointers 
-  // --------------------------------------------------------
-  ACodeNode* FirstEnclScope() const;      // return  FirstChild()
-  ACodeNode* LastEnclScope()  const;      // return  LastChild()
-  ACodeNode* NextScope()      const;      // return  NULL or NextSibling()
-  ACodeNode* PrevScope()      const;      // return  NULL or PrevSibling()
-  bool       IsLeaf()         const       { return  FirstEnclScope() == NULL; }
-
-  ACodeNode* nextScopeNonOverlapping() const;
-
-  // --------------------------------------------------------
-  // Paths and Merging
-  // --------------------------------------------------------
 
   // Distance: Given two ANode nodes, a node and some ancestor,
   // return the distance of the path between the two.  The distance
@@ -444,12 +472,6 @@ public:
   // into 'toNode'
   static bool IsMergable(ANode* toNode, ANode* fromNode);
   
-  // --------------------------------------------------------
-  // cloning
-  // --------------------------------------------------------
-  
-  // Clone: return a shallow copy, unlinked from the tree
-  virtual ANode* Clone() { return new ANode(*this); }
   
   // --------------------------------------------------------
   // XML output
@@ -613,6 +635,14 @@ public:
   ACodeNode* ACodeNodeWithLine(SrcFile::ln ln) const;
 
 
+  // compare: Return negative if x < y; 0 if x == y; positive
+  //   otherwise.  If x == y, break ties using VMAIntervalSet and then
+  //   by name attributes.
+  static int 
+  compare(const ACodeNode* x, const ACodeNode* y);
+
+  ACodeNode* nextSiblingNonOverlapping() const;
+
   // --------------------------------------------------------
   // 
   // --------------------------------------------------------
@@ -671,11 +701,6 @@ protected:
   VMAIntervalSet m_vmaSet;
 };
 
-
-// - if x < y; 0 if x == y; + otherwise
-// N.B.: in the case that x == y, break ties using VMAIntervalSet and
-// then by name attributes.
-int ACodeNodeLineComp(const ACodeNode* x, const ACodeNode* y);
 
 
 //***************************************************************************

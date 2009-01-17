@@ -72,11 +72,8 @@ namespace SrcFile {
   inline int 
   compare(SrcFile::ln x, SrcFile::ln y)
   {
-    // We would typically wish to use the following for this simple
-    // comparison, but it fails if the the differences are greater than
-    // an 'int'
-    // return (x - y)
-
+    // The elegant implementation "return (x - y)" may fail since the
+    // differences between two 'uints' may be greater than an 'int'
     if (x < y)       { return -1; }
     else if (x == y) { return 0; }
     else             { return 1; }

@@ -270,7 +270,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
     }
     
     // recur 
-    if (!n->IsLeaf()) {
+    if (!n->isLeaf()) {
       overlayStaticStructure(prof, n, epoch_lm, lmStrct, lm);
     }
   }
@@ -365,7 +365,7 @@ loopifyFrame(Prof::CCT::ANode* mirrorNode,
     Prof::Struct::ACodeNode* n = it.CurNode();
 
     // Done: if we reach the natural base case or embedded proceedure
-    if (n->IsLeaf() || n->type() == Prof::Struct::ANode::TyPROC) {
+    if (n->isLeaf() || n->type() == Prof::Struct::ANode::TyPROC) {
       continue;
     }
 
@@ -485,7 +485,7 @@ coalesceStmts(Prof::CCT::ANode* node)
     Prof::CCT::ANode* child = it.CurNode();
     it++; // advance iterator -- it is pointing at 'child'
     
-    bool inspect = (child->IsLeaf() && (child->type() == Prof::CCT::ANode::TyStmt));
+    bool inspect = (child->isLeaf() && (child->type() == Prof::CCT::ANode::TyStmt));
 
     if (inspect) {
       // This child is a leaf. Test for duplicate source line info.
@@ -500,13 +500,14 @@ coalesceStmts(Prof::CCT::ANode* node)
 	// remove 'child' from tree
 	child->Unlink();
 	delete child;
+	// NOTE: could clear Prof::CallPath::Profile::StructMetricIdFlg
       } 
       else { 
 	// no entry found -- add
 	stmtMap.insert(std::make_pair(line, c));
       }
     }
-    else if (!child->IsLeaf()) {
+    else if (!child->isLeaf()) {
       // Recur
       coalesceStmts(child);
     }
@@ -558,7 +559,7 @@ pruneByMetrics(Prof::CCT::ANode* node)
     // 2. Trim this node if necessary
     bool isTy = (x->type() == Prof::CCT::ANode::TyProcFrm || 
 		 x->type() == Prof::CCT::ANode::TyLoop);
-    if (x->IsLeaf() && isTy) {
+    if (x->isLeaf() && isTy) {
       x->Unlink(); // unlink 'x' from tree
       DIAG_DevMsgIf(0, "pruneByMetrics: " << hex << x << dec << " (sid: " << x->structureId() << ")");
       delete x;
@@ -779,8 +780,8 @@ lush_cilkNormalizeByFrame(Prof::CCT::ANode* node)
 	mergeMap[x_nm] = x;
       }
       
-      Prof::CCT::ANode* par_tokeep = tokeep->Parent();
-      Prof::CCT::ANode* par_todel  = todel->Parent();
+      Prof::CCT::ANode* par_tokeep = tokeep->parent();
+      Prof::CCT::ANode* par_todel  = todel->parent();
 
       DIAG_MsgIf(DBG_LUSH, "\tkeep (" << tokeep << "): " << tokeep->codeName() 
 		 << "\n" << "\tdel  (" << todel  << "): " << todel->codeName());

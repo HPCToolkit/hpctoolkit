@@ -286,28 +286,6 @@ Call::Call(ANode* _parent,
 // ANode, etc: Tree Navigation 
 //***************************************************************************
 
-ANode* 
-ANode::NextSibling() const
-{ 
-  // siblings are linked in a circular list
-  if ((Parent()->LastChild() != this)) {
-    return dynamic_cast<ANode*>(NextSibling()); 
-  } 
-  return NULL;  
-}
-
-
-ANode* 
-ANode::PrevSibling() const
-{ 
-  // siblings are linked in a circular list
-  if ((Parent()->FirstChild() != this)) {
-    return dynamic_cast<ANode*>(PrevSibling()); 
-  } 
-  return NULL;
-}
-
-
 #define dyn_cast_return(base, derived, expr) \
     { base* ptr = expr;  \
       if (ptr == NULL) {  \
@@ -323,7 +301,7 @@ ANode::Ancestor(NodeType tp) const
 {
   ANode* s = const_cast<ANode*>(this); 
   while (s && s->type() != tp) {
-    s = s->Parent(); 
+    s = s->parent(); 
   } 
   return s;
 } 
@@ -470,7 +448,7 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
   // ------------------------------------------------------------
   // 0. If y is childless, return.
   // ------------------------------------------------------------
-  if (y->IsLeaf()) {
+  if (y->isLeaf()) {
     return;
   }
 
@@ -836,7 +814,7 @@ ANode::writeXML_pre(ostream& os, int oFlags, const char *prefix) const
 
   bool doTag = (type() != TyRoot);
   bool hasMetrics = (this_dyn && this_dyn->hasMetrics());
-  bool isXMLLeaf = IsLeaf() && !hasMetrics;
+  bool isXMLLeaf = isLeaf() && !hasMetrics;
 
   // 1. Write element name
   if (doTag) {
@@ -920,9 +898,9 @@ int ANodeLineComp(ANode* x, ANode* y)
     bool endLinesEqual = (x->endLine() == y->endLine());
     
     // 1. Otherwise: rank a leaf node before a non-leaf node
-    if (endLinesEqual && !(x->IsLeaf() && y->IsLeaf())) {
-      if      (x->IsLeaf()) { return -1; } // x < y 
-      else if (y->IsLeaf()) { return 1; }  // x > y  
+    if (endLinesEqual && !(x->isLeaf() && y->isLeaf())) {
+      if      (x->isLeaf()) { return -1; } // x < y 
+      else if (y->isLeaf()) { return 1; }  // x > y  
     }
     
     // 2. General case
