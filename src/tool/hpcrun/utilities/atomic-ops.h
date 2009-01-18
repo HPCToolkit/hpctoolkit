@@ -60,11 +60,11 @@ compare_and_swap(volatile void *ptr, unsigned long old, unsigned long new)
 
 #if defined (LL_BODY) && defined(SC_BODY) 
 
-#define read_modify_write(type, addr, expn, result) {                              \
-    type __new;                                                                    \
-    do {                                                                           \
-      result = (type) load_linked((unsigned long *) addr);                         \
-      __new = expn;                                                                \
+#define read_modify_write(type, addr, expn, result) {                        \
+    type __new;                                                              \
+    do {                                                                     \
+      result = (type) load_linked((unsigned long *) addr);                   \
+      __new = expn;                                                          \
     } while (!store_conditional((unsigned long *) addr, (unsigned long) __new));   \
 }
 

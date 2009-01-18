@@ -10,8 +10,11 @@
 
 //***************************************************************************
 
-// FIXME: tallent: These platform switches should be based on the
-// autoconf host.
+// *** FIXME: tallent: ***
+// 1. These platform switches should be based on the autoconf host (or
+//    we should just use the gcc intrinsics).
+// 2. If we keep them, we should just use a "int64_t" so we don't need
+//    versions for each size of a "long".
 
 #if defined(__i386__) 
 
@@ -41,21 +44,30 @@
   // ll r_dest, addr_offset(r_addr)
   // sc r_src,  addr_offset(r_addr) [sets r_src to 1 (success) or 0]
 
-  // (lld/scd for 64 bit versions)
+  // Note: lld/scd for 64 bit versions
+
+#if (_MIPS_SIM == _ABI64)
+#  define MIPS_WORD_SFX "d"
+#elif (_MIPS_SIM == _ABIN32)
+#  define MIPS_WORD_SFX ""
+#else
+#  error "Unknown MIPS platform!"
+#endif
 
 #define LL_BODY                      \
   __asm__ __volatile__(              \
-        "lld %0,0(%1)"               \
+        "ll"MIPS_WORD_SFX" %0,0(%1)" \
                	: "=r" (result)      \
                	: "r"(ptr))
 
-#define SC_BODY                      \
-  __asm__ __volatile__(              \
-       	"scd  %2,0(%1) \n\t"         \
-       	"move %0,%2"                 \
-               	: "=&r" (result)     \
-               	: "r"(ptr), "r"(val) \
+#define SC_BODY                              \
+  __asm__ __volatile__(                      \
+       	"sc"MIPS_WORD_SFX" %2,0(%1) \n\t"    \
+       	"move              %0,%2"            \
+                : "=&r" (result)             \
+               	: "r"(ptr), "r"(val)         \
                	: "memory")
+
 
 #elif defined(__ppc64__)
 
