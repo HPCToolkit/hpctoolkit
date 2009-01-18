@@ -3,23 +3,23 @@
 
 //************************* System Include Files ****************************
 
+#include <stdlib.h>
+#include <stdbool.h>
 #include <ucontext.h>
 #include <assert.h>
 
 //************************ libmonitor Include Files *************************
 
-#include <monitor.h>
+// see mips-unwind-cfg.h
 
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
 
-#include "pmsg.h"
-
 #include "unwind.h"
-#include "splay.h"
 #include "stack_troll.h"
 
+#include "mips-unwind-cfg.h"
 #include "mips-unwind-interval.h"
 
 
@@ -135,6 +135,28 @@ computeNext_FPFrame(void** * nxt_sp, void** * nxt_fp,
 
 
 //***************************************************************************
+
+
+static inline UNW_INTERVAL_t
+demand_interval_lite(void* pc)
+{
+  // FIXME: lookup bounds, call mips_build_intervals
+  return UNW_INTERVAL_NULL;
+}
+
+static inline UNW_INTERVAL_t
+demand_interval(void* pc)
+{
+#if (HPC_UNW_LITE)
+  return demand_interval_lite(pc);
+#else
+   // may call build_intervals
+  return (UNW_INTERVAL_t)csprof_addr_to_interval(pc);
+#endif
+}
+
+
+//***************************************************************************
 // interface functions
 //***************************************************************************
 
@@ -172,16 +194,16 @@ unw_init_cursor(void* context, unw_cursor_t* cursor)
   cursor->sp = ucontext_sp(ctxt);
   cursor->bp = ucontext_fp(ctxt);
 
-  cursor->intvl = csprof_addr_to_interval(cursor->pc);
-  unw_interval_t* intvl = (unw_interval_t*)cursor->intvl;
+  UNW_INTERVAL_t intvl = demand_interval(cursor->pc);
+  cursor->intvl = (UNW_CURSOR_INTERVAL_t)intvl;
 
-  if (frameflg_isset(intvl->flgs, FrmFlg_RAReg)) {
-    cursor->ra = (void*)ucontext_getreg(context, intvl->ra_arg);
+  if (!UI_IS_NULL(intvl) && frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg)) {
+    cursor->ra = (void*)ucontext_getreg(context, UI_FLD(intvl,ra_arg));
   }
 
   TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
        cursor->pc, cursor->ra, cursor->sp, cursor->bp);
-  if (MYDBG) { ui_dump(intvl, 1); }
+  if (MYDBG) { ui_dump(UI_ARG(intvl), 1); }
 }
 
 
@@ -192,14 +214,20 @@ unw_step(unw_cursor_t* cursor)
   void*  pc = cursor->pc;
   void** sp = cursor->sp;
   void** fp = cursor->bp;
-  unw_interval_t* intvl = (unw_interval_t*)cursor->intvl;
+  UNW_INTERVAL_t intvl = (UNW_INTERVAL_t)cursor->intvl;
 
   // next (parent) frame
   void*  nxt_pc = pc_NULL;
   void** nxt_sp = NULL;
   void** nxt_fp = NULL;
-  unw_interval_t* nxt_intvl = NULL;
+  UNW_INTERVAL_t nxt_intvl = UNW_INTERVAL_NULL;
+
+  if (UI_IS_NULL(intvl)) {
+    TMSG(UNW, "error: missing interval");
+    return STEP_ERROR;
+  }
   
+
   //-----------------------------------------------------------
   // check for outermost frame (return STEP_STOP only after outermost
   // frame has been identified as valid)
@@ -213,20 +241,21 @@ unw_step(unw_cursor_t* cursor)
     TMSG(UNW, "stop: sp (%p) >= monitor_stack_bottom", sp);
     return STEP_STOP;
   }
+
   
   //-----------------------------------------------------------
   // compute RA (return address) for the caller's frame
   //-----------------------------------------------------------
-  if (frameflg_isset(intvl->flgs, FrmFlg_RAReg)) {
+  if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg)) {
     // RA should be in a register only on the first call to unw_step()
     nxt_pc = cursor->ra;
   }
-  else if (intvl->ty == FrmTy_SP) {
-    nxt_pc = getValFromSP(sp, intvl->ra_arg);
+  else if (UI_FLD(intvl,ty) == FrmTy_SP) {
+    nxt_pc = getValFromSP(sp, UI_FLD(intvl,ra_arg));
   }
-  else if (intvl->ty == FrmTy_FP) {
+  else if (UI_FLD(intvl,ty) == FrmTy_FP) {
     if (isPossibleFP(sp, fp)) { // FP is our weak spot
-      nxt_pc = getValFromFP(fp, intvl->ra_arg);
+      nxt_pc = getValFromFP(fp, UI_FLD(intvl,ra_arg));
     }
   }
   else {
@@ -244,12 +273,12 @@ unw_step(unw_cursor_t* cursor)
   //-----------------------------------------------------------
   // compute SP (stack pointer) and FP (frame pointer) for the caller's frame.
   //-----------------------------------------------------------
-  if (intvl->ty == FrmTy_SP) {
-    computeNext_SPFrame(&nxt_sp, &nxt_fp, intvl, sp, fp);
+  if (UI_FLD(intvl,ty) == FrmTy_SP) {
+    computeNext_SPFrame(&nxt_sp, &nxt_fp, UI_ARG(intvl), sp, fp);
   }
-  else if (intvl->ty == FrmTy_FP) {
+  else if (UI_FLD(intvl,ty) == FrmTy_FP) {
     if (isPossibleFP(sp, fp)) { // FP is our weak spot
-      computeNext_FPFrame(&nxt_sp, &nxt_fp, intvl, fp);
+      computeNext_FPFrame(&nxt_sp, &nxt_fp, UI_ARG(intvl), fp);
     }
   }
   else {
@@ -262,10 +291,10 @@ unw_step(unw_cursor_t* cursor)
 
   bool didTroll = false;
   if (nxt_pc != pc_NULL) {
-    nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(getCallFromRA(nxt_pc));
+    nxt_intvl = demand_interval(getCallFromRA(nxt_pc));
   }
 
-  if (!nxt_intvl) {
+  if (UI_IS_NULL(nxt_intvl)) {
     // nxt_pc is invalid for some reason... try trolling
     TMSG(UNW, "troll: bad pc=%p; cur sp=%p, fp=%p...", nxt_pc, sp, fp);
 
@@ -277,8 +306,8 @@ unw_step(unw_cursor_t* cursor)
     }
     void** troll_sp = (void**)getPtrFromSP(sp, troll_pc_pos);
     
-    nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(getCallFromRA(*troll_sp));
-    if (!nxt_intvl) {
+    nxt_intvl = demand_interval(getCallFromRA(*troll_sp));
+    if (UI_IS_NULL(nxt_intvl)) {
       TMSG(UNW, "error: troll_pc=%p failed", *troll_sp);
       return STEP_ERROR;
     }
@@ -286,18 +315,18 @@ unw_step(unw_cursor_t* cursor)
 
     nxt_pc = *troll_sp;
 
-    if (!frameflg_isset(intvl->flgs, FrmFlg_RAReg) 
-	&& intvl->ra_arg != unwpos_NULL) {
+    if (!frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg) 
+	&& UI_FLD(intvl,ra_arg) != unwpos_NULL) {
       // realign sp/fp and recompute nxt_sp, nxt_fp
-      if (intvl->ty == FrmTy_SP) {
-	void** new_sp = getPtrFromSP(troll_sp, -intvl->ra_arg);
-	computeNext_SPFrame(&nxt_sp, &nxt_fp, intvl, new_sp, NULL);
+      if (UI_FLD(intvl,ty) == FrmTy_SP) {
+	void** new_sp = getPtrFromSP(troll_sp, -UI_FLD(intvl,ra_arg));
+	computeNext_SPFrame(&nxt_sp, &nxt_fp, UI_ARG(intvl), new_sp, NULL);
 	TMSG(UNW, "troll align/sp: troll_sp=%p, new sp=%p: nxt sp=%p, fp=%p",
 	     troll_sp, new_sp, nxt_sp, nxt_fp);
       }
-      else if (intvl->ty == FrmTy_FP) {
-	void** new_fp = getPtrFromSP(troll_sp, -intvl->ra_arg);
-	computeNext_FPFrame(&nxt_sp, &nxt_fp, intvl, new_fp);
+      else if (UI_FLD(intvl,ty) == FrmTy_FP) {
+	void** new_fp = getPtrFromSP(troll_sp, -UI_FLD(intvl,ra_arg));
+	computeNext_FPFrame(&nxt_sp, &nxt_fp, UI_ARG(intvl), new_fp);
 	TMSG(UNW, "troll align/fp: troll_sp=%p, new fp=%p: nxt sp=%p, fp=%p",
 	     troll_sp, new_fp, nxt_sp, nxt_fp);
       }
@@ -313,7 +342,7 @@ unw_step(unw_cursor_t* cursor)
 
 
   // INVARIANT: Ensure we always make progress unwinding the stack...
-  bool frameSizeMayBe0 = frameflg_isset(intvl->flgs, FrmFlg_RAReg);
+  bool frameSizeMayBe0 = frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg);
   if (!frameSizeMayBe0 && !isPossibleParentSP(sp, nxt_sp)) {
     TMSG(UNW, "warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
     nxt_sp = sp + 1; // should cause trolling on next unw_step
@@ -321,13 +350,13 @@ unw_step(unw_cursor_t* cursor)
 
 
   TMSG(UNW, "next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
-  if (MYDBG) { ui_dump(nxt_intvl, 1); }
+  if (MYDBG) { ui_dump(UI_ARG(nxt_intvl), 1); }
 
   cursor->pc = nxt_pc;
   cursor->sp = nxt_sp;
   cursor->bp = nxt_fp;
   cursor->ra = NULL; // always NULL after unw_step() completes
-  cursor->intvl = (splay_interval_t*)nxt_intvl;
+  cursor->intvl = (UNW_CURSOR_INTERVAL_t)nxt_intvl;
 
   return (didTroll) ? STEP_TROLL : STEP_OK;
 }

@@ -6,11 +6,12 @@
 
 //************************* System Include Files ****************************
 
+#include <stdlib.h>
 #include <stdbool.h>
 
 //*************************** User Include Files ****************************
 
-#include "splay-interval.h"
+#include "mips-unwind-cfg.h"
 
 //*************************** Forward Declarations **************************
 
@@ -38,6 +39,7 @@ typedef enum {
   FrmTy_FP,   // Parent's SP/FP are FP-based; RA is FP-based or reg
 
 } framety_t;
+
 
 typedef enum {
   FrmFlg_NULL    = 0x0,
@@ -81,7 +83,7 @@ framety_string(framety_t ty);
 #define unwpos_NULL (-1)
 
 typedef struct {
-  splay_interval_t common; // common splay tree fields
+  HPC_IFNO_UNW_LITE(splay_interval_t common;) // common splay tree fields
 
   framety_t  ty   : 16;
   frameflg_t flgs : 16;
@@ -96,10 +98,6 @@ typedef struct {
 unw_interval_t* 
 new_ui(char* start_addr, framety_t ty, frameflg_t flgs, 
        int sp_pos, int fp_pos, int ra_arg, unw_interval_t* prev);
-
-#define NEW_UI(start_addr, ty, flgs, sp_pos, fp_pos, ra_arg, prev) \
-  (unw_interval_t){.ty = ty, .flgs = flgs, \
-                   .sp_pos = sp_pos, .fp_pos = fp_pos, .ra_arg = ra_arg }
 
 static inline bool 
 ui_cmp(unw_interval_t* x, unw_interval_t* y)
@@ -119,6 +117,54 @@ long ui_count();
 long suspicious_count();
 void suspicious_interval(void *pc);
 void ui_link(unw_interval_t* current, unw_interval_t* next);
+
+//***************************************************************************
+
+// Special support for using unw_interval_t's as either pointers or
+// objects.  This allows seamless transition between dynamic and
+// static (HPC_UNW_LITE) allocation.
+//
+//   UNW_INTERVAL_t: the type of an unw_interval_t
+//   NEW_UI: return a new unw_interval_t (statically or dynamically allocated)
+//   UNW_INTERVAL_NULL: the appropriate value for a NULL unw_interval_t
+//   UI_IS_NULL: test whether the given interval is NULL
+//   UI_FLD: extract a field from an UNW_INTERVAL_t
+//   UI_ARG: pass an UNW_INTERVAL_t as an argument
+
+#if (HPC_UNW_LITE)
+
+#  define UNW_INTERVAL_t unw_interval_t
+
+#  define NEW_UI(start_addr, ty, flgs, sp_pos, fp_pos, ra_arg, prev) \
+     (unw_interval_t){.ty = ty, .flgs = flgs,                        \
+                      .sp_pos = sp_pos, .fp_pos = fp_pos, .ra_arg = ra_arg }
+
+#  define UNW_INTERVAL_NULL             \
+     NEW_UI(0, FrmTy_NULL, FrmFlg_NULL, \
+            unwpos_NULL, unwpos_NULL, unwpos_NULL, NULL)
+
+#  define UI_IS_NULL(ui) ((ui).ty == FrmTy_NULL)
+
+#  define UI_FLD(ui, field) (ui).field
+
+#  define UI_ARG(ui) &(ui)
+
+#else
+
+#  define UNW_INTERVAL_t unw_interval_t*
+
+#  define NEW_UI new_ui
+
+#  define UNW_INTERVAL_NULL NULL
+
+#  define UI_IS_NULL(ui) (ui == NULL)
+
+#  define UI_FLD(ui, field) (ui)->field
+
+#  define UI_ARG(ui) ui
+
+#endif
+
 
 //***************************************************************************
 
