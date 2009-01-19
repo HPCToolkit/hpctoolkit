@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h> // environ
 #include <ucontext.h>
 #include <assert.h>
 
@@ -49,13 +50,24 @@ unw_isin_start_func(void* pc)
 }
 
 
-#include <monitor.h> // FIXME
-
 static inline void**
 unw_stack_bottom()
 {
-#if (HPC_UNW_LITE)  
-  return (void**)monitor_stack_bottom(); // FIXME
+#if (HPC_UNW_LITE)
+  // For a Linux process, the environment is just above the stack
+  // bottom (which may be randomized instead of the traditional 8 MB).
+  // With some experimentation, I found that the begin of the
+  // 'environ' array is closest to the stack bottom.  This makes sense
+  // since the strings are all stored from lower to higher addresses.
+  extern char** environ;
+  static void** process_stack_bottom = NULL;
+
+  if (!process_stack_bottom) { 
+    void** x = (void**)((intptr_t)environ - 1);
+    process_stack_bottom = x; // N.B.: atomic update
+  }
+
+  return process_stack_bottom; // FIXME: thread stack bottom
 #else
   return (void**)monitor_stack_bottom();
 #endif
