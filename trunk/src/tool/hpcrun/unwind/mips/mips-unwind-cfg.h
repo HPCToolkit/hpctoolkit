@@ -15,6 +15,7 @@
 //***************************************************************************
 
 #if (!HPC_UNW_LITE)
+
 // libmonitor includes
 #include <monitor.h>
 
@@ -23,6 +24,12 @@
 #  include "splay.h"
 #  include "atomic-ops.h"
 #  include <memory/mem.h>
+
+#else
+
+// hpcrun includes
+#  include "dylib.h"
+
 #endif
 
 

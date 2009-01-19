@@ -17,7 +17,7 @@
 #if (HPC_UNW_LITE)
 
    // there should probably have a check to ensure this is big enough
-   typedef struct { char data[128]; } unw_interval_opaque_t
+   typedef struct { char data[128]; } unw_interval_opaque_t;
 #  define UNW_CURSOR_INTERVAL_t unw_interval_opaque_t
 
 #else

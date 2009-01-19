@@ -22,14 +22,6 @@ extern "C" {
 #endif
 
 //***************************************************************************
-// external interface
-//***************************************************************************
-
-interval_status 
-build_intervals(char* ins, unsigned int len);
-
-
-//***************************************************************************
 // framety_t and frameflg_t
 //***************************************************************************
 
@@ -125,19 +117,36 @@ void ui_link(unw_interval_t* current, unw_interval_t* next);
 // static (HPC_UNW_LITE) allocation.
 //
 //   UNW_INTERVAL_t: the type of an unw_interval_t
+//
 //   NEW_UI: return a new unw_interval_t (statically or dynamically allocated)
+//
 //   UNW_INTERVAL_NULL: the appropriate value for a NULL unw_interval_t
+//
 //   UI_IS_NULL: test whether the given interval is NULL
+//
 //   UI_FLD: extract a field from an UNW_INTERVAL_t
+//
 //   UI_ARG: pass an UNW_INTERVAL_t as an argument
+//
+//   CASTTO_UNW_CURSOR_INTERVAL_t: cast to an UNW_CURSOR_INTERVAL_t
+//
+//   CASTTO_UNW_INTERVAL_t: cast to an UNW_INTERVAL_t
+//
+//   UI_CMP_OPT: "optimized" ui_cmp (a pointer comparison if
+//               UNW_INTERVAL_t is a pointer)
 
 #if (HPC_UNW_LITE)
 
+//-----------------------------------------------------------
+// both UNW_CURSOR_INTERVAL_t and UNW_INTERVAL_t are structs
+//-----------------------------------------------------------
+
 #  define UNW_INTERVAL_t unw_interval_t
 
-#  define NEW_UI(start_addr, ty, flgs, sp_pos, fp_pos, ra_arg, prev) \
-     (unw_interval_t){.ty = ty, .flgs = flgs,                        \
-                      .sp_pos = sp_pos, .fp_pos = fp_pos, .ra_arg = ra_arg }
+#  define NEW_UI(addr, x_ty, x_flgs, x_sp_pos, x_fp_pos, x_ra_arg, prev) \
+     (unw_interval_t){.ty = x_ty, .flgs = x_flgs,                        \
+                      .sp_pos = x_sp_pos, .fp_pos = x_fp_pos,            \
+                      .ra_arg = x_ra_arg }
 
 #  define UNW_INTERVAL_NULL             \
      NEW_UI(0, FrmTy_NULL, FrmFlg_NULL, \
@@ -149,7 +158,16 @@ void ui_link(unw_interval_t* current, unw_interval_t* next);
 
 #  define UI_ARG(ui) &(ui)
 
+#  define CASTTO_UNW_CURSOR_INTERVAL_t(x) (*((UNW_CURSOR_INTERVAL_t*)&(x)))
+#  define CASTTO_UNW_INTERVAL_t(x)        (*((UNW_INTERVAL_t*)&(x)))
+
+#  define UI_CMP_OPT(x_ui, y_ui) ui_cmp(&(x_ui), &(y_ui))
+
 #else
+
+//-----------------------------------------------------------
+// both UNW_CURSOR_INTERVAL_t and UNW_INTERVAL_t are pointers
+//-----------------------------------------------------------
 
 #  define UNW_INTERVAL_t unw_interval_t*
 
@@ -163,6 +181,26 @@ void ui_link(unw_interval_t* current, unw_interval_t* next);
 
 #  define UI_ARG(ui) ui
 
+#  define CASTTO_UNW_CURSOR_INTERVAL_t(x) (UNW_CURSOR_INTERVAL_t)(x)
+#  define CASTTO_UNW_INTERVAL_t(x)        (UNW_INTERVAL_t)(x)
+
+#  define UI_CMP_OPT(x_ui, y_ui) ((x_ui) == (y_ui))
+
+#endif
+
+
+//***************************************************************************
+// external interface
+//***************************************************************************
+
+// given a PC, return the interval for it
+UNW_INTERVAL_t
+demand_interval(void* pc);
+
+
+#if (!HPC_UNW_LITE)
+interval_status 
+build_intervals(char* ins, unsigned int len);
 #endif
 
 
