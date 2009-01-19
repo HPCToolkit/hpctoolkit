@@ -43,6 +43,10 @@ csprof_sample_callstack_from_frame(csprof_state_t *, int,
 				   size_t, unw_cursor_t *);
 
 
+#if (HPC_UNW_LITE)
+static int
+test_backtrace_lite(ucontext_t* context);
+#endif
 
 //***************************************************************************
 // interface functions
@@ -58,17 +62,16 @@ csprof_cct_node_t*
 csprof_sample_callstack(csprof_state_t *state, ucontext_t* context, 
 			int metric_id, size_t sample_count)
 {
-  unw_cursor_t frame;
-
-  csprof_cct_node_t* n;
-
   csprof_state_verify_backtrace_invariants(state);
-
+  
+  csprof_cct_node_t* n = NULL;
   if (!lush_agents) {
+    unw_cursor_t frame;
     unw_init_cursor(context, &frame);
     MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
     n = csprof_sample_callstack_from_frame(state, metric_id,
-					   sample_count, &frame);
+					   sample_count, &frame);    
+    //HPC_IF_UNW_LITE(test_backtrace_lite(context);)
   }
   else {
     n = lush_backtrace(state, context, metric_id, sample_count);
@@ -81,6 +84,47 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
   return n;
 }
 
+
+
+
+#if (HPC_UNW_LITE)
+int 
+hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
+{
+  // special trivial case: size == 0 (N.B.: permit size < 0)
+  if (size <= 0) {
+    return 0;
+  }
+
+  // INVARIANT: 'size' > 0; 'buffer' is non-empty; 'context' is non-NULL
+  if ( !(size > 0 && buffer && context) ) {
+    return -1; // error
+  }
+
+  unw_cursor_t cursor;
+  unw_init_cursor(context, &cursor);
+
+  int my_size = 0;
+  while (my_size < size) {
+    int ret;
+
+    void* ip;
+    ret = unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    if (ret < 0) { /* ignore error */ }
+
+    buffer[my_size] = ip; // my_size < size
+    my_size++;
+
+    ret = unw_step(&cursor);
+    if (ret <= 0) {
+      // N.B. (ret < 0) indicates an unwind error, which we ignore
+      break;
+    }
+  }
+  
+  return my_size;
+}
+#endif
 
 
 //***************************************************************************
@@ -104,7 +148,11 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
 static int
 csprof_sample_filter(int len, csprof_frame_t *start, csprof_frame_t *last)
 {
-  return (! ( monitor_in_start_func_narrow(last->ip) && (len > 1) ));
+#if (HPC_UNW_LITE)
+  return ( !(len > 1) );
+#else
+  return ( !(monitor_in_start_func_narrow(last->ip) && (len > 1)) );
+#endif
 }
 
 
@@ -176,3 +224,21 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 				    (cct_metric_data_t){.i = sample_count});
   return n;
 }
+
+
+#if (HPC_UNW_LITE)
+static int
+test_backtrace_lite(ucontext_t* context)
+{
+  const int bufsz = 100;
+
+  void* buffer[bufsz];
+  int sz = hpcrun_backtrace_lite(buffer, bufsz, context);
+
+  for (int i = 0; i < sz; ++i) {
+    TMSG(UNW, "backtrace_lite: pc=%p", buffer[i]);
+  }
+
+  return sz;
+}
+#endif
