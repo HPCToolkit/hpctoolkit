@@ -567,41 +567,6 @@ inst_accesses_callers_mem(xed_decoded_inst_t *xptr)
 	return false;
 }
 
-#if 0
-static bool
-from_ax_reg(xed_decoded_inst_t *xptr)
-{
-  static xed_operand_enum_t regnames[] = { XED_OPERAND_REG0, XED_OPERAND_REG1 };
-  int noperands = xed_decoded_inst_noperands(xptr);
-  int opid;
-  if (noperands == 2) {
-    opid = 1;
-  } else {
-    xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
-    switch (xiclass) {
-    case XED_ICLASS_PUSH: 
-    case XED_ICLASS_PUSHFQ: 
-    case XED_ICLASS_PUSHFD: 
-    case XED_ICLASS_PUSHF:  
-      opid = 0;
-      break;
-    default:
-      return false;
-    }
-  }
-  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
-  const xed_operand_t *op =  xed_inst_operand(xi, opid);
-  xed_operand_enum_t   op_name = xed_operand_name(op);
-  if ((op_name == regnames[opid]) && 
-      ((xed_decoded_inst_get_reg(xptr, op_name) == XED_REG_RAX) ||
-       (xed_decoded_inst_get_reg(xptr, op_name) == XED_REG_EAX) ||
-       (xed_decoded_inst_get_reg(xptr, op_name) == XED_REG_AX))) {
-    return true;
-  }
-  return false;
-}
-#endif
-
 
 static bool
 from_ax_reg(xed_decoded_inst_t *xptr)
@@ -617,7 +582,7 @@ from_ax_reg(xed_decoded_inst_t *xptr)
     if (op_name == regops[opid]) {  
       xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op_name);
       if ((regname == XED_REG_RAX) || (regname == XED_REG_EAX) || (regname == XED_REG_AX)) {
-	// operand may perform a read
+	// operand may perform a read of rax/eax/ax
 	switch(xed_operand_rw(op)) {
 	case XED_OPERAND_ACTION_R:   // read
 	  // case XED_OPERAND_ACTION_RW:  // read and written: skip this case - xor %eax, %eax is OK
