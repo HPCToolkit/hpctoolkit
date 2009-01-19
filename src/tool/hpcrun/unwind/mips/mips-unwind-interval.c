@@ -25,7 +25,7 @@
 
 //*************************** Forward Declarations **************************
 
-static unw_interval_t*
+static UNW_INTERVAL_t
 mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, 
 		     bool retFirst, int verbose);
 
@@ -42,6 +42,26 @@ long suspicious_cnt = 0;
 // interface operations
 //***************************************************************************
 
+UNW_INTERVAL_t
+demand_interval(void* pc)
+{
+#if (HPC_UNW_LITE)
+  uint32_t* insn_beg = (uint32_t*)dylib_find_lower_bound(pc);
+  if (insn_beg) {
+    uint32_t* insn_end = (uint32_t*)pc; // [insn_beg, insn_end)
+    return mips_build_intervals(insn_beg, insn_end, false/*retFirst*/, 0);
+  }
+  else {
+    return UNW_INTERVAL_NULL;
+  }
+#else
+  // N.B.: calls build_intervals() if necessary
+  return (UNW_INTERVAL_t)csprof_addr_to_interval(pc);
+#endif
+}
+
+
+#if (!HPC_UNW_LITE)
 interval_status 
 build_intervals(char* insn_beg, unsigned int len)
 {
@@ -49,7 +69,7 @@ build_intervals(char* insn_beg, unsigned int len)
   uint32_t* my_insn_beg = (uint32_t*)(insn_beg);
   uint32_t* my_insn_end = (uint32_t*)(insn_beg + len);
 
-  unw_interval_t* beg_ui = 
+  UNW_INTERVAL_t beg_ui = 
     mips_build_intervals(my_insn_beg, my_insn_end, true/*retFirst*/, 0);
 
   interval_status x = (interval_status){.first_undecoded_ins = NULL,
@@ -57,12 +77,13 @@ build_intervals(char* insn_beg, unsigned int len)
 					.first = (splay_interval_t*)beg_ui};
   return x;
 }
-
+#endif
 
 //***************************************************************************
 // unw_interval_t interface
 //***************************************************************************
 
+#if (!HPC_UNW_LITE)
 unw_interval_t* 
 new_ui(char* start_addr, framety_t ty, frameflg_t flgs,
        int sp_pos, int fp_pos, int ra_arg, unw_interval_t* prev)
@@ -89,11 +110,13 @@ new_ui(char* start_addr, framety_t ty, frameflg_t flgs,
 
   return u;
 }
+#endif
 
 
 void 
 ui_dump(unw_interval_t* u, int dump_to_stdout)
 {
+#if (!HPC_UNW_LITE)
   if (!u) {
     return;
   }
@@ -110,6 +133,7 @@ ui_dump(unw_interval_t* u, int dump_to_stdout)
     fprintf(stderr, "%s", buf);
     fflush(stderr);
   }
+#endif
 }
 
 
@@ -133,15 +157,15 @@ void
 suspicious_interval(void *pc) 
 {
   EMSG("suspicous interval for pc = %p", pc);
-  fetch_and_add(&suspicious_cnt,1);
+  HPC_IFNO_UNW_LITE(fetch_and_add(&suspicious_cnt,1);)
 }
 
 
 void 
 ui_link(unw_interval_t* current, unw_interval_t* next)
 {
-  current->common.end  = next->common.start;
-  current->common.next = (splay_interval_t*)next;
+  HPC_IFNO_UNW_LITE(current->common.end  = next->common.start;)
+  HPC_IFNO_UNW_LITE(current->common.next = (splay_interval_t*)next;)
 }
 
 
@@ -479,7 +503,8 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     // *** canonical frame ***
     //--------------------------------------------------
     else if (isAdjustSPByVar(*cur_insn)) {
-      if (canon_ui != beg_ui && UI_FLD(canon_ui,ty) == FrmTy_SP) {
+      // if canonical interval has been set and is not an SP-frame...
+      if (!UI_CMP_OPT(canon_ui, beg_ui) && UI_FLD(canon_ui,ty) == FrmTy_SP) {
 	int fp_pos = convertSPToFPPos(UI_FLD(canon_ui,sp_pos), 
 				      UI_FLD(canon_ui,fp_pos));
 	int ra_pos = convertSPToFPPos(UI_FLD(canon_ui,sp_pos), 

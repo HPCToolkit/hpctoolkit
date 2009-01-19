@@ -16,12 +16,11 @@
 
 #include <include/general.h>
 
-#include "unwind.h"
-#include "stack_troll.h"
-
 #include "mips-unwind-cfg.h"
 #include "mips-unwind-interval.h"
 
+#include "unwind.h"
+#include "stack_troll.h"
 
 // FIXME: Abuse the isa library by cherry-picking this special header.
 // One possibility is to simply use the ISA lib -- doesn't xed
@@ -33,6 +32,34 @@
 #define MYDBG 0
 
 #define pc_NULL ((void*)(intptr_t)(-1)) /* NULL may identify outmost frame */
+
+
+//***************************************************************************
+// quasi interface functions
+//***************************************************************************
+
+static inline bool 
+unw_isin_start_func(void* pc)
+{
+#if (HPC_UNW_LITE)
+  return dylib_isin_start_func(pc);
+#else
+  return (bool)monitor_in_start_func_wide(pc);
+#endif
+}
+
+
+#include <monitor.h> // FIXME
+
+static inline void**
+unw_stack_bottom()
+{
+#if (HPC_UNW_LITE)  
+  return (void**)monitor_stack_bottom(); // FIXME
+#else
+  return (void**)monitor_stack_bottom();
+#endif
+}
 
 
 //***************************************************************************
@@ -100,7 +127,7 @@ static inline bool
 isPossibleFP(void** sp, void** fp)
 {
   // Stacks grow down, so frame pointer is at a higher address
-  return ((void**)monitor_stack_bottom() >= fp && fp >= sp);
+  return (unw_stack_bottom() >= fp && fp >= sp);
 }
 
 
@@ -135,28 +162,6 @@ computeNext_FPFrame(void** * nxt_sp, void** * nxt_fp,
 
 
 //***************************************************************************
-
-
-static inline UNW_INTERVAL_t
-demand_interval_lite(void* pc)
-{
-  // FIXME: lookup bounds, call mips_build_intervals
-  return UNW_INTERVAL_NULL;
-}
-
-static inline UNW_INTERVAL_t
-demand_interval(void* pc)
-{
-#if (HPC_UNW_LITE)
-  return demand_interval_lite(pc);
-#else
-   // may call build_intervals
-  return (UNW_INTERVAL_t)csprof_addr_to_interval(pc);
-#endif
-}
-
-
-//***************************************************************************
 // interface functions
 //***************************************************************************
 
@@ -171,7 +176,7 @@ context_pc(void* context)
 void
 unw_init(void)
 {
-  csprof_interval_tree_init();
+  HPC_IFNO_UNW_LITE(csprof_interval_tree_init();)
 }
 
 
@@ -195,7 +200,7 @@ unw_init_cursor(void* context, unw_cursor_t* cursor)
   cursor->bp = ucontext_fp(ctxt);
 
   UNW_INTERVAL_t intvl = demand_interval(cursor->pc);
-  cursor->intvl = (UNW_CURSOR_INTERVAL_t)intvl;
+  cursor->intvl = CASTTO_UNW_CURSOR_INTERVAL_t(intvl);
 
   if (!UI_IS_NULL(intvl) && frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg)) {
     cursor->ra = (void*)ucontext_getreg(context, UI_FLD(intvl,ra_arg));
@@ -214,7 +219,7 @@ unw_step(unw_cursor_t* cursor)
   void*  pc = cursor->pc;
   void** sp = cursor->sp;
   void** fp = cursor->bp;
-  UNW_INTERVAL_t intvl = (UNW_INTERVAL_t)cursor->intvl;
+  UNW_INTERVAL_t intvl = CASTTO_UNW_INTERVAL_t(cursor->intvl);
 
   // next (parent) frame
   void*  nxt_pc = pc_NULL;
@@ -223,7 +228,7 @@ unw_step(unw_cursor_t* cursor)
   UNW_INTERVAL_t nxt_intvl = UNW_INTERVAL_NULL;
 
   if (UI_IS_NULL(intvl)) {
-    TMSG(UNW, "error: missing interval");
+    TMSG(UNW, "error: missing interval for pc=%p", pc);
     return STEP_ERROR;
   }
   
@@ -232,13 +237,13 @@ unw_step(unw_cursor_t* cursor)
   // check for outermost frame (return STEP_STOP only after outermost
   // frame has been identified as valid)
   //-----------------------------------------------------------
-  if (monitor_in_start_func_wide(pc)) {
-    TMSG(UNW, "stop: monitor_in_start_func_wide, pc=%p", pc);
+  if (unw_isin_start_func(pc)) {
+    TMSG(UNW, "stop: unw_isin_start_func, pc=%p", pc);
     return STEP_STOP;
   }
 
-  if ( sp >= (void**)monitor_stack_bottom() ) {
-    TMSG(UNW, "stop: sp (%p) >= monitor_stack_bottom", sp);
+  if (sp >= unw_stack_bottom()) {
+    TMSG(UNW, "stop: sp (%p) >= unw_stack_bottom", sp);
     return STEP_STOP;
   }
 
@@ -356,7 +361,7 @@ unw_step(unw_cursor_t* cursor)
   cursor->sp = nxt_sp;
   cursor->bp = nxt_fp;
   cursor->ra = NULL; // always NULL after unw_step() completes
-  cursor->intvl = (UNW_CURSOR_INTERVAL_t)nxt_intvl;
+  cursor->intvl = CASTTO_UNW_CURSOR_INTERVAL_t(nxt_intvl);
 
   return (didTroll) ? STEP_TROLL : STEP_OK;
 }
