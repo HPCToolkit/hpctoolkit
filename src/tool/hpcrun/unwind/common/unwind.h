@@ -49,7 +49,11 @@ extern void csprof_unwind_drop_sample(void);
 //********************************************************************
 
 void unw_init(void);
+
+// FIXME: tallent: cursor should be the first argument (consistent
+// with libunwind and a signal that it is modified).
 void unw_init_cursor(void* context, unw_cursor_t* cursor);
+
 
 //---------------------------------------------------------------------
 // function: unw_step
