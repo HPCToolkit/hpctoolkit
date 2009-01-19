@@ -1,15 +1,17 @@
-//
+// -*-Mode: C++;-*- // technically C99
 // $Id$
-//
+
 //*****************************************************************************
 // system includes
 //*****************************************************************************
 
-#include <link.h>
-#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
+//#define GNU_SOURCE
+#include <link.h>  // dl_iterate_phdr
+#include <dlfcn.h> // dladdr
 
 
 //*****************************************************************************
@@ -59,11 +61,13 @@ struct dylib_fmca_s {
 // forward declarations
 //*****************************************************************************
 
-static int dylib_map_open_dsos_callback
-(struct dl_phdr_info *info, size_t size, void *);
+static int 
+dylib_map_open_dsos_callback(struct dl_phdr_info *info, 
+			     size_t size, void *);
 
-static int dylib_find_module_containing_addr_callback
-(struct dl_phdr_info *info, size_t size, void *fargs_v);
+static int 
+dylib_find_module_containing_addr_callback(struct dl_phdr_info *info, 
+					   size_t size, void *fargs_v);
 
 
 
@@ -130,6 +134,31 @@ dylib_find_module_containing_addr(void *addr,
 }
 
 
+void* 
+dylib_find_lower_bound(void* pc)
+{
+  Dl_info dli;
+  int ret = dladdr(pc, &dli);
+  if (ret) {
+    //printf("dylib_find_lower_bound: lm: %s (%p); sym: %s (%p)\n", dli.dli_fname, dli.dli_fbase, dli.dli_sname, dli.dli_saddr);
+    return dli.dli_saddr;
+  }
+  else {
+    return NULL;
+  }
+}
+
+
+bool 
+dylib_isin_start_func(void* pc)
+{
+  extern int __libc_start_main(void); // start of a process
+  extern int __clone(void);           // start of a thread
+
+  void* lb = dylib_find_lower_bound(pc);
+  return (lb == __libc_start_main || lb == __clone);
+}
+
 
 //*****************************************************************************
 // private operations
@@ -192,3 +221,4 @@ dylib_find_module_containing_addr_callback(struct dl_phdr_info *info,
 
   return 0;
 }
+
