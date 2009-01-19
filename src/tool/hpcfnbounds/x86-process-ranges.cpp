@@ -17,15 +17,6 @@ extern "C" {
 
 
 /******************************************************************************
- * macros
- *****************************************************************************/
-
-#define is_call_iclass(x) \
-   ((x == XED_ICLASS_CALL_FAR) || (x == XED_ICLASS_CALL_NEAR))
-
-
-
-/******************************************************************************
  * forward declarations 
  *****************************************************************************/
 
@@ -57,6 +48,9 @@ static bool bkwd_jump_into_protected_range(char *ins, long offset,
 static bool validate_tail_call_from_jump(char *ins, long offset, 
 					 xed_decoded_inst_t *xptr);
 
+static bool nextins_looks_like_fn_start(char *ins, long offset, 
+					xed_decoded_inst_t *xptrin);
+
 /******************************************************************************
  * local variables 
  *****************************************************************************/
@@ -68,6 +62,7 @@ static xed_state_t xed_machine_state_x86_64 = { XED_MACHINE_MODE_LONG_64,
 static char *prologue_start = NULL;
 static char *set_rbp = NULL;
 static char *push_rbp = NULL;
+static char *push_other = NULL;
 
 
 /******************************************************************************
@@ -171,13 +166,10 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
 	}
       }
       bkwd_jump_into_protected_range(ins, offset, xptr);
-      if (fn_discovery  && !is_call_iclass(prev_xiclass)) {
-        // regarding use of !is_call above: don't infer function start 
-        // if we run into code from C++ that consists of a call followed 
-        // by an unconditional jump
-	if (validate_tail_call_from_jump(ins, offset, xptr)) {
-	  after_unconditional(ins, offset, xptr);
-	}
+      if (fn_discovery && 
+	  (validate_tail_call_from_jump(ins, offset, xptr) || 
+	   nextins_looks_like_fn_start(ins, offset, xptr))) {
+        after_unconditional(ins, offset, xptr);
       }
       break;
     case XED_ICLASS_RET_FAR:
@@ -424,6 +416,81 @@ validate_tail_call_from_jump(char *ins, long offset, xed_decoded_inst_t *xptr)
 }  
 
 
+static bool 
+nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
+{ 
+  xed_decoded_inst_t xedd_tmp;
+  xed_decoded_inst_t *xptr = &xedd_tmp;
+  xed_error_enum_t xed_error;
+
+  ins = ins + xed_decoded_inst_get_length(xptrin);
+
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
+
+  for(;;) {
+    xed_decoded_inst_zero_keep_mode(xptr);
+    xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+
+    if (xed_error != XED_ERROR_NONE) return false;
+
+    xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+    switch(xiclass) {
+    case XED_ICLASS_NOP:  case XED_ICLASS_NOP2: case XED_ICLASS_NOP3: 
+    case XED_ICLASS_NOP4: case XED_ICLASS_NOP5: case XED_ICLASS_NOP6: 
+    case XED_ICLASS_NOP7: case XED_ICLASS_NOP8: case XED_ICLASS_NOP9:
+      // nop: move to the next instruction
+      ins = ins + xed_decoded_inst_get_length(xptr);
+      break;
+    case XED_ICLASS_PUSH: 
+    case XED_ICLASS_PUSHFQ: 
+    case XED_ICLASS_PUSHFD: 
+    case XED_ICLASS_PUSHF:  
+      {
+	const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+	const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+	xed_operand_enum_t   op0_name = xed_operand_name(op0);
+
+	if (op0_name == XED_OPERAND_REG0) { 
+	  xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
+	  if (regname == XED_REG_RBP) {
+	    return true;
+	  }
+	}
+      }
+      return false;
+    case XED_ICLASS_ADD:
+    case XED_ICLASS_SUB:
+      {
+	const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+	const xed_operand_t* op0 = xed_inst_operand(xi,0);
+	const xed_operand_t* op1 = xed_inst_operand(xi,1);
+	xed_operand_enum_t   op0_name = xed_operand_name(op0);
+
+	if ((op0_name == XED_OPERAND_REG0) &&
+	    (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RSP)) {
+
+	  if (xed_operand_name(op1) == XED_OPERAND_IMM0) {
+	    //---------------------------------------------------------------------------
+	    // we are adjusting the stack pointer by a constant offset
+	    //---------------------------------------------------------------------------
+	    int sign = (xiclass == XED_ICLASS_ADD) ? 1 : -1;
+	    long immedv = sign * xed_decoded_inst_get_signed_immediate(xptr);
+	    if (immedv < 0) return true;
+	  }
+	}
+      }
+      return false;
+    default:
+      // not a nop, or what is expected for the start of a routine.
+      return false;
+      break;
+    }
+  } 
+
+  return false;
+}  
+
+
 static void 
 process_branch(char *ins, long offset, xed_decoded_inst_t *xptr)
 { 
@@ -500,30 +567,70 @@ inst_accesses_callers_mem(xed_decoded_inst_t *xptr)
 	return false;
 }
 
+#if 0
 static bool
 from_ax_reg(xed_decoded_inst_t *xptr)
 {
+  static xed_operand_enum_t regnames[] = { XED_OPERAND_REG0, XED_OPERAND_REG1 };
   int noperands = xed_decoded_inst_noperands(xptr);
+  int opid;
   if (noperands == 2) {
-    const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
-    const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
-    xed_operand_enum_t   op1_name = xed_operand_name(op1);
-
-#if 0
-    if ((xed_decoded_inst_get_iclass(xptr) == XED_ICLASS_MOV) || 
-	(xed_decoded_inst_get_iclass(xptr) == XED_ICLASS_MOVSXD)) {
-#endif
-      if ((op1_name == XED_OPERAND_REG1) && 
-	  ((xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_RAX) ||
-	   (xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_EAX) ||
-	   (xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_AX))) {
-	return true;
-      }
-#if 0
+    opid = 1;
+  } else {
+    xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+    switch (xiclass) {
+    case XED_ICLASS_PUSH: 
+    case XED_ICLASS_PUSHFQ: 
+    case XED_ICLASS_PUSHFD: 
+    case XED_ICLASS_PUSHF:  
+      opid = 0;
+      break;
+    default:
+      return false;
     }
-#endif
   }
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t *op =  xed_inst_operand(xi, opid);
+  xed_operand_enum_t   op_name = xed_operand_name(op);
+  if ((op_name == regnames[opid]) && 
+      ((xed_decoded_inst_get_reg(xptr, op_name) == XED_REG_RAX) ||
+       (xed_decoded_inst_get_reg(xptr, op_name) == XED_REG_EAX) ||
+       (xed_decoded_inst_get_reg(xptr, op_name) == XED_REG_AX))) {
+    return true;
+  }
+  return false;
+}
+#endif
 
+
+static bool
+from_ax_reg(xed_decoded_inst_t *xptr)
+{
+  static xed_operand_enum_t regops[] = { XED_OPERAND_REG0, XED_OPERAND_REG1 };
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  int noperands = xed_decoded_inst_noperands(xptr);
+
+  if (noperands > 2) noperands = 2; // we don't care about more than two operands
+  for (int opid = 0; opid < noperands; opid++) { 
+    const xed_operand_t *op =  xed_inst_operand(xi, opid);
+    xed_operand_enum_t   op_name = xed_operand_name(op);
+    if (op_name == regops[opid]) {  
+      xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op_name);
+      if ((regname == XED_REG_RAX) || (regname == XED_REG_EAX) || (regname == XED_REG_AX)) {
+	// operand may perform a read
+	switch(xed_operand_rw(op)) {
+	case XED_OPERAND_ACTION_R:   // read
+	  // case XED_OPERAND_ACTION_RW:  // read and written: skip this case - xor %eax, %eax is OK
+	case XED_OPERAND_ACTION_RCW: // read and conditionlly written 
+	case XED_OPERAND_ACTION_CR:  // conditionally read
+	case XED_OPERAND_ACTION_CRW: // conditionlly read, always written
+	  return true;
+	default:
+	  return false;
+	}
+      }
+    }
+  }
   return false;
 }
 
@@ -584,7 +691,9 @@ addsub(char *ins, xed_decoded_inst_t *xptr, xed_iclass_enum_t iclass, long ins_o
   static long prologue_offset = 0;
 
   if ((op0_name == XED_OPERAND_REG0) &&
-      (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RSP)) {
+      ((xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RSP) ||
+       (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_ESP) ||
+       (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_SP))) {
 
     if (xed_operand_name(op1) == XED_OPERAND_IMM0) {
       //---------------------------------------------------------------------------
@@ -661,6 +770,8 @@ process_push(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
     if (regname == XED_REG_RBP) {
       push_rbp = ins;
+    } else {
+      push_other = ins;
     }
   }
 }
@@ -677,6 +788,8 @@ process_pop(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
     if (regname == XED_REG_RBP) {
       add_protected_range(push_rbp + ins_offset + 1, ins + ins_offset + 1);
+    } else {
+      if (push_other) add_protected_range(push_other + ins_offset + 1, ins + ins_offset + 1);
     }
   }
 }
