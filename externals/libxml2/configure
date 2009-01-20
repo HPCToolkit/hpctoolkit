@@ -11,7 +11,7 @@ src=libxml2-2.6.32
 . ../build-utils/configure.inc
 pre_configure
 
-set -- --prefix="$prefix" "$@"
+set -- --prefix="$prefix" --without-python "$@"
 set -- CC="$CC" CFLAGS="$CFLAGS" "$@"
 if test -n "${is_cross_compile}" ; then
     set -- --host="${host}" "$@"
