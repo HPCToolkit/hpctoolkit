@@ -1142,7 +1142,7 @@ AC_SUBST([XERCES_LIB])
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
-# enable-hpcrun: Only build hpcrun if on Linux and PAPI is present
+# enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
 #-------------------------------------------------
 
 AC_MSG_CHECKING([whether to build hpcrun-flat])
@@ -1265,6 +1265,44 @@ fi
 HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
 
 AC_SUBST([HPCRUN_LIBCXX_PATH])
+
+
+#-------------------------------------------------
+# enable-hpcrun-static:
+#-------------------------------------------------
+
+# The motivation for this option is that it can be very tricky to
+# build the static profiling code when cross-compiling for a multilib
+# system.
+#
+# The problem is related to the fact that the final libtool target is
+# a .o (rather than a .la) linked together from other .o's.  Libtool
+# correctly creates the individual .o's.  But when the time comes to
+# link the individual .o's together, problems occur.  The link begins
+# promisingly using --mode=link and the cross compiler (e.g. scgcc32).
+# However, libtool then uses the linker (ld) directly.  Unfortunately,
+# the linker doesn't know about cross-compiling multilib magic and
+# uses the default ABI rather than the correct one (e.g., 64 instead
+# of n32).  Even worse, trying to solve the problem using by setting
+# LDFLAGS (e.g. LDFLAGS="-Wl,-m...") appears futile because the flag
+# is not passed to ld when it is called directly.
+
+AC_MSG_CHECKING([whether to build hpcrun for statically linked executables])
+
+OPT_ENABLE_HPCRUN_STATIC="yes"
+
+AC_ARG_ENABLE([hpcrun-static],
+  AS_HELP_STRING([--enable-hpcrun-static],
+	  [build hpcrun for statically linked executables (default yes)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_HPCRUN_STATIC="yes" ;;
+     no)  OPT_ENABLE_HPCRUN_STATIC="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-hpcrun-static]) ;;
+   esac],
+  [OPT_ENABLE_HPCRUN_STATIC=yes])
+
+AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_STATIC}])
+AM_CONDITIONAL(OPT_ENABLE_HPCRUN_STATIC, test "${OPT_ENABLE_HPCRUN_STATIC}" = "yes")
 
 
 #-------------------------------------------------
@@ -1426,8 +1464,9 @@ AC_MSG_NOTICE([  Externals revision: $externals_mesg])
 AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  build: $build])
 AC_MSG_NOTICE([  host:  $host])
-AC_MSG_NOTICE([  CC, CFLAGS: $CC $CFLAGS ${HOST_CFLAGS}])
-AC_MSG_NOTICE([  CXX, CXXFLAGS: $CXX $CXXFLAGS ${HOST_CXXFLAGS}])
+AC_MSG_NOTICE([  CC, CFLAGS: ${CC} ${CFLAGS} ${HOST_CFLAGS}])
+AC_MSG_NOTICE([  CXX, CXXFLAGS: ${CXX} ${CXXFLAGS} ${HOST_CXXFLAGS}])
+AC_MSG_NOTICE([  LDFLAGS: ${LDFLAGS}])
 AC_MSG_NOTICE([  binutils: $GNUBINUTILS])
 AC_MSG_NOTICE([  libdwarf: $LIBDWARF])
 AC_MSG_NOTICE([  libelf: $LIBELF])

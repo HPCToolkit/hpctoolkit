@@ -34,9 +34,17 @@ include $(top_srcdir)/src/Makeinclude.config
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
 pkglib_LTLIBRARIES = libcsprof.la
-pkglib_PROGRAMS = libcsprof.o
-bin_SCRIPTS = scripts/hpcrun scripts/hpclink
+
+bin_SCRIPTS = scripts/hpcrun
+
+if OPT_ENABLE_HPCRUN_STATIC
+  pkglib_PROGRAMS = libcsprof.o
+
+  bin_SCRIPTS += scripts/hpclink
+endif
+
 pkglibexec_SCRIPTS = scripts/hpclog
+
 
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
@@ -183,8 +191,8 @@ libcsprof_o_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
-libcsprof_la_CFLAGS = -std=c99 $(CFLAGS) $(HOST_CFLAGS)
-libcsprof_o_CFLAGS  = -std=c99 $(CFLAGS) $(HOST_CFLAGS)
+libcsprof_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libcsprof_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
 
 libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
 libcsprof_o_LDADD   = $(HPC_LIBPROFLEAN)
