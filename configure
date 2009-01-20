@@ -793,6 +793,8 @@ OPT_ENABLE_LUSH_FALSE
 OPT_ENABLE_LUSH_TRUE
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
+OPT_ENABLE_HPCRUN_STATIC_FALSE
+OPT_ENABLE_HPCRUN_STATIC_TRUE
 HPCRUN_LIBCXX_PATH
 OPT_ENABLE_HPCRUN_ASYNC_FALSE
 OPT_ENABLE_HPCRUN_ASYNC_TRUE
@@ -1012,6 +1014,7 @@ with_xerces
 enable_hpcrun
 enable_hpcrun_sync
 enable_hpcrun_async
+enable_hpcrun_static
 enable_devtools
 enable_hpc_binutils
 enable_lush
@@ -1673,6 +1676,8 @@ Optional Features:
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-sync    Build hpcrun (synchronous)
   --enable-hpcrun-async   Build hpcrun (synchronous)
+  --enable-hpcrun-static  build hpcrun for statically linked executables
+                          (default yes)
   --enable-devtools       Build development tools (enable debugging)
   --enable-hpc-binutils   Enable extra HPCToolkit GNU binutils functionality
   --enable-lush           use lush backtrace in hpcrun
@@ -4615,13 +4620,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4618: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4623: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4621: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4626: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4624: output\"" >&5)
+  (eval echo "\"\$as_me:4629: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5827,7 +5832,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5830 "configure"' > conftest.$ac_ext
+  echo '#line 5835 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7680,11 +7685,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7683: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7688: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7687: \$? = $ac_status" >&5
+   echo "$as_me:7692: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8019,11 +8024,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8022: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8027: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8026: \$? = $ac_status" >&5
+   echo "$as_me:8031: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8124,11 +8129,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8127: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8132: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8131: \$? = $ac_status" >&5
+   echo "$as_me:8136: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8179,11 +8184,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8182: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8187: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8186: \$? = $ac_status" >&5
+   echo "$as_me:8191: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10979,7 +10984,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10982 "configure"
+#line 10987 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11075,7 +11080,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11078 "configure"
+#line 11083 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14326,11 +14331,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14329: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14334: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14333: \$? = $ac_status" >&5
+   echo "$as_me:14338: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14425,11 +14430,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14428: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14433: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14432: \$? = $ac_status" >&5
+   echo "$as_me:14437: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14477,11 +14482,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14480: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14485: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14484: \$? = $ac_status" >&5
+   echo "$as_me:14489: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19198,7 +19203,7 @@ $as_echo "${XERCES}" >&6; }
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
-# enable-hpcrun: Only build hpcrun if on Linux and PAPI is present
+# enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
 #-------------------------------------------------
 
 { $as_echo "$as_me:$LINENO: checking whether to build hpcrun-flat" >&5
@@ -19368,6 +19373,57 @@ fi
 
 HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
 
+
+
+
+#-------------------------------------------------
+# enable-hpcrun-static:
+#-------------------------------------------------
+
+# The motivation for this option is that it can be very tricky to
+# build the static profiling code when cross-compiling for a multilib
+# system.
+#
+# The problem is related to the fact that the final libtool target is
+# a .o (rather than a .la) linked together from other .o's.  Libtool
+# correctly creates the individual .o's.  But when the time comes to
+# link the individual .o's together, problems occur.  The link begins
+# promisingly using --mode=link and the cross compiler (e.g. scgcc32).
+# However, libtool then uses the linker (ld) directly.  Unfortunately,
+# the linker doesn't know about cross-compiling multilib magic and
+# uses the default ABI rather than the correct one (e.g., 64 instead
+# of n32).  Even worse, trying to solve the problem using by setting
+# LDFLAGS (e.g. LDFLAGS="-Wl,-m...") appears futile because the flag
+# is not passed to ld when it is called directly.
+
+{ $as_echo "$as_me:$LINENO: checking whether to build hpcrun for statically linked executables" >&5
+$as_echo_n "checking whether to build hpcrun for statically linked executables... " >&6; }
+
+OPT_ENABLE_HPCRUN_STATIC="yes"
+
+# Check whether --enable-hpcrun-static was given.
+if test "${enable_hpcrun_static+set}" = set; then
+  enableval=$enable_hpcrun_static; case "${enableval}" in
+     yes) OPT_ENABLE_HPCRUN_STATIC="yes" ;;
+     no)  OPT_ENABLE_HPCRUN_STATIC="no" ;;
+     *) { { $as_echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-hpcrun-static" >&5
+$as_echo "$as_me: error: bad value ${enableval} for --enable-hpcrun-static" >&2;}
+   { (exit 1); exit 1; }; } ;;
+   esac
+else
+  OPT_ENABLE_HPCRUN_STATIC=yes
+fi
+
+
+{ $as_echo "$as_me:$LINENO: result: ${OPT_ENABLE_HPCRUN_STATIC}" >&5
+$as_echo "${OPT_ENABLE_HPCRUN_STATIC}" >&6; }
+ if test "${OPT_ENABLE_HPCRUN_STATIC}" = "yes"; then
+  OPT_ENABLE_HPCRUN_STATIC_TRUE=
+  OPT_ENABLE_HPCRUN_STATIC_FALSE='#'
+else
+  OPT_ENABLE_HPCRUN_STATIC_TRUE='#'
+  OPT_ENABLE_HPCRUN_STATIC_FALSE=
+fi
 
 
 
@@ -19779,6 +19835,13 @@ if test -z "${OPT_ENABLE_HPCRUN_ASYNC_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_ASY
   { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_HPCRUN_ASYNC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 $as_echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN_ASYNC\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${OPT_ENABLE_HPCRUN_STATIC_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_STATIC_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_HPCRUN_STATIC\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN_STATIC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -22192,10 +22255,12 @@ $as_echo "$as_me:   prefix: $prefix" >&6;}
 $as_echo "$as_me:   build: $build" >&6;}
 { $as_echo "$as_me:$LINENO:   host:  $host" >&5
 $as_echo "$as_me:   host:  $host" >&6;}
-{ $as_echo "$as_me:$LINENO:   CC, CFLAGS: $CC $CFLAGS ${HOST_CFLAGS}" >&5
-$as_echo "$as_me:   CC, CFLAGS: $CC $CFLAGS ${HOST_CFLAGS}" >&6;}
-{ $as_echo "$as_me:$LINENO:   CXX, CXXFLAGS: $CXX $CXXFLAGS ${HOST_CXXFLAGS}" >&5
-$as_echo "$as_me:   CXX, CXXFLAGS: $CXX $CXXFLAGS ${HOST_CXXFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO:   CC, CFLAGS: ${CC} ${CFLAGS} ${HOST_CFLAGS}" >&5
+$as_echo "$as_me:   CC, CFLAGS: ${CC} ${CFLAGS} ${HOST_CFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO:   CXX, CXXFLAGS: ${CXX} ${CXXFLAGS} ${HOST_CXXFLAGS}" >&5
+$as_echo "$as_me:   CXX, CXXFLAGS: ${CXX} ${CXXFLAGS} ${HOST_CXXFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO:   LDFLAGS: ${LDFLAGS}" >&5
+$as_echo "$as_me:   LDFLAGS: ${LDFLAGS}" >&6;}
 { $as_echo "$as_me:$LINENO:   binutils: $GNUBINUTILS" >&5
 $as_echo "$as_me:   binutils: $GNUBINUTILS" >&6;}
 { $as_echo "$as_me:$LINENO:   libdwarf: $LIBDWARF" >&5
