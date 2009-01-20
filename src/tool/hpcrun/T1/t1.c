@@ -23,9 +23,6 @@ int main(int argc, char *argv[]){
     for (j=0; j < LIMIT; j++){
       y = x * x + sin(y);
       x = log(y) + cos(x);
-#if 0
-      void* z = malloc(1); /* ADDED by N.T. */
-#endif
     }
   }
   return 0;
