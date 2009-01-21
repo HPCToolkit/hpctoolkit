@@ -149,10 +149,11 @@ static inline void
 computeNext_SPFrame(void** * nxt_sp, void** * nxt_fp,
 		    unw_interval_t* intvl, void** sp, void** fp)
 {
-  *nxt_sp = getPtrFromSP(sp, intvl->sp_pos);
+  // intvl->sp_arg != unwarg_NULL
+  *nxt_sp = getPtrFromSP(sp, intvl->sp_arg);
 
-  if (intvl->sp_pos != unwpos_NULL) {
-    *nxt_fp = getPtrFromSP(sp, intvl->sp_pos);
+  if (intvl->fp_arg != unwarg_NULL) {
+    *nxt_fp = getValFromSP(sp, intvl->fp_arg);
   }
   else if (fp) {
     // preserve FP for use with parent frame (child may save parent's FP)
@@ -165,10 +166,15 @@ static inline void
 computeNext_FPFrame(void** * nxt_sp, void** * nxt_fp,
 		    unw_interval_t* intvl, void** fp)
 {
-  *nxt_sp = fp;
+  if (intvl->sp_arg != unwarg_NULL) {
+    *nxt_sp = getValFromFP(fp, intvl->sp_arg);
+  }
+  else {
+    *nxt_sp = fp;
+  }
   
-  if (intvl->sp_pos != unwpos_NULL) {
-    *nxt_fp = getValFromFP(fp, intvl->sp_pos);
+  if (intvl->fp_arg != unwarg_NULL) {
+    *nxt_fp = getValFromFP(fp, intvl->fp_arg);
   }
 }
 
@@ -214,8 +220,13 @@ unw_init_cursor(void* context, unw_cursor_t* cursor)
   UNW_INTERVAL_t intvl = demand_interval(cursor->pc);
   cursor->intvl = CASTTO_UNW_CURSOR_INTERVAL_t(intvl);
 
-  if (!UI_IS_NULL(intvl) && frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg)) {
-    cursor->ra = (void*)ucontext_getreg(context, UI_FLD(intvl,ra_arg));
+  if (!UI_IS_NULL(intvl)) {
+    if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg)) {
+      cursor->ra = (void*)ucontext_getreg(context, UI_FLD(intvl,ra_arg));
+    }
+    if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_FPInV0)) {
+      // FIXME: it would be nice to preserve the parent FP
+    }
   }
 
   TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
@@ -315,13 +326,13 @@ unw_step(unw_cursor_t* cursor)
     // nxt_pc is invalid for some reason... try trolling
     TMSG(UNW, "troll: bad pc=%p; cur sp=%p, fp=%p...", nxt_pc, sp, fp);
 
-    uint troll_pc_pos;
-    uint ret = stack_troll(sp, &troll_pc_pos);
+    uint troll_pc_ofst;
+    uint ret = stack_troll(sp, &troll_pc_ofst);
     if (!ret) {
       TMSG(UNW, "error: troll failed");
       return STEP_ERROR;
     }
-    void** troll_sp = (void**)getPtrFromSP(sp, troll_pc_pos);
+    void** troll_sp = (void**)getPtrFromSP(sp, troll_pc_ofst);
     
     nxt_intvl = demand_interval(getCallFromRA(*troll_sp));
     if (UI_IS_NULL(nxt_intvl)) {
@@ -333,7 +344,7 @@ unw_step(unw_cursor_t* cursor)
     nxt_pc = *troll_sp;
 
     if (!frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg) 
-	&& UI_FLD(intvl,ra_arg) != unwpos_NULL) {
+	&& UI_FLD(intvl,ra_arg) != unwarg_NULL) {
       // realign sp/fp and recompute nxt_sp, nxt_fp
       if (UI_FLD(intvl,ty) == FrmTy_SP) {
 	void** new_sp = getPtrFromSP(troll_sp, -UI_FLD(intvl,ra_arg));

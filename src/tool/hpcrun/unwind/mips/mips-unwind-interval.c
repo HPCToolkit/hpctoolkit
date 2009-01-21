@@ -85,8 +85,8 @@ build_intervals(char* insn_beg, unsigned int len)
 
 #if (!HPC_UNW_LITE)
 unw_interval_t* 
-new_ui(char* start_addr, framety_t ty, frameflg_t flgs,
-       int sp_pos, int fp_pos, int ra_arg, unw_interval_t* prev)
+new_ui(char* start_addr, framety_t ty, int flgs,
+       int sp_arg, int fp_arg, int ra_arg, unw_interval_t* prev)
 {
   unw_interval_t* u = (unw_interval_t*)csprof_malloc(sizeof(unw_interval_t));
 
@@ -100,10 +100,10 @@ new_ui(char* start_addr, framety_t ty, frameflg_t flgs,
   }
 
   u->ty   = ty;
-  u->flgs = flgs;
+  u->flgs = (int16_t)flgs;
 
-  u->sp_pos = sp_pos;
-  u->fp_pos = fp_pos;
+  u->sp_arg = sp_arg;
+  u->fp_arg = fp_arg;
   u->ra_arg = ra_arg;
 
   fetch_and_add(&ui_cnt, 1);
@@ -123,9 +123,9 @@ ui_dump(unw_interval_t* u, int dump_to_stdout)
 
   char buf[256];
   
-  sprintf(buf, "start=%p end=%p ty=%s flgs=%d sp_pos=%d fp_pos=%d ra_arg=%d next=%p prev=%p\n",
+  sprintf(buf, "start=%p end=%p ty=%s flgs=%d sp_arg=%d fp_arg=%d ra_arg=%d next=%p prev=%p\n",
 	  (void*)u->common.start, (void*)u->common.end,
-	  framety_string(u->ty), u->flgs, u->sp_pos, u->fp_pos, u->ra_arg,
+	  framety_string(u->ty), u->flgs, u->sp_arg, u->fp_arg, u->ra_arg,
 	  u->common.next, u->common.prev);
 
   EMSG(buf);
@@ -284,7 +284,9 @@ isMoveReg(uint32_t insn, int reg_dst, int reg_src)
   uint32_t op = (insn & OP_MASK);
   uint32_t op_spc = (insn & OPSpecial_MASK);
   if (op == OPSpecial && 
-      (op_spc == DADDU || op_spc == ADDU || op_spc == DADD || op_spc == ADD)) {
+      (op_spc == DADDU || op_spc == ADDU || 
+       op_spc == OR ||
+       op_spc == DADD || op_spc == ADD)) {
     // The non-'U' probably never occur since they trap on overflow.
     return ((REG_D(insn) == reg_dst) && (REG_S(insn) == reg_src) &&
 	    (REG_T(insn) == REG_0));
@@ -298,12 +300,13 @@ isMoveReg(uint32_t insn, int reg_dst, int reg_src)
 //***************************************************************************
 
 static inline void 
-checkSPPos(int* pos, int alt_pos)
+checkSPOfst(int* ofst, int alt_ofst)
 {
-  // SP-relative position: must be positive
-  if (*pos < 0) {
-    EMSG("build_intervals: SP-relative pos'n not positive (%d)", *pos);
-    *pos = alt_pos;
+  // SP-relative offset: must be positive
+  if (*ofst < 0) {
+    EMSG("build_intervals: negative SP-relative offset (%d -> %d)", 
+	 *ofst, alt_ofst);
+    *ofst = alt_ofst;
   }
 }
 
@@ -320,9 +323,9 @@ checkUI(unw_interval_t* ui, framety_t ty, uint32_t* insn)
 
 
 static inline int
-convertSPToFPPos(int frame_sz, int sp_rel)
+convertSPToFPOfst(int frame_sz, int sp_rel)
 {
-  int fp_rel = (sp_rel == unwpos_NULL) ? 0 : -(frame_sz - sp_rel);
+  int fp_rel = (sp_rel == unwarg_NULL) ? unwarg_NULL : -(frame_sz - sp_rel);
   return fp_rel;
 }
 
@@ -382,7 +385,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
 		     bool retFirst, int verbose)
 {
   UNW_INTERVAL_t beg_ui = NEW_UI(INSN(beg_insn), FrmTy_SP, FrmFlg_RAReg,
-				 0, unwpos_NULL, REG_RA, NULL);
+				 0, unwarg_NULL, REG_RA, NULL);
   UNW_INTERVAL_t ui = beg_ui;
   UNW_INTERVAL_t nxt_ui = UNW_INTERVAL_NULL;
 
@@ -400,25 +403,34 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     // 1. SP-frames
     // 
     // SP-frame --> SP-frame: alloc/dealloc constant-sized frame
+    // FP-frame --> FP-frame: additional storage [UNCOMMON]
     //--------------------------------------------------
     if (isAdjustSPByConst(*cur_insn)) {
-      checkUI(UI_ARG(ui), FrmTy_SP, cur_insn);
-
-      int amnt = getAdjustSPByConstAmnt(*cur_insn);
+      int sp_arg, ra_arg;
       
-      int sp_pos = UI_FLD(ui,sp_pos) + amnt;
-      checkSPPos(&sp_pos, UI_FLD(ui,sp_pos));
-
-      int ra_arg = UI_FLD(ui,ra_arg);
-      if (!frameflg_isset(UI_FLD(ui,flgs), FrmFlg_RAReg)) {
-	ra_arg += amnt;
-	checkSPPos(&ra_arg, UI_FLD(ui,ra_arg));
+      if (UI_FLD(ui,ty) == FrmTy_SP) {
+	//checkUI(UI_ARG(ui), FrmTy_SP, cur_insn);
+	int amnt = getAdjustSPByConstAmnt(*cur_insn);
+	
+	sp_arg = UI_FLD(ui,sp_arg) + amnt;
+	checkSPOfst(&sp_arg, UI_FLD(ui,sp_arg));
+	
+	ra_arg = UI_FLD(ui,ra_arg);
+	if (!frameflg_isset(UI_FLD(ui,flgs), FrmFlg_RAReg)) {
+	  ra_arg += amnt;
+	  checkSPOfst(&ra_arg, UI_FLD(ui,ra_arg));
+	}
+      }
+      else {
+	sp_arg = UI_FLD(ui,sp_arg);
+	ra_arg = UI_FLD(ui,ra_arg);
       }
 
-      nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_SP, UI_FLD(ui,flgs), 
-		      sp_pos, UI_FLD(ui,fp_pos), ra_arg, ui);
+      nxt_ui = NEW_UI(nextInsn(cur_insn), UI_FLD(ui,ty), UI_FLD(ui,flgs), 
+		      sp_arg, UI_FLD(ui,fp_arg), ra_arg, ui);
       ui = nxt_ui;
     }
+
     //--------------------------------------------------
     // SP-frame --> SP-frame: store RA/FP
     // *** canonical frame ***
@@ -427,9 +439,9 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
       checkUI(UI_ARG(ui), FrmTy_SP, cur_insn);
 
       // store return address
-      int ra_pos = getStoreRegInFrameOffset(*cur_insn);
+      int ra_arg = getStoreRegInFrameOffset(*cur_insn);
       nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_SP, FrmFlg_NULL,
-		      UI_FLD(ui,sp_pos), UI_FLD(ui,fp_pos), ra_pos, ui);
+		      UI_FLD(ui,sp_arg), UI_FLD(ui,fp_arg), ra_arg, ui);
       ui = nxt_ui;
 
       canon_ui = canonSP_ui = nxt_ui;
@@ -438,13 +450,14 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
       checkUI(UI_ARG(ui), FrmTy_SP, cur_insn);
 
       // store frame pointer (N.B. fp may be used as saved reg s8)
-      int fp_pos = getStoreRegInFrameOffset(*cur_insn);
+      int fp_arg = getStoreRegInFrameOffset(*cur_insn);
       nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_SP, UI_FLD(ui,flgs),
-		      UI_FLD(ui,sp_pos), fp_pos, UI_FLD(ui,ra_arg), ui);
+		      UI_FLD(ui,sp_arg), fp_arg, UI_FLD(ui,ra_arg), ui);
       ui = nxt_ui;
 
       canon_ui = canonSP_ui = nxt_ui;
     }
+
     //--------------------------------------------------
     // SP-frame --> SP-frame: load RA by SP
     //--------------------------------------------------
@@ -452,7 +465,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
       checkUI(UI_ARG(ui), FrmTy_SP, cur_insn);
 
       nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_SP, FrmFlg_RAReg,
-		      UI_FLD(ui,sp_pos), UI_FLD(ui,fp_pos), REG_RA, ui);
+		      UI_FLD(ui,sp_arg), UI_FLD(ui,fp_arg), REG_RA, ui);
       ui = nxt_ui;
     }
 
@@ -471,7 +484,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
       if (!ui_cmp(UI_ARG(ui), UI_ARG(canon_ui))) {
 	nxt_ui = NEW_UI(nextInsn(cur_insn + 1/*delay slot*/),
 			UI_FLD(canon_ui,ty), UI_FLD(canon_ui,flgs), 
-			UI_FLD(canon_ui,sp_pos), UI_FLD(canon_ui,fp_pos),
+			UI_FLD(canon_ui,sp_arg), UI_FLD(canon_ui,fp_arg),
 			UI_FLD(canon_ui,ra_arg), ui);
 	ui = nxt_ui;
 	cur_insn++; // skip delay slot and align new interval
@@ -480,23 +493,60 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
 
 
     //--------------------------------------------------
-    // 3. Basic support for FP frames.  We don't track register moves...
+    // 3. Basic support for FP frames.
     // 
-    // SP-frame --> FP-frame: store RA by FP
+    // *-frame --> FP-frame: store RA by FP
     // *** canonical frame ***
     //--------------------------------------------------
     else if (isStoreRegInFrame(*cur_insn, REG_FP, REG_RA)) {
-      checkUI(UI_ARG(ui), FrmTy_SP, cur_insn);
+      int sp_arg, fp_arg;
+      if (UI_FLD(ui,ty) == FrmTy_SP) {
+	sp_arg = unwarg_NULL;
+	fp_arg = convertSPToFPOfst(UI_FLD(ui,sp_arg), UI_FLD(ui,fp_arg));
+      }
+      else {
+	sp_arg = UI_FLD(ui,sp_arg);
+	fp_arg = UI_FLD(ui,fp_arg);
+      }
+      int ra_arg = getStoreRegInFrameOffset(*cur_insn);
 
-      int fp_pos = convertSPToFPPos(UI_FLD(ui,sp_pos), UI_FLD(ui,fp_pos));
-      int ra_pos = getStoreRegInFrameOffset(*cur_insn);
-      nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_FP, FrmFlg_NULL,
-		      0, fp_pos, ra_pos, ui);
+      int16_t flgs = UI_FLD(ui,flgs);
+      frameflg_unset(&flgs, FrmFlg_RAReg);
+
+      nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_FP, flgs,
+		      sp_arg, fp_arg, ra_arg, ui);
       ui = nxt_ui;
-
+      
       canon_ui = canonFP_ui = nxt_ui;
     }
-    /* else if (store-parent's-FP): requires register move tracking */
+
+    //--------------------------------------------------
+    // *-frame --> FP-frame: store parent FP (saved in reg) by FP
+    // *** canonical frame ***
+    //--------------------------------------------------
+    else if (isMoveReg(*cur_insn, REG_V0, REG_FP)) {
+      frameflg_set(&UI_FLD(ui,flgs), FrmFlg_FPInV0);
+    }
+    else if (frameflg_isset(UI_FLD(ui,flgs), FrmFlg_FPInV0) &&
+	     isStoreRegInFrame(*cur_insn, REG_FP, REG_V0)) {
+      int sp_arg, ra_arg;
+      if (UI_FLD(ui,ty) == FrmTy_SP) {
+	sp_arg = unwarg_NULL;
+	ra_arg = convertSPToFPOfst(UI_FLD(ui,sp_arg), UI_FLD(ui,ra_arg));
+      }
+      else {
+	sp_arg = UI_FLD(ui,sp_arg);
+	ra_arg = UI_FLD(ui,ra_arg);
+      }
+      int fp_arg = getStoreRegInFrameOffset(*cur_insn);
+
+      nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_FP, UI_FLD(ui,flgs),
+		      sp_arg, fp_arg, ra_arg, ui);
+      ui = nxt_ui;
+      
+      canon_ui = canonFP_ui = nxt_ui;
+    }
+    /* else if (store-parent's-SP): useless */
 
     //--------------------------------------------------
     // *-frame --> FP-frame: allocate variable-sized frame
@@ -505,27 +555,33 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     else if (isAdjustSPByVar(*cur_insn)) {
       // if canonical interval has been set and is not an SP-frame...
       if (!UI_CMP_OPT(canon_ui, beg_ui) && UI_FLD(canon_ui,ty) == FrmTy_SP) {
-	int fp_pos = convertSPToFPPos(UI_FLD(canon_ui,sp_pos), 
-				      UI_FLD(canon_ui,fp_pos));
-	int ra_pos = convertSPToFPPos(UI_FLD(canon_ui,sp_pos), 
-				      UI_FLD(canon_ui,ra_arg));
-	nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_FP, UI_FLD(ui,flgs), 
-			0, fp_pos, ra_pos, ui);
+	int fp_arg = convertSPToFPOfst(UI_FLD(canon_ui,sp_arg), 
+				       UI_FLD(canon_ui,fp_arg));
+	int ra_arg = convertSPToFPOfst(UI_FLD(canon_ui,sp_arg), 
+				       UI_FLD(canon_ui,ra_arg));
+
+	int16_t flgs = UI_FLD(ui,flgs);
+	frameflg_set(&flgs, FrmFlg_FrmSzUnk);
+	
+	nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_FP, flgs,
+			unwarg_NULL, fp_arg, ra_arg, ui);
 	ui = nxt_ui;
 
 	canon_ui = canonFP_ui = nxt_ui;
       }
     }
+
     //--------------------------------------------------
     // FP-frame --> FP-frame: load RA by FP
     //--------------------------------------------------
     else if (isLoadRegFromFrame(*cur_insn, REG_FP, REG_RA)) {
       checkUI(UI_ARG(ui), FrmTy_FP, cur_insn);
       nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_FP, FrmFlg_RAReg,
-		      UI_FLD(ui,sp_pos), UI_FLD(ui,fp_pos), REG_RA, ui);
+		      UI_FLD(ui,sp_arg), UI_FLD(ui,fp_arg), REG_RA, ui);
       ui = nxt_ui;
     }
-    /* else if (load-parent's-FP): requires register move tracking */
+    /* else if (load-parent's-FP): not needed */
+    /* else if (load-parent's-SP): useless */
 
     //--------------------------------------------------
     // FP-frame --> SP-frame: deallocate (all/part of) frame by restoring SP
@@ -536,14 +592,13 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
 	  (!frameflg_isset(UI_FLD(canon_ui,flgs), FrmFlg_RAReg)
 	   && frameflg_isset(UI_FLD(ui,flgs), FrmFlg_RAReg));
 	
-	frameflg_t flgs = 
-	  (isFullDealloc) ? FrmFlg_RAReg : UI_FLD(canonSP_ui,flgs);
-	int sp_pos, fp_pos, ra_arg;
-	sp_pos = (isFullDealloc) ? 0           : UI_FLD(canonSP_ui,sp_pos);
-	fp_pos = (isFullDealloc) ? unwpos_NULL : UI_FLD(canonSP_ui,fp_pos);
+	int flgs = (isFullDealloc) ? FrmFlg_RAReg : UI_FLD(canonSP_ui,flgs);
+	int sp_arg, fp_arg, ra_arg;
+	sp_arg = (isFullDealloc) ? 0           : UI_FLD(canonSP_ui,sp_arg);
+	fp_arg = (isFullDealloc) ? unwarg_NULL : UI_FLD(canonSP_ui,fp_arg);
 	ra_arg = (isFullDealloc) ? REG_RA      : UI_FLD(canonSP_ui,ra_arg);
-	nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_SP, flgs, 
-			sp_pos, fp_pos, ra_arg, ui);
+	nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_SP, flgs,
+			sp_arg, fp_arg, ra_arg, ui);
 	ui = nxt_ui;
       }
       else {
