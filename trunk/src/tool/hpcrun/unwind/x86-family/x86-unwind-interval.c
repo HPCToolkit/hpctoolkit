@@ -66,7 +66,7 @@ suspicious_count(void)
 void
 suspicious_interval(void *pc) 
 {
-  EMSG("suspicous interval for pc = %p", pc);
+  EMSG("suspicious interval for pc = %p", pc);
   fetch_and_add(&suspicious_cnt,1);
 }
 
@@ -146,7 +146,7 @@ dump_ui(unwind_interval *u, int dump_to_stdout)
 {
   char buf[1000];
 
-  sprintf(buf, "start=%p end =%p ra_status=%s sp_ra_pos=%d sp_bp_pos=%d bp_status=%s "
+  sprintf(buf, "UNW: start=%p end =%p ra_status=%s sp_ra_pos=%d sp_bp_pos=%d bp_status=%s "
 	  "bp_ra_pos = %d bp_bp_pos=%d next=%p prev=%p prev_canonical=%p rest_canon=%d\n", 
 	  (void *) u->common.start, (void *) u->common.end, ra_status_string(u->ra_status),
 	  u->sp_ra_pos, u->sp_bp_pos, 
@@ -154,11 +154,13 @@ dump_ui(unwind_interval *u, int dump_to_stdout)
 	  u->bp_ra_pos, u->bp_bp_pos,
 	  u->common.next, u->common.prev, u->prev_canonical, u->restored_canonical); 
 
-  EMSG(buf);
+  PMSG(UNW,buf);
+#if 0
   if (dump_to_stdout) { 
     fprintf(stderr, "%s", buf);
     fflush(stderr);
   }
+#endif
 }
 
 

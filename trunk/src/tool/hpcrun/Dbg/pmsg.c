@@ -142,6 +142,9 @@ pmsg_init()
     dbg_flags[defaults[i]] = 1;
   }
   ctl_flag_fill(0);
+#if 0
+  ctl_flags[CTL_PREFIX(TROLL_WAIT)] = 1;
+#endif  
 
   char *s = getenv("CSPROF_DD");
   if(s){
