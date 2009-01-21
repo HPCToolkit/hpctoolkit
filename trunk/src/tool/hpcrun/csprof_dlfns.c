@@ -6,6 +6,7 @@
 #include "atomic-ops.h"
 #include "fnbounds_interface.h"
 #include "sample_event.h"
+#include "pmsg.h"
 
 static long dlopens_pending = 0;
 static long dlcloses_pending = 0;
@@ -17,7 +18,7 @@ static long dlcloses_pending = 0;
 // we load function addresses into memory not to use dlopen.
 //
 void 
-csprof_pre_dlopen()
+csprof_pre_dlopen(const char *path, int flags)
 {
    fetch_and_add(&dlopens_pending, 1L);
    csprof_suspend_sampling(1);
@@ -30,6 +31,7 @@ csprof_dlopen_pending()
   return dlopens_pending;
 }
 
+
 void 
 csprof_dlopen(const char *module_name, int flags, void *handle)
 {
@@ -40,13 +42,21 @@ csprof_dlopen(const char *module_name, int flags, void *handle)
      fnbounds_map_open_dsos();
    }
    csprof_suspend_sampling(-1);
+   TMSG(EPOCH, "dlopen: handle = %p, name = %s", handle, module_name);
 }
 
 
-void 
+void
 csprof_dlclose(void *handle)
 {
    csprof_suspend_sampling(1);
+}
+
+
+void
+csprof_post_dlclose(void *handle, int ret)
+{
    fnbounds_unmap_closed_dsos();
    csprof_suspend_sampling(-1);
+   TMSG(EPOCH, "dlclose: handle = %p", handle);
 }

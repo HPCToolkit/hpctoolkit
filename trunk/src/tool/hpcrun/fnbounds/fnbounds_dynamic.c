@@ -528,6 +528,8 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
       // the entry on the closed list was not the same module
       fnbounds_epoch_finalize_locked();
       csprof_epoch_new();
+      TMSG(EPOCH, "new epoch cause: start = %p, end = %p, name = %s",
+	   start, end, module_name);
     }
   }
   dso_info = fnbounds_compute(module_name, start, end);
@@ -596,6 +598,8 @@ new_dso_info_t(const char *name, void **table, struct fnbounds_file_header *fh,
   r->end_addr = endaddr;
 
   dso_list_add(&dso_open_list, r);
+  TMSG(EPOCH, "new dso: start = %p, end = %p, name = %s",
+       startaddr, endaddr, name);
 
   return r;
 }

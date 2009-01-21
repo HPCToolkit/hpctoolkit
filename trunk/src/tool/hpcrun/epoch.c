@@ -100,15 +100,16 @@ csprof_epoch_add_module(const char *module_name,
 csprof_epoch_t *
 csprof_epoch_new()
 {
-  TMSG(EPOCH,"new epoch created");
   TMSG(MALLOC," epoch-new");
   csprof_epoch_t *e = csprof_malloc2(sizeof(csprof_epoch_t));
 
   if(e == NULL) {
     /* memory subsystem hasn't been initialized yet (happens sometimes
        with threaded programs) */
+    TMSG(EPOCH, "new epoch skipped (memory not initialized)");
     return NULL;
   }
+  TMSG(EPOCH, "new epoch created");
 
   memset(e, 0, sizeof(*e));
 

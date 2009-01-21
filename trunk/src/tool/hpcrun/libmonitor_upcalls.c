@@ -228,7 +228,7 @@ monitor_dlopen(const char *path, int flags, void *handle)
 }
 
 
-void 
+void
 monitor_dlclose(void *handle)
 {
   csprof_dlclose(handle);
@@ -240,4 +240,11 @@ monitor_dlclose(void *handle)
 */
 }
 
-#endif /* HPCRUN_STATIC_LINK */
+
+void
+monitor_post_dlclose(void *handle, int ret)
+{
+  csprof_post_dlclose(handle, ret);
+}
+
+#endif /* ! HPCRUN_STATIC_LINK */
