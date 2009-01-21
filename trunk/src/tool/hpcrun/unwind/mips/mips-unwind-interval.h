@@ -34,33 +34,32 @@ typedef enum {
 
 
 typedef enum {
-  FrmFlg_NULL    = 0x0,
-  FrmFlg_RAReg   = 0x1, // RA is in a register (otherwise, in the frame)
-
+  FrmFlg_NULL     = 0x0,
+  FrmFlg_RAReg    = 0x1, // RA is in a register (otherwise, in the frame)
+  FrmFlg_FrmSzUnk = 0x2, // frame size is unknown (e.g., alloca)
+  FrmFlg_FPInV0   = 0x4, // (parent) FP has been moved to register v0
 } frameflg_t;
 
 
 static inline bool 
-frameflg_isset(int flags, frameflg_t flg)
+frameflg_isset(int16_t flags, frameflg_t flg)
 {
   return (flags & flg);
 }
 
 
-#if 0
 static inline void 
-frameflg_set(int* flags, flagsflg_t flg)
+frameflg_set(int16_t* flags, frameflg_t flg)
 {
   *flags = (*flags | flg);
 }
 
 
 static inline void 
-frameflg_unset(int* flags, flagsflg_t flg)
+frameflg_unset(int16_t* flags, frameflg_t flg)
 {
   *flags = (*flags & ~flg);
 }
-#endif
 
 
 const char* 
@@ -72,32 +71,46 @@ framety_string(framety_t ty);
 //***************************************************************************
 
 // an invalid position (note that in particular, 0 may be a valid postion)
-#define unwpos_NULL (-1)
+#define unwarg_NULL (-1)
 
 typedef struct {
   HPC_IFNO_UNW_LITE(splay_interval_t common;) // common splay tree fields
 
-  framety_t  ty   : 16;
-  frameflg_t flgs : 16;
+  //--------------------------------------------------
+  // frame type and flags
+  //--------------------------------------------------
+  framety_t              ty    : 16;
+  int16_t /*frameflg_t*/ flgs;
 
-  int sp_pos; // parent's SP position; init to unwpos_NULL
-  int fp_pos; // parent's FP position; init to unwpos_NULL
-  int ra_arg; // RA position or register; init to unwpos_NULL
+  //--------------------------------------------------
+  // SP, FP, RA arguments, all initialized to unwarg_NULL
+  //--------------------------------------------------
+
+  // FrmTy_SP: distance of parent's SP relative to current SP
+  // FrmTy_FP: offset of parent's SP within frame, relative to FP
+  int sp_arg;
+
+  // *: offset of parent's FP within frame (relative to SP/FP)
+  int fp_arg;
+
+  // *, FrmFlg_RAReg: register name for RA
+  // *, otherwise   : offset of RA within frame (relative to SP/FP)
+  int ra_arg;
 
 } unw_interval_t;
 
 
 unw_interval_t* 
-new_ui(char* start_addr, framety_t ty, frameflg_t flgs, 
-       int sp_pos, int fp_pos, int ra_arg, unw_interval_t* prev);
+new_ui(char* start_addr, framety_t ty, int flgs, 
+       int sp_arg, int fp_arg, int ra_arg, unw_interval_t* prev);
 
 static inline bool 
 ui_cmp(unw_interval_t* x, unw_interval_t* y)
 {
   return ((x->ty == y->ty) && 
 	  (x->flgs == y->flgs) &&
-	  (x->sp_pos == y->sp_pos) &&
-	  (x->fp_pos == y->fp_pos) &&
+	  (x->sp_arg == y->sp_arg) &&
+	  (x->fp_arg == y->fp_arg) &&
 	  (x->ra_arg == y->ra_arg));
 }
 
@@ -143,14 +156,14 @@ void ui_link(unw_interval_t* current, unw_interval_t* next);
 
 #  define UNW_INTERVAL_t unw_interval_t
 
-#  define NEW_UI(addr, x_ty, x_flgs, x_sp_pos, x_fp_pos, x_ra_arg, prev) \
-     (unw_interval_t){.ty = x_ty, .flgs = x_flgs,                        \
-                      .sp_pos = x_sp_pos, .fp_pos = x_fp_pos,            \
+#  define NEW_UI(addr, x_ty, x_flgs, x_sp_arg, x_fp_arg, x_ra_arg, prev) \
+     (unw_interval_t){.ty = x_ty, .flgs = (int16_t)x_flgs,               \
+                      .sp_arg = x_sp_arg, .fp_arg = x_fp_arg,            \
                       .ra_arg = x_ra_arg }
 
 #  define UNW_INTERVAL_NULL             \
      NEW_UI(0, FrmTy_NULL, FrmFlg_NULL, \
-            unwpos_NULL, unwpos_NULL, unwpos_NULL, NULL)
+            unwarg_NULL, unwarg_NULL, unwarg_NULL, NULL)
 
 #  define UI_IS_NULL(ui) ((ui).ty == FrmTy_NULL)
 
