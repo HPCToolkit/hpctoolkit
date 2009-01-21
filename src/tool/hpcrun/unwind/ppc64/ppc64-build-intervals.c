@@ -85,9 +85,7 @@ ppc64_build_intervals(char *ins, unsigned int len)
   int *end_ins = (int *) (ins + len);
 
   while (cur_ins < end_ins) {
-#if 1
-    printf("trying 0x%x [%p,%p)\n",*cur_ins, cur_ins, end_ins);
-#endif
+      TMSG(INTV,"trying 0x%x [%p,%p)\n",*cur_ins, cur_ins, end_ins);
     //--------------------------------------------------
     // move return address from LR to R0
     //--------------------------------------------------

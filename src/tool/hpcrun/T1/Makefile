@@ -6,7 +6,11 @@ CC     := gcc -std=c99
 CXX    := g++
 MPICC  := mpicc
 
-LINK.cc := $(LINKPRE) $(CC)
+LINKPRE := hpclink
+static := -static
+static_lib := $(HOME)/Documents/pkgs-src/hpctoolkit/INSTALL/lib/hpctoolkit/libcsprof.a
+
+LINK.cc := $(LINKPRE) $(CC) $(static)
 
 CFLAGS := -g -I..
 
@@ -16,7 +20,7 @@ tmpi: tmpi.c
 mpi: mpi.c
 	$(MPICC) -o $@ -g -O $<
 
-t1: t1.o
+t1: t1.o $(static_lib)
 	$(LINK.cc) -g $< -lm -o $@
 
 fib: fib.o
