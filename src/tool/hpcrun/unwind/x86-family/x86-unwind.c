@@ -75,11 +75,11 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
 {
   extern void dump_ui(unwind_interval *u, int dump_to_stdout);
 
-  PMSG(UNW,"init prim unw called with context = %p, cursor_p = %p\n",context, cursor);
+  //  TMSG(UNW,"init prim unw called with context = %p, cursor_p = %p\n",context, cursor);
 
   unw_init_cursor_arch(context, cursor);
 
-  PMSG(UNW,"UNW_INIT: frame pc = %p, frame bp = %p, frame sp = %p", 
+  TMSG(UNW,"INIT CURSOR: frame pc = %p, frame bp = %p, frame sp = %p", 
        cursor->pc, cursor->bp, cursor->sp);
 
   cursor->trolling_used = 0;
@@ -94,11 +94,8 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
     update_cursor_with_troll(cursor, 0);
   } 
 
-  if (debug_unw) {
-    PMSG(UNW,"dumping the found interval");
-    dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
-  }
-  PMSG(UNW,"UNW_INIT: returned interval = %p",cursor->intvl);
+  TMSG(UNW,"dumping the found interval");
+  dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
 }
 
 
@@ -139,19 +136,27 @@ unw_step_sp(unw_cursor_t *cursor)
   sp = cursor->sp;
   pc = cursor->pc;
   uw = (unwind_interval *)cursor->intvl;
+  TMSG(UNW,"cursor in ==> bp=%p,sp=%p,pc=%p",bp,sp,pc);
+  TMSG(UNW,"unwind interval in below:");
+  dump_ui(uw,1);
 
   next_sp  = ((void **)((unsigned long) sp + uw->sp_ra_pos));
   next_pc  = *next_sp;
+  TMSG(UNW,"sp potential advance cursor: next_sp=%p ==> next_pc = %p",next_sp,next_pc);
   if (uw->bp_status == BP_UNCHANGED){
     next_bp = bp;
-  } else {
+    TMSG(UNW,"BP_UNCHANGED ==> next_bp=%p",next_bp);
+  }
+  else {
     //-----------------------------------------------------------
     // reload the candidate value for the caller's BP from the 
     // save area in the activation frame according to the unwind 
     // information produced by binary analysis
     //-----------------------------------------------------------
     next_bp = (void **)((unsigned long) sp + uw->sp_bp_pos);
+    TMSG(UNW,"sp unwind next_bp loc = %p",next_bp);
     next_bp  = *next_bp; 
+    TMSG(UNW,"sp unwind next_bp val = %p",next_bp);
 
     //-----------------------------------------------------------
     // if value of BP reloaded from the save area does not point 
@@ -167,31 +172,37 @@ unw_step_sp(unw_cursor_t *cursor)
     // 19 December 2007 - John Mellor-Crummey
     //-----------------------------------------------------------
     if (((unsigned long) next_bp < (unsigned long) sp) && 
-        ((unsigned long) bp > (unsigned long) sp)) 
+        ((unsigned long) bp > (unsigned long) sp)){
       next_bp = bp;
+      TMSG(UNW,"sp unwind bp sanity check fails. resetting next_bp to current bp = %p",next_bp);
+    }
   }
   next_sp += 1;
   cursor->intvl = csprof_addr_to_interval(((char *)next_pc) - 1);
 
   if (! cursor->intvl){
     if (((void *)next_sp) >= monitor_stack_bottom()){
+      TMSG(UNW,"No next interval, and next_sp >= stack bottom, so stop unwind ...");
       return STEP_STOP;
-    } else {
+    }
+    else {
+      TMSG(UNW,"No next interval, step fails");
       return STEP_ERROR;
     }
-  } else {
+  }
+  else {
     cursor->pc = next_pc;
     cursor->bp = next_bp;
     cursor->sp = next_sp;
   }
 
-  if (debug_unw) {
-    PMSG(UNW,"dumping the found interval");
-    dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
-  }
+#if 0
+  TMSG(UNW,"dumping the found interval");
+  dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
+  TMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
+#endif
 
-  PMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
-
+  TMSG(UNW,"==== sp advance ok ===");
   return STEP_OK;
 }
 
@@ -209,6 +220,11 @@ unw_step_bp(unw_cursor_t *cursor)
   sp = cursor->sp;
   pc = cursor->pc;
   uw = (unwind_interval *)cursor->intvl;
+
+  TMSG(UNW,"cursor in ==> bp=%p,sp=%p,pc=%p",bp,sp,pc);
+  TMSG(UNW,"unwind interval in below:");
+  dump_ui(uw,1);
+
   if ((unsigned long) bp >= (unsigned long) sp) {
     // bp relative
     next_sp  = ((void **)((unsigned long) bp + uw->bp_bp_pos));
@@ -233,11 +249,7 @@ unw_step_bp(unw_cursor_t *cursor)
         cursor->bp    = next_bp;
         cursor->sp    = next_sp;
         cursor->intvl = (splay_interval_t *)uw;
-        if (debug_unw) {
-          TMSG(UNW,"dumping the found interval");
-          dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
-        }
-        TMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
+        TMSG(UNW,"cursor advances ==>has_intvl=%d,bp=%p,sp=%p,pc=%p",cursor->intvl != NULL,next_bp,next_sp,next_pc);
         return STEP_OK;
       }
     }
@@ -317,7 +329,10 @@ unw_step (unw_cursor_t *cursor)
   // check if we have reached the end of our unwind, which is
   // demarcated with a fence. 
   //-----------------------------------------------------------
-  if (csprof_check_fence(cursor->pc)) return STEP_STOP;
+  if (csprof_check_fence(cursor->pc)){
+    TMSG(UNW,"current pc in monitor fence",cursor->pc);
+    return STEP_STOP;
+  }
 
   void *sp, **bp, *pc; 
   void **next_sp, **next_bp, *next_pc;
@@ -351,7 +366,7 @@ unw_step (unw_cursor_t *cursor)
     assert(0);
   }
   if (unw_res != -1){
-    TMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
+    TMSG(UNW,"=========== unw_step Succeeds ============== ");
     return unw_res;
   }
   PMSG_LIMIT(TMSG(TROLL,"UNW STEP FAILURE : cursor pc = %p, cursor bp = %p, cursor sp = %p", pc, bp, sp));

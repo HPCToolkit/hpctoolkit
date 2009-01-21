@@ -29,7 +29,7 @@ uint stack_troll(void **start_sp, uint *ra_pos)
   for (int i = 0; i < TROLL_LIMIT; i++) {
     void *beg, *end;
     if (!fnbounds_enclosing_addr(*sp, &beg, &end)) {
-      PMSG(TROLL,"troll(sp=%p): found valid address %p at sp=%p", 
+      TMSG(TROLL,"(sp=%p): found valid address %p at sp=%p", 
 	   start_sp, *sp, sp);
       *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
       return 1;
@@ -37,7 +37,7 @@ uint stack_troll(void **start_sp, uint *ra_pos)
     sp++;
   }
   
-  PMSG(TROLL,"troll(sp=%p): failed using limit %d", start_sp, TROLL_LIMIT);
+  TMSG(TROLL,"(sp=%p): failed using limit %d", start_sp, TROLL_LIMIT);
   *ra_pos = -1;
   return 0;
 }
