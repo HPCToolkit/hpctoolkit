@@ -123,17 +123,19 @@ dump_ui(unwind_interval *u, int dump_to_stdout)
 {
   char buf[1000];
 
-  sprintf(buf, "start=%p end =%p ra_status=%s bp_status=%s "
+  sprintf(buf, "INTV: start=%p end =%p ra_status=%s bp_status=%s "
 	  "bp_ra_pos = %d next=%p prev=%p\n", 
 	  (void *) u->common.start, (void *) u->common.end, 
 	  ra_status_string(u->ra_status), bp_status_string(u->bp_status), 
 	  u->bp_ra_pos, u->common.next, u->common.prev); 
 
-  EMSG(buf);
+  PMSG(INTV,buf);
+#if 0
   if (dump_to_stdout) { 
     fprintf(stderr, "%s", buf);
     fflush(stderr);
   }
+#endif
 }
 
 

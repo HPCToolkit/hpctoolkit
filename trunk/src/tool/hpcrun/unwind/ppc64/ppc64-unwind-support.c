@@ -63,20 +63,24 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
   ucontext_t *ctx = (ucontext_t *) context;
 
   if (((unwind_interval *)cursor->intvl)->ra_status == RA_REGISTER) { 
-      if (((unwind_interval *)cursor->intvl)->bp_ra_pos != REGISTER_R0) 
+      if (((unwind_interval *)cursor->intvl)->bp_ra_pos == REGISTER_R0){
+	  TMSG(UNW,"register r0 selected");
 	  ra = ctx->uc_mcontext.regs->gpr[0];
-      else if (((unwind_interval *)cursor->intvl)->bp_ra_pos != REGISTER_LR) 
+      }
+      else if (((unwind_interval *)cursor->intvl)->bp_ra_pos == REGISTER_LR){
+	  TMSG(UNW,"register LR selected");
 	  ra = ctx->uc_mcontext.regs->link;
+      }
       else assert(0);
   }
 
   cursor->ra =  (void *) ra;
 
-  TMSG(UNW_INIT,"frame pc = %p, frame bp = %p, frame ra = %p", 
+  TMSG(UNW,"init ==> pc = %p, bp = %p, ra = %p", 
        cursor->pc, cursor->bp, cursor->ra);
 
   if (debug_unw) {
-    TMSG(UNW,"dumping the found interval");
+    TMSG(UNW_INIT,"dumping the found interval");
     dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
   }
 
@@ -99,7 +103,7 @@ unw_step(unw_cursor_t *cursor)
   // if we fail this check, we are done with the unwind.
   //-----------------------------------------------------------
   if (monitor_in_start_func_wide(pc)) {
-    TMSG(UNW,"monitor in start func wide, pc=%p",pc);
+    TMSG(UNW,"<==== END UWIND ===> monitor in start func wide, pc=%p",pc);
     return 0;
   }
   
@@ -153,8 +157,8 @@ unw_step(unw_cursor_t *cursor)
   }
 
   TMSG(UNW,"candidate next_pc = %p, candidate next_bp = %p", next_pc, next_bp);
-  if ((unsigned long) next_bp < (unsigned long) bp){
-    TMSG(UNW,"next bp = %p < current bp = %p", next_bp, bp);
+  if (next_bp < bp){
+    TMSG(UNW,"<=== END UNWIND ===> next bp = %p < current bp = %p", next_bp, bp);
     return 0;
   }
 
@@ -170,7 +174,7 @@ unw_step(unw_cursor_t *cursor)
     TMSG(UNW,"next_pc = %p has no valid interval, continuing to look ...", 
 	 next_pc);
     if (((void *)next_bp) >= monitor_stack_bottom()){
-      TMSG(UNW,"next bp (%p) >= monitor_stack_bottom (%p)",
+      TMSG(UNW,"<=== END UNWIND ===> no next interval,next bp (%p) >= monitor_stack_bottom (%p)",
 	   next_bp, monitor_stack_bottom());
       return 0;
     }
@@ -189,7 +193,7 @@ unw_step(unw_cursor_t *cursor)
 
   if (!cursor->intvl){
     TMSG(UNW,"candidate next_pc = %p did not have an interval",next_pc);
-    return 0;
+    return -1;
   }
 
   cursor->pc = next_pc;
