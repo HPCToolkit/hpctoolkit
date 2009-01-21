@@ -153,10 +153,11 @@ bool
 dylib_isin_start_func(void* pc)
 {
   extern int __libc_start_main(void); // start of a process
-  extern int __clone(void);           // start of a thread
+  extern int __clone(void);           // start of a thread (extern)
+  extern int clone(void);             // start of a thread (weak)
 
   void* lb = dylib_find_lower_bound(pc);
-  return (lb == __libc_start_main || lb == __clone);
+  return (lb == __libc_start_main || lb == clone || lb == __clone);
 }
 
 
