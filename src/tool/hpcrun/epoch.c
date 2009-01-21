@@ -32,6 +32,7 @@
   or otherwise) arising in any way out of the use of this software, even
   if advised of the possibility of such damage.
 */
+#include <sys/time.h>
 #include "interface.h"
 #include "epoch.h"
 #include "mem.h"
@@ -40,6 +41,7 @@
 #include "general.h"
 #include "fnbounds_interface.h"
 #include "hpcfile_general.h"
+#include "sample_event.h"
 #include "spinlock.h"
 #include "state.h"
 
@@ -109,7 +111,11 @@ csprof_epoch_new()
     TMSG(EPOCH, "new epoch skipped (memory not initialized)");
     return NULL;
   }
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
   TMSG(EPOCH, "new epoch created");
+  TMSG(EPOCH, "new epoch time: sec = %ld, usec = %d, samples = %ld",
+       (long)tv.tv_sec, (int)tv.tv_usec, samples_taken);
 
   memset(e, 0, sizeof(*e));
 
