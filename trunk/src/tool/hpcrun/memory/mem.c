@@ -308,10 +308,20 @@ csprof_malloc_threaded(csprof_mem_t *memstore, size_t size)
   void *mem;
 
   // Sanity check
-  if(csprof_mem__get_status(memstore) != CSPROF_MEM_STATUS_INIT) { EMSG("NO MEM STATUS");return NULL; }
-  if(!csprof_mem__is_enabled(memstore, CSPROF_MEM_STORE)) { EMSG("NO MEM ENBL");return NULL; }
+  if (csprof_mem__get_status(memstore) != CSPROF_MEM_STATUS_INIT) {
+    EMSG("NO MEM STATUS");
+    return NULL;
+  }
+  if (!csprof_mem__is_enabled(memstore, CSPROF_MEM_STORE)) {
+    EMSG("NO MEM ENBL");
+    return NULL;
+  }
 
-  if(size <= 0) { EMSG("CSPROF_MALLOC: size <=0");return NULL; } // check to prevent an infinite loop!
+  if (size <= 0) {
+    // check to prevent an infinite loop!
+    EMSG("CSPROF_MALLOC: size <=0");
+    return NULL;
+  } 
 
   size = csprof_align_malloc_request(size);
   TMSG(CSP_MALLOC,"requested size after alignment = %ld",size);
