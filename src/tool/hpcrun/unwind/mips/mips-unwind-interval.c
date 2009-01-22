@@ -206,10 +206,12 @@ static inline bool
 isAdjustSPByConst(uint32_t insn)
 {
   // example: daddiu sp,sp,-96
-  uint32_t op = (insn & OP_MASK);
-  if (op == DADDIU || op == ADDIU || op == DADDI || op == ADDI) {
+  uint32_t op = (insn & MIPS_OPCODE_MASK);
+  if (op == MIPS_OP_DADDIU || op == MIPS_OP_ADDIU || 
+      op == MIPS_OP_DADDI || op == MIPS_OP_ADDI) {
     // The non-'U' probably never occur since they trap on overflow.
-    return (REG_S(insn) == REG_SP) && (REG_T(insn) == REG_SP);
+    return ((MIPS_OPND_REG_S(insn) == MIPS_REG_SP) && 
+	    (MIPS_OPND_REG_T(insn) == MIPS_REG_SP));
   }
   return false;
 }
@@ -218,19 +220,21 @@ isAdjustSPByConst(uint32_t insn)
 // positive value means frame allocation
 static inline int
 getAdjustSPByConstAmnt(uint32_t insn)
-{ return - (int16_t)IMM(insn); }
+{ return - (int16_t)MIPS_OPND_IMM(insn); }
 
 
 static inline bool 
 isAdjustSPByVar(uint32_t insn)
 {
   // example: dsubu sp,sp,v0
-  uint32_t op = (insn & OP_MASK);
-  uint32_t op_spc = (insn & OPSpecial_MASK);
-  if (op == OPSpecial &&
-      (op_spc == DSUBU || op_spc == SUBU || op_spc == DSUB || op_spc == SUB)) {
+  uint32_t op = (insn & MIPS_OPCODE_MASK);
+  uint32_t op_spc = (insn & MIPS_OPClass_Special_MASK);
+  if (op == MIPS_OPClass_Special &&
+      (op_spc == MIPS_OP_DSUBU || op_spc == MIPS_OP_SUBU || 
+       op_spc == MIPS_OP_DSUB || op_spc == MIPS_OP_SUB)) {
     // The non-'U' probably never occur since they trap on overflow.
-    return (REG_D(insn) == REG_SP) && (REG_S(insn) == REG_SP);
+    return ((MIPS_OPND_REG_D(insn) == MIPS_REG_SP) && 
+	    (MIPS_OPND_REG_S(insn) == MIPS_REG_SP));
   }
   return false;
 }
@@ -240,10 +244,11 @@ static inline bool
 isStoreRegInFrame(uint32_t insn, int reg_base, int reg_src)
 {
   // example: sd ra, 64(sp)
-  // to be frame-relevant, reg_base should be REG_SP or REG_FP
-  uint32_t op = (insn & OP_MASK);
-  if (op == SD || op == SW) {
-    return (REG_S(insn) == reg_base) && (REG_T(insn) == reg_src);
+  // to be frame-relevant, reg_base should be MIPS_REG_SP or MIPS_REG_FP
+  uint32_t op = (insn & MIPS_OPCODE_MASK);
+  if (op == MIPS_OP_SD || op == MIPS_OP_SW) {
+    return ((MIPS_OPND_REG_S(insn) == reg_base) &&
+	    (MIPS_OPND_REG_T(insn) == reg_src));
   }
   return false;
 }
@@ -251,17 +256,18 @@ isStoreRegInFrame(uint32_t insn, int reg_base, int reg_src)
 
 static inline int
 getStoreRegInFrameOffset(uint32_t insn)
-{ return (int16_t)IMM(insn); }
+{ return (int16_t)MIPS_OPND_IMM(insn); }
 
 
 static inline bool 
 isLoadRegFromFrame(uint32_t insn, int reg_base, int reg_dest)
 {
   // example: ld ra, 64(sp)
-  // to be frame-relevant, reg_base should be REG_SP or REG_FP
-  uint32_t op = (insn & OP_MASK);
-  if (op == LD || op == LW) {
-    return (REG_S(insn) == reg_base) && (REG_T(insn) == reg_dest);
+  // to be frame-relevant, reg_base should be MIPS_REG_SP or MIPS_REG_FP
+  uint32_t op = (insn & MIPS_OPCODE_MASK);
+  if (op == MIPS_OP_LD || op == MIPS_OP_LW) {
+    return ((MIPS_OPND_REG_S(insn) == reg_base) &&
+	    (MIPS_OPND_REG_T(insn) == reg_dest));
   }
   return false;
 }
@@ -270,8 +276,9 @@ isLoadRegFromFrame(uint32_t insn, int reg_base, int reg_dest)
 static inline bool 
 isJumpToReg(uint32_t insn, int reg_to)
 {
-  if ( (insn & OP_MASK) == OPSpecial && (insn & OPSpecial_MASK) == JR ) {
-    return (REG_S(insn) == reg_to);
+  if ( (insn & MIPS_OPCODE_MASK) == MIPS_OPClass_Special &&
+       (insn & MIPS_OPClass_Special_MASK) == MIPS_OP_JR ) {
+    return (MIPS_OPND_REG_S(insn) == reg_to);
   }
   return false;
 }
@@ -281,15 +288,16 @@ static inline bool
 isMoveReg(uint32_t insn, int reg_dst, int reg_src)
 {
   // move rd, rs ==> addu rd, rs, rt=R0
-  uint32_t op = (insn & OP_MASK);
-  uint32_t op_spc = (insn & OPSpecial_MASK);
-  if (op == OPSpecial && 
-      (op_spc == DADDU || op_spc == ADDU || 
-       op_spc == OR ||
-       op_spc == DADD || op_spc == ADD)) {
+  uint32_t op = (insn & MIPS_OPCODE_MASK);
+  uint32_t op_spc = (insn & MIPS_OPClass_Special_MASK);
+  if (op == MIPS_OPClass_Special && 
+      (op_spc == MIPS_OP_DADDU || op_spc == MIPS_OP_ADDU || 
+       op_spc == MIPS_OP_OR ||
+       op_spc == MIPS_OP_DADD || op_spc == MIPS_OP_ADD)) {
     // The non-'U' probably never occur since they trap on overflow.
-    return ((REG_D(insn) == reg_dst) && (REG_S(insn) == reg_src) &&
-	    (REG_T(insn) == REG_0));
+    return ((MIPS_OPND_REG_D(insn) == reg_dst) &&
+	    (MIPS_OPND_REG_S(insn) == reg_src) &&
+	    (MIPS_OPND_REG_T(insn) == MIPS_REG_0));
   }
   return false;
 }
@@ -335,11 +343,11 @@ convertSPToFPOfst(int frame_sz, int sp_rel)
 //***************************************************************************
 
 // MIPS is very regular. 
-// - Calls (JAL/JALR/B*AL) store the return address in REG_RA.  (JALR
+// - Calls (JAL/JALR/B*AL) store the return address in register RA.  (JALR
 //   may be used to store the return address in a different register.)
-// - Thus, on procedure entry, the return address is usually in REG_RA.
+// - Thus, on procedure entry, the return address is usually in register RA.
 // - Frames are typically SP-relative (except for alloca's)
-// - If a call is made, REG_RA is stored in the frame; after the call
+// - If a call is made, register RA is stored in the frame; after the call
 //   and before a return, it is reloaded.
 
 // Typical SP frame: GCC and Pathscale
@@ -354,7 +362,7 @@ convertSPToFPOfst(int frame_sz, int sp_rel)
 // Typical FP frame: GCC [note fp = s8]
 //   daddiu  sp,sp,-96   ! allocate basic frame
 //   sd      fp,56(sp)   ! preserve parent's FP
-//   move    fp,sp       ! setup FP
+//   move    fp,sp       ! setup (BOGUS) FP
 //   sd      ra,64(sp)   ! store RA
 //   dsubu   sp,sp,v0    ! allocate more frame             [COMMON]
 //                       ! store SP?
@@ -385,7 +393,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
 		     bool retFirst, int verbose)
 {
   UNW_INTERVAL_t beg_ui = NEW_UI(INSN(beg_insn), FrmTy_SP, FrmFlg_RAReg,
-				 0, unwarg_NULL, REG_RA, NULL);
+				 0, unwarg_NULL, MIPS_REG_RA, NULL);
   UNW_INTERVAL_t ui = beg_ui;
   UNW_INTERVAL_t nxt_ui = UNW_INTERVAL_NULL;
 
@@ -435,18 +443,21 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     // SP-frame --> SP-frame: store RA/FP
     // *** canonical frame ***
     //--------------------------------------------------
-    else if (isStoreRegInFrame(*cur_insn, REG_SP, REG_RA)) {
+    else if (isStoreRegInFrame(*cur_insn, MIPS_REG_SP, MIPS_REG_RA)) {
       checkUI(UI_ARG(ui), FrmTy_SP, cur_insn);
 
       // store return address
       int ra_arg = getStoreRegInFrameOffset(*cur_insn);
-      nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_SP, FrmFlg_NULL,
+      int16_t flgs = UI_FLD(ui,flgs);
+      frameflg_unset(&flgs, FrmFlg_RAReg);
+
+      nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_SP, flgs,
 		      UI_FLD(ui,sp_arg), UI_FLD(ui,fp_arg), ra_arg, ui);
       ui = nxt_ui;
 
       canon_ui = canonSP_ui = nxt_ui;
     }
-    else if (isStoreRegInFrame(*cur_insn, REG_SP, REG_FP)) {
+    else if (isStoreRegInFrame(*cur_insn, MIPS_REG_SP, MIPS_REG_FP)) {
       checkUI(UI_ARG(ui), FrmTy_SP, cur_insn);
 
       // store frame pointer (N.B. fp may be used as saved reg s8)
@@ -461,11 +472,11 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     //--------------------------------------------------
     // SP-frame --> SP-frame: load RA by SP
     //--------------------------------------------------
-    else if (isLoadRegFromFrame(*cur_insn, REG_SP, REG_RA)) {
+    else if (isLoadRegFromFrame(*cur_insn, MIPS_REG_SP, MIPS_REG_RA)) {
       checkUI(UI_ARG(ui), FrmTy_SP, cur_insn);
 
       nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_SP, FrmFlg_RAReg,
-		      UI_FLD(ui,sp_arg), UI_FLD(ui,fp_arg), REG_RA, ui);
+		      UI_FLD(ui,sp_arg), UI_FLD(ui,fp_arg), MIPS_REG_RA, ui);
       ui = nxt_ui;
     }
 
@@ -473,7 +484,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     //--------------------------------------------------
     // 2. General: interior returns/epilogues
     //--------------------------------------------------
-    else if (isJumpToReg(*cur_insn, REG_RA)
+    else if (isJumpToReg(*cur_insn, MIPS_REG_RA)
 	     && ((cur_insn + 1/*delay slot*/ + 1) < end_insn)) {
       // An interior return.  Restore the canonical interval if necessary.
       // 
@@ -498,7 +509,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     // *-frame --> FP-frame: store RA by FP
     // *** canonical frame ***
     //--------------------------------------------------
-    else if (isStoreRegInFrame(*cur_insn, REG_FP, REG_RA)) {
+    else if (isStoreRegInFrame(*cur_insn, MIPS_REG_FP, MIPS_REG_RA)) {
       int sp_arg, fp_arg;
       if (UI_FLD(ui,ty) == FrmTy_SP) {
 	sp_arg = unwarg_NULL;
@@ -524,11 +535,11 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     // *-frame --> FP-frame: store parent FP (saved in reg) by FP
     // *** canonical frame ***
     //--------------------------------------------------
-    else if (isMoveReg(*cur_insn, REG_V0, REG_FP)) {
+    else if (isMoveReg(*cur_insn, MIPS_REG_V0, MIPS_REG_FP)) {
       frameflg_set(&UI_FLD(ui,flgs), FrmFlg_FPInV0);
     }
     else if (frameflg_isset(UI_FLD(ui,flgs), FrmFlg_FPInV0) &&
-	     isStoreRegInFrame(*cur_insn, REG_FP, REG_V0)) {
+	     isStoreRegInFrame(*cur_insn, MIPS_REG_FP, MIPS_REG_V0)) {
       int sp_arg, ra_arg;
       if (UI_FLD(ui,ty) == FrmTy_SP) {
 	sp_arg = unwarg_NULL;
@@ -552,19 +563,35 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     // *-frame --> FP-frame: allocate variable-sized frame
     // *** canonical frame ***
     //--------------------------------------------------
+    else if (isMoveReg(*cur_insn, MIPS_REG_FP, MIPS_REG_SP)) {
+      // FP is set to SP, likely meaning it will point to the middle
+      // of the frame (pos. offsets) rather than the top (neg. offsets)
+      // ??? test that the canonical FP frame has not been set ???
+      frameflg_set(&UI_FLD(ui,flgs), FrmFlg_FPOfstPos);
+    }
     else if (isAdjustSPByVar(*cur_insn)) {
       // if canonical interval has been set and is not an SP-frame...
       if (!UI_CMP_OPT(canon_ui, beg_ui) && UI_FLD(canon_ui,ty) == FrmTy_SP) {
-	int fp_arg = convertSPToFPOfst(UI_FLD(canon_ui,sp_arg), 
-				       UI_FLD(canon_ui,fp_arg));
-	int ra_arg = convertSPToFPOfst(UI_FLD(canon_ui,sp_arg), 
-				       UI_FLD(canon_ui,ra_arg));
-
 	int16_t flgs = UI_FLD(ui,flgs);
+	int sp_arg, fp_arg, ra_arg;
+
+	if (frameflg_isset(flgs, FrmFlg_FPOfstPos)) {
+	  sp_arg = UI_FLD(canon_ui,sp_arg);
+	  fp_arg = UI_FLD(canon_ui,fp_arg);
+	  ra_arg = UI_FLD(canon_ui,ra_arg);
+	}
+	else {
+	  sp_arg = unwarg_NULL;
+	  fp_arg = convertSPToFPOfst(UI_FLD(canon_ui,sp_arg), 
+				     UI_FLD(canon_ui,fp_arg));
+	  ra_arg = convertSPToFPOfst(UI_FLD(canon_ui,sp_arg), 
+				     UI_FLD(canon_ui,ra_arg));
+	}
+	  
 	frameflg_set(&flgs, FrmFlg_FrmSzUnk);
 	
 	nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_FP, flgs,
-			unwarg_NULL, fp_arg, ra_arg, ui);
+			sp_arg, fp_arg, ra_arg, ui);
 	ui = nxt_ui;
 
 	canon_ui = canonFP_ui = nxt_ui;
@@ -574,10 +601,10 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     //--------------------------------------------------
     // FP-frame --> FP-frame: load RA by FP
     //--------------------------------------------------
-    else if (isLoadRegFromFrame(*cur_insn, REG_FP, REG_RA)) {
+    else if (isLoadRegFromFrame(*cur_insn, MIPS_REG_FP, MIPS_REG_RA)) {
       checkUI(UI_ARG(ui), FrmTy_FP, cur_insn);
       nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_FP, FrmFlg_RAReg,
-		      UI_FLD(ui,sp_arg), UI_FLD(ui,fp_arg), REG_RA, ui);
+		      UI_FLD(ui,sp_arg), UI_FLD(ui,fp_arg), MIPS_REG_RA, ui);
       ui = nxt_ui;
     }
     /* else if (load-parent's-FP): not needed */
@@ -586,7 +613,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     //--------------------------------------------------
     // FP-frame --> SP-frame: deallocate (all/part of) frame by restoring SP
     //--------------------------------------------------
-    else if (isMoveReg(*cur_insn, REG_SP, REG_FP)) {
+    else if (isMoveReg(*cur_insn, MIPS_REG_SP, MIPS_REG_FP)) {
       if (UI_FLD(ui,ty) == FrmTy_FP) {
 	bool isFullDealloc = 
 	  (!frameflg_isset(UI_FLD(canon_ui,flgs), FrmFlg_RAReg)
@@ -596,7 +623,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
 	int sp_arg, fp_arg, ra_arg;
 	sp_arg = (isFullDealloc) ? 0           : UI_FLD(canonSP_ui,sp_arg);
 	fp_arg = (isFullDealloc) ? unwarg_NULL : UI_FLD(canonSP_ui,fp_arg);
-	ra_arg = (isFullDealloc) ? REG_RA      : UI_FLD(canonSP_ui,ra_arg);
+	ra_arg = (isFullDealloc) ? MIPS_REG_RA : UI_FLD(canonSP_ui,ra_arg);
 	nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_SP, flgs,
 			sp_arg, fp_arg, ra_arg, ui);
 	ui = nxt_ui;

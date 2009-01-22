@@ -34,10 +34,12 @@ typedef enum {
 
 
 typedef enum {
-  FrmFlg_NULL     = 0x0,
-  FrmFlg_RAReg    = 0x1, // RA is in a register (otherwise, in the frame)
-  FrmFlg_FrmSzUnk = 0x2, // frame size is unknown (e.g., alloca)
-  FrmFlg_FPInV0   = 0x4, // (parent) FP has been moved to register v0
+  FrmFlg_NULL      = 0x0,
+  FrmFlg_RAReg     = 0x1, // RA is in a register (otherwise, in the frame)
+  FrmFlg_FrmSzUnk  = 0x2, // frame size is unknown (e.g., alloca)
+  FrmFlg_FPOfstPos = 0x4, // offsets from FP are positive (not negative)
+  FrmFlg_FPInV0    = 0x8, // (parent) FP has been moved to register v0
+
 } frameflg_t;
 
 
@@ -86,8 +88,10 @@ typedef struct {
   // SP, FP, RA arguments, all initialized to unwarg_NULL
   //--------------------------------------------------
 
-  // FrmTy_SP: distance of parent's SP relative to current SP
-  // FrmTy_FP: offset of parent's SP within frame, relative to FP
+  // FrmTy_SP:           distance of parent's SP relative to current SP
+  // FrmTy_FP: 
+  // - FrmFlg_FPOfstPos: distance of parent's SP relative to current FP
+  // - otherwise:        offset of parent's SP within frame, relative to FP
   int sp_arg;
 
   // *: offset of parent's FP within frame (relative to SP/FP)

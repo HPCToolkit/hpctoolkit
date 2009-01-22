@@ -143,136 +143,136 @@ MipsISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
   // the host may have a different byte order than the executable.
   uint32_t insn = (uint32_t)BFD_GETX32((const unsigned char*)mi);
   
-  switch (insn & OP_MASK)
+  switch (insn & MIPS_OPCODE_MASK)
     {
-    case OPSpecial:
-      switch (insn & OPSpecial_MASK)
+    case MIPS_OPClass_Special:
+      switch (insn & MIPS_OPClass_Special_MASK)
 	{
-	case JR:                        // Instructions from Table A-13
+	case MIPS_OP_JR:                // Instructions from Table A-13
 	  // JR $31 returns from a JAL call instruction.
-	  if (REG_S(insn) == REG_RA) {
+	  if (MIPS_OPND_REG_S(insn) == MIPS_REG_RA) {
 	    return InsnDesc(InsnDesc::SUBR_RET);
 	  }
 	  else {
 	    return InsnDesc(InsnDesc::BR_UN_COND_IND);
 	  }
-	case JALR:
+	case MIPS_OP_JALR:
 	  return InsnDesc(InsnDesc::SUBR_IND);
 	  
-	case SYSCALL:                   // Instructions from Table A-16, 
-	case BREAK:                     //   Table A-17
-	case TGE:   // Trap-on-Condition...
-	case TGEU:
-	case TLT:
-	case TLTU:
-	case TEQ:
-	case TNE:
+	case MIPS_OP_SYSCALL:           // Instructions from Table A-16,
+	case MIPS_OP_BREAK:             //   Table A-17
+	case MIPS_OP_TGE:   // Trap-on-Condition...
+	case MIPS_OP_TGEU:
+	case MIPS_OP_TLT:
+	case MIPS_OP_TLTU:
+	case MIPS_OP_TEQ:
+	case MIPS_OP_TNE:
 	  return InsnDesc(InsnDesc::SYS_CALL); 
 
-	case SYNC:
+	case MIPS_OP_SYNC:
 	  return InsnDesc(InsnDesc::OTHER);
 	}
       break;
-    case OPRegImm:
-      switch (insn & OPRegImm_MASK)
+    case MIPS_OPClass_RegImm:
+      switch (insn & MIPS_OPClass_RegImm_MASK)
 	{
-	case BLTZ:                      // Instructions from Table A-15
-	case BGEZ:
-	case BLTZL:
-	case BGEZL:
+	case MIPS_OP_BLTZ:              // Instructions from Table A-15
+	case MIPS_OP_BGEZ:
+	case MIPS_OP_BLTZL:
+	case MIPS_OP_BGEZL:
 	  return InsnDesc(InsnDesc::INT_BR_COND_REL);
 	  
-	case BLTZAL:  // Link
-	case BGEZAL:  // Link
-	case BLTZALL: // Link
-	case BGEZALL: // Link
+	case MIPS_OP_BLTZAL:  // Link
+	case MIPS_OP_BGEZAL:  // Link
+	case MIPS_OP_BLTZALL: // Link
+	case MIPS_OP_BGEZALL: // Link
 	  return InsnDesc(InsnDesc::SUBR_REL); 
 
-	case TGEI:                      // Instructions from Table A-18 
-	case TGEIU: // Trap-on-Condition...
-	case TLTI:
-	case TLTIU:
-	case TEQI:
-	case TNEI:
+	case MIPS_OP_TGEI:              // Instructions from Table A-18 
+	case MIPS_OP_TGEIU: // Trap-on-Condition...
+	case MIPS_OP_TLTI:
+	case MIPS_OP_TLTIU:
+	case MIPS_OP_TEQI:
+	case MIPS_OP_TNEI:
 	  return InsnDesc(InsnDesc::OTHER); 
 	}
       break;
-    case OPCop1x:
-      switch (insn & OPCop1x_MASK)
+    case MIPS_OPClass_Cop1x:
+      switch (insn & MIPS_OPClass_Cop1x_MASK)
 	{
-	case LWXC1: // Word	        // Instructions from Table A-7
+	case MIPS_OP_LWXC1: // Word	// Instructions from Table A-7
 	  return InsnDesc(InsnDesc::MEM_LOAD);
-	case LDXC1: // Doubleword
+	case MIPS_OP_LDXC1: // Doubleword
 	  return InsnDesc(InsnDesc::MEM_LOAD);
-	case SWXC1: // Word
+	case MIPS_OP_SWXC1: // Word
 	  return InsnDesc(InsnDesc::MEM_STORE);
-	case SDXC1: // Doubleword
+	case MIPS_OP_SDXC1: // Doubleword
 	  return InsnDesc(InsnDesc::MEM_STORE);
 	}
       break;
 
     // Normal instruction class (OPNormal)
-    case LB:   // Byte                  // Instructions from Table A-3
-    case LBU:  // Byte Unsigned         //  Table A-4, Table A-5, Table A-6
-    case LH:   // Halfword
-    case LHU:  // Halfword Unsigned
-    case LW:   // Word
-    case LWU:  // Word Unsigned
-    case LWL:  // Word Left
-    case LWR:  // Word Right
-    case LL:   // Linked Word
-    case LWC1: // Word
-    case LWC2: // Word
+    case MIPS_OP_LB:   // Byte          // Instructions from Table A-3
+    case MIPS_OP_LBU:  // Byte Unsigned //  Table A-4, Table A-5, Table A-6
+    case MIPS_OP_LH:   // Halfword
+    case MIPS_OP_LHU:  // Halfword Unsigned
+    case MIPS_OP_LW:   // Word
+    case MIPS_OP_LWU:  // Word Unsigned
+    case MIPS_OP_LWL:  // Word Left
+    case MIPS_OP_LWR:  // Word Right
+    case MIPS_OP_LL:   // Linked Word
+    case MIPS_OP_LWC1: // Word
+    case MIPS_OP_LWC2: // Word
       return InsnDesc(InsnDesc::MEM_LOAD);
 
-    case LD:   // Doubleword
-    case LDL:  // Doubleword Left
-    case LDR:  // Doubleword Right
-    case LLD:  // Linked Doubleword
-    case LDC1: // Doubleword
-    case LDC2: // Doubleword
+    case MIPS_OP_LD:   // Doubleword
+    case MIPS_OP_LDL:  // Doubleword Left
+    case MIPS_OP_LDR:  // Doubleword Right
+    case MIPS_OP_LLD:  // Linked Doubleword
+    case MIPS_OP_LDC1: // Doubleword
+    case MIPS_OP_LDC2: // Doubleword
       return InsnDesc(InsnDesc::MEM_LOAD); // Doubleword
 
-    case SB:   // Byte
-    case SH:   // Halfword
-    case SW:   // Word
-    case SWL:  // Word Left
-    case SWR:  // Word Right
-    case SC:   // Conditional Word
-    case SWC1: // Word
-    case SWC2: // Word
+    case MIPS_OP_SB:   // Byte
+    case MIPS_OP_SH:   // Halfword
+    case MIPS_OP_SW:   // Word
+    case MIPS_OP_SWL:  // Word Left
+    case MIPS_OP_SWR:  // Word Right
+    case MIPS_OP_SC:   // Conditional Word
+    case MIPS_OP_SWC1: // Word
+    case MIPS_OP_SWC2: // Word
       return InsnDesc(InsnDesc::MEM_STORE);
       
-    case SD:   // Doubleword
-    case SDL:  // Doubleword Left
-    case SDR:  // Doubleword Right
-    case SCD:  // Conditional Doubleword
-    case SDC1: // Doubleword
-    case SDC2: // Doubleword
+    case MIPS_OP_SD:   // Doubleword
+    case MIPS_OP_SDL:  // Doubleword Left
+    case MIPS_OP_SDR:  // Doubleword Right
+    case MIPS_OP_SCD:  // Conditional Doubleword
+    case MIPS_OP_SDC1: // Doubleword
+    case MIPS_OP_SDC2: // Doubleword
       return InsnDesc(InsnDesc::MEM_STORE); // Doubleword
 
-                                        // Instructions from Table A-12
+                                // Instructions from Table A-12
       // N.B.: These instructions are PC-region but we will treat them
       // as PC-relative
-    case J:                             
+    case MIPS_OP_J:                             
       return InsnDesc(InsnDesc::BR_UN_COND_REL);  
-    case JAL:                           
+    case MIPS_OP_JAL:                           
       return InsnDesc(InsnDesc::SUBR_REL);     
       
-    case BEQ:                           // Instructions from Table A-14
+    case MIPS_OP_BEQ:                   // Instructions from Table A-14
       // If operands are the same then then there is no fall-thru branch.
       // Test for general case.
-      if (REG_S(insn) == REG_T(insn))
+      if (MIPS_OPND_REG_S(insn) == MIPS_OPND_REG_T(insn))
 	return InsnDesc(InsnDesc::BR_UN_COND_REL);
       else
 	return InsnDesc(InsnDesc::INT_BR_COND_REL);
-    case BNE:
-    case BLEZ:
-    case BGTZ:
-    case BEQL:
-    case BNEL:
-    case BLEZL:
-    case BGTZL:
+    case MIPS_OP_BNE:
+    case MIPS_OP_BLEZ:
+    case MIPS_OP_BGTZ:
+    case MIPS_OP_BEQL:
+    case MIPS_OP_BNEL:
+    case MIPS_OP_BLEZL:
+    case MIPS_OP_BGTZL:
       return InsnDesc(InsnDesc::INT_BR_COND_REL);
 
     default:
@@ -291,53 +291,57 @@ MipsISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
   uint32_t insn = (uint32_t)BFD_GETX32((const unsigned char*)mi);
 
   intptr_t offset;
-  switch (insn & OP_MASK)
+  switch (insn & MIPS_OPCODE_MASK)
     {
-    case OPSpecial:
-      switch (insn & OPSpecial_MASK)
+    case MIPS_OPClass_Special:
+      switch (insn & MIPS_OPClass_Special_MASK)
 	{
-	case JR:                        // Instructions from Table A-13
-	case JALR:
+	case MIPS_OP_JR:                // Instructions from Table A-13
+	case MIPS_OP_JALR:
 	  break;  // branch content in register
 	}
       break;
-    case OPRegImm:
-      switch (insn & OPRegImm_MASK)
+    case MIPS_OPClass_RegImm:
+      switch (insn & MIPS_OPClass_RegImm_MASK)
 	{
-	case BLTZ:                      // Instructions from Table A-15
-	case BGEZ:
-	case BLTZAL:  
-	case BGEZAL:  
-	case BLTZL:
-	case BGEZL:
-	case BLTZALL: 
-	case BGEZALL:
+	case MIPS_OP_BLTZ:              // Instructions from Table A-15
+	case MIPS_OP_BGEZ:
+	case MIPS_OP_BLTZAL:  
+	case MIPS_OP_BGEZAL:  
+	case MIPS_OP_BLTZL:
+	case MIPS_OP_BGEZL:
+	case MIPS_OP_BLTZALL: 
+	case MIPS_OP_BGEZALL:
 	  // Added to the address of the instruction *following* the branch
-	  offset = IMM(insn);
-	  if (offset & IMM_SIGN) { offset |= ~IMM_MASK; } // sign extend
+	  offset = MIPS_OPND_IMM(insn);
+	  if (offset & MIPS_OPND_IMM_SIGN) { 
+	    offset |= ~MIPS_OPND_IMM_MASK;  // sign extend
+	  }
 	  return ((pc + MINSN_SIZE) + (offset << 2));
 	}
       break;
 
     // Normal instruction class
-    case J:                             // Instructions from Table A-12
-    case JAL:
+    case MIPS_OP_J:                     // Instructions from Table A-12
+    case MIPS_OP_JAL:
       // These are PC-Region and not PC-Relative instructions.
       // Upper order bits come from the address of the delay-slot instruction
-      offset = INSN_INDEX(insn) << 2;
-      return (((pc + MINSN_SIZE) & INSN_INDEX_UPPER_MASK) | offset);
+      offset = MIPS_OPND_INSN_INDEX(insn) << 2;
+      return (((pc + MINSN_SIZE) & MIPS_OPND_INSN_INDEX_UPPER_MASK) | offset);
       
-    case BEQ:                           // Instructions from Table A-14
-    case BNE:
-    case BLEZ:
-    case BGTZ:
-    case BEQL:
-    case BNEL:
-    case BLEZL:
-    case BGTZL:
+    case MIPS_OP_BEQ:                   // Instructions from Table A-14
+    case MIPS_OP_BNE:
+    case MIPS_OP_BLEZ:
+    case MIPS_OP_BGTZ:
+    case MIPS_OP_BEQL:
+    case MIPS_OP_BNEL:
+    case MIPS_OP_BLEZL:
+    case MIPS_OP_BGTZL:
       // Added to the address of the instruction *following* the branch
-      offset = IMM(insn);
-      if (offset & IMM_SIGN) { offset |= ~IMM_MASK; } // sign extend
+      offset = MIPS_OPND_IMM(insn);
+      if (offset & MIPS_OPND_IMM_SIGN) { 
+	offset |= ~MIPS_OPND_IMM_MASK; // sign extend
+      }
       return ((pc + MINSN_SIZE) + (offset << 2));
       
     default:

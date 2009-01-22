@@ -90,17 +90,17 @@ ucontext_pc(ucontext_t* context)
 
 static inline void*
 ucontext_ra(ucontext_t* context)
-{ return (void*)ucontext_getreg(context, REG_RA); }
+{ return (void*)ucontext_getreg(context, MIPS_REG_RA); }
 
 
 static inline void**
 ucontext_sp(ucontext_t* context)
-{ return (void**)ucontext_getreg(context, REG_SP); }
+{ return (void**)ucontext_getreg(context, MIPS_REG_SP); }
 
 
 static inline void**
 ucontext_fp(ucontext_t* context)
-{ return (void**)ucontext_getreg(context, REG_FP); }
+{ return (void**)ucontext_getreg(context, MIPS_REG_FP); }
 
 
 //***************************************************************************
@@ -108,25 +108,20 @@ ucontext_fp(ucontext_t* context)
 static inline void*
 getNxtPCFromRA(void* ra)
 {
-  // both the call instruction and the delay slot have produced effects
+  // both the call instruction and the delay slot have effects
   //(uintptr_t)ra - 4 /*delay slot*/ - 4 /*next insn*/;
   return ra;
 }
 
 
 static inline void**
-getPtrFromSP(void** sp, int offset)
-{ return (void**)((uintptr_t)sp + offset); }
+getPtrFromPtr(void** ptr, int offset)
+{ return (void**)((uintptr_t)ptr + offset); }
 
 
 static inline void*
-getValFromSP(void** sp, int offset)
-{ return *getPtrFromSP(sp, offset); }
-
-
-static inline void*
-getValFromFP(void** fp, int offset)
-{ return *getPtrFromSP(fp, offset); }
+getValFromPtr(void** ptr, int offset)
+{ return *getPtrFromPtr(ptr, offset); }
 
 
 static inline bool
@@ -152,10 +147,10 @@ computeNext_SPFrame(void** * nxt_sp, void** * nxt_fp,
 		    unw_interval_t* intvl, void** sp, void** fp)
 {
   // intvl->sp_arg != unwarg_NULL
-  *nxt_sp = getPtrFromSP(sp, intvl->sp_arg);
+  *nxt_sp = getPtrFromPtr(sp, intvl->sp_arg);
 
   if (intvl->fp_arg != unwarg_NULL) {
-    *nxt_fp = getValFromSP(sp, intvl->fp_arg);
+    *nxt_fp = getValFromPtr(sp, intvl->fp_arg);
   }
   else if (fp) {
     // preserve FP for use with parent frame (child may save parent's FP)
@@ -169,14 +164,19 @@ computeNext_FPFrame(void** * nxt_sp, void** * nxt_fp,
 		    unw_interval_t* intvl, void** fp)
 {
   if (intvl->sp_arg != unwarg_NULL) {
-    *nxt_sp = getValFromFP(fp, intvl->sp_arg);
+    if (frameflg_isset(intvl->flgs, FrmFlg_FPOfstPos)) {
+      *nxt_sp = getPtrFromPtr(fp, intvl->sp_arg);
+    }
+    else {
+      *nxt_sp = getValFromPtr(fp, intvl->sp_arg);
+    }
   }
   else {
     *nxt_sp = fp;
   }
   
   if (intvl->fp_arg != unwarg_NULL) {
-    *nxt_fp = getValFromFP(fp, intvl->fp_arg);
+    *nxt_fp = getValFromPtr(fp, intvl->fp_arg);
   }
 }
 
@@ -281,11 +281,11 @@ unw_step(unw_cursor_t* cursor)
     nxt_pc = cursor->ra;
   }
   else if (UI_FLD(intvl,ty) == FrmTy_SP) {
-    nxt_pc = getValFromSP(sp, UI_FLD(intvl,ra_arg));
+    nxt_pc = getValFromPtr(sp, UI_FLD(intvl,ra_arg));
   }
   else if (UI_FLD(intvl,ty) == FrmTy_FP) {
     if (isPossibleFP(sp, fp)) { // FP is our weak spot
-      nxt_pc = getValFromFP(fp, UI_FLD(intvl,ra_arg));
+      nxt_pc = getValFromPtr(fp, UI_FLD(intvl,ra_arg));
     }
   }
   else {
@@ -334,7 +334,7 @@ unw_step(unw_cursor_t* cursor)
       TMSG(UNW, "error: troll failed");
       return STEP_ERROR;
     }
-    void** troll_sp = (void**)getPtrFromSP(sp, troll_pc_ofst);
+    void** troll_sp = (void**)getPtrFromPtr(sp, troll_pc_ofst);
     
     nxt_intvl = demand_interval(getNxtPCFromRA(*troll_sp));
     if (UI_IS_NULL(nxt_intvl)) {
@@ -349,13 +349,13 @@ unw_step(unw_cursor_t* cursor)
 	&& UI_FLD(intvl,ra_arg) != unwarg_NULL) {
       // realign sp/fp and recompute nxt_sp, nxt_fp
       if (UI_FLD(intvl,ty) == FrmTy_SP) {
-	void** new_sp = getPtrFromSP(troll_sp, -UI_FLD(intvl,ra_arg));
+	void** new_sp = getPtrFromPtr(troll_sp, -UI_FLD(intvl,ra_arg));
 	computeNext_SPFrame(&nxt_sp, &nxt_fp, UI_ARG(intvl), new_sp, NULL);
 	TMSG(UNW, "troll align/sp: troll_sp=%p, new sp=%p: nxt sp=%p, fp=%p",
 	     troll_sp, new_sp, nxt_sp, nxt_fp);
       }
       else if (UI_FLD(intvl,ty) == FrmTy_FP) {
-	void** new_fp = getPtrFromSP(troll_sp, -UI_FLD(intvl,ra_arg));
+	void** new_fp = getPtrFromPtr(troll_sp, -UI_FLD(intvl,ra_arg));
 	computeNext_FPFrame(&nxt_sp, &nxt_fp, UI_ARG(intvl), new_fp);
 	TMSG(UNW, "troll align/fp: troll_sp=%p, new fp=%p: nxt sp=%p, fp=%p",
 	     troll_sp, new_fp, nxt_sp, nxt_fp);
