@@ -29,6 +29,7 @@ double mlog(double x){
 }
 
 void foob(double *x){
+#define NO
 #ifndef NO
   *x = (*x) * 3.14 + mlog(*x);
 #else
@@ -50,28 +51,36 @@ void nobar(void){
   }
 }
 
-int bar(){
+double bar(){
   double x,y;
   int i,j;
+  int limit;
 
   x = 2.78;
   foob(&x);
-  for (i=0; i < LIMIT_OUTER; i++){
-    for (j=0; j < LIMIT; j++){
+
+  limit = x * 2687; // tallent
+
+  for (i=0; i < limit; i++){
+    for (j=0; j < limit/8; j++){
       y = x * x + msin(y);
       x = mlog(y) + mcos(x);
     }
   }
   // printf("x = %g, y = %g\n",x,y);
-  return 0;
+  return x;
 }
 
 #define MAX_THREADS	    200
 #define DEFAULT_NUM_THREADS 1
 
+#include <alloca.h>
+
 void *PrintHello(void *threadid)
 {
-   bar();
+  double x = bar();
+  void* z = alloca(8);
+  printf("hello: (%f) %p\n", x, z);  
    /*   pthread_exit(NULL); */
 }
 
@@ -81,31 +90,33 @@ main(int argc, char *argv[])
   pthread_t threads[MAX_THREADS];
   int rc, t;
   int nthreads = DEFAULT_NUM_THREADS;
+  double x;
 
   if (argc >= 2){
     nthreads = atoi(argv[1]);
   }
   printf("Num threads = %d\n", nthreads);
-
+  
   for(t=0;t<nthreads;t++){
-      printf("Creating thread %d\n", t+1);
-      rc = pthread_create(&threads[t], NULL, PrintHello, (void *)(long)t);
-      if (rc){
-         printf("ERROR; return code from pthread_create() is %d\n", rc);
-         exit(-1);
-      }
-   }
-   printf("Main thread calls bar\n");
-   bar();
-   printf("Main thread back from bar\n");
-   for(t=0;t<nthreads;t++){
-      printf("Joining thread %d\n", t+1);
-      rc = pthread_join(threads[t],0);
-      if (rc){
-         printf("ERROR; return code from pthread_join() is %d\n", rc);
-         exit(-1);
-      }
-   }
-   return 0;
-   //   exit(0);
+    printf("Creating thread %d\n", t+1);
+    rc = pthread_create(&threads[t], NULL, PrintHello, (void *)(long)t);
+    if (rc){
+      printf("ERROR; return code from pthread_create() is %d\n", rc);
+      exit(-1);
+    }
+  }
+  void* z = alloca(8);
+  printf("Main thread calls bar (%p)\n", z);
+  x = bar();
+  printf("Main thread back from bar (%f)\n", x);
+  for(t=0;t<nthreads;t++){
+    printf("Joining thread %d\n", t+1);
+    rc = pthread_join(threads[t],0);
+    if (rc){
+      printf("ERROR; return code from pthread_join() is %d\n", rc);
+      exit(-1);
+    }
+  }
+  return 0;
+  //   exit(0);
 }
