@@ -106,9 +106,11 @@ ucontext_fp(ucontext_t* context)
 //***************************************************************************
 
 static inline void*
-getCallFromRA(void* ra)
+getNxtPCFromRA(void* ra)
 {
-  return (void*)((uintptr_t)ra - 4 /*delay slot*/ - 4 /*next insn*/);
+  // both the call instruction and the delay slot have produced effects
+  //(uintptr_t)ra - 4 /*delay slot*/ - 4 /*next insn*/;
+  return ra;
 }
 
 
@@ -319,7 +321,7 @@ unw_step(unw_cursor_t* cursor)
 
   bool didTroll = false;
   if (nxt_pc != pc_NULL) {
-    nxt_intvl = demand_interval(getCallFromRA(nxt_pc));
+    nxt_intvl = demand_interval(getNxtPCFromRA(nxt_pc));
   }
 
   if (UI_IS_NULL(nxt_intvl)) {
@@ -334,7 +336,7 @@ unw_step(unw_cursor_t* cursor)
     }
     void** troll_sp = (void**)getPtrFromSP(sp, troll_pc_ofst);
     
-    nxt_intvl = demand_interval(getCallFromRA(*troll_sp));
+    nxt_intvl = demand_interval(getNxtPCFromRA(*troll_sp));
     if (UI_IS_NULL(nxt_intvl)) {
       TMSG(UNW, "error: troll_pc=%p failed", *troll_sp);
       return STEP_ERROR;
