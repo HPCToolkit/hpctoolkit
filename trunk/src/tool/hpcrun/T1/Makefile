@@ -6,9 +6,9 @@ CC     := gcc -std=c99
 CXX    := g++
 MPICC  := mpicc
 
-LINKPRE := hpclink
-static := -static
-static_lib := $(HOME)/Documents/pkgs-src/hpctoolkit/INSTALL/lib/hpctoolkit/libcsprof.a
+#LINKPRE := hpclink
+#static := -static
+#static_lib := $(HOME)/Documents/pkgs-src/hpctoolkit/INSTALL/lib/hpctoolkit/libcsprof.a
 
 LINK.cc := $(LINKPRE) $(CC) $(static)
 
