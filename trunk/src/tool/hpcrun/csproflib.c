@@ -168,7 +168,7 @@ csprof_init_internal(void)
   unw_init();
 
   // sample source setup
-
+  TD_GET(suspend_sampling) = 0; // cf. csprof_thread_data_init
   SAMPLE_SOURCES(init);
   SAMPLE_SOURCES(process_event_list,lush_metrics);
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
