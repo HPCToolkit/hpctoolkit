@@ -87,18 +87,19 @@ using namespace xml;
 
 //***************************************************************************
 
+namespace Prof {
+namespace Struct {
+
+
 //***************************************************************************
 // Tree
 //***************************************************************************
 
-namespace Prof {
-namespace Struct {
-
 uint ANode::s_nextUniqueId = 1;
 
-const std::string Tree::UnknownFileNm = "!unknown-file!";
+const std::string Tree::UnknownFileNm = "~unknown-file~";
 
-const std::string Tree::UnknownProcNm = "!unknown-proc!";
+const std::string Tree::UnknownProcNm = "~unknown-proc~";
 
 
 Tree::Tree(const char* name, Root* root)
@@ -147,16 +148,10 @@ Tree::ddump() const
   dump();
 }
 
-} // namespace Struct
-} // namespace Prof
 
-
-namespace Prof {
-namespace Struct {
-
-/*****************************************************************************/
+//***************************************************************************
 // ANodeTy `methods' (could completely replace with dynamic typing)
-/*****************************************************************************/
+//***************************************************************************
 
 const string ANode::ScopeNames[ANode::TyNUMBER] = {
   "PGM", "GRP", "LM", "FIL", "PRC", "A", "LP", "SR", "REF", "ANY"
@@ -1944,6 +1939,4 @@ Ref::RelocateRef()
 
 } // namespace Struct
 } // namespace Prof
-
-
 
