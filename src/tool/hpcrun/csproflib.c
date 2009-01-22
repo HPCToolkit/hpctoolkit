@@ -213,7 +213,8 @@ csprof_thread_pre_create(void)
   ucontext_t context;
   ret = getcontext(&context);
   if (ret != 0) {
-    EMSG("Error: getcontext = %d", ret); 
+    EMSG("error: csprof_thread_pre_create: getcontext = %d", ret);
+    return NULL;
   }
 
   int metric_id = 0; // FIXME: should be able to obtain index of first metric
@@ -252,7 +253,9 @@ csprof_thread_post_create(void *dc)
 void *
 csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 {
-  thread_data_t *td  = csprof_allocate_thread_data();
+  thread_data_t *td = csprof_allocate_thread_data();
+  td->suspend_sampling = 1; // begin: protect against spurious signals
+
   csprof_set_thread_data(td);
   csprof_thread_data_init(id,1,0);
 
@@ -264,6 +267,7 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
   // start sampling sources
   TMSG(INIT,"starting sampling sources");
 
+  td->suspend_sampling = 0; // end: protect against spurious signals
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
   SAMPLE_SOURCES(start);
 
