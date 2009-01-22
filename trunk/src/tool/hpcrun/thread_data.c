@@ -37,11 +37,17 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
 {
   NMSG(THREAD_SPECIFIC,"init thread specific data for %d",id);
   thread_data_t *td = csprof_get_thread_data();
-  TD_GET(suspend_sampling) = 0;
 
   // initialize thread_data with known bogus bit pattern so that missing
   // initializations will be apparent.
   memset(td, 0xfe, sizeof(thread_data_t)); 
+
+  // sampling control variables
+  //   tallent: protect against spurious signals until 'state' is fully
+  //   initialized... for now rely on caller to re-enable
+  td->suspend_sampling            = 1; // protect against spurious signals
+  td->handling_synchronous_sample = 0;
+  csprof_init_handling_sample(td,0);
 
   td->id                          = id;
   td->memstore                    = csprof_malloc_init(sz, sz_tmp);
@@ -51,11 +57,6 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
   // locks
   td->fnbounds_lock               = 0;
   td->splay_lock                  = 0;
-
-  // sampling control variables
-  td->suspend_sampling            = 0;
-  td->handling_synchronous_sample = 0;
-  csprof_init_handling_sample(td,0);
 
   td->trace_file                  = NULL;
   td->last_us_usage               = 0;
