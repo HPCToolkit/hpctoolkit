@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/09/20}
+\setDate{ 2009/01/23}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -61,10 +61,13 @@ Typical usage:\\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-Given an application binary or DSO \Arg{binary}, \Prog{hpcstruct} recovers the program structure of its object code and writes to standard output a program structure to object code mapping.
+Given an application binary or DSO \Arg{binary}, \Prog{hpcstruct} recovers the program structure of its object code.
+Program structure is a mapping of a program's static source-level structure to its object code.
+By default, \Prog{hpcstruct} writes its results to the file \File{basename(<binary>).hpcstruct}.
+This file is typically passed to \textbf{HPCToolkit}'s correlation tool, \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.
+
 \Prog{hpcstruct} is designed primarily for highly optimized binaries created from C, C++ and Fortran source code.
 Because \Prog{hpcstruct}'s algorithms exploit a binary's debugging information, for best results, \Arg{binary} should be compiled with standard debugging information.
-\Prog{hpcstruct}'s output is typically passed to \textbf{HPCToolkit}'s correlation tool, \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
@@ -95,18 +98,34 @@ Debug: use debug level \Arg{n}. \{1\}
 Debug structure recovery for procedures matching the procedure glob \Arg{glob}.
 \end{Description}
 
-\subsection{Options: Recovery and Output}
+
+\subsection{Options: Structure recovery}
 
 \begin{Description}
-  \item[\Opt{-i}, \Opt{--irreducible-interval-as-loop-off}] Do not treat irreducible intervals as loops.
-  \item[\Opt{-f}, \Opt{--forward-substitution-off}] Assume that forward substitution does not occur.  (Useful for handling erroneous PGI debugging info.)
+\item[\Opt{-i}, \Opt{--irreducible-interval-as-loop-off}]
+Do not treat irreducible intervals as loops.
 
-  \item[\OptArg{-p}{path-list}, \OptArg{--canonical-paths}{path-list}] Ensure that scope tree only contains files found in the colon-separated path list \Arg{path-list}. May be passed multiple times.
+\item[\Opt{-f}, \Opt{--forward-substitution-off}]
+Assume that forward substitution does not occur.  (Useful for handling erroneous PGI debugging info.)
 
-\item[\Opt{-n}, \Opt{--normalize-off}] Turn off scope tree normalization.
-\item[\Opt{-u}, \Opt{--unsafe-normalize-off}] Turn off potentially unsafe normalization.
+\item[\Opt{-n}, \Opt{--normalize-off}]
+Turn off scope tree normalization.
 
-\item[\Opt{-c}, \Opt{--compact}] Generate compact output, eliminating extra white space.
+\item[\Opt{-u}, \Opt{--unsafe-normalize-off}]
+Turn off potentially unsafe normalization.
+\end{Description}
+
+
+\subsection{Options: Output}
+\item[\OptArg{-o}{file}, \OptArg{--output}{file}]
+Write results to \Arg{file}.  Use `-' for \File{stdout}. \{\File{basename(<binary>).hpcstruct}\}
+
+\begin{Description}
+\item[\Opt{--compact}]
+Generate compact output, eliminating extra white space.
+
+% \item[\OptArg{-p}{path-list}, \OptArg{--canonical-paths}{path-list}] Ensure that scope tree only contains files found in the colon-separated path list \Arg{path-list}. May be passed multiple times.
+
 \end{Description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -115,10 +134,10 @@ Debug structure recovery for procedures matching the procedure glob \Arg{glob}.
 %\begin{enumerate}
 %\item 
 Assume we have collected profiling information for the (optimized) binary \File{sweep3dsingle}, compiled with debugging information.
-We wish to recover program structure in the file \File{sweep3dsingle.psxml} for use with \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.
+We wish to recover program structure in the file \File{sweep3dsingle.hpcstruct} for use with \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.
 To do this, execute:
 \begin{verbatim}
-    hpcstruct sweep3dsingle > sweep3dsingle.psxml
+    hpcstruct sweep3dsingle
 \end{verbatim}
 
 %\end{enumerate}

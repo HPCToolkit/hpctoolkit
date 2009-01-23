@@ -66,6 +66,7 @@ using std::endl;
 #include <lib/binutils/LM.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/IOUtil.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -110,11 +111,11 @@ real_main(int argc, char* argv[])
   binutils::LM* lm = NULL;
   try {
     lm = new binutils::LM();
-    lm->open(args.inputFile.c_str());
+    lm->open(args.in_filenm.c_str());
     lm->read(binutils::LM::ReadFlg_ALL);
   } 
   catch (...) {
-    DIAG_EMsg("Exception encountered while reading " << args.inputFile);
+    DIAG_EMsg("Exception encountered while reading " << args.in_filenm);
     throw;
   }
   
@@ -131,7 +132,12 @@ real_main(int argc, char* argv[])
 		    args.forwardSubstitutionOff,
 		    args.dbgProcGlob);
     
-    writeStructure(std::cout, strctTree, args.prettyPrintOutput);
+    const char* osnm = 
+      (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    writeStructure(*os, strctTree, args.prettyPrintOutput);
+    IOUtil::CloseStream(os);
+
     delete strctTree;
   }
   
