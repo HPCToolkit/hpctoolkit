@@ -1,6 +1,18 @@
 // -*-Mode: C++;-*- // technically C99
 // $Id$
 
+//***************************************************************************
+//
+// HPCToolkit's MIPS Unwinder
+// 
+// Nathan Tallent
+// Rice University
+//
+// When part of HPCToolkit, this code assumes HPCToolkit's license;
+// see www.hpctoolkit.org.
+//
+//***************************************************************************
+
 //************************* System Include Files ****************************
 
 #include <stdlib.h>
