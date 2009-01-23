@@ -95,12 +95,14 @@ public:
   bool forwardSubstitutionOff;    // default: false
   bool normalizeScopeTree;        // default: true
   bool unsafeNormalizations;      // default: true
-  bool prettyPrintOutput;         // default: true
   std::string canonicalPathList;
   std::string dbgProcGlob;
 
+  std::string out_filenm;
+  bool prettyPrintOutput;         // default: true
+
   // Parsed Data: arguments
-  std::string inputFile;
+  std::string in_filenm;
 
 private:
   void Ctor();

@@ -62,6 +62,7 @@ using std::string;
 #include "Args.hpp"
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/Files.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -82,13 +83,16 @@ static const char* usage_summary =
 
 static const char* usage_details = "\
 Given an application binary or DSO <binary>, hpcstruct recovers the program\n\
-structure of its object code and writes to standard output a program\n\
-structure to object code mapping. hpcstruct is designed primarily for highly\n\
-optimized binaries created from C, C++ and Fortran source code. Because\n\
-hpcstruct's algorithms exploit a binary's debugging information, for best\n\
-results, binary should be compiled with standard debugging information.\n\
-hpcstruct's output is typically passed to an HPCToolkit's correlation tool.\n\
-See the documentation for more information.\n\
+structure of its object code.  Program structure is a mapping of a program's\n\
+static source-level structure to its object code.  By default, hpcstruct\n\
+writes its results to the file 'basename(<binary>).hpcstruct'.  This file\n\
+is typically passed to HPCToolkit's correlation tool hpcprof.\n\
+\n\
+hpcstruct is designed primarily for highly optimized binaries created from\n\
+C, C++ and Fortran source code. Because hpcstruct's algorithms exploit a\n\
+binary's debugging information, for best results, binary should be compiled\n\
+with standard debugging information.  See the documentation for more\n\
+information.\n\
 \n\
 Options: General\n\
   -v [<n>], --verbose [<n>]\n\
@@ -100,28 +104,35 @@ Options: General\n\
   --debug-proc <glob>  Debug structure recovery for procedures matching\n\
                        the procedure glob <glob>\n\
 \n\
-Options: Recovery and Output\n\
+Options: Structure recovery\n\
   -i, --irreducible-interval-as-loop-off\n\
                        Do not treat irreducible intervals as loops\n\
   -f, --forward-substitution-off\n\
                        Assume that forward substitution does not occur.\n\
                        (Useful for handling erroneous PGI debugging info.)\n\
-  -p <list>, --canonical-paths <list>\n\
-                       Ensure that scope tree only contains files found in\n\
-                       the colon-separated <list>. May be passed multiple\n\
-                       times.\n\
   -n, --normalize-off  Turn off scope tree normalization\n\
   -u, --unsafe-normalize-off\n\
                        Turn off potentially unsafe normalization\n\
-  -c, --compact        Generate compact output, eliminating extra white space\n\
+\n\
+Options: Output:\n\
+  -o <file>, --output <file>\n\
+                       Write results to <file>.  Use '-' for stdout.\n\
+  --compact            Generate compact output, eliminating extra white space\n\
 ";
+
+#if 0
+  -p <list>, --canonical-paths <list>
+                       Ensure that scope tree only contains files found in
+                       the colon-separated <list>. May be passed multiple
+                       times.
+#endif
 
 
 #define CLP CmdLineParser
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
-  // Options
+  // Structure recovery options
   { 'i', "irreducible-interval-as-loop-off",
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
@@ -136,10 +147,14 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'u', "unsafe-normalize-off", 
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
-  { 'c', "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+    
+  // Output options
+  { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   
-  // Options
+  // General
   { 'v', "verbose",     CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
      NULL },
   { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
@@ -267,7 +282,7 @@ Args::parse(int argc, const char* const argv[])
       dbgProcGlob = parser.getOptArg("debug-proc");
     }
     
-    // Check for other options
+    // Check for other options: Structure recovery
     if (parser.isOpt("irreducible-interval-as-loop-off")) { 
       irreducibleIntervalIsLoop = false;
     } 
@@ -279,10 +294,15 @@ Args::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("normalize-off")) { 
       normalizeScopeTree = false;
-    } 
+    }
     if (parser.isOpt("unsafe-normalize-off")) { 
       unsafeNormalizations = false;
-    } 
+    }
+
+    // Check for other options: Output options
+    if (parser.isOpt("output")) {
+      out_filenm = parser.getOptArg("output");
+    }
     if (parser.isOpt("compact")) { 
       prettyPrintOutput = false;
     } 
@@ -291,7 +311,12 @@ Args::parse(int argc, const char* const argv[])
     if (parser.getNumArgs() != 1) {
       ARG_ERROR("Incorrect number of arguments!");
     }
-    inputFile = parser.getArg(0);
+    in_filenm = parser.getArg(0);
+
+    if (out_filenm.empty()) {
+      string base_filenm = FileUtil::basename(in_filenm);
+      out_filenm = base_filenm + ".hpcstruct";
+    }
   }
   catch (const CmdLineParser::ParseError& x) {
     ARG_ERROR(x.what());
@@ -310,7 +335,7 @@ Args::dump(std::ostream& os) const
   os << "Args.prettyPrintOutput= " << prettyPrintOutput << endl;
   os << "Args.normalizeScopeTree= " << normalizeScopeTree << endl;
   os << "Args.canonicalPathList= " << canonicalPathList << endl;
-  os << "Args.inputFile= " << inputFile << endl;
+  os << "Args.in_filenm= " << in_filenm << endl;
 }
 
 void 

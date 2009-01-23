@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/07/09}
+\setDate{ 2009/01/23}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -122,19 +122,19 @@ Profile with \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.  Assume we wish to use two
 \end{verbatim}
 
 \item \textbf{Recover static source code structure}. 
-Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to recover program structure.
+Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to recover program structure and write it to the file \File{zoo.hpcstruct}
 \begin{verbatim}
-  hpcstruct zoo > zoo.psxml
+  hpcstruct zoo
 \end{verbatim}
 
 \item \textbf{Correlate call path or flat metrics with static source code structure}.
 Create an Experiment database using \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.  Assume the Experiment database is located in \File{experiment-db}.
 \begin{verbatim}
-  hpcprof -I 'path-to-zoo' -S zoo.psxml profile-file-1 profile-file-2
+  hpcprof -I 'path-to-zoo' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
 or
 \begin{verbatim}
-  hpcprof-flat -I 'path-to-zoo/*' -S zoo.psxml profile-file-1 profile-file-2
+  hpcprof-flat -I 'path-to-zoo/*' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
 
 \item \textbf{Visualize}.
@@ -157,17 +157,17 @@ Begin with steps 1 and 2 above.
 
 To compute raw metrics for each native event and generate the default program and load module summaries:
 \begin{verbatim}
-  hpcproftt -I 'path-to-zoo/*' -S zoo.psxml profile-file-1 profile-file-2
+  hpcproftt -I 'path-to-zoo/*' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
 
 To compute raw and summary metrics (but only show the latter) and generate summaries for all program structure elements:
 \begin{verbatim}
-  hpcproftt --src=sum --metric=sum-only -I 'path-to-zoo/*' -S zoo.psxml profile-file-1 profile-file-2
+  hpcproftt --src=sum --metric=sum-only -I 'path-to-zoo/*' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
 
 To compute raw and summary metrics and generate summaries for all program structure elements and generate annotated source files:
 \begin{verbatim}
-  hpcproftt --src=all --metric=sum -I 'path-to-zoo/*' -S zoo.psxml profile-file-1 profile-file-2
+  hpcproftt --src=all --metric=sum -I 'path-to-zoo/*' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
 
 
