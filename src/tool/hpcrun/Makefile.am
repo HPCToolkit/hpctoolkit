@@ -82,7 +82,7 @@ MY_BASE_FILES =			\
 	thread_use.c			\
 	trace.c				\
 	unsafe.c			\
-	Dbg/pmsg.c			\
+	messages/pmsg.c			\
 	fnbounds/fnbounds_common.c	\
 	lush/lush-backtrace.c		\
 	lush/lush.c			\
@@ -144,7 +144,7 @@ MY_CPP_DEFINES =			\
 	-DINLINE_FN=1
 
 MY_INCLUDE_DIRS =			\
-	-I$(srcdir)/Dbg			\
+	-I$(srcdir)/messages	        \
 	-I$(srcdir)/fnbounds		\
 	-I$(srcdir)/lush		\
 	-I$(srcdir)/lush-agents		\
