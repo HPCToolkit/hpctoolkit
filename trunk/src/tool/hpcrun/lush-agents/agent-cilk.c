@@ -34,7 +34,7 @@
 #include "agent-cilk.h"
 
 #include <general.h> // FIXME: for MSG -- but should not include
-#include <Dbg/pmsg.h>
+#include <pmsg.h>
 
 //*************************** Forward Declarations **************************
 

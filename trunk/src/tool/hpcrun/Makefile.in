@@ -188,7 +188,7 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	sample_event.c sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_sources_registered.c \
 	segv_handler.c state.c system_server.c thread_data.c \
-	thread_use.c trace.c unsafe.c Dbg/pmsg.c \
+	thread_use.c trace.c unsafe.c messages/pmsg.c \
 	fnbounds/fnbounds_common.c lush/lush-backtrace.c lush/lush.c \
 	lush/lushi-cb.c lush/lush-support-rt.c memory/list.c \
 	memory/mem.c sampling/types/callstack/cct.c \
@@ -269,7 +269,7 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_sources_registered.c \
 	segv_handler.c state.c system_server.c thread_data.c \
-	thread_use.c trace.c unsafe.c Dbg/pmsg.c \
+	thread_use.c trace.c unsafe.c messages/pmsg.c \
 	fnbounds/fnbounds_common.c lush/lush-backtrace.c lush/lush.c \
 	lush/lushi-cb.c lush/lush-support-rt.c memory/list.c \
 	memory/mem.c sampling/types/callstack/cct.c \
@@ -618,7 +618,7 @@ MY_BASE_FILES = \
 	thread_use.c			\
 	trace.c				\
 	unsafe.c			\
-	Dbg/pmsg.c			\
+	messages/pmsg.c			\
 	fnbounds/fnbounds_common.c	\
 	lush/lush-backtrace.c		\
 	lush/lush.c			\
@@ -678,7 +678,7 @@ MY_CPP_DEFINES = \
 	-DINLINE_FN=1
 
 MY_INCLUDE_DIRS = \
-	-I$(srcdir)/Dbg			\
+	-I$(srcdir)/messages	        \
 	-I$(srcdir)/fnbounds		\
 	-I$(srcdir)/lush		\
 	-I$(srcdir)/lush-agents		\
@@ -1268,12 +1268,12 @@ libcsprof_la-unsafe.lo: unsafe.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-unsafe.lo `test -f 'unsafe.c' || echo '$(srcdir)/'`unsafe.c
 
-libcsprof_la-pmsg.lo: Dbg/pmsg.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-pmsg.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-pmsg.Tpo -c -o libcsprof_la-pmsg.lo `test -f 'Dbg/pmsg.c' || echo '$(srcdir)/'`Dbg/pmsg.c
+libcsprof_la-pmsg.lo: messages/pmsg.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-pmsg.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-pmsg.Tpo -c -o libcsprof_la-pmsg.lo `test -f 'messages/pmsg.c' || echo '$(srcdir)/'`messages/pmsg.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-pmsg.Tpo $(DEPDIR)/libcsprof_la-pmsg.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='Dbg/pmsg.c' object='libcsprof_la-pmsg.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg.c' object='libcsprof_la-pmsg.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-pmsg.lo `test -f 'Dbg/pmsg.c' || echo '$(srcdir)/'`Dbg/pmsg.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-pmsg.lo `test -f 'messages/pmsg.c' || echo '$(srcdir)/'`messages/pmsg.c
 
 libcsprof_la-fnbounds_common.lo: fnbounds/fnbounds_common.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-fnbounds_common.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-fnbounds_common.Tpo -c -o libcsprof_la-fnbounds_common.lo `test -f 'fnbounds/fnbounds_common.c' || echo '$(srcdir)/'`fnbounds/fnbounds_common.c
@@ -1856,19 +1856,19 @@ libcsprof_o-unsafe.obj: unsafe.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-unsafe.obj `if test -f 'unsafe.c'; then $(CYGPATH_W) 'unsafe.c'; else $(CYGPATH_W) '$(srcdir)/unsafe.c'; fi`
 
-libcsprof_o-pmsg.o: Dbg/pmsg.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg.o -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg.Tpo -c -o libcsprof_o-pmsg.o `test -f 'Dbg/pmsg.c' || echo '$(srcdir)/'`Dbg/pmsg.c
+libcsprof_o-pmsg.o: messages/pmsg.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg.o -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg.Tpo -c -o libcsprof_o-pmsg.o `test -f 'messages/pmsg.c' || echo '$(srcdir)/'`messages/pmsg.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg.Tpo $(DEPDIR)/libcsprof_o-pmsg.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='Dbg/pmsg.c' object='libcsprof_o-pmsg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg.c' object='libcsprof_o-pmsg.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg.o `test -f 'Dbg/pmsg.c' || echo '$(srcdir)/'`Dbg/pmsg.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg.o `test -f 'messages/pmsg.c' || echo '$(srcdir)/'`messages/pmsg.c
 
-libcsprof_o-pmsg.obj: Dbg/pmsg.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg.Tpo -c -o libcsprof_o-pmsg.obj `if test -f 'Dbg/pmsg.c'; then $(CYGPATH_W) 'Dbg/pmsg.c'; else $(CYGPATH_W) '$(srcdir)/Dbg/pmsg.c'; fi`
+libcsprof_o-pmsg.obj: messages/pmsg.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg.Tpo -c -o libcsprof_o-pmsg.obj `if test -f 'messages/pmsg.c'; then $(CYGPATH_W) 'messages/pmsg.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg.c'; fi`
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg.Tpo $(DEPDIR)/libcsprof_o-pmsg.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='Dbg/pmsg.c' object='libcsprof_o-pmsg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg.c' object='libcsprof_o-pmsg.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg.obj `if test -f 'Dbg/pmsg.c'; then $(CYGPATH_W) 'Dbg/pmsg.c'; else $(CYGPATH_W) '$(srcdir)/Dbg/pmsg.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg.obj `if test -f 'messages/pmsg.c'; then $(CYGPATH_W) 'messages/pmsg.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg.c'; fi`
 
 libcsprof_o-fnbounds_common.o: fnbounds/fnbounds_common.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-fnbounds_common.o -MD -MP -MF $(DEPDIR)/libcsprof_o-fnbounds_common.Tpo -c -o libcsprof_o-fnbounds_common.o `test -f 'fnbounds/fnbounds_common.c' || echo '$(srcdir)/'`fnbounds/fnbounds_common.c

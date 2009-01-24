@@ -45,6 +45,7 @@
 #include "monitor.h"
 #include "pmsg.h"
 #include "structs.h"
+#include "sample_event.h"
 #include "system_server.h"
 #include "unlink.h"
 #include "spinlock.h"
@@ -528,8 +529,20 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
       // the entry on the closed list was not the same module
       fnbounds_epoch_finalize_locked();
       csprof_epoch_new();
-      TMSG(EPOCH, "new epoch cause: start = %p, end = %p, name = %s",
-	   start, end, module_name);
+      TMSG(EPOCH, "new epoch cause: start = %p, end = %p, name = %s", start, end, module_name);
+      EEMSG("WARNING: Load module %s with address range [%p,%p) is being replaced with",
+	dso_info->name, dso_info->start_addr, dso_info->end_addr);
+      EEMSG("   load module %s with address range [%p,%p).", module_name, start, end);
+      EEMSG("   Currently, all samples within load modules that map to overlapping address ");
+      EEMSG("   ranges will currently be incorrectly attributed by hpcrun to the last load ");
+      EEMSG("   module mapped to the range. In this execution, this misattribution will ");
+      EEMSG("   affect procedure frames in at most %d samples. Some or all of those ", samples_taken);
+      EEMSG("   samples may involve procedure frames in the affected load modules.  Ongoing ");
+      EEMSG("   work in hpcrun is aimed at addressing this shortcoming. This warning is ");
+      EEMSG("   provided to notify early users about a limitation in HPCToolkit that ");
+      EEMSG("   affects the accuracy of data reported. As long the aforementioned load ");  
+      EEMSG("   modules are not the focus of your analysis, this error should not be of ");
+      EEMSG("   concern.");
     }
   }
   dso_info = fnbounds_compute(module_name, start, end);
