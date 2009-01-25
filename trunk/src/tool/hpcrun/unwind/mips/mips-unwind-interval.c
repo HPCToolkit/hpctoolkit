@@ -41,6 +41,9 @@ static UNW_INTERVAL_t
 mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn, 
 		     bool retFirst, int verbose);
 
+static void*
+mips_find_proc(void* pc, void* module_beg);
+
 
 //***************************************************************************
 // global variables
@@ -54,14 +57,26 @@ long suspicious_cnt = 0;
 // interface operations
 //***************************************************************************
 
+// demand_interval: Given a PC 'pc', return an interval.  Note that
+// 'pc' may be bogus (i.e, not even point to a text segment) and in this
+// case UNW_INTERVAL_NULL should be returned.
 UNW_INTERVAL_t
-demand_interval(void* pc)
+demand_interval(void* pc, bool isTopFrame)
 {
 #if (HPC_UNW_LITE)
-  uint32_t* insn_beg = (uint32_t*)dylib_find_lower_bound(pc);
-  if (insn_beg) {
-    uint32_t* insn_end = (uint32_t*)pc; // [insn_beg, insn_end)
-    return mips_build_intervals(insn_beg, insn_end, false/*retFirst*/, 0);
+  void* proc_beg = NULL, *mod_beg = NULL;
+  dylib_find_proc(pc, &proc_beg, &mod_beg);
+
+  if (!proc_beg && mod_beg && !isTopFrame) {
+    // The procedure begin could not be found but pc is valid (since
+    // the module begin was found).
+    proc_beg = mips_find_proc(pc, mod_beg);
+  }
+  
+  if (proc_beg) {
+    uint32_t* beg = (uint32_t*)proc_beg; // [insn_beg, insn_end)
+    uint32_t* end = (uint32_t*)pc; 
+    return mips_build_intervals(beg, end, false/*retFirst*/, 0);
   }
   else {
     return UNW_INTERVAL_NULL;
@@ -78,11 +93,10 @@ interval_status
 build_intervals(char* insn_beg, unsigned int len)
 {
   // [my_insn_beg, my_insn_end)
-  uint32_t* my_insn_beg = (uint32_t*)(insn_beg);
-  uint32_t* my_insn_end = (uint32_t*)(insn_beg + len);
+  uint32_t* beg = (uint32_t*)(insn_beg);
+  uint32_t* end = (uint32_t*)(insn_beg + len);
 
-  UNW_INTERVAL_t beg_ui = 
-    mips_build_intervals(my_insn_beg, my_insn_end, true/*retFirst*/, 0);
+  UNW_INTERVAL_t beg_ui = mips_build_intervals(beg, end, true/*retFirst*/, 0);
 
   interval_status x = (interval_status){.first_undecoded_ins = NULL,
 					.errcode = 0,
@@ -663,3 +677,47 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
   return (retFirst) ? beg_ui : ui;
 }
 
+
+static void* 
+mips_find_proc(void* pc, void* module_beg)
+{
+  // If we are within a valid text segment and if this is not the
+  // first stack frame, we assume the following about the procedure
+  // that pc is contained within:
+  // - it is (almost certainly) not a frameless procedure
+  // - all prologue code has been executed (since pc should be a
+  //   return address)
+  // 
+  // Therefore we perform a reverse search for the following pattern:
+  //   daddiu sp, sp, -xxx   <- functional begin of routine
+  //   sd     ra, xx(sp/fp)
+
+  bool fnd_ra = false, fnd_alloc = false;
+  
+  uint32_t* cur_insn = (uint32_t*)pc;
+
+  // 1. find the store of the return address
+  while (cur_insn > (uint32_t*)module_beg && !fnd_ra) {
+    if (isStoreRegInFrame(*cur_insn, MIPS_REG_SP, MIPS_REG_RA) ||
+	isStoreRegInFrame(*cur_insn, MIPS_REG_FP, MIPS_REG_RA)) {
+      fnd_ra = true; // advance to next insn
+    }
+    cur_insn--;
+  }
+  
+  if (!fnd_ra) {
+    return NULL;
+  }
+  
+  // 2. find the stack allocation -- we hope there is only one!
+  while (cur_insn > (uint32_t*)module_beg) {
+    if (isAdjustSPByConst(*cur_insn) 
+	&& getAdjustSPByConstAmnt(*cur_insn) > 0) {
+      fnd_alloc = true;
+      break;
+    }
+    cur_insn--;
+  }
+
+  return (fnd_alloc) ? cur_insn : NULL;
+}

@@ -134,17 +134,19 @@ dylib_find_module_containing_addr(void *addr,
 }
 
 
-void* 
-dylib_find_lower_bound(void* pc)
+int 
+dylib_find_proc(void* pc, void* *proc_beg, void* *mod_beg)
 {
   Dl_info dli;
   int ret = dladdr(pc, &dli);
   if (ret) {
-    //printf("dylib_find_lower_bound: lm: %s (%p); sym: %s (%p)\n", dli.dli_fname, dli.dli_fbase, dli.dli_sname, dli.dli_saddr);
-    return dli.dli_saddr;
+    //printf("dylib_find_proc: lm: %s (%p); sym: %s (%p)\n", dli.dli_fname, dli.dli_fbase, dli.dli_sname, dli.dli_saddr);
+    *proc_beg = dli.dli_saddr;
+    *mod_beg  = dli.dli_fbase;
+    return 0;
   }
   else {
-    return NULL;
+    return -1;
   }
 }
 
@@ -156,9 +158,26 @@ dylib_isin_start_func(void* pc)
   extern int __clone(void);           // start of a thread (extern)
   extern int clone(void);             // start of a thread (weak)
 
-  void* lb = dylib_find_lower_bound(pc);
-  return (lb == __libc_start_main || lb == clone || lb == __clone);
+  void* proc_beg = NULL, *mod_beg = NULL;
+  dylib_find_proc(pc, &proc_beg, &mod_beg);
+  return (proc_beg == __libc_start_main || 
+	  proc_beg == clone || proc_beg == __clone);
 }
+
+
+const char* 
+dylib_find_proc_name(const void* pc)
+{
+  Dl_info dli;
+  int ret = dladdr(pc, &dli);
+  if (ret) {
+    return (dli.dli_sname) ? dli.dli_sname : dli.dli_fname;
+  }
+  else {
+    return NULL;
+  }
+}
+
 
 
 //*****************************************************************************

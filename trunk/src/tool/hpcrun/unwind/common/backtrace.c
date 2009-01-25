@@ -108,7 +108,7 @@ hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
   while (my_size < size) {
     int ret;
 
-    void* ip;
+    void* ip = NULL;
     ret = unw_get_reg(&cursor, UNW_REG_IP, &ip);
     if (ret < 0) { /* ignore error */ }
 

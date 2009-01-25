@@ -333,7 +333,8 @@
 // =========================================
 #define MIPS_OP_NOP	0x00000000  /* SLL */
 #define MIPS_OP_UNIMP	0x00000000  /* NOP */
-#define MIPS_OP_MOV     OR /* could also be a ADDU/DADDU */
+#define MIPS_OP_MOVE    OR          /* could also be a ADDU/DADDU */
+#define MIPS_OP_LI      MIPS_OP_ADDIU
 
 
 //***************************************************************************
