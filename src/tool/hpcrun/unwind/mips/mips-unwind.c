@@ -17,9 +17,11 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <assert.h>
+
 #include <unistd.h> // environ
 #include <ucontext.h>
-#include <assert.h>
+
 
 //************************ libmonitor Include Files *************************
 
@@ -29,16 +31,17 @@
 
 #include <include/general.h>
 
-#include "mips-unwind-cfg.h"
-#include "mips-unwind-interval.h"
-
 #include "unwind.h"
 #include "stack_troll.h"
+
+#include "mips-unwind-cfg.h"
+#include "mips-unwind-interval.h"
 
 // FIXME: Abuse the isa library by cherry-picking this special header.
 // One possibility is to simply use the ISA lib -- doesn't xed
 // internally use C++ stuff?
 #include <lib/isa/instructionSets/mips.h>
+
 
 //*************************** Forward Declarations **************************
 
@@ -79,7 +82,8 @@ unw_stack_bottom()
     process_stack_bottom = x; // N.B.: atomic update
   }
 
-  return process_stack_bottom; // FIXME: thread stack bottom
+  // FIXME: thread stack bottom -- could also look at /proc/self/maps
+  return process_stack_bottom; 
 #else
   return (void**)monitor_stack_bottom();
 #endif
@@ -90,6 +94,9 @@ unw_stack_bottom()
 // private operations
 //***************************************************************************
 
+// NOTE: for the n32 ABI, the registers are technically 64 bits, even
+// though pointers are only 32 bits.
+
 static inline greg_t
 ucontext_getreg(ucontext_t* context, int reg)
 { return context->uc_mcontext.gregs[reg]; }
@@ -97,22 +104,22 @@ ucontext_getreg(ucontext_t* context, int reg)
 
 static inline void*
 ucontext_pc(ucontext_t* context)
-{ return (void*)context->uc_mcontext.pc; }
+{ return (void*)(uintptr_t)context->uc_mcontext.pc; }
 
 
 static inline void*
 ucontext_ra(ucontext_t* context)
-{ return (void*)ucontext_getreg(context, MIPS_REG_RA); }
+{ return (void*)(uintptr_t)ucontext_getreg(context, MIPS_REG_RA); }
 
 
 static inline void**
 ucontext_sp(ucontext_t* context)
-{ return (void**)ucontext_getreg(context, MIPS_REG_SP); }
+{ return (void**)(uintptr_t)ucontext_getreg(context, MIPS_REG_SP); }
 
 
 static inline void**
 ucontext_fp(ucontext_t* context)
-{ return (void**)ucontext_getreg(context, MIPS_REG_FP); }
+{ return (void**)(uintptr_t)ucontext_getreg(context, MIPS_REG_FP); }
 
 
 //***************************************************************************
@@ -194,6 +201,50 @@ computeNext_FPFrame(void** * nxt_sp, void** * nxt_fp,
 
 
 //***************************************************************************
+
+static inline bool
+isPossibleSignalTrampoline(void* ra, void** sp)
+{
+  return (unw_stack_bottom() > (void**)ra && (void**)ra > sp);
+}
+
+
+static inline bool
+isSignalTrampoline(void* addr)
+{
+  // Signal trampolines for MIPS n64 and n32 (respectively):
+  // addr:  li      v0,5211  |  addr: li      v0,6211
+  //        syscall          |        syscall
+
+#define MIPS_SIGTRAMP_LI_VO_N64 (0x24020000 + 5000 + 211)
+#define MIPS_SIGTRAMP_LI_VO_N32 (0x24020000 + 6000 + 211)
+
+  uint32_t* insn1 = (uint32_t*)addr;
+  uint32_t* insn2 = insn1 + 1;
+
+  return ( (*insn1 == MIPS_SIGTRAMP_LI_VO_N64 || 
+	    *insn1 == MIPS_SIGTRAMP_LI_VO_N32)
+	   && (*insn2 == MIPS_OP_SYSCALL) );
+}
+
+
+static inline ucontext_t*
+getSignalContextFromTrampline(void* sigtramp)
+{
+  // Signal context is a fixed distance from first instruction in the
+  // signal trampoline
+#define MIPS_SIGFRAME_CODE_OFST         (4 * 4)
+#define MIPS_SIGFRAME_SIGCONTEXT_OFST   (6 * 4)
+#define MIPS_RTSIGFRAME_SIGINFO_SZ      128
+
+  int ofst = - MIPS_SIGFRAME_CODE_OFST + (MIPS_SIGFRAME_SIGCONTEXT_OFST
+					  + MIPS_RTSIGFRAME_SIGINFO_SZ);
+  ucontext_t* ctxt = (ucontext_t*)getPtrFromPtr(sigtramp, ofst);
+  return ctxt;
+}
+
+
+//***************************************************************************
 // interface functions
 //***************************************************************************
 
@@ -231,12 +282,13 @@ unw_init_cursor(void* context, unw_cursor_t* cursor)
   cursor->sp = ucontext_sp(ctxt);
   cursor->bp = ucontext_fp(ctxt);
 
-  UNW_INTERVAL_t intvl = demand_interval(cursor->pc);
+  UNW_INTERVAL_t intvl = demand_interval(cursor->pc, true/*isTopFrame*/);
   cursor->intvl = CASTTO_UNW_CURSOR_INTERVAL_t(intvl);
 
   if (!UI_IS_NULL(intvl)) {
     if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg)) {
-      cursor->ra = (void*)ucontext_getreg(context, UI_FLD(intvl,ra_arg));
+      cursor->ra = 
+	(void*)(uintptr_t)ucontext_getreg(context, UI_FLD(intvl,ra_arg));
     }
     if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_FPInV0)) {
       // FIXME: it would be nice to preserve the parent FP
@@ -262,6 +314,7 @@ unw_step(unw_cursor_t* cursor)
   void*  nxt_pc = pc_NULL;
   void** nxt_sp = NULL;
   void** nxt_fp = NULL;
+  void*  nxt_ra = NULL; // always NULL unless we go through a signal handler
   UNW_INTERVAL_t nxt_intvl = UNW_INTERVAL_NULL;
 
   if (UI_IS_NULL(intvl)) {
@@ -290,6 +343,7 @@ unw_step(unw_cursor_t* cursor)
   //-----------------------------------------------------------
   if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg)) {
     // RA should be in a register only on the first call to unw_step()
+    // (or the first call after going through a signal trampoline)
     nxt_pc = cursor->ra;
   }
   else if (UI_FLD(intvl,ty) == FrmTy_SP) {
@@ -305,12 +359,14 @@ unw_step(unw_cursor_t* cursor)
   }
   // INVARIANT: nxt_pc has been overwritten or is pc_NULL
 
+#if 0
   if (nxt_pc == NULL) {
     // Allegedly, MIPS API promises NULL RA for outermost frame
     // NOTE: we are already past the last valid PC
     TMSG(UNW, "stop: pc=%p", nxt_pc);
     return STEP_STOP;
   }
+#endif
 
   //-----------------------------------------------------------
   // compute SP (stack pointer) and FP (frame pointer) for the caller's frame.
@@ -331,24 +387,39 @@ unw_step(unw_cursor_t* cursor)
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------  
 
-  bool didTroll = false;
-  if (nxt_pc != pc_NULL) {
-    nxt_intvl = demand_interval(getNxtPCFromRA(nxt_pc));
+  // check for a signal handling trampoline
+  bool isTopFrame = false;
+  if (isPossibleSignalTrampoline(nxt_pc, sp) // nxt_pc is relative to sp
+      && isSignalTrampoline(nxt_pc)) {
+    ucontext_t* ctxt = getSignalContextFromTrampline(nxt_pc);
+    nxt_pc = ucontext_pc(ctxt);
+    nxt_ra = ucontext_ra(ctxt);
+    nxt_sp = ucontext_sp(ctxt);
+    nxt_fp = ucontext_fp(ctxt);
+    isTopFrame = true;
+    TMSG(UNW, "signal tramp context: pc=%p, sp=%p, fp=%p", 
+	 nxt_pc, nxt_sp, nxt_fp);
   }
 
+  // try to obtain interval
+  if (nxt_pc != pc_NULL) {
+    nxt_intvl = demand_interval(getNxtPCFromRA(nxt_pc), isTopFrame);
+  }
+
+  // if nxt_pc is invalid for some reason, try trolling
+  bool didTroll = false;
   if (UI_IS_NULL(nxt_intvl)) {
-    // nxt_pc is invalid for some reason... try trolling
     TMSG(UNW, "troll: bad pc=%p; cur sp=%p, fp=%p...", nxt_pc, sp, fp);
 
-    uint troll_pc_ofst;
-    uint ret = stack_troll(sp, &troll_pc_ofst);
-    if (!ret) {
+    unsigned int troll_pc_ofst;
+    int ret = stack_troll(sp, &troll_pc_ofst);
+    if (ret != 0) {
       TMSG(UNW, "error: troll failed");
       return STEP_ERROR;
     }
     void** troll_sp = (void**)getPtrFromPtr(sp, troll_pc_ofst);
     
-    nxt_intvl = demand_interval(getNxtPCFromRA(*troll_sp));
+    nxt_intvl = demand_interval(getNxtPCFromRA(*troll_sp), isTopFrame);
     if (UI_IS_NULL(nxt_intvl)) {
       TMSG(UNW, "error: troll_pc=%p failed", *troll_sp);
       return STEP_ERROR;
@@ -395,9 +466,9 @@ unw_step(unw_cursor_t* cursor)
   if (MYDBG) { ui_dump(UI_ARG(nxt_intvl), 1); }
 
   cursor->pc = nxt_pc;
+  cursor->ra = nxt_ra;
   cursor->sp = nxt_sp;
   cursor->bp = nxt_fp;
-  cursor->ra = NULL; // always NULL after unw_step() completes
   cursor->intvl = CASTTO_UNW_CURSOR_INTERVAL_t(nxt_intvl);
 
   return (didTroll) ? STEP_TROLL : STEP_OK;

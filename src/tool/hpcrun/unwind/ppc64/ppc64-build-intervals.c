@@ -50,6 +50,27 @@
  *	ra relative to bp, BP_SAVED, BP_FRAME
  *****************************************************************************/
 
+/*
+  Typical PPC frames:
+  
+  // stwu: store with update:
+  //       push the stack pointer (r1) and then update the stack pointer
+  // mflr: move from LR (and store into r0)
+  // stw: store word: Push LR (which contains the return address)
+  stwu r1, -32(r1)
+  mflr r0
+  stw  r0, 36(r1)
+
+  // ... do some stuff ...
+
+  // Pop LR
+  // mtlr: move to LR (from r0)
+  // blr: return!
+  lwz r0, 36(r1)
+  mtlr r0
+  blr
+*/
+
 
 /******************************************************************************
  * interface operations 

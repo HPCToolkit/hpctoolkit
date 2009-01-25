@@ -48,8 +48,8 @@
 #if (HPC_UNW_MSG)
 #  include "pmsg.h"
 #else
-#  define TMSG(x) /*remove*/
-#  define EMSG(x) /*remove*/
+#  define TMSG(x, ...) /*remove*/
+#  define EMSG(x, ...) /*remove*/
 #endif
 
 

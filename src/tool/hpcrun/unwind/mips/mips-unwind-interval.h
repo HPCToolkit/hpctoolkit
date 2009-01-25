@@ -224,7 +224,7 @@ void ui_link(unw_interval_t* current, unw_interval_t* next);
 
 // given a PC, return the interval for it
 UNW_INTERVAL_t
-demand_interval(void* pc);
+demand_interval(void* pc, bool isTopFrame);
 
 
 #if (!HPC_UNW_LITE)
