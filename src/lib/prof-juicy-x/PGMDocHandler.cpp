@@ -330,7 +330,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
 
     //m_curProc = Struct::Proc::demand(m_curFile, procnm, line);
 
-    m_curProc = m_curFile->FindProc(name);
+    m_curProc = m_curFile->findProc(name);
     if (m_curProc) {
       // STRUCTURE files usually have qualifying VMA information.
       // Assume that VMA information fully qualifies procedures.
@@ -659,7 +659,7 @@ PGMDocHandler::ProcessGroupDocEndTag()
       Struct::ANode* curNode = entry->GetScope();
       Struct::ANode* shadowNode = entry->GetShadow();
       if (!shadowNode) {
-	shadowNode = curNode->Clone();
+	shadowNode = curNode->clone();
 	shadowNode->Link(parentNode);
 	entry->SetShadow(shadowNode);
       }

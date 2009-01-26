@@ -274,9 +274,9 @@ LM::Ctor(const char* nm, ANode* parent)
   DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGROUP), "");
 
   m_name = nm;
-  fileMap = new FileMap();
-  procMap = NULL;
-  stmtMap = NULL;
+  m_fileMap = new FileMap();
+  m_procMap = NULL;
+  m_stmtMap = NULL;
 
   AncRoot()->AddToLoadModMap(this);
 }
@@ -288,9 +288,9 @@ LM::operator=(const LM& x)
   // shallow copy
   if (&x != this) {
     m_name     = x.m_name;
-    fileMap  = NULL;
-    procMap  = NULL;
-    stmtMap  = NULL;
+    m_fileMap  = NULL;
+    m_procMap  = NULL;
+    m_stmtMap  = NULL;
   }
   return *this;
 }
@@ -310,16 +310,15 @@ LM::demand(Root* pgm, const string& lm_nm)
 RealPathMgr& File::s_realpathMgr = RealPathMgr::singleton();
 
 void
-File::Ctor(const char* fname, bool isReadable, ANode* parent)
+File::Ctor(const char* fname, ANode* parent)
 {
-  DIAG_Assert(fname, "");
   ANodeTy t = (parent) ? parent->type() : TyANY;
   DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGROUP) || (t == TyLM), "");
 
-  srcIsReadable = isReadable;
-  m_name = fname;
+  m_name = (fname) ? fname : "";
+  m_procMap = new ProcMap();
+
   AncLM()->AddToFileMap(this);
-  procMap = new ProcMap();
 }
 
 
@@ -328,9 +327,8 @@ File::operator=(const File& x)
 {
   // shallow copy
   if (&x != this) {
-    srcIsReadable = x.srcIsReadable;
-    m_name          = x.m_name;
-    procMap       = NULL;
+    m_name    = x.m_name;
+    m_procMap = NULL;
   }
   return *this;
 }
@@ -344,11 +342,10 @@ File::demand(LM* lm, const string& filenm)
   string nm_real = filenm;
   File::s_realpathMgr.realpath(nm_real);
 
-  File* file = lm->FindFile(nm_real);
+  File* file = lm->findFile(nm_real);
   if (!file) {
     note = "(created)";
-    bool isReadable = FileUtil::isReadable(nm_real.c_str());
-    file = new File(nm_real, isReadable, lm);
+    file = new File(nm_real, lm);
   }
   DIAG_DevMsgIf(DBG_FILE, "Struct::File::demand: " << note << endl 
 		<< "\tin : " << filenm << endl
@@ -367,7 +364,7 @@ Proc::Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym)
   m_name = (n) ? n : "";
   m_linkname = (ln) ? ln : "";
   m_hasSym = hasSym;
-  stmtMap = new StmtMap();
+  m_stmtMap = new StmtMap();
   if (parent) {
     Relocate();
   }
@@ -387,7 +384,7 @@ Proc::operator=(const Proc& x)
     m_name     = x.m_name;
     m_linkname = x.m_linkname;
     m_hasSym   = x.m_hasSym;
-    stmtMap    = new StmtMap();
+    m_stmtMap  = new StmtMap();
   }
   return *this;
 }
@@ -397,7 +394,7 @@ Proc*
 Proc::demand(File* file, const string& procnm, SrcFile::ln line)
 {
   // NOTE: The Proc is always created as non-symbolic...
-  Proc* proc = file->FindProc(procnm);
+  Proc* proc = file->findProc(procnm);
   if (!proc) {
     proc = new Proc(procnm, file, procnm, false, line, line);
   }
@@ -842,7 +839,7 @@ LM::AddToFileMap(File* f)
   s_realpathMgr.realpath(nm_real);
   DIAG_DevMsg(2, "LM: mapping file name '" << nm_real << "' to File* " << f);
   std::pair<FileMap::iterator, bool> ret = 
-    fileMap->insert(std::make_pair(nm_real, f));
+    m_fileMap->insert(std::make_pair(nm_real, f));
   DIAG_Assert(ret.second, "Duplicate instance: " << f->name() << "\n" << toStringXML());
 }
 
@@ -852,25 +849,25 @@ File::AddToProcMap(Proc* p)
 {
   DIAG_DevMsg(2, "File (" << this << "): mapping proc name '" << p->name()
 	      << "' to Proc* " << p);
-  procMap->insert(make_pair(p->name(), p)); // multimap
+  m_procMap->insert(make_pair(p->name(), p)); // multimap
 } 
 
 
 void 
 Proc::AddToStmtMap(Stmt* stmt)
 {
-  // FIXME: multiple statments may map to same line with inlining
-  (*stmtMap)[stmt->begLine()] = stmt;
+  // FIXME: confusion between native and alien statements
+  (*m_stmtMap)[stmt->begLine()] = stmt;
 }
 
 
 File*
-LM::FindFile(const char* nm) const
+LM::findFile(const char* nm) const
 {
   string nm_real = nm;
   s_realpathMgr.realpath(nm_real);
-  FileMap::iterator it = fileMap->find(nm_real);
-  File* x = (it != fileMap->end()) ? it->second : NULL;
+  FileMap::iterator it = m_fileMap->find(nm_real);
+  File* x = (it != m_fileMap->end()) ? it->second : NULL;
   return x;
 }
 
@@ -878,11 +875,11 @@ LM::FindFile(const char* nm) const
 ACodeNode*
 LM::findByVMA(VMA vma)
 {
-  if (!procMap) {
-    buildMap(procMap, ANode::TyPROC);
+  if (!m_procMap) {
+    buildMap(m_procMap, ANode::TyPROC);
   }
-  if (!stmtMap) {
-    buildMap(stmtMap, ANode::TySTMT);
+  if (!m_stmtMap) {
+    buildMap(m_stmtMap, ANode::TySTMT);
   }
   
   // Attempt to find StatementRange and then Proc
@@ -940,7 +937,7 @@ LM::verifyMap(VMAIntervalMap<T>* m, const char* map_nm)
 bool 
 LM::verifyStmtMap() const
 { 
-  if (!stmtMap) {
+  if (!m_stmtMap) {
     VMAToStmtRangeMap* mp;
     buildMap(mp, ANode::TySTMT);
     verifyMap(mp, "stmtMap"); 
@@ -948,20 +945,20 @@ LM::verifyStmtMap() const
     return true; 
  }
   else {
-    return verifyMap(stmtMap, "stmtMap"); 
+    return verifyMap(m_stmtMap, "stmtMap"); 
   }
 }
 
 
 Proc*
-File::FindProc(const char* nm, const char* lnm) const
+File::findProc(const char* nm, const char* lnm) const
 {
   Proc* found = NULL;
 
-  ProcMap::const_iterator it = procMap->find(nm);
-  if (it != procMap->end()) {
+  ProcMap::const_iterator it = m_procMap->find(nm);
+  if (it != m_procMap->end()) {
     if (lnm && lnm != '\0') {
-      for ( ; (it != procMap->end() && it->first == nm); ++it) {
+      for ( ; (it != m_procMap->end() && it->first == nm); ++it) {
 	Proc* p = it->second;
 	if (p->LinkName() == lnm) {
 	  return p; // found = p
@@ -1877,8 +1874,8 @@ LM::dumpmaps() const
   ostream& os = std::cerr;
   
   os << "Procedure map\n";
-  for (VMAToProcMap::const_iterator it = procMap->begin(); 
-       it != procMap->end(); ++it) {
+  for (VMAToProcMap::const_iterator it = m_procMap->begin(); 
+       it != m_procMap->end(); ++it) {
     it->first.dump(os);
     os << " --> " << hex << "Ox" << it->second << dec << endl;
   }
@@ -1886,8 +1883,8 @@ LM::dumpmaps() const
   os << endl;
 
   os << "Statement map\n";
-  for (VMAToStmtRangeMap::const_iterator it = stmtMap->begin(); 
-       it != stmtMap->end(); ++it) {
+  for (VMAToStmtRangeMap::const_iterator it = m_stmtMap->begin(); 
+       it != m_stmtMap->end(); ++it) {
     it->first.dump(os);
     os << " --> " << hex << "Ox" << it->second << dec << endl;
   }

@@ -507,7 +507,7 @@ demandProcNode(Struct::File* fStrct, binutils::Proc* p)
   }
   
   // Create or find the scope.  Fuse procedures if names match.
-  Struct::Proc* pStrct = fStrct->FindProc(procNm, procLnNm);
+  Struct::Proc* pStrct = fStrct->findProc(procNm, procLnNm);
   if (!pStrct) {
     pStrct = new Struct::Proc(procNm, fStrct, procLnNm, p->hasSymbolic(),
 			      begLn, endLn);
