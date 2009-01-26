@@ -21,8 +21,6 @@
 #include "thread_use.h"
 #include "tokenize.h"
 
-// FIXME: use tbl below to count # flags
-
 static FILE *log_file;
 static spinlock_t pmsg_lock = SPINLOCK_UNLOCKED;
 
