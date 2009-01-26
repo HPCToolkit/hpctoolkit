@@ -21,23 +21,26 @@
 #include "pmsg.h"
 #include "stack_troll.h"
 #include "fnbounds_interface.h"
+#include "validate_return_addr.h"
+#include "unwind_cursor.h"
 
-uint stack_troll(void **start_sp, uint *ra_pos)
+int
+stack_troll(void **start_sp, uint *ra_pos, unw_cursor_t *cursor)
 {
   void **sp = start_sp;
 
   for (int i = 0; i < TROLL_LIMIT; i++) {
-    void *beg, *end;
-    if (!fnbounds_enclosing_addr(*sp, &beg, &end)) {
-      TMSG(TROLL,"(sp=%p): found valid address %p at sp=%p", 
-	   start_sp, *sp, sp);
+    // void *beg, *end;
+    if (validate_return_addr(*sp,cursor)){
+      PMSG_LIMIT(TMSG(TROLL,"(sp=%p): found valid address %p at sp=%p", \
+                      start_sp, *sp, sp));
       *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
       return 1;
     }
     sp++;
   }
   
-  TMSG(TROLL,"(sp=%p): failed using limit %d", start_sp, TROLL_LIMIT);
+  PMSG_LIMIT(TMSG(TROLL,"(sp=%p): failed using limit %d", start_sp, TROLL_LIMIT));
   *ra_pos = -1;
   return 0;
 }

@@ -7,7 +7,8 @@
 extern "C" {
 #endif
 
-uint stack_troll(void **start_sp, uint *ra_pos);
+#include "unwind_cursor.h"
+  int stack_troll(void **start_sp, uint *ra_pos,unw_cursor_t *cursor);
 
 #ifdef __cplusplus
 }

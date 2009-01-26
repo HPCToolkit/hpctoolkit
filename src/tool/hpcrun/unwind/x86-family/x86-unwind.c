@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <setjmp.h>
+#include <stdbool.h>
 
 // for getpid
 #include <sys/types.h>
@@ -25,6 +26,7 @@
 
 #include "thread_data.h"
 #include "x86-unwind-interval.h"
+#include "validate_return_addr.h"
 
 /****************************************************************************************
  * global data 
@@ -414,7 +416,7 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 {
   unsigned int tmp_ra_offset;
 
-  int ret = stack_troll(cursor->sp, &tmp_ra_offset);
+  int ret = stack_troll(cursor->sp, &tmp_ra_offset,cursor);
   if (ret == 0) {
     void  **next_sp = ((void **)((unsigned long) cursor->sp + tmp_ra_offset));
     void *next_pc = *next_sp;
@@ -447,6 +449,21 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
   drop_sample();
 }
 
+// XED_ICLASS_CALL_FAR XED_ICLASS_CALL_NEAR:
+
+#include "validate_return_addr.h"
+#include "fnbounds_interface.h"
+
+bool
+validate_return_addr(void *addr,unw_cursor_t *cursor)
+{
+  void *beg,*end;
+  
+  if (fnbounds_enclosing_addr(addr, &beg, &end)){
+    return (addr >= beg);
+  }
+  return false;
+}
 
 static int 
 csprof_check_fence(void *ip)
