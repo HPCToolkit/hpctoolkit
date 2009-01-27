@@ -457,12 +457,9 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 bool
 validate_return_addr(void *addr,unw_cursor_t *cursor)
 {
-  void *beg,*end;
-  
-  if (fnbounds_enclosing_addr(addr, &beg, &end)){
-    return (addr >= beg);
-  }
-  return false;
+  void *beg = NULL, *end = NULL;
+  int ret = fnbounds_enclosing_addr(addr, &beg, &end);
+  return (ret == 0) && beg;
 }
 
 static int 

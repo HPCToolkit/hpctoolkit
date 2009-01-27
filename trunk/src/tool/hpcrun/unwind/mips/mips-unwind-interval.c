@@ -684,7 +684,7 @@ mips_find_proc(void* pc, void* module_beg)
   // If we are within a valid text segment and if this is not the
   // first stack frame, we assume the following about the procedure
   // that pc is contained within:
-  // - it is (almost certainly) not a frameless procedure
+  // - it is extremely likely to have a frame (i.e., not frameless)
   // - all prologue code has been executed (since pc should be a
   //   return address)
   // 
