@@ -83,7 +83,7 @@ Analysis::Util::getProfileType(const std::string& filenm)
   // bytes and test for the magic cookie.
   
   // FIXME: not yet abstracted since csprof is still a mess
-  static const string CALLPATH_SFX = ".csp";
+  static const string CALLPATH_SFX = ".hpcrun";
   
   if (filenm.length() > CALLPATH_SFX.length()) {
     uint begpos = filenm.length() - CALLPATH_SFX.length();
@@ -93,15 +93,15 @@ Analysis::Util::getProfileType(const std::string& filenm)
   }
 
 #if 0
-  // version 1
+  // C++
+  std::ifstream in(fname);
+  in.read(char* buf, streamsize n);
+
+  // C:
   char* buf = new char[32+1];
   int bytesRead = ::fread(f, buf, sizeof(char), 32);
 
-  // version 2
-  std::ifstream in(fname);
-  in.get()...
-
-  // version 3
+  // Overloaded C++
   std::ifstream in(fname);
   std::istreambuf_iterator<char> i(in);
   std::istreambuf_iterator<char> eos;
