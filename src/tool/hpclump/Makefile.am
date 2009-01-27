@@ -83,7 +83,9 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS = hpclump
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
+
+pkglibexec_PROGRAMS = hpclump
 
 hpclump_SOURCES  = $(MYSOURCES)
 hpclump_CFLAGS   = $(MYCFLAGS)
