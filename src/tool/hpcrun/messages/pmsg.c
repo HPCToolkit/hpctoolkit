@@ -34,10 +34,74 @@ static char *dbg_tbl[] = {
 
 static char *__csprof_noisy_msgs = NULL;
 
+typedef struct flag_list_t {
+  int n_entries;
+  pmsg_category *entries;
+} flag_list_t;
+
+static pmsg_category all_list_entries [] = {
+#define E(s) DBG_PREFIX(s)
+ E(INIT),
+ E(FINI),
+ E(FIND),
+ E(INTV),
+ E(ITIMER_HANDLER),
+ E(ITIMER_CTL),
+ E(UNW),
+ E(SPLAY),
+ E(INTV2),
+ E(TROLL),
+ E(UNW_INIT),
+ E(BASIC_INIT),
+ E(SAMPLE),
+ E(SWIZZLE),
+ E(FINALIZE),
+ E(DATA_WRITE),
+ E(PAPI),
+ E(PAPI_SAMPLE),
+ E(PAPI_EVENT_NAME),
+ E(DBG),
+ E(THREAD),
+ E(PROCESS),
+ E(EPOCH),
+ E(HANDLING_SAMPLE),
+ E(MEM),
+ E(MEM2),
+ E(SAMPLE_FILTER),
+ E(THREAD_SPECIFIC),
+ E(DL_BOUND),
+ E(ADD_MODULE_BASE),
+ E(DL_ADD_MODULE),
+ E(OPTIONS),
+ E(PRE_FORK),
+ E(POST_FORK),
+ E(EVENTS),
+ E(SYSTEM_SERVER),
+ E(SYSTEM_COMMAND),
+ E(AS_add_source),
+ E(AS_started),
+ E(AS_MAP),
+ E(SS_COMMON),
+ E(METRICS),
+ E(UNW_CONFIG),
+ E(UNW_STRATEGY),
+ E(BACKTRACE),
+ E(SUSPENDED_SAMPLE),
+ E(MMAP),
+ E(MALLOC),
+ E(CSP_MALLOC),
+ E(MEM__ALLOC)
+};
+
+static flag_list_t all_list = {
+  .n_entries = sizeof(all_list_entries)/sizeof(all_list_entries[0]),
+  .entries   = all_list_entries
+};
 
 #define N_DBG_CATEGORIES sizeof(dbg_tbl)/sizeof(dbg_tbl[0])
 static int dbg_flags[N_DBG_CATEGORIES];
 
+#if 0
 static char *ctl_tbl[] = {
 # undef D
 # define D(s) #s
@@ -47,6 +111,7 @@ static char *ctl_tbl[] = {
 
 #define N_CTL_CATEGORIES sizeof(ctl_tbl)/sizeof(ctl_tbl[0])
 static int ctl_flags[N_CTL_CATEGORIES];
+#endif
 
 void
 dbg_set_flag(pmsg_category flag,int val)
@@ -61,8 +126,7 @@ dbg_get_flag(pmsg_category flag)
 }
 
 static int defaults[] = {
-  DBG_PREFIX(TROLL),
-  DBG_PREFIX(UNW_CONFIG)
+  DBG_PREFIX(TROLL)
 };
 #define NDEFAULTS (sizeof(defaults)/sizeof(defaults[0]))
 
@@ -75,10 +139,10 @@ flag_fill(int v)
 }
 
 static void
-ctl_flag_fill(int v)
+selected_flag_fill(flag_list_t *flag_list,int v)
 {
-  for(int i=0; i < N_CTL_CATEGORIES; i++){
-    ctl_flags[i] = v;
+  for (int i=0; i < flag_list->n_entries; i++){
+    dbg_flags[flag_list->entries[i]] = v;
   }
 }
 
@@ -99,7 +163,7 @@ csprof_dbg_init(char *in)
   if (__csprof_noisy_msgs) csprof_emsg("dd input string f init = %s",in);
   for (char *f=start_tok(in); more_tok(); f=next_tok()){
     if (strcmp(f,"ALL") == 0){
-      flag_fill(1);
+      selected_flag_fill(&all_list,1);
       return;
     }
     if (__csprof_noisy_msgs) csprof_emsg("checking dd token %s",f);
@@ -110,6 +174,15 @@ csprof_dbg_init(char *in)
     } else {
       fprintf(stderr,"WARNING: dbg flag %s not recognized\n",f);
     }
+  }
+}
+
+#if 0
+static void
+ctl_flag_fill(int v)
+{
+  for(int i=0; i < N_CTL_CATEGORIES; i++){
+    ctl_flags[i] = v;
   }
 }
 
@@ -127,6 +200,15 @@ csprof_ctl_init(char *in)
       fprintf(stderr,"WARNING: ctl flag %s not recognized\n",f);
     }
   }
+}
+
+#endif
+
+// interface to the debug ctl flags
+int
+csprof_dbg(dbg_category flag)
+{
+  return dbg_flags[flag];
 }
 
 static void
@@ -166,12 +248,13 @@ pmsg_init()
   if(s){
     csprof_dbg_init(s);
   }
+#if 0
   ctl_flag_fill(0);
   s = getenv("CSPROF_DC");
   if (s){
     csprof_ctl_init(s);
   }
-
+#endif
   spinlock_unlock(&pmsg_lock);
 
   if (__csprof_noisy_msgs){
@@ -323,14 +406,6 @@ csprof_amsg(const char *fmt,...)
   va_start(args,fmt);
   _nmsg(fmt,args);
 }
-
-// interface to the debug ctl flags
-int
-csprof_ctl(ctl_category flag)
-{
-  return ctl_flags[flag];
-}
-
 
 int
 csprof_logfile_fd(void)
