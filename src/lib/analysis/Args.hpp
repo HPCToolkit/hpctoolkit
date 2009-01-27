@@ -134,7 +134,11 @@ public:
 
 #define Analysis_OUT_DB_EXPERIMENT "experiment.xml"
 #define Analysis_OUT_DB_CSV        "experiment.csv"
-#define Analysis_DB_DIR            "experiment-db"
+
+#define Analysis_DB_DIR_pfx        "hpctoolkit"
+#define Analysis_DB_DIR_nm         "database"
+#define Analysis_DB_DIR            "hpctoolkit-<app>-database"
+
 
   std::string out_db_experiment; // disable: "", stdout: "-"
   std::string out_db_csv;        // disable: "", stdout: "-"
