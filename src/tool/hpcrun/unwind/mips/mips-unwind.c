@@ -33,6 +33,7 @@
 
 #include "unwind.h"
 #include "stack_troll.h"
+#include "validate_return_addr.h"
 
 #include "mips-unwind-cfg.h"
 #include "mips-unwind-interval.h"
@@ -245,6 +246,20 @@ getSignalContextFromTrampline(void* sigtramp)
 
 
 //***************************************************************************
+
+static inline bool
+isAfterCall(void* addr)
+{
+  uint32_t* ra = (uint32_t*)addr;
+  uint32_t insn = *(ra - 1/*delay slot*/ - 1/*potential call*/);
+
+  // jalr rs [rd = 31 [RA] is implied]
+  uint32_t op_spc = (insn & MIPS_OPClass_Special_MASK);
+  return (op_spc == MIPS_OP_JALR && (MIPS_OPND_REG_D(insn) == MIPS_REG_RA));
+}
+
+
+//***************************************************************************
 // interface functions
 //***************************************************************************
 
@@ -288,7 +303,7 @@ unw_init_cursor(void* context, unw_cursor_t* cursor)
   if (!UI_IS_NULL(intvl)) {
     if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg)) {
       cursor->ra = 
-	(void*)(uintptr_t)ucontext_getreg(context, UI_FLD(intvl,ra_arg));
+	(void*)(uintptr_t)ucontext_getreg(context, UI_FLD(intvl, ra_arg));
     }
     if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_FPInV0)) {
       // FIXME: it would be nice to preserve the parent FP
@@ -389,7 +404,7 @@ unw_step(unw_cursor_t* cursor)
 
   // check for a signal handling trampoline
   bool isTopFrame = false;
-  if (isPossibleSignalTrampoline(nxt_pc, sp) // nxt_pc is relative to sp
+  if (isPossibleSignalTrampoline(nxt_pc, nxt_sp)
       && isSignalTrampoline(nxt_pc)) {
     ucontext_t* ctxt = getSignalContextFromTrampline(nxt_pc);
     nxt_pc = ucontext_pc(ctxt);
@@ -412,14 +427,14 @@ unw_step(unw_cursor_t* cursor)
     TMSG(UNW, "troll: bad pc=%p; cur sp=%p, fp=%p...", nxt_pc, sp, fp);
 
     unsigned int troll_pc_ofst;
-    int ret = stack_troll(sp, &troll_pc_ofst);
+    int ret = stack_troll(sp, &troll_pc_ofst, cursor);
     if (ret != 0) {
       TMSG(UNW, "error: troll failed");
       return STEP_ERROR;
     }
     void** troll_sp = (void**)getPtrFromPtr(sp, troll_pc_ofst);
     
-    nxt_intvl = demand_interval(getNxtPCFromRA(*troll_sp), isTopFrame);
+    nxt_intvl = demand_interval(getNxtPCFromRA(*troll_sp), false/*topFrame*/);
     if (UI_IS_NULL(nxt_intvl)) {
       TMSG(UNW, "error: troll_pc=%p failed", *troll_sp);
       return STEP_ERROR;
@@ -474,3 +489,21 @@ unw_step(unw_cursor_t* cursor)
   return (didTroll) ? STEP_TROLL : STEP_OK;
 }
 
+
+bool
+validate_return_addr(void* addr, unw_cursor_t* cursor)
+{
+  void *proc_beg = NULL, *proc_end = NULL;
+  bool isValid = false;
+
+#if (HPC_UNW_LITE)
+  void* mod_beg = NULL;
+  dylib_find_proc(addr, &proc_beg, &mod_beg);
+  isValid = (mod_beg || proc_beg);
+#else
+  int ret = fnbounds_enclosing_addr(addr, &proc_beg, &proc_end);
+  isValid = (ret == 0) && proc_beg;
+#endif
+
+  return isValid && isAfterCall(addr);
+}

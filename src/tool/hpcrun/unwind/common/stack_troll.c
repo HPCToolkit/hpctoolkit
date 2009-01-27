@@ -30,17 +30,16 @@ stack_troll(void **start_sp, uint *ra_pos, unw_cursor_t *cursor)
   void **sp = start_sp;
 
   for (int i = 0; i < TROLL_LIMIT; i++) {
-    // void *beg, *end;
     if (validate_return_addr(*sp,cursor)){
       PMSG_LIMIT(TMSG(TROLL,"(sp=%p): found valid address %p at sp=%p", \
                       start_sp, *sp, sp));
       *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
-      return 1;
+      return 0; // success
     }
     sp++;
   }
   
   PMSG_LIMIT(TMSG(TROLL,"(sp=%p): failed using limit %d", start_sp, TROLL_LIMIT));
   *ra_pos = -1;
-  return 0;
+  return 1; // error
 }
