@@ -249,6 +249,13 @@ then
     test -f "$appl_out" || die "compile #1 failed: $command $@"
 fi
 
+# Require the output to be statically-linked.
+if file "$appl_out" | grep -i static >/dev/null ; then :
+else
+    mv -f "$appl_out" "${appl_out}.failed"
+    die "program not statically-linked (maybe forgot -static): $appl_out"
+fi
+
 #
 # Step 4 -- Link with real nm file.
 #
