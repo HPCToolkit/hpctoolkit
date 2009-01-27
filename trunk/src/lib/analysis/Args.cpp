@@ -90,7 +90,7 @@ Analysis::Args::Ctor()
 
   out_db_experiment = Analysis_OUT_DB_EXPERIMENT;
   out_db_csv        = "";
-  db_dir            = Analysis_DB_DIR;
+  db_dir            = Analysis_DB_DIR_pfx "-" Analysis_DB_DIR_nm;
   db_copySrcFiles   = true;
   out_db_config     = "";
 

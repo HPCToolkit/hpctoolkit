@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2009/01/23}
+\setDate{ 2009/01/26}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -128,7 +128,7 @@ Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to recover program structure a
 \end{verbatim}
 
 \item \textbf{Correlate call path or flat metrics with static source code structure}.
-Create an Experiment database using \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.  Assume the Experiment database is located in \File{experiment-db}.
+Create an Experiment database using \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.  Assume the Experiment database is located in \File{hpctoolkit-database}.
 \begin{verbatim}
   hpcprof -I 'path-to-zoo' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
@@ -140,7 +140,7 @@ or
 \item \textbf{Visualize}.
 Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}:
 \begin{verbatim}
-  hpcviewer experiment-db/experiment.xml
+  hpcviewer hpctoolkit-database
 \end{verbatim}
 Derived metrics may be computed on-the-fly with the viewer.
 
@@ -184,7 +184,7 @@ These steps create a template \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}
 \begin{itemize}
 \item \textbf{Create derived metrics}.  Add COMPUTE metrics to the \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} configuration file (named \File{config.xml}) generated during the initial run.  The \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} man page contains some examples. 
 
-\item \textbf{Correlate}. Rerun \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} to create a new Experiment database.  Assume that it is located in \File{experiment-db-1}
+\item \textbf{Correlate}. Rerun \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} to create a new Experiment database.  Assume that it is located in \File{hpctoolkit-database-1}
 \begin{verbatim}
   hpcprof-flat --config config.xml
 \end{verbatim}
@@ -192,7 +192,7 @@ These steps create a template \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}
 \item \textbf{Visualize}.
 Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}:
 \begin{verbatim}
-  hpcviewer experiment-db-1/experiment.xml
+  hpcviewer hpctoolkit-database-1/experiment.xml
 \end{verbatim}
 
 \end{itemize}

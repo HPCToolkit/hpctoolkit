@@ -300,11 +300,14 @@ Args::parse(int argc, const char* const argv[])
     }
     
     // Check for other options: Output options
+    bool isDbDirSet = false;
     if (parser.isOpt("output")) {
       db_dir = parser.getOptArg("output");
+      isDbDirSet = true;
     }
     if (parser.isOpt("db")) {
       db_dir = parser.getOptArg("db");
+      isDbDirSet = true;
     }
 
     // Check for required arguments
@@ -322,6 +325,29 @@ Args::parse(int argc, const char* const argv[])
     if (profileFiles.size() > 16 && !parser.isOpt("force")) {
       ARG_ERROR("Currently, hpcprof permits at most 16 profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.  We are working on solutions.");
     }
+
+    // TEMPORARY: parse first file name to determine name of database
+    if (!isDbDirSet) {
+      // hpctoolkit-<nm>-measurements[-xxx]/<nm>-000000-tid-hostid-pid.hpcrun
+      const string& fnm = profileFiles[0];
+      size_t pos1 = fnm.find("hpctoolkit-");
+      size_t pos2 = fnm.find("-measurements");
+      if (pos1 == 0 && pos2 != string::npos) {
+	size_t nm_beg = fnm.find_first_of('-') + 1; 
+	size_t nm_end = pos2 - 1;
+	string nm = fnm.substr(nm_beg, nm_end - nm_beg + 1);
+	
+	string id;
+	size_t id_beg = fnm.find_first_of('-', pos2 + 1);
+	size_t id_end = fnm.find_first_of('/', pos2 + 1);
+	if (id_end != string::npos && id_beg < id_end) {
+	  id = fnm.substr(id_beg, id_end - id_beg);
+	}
+	
+	db_dir = Analysis_DB_DIR_pfx "-" + nm + "-" Analysis_DB_DIR_nm + id;
+      }
+    }
+
   }
   catch (const CmdLineParser::ParseError& x) {
     ARG_ERROR(x.what());
