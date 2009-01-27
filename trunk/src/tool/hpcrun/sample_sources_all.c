@@ -92,7 +92,10 @@ _ASB(started)
 void
 csprof_sample_sources_from_eventlist(char *evl)
 {
-  if (evl == 0) return;
+  if (evl == 0){
+    csprof_abort("*** No sampling sources are specified --- aborting");
+    return;
+  }
 
   TMSG(EVENTS,"evl (before processing) = |%s|",evl);
 

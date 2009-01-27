@@ -68,6 +68,9 @@ monitor_init_process(int *argc, char **argv, void *data)
   NMSG(PROCESS,"init");
 
   csprof_init_internal();
+  if (ENABLED(TST)){
+    EEMSG("TST debug ctl is active!");
+  }
 
   return data;
 }

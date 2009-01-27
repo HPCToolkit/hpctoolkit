@@ -374,7 +374,7 @@ unw_step (unw_cursor_t *cursor)
   PMSG_LIMIT(TMSG(TROLL,"UNW STEP FAILURE : cursor pc = %p, cursor bp = %p, cursor sp = %p", pc, bp, sp));
   PMSG_LIMIT(TMSG(TROLL,"UNW STEP calls stack troll"));
 
-  IF_ENABLED(TROLL_WAIT) {
+  if (ENABLED(TROLL_WAIT)) {
     fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
             "Maybe call dbg_set_flag(DBG_TROLL_WAIT,0) after attached\n",getpid());
     
@@ -457,9 +457,8 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 bool
 validate_return_addr(void *addr,unw_cursor_t *cursor)
 {
-  void *beg = NULL, *end = NULL;
-  int ret = fnbounds_enclosing_addr(addr, &beg, &end);
-  return (ret == 0) && beg;
+  void *beg, *end;
+  return (! fnbounds_enclosing_addr(addr, &beg, &end));
 }
 
 static int 

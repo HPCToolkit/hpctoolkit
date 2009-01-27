@@ -661,7 +661,7 @@ fnbounds_tmpdir_get()
 static void 
 fnbounds_tmpdir_remove()
 {
-  IF_NOT_DISABLED(DL_BOUND_UNLINK){
+  if (! ENABLED (DL_BOUND_RETAIN_TMP)){
     unlink_tree(fnbounds_tmpdir);
   }
 }
