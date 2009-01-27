@@ -58,11 +58,16 @@ using std::dec;
 #include <string>
 using std::string;
 
+#include <cstring>
+
 //*************************** User Include Files ****************************
 
 #include "Util.hpp"
 
 #include <lib/banal/bloop-simple.hpp>
+
+#include <lib/prof-lean/hpcfile_csprof.h>
+#include <lib/prof-lean/hpcfile_hpcrun.h>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/pathfind.h>
@@ -79,37 +84,24 @@ using std::string;
 Analysis::Util::ProfType_t 
 Analysis::Util::getProfileType(const std::string& filenm)
 {
-  // FIXME: a better way of doing this would be to read the first 32
-  // bytes and test for the magic cookie.
+  static const int bufSZ = 32;
+  char buf[bufSZ] = { '\0' };
+
+  std::istream* is = IOUtil::OpenIStream(filenm.c_str());
+  is->read(buf, bufSZ);
+  IOUtil::CloseStream(is);
   
-  // FIXME: not yet abstracted since csprof is still a mess
-  static const string CALLPATH_SFX = ".hpcrun";
-  
-  if (filenm.length() > CALLPATH_SFX.length()) {
-    uint begpos = filenm.length() - CALLPATH_SFX.length();
-    if (filenm.find(CALLPATH_SFX, begpos) != string::npos) {
-      return ProfType_CALLPATH;
-    }
+  ProfType_t ty = ProfType_NULL;
+  if (strncmp(buf, HPCFILE_CSPROF_MAGIC_STR, 
+	      HPCFILE_CSPROF_MAGIC_STR_LEN) == 0) {
+    ty = ProfType_CALLPATH;      
+  }
+  else if (strncmp(buf, HPCRUNFILE_MAGIC_STR, 
+		   HPCRUNFILE_MAGIC_STR_LEN) == 0) {
+    ty = ProfType_FLAT;
   }
 
-#if 0
-  // C++
-  std::ifstream in(fname);
-  in.read(char* buf, streamsize n);
-
-  // C:
-  char* buf = new char[32+1];
-  int bytesRead = ::fread(f, buf, sizeof(char), 32);
-
-  // Overloaded C++
-  std::ifstream in(fname);
-  std::istreambuf_iterator<char> i(in);
-  std::istreambuf_iterator<char> eos;
-  std::vector<char> v(i, eos);
-  // or: string str(i, i+32);
-#endif
-  
-  return ProfType_FLAT;
+  return ty;
 }
 
 
