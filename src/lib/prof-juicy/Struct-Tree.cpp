@@ -232,6 +232,7 @@ Root::operator=(const Root& x)
 LM* 
 Root::findLM(const char* nm) const
 {
+  // FIXME: if the map is empty but we have children, we should construct it
   std::string nm_real = nm;
   s_realpathMgr.realpath(nm_real);
   LMMap::iterator it = lmMap->find(nm_real);
@@ -278,7 +279,10 @@ LM::Ctor(const char* nm, ANode* parent)
   m_procMap = NULL;
   m_stmtMap = NULL;
 
-  AncRoot()->AddToLoadModMap(this);
+  Root* root = AncRoot();
+  if (root) {
+    root->AddToLoadModMap(this);
+  }
 }
 
 
@@ -391,12 +395,13 @@ Proc::operator=(const Proc& x)
 
 
 Proc*
-Proc::demand(File* file, const string& procnm, SrcFile::ln line)
+Proc::demand(File* file, const string& nm, const std::string& lnm, 
+	     SrcFile::ln line)
 {
   // NOTE: The Proc is always created as non-symbolic...
-  Proc* proc = file->findProc(procnm);
+  Proc* proc = file->findProc(nm, lnm);
   if (!proc) {
-    proc = new Proc(procnm, file, procnm, false, line, line);
+    proc = new Proc(nm, file, lnm, false, line, line);
   }
   return proc;
 }

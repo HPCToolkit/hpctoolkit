@@ -60,15 +60,39 @@
 #include <lib/prof-juicy/Struct-Tree.hpp>
 #include <lib/binutils/LM.hpp>
 
-//*************************** Forward Declarations ***************************
+
+//***************************************************************************
+
+namespace banal {
+
+namespace bloop {
+
+
+class ProcNameMgr
+{
+public:
+  ProcNameMgr() { }
+  virtual ~ProcNameMgr() { }
+
+  virtual std::string 
+  canonicalize(const std::string& name) = 0;
+
+};
+
+
+} // namespace bloop
+
+} // namespace banal
+
+
+//***************************************************************************
 
 namespace banal {
 
 namespace bloop {
   
-  Prof::Struct::Tree* 
+  Prof::Struct::LM* 
   makeStructure(binutils::LM* lm, 
-		const char* canonicalPathList = "",
 		bool normalizeScopeTree = true,
 		bool unsafeNormalizations = true,
 		bool irreducibleIntervalIsLoop = false,
@@ -80,12 +104,10 @@ namespace bloop {
 
 
   bool 
-  normalize(Prof::Struct::Tree* pgmScopeTree, 
-	    bool unsafeNormalizations = true);
+  normalize(Prof::Struct::LM* lmStrct, bool unsafeNormalizations = true);
 
   void
-  writeStructure(std::ostream& os, 
-		 Prof::Struct::Tree* pgmScopeTree,
+  writeStructure(std::ostream& os, Prof::Struct::Tree* strctTree,
 		 bool prettyPrint = true);
 
 } // namespace bloop
