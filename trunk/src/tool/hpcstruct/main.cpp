@@ -123,14 +123,16 @@ real_main(int argc, char* argv[])
   // Build and print the ScopeTree
   // ------------------------------------------------------------
   { 
+    Prof::Struct::Root* rootStrct = new Prof::Struct::Root("");
+    Prof::Struct::Tree* strctTree = new Prof::Struct::Tree("", rootStrct);
+
     using namespace banal::bloop;
-    Prof::Struct::Tree* strctTree =
-      makeStructure(lm, args.canonicalPathList.c_str(),
-		    args.normalizeScopeTree, 
-		    args.unsafeNormalizations,
-		    args.irreducibleIntervalIsLoop,
-		    args.forwardSubstitutionOff,
-		    args.dbgProcGlob);
+    Prof::Struct::LM* lmStrct = makeStructure(lm, args.normalizeScopeTree, 
+					      args.unsafeNormalizations,
+					      args.irreducibleIntervalIsLoop,
+					      args.forwardSubstitutionOff,
+					      args.dbgProcGlob);
+    lmStrct->Link(rootStrct);
     
     const char* osnm = 
       (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();

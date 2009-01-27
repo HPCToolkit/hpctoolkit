@@ -1148,8 +1148,14 @@ public:
   { return new Proc(*this); }
 
   static Proc*
-  demand(File* file, const std::string& procnm, SrcFile::ln line = 0);
+  demand(File* file, const std::string& nm, const std::string& lnm,
+	 SrcFile::ln line = 0);
 
+  static Proc*
+  demand(File* file, const std::string& nm, SrcFile::ln line = 0)
+  { demand(file, nm, "", line); }
+
+  
 
   // --------------------------------------------------------
   // 

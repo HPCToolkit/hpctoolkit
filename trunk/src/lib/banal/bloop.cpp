@@ -180,24 +180,17 @@ namespace bloop {
 // ------------------------------------------------------------
 
 static bool 
-removeOrphanedProcedureRepository(Prof::Struct::Tree* strctTree);
-
-static bool 
-mergeBogusAlienStrct(Prof::Struct::Tree* strctTree);
+mergeBogusAlienStrct(Prof::Struct::LM* lmStrct);
 
 static bool
-coalesceDuplicateStmts(Prof::Struct::Tree* strctTree, 
-		       bool unsafeNormalizations);
+coalesceDuplicateStmts(Prof::Struct::LM* lmStrct, bool unsafeNormalizations);
 
 static bool 
-mergePerfectlyNestedLoops(Prof::Struct::Tree* strctTree);
+mergePerfectlyNestedLoops(Struct::ANode* node);
 
 static bool 
-removeEmptyNodes(Prof::Struct::Tree* strctTree);
+removeEmptyNodes(Struct::ANode* node);
 
-static bool 
-filterFilesFromStrctTree(Prof::Struct::Tree* strctTree, 
-			 const char* canonicalPathList);
   
 // ------------------------------------------------------------
 // Helpers for normalizing the structure tree
@@ -303,35 +296,25 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
 //   to 'clean up' the resulting scope tree.  Among other things, the
 //   normalizer employs heuristics to reverse certain compiler
 //   optimizations such as loop unrolling.
-
-// FIXME:: this should return Prof::Struct::LM*
-Prof::Struct::Tree*
+Prof::Struct::LM*
 banal::bloop::makeStructure(binutils::LM* lm, 
-			    const char* canonicalPathList, 
 			    bool normalizeScopeTree,
 			    bool unsafeNormalizations,
 			    bool irreducibleIntervalIsLoop,
 			    bool forwardSubstitutionOff,
 			    const std::string& dbgProcGlob)
 {
+  // Assume lm->Read() has been performed
   DIAG_Assert(lm, DIAG_UnexpectedInput);
-
-  Struct::Tree* strctTree = NULL;
-  Struct::Root* rootStrct = NULL;
 
   // FIXME (minor): relocate
   //OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm + lm->name();
 
-  // Assume lm->Read() has been performed
-  rootStrct = new Struct::Root("");
-  strctTree = new Struct::Tree("", rootStrct);
-
-  Struct::LM* lmStrct = new Struct::LM(lm->name(), rootStrct);
+  Struct::LM* lmStrct = new Struct::LM(lm->name(), NULL);
 
   // 1. Build Struct::File/Struct::Proc skeletal structure
   ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm);
   
-
   // 2. For each [Struct::Proc, binutils::Proc] pair, complete the build.
   // Note that a Struct::Proc may be associated with more than one
   // binutils::Proc.
@@ -347,17 +330,12 @@ banal::bloop::makeStructure(binutils::LM* lm,
   delete mp;
 
   // 3. Normalize
-  if (canonicalPathList && canonicalPathList[0] != '\0') {
-    bool result = filterFilesFromStrctTree(strctTree, canonicalPathList);
-    DIAG_Assert(result, "Path canonicalization result should never be false!");
-  }
-
   if (normalizeScopeTree) {
-    bool result = normalize(strctTree, unsafeNormalizations);
+    bool result = normalize(lmStrct, unsafeNormalizations);
     DIAG_Assert(result, "Normalization result should never be false!");
   }
 
-  return strctTree;
+  return lmStrct;
 }
 
 
@@ -366,20 +344,17 @@ banal::bloop::makeStructure(binutils::LM* lm,
 // almost all unnormalized scope tree contain duplicate statement
 // instances.  See each normalizing routine for more information.
 bool 
-banal::bloop::normalize(Prof::Struct::Tree* strctTree,
-			bool unsafeNormalizations)
+banal::bloop::normalize(Prof::Struct::LM* lmStrct, bool unsafeNormalizations)
 {
   bool changed = false;
   
-  // changed |= removeOrphanedProcedureRepository(strctTree);
-
   // Remove unnecessary alien scopes
-  changed |= mergeBogusAlienStrct(strctTree);
+  changed |= mergeBogusAlienStrct(lmStrct);
 
   // Cleanup procedure/alien scopes
-  changed |= coalesceDuplicateStmts(strctTree, unsafeNormalizations);
-  changed |= mergePerfectlyNestedLoops(strctTree);
-  changed |= removeEmptyNodes(strctTree);
+  changed |= coalesceDuplicateStmts(lmStrct, unsafeNormalizations);
+  changed |= mergePerfectlyNestedLoops(lmStrct);
+  changed |= removeEmptyNodes(lmStrct);
   
   return true; // no errors
 }
@@ -513,7 +488,8 @@ demandProcNode(Struct::File* fStrct, binutils::Proc* p)
 			      begLn, endLn);
   }
   else {
-    // Assume the procedure was split.  Fuse it together.
+    // Fuse with the existing Struct::Proc, assuming the procedure was
+    // split or specialized.
     DIAG_DevMsg(3, "Merging multiple instances of procedure [" 
 		<< pStrct->toStringXML() << "] with " << procNm << " " 
 		<< procLnNm << " " << bounds.toString());
@@ -1077,48 +1053,17 @@ namespace banal {
 
 namespace bloop {
 
-// removeOrphanedProcedureRepository: Remove the OrphanedProcedureFile
-// from the tree.
-static bool 
-removeOrphanedProcedureRepository(Prof::Struct::Tree* strctTree)
-{
-  bool changed = false;
-  
-  Struct::Root* rootStrct = strctTree->root();
-  if (!rootStrct) { return changed; }
-  
-  for (Struct::ANodeIterator it(rootStrct, 
-				&Struct::ANodeTyFilter[Struct::ANode::TyFILE]); 
-       it.Current(); /* */) {
-    Struct::File* file = dynamic_cast<Struct::File*>(it.Current());
-    it++; // advance iterator -- it is pointing at 'file'
-    
-    if (file->name() == OrphanedProcedureFile) {
-      file->Unlink(); // unlink 'file' from tree
-      delete file;
-      changed = true;
-    }
-  } 
-  
-  return changed;
-}
-
-
-//****************************************************************************
 
 static bool 
 mergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file);
 
 
 static bool 
-mergeBogusAlienStrct(Prof::Struct::Tree* strctTree)
+mergeBogusAlienStrct(Prof::Struct::LM* lmStrct)
 {
   bool changed = false;
-  
-  Struct::Root* rootStrct = strctTree->root();
-  if (!rootStrct) { return changed; }
-  
-  for (Struct::ANodeIterator it(rootStrct, 
+    
+  for (Struct::ANodeIterator it(lmStrct, 
 				&Struct::ANodeTyFilter[Struct::ANode::TyPROC]);
        it.Current(); ++it) {
     Struct::Proc* proc = dynamic_cast<Struct::Proc*>(it.Current());
@@ -1228,12 +1173,10 @@ CDS_ScopeFilter(const Struct::ANode& x, long type)
 }
 
 static bool
-coalesceDuplicateStmts(Prof::Struct::Tree* strctTree, 
-		       bool unsafeNormalizations)
+coalesceDuplicateStmts(Prof::Struct::LM* lmStrct, bool unsafeNormalizations)
 {
   bool changed = false;
   CDS_unsafeNormalizations = unsafeNormalizations;
-  Struct::Root* rootStrct = strctTree->root();
   SortIdToStmtMap stmtMap;    // line to statement data map
   Struct::ANodeSet visitedScopes; // all children of a scope have been visited
   Struct::ANodeSet toDelete;      // nodes to delete
@@ -1245,7 +1188,7 @@ coalesceDuplicateStmts(Prof::Struct::Tree* strctTree,
   // Struct::Alien's are skipped.)
 
   Struct::ANodeFilter filter(CDS_ScopeFilter, "CDS_ScopeFilter", 0);
-  for (Struct::ANodeIterator it(rootStrct, &filter); it.Current(); ++it) {
+  for (Struct::ANodeIterator it(lmStrct, &filter); it.Current(); ++it) {
     Struct::ACodeNode* scope = dynamic_cast<Struct::ACodeNode*>(it.Current());
     changed |= coalesceDuplicateStmts(scope, &stmtMap, &visitedScopes,
 				      &toDelete, 1);
@@ -1456,17 +1399,6 @@ CDS_InspectStmt(Struct::Stmt* stmt1, SortIdToStmtMap* stmtMap,
 // mergePerfectlyNestedLoops: Fuse together a child with a parent when
 // the child is perfectly nested in the parent.
 static bool 
-mergePerfectlyNestedLoops(Struct::ANode* node);
-
-
-static bool 
-mergePerfectlyNestedLoops(Prof::Struct::Tree* strctTree)
-{
-  return mergePerfectlyNestedLoops(strctTree->root());
-}
-
-
-static bool 
 mergePerfectlyNestedLoops(Struct::ANode* node)
 {
   bool changed = false;
@@ -1513,19 +1445,7 @@ mergePerfectlyNestedLoops(Struct::ANode* node)
 // always maintaining the top level Struct::Root (PGM) scope.  See the
 // predicate 'removeEmptyNodes_isEmpty' for details.
 static bool 
-removeEmptyNodes(Struct::ANode* node);
-
-static bool 
 removeEmptyNodes_isEmpty(const Struct::ANode* node);
-
-
-static bool 
-removeEmptyNodes(Prof::Struct::Tree* strctTree)
-{
-  // Always maintain the top level PGM scope, even if empty
-  return removeEmptyNodes(strctTree->root());
-}
-
 
 static bool 
 removeEmptyNodes(Struct::ANode* node)
@@ -1574,38 +1494,6 @@ removeEmptyNodes_isEmpty(const Struct::ANode* node)
     return n->vmaSet().empty();
   }
   return false;
-}
-
-
-//****************************************************************************
-
-// filterFilesFromStrctTree: 
-static bool 
-filterFilesFromStrctTree(Prof::Struct::Tree* strctTree, 
-			 const char* canonicalPathList)
-{
-  bool changed = false;
-  
-  Struct::Root* rootStrct = strctTree->root();
-  if (!rootStrct) { return changed; }
-  
-  for (Struct::ANodeIterator it(rootStrct, 
-				&Struct::ANodeTyFilter[Struct::ANode::TyFILE]); 
-       it.Current(); /* */) {
-    Struct::File* file = dynamic_cast<Struct::File*>(it.Current());
-    it++; // advance iterator -- it is pointing at 'file'
-    
-    // Verify this file in the current list of acceptible paths
-    string baseFileName = FileUtil::basename(file->name());
-    DIAG_Assert(!baseFileName.empty(), "Invalid path!");
-    if (!pathfind(canonicalPathList, baseFileName.c_str(), "r")) {
-      file->Unlink(); // unlink 'file' from tree
-      delete file;
-      changed = true;
-    }
-  } 
-  
-  return changed;
 }
 
 
