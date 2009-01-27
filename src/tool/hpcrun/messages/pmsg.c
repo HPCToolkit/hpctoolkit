@@ -20,19 +20,23 @@
 #include "thread_data.h"
 #include "thread_use.h"
 #include "tokenize.h"
+#include "monitor.h"
 
 static FILE *log_file;
 static spinlock_t pmsg_lock = SPINLOCK_UNLOCKED;
 
-static char *tbl[] = {
+static char *dbg_tbl[] = {
 # undef E
 # define E(s) #s
 # include "pmsg.src"
 # undef E
 };
 
-#define N_PMSG_FLAGS sizeof(tbl)/sizeof(tbl[0])
-static int dbg_flags[N_PMSG_FLAGS];
+static char *__csprof_noisy_msgs = NULL;
+
+
+#define N_DBG_CATEGORIES sizeof(dbg_tbl)/sizeof(dbg_tbl[0])
+static int dbg_flags[N_DBG_CATEGORIES];
 
 static char *ctl_tbl[] = {
 # undef D
@@ -56,8 +60,6 @@ dbg_get_flag(pmsg_category flag)
   return dbg_flags[flag];
 }
 
-#define N_CATEGORIES (sizeof(tbl)/sizeof(tbl[0]))
-
 static int defaults[] = {
   DBG_PREFIX(TROLL),
   DBG_PREFIX(UNW_CONFIG)
@@ -67,7 +69,7 @@ static int defaults[] = {
 static void
 flag_fill(int v)
 {
-  for(int i=0; i < N_PMSG_FLAGS; i++){
+  for(int i=0; i < N_DBG_CATEGORIES; i++){
     dbg_flags[i] = v;
   }
 }
@@ -81,9 +83,9 @@ ctl_flag_fill(int v)
 }
 
 static int
-lookup(char *s)
+lookup(char *s,char *tbl[],int n_entries)
 {
-  for (int i=0; i < N_CATEGORIES; i++){
+  for (int i=0; i < n_entries; i++){
     if (! strcmp(tbl[i],s)){
       return i;
     }
@@ -94,16 +96,16 @@ lookup(char *s)
 static void
 csprof_dbg_init(char *in)
 {
-  // csprof_emsg("input string f init = %s",in);
+  if (__csprof_noisy_msgs) csprof_emsg("dd input string f init = %s",in);
   for (char *f=start_tok(in); more_tok(); f=next_tok()){
     if (strcmp(f,"ALL") == 0){
       flag_fill(1);
       return;
     }
-    // csprof_emsg("checking token %s",f);
-    int ii = lookup(f);
+    if (__csprof_noisy_msgs) csprof_emsg("checking dd token %s",f);
+    int ii = lookup(f,dbg_tbl,N_DBG_CATEGORIES);
     if (ii >= 0){
-      // csprof_emsg("token code = %d",ii);
+      if (__csprof_noisy_msgs) csprof_emsg("dd token code = %d",ii);
       dbg_flags[ii] = 1;
     } else {
       fprintf(stderr,"WARNING: dbg flag %s not recognized\n",f);
@@ -112,11 +114,27 @@ csprof_dbg_init(char *in)
 }
 
 static void
+csprof_ctl_init(char *in)
+{
+  if (__csprof_noisy_msgs) csprof_emsg("dc input string f init = %s",in);
+  for (char *f=start_tok(in); more_tok(); f=next_tok()){
+    if (__csprof_noisy_msgs) csprof_emsg("checking dc token %s",f);
+    int ii = lookup(f,ctl_tbl,N_CTL_CATEGORIES);
+    if (ii >= 0){
+      if (__csprof_noisy_msgs) csprof_emsg("dc token code = %d",ii);
+      ctl_flags[ii] = 1;
+    } else {
+      fprintf(stderr,"WARNING: ctl flag %s not recognized\n",f);
+    }
+  }
+}
+
+static void
 dump(void)
 {
-  for (int i=0; i < N_PMSG_FLAGS; i++){
-    if (i < N_CATEGORIES){
-      fprintf(stderr,"dbg_flags[%s] = %d\n",tbl[i],dbg_flags[i]);
+  for (int i=0; i < N_DBG_CATEGORIES; i++){
+    if (i < N_DBG_CATEGORIES){
+      fprintf(stderr,"dbg_flags[%s] = %d\n",dbg_tbl[i],dbg_flags[i]);
     } else {
       fprintf(stderr,"dbg_flags[UNK] = %d\n",i);
     }
@@ -127,6 +145,8 @@ dump(void)
 void
 pmsg_init()
 {
+  __csprof_noisy_msgs = getenv("__CSPROF_NOISY_MSGS");
+
   // get name for log file 
   char log_name[PATH_MAX];
   files_log_name(log_name, PATH_MAX);
@@ -136,19 +156,27 @@ pmsg_init()
   if (!log_file) log_file = stderr;
 
   flag_fill(0);
-  for (int i=0; i < NDEFAULTS; i++){
-    dbg_flags[defaults[i]] = 1;
+  if (! getenv("CSPROF_QUIET")){
+    for (int i=0; i < NDEFAULTS; i++){
+      dbg_flags[defaults[i]] = 1;
+    }
   }
-  ctl_flag_fill(0);
-#if 0
-  ctl_flags[CTL_PREFIX(TROLL_WAIT)] = 1;
-#endif  
 
   char *s = getenv("CSPROF_DD");
   if(s){
     csprof_dbg_init(s);
   }
+  ctl_flag_fill(0);
+  s = getenv("CSPROF_DC");
+  if (s){
+    csprof_ctl_init(s);
+  }
+
   spinlock_unlock(&pmsg_lock);
+
+  if (__csprof_noisy_msgs){
+    monitor_real_exit(1);
+  }
 }
 
 void
@@ -168,7 +196,7 @@ _msg(const char *fmt,va_list args)
   if (csprof_using_threads_p()){
     sprintf(fstr,"[%d]: ",TD_GET(id));
   }
-  IF_ENABLED(PID){
+  if (ENABLED(PID)){
     sprintf(fstr,"[%d]: ",getpid());
   }
   strcat(fstr,fmt);
@@ -242,7 +270,7 @@ csprof_abort_w_info(void (*info)(void),const char *fmt,...)
   va_end(args);
   fprintf(stderr,"\n");
   info();
-  exit(-1);
+  monitor_real_exit(-1);
 }
 
 // message to log file, also echo on stderr
@@ -296,9 +324,9 @@ csprof_amsg(const char *fmt,...)
   _nmsg(fmt,args);
 }
 
-// interface to the debug flags
+// interface to the debug ctl flags
 int
-csprof_dbg(ctl_category flag)
+csprof_ctl(ctl_category flag)
 {
   return ctl_flags[flag];
 }

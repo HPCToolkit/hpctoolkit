@@ -78,6 +78,7 @@ opt_debug_wait=""
 opt_papi=""
 opt_ev_list=''
 opt_trace=""
+opt_quiet=''
 
 #######################
 
@@ -316,6 +317,10 @@ f_getoptions()
             dd_list="$L2$1"
 	    L2="$dd_list "
             ;;
+      -dc)  shift; 
+            dc_list="$L3$1"
+	    L3="$dc_list "
+            ;;
       -d)  opt_debug_wait=1;
             ;;
 
@@ -346,6 +351,9 @@ f_getoptions()
         opt_trace=1
         ;;
 
+      -q)
+        opt_quiet=1
+	;;
       -*)
         f_erroneous_option $1;
         exit 1;
@@ -418,11 +426,17 @@ f_prepareenv()
   if [ -n "$dd_list" ]; then
     export CSPROF_DD=$dd_list
   fi
+  if [ -n "$dc_list" ]; then
+    export CSPROF_DC=$dc_list
+  fi
   if [ -n "$opt_monitor_debug" ]; then
     export MONITOR_DEBUG=1
   fi
   if [ -n "${opt_trace}" ]; then
     export CSPROF_OPT_TRACE=1
+  fi
+  if [ -n "${opt_quiet}" ]; then
+    export CSPROF_OPT_QUIET=1
   fi
 
 
