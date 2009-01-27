@@ -493,14 +493,14 @@ unw_step(unw_cursor_t* cursor)
 bool
 validate_return_addr(void* addr, unw_cursor_t* cursor)
 {
-  void *proc_beg = NULL, *proc_end = NULL;
   bool isValid = false;
 
 #if (HPC_UNW_LITE)
-  void* mod_beg = NULL;
+  void *proc_beg = NULL, *mod_beg = NULL;
   dylib_find_proc(addr, &proc_beg, &mod_beg);
   isValid = (mod_beg || proc_beg);
 #else
+  void *proc_beg = NULL, *proc_end = NULL;
   int ret = fnbounds_enclosing_addr(addr, &proc_beg, &proc_end);
   isValid = (ret == 0) && proc_beg;
 #endif
