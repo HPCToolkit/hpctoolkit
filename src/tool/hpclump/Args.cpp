@@ -122,11 +122,11 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "decode",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
   {  0 , "old",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
 
-  { 'l', "load-addr",     CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL, NULL },
+  { 'l', "load-addr", CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL, NULL },
   
   { 'V', "version",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
   { 'h', "help",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
-  {  0 , "debug",    CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL, NULL }, // hidden
+  {  0 , "debug",    CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long }, // hidden
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 
