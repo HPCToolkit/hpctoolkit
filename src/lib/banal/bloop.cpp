@@ -112,30 +112,30 @@ typedef std::multimap<Struct::Proc*, BinUtil::Proc*> ProcStrctToProcMap;
 
 static ProcStrctToProcMap*
 buildLMSkeleton(Struct::LM* lmStrct, BinUtil::LM* lm, 
-		ProcNameMgr* procNameMgr);
+		ProcNameMgr* procNmMgr);
 
 static Struct::File*
 demandFileNode(Struct::LM* lmStrct, BinUtil::Proc* p);
 
 static Struct::Proc*
 demandProcNode(Struct::File* fStrct, BinUtil::Proc* p, 
-	       ProcNameMgr* procNameMgr);
+	       ProcNameMgr* procNmMgr);
 
 
 static Struct::Proc*
 buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p, 
-		   bool irrIvalIsLoop, 
-		   bool fwdSubstOff,
+		   bool isIrrIvalLoop, bool fwdSubstOff, ProcNameMgr* procNmMgr,
 		   const std::string& dbgProcGlob); 
 
 static int
 buildProcLoopNests(Struct::Proc* pStrct, BinUtil::Proc* p,
-		   bool irrIvalIsLoop, bool fwdSubstOff, bool isDbg);
+		   bool isIrrIvalLoop, bool fwdSubstOff, 
+		   ProcNameMgr* procNmMgr, bool isDbg);
 
 static int
 buildStmts(bloop::LocationMgr& locMgr,
 	   Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
-	   OA::OA_ptr<OA::CFG::NodeInterface> bb);
+	   OA::OA_ptr<OA::CFG::NodeInterface> bb, ProcNameMgr* procNmMgr);
 
 
 static void
@@ -185,7 +185,7 @@ static bool
 mergeBogusAlienStrct(Prof::Struct::LM* lmStrct);
 
 static bool
-coalesceDuplicateStmts(Prof::Struct::LM* lmStrct, bool unsafeNormalizations);
+coalesceDuplicateStmts(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe);
 
 static bool 
 mergePerfectlyNestedLoops(Struct::ANode* node);
@@ -300,11 +300,11 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
 //   optimizations such as loop unrolling.
 Prof::Struct::LM*
 banal::bloop::makeStructure(BinUtil::LM* lm, 
-			    bool normalizeScopeTree,
-			    bool unsafeNormalizations,
-			    bool irreducibleIntervalIsLoop,
-			    bool forwardSubstitutionOff,
-			    ProcNameMgr* procNameMgr,
+			    bool doNormalize,
+			    bool doNormalizeUnsafe,
+			    bool isIrrIvalLoop,
+			    bool fwdSubstOff,
+			    ProcNameMgr* procNmMgr,
 			    const std::string& dbgProcGlob)
 {
   // Assume lm->Read() has been performed
@@ -316,7 +316,7 @@ banal::bloop::makeStructure(BinUtil::LM* lm,
   Struct::LM* lmStrct = new Struct::LM(lm->name(), NULL);
 
   // 1. Build Struct::File/Struct::Proc skeletal structure
-  ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm, procNameMgr);
+  ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm, procNmMgr);
   
   // 2. For each [Struct::Proc, BinUtil::Proc] pair, complete the build.
   // Note that a Struct::Proc may be associated with more than one
@@ -326,15 +326,14 @@ banal::bloop::makeStructure(BinUtil::LM* lm,
     BinUtil::Proc* p = it->second;
 
     DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
-    buildProcStructure(pStrct, p, 
-		       irreducibleIntervalIsLoop, forwardSubstitutionOff,
-		       dbgProcGlob);
+    buildProcStructure(pStrct, p, isIrrIvalLoop, fwdSubstOff, 
+		       procNmMgr, dbgProcGlob);
   }
   delete mp;
 
   // 3. Normalize
-  if (normalizeScopeTree) {
-    bool result = normalize(lmStrct, unsafeNormalizations);
+  if (doNormalize) {
+    bool result = normalize(lmStrct, doNormalizeUnsafe);
     DIAG_Assert(result, "Normalization result should never be false!");
   }
 
@@ -347,7 +346,7 @@ banal::bloop::makeStructure(BinUtil::LM* lm,
 // almost all unnormalized scope tree contain duplicate statement
 // instances.  See each normalizing routine for more information.
 bool 
-banal::bloop::normalize(Prof::Struct::LM* lmStrct, bool unsafeNormalizations)
+banal::bloop::normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
 {
   bool changed = false;
   
@@ -355,7 +354,7 @@ banal::bloop::normalize(Prof::Struct::LM* lmStrct, bool unsafeNormalizations)
   changed |= mergeBogusAlienStrct(lmStrct);
 
   // Cleanup procedure/alien scopes
-  changed |= coalesceDuplicateStmts(lmStrct, unsafeNormalizations);
+  changed |= coalesceDuplicateStmts(lmStrct, doNormalizeUnsafe);
   changed |= mergePerfectlyNestedLoops(lmStrct);
   changed |= removeEmptyNodes(lmStrct);
   
@@ -380,7 +379,7 @@ namespace bloop {
 //
 // Struct::Procs will be sorted by begLn (cf. Struct::ACodeNode::Reorder)
 static ProcStrctToProcMap*
-buildLMSkeleton(Struct::LM* lmStrct, BinUtil::LM* lm, ProcNameMgr* procNameMgr)
+buildLMSkeleton(Struct::LM* lmStrct, BinUtil::LM* lm, ProcNameMgr* procNmMgr)
 {
   ProcStrctToProcMap* mp = new ProcStrctToProcMap;
   
@@ -393,7 +392,7 @@ buildLMSkeleton(Struct::LM* lmStrct, BinUtil::LM* lm, ProcNameMgr* procNameMgr)
     BinUtil::Proc* p = it->second;
     if (p->size() != 0) {
       Struct::File* fStrct = demandFileNode(lmStrct, p);
-      Struct::Proc* pStrct = demandProcNode(fStrct, p, procNameMgr);
+      Struct::Proc* pStrct = demandProcNode(fStrct, p, procNmMgr);
       mp->insert(make_pair(pStrct, p));
     }
   }
@@ -452,7 +451,7 @@ demandFileNode(Struct::LM* lmStrct, BinUtil::Proc* p)
 // the parent is always a Struct::File.
 static Struct::Proc*
 demandProcNode(Struct::File* fStrct, BinUtil::Proc* p, 
-	       ProcNameMgr* procNameMgr)
+	       ProcNameMgr* procNmMgr)
 {
   // Find VMA boundaries: [beg, end)
   VMA endVMA = p->begVMA() + p->size();
@@ -461,8 +460,8 @@ demandProcNode(Struct::File* fStrct, BinUtil::Proc* p,
 	      << bounds.toString());
   
   // Find procedure name
-  string procNm   = BinUtil::canonicalizeProcName(p->name(), procNameMgr);
-  string procLnNm = BinUtil::canonicalizeProcName(p->linkName(), procNameMgr);
+  string procNm   = BinUtil::canonicalizeProcName(p->name(), procNmMgr);
+  string procLnNm = BinUtil::canonicalizeProcName(p->linkName(), procNmMgr);
   
   // Find preliminary source line bounds
   string file, proc;
@@ -524,21 +523,23 @@ buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
-		   bool irrIvalIsLoop, bool fwdSubstOff, bool isDbg);
+		   bool isIrrIvalLoop, bool fwdSubstOff,
+		   ProcNameMgr* procNmMgr, bool isDbg);
 
 static Struct::ACodeNode*
 buildLoopAndStmts(bloop::LocationMgr& locMgr, 
 		  Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 		  OA::OA_ptr<OA::NestedSCR> tarj,
 		  OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
-		  OA::RIFG::NodeId fgNode, bool irrIvalIsLoop);
+		  OA::RIFG::NodeId fgNode,
+		  bool isIrrIvalLoop, ProcNameMgr* procNmMgr);
 
 
 // buildProcStructure: Complete the representation for 'pStrct' given the
 // BinUtil::Proc 'p'.  Note that pStrcts parent may itself be a Struct::Proc.
 static Struct::Proc* 
 buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p,
-		   bool irrIvalIsLoop, bool fwdSubstOff,
+		   bool isIrrIvalLoop, bool fwdSubstOff, ProcNameMgr* procNmMgr,
 		   const std::string& dbgProcGlob)
 {
   DIAG_Msg(3, "==> Proc `" << p->name() << "' (" << p->id() << ") <==");
@@ -549,7 +550,7 @@ buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p,
     isDbg = FileUtil::fnmatch(dbgProcGlob, p->name().c_str());
   }
   
-  buildProcLoopNests(pStrct, p, irrIvalIsLoop, fwdSubstOff, isDbg);
+  buildProcLoopNests(pStrct, p, isIrrIvalLoop, fwdSubstOff, procNmMgr, isDbg);
   
   return pStrct;
 }
@@ -560,7 +561,8 @@ buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p,
 // scopes.
 static int
 buildProcLoopNests(Struct::Proc* pStrct, BinUtil::Proc* p,
-		   bool irrIvalIsLoop, bool fwdSubstOff, bool isDbg)
+		   bool isIrrIvalLoop, bool fwdSubstOff, 
+		   ProcNameMgr* procNmMgr, bool isDbg)
 {
   static const int sepWidth = 77;
   using std::setfill;
@@ -612,7 +614,7 @@ buildProcLoopNests(Struct::Proc* pStrct, BinUtil::Proc* p,
     }
 
     int r = buildProcLoopNests(pStrct, p, tarj, cfg, fgRoot,
-			       irrIvalIsLoop, fwdSubstOff, isDbg);
+			       isIrrIvalLoop, fwdSubstOff, procNmMgr, isDbg);
 
     if (isDbg) {
       cerr << setfill('-') << setw(sepWidth) << "-" << endl;
@@ -638,7 +640,8 @@ buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
-		   bool irrIvalIsLoop, bool fwdSubstOff, bool isDbg)
+		   bool isIrrIvalLoop, bool fwdSubstOff, 
+		   ProcNameMgr* procNmMgr, bool isDbg)
 {
   typedef std::list<QNode> MyQueue;
 
@@ -696,7 +699,8 @@ buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
       // below ensure that this context has been fully explored.
       Struct::ACodeNode* myScope;
       myScope = buildLoopAndStmts(locMgr, qnode.enclosingStrct, p,
-				  tarj, cfg, qnode.fgNode, irrIvalIsLoop);
+				  tarj, cfg, qnode.fgNode, isIrrIvalLoop, 
+				  procNmMgr);
       isNodeProcessed[qnode.fgNode] = true;
       qnode.scope = myScope;
       if (myScope->type() == Struct::ANode::TyLOOP) {
@@ -716,7 +720,7 @@ buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
     do {
       Struct::ACodeNode* myScope;
       myScope = buildLoopAndStmts(locMgr, qnode.scope, p, 
-				  tarj, cfg, kid, irrIvalIsLoop);
+				  tarj, cfg, kid, isIrrIvalLoop, procNmMgr);
       isNodeProcessed[kid] = true;
       if (myScope->type() == Struct::ANode::TyLOOP) {
 	nLoops++;
@@ -757,7 +761,8 @@ buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
   for (uint i = 1; i < isNodeProcessed.size(); ++i) {
     if (!isNodeProcessed[i]) {
       // INVARIANT: return value is never a Struct::Loop
-      buildLoopAndStmts(locMgr, enclosingProc, p, tarj, cfg, i, irrIvalIsLoop);
+      buildLoopAndStmts(locMgr, enclosingProc, p, tarj, cfg, i, isIrrIvalLoop,
+			procNmMgr);
     }
   }
 
@@ -775,7 +780,8 @@ buildLoopAndStmts(bloop::LocationMgr& locMgr,
 		  Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 		  OA::OA_ptr<OA::NestedSCR> tarj,
 		  OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
-		  OA::RIFG::NodeId fgNode, bool irrIvalIsLoop)
+		  OA::RIFG::NodeId fgNode, 
+		  bool isIrrIvalLoop, ProcNameMgr* procNmMgr)
 {
   OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
   OA::OA_ptr<OA::CFG::NodeInterface> bb = 
@@ -795,21 +801,21 @@ buildLoopAndStmts(bloop::LocationMgr& locMgr,
     // -----------------------------------------------------
   }
   else if (ity == OA::NestedSCR::NODE_INTERVAL || 
-	   (irrIvalIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) {
+	   (isIrrIvalLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) {
     // -----------------------------------------------------
     // INTERVAL or IRREDUCIBLE as a loop: Loop head
     // -----------------------------------------------------
     string fnm, pnm;
     SrcFile::ln line;
     findLoopBegLineInfo(p, bb, fnm, pnm, line);
-    pnm = BinUtil::canonicalizeProcName(pnm);
+    pnm = BinUtil::canonicalizeProcName(pnm, procNmMgr);
     
     Struct::Loop* loop = new Struct::Loop(NULL, line, line);
     loop->vmaSet().insert(begVMA, begVMA + 1); // a loop id
     locMgr.locate(loop, enclosingStrct, fnm, pnm, line);
     childScope = loop;
   }
-  else if (!irrIvalIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
+  else if (!isIrrIvalLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
     // -----------------------------------------------------
     // IRREDUCIBLE as no loop: May contain loops
     // -----------------------------------------------------
@@ -821,7 +827,7 @@ buildLoopAndStmts(bloop::LocationMgr& locMgr,
   // -----------------------------------------------------
   // Process instructions within BB
   // -----------------------------------------------------
-  buildStmts(locMgr, childScope, p, bb);
+  buildStmts(locMgr, childScope, p, bb, procNmMgr);
 
   return childScope;
 }
@@ -833,7 +839,7 @@ buildLoopAndStmts(bloop::LocationMgr& locMgr,
 static int 
 buildStmts(bloop::LocationMgr& locMgr,
 	   Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
-	   OA::OA_ptr<OA::CFG::NodeInterface> bb)
+	   OA::OA_ptr<OA::CFG::NodeInterface> bb, ProcNameMgr* procNmMgr)
 {
   static int call_sortId = 0;
 
@@ -852,7 +858,7 @@ buildStmts(bloop::LocationMgr& locMgr,
     string filenm, procnm;
     SrcFile::ln line;
     p->GetSourceFileInfo(vma, opIdx, procnm, filenm, line); 
-    procnm = BinUtil::canonicalizeProcName(procnm);
+    procnm = BinUtil::canonicalizeProcName(procnm, procNmMgr);
 
     // 2. create a VMA interval
     // the next (or hypothetically next) insn begins no earlier than:
@@ -895,7 +901,7 @@ buildProcLoopNests(Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::Interface> cfg, 
 		   OA::RIFG::NodeId fgNode, 
-		   int addStmts, bool irrIvalIsLoop)
+		   int addStmts, bool isIrrIvalLoop)
 {
   int localLoops = 0;
   OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
@@ -926,7 +932,7 @@ buildProcLoopNests(Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
       }
     }
     else if (ity == OA::NestedSCR::NODE_INTERVAL || 
-	     (irrIvalIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) {
+	     (isIrrIvalLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) {
       // -----------------------------------------------------
       // INTERVAL or IRREDUCIBLE as a loop: Loop head
       // -----------------------------------------------------
@@ -934,15 +940,15 @@ buildProcLoopNests(Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
       // add alien context if necessary....
       Struct::Loop* lScope = new Struct::Loop(enclosingStrct, line, line);
       int num = buildProcLoopNests(lScope, p, tarj, cfg, kid, mp,
-				   1, irrIvalIsLoop);
+				   1, isIrrIvalLoop);
       localLoops += (num + 1);
     }
-    else if (!irrIvalIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
+    else if (!isIrrIvalLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
       // -----------------------------------------------------
       // IRREDUCIBLE as no loop: May contain loops
       // -----------------------------------------------------
       int num = buildProcLoopNests(enclosingStrct, p, tarj, cfg, kid, mp,
-				   addStmts, irrIvalIsLoop);
+				   addStmts, isIrrIvalLoop);
       localLoops += num;
     }
     else {
@@ -1155,7 +1161,7 @@ mergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
 //   instances.
 // E.g.: lca ---...--- s1
 //          \---...--- s2
-static bool CDS_unsafeNormalizations = true;
+static bool CDS_doNormalizeUnsafe = true;
 
 static bool
 coalesceDuplicateStmts(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap, 
@@ -1178,10 +1184,10 @@ CDS_ScopeFilter(const Struct::ANode& x, long type)
 }
 
 static bool
-coalesceDuplicateStmts(Prof::Struct::LM* lmStrct, bool unsafeNormalizations)
+coalesceDuplicateStmts(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
 {
   bool changed = false;
-  CDS_unsafeNormalizations = unsafeNormalizations;
+  CDS_doNormalizeUnsafe = doNormalizeUnsafe;
   SortIdToStmtMap stmtMap;    // line to statement data map
   Struct::ANodeSet visitedScopes; // all children of a scope have been visited
   Struct::ANodeSet toDelete;      // nodes to delete
@@ -1372,7 +1378,7 @@ CDS_InspectStmt(Struct::Stmt* stmt1, SortIdToStmtMap* stmtMap,
       DIAG_DevMsgIf(DBG_CDS, "  Delete: " << toRemove);
       changed = true;
     } 
-    else if (CDS_unsafeNormalizations) {
+    else if (CDS_doNormalizeUnsafe) {
       // Case 2: Duplicate statements in different loops (or scopes).
       // Merge the nodes from stmt2->lca into those from stmt1->lca.
       DIAG_DevMsgIf(DBG_CDS, "  Merge: " << stmt1 << " <- " << stmt2);

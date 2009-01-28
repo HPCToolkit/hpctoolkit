@@ -69,24 +69,78 @@ using std::string;
 // CilkNameMgr
 //***************************************************************************
 
-const string CilkNameMgr::s_slow_pfx = "_cilk_";
-const string CilkNameMgr::s_slow_sfx = "_slow";
+// Cilk creates four specializations of each procedure:
+//   fast:    <x>
+//   slow:   _cilk_<x>_slow
+//   import: _cilk_<x>_import
+//   export: mt_<x>
+
+const string CilkNameMgr::s_procSlow_pfx   = "_cilk_";
+const string CilkNameMgr::s_procSlow_sfx   = "_slow";
+
+const string CilkNameMgr::s_procImport_pfx = "_cilk_";
+const string CilkNameMgr::s_procImport_sfx = "_import";
+
+const string CilkNameMgr::s_procExport_pfx = "mt_";
+const string CilkNameMgr::s_procExport_sfx = "";
+
+
+// Cilk 'outlines' an inlet <x> within a procedure <proc>, creating
+// three specializations:
+//   norm: _cilk_<proc>_<x>_inlet
+//   fast: _cilk_<proc>_<x>_inlet_fast
+//   slow: _cilk_<proc>_<x>_inlet_slow
+
+const string CilkNameMgr::s_inletNorm_pfx = "_cilk_";
+const string CilkNameMgr::s_inletNorm_sfx = "_inlet";
+
+const string CilkNameMgr::s_inletFast_pfx = "_cilk_";
+const string CilkNameMgr::s_inletFast_sfx = "_inlet_fast";
+
+const string CilkNameMgr::s_inletSlow_pfx = "_cilk_";
+const string CilkNameMgr::s_inletSlow_sfx = "_inlet_slow";
 
 
 string
 CilkNameMgr::canonicalize(const string& name)
 {
-  if (name == "_cilk_cilk_main_import") {
-    // 1. _cilk_cilk_main_import --> invoke_main_slow    
+  // ------------------------------------------------------------
+  // inlets: must test before procedures because of _slow suffix
+  // ------------------------------------------------------------
+  if (isGenerated(name, s_inletNorm_pfx, s_inletNorm_sfx)) {
+    return basename(name, s_inletNorm_pfx, s_inletNorm_sfx);
+  }
+  else if (isGenerated(name, s_inletFast_pfx, s_inletFast_sfx)) {
+    return basename(name, s_inletFast_pfx, s_inletFast_sfx);
+  }
+  else if (isGenerated(name, s_inletSlow_pfx, s_inletSlow_sfx)) {
+    return basename(name, s_inletSlow_pfx, s_inletSlow_sfx);
+  }
+
+  // ------------------------------------------------------------
+  // procedures
+  // ------------------------------------------------------------
+  else if (isGenerated(name, s_procSlow_pfx, s_procSlow_sfx)) {
+    return basename(name, s_procSlow_pfx, s_procSlow_sfx);
+  }
+  else if (isGenerated(name, s_procImport_pfx, s_procImport_sfx)) {
+    return basename(name, s_procImport_pfx, s_procImport_sfx);
+  }
+  else if (isGenerated(name, s_procExport_pfx, s_procExport_sfx)) {
+    return basename(name, s_procExport_pfx, s_procExport_sfx);
+  }
+
+  // ------------------------------------------------------------
+  // special case
+  // ------------------------------------------------------------
+  else if (name == "_cilk_cilk_main_import") {
+    // _cilk_cilk_main_import --> invoke_main_slow
     return "invoke_main_slow";
   }
-  else if (is_slow_proc(name)) {
-    // 2. if '_cilk' is a prefix of name, apply:
-    //      _cilk_<x>_slow --> <x>  (_cilk_cilk_main_slow --> cilk_main)
-    int len = name.length() - s_slow_pfx.length() - s_slow_sfx.length();
-    string canon_nm = name.substr(s_slow_pfx.length(), len);
-    return canon_nm;
-  }
+
+  // ------------------------------------------------------------
+  // default
+  // ------------------------------------------------------------
   else {
     return name;
   }
