@@ -202,7 +202,6 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	unwind/ppc64/ppc64-context.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind-support.c \
-	processor/x86-64/processor-libc.c processor/x86-64/swizzle.c \
 	unwind/x86-family/x86-all.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
@@ -245,8 +244,7 @@ am__objects_13 = libcsprof_la-ppc64-build-intervals.lo \
 	libcsprof_la-ppc64-unwind-interval.lo \
 	libcsprof_la-ppc64-unwind-support.lo
 @HOST_CPU_PPC_TRUE@am__objects_14 = $(am__objects_13)
-am__objects_15 = libcsprof_la-processor-libc.lo \
-	libcsprof_la-swizzle.lo libcsprof_la-x86-all.lo \
+am__objects_15 = libcsprof_la-x86-all.lo \
 	libcsprof_la-x86-unwind-interval.lo \
 	libcsprof_la-x86-unwind-interval-fixup.lo \
 	libcsprof_la-x86-unwind.lo libcsprof_la-x86-unwind-support.lo \
@@ -283,7 +281,6 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	unwind/ppc64/ppc64-context.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind-support.c \
-	processor/x86-64/processor-libc.c processor/x86-64/swizzle.c \
 	unwind/x86-family/x86-all.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
@@ -331,8 +328,7 @@ am__objects_23 = libcsprof_o-ppc64-build-intervals.$(OBJEXT) \
 	libcsprof_o-ppc64-unwind-interval.$(OBJEXT) \
 	libcsprof_o-ppc64-unwind-support.$(OBJEXT)
 @HOST_CPU_PPC_TRUE@am__objects_24 = $(am__objects_23)
-am__objects_25 = libcsprof_o-processor-libc.$(OBJEXT) \
-	libcsprof_o-swizzle.$(OBJEXT) libcsprof_o-x86-all.$(OBJEXT) \
+am__objects_25 = libcsprof_o-x86-all.$(OBJEXT) \
 	libcsprof_o-x86-unwind-interval.$(OBJEXT) \
 	libcsprof_o-x86-unwind-interval-fixup.$(OBJEXT) \
 	libcsprof_o-x86-unwind.$(OBJEXT) \
@@ -657,8 +653,6 @@ MY_PPC_FILES = \
 	unwind/ppc64/ppc64-unwind-support.c
 
 MY_X86_FILES = \
-	processor/x86-64/processor-libc.c		\
-	processor/x86-64/swizzle.c			\
 	unwind/x86-family/x86-all.c			\
 	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
@@ -952,7 +946,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-context.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-unwind-support.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-processor-libc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_event.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_itimer.Plo@am__quote@
@@ -964,7 +957,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-splay.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-stack_troll.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-state.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-swizzle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-system_server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-thread_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-thread_use.Plo@am__quote@
@@ -1010,7 +1002,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-context.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-unwind-support.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-processor-libc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_event.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_itimer.Po@am__quote@
@@ -1022,7 +1013,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-splay.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-stack_troll.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-state.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-swizzle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-system_server.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-thread_data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-thread_use.Po@am__quote@
@@ -1449,20 +1439,6 @@ libcsprof_la-ppc64-unwind-support.lo: unwind/ppc64/ppc64-unwind-support.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-unwind-support.c' object='libcsprof_la-ppc64-unwind-support.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-ppc64-unwind-support.lo `test -f 'unwind/ppc64/ppc64-unwind-support.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind-support.c
-
-libcsprof_la-processor-libc.lo: processor/x86-64/processor-libc.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-processor-libc.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-processor-libc.Tpo -c -o libcsprof_la-processor-libc.lo `test -f 'processor/x86-64/processor-libc.c' || echo '$(srcdir)/'`processor/x86-64/processor-libc.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-processor-libc.Tpo $(DEPDIR)/libcsprof_la-processor-libc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='processor/x86-64/processor-libc.c' object='libcsprof_la-processor-libc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-processor-libc.lo `test -f 'processor/x86-64/processor-libc.c' || echo '$(srcdir)/'`processor/x86-64/processor-libc.c
-
-libcsprof_la-swizzle.lo: processor/x86-64/swizzle.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-swizzle.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-swizzle.Tpo -c -o libcsprof_la-swizzle.lo `test -f 'processor/x86-64/swizzle.c' || echo '$(srcdir)/'`processor/x86-64/swizzle.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-swizzle.Tpo $(DEPDIR)/libcsprof_la-swizzle.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='processor/x86-64/swizzle.c' object='libcsprof_la-swizzle.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-swizzle.lo `test -f 'processor/x86-64/swizzle.c' || echo '$(srcdir)/'`processor/x86-64/swizzle.c
 
 libcsprof_la-x86-all.lo: unwind/x86-family/x86-all.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-x86-all.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-x86-all.Tpo -c -o libcsprof_la-x86-all.lo `test -f 'unwind/x86-family/x86-all.c' || echo '$(srcdir)/'`unwind/x86-family/x86-all.c
@@ -2191,34 +2167,6 @@ libcsprof_o-ppc64-unwind-support.obj: unwind/ppc64/ppc64-unwind-support.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-unwind-support.c' object='libcsprof_o-ppc64-unwind-support.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ppc64-unwind-support.obj `if test -f 'unwind/ppc64/ppc64-unwind-support.c'; then $(CYGPATH_W) 'unwind/ppc64/ppc64-unwind-support.c'; else $(CYGPATH_W) '$(srcdir)/unwind/ppc64/ppc64-unwind-support.c'; fi`
-
-libcsprof_o-processor-libc.o: processor/x86-64/processor-libc.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-processor-libc.o -MD -MP -MF $(DEPDIR)/libcsprof_o-processor-libc.Tpo -c -o libcsprof_o-processor-libc.o `test -f 'processor/x86-64/processor-libc.c' || echo '$(srcdir)/'`processor/x86-64/processor-libc.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-processor-libc.Tpo $(DEPDIR)/libcsprof_o-processor-libc.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='processor/x86-64/processor-libc.c' object='libcsprof_o-processor-libc.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-processor-libc.o `test -f 'processor/x86-64/processor-libc.c' || echo '$(srcdir)/'`processor/x86-64/processor-libc.c
-
-libcsprof_o-processor-libc.obj: processor/x86-64/processor-libc.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-processor-libc.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-processor-libc.Tpo -c -o libcsprof_o-processor-libc.obj `if test -f 'processor/x86-64/processor-libc.c'; then $(CYGPATH_W) 'processor/x86-64/processor-libc.c'; else $(CYGPATH_W) '$(srcdir)/processor/x86-64/processor-libc.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-processor-libc.Tpo $(DEPDIR)/libcsprof_o-processor-libc.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='processor/x86-64/processor-libc.c' object='libcsprof_o-processor-libc.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-processor-libc.obj `if test -f 'processor/x86-64/processor-libc.c'; then $(CYGPATH_W) 'processor/x86-64/processor-libc.c'; else $(CYGPATH_W) '$(srcdir)/processor/x86-64/processor-libc.c'; fi`
-
-libcsprof_o-swizzle.o: processor/x86-64/swizzle.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-swizzle.o -MD -MP -MF $(DEPDIR)/libcsprof_o-swizzle.Tpo -c -o libcsprof_o-swizzle.o `test -f 'processor/x86-64/swizzle.c' || echo '$(srcdir)/'`processor/x86-64/swizzle.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-swizzle.Tpo $(DEPDIR)/libcsprof_o-swizzle.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='processor/x86-64/swizzle.c' object='libcsprof_o-swizzle.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-swizzle.o `test -f 'processor/x86-64/swizzle.c' || echo '$(srcdir)/'`processor/x86-64/swizzle.c
-
-libcsprof_o-swizzle.obj: processor/x86-64/swizzle.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-swizzle.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-swizzle.Tpo -c -o libcsprof_o-swizzle.obj `if test -f 'processor/x86-64/swizzle.c'; then $(CYGPATH_W) 'processor/x86-64/swizzle.c'; else $(CYGPATH_W) '$(srcdir)/processor/x86-64/swizzle.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-swizzle.Tpo $(DEPDIR)/libcsprof_o-swizzle.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='processor/x86-64/swizzle.c' object='libcsprof_o-swizzle.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-swizzle.obj `if test -f 'processor/x86-64/swizzle.c'; then $(CYGPATH_W) 'processor/x86-64/swizzle.c'; else $(CYGPATH_W) '$(srcdir)/processor/x86-64/swizzle.c'; fi`
 
 libcsprof_o-x86-all.o: unwind/x86-family/x86-all.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-x86-all.o -MD -MP -MF $(DEPDIR)/libcsprof_o-x86-all.Tpo -c -o libcsprof_o-x86-all.o `test -f 'unwind/x86-family/x86-all.c' || echo '$(srcdir)/'`unwind/x86-family/x86-all.c

@@ -122,8 +122,6 @@ MY_PPC_FILES = \
 	unwind/ppc64/ppc64-unwind-support.c
 
 MY_X86_FILES = \
-	processor/x86-64/processor-libc.c		\
-	processor/x86-64/swizzle.c			\
 	unwind/x86-family/x86-all.c			\
 	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
