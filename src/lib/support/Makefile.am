@@ -83,6 +83,8 @@ MYSOURCES = \
 	\
 	Logic.hpp Logic.cpp \
 	\
+	ProcNameMgr.hpp ProcNameMgr.cpp \
+	\
 	HashTable.hpp HashTable.cpp \
 	HashTableSortedIterator.hpp HashTableSortedIterator.cpp \
 	IntVector.hpp IntVector.cpp \

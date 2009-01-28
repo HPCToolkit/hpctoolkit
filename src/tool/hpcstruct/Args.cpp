@@ -120,12 +120,6 @@ Options: Output:\n\
   --compact            Generate compact output, eliminating extra white space\n\
 ";
 
-#if 0
-  -p <list>, --canonical-paths <list>
-                       Ensure that scope tree only contains files found in
-                       the colon-separated <list>. May be passed multiple
-                       times.
-#endif
 
 
 #define CLP CmdLineParser
@@ -138,8 +132,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      NULL },
   { 'f', "forward-substitution-off",
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":",
      NULL },
 
   { 'n', "normalize-off",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
@@ -289,9 +281,6 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("forward-substitution-off")) { 
       forwardSubstitutionOff = true;
     } 
-    if (parser.isOpt("canonical-paths")) { 
-      canonicalPathList = parser.getOptArg("canonical-paths");
-    }
     if (parser.isOpt("normalize-off")) { 
       normalizeScopeTree = false;
     }
@@ -334,9 +323,9 @@ Args::dump(std::ostream& os) const
   os << "Args.cmd= " << getCmd() << endl; 
   os << "Args.prettyPrintOutput= " << prettyPrintOutput << endl;
   os << "Args.normalizeScopeTree= " << normalizeScopeTree << endl;
-  os << "Args.canonicalPathList= " << canonicalPathList << endl;
   os << "Args.in_filenm= " << in_filenm << endl;
 }
+
 
 void 
 Args::ddump() const

@@ -88,7 +88,7 @@ namespace bloop {
     bool t2 = false;
     if (callCtxt->type() == Struct::ANode::TyPROC) {
       const Struct::Proc* pStrct = dynamic_cast<const Struct::Proc*>(callCtxt);
-      t2 = ctxtNameEqFuzzy(pStrct->LinkName(), x);
+      t2 = ctxtNameEqFuzzy(pStrct->linkName(), x);
     }
     return (t1 || t2);    
   }

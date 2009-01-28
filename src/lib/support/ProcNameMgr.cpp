@@ -50,76 +50,49 @@
 
 //************************* System Include Files ****************************
 
-#include <iostream>
-using std::cout;
-using std::cerr;
-using std::endl;
-
-#include <iomanip>
-
-#include <fstream>
-#include <sstream>
-
 #include <string>
 using std::string;
 
-#include <map>
-#include <list>
-#include <vector>
-
-#include <algorithm>
-
-#include <cstring>
 
 //*************************** User Include Files ****************************
 
-#include "bloop-simple.hpp"
+#include "ProcNameMgr.hpp"
 
-#include <lib/prof-juicy/Struct-Tree.hpp>
-using namespace Prof;
-
-#include <lib/binutils/LM.hpp>
-#include <lib/binutils/Insn.hpp>
-
-#include <lib/support/diagnostics.h>
+#include "diagnostics.h"
 
 
-//*************************** Forward Declarations ***************************
+//*************************** Forward Declarations **************************
 
-//****************************************************************************
-// 
-//****************************************************************************
+//***************************************************************************
 
-// makeStructureSimple: Uses the line map to make structure
-Struct::Stmt*
-banal::bloop::makeStructureSimple(Struct::LM* lmStrct, 
-				  binutils::LM* lm, VMA vma)
+//***************************************************************************
+// CilkNameMgr
+//***************************************************************************
+
+const string CilkNameMgr::s_slow_pfx = "_cilk_";
+const string CilkNameMgr::s_slow_sfx = "_slow";
+
+
+string
+CilkNameMgr::canonicalize(const string& name)
 {
-  string procnm, filenm;
-  SrcFile::ln line;
-  lm->GetSourceFileInfo(vma, 0 /*opIdx*/, procnm, filenm, line);
-  procnm = GetBestFuncName(procnm);
-  
-  if (filenm.empty()) {
-    filenm = Struct::Tree::UnknownFileNm;
+  if (name == "_cilk_cilk_main_import") {
+    // 1. _cilk_cilk_main_import --> invoke_main_slow    
+    return "invoke_main_slow";
   }
-  if (procnm.empty()) {
-    procnm = Struct::Tree::UnknownProcNm;
+  else if (is_slow_proc(name)) {
+    // 2. if '_cilk' is a prefix of name, apply:
+    //      _cilk_<x>_slow --> <x>  (_cilk_cilk_main_slow --> cilk_main)
+    int len = name.length() - s_slow_pfx.length() - s_slow_sfx.length();
+    string canon_nm = name.substr(s_slow_pfx.length(), len);
+    return canon_nm;
   }
-  
-  Struct::File* fileStrct = Struct::File::demand(lmStrct, filenm);
-  Struct::Proc* procStrct = Struct::Proc::demand(fileStrct, procnm, "",
-						 line, line);
-  Struct::Stmt* stmtStrct = procStrct->findStmt(line);
-  if (!stmtStrct) {
-    VMA begVMA = vma;
-
-    binutils::Insn* insn = lm->findInsn(vma, 0 /*opIdx*/);
-    VMA endVMA = (insn) ? insn->endVMA() : vma + 1;
-
-    stmtStrct = new Struct::Stmt(procStrct, line, line, begVMA, endVMA);
+  else {
+    return name;
   }
-
-  return stmtStrct;
 }
+
+
+//***************************************************************************
+
 

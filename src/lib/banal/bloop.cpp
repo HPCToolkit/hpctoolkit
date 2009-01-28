@@ -111,13 +111,15 @@ namespace bloop {
 typedef std::multimap<Struct::Proc*, binutils::Proc*> ProcStrctToProcMap;
 
 static ProcStrctToProcMap*
-buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm);
+buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm, 
+		ProcNameMgr* procNameMgr);
 
 static Struct::File*
 demandFileNode(Struct::LM* lmStrct, binutils::Proc* p);
 
 static Struct::Proc*
-demandProcNode(Struct::File* fStrct, binutils::Proc* p);
+demandProcNode(Struct::File* fStrct, binutils::Proc* p, 
+	       ProcNameMgr* procNameMgr);
 
 
 static Struct::Proc*
@@ -302,6 +304,7 @@ banal::bloop::makeStructure(binutils::LM* lm,
 			    bool unsafeNormalizations,
 			    bool irreducibleIntervalIsLoop,
 			    bool forwardSubstitutionOff,
+			    ProcNameMgr* procNameMgr,
 			    const std::string& dbgProcGlob)
 {
   // Assume lm->Read() has been performed
@@ -313,7 +316,7 @@ banal::bloop::makeStructure(binutils::LM* lm,
   Struct::LM* lmStrct = new Struct::LM(lm->name(), NULL);
 
   // 1. Build Struct::File/Struct::Proc skeletal structure
-  ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm);
+  ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm, procNameMgr);
   
   // 2. For each [Struct::Proc, binutils::Proc] pair, complete the build.
   // Note that a Struct::Proc may be associated with more than one
@@ -377,7 +380,7 @@ namespace bloop {
 //
 // Struct::Procs will be sorted by begLn (cf. Struct::ACodeNode::Reorder)
 static ProcStrctToProcMap*
-buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm)
+buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm, ProcNameMgr* procNameMgr)
 {
   ProcStrctToProcMap* mp = new ProcStrctToProcMap;
   
@@ -390,7 +393,7 @@ buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm)
     binutils::Proc* p = it->second;
     if (p->size() != 0) {
       Struct::File* fStrct = demandFileNode(lmStrct, p);
-      Struct::Proc* pStrct = demandProcNode(fStrct, p);
+      Struct::Proc* pStrct = demandProcNode(fStrct, p, procNameMgr);
       mp->insert(make_pair(pStrct, p));
     }
   }
@@ -448,7 +451,8 @@ demandFileNode(Struct::LM* lmStrct, binutils::Proc* p)
 // demandProcNode: Build skeletal Struct::Proc.  We can assume that
 // the parent is always a Struct::File.
 static Struct::Proc*
-demandProcNode(Struct::File* fStrct, binutils::Proc* p)
+demandProcNode(Struct::File* fStrct, binutils::Proc* p, 
+	       ProcNameMgr* procNameMgr)
 {
   // Find VMA boundaries: [beg, end)
   VMA endVMA = p->begVMA() + p->size();
@@ -480,20 +484,21 @@ demandProcNode(Struct::File* fStrct, binutils::Proc* p)
     begLn = begLn1;
     endLn = std::max(begLn1, endLn1);
   }
-  
-  // Create or find the scope.  Fuse procedures if names match.
-  Struct::Proc* pStrct = fStrct->findProc(procNm, procLnNm);
-  if (!pStrct) {
-    pStrct = new Struct::Proc(procNm, fStrct, procLnNm, p->hasSymbolic(),
-			      begLn, endLn);
-  }
-  else {
-    // Fuse with the existing Struct::Proc, assuming the procedure was
-    // split or specialized.
+
+  // Obtain Struct::Proc by name.  This has the effect of fusing with
+  // the existing Struct::Proc and accounts for procedure splitting or
+  // specialization.
+  bool didCreate = false;
+  Struct::Proc* pStrct = 
+    Struct::Proc::demand(fStrct, procNm, procLnNm, begLn, endLn, &didCreate);
+  if (!didCreate) {
     DIAG_DevMsg(3, "Merging multiple instances of procedure [" 
 		<< pStrct->toStringXML() << "] with " << procNm << " " 
 		<< procLnNm << " " << bounds.toString());
     pStrct->ExpandLineRange(begLn, endLn);
+  }
+  if (p->hasSymbolic()) {
+    pStrct->hasSymbolic(p->hasSymbolic()); // optimistically set
   }
   pStrct->vmaSet().insert(bounds);
   

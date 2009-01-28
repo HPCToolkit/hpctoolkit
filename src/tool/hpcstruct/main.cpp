@@ -131,6 +131,7 @@ real_main(int argc, char* argv[])
 					      args.unsafeNormalizations,
 					      args.irreducibleIntervalIsLoop,
 					      args.forwardSubstitutionOff,
+					      NULL,
 					      args.dbgProcGlob);
     lmStrct->Link(rootStrct);
     
