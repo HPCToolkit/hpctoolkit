@@ -312,7 +312,12 @@ public:
   static long     toLong(const std::string& str);
   static uint64_t toUInt64(const std::string& str);
   static double   toDbl(const std::string& str);
-  
+
+  // ---------------------------------------------------------
+  // Disambiguate optional arguments to a switch
+  // ---------------------------------------------------------
+  static bool isOptArg_long(const char* option);
+
   // -------------------------------------------------------
   // Misc
   // -------------------------------------------------------

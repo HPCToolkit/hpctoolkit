@@ -412,6 +412,21 @@ CmdLineParser::toDbl(const string& str)
 
 //****************************************************************************
 
+bool 
+CmdLineParser::isOptArg_long(const char* option)
+{
+  try {
+    CmdLineParser::toLong(string(option));
+  }
+  catch (const CmdLineParser::Exception& x) {
+    return false;
+  }
+  return true;
+}
+
+
+//****************************************************************************
+
 void 
 CmdLineParser::dump(std::ostream& os) const
 {
