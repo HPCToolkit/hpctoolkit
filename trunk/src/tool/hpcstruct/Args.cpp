@@ -148,13 +148,13 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   
   // General
   { 'v', "verbose",     CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
+     CLP::isOptArg_long },
   { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
+     CLP::isOptArg_long },
   {  0 , "debug-proc",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version

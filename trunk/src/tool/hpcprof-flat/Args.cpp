@@ -196,13 +196,13 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // General
   { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
+     CLP::isOptArg_long },
   { 'V', "version",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,  // hidden
-     NULL },
+     CLP::isOptArg_long },
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 
