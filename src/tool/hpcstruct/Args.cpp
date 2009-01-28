@@ -131,6 +131,9 @@ Options: Output:\n\
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
+  {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
   // Structure recovery options
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  ":",
      NULL },
@@ -283,6 +286,9 @@ Args::parse(int argc, const char* const argv[])
     }
     
     // Check for other options: Structure recovery
+    if (parser.isOpt("agent-cilk")) {
+      lush_agent = "cilk magic"; // non-empty
+    }
     if (parser.isOpt("include")) {
       searchPathStr += ":" + parser.getOptArg("include");
     }

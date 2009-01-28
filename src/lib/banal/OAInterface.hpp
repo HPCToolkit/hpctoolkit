@@ -106,28 +106,28 @@
 
 namespace banal {
 
-inline binutils::Insn*
+inline BinUtil::Insn*
 OA_CFG_getBegInsn(OA::OA_ptr<OA::CFG::NodeInterface> bb) 
 {
   OA::OA_ptr<OA::CFG::NodeStatementsIteratorInterface> stmtIt =
     bb->getNodeStatementsIterator();
   
-  binutils::Insn* stmt = NULL;
+  BinUtil::Insn* stmt = NULL;
   if (stmtIt->isValid()) {
-    stmt = IRHNDL_TO_TY(stmtIt->current(), binutils::Insn*);
+    stmt = IRHNDL_TO_TY(stmtIt->current(), BinUtil::Insn*);
   }
   return stmt;
 }
 
 
-inline binutils::Insn*
+inline BinUtil::Insn*
 OA_CFG_getEndInsn(OA::OA_ptr<OA::CFG::NodeInterface> bb) 
 {
   OA::OA_ptr<OA::CFG::NodeStatementsRevIteratorInterface> stmtIt =
     bb->getNodeStatementsRevIterator();
-  binutils::Insn* stmt = NULL;
+  BinUtil::Insn* stmt = NULL;
   if (stmtIt->isValid()) {
-    stmt = IRHNDL_TO_TY(stmtIt->current(), binutils::Insn*);
+    stmt = IRHNDL_TO_TY(stmtIt->current(), BinUtil::Insn*);
   }
   return stmt;
 }
@@ -143,7 +143,7 @@ namespace banal {
 
 class RegionStmtIterator: public OA::IRRegionStmtIterator {
 public:
-  RegionStmtIterator(binutils::Proc& _p) : pii(_p) { }
+  RegionStmtIterator(BinUtil::Proc& _p) : pii(_p) { }
   virtual ~RegionStmtIterator() { }
 
   virtual OA::StmtHandle current () const 
@@ -155,7 +155,7 @@ public:
   virtual void reset() { pii.Reset(); }
 
 private:
-  binutils::ProcInsnIterator pii;
+  BinUtil::ProcInsnIterator pii;
 };
 
 }
@@ -174,7 +174,7 @@ public:
 
   // Note: We assume each instantiation of the IRInterface represents
   // one procedure!
-  OAInterface(binutils::Proc* proc);
+  OAInterface(BinUtil::Proc* proc);
   virtual ~OAInterface();
   
   
@@ -286,7 +286,7 @@ private:
   VMA normalizeTarget(VMA vma) const
   {
     VMA vma_norm = vma;
-    binutils::Insn* insn = m_proc->lm()->findInsnNear(vma, 0);
+    BinUtil::Insn* insn = m_proc->lm()->findInsnNear(vma, 0);
     if (insn) {
       // could check that (vma_norm - vma) is no greater than a few bytes
       vma_norm = insn->vma();
@@ -295,7 +295,7 @@ private:
   }
 
 private:
-  binutils::Proc* m_proc;
+  BinUtil::Proc* m_proc;
   std::set<VMA> m_branchTargetSet;
 };
 

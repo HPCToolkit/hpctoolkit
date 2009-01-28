@@ -395,12 +395,12 @@ Proc::operator=(const Proc& x)
 
 
 Proc*
-Proc::demand(File* file, const string& nm, const std::string& lnm, 
+Proc::demand(File* file, const string& name, const std::string& linkname, 
 	     SrcFile::ln begLn, SrcFile::ln endLn, bool* didCreate)
 {
-  Proc* proc = file->findProc(nm, lnm);
+  Proc* proc = file->findProc(name, linkname);
   if (!proc) {
-    proc = new Proc(nm, file, lnm, false, begLn, endLn);
+    proc = new Proc(name, file, linkname, false, begLn, endLn);
     if (didCreate) {
       *didCreate = true;
     }
@@ -961,17 +961,17 @@ LM::verifyStmtMap() const
 
 
 Proc*
-File::findProc(const char* nm, const char* lnm) const
+File::findProc(const char* name, const char* linkname) const
 {
   Proc* found = NULL;
 
-  ProcMap::const_iterator it = m_procMap->find(nm);
+  ProcMap::const_iterator it = m_procMap->find(name);
   if (it != m_procMap->end()) {
-    if (lnm && lnm[0] != '\0') {
-      for ( ; (it != m_procMap->end() && strcmp(it->first.c_str(), nm) == 0);
+    if (linkname && linkname[0] != '\0') {
+      for ( ; (it != m_procMap->end() && strcmp(it->first.c_str(), name) == 0);
 	    ++it) {
 	Proc* p = it->second;
-	if (strcmp(p->linkName().c_str(), lnm) == 0) {
+	if (strcmp(p->linkName().c_str(), linkname) == 0) {
 	  return p; // found = p
 	}
       }

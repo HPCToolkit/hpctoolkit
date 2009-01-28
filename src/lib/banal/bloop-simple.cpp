@@ -93,12 +93,12 @@ using namespace Prof;
 // makeStructureSimple: Uses the line map to make structure
 Struct::Stmt*
 banal::bloop::makeStructureSimple(Struct::LM* lmStrct, 
-				  binutils::LM* lm, VMA vma)
+				  BinUtil::LM* lm, VMA vma)
 {
   string procnm, filenm;
   SrcFile::ln line;
   lm->GetSourceFileInfo(vma, 0 /*opIdx*/, procnm, filenm, line);
-  procnm = GetBestFuncName(procnm);
+  procnm = BinUtil::canonicalizeProcName(procnm);
   
   if (filenm.empty()) {
     filenm = Struct::Tree::UnknownFileNm;
@@ -114,7 +114,7 @@ banal::bloop::makeStructureSimple(Struct::LM* lmStrct,
   if (!stmtStrct) {
     VMA begVMA = vma;
 
-    binutils::Insn* insn = lm->findInsn(vma, 0 /*opIdx*/);
+    BinUtil::Insn* insn = lm->findInsn(vma, 0 /*opIdx*/);
     VMA endVMA = (insn) ? insn->endVMA() : vma + 1;
 
     stmtStrct = new Struct::Stmt(procStrct, line, line, begVMA, endVMA);

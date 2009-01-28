@@ -184,7 +184,7 @@ loopifyFrame(Prof::CCT::ProcFrm* frame,
 static void 
 overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 		       Prof::Epoch::LM* epoch_lm, 
-		       Prof::Struct::LM* lmStrct, binutils::LM* lm);
+		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
 
 
 // overlayStaticStructure: Effectively create equivalence classes of frames
@@ -194,7 +194,7 @@ void
 Analysis::CallPath::
 overlayStaticStructure(Prof::CallPath::Profile* prof, 
 		       Prof::Epoch::LM* epoch_lm, 
-		       Prof::Struct::LM* lmStrct, binutils::LM* lm)
+		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
   Prof::CCT::Tree* cct = prof->cct();
   if (!cct) { return; }
@@ -206,7 +206,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof,
 static void 
 overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node, 
 		       Prof::Epoch::LM* epoch_lm, 
-		       Prof::Struct::LM* lmStrct, binutils::LM* lm)
+		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
   // INVARIANT: The parent of 'node' has been fully processed and
   // lives within a correctly located procedure frame.

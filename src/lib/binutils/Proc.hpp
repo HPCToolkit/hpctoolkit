@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef binutils_Proc_hpp 
-#define binutils_Proc_hpp
+#ifndef BinUtil_Proc_hpp 
+#define BinUtil_Proc_hpp
 
 //************************* System Include Files ****************************
 
@@ -73,7 +73,7 @@ class TextSeg;
 // Proc
 //***************************************************************************
 
-namespace binutils {
+namespace BinUtil {
 
 // --------------------------------------------------------------------------
 // 'Proc' represents a procedure in the 'TextSeg' of a 'LM'
@@ -106,7 +106,7 @@ public:
   void               name(const std::string& name) { m_name = name; }
 
   // Returns the name as found in the symbol table
-  const std::string& GetLinkName() const { return m_linkname; }
+  const std::string& linkName() const { return m_linkname; }
 
   // Return type of procedure
   Type type() const    { return m_type; }
@@ -225,14 +225,14 @@ private:
   static unsigned int nextId;
 };
 
-} // namespace binutils
+} // namespace BinUtil
 
 
 //***************************************************************************
 // ProcInsnIterator
 //***************************************************************************
 
-namespace binutils {
+namespace BinUtil {
 
 // --------------------------------------------------------------------------
 // 'ProcInsnIterator' enumerates a procedure's
@@ -280,9 +280,9 @@ private:
   LM::InsnMap::const_iterator endIt;
 };
 
-} // namespace binutils
+} // namespace BinUtil
 
 
 //***************************************************************************
 
-#endif // binutils_Proc_hpp
+#endif // BinUtil_Proc_hpp

@@ -96,7 +96,7 @@ class MetricCursor {
 public:
   MetricCursor(const Prof::Metric::Mgr& metricMgr,
 	       const Prof::Flat::LM& proflm, 
-	       const binutils::LM& lm);
+	       const BinUtil::LM& lm);
   ~MetricCursor();
   
   const vector<const Prof::Flat::EventData*>& 
@@ -155,7 +155,7 @@ private:
 
 MetricCursor::MetricCursor(const Prof::Metric::Mgr& metricMgr,
 			   const Prof::Flat::LM& proflm, 
-			   const binutils::LM& lm)
+			   const BinUtil::LM& lm)
 {
   m_loadAddr = (VMA)proflm.load_addr();
   m_doUnrelocate = lm.doUnrelocate(m_loadAddr);
@@ -291,7 +291,7 @@ writeMetricVals(ColumnFormatter& colFmt,
 static void
 correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
 		       const Prof::Flat::LM& proflm, 
-		       const binutils::LM& lm,
+		       const BinUtil::LM& lm,
 		       // ----------------------------------------------
 		       std::ostream& os, 
 		       bool srcCode,
@@ -332,10 +332,10 @@ correlateWithObject(const Prof::Metric::Mgr& metricMgr,
     const Prof::Flat::LM* proflm = it->second;
     
     // 1. Open and read the load module
-    binutils::LM* lm = new binutils::LM();
+    BinUtil::LM* lm = new BinUtil::LM();
     try {
       lm->open(proflm->name().c_str());
-      lm->read(binutils::LM::ReadFlg_ALL);
+      lm->read(BinUtil::LM::ReadFlg_ALL);
     } 
     catch (...) {
       DIAG_EMsg("While reading " << proflm->name());
@@ -352,7 +352,7 @@ correlateWithObject(const Prof::Metric::Mgr& metricMgr,
 void
 correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr, 
 		       const Prof::Flat::LM& proflm, 
-		       const binutils::LM& lm,
+		       const BinUtil::LM& lm,
 		       // ----------------------------------------------
 		       ostream& os, 
 		       bool srcCode,
@@ -390,17 +390,17 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
   // 1. For each procedure in the load module
   // --------------------------------------------------------
   
-  for (binutils::LM::ProcMap::const_iterator it = lm.procs().begin();
+  for (BinUtil::LM::ProcMap::const_iterator it = lm.procs().begin();
        it != lm.procs().end(); ++it) {
-    const binutils::Proc* p = it->second;
+    const BinUtil::Proc* p = it->second;
 
     // obtain name (and prune if necessary)
-    string bestName = GetBestFuncName(p->name());
+    string bestName = BinUtil::canonicalizeProcName(p->name());
     if (hasProcGlobs && !FileUtil::fnmatch(procPruneGlobs, bestName.c_str())) {
       continue;
     }
      
-    binutils::Insn* endInsn = p->endInsn();
+    BinUtil::Insn* endInsn = p->endInsn();
     VMAInterval procint(p->begVMA(), p->endVMA() + endInsn->size());
 
     // obtain counts (and prune if necessary)
@@ -439,10 +439,10 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
     string the_file;
     SrcFile::ln the_line = SrcFile::ln_NULL;
 
-    for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
-      binutils::Insn* insn = it.Current();
+    for (BinUtil::ProcInsnIterator it(*p); it.IsValid(); ++it) {
+      BinUtil::Insn* insn = it.Current();
       VMA vma = insn->vma();
-      VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, insn->opIndex());
+      VMA opVMA = BinUtil::LM::isa->ConvertVMAToOpVMA(vma, insn->opIndex());
 
       // 1. Collect metric annotations
       const vector<uint64_t>& metricValVMA = 

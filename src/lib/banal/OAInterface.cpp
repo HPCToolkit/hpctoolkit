@@ -69,7 +69,7 @@ using std::string;
 
 #include <lib/binutils/Proc.hpp>
 #include <lib/binutils/Insn.hpp>
-using namespace binutils;
+using namespace BinUtil;
 
 #include <lib/support/diagnostics.h>
 

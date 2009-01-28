@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef binutils_Insn_hpp 
-#define binutils_Insn_hpp
+#ifndef BinUtil_Insn_hpp 
+#define BinUtil_Insn_hpp
 
 //************************* System Include Files ****************************
 
@@ -69,7 +69,7 @@
 // Insn
 //***************************************************************************
 
-namespace binutils {
+namespace BinUtil {
 
 // 'Insn' is an abstract class that represents one single
 // processor instruction instruction in the 'TextSection' of a
@@ -185,14 +185,14 @@ private:
   VMA m_vma;         // vma of the beginning of this instruction packet
 };
 
-} // namespace binutils
+} // namespace BinUtil
 
 
 //***************************************************************************
 // CISCInsn
 //***************************************************************************
 
-namespace binutils {
+namespace BinUtil {
 
 class CISCInsn : public Insn {
 public:
@@ -232,14 +232,14 @@ private:
   ushort m_size;
 };
 
-} // namespace binutils
+} // namespace BinUtil
 
 
 //***************************************************************************
 // RISCInsn
 //***************************************************************************
 
-namespace binutils {
+namespace BinUtil {
 
 class RISCInsn : public Insn {
 public:
@@ -270,14 +270,14 @@ protected:
 private:
 };
 
-} // namespace binutils
+} // namespace BinUtil
 
 
 //***************************************************************************
 // VLIWInsn
 //***************************************************************************
 
-namespace binutils {
+namespace BinUtil {
 
 class VLIWInsn : public Insn {
 public:
@@ -313,7 +313,7 @@ private:
   ushort m_opIndex;
 };
 
-} // namespace binutils
+} // namespace BinUtil
 
 //***************************************************************************
 

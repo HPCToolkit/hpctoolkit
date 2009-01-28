@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef binutils_LM_hpp 
-#define binutils_LM_hpp
+#ifndef BinUtil_LM_hpp 
+#define BinUtil_LM_hpp
 
 //************************* System Include Files ****************************
 
@@ -82,7 +82,7 @@ class ISA;
 // LM (LoadModule)
 //***************************************************************************
 
-namespace binutils {
+namespace BinUtil {
 
 class Seg;
 class Proc;
@@ -439,7 +439,7 @@ private:
 
   friend class TextSeg; // for TextSeg::Create_InitializeProcs();
 
-  binutils::dbg::LM* 
+  BinUtil::dbg::LM* 
   GetDebugInfo() { 
     return &m_dbgInfo; 
   }
@@ -467,7 +467,7 @@ private:
   InsnMap m_insnMap; // owns all Insn*
 
   // symbolic info used in building procedures
-  binutils::dbg::LM m_dbgInfo;
+  BinUtil::dbg::LM m_dbgInfo;
 
   bfd*      m_bfd;           // BFD of this module.
   asymbol** m_bfdSymTab;     // Unmodified BFD symbol table
@@ -477,14 +477,14 @@ private:
   RealPathMgr& m_realpathMgr;
 };
 
-} // namespace binutils
+} // namespace BinUtil
 
 
 //***************************************************************************
 // Executable
 //***************************************************************************
 
-namespace binutils {
+namespace BinUtil {
 
 // --------------------------------------------------------------------------
 // 'Executable' represents an executable binary
@@ -525,16 +525,16 @@ private:
   VMA m_startVMA;
 };
 
-} // namespace binutils
+} // namespace BinUtil
 
 
 //***************************************************************************
 // Exception
 //***************************************************************************
 
-#define BINUTILS_Throw(streamArgs) DIAG_ThrowX(binutils::Exception, streamArgs)
+#define BINUTIL_Throw(streamArgs) DIAG_ThrowX(BinUtil::Exception, streamArgs)
 
-namespace binutils {
+namespace BinUtil {
 
 class Exception : public Diagnostics::Exception {
 public:
@@ -543,15 +543,15 @@ public:
   { }
   
   virtual std::string message() const { 
-    return "[binutils]: " + what();
+    return "[BinUtil]: " + what();
   }
 
 private:
 };
 
-} // namespace binutils
+} // namespace BinUtil
 
 
 //***************************************************************************
 
-#endif // binutils_LM_hpp
+#endif // BinUtil_LM_hpp

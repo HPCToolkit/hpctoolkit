@@ -94,7 +94,7 @@ typedef std::map<SrcFile::ln, VMAList*>::value_type LineToVMAListMapItVal;
 void ClearLineToVMAListMap(LineToVMAListMap* map);
 
 // Dump Helpers
-void DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm);
+void DumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm);
 
 //****************************************************************************
 
@@ -137,11 +137,11 @@ realmain(int argc, char* const argv[])
   // ------------------------------------------------------------
   // Read load module
   // ------------------------------------------------------------
-  binutils::LM* lm = NULL;
+  BinUtil::LM* lm = NULL;
   try {
-    lm = new binutils::LM();
+    lm = new BinUtil::LM();
     lm->open(args.inputFile.c_str());
-    lm->read(binutils::LM::ReadFlg_ALL);
+    lm->read(BinUtil::LM::ReadFlg_ALL);
   } 
   catch (...) {
     DIAG_EMsg("Exception encountered while reading " << args.inputFile);
@@ -157,15 +157,15 @@ realmain(int argc, char* const argv[])
     }
     
     // Assume parser sanity checked arguments
-    binutils::LM::DumpTy ty = binutils::LM::DUMP_Mid;
+    BinUtil::LM::DumpTy ty = BinUtil::LM::DUMP_Mid;
     if (args.dumpShort) {
-      ty = binutils::LM::DUMP_Short;
+      ty = BinUtil::LM::DUMP_Short;
     } 
     if (args.dumpLong) {
-      ty = binutils::LM::DUMP_Long;
+      ty = BinUtil::LM::DUMP_Long;
     }
     if (args.dumpDecode) {
-      ty = (binutils::LM::DumpTy)(ty | binutils::LM::DUMP_Flg_Insn_decode);
+      ty = (BinUtil::LM::DumpTy)(ty | BinUtil::LM::DUMP_Flg_Insn_decode);
     }
     
     lm->dump(std::cout, ty);
@@ -184,22 +184,22 @@ realmain(int argc, char* const argv[])
 //****************************************************************************
 
 void 
-DumpHeaderInfo(std::ostream& os, binutils::LM* lm, const char* pre = "")
+DumpHeaderInfo(std::ostream& os, BinUtil::LM* lm, const char* pre = "")
 {
   os << "Begin LoadModule Stmt Dump\n";
   os << pre << "Name: `" << lm->name() << "'\n";
   os << pre << "Type: `";
   switch (lm->type()) {
-    case binutils::LM::TypeExe:
+    case BinUtil::LM::TypeExe:
       os << "Executable (fully linked except for possible DSOs)'\n";
       break;
-    case binutils::LM::TypeDSO:
+    case BinUtil::LM::TypeDSO:
       os << "Dynamically Shared Library'\n";
       break;
     default:
       DIAG_Die("Unknown LM type!"); 
   }
-  os << pre << "ISA: `" << typeid(*binutils::LM::isa).name() << "'\n"; // std::type_info
+  os << pre << "ISA: `" << typeid(*BinUtil::LM::isa).name() << "'\n"; // std::type_info
 }
 
 //****************************************************************************
@@ -209,7 +209,7 @@ void DumpSymbolicInfoForFunc(std::ostream& os, const char* pre,
 			     const char* file);
 
 void 
-DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm)
+DumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm)
 {
   string pre = "  ";
   string pre1 = pre + "  ";
@@ -222,26 +222,26 @@ DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm)
   // ------------------------------------------------------------------------  
 
   os << pre << "Dump:\n";
-  for (binutils::LM::ProcMap::iterator it = lm->procs().begin();
+  for (BinUtil::LM::ProcMap::iterator it = lm->procs().begin();
        it != lm->procs().end(); ++it) {
-    binutils::Proc* p = it->second;
-    string pName = GetBestFuncName(p->name());
+    BinUtil::Proc* p = it->second;
+    string pName = BinUtil::canonicalizeProcName(p->name());
 
       
     // We have a 'Procedure'.  Iterate over VMA values     
     string theFunc = pName, theFile;
     LineToVMAListMap map;
 
-    for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
-      binutils::Insn* inst = it.Current();
+    for (BinUtil::ProcInsnIterator it(*p); it.IsValid(); ++it) {
+      BinUtil::Insn* inst = it.Current();
       VMA vma = inst->vma();
-      VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, inst->opIndex());
+      VMA opVMA = BinUtil::LM::isa->ConvertVMAToOpVMA(vma, inst->opIndex());
 	
       // 1. Attempt to find symbolic information
       string func, file;
       SrcFile::ln line;
       p->GetSourceFileInfo(vma, inst->opIndex(), func, file, line);
-      func = GetBestFuncName(func);
+      func = BinUtil::canonicalizeProcName(func);
 	
       // Bad line number: cannot fix; advance iteration
       if ( !SrcFile::isValid(line) ) {

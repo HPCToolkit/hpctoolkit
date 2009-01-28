@@ -73,7 +73,7 @@ using std::string;
 //****************************************************************************
 
 void
-binutils::Insn::dump(std::ostream& o, int flags, const char* pre) const
+BinUtil::Insn::dump(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
   VMA target = targetVMA(m_vma);
@@ -94,7 +94,7 @@ binutils::Insn::dump(std::ostream& o, int flags, const char* pre) const
 
 
 string
-binutils::Insn::toString(int flags, const char* pre) const
+BinUtil::Insn::toString(int flags, const char* pre) const
 {
   std::ostringstream os;
   dump(os, flags, pre);
@@ -103,14 +103,14 @@ binutils::Insn::toString(int flags, const char* pre) const
 
 
 void
-binutils::Insn::ddump() const
+BinUtil::Insn::ddump() const
 {
   dump(std::cerr);
 }
 
 
 void
-binutils::Insn::dumpme(std::ostream& o, const char* pre) const
+BinUtil::Insn::dumpme(std::ostream& o, const char* pre) const
 {
 }
 
@@ -120,14 +120,14 @@ binutils::Insn::dumpme(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 void
-binutils::CISCInsn::dump(std::ostream& o, int flags, const char* pre) const
+BinUtil::CISCInsn::dump(std::ostream& o, int flags, const char* pre) const
 {
   Insn::dump(o, flags, pre);
 }
 
 
 void
-binutils::CISCInsn::dumpme(std::ostream& o, const char* pre) const
+BinUtil::CISCInsn::dumpme(std::ostream& o, const char* pre) const
 {
   o << "(CISC sz:" << size() << ")";
 }
@@ -138,14 +138,14 @@ binutils::CISCInsn::dumpme(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 void
-binutils::RISCInsn::dump(std::ostream& o, int flags, const char* pre) const
+BinUtil::RISCInsn::dump(std::ostream& o, int flags, const char* pre) const
 {
   Insn::dump(o, flags, pre);
 }
 
 
 void
-binutils::RISCInsn::dumpme(std::ostream& o, const char* pre) const
+BinUtil::RISCInsn::dumpme(std::ostream& o, const char* pre) const
 {
   o << "(RISC)";
 }
@@ -156,14 +156,14 @@ binutils::RISCInsn::dumpme(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 void
-binutils::VLIWInsn::dump(std::ostream& o, int flags, const char* pre) const
+BinUtil::VLIWInsn::dump(std::ostream& o, int flags, const char* pre) const
 {
   Insn::dump(o, flags, pre);
 }
 
 
 void
-binutils::VLIWInsn::dumpme(std::ostream& o, const char* pre) const
+BinUtil::VLIWInsn::dumpme(std::ostream& o, const char* pre) const
 {
   o << "(VLIW opIdx:" << opIndex() << ")";
 }

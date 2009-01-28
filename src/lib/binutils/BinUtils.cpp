@@ -51,18 +51,12 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <string>
+using std::string;
 
-#ifdef NO_STD_CHEADERS
-# include <stdlib.h>
-# include <string.h>
-#else
-# include <cstdlib> // for 'free'
-# include <cstring> // for 'strlen', 'strcpy'
-using namespace std; // For compatibility with non-std C headers
-#endif
+#include <cstdlib> // for 'free'
+#include <cstring> // for 'strlen', 'strcpy'
 
-#include <sys/types.h> // for 'stat'
-#include <sys/stat.h>
 
 //*************************** User Include Files ****************************
 
@@ -72,106 +66,80 @@ using namespace std; // For compatibility with non-std C headers
 
 //****************************************************************************
 
+namespace BinUtil {
 
 //***************************************************************************
-// System Dependent Helpers
+// 
 //***************************************************************************
 
-// 'GetBestFuncName': If 'name' is non-nil, uses 'GetDemangledFuncName' 
+// 'canonicalizeProcName': If 'name' is non-empty, uses 'demangleProcName' 
 // to attempt to demangle it.  If there is an error in demangling,
 // return 'name'; otherwise return the demangled version.
-const char*
-GetBestFuncName(const char* name)
+string
+canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr)
 {
-  if (!name) { return NULL; }
-  if (name[0] == '\0') { return name; }
-
-  const char* demangledName = GetDemangledFuncName(name);
-  if (demangledName && (strlen(demangledName) > 0)) {
-    return demangledName;
-  } 
-  else {
-    return name;
+  if (name.empty()) {
+    return name; 
   }
+
+  string bestname = demangleProcName(name.c_str());
+  if (procNameMgr) {
+    bestname = procNameMgr->canonicalize(bestname);
+  }
+  
+  return bestname;
 }
 
 
 // Include the system demangle
-#if defined(HOST_OS_IRIX)
-# include <dem.h>      // demangle
-  const int DEMANGLE_BUF_SZ = MAXDBUF;
-#elif defined(HOST_OS_TRU64)
-# include <../../usr/include/demangle.h> // demangle (don't confuse with GNU)
-  const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
-#elif defined(HOST_OS_SOLARIS)
+#if defined(HOST_OS_SOLARIS)
 # include <../../usr/include/demangle.h> // demangle (don't confuse with GNU)
   const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
 #elif defined(HOST_OS_LINUX) || defined(HOST_OS_MACOS)
   // the system demangle is GNU's demangle
-  const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
 #else
 # error "binutils::BinUtils does not recognize your platform."
 #endif
-
-const int MANGLE_BUF_SZ = 4096;
 
 // Include GNU's demangle
 #include <include/gnu_demangle.h> // GNU's demangle
 
 
-// Returns the demangled function name.  The return value is stored in
-// 'outbuf' and will be clobbered the next time the function is called.
-const char*
-GetDemangledFuncName(const char* name)
+// Returns the demangled function name (if possible) or the original name.
+string
+demangleProcName(const std::string& name)
 {
-  static char inbuf[MANGLE_BUF_SZ];
-  static char outbuf[DEMANGLE_BUF_SZ];
-  strncpy(inbuf, name, MANGLE_BUF_SZ-1);
-  inbuf[MANGLE_BUF_SZ-1] = '\0';
+  string bestname = name;
 
   // -------------------------------------------------------
   // Try the system demangler first
   // -------------------------------------------------------
-  strcpy(outbuf, ""); // clear outbuf
-  bool demSuccess = false;
-#if defined(HOST_OS_IRIX)
-  if (demangle(inbuf, outbuf) == 0) {
-    demSuccess = true;
-  } // else: demangling failed
-#elif defined(HOST_OS_TRU64)
-  if (MLD_demangle_string(inbuf, outbuf,
-			  DEMANGLE_BUF_SZ, MLD_SHOW_DEMANGLED_NAME) == 1) {
-    demSuccess = true; 
-  } // else: error or useless
-#elif defined(HOST_OS_SOLARIS)
-  if (cplus_demangle(inbuf, outbuf, DEMANGLE_BUF_SZ) == 0) {
-    demSuccess = true;
-  } // else: invalid mangled name or output buffer too small
-#elif defined(HOST_OS_LINUX)
-  // System demangler is same as GNU's
+#if defined(HOST_OS_SOLARIS)
+  static char outbuf[DEMANGLE_BUF_SZ] = { '\0' };
+  if (cplus_demangle(name, outbuf, DEMANGLE_BUF_SZ) == 0) {
+    // Sun has a liberal interpretation of 'valid encoded name'.)
+    // Ensure, a change has occured.
+    if (strcmp(name, outbuf) != 0) {
+      bestname = outbuf;
+    }
+  }
+  if (!bestname.empty()) {
+    return bestname;
+  }
 #endif
-
-  // Definitions of a 'valid encoded name' differ.  This causes a
-  // problem if the system demangler deems a string to be encoded,
-  // reports a successful demangle, but simply *copies* the string into
-  // 'outbuf' (the 'identity demangle').  (Sun, in particular, has a
-  // liberal interpretation of 'valid encoded name'.)  In such cases,
-  // we want to give the GNU demangler a chance.
-  if (strcmp(inbuf, outbuf) == 0) { demSuccess = false; }
-  
-  if (demSuccess) { return outbuf; }
+  // Note: on Linux, system demangler is same as GNU's
 
   // -------------------------------------------------------
   // Now try GNU's demangler
   // -------------------------------------------------------
-  strcpy(outbuf, ""); // clear outbuf
-  char* ret = GNU_CPLUS_DEMANGLE(inbuf, DMGL_PARAMS | DMGL_ANSI);
-  if (!ret) {
-    return NULL; // error!
+  char* str = GNU_CPLUS_DEMANGLE(name.c_str(), DMGL_PARAMS | DMGL_ANSI);
+  if (str) {
+    bestname = str;
+    free(str); // gnu_cplus_demangle caller is responsible for memory cleanup
   }
-  strncpy(outbuf, ret, DEMANGLE_BUF_SZ-1);
-  outbuf[DEMANGLE_BUF_SZ-1] = '\0';
-  free(ret); // gnu_cplus_demangle caller is responsible for memory cleanup
-  return outbuf; // success!
+
+  return bestname;
 }
 
+
+} // namespace BinUtil

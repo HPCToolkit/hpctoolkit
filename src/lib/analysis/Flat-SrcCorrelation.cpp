@@ -711,13 +711,13 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
 			      ProfToMetricsTupleVec& profToMetricsVec,
 			      bool useStruct)
 {
-  binutils::LM* lm = openLM(lmname);
+  BinUtil::LM* lm = openLM(lmname);
   if (!lm) {
     return;
   }
 
   if (!useStruct) {
-    lm->read(binutils::LM::ReadFlg_Seg);
+    lm->read(BinUtil::LM::ReadFlg_Seg);
   }
 
   Prof::Struct::LM* lmStrct = 
@@ -775,7 +775,7 @@ Driver::correlateRaw(PerfMetric* metric,
 		     VMA lm_load_addr,
 		     Prof::Struct::Tree& structure,
 		     Prof::Struct::LM* lmStrct,
-		     /*const*/ binutils::LM* lm,
+		     /*const*/ BinUtil::LM* lm,
 		     bool useStruct)
 {
   unsigned long period = profevent.mdesc().period();
@@ -946,15 +946,15 @@ Driver::readProf(Prof::Flat::ProfileData* prof)
 }
 
 
-binutils::LM*
+BinUtil::LM*
 Driver::openLM(const string& fnm)
 {
-  binutils::LM* lm = NULL;
+  BinUtil::LM* lm = NULL;
   try {
-    lm = new binutils::LM();
+    lm = new BinUtil::LM();
     lm->open(fnm.c_str());
   }
-  catch (const binutils::Exception& x) {
+  catch (const BinUtil::Exception& x) {
     DIAG_EMsg("While opening " << fnm.c_str() << ":\n" << x.message());
   }
   catch (...) {

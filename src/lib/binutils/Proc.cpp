@@ -76,12 +76,12 @@ using std::string;
 // Proc
 //***************************************************************************
 
-unsigned int binutils::Proc::nextId = 0;
+unsigned int BinUtil::Proc::nextId = 0;
 
-binutils::Proc::Proc(binutils::TextSeg* seg, 
-		     const string& name, const string& linkname,
-                     binutils::Proc::Type t, VMA begVMA, VMA endVMA, 
-		     unsigned int size)
+BinUtil::Proc::Proc(BinUtil::TextSeg* seg, 
+		    const string& name, const string& linkname,
+		    BinUtil::Proc::Type t, VMA begVMA, VMA endVMA, 
+		    unsigned int size)
   : m_seg(seg), m_name(name), m_linkname(linkname), m_type(t), m_begVMA(begVMA),
     m_endVMA(endVMA), m_size(size), m_filenm(""), m_begLine(0), m_parent(NULL)
 {
@@ -90,14 +90,14 @@ binutils::Proc::Proc(binutils::TextSeg* seg,
 }
 
 
-binutils::Proc::~Proc()
+BinUtil::Proc::~Proc()
 {
   m_seg = NULL;
 }
 
 
-binutils::Insn* 
-binutils::Proc::endInsn() const
+BinUtil::Insn* 
+BinUtil::Proc::endInsn() const
 {
   Insn* insn = findInsn(m_endVMA, 0);
   if (insn) {
@@ -111,7 +111,7 @@ binutils::Proc::endInsn() const
 
 
 string 
-binutils::Proc::toString(int flags) const
+BinUtil::Proc::toString(int flags) const
 {
   std::ostringstream os;
   dump(os, flags);
@@ -120,38 +120,38 @@ binutils::Proc::toString(int flags) const
 
 
 void
-binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
+BinUtil::Proc::dump(std::ostream& os, int flags, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
   string p2 = p + "    ";  
   
-  string func, file, b_func, b_file, e_func, e_file;
+  string proc, file, b_proc, b_file, e_proc, e_file;
   SrcFile::ln begLn, endLn, b_begLn, e_endLn2;
   Insn* eInsn = endInsn();
   ushort endOp = (eInsn) ? eInsn->opIndex() : 0;
 
   // This call performs some consistency checking
   m_seg->GetSourceFileInfo(begVMA(), 0, endVMA(), endOp,
-			   func, file, begLn, endLn);
+			   proc, file, begLn, endLn);
 
   // These calls perform no consistency checking
-  m_seg->GetSourceFileInfo(begVMA(), 0, b_func, b_file, b_begLn);
-  m_seg->GetSourceFileInfo(endVMA(), endOp, e_func, e_file, e_endLn2);
+  m_seg->GetSourceFileInfo(begVMA(), 0, b_proc, b_file, b_begLn);
+  m_seg->GetSourceFileInfo(endVMA(), endOp, e_proc, e_file, e_endLn2);
 
-  string nm = GetBestFuncName(name());
-  string ln_nm = GetBestFuncName(GetLinkName());
+  string nm = BinUtil::canonicalizeProcName(name());
+  string ln_nm = BinUtil::canonicalizeProcName(linkName());
   
   os << p << "---------- Procedure Dump ----------\n";
   os << p << "  Name:     `" << nm << "'\n";
   os << p << "  LinkName: `" << ln_nm << "'\n";
   os << p << "  Sym:      {" << filename() << "}:" << begLine() << "\n";
   os << p << "  LnMap:    {" << file << "}[" 
-     << GetBestFuncName(func) <<"]:" << begLn << "-" << endLn << "\n";
+     << BinUtil::canonicalizeProcName(proc) <<"]:" << begLn << "-" << endLn << "\n";
   os << p << "  LnMap(b): {" << b_file << "}[" 
-     << GetBestFuncName(b_func) << "]:" << b_begLn << "\n";
+     << BinUtil::canonicalizeProcName(b_proc) << "]:" << b_begLn << "\n";
   os << p << "  LnMap(e): {" << e_file << "}[" 
-     << GetBestFuncName(e_func) << "]:" << e_endLn2 << "\n";
+     << BinUtil::canonicalizeProcName(e_proc) << "]:" << e_endLn2 << "\n";
   
   os << p << "  ID, Type: " << id() << ", `";
   switch (type()) {
@@ -185,10 +185,10 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
 	VMA vma = insn->vma();
 	ushort opIdx = insn->opIndex();
 
-	string func, file;
+	string proc, file;
 	SrcFile::ln line;
-    	m_seg->GetSourceFileInfo(vma, opIdx, func, file, line);
-	func = GetBestFuncName(func);
+    	m_seg->GetSourceFileInfo(vma, opIdx, proc, file, line);
+	proc = BinUtil::canonicalizeProcName(proc);
 	
 	os << p2 << "  ";
 	if (file == filename()) { 
@@ -198,11 +198,11 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
 	  os << "!{" << file << "}";
 	}
 	os << ":" << line << ":";
-	if (func == nm || func == ln_nm) {
+	if (proc == nm || proc == ln_nm) {
 	  os << "-";
 	}
 	else {
-	  os << "![" << func << "]";
+	  os << "![" << proc << "]";
 	}
 	os << "\n";
       }
@@ -212,7 +212,7 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
 
 
 void
-binutils::Proc::ddump() const
+BinUtil::Proc::ddump() const
 {
   dump(std::cerr);
 }
@@ -222,20 +222,20 @@ binutils::Proc::ddump() const
 // ProcInsnIterator
 //***************************************************************************
 
-binutils::ProcInsnIterator::ProcInsnIterator(const Proc& _p)
+BinUtil::ProcInsnIterator::ProcInsnIterator(const Proc& _p)
   : p(_p), lm(*(p.lm()))
 {
   Reset();
 }
 
 
-binutils::ProcInsnIterator::~ProcInsnIterator()
+BinUtil::ProcInsnIterator::~ProcInsnIterator()
 {
 }
 
 
 void
-binutils::ProcInsnIterator::Reset()
+BinUtil::ProcInsnIterator::Reset()
 {
   it    = lm.m_insnMap.find(p.m_begVMA);
   endIt = lm.m_insnMap.find(p.m_endVMA); 

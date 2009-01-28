@@ -1068,11 +1068,11 @@ public:
   // FindProc: Attempt to find the procedure within the multimap.  If
   // 'lnm' is provided, require that link names match.
   Proc* 
-  findProc(const char* nm, const char* lnm = NULL) const;
+  findProc(const char* name, const char* linkname = NULL) const;
 
   Proc* 
-  findProc(const std::string& nm, const std::string& lnm = "") const
-  { return findProc(nm.c_str(), lnm.c_str()); }
+  findProc(const std::string& name, const std::string& linkname = "") const
+  { return findProc(name.c_str(), linkname.c_str()); }
 
                                            
   // --------------------------------------------------------
@@ -1149,16 +1149,14 @@ public:
   //   Proc was created and false otherwise.
   // Note: currently sets hasSymbolic() to false on creation
   static Proc*
-  demand(File* file, const std::string& nm, const std::string& lnm,
+  demand(File* file, const std::string& name, const std::string& linkname,
 	 SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL, 
 	 bool* didCreate = NULL);
 
   static Proc*
-  demand(File* file, const std::string& nm)
-  { demand(file, nm, "", ln_NULL, ln_NULL, NULL); }
+  demand(File* file, const std::string& name)
+  { demand(file, name, "", ln_NULL, ln_NULL, NULL); }
 
-  // FIXME: both demand and File::findProc should take a ProcNameMgr.
-  
 
   // --------------------------------------------------------
   // 

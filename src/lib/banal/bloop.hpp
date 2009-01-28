@@ -71,7 +71,7 @@ namespace banal {
 namespace bloop {
   
   Prof::Struct::LM* 
-  makeStructure(binutils::LM* lm, 
+  makeStructure(BinUtil::LM* lm, 
 		bool normalizeScopeTree = true,
 		bool unsafeNormalizations = true,
 		bool irreducibleIntervalIsLoop = false,
@@ -80,7 +80,7 @@ namespace bloop {
 		const std::string& dbgProcGlob = "");
   
   Prof::Struct::Stmt*
-  makeStructureSimple(Prof::Struct::LM* lmStrct, binutils::LM* lm, VMA vma);
+  makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
 
 
   bool 
