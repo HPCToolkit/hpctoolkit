@@ -18,6 +18,7 @@
 #include "unwind.h"
 #include "unwind_cursor.h"
 #include "ppc64-unwind-interval.h"
+#include "validate_return_addr.h"
 
 
 
@@ -219,4 +220,15 @@ unw_get_reg(unw_cursor_t *cursor, int reg_id, void **reg_value)
   *reg_value = cursor->pc;
 
   return 0;
+}
+
+
+bool
+validate_return_addr(void* addr, unw_cursor_t* cursor)
+{
+  bool isValid = true;
+
+  // trivial implementation for now
+
+  return isValid;
 }
