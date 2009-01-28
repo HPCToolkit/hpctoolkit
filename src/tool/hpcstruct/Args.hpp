@@ -91,6 +91,7 @@ public:
   const std::string& getCmd() const;
 
   // Parsed Data: optional arguments
+  std::string searchPathStr;      // default: "."
   bool irreducibleIntervalIsLoop; // default: true
   bool forwardSubstitutionOff;    // default: false
   bool normalizeScopeTree;        // default: true

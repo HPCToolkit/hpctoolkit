@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2009/01/23}
+\setDate{ 2009/01/27}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -102,6 +102,13 @@ Debug structure recovery for procedures matching the procedure glob \Arg{glob}.
 \subsection{Options: Structure recovery}
 
 \begin{Description}
+\item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
+Use \Arg{path} when resolving source file names. 
+This option is useful when a compiler records the same filename in \emph{different} ways within the symbolic information.
+(Yes, this does happen.)
+For a recursive search, append a '*' after the last slash, e.g., \verb+'/mypath/*'+ (quote or escape to protect from the shell). 
+May pass multiple times.
+
 \item[\Opt{-i}, \Opt{--irreducible-interval-as-loop-off}]
 Do not treat irreducible intervals as loops.
 

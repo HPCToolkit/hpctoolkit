@@ -105,6 +105,11 @@ Options: General\n\
                        the procedure glob <glob>\n\
 \n\
 Options: Structure recovery\n\
+  -I <path>, --include <path>\n\
+                       Use <path> when resolving source file names. For a\n\
+                       recursive search, append a '*' after the last slash,\n\
+                       e.g., '/mypath/*' (quote or escape to protect from\n\
+                       the shell.) May pass multiple times.\n\
   -i, --irreducible-interval-as-loop-off\n\
                        Do not treat irreducible intervals as loops\n\
   -f, --forward-substitution-off\n\
@@ -127,6 +132,8 @@ Options: Output:\n\
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Structure recovery options
+  { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  ":",
+     NULL },
   { 'i', "irreducible-interval-as-loop-off",
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
@@ -183,6 +190,7 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
+  searchPathStr = ".";
   irreducibleIntervalIsLoop = true;
   forwardSubstitutionOff = false;
   normalizeScopeTree = true;
@@ -275,6 +283,9 @@ Args::parse(int argc, const char* const argv[])
     }
     
     // Check for other options: Structure recovery
+    if (parser.isOpt("include")) {
+      searchPathStr += ":" + parser.getOptArg("include");
+    }
     if (parser.isOpt("irreducible-interval-as-loop-off")) { 
       irreducibleIntervalIsLoop = false;
     } 

@@ -67,6 +67,7 @@ using std::endl;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/IOUtil.hpp>
+#include <lib/support/RealPathMgr.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -104,6 +105,7 @@ int
 real_main(int argc, char* argv[])
 {
   Args args(argc, argv);
+  RealPathMgr::singleton().searchPaths(args.searchPathStr);
   
   // ------------------------------------------------------------
   // Read executable

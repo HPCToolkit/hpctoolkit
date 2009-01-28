@@ -172,7 +172,6 @@ Analysis::Args::normalizeSearchPaths()
 std::string 
 Analysis::Args::searchPathStr() const
 {
-  // cf. Driver::searchPathStr (Flat-SrcCorrelation.*)
   string path = ".";
   for (uint i = 0; i < searchPathTpls.size(); ++i) { 
     path += string(":") + searchPathTpls[i].first;
