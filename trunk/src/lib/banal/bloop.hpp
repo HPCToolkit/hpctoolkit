@@ -72,10 +72,10 @@ namespace bloop {
   
   Prof::Struct::LM* 
   makeStructure(BinUtil::LM* lm, 
-		bool normalizeScopeTree = true,
-		bool unsafeNormalizations = true,
-		bool irreducibleIntervalIsLoop = false,
-		bool forwardSubstitutionOff = false,
+		bool doNormalize = true,
+		bool doNormalizeUnsafe = true,
+		bool isIrrIvalLoop = false,
+		bool fwdSubstOff = false,
 		ProcNameMgr* procNameMgr = NULL,
 		const std::string& dbgProcGlob = "");
   
@@ -84,7 +84,7 @@ namespace bloop {
 
 
   bool 
-  normalize(Prof::Struct::LM* lmStrct, bool unsafeNormalizations = true);
+  normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe = true);
 
   void
   writeStructure(std::ostream& os, Prof::Struct::Tree* strctTree,

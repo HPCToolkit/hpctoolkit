@@ -99,14 +99,35 @@ public:
 private:
 
   bool 
-  is_slow_proc(const std::string& x)
+  isGenerated(const std::string& x, 
+	      const std::string& pfx, const std::string& sfx)
   {
-    return (x.compare(0, s_slow_pfx.length(), s_slow_pfx) == 0);
+    bool isSane = (x.length() > (pfx.length() + sfx.length()));
+    size_t sfx_pos = x.length() - sfx.length();
+
+    // test suffix first becuase it fails more than the prefix comparison
+    return (isSane && 
+	    x.compare(sfx_pos, sfx.length(), sfx) == 0 &&
+	    x.compare(0, pfx.length(), pfx) == 0);
+  }
+
+  std::string 
+  basename(const std::string& x, 
+	   const std::string& pfx, const std::string& sfx)
+  {
+    // Assume: x.length() > (pfx.length() + sfx.length())
+    int len = x.length() - pfx.length() - sfx.length();
+    return x.substr(pfx.length(), len);
   }
 
 private:
-  static const std::string s_slow_pfx;
-  static const std::string s_slow_sfx;
+  static const std::string s_procSlow_pfx,   s_procSlow_sfx;
+  static const std::string s_procImport_pfx, s_procImport_sfx;
+  static const std::string s_procExport_pfx, s_procExport_sfx;
+
+  static const std::string s_inletNorm_pfx, s_inletNorm_sfx;
+  static const std::string s_inletFast_pfx, s_inletFast_sfx;
+  static const std::string s_inletSlow_pfx, s_inletSlow_sfx;
 };
 
 
