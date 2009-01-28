@@ -917,9 +917,9 @@ public:
 
   virtual const std::string& name() const { return m_name; }
 
-  std::string BaseName() const  { return FileUtil::basename(m_name); }
-
   virtual std::string codeName() const { return name(); }
+
+  std::string BaseName() const  { return FileUtil::basename(m_name); }
 
 
   // --------------------------------------------------------
@@ -1051,12 +1051,14 @@ public:
   // --------------------------------------------------------
 
   virtual const std::string& name() const { return m_name; }
+
+  virtual std::string codeName() const;
+
+
   void name(const char* fname) { m_name = fname; }
   void name(const std::string& fname) { m_name = fname; }
 
   std::string BaseName() const { return FileUtil::basename(m_name); }
-
-  virtual std::string codeName() const;
 
 
   // --------------------------------------------------------
@@ -1070,10 +1072,7 @@ public:
 
   Proc* 
   findProc(const std::string& nm, const std::string& lnm = "") const
-  {
-    const char* x = lnm.c_str();
-    return findProc(nm.c_str(), (x[0] == '\0') ? NULL : x);
-  }
+  { return findProc(nm.c_str(), lnm.c_str()); }
 
                                            
   // --------------------------------------------------------
@@ -1130,9 +1129,8 @@ public:
     Ctor(name, parent, linkname, hasSym);
   }
   
-  Proc(const std::string& name, ACodeNode* parent,
-	    const std::string& linkname, bool hasSym,
-	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+  Proc(const std::string& name, ACodeNode* parent, const std::string& linkname,
+       bool hasSym, SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyPROC, parent, begLn, endLn, 0, 0)
   {
     Ctor(name.c_str(), parent, linkname.c_str(), hasSym);
@@ -1147,14 +1145,19 @@ public:
   clone() 
   { return new Proc(*this); }
 
+  // demand: if didCreate is non-NULL, it will be set to true if a new
+  //   Proc was created and false otherwise.
+  // Note: currently sets hasSymbolic() to false on creation
   static Proc*
   demand(File* file, const std::string& nm, const std::string& lnm,
-	 SrcFile::ln line = 0);
+	 SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL, 
+	 bool* didCreate = NULL);
 
   static Proc*
-  demand(File* file, const std::string& nm, SrcFile::ln line = 0)
-  { demand(file, nm, "", line); }
+  demand(File* file, const std::string& nm)
+  { demand(file, nm, "", ln_NULL, ln_NULL, NULL); }
 
+  // FIXME: both demand and File::findProc should take a ProcNameMgr.
   
 
   // --------------------------------------------------------
@@ -1163,16 +1166,18 @@ public:
 
   virtual const std::string& name() const { return m_name; }
 
+  virtual std::string codeName() const;
+
+
   void name(const char* n) { m_name = n; }
   void name(const std::string& n) { m_name = n; }
 
-  virtual const std::string& LinkName() const { return m_linkname; }
-
-  virtual std::string codeName() const;
+  const std::string& linkName() const { return m_linkname; }
 
   bool hasSymbolic() const { return m_hasSym; }
-  
-  
+  void hasSymbolic(bool x) { m_hasSym = x; }
+
+
   // --------------------------------------------------------
   // search for enclosing nodes
   // --------------------------------------------------------

@@ -58,31 +58,10 @@
 #include <include/general.h> 
 
 #include <lib/prof-juicy/Struct-Tree.hpp>
+
 #include <lib/binutils/LM.hpp>
 
-
-//***************************************************************************
-
-namespace banal {
-
-namespace bloop {
-
-
-class ProcNameMgr
-{
-public:
-  ProcNameMgr() { }
-  virtual ~ProcNameMgr() { }
-
-  virtual std::string 
-  canonicalize(const std::string& name) = 0;
-
-};
-
-
-} // namespace bloop
-
-} // namespace banal
+#include <lib/support/ProcNameMgr.hpp>
 
 
 //***************************************************************************
@@ -97,6 +76,7 @@ namespace bloop {
 		bool unsafeNormalizations = true,
 		bool irreducibleIntervalIsLoop = false,
 		bool forwardSubstitutionOff = false,
+		ProcNameMgr* procNameMgr = NULL,
 		const std::string& dbgProcGlob = "");
   
   Prof::Struct::Stmt*

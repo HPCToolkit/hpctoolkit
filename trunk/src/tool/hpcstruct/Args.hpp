@@ -95,7 +95,6 @@ public:
   bool forwardSubstitutionOff;    // default: false
   bool normalizeScopeTree;        // default: true
   bool unsafeNormalizations;      // default: true
-  std::string canonicalPathList;
   std::string dbgProcGlob;
 
   std::string out_filenm;

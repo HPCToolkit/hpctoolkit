@@ -48,78 +48,68 @@
 //
 //***************************************************************************
 
+#ifndef ProcNameMgr_hpp 
+#define ProcNameMgr_hpp
+
 //************************* System Include Files ****************************
 
-#include <iostream>
-using std::cout;
-using std::cerr;
-using std::endl;
-
-#include <iomanip>
-
-#include <fstream>
-#include <sstream>
-
 #include <string>
-using std::string;
-
 #include <map>
-#include <list>
-#include <vector>
-
-#include <algorithm>
-
-#include <cstring>
+#include <iostream>
 
 //*************************** User Include Files ****************************
 
-#include "bloop-simple.hpp"
+#include <include/general.h>
 
-#include <lib/prof-juicy/Struct-Tree.hpp>
-using namespace Prof;
+//*************************** Forward Declarations **************************
 
-#include <lib/binutils/LM.hpp>
-#include <lib/binutils/Insn.hpp>
+//***************************************************************************
+// ProcNameMgr
+//***************************************************************************
 
-#include <lib/support/diagnostics.h>
+// --------------------------------------------------------------------------
+// 'ProcNameMgr' 
+// --------------------------------------------------------------------------
 
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
-// 
-//****************************************************************************
-
-// makeStructureSimple: Uses the line map to make structure
-Struct::Stmt*
-banal::bloop::makeStructureSimple(Struct::LM* lmStrct, 
-				  binutils::LM* lm, VMA vma)
+class ProcNameMgr
 {
-  string procnm, filenm;
-  SrcFile::ln line;
-  lm->GetSourceFileInfo(vma, 0 /*opIdx*/, procnm, filenm, line);
-  procnm = GetBestFuncName(procnm);
-  
-  if (filenm.empty()) {
-    filenm = Struct::Tree::UnknownFileNm;
+public:
+  ProcNameMgr() { }
+  virtual ~ProcNameMgr() { }
+
+  virtual std::string 
+  canonicalize(const std::string& name) = 0;
+
+};
+
+
+// --------------------------------------------------------------------------
+// 'CilkNameMgr' 
+// --------------------------------------------------------------------------
+
+class CilkNameMgr : public ProcNameMgr
+{
+public:
+  CilkNameMgr() { }
+  virtual ~CilkNameMgr() { }
+
+  virtual std::string 
+  canonicalize(const std::string& name);
+
+private:
+
+  bool 
+  is_slow_proc(const std::string& x)
+  {
+    return (x.compare(0, s_slow_pfx.length(), s_slow_pfx) == 0);
   }
-  if (procnm.empty()) {
-    procnm = Struct::Tree::UnknownProcNm;
-  }
-  
-  Struct::File* fileStrct = Struct::File::demand(lmStrct, filenm);
-  Struct::Proc* procStrct = Struct::Proc::demand(fileStrct, procnm, "",
-						 line, line);
-  Struct::Stmt* stmtStrct = procStrct->findStmt(line);
-  if (!stmtStrct) {
-    VMA begVMA = vma;
 
-    binutils::Insn* insn = lm->findInsn(vma, 0 /*opIdx*/);
-    VMA endVMA = (insn) ? insn->endVMA() : vma + 1;
+private:
+  static const std::string s_slow_pfx;
+  static const std::string s_slow_sfx;
+};
 
-    stmtStrct = new Struct::Stmt(procStrct, line, line, begVMA, endVMA);
-  }
 
-  return stmtStrct;
-}
+//***************************************************************************
 
+#endif // ProcNameMgr_hpp

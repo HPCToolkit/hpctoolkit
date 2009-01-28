@@ -396,12 +396,17 @@ Proc::operator=(const Proc& x)
 
 Proc*
 Proc::demand(File* file, const string& nm, const std::string& lnm, 
-	     SrcFile::ln line)
+	     SrcFile::ln begLn, SrcFile::ln endLn, bool* didCreate)
 {
-  // NOTE: The Proc is always created as non-symbolic...
   Proc* proc = file->findProc(nm, lnm);
   if (!proc) {
-    proc = new Proc(nm, file, lnm, false, line, line);
+    proc = new Proc(nm, file, lnm, false, begLn, endLn);
+    if (didCreate) {
+      *didCreate = true;
+    }
+  }
+  else if (didCreate) {
+    *didCreate = false;
   }
   return proc;
 }
@@ -962,10 +967,11 @@ File::findProc(const char* nm, const char* lnm) const
 
   ProcMap::const_iterator it = m_procMap->find(nm);
   if (it != m_procMap->end()) {
-    if (lnm && lnm != '\0') {
-      for ( ; (it != m_procMap->end() && it->first == nm); ++it) {
+    if (lnm && lnm[0] != '\0') {
+      for ( ; (it != m_procMap->end() && strcmp(it->first.c_str(), nm) == 0);
+	    ++it) {
 	Proc* p = it->second;
-	if (p->LinkName() == lnm) {
+	if (strcmp(p->linkName().c_str(), lnm) == 0) {
 	  return p; // found = p
 	}
       }
@@ -1140,7 +1146,7 @@ ACodeNode::compare(const ACodeNode* x, const ACodeNode* y)
 	Proc *px = (Proc*)x, *py = (Proc*)y;
 	int cmp1 = px->name().compare(py->name());
 	if (cmp1 != 0) { return cmp1; }
-	int cmp2 = px->LinkName().compare(py->LinkName());
+	int cmp2 = px->linkName().compare(py->linkName());
 	if (cmp2 != 0) { return cmp2; }
       }
       
@@ -1391,7 +1397,7 @@ string
 Proc::toXML(int oFlags) const
 { 
   string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
-  if (m_name != m_linkname) { // if different, print both
+  if (!m_linkname.empty() && m_name != m_linkname) { // print if different
     self = self + " ln" + MakeAttrStr(m_linkname);
   }
   self = self + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
