@@ -40,6 +40,7 @@
 #include "csprof_dlfns.h"
 #include "dylib.h"
 #include "epoch.h"
+#include "files.h"
 #include "fnbounds-file-header.h"
 #include "fnbounds_interface.h"
 #include "monitor.h"
@@ -500,6 +501,7 @@ fnbounds_dso_info_query(void *pc, dso_info_t * dl_list)
 static dso_info_t *
 fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
 {
+  static int first_warning = 1;
   dso_info_t *dso_info = fnbounds_dso_info_query(start, dso_closed_list);
 
   // the address range of the module, which does not have an open mapping
@@ -529,24 +531,47 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
       // the entry on the closed list was not the same module
       fnbounds_epoch_finalize_locked();
       csprof_epoch_new();
-      TMSG(EPOCH, "new epoch cause: start = %p, end = %p, name = %s", start, end, module_name);
-      EEMSG("WARNING: Load module %s with address range [%p,%p) is being replaced with",
-	dso_info->name, dso_info->start_addr, dso_info->end_addr);
-      EEMSG("   load module %s with address range [%p,%p).", module_name, start, end);
-      EEMSG("   Currently, all samples within load modules that map to overlapping address ");
-      EEMSG("   ranges will currently be incorrectly attributed by hpcrun to the last load ");
-      EEMSG("   module mapped to the range. In this execution, this misattribution will ");
-      EEMSG("   affect procedure frames in at most %d samples. Some or all of those ", samples_taken);
-      EEMSG("   samples may involve procedure frames in the affected load modules.  Ongoing ");
-      EEMSG("   work in hpcrun is aimed at addressing this shortcoming. This warning is ");
-      EEMSG("   provided to notify early users about a limitation in HPCToolkit that ");
-      EEMSG("   affects the accuracy of data reported. As long the aforementioned load ");  
-      EEMSG("   modules are not the focus of your analysis, this error should not be of ");
-      EEMSG("   concern.");
+      TMSG(EPOCH, "new epoch cause: start = %p, end = %p, name = %s", 
+	   start, end, module_name);
+
+
+      EMSG("WARNING: [OVERLAPPING LOAD MODULES] \n"
+	   "    Load module %s with\n"
+	   "    address range [%p,%p)\n"
+	   "    is being replaced with\n" 
+	   "    load module %s with"
+	   "    address range [%p,%p).\n"
+	   "    This could affect attribution of %d samples.\n"
+	   "    See 'CAUTION: *OVERLAPPING MODULES*'.", 
+	   dso_info->name, dso_info->start_addr, dso_info->end_addr,
+	   module_name, start, end, samples_taken);
+
+      if (first_warning) { 
+	char log_file[PATH_MAX];
+	files_log_name(log_file, PATH_MAX);
+
+	first_warning = 0;
+
+	fprintf(stderr, "hpcrun: warning - load modules at overlapping"
+		" addresses. See log file %s for implications.", 
+		log_file);
+
+	EMSG("CAUTION: *OVERLAPPING LOAD MODULES* All samples within load\n"
+	   "    modules that map to overlapping address ranges will currently\n"
+	   "    be incorrectly attributed by hpcrun to the last load module\n"
+	   "    mapped to the range. Some or all of the samples prior to the\n"
+	   "    remapping may involve procedure frames in the affected load\n"
+	   "    module.  Ongoing work in hpcrun is aimed at addressing this\n"
+	   "    shortcoming. This warning is provided to notify early users\n "
+	   "    about a limitation in HPCToolkit that affects the accuracy of\n"
+	   "    data reported. As long the load modules affected are not\n"
+	   "    the focus of your analysis, this error should not be of\n"
+	   "    concern.");
+      }
     }
   }
   dso_info = fnbounds_compute(module_name, start, end);
-
+  
   return dso_info;
 }
 
