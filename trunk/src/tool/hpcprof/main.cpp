@@ -73,6 +73,9 @@ using std::string;
 
 #include <lib/binutils/LM.hpp>
 
+#include <lib/support/diagnostics.h>
+#include <lib/support/IOUtil.hpp>
+#include <lib/support/RealPathMgr.hpp>
 #include <lib/support/realpath.h>
 
 //*************************** Forward Declarations ***************************
