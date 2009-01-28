@@ -93,22 +93,22 @@ using std::string;
 // Seg
 //***************************************************************************
 
-binutils::Seg::Seg(binutils::LM* lm, const string& name, Type type,
-		   VMA beg, VMA end, VMA size)
+BinUtil::Seg::Seg(BinUtil::LM* lm, const string& name, Type type,
+		  VMA beg, VMA end, VMA size)
   : m_lm(lm), m_name(name), m_type(type), 
     m_begVMA(beg), m_endVMA(end), m_size(size)
 {
 }
 
 
-binutils::Seg::~Seg()
+BinUtil::Seg::~Seg()
 {
   m_lm = NULL; 
 }
 
 
 string
-binutils::Seg::toString(int flags, const char* pre) const
+BinUtil::Seg::toString(int flags, const char* pre) const
 {
   std::ostringstream os;
   dump(os, flags, pre);
@@ -117,7 +117,7 @@ binutils::Seg::toString(int flags, const char* pre) const
 
 
 void
-binutils::Seg::dump(std::ostream& o, int flags, const char* pre) const
+BinUtil::Seg::dump(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
   o << std::showbase;
@@ -136,7 +136,7 @@ binutils::Seg::dump(std::ostream& o, int flags, const char* pre) const
 
 
 void
-binutils::Seg::ddump() const
+BinUtil::Seg::ddump() const
 {
   dump(std::cerr);
 }
@@ -145,8 +145,8 @@ binutils::Seg::ddump() const
 // TextSeg
 //***************************************************************************
 
-binutils::TextSeg::TextSeg(binutils::LM* lm, const string& name, 
-			   VMA beg, VMA end, uint64_t size)
+BinUtil::TextSeg::TextSeg(BinUtil::LM* lm, const string& name, 
+			  VMA beg, VMA end, uint64_t size)
   : Seg(lm, name, Seg::TypeText, beg, end, size), 
     m_contentsRaw(NULL), m_contents(NULL)
 {
@@ -161,7 +161,7 @@ binutils::TextSeg::TextSeg(binutils::LM* lm, const string& name,
 }
 
 
-binutils::TextSeg::~TextSeg()
+BinUtil::TextSeg::~TextSeg()
 {
   // Clear procedures
   for (ProcVec::iterator it = m_procs.begin(); it != m_procs.end(); ++it) {
@@ -176,7 +176,7 @@ binutils::TextSeg::~TextSeg()
 
 
 void
-binutils::TextSeg::dump(std::ostream& o, int flags, const char* pre) const
+BinUtil::TextSeg::dump(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
@@ -195,7 +195,7 @@ binutils::TextSeg::dump(std::ostream& o, int flags, const char* pre) const
 
 
 void
-binutils::TextSeg::ctor_initProcs()
+BinUtil::TextSeg::ctor_initProcs()
 {
   dbg::LM* dbgInfo = m_lm->GetDebugInfo();
 
@@ -264,7 +264,7 @@ binutils::TextSeg::ctor_initProcs()
 
       if (!dbg) {
 	procNm = findProcName(abfd, sym);
-	string pnm = GetBestFuncName(procNm);
+	string pnm = BinUtil::canonicalizeProcName(procNm);
 	
 	dbg::LM::iterator1 it1 = dbgInfo->find1(pnm);
 	dbg = (it1 != dbgInfo->end1()) ? it1->second : NULL;
@@ -352,7 +352,7 @@ binutils::TextSeg::ctor_initProcs()
 
 // Read in the section data (usually raw instructions).
 void
-binutils::TextSeg::ctor_readSegment()
+BinUtil::TextSeg::ctor_readSegment()
 {
   // - Obtain a new buffer, and align the pointer to a 16-byte
   //   boundary.
@@ -384,7 +384,7 @@ binutils::TextSeg::ctor_readSegment()
 
 // Disassemble the instructions in each procedure
 void
-binutils::TextSeg::ctor_disassembleProcs()
+BinUtil::TextSeg::ctor_disassembleProcs()
 {
   // ------------------------------------------------------------
   // Disassemble the instructions in each procedure.
@@ -439,7 +439,7 @@ binutils::TextSeg::ctor_disassembleProcs()
 // debugging information, if possible; otherwise returns the symbol
 // name.
 string
-binutils::TextSeg::findProcName(bfd* abfd, asymbol* procSym) const
+BinUtil::TextSeg::findProcName(bfd* abfd, asymbol* procSym) const
 {
   string procName;
   const char* func = NULL, * file = NULL;
@@ -471,7 +471,7 @@ binutils::TextSeg::findProcName(bfd* abfd, asymbol* procSym) const
 // then it is the address of the end of the section.  One can safely
 // assume this returns an over-estimate of the end VMA.
 VMA
-binutils::TextSeg::findProcEnd(int funcSymIndex) const
+BinUtil::TextSeg::findProcEnd(int funcSymIndex) const
 {
   // Since the symbol table we get is sorted by VMA, we can stop
   // the search as soon as we've gone beyond the VMA of this section.
@@ -495,9 +495,9 @@ binutils::TextSeg::findProcEnd(int funcSymIndex) const
 
 // Returns a new instruction of the appropriate type.  Promises not to
 // return NULL.
-binutils::Insn*
-binutils::TextSeg::makeInsn(bfd* abfd, MachInsn* mi, VMA vma, ushort opIndex,
-			     ushort sz) const
+BinUtil::Insn*
+BinUtil::TextSeg::makeInsn(bfd* abfd, MachInsn* mi, VMA vma, ushort opIndex,
+			   ushort sz) const
 {
   // Assume that there is only one instruction type per
   // architecture (unlike i860 for example).

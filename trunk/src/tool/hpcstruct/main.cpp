@@ -110,11 +110,11 @@ real_main(int argc, char* argv[])
   // ------------------------------------------------------------
   // Read executable
   // ------------------------------------------------------------
-  binutils::LM* lm = NULL;
+  BinUtil::LM* lm = NULL;
   try {
-    lm = new binutils::LM();
+    lm = new BinUtil::LM();
     lm->open(args.in_filenm.c_str());
-    lm->read(binutils::LM::ReadFlg_ALL);
+    lm->read(BinUtil::LM::ReadFlg_ALL);
   } 
   catch (...) {
     DIAG_EMsg("Exception encountered while reading " << args.in_filenm);
@@ -125,6 +125,11 @@ real_main(int argc, char* argv[])
   // Build and print the ScopeTree
   // ------------------------------------------------------------
   { 
+    ProcNameMgr* procNameMgr = NULL;
+    if (!args.lush_agent.empty()) {
+      procNameMgr = new CilkNameMgr;
+    }
+
     Prof::Struct::Root* rootStrct = new Prof::Struct::Root("");
     Prof::Struct::Tree* strctTree = new Prof::Struct::Tree("", rootStrct);
 
@@ -133,7 +138,7 @@ real_main(int argc, char* argv[])
 					      args.unsafeNormalizations,
 					      args.irreducibleIntervalIsLoop,
 					      args.forwardSubstitutionOff,
-					      NULL,
+					      procNameMgr,
 					      args.dbgProcGlob);
     lmStrct->Link(rootStrct);
     

@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef binutils_Seg_hpp 
-#define binutils_Seg_hpp
+#ifndef BinUtil_Seg_hpp 
+#define BinUtil_Seg_hpp
 
 //************************* System Include Files ****************************
 
@@ -72,7 +72,7 @@
 // Seg
 //***************************************************************************
 
-namespace binutils {
+namespace BinUtil {
 
 class Proc;
 class Insn;
@@ -163,14 +163,14 @@ private:
   uint64_t m_size; // size in bytes
 };
 
-} // namespace binutils
+} // namespace BinUtil
 
 
 //***************************************************************************
 // TextSeg
 //***************************************************************************
 
-namespace binutils {
+namespace BinUtil {
 
 
 // --------------------------------------------------------------------------
@@ -256,8 +256,8 @@ private:
 };
 
 
-} // namespace binutils
+} // namespace BinUtil
 
 //****************************************************************************
 
-#endif // binutils_Seg_hpp
+#endif // BinUtil_Seg_hpp

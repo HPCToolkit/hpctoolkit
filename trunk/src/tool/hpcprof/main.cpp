@@ -261,7 +261,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof,
 		       Prof::Struct::LM* lmStrct)
 {
   const string& lm_nm = epoch_lm->name();
-  binutils::LM* lm = NULL;
+  BinUtil::LM* lm = NULL;
 
   bool useStruct = (lmStrct->ChildCount() > 0);
 
@@ -272,9 +272,9 @@ overlayStaticStructure(Prof::CallPath::Profile* prof,
     DIAG_Msg(1, "Line map : " << lm_nm);
 
     try {
-      lm = new binutils::LM();
+      lm = new BinUtil::LM();
       lm->open(lm_nm.c_str());
-      lm->read(binutils::LM::ReadFlg_Proc);
+      lm->read(BinUtil::LM::ReadFlg_Proc);
     }
     catch (...) {
       DIAG_EMsg("While reading '" << lm_nm << "'...");

@@ -79,7 +79,7 @@ using std::dec;
 //***************************************************************************
 
 std::string
-binutils::dbg::Proc::toString() const
+BinUtil::dbg::Proc::toString() const
 {
   std::ostringstream os;
   dump(os);
@@ -88,7 +88,7 @@ binutils::dbg::Proc::toString() const
 
 
 std::ostream&
-binutils::dbg::Proc::dump(std::ostream& os) const
+BinUtil::dbg::Proc::dump(std::ostream& os) const
 {
   os << "{dbg::Proc: \n";
   os << "  " << name 
@@ -103,7 +103,7 @@ binutils::dbg::Proc::dump(std::ostream& os) const
 
 
 void
-binutils::dbg::Proc::ddump() const
+BinUtil::dbg::Proc::ddump() const
 {
   dump(std::cerr);
 }

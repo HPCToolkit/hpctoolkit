@@ -263,7 +263,7 @@ Epoch::LM::~LM()
 void 
 Epoch::LM::compute_relocAmt()
 {
-  binutils::LM* lm = new binutils::LM();
+  BinUtil::LM* lm = new BinUtil::LM();
   try {
     lm->open(m_name.c_str());
     if (lm->doUnrelocate(m_loadAddr)) {

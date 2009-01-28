@@ -82,12 +82,12 @@ using std::dec;
 // LM
 //***************************************************************************
 
-binutils::dbg::LM::LM()
+BinUtil::dbg::LM::LM()
 {
 }
 
 
-binutils::dbg::LM::~LM()
+BinUtil::dbg::LM::~LM()
 {
   clear();
   clear1();
@@ -95,7 +95,7 @@ binutils::dbg::LM::~LM()
 
 
 void
-binutils::dbg::LM::read(bfd* abfd, asymbol** bfdSymTab)
+BinUtil::dbg::LM::read(bfd* abfd, asymbol** bfdSymTab)
 {
 #if defined(HAVE_HPC_GNUBINUTILS)
   if (!bfdSymTab) { return; }
@@ -115,7 +115,7 @@ binutils::dbg::LM::read(bfd* abfd, asymbol** bfdSymTab)
 
 
 void
-binutils::dbg::LM::clear()
+BinUtil::dbg::LM::clear()
 {
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
     delete it->second;
@@ -125,7 +125,7 @@ binutils::dbg::LM::clear()
 
 
 void
-binutils::dbg::LM::clear1()
+BinUtil::dbg::LM::clear1()
 {
   for (const_iterator1 it = this->begin1(); it != this->end1(); ++it) {
     delete it->second;
@@ -135,7 +135,7 @@ binutils::dbg::LM::clear1()
 
 
 std::string
-binutils::dbg::LM::toString() const
+BinUtil::dbg::LM::toString() const
 {
   std::ostringstream os;
   dump(os);
@@ -144,7 +144,7 @@ binutils::dbg::LM::toString() const
 
 
 std::ostream&
-binutils::dbg::LM::dump(std::ostream& os) const
+BinUtil::dbg::LM::dump(std::ostream& os) const
 {
   os << "{ dbg::LM: \n";
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
@@ -162,7 +162,7 @@ binutils::dbg::LM::dump(std::ostream& os) const
 
 
 void
-binutils::dbg::LM::ddump() const
+BinUtil::dbg::LM::ddump() const
 {
   dump(std::cerr);
 }
@@ -172,7 +172,7 @@ binutils::dbg::LM::ddump() const
 
 // Should have function type of 'bfd_forall_dbg_funcinfo_fn_t'
 int 
-binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj, 
+BinUtil::dbg::LM::bfd_dbgInfoCallback(void* callback_obj, 
 				       void* parent, void* funcinfo)
 {
 #if defined(HAVE_HPC_GNUBINUTILS)
@@ -207,7 +207,7 @@ binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
   }
   pinfo->parentVMA = begVMA;
 
-  DIAG_DevMsg(10, "binutils::dbg::LM::bfd_dbgInfoCallback:\n"
+  DIAG_DevMsg(10, "BinUtil::dbg::LM::bfd_dbgInfoCallback:\n"
 	      << pinfo->toString());
 
 
@@ -279,7 +279,7 @@ binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
 
 
 void 
-binutils::dbg::LM::setParentPointers()
+BinUtil::dbg::LM::setParentPointers()
 {
   // Set parent pointers assuming begVMA has been set.
   for (const_iterator it = this->begin(); it != this->end(); ++it) {

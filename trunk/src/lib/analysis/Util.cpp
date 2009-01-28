@@ -125,7 +125,8 @@ Analysis::Util::getProfileType(const std::string& filenm)
 // Struct::Stmt map is consulted which is ambiguous in the presence of
 // inlinine (Struct::Alien).
 Prof::Struct::ACodeNode*
-Analysis::Util::demandStructure(VMA vma, Prof::Struct::LM* lmStrct, binutils::LM* lm, bool useStruct)
+Analysis::Util::demandStructure(VMA vma, Prof::Struct::LM* lmStrct, 
+				BinUtil::LM* lm, bool useStruct)
 {
   Prof::Struct::ACodeNode* strct = lmStrct->findByVMA(vma);
   if (!strct) {

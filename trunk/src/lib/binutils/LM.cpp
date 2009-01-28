@@ -98,10 +98,10 @@ using std::dec;
 //***************************************************************************
 
 // current ISA (see comments in header)
-ISA* binutils::LM::isa = NULL;
+ISA* BinUtil::LM::isa = NULL;
 
 
-binutils::LM::LM()
+BinUtil::LM::LM()
   : m_type(TypeNULL), m_readFlags(ReadFlg_NULL),
     m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
     m_textBegReloc(0), m_unrelocDelta(0),
@@ -111,7 +111,7 @@ binutils::LM::LM()
 }
 
 
-binutils::LM::~LM()
+BinUtil::LM::~LM()
 {
   for (SegMap::iterator it = m_segMap.begin(); it != m_segMap.end(); ++it) {
     delete it->second; // Seg*
@@ -142,7 +142,7 @@ binutils::LM::~LM()
 
 
 void
-binutils::LM::open(const char* filenm)
+BinUtil::LM::open(const char* filenm)
 {
   DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
   
@@ -154,14 +154,14 @@ binutils::LM::open(const char* filenm)
   bfd_init();
   m_bfd = bfd_openr(filenm, "default");
   if (!m_bfd) {
-    BINUTILS_Throw("'" << filenm << "': " << bfd_errmsg(bfd_get_error()));
+    BINUTIL_Throw("'" << filenm << "': " << bfd_errmsg(bfd_get_error()));
   }
   
   // bfd_object:  may contain data, symbols, relocations and debug info
   // bfd_archive: contains other BFDs and an optional index
   // bfd_core:    contains the result of an executable core dump
   if (!bfd_check_format(m_bfd, bfd_object)) {
-    BINUTILS_Throw("'" << filenm << "': not an object or executable");
+    BINUTIL_Throw("'" << filenm << "': not an object or executable");
   }
   
   m_name = filenm;
@@ -244,7 +244,7 @@ binutils::LM::open(const char* filenm)
 
 
 void
-binutils::LM::read(LM::ReadFlg readflg)
+BinUtil::LM::read(LM::ReadFlg readflg)
 {
   // If the file has not been opened...
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
@@ -259,7 +259,7 @@ binutils::LM::read(LM::ReadFlg readflg)
 // VMAs.  All routines operating on VMAs should call unrelocate(),
 // which will do the right thing.
 void 
-binutils::LM::relocate(VMA textBegReloc)
+BinUtil::LM::relocate(VMA textBegReloc)
 {
   DIAG_Assert(m_txtBeg != 0, "LM::Relocate not supported!");
   m_textBegReloc = textBegReloc;
@@ -275,7 +275,7 @@ binutils::LM::relocate(VMA textBegReloc)
 
 
 MachInsn*
-binutils::LM::findMachInsn(VMA vma, ushort &size) const
+BinUtil::LM::findMachInsn(VMA vma, ushort &size) const
 {
   MachInsn* minsn = NULL;
   size = 0;
@@ -289,9 +289,9 @@ binutils::LM::findMachInsn(VMA vma, ushort &size) const
 
 
 bool
-binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
-				string& func, 
-				string& file, SrcFile::ln& line) /*const*/
+BinUtil::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
+			       string& func, 
+			       string& file, SrcFile::ln& line) /*const*/
 {
   bool STATUS = false;
   func = file = "";
@@ -342,11 +342,11 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
 
 
 bool
-binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
-				VMA endVMA, ushort eOpIndex,
-				string& func, string& file,
-				SrcFile::ln& begLine, SrcFile::ln& endLine,
-				unsigned flags) /*const*/
+BinUtil::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
+			       VMA endVMA, ushort eOpIndex,
+			       string& func, string& file,
+			       SrcFile::ln& begLine, SrcFile::ln& endLine,
+			       unsigned flags) /*const*/
 {
   bool STATUS = false;
   func = file = "";
@@ -418,8 +418,8 @@ binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 
 
 bool 
-binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, 
-				   SrcFile::ln &line) const
+BinUtil::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, 
+				  SrcFile::ln &line) const
 {
   bool isfound = false;
   line = 0;
@@ -443,7 +443,7 @@ binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex,
 
 
 void
-binutils::LM::textBegEndVMA(VMA* begVMA, VMA* endVMA)
+BinUtil::LM::textBegEndVMA(VMA* begVMA, VMA* endVMA)
 { 
   VMA curr_begVMA;
   VMA curr_endVMA;
@@ -473,7 +473,7 @@ binutils::LM::textBegEndVMA(VMA* begVMA, VMA* endVMA)
 
 
 string
-binutils::LM::toString(int flags, const char* pre) const
+BinUtil::LM::toString(int flags, const char* pre) const
 {
   std::ostringstream os;
   dump(os, flags, pre);
@@ -482,7 +482,7 @@ binutils::LM::toString(int flags, const char* pre) const
 
 
 void
-binutils::LM::dump(std::ostream& o, int flags, const char* pre) const
+BinUtil::LM::dump(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
   string p1 = p;
@@ -518,20 +518,20 @@ binutils::LM::dump(std::ostream& o, int flags, const char* pre) const
 
 
 void
-binutils::LM::ddump() const
+BinUtil::LM::ddump() const
 {
   dump(std::cerr);
 }
 
 
 void
-binutils::LM::dumpme(std::ostream& o, const char* pre) const
+BinUtil::LM::dumpme(std::ostream& o, const char* pre) const
 {
 }
 
 
 void
-binutils::LM::dumpProcMap(std::ostream& os, unsigned flag, 
+BinUtil::LM::dumpProcMap(std::ostream& os, unsigned flag, 
 			  const char* pre) const
 {
   for (ProcMap::const_iterator it = m_procMap.begin(); 
@@ -546,7 +546,7 @@ binutils::LM::dumpProcMap(std::ostream& os, unsigned flag,
 
 
 void
-binutils::LM::ddumpProcMap(unsigned flag) const
+BinUtil::LM::ddumpProcMap(unsigned flag) const
 {
   dumpProcMap(std::cerr, flag);
 }
@@ -554,7 +554,7 @@ binutils::LM::ddumpProcMap(unsigned flag) const
 //***************************************************************************
 
 int
-binutils::LM::SymCmpByVMAFunc(const void* s1, const void* s2)
+BinUtil::LM::SymCmpByVMAFunc(const void* s1, const void* s2)
 {
   asymbol *a = (asymbol *)s1;
   asymbol *b = (asymbol *)s2;
@@ -573,7 +573,7 @@ binutils::LM::SymCmpByVMAFunc(const void* s1, const void* s2)
 
 
 void
-binutils::LM::readSymbolTables()
+BinUtil::LM::readSymbolTables()
 {
   // First, attempt to get the normal symbol table.  If that fails,
   // attempt to read the dynamic symbol table.
@@ -626,7 +626,7 @@ binutils::LM::readSymbolTables()
 
 
 void
-binutils::LM::readSegs()
+BinUtil::LM::readSegs()
 {
   // Create sections.
   // Pass symbol table and debug summary information for each section
@@ -665,7 +665,7 @@ binutils::LM::readSegs()
 
 
 void
-binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
+BinUtil::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
 {
   string p(pre);
 
@@ -772,7 +772,7 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
 
 
 void
-binutils::LM::DumpSymTab(std::ostream& o, const char* pre) const
+BinUtil::LM::DumpSymTab(std::ostream& o, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
@@ -797,23 +797,23 @@ binutils::LM::DumpSymTab(std::ostream& o, const char* pre) const
 // Exe
 //***************************************************************************
 
-binutils::Exe::Exe()
+BinUtil::Exe::Exe()
   : m_startVMA(0)
 {
 }
 
 
-binutils::Exe::~Exe()
+BinUtil::Exe::~Exe()
 {
 }
 
 
 void
-binutils::Exe::open(const char* filenm)
+BinUtil::Exe::open(const char* filenm)
 {
   LM::open(filenm);
   if (type() != LM::TypeExe) {
-    BINUTILS_Throw("'" << filenm << "' is not an executable.");
+    BINUTIL_Throw("'" << filenm << "' is not an executable.");
   }
 
   m_startVMA = bfd_get_start_address(abfd());
@@ -821,14 +821,14 @@ binutils::Exe::open(const char* filenm)
 
 
 void
-binutils::Exe::dump(std::ostream& o, int flags, const char* pre) const
+BinUtil::Exe::dump(std::ostream& o, int flags, const char* pre) const
 {
   LM::dump(o, flags, pre);
 }
 
 
 void
-binutils::Exe::dumpme(std::ostream& o, const char* pre) const
+BinUtil::Exe::dumpme(std::ostream& o, const char* pre) const
 {
   o << pre << "Program start address: " << hex << GetStartVMA()
     << dec << endl;

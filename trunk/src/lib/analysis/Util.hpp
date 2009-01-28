@@ -86,7 +86,7 @@ getProfileType(const std::string& filenm);
 // ------------------------------------------------------------
 
 Prof::Struct::ACodeNode*
-demandStructure(VMA vma, Prof::Struct::LM* lmStrct, binutils::LM* lm, 
+demandStructure(VMA vma, Prof::Struct::LM* lmStrct, BinUtil::LM* lm, 
 		bool useStruct);
 
 

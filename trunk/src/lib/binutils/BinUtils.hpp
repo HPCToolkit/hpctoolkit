@@ -59,28 +59,24 @@
 
 #include <include/general.h>
 
+#include <lib/support/ProcNameMgr.hpp>
+
 //*************************** Forward Declarations ***************************
 
 //****************************************************************************
 
-const char* 
-GetBestFuncName(const char* name);
-
-inline const char* 
-GetBestFuncName(const std::string& name)
-{
-  return GetBestFuncName(name.c_str());
-}
+namespace BinUtil {
 
 
-const char* 
-GetDemangledFuncName(const char* name);
+std::string
+canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr = NULL);
 
-inline const char* 
-GetDemangledFuncName(const std::string& name)
-{
-  return GetDemangledFuncName(name.c_str());
-}
+
+std::string
+demangleProcName(const std::string& name);
+
+
+} // namespace BinUtil
 
 
 //****************************************************************************

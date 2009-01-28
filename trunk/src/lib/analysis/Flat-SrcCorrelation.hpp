@@ -140,7 +140,7 @@ private:
 	       VMA lm_load_addr,
 	       Prof::Struct::Tree& structure,
 	       Prof::Struct::LM* lmStrct,
-	       /*const*/ binutils::LM* lm,
+	       /*const*/ BinUtil::LM* lm,
 	       bool useStruct);
   
   bool
@@ -174,7 +174,7 @@ private:
   void
   readProf(Prof::Flat::ProfileData* prof);
 
-  binutils::LM*
+  BinUtil::LM*
   openLM(const string& fnm);
 
   // -------------------------------------------------------

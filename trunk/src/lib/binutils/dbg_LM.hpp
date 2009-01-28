@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef binutils_dbg_LM_hpp 
-#define binutils_dbg_LM_hpp
+#ifndef BinUtil_dbg_LM_hpp 
+#define BinUtil_dbg_LM_hpp
 
 //************************* System Include Files ****************************
 
@@ -72,7 +72,7 @@
 // LM (LoadModule)
 //***************************************************************************
 
-namespace binutils {
+namespace BinUtil {
 
 namespace dbg {
 
@@ -241,8 +241,8 @@ private:
 
 } // namespace dbg
 
-} // namespace binutils
+} // namespace BinUtil
 
 //***************************************************************************
 
-#endif // binutils_dbg_LM_hpp
+#endif // BinUtil_dbg_LM_hpp

@@ -108,38 +108,38 @@ namespace bloop {
 // Helpers for building a structure tree
 // ------------------------------------------------------------
 
-typedef std::multimap<Struct::Proc*, binutils::Proc*> ProcStrctToProcMap;
+typedef std::multimap<Struct::Proc*, BinUtil::Proc*> ProcStrctToProcMap;
 
 static ProcStrctToProcMap*
-buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm, 
+buildLMSkeleton(Struct::LM* lmStrct, BinUtil::LM* lm, 
 		ProcNameMgr* procNameMgr);
 
 static Struct::File*
-demandFileNode(Struct::LM* lmStrct, binutils::Proc* p);
+demandFileNode(Struct::LM* lmStrct, BinUtil::Proc* p);
 
 static Struct::Proc*
-demandProcNode(Struct::File* fStrct, binutils::Proc* p, 
+demandProcNode(Struct::File* fStrct, BinUtil::Proc* p, 
 	       ProcNameMgr* procNameMgr);
 
 
 static Struct::Proc*
-buildProcStructure(Struct::Proc* pStrct, binutils::Proc* p, 
+buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p, 
 		   bool irrIvalIsLoop, 
 		   bool fwdSubstOff,
 		   const std::string& dbgProcGlob); 
 
 static int
-buildProcLoopNests(Struct::Proc* pStrct, binutils::Proc* p,
+buildProcLoopNests(Struct::Proc* pStrct, BinUtil::Proc* p,
 		   bool irrIvalIsLoop, bool fwdSubstOff, bool isDbg);
 
 static int
 buildStmts(bloop::LocationMgr& locMgr,
-	   Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
+	   Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 	   OA::OA_ptr<OA::CFG::NodeInterface> bb);
 
 
 static void
-findLoopBegLineInfo(binutils::Proc* p, 
+findLoopBegLineInfo(BinUtil::Proc* p, 
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
 		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn);
 
@@ -299,7 +299,7 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
 //   normalizer employs heuristics to reverse certain compiler
 //   optimizations such as loop unrolling.
 Prof::Struct::LM*
-banal::bloop::makeStructure(binutils::LM* lm, 
+banal::bloop::makeStructure(BinUtil::LM* lm, 
 			    bool normalizeScopeTree,
 			    bool unsafeNormalizations,
 			    bool irreducibleIntervalIsLoop,
@@ -318,12 +318,12 @@ banal::bloop::makeStructure(binutils::LM* lm,
   // 1. Build Struct::File/Struct::Proc skeletal structure
   ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm, procNameMgr);
   
-  // 2. For each [Struct::Proc, binutils::Proc] pair, complete the build.
+  // 2. For each [Struct::Proc, BinUtil::Proc] pair, complete the build.
   // Note that a Struct::Proc may be associated with more than one
-  // binutils::Proc.
+  // BinUtil::Proc.
   for (ProcStrctToProcMap::iterator it = mp->begin(); it != mp->end(); ++it) {
     Struct::Proc* pStrct = it->first;
-    binutils::Proc* p = it->second;
+    BinUtil::Proc* p = it->second;
 
     DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
     buildProcStructure(pStrct, p, 
@@ -376,11 +376,11 @@ namespace bloop {
 // nesting structure allows inference of accurate boundaries on
 // procedure end lines.
 //
-// A Struct::Proc can be associated with multiple binutils::Procs
+// A Struct::Proc can be associated with multiple BinUtil::Procs
 //
 // Struct::Procs will be sorted by begLn (cf. Struct::ACodeNode::Reorder)
 static ProcStrctToProcMap*
-buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm, ProcNameMgr* procNameMgr)
+buildLMSkeleton(Struct::LM* lmStrct, BinUtil::LM* lm, ProcNameMgr* procNameMgr)
 {
   ProcStrctToProcMap* mp = new ProcStrctToProcMap;
   
@@ -388,9 +388,9 @@ buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm, ProcNameMgr* procNameMgr)
   // 1. Create basic structure for each procedure
   // -------------------------------------------------------
 
-  for (binutils::LM::ProcMap::iterator it = lm->procs().begin();
+  for (BinUtil::LM::ProcMap::iterator it = lm->procs().begin();
        it != lm->procs().end(); ++it) {
-    binutils::Proc* p = it->second;
+    BinUtil::Proc* p = it->second;
     if (p->size() != 0) {
       Struct::File* fStrct = demandFileNode(lmStrct, p);
       Struct::Proc* pStrct = demandProcNode(fStrct, p, procNameMgr);
@@ -403,8 +403,8 @@ buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm, ProcNameMgr* procNameMgr)
   // -------------------------------------------------------
   for (ProcStrctToProcMap::iterator it = mp->begin(); it != mp->end(); ++it) {
     Struct::Proc* pStrct = it->first;
-    binutils::Proc* p = it->second;
-    binutils::Proc* parent = p->parent();
+    BinUtil::Proc* p = it->second;
+    BinUtil::Proc* parent = p->parent();
 
     if (parent) {
       Struct::Proc* parentScope = lmStrct->findProc(parent->begVMA());
@@ -429,7 +429,7 @@ buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm, ProcNameMgr* procNameMgr)
 
 // demandFileNode: 
 static Struct::File* 
-demandFileNode(Struct::LM* lmStrct, binutils::Proc* p)
+demandFileNode(Struct::LM* lmStrct, BinUtil::Proc* p)
 {
   // Attempt to find filename for procedure
   string filenm = p->filename();
@@ -451,7 +451,7 @@ demandFileNode(Struct::LM* lmStrct, binutils::Proc* p)
 // demandProcNode: Build skeletal Struct::Proc.  We can assume that
 // the parent is always a Struct::File.
 static Struct::Proc*
-demandProcNode(Struct::File* fStrct, binutils::Proc* p, 
+demandProcNode(Struct::File* fStrct, BinUtil::Proc* p, 
 	       ProcNameMgr* procNameMgr)
 {
   // Find VMA boundaries: [beg, end)
@@ -461,13 +461,13 @@ demandProcNode(Struct::File* fStrct, binutils::Proc* p,
 	      << bounds.toString());
   
   // Find procedure name
-  string procNm   = GetBestFuncName(p->name()); 
-  string procLnNm = GetBestFuncName(p->GetLinkName());
+  string procNm   = BinUtil::canonicalizeProcName(p->name(), procNameMgr);
+  string procLnNm = BinUtil::canonicalizeProcName(p->linkName(), procNameMgr);
   
   // Find preliminary source line bounds
   string file, proc;
   SrcFile::ln begLn1, endLn1;
-  binutils::Insn* eInsn = p->endInsn();
+  BinUtil::Insn* eInsn = p->endInsn();
   ushort endOp = (eInsn) ? eInsn->opIndex() : 0;
   p->GetSourceFileInfo(p->begVMA(), 0, p->endVMA(), endOp, 
 		       proc, file, begLn1, endLn1, 0 /*no swapping*/);
@@ -489,8 +489,8 @@ demandProcNode(Struct::File* fStrct, binutils::Proc* p,
   // the existing Struct::Proc and accounts for procedure splitting or
   // specialization.
   bool didCreate = false;
-  Struct::Proc* pStrct = 
-    Struct::Proc::demand(fStrct, procNm, procLnNm, begLn, endLn, &didCreate);
+  Struct::Proc* pStrct = Struct::Proc::demand(fStrct, procNm, procLnNm, 
+					      begLn, endLn, &didCreate);
   if (!didCreate) {
     DIAG_DevMsg(3, "Merging multiple instances of procedure [" 
 		<< pStrct->toStringXML() << "] with " << procNm << " " 
@@ -520,7 +520,7 @@ namespace bloop {
 
 
 static int 
-buildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
+buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
@@ -528,16 +528,16 @@ buildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
 
 static Struct::ACodeNode*
 buildLoopAndStmts(bloop::LocationMgr& locMgr, 
-		  Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
+		  Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 		  OA::OA_ptr<OA::NestedSCR> tarj,
 		  OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		  OA::RIFG::NodeId fgNode, bool irrIvalIsLoop);
 
 
 // buildProcStructure: Complete the representation for 'pStrct' given the
-// binutils::Proc 'p'.  Note that pStrcts parent may itself be a Struct::Proc.
+// BinUtil::Proc 'p'.  Note that pStrcts parent may itself be a Struct::Proc.
 static Struct::Proc* 
-buildProcStructure(Struct::Proc* pStrct, binutils::Proc* p,
+buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p,
 		   bool irrIvalIsLoop, bool fwdSubstOff,
 		   const std::string& dbgProcGlob)
 {
@@ -559,7 +559,7 @@ buildProcStructure(Struct::Proc* pStrct, binutils::Proc* p,
 // the Nested SCR (Tarjan tree) to create loop nests and statement
 // scopes.
 static int
-buildProcLoopNests(Struct::Proc* pStrct, binutils::Proc* p,
+buildProcLoopNests(Struct::Proc* pStrct, BinUtil::Proc* p,
 		   bool irrIvalIsLoop, bool fwdSubstOff, bool isDbg)
 {
   static const int sepWidth = 77;
@@ -634,7 +634,7 @@ buildProcLoopNests(Struct::Proc* pStrct, binutils::Proc* p,
 // sibling loop boundaries.  Note that the resulting source coded
 // loops are UNNORMALIZED.
 static int 
-buildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
+buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
@@ -772,7 +772,7 @@ buildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
 // scope for children of 'fgNode', e.g. loop or proc. 
 static Struct::ACodeNode*
 buildLoopAndStmts(bloop::LocationMgr& locMgr, 
-		  Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
+		  Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 		  OA::OA_ptr<OA::NestedSCR> tarj,
 		  OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		  OA::RIFG::NodeId fgNode, bool irrIvalIsLoop)
@@ -780,7 +780,7 @@ buildLoopAndStmts(bloop::LocationMgr& locMgr,
   OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
   OA::OA_ptr<OA::CFG::NodeInterface> bb = 
     rifg->getNode(fgNode).convert<OA::CFG::NodeInterface>();
-  binutils::Insn* insn = banal::OA_CFG_getBegInsn(bb);
+  BinUtil::Insn* insn = banal::OA_CFG_getBegInsn(bb);
   VMA begVMA = (insn) ? insn->opVMA() : 0;
   
   DIAG_DevMsg(10, "buildLoopAndStmts: " << bb << " [id: " << bb->getId() << "] " << hex << begVMA << " --> " << enclosingStrct << dec << " " << enclosingStrct->toString_id());
@@ -802,7 +802,7 @@ buildLoopAndStmts(bloop::LocationMgr& locMgr,
     string fnm, pnm;
     SrcFile::ln line;
     findLoopBegLineInfo(p, bb, fnm, pnm, line);
-    pnm = GetBestFuncName(pnm);
+    pnm = BinUtil::canonicalizeProcName(pnm);
     
     Struct::Loop* loop = new Struct::Loop(NULL, line, line);
     loop->vmaSet().insert(begVMA, begVMA + 1); // a loop id
@@ -832,7 +832,7 @@ buildLoopAndStmts(bloop::LocationMgr& locMgr,
 // not add duplicates.
 static int 
 buildStmts(bloop::LocationMgr& locMgr,
-	   Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
+	   Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 	   OA::OA_ptr<OA::CFG::NodeInterface> bb)
 {
   static int call_sortId = 0;
@@ -840,7 +840,7 @@ buildStmts(bloop::LocationMgr& locMgr,
   OA::OA_ptr<OA::CFG::NodeStatementsIteratorInterface> it =
     bb->getNodeStatementsIterator();
   for ( ; it->isValid(); ) {
-    binutils::Insn* insn = IRHNDL_TO_TY(it->current(), binutils::Insn*);
+    BinUtil::Insn* insn = IRHNDL_TO_TY(it->current(), BinUtil::Insn*);
     VMA vma = insn->vma();
     ushort opIdx = insn->opIndex();
     VMA opvma = insn->opVMA();
@@ -852,12 +852,12 @@ buildStmts(bloop::LocationMgr& locMgr,
     string filenm, procnm;
     SrcFile::ln line;
     p->GetSourceFileInfo(vma, opIdx, procnm, filenm, line); 
-    procnm = GetBestFuncName(procnm);
+    procnm = BinUtil::canonicalizeProcName(procnm);
 
     // 2. create a VMA interval
     // the next (or hypothetically next) insn begins no earlier than:
-    binutils::Insn* n_insn = (it->isValid()) ? 
-      IRHNDL_TO_TY(it->current(), binutils::Insn*) : NULL;
+    BinUtil::Insn* n_insn = (it->isValid()) ? 
+      IRHNDL_TO_TY(it->current(), BinUtil::Insn*) : NULL;
     VMA n_opvma = (n_insn) ? n_insn->opVMA() : insn->endVMA();
     DIAG_Assert(opvma < n_opvma, "Invalid VMAInterval: [" << opvma << ", "
 		<< n_opvma << ")");
@@ -891,7 +891,7 @@ buildStmts(bloop::LocationMgr& locMgr,
 //
 // Note that these loops are UNNORMALIZED.
 static int 
-buildProcLoopNests(Struct::ACodeNode* enclosingStrct, binutils::Proc* p, 
+buildProcLoopNests(Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p, 
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::Interface> cfg, 
 		   OA::RIFG::NodeId fgNode, 
@@ -970,7 +970,7 @@ buildProcLoopNests(Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
 // former case, we take the smallest source line of them all; in the
 // latter we use headVMA.
 static void
-findLoopBegLineInfo(binutils::Proc* p, 
+findLoopBegLineInfo(BinUtil::Proc* p, 
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
 		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn)
 {
@@ -979,7 +979,7 @@ findLoopBegLineInfo(binutils::Proc* p,
   begLn = SrcFile::ln_NULL;
 
   // Find the head vma
-  binutils::Insn* head = banal::OA_CFG_getBegInsn(headBB);
+  BinUtil::Insn* head = banal::OA_CFG_getBegInsn(headBB);
   VMA headVMA = head->vma();
   ushort headOpIdx = head->opIndex();
   DIAG_Assert(headOpIdx == 0, "Target of a branch at " << headVMA 
@@ -993,7 +993,7 @@ findLoopBegLineInfo(binutils::Proc* p,
     
     OA::OA_ptr<NodeInterface> bb = e->getCFGSource();
 
-    binutils::Insn* backBR = banal::OA_CFG_getEndInsn(bb);
+    BinUtil::Insn* backBR = banal::OA_CFG_getEndInsn(bb);
     if (!backBR) {
       continue;
     }
