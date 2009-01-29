@@ -84,6 +84,7 @@ unw_stack_bottom()
   }
 
   // FIXME: thread stack bottom -- could also look at /proc/self/maps
+  // FIXME: checkout __libc_stack_end (cf. libc backtrace)
   return process_stack_bottom; 
 #else
   return (void**)monitor_stack_bottom();
