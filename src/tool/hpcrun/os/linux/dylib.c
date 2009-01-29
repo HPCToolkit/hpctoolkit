@@ -138,7 +138,7 @@ int
 dylib_find_proc(void* pc, void* *proc_beg, void* *mod_beg)
 {
   Dl_info dli;
-  int ret = dladdr(pc, &dli);
+  int ret = dladdr(pc, &dli); // cf. glibc's _dl_addr
   if (ret) {
     //printf("dylib_find_proc: lm: %s (%p); sym: %s (%p)\n", dli.dli_fname, dli.dli_fbase, dli.dli_sname, dli.dli_saddr);
     *proc_beg = dli.dli_saddr;
