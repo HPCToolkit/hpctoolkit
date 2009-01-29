@@ -419,9 +419,6 @@ static void
 pruneByMetrics(Prof::CallPath::Profile* prof);
 
 static void 
-lush_cilkNormalize(Prof::CallPath::Profile* prof);
-
-static void 
 lush_makeParallelOverhead(Prof::CallPath::Profile* prof);
 
 
@@ -432,7 +429,6 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile* prof,
   coalesceStmts(prof);
 
   if (!lush_agent.empty()) {
-    lush_cilkNormalize(prof);
     lush_makeParallelOverhead(prof);
   }
 
@@ -620,185 +616,6 @@ public:
 };
 
 const string ParallelOverhead::s_tag = "lush:parallel-overhead";
-
-
-class CilkCanonicalizer
-{
-public:
-  static const string s_slow_pfx;
-  static const string s_slow_sfx;
-
-  static string 
-  normalizeName(Prof::CCT::ProcFrm* x) 
-  {
-    //string x_nm = x.substr(pfx, mrk_x - 1 - pfx);
-    const string& x_nm = x->procName();
-    
-    string xtra = "";
-
-    size_t mrk_x = x_nm.find(ParallelOverhead::s_tag);
-    if (mrk_x == string::npos && ParallelOverhead::is_overhead(x)) {
-      xtra = "@" + ParallelOverhead::s_tag;
-    }
-    
-    // if '_cilk' is a prefix of x_nm, normalize
-    if (x_nm == "_cilk_cilk_main_import") {
-      // 1. _cilk_cilk_main_import --> invoke_main_slow
-      return "invoke_main_slow" + xtra;
-    }
-    else if (is_slow_pfx(x_nm)) {
-      // 2. _cilk_x_slow --> x [_cilk_cilk_main_slow --> cilk_main]
-      int len = x_nm.length() - s_slow_pfx.length() - s_slow_sfx.length();
-      string x_basenm = x_nm.substr(s_slow_pfx.length(), len);
-      return x_basenm + xtra;
-    }
-    else {
-      return x_nm + xtra;
-    }
-  }
-
-  static inline bool 
-  is_slow_pfx(const string& x)
-  {
-    return (x.compare(0, s_slow_pfx.length(), s_slow_pfx) == 0);
-  }
-
-  static inline bool 
-  is_slow_proc(Prof::CCT::ProcFrm* x)
-  {
-    const string& x_procnm = x->procName();
-    return is_slow_pfx(x_procnm);
-  }
-
-};
-
-const string CilkCanonicalizer::s_slow_pfx = "_cilk_";
-const string CilkCanonicalizer::s_slow_sfx = "_slow";
-
-
-
-//***************************************************************************
-// lush_cilkNormalize
-//***************************************************************************
-
-
-static void 
-lush_cilkNormalize(Prof::CCT::ANode* node);
-
-static void 
-lush_cilkNormalizeByFrame(Prof::CCT::ANode* node);
-
-
-// Notes: Match frames, and use those matches to merge callsites.
-
-static void 
-lush_cilkNormalize(Prof::CallPath::Profile* prof)
-{
-  Prof::CCT::Tree* cct = prof->cct();
-  if (!cct) { return; }
-
-  lush_cilkNormalize(cct->root());
-}
-
-
-typedef std::map<string, Prof::CCT::ANode*> CilkMergeMap;
-
-
-// - Preorder Visit
-static void 
-lush_cilkNormalize(Prof::CCT::ANode* node)
-{
-  if (!node) { return; }
-
-  // ------------------------------------------------------------
-  // Visit node
-  // ------------------------------------------------------------
-  Prof::CCT::ProcFrm* proc = dynamic_cast<Prof::CCT::ProcFrm*>(node);
-  if (proc) {
-    lush_cilkNormalizeByFrame(node);
-
-    // normalize routines not normalized by merging...
-    proc->procNameXXX(CilkCanonicalizer::normalizeName(proc));
-  }
-
-  // ------------------------------------------------------------
-  // Recur
-  // ------------------------------------------------------------
-  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
-    Prof::CCT::ANode* x = it.CurNode();
-    lush_cilkNormalize(x);
-  }
-}
-
-
-static void 
-lush_cilkNormalizeByFrame(Prof::CCT::ANode* node)
-{
-  DIAG_MsgIf(DBG_LUSH, "====> (" << node << ") " << node->codeName());
-  
-  // ------------------------------------------------------------
-  // Gather (grand) children frames (skip one level)
-  // ------------------------------------------------------------
-  CCTANodeSet frameSet;
-  
-  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
-    Prof::CCT::ANode* child = it.CurNode();
-
-    for (Prof::CCT::ANodeChildIterator it(child); it.Current(); ++it) {
-      Prof::CCT::ProcFrm* x = dynamic_cast<Prof::CCT::ProcFrm*>(it.CurNode());
-      if (x) {
-	frameSet.insert(x);
-      }
-    }
-  }
-
-
-  // ------------------------------------------------------------
-  // Merge against (grand) children frames
-  // ------------------------------------------------------------
-
-  CilkMergeMap mergeMap;
-
-  for (CCTANodeSet::iterator it = frameSet.begin(); it != frameSet.end(); ++it) {
-    
-    Prof::CCT::ProcFrm* x = dynamic_cast<Prof::CCT::ProcFrm*>(*it);
-
-    string x_nm = CilkCanonicalizer::normalizeName(x);
-    DIAG_MsgIf(DBG_LUSH, "\tins: " << x->codeName() << "\n" 
-	       << "\tas : " << x_nm << " --> " << x);
-    CilkMergeMap::iterator it = mergeMap.find(x_nm);
-    if (it != mergeMap.end()) {
-      // found -- we have a duplicate
-      Prof::CCT::ProcFrm* y = dynamic_cast<Prof::CCT::ProcFrm*>((*it).second);
-
-      // keep the version without the "_cilk_" prefix
-      Prof::CCT::ANode* tokeep = y, *todel = x;
-      
-      if (CilkCanonicalizer::is_slow_proc(y)) {
-        tokeep = x;
-	todel = y;
-	mergeMap[x_nm] = x;
-      }
-      
-      Prof::CCT::ANode* par_tokeep = tokeep->parent();
-      Prof::CCT::ANode* par_todel  = todel->parent();
-
-      DIAG_MsgIf(DBG_LUSH, "\tkeep (" << tokeep << "): " << tokeep->codeName() 
-		 << "\n" << "\tdel  (" << todel  << "): " << todel->codeName());
-
-      // merge parents, if necessary
-      if (par_tokeep != par_todel) {
-	par_tokeep->merge_node(par_todel); // unlinks and deletes par_todel
-      }
-
-      // merge parents, if necessary
-      tokeep->merge_node(todel); // unlinks and deletes todel
-    }
-    else { 
-      mergeMap.insert(std::make_pair(x_nm, x));
-    }
-  }
-}
 
 
 //***************************************************************************
