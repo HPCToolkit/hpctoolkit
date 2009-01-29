@@ -19,7 +19,6 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#include <unistd.h> // environ
 #include <ucontext.h>
 
 
@@ -70,22 +69,10 @@ static inline void**
 unw_stack_bottom()
 {
 #if (HPC_UNW_LITE)
-  // For a Linux process, the environment is just above the stack
-  // bottom (which may be randomized instead of the traditional 8 MB).
-  // With some experimentation, I found that the begin of the
-  // 'environ' array is closest to the stack bottom.  This makes sense
-  // since the strings are all stored from lower to higher addresses.
-  extern char** environ;
-  static void** process_stack_bottom = NULL;
-
-  if (!process_stack_bottom) { 
-    void** x = (void**)((intptr_t)environ - 1);
-    process_stack_bottom = x; // N.B.: atomic update
-  }
-
-  // FIXME: thread stack bottom -- could also look at /proc/self/maps
-  // FIXME: checkout __libc_stack_end (cf. libc backtrace)
-  return process_stack_bottom; 
+  // Very nice glibc symbol.  Note also that 'environ' works since the
+  // environment is just above the stack bottom.
+  extern void** __libc_stack_end;
+  return __libc_stack_end; // FIXME: thread stack bottom?
 #else
   return (void**)monitor_stack_bottom();
 #endif
