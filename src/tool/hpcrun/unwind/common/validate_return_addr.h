@@ -3,7 +3,13 @@
 
 #include <stdbool.h>
 #include "unwind_cursor.h"
+typedef enum {
+  UNW_ADDR_CONFIRMED = 0,
+  UNW_ADDR_PROBABLE  = 1,
+  UNW_ADDR_CYCLE     = 2,
+  UNW_ADDR_WRONG     = 3
+} validation_status;
 
-extern bool validate_return_addr(void *addr, unw_cursor_t *cursor);
+typedef validation_status (*validate_addr_fn_t)(void *addr, void *generic_arg);
 
 #endif // VALIDATE_RETURN_ADDR_H

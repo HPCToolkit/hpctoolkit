@@ -58,6 +58,7 @@ static int unw_step_prefer_sp(void);
 
 static void drop_sample(void);
 
+static validation_status validate_return_addr(void *addr, void *generic_arg);
 
 /****************************************************************************************
  * interface functions
@@ -411,13 +412,15 @@ drop_sample(void)
 }
 
 
+// TODO: build up appropriate generic argument
+
 static void 
 update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 {
   unsigned int tmp_ra_offset;
 
-  int ret = stack_troll(cursor->sp, &tmp_ra_offset,cursor);
-  if (ret == 0) {
+  int ret = stack_troll(cursor->sp, &tmp_ra_offset, &validate_return_addr, (void *)cursor);
+  if (ret != TROLL_INVALID) {
     void  **next_sp = ((void **)((unsigned long) cursor->sp + tmp_ra_offset));
     void *next_pc = *next_sp;
 
@@ -440,7 +443,8 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
     }
     PMSG_LIMIT(PMSG(TROLL, "No interval found for trolled pc, dropping sample,cursor pc = %p", cursor->pc));
     // fall through for error handling
-  } else {
+  }
+  else {
     PMSG_LIMIT(PMSG(TROLL, "Troll failed: dropping sample,cursor pc = %p", cursor->pc));
     PMSG_LIMIT(PMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc));
     // fall through for error handling
@@ -454,11 +458,14 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 #include "validate_return_addr.h"
 #include "fnbounds_interface.h"
 
-bool
-validate_return_addr(void *addr,unw_cursor_t *cursor)
+static validation_status
+validate_return_addr(void *addr, void *generic)
 {
   void *beg, *end;
-  return (! fnbounds_enclosing_addr(addr, &beg, &end));
+  if (fnbounds_enclosing_addr(addr, &beg, &end)){
+    return UNW_ADDR_WRONG;
+  }
+  return UNW_ADDR_CONFIRMED;
 }
 
 static int 
