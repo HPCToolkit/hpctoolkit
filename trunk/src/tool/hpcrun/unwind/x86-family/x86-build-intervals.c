@@ -70,7 +70,6 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
 
   first = current;
   while (ins < end) {
-    
     xed_decoded_inst_zero_keep_mode(xptr);
     xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 
@@ -79,6 +78,10 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
       ins++;         /* skip this byte      */
       continue;      /* continue onward ... */
     }
+
+    // ensure that we don't move past the end of the interval because of a misaligned instruction
+    char *nextins = ins + xed_decoded_inst_get_length(xptr);
+    if (nextins > end) break;
 
     next = process_inst(xptr, &ins, end, &current, first, &bp_just_pushed, 
 			&highwatermark, &canonical_interval, &bp_frames_found, &rax_rbp_equivalent_at);
