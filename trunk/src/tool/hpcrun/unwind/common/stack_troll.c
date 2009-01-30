@@ -22,19 +22,34 @@
 #include "stack_troll.h"
 #include "fnbounds_interface.h"
 #include "validate_return_addr.h"
-#include "unwind_cursor.h"
 
-int
-stack_troll(void **start_sp, uint *ra_pos, unw_cursor_t *cursor)
+troll_status
+stack_troll(void **start_sp, uint *ra_pos, validate_addr_fn_t validate_addr, void *generic_arg)
 {
   void **sp = start_sp;
 
   for (int i = 0; i < TROLL_LIMIT; i++) {
-    if (validate_return_addr(*sp,cursor)){
-      PMSG_LIMIT(TMSG(TROLL,"(sp=%p): found valid address %p at sp=%p", \
-                      start_sp, *sp, sp));
-      *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
-      return 0; // success
+    switch (validate_addr(*sp,generic_arg)){
+      case UNW_ADDR_CONFIRMED:
+        PMSG_LIMIT(TMSG(TROLL,"(sp=%p): found confirmed valid address %p at sp=%p", \
+                        start_sp, *sp, sp));
+        *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
+        return TROLL_VALID; // success
+
+      case UNW_ADDR_PROBABLE:
+        PMSG_LIMIT(TMSG(TROLL,"found likely valid address %p at sp=%p", \
+                        *sp, sp));
+        *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
+        return TROLL_LIKELY; // success
+      case UNW_ADDR_CYCLE:
+        PMSG_LIMIT(TMSG(TROLL_CHK,"infinite loop detected from address %p at sp=%p", \
+                        *sp, sp));
+      case UNW_ADDR_WRONG:
+        PMSG_LIMIT(TMSG(TROLL_CHK,"provably invalid address %p at sp=%p", \
+                        *sp, sp));
+      default:
+        EMSG("UNKNOWN return code from validate_addr in Trolling code %p at sp=%p",
+             *sp, sp);
     }
     sp++;
   }
