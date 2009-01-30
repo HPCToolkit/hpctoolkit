@@ -32,7 +32,6 @@
 
 #include "unwind.h"
 #include "stack_troll.h"
-#include "validate_return_addr.h"
 
 #include "mips-unwind-cfg.h"
 #include "mips-unwind-interval.h"
@@ -247,6 +246,30 @@ isAfterCall(void* addr)
 }
 
 
+validation_status
+validateTroll(void* addr, void* arg)
+{
+  bool isInCode = false
+
+#if (HPC_UNW_LITE)
+  void *proc_beg = NULL, *mod_beg = NULL;
+  dylib_find_proc(addr, &proc_beg, &mod_beg);
+  isInCode = (mod_beg || proc_beg);
+#else
+  void *proc_beg = NULL, *proc_end = NULL;
+  int ret = fnbounds_enclosing_addr(addr, &proc_beg, &proc_end);
+  isInCode = (ret == 0) && proc_beg;
+#endif
+  
+  if (isInCode && isAfterCall(addr)) {
+    return UNW_ADDR_CONFIRMED;
+  }
+  else {
+    return UNW_ADDR_WRONG;
+  }
+}
+
+
 //***************************************************************************
 // interface functions
 //***************************************************************************
@@ -415,8 +438,8 @@ unw_step(unw_cursor_t* cursor)
     TMSG(UNW, "troll: bad pc=%p; cur sp=%p, fp=%p...", nxt_pc, sp, fp);
 
     unsigned int troll_pc_ofst;
-    int ret = stack_troll(sp, &troll_pc_ofst, cursor);
-    if (ret != 0) {
+    troll_status ret = stack_troll(sp, &troll_pc_ofst, validateTroll, NULL);
+    if (ret == TROLL_INVALID) {
       TMSG(UNW, "error: troll failed");
       return STEP_ERROR;
     }
@@ -477,21 +500,3 @@ unw_step(unw_cursor_t* cursor)
   return (didTroll) ? STEP_TROLL : STEP_OK;
 }
 
-
-bool
-validate_return_addr(void* addr, unw_cursor_t* cursor)
-{
-  bool isValid = false;
-
-#if (HPC_UNW_LITE)
-  void *proc_beg = NULL, *mod_beg = NULL;
-  dylib_find_proc(addr, &proc_beg, &mod_beg);
-  isValid = (mod_beg || proc_beg);
-#else
-  void *proc_beg = NULL, *proc_end = NULL;
-  int ret = fnbounds_enclosing_addr(addr, &proc_beg, &proc_end);
-  isValid = (ret == 0) && proc_beg;
-#endif
-
-  return isValid && isAfterCall(addr);
-}
