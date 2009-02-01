@@ -268,12 +268,13 @@ pmsg_fini(void)
   if (log_file != stderr) fclose(log_file);
 }
 
+#define MSG_BUF_SIZE  4096
+
 static void
 _msg(const char *fmt,va_list args)
 {
-  char fstr[256];
-  char buf[512];
-  int n;
+  char fstr[MSG_BUF_SIZE];
+  char buf[MSG_BUF_SIZE];
 
   fstr[0] = '\0';
   if (csprof_using_threads_p()){
@@ -282,11 +283,11 @@ _msg(const char *fmt,va_list args)
   if (ENABLED(PID)){
     sprintf(fstr,"[%d]: ",getpid());
   }
-  strcat(fstr,fmt);
+  strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
   strcat(fstr,"\n");
-  n = vsprintf(buf,fstr,args);
+  vsnprintf(buf, MSG_BUF_SIZE - 2, fstr, args);
   spinlock_lock(&pmsg_lock);
-  fprintf(log_file,buf);
+  fprintf(log_file, "%s", buf);
   fflush(log_file);
   spinlock_unlock(&pmsg_lock);
 
@@ -298,16 +299,15 @@ _msg(const char *fmt,va_list args)
 static void
 _nmsg(const char *fmt,va_list args)
 {
-  char fstr[256];
-  char buf[512];
-  int n;
+  char fstr[MSG_BUF_SIZE];
+  char buf[MSG_BUF_SIZE];
 
   fstr[0] = '\0';
-  strcat(fstr,fmt);
+  strncat(fstr, fmt, MSG_BUF_SIZE - 5);
   strcat(fstr,"\n");
-  n = vsprintf(buf,fstr,args);
+  vsnprintf(buf, MSG_BUF_SIZE - 2, fstr, args);
   spinlock_lock(&pmsg_lock);
-  fprintf(log_file,buf);
+  fprintf(log_file, "%s", buf);
   fflush(log_file);
   spinlock_unlock(&pmsg_lock);
 
