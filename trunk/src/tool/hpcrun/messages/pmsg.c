@@ -342,32 +342,42 @@ csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
 }
 
 void
-csprof_abort_w_info(void (*info)(void),const char *fmt,...)
+csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
 {
+  // massage fmt string to end in a newline
+  char fstr[MSG_BUF_SIZE];
+  fstr[0] = '\0';
+  strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
+  strcat(fstr,"\n");
+
   va_list args;
-  va_start(args,fmt);
+  va_start(args, fmt);
   _msg(fmt,args);
 
   va_start(args,fmt);
-  vfprintf(stderr,fmt,args);
+  vfprintf(stderr, fstr, args);
   va_end(args);
-  fprintf(stderr,"\n");
   info();
   monitor_real_exit(-1);
 }
 
 // message to log file, also echo on stderr
 void
-csprof_stderr_msg(const char *fmt,...)
+csprof_stderr_msg(const char *fmt, ...)
 {
-  va_list args;
-  va_start(args,fmt);
-  _msg(fmt,args);
+  // massage fmt string to end in a newline
+  char fstr[MSG_BUF_SIZE];
+  fstr[0] = '\0';
+  strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
+  strcat(fstr,"\n");
 
-  va_start(args,fmt);
-  vfprintf(stderr,fmt,args);
+  va_list args;
+  va_start(args, fmt);
+  _msg(fmt, args);
+
+  va_start(args, fmt);
+  vfprintf(stderr, fstr, args);
   va_end(args);
-  fprintf(stderr,"\n");
 }
 
 void
