@@ -275,7 +275,7 @@ pmsg_fini(void)
 #define MSG_BUF_SIZE  4096
 
 static void
-_msg(const char *fmt,va_list args)
+write_msg_to_log(const char *fmt,va_list args)
 {
   char fstr[MSG_BUF_SIZE];
   char buf[MSG_BUF_SIZE];
@@ -321,7 +321,7 @@ _nmsg(const char *fmt,va_list args)
 void
 csprof_emsg_valist(const char *fmt, va_list args)
 {
-  _msg(fmt,args);
+  write_msg_to_log(fmt,args);
 }
 
 
@@ -330,7 +330,7 @@ csprof_emsg(const char *fmt,...)
 {
   va_list args;
   va_start(args,fmt);
-  _msg(fmt,args);
+  write_msg_to_log(fmt,args);
 }
 
 void
@@ -341,7 +341,7 @@ csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
   }
   va_list args;
   va_start(args,fmt);
-  _msg(fmt,args);
+  write_msg_to_log(fmt,args);
   abort();
 }
 
@@ -356,7 +356,7 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
 
   va_list args;
   va_start(args, fmt);
-  _msg(fmt,args);
+  write_msg_to_log(fmt,args);
 
   va_start(args,fmt);
   vfprintf(stderr, fstr, args);
@@ -374,7 +374,7 @@ csprof_stderr_log_msg(bool copy_to_log,const char *fmt, ...)
   va_list args;
 
   fstr[0] = '\0';
-  strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
+  strncat(fstr, fmt, MSG_BUF_SIZE - 5);
   strcat(fstr,"\n");
 
   va_start(args, fmt);
@@ -384,7 +384,7 @@ csprof_stderr_log_msg(bool copy_to_log,const char *fmt, ...)
   if (copy_to_log){
     va_list args;
     va_start(args, fmt);
-    _msg(fmt, args);
+    write_msg_to_log(fmt, args);
   }
 }
 
@@ -403,7 +403,7 @@ csprof_pmsg(pmsg_category flag,const char *fmt,...)
   }
   va_list args;
   va_start(args,fmt);
-  _msg(fmt,args);
+  write_msg_to_log(fmt,args);
 }
 
 void
