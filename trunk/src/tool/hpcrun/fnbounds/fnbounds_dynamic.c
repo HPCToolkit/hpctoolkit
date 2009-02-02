@@ -550,9 +550,8 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
 
 	first_warning = 0;
 
-	EEMSG("hpcrun: warning - load modules at overlapping"
-		" addresses. See log file %s for implications.", 
-		log_file);
+	STDERR_MSG("hpcrun: warning - load modules at overlapping"
+	   " addresses. See log file %s for implications.", log_file);
 
 	EMSG("CAUTION [OVERLAPPING LOAD MODULES] All samples within load\n"
 	   "    modules that map to overlapping address ranges will currently\n"

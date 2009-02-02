@@ -1,3 +1,4 @@
+#!/bin/sh
 # -*- Mode:Shell-script -*-
 
 function dolog (){
