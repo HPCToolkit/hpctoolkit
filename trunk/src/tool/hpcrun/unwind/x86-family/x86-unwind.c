@@ -194,6 +194,11 @@ unw_step_sp(unw_cursor_t *cursor)
     }
   }
   else {
+    // sanity check to avoid infinite unwind loop
+    if (next_sp <= cursor->sp){
+      TMSG(INTV_ERR,"@ pc = %p. sp unwind does not advance stack. New sp = %p, old sp = %p",cursor->pc,next_sp,cursor->sp);
+      return STEP_ERROR;
+    }
     cursor->pc = next_pc;
     cursor->bp = next_bp;
     cursor->sp = next_sp;
@@ -428,6 +433,10 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
     void **next_bp = (void **) cursor->bp; 
 
     next_sp += 1;
+    if ( next_sp <= cursor->sp){
+      PMSG_LIMIT(PMSG(TROLL,"Something wierd happened! trolling from %p resulted in sp not advancing",cursor->pc));
+      drop_sample();
+    }
 
     cursor->intvl = csprof_addr_to_interval(((char *)next_pc) + offset);
     if (cursor->intvl) {
