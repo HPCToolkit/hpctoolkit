@@ -70,6 +70,7 @@ monitor_init_process(int *argc, char **argv, void *data)
   csprof_init_internal();
   if (ENABLED(TST)){
     EEMSG("TST debug ctl is active!");
+    STDERR_MSG("Std Err message appears");
   }
 
   return data;

@@ -262,6 +262,8 @@ pmsg_init()
   }
 }
 
+
+
 void
 pmsg_fini(void)
 {
@@ -269,6 +271,20 @@ pmsg_fini(void)
 }
 
 #define MSG_BUF_SIZE  4096
+
+void
+csprof_stderr_msg(const char *fmt,...)
+{
+  va_list args;
+  va_start(args,fmt);
+
+  spinlock_lock(&pmsg_lock);
+  vfprintf(stderr,fmt,args);
+  fprintf(stderr,"\n");
+  spinlock_unlock(&pmsg_lock);
+
+  va_end(args);
+}
 
 static void
 _msg(const char *fmt,va_list args)
@@ -363,7 +379,7 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
 
 // message to log file, also echo on stderr
 void
-csprof_stderr_msg(const char *fmt, ...)
+csprof_stderr_log_msg(const char *fmt, ...)
 {
   // massage fmt string to end in a newline
   char fstr[MSG_BUF_SIZE];

@@ -42,8 +42,9 @@ extern void csprof_up_pmsg_count(void);
 
 #define PMSG_LIMIT(C) if (csprof_below_pmsg_threshold()) C
 
+#define STDERR_MSG csprof_stderr_msg
 #define EMSG csprof_emsg
-#define EEMSG csprof_stderr_msg
+#define EEMSG csprof_stderr_log_msg
 #define AMSG csprof_amsg
 #define PMSG(f,...) csprof_pmsg(DBG_PREFIX(f),__VA_ARGS__)
 #define TMSG(f,...) csprof_pmsg(DBG_PREFIX(f),#f ": " __VA_ARGS__)
