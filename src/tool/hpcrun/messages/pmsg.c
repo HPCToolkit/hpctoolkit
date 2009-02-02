@@ -51,6 +51,7 @@ static pmsg_category all_list_entries [] = {
  E(UNW),
  E(SPLAY),
  E(INTV2),
+ E(INTV_ERR),
  E(TROLL),
  E(UNW_INIT),
  E(BASIC_INIT),
