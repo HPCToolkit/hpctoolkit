@@ -11,6 +11,7 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include "fname_max.h"
 #include "files.h"
@@ -272,20 +273,6 @@ pmsg_fini(void)
 
 #define MSG_BUF_SIZE  4096
 
-void
-csprof_stderr_msg(const char *fmt,...)
-{
-  va_list args;
-  va_start(args,fmt);
-
-  spinlock_lock(&pmsg_lock);
-  vfprintf(stderr,fmt,args);
-  fprintf(stderr,"\n");
-  spinlock_unlock(&pmsg_lock);
-
-  va_end(args);
-}
-
 static void
 _msg(const char *fmt,va_list args)
 {
@@ -379,21 +366,25 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
 
 // message to log file, also echo on stderr
 void
-csprof_stderr_log_msg(const char *fmt, ...)
+csprof_stderr_log_msg(bool copy_to_log,const char *fmt, ...)
 {
   // massage fmt string to end in a newline
   char fstr[MSG_BUF_SIZE];
+  va_list args;
+
   fstr[0] = '\0';
   strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
   strcat(fstr,"\n");
 
-  va_list args;
-  va_start(args, fmt);
-  _msg(fmt, args);
-
   va_start(args, fmt);
   vfprintf(stderr, fstr, args);
   va_end(args);
+
+  if (copy_to_log){
+    va_list args;
+    va_start(args, fmt);
+    _msg(fmt, args);
+  }
 }
 
 void
