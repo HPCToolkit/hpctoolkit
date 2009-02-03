@@ -249,7 +249,7 @@ isAfterCall(void* addr)
 validation_status
 validateTroll(void* addr, void* arg)
 {
-  bool isInCode = false
+  bool isInCode = false;
 
 #if (HPC_UNW_LITE)
   void *proc_beg = NULL, *mod_beg = NULL;
