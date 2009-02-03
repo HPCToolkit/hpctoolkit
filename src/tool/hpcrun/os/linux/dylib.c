@@ -146,6 +146,8 @@ dylib_find_proc(void* pc, void* *proc_beg, void* *mod_beg)
     return 0;
   }
   else {
+    *proc_beg = NULL;
+    *mod_beg = NULL;
     return -1;
   }
 }
