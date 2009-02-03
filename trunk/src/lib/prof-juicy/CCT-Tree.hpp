@@ -753,7 +753,7 @@ public:
 
 
   const std::string& 
-  procName() const { 
+  procName() const {
     // Struct::Proc or Struct::Alien
     if (m_strct) { 
       return m_strct->name();
@@ -761,7 +761,6 @@ public:
     else {
       return BOGUS; 
     }
-  }
 
 #if (DBG_LUSH_PROC_FRAME)
       std::string nm = pctxtStrct->name();
@@ -770,20 +769,8 @@ public:
 	  + ", " + n_dyn->lip_str() + ") [" + n_dyn->assocInfo_str() + "]";
       }
 #endif
-
-
-  void
-  procNameXXX(const std::string& pnm) const { 
-    // Struct::Proc or Struct::Alien
-    if (m_strct) { 
-      if (isAlien()) {
-	dynamic_cast<Struct::Alien*>(m_strct)->name(pnm);
-      }
-      else {
-	dynamic_cast<Struct::Proc*>(m_strct)->name(pnm);
-      }
-    }
   }
+
 
   uint 
   procId() const { 
