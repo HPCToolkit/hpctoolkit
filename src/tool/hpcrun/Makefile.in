@@ -194,8 +194,9 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	memory/mem.c sampling/types/callstack/cct.c \
 	sampling/types/callstack/dump_backtraces.c \
 	unwind/common/backtrace.c unwind/common/splay.c \
-	unwind/common/stack_troll.c utilities/executable-path.c \
-	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
+	unwind/common/stack_troll.c unwind/common/ui_tree.c \
+	utilities/executable-path.c utilities/spinlock.c \
+	utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-build-intervals.c \
@@ -230,8 +231,9 @@ am__objects_7 = libcsprof_la-first_func.lo \
 	libcsprof_la-mem.lo libcsprof_la-cct.lo \
 	libcsprof_la-dump_backtraces.lo libcsprof_la-backtrace.lo \
 	libcsprof_la-splay.lo libcsprof_la-stack_troll.lo \
-	libcsprof_la-executable-path.lo libcsprof_la-spinlock.lo \
-	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
+	libcsprof_la-ui_tree.lo libcsprof_la-executable-path.lo \
+	libcsprof_la-spinlock.lo libcsprof_la-tokenize.lo \
+	libcsprof_la-unlink.lo
 am__objects_8 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_9 = libcsprof_la-dylib.lo
@@ -273,8 +275,9 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	memory/mem.c sampling/types/callstack/cct.c \
 	sampling/types/callstack/dump_backtraces.c \
 	unwind/common/backtrace.c unwind/common/splay.c \
-	unwind/common/stack_troll.c utilities/executable-path.c \
-	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
+	unwind/common/stack_troll.c unwind/common/ui_tree.c \
+	utilities/executable-path.c utilities/spinlock.c \
+	utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_static.c unwind/mips/mips-unwind.c \
 	unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-build-intervals.c \
@@ -316,6 +319,7 @@ am__objects_19 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-dump_backtraces.$(OBJEXT) \
 	libcsprof_o-backtrace.$(OBJEXT) libcsprof_o-splay.$(OBJEXT) \
 	libcsprof_o-stack_troll.$(OBJEXT) \
+	libcsprof_o-ui_tree.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
 	libcsprof_o-spinlock.$(OBJEXT) libcsprof_o-tokenize.$(OBJEXT) \
 	libcsprof_o-unlink.$(OBJEXT)
@@ -627,6 +631,7 @@ MY_BASE_FILES = \
 	unwind/common/backtrace.c	\
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
+	unwind/common/ui_tree.c		\
 	utilities/executable-path.c	\
 	utilities/spinlock.c		\
 	utilities/tokenize.c		\
@@ -962,6 +967,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-thread_use.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-tokenize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-trace.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ui_tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-unlink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-unsafe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-all.Plo@am__quote@
@@ -1018,6 +1024,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-thread_use.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-tokenize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-trace.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ui_tree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-unlink.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-unsafe.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-all.Po@am__quote@
@@ -1348,6 +1355,13 @@ libcsprof_la-stack_troll.lo: unwind/common/stack_troll.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/common/stack_troll.c' object='libcsprof_la-stack_troll.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-stack_troll.lo `test -f 'unwind/common/stack_troll.c' || echo '$(srcdir)/'`unwind/common/stack_troll.c
+
+libcsprof_la-ui_tree.lo: unwind/common/ui_tree.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-ui_tree.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-ui_tree.Tpo -c -o libcsprof_la-ui_tree.lo `test -f 'unwind/common/ui_tree.c' || echo '$(srcdir)/'`unwind/common/ui_tree.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-ui_tree.Tpo $(DEPDIR)/libcsprof_la-ui_tree.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/common/ui_tree.c' object='libcsprof_la-ui_tree.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-ui_tree.lo `test -f 'unwind/common/ui_tree.c' || echo '$(srcdir)/'`unwind/common/ui_tree.c
 
 libcsprof_la-executable-path.lo: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-executable-path.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-executable-path.Tpo -c -o libcsprof_la-executable-path.lo `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
@@ -2013,6 +2027,20 @@ libcsprof_o-stack_troll.obj: unwind/common/stack_troll.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/common/stack_troll.c' object='libcsprof_o-stack_troll.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-stack_troll.obj `if test -f 'unwind/common/stack_troll.c'; then $(CYGPATH_W) 'unwind/common/stack_troll.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/stack_troll.c'; fi`
+
+libcsprof_o-ui_tree.o: unwind/common/ui_tree.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-ui_tree.o -MD -MP -MF $(DEPDIR)/libcsprof_o-ui_tree.Tpo -c -o libcsprof_o-ui_tree.o `test -f 'unwind/common/ui_tree.c' || echo '$(srcdir)/'`unwind/common/ui_tree.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ui_tree.Tpo $(DEPDIR)/libcsprof_o-ui_tree.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/common/ui_tree.c' object='libcsprof_o-ui_tree.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ui_tree.o `test -f 'unwind/common/ui_tree.c' || echo '$(srcdir)/'`unwind/common/ui_tree.c
+
+libcsprof_o-ui_tree.obj: unwind/common/ui_tree.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-ui_tree.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-ui_tree.Tpo -c -o libcsprof_o-ui_tree.obj `if test -f 'unwind/common/ui_tree.c'; then $(CYGPATH_W) 'unwind/common/ui_tree.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/ui_tree.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ui_tree.Tpo $(DEPDIR)/libcsprof_o-ui_tree.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/common/ui_tree.c' object='libcsprof_o-ui_tree.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ui_tree.obj `if test -f 'unwind/common/ui_tree.c'; then $(CYGPATH_W) 'unwind/common/ui_tree.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/ui_tree.c'; fi`
 
 libcsprof_o-executable-path.o: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-executable-path.o -MD -MP -MF $(DEPDIR)/libcsprof_o-executable-path.Tpo -c -o libcsprof_o-executable-path.o `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c

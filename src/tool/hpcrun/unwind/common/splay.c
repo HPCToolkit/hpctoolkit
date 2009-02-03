@@ -1,37 +1,23 @@
 /*
- * Splay-tree code for PC to unwind interval lookup and memo-ization.
+ * General interval splay tree functions, not specific to unwind
+ * intervals.
+ *
+ * Note: these routines all assume a locked tree.
  *
  * $Id$
  */
 
-#include <assert.h>
-#include <err.h>
 #include <stdio.h>
-#include "splay-interval.h"
-#include "spinlock.h"
-#include "splay.h"
+
 #include "pmsg.h"
-#include "thread_data.h"
+#include "splay.h"
+#include "splay-interval.h"
 
-#include "fnbounds_interface.h"
 
+//---------------------------------------------------------------------
+// private operations
+//---------------------------------------------------------------------
 
-static interval_tree_node_t csprof_interval_tree_root = NULL;
-static spinlock_t csprof_interval_tree_lock;
-
-void
-csprof_interval_tree_init(void)
-{
-  TMSG(SPLAY,"interval splay tree init");
-  csprof_interval_tree_root = NULL;
-  spinlock_unlock(&csprof_interval_tree_lock);
-}
-
-void
-csprof_release_splay_lock(void)
-{
-  spinlock_unlock(&csprof_interval_tree_lock);
-}
 
 /*
  * The Sleator-Tarjan top-down splay algorithm.  Rotate the interval
@@ -41,11 +27,11 @@ csprof_release_splay_lock(void)
  *
  * Returns: the new root.
  */
-static interval_tree_node_t
-interval_tree_splay(interval_tree_node_t root, void *addr)
+static interval_tree_node *
+interval_tree_splay(interval_tree_node *root, void *addr)
 {
     interval_tree_node dummy;
-    interval_tree_node_t ltree_max, rtree_min, y;
+    interval_tree_node *ltree_max, *rtree_min, *y;
 
     if (root == NULL)
 	return (NULL);
@@ -95,157 +81,199 @@ interval_tree_splay(interval_tree_node_t root, void *addr)
     return (root);
 }
 
+
+//---------------------------------------------------------------------
+// interface operations
+//---------------------------------------------------------------------
+
+
 /*
- * Lookup the PC address in the interval tree and return a pointer to
- * the interval containing that address (the new root).  Grow the tree
- * lazily and memo-ize the answers.
+ * Lookup "addr" in the tree "root".
  *
- * Returns: pointer to unwind_interval struct if found, else NULL.
+ * Returns: pointer to node containing "addr", else NULL if "addr" is
+ * not in the tree.
  */
-// FIXME  --- this is dangerous and sucks
-#define root  csprof_interval_tree_root
-#define lock  csprof_interval_tree_lock
-
-#define SPINLOCK(l) do { \
-    TD_GET(splay_lock) = 0; \
-    spinlock_lock(l);       \
-    TD_GET(splay_lock) = 1; } while(0);
-
-#define SPINUNLOCK(l) do {\
-    spinlock_unlock(l);       \
-    TD_GET(splay_lock) = 0; } while(0);
-
-
-splay_interval_t *
-csprof_addr_to_interval(void *addr)
+interval_tree_node *
+interval_tree_lookup(interval_tree_node **root,  /* in/out */
+		     void *addr)
 {
-    void *fcn_start, *fcn_end;
-    interval_status istat;
-    interval_tree_node_t first, last, p, lroot;
-    splay_interval_t *ans;
-    int ret;
-    extern interval_status build_intervals(char *ins, unsigned int len);
+    *root = interval_tree_splay(*root, addr);
+    if (*root != NULL && START(*root) <= addr && addr < END(*root))
+	return (*root);
 
-    SPINLOCK(&lock);
-
-    /* See if addr is already in the tree. */
-    root = interval_tree_splay(root, addr);
-    if (root != NULL && START(root) <= addr && addr < END(root)) {
-	lroot = root;
-	SPINUNLOCK(&lock);
-	TMSG(SPLAY,"found %lx already in tree",addr);
-	return (splay_interval_t *)lroot;
-    }
-
-    /* Get list of new intervals to insert into the tree. */
-    ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end);
-    if (ret != SUCCESS) {
-	SPINUNLOCK(&lock);
-	TMSG(SPLAY,"no enclosing bounds found");
-	return (NULL);
-    }
-    assert(fcn_start <= addr && addr < fcn_end);
-
-    istat = build_intervals(fcn_start, fcn_end - fcn_start);
-
-    if (istat.first == NULL) {
-	SPINUNLOCK(&lock);
-	TMSG(SPLAY,"build intervals failed");
-	return (NULL);
-    }
-
-    /*
-     * Convert list of unwind intervals to tree nodes and look for the
-     * interval containing addr.
-     * FIXME: Should do more sanity-checking on the order of intervals.
-     */
-    first = (interval_tree_node_t)istat.first;
-    ans = NULL;
-    for (p = first; p != NULL; p = RIGHT(p)) {
-	LEFT(p) = NULL;
-	if (START(p) <= addr && addr < END(p))
-	    ans = p;
-	last = p;
-    }
-    assert(fcn_start <= START(first));
-    assert(END(last) <= fcn_end);
-
-    /*
-     * Always link the new nodes into the tree whether we found the
-     * interval or not.
-     * FIXME: Should do more sanity-checking on the order of intervals.
-     */
-    if (root == NULL) {
-	root = first;
-    } else if (addr < START(root)) {
-	if (LEFT(root) == NULL) {
-	    if (END(last) <= START(root)) {
-		LEFT(root) = first;
-	    } else {
-		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
-	    }
-	} else {
-	    LEFT(root) = interval_tree_splay(LEFT(root), END(root));
-	    if (END(LEFT(root)) <= START(first) && END(last) <= START(root)) {
-		RIGHT(LEFT(root)) = first;
-	    } else {
-		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
-	    }
-	}
-    } else {
-	if (RIGHT(root) == NULL) {
-	    if (END(root) <= START(first)) {
-		RIGHT(root) = first;
-	    } else {
-		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
-	    }
-	} else {
-	    RIGHT(root) = interval_tree_splay(RIGHT(root), START(root));
-	    if (END(root) <= START(first) && END(last) <= START(RIGHT(root))) {
-		LEFT(RIGHT(root)) = first;
-	    } else {
-		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
-	    }
-	}
-    }
-
-    SPINUNLOCK(&lock);
-
-    PMSG(SPLAY,"SPLAY: returning interval = %p",ans);
-    return (ans);
+    return (NULL);
 }
 
-#undef root
 
-/* *********************************************************************** */
+/*
+ * Insert "node" into the tree at "root", and check for nodes that are
+ * reversed (start > end), zero-length (start = end), or that overlap
+ * with an existing node.
+ *
+ * Returns: 0 on success (inserted), else 1 if insert failed
+ * (overlap).
+ */
+int
+interval_tree_insert(interval_tree_node **root,  /* in/out */
+		     interval_tree_node *node)
+{
+    interval_tree_node *t;
+
+    /* Reversed order or zero-length. */
+    if (START(node) >= END(node))
+	return (1);
+
+    /* Empty tree. */
+    if (*root == NULL) {
+	LEFT(node) = NULL;
+	RIGHT(node) = NULL;
+	*root = node;
+	return (0);
+    }
+
+    /* Insert left of root. */
+    *root = interval_tree_splay(*root, START(node));
+    if (END(node) <= START(*root)) {
+	LEFT(node) = LEFT(*root);
+	RIGHT(node) = *root;
+	LEFT(*root) = NULL;
+	*root = node;
+	return (0);
+    }
+
+    /* Insert right of root. */
+    t = interval_tree_splay(RIGHT(*root), START(*root));
+    if (END(*root) <= START(node)
+	&& (t == NULL || END(node) <= START(t))) {
+	LEFT(node) = *root;
+	RIGHT(node) = t;
+	RIGHT(*root) = NULL;
+	*root = node;
+	return (0);
+    }
+
+    /* Must overlap with something in the tree. */
+    RIGHT(*root) = t;
+    return (1);
+}
+
+
+/*
+ * Remove from "root" all nodes with intervals within or overlapping
+ * with [start, end).
+ *
+ * Returns: the new root in *root and the tree of deleted nodes in
+ * *del_tree.
+ */
+void
+interval_tree_delete(interval_tree_node **root,      /* in/out */
+		     interval_tree_node **del_tree,  /* out */
+		     void *start, void *end)
+{
+    interval_tree_node *ltree, *rtree, *t;
+
+    /* Empty tree. */
+    if (*root == NULL) {
+	*del_tree = NULL;
+	return;
+    }
+
+    /*
+     * Split the tree into three pieces: intervals entirely less than
+     * start (ltree), intervals within or overlapping with [start, end)
+     * (del_tree), and intervals entirely greater than end (rtree).
+     */
+    t = interval_tree_splay(*root, start);
+    if (END(t) <= start) {
+	ltree = t;
+	t = RIGHT(t);
+	RIGHT(ltree) = NULL;
+    } else {
+	ltree = LEFT(t);
+	LEFT(t) = NULL;
+    }
+    t = interval_tree_splay(t, end);
+    if (t == NULL) {
+	*del_tree = NULL;
+	rtree = NULL;
+    } else if (end <= START(t)) {
+	*del_tree = LEFT(t);
+	rtree = t;
+	LEFT(t) = NULL;
+    } else {
+	*del_tree = t;
+	rtree = RIGHT(t);
+	RIGHT(t) = NULL;
+    }
+
+    /* Combine the left and right pieces to make the new tree. */
+    if (ltree == NULL) {
+	*root = rtree;
+    } else if (rtree == NULL) {
+	*root = ltree;
+    } else {
+	*root = interval_tree_splay(ltree, end);
+	RIGHT(*root) = rtree;
+    }
+}
+
+
+/*
+ * Verify the interval tree "root" by doing an in-order traversal and
+ * checking each node for internal consistency (start < end) and for
+ * overlap with the previous node.
+ */
+static int v_num_errs;
+static int v_prev_num;
+static void *v_prev_start;
+static void *v_prev_end;
+static void *v_min_addr;
+static unsigned long v_total_len;
 
 static void
-csprof_print_interval_tree_r(FILE* fs, interval_tree_node_t node);
+verify_tree(interval_tree_node *root, const char *label)
+{
+    if (root == NULL)
+	return;
+
+    verify_tree(LEFT(root), label);
+
+    /* reversed order */
+    if (START(root) >= END(root)) {
+	EMSG("%s: BAD node %d [%p, %p) in reversed order",
+	     label, v_prev_num + 1, START(root), END(root));
+	v_num_errs++;
+    }
+    /* overlap */
+    if (v_prev_end > START(root)) {
+	EMSG("%s: BAD node %d [%p, %p) overlaps node %d [%p, %p)",
+	     label, v_prev_num, v_prev_start, v_prev_end,
+	     v_prev_num + 1, START(root), END(root));
+	v_num_errs++;
+    }
+    v_prev_num++;
+    v_prev_start = START(root);
+    v_prev_end = END(root);
+    if (v_prev_num == 1) {
+	v_min_addr = START(root);
+    }
+    v_total_len += (unsigned long)END(root) - (unsigned long)START(root);
+
+    verify_tree(RIGHT(root), label);
+}
 
 
 void
-csprof_print_interval_tree()
+interval_tree_verify(interval_tree_node *root, const char *label)
 {
-  FILE* fs = stdout;
+    v_num_errs = 0;
+    v_prev_num = 0;
+    v_prev_start = (void *)0;
+    v_prev_end = (void *)0;
+    v_min_addr = (void *)0;
+    v_total_len = 0;
 
-  fprintf(fs, "Interval tree:\n");
-  csprof_print_interval_tree_r(fs, csprof_interval_tree_root);
-  fprintf(fs, "\n");
-  fflush(fs);
-}
-
-
-static void
-csprof_print_interval_tree_r(FILE* fs, interval_tree_node_t node)
-{
-  // Base case
-  if (node == NULL) {
-    return;
-  }
-  
-  fprintf(fs, "  {%p start=%p end=%p}\n", node, START(node), END(node));
-  
-  // Recur
-  csprof_print_interval_tree_r(fs, RIGHT(node));
-  csprof_print_interval_tree_r(fs, LEFT(node));
+    verify_tree(root, label);
+    EMSG("%s: verify: errors = %d, nodes = %d, min = %p, max = %p, len = %lu",
+	 label, v_num_errs, v_prev_num, v_min_addr, v_prev_end, v_total_len);
 }

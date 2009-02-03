@@ -23,6 +23,7 @@
 
 #include "unwind.h"
 #include "splay.h"
+#include "ui_tree.h"
 
 #include "thread_data.h"
 #include "x86-unwind-interval.h"

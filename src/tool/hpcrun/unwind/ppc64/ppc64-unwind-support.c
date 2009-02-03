@@ -15,6 +15,7 @@
 #include "monitor.h"
 #include "pmsg.h"
 #include "splay.h"
+#include "ui_tree.h"
 #include "unwind.h"
 #include "unwind_cursor.h"
 #include "ppc64-unwind-interval.h"

@@ -38,6 +38,7 @@
 #  include "splay-interval.h"
 #  include "splay.h"
 #  include "fnbounds_interface.h"
+#  include "ui_tree.h"
 
 #else
 
