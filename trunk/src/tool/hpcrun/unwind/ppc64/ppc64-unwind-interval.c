@@ -16,6 +16,7 @@
 #include "ppc64-unwind-interval.h"
 #include "pmsg.h"
 #include "atomic-ops.h"
+#include "ui_tree.h"
 
 
 
@@ -89,7 +90,7 @@ new_ui(char *start,
        bp_loc bp_status,          
        unwind_interval *prev)
 {
-  unwind_interval *u = (unwind_interval *) csprof_malloc(sizeof(unwind_interval)); 
+  unwind_interval *u = (unwind_interval *) csprof_ui_malloc(sizeof(unwind_interval)); 
 
 // **** SPECIAL PURPOSE CODE TO INDUCE MEM FAILURE (conditionally included) ***
 # include "mem_error_gen.h" 

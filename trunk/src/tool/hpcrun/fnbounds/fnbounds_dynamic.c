@@ -51,6 +51,7 @@
 #include "unlink.h"
 #include "spinlock.h"
 #include "thread_data.h"
+#include "ui_tree.h"
 
 
 //*********************************************************************
@@ -243,9 +244,6 @@ fnbounds_unmap_closed_dsos()
 
       // add to closed list of DSOs 
       dso_list_add(&dso_closed_list, dso_info);
-
-      // Free the table memory.
-      munmap(dso_info->table, dso_info->map_size);
     }
   }
 
@@ -460,24 +458,29 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
 static void
 fnbounds_epoch_finalize_locked()
 {
-  dso_info_t *dso_info;
+  dso_info_t *dso_info, *next;
 
   for (dso_info = dso_open_list; dso_info; dso_info = dso_info->next) {
     csprof_epoch_add_module(dso_info->name, NULL /* no vaddr */,
 			    dso_info->start_addr, 
 			    dso_info->end_addr - dso_info->start_addr);
-  } 
+  }
 
-  dso_info_t *next;
+  // Purge the DSO closed list: munmap() the fnbounds array, delete
+  // the ranges from the interval tree, and move the node to the free
+  // list.
+  //
   for (dso_info = dso_closed_list; dso_info;) {
     csprof_epoch_add_module(dso_info->name, NULL /* no vaddr */,
 			    dso_info->start_addr, 
 			    dso_info->end_addr - dso_info->start_addr);
+    munmap(dso_info->table, dso_info->map_size);
+    csprof_delete_ui_range(dso_info->start_addr, dso_info->end_addr);
     next = dso_info->next;
     dso_list_remove(&dso_closed_list, dso_info);
     dso_info_free(dso_info);
     dso_info = next;
-  } 
+  }
 }
 
 

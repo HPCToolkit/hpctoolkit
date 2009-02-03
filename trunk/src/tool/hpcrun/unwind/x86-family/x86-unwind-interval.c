@@ -6,6 +6,7 @@
 #include "x86-unwind-interval.h"
 #include "pmsg.h"
 #include "atomic-ops.h"
+#include "ui_tree.h"
 
 #define STR(s) case s: return #s
 
@@ -76,7 +77,7 @@ new_ui(char *start,
        bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
        unwind_interval *prev)
 {
-  unwind_interval *u = (unwind_interval *) csprof_malloc(sizeof(unwind_interval)); 
+  unwind_interval *u = (unwind_interval *) csprof_ui_malloc(sizeof(unwind_interval)); 
 
 # include "mem_error_gen.h" // **** SPECIAL PURPOSE CODE TO INDUCE MEM FAILURE (conditionally included) ***
 
@@ -119,7 +120,7 @@ set_ui_restored_canonical(unwind_interval *u, unwind_interval *value)
 unwind_interval *
 fluke_ui(char *loc,unsigned int pos)
 {
-  unwind_interval *u = (unwind_interval *) csprof_malloc(sizeof(unwind_interval)); 
+  unwind_interval *u = (unwind_interval *) csprof_ui_malloc(sizeof(unwind_interval)); 
 
   u->common.start = loc;
   u->common.end = loc;

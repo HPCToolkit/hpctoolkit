@@ -95,6 +95,7 @@ MY_BASE_FILES =			\
 	unwind/common/backtrace.c	\
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
+	unwind/common/ui_tree.c		\
 	utilities/executable-path.c	\
 	utilities/spinlock.c		\
 	utilities/tokenize.c		\

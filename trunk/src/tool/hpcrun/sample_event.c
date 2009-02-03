@@ -9,7 +9,6 @@
 #include "metrics_types.h"
 #include "pmsg.h"
 #include "segv_handler.h"
-#include "splay.h"
 #include "state.h"
 #include "thread_data.h"
 #include "trace.h"
@@ -21,6 +20,7 @@
 #include "csprof-malloc.h"
 #include "splay-interval.h"
 #include "sample_sources_all.h"
+#include "ui_tree.h"
 
 
 //*************************** Forward Declarations **************************
