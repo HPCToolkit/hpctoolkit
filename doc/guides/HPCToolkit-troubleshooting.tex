@@ -1,0 +1,156 @@
+\documentclass{article}
+\usepackage{hyperref}
+\setlength{\topmargin}{0in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\parindent}{0in}
+\begin{document}
+\title{Understanding and Troubleshooting \\
+         HPCToolkit Problems}
+\author{The HPCToolkit Team}
+\date{03 February 2009}
+\maketitle
+\textbf{Why isn't my source code found by hpcviewer?}
+\begin{quote}
+When using hpcquick to create performance databases, one must specify the path 
+to each directory using the flag \verb|-I dir1 dir2 ... dirN|
+
+Here, \verb|dir1| through \verb|dirN| specify a list of directories --– either
+relative or absolute –-- containing source code to which performance
+data should be correlated.  In order to search for source files in a
+directory and recursively inspect all of its descendents, append an
+escaped '*' after the last slash, e.g., \verb|/mypath/\*.|
+
+For any functions whose source code is not found in these directories
+(e.g., system libraries), hpcview will generate a synopsis that shows
+the presence of the function and its line extents (if known), but no
+source code.
+
+\end{quote}
+\textbf{I tried the approach above, and am still missing source files.}
+\begin{quote}
+This is a common problem. The cause for this difficulty is that the
+pathnames associated with performance metrics are extracted from an
+application binary. The path names encoded in the binary can be
+
+\begin{itemize}
+   \item relative to the directory where the source was compiled, not
+         where you are now as you measure and analyze the code, or
+
+   \item absolute paths that have encodings for the mount point the
+         directory that existed when the file was compiled, but might be
+         different now (e.g., they were compiled on a different node of a
+         cluster that had a different mount point for the shared file
+         system).
+\end{itemize}
+
+
+Diagnosing and fixing this problem requires knowing exactly what path
+names are referenced in the binary and/or perhaps the performance
+data. Fortunately, this is not hard. Let’s say you have performance
+metrics data in a file \verb|perfdata.pxml| and static program structure data
+reported by \verb|HPCtoolkit|'s \verb|bloop| binary analysis tool in
+\verb|myprogram.bloop|. Use the Unix grep utility to select lines in each of
+these files that have file path names. This can be accomplished with
+the following commands
+\begin{quote}
+   \verb|% grep "F n=" myprogram.bloop perfdata.xml|
+\end{quote}
+
+Examine the path prefixes to the file names. These are the path
+prefixes that \verb|HPCtoolkit|'s \verb|hpcview| tool will use to
+attempt to locate the source files. To ensure that \verb|hpcview| is able to
+find the source files, it may be necessary to substitute a path prefix
+found in the binary and/or performance data with something different.
+Fortunately, \verb|hpcview| is able to apply substitutions automatically;
+however, it is up to you the user to specify what substitutions are
+needed.
+
+To perform necessary substitutions, edit the configuration file used
+by \verb|hpcview| to construct your program’s performance database. If
+you used \verb|hpcquick| to construct the performance database, as a
+side effect of the \verb|hpcquick| script, it left a configuration
+file \verb|hpcquick.xml| in the directory in which you ran \verb|hpcquick|.
+Substitutions are specified using the \verb|REPLACE| operator.
+
+For instance, if the executable binary contains the file path 
+\begin{quote}
+\verb|<F n="../../binutils/bfd/foo.c">|
+\end{quote}
+and it the corresponding source file can be found at 
+\begin{quote}
+\verb|/scratch/tmp/binutils/bfd/foo.c|
+\end{quote}
+hpcview can be directed to perform the necessary path prefix substitution by 
+adding the following line to its configuration file: 
+\begin{quote}
+\verb|<REPLACE in="../../binutils” out=”/scratch/tmp/binutils">|
+\end{quote}
+
+In the configuration file, \verb|REPLACE| commands should be placed
+immediately after any PATH operators and before any \verb|METRIC|
+definitions. See
+ \href{http://hipersoft.cs.rice.edu/hpctoolkit/documentation/doc/dtd_hpcview.html}{HPCviewer docs}  
+for detailed information about the hpcview configuration file.
+
+Rerunning hpcview with the necessary \verb|REPLACE| directives in place will
+generate a performance database with the source code included as
+desired.
+\end{quote}
+
+\textbf{Why don't the line numbers for loops and/or procedures exactly
+correspond to what I see in the source code?}
+\begin{quote}
+
+To use a clich\'{e}, ``garbage in, garbage out''. \verb|HPCToolkit|
+depends on information recorded in the symbol table by the
+compiler. Line numbers for procedures and loops are inferred by
+looking at the symbol table information recorded for machine
+instructions identified as being inside the procedure or loop.
+
+For procedures, often no machine instructions are associated with a
+procedure's declarations. Thus, the first line in the procedure that
+has an associated machine instruction is the first line of executable
+code.
+
+Inlined functions may lead to confusing data for a procedure. Machine
+instructions mapped to source lines from the inline function appear in
+the context of other functions. Currently, there is no support for
+identifying and reporting code for inline functions as such.
+
+For loops, the process of identifying what source lines are in a loop
+is similar: what source lines map to machine instructions inside a
+loop defined by a backward branch to a loop head. Sometimes compilers
+sometimes don’t properly record the line number mapping.
+
+Some common constructs such as Fortran's statement functions lead to
+confusing output from bloop, HPCToolkit’s binary analyzer. With
+Compaq's C compiler on Alpha systems, machine instructions that result
+from forward substitution of statement functions are mapped back to
+the line numbers in which the statement functions are defined. \verb|bloop|'s
+normalization phase ensures that source lines will appear only once in
+hpcviewer’s display. Thus different loops in which the same statement
+functions are instantiated will appear fused in the program structure
+after \verb|bloop|'s normalization. There is no simple fix for this
+problem. A related issue is that sampled performance data for a
+machine instruction is mapped back to the source line that a machine
+instruction was derived from.  When machine instructions found in
+different loops map back to the source line for a statement function,
+performance is not going to be attributed correctly. To cope with this
+issue, the whole HPCToolkit tool chain needs modifications to cope
+with the fact that there are multiple instances of a source line that
+need to be processed and viewed as distinct entities.
+
+With SGI's \verb|MIPspro| compilers, we have seen loop headers attributed to
+the last line before the loop containing executable code. In the case
+of the Intel compiler, sometimes machine instructions found in
+optimized code map to the end of the source file. Yuck!
+
+When the compiler line mapping information is wrong, there is little
+you can do about it other than to ignore its imperfections, or
+hand-edit the XML program structure file produced by \verb|bloop|, which I
+don’t recommend unless you are desperate.
+\end{quote}
+
+\end{document}
