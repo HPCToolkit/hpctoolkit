@@ -107,7 +107,7 @@ Summary of "Best Practices" from hpctoolkit man page:
   detailed information to a log that indicates how many samples whose
   attribution it might effect.
 
-- small potential for SEG if a thread receives a sample before it is
+- small potential for SEGV if a thread receives a sample before it is
   fully initialized to process samples (however, automatic recovery)
 
 - When hpcrun is invoked with debugging options turned on, it may
@@ -149,7 +149,7 @@ Summary of "Best Practices" from hpctoolkit man page:
 1.3. hpcprof
 ----------------------------------------
 
-- epochs do not fully support every possile usage of dlopen/close.
+- epochs do not fully support every possible usage of dlopen/close.
 
 - NOTE: if one uses a recursive search path that contains a cycle
   (with symbolic links), the search algorithm will loop.
@@ -160,6 +160,7 @@ Summary of "Best Practices" from hpctoolkit man page:
 
 - DBs can be large, esp, with inlining.
 
+- not suitable for working with data from many processes
 
 ----------------------------------------
 1.4. hpcviewer
@@ -167,6 +168,7 @@ Summary of "Best Practices" from hpctoolkit man page:
 
 - Large number of metrics
 - Derived metric computations can get clumsy.
+- Lacking support for analysis of data large numbers of processes. 
 
 
 =============================================================================
