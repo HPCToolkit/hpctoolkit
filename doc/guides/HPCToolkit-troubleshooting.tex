@@ -1,7 +1,7 @@
 %\documentclass[12pt]{article}
 \documentclass{article}
 \usepackage{hyperref}
-\usepackage{verbatim,moreverb}
+\usepackage{verbatim,moreverb,fancyvrb}
 \setlength{\topmargin}{0in}
 \setlength{\oddsidemargin}{0in}
 \setlength{\evensidemargin}{0in}
@@ -27,7 +27,6 @@
 
 \textbf{Why isn't my source code found by \hpcviewer ?}
 \begin{comment}
-'*' must appear at the end.
 (circular links in recursive search may lead to  inf loop)
 \end{comment}
 \begin{quote}
@@ -110,17 +109,59 @@ and one with a path like
         missing source file.
 \end{comment}
 
-Some sample output appears below:
+For example, suppose we have an application \verb|app1| whose main source 
+is in in a directory \verb|/projs/Apps/app1-src|. The \verb|app1|
+application is built inside the \verb|app1-src| subdirectory, and it uses
+source files from a subdirectory \verb|app1-src/special| as well as some
+source common to all applications, located in
+\verb|/projs/Apps/common|. When \verb|app1| is built, the
+\verb|common| source is accessed by relative path \verb|../common|.
+The \verb|app1| executable is installed on our path.
+
+Now, we switch to our home directory \verb|/h/user/T1| to collect
+some profile data for \verb|app1|.
+When we run \hpcstruct\ (without the \verb|-I| flag) as follows:
+\begin{quote}
+  \verb|hpcstruct -S app1.hpcstruct */*.hpcrun|
+\end{quote}
+This results in the output
+\begin{quote}
+\begin{Verbatim}[fontsize=\small]
+msg: Line map : /opt/apps/intel/compilers/10.1/lib/libimf.so
+msg: STRUCTURE: /usr/local/bin/app1
+msg: Copying source files reached by PATH option to /h/user/T1/hpctoolkit-app1-database
+WARNING: lost: app1.c
+WARNING: lost: special/xfn1.c
+WARNING: lost: ../common/mathx.c
+WARNING: lost: ~unknown-file~
+WARNING: lost: irc_msg_support.c
+\end{Verbatim}
+\end{quote}
+The \verb|WARNING: lost:| obtains for \verb|~unknown-file~| and
+\verb|irc_msg_support.c| because these are compiler system files --- source
+is unavailable. The other lost files, however, can be found by using
+the proper \verb|-I| flag:
 \begin{quote}
 \begin{verbatim}
-msg:   cp:/home/user/Project/L2/xfn.c -> ./src/home/user/Project/L2/xfn.c
-msg:   cp:/home/user/Project/L2/yfn.c -> ./src/home/user/Project/L2/yfn.c
-msg:   cp:/home/user/Project/Main1/t1.c -> ./src/home/user/Project/Main1/t1.c
-WARNING: lost: ~unknown-file~
-WARNING: lost: interp.c
+hpcstruct -I /projs/Apps/'*' -S app1.hpcstruct */*.hpcrun
 \end{verbatim}
 \end{quote}
-
+\vbox{%
+The resulting output:
+\begin{quote}
+\begin{Verbatim}[fontsize=\small]
+msg: Line map : /opt/apps/intel/compilers/10.1/lib/libimf.so
+msg: STRUCTURE: /usr/local/bin/app1
+msg: Copying source files reached by PATH option to /h/user/T1/hpctoolkit-app1-database
+msg:   cp:/projs/Apps/app1-src/app1.c -> ./projs/Apps/app1-src/app1.c
+msg:   cp:/projs/Apps/app1-src/special/xfn1.c -> ./projs/Apps/app1-src/special/xfn1.c
+msg:   cp:/projs/Apps/common/mathx.c -> ./projs/Apps/common/mathx.c
+WARNING: lost: ~unknown-file~
+WARNING: lost: irc_msg_support.c
+\end{Verbatim}
+\end{quote}
+Much better!
+}
 \textbf{Best Practice:} Carefully inspect the output of \hpcprof\ to
 determine which files are lost.  Then, use the recursive search form
 of the \verb|-I| flag with absolute paths to the actual source
