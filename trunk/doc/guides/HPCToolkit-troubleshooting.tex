@@ -162,6 +162,37 @@ WARNING: lost: irc_msg_support.c
 \end{quote}
 Much better!
 }
+\begin{comment}
+  From John
+
+  Best Practice: Carefully inspect the output of hpcprof to determine
+  which ﬁles are lost. Then, specify one or more -I flags with paths
+  to directories from which the relative paths of lost source files
+  can be resolved. Specifying a -I path ending in a '*' (the recursive
+  search form) can reduce the number of -I paths that need to be
+  specified.
+ ----------------
+  From Nathan
+
+  The best practice is to always use -I to do a recursive search
+  starting at the top of your each distinct source (or build, if
+  separate) directory.  (E.g. in the case of Chroma, which uses 3 or 4
+  separate packages, you would need 3 or 4 -Is.)
+
+  As long as one doesn't have a crazy source tree where symbolic links
+  create cycles, this will be the right thing 99% of the time.
+---
+  John Again
+
+  OK. I'm fine with Nathan's suggestion, but the language has to be
+  written carefully so that others know what he means and not just
+  us. What I wanted to make clear was that we don't want to specify
+  "absolute paths to the actual source directory". What we want is to
+  specify absolute paths to the top of each distinct source or build
+  directory tree within which the relative path names to the lost
+  files can be resolved.
+\end{comment}
+
 \textbf{Best Practice:} Carefully inspect the output of \hpcprof\ to
 determine which files are lost.  Then, use the recursive search form
 of the \verb|-I| flag with absolute paths to the actual source
