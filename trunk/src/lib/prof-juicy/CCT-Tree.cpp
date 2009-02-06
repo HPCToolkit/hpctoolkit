@@ -394,7 +394,7 @@ ADynNode::mergeMetrics(const ADynNode& y, uint beg_idx)
 void 
 ADynNode::appendMetrics(const ADynNode& y)
 {
-  for (int i = 0; i < y.numMetrics(); ++i) {
+  for (uint i = 0; i < y.numMetrics(); ++i) {
     m_metrics.push_back(y.metric(i));
   }
 }
@@ -403,7 +403,7 @@ ADynNode::appendMetrics(const ADynNode& y)
 void 
 ADynNode::expandMetrics_before(uint offset)
 {
-  for (int i = 0; i < offset; ++i) {
+  for (uint i = 0; i < offset; ++i) {
     m_metrics.insert(m_metrics.begin(), hpcfile_metric_data_ZERO);
   }
 }
@@ -412,7 +412,7 @@ ADynNode::expandMetrics_before(uint offset)
 void 
 ADynNode::expandMetrics_after(uint offset)
 {
-  for (int i = 0; i < offset; ++i) {
+  for (uint i = 0; i < offset; ++i) {
     m_metrics.push_back(hpcfile_metric_data_ZERO);
   }
 }

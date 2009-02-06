@@ -92,7 +92,7 @@ namespace CallPath {
 Profile::Profile(uint numMetrics)
 {
   m_metricdesc.resize(numMetrics);
-  for (int i = 0; i < m_metricdesc.size(); ++i) {
+  for (uint i = 0; i < m_metricdesc.size(); ++i) {
     m_metricdesc[i] = new SampledMetricDesc();
   }
   m_cct = new CCT::Tree(this);
@@ -103,7 +103,7 @@ Profile::Profile(uint numMetrics)
 
 Profile::~Profile()
 {
-  for (int i = 0; i < m_metricdesc.size(); ++i) {
+  for (uint i = 0; i < m_metricdesc.size(); ++i) {
     delete m_metricdesc[i];
   }
   delete m_cct;
@@ -373,7 +373,7 @@ Profile::make(const char* fnm)
   // ------------------------------------------------------------
   // Extract metrics
   // ------------------------------------------------------------
-  for (int i = 0; i < num_metrics; i++) {
+  for (uint i = 0; i < num_metrics; i++) {
     SampledMetricDesc* metric = prof->metric(i);
     metric->name(metadata.metrics[i].metric_name);
     metric->flags(metadata.metrics[i].flags);
@@ -383,7 +383,7 @@ Profile::make(const char* fnm)
   // ------------------------------------------------------------
   // Cleanup
   // ------------------------------------------------------------
-  for (int i = 0; i < num_metrics; i++) {
+  for (uint i = 0; i < num_metrics; i++) {
     hpcfile_free_CB(metadata.metrics[i].metric_name);
   }
   hpcfile_free_CB(metadata.target);

@@ -1205,7 +1205,7 @@ ACodeNode::nextSiblingNonOverlapping() const
 string
 ACodeNode::LineRange() const
 {
-  string self = "l=" + StrUtil::toStr(m_begLn) + " -" + StrUtil::toStr(m_endLn);
+  string self = "l=" + StrUtil::toStr(m_begLn) + "-" + StrUtil::toStr(m_endLn);
   return self;
 }
 

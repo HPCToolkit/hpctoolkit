@@ -783,7 +783,7 @@ BinUtil::LM::DumpSymTab(std::ostream& o, const char* pre) const
   // Every function symbol seems to have section *ABS*.  Thus, we
   // can't obtain any relevant section information from the symbol
   // itself.  I haven't noticed this on any other platform.
-  for (int i = 0; i < m_bfdSymTabSz; i++) {
+  for (uint i = 0; i < m_bfdSymTabSz; i++) {
     asymbol *sym = m_bfdSymTabSort[i]; // m_bfdSymTab[i];
     o << p1 << hex << (bfd_vma)bfd_asymbol_value(sym) << ": " << dec
       << "[" << sym->section->name << "] "

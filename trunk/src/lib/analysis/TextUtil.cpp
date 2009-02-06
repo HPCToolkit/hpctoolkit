@@ -227,13 +227,11 @@ ColumnFormatter::genCol(uint mId, double metricVal, double metricTot,
 void
 ColumnFormatter::genBlankCol(uint mId)
 {
-  const PerfMetric* m = m_mMgr.metric(mId);
-  
+  //const PerfMetric* m = m_mMgr.metric(mId);
   if (!isDisplayed(mId)) {
     return;
   }
-  m_os << std::setw(m_annotWidth[mId]) << std::setfill(' ') << " "
-       << " ";
+  m_os << std::setw(m_annotWidth[mId]) << std::setfill(' ') << " " << " ";
 }
 
 

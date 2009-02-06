@@ -66,7 +66,7 @@
 class DocHandlerArgs {
 public:
   DocHandlerArgs() { }
-  ~DocHandlerArgs() { }
+  virtual ~DocHandlerArgs() { }
   
   virtual std::string 
   replacePath(const char* oldpath) const 

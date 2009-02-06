@@ -312,7 +312,7 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
   // address. enter them into a data structure for reachable function
   // processing
   //-----------------------------------------------------------------
-  for (int i = 0; i < symvec.size(); i++) {
+  for (unsigned int i = 0; i < symvec.size(); i++) {
     Symbol *s = symvec[i];
     Symbol::SymbolLinkage sl = s->getLinkage();
     if (report_symbol(s)) 
@@ -389,7 +389,7 @@ dump_file_info(const char *filename, bool fn_discovery)
   //-----------------------------------------------------------------
   vector<ExceptionBlock *> exvec;
   syms->getAllExceptions(exvec);
-  for (int i = 0; i < exvec.size(); i++) {
+  for (unsigned int i = 0; i < exvec.size(); i++) {
     ExceptionBlock *e = exvec[i];
 
 #ifdef DUMP_EXCEPTION_BLOCK_INFO

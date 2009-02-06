@@ -104,7 +104,8 @@ BinUtil::dbg::LM::read(bfd* abfd, asymbol** bfdSymTab)
   if (bfd_get_flavour(abfd) == bfd_target_elf_flavour) {
     bfd_forall_dbg_funcinfo_fn_t callback = 
       (bfd_forall_dbg_funcinfo_fn_t)bfd_dbgInfoCallback;
-    int cnt = bfd_elf_forall_dbg_funcinfo(abfd, bfdSymTab, callback, this);
+    //int cnt =
+    bfd_elf_forall_dbg_funcinfo(abfd, bfdSymTab, callback, this);
   }
   
   // Post-process and set parent pointers

@@ -207,7 +207,7 @@ public:
   DriverDocHandlerArgs(Driver* driver) 
     : m_driver(driver) { }
   
-  ~DriverDocHandlerArgs() { }
+  virtual ~DriverDocHandlerArgs() { }
   
   virtual string replacePath(const char* oldpath) const { 
     return m_driver->replacePath(oldpath);

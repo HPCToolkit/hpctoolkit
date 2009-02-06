@@ -290,8 +290,6 @@ DumpSymbolicInfoForFunc(std::ostream& os, const char* pre,
   string p = pre;
   string p1 = p + "  ";
 
-  unsigned int mapSz = map->size();
-  
   os << p << "* " << func << "\n"
      << p << "  [" << file << "]\n";
 
