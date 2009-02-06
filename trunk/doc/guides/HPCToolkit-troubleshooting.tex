@@ -1,29 +1,66 @@
 \documentclass{article}
 \usepackage{hyperref}
+\usepackage{verbatim,moreverb}
 \setlength{\topmargin}{0in}
 \setlength{\oddsidemargin}{0in}
 \setlength{\evensidemargin}{0in}
 \setlength{\textwidth}{6.5in}
 \setlength{\parindent}{0in}
+
+% ----------------------------------------------------------
+% tools
+% ----------------------------------------------------------
+
+\newcommand{\HPCToolkit}{\textsc{HPCToolkit}}
+\newcommand{\hpcrun}{\texttt{hpcrun}}
+\newcommand{\hpcstruct}{\texttt{hpcstruct}}
+\newcommand{\hpcprof}{\texttt{hpcprof}}
+\newcommand{\hpcviewer}{\texttt{hpcviewer}}
+
 \begin{document}
 \title{Understanding and Troubleshooting \\
-         HPCToolkit Problems}
-\author{The HPCToolkit Team}
+         \HPCToolkit\ Problems}
+\author{The \HPCToolkit\ Team}
 \date{03 February 2009}
 \maketitle
+
+\begin{comment}
+no more hpcquick, bloop, csprof, etc
+
+find out Nathan's default typeographic conventions  
+\end{comment}
+
 \textbf{Why isn't my source code found by hpcviewer?}
+\begin{comment}
+use -I ROOT_TO_SRC/'*'
+
+'*' must appear at the end.
+
+(circular links in recursive search may lead to  inf loop)
+\end{comment}
 \begin{quote}
-When using hpcquick to create performance databases, one must specify the path 
-to each directory using the flag \verb|-I dir1 dir2 ... dirN|
+When using \hpcprof\ to create performance databases, one must specify the path 
+to the source directories using the \verb|-I dir| flag. If there are multiple
+source directories, then multiple \verb|-I| flags are required:
+\begin{quote}
+ \verb|-I dir1 -I dir2 ... -I dirN|
+\end{quote}
+The specified list of directory paths, \verb|dir1| through \verb|dirN|, can be either
+relative or absolute.
 
-Here, \verb|dir1| through \verb|dirN| specify a list of directories --– either
-relative or absolute –-- containing source code to which performance
-data should be correlated.  In order to search for source files in a
-directory and recursively inspect all of its descendents, append an
-escaped '*' after the last slash, e.g., \verb|/mypath/\*.|
+In addition, \hpcprof\ has a recursive directory search feature that can greatly reduce the
+number of \verb|-I| flag instances. To conduct a source-file search of a directory 
+\emph{and all of it's decendants}, simply append an escaped '*' after the last slash, e.g.,
+\verb|/mypath/\*| ( or \verb|/mypath/'*'| ). This greatly simplifies the \hpcprof\ command line
+for a typical project. For example, suppose a project has all of it's source in a top-level directory
+called \verb|src|. Inside \verb|src| are several libraries ( like \verb|src/lib1|,\verb|src/lib2|,
+\verb|src/lib-math|, etc). Then, all of the source is visible to \hpcprof\ by using the single flag
+\begin{quote}
+\verb|-I src/'*'|.
+\end{quote}
 
-For any functions whose source code is not found in these directories
-(e.g., system libraries), hpcview will generate a synopsis that shows
+For any functions whose source code is not found in the specified directories
+(e.g., system libraries), \hpcviewer\ will generate a synopsis that shows
 the presence of the function and its line extents (if known), but no
 source code.
 
@@ -45,65 +82,58 @@ application binary. The path names encoded in the binary can be
          system).
 \end{itemize}
 
-
 Diagnosing and fixing this problem requires knowing exactly what path
 names are referenced in the binary and/or perhaps the performance
-data. Fortunately, this is not hard. Let’s say you have performance
-metrics data in a file \verb|perfdata.pxml| and static program structure data
-reported by \verb|HPCtoolkit|'s \verb|bloop| binary analysis tool in
-\verb|myprogram.bloop|. Use the Unix grep utility to select lines in each of
-these files that have file path names. This can be accomplished with
-the following commands
+data. Fortunately, this is information is supplied by \hpcprof .
+If a source file is sucessfully located, then a 
 \begin{quote}
-   \verb|% grep "F n=" myprogram.bloop perfdata.xml|
+\verb|msg:   cp:...|
 \end{quote}
-
-Examine the path prefixes to the file names. These are the path
-prefixes that \verb|HPCtoolkit|'s \verb|hpcview| tool will use to
-attempt to locate the source files. To ensure that \verb|hpcview| is able to
-find the source files, it may be necessary to substitute a path prefix
-found in the binary and/or performance data with something different.
-Fortunately, \verb|hpcview| is able to apply substitutions automatically;
-however, it is up to you the user to specify what substitutions are
-needed.
-
-To perform necessary substitutions, edit the configuration file used
-by \verb|hpcview| to construct your program’s performance database. If
-you used \verb|hpcquick| to construct the performance database, as a
-side effect of the \verb|hpcquick| script, it left a configuration
-file \verb|hpcquick.xml| in the directory in which you ran \verb|hpcquick|.
-Substitutions are specified using the \verb|REPLACE| operator.
-
-For instance, if the executable binary contains the file path 
+line appears in the output of \hpcprof . Unlocated files are deemed 'lost'
+and there is an output line of the form 
 \begin{quote}
-\verb|<F n="../../binutils/bfd/foo.c">|
+\verb|WARNING:  lost:|
 \end{quote}
-and it the corresponding source file can be found at 
+in the output.
+
+Some sample output appears below:
 \begin{quote}
-\verb|/scratch/tmp/binutils/bfd/foo.c|
-\end{quote}
-hpcview can be directed to perform the necessary path prefix substitution by 
-adding the following line to its configuration file: 
-\begin{quote}
-\verb|<REPLACE in="../../binutils” out=”/scratch/tmp/binutils">|
+\begin{verbatim}
+msg:   cp:/home/user/Project/L2/xfn.c -> ./src/home/user/Project/L2/xfn.c
+msg:   cp:/home/user/Project/L2/yfn.c -> ./src/home/user/Project/L2/yfn.c
+msg:   cp:/home/user/Project/Main1/t1.c -> ./src/home/user/Project/Main1/t1.c
+WARNING: lost: ~unknown-file~
+WARNING: lost: interp.c
+\end{verbatim}
 \end{quote}
 
-In the configuration file, \verb|REPLACE| commands should be placed
-immediately after any PATH operators and before any \verb|METRIC|
-definitions. See
- \href{http://hipersoft.cs.rice.edu/hpctoolkit/documentation/doc/dtd_hpcview.html}{HPCviewer docs}  
-for detailed information about the hpcview configuration file.
-
-Rerunning hpcview with the necessary \verb|REPLACE| directives in place will
-generate a performance database with the source code included as
-desired.
+\textbf{Best Practice:} Carefully inspect the output of \hpcprof\ to determine which files are lost.
+Then, use the recursive search form of the \verb|-I| flag with absolute paths to the actual source directory.
 \end{quote}
+
+\begin{comment}
+   possible question: What happens if I forget to run hpcstruct?  
+No hpcstruct = 
+   really crazy procedure & loop bounds
+   no inlining detection!
+\end{comment}
 
 \textbf{Why don't the line numbers for loops and/or procedures exactly
 correspond to what I see in the source code?}
+\begin{comment}
+  Wipe MIPSpro, Compaq compiler
+
+PGI associates 1 line / basic block, so info is limited
+
+Intel and GCC have, in our experience produced the best.
+
+See hpcstruct manpage.
+
+hpcviewer help is good idea.
+\end{comment}
 \begin{quote}
 
-To use a clich\'{e}, ``garbage in, garbage out''. \verb|HPCToolkit|
+To use a clich\'{e}, ``garbage in, garbage out''. \HPCToolkit\ 
 depends on information recorded in the symbol table by the
 compiler. Line numbers for procedures and loops are inferred by
 looking at the symbol table information recorded for machine
@@ -114,18 +144,20 @@ procedure's declarations. Thus, the first line in the procedure that
 has an associated machine instruction is the first line of executable
 code.
 
-Inlined functions may lead to confusing data for a procedure. Machine
+Inlined functions may occasionally lead to confusing data for a procedure. Machine
 instructions mapped to source lines from the inline function appear in
-the context of other functions. Currently, there is no support for
-identifying and reporting code for inline functions as such.
+the context of other functions. While \hpcprof 's methods for handling inline
+functions are good, some codes can confuse the system.
 
 For loops, the process of identifying what source lines are in a loop
-is similar: what source lines map to machine instructions inside a
+is similar to the procedure process: what source lines map to machine instructions inside a
 loop defined by a backward branch to a loop head. Sometimes compilers
 sometimes don’t properly record the line number mapping.
 
+\begin{comment}
+  
 Some common constructs such as Fortran's statement functions lead to
-confusing output from bloop, HPCToolkit’s binary analyzer. With
+confusing output from \hpcstruct , \HPCToolkit 's binary analyzer. With
 Compaq's C compiler on Alpha systems, machine instructions that result
 from forward substitution of statement functions are mapped back to
 the line numbers in which the statement functions are defined. \verb|bloop|'s
@@ -138,7 +170,7 @@ machine instruction is mapped back to the source line that a machine
 instruction was derived from.  When machine instructions found in
 different loops map back to the source line for a statement function,
 performance is not going to be attributed correctly. To cope with this
-issue, the whole HPCToolkit tool chain needs modifications to cope
+issue, the whole \HPCToolkit\ tool chain needs modifications to cope
 with the fact that there are multiple instances of a source line that
 need to be processed and viewed as distinct entities.
 
@@ -146,11 +178,12 @@ With SGI's \verb|MIPspro| compilers, we have seen loop headers attributed to
 the last line before the loop containing executable code. In the case
 of the Intel compiler, sometimes machine instructions found in
 optimized code map to the end of the source file. Yuck!
+\end{comment}
 
 When the compiler line mapping information is wrong, there is little
 you can do about it other than to ignore its imperfections, or
-hand-edit the XML program structure file produced by \verb|bloop|, which I
-don’t recommend unless you are desperate.
+hand-edit the XML program structure file produced by \hpcstruct . This
+technique is used only when truly desparate.
 \end{quote}
 
 \end{document}
