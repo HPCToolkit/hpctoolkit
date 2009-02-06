@@ -97,6 +97,19 @@ and there is an output line of the form
 \end{quote}
 in the output.
 
+\begin{comment}
+ It might be better to have three lost files in the example: one without a path
+	interp.c
+one with a relative path like 
+	solve/solvermain.c
+and one with a path like
+	../../lib/math.c
+
+        In all cases, the path passed to hpcprof with a -I flag should
+        be a directory from which the relative path will reach the
+        missing source file.
+\end{comment}
+
 Some sample output appears below:
 \begin{quote}
 \begin{verbatim}
