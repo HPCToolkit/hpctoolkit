@@ -1,3 +1,4 @@
+%\documentclass[12pt]{article}
 \documentclass{article}
 \usepackage{hyperref}
 \usepackage{verbatim,moreverb}
@@ -24,18 +25,9 @@
 \date{03 February 2009}
 \maketitle
 
+\textbf{Why isn't my source code found by \hpcviewer ?}
 \begin{comment}
-no more hpcquick, bloop, csprof, etc
-
-find out Nathan's default typeographic conventions  
-\end{comment}
-
-\textbf{Why isn't my source code found by hpcviewer?}
-\begin{comment}
-use -I ROOT_TO_SRC/'*'
-
 '*' must appear at the end.
-
 (circular links in recursive search may lead to  inf loop)
 \end{comment}
 \begin{quote}
@@ -45,27 +37,34 @@ source directories, then multiple \verb|-I| flags are required:
 \begin{quote}
  \verb|-I dir1 -I dir2 ... -I dirN|
 \end{quote}
-The specified list of directory paths, \verb|dir1| through \verb|dirN|, can be either
-relative or absolute.
+The specified list of directory paths, \verb|dir1| through
+\verb|dirN|, can be either relative or absolute.
 
-In addition, \hpcprof\ has a recursive directory search feature that can greatly reduce the
-number of \verb|-I| flag instances. To conduct a source-file search of a directory 
-\emph{and all of it's decendants}, simply append an escaped '*' after the last slash, e.g.,
-\verb|/mypath/\*| ( or \verb|/mypath/'*'| ). This greatly simplifies the \hpcprof\ command line
-for a typical project. For example, suppose a project has all of it's source in a top-level directory
-called \verb|src|. Inside \verb|src| are several libraries ( like \verb|src/lib1|,\verb|src/lib2|,
-\verb|src/lib-math|, etc). Then, all of the source is visible to \hpcprof\ by using the single flag
+In addition, \hpcprof\ has a recursive directory search feature that
+can greatly reduce the number of \verb|-I| flag instances. To conduct
+a source-file search of a directory \emph{and all of it's decendants},
+simply append an escaped '*' after the last slash, e.g.,
+\verb|/mypath/\*| ( or \verb|/mypath/'*'| ). This greatly simplifies
+the \hpcprof\ command line for a typical project. For example, suppose
+a project has all of it's source in a top-level directory called
+\verb|src|. Inside \verb|src| are several libraries ( like
+\verb|src/lib1|,\verb|src/lib2|, \verb|src/lib-math|, etc). Then, all
+of the source is visible to \hpcprof\ by using the single flag
 \begin{quote}
 \verb|-I src/'*'|.
 \end{quote}
+
+\textbf{NOTE:} The \verb|'*'| can be used \emph{only} at the end of
+a directory path.
 
 For any functions whose source code is not found in the specified directories
 (e.g., system libraries), \hpcviewer\ will generate a synopsis that shows
 the presence of the function and its line extents (if known), but no
 source code.
-
 \end{quote}
-\textbf{I tried the approach above, and am still missing source files.}
+
+\vbox{%
+\textbf{I tried the approach above, but I am still missing source files.}
 \begin{quote}
 This is a common problem. The cause for this difficulty is that the
 pathnames associated with performance metrics are extracted from an
@@ -81,7 +80,9 @@ application binary. The path names encoded in the binary can be
          cluster that had a different mount point for the shared file
          system).
 \end{itemize}
-
+\end{quote}
+} 
+\begin{quote}
 Diagnosing and fixing this problem requires knowing exactly what path
 names are referenced in the binary and/or perhaps the performance
 data. Fortunately, this is information is supplied by \hpcprof .
@@ -107,8 +108,10 @@ WARNING: lost: interp.c
 \end{verbatim}
 \end{quote}
 
-\textbf{Best Practice:} Carefully inspect the output of \hpcprof\ to determine which files are lost.
-Then, use the recursive search form of the \verb|-I| flag with absolute paths to the actual source directory.
+\textbf{Best Practice:} Carefully inspect the output of \hpcprof\ to
+determine which files are lost.  Then, use the recursive search form
+of the \verb|-I| flag with absolute paths to the actual source
+directory.
 \end{quote}
 
 \begin{comment}
@@ -118,6 +121,7 @@ No hpcstruct =
    no inlining detection!
 \end{comment}
 
+\vbox{%
 \textbf{Why don't the line numbers for loops and/or procedures exactly
 correspond to what I see in the source code?}
 \begin{comment}
@@ -138,21 +142,25 @@ depends on information recorded in the symbol table by the
 compiler. Line numbers for procedures and loops are inferred by
 looking at the symbol table information recorded for machine
 instructions identified as being inside the procedure or loop.
-
+\end{quote}
+}
+\begin{quote}
 For procedures, often no machine instructions are associated with a
 procedure's declarations. Thus, the first line in the procedure that
 has an associated machine instruction is the first line of executable
 code.
 
-Inlined functions may occasionally lead to confusing data for a procedure. Machine
-instructions mapped to source lines from the inline function appear in
-the context of other functions. While \hpcprof 's methods for handling inline
-functions are good, some codes can confuse the system.
+Inlined functions may occasionally lead to confusing data for a
+procedure. Machine instructions mapped to source lines from the inline
+function appear in the context of other functions. While \hpcprof 's
+methods for handling inline functions are good, some codes can confuse
+the system.
 
 For loops, the process of identifying what source lines are in a loop
-is similar to the procedure process: what source lines map to machine instructions inside a
-loop defined by a backward branch to a loop head. Sometimes compilers
-sometimes don’t properly record the line number mapping.
+is similar to the procedure process: what source lines map to machine
+instructions inside a loop defined by a backward branch to a loop
+head. Sometimes compilers sometimes don’t properly record the line
+number mapping.
 
 \begin{comment}
   
