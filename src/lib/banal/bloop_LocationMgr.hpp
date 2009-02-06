@@ -76,7 +76,7 @@ namespace bloop {
   {
     // perform a 'fuzzy' match: e.g., 'm_procnm' name can be 'GetLB' 
     // even though the full context name is Array2D<double>::GetLB(int).
-    int pos = ctxtnm.find(x);
+    size_t pos = ctxtnm.find(x);
     return (pos != string::npos && (pos == 0 || std::ispunct(ctxtnm[pos-1])));
   }
 
@@ -389,6 +389,7 @@ private:
   
   class FindCtxt_MatchOp {
   public:
+    virtual ~FindCtxt_MatchOp() { }
     virtual bool operator()(const Ctxt& ctxt) const = 0;
   };
 
@@ -396,7 +397,7 @@ private:
   public:
     FindCtxt_MatchFPLOp(const string& filenm, const string& procnm, SrcFile::ln line)
       : m_filenm(filenm), m_procnm(procnm), m_line(line) { }
-    ~FindCtxt_MatchFPLOp() { }
+    virtual ~FindCtxt_MatchFPLOp() { }
     
     virtual bool operator()(const Ctxt& ctxt) const {
       return (ctxt.containsLine(m_filenm, m_line)
@@ -411,7 +412,7 @@ private:
   public:
     FindCtxt_MatchFPOp(const string& filenm, const string& procnm)
       : m_filenm(filenm), m_procnm(procnm) { }
-    ~FindCtxt_MatchFPOp() { }
+    virtual ~FindCtxt_MatchFPOp() { }
     
     virtual bool operator()(const Ctxt& ctxt) const {
       return (ctxt.fileName() == m_filenm && ctxt.ctxt()->name() == m_procnm);
@@ -424,7 +425,7 @@ private:
   public:
     FindCtxt_MatchFLOp(const string& filenm, SrcFile::ln line)
       : m_filenm(filenm), m_line(line) { }
-    ~FindCtxt_MatchFLOp() { }
+    virtual ~FindCtxt_MatchFLOp() { }
     
     virtual bool operator()(const Ctxt& ctxt) const {
       return (ctxt.containsLine(m_filenm, m_line));
@@ -438,7 +439,7 @@ private:
   public:
     FindCtxt_MatchFOp(const string& filenm)
       : m_filenm(filenm) { }
-    ~FindCtxt_MatchFOp() { }
+    virtual ~FindCtxt_MatchFOp() { }
     
     virtual bool operator()(const Ctxt& ctxt) const {
       return (ctxt.fileName() == m_filenm);
@@ -451,7 +452,7 @@ private:
   public:
     FindCtxt_MatchLOp(SrcFile::ln line)
       : m_line(line) { }
-    ~FindCtxt_MatchLOp() { }
+    virtual ~FindCtxt_MatchLOp() { }
     
     virtual bool operator()(const Ctxt& ctxt) const {
       return (ctxt.containsLine(m_line));

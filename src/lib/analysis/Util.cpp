@@ -60,6 +60,8 @@ using std::string;
 
 #include <cstring>
 
+#include <typeinfo>
+
 //*************************** User Include Files ****************************
 
 #include "Util.hpp"
@@ -128,14 +130,13 @@ Prof::Struct::ACodeNode*
 Analysis::Util::demandStructure(VMA vma, Prof::Struct::LM* lmStrct, 
 				BinUtil::LM* lm, bool useStruct)
 {
-  Prof::Struct::ACodeNode* strct = lmStrct->findByVMA(vma);
+  using namespace Prof;
+  Struct::ACodeNode* strct = lmStrct->findByVMA(vma);
   if (!strct) {
     if (useStruct) {
-      Prof::Struct::File* fileStrct = 
-	Prof::Struct::File::demand(lmStrct, 
-				   Prof::Struct::Tree::UnknownFileNm);
-      strct = Prof::Struct::Proc::demand(fileStrct, 
-					 Prof::Struct::Tree::UnknownProcNm);
+      Struct::File* fileStrct = 
+	Struct::File::demand(lmStrct, Struct::Tree::UnknownFileNm);
+      strct = Struct::Proc::demand(fileStrct, Struct::Tree::UnknownProcNm);
     }
     else {
       strct = banal::bloop::makeStructureSimple(lmStrct, lm, vma);

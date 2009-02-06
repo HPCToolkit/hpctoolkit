@@ -417,8 +417,8 @@ LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
   }
 #endif
   
-  const string& proposed_procnm = proposed_ctxt->ctxt()->name();
-  const string& proposed_filenm = proposed_ctxt->fileName();
+  //const string& proposed_procnm = proposed_ctxt->ctxt()->name();
+  //const string& proposed_filenm = proposed_ctxt->fileName();
   Struct::Loop* proposed_loop = dynamic_cast<Struct::Loop*>(proposed_scope);
   
   // proposed loop lives within proposed context 
@@ -435,8 +435,8 @@ LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
   // top context file and procedure name (top context is alien if !=
   // to proposed_ctxt)
   const Ctxt* top_ctxt = topCtxt();
-  const string& top_filenm = top_ctxt->fileName();
-  const string& top_procnm = top_ctxt->ctxt()->name();
+  //const string& top_filenm = top_ctxt->fileName();
+  //const string& top_procnm = top_ctxt->ctxt()->name();
   DIAG_Assert(Logic::implies(proposed_ctxt != top_ctxt, top_ctxt->isAlien()),
 	      "Inconsistent context stack!");
   

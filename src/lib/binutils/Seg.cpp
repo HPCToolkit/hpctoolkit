@@ -148,7 +148,7 @@ BinUtil::Seg::ddump() const
 BinUtil::TextSeg::TextSeg(BinUtil::LM* lm, const string& name, 
 			  VMA beg, VMA end, uint64_t size)
   : Seg(lm, name, Seg::TypeText, beg, end, size), 
-    m_contentsRaw(NULL), m_contents(NULL)
+    m_contents(NULL), m_contentsRaw(NULL)
 {
   uint rflg = m_lm->readFlags();
   if (rflg & LM::ReadFlg_fProc) {
@@ -218,7 +218,7 @@ BinUtil::TextSeg::ctor_initProcs()
   uint symtabSz = m_lm->bfdSymTabSz();
 
   // FIXME:PERF exploit the fact that the symbol table is sorted by vma
-  for (int i = 0; i < symtabSz; i++) {
+  for (uint i = 0; i < symtabSz; i++) {
     asymbol* sym = symtab[i]; 
     if (isIn(bfd_asymbol_value(sym)) 
 	&& (sym->flags & BSF_FUNCTION)
@@ -479,7 +479,7 @@ BinUtil::TextSeg::findProcEnd(int funcSymIndex) const
   uint symtabSz = m_lm->bfdSymTabSz();
 
   VMA ret = endVMA();
-  for (int next = funcSymIndex + 1; next < symtabSz; ++next) {
+  for (uint next = funcSymIndex + 1; next < symtabSz; ++next) {
     asymbol* sym = symtab[next];
     if (!isIn(bfd_asymbol_value(sym))) {
       break;

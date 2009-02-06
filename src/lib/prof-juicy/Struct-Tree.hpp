@@ -1155,7 +1155,7 @@ public:
 
   static Proc*
   demand(File* file, const std::string& name)
-  { demand(file, name, "", ln_NULL, ln_NULL, NULL); }
+  { return demand(file, name, "", ln_NULL, ln_NULL, NULL); }
 
 
   // --------------------------------------------------------

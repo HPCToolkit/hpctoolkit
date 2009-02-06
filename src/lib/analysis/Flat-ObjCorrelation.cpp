@@ -148,7 +148,7 @@ private:
   vector<const Prof::Flat::EventData*> m_metricDescs;
   vector<uint64_t> m_metricTots;
 
-  vector<int> m_curMetricIdx;
+  vector<uint> m_curMetricIdx;
   vector<uint64_t> m_metricValAtVMA;
 };
 
@@ -224,7 +224,7 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
     
     // advance ith bucket until it arrives at vmaint region:
     //   (bucket overlaps beg_vma) || (bucket is beyond beg_vma)
-    for (int& j = m_curMetricIdx[i]; j < profevent.num_data(); ++j) {
+    for (uint& j = m_curMetricIdx[i]; j < profevent.num_data(); ++j) {
       const Prof::Flat::Datum& evdat = profevent.datum(j);
       VMA ev_vma = evdat.first;
       VMA ev_ur_vma = unrelocate(ev_vma);
@@ -238,7 +238,7 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
     
     // count until bucket moves beyond vmaint region
     // INVARIANT: upon entry, bucket overlaps or is beyond region
-    for (int j = m_curMetricIdx[i]; j < profevent.num_data(); ++j) {
+    for (uint j = m_curMetricIdx[i]; j < profevent.num_data(); ++j) {
       const Prof::Flat::Datum& evdat = profevent.datum(j);
       VMA ev_vma = evdat.first;
       VMA ev_ur_vma = unrelocate(ev_vma);
@@ -374,8 +374,6 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
      << "Load module: " << proflm.name() << std::endl
      << std::setfill('-') << std::setw(77) << "-" << std::endl;
 
-  const vector<const Prof::Flat::EventData*>& metricDescs = 
-    metricCursor.metricDescs();
   const vector<uint64_t>& metricTots = metricCursor.metricTots();
   
   os << std::endl;

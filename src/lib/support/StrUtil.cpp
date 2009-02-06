@@ -87,7 +87,7 @@ void
 tokenize_char(const std::string& tokenstr, const char* delim,
 	      std::vector<std::string>& tokenvec)
 {
-  const int sz = tokenstr.size();
+  const size_t sz = tokenstr.size();
   for (size_t begp = 0, endp = 0; begp < sz; begp = endp+1) {
     begp = tokenstr.find_first_not_of(delim, begp);
     if (begp == string::npos) {
@@ -109,7 +109,7 @@ tokenize_str(const std::string& tokenstr, const char* delim,
 	     std::vector<std::string>& tokenvec)
 {
   const int delimsz = strlen(delim);
-  const int sz = tokenstr.size();
+  const size_t sz = tokenstr.size();
   
   for (size_t begp = 0, endp = 0; begp < sz; begp = endp + delimsz) {
     endp = tokenstr.find(delim, begp);
@@ -298,7 +298,7 @@ toStr(const uint64_t x, int base)
 string
 toStr(const void* x, int base)
 {
-  sprintf(buf, "%#p", x);
+  sprintf(buf, "%p", x);
   return string(buf);
 }
 

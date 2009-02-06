@@ -402,14 +402,14 @@ public:
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  virtual std::string toString() const
+  std::string toString() const
   {
     std::ostringstream os;
     dump(os);
     return os.str();
   }
   
-  virtual std::ostream& dump(std::ostream& os) const
+  std::ostream& dump(std::ostream& os) const
   {
     for (const_iterator it = this->begin(); it != this->end(); ++it) {
       os << it->first.toString() << " --> " << it->second << std::endl;
@@ -419,7 +419,7 @@ public:
   
   std::ostream& ddump() const
   {
-    dump(std::cerr);
+    return dump(std::cerr);
   }
 
 private:

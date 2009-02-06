@@ -166,7 +166,7 @@ main_objCorrelation(const Args& args)
 {
   std::ostream& os = std::cout;
   
-  for (int i = 0; i < args.profileFiles.size(); ++i) {
+  for (uint i = 0; i < args.profileFiles.size(); ++i) {
     const std::string& fnm = args.profileFiles[i];
 
     // 0. Generate nice header
@@ -195,7 +195,7 @@ main_rawData(const std::vector<string>& profileFiles)
 {
   std::ostream& os = std::cout;
 
-  for (int i = 0; i < profileFiles.size(); ++i) {
+  for (uint i = 0; i < profileFiles.size(); ++i) {
     const char* fnm = profileFiles[i].c_str();
 
     // generate nice header

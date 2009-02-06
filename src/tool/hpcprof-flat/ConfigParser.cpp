@@ -141,7 +141,7 @@ makeMathMLExpr(const char* nm, DOMNode* mathMLExpr,
 static string 
 getAttr(DOMNode *node, const XMLCh *attrName);
 
-static string 
+static void
 canonicalizePaths(string& inPath, string& outPath);
 
 static void 
@@ -296,7 +296,7 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr)
   static XMLCh* NAMEATTR = XMLString::transcode("name");
   static XMLCh* DISPLAYATTR = XMLString::transcode("display");
   static XMLCh* PERCENTATTR = XMLString::transcode("percent");
-  static XMLCh* PROPAGATEATTR = XMLString::transcode("propagate");
+  //static XMLCh* PROPAGATEATTR = XMLString::transcode("propagate");
   static XMLCh* DISPLAYNAMEATTR = XMLString::transcode("displayName");
   static XMLCh* SORTBYATTR = XMLString::transcode("sortBy");
 
@@ -453,7 +453,7 @@ getAttr(DOMNode *node, const XMLCh *attrName)
 
 // -------------------------------------------------------------------------
 
-static string 
+static void
 canonicalizePaths(string& inPath, string& outPath)
 {
   // Add a '/' at the end of the in path; it's good when testing for
