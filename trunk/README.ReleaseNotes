@@ -27,20 +27,23 @@ parallelism makes it increasingly likely that one of several known
 bugs (that are the focus of ongoing development efforts) may cause
 problems.
 
-Summary of "Best Practices" from hpctoolkit man page:
+Summary of "Best Practices" from the 'hpctoolkit(1)' man page:
 
 1. Compile your application with full optimization and debugging
-   symbols.
+   symbols.  See the 'hpcstruct(1)' man page for recommendations.
 
 2. Profile it with *hpcrun*.
 
 3. Compute static structure for the main binary using *hpcstruct*.
 
 4. Interpret measurements and correlate them with source code using
-   *hpcprof*.  Pass static structure files with -S.  Pass a recursive
+   *hpcprof*.  Perform either a node-based study or a scaling study.  (In
+   other words, do not pass 1000s of data files to hpcprof.)
+
+   Pass static structure files with -S.  Pass a recursive
    search path using -I.
 
-5. Use hpcviewer to interactively browse the results.
+5. Use *hpcviewer* to interactively browse the results.
 
 
 =============================================================================
@@ -68,62 +71,115 @@ Summary of "Best Practices" from hpctoolkit man page:
 
 1.1.2. Usage limitations:
 
-- choosing sampling events
-  - rule of thumb:
-    - shoot for 100-1000 samples/second (1-5% overhead)
+- Choosing sampling events.  We recommend using PAPI events in
+  general.  However, some PAPI events are not profilable because of
+  PAPI implementation details.  Also, PAPI's standard event list may
+  not cover an architectural feature you are interested in.  In such
+  cases, you will have to resort to native events.  In many cases, you
+  will have to consult the architecture's manual to fully understand
+  what the event means: there is no standard event list or naming
+  scheme and events sometimes have unusual meanings.
 
-  - hardware-performance-counter periods require some thought
-    - hardware limitations
-    - meaning may require consultation of architecture manual
-    - sample period
+- Number of sampling events.  Currently, hpcrun does not multiplex
+  hardware counters.  This means that the number of events that you
+  may concurrently profile against is limited by your architecture's
+  performance monitoring unit.  Note that some architectures hard-wire
+  one or more counters to a specific event (such as cycles).
+
+- Choosing sampling periods.  The key requirement in choosing sampling
+  periods is that you obtain enough samples to provide statistical
+  significance.  We usually recommend a sampling rate between
+  100s-1000s of samples per second.  This usually only produces 1-5%
+  execution time overhead.
+
+  Choosing sampling rates depends on the architecture and sometimes
+  the application. 
+
+  Choosing periods for cycle and instruction-related events are
+  usually easy.  Cycles directly relates to the clock speed.
+  Instruction-related events relates to the issue rate and width.
+
+  Choosing periods for other events seems harder because different
+  applications uses resources differently.  For example, some
+  applications are memory intensive and others are not.
+  However, if the goal is to identify rate-limiting factors of the
+  architecture, then it is not necessary to consider the application.
+  For example, if the goal is to determine whether L2 D-cache
+  latency is a limiting factor, then it is only necessary to work
+  backward from the architecture's specifications to determine what
+  number of L2 D-cache misses per second would be problematic.
+
+- Architectural event conflicts.  With some performance monitoring
+  units, certain events may not be concurrently used with other
+  events.
+
+- Architectural interrupt delay.  On most out-of-order pipelined
+  architectures, a hardware counter interrupt is not precisely
+  attributed to the instruction that induced the counter to overflow.
+  The gap is commonly 50-70 instructions.  This means that one should
+  not assume that aggregation at the source line level is fully
+  precise.  (E.g., if a L1 D-cache miss is attributed to a statement
+  that has been compiled to register-only operations, assume the miss
+  is attributed to a nearby load.)  However, aggregation at the
+  procedure and loop level is reliable.
 
 
 1.1.3. Measurement limitations:
 
-- cannot account for tail calls.  cannot fully account for inlining   
+- Tail calls and inlining.  Both of these compiler optimizations avoid
+  creating procedure frames and thus generate run-time stacks that do
+  not correspond to the user-level context.  hpcrun does not
+  reconstruct the user-level stack.  Note that using hpcstruct's
+  structure information enables hpcprof to identify inlined frames
+  within the call path.
 
-- blind spot: static initializers (since sampling begins between just
-  before main)
-
-- blind spot: dlopen/dlclosing is supported in its full glory
+- There are currently two blind spots in hpcrun.  First, static
+  initializers are not profiled because sampling begins just before
+  "main" is called.  Second, sampling is turned off during dlopen's
+  and dlclose's to ensure internal data structures remain consistent.
 
 
 1.1.4. Rarely encountered measurement bugs:
 
-- When dynamic loading is used extensively, it is possible that
-  multiple load modules will map to the same place in a program's
-  address space over the course of a program's execution. Additional
-  support in HPCToolkit is needed to correctly distinguish when the
-  same addresses may map to different load modules at different times
-  during an execution. Presently, all samples that involve addresses
-  that map to more than one load module are resolved by mapping them
-  to the LAST load module that was visible at a particular address
-  range. While we have observed that this problem occurs in practice
-  with OpenMPI programs (the OpenMPI implementation makes extensive
-  use of dynamic libraries), typically this problem affects the
-  accuracy of attributing only a handful of samples. If this problem
-  occurs during execution, hpcrun writes a message to stderr
-  indicating that the problem has occurred, and then records more
-  detailed information to a log that indicates how many samples whose
-  attribution it might effect.
+- Dynamic linking. When dynamic loading is used extensively, it is
+  possible that multiple load modules will map to the same place in a
+  program's address space over the course of a program's
+  execution. Additional support in HPCToolkit is needed to correctly
+  distinguish when the same addresses may map to different load
+  modules at different times during an execution. Presently, all
+  samples that involve addresses that map to more than one load module
+  are resolved by mapping them to the LAST load module that was
+  visible at a particular address range. While we have observed that
+  this problem occurs in practice with OpenMPI programs (the OpenMPI
+  implementation makes extensive use of dynamic libraries), typically
+  this problem affects the accuracy of attributing only a handful of
+  samples. If this problem occurs during execution, hpcrun writes a
+  message to stderr indicating that the problem has occurred, and then
+  records more detailed information to a log that indicates how many
+  samples whose attribution it might effect.
 
-- small potential for SEGV if a thread receives a sample before it is
-  fully initialized to process samples (however, automatic recovery)
+- Threads and asynchronous signals. Because of the ill-defined
+  relationship between threads and asynchronous signals, it is possible
+  that a thread receives a sample signal before its profiling data
+  structures are fully initialized.  We have attempted to make the
+  window as small as possible.  If a thread does receive such a signal
+  while the window is open, it will generate a SEGV.  It should,
+  however, automatically recover and continue profiling.
 
-- When hpcrun is invoked with debugging options turned on, it may
-  print log messages not only when processing samples, but also when
-  threads are created or dynamic loading of shared libraries
-  occurs. Presently hpcrun's messaging subsystem acquires a lock
-  before writing to stderr or a log file to avoid unwanted
-  interleaving of output from different threads. It is possible
-  (though it has never been observed) that a sample event may occur
-  while an output lock is held. If the thread holding a messaging
-  subsystem lock is hit with a sample event while holding the lock,
-  this can cause deadlock. This situation has never been encountered
-  in practice, but it is possible. Presently, the messaging system is
-  being overhauled and the interaction between synchronous and
-  asynchronous entries into hpcrun's run-time library is being
-  overhauled to avoid the potential for such race conditions.
+- Debugging messages. When hpcrun is invoked with debugging options
+  turned on, it may print log messages not only when processing
+  samples, but also when threads are created or dynamic loading of
+  shared libraries occurs. Presently hpcrun's messaging subsystem
+  acquires a lock before writing to stderr or a log file to avoid
+  unwanted interleaving of output from different threads. It is
+  possible (though it has never been observed) that a sample event may
+  occur while an output lock is held. If the thread holding a
+  messaging subsystem lock is hit with a sample event while holding
+  the lock, this can cause deadlock. This situation has never been
+  encountered in practice, but it is possible. Presently, the
+  messaging system is being overhauled and the interaction between
+  synchronous and asynchronous entries into hpcrun's run-time library
+  is being overhauled to avoid the potential for such race conditions.
 
 
 ----------------------------------------
@@ -133,42 +189,72 @@ Summary of "Best Practices" from hpctoolkit man page:
 
 1.2.1. Limitations
 
-- Incomplete binary analysis: switch statements, indirect jumps
+- Incorrect or erroneous debugging information.  The most important
+  requirement for hpcstruct to generate good static structure is good
+  debugging information.  Ensure that you compile with as much
+  debugging information as possible.  Even then, some compiler
+  generate erroneous information.  hpcstruct attempts to ignore such
+  information, but this is only successful if the bulk of the
+  information is correct.
 
-- Inlining recovery: detects inlined code, but does not attempt to re-nest
+- Inlining recovery: Given accurate debugging information, hpcstruct
+  can detect almost all inlining.  However, it does not attempt to
+  recover call path relationships between the inlined code.  For
+  example, if a call path consisting of two procedures (a calls b) is
+  inlined into a third procedure x, hpcstruct shows that two routines
+  are inlined into x, but does not indicate that a called b.
 
-- Incorrect or Erroneous debugging information
+- Incomplete binary analysis.  hpcstruct does not analyze indirect
+  jumps which means it does not completely account for switch
+  statements and indirect jumps.  This is very rarely a problem.
 
 
 1.2.2. Performance
  
-- mostly a biutils problem
+- hpcstruct can be slow on large binaries, especially if the binaries
+  have limited debugging information.  The bulk of the problem has to
+  do with inefficiencies in GNU binutils.  (We have resolved the worst
+  of them.)
 
 
 ----------------------------------------
 1.3. hpcprof
 ----------------------------------------
 
-- epochs do not fully support every possible usage of dlopen/close.
+1.3.1. Limitations
 
-- NOTE: if one uses a recursive search path that contains a cycle
-  (with symbolic links), the search algorithm will loop.
+- Few profile files. Be very careful about passing hpcprof a large
+  number of profile files.  There are two reasons or this.  First, the
+  resulting database would be unmanageable because of the number of
+  metric columns.  (We have plans to address this with summary
+  metrics.)  Second, hpcviewer will consume vast amounts of memory.
+  hpcprof itself would use far less memory than hpcviewer, but the
+  first reason still remains.
 
-- Be carefule about doing *.hpcrun.
+- Experiment databases can be large, especially if your compiler
+  performed aggressive inlining.
 
-- Be careful about making conclusions if there are only a handful of samples
 
-- DBs can be large, esp, with inlining.
+1.3.2 Bugs
 
-- not suitable for working with data from many processes
+- Recursive search paths (-I).  If a recursive search path is used
+  that contains a cycle (e.g., by symbolic links), the search
+  algorithm may enter an infinite loop.
+
 
 ----------------------------------------
 1.4. hpcviewer
 ----------------------------------------
 
-- Large number of metrics
-- Derived metric computations can get clumsy.
-- Lacking support for analysis of data large numbers of processes. 
+1.4.1. Usage Limitations
+
+- See 1.3.1.
+
+- Ensure that the total number of samples is statistically Be careful
+  about making conclusions if there are only a handful of samples
+
+- Derived metric computations can become rather cumbersome when
+  working with a large number of columns.
 
 
 =============================================================================
