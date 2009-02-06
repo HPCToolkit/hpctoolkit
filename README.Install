@@ -1,49 +1,64 @@
-=====================
-HPCToolkit Externals
-=====================
-
 $Id$
+
+=============================================================================
+=============================================================================
+
+HPCToolkit/README.Install
+
+=============================================================================
+=============================================================================
+
+Contents:
+  0. Introduction
+  1. Obtaining HPCToolkit and Externals
+  2. Building Externals
+  3. Building HPCToolkit
+  4. External's 'configure' Options
+  5. What About PAPI?
+
+=============================================================================
+
+----------------------------------------
+0. Introduction
+----------------------------------------
 
 HPCToolkit has many prerequisites.  Some, like libelf and libxml2 are
 commonly found on Linux systems, but not always.  Others, like Open
-Analysis and SymtabAPI are almost never available.  And then there's
-binutils.  HPCToolkit uses a heavily-patched and incompatible version
-of binutils, so the only place you'll find it is in a Rice subversion
-repository.
+Analysis and SymtabAPI are almost never available.  And then there is
+GNU binutils.  HPCToolkit uses a heavily-patched and incompatible
+version of binutils, so the only place you'll find it is in a Rice
+subversion repository.
 
-The externals tree is an attempt to deal with these prerequisites.  It
-scans your system to identify which packages are available and
-attempts to build the ones that are missing.  It is still a work in
-progress.
+HPCToolkit's Externals may be thought of as a 'package manager' and is
+an attempt to deal with these prerequisites.  It scans your system to
+identify which packages are available and attempts to build the ones
+that are missing.
 
-=================================
-Getting HPCToolkit and Externals
-=================================
+=============================================================================
 
-The HPCToolkit home page is at:
-
-   http://hpctoolkit.org/
-
-The HPCToolkit project, including subversion repository and bug
-tracking system, is hosted at the SciDAC Outreach Center.
-
-   https://outreach.scidac.gov/projects/hpctoolkit/
+----------------------------------------
+1. Obtaining HPCToolkit and Externals
+----------------------------------------
 
 The HPCToolkit source files come in two trees: one for HPCToolkit
 proper and one for all of its prerequisites.  Both are available via
-anonymous subversion checkout.  The normal usage is to download (or
-unpack) both trees in side-by-side directories.
+tarballs or anonymous subversion checkout.  The normal usage is to
+download (or unpack) both trees in side-by-side directories.
 
-   svn co https://outreach.scidac.gov/svn/hpctoolkit/externals
+Source tarballs may be downloaded from:
+  https://outreach.scidac.gov/projects/hpctoolkit
+
+Alternatively, a subversion checkout may be performed as follows:
+   svn co https://outreach.scidac.gov/svn/hpctoolkit/externals hpctoolkit-externals
    svn co https://outreach.scidac.gov/svn/hpctoolkit/trunk hpctoolkit
 
 Note that SciDAC uses https for anonymous checkout.
 
-The email address for HPCToolkit and Externals is hpc@cs.rice.edu.
+=============================================================================
 
-===================
-Building Externals
-===================
+----------------------------------------
+2. Building Externals
+----------------------------------------
 
 Building HPCToolkit is done in two phases: first build all necessary
 prerequisite packages (hpctoolkit-externals), and then build
@@ -83,9 +98,11 @@ Note: After building HPCToolkit, do not delete the externals tree,
 there are still some parts of HPCToolkit that use the externals's
 staging area as a run dependency.  But make distclean is ok.
 
-====================
-Building HPCToolkit
-====================
+=============================================================================
+
+----------------------------------------
+3. Building HPCToolkit
+----------------------------------------
 
 After building the externals tree, return to the HPCToolkit directory
 and configure and build HPCToolkit.
@@ -111,9 +128,9 @@ Note: HPCToolkit uses Autoconf and Automake, so it supports the
 standard Autoconf options, the standard Automake targets and vpath
 builds (separate build and source trees).
 
-==================
-Configure Options
-==================
+----------------------------------------
+4. External's 'configure' Options
+----------------------------------------
 
 Although the normal usage is to have externals build all of the
 prerequisite packages itself, it is also possible to build any of them
@@ -144,9 +161,9 @@ externals is just called monitor in HPCToolkit.
 Note: libunwind is only used on ia64 and xed2 is only used on x86 and
 x86-64.
 
-=================
-What About PAPI?
-=================
+----------------------------------------
+5. What About PAPI?
+----------------------------------------
 
 PAPI, the Performance API, provides access to the hardware performance
 counters.  HPCToolkit can run without PAPI, but then it is limited to
@@ -159,13 +176,4 @@ included in the externals tree.  PAPI requires a kernel patch
 (perfmon2 or perfctr) and if that patch is not already installed, then
 it is not possible to fix that in user land.
 
-=============
-Known Issues
-=============
-
-After building HPCToolkit, do not delete or even move the externals
-tree.  There are still some parts of HPCToolkit that use the
-externals's tree as a run dependency.  Eventually, this will be fixed,
-where HPCToolkit has no run dependency on externals, but for now,
-leave it intact.
 
