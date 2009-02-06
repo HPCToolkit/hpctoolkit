@@ -70,7 +70,7 @@ It has been designed around the following principles:
 
 \subsection{Top-Down Analysis With Calling Context and Program Structure}
 
-A typical node-based performance analysis session consists of:
+A typical performance analysis session consists of:
 \begin{enumerate}
 \item \textbf{Measurement.}  
 Collect low-overhead, high-accuracy profiles using statistical sampling.
@@ -111,18 +111,18 @@ Collect low-overhead, high-accuracy `flat' profiles using statistical sampling (
 
 \subsection{Interactively visualize call path or flat metrics correlated with program structure}
 
-
+Assume we have an application called \emph{zoo} whose source code is located in in \File{path-to-zoo}.
 
 \begin{enumerate}
 
-\item \textbf{Compile}.  
-
-Assume we have an application called \emph{zoo} whose source code is located in in \File{path-to-zoo}.
-First we compile and link the application normally with full optimization and as much debugging information as possible.
+\item \textbf{Compile}.
+First compile and link the application normally with full optimization and as much debugging information as possible.
 Typically, this involves compiler options similar to \verb+-O3 -g+.
+(See \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} for options for specific compilers.)
 
 \item \textbf{Measure}.
-Profile with \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.  Assume we wish to use two different sets of events and that the results are placed in \File{profile-file-1} and \File{profile-file-2}.
+Profile with \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.
+Assume we wish to use two different sets of events and that the results are placed in \File{profile-file-1} and \File{profile-file-2}.
 \begin{verbatim}
   hpcrun <event-set-1> zoo
   hpcrun <event-set-2> zoo
@@ -135,7 +135,8 @@ Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to recover program structure a
 \end{verbatim}
 
 \item \textbf{Correlate call path or flat metrics with static source code structure}.
-Create an Experiment database using \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.  Assume the Experiment database is located in \File{hpctoolkit-database}.
+Create an Experiment database using \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.
+Assume the Experiment database is located in \File{hpctoolkit-database}.
 \begin{verbatim}
   hpcprof -I 'path-to-zoo' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
@@ -156,7 +157,7 @@ Derived metrics may be computed on-the-fly with the viewer.
 
 \subsection{Visualize textual summaries of flat metrics}
 
-Begin with steps 1 and 2 above.
+Begin with steps 1--3 above.
 
 \begin{itemize}
 
@@ -226,7 +227,7 @@ Version: \Version\ of \Date.
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2008, Rice University.
+\item[Copyright] \copyright\ 2002-2009, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 

@@ -75,10 +75,10 @@ Summary of "Best Practices" from the 'hpctoolkit(1)' man page:
   general.  However, some PAPI events are not profilable because of
   PAPI implementation details.  Also, PAPI's standard event list may
   not cover an architectural feature you are interested in.  In such
-  cases, you will have to resort to native events.  In many cases, you
-  will have to consult the architecture's manual to fully understand
-  what the event means: there is no standard event list or naming
-  scheme and events sometimes have unusual meanings.
+  cases, it is necessary to resort to native events.  In many cases,
+  you will have to consult the architecture's manual to fully
+  understand what the event means: there is no standard event list or
+  naming scheme and events sometimes have unusual meanings.
 
 - Number of sampling events.  Currently, hpcrun does not multiplex
   hardware counters.  This means that the number of events that you
@@ -250,8 +250,9 @@ Summary of "Best Practices" from the 'hpctoolkit(1)' man page:
 
 - See 1.3.1.
 
-- Ensure that the total number of samples is statistically Be careful
-  about making conclusions if there are only a handful of samples
+- Ensure that the total number of samples is statistically
+  significant. Be careful about making conclusions if there are only a
+  handful of samples
 
 - Derived metric computations can become rather cumbersome when
   working with a large number of columns.
