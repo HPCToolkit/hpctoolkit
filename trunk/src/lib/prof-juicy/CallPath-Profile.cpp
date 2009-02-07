@@ -345,16 +345,17 @@ Profile::make(const char* fnm)
   // ------------------------------------------------------------
   // Epoch
   // ------------------------------------------------------------
-  DIAG_WMsgIf(epochtbl.num_epoch > 1, fnm << ": only processing first epoch!");
+  DIAG_WMsgIf(epochtbl.num_epoch > 1, fnm << ": only processing last epoch!");
+  const uint epoch_id  = (epochtbl.num_epoch - 1);
 
-  uint num_lm = epochtbl.epoch_modlist[0].num_loadmodule;
+  uint num_lm = epochtbl.epoch_modlist[epoch_id].num_loadmodule;
 
   Epoch* epoch = new Epoch(num_lm);
 
   for (int i = num_lm - 1; i >= 0; --i) { 
-    const char* nm = epochtbl.epoch_modlist[0].loadmodule[i].name;
-    VMA loadAddr = epochtbl.epoch_modlist[0].loadmodule[i].mapaddr;
-    size_t sz = 0; //epochtbl.epoch_modlist[0].loadmodule[i].size;
+    const char* nm = epochtbl.epoch_modlist[epoch_id].loadmodule[i].name;
+    VMA loadAddr = epochtbl.epoch_modlist[epoch_id].loadmodule[i].mapaddr;
+    size_t sz = 0; //epochtbl.epoch_modlist[epoch_id].loadmodule[i].size;
     Epoch::LM* lm = new Epoch::LM(nm, loadAddr, sz);
     epoch->lm_insert(lm);
   }
