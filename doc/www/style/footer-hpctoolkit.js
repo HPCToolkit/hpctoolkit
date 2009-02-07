@@ -13,7 +13,7 @@ document.write('</tr>');
 
 document.write('<tr>');
 document.write('<td align="left">');
-document.write('  &copy;2000-2008 <a title="Rice University" href="http://www.rice.edu">Rice University</a>');
+document.write('  &copy;2000-2009 <a title="Rice University" href="http://www.rice.edu">Rice University</a>');
 document.write('</td>');
 document.write('<td align="right">');
 document.write('  [<a href="info-contact.html">Contact Us</a> |');
