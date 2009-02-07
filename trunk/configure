@@ -19557,7 +19557,7 @@ $as_echo "yes (${OPT_OBJCOPY})" >&6; }
 # Makefiles to create
 #----------------------------------------------------------------------------
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/guides/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
 
 
 ac_config_files="$ac_config_files src/tool/hpcrun/scripts/hpcrun"
@@ -20703,6 +20703,7 @@ do
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
     "doc/man/Makefile") CONFIG_FILES="$CONFIG_FILES doc/man/Makefile" ;;
     "doc/man/HPCToolkitVersionInfo.tex") CONFIG_FILES="$CONFIG_FILES doc/man/HPCToolkitVersionInfo.tex" ;;
+    "doc/guides/Makefile") CONFIG_FILES="$CONFIG_FILES doc/guides/Makefile" ;;
     "doc/www/Makefile") CONFIG_FILES="$CONFIG_FILES doc/www/Makefile" ;;
     "lib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;

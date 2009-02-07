@@ -3,7 +3,7 @@
 
 ## * BeginRiceCopyright *****************************************************
 ## 
-## Copyright ((c)) 2002, Rice University 
+## Copyright ((c)) 2009, Rice University 
 ## All rights reserved.
 ## 
 ## Redistribution and use in source and binary forms, with or without
@@ -55,15 +55,15 @@ AUTOMAKE_OPTIONS = foreign
 # Local settings
 #############################################################################
 
+MYGUIDES = \
+	HPCToolkit-troubleshooting.pdf
+
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS = \
-	www \
-	\
-	man \
-	guides
+wwwguidedir = $(docdir)/guides
+dist_wwwguide_DATA = $(MYGUIDES)
 
 #############################################################################
 # Other rules
