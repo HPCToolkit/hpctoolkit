@@ -256,27 +256,12 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
 {
   int success;
 
-  //-------------------------------------------------------------------
-  // check if the file is a dso containing fnbounds information that
-  // we mapped by checking to see if the mapped file is in csprof's
-  // temporary directory.
-  //-------------------------------------------------------------------
+  FNBOUNDS_LOCK;
 
-  if (strncmp(fnbounds_tmpdir, module_name, strlen(fnbounds_tmpdir)) == 0) {
-    success = 1; // it is one of ours, no processing needed. indicate success.
-  } else {
+  success = fnbounds_dso_info_query(start, dso_open_list) != NULL
+      || fnbounds_dso_handle_open(module_name, start, end) != NULL;
 
-    FNBOUNDS_LOCK;
-    dso_info_t *tmp = fnbounds_dso_info_query(start, dso_open_list);
-
-    if (tmp) {
-      success = 1; // already mapped
-    } else {
-      dso_info_t *dso_info = fnbounds_dso_handle_open(module_name, start, end);
-      success =  (dso_info ? 1 : 0); 
-    } 
-    FNBOUNDS_UNLOCK;
-  }
+  FNBOUNDS_UNLOCK;
 
   return success;
 }
@@ -419,7 +404,7 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
     monitor_real_exit(1);
   }
 
-  long map_size;
+  long map_size = 0;
   struct fnbounds_file_header fh;
   void **nm_table = (void **)fnbounds_read_nm_file(dlname, &map_size, &fh);
   if (nm_table == NULL) {
