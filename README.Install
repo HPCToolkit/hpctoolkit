@@ -1,4 +1,4 @@
-$Id$
+>$Id$
 
 =============================================================================
 =============================================================================
@@ -10,8 +10,8 @@ HPCToolkit/README.Install
 
 Contents:
   0. Introduction
-  1. Obtaining HPCToolkit and Externals
-  2. Building Externals
+  1. Obtaining HPCToolkit
+  2. Building HPCToolkit's Externals
   3. Building HPCToolkit
   4. External's 'configure' Options
   5. What About PAPI?
@@ -37,27 +37,38 @@ that are missing.
 =============================================================================
 
 ----------------------------------------
-1. Obtaining HPCToolkit and Externals
+1. Obtaining HPCToolkit
 ----------------------------------------
 
-The HPCToolkit source files come in two trees: one for HPCToolkit
-proper and one for all of its prerequisites.  Both are available via
-tarballs or anonymous subversion checkout.  The normal usage is to
-download (or unpack) both trees in side-by-side directories.
+HPCToolkit is currently distributed in three parts: 
+  1) HPCToolkit 'proper'
+  2) HPCToolkit's hpcviewer (based on the Rich Client Platform)
+  3) HPCToolkit Externals (prerequisites)
 
-Source tarballs may be downloaded from:
+Both HPCToolkit and Externals are available via tarballs or anonymous
+subversion checkout.  The normal usage is to download (or unpack) both
+trees in side-by-side directories.  hpcviewer is also available via
+anonymous subversion checkout, but normal usgage is to download a
+build for your platform.
+
+
+Source tarballs for HPCToolkit and Externals may be downloaded from:
   https://outreach.scidac.gov/projects/hpctoolkit
 
-Alternatively, a subversion checkout may be performed as follows:
+Alternatively, a subversion checkout for may be performed as follows
+(SciDAC uses https for anonymous checkout):
    svn co https://outreach.scidac.gov/svn/hpctoolkit/externals hpctoolkit-externals
    svn co https://outreach.scidac.gov/svn/hpctoolkit/trunk hpctoolkit
 
-Note that SciDAC uses https for anonymous checkout.
+
+Builds for hpcviewer may be downloaded from:
+  https://outreach.scidac.gov/projects/hpcviewer
+
 
 =============================================================================
 
 ----------------------------------------
-2. Building Externals
+2. Building HPCToolkit's Externals
 ----------------------------------------
 
 Building HPCToolkit is done in two phases: first build all necessary
@@ -94,10 +105,6 @@ After building the external packages, then its tree can be cleaned up
 several times with the same externals tree.  That is, reconfiguring or
 rebuilding HPCToolkit does not require rebuilding the externals tree.
 
-Note: After building HPCToolkit, do not delete the externals tree,
-there are still some parts of HPCToolkit that use the externals's
-staging area as a run dependency.  But make distclean is ok.
-
 =============================================================================
 
 ----------------------------------------
@@ -127,6 +134,8 @@ need to add all of HPCToolkit's prerequisites as configure options.
 Note: HPCToolkit uses Autoconf and Automake, so it supports the
 standard Autoconf options, the standard Automake targets and vpath
 builds (separate build and source trees).
+
+=============================================================================
 
 ----------------------------------------
 4. External's 'configure' Options
@@ -160,6 +169,8 @@ externals is just called monitor in HPCToolkit.
 
 Note: libunwind is only used on ia64 and xed2 is only used on x86 and
 x86-64.
+
+=============================================================================
 
 ----------------------------------------
 5. What About PAPI?
