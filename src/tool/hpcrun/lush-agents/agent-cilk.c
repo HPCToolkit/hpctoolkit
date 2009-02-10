@@ -225,10 +225,10 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   }
   else if (cur_seg == UNW_SEG_CILKSCHED) {
     switch (csr->u.ty) {
-      case UNW_TY_MASTER:
+      case UnwTy_Master:
 	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
 	break;
-      case UNW_TY_WORKER0:
+      case UnwTy_WorkerLcl:
 	if (csr->u.prev_seg == UNW_SEG_USER 
 	    && !csr_is_flag(csr, UNW_FLG_HAVE_LCTXT)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
@@ -241,7 +241,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
 	}
 	break;
-      case UNW_TY_WORKER1:
+      case UnwTy_Worker:
 	if (csr->u.prev_seg == UNW_SEG_USER 
 	    && !csr_is_flag(csr, UNW_FLG_HAVE_LCTXT)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
@@ -368,24 +368,22 @@ init_lcursor(lush_cursor_t* cursor)
   if (aid_prev == lush_agentid_NULL) {
     CilkWorkerState* ws = 
       (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
-    
-    csr->u.prev_seg = UNW_SEG_NULL;
+    Closure* cactus_stack = (ws) ? CILKWS_CL_DEQ_BOT(ws) : NULL;
 
     // unw_ty_t
     if (!ws) {
-      csr->u.ty = UNW_TY_MASTER;
-    }
-    else if (ws->self == 0 && !CILK_Has_Thread0_Stolen) {
-      csr->u.ty = UNW_TY_WORKER0;
+      csr->u.ty = UnwTy_Master;
     }
     else {
-      csr->u.ty = UNW_TY_WORKER1;
+      csr->u.ty = (cactus_stack) ? UnwTy_Worker : UnwTy_WorkerLcl;
     }
+
+    csr->u.prev_seg = UNW_SEG_NULL;
 
     csr->u.flg = UNW_FLG_NULL;
 
     csr->u.cilk_worker_state = ws;
-    csr->u.cilk_closure = (ws) ? CILKWS_CL_DEQ_BOT(ws) : NULL;
+    csr->u.cilk_closure = cactus_stack;
   }
   else if (aid_prev != MY_lush_aid) {
     fprintf(stderr, "FIXME: HOW TO HANDLE MULTIPLE AGENTS?\n");
