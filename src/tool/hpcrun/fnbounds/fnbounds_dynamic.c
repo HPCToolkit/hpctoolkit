@@ -85,10 +85,9 @@ static char *tmproot = "/tmp";
 
 static char fnbounds_tmpdir[PATH_MAX];
 
-static dso_info_t *dso_open_list;
-static dso_info_t *dso_closed_list;
-
-static dso_info_t *dso_free_list;
+static dso_info_t *dso_open_list = NULL;
+static dso_info_t *dso_closed_list = NULL;
+static dso_info_t *dso_free_list = NULL;
 
 // locking functions to ensure that dynamic bounds data structures 
 // are consistent.
@@ -687,34 +686,38 @@ dso_list_head(dso_info_t *dso_list)
   return dso_list;
 }
 
-static void 
+static void
 dso_list_add(dso_info_t **dso_list, dso_info_t *self)
 {
   // add self at head of list
   self->next = *dso_list;
   self->prev = NULL;
+  if (*dso_list != NULL) {
+    (*dso_list)->prev = self;
+  }
   *dso_list = self;
 }
 
-static void 
+static void
 dso_list_remove(dso_info_t **dso_list, dso_info_t *self)
 {
   dso_info_t *prev = self->prev;
+  dso_info_t *next = self->next;
 
-  if (prev) {
-    // have a predecessor: not at head of list 
-    // 1. adjust predecessor to point to my successor 
-    // 2. forget about my predecessor 
-    prev->next = self->next;
-    self->prev = NULL;
+  if (prev != NULL) {
+    // have a predecessor, skip over self
+    prev->next = next;
   } else {
-    // no predecessor: at head of list
-    // repoint list head to next 
-    *dso_list = self->next;
+    // no predecessor, at head of list
+    *dso_list = next;
+  }
+  if (next != NULL) {
+    // have a successor, skip over self
+    next->prev = prev; 
   }
 
-  // forget about my successor 
-  self->next = 0;
+  self->prev = NULL;
+  self->next = NULL;
 }
 
 
@@ -725,8 +728,8 @@ dso_list_remove(dso_info_t **dso_list, dso_info_t *self)
 static dso_info_t *
 dso_info_allocate()
 {
-  static dso_info_t *dso_free_list = 0;
   dso_info_t *new = dso_list_head(dso_free_list);
+
   if (new) {
     dso_list_remove(&dso_free_list, new);
   } else {
