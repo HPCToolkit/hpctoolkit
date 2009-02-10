@@ -96,19 +96,6 @@ and there is an output line of the form
 \end{quote}
 in the output.
 
-\begin{comment}
- It might be better to have three lost files in the example: one without a path
-	interp.c
-one with a relative path like 
-	solve/solvermain.c
-and one with a path like
-	../../lib/math.c
-
-        In all cases, the path passed to hpcprof with a -I flag should
-        be a directory from which the relative path will reach the
-        missing source file.
-\end{comment}
-
 For example, suppose we have an application \verb|app1| whose main source 
 is in in a directory \verb|/projs/Apps/app1-src|. The \verb|app1|
 application is built inside the \verb|app1-src| subdirectory, and it uses
@@ -162,41 +149,13 @@ WARNING: lost: irc_msg_support.c
 \end{quote}
 Much better!
 }
-\begin{comment}
-  From John
+\textbf{Best Practice:} First, carefully inspect the output of \hpcprof\ to
+determine which files are lost. Next, determine the absolute path for
+each distinct top-level source directory (or build directory, if it 
+is separate fromt the source directory). Finally, for each of these (absolute) directory paths,
+specify a \verb|-I| option with the recursive search option ( \verb|'*'| at the end
+of the path).
 
-  Best Practice: Carefully inspect the output of hpcprof to determine
-  which ﬁles are lost. Then, specify one or more -I flags with paths
-  to directories from which the relative paths of lost source files
-  can be resolved. Specifying a -I path ending in a '*' (the recursive
-  search form) can reduce the number of -I paths that need to be
-  specified.
- ----------------
-  From Nathan
-
-  The best practice is to always use -I to do a recursive search
-  starting at the top of your each distinct source (or build, if
-  separate) directory.  (E.g. in the case of Chroma, which uses 3 or 4
-  separate packages, you would need 3 or 4 -Is.)
-
-  As long as one doesn't have a crazy source tree where symbolic links
-  create cycles, this will be the right thing 99% of the time.
----
-  John Again
-
-  OK. I'm fine with Nathan's suggestion, but the language has to be
-  written carefully so that others know what he means and not just
-  us. What I wanted to make clear was that we don't want to specify
-  "absolute paths to the actual source directory". What we want is to
-  specify absolute paths to the top of each distinct source or build
-  directory tree within which the relative path names to the lost
-  files can be resolved.
-\end{comment}
-
-\textbf{Best Practice:} Carefully inspect the output of \hpcprof\ to
-determine which files are lost.  Then, use the recursive search form
-of the \verb|-I| flag with absolute paths to the actual source
-directory.
 \end{quote}
 
 \begin{comment}
@@ -209,19 +168,8 @@ No hpcstruct =
 \vbox{%
 \textbf{Why don't the line numbers for loops and/or procedures exactly
 correspond to what I see in the source code?}
-\begin{comment}
-  Wipe MIPSpro, Compaq compiler
 
-PGI associates 1 line / basic block, so info is limited
-
-Intel and GCC have, in our experience produced the best.
-
-See hpcstruct manpage.
-
-hpcviewer help is good idea.
-\end{comment}
 \begin{quote}
-
 To use a clich\'{e}, ``garbage in, garbage out''. \HPCToolkit\ 
 depends on information recorded in the symbol table by the
 compiler. Line numbers for procedures and loops are inferred by
@@ -229,6 +177,7 @@ looking at the symbol table information recorded for machine
 instructions identified as being inside the procedure or loop.
 \end{quote}
 }
+
 \begin{quote}
 For procedures, often no machine instructions are associated with a
 procedure's declarations. Thus, the first line in the procedure that
@@ -246,32 +195,6 @@ is similar to the procedure process: what source lines map to machine
 instructions inside a loop defined by a backward branch to a loop
 head. Sometimes compilers sometimes don’t properly record the line
 number mapping.
-
-\begin{comment}
-  
-Some common constructs such as Fortran's statement functions lead to
-confusing output from \hpcstruct , \HPCToolkit 's binary analyzer. With
-Compaq's C compiler on Alpha systems, machine instructions that result
-from forward substitution of statement functions are mapped back to
-the line numbers in which the statement functions are defined. \verb|bloop|'s
-normalization phase ensures that source lines will appear only once in
-hpcviewer’s display. Thus different loops in which the same statement
-functions are instantiated will appear fused in the program structure
-after \verb|bloop|'s normalization. There is no simple fix for this
-problem. A related issue is that sampled performance data for a
-machine instruction is mapped back to the source line that a machine
-instruction was derived from.  When machine instructions found in
-different loops map back to the source line for a statement function,
-performance is not going to be attributed correctly. To cope with this
-issue, the whole \HPCToolkit\ tool chain needs modifications to cope
-with the fact that there are multiple instances of a source line that
-need to be processed and viewed as distinct entities.
-
-With SGI's \verb|MIPspro| compilers, we have seen loop headers attributed to
-the last line before the loop containing executable code. In the case
-of the Intel compiler, sometimes machine instructions found in
-optimized code map to the end of the source file. Yuck!
-\end{comment}
 
 When the compiler line mapping information is wrong, there is little
 you can do about it other than to ignore its imperfections, or
