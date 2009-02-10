@@ -344,7 +344,6 @@ unw_step (unw_cursor_t *cursor)
   }
 
   void *sp, **bp, *pc; 
-  void **next_sp, **next_bp, *next_pc;
 
   unwind_interval *uw;
 
