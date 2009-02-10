@@ -182,9 +182,12 @@ system_server_shutdown()
 {
   // --------------------------------------------------------------------------------------------------
   // send command string length value of -1 to terminate 
+  // but not if we're called back in the server (child) itself
   // --------------------------------------------------------------------------------------------------
-  int ret = write(WRITE_FD(CLIENT_TO_SERVER), &server_done, sizeof(server_done));
-  EXIT_ON_ERROR(ret, sizeof(server_done), "system server shutdown failed");
+  if (server_pid != 0) {
+    int ret = write(WRITE_FD(CLIENT_TO_SERVER), &server_done, sizeof(server_done));
+    EXIT_ON_ERROR(ret, sizeof(server_done), "system server shutdown failed");
+  }
 }
  
 
