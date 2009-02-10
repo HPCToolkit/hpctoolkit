@@ -143,7 +143,7 @@ link_ui(unwind_interval *current, unwind_interval *next)
 
 
 void 
-dump_ui(unwind_interval *u, int dump_to_stdout)
+dump_ui(unwind_interval *u, int dump_to_stderr)
 {
   char buf[1000];
 
@@ -156,12 +156,10 @@ dump_ui(unwind_interval *u, int dump_to_stdout)
 	  u->common.next, u->common.prev, u->prev_canonical, u->restored_canonical); 
 
   PMSG(UNW,buf);
-#if 0
-  if (dump_to_stdout) { 
+  if (dump_to_stderr) { 
     fprintf(stderr, "%s", buf);
     fflush(stderr);
   }
-#endif
 }
 
 

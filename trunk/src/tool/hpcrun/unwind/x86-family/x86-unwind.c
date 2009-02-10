@@ -99,7 +99,7 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
   } 
 
   TMSG(UNW,"dumping the found interval");
-  dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
+  dump_ui((unwind_interval *)cursor->intvl, 0); // debug for now
 }
 
 
@@ -142,7 +142,7 @@ unw_step_sp(unw_cursor_t *cursor)
   uw = (unwind_interval *)cursor->intvl;
   TMSG(UNW,"cursor in ==> bp=%p,sp=%p,pc=%p",bp,sp,pc);
   TMSG(UNW,"unwind interval in below:");
-  dump_ui(uw,1);
+  dump_ui(uw, 0);
 
   next_sp  = ((void **)((unsigned long) sp + uw->sp_ra_pos));
   next_pc  = *next_sp;
@@ -232,7 +232,7 @@ unw_step_bp(unw_cursor_t *cursor)
 
   TMSG(UNW,"cursor in ==> bp=%p,sp=%p,pc=%p",bp,sp,pc);
   TMSG(UNW,"unwind interval in below:");
-  dump_ui(uw,1);
+  dump_ui(uw, 0);
 
   if ((unsigned long) bp >= (unsigned long) sp) {
     // bp relative
@@ -371,7 +371,7 @@ unw_step (unw_cursor_t *cursor)
 
   default:
     EMSG("ILLEGAL UNWIND INTERVAL");
-    dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
+    dump_ui((unwind_interval *)cursor->intvl, 0); // debug for now
     assert(0);
   }
   if (unw_res != -1){

@@ -67,7 +67,7 @@ extern "C" {
   unwind_interval *fluke_ui(char *pc,unsigned int sp_ra_pos);
 
   void link_ui(unwind_interval *current, unwind_interval *next);
-  void dump_ui(unwind_interval *u, int dump_to_stdout);
+  void dump_ui(unwind_interval *u, int dump_to_stderr);
   long ui_count();
 
   long suspicious_count();
