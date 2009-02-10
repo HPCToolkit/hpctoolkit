@@ -126,7 +126,7 @@ csprof_state_flag_isset(csprof_state_t *state, unsigned int flag)
     unsigned int state_flags = state->flags;
 
     s1 = s1 + 1;
-    MSG(1,"state flag isset: %lx",state_flags & flag);
+    MSG(1,"state flag isset: %x",state_flags & flag);
     return state_flags & flag;
 }
 

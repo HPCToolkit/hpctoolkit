@@ -148,8 +148,8 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
 	const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
 	const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
 	const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
-	xed_operand_type_enum_t op0_type = xed_operand_type(op0);
-	xed_operand_type_enum_t op1_type = xed_operand_type(op1);
+	//xed_operand_type_enum_t op0_type = xed_operand_type(op0); // unused
+	//xed_operand_type_enum_t op1_type = xed_operand_type(op1); // unused
 	if ((xed_operand_name(op0) == XED_OPERAND_MEM0) && 
 	    (xed_operand_name(op1) == XED_OPERAND_REG0) && 
 	    (xed_operand_nonterminal_name(op1) == XED_NONTERMINAL_RIP)) {
@@ -372,7 +372,7 @@ validate_tail_call_from_jump(char *ins, long offset, xed_decoded_inst_t *xptr)
 	xed_error_enum_t xed_error;
 
 	xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
-	xed_iclass_enum_t prev_xiclass = XED_ICLASS_INVALID;
+	//xed_iclass_enum_t prev_xiclass = XED_ICLASS_INVALID; // unused
 
 	while (ins < target) {
 
@@ -682,10 +682,10 @@ addsub(char *ins, xed_decoded_inst_t *xptr, xed_iclass_enum_t iclass, long ins_o
 	  //    (it may be the first instruction in the function - we don't want 
 	  //     to prevent it from starting a function) 
 	  // -- ensure that add/sub in the epilogue IS part of the range 
-	  char *end = ins + 1; 
 	  add_protected_range(prologue_start + ins_offset + 1, 
 			      ins + ins_offset + 1);
 #ifdef DEBUG_ADDSUB
+	  char *end = ins + 1; 
 	  fprintf(stderr,"range [%p, %p] offset %ld\n", 
 		  prologue_start + ins_offset, end + ins_offset, immedv);
 #endif

@@ -648,7 +648,7 @@ private:
   // FIXME: convert to metric-id a la Metric::Mgr
   const SampledMetricDescVec* m_metricdesc; // does not own memory
 
-  // FIXME: a vector of doubles, a la ScopeInfo
+  // FIXME: a vector of doubles, a la Struct::Tree
   std::vector<hpcfile_metric_data_t> m_metrics;
 };
 
