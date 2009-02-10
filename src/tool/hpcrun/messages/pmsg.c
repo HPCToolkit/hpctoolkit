@@ -49,7 +49,7 @@ static pmsg_category all_list_entries [] = {
  E(ITIMER_HANDLER),
  E(ITIMER_CTL),
  E(UNW),
- E(SPLAY),
+ E(UITREE),
  E(INTV2),
  E(INTV_ERR),
  E(TROLL),

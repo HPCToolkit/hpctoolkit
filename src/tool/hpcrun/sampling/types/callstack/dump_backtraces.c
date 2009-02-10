@@ -36,7 +36,7 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t* unwind)
     }
     PMSG_LIMIT(EMSG("--------End cached backtrace-----------"));
   }
-  
+
   cnt = 0;
   PMSG_LIMIT(EMSG("")); /* space */
   if (unwind) {
