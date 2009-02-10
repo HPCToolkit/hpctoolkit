@@ -65,7 +65,8 @@ union cilk_ip {
   } u;
 };
 
-static inline void cilk_ip_init(cilk_ip_t* x, void* ip /*uint32_t status*/)
+static inline void 
+cilk_ip_init(cilk_ip_t* x, void* ip /*uint32_t status*/)
 {
   x->u.ip = ip;
   //x->u.status = status;
@@ -81,23 +82,25 @@ static inline void cilk_ip_init(cilk_ip_t* x, void* ip /*uint32_t status*/)
 // ---------------------------------------------------------
 
 typedef enum unw_ty_e  unw_ty_t;
-
+ 
 enum unw_ty_e {
-  UNW_TY_NULL    = 0,
-  UNW_TY_MASTER,  // master (non-worker thread)
+  UnwTy_NULL    = 0,
+  UnwTy_Master,  // master (non-worker thread)
 
-  UNW_TY_WORKER0, // worker 0 before it steals
-  UNW_TY_WORKER1  // worker 0 after it steals; all other workers
+  UnwTy_WorkerLcl, // worker: user context is fully on local stack
+  UnwTy_Worker     // worker: user context is partially on cactus stack
 };
 
-static inline bool unw_ty_is_master(unw_ty_t ty) 
+static inline bool 
+unw_ty_is_master(unw_ty_t ty) 
 {
-  return (ty == UNW_TY_MASTER);
+  return (ty == UnwTy_Master);
 }
 
-static inline bool unw_ty_is_worker(unw_ty_t ty) 
+static inline bool 
+unw_ty_is_worker(unw_ty_t ty) 
 {
-  return ((ty == UNW_TY_WORKER0) || (ty == UNW_TY_WORKER1));
+  return ((ty == UnwTy_WorkerLcl) || (ty == UnwTy_Worker));
 }
 
 
