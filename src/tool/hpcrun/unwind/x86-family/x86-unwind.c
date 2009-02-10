@@ -303,8 +303,9 @@ unw_step_std(unw_cursor_t *cursor)
 static step_state
 t1_dbg_unw_step(unw_cursor_t *cursor)
 {
-  // return STEP_ERROR;
   drop_sample();
+
+  return STEP_ERROR;
 }
 
 static step_state
