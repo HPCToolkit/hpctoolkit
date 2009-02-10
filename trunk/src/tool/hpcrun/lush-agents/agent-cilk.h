@@ -113,10 +113,10 @@ typedef enum unw_seg_e unw_seg_t;
 enum unw_seg_e {
   // Segments of a Cilk physical stack
   // NOTE: ordering is important (inner to outer contexts)
-  UNW_SEG_NULL   = 0,
-  UNW_SEG_CILKRT,    // Cilk runtime support
-  UNW_SEG_USER,      // User code
-  UNW_SEG_CILKSCHED  // Cilk scheduler
+  UnwSeg_NULL   = 0,
+  UnwSeg_CilkRT,    // Cilk runtime support
+  UnwSeg_User,      // User code
+  UnwSeg_CilkSched  // Cilk scheduler
 };
 
 
@@ -127,10 +127,10 @@ enum unw_seg_e {
 typedef enum unw_flg_e unw_flg_t;
 
 enum unw_flg_e {
-  UNW_FLG_NULL       = 0x00,
-  UNW_FLG_SEEN_USER  = 0x01, // user code has been seen (inter)
-  UNW_FLG_HAVE_LCTXT = 0x02, // logical context has been obtained (inter)
-  UNW_FLG_BEG_LNOTE  = 0x04, // past beginning note of an lchord
+  UnwFlg_NULL       = 0x00,
+  UnwFlg_SeenUser   = 0x01, // user code has been seen (inter)
+  UnwFlg_HaveLCtxt  = 0x02, // logical context has been obtained (inter)
+  UnwFlg_BegLNote   = 0x04, // past beginning note of an lchord
 };
 
 

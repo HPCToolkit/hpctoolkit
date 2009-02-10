@@ -166,7 +166,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // -------------------------------------------------------
   // Compute p-note's current stack segment ('cur_seg')
   // -------------------------------------------------------
-  unw_seg_t cur_seg = UNW_SEG_NULL;
+  unw_seg_t cur_seg = UnwSeg_NULL;
 
   char buffer[PATH_MAX];
   bool is_cilkrt = is_libcilk(csr->u.ref_ip, buffer);
@@ -174,23 +174,23 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 
   if (unw_ty_is_worker(csr->u.ty)) {
     // -------------------------------------------------------
-    // 1. is_cilkrt &  (deq_diff <= 1) => UNW_SEG_CILKSCHED 
-    // 2. is_cilkrt & !(deq_diff <= 1) => UNW_SEG_CILKRT
-    // 3. is_user                      => UNW_SEG_USER
+    // 1. is_cilkrt &  (deq_diff <= 1) => UnwSeg_CilkSched 
+    // 2. is_cilkrt & !(deq_diff <= 1) => UnwSeg_CilkRT
+    // 3. is_user                      => UnwSeg_User
     // -------------------------------------------------------
     CilkWorkerState* ws = csr->u.cilk_worker_state;
     long deq_diff = CILKWS_FRAME_DEQ_TAIL(ws) - CILKWS_FRAME_DEQ_HEAD(ws);
 
     if (is_user) {
-      cur_seg = UNW_SEG_USER;
-      csr_set_flag(csr, UNW_FLG_SEEN_USER);
+      cur_seg = UnwSeg_User;
+      csr_set_flag(csr, UnwFlg_SeenUser);
     }
     else if (is_cilkrt) {
-      cur_seg = (deq_diff <= 1) ? UNW_SEG_CILKSCHED : UNW_SEG_CILKRT;
+      cur_seg = (deq_diff <= 1) ? UnwSeg_CilkSched : UnwSeg_CilkRT;
 
       // FIXME: sometimes the above test is not correct... OVERRIDE
-      if (cur_seg == UNW_SEG_CILKRT && csr_is_flag(csr, UNW_FLG_SEEN_USER)) {
-	cur_seg = UNW_SEG_CILKSCHED;
+      if (cur_seg == UnwSeg_CilkRT && csr_is_flag(csr, UnwFlg_SeenUser)) {
+	cur_seg = UnwSeg_CilkSched;
       }
     }
     else {
@@ -198,7 +198,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
     }
   }
   else if (unw_ty_is_master(csr->u.ty)) {
-    cur_seg = UNW_SEG_CILKSCHED;
+    cur_seg = UnwSeg_CilkSched;
     if ( !(is_user || is_cilkrt) ) {
       // is_user may be true when executing main
       fprintf(stderr, "FIXME: Unknown segment for master (assert)\n"); 
@@ -215,26 +215,26 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // FIXME: consider effects of multiple agents
   //lush_agentid_t last_aid = lush_cursor_get_aid(cursor); 
 
-  if (cur_seg == UNW_SEG_CILKRT) {
+  if (cur_seg == UnwSeg_CilkRT) {
     // INVARIANT: unw_ty_is_worker() == true
     lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
   }
-  else if (cur_seg == UNW_SEG_USER) {
+  else if (cur_seg == UnwSeg_User) {
     // INVARIANT: unw_ty_is_worker() == true
     lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
   }
-  else if (cur_seg == UNW_SEG_CILKSCHED) {
+  else if (cur_seg == UnwSeg_CilkSched) {
     switch (csr->u.ty) {
       case UnwTy_Master:
 	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
 	break;
       case UnwTy_WorkerLcl:
-	if (csr->u.prev_seg == UNW_SEG_USER 
-	    && !csr_is_flag(csr, UNW_FLG_HAVE_LCTXT)) {
+	if (csr->u.prev_seg == UnwSeg_User 
+	    && !csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
-	  csr_set_flag(csr, UNW_FLG_HAVE_LCTXT);
+	  csr_set_flag(csr, UnwFlg_HaveLCtxt);
     	}
-	else if (csr_is_flag(csr, UNW_FLG_HAVE_LCTXT)) {
+	else if (csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0);
 	}
 	else {
@@ -242,12 +242,12 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 	}
 	break;
       case UnwTy_Worker:
-	if (csr->u.prev_seg == UNW_SEG_USER 
-	    && !csr_is_flag(csr, UNW_FLG_HAVE_LCTXT)) {
+	if (csr->u.prev_seg == UnwSeg_User 
+	    && !csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
-	  csr_set_flag(csr, UNW_FLG_HAVE_LCTXT);
+	  csr_set_flag(csr, UnwFlg_HaveLCtxt);
 	}
-	else if (csr_is_flag(csr, UNW_FLG_HAVE_LCTXT)) {
+	else if (csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
 	}
 	else {
@@ -314,19 +314,19 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
     ty = LUSH_STEP_END_CHORD;
   }
   else if (as == LUSH_ASSOC_1_to_1) {
-    if (csr_is_flag(csr, UNW_FLG_BEG_LNOTE)) {
+    if (csr_is_flag(csr, UnwFlg_BegLNote)) {
       ty = LUSH_STEP_END_CHORD;
     }
     else {
       cilk_ip_init(lip, csr->u.ref_ip /*0*/);
       ty = LUSH_STEP_CONT;
-      csr_set_flag(csr, UNW_FLG_BEG_LNOTE);
+      csr_set_flag(csr, UnwFlg_BegLNote);
     }
   }
   else if (as == LUSH_ASSOC_1_to_M) {
     // INVARIANT: csr->u.cilk_closure is non-NULL
     Closure* cl = csr->u.cilk_closure;
-    if (csr_is_flag(csr, UNW_FLG_BEG_LNOTE)) { // past begining of lchord
+    if (csr_is_flag(csr, UnwFlg_BegLNote)) { // past begining of lchord
       // advance to next closure
       cl = csr->u.cilk_closure = cl->parent;
       SET_LIP_AND_TY(cl, lip, ty);
@@ -335,7 +335,7 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
       // skip the top closure; it is identical to the outermost stack frame
       cl = csr->u.cilk_closure = cl->parent;
       SET_LIP_AND_TY(cl, lip, ty);
-      csr_set_flag(csr, UNW_FLG_BEG_LNOTE);
+      csr_set_flag(csr, UnwFlg_BegLNote);
     }
   }
   else {
@@ -378,9 +378,9 @@ init_lcursor(lush_cursor_t* cursor)
       csr->u.ty = (cactus_stack) ? UnwTy_Worker : UnwTy_WorkerLcl;
     }
 
-    csr->u.prev_seg = UNW_SEG_NULL;
+    csr->u.prev_seg = UnwSeg_NULL;
 
-    csr->u.flg = UNW_FLG_NULL;
+    csr->u.flg = UnwFlg_NULL;
 
     csr->u.cilk_worker_state = ws;
     csr->u.cilk_closure = cactus_stack;
@@ -395,7 +395,7 @@ init_lcursor(lush_cursor_t* cursor)
   memset(lip, 0, sizeof(*lip));
 
   csr->u.ref_ip = (void*)lush_cursor_get_ip(cursor);
-  csr_unset_flag(csr, UNW_FLG_BEG_LNOTE);
+  csr_unset_flag(csr, UnwFlg_BegLNote);
 }
 
 
