@@ -59,5 +59,5 @@ stack_troll(void **start_sp, uint *ra_pos, validate_addr_fn_t validate_addr, voi
   
   PMSG_LIMIT(TMSG(TROLL,"(sp=%p): failed using limit %d", start_sp, TROLL_LIMIT));
   *ra_pos = -1;
-  return 1; // error
+  return TROLL_INVALID; // error
 }
