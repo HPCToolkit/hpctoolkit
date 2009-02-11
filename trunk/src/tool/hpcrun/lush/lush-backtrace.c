@@ -21,25 +21,26 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
-#include <dlfcn.h>
+//************************ libmonitor Include Files *************************
+
+#include <monitor.h>
 
 //*************************** User Include Files ****************************
 
 #include "lush.h"
 #include "lush-backtrace.h"
 
-#include <general.h>
-#include <state.h>
+#include <include/general.h>
 
-#include <monitor.h>
+#include <state.h>
+#include <sample_event.h>
 
 //*************************** Forward Declarations **************************
 
 static csprof_frame_t*
 canonicalize_chord(csprof_frame_t* chord_beg, lush_assoc_t as,
-		   unsigned int pchord_len, unsigned int lchord_len);
+		   uint pchord_len, uint lchord_len);
 
 
 //***************************************************************************
@@ -105,7 +106,11 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   // ---------------------------------------------------------
   // Step through bichords
   // ---------------------------------------------------------
-  while (lush_step_bichord(&cursor) != LUSH_STEP_END_PROJ) {
+  uint unw_len = 0;
+  lush_step_t ty = LUSH_STEP_NULL;
+
+  while ( (ty = lush_step_bichord(&cursor)) != LUSH_STEP_END_PROJ 
+	  && ty != LUSH_STEP_ERROR ) {
     lush_agentid_t aid = lush_cursor_get_aid(&cursor);
     lush_assoc_t as = lush_cursor_get_assoc(&cursor);
 
@@ -115,7 +120,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
 
     csprof_state_ensure_buffer_avail(state, state->unwind);
     csprof_frame_t* chord_beg = state->unwind; // innermost note
-    unsigned int pchord_len = 0, lchord_len = 0;
+    uint pchord_len = 0, lchord_len = 0;
 
     // ---------------------------------------------------------
     // Step through p-notes of p-chord
@@ -164,12 +169,25 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
     // ---------------------------------------------------------
     csprof_frame_t* chord_end;
     chord_end = canonicalize_chord(chord_beg, as, pchord_len, lchord_len);
+    unw_len++;
 
     state->unwind = chord_end;
   }
 
+  if (ty == LUSH_STEP_ERROR) {
+    csprof_drop_sample(); // NULL
+  }
+
+#if 0
+  // FIXME: cf. csprof_sample_filter in backtrace.c
+  if ( !(monitor_in_start_func_narrow(bt_end->ip) && unw_len > 1) ) {
+    filtered_samples++;
+    return NULL;
+  }
+#endif
+
   // ---------------------------------------------------------
-  // insert backtrace into calling context tree 
+  // insert backtrace into calling context tree (if sensible)
   // ---------------------------------------------------------
   csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
   csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
@@ -200,14 +218,14 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
 // returns the end of the chord (exclusive)
 static csprof_frame_t* 
 canonicalize_chord(csprof_frame_t* chord_beg, lush_assoc_t as,
-		   unsigned int pchord_len, unsigned int lchord_len)
+		   uint pchord_len, uint lchord_len)
 {
   // Set assoc and fill empty p-notes/l-notes
 
   // INVARIANT: chord_len >= 1
   //   [chord_beg = innermost ... outermost, chord_end)
 
-  unsigned int chord_len = MAX(pchord_len, lchord_len);
+  uint chord_len = MAX(pchord_len, lchord_len);
   csprof_frame_t* chord_end  = chord_beg + chord_len; // N.B.: exclusive
   csprof_frame_t* pchord_end = chord_beg + pchord_len;
   csprof_frame_t* lchord_end = chord_beg + lchord_len;
@@ -223,7 +241,7 @@ canonicalize_chord(csprof_frame_t* chord_beg, lush_assoc_t as,
   }
   // else: default is fine for a-to-0 and 1-to-1
   
-  unsigned int path_len = chord_len;
+  uint path_len = chord_len;
   for (csprof_frame_t* x = chord_beg; x < chord_end; ++x, --path_len) {
     lush_assoc_info__set_assoc(x->as_info, as);
     lush_assoc_info__set_path_len(x->as_info, path_len);

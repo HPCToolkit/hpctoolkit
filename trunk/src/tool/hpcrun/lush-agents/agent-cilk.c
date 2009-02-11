@@ -60,7 +60,7 @@ static const char* ld_str = "ld-linux";
 
 //*************************** Forward Declarations **************************
 
-static void
+static int
 init_lcursor(lush_cursor_t* cursor);
 
 static bool
@@ -160,7 +160,10 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // -------------------------------------------------------
   // Initialize cursor
   // -------------------------------------------------------
-  init_lcursor(cursor);
+  int ret = init_lcursor(cursor);
+  if (ret != 0) {
+    return LUSH_STEP_ERROR;
+  }
   cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
 
   // -------------------------------------------------------
@@ -355,7 +358,7 @@ LUSHI_set_active_frame_marker(/*ctxt, cb*/)
 
 // --------------------------------------------------------------------------
 
-void
+int
 init_lcursor(lush_cursor_t* cursor)
 {
   lush_lip_t* lip = lush_cursor_get_lip(cursor);
@@ -376,6 +379,26 @@ init_lcursor(lush_cursor_t* cursor)
     }
     else {
       csr->u.ty = (cactus_stack) ? UnwTy_Worker : UnwTy_WorkerLcl;
+
+      if (CILK_WS_has_stolen(ws) && !cactus_stack) {
+	// Sometimes we are hammered in the middle of a Cilk operation
+	// where the cactus stack pointer becomes NULL, even though
+	// logical context 'should' exist (e.g., Cilk_sync before a
+	// return).  The result is that we cannot obtain the logical
+	// context and therefore cannot locate the unwind correctly
+	// within the CCT.
+	//
+	// To avoid such bad unwinds, we use the simple heuristic of
+	// requiring a cactus stack pointer if the worker has become a
+	// thief. It is not a perfect solution since a worker may have
+	// stolen the main routine; however, this is an exceptional
+	// case.
+	//
+	// FIXME: the best solution is to find the smallest window
+	// within the scheduler code and set a flag.  But I found that
+	// this is easier said than done.
+	return 1;
+      }
     }
 
     csr->u.prev_seg = UnwSeg_NULL;
@@ -396,6 +419,8 @@ init_lcursor(lush_cursor_t* cursor)
 
   csr->u.ref_ip = (void*)lush_cursor_get_ip(cursor);
   csr_unset_flag(csr, UnwFlg_BegLNote);
+
+  return 0;
 }
 
 
