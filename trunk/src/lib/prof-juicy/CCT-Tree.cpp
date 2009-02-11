@@ -59,6 +59,8 @@ using std::dec;
 #include <string>
 using std::string;
 
+#include <typeinfo>
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
@@ -75,6 +77,7 @@ using SrcFile::ln_NULL;
 #include <lib/support/Trace.hpp>
 
 //*************************** Forward Declarations ***************************
+
 
 //***************************************************************************
 
@@ -569,6 +572,7 @@ ANode::codeName() const
   return self;
 }
 
+
 string
 ProcFrm::codeName() const
 { 
@@ -578,6 +582,50 @@ ProcFrm::codeName() const
     + StrUtil::toStr(begLine()) + "-" + StrUtil::toStr(endLine());
   return self;
 }
+
+
+static string
+makeProcNameDbg(const Prof::CCT::ANode* node);
+
+string
+ProcFrm::procNameDbg() const
+{
+  string nm = procName() + makeProcNameDbg(this);
+  return nm;
+}
+
+
+static string
+makeProcNameDbg(const Prof::CCT::ANode* node)
+{
+  string nm;
+  
+  if (!node) {
+    return nm;
+  }
+
+  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
+    const Prof::CCT::ANode* n = it.CurNode();
+
+    // Build name from ADynNode
+    const Prof::CCT::ADynNode* n_dyn = 
+      dynamic_cast<const Prof::CCT::ADynNode*>(n);
+    if (n_dyn) {
+      nm += n_dyn->nameDyn();
+    }
+    
+    if (n_dyn || typeid(*n) == typeid(Prof::CCT::ProcFrm)) {
+      // Base case: do not recur through ADynNode's or ProcFrm's
+    }
+    else {
+      // General case: recur through ProcFrm's static structure
+      nm += makeProcNameDbg(n);
+    }
+  }
+
+  return nm;
+}
+ 
 
 
 //**********************************************************************
@@ -607,23 +655,22 @@ ANode::toString_me(int oFlags) const
 
   SrcFile::ln lnBeg = begLine();
   string line = StrUtil::toStr(lnBeg);
-  //SrcFile::ln lnEnd = endLine();
-  //if (lnBeg != lnEnd) {
-  //  line += "-" + StrUtil::toStr(lnEnd);
-  //}
+#if 0
+  SrcFile::ln lnEnd = endLine();
+  if (lnBeg != lnEnd) {
+    line += "-" + StrUtil::toStr(lnEnd);
+  }
+#endif
 
   uint sId = (m_strct) ? m_strct->id() : 0;
-  self += " s" + xml::MakeAttrNum(sId)
-    + " l" + xml::MakeAttrStr(line);
-
-  if (oFlags & Tree::OFlg_Debug) {
-    self = self + " uid" + xml::MakeAttrNum(id());
-  }
+  self += " s" + xml::MakeAttrNum(sId) + " l" + xml::MakeAttrStr(line);
+  //self = self + " uid" + xml::MakeAttrNum(id());
+  
   return self;
 }
 
 
-std::string 
+string 
 ADynNode::assocInfo_str() const
 {
   char str[LUSH_ASSOC_INFO_STR_MIN_LEN];
@@ -632,12 +679,21 @@ ADynNode::assocInfo_str() const
 }
 
 
-std::string 
+string 
 ADynNode::lip_str() const
 {
   char str[LUSH_LIP_STR_MIN_LEN];
   lush_lip_sprintf(str, m_lip);
   return string(str);
+}
+
+
+string 
+ADynNode::nameDyn() const
+{
+  string nm = " [" + assocInfo_str() + ": ("
+    + StrUtil::toStr(m_ip, 16) + ") (" + lip_str() + ")]";
+  return nm;
 }
 
 
@@ -647,9 +703,11 @@ ADynNode::writeDyn(std::ostream& o, int oFlags, const char* pre) const
   string p(pre);
 
   o << std::showbase;
+
   o << p << assocInfo_str() 
-    << hex << " [ip " << m_ip << ", " << dec << m_opIdx << "] ";
-  o << hex << m_lip << " [lip " << lip_str() << "]" << dec;
+    << hex << " [ip " << m_ip << ", " << dec << m_opIdx << "] "
+    << hex << m_lip << " [lip " << lip_str() << "]" << dec;
+
   o << p << " [metrics";
   for (uint i = 0; i < m_metrics.size(); ++i) {
     o << " " << m_metrics[i];
@@ -689,22 +747,17 @@ string
 ProcFrm::toString_me(int oFlags) const
 {
   string self = ANode::toString_me(oFlags);
-
+  
   if (m_strct)  {
-#if (FIXME_WRITE_CCT_DICTIONARIES)
-    self += " lm" + xml::MakeAttrNum(lmId())
-      + " f" + xml::MakeAttrNum(fileId())
-      + " n" + xml::MakeAttrNum(procId());
-#else
-    const string& lm_nm = lmName();
-    const string& fnm   = fileName();
-    const string& pnm   = procName();
+    string lm_nm = xml::MakeAttrNum(lmId());
+    string fnm = xml::MakeAttrNum(fileId());
+    string pnm = xml::MakeAttrNum(procId());
 
-    self += " lm" + xml::MakeAttrStr(lm_nm)
-      + " f" + xml::MakeAttrStr(fnm)
-      + " n" + xml::MakeAttrStr(pnm);
-#endif
+    if (oFlags & Tree::OFlg_Debug) {
+      pnm = xml::MakeAttrStr(procNameDbg());
+    }
 
+    self += " lm" + lm_nm + " f" + fnm + " n" + pnm;
     if (isAlien()) {
       self = self + " a=\"1\"";
     }
@@ -717,31 +770,16 @@ ProcFrm::toString_me(int oFlags) const
 string
 Call::toString_me(int oFlags) const
 {
-  string self = ANode::toString_me(oFlags);
-  
-  if (oFlags & CCT::Tree::OFlg_Debug) {
-    // writeDyn();
-    self += " assoc" + xml::MakeAttrStr(assocInfo_str()) 
-      + " ip_real" + xml::MakeAttrNum(ip_real(), 16)
-      + " op" + xml::MakeAttrNum(opIndex())
-      + " lip" + xml::MakeAttrStr(lip_str());
-  }
-
-  return self; 
+  string self = ANode::toString_me(oFlags); // nameDyn()
+  return self;
 }
 
 
 string
 Stmt::toString_me(int oFlags) const
 {
-  string self = ANode::toString_me(oFlags);
-
-  if (oFlags & CCT::Tree::OFlg_Debug) {
-    self += " ip" + xml::MakeAttrNum(ip(), 16) 
-      + " op" + xml::MakeAttrNum(opIndex());
-  }
-
-  return self; 
+  string self = ANode::toString_me(oFlags); // nameDyn()
+  return self;
 } 
 
 
