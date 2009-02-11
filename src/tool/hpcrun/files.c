@@ -177,7 +177,7 @@ files_name(char *filename, unsigned int mpi, const char *suffix)
 {
   thread_data_t *td = csprof_get_thread_data();
 
-  sprintf(filename, "%s/%s-%06lu-%03lu-%lx-%u.%s", 
+  sprintf(filename, "%s/%s-%06u-%03lu-%lx-%u.%s", 
           output_directory, executable_name, mpi, 
           td->state->pstate.thrid,
           os_hostid(), os_pid(), suffix); 
