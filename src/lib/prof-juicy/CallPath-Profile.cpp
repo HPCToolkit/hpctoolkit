@@ -192,7 +192,7 @@ writeXML_ProcFilter(const Struct::ANode& x, long type)
 
 
 std::ostream& 
-Profile::writeXML_hdr(std::ostream& os, const char* pre) const
+Profile::writeXML_hdr(std::ostream& os, int oFlags, const char* pre) const
 {
   os << "  <MetricTable>\n";
   uint n_metrics = numMetrics();
@@ -208,7 +208,6 @@ Profile::writeXML_hdr(std::ostream& os, const char* pre) const
   }
   os << "  </MetricTable>\n";
 
-#if (FIXME_WRITE_CCT_DICTIONARIES)
   os << "  <LoadModuleTable>\n";
   writeXML_help(os, "LoadModule", m_structure, &Struct::ANodeTyFilter[Struct::ANode::TyLM], 1);
   os << "  </LoadModuleTable>\n";
@@ -218,11 +217,12 @@ Profile::writeXML_hdr(std::ostream& os, const char* pre) const
   writeXML_help(os, "File", m_structure, &filt1, 2);
   os << "  </FileTable>\n";
 
-  os << "  <ProcedureTable>\n";
-  Struct::ANodeFilter filt2(writeXML_ProcFilter, "ProcTable", 0);
-  writeXML_help(os, "Procedure", m_structure, &filt2, 3);
-  os << "  </ProcedureTable>\n";
-#endif
+  if ( !(oFlags & CCT::Tree::OFlg_Debug) ) {
+    os << "  <ProcedureTable>\n";
+    Struct::ANodeFilter filt2(writeXML_ProcFilter, "ProcTable", 0);
+    writeXML_help(os, "Procedure", m_structure, &filt2, 3);
+    os << "  </ProcedureTable>\n";
+  }
 
   return os;
 }

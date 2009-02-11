@@ -100,6 +100,14 @@ write(Prof::CallPath::Profile* prof, std::ostream& os,
 
   using namespace Prof;
 
+  int oFlags = 0;
+  if (!prettyPrint) { 
+    oFlags |= CCT::Tree::OFlg_Compressed;
+  }
+  DIAG_If(5) {
+    oFlags |= CCT::Tree::OFlg_Debug;
+  }
+
   string name = (title.empty()) ? prof->name() : title;
 
   os << "<?xml version=\"1.0\"?>" << std::endl;
@@ -115,7 +123,7 @@ write(Prof::CallPath::Profile* prof, std::ostream& os,
   // 
   // ------------------------------------------------------------
   os << "<SecHeader>\n";
-  prof->writeXML_hdr(os);
+  prof->writeXML_hdr(os, oFlags);
   os << "  <Info/>\n";
   os << "</SecHeader>\n";
   os.flush();
@@ -123,11 +131,6 @@ write(Prof::CallPath::Profile* prof, std::ostream& os,
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
-  int oFlags = 0;
-  if (!prettyPrint) { 
-    oFlags |= CCT::Tree::OFlg_Compressed;
-  }
-
   os << "<SecCallPathProfileData>\n";
   prof->cct()->writeXML(os, oFlags);
   os << "</SecCallPathProfileData>\n";

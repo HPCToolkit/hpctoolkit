@@ -83,7 +83,6 @@
 
 // Hack for interpreting Cilk-like LIPs.
 #define FIXME_CILK_LIP_HACK
-#define DBG_LUSH_PROC_FRAME 0
 
 inline std::ostream&
 operator<<(std::ostream& os, const hpcfile_metric_data_t x)
@@ -92,7 +91,6 @@ operator<<(std::ostream& os, const hpcfile_metric_data_t x)
   return os;
 }
 
-#define FIXME_WRITE_CCT_DICTIONARIES 1
 
 //***************************************************************************
 // Tree
@@ -612,6 +610,8 @@ public:
   std::string assocInfo_str() const;
   std::string lip_str() const;
 
+  std::string nameDyn() const;
+
   void 
   writeDyn(std::ostream& os, int oFlags = 0, const char* prefix = "") const;
 
@@ -761,15 +761,11 @@ public:
     else {
       return BOGUS; 
     }
-
-#if (DBG_LUSH_PROC_FRAME)
-      std::string nm = pctxtStrct->name();
-      if (n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
-	nm += " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
-	  + ", " + n_dyn->lip_str() + ") [" + n_dyn->assocInfo_str() + "]";
-      }
-#endif
   }
+
+
+  std::string
+  procNameDbg() const;
 
 
   uint 

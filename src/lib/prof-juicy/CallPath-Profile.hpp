@@ -133,7 +133,8 @@ public:
   // -------------------------------------------------------
 
   std::ostream& 
-  writeXML_hdr(std::ostream& os = std::cerr, const char *pre = "") const;
+  writeXML_hdr(std::ostream& os = std::cerr, 
+	       int oFlags = 0, const char *pre = "") const;
 
   //std::ostream& writeXML_cct(...) const;
 
