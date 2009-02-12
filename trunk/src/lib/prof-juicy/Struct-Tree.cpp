@@ -51,7 +51,7 @@
 //************************* System Include Files ****************************
 
 #include <cstdio> // for 'fopen'
-#include <climits>
+#include <cstring> // for 'strcmp'
 
 #include <iostream>
 using std::ostream;
