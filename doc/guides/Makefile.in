@@ -247,7 +247,8 @@ AUTOMAKE_OPTIONS = foreign
 # Local settings
 #############################################################################
 MYGUIDES = \
-	HPCToolkit-troubleshooting.pdf
+	HPCToolkit-troubleshooting.pdf \
+	HPCToolkit-effective-analysis.pdf
 
 
 #############################################################################
