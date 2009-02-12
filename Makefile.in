@@ -875,7 +875,6 @@ hpc-dist:
 	  $${nm_new}/config \
 	  \
           $${nm_new}/doc \
-	  $${nm_new}/examples \
           $${nm_new}/lib \
           $${nm_new}/src \
 	  $${nm_new}/tools \
