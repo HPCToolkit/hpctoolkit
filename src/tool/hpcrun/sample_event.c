@@ -21,7 +21,7 @@
 #include "splay-interval.h"
 #include "sample_sources_all.h"
 #include "ui_tree.h"
-
+#include "string.h"
 
 //*************************** Forward Declarations **************************
 
@@ -120,7 +120,9 @@ csprof_sample_event(void *context, int metric_id, unsigned long long metric_unit
     }
   }
   else {
-    PMSG_LIMIT(EMSG("got bad unwind: context_pc = %p, unwind_pc = %p\n\n", state->context_pc, state->unwind_pc));
+    memset((void *)it->jb,'\0',sizeof(it->jb));
+    PMSG_LIMIT(EMSG("got bad unwind: context_pc = %p, unwind_pc = %p\n\n",state->context_pc, \
+		    state->unwind_pc));
     dump_backtraces(state, state->unwind);
     bad_unwind_count++;
     csprof_up_pmsg_count();

@@ -12,6 +12,8 @@
 #include "thread_data.h"
 #include "handling_sample.h"
 
+#include "memchk.h"
+
 /* catch SIGSEGVs */
 
 int segv_count = 0;
@@ -23,7 +25,14 @@ csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
   if (csprof_is_handling_sample()){
     sigjmp_buf_t *it = &(TD_GET(bad_unwind));
-
+    if (memchk((void *)it,'\0',sizeof(*it))) {
+      EMSG("GOT ALL 0 jmpbuf during segv handling !!!. Major problem !!!");
+#ifdef ABORT_RE_SEGV
+        monitor_real_abort();
+#else
+        return 0;
+#endif
+    }
     segv_count++;
     siglongjmp(it->jb,9);  // make sure we don't hose ourselves by doing re-entrant backtracing
   }
