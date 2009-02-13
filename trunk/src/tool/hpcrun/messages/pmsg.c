@@ -103,18 +103,6 @@ static flag_list_t all_list = {
 #define N_DBG_CATEGORIES sizeof(dbg_tbl)/sizeof(dbg_tbl[0])
 static int dbg_flags[N_DBG_CATEGORIES];
 
-#if 0
-static char *ctl_tbl[] = {
-# undef D
-# define D(s) #s
-# include "ctl.src"
-# undef D
-};
-
-#define N_CTL_CATEGORIES sizeof(ctl_tbl)/sizeof(ctl_tbl[0])
-static int ctl_flags[N_CTL_CATEGORIES];
-#endif
-
 void
 dbg_set_flag(pmsg_category flag,int val)
 {
@@ -213,6 +201,7 @@ csprof_dbg(dbg_category flag)
   return dbg_flags[flag];
 }
 
+#ifdef DBG_PMSG
 static void
 dump(void)
 {
@@ -224,7 +213,7 @@ dump(void)
     }
   }
 }
-
+#endif
 
 void
 pmsg_init()

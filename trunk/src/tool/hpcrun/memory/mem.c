@@ -215,6 +215,7 @@ csprof_mem_alloc_main(csprof_mem_t *x, size_t sz)
   return csprof_mem__alloc(x,sz,CSPROF_MEM_STORE);
 }
 
+#if 0
 // csprof_mem__free: Attempts to free 'sz' bytes in the store
 // specified by 'st'.  Returns CSPROF_OK upon success; CSPROF_ERR on
 // error.
@@ -247,7 +248,7 @@ csprof_mem__free(csprof_mem_t *x, void* ptr, size_t sz, csprof_mem_store_t st)
 
   return CSPROF_OK;
 }
-
+#endif
 // csprof_mem__is_enabled: Returns 1 if the memory store 'st' is
 // enabled, 0 otherwise.
 static int
