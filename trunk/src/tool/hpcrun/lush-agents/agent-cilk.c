@@ -63,6 +63,12 @@ static const char* ld_str = "ld-linux";
 static int
 init_lcursor(lush_cursor_t* cursor);
 
+static unw_seg_t
+classify_by_unw_segment(cilk_cursor_t* csr);
+
+static unw_seg_t
+peek_segment(lush_cursor_t* cursor);
+
 static bool
 is_libcilk(void* addr, char* lm_buffer /*helper storage*/);
 
@@ -169,47 +175,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // -------------------------------------------------------
   // Compute p-note's current stack segment ('cur_seg')
   // -------------------------------------------------------
-  unw_seg_t cur_seg = UnwSeg_NULL;
-
-  char buffer[PATH_MAX];
-  bool is_cilkrt = is_libcilk(csr->u.ref_ip, buffer);
-  bool is_user   = is_cilkprogram(csr->u.ref_ip, buffer);
-
-  if (unw_ty_is_worker(csr->u.ty)) {
-    // -------------------------------------------------------
-    // 1. is_cilkrt &  (deq_diff <= 1) => UnwSeg_CilkSched 
-    // 2. is_cilkrt & !(deq_diff <= 1) => UnwSeg_CilkRT
-    // 3. is_user                      => UnwSeg_User
-    // -------------------------------------------------------
-    CilkWorkerState* ws = csr->u.cilk_worker_state;
-    long deq_diff = CILKWS_FRAME_DEQ_TAIL(ws) - CILKWS_FRAME_DEQ_HEAD(ws);
-
-    if (is_user) {
-      cur_seg = UnwSeg_User;
-      csr_set_flag(csr, UnwFlg_SeenUser);
-    }
-    else if (is_cilkrt) {
-      cur_seg = (deq_diff <= 1) ? UnwSeg_CilkSched : UnwSeg_CilkRT;
-
-      // FIXME: sometimes the above test is not correct... OVERRIDE
-      if (cur_seg == UnwSeg_CilkRT && csr_is_flag(csr, UnwFlg_SeenUser)) {
-	cur_seg = UnwSeg_CilkSched;
-      }
-    }
-    else {
-      fprintf(stderr, "FIXME: (assert): neither cilkrt nor user\n");
-    }
-  }
-  else if (unw_ty_is_master(csr->u.ty)) {
-    cur_seg = UnwSeg_CilkSched;
-    if ( !(is_user || is_cilkrt) ) {
-      // is_user may be true when executing main
-      fprintf(stderr, "FIXME: Unknown segment for master (assert)\n"); 
-    }
-  }
-  else {
-    fprintf(stderr, "FIXME: Unknown thread type! (assert)\n");
-  }
+  unw_seg_t cur_seg = classify_by_unw_segment(csr);
 
   // -------------------------------------------------------
   // Given p-note derive l-note:
@@ -224,7 +190,14 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   }
   else if (cur_seg == UnwSeg_User) {
     // INVARIANT: unw_ty_is_worker() == true
-    lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
+    CilkWorkerState* ws = csr->u.cilk_worker_state;
+    if (ws && ws->self == 0 && peek_segment(cursor) == UnwSeg_CilkSched) {
+      // local stack: import_cilk_main -> cilk_main
+      lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0); // skip
+    }
+    else {
+      lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
+    }
   }
   else if (cur_seg == UnwSeg_CilkSched) {
     switch (csr->u.ty) {
@@ -238,7 +211,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 	  csr_set_flag(csr, UnwFlg_HaveLCtxt);
     	}
 	else if (csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
-	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0);
+	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0); // skip
 	}
 	else {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
@@ -251,7 +224,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 	  csr_set_flag(csr, UnwFlg_HaveLCtxt);
 	}
 	else if (csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
-	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0); // skip
 	}
 	else {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
@@ -356,9 +329,11 @@ LUSHI_set_active_frame_marker(/*ctxt, cb*/)
 }
 
 
-// --------------------------------------------------------------------------
+// **************************************************************************
+// 
+// **************************************************************************
 
-int
+static int
 init_lcursor(lush_cursor_t* cursor)
 {
   lush_lip_t* lip = lush_cursor_get_lip(cursor);
@@ -421,6 +396,75 @@ init_lcursor(lush_cursor_t* cursor)
   csr_unset_flag(csr, UnwFlg_BegLNote);
 
   return 0;
+}
+
+
+// Classify the cursor by the unw segment (physical stack)
+// NOTE: may set a flag within 'csr'
+static unw_seg_t
+classify_by_unw_segment(cilk_cursor_t* csr)
+{
+  unw_seg_t cur_seg = UnwSeg_NULL;
+
+  char buffer[PATH_MAX];
+  bool is_cilkrt = is_libcilk(csr->u.ref_ip, buffer);
+  bool is_user   = is_cilkprogram(csr->u.ref_ip, buffer);
+
+  if (unw_ty_is_worker(csr->u.ty)) {
+    // -------------------------------------------------------
+    // 1. is_cilkrt &  (deq_diff <= 1) => UnwSeg_CilkSched 
+    // 2. is_cilkrt & !(deq_diff <= 1) => UnwSeg_CilkRT
+    // 3. is_user                      => UnwSeg_User
+    // -------------------------------------------------------
+    CilkWorkerState* ws = csr->u.cilk_worker_state;
+    long deq_diff = CILKWS_FRAME_DEQ_TAIL(ws) - CILKWS_FRAME_DEQ_HEAD(ws);
+
+    if (is_user) {
+      cur_seg = UnwSeg_User;
+      csr_set_flag(csr, UnwFlg_SeenUser);
+    }
+    else if (is_cilkrt) {
+      cur_seg = (deq_diff <= 1) ? UnwSeg_CilkSched : UnwSeg_CilkRT;
+
+      // FIXME: sometimes the above test is not correct... OVERRIDE
+      if (cur_seg == UnwSeg_CilkRT && csr_is_flag(csr, UnwFlg_SeenUser)) {
+	cur_seg = UnwSeg_CilkSched;
+      }
+    }
+    else {
+      fprintf(stderr, "FIXME: (assert): neither cilkrt nor user\n");
+    }
+  }
+  else if (unw_ty_is_master(csr->u.ty)) {
+    cur_seg = UnwSeg_CilkSched;
+    if ( !(is_user || is_cilkrt) ) {
+      // is_user may be true when executing main
+      fprintf(stderr, "FIXME: Unknown segment for master (assert)\n"); 
+    }
+  }
+  else {
+    fprintf(stderr, "FIXME: Unknown thread type! (assert)\n");
+  }
+
+  return cur_seg;
+}
+
+
+static unw_seg_t
+peek_segment(lush_cursor_t* cursor)
+{
+  lush_cursor_t tmp_cursor = *cursor;
+
+  unw_seg_t cur_seg = UnwSeg_NULL;
+
+  lush_step_t ty = LUSHI_step_pnote(&tmp_cursor);
+  if ( !(ty == LUSH_STEP_END_PROJ || ty == LUSH_STEP_ERROR) ) {
+    cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(&tmp_cursor);
+    csr->u.ref_ip = (void*)lush_cursor_get_ip(&tmp_cursor);
+    cur_seg = classify_by_unw_segment(csr);
+  }
+
+  return cur_seg;
 }
 
 
