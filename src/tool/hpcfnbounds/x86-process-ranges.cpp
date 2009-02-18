@@ -99,6 +99,13 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
 
   while (ins < end) {
 
+#define DEBUG
+#ifdef DEBUG
+    // vins = virtual address of instruction as we expect it in the object file
+    // (this is useful because we can set a breakpoint to watch a vins)
+    char *vins = ins + offset; 
+#endif
+
     if (ins >= guidepost) {
       if (ins > guidepost) {
 	//--------------------------------------------------------------
@@ -308,7 +315,7 @@ process_call(char *ins, long offset, xed_decoded_inst_t *xptr,
     if (xed_operand_values_has_branch_displacement(vals)) {
       void *vaddr = get_branch_target(ins + offset,xptr,vals);
       if (consider_possible_fn_address(vaddr)) {
-	add_stripped_function_entry(vaddr);
+	add_stripped_function_entry(vaddr, 1 /* call count */);
       }
     }
 
@@ -733,8 +740,10 @@ process_push(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
 
   if (op0_name == XED_OPERAND_REG0) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (regname == XED_REG_RBP) {
+    if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
       push_rbp = ins;
+      // JMC + MIKE: assume that a push might be a potential function entry
+      add_stripped_function_entry(ins + ins_offset, 1 /* support */); 
     } else {
       push_other = ins;
     }
@@ -751,10 +760,12 @@ process_pop(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
 
   if (op0_name == XED_OPERAND_REG0) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (regname == XED_REG_RBP) {
+    if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
       add_protected_range(push_rbp + ins_offset + 1, ins + ins_offset + 1);
     } else {
+#if 0
       if (push_other) add_protected_range(push_other + ins_offset + 1, ins + ins_offset + 1);
+#endif
     }
   }
 }
@@ -769,5 +780,6 @@ process_enter(char *ins, long ins_offset)
 static void 
 process_leave(char *ins, long ins_offset)
 {
-  add_protected_range(set_rbp + ins_offset + 1, ins + ins_offset + 1);
+  char *save_rbp = (set_rbp > push_rbp) ? set_rbp : push_rbp;
+  add_protected_range(save_rbp + ins_offset + 1, ins + ins_offset + 1);
 }

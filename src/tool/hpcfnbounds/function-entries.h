@@ -3,8 +3,9 @@
 
 using namespace std;
 
-void add_function_entry(void *address, const string *comment, bool isglobal);
-void add_stripped_function_entry(void *function_entry);
+void add_function_entry(void *address, const string *comment, bool isglobal, 
+			int call_count = 0);
+void add_stripped_function_entry(void *function_entry, int call_count = 0);
 bool contains_function_entry(void *address);
 
 void add_protected_range(void *start, void *end);

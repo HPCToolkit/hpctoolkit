@@ -372,6 +372,17 @@ dump_header_info(int relocatable)
   }
 }
 
+static void
+assert_file_is_readable(const char *filename)
+{
+  struct stat sbuf;
+  int ret = stat(filename, &sbuf);
+  if (ret != 0 || !S_ISREG(sbuf.st_mode)) {
+    fprintf(stderr, "hpcfnbounds: unable to open file %s", filename);
+    exit(-1);
+  } 
+}
+
 
 static void 
 dump_file_info(const char *filename, bool fn_discovery)
@@ -379,6 +390,9 @@ dump_file_info(const char *filename, bool fn_discovery)
   Symtab *syms;
   string sfile(filename);
   vector<Symbol *> symvec;
+
+  assert_file_is_readable(filename);
+
   Symtab::openFile(syms, sfile);
   int relocatable = 0;
 
