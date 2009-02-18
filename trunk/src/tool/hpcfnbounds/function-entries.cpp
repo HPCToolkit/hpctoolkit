@@ -25,11 +25,12 @@ using namespace std;
 
 class Function {
 public:
-  Function(void *_address, string *_comment, bool _isvisible);
+  Function(void *_address, string *_comment, bool _isvisible, int _call_count);
   void AppendComment(const string *c);
   void *address;
   string *comment;
   bool isvisible;
+  int call_count;
   int operator<(Function *right);
 };
 
@@ -38,7 +39,8 @@ public:
  * forward declarations
  *****************************************************************************/
 
-static void new_function_entry(void *addr, string *comment, bool isvisible);
+static void new_function_entry(void *addr, string *comment, bool isvisible, 
+			       int call_count);
 static void dump_function_entry(void *addr, const char *comment);
 static void end_of_function_entries(void);
 
@@ -91,7 +93,8 @@ dump_reachable_functions()
       // inferred functions must be at least 16 bytes long
       if (i != function_entries.end()) {
         Function *nextf = (*i).second;
-	 if ((((unsigned long) nextf->address) - 
+	 if (f->call_count == 0 && 
+	     (((unsigned long) nextf->address) - 
               ((unsigned long) f->address)) < 16) continue;
       }
       sprintf(buffer,"stripped_%p", f->address);
@@ -104,11 +107,12 @@ dump_reachable_functions()
 
 
 void 
-add_stripped_function_entry(void *addr)
+add_stripped_function_entry(void *addr, int call_count)
 {
   // only add the function if it hasn't been specifically excluded 
-  if (excluded_function_entries.find(addr) == excluded_function_entries.end())  {
-    add_function_entry(addr, NULL, false);
+  if (excluded_function_entries.find(addr) == 
+      excluded_function_entries.end())  {
+    add_function_entry(addr, NULL, false, call_count);
   }
 }
 
@@ -124,12 +128,14 @@ query_function_entry(void *addr)
 
 
 void 
-add_function_entry(void *addr, const string *comment, bool isvisible)
+add_function_entry(void *addr, const string *comment, bool isvisible, 
+		   int call_count)
 {
   FunctionSet::iterator it = function_entries.find(addr); 
 
   if (it == function_entries.end()) {
-    new_function_entry(addr, comment ? new string(*comment) : NULL, isvisible);
+    new_function_entry(addr, comment ? new string(*comment) : NULL, isvisible, 
+		       call_count);
   } else {
     Function *f = (*it).second;
     if (comment) {
@@ -137,6 +143,7 @@ add_function_entry(void *addr, const string *comment, bool isvisible)
     } else if (f->comment) {
       f->isvisible = true;
     }
+    f->call_count += call_count;
   }
 }
 
@@ -221,9 +228,9 @@ end_of_function_entries(void)
 
 
 static void 
-new_function_entry(void *addr, string *comment, bool isvisible)
+new_function_entry(void *addr, string *comment, bool isvisible, int call_count)
 {
-  Function *f = new Function(addr, comment, isvisible);
+  Function *f = new Function(addr, comment, isvisible, call_count);
   function_entries.insert(pair<void*, Function*>(addr, f));
 }
 
@@ -252,11 +259,13 @@ add_protected_range(void *start, void *end)
 }
 
 
-Function::Function(void *_address, string *_comment, bool _isvisible) 
+Function::Function(void *_address, string *_comment, bool _isvisible, 
+		   int _call_count) 
 { 
   address = _address; 
   comment = _comment; 
   isvisible = _isvisible; 
+  call_count = _call_count;
 }
 
 
