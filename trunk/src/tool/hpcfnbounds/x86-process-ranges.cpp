@@ -63,6 +63,7 @@ static char *prologue_start = NULL;
 static char *set_rbp = NULL;
 static char *push_rbp = NULL;
 static char *push_other = NULL;
+static xed_reg_enum_t push_other_reg;
 
 
 /******************************************************************************
@@ -743,9 +744,10 @@ process_push(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
     if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
       push_rbp = ins;
       // JMC + MIKE: assume that a push might be a potential function entry
-      add_stripped_function_entry(ins + ins_offset, 1 /* support */); 
+      // add_stripped_function_entry(ins + ins_offset, 1 /* support */); 
     } else {
       push_other = ins;
+      push_other_reg = regname;
     }
   }
 }
@@ -763,9 +765,8 @@ process_pop(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
     if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
       add_protected_range(push_rbp + ins_offset + 1, ins + ins_offset + 1);
     } else {
-#if 0
-      if (push_other) add_protected_range(push_other + ins_offset + 1, ins + ins_offset + 1);
-#endif
+      if (push_other && push_other_reg == regname) 
+	add_protected_range(push_other + ins_offset + 1, ins + ins_offset + 1);
     }
   }
 }
