@@ -56,9 +56,10 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 MYGUIDES = \
+	HPCToolkit-effective-analysis.pdf \
+	HPCToolkit-mpi.pdf \
 	HPCToolkit-troubleshooting.pdf \
-	HPCToolkit-using-hpcviewer.pdf \
-	HPCToolkit-effective-analysis.pdf
+	HPCToolkit-using-hpcviewer.pdf
 
 #############################################################################
 # Automake rules
