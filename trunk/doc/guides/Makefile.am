@@ -58,6 +58,7 @@ AUTOMAKE_OPTIONS = foreign
 MYGUIDES = \
 	HPCToolkit-effective-analysis.pdf \
 	HPCToolkit-mpi.pdf \
+	HPCToolkit-quickstart-guide.pdf \
 	HPCToolkit-troubleshooting.pdf \
 	HPCToolkit-using-hpcviewer.pdf
 
