@@ -205,6 +205,12 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
       if (fn_discovery) process_branch(ins, offset , xptr);
       break;
 
+    case XED_ICLASS_LOOP:
+    case XED_ICLASS_LOOPE:
+    case XED_ICLASS_LOOPNE:
+      if (fn_discovery) process_branch(ins, offset , xptr);
+      break;
+
     case XED_ICLASS_PUSH: 
     case XED_ICLASS_PUSHFQ: 
     case XED_ICLASS_PUSHFD: 
