@@ -258,6 +258,39 @@ is_padding(int c)
   return (c == 0x66) || (c == 0x90);
 }
 
+static bool
+skip_padding(unsigned char **ins)
+{
+  bool notdone = true;
+  xed_decoded_inst_t xedd_tmp;
+  xed_decoded_inst_t *xptr = &xedd_tmp;
+  xed_error_enum_t xed_error;
+
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
+
+  while(notdone) {
+    xed_decoded_inst_zero_keep_mode(xptr);
+    xed_error = xed_decode(xptr, (uint8_t*) *ins, 15);
+
+    if (xed_error != XED_ERROR_NONE) return false;
+
+    xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+    switch(xiclass) {
+    case XED_ICLASS_NOP:  case XED_ICLASS_NOP2: case XED_ICLASS_NOP3: 
+    case XED_ICLASS_NOP4: case XED_ICLASS_NOP5: case XED_ICLASS_NOP6: 
+    case XED_ICLASS_NOP7: case XED_ICLASS_NOP8: case XED_ICLASS_NOP9:
+      // nop: move to the next instruction
+      *ins = *ins + xed_decoded_inst_get_length(xptr);
+      break;
+    default:
+      // a valid instruction but not a nop; we are done skipping
+      notdone = false;
+      break;
+    }
+  } 
+  return true; 
+}
+
 
 //----------------------------------------------------------------------------
 // code that is unreachable after a return or an unconditional jump is a 
@@ -271,6 +304,23 @@ after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr)
   unsigned char *uins = (unsigned char *) ins;
   unsigned char *potential_function_addr = uins + offset;
   for (; is_padding(*uins); uins++); // skip remaining padding 
+
+#if 0
+  // new code not ready for use yet
+  {
+    bool halt = false;
+    if (uins != (unsigned char *) ins) { // try new skipping function
+      unsigned char *new_func_addr = (unsigned char *) ins;
+      if (skip_padding(&new_func_addr) == false) halt = true;
+      if (new_func_addr != uins) halt = true;
+      if (halt) {
+	fprintf(stderr, "skip padding difference: "
+		"old stopped here %p, "
+		"new stopped here %p\n", uins + offset, new_func_addr + offset);
+      }
+    }
+  }
+#endif
 
   //--------------------------------------------------------------------
   // only infer a function entry before padding bytes if there isn't 
@@ -292,7 +342,8 @@ get_branch_target(char *ins, xed_decoded_inst_t *xptr,
   int offset = 0;
   switch(bytes) {
   case 1:
-    offset = (signed char) xed_operand_values_get_branch_displacement_byte(vals,0);
+    offset = (signed char) 
+      xed_operand_values_get_branch_displacement_byte(vals,0);
     break;
   case 4:
     offset = xed_operand_values_get_branch_displacement_int32(vals);
@@ -485,9 +536,9 @@ nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
 	    (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RSP)) {
 
 	  if (xed_operand_name(op1) == XED_OPERAND_IMM0) {
-	    //---------------------------------------------------------------------------
+	    //------------------------------------------------------------------
 	    // we are adjusting the stack pointer by a constant offset
-	    //---------------------------------------------------------------------------
+	    //------------------------------------------------------------------
 	    int sign = (xiclass == XED_ICLASS_ADD) ? 1 : -1;
 	    long immedv = sign * xed_decoded_inst_get_signed_immediate(xptr);
 	    if (immedv < 0) {
@@ -629,6 +680,21 @@ is_null(unsigned char *ins, int n)
 }
 
 static bool
+is_breakpoint(xed_decoded_inst_t *xptr)
+{
+  xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+  switch(xiclass) {
+  case XED_ICLASS_INT:
+  case XED_ICLASS_INT1:
+  case XED_ICLASS_INT3: 
+    return true;
+  default:
+    break;
+  }
+  return false;
+}
+
+static bool
 invalid_routine_start(unsigned char *ins)
 {
   xed_decoded_inst_t xdi;
@@ -642,6 +708,7 @@ invalid_routine_start(unsigned char *ins)
   if (is_null(ins, xed_decoded_inst_get_length(xptr))) return true;
   if (inst_accesses_callers_mem(xptr)) return true;
   if (from_ax_reg(xptr)) return true;
+  if (is_breakpoint(xptr)) return true;
 
   return false;
 }
