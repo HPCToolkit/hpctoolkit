@@ -631,18 +631,19 @@ is_null(unsigned char *ins, int n)
 static bool
 invalid_routine_start(unsigned char *ins)
 {
-	xed_decoded_inst_t xdi;
+  xed_decoded_inst_t xdi;
+  xed_decoded_inst_t *xptr = &xdi;
 
-	xed_decoded_inst_zero_set_mode(&xdi, &xed_machine_state_x86_64);
-	xed_error_enum_t xed_error = xed_decode(&xdi, (uint8_t*) ins, 15);
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
+  xed_error_enum_t xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+  
+  if (xed_error != XED_ERROR_NONE) return true; 
 
-	if (xed_error == XED_ERROR_NONE) { 
-	        if (is_null(ins, xed_decoded_inst_get_length(&xdi))) return true;
-		if (inst_accesses_callers_mem(&xdi)) return true;
-		if (from_ax_reg(&xdi)) return true;
-	}
+  if (is_null(ins, xed_decoded_inst_get_length(xptr))) return true;
+  if (inst_accesses_callers_mem(xptr)) return true;
+  if (from_ax_reg(xptr)) return true;
 
-	return false;
+  return false;
 }
 
 
