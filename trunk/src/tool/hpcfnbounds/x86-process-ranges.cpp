@@ -302,20 +302,6 @@ after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr)
 {
   ins += xed_decoded_inst_get_length(xptr);
 
-#if 0
-  unsigned char *uins = (unsigned char *) ins;
-  unsigned char *potential_function_addr = uins + offset;
-  for (; is_padding(*uins); uins++); // skip remaining padding 
-  //--------------------------------------------------------------------
-  // only infer a function entry before padding bytes if there isn't 
-  // already one after padding bytes
-  //--------------------------------------------------------------------
-  if (contains_function_entry(uins + offset) == false) {
-    if (!invalid_routine_start(uins)) {
-      add_stripped_function_entry(potential_function_addr); 
-    }
-  }
-#else
   unsigned char *new_func_addr = (unsigned char *) ins;
   if (skip_padding(&new_func_addr) == false) {
     // false = not a valid instruction; 
@@ -325,12 +311,8 @@ after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr)
   if (contains_function_entry(new_func_addr + offset) == false) {
     if (!invalid_routine_start(new_func_addr)) {
       add_stripped_function_entry(new_func_addr + offset); 
-#if 0
-      add_stripped_function_entry((unsigned char *) ins + offset); 
-#endif
     }
   }
-#endif
 }
 
 
