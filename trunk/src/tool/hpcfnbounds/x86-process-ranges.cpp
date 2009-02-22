@@ -564,8 +564,11 @@ process_branch(char *ins, long offset, xed_decoded_inst_t *xptr)
 	  // extend branch range to before padding
 	  target--;
 	}
+
 	start = target;
-	end = relocated_ins; 
+	// protect to end of branch instruction
+	int branch_inst_len = xed_decoded_inst_get_length(xptr);
+	end = relocated_ins + branch_inst_len; 
       } else {
 	start = relocated_ins;
 	//-----------------------------------------------------
