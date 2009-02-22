@@ -394,6 +394,52 @@ bkwd_jump_into_protected_range(char *ins, long offset, xed_decoded_inst_t *xptr)
   return false;
 }
 
+bool
+range_contains_control_flow(char *start, char *end)
+{
+  xed_decoded_inst_t xedd_tmp;
+  xed_decoded_inst_t *xptr = &xedd_tmp;
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
+
+  char *ins = start;
+  while (ins < end) {
+
+    xed_decoded_inst_zero_keep_mode(xptr);
+    xed_error_enum_t xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+
+    if (xed_error != XED_ERROR_NONE) {
+      ins++;         /* skip this byte      */
+      continue;      /* continue onward ... */
+    }
+
+    xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+    switch(xiclass) {
+      // unconditional jump
+    case XED_ICLASS_JMP:      case XED_ICLASS_JMP_FAR:
+
+      // return
+    case XED_ICLASS_RET_FAR:  case XED_ICLASS_RET_NEAR:
+
+      // conditional branch
+    case XED_ICLASS_JB:       case XED_ICLASS_JBE: 
+    case XED_ICLASS_JL:       case XED_ICLASS_JLE: 
+    case XED_ICLASS_JNB:      case XED_ICLASS_JNBE: 
+    case XED_ICLASS_JNL:      case XED_ICLASS_JNLE: 
+    case XED_ICLASS_JNO:      case XED_ICLASS_JNP:
+    case XED_ICLASS_JNS:      case XED_ICLASS_JNZ:
+    case XED_ICLASS_JO:       case XED_ICLASS_JP:
+    case XED_ICLASS_JRCXZ:    case XED_ICLASS_JS:
+    case XED_ICLASS_JZ:
+      return true;
+
+    default:
+      break;
+    }
+    ins += xed_decoded_inst_get_length(xptr);
+  }
+  return false;
+}
+
 
 static bool 
 validate_tail_call_from_jump(char *ins, long offset, xed_decoded_inst_t *xptr)
@@ -414,50 +460,73 @@ validate_tail_call_from_jump(char *ins, long offset, xed_decoded_inst_t *xptr)
 	// backward jump; if this is a tail call, it should fall on a function
 	// entry already in the function entries table
 	if (query_function_entry(target)) return true;
-      } else {
-	// forward jump; if this is a tail call, it should 
-	xed_decoded_inst_t xedd_tmp;
-	xed_decoded_inst_t *xptr = &xedd_tmp;
-	xed_error_enum_t xed_error;
 
+	// we may be looking at a bogus jump in data; 
+	// we must make sure that its target is in bounds before inspecting it.
+	char *target_addr_in_memory = target - offset;
+	if (!consider_possible_fn_address(target_addr_in_memory)) return false;
+
+	xed_decoded_inst_t xtmp;
+	xed_decoded_inst_t *xptr = &xtmp;
 	xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
-	//xed_iclass_enum_t prev_xiclass = XED_ICLASS_INVALID; // unused
-
-	while (ins < target) {
-
-	  xed_decoded_inst_zero_keep_mode(xptr);
-	  xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
-
-	  if (xed_error != XED_ERROR_NONE) {
-	    ins++;         /* skip this byte      */
-	    continue;      /* continue onward ... */
+	
+	xed_error_enum_t xed_error = 
+	  xed_decode(xptr, (uint8_t*) target_addr_in_memory, 15);
+	if (xed_error != XED_ERROR_NONE) return false;
+	
+	xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+	const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+	
+	switch(xiclass) {
+	case XED_ICLASS_PUSH: 
+	case XED_ICLASS_PUSHFQ: 
+	case XED_ICLASS_PUSHFD: 
+	case XED_ICLASS_PUSHF:  
+	  {
+	    const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+	    xed_operand_enum_t   op0_name = xed_operand_name(op0);
+	    
+	    if (op0_name == XED_OPERAND_REG0) { 
+	      xed_reg_enum_t regname = 
+		xed_decoded_inst_get_reg(xptr, op0_name);
+	      if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
+		add_stripped_function_entry(target, 1 /* support */); 
+		return true;
+	      }
+	    }
 	  }
-
-	  xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
-	  switch(xiclass) {
-	    // unconditional jump
-	  case XED_ICLASS_JMP:      case XED_ICLASS_JMP_FAR:
-
-	    // return
-	  case XED_ICLASS_RET_FAR:  case XED_ICLASS_RET_NEAR:
-
-	    // conditional branch
-	  case XED_ICLASS_JB:       case XED_ICLASS_JBE: 
-	  case XED_ICLASS_JL:       case XED_ICLASS_JLE: 
-	  case XED_ICLASS_JNB:      case XED_ICLASS_JNBE: 
-	  case XED_ICLASS_JNL:      case XED_ICLASS_JNLE: 
-	  case XED_ICLASS_JNO:      case XED_ICLASS_JNP:
-	  case XED_ICLASS_JNS:      case XED_ICLASS_JNZ:
-	  case XED_ICLASS_JO:       case XED_ICLASS_JP:
-	  case XED_ICLASS_JRCXZ:    case XED_ICLASS_JS:
-	  case XED_ICLASS_JZ:
-	    return true;
-
-	  default:
-	    break;
+	  return false;
+	case XED_ICLASS_ADD:
+	case XED_ICLASS_SUB:
+	  {
+	    const xed_operand_t* op0 = xed_inst_operand(xi,0);
+	    const xed_operand_t* op1 = xed_inst_operand(xi,1);
+	    xed_operand_enum_t   op0_name = xed_operand_name(op0);
+	    
+	    if ((op0_name == XED_OPERAND_REG0) &&
+		(xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RSP)) {
+	      
+	      if (xed_operand_name(op1) == XED_OPERAND_IMM0) {
+		//-------------------------------------------------
+		// adjusting the stack pointer by a constant offset
+		//-------------------------------------------------
+		int sign = (xiclass == XED_ICLASS_ADD) ? 1 : -1;
+		long immedv = sign * 
+		  xed_decoded_inst_get_signed_immediate(xptr);
+		if (immedv < 0) {
+		  add_stripped_function_entry(target, 1 /* support */); 
+		  return true;
+		}
+	      }
+	    }
 	  }
-	  ins += xed_decoded_inst_get_length(xptr);
+	  return false;
+	default:
+	  // not what is expected for the start of a routine.
+	  return false;
 	}
+      } else {
+	return range_contains_control_flow(ins, target);
       }
     }
   }
