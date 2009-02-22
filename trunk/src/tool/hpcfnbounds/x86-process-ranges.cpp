@@ -63,6 +63,7 @@ static char *prologue_start = NULL;
 static char *set_rbp = NULL;
 static char *push_rbp = NULL;
 static char *push_other = NULL;
+static char *last_bad = NULL;
 static xed_reg_enum_t push_other_reg;
 
 
@@ -134,6 +135,7 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
     xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 
     if (xed_error != XED_ERROR_NONE) {
+      last_bad = ins;
       error_count++; /* note the error      */
       ins++;         /* skip this byte      */
       continue;      /* continue onward ... */
@@ -828,8 +830,20 @@ process_pop(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
     if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
       add_protected_range(push_rbp + ins_offset + 1, ins + ins_offset + 1);
     } else {
-      if (push_other && push_other_reg == regname) 
-	add_protected_range(push_other + ins_offset + 1, ins + ins_offset + 1);
+      if (push_other) {
+	if (push_other_reg == regname) {
+	  add_protected_range(push_other + ins_offset + 1, 
+			      ins + ins_offset + 1);
+	} else {
+	  // it must match some push. assume the latest.
+	  char *push_latest = (push_other > push_rbp) ? push_other : push_rbp;
+	  // ... unless we've started to see bad instructions, which makes
+	  //     it likely that we're walking through data
+	  if (push_latest > last_bad)
+	    add_protected_range(push_latest + ins_offset + 1, 
+				ins + ins_offset + 1);
+	}
+      }
     }
   }
 }
