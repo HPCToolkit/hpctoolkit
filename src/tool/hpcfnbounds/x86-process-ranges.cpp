@@ -278,6 +278,9 @@ skip_padding(unsigned char **ins)
 
     xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
     switch(xiclass) {
+    case XED_ICLASS_LEA: 
+      // gcc seems to use these as padding between functions
+      // treat it as a nop
     case XED_ICLASS_NOP:  case XED_ICLASS_NOP2: case XED_ICLASS_NOP3: 
     case XED_ICLASS_NOP4: case XED_ICLASS_NOP5: case XED_ICLASS_NOP6: 
     case XED_ICLASS_NOP7: case XED_ICLASS_NOP8: case XED_ICLASS_NOP9:
@@ -303,6 +306,8 @@ static void
 after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr)
 {
   ins += xed_decoded_inst_get_length(xptr);
+
+  if (inside_protected_range(ins + offset)) return;
 
   unsigned char *new_func_addr = (unsigned char *) ins;
   if (skip_padding(&new_func_addr) == false) {
@@ -362,6 +367,12 @@ process_call(char *ins, long offset, xed_decoded_inst_t *xptr,
     }
 
   }
+  // some function calls don't return; we have seen the last instruction
+  // in a routine be a call to a function that doesn't return
+  // (e.g. _gfortrani_internal_unpack_c8 in libgfortran ends in a call to abort)
+  // look to see if a function signature appears next. mark a routine start
+  // if appropriate
+  nextins_looks_like_fn_start(ins, offset, xptr);
 }
 
 
@@ -383,7 +394,8 @@ bkwd_jump_into_protected_range(char *ins, long offset, xed_decoded_inst_t *xptr)
       void *start, *end;
       if (target < relocated_ins) {
 	start = target;
-	end = relocated_ins; 
+	int branch_inst_len = xed_decoded_inst_get_length(xptr);
+	end = relocated_ins + branch_inst_len; 
 	if (inside_protected_range(target)) {
 	  add_protected_range(start, end);
 	  return true;
@@ -395,13 +407,14 @@ bkwd_jump_into_protected_range(char *ins, long offset, xed_decoded_inst_t *xptr)
 }
 
 bool
-range_contains_control_flow(char *start, char *end)
+range_contains_control_flow(void *vstart, void *vend)
 {
   xed_decoded_inst_t xedd_tmp;
   xed_decoded_inst_t *xptr = &xedd_tmp;
   xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
 
-  char *ins = start;
+  char *ins = (char *) vstart;
+  char *end = (char *) vend;
   while (ins < end) {
 
     xed_decoded_inst_zero_keep_mode(xptr);
@@ -463,8 +476,8 @@ validate_tail_call_from_jump(char *ins, long offset, xed_decoded_inst_t *xptr)
 
 	// we may be looking at a bogus jump in data; 
 	// we must make sure that its target is in bounds before inspecting it.
+	if (!consider_possible_fn_address(target)) return false;
 	char *target_addr_in_memory = target - offset;
-	if (!consider_possible_fn_address(target_addr_in_memory)) return false;
 
 	xed_decoded_inst_t xtmp;
 	xed_decoded_inst_t *xptr = &xtmp;
@@ -543,6 +556,8 @@ nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
 
   ins = ins + xed_decoded_inst_get_length(xptrin);
 
+  if (inside_protected_range(ins + offset)) return false;
+
   xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
 
   for(;;) {
@@ -553,6 +568,9 @@ nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
 
     xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
     switch(xiclass) {
+    case XED_ICLASS_LEA: 
+      // gcc seems to use these as padding between functions
+      // treat it as a nop
     case XED_ICLASS_NOP:  case XED_ICLASS_NOP2: case XED_ICLASS_NOP3: 
     case XED_ICLASS_NOP4: case XED_ICLASS_NOP5: case XED_ICLASS_NOP6: 
     case XED_ICLASS_NOP7: case XED_ICLASS_NOP8: case XED_ICLASS_NOP9:

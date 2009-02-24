@@ -11,6 +11,7 @@
 
 #include "code-ranges.h"
 #include "function-entries.h"
+#include "process-ranges.h"
 #include "intervals.h"
 
 #include <map>
@@ -95,7 +96,13 @@ dump_reachable_functions()
         Function *nextf = (*i).second;
 	 if (f->call_count == 0 && 
 	     (((unsigned long) nextf->address) - 
-              ((unsigned long) f->address)) < 16) continue;
+              ((unsigned long) f->address)) < 16)  {
+	   long offset = offset_for_fn(f->address);
+	   if (!range_contains_control_flow((char *) f->address + offset, 
+					    ((char *) nextf->address + 
+					     offset)))
+	     continue;
+	 }
       }
       sprintf(buffer,"stripped_%p", f->address);
       name = buffer;
@@ -134,8 +141,8 @@ add_function_entry(void *addr, const string *comment, bool isvisible,
   FunctionSet::iterator it = function_entries.find(addr); 
 
   if (it == function_entries.end()) {
-    new_function_entry(addr, comment ? new string(*comment) : NULL, isvisible, 
-		       call_count);
+    new_function_entry(addr, comment ? new string(*comment) : NULL, 
+		       isvisible, call_count);
   } else {
     Function *f = (*it).second;
     if (comment) {

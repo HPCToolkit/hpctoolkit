@@ -20,6 +20,7 @@ public:
   bool Contains(void *addr);
   bool Discover() { return discover; }
   void *Relocate(void *addr); 
+  long Offset() { return offset; }
 private:
   void *start;
   void *end;
@@ -42,6 +43,22 @@ static CodeRangeSet code_ranges;
 /******************************************************************************
  * interface operations 
  *****************************************************************************/
+
+
+long
+offset_for_fn(void *addr)
+{
+  CodeRangeSet::iterator it = code_ranges.lower_bound(addr);
+
+  if (it != code_ranges.begin() && it != code_ranges.end()) {
+    if (--it != code_ranges.begin()) {
+      CodeRange *r = (*it).second;
+      if (r->Contains(addr)) return r->Offset();
+    }
+  }
+  return 0L; //should never get here
+} 
+
 
 bool 
 consider_possible_fn_address(void *addr)
