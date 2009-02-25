@@ -317,6 +317,14 @@ after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr)
   }
   if (contains_function_entry(new_func_addr + offset) == false) {
     if (!invalid_routine_start(new_func_addr)) {
+#if 0
+      fn_start = WEAK;
+      if () { // push bp OR
+              // save something at offset rel to sp  OR
+	      // arith on sp
+              //     ==> strong evidence f fn start.
+      }
+#endif
       add_stripped_function_entry(new_func_addr + offset); 
     }
   }
@@ -895,8 +903,14 @@ process_push(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
     if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
       push_rbp = ins;
-      // JMC + MIKE: assume that a push might be a potential function entry
-      // add_stripped_function_entry(ins + ins_offset, 1 /* support */); 
+      // JMC + MIKE: assume that a push when there is only weak evidence of a fn start
+      //     might be a potential function entry
+#if 0
+      if (fn_start == WEAK_FN){
+	add_stripped_function_entry(ins + ins_offset, 1 /* support */);
+	fn_start == MODERATE_FN;
+      }
+#endif
     } else {
       push_other = ins;
       push_other_reg = regname;
