@@ -47,7 +47,7 @@
 
 //************************* User Include Files *******************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include "Args.hpp"
 #include "TextUtil.hpp"

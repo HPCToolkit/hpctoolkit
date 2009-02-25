@@ -47,7 +47,7 @@ using std::string;
 
 //************************* User Include Files *******************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include "PerfMetric.hpp"
 #include "Struct-Tree.hpp"

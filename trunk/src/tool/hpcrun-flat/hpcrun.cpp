@@ -45,7 +45,7 @@ using std::string;
 #include "dlpapi.h"
 #include "hpcrun.h"
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/findinstall.h>

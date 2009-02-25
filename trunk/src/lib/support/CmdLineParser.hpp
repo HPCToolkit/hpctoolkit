@@ -50,8 +50,8 @@
 //
 //***************************************************************************
 
-#ifndef CmdLineParser_H 
-#define CmdLineParser_H
+#ifndef support_CmdLineParser_hpp 
+#define support_CmdLineParser_hpp
 
 //************************* System Include Files ****************************
 
@@ -60,7 +60,7 @@
 #include <vector>
 #include <string>
 
-#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+#include <inttypes.h>
 
 //*************************** User Include Files ****************************
 
@@ -389,5 +389,5 @@ private:
 
 //****************************************************************************
 
-#endif
+#endif // support_CmdLineParser_hpp
 

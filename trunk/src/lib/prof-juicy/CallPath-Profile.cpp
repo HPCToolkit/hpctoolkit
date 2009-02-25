@@ -61,7 +61,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include "CallPath-Profile.hpp"
 #include "Struct-Tree.hpp"

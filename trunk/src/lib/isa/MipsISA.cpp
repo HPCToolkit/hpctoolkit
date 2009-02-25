@@ -55,7 +55,7 @@ using std::ostream;
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 #include <include/gnu_bfd.h>  // for bfd_getb32, bfd_getl32
 #include <include/gnu_dis-asm.h>
 

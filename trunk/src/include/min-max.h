@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -37,85 +37,39 @@
 
 //***************************************************************************
 //
-// File:
+// File: 
 //   $Source$
 //
 // Purpose:
-//   [The purpose of this file]
+//   uint types
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
 //
+// Author:
+//   Nathan Tallent, Rice University.
+//
 //***************************************************************************
 
-#ifndef RealPathMgr_hpp 
-#define RealPathMgr_hpp
+#ifndef include_min_max_h
+#define include_min_max_h
 
-//************************* System Include Files ****************************
+//****************************************************************************
 
-#include <string>
-#include <map>
-#include <iostream>
+//****************************************************************************
+// MIN/MAX for C (use std::min/max for C++)
+//****************************************************************************
 
-#include <cctype>
+#if !defined(__cplusplus)
 
-//*************************** User Include Files ****************************
+# undef MIN
+# undef MAX
+# define MIN(a,b) (((a) < (b)) ? (a) : (b))
+# define MAX(a,b) (((a) > (b)) ? (a) : (b))
 
-#include <include/uint.h>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-// RealPathMgr
-//***************************************************************************
+#endif
 
 
-// --------------------------------------------------------------------------
-// 'RealPathMgr' 
-// --------------------------------------------------------------------------
+//****************************************************************************
 
-class RealPathMgr {
-public:
-  RealPathMgr();
-  ~RealPathMgr();
-
-  static RealPathMgr& singleton();
-
-  // -------------------------------------------------------
-  // 
-  // -------------------------------------------------------
-
-  // realpath: Given 'fnm', convert it to its 'realpath' (if possible)
-  // and return true.  Return true if 'fnm' is as fully resolved as it
-  // can be (which does not necessarily mean it exists); otherwise
-  // return false.
-  bool realpath(std::string& fnm);
-  
-  const std::string& searchPaths()
-    { return m_searchPaths; }
-
-  void searchPaths(const std::string& x)
-    { m_searchPaths = x; }
-
-  // -------------------------------------------------------
-  // debugging
-  // -------------------------------------------------------
-  std::string toString(int flags = 0) const;
-
-  // flags = -1: compressed dump / 0: normal dump / 1: extra info
-  std::ostream& dump(std::ostream& os, int flags = 0) const;
-
-  void ddump(int flags = 0) const;
-
-private:
-  typedef std::map<std::string, std::string> MyMap;
-  
-  std::string m_searchPaths;
-  MyMap m_realpath_map;
-};
-
-
-
-//***************************************************************************
-
-#endif // RealPathMgr_hpp
+#endif /* include_min_max_h */

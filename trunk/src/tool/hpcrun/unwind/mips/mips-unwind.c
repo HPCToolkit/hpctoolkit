@@ -28,7 +28,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include "unwind.h"
 #include "stack_troll.h"

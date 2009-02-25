@@ -31,7 +31,7 @@
 #include "lush.h"
 #include "lush-backtrace.h"
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include <state.h>
 #include <sample_event.h>

@@ -57,7 +57,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include "PCProfile.hpp"
 #include "DCPIProfileFilter.hpp"

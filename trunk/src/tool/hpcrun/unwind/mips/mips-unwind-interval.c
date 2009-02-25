@@ -24,7 +24,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include "mips-unwind-cfg.h"
 #include "mips-unwind-interval.h"

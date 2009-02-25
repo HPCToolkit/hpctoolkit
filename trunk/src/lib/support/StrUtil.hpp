@@ -61,11 +61,9 @@
 #include <string>
 #include <vector>
 
-#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+#include <inttypes.h>
 
 //*************************** User Include Files *****************************
-
-#include <include/general.h>
 
 //************************** Forward Declarations ****************************
 

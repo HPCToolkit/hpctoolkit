@@ -1,7 +1,7 @@
 #ifndef STACK_TROLL_H
 #define STACK_TROLL_H
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #ifdef __cplusplus
 extern "C" {

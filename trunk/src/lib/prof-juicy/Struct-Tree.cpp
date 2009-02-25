@@ -66,7 +66,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include "Struct-Tree.hpp"
 #include "PerfMetric.hpp"

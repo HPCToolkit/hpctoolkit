@@ -59,7 +59,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include "PCProfileMetric.hpp"
 #include "PCProfileFilter.hpp"

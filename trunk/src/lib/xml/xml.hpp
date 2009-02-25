@@ -58,11 +58,11 @@
 #include <iostream>
 #include <string>
 
-#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+#include <inttypes.h>
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include <lib/support/StrUtil.hpp>
 #include <lib/support/IOUtil.hpp>

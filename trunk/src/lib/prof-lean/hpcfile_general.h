@@ -59,11 +59,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+#include <inttypes.h>
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h> /* special printf format strings */
 #include "io.h"
 
 //*************************** Forward Declarations **************************
