@@ -55,7 +55,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h> 
+#include <include/uint.h> 
 
 #include <lib/prof-juicy/Struct-Tree.hpp>
 #include <lib/binutils/LM.hpp>

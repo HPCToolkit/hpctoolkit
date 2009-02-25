@@ -23,11 +23,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+#include <inttypes.h>
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h> /* special printf format strings */
+#include <include/uint.h>
 
 #include "lush-support.h"
 

@@ -27,7 +27,7 @@
 //************************* System Include Files ****************************
 
 #include <stdio.h>
-#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+#include <inttypes.h>
 
 //*************************** User Include Files ****************************
 

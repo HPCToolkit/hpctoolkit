@@ -15,8 +15,9 @@
  */
 
 #include <stdlib.h>
+#include <inttypes.h>
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include "pmsg.h"
 #include "stack_troll.h"

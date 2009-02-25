@@ -64,6 +64,9 @@ using std::string;
 
 #include <errno.h>
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 //*************************** User Include Files *****************************
 
 #include "StrUtil.hpp"

@@ -60,11 +60,11 @@
 #include <fstream>
 #include <string>
 
-#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+#include <inttypes.h>
 
 //*************************** User Include Files *****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 //************************** Forward Declarations ****************************
 

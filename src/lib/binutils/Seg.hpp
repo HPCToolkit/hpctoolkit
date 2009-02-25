@@ -59,7 +59,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 #include <include/gnu_bfd.h>
 
 #include "LM.hpp"

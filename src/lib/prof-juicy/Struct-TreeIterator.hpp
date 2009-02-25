@@ -57,7 +57,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 //NOTE: included by Struct-Tree.hpp
 //#include "Struct-Tree.hpp"

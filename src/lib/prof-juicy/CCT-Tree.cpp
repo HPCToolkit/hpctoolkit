@@ -63,7 +63,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include "CCT-Tree.hpp"
 

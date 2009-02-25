@@ -61,7 +61,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include <lib/prof-juicy/Metric-Mgr.hpp>
 

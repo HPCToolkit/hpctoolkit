@@ -66,7 +66,7 @@
 
 /* user include files */
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #include "sample_sources_all.h"
 #include "atomic.h"

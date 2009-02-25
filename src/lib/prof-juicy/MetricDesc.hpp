@@ -58,7 +58,7 @@
 
 //*************************** User Include Files ****************************//
 
-#include <include/general.h> 
+#include <include/uint.h> 
 
 #include <lib/prof-lean/hpcfile_csprof.h>
 

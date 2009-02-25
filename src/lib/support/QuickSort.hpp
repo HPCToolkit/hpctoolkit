@@ -91,7 +91,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/uint.h>
 
 /************************ QuickSort function prototypes **********************/
 

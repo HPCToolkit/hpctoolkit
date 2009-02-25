@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -37,85 +37,72 @@
 
 //***************************************************************************
 //
-// File:
+// File: 
 //   $Source$
 //
 // Purpose:
-//   [The purpose of this file]
+//   uint types
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
 //
+// Author:
+//   Nathan Tallent, Rice University.
+//
 //***************************************************************************
 
-#ifndef RealPathMgr_hpp 
-#define RealPathMgr_hpp
+#ifndef include_uint_h
+#define include_uint_h
 
-//************************* System Include Files ****************************
+//****************************************************************************
 
-#include <string>
-#include <map>
-#include <iostream>
-
-#include <cctype>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-// RealPathMgr
-//***************************************************************************
+// A sanity check that should probably just be in configure (FIXME)
+#if !defined(SIZEOF_VOIDP)
+# error "configure.ac should have defined SIZEOF_VOIDP using AC_CHECK_SIZEOF."
+#endif
 
 
-// --------------------------------------------------------------------------
-// 'RealPathMgr' 
-// --------------------------------------------------------------------------
+#if 0
 
-class RealPathMgr {
-public:
-  RealPathMgr();
-  ~RealPathMgr();
+#if defined(__cplusplus)
+# include <cstddef> // for 'NULL'
+#else
+# include <stddef.h>
+#endif
 
-  static RealPathMgr& singleton();
+#endif
 
-  // -------------------------------------------------------
-  // 
-  // -------------------------------------------------------
+//****************************************************************************
+// Convenient unsigned types
+//****************************************************************************
 
-  // realpath: Given 'fnm', convert it to its 'realpath' (if possible)
-  // and return true.  Return true if 'fnm' is as fully resolved as it
-  // can be (which does not necessarily mean it exists); otherwise
-  // return false.
-  bool realpath(std::string& fnm);
-  
-  const std::string& searchPaths()
-    { return m_searchPaths; }
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+#ifdef HAVE_INTTYPES_H
+# include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
 
-  void searchPaths(const std::string& x)
-    { m_searchPaths = x; }
+#if defined(__cplusplus)
 
-  // -------------------------------------------------------
-  // debugging
-  // -------------------------------------------------------
-  std::string toString(int flags = 0) const;
+# if !defined(HAVE_USHORT)
+  typedef    unsigned short int    ushort;
+# endif
 
-  // flags = -1: compressed dump / 0: normal dump / 1: extra info
-  std::ostream& dump(std::ostream& os, int flags = 0) const;
+# if !defined(HAVE_UINT)
+  typedef    unsigned int          uint;
+# endif
 
-  void ddump(int flags = 0) const;
+# if !defined(HAVE_ULONG)
+  typedef    unsigned long int    ulong;
+# endif
 
-private:
-  typedef std::map<std::string, std::string> MyMap;
-  
-  std::string m_searchPaths;
-  MyMap m_realpath_map;
-};
+#endif
 
 
+/****************************************************************************/
 
-//***************************************************************************
-
-#endif // RealPathMgr_hpp
+#endif /* include_uint_h */

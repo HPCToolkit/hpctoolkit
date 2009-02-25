@@ -47,7 +47,7 @@
 
 #include "monitor.h"
 
-#include <include/general.h>
+#include <include/uint.h>
 
 #ifdef HAVE_MONITOR  
 // FIXME: use libmonitor completely and include it
