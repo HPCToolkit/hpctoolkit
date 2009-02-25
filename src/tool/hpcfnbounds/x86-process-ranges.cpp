@@ -51,6 +51,8 @@ static bool validate_tail_call_from_jump(char *ins, long offset,
 static bool nextins_looks_like_fn_start(char *ins, long offset, 
 					xed_decoded_inst_t *xptrin);
 
+static bool lea_has_zero_offset(xed_decoded_inst_t *xptr);
+
 /******************************************************************************
  * local variables 
  *****************************************************************************/
@@ -279,7 +281,8 @@ skip_padding(unsigned char **ins)
     xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
     switch(xiclass) {
     case XED_ICLASS_LEA: 
-      // gcc seems to use these as padding between functions
+      if (!lea_has_zero_offset(xptr)) return false; 
+      // gcc seems to use 0 offset lea as padding between functions
       // treat it as a nop
     case XED_ICLASS_NOP:  case XED_ICLASS_NOP2: case XED_ICLASS_NOP3: 
     case XED_ICLASS_NOP4: case XED_ICLASS_NOP5: case XED_ICLASS_NOP6: 
@@ -555,6 +558,19 @@ validate_tail_call_from_jump(char *ins, long offset, xed_decoded_inst_t *xptr)
 }  
 
 
+static bool
+lea_has_zero_offset(xed_decoded_inst_t *xptr)
+{
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
+  xed_operand_enum_t   op1_name = xed_operand_name(op1);
+  if (op1_name == XED_OPERAND_AGEN) { 
+    int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
+    if (offset == 0) return true;
+  } 
+  return false;
+}
+
 static bool 
 nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
 { 
@@ -577,8 +593,10 @@ nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
     xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
     switch(xiclass) {
     case XED_ICLASS_LEA: 
-      // gcc seems to use these as padding between functions
+      if (!lea_has_zero_offset(xptr)) return false; 
+      // gcc seems to use 0 offset lea as padding between functions
       // treat it as a nop
+
     case XED_ICLASS_NOP:  case XED_ICLASS_NOP2: case XED_ICLASS_NOP3: 
     case XED_ICLASS_NOP4: case XED_ICLASS_NOP5: case XED_ICLASS_NOP6: 
     case XED_ICLASS_NOP7: case XED_ICLASS_NOP8: case XED_ICLASS_NOP9:
