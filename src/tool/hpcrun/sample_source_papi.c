@@ -52,7 +52,6 @@
  *****************************************************************************/
 
 
-// #define OVERFLOW_MODE PAPI_OVERFLOW_FORCE_SW
 #define OVERFLOW_MODE 0
 
 #define THRESHOLD   10000000
@@ -86,21 +85,8 @@ METHOD_FN(init)
   TMSG(PAPI,"PAPI_library_init = %d", ret);
   TMSG(PAPI,"PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
   if (ret != PAPI_VER_CURRENT){
-    csprof_abort("Failed: PAPI_library_init");
-#if 0
-    EMSG("Failed: PAPI_library_init\n");
-    abort();
-#endif
+    csprof_abort("Failed: PAPI_library_init. Looking for version %d, got version %d",PAPI_VER_CURRENT,ret);
   }
-
-#if 0
-  ret = PAPI_thread_init(pthread_self);
-  TMSG(PAPI,"PAPI_thread_init = %d",ret);
-  if(ret != PAPI_OK){
-    EMSG("Failed: PAPI_thread_init");
-    abort();
-  }
-#endif
   self->state = INIT;
 }
 
@@ -113,11 +99,8 @@ METHOD_FN(_start)
   TMSG(PAPI,"starting PAPI w event set %d",eventSet);
   int ret = PAPI_start(eventSet);
   if (ret != PAPI_OK){
-    csprof_abort("Failed to start papi f eventset %, ret = %d",eventSet,ret);
-#if 0
-    EMSG("Failed to start papi f eventset %, ret = %d",eventSet,ret);
-    abort();
-#endif
+    csprof_abort("Failed to start papi f eventset %d. Return code = %d ==> %s",eventSet,ret,
+		 PAPI_strerror(ret));
   }
 
   TD_GET(ss_state)[self->evset_idx] = START;
@@ -147,7 +130,7 @@ METHOD_FN(stop)
   long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));
   int ret = PAPI_stop(eventSet, values);
   if (ret != PAPI_OK){
-    EMSG("Failed to stop papi f eventset %d, ret = %d",eventSet,ret);
+    EMSG("Failed to stop papi f eventset %d. Return code = %d ==> %s",eventSet,ret,PAPI_strerror(ret));
   }
 
   TD_GET(ss_state)[self->evset_idx] = STOP;
@@ -175,7 +158,6 @@ METHOD_FN(supports_event,const char *ev_str)
 
   extract_ev_thresh(ev_str,sizeof(evtmp),evtmp,&th);
   return event_name_to_code(evtmp,&ec);
-  // return (strstr(ev_str,"WALLCLOCK") == NULL); // FIXME: Better way to tell prior to init?
 }
  
 static void
@@ -238,11 +220,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
   ret = PAPI_create_eventset(&eventSet);
   PMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret,eventSet);
   if (ret != PAPI_OK){
-    csprof_abort("Failure: PAPI_create_eventset: %d", ret);
-#if 0
-    EMSG("Failure: PAPI_create_eventset: %d", ret);
-    abort();
-#endif
+    csprof_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", ret,PAPI_strerror(ret));
   }
 
   int nevents = (self->evl).nevents;
@@ -252,11 +230,9 @@ METHOD_FN(gen_event_set,int lush_metrics)
     if (ret != PAPI_OK){
       char nm[256];
       PAPI_event_code_to_name(evcode,nm);
-      csprof_abort("Failure: PAPI_add_event:, trying to add event %s, got ret code = %d", nm, ret);
-#if 0
-      EMSG("Failure: PAPI_add_event:, trying to add event %s, got ret code = %d", nm, ret);
-      abort();
-#endif
+
+      csprof_abort("Failure: PAPI_add_event:, trying to add event %s, got ret code = %d ==> %s",
+		   nm, ret, PAPI_strerror(ret));
     }
   }
   for(i=0;i < nevents;i++){
@@ -267,11 +243,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
 			papi_event_handler);
     TMSG(PAPI,"PAPI_overflow = %d", ret);
     if (ret != PAPI_OK){
-      csprof_abort("Failure: PAPI_overflow: %d", ret);
-#if 0
-      EMSG("Failure: PAPI_overflow: %d", ret);
-      abort();
-#endif
+      csprof_abort("Failure: PAPI_overflow.Return code = %d ==> %s", ret, PAPI_strerror(ret));
     }
   }
   thread_data_t *td = csprof_get_thread_data();
@@ -364,16 +336,19 @@ event_name_to_code(char *evname,int *ec)
   if (ret != PAPI_OK) {
     TMSG(PAPI_EVENT_NAME,"event name to code failed with name = %s",evname);
     TMSG(PAPI_EVENT_NAME,"event_code_to_name failed: %d",ret);
+    EEMSG("PAPI_event_name_to_code fails:, errcode = %s",PAPI_strerror(ret));
     return 0;
   }
   ret = PAPI_query_event(*ec);
   if (ret != PAPI_OK) {
     TMSG(PAPI_EVENT_NAME,"PAPI query event failed: %d",ret);
+    EEMSG("PAPI_query_event fails:, errcode = %s",PAPI_strerror(ret));
     return 0;
   }
   ret = PAPI_get_event_info(*ec, &info);
   if (ret != PAPI_OK) {
     TMSG(PAPI_EVENT_NAME,"PAPI_get_event_info failed :%d",ret);
+    EEMSG("PAPI_get_event_info fails:, errcode = %s",PAPI_strerror(ret));
     return 0;
   }
   return 1;
@@ -387,10 +362,6 @@ extract_and_check_event(char *in,int *ec,long *th)
   extract_ev_thresh(in,sizeof(evbuf),evbuf,th);
   if (! event_name_to_code(evbuf,ec)){
     csprof_abort("PAPI event spec %s failed!",in);
-#if 0
-    EMSG("PAPI event spec %s failed!",in);
-    abort();
-#endif
   }
 }
 
@@ -406,10 +377,15 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   TMSG(PAPI_SAMPLE,"papi event happened, ovec = %ld",ovec);
 
-  int retval = PAPI_get_overflow_event_index(event_set, ovec, my_events, 
+  int ret = PAPI_get_overflow_event_index(event_set, ovec, my_events, 
                                              &my_event_count);
-
-  assert(retval == PAPI_OK);
+# if 0 // assert is simplest, but gives no feedback
+    assert(retval == PAPI_OK);
+# endif
+  if (ret != PAPI_OK){
+    csprof_abort("Failed inside papi_event_handler at get_overflow_event_index."
+		 "Return code = %d ==> %s",ret,PAPI_strerror(ret));
+  }
 
   for(i = 0; i < my_event_count; i++) {
     int metric_id = my_events[i];
