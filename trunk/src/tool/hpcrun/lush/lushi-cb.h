@@ -4,16 +4,16 @@
 //***************************************************************************
 //
 // File: 
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    LUSH Interface: Callback Interface for LUSH agents
+//   LUSH Interface: Callback Interface for LUSH agents
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 // Author:
-//    Nathan Tallent, Rice University.
+//   Nathan Tallent, Rice University.
 //
 //***************************************************************************
 
