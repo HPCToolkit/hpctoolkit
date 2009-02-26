@@ -28,6 +28,14 @@
 
 
 //***************************************************************************
+// interface to ucontext_t
+//***************************************************************************
+
+// tallent: probably should be moved
+void *context_pc(void *context);
+
+
+//***************************************************************************
 // interface to HPCToolkit's unwinder (cf. libunwind)
 //***************************************************************************
 
@@ -41,21 +49,21 @@ extern void unw_init();
 
 
 // ----------------------------------------------------------
-// unw_init_cursor
-// ----------------------------------------------------------
-
-// FIXME: tallent: cursor should be the first argument (consistent
-// with libunwind and a signal that it is modified).
-extern void unw_init_cursor(unw_cursor_t* cursor, void* context);
-
-
-// ----------------------------------------------------------
 // unw_get_reg
 // ----------------------------------------------------------
 
 #define UNW_REG_IP 1
 
 extern int unw_get_reg(unw_cursor_t *c, int reg_id, void **reg_value);
+
+
+// ----------------------------------------------------------
+// unw_init_cursor
+// ----------------------------------------------------------
+
+// FIXME: tallent: cursor should be the first argument (consistent
+// with libunwind and a signal that it is modified).
+extern void unw_init_cursor(unw_cursor_t* cursor, void* context);
 
 
 // ----------------------------------------------------------
@@ -84,12 +92,6 @@ extern int unw_step(unw_cursor_t *c);
 
 // FIXME: tallent: the code in x86-unwind.c probably should be common
 extern void unw_throw();
-
-
-//***************************************************************************
-
-// FIXME: tallent: this probably does not need to be exposed
-void *context_pc(void *context);
 
 
 //***************************************************************************
