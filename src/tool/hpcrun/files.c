@@ -115,8 +115,8 @@ files_set_directory()
       sprintf(default_path,"./hpctoolkit-%s-measurements-%s", executable_name, jid);
     }
     path = default_path;
-    int dircode = mkdir(default_path, 0755);
-    /* no error checking needed here, errors will be picked up by realpath below */
+    mkdir(default_path, 0755);
+    // N.B.: safe to skip checking for errors as realpath will notice them
   }
 
   int dir_error = 0;

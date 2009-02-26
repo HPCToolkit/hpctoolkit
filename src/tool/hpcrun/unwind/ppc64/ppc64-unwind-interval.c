@@ -14,12 +14,14 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
-
+#include <inttypes.h>
 
 
 /*****************************************************************************
  * local include files 
  *****************************************************************************/
+
+#include <include/gcc-attr.h>
 
 #include "ppc64-unwind-interval.h"
 
@@ -225,6 +227,7 @@ bp_status_string(bp_loc l)
 }
 
 
+#if 0
 static const char *
 register_name(int reg)
 {
@@ -235,6 +238,7 @@ register_name(int reg)
    }
    return NULL;
 }
+#endif
 
 
 //***************************************************************************
@@ -384,18 +388,17 @@ ppc64_print_interval_set(unwind_interval *first)
 }
 
 
-static void 
-ppc64_dump_intervals(char  *addr) 
+static void GCC_ATTR_UNUSED
+ppc64_dump_intervals(char  *addr)
 {
   void *s, *e;
-  unwind_interval *u;
   interval_status intervals;
 
   fnbounds_enclosing_addr(addr, &s, &e);
 
-  unsigned long llen = ((unsigned long) e) - (unsigned long) s;
+  uintptr_t llen = ((unsigned long) e) - (unsigned long) s;
 
-  printf("build intervals from %p to %p %d\n",s,e,llen);
+  printf("build intervals from %p to %p (%"PRIuPTR")\n", s, e, llen);
   intervals = ppc64_build_intervals(s, (unsigned int) llen);
 
   ppc64_print_interval_set((unwind_interval *) intervals.first);
