@@ -1,72 +1,72 @@
 // -*-Mode: C++;-*- // technically C99
 // $Id$
 
-//********************************************************************
-// file: unwind.h
+//***************************************************************************
+// File:
+//   unwind.h
 //
-// purpose:
-//     interface to the stack-unwinding primitives. this includes
-//     both the architecture-independent, and the 
-//     architecture-specific primitives
-//********************************************************************
+// Purpose:
+//   interface to the stack-unwinding primitives. 
+//
+//***************************************************************************
 
-#ifndef UNWIND_H
-#define UNWIND_H
+#ifndef unwind_h
+#define unwind_h
 
-//********************************************************************
+//***************************************************************************
 // system include files
-//********************************************************************
+//***************************************************************************
 
 #include <ucontext.h>
 
 
-
-//********************************************************************
+//***************************************************************************
 // local include files
-//********************************************************************
+//***************************************************************************
 
 #include "unwind_cursor.h"
 
 
+//***************************************************************************
+// interface to HPCToolkit's unwinder (cf. libunwind)
+//***************************************************************************
 
-//********************************************************************
-// interface to architecture-specific operations
-//********************************************************************
+typedef void* unw_word_t;
 
-void *context_pc(void *context);
+// ----------------------------------------------------------
+// unw_init
+// ----------------------------------------------------------
 
-// tallent: FIXME: These are OBSOLETE!
-void  unw_init_arch(void);
-void  unw_init_cursor_arch(void* context, unw_cursor_t *cursor);
-int   unw_get_reg_arch(unw_cursor_t *c, int reg_id, void **reg_value);
+extern void unw_init();
 
-extern int unw_step(unw_cursor_t *c);
-extern int unw_get_reg(unw_cursor_t *c, int reg_id, void **reg_value);
-extern void csprof_unwind_drop_sample(void);
 
-//********************************************************************
-// interface to architecture independent operations
-//********************************************************************
-
-void unw_init(void);
+// ----------------------------------------------------------
+// unw_init_cursor
+// ----------------------------------------------------------
 
 // FIXME: tallent: cursor should be the first argument (consistent
 // with libunwind and a signal that it is modified).
-void unw_init_cursor(void* context, unw_cursor_t* cursor);
+extern void unw_init_cursor(void* context, unw_cursor_t* cursor);
 
 
-//---------------------------------------------------------------------
-// function: unw_step
-//
-// purpose:
-//     Given a cursor, step the cursor to the next (less deeply nested)
-//     frame.  Conforms to the semantics of libunwind's unw_step.  In
-//     particular, returns:
-//       > 0 : successfully advanced cursor to next frame
-//         0 : previous frame was the end of the unwind
-//       < 0 : error condition
-//---------------------------------------------------------------------
-typedef void *unw_word_t;
+// ----------------------------------------------------------
+// unw_get_reg
+// ----------------------------------------------------------
+
+#define UNW_REG_IP 1
+
+extern int unw_get_reg(unw_cursor_t *c, int reg_id, void **reg_value);
+
+
+// ----------------------------------------------------------
+// unw_step: 
+//   Given a cursor, step the cursor to the next (less deeply
+//   nested) frame.  Conforms to the semantics of libunwind's
+//   unw_step.  In particular, returns:
+//     > 0 : successfully advanced cursor to next frame
+//       0 : previous frame was the end of the unwind
+//     < 0 : error condition
+// ---------------------------------------------------------
 
 typedef enum {
   STEP_ERROR = -1,
@@ -75,6 +75,23 @@ typedef enum {
   STEP_TROLL = 2,
 } step_state;
 
-#define UNW_REG_IP 1
+extern int unw_step(unw_cursor_t *c);
 
-#endif
+
+// ----------------------------------------------------------
+// unw_throw
+// ----------------------------------------------------------
+
+// FIXME: tallent: the code in x86-unwind.c probably should be common
+extern void unw_throw();
+
+
+//***************************************************************************
+
+// FIXME: tallent: this probably does not need to be exposed
+void *context_pc(void *context);
+
+
+//***************************************************************************
+
+#endif // unwind_h
