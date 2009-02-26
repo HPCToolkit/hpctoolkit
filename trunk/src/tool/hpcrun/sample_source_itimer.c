@@ -16,21 +16,18 @@
 #include <ucontext.h>           /* struct ucontext */
 #include <assert.h>
 
-#define USE_THREAD_USAGE_FOR_WALLCLOCK
+
+/******************************************************************************
+ * libmonitor
+ *****************************************************************************/
+
+#include <monitor.h>
 
 
 /******************************************************************************
  * local includes
  *****************************************************************************/
 
-/*---------------------------
- * monitor
- *--------------------------*/
-#include "monitor.h"
-
-/*---------------------------
- * csprof
- *--------------------------*/
 #include "csprof_options.h"
 #include "metrics.h"
 #include "pmsg.h"
@@ -50,13 +47,30 @@
 #define CSPROF_PROFILE_TIMER ITIMER_PROF
 
 #ifdef CATAMOUNT
-#define CSPROF_PROFILE_SIGNAL SIGALRM
-#define CSPROF_PROFILE_TIMER ITIMER_REAL
+# define CSPROF_PROFILE_SIGNAL SIGALRM
+# define CSPROF_PROFILE_TIMER ITIMER_REAL
 #endif
 
 #define SECONDS_TO_MICROSECONDS(s) ((s) * 1000000)
 
 #define ITIMER_METRIC_ID 0
+
+#define USE_THREAD_USAGE_FOR_WALLCLOCK
+#define RESET_ITIMER_EACH_SAMPLE
+
+//#define BGP
+
+#ifdef BGP
+# undef USE_THREAD_USAGE_FOR_WALLCLOCK
+# undef RESET_ITIMER_EACH_SAMPLE
+#endif
+
+#ifdef RESET_ITIMER_EACH_SAMPLE
+# define AUTOMATIC_ITIMER_RESET(x)      0
+#else
+# define AUTOMATIC_ITIMER_RESET(x)      x
+#endif
+
 
 /******************************************************************************
  * forward declarations 
@@ -155,10 +169,9 @@ METHOD_FN(process_event_list,int lush_metrics)
   itimer.it_value.tv_sec = seconds;
   itimer.it_value.tv_usec = microseconds;
 
-  /* no automatic restart */
-  itimer.it_interval.tv_sec = 0;
-  itimer.it_interval.tv_usec = 0;
-
+  /* macros define whether automatic restart or not */
+  itimer.it_interval.tv_sec = AUTOMATIC_ITIMER_RESET(seconds);
+  itimer.it_interval.tv_usec = AUTOMATIC_ITIMER_RESET(microseconds);
 }
 
 static void
@@ -285,7 +298,10 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
     TMSG(SPECIAL,"No itimer restart, due to disabled sampling");
     return 0;
   }
+
+#ifdef RESET_ITIMER_EACH_SAMPLE
   METHOD_CALL(&_itimer_obj,start);
+#endif
     
 
   return 0; /* tell monitor that the signal has been handled */
