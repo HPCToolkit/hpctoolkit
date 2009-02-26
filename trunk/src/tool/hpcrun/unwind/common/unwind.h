@@ -36,7 +36,13 @@ void *context_pc(void *context);
 
 
 //***************************************************************************
+//
 // interface to HPCToolkit's unwinder (cf. libunwind)
+//
+//   these routines are called by the common backtrace routines and
+//   therefore must be provided by architecture-specific unwind
+//   agents.
+//
 //***************************************************************************
 
 typedef void* unw_word_t;
@@ -61,8 +67,6 @@ extern int unw_get_reg(unw_cursor_t *c, int reg_id, void **reg_value);
 // unw_init_cursor
 // ----------------------------------------------------------
 
-// FIXME: tallent: cursor should be the first argument (consistent
-// with libunwind and a signal that it is modified).
 extern void unw_init_cursor(unw_cursor_t* cursor, void* context);
 
 
@@ -86,8 +90,25 @@ typedef enum {
 extern int unw_step(unw_cursor_t *c);
 
 
+//***************************************************************************
+//
+// services provided by HPCToolkit's unwinder
+//
+//   these routines are called by the common backtrace routines and
+//   therefore must be provided by architecture-specific unwind
+//   agents.
+//
+//***************************************************************************
+
 // ----------------------------------------------------------
-// unw_throw
+// unw_troll_stack
+// ----------------------------------------------------------
+
+// FIXME: tallent: move stack trolling code here
+
+
+// ----------------------------------------------------------
+// unw_throw:
 // ----------------------------------------------------------
 
 // FIXME: tallent: the code in x86-unwind.c probably should be common
