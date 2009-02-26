@@ -124,7 +124,7 @@ unw_get_reg(unw_cursor_t *cursor, int reg_id, void **reg_value)
 
 
 void 
-unw_init_cursor(void *context, unw_cursor_t *cursor)
+unw_init_cursor(unw_cursor_t *cursor, void *context)
 {
   unsigned long ra = 0;
 

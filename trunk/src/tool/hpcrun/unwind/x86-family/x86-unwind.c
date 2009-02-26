@@ -81,7 +81,7 @@ unw_init(void)
 
 
 void 
-unw_init_cursor(void* context, unw_cursor_t *cursor)
+unw_init_cursor(unw_cursor_t* cursor, void* context)
 {
   extern void dump_ui(unwind_interval *u, int dump_to_stdout);
 

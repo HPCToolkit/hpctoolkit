@@ -46,7 +46,7 @@ extern void unw_init();
 
 // FIXME: tallent: cursor should be the first argument (consistent
 // with libunwind and a signal that it is modified).
-extern void unw_init_cursor(void* context, unw_cursor_t* cursor);
+extern void unw_init_cursor(unw_cursor_t* cursor, void* context);
 
 
 // ----------------------------------------------------------

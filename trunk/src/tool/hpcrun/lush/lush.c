@@ -185,7 +185,7 @@ lush_init_unw(lush_cursor_t* cursor,
   cursor->apool = apool;
   lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ);
   lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD);
-  unw_init_cursor(context, lush_cursor_get_pcursor(cursor));
+  unw_init_cursor(lush_cursor_get_pcursor(cursor), context);
 }
 
 
