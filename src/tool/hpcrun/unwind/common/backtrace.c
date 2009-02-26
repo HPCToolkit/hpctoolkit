@@ -67,7 +67,7 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
   csprof_cct_node_t* n = NULL;
   if (!lush_agents) {
     unw_cursor_t frame;
-    unw_init_cursor(context, &frame);
+    unw_init_cursor(&frame, context);
     MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
     n = csprof_sample_callstack_from_frame(state, metric_id,
 					   sample_count, &frame);    
@@ -104,7 +104,7 @@ hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
   unw_init();
 
   unw_cursor_t cursor;
-  unw_init_cursor(context, &cursor);
+  unw_init_cursor(&cursor, context);
 
   int my_size = 0;
   while (my_size < size) {
