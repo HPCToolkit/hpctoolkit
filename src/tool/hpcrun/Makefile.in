@@ -199,10 +199,8 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
-	unwind/ppc64/ppc64-build-intervals.c \
-	unwind/ppc64/ppc64-context.c \
+	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
-	unwind/ppc64/ppc64-unwind-support.c \
 	unwind/x86-family/x86-all.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
@@ -241,10 +239,8 @@ am__objects_9 = libcsprof_la-dylib.lo
 am__objects_11 = libcsprof_la-mips-unwind.lo \
 	libcsprof_la-mips-unwind-interval.lo
 @HOST_CPU_MIPS_TRUE@am__objects_12 = $(am__objects_11)
-am__objects_13 = libcsprof_la-ppc64-build-intervals.lo \
-	libcsprof_la-ppc64-context.lo \
-	libcsprof_la-ppc64-unwind-interval.lo \
-	libcsprof_la-ppc64-unwind-support.lo
+am__objects_13 = libcsprof_la-ppc64-unwind.lo \
+	libcsprof_la-ppc64-unwind-interval.lo
 @HOST_CPU_PPC_TRUE@am__objects_14 = $(am__objects_13)
 am__objects_15 = libcsprof_la-x86-all.lo \
 	libcsprof_la-x86-unwind-interval.lo \
@@ -279,11 +275,8 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	utilities/executable-path.c utilities/spinlock.c \
 	utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_static.c unwind/mips/mips-unwind.c \
-	unwind/mips/mips-unwind-interval.c \
-	unwind/ppc64/ppc64-build-intervals.c \
-	unwind/ppc64/ppc64-context.c \
+	unwind/mips/mips-unwind-interval.c unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
-	unwind/ppc64/ppc64-unwind-support.c \
 	unwind/x86-family/x86-all.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
@@ -327,10 +320,8 @@ am__objects_20 = libcsprof_o-fnbounds_static.$(OBJEXT)
 am__objects_21 = libcsprof_o-mips-unwind.$(OBJEXT) \
 	libcsprof_o-mips-unwind-interval.$(OBJEXT)
 @HOST_CPU_MIPS_TRUE@am__objects_22 = $(am__objects_21)
-am__objects_23 = libcsprof_o-ppc64-build-intervals.$(OBJEXT) \
-	libcsprof_o-ppc64-context.$(OBJEXT) \
-	libcsprof_o-ppc64-unwind-interval.$(OBJEXT) \
-	libcsprof_o-ppc64-unwind-support.$(OBJEXT)
+am__objects_23 = libcsprof_o-ppc64-unwind.$(OBJEXT) \
+	libcsprof_o-ppc64-unwind-interval.$(OBJEXT)
 @HOST_CPU_PPC_TRUE@am__objects_24 = $(am__objects_23)
 am__objects_25 = libcsprof_o-x86-all.$(OBJEXT) \
 	libcsprof_o-x86-unwind-interval.$(OBJEXT) \
@@ -652,10 +643,8 @@ MY_MIPS_FILES = \
 	unwind/mips/mips-unwind-interval.c
 
 MY_PPC_FILES = \
-	unwind/ppc64/ppc64-build-intervals.c	\
-	unwind/ppc64/ppc64-context.c		\
-	unwind/ppc64/ppc64-unwind-interval.c    \
-	unwind/ppc64/ppc64-unwind-support.c
+	unwind/ppc64/ppc64-unwind.c \
+	unwind/ppc64/ppc64-unwind-interval.c
 
 MY_X86_FILES = \
 	unwind/x86-family/x86-all.c			\
@@ -950,10 +939,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-mips-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-name.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-pmsg.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-build-intervals.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-context.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-unwind-interval.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-unwind-support.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_event.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_itimer.Plo@am__quote@
@@ -1007,10 +994,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mips-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-name.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-pmsg.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-build-intervals.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-context.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-unwind-interval.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-unwind-support.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_event.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_itimer.Po@am__quote@
@@ -1429,19 +1414,12 @@ libcsprof_la-mips-unwind-interval.lo: unwind/mips/mips-unwind-interval.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-mips-unwind-interval.lo `test -f 'unwind/mips/mips-unwind-interval.c' || echo '$(srcdir)/'`unwind/mips/mips-unwind-interval.c
 
-libcsprof_la-ppc64-build-intervals.lo: unwind/ppc64/ppc64-build-intervals.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-ppc64-build-intervals.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-ppc64-build-intervals.Tpo -c -o libcsprof_la-ppc64-build-intervals.lo `test -f 'unwind/ppc64/ppc64-build-intervals.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-build-intervals.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-ppc64-build-intervals.Tpo $(DEPDIR)/libcsprof_la-ppc64-build-intervals.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-build-intervals.c' object='libcsprof_la-ppc64-build-intervals.lo' libtool=yes @AMDEPBACKSLASH@
+libcsprof_la-ppc64-unwind.lo: unwind/ppc64/ppc64-unwind.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-ppc64-unwind.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-ppc64-unwind.Tpo -c -o libcsprof_la-ppc64-unwind.lo `test -f 'unwind/ppc64/ppc64-unwind.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-ppc64-unwind.Tpo $(DEPDIR)/libcsprof_la-ppc64-unwind.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-unwind.c' object='libcsprof_la-ppc64-unwind.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-ppc64-build-intervals.lo `test -f 'unwind/ppc64/ppc64-build-intervals.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-build-intervals.c
-
-libcsprof_la-ppc64-context.lo: unwind/ppc64/ppc64-context.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-ppc64-context.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-ppc64-context.Tpo -c -o libcsprof_la-ppc64-context.lo `test -f 'unwind/ppc64/ppc64-context.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-context.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-ppc64-context.Tpo $(DEPDIR)/libcsprof_la-ppc64-context.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-context.c' object='libcsprof_la-ppc64-context.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-ppc64-context.lo `test -f 'unwind/ppc64/ppc64-context.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-context.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-ppc64-unwind.lo `test -f 'unwind/ppc64/ppc64-unwind.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind.c
 
 libcsprof_la-ppc64-unwind-interval.lo: unwind/ppc64/ppc64-unwind-interval.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-ppc64-unwind-interval.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-ppc64-unwind-interval.Tpo -c -o libcsprof_la-ppc64-unwind-interval.lo `test -f 'unwind/ppc64/ppc64-unwind-interval.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind-interval.c
@@ -1449,13 +1427,6 @@ libcsprof_la-ppc64-unwind-interval.lo: unwind/ppc64/ppc64-unwind-interval.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-unwind-interval.c' object='libcsprof_la-ppc64-unwind-interval.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-ppc64-unwind-interval.lo `test -f 'unwind/ppc64/ppc64-unwind-interval.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind-interval.c
-
-libcsprof_la-ppc64-unwind-support.lo: unwind/ppc64/ppc64-unwind-support.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-ppc64-unwind-support.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-ppc64-unwind-support.Tpo -c -o libcsprof_la-ppc64-unwind-support.lo `test -f 'unwind/ppc64/ppc64-unwind-support.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind-support.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-ppc64-unwind-support.Tpo $(DEPDIR)/libcsprof_la-ppc64-unwind-support.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-unwind-support.c' object='libcsprof_la-ppc64-unwind-support.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-ppc64-unwind-support.lo `test -f 'unwind/ppc64/ppc64-unwind-support.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind-support.c
 
 libcsprof_la-x86-all.lo: unwind/x86-family/x86-all.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-x86-all.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-x86-all.Tpo -c -o libcsprof_la-x86-all.lo `test -f 'unwind/x86-family/x86-all.c' || echo '$(srcdir)/'`unwind/x86-family/x86-all.c
@@ -2143,33 +2114,19 @@ libcsprof_o-mips-unwind-interval.obj: unwind/mips/mips-unwind-interval.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-mips-unwind-interval.obj `if test -f 'unwind/mips/mips-unwind-interval.c'; then $(CYGPATH_W) 'unwind/mips/mips-unwind-interval.c'; else $(CYGPATH_W) '$(srcdir)/unwind/mips/mips-unwind-interval.c'; fi`
 
-libcsprof_o-ppc64-build-intervals.o: unwind/ppc64/ppc64-build-intervals.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-ppc64-build-intervals.o -MD -MP -MF $(DEPDIR)/libcsprof_o-ppc64-build-intervals.Tpo -c -o libcsprof_o-ppc64-build-intervals.o `test -f 'unwind/ppc64/ppc64-build-intervals.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-build-intervals.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ppc64-build-intervals.Tpo $(DEPDIR)/libcsprof_o-ppc64-build-intervals.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-build-intervals.c' object='libcsprof_o-ppc64-build-intervals.o' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-ppc64-unwind.o: unwind/ppc64/ppc64-unwind.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-ppc64-unwind.o -MD -MP -MF $(DEPDIR)/libcsprof_o-ppc64-unwind.Tpo -c -o libcsprof_o-ppc64-unwind.o `test -f 'unwind/ppc64/ppc64-unwind.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ppc64-unwind.Tpo $(DEPDIR)/libcsprof_o-ppc64-unwind.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-unwind.c' object='libcsprof_o-ppc64-unwind.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ppc64-build-intervals.o `test -f 'unwind/ppc64/ppc64-build-intervals.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-build-intervals.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ppc64-unwind.o `test -f 'unwind/ppc64/ppc64-unwind.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind.c
 
-libcsprof_o-ppc64-build-intervals.obj: unwind/ppc64/ppc64-build-intervals.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-ppc64-build-intervals.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-ppc64-build-intervals.Tpo -c -o libcsprof_o-ppc64-build-intervals.obj `if test -f 'unwind/ppc64/ppc64-build-intervals.c'; then $(CYGPATH_W) 'unwind/ppc64/ppc64-build-intervals.c'; else $(CYGPATH_W) '$(srcdir)/unwind/ppc64/ppc64-build-intervals.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ppc64-build-intervals.Tpo $(DEPDIR)/libcsprof_o-ppc64-build-intervals.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-build-intervals.c' object='libcsprof_o-ppc64-build-intervals.obj' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-ppc64-unwind.obj: unwind/ppc64/ppc64-unwind.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-ppc64-unwind.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-ppc64-unwind.Tpo -c -o libcsprof_o-ppc64-unwind.obj `if test -f 'unwind/ppc64/ppc64-unwind.c'; then $(CYGPATH_W) 'unwind/ppc64/ppc64-unwind.c'; else $(CYGPATH_W) '$(srcdir)/unwind/ppc64/ppc64-unwind.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ppc64-unwind.Tpo $(DEPDIR)/libcsprof_o-ppc64-unwind.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-unwind.c' object='libcsprof_o-ppc64-unwind.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ppc64-build-intervals.obj `if test -f 'unwind/ppc64/ppc64-build-intervals.c'; then $(CYGPATH_W) 'unwind/ppc64/ppc64-build-intervals.c'; else $(CYGPATH_W) '$(srcdir)/unwind/ppc64/ppc64-build-intervals.c'; fi`
-
-libcsprof_o-ppc64-context.o: unwind/ppc64/ppc64-context.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-ppc64-context.o -MD -MP -MF $(DEPDIR)/libcsprof_o-ppc64-context.Tpo -c -o libcsprof_o-ppc64-context.o `test -f 'unwind/ppc64/ppc64-context.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-context.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ppc64-context.Tpo $(DEPDIR)/libcsprof_o-ppc64-context.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-context.c' object='libcsprof_o-ppc64-context.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ppc64-context.o `test -f 'unwind/ppc64/ppc64-context.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-context.c
-
-libcsprof_o-ppc64-context.obj: unwind/ppc64/ppc64-context.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-ppc64-context.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-ppc64-context.Tpo -c -o libcsprof_o-ppc64-context.obj `if test -f 'unwind/ppc64/ppc64-context.c'; then $(CYGPATH_W) 'unwind/ppc64/ppc64-context.c'; else $(CYGPATH_W) '$(srcdir)/unwind/ppc64/ppc64-context.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ppc64-context.Tpo $(DEPDIR)/libcsprof_o-ppc64-context.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-context.c' object='libcsprof_o-ppc64-context.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ppc64-context.obj `if test -f 'unwind/ppc64/ppc64-context.c'; then $(CYGPATH_W) 'unwind/ppc64/ppc64-context.c'; else $(CYGPATH_W) '$(srcdir)/unwind/ppc64/ppc64-context.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ppc64-unwind.obj `if test -f 'unwind/ppc64/ppc64-unwind.c'; then $(CYGPATH_W) 'unwind/ppc64/ppc64-unwind.c'; else $(CYGPATH_W) '$(srcdir)/unwind/ppc64/ppc64-unwind.c'; fi`
 
 libcsprof_o-ppc64-unwind-interval.o: unwind/ppc64/ppc64-unwind-interval.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-ppc64-unwind-interval.o -MD -MP -MF $(DEPDIR)/libcsprof_o-ppc64-unwind-interval.Tpo -c -o libcsprof_o-ppc64-unwind-interval.o `test -f 'unwind/ppc64/ppc64-unwind-interval.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind-interval.c
@@ -2184,20 +2141,6 @@ libcsprof_o-ppc64-unwind-interval.obj: unwind/ppc64/ppc64-unwind-interval.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-unwind-interval.c' object='libcsprof_o-ppc64-unwind-interval.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ppc64-unwind-interval.obj `if test -f 'unwind/ppc64/ppc64-unwind-interval.c'; then $(CYGPATH_W) 'unwind/ppc64/ppc64-unwind-interval.c'; else $(CYGPATH_W) '$(srcdir)/unwind/ppc64/ppc64-unwind-interval.c'; fi`
-
-libcsprof_o-ppc64-unwind-support.o: unwind/ppc64/ppc64-unwind-support.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-ppc64-unwind-support.o -MD -MP -MF $(DEPDIR)/libcsprof_o-ppc64-unwind-support.Tpo -c -o libcsprof_o-ppc64-unwind-support.o `test -f 'unwind/ppc64/ppc64-unwind-support.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind-support.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ppc64-unwind-support.Tpo $(DEPDIR)/libcsprof_o-ppc64-unwind-support.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-unwind-support.c' object='libcsprof_o-ppc64-unwind-support.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ppc64-unwind-support.o `test -f 'unwind/ppc64/ppc64-unwind-support.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind-support.c
-
-libcsprof_o-ppc64-unwind-support.obj: unwind/ppc64/ppc64-unwind-support.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-ppc64-unwind-support.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-ppc64-unwind-support.Tpo -c -o libcsprof_o-ppc64-unwind-support.obj `if test -f 'unwind/ppc64/ppc64-unwind-support.c'; then $(CYGPATH_W) 'unwind/ppc64/ppc64-unwind-support.c'; else $(CYGPATH_W) '$(srcdir)/unwind/ppc64/ppc64-unwind-support.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ppc64-unwind-support.Tpo $(DEPDIR)/libcsprof_o-ppc64-unwind-support.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/ppc64/ppc64-unwind-support.c' object='libcsprof_o-ppc64-unwind-support.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-ppc64-unwind-support.obj `if test -f 'unwind/ppc64/ppc64-unwind-support.c'; then $(CYGPATH_W) 'unwind/ppc64/ppc64-unwind-support.c'; else $(CYGPATH_W) '$(srcdir)/unwind/ppc64/ppc64-unwind-support.c'; fi`
 
 libcsprof_o-x86-all.o: unwind/x86-family/x86-all.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-x86-all.o -MD -MP -MF $(DEPDIR)/libcsprof_o-x86-all.Tpo -c -o libcsprof_o-x86-all.o `test -f 'unwind/x86-family/x86-all.c' || echo '$(srcdir)/'`unwind/x86-family/x86-all.c

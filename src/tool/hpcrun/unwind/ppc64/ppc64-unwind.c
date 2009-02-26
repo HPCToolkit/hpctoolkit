@@ -1,3 +1,13 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
+//***************************************************************************
+//
+// HPCToolkit's PPC64 Unwinder
+//
+//***************************************************************************
+
+
 //***************************************************************************
 // system include files
 //***************************************************************************
@@ -7,20 +17,25 @@
 #include <ucontext.h>
 
 
+//***************************************************************************
+// libmonitor include files
+//***************************************************************************
+
+#include <monitor.h>
+
 
 //***************************************************************************
 // local include files
 //***************************************************************************
 
-#include "monitor.h"
+#include "ppc64-unwind-interval.h"
+
+#include "unwind.h"
+#include "unwind_cursor.h"
+
 #include "pmsg.h"
 #include "splay.h"
 #include "ui_tree.h"
-#include "unwind.h"
-#include "unwind_cursor.h"
-#include "ppc64-unwind-interval.h"
-#include "validate_return_addr.h"
-
 
 
 //***************************************************************************
@@ -30,10 +45,8 @@
 #define RA_OFFSET_FROM_BP 1
 #define PC_FROM_FRAME_BP(bp) (*((void **) bp + RA_OFFSET_FROM_BP))
 
-
-#define REGISTER_R0 ((unsigned int) -5)
-#define REGISTER_LR ((unsigned int) -3)
-
+#define REGISTER_R0 (-5)
+#define REGISTER_LR (-3)
 
 
 //***************************************************************************
@@ -42,24 +55,82 @@
 static int debug_unw = 1;
 
 
+//***************************************************************************
+// private operations
+//***************************************************************************
+
+#define PPC64_PC 32
+#define PPC64_BP 1
+#define PPC64_SP 1 /* wrong */ 
+
+#if __WORDSIZE == 32
+#define UCONTEXT_REG(uc, reg) (((ucontext_t *)uc)->uc_mcontext.uc_regs->gregs[reg])
+#else
+#define UCONTEXT_REG(uc, reg) (((ucontext_t *)uc)->uc_mcontext.gp_regs[reg])
+#endif
+
+static inline void **
+ucontext_bp(void *context)
+{
+  return (void **)UCONTEXT_REG(context, PPC64_BP);
+}
+
+
+static inline void **
+ucontext_sp(void *context)
+{
+  return (void **)UCONTEXT_REG(context, PPC64_SP);
+}
+
+
+//***************************************************************************
+
+bool
+validate_return_addr(void* addr, unw_cursor_t* cursor)
+{
+  bool isValid = true;
+
+  // trivial implementation for now
+
+  return isValid;
+}
+
 
 //***************************************************************************
 // interface operations
 //***************************************************************************
 
+void *
+context_pc(void *context)
+{
+  //ucontext_t* ctxt = context;
+  return (void *)  UCONTEXT_REG(context, PPC64_PC);
+}
+
+
 void
 unw_init(void)
 {
+  csprof_interval_tree_init();
+}
+
+
+int 
+unw_get_reg(unw_cursor_t *cursor, int reg_id, void **reg_value)
+{
+  assert(reg_id == UNW_REG_IP);
+  *reg_value = cursor->pc;
+  return 0;
 }
 
 
 void 
-unw_init_cursor(void* context, unw_cursor_t *cursor)
+unw_init_cursor(void *context, unw_cursor_t *cursor)
 {
   unsigned long ra = 0;
 
   cursor->pc = context_pc(context);
-  cursor->bp = context_bp(context);
+  cursor->bp = ucontext_bp(context);
   cursor->intvl = csprof_addr_to_interval(cursor->pc);
 
   ucontext_t *ctx = (ucontext_t *) context;
@@ -99,7 +170,7 @@ unw_step(unw_cursor_t *cursor)
   // current frame
   void  *pc = cursor->pc;
   void **bp = cursor->bp;
-  void **ra = cursor->ra;
+  void  *ra = cursor->ra;
 
   //-----------------------------------------------------------
   // if we fail this check, we are done with the unwind.
@@ -119,7 +190,7 @@ unw_step(unw_cursor_t *cursor)
     // from the relevant register into the ra slot of the cursor.
     // set next_pc from the ra slot of the cursor 
     //-----------------------------------------------------------
-    next_pc = cursor->ra;
+    next_pc = ra;
   } else {
     //-----------------------------------------------------------
     // return address is saved in my caller's stack frame.
@@ -213,23 +284,3 @@ unw_step(unw_cursor_t *cursor)
   return 1;
 }
 
-
-int 
-unw_get_reg(unw_cursor_t *cursor, int reg_id, void **reg_value)
-{
-  assert(reg_id == UNW_REG_IP);
-  *reg_value = cursor->pc;
-
-  return 0;
-}
-
-
-bool
-validate_return_addr(void* addr, unw_cursor_t* cursor)
-{
-  bool isValid = true;
-
-  // trivial implementation for now
-
-  return isValid;
-}
