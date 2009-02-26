@@ -61,10 +61,16 @@ static void drop_sample(void);
 
 static validation_status validate_return_addr(void *addr, void *generic_arg);
 
+
+// tallent: FIXME: obsolete
+void unw_init_arch(void);
+void unw_init_cursor_arch(void* context, unw_cursor_t *cursor);
+int  unw_get_reg_arch(unw_cursor_t *c, int reg_id, void **reg_value);
+
+
 /****************************************************************************************
  * interface functions
  ***************************************************************************************/
-
 
 void
 unw_init(void)
@@ -394,7 +400,7 @@ unw_step (unw_cursor_t *cursor)
 
 // public interface to local drop sample
 void
-csprof_unwind_drop_sample(void)
+unw_throw(void)
 {
   drop_sample();
 }
