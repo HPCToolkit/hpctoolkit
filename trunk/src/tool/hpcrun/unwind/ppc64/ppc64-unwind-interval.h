@@ -12,6 +12,9 @@
 
 //************************* System Include Files ****************************
 
+#include <stddef.h>
+#include <stdbool.h>
+
 //*************************** User Include Files ****************************
 
 #include "splay-interval.h"
@@ -26,40 +29,46 @@
 //***************************************************************************
 
 typedef enum {
-  RA_SP_RELATIVE,
-  RA_STD_FRAME,
-  RA_BP_FRAME,
-  RA_REGISTER, // RA is in a register (either LR or R0)
-  RA_POISON
-} ra_loc;
+  RATy_NULL = 0,
+  RATy_SPRel, // RA is relative to SP
+  RATy_Reg,   // RA is in a register (either LR or R0)
+} ra_ty_t;
 
 
 typedef enum {
-  BP_UNCHANGED,
-  BP_SAVED,     // Parent's BP is saved in frame
-  BP_HOSED
-} bp_loc;
+  SPTy_NULL = 0,
+  SPTy_SPRel, // Parent's SP is relative to current SP (saved in frame)
+  SPTy_Reg,   // Parent's SP is in a register (R1) (unallocated frame)
+} sp_ty_t;
 
 
 typedef struct {
   struct splay_interval_s common; // common splay tree fields
 
-  ra_loc ra_status; // how to find the return address
-  bp_loc bp_status; // how to find the bp register
+  ra_ty_t ra_ty : 16;
+  sp_ty_t sp_ty : 16;
 
-  // RA_REGISTER: the register that contains ra
-  // otherwise:   ra offset from bp
+  // ra_ty == RATy_Reg: the register that contains RA
+  // otherwise:         RA's offset from appropriate pointer
   int ra_arg;
 
 } unw_interval_t;
 
 
 unw_interval_t *
-new_ui(char *startaddr, ra_loc ra_status, int ra_arg, 
-       bp_loc bp_status, unw_interval_t *prev);
+new_ui(char *startaddr, ra_ty_t ra_ty, int ra_arg, 
+       sp_ty_t sp_ty, unw_interval_t *prev);
+
+static inline bool 
+ui_cmp(unw_interval_t* x, unw_interval_t* y)
+{
+  return ((x->ra_ty == y->ra_ty) && 
+	  (x->sp_ty == y->sp_ty) &&
+	  (x->ra_arg == y->ra_arg));
+}
 
 void 
-ui_dump(unw_interval_t *u, int dump_to_stdout);
+ui_dump(unw_interval_t *u);
 
 // FIXME: these should be part of the common interface
 long ui_count();
