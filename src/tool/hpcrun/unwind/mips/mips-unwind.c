@@ -246,7 +246,7 @@ isAfterCall(void* addr)
 }
 
 
-validation_status
+static validation_status
 validateTroll(void* addr, void* arg)
 {
   bool isInCode = false;
@@ -323,7 +323,7 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
 
   TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
        cursor->pc, cursor->ra, cursor->sp, cursor->bp);
-  if (MYDBG) { ui_dump(UI_ARG(intvl), 1); }
+  if (MYDBG) { ui_dump(UI_ARG(intvl)); }
 }
 
 
@@ -435,7 +435,7 @@ unw_step(unw_cursor_t* cursor)
   // if nxt_pc is invalid for some reason, try trolling
   bool didTroll = false;
   if (UI_IS_NULL(nxt_intvl)) {
-    TMSG(UNW, "troll: bad pc=%p; cur sp=%p, fp=%p...", nxt_pc, sp, fp);
+    TMSG(UNW, "warning: bad nxt pc=%p; sp=%p, fp=%p...", nxt_pc, sp, fp);
 
     unsigned int troll_pc_ofst;
     troll_status ret = stack_troll(sp, &troll_pc_ofst, validateTroll, NULL);
@@ -489,7 +489,7 @@ unw_step(unw_cursor_t* cursor)
 
 
   TMSG(UNW, "next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
-  if (MYDBG) { ui_dump(UI_ARG(nxt_intvl), 1); }
+  if (MYDBG) { ui_dump(UI_ARG(nxt_intvl)); }
 
   cursor->pc = nxt_pc;
   cursor->ra = nxt_ra;

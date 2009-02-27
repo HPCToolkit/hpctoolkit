@@ -131,7 +131,7 @@ ui_cmp(unw_interval_t* x, unw_interval_t* y)
 }
 
 void 
-ui_dump(unw_interval_t* u, int dump_to_stdout);
+ui_dump(unw_interval_t* u);
 
 // FIXME: these should be part of the common interface
 long ui_count();

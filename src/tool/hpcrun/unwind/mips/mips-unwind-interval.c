@@ -140,26 +140,16 @@ new_ui(char* start_addr, framety_t ty, int flgs,
 
 
 void 
-ui_dump(unw_interval_t* u, int dump_to_stdout)
+ui_dump(unw_interval_t* u)
 {
-#if (!HPC_UNW_LITE)
   if (!u) {
     return;
   }
 
-  char buf[256];
-  
-  sprintf(buf, "start=%p end=%p ty=%s flgs=%d sp_arg=%d fp_arg=%d ra_arg=%d next=%p prev=%p\n",
-	  (void*)u->common.start, (void*)u->common.end,
-	  framety_string(u->ty), u->flgs, u->sp_arg, u->fp_arg, u->ra_arg,
-	  u->common.next, u->common.prev);
-
-  EMSG(buf);
-  if (dump_to_stdout) { 
-    fprintf(stderr, "%s", buf);
-    fflush(stderr);
-  }
-#endif
+  TMSG(INTV, "start=%p end=%p ty=%s flgs=%d sp_arg=%d fp_arg=%d ra_arg=%d next=%p prev=%p\n",
+       (void*)u->common.start, (void*)u->common.end,
+       framety_string(u->ty), u->flgs, u->sp_arg, u->fp_arg, u->ra_arg,
+       u->common.next, u->common.prev);
 }
 
 
@@ -351,7 +341,7 @@ checkUI(unw_interval_t* ui, framety_t ty, uint32_t* insn)
   if (ui->ty != ty) {
     EMSG("build_intervals: At pc=%p [0x%x], unexpected interval type %s", 
 	 insn, *insn, framety_string(ty));
-    ui_dump(ui, 0);
+    ui_dump(ui);
   }
 }
 
@@ -431,7 +421,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
 
   uint32_t* cur_insn = beg_insn;
   while (cur_insn < end_insn) {
-    //printf("insn: 0x%x [%p,%p)\n", *cur_insn, cur_insn, end_insn);
+    //TMSG(INTV, "insn: 0x%x [%p,%p)\n", *cur_insn, cur_insn, end_insn);
 
     //--------------------------------------------------
     // 1. SP-frames
@@ -669,7 +659,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
 #if (!HPC_UNW_LITE)
   if (verbose) {
     for (UNW_INTERVAL_t x = beg_ui; x; x = (UNW_INTERVAL_t)x->common.next) {
-      ui_dump(x, 0);
+      ui_dump(x);
     }
   }
 #endif
