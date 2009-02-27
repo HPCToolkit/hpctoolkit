@@ -104,13 +104,10 @@ int csprof_state_init(csprof_state_t *x)
      integer.  Tru64 Unix returns an `int'.  it probably won't hurt us
      if we get truncated on ia64, right? */
 
-  int hostid = gethostid(); // FIXME: added gethostid
-  pid_t pid = getpid();
-
   memset(x, 0, sizeof(*x));
 
-  x->pstate.pid = pid;
-  x->pstate.hostid = hostid;
+  x->pstate.pid = 0;    // FIXME: OBSOLETE
+  x->pstate.hostid = 0; // FIXME: OBSOLETE
 
   return CSPROF_OK;
 }
