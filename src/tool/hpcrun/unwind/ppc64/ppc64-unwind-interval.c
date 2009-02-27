@@ -7,21 +7,18 @@
 //
 //***************************************************************************
 
-/*****************************************************************************
- * system include files 
- *****************************************************************************/
+//************************* System Include Files ****************************
 
 #include <string.h>
 #include <stdio.h>
-#include <assert.h>
 #include <inttypes.h>
+#include <assert.h>
 
 
-/*****************************************************************************
- * local include files 
- *****************************************************************************/
+//*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
+#include <include/uint.h>
 
 #include "ppc64-unwind-interval.h"
 
@@ -32,62 +29,29 @@
 
 #include "fnbounds_interface.h"
 
-
-//***************************************************************************
-// macros
-//***************************************************************************
-
-#define STR(s) case s: return #s
+// FIXME: see note in mips-unwind.c
+#include <lib/isa/instructionSets/ppc.h>
 
 
-#define REGISTER_R0 (-5)
-#define REGISTER_LR (-3)
-
-
-#define MFLR_R0(x)      ((x) == 0x7c0802a6)
-#define STW_R0_R1(x)    (((x) & 0xffff0000) == 0x90010000)
-#define STWU_R1_R1(x)   (((x) & 0xffff0000) == 0x94210000)
-#define MTLR_R0(x)      ((x) == 0x7c0803a6)
-#define LWZ_R0_R1(x)    (((x) & 0xffff0000) == 0x80010000)
-#define DISP(x)         (((short)((x) & 0x0000ffff)))
-#define ADDI_R1(x)      (((x) & 0xffff0000) == 0x38210000)
-#define MR_R1(x)        (((x) & 0xffc003ff) == 0x7d400378)
-#define BLR(x)          ((x) == 0x4e800020)
-
-#define NEXT_INS        ((char *) (cur_ins + 1))
-
-
-/*****************************************************************************
- * forward declarations
- *****************************************************************************/
+//*************************** Forward Declarations **************************
 
 static interval_status 
 ppc64_build_intervals(char *ins, unsigned int len);
 
 static void 
-ppc64_print_interval_set(unwind_interval *first);
+ppc64_print_interval_set(unw_interval_t *first);
 
-static const char *ra_status_string(ra_loc l); 
-static const char *bp_status_string(bp_loc l);
+static const char *
+ra_status_string(ra_loc l); 
+
+static const char *
+bp_status_string(bp_loc l);
 
 
 
 //***************************************************************************
 // global variables
 //***************************************************************************
-
-const unwind_interval poison_ui = {
-  .common    = {
-    .next  = NULL,
-    .prev  = NULL
-  },
-
-  .ra_status = POISON,
-
-  .bp_status = BP_HOSED,
-  .bp_ra_pos = 0,
-};
-
 
 long ui_cnt = 0;
 long suspicious_cnt = 0;
@@ -103,69 +67,49 @@ build_intervals(char *ins, unsigned int len)
 {
   interval_status stat = ppc64_build_intervals(ins, len);
 
-  ppc64_print_interval_set((unwind_interval *) stat.first);
+  ppc64_print_interval_set((unw_interval_t *) stat.first);
 
   return stat;
 }
 
 
 //***************************************************************************
-// interface operations 
+// unw_interval_t interface
 //***************************************************************************
 
-unwind_interval *
-new_ui(char *start, 
-       ra_loc ra_status, int bp_ra_pos, 
-       bp_loc bp_status,          
-       unwind_interval *prev)
+unw_interval_t *
+new_ui(char *start_addr,
+       ra_loc ra_status, int ra_arg, bp_loc bp_status, 
+       unw_interval_t *prev)
 {
-  unwind_interval *u = (unwind_interval *) csprof_ui_malloc(sizeof(unwind_interval)); 
+  unw_interval_t* u = (unw_interval_t*)csprof_ui_malloc(sizeof(unw_interval_t));
 
-// **** SPECIAL PURPOSE CODE TO INDUCE MEM FAILURE (conditionally included) ***
-# include "mem_error_gen.h" 
-
-  (void) fetch_and_add(&ui_cnt, 1);
-
-  u->common.start = start;
+  u->common.start = start_addr;
   u->common.end = 0;
+  u->common.prev = (splay_interval_t*)prev;
+  u->common.next = NULL;
+
+  if (prev) {
+    ui_link(prev, u);
+  }
 
   u->ra_status = ra_status;
   u->bp_status = bp_status;
-  u->bp_ra_pos = bp_ra_pos;
+  u->ra_arg    = ra_arg;
 
-  u->common.prev = (splay_interval_t *) prev;
-  u->common.next = NULL;
+  fetch_and_add(&ui_cnt, 1);
 
-  return u; 
+  return u;
 }
 
 
 void 
-link_ui(unwind_interval *current, unwind_interval *next)
+ui_dump(unw_interval_t* u, int dump_to_stdout)
 {
-  current->common.end = next->common.start;
-  current->common.next= (splay_interval_t *)next;
-}
-
-
-void 
-dump_ui(unwind_interval *u, int dump_to_stdout)
-{
-  char buf[1000];
-
-  sprintf(buf, "INTV: start=%p end =%p ra_status=%s bp_status=%s "
-	  "bp_ra_pos = %d next=%p prev=%p\n", 
-	  (void *) u->common.start, (void *) u->common.end, 
-	  ra_status_string(u->ra_status), bp_status_string(u->bp_status), 
-	  u->bp_ra_pos, u->common.next, u->common.prev); 
-
-  PMSG(INTV,buf);
-#if 0
-  if (dump_to_stdout) { 
-    fprintf(stderr, "%s", buf);
-    fflush(stderr);
-  }
-#endif
+  TMSG(INTV, "start=%p end=%p ra_ty=%s bp_ty=%s ra_arg=%d next=%p prev=%p\n",
+       (void *) u->common.start, (void *) u->common.end, 
+       ra_status_string(u->ra_status), bp_status_string(u->bp_status), 
+       u->ra_arg, u->common.next, u->common.prev);
 }
 
 
@@ -193,10 +137,20 @@ suspicious_interval(void *pc)
 }
 
 
+void 
+ui_link(unw_interval_t* current, unw_interval_t* next)
+{
+  current->common.end = next->common.start;
+  current->common.next= (splay_interval_t*)next;
+}
 
-/*****************************************************************************
- * private operations 
- *****************************************************************************/
+
+
+//***************************************************************************
+// private operations 
+//***************************************************************************
+
+#define STR(s) case s: return #s
 
 static const char *
 ra_status_string(ra_loc l) 
@@ -206,7 +160,7 @@ ra_status_string(ra_loc l)
    STR(RA_STD_FRAME);
    STR(RA_BP_FRAME);
    STR(RA_REGISTER);
-   STR(POISON);
+   STR(RA_POISON);
   default:
     assert(0);
   }
@@ -232,8 +186,8 @@ static const char *
 register_name(int reg)
 {
    switch(reg) {
-   case REGISTER_LR: return "lr";
-   case REGISTER_R0: return "r0";
+   case PPC_REG_LR: return "lr";
+   case PPC_REG_R0: return "r0";
    default:          assert(0);
    }
    return NULL;
@@ -242,75 +196,77 @@ register_name(int reg)
 
 
 //***************************************************************************
+// build_intervals: helpers
+//***************************************************************************
+
+
+//***************************************************************************
 // build_intervals:
 //***************************************************************************
 
-// states
+// Typical PPC frames:
+//   stwu r1, -32(r1)   ! store with update: store stack pointer (R1) at
+//                      !   -32(r1) and *then* set R1 to -32(r1)
+//   mflr r0            ! move from LR: (and store into R0)
+//   stw  r0, 36(r1)    ! store word: store LR (return addr) in *parent* frame
+//
+//   // ... do some stuff ...
+//
+//   lwz r0, 36(r1)     ! load LR
+//   mtlr r0            ! mtlr: move to LR (from r0)
+//   blr                ! blr: return!
+// 
+// Observe:
+//   1. Before mflr, RA is in LR and R1
+//   1. After stw,   RA is in parent's frame; parent 
+
+// states:
 //   ra in LR, BP_UNCHANGED, RA_REGISTER
 //   parent's BP in R1 - BP_UNCHANGED, RA_REGISTER
 //   my BP in R1 - BP_SAVED, RA_REGISTER
 //   ra relative to bp, BP_SAVED, BP_FRAME
 
-/*
-  Typical PPC frames:
-  
-  // stwu: store with update:
-  //       push the stack pointer (r1) and then update the stack pointer
-  // mflr: move from LR (and store into r0)
-  // stw: store word: Push LR (which contains the return address)
-  stwu r1, -32(r1)
-  mflr r0
-  stw  r0, 36(r1)
-
-  // ... do some stuff ...
-
-  // Pop LR
-  // mtlr: move to LR (from r0)
-  // blr: return!
-  lwz r0, 36(r1)
-  mtlr r0
-  blr
-*/
-
-
 static interval_status 
-ppc64_build_intervals(char *ins, unsigned int len)
+ppc64_build_intervals(char *beg_insn, unsigned int len)
 {
+#define NEXT_INS        ((char *) (cur_insn + 1))
+
   interval_status stat;
 
-  unwind_interval *first = new_ui(ins, RA_REGISTER, REGISTER_LR, 
-				  BP_UNCHANGED,  NULL);
-  unwind_interval *ui = first;
-  unwind_interval *next = NULL;
-  unwind_interval *canonical = first;
+  unw_interval_t* beg_ui = new_ui(beg_insn, RA_REGISTER, PPC_REG_LR, 
+				  BP_UNCHANGED, NULL);
+  unw_interval_t* ui = beg_ui;
+  unw_interval_t* nxt_ui = NULL;
+  unw_interval_t* canon_ui = beg_ui;
 
   int frame_size = 0;
   int ra_disp = 0;
 
-  int *cur_ins = (int *) ins;
-  int *end_ins = (int *) (ins + len);
+  uint32_t* cur_insn = (uint32_t*) beg_insn;
+  uint32_t* end_insn = (uint32_t*) (beg_insn + len);
 
-  while (cur_ins < end_ins) {
-      TMSG(INTV,"trying 0x%x [%p,%p)\n",*cur_ins, cur_ins, end_ins);
+  while (cur_insn < end_insn) {
+    TMSG(INTV,"trying 0x%x [%p,%p)\n", *cur_insn, cur_insn, end_insn);
+
     //--------------------------------------------------
     // move return address from LR to R0
     //--------------------------------------------------
-    if (MFLR_R0(*cur_ins)) {
-      next = new_ui(NEXT_INS, RA_REGISTER, REGISTER_R0, ui->bp_status, ui);
-      link_ui(ui, next); ui = next;
+    if (PPC_OP_MFLR_R0(*cur_insn)) {
+      nxt_ui = new_ui(NEXT_INS, RA_REGISTER, PPC_REG_R0, ui->bp_status, ui);
+      ui = nxt_ui;
     }
-
+    
     //--------------------------------------------------
     // store return address into parent's frame
     // we don't need to remember the offset for the return address
     // because we can just get it out of the parent's frame
     //--------------------------------------------------
-    if (STW_R0_R1(*cur_ins)) {
-      short ra_disp = DISP(*cur_ins);
+    else if (PPC_OP_STW_R0_R1(*cur_insn)) {
+      short ra_disp = PPC_OPND_DISP(*cur_insn);
       if ((frame_size + 4 == (int) ra_disp) && (ra_disp > 4)) {
-        next = new_ui(NEXT_INS, RA_BP_FRAME, 0, BP_SAVED, ui);
-        if (canonical == first) canonical = next;
-        link_ui(ui, next); ui = next;
+        nxt_ui = new_ui(NEXT_INS, RA_BP_FRAME, 0, BP_SAVED, ui);
+        if (canon_ui == beg_ui) canon_ui = nxt_ui;
+        ui = nxt_ui;
       }
     }
 
@@ -319,71 +275,71 @@ ppc64_build_intervals(char *ins, unsigned int len)
     // NOTE: return address remains in the register that 
     //       it was in before 
     //--------------------------------------------------
-    if (STWU_R1_R1(*cur_ins)) {
-      next = new_ui(NEXT_INS, RA_REGISTER, ui->bp_ra_pos, BP_SAVED, ui);
-      frame_size = - DISP(*cur_ins);
-      link_ui(ui, next); ui = next;
+    else if (PPC_OP_STWU_R1_R1(*cur_insn)) {
+      nxt_ui = new_ui(NEXT_INS, RA_REGISTER, ui->ra_arg, BP_SAVED, ui);
+      frame_size = - PPC_OPND_DISP(*cur_insn);
+      ui = nxt_ui;
     }
 
     //--------------------------------------------------
     // move return address from R0 to LR
     //--------------------------------------------------
-    if (MTLR_R0(*cur_ins)) {
-      next = new_ui(NEXT_INS, RA_REGISTER, REGISTER_LR, ui->bp_status, ui);
-      link_ui(ui, next); ui = next;
+    else if (PPC_OP_MTLR_R0(*cur_insn)) {
+      nxt_ui = new_ui(NEXT_INS, RA_REGISTER, PPC_REG_LR, ui->bp_status, ui);
+      ui = nxt_ui;
     }
 
     //--------------------------------------------------
     // reset frame pointer to caller's frame
     //--------------------------------------------------
-    if (MR_R1(*cur_ins) || (ADDI_R1(*cur_ins) && (DISP(*cur_ins) == frame_size)))
-    {
+    else if (PPC_OP_MR_R1(*cur_insn) || 
+	     (PPC_OP_ADDI_R1(*cur_insn) 
+	      && (PPC_OPND_DISP(*cur_insn) == frame_size))) {
       // assume the mr restores the proper value; we would have to track 
       // register values to be sure.
-      next = new_ui(NEXT_INS, ui->ra_status, ui->bp_ra_pos, BP_UNCHANGED, ui);
-      link_ui(ui, next); ui = next;
+      nxt_ui = new_ui(NEXT_INS, ui->ra_status, ui->ra_arg, BP_UNCHANGED, ui);
+      ui = nxt_ui;
     }
 
     //--------------------------------------------------
     // load return address into R0 from caller's frame
     //--------------------------------------------------
-    if (LWZ_R0_R1(*cur_ins) && DISP(*cur_ins) == ra_disp) {
-      next = new_ui(NEXT_INS, RA_REGISTER, REGISTER_R0, ui->bp_status, ui);
-      link_ui(ui, next); ui = next;
+    else if (PPC_OP_LWZ_R0_R1(*cur_insn) 
+	     && PPC_OPND_DISP(*cur_insn) == ra_disp) {
+      nxt_ui = new_ui(NEXT_INS, RA_REGISTER, PPC_REG_R0, ui->bp_status, ui);
+      ui = nxt_ui;
     }
-    if (BLR(*cur_ins) && (cur_ins + 1 < end_ins)) {
+    
+    else if (PPC_OP_BLR(*cur_insn) && (cur_insn + 1 < end_insn)) {
       // a return, but not the last instruction in the routine
-      if ((ui->ra_status !=  canonical->ra_status) &&
-          (ui->bp_ra_pos !=  canonical->bp_ra_pos) &&
-          (ui->bp_status !=  canonical->bp_status)) {
+      if ((ui->ra_status != canon_ui->ra_status) &&
+          (ui->ra_arg    != canon_ui->ra_arg) &&
+          (ui->bp_status != canon_ui->bp_status)) {
          // don't make a new interval if it is the same as the present one.
-         next = new_ui(NEXT_INS, canonical->ra_status, canonical->bp_ra_pos, 
-                       canonical->bp_status, ui);
-         link_ui(ui, next); ui = next;
+         nxt_ui = new_ui(NEXT_INS, canon_ui->ra_status, canon_ui->ra_arg, 
+                       canon_ui->bp_status, ui);
+         ui = nxt_ui;
       }
     }
 
-
-    cur_ins++;
+    cur_insn++;
   }
 
-  ui->common.end = end_ins;
+  ui->common.end = end_insn;
 
   stat.first_undecoded_ins = NULL;
   stat.errcode = 0;
-  stat.first = (splay_interval_t *) first;
+  stat.first = (splay_interval_t *) beg_ui;
 
   return stat; 
 }
 
 
 static void 
-ppc64_print_interval_set(unwind_interval *first) 
+ppc64_print_interval_set(unw_interval_t *beg_ui) 
 {
-  unwind_interval *u;
-
-  for(u = first; u; u = (unwind_interval *) u->common.next) {
-    dump_ui(u, 1);
+  for (unw_interval_t* u = beg_ui; u; u = (unw_interval_t*)u->common.next) {
+    ui_dump(u, 1);
   }
 }
 
@@ -396,10 +352,10 @@ ppc64_dump_intervals(char  *addr)
 
   fnbounds_enclosing_addr(addr, &s, &e);
 
-  uintptr_t llen = ((unsigned long) e) - (unsigned long) s;
+  uintptr_t llen = ((uintptr_t)e) - (uintptr_t)s;
 
   printf("build intervals from %p to %p (%"PRIuPTR")\n", s, e, llen);
   intervals = ppc64_build_intervals(s, (unsigned int) llen);
 
-  ppc64_print_interval_set((unwind_interval *) intervals.first);
+  ppc64_print_interval_set((unw_interval_t *) intervals.first);
 }
