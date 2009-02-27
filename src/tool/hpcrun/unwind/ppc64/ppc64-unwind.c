@@ -77,24 +77,24 @@ ucontext_sp(ucontext_t *context)
 //***************************************************************************
 
 static inline void*
-getNxtPCFromFP(void** fp)
+getNxtPCFromSP(void** sp)
 {
-  static const int RA_OFFSET_FROM_FP = 1;
-  return *(fp + RA_OFFSET_FROM_FP);
+  static const int RA_OFFSET_FROM_SP = 1;
+  return *(sp + RA_OFFSET_FROM_SP);
 }
 
 
 static inline bool
-isPossibleNonBottomFP(void** fp)
+isPossibleNonBottomSP(void** fp)
 {
-  // Stacks grow down, so frame pointer is at a higher address
+  // Stacks grow down, so stack pointer is at a higher address
   // N.B.: fp is strictly less than stack bottom
   return (monitor_stack_bottom() > (void*)fp /*&& fp >= sp*/);
 }
 
 
 static inline bool
-isPossibleParentFP(void** fp, void** parent_fp)
+isPossibleParentSP(void** fp, void** parent_fp)
 {
   // Stacks grow down, so outer frames are at higher addresses
   return (parent_fp > fp); // assume frame size is not 0
@@ -136,27 +136,24 @@ unw_init_cursor(unw_cursor_t *cursor, void *context)
 
   cursor->pc = ucontext_pc(ctxt);
   cursor->ra = NULL;
-  cursor->sp = NULL;
-  cursor->bp = ucontext_fp(ctxt);
+  cursor->sp = ucontext_sp(ctxt);
+  cursor->bp = NULL;
 
   unw_interval_t* intvl = (unw_interval_t*)csprof_addr_to_interval(cursor->pc);
   cursor->intvl = (splay_interval_t*)intvl;
     
-  if (intvl->ra_status == RA_REGISTER) {
-    if (intvl->ra_arg == PPC_REG_R0) {
-      cursor->ra = (void*)(ctxt->uc_mcontext.regs->gpr[PPC_REG_R0]);
-    }
-    else if (intvl->ra_arg == PPC_REG_LR) {
+  if (intvl->ra_ty == RATy_Reg) {
+    if (intvl->ra_arg == PPC_REG_LR) {
       cursor->ra = (void*)(ctxt->uc_mcontext.regs->link);
     }
     else {
-      assert(0);
+      cursor->ra = (void*)(ctxt->uc_mcontext.regs->gpr[intvl->ra_arg]);
     }
   }
   
   TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
        cursor->pc, cursor->ra, cursor->sp, cursor->bp);
-  if (MYDBG) { ui_dump(intvl, 1); }
+  if (MYDBG) { ui_dump(intvl); }
 }
 
 
@@ -165,14 +162,14 @@ unw_step(unw_cursor_t *cursor)
 {
   // current frame
   void*  pc = cursor->pc;
-  void** sp = cursor->sp; // unused
-  void** fp = cursor->bp;
+  void** sp = cursor->sp;
+  void** fp = cursor->bp; // unused
   unw_interval_t* intvl = (unw_interval_t*)(cursor->intvl);
   
   // next (parent) frame
   void*  nxt_pc = NULL;
-  void** nxt_sp = NULL; // unused
-  void** nxt_fp = NULL;
+  void** nxt_sp = NULL;
+  void** nxt_fp = NULL; // unused
   void*  nxt_ra = NULL; // always NULL unless we go through a signal handler
   unw_interval_t* nxt_intvl = NULL;
   
@@ -191,8 +188,8 @@ unw_step(unw_cursor_t *cursor)
     return STEP_STOP;
   }
   
-  if ((void*)fp >= monitor_stack_bottom()) {
-    TMSG(UNW, "stop: fp (%p) >= unw_stack_bottom", fp);
+  if ((void*)sp >= monitor_stack_bottom()) {
+    TMSG(UNW, "stop: sp (%p) >= unw_stack_bottom", sp);
     return STEP_STOP;
   }
 
@@ -200,34 +197,41 @@ unw_step(unw_cursor_t *cursor)
   //-----------------------------------------------------------
   // compute RA (return address) for the caller's frame
   //-----------------------------------------------------------
-  if (intvl->ra_status == RA_REGISTER) {
+  if (intvl->ra_ty == RATy_Reg) {
     // RA should be in a register only on the first call to unw_step()
     // (or the first call after going through a signal trampoline)
     nxt_pc = cursor->ra;
   }
   else {
     // INVARIANT: RA is saved in my caller's stack frame
-    if (intvl->bp_status != BP_SAVED) {
-      // FP already points to caller's stack frame
-      nxt_pc = getNxtPCFromFP(fp);
+    if (intvl->sp_ty == SPTy_Reg) {
+      // SP already points to caller's stack frame
+      nxt_pc = getNxtPCFromSP(sp);
+    }
+    else if (intvl->sp_ty == SPTy_SPRel) {
+      // SP points to parent's SP
+      nxt_pc = getNxtPCFromSP((void**) *sp);
     }
     else {
-      // FP points to parent's FP
-      nxt_pc = getNxtPCFromFP((void**) *fp);
+      assert(0);
     }
   }
 
   //-----------------------------------------------------------
-  // compute FP (frame pointer) for the caller's frame
+  // compute SP (stack pointer) for the caller's frame
   //-----------------------------------------------------------
-  if (intvl->bp_status != BP_SAVED) {
-    // FP already points to caller's stack frame
-    nxt_fp = fp;
+  if (intvl->sp_ty == SPTy_Reg) {
+    // SP already points to caller's stack frame
+    nxt_sp = sp;
+  }
+  else if (intvl->sp_ty == SPTy_SPRel) {
+    // SP points to parent's SP
+    nxt_sp = *sp;
   }
   else {
-    // FP points to parent's FP
-    nxt_fp = *fp;
+    assert(0);
   }
+
 
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
@@ -244,39 +248,38 @@ unw_step(unw_cursor_t *cursor)
     //
     // NOTE: this should only happen in the top frame on the stack.
     //-------------------------------------------------------------------
-    void** new_fp = NULL;
-    if (isPossibleNonBottomFP(nxt_fp)) {
-      new_fp = *nxt_fp;
-      nxt_pc = getNxtPCFromFP(new_fp);
+    void** new_sp = NULL;
+    if (isPossibleNonBottomSP(nxt_sp)) {
+      new_sp = *nxt_sp;
+      nxt_pc = getNxtPCFromSP(new_sp);
     
       nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
     }
      
     if (!nxt_intvl) {
-      TMSG(UNW, "error: skip-frame failed: nxt pc=%p, fp=%p; new fp=%p", 
-	   nxt_pc, nxt_fp, new_fp);
+      TMSG(UNW, "error: skip-frame failed: nxt pc=%p, sp=%p; new sp=%p", 
+	   nxt_pc, nxt_sp, new_sp);
       return STEP_ERROR;
     }
 
-    nxt_fp = new_fp;
-    TMSG(UNW, "skip-frame: nxt pc=%p, fp=%p", nxt_pc, nxt_fp);
+    nxt_sp = new_sp;
+    TMSG(UNW, "skip-frame: nxt pc=%p, sp=%p", nxt_pc, nxt_sp);
   }
   // INVARIANT: At this point, 'nxt_intvl' is valid
 
 
   // INVARIANT: Ensure we always make progress unwinding the stack...
-  bool frameSizeMayBe0 = (intvl->bp_status != BP_SAVED);
-  if (!frameSizeMayBe0 && !isPossibleParentFP(fp, nxt_fp)) {
-    // FIXME: possibly combine this with trolling
-    //   TMSG(UNW, "warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
-    //   nxt_fp = fp + 1
-    TMSG(UNW, "error: loop! nxt_fp=%p, fp=%p", nxt_fp, fp);
+  bool frameSizeMayBe0 = (intvl->sp_ty == SPTy_Reg);
+  if (!frameSizeMayBe0 && !isPossibleParentSP(sp, nxt_sp)) {
+    // TMSG(UNW, "warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
+    // nxt_sp = sp + 1
+    TMSG(UNW, "error: loop! nxt_sp=%p, sp=%p", nxt_sp, sp);
     return STEP_ERROR;
   }
 
 
-  TMSG(UNW, "next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
-  if (MYDBG) { ui_dump(nxt_intvl, 1); }
+  TMSG(UNW, "next: pc=%p, sp=%p, sp=%p", nxt_pc, nxt_sp, nxt_sp);
+  if (MYDBG) { ui_dump(nxt_intvl); }
 
   cursor->pc = nxt_pc;
   cursor->ra = nxt_ra;

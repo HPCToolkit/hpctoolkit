@@ -42,10 +42,10 @@ static void
 ppc64_print_interval_set(unw_interval_t *first);
 
 static const char *
-ra_status_string(ra_loc l); 
+ra_ty_string(ra_ty_t l); 
 
 static const char *
-bp_status_string(bp_loc l);
+sp_ty_string(sp_ty_t l);
 
 
 
@@ -78,8 +78,8 @@ build_intervals(char *ins, unsigned int len)
 //***************************************************************************
 
 unw_interval_t *
-new_ui(char *start_addr,
-       ra_loc ra_status, int ra_arg, bp_loc bp_status, 
+new_ui(char *start_addr, 
+       ra_ty_t ra_ty, int ra_arg, sp_ty_t sp_ty, 
        unw_interval_t *prev)
 {
   unw_interval_t* u = (unw_interval_t*)csprof_ui_malloc(sizeof(unw_interval_t));
@@ -93,9 +93,9 @@ new_ui(char *start_addr,
     ui_link(prev, u);
   }
 
-  u->ra_status = ra_status;
-  u->bp_status = bp_status;
-  u->ra_arg    = ra_arg;
+  u->ra_ty  = ra_ty;
+  u->sp_ty  = sp_ty;
+  u->ra_arg = ra_arg;
 
   fetch_and_add(&ui_cnt, 1);
 
@@ -104,11 +104,15 @@ new_ui(char *start_addr,
 
 
 void 
-ui_dump(unw_interval_t* u, int dump_to_stdout)
+ui_dump(unw_interval_t* u)
 {
-  TMSG(INTV, "start=%p end=%p ra_ty=%s bp_ty=%s ra_arg=%d next=%p prev=%p\n",
+  if (!u) {
+    return;
+  }
+
+  TMSG(INTV, "start=%p end=%p ra_ty=%s sp_ty=%s ra_arg=%d next=%p prev=%p\n",
        (void *) u->common.start, (void *) u->common.end, 
-       ra_status_string(u->ra_status), bp_status_string(u->bp_status), 
+       ra_ty_string(u->ra_ty), sp_ty_string(u->sp_ty), 
        u->ra_arg, u->common.next, u->common.prev);
 }
 
@@ -153,14 +157,12 @@ ui_link(unw_interval_t* current, unw_interval_t* next)
 #define STR(s) case s: return #s
 
 static const char *
-ra_status_string(ra_loc l) 
+ra_ty_string(ra_ty_t l) 
 {
-  switch(l) {
-   STR(RA_SP_RELATIVE);
-   STR(RA_STD_FRAME);
-   STR(RA_BP_FRAME);
-   STR(RA_REGISTER);
-   STR(RA_POISON);
+  switch (l) {
+   STR(RATy_NULL);
+   STR(RATy_SPRel);
+   STR(RATy_Reg);
   default:
     assert(0);
   }
@@ -169,12 +171,12 @@ ra_status_string(ra_loc l)
 
 
 static const char *
-bp_status_string(bp_loc l)
+sp_ty_string(sp_ty_t l)
 {
-  switch(l){
-    STR(BP_UNCHANGED);
-    STR(BP_SAVED);
-    STR(BP_HOSED);
+  switch (l) {
+    STR(SPTy_NULL);
+    STR(SPTy_SPRel);
+    STR(SPTy_Reg);
   default:
     assert(0);
   }
@@ -199,6 +201,12 @@ register_name(int reg)
 // build_intervals: helpers
 //***************************************************************************
 
+#define INSN(insn) ((char*)(insn))
+
+static inline char*
+nextInsn(uint32_t* insn) 
+{ return INSN(insn + 1); }
+
 
 //***************************************************************************
 // build_intervals:
@@ -216,25 +224,22 @@ register_name(int reg)
 //   mtlr r0            ! mtlr: move to LR (from r0)
 //   blr                ! blr: return!
 // 
-// Observe:
-//   1. Before mflr, RA is in LR and R1
-//   1. After stw,   RA is in parent's frame; parent 
+// Notes:
+// - When an alloca occurs, r0 remains the stack pointer for the
+//   constant-sized portion of the frame and another register is used as the
+//   stack pointer for the dynamically sized portion.
+//
+// States:
+//   1. RA is in register (LR/R0); SP (r1) points to parent's frame
+//   2. RA is in register (LR/R0); SP (r1) has been stored & updated
+//   3. RA is SP-relative        ; SP (r1) has been stored & updated
 
-// states:
-//   ra in LR, BP_UNCHANGED, RA_REGISTER
-//   parent's BP in R1 - BP_UNCHANGED, RA_REGISTER
-//   my BP in R1 - BP_SAVED, RA_REGISTER
-//   ra relative to bp, BP_SAVED, BP_FRAME
 
 static interval_status 
 ppc64_build_intervals(char *beg_insn, unsigned int len)
 {
-#define NEXT_INS        ((char *) (cur_insn + 1))
-
-  interval_status stat;
-
-  unw_interval_t* beg_ui = new_ui(beg_insn, RA_REGISTER, PPC_REG_LR, 
-				  BP_UNCHANGED, NULL);
+  unw_interval_t* beg_ui = new_ui(beg_insn, RATy_Reg, PPC_REG_LR, SPTy_Reg, 
+				  NULL);
   unw_interval_t* ui = beg_ui;
   unw_interval_t* nxt_ui = NULL;
   unw_interval_t* canon_ui = beg_ui;
@@ -246,38 +251,42 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
   uint32_t* end_insn = (uint32_t*) (beg_insn + len);
 
   while (cur_insn < end_insn) {
-    TMSG(INTV,"trying 0x%x [%p,%p)\n", *cur_insn, cur_insn, end_insn);
+    TMSG(INTV, "insn: 0x%x [%p,%p)\n", *cur_insn, cur_insn, end_insn);
 
     //--------------------------------------------------
     // move return address from LR to R0
     //--------------------------------------------------
     if (PPC_OP_MFLR_R0(*cur_insn)) {
-      nxt_ui = new_ui(NEXT_INS, RA_REGISTER, PPC_REG_R0, ui->bp_status, ui);
+      nxt_ui = new_ui(nextInsn(cur_insn), RATy_Reg, PPC_REG_R0, ui->sp_ty, ui);
       ui = nxt_ui;
     }
     
     //--------------------------------------------------
     // store return address into parent's frame
-    // we don't need to remember the offset for the return address
-    // because we can just get it out of the parent's frame
     //--------------------------------------------------
     else if (PPC_OP_STW_R0_R1(*cur_insn)) {
-      short ra_disp = PPC_OPND_DISP(*cur_insn);
-      if ((frame_size + 4 == (int) ra_disp) && (ra_disp > 4)) {
-        nxt_ui = new_ui(NEXT_INS, RA_BP_FRAME, 0, BP_SAVED, ui);
-        if (canon_ui == beg_ui) canon_ui = nxt_ui;
+      ra_disp = PPC_OPND_DISP(*cur_insn);
+      // we do not need to remember the offset for the return address
+      // because we can just pluck it out of the parent's frame
+
+      // FIXME: using these constants is dangerous -- isn't it void*?
+      if ((frame_size + 4 == ra_disp) && (ra_disp > 4)) {
+        nxt_ui = new_ui(nextInsn(cur_insn), RATy_SPRel, 0, SPTy_SPRel, ui);
+        if (canon_ui == beg_ui) {
+	  canon_ui = nxt_ui;
+	}
         ui = nxt_ui;
       }
     }
 
     //--------------------------------------------------
-    // set up my frame
-    // NOTE: return address remains in the register that 
-    //       it was in before 
+    // create frame (adjust SP) and store parent's SP
     //--------------------------------------------------
     else if (PPC_OP_STWU_R1_R1(*cur_insn)) {
-      nxt_ui = new_ui(NEXT_INS, RA_REGISTER, ui->ra_arg, BP_SAVED, ui);
+      // NOTE: return address remains same register
       frame_size = - PPC_OPND_DISP(*cur_insn);
+      nxt_ui = new_ui(nextInsn(cur_insn), 
+		      ui->ra_ty, ui->ra_arg, SPTy_SPRel, ui);
       ui = nxt_ui;
     }
 
@@ -285,7 +294,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     // move return address from R0 to LR
     //--------------------------------------------------
     else if (PPC_OP_MTLR_R0(*cur_insn)) {
-      nxt_ui = new_ui(NEXT_INS, RA_REGISTER, PPC_REG_LR, ui->bp_status, ui);
+      nxt_ui = new_ui(nextInsn(cur_insn), RATy_Reg, PPC_REG_LR, ui->sp_ty, ui);
       ui = nxt_ui;
     }
 
@@ -293,11 +302,11 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     // reset frame pointer to caller's frame
     //--------------------------------------------------
     else if (PPC_OP_MR_R1(*cur_insn) || 
-	     (PPC_OP_ADDI_R1(*cur_insn) 
+	     (PPC_OP_ADDI_R1(*cur_insn)
 	      && (PPC_OPND_DISP(*cur_insn) == frame_size))) {
       // assume the mr restores the proper value; we would have to track 
       // register values to be sure.
-      nxt_ui = new_ui(NEXT_INS, ui->ra_status, ui->ra_arg, BP_UNCHANGED, ui);
+      nxt_ui = new_ui(nextInsn(cur_insn), ui->ra_ty, ui->ra_arg, SPTy_Reg, ui);
       ui = nxt_ui;
     }
 
@@ -306,27 +315,28 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     //--------------------------------------------------
     else if (PPC_OP_LWZ_R0_R1(*cur_insn) 
 	     && PPC_OPND_DISP(*cur_insn) == ra_disp) {
-      nxt_ui = new_ui(NEXT_INS, RA_REGISTER, PPC_REG_R0, ui->bp_status, ui);
+      nxt_ui = new_ui(nextInsn(cur_insn), RATy_Reg, PPC_REG_R0, ui->sp_ty, ui);
       ui = nxt_ui;
     }
     
+    //--------------------------------------------------
+    // interior returns/epilogues
+    //--------------------------------------------------
     else if (PPC_OP_BLR(*cur_insn) && (cur_insn + 1 < end_insn)) {
-      // a return, but not the last instruction in the routine
-      if ((ui->ra_status != canon_ui->ra_status) &&
-          (ui->ra_arg    != canon_ui->ra_arg) &&
-          (ui->bp_status != canon_ui->bp_status)) {
-         // don't make a new interval if it is the same as the present one.
-         nxt_ui = new_ui(NEXT_INS, canon_ui->ra_status, canon_ui->ra_arg, 
-                       canon_ui->bp_status, ui);
-         ui = nxt_ui;
+      // An interior return.  Restore the canonical interval if necessary.
+      if (!ui_cmp(ui, canon_ui)) {
+	nxt_ui = new_ui(nextInsn(cur_insn), canon_ui->ra_ty, canon_ui->ra_arg, 
+			canon_ui->sp_ty, ui);
+	ui = nxt_ui;
       }
     }
-
+    
     cur_insn++;
   }
 
   ui->common.end = end_insn;
 
+  interval_status stat;
   stat.first_undecoded_ins = NULL;
   stat.errcode = 0;
   stat.first = (splay_interval_t *) beg_ui;
@@ -339,7 +349,7 @@ static void
 ppc64_print_interval_set(unw_interval_t *beg_ui) 
 {
   for (unw_interval_t* u = beg_ui; u; u = (unw_interval_t*)u->common.next) {
-    ui_dump(u, 1);
+    ui_dump(u);
   }
 }
 
