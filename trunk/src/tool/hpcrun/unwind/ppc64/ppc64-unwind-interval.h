@@ -7,80 +7,75 @@
 //
 //***************************************************************************
 
-
 #ifndef ppc64_unwind_interval_h
 #define ppc64_unwind_interval_h
 
+//************************* System Include Files ****************************
 
-/******************************************************************************
- * local includes
- *****************************************************************************/
+//*************************** User Include Files ****************************
 
 #include "splay-interval.h"
 
 
+//*************************** Forward Declarations **************************
 
-/******************************************************************************
- * type declarations 
- *****************************************************************************/
+//***************************************************************************
+
+//***************************************************************************
+// unw_interval_t
+//***************************************************************************
 
 typedef enum {
-  RA_SP_RELATIVE, RA_STD_FRAME, RA_BP_FRAME, RA_REGISTER, POISON
+  RA_SP_RELATIVE,
+  RA_STD_FRAME,
+  RA_BP_FRAME,
+  RA_REGISTER, // RA is in a register (either LR or R0)
+  RA_POISON
 } ra_loc;
 
 
 typedef enum {
-  BP_UNCHANGED, BP_SAVED, BP_HOSED
+  BP_UNCHANGED,
+  BP_SAVED,     // Parent's BP is saved in frame
+  BP_HOSED
 } bp_loc;
 
 
-struct unwind_interval_t {
+typedef struct {
   struct splay_interval_s common; // common splay tree fields
 
-  ra_loc ra_status; /* how to find the return address */
-  bp_loc bp_status; /* how to find the bp register */
-  int bp_ra_pos;    /* return address offset from bp */
-};
+  ra_loc ra_status; // how to find the return address
+  bp_loc bp_status; // how to find the bp register
+
+  // RA_REGISTER: the register that contains ra
+  // otherwise:   ra offset from bp
+  int ra_arg;
+
+} unw_interval_t;
 
 
-typedef struct unwind_interval_t unwind_interval;
+unw_interval_t *
+new_ui(char *startaddr, ra_loc ra_status, int ra_arg, 
+       bp_loc bp_status, unw_interval_t *prev);
+
+void 
+ui_dump(unw_interval_t *u, int dump_to_stdout);
+
+// FIXME: these should be part of the common interface
+long ui_count();
+long suspicious_count();
+void suspicious_interval(void *pc);
+void ui_link(unw_interval_t *current, unw_interval_t *next);
 
 
+//***************************************************************************
+// external interface
+//***************************************************************************
 
-/******************************************************************************
- * global variables 
- *****************************************************************************/
-extern const unwind_interval poison_ui;
-
-
-
-/******************************************************************************
- * interface operations
- *****************************************************************************/
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-  interval_status build_intervals(char  *ins, unsigned int len);
-
-  unwind_interval *
-  new_ui(char *startaddr, ra_loc ra_status, int bp_ra_pos, 
-	 bp_loc bp_status, unwind_interval *prev);
+interval_status 
+build_intervals(char *ins, unsigned int len);
 
 
-  void link_ui(unwind_interval *current, unwind_interval *next);
-  void dump_ui(unwind_interval *u, int dump_to_stdout);
-
-  long ui_count();
-
-  long suspicious_count();
-  void suspicious_interval(void *pc);
-
-#ifdef __cplusplus
-};
-#endif
-
-
+//***************************************************************************
 
 #endif // ppc64_unwind_interval_h
