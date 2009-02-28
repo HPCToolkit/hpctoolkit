@@ -24,6 +24,8 @@
 #include "fnbounds_interface.h"
 #include "validate_return_addr.h"
 
+static const int TROLL_LIMIT = 16;
+
 troll_status
 stack_troll(void **start_sp, uint *ra_pos, validate_addr_fn_t validate_addr, void *generic_arg)
 {

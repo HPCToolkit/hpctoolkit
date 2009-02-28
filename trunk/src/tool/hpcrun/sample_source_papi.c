@@ -70,7 +70,7 @@
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
 static void extract_and_check_event(char *in,int *ec,long *th);
 static void extract_ev_thresh(const char *in,int evlen,char *ev,long *th);
-static int event_name_to_code(char *evname,int *ec);
+static bool event_name_to_code(char *evname,int *ec);
 
 /******************************************************************************
  * local variables
@@ -327,7 +327,7 @@ extract_ev_thresh(const char *in,int evlen,char *ev,long *th)
 // convert papi event name to code
 // NOTE: return status is true if succeeded, false otherwise
 
-static int
+static bool
 event_name_to_code(char *evname,int *ec)
 {
   PAPI_event_info_t info;
@@ -336,22 +336,22 @@ event_name_to_code(char *evname,int *ec)
   if (ret != PAPI_OK) {
     TMSG(PAPI_EVENT_NAME,"event name to code failed with name = %s",evname);
     TMSG(PAPI_EVENT_NAME,"event_code_to_name failed: %d",ret);
-    EEMSG("PAPI_event_name_to_code fails:, errcode = %s",PAPI_strerror(ret));
-    return 0;
+    TMSG(PAPI_EVENT_NAME,"PAPI_event_name_to_code fails:, errcode = %s",PAPI_strerror(ret));
+    return false;
   }
   ret = PAPI_query_event(*ec);
   if (ret != PAPI_OK) {
     TMSG(PAPI_EVENT_NAME,"PAPI query event failed: %d",ret);
-    EEMSG("PAPI_query_event fails:, errcode = %s",PAPI_strerror(ret));
-    return 0;
+    TMSG(PAPI_EVENT_NAME,"PAPI_query_event fails:, errcode = %s",PAPI_strerror(ret));
+    return false;
   }
   ret = PAPI_get_event_info(*ec, &info);
   if (ret != PAPI_OK) {
     TMSG(PAPI_EVENT_NAME,"PAPI_get_event_info failed :%d",ret);
-    EEMSG("PAPI_get_event_info fails:, errcode = %s",PAPI_strerror(ret));
-    return 0;
+    TMSG(PAPI_EVENT_NAME,"PAPI_get_event_info fails:, errcode = %s",PAPI_strerror(ret));
+    return false;
   }
-  return 1;
+  return true;
 }
 
 static void
@@ -361,7 +361,7 @@ extract_and_check_event(char *in,int *ec,long *th)
 
   extract_ev_thresh(in,sizeof(evbuf),evbuf,th);
   if (! event_name_to_code(evbuf,ec)){
-    csprof_abort("PAPI event spec %s failed!",in);
+    csprof_abort("Strange PAPI failure. Previously validated event spec %s now fails to produce a valid event code.",in);
   }
 }
 
