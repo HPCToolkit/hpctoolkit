@@ -201,6 +201,8 @@ register_name(int reg)
 // build_intervals: helpers
 //***************************************************************************
 
+#define PPC_FRAME_LINKAGE_RA_OFST (sizeof(void*))
+
 #define INSN(insn) ((char*)(insn))
 
 static inline char*
@@ -268,9 +270,8 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
       ra_disp = PPC_OPND_DISP(*cur_insn);
       // we do not need to remember the offset for the return address
       // because we can just pluck it out of the parent's frame
-
-      // FIXME: using these constants is dangerous -- isn't it void*?
-      if ((frame_size + 4 == ra_disp) && (ra_disp > 4)) {
+      if ((frame_size + PPC_FRAME_LINKAGE_RA_OFST == ra_disp) 
+	  && (ra_disp > PPC_FRAME_LINKAGE_RA_OFST)) {
         nxt_ui = new_ui(nextInsn(cur_insn), RATy_SPRel, 0, SPTy_SPRel, ui);
         if (canon_ui == beg_ui) {
 	  canon_ui = nxt_ui;

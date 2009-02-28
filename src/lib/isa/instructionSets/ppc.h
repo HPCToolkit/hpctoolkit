@@ -54,6 +54,8 @@
 #ifndef isa_instructionset_ppc_h
 #define isa_instructionset_ppc_h
 
+#include <inttypes.h>
+
 //****************************************************************************
 // 
 //****************************************************************************
@@ -68,18 +70,20 @@
 #define PPC_OP_MR_R1(x)      (((x) & 0xffc003ff) == 0x7d400378)
 #define PPC_OP_BLR(x)        ((x) == 0x4e800020)
 
+//****************************************************************************
+
 
 #define PPC_OPND_DISP(x)     (((int16_t)((x) & 0x0000ffff)))
 
+//****************************************************************************
 
 #define PPC_REG_R0 0
-#define PPC_REG_SP 1 // typically, R1 is a stack pointer...
+#define PPC_REG_SP 1 // typically, R1 is a stack pointer, not a frame pointer
 #define PPC_REG_FP 1 
 
 #define PPC_REG_PC 32
 
 #define PPC_REG_LR (-1)
-
 
 /****************************************************************************/
 
