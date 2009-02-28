@@ -5,7 +5,6 @@
 //*************************** User Include Files ****************************
 
 #include "atomic-ops.h"
-#include "dump_backtraces.h"
 #include "metrics_types.h"
 #include "pmsg.h"
 #include "segv_handler.h"
@@ -97,7 +96,7 @@ csprof_sample_event(void *context, int metric_id, unsigned long long metric_unit
 
   csprof_set_handling_sample(td);
 
-  if (!sigsetjmp(it->jb,1)){
+  if (!sigsetjmp(it->jb,1)) {
 
     if (state != NULL) {
       node = csprof_take_profile_sample(state, context, metric_id, metric_units_consumed);
@@ -121,9 +120,8 @@ csprof_sample_event(void *context, int metric_id, unsigned long long metric_unit
   }
   else {
     memset((void *)it->jb,'\0',sizeof(it->jb));
-    PMSG_LIMIT(EMSG("got bad unwind: context_pc = %p, unwind_pc = %p\n\n",state->context_pc, \
-		    state->unwind_pc));
-    dump_backtraces(state, state->unwind);
+    PMSG_LIMIT(EMSG("error: segv: context_pc=%p, unwind_pc=%p", state->context_pc, state->unwind_pc));
+    dump_backtrace(state, state->unwind);
     bad_unwind_count++;
     csprof_up_pmsg_count();
     if (TD_GET(splay_lock)) {
