@@ -141,8 +141,8 @@ unw_init_cursor(unw_cursor_t *cursor, void *context)
 
   unw_interval_t* intvl = (unw_interval_t*)csprof_addr_to_interval(cursor->pc);
   cursor->intvl = (splay_interval_t*)intvl;
-    
-  if (intvl->ra_ty == RATy_Reg) {
+  
+  if (intvl && intvl->ra_ty == RATy_Reg) {
     if (intvl->ra_arg == PPC_REG_LR) {
       cursor->ra = (void*)(ctxt->uc_mcontext.regs->link);
     }
