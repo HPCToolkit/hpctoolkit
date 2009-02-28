@@ -278,7 +278,7 @@ unw_step(unw_cursor_t *cursor)
   }
 
 
-  TMSG(UNW, "next: pc=%p, sp=%p, sp=%p", nxt_pc, nxt_sp, nxt_sp);
+  TMSG(UNW, "next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
   if (MYDBG) { ui_dump(nxt_intvl); }
 
   cursor->pc = nxt_pc;
