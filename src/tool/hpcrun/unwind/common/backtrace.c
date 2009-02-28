@@ -32,11 +32,14 @@
 //***************************************************************************
 
 static csprof_cct_node_t*
-csprof_sample_callstack_from_frame(csprof_state_t *, int,
-				   size_t, unw_cursor_t *);
+hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
+		 int metric_id, size_t sample_count);
 
 
 #if (HPC_UNW_LITE)
+static int
+hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context);
+
 static int
 test_backtrace_lite(ucontext_t* context);
 #endif
@@ -59,19 +62,16 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
   
   csprof_cct_node_t* n = NULL;
   if (!lush_agents) {
-    unw_cursor_t frame;
-    unw_init_cursor(&frame, context);
-    MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
-    n = csprof_sample_callstack_from_frame(state, metric_id,
-					   sample_count, &frame);    
-    //HPC_IF_UNW_LITE(test_backtrace_lite(context);)
+    n = hpcrun_backtrace(state, context, metric_id, sample_count);
   }
   else {
     n = lush_backtrace(state, context, metric_id, sample_count);
   }
+  //HPC_IF_UNW_LITE(test_backtrace_lite(context);)
 
   if (!n) {
-    DBGMSG_PUB(1, "Error... (pid=%d)", getpid()); // FIXME: improve
+    // N.B.: may not be an error for lush_backtrace
+    // EMSG("error: ");
   }
 
   return n;
@@ -79,9 +79,110 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
 
 
 
+//***************************************************************************
+// private operations 
+//***************************************************************************
+
+//---------------------------------------------------------------------------
+// function: hpcrun_filter_sample
+//
+// purpose:
+//     ignore any samples that aren't rooted at designated call sites in 
+//     monitor that should be at the base of all process and thread call 
+//     stacks. 
+//
+// implementation notes:
+//     to support this, in monitor we define a pair of labels surrounding the 
+//     call site of interest. it is possible to get a sample between the pair 
+//     of labels that is outside the call. in that case, the length of the 
+//     sample's callstack would be 1, and we ignore it.
+//-----------------------------------------------------------------------------
+static int
+hpcrun_filter_sample(int len, csprof_frame_t *start, csprof_frame_t *last)
+{
+#if (HPC_UNW_LITE)
+  return ( !(len > 1) );
+#else
+  return ( !(monitor_in_start_func_narrow(last->ip) && (len > 1)) );
+#endif
+}
+
+
+static csprof_cct_node_t*
+hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
+		 int metric_id, size_t sample_count)
+{
+  int backtrace_trolled = 0;
+
+  unw_cursor_t cursor;
+  unw_init_cursor(&cursor, context);
+
+  //--------------------------------------------------------------------
+  // note: these variables are not local variables so that if a SIGSEGV 
+  // occurs and control returns up several procedure frames, the values 
+  // are accessible to a dumping routine that will tell us where we ran 
+  // into a problem.
+  //--------------------------------------------------------------------
+  state->unwind   = state->btbuf; // innermost
+  state->bufstk   = state->bufend;
+  state->treenode = NULL;
+
+  int unw_len = 0;
+  while (true) {
+    int ret;
+
+    unw_word_t ip = 0;
+    ret = unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    if (ret < 0) {
+      break;
+    }
+
+    csprof_state_ensure_buffer_avail(state, state->unwind);
+
+    state->unwind->ip = (void *) ip;
+    state->unwind->sp = (void *) 0;
+    state->unwind++;
+    unw_len++;
+
+    state->unwind_pc = (void *) ip; // mark starting point in case of failure
+
+    ret = unw_step(&cursor);
+    backtrace_trolled = (ret == STEP_TROLL);
+    if (ret <= 0) {
+      break;
+    }
+  }
+  if (backtrace_trolled){
+    csprof_up_pmsg_count();
+  }
+  // MSG(1,"BTIP------------");
+  // dump_backtrace(state,state->unwind);
+  
+  if (! ENABLED(NO_SAMPLE_FILTERING)) {
+    if (hpcrun_filter_sample(unw_len, state->btbuf, state->unwind - 1)){
+      TMSG(SAMPLE_FILTER, "filter sample of length %d", unw_len);
+      csprof_frame_t *fr = state->btbuf;
+      for (int i = 0; i < unw_len; i++, fr++){
+	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p",i,fr->ip);
+      }
+      filtered_samples++;
+      return 0;
+    }
+  }
+
+  csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
+  csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
+
+  csprof_cct_node_t* n;
+  n = csprof_state_insert_backtrace(state, metric_id,
+				    bt_end, bt_beg,
+				    (cct_metric_data_t){.i = sample_count});
+  return n;
+}
+
 
 #if (HPC_UNW_LITE)
-int 
+static int 
 hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
 {
   // special trivial case: size == 0 (N.B.: permit size < 0)
@@ -122,105 +223,6 @@ hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
 #endif
 
 
-//***************************************************************************
-// private operations 
-//***************************************************************************
-
-//---------------------------------------------------------------------------
-// function: csprof_sample_filter
-//
-// purpose:
-//     ignore any samples that aren't rooted at designated call sites in 
-//     monitor that should be at the base of all process and thread call 
-//     stacks. 
-//
-// implementation notes:
-//     to support this, in monitor we define a pair of labels surrounding the 
-//     call site of interest. it is possible to get a sample between the pair 
-//     of labels that is outside the call. in that case, the length of the 
-//     sample's callstack would be 1, and we ignore it.
-//-----------------------------------------------------------------------------
-static int
-csprof_sample_filter(int len, csprof_frame_t *start, csprof_frame_t *last)
-{
-#if (HPC_UNW_LITE)
-  return ( !(len > 1) );
-#else
-  return ( !(monitor_in_start_func_narrow(last->ip) && (len > 1)) );
-#endif
-}
-
-
-static csprof_cct_node_t*
-csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
-				   size_t sample_count, unw_cursor_t *cursor)
-{
-  int backtrace_trolled = 0;
-
-  //--------------------------------------------------------------------
-  // note: these variables are not local variables so that if a SIGSEGV 
-  // occurs and control returns up several procedure frames, the values 
-  // are accessible to a dumping routine that will tell us where we ran 
-  // into a problem.
-  //--------------------------------------------------------------------
-  state->unwind   = state->btbuf; // innermost
-  state->bufstk   = state->bufend;
-  state->treenode = NULL;
-
-  int unw_len = 0;
-  while (true) {
-    int ret;
-
-    unw_word_t ip = 0;
-    ret = unw_get_reg(cursor, UNW_REG_IP, &ip);
-    if (ret < 0) {
-      break;
-    }
-
-    csprof_state_ensure_buffer_avail(state, state->unwind);
-
-    state->unwind->ip = (void *) ip;
-    state->unwind->sp = (void *) 0;
-    state->unwind++;
-    unw_len++;
-
-    state->unwind_pc = (void *) ip; // mark starting point in case of failure
-
-    ret = unw_step(cursor);
-    backtrace_trolled = (ret == STEP_TROLL);
-    if (ret <= 0) {
-      break;
-    }
-  }
-  if (backtrace_trolled){
-    csprof_up_pmsg_count();
-  }
-  // MSG(1,"BTIP------------");
-  // dump_backtrace(state,state->unwind);
-  
-  if (! ENABLED(NO_SAMPLE_FILTERING)) {
-    if (csprof_sample_filter(unw_len, state->btbuf, state->unwind - 1)){
-      TMSG(SAMPLE_FILTER, "filter sample of length %d", unw_len);
-      csprof_frame_t *fr = state->btbuf;
-      for (int i = 0; i < unw_len; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p",i,fr->ip);
-      }
-      filtered_samples++;
-      return 0;
-    }
-  }
-
-  csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
-  csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
-
-  csprof_cct_node_t* n;
-  n = csprof_state_insert_backtrace(state, metric_id,
-				    bt_end, bt_beg,
-				    (cct_metric_data_t){.i = sample_count});
-  return n;
-}
-
-
 #if (HPC_UNW_LITE)
 static int
 test_backtrace_lite(ucontext_t* context)
@@ -240,7 +242,7 @@ test_backtrace_lite(ucontext_t* context)
 
 
 //***************************************************************************
-// private operations 
+// 
 //***************************************************************************
 
 void 
