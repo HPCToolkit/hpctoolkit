@@ -20,6 +20,4 @@ typedef enum {
 }
 #endif
 
-#define TROLL_LIMIT 16
-
 #endif /* STACK_TROLL_H */
