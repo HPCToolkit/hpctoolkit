@@ -192,7 +192,6 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	fnbounds/fnbounds_common.c lush/lush-backtrace.c lush/lush.c \
 	lush/lushi-cb.c lush/lush-support-rt.c memory/list.c \
 	memory/mem.c sampling/types/callstack/cct.c \
-	sampling/types/callstack/dump_backtraces.c \
 	unwind/common/backtrace.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	utilities/executable-path.c utilities/spinlock.c \
@@ -227,11 +226,10 @@ am__objects_7 = libcsprof_la-first_func.lo \
 	libcsprof_la-lush.lo libcsprof_la-lushi-cb.lo \
 	libcsprof_la-lush-support-rt.lo libcsprof_la-list.lo \
 	libcsprof_la-mem.lo libcsprof_la-cct.lo \
-	libcsprof_la-dump_backtraces.lo libcsprof_la-backtrace.lo \
-	libcsprof_la-splay.lo libcsprof_la-stack_troll.lo \
-	libcsprof_la-ui_tree.lo libcsprof_la-executable-path.lo \
-	libcsprof_la-spinlock.lo libcsprof_la-tokenize.lo \
-	libcsprof_la-unlink.lo
+	libcsprof_la-backtrace.lo libcsprof_la-splay.lo \
+	libcsprof_la-stack_troll.lo libcsprof_la-ui_tree.lo \
+	libcsprof_la-executable-path.lo libcsprof_la-spinlock.lo \
+	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
 am__objects_8 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_9 = libcsprof_la-dylib.lo
@@ -269,7 +267,6 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	fnbounds/fnbounds_common.c lush/lush-backtrace.c lush/lush.c \
 	lush/lushi-cb.c lush/lush-support-rt.c memory/list.c \
 	memory/mem.c sampling/types/callstack/cct.c \
-	sampling/types/callstack/dump_backtraces.c \
 	unwind/common/backtrace.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	utilities/executable-path.c utilities/spinlock.c \
@@ -308,10 +305,8 @@ am__objects_19 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-lush.$(OBJEXT) libcsprof_o-lushi-cb.$(OBJEXT) \
 	libcsprof_o-lush-support-rt.$(OBJEXT) \
 	libcsprof_o-list.$(OBJEXT) libcsprof_o-mem.$(OBJEXT) \
-	libcsprof_o-cct.$(OBJEXT) \
-	libcsprof_o-dump_backtraces.$(OBJEXT) \
-	libcsprof_o-backtrace.$(OBJEXT) libcsprof_o-splay.$(OBJEXT) \
-	libcsprof_o-stack_troll.$(OBJEXT) \
+	libcsprof_o-cct.$(OBJEXT) libcsprof_o-backtrace.$(OBJEXT) \
+	libcsprof_o-splay.$(OBJEXT) libcsprof_o-stack_troll.$(OBJEXT) \
 	libcsprof_o-ui_tree.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
 	libcsprof_o-spinlock.$(OBJEXT) libcsprof_o-tokenize.$(OBJEXT) \
@@ -618,7 +613,6 @@ MY_BASE_FILES = \
 	memory/list.c			\
 	memory/mem.c			\
 	sampling/types/callstack/cct.c	\
-	sampling/types/callstack/dump_backtraces.c	\
 	unwind/common/backtrace.c	\
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
@@ -915,7 +909,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-csprof_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-csproflib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-data.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-dump_backtraces.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-dylib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-env.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-epoch.Plo@am__quote@
@@ -971,7 +964,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-csprof_options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-csproflib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-data.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-dump_backtraces.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-env.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-epoch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-executable-path.Po@am__quote@
@@ -1315,13 +1307,6 @@ libcsprof_la-cct.lo: sampling/types/callstack/cct.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sampling/types/callstack/cct.c' object='libcsprof_la-cct.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-cct.lo `test -f 'sampling/types/callstack/cct.c' || echo '$(srcdir)/'`sampling/types/callstack/cct.c
-
-libcsprof_la-dump_backtraces.lo: sampling/types/callstack/dump_backtraces.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-dump_backtraces.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-dump_backtraces.Tpo -c -o libcsprof_la-dump_backtraces.lo `test -f 'sampling/types/callstack/dump_backtraces.c' || echo '$(srcdir)/'`sampling/types/callstack/dump_backtraces.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-dump_backtraces.Tpo $(DEPDIR)/libcsprof_la-dump_backtraces.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sampling/types/callstack/dump_backtraces.c' object='libcsprof_la-dump_backtraces.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-dump_backtraces.lo `test -f 'sampling/types/callstack/dump_backtraces.c' || echo '$(srcdir)/'`sampling/types/callstack/dump_backtraces.c
 
 libcsprof_la-backtrace.lo: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-backtrace.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-backtrace.Tpo -c -o libcsprof_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
@@ -1945,20 +1930,6 @@ libcsprof_o-cct.obj: sampling/types/callstack/cct.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sampling/types/callstack/cct.c' object='libcsprof_o-cct.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-cct.obj `if test -f 'sampling/types/callstack/cct.c'; then $(CYGPATH_W) 'sampling/types/callstack/cct.c'; else $(CYGPATH_W) '$(srcdir)/sampling/types/callstack/cct.c'; fi`
-
-libcsprof_o-dump_backtraces.o: sampling/types/callstack/dump_backtraces.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-dump_backtraces.o -MD -MP -MF $(DEPDIR)/libcsprof_o-dump_backtraces.Tpo -c -o libcsprof_o-dump_backtraces.o `test -f 'sampling/types/callstack/dump_backtraces.c' || echo '$(srcdir)/'`sampling/types/callstack/dump_backtraces.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-dump_backtraces.Tpo $(DEPDIR)/libcsprof_o-dump_backtraces.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sampling/types/callstack/dump_backtraces.c' object='libcsprof_o-dump_backtraces.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-dump_backtraces.o `test -f 'sampling/types/callstack/dump_backtraces.c' || echo '$(srcdir)/'`sampling/types/callstack/dump_backtraces.c
-
-libcsprof_o-dump_backtraces.obj: sampling/types/callstack/dump_backtraces.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-dump_backtraces.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-dump_backtraces.Tpo -c -o libcsprof_o-dump_backtraces.obj `if test -f 'sampling/types/callstack/dump_backtraces.c'; then $(CYGPATH_W) 'sampling/types/callstack/dump_backtraces.c'; else $(CYGPATH_W) '$(srcdir)/sampling/types/callstack/dump_backtraces.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-dump_backtraces.Tpo $(DEPDIR)/libcsprof_o-dump_backtraces.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sampling/types/callstack/dump_backtraces.c' object='libcsprof_o-dump_backtraces.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-dump_backtraces.obj `if test -f 'sampling/types/callstack/dump_backtraces.c'; then $(CYGPATH_W) 'sampling/types/callstack/dump_backtraces.c'; else $(CYGPATH_W) '$(srcdir)/sampling/types/callstack/dump_backtraces.c'; fi`
 
 libcsprof_o-backtrace.o: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-backtrace.o -MD -MP -MF $(DEPDIR)/libcsprof_o-backtrace.Tpo -c -o libcsprof_o-backtrace.o `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c

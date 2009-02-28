@@ -6,6 +6,7 @@
 // system include files
 //***************************************************************************
 
+#include <stdbool.h>
 #include <sys/types.h>
 #include <ucontext.h>
 
@@ -20,7 +21,6 @@
 #include "backtrace.h"
 #include "state.h"
 #include "general.h"
-#include "dump_backtraces.h"
 #include "pmsg.h"
 #include "monitor.h"
 #include "sample_event.h"
@@ -30,13 +30,6 @@
 //***************************************************************************
 // forward declarations 
 //***************************************************************************
-
-#ifdef DEBUG
-#define debug_dump_backtraces(x,y) dump_backtraces(x,y)
-#else
-#define debug_dump_backtraces(x,y)
-#endif
-
 
 static csprof_cct_node_t*
 csprof_sample_callstack_from_frame(csprof_state_t *, int,
@@ -110,7 +103,7 @@ hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
   while (my_size < size) {
     int ret;
 
-    void* ip = NULL;
+    unw_word_t ip = 0;
     ret = unw_get_reg(&cursor, UNW_REG_IP, &ip);
     if (ret < 0) { /* ignore error */ }
 
@@ -162,8 +155,6 @@ static csprof_cct_node_t*
 csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 				   size_t sample_count, unw_cursor_t *cursor)
 {
-  unw_word_t ip;
-  int ret;
   int backtrace_trolled = 0;
 
   //--------------------------------------------------------------------
@@ -172,30 +163,32 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
   // are accessible to a dumping routine that will tell us where we ran 
   // into a problem.
   //--------------------------------------------------------------------
-  state->unwind   = state->btbuf;
+  state->unwind   = state->btbuf; // innermost
   state->bufstk   = state->bufend;
   state->treenode = NULL;
 
   int unw_len = 0;
-  for(;;){
-    csprof_state_ensure_buffer_avail(state, state->unwind);
+  while (true) {
+    int ret;
 
-    if (unw_get_reg(cursor, UNW_REG_IP, &ip) < 0) {
-      MSG(1,"get_reg break");
+    unw_word_t ip = 0;
+    ret = unw_get_reg(cursor, UNW_REG_IP, &ip);
+    if (ret < 0) {
       break;
     }
 
-    state->unwind_pc = (void *) ip; // mark starting point in case of failure
+    csprof_state_ensure_buffer_avail(state, state->unwind);
 
     state->unwind->ip = (void *) ip;
     state->unwind->sp = (void *) 0;
     state->unwind++;
     unw_len++;
 
+    state->unwind_pc = (void *) ip; // mark starting point in case of failure
+
     ret = unw_step(cursor);
     backtrace_trolled = (ret == STEP_TROLL);
     if (ret <= 0) {
-      MSG(1,"Hit unw_step break");
       break;
     }
   }
@@ -203,13 +196,13 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
     csprof_up_pmsg_count();
   }
   // MSG(1,"BTIP------------");
-  // dump_backtraces(state,state->unwind);
+  // dump_backtrace(state,state->unwind);
   
-  if (! ENABLED(NO_SAMPLE_FILTERING)){
-    if (csprof_sample_filter(unw_len,state->btbuf,state->unwind - 1)){
-      TMSG(SAMPLE_FILTER,"filter sample of length %d",unw_len);
+  if (! ENABLED(NO_SAMPLE_FILTERING)) {
+    if (csprof_sample_filter(unw_len, state->btbuf, state->unwind - 1)){
+      TMSG(SAMPLE_FILTER, "filter sample of length %d", unw_len);
       csprof_frame_t *fr = state->btbuf;
-      for (int i = 0; i < unw_len; i++,fr++){
+      for (int i = 0; i < unw_len; i++, fr++){
 	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p",i,fr->ip);
       }
       filtered_samples++;
@@ -244,3 +237,51 @@ test_backtrace_lite(ucontext_t* context)
   return sz;
 }
 #endif
+
+
+//***************************************************************************
+// private operations 
+//***************************************************************************
+
+void 
+dump_backtrace(csprof_state_t *state, csprof_frame_t* unwind)
+{
+  static const int msg_limit = 100;
+  int msg_cnt = 0;
+
+  char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
+  char lip_str[LUSH_LIP_STR_MIN_LEN];
+
+  PMSG_LIMIT(EMSG("-- begin new backtrace (innermost first) ------------"));
+
+  if (unwind) {
+    for (csprof_frame_t* x = state->btbuf; x < unwind; ++x) {
+      lush_assoc_info_sprintf(as_str, x->as_info);
+      lush_lip_sprintf(lip_str, x->lip);
+      PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
+
+      msg_cnt++;
+      if (msg_cnt > msg_limit) {
+        PMSG_LIMIT(EMSG("!!! message limit !!!"));
+        break;
+      }
+    }
+  }
+
+  if (msg_cnt <= msg_limit && state->bufstk != state->bufend) {
+    PMSG_LIMIT(EMSG("-- begin cached backtrace ---------------------------"));
+    for (csprof_frame_t* x = state->bufstk; x < state->bufend; ++x) {
+      lush_assoc_info_sprintf(as_str, x->as_info);
+      lush_lip_sprintf(lip_str, x->lip);
+      PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
+
+      msg_cnt++;
+      if (msg_cnt > msg_limit) {
+        PMSG_LIMIT(EMSG("!!! message limit !!!"));
+        break;
+      }
+    }
+  }
+
+  PMSG_LIMIT(EMSG("-- end backtrace ------------------------------------\n"));
+}

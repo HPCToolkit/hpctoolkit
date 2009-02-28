@@ -91,7 +91,6 @@ MY_BASE_FILES =			\
 	memory/list.c			\
 	memory/mem.c			\
 	sampling/types/callstack/cct.c	\
-	sampling/types/callstack/dump_backtraces.c	\
 	unwind/common/backtrace.c	\
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\

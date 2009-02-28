@@ -43,6 +43,9 @@ int
 hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context);
 #endif
 
+// FIXME: tallent: relocate when 'csprof state' trash is untangled
+void 
+dump_backtrace(csprof_state_t *state, csprof_frame_t *unwind);
 
 //***************************************************************************
 
