@@ -26,15 +26,6 @@ process_enter(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
     case XED_OPERAND_IMM0SIGNED:
       offset += xed_decoded_inst_get_signed_immediate(xptr);
       break;
-#if 0
-      // johnmc - FIXME - need to handle this, but need to see what instruction looks like to figure out how.
-    case XED_OPERAND_IMM8:
-      {
-	int tmp = (int) r.get_imm8();
-	offset += 8 * ((tmp >= 1) ? (tmp -1):tmp);
-      }
-      break;
-#endif
     default:
       // RSP, RBP ...
       break;
