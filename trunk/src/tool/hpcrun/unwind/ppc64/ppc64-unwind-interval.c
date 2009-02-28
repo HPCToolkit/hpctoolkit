@@ -110,7 +110,7 @@ ui_dump(unw_interval_t* u)
     return;
   }
 
-  TMSG(INTV, "start=%p end=%p ra_ty=%s sp_ty=%s ra_arg=%d next=%p prev=%p\n",
+  TMSG(INTV, "intv: start=%p end=%p ra_ty=%s sp_ty=%s ra_arg=%d next=%p prev=%p",
        (void *) u->common.start, (void *) u->common.end, 
        ra_ty_string(u->ra_ty), sp_ty_string(u->sp_ty), 
        u->ra_arg, u->common.next, u->common.prev);
@@ -251,7 +251,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
   uint32_t* end_insn = (uint32_t*) (beg_insn + len);
 
   while (cur_insn < end_insn) {
-    TMSG(INTV, "insn: 0x%x [%p,%p)\n", *cur_insn, cur_insn, end_insn);
+    TMSG(INTV, "insn: 0x%x [%p,%p)", *cur_insn, cur_insn, end_insn);
 
     //--------------------------------------------------
     // move return address from LR to R0
@@ -348,9 +348,11 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 static void 
 ppc64_print_interval_set(unw_interval_t *beg_ui) 
 {
+  TMSG(INTV, "");
   for (unw_interval_t* u = beg_ui; u; u = (unw_interval_t*)u->common.next) {
     ui_dump(u);
   }
+  TMSG(INTV, "");
 }
 
 
