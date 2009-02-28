@@ -19,15 +19,6 @@ void x86_dump_intervals(char  *addr)
 }
 
 
-#if 0
-void pl_xedd(void *ins){
-  xed_decoded_inst_t xedd;
-  xed_decoded_inst_t *xptr = &xedd;
-  xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
-  xed_decode(xptr, reinterpret_cast<const uint8_t*>(ins), 15);
-}
-#endif
-
 void x86_dump_ins(void *ins)
 {
   xed_decoded_inst_t xedd;
@@ -46,15 +37,5 @@ void x86_dump_ins(void *ins)
   EMSG(errbuf);
   fprintf(stderr, errbuf);
   fflush(stderr);
-
-#if 0
-  write(0, "writing 0\n", 10);
-  write(1, "writing 1\n", 10);
-#endif
-
-#if 0
-  print_operands(xptr);
-  print_memops(xptr);
-#endif
 }
 
