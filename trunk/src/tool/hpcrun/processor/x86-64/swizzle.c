@@ -2,7 +2,6 @@
 
 #include "interface.h"
 #include "general.h"
-#include "dump_backtraces.h"
 
 extern void *__libc_start_main;
 

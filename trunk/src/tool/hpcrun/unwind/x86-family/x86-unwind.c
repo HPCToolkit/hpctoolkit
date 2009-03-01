@@ -13,8 +13,6 @@
 #include <unistd.h>
 
 #include "state.h"
-#include "dump_backtraces.h"
-
 #include "general.h"
 #include "mem.h"
 #include "pmsg.h"
