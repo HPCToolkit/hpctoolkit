@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2009/02/09}
+\setDate{ 2009/03/02}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -109,7 +109,7 @@ Collect low-overhead, high-accuracy `flat' profiles using statistical sampling (
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Examples}
 
-\subsection{Interactively visualize call path or flat metrics correlated with program structure}
+\subsection{Interactively visualize call path or flat profiles correlated with program structure}
 
 Assume we have an application called \emph{zoo} whose source code is located in in \File{path-to-zoo}.
 
@@ -121,11 +121,11 @@ Typically, this involves compiler options similar to \verb+-O3 -g+.
 (See \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} for options for specific compilers.)
 
 \item \textbf{Measure}.
-Profile with \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.
+Profile with \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} or \HTMLhref{hpcrun-flat.html}{\Cmd{hpcrun-flat}{1}}.
 Assume we wish to use two different sets of events and that the results are placed in \File{profile-file-1} and \File{profile-file-2}.
 \begin{verbatim}
-  hpcrun <event-set-1> zoo
-  hpcrun <event-set-2> zoo
+  hpcrun[-flat] <event-set-1> zoo
+  hpcrun[-flat] <event-set-2> zoo
 \end{verbatim}
 
 \item \textbf{Recover static source code structure}. 
@@ -135,14 +135,10 @@ Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to recover program structure a
 \end{verbatim}
 
 \item \textbf{Correlate call path or flat metrics with static source code structure}.
-Create an Experiment database using \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.
-Assume the Experiment database is located in \File{hpctoolkit-database}.
+Create an Experiment database using \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.  (The version of \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} must match the version of \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.)
+Assume the generated Experiment database is named \File{hpctoolkit-database}.
 \begin{verbatim}
-  hpcprof -I 'path-to-zoo' -S zoo.hpcstruct profile-file-1 profile-file-2
-\end{verbatim}
-or
-\begin{verbatim}
-  hpcprof-flat -I 'path-to-zoo/*' -S zoo.hpcstruct profile-file-1 profile-file-2
+  hpcprof[-flat] -I path-to-zoo/'*' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
 
 \item \textbf{Visualize}.
@@ -150,60 +146,59 @@ Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer
 \begin{verbatim}
   hpcviewer hpctoolkit-database
 \end{verbatim}
-Derived metrics may be computed on-the-fly with the viewer.
+Derived metrics may be computed on-the-fly with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
+See \emph{The hpcviewer User Interface} Guide for more information.
 
 \end{enumerate}
 
 
-\subsection{Visualize textual summaries of flat metrics}
+\subsection{Visualize textual summaries of flat profiles}
 
 Begin with steps 1--3 above.
 
 \begin{itemize}
 
 \item \textbf{Correlate metrics with static source code structure and generate textual summaries}.
+Use \HTMLhref{hpcproftt.html}{\Cmd{hpcproftt}{1}}.
 
 To compute raw metrics for each native event and generate the default program and load module summaries:
 \begin{verbatim}
-  hpcproftt -I 'path-to-zoo/*' -S zoo.hpcstruct profile-file-1 profile-file-2
+  hpcproftt -I path-to-zoo/'*' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
 
 To compute raw and summary metrics (but only show the latter) and generate summaries for all program structure elements:
 \begin{verbatim}
-  hpcproftt --src=sum --metric=sum-only -I 'path-to-zoo/*' -S zoo.hpcstruct profile-file-1 profile-file-2
+  hpcproftt --src=sum --metric=sum-only -I path-to-zoo/'*' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
 
 To compute raw and summary metrics and generate summaries for all program structure elements and generate annotated source files:
 \begin{verbatim}
-  hpcproftt --src=all --metric=sum -I 'path-to-zoo/*' -S zoo.hpcstruct profile-file-1 profile-file-2
-\end{verbatim}
-
-
-The first computes
-
-\end{itemize}
-
-
-\subsection{Interactively visualize derived flat metrics (computed in batch) correlated with program structure}
-
-Begin with steps 1--4 above.
-These steps create a template \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} configuration file which can be modified and used to rerun \Prog{hpcprof-flat}.
-
-\begin{itemize}
-\item \textbf{Create derived metrics}.  Add COMPUTE metrics to the \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} configuration file (named \File{config.xml}) generated during the initial run.  The \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} man page contains some examples. 
-
-\item \textbf{Correlate}. Rerun \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} to create a new Experiment database.  Assume that it is located in \File{hpctoolkit-database-1}
-\begin{verbatim}
-  hpcprof-flat --config config.xml
-\end{verbatim}
-
-\item \textbf{Visualize}.
-Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}:
-\begin{verbatim}
-  hpcviewer hpctoolkit-database-1/experiment.xml
+  hpcproftt --src=all --metric=sum -I path-to-zoo/'*' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
 
 \end{itemize}
+
+
+% \subsection{Interactively visualize derived flat metrics (computed in batch) correlated with program structure}
+
+% Begin with steps 1--4 above.
+% These steps create a template \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} configuration file which can be modified and used to rerun \Prog{hpcprof-flat}.
+
+% \begin{itemize}
+% \item \textbf{Create derived metrics}.  Add COMPUTE metrics to the \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} configuration file (named \File{config.xml}) generated during the initial run.  The \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} man page contains some examples. 
+
+% \item \textbf{Correlate}. Rerun \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} to create a new Experiment database.  Assume that it is located in \File{hpctoolkit-database-1}
+% \begin{verbatim}
+%   hpcprof-flat --config config.xml
+% \end{verbatim}
+
+% \item \textbf{Visualize}.
+% Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}:
+% \begin{verbatim}
+%   hpcviewer hpctoolkit-database-1/experiment.xml
+% \end{verbatim}
+
+% \end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
