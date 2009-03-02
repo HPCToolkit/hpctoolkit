@@ -102,7 +102,7 @@ void*
 monitor_init_thread(unsigned tid)
 {
   if (opt_debug >= 1) {
-    fprintf(stderr, "init_thread(TID=0x%lx) callback from monitor received\n", tid);
+    fprintf(stderr, "init_thread(TID=0x%ux) callback from monitor received\n", tid);
   }
   return((void *)init_thread(1));
 }

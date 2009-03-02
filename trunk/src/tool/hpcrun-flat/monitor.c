@@ -48,6 +48,7 @@
 #include "monitor.h"
 
 #include <include/uint.h>
+#include <include/min-max.h>
 
 #ifdef HAVE_MONITOR  
 // FIXME: use libmonitor completely and include it
@@ -1000,8 +1001,9 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
   char outfilenm[outfilenmLen];
   char hostnm[hostnmLen];
   const char* cmd = hpcrun_cmd; 
-  char* event = NULL, *slash = NULL;
-  uint numEvents = 0;
+  char* slash = NULL;
+  //uint numEvents = 0;
+  //char* event = NULL;
   FILE* fs;
   
   if (sharedprofdesc) {

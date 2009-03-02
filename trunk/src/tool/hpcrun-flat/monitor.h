@@ -71,14 +71,16 @@
 
 #define ERRMSG0(fmt)					                \
   { if (HPCRUN_DBG_LVL) {                                               \
-      fprintf(stderr, MSG_str(fmt " [%s:%d]"), __FILE__, __LINE__); }   \
-    else { fprintf(stderr, MSG_str(fmt)); }                             \
+      fprintf(stderr, MSG_str("[%s:%d]: " fmt), __FILE__, __LINE__); }	\
+    else {								\
+      fprintf(stderr, MSG_str(fmt)); }					\
   }
 
 #define ERRMSGx(fmt, ...)					        \
   { if (HPCRUN_DBG_LVL) {                                               \
-      fprintf(stderr, MSG_str(fmt " [%s:%d]"), __FILE__, __LINE__, __VA_ARGS__); } \
-    else { fprintf(stderr, MSG_str(fmt), __VA_ARGS__); }                \
+      fprintf(stderr, MSG_str("[%s:%d]: " fmt), __FILE__, __LINE__, __VA_ARGS__); } \
+    else {								\
+      fprintf(stderr, MSG_str(fmt), __VA_ARGS__); }			\
   }
 
 /*#define ERRMSG(...)						      \
