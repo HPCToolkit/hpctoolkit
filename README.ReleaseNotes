@@ -123,6 +123,18 @@ Summary of "Best Practices" from the 'hpctoolkit(1)' man page:
   is attributed to a nearby load.)  However, aggregation at the
   procedure and loop level is reliable.
 
+- System itimer (WALLCLOCK).  On Linux systems, the kernel will not
+  deliver itimer interrupts faster than the unit of a jiffy, which
+  defaults to 4 milliseconds.  One can configure the kernel to use a
+  value as small as 1 millisecond, but it is unlikely the kernel will
+  actually deliver itimer signals at that rate when a period of 1000
+  microseconds is requested.  
+
+  However, on Linux one can get quite close to the kernel Hz rate by
+  setting the itimer interval to something less than the Hz rate.  For
+  example, if the Hz rate is 1000 microseconds, one can use 500
+  microseconds (or just 1) and obtain about 999 interrupts per second.
+
 
 1.1.3. Measurement limitations:
 
