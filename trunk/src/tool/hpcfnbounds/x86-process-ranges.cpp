@@ -616,11 +616,8 @@ nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
 	xed_operand_enum_t   op0_name = xed_operand_name(op0);
 
 	if (op0_name == XED_OPERAND_REG0) { 
-	  xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-	  if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
-	    add_stripped_function_entry(ins + offset, 1 /* support */); 
-	    return true;
-	  }
+	  add_stripped_function_entry(ins + offset, 1 /* support */); 
+	  return true;
 	}
       }
       return false;

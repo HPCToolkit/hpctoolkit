@@ -50,7 +50,7 @@ offset_for_fn(void *addr)
 {
   CodeRangeSet::iterator it = code_ranges.lower_bound(addr);
 
-  if (it != code_ranges.begin() && it != code_ranges.end()) {
+  if (it != code_ranges.begin()) { 
     if (--it != code_ranges.begin()) {
       CodeRange *r = (*it).second;
       if (r->Contains(addr)) return r->Offset();

@@ -98,6 +98,12 @@ dump_reachable_functions()
 	    (((unsigned long) nextf->address) - 
 	     ((unsigned long) f->address)) < 16)  {
 	  long offset = offset_for_fn(f->address);
+	  if (offset == 0) {
+            // if f->address lies within a valid code range, its
+            // offset will be non-zero. if offset is zero, the 
+            // address cannot be a valid function start.
+	    continue; 
+          }
 	  if (!range_contains_control_flow((char *) f->address + offset, 
 					   ((char *) nextf->address + 
 					    offset)))
