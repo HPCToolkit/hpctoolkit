@@ -65,6 +65,8 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 //************************* User Include Files *******************************
 
+#include <include/gcc-attr.h>
+
 #include "ConfigParser.hpp"
 
 #include <lib/prof-juicy-x/MathMLExprParser.hpp>
@@ -144,7 +146,7 @@ getAttr(DOMNode *node, const XMLCh *attrName);
 static void
 canonicalizePaths(string& inPath, string& outPath);
 
-static void 
+static void GCC_ATTR_UNUSED
 printName(DOMNode *node)
 {
   const XMLCh *nodeName = node->getNodeName();

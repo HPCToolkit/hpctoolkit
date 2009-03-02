@@ -106,7 +106,7 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
 
   while (ins < end) {
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
     // vins = virtual address of instruction as we expect it in the object file
     // (this is useful because we can set a breakpoint to watch a vins)
