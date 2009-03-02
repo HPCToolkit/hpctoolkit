@@ -4,22 +4,39 @@
 //     structure for the contexts may be different for the
 //     target system vs the build system.
 
+//***************************************************************************
+// system include files 
+//***************************************************************************
+
 #include <stdio.h>
 #include <setjmp.h>
 #include <stdbool.h>
 
-// for getpid
 #include <sys/types.h>
-#include <unistd.h>
+#include <unistd.h> // for getpid
+
+
+//***************************************************************************
+// libmonitor includes
+//***************************************************************************
+
+#include "monitor.h"
+
+
+//***************************************************************************
+// local include files 
+//***************************************************************************
+
+#include <include/gcc-attr.h>
 
 #include "state.h"
 #include "general.h"
 #include "mem.h"
 #include "pmsg.h"
 #include "stack_troll.h"
-#include "monitor.h"
 
 #include "unwind.h"
+#include "backtrace.h"
 #include "splay.h"
 #include "ui_tree.h"
 
@@ -312,7 +329,7 @@ t1_dbg_unw_step(unw_cursor_t *cursor)
   return STEP_ERROR;
 }
 
-static step_state
+static step_state GCC_ATTR_UNUSED
 t2_dbg_unw_step(unw_cursor_t *cursor)
 {
   static int s = 0;
@@ -412,8 +429,9 @@ drop_sample(void)
 {
   if (DEBUG_NO_LONGJMP) return;
 
-  if (csprof_below_pmsg_threshold())
-    dump_backtraces(TD_GET(state),0);
+  if (csprof_below_pmsg_threshold()) {
+    dump_backtrace(TD_GET(state),0);
+  }
 
   csprof_up_pmsg_count();
 

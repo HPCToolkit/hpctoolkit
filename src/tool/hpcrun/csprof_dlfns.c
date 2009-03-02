@@ -9,7 +9,7 @@
 #include "pmsg.h"
 
 static long dlopens_pending = 0;
-static long dlcloses_pending = 0;
+//static long dlcloses_pending = 0;
 
 // FIXME: look into fetch_and_add optimization for the dlclose side
 //        also
