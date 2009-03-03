@@ -61,7 +61,7 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, char **ins_ptr, char *en
       //
       // 20 December 2007 - John Mellor-Crummey
       //----------------------------------------------------------
-      highwatermark_t empty_highwatermark = { NULL, NULL, HW_NONE };
+      highwatermark_t empty_highwatermark = { NULL, NULL, HW_UNINITIALIZED };
       *highwatermark = empty_highwatermark;
     }
     next = current;

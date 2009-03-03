@@ -27,21 +27,18 @@ process_enter(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
       offset += xed_decoded_inst_get_signed_immediate(xptr);
       break;
     default:
-      // RSP, RBP ...
       break;
     }
   }
   PMSG(INTV,"new interval from ENTER");
   next = new_ui(ins + xed_decoded_inst_get_length(xptr),
-#if PREFER_BP_FRAME
-		RA_BP_FRAME,
-#else
 		RA_STD_FRAME,
-#endif
 		current->sp_ra_pos + offset, 8, BP_SAVED,
 		current->sp_bp_pos + offset - 8, 0, current);
   highwatermark->uwi = next;
-  highwatermark->type = HW_BPSAVE;
+  highwatermark->state = 
+    HW_NEW_STATE(highwatermark->state, HW_BP_SAVED | 
+		 HW_SP_DECREMENTED | HW_BP_OVERWRITTEN);
   return next;
 }
 

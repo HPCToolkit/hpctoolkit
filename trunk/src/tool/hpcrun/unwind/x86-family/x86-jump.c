@@ -23,13 +23,15 @@ process_unconditional_branch(xed_decoded_inst_t *xptr, unwind_interval *current,
 			    bool bp_frames_found)
 {
   unwind_interval *next = current;
-  if (highwatermark->type == HW_NONE)  {
-    highwatermark->uwi = current; 
-    highwatermark->type = HW_BRANCH; 
+
+  if (highwatermark->state == HW_UNINITIALIZED) {
+    highwatermark->uwi = current;
+    highwatermark->state = HW_INITIALIZED;
   }
 
   reset_to_canonical_interval(xptr, current, &next, ins, end, irdebug, first, 
-			      highwatermark, canonical_interval, bp_frames_found); 
+			      highwatermark, canonical_interval, 
+			      bp_frames_found); 
   return next;
 }
 
@@ -38,9 +40,10 @@ unwind_interval *
 process_conditional_branch(unwind_interval *current, 
 			   highwatermark_t *highwatermark)
 {
-  if (highwatermark->type == HW_NONE)  {
-    highwatermark->uwi = current; 
-    highwatermark->type = HW_BRANCH; 
-  } 
+  if (highwatermark->state == HW_UNINITIALIZED) {
+    highwatermark->uwi = current;
+    highwatermark->state = HW_INITIALIZED;
+  }
+
   return current;
 }

@@ -3,6 +3,7 @@
  *****************************************************************************/
 
 #include "x86-unwind-analysis.h"
+#include "x86-decoder.h"
 #include <assert.h>
 
 /******************************************************************************
@@ -31,7 +32,7 @@ process_push(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
   sp_bp_pos = current->sp_bp_pos + size; 
   if (op0_name == XED_OPERAND_REG0) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (regname == XED_REG_RBP && bp_status == BP_UNCHANGED) {
+    if (is_reg_bp(regname) && bp_status == BP_UNCHANGED) {
       bp_status = BP_SAVED;
       sp_bp_pos = 0;
     }
@@ -66,7 +67,7 @@ process_pop(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 
   if (op0_name == XED_OPERAND_REG0) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (regname == XED_REG_RBP)  bp_status = BP_UNCHANGED;
+    if (is_reg_bp(regname)) bp_status = BP_UNCHANGED;
   }
 
   next = new_ui(ins + xed_decoded_inst_get_length(xptr), current->ra_status, 
