@@ -10,25 +10,28 @@
  * local types
  *****************************************************************************/
 
-typedef enum {HW_NONE, HW_BRANCH, HW_CALL, HW_BPSAVE, HW_SPSUB, HW_CREATE_STD, 
-	      HW_BPSAVE_AFTER_SUB, HW_BPHOSED} 
-  hw_type;
-
 typedef struct highwatermark_s {
   unwind_interval *uwi;
   void *succ_inst_ptr; // pointer to successor (support for pathscale idiom)
-  hw_type type;
+  int state;
 } highwatermark_t;
 
-#define PREFER_BP_FRAME 0
 
 
 /******************************************************************************
  * macros 
  *****************************************************************************/
-#define iclass(xptr) xed_decoded_inst_get_iclass(xptr)
-#define iclass_eq(xptr, class) (iclass(xptr) == (class))
 
+#define HW_INITIALIZED      0x8
+#define HW_BP_SAVED         0x4
+#define HW_BP_OVERWRITTEN   0x2
+#define HW_SP_DECREMENTED   0x1
+#define HW_UNINITIALIZED    0x0
+
+#define HW_TEST_STATE(state, is_set, is_clear) \
+  ((((state) & (is_set)) == (is_set))  && (((state) & (is_clear)) == 0x0))
+
+#define HW_NEW_STATE(state, set) ((state) | HW_INITIALIZED | (set))
 
 #endif
 

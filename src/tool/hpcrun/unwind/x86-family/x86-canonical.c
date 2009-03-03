@@ -3,6 +3,14 @@
 #include "x86-unwind-interval.h"
 #include "pmsg.h"
 
+
+#define HW_INITIALIZED		0x8
+#define HW_BP_SAVED			0x4
+#define HW_BP_OVERWRITTEN	0x2
+#define HW_SP_DECREMENTED	0x1
+#define HW_UNINITIALIZED	0x0
+
+
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
@@ -37,7 +45,8 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
       *canonical_interval = first;
     } else if (crhs) {
       if (hw_uwi && hw_uwi->bp_status != BP_UNCHANGED)
-	if (crhs->bp_status == BP_UNCHANGED || (crhs->bp_status == BP_SAVED  && hw_uwi->bp_status == BP_HOSED)) {
+	if (crhs->bp_status == BP_UNCHANGED || 
+		(crhs->bp_status == BP_SAVED && hw_uwi->bp_status == BP_HOSED)) {
          set_ui_canonical(hw_uwi, *canonical_interval);
          *canonical_interval = hw_uwi;
       }

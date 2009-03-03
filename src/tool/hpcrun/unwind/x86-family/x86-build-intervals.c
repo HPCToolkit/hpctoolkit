@@ -51,7 +51,7 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
 
   unwind_interval *prev = NULL, *current = NULL, *next = NULL, *first = NULL;
 
-  highwatermark_t highwatermark = { NULL, NULL, HW_NONE };
+  highwatermark_t highwatermark = { NULL, NULL, HW_UNINITIALIZED };
   char *rax_rbp_equivalent_at = 0;
   unwind_interval *canonical_interval = 0;
   int error_count = 0;

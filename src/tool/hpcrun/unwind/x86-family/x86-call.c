@@ -9,9 +9,9 @@ unwind_interval*
 process_call(unwind_interval *current, highwatermark_t *highwatermark)
 {
   unwind_interval *next = current;
-  if (highwatermark->type == HW_NONE) {
+  if (highwatermark->state == HW_UNINITIALIZED) {
     highwatermark->uwi = current;
-    highwatermark->type = HW_CALL;
+    highwatermark->state = HW_INITIALIZED;
   }
   
 #ifdef USE_CALL_LOOKAHEAD
