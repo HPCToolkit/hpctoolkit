@@ -1,16 +1,16 @@
 # -*-Mode: makefile;-*-
-# $Id$
+## $Id$
 
 #############################################################################
-#
-# File:
-#   $Source$
-#
-# Description:
-#   Include file for package Makefile.in
-# 
-#   *Assumes presence of Automake variables!*
-#
+##
+## File:
+##   $Source$
+##
+## Description:
+##   Include file for package Makefile.in
+## 
+##   *Assumes presence of Automake variables!*
+##
 #############################################################################
 
 #############################################################################
