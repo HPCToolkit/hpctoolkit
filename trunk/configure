@@ -18765,12 +18765,13 @@ MONITOR=
 MONITOR_LIBS=
 HPC_MONITOR=
 
-# Use monitor by default
-
 if test "$use_externals" = yes ; then
-  OPT_WITH_MONITOR=yes
-  OPT_INSTALL_MONITOR=yes
   MONITOR="$ext_old_monitor_prefix"
+  case "$MONITOR" in
+    /* )  OPT_WITH_MONITOR=yes
+	  OPT_INSTALL_MONITOR=yes
+	  ;;
+  esac
 fi
 
 
@@ -18778,7 +18779,7 @@ fi
 if test "${with_monitor+set}" = set; then
   withval=$with_monitor; if test $withval != no; then
      OPT_WITH_MONITOR=yes
-     OPT_INSTALL_MONITOR=no
+     OPT_INSTALL_MONITOR=yes
      MONITOR=${withval}
    else
      OPT_WITH_MONITOR=no
@@ -18794,7 +18795,6 @@ done
 MONITOR_LIBS=`echo ${MONITOR_LIBS}`
 
 MONITOR_IFLAGS="-I${MONITOR}/include"
-MONITOR_LDFLAGS="... -lmonitor"
 if test "${OPT_INSTALL_MONITOR}" = "yes" ; then
   HPC_MONITOR="hpctoolkit/monitor"  # lib/...
 else
@@ -19210,7 +19210,9 @@ $as_echo "${XERCES}" >&6; }
 $as_echo_n "checking whether to build hpcrun-flat... " >&6; }
 
 OPT_ENABLE_HPCRUN_FLAT="no"
-if test "${OPT_HAVE_PAPI}" = "yes" && test "${HOST_OS}" = "Linux"; then
+if test "${OPT_HAVE_PAPI}" = "yes" && test "${HOST_OS}" = "Linux" \
+   && test "${OPT_WITH_MONITOR}" != no
+then
   OPT_ENABLE_HPCRUN_FLAT="yes"
 fi
 
