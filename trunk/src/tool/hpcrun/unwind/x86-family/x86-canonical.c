@@ -60,12 +60,15 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
     {
       ra_loc ra_status = first->ra_status;
       bp_loc bp_status = (current->bp_status == BP_HOSED) ? BP_HOSED : first->bp_status;
+#ifndef FIX_INTERVALS_AT_RETURN
       if ((current->ra_status != ra_status) ||
 	  (current->bp_status != bp_status) ||
 	  (current->sp_ra_pos != first->sp_ra_pos) ||
 	  (current->bp_ra_pos != first->bp_ra_pos) ||
 	  (current->bp_bp_pos != first->bp_bp_pos) ||
-	  (current->sp_bp_pos != first->sp_bp_pos)) {
+	  (current->sp_bp_pos != first->sp_bp_pos)) 
+#endif
+	{
 	*next = new_ui(ins + xed_decoded_inst_get_length(xptr),
 		       ra_status, first->sp_ra_pos, first->bp_ra_pos,
 		       bp_status, first->sp_bp_pos, first->bp_bp_pos,
