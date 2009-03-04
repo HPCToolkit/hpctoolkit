@@ -818,13 +818,14 @@ SYMTABAPI_COPY
 SYMTABAPI_LIB
 SYMTABAPI_INC
 papi_extra_libs
-OPT_PAPI_LIB
 OPT_PAPI_LIBPATH
 OPT_PAPI_LDFLAGS
 OPT_PAPI_IFLAGS
 OPT_PAPI
-OPT_HAVE_PAPI_FALSE
-OPT_HAVE_PAPI_TRUE
+OPT_PAPI_STATIC_FALSE
+OPT_PAPI_STATIC_TRUE
+OPT_PAPI_DYNAMIC_FALSE
+OPT_PAPI_DYNAMIC_TRUE
 OA_LDFLAGS
 OA_IFLAGS
 OPT_INSTALL_MONITOR
@@ -4620,13 +4621,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4623: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4624: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4626: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4627: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4629: output\"" >&5)
+  (eval echo "\"\$as_me:4630: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5832,7 +5833,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5835 "configure"' > conftest.$ac_ext
+  echo '#line 5836 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7685,11 +7686,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7688: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7689: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7692: \$? = $ac_status" >&5
+   echo "$as_me:7693: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8024,11 +8025,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8027: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8028: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8031: \$? = $ac_status" >&5
+   echo "$as_me:8032: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8129,11 +8130,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8132: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8133: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8136: \$? = $ac_status" >&5
+   echo "$as_me:8137: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8184,11 +8185,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8187: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8188: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8191: \$? = $ac_status" >&5
+   echo "$as_me:8192: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10984,7 +10985,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10987 "configure"
+#line 10988 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11080,7 +11081,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11083 "configure"
+#line 11084 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14331,11 +14332,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14334: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14335: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14338: \$? = $ac_status" >&5
+   echo "$as_me:14339: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14430,11 +14431,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14433: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14434: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14437: \$? = $ac_status" >&5
+   echo "$as_me:14438: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14482,11 +14483,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14485: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14486: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14489: \$? = $ac_status" >&5
+   echo "$as_me:14490: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -18937,11 +18938,12 @@ $as_echo "${CAN_PAPI_LINK}" >&6; }
    }
 
 OPT_HAVE_PAPI=no
+OPT_PAPI_DYNAMIC=no
+OPT_PAPI_STATIC=no
 OPT_PAPI=
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LDFLAGS=
 OPT_PAPI_LIBPATH=
-OPT_PAPI_LIB=
 
 
 # Check whether --with-papi was given.
@@ -18976,49 +18978,58 @@ fi
 #   <papi-build-path>/ papi.h
 #                      libpapi.so
 # Note: same test is in hpctoolkit-oss's Makefile.quick
+#
 if test "$OPT_HAVE_PAPI" = "yes" ; then
   if test -f "${OPT_PAPI}/include/papi.h"; then
     OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
-  else
+  elif test -f "${OPT_PAPI}/papi.h" ; then
     OPT_PAPI_IFLAGS="-I${OPT_PAPI}"
+  else
+    { { $as_echo "$as_me:$LINENO: error: no papi.h in ${OPT_PAPI}/include" >&5
+$as_echo "$as_me: error: no papi.h in ${OPT_PAPI}/include" >&2;}
+   { (exit 1); exit 1; }; }
   fi
 
   for lib in ${LIB_SEARCH_PATH} ; do
-    if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
-      if HPC_check_cxx_papi_link ${OPT_PAPI_IFLAGS} ${OPT_PAPI}/${lib} ; then
-        OPT_PAPI_LIBPATH="${OPT_PAPI}/${lib}"
-        OPT_PAPI_LIB="${OPT_PAPI_LIBPATH}/libpapi.so"
-        OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
-        break;
+    if test -r "${OPT_PAPI}/${lib}/libpapi.so" \
+       || test -f "${OPT_PAPI}/${lib}/libpapi.a"
+    then
+      OPT_PAPI_LIBPATH="${OPT_PAPI}/${lib}"
+      OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
+      if test -f "${OPT_PAPI}/${lib}/libpapi.so" ; then
+	OPT_PAPI_DYNAMIC=yes
       fi
+      if test -f "${OPT_PAPI}/${lib}/libpapi.a" ; then
+	OPT_PAPI_STATIC=yes
+      fi
+      break
     fi
   done
-
-  #for lib in ${LIB_SEARCH_PATH} ; do
-  #  if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
-  #    OPT_PAPI_LIB="${OPT_PAPI_LIB} ${OPT_PAPI}/${lib}/libpapi.so"
-  #  fi
-  #done
-  #OPT_PAPI_LIB=`echo ${OPT_PAPI_LIB}`
-
+  if test "x$OPT_PAPI_LIBPATH" = x ; then
+    { { $as_echo "$as_me:$LINENO: error: no libpapi.so or libpapi.a in $LIB_SEARCH_PATH" >&5
+$as_echo "$as_me: error: no libpapi.so or libpapi.a in $LIB_SEARCH_PATH" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
 fi
 
 # Check for PAPI > 3.0 [skip for now]
 
 if test "${OPT_HAVE_PAPI}" = "yes"; then
-  if test -n "${OPT_PAPI_LIB}" ; then
-    { $as_echo "$as_me:$LINENO: result: yes (${OPT_PAPI_LIB})" >&5
-$as_echo "yes (${OPT_PAPI_LIB})" >&6; }
-  else
-    { { $as_echo "$as_me:$LINENO: error: cannot find usable PAPI in '${LIB_SEARCH_PATH}'" >&5
-$as_echo "$as_me: error: cannot find usable PAPI in '${LIB_SEARCH_PATH}'" >&2;}
-   { (exit 1); exit 1; }; }
-  fi
+  { $as_echo "$as_me:$LINENO: result: yes (${OPT_PAPI})" >&5
+$as_echo "yes (${OPT_PAPI})" >&6; }
+  { $as_echo "$as_me:$LINENO: PAPI shared libpapi.so: $OPT_PAPI_DYNAMIC" >&5
+$as_echo "$as_me: PAPI shared libpapi.so: $OPT_PAPI_DYNAMIC" >&6;}
+  { $as_echo "$as_me:$LINENO: PAPI static libpapi.a: $OPT_PAPI_STATIC" >&5
+$as_echo "$as_me: PAPI static libpapi.a: $OPT_PAPI_STATIC" >&6;}
 else
   { $as_echo "$as_me:$LINENO: result: no" >&5
 $as_echo "no" >&6; }
 fi
 
+# The dynamic case also needs libpapi.so's prerequisite libraries
+# (-lperfctr, -lpfm).  In the static case, libpapi.a already includes
+# these functions.  At least, that's what we've seen so far.
+#
 papi_extra_libs=
 so_file="${OPT_PAPI_LIBPATH}/libpapi.so"
 if test -f "$so_file" ; then
@@ -19032,12 +19043,20 @@ if test -f "$so_file" ; then
   fi
 fi
 
- if test "${OPT_HAVE_PAPI}" = "yes"; then
-  OPT_HAVE_PAPI_TRUE=
-  OPT_HAVE_PAPI_FALSE='#'
+ if test "$OPT_PAPI_DYNAMIC" = yes; then
+  OPT_PAPI_DYNAMIC_TRUE=
+  OPT_PAPI_DYNAMIC_FALSE='#'
 else
-  OPT_HAVE_PAPI_TRUE='#'
-  OPT_HAVE_PAPI_FALSE=
+  OPT_PAPI_DYNAMIC_TRUE='#'
+  OPT_PAPI_DYNAMIC_FALSE=
+fi
+
+ if test "$OPT_PAPI_STATIC" = yes; then
+  OPT_PAPI_STATIC_TRUE=
+  OPT_PAPI_STATIC_FALSE='#'
+else
+  OPT_PAPI_STATIC_TRUE='#'
+  OPT_PAPI_STATIC_FALSE=
 fi
 
 
@@ -19210,8 +19229,8 @@ $as_echo "${XERCES}" >&6; }
 $as_echo_n "checking whether to build hpcrun-flat... " >&6; }
 
 OPT_ENABLE_HPCRUN_FLAT="no"
-if test "${OPT_HAVE_PAPI}" = "yes" && test "${HOST_OS}" = "Linux" \
-   && test "${OPT_WITH_MONITOR}" != no
+if test "$OPT_PAPI_DYNAMIC" = yes && test "$OPT_WITH_MONITOR" = yes \
+   && test "${HOST_OS}" = "Linux"
 then
   OPT_ENABLE_HPCRUN_FLAT="yes"
 fi
@@ -19805,10 +19824,17 @@ $as_echo "$as_me: error: conditional \"OPT_HAVE_LIBUNWIND\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${OPT_HAVE_PAPI_TRUE}" && test -z "${OPT_HAVE_PAPI_FALSE}"; then
-  { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_HAVE_PAPI\" was never defined.
+if test -z "${OPT_PAPI_DYNAMIC_TRUE}" && test -z "${OPT_PAPI_DYNAMIC_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_PAPI_DYNAMIC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
-$as_echo "$as_me: error: conditional \"OPT_HAVE_PAPI\" was never defined.
+$as_echo "$as_me: error: conditional \"OPT_PAPI_DYNAMIC\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${OPT_PAPI_STATIC_TRUE}" && test -z "${OPT_PAPI_STATIC_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_PAPI_STATIC\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"OPT_PAPI_STATIC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi

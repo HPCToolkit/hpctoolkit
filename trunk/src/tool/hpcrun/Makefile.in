@@ -97,12 +97,12 @@ DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 @HOST_CPU_X86_TRUE@am__append_16 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_TRUE@am__append_17 = $(XED2_LIB)/libxed.a
 @HOST_CPU_X86_TRUE@am__append_18 = $(XED2_LIB)/libxed.a
-@OPT_HAVE_PAPI_TRUE@am__append_19 = $(MY_PAPI_FILES)
-@OPT_HAVE_PAPI_TRUE@am__append_20 = $(MY_PAPI_FILES)
-@OPT_HAVE_PAPI_TRUE@am__append_21 = $(PAPI_INC_FLGS)
-@OPT_HAVE_PAPI_TRUE@am__append_22 = $(PAPI_INC_FLGS)
-@OPT_HAVE_PAPI_TRUE@am__append_23 = $(PAPI_LD_FLGS)
-@OPT_HAVE_PAPI_TRUE@am__append_24 = $(PAPI_LD_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_19 = $(MY_PAPI_FILES)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_20 = $(PAPI_INC_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_21 = $(PAPI_LD_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_22 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_23 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_24 = $(PAPI_LD_FLGS)
 @OPT_ENABLE_LUSH_TRUE@am__append_25 = libagent-cilk.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-pthread.la libagent-tbb.la
 subdir = src/tool/hpcrun
@@ -228,7 +228,7 @@ am__objects_15 = libcsprof_la-x86-all.lo \
 	libcsprof_la-x86-linux-dlresolver.lo
 @HOST_CPU_X86_TRUE@am__objects_16 = $(am__objects_15)
 am__objects_17 = libcsprof_la-sample_source_papi.lo
-@OPT_HAVE_PAPI_TRUE@am__objects_18 = $(am__objects_17)
+@OPT_PAPI_DYNAMIC_TRUE@am__objects_18 = $(am__objects_17)
 am_libcsprof_la_OBJECTS = $(am__objects_7) $(am__objects_8) \
 	$(am__objects_10) $(am__objects_12) $(am__objects_14) \
 	$(am__objects_16) $(am__objects_18) libcsprof_la-last_func.lo
@@ -307,7 +307,7 @@ am__objects_25 = libcsprof_o-x86-all.$(OBJEXT) \
 	libcsprof_o-x86-linux-dlresolver.$(OBJEXT)
 @HOST_CPU_X86_TRUE@am__objects_26 = $(am__objects_25)
 am__objects_27 = libcsprof_o-sample_source_papi.$(OBJEXT)
-@OPT_HAVE_PAPI_TRUE@am__objects_28 = $(am__objects_27)
+@OPT_PAPI_STATIC_TRUE@am__objects_28 = $(am__objects_27)
 am_libcsprof_o_OBJECTS = $(am__objects_19) $(am__objects_20) \
 	$(am__objects_22) $(am__objects_24) $(am__objects_26) \
 	$(am__objects_28) libcsprof_o-last_func.$(OBJEXT)
@@ -427,7 +427,6 @@ OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
-OPT_PAPI_LIB = @OPT_PAPI_LIB@
 OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
@@ -674,19 +673,19 @@ libcsprof_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
 	$(am__append_13) $(am__append_19) utilities/last_func.c
 libcsprof_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
 	$(am__append_4) $(am__append_8) $(am__append_14) \
-	$(am__append_20) utilities/last_func.c
+	$(am__append_22) utilities/last_func.c
 libcsprof_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_5) $(am__append_9) $(am__append_15) \
-	$(am__append_21)
+	$(am__append_20)
 libcsprof_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_6) $(am__append_10) \
-	$(am__append_16) $(am__append_22)
+	$(am__append_16) $(am__append_23)
 libcsprof_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_11)
 libcsprof_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_12)
 libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
 libcsprof_o_LDADD = $(HPC_LIBPROFLEAN)
 libcsprof_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(am__append_17) $(am__append_23)
+	-lpthread -lrt $(am__append_17) $(am__append_21)
 libcsprof_o_LDFLAGS = $(am__append_18) $(am__append_24)
 
 # FIXME: This is specific to Rice.
