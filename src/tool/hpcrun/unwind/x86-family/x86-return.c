@@ -22,10 +22,27 @@ process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr,
   unwind_interval *current = *current_ptr;
   char *ins = *ins_ptr;
   unwind_interval *next = current;
-  // unwind_interval *c = NULL; // unused
+#ifdef FIX_INTERVALS_AT_RETURN
+  if (current->ra_status == RA_SP_RELATIVE) {
+    int offset = current->sp_ra_pos;
+    if (offset != 0) {
+      unwind_interval *u = current;
+      for (;;) {
+	// fix offset
+	u->sp_ra_pos -= offset;
+	u->sp_bp_pos -= offset;
+
+	if (u->restored_canonical == 1) break;
+	u = (unwind_interval *) u->common.prev;
+	if (u == 0) break;
+      } 
+    }
+  } 
+#endif
   if (current->bp_status != BP_UNCHANGED) {
      suspicious_interval(ins);
 #if 0
+     unwind_interval *c = NULL; 
      unwind_interval *ui = current;
      while (ui && ui->restored_canonical == 0) ui = ui->prev;
      if (ui && ui->restored_canonical) {
