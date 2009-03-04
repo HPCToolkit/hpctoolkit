@@ -151,7 +151,7 @@ unw_init_cursor(unw_cursor_t *cursor, void *context)
     }
   }
   
-  TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
+  TMSG(UNW, " init: pc=%p, ra=%p, sp=%p, fp=%p", 
        cursor->pc, cursor->ra, cursor->sp, cursor->bp);
   if (MYDBG) { ui_dump(intvl); }
 }
@@ -174,7 +174,7 @@ unw_step(unw_cursor_t *cursor)
   unw_interval_t* nxt_intvl = NULL;
   
   if (!intvl) {
-    TMSG(UNW, "error: missing interval for pc=%p", pc);
+    TMSG(UNW, " error: missing interval for pc=%p", pc);
     return STEP_ERROR;
   }
 
@@ -184,12 +184,12 @@ unw_step(unw_cursor_t *cursor)
   // frame has been identified as valid)
   //-----------------------------------------------------------
   if (monitor_in_start_func_wide(pc)) {
-    TMSG(UNW, "stop: monitor_in_start_func_wide, pc=%p", pc);
+    TMSG(UNW, " stop: monitor_in_start_func_wide, pc=%p", pc);
     return STEP_STOP;
   }
   
   if ((void*)sp >= monitor_stack_bottom()) {
-    TMSG(UNW, "stop: sp (%p) >= unw_stack_bottom", sp);
+    TMSG(UNW, " stop: sp (%p) >= unw_stack_bottom", sp);
     return STEP_STOP;
   }
 
@@ -240,7 +240,7 @@ unw_step(unw_cursor_t *cursor)
 
   // if nxt_pc is invalid for some reason...
   if (!nxt_intvl) {
-    TMSG(UNW, "warning: bad nxt pc=%p; sp=%p, fp=%p...", nxt_pc, sp, fp);
+    TMSG(UNW, " warning: bad nxt pc=%p; sp=%p, fp=%p...", nxt_pc, sp, fp);
 
     //-------------------------------------------------------------------
     // assume there is no valid PC saved in the return address slot in my 
@@ -257,13 +257,13 @@ unw_step(unw_cursor_t *cursor)
     }
      
     if (!nxt_intvl) {
-      TMSG(UNW, "error: skip-frame failed: nxt pc=%p, sp=%p; new sp=%p", 
+      TMSG(UNW, " error: skip-frame failed: nxt pc=%p, sp=%p; new sp=%p", 
 	   nxt_pc, nxt_sp, new_sp);
       return STEP_ERROR;
     }
 
     nxt_sp = new_sp;
-    TMSG(UNW, "skip-frame: nxt pc=%p, sp=%p", nxt_pc, nxt_sp);
+    TMSG(UNW, " skip-frame: nxt pc=%p, sp=%p", nxt_pc, nxt_sp);
   }
   // INVARIANT: At this point, 'nxt_intvl' is valid
 
@@ -271,14 +271,14 @@ unw_step(unw_cursor_t *cursor)
   // INVARIANT: Ensure we always make progress unwinding the stack...
   bool frameSizeMayBe0 = (intvl->sp_ty == SPTy_Reg);
   if (!frameSizeMayBe0 && !isPossibleParentSP(sp, nxt_sp)) {
-    // TMSG(UNW, "warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
+    // TMSG(UNW, " warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
     // nxt_sp = sp + 1
-    TMSG(UNW, "error: loop! nxt_sp=%p, sp=%p", nxt_sp, sp);
+    TMSG(UNW, " error: loop! nxt_sp=%p, sp=%p", nxt_sp, sp);
     return STEP_ERROR;
   }
 
 
-  TMSG(UNW, "next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
+  TMSG(UNW, " next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
   if (MYDBG) { ui_dump(nxt_intvl); }
 
   cursor->pc = nxt_pc;

@@ -35,6 +35,8 @@
 
 //*************************** Forward Declarations **************************
 
+#define MYDBG 0
+
 static interval_status 
 ppc64_build_intervals(char *ins, unsigned int len);
 
@@ -66,8 +68,10 @@ interval_status
 build_intervals(char *ins, unsigned int len)
 {
   interval_status stat = ppc64_build_intervals(ins, len);
-
-  ppc64_print_interval_set((unw_interval_t *) stat.first);
+  
+  if (MYDBG) {
+    ppc64_print_interval_set((unw_interval_t *) stat.first);
+  }
 
   return stat;
 }
@@ -78,8 +82,7 @@ build_intervals(char *ins, unsigned int len)
 //***************************************************************************
 
 unw_interval_t *
-new_ui(char *start_addr, 
-       ra_ty_t ra_ty, int ra_arg, sp_ty_t sp_ty, 
+new_ui(char *start_addr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
        unw_interval_t *prev)
 {
   unw_interval_t* u = (unw_interval_t*)csprof_ui_malloc(sizeof(unw_interval_t));
@@ -93,8 +96,9 @@ new_ui(char *start_addr,
     ui_link(prev, u);
   }
 
-  u->ra_ty  = ra_ty;
   u->sp_ty  = sp_ty;
+  u->ra_ty  = ra_ty;
+  u->sp_arg = sp_arg;
   u->ra_arg = ra_arg;
 
   fetch_and_add(&ui_cnt, 1);
@@ -110,10 +114,10 @@ ui_dump(unw_interval_t* u)
     return;
   }
 
-  TMSG(INTV, "intv: start=%p end=%p ra_ty=%s sp_ty=%s ra_arg=%d next=%p prev=%p",
+  TMSG(INTV, "    start=%p end=%p sp_ty=%s ra_ty=%s sp_arg=%d ra_arg=%d next=%p prev=%p",
        (void *) u->common.start, (void *) u->common.end, 
-       ra_ty_string(u->ra_ty), sp_ty_string(u->sp_ty), 
-       u->ra_arg, u->common.next, u->common.prev);
+       sp_ty_string(u->sp_ty), ra_ty_string(u->ra_ty), u->sp_arg, u->ra_arg,
+       u->common.next, u->common.prev);
 }
 
 
@@ -201,7 +205,76 @@ register_name(int reg)
 // build_intervals: helpers
 //***************************************************************************
 
-#define PPC_FRAME_LINKAGE_RA_OFST (sizeof(void*))
+static inline bool 
+isInsn_MFLR_R0(uint32_t insn)
+{ return (insn == 0x7c0802a6); }
+
+
+static inline bool 
+isInsn_MTLR_R0(uint32_t insn)
+{ return (insn == 0x7c0803a6); }
+
+
+static inline bool 
+isInsn_STW(uint32_t insn, int Rs, int Ra)
+{
+  const int D = 0x0;  
+  return (insn & PPC_INSN_D_MASK) == PPC_INSN_D(PPC_OP_STW, Rs, Ra, D);
+}
+
+
+static inline bool 
+isInsn_STWU(uint32_t insn, int Rs, int Ra)
+{
+  const int D = 0x0;
+  return (insn & PPC_INSN_D_MASK) == PPC_INSN_D(PPC_OP_STWU, Rs, Ra, D);
+}
+
+
+static inline bool 
+isInsn_LWZ(uint32_t insn, int Rt, int Ra)
+{
+  const int D = 0x0;
+  return (insn & PPC_INSN_D_MASK) == PPC_INSN_D(PPC_OP_LWZ, Rt, Ra, D);
+}
+
+
+static inline bool 
+isInsn_ADDI(uint32_t insn, int Rt, int Ra)
+{
+  const int SI = 0x0;
+  return ((insn & PPC_INSN_D_MASK) == PPC_INSN_D(PPC_OP_ADDI, Rt, Ra, SI));
+}
+
+
+static inline bool 
+isInsn_MR(uint32_t insn, int Ra)
+{   
+  const int Rs = 0, Rc = 0x0;
+  return ((insn & (PPC_OP_X_MASK | PPC_OPND_REG_A_MASK))
+	  == PPC_INSN_X(PPC_OP_MR, Rs, Ra, Rs, Rc));
+}
+
+
+static inline bool 
+isInsn_BLR(uint32_t insn)
+{ return (insn == 0x4e800020); }
+
+
+//***************************************************************************
+
+static inline int 
+getRADispFromSPDisp(int sp_disp) 
+{ return sp_disp + (sizeof(void*)); }
+
+
+static inline int
+getSPDispFromUI(unw_interval_t* ui)
+{ 
+  // if sp_ty != SPTy_SPRel, then frame size is 0
+  return (ui->sp_ty == SPTy_SPRel) ? ui->sp_arg : 0;
+}
+
 
 #define INSN(insn) ((char*)(insn))
 
@@ -240,94 +313,99 @@ nextInsn(uint32_t* insn)
 static interval_status 
 ppc64_build_intervals(char *beg_insn, unsigned int len)
 {
-  unw_interval_t* beg_ui = new_ui(beg_insn, RATy_Reg, PPC_REG_LR, SPTy_Reg, 
-				  NULL);
+  unw_interval_t* beg_ui = 
+    new_ui(beg_insn, SPTy_Reg, RATy_Reg, PPC_REG_SP, PPC_REG_LR, NULL);
   unw_interval_t* ui = beg_ui;
   unw_interval_t* nxt_ui = NULL;
   unw_interval_t* canon_ui = beg_ui;
-
-  int frame_size = 0;
-  int ra_disp = 0;
 
   uint32_t* cur_insn = (uint32_t*) beg_insn;
   uint32_t* end_insn = (uint32_t*) (beg_insn + len);
 
   while (cur_insn < end_insn) {
-    TMSG(INTV, "insn: 0x%x [%p,%p)", *cur_insn, cur_insn, end_insn);
+    //TMSG(INTV, "insn: 0x%x [%p,%p)", *cur_insn, cur_insn, end_insn);
 
     //--------------------------------------------------
-    // move return address from LR to R0
+    // move return address from LR (to R0)
     //--------------------------------------------------
-    if (PPC_OP_MFLR_R0(*cur_insn)) {
-      nxt_ui = new_ui(nextInsn(cur_insn), RATy_Reg, PPC_REG_R0, ui->sp_ty, ui);
+    if (isInsn_MFLR_R0(*cur_insn)) {
+      nxt_ui = new_ui(nextInsn(cur_insn), 
+		      ui->sp_ty, RATy_Reg, ui->sp_arg, PPC_REG_R0, ui);
       ui = nxt_ui;
     }
-    
     //--------------------------------------------------
-    // store return address into parent's frame
+    // move return address to LR (from R0)
     //--------------------------------------------------
-    else if (PPC_OP_STW_R0_R1(*cur_insn)) {
-      ra_disp = PPC_OPND_DISP(*cur_insn);
-      // we do not need to remember the offset for the return address
-      // because we can just pluck it out of the parent's frame
-      if ((frame_size + PPC_FRAME_LINKAGE_RA_OFST == ra_disp) 
-	  && (ra_disp > PPC_FRAME_LINKAGE_RA_OFST)) {
-        nxt_ui = new_ui(nextInsn(cur_insn), RATy_SPRel, 0, SPTy_SPRel, ui);
+    else if (isInsn_MTLR_R0(*cur_insn)) {
+      nxt_ui = new_ui(nextInsn(cur_insn), 
+		      ui->sp_ty, RATy_Reg, ui->sp_arg, PPC_REG_LR, ui);
+      ui = nxt_ui;
+    }
+
+    //--------------------------------------------------
+    // store return address (R0) into parent's frame
+    //--------------------------------------------------
+    else if (isInsn_STW(*cur_insn, PPC_REG_RA, PPC_REG_SP)) {
+      int sp_disp = getSPDispFromUI(ui);
+      int ra_disp = PPC_OPND_DISP(*cur_insn);
+      if (getRADispFromSPDisp(sp_disp) == ra_disp) {
+        nxt_ui = new_ui(nextInsn(cur_insn), 
+			ui->sp_ty, RATy_SPRel, ui->sp_arg, ra_disp, ui);
         if (canon_ui == beg_ui) {
 	  canon_ui = nxt_ui;
 	}
         ui = nxt_ui;
       }
     }
+    //--------------------------------------------------
+    // load return address from caller's frame (into R0)
+    //--------------------------------------------------
+    else if (isInsn_LWZ(*cur_insn, PPC_REG_RA, PPC_REG_SP)) {
+      int sp_disp = getSPDispFromUI(ui);
+      int ra_disp = PPC_OPND_DISP(*cur_insn);
+      if (getRADispFromSPDisp(sp_disp) == ra_disp) {
+	nxt_ui = new_ui(nextInsn(cur_insn), 
+			ui->sp_ty, RATy_Reg, ui->sp_arg, PPC_REG_R0, ui);
+	ui = nxt_ui;
+      }
+    }
 
     //--------------------------------------------------
-    // create frame (adjust SP) and store parent's SP
+    // allocate frame: adjust SP and store parent's SP
     //--------------------------------------------------
-    else if (PPC_OP_STWU_R1_R1(*cur_insn)) {
-      // NOTE: return address remains same register
-      frame_size = - PPC_OPND_DISP(*cur_insn);
+    else if (isInsn_STWU(*cur_insn, PPC_REG_SP, PPC_REG_SP)) {
+      int sp_disp = - PPC_OPND_DISP(*cur_insn);
       nxt_ui = new_ui(nextInsn(cur_insn), 
-		      ui->ra_ty, ui->ra_arg, SPTy_SPRel, ui);
+		      SPTy_SPRel, ui->ra_ty, sp_disp, ui->ra_arg, ui);
+      ui = nxt_ui;
+    }
+    //--------------------------------------------------
+    // deallocate frame: reset SP to parents's SP
+    //--------------------------------------------------
+    else if (isInsn_MR(*cur_insn, PPC_REG_SP)) {
+      // N.B. To be sure the MR restores SP, we would have to track
+      // registers.  As a sanity check, test for a non-zero frame size
+      if (getSPDispFromUI(ui) > 0) {
+	nxt_ui = new_ui(nextInsn(cur_insn), 
+			SPTy_Reg, ui->ra_ty, PPC_REG_SP, ui->ra_arg, ui);
+	ui = nxt_ui;
+      }
+    }
+    else if (isInsn_ADDI(*cur_insn, PPC_REG_SP, PPC_REG_SP)
+	     && (PPC_OPND_DISP(*cur_insn) == getSPDispFromUI(ui))) {
+      nxt_ui = new_ui(nextInsn(cur_insn), 
+		      SPTy_Reg, ui->ra_ty, PPC_REG_SP, ui->ra_arg, ui);
       ui = nxt_ui;
     }
 
-    //--------------------------------------------------
-    // move return address from R0 to LR
-    //--------------------------------------------------
-    else if (PPC_OP_MTLR_R0(*cur_insn)) {
-      nxt_ui = new_ui(nextInsn(cur_insn), RATy_Reg, PPC_REG_LR, ui->sp_ty, ui);
-      ui = nxt_ui;
-    }
-
-    //--------------------------------------------------
-    // reset frame pointer to caller's frame
-    //--------------------------------------------------
-    else if (PPC_OP_MR_R1(*cur_insn) || 
-	     (PPC_OP_ADDI_R1(*cur_insn)
-	      && (PPC_OPND_DISP(*cur_insn) == frame_size))) {
-      // assume the mr restores the proper value; we would have to track 
-      // register values to be sure.
-      nxt_ui = new_ui(nextInsn(cur_insn), ui->ra_ty, ui->ra_arg, SPTy_Reg, ui);
-      ui = nxt_ui;
-    }
-
-    //--------------------------------------------------
-    // load return address into R0 from caller's frame
-    //--------------------------------------------------
-    else if (PPC_OP_LWZ_R0_R1(*cur_insn) 
-	     && PPC_OPND_DISP(*cur_insn) == ra_disp) {
-      nxt_ui = new_ui(nextInsn(cur_insn), RATy_Reg, PPC_REG_R0, ui->sp_ty, ui);
-      ui = nxt_ui;
-    }
-    
     //--------------------------------------------------
     // interior returns/epilogues
     //--------------------------------------------------
-    else if (PPC_OP_BLR(*cur_insn) && (cur_insn + 1 < end_insn)) {
+    else if (isInsn_BLR(*cur_insn) && (cur_insn + 1 < end_insn)) {
       // An interior return.  Restore the canonical interval if necessary.
       if (!ui_cmp(ui, canon_ui)) {
-	nxt_ui = new_ui(nextInsn(cur_insn), canon_ui->ra_ty, canon_ui->ra_arg, 
-			canon_ui->sp_ty, ui);
+	nxt_ui = new_ui(nextInsn(cur_insn), canon_ui->sp_ty, canon_ui->ra_ty,
+			canon_ui->sp_arg, canon_ui->ra_arg, ui);
 	ui = nxt_ui;
       }
     }
