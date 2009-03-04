@@ -60,30 +60,83 @@
 // 
 //****************************************************************************
 
+//***************************************************************************
+// Registers
+//***************************************************************************
 
-#define PPC_OP_MFLR_R0(x)    ((x) == 0x7c0802a6)
-#define PPC_OP_STW_R0_R1(x)  (((x) & 0xffff0000) == 0x90010000)
-#define PPC_OP_STWU_R1_R1(x) (((x) & 0xffff0000) == 0x94210000)
-#define PPC_OP_MTLR_R0(x)    ((x) == 0x7c0803a6)
-#define PPC_OP_LWZ_R0_R1(x)  (((x) & 0xffff0000) == 0x80010000)
-#define PPC_OP_ADDI_R1(x)    (((x) & 0xffff0000) == 0x38210000)
-#define PPC_OP_MR_R1(x)      (((x) & 0xffc003ff) == 0x7d400378)
-#define PPC_OP_BLR(x)        ((x) == 0x4e800020)
+#define PPC_REG_R0  0
+#define PPC_REG_RA  PPC_REG_R0 /* typical */
 
-//****************************************************************************
+#define PPC_REG_R1  1
+#define PPC_REG_SP  PPC_REG_R1 /* typical */
+#define PPC_REG_FP  PPC_REG_R1 /* rare */
 
+#define PPC_REG_R2  2
+/* ... */
+#define PPC_REG_R31 31
+
+#define PPC_REG_PC  32
+
+#define PPC_REG_LR (-1)
+
+
+//***************************************************************************
+// Operands
+//***************************************************************************
+
+#define PPC_OPND_REG_S_MASK  0x03e00000
+#define PPC_OPND_REG_S_SHIFT 21
+
+#define PPC_OPND_REG_T_MASK  PPC_OPND_REG_S_MASK
+#define PPC_OPND_REG_T_SHIFT PPC_OPND_REG_S_SHIFT
+
+#define PPC_OPND_REG_A_MASK  0x001f0000
+#define PPC_OPND_REG_A_SHIFT 16
+
+#define PPC_OPND_REG_B_MASK  0x0000f800
+#define PPC_OPND_REG_B_SHIFT 11
+
+#define PPC_OPND_CC_MASK     0x00000001
+#define PPC_OPND_CC_SHIFT    0
 
 #define PPC_OPND_DISP(x)     (((int16_t)((x) & 0x0000ffff)))
 
-//****************************************************************************
 
-#define PPC_REG_R0 0
-#define PPC_REG_SP 1 // typically, R1 is a stack pointer, not a frame pointer
-#define PPC_REG_FP 1 
 
-#define PPC_REG_PC 32
+//***************************************************************************
+// Opcodes
+//***************************************************************************
 
-#define PPC_REG_LR (-1)
+#define PPC_OP_D_MASK 0xfc000000  /* opcode  */
+#define PPC_OP_X_MASK 0xfc0007fe  /* opcode, extra-opc */
+
+#define PPC_OP_LWZ   0x80000000 /* D-form */
+#define PPC_OP_STW   0x90000000 /* D-form */
+#define PPC_OP_STWU  0x94000000 /* D-form */
+
+#define PPC_OP_ADDI  0x38000000 /* D-form */
+
+#define PPC_OP_OR    0x7c000378 /* X-form */
+#define PPC_OP_MR    PPC_OP_OR  /* X-form: mr Rx Ry = or Rx Ry Ry */
+
+
+//***************************************************************************
+// Instructions
+//***************************************************************************
+
+#define PPC_INSN_D_MASK 0xffff0000 /* opcode RS, RA */
+#define PPC_INSN_X_MASK 0xfffffffe /* opcode RS, RA, RB, extra-opc */
+
+#define PPC_INSN_D(opc, Rs, Ra, D) \
+  ((opc) | ((Rs) << PPC_OPND_REG_S_SHIFT) \
+         | ((Ra) << PPC_OPND_REG_A_SHIFT) \
+         | (D))
+
+#define PPC_INSN_X(opc, Rs, Ra, Rb, Rc) \
+  ((opc) | ((Rs) << PPC_OPND_REG_S_SHIFT) \
+         | ((Ra) << PPC_OPND_REG_A_SHIFT) \
+         | ((Rb) << PPC_OPND_REG_B_SHIFT) \
+         | (Rc))
 
 /****************************************************************************/
 

@@ -29,41 +29,47 @@
 //***************************************************************************
 
 typedef enum {
-  RATy_NULL = 0,
-  RATy_SPRel, // RA is relative to SP
-  RATy_Reg,   // RA is in a register (either LR or R0)
-} ra_ty_t;
-
-
-typedef enum {
   SPTy_NULL = 0,
   SPTy_SPRel, // Parent's SP is relative to current SP (saved in frame)
   SPTy_Reg,   // Parent's SP is in a register (R1) (unallocated frame)
 } sp_ty_t;
 
 
+typedef enum {
+  RATy_NULL = 0,
+  RATy_SPRel, // RA is relative to SP
+  RATy_Reg,   // RA is in a register (either LR or R0)
+} ra_ty_t;
+
+
 typedef struct {
   struct splay_interval_s common; // common splay tree fields
 
-  ra_ty_t ra_ty : 16;
+  // frame type
   sp_ty_t sp_ty : 16;
+  ra_ty_t ra_ty : 16;
 
-  // ra_ty == RATy_Reg: the register that contains RA
-  // otherwise:         RA's offset from appropriate pointer
+  // sp_ty == SPTy_Reg: Parent SP's register
+  // otherwise:         Parent SP's offset from appropriate pointer
+  int sp_arg;
+
+  // ra_ty == RATy_Reg: Parent RA's register
+  // otherwise:         Parent RA's offset from appropriate pointer
   int ra_arg;
 
 } unw_interval_t;
 
 
 unw_interval_t *
-new_ui(char *startaddr, ra_ty_t ra_ty, int ra_arg, 
-       sp_ty_t sp_ty, unw_interval_t *prev);
+new_ui(char *startaddr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
+       unw_interval_t *prev);
 
 static inline bool 
 ui_cmp(unw_interval_t* x, unw_interval_t* y)
 {
-  return ((x->ra_ty == y->ra_ty) && 
-	  (x->sp_ty == y->sp_ty) &&
+  return ((x->sp_ty  == y->sp_ty) &&
+	  (x->ra_ty  == y->ra_ty) && 
+	  (x->sp_arg == y->sp_arg) &&
 	  (x->ra_arg == y->ra_arg));
 }
 
