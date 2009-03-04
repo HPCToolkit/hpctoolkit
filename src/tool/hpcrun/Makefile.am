@@ -228,13 +228,15 @@ if HOST_CPU_X86
     libcsprof_o_LDFLAGS   += $(XED2_LIB)/libxed.a
 endif
 
-
-if OPT_HAVE_PAPI
+if OPT_PAPI_DYNAMIC
     libcsprof_la_SOURCES  += $(MY_PAPI_FILES)
-    libcsprof_o_SOURCES   += $(MY_PAPI_FILES)
     libcsprof_la_CPPFLAGS += $(PAPI_INC_FLGS)
-    libcsprof_o_CPPFLAGS  += $(PAPI_INC_FLGS)
     libcsprof_la_LDFLAGS  += $(PAPI_LD_FLGS)
+endif
+
+if OPT_PAPI_STATIC
+    libcsprof_o_SOURCES   += $(MY_PAPI_FILES)
+    libcsprof_o_CPPFLAGS  += $(PAPI_INC_FLGS)
     libcsprof_o_LDFLAGS   += $(PAPI_LD_FLGS)
 endif
 

@@ -909,11 +909,12 @@ AC_MSG_CHECKING([whether configured with PAPI])
 HPC_DEF_CHECK_CXX_PAPI_LINK
 
 OPT_HAVE_PAPI=no
+OPT_PAPI_DYNAMIC=no
+OPT_PAPI_STATIC=no
 OPT_PAPI=
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LDFLAGS=
 OPT_PAPI_LIBPATH=
-OPT_PAPI_LIB=
 
 AC_ARG_WITH([papi],
   AS_HELP_STRING([--with-papi=PATH],
@@ -943,45 +944,50 @@ AC_ARG_WITH([papi],
 #   <papi-build-path>/ papi.h
 #                      libpapi.so
 # Note: same test is in hpctoolkit-oss's Makefile.quick
+#
 if test "$OPT_HAVE_PAPI" = "yes" ; then
   if test -f "${OPT_PAPI}/include/papi.h"; then
     OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
-  else
+  elif test -f "${OPT_PAPI}/papi.h" ; then
     OPT_PAPI_IFLAGS="-I${OPT_PAPI}"
+  else
+    AC_MSG_ERROR([no papi.h in ${OPT_PAPI}/include])
   fi
   
   for lib in ${LIB_SEARCH_PATH} ; do
-    if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
-      if HPC_check_cxx_papi_link ${OPT_PAPI_IFLAGS} ${OPT_PAPI}/${lib} ; then
-        OPT_PAPI_LIBPATH="${OPT_PAPI}/${lib}"
-        OPT_PAPI_LIB="${OPT_PAPI_LIBPATH}/libpapi.so"
-        OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
-        break;
+    if test -r "${OPT_PAPI}/${lib}/libpapi.so" \
+       || test -f "${OPT_PAPI}/${lib}/libpapi.a"
+    then
+      OPT_PAPI_LIBPATH="${OPT_PAPI}/${lib}"
+      OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
+      if test -f "${OPT_PAPI}/${lib}/libpapi.so" ; then
+	OPT_PAPI_DYNAMIC=yes
       fi
+      if test -f "${OPT_PAPI}/${lib}/libpapi.a" ; then
+	OPT_PAPI_STATIC=yes
+      fi
+      break
     fi
   done
-
-  #for lib in ${LIB_SEARCH_PATH} ; do
-  #  if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
-  #    OPT_PAPI_LIB="${OPT_PAPI_LIB} ${OPT_PAPI}/${lib}/libpapi.so"
-  #  fi
-  #done
-  #OPT_PAPI_LIB=`echo ${OPT_PAPI_LIB}`
-
+  if test "x$OPT_PAPI_LIBPATH" = x ; then
+    AC_MSG_ERROR([no libpapi.so or libpapi.a in $LIB_SEARCH_PATH])
+  fi
 fi
 
 # Check for PAPI > 3.0 [skip for now]
 
-if test "${OPT_HAVE_PAPI}" = "yes"; then 
-  if test -n "${OPT_PAPI_LIB}" ; then
-    AC_MSG_RESULT([yes (${OPT_PAPI_LIB})])
-  else
-    AC_MSG_ERROR([cannot find usable PAPI in '${LIB_SEARCH_PATH}'])
-  fi
+if test "${OPT_HAVE_PAPI}" = "yes"; then
+  AC_MSG_RESULT([yes (${OPT_PAPI})])
+  AC_MSG_NOTICE([PAPI shared libpapi.so: $OPT_PAPI_DYNAMIC])
+  AC_MSG_NOTICE([PAPI static libpapi.a: $OPT_PAPI_STATIC])
 else
   AC_MSG_RESULT([no])
 fi
 
+# The dynamic case also needs libpapi.so's prerequisite libraries
+# (-lperfctr, -lpfm).  In the static case, libpapi.a already includes
+# these functions.  At least, that's what we've seen so far.
+#
 papi_extra_libs=
 so_file="${OPT_PAPI_LIBPATH}/libpapi.so"
 if test -f "$so_file" ; then
@@ -995,12 +1001,13 @@ if test -f "$so_file" ; then
   fi
 fi
 
-AM_CONDITIONAL(OPT_HAVE_PAPI, test "${OPT_HAVE_PAPI}" = "yes")
+AM_CONDITIONAL(OPT_PAPI_DYNAMIC, test "$OPT_PAPI_DYNAMIC" = yes)
+AM_CONDITIONAL(OPT_PAPI_STATIC,  test "$OPT_PAPI_STATIC" = yes)
+
 AC_SUBST(OPT_PAPI)
 AC_SUBST(OPT_PAPI_IFLAGS)
 AC_SUBST(OPT_PAPI_LDFLAGS)
 AC_SUBST(OPT_PAPI_LIBPATH)
-AC_SUBST(OPT_PAPI_LIB)
 AC_SUBST([papi_extra_libs])
 
 
@@ -1148,8 +1155,8 @@ AC_SUBST([XERCES_LIB])
 AC_MSG_CHECKING([whether to build hpcrun-flat])
 
 OPT_ENABLE_HPCRUN_FLAT="no"
-if test "${OPT_HAVE_PAPI}" = "yes" && test "${HOST_OS}" = "Linux" \
-   && test "${OPT_WITH_MONITOR}" != no
+if test "$OPT_PAPI_DYNAMIC" = yes && test "$OPT_WITH_MONITOR" = yes \
+   && test "${HOST_OS}" = "Linux"
 then
   OPT_ENABLE_HPCRUN_FLAT="yes"
 fi
