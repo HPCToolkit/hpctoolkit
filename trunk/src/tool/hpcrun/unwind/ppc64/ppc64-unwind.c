@@ -195,22 +195,17 @@ unw_step(unw_cursor_t *cursor)
 
   //-----------------------------------------------------------
   // compute SP (stack pointer) for the caller's frame.  Do this first
-  //   because we rely on the invariant that an interior frames contains
+  //   because we rely on the invariant that an interior frame contains
   //   a stack pointer and, above it, a return address.
   //-----------------------------------------------------------
   if (intvl->sp_ty == SPTy_Reg) {
     // SP already points to caller's stack frame
     nxt_sp = sp;
     
-    // check for inconsistency: if this is an interior frame, correct SP
+    // consistency check: interior frames should not have type SPTy_Reg
     if (isInteriorFrm) {
       nxt_sp = *sp;
-      TMSG(UNW, " error: correcting sp: nxt_sp %p -> %p", sp, nxt_sp);
-      
-      if (intvl->ra_ty != RATy_SPRel) {
-	intvl->ra_ty = RATy_SPRel;
-	TMSG(UNW, " error: correcting ra_ty (SPRel)");
-      }
+      TMSG(UNW, " error: correcting sp: %p -> %p", sp, nxt_sp);
     }
   }
   else if (intvl->sp_ty == SPTy_SPRel) {
@@ -226,9 +221,13 @@ unw_step(unw_cursor_t *cursor)
   // compute RA (return address) for the caller's frame
   //-----------------------------------------------------------
   if (intvl->ra_ty == RATy_Reg) {
-    // RA should be in a register only on the first call to unw_step()
-    // (or the first call after going through a signal trampoline)
     nxt_pc = cursor->ra;
+
+    // consistency check: interior frames should not have type RATy_Reg
+    if (isInteriorFrm) {
+      nxt_pc = getNxtPCFromSP(nxt_sp);
+      TMSG(UNW, " error: correcting pc: %p -> %p", cursor->ra, nxt_pc);
+    }
   }
   else if (intvl->ra_ty == RATy_SPRel) {
     nxt_pc = getNxtPCFromSP(nxt_sp);
@@ -255,7 +254,6 @@ unw_step(unw_cursor_t *cursor)
     if (!isInteriorFrm) {
       try_sp = *nxt_sp;
       nxt_pc = getNxtPCFromSP(try_sp);
-    
       nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
     }
      
