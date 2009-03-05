@@ -422,10 +422,9 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
         nxt_ui = new_ui(nextInsn(cur_insn), 
 			ui->sp_ty, RATy_SPRel, ui->sp_arg, ra_disp, ui);
-        if (canon_ui == beg_ui) {
-	  canon_ui = nxt_ui;
-	}
         ui = nxt_ui;
+
+	canon_ui = nxt_ui;
       }
     }
     //--------------------------------------------------
@@ -455,6 +454,8 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
       nxt_ui = new_ui(nextInsn(cur_insn),
 		      SPTy_SPRel, ui->ra_ty, sp_disp, ui->ra_arg, ui);
       ui = nxt_ui;
+
+      canon_ui = nxt_ui;
     }
     //--------------------------------------------------
     // deallocate frame: reset SP to parents's SP
