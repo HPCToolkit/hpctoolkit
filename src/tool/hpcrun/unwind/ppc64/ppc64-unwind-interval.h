@@ -30,15 +30,15 @@
 
 typedef enum {
   SPTy_NULL = 0,
-  SPTy_SPRel, // Parent's SP is relative to current SP (saved in frame)
-  SPTy_Reg,   // Parent's SP is in a register (R1) (unallocated frame)
+  SPTy_Reg,     // Parent's SP is in a register (R1) (unallocated frame)
+  SPTy_SPRel,   // Parent's SP is relative to current SP (saved in frame)
 } sp_ty_t;
 
 
 typedef enum {
   RATy_NULL = 0,
-  RATy_SPRel, // RA is relative to SP
-  RATy_Reg,   // RA is in a register (either LR or R0)
+  RATy_Reg,     // RA is in a register (either LR or R0)
+  RATy_SPRel,   // RA is relative to SP
 } ra_ty_t;
 
 
@@ -49,12 +49,12 @@ typedef struct {
   sp_ty_t sp_ty : 16;
   ra_ty_t ra_ty : 16;
 
-  // sp_ty == SPTy_Reg: Parent SP's register
-  // otherwise:         Parent SP's offset from appropriate pointer
+  // SPTy_Reg  : Parent SP's register
+  // RATy_SPRel: Parent SP's offset from appropriate pointer
   int sp_arg;
 
-  // ra_ty == RATy_Reg: Parent RA's register
-  // otherwise:         Parent RA's offset from appropriate pointer
+  // RATy_Reg  : Parent RA's register
+  // RATy_SPRel: Parent RA's offset from appropriate pointer
   int ra_arg;
 
 } unw_interval_t;
