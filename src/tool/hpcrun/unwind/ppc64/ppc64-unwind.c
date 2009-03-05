@@ -42,6 +42,11 @@
 
 #define MYDBG 0
 
+typedef enum {
+  UnwFlg_NULL = 0,
+  UnwFlg_StackTop,
+} unw_flag_t;
+
 
 //***************************************************************************
 // private operations
@@ -85,19 +90,10 @@ getNxtPCFromSP(void** sp)
 
 
 static inline bool
-isPossibleNonBottomSP(void** fp)
-{
-  // Stacks grow down, so stack pointer is at a higher address
-  // N.B.: fp is strictly less than stack bottom
-  return (monitor_stack_bottom() > (void*)fp /*&& fp >= sp*/);
-}
-
-
-static inline bool
-isPossibleParentSP(void** fp, void** parent_fp)
+isPossibleParentSP(void** sp, void** parent_sp)
 {
   // Stacks grow down, so outer frames are at higher addresses
-  return (parent_fp > fp); // assume frame size is not 0
+  return (parent_sp > sp); // assume frame size is not 0
 }
 
 
@@ -138,6 +134,7 @@ unw_init_cursor(unw_cursor_t *cursor, void *context)
   cursor->ra = NULL;
   cursor->sp = ucontext_sp(ctxt);
   cursor->bp = NULL;
+  cursor->flags = UnwFlg_StackTop;
 
   unw_interval_t* intvl = (unw_interval_t*)csprof_addr_to_interval(cursor->pc);
   cursor->intvl = (splay_interval_t*)intvl;
@@ -165,6 +162,8 @@ unw_step(unw_cursor_t *cursor)
   void** sp = cursor->sp;
   void** fp = cursor->bp; // unused
   unw_interval_t* intvl = (unw_interval_t*)(cursor->intvl);
+
+  bool isInteriorFrm = (cursor->flags != UnwFlg_StackTop);
   
   // next (parent) frame
   void*  nxt_pc = NULL;
@@ -195,6 +194,35 @@ unw_step(unw_cursor_t *cursor)
 
 
   //-----------------------------------------------------------
+  // compute SP (stack pointer) for the caller's frame.  Do this first
+  //   because we rely on the invariant that an interior frames contains
+  //   a stack pointer and, above it, a return address.
+  //-----------------------------------------------------------
+  if (intvl->sp_ty == SPTy_Reg) {
+    // SP already points to caller's stack frame
+    nxt_sp = sp;
+    
+    // check for inconsistency: if this is an interior frame, correct SP
+    if (isInteriorFrm) {
+      nxt_sp = *sp;
+      TMSG(UNW, " error: correcting sp: nxt_sp %p -> %p", sp, nxt_sp);
+      
+      if (intvl->ra_ty != RATy_SPRel) {
+	intvl->ra_ty = RATy_SPRel;
+	TMSG(UNW, " error: correcting ra_ty (SPRel)");
+      }
+    }
+  }
+  else if (intvl->sp_ty == SPTy_SPRel) {
+    // SP points to parent's SP
+    nxt_sp = *sp;
+  }
+  else {
+    assert(0);
+  }
+
+
+  //-----------------------------------------------------------
   // compute RA (return address) for the caller's frame
   //-----------------------------------------------------------
   if (intvl->ra_ty == RATy_Reg) {
@@ -202,31 +230,8 @@ unw_step(unw_cursor_t *cursor)
     // (or the first call after going through a signal trampoline)
     nxt_pc = cursor->ra;
   }
-  else {
-    // INVARIANT: RA is saved in my caller's stack frame
-    if (intvl->sp_ty == SPTy_Reg) {
-      // SP already points to caller's stack frame
-      nxt_pc = getNxtPCFromSP(sp);
-    }
-    else if (intvl->sp_ty == SPTy_SPRel) {
-      // SP points to parent's SP
-      nxt_pc = getNxtPCFromSP((void**) *sp);
-    }
-    else {
-      assert(0);
-    }
-  }
-
-  //-----------------------------------------------------------
-  // compute SP (stack pointer) for the caller's frame
-  //-----------------------------------------------------------
-  if (intvl->sp_ty == SPTy_Reg) {
-    // SP already points to caller's stack frame
-    nxt_sp = sp;
-  }
-  else if (intvl->sp_ty == SPTy_SPRel) {
-    // SP points to parent's SP
-    nxt_sp = *sp;
+  else if (intvl->ra_ty == RATy_SPRel) {
+    nxt_pc = getNxtPCFromSP(nxt_sp);
   }
   else {
     assert(0);
@@ -243,34 +248,32 @@ unw_step(unw_cursor_t *cursor)
     TMSG(UNW, " warning: bad nxt pc=%p; sp=%p, fp=%p...", nxt_pc, sp, fp);
 
     //-------------------------------------------------------------------
-    // assume there is no valid PC saved in the return address slot in my 
-    // caller's frame.  try one frame deeper. 
-    //
-    // NOTE: this should only happen in the top frame on the stack.
+    // If this is a leaf frame, assume the interval didn't correctly
+    // track the return address.  Try one frame deeper.
     //-------------------------------------------------------------------
-    void** new_sp = NULL;
-    if (isPossibleNonBottomSP(nxt_sp)) {
-      new_sp = *nxt_sp;
-      nxt_pc = getNxtPCFromSP(new_sp);
+    void** try_sp = NULL;
+    if (!isInteriorFrm) {
+      try_sp = *nxt_sp;
+      nxt_pc = getNxtPCFromSP(try_sp);
     
       nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
     }
      
     if (!nxt_intvl) {
-      TMSG(UNW, " error: skip-frame failed: nxt pc=%p, sp=%p; new sp=%p", 
-	   nxt_pc, nxt_sp, new_sp);
+      TMSG(UNW, " error: skip-frame failed: nxt pc=%p, sp=%p; try sp=%p", 
+	   nxt_pc, nxt_sp, try_sp);
       return STEP_ERROR;
     }
 
-    nxt_sp = new_sp;
+    nxt_sp = try_sp;
     TMSG(UNW, " skip-frame: nxt pc=%p, sp=%p", nxt_pc, nxt_sp);
   }
   // INVARIANT: At this point, 'nxt_intvl' is valid
 
 
   // INVARIANT: Ensure we always make progress unwinding the stack...
-  bool frameSizeMayBe0 = (intvl->sp_ty == SPTy_Reg);
-  if (!frameSizeMayBe0 && !isPossibleParentSP(sp, nxt_sp)) {
+  bool mayFrameSizeBe0 = (intvl->sp_ty == SPTy_Reg && !isInteriorFrm);
+  if (!mayFrameSizeBe0 && !isPossibleParentSP(sp, nxt_sp)) {
     // TMSG(UNW, " warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
     // nxt_sp = sp + 1
     TMSG(UNW, " error: loop! nxt_sp=%p, sp=%p", nxt_sp, sp);
@@ -286,6 +289,7 @@ unw_step(unw_cursor_t *cursor)
   cursor->sp = nxt_sp;
   cursor->bp = nxt_fp;
   cursor->intvl = (splay_interval_t*)nxt_intvl;
+  cursor->flags = UnwFlg_NULL;
 
   return STEP_OK;
 }
