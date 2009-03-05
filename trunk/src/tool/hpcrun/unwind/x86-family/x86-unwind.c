@@ -107,7 +107,7 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
   TMSG(UNW,"INIT CURSOR: frame pc = %p, frame bp = %p, frame sp = %p", 
        cursor->pc, cursor->bp, cursor->sp);
 
-  cursor->trolling_used = 0;
+  cursor->flags = 0; // trolling_used
   cursor->intvl = csprof_addr_to_interval(cursor->pc);
 
   if (!cursor->intvl) {
@@ -143,7 +143,7 @@ unw_step_prefer_sp(void)
   else {
     return 0;
   }
-  // return cursor->trolling_used;
+  // return cursor->flags; // trolling_used
 }
 
 step_state
@@ -470,7 +470,7 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
       cursor->bp = next_bp;
       cursor->sp = next_sp;
 
-      cursor->trolling_used = 1;
+      cursor->flags = 1; // trolling_used
       return; // success!
     }
     PMSG_LIMIT(PMSG(TROLL, "No interval found for trolled pc, dropping sample,cursor pc = %p", cursor->pc));
