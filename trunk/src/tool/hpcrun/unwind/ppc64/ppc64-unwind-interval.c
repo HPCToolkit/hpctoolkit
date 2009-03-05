@@ -115,7 +115,7 @@ ui_dump(unw_interval_t* u)
     return;
   }
 
-  TMSG(INTV, "      start=%p end=%p sp_ty=%s ra_ty=%s sp_arg=%d ra_arg=%d next=%p prev=%p",
+  TMSG(INTV, "      [%p, %p) ty=%s,%s sp_arg=%d ra_arg=%d ->%p <-%p",
        (void *) u->common.start, (void *) u->common.end, 
        sp_ty_string(u->sp_ty), ra_ty_string(u->ra_ty), u->sp_arg, u->ra_arg,
        u->common.next, u->common.prev);
@@ -415,6 +415,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 
     //--------------------------------------------------
     // store return address (R0) into parent's frame
+    //   (may come before or after frame allocation)
     //--------------------------------------------------
     else if (isInsn_STW(*cur_insn, PPC_REG_RA, PPC_REG_SP)) {
       int sp_disp = getSPDispFromUI(ui);
@@ -442,12 +443,17 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 
     //--------------------------------------------------
     // allocate frame: adjust SP and store parent's SP
+    //   (may come before or after storing of RA)
     //--------------------------------------------------
     else if (isInsn_STWU(*cur_insn, PPC_REG_SP, PPC_REG_SP)) {
       int sp_disp = - PPC_OPND_DISP(*cur_insn);
+      int ra_arg = ((ui->ra_ty == RATy_SPRel) ? 
+		    ui->ra_arg + sp_disp : ui->ra_arg);
       nxt_ui = new_ui(nextInsn(cur_insn), 
-		      SPTy_SPRel, ui->ra_ty, sp_disp, ui->ra_arg, ui);
+		      SPTy_SPRel, ui->ra_ty, sp_disp, ra_arg, ui);
       ui = nxt_ui;
+
+      canon_ui = nxt_ui;
     }
     else if (isInsn_STWUX(*cur_insn, PPC_REG_SP)) {
       int sp_disp = -1; // N.B. currently we do not track this
@@ -469,7 +475,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     else if (isInsn_MR(*cur_insn, PPC_REG_SP)) {
       // N.B. To be sure the MR restores SP, we would have to track
       // registers.  As a sanity check, test for a non-zero frame size
-      if (getSPDispFromUI(ui) > 0) {
+      if (getSPDispFromUI(ui) != 0) {
 	nxt_ui = new_ui(nextInsn(cur_insn), 
 			SPTy_Reg, ui->ra_ty, PPC_REG_SP, ui->ra_arg, ui);
 	ui = nxt_ui;
