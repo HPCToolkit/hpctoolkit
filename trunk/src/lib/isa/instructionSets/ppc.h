@@ -86,17 +86,24 @@
 
 #define PPC_OPND_REG_S_MASK  0x03e00000
 #define PPC_OPND_REG_S_SHIFT 21
+#define PPC_OPND_REG_S(insn) \
+  (((insn) & PPC_OPND_REG_S_MASK) >> PPC_OPND_REG_S_SHIFT)
 
 #define PPC_OPND_REG_T_MASK  PPC_OPND_REG_S_MASK
 #define PPC_OPND_REG_T_SHIFT PPC_OPND_REG_S_SHIFT
+#define PPC_OPND_REG_T(insn) PPC_OPND_REG_S(insn)
 
 #define PPC_OPND_REG_A_MASK  0x001f0000
 #define PPC_OPND_REG_A_SHIFT 16
+#define PPC_OPND_REG_A(insn) \
+  (((insn) & PPC_OPND_REG_A_MASK) >> PPC_OPND_REG_A_SHIFT)
 
 #define PPC_OPND_REG_B_MASK  0x0000f800
 #define PPC_OPND_REG_B_SHIFT 11
+#define PPC_OPND_REG_B(insn) \
+  (((insn) & PPC_OPND_REG_B_MASK) >> PPC_OPND_REG_B_SHIFT)
 
-#define PPC_OPND_CC_MASK     0x00000001
+#define PPC_OPND_CC_MASK     0x00000001  /* Condition code bit */
 #define PPC_OPND_CC_SHIFT    0
 
 #define PPC_OPND_DISP(x)     (((int16_t)((x) & 0x0000ffff)))
@@ -107,17 +114,22 @@
 // Opcodes
 //***************************************************************************
 
-#define PPC_OP_D_MASK 0xfc000000  /* opcode  */
+#define PPC_OP_D_MASK 0xfc000000  /* opcode */
 #define PPC_OP_X_MASK 0xfc0007fe  /* opcode, extra-opc */
 
-#define PPC_OP_LWZ   0x80000000 /* D-form */
-#define PPC_OP_STW   0x90000000 /* D-form */
-#define PPC_OP_STWU  0x94000000 /* D-form */
+#define PPC_OP_LWZ    0x80000000 /* D-form */
+#define PPC_OP_STW    0x90000000 /* D-form */
+#define PPC_OP_STWU   0x94000000 /* D-form */
 
-#define PPC_OP_ADDI  0x38000000 /* D-form */
+#define PPC_OP_ADDI   0x38000000 /* D-form */
+#define PPC_OP_ADDIS  0x3c000000 /* D-form */ 
+#define PPC_OP_LIS    PPC_OP_ADDIS /* D-form: lis Rx,v = addis Rx,0,v */
 
-#define PPC_OP_OR    0x7c000378 /* X-form */
-#define PPC_OP_MR    PPC_OP_OR  /* X-form: mr Rx Ry = or Rx Ry Ry */
+
+#define PPC_OP_STWUX  0x7c00016e /* X-form */
+
+#define PPC_OP_OR     0x7c000378 /* X-form */
+#define PPC_OP_MR     PPC_OP_OR  /* X-form: mr Rx Ry = or Rx Ry Ry */
 
 
 //***************************************************************************
@@ -127,15 +139,15 @@
 #define PPC_INSN_D_MASK 0xffff0000 /* opcode RS, RA */
 #define PPC_INSN_X_MASK 0xfffffffe /* opcode RS, RA, RB, extra-opc */
 
-#define PPC_INSN_D(opc, Rs, Ra, D) \
-  ((opc) | ((Rs) << PPC_OPND_REG_S_SHIFT) \
-         | ((Ra) << PPC_OPND_REG_A_SHIFT) \
+#define PPC_INSN_D(opc, RS, RA, D) \
+  ((opc) | ((RS) << PPC_OPND_REG_S_SHIFT) \
+         | ((RA) << PPC_OPND_REG_A_SHIFT) \
          | (D))
 
-#define PPC_INSN_X(opc, Rs, Ra, Rb, Rc) \
-  ((opc) | ((Rs) << PPC_OPND_REG_S_SHIFT) \
-         | ((Ra) << PPC_OPND_REG_A_SHIFT) \
-         | ((Rb) << PPC_OPND_REG_B_SHIFT) \
+#define PPC_INSN_X(opc, RS, RA, RB, Rc) \
+  ((opc) | ((RS) << PPC_OPND_REG_S_SHIFT) \
+         | ((RA) << PPC_OPND_REG_A_SHIFT) \
+         | ((RB) << PPC_OPND_REG_B_SHIFT) \
          | (Rc))
 
 /****************************************************************************/

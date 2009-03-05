@@ -19,6 +19,7 @@
 
 #include <include/gcc-attr.h>
 #include <include/uint.h>
+#include <include/min-max.h>
 
 #include "ppc64-unwind-interval.h"
 
@@ -44,10 +45,10 @@ static void
 ppc64_print_interval_set(unw_interval_t *first);
 
 static const char *
-ra_ty_string(ra_ty_t l); 
+ra_ty_string(ra_ty_t ty); 
 
 static const char *
-sp_ty_string(sp_ty_t l);
+sp_ty_string(sp_ty_t ty);
 
 
 
@@ -114,7 +115,7 @@ ui_dump(unw_interval_t* u)
     return;
   }
 
-  TMSG(INTV, "    start=%p end=%p sp_ty=%s ra_ty=%s sp_arg=%d ra_arg=%d next=%p prev=%p",
+  TMSG(INTV, "      start=%p end=%p sp_ty=%s ra_ty=%s sp_arg=%d ra_arg=%d next=%p prev=%p",
        (void *) u->common.start, (void *) u->common.end, 
        sp_ty_string(u->sp_ty), ra_ty_string(u->ra_ty), u->sp_arg, u->ra_arg,
        u->common.next, u->common.prev);
@@ -161,12 +162,12 @@ ui_link(unw_interval_t* current, unw_interval_t* next)
 #define STR(s) case s: return #s
 
 static const char *
-ra_ty_string(ra_ty_t l) 
+ra_ty_string(ra_ty_t ty) 
 {
-  switch (l) {
-   STR(RATy_NULL);
-   STR(RATy_SPRel);
-   STR(RATy_Reg);
+  switch (ty) {
+    STR(RATy_NULL);
+    STR(RATy_Reg);
+    STR(RATy_SPRel);
   default:
     assert(0);
   }
@@ -175,12 +176,12 @@ ra_ty_string(ra_ty_t l)
 
 
 static const char *
-sp_ty_string(sp_ty_t l)
+sp_ty_string(sp_ty_t ty)
 {
-  switch (l) {
+  switch (ty) {
     STR(SPTy_NULL);
-    STR(SPTy_SPRel);
     STR(SPTy_Reg);
+    STR(SPTy_SPRel);
   default:
     assert(0);
   }
@@ -224,18 +225,29 @@ isInsn_STW(uint32_t insn, int Rs, int Ra)
 
 
 static inline bool 
+isInsn_LWZ(uint32_t insn, int Rt, int Ra)
+{
+  const int D = 0x0;
+  return (insn & PPC_INSN_D_MASK) == PPC_INSN_D(PPC_OP_LWZ, Rt, Ra, D);
+}
+
+
+static inline bool 
 isInsn_STWU(uint32_t insn, int Rs, int Ra)
 {
+  // stwu Rs Ra: store Rs at (Ra + D); set Ra to (Ra + D)
   const int D = 0x0;
   return (insn & PPC_INSN_D_MASK) == PPC_INSN_D(PPC_OP_STWU, Rs, Ra, D);
 }
 
 
 static inline bool 
-isInsn_LWZ(uint32_t insn, int Rt, int Ra)
-{
-  const int D = 0x0;
-  return (insn & PPC_INSN_D_MASK) == PPC_INSN_D(PPC_OP_LWZ, Rt, Ra, D);
+isInsn_STWUX(uint32_t insn, int Ra)
+{   
+  // stwux Rs Ra Rb: store Rs at (Ra + Rb); set Ra to (Ra + Rb)
+  const int Rs = 0, Rb = 0, Rc = 0x0;
+  return ((insn & (PPC_OP_X_MASK | PPC_OPND_REG_A_MASK))
+	  == PPC_INSN_X(PPC_OP_STWUX, Rs, Ra, Rb, Rc));
 }
 
 
@@ -249,10 +261,13 @@ isInsn_ADDI(uint32_t insn, int Rt, int Ra)
 
 static inline bool 
 isInsn_MR(uint32_t insn, int Ra)
-{   
+{
+  // mr Ra Rs = or Ra Rs Rb where Rs = Rb
   const int Rs = 0, Rc = 0x0;
-  return ((insn & (PPC_OP_X_MASK | PPC_OPND_REG_A_MASK))
-	  == PPC_INSN_X(PPC_OP_MR, Rs, Ra, Rs, Rc));
+  bool isMoveToRa = ((insn & (PPC_OP_X_MASK | PPC_OPND_REG_A_MASK))
+		     == PPC_INSN_X(PPC_OP_MR, Rs, Ra, Rs, Rc));
+  bool isRsEqRb = (PPC_OPND_REG_S(insn) == PPC_OPND_REG_B(insn));
+  return (isMoveToRa && isRsEqRb);
 }
 
 
@@ -287,27 +302,83 @@ nextInsn(uint32_t* insn)
 // build_intervals:
 //***************************************************************************
 
-// Typical PPC frames:
-//   stwu r1, -32(r1)   ! store with update: store stack pointer (R1) at
-//                      !   -32(r1) and *then* set R1 to -32(r1)
-//   mflr r0            ! move from LR: (and store into R0)
-//   stw  r0, 36(r1)    ! store word: store LR (return addr) in *parent* frame
+// R1 invariably remains the stack pointer, even for dynamically sized
+// frames or very large frames.  Moreover, every non-leaf procedure
+// stores the SP using stwu/stwux, creating a linked list of SPs.
 //
-//   // ... do some stuff ...
+//  bottom (outermost frame)
+//  |-------------|
+// A|             |
+//  | RA          | <- stored by caller
+//  | SP <---     | <- stored w/ stwu
+//  |-------/-----|
+// B|      /      |                          Typical frame
+//  | RA  /       | <- (by C)
+//  | SP / <- <-  | <- (stwu)
+//  |-------/--|--|
+// C|      /   |  |                          Possible nasty frame
+//  | []  /    |  | <- 
+//  | SP /    /   | <- (stwu)
+//  |- - - - / - -|  
+//  |       /     | (xtra frame)
+//  |      /      |
+//  |     /       |
+//  | SP /        | <- stwux
+//  |-------------|
+
+
+// Typical PPC frames (constant frame size <= 16 bits)
+//   stwu r1, -32(r1)   ! store with update: store SP (r1) at -32(r1)
+//                        and *then* set SP (r1) to -32(r1)
+//   mflr r0            ! move from LR: (and store into RA/r0)
+//   stw  r0, 36(r1)    ! store word: store RA (r0) in *parent* frame
+//
+//   ... compute ...
 //
 //   lwz r0, 36(r1)     ! load LR
 //   mtlr r0            ! mtlr: move to LR (from r0)
 //   blr                ! blr: return!
-// 
-// Notes:
-// - When an alloca occurs, r0 remains the stack pointer for the
-//   constant-sized portion of the frame and another register is used as the
-//   stack pointer for the dynamically sized portion.
 //
 // States:
-//   1. RA is in register (LR/R0); SP (r1) points to parent's frame
-//   2. RA is in register (LR/R0); SP (r1) has been stored & updated
+//   1. RA is in register (LR/r0); SP (r1) points to parent's frame
+//   2. RA is in register (LR/r0); SP (r1) has been stored & updated
 //   3. RA is SP-relative        ; SP (r1) has been stored & updated
+
+
+// Nasty PPC frames have few common characteristics between compilers
+// (frame size > 16 bit displacement field)
+//   mflr    r0
+//   mr      r12,r1       ! 
+//   stw     r0,4(r1)     ! save RA in parent frame (note frame size is 0)
+//   lis     r0,-1        ! r0 <- 0xffff0000 (-65536)
+//   addic   r0,r0,-1664  ! r0 <- 67200 = -65536 + -1664
+//   stwux   r1,r1,r0     ! store r1 at (r1 + r0); set r1 to (r1 + r0)
+//
+//   ... compute: cobber r12, of course! ...
+// 
+//   addis   r11,r1,1     ! r11 <- r1 + [0x10000 (65536)]
+//   addi    r11,r11,1664 ! r11 <- r11 + 1664
+//   lwz     r0,4(r11)    ! restore RA (r0)
+//   mr      r1,r11       ! restore SP (r1)
+//   mtlr    r0
+//   blr
+
+// flash: runtimeparameters_read (above)
+// flash: <_ZN4DCMF7MappingC2ERNS_11PersonalityERNS_13MemoryManagerERNS_3Log3LogE>:
+//   lis     r0,-3
+//   mr      r12,r1
+//   ori     r0,r0,49040
+//   stwux   r1,r1,r0
+//   mflr    r0
+//   stw     r0,4(r12)
+//   ...
+//   lwz     r11,0(r1)
+//   lwz     r0,4(r11)
+//   mtlr    r0
+//   mr      r1,r11
+
+// Another nasty frame now in t1:
+
 
 
 static interval_status 
@@ -379,9 +450,21 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 		      SPTy_SPRel, ui->ra_ty, sp_disp, ui->ra_arg, ui);
       ui = nxt_ui;
     }
+    else if (isInsn_STWUX(*cur_insn, PPC_REG_SP)) {
+      int sp_disp = -1; // N.B. currently we do not track this
+      nxt_ui = new_ui(nextInsn(cur_insn),
+		      SPTy_SPRel, ui->ra_ty, sp_disp, ui->ra_arg, ui);
+      ui = nxt_ui;
+    }
     //--------------------------------------------------
     // deallocate frame: reset SP to parents's SP
     //--------------------------------------------------
+    else if (isInsn_ADDI(*cur_insn, PPC_REG_SP, PPC_REG_SP)
+	     && (PPC_OPND_DISP(*cur_insn) == getSPDispFromUI(ui))) {
+      nxt_ui = new_ui(nextInsn(cur_insn), 
+		      SPTy_Reg, ui->ra_ty, PPC_REG_SP, ui->ra_arg, ui);
+      ui = nxt_ui;
+    }
     else if (isInsn_MR(*cur_insn, PPC_REG_SP)) {
       // N.B. To be sure the MR restores SP, we would have to track
       // registers.  As a sanity check, test for a non-zero frame size
@@ -390,12 +473,6 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 			SPTy_Reg, ui->ra_ty, PPC_REG_SP, ui->ra_arg, ui);
 	ui = nxt_ui;
       }
-    }
-    else if (isInsn_ADDI(*cur_insn, PPC_REG_SP, PPC_REG_SP)
-	     && (PPC_OPND_DISP(*cur_insn) == getSPDispFromUI(ui))) {
-      nxt_ui = new_ui(nextInsn(cur_insn), 
-		      SPTy_Reg, ui->ra_ty, PPC_REG_SP, ui->ra_arg, ui);
-      ui = nxt_ui;
     }
 
     //--------------------------------------------------
