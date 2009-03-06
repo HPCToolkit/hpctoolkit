@@ -264,21 +264,30 @@ pmsg_fini(void)
 #define MSG_BUF_SIZE  4096
 
 static void
-write_msg_to_log(const char *fmt,va_list args)
+write_msg_to_log(const char *tag, const char *fmt, va_list args)
 {
   char fstr[MSG_BUF_SIZE];
   char buf[MSG_BUF_SIZE];
 
   fstr[0] = '\0';
-  if (csprof_using_threads_p()){
-    sprintf(fstr,"[%d]: ",TD_GET(id));
+
+  if (csprof_using_threads_p()) {
+    sprintf(fstr, "[%d]: ", TD_GET(id));
   }
-  if (ENABLED(PID)){
-    sprintf(fstr,"[%d]: ",getpid());
+  if (ENABLED(PID)) {
+    sprintf(fstr, "[%d]: ", getpid());
   }
+
+  if (tag) {
+    char* fstr_end = fstr + strlen(fstr);
+    sprintf(fstr_end, "%-5s: ", tag);
+  }
+
   strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
   strcat(fstr,"\n");
+
   vsnprintf(buf, MSG_BUF_SIZE - 2, fstr, args);
+
   spinlock_lock(&pmsg_lock);
   fprintf(log_file, "%s", buf);
   fflush(log_file);
@@ -310,7 +319,7 @@ _nmsg(const char *fmt,va_list args)
 void
 csprof_emsg_valist(const char *fmt, va_list args)
 {
-  write_msg_to_log(fmt,args);
+  write_msg_to_log(NULL, fmt, args);
 }
 
 
@@ -319,7 +328,7 @@ csprof_emsg(const char *fmt,...)
 {
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(fmt,args);
+  write_msg_to_log(NULL, fmt, args);
 }
 
 void
@@ -330,7 +339,7 @@ csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
   }
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(fmt,args);
+  write_msg_to_log(NULL, fmt, args);
   abort();
 }
 
@@ -345,7 +354,7 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
 
   va_list args;
   va_start(args, fmt);
-  write_msg_to_log(fmt,args);
+  write_msg_to_log(NULL, fmt, args);
 
   va_start(args,fmt);
   vfprintf(stderr, fstr, args);
@@ -373,7 +382,7 @@ csprof_stderr_log_msg(bool copy_to_log,const char *fmt, ...)
   if (copy_to_log){
     va_list args;
     va_start(args, fmt);
-    write_msg_to_log(fmt, args);
+    write_msg_to_log(NULL, fmt, args);
   }
 }
 
@@ -384,7 +393,7 @@ __csprof_dc(void)
 }
 
 void
-csprof_pmsg(pmsg_category flag,const char *fmt,...)
+csprof_pmsg(pmsg_category flag, const char *tag, const char *fmt,...)
 {
   if (! dbg_flags[flag]){
     // csprof_emsg("PMSG flag in = %d (%s), flag ctl = %d --> NOPRINT",flag,tbl[flag],dbg_flags[flag]);
@@ -392,7 +401,7 @@ csprof_pmsg(pmsg_category flag,const char *fmt,...)
   }
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(fmt,args);
+  write_msg_to_log(tag, fmt, args);
 }
 
 void
