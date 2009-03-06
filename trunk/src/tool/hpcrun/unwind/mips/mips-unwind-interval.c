@@ -146,10 +146,10 @@ ui_dump(unw_interval_t* u)
     return;
   }
 
-  TMSG(INTV, "intv: start=%p end=%p ty=%s flgs=%d sp_arg=%d fp_arg=%d ra_arg=%d next=%p prev=%p",
+  TMSG(INTV, "  [%p, %p) ty=%s flgs=%d sp_arg=%d fp_arg=%d ra_arg=%d",
        (void*)u->common.start, (void*)u->common.end,
-       framety_string(u->ty), u->flgs, u->sp_arg, u->fp_arg, u->ra_arg,
-       u->common.next, u->common.prev);
+       framety_string(u->ty), u->flgs, u->sp_arg, u->fp_arg, u->ra_arg);
+  //TMSG(INTV, "  next=%p prev=%p", u->common.next, u->common.prev);
 }
 
 
