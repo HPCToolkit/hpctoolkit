@@ -33,6 +33,15 @@ dlopen: dlopen.c
 dlopen-test: dlopen-test.c
 	gcc -o dlopen-test -g dlopen-test.c -ldl
 
+.PHONY: early
+early: libearly.so emain
+
+libearly.so: early.c
+	$(CC) -o $@ -O -g -shared -fPIC $< -ldl -lpthread
+
+emain: emain.c
+	$(CC) -o $@ -O -g $< -L. -learly
+
 noext = $(filter-out $(wildcard *.*) makefile Makefile,$(wildcard *))
 
 .PHONY: clean
