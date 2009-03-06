@@ -319,11 +319,14 @@ csprof_fini_internal(void)
       lush_agent_pool__fini(lush_agents);
     }
 
-    AMSG(" %d samples, %d filtered, %d dropped (%d segvs) %ld blocked, "
-	 "%ld intervals %ld suspicious",
-	 samples_taken, filtered_samples, bad_unwind_count, segv_count,
-	 csprof_num_samples_blocked_async(), ui_count(), suspicious_count());
-
+    long unw_err = filtered_samples + bad_unwind_count;
+    AMSG("SUMMARY: samples: %d || blocks: %ld || "
+	 "errors: %ld (%d drops, %d filters, %d segvs) || "
+	 "intervals %ld (%ld suspicious)",
+	 samples_taken, csprof_num_samples_blocked_async(), 
+	 unw_err, bad_unwind_count, filtered_samples, segv_count,
+	 ui_count(), suspicious_count());
+    
     pmsg_fini();
   }
 }
