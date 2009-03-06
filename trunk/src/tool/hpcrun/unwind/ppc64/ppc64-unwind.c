@@ -205,7 +205,7 @@ unw_step(unw_cursor_t *cursor)
     // consistency check: interior frames should not have type SPTy_Reg
     if (isInteriorFrm) {
       nxt_sp = *sp;
-      TMSG(UNW, " error: correcting sp: %p -> %p", sp, nxt_sp);
+      TMSG(UNW, " warning: correcting sp: %p -> %p", sp, nxt_sp);
     }
   }
   else if (intvl->sp_ty == SPTy_SPRel) {
@@ -226,7 +226,7 @@ unw_step(unw_cursor_t *cursor)
     // consistency check: interior frames should not have type RATy_Reg
     if (isInteriorFrm) {
       nxt_pc = getNxtPCFromSP(nxt_sp);
-      TMSG(UNW, " error: correcting pc: %p -> %p", cursor->ra, nxt_pc);
+      TMSG(UNW, " warning: correcting pc: %p -> %p", cursor->ra, nxt_pc);
     }
   }
   else if (intvl->ra_ty == RATy_SPRel) {

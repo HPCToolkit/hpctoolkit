@@ -115,10 +115,10 @@ ui_dump(unw_interval_t* u)
     return;
   }
 
-  TMSG(INTV, "      [%p, %p) ty=%s,%s sp_arg=%d ra_arg=%d ->%p <-%p",
+  TMSG(INTV, "      [%p, %p) ty=%-10s,%-10s sp_arg=%5d ra_arg=%5d",
        (void *) u->common.start, (void *) u->common.end, 
-       sp_ty_string(u->sp_ty), ra_ty_string(u->ra_ty), u->sp_arg, u->ra_arg,
-       u->common.next, u->common.prev);
+       sp_ty_string(u->sp_ty), ra_ty_string(u->ra_ty), u->sp_arg, u->ra_arg);
+  //TMSG(INTV, "      next=%p prev=%p", u->common.next, u->common.prev);
 }
 
 
@@ -207,13 +207,25 @@ register_name(int reg)
 //***************************************************************************
 
 static inline bool 
-isInsn_MFLR_R0(uint32_t insn)
-{ return (insn == 0x7c0802a6); }
+isInsn_MFLR(uint32_t insn, int* Rt)
+{
+  if ((insn & PPC_OP_XFX_SPR_MASK) == PPC_OP_MFLR) {
+    *Rt = PPC_OPND_REG_T(insn);
+    return true;
+  }
+  return false;
+}
 
 
 static inline bool 
-isInsn_MTLR_R0(uint32_t insn)
-{ return (insn == 0x7c0803a6); }
+isInsn_MTLR(uint32_t insn, int* Rt)
+{
+  if ((insn & PPC_OP_XFX_SPR_MASK) == PPC_OP_MTLR) {
+    *Rt = PPC_OPND_REG_T(insn);
+    return true;
+  }
+  return false;
+}
 
 
 static inline bool 
@@ -273,7 +285,7 @@ isInsn_MR(uint32_t insn, int Ra)
 
 static inline bool 
 isInsn_BLR(uint32_t insn)
-{ return (insn == 0x4e800020); }
+{ return (insn == PPC_OP_BLR); }
 
 
 //***************************************************************************
@@ -393,31 +405,38 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
   uint32_t* cur_insn = (uint32_t*) beg_insn;
   uint32_t* end_insn = (uint32_t*) (beg_insn + len);
 
+  int reg;
+
   while (cur_insn < end_insn) {
     //TMSG(INTV, "insn: 0x%x [%p,%p)", *cur_insn, cur_insn, end_insn);
 
     //--------------------------------------------------
-    // move return address from LR (to R0)
+    // move return address from LR (to 'reg')
     //--------------------------------------------------
-    if (isInsn_MFLR_R0(*cur_insn)) {
+    if (ui->ra_ty == RATy_Reg &&
+	ui->ra_arg == PPC_REG_LR &&
+	isInsn_MFLR(*cur_insn, &reg)) {
       nxt_ui = new_ui(nextInsn(cur_insn), 
-		      ui->sp_ty, RATy_Reg, ui->sp_arg, PPC_REG_R0, ui);
+		      ui->sp_ty, RATy_Reg, ui->sp_arg, reg, ui);
       ui = nxt_ui;
     }
     //--------------------------------------------------
-    // move return address to LR (from R0)
+    // move return address to LR (from 'reg')
     //--------------------------------------------------
-    else if (isInsn_MTLR_R0(*cur_insn)) {
+    else if (isInsn_MTLR(*cur_insn, &reg)) {
+      // TODO: could scan backwards based on 'reg' (e.g., isInsn_LWZ)
       nxt_ui = new_ui(nextInsn(cur_insn), 
 		      ui->sp_ty, RATy_Reg, ui->sp_arg, PPC_REG_LR, ui);
       ui = nxt_ui;
     }
 
     //--------------------------------------------------
-    // store return address (R0) into parent's frame
+    // store return address into parent's frame
     //   (may come before or after frame allocation)
     //--------------------------------------------------
-    else if (isInsn_STW(*cur_insn, PPC_REG_RA, PPC_REG_SP)) {
+    else if (ui->ra_ty == RATy_Reg && 
+	     ui->ra_arg >= PPC_REG_R0 &&
+	     isInsn_STW(*cur_insn, ui->ra_arg, PPC_REG_SP)) {
       int sp_disp = getSPDispFromUI(ui);
       int ra_disp = PPC_OPND_DISP(*cur_insn);
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
@@ -486,6 +505,9 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     // interior returns/epilogues
     //--------------------------------------------------
     else if (isInsn_BLR(*cur_insn) && (cur_insn + 1 < end_insn)) {
+      // TODO: ensure that frame has been deallocated and mtlr issued
+      // and adjust intervals if necessary.
+
       // An interior return.  Restore the canonical interval if necessary.
       if (!ui_cmp(ui, canon_ui)) {
 	nxt_ui = new_ui(nextInsn(cur_insn), canon_ui->sp_ty, canon_ui->ra_ty,
