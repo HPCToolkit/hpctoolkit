@@ -481,8 +481,8 @@ unw_step(unw_cursor_t* cursor)
 
 
   // INVARIANT: Ensure we always make progress unwinding the stack...
-  bool frameSizeMayBe0 = frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg);
-  if (!frameSizeMayBe0 && !isPossibleParentSP(sp, nxt_sp)) {
+  bool mayFrameSizeBe0 = frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg);
+  if (!mayFrameSizeBe0 && !isPossibleParentSP(sp, nxt_sp)) {
     TMSG(UNW, "warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
     nxt_sp = sp + 1; // should cause trolling on next unw_step
   }
