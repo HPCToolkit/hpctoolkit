@@ -53,6 +53,7 @@ static pmsg_category all_list_entries [] = {
  E(INTV2),
  E(INTV_ERR),
  E(TROLL),
+ E(DROP),
  E(UNW_INIT),
  E(BASIC_INIT),
  E(SAMPLE),
@@ -116,7 +117,8 @@ dbg_get_flag(pmsg_category flag)
 }
 
 static int defaults[] = {
-  DBG_PREFIX(TROLL)
+  DBG_PREFIX(TROLL),
+  DBG_PREFIX(DROP)
 };
 #define NDEFAULTS (sizeof(defaults)/sizeof(defaults[0]))
 

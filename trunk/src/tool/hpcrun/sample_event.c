@@ -69,7 +69,7 @@ csprof_disable_sampling(void)
 void
 csprof_drop_sample(void)
 {
-  TMSG(SPECIAL,"Dropping sample from sample event");
+  TMSG(DROP, "dropping sample");
   sigjmp_buf_t *it = &(TD_GET(bad_unwind));
   siglongjmp(it->jb,9);
 }
@@ -94,7 +94,8 @@ csprof_sample_event(void *context, int metric_id, unsigned long long metric_unit
 
   csprof_set_handling_sample(td);
 
-  if (!sigsetjmp(it->jb,1)) {
+  int ljmp = sigsetjmp(it->jb, 1);
+  if (ljmp == 0) {
 
     if (state != NULL) {
       node = csprof_take_profile_sample(state, context, metric_id, metric_units_consumed);
@@ -117,8 +118,10 @@ csprof_sample_event(void *context, int metric_id, unsigned long long metric_unit
     }
   }
   else {
-    memset((void *)it->jb,'\0',sizeof(it->jb));
-    PMSG_LIMIT(EMSG("error: segv: context_pc=%p, unwind_pc=%p", state->context_pc, state->unwind_pc));
+    // ------------------------------------------------------------
+    // recover from SEGVs and dropped samples
+    // ------------------------------------------------------------
+    memset((void *)it->jb, '\0', sizeof(it->jb));
     dump_backtrace(state, state->unwind);
     bad_unwind_count++;
     csprof_up_pmsg_count();
