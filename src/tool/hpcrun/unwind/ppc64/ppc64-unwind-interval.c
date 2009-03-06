@@ -115,10 +115,10 @@ ui_dump(unw_interval_t* u)
     return;
   }
 
-  TMSG(INTV, "      [%p, %p) ty=%-10s,%-10s sp_arg=%5d ra_arg=%5d",
+  TMSG(INTV, "  [%p, %p) ty=%-10s,%-10s sp_arg=%5d ra_arg=%5d",
        (void *) u->common.start, (void *) u->common.end, 
        sp_ty_string(u->sp_ty), ra_ty_string(u->ra_ty), u->sp_arg, u->ra_arg);
-  //TMSG(INTV, "      next=%p prev=%p", u->common.next, u->common.prev);
+  //TMSG(INTV, "     next=%p prev=%p", u->common.next, u->common.prev);
 }
 
 
