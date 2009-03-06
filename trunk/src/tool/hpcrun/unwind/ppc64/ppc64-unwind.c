@@ -148,7 +148,7 @@ unw_init_cursor(unw_cursor_t *cursor, void *context)
     }
   }
   
-  TMSG(UNW, " init: pc=%p, ra=%p, sp=%p, fp=%p", 
+  TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
        cursor->pc, cursor->ra, cursor->sp, cursor->bp);
   if (MYDBG) { ui_dump(intvl); }
 }
@@ -173,7 +173,7 @@ unw_step(unw_cursor_t *cursor)
   unw_interval_t* nxt_intvl = NULL;
   
   if (!intvl) {
-    TMSG(UNW, " error: missing interval for pc=%p", pc);
+    TMSG(UNW, "error: missing interval for pc=%p", pc);
     return STEP_ERROR;
   }
 
@@ -183,12 +183,12 @@ unw_step(unw_cursor_t *cursor)
   // frame has been identified as valid)
   //-----------------------------------------------------------
   if (monitor_in_start_func_wide(pc)) {
-    TMSG(UNW, " stop: monitor_in_start_func_wide, pc=%p", pc);
+    TMSG(UNW, "stop: monitor_in_start_func_wide, pc=%p", pc);
     return STEP_STOP;
   }
   
   if ((void*)sp >= monitor_stack_bottom()) {
-    TMSG(UNW, " stop: sp (%p) >= unw_stack_bottom", sp);
+    TMSG(UNW, "stop: sp (%p) >= unw_stack_bottom", sp);
     return STEP_STOP;
   }
 
@@ -196,7 +196,7 @@ unw_step(unw_cursor_t *cursor)
   //-----------------------------------------------------------
   // compute SP (stack pointer) for the caller's frame.  Do this first
   //   because we rely on the invariant that an interior frame contains
-  //   a stack pointer and, above it, a return address.
+  //   a stack pointer and, above the stack pointer, a return address.
   //-----------------------------------------------------------
   if (intvl->sp_ty == SPTy_Reg) {
     // SP already points to caller's stack frame
@@ -205,7 +205,7 @@ unw_step(unw_cursor_t *cursor)
     // consistency check: interior frames should not have type SPTy_Reg
     if (isInteriorFrm) {
       nxt_sp = *sp;
-      TMSG(UNW, " warning: correcting sp: %p -> %p", sp, nxt_sp);
+      TMSG(UNW, "warning: correcting sp: %p -> %p", sp, nxt_sp);
     }
   }
   else if (intvl->sp_ty == SPTy_SPRel) {
@@ -226,7 +226,7 @@ unw_step(unw_cursor_t *cursor)
     // consistency check: interior frames should not have type RATy_Reg
     if (isInteriorFrm) {
       nxt_pc = getNxtPCFromSP(nxt_sp);
-      TMSG(UNW, " warning: correcting pc: %p -> %p", cursor->ra, nxt_pc);
+      TMSG(UNW, "warning: correcting pc: %p -> %p", cursor->ra, nxt_pc);
     }
   }
   else if (intvl->ra_ty == RATy_SPRel) {
@@ -244,7 +244,7 @@ unw_step(unw_cursor_t *cursor)
 
   // if nxt_pc is invalid for some reason...
   if (!nxt_intvl) {
-    TMSG(UNW, " warning: bad nxt pc=%p; sp=%p, fp=%p...", nxt_pc, sp, fp);
+    TMSG(UNW, "warning: bad nxt pc=%p; sp=%p, fp=%p...", nxt_pc, sp, fp);
 
     //-------------------------------------------------------------------
     // If this is a leaf frame, assume the interval didn't correctly
@@ -258,13 +258,13 @@ unw_step(unw_cursor_t *cursor)
     }
      
     if (!nxt_intvl) {
-      TMSG(UNW, " error: skip-frame failed: nxt pc=%p, sp=%p; try sp=%p", 
+      TMSG(UNW, "error: skip-frame failed: nxt pc=%p, sp=%p; try sp=%p", 
 	   nxt_pc, nxt_sp, try_sp);
       return STEP_ERROR;
     }
 
     nxt_sp = try_sp;
-    TMSG(UNW, " skip-frame: nxt pc=%p, sp=%p", nxt_pc, nxt_sp);
+    TMSG(UNW, "skip-frame: nxt pc=%p, sp=%p", nxt_pc, nxt_sp);
   }
   // INVARIANT: At this point, 'nxt_intvl' is valid
 
@@ -274,12 +274,12 @@ unw_step(unw_cursor_t *cursor)
   if (!mayFrameSizeBe0 && !isPossibleParentSP(sp, nxt_sp)) {
     // TMSG(UNW, " warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
     // nxt_sp = sp + 1
-    TMSG(UNW, " error: loop! nxt_sp=%p, sp=%p", nxt_sp, sp);
+    TMSG(UNW, "error: loop! nxt_sp=%p, sp=%p", nxt_sp, sp);
     return STEP_ERROR;
   }
 
 
-  TMSG(UNW, " next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
+  TMSG(UNW, "next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
   if (MYDBG) { ui_dump(nxt_intvl); }
 
   cursor->pc = nxt_pc;
