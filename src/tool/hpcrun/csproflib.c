@@ -109,7 +109,7 @@ static csprof_options_t opts;
 sigset_t prof_sigset;
 #endif
 
-int csprof_initialized = 0;
+static int csprof_initialized = 0;
 
 extern void _start(void);
 extern int __stop___libc_freeres_ptrs;
@@ -123,6 +123,12 @@ long static_epoch_size;
 //
 
 int lush_metrics = 0; // FIXME: global variable for now
+
+int
+csprof_is_initialized(void)
+{
+  return csprof_initialized;
+}
 
 void
 csprof_init_internal(void)
@@ -168,7 +174,6 @@ csprof_init_internal(void)
   unw_init();
 
   // sample source setup
-  TD_GET(suspend_sampling) = 0; // cf. csprof_thread_data_init
   SAMPLE_SOURCES(init);
   SAMPLE_SOURCES(process_event_list,lush_metrics);
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
@@ -207,9 +212,6 @@ csprof_thread_pre_create(void)
   // Capture new thread's creation context.
   // -------------------------------------------------------
   csprof_state_t* state = csprof_get_state();
-
-  csprof_handling_synchronous_sample(1); 
-
   ucontext_t context;
   ret = getcontext(&context);
   if (ret != 0) {
@@ -247,7 +249,6 @@ csprof_thread_pre_create(void)
 void
 csprof_thread_post_create(void *dc)
 {
-  csprof_handling_synchronous_sample(0); 
 }
 
 void *
@@ -267,7 +268,6 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
   // start sampling sources
   TMSG(INIT,"starting sampling sources");
 
-  td->suspend_sampling = 0; // end: protect against spurious signals
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
   SAMPLE_SOURCES(start);
 
@@ -319,8 +319,10 @@ csprof_fini_internal(void)
       lush_agent_pool__fini(lush_agents);
     }
 
-    AMSG(" %d samples, %d filtered, %d dropped (%d segvs), %ld intervals %ld suspicious",
-	 samples_taken, filtered_samples, bad_unwind_count, segv_count, ui_count(), suspicious_count());
+    AMSG(" %d samples, %d filtered, %d dropped (%d segvs) %ld blocked, "
+	 "%ld intervals %ld suspicious",
+	 samples_taken, filtered_samples, bad_unwind_count, segv_count,
+	 csprof_num_samples_blocked_async(), ui_count(), suspicious_count());
 
     pmsg_fini();
   }
