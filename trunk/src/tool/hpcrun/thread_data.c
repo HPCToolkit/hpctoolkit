@@ -46,7 +46,6 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
   //   tallent: protect against spurious signals until 'state' is fully
   //   initialized... for now rely on caller to re-enable
   td->suspend_sampling            = 1; // protect against spurious signals
-  td->handling_synchronous_sample = 0;
   csprof_init_handling_sample(td,0);
 
   td->id                          = id;

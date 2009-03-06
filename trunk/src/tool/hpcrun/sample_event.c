@@ -37,15 +37,21 @@ int samples_taken    = 0;
 int bad_unwind_count = 0;
 int filtered_samples = 0; // global variable to count filtered samples
 
+static int _sampling_disabled = 0;
+
+static long num_samples_blocked_async = 0;
 
 void
-csprof_suspend_sampling(int val)
+csprof_inc_samples_blocked_async(void)
 {
-  thread_data_t *td = csprof_get_thread_data();
-  td->suspend_sampling += val;
+  fetch_and_add(&num_samples_blocked_async, 1L);
 }
 
-static int _sampling_disabled = 0;
+long
+csprof_num_samples_blocked_async(void)
+{
+  return num_samples_blocked_async;
+}
 
 int
 sampling_is_disabled(void)
@@ -82,15 +88,7 @@ csprof_sample_event(void *context, int metric_id, unsigned long long metric_unit
   }
 
   thread_data_t *td = csprof_get_thread_data();
-
-  if (td->suspend_sampling){
-    TMSG(SUSPENDED_SAMPLE,"thread");
-    return (NULL);
-  }
-
   sigjmp_buf_t *it = &(td->bad_unwind);
-
-  
   csprof_cct_node_t* node = NULL;
   csprof_state_t *state = td->state;
 
@@ -194,20 +192,4 @@ csprof_take_profile_sample(csprof_state_t *state, void *context,
 				  | CSPROF_EPILOGUE_SP_RESET));
   
   return n;
-}
-
-
-void  
-csprof_handling_synchronous_sample(int val) 
-{
-  thread_data_t *td = csprof_get_thread_data();
-  td->handling_synchronous_sample = val;
-}
-
-
-int 
-csprof_handling_synchronous_sample_p() 
-{
-  thread_data_t *td = csprof_get_thread_data();
-  return (td->handling_synchronous_sample != 0);
 }

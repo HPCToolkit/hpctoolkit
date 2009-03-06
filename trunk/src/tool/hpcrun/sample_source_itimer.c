@@ -282,7 +282,10 @@ extern int sampling_is_disabled(void);
 static int
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
-  if (!csprof_handling_synchronous_sample_p()) {
+  // Must check for async block first and avoid any MSG if true.
+  if (csprof_async_is_blocked()) {
+    csprof_inc_samples_blocked_async();
+  } else {
     TMSG(ITIMER_HANDLER,"Itimer sample event");
 
 #ifdef USE_THREAD_USAGE_FOR_WALLCLOCK
@@ -302,7 +305,6 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 #ifdef RESET_ITIMER_EACH_SAMPLE
   METHOD_CALL(&_itimer_obj,start);
 #endif
-    
 
   return 0; /* tell monitor that the signal has been handled */
 }

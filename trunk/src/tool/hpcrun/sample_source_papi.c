@@ -373,15 +373,16 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_events[MAX_EVENTS];
   int my_event_count = MAX_EVENTS;
 
-  if (csprof_handling_synchronous_sample_p()) return;
+  // Must check for async block first and avoid any MSG if true.
+  if (csprof_async_is_blocked()) {
+    csprof_inc_samples_blocked_async();
+    return;
+  }
 
   TMSG(PAPI_SAMPLE,"papi event happened, ovec = %ld",ovec);
 
   int ret = PAPI_get_overflow_event_index(event_set, ovec, my_events, 
                                              &my_event_count);
-# if 0 // assert is simplest, but gives no feedback
-    assert(retval == PAPI_OK);
-# endif
   if (ret != PAPI_OK){
     csprof_abort("Failed inside papi_event_handler at get_overflow_event_index."
 		 "Return code = %d ==> %s",ret,PAPI_strerror(ret));

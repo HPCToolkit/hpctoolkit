@@ -7,6 +7,7 @@
 //***************************************************************************
 //
 #include <pthread.h>
+#include <unistd.h>
 
 #ifdef LINUX
 #include <linux/unistd.h>
@@ -32,6 +33,7 @@
 #include "sample_sources_all.h"
 #include "csprof_dlfns.h"
 #include "fnbounds_interface.h"
+#include "thread_data.h"
 #include "thread_use.h"
 #include "trace.h"
 
@@ -49,20 +51,74 @@ static volatile int DEBUGGER_WAIT = 1;
 // interface functions
 //***************************************************************************
 
+//
+// Whenever a thread enters csprof synchronously via a monitor
+// callback, don't allow it to reenter asynchronously via a signal
+// handler.  Too much of csprof is not signal-handler safe to allow
+// this.  For example, printing debug messages could deadlock if the
+// signal hits while holding the MSG lock.
+//
+// This block is only needed per-thread, so the "suspend_sampling"
+// thread data is a convenient place to store this.
+//
+static inline void
+csprof_async_block(void)
+{
+  TD_GET(suspend_sampling) = 1;
+}
+
+static inline void
+csprof_async_unblock(void)
+{
+  TD_GET(suspend_sampling) = 0;
+}
+
+int
+csprof_async_is_blocked(void)
+{
+  return TD_GET(suspend_sampling) && !ENABLED(ASYNC_RISKY);
+}
+
+
+//
+// In the monitor callbacks, block two things:
+//
+//   1. Skip the callback if csprof is not yet initialized.
+//   2. Block async reentry for the duration of the callback.
+//
+// Init-process and init-thread are where we do the initialization, so
+// they're special.  Also, monitor promises that init and fini process
+// and thread are run in sequence, but dlopen, fork, pthread-create
+// can occur out of sequence (in init constructor).
+//
+#define PROC_NAME_LEN  2048
 void *
 monitor_init_process(int *argc, char **argv, void *data)
 {
-  char *process_name = argv[0];
+  char *process_name;
+  char buf[PROC_NAME_LEN];
 
   if (getenv("CSPROF_WAIT")){
     while(DEBUGGER_WAIT);
+  }
+
+  // FIXME: if the process fork()s before main, then argc and argv
+  // will be NULL in the child here.  MPT on CNL does this.
+  process_name = "unknown";
+  if (argv != NULL && argv[0] != NULL) {
+    process_name = argv[0];
+  } else {
+    int len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
+    if (len > 1) {
+      buf[len] = 0;
+      process_name = buf;
+    }
   }
 
   csprof_set_using_threads(0);
 
   files_set_executable(process_name);
   files_set_directory();
-
 
   pmsg_init();
   NMSG(PROCESS,"init");
@@ -72,17 +128,24 @@ monitor_init_process(int *argc, char **argv, void *data)
     EEMSG("TST debug ctl is active!");
     STDERR_MSG("Std Err message appears");
   }
+  csprof_async_unblock();
 
   return data;
 }
+
 
 static struct _ff {
   int flag;
 } from_fork;
 
+
 void *
 monitor_pre_fork(void)
 {
+  if (! csprof_is_initialized())
+    return NULL;
+  csprof_async_block();
+
   NMSG(PRE_FORK,"pre_fork call");
 
   if (SAMPLE_SOURCES(started)) {
@@ -92,13 +155,19 @@ monitor_pre_fork(void)
   }
 
   NMSG(PRE_FORK,"finished pre_fork call");
+  csprof_async_unblock();
 
   return (void *)(&from_fork);
 }
 
+
 void
 monitor_post_fork(pid_t child, void *data)
 {
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
+
   NMSG(POST_FORK,"Post fork call");
 
   if (!SAMPLE_SOURCES(started)){
@@ -117,15 +186,20 @@ monitor_post_fork(pid_t child, void *data)
   }
 
   NMSG(POST_FORK,"Finished post fork");
+  csprof_async_unblock();
 }
 
 
 void
 monitor_fini_process(int how, void *data)
 {
+  csprof_async_block();
+
   csprof_fini_internal();
   trace_close();
   fnbounds_fini();
+
+  csprof_async_unblock();
 }
 
 
@@ -134,10 +208,14 @@ monitor_fini_process(int how, void *data)
 void
 monitor_init_thread_support(void)
 {
+  csprof_async_block();
+
   NMSG(THREAD,"REALLY init_thread_support ---");
   csprof_init_thread_support();
   csprof_set_using_threads(1);
   NMSG(THREAD,"Init thread support done");
+
+  csprof_async_unblock();
 }
 
 
@@ -146,22 +224,33 @@ monitor_thread_pre_create(void)
 {
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
+  if (! csprof_is_initialized())
+    return NULL;
+  csprof_async_block();
+
   NMSG(THREAD,"pre create");
 
   void *ret = csprof_thread_pre_create();
 
   NMSG(THREAD,"->finish pre create");
+  csprof_async_unblock();
+
   return ret;
-  // return csprof_thread_pre_create();
 }
 
 
 void
 monitor_thread_post_create(void *dc)
 {
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
+
   NMSG(THREAD,"post create");
   csprof_thread_post_create(dc);
   NMSG(THREAD,"done post create");
+
+  csprof_async_unblock();
 }
 
 
@@ -173,19 +262,23 @@ monitor_init_thread(int tid, void *data)
   NMSG(THREAD,"back from init thread %d",tid);
 
   trace_open();
+  csprof_async_unblock();
 
   return thread_data;
 }
 
 
-void 
+void
 monitor_fini_thread(void *init_thread_data)
 {
+  csprof_async_block();
+
   csprof_state_t *state = (csprof_state_t *)init_thread_data;
 
   csprof_thread_fini(state);
-
   trace_close();
+
+  csprof_async_unblock();
 }
 
 
@@ -209,46 +302,54 @@ monitor_reset_stacksize(size_t old_size)
 void
 monitor_pre_dlopen(const char *path, int flags)
 {
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
+
   csprof_pre_dlopen(path, flags);
+
+  // Temporarily keep blocked until the true dlopen lock is added.
+  if (ENABLED(DLOPEN_RISKY))
+    csprof_async_unblock();
 }
 
 
-void 
+void
 monitor_dlopen(const char *path, int flags, void *handle)
 {
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
+
   csprof_dlopen(path, flags, handle);
-
-#if 0
-  csprof_epoch_t *epoch;
-  csprof_epoch_lock();
-
-  /* create a new epoch */
-  epoch = csprof_epoch_new();
-
-  dl_add_module(path);
-
-  csprof_epoch_unlock();
-#endif
+  csprof_async_unblock();
 }
 
 
 void
 monitor_dlclose(void *handle)
 {
-  csprof_dlclose(handle);
-/*
-  assert(0);
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
 
-  dl_remove_library(handle);
-  FIXME: delete intervals from the splay tree too
-*/
+  csprof_dlclose(handle);
+
+  // Temporarily keep blocked until the true dlopen lock is added.
+  if (ENABLED(DLOPEN_RISKY))
+    csprof_async_unblock();
 }
 
 
 void
 monitor_post_dlclose(void *handle, int ret)
 {
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
+
   csprof_post_dlclose(handle, ret);
+  csprof_async_unblock();
 }
 
 #endif /* ! HPCRUN_STATIC_LINK */
