@@ -94,6 +94,22 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	  }
 	}
       }
+    } else if (is_reg_sp(reg0)) {
+      //--------------------------------------------------------------------
+      // register being loaded is SP
+      //--------------------------------------------------------------------
+      xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, 0); 
+      if (is_reg_sp(basereg)) { 
+	//================================================================
+	// instruction: restore SP from a saved location in the stack  
+	// action:      create a new interval with SP status reset to 
+	//              BP_UNCHANGED
+	//================================================================
+	next = new_ui(ins + xed_decoded_inst_get_length(xptr),
+	 	      RA_SP_RELATIVE, 0, 0,
+		      current->bp_status, current->sp_bp_pos, 
+		      current->bp_bp_pos, current);
+      }
     }
   } else if ((op0_name == XED_OPERAND_REG0) && (op1_name == XED_OPERAND_REG1)){
     //----------------------------------------------------------------------

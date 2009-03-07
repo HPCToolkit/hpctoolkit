@@ -34,7 +34,7 @@ typedef struct highwatermark_s {
 #define HW_NEW_STATE(state, set) ((state) | HW_INITIALIZED | (set))
 
 
-// #define FIX_INTERVALS_AT_RETURN
+#define FIX_INTERVALS_AT_RETURN
 #endif
 
 
