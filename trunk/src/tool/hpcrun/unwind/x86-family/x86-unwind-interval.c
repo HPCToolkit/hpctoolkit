@@ -67,7 +67,7 @@ suspicious_count(void)
 void
 suspicious_interval(void *pc) 
 {
-  EMSG("suspicious interval for pc = %p", pc);
+  TMSG(SUSPICIOUS_INTERVAL,"suspicious interval for pc = %p", pc);
   fetch_and_add(&suspicious_cnt,1);
 }
 

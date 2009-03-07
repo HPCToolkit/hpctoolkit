@@ -20,7 +20,7 @@
 // libmonitor includes
 //***************************************************************************
 
-#include "monitor.h"
+#include <monitor.h>
 
 
 //***************************************************************************
@@ -28,6 +28,7 @@
 //***************************************************************************
 
 #include <include/gcc-attr.h>
+#include <x86-decoder.h>
 
 #include "state.h"
 #include "general.h"
@@ -75,6 +76,7 @@ static int unw_step_prefer_sp(void);
 static void drop_sample(void);
 
 static validation_status validate_return_addr(void *addr, void *generic_arg);
+static validation_status simple_validate_addr(void *addr, void *generic_arg);
 
 
 // tallent: FIXME: obsolete
@@ -111,10 +113,10 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
   cursor->intvl = csprof_addr_to_interval(cursor->pc);
 
   if (!cursor->intvl) {
-    PMSG(TROLL,"UNW INIT FAILURE: frame pc = %p, frame bp = %p, frame sp = %p",
+    TMSG(TROLL,"UNW INIT FAILURE: frame pc = %p, frame bp = %p, frame sp = %p",
          cursor->pc, cursor->bp, cursor->sp);
 
-    PMSG(TROLL,"UNW INIT calls stack troll");
+    TMSG(TROLL,"UNW INIT calls stack troll");
 
     update_cursor_with_troll(cursor, 0);
   } 
@@ -156,6 +158,8 @@ unw_step_sp(unw_cursor_t *cursor)
 
   TMSG(UNW_STRATEGY,"Using SP step");
 
+  void *stack_bottom = monitor_stack_bottom();
+
   // current frame
   bp = cursor->bp;
   sp = cursor->sp;
@@ -165,12 +169,18 @@ unw_step_sp(unw_cursor_t *cursor)
   TMSG(UNW,"unwind interval in below:");
   dump_ui(uw, 0);
 
-  next_sp  = ((void **)((unsigned long) sp + uw->sp_ra_pos));
+  next_sp  = (void **)(sp + uw->sp_ra_pos);
+#if 0
+  if (! (sp <= (void *)next_sp && (void *)next_sp < stack_bottom)) {
+    TMSG(UNW,"sp unwind step gave invalid next sp. cursor sp = %p, next_sp = %p",sp,next_sp);
+    return STEP_ERROR;
+  }
+#endif
   next_pc  = *next_sp;
   TMSG(UNW,"sp potential advance cursor: next_sp=%p ==> next_pc = %p",next_sp,next_pc);
   if (uw->bp_status == BP_UNCHANGED){
     next_bp = bp;
-    TMSG(UNW,"BP_UNCHANGED ==> next_bp=%p",next_bp);
+    TMSG(UNW,"sp unwind step has BP_UNCHANGED ==> next_bp=%p",next_bp);
   }
   else {
     //-----------------------------------------------------------
@@ -178,7 +188,7 @@ unw_step_sp(unw_cursor_t *cursor)
     // save area in the activation frame according to the unwind 
     // information produced by binary analysis
     //-----------------------------------------------------------
-    next_bp = (void **)((unsigned long) sp + uw->sp_bp_pos);
+    next_bp = (void **)(sp + uw->sp_bp_pos);
     TMSG(UNW,"sp unwind next_bp loc = %p",next_bp);
     next_bp  = *next_bp; 
     TMSG(UNW,"sp unwind next_bp val = %p",next_bp);
@@ -255,42 +265,41 @@ unw_step_bp(unw_cursor_t *cursor)
   TMSG(UNW,"unwind interval in below:");
   dump_ui(uw, 0);
 
-  if ((unsigned long) bp >= (unsigned long) sp) {
-    // bp relative
-    next_sp  = ((void **)((unsigned long) bp + uw->bp_bp_pos));
-    next_bp  = *next_sp;
-    next_sp  = ((void **)((unsigned long) bp + uw->bp_ra_pos));
-    next_pc  = *next_sp;
-    next_sp += 1;
-    if ((unsigned long) next_sp > (unsigned long) sp) { 
-      // this condition is a weak correctness check. only
-      // try building an interval for the return address again if it succeeds
-      uw = (unwind_interval *)csprof_addr_to_interval(((char *)next_pc) - 1);
-      if (! uw){
-        if (((void *)next_sp) >= monitor_stack_bottom()) {
-          TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom, next_sp = %p",next_sp);
-          return STEP_STOP;
-        }
-        TMSG(UNW_STRATEGY,"BP cannot build interval for next_pc(%p)",next_pc);
-        return STEP_ERROR;
+  if (!(sp <= (void *)bp && (void *)bp < monitor_stack_bottom())) {
+    TMSG(UNW_STRATEGY_ERROR,"bp unwind attempted, but incoming bp(%p) was not between sp(%p) and monitor stack bottom(%p)",
+         bp,sp,monitor_stack_bottom());
+    return STEP_ERROR;
+  }
+
+  // bp relative
+  next_sp  = (void **)((void *)bp + uw->bp_bp_pos);
+  next_bp  = *next_sp;
+  next_sp  = (void **)((void *)bp + uw->bp_ra_pos);
+  next_pc  = *next_sp;
+  next_sp += 1;
+  if ((void *)next_sp > sp) {
+    // this condition is a weak correctness check. only
+    // try building an interval for the return address again if it succeeds
+    uw = (unwind_interval *)csprof_addr_to_interval(((char *)next_pc) - 1);
+    if (! uw){
+      if (((void *)next_sp) >= monitor_stack_bottom()) {
+        TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom, next_sp = %p",next_sp);
+        return STEP_STOP;
       }
-      else {
-        cursor->pc    = next_pc;
-        cursor->bp    = next_bp;
-        cursor->sp    = next_sp;
-        cursor->intvl = (splay_interval_t *)uw;
-        TMSG(UNW,"cursor advances ==>has_intvl=%d,bp=%p,sp=%p,pc=%p",cursor->intvl != NULL,next_bp,next_sp,next_pc);
-        return STEP_OK;
-      }
-    }
-    else {
-      TMSG(UNW_STRATEGY,"BP unwind fails: next_sp(%p) <= current sp(%p)",next_sp,sp);
+      TMSG(UNW_STRATEGY,"BP cannot build interval for next_pc(%p)",next_pc);
       return STEP_ERROR;
     }
-
+    else {
+      cursor->pc    = next_pc;
+      cursor->bp    = next_bp;
+      cursor->sp    = next_sp;
+      cursor->intvl = (splay_interval_t *)uw;
+      TMSG(UNW,"cursor advances ==>has_intvl=%d,bp=%p,sp=%p,pc=%p",cursor->intvl != NULL,next_bp,next_sp,next_pc);
+      return STEP_OK;
+    }
   }
   else {
-    TMSG(UNW_STRATEGY,"BP unwind fails: bp (%lx) < sp (%lx)",bp,sp);
+    TMSG(UNW_STRATEGY,"BP unwind fails: bp (%p) < sp (%p)",bp,sp);
     return STEP_ERROR;
   }
   EMSG("FALL Through BP unwind: shouldn't happen");
@@ -309,7 +318,8 @@ unw_step_std(unw_cursor_t *cursor)
       TMSG(UNW_STRATEGY,"--STD_FRAME: SP failed, RETRY w BP");
       unw_res = unw_step_bp(cursor);
     }
-  } else {
+  }
+  else {
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with BP");
     unw_res = unw_step_bp(cursor);
     if (unw_res == STEP_ERROR) {
@@ -447,7 +457,11 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 {
   unsigned int tmp_ra_offset;
 
+#if 0
   int ret = stack_troll(cursor->sp, &tmp_ra_offset, &validate_return_addr, (void *)cursor);
+#else
+  int ret = stack_troll(cursor->sp, &tmp_ra_offset, &simple_validate_addr, (void *)cursor);
+#endif
   if (ret != TROLL_INVALID) {
     void  **next_sp = ((void **)((unsigned long) cursor->sp + tmp_ra_offset));
     void *next_pc = *next_sp;
@@ -485,19 +499,130 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
   drop_sample();
 }
 
-// XED_ICLASS_CALL_FAR XED_ICLASS_CALL_NEAR:
-
 #include "validate_return_addr.h"
 #include "fnbounds_interface.h"
+
+/* static */ void *
+vget_branch_target(void *ins, xed_decoded_inst_t *xptr, 
+		  xed_operand_values_t *vals)
+{
+  int bytes = xed_operand_values_get_branch_displacement_length(vals);
+  int offset = 0;
+  switch(bytes) {
+  case 1:
+    offset = (signed char) 
+      xed_operand_values_get_branch_displacement_byte(vals,0);
+    break;
+  case 4:
+    offset = xed_operand_values_get_branch_displacement_int32(vals);
+    break;
+  default:
+    assert(0);
+  }
+  void *end_of_call_inst = ins + xed_decoded_inst_get_length(xptr);
+  void *target = end_of_call_inst + offset;
+  return target;
+}
+
+/* static */ void *
+vdecode_call(void *ins, xed_decoded_inst_t *xptr)
+{
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+  xed_operand_enum_t   op0_name = xed_operand_name(op0);
+  xed_operand_type_enum_t op0_type = xed_operand_type(op0);
+
+  if (op0_name == XED_OPERAND_RELBR && 
+      op0_type == XED_OPERAND_TYPE_IMM_CONST) {
+    // fprintf(stderr,"looks like constant call\n");
+    xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
+
+    if (xed_operand_values_has_branch_displacement(vals)) {
+      void *vaddr = vget_branch_target(ins,xptr,vals);
+      // fprintf(stderr,"apparent call to %p\n",vaddr);
+      return vaddr;
+    }
+  }
+  return NULL;
+}
+
+
+/* static */ bool
+confirm_call(void *addr, void *routine)
+{
+  xed_decoded_inst_t xedd;
+  xed_decoded_inst_t *xptr = &xedd;
+  xed_error_enum_t xed_error;
+  xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
+  xed_decoded_inst_zero_keep_mode(xptr);
+  void *possible_call = addr - 5;
+  xed_error = xed_decode(xptr, (uint8_t *)possible_call, 15);
+
+  TMSG(VALIDATE_UNW,"trying to confirm a call from return addr %p",addr);
+
+  if (xed_error != XED_ERROR_NONE) {
+    TMSG(VALIDATE_UNW,"addr %p has xed decode error when attempting confirm",possible_call);
+    return false;
+  }
+
+  xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+  switch(xiclass) {
+    case XED_ICLASS_CALL_FAR:
+    case XED_ICLASS_CALL_NEAR:
+      TMSG(VALIDATE_UNW,"call instruction confirmed @ %p",possible_call);
+      void *the_call = vdecode_call(possible_call,xptr);
+      TMSG(VALIDATE_UNW,"comparing discovered call %p to actual routine %p",the_call,routine);
+      return (the_call == routine);
+      break;
+    default:
+      return false;
+  }
+  EMSG("confirm call shouldn't get here!");
+  return false;
+}
+
+static bool
+indirect_or_tail(void *addr,void *my_routine)
+{
+  TMSG(VALIDATE_UNW,"checking for indirect or tail call");
+  return true;
+}
 
 static validation_status
 validate_return_addr(void *addr, void *generic)
 {
+  unw_cursor_t *cursor = (unw_cursor_t *)generic;
+
   void *beg, *end;
-  if (fnbounds_enclosing_addr(addr, &beg, &end)){
+  if (fnbounds_enclosing_addr(addr, &beg, &end)) {
     return UNW_ADDR_WRONG;
   }
-  return UNW_ADDR_CONFIRMED;
+
+  void *my_routine = cursor->pc;
+  if (fnbounds_enclosing_addr(my_routine,&beg,&end)) {
+    return UNW_ADDR_WRONG;
+  }
+  my_routine = beg;
+  TMSG(VALIDATE_UNW,"beginning of my routine = %p",my_routine);
+  if (confirm_call(addr,my_routine)) {
+    return UNW_ADDR_CONFIRMED;
+  }
+  if (indirect_or_tail(addr,my_routine)) {
+    return UNW_ADDR_PROBABLE;
+  }
+
+  return UNW_ADDR_WRONG;
+}
+
+static validation_status
+simple_validate_addr(void *addr, void *generic)
+{
+  void *beg, *end;
+  if (fnbounds_enclosing_addr(addr, &beg, &end)) {
+    return UNW_ADDR_WRONG;
+  }
+
+  return UNW_ADDR_PROBABLE;
 }
 
 static int 
