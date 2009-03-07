@@ -118,7 +118,8 @@ dbg_get_flag(pmsg_category flag)
 
 static int defaults[] = {
   DBG_PREFIX(TROLL),
-  DBG_PREFIX(DROP)
+  DBG_PREFIX(DROP),
+  DBG_PREFIX(SUSPICIOUS_INTERVAL)
 };
 #define NDEFAULTS (sizeof(defaults)/sizeof(defaults[0]))
 
