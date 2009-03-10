@@ -45,27 +45,28 @@
 #include "x86-unwind-interval.h"
 #include "validate_return_addr.h"
 
-/****************************************************************************************
- * global data 
- ***************************************************************************************/
+//****************************************************************************
+// global data 
+//****************************************************************************
 
 int debug_unw = 0;
 
 
 
-/****************************************************************************************
- * local data 
- ***************************************************************************************/
+//****************************************************************************
+// local data 
+//****************************************************************************
 
-static int DEBUG_WAIT_BEFORE_TROLLING = 1; // flag value won't matter environment var set
+// flag value won't matter environment var set
+static int DEBUG_WAIT_BEFORE_TROLLING = 1; 
 
 static int DEBUG_NO_LONGJMP = 0;
 
 
 
-/****************************************************************************************
- * forward declarations 
- ***************************************************************************************/
+//****************************************************************************
+// forward declarations 
+//****************************************************************************
 
 static void update_cursor_with_troll(unw_cursor_t *cursor, int offset);
 
@@ -85,9 +86,9 @@ void unw_init_cursor_arch(void* context, unw_cursor_t *cursor);
 int  unw_get_reg_arch(unw_cursor_t *c, int reg_id, void **reg_value);
 
 
-/****************************************************************************************
- * interface functions
- ***************************************************************************************/
+//****************************************************************************
+// interface functions
+//****************************************************************************
 
 void
 unw_init(void)
@@ -102,7 +103,10 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
 {
   extern void dump_ui(unwind_interval *u, int dump_to_stdout);
 
-  //  TMSG(UNW,"init prim unw called with context = %p, cursor_p = %p\n",context, cursor);
+#if 0
+  TMSG(UNW,"init prim unw called with context = %p, cursor_p = %p\n",
+       context, cursor);
+#endif
 
   unw_init_cursor_arch(context, cursor);
 
@@ -126,27 +130,27 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
 }
 
 
-// This get_reg just extracts the pc, regardless of REGID
-
 int 
-unw_get_reg(unw_cursor_t *cursor, int reg_id,void **reg_value)
+unw_get_reg(unw_cursor_t *cursor, int reg_id, void **reg_value)
 {
    unw_get_reg_arch(cursor, reg_id, reg_value);
    return 0;
 }
 
-// FIXME: make this a selectable paramter, so that all manner of strategies can be selected
+
+// FIXME: make this a selectable paramter, so that all manner of strategies 
+// can be selected
 static int
 unw_step_prefer_sp(void)
 {
   if (ENABLED(PREFER_SP)){
     return 1;
-  }
-  else {
+  } else {
     return 0;
   }
   // return cursor->flags; // trolling_used
 }
+
 
 step_state
 unw_step_sp(unw_cursor_t *cursor)
@@ -165,33 +169,36 @@ unw_step_sp(unw_cursor_t *cursor)
   sp = cursor->sp;
   pc = cursor->pc;
   uw = (unwind_interval *)cursor->intvl;
-  TMSG(UNW,"cursor in ==> bp=%p,sp=%p,pc=%p",bp,sp,pc);
+  TMSG(UNW,"cursor in ==> bp=%p, sp=%p, pc=%p", bp, sp, pc);
   TMSG(UNW,"unwind interval in below:");
   dump_ui(uw, 0);
 
   next_sp  = (void **)(sp + uw->sp_ra_pos);
 #if 0
   if (! (sp <= (void *)next_sp && (void *)next_sp < stack_bottom)) {
-    TMSG(UNW,"sp unwind step gave invalid next sp. cursor sp = %p, next_sp = %p",sp,next_sp);
+    TMSG(UNW,"sp unwind step gave invalid next sp. cursor sp = %p,"
+	 " next_sp = %p", sp, next_sp);
     return STEP_ERROR;
   }
 #endif
   next_pc  = *next_sp;
-  TMSG(UNW,"sp potential advance cursor: next_sp=%p ==> next_pc = %p",next_sp,next_pc);
+
+  TMSG(UNW,"sp potential advance cursor: next_sp=%p ==> next_pc = %p",
+       next_sp, next_pc);
+
   if (uw->bp_status == BP_UNCHANGED){
     next_bp = bp;
-    TMSG(UNW,"sp unwind step has BP_UNCHANGED ==> next_bp=%p",next_bp);
-  }
-  else {
+    TMSG(UNW,"sp unwind step has BP_UNCHANGED ==> next_bp=%p", next_bp);
+  } else {
     //-----------------------------------------------------------
     // reload the candidate value for the caller's BP from the 
     // save area in the activation frame according to the unwind 
     // information produced by binary analysis
     //-----------------------------------------------------------
     next_bp = (void **)(sp + uw->sp_bp_pos);
-    TMSG(UNW,"sp unwind next_bp loc = %p",next_bp);
+    TMSG(UNW,"sp unwind next_bp loc = %p", next_bp);
     next_bp  = *next_bp; 
-    TMSG(UNW,"sp unwind next_bp val = %p",next_bp);
+    TMSG(UNW,"sp unwind next_bp val = %p", next_bp);
 
     //-----------------------------------------------------------
     // if value of BP reloaded from the save area does not point 
@@ -209,7 +216,8 @@ unw_step_sp(unw_cursor_t *cursor)
     if (((unsigned long) next_bp < (unsigned long) sp) && 
         ((unsigned long) bp > (unsigned long) sp)){
       next_bp = bp;
-      TMSG(UNW,"sp unwind bp sanity check fails. resetting next_bp to current bp = %p",next_bp);
+      TMSG(UNW,"sp unwind bp sanity check fails."
+	   " Resetting next_bp to current bp = %p", next_bp);
     }
   }
   next_sp += 1;
@@ -217,18 +225,18 @@ unw_step_sp(unw_cursor_t *cursor)
 
   if (! cursor->intvl){
     if (((void *)next_sp) >= monitor_stack_bottom()){
-      TMSG(UNW,"No next interval, and next_sp >= stack bottom, so stop unwind ...");
+      TMSG(UNW,"No next interval, and next_sp >= stack bottom,"
+	   " so stop unwind ...");
       return STEP_STOP;
-    }
-    else {
+    } else {
       TMSG(UNW,"No next interval, step fails");
       return STEP_ERROR;
     }
-  }
-  else {
+  } else {
     // sanity check to avoid infinite unwind loop
     if (next_sp <= cursor->sp){
-      TMSG(INTV_ERR,"@ pc = %p. sp unwind does not advance stack. New sp = %p, old sp = %p",cursor->pc,next_sp,cursor->sp);
+      TMSG(INTV_ERR,"@ pc = %p. sp unwind does not advance stack." 
+	   " New sp = %p, old sp = %p", cursor->pc, next_sp, cursor->sp);
       return STEP_ERROR;
     }
     cursor->pc = next_pc;
@@ -239,12 +247,13 @@ unw_step_sp(unw_cursor_t *cursor)
 #if 0
   TMSG(UNW,"dumping the found interval");
   dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
-  TMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
+  TMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n", cursor->pc, cursor->bp);
 #endif
 
   TMSG(UNW,"==== sp advance ok ===");
   return STEP_OK;
 }
+
 
 step_state
 unw_step_bp(unw_cursor_t *cursor)
@@ -261,13 +270,14 @@ unw_step_bp(unw_cursor_t *cursor)
   pc = cursor->pc;
   uw = (unwind_interval *)cursor->intvl;
 
-  TMSG(UNW,"cursor in ==> bp=%p,sp=%p,pc=%p",bp,sp,pc);
+  TMSG(UNW,"cursor in ==> bp=%p, sp=%p, pc=%p", bp, sp, pc);
   TMSG(UNW,"unwind interval in below:");
   dump_ui(uw, 0);
 
   if (!(sp <= (void *)bp && (void *)bp < monitor_stack_bottom())) {
-    TMSG(UNW_STRATEGY_ERROR,"bp unwind attempted, but incoming bp(%p) was not between sp(%p) and monitor stack bottom(%p)",
-         bp,sp,monitor_stack_bottom());
+    TMSG(UNW_STRATEGY_ERROR,"bp unwind attempted, but incoming bp(%p) was not"
+         " between sp (%p) and monitor stack bottom (%p)", 
+         bp, sp, monitor_stack_bottom());
     return STEP_ERROR;
   }
 
@@ -283,28 +293,29 @@ unw_step_bp(unw_cursor_t *cursor)
     uw = (unwind_interval *)csprof_addr_to_interval(((char *)next_pc) - 1);
     if (! uw){
       if (((void *)next_sp) >= monitor_stack_bottom()) {
-        TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom, next_sp = %p",next_sp);
+        TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom,"
+	     " next_sp = %p", next_sp);
         return STEP_STOP;
       }
-      TMSG(UNW_STRATEGY,"BP cannot build interval for next_pc(%p)",next_pc);
+      TMSG(UNW_STRATEGY,"BP cannot build interval for next_pc(%p)", next_pc);
       return STEP_ERROR;
-    }
-    else {
+    } else {
       cursor->pc    = next_pc;
       cursor->bp    = next_bp;
       cursor->sp    = next_sp;
       cursor->intvl = (splay_interval_t *)uw;
-      TMSG(UNW,"cursor advances ==>has_intvl=%d,bp=%p,sp=%p,pc=%p",cursor->intvl != NULL,next_bp,next_sp,next_pc);
+      TMSG(UNW,"cursor advances ==>has_intvl=%d, bp=%p, sp=%p, pc=%p",
+	   cursor->intvl != NULL, next_bp, next_sp, next_pc);
       return STEP_OK;
     }
-  }
-  else {
-    TMSG(UNW_STRATEGY,"BP unwind fails: bp (%p) < sp (%p)",bp,sp);
+  } else {
+    TMSG(UNW_STRATEGY,"BP unwind fails: bp (%p) < sp (%p)", bp, sp);
     return STEP_ERROR;
   }
   EMSG("FALL Through BP unwind: shouldn't happen");
   return STEP_ERROR;
 }
+
 
 step_state
 unw_step_std(unw_cursor_t *cursor)
@@ -318,8 +329,7 @@ unw_step_std(unw_cursor_t *cursor)
       TMSG(UNW_STRATEGY,"--STD_FRAME: SP failed, RETRY w BP");
       unw_res = unw_step_bp(cursor);
     }
-  }
-  else {
+  } else {
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with BP");
     unw_res = unw_step_bp(cursor);
     if (unw_res == STEP_ERROR) {
@@ -330,6 +340,7 @@ unw_step_std(unw_cursor_t *cursor)
   return unw_res;
 }
 
+
 // special steppers to artificially introduce error conditions
 static step_state
 t1_dbg_unw_step(unw_cursor_t *cursor)
@@ -338,6 +349,7 @@ t1_dbg_unw_step(unw_cursor_t *cursor)
 
   return STEP_ERROR;
 }
+
 
 static step_state GCC_ATTR_UNUSED
 t2_dbg_unw_step(unw_cursor_t *cursor)
@@ -355,9 +367,11 @@ t2_dbg_unw_step(unw_cursor_t *cursor)
   return rv;
 }
 
+
 static step_state (*dbg_unw_step)(unw_cursor_t *cursor) = t1_dbg_unw_step;
 
 extern int samples_taken;
+
 
 step_state
 unw_step (unw_cursor_t *cursor)
@@ -371,7 +385,7 @@ unw_step (unw_cursor_t *cursor)
   // demarcated with a fence. 
   //-----------------------------------------------------------
   if (csprof_check_fence(cursor->pc)){
-    TMSG(UNW,"current pc in monitor fence",cursor->pc);
+    TMSG(UNW,"current pc in monitor fence", cursor->pc);
     return STEP_STOP;
   }
 
@@ -409,14 +423,17 @@ unw_step (unw_cursor_t *cursor)
     TMSG(UNW,"=========== unw_step Succeeds ============== ");
     return unw_res;
   }
-  PMSG_LIMIT(TMSG(TROLL,"UNW STEP FAILURE : cursor pc = %p, cursor bp = %p, cursor sp = %p", pc, bp, sp));
+  PMSG_LIMIT(TMSG(TROLL,"UNW STEP FAILURE : cursor pc = %p, cursor bp = %p,"
+		  " cursor sp = %p", pc, bp, sp));
   PMSG_LIMIT(TMSG(TROLL,"UNW STEP calls stack troll"));
 
   if (ENABLED(TROLL_WAIT)) {
     fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
-            "Maybe call dbg_set_flag(DBG_TROLL_WAIT,0) after attached\n",getpid());
+            "Maybe call dbg_set_flag(DBG_TROLL_WAIT,0) after attached\n",
+	    getpid());
     
-    while(DEBUG_WAIT_BEFORE_TROLLING);  // spin wait for developer to attach a debugger and clear the flag 
+    // spin wait for developer to attach a debugger and clear the flag 
+    while(DEBUG_WAIT_BEFORE_TROLLING);  
   }
   
   update_cursor_with_troll(cursor, 1);
@@ -430,9 +447,11 @@ unw_throw(void)
   drop_sample();
 }
 
-/****************************************************************************************
- * private operations
- ***************************************************************************************/
+
+
+//****************************************************************************
+// private operations
+//****************************************************************************
 
 static void 
 drop_sample(void)
@@ -458,26 +477,31 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
   unsigned int tmp_ra_offset;
 
 #if 0
-  int ret = stack_troll(cursor->sp, &tmp_ra_offset, &validate_return_addr, (void *)cursor);
+  int ret = stack_troll(cursor->sp, &tmp_ra_offset, &validate_return_addr, 
+			(void *)cursor);
 #else
-  int ret = stack_troll(cursor->sp, &tmp_ra_offset, &simple_validate_addr, (void *)cursor);
+  int ret = stack_troll(cursor->sp, &tmp_ra_offset, &simple_validate_addr, 
+			(void *)cursor);
 #endif
+
   if (ret != TROLL_INVALID) {
     void  **next_sp = ((void **)((unsigned long) cursor->sp + tmp_ra_offset));
     void *next_pc = *next_sp;
 
-    // the current base pointer is a good assumption for the caller's base pointer 
+    // the current base pointer is a good assumption for the caller's BP
     void **next_bp = (void **) cursor->bp; 
 
     next_sp += 1;
     if ( next_sp <= cursor->sp){
-      PMSG_LIMIT(PMSG(TROLL,"Something wierd happened! trolling from %p resulted in sp not advancing",cursor->pc));
+      PMSG_LIMIT(PMSG(TROLL,"Something weird happened! trolling from %p"
+		      " resulted in sp not advancing", cursor->pc));
       drop_sample();
     }
 
     cursor->intvl = csprof_addr_to_interval(((char *)next_pc) + offset);
     if (cursor->intvl) {
-      PMSG_LIMIT(PMSG(TROLL,"Trolling advances cursor to pc = %p,sp = %p", next_pc, next_sp));
+      PMSG_LIMIT(PMSG(TROLL,"Trolling advances cursor to pc = %p, sp = %p", 
+		      next_pc, next_sp));
       PMSG_LIMIT(PMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc));
 
       cursor->pc = next_pc;
@@ -487,11 +511,12 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
       cursor->flags = 1; // trolling_used
       return; // success!
     }
-    PMSG_LIMIT(PMSG(TROLL, "No interval found for trolled pc, dropping sample,cursor pc = %p", cursor->pc));
+    PMSG_LIMIT(PMSG(TROLL, "No interval found for trolled pc, dropping sample,"
+		    " cursor pc = %p", cursor->pc));
     // fall through for error handling
-  }
-  else {
-    PMSG_LIMIT(PMSG(TROLL, "Troll failed: dropping sample,cursor pc = %p", cursor->pc));
+  } else {
+    PMSG_LIMIT(PMSG(TROLL, "Troll failed: dropping sample, cursor pc = %p", 
+		    cursor->pc));
     PMSG_LIMIT(PMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc));
     // fall through for error handling
   }
@@ -499,12 +524,13 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
   drop_sample();
 }
 
+
 #include "validate_return_addr.h"
 #include "fnbounds_interface.h"
 
 /* static */ void *
 vget_branch_target(void *ins, xed_decoded_inst_t *xptr, 
-		  xed_operand_values_t *vals)
+		   xed_operand_values_t *vals)
 {
   int bytes = xed_operand_values_get_branch_displacement_length(vals);
   int offset = 0;
@@ -538,8 +564,8 @@ vdecode_call(void *ins, xed_decoded_inst_t *xptr)
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
 
     if (xed_operand_values_has_branch_displacement(vals)) {
-      void *vaddr = vget_branch_target(ins,xptr,vals);
-      // fprintf(stderr,"apparent call to %p\n",vaddr);
+      void *vaddr = vget_branch_target(ins, xptr, vals);
+      // fprintf(stderr,"apparent call to %p\n", vaddr);
       return vaddr;
     }
   }
@@ -558,10 +584,11 @@ confirm_call(void *addr, void *routine)
   void *possible_call = addr - 5;
   xed_error = xed_decode(xptr, (uint8_t *)possible_call, 15);
 
-  TMSG(VALIDATE_UNW,"trying to confirm a call from return addr %p",addr);
+  TMSG(VALIDATE_UNW,"trying to confirm a call from return addr %p", addr);
 
   if (xed_error != XED_ERROR_NONE) {
-    TMSG(VALIDATE_UNW,"addr %p has xed decode error when attempting confirm",possible_call);
+    TMSG(VALIDATE_UNW, "addr %p has XED decode error when attempting confirm",
+	 possible_call);
     return false;
   }
 
@@ -569,9 +596,10 @@ confirm_call(void *addr, void *routine)
   switch(xiclass) {
     case XED_ICLASS_CALL_FAR:
     case XED_ICLASS_CALL_NEAR:
-      TMSG(VALIDATE_UNW,"call instruction confirmed @ %p",possible_call);
-      void *the_call = vdecode_call(possible_call,xptr);
-      TMSG(VALIDATE_UNW,"comparing discovered call %p to actual routine %p",the_call,routine);
+      TMSG(VALIDATE_UNW,"call instruction confirmed @ %p", possible_call);
+      void *the_call = vdecode_call(possible_call, xptr);
+      TMSG(VALIDATE_UNW,"comparing discovered call %p to actual routine %p",
+	   the_call, routine);
       return (the_call == routine);
       break;
     default:
@@ -581,12 +609,14 @@ confirm_call(void *addr, void *routine)
   return false;
 }
 
+
 static bool
-indirect_or_tail(void *addr,void *my_routine)
+indirect_or_tail(void *addr, void *my_routine)
 {
   TMSG(VALIDATE_UNW,"checking for indirect or tail call");
   return true;
 }
+
 
 static validation_status
 validate_return_addr(void *addr, void *generic)
@@ -603,16 +633,17 @@ validate_return_addr(void *addr, void *generic)
     return UNW_ADDR_WRONG;
   }
   my_routine = beg;
-  TMSG(VALIDATE_UNW,"beginning of my routine = %p",my_routine);
-  if (confirm_call(addr,my_routine)) {
+  TMSG(VALIDATE_UNW,"beginning of my routine = %p", my_routine);
+  if (confirm_call(addr, my_routine)) {
     return UNW_ADDR_CONFIRMED;
   }
-  if (indirect_or_tail(addr,my_routine)) {
+  if (indirect_or_tail(addr, my_routine)) {
     return UNW_ADDR_PROBABLE;
   }
 
   return UNW_ADDR_WRONG;
 }
+
 
 static validation_status
 simple_validate_addr(void *addr, void *generic)
@@ -625,6 +656,7 @@ simple_validate_addr(void *addr, void *generic)
   return UNW_ADDR_PROBABLE;
 }
 
+
 static int 
 csprof_check_fence(void *ip)
 {
@@ -633,9 +665,9 @@ csprof_check_fence(void *ip)
 
 
 
-/****************************************************************************************
- * debug operations
- ***************************************************************************************/
+//****************************************************************************
+// debug operations
+//****************************************************************************
 
 unw_cursor_t _dbg_cursor;
 
