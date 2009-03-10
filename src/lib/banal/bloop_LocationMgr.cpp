@@ -133,17 +133,17 @@ LocationMgr::init(Struct::LM* lm)
 {
   m_loadMod = lm;
   mDBG = 0;
-  m_fwdSubstOff = false;
+  m_isFwdSubst = false;
 }
 
 
 void
-LocationMgr::begSeq(Struct::Proc* enclosingProc, bool fwdSubstOff)
+LocationMgr::begSeq(Struct::Proc* enclosingProc, bool isFwdSubst)
 {
   DIAG_Assert(m_ctxtStack.empty() && m_alienMap.empty(), 
 	      "LocationMgr contains leftover crud!");
   pushCtxt(Ctxt(enclosingProc));
-  m_fwdSubstOff = fwdSubstOff;
+  m_isFwdSubst = isFwdSubst;
 }
 
 
@@ -512,7 +512,7 @@ LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
       // INVARIANT: File names must match (or use_ctxt would be NULL)
       DIAG_Assert(use_ctxt == proposed_ctxt, "Different contexts: " 
 		  << use_ctxt->toString() << proposed_ctxt->toString());
-      if (!m_fwdSubstOff && SrcFile::isValid(line) 
+      if (m_isFwdSubst && SrcFile::isValid(line) 
 	  && !containsLineFzy(use_ctxt->loop(), line, use_ctxt->isAlien())) {
 	use_ctxt = NULL; // force a relocation
       }

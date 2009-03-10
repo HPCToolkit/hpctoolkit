@@ -129,7 +129,7 @@ public:
   //   of method invocations from the following list.  (The internal
   //   context stack should be empty.)
   void 
-  begSeq(Prof::Struct::Proc* enclosingProc, bool fwdSubstOff = false);
+  begSeq(Prof::Struct::Proc* enclosingProc, bool isFwdSubst = false);
 
   // locate: Given a parentless Struct::Loop 'loop', the original
   //   enclosing scope 'proposed_scope' and best-guess source-line
@@ -537,7 +537,7 @@ private:
   MyStack     m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]
   Prof::Struct::LM* m_loadMod;
   int         mDBG;
-  bool        m_fwdSubstOff;
+  bool        m_isFwdSubst;
 
   AlienStrctMap m_alienMap;
 };

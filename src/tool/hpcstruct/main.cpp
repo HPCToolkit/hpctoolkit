@@ -134,10 +134,10 @@ real_main(int argc, char* argv[])
     Prof::Struct::Tree* strctTree = new Prof::Struct::Tree("", rootStrct);
 
     using namespace banal::bloop;
-    Prof::Struct::LM* lmStrct = makeStructure(lm, args.normalizeScopeTree, 
-					      args.unsafeNormalizations,
-					      args.irreducibleIntervalIsLoop,
-					      args.forwardSubstitutionOff,
+    Prof::Struct::LM* lmStrct = makeStructure(lm, args.doNormalize, 
+					      args.doNormalizeUnsafe,
+					      args.isIrreducibleIntervalLoop,
+					      args.isForwardSubstitution,
 					      procNameMgr,
 					      args.dbgProcGlob);
     lmStrct->Link(rootStrct);

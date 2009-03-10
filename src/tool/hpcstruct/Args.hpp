@@ -93,10 +93,10 @@ public:
   // Parsed Data: optional arguments
   std::string lush_agent;
   std::string searchPathStr;      // default: "."
-  bool irreducibleIntervalIsLoop; // default: true
-  bool forwardSubstitutionOff;    // default: false
-  bool normalizeScopeTree;        // default: true
-  bool unsafeNormalizations;      // default: true
+  bool isIrreducibleIntervalLoop; // default: true
+  bool isForwardSubstitution;     // default: false
+  bool doNormalize;               // default: true
+  bool doNormalizeUnsafe;         // default: true
   std::string dbgProcGlob;
 
   std::string out_filenm;
