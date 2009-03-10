@@ -75,7 +75,7 @@ namespace bloop {
 		bool doNormalize = true,
 		bool doNormalizeUnsafe = true,
 		bool isIrrIvalLoop = false,
-		bool fwdSubstOff = false,
+		bool isFwdSubst = false,
 		ProcNameMgr* procNameMgr = NULL,
 		const std::string& dbgProcGlob = "");
   

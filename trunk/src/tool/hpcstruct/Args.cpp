@@ -100,7 +100,7 @@ Options: General\n\
                        verbosity level <n>. {1}\n\
   -V, --version        Print version information.\n\
   -h, --help           Print this help.\n\
-  --debug [<n>]        Debug: use debug level <n>. {1}\n\
+  --debug=[<n>]        Debug: use debug level <n>. {1}\n\
   --debug-proc <glob>  Debug structure recovery for procedures matching\n\
                        the procedure glob <glob>\n\
 \n\
@@ -194,10 +194,10 @@ void
 Args::Ctor()
 {
   searchPathStr = ".";
-  irreducibleIntervalIsLoop = true;
-  forwardSubstitutionOff = false;
-  normalizeScopeTree = true;
-  unsafeNormalizations = true;
+  isIrreducibleIntervalLoop = true;
+  isForwardSubstitution = true;
+  doNormalize = true;
+  doNormalizeUnsafe = true;
   prettyPrintOutput = true;
 }
 
@@ -293,16 +293,16 @@ Args::parse(int argc, const char* const argv[])
       searchPathStr += ":" + parser.getOptArg("include");
     }
     if (parser.isOpt("irreducible-interval-as-loop-off")) { 
-      irreducibleIntervalIsLoop = false;
-    } 
+      isIrreducibleIntervalLoop = false;
+    }
     if (parser.isOpt("forward-substitution-off")) { 
-      forwardSubstitutionOff = true;
-    } 
+      isForwardSubstitution = false;
+    }
     if (parser.isOpt("normalize-off")) { 
-      normalizeScopeTree = false;
+      doNormalize = false;
     }
     if (parser.isOpt("unsafe-normalize-off")) { 
-      unsafeNormalizations = false;
+      doNormalizeUnsafe = false;
     }
 
     // Check for other options: Output options
@@ -339,7 +339,7 @@ Args::dump(std::ostream& os) const
 {
   os << "Args.cmd= " << getCmd() << endl; 
   os << "Args.prettyPrintOutput= " << prettyPrintOutput << endl;
-  os << "Args.normalizeScopeTree= " << normalizeScopeTree << endl;
+  os << "Args.doNormalize= " << doNormalize << endl;
   os << "Args.in_filenm= " << in_filenm << endl;
 }
 

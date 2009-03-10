@@ -124,12 +124,12 @@ demandProcNode(Struct::File* fStrct, BinUtil::Proc* p,
 
 static Struct::Proc*
 buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p, 
-		   bool isIrrIvalLoop, bool fwdSubstOff, ProcNameMgr* procNmMgr,
+		   bool isIrrIvalLoop, bool isFwdSubst, ProcNameMgr* procNmMgr,
 		   const std::string& dbgProcGlob); 
 
 static int
 buildProcLoopNests(Struct::Proc* pStrct, BinUtil::Proc* p,
-		   bool isIrrIvalLoop, bool fwdSubstOff, 
+		   bool isIrrIvalLoop, bool isFwdSubst, 
 		   ProcNameMgr* procNmMgr, bool isDbg);
 
 static int
@@ -303,7 +303,7 @@ banal::bloop::makeStructure(BinUtil::LM* lm,
 			    bool doNormalize,
 			    bool doNormalizeUnsafe,
 			    bool isIrrIvalLoop,
-			    bool fwdSubstOff,
+			    bool isFwdSubst,
 			    ProcNameMgr* procNmMgr,
 			    const std::string& dbgProcGlob)
 {
@@ -326,7 +326,7 @@ banal::bloop::makeStructure(BinUtil::LM* lm,
     BinUtil::Proc* p = it->second;
 
     DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
-    buildProcStructure(pStrct, p, isIrrIvalLoop, fwdSubstOff, 
+    buildProcStructure(pStrct, p, isIrrIvalLoop, isFwdSubst, 
 		       procNmMgr, dbgProcGlob);
   }
   delete mp;
@@ -523,7 +523,7 @@ buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
-		   bool isIrrIvalLoop, bool fwdSubstOff,
+		   bool isIrrIvalLoop, bool isFwdSubst,
 		   ProcNameMgr* procNmMgr, bool isDbg);
 
 static Struct::ACodeNode*
@@ -539,7 +539,7 @@ buildLoopAndStmts(bloop::LocationMgr& locMgr,
 // BinUtil::Proc 'p'.  Note that pStrcts parent may itself be a Struct::Proc.
 static Struct::Proc* 
 buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p,
-		   bool isIrrIvalLoop, bool fwdSubstOff, ProcNameMgr* procNmMgr,
+		   bool isIrrIvalLoop, bool isFwdSubst, ProcNameMgr* procNmMgr,
 		   const std::string& dbgProcGlob)
 {
   DIAG_Msg(3, "==> Proc `" << p->name() << "' (" << p->id() << ") <==");
@@ -550,7 +550,7 @@ buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p,
     isDbg = FileUtil::fnmatch(dbgProcGlob, p->name().c_str());
   }
   
-  buildProcLoopNests(pStrct, p, isIrrIvalLoop, fwdSubstOff, procNmMgr, isDbg);
+  buildProcLoopNests(pStrct, p, isIrrIvalLoop, isFwdSubst, procNmMgr, isDbg);
   
   return pStrct;
 }
@@ -561,7 +561,7 @@ buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p,
 // scopes.
 static int
 buildProcLoopNests(Struct::Proc* pStrct, BinUtil::Proc* p,
-		   bool isIrrIvalLoop, bool fwdSubstOff, 
+		   bool isIrrIvalLoop, bool isFwdSubst, 
 		   ProcNameMgr* procNmMgr, bool isDbg)
 {
   static const int sepWidth = 77;
@@ -614,7 +614,7 @@ buildProcLoopNests(Struct::Proc* pStrct, BinUtil::Proc* p,
     }
 
     int r = buildProcLoopNests(pStrct, p, tarj, cfg, fgRoot,
-			       isIrrIvalLoop, fwdSubstOff, procNmMgr, isDbg);
+			       isIrrIvalLoop, isFwdSubst, procNmMgr, isDbg);
 
     if (isDbg) {
       cerr << setfill('-') << setw(sepWidth) << "-" << endl;
@@ -640,7 +640,7 @@ buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
-		   bool isIrrIvalLoop, bool fwdSubstOff, 
+		   bool isIrrIvalLoop, bool isFwdSubst, 
 		   ProcNameMgr* procNmMgr, bool isDbg)
 {
   typedef std::list<QNode> MyQueue;
@@ -654,7 +654,7 @@ buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
     locMgr.debug(1);
   }
 
-  locMgr.begSeq(enclosingProc, fwdSubstOff);
+  locMgr.begSeq(enclosingProc, isFwdSubst);
   
   // -------------------------------------------------------
   // Process the Nested SCR (Tarjan tree) in preorder
