@@ -111,21 +111,19 @@ namespace bloop {
 typedef std::multimap<Struct::Proc*, BinUtil::Proc*> ProcStrctToProcMap;
 
 static ProcStrctToProcMap*
-buildLMSkeleton(Struct::LM* lmStrct, BinUtil::LM* lm, 
-		ProcNameMgr* procNmMgr);
+buildLMSkeleton(Struct::LM* lmStrct, BinUtil::LM* lm, ProcNameMgr* procNmMgr);
 
 static Struct::File*
 demandFileNode(Struct::LM* lmStrct, BinUtil::Proc* p);
 
 static Struct::Proc*
-demandProcNode(Struct::File* fStrct, BinUtil::Proc* p, 
-	       ProcNameMgr* procNmMgr);
+demandProcNode(Struct::File* fStrct, BinUtil::Proc* p, ProcNameMgr* procNmMgr);
 
 
 static Struct::Proc*
 buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p, 
-		   bool isIrrIvalLoop, bool isFwdSubst, ProcNameMgr* procNmMgr,
-		   const std::string& dbgProcGlob); 
+		   bool isIrrIvalLoop, bool isFwdSubst, 
+		   ProcNameMgr* procNmMgr, const std::string& dbgProcGlob); 
 
 static int
 buildProcLoopNests(Struct::Proc* pStrct, BinUtil::Proc* p,
@@ -139,7 +137,7 @@ buildStmts(bloop::LocationMgr& locMgr,
 
 
 static void
-findLoopBegLineInfo(BinUtil::Proc* p, 
+findLoopBegLineInfo(/*Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
 		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn);
 
@@ -450,8 +448,7 @@ demandFileNode(Struct::LM* lmStrct, BinUtil::Proc* p)
 // demandProcNode: Build skeletal Struct::Proc.  We can assume that
 // the parent is always a Struct::File.
 static Struct::Proc*
-demandProcNode(Struct::File* fStrct, BinUtil::Proc* p, 
-	       ProcNameMgr* procNmMgr)
+demandProcNode(Struct::File* fStrct, BinUtil::Proc* p, ProcNameMgr* procNmMgr)
 {
   // Find VMA boundaries: [beg, end)
   VMA endVMA = p->begVMA() + p->size();
@@ -539,8 +536,8 @@ buildLoopAndStmts(bloop::LocationMgr& locMgr,
 // BinUtil::Proc 'p'.  Note that pStrcts parent may itself be a Struct::Proc.
 static Struct::Proc* 
 buildProcStructure(Struct::Proc* pStrct, BinUtil::Proc* p,
-		   bool isIrrIvalLoop, bool isFwdSubst, ProcNameMgr* procNmMgr,
-		   const std::string& dbgProcGlob)
+		   bool isIrrIvalLoop, bool isFwdSubst, 
+		   ProcNameMgr* procNmMgr, const std::string& dbgProcGlob)
 {
   DIAG_Msg(3, "==> Proc `" << p->name() << "' (" << p->id() << ") <==");
   
@@ -805,9 +802,10 @@ buildLoopAndStmts(bloop::LocationMgr& locMgr,
     // -----------------------------------------------------
     // INTERVAL or IRREDUCIBLE as a loop: Loop head
     // -----------------------------------------------------
+    //Struct::ACodeNode* procCtxt = enclosingStrct->ancestorProcCtxt();
     string fnm, pnm;
     SrcFile::ln line;
-    findLoopBegLineInfo(p, bb, fnm, pnm, line);
+    findLoopBegLineInfo(/*procCtxt,*/ p, bb, fnm, pnm, line);
     pnm = BinUtil::canonicalizeProcName(pnm, procNmMgr);
     
     Struct::Loop* loop = new Struct::Loop(NULL, line, line);
@@ -969,16 +967,17 @@ buildProcLoopNests(Struct::ACodeNode* enclosingStrct, BinUtil::Proc* p,
 // find loop begin source line information.  
 //
 // The routine first attempts to use the source line information for
-// the backward branch, if one exists.
+// the backward branch, if one exists.  Then, it consults the 'head'
+// instruction.
 //
 // Note: It is possible to have multiple or no backward branches
 // (e.g. an 'unstructured' loop written with IFs and GOTOs).  In the
 // former case, we take the smallest source line of them all; in the
 // latter we use headVMA.
 static void
-findLoopBegLineInfo(BinUtil::Proc* p, 
+findLoopBegLineInfo(/* Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
-		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn)
+		    string& begFileNm, string& begProcNm, SrcFile::ln& begLn)
 {
   using namespace OA::CFG;
 
@@ -991,7 +990,9 @@ findLoopBegLineInfo(BinUtil::Proc* p,
   DIAG_Assert(headOpIdx == 0, "Target of a branch at " << headVMA 
 	      << " has op-index of: " << headOpIdx);
   
-  // Now find the backward branch
+  // ------------------------------------------------------------
+  // Attempt to use backward branch to find loop begin line (see note above)
+  // ------------------------------------------------------------
   OA::OA_ptr<EdgesIteratorInterface> it 
     = headBB->getCFGIncomingEdgesIterator();
   for ( ; it->isValid(); ++(*it)) {
@@ -1016,16 +1017,47 @@ findLoopBegLineInfo(BinUtil::Proc* p,
       if (SrcFile::isValid(line) 
 	  && (!SrcFile::isValid(begLn) || line < begLn)) {
 	begLn = line;
-	begFilenm = filenm;
-	begProcnm = procnm;
+	begFileNm = filenm;
+	begProcNm = procnm;
       }
     }
   }
-  
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------  
   if (!SrcFile::isValid(begLn)) {
-    VMA headOpIdx = head->opIndex();
-    p->GetSourceFileInfo(headVMA, headOpIdx, begProcnm, begFilenm, begLn);
+    // Fall through: consult the first instruction in the loop
+    p->GetSourceFileInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
   }
+
+#if 0 
+  // TODO: Possibly try to have two levels of forward-substitution-off
+  // support.  The less agressive level (this code) compares the first
+  // instruction in a loop with the loop backward branch in an attempt
+  // to arrive at a better loop begin line (which is only adjusted by
+  // fuzzy matching or by self-nesting correction).  The more
+  // aggressive level is the min-max loop heuristic and is implemented
+  // in LocationMgr::determineContext().
+
+  else if (/* forward substitution off */) {
+    // INVARIANT: backward branch was found (begLn is valid)
+    
+    // If head instruction appears to come from the same procedure
+    // context as the backward branch, then compare the two sets of
+    // source information.
+    SrcFile::ln line;
+    string filenm, procnm;
+    p->GetSourceFileInfo(headVMA, headOpIdx, procnm, filenm, line);
+    
+    if (filenm == begFileNm && ctxtNameEqFuzzy(procnm, begProcNm)
+	&& procCtxt->begLine() < line && line < procCtxt->endLine()) {
+      begLn = line;
+      begFileNm = filenm;
+      begProcNm = procnm;
+    }
+  }
+#endif
 }
 
 
