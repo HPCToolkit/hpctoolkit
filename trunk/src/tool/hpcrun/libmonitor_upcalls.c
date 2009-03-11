@@ -203,6 +203,29 @@ monitor_fini_process(int how, void *data)
 }
 
 
+//
+// On some systems, taking a signal inside MPI_Init breaks MPI_Init.
+// So, turn off sampling (not just block) within MPI_Init, with the
+// control variable MPI_RISKY to bypass this.
+//
+void
+monitor_mpi_pre_init(void)
+{
+  if (! ENABLED(MPI_RISKY)) {
+    // Turn sampling off.
+  }
+}
+
+
+void
+monitor_init_mpi(int *argc, char ***argv)
+{
+  if (! ENABLED(MPI_RISKY)) {
+    // Turn sampling back on.
+  }
+}
+
+
 #ifdef CSPROF_THREADS
 
 void
