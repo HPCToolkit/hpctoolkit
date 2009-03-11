@@ -34,10 +34,10 @@ papi_extra_libs='@papi_extra_libs@'
 wrap1="main exit _exit dlopen dlclose fork vfork system"
 wrap2="execl execlp execle execv execvp execve"
 wrap3="pthread_create signal sigaction sigprocmask pthread_sigmask"
-wrap4="MPI_Init mpi_init_ mpi_init__"
-wrap5="MPI_Init_thread mpi_init_thread_ mpi_init_thread__"
-wrap6="MPI_Finalize mpi_finalize_ mpi_finalize__"
-wrap7="MPI_Comm_rank mpi_comm_rank_ mpi_comm_rank__"
+wrap4="MPI_Init mpi_init mpi_init_ mpi_init__"
+wrap5="MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__"
+wrap6="MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__"
+wrap7="MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__"
 monitor_wrap_names="$wrap1 $wrap2 $wrap3 $wrap4 $wrap5 $wrap6 $wrap7"
 
 # Set to -m64 on 64-bit version (for gcc).
