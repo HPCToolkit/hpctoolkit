@@ -112,7 +112,7 @@ csprof_addr_to_interval(void *addr)
 {
   UI_TREE_LOCK;
 
-  splay_interval_t *retval = csprof_addr_to_interval_unlocked(addr);
+  splay_interval_t *retval = csprof_addr_to_interval_locked(addr);
 
   UI_TREE_UNLOCK;
 
@@ -132,7 +132,7 @@ csprof_addr_to_interval(void *addr)
  *          SO, BE CAREFUL.
  */
 splay_interval_t *
-csprof_addr_to_interval_unlocked(void *addr)
+csprof_addr_to_interval_locked(void *addr)
 {
   void *fcn_start, *fcn_end;
   interval_status istat;
