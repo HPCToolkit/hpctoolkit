@@ -121,6 +121,7 @@ MY_PPC_FILES = \
 
 MY_X86_FILES = \
 	unwind/x86-family/x86-all.c			\
+	unwind/x86-family/x86-cold-path.c		\
 	unwind/x86-family/x86-unwind-interval.c		\
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
 	unwind/x86-family/x86-unwind.c		        \
