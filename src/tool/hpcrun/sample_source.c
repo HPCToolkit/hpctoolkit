@@ -58,18 +58,19 @@ csprof_add_sample_source(sample_source_globals_t *_ssgtd)
   ssgd = _ssgd;
 }
 
-
+//
+// START/STOP inversion
 void
 csprof_start_sampling(thread_data_t *td)
 {
-  call_sampling_methods(SAMPLING_STOP, td);
+  call_sampling_methods(SAMPLING_START, td);
 }
 
 
 void
 csprof_stop_sampling(thread_data_t *td)
 {
-  call_sampling_methods(SAMPLING_START, td);
+  call_sampling_methods(SAMPLING_STOP, td);
 }
 
 

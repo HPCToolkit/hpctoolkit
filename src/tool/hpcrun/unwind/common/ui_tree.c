@@ -100,8 +100,6 @@ csprof_ui_malloc(size_t ui_size)
 
   return (ans);
 }
-
-
 /*
  * Lookup the PC address in the interval tree and return a pointer to
  * the interval containing that address (the new root).  Grow the tree
@@ -112,18 +110,39 @@ csprof_ui_malloc(size_t ui_size)
 splay_interval_t *
 csprof_addr_to_interval(void *addr)
 {
+  UI_TREE_LOCK;
+
+  splay_interval_t *retval = csprof_addr_to_interval_unlocked(addr);
+
+  UI_TREE_UNLOCK;
+
+  return retval;
+}
+
+
+/*
+ * Lookup the PC address in the interval tree WITHOUT REGARD TO LOCKING and returns
+ * a pointer to the interval containing that address (the new root).  Grow the tree
+ * lazily and memo-ize the answers.
+ *
+ * Returns: pointer to unwind_interval struct if found, else NULL.
+ *
+ * WARNING: A caller of this routine is PRESUMED to hold the UI_TREE lock.
+ *          Failure to respect this requirement will lead to chaos in multithreaded code
+ *          SO, BE CAREFUL.
+ */
+splay_interval_t *
+csprof_addr_to_interval_unlocked(void *addr)
+{
   void *fcn_start, *fcn_end;
   interval_status istat;
   interval_tree_node *p, *q;
   splay_interval_t *ans;
   int ret;
 
-  UI_TREE_LOCK;
-
   /* See if addr is already in the tree. */
   p = interval_tree_lookup(&ui_tree_root, addr);
   if (p != NULL) {
-    UI_TREE_UNLOCK;
     TMSG(UITREE_LOOKUP, "found in unwind tree: addr %p", addr);
     return (splay_interval_t *)p;
   }
@@ -131,19 +150,16 @@ csprof_addr_to_interval(void *addr)
   /* Get list of new intervals to insert into the tree. */
   ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end);
   if (ret != SUCCESS) {
-    UI_TREE_UNLOCK;
     TMSG(UITREE, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
     return (NULL);
   }
   if (addr < fcn_start || fcn_end <= addr) {
-    UI_TREE_UNLOCK;
     TMSG(UITREE, "BAD fnbounds_enclosing_addr failed: addr %p "
 	 "not within fcn range %p to %p", addr, fcn_start, fcn_end);
     return (NULL);
   }
   istat = build_intervals(fcn_start, fcn_end - fcn_start);
   if (istat.first == NULL) {
-    UI_TREE_UNLOCK;
     TMSG(UITREE, "BAD build_intervals failed: fcn range %p to %p",
 	 fcn_start, fcn_end);
     return (NULL);
@@ -185,8 +201,6 @@ csprof_addr_to_interval(void *addr)
   if (ENABLED(UITREE_VERIFY)) {
     interval_tree_verify(ui_tree_root, "UITREE");
   }
-
-  UI_TREE_UNLOCK;
 
   TMSG(UITREE_LOOKUP, "unwind lookup, addr = %p, ans = %p", addr, ans);
   return (ans);

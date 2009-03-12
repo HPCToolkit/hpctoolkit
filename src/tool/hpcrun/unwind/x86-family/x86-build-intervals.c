@@ -13,19 +13,18 @@
 #include "x86-process-inst.h"
 #include "x86-unwind-analysis.h"
 #include "x86-unwind-interval-fixup.h"
+#include "x86-interval-arg.h"
 
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
 
-static void 
-set_status(interval_status *status, char *fui, int errcode, 
-	   unwind_interval *first);
+static void set_status(interval_status *status, char *fui, int errcode, 
+		       unwind_interval *first);
 
-interval_status 
-x86_build_intervals(char *ins, unsigned int len, int noisy);
+interval_status x86_build_intervals(void *ins, unsigned int len, int noisy);
 
-
+static void x86_coalesce_unwind_intervals(unwind_interval *ui);
 
 /******************************************************************************
  * interface operations 
@@ -39,9 +38,9 @@ build_intervals(char *ins, unsigned int len)
 
 
 interval_status 
-x86_build_intervals(char *ins, unsigned int len, int noisy)
+x86_build_intervals(void *ins, unsigned int len, int noisy)
 {
-  char *first_ins = ins;
+  void *first_ins = ins;
 
   xed_decoded_inst_t xedd;
   xed_decoded_inst_t *xptr = &xedd;
@@ -60,7 +59,11 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
   bool bp_frames_found = false;  
   bool bp_just_pushed = false;
 
-  char *end = ins + len;
+  void *end = ins + len;
+
+  interval_arg_t iarg;
+  iarg.beg            = first_ins;
+  iarg.end            = end;
 
   current = new_ui(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL);
 
@@ -80,11 +83,12 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
     }
 
     // ensure that we don't move past the end of the interval because of a misaligned instruction
-    char *nextins = ins + xed_decoded_inst_get_length(xptr);
+    void *nextins = ins + xed_decoded_inst_get_length(xptr);
     if (nextins > end) break;
 
     next = process_inst(xptr, &ins, end, &current, first, &bp_just_pushed, 
-			&highwatermark, &canonical_interval, &bp_frames_found, &rax_rbp_equivalent_at);
+			&highwatermark, &canonical_interval, &bp_frames_found, &rax_rbp_equivalent_at,
+			&iarg);
     
     if (next == &poison_ui) {
       set_status(&status, ins, -1, NULL);
@@ -112,6 +116,7 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
   set_status(&status, ins, error_count, first);
 
   x86_fix_unwind_intervals(first_ins, len, &status);
+  x86_coalesce_unwind_intervals((unwind_interval *)status.first);
   return status;
 }
 
@@ -121,11 +126,17 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
  * private operations 
  *****************************************************************************/
 
-static void set_status(interval_status *status, char *fui, int errcode, 
-		       unwind_interval *first) 
+static void
+set_status(interval_status *status, char *fui, int errcode, 
+	   unwind_interval *first)
 {
   status->first_undecoded_ins = fui;
   status->errcode = errcode;
   status->first   = (splay_interval_t *)first;
 }
 
+static void
+x86_coalesce_unwind_intervals(unwind_interval *ui)
+{
+  return;
+}

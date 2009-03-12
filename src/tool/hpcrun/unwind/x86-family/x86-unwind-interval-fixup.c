@@ -18,7 +18,7 @@ add_x86_unwind_interval_fixup_function(x86_ui_fixup_fn_t fn)
    x86_fixup_list = i;
 }
 
-int 
+int
 x86_fix_unwind_intervals(char *ins, int len, interval_status *stat)
 {
    x86_ui_fixup_list_item_t *fentry = x86_fixup_list;
