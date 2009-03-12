@@ -12,16 +12,23 @@
 % tools
 % ----------------------------------------------------------
 
-\newcommand{\HPCToolkit}{\textsc{HPCToolkit}}
+\newcommand{\hpctoolkit}{\textsc{HPCToolkit}}
 \newcommand{\hpcrun}{\texttt{hpcrun}}
 \newcommand{\hpcstruct}{\texttt{hpcstruct}}
 \newcommand{\hpcprof}{\texttt{hpcprof}}
 \newcommand{\hpcviewer}{\texttt{hpcviewer}}
 
+% ----------------------------------------------------------
+% convenient abbreviations
+% ----------------------------------------------------------
+
+\newcommand{\eg}{{\em e.g.}}
+
+
 \begin{document}
 \title{Understanding and Troubleshooting \\
-         \HPCToolkit\ Problems}
-\author{The \HPCToolkit\ Team}
+         \hpctoolkit\ Problems}
+\author{The \hpctoolkit\ Team}
 \date{03 February 2009}
 \maketitle
 
@@ -133,7 +140,7 @@ the proper \verb|-I| flag:
 hpcstruct -I /projs/Apps/'*' -S app1.hpcstruct */*.hpcrun
 \end{verbatim}
 \end{quote}
-\vbox{%
+
 The resulting output:
 \begin{quote}
 \begin{Verbatim}[fontsize=\small]
@@ -147,8 +154,9 @@ WARNING: lost: ~unknown-file~
 WARNING: lost: irc_msg_support.c
 \end{Verbatim}
 \end{quote}
-Much better!
-}
+\nobreak Much better!
+
+
 \textbf{Best Practice:} First, carefully inspect the output of \hpcprof\ to
 determine which files are lost. Next, determine the absolute path for
 each distinct top-level source directory (or build directory, if it 
@@ -165,20 +173,19 @@ No hpcstruct =
    no inlining detection!
 \end{comment}
 
-\vbox{%
+%\vbox{%
 \textbf{Why don't the line numbers for loops and/or procedures exactly
-correspond to what I see in the source code?}
+correspond to what I see in my source code?}
 
 \begin{quote}
-To use a clich\'{e}, ``garbage in, garbage out''. \HPCToolkit\ 
+To use a clich\'{e}, ``garbage in, garbage out''. \hpctoolkit\ 
 depends on information recorded in the symbol table by the
 compiler. Line numbers for procedures and loops are inferred by
 looking at the symbol table information recorded for machine
 instructions identified as being inside the procedure or loop.
-\end{quote}
-}
 
-\begin{quote}
+%}
+
 For procedures, often no machine instructions are associated with a
 procedure's declarations. Thus, the first line in the procedure that
 has an associated machine instruction is the first line of executable
@@ -200,6 +207,27 @@ When the compiler line mapping information is wrong, there is little
 you can do about it other than to ignore its imperfections, or
 hand-edit the XML program structure file produced by \hpcstruct . This
 technique is used only when truly desparate.
+\end{quote}
+
+\textbf{A particular scope in my code (\eg, a loop) contains one call to a 
+function, yet \hpcviewer{} shows several. Is something wrong with \hpctoolkit{}?}
+\begin{quote}
+In a word: no. In the course of code optimization, compilers often replicate code blocks. 
+For instance, as it generates code, a compiler may peel iterations from a loop or split the iteration 
+space of a loop into two or more loops. 
+In such cases, one call in the source code may be transformed into multiple 
+distinct calls that reside at different code addresses in the executable. 
+
+When analyzing applications at the binary level, it is difficult to 
+determine whether two distinct calls to the same function that appear in the machine 
+code were derived from the same call in the source code. 
+Even if both calls map to the same source line, it may be wrong to coalesce them; 
+the source code might contain multiple calls to the same function on the same line. 
+By design, \hpctoolkit{} does not attempt to coalesce distinct calls to the same function
+because it might be incorrect to do so; instead, it independently reports each call site 
+that appears in the machine code. 
+If the compiler duplicated calls as it replicated code during optimization,  
+multiple call sites may be reported by \hpcviewer{} when only one appeared in the source code. 
 \end{quote}
 
 \end{document}
