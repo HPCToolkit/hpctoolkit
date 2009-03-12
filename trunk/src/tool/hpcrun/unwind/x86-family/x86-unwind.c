@@ -76,7 +76,7 @@ static int unw_step_prefer_sp(void);
 
 static void drop_sample(void);
 
-static validation_status validate_return_addr(void *addr, void *generic_arg);
+static validation_status GCC_ATTR_UNUSED validate_return_addr(void *addr, void *generic_arg);
 static validation_status simple_validate_addr(void *addr, void *generic_arg);
 
 
@@ -162,7 +162,7 @@ unw_step_sp(unw_cursor_t *cursor)
 
   TMSG(UNW_STRATEGY,"Using SP step");
 
-  void *stack_bottom = monitor_stack_bottom();
+  // void *stack_bottom = monitor_stack_bottom();
 
   // current frame
   bp = cursor->bp;
@@ -174,13 +174,6 @@ unw_step_sp(unw_cursor_t *cursor)
   dump_ui(uw, 0);
 
   next_sp  = (void **)(sp + uw->sp_ra_pos);
-#if 0
-  if (! (sp <= (void *)next_sp && (void *)next_sp < stack_bottom)) {
-    TMSG(UNW,"sp unwind step gave invalid next sp. cursor sp = %p,"
-	 " next_sp = %p", sp, next_sp);
-    return STEP_ERROR;
-  }
-#endif
   next_pc  = *next_sp;
 
   TMSG(UNW,"sp potential advance cursor: next_sp=%p ==> next_pc = %p",
@@ -425,6 +418,8 @@ unw_step (unw_cursor_t *cursor)
   }
   PMSG_LIMIT(TMSG(TROLL,"UNW STEP FAILURE : cursor pc = %p, cursor bp = %p,"
 		  " cursor sp = %p", pc, bp, sp));
+  PMSG_LIMIT(TMSG(TROLL,"unwind interval below:"));
+  dump_ui_troll(uw);
   PMSG_LIMIT(TMSG(TROLL,"UNW STEP calls stack troll"));
 
   if (ENABLED(TROLL_WAIT)) {
@@ -468,8 +463,6 @@ drop_sample(void)
   siglongjmp(it->jb,9);
 }
 
-
-// TODO: build up appropriate generic argument
 
 static void 
 update_cursor_with_troll(unw_cursor_t *cursor, int offset)
@@ -573,6 +566,16 @@ vdecode_call(void *ins, xed_decoded_inst_t *xptr)
 }
 
 
+// see if this works for jumps also.
+// if so,
+// FIXME: rename the vdecode_call function
+//
+void *
+x86_get_branch_target(void *ins,xed_decoded_inst_t *xptr)
+{
+  return vdecode_call(ins,xptr);
+}
+
 /* static */ bool
 confirm_call(void *addr, void *routine)
 {
@@ -618,7 +621,7 @@ indirect_or_tail(void *addr, void *my_routine)
 }
 
 
-static validation_status
+static validation_status GCC_ATTR_UNUSED
 validate_return_addr(void *addr, void *generic)
 {
   unw_cursor_t *cursor = (unw_cursor_t *)generic;

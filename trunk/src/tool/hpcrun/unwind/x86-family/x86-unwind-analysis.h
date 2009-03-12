@@ -16,7 +16,7 @@ typedef struct highwatermark_s {
   int state;
 } highwatermark_t;
 
-
+void *x86_get_branch_target(void *ins,xed_decoded_inst_t *xptr);
 
 /******************************************************************************
  * macros 

@@ -267,7 +267,7 @@ pmsg_fini(void)
 #define MSG_BUF_SIZE  4096
 
 static void
-write_msg_to_log(const char *tag, const char *fmt, va_list args)
+write_msg_to_log(bool echo_stderr, const char *tag, const char *fmt, va_list args)
 {
   char fstr[MSG_BUF_SIZE];
   char buf[MSG_BUF_SIZE];
@@ -295,6 +295,9 @@ write_msg_to_log(const char *tag, const char *fmt, va_list args)
   fprintf(log_file, "%s", buf);
   fflush(log_file);
   spinlock_unlock(&pmsg_lock);
+  if (echo_stderr){
+    fprintf(stderr,"%s",buf);
+  }
 
   va_end(args);
 }
@@ -322,7 +325,7 @@ _nmsg(const char *fmt,va_list args)
 void
 csprof_emsg_valist(const char *fmt, va_list args)
 {
-  write_msg_to_log(NULL, fmt, args);
+  write_msg_to_log(false, NULL, fmt, args);
 }
 
 
@@ -331,7 +334,7 @@ csprof_emsg(const char *fmt,...)
 {
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(NULL, fmt, args);
+  write_msg_to_log(false, NULL, fmt, args);
 }
 
 void
@@ -342,7 +345,7 @@ csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
   }
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(NULL, fmt, args);
+  write_msg_to_log(false, NULL, fmt, args);
   abort();
 }
 
@@ -357,7 +360,7 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
 
   va_list args;
   va_start(args, fmt);
-  write_msg_to_log(NULL, fmt, args);
+  write_msg_to_log(false, NULL, fmt, args);
 
   va_start(args,fmt);
   vfprintf(stderr, fstr, args);
@@ -368,7 +371,7 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
 
 // message to log file, also echo on stderr
 void
-csprof_stderr_log_msg(bool copy_to_log,const char *fmt, ...)
+csprof_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
 {
   // massage fmt string to end in a newline
   char fstr[MSG_BUF_SIZE];
@@ -385,7 +388,7 @@ csprof_stderr_log_msg(bool copy_to_log,const char *fmt, ...)
   if (copy_to_log){
     va_list args;
     va_start(args, fmt);
-    write_msg_to_log(NULL, fmt, args);
+    write_msg_to_log(false, NULL, fmt, args);
   }
 }
 
@@ -404,11 +407,24 @@ csprof_pmsg(pmsg_category flag, const char *tag, const char *fmt,...)
   }
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(tag, fmt, args);
+  write_msg_to_log(false, tag, fmt, args);
+}
+
+// like pmsg, except echo message to stderr when flag is set
+void
+csprof_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag, const char *fmt,...)
+{
+  if (! dbg_flags[flag]){
+    // csprof_emsg("PMSG flag in = %d (%s), flag ctl = %d --> NOPRINT",flag,tbl[flag],dbg_flags[flag]);
+    return;
+  }
+  va_list args;
+  va_start(args,fmt);
+  write_msg_to_log(echo_stderr, tag, fmt, args);
 }
 
 void
-csprof_nmsg(pmsg_category flag,const char *fmt,...)
+csprof_nmsg(pmsg_category flag, const char *fmt, ...)
 {
   if (! dbg_flags[flag]){
     return;

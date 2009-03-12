@@ -15,12 +15,12 @@ static bool plt_is_next(char *ins);
 
 unwind_interval *
 process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr, 
-	       char **ins_ptr, char *end, bool irdebug, unwind_interval *first, 
+	       void **ins_ptr, void *end, bool irdebug, unwind_interval *first, 
 	       highwatermark_t *highwatermark, 
 	       unwind_interval **canonical_interval, bool *bp_frames_found)
 {
   unwind_interval *current = *current_ptr;
-  char *ins = *ins_ptr;
+  void *ins = *ins_ptr;
   unwind_interval *next = current;
 #ifdef FIX_INTERVALS_AT_RETURN
   if (current->ra_status == RA_SP_RELATIVE) {
@@ -39,7 +39,7 @@ process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr,
     }
   } 
 #endif
-  if (current->bp_status != BP_UNCHANGED) {
+  if (current->bp_status == BP_SAVED) {
      suspicious_interval(ins);
 #if 0
      unwind_interval *c = NULL; 

@@ -13,7 +13,7 @@
 
 unwind_interval *
 process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr, 
-	       char **ins, char *end, bool irdebug, unwind_interval *first, 
+	       void **ins, void *end, bool irdebug, unwind_interval *first, 
 	       highwatermark_t *highwatermark, 
 	       unwind_interval **canonical_interval, bool *bp_frames_found);
 
