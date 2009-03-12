@@ -18,17 +18,17 @@
 //
 
 
-/* static */ void
+static void
 cold_code_fixup(unwind_interval *current, unwind_interval *warm)
 {
-  ETMSG(COLD_CODE,"  --fixing up current intervals with the warm interval");
+  TMSG(COLD_CODE,"  --fixing up current intervals with the warm interval");
   int ra_offset = warm->sp_ra_pos;
   int bp_offset = warm->sp_bp_pos;
   if (ra_offset == 0) {
-    ETMSG(COLD_CODE,"  --warm code calling routine has offset 0, so no action taken");
+    TMSG(COLD_CODE,"  --warm code calling routine has offset 0, so no action taken");
     return;
   }
-  ETMSG(COLD_CODE,"  --updating sp_ra_pos with offset %d",ra_offset);
+  TMSG(COLD_CODE,"  --updating sp_ra_pos with offset %d",ra_offset);
   for(unwind_interval *intv = current;intv;intv = (unwind_interval *)intv->common.prev) {
     intv->sp_ra_pos += ra_offset;
     intv->sp_bp_pos += bp_offset;
@@ -38,7 +38,7 @@ cold_code_fixup(unwind_interval *current, unwind_interval *warm)
 // Confirm that the previous instruction is a conditional branch to beginning of
 // cold call routine
 
-/* static */ bool
+static bool
 confirm_cold_path_call(void *loc, interval_arg_t *iarg)
 {
   xed_decoded_inst_t xedd;
@@ -50,9 +50,9 @@ confirm_cold_path_call(void *loc, interval_arg_t *iarg)
   void *routine       = iarg->beg;     
   xed_error = xed_decode(xptr, (uint8_t *)possible_call, 15);
 
-  ETMSG(COLD_CODE,"  --trying to confirm a cold code 'call' from addr %p",possible_call);
+  TMSG(COLD_CODE,"  --trying to confirm a cold code 'call' from addr %p",possible_call);
   if (xed_error != XED_ERROR_NONE) {
-    ETMSG(COLD_CODE,"  --addr %p has xed decode error when attempting confirm",possible_call);
+    TMSG(COLD_CODE,"  --addr %p has xed decode error when attempting confirm",possible_call);
     return false;
   }
 
@@ -74,13 +74,13 @@ confirm_cold_path_call(void *loc, interval_arg_t *iarg)
   case XED_ICLASS_JRCXZ:
   case XED_ICLASS_JS:
   case XED_ICLASS_JZ:
-    ETMSG(COLD_CODE,"  --conditional branch confirmed @ %p",possible_call);
+    TMSG(COLD_CODE,"  --conditional branch confirmed @ %p",possible_call);
     void *the_call = x86_get_branch_target(possible_call,xptr);
-    ETMSG(COLD_CODE,"  --comparing 'call' %p to actual routine %p",the_call,routine);
+    TMSG(COLD_CODE,"  --comparing 'call' %p to actual routine %p",the_call,routine);
     return (the_call == routine);
     break;
   default:
-    ETMSG(COLD_CODE,"  --No conditional branch @ %p, so NOT a cold call",possible_call);
+    TMSG(COLD_CODE,"  --No conditional branch @ %p, so NOT a cold call",possible_call);
     return false;
   }
   EMSG("confirm cold path call shouldn't get here!");
@@ -89,21 +89,21 @@ confirm_cold_path_call(void *loc, interval_arg_t *iarg)
 
 // The cold code detector is called when unconditional jump is encountered
 
-/* static */ bool
+static bool
 is_cold_code(void *ins, xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 {
   void *branch_target = x86_get_branch_target(ins,xptr);
   if (((ins + xed_decoded_inst_get_length(xptr)) == iarg->end) &&
       !(iarg->beg <= branch_target && branch_target <= iarg->end)){
     // this is a possible cold code routine
-    ETMSG(COLD_CODE,"potential cold code jmp detected in routine starting @ %p",iarg->beg);
+    TMSG(COLD_CODE,"potential cold code jmp detected in routine starting @ %p",iarg->beg);
     void *beg, *end;
     if (fnbounds_enclosing_addr(branch_target, &beg, &end)){
       EEMSG("Wierd result! branch_target %p has no function bounds",branch_target);
       return false;
     }
     if (!(branch_target > beg)){
-      ETMSG(COLD_CODE,"  --jump is a regular tail call, NOT a cold code return");
+      TMSG(COLD_CODE,"  --jump is a regular tail call, NOT a cold code return");
       return false;
     }
     iarg->return_addr = branch_target; // store the address of the branch, in case this turns out to be a
@@ -138,10 +138,10 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, void **ins_ptr, void *en
 					canonical_interval, *bp_frames_found);
 
     if (is_cold_code(ins, xptr, iarg)) {
-      ETMSG(COLD_CODE,"  --cold code routine detected!");
-      ETMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
+      TMSG(COLD_CODE,"  --cold code routine detected!");
+      TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
       unwind_interval *ui = (unwind_interval *) csprof_addr_to_interval_unlocked(iarg->return_addr);
-      ETMSG(COLD_CODE,"got unwind interval from csprof_addr_to_interval");
+      TMSG(COLD_CODE,"got unwind interval from csprof_addr_to_interval");
       if (ENABLED(COLD_CODE)) {
         dump_ui_stderr(ui);
       }
