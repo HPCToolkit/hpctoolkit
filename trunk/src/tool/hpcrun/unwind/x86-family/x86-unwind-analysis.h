@@ -16,7 +16,7 @@ typedef struct highwatermark_s {
   int state;
 } highwatermark_t;
 
-void *x86_get_branch_target(void *ins,xed_decoded_inst_t *xptr);
+extern void *x86_get_branch_target(void *ins,xed_decoded_inst_t *xptr);
 
 /******************************************************************************
  * macros 
@@ -35,7 +35,4 @@ void *x86_get_branch_target(void *ins,xed_decoded_inst_t *xptr);
 
 
 #define FIX_INTERVALS_AT_RETURN
-#endif
-
-
-
+#endif  // x86_unwind_analysis_h

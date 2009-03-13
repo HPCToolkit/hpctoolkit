@@ -43,7 +43,7 @@
 
 #include "thread_data.h"
 #include "x86-unwind-interval.h"
-#include "validate_return_addr.h"
+#include "x86-validate-retn-addr.h"
 
 //****************************************************************************
 // global data 
@@ -75,10 +75,6 @@ static int csprof_check_fence(void *ip);
 static int unw_step_prefer_sp(void);
 
 static void drop_sample(void);
-
-static validation_status GCC_ATTR_UNUSED validate_return_addr(void *addr, void *generic_arg);
-static validation_status simple_validate_addr(void *addr, void *generic_arg);
-
 
 // tallent: FIXME: obsolete
 void unw_init_arch(void);
@@ -469,13 +465,8 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 {
   unsigned int tmp_ra_offset;
 
-#if 0
   int ret = stack_troll(cursor->sp, &tmp_ra_offset, &validate_return_addr, 
 			(void *)cursor);
-#else
-  int ret = stack_troll(cursor->sp, &tmp_ra_offset, &simple_validate_addr, 
-			(void *)cursor);
-#endif
 
   if (ret != TROLL_INVALID) {
     void  **next_sp = ((void **)((unsigned long) cursor->sp + tmp_ra_offset));
@@ -518,155 +509,11 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 }
 
 
-#include "validate_return_addr.h"
-#include "fnbounds_interface.h"
-
-/* static */ void *
-vget_branch_target(void *ins, xed_decoded_inst_t *xptr, 
-		   xed_operand_values_t *vals)
-{
-  int bytes = xed_operand_values_get_branch_displacement_length(vals);
-  int offset = 0;
-  switch(bytes) {
-  case 1:
-    offset = (signed char) 
-      xed_operand_values_get_branch_displacement_byte(vals,0);
-    break;
-  case 4:
-    offset = xed_operand_values_get_branch_displacement_int32(vals);
-    break;
-  default:
-    assert(0);
-  }
-  void *end_of_call_inst = ins + xed_decoded_inst_get_length(xptr);
-  void *target = end_of_call_inst + offset;
-  return target;
-}
-
-/* static */ void *
-vdecode_call(void *ins, xed_decoded_inst_t *xptr)
-{
-  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
-  const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
-  xed_operand_enum_t   op0_name = xed_operand_name(op0);
-  xed_operand_type_enum_t op0_type = xed_operand_type(op0);
-
-  if (op0_name == XED_OPERAND_RELBR && 
-      op0_type == XED_OPERAND_TYPE_IMM_CONST) {
-    // fprintf(stderr,"looks like constant call\n");
-    xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
-
-    if (xed_operand_values_has_branch_displacement(vals)) {
-      void *vaddr = vget_branch_target(ins, xptr, vals);
-      // fprintf(stderr,"apparent call to %p\n", vaddr);
-      return vaddr;
-    }
-  }
-  return NULL;
-}
-
-
-// see if this works for jumps also.
-// if so,
-// FIXME: rename the vdecode_call function
-//
-void *
-x86_get_branch_target(void *ins,xed_decoded_inst_t *xptr)
-{
-  return vdecode_call(ins,xptr);
-}
-
-/* static */ bool
-confirm_call(void *addr, void *routine)
-{
-  xed_decoded_inst_t xedd;
-  xed_decoded_inst_t *xptr = &xedd;
-  xed_error_enum_t xed_error;
-  xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
-  xed_decoded_inst_zero_keep_mode(xptr);
-  void *possible_call = addr - 5;
-  xed_error = xed_decode(xptr, (uint8_t *)possible_call, 15);
-
-  TMSG(VALIDATE_UNW,"trying to confirm a call from return addr %p", addr);
-
-  if (xed_error != XED_ERROR_NONE) {
-    TMSG(VALIDATE_UNW, "addr %p has XED decode error when attempting confirm",
-	 possible_call);
-    return false;
-  }
-
-  xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
-  switch(xiclass) {
-    case XED_ICLASS_CALL_FAR:
-    case XED_ICLASS_CALL_NEAR:
-      TMSG(VALIDATE_UNW,"call instruction confirmed @ %p", possible_call);
-      void *the_call = vdecode_call(possible_call, xptr);
-      TMSG(VALIDATE_UNW,"comparing discovered call %p to actual routine %p",
-	   the_call, routine);
-      return (the_call == routine);
-      break;
-    default:
-      return false;
-  }
-  EMSG("confirm call shouldn't get here!");
-  return false;
-}
-
-
-static bool
-indirect_or_tail(void *addr, void *my_routine)
-{
-  TMSG(VALIDATE_UNW,"checking for indirect or tail call");
-  return true;
-}
-
-
-static validation_status GCC_ATTR_UNUSED
-validate_return_addr(void *addr, void *generic)
-{
-  unw_cursor_t *cursor = (unw_cursor_t *)generic;
-
-  void *beg, *end;
-  if (fnbounds_enclosing_addr(addr, &beg, &end)) {
-    return UNW_ADDR_WRONG;
-  }
-
-  void *my_routine = cursor->pc;
-  if (fnbounds_enclosing_addr(my_routine,&beg,&end)) {
-    return UNW_ADDR_WRONG;
-  }
-  my_routine = beg;
-  TMSG(VALIDATE_UNW,"beginning of my routine = %p", my_routine);
-  if (confirm_call(addr, my_routine)) {
-    return UNW_ADDR_CONFIRMED;
-  }
-  if (indirect_or_tail(addr, my_routine)) {
-    return UNW_ADDR_PROBABLE;
-  }
-
-  return UNW_ADDR_WRONG;
-}
-
-
-static validation_status
-simple_validate_addr(void *addr, void *generic)
-{
-  void *beg, *end;
-  if (fnbounds_enclosing_addr(addr, &beg, &end)) {
-    return UNW_ADDR_WRONG;
-  }
-
-  return UNW_ADDR_PROBABLE;
-}
-
-
 static int 
 csprof_check_fence(void *ip)
 {
   return monitor_in_start_func_wide(ip);
 }
-
-
 
 //****************************************************************************
 // debug operations

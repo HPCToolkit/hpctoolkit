@@ -1,8 +1,6 @@
 #ifndef VALIDATE_RETURN_ADDR_H
 #define VALIDATE_RETURN_ADDR_H
 
-#include <stdbool.h>
-#include "unwind_cursor.h"
 typedef enum {
   UNW_ADDR_CONFIRMED = 0,
   UNW_ADDR_PROBABLE  = 1,
