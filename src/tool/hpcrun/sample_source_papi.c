@@ -305,7 +305,7 @@ extract_ev_thresh(const char *in,int evlen,char *ev,long *th)
 {
   unsigned int len;
 
-  char *dlm = strrchr(in,':');
+  char *dlm = strrchr(in,'@');
   if (dlm) {
     if (isdigit(dlm[1])){ // assume this is the threshold
       len = MIN(dlm-in,evlen);
