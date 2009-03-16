@@ -148,7 +148,7 @@ METHOD_FN(process_event_list,int lush_metrics)
 {
   long period = 5000L;
 
-  char *_p = strchr(METHOD_CALL(self,get_event_str),':');
+  char *_p = strchr(METHOD_CALL(self,get_event_str),'@');
   if ( _p) {
     period = strtol(_p+1,NULL,10);
   }
