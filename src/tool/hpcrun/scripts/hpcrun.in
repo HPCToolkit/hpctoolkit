@@ -156,7 +156,7 @@ Options: Profiling (Defaults shown in curly brackets {})
      only way to distinguish profiles from multiple runs will be by their 
      creation times or the measurement data that the profiles contain.
 
-  -e <event>[:<period>], --event <event>[:<period>]
+  -e <event>[@<period>], --event <event>[@<period>]
      This argument is used to specify an event that hpcrun should
      use as the basis for statistical sampling along with the event 
      period.  This argument may be used multiple times to specify that 
@@ -164,7 +164,7 @@ Options: Profiling (Defaults shown in curly brackets {})
      have a distinct period.
 
      If no event is specified, the default event specification is
-     WALLCLOCK:5000 (a sample event every 5000 microseconds). You may
+     WALLCLOCK@5000 (a sample event every 5000 microseconds). You may
      specify a shorter or longer period for WALLCLOCK events. Your 
      operating system may silently ensure that your period is not too 
      short and round your specified period up to the system's minimum. 
@@ -206,7 +206,7 @@ Options: Profiling (Defaults shown in curly brackets {})
      single execution.
 
      EXAMPLE
-       hpcrun -e PAPI_TOT_INS:1000000 -e PAPI_FP_INS:100000 A_PROGRAM
+       hpcrun -e PAPI_TOT_INS@1000000 -e PAPI_FP_INS@100000 A_PROGRAM
 
        The above command line would sample A_PROGRAM every 1,000,000 instructions
        and every 100,000 floating point instructions.
@@ -328,7 +328,9 @@ f_getoptions()
 
       -e | --event) 
         shift; 
-        opt_ev_list="$LL$1";
+        # replace : separator with @ to retain support for old syntax
+	LLL=`echo $1 | tr ':' '@'`
+        opt_ev_list="$LL$LLL";
 	LL="$opt_ev_list "
         ;;
 
@@ -409,7 +411,7 @@ f_prepareenv()
   if [ -n "${opt_ev_list}" ]; then
     CSPROF_OPT_EVENT="${opt_ev_list}"
   else
-    CSPROF_OPT_EVENT="WALLCLOCK:5000"
+    CSPROF_OPT_EVENT="WALLCLOCK@5000"
   fi
   export CSPROF_OPT_EVENT
   if [ -n "${opt_debug}" ]; then

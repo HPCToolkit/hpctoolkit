@@ -15,6 +15,8 @@
 #include "pmsg.h"
 #include "tokenize.h"
 
+#define EVENT_PERIOD_SEPARATOR '@'
+
 void
 csprof_process_event_list(const char *evl,event_info *info)
 {
@@ -33,25 +35,17 @@ csprof_process_event_list(const char *evl,event_info *info)
   for(char *event = start_tok(evl); more_tok(); event = next_tok()){
     use_wallclock = (strstr(event,"WALLCLOCK") != NULL);
     if (use_wallclock){
-      char *_p = strchr(event,':');
+      char *_p = strchr(event, EVENT_PERIOD_SEPARATOR);
       if (! _p){
-        csprof_abort("Syntax for wallclock event is: WALLCLOCK:_Your_Period_Here");
-#if 0
-        EMSG("Syntax for wallclock event is: WALLCLOCK:_Your_Period_Here");
-        abort();
-#endif
+        csprof_abort("Syntax for WALLCLOCK event is: WALLCLOCK@_Your_Period_Here_");
       }
       period = strtol(_p+1,NULL,10);
       info->sample_period = period;
-      TMSG(OPTIONS,"wallclock period set to %ld",period);
+      TMSG(OPTIONS,"WALLCLOCK period set to %ld",period);
     }
     use_papi = use_papi || ! use_wallclock;
     if (use_wallclock && use_papi) {
-      csprof_abort("Simultaneous wallclock and papi NOT allowed");
-#if 0
-      EMSG("Simultaneous wallclock and papi NOT allowed");
-      abort();
-#endif
+      csprof_abort("Sampling with both WALLCLOCK and PAPI events in the same execution is forbidden");
     }
   }
   info->sample_source = use_wallclock ? ITIMER : PAPI;
