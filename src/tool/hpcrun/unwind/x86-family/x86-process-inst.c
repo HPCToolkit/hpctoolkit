@@ -40,7 +40,8 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, void **ins_ptr, void *en
     if (hpcrun_is_cold_code(ins, xptr, iarg)) {
       TMSG(COLD_CODE,"  --cold code routine detected!");
       TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
-      unwind_interval *ui = (unwind_interval *) csprof_addr_to_interval_locked(iarg->return_addr);
+      unwind_interval *ui = (unwind_interval *) 
+	csprof_addr_to_interval_locked(iarg->return_addr);
       TMSG(COLD_CODE,"got unwind interval from csprof_addr_to_interval");
       if (ENABLED(COLD_CODE)) {
         dump_ui_stderr(ui);
