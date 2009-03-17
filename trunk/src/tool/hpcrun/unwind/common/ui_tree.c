@@ -43,7 +43,7 @@ static size_t the_ui_size = 0;
 
 extern interval_status build_intervals(char *ins, unsigned int len);
 static void free_ui_tree_locked(interval_tree_node *tree);
-static void free_ui_node_locked(interval_tree_node *node);
+void free_ui_node_locked(interval_tree_node *node);
 
 
 //---------------------------------------------------------------------
@@ -260,7 +260,7 @@ free_ui_tree_locked(interval_tree_node *tree)
 }
 
 
-static void
+void
 free_ui_node_locked(interval_tree_node *node)
 {
   RIGHT(node) = ui_free_list;
