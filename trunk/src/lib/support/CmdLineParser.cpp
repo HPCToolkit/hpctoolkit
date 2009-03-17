@@ -424,6 +424,27 @@ CmdLineParser::isOptArg_long(const char* option)
   return true;
 }
 
+//****************************************************************************
+
+bool
+CmdLineParser::parseArg_bool(const string& value, const char* err_note)
+{
+  const string& x = value;
+  if (x == "true" || x == "1" || x == "yes" || x == "on") {
+    return true;
+  }
+  else if (x == "false" || x == "0" || x == "no" || x == "off") {
+    return false;
+  }
+  else {
+    string msg = "Expected boolean value but received: " + x;
+    if (err_note) {
+      msg = string(err_note) + ": " + msg;
+    }
+    throw Exception(msg);
+  }
+}
+
 
 //****************************************************************************
 
