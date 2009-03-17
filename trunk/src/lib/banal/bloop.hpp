@@ -69,11 +69,17 @@
 namespace banal {
 
 namespace bloop {
-  
+
+  enum NormTy {
+    // TODO: redo along the lines of BinUtil::LM::ReadFlg
+    NormTy_None,
+    NormTy_Safe, // Safe-only
+    NormTy_All
+  };
+
   Prof::Struct::LM* 
   makeStructure(BinUtil::LM* lm, 
-		bool doNormalize = true,
-		bool doNormalizeUnsafe = true,
+		NormTy doNormalizeTy,
 		bool isIrrIvalLoop = false,
 		bool isFwdSubst = false,
 		ProcNameMgr* procNameMgr = NULL,
