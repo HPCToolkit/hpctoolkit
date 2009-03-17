@@ -59,6 +59,9 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
+
+#include <lib/banal/bloop.hpp>
+
 #include <lib/support/CmdLineParser.hpp>
 
 //*************************** Forward Declarations **************************
@@ -92,11 +95,10 @@ public:
 
   // Parsed Data: optional arguments
   std::string lush_agent;
-  std::string searchPathStr;      // default: "."
-  bool isIrreducibleIntervalLoop; // default: true
-  bool isForwardSubstitution;     // default: false
-  bool doNormalize;               // default: true
-  bool doNormalizeUnsafe;         // default: true
+  std::string searchPathStr;          // default: "."
+  bool isIrreducibleIntervalLoop;     // default: true
+  bool isForwardSubstitution;         // default: false
+  banal::bloop::NormTy doNormalizeTy; // default: NormTy_All
   std::string dbgProcGlob;
 
   std::string out_filenm;
@@ -107,6 +109,9 @@ public:
 
 private:
   void Ctor();
+
+  banal::bloop::NormTy
+  parseArg_norm(const std::string& value, char* err_note);
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];

@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2009/02/09}
+\setDate{ 2009/03/16}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -109,23 +109,26 @@ This option is useful when a compiler records the same filename in \emph{differe
 For a recursive search, append a '*' after the last slash, e.g., \verb+'/mypath/*'+ (quote or escape to protect from the shell). 
 May pass multiple times.
 
-\item[\Opt{-i}, \Opt{--irreducible-interval-as-loop-off}]
-Do not treat irreducible intervals as loops.
+\item[\OptArg{--loop-intvl}{yes|no}]
+Should loop recovery heuristics assume an irreducible interval is a loop? \{yes\}.
 
-\item[\Opt{-f}, \Opt{--forward-substitution-off}]
-Assume that forward substitution does not occur.  (Useful for handling erroneous PGI debugging info.)
+\item[\OptArg{--loop-fwd-subst}{yes|no}]
+Should loop recovery heuristics assume forward substitution may occur? \{yes\}.
 
-\item[\Opt{-n}, \Opt{--normalize-off}]
-Turn off scope tree normalization.
+\item[\OptArg{-N}{all|safe|none}, \OptArg{--normalize}{all|safe|none}]
+Specify normalizations to apply to program structure. \{all\}
+  \begin{itemize}
+  \item \textbf{all}: apply all normalizations
+  \item \textbf{safe}: apply only safe normalizations
+  \item \textbf{none}: apply no normalizations
+  \end{itemize}
 
-\item[\Opt{-u}, \Opt{--unsafe-normalize-off}]
-Turn off potentially unsafe normalization.
 \end{Description}
 
 
 \subsection{Options: Output}
 \item[\OptArg{-o}{file}, \OptArg{--output}{file}]
-Write results to \Arg{file}.  Use `-' for \File{stdout}. \{\File{basename(<binary>).hpcstruct}\}
+Write results to \Arg{file}.  Use `-' for \File{stdout}. \{\File{basename(}\Arg{binary}\File{).hpcstruct}\}
 
 \begin{Description}
 \item[\Opt{--compact}]

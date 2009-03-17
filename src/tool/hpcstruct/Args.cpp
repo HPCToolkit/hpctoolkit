@@ -110,14 +110,17 @@ Options: Structure recovery\n\
                        recursive search, append a '*' after the last slash,\n\
                        e.g., '/mypath/*' (quote or escape to protect from\n\
                        the shell.) May pass multiple times.\n\
-  -i, --irreducible-interval-as-loop-off\n\
-                       Do not treat irreducible intervals as loops\n\
-  -f, --forward-substitution-off\n\
-                       Assume that forward substitution does not occur.\n\
-                       (Useful for handling erroneous PGI debugging info.)\n\
-  -n, --normalize-off  Turn off scope tree normalization\n\
-  -u, --unsafe-normalize-off\n\
-                       Turn off potentially unsafe normalization\n\
+  --loop-intvl <yes|no>\n\
+                       Should loop recovery heuristics assume an irreducible\n\
+                       interval is a loop? {yes}\n\
+  --loop-fwd-subst <yes|no>\n\
+                       Should loop recovery heuristics assume forward\n\
+                       substitution may occur? {yes}\n\
+  -N <all|safe|none>, --normalize <all|safe|none>\n\
+                       Specify normalizations to apply to structure. {all}\n\
+                         all : apply all normalizations\n\
+                         safe: apply only safe normalizations\n\
+                         none: apply no normalizations\n\
 \n\
 Options: Output:\n\
   -o <file>, --output <file>\n\
@@ -137,17 +140,14 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Structure recovery options
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  ":",
      NULL },
-  { 'i', "irreducible-interval-as-loop-off",
-                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  { 'f', "forward-substitution-off",
-                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
 
-  { 'n', "normalize-off",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+  {  0 , "loop-intvl",      CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
-  { 'u', "unsafe-normalize-off", 
-                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+  {  0 , "loop-fwd-subst",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  // Li, Lf
+
+  { 'N', "normalize",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
     
   // Output options
@@ -196,8 +196,7 @@ Args::Ctor()
   searchPathStr = ".";
   isIrreducibleIntervalLoop = true;
   isForwardSubstitution = true;
-  doNormalize = true;
-  doNormalizeUnsafe = true;
+  doNormalizeTy = banal::bloop::NormTy_All;
   prettyPrintOutput = true;
 }
 
@@ -292,17 +291,19 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("include")) {
       searchPathStr += ":" + parser.getOptArg("include");
     }
-    if (parser.isOpt("irreducible-interval-as-loop-off")) { 
-      isIrreducibleIntervalLoop = false;
+    if (parser.isOpt("loop-intvl")) {
+      const string& arg = parser.getOptArg("loop-intvl");
+      isIrreducibleIntervalLoop = 
+	CmdLineParser::parseArg_bool(arg, "--loop-intvl option");
     }
-    if (parser.isOpt("forward-substitution-off")) { 
-      isForwardSubstitution = false;
+    if (parser.isOpt("loop-fwd-subst")) {
+      const string& arg = parser.getOptArg("loop-fwd-subst");
+      isForwardSubstitution = 
+	CmdLineParser::parseArg_bool(arg, "--loop-fwd-subst option");
     }
-    if (parser.isOpt("normalize-off")) { 
-      doNormalize = false;
-    }
-    if (parser.isOpt("unsafe-normalize-off")) { 
-      doNormalizeUnsafe = false;
+    if (parser.isOpt("normalize")) { 
+      const string& arg = parser.getOptArg("normalize");
+      doNormalizeTy = parseArg_norm(arg, "--normalize option");
     }
 
     // Check for other options: Output options
@@ -338,8 +339,6 @@ void
 Args::dump(std::ostream& os) const
 {
   os << "Args.cmd= " << getCmd() << endl; 
-  os << "Args.prettyPrintOutput= " << prettyPrintOutput << endl;
-  os << "Args.doNormalize= " << doNormalize << endl;
   os << "Args.in_filenm= " << in_filenm << endl;
 }
 
@@ -348,6 +347,26 @@ void
 Args::ddump() const
 {
   dump(std::cerr);
+}
+
+
+//***************************************************************************
+
+banal::bloop::NormTy
+Args::parseArg_norm(const string& value, char* err_note)
+{
+  if (value == "all") {
+    return banal::bloop::NormTy_All;
+  }
+  else if (value == "safe") {
+    return banal::bloop::NormTy_Safe;
+  }
+  else if (value == "none") {
+    return banal::bloop::NormTy_None;
+  }
+  else {
+    ARG_ERROR(err_note << ": Unexpected value received: " << value);
+  }
 }
 
 

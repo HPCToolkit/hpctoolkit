@@ -298,8 +298,7 @@ banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree,
 //   optimizations such as loop unrolling.
 Prof::Struct::LM*
 banal::bloop::makeStructure(BinUtil::LM* lm, 
-			    bool doNormalize,
-			    bool doNormalizeUnsafe,
+			    NormTy doNormalizeTy,
 			    bool isIrrIvalLoop,
 			    bool isFwdSubst,
 			    ProcNameMgr* procNmMgr,
@@ -330,7 +329,8 @@ banal::bloop::makeStructure(BinUtil::LM* lm,
   delete mp;
 
   // 3. Normalize
-  if (doNormalize) {
+  if (doNormalizeTy != NormTy_None) {
+    bool doNormalizeUnsafe = (doNormalizeTy == NormTy_All);
     bool result = normalize(lmStrct, doNormalizeUnsafe);
     DIAG_Assert(result, "Normalization result should never be false!");
   }
