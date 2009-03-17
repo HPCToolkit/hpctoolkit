@@ -69,6 +69,7 @@ extern "C" {
   void link_ui(unwind_interval *current, unwind_interval *next);
   void dump_ui(unwind_interval *u, int dump_to_stderr);
   void dump_ui_stderr(unwind_interval *u);
+  void dump_ui_log(unwind_interval *u);
   void dump_ui_troll(unwind_interval *u);
   long ui_count();
 

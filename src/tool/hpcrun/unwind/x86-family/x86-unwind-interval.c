@@ -155,21 +155,21 @@ _dump_ui_str(unwind_interval *u, char *buf, size_t len)
 
 
 void
-dump_ui(unwind_interval *u, int dump_to_stderr)
+dump_ui_log(unwind_interval *u)
 {
   char buf[1000];
 
   _dump_ui_str(u, buf, sizeof(buf));
 
-#if 0
-  sprintf(buf, "UNW: start=%p end =%p ra_status=%s sp_ra_pos=%d sp_bp_pos=%d bp_status=%s "
-	  "bp_ra_pos = %d bp_bp_pos=%d next=%p prev=%p prev_canonical=%p rest_canon=%d\n", 
-	  (void *) u->common.start, (void *) u->common.end, ra_status_string(u->ra_status),
-	  u->sp_ra_pos, u->sp_bp_pos, 
-	  bp_status_string(u->bp_status),
-	  u->bp_ra_pos, u->bp_bp_pos,
-	  u->common.next, u->common.prev, u->prev_canonical, u->restored_canonical); 
-#endif
+  EMSG(buf);
+}
+
+void
+dump_ui(unwind_interval *u, int dump_to_stderr)
+{
+  char buf[1000];
+
+  _dump_ui_str(u, buf, sizeof(buf));
 
   PMSG(UNW,buf);
   if (dump_to_stderr) { 

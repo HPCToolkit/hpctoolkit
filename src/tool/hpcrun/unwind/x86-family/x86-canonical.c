@@ -27,7 +27,7 @@ unwind_interval *find_first_non_decr(unwind_interval *first,
 
 void 
 reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current, 
-			    unwind_interval **next, char *ins, char *end, 
+			    unwind_interval **next, char *ins, char *end,
 			    bool irdebug, unwind_interval *first, 
 			    highwatermark_t *highwatermark, 
 			    unwind_interval **canonical_interval, 
