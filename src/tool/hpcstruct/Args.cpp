@@ -128,6 +128,9 @@ Options: Output:\n\
   --compact            Generate compact output, eliminating extra white space\n\
 ";
 
+// Possible extensions:
+//  --Li : Select the opposite of the --loop-intvl default.
+//  --Lf : Select the opposite of the --loop-fwd-subst default.
 
 
 #define CLP CmdLineParser
@@ -145,7 +148,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      NULL },
   {  0 , "loop-fwd-subst",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
-  // Li, Lf
 
   { 'N', "normalize",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
