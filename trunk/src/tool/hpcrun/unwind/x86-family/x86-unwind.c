@@ -45,6 +45,7 @@
 #include "x86-unwind-interval.h"
 #include "x86-validate-retn-addr.h"
 
+
 //****************************************************************************
 // global data 
 //****************************************************************************
@@ -70,36 +71,104 @@ static int DEBUG_NO_LONGJMP = 0;
 
 #define MYDBG 0
 
-static void update_cursor_with_troll(unw_cursor_t *cursor, int offset);
 
-static int csprof_check_fence(void *ip);
+static void 
+update_cursor_with_troll(unw_cursor_t *cursor, int offset);
 
-static int unw_step_prefer_sp(void);
+static int 
+csprof_check_fence(void *ip);
 
-static void drop_sample(void);
+static void 
+drop_sample(void);
 
-// tallent: FIXME: obsolete
-void unw_init_arch(void);
-void unw_init_cursor_arch(void* context, unw_cursor_t *cursor);
-int  unw_get_reg_arch(unw_cursor_t *c, int reg_id, void **reg_value);
+
+static int
+unw_step_prefer_sp(void);
+
+static step_state 
+unw_step_sp(unw_cursor_t *cursor);
+
+static step_state
+unw_step_bp(unw_cursor_t *cursor);
+
+static step_state
+unw_step_std(unw_cursor_t *cursor);
+
+static step_state
+t1_dbg_unw_step(unw_cursor_t *cursor);
+
+static step_state (*dbg_unw_step)(unw_cursor_t *cursor) = t1_dbg_unw_step;
+
+
+//***************************************************************************
+// macros
+//***************************************************************************
+
+#if defined(__LIBCATAMOUNT__)
+#undef __CRAYXT_CATAMOUNT_TARGET
+#define __CRAYXT_CATAMOUNT_TARGET
+#endif
+
+#define GET_MCONTEXT(context) (&((ucontext_t *)context)->uc_mcontext)
+
+//-------------------------------------------------------------------------
+// define macros for extracting pc, bp, and sp from machine contexts. these
+// macros bridge differences between machine context representations for
+// Linux and Catamount
+//-------------------------------------------------------------------------
+#ifdef __CRAYXT_CATAMOUNT_TARGET
+
+#define MCONTEXT_PC(mctxt) ((void *)   mctxt->sc_rip)
+#define MCONTEXT_BP(mctxt) ((void **)  mctxt->sc_rbp)
+#define MCONTEXT_SP(mctxt) ((void **)  mctxt->sc_rsp)
+
+#else
+
+#define MCONTEXT_REG(mctxt, reg) (mctxt->gregs[reg])
+#define MCONTEXT_PC(mctxt) ((void *)  MCONTEXT_REG(mctxt, REG_RIP))
+#define MCONTEXT_BP(mctxt) ((void **) MCONTEXT_REG(mctxt, REG_RBP))
+#define MCONTEXT_SP(mctxt) ((void **) MCONTEXT_REG(mctxt, REG_RSP))
+
+#endif
 
 
 //****************************************************************************
 // interface functions
 //****************************************************************************
 
+void *
+context_pc(void* context)
+{
+  mcontext_t *mc = GET_MCONTEXT(context);
+  return MCONTEXT_PC(mc);
+}
+
+
 void
 unw_init(void)
 {
-  unw_init_arch();
+  x86_family_decoder_init();
   csprof_interval_tree_init();
+}
+
+
+int 
+unw_get_reg(unw_cursor_t *cursor, int reg_id, void **reg_value)
+{
+  assert(reg_id == UNW_REG_IP);
+  *reg_value = cursor->pc;
+  return 0;
 }
 
 
 void 
 unw_init_cursor(unw_cursor_t* cursor, void* context)
 {
-  unw_init_cursor_arch(context, cursor);
+  mcontext_t *mc = GET_MCONTEXT(context);
+
+  cursor->pc = MCONTEXT_PC(mc); 
+  cursor->bp = MCONTEXT_BP(mc);
+  cursor->sp = MCONTEXT_SP(mc);
 
   TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, bp=%p", 
        cursor->pc, cursor->ra, cursor->sp, cursor->bp);
@@ -116,13 +185,84 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
 }
 
 
-int 
-unw_get_reg(unw_cursor_t *cursor, int reg_id, void **reg_value)
+step_state
+unw_step (unw_cursor_t *cursor)
 {
-   unw_get_reg_arch(cursor, reg_id, reg_value);
-   return 0;
+  if ( ENABLED(DBG_UNW_STEP) ){
+    return dbg_unw_step(cursor);
+  }
+
+  //-----------------------------------------------------------
+  // check if we have reached the end of our unwind, which is
+  // demarcated with a fence. 
+  //-----------------------------------------------------------
+  if (csprof_check_fence(cursor->pc)){
+    TMSG(UNW,"current pc in monitor fence", cursor->pc);
+    return STEP_STOP;
+  }
+
+
+  // current frame
+  void** bp = cursor->bp;
+  void*  sp = cursor->sp;
+  void*  pc = cursor->pc;
+
+  unwind_interval* uw = (unwind_interval *)cursor->intvl;
+
+  int unw_res;
+
+  switch (uw->ra_status){
+  case RA_SP_RELATIVE:
+    unw_res = unw_step_sp(cursor);
+    break;
+    
+  case RA_BP_FRAME:
+    unw_res = unw_step_bp(cursor);
+    break;
+    
+  case RA_STD_FRAME:
+    unw_res = unw_step_std(cursor);
+    break;
+
+  default:
+    EMSG("error: ILLEGAL UNWIND INTERVAL");
+    dump_ui((unwind_interval *)cursor->intvl, 0);
+    assert(0);
+  }
+
+  if (unw_res != -1) {
+    //TMSG(UNW,"=========== unw_step Succeeds ============== ");
+    return unw_res;
+  }
+
+  PMSG_LIMIT(TMSG(TROLL,"error: unw_step: pc=%p, bp=%p, sp=%p", pc, bp, sp));
+  dump_ui_troll(uw);
+  //PMSG_LIMIT(TMSG(TROLL,"UNW STEP calls stack troll")); tallent: redundant?
+
+  if (ENABLED(TROLL_WAIT)) {
+    fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
+            "Maybe call dbg_set_flag(DBG_TROLL_WAIT,0) after attached\n",
+	    getpid());
+    
+    // spin wait for developer to attach a debugger and clear the flag 
+    while(DEBUG_WAIT_BEFORE_TROLLING);  
+  }
+  
+  update_cursor_with_troll(cursor, 1);
+  return STEP_TROLL;
 }
 
+
+void
+unw_throw(void)
+{
+  drop_sample();
+}
+
+
+//****************************************************************************
+// unw_step helpers
+//****************************************************************************
 
 // FIXME: make this a selectable paramter, so that all manner of strategies 
 // can be selected
@@ -138,7 +278,7 @@ unw_step_prefer_sp(void)
 }
 
 
-step_state
+static step_state
 unw_step_sp(unw_cursor_t *cursor)
 {
   void *sp, **bp, *pc; 
@@ -233,7 +373,7 @@ unw_step_sp(unw_cursor_t *cursor)
 }
 
 
-step_state
+static step_state
 unw_step_bp(unw_cursor_t *cursor)
 {
   void *sp, **bp, *pc; 
@@ -295,7 +435,7 @@ unw_step_bp(unw_cursor_t *cursor)
 }
 
 
-step_state
+static step_state
 unw_step_std(unw_cursor_t *cursor)
 {
   int unw_res;
@@ -317,6 +457,7 @@ unw_step_std(unw_cursor_t *cursor)
   }
   return unw_res;
 }
+
 
 
 // special steppers to artificially introduce error conditions
@@ -345,88 +486,6 @@ t2_dbg_unw_step(unw_cursor_t *cursor)
   return rv;
 }
 
-
-static step_state (*dbg_unw_step)(unw_cursor_t *cursor) = t1_dbg_unw_step;
-
-extern int samples_taken;
-
-
-step_state
-unw_step (unw_cursor_t *cursor)
-{
-  if ( ENABLED(DBG_UNW_STEP) ){
-    return dbg_unw_step(cursor);
-  }
-
-  //-----------------------------------------------------------
-  // check if we have reached the end of our unwind, which is
-  // demarcated with a fence. 
-  //-----------------------------------------------------------
-  if (csprof_check_fence(cursor->pc)){
-    TMSG(UNW,"current pc in monitor fence", cursor->pc);
-    return STEP_STOP;
-  }
-
-  void *sp, **bp, *pc; 
-
-  unwind_interval *uw;
-
-  // current frame
-  bp = cursor->bp;
-  sp = cursor->sp;
-  pc = cursor->pc;
-  uw = (unwind_interval *)cursor->intvl;
-
-  int unw_res;
-
-  switch (uw->ra_status){
-  case RA_SP_RELATIVE:
-    unw_res = unw_step_sp(cursor);
-    break;
-    
-  case RA_BP_FRAME:
-    unw_res = unw_step_bp(cursor);
-    break;
-    
-  case RA_STD_FRAME:
-    unw_res = unw_step_std(cursor);
-    break;
-
-  default:
-    EMSG("error: ILLEGAL UNWIND INTERVAL");
-    dump_ui((unwind_interval *)cursor->intvl, 0);
-    assert(0);
-  }
-
-  if (unw_res != -1) {
-    TMSG(UNW,"=========== unw_step Succeeds ============== ");
-    return unw_res;
-  }
-
-  PMSG_LIMIT(TMSG(TROLL,"UNW STEP FAILURE : pc=%p, bp=%p, sp=%p", pc, bp, sp));
-  dump_ui_troll(uw);
-  //PMSG_LIMIT(TMSG(TROLL,"UNW STEP calls stack troll")); tallent: redundant?
-
-  if (ENABLED(TROLL_WAIT)) {
-    fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
-            "Maybe call dbg_set_flag(DBG_TROLL_WAIT,0) after attached\n",
-	    getpid());
-    
-    // spin wait for developer to attach a debugger and clear the flag 
-    while(DEBUG_WAIT_BEFORE_TROLLING);  
-  }
-  
-  update_cursor_with_troll(cursor, 1);
-  return STEP_TROLL;
-}
-
-
-// public interface to local drop sample
-void
-unw_throw(void)
-{
-  drop_sample();
-}
 
 
 
@@ -505,6 +564,7 @@ csprof_check_fence(void *ip)
   return monitor_in_start_func_wide(ip);
 }
 
+
 //****************************************************************************
 // debug operations
 //****************************************************************************
@@ -514,6 +574,12 @@ unw_cursor_t _dbg_cursor;
 void dbg_init_cursor(void *context)
 {
   DEBUG_NO_LONGJMP = 1;
-  unw_init_cursor_arch(context, &_dbg_cursor);
+
+  mcontext_t *mc = GET_MCONTEXT(context);
+
+  _dbg_cursor.pc = MCONTEXT_PC(mc); 
+  _dbg_cursor.bp = MCONTEXT_BP(mc);
+  _dbg_cursor.sp = MCONTEXT_SP(mc);
+
   DEBUG_NO_LONGJMP = 0;
 }
