@@ -68,6 +68,8 @@ static int DEBUG_NO_LONGJMP = 0;
 // forward declarations 
 //****************************************************************************
 
+#define MYDBG 0
+
 static void update_cursor_with_troll(unw_cursor_t *cursor, int offset);
 
 static int csprof_check_fence(void *ip);
@@ -97,32 +99,20 @@ unw_init(void)
 void 
 unw_init_cursor(unw_cursor_t* cursor, void* context)
 {
-  extern void dump_ui(unwind_interval *u, int dump_to_stdout);
-
-#if 0
-  TMSG(UNW,"init prim unw called with context = %p, cursor_p = %p\n",
-       context, cursor);
-#endif
-
   unw_init_cursor_arch(context, cursor);
 
-  TMSG(UNW,"INIT CURSOR: frame pc = %p, frame bp = %p, frame sp = %p", 
-       cursor->pc, cursor->bp, cursor->sp);
+  TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, bp=%p", 
+       cursor->pc, cursor->ra, cursor->sp, cursor->bp);
 
   cursor->flags = 0; // trolling_used
   cursor->intvl = csprof_addr_to_interval(cursor->pc);
 
   if (!cursor->intvl) {
-    TMSG(TROLL,"UNW INIT FAILURE: frame pc = %p, frame bp = %p, frame sp = %p",
-         cursor->pc, cursor->bp, cursor->sp);
-
-    TMSG(TROLL,"UNW INIT calls stack troll");
-
+    // TMSG(TROLL,"UNW INIT calls stack troll");
     update_cursor_with_troll(cursor, 0);
-  } 
+  }
 
-  TMSG(UNW,"dumping the found interval");
-  dump_ui((unwind_interval *)cursor->intvl, 0); // debug for now
+  if (MYDBG) { dump_ui((unwind_interval *)cursor->intvl, 0); }
 }
 
 
@@ -166,8 +156,7 @@ unw_step_sp(unw_cursor_t *cursor)
   pc = cursor->pc;
   uw = (unwind_interval *)cursor->intvl;
   TMSG(UNW,"cursor in ==> bp=%p, sp=%p, pc=%p", bp, sp, pc);
-  TMSG(UNW,"unwind interval in below:");
-  dump_ui(uw, 0);
+  if (MYDBG) { dump_ui(uw, 0); }
 
   next_sp  = (void **)(sp + uw->sp_ra_pos);
   next_pc  = *next_sp;
@@ -261,7 +250,7 @@ unw_step_bp(unw_cursor_t *cursor)
 
   TMSG(UNW,"cursor in ==> bp=%p, sp=%p, pc=%p", bp, sp, pc);
   TMSG(UNW,"unwind interval in below:");
-  dump_ui(uw, 0);
+  if (MYDBG) { dump_ui(uw, 0); }
 
   if (!(sp <= (void *)bp && (void *)bp < monitor_stack_bottom())) {
     TMSG(UNW_STRATEGY_ERROR,"bp unwind attempted, but incoming bp(%p) was not"
@@ -400,23 +389,23 @@ unw_step (unw_cursor_t *cursor)
     break;
     
   case RA_STD_FRAME:
-       unw_res = unw_step_std(cursor);
-       break;
+    unw_res = unw_step_std(cursor);
+    break;
 
   default:
-    EMSG("ILLEGAL UNWIND INTERVAL");
-    dump_ui((unwind_interval *)cursor->intvl, 0); // debug for now
+    EMSG("error: ILLEGAL UNWIND INTERVAL");
+    dump_ui((unwind_interval *)cursor->intvl, 0);
     assert(0);
   }
-  if (unw_res != -1){
+
+  if (unw_res != -1) {
     TMSG(UNW,"=========== unw_step Succeeds ============== ");
     return unw_res;
   }
-  PMSG_LIMIT(TMSG(TROLL,"UNW STEP FAILURE : cursor pc = %p, cursor bp = %p,"
-		  " cursor sp = %p", pc, bp, sp));
-  PMSG_LIMIT(TMSG(TROLL,"unwind interval below:"));
+
+  PMSG_LIMIT(TMSG(TROLL,"UNW STEP FAILURE : pc=%p, bp=%p, sp=%p", pc, bp, sp));
   dump_ui_troll(uw);
-  PMSG_LIMIT(TMSG(TROLL,"UNW STEP calls stack troll"));
+  //PMSG_LIMIT(TMSG(TROLL,"UNW STEP calls stack troll")); tallent: redundant?
 
   if (ENABLED(TROLL_WAIT)) {
     fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
@@ -430,6 +419,7 @@ unw_step (unw_cursor_t *cursor)
   update_cursor_with_troll(cursor, 1);
   return STEP_TROLL;
 }
+
 
 // public interface to local drop sample
 void
