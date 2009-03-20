@@ -50,7 +50,7 @@ typedef enum {
   FrmFlg_RAReg     = 0x1, // RA is in a register (otherwise, in the frame)
   FrmFlg_FrmSzUnk  = 0x2, // frame size is unknown (e.g., alloca)
   FrmFlg_FPOfstPos = 0x4, // offsets from FP are positive (not negative)
-  FrmFlg_FPInV0    = 0x8, // (parent) FP has been moved to register v0
+  FrmFlg_FPInV     = 0x8, // (parent) FP has been moved to register v0/v1
 
 } frameflg_t;
 

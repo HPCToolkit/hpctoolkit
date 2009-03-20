@@ -25,6 +25,7 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
+#include <include/gcc-attr.h>
 
 #include "mips-unwind-cfg.h"
 #include "mips-unwind-interval.h"
@@ -243,11 +244,14 @@ static inline bool
 isAdjustSPByVar(uint32_t insn)
 {
   // example: dsubu sp,sp,v0
+  // example: daddu sp,sp,v0 (where v0 is negative)
   uint32_t op = (insn & MIPS_OPCODE_MASK);
   uint32_t op_spc = (insn & MIPS_OPClass_Special_MASK);
   if (op == MIPS_OPClass_Special &&
-      (op_spc == MIPS_OP_DSUBU || op_spc == MIPS_OP_SUBU || 
-       op_spc == MIPS_OP_DSUB || op_spc == MIPS_OP_SUB)) {
+      ( op_spc == MIPS_OP_DSUBU || op_spc == MIPS_OP_SUBU || 
+	op_spc == MIPS_OP_DSUB  || op_spc == MIPS_OP_SUB ||
+	op_spc == MIPS_OP_DADDU || op_spc == MIPS_OP_ADDU || 
+	op_spc == MIPS_OP_DADD  || op_spc == MIPS_OP_ADD ) ) {
     // The non-'U' probably never occur since they trap on overflow.
     return ((MIPS_OPND_REG_D(insn) == MIPS_REG_SP) && 
 	    (MIPS_OPND_REG_S(insn) == MIPS_REG_SP));
@@ -297,6 +301,15 @@ isJumpToReg(uint32_t insn, int reg_to)
     return (MIPS_OPND_REG_S(insn) == reg_to);
   }
   return false;
+}
+
+
+static inline bool 
+isCall(uint32_t insn)
+{
+  return ( (insn & MIPS_OPCODE_MASK) == MIPS_OPClass_Special &&
+	   (insn & MIPS_OPClass_Special_MASK) == MIPS_OP_JALR &&
+	   MIPS_OPND_REG_D(insn) == MIPS_REG_RA );
 }
 
 
@@ -418,6 +431,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
   UNW_INTERVAL_t canonSP_ui = beg_ui;
   UNW_INTERVAL_t canonFP_ui = UNW_INTERVAL_NULL; // currently not needed
 
+  int fp_saved_reg = 0;
 
   uint32_t* cur_insn = beg_insn;
   while (cur_insn < end_insn) {
@@ -491,14 +505,21 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     else if (isLoadRegFromFrame(*cur_insn, MIPS_REG_SP, MIPS_REG_RA)) {
       checkUI(UI_ARG(ui), FrmTy_SP, cur_insn);
 
+      // sanity check: sp_arg must be positive!
+      // TODO: apply this check to other SP-relative ops.  Fix prior intervals
+      int sp_arg = UI_FLD(ui,sp_arg);
+      if ( !(sp_arg > 0) ) {
+	sp_arg = UI_FLD(canonSP_ui,sp_arg);
+      }
+
       nxt_ui = NEW_UI(nextInsn(cur_insn), FrmTy_SP, FrmFlg_RAReg,
-		      UI_FLD(ui,sp_arg), UI_FLD(ui,fp_arg), MIPS_REG_RA, ui);
+		      sp_arg, UI_FLD(ui,fp_arg), MIPS_REG_RA, ui);
       ui = nxt_ui;
     }
 
 
     //--------------------------------------------------
-    // 2. General: interior returns/epilogues
+    // 2. General: interior epilogues before returns
     //--------------------------------------------------
     else if (isJumpToReg(*cur_insn, MIPS_REG_RA)
 	     && ((cur_insn + 1/*delay slot*/ + 1) < end_insn)) {
@@ -515,6 +536,24 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
 			UI_FLD(canon_ui,ra_arg), ui);
 	ui = nxt_ui;
 	cur_insn++; // skip delay slot and align new interval
+      }
+    }
+
+    //--------------------------------------------------
+    // General: interior epilogues before callsites
+    //--------------------------------------------------
+    else if (isCall(*cur_insn)
+	     && frameflg_isset(UI_FLD(ui,flgs), FrmFlg_RAReg)) {
+      // The callsite (jalr) is clobbering r31, but RA is in r31.  We
+      // assume this is an inconsistency arising from control flow
+      // jumping around an interior epilogue before the callsite.
+      // Restore the canonical interval.
+      if (!ui_cmp(UI_ARG(ui), UI_ARG(canon_ui))) {
+	nxt_ui = NEW_UI(nextInsn(cur_insn),
+			UI_FLD(canon_ui,ty), UI_FLD(canon_ui,flgs), 
+			UI_FLD(canon_ui,sp_arg), UI_FLD(canon_ui,fp_arg),
+			UI_FLD(canon_ui,ra_arg), ui);
+	ui = nxt_ui;
       }
     }
 
@@ -552,10 +591,15 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
     // *** canonical frame ***
     //--------------------------------------------------
     else if (isMoveReg(*cur_insn, MIPS_REG_V0, MIPS_REG_FP)) {
-      frameflg_set(&UI_FLD(ui,flgs), FrmFlg_FPInV0);
+      frameflg_set(&UI_FLD(ui,flgs), FrmFlg_FPInV);
+      fp_saved_reg = MIPS_REG_V0;
     }
-    else if (frameflg_isset(UI_FLD(ui,flgs), FrmFlg_FPInV0) &&
-	     isStoreRegInFrame(*cur_insn, MIPS_REG_FP, MIPS_REG_V0)) {
+    else if (isMoveReg(*cur_insn, MIPS_REG_V1, MIPS_REG_FP)) {
+      frameflg_set(&UI_FLD(ui,flgs), FrmFlg_FPInV);
+      fp_saved_reg = MIPS_REG_V1;
+    }
+    else if (frameflg_isset(UI_FLD(ui,flgs), FrmFlg_FPInV) &&
+	     isStoreRegInFrame(*cur_insn, MIPS_REG_FP, fp_saved_reg)) {
       int sp_arg, ra_arg;
       if (UI_FLD(ui,ty) == FrmTy_SP) {
 	sp_arg = unwarg_NULL;
@@ -586,7 +630,9 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
       frameflg_set(&UI_FLD(ui,flgs), FrmFlg_FPOfstPos);
     }
     else if (isAdjustSPByVar(*cur_insn)) {
-      // if canonical interval has been set and is not an SP-frame...
+      // TODO: ensure "daddu sp,sp,v0" is allocation rather than deallocation
+
+      // if canonical interval has been set and it is an SP-frame...
       if (!UI_CMP_OPT(canon_ui, beg_ui) && UI_FLD(canon_ui,ty) == FrmTy_SP) {
 	int16_t flgs = UI_FLD(ui,flgs);
 	int sp_arg, fp_arg, ra_arg;
@@ -668,7 +714,7 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
 }
 
 
-static void* 
+static void* GCC_ATTR_UNUSED
 mips_find_proc(void* pc, void* module_beg)
 {
   // If we are within a valid text segment and if this is not the

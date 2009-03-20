@@ -316,7 +316,7 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
       cursor->ra = 
 	(void*)(uintptr_t)ucontext_getreg(context, UI_FLD(intvl, ra_arg));
     }
-    if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_FPInV0)) {
+    if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_FPInV)) {
       // FIXME: it would be nice to preserve the parent FP
     }
   }
