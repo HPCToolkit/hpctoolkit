@@ -201,12 +201,6 @@ unw_step (unw_cursor_t *cursor)
     return STEP_STOP;
   }
 
-
-  // current frame
-  void** bp = cursor->bp;
-  void*  sp = cursor->sp;
-  void*  pc = cursor->pc;
-
   unwind_interval* uw = (unwind_interval *)cursor->intvl;
 
   int unw_res;
@@ -281,25 +275,22 @@ unw_step_prefer_sp(void)
 static step_state
 unw_step_sp(unw_cursor_t *cursor)
 {
-  void *sp, **bp, *pc; 
-  void **next_sp, **next_bp, *next_pc;
-
-  unwind_interval *uw;
-
   TMSG(UNW_STRATEGY,"Using SP step");
 
   // void *stack_bottom = monitor_stack_bottom();
 
   // current frame
-  bp = cursor->bp;
-  sp = cursor->sp;
-  pc = cursor->pc;
-  uw = (unwind_interval *)cursor->intvl;
-  TMSG(UNW,"cursor in ==> bp=%p, sp=%p, pc=%p", bp, sp, pc);
+  void** bp = cursor->bp;
+  void*  sp = cursor->sp;
+  void*  pc = cursor->pc;
+  unwind_interval* uw = (unwind_interval *)cursor->intvl;
+  
+  TMSG(UNW,"step_sp: bp=%p, sp=%p, pc=%p", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }
 
-  next_sp  = (void **)(sp + uw->sp_ra_pos);
-  next_pc  = *next_sp;
+  void** next_bp = NULL;
+  void** next_sp = (void **)(sp + uw->sp_ra_pos);
+  void*  next_pc  = *next_sp;
 
   TMSG(UNW,"sp potential advance cursor: next_sp=%p ==> next_pc = %p",
        next_sp, next_pc);
