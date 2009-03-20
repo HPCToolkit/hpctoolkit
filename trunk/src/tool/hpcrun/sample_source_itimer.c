@@ -43,33 +43,49 @@
  * macros
  *****************************************************************************/
 
-#define CSPROF_PROFILE_SIGNAL SIGPROF
-#define CSPROF_PROFILE_TIMER ITIMER_PROF
+#define CSPROF_PROFILE_SIGNAL  SIGPROF
+#define CSPROF_PROFILE_TIMER   ITIMER_PROF
 
 #ifdef CATAMOUNT
 # define CSPROF_PROFILE_SIGNAL SIGALRM
-# define CSPROF_PROFILE_TIMER ITIMER_REAL
+# define CSPROF_PROFILE_TIMER  ITIMER_REAL
 #endif
 
 #define SECONDS_TO_MICROSECONDS(s) ((s) * 1000000)
 
 #define ITIMER_METRIC_ID 0
 
-#define USE_THREAD_USAGE_FOR_WALLCLOCK
-#define RESET_ITIMER_EACH_SAMPLE
-
 //#define BGP
 
-#ifdef BGP
-# undef USE_THREAD_USAGE_FOR_WALLCLOCK
-# undef RESET_ITIMER_EACH_SAMPLE
+#if !defined(BGP)
+#  define USE_THREAD_USAGE_FOR_WALLCLOCK
 #endif
 
-#ifdef RESET_ITIMER_EACH_SAMPLE
-# define AUTOMATIC_ITIMER_RESET(x)      0
-#else
-# define AUTOMATIC_ITIMER_RESET(x)      x
-#endif
+#define RESET_ITIMER_EACH_SAMPLE
+
+#if defined(RESET_ITIMER_EACH_SAMPLE)
+
+# if defined(BGP)
+  //--------------------------------------------------------------------------
+  // Blue Gene/P compute node support for itimer incorrectly delivers SIGALRM
+  // in one-shot mode. To sidestep this problem, we use itimer in 
+  // interval mode, but with an interval so long that we never expect to get 
+  // a repeat interrupt before resetting it. 
+  //--------------------------------------------------------------------------
+#    define AUTOMATIC_ITIMER_RESET_SECONDS(x)            (SECONDS_PER_HOUR) 
+#    define AUTOMATIC_ITIMER_RESET_MICROSECONDS(x)       (0)
+#  else  // !defined(BGP)
+#    define AUTOMATIC_ITIMER_RESET_SECONDS(x)            (0) 
+#    define AUTOMATIC_ITIMER_RESET_MICROSECONDS(x)       (0)
+#  endif // !defined(BGP)
+
+#else  // !defined(RESET_ITIMER_EACH_SAMPLE)
+
+#  define AUTOMATIC_ITIMER_RESET_SECONDS(x)              (x)
+#  define AUTOMATIC_ITIMER_RESET_MICROSECONDS(x)         (x)
+
+#endif // !defined(RESET_ITIMER_EACH_SAMPLE)
+
 
 
 /******************************************************************************
@@ -170,8 +186,8 @@ METHOD_FN(process_event_list,int lush_metrics)
   itimer.it_value.tv_usec = microseconds;
 
   /* macros define whether automatic restart or not */
-  itimer.it_interval.tv_sec = AUTOMATIC_ITIMER_RESET(seconds);
-  itimer.it_interval.tv_usec = AUTOMATIC_ITIMER_RESET(microseconds);
+  itimer.it_interval.tv_sec  =  AUTOMATIC_ITIMER_RESET_SECONDS(seconds);
+  itimer.it_interval.tv_usec =  AUTOMATIC_ITIMER_RESET_MICROSECONDS(microseconds);
 }
 
 static void
