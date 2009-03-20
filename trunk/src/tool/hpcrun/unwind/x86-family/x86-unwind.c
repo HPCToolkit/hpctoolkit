@@ -201,6 +201,10 @@ unw_step (unw_cursor_t *cursor)
     return STEP_STOP;
   }
 
+  // current frame  
+  void** bp = cursor->bp;  
+  void*  sp = cursor->sp;  
+  void*  pc = cursor->pc;
   unwind_interval* uw = (unwind_interval *)cursor->intvl;
 
   int unw_res;
@@ -228,7 +232,7 @@ unw_step (unw_cursor_t *cursor)
     //TMSG(UNW,"=========== unw_step Succeeds ============== ");
     return unw_res;
   }
-
+  
   PMSG_LIMIT(TMSG(TROLL,"error: unw_step: pc=%p, bp=%p, sp=%p", pc, bp, sp));
   dump_ui_troll(uw);
   //PMSG_LIMIT(TMSG(TROLL,"UNW STEP calls stack troll")); tallent: redundant?
