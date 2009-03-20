@@ -82,6 +82,8 @@
 extern "C" {
 #endif
 
+// NOTE: CSPROF_PERF should be defined on the compile line
+
     /* debugging messages which users might find entertaining */
 #if defined(CSPROF_PERF)
 #define CSPROF_DBG_LVL_PUB 0
