@@ -1676,7 +1676,7 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-sync    Build hpcrun (synchronous)
-  --enable-hpcrun-async   Build hpcrun (synchronous)
+  --enable-hpcrun-async   Build hpcrun (asynchronous)
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
   --enable-devtools       Build development tools (enable debugging)

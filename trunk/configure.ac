@@ -1224,7 +1224,7 @@ OPT_ENABLE_HPCRUN_ASYNC=no
 
 AC_ARG_ENABLE([hpcrun-async],
   AS_HELP_STRING([--enable-hpcrun-async],
-                 [Build hpcrun (synchronous)]),
+                 [Build hpcrun (asynchronous)]),
   [case "${enableval}" in
      yes) OPT_ENABLE_HPCRUN_ASYNC="yes" ;;
      no)  OPT_ENABLE_HPCRUN_ASYNC="no" ;;
