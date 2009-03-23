@@ -181,7 +181,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
 #if 0
   // FIXME: cf. csprof_sample_filter in backtrace.c
   if ( !(monitor_in_start_func_narrow(bt_end->ip) && unw_len > 1) ) {
-    filtered_samples++;
+    csprof_inc_samples_filtered();
     return NULL;
   }
 #endif

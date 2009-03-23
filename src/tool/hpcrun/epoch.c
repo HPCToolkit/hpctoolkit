@@ -115,7 +115,7 @@ csprof_epoch_new()
   gettimeofday(&tv, NULL);
   TMSG(EPOCH, "new epoch created");
   TMSG(EPOCH, "new epoch time: sec = %ld, usec = %d, samples = %ld",
-       (long)tv.tv_sec, (int)tv.tv_usec, samples_taken);
+       (long)tv.tv_sec, (int)tv.tv_usec, csprof_num_samples_total());
 
   memset(e, 0, sizeof(*e));
 

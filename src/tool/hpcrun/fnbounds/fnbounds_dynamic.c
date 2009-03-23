@@ -526,10 +526,10 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
 	   "    Load module %s with address range [%p,%p)\n"
 	   "    is being replaced with\n" 
 	   "    load module %s with address range [%p,%p).\n"
-	   "    This could affect attribution of %d samples.\n"
+	   "    This could affect attribution of %ld samples.\n"
 	   "    See 'CAUTION [OVERLAPPING MODULES]'.", 
 	   dso_info->name, dso_info->start_addr, dso_info->end_addr,
-	   module_name, start, end, samples_taken);
+	   module_name, start, end, csprof_num_samples_total());
 
       if (first_warning) { 
 	char log_file[PATH_MAX];
@@ -565,6 +565,8 @@ fnbounds_dso_info_get(void *pc)
 {
   dso_info_t *dso_open = fnbounds_dso_info_query(pc, dso_open_list);
 
+  // With the new dlopen lock there are no more pending dlopens.
+#if 0
   if (!dso_open) {
 
     //-----------------------------------------------------------------
@@ -590,6 +592,7 @@ fnbounds_dso_info_get(void *pc)
       }
     }
   }
+#endif
 
   return dso_open;
 }

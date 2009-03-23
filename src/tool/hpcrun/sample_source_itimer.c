@@ -311,7 +311,7 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
     unsigned long long time_value = 1; /* time in samples */
 #endif
 
-    csprof_sample_event(context, ITIMER_METRIC_ID, time_value);
+    csprof_sample_event(context, ITIMER_METRIC_ID, time_value, 0);
   }
   if (sampling_is_disabled()){
     TMSG(SPECIAL,"No itimer restart, due to disabled sampling");
