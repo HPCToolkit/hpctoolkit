@@ -33,6 +33,15 @@ dlopen: dlopen.c
 dlopen-test: dlopen-test.c
 	gcc -o dlopen-test -g dlopen-test.c -ldl
 
+dlstress: libsum1.so libsum2.so dlstress.c
+	gcc -o $@ -g -O dlstress.c -ldl -lpthread
+
+libsum1.so: sum.c
+	$(CC) -o $@ -g -O -shared -fPIC $<
+
+libsum2.so: sum.c
+	$(CC) -o $@ -g -O -shared -fPIC -DLIBSUM_TWO $<
+
 .PHONY: early
 early: libearly.so emain
 
