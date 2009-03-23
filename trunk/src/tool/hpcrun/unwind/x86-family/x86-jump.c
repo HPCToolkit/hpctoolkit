@@ -9,6 +9,8 @@
 #include "x86-process-inst.h"
 #include "x86-canonical.h"
 #include "x86-jump.h"
+#include "x86-interval-highwatermark.h"
+
 
 /******************************************************************************
  * interface operations

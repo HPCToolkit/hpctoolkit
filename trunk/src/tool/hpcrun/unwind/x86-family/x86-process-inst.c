@@ -8,7 +8,7 @@
 #include "x86-jump.h"
 #include "x86-move.h"
 #include "x86-push.h"
-#include "x86-unwind-analysis.h"
+#include "x86-interval-highwatermark.h"
 #include "x86-return.h"
 #include "x86-cold-path.h"
 #include "x86-interval-arg.h"

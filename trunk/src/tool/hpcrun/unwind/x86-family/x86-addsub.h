@@ -10,4 +10,3 @@ process_addsub(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	       bool *bp_frames_found);
 
 #endif
-
