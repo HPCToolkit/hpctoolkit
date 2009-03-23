@@ -98,7 +98,6 @@
 #include "unwind.h"
 #include "fnbounds_interface.h"
 #include "splay-interval.h"
-#include "interval-interface.h"
 
 #include <lush/lush.h>
 #include <lush/lush-backtrace.h>
@@ -226,7 +225,7 @@ csprof_thread_pre_create(void)
 
   // insert into CCT as a placeholder
   csprof_cct_node_t* n;
-  n = csprof_sample_event(&context, metric_id, 0 /* metric_units_consumed */);
+  n = csprof_sample_event(&context, metric_id, 0 /* metric_units_consumed */, 1);
 
   // tallent: only drop one to account for inlining.
   if (n) { n = n->parent; }
@@ -319,13 +318,7 @@ csprof_fini_internal(void)
       lush_agent_pool__fini(lush_agents);
     }
 
-    long unw_err = filtered_samples + bad_unwind_count;
-    AMSG("SUMMARY: samples: %d || blocks: %ld || "
-	 "errors: %ld (%d drops, %d filters, %d segvs) || "
-	 "intervals %ld (%ld suspicious)",
-	 samples_taken, csprof_num_samples_blocked_async(), 
-	 unw_err, bad_unwind_count, filtered_samples, segv_count,
-	 ui_count(), suspicious_count());
+    csprof_display_summary();
     
     pmsg_fini();
   }

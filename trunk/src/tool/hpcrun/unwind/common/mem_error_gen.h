@@ -5,8 +5,8 @@
 
 #if GEN_INF_MEM_REQ
   // special purpose extreme error condition checking code
-  extern int samples_taken;
-  if (samples_taken >= 4){
+  extern long csprof_num_samples_total(void);
+  if (csprof_num_samples_total() >= 4) {
     TMSG(SPECIAL,"Hit infinite interval build to test mem kill");
     int msg_prt = 0;
     for(int i = 1;;i++){

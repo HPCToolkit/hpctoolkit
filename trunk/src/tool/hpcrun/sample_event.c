@@ -13,11 +13,14 @@
 #include "trace.h"
 #include "backtrace.h"
 #include "csprof_csdata.h"
+#include "csprof_dlfns.h"
 #include "handling_sample.h"
 #include "fnbounds_interface.h"
+#include "interval-interface.h"
 #include "unwind.h"
 #include "csprof-malloc.h"
 #include "splay-interval.h"
+#include "sample_event.h"
 #include "sample_sources_all.h"
 #include "ui_tree.h"
 #include "string.h"
@@ -30,28 +33,15 @@ csprof_take_profile_sample(csprof_state_t *state, void *context,
 
 //***************************************************************************
 
-// routine to take samples
-// common sampling code, called by all event handlers
-
-int samples_taken    = 0;
-int bad_unwind_count = 0;
-int filtered_samples = 0; // global variable to count filtered samples
+static long num_samples_total = 0;
+static long num_samples_attempted = 0;
+static long num_samples_blocked_async = 0;
+static long num_samples_blocked_dlopen = 0;
+static long num_samples_dropped = 0;
+static long num_samples_filtered = 0;
 
 static int _sampling_disabled = 0;
 
-static long num_samples_blocked_async = 0;
-
-void
-csprof_inc_samples_blocked_async(void)
-{
-  fetch_and_add(&num_samples_blocked_async, 1L);
-}
-
-long
-csprof_num_samples_blocked_async(void)
-{
-  return num_samples_blocked_async;
-}
 
 int
 sampling_is_disabled(void)
@@ -74,18 +64,71 @@ csprof_drop_sample(void)
   siglongjmp(it->jb,9);
 }
 
-csprof_cct_node_t*
-csprof_sample_event(void *context, int metric_id, unsigned long long metric_units_consumed)
+long
+csprof_num_samples_total(void)
 {
-  samples_taken++;
+  return num_samples_total;
+}
 
-  TMSG(SAMPLE,"Handling sample");
+// The async blocks happen in the signal handlers, without getting to
+// csprof_sample_event, so also increment the total count here.
+void
+csprof_inc_samples_blocked_async(void)
+{
+  fetch_and_add(&num_samples_total, 1L);
+  fetch_and_add(&num_samples_blocked_async, 1L);
+}
+
+void
+csprof_inc_samples_filtered(void)
+{
+  fetch_and_add(&num_samples_filtered, 1L);
+}
+
+void
+csprof_display_summary(void)
+{
+  long blocked = num_samples_blocked_async + num_samples_blocked_dlopen;
+  long errors = num_samples_dropped + num_samples_filtered;
+  long valid = num_samples_attempted - errors;
+
+  AMSG("SAMPLES: blocked: %ld (async: %ld, dlopen: %ld), "
+       "errors: %ld (drops: %ld, filters: %ld, segvs: %d)",
+       blocked, num_samples_blocked_async, num_samples_blocked_dlopen,
+       errors, num_samples_dropped, num_samples_filtered, segv_count);
+
+  AMSG("SUMMARY: total: %ld, recorded: %ld, blocked: %ld, errors: %ld, "
+       "intervals: %ld (susp: %ld)%s",
+       num_samples_total, valid, blocked, errors,
+       ui_count(), suspicious_count(),
+       _sampling_disabled ? " SAMPLING WAS DISABLED" : "");
+}
+
+csprof_cct_node_t *
+csprof_sample_event(void *context, int metric_id,
+		    unsigned long long metric_units_consumed, int is_sync)
+{
+  fetch_and_add(&num_samples_total, 1L);
+
   if (_sampling_disabled){
     TMSG(SAMPLE,"global suspension");
     csprof_all_sources_stop();
-    //    csprof_all_sources_hard_stop();
     return NULL;
   }
+
+  // Synchronous unwinds (pthread_create) must wait until they aquire
+  // the read lock, but async samples give up if not avail.
+  if (is_sync) {
+    while (! csprof_dlopen_read_lock()) ;
+  }
+  else if (! csprof_dlopen_read_lock()) {
+    TMSG(SAMPLE, "skipping sample for dlopen lock");
+    fetch_and_add(&num_samples_blocked_dlopen, 1L);
+    return NULL;
+  }
+
+  TMSG(SAMPLE, "attempting sample");
+  fetch_and_add(&num_samples_attempted, 1L);
 
   thread_data_t *td = csprof_get_thread_data();
   sigjmp_buf_t *it = &(td->bad_unwind);
@@ -123,7 +166,7 @@ csprof_sample_event(void *context, int metric_id, unsigned long long metric_unit
     // ------------------------------------------------------------
     memset((void *)it->jb, '\0', sizeof(it->jb));
     dump_backtrace(state, state->unwind);
-    bad_unwind_count++;
+    fetch_and_add(&num_samples_dropped, 1L);
     csprof_up_pmsg_count();
     if (TD_GET(splay_lock)) {
       csprof_release_splay_lock();
@@ -134,6 +177,7 @@ csprof_sample_event(void *context, int metric_id, unsigned long long metric_unit
   }
 
   csprof_clear_handling_sample(td);
+  csprof_dlopen_read_unlock();
 
   return node;
 }

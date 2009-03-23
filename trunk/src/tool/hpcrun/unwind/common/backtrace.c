@@ -165,7 +165,7 @@ hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
       for (int i = 0; i < unw_len; i++, fr++){
 	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p",i,fr->ip);
       }
-      filtered_samples++;
+      csprof_inc_samples_filtered();
       return 0;
     }
   }

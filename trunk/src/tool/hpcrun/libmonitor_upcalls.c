@@ -330,10 +330,7 @@ monitor_pre_dlopen(const char *path, int flags)
   csprof_async_block();
 
   csprof_pre_dlopen(path, flags);
-
-  // Temporarily keep blocked until the true dlopen lock is added.
-  if (ENABLED(DLOPEN_RISKY))
-    csprof_async_unblock();
+  csprof_async_unblock();
 }
 
 
@@ -357,10 +354,7 @@ monitor_dlclose(void *handle)
   csprof_async_block();
 
   csprof_dlclose(handle);
-
-  // Temporarily keep blocked until the true dlopen lock is added.
-  if (ENABLED(DLOPEN_RISKY))
-    csprof_async_unblock();
+  csprof_async_unblock();
 }
 
 

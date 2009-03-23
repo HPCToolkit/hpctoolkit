@@ -390,6 +390,6 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   for(i = 0; i < my_event_count; i++) {
     int metric_id = my_events[i];
-    csprof_sample_event(context, metric_id, 1 /* metric_units_consumed in samples */);
+    csprof_sample_event(context, metric_id, 1 /* metric_units_consumed in samples */, 0);
   }
 }
