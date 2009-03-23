@@ -2,7 +2,7 @@
  * include files
  *****************************************************************************/
 
-#include "x86-unwind-analysis.h"
+#include "x86-interval-highwatermark.h"
 #include "x86-decoder.h"
 #include <assert.h>
 

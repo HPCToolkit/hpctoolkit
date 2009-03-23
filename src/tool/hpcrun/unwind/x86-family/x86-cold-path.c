@@ -20,6 +20,7 @@
 //**************************************************************************
 
 #include <stdbool.h>
+#include <stdint.h>
 
 
 
@@ -67,7 +68,6 @@ hpcrun_cold_code_fixup(unwind_interval *current, unwind_interval *warm)
   }
 }
 
-
 // The cold code detector is called when unconditional jump is encountered
 bool
 hpcrun_is_cold_code(void *ins, xed_decoded_inst_t *xptr, interval_arg_t *iarg)
@@ -79,11 +79,11 @@ hpcrun_is_cold_code(void *ins, xed_decoded_inst_t *xptr, interval_arg_t *iarg)
     if (branch_target < iarg->beg || iarg->end <= branch_target) {
       // this is a possible cold code routine
       TMSG(COLD_CODE,"potential cold code jmp detected in routine starting @"
-	   " %p",iarg->beg);
+	   " %p (location in routine = %p)",iarg->beg,ins);
       void *beg, *end;
       if (fnbounds_enclosing_addr(branch_target, &beg, &end)){
-	EEMSG("Weird result! branch_target %p has no function bounds",
-	      branch_target);
+	EMSG("Weird result! jmp @ %p branch_target %p has no function bounds",
+	      ins, branch_target);
 	return false;
       }
       if (branch_target == beg){

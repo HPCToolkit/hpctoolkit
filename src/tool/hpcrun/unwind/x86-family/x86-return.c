@@ -1,6 +1,6 @@
 #include "x86-canonical.h"
 #include "x86-decoder.h"
-#include "x86-unwind-analysis.h"
+#include "x86-interval-highwatermark.h"
 
 /******************************************************************************
  * forward declarations 

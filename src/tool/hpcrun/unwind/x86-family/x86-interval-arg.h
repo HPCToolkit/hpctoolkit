@@ -2,7 +2,8 @@
 #define X86_INTERVAL_ARG_H
 
 #include <stdbool.h>
-#include "x86-unwind-analysis.h"
+
+#include "x86-interval-highwatermark.h"
 
 // as extra arguments are added to the process inst routine, better
 // to add fields to the structure, rather than keep changing the function signature

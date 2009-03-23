@@ -15,6 +15,9 @@ LINK.cc := $(LINKPRE) $(CC) $(static)
 
 CFLAGS := -g -I..
 
+deepcallpath: deepcall_main.o $(wildcard DeepCallPaths/f*.c)
+	$(LINK.cc) $^ -o $@
+
 tmpi: tmpi.c
 	$(MPICC) $< -lm -o $@
 
@@ -87,3 +90,6 @@ vpath %.c ..
 
 %.E : %.c
 	$(CC) -I.. -E $< > $@
+
+T:
+	# f files $(wildcard DeepCallPaths/f*.c)
