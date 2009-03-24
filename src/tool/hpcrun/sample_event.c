@@ -118,6 +118,8 @@ csprof_sample_event(void *context, int metric_id,
 
   // Synchronous unwinds (pthread_create) must wait until they aquire
   // the read lock, but async samples give up if not avail.
+  // This only applies in the dynamic case.
+#ifndef HPCRUN_STATIC_LINK
   if (is_sync) {
     while (! csprof_dlopen_read_lock()) ;
   }
@@ -126,6 +128,7 @@ csprof_sample_event(void *context, int metric_id,
     fetch_and_add(&num_samples_blocked_dlopen, 1L);
     return NULL;
   }
+#endif
 
   TMSG(SAMPLE, "attempting sample");
   fetch_and_add(&num_samples_attempted, 1L);
@@ -177,7 +180,9 @@ csprof_sample_event(void *context, int metric_id,
   }
 
   csprof_clear_handling_sample(td);
+#ifndef HPCRUN_STATIC_LINK
   csprof_dlopen_read_unlock();
+#endif
 
   return node;
 }
