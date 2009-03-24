@@ -29,8 +29,38 @@
 \title{Understanding and Troubleshooting \\
          \hpctoolkit\ Problems}
 \author{The \hpctoolkit\ Team}
-\date{03 February 2009}
+\date{24 March 2009}
 \maketitle
+
+\textbf{\hpcviewer\ runs glacially slow, what is the workaround?}
+\begin{quote}
+There are three likely reasons why \hpcviewer{} might run terribly
+slow.  You may be running \hpcviewer{} on a remote system with low
+bandwidth, high latency or an otherwise unsatisfactory network
+connection to your desktop. If any of these conditions are true,
+\hpcviewer{}'s otherwise snappy GUI can become sluggish if not
+downright unresponsive.  The solution is to install \hpcviewer{} on
+your local system, copy the database onto your local system, and run
+\hpcviewer{} locally. We almost always run \hpcviewer{} on our local
+workstations or laptops for this reason.
+
+Another reason could be that the {\tt experiment.xml} file in your
+database is very large.  If this is tens of megabytes or more, the
+total database size might be the problem.
+
+This problem can also occur if the database contains too many columns
+of metrics.  This can happen if you use \hpcprof{} to build a database
+for several threads with several metrics each, resulting in too many
+metrics total. You can check the number of columns in your database by
+running
+\begin{quote}
+\verb,grep -e "<Metric" experiment.xml | wc -l,
+\end{quote}
+If that command yields a number greater than 30 or so, \hpcviewer{} is
+likely slow because you are working with too many columns of metrics.
+In this case, run \hpcprof\ to build a database with fewer threads.
+\end{quote}
+
 
 \textbf{Why isn't my source code found by \hpcviewer ?}
 \begin{comment}
