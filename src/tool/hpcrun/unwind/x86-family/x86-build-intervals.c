@@ -51,37 +51,29 @@ x86_build_intervals(void *ins, unsigned int len, int noisy)
   xed_decoded_inst_t *xptr = &xedd;
   xed_error_enum_t xed_error;
 
-  highwatermark_t highwatermark = { NULL, NULL, HW_UNINITIALIZED };
-  char *rax_rbp_equivalent_at = 0;
-  unwind_interval *canonical_interval = 0;
-
-  int error_count = 0;
-
-  // handle return is different if there are any bp frames
-  bool bp_frames_found = false;  
-  bool bp_just_pushed = false;
-
-  unwind_interval *prev = NULL, *next = NULL, *first = NULL;
-
   // the local data structure for handling all of the various data needed for
   // building intervals.
   //
+
   interval_arg_t iarg;
+
+  highwatermark_t _h = { NULL, NULL, HW_UNINITIALIZED };
+
+  int error_count = 0;
+
+  unwind_interval *next = NULL;
 
   // local allocation of iarg data
 
-  unwind_interval *current = new_ui(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL);
+  void *first_ins    = ins;
+  void *end          = ins + len;
 
-  void *first_ins = ins;
-  void *end       = ins + len;
-
-  iarg.beg             	     = first_ins;
-  iarg.end             	     = end;
-  
-  iarg.ins                   = ins;
-  //  iarg.highwatermark   	     = &_h;
-  iarg.current         	     = current;
-  iarg.first                 = current;
+  iarg.beg           = first_ins;
+  iarg.end           = end;
+  iarg.highwatermark = _h;
+  iarg.ins           = ins;
+  iarg.current       = new_ui(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL);
+  iarg.first         = iarg.current;
 
   // handle return is different if there are any bp frames
 
@@ -93,48 +85,47 @@ x86_build_intervals(void *ins, unsigned int len, int noisy)
 
   xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
 
-  if (noisy) dump_ui(current, true);
+  if (noisy) dump_ui(iarg.current, true);
 
-  first = current;
-  while (ins < end) {
+  while (iarg.ins < end) {
     xed_decoded_inst_zero_keep_mode(xptr);
-    xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+    xed_error = xed_decode(xptr, (uint8_t*) iarg.ins, 15);
 
     if (xed_error != XED_ERROR_NONE) {
       error_count++; /* note the error      */
-      ins++;         /* skip this byte      */
+      iarg.ins++;         /* skip this byte      */
       continue;      /* continue onward ... */
     }
 
     // ensure that we don't move past the end of the interval because of a misaligned instruction
-    void *nextins = ins + xed_decoded_inst_get_length(xptr);
+    void *nextins = iarg.ins + xed_decoded_inst_get_length(xptr);
     if (nextins > end) break;
 
-    next = process_inst(xptr, &ins, end, &current, first, &bp_just_pushed, 
-			&highwatermark, &canonical_interval, &bp_frames_found, &rax_rbp_equivalent_at,
+    next = process_inst(xptr, &iarg.ins, iarg.end, &iarg.current, iarg.first, &iarg.bp_just_pushed,
+			&iarg.highwatermark, &iarg.canonical_interval, &iarg.bp_frames_found,
+			&iarg.rax_rbp_equivalent_at,
 			&iarg);
     
     if (next == &poison_ui) {
-      set_status(&status, ins, -1, NULL);
+      set_status(&status, iarg.ins, -1, NULL);
       return status;
     }
 
-    if (next != current) {
-      link_ui(current, next);
-      prev = current;
-      current = next;
+    if (next != iarg.current) {
+      link_ui(iarg.current, next);
+      iarg.current = next;
 
-      if (noisy) dump_ui(current, true);
+      if (noisy) dump_ui(iarg.current, true);
     }
-    ins += xed_decoded_inst_get_length(xptr);
-    (current->common).end = ins;
+    iarg.ins += xed_decoded_inst_get_length(xptr);
+    (iarg.current->common).end = iarg.ins;
   }
 
-  (current->common).end = end;
+  (iarg.current->common).end = end;
 
-  set_status(&status, ins, error_count, first);
+  set_status(&status, iarg.ins, error_count, iarg.first);
 
-  x86_fix_unwind_intervals(first_ins, len, &status);
+  x86_fix_unwind_intervals(iarg.beg, len, &status);
   x86_coalesce_unwind_intervals((unwind_interval *)status.first);
   return status;
 }
@@ -149,93 +140,6 @@ x86_ui_same_data(unwind_interval *proto, unwind_interval *cand)
 	   (proto->bp_ra_pos == cand->bp_ra_pos) &&
 	   (proto->bp_bp_pos == cand->bp_bp_pos) );
 }
-
-#if 0
-interval_status 
-x86_build_intervals(void *ins, unsigned int len, int noisy)
-{
-  void *first_ins = ins;
-
-  xed_decoded_inst_t xedd;
-  xed_decoded_inst_t *xptr = &xedd;
-
-
-  interval_arg_t iarg;
-
-  interval_status status;
-  xed_error_enum_t xed_error;
-
-  unwind_interval *prev = NULL, *current = NULL, *next = NULL, *first = NULL;
-
-  highwatermark_t highwatermark = { NULL, NULL, HW_UNINITIALIZED };
-  char *rax_rbp_equivalent_at = 0;
-  unwind_interval *canonical_interval = 0;
-  int error_count = 0;
-
-  // handle return is different if there are any bp frames
-  bool bp_frames_found = false;  
-  bool bp_just_pushed = false;
-
-  void *end = ins + len;
-
-  iarg.beg            = first_ins;
-  iarg.end            = end;
-
-  current = new_ui(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL);
-
-  xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
-
-  if (noisy) dump_ui(current, true);
-
-  first = current;
-  while (ins < end) {
-    xed_decoded_inst_zero_keep_mode(xptr);
-    xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
-
-    if (xed_error != XED_ERROR_NONE) {
-      error_count++; /* note the error      */
-      ins++;         /* skip this byte      */
-      continue;      /* continue onward ... */
-    }
-
-    // ensure that we don't move past the end of the interval because of a misaligned instruction
-    void *nextins = ins + xed_decoded_inst_get_length(xptr);
-    if (nextins > end) break;
-
-    next = process_inst(xptr, &ins, end, &current, first, &bp_just_pushed,
-			&highwatermark, &canonical_interval, &bp_frames_found, &rax_rbp_equivalent_at,
-			&iarg);
-    
-    if (next == &poison_ui) {
-      set_status(&status, ins, -1, NULL);
-      return status;
-    }
-
-#if 0
-    printf("ins %p current = %p, next = %p, iclass = %s, noisy = %d\n", 
-	   ins, current, next, xed_iclass_enum_t2str(iclass(xptr)), noisy);
-#endif
-
-    if (next != current) {
-      link_ui(current, next);
-      prev = current;
-      current = next;
-
-      if (noisy) dump_ui(current, true);
-    }
-    ins += xed_decoded_inst_get_length(xptr);
-    (current->common).end = ins;
-  }
-
-  (current->common).end = end;
-
-  set_status(&status, ins, error_count, first);
-
-  x86_fix_unwind_intervals(first_ins, len, &status);
-  x86_coalesce_unwind_intervals((unwind_interval *)status.first);
-  return status;
-}
-#endif
 
 
 /******************************************************************************

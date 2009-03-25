@@ -5,7 +5,7 @@
 
 unwind_interval *
 process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi, 
-	     unwind_interval *current, highwatermark_t *highwatermark, char **rax_rbp_equivalent_at);
+	     unwind_interval *current, highwatermark_t *highwatermark, void **rax_rbp_equivalent_at);
 
 #endif
 
