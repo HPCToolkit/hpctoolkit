@@ -357,12 +357,6 @@ unw_step_sp(unw_cursor_t *cursor)
     cursor->sp = next_sp;
   }
 
-#if 0
-  TMSG(UNW,"dumping the found interval");
-  dump_ui((unwind_interval *)cursor->intvl,1); // debug for now
-  TMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n", cursor->pc, cursor->bp);
-#endif
-
   TMSG(UNW,"==== sp advance ok ===");
   return STEP_OK;
 }
