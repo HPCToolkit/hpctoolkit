@@ -43,7 +43,6 @@ static size_t the_ui_size = 0;
 
 extern interval_status build_intervals(char *ins, unsigned int len);
 static void free_ui_tree_locked(interval_tree_node *tree);
-void free_ui_node_locked(interval_tree_node *node);
 
 
 //---------------------------------------------------------------------
@@ -100,6 +99,8 @@ csprof_ui_malloc(size_t ui_size)
 
   return (ans);
 }
+
+
 /*
  * Lookup the PC address in the interval tree and return a pointer to
  * the interval containing that address (the new root).  Grow the tree
@@ -111,9 +112,7 @@ splay_interval_t *
 csprof_addr_to_interval(void *addr)
 {
   UI_TREE_LOCK;
-
   splay_interval_t *retval = csprof_addr_to_interval_locked(addr);
-
   UI_TREE_UNLOCK;
 
   return retval;
@@ -121,15 +120,12 @@ csprof_addr_to_interval(void *addr)
 
 
 /*
- * Lookup the PC address in the interval tree WITHOUT REGARD TO LOCKING and returns
- * a pointer to the interval containing that address (the new root).  Grow the tree
- * lazily and memo-ize the answers.
+ * The locked version of csprof_addr_to_interval().  Lookup the PC
+ * address in the interval tree and return a pointer to the interval
+ * containing that address.
  *
  * Returns: pointer to unwind_interval struct if found, else NULL.
- *
- * WARNING: A caller of this routine is PRESUMED to hold the UI_TREE lock.
- *          Failure to respect this requirement will lead to chaos in multithreaded code
- *          SO, BE CAREFUL.
+ * The caller must hold the ui-tree lock.
  */
 splay_interval_t *
 csprof_addr_to_interval_locked(void *addr)
@@ -147,8 +143,17 @@ csprof_addr_to_interval_locked(void *addr)
     return (splay_interval_t *)p;
   }
 
-  /* Get list of new intervals to insert into the tree. */
+  /*
+   * Get list of new intervals to insert into the tree.
+   *
+   * Note: we can't hold the ui-tree lock while acquiring the fnbounds
+   * lock, that could lead to LOR deadlock.  Releasing and reacquiring
+   * the lock could cause the insert to fail if another thread does
+   * the insert first, but in that case, it's not really a failure.
+   */
+  UI_TREE_UNLOCK;
   ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end);
+  UI_TREE_LOCK;
   if (ret != SUCCESS) {
     TMSG(UITREE, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
     return (NULL);

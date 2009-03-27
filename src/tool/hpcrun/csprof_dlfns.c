@@ -25,27 +25,26 @@
 // DLOPEN_RISKY disables the read locks (always succeed), so that
 // sampling will never be blocked in this case.  But we keep the write
 // locks for the benefit of the fnbounds functions.
-// 
 //
 static spinlock_t dlopen_lock = SPINLOCK_UNLOCKED;
 static volatile long dlopen_num_readers = 0;
 static volatile char dlopen_num_writers = 0;
 
 
-// Writers always wait until they aquire the lock.
+// Writers always wait until they acquire the lock.
 static void
 csprof_dlopen_write_lock(void)
 {
-  int aquire = 0;
+  int acquire = 0;
 
   do {
     spinlock_lock(&dlopen_lock);
     if (dlopen_num_writers == 0) {
       dlopen_num_writers = 1;
-      aquire = 1;
+      acquire = 1;
     }
     spinlock_unlock(&dlopen_lock);
-  } while (! aquire);
+  } while (! acquire);
 
   // Wait for any readers to finish.
   if (! ENABLED(DLOPEN_RISKY)) {
@@ -66,39 +65,32 @@ csprof_dlopen_write_unlock(void)
 static void
 csprof_dlopen_downgrade_lock(void)
 {
-  if (! ENABLED(DLOPEN_RISKY)) {
-    dlopen_num_readers = 1;
-  }
+  fetch_and_add(&dlopen_num_readers, 1L);
   dlopen_num_writers = 0;
 }
 
 
-// Readers try to aquire a lock, but they don't wait if that fails.
-// Returns: 1 if aquired, else 0 if not.
+// Readers try to acquire a lock, but they don't wait if that fails.
+// Returns: 1 if acquired, else 0 if not.
 int
 csprof_dlopen_read_lock(void)
 {
-  int aquire = 0;
-
-  if (ENABLED(DLOPEN_RISKY))
-    return (1);
+  int acquire = 0;
 
   spinlock_lock(&dlopen_lock);
-  if (dlopen_num_writers == 0) {
+  if (dlopen_num_writers == 0 || ENABLED(DLOPEN_RISKY)) {
     fetch_and_add(&dlopen_num_readers, 1L);
-    aquire = 1;
+    acquire = 1;
   }
   spinlock_unlock(&dlopen_lock);
 
-  return (aquire);
+  return (acquire);
 }
 
 
 void
 csprof_dlopen_read_unlock(void)
 {
-  if (ENABLED(DLOPEN_RISKY))
-    return;
   fetch_and_add(&dlopen_num_readers, -1L);
 }
 
@@ -110,19 +102,17 @@ csprof_pre_dlopen(const char *path, int flags)
 }
 
 
-// FIXME: We would prefer to downgrade the dl lock to a read lock
-// before calling fnbounds_map_open_dsos() to allow sampling in other
-// threads, but that currently leads to lock-order-reversal (LOR)
-// deadlock on the fnbounds lock and the system dl-iterate-phdr()
-// lock.
+// It's safe to downgrade the lock during fnbounds_map_open_dsos()
+// because it acquires the dl-iterate lock before the fnbounds lock,
+// and that order is consistent with sampling.
 //
 void 
 csprof_dlopen(const char *module_name, int flags, void *handle)
 {
   TMSG(EPOCH, "dlopen: handle = %p, name = %s", handle, module_name);
-  // csprof_dlopen_downgrade_lock();
+  csprof_dlopen_downgrade_lock();
   fnbounds_map_open_dsos();
-  csprof_dlopen_write_unlock();
+  csprof_dlopen_read_unlock();
 }
 
 
@@ -133,6 +123,10 @@ csprof_dlclose(void *handle)
 }
 
 
+// We can't downgrade the lock during fnbounds_unmap_closed_dsos()
+// because it acquires the fnbounds lock before the dl-iterate lock,
+// and that is a LOR with sampling.
+//
 void
 csprof_post_dlclose(void *handle, int ret)
 {
