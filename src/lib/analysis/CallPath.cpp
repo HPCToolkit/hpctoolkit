@@ -245,9 +245,9 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 
       Struct::ACodeNode* pctxtStrct = strct->ancestorProcCtxt();
 
-      Struct::ANode* t = strct->Ancestor(Struct::ANode::TyLOOP, 
-					 Struct::ANode::TyALIEN);
-                                      // FIXME: include PROC (for nested procs)
+      Struct::ANode* t = strct->ancestor(Struct::ANode::TyLOOP, 
+					 Struct::ANode::TyALIEN, 
+					 Struct::ANode::TyPROC);
       Struct::Loop* loopStrct = dynamic_cast<Struct::Loop*>(t);
 
       n->structure(strct);
@@ -484,7 +484,8 @@ coalesceStmts(Prof::CCT::ANode* node)
     Prof::CCT::ANode* child = it.CurNode();
     it++; // advance iterator -- it is pointing at 'child'
     
-    bool inspect = (child->isLeaf() && (child->type() == Prof::CCT::ANode::TyStmt));
+    bool inspect = (child->isLeaf() 
+		    && (child->type() == Prof::CCT::ANode::TyStmt));
 
     if (inspect) {
       // This child is a leaf. Test for duplicate source line info.
@@ -681,14 +682,14 @@ static void
 lush_makeParallelOverhead(Prof::CCT::ANode* node, 
 			  const std::vector<uint>& m_src, 
 			  const std::vector<uint>& m_dst, 
-			  bool is_overhead_ctxt)
+			  bool isOverheadCtxt)
 {
   if (!node) { return; }
 
   // ------------------------------------------------------------
   // Visit node
   // ------------------------------------------------------------
-  if (is_overhead_ctxt) {
+  if (isOverheadCtxt) {
     for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
       Prof::CCT::ANode* x = it.CurNode();
       Prof::CCT::ADynNode* x_dyn = dynamic_cast<Prof::CCT::ADynNode*>(x);
@@ -709,14 +710,15 @@ lush_makeParallelOverhead(Prof::CCT::ANode* node,
   // Recur
   // ------------------------------------------------------------
 
+  bool isOverheadCtxt_nxt = isOverheadCtxt;
   if (node->type() == Prof::CCT::ANode::TyProcFrm) {
     Prof::CCT::ProcFrm* x = dynamic_cast<Prof::CCT::ProcFrm*>(node);
-    is_overhead_ctxt = ParallelOverhead::is_overhead(x);
+    isOverheadCtxt_nxt = ParallelOverhead::is_overhead(x);
   }
 
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
     Prof::CCT::ANode* x = it.CurNode();
-    lush_makeParallelOverhead(x, m_src, m_dst, is_overhead_ctxt);
+    lush_makeParallelOverhead(x, m_src, m_dst, isOverheadCtxt_nxt);
   }
 }
 
