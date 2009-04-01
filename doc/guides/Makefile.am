@@ -59,6 +59,7 @@ MYGUIDES = \
 	HPCToolkit-effective-analysis.pdf \
 	HPCToolkit-mpi.pdf \
 	HPCToolkit-quickstart-guide.pdf \
+	HPCToolkit-static.pdf \
 	HPCToolkit-troubleshooting.pdf \
 	HPCToolkit-using-hpcviewer.pdf
 
