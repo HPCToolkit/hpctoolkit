@@ -18,6 +18,7 @@
 
 \newcommand{\HPCToolkit}{\textsc{HPCToolkit}}
 \newcommand{\hpcrun}{\texttt{hpcrun}}
+\newcommand{\hpclink}{\texttt{hpclink}}
 \newcommand{\hpcstruct}{\texttt{hpcstruct}}
 \newcommand{\hpcprof}{\texttt{hpcprof}}
 \newcommand{\hpcviewer}{\texttt{hpcviewer}}
@@ -66,7 +67,35 @@ to the following example.
 hpcrun} and its options on the inside, and finally the application
 program and its command-line arguments last.
 
-% \newpage
+\question{How do I compile and run a statically-linked MPI program?}
+
+\answer{} 
+On systems such as Compute-Node Linux and BG/P that run only
+statically-linked binaries on the compute nodes, use \hpclink\ to
+build a statically-linked version of your application with the
+\HPCToolkit\ library linked in.  For example,
+
+\begin{quote}
+\begin{verbatim}
+hpclink mpicc -o myprog file.o ... -l<lib> ...
+\end{verbatim}
+\end{quote}
+
+\noindent
+Then, set the {\tt CSPROF\_OPT\_EVENT} environment variable in the
+launch script before running the application.
+
+\begin{quote}
+\begin{verbatim}
+export CSPROF_OPT_EVENT="PAPI_TOT_CYC@4000000"
+mpiexec -n 64 myprog arg ...
+\end{verbatim}
+\end{quote}
+
+\noindent
+See the {\it Using {\sc HPCToolkit} with Statically-Linked Programs} guide
+for more information.
+
 \question{What files does {\tt hpcrun} produce for an MPI program?}
 
 \answer{} In this example, {\tt s3d\_f90.x} is the Fortran S3D program
@@ -112,8 +141,7 @@ example, in C, the program might begin with:
 
 \begin{quote}
 \begin{verbatim}
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     int size, rank;
 

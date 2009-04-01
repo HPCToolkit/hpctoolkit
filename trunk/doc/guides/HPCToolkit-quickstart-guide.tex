@@ -59,6 +59,7 @@
 
 \newcommand{\HPCToolkit}{\textsc{HPCToolkit}}
 \newcommand{\hpcrun}{\texttt{hpcrun}}
+\newcommand{\hpclink}{\texttt{hpclink}}
 \newcommand{\hpcstruct}{\texttt{hpcstruct}}
 \newcommand{\hpcprof}{\texttt{hpcprof}}
 \newcommand{\hpcviewer}{\texttt{hpcviewer}}
@@ -97,7 +98,7 @@
 \begin{center}
 {\Large \HPCToolkit{} Quickstart Guide}\\[1ex]
 {\HPCToolkit{} Project Team}\\
-Feburary 17, 2009
+March 31, 2009
 \end{center}
 
 
@@ -112,11 +113,28 @@ For a sequential or multithreaded code:\\
 For an MPI code:\\
 \lindent {\tt mpiexec -n 32 hpcrun [hpcrun options] myprogram [program arguments]}\footnote{Here, we assume that your MPI launcher is named {\tt mpiexec}. It may be {\tt mpirun} or something else depending on the MPI implementation you are using.}\\[1ex]
 \sloppy This command will produce a directory with the name {\tt hpctoolkit-myprogram-measurements}. If an {\tt hpcrun} command is run under control of PBS or GridEngine batch job schedulers, the name of the measurements directory will have its batch job id appended. For single-threaded programs, this directory will contain a single file with the suffix {\tt myprogram-{\em nodeid}.hpcrun}. {\em Nodeid} is a hex value representing the host name for the node on which the measurements were collected. For parallel codes, performance measurements will be saved in files within the measurements directory with names that have the MPI rank (0 if none) and the thread id embedded.
+
+\item{ \em Running statically-linked binaries.} \\
+On systems such as Compute-Node Linux and BG/P that run only
+statically-linked binaries on the compute nodes, use \hpclink\ to
+build a statically-linked version of your application with the
+\HPCToolkit\ library linked in.  For example, \\
+\lindent
+\verb|hpclink mpicc -o myprog file.o ... -l<lib> ...| \\[1ex]
+Then, set the {\tt CSPROF\_OPT\_EVENT} environment variable in the
+launch script before running the application. \\
+\lindent
+\verb|export CSPROF_OPT_EVENT="PAPI_TOT_CYC@4000000"| \\
+\lindent
+\verb|aprun -n 64 myprog arg ...| \\[1ex]
+See the {\it Using {\sc HPCToolkit} with Statically-Linked Programs} guide
+for more information.
+
 \item{ \em Recovering program structure information.}\\
 \lindent {\tt hpcstruct myprogram}\\[1ex]
 This command will produce a file {\tt myprogram.hpcstruct} that should be passed to {\tt hpcprof} with the {\tt -S} argument.
 \item{ \em Correlating measurements to source code.}\\
-\lindent {\tt hpcprof -S myprogram.hpcstruct -I path-to-myprogram-src \textbackslash \\ 
+\lindent {\tt hpcprof -S myprogram.hpcstruct -I path-to-myprogram-src \verb+\+ \\ 
 \lindent \lindent hpctoolkit-myprogram-measurements/*.hpcrun}\\[1ex]
 This command will produce a directory with the name {\tt hpctoolkit-myprogram-database}. If this database directory already exists, {\tt hpcprof} will append its process id at the end of the aforementioned directory name to yield a unique name.
 \item{ \em Viewing application performance measurements.}\\
@@ -136,11 +154,11 @@ Scalability bottlenecks in parallel codes can be pinpointed by differential anal
 
 % ---------------------------------------------------------------------------
 % ---------------------------------------------------------------------------
-\clearpage
-\bibliographystyle{abbrv}
-
-\vspace{-18pt}
-\bibliography{refs}
+% \clearpage
+% \bibliographystyle{abbrv}
+% 
+% \vspace{-18pt}
+% \bibliography{refs}
 
 \end{document}
 
