@@ -455,7 +455,7 @@ Ref::Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName)
 
 
 //***************************************************************************
-// ANode: Ancestor
+// ANode: ancestor
 //***************************************************************************
 
 #define dyn_cast_return(base, derived, expr) \
@@ -475,21 +475,32 @@ ANode::ACodeNodeParent() const
 
 
 ANode*
-ANode::Ancestor(ANodeTy tp) const
+ANode::ancestor(ANodeTy ty) const
 {
   const ANode* x = this;
-  while (x && x->type() != tp) {
+  while (x && x->type() != ty) {
     x = x->parent();
   } 
   return const_cast<ANode*>(x);
 } 
 
 
-ANode *
-ANode::Ancestor(ANodeTy tp1, ANodeTy tp2) const
+ANode*
+ANode::ancestor(ANodeTy ty1, ANodeTy ty2) const
 {
   const ANode* x = this;
-  while (x && x->type() != tp1 && x->type() != tp2) {
+  while (x && x->type() != ty1 && x->type() != ty2) {
+    x = x->parent();
+  }
+  return const_cast<ANode*>(x);
+} 
+
+
+ANode*
+ANode::ancestor(ANodeTy ty1, ANodeTy ty2, ANodeTy ty3) const
+{
+  const ANode* x = this;
+  while (x && x->type() != ty1 && x->type() != ty2 && x->type() != ty3) {
     x = x->parent();
   }
   return const_cast<ANode*>(x);
@@ -549,7 +560,7 @@ ANode::AncRoot() const
     return NULL;
   } 
   else { 
-    dyn_cast_return(ANode, Root, Ancestor(TyRoot));
+    dyn_cast_return(ANode, Root, ancestor(TyRoot));
   }
 }
 
@@ -557,56 +568,56 @@ ANode::AncRoot() const
 Group*
 ANode::AncGroup() const 
 {
-  dyn_cast_return(ANode, Group, Ancestor(TyGROUP));
+  dyn_cast_return(ANode, Group, ancestor(TyGROUP));
 }
 
 
 LM*
 ANode::AncLM() const 
 {
-  dyn_cast_return(ANode, LM, Ancestor(TyLM));
+  dyn_cast_return(ANode, LM, ancestor(TyLM));
 }
 
 
 File*
 ANode::AncFile() const 
 {
-  dyn_cast_return(ANode, File, Ancestor(TyFILE));
+  dyn_cast_return(ANode, File, ancestor(TyFILE));
 }
 
 
 Proc*
 ANode::AncProc() const 
 {
-  dyn_cast_return(ANode, Proc, Ancestor(TyPROC));
+  dyn_cast_return(ANode, Proc, ancestor(TyPROC));
 }
 
 
 Alien*
 ANode::AncAlien() const 
 {
-  dyn_cast_return(ANode, Alien, Ancestor(TyALIEN));
+  dyn_cast_return(ANode, Alien, ancestor(TyALIEN));
 }
 
 
 Loop*
 ANode::AncLoop() const 
 {
-  dyn_cast_return(ANode, Loop, Ancestor(TyLOOP));
+  dyn_cast_return(ANode, Loop, ancestor(TyLOOP));
 }
 
 
 Stmt*
 ANode::AncStmt() const 
 {
-  dyn_cast_return(ANode, Stmt, Ancestor(TySTMT));
+  dyn_cast_return(ANode, Stmt, ancestor(TySTMT));
 }
 
 
 ACodeNode*
 ANode::ancestorProcCtxt() const 
 {
-  return dynamic_cast<ACodeNode*>(Ancestor(TyPROC, TyALIEN));
+  return dynamic_cast<ACodeNode*>(ancestor(TyPROC, TyALIEN));
 }
 
 

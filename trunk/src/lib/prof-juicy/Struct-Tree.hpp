@@ -325,22 +325,23 @@ public:
 
 
   // --------------------------------------------------------
-  // Ancestor: find first ANode in path from this to root with given type
+  // ancestor: find first ANode in path from this to root with given type
   // (Note: We assume that a node *can* be an ancestor of itself.)
   // --------------------------------------------------------
-  ANode* Ancestor(ANodeTy type) const;
-  ANode* Ancestor(ANodeTy tp1, ANodeTy tp2) const;
+  ANode* ancestor(ANodeTy type) const;
+  ANode* ancestor(ANodeTy ty1, ANodeTy ty2) const;
+  ANode* ancestor(ANodeTy ty1, ANodeTy ty2, ANodeTy ty3) const;
 
-  Root*  AncRoot() const;   // return Ancestor(TyRoot)
-  Group* AncGroup() const;  // return Ancestor(TyGROUP)
-  LM*    AncLM() const;     // return Ancestor(TyLM)
-  File*  AncFile() const;   // return Ancestor(TyFILE)
-  Proc*  AncProc() const;   // return Ancestor(TyPROC)
-  Alien* AncAlien() const;  // return Ancestor(TyALIEN)
-  Loop*  AncLoop() const;   // return Ancestor(TyLOOP)
-  Stmt*  AncStmt() const;   // return Ancestor(TySTMT)
+  Root*  AncRoot() const;   // return ancestor(TyRoot)
+  Group* AncGroup() const;  // return ancestor(TyGROUP)
+  LM*    AncLM() const;     // return ancestor(TyLM)
+  File*  AncFile() const;   // return ancestor(TyFILE)
+  Proc*  AncProc() const;   // return ancestor(TyPROC)
+  Alien* AncAlien() const;  // return ancestor(TyALIEN)
+  Loop*  AncLoop() const;   // return ancestor(TyLOOP)
+  Stmt*  AncStmt() const;   // return ancestor(TySTMT)
 
-  ACodeNode* ancestorProcCtxt() const; // return Ancestor(TyALIEN|TyPROC)
+  ACodeNode* ancestorProcCtxt() const; // return ancestor(TyALIEN|TyPROC)
 
   ACodeNode* ACodeNodeParent() const;
 
