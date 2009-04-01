@@ -115,6 +115,7 @@ public:
     OFlg_Compressed      = (1 << 1), // Write in compressed format
     OFlg_LeafMetricsOnly = (1 << 2), // Write metrics only at leaves
     OFlg_Debug           = (1 << 3), // Debug: show xtra source line info
+    OFlg_DebugAll        = (1 << 4), // Debug: (may be invalid format)
   };
 
 public:
@@ -883,9 +884,9 @@ public:
   virtual VMA ip() const 
   { 
 #ifdef FIXME_CILK_LIP_HACK
-    if (lip_cilk_isvalid()) { return lip_cilk(); }
-#endif    
-    return (ADynNode::ip_real() - 1); 
+    if (lip_cilk_isvalid()) { return (lip_cilk() - 1); }
+#endif
+    return (ADynNode::ip_real() - 1);
   }
   
   VMA ra() const { return ADynNode::ip_real(); }

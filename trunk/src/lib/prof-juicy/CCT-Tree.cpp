@@ -142,7 +142,7 @@ Tree::dump(std::ostream& os, int oFlags) const
 void 
 Tree::ddump() const
 {
-  dump(std::cerr, 0/*oFlags*/);
+  dump(std::cerr, Tree::OFlg_DebugAll);
 }
 
 
@@ -753,7 +753,11 @@ ProcFrm::toString_me(int oFlags) const
     string fnm = xml::MakeAttrNum(fileId());
     string pnm = xml::MakeAttrNum(procId());
 
-    if (oFlags & Tree::OFlg_Debug) {
+    if (oFlags & Tree::OFlg_DebugAll) {
+      lm_nm = xml::MakeAttrStr(lmName());
+      fnm = xml::MakeAttrStr(fileName());
+    }
+    if ( (oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll) ) {
       pnm = xml::MakeAttrStr(procNameDbg());
     }
 
@@ -833,14 +837,14 @@ ANode::dump(ostream &os, int oFlags, const char *pre) const
 void
 ANode::ddump() const
 {
-  writeXML(std::cerr, 0/*oFlags*/, "");
+  writeXML(std::cerr, Tree::OFlg_DebugAll, "");
 } 
 
 
 void
 ANode::ddump_me() const
 {
-  string str = toString_me(0/*oFlags*/);
+  string str = toString_me(Tree::OFlg_DebugAll);
   std::cerr << str;
 }
 
