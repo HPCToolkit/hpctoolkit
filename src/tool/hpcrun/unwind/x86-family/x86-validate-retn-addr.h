@@ -4,5 +4,6 @@
 #include "validate_return_addr.h"
 
 extern validation_status validate_return_addr(void *addr, void *generic);
+extern validation_status deep_validate_return_addr(void *addr, void *generic);
 
 #endif // X86_VALIDATE_RETN_ADDR_H

@@ -68,7 +68,9 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, void **ins_ptr, void *en
   case XED_ICLASS_JRCXZ:
   case XED_ICLASS_JS:
   case XED_ICLASS_JZ:
-    next = process_conditional_branch(current, highwatermark);
+    next = process_conditional_branch(xptr, current, ins, end,
+                                      first, highwatermark);
+
     break;
 
   case XED_ICLASS_FNSTCW:

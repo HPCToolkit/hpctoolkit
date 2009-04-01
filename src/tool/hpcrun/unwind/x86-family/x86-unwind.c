@@ -186,12 +186,8 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
 
 
 step_state
-unw_step (unw_cursor_t *cursor)
+unw_step_real(unw_cursor_t *cursor)
 {
-  if ( ENABLED(DBG_UNW_STEP) ){
-    return dbg_unw_step(cursor);
-  }
-
   //-----------------------------------------------------------
   // check if we have reached the end of our unwind, which is
   // demarcated with a fence. 
@@ -235,7 +231,6 @@ unw_step (unw_cursor_t *cursor)
   
   PMSG_LIMIT(TMSG(TROLL,"error: unw_step: pc=%p, bp=%p, sp=%p", pc, bp, sp));
   dump_ui_troll(uw);
-  //PMSG_LIMIT(TMSG(TROLL,"UNW STEP calls stack troll")); tallent: redundant?
 
   if (ENABLED(TROLL_WAIT)) {
     fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
@@ -250,6 +245,49 @@ unw_step (unw_cursor_t *cursor)
   return STEP_TROLL;
 }
 
+#undef _MM
+#define _MM(a,v) [v] = 0
+
+size_t hpcrun_validation_counts[] = {
+#include "validate_return_addr.src"
+};
+
+void
+hpcrun_validation_summary(void)
+{
+  AMSG("VALIDATION: Confirmed: %ld, Probable: %ld, Wrong: %ld",
+       hpcrun_validation_counts[UNW_ADDR_CONFIRMED],
+       hpcrun_validation_counts[UNW_ADDR_PROBABLE],
+       hpcrun_validation_counts[UNW_ADDR_WRONG]);
+}
+
+/* static */ void
+vrecord(void *from, void *to, validation_status vstat)
+{
+  hpcrun_validation_counts[vstat]++;
+
+  if ( ENABLED(VALID_RECORD_ALL) || (vstat == UNW_ADDR_WRONG) ){
+    TMSG(UNW_VALID,"%p->%p (%s)", from, to, vstat2s(vstat));
+  }
+}
+
+step_state
+unw_step(unw_cursor_t *cursor)
+{
+  if ( ENABLED(DBG_UNW_STEP) ){
+    return dbg_unw_step(cursor);
+  }
+  
+  unw_cursor_t saved = *cursor;
+  step_state rv = unw_step_real(cursor);
+  if ( ENABLED(UNW_VALID) ) {
+    if (rv == STEP_OK) {
+      validation_status vstat = deep_validate_return_addr(cursor->pc, (void *) &saved);
+      vrecord(saved.pc,cursor->pc,vstat);
+    }
+  }
+  return rv;
+}
 
 void
 unw_throw(void)
@@ -498,12 +536,12 @@ drop_sample(void)
 }
 
 
-static void 
+static void
 update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 {
   unsigned int tmp_ra_offset;
 
-  int ret = stack_troll(cursor->sp, &tmp_ra_offset, &validate_return_addr, 
+  int ret = stack_troll(cursor->sp, &tmp_ra_offset, &deep_validate_return_addr,
 			(void *)cursor);
 
   if (ret != TROLL_INVALID) {

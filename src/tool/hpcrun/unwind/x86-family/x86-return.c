@@ -35,14 +35,14 @@ process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr,
 	if (u->restored_canonical == 1) break;
 	u = (unwind_interval *) u->common.prev;
 	if (u == 0) break;
-      } 
+      }
     }
-  } 
+  }
 #endif
   if (current->bp_status == BP_SAVED) {
      suspicious_interval(ins);
 #if 0
-     unwind_interval *c = NULL; 
+     unwind_interval *c = NULL;
      unwind_interval *ui = current;
      while (ui && ui->restored_canonical == 0) ui = ui->prev;
      if (ui && ui->restored_canonical) {

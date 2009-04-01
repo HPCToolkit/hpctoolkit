@@ -112,10 +112,12 @@ MY_LINUX_DYNAMIC_FILES = 		\
 
 
 MY_MIPS_FILES = \
+	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c \
 	unwind/mips/mips-unwind-interval.c
 
 MY_PPC_FILES = \
+	unwind/common/default_validation_summary.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c
 
