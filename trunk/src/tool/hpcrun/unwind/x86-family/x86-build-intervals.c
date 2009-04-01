@@ -155,6 +155,20 @@ set_status(interval_status *status, char *fui, int errcode,
   status->first   = (splay_interval_t *)first;
 }
 
+// NOTE: following routine has an additional side effect!
+//       the presence of tail calls is determined at interval building time,
+//       (and noted in the interval where it is detected).
+//
+//       During the coalesce process after the initial interval set is complete,
+//       the interval-specific tail call presence is OR-reduced to yield the
+//       tail call presence for the entire routine.
+//       The entire routine has_tail_calls value is entered in the 1st interval for the
+//       routine.
+//
+//       The tail call info is *currently* the only routine-level info computed at interval
+//       building time. If more routine-level information items come up, the reduction side
+//       effect of the coalesce routine can be expanded to accomodate.
+
 /* static */ void
 x86_coalesce_unwind_intervals(unwind_interval *ui)
 {
@@ -164,9 +178,12 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
     return;
   }
 
-  unwind_interval *current = ui;
+  unwind_interval *first   = ui;
+  unwind_interval *current = first;
   ui                       = (unwind_interval *) ui->common.next;
   
+  bool routine_has_tail_calls = first->has_tail_calls;
+
   TMSG(COALESCE," starting prototype interval =");
   if (ENABLED(COALESCE)){
     dump_ui_log(current);
@@ -177,9 +194,12 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
       dump_ui_log(ui);
     }
     
+    routine_has_tail_calls = routine_has_tail_calls || current->has_tail_calls || ui->has_tail_calls;
+
     if (x86_ui_same_data(current,ui)){
       current->common.end  = ui->common.end;
       current->common.next = ui->common.next;
+      current->has_tail_calls = current->has_tail_calls || ui->has_tail_calls;
       free_ui_node_locked((interval_tree_node *) ui);
       ui = current;
       TMSG(COALESCE,"Intervals match! Extended interval:");
@@ -192,5 +212,9 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
       current = ui;
     }
   }
+
+  // update first interval with collected info
+  first->has_tail_calls = routine_has_tail_calls;
+
   return;
 }

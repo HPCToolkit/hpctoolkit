@@ -2,6 +2,8 @@
 // $Id$
 
 
+#include <string.h>
+
 //*************************** User Include Files ****************************
 
 #include "atomic-ops.h"
@@ -23,7 +25,7 @@
 #include "sample_event.h"
 #include "sample_sources_all.h"
 #include "ui_tree.h"
-#include "string.h"
+#include "validate_return_addr.h"
 
 //*************************** Forward Declarations **************************
 
@@ -102,6 +104,10 @@ csprof_display_summary(void)
        num_samples_total, valid, blocked, errors,
        ui_count(), suspicious_count(),
        _sampling_disabled ? " SAMPLING WAS DISABLED" : "");
+
+  if (ENABLED(UNW_VALID)) {
+    hpcrun_validation_summary();
+  }
 }
 
 csprof_cct_node_t *

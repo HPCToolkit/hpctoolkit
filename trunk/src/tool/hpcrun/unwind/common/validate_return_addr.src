@@ -1,0 +1,4 @@
+  _MM(CONFIRMED,0),
+  _MM(PROBABLE,1),
+  _MM(CYCLE,2),
+  _MM(WRONG,3)

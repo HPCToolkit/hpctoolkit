@@ -1,6 +1,8 @@
 #ifndef INTERVALS_H
 #define INTERVALS_H
 
+#include <stdbool.h>
+
 #include "splay-interval.h"
 
 /*************************************************************************************
@@ -29,6 +31,8 @@ struct unwind_interval_t {
 
   struct unwind_interval_t *prev_canonical;
   int restored_canonical;
+
+  bool has_tail_calls;
 };
 
 #define lstartaddr ((unsigned long) startaddr)
@@ -70,6 +74,7 @@ extern "C" {
   void dump_ui(unwind_interval *u, int dump_to_stderr);
   void dump_ui_stderr(unwind_interval *u);
   void dump_ui_log(unwind_interval *u);
+  void dump_ui_dbg(unwind_interval *u);
   void dump_ui_troll(unwind_interval *u);
   long ui_count();
 

@@ -87,7 +87,7 @@ typedef enum {
   STEP_TROLL = 2,
 } step_state;
 
-extern int unw_step(unw_cursor_t *c);
+extern step_state unw_step(unw_cursor_t *c);
 
 
 //***************************************************************************
