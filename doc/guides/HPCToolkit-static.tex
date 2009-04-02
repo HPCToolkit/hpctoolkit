@@ -36,17 +36,17 @@
 \HPCToolkit{} is an integrated suite of tools that supports
 measurement, analysis, attribution and presentation of application
 performance for sequential and parallel programs.  This document
-describes how to link and run statically linked applications so that you can use
+describes how to link and run a statically linked application so that you can use
  \HPCToolkit\'s monitoring capabilities. 
  \end{abstract}
 
 \section{Introduction}
 On modern Linux systems, dynamically linked executables are the default. With dynamically linked executables, \HPCToolkit's \hpcrun{} script uses  library preloading
  to inject \HPCToolkit's monitoring code into an application's address space. 
-However, in some cases, one wants or needs to build statically linked executables. 
+However, in some cases, one wants or needs to build a statically linked executable. 
 \begin{itemize}
 \item One might want to build a statically linked executable because they are generally faster if the executable spends a significant amount of time calling functions in libraries. 
-\item On scalable parallel systems such as a Blue Gene/P or a Cray XT, at present the compute node kernels don't support dynamically linked executables; for these systems, one needs to build statically linked executables.
+\item On scalable parallel systems such as a Blue Gene/P or a Cray XT, at present the compute node kernels don't support using dynamically linked executables; for these systems, one needs to build a statically linked executable.
 \end{itemize}
 
 For statically linked executables, preloading \HPCToolkit's monitoring code into an application's address space at program launch is not an option. Instead, monitoring code must be added at link time; \HPCToolkit{}'s \hpclink{} script is used for this purpose.
@@ -83,13 +83,13 @@ In practice, you may want to edit your {\tt Makefile} to always build
 two versions of your program, perhaps naming them {\tt myprog} and
 {\tt myprog.hpc}.
 
-\section{Running the Statically-Linked Binary}
+\section{Running a Statically Linked Binary}
 
 For dynamically linked executables, the \hpcrun\ script sets environment variables to
 pass information to the \HPCToolkit\ monitoring library. On standard Linux systems,  statically-linked executables can still be launched with \hpcrun. 
 
 On Cray XT and Blue Gene/P systems,  the  \hpcrun\   script is not applicable because of differences in application launch procedures.
-On these systems, you will need to use the {\tt CSPROF\_OPT\_EVENT} environment variable to pass \HPCToolkit's monitoring code, which was linked into your executable using \hpclink, a  list of events to be monitored.
+On these systems, you will need to use the {\tt CSPROF\_OPT\_EVENT} environment variable to pass a list of events to \HPCToolkit's monitoring code, which was linked into your executable using \hpclink.
 Typically, you would set {\tt CSPROF\_OPT\_EVENT}  in your launch script.
 
 The {\tt CSPROF\_OPT\_EVENT} environment variable
@@ -108,7 +108,7 @@ aprun -n 64 ./myprog arg ...
 \end{quote}
 % $ Artificially end math mode.
 
-Using the Cobalt job launcher on Argonne National Laboratory's BG/P system, you would use  the {\tt --env} option to pass environment
+Using the Cobalt job launcher on Argonne National Laboratory's Blue Gene/P system, you would use  the {\tt --env} option to pass environment
 variables.  For example, you might submit a job with:
 
 \begin{quote}
@@ -121,8 +121,8 @@ qsub -t 60 -n 64 --env CSPROF_OPT_EVENT="PAPI_TOT_CYC@4000000" \
 \section{Troubleshooting}
 
 With some compilers you need to disable interprocedural
-optimization to use \hpclink.  To instrument your statically linked executable at link time, \hpclink\ inserts monitoring hooks into  your program
-with the {\tt ld} option {\tt --wrap} (see the ld(1) man page).  For some compilers, {\em e.g.}, IBM's XL compilers and Pathscale's compilers,
+optimization to use \hpclink.  To instrument your statically linked executable at link time, \hpclink\ uses the
+ {\tt ld} option {\tt --wrap} (see the ld(1) man page) to interpose monitoring code between your application and various process, thread, and signal control operations, {\em e.g.}  {\tt fork},  {\tt pthread\_create}, and {\tt sigprocmask} to name a few. For some compilers, {\em e.g.}, IBM's XL compilers and Pathscale's compilers,
 interprocedural optimization interferes with the {\tt --wrap} option
 and prevents \hpclink\ from working properly. If this is the case, \hpclink{} will emit error messages and fail. If you want to use \hpclink\ with such compilers, sadly, you must turn off interprocedural optimization. 
 
