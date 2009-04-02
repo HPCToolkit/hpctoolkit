@@ -300,7 +300,7 @@ Call::Call(ANode* _parent,
 
 
 ANode* 
-ANode::Ancestor(NodeType tp) const
+ANode::ancestor(NodeType tp) const
 {
   ANode* s = const_cast<ANode*>(this); 
   while (s && s->type() != tp) {
@@ -333,7 +333,7 @@ ANode::ancestorRoot() const
   if (Parent() == NULL) {
     return NULL;
   }  else { 
-    dyn_cast_return(ANode, Root, Ancestor(TyRoot));
+    dyn_cast_return(ANode, Root, ancestor(TyRoot));
   }
 }
 
@@ -341,28 +341,28 @@ ANode::ancestorRoot() const
 ProcFrm*
 ANode::ancestorProcFrm() const
 {
-  dyn_cast_return(ANode, ProcFrm, Ancestor(TyProcFrm)); 
+  dyn_cast_return(ANode, ProcFrm, ancestor(TyProcFrm)); 
 }
 
 
 Loop*
 ANode::ancestorLoop() const 
 {
-  dyn_cast_return(ANode, Loop, Ancestor(TyLoop));
+  dyn_cast_return(ANode, Loop, ancestor(TyLoop));
 }
 
 
 Stmt*
 ANode::ancestorStmt() const 
 {
-  dyn_cast_return(ANode, Stmt, Ancestor(TyStmt));
+  dyn_cast_return(ANode, Stmt, ancestor(TyStmt));
 }
 
 
 Call*
 ANode::ancestorCall() const
 {
-  dyn_cast_return(ANode, Call, Ancestor(TyCall)); 
+  dyn_cast_return(ANode, Call, ancestor(TyCall)); 
 }
 
 

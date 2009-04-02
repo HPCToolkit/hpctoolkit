@@ -150,38 +150,38 @@ write(Prof::CallPath::Profile* prof, std::ostream& os,
 // Routines for Inferring Call Frames (based on STRUCTURE information)
 //****************************************************************************
 
-typedef std::map<Prof::Struct::ACodeNode*, Prof::CCT::ProcFrm*> ACodeNodeToProcFrameMap;
+typedef std::map<Prof::Struct::ACodeNode*, Prof::CCT::ProcFrm*> ACodeNodeToProcFrmMap;
 
 
 typedef std::pair<Prof::CCT::ProcFrm*, 
-		  Prof::Struct::ACodeNode*> ProcFrameAndLoop;
+		  Prof::Struct::ACodeNode*> ProcFrmAndLoop;
 inline bool 
-operator<(const ProcFrameAndLoop& x, const ProcFrameAndLoop& y) 
+operator<(const ProcFrmAndLoop& x, const ProcFrmAndLoop& y) 
 {
   return ((x.first < y.first) || 
 	  ((x.first == y.first) && (x.second < y.second)));
 }
 
-typedef std::map<ProcFrameAndLoop, Prof::CCT::Loop*> ProcFrameAndLoopToCSLoopMap;
+typedef std::map<ProcFrmAndLoop, Prof::CCT::Loop*> ProcFrmAndLoopToCSLoopMap;
 
 
 
 
 static Prof::CCT::ProcFrm*
 demandProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::ACodeNode* pctxtStrct,
-		ACodeNodeToProcFrameMap& frameMap,
-		ProcFrameAndLoopToCSLoopMap& loopMap);
+		ACodeNodeToProcFrmMap& frameMap,
+		ProcFrmAndLoopToCSLoopMap& loopMap);
 
 static void
 makeProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* proc, 
-	      ACodeNodeToProcFrameMap& frameMap,
-	      ProcFrameAndLoopToCSLoopMap& loopMap);
+	      ACodeNodeToProcFrmMap& frameMap,
+	      ProcFrmAndLoopToCSLoopMap& loopMap);
 
 static void
-loopifyFrame(Prof::CCT::ProcFrm* frame, 
-	     Prof::Struct::ACodeNode* ctxtScope,
-	     ACodeNodeToProcFrameMap& frameMap,
-	     ProcFrameAndLoopToCSLoopMap& loopMap);
+makeProcFrameStructure(Prof::CCT::ProcFrm* frame, 
+		       Prof::Struct::ACodeNode* ctxtScope,
+		       ACodeNodeToProcFrmMap& frameMap,
+		       ProcFrmAndLoopToCSLoopMap& loopMap);
 
 
 static void 
@@ -218,8 +218,8 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 
   bool useStruct = (!lm);
 
-  ACodeNodeToProcFrameMap frameMap;
-  ProcFrameAndLoopToCSLoopMap loopMap;
+  ACodeNodeToProcFrmMap frameMap;
+  ProcFrmAndLoopToCSLoopMap loopMap;
 
   // For each immediate child of this node...
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
@@ -261,8 +261,8 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
       // itself or loop within
       Prof::CCT::ANode* newParent = frame;
       if (loopStrct) {
-	ProcFrameAndLoop toFind(frame, loopStrct);
-	ProcFrameAndLoopToCSLoopMap::iterator it = loopMap.find(toFind);
+	ProcFrmAndLoop toFind(frame, loopStrct);
+	ProcFrmAndLoopToCSLoopMap::iterator it = loopMap.find(toFind);
 	DIAG_Assert(it != loopMap.end(), "Cannot find corresponding loop structure:\n" << loopStrct->toStringXML());
 	newParent = (*it).second;
       }
@@ -287,12 +287,12 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 // Assumes that symbolic information has been added to node.
 static Prof::CCT::ProcFrm*
 demandProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::ACodeNode* pctxtStrct,
-		ACodeNodeToProcFrameMap& frameMap,
-		ProcFrameAndLoopToCSLoopMap& loopMap)
+		ACodeNodeToProcFrmMap& frameMap,
+		ProcFrmAndLoopToCSLoopMap& loopMap)
 {
   Prof::CCT::ProcFrm* frame = NULL;
   
-  ACodeNodeToProcFrameMap::iterator it = frameMap.find(pctxtStrct);
+  ACodeNodeToProcFrmMap::iterator it = frameMap.find(pctxtStrct);
   if (it != frameMap.end()) {
     frame = (*it).second;
   }
@@ -304,7 +304,7 @@ demandProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::ACodeNode* pctxtStrct,
     makeProcFrame(node, procStrct, frameMap, loopMap);
 
     // frame should now be in map
-    ACodeNodeToProcFrameMap::iterator it = frameMap.find(pctxtStrct);
+    ACodeNodeToProcFrmMap::iterator it = frameMap.find(pctxtStrct);
     DIAG_Assert(it != frameMap.end(), "");
     frame = (*it).second;
   }
@@ -315,8 +315,8 @@ demandProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::ACodeNode* pctxtStrct,
 
 static void 
 makeProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
-	      ACodeNodeToProcFrameMap& frameMap,
-	      ProcFrameAndLoopToCSLoopMap& loopMap)
+	      ACodeNodeToProcFrmMap& frameMap,
+	      ProcFrmAndLoopToCSLoopMap& loopMap)
 {
   Prof::CCT::ProcFrm* frame = new Prof::CCT::ProcFrm(NULL, procStrct);
   procStrct->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
@@ -324,19 +324,20 @@ makeProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
   frame->Link(node->Parent());
   frameMap.insert(std::make_pair(procStrct, frame));
 
-  loopifyFrame(frame, procStrct, frameMap, loopMap);
+  makeProcFrameStructure(frame, procStrct, frameMap, loopMap);
 }
 
 
 static void
-loopifyFrame(Prof::CCT::ANode* mirrorNode, Prof::Struct::ACodeNode* node,
-	     Prof::CCT::ProcFrm* frame,
-	     Prof::CCT::Loop* enclLoop,
-	     ACodeNodeToProcFrameMap& frameMap,
-	     ProcFrameAndLoopToCSLoopMap& loopMap);
+makeProcFrameStructure(Prof::CCT::ANode* mirrorNode, 
+		       Prof::Struct::ACodeNode* node,
+		       Prof::CCT::ProcFrm* frame,
+		       Prof::CCT::Loop* enclLoop,
+		       ACodeNodeToProcFrmMap& frameMap,
+		       ProcFrmAndLoopToCSLoopMap& loopMap);
 
 
-// loopifyFrame: Given a procedure frame 'frame' and its associated
+// makeProcFrameStructure: Given a procedure frame 'frame' and its associated
 // context scope 'ctxtScope' (Struct::Proc or Struct::Alien), mirror
 // ctxtScope's loop and context structure and add entries to
 // 'frameMap' and 'loopMap.'
@@ -345,24 +346,24 @@ loopifyFrame(Prof::CCT::ANode* mirrorNode, Prof::Struct::ACodeNode* node,
 // pruned by pruneByMetrics().  We could be a little smarter, but on
 // another day.
 static void
-loopifyFrame(Prof::CCT::ProcFrm* frame, 
-	     Prof::Struct::ACodeNode* ctxtScope,
-	     ACodeNodeToProcFrameMap& frameMap,
-	     ProcFrameAndLoopToCSLoopMap& loopMap)
+makeProcFrameStructure(Prof::CCT::ProcFrm* frame, 
+		       Prof::Struct::ACodeNode* ctxtScope,
+		       ACodeNodeToProcFrmMap& frameMap,
+		       ProcFrmAndLoopToCSLoopMap& loopMap)
 {
-  loopifyFrame(frame, ctxtScope, frame, NULL, frameMap, loopMap);
+  makeProcFrameStructure(frame, ctxtScope, frame, NULL, frameMap, loopMap);
 }
 
 
 // 'frame' is the enclosing frame
 // 'loop' is the enclosing loop
 static void
-loopifyFrame(Prof::CCT::ANode* mirrorNode, 
-	     Prof::Struct::ACodeNode* node,
-	     Prof::CCT::ProcFrm* frame,
-	     Prof::CCT::Loop* enclLoop,
-	     ACodeNodeToProcFrameMap& frameMap,
-	     ProcFrameAndLoopToCSLoopMap& loopMap)
+makeProcFrameStructure(Prof::CCT::ANode* mirrorNode, 
+		       Prof::Struct::ACodeNode* node,
+		       Prof::CCT::ProcFrm* frame,
+		       Prof::CCT::Loop* enclLoop,
+		       ACodeNodeToProcFrmMap& frameMap,
+		       ProcFrmAndLoopToCSLoopMap& loopMap)
 {
   for (Prof::Struct::ACodeNodeChildIterator it(node); it.Current(); ++it) {
     Prof::Struct::ACodeNode* n = it.CurNode();
@@ -383,7 +384,7 @@ loopifyFrame(Prof::CCT::ANode* mirrorNode,
     if (n->type() == Prof::Struct::ANode::TyLOOP) {
       // loops are always children of the current root (loop or frame)
       Prof::CCT::Loop* lp = new Prof::CCT::Loop(mirrorNode, n);
-      loopMap.insert(std::make_pair(ProcFrameAndLoop(frame, n), lp));
+      loopMap.insert(std::make_pair(ProcFrmAndLoop(frame, n), lp));
       DIAG_DevMsgIf(0, hex << "(" << frame << " " << n << ") -> (" << lp << ")" << dec);
 
       mirrorRoot = lp;
@@ -392,7 +393,7 @@ loopifyFrame(Prof::CCT::ANode* mirrorNode,
     else if (n->type() == Prof::Struct::ANode::TyALIEN) {
       Prof::CCT::ProcFrm* fr = new Prof::CCT::ProcFrm(NULL, n);
       frameMap.insert(std::make_pair(n, fr));
-      DIAG_DevMsgIf(0, "loopifyFrame: " << fr->procName() << " (sid: " << fr->procId() << ")" << hex << " [" << n << " -> " << fr << "]" << dec);
+      DIAG_DevMsgIf(0, "makeProcFrameStructure: " << fr->procName() << " (sid: " << fr->procId() << ")" << hex << " [" << n << " -> " << fr << "]" << dec);
       
       if (enclLoop) {
 	fr->Link(enclLoop);
@@ -405,7 +406,8 @@ loopifyFrame(Prof::CCT::ANode* mirrorNode,
       nxt_frame = fr;
     }
     
-    loopifyFrame(mirrorRoot, n, nxt_frame, nxt_enclLoop, frameMap, loopMap);
+    makeProcFrameStructure(mirrorRoot, n, nxt_frame, nxt_enclLoop, 
+			   frameMap, loopMap);
   }
 }
   
