@@ -81,7 +81,7 @@ void
 overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
 
-bool 
+void
 normalize(Prof::CallPath::Profile* prof, string lush_agent);
 
 void 
