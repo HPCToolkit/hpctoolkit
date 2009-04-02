@@ -335,7 +335,7 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
     }
   }
 }
-  
+
 
 
 //***************************************************************************
@@ -352,19 +352,17 @@ static void
 lush_makeParallelOverhead(Prof::CallPath::Profile* prof);
 
 
-bool 
+void 
 Analysis::CallPath::normalize(Prof::CallPath::Profile* prof, 
 			      string lush_agent)
 {
+  pruneByMetrics(prof);
+
   coalesceStmts(prof);
 
   if (!lush_agent.empty()) {
     lush_makeParallelOverhead(prof);
   }
-
-  pruneByMetrics(prof);
-
-  return (true);
 }
 
 
@@ -384,27 +382,26 @@ coalesceStmts(Prof::CallPath::Profile* prof)
 }
 
 
-// coalesceStmts: In the CCT collected by hpcrun, leaf nodes are
-// distinct according to instruction pointer.  We wish to coalesce all
-// nodes belonging to the same line.  One way of doing this 
+// coalesceStmts: In the CCT collected by hpcrun, leaf nodes
+// (CCT::Stmt) are distinct according to instruction pointer.  After
+// static structure has been overlayed, they have been coalesced by
+// Struct::Stmt.  However, because structure information distinguishes
+// callsites from statements, we still want to coalesce CCT::Stmts by
+// line.
 //
-// NOTE: We assume that prior normalizations have been applied.  This
-// means that statement nodes have already been separated by procedure
-// frame (including Alien frames).  This means that all of a node's
-// child statement nodes obey the non-overlapping principle of a
-// source code.
+// NOTE: After static structure has been overlayed on the CCT, a
+// node's child statement nodes obey the non-overlapping principle of
+// a source code.
 static void 
 coalesceStmts(Prof::CCT::ANode* node)
 {
-  // Since hpcstruct distinguishes callsites from statements, use
-  // SrcFile::ln instead of Prof::Struct::ACodeNode*.
-  typedef std::map<SrcFile::ln, Prof::CCT::Stmt*> StructToStmtMap;
+  typedef std::map<SrcFile::ln, Prof::CCT::Stmt*> LineToStmtMap;
 
   if (!node) { 
     return; 
   }
 
-  StructToStmtMap stmtMap;
+  LineToStmtMap stmtMap;
   
   // For each immediate child of this node...
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
@@ -418,7 +415,7 @@ coalesceStmts(Prof::CCT::ANode* node)
       // This child is a leaf. Test for duplicate source line info.
       Prof::CCT::Stmt* c = dynamic_cast<Prof::CCT::Stmt*>(child);
       SrcFile::ln line = c->begLine();
-      StructToStmtMap::iterator it = stmtMap.find(line);
+      LineToStmtMap::iterator it = stmtMap.find(line);
       if (it != stmtMap.end()) {
 	// found -- we have a duplicate
 	Prof::CCT::Stmt* c1 = (*it).second;
@@ -428,7 +425,7 @@ coalesceStmts(Prof::CCT::ANode* node)
 	child->Unlink();
 	delete child;
 	// NOTE: could clear Prof::CallPath::Profile::StructMetricIdFlg
-      } 
+      }
       else { 
 	// no entry found -- add
 	stmtMap.insert(std::make_pair(line, c));
@@ -438,7 +435,7 @@ coalesceStmts(Prof::CCT::ANode* node)
       // Recur
       coalesceStmts(child);
     }
-  } 
+  }
 }
 
 
@@ -558,7 +555,7 @@ lush_makeParallelOverhead(Prof::CCT::ANode* node,
 			  bool is_overhead_ctxt);
 
 
-
+// Assumes: metrics are still only at leaves (CCT::Stmt)
 static void 
 lush_makeParallelOverhead(Prof::CallPath::Profile* prof)
 {
@@ -614,31 +611,27 @@ lush_makeParallelOverhead(Prof::CCT::ANode* node,
   if (!node) { return; }
 
   // ------------------------------------------------------------
-  // Visit node
+  // Visit CCT::Stmt nodes (Assumes metrics are only at leaves)
   // ------------------------------------------------------------
-  if (isOverheadCtxt) {
-    for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
-      Prof::CCT::ANode* x = it.CurNode();
-      Prof::CCT::ADynNode* x_dyn = dynamic_cast<Prof::CCT::ADynNode*>(x);
-      if (x_dyn) {
-	for (uint i = 0; i < m_src.size(); ++i) {
-	  uint src_idx = m_src[i];
-	  uint dst_idx = m_dst[i];
-	  hpcfile_metric_data_t mval = x_dyn->metric(src_idx);
-
-	  x_dyn->metricDecr(src_idx, mval);
-	  x_dyn->metricIncr(dst_idx, mval);
-	}
-      }
+  if (isOverheadCtxt && (typeid(*node) == typeid(Prof::CCT::Stmt))) {
+    Prof::CCT::Stmt* stmt = dynamic_cast<Prof::CCT::Stmt*>(node);
+    for (uint i = 0; i < m_src.size(); ++i) {
+      uint src_idx = m_src[i];
+      uint dst_idx = m_dst[i];
+      hpcfile_metric_data_t mval = stmt->metric(src_idx);
+      
+      stmt->metricDecr(src_idx, mval);
+      stmt->metricIncr(dst_idx, mval);
     }
   }
 
   // ------------------------------------------------------------
   // Recur
   // ------------------------------------------------------------
-
+  
+  // Note: once set, isOverheadCtxt should remain true for all descendents
   bool isOverheadCtxt_nxt = isOverheadCtxt;
-  if (typeid(*node) == typeid(Prof::CCT::ProcFrm)) {
+  if (!isOverheadCtxt && typeid(*node) == typeid(Prof::CCT::ProcFrm)) {
     Prof::CCT::ProcFrm* x = dynamic_cast<Prof::CCT::ProcFrm*>(node);
     isOverheadCtxt_nxt = ParallelOverhead::is_overhead(x);
   }
