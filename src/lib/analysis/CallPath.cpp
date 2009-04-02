@@ -62,6 +62,8 @@ using std::string;
 #include <climits>
 #include <cstring>
 
+#include <typeinfo>
+
 
 //*************************** User Include Files ****************************
 
@@ -150,38 +152,20 @@ write(Prof::CallPath::Profile* prof, std::ostream& os,
 // Routines for Inferring Call Frames (based on STRUCTURE information)
 //****************************************************************************
 
-typedef std::map<Prof::Struct::ACodeNode*, Prof::CCT::ProcFrm*> ACodeNodeToProcFrmMap;
+typedef std::map<Prof::Struct::ANode*, Prof::CCT::ANode*> StructToCCTMap;
 
-
-typedef std::pair<Prof::CCT::ProcFrm*, 
-		  Prof::Struct::ACodeNode*> ProcFrmAndLoop;
-inline bool 
-operator<(const ProcFrmAndLoop& x, const ProcFrmAndLoop& y) 
-{
-  return ((x.first < y.first) || 
-	  ((x.first == y.first) && (x.second < y.second)));
-}
-
-typedef std::map<ProcFrmAndLoop, Prof::CCT::Loop*> ProcFrmAndLoopToCSLoopMap;
-
-
-
+static Prof::CCT::ANode*
+demandScopeInFrame(Prof::CCT::ADynNode* node, Prof::Struct::ANode* strct, 
+		   StructToCCTMap& strctToCCTMap);
 
 static Prof::CCT::ProcFrm*
-demandProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::ACodeNode* pctxtStrct,
-		ACodeNodeToProcFrmMap& frameMap,
-		ProcFrmAndLoopToCSLoopMap& loopMap);
+makeFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
+	  StructToCCTMap& strctToCCTMap);
 
 static void
-makeProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* proc, 
-	      ACodeNodeToProcFrmMap& frameMap,
-	      ProcFrmAndLoopToCSLoopMap& loopMap);
-
-static void
-makeProcFrameStructure(Prof::CCT::ProcFrm* frame, 
-		       Prof::Struct::ACodeNode* ctxtScope,
-		       ACodeNodeToProcFrmMap& frameMap,
-		       ProcFrmAndLoopToCSLoopMap& loopMap);
+makeFrameStructure(Prof::CCT::ANode* node_frame,
+		   Prof::Struct::ACodeNode* node_strct,
+		   StructToCCTMap& strctToCCTMap);
 
 
 static void 
@@ -218,8 +202,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 
   bool useStruct = (!lm);
 
-  ACodeNodeToProcFrmMap frameMap;
-  ProcFrmAndLoopToCSLoopMap loopMap;
+  StructToCCTMap strctToCCTMap;
 
   // For each immediate child of this node...
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
@@ -237,39 +220,26 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 	DIAG_DevMsg(0, "overlayStaticStructure: " << hex << ((p) ? p->ip() : 0) << " --> " << ip_ur << dec);
       }
 
-      // 1. Add symbolic information to 'n'
       using namespace Prof;
-      
+
+      // 1. Add symbolic information to 'n_dyn'
       Struct::ACodeNode* strct = 
 	Analysis::Util::demandStructure(ip_ur, lmStrct, lm, useStruct);
-
-      Struct::ACodeNode* pctxtStrct = strct->ancestorProcCtxt();
-
-      Struct::ANode* t = strct->ancestor(Struct::ANode::TyLOOP, 
-					 Struct::ANode::TyALIEN, 
-					 Struct::ANode::TyPROC);
-      Struct::Loop* loopStrct = dynamic_cast<Struct::Loop*>(t);
-
       n->structure(strct);
       strct->metricIncr(CallPath::Profile::StructMetricIdFlg, 1.0);
 
-      // 2. Demand a procedure frame for 'n', complete with loop structure
-      Prof::CCT::ProcFrm* frame = demandProcFrame(n_dyn, pctxtStrct, 
-						  frameMap, loopMap);
-      
-      // 3. Determine parent context for 'n': the procedure frame
-      // itself or loop within
-      Prof::CCT::ANode* newParent = frame;
-      if (loopStrct) {
-	ProcFrmAndLoop toFind(frame, loopStrct);
-	ProcFrmAndLoopToCSLoopMap::iterator it = loopMap.find(toFind);
-	DIAG_Assert(it != loopMap.end(), "Cannot find corresponding loop structure:\n" << loopStrct->toStringXML());
-	newParent = (*it).second;
-      }
-      
-      // 4. Link 'n' to its parent
+      // 2. Demand a procedure frame for 'n_dyn' and its scope within it
+      Struct::ANode* scope_strct = strct->ancestor(Struct::ANode::TyLOOP,
+						   Struct::ANode::TyALIEN,
+						   Struct::ANode::TyPROC);
+      scope_strct->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
+
+      Prof::CCT::ANode* scope_frame = 
+	demandScopeInFrame(n_dyn, scope_strct, strctToCCTMap);
+
+      // 3. Link 'n' to its parent
       n->Unlink();
-      n->Link(newParent);
+      n->Link(scope_frame);
     }
     
     // recur 
@@ -280,134 +250,89 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 }
 
 
-// demandProcFrame: Find or create a procedure frame for 'node' given
-// its corresponding procedure context 'pctxtStrct' (Struct::Proc or
-// Struct::Alien)
-// 
-// Assumes that symbolic information has been added to node.
-static Prof::CCT::ProcFrm*
-demandProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::ACodeNode* pctxtStrct,
-		ACodeNodeToProcFrmMap& frameMap,
-		ProcFrmAndLoopToCSLoopMap& loopMap)
+// demandScopeInFrame: Return the scope in the CCT frame that
+// corresponds to 'strct'.  Creates a procedure frame and adds
+// structure to it, if necessary.
+//
+// INVARIANT: symbolic information has been added to 'node'.
+static Prof::CCT::ANode*
+demandScopeInFrame(Prof::CCT::ADynNode* node, 
+		   Prof::Struct::ANode* strct, 
+		   StructToCCTMap& strctToCCTMap)
 {
-  Prof::CCT::ProcFrm* frame = NULL;
+  Prof::CCT::ANode* frameScope = NULL;
   
-  ACodeNodeToProcFrmMap::iterator it = frameMap.find(pctxtStrct);
-  if (it != frameMap.end()) {
-    frame = (*it).second;
+  StructToCCTMap::iterator it = strctToCCTMap.find(strct);
+  if (it != strctToCCTMap.end()) {
+    frameScope = (*it).second;
   }
   else {
-    // Find and create the frame.
-    // INVARIANT: 'node' has symbolic information
+    Prof::Struct::Proc* procStrct = strct->AncProc();
+    makeFrame(node, procStrct, strctToCCTMap);
 
-    Prof::Struct::Proc* procStrct = pctxtStrct->AncProc();
-    makeProcFrame(node, procStrct, frameMap, loopMap);
-
-    // frame should now be in map
-    ACodeNodeToProcFrmMap::iterator it = frameMap.find(pctxtStrct);
-    DIAG_Assert(it != frameMap.end(), "");
-    frame = (*it).second;
+    StructToCCTMap::iterator it1 = strctToCCTMap.find(strct);
+    DIAG_Assert(it1 != strctToCCTMap.end(), "");
+    frameScope = (*it1).second;
   }
   
+  return frameScope;
+}
+
+
+// makeFrame: Create a CCT::ProcFrm 'frame' corresponding to 'procStrct'
+//   - make 'frame' a sibling of 'node'
+//   - populate 'strctToCCTMap' with the frame's static structure
+static Prof::CCT::ProcFrm*
+makeFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
+	  StructToCCTMap& strctToCCTMap)
+{
+  Prof::CCT::ProcFrm* frame = new Prof::CCT::ProcFrm(NULL, procStrct);
+  frame->Link(node->Parent());
+  strctToCCTMap.insert(std::make_pair(procStrct, frame));
+
+  makeFrameStructure(frame, procStrct, strctToCCTMap);
+
   return frame;
 }
 
 
-static void 
-makeProcFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
-	      ACodeNodeToProcFrmMap& frameMap,
-	      ProcFrmAndLoopToCSLoopMap& loopMap)
-{
-  Prof::CCT::ProcFrm* frame = new Prof::CCT::ProcFrm(NULL, procStrct);
-  procStrct->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
-
-  frame->Link(node->Parent());
-  frameMap.insert(std::make_pair(procStrct, frame));
-
-  makeProcFrameStructure(frame, procStrct, frameMap, loopMap);
-}
-
-
-static void
-makeProcFrameStructure(Prof::CCT::ANode* mirrorNode, 
-		       Prof::Struct::ACodeNode* node,
-		       Prof::CCT::ProcFrm* frame,
-		       Prof::CCT::Loop* enclLoop,
-		       ACodeNodeToProcFrmMap& frameMap,
-		       ProcFrmAndLoopToCSLoopMap& loopMap);
-
-
-// makeProcFrameStructure: Given a procedure frame 'frame' and its associated
-// context scope 'ctxtScope' (Struct::Proc or Struct::Alien), mirror
-// ctxtScope's loop and context structure and add entries to
-// 'frameMap' and 'loopMap.'
+// makeFrameStructure: Given a procedure frame 'frame' and its
+// associated procedure structure 'procStrct', mirror procStrct's loop
+// and alien structure within 'frame'.  Populate 'strctToCCTMap'.
 // 
 // NOTE: this *eagerly* adds structure to a frame that may later be
 // pruned by pruneByMetrics().  We could be a little smarter, but on
 // another day.
 static void
-makeProcFrameStructure(Prof::CCT::ProcFrm* frame, 
-		       Prof::Struct::ACodeNode* ctxtScope,
-		       ACodeNodeToProcFrmMap& frameMap,
-		       ProcFrmAndLoopToCSLoopMap& loopMap)
+makeFrameStructure(Prof::CCT::ANode* node_frame,
+		   Prof::Struct::ACodeNode* node_strct,
+		   StructToCCTMap& strctToCCTMap)
 {
-  makeProcFrameStructure(frame, ctxtScope, frame, NULL, frameMap, loopMap);
-}
-
-
-// 'frame' is the enclosing frame
-// 'loop' is the enclosing loop
-static void
-makeProcFrameStructure(Prof::CCT::ANode* mirrorNode, 
-		       Prof::Struct::ACodeNode* node,
-		       Prof::CCT::ProcFrm* frame,
-		       Prof::CCT::Loop* enclLoop,
-		       ACodeNodeToProcFrmMap& frameMap,
-		       ProcFrmAndLoopToCSLoopMap& loopMap)
-{
-  for (Prof::Struct::ACodeNodeChildIterator it(node); it.Current(); ++it) {
-    Prof::Struct::ACodeNode* n = it.CurNode();
+  for (Prof::Struct::ACodeNodeChildIterator it(node_strct); 
+       it.Current(); ++it) {
+    Prof::Struct::ACodeNode* n_strct = it.CurNode();
 
     // Done: if we reach the natural base case or embedded proceedure
-    if (n->isLeaf() || n->type() == Prof::Struct::ANode::TyPROC) {
+    if (n_strct->isLeaf() || typeid(*n_strct) == typeid(Prof::Struct::Proc)) {
       continue;
     }
 
-    // - Flatten nested alien frames descending from a loop
-    // - Presume that alien frames derive from callsites in the parent
-    // frame, but flatten any nesting.
-
-    Prof::CCT::ANode* mirrorRoot = mirrorNode;
-    Prof::CCT::ProcFrm* nxt_frame = frame;
-    Prof::CCT::Loop* nxt_enclLoop = enclLoop;
-
-    if (n->type() == Prof::Struct::ANode::TyLOOP) {
-      // loops are always children of the current root (loop or frame)
-      Prof::CCT::Loop* lp = new Prof::CCT::Loop(mirrorNode, n);
-      loopMap.insert(std::make_pair(ProcFrmAndLoop(frame, n), lp));
-      DIAG_DevMsgIf(0, hex << "(" << frame << " " << n << ") -> (" << lp << ")" << dec);
-
-      mirrorRoot = lp;
-      nxt_enclLoop = lp;
+    // Create n_frame, the frame node corresponding to n_strct
+    Prof::CCT::ANode* n_frame = NULL;
+    if (typeid(*n_strct) == typeid(Prof::Struct::Loop)) {
+      n_frame = new Prof::CCT::Loop(node_frame, n_strct);
     }
-    else if (n->type() == Prof::Struct::ANode::TyALIEN) {
-      Prof::CCT::ProcFrm* fr = new Prof::CCT::ProcFrm(NULL, n);
-      frameMap.insert(std::make_pair(n, fr));
-      DIAG_DevMsgIf(0, "makeProcFrameStructure: " << fr->procName() << " (sid: " << fr->procId() << ")" << hex << " [" << n << " -> " << fr << "]" << dec);
-      
-      if (enclLoop) {
-	fr->Link(enclLoop);
-      }
-      else {
-	fr->Link(frame);
-      }
-
-      mirrorRoot = fr;
-      nxt_frame = fr;
+    else if (typeid(*n_strct) == typeid(Prof::Struct::Alien)) {
+      n_frame = new Prof::CCT::ProcFrm(node_frame, n_strct);
     }
     
-    makeProcFrameStructure(mirrorRoot, n, nxt_frame, nxt_enclLoop, 
-			   frameMap, loopMap);
+    if (n_frame) {
+      strctToCCTMap.insert(std::make_pair(n_strct, n_frame));
+      DIAG_DevMsgIf(0, "makeFrameStructure: " << hex << " [" << n_strct << " -> " << n_frame << "]" << dec);
+
+      // Recur
+      makeFrameStructure(n_frame, n_strct, strctToCCTMap);
+    }
   }
 }
   
@@ -487,7 +412,7 @@ coalesceStmts(Prof::CCT::ANode* node)
     it++; // advance iterator -- it is pointing at 'child'
     
     bool inspect = (child->isLeaf() 
-		    && (child->type() == Prof::CCT::ANode::TyStmt));
+		    && (typeid(*child) == typeid(Prof::CCT::Stmt)));
 
     if (inspect) {
       // This child is a leaf. Test for duplicate source line info.
@@ -559,8 +484,8 @@ pruneByMetrics(Prof::CCT::ANode* node)
     pruneByMetrics(x);
 
     // 2. Trim this node if necessary
-    bool isTy = (x->type() == Prof::CCT::ANode::TyProcFrm || 
-		 x->type() == Prof::CCT::ANode::TyLoop);
+    bool isTy = (typeid(*x) == typeid(Prof::CCT::ProcFrm) || 
+		 typeid(*x) == typeid(Prof::CCT::Loop));
     if (x->isLeaf() && isTy) {
       x->Unlink(); // unlink 'x' from tree
       DIAG_DevMsgIf(0, "pruneByMetrics: " << hex << x << dec << " (sid: " << x->structureId() << ")");
@@ -713,7 +638,7 @@ lush_makeParallelOverhead(Prof::CCT::ANode* node,
   // ------------------------------------------------------------
 
   bool isOverheadCtxt_nxt = isOverheadCtxt;
-  if (node->type() == Prof::CCT::ANode::TyProcFrm) {
+  if (typeid(*node) == typeid(Prof::CCT::ProcFrm)) {
     Prof::CCT::ProcFrm* x = dynamic_cast<Prof::CCT::ProcFrm*>(node);
     isOverheadCtxt_nxt = ParallelOverhead::is_overhead(x);
   }
