@@ -310,7 +310,7 @@ public:
   // Ancestor: find first node in path from this to root with given type
   // --------------------------------------------------------
   // a node may be an ancestor of itself
-  ANode*   Ancestor(NodeType tp) const;
+  ANode*   ancestor(NodeType tp) const;
   
   Root*    ancestorRoot() const;
   ProcFrm* ancestorProcFrm() const;
