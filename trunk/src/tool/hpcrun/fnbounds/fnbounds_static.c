@@ -59,7 +59,7 @@ fnbounds_epoch_finalize()
   void *start = csprof_nm_addrs[0];
   void *end = csprof_nm_addrs[csprof_nm_addrs_len - 1];
 
-  csprof_epoch_add_module(files_executable_name(), 0 /* no vaddr */,
+  csprof_epoch_add_module(files_executable_pathname(), 0 /* no vaddr */,
 			  start, end - start);
 } 
 

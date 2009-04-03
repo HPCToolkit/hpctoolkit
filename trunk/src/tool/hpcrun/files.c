@@ -52,7 +52,7 @@ static char *os_realpath(const char *inpath, char *outpath);
 static char default_path[PATH_MAX];
 static char output_directory[PATH_MAX];
 static char *executable_name = 0;
-
+static char *executable_pathname = 0;
 
 
 //***************************************************************
@@ -63,6 +63,13 @@ void
 files_trace_name(char *filename, unsigned int mpi, int len)
 {
   files_name(filename, mpi, CSPROF_TRACE_FNM_SFX);
+}
+
+
+const char *
+files_executable_pathname(void)
+{
+  return executable_pathname;
 }
 
 
@@ -131,12 +138,22 @@ files_set_directory()
 }
 
 
+static const size_t PATH_MAX_LEN = 2048;
+
 void 
 files_set_executable(char *execname)
 {
   executable_name = strdup(basename(execname));
+  if (executable_name[0] != '/') {
+    char path[PATH_MAX_LEN];
+    // check return code; use pathname in fnbounds_static epoch finalize
+    realpath(executable_name, path);
+    executable_pathname = strdup(path);
+  }
+  else {
+    executable_pathname = executable_name;
+  }
 }
-
 
 
 //***************************************************************

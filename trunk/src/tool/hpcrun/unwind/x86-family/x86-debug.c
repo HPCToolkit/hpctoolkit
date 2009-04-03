@@ -19,7 +19,8 @@ void x86_dump_intervals(char  *addr)
 }
 
 
-void x86_dump_ins(void *ins)
+void
+x86_dump_ins(void *ins)
 {
   xed_decoded_inst_t xedd;
   xed_decoded_inst_t *xptr = &xedd;
