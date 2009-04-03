@@ -43,15 +43,17 @@
  * macros
  *****************************************************************************/
 
-#define CSPROF_PROFILE_SIGNAL  SIGPROF
-#define CSPROF_PROFILE_TIMER   ITIMER_PROF
-
-#ifdef CATAMOUNT
-# define CSPROF_PROFILE_SIGNAL SIGALRM
-# define CSPROF_PROFILE_TIMER  ITIMER_REAL
+#if defined(CATAMOUNT)
+#   define CSPROF_PROFILE_SIGNAL           SIGALRM
+#   define CSPROF_PROFILE_TIMER            ITIMER_REAL
+#else
+#  define CSPROF_PROFILE_SIGNAL            SIGPROF
+#  define CSPROF_PROFILE_TIMER             ITIMER_PROF
 #endif
 
-#define SECONDS_TO_MICROSECONDS(s) ((s) * 1000000)
+#define SECONDS_PER_HOUR                   3600
+#define MICROSECONDS_PER_SECOND            1000000
+#define SECONDS_TO_MICROSECONDS(s)         ((s) * MICROSECONDS_PER_SECOND)
 
 #define ITIMER_METRIC_ID 0
 
