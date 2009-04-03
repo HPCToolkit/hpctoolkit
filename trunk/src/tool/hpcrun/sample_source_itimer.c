@@ -55,9 +55,7 @@
 
 #define ITIMER_METRIC_ID 0
 
-//#define BGP
-
-#if !defined(BGP)
+#if !defined(HOST_SYSTEM_IBM_BLUEGENE)
 #  define USE_THREAD_USAGE_FOR_WALLCLOCK
 #endif
 
@@ -65,7 +63,7 @@
 
 #if defined(RESET_ITIMER_EACH_SAMPLE)
 
-# if defined(BGP)
+#  if defined(HOST_SYSTEM_IBM_BLUEGENE)
   //--------------------------------------------------------------------------
   // Blue Gene/P compute node support for itimer incorrectly delivers SIGALRM
   // in one-shot mode. To sidestep this problem, we use itimer in 
@@ -74,10 +72,10 @@
   //--------------------------------------------------------------------------
 #    define AUTOMATIC_ITIMER_RESET_SECONDS(x)            (SECONDS_PER_HOUR) 
 #    define AUTOMATIC_ITIMER_RESET_MICROSECONDS(x)       (0)
-#  else  // !defined(BGP)
+#  else  // !defined(HOST_SYSTEM_IBM_BLUEGENE)
 #    define AUTOMATIC_ITIMER_RESET_SECONDS(x)            (0) 
 #    define AUTOMATIC_ITIMER_RESET_MICROSECONDS(x)       (0)
-#  endif // !defined(BGP)
+#  endif // !defined(HOST_SYSTEM_IBM_BLUEGENE)
 
 #else  // !defined(RESET_ITIMER_EACH_SAMPLE)
 

@@ -1362,7 +1362,7 @@ fi
 
 
 #-------------------------------------------------
-# Option: --enable-lush
+# enable-lush
 #-------------------------------------------------
 
 AC_ARG_ENABLE([lush],
@@ -1401,6 +1401,32 @@ AC_ARG_WITH([objcopy],
 AC_MSG_RESULT([yes (${OPT_OBJCOPY})])
 
 AC_SUBST(OPT_OBJCOPY)
+
+
+#-------------------------------------------------
+# enable-bluegene: BG/* support
+#   FIXME: should be a better way
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether to enable IBM BlueGene/* support])
+
+OPT_ENABLE_IBM_BLUEGENE="yes"
+
+AC_ARG_ENABLE([bluegene],
+  AS_HELP_STRING([--enable-bluegene],
+                 [Enable BlueGene/* support]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_IBM_BLUEGENE="yes" ;;
+     no)  OPT_ENABLE_IBM_BLUEGENE="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-bluegene]) ;;
+   esac],
+  [OPT_ENABLE_IBM_BLUEGENE=yes])
+
+AC_MSG_RESULT([${OPT_ENABLE_IBM_BLUEGENE}])
+
+if test "${OPT_ENABLE_IBM_BLUEGENE}" = "yes" ; then
+  AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [], [IBM BlueGene/* support])
+fi
 
 
 #----------------------------------------------------------------------------

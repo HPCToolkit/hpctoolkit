@@ -178,6 +178,7 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	utilities/executable-path.c utilities/spinlock.c \
 	utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
+	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -216,10 +217,12 @@ am__objects_8 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_9 = libcsprof_la-dylib.lo
 @HOST_OS_LINUX_TRUE@am__objects_10 = $(am__objects_9)
-am__objects_11 = libcsprof_la-mips-unwind.lo \
+am__objects_11 = libcsprof_la-default_validation_summary.lo \
+	libcsprof_la-mips-unwind.lo \
 	libcsprof_la-mips-unwind-interval.lo
 @HOST_CPU_MIPS_TRUE@am__objects_12 = $(am__objects_11)
-am__objects_13 = libcsprof_la-ppc64-unwind.lo \
+am__objects_13 = libcsprof_la-default_validation_summary.lo \
+	libcsprof_la-ppc64-unwind.lo \
 	libcsprof_la-ppc64-unwind-interval.lo
 @HOST_CPU_PPC_TRUE@am__objects_14 = $(am__objects_13)
 am__objects_15 = libcsprof_la-x86-all.lo libcsprof_la-x86-cold-path.lo \
@@ -254,8 +257,10 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	utilities/executable-path.c utilities/spinlock.c \
 	utilities/tokenize.c utilities/unlink.c \
-	fnbounds/fnbounds_static.c unwind/mips/mips-unwind.c \
-	unwind/mips/mips-unwind-interval.c unwind/ppc64/ppc64-unwind.c \
+	fnbounds/fnbounds_static.c \
+	unwind/common/default_validation_summary.c \
+	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
+	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
 	unwind/x86-family/x86-all.c unwind/x86-family/x86-cold-path.c \
 	unwind/x86-family/x86-validate-retn-addr.c \
@@ -296,10 +301,12 @@ am__objects_19 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-spinlock.$(OBJEXT) libcsprof_o-tokenize.$(OBJEXT) \
 	libcsprof_o-unlink.$(OBJEXT)
 am__objects_20 = libcsprof_o-fnbounds_static.$(OBJEXT)
-am__objects_21 = libcsprof_o-mips-unwind.$(OBJEXT) \
+am__objects_21 = libcsprof_o-default_validation_summary.$(OBJEXT) \
+	libcsprof_o-mips-unwind.$(OBJEXT) \
 	libcsprof_o-mips-unwind-interval.$(OBJEXT)
 @HOST_CPU_MIPS_TRUE@am__objects_22 = $(am__objects_21)
-am__objects_23 = libcsprof_o-ppc64-unwind.$(OBJEXT) \
+am__objects_23 = libcsprof_o-default_validation_summary.$(OBJEXT) \
+	libcsprof_o-ppc64-unwind.$(OBJEXT) \
 	libcsprof_o-ppc64-unwind-interval.$(OBJEXT)
 @HOST_CPU_PPC_TRUE@am__objects_24 = $(am__objects_23)
 am__objects_25 = libcsprof_o-x86-all.$(OBJEXT) \
@@ -618,10 +625,12 @@ MY_LINUX_DYNAMIC_FILES = \
 	os/linux/dylib.c
 
 MY_MIPS_FILES = \
+	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c \
 	unwind/mips/mips-unwind-interval.c
 
 MY_PPC_FILES = \
+	unwind/common/default_validation_summary.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c
 
@@ -893,6 +902,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-csprof_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-csproflib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-data.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-default_validation_summary.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-dylib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-env.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-epoch.Plo@am__quote@
@@ -950,6 +960,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-csprof_options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-csproflib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-data.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-default_validation_summary.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-env.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-epoch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-executable-path.Po@am__quote@
@@ -1372,6 +1383,13 @@ libcsprof_la-dylib.lo: os/linux/dylib.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='os/linux/dylib.c' object='libcsprof_la-dylib.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-dylib.lo `test -f 'os/linux/dylib.c' || echo '$(srcdir)/'`os/linux/dylib.c
+
+libcsprof_la-default_validation_summary.lo: unwind/common/default_validation_summary.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-default_validation_summary.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-default_validation_summary.Tpo -c -o libcsprof_la-default_validation_summary.lo `test -f 'unwind/common/default_validation_summary.c' || echo '$(srcdir)/'`unwind/common/default_validation_summary.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-default_validation_summary.Tpo $(DEPDIR)/libcsprof_la-default_validation_summary.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/common/default_validation_summary.c' object='libcsprof_la-default_validation_summary.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-default_validation_summary.lo `test -f 'unwind/common/default_validation_summary.c' || echo '$(srcdir)/'`unwind/common/default_validation_summary.c
 
 libcsprof_la-mips-unwind.lo: unwind/mips/mips-unwind.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-mips-unwind.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-mips-unwind.Tpo -c -o libcsprof_la-mips-unwind.lo `test -f 'unwind/mips/mips-unwind.c' || echo '$(srcdir)/'`unwind/mips/mips-unwind.c
@@ -2058,6 +2076,20 @@ libcsprof_o-fnbounds_static.obj: fnbounds/fnbounds_static.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fnbounds/fnbounds_static.c' object='libcsprof_o-fnbounds_static.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-fnbounds_static.obj `if test -f 'fnbounds/fnbounds_static.c'; then $(CYGPATH_W) 'fnbounds/fnbounds_static.c'; else $(CYGPATH_W) '$(srcdir)/fnbounds/fnbounds_static.c'; fi`
+
+libcsprof_o-default_validation_summary.o: unwind/common/default_validation_summary.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-default_validation_summary.o -MD -MP -MF $(DEPDIR)/libcsprof_o-default_validation_summary.Tpo -c -o libcsprof_o-default_validation_summary.o `test -f 'unwind/common/default_validation_summary.c' || echo '$(srcdir)/'`unwind/common/default_validation_summary.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-default_validation_summary.Tpo $(DEPDIR)/libcsprof_o-default_validation_summary.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/common/default_validation_summary.c' object='libcsprof_o-default_validation_summary.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-default_validation_summary.o `test -f 'unwind/common/default_validation_summary.c' || echo '$(srcdir)/'`unwind/common/default_validation_summary.c
+
+libcsprof_o-default_validation_summary.obj: unwind/common/default_validation_summary.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-default_validation_summary.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-default_validation_summary.Tpo -c -o libcsprof_o-default_validation_summary.obj `if test -f 'unwind/common/default_validation_summary.c'; then $(CYGPATH_W) 'unwind/common/default_validation_summary.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/default_validation_summary.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-default_validation_summary.Tpo $(DEPDIR)/libcsprof_o-default_validation_summary.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/common/default_validation_summary.c' object='libcsprof_o-default_validation_summary.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-default_validation_summary.obj `if test -f 'unwind/common/default_validation_summary.c'; then $(CYGPATH_W) 'unwind/common/default_validation_summary.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/default_validation_summary.c'; fi`
 
 libcsprof_o-mips-unwind.o: unwind/mips/mips-unwind.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-mips-unwind.o -MD -MP -MF $(DEPDIR)/libcsprof_o-mips-unwind.Tpo -c -o libcsprof_o-mips-unwind.o `test -f 'unwind/mips/mips-unwind.c' || echo '$(srcdir)/'`unwind/mips/mips-unwind.c
