@@ -6,12 +6,15 @@ CC     := gcc -std=c99
 CXX    := g++
 MPICC  := mpicc
 
-#LINKPRE := hpclink
-#static := -static
 # static_lib := $(HOME)/Documents/pkgs-src/hpctoolkit/INSTALL/lib/hpctoolkit/libcsprof.a
-# static_lib := $(HOME)/hpctoolkit-install/lib/hpctoolkit/libcsprof.a
+ifdef STATIC
+   LINKPRE := hpclink
+   static_lib := $(HOME)/hpctoolkit-install/lib/hpctoolkit/libcsprof.a
+   static := -static
+endif
 
 LINK.cc := $(LINKPRE) $(CC) $(static)
+LINK.static.cc := hpclink $(CC) -static
 
 CFLAGS := -g -I..
 
@@ -24,7 +27,19 @@ tmpi: tmpi.c
 mpi: mpi.c
 	$(MPICC) -o $@ -g -O $<
 
-t1: t1.o $(static_lib)
+t1-static: t1.o
+	$(LINK.static.cc) -g $< -lm -o $@
+
+
+ifdef NO
+t1-static.o: CFLAGS += -static
+
+t1-static.o: t1.c
+	$(COMPILE.c) $< -o $@
+
+endif
+
+t1: t1.o
 	$(LINK.cc) -g $< -lm -o $@
 
 fib: fib.o

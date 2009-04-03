@@ -1,4 +1,9 @@
 //
+// TODO: NONE unimplemented ????
+//
+
+
+//
 // The sample sources data structure
 //
 // Even though (as of 24apr08) the current system is limited to 1 source,
@@ -41,6 +46,28 @@ add_source(sample_source_t *ss)
   sample_sources[n_sources] = ss;
   n_sources++;
   NMSG(AS_add_source,"# sources now = %d",n_sources);
+}
+
+void
+csprof_sample_sources_from_eventlist(char *evl)
+{
+  if (evl == 0){
+    csprof_abort("*** No sampling sources are specified --- aborting");
+    return;
+  }
+
+  TMSG(EVENTS,"evl (before processing) = |%s|",evl);
+
+  for(char *event = start_tok(evl); more_tok(); event = next_tok()){
+    sample_source_t *s;
+    if ( (s = csprof_source_can_process(event)) ){
+      add_source(s);
+      METHOD_CALL(s,add_event,event);
+    }
+    else {
+      csprof_event_abort("Requested event %s is not supported!",event);
+    }
+  }
 }
 
 #define _AS0(n) \
@@ -89,24 +116,3 @@ _ASB(started)
 
 #define csprof_event_abort(...) csprof_abort_w_info(csprof_registered_sources_list,__VA_ARGS__)
 
-void
-csprof_sample_sources_from_eventlist(char *evl)
-{
-  if (evl == 0){
-    csprof_abort("*** No sampling sources are specified --- aborting");
-    return;
-  }
-
-  TMSG(EVENTS,"evl (before processing) = |%s|",evl);
-
-  for(char *event = start_tok(evl); more_tok(); event = next_tok()){
-    sample_source_t *s;
-    if ( (s = csprof_source_can_process(event)) ){
-      add_source(s);
-      METHOD_CALL(s,add_event,event);
-    }
-    else {
-      csprof_event_abort("Requested event %s is not supported!",event);
-    }
-  }
-}
