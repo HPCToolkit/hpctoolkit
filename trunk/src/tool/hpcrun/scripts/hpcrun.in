@@ -362,6 +362,7 @@ f_getoptions()
     shift
   done
 
+  # FIXME: this is fundamentally broken if args contain spaces.
   cmd_to_profile="$*"
   f_error_on_nil "${cmd_to_profile}" "** no command to profile\n";
 }
@@ -379,8 +380,6 @@ f_getexec()
 f_prepareenv()
 {
   sysname=`uname`
-
-  f_getexec $cmd_to_profile
 
   # export the profiler library
   if [ $sysname = "OSF1" ]; then
@@ -458,6 +457,30 @@ f_prepareenv()
 f_checkenv 
 
 f_getoptions "$@"
+f_getexec $cmd_to_profile
+
+#
+# Sanity checks before launching the application.
+#
+# In the dynamic case, verify that the application and libcsprof are
+# either both 32-bit or both 64-bit.  Give a pass to scripts,
+# statically-linked binaries (which we don't really support via
+# hpcrun) and programs on PATH (for now).
+#
+if test -x "$_EXEC" ; then
+  file_out=`file -L "$_EXEC"`
+  echo "$file_out" | grep -E -i -e 'elf.*dynamic' >/dev/null 2>&1
+  if test $? -eq 0 ; then
+    appl_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
+    file_out=`file -L "${libcsprof_dir}/libcsprof.so"`
+    csprof_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
+    if test "$appl_bit" != "$csprof_bit" ; then
+      echo "cannot run application $_EXEC" 1>&2
+      echo "application is $appl_bit but hpctoolkit is $csprof_bit" 1>&2
+      exit 1
+    fi
+  fi
+fi
 
 f_prepareenv
 
