@@ -19584,7 +19584,7 @@ $as_echo "yes (${OPT_OBJCOPY})" >&6; }
 { $as_echo "$as_me:$LINENO: checking whether to enable IBM BlueGene/* support" >&5
 $as_echo_n "checking whether to enable IBM BlueGene/* support... " >&6; }
 
-OPT_ENABLE_IBM_BLUEGENE="yes"
+OPT_ENABLE_IBM_BLUEGENE="no"
 
 # Check whether --enable-bluegene was given.
 if test "${enable_bluegene+set}" = set; then
@@ -19596,7 +19596,7 @@ $as_echo "$as_me: error: bad value ${enableval} for --enable-bluegene" >&2;}
    { (exit 1); exit 1; }; } ;;
    esac
 else
-  OPT_ENABLE_IBM_BLUEGENE=yes
+  OPT_ENABLE_IBM_BLUEGENE=no
 fi
 
 
