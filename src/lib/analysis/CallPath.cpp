@@ -174,9 +174,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
 
 
-// overlayStaticStructure: Effectively create equivalence classes of frames
-// for all the return addresses found under.
-//
+// overlayStaticStructure: Create frames for CCT::Call and CCT::Stmt.
 void
 Analysis::CallPath::
 overlayStaticStructure(Prof::CallPath::Profile* prof, 
@@ -270,9 +268,9 @@ demandScopeInFrame(Prof::CCT::ADynNode* node,
     Prof::Struct::Proc* procStrct = strct->AncProc();
     makeFrame(node, procStrct, strctToCCTMap);
 
-    StructToCCTMap::iterator it1 = strctToCCTMap.find(strct);
-    DIAG_Assert(it1 != strctToCCTMap.end(), "");
-    frameScope = (*it1).second;
+    it = strctToCCTMap.find(strct);
+    DIAG_Assert(it != strctToCCTMap.end(), "");
+    frameScope = (*it).second;
   }
   
   return frameScope;
