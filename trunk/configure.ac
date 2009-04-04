@@ -1410,7 +1410,7 @@ AC_SUBST(OPT_OBJCOPY)
 
 AC_MSG_CHECKING([whether to enable IBM BlueGene/* support])
 
-OPT_ENABLE_IBM_BLUEGENE="yes"
+OPT_ENABLE_IBM_BLUEGENE="no"
 
 AC_ARG_ENABLE([bluegene],
   AS_HELP_STRING([--enable-bluegene],
@@ -1420,7 +1420,7 @@ AC_ARG_ENABLE([bluegene],
      no)  OPT_ENABLE_IBM_BLUEGENE="no" ;;
      *) AC_MSG_ERROR([bad value ${enableval} for --enable-bluegene]) ;;
    esac],
-  [OPT_ENABLE_IBM_BLUEGENE=yes])
+  [OPT_ENABLE_IBM_BLUEGENE=no])
 
 AC_MSG_RESULT([${OPT_ENABLE_IBM_BLUEGENE}])
 
