@@ -91,19 +91,20 @@ void
 csprof_display_summary(void)
 {
   long blocked = num_samples_blocked_async + num_samples_blocked_dlopen;
-  long errors = num_samples_dropped + num_samples_filtered;
-  long valid = num_samples_attempted - errors;
+  long errant = num_samples_dropped + num_samples_filtered;
+  long valid = num_samples_attempted - errant;
 
-  AMSG("SAMPLES: blocked: %ld (async: %ld, dlopen: %ld), "
-       "errors: %ld (drops: %ld, filters: %ld, segvs: %d)",
+  AMSG("SAMPLE ANOMALIES: blocks: %ld (async: %ld, dlopen: %ld), "
+       "errors: %ld (dropped: %ld, filtered: %ld, segv: %d)",
        blocked, num_samples_blocked_async, num_samples_blocked_dlopen,
-       errors, num_samples_dropped, num_samples_filtered, segv_count);
+       errant, num_samples_dropped, num_samples_filtered, segv_count);
 
-  AMSG("SUMMARY: total: %ld, recorded: %ld, blocked: %ld, errors: %ld, "
-       "intervals: %ld (susp: %ld)%s",
-       num_samples_total, valid, blocked, errors,
+  AMSG("SUMMARY: samples: %ld (recorded: %ld, blocked: %ld, errant: %ld), "
+       "intervals: %ld (suspicious: %ld)%s",
+       num_samples_total, valid, blocked, errant,
        ui_count(), suspicious_count(),
        _sampling_disabled ? " SAMPLING WAS DISABLED" : "");
+  // logs, retentions || adj.: recorded, retained, written
 
   if (ENABLED(UNW_VALID)) {
     hpcrun_validation_summary();
