@@ -70,6 +70,7 @@
 
 #include "sample_sources_all.h"
 #include "atomic.h"
+#include "backtrace.h"
 #include "files.h"
 #include "csproflib.h"
 #include "csproflib_private.h"
@@ -413,6 +414,11 @@ int csprof_write_profile_data(csprof_state_t *state)
 {
   int ret = CSPROF_OK, ret1, ret2;
   FILE* fs;
+
+#if defined(HOST_SYSTEM_IBM_BLUEGENE)
+  EMSG("Backtrace for last sample event:\n");
+  dump_backtrace(state, state->unwind);
+#endif
 
   /* Generate a filename */
   char fnm[CSPROF_FNM_SZ];
