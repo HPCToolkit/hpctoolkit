@@ -6,8 +6,6 @@
 //
 // The sample sources data structure
 //
-// Even though (as of 24apr08) the current system is limited to 1 source,
-// we use an array for extensibility
 
 #include <stdlib.h>
 
@@ -18,9 +16,12 @@
 #include "sample_sources_registered.h"
 #include "tokenize.h"
 
+#define csprof_event_abort(...) csprof_abort_w_info(csprof_registered_sources_list, __VA_ARGS__)
+
 static sample_source_t *sample_sources[MAX_SAMPLE_SOURCES];
 
 static int n_sources = 0;
+
 
 static int
 in_sources(sample_source_t *ss)
@@ -31,6 +32,7 @@ in_sources(sample_source_t *ss)
   }
   return 0;
 }
+
 
 static void
 add_source(sample_source_t *ss)
@@ -47,6 +49,7 @@ add_source(sample_source_t *ss)
   n_sources++;
   NMSG(AS_add_source,"# sources now = %d",n_sources);
 }
+
 
 void
 csprof_sample_sources_from_eventlist(char *evl)
@@ -114,5 +117,4 @@ _AS0(hard_stop)
 _AS0(shutdown)
 _ASB(started)
 
-#define csprof_event_abort(...) csprof_abort_w_info(csprof_registered_sources_list,__VA_ARGS__)
 
