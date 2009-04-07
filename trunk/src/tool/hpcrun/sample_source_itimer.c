@@ -334,7 +334,7 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
   // program, thus blocking further samples.  We can work around this
   // problem by resetting the signal mask here.
   //
-  monitor_real_pthread_sigmask(SIG_UNBLOCK, &sigset_itimer, NULL);
+  monitor_real_sigprocmask(SIG_UNBLOCK, &sigset_itimer, NULL);
 #endif
 
   return 0; /* tell monitor that the signal has been handled */
