@@ -1420,7 +1420,9 @@ AC_ARG_ENABLE([bluegene],
      no)  OPT_ENABLE_IBM_BLUEGENE="no" ;;
      *) AC_MSG_ERROR([bad value ${enableval} for --enable-bluegene]) ;;
    esac],
-  [OPT_ENABLE_IBM_BLUEGENE=no])
+  [if test "$HOST_CPU_PPC" = yes && test -d /bgsys ; then
+     OPT_ENABLE_IBM_BLUEGENE=yes
+   fi])
 
 AC_MSG_RESULT([${OPT_ENABLE_IBM_BLUEGENE}])
 

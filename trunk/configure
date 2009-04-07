@@ -19596,7 +19596,9 @@ $as_echo "$as_me: error: bad value ${enableval} for --enable-bluegene" >&2;}
    { (exit 1); exit 1; }; } ;;
    esac
 else
-  OPT_ENABLE_IBM_BLUEGENE=no
+  if test "$HOST_CPU_PPC" = yes && test -d /bgsys ; then
+     OPT_ENABLE_IBM_BLUEGENE=yes
+   fi
 fi
 
 
