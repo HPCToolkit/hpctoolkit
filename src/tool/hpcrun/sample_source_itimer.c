@@ -9,6 +9,7 @@
  * system includes
  *****************************************************************************/
 
+#include <signal.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -104,6 +105,7 @@ static unsigned long long thread_usage_in_microseconds();
  *****************************************************************************/
 
 static struct itimerval itimer;
+static sigset_t sigset_itimer;
 
 // ******* METHOD DEFINITIONS ***********
 
@@ -111,6 +113,8 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT; // no actual init actions necessary for itimer
+  sigemptyset(&sigset_itimer);
+  sigaddset(&sigset_itimer, CSPROF_PROFILE_SIGNAL);
 }
 
 static void
@@ -320,6 +324,17 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 
 #ifdef RESET_ITIMER_EACH_SAMPLE
   METHOD_CALL(&_itimer_obj,start);
+#endif
+
+#ifdef HOST_SYSTEM_IBM_BLUEGENE
+  //
+  // On BG/P, siglongjmp() is broken.  If we catch a SEGV,
+  // siglongjmp() out of it and return from the itimer handler, then
+  // the itimer signal will still be blocked in the application
+  // program, thus blocking further samples.  We can work around this
+  // problem by resetting the signal mask here.
+  //
+  monitor_real_pthread_sigmask(SIG_UNBLOCK, &sigset_itimer, NULL);
 #endif
 
   return 0; /* tell monitor that the signal has been handled */
