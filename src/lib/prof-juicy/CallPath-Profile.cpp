@@ -71,7 +71,9 @@ using namespace xml;
 
 #include <lib/prof-lean/hpcfile_csproflib.h>
 
-#include <lib/support/Trace.hpp>
+#include <lib/support/diagnostics.h>
+#include <lib/support/RealPathMgr.hpp>
+
 
 //*************************** Forward Declarations **************************
 
@@ -353,9 +355,11 @@ Profile::make(const char* fnm)
   Epoch* epoch = new Epoch(num_lm);
 
   for (int i = num_lm - 1; i >= 0; --i) { 
-    const char* nm = epochtbl.epoch_modlist[epoch_id].loadmodule[i].name;
+    string nm = epochtbl.epoch_modlist[epoch_id].loadmodule[i].name;
+    RealPathMgr::singleton().realpath(nm);
     VMA loadAddr = epochtbl.epoch_modlist[epoch_id].loadmodule[i].mapaddr;
     size_t sz = 0; //epochtbl.epoch_modlist[epoch_id].loadmodule[i].size;
+
     Epoch::LM* lm = new Epoch::LM(nm, loadAddr, sz);
     epoch->lm_insert(lm);
   }
