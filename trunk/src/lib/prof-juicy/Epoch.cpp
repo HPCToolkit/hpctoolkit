@@ -245,8 +245,8 @@ Epoch::ddump() const
 
 //****************************************************************************
 
-Epoch::LM::LM(const char* nm, VMA loadAddr, size_t size)
-  : m_id(LM_id_NULL), m_name((nm) ? nm: ""), 
+Epoch::LM::LM(const std::string& name, VMA loadAddr, size_t size)
+  : m_id(LM_id_NULL), m_name(name), 
     m_loadAddr(loadAddr), m_size(size), 
     m_isAvail(true),
     m_relocAmt(0),

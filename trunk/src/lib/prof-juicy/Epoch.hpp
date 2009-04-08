@@ -91,7 +91,8 @@ public:
 
   class LM : public Unique {
   public:
-    LM(const char* name = NULL, VMA loadAddr = 0, size_t size = 0);
+    LM(const std::string& name = "", VMA loadAddr = 0, size_t size = 0);
+    //LM(const char* name = NULL, VMA loadAddr = 0, size_t size = 0);
     virtual ~LM();
 
     LM_id_t id() const 
