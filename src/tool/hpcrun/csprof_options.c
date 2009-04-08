@@ -1,3 +1,7 @@
+//
+// $Id$
+//
+
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -44,9 +48,14 @@ csprof_options__getopts(csprof_options_t* x)
   }
 
   // process event list
+  // HPCRUN_EVENT_LIST is the approved name, but accept CSPROF_OPT_EVENT
+  // for backwards compatibility for now.
   
   NMSG(OPTIONS,"--before init of registered sample sources");
   csprof_registered_sources_init();
-  csprof_sample_sources_from_eventlist(getenv("CSPROF_OPT_EVENT"));
+  if ((s = getenv(HPCRUN_EVENT_LIST)) == NULL)
+    s = getenv("CSPROF_OPT_EVENT");
+  csprof_sample_sources_from_eventlist(s);
+
   return CSPROF_OK;
 }

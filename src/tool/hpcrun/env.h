@@ -57,8 +57,6 @@ extern const char* CSPROF_OPT_MAX_METRICS;
 
 extern const char* SWITCH_TO_PAPI;
 
-#ifdef CSPROF_PAPI
-extern const char* CSPROF_OPT_EVENT;
-#endif
+extern const char* HPCRUN_EVENT_LIST;
 
 #endif /* CSPROF_ENV_H */

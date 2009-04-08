@@ -23,6 +23,4 @@ const char* CSPROF_OPT_MAX_METRICS   = "CSPROF_OPT_MAX_METRICS";
 const char* SWITCH_TO_PAPI           = "SWITCH_TO_PAPI";
 const char* PAPI_EVENT_LIST          = "PAPI_EVENT_LIST";
 
-#ifdef CSPROF_PAPI
-const char* CSPROF_OPT_EVENT         = "CSPROF_OPT_PAPI_EVENT";
-#endif
+const char* HPCRUN_EVENT_LIST        = "HPCRUN_EVENT_LIST";

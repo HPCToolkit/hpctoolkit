@@ -82,12 +82,12 @@ hpclink mpicc -o myprog file.o ... -l<lib> ...
 \end{quote}
 
 \noindent
-Then, set the {\tt CSPROF\_OPT\_EVENT} environment variable in the
+Then, set the {\tt HPCRUN\_EVENT\_LIST} environment variable in the
 launch script before running the application.
 
 \begin{quote}
 \begin{verbatim}
-export CSPROF_OPT_EVENT="PAPI_TOT_CYC@4000000"
+export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000000"
 mpiexec -n 64 myprog arg ...
 \end{verbatim}
 \end{quote}

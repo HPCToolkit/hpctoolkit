@@ -88,13 +88,18 @@ two versions of your program, perhaps naming them {\tt myprog} and
 For dynamically linked executables, the \hpcrun\ script sets environment variables to
 pass information to the \HPCToolkit\ monitoring library. On standard Linux systems,  statically-linked executables can still be launched with \hpcrun. 
 
-On Cray XT and Blue Gene/P systems,  the  \hpcrun\   script is not applicable because of differences in application launch procedures.
-On these systems, you will need to use the {\tt CSPROF\_OPT\_EVENT} environment variable to pass a list of events to \HPCToolkit's monitoring code, which was linked into your executable using \hpclink.
-Typically, you would set {\tt CSPROF\_OPT\_EVENT}  in your launch script.
+On Cray XT and Blue Gene/P systems, the \hpcrun\ script is not
+applicable because of differences in application launch procedures.
+On these systems, you will need to use the {\tt HPCRUN\_EVENT\_LIST}
+environment variable to pass a list of events to \HPCToolkit's
+monitoring code, which was linked into your executable using \hpclink.
+Typically, you would set {\tt HPCRUN\_EVENT\_LIST} in your launch
+script.
 
-The {\tt CSPROF\_OPT\_EVENT} environment variable
-should be set to a space-separated list of {\tt EVENT@COUNT} pairs.
-For example, in a PBS script for a Cray XT system, you might write the following in Bourne shell or bash syntax:
+The {\tt HPCRUN\_EVENT\_LIST} environment variable should be set to a
+space-separated list of {\tt EVENT@COUNT} pairs.  For example, in a
+PBS script for a Cray XT system, you might write the following in
+Bourne shell or bash syntax:
 
 \begin{quote}
 \begin{verbatim}
@@ -102,7 +107,7 @@ For example, in a PBS script for a Cray XT system, you might write the following
 #PBS -l size=64
 #PBS -l walltime=01:00:00
 cd $PBS_O_WORKDIR
-export CSPROF_OPT_EVENT="PAPI_TOT_CYC@4000000 PAPI_L2_TCM@400000"
+export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000000 PAPI_L2_TCM@400000"
 aprun -n 64 ./myprog arg ...
 \end{verbatim}
 \end{quote}
@@ -113,7 +118,7 @@ variables.  For example, you might submit a job with:
 
 \begin{quote}
 \begin{verbatim}
-qsub -t 60 -n 64 --env CSPROF_OPT_EVENT="PAPI_TOT_CYC@4000000" \
+qsub -t 60 -n 64 --env HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000000" \
     /path/to/myprog arg ...
 \end{verbatim}
 \end{quote}

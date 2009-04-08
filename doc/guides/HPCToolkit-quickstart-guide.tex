@@ -121,10 +121,10 @@ build a statically-linked version of your application with the
 \HPCToolkit\ library linked in.  For example, \\
 \lindent
 \verb|hpclink mpicc -o myprog file.o ... -l<lib> ...| \\[1ex]
-Then, set the {\tt CSPROF\_OPT\_EVENT} environment variable in the
+Then, set the {\tt HPCRUN\_EVENT\_LIST} environment variable in the
 launch script before running the application. \\
 \lindent
-\verb|export CSPROF_OPT_EVENT="PAPI_TOT_CYC@4000000"| \\
+\verb|export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000000"| \\
 \lindent
 \verb|aprun -n 64 myprog arg ...| \\[1ex]
 See the {\it Using {\sc HPCToolkit} with Statically-Linked Programs} guide
