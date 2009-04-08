@@ -314,9 +314,17 @@ nextInsn(uint32_t* insn)
 // build_intervals:
 //***************************************************************************
 
-// R1 invariably remains the stack pointer, even for dynamically sized
-// frames or very large frames.  Moreover, every non-leaf procedure
+// R1 (almost) invariably remains the stack pointer, even for dynamically
+// sized frames or very large frames.  Moreover, every non-leaf procedure
 // stores the SP using stwu/stwux, creating a linked list of SPs.
+//
+// Exception: sometimes R1 appears to be updated non-atomically (i.e., without
+// a variant of stwu):
+//   lwz  r0,0(r1)  [load parent-SP, located at SP/r1]
+//   mr   r1,r3     [clobber SP]
+//   stw  r0,0(r3)  [save parent-SP at r3, making SP valid!] <-- sample!
+//
+// PPC frame layout:
 //
 //  bottom (outermost frame)
 //  |-------------|
