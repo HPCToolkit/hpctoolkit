@@ -254,10 +254,7 @@ unw_step(unw_cursor_t *cursor)
     if (!isInteriorFrm) {
       try_sp = *nxt_sp;
 
-      // Sanity check SP: Once in a while SP is clobbered, e.g.:
-      //   lwz  r0,0(r1)  [load parent-SP, located at SP/r1]
-      //   mr   r1,r3     [clobber SP]
-      //   stw  r0,0(r3)  [save parent-SP at r3, making SP valid!] <-- sample!
+      // Sanity check SP: Once in a while SP is clobbered.
       if (isPossibleParentSP(nxt_sp, try_sp)) {
 	nxt_pc = getNxtPCFromSP(try_sp);
 	nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
