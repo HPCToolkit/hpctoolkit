@@ -212,7 +212,10 @@ void
 monitor_mpi_pre_init(void)
 {
   if (! ENABLED(MPI_RISKY)) {
+#if defined(HOST_SYSTEM_IBM_BLUEGENE)
     // Turn sampling off.
+    SAMPLE_SOURCES(stop);
+#endif
   }
 }
 
@@ -221,7 +224,10 @@ void
 monitor_init_mpi(int *argc, char ***argv)
 {
   if (! ENABLED(MPI_RISKY)) {
+#if defined(HOST_SYSTEM_IBM_BLUEGENE)
     // Turn sampling back on.
+    SAMPLE_SOURCES(start);
+#endif
   }
 }
 
