@@ -408,11 +408,11 @@ f_prepareenv()
 #    export CSPROF_OPT_MEM_SZ
 #  fi
   if [ -n "${opt_ev_list}" ]; then
-    CSPROF_OPT_EVENT="${opt_ev_list}"
+    HPCRUN_EVENT_LIST="${opt_ev_list}"
   else
-    CSPROF_OPT_EVENT="WALLCLOCK@5000"
+    HPCRUN_EVENT_LIST="WALLCLOCK@5000"
   fi
-  export CSPROF_OPT_EVENT
+  export HPCRUN_EVENT_LIST
   if [ -n "${opt_debug}" ]; then
     CSPROF_OPT_DEBUG="${opt_debug}"
     export CSPROF_OPT_DEBUG
@@ -490,7 +490,7 @@ fi
 if [ -n "${opt_debug}" ]; then
   echo hpcrun script LD_PRELOAD = $LD_PRELOAD
   echo CSPROF_DD = $CSPROF_DD
-  echo event list = $CSPROF_OPT_EVENT
+  echo event list = $HPCRUN_EVENT_LIST
 fi
 #
 # !!! WOW !!
