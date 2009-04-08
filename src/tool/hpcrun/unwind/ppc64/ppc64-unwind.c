@@ -253,8 +253,15 @@ unw_step(unw_cursor_t *cursor)
     void** try_sp = NULL;
     if (!isInteriorFrm) {
       try_sp = *nxt_sp;
-      nxt_pc = getNxtPCFromSP(try_sp);
-      nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
+
+      // Sanity check SP: Once in a while SP is clobbered, e.g.:
+      //   lwz  r0,0(r1)  [load parent-SP, located at SP/r1]
+      //   mr   r1,r3     [clobber SP]
+      //   stw  r0,0(r3)  [save parent-SP at r3, making SP valid!] <-- sample!
+      if (isPossibleParentSP(nxt_sp, try_sp)) {
+	nxt_pc = getNxtPCFromSP(try_sp);
+	nxt_intvl = (unw_interval_t*)csprof_addr_to_interval(nxt_pc);
+      }
     }
      
     if (!nxt_intvl) {
@@ -263,6 +270,7 @@ unw_step(unw_cursor_t *cursor)
       return STEP_ERROR;
     }
 
+    // INVARIANT: 'try_sp' is valid
     nxt_sp = try_sp;
     TMSG(UNW, "skip-frame: nxt pc=%p, sp=%p", nxt_pc, nxt_sp);
   }
