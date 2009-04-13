@@ -107,7 +107,8 @@ monitor_init_process(int *argc, char **argv, void *data)
   process_name = "unknown";
   if (argv != NULL && argv[0] != NULL) {
     process_name = argv[0];
-  } else {
+  }
+  else {
     int len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
     if (len > 1) {
       buf[len] = 0;
