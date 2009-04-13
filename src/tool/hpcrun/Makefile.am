@@ -33,13 +33,16 @@ include $(top_srcdir)/src/Makeinclude.config
 
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
-pkglib_LTLIBRARIES = libcsprof.la
+pkglib_LTLIBRARIES =
+bin_SCRIPTS =
 
-bin_SCRIPTS = scripts/hpcrun
+if OPT_ENABLE_HPCRUN_DYNAMIC
+  pkglib_LTLIBRARIES += libcsprof.la
+  bin_SCRIPTS += scripts/hpcrun
+endif
 
 if OPT_ENABLE_HPCRUN_STATIC
   pkglib_PROGRAMS = libcsprof.o
-
   bin_SCRIPTS += scripts/hpclink
 endif
 
