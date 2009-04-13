@@ -721,6 +721,8 @@ AC_SUBST([LIBELF_COPY])
 #-------------------------------------------------
 
 LIBMONITOR=no
+OPT_LIBMONITOR_DYNAMIC=no
+OPT_LIBMONITOR_STATIC=no
 if test "$use_externals" = yes ; then
     LIBMONITOR="$ext_libmonitor_prefix"
 fi
@@ -741,9 +743,11 @@ case "$LIBMONITOR" in
 	    AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
 	fi
 	LIBMONITOR_LIB="${LIBMONITOR}/lib"
-	if test -f "${LIBMONITOR_LIB}/libmonitor.so" ; then :
-	else
-	    AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
+	if test -f "${LIBMONITOR_LIB}/libmonitor.so" ; then
+	    OPT_LIBMONITOR_DYNAMIC=yes
+	fi
+	if test -f "${LIBMONITOR_LIB}/libmonitor_wrap.a" ; then
+	    OPT_LIBMONITOR_STATIC=yes
 	fi
 	LIBMONITOR_COPY=yes
 	LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
@@ -1310,8 +1314,25 @@ AC_ARG_ENABLE([hpcrun-static],
    esac],
   [OPT_ENABLE_HPCRUN_STATIC=yes])
 
+if test "$OPT_LIBMONITOR_STATIC" = no ; then
+  OPT_ENABLE_HPCRUN_STATIC=no
+fi
+
 AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_STATIC}])
 AM_CONDITIONAL(OPT_ENABLE_HPCRUN_STATIC, test "${OPT_ENABLE_HPCRUN_STATIC}" = "yes")
+
+
+AC_MSG_CHECKING([whether to build hpcrun for dynamically linked executables])
+
+OPT_ENABLE_HPCRUN_DYNAMIC=no
+if test "$OPT_ENABLE_HPCRUN" = yes && test "$OPT_LIBMONITOR_DYNAMIC" = yes ; then
+  OPT_ENABLE_HPCRUN_DYNAMIC=yes
+fi
+
+AC_MSG_RESULT([$OPT_ENABLE_HPCRUN_DYNAMIC])
+
+AM_CONDITIONAL([OPT_ENABLE_HPCRUN_DYNAMIC],
+  [test "$OPT_ENABLE_HPCRUN_DYNAMIC" = yes])
 
 
 #-------------------------------------------------

@@ -78,32 +78,34 @@ host_triplet = @host@
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules TODO
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_1 = libcsprof.la
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_2 = scripts/hpcrun
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@pkglib_PROGRAMS = libcsprof.o$(EXEEXT)
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_1 = scripts/hpclink
-@HOST_OS_LINUX_TRUE@am__append_2 = $(MY_LINUX_DYNAMIC_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_3 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_4 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_5 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_6 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_7 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_8 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_9 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_10 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_11 = -D__ppc64__
-@HOST_CPU_PPC_TRUE@am__append_12 = -D__ppc64__
-@HOST_CPU_X86_TRUE@am__append_13 = $(MY_X86_FILES)
-@HOST_CPU_X86_TRUE@am__append_14 = $(MY_X86_FILES)
-@HOST_CPU_X86_TRUE@am__append_15 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_TRUE@am__append_16 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_TRUE@am__append_17 = $(XED2_LIB)/libxed.a
-@HOST_CPU_X86_TRUE@am__append_18 = $(XED2_LIB)/libxed.a
-@OPT_PAPI_DYNAMIC_TRUE@am__append_19 = $(MY_PAPI_FILES)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_20 = $(PAPI_INC_FLGS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_21 = $(PAPI_LD_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_22 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_23 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_24 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_LUSH_TRUE@am__append_25 = libagent-cilk.la \
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_3 = scripts/hpclink
+@HOST_OS_LINUX_TRUE@am__append_4 = $(MY_LINUX_DYNAMIC_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_5 = $(MY_MIPS_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_6 = $(MY_MIPS_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_7 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_MIPS_TRUE@am__append_8 = $(MY_MIPS_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_9 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_10 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_11 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_12 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_PPC_TRUE@am__append_13 = -D__ppc64__
+@HOST_CPU_PPC_TRUE@am__append_14 = -D__ppc64__
+@HOST_CPU_X86_TRUE@am__append_15 = $(MY_X86_FILES)
+@HOST_CPU_X86_TRUE@am__append_16 = $(MY_X86_FILES)
+@HOST_CPU_X86_TRUE@am__append_17 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_TRUE@am__append_18 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_TRUE@am__append_19 = $(XED2_LIB)/libxed.a
+@HOST_CPU_X86_TRUE@am__append_20 = $(XED2_LIB)/libxed.a
+@OPT_PAPI_DYNAMIC_TRUE@am__append_21 = $(MY_PAPI_FILES)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_22 = $(PAPI_INC_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_23 = $(PAPI_LD_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_24 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_25 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_26 = $(PAPI_LD_FLGS)
+@OPT_ENABLE_LUSH_TRUE@am__append_27 = libagent-cilk.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-pthread.la libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -241,6 +243,8 @@ libcsprof_la_OBJECTS = $(am_libcsprof_la_OBJECTS)
 libcsprof_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libcsprof_la_CFLAGS) \
 	$(CFLAGS) $(libcsprof_la_LDFLAGS) $(LDFLAGS) -o $@
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libcsprof_la_rpath = -rpath \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
 pkglibPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(pkglib_PROGRAMS)
 am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
@@ -564,8 +568,8 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Automake rules
 #############################################################################
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
-pkglib_LTLIBRARIES = libcsprof.la $(am__append_25)
-bin_SCRIPTS = scripts/hpcrun $(am__append_1)
+pkglib_LTLIBRARIES = $(am__append_1) $(am__append_27)
+bin_SCRIPTS = $(am__append_2) $(am__append_3)
 pkglibexec_SCRIPTS = scripts/hpclog
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
@@ -684,24 +688,24 @@ MY_X86_INCLUDE_DIRS = \
 	-I$(XED2_INC)
 
 libcsprof_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
-	$(am__append_2) $(am__append_3) $(am__append_7) \
-	$(am__append_13) $(am__append_19) utilities/last_func.c
+	$(am__append_4) $(am__append_5) $(am__append_9) \
+	$(am__append_15) $(am__append_21) utilities/last_func.c
 libcsprof_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
-	$(am__append_4) $(am__append_8) $(am__append_14) \
-	$(am__append_22) utilities/last_func.c
+	$(am__append_6) $(am__append_10) $(am__append_16) \
+	$(am__append_24) utilities/last_func.c
 libcsprof_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_5) $(am__append_9) $(am__append_15) \
-	$(am__append_20)
+	$(am__append_7) $(am__append_11) $(am__append_17) \
+	$(am__append_22)
 libcsprof_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_6) $(am__append_10) \
-	$(am__append_16) $(am__append_23)
-libcsprof_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_11)
-libcsprof_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_12)
+	$(MY_INCLUDE_DIRS) $(am__append_8) $(am__append_12) \
+	$(am__append_18) $(am__append_25)
+libcsprof_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_13)
+libcsprof_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(am__append_14)
 libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
 libcsprof_o_LDADD = $(HPC_LIBPROFLEAN)
 libcsprof_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(am__append_17) $(am__append_21)
-libcsprof_o_LDFLAGS = $(am__append_18) $(am__append_24)
+	-lpthread -lrt $(am__append_19) $(am__append_23)
+libcsprof_o_LDFLAGS = $(am__append_20) $(am__append_26)
 
 # FIXME: This is specific to Rice.
 MY_AGENT_RTSUPPORT = lush/lush-support-rt.h lush/lush-support-rt.c
@@ -813,7 +817,7 @@ libagent-pthread.la: $(libagent_pthread_la_OBJECTS) $(libagent_pthread_la_DEPEND
 libagent-tbb.la: $(libagent_tbb_la_OBJECTS) $(libagent_tbb_la_DEPENDENCIES) 
 	$(libagent_tbb_la_LINK) $(am_libagent_tbb_la_rpath) $(libagent_tbb_la_OBJECTS) $(libagent_tbb_la_LIBADD) $(LIBS)
 libcsprof.la: $(libcsprof_la_OBJECTS) $(libcsprof_la_DEPENDENCIES) 
-	$(libcsprof_la_LINK) -rpath $(pkglibdir) $(libcsprof_la_OBJECTS) $(libcsprof_la_LIBADD) $(LIBS)
+	$(libcsprof_la_LINK) $(am_libcsprof_la_rpath) $(libcsprof_la_OBJECTS) $(libcsprof_la_LIBADD) $(LIBS)
 install-pkglibPROGRAMS: $(pkglib_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(pkglibdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibdir)"
