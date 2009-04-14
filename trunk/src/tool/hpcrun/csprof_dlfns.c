@@ -29,6 +29,15 @@
 static spinlock_t dlopen_lock = SPINLOCK_UNLOCKED;
 static volatile long dlopen_num_readers = 0;
 static volatile char dlopen_num_writers = 0;
+static long num_dlopen_pending = 0;
+
+
+// We use this only in the DLOPEN_RISKY case.
+long
+csprof_dlopen_pending(void)
+{
+  return num_dlopen_pending;
+}
 
 
 // Writers always wait until they acquire the lock.
@@ -99,6 +108,7 @@ void
 csprof_pre_dlopen(const char *path, int flags)
 {
   csprof_dlopen_write_lock();
+  fetch_and_add(&num_dlopen_pending, 1L);
 }
 
 
@@ -112,6 +122,7 @@ csprof_dlopen(const char *module_name, int flags, void *handle)
   TMSG(EPOCH, "dlopen: handle = %p, name = %s", handle, module_name);
   csprof_dlopen_downgrade_lock();
   fnbounds_map_open_dsos();
+  fetch_and_add(&num_dlopen_pending, -1L);
   csprof_dlopen_read_unlock();
 }
 
@@ -131,7 +142,6 @@ void
 csprof_post_dlclose(void *handle, int ret)
 {
   TMSG(EPOCH, "dlclose: handle = %p", handle);
-  // csprof_dlopen_downgrade_lock();
   fnbounds_unmap_closed_dsos();
   csprof_dlopen_write_unlock();
 }
