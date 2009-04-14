@@ -565,34 +565,22 @@ fnbounds_dso_info_get(void *pc)
 {
   dso_info_t *dso_open = fnbounds_dso_info_query(pc, dso_open_list);
 
-  // With the new dlopen lock there are no more pending dlopens.
-#if 0
-  if (!dso_open) {
-
-    //-----------------------------------------------------------------
-    // we don't have any function bounds information for an open dso 
-    // containing this pc.
-    //-----------------------------------------------------------------
-
-    if (csprof_dlopen_pending()) {
-
-      //---------------------------------------------------------------
-      // a new dso might have been just mapped without our knowledge.
-      // see if we can locate the name and address range of a dso 
-      // containing this pc.
-      //---------------------------------------------------------------
-
-      char module_name[PATH_MAX];
-      void *mstart; 
-      void *mend;
+  // We can't call dl_iterate_phdr() in general because catching a
+  // sample at just the wrong point inside dlopen() will segfault or
+  // deadlock.
+  //
+  // However, the risk is small, and if we're willing to take the
+  // risk, then analyzing the new DSO here allows us to sample inside
+  // an init constructor.
+  //
+  if (!dso_open && ENABLED(DLOPEN_RISKY) && csprof_dlopen_pending() > 0) {
+    char module_name[PATH_MAX];
+    void *mstart, *mend;
       
-      if (dylib_find_module_containing_addr(pc, module_name, &mstart, &mend)) {
-	dso_open = fnbounds_dso_handle_open(module_name, (void *) mstart, 
-					    (void *) mend);
-      }
+    if (dylib_find_module_containing_addr(pc, module_name, &mstart, &mend)) {
+      dso_open = fnbounds_dso_handle_open(module_name, mstart, mend);
     }
   }
-#endif
 
   return dso_open;
 }
