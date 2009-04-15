@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2009/03/16}
+\setDate{ 2009/04/15}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -56,7 +56,8 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 \Prog{hpcstruct} \oOpt{options} \Arg{binary}
 
 Typical usage:\\
-\Prog{hpcstruct} \Arg{binary} > \Arg{output.psxml}
+\SP\SP\SP\Prog{hpcstruct} \Arg{binary}\\
+which creates \File{basename(}\Arg{binary}\File{).hpcstruct}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
@@ -127,10 +128,12 @@ Specify normalizations to apply to program structure. \{all\}
 
 
 \subsection{Options: Output}
+
+\begin{Description}
+
 \item[\OptArg{-o}{file}, \OptArg{--output}{file}]
 Write results to \Arg{file}.  Use `-' for \File{stdout}. \{\File{basename(}\Arg{binary}\File{).hpcstruct}\}
 
-\begin{Description}
 \item[\Opt{--compact}]
 Generate compact output, eliminating extra white space.
 
