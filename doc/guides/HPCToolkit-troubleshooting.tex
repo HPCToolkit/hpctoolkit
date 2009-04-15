@@ -29,8 +29,39 @@
 \title{Understanding and Troubleshooting \\
          \hpctoolkit\ Problems}
 \author{The \hpctoolkit\ Team}
-\date{24 March 2009}
+\date{14 April 2009}
 \maketitle
+
+
+\textbf{When I run \hpcviewer, I only see results per function call,
+not per line of code.}
+\begin{quote}
+Your program probably lacks debugging information or else you have
+stripped the binary.  The debugging information includes a line map
+which is used by profilers and debuggers to match up machine addresses
+with source code lines.  \hpctoolkit\ can profile binaries without
+debugging information, but in that case, it can only display the
+results per function call, not per source line.
+
+The solution is to always compile your programs with debugging
+information.  The option for this varies by compiler.  For the GNU
+compilers (gcc, gfortran, etc.) use {\tt -g}, for the Pathscale
+compilers (pathcc, pathf95, etc.) use {\tt -g1}, for the PGI compilers
+(pgcc, pgf95, etc.) use {\tt -gopt}, and for the Intel compilers (icc,
+ifort, etc.) use {\tt -g}.  Also, be careful not to strip the binary,
+that would remove the debugging information.
+
+{\it Note:} Debugging information does not make a program run slower,
+and stripping the binary does not make it run faster.  In general,
+debugging information is compatible with compiler optimization.  Just
+understand that at high optimization levels, the compiler may make
+significant program transformations which do not cleanly map to line
+numbers in the original source.  However, for some compilers, full
+debugging information may interfere with high optimization levels.
+The above options should be alright, but you should consult your
+compiler's man page.
+\end{quote}
+
 
 \textbf{\hpcviewer\ runs glacially slow, what is the workaround?}
 \begin{quote}
@@ -78,7 +109,7 @@ The specified list of directory paths, \verb|dir1| through
 
 In addition, \hpcprof\ has a recursive directory search feature that
 can greatly reduce the number of \verb|-I| flag instances. To conduct
-a source-file search of a directory \emph{and all of it's decendants},
+a source-file search of a directory \emph{and all of it's descendants},
 simply append an escaped '*' after the last slash, e.g.,
 \verb|/mypath/\*| ( or \verb|/mypath/'*'| ). This greatly simplifies
 the \hpcprof\ command line for a typical project. For example, suppose
@@ -87,7 +118,7 @@ a project has all of it's source in a top-level directory called
 \verb|src/lib1|,\verb|src/lib2|, \verb|src/lib-math|, etc). Then, all
 of the source is visible to \hpcprof\ by using the single flag
 \begin{quote}
-\verb|-I src/'*'|.
+\verb|-I src/'*'|
 \end{quote}
 
 \textbf{NOTE:} The \verb|'*'| can be used \emph{only} at the end of
@@ -122,7 +153,7 @@ application binary. The path names encoded in the binary can be
 Diagnosing and fixing this problem requires knowing exactly what path
 names are referenced in the binary and/or perhaps the performance
 data. Fortunately, this is information is supplied by \hpcprof .
-If a source file is sucessfully located, then a 
+If a source file is successfully located, then a 
 \begin{quote}
 \verb|msg:   cp:...|
 \end{quote}
@@ -190,7 +221,7 @@ WARNING: lost: irc_msg_support.c
 \textbf{Best Practice:} First, carefully inspect the output of \hpcprof\ to
 determine which files are lost. Next, determine the absolute path for
 each distinct top-level source directory (or build directory, if it 
-is separate fromt the source directory). Finally, for each of these (absolute) directory paths,
+is separate from the source directory). Finally, for each of these (absolute) directory paths,
 specify a \verb|-I| option with the recursive search option ( \verb|'*'| at the end
 of the path).
 
@@ -230,13 +261,13 @@ the system.
 For loops, the process of identifying what source lines are in a loop
 is similar to the procedure process: what source lines map to machine
 instructions inside a loop defined by a backward branch to a loop
-head. Sometimes compilers sometimes don’t properly record the line
-number mapping.
+head. Sometimes compilers don't properly record the line number
+mapping.
 
 When the compiler line mapping information is wrong, there is little
 you can do about it other than to ignore its imperfections, or
 hand-edit the XML program structure file produced by \hpcstruct . This
-technique is used only when truly desparate.
+technique is used only when truly desperate.
 \end{quote}
 
 \textbf{A particular scope in my code (\eg, a loop) contains one call to a 
