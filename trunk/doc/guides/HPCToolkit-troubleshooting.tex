@@ -44,22 +44,24 @@ debugging information, but in that case, it can only display the
 results per function call, not per source line.
 
 The solution is to always compile your programs with debugging
-information.  The option for this varies by compiler.  For the GNU
-compilers (gcc, gfortran, etc.) use {\tt -g}, for the Pathscale
-compilers (pathcc, pathf95, etc.) use {\tt -g1}, for the PGI compilers
-(pgcc, pgf95, etc.) use {\tt -gopt}, and for the Intel compilers (icc,
-ifort, etc.) use {\tt -g}.  Also, be careful not to strip the binary,
-that would remove the debugging information.
+information.  The option for this varies by compiler.  We suggest the
+following options: for the GNU compilers (gcc, gfortran) use {\tt -g},
+for the Intel compilers (icc, ifort) use ``{\tt -g -debug
+inline\_debug\_info}'', for the Pathscale compilers (pathcc, pathf95)
+use {\tt -g1}, and for the PGI compilers (pgcc, pgf95) use {\tt
+-gopt}.  Also, be careful not to strip the binary as that would remove
+the debugging information.
 
-{\it Note:} Debugging information does not make a program run slower,
-and stripping the binary does not make it run faster.  In general,
-debugging information is compatible with compiler optimization.  Just
-understand that at high optimization levels, the compiler may make
-significant program transformations which do not cleanly map to line
-numbers in the original source.  However, for some compilers, full
-debugging information may interfere with high optimization levels.
-The above options should be alright, but you should consult your
-compiler's man page.
+{\it Note:} Adding debugging information does not make a program run
+slower, and stripping the binary does not make it run faster.  In
+general, debugging information is compatible with compiler
+optimization.  Just understand that at high optimization levels, the
+compiler may make significant program transformations which do not
+cleanly map to line numbers in the original source code.  Also, be
+sure to explicitly add any optimization options to the compile line,
+preferably after the debugging options, for example, ``{\tt -g -O2}''.
+Many compilers will lower the optimization level if the compile line
+includes debugging options but no optimization option.
 \end{quote}
 
 
