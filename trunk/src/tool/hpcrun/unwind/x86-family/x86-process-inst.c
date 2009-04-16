@@ -14,16 +14,8 @@
 #include "x86-interval-arg.h"
 #include "ui_tree.h"
 
-unwind_interval *process_inst(xed_decoded_inst_t *xptr, void **ins_ptr, void *end,
-			      unwind_interval **current_ptr, unwind_interval *first,
-			      bool *bp_just_pushed, 
-			      highwatermark_t *highwatermark,
-			      unwind_interval **canonical_interval, 
-			      bool *bp_frames_found, void **rax_rbp_equivalent_at,
-                              interval_arg_t *iarg)
+unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 {
-  void *ins = *ins_ptr;
-  unwind_interval *current = *current_ptr;
   xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
   const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
   unwind_interval *next;
@@ -33,11 +25,11 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, void **ins_ptr, void *en
 
   case XED_ICLASS_JMP: 
   case XED_ICLASS_JMP_FAR:
-    next = process_unconditional_branch(xptr, current, ins, end, 
-					irdebug, first, highwatermark, 
-					canonical_interval, *bp_frames_found);
+    next = process_unconditional_branch(xptr, iarg->current, iarg->ins, iarg->end,
+					irdebug, iarg->first, &(iarg->highwatermark),
+					&(iarg->canonical_interval), iarg->bp_frames_found);
 
-    if (hpcrun_is_cold_code(ins, xptr, iarg)) {
+    if (hpcrun_is_cold_code(iarg->ins, xptr, iarg)) {
       TMSG(COLD_CODE,"  --cold code routine detected!");
       TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
       unwind_interval *ui = (unwind_interval *) 
@@ -47,14 +39,14 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, void **ins_ptr, void *en
         dump_ui_stderr(ui);
       }
       // Fixup current intervals w.r.t. the warm code interval
-      hpcrun_cold_code_fixup(current, ui);
+      hpcrun_cold_code_fixup(iarg->current, ui);
     }
 
     break;
 
-  case XED_ICLASS_JBE: 
-  case XED_ICLASS_JL: 
-  case XED_ICLASS_JLE: 
+  case XED_ICLASS_JBE:
+  case XED_ICLASS_JL:
+  case XED_ICLASS_JLE:
   case XED_ICLASS_JNB:
   case XED_ICLASS_JNBE: 
   case XED_ICLASS_JNL: 
@@ -68,14 +60,14 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, void **ins_ptr, void *en
   case XED_ICLASS_JRCXZ:
   case XED_ICLASS_JS:
   case XED_ICLASS_JZ:
-    next = process_conditional_branch(xptr, current, ins, end,
-                                      first, highwatermark);
+    next = process_conditional_branch(xptr, iarg->current, iarg->ins, iarg->end,
+                                      iarg->first, &(iarg->highwatermark));
 
     break;
 
   case XED_ICLASS_FNSTCW:
   case XED_ICLASS_STMXCSR:
-    if (highwatermark->succ_inst_ptr == ins) { 
+    if ((iarg->highwatermark).succ_inst_ptr == iarg->ins) { 
       //----------------------------------------------------------
       // recognize Pathscale idiom for routine prefix and ignore
       // any highwatermark setting that resulted from it.
@@ -83,63 +75,62 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, void **ins_ptr, void *en
       // 20 December 2007 - John Mellor-Crummey
       //----------------------------------------------------------
       highwatermark_t empty_highwatermark = { NULL, NULL, HW_UNINITIALIZED };
-      *highwatermark = empty_highwatermark;
+      iarg->highwatermark = empty_highwatermark;
     }
-    next = current;
+    next = iarg->current;
     break;
 
   case XED_ICLASS_LEA: 
-    next = process_lea(ins, xptr, xi, current, highwatermark);
+    next = process_lea(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark));
     break;
 
   case XED_ICLASS_MOV: 
-    next = process_move(ins, xptr, xi, current, highwatermark, rax_rbp_equivalent_at);
+    next = process_move(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark), &(iarg->rax_rbp_equivalent_at));
     break;
 
   case XED_ICLASS_ENTER:
-    next = process_enter(ins, xptr, xi, current, highwatermark);
+    next = process_enter(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark));
     break;
 
   case XED_ICLASS_LEAVE:
-    next = process_leave(ins, xptr, xi, current, highwatermark);
+    next = process_leave(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark));
     break;
 
   case XED_ICLASS_CALL_FAR:
   case XED_ICLASS_CALL_NEAR:
-    next = process_call(current, highwatermark);
+    next = process_call(iarg->current, &(iarg->highwatermark));
     break;
 
   case XED_ICLASS_RET_FAR:
   case XED_ICLASS_RET_NEAR:
-    next = process_return(xptr, current_ptr, ins_ptr, end, irdebug, first, 
-			  highwatermark, canonical_interval, bp_frames_found);
+    next = process_return(xptr, &(iarg->current), &(iarg->ins), iarg->end, irdebug, iarg->first,
+			  &(iarg->highwatermark), &(iarg->canonical_interval), &(iarg->bp_frames_found));
     break;
 
   case XED_ICLASS_ADD:   
   case XED_ICLASS_SUB: 
-    next = process_addsub(ins, xptr, xi, current, highwatermark, 
-			  canonical_interval, bp_frames_found);
+    next = process_addsub(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark),
+			  &(iarg->canonical_interval), &(iarg->bp_frames_found));
     break;
 
-  case XED_ICLASS_PUSH:   
+  case XED_ICLASS_PUSH:
   case XED_ICLASS_PUSHF:  
   case XED_ICLASS_PUSHFD: 
   case XED_ICLASS_PUSHFQ: 
-    next = process_push(ins, xptr, xi, current, highwatermark);
+    next = process_push(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark));
     break;
 
   case XED_ICLASS_POP:   
   case XED_ICLASS_POPF:  
   case XED_ICLASS_POPFD: 
   case XED_ICLASS_POPFQ: 
-    next = process_pop(ins, xptr, xi, current, highwatermark);
+    next = process_pop(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark));
     break;
 
   default:
-    next = current;
+    next = iarg->current;
     break;
   }
 
   return next;
 }
-

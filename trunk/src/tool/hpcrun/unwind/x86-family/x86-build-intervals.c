@@ -101,10 +101,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy)
     void *nextins = iarg.ins + xed_decoded_inst_get_length(xptr);
     if (nextins > end) break;
 
-    next = process_inst(xptr, &iarg.ins, iarg.end, &iarg.current, iarg.first, &iarg.bp_just_pushed,
-			&iarg.highwatermark, &iarg.canonical_interval, &iarg.bp_frames_found,
-			&iarg.rax_rbp_equivalent_at,
-			&iarg);
+    next = process_inst(xptr, &iarg);
     
     if (next == &poison_ui) {
       set_status(&status, iarg.ins, -1, NULL);
