@@ -2,7 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #define LIMIT_OUTER 1000
-#define LIMIT 1000
+#define LIMIT 10000
 
 int bar() {
 	int x, y;

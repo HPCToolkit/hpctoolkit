@@ -19,7 +19,7 @@
 
 unwind_interval *
 process_unconditional_branch(xed_decoded_inst_t *xptr, unwind_interval *current,
-			    char *ins, void *end,
+			    void *ins, void *end,
 			    bool irdebug, unwind_interval *first,
 			    highwatermark_t *highwatermark,
 			    unwind_interval **canonical_interval,
