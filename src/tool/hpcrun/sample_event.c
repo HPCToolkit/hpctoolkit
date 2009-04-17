@@ -92,12 +92,13 @@ csprof_display_summary(void)
 {
   long blocked = num_samples_blocked_async + num_samples_blocked_dlopen;
   long errant = num_samples_dropped + num_samples_filtered;
+  long other = num_samples_dropped - segv_count;
   long valid = num_samples_attempted - errant;
 
   AMSG("SAMPLE ANOMALIES: blocks: %ld (async: %ld, dlopen: %ld), "
-       "errors: %ld (dropped: %ld, filtered: %ld, segv: %d)",
+       "errors: %ld (filtered: %ld, segv: %d, other: %ld)",
        blocked, num_samples_blocked_async, num_samples_blocked_dlopen,
-       errant, num_samples_dropped, num_samples_filtered, segv_count);
+       errant, num_samples_filtered, segv_count, other);
 
   AMSG("SUMMARY: samples: %ld (recorded: %ld, blocked: %ld, errant: %ld), "
        "intervals: %ld (suspicious: %ld)%s",
