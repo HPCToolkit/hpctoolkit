@@ -48,7 +48,9 @@ extern "C" {
 struct lush_agent_pool {
 
   lush_agent_t agent; // FIXME: one agent for now
-  int metric_id; // FIXME: only one for now
+
+  int metric_time;     // FIXME: only one for now
+  int metric_idleness; // idleness is relative to time
 
   // for each LUSHI routine, a vector of pointers for each agent
   // (indexed by agent id)

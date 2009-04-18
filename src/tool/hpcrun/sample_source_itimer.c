@@ -39,6 +39,8 @@
 #include "simple_oo.h"
 #include "thread_data.h"
 
+#include "lush/lush-backtrace.h"
+
 
 /******************************************************************************
  * macros
@@ -212,12 +214,13 @@ METHOD_FN(gen_event_set,int lush_metrics)
 				      HPCFILE_METRIC_FLAG_ASYNC,
 				      sample_period);
     
-    // FIXME:LUSH: inadequacy compounded by inadequacy of metric
-    // interface.  Cf. papi version.
+    // FIXME:LUSH: need a more flexible metric interface
     if (lush_metrics == 1) {
-      int lush_metric_id = csprof_new_metric();
-      assert(lush_metric_id == 1);
-      csprof_set_metric_info_and_period(lush_metric_id, "idleness (ms)",
+      int mid_idleness = csprof_new_metric();
+      lush_agents->metric_time = metric_id;
+      lush_agents->metric_idleness = mid_idleness;
+
+      csprof_set_metric_info_and_period(mid_idleness, "idleness (ms)",
 					HPCFILE_METRIC_FLAG_ASYNC | HPCFILE_METRIC_FLAG_REAL,
 					sample_period);
     }

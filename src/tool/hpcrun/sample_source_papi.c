@@ -22,17 +22,15 @@
 #include <stdbool.h>
 
 /******************************************************************************
- * local includes
+ * libmonitor
  *****************************************************************************/
 
-/*---------------------------
- * monitor
- *--------------------------*/
 #include "monitor.h"
 
-/*---------------------------
- * csprof
- *--------------------------*/
+
+/******************************************************************************
+ * local includes
+ *****************************************************************************/
 
 #include "csprof_options.h"
 #include "hpcfile_csprof.h"
@@ -45,6 +43,8 @@
 #include "simple_oo.h"
 #include "thread_data.h"
 #include "tokenize.h"
+
+#include "lush/lush-backtrace.h"
 
 
 /******************************************************************************
@@ -166,20 +166,19 @@ METHOD_FN(process_event_list, int lush_metrics)
   char *event;
   int i;
 
-  // FIXME:LUSH: inadequacy compounded by inadequacy of metric
-  // interface.  Cf. itimer version.
   int num_lush_metrics = 0;
 
   char *evlist = self->evl.evl_spec;
-  for(event = start_tok(evlist); more_tok(); event = next_tok()){
+  for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     int evcode;
     long thresh;
 
     TMSG(PAPI,"checking event spec = %s",event);
     extract_and_check_event(event,&evcode,&thresh);
     
+    // FIXME:LUSH: need a more flexible metric interface
     if (lush_metrics == 1 && strncmp(event, "PAPI_TOT_CYC", 12) == 0) {
-      num_lush_metrics++; // LUSH
+      num_lush_metrics++;
     }
 
     TMSG(PAPI,"got event code = %x, thresh = %ld",evcode,thresh);
@@ -190,18 +189,24 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   csprof_set_max_metrics(nevents + num_lush_metrics);
 
-  for(i=0; i < nevents; i++){
+  for (i = 0; i < nevents; i++) {
     char buffer[PAPI_MAX_STR_LEN];
     int metric_id = csprof_new_metric(); /* weight */
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
-    TMSG(PAPI,"metric for event %d = %s",i,buffer);
+    TMSG(PAPI, "metric for event %d = %s", i, buffer);
     csprof_set_metric_info_and_period(metric_id, strdup(buffer),
 				      HPCFILE_METRIC_FLAG_ASYNC,
 				      self->evl.events[i].thresh);
+
+    // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
-      int lush_metric_id = csprof_new_metric();
-      assert(num_lush_metrics == 1 && lush_metric_id == 1);
-      csprof_set_metric_info_and_period(lush_metric_id, "idleness",
+      // there should be one lush metric; its source is the last event
+      assert(num_lush_metrics == 1 && (i == (nevents - 1)));
+      int mid_idleness = csprof_new_metric();
+      lush_agents->metric_time = metric_id;
+      lush_agents->metric_idleness = mid_idleness;
+
+      csprof_set_metric_info_and_period(mid_idleness, "idleness",
 					HPCFILE_METRIC_FLAG_ASYNC | HPCFILE_METRIC_FLAG_REAL,
 					self->evl.events[i].thresh);
     }
@@ -218,16 +223,17 @@ METHOD_FN(gen_event_set,int lush_metrics)
   eventSet = PAPI_NULL;
   TMSG(PAPI,"create event set");
   ret = PAPI_create_eventset(&eventSet);
-  PMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret,eventSet);
-  if (ret != PAPI_OK){
-    csprof_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", ret,PAPI_strerror(ret));
+  PMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret, eventSet);
+  if (ret != PAPI_OK) {
+    csprof_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", 
+		 ret, PAPI_strerror(ret));
   }
 
   int nevents = (self->evl).nevents;
-  for (i=0; i < nevents; i++){
+  for (i = 0; i < nevents; i++) {
     int evcode = self->evl.events[i].event;
     ret = PAPI_add_event(eventSet, evcode);
-    if (ret != PAPI_OK){
+    if (ret != PAPI_OK) {
       char nm[256];
       PAPI_event_code_to_name(evcode,nm);
 
@@ -235,15 +241,16 @@ METHOD_FN(gen_event_set,int lush_metrics)
 		   nm, ret, PAPI_strerror(ret));
     }
   }
-  for(i=0;i < nevents;i++){
+  for (i = 0; i < nevents; i++) {
     int evcode = self->evl.events[i].event;
     long thresh = self->evl.events[i].thresh;
 
     ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
 			papi_event_handler);
     TMSG(PAPI,"PAPI_overflow = %d", ret);
-    if (ret != PAPI_OK){
-      csprof_abort("Failure: PAPI_overflow.Return code = %d ==> %s", ret, PAPI_strerror(ret));
+    if (ret != PAPI_OK) {
+      csprof_abort("Failure: PAPI_overflow.Return code = %d ==> %s", 
+		   ret, PAPI_strerror(ret));
     }
   }
   thread_data_t *td = csprof_get_thread_data();
@@ -382,14 +389,16 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   TMSG(PAPI_SAMPLE,"papi event happened, ovec = %ld",ovec);
 
   int ret = PAPI_get_overflow_event_index(event_set, ovec, my_events, 
-                                             &my_event_count);
-  if (ret != PAPI_OK){
+					  &my_event_count);
+  if (ret != PAPI_OK) {
     csprof_abort("Failed inside papi_event_handler at get_overflow_event_index."
-		 "Return code = %d ==> %s",ret,PAPI_strerror(ret));
+		 "Return code = %d ==> %s", ret, PAPI_strerror(ret));
   }
-
-  for(i = 0; i < my_event_count; i++) {
+  for (i = 0; i < my_event_count; i++) {
+    // FIXME: SUBTLE ERROR: metric_id may not be same from csprof_new_metric()!
+    // This means lush's 'time' metric should be *last*
     int metric_id = my_events[i];
-    csprof_sample_event(context, metric_id, 1 /* metric_units_consumed in samples */, 0);
+    csprof_sample_event(context, metric_id, 
+			1 /*metric_units_consumed*/, 0 /*is_sync*/);
   }
 }

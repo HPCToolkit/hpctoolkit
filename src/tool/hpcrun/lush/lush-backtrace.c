@@ -47,48 +47,41 @@ canonicalize_chord(csprof_frame_t* chord_beg, lush_assoc_t as,
 // LUSH Agents
 //***************************************************************************
 
-// FIXME: def in state.c for the time being
-//lush_agent_pool_t* lush_agents = NULL;
+lush_agent_pool_t* lush_agents = NULL;
+
 
 //***************************************************************************
 // LUSH backtrace
 //***************************************************************************
 
-#if 0 // FIXME: OBSOLETE
-csprof_cct_node_t*
-csprof_sample_callstack(csprof_state_t* state, ucontext_t* context,
-			int metric_id, size_t sample_count)
-{
-  csprof_cct_node_t* n;
-  n = lush_backtrace(state, context, metric_id, sample_count);
-  if (!n) {
-    DBGMSG_PUB(1, "LUSH... (pid=%d)", getpid()); // FIXME: improve
-  }
-  return n;
-}
-#endif
-
-
 csprof_cct_node_t*
 lush_backtrace(csprof_state_t* state, ucontext_t* context,
 	       int metric_id, size_t sample_count)
 {
-  lush_agentid_t do_agent_metrics = lush_agentid_NULL;
 
-  lush_agentid_t aid = 1;
-  if (lush_agents->LUSHI_do_backtrace[aid]()) {
-    do_agent_metrics = aid;
+  // ---------------------------------------------------------  
+  // Record backtrace if a) not a special lush metric or b) the lush
+  // agent indicates we should
+  // ---------------------------------------------------------
+
+  bool do_metric_normal = false;
+  lush_agentid_t do_metric_idleness = lush_agentid_NULL; // list of agents
+
+  if (metric_id != lush_agents->metric_time) {
+    do_metric_normal = true;
   }
-
-  // TODO: Multiple agents? We perform a backtrace if there exists an
-  // agent for which the predicate is true.  Or the agent at top of stack?
-  //
-  // We also perform a backtrace if sample_count == 0, assuming this
-  // is a directive to collect something like 'creation context'.
-  if ( !(sample_count == 0 || do_agent_metrics) ) {
-    return NULL;
+  else {
+    // TODO: multiple agents
+    lush_agentid_t aid = 1;
+    if (lush_agents->metric_idleness != lush_metricid_NULL
+	&& lush_agents->LUSHI_do_backtrace[aid]()) {
+      do_metric_idleness = aid;
+    }
+    else {
+      return NULL;
+    }
   }
-
+  
 
   // ---------------------------------------------------------
   // Perform the backtrace
@@ -202,11 +195,12 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   
   // FIXME: register active return
 
-  if (node && do_agent_metrics) {
+  if (node && do_metric_idleness) {
+    lush_agentid_t aid = do_metric_idleness;
     double idleness_fraction = lush_agents->LUSHI_get_idleness[aid]();
     double idleness = work * idleness_fraction;
 
-    int mid = lush_agents->metric_id;
+    int mid = lush_agents->metric_idleness;
     cct_metric_data_increment(mid, &node->metrics[mid], 
 			      (cct_metric_data_t){.r = idleness});
   }

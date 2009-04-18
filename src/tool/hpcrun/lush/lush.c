@@ -119,7 +119,8 @@ lush_agent_pool__init(lush_agent_pool_t* x, const char* path)
 {
   int num_agents = 1; // count the agents
 
-  x->metric_id = 1; // FIXME: (ITIMER_METRIC_ID + 1)
+  x->metric_time = lush_metricid_NULL;
+  x->metric_idleness = lush_metricid_NULL;
 
   // 1. Allocate tables first
 #define FN_TBL_ALLOC(BASE, FN, SZ) \

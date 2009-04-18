@@ -18,10 +18,6 @@
 #include "pmsg.h"
 
 
-// FIXME: cf. lush-backtrace.c
-lush_agent_pool_t* lush_agents = NULL;
-
-
 /* non-threaded profilers can have a single profiling state...
    but it can't be statically allocated because of epochs */
 
