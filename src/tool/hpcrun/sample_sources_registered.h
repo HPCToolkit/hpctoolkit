@@ -2,7 +2,7 @@
 #define REGISTERED_SAMPLE_SOURCES_H
 
 #include "sample_source.h"
-#define MAX_POSSIBLE_SAMPLE_SOURCES 2
+#define MAX_POSSIBLE_SAMPLE_SOURCES 3
 
 extern void             csprof_ss_register(sample_source_t *src);
 extern sample_source_t *csprof_source_can_process(char *event);

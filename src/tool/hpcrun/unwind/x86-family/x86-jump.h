@@ -12,14 +12,7 @@
  *****************************************************************************/
 
 unwind_interval *
-process_unconditional_branch(xed_decoded_inst_t *xptr, unwind_interval *current, 
-			     void *ins, void *end,
-			     bool irdebug, unwind_interval *first, 
-			     highwatermark_t *highwatermark, 
-			     unwind_interval **canonical_interval, 
-			     bool bp_frames_found);
-
-
+process_unconditional_branch(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg);
 
 unwind_interval *
 process_conditional_branch(xed_decoded_inst_t *xptr,

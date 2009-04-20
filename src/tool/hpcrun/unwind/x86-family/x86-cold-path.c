@@ -70,8 +70,9 @@ hpcrun_cold_code_fixup(unwind_interval *current, unwind_interval *warm)
 
 // The cold code detector is called when unconditional jump is encountered
 bool
-hpcrun_is_cold_code(void *ins, xed_decoded_inst_t *xptr, interval_arg_t *iarg)
+hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 {
+  void *ins     = iarg->ins;
   char *ins_end = ins + xed_decoded_inst_get_length(xptr);
   if (ins_end == iarg->end) {
     void *branch_target = x86_get_branch_target(ins,xptr);
