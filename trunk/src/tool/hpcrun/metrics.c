@@ -46,17 +46,18 @@ int csprof_set_max_metrics(int max_metrics)
   }
 }
 
-hpcfile_csprof_data_t *csprof_get_metric_data()
+hpcfile_csprof_data_t *
+csprof_get_metric_data(void)
 {
   return &metric_data;
 }
 
-int csprof_num_recorded_metrics()
+int
+csprof_num_recorded_metrics(void)
 {
   return metric_data.num_metrics;
 }
 
-
 /* providing hooks for the user to define their own metrics */
 
 int
