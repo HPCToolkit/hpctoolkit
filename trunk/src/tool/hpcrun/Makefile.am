@@ -77,6 +77,7 @@ MY_BASE_FILES =			\
 	sample_sources_all.c		\
 	sample_source_common.c		\
 	sample_source_itimer.c		\
+	sample_source_none.c            \
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	state.c				\

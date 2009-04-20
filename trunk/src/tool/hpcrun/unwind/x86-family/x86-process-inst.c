@@ -25,11 +25,8 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 
   case XED_ICLASS_JMP: 
   case XED_ICLASS_JMP_FAR:
-    next = process_unconditional_branch(xptr, iarg->current, iarg->ins, iarg->end,
-					irdebug, iarg->first, &(iarg->highwatermark),
-					&(iarg->canonical_interval), iarg->bp_frames_found);
-
-    if (hpcrun_is_cold_code(iarg->ins, xptr, iarg)) {
+    next = process_unconditional_branch(xptr, irdebug, iarg);
+    if (hpcrun_is_cold_code(xptr, iarg)) {
       TMSG(COLD_CODE,"  --cold code routine detected!");
       TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
       unwind_interval *ui = (unwind_interval *) 
