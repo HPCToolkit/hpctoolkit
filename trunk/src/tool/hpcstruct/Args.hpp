@@ -111,7 +111,7 @@ private:
   void Ctor();
 
   banal::bloop::NormTy
-  parseArg_norm(const std::string& value, char* err_note);
+  parseArg_norm(const std::string& value, const char* err_note);
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];

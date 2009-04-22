@@ -412,7 +412,8 @@ void csprof_print_backtrace(csprof_state_t *state)
 
 int csprof_write_profile_data(csprof_state_t *state)
 {
-  int ret = CSPROF_OK, ret1, ret2;
+  // FIXME: tallent: this code is incomprehensible
+  int ret = CSPROF_OK, ret1, ret2 = CSPROF_OK;
   FILE* fs;
 
 #if defined(HOST_SYSTEM_IBM_BLUEGENE)

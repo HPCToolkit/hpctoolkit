@@ -1120,27 +1120,31 @@ ACodeNode*
 ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
 {
   DIAG_Assert(ln != ln_NULL, "ACodeNode::ACodeNodeWithLine: invalid line");
-  ACodeNode* ci;
+  ACodeNode* fnd = NULL;
   // ln > m_endLn means there is no child that contains ln
   if (ln <= m_endLn) {
     for (ANodeChildIterator it(this); it.Current(); it++) {
-      ci = dynamic_cast<ACodeNode*>(it.Current());
-      DIAG_Assert(ci, "");
-      if  (ci->containsLine(ln)) {
-	if (ci->type() == TySTMT) {  
-	  return ci; // never look inside LINE_SCOPEs 
+      fnd = dynamic_cast<ACodeNode*>(it.Current());
+      DIAG_Assert(fnd, "");
+      if  (fnd->containsLine(ln)) {
+	if (fnd->type() == TySTMT) {  
+	  return fnd; // never look inside LINE_SCOPEs 
 	} 
 	
 	// desired line might be in inner scope; however, it might be
 	// elsewhere because optimization left procedure with 
 	// non-contiguous line ranges in scopes at various levels.
-	ACodeNode* inner = ci->ACodeNodeWithLine(ln);
+	ACodeNode* inner = fnd->ACodeNodeWithLine(ln);
 	if (inner) return inner;
       } 
     }
   }
-  if (ci->type() == TyPROC) return (ACodeNode*) this;
-  else return 0;
+  if (fnd && fnd->type() == TyPROC) {
+    return const_cast<ACodeNode*>(this);
+  }
+  else {
+    return NULL;
+  }
 }
 
 

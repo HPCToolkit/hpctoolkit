@@ -301,8 +301,10 @@ private:
   }
 
   static void CtxtChange_set(CtxtChange_t& x, CtxtChange_t c) {
-    (uint&)x &= (uint)CtxtChange_FLAG_MASK; // reset
-    (uint&)x |= (uint)c;
+    uint t = (uint)x;
+    t &= CtxtChange_FLAG_MASK; // reset
+    t |= (uint)c;
+    x = (CtxtChange_t)t;
   }
 
 
@@ -311,7 +313,9 @@ private:
   }
 
   static void CtxtChange_setFlag(CtxtChange_t& x, CtxtChange_t flag) {
-    (uint&)x |= (uint)flag;
+    uint t = (uint)x;
+    t |= (uint)flag;
+    x = (CtxtChange_t)t;
   }
 
   static std::string toString(CtxtChange_t x);
