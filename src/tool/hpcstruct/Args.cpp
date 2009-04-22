@@ -355,7 +355,7 @@ Args::ddump() const
 //***************************************************************************
 
 banal::bloop::NormTy
-Args::parseArg_norm(const string& value, char* err_note)
+Args::parseArg_norm(const string& value, const char* err_note)
 {
   if (value == "all") {
     return banal::bloop::NormTy_All;

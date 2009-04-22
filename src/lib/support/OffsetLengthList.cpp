@@ -385,7 +385,7 @@ Offset_Length_List &
 Offset_Length_List::operator &= ( Offset_Length_List &lst ) {
   Offset_Length_List_Entry *e0, *e1, *e2;
   Offset_Length_List temp;
-  int b0, f0, b1, f1, b2, f2;
+  int b0, f0, b1, f1, b2, f2 = 0;
   e0 = head;
   e1 = lst.head;
   while( e0 && e1 ) {
@@ -557,7 +557,7 @@ Offset_Length_List &
 Offset_Length_List::operator -= ( Offset_Length_List &lst ) {
   Offset_Length_List_Entry *e0, *e1, *e2;
   Offset_Length_List temp;
-  int b0, f0, b1, f1, b2, f2;
+  int b0, f0, b1, f1, b2, f2 = 0;
   e0 = head;
   e1 = lst.head;
   while( e0 && e1 ) {

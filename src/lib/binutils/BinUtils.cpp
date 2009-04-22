@@ -62,6 +62,22 @@ using std::string;
 
 #include "BinUtils.hpp"
 
+
+//****************************************************************************
+
+// Include the system demangle
+#if defined(HOST_OS_SOLARIS)
+# include <../../usr/include/demangle.h> // demangle (don't confuse with GNU)
+  const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
+#elif defined(HOST_OS_LINUX) || defined(HOST_OS_MACOS)
+  // the system demangle is GNU's demangle
+#else
+# error "binutils::BinUtils does not recognize your platform."
+#endif
+
+// Include GNU's demangle
+#include <include/gnu_demangle.h> // GNU's demangle
+
 //*************************** Forward Declarations ***************************
 
 //****************************************************************************
@@ -89,20 +105,6 @@ canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr)
   
   return bestname;
 }
-
-
-// Include the system demangle
-#if defined(HOST_OS_SOLARIS)
-# include <../../usr/include/demangle.h> // demangle (don't confuse with GNU)
-  const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
-#elif defined(HOST_OS_LINUX) || defined(HOST_OS_MACOS)
-  // the system demangle is GNU's demangle
-#else
-# error "binutils::BinUtils does not recognize your platform."
-#endif
-
-// Include GNU's demangle
-#include <include/gnu_demangle.h> // GNU's demangle
 
 
 // Returns the demangled function name (if possible) or the original name.
