@@ -58,24 +58,22 @@ csprof_cct_node_t*
 lush_backtrace(csprof_state_t* state, ucontext_t* context,
 	       int metric_id, size_t sample_count)
 {
-
-  // ---------------------------------------------------------  
-  // Record backtrace if a) not a special lush metric or b) the lush
-  // agent indicates we should
   // ---------------------------------------------------------
-
-  bool do_metric_normal = false;
+  // Record backtrace if:
+  //   1) a synchronous unwind or a non-lush-relevant metric
+  //   2) a lush agent indicates we should
+  // ---------------------------------------------------------
   lush_agentid_t do_metric_idleness = lush_agentid_NULL; // list of agents
 
-  if (metric_id != lush_agents->metric_time) {
-    do_metric_normal = true;
+  if (sample_count == 0 || metric_id != lush_agents->metric_time) {
+    // case 1
   }
   else {
-    // TODO: multiple agents
-    lush_agentid_t aid = 1;
+    // NOTE: metric_id == lush_agents->metric_time
+    lush_agentid_t aid = 1; // TODO: multiple agents
     if (lush_agents->metric_idleness != lush_metricid_NULL
 	&& lush_agents->LUSHI_do_backtrace[aid]()) {
-      do_metric_idleness = aid;
+      do_metric_idleness = aid; // case 2
     }
     else {
       return NULL;

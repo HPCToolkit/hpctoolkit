@@ -514,6 +514,7 @@ LUSHI_do_backtrace()
   return (ws && CILK_WS_is_working(ws));
 }
 
+
 extern double
 LUSHI_get_idleness()
 {

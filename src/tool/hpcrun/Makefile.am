@@ -92,6 +92,7 @@ MY_BASE_FILES =			\
 	lush/lush.c			\
 	lush/lushi-cb.c			\
 	lush/lush-support-rt.c		\
+	lush/lush-pthread.c		\
 	memory/list.c			\
 	memory/mem.c			\
 	sampling/types/callstack/cct.c	\

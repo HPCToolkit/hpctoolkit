@@ -14,6 +14,7 @@
 #include "mem.h"
 #include "state.h"
 
+#include <lush/lush-pthread.h>
 
 typedef struct {
   sigjmp_buf jb;
@@ -39,6 +40,8 @@ typedef struct _td_t {
   int             suspend_sampling;
   FILE*           trace_file;
   unsigned long long last_us_usage;
+
+  lush_pthr_t     pthr_metrics;
 } thread_data_t;
 
 #define TD_GET(field) csprof_get_thread_data()->field
