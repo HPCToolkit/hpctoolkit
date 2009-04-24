@@ -212,7 +212,7 @@ lush_step_bichord(lush_cursor_t* cursor)
   unw_word_t ip = lush_cursor_get_ip(cursor);
   lush_agentid_t first_aid = lush_agentid_NULL;
 
-  // attempt to find an agent
+  // Attempt to find an agent
   lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = 1;
   for (aid = 1; aid <= 1; ++aid) { // FIXME: first in list, etc.
@@ -225,8 +225,11 @@ lush_step_bichord(lush_cursor_t* cursor)
     }
   }
 
-  // use the 'identity agent'
+  // Use the Identity agent: Association is 1-to-1
   if (first_aid == lush_agentid_NULL) {
+    lush_lip_t* lip = lush_cursor_get_lip(cursor);
+    lip->data8[0] = (uint64_t)lush_cursor_get_ip(cursor);
+
     ty = LUSH_STEP_CONT;
     lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
   }
@@ -290,17 +293,9 @@ lush_step_lnote(lush_cursor_t* cursor)
   }
   else {
     // Identity agent: Association is 1-to-1, so l-chord is unit length
-    int t = unw_step(lush_cursor_get_pcursor(cursor));
-    if (t > 0) {
-      ty = LUSH_STEP_CONT;
-      lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_END_LCHORD);
-    }
-    else if (t == 0) {
-      ty = LUSH_STEP_END_PROJ; // must filter (invalid return type)
-    } 
-    else if (t < 0) {
-      ty = LUSH_STEP_ERROR;
-    }
+    // NOTE: lip was set by lush_step_bichord()
+    ty = LUSH_STEP_CONT;
+    lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_END_LCHORD);
   }
 
   // Set cursor flags
@@ -381,7 +376,7 @@ lush_forcestep_pnote(lush_cursor_t* cursor)
     }
     else if (t == 0) {
       ty = LUSH_STEP_END_PROJ;
-    } 
+    }
     else /* (t < 0) */ {
       ty = LUSH_STEP_ERROR;
     }
