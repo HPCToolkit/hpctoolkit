@@ -156,6 +156,7 @@ csprof_init_internal(void)
   trace_open(); 
 
   // Initialize LUSH agents
+  lush_pthreads__init();
   if (opts.lush_agent_paths[0] != '\0') {
     csprof_state_t* state = TD_GET(state);
     TMSG(MALLOC," -init_internal-: lush allocation");
@@ -166,6 +167,7 @@ csprof_init_internal(void)
   }
 
   lush_metrics = (lush_agents) ? 1 : 0;
+  
 
   sigemptyset(&prof_sigset);
   sigaddset(&prof_sigset,SIGPROF);
@@ -265,6 +267,8 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
   state->pstate.thrid = id; // local thread id in state
   state->csdata_ctxt = thr_ctxt;
 
+  lush_pthr__create(&TD_GET(pthr_metrics));
+
   // start sampling sources
   TMSG(INIT,"starting sampling sources");
 
@@ -282,9 +286,10 @@ void
 csprof_thread_fini(csprof_state_t *state)
 {
   TMSG(FINI,"thread fini");
-  if (csprof_initialized){
+  if (csprof_initialized) {
     TMSG(FINI,"thread finit stops sampling");
     SAMPLE_SOURCES(stop);
+    lush_pthr__destroy(&TD_GET(pthr_metrics));
     csprof_write_profile_data(state);
   }
 }

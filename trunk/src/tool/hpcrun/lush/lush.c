@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdio.h>
 
 #include <dlfcn.h>
 
@@ -32,8 +33,6 @@
 //*************************** User Include Files ****************************
 
 #include "lush.h"
-
-#include <general.h>
 
 //*************************** Forward Declarations **************************
 
@@ -331,7 +330,6 @@ lush_step_lnote(lush_cursor_t* cursor)
 lush_step_t
 lush_step_pchord(lush_cursor_t* cursor)
 {
- 
   lush_step_t ty = LUSH_STEP_NULL;
 
 #if 0 // FIXME: check this

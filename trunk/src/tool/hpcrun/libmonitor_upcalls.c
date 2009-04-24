@@ -298,6 +298,53 @@ monitor_init_thread(int tid, void *data)
 }
 
 
+//#define LUSH_PTHREADS
+#ifdef LUSH_PTHREADS
+
+void
+monitor_thread_pre_lock()
+{
+  lush_pthr__lock_pre(&TD_GET(pthr_metrics));
+}
+
+
+void
+monitor_thread_post_lock(int result)
+{
+  lush_pthr__lock_post(&TD_GET(pthr_metrics));
+}
+
+
+void
+monitor_thread_post_trylock(int result)
+{
+  lush_pthr__trylock(&TD_GET(pthr_metrics), result);
+}
+
+
+void
+monitor_thread_unlock()
+{
+  lush_pthr__unlock(&TD_GET(pthr_metrics));
+}
+
+
+void
+monitor_thread_pre_cond_wait()
+{
+  lush_pthr__condwait_pre(&TD_GET(pthr_metrics));
+}
+
+
+void
+monitor_thread_post_cond_wait(int result)
+{
+  lush_pthr__condwait_post(&TD_GET(pthr_metrics));
+}
+
+#endif // LUSH_PTHREADS
+
+
 void
 monitor_fini_thread(void *init_thread_data)
 {
@@ -325,6 +372,7 @@ monitor_reset_stacksize(size_t old_size)
 }
 
 #endif  /* CSPROF_THREADS */
+
 
 
 #ifndef HPCRUN_STATIC_LINK

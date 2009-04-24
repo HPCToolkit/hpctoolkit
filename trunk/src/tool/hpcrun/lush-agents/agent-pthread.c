@@ -30,6 +30,8 @@
 
 #include "agent-pthread.h"
 
+#include "thread_data.h" // FIXME: outside of interface
+
 //*************************** Forward Declarations **************************
 
 #define LUSHCB_DECL(FN) \
@@ -177,15 +179,34 @@ LUSHI_lip_write()
 extern int
 LUSHI_do_backtrace()
 {
-  // STUB that should be replaced
-  return 0; 
+  lush_pthr_t* pthr = &TD_GET(pthr_metrics);
+  return (int)pthr->is_working;
 }
+
 
 extern double
 LUSHI_get_idleness()
 {
-  // STUB that should be replaced
-  return 0.0;
+  lush_pthr_t* pthr = &TD_GET(pthr_metrics);
+  if (!pthr->is_working) {
+    return 0.0;
+  }
+
+  double num_working      = *(pthr->ps_num_working);
+  double num_working_lock = *(pthr->ps_num_working_lock);
+  double num_idle_cond    = *(pthr->ps_num_idle_cond);
+
+  if (lush_pthr__isWorking_lock(pthr)) {
+    // is_working_lock() : num_idle_lock / num_working_lock
+    double idleness = (*(pthr->ps_num_threads) - num_working);
+    double num_idle_lock = (idleness - num_idle_cond);
+    return (num_idle_lock / num_working_lock);
+  }
+  else {
+    // is_working_cond() || is_working : num_idle_cond / num_working_othr
+    double num_working_othr = (num_working - num_working_lock);
+    return (num_idle_cond / num_working_othr);
+  }
 }
 
 // **************************************************************************
