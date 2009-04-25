@@ -98,7 +98,7 @@ monitor_init_process(int *argc, char **argv, void *data)
   char *process_name;
   char buf[PROC_NAME_LEN];
 
-  if (getenv("CSPROF_WAIT")){
+  if (getenv("CSPROF_WAIT")) {
     while(DEBUGGER_WAIT);
   }
 
