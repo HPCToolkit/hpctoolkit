@@ -135,6 +135,7 @@ csprof_init_internal(void)
 {
   /* private memory store for the initial thread is done below */
 
+  lush_pthreads__init();
   csprof_thread_data_init(0,CSPROF_MEM_SZ_DEFAULT,0);
 
   /* epoch poking needs the memory manager init'd() (and
@@ -156,7 +157,7 @@ csprof_init_internal(void)
   trace_open(); 
 
   // Initialize LUSH agents
-  lush_pthreads__init();
+
   if (opts.lush_agent_paths[0] != '\0') {
     csprof_state_t* state = TD_GET(state);
     TMSG(MALLOC," -init_internal-: lush allocation");
@@ -267,8 +268,6 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
   state->pstate.thrid = id; // local thread id in state
   state->csdata_ctxt = thr_ctxt;
 
-  lush_pthr__create(&TD_GET(pthr_metrics));
-
   // start sampling sources
   TMSG(INIT,"starting sampling sources");
 
@@ -289,7 +288,7 @@ csprof_thread_fini(csprof_state_t *state)
   if (csprof_initialized) {
     TMSG(FINI,"thread finit stops sampling");
     SAMPLE_SOURCES(stop);
-    lush_pthr__destroy(&TD_GET(pthr_metrics));
+    lush_pthr__thread_fini(&TD_GET(pthr_metrics));
     csprof_write_profile_data(state);
   }
 }

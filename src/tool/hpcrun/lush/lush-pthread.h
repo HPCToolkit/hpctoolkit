@@ -91,9 +91,6 @@ typedef struct {
 } lush_pthr_t;
 
 
-void 
-lush_pthr__init(lush_pthr_t* x);
-
 //***************************************************************************
 
 static inline bool
@@ -116,12 +113,17 @@ lush_pthr__isWorking_cond(lush_pthr_t* x)
   return (x->is_working && lush_pthr__isDirectlyInCond(x));
 }
 
+//***************************************************************************
+
+void 
+lush_pthr__init(lush_pthr_t* x);
+
 
 //***************************************************************************
 
 // create (thread): 
 static inline void
-lush_pthr__create(lush_pthr_t* x)
+lush_pthr__thread_init(lush_pthr_t* x)
 {
   x->is_working = true;
   x->num_locks  = 0;
@@ -138,7 +140,7 @@ lush_pthr__create(lush_pthr_t* x)
 
 // destroy (thread): 
 static inline void
-lush_pthr__destroy(lush_pthr_t* x)
+lush_pthr__thread_fini(lush_pthr_t* x)
 {
   x->is_working = false;
   x->num_locks  = 0;
