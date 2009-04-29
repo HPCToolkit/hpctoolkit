@@ -105,8 +105,9 @@ DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 @OPT_PAPI_STATIC_TRUE@am__append_24 = $(MY_PAPI_FILES)
 @OPT_PAPI_STATIC_TRUE@am__append_25 = $(PAPI_INC_FLGS)
 @OPT_PAPI_STATIC_TRUE@am__append_26 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_LUSH_TRUE@am__append_27 = libagent-cilk.la \
-@OPT_ENABLE_LUSH_TRUE@	libagent-pthread.la libagent-tbb.la
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_27 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_28 = libagent-pthread.la \
+@OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -131,12 +132,14 @@ am__libagent_cilk_la_SOURCES_DIST = lush-agents/agent-cilk.h \
 	lush/lush-support-rt.c
 am__objects_1 = libagent_cilk_la-lush-support-rt.lo
 am__objects_2 = libagent_cilk_la-agent-cilk.lo $(am__objects_1)
-@OPT_ENABLE_LUSH_TRUE@am_libagent_cilk_la_OBJECTS = $(am__objects_2)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am_libagent_cilk_la_OBJECTS =  \
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@	$(am__objects_2)
 libagent_cilk_la_OBJECTS = $(am_libagent_cilk_la_OBJECTS)
 libagent_cilk_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libagent_cilk_la_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-@OPT_ENABLE_LUSH_TRUE@am_libagent_cilk_la_rpath = -rpath $(pkglibdir)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am_libagent_cilk_la_rpath =  \
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@	-rpath $(pkglibdir)
 libagent_pthread_la_LIBADD =
 am__libagent_pthread_la_SOURCES_DIST = lush-agents/agent-pthread.h \
 	lush-agents/agent-pthread.c lush/lush-support-rt.h \
@@ -438,6 +441,7 @@ OA_IFLAGS = @OA_IFLAGS@
 OA_LDFLAGS = @OA_LDFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_LIBUNWIND_IFLAGS = @OPT_LIBUNWIND_IFLAGS@
 OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
@@ -573,7 +577,7 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Automake rules
 #############################################################################
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
-pkglib_LTLIBRARIES = $(am__append_1) $(am__append_27)
+pkglib_LTLIBRARIES = $(am__append_1) $(am__append_27) $(am__append_28)
 bin_SCRIPTS = $(am__append_2) $(am__append_3)
 pkglibexec_SCRIPTS = scripts/hpclog
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
@@ -716,15 +720,13 @@ libcsprof_o_LDFLAGS = $(am__append_20) $(am__append_26)
 
 # FIXME: This is specific to Rice.
 MY_AGENT_RTSUPPORT = lush/lush-support-rt.h lush/lush-support-rt.c
-MY_CILK_INSTALL = /home/eraxxon/develop/cilk/cilk-install
 MY_AGENT_CILK_SOURCES = \
 	lush-agents/agent-cilk.h lush-agents/agent-cilk.c \
 	$(MY_AGENT_RTSUPPORT)
 
-MY_AGENT_CILK_IFLAGS = -I$(MY_CILK_INSTALL)/include
 MY_AGENT_CILK_CFLAGS = \
 	$(CFLAGS) $(HOST_CFLAGS) \
-	$(MY_AGENT_CILK_IFLAGS) \
+	$(OPT_CILK_IFLAGS) \
 	$(MY_INCLUDE_DIRS)
 
 MY_AGENT_PTHREAD_SOURCES = \
@@ -743,8 +745,8 @@ MY_AGENT_TBB_CFLAGS = \
 	$(CFLAGS) $(HOST_CFLAGS) \
 	$(MY_INCLUDE_DIRS)
 
-@OPT_ENABLE_LUSH_TRUE@libagent_cilk_la_SOURCES = $(MY_AGENT_CILK_SOURCES)
-@OPT_ENABLE_LUSH_TRUE@libagent_cilk_la_CFLAGS = $(MY_AGENT_CILK_CFLAGS)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@libagent_cilk_la_SOURCES = $(MY_AGENT_CILK_SOURCES)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@libagent_cilk_la_CFLAGS = $(MY_AGENT_CILK_CFLAGS)
 @OPT_ENABLE_LUSH_TRUE@libagent_pthread_la_SOURCES = $(MY_AGENT_PTHREAD_SOURCES)
 @OPT_ENABLE_LUSH_TRUE@libagent_pthread_la_CFLAGS = $(MY_AGENT_PTHREAD_CFLAGS)
 @OPT_ENABLE_LUSH_TRUE@libagent_tbb_la_SOURCES = $(MY_AGENT_TBB_SOURCES)

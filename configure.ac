@@ -1388,7 +1388,7 @@ fi
 
 AC_ARG_ENABLE([lush],
   [AS_HELP_STRING([--enable-lush],
-          [use lush backtrace in hpcrun])],
+                  [use lush backtrace in hpcrun])],
   [],
   [enable_lush=no])
 
@@ -1401,6 +1401,28 @@ fi
 AC_MSG_RESULT([$enable_lush])
 
 AM_CONDITIONAL([OPT_ENABLE_LUSH], [test "$enable_lush" = yes])
+
+
+
+OPT_WITH_CILK=no
+OPT_CILK_ROOT=
+
+AC_ARG_WITH([cilk],
+  AS_HELP_STRING([--with-cilk=PATH],
+                 [use given (MIT) Cilk installation for LUSH agents]),
+  [if test $withval != no; then
+     OPT_WITH_CILK=yes
+     OPT_CILK_ROOT=${withval}
+   else
+     OPT_WITH_CILK=no
+   fi],
+  [])
+
+
+OPT_CILK_IFLAGS="-I${OPT_CILK_ROOT}/include"
+
+AM_CONDITIONAL([OPT_WITH_CILK], [test "$OPT_WITH_CILK" = yes])
+AC_SUBST([OPT_CILK_IFLAGS])
 
 
 #-------------------------------------------------

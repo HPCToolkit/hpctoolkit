@@ -256,17 +256,13 @@ libcsprof_o_SOURCES  += utilities/last_func.c
 
 MY_AGENT_RTSUPPORT = lush/lush-support-rt.h lush/lush-support-rt.c
 
-MY_CILK_INSTALL = /home/eraxxon/develop/cilk/cilk-install
-
 MY_AGENT_CILK_SOURCES = \
 	lush-agents/agent-cilk.h lush-agents/agent-cilk.c \
 	$(MY_AGENT_RTSUPPORT)
 
-MY_AGENT_CILK_IFLAGS = -I$(MY_CILK_INSTALL)/include
-
 MY_AGENT_CILK_CFLAGS = \
 	$(CFLAGS) $(HOST_CFLAGS) \
-	$(MY_AGENT_CILK_IFLAGS) \
+	$(OPT_CILK_IFLAGS) \
 	$(MY_INCLUDE_DIRS)
 
 
@@ -289,9 +285,11 @@ MY_AGENT_TBB_CFLAGS = \
 
 
 if OPT_ENABLE_LUSH
+if OPT_WITH_CILK
   pkglib_LTLIBRARIES       += libagent-cilk.la
   libagent_cilk_la_SOURCES  = $(MY_AGENT_CILK_SOURCES)
   libagent_cilk_la_CFLAGS   = $(MY_AGENT_CILK_CFLAGS)
+endif
 
   pkglib_LTLIBRARIES       += libagent-pthread.la
   libagent_pthread_la_SOURCES  = $(MY_AGENT_PTHREAD_SOURCES)
