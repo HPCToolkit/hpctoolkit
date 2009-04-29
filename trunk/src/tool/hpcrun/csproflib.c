@@ -157,7 +157,6 @@ csprof_init_internal(void)
   trace_open(); 
 
   // Initialize LUSH agents
-
   if (opts.lush_agent_paths[0] != '\0') {
     csprof_state_t* state = TD_GET(state);
     TMSG(MALLOC," -init_internal-: lush allocation");
