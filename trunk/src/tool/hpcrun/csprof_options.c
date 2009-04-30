@@ -52,10 +52,6 @@ csprof_options__getopts(csprof_options_t* x)
   // for backwards compatibility for now.
   
   NMSG(OPTIONS,"--before init of registered sample sources");
-  csprof_registered_sources_init();
-  if ((s = getenv(HPCRUN_EVENT_LIST)) == NULL)
-    s = getenv("CSPROF_OPT_EVENT");
-  csprof_sample_sources_from_eventlist(s);
 
   return CSPROF_OK;
 }

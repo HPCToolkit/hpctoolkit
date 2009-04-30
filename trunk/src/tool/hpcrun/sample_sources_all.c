@@ -8,6 +8,8 @@
 //
 
 #include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 
 #include "pmsg.h"
 #include "simple_oo.h"
@@ -18,10 +20,61 @@
 
 #define csprof_event_abort(...) csprof_abort_w_info(csprof_registered_sources_list, __VA_ARGS__)
 
+//
+// FUNCTION DEFINING MACROS
+//
+
+#define _AS0(n) \
+void                                                          \
+csprof_all_sources_ ##n(void)                                 \
+{                                                             \
+  for(int i=0;i < n_sources;i++) {                            \
+    TMSG(AS_MAP,"sample source %d (%s) method call: %s",i,sample_sources[i]->name,#n); \
+    METHOD_CALL(sample_sources[i],n);                  \
+  }                                                           \
+}
+
+#define _AS1(n,t,arg) \
+void                                                          \
+csprof_all_sources_ ##n(t arg)                                \
+{                                                             \
+  for(int i=0;i < n_sources;i++) {                            \
+    METHOD_CALL(sample_sources[i],n,arg);              \
+  }                                                           \
+}
+
+#define _ASB(n)                                    \
+bool                                               \
+csprof_all_sources_ ##n(void)                      \
+{                                                  \
+  NMSG(AS_ ##n,"checking %d sources",n_sources);   \
+  for(int i=0;i < n_sources;i++) {                 \
+    if (! METHOD_CALL(sample_sources[i],n)) {      \
+      NMSG(AS_ ##n,"%s not started",sample_sources[i]->name); \
+      return false;                                \
+    }                                              \
+  }                                                \
+  return true;                                     \
+}
+
+//
+// END Function Defining Macros
+//
+
 static sample_source_t *sample_sources[MAX_SAMPLE_SOURCES];
 
 static int n_sources = 0;
 
+bool
+csprof_check_named_source(const char *src)
+{
+  for(int i=0; i < n_sources; i++){
+    if (strcmp(sample_sources[i]->name, src) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
 
 static int
 in_sources(sample_source_t *ss)
@@ -73,38 +126,6 @@ csprof_sample_sources_from_eventlist(char *evl)
   }
 }
 
-#define _AS0(n) \
-void                                                          \
-csprof_all_sources_ ##n(void)                                 \
-{                                                             \
-  for(int i=0;i < n_sources;i++) {                            \
-    TMSG(AS_MAP,"sample source %d (%s) method call: %s",i,sample_sources[i]->name,#n); \
-    METHOD_CALL(sample_sources[i],n);                  \
-  }                                                           \
-}
-
-#define _AS1(n,t,arg) \
-void                                                          \
-csprof_all_sources_ ##n(t arg)                                \
-{                                                             \
-  for(int i=0;i < n_sources;i++) {                            \
-    METHOD_CALL(sample_sources[i],n,arg);              \
-  }                                                           \
-}
-
-#define _ASB(n) \
-int                                                \
-csprof_all_sources_ ##n(void)                      \
-{                                                  \
-  NMSG(AS_ ##n,"checking %d sources",n_sources);   \
-  for(int i=0;i < n_sources;i++) {                 \
-    if (! METHOD_CALL(sample_sources[i],n)) {      \
-      NMSG(AS_ ##n,"%s not started",sample_sources[i]->name); \
-      return 0;                                    \
-    }                                              \
-  }                                                \
-  return 1;                                        \
-}
 
 // The mapped operations
 
@@ -116,5 +137,3 @@ _AS0(stop)
 _AS0(hard_stop)
 _AS0(shutdown)
 _ASB(started)
-
-

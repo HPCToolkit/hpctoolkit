@@ -10,7 +10,13 @@
 #include <unistd.h>  // gethostid
 #include <sys/types.h>  // struct stat
 #include <sys/stat.h>   // stat 
+#include <stdbool.h>
 
+//***************************************************************
+// globals 
+//***************************************************************
+
+extern bool csprof_no_samples;
 
 
 //***************************************************************
@@ -99,7 +105,6 @@ void files_set_job_id()
 {
 }
 
-
 void 
 files_set_directory()
 {  
@@ -122,6 +127,9 @@ files_set_directory()
       sprintf(default_path,"./hpctoolkit-%s-measurements-%s", executable_name, jid);
     }
     path = default_path;
+
+    if (csprof_no_samples) return;
+
     mkdir(default_path, 0755);
     // N.B.: safe to skip checking for errors as realpath will notice them
   }

@@ -63,6 +63,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <stdbool.h>
 
 /* user include files */
 
@@ -296,6 +297,8 @@ csprof_thread_fini(csprof_state_t *state)
 // csprof_fini_internal: 
 // errors: handles all errors
 
+extern bool csprof_no_samples;
+
 void
 csprof_fini_internal(void)
 {
@@ -313,14 +316,16 @@ csprof_fini_internal(void)
     SAMPLE_SOURCES(stop);
     SAMPLE_SOURCES(shutdown);
 
-    fnbounds_fini();
-
-    csprof_write_profile_data(state);
-
     // shutdown LUSH agents
     if (lush_agents) {
       lush_agent_pool__fini(lush_agents);
     }
+
+    if (csprof_no_samples) return;
+
+    fnbounds_fini();
+
+    csprof_write_profile_data(state);
 
     csprof_display_summary();
     
