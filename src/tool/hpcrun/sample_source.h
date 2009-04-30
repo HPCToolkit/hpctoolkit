@@ -1,6 +1,8 @@
 #ifndef SAMPLE_SOURCE_H
 #define SAMPLE_SOURCE_H
 
+#include <stdbool.h>
+
 #include "simple_oo.h"
 
 // OO macros for sample_sources

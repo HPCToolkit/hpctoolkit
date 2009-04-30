@@ -156,9 +156,13 @@ static char *nm_command = 0;
 //     start a new server if the process forks
 //---------------------------------------------------------------------
 
+extern bool csprof_no_samples;
+
 int 
 fnbounds_init()
 {
+  if (csprof_no_samples) return 0;
+
   int result = system_server_start();
   if (result == 0) {
     result = fnbounds_tmpdir_create();
@@ -273,9 +277,13 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
 //     server process
 //---------------------------------------------------------------------
 
+extern bool csprof_no_samples;
+
 void 
 fnbounds_fini()
 {
+  if (csprof_no_samples) return;
+
   system_server_shutdown();
   fnbounds_tmpdir_remove();
 }

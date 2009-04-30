@@ -8,6 +8,8 @@
 //
 #include <pthread.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #ifdef LINUX
 #include <linux/unistd.h>
@@ -21,6 +23,7 @@
 
 #include "monitor.h"
 
+#include "env.h"
 #include "files.h"
 #include "general.h"
 #include "name.h"
@@ -45,7 +48,7 @@
 
 static volatile int DEBUGGER_WAIT = 1;
 
-
+bool csprof_no_samples = true;
 
 //***************************************************************************
 // interface functions
@@ -119,6 +122,18 @@ monitor_init_process(int *argc, char **argv, void *data)
   csprof_set_using_threads(0);
 
   files_set_executable(process_name);
+
+  csprof_registered_sources_init();
+  char *s = getenv(HPCRUN_EVENT_LIST);
+  if (s == NULL){
+    s = getenv("CSPROF_OPT_EVENT");
+  }
+  csprof_sample_sources_from_eventlist(s);
+  csprof_no_samples = csprof_check_named_source("NONE");
+  if (getenv("SHOW_NONE") && csprof_no_samples) {
+    fprintf(stderr,"NOTE: sample source NONE is specified\n");
+  }
+
   files_set_directory();
 
   pmsg_init();

@@ -1,7 +1,7 @@
 //
-// Use an array of flags to turn on/off printing
+// Unified treatement of messages, and control flags
 //
-// Also supply EMSG for un restricted printing
+// Many print/log options.
 //
 #include <stdarg.h>
 #include <stddef.h>
@@ -25,6 +25,8 @@
 
 static FILE *log_file;
 static spinlock_t pmsg_lock = SPINLOCK_UNLOCKED;
+
+extern bool csprof_no_samples;
 
 static char *dbg_tbl[] = {
 # undef E
@@ -170,33 +172,6 @@ csprof_dbg_init(char *in)
   }
 }
 
-#if 0
-static void
-ctl_flag_fill(int v)
-{
-  for(int i=0; i < N_CTL_CATEGORIES; i++){
-    ctl_flags[i] = v;
-  }
-}
-
-static void
-csprof_ctl_init(char *in)
-{
-  if (__csprof_noisy_msgs) csprof_emsg("dc input string f init = %s",in);
-  for (char *f=start_tok(in); more_tok(); f=next_tok()){
-    if (__csprof_noisy_msgs) csprof_emsg("checking dc token %s",f);
-    int ii = lookup(f,ctl_tbl,N_CTL_CATEGORIES);
-    if (ii >= 0){
-      if (__csprof_noisy_msgs) csprof_emsg("dc token code = %d",ii);
-      ctl_flags[ii] = 1;
-    } else {
-      fprintf(stderr,"WARNING: ctl flag %s not recognized\n",f);
-    }
-  }
-}
-
-#endif
-
 // interface to the debug ctl flags
 int
 csprof_dbg(dbg_category flag)
@@ -223,14 +198,6 @@ pmsg_init()
 {
   __csprof_noisy_msgs = getenv("__CSPROF_NOISY_MSGS");
 
-  // get name for log file 
-  char log_name[PATH_MAX];
-  files_log_name(log_name, PATH_MAX);
-
-  // open log file
-  log_file = fopen(log_name,"w");
-  if (!log_file) log_file = stderr;
-
   flag_fill(0);
   if (! getenv("CSPROF_QUIET")){
     for (int i=0; i < NDEFAULTS; i++){
@@ -242,40 +209,47 @@ pmsg_init()
   if(s){
     csprof_dbg_init(s);
   }
-#if 0
-  ctl_flag_fill(0);
-  s = getenv("CSPROF_DC");
-  if (s){
-    csprof_ctl_init(s);
-  }
-#endif
   spinlock_unlock(&pmsg_lock);
 
   if (__csprof_noisy_msgs){
     monitor_real_exit(1);
   }
+
+  if (csprof_no_samples) return;
+
+  // get name for log file 
+  char log_name[PATH_MAX];
+  files_log_name(log_name, PATH_MAX);
+
+  // open log file
+  log_file = fopen(log_name,"w");
+  if (!log_file) log_file = stderr;
+
 }
-
-
 
 void
 pmsg_fini(void)
 {
-  if (log_file != stderr) fclose(log_file);
+  if (csprof_no_samples) return;
+
+  if (log_file != stderr){
+    fclose(log_file);
+  }
 }
 
 #define MSG_BUF_SIZE  4096
 
 static void
-write_msg_to_log(bool echo_stderr, const char *tag, const char *fmt, va_list args)
+create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag, const char *fmt, va_list args)
 {
   char fstr[MSG_BUF_SIZE];
-  char buf[MSG_BUF_SIZE];
 
   fstr[0] = '\0';
 
-  if (csprof_using_threads_p()) {
-    sprintf(fstr, "[%d]: ", TD_GET(id));
+  if (add_thread_id) {
+    if (csprof_using_threads_p()) {
+      sprintf(fstr, "[%d]: ", TD_GET(id));
+    }
   }
   if (ENABLED(PID)) {
     sprintf(fstr, "[%d]: ", getpid());
@@ -289,43 +263,41 @@ write_msg_to_log(bool echo_stderr, const char *tag, const char *fmt, va_list arg
   strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
   strcat(fstr,"\n");
 
-  vsnprintf(buf, MSG_BUF_SIZE - 2, fstr, args);
+  vsnprintf(buf, buflen - 2, fstr, args);
+}
 
-  spinlock_lock(&pmsg_lock);
-  fprintf(log_file, "%s", buf);
-  fflush(log_file);
-  spinlock_unlock(&pmsg_lock);
+//
+// TODO -- factor out message composition from writing
+//
+static void
+write_msg_to_log(bool echo_stderr, bool add_thread_id, const char *tag, const char *fmt, va_list args)
+{
+  char buf[MSG_BUF_SIZE];
+
+  if (csprof_no_samples && (! echo_stderr)){
+    return;
+  }
+
+  create_msg(buf, sizeof(buf), add_thread_id, tag, fmt, args);
+  va_end(args);
+
   if (echo_stderr){
     fprintf(stderr,"%s",buf);
   }
 
-  va_end(args);
-}
+  if (csprof_no_samples) return;
 
-
-// like _msg, but doesn't care about threads ...
-static void
-_nmsg(const char *fmt,va_list args)
-{
-  char fstr[MSG_BUF_SIZE];
-  char buf[MSG_BUF_SIZE];
-
-  fstr[0] = '\0';
-  strncat(fstr, fmt, MSG_BUF_SIZE - 5);
-  strcat(fstr,"\n");
-  vsnprintf(buf, MSG_BUF_SIZE - 2, fstr, args);
   spinlock_lock(&pmsg_lock);
   fprintf(log_file, "%s", buf);
   fflush(log_file);
   spinlock_unlock(&pmsg_lock);
-
-  va_end(args);
 }
+
 
 void
 csprof_emsg_valist(const char *fmt, va_list args)
 {
-  write_msg_to_log(false, NULL, fmt, args);
+  write_msg_to_log(false, false, NULL, fmt, args);
 }
 
 
@@ -334,7 +306,7 @@ csprof_emsg(const char *fmt,...)
 {
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(false, NULL, fmt, args);
+  write_msg_to_log(false, false, NULL, fmt, args);
 }
 
 void
@@ -345,7 +317,7 @@ csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
   }
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(false, NULL, fmt, args);
+  write_msg_to_log(false, false, NULL, fmt, args);
   abort();
 }
 
@@ -354,13 +326,14 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
 {
   // massage fmt string to end in a newline
   char fstr[MSG_BUF_SIZE];
+
   fstr[0] = '\0';
   strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
   strcat(fstr,"\n");
 
   va_list args;
   va_start(args, fmt);
-  write_msg_to_log(false, NULL, fmt, args);
+  write_msg_to_log(false, false, NULL, fmt, args);
 
   va_start(args,fmt);
   vfprintf(stderr, fstr, args);
@@ -388,7 +361,7 @@ csprof_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
   if (copy_to_log){
     va_list args;
     va_start(args, fmt);
-    write_msg_to_log(false, NULL, fmt, args);
+    write_msg_to_log(false, false, NULL, fmt, args);
   }
 }
 
@@ -407,7 +380,7 @@ csprof_pmsg(pmsg_category flag, const char *tag, const char *fmt,...)
   }
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(false, tag, fmt, args);
+  write_msg_to_log(false, true, tag, fmt, args);
 }
 
 // like pmsg, except echo message to stderr when flag is set
@@ -415,12 +388,11 @@ void
 csprof_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag, const char *fmt,...)
 {
   if (! dbg_flags[flag]){
-    // csprof_emsg("PMSG flag in = %d (%s), flag ctl = %d --> NOPRINT",flag,tbl[flag],dbg_flags[flag]);
     return;
   }
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(echo_stderr, tag, fmt, args);
+  write_msg_to_log(echo_stderr, true, tag, fmt, args);
 }
 
 void
@@ -431,7 +403,7 @@ csprof_nmsg(pmsg_category flag, const char *fmt, ...)
   }
   va_list args;
   va_start(args,fmt);
-  _nmsg(fmt,args);
+  write_msg_to_log(false, false, NULL, fmt, args);
 }
 
 void
@@ -439,7 +411,7 @@ csprof_amsg(const char *fmt,...)
 {
   va_list args;
   va_start(args,fmt);
-  _nmsg(fmt,args);
+  write_msg_to_log(false, false, NULL, fmt, args);
 }
 
 int
