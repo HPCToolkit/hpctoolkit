@@ -34,9 +34,13 @@
 #include <include/uint.h>
 
 #include <state.h>
-#include <sample_event.h>
+#include <sample_event.h> // csprof_drop_sample()
+#include <unwind/common/backtrace.h> // dump_backtrace()
+
 
 //*************************** Forward Declarations **************************
+
+#define MYDBG 0
 
 static csprof_frame_t*
 canonicalize_chord(csprof_frame_t* chord_beg, lush_assoc_t as,
@@ -180,12 +184,14 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   // ---------------------------------------------------------
   // insert backtrace into calling context tree (if sensible)
   // ---------------------------------------------------------
+  if (MYDBG) {
+    dump_backtrace(state, state->unwind);
+  }
+
   csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
   csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
 
   const int work = sample_count;
-  
-  //dump_backtraces(state, state->unwind);
   csprof_cct_node_t* node = NULL;
   node = csprof_state_insert_backtrace(state, metric_id, 
 				       bt_end, bt_beg, 
