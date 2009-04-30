@@ -492,7 +492,7 @@ public:
   void ip(VMA ip, ushort opIdx) 
   { 
 #ifdef FIXME_CILK_LIP_HACK
-    if (lip_cilk_isvalid()) { lip_cilk(ip); return; }
+    if (lip_cilk_isvalid()) { lip_cilk(ip); m_opIdx = 0; return; }
 #endif
     m_ip = ip; m_opIdx = opIdx; 
   }
@@ -882,7 +882,7 @@ public:
   
   // Node data
   virtual VMA ip() const 
-  { 
+  {
 #ifdef FIXME_CILK_LIP_HACK
     if (lip_cilk_isvalid()) { return (lip_cilk() - 1); }
 #endif

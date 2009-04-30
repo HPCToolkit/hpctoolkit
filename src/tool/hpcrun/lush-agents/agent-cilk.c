@@ -192,7 +192,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
     // INVARIANT: unw_ty_is_worker() == true
     CilkWorkerState* ws = csr->u.cilk_worker_state;
     if (ws && ws->self == 0 && peek_segment(cursor) == UnwSeg_CilkSched) {
-      // local stack: import_cilk_main -> cilk_main
+      // local stack: import_cilk_main -> cilk_main (skip the former)
       lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0); // skip
     }
     else {
@@ -273,7 +273,9 @@ LUSHI_step_pnote(lush_cursor_t* cursor)
     ty = LUSH_STEP_END_CHORD;					\
   }								\
   else {							\
-    cilk_ip_init(lip, CILKFRM_PROC(cl->frame) /*cl->status*/);	\
+    /* NOTE: interior lips should act like a return address; */	\
+    /*   therefore, we add 1                                 */	\
+    cilk_ip_init(lip, CILKFRM_PROC(cl->frame) + 1);		\
     ty = LUSH_STEP_CONT;					\
   } 
 
@@ -302,13 +304,13 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
   else if (as == LUSH_ASSOC_1_to_M) {
     // INVARIANT: csr->u.cilk_closure is non-NULL
     Closure* cl = csr->u.cilk_closure;
-    if (csr_is_flag(csr, UnwFlg_BegLNote)) { // past begining of lchord
+    if (csr_is_flag(csr, UnwFlg_BegLNote)) { // after innermost closure
       // advance to next closure
       cl = csr->u.cilk_closure = cl->parent;
       SET_LIP_AND_TY(cl, lip, ty);
     }
     else {
-      // skip the top closure; it is identical to the outermost stack frame
+      // skip innermost closure; it is identical to the outermost stack frame
       cl = csr->u.cilk_closure = cl->parent;
       SET_LIP_AND_TY(cl, lip, ty);
       csr_set_flag(csr, UnwFlg_BegLNote);

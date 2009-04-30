@@ -34,6 +34,9 @@
 
 #include "lush.h"
 
+#include <unwind/common/unwind.h> // unw_step()
+
+
 //*************************** Forward Declarations **************************
 
 static void handle_any_dlerror();
@@ -228,7 +231,7 @@ lush_step_bichord(lush_cursor_t* cursor)
   // Use the Identity agent: Association is 1-to-1
   if (first_aid == lush_agentid_NULL) {
     lush_lip_t* lip = lush_cursor_get_lip(cursor);
-    lip->data8[0] = (uint64_t)lush_cursor_get_ip(cursor);
+    lip->data8[0] = (uint64_t)ip;
 
     ty = LUSH_STEP_CONT;
     lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
