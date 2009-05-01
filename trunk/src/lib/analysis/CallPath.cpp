@@ -174,7 +174,8 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
 
 
-// overlayStaticStructure: Create frames for CCT::Call and CCT::Stmt.
+// overlayStaticStructure: Create frames for CCT::Call and CCT::Stmt
+// using a preorder walk over the CCT.
 void
 Analysis::CallPath::
 overlayStaticStructure(Prof::CallPath::Profile* prof, 
@@ -240,7 +241,9 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
       n->Link(scope_frame);
     }
     
+    // ---------------------------------------------------
     // recur 
+    // ---------------------------------------------------
     if (!n->isLeaf()) {
       overlayStaticStructure(prof, n, epoch_lm, lmStrct, lm);
     }
