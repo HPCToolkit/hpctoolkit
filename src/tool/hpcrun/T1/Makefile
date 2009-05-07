@@ -54,6 +54,9 @@ dlopen-test: dlopen-test.c
 dlstress: libsum1.so libsum2.so dlstress.c
 	gcc -o $@ -g -O dlstress.c -ldl -lpthread
 
+epoch: libsum1.so libsum2.so epoch.c
+	gcc -o $@ -g -O epoch.c -ldl
+
 libsum1.so: sum.c
 	$(CC) -o $@ -g -O -shared -fPIC $<
 
