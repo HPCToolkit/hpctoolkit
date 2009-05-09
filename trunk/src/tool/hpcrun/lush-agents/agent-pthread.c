@@ -28,6 +28,8 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/min-max.h>
+
 #include "agent-pthread.h"
 
 #include "thread_data.h" // FIXME: outside of interface
@@ -192,19 +194,33 @@ LUSHI_get_idleness()
     return 0.0;
   }
 
+  bool is_working_lock = lush_pthr__isWorking_lock(pthr);
+
   double num_working      = *(pthr->ps_num_working);
   double num_working_lock = *(pthr->ps_num_working_lock);
-  double num_idle_cond    = *(pthr->ps_num_idle_cond);
+  double num_idle_cond    = MAX(0, *(pthr->ps_num_idle_cond)); // timing window
 
-  if (lush_pthr__isWorking_lock(pthr)) {
+  // INVARIANT: This thread is working.  Therefore it is either
+  // working while locked or it is working as 'other' (within a
+  // condition variable critical section or without a lock).
+  if (is_working_lock) {
+    num_working_lock = MAX(1, num_working_lock); // account for timing windows
+  }
+
+  if (is_working_lock) {
+    // -----------------------------------------------------
     // is_working_lock() : num_idle_lock / num_working_lock
+    // -----------------------------------------------------
     double idleness = (*(pthr->ps_num_threads) - num_working);
-    double num_idle_lock = (idleness - num_idle_cond);
+    double num_idle_lock = MAX(0, idleness - num_idle_cond);
     return (num_idle_lock / num_working_lock);
   }
   else {
+    // -----------------------------------------------------
     // is_working_cond() || is_working : num_idle_cond / num_working_othr
-    double num_working_othr = (num_working - num_working_lock);
+    // -----------------------------------------------------
+    // INVARIANT: (num_working - num_working_lock) should always be > 0
+    double num_working_othr = MAX(1, num_working - num_working_lock);
     return (num_idle_cond / num_working_othr);
   }
 }
