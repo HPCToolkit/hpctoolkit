@@ -29,6 +29,8 @@
 
 #include "lush-pthread.h"
 
+#include "pmsg.h"
+
 
 //*************************** Forward Declarations **************************
 
@@ -74,6 +76,18 @@ lush_pthr__init(lush_pthr_t* x)
   x->ps_num_working_lock = &lush_pthr_ps_num_working_lock;
   
   x->ps_num_idle_cond = &lush_pthr_ps_num_idle_cond;
+}
+
+
+void 
+lush_pthr__dump(lush_pthr_t* x, const char* nm)
+{
+  EMSG("lush_pthr(%s):\t is_wrking %d, num_lck %d, cnd_lck %d | "
+       "# wrking %ld, wrking_lck %ld, idle_cnd %ld | "
+       "# procs %ld, threads %d",
+       nm, x->is_working, x->num_locks, x->cond_lock,
+       *x->ps_num_working, *x->ps_num_working_lock, *x->ps_num_idle_cond,
+       *x->ps_num_procs, *x->ps_num_threads);
 }
 
 

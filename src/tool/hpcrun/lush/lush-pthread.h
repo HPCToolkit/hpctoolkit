@@ -25,11 +25,14 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+
 //*************************** User Include Files ****************************
 
 #include "atomic.h"
 
 //*************************** Forward Declarations **************************
+
+#define LUSH_PTHR_DBG 0
 
 #if defined(__cplusplus)
 extern "C" {
@@ -118,6 +121,9 @@ lush_pthr__isWorking_cond(lush_pthr_t* x)
 void 
 lush_pthr__init(lush_pthr_t* x);
 
+void 
+lush_pthr__dump(lush_pthr_t* x, const char* nm);
+
 
 //***************************************************************************
 
@@ -135,6 +141,8 @@ lush_pthr__thread_init(lush_pthr_t* x)
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
+
+  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "t_init"); }
 }
 
 
@@ -152,6 +160,8 @@ lush_pthr__thread_fini(lush_pthr_t* x)
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
+
+  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "t_fini"); }
 }
 
 
@@ -161,6 +171,10 @@ lush_pthr__thread_fini(lush_pthr_t* x)
 static inline void
 lush_pthr__lock_pre(lush_pthr_t* x)
 {
+  if ( !(x && x->ps_num_working) ) {
+    return; // protect against calls before thread initialization
+  }
+
   x->is_working = false;
   // x->num_locks: same
   // x->cond_lock: same
@@ -169,6 +183,8 @@ lush_pthr__lock_pre(lush_pthr_t* x)
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
+
+  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "lock["); }
 }
 
 
@@ -176,6 +192,10 @@ lush_pthr__lock_pre(lush_pthr_t* x)
 static inline void
 lush_pthr__lock_post(lush_pthr_t* x)
 {
+  if ( !(x && x->ps_num_working) ) {
+    return; // protect against calls before thread initialization
+  }
+
   // (1) moving to lock; (2) moving from cond to lock
   bool do_addLock = (x->num_locks == 0 || lush_pthr__isDirectlyInCond(x));
 
@@ -189,6 +209,8 @@ lush_pthr__lock_post(lush_pthr_t* x)
   }
 
   // x->ps_num_idle_cond: same
+
+  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "lock]"); }
 }
 
 
@@ -196,6 +218,9 @@ lush_pthr__lock_post(lush_pthr_t* x)
 static inline void
 lush_pthr__trylock(lush_pthr_t* x, int result)
 {
+  if ( !(x && x->ps_num_working_lock) ) {
+    return; // protect against calls before thread initialization
+  }
   if (result != 0) {
     return; // lock was not acquired -- state remains the same
   }
@@ -213,6 +238,8 @@ lush_pthr__trylock(lush_pthr_t* x, int result)
   }
 
   // x->ps_num_idle_cond: same
+
+  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "trylock"); }
 }
 
 
@@ -220,6 +247,10 @@ lush_pthr__trylock(lush_pthr_t* x, int result)
 static inline void
 lush_pthr__unlock(lush_pthr_t* x)
 {
+  if ( !(x && x->ps_num_working_lock) ) {
+    return; // protect against calls before thread initialization
+  }
+
   bool wasDirectlyInCond = lush_pthr__isDirectlyInCond(x);
 
   x->is_working = true; // same
@@ -229,11 +260,14 @@ lush_pthr__unlock(lush_pthr_t* x)
   }
   
   // x->ps_num_working: same
-  if (x->num_locks == 0 || lush_pthr__isDirectlyInCond(x)) {
+  if ((x->num_locks == 0 && !wasDirectlyInCond) 
+      || lush_pthr__isDirectlyInCond(x)) {
     csprof_atomic_decrement(x->ps_num_working_lock);
   }
 
   // x->ps_num_idle_cond: same
+
+  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "unlock"); }
 }
 
 
@@ -243,16 +277,25 @@ lush_pthr__unlock(lush_pthr_t* x)
 static inline void
 lush_pthr__condwait_pre(lush_pthr_t* x)
 {
+  if ( !(x && x->ps_num_working) ) {
+    return; // protect against calls before thread initialization
+  }
+
+  bool wasDirectlyInCond = lush_pthr__isDirectlyInCond(x);
+
   x->is_working = false;
   x->num_locks--;
   //x->cond_lock: same
   
-  csprof_atomic_decrement(x->ps_num_working);
-  if (x->num_locks == 0) {
+  // N.B. this order ensures that (num_working - num_working_lock) >= 0
+  if (x->num_locks == 0 && !wasDirectlyInCond) {
     csprof_atomic_decrement(x->ps_num_working_lock);
   }
+  csprof_atomic_decrement(x->ps_num_working);
 
   csprof_atomic_increment(x->ps_num_idle_cond);
+
+  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "cwait["); }
 }
 
 
@@ -260,14 +303,20 @@ lush_pthr__condwait_pre(lush_pthr_t* x)
 static inline void
 lush_pthr__condwait_post(lush_pthr_t* x)
 {
+  if ( !(x && x->ps_num_working) ) {
+    return; // protect against calls before thread initialization
+  }
+
   x->is_working = true;
   x->num_locks++;
   x->cond_lock = x->num_locks;
 
   csprof_atomic_increment(x->ps_num_working);
-  // x->ps_num_working_lock: same
+  // x->ps_num_working_lock: same, b/c thread is part of 'num_working_cond'
 
   csprof_atomic_decrement(x->ps_num_idle_cond);
+
+  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "cwait]"); }
 }
 
 
