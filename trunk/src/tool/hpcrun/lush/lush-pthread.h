@@ -175,14 +175,14 @@ lush_pthr__lock_pre(lush_pthr_t* x)
     return; // protect against calls before thread initialization
   }
 
-  x->is_working = false;
-  // x->num_locks: same
-  // x->cond_lock: same
-
   csprof_atomic_decrement(x->ps_num_working);
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
+
+  x->is_working = false;
+  // x->num_locks: same
+  // x->cond_lock: same
 
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "lock["); }
 }
@@ -282,18 +282,19 @@ lush_pthr__condwait_pre(lush_pthr_t* x)
   }
 
   bool wasDirectlyInCond = lush_pthr__isDirectlyInCond(x);
-
-  x->is_working = false;
-  x->num_locks--;
-  //x->cond_lock: same
+  int new_num_locks = (x->num_locks - 1);
   
   // N.B. this order ensures that (num_working - num_working_lock) >= 0
-  if (x->num_locks == 0 && !wasDirectlyInCond) {
+  if (new_num_locks == 0 && !wasDirectlyInCond) {
     csprof_atomic_decrement(x->ps_num_working_lock);
   }
   csprof_atomic_decrement(x->ps_num_working);
 
   csprof_atomic_increment(x->ps_num_idle_cond);
+
+  x->is_working = false;
+  x->num_locks = new_num_locks;
+  //x->cond_lock: same
 
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "cwait["); }
 }
