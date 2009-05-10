@@ -178,11 +178,10 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	messages/pmsg.c fnbounds/fnbounds_common.c \
 	lush/lush-backtrace.c lush/lush.c lush/lushi-cb.c \
 	lush/lush-support-rt.c lush/lush-pthread.c memory/list.c \
-	memory/mem.c sampling/types/callstack/cct.c \
-	unwind/common/backtrace.c unwind/common/splay.c \
-	unwind/common/stack_troll.c unwind/common/ui_tree.c \
-	utilities/executable-path.c utilities/spinlock.c \
-	utilities/tokenize.c utilities/unlink.c \
+	memory/mem.c cct/cct.c unwind/common/backtrace.c \
+	unwind/common/splay.c unwind/common/stack_troll.c \
+	unwind/common/ui_tree.c utilities/executable-path.c \
+	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
 	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
@@ -262,11 +261,10 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	messages/pmsg.c fnbounds/fnbounds_common.c \
 	lush/lush-backtrace.c lush/lush.c lush/lushi-cb.c \
 	lush/lush-support-rt.c lush/lush-pthread.c memory/list.c \
-	memory/mem.c sampling/types/callstack/cct.c \
-	unwind/common/backtrace.c unwind/common/splay.c \
-	unwind/common/stack_troll.c unwind/common/ui_tree.c \
-	utilities/executable-path.c utilities/spinlock.c \
-	utilities/tokenize.c utilities/unlink.c \
+	memory/mem.c cct/cct.c unwind/common/backtrace.c \
+	unwind/common/splay.c unwind/common/stack_troll.c \
+	unwind/common/ui_tree.c utilities/executable-path.c \
+	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_static.c \
 	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
@@ -619,7 +617,7 @@ MY_BASE_FILES = \
 	lush/lush-pthread.c		\
 	memory/list.c			\
 	memory/mem.c			\
-	sampling/types/callstack/cct.c	\
+	cct/cct.c			\
 	unwind/common/backtrace.c	\
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
@@ -677,7 +675,7 @@ MY_INCLUDE_DIRS = \
 	-I$(srcdir)/memory		\
 	-I$(srcdir)/os/catamount	\
 	-I$(srcdir)/os/linux		\
-	-I$(srcdir)/sampling/types/callstack	\
+	-I$(srcdir)/cct			\
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
@@ -1331,12 +1329,12 @@ libcsprof_la-mem.lo: memory/mem.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-mem.lo `test -f 'memory/mem.c' || echo '$(srcdir)/'`memory/mem.c
 
-libcsprof_la-cct.lo: sampling/types/callstack/cct.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-cct.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-cct.Tpo -c -o libcsprof_la-cct.lo `test -f 'sampling/types/callstack/cct.c' || echo '$(srcdir)/'`sampling/types/callstack/cct.c
+libcsprof_la-cct.lo: cct/cct.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-cct.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-cct.Tpo -c -o libcsprof_la-cct.lo `test -f 'cct/cct.c' || echo '$(srcdir)/'`cct/cct.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-cct.Tpo $(DEPDIR)/libcsprof_la-cct.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sampling/types/callstack/cct.c' object='libcsprof_la-cct.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct/cct.c' object='libcsprof_la-cct.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-cct.lo `test -f 'sampling/types/callstack/cct.c' || echo '$(srcdir)/'`sampling/types/callstack/cct.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-cct.lo `test -f 'cct/cct.c' || echo '$(srcdir)/'`cct/cct.c
 
 libcsprof_la-backtrace.lo: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-backtrace.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-backtrace.Tpo -c -o libcsprof_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
@@ -1996,19 +1994,19 @@ libcsprof_o-mem.obj: memory/mem.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-mem.obj `if test -f 'memory/mem.c'; then $(CYGPATH_W) 'memory/mem.c'; else $(CYGPATH_W) '$(srcdir)/memory/mem.c'; fi`
 
-libcsprof_o-cct.o: sampling/types/callstack/cct.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-cct.o -MD -MP -MF $(DEPDIR)/libcsprof_o-cct.Tpo -c -o libcsprof_o-cct.o `test -f 'sampling/types/callstack/cct.c' || echo '$(srcdir)/'`sampling/types/callstack/cct.c
+libcsprof_o-cct.o: cct/cct.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-cct.o -MD -MP -MF $(DEPDIR)/libcsprof_o-cct.Tpo -c -o libcsprof_o-cct.o `test -f 'cct/cct.c' || echo '$(srcdir)/'`cct/cct.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-cct.Tpo $(DEPDIR)/libcsprof_o-cct.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sampling/types/callstack/cct.c' object='libcsprof_o-cct.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct/cct.c' object='libcsprof_o-cct.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-cct.o `test -f 'sampling/types/callstack/cct.c' || echo '$(srcdir)/'`sampling/types/callstack/cct.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-cct.o `test -f 'cct/cct.c' || echo '$(srcdir)/'`cct/cct.c
 
-libcsprof_o-cct.obj: sampling/types/callstack/cct.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-cct.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-cct.Tpo -c -o libcsprof_o-cct.obj `if test -f 'sampling/types/callstack/cct.c'; then $(CYGPATH_W) 'sampling/types/callstack/cct.c'; else $(CYGPATH_W) '$(srcdir)/sampling/types/callstack/cct.c'; fi`
+libcsprof_o-cct.obj: cct/cct.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-cct.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-cct.Tpo -c -o libcsprof_o-cct.obj `if test -f 'cct/cct.c'; then $(CYGPATH_W) 'cct/cct.c'; else $(CYGPATH_W) '$(srcdir)/cct/cct.c'; fi`
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-cct.Tpo $(DEPDIR)/libcsprof_o-cct.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sampling/types/callstack/cct.c' object='libcsprof_o-cct.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct/cct.c' object='libcsprof_o-cct.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-cct.obj `if test -f 'sampling/types/callstack/cct.c'; then $(CYGPATH_W) 'sampling/types/callstack/cct.c'; else $(CYGPATH_W) '$(srcdir)/sampling/types/callstack/cct.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-cct.obj `if test -f 'cct/cct.c'; then $(CYGPATH_W) 'cct/cct.c'; else $(CYGPATH_W) '$(srcdir)/cct/cct.c'; fi`
 
 libcsprof_o-backtrace.o: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-backtrace.o -MD -MP -MF $(DEPDIR)/libcsprof_o-backtrace.Tpo -c -o libcsprof_o-backtrace.o `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c

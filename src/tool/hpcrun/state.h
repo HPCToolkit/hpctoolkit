@@ -49,8 +49,7 @@ extern csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *);
 // Undoubtedly a better solution than this is possible, but this at
 // least is a more appropriate location.
 
-#define csprof_state_ensure_buffer_avail(/*csprof_state_t*/ state,    \
-					 /*csprof_frame_t*/ unwind)   \
+#define csprof_state_ensure_buffer_avail(state, unwind)               \
   if (unwind == state->bufend) {				      \
     unwind = csprof_state_expand_buffer(state, unwind);		      \
     state->bufstk = state->bufend;				      \

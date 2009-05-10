@@ -10,7 +10,6 @@
 
 #include "csprof_csdata.h"
 #include "epoch.h"
-// #include "list.h"
 
 #include <lush/lush.h>
 
@@ -23,12 +22,10 @@
 
 /* not currently used */
 /* contents of the persistent state file for the profiler */
-typedef struct csprof_pstate_s { 
+typedef struct csprof_pstate_t { 
     long int hostid;            /* host id of the machine FIXME */
     pid_t pid;                  /* the process's pid */
-  // #ifdef CSPROF_THREADS // keep the structure, but don't use it in unthreaded case
     pthread_t thrid;            /* the particular thread */
-  // #endif
     unsigned int ninit;         /* how many times the pid has been init'd */
 } csprof_pstate_t;
 

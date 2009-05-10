@@ -21,12 +21,21 @@ local_td(void)
   return &_local_td;
 }
 
+static bool
+local_true(void)
+{
+  return true;
+}
+
 thread_data_t *(*csprof_get_thread_data)(void) = &local_td;
+bool          (*csprof_td_avail)(void)         = &local_true;
 
 void
 csprof_unthreaded_data(void)
 {
   csprof_get_thread_data = &local_td;
+  csprof_td_avail        = &local_true;
+
 }
 
 
@@ -117,6 +126,13 @@ csprof_allocate_thread_data(void)
   return malloc(sizeof(thread_data_t));
 }
 
+static bool
+thread_specific_td_avail(void)
+{
+  thread_data_t *ret = (thread_data_t *) pthread_getspecific(_csprof_key);
+  return !(ret == NULL);
+}
+
 thread_data_t *
 thread_specific_td(void)
 {
@@ -132,5 +148,6 @@ csprof_threaded_data(void)
 {
   assert(csprof_get_thread_data == &local_td);
   csprof_get_thread_data = &thread_specific_td;
+  csprof_td_avail        = &thread_specific_td_avail;
 }
 #endif // defined(CSPROF_THREADS)
