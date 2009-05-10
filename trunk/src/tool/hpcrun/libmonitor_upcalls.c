@@ -79,7 +79,7 @@ csprof_async_unblock(void)
 int
 csprof_async_is_blocked(void)
 {
-  return TD_GET(suspend_sampling) && !ENABLED(ASYNC_RISKY);
+  return (! csprof_td_avail()) || (TD_GET(suspend_sampling) && !ENABLED(ASYNC_RISKY));
 }
 
 

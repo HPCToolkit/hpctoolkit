@@ -95,7 +95,7 @@ MY_BASE_FILES =			\
 	lush/lush-pthread.c		\
 	memory/list.c			\
 	memory/mem.c			\
-	sampling/types/callstack/cct.c	\
+	cct/cct.c			\
 	unwind/common/backtrace.c	\
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
@@ -155,7 +155,7 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/memory		\
 	-I$(srcdir)/os/catamount	\
 	-I$(srcdir)/os/linux		\
-	-I$(srcdir)/sampling/types/callstack	\
+	-I$(srcdir)/cct			\
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\

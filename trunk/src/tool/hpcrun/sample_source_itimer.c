@@ -122,6 +122,10 @@ METHOD_FN(init)
 static void
 METHOD_FN(_start)
 {
+  if (! csprof_td_avail()){
+    return; // in the unlikely event that we are trying to start, but thread data is unavailable,
+            // assume that all sample source ops are suspended.
+  }
   TMSG(ITIMER_CTL,"starting itimer");
   setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
 

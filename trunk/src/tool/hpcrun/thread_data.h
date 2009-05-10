@@ -9,6 +9,7 @@
 // (there is just 1 thread).
 
 #include <setjmp.h>
+#include <stdbool.h>
 
 #include "sample_sources_registered.h"
 #include "mem.h"
@@ -47,6 +48,7 @@ typedef struct _td_t {
 #define TD_GET(field) csprof_get_thread_data()->field
 
 extern thread_data_t *(*csprof_get_thread_data)(void);
+extern bool          (*csprof_td_avail)(void);
 extern thread_data_t *csprof_allocate_thread_data(void);
 extern void           csprof_init_pthread_key(void);
 extern void           csprof_thread_data_init(int id,offset_t sz1,offset_t sz2);
