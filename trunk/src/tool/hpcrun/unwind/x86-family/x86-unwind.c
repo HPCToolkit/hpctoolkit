@@ -189,15 +189,6 @@ step_state
 unw_step_real(unw_cursor_t *cursor)
 {
 
-  // for thread stuff, check to see if we are unwinding in a specific thread
-  //   if so, call a do_nothing routine [ can set a breakpoint here ]
-  //
-  if (ENABLED(DEBUG_THREAD_STEP) &&
-      csprof_using_threads_p() &&
-      (TD_GET(id) == hpcrun_debug_thread_id) ){
-    hpcrun_do_nothing();
-  }
-
   //-----------------------------------------------------------
   // check if we have reached the end of our unwind, which is
   // demarcated with a fence. 
