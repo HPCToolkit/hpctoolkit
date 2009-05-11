@@ -35,6 +35,7 @@
 #include "mem.h"
 #include "pmsg.h"
 #include "stack_troll.h"
+#include "thread_use.h"
 
 #include "unwind.h"
 #include "backtrace.h"
@@ -184,10 +185,19 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
   if (MYDBG) { dump_ui((unwind_interval *)cursor->intvl, 0); }
 }
 
-
 step_state
 unw_step_real(unw_cursor_t *cursor)
 {
+
+  // for thread stuff, check to see if we are unwinding in a specific thread
+  //   if so, call a do_nothing routine [ can set a breakpoint here ]
+  //
+  if (ENABLED(DEBUG_THREAD_STEP) &&
+      csprof_using_threads_p() &&
+      (TD_GET(id) == hpcrun_debug_thread_id) ){
+    hpcrun_do_nothing();
+  }
+
   //-----------------------------------------------------------
   // check if we have reached the end of our unwind, which is
   // demarcated with a fence. 

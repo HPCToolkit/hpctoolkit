@@ -34,6 +34,9 @@
 // forward declarations
 //***************************************************************************
 
+extern int hpcrun_debug_thread_id;
+extern void hpcrun_do_nothing(void);
+
 csprof_cct_node_t*
 csprof_sample_callstack(csprof_state_t *state, ucontext_t* context, 
 			int metric_id, size_t sample_count);
