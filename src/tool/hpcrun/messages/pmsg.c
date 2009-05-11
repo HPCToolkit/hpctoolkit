@@ -306,7 +306,7 @@ csprof_emsg(const char *fmt,...)
 {
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(false, false, NULL, fmt, args);
+  write_msg_to_log(false, true, NULL, fmt, args);
 }
 
 void
