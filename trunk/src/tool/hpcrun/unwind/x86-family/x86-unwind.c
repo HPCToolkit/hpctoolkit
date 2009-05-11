@@ -206,6 +206,8 @@ unw_step_real(unw_cursor_t *cursor)
 
   int unw_res;
 
+  if (!uw) return STEP_ERROR;
+
   switch (uw->ra_status){
   case RA_SP_RELATIVE:
     unw_res = unw_step_sp(cursor);
@@ -224,6 +226,7 @@ unw_step_real(unw_cursor_t *cursor)
     dump_ui((unwind_interval *)cursor->intvl, 0);
     assert(0);
   }
+  if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP; 
 
   if (unw_res != -1) {
     //TMSG(UNW,"=========== unw_step Succeeds ============== ");
@@ -379,7 +382,7 @@ unw_step_sp(unw_cursor_t *cursor)
     if (((void *)next_sp) >= monitor_stack_bottom()){
       TMSG(UNW,"No next interval, and next_sp >= stack bottom,"
 	   " so stop unwind ...");
-      return STEP_STOP;
+      return STEP_STOP_WEAK;
     } else {
       TMSG(UNW,"No next interval, step fails");
       return STEP_ERROR;
@@ -441,7 +444,7 @@ unw_step_bp(unw_cursor_t *cursor)
       if (((void *)next_sp) >= monitor_stack_bottom()) {
         TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom,"
 	     " next_sp = %p", next_sp);
-        return STEP_STOP;
+        return STEP_STOP_WEAK;
       }
       TMSG(UNW_STRATEGY,"BP cannot build interval for next_pc(%p)", next_pc);
       return STEP_ERROR;
@@ -471,14 +474,14 @@ unw_step_std(unw_cursor_t *cursor)
   if (unw_step_prefer_sp()){
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with SP");
     unw_res = unw_step_sp(cursor);
-    if (unw_res == STEP_ERROR) {
+    if (unw_res == STEP_ERROR || unw_res == STEP_STOP_WEAK) {
       TMSG(UNW_STRATEGY,"--STD_FRAME: SP failed, RETRY w BP");
       unw_res = unw_step_bp(cursor);
     }
   } else {
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with BP");
     unw_res = unw_step_bp(cursor);
-    if (unw_res == STEP_ERROR) {
+    if (unw_res == STEP_ERROR || unw_res == STEP_STOP_WEAK) {
       TMSG(UNW_STRATEGY,"--STD_FRAME: BP failed, RETRY w SP");
       unw_res = unw_step_sp(cursor);
     }
