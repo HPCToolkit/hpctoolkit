@@ -85,6 +85,7 @@ typedef enum {
   STEP_STOP  = 0,
   STEP_OK    = 1,
   STEP_TROLL = 2,
+  STEP_STOP_WEAK = 3
 } step_state;
 
 extern step_state unw_step(unw_cursor_t *c);
