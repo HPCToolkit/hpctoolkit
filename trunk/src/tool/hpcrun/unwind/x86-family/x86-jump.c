@@ -28,12 +28,7 @@ process_unconditional_branch(xed_decoded_inst_t *xptr, bool irdebug, interval_ar
     (iarg->highwatermark).state = HW_INITIALIZED;
   }
 
-#ifdef IARGR
   reset_to_canonical_interval(xptr, &next, irdebug, iarg);
-#endif
-  reset_to_canonical_interval(xptr, iarg->current, &next, iarg->ins, iarg->end, irdebug, iarg->first, 
-			      &(iarg->highwatermark), &(iarg->canonical_interval),
-			      iarg->bp_frames_found);
 
   TMSG(TAIL_CALL,"checking for tail call via unconditional branch @ %p",iarg->ins);
   void *possible = x86_get_branch_target(iarg->ins, xptr);

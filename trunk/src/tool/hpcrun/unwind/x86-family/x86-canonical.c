@@ -2,6 +2,7 @@
 #include "x86-decoder.h"
 #include "x86-unwind-interval.h"
 #include "pmsg.h"
+#include "x86-interval-arg.h"
 
 
 #define HW_INITIALIZED		0x8
@@ -26,13 +27,19 @@ unwind_interval *find_first_non_decr(unwind_interval *first,
  *****************************************************************************/
 
 void 
-reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current, 
-			    unwind_interval **next, char *ins, char *end,
-			    bool irdebug, unwind_interval *first, 
-			    highwatermark_t *highwatermark, 
-			    unwind_interval **canonical_interval, 
-			    bool bp_frames_found)
+reset_to_canonical_interval(xed_decoded_inst_t *xptr,
+			    unwind_interval **next,
+			    bool irdebug,
+                            interval_arg_t *iarg)
 {
+  unwind_interval *current             = iarg->current;
+  void *ins                            = iarg->ins;
+  void *end                            = iarg->end;
+  unwind_interval *first               = iarg->first;
+  highwatermark_t *highwatermark       = &(iarg->highwatermark);
+  unwind_interval **canonical_interval = &(iarg->canonical_interval); 
+  bool bp_frames_found                 = iarg->bp_frames_found;
+
   unwind_interval *hw_uwi = highwatermark->uwi;
   // if the return is not the last instruction in the interval, 
   // set up an interval for code after the return 

@@ -18,7 +18,6 @@ unwind_interval *
 process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
 {
   unwind_interval *next = iarg->current;
-  highwatermark_t *hw_tmp = &(iarg->highwatermark);
 
 #ifdef FIX_INTERVALS_AT_RETURN
   if (iarg->current->ra_status == RA_SP_RELATIVE) {
@@ -95,11 +94,7 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
       iarg->canonical_interval = iarg->current;
     }
     else {
-#ifdef IARGR
       reset_to_canonical_interval(xptr, &next, irdebug, iarg);
-#endif
-      reset_to_canonical_interval(xptr, iarg->current, &next, iarg->ins, iarg->end, irdebug, iarg->first, 
-				  hw_tmp, &(iarg->canonical_interval), iarg->bp_frames_found);
     }
   }
   return next;
