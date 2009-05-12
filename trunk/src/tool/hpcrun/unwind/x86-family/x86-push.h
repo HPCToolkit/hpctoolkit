@@ -6,19 +6,16 @@
  *****************************************************************************/
 
 #include "x86-interval-highwatermark.h"
+#include "x86-interval-arg.h"
 
 /******************************************************************************
  * interface operations 
  *****************************************************************************/
 
 unwind_interval *
-process_push(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi, 
-	     unwind_interval *current, highwatermark_t *highwatermark);
-
-
+process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg);
 
 unwind_interval *
-process_pop(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi, 
-	    unwind_interval *current, highwatermark_t *highwatermark);
+process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg);
 
 #endif
