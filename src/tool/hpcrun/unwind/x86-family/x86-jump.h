@@ -15,10 +15,6 @@ unwind_interval *
 process_unconditional_branch(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg);
 
 unwind_interval *
-process_conditional_branch(xed_decoded_inst_t *xptr,
-                           unwind_interval *current,
-                           void *ins, void *end,
-                           unwind_interval *first,
-			   highwatermark_t *highwatermark);
+process_conditional_branch(xed_decoded_inst_t *xptr, interval_arg_t *iarg);
 
 #endif

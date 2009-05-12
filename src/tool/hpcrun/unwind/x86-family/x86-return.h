@@ -5,6 +5,7 @@
  * include files
  *****************************************************************************/
 #include "x86-unwind-analysis.h"
+#include "x86-interval-arg.h"
 
 
 /******************************************************************************
@@ -12,10 +13,7 @@
  *****************************************************************************/
 
 unwind_interval *
-process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr, 
-	       void **ins, void *end, bool irdebug, unwind_interval *first, 
-	       highwatermark_t *highwatermark, 
-	       unwind_interval **canonical_interval, bool *bp_frames_found);
+process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg);
 
 #endif
 

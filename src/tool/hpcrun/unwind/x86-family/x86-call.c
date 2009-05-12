@@ -1,21 +1,24 @@
 #include "x86-interval-highwatermark.h"
 #include "x86-decoder.h"
+#include "x86-interval-arg.h"
 
 /******************************************************************************
  * interface operations
  *****************************************************************************/
 
 unwind_interval*
-process_call(unwind_interval *current, highwatermark_t *highwatermark)
+process_call(interval_arg_t *iarg)
 {
-  unwind_interval *next = current;
-  if (highwatermark->state == HW_UNINITIALIZED) {
-    highwatermark->uwi = current;
-    highwatermark->state = HW_INITIALIZED;
+  unwind_interval *next = iarg->current;
+  highwatermark_t *hw_tmp = &(iarg->highwatermark);
+
+  if (hw_tmp->state == HW_UNINITIALIZED) {
+    hw_tmp->uwi = iarg->current;
+    hw_tmp->state = HW_INITIALIZED;
   }
   
 #ifdef USE_CALL_LOOKAHEAD
-  next = call_lookahead(xptr, current, ins);
+  next = call_lookahead(xptr, iarg->current, iarg->ins);
 #endif
   return next;
 }

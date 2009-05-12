@@ -57,9 +57,7 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
   case XED_ICLASS_JRCXZ:
   case XED_ICLASS_JS:
   case XED_ICLASS_JZ:
-    next = process_conditional_branch(xptr, iarg->current, iarg->ins, iarg->end,
-                                      iarg->first, &(iarg->highwatermark));
-
+    next = process_conditional_branch(xptr, iarg);
     break;
 
   case XED_ICLASS_FNSTCW:
@@ -78,50 +76,48 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
     break;
 
   case XED_ICLASS_LEA: 
-    next = process_lea(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark));
+    next = process_lea(xptr, xi, iarg);
     break;
 
-  case XED_ICLASS_MOV: 
-    next = process_move(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark), &(iarg->rax_rbp_equivalent_at));
+  case XED_ICLASS_MOV:
+    next = process_move(xptr, xi, iarg);
     break;
 
   case XED_ICLASS_ENTER:
-    next = process_enter(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark));
+    next = process_enter(xptr, xi, iarg);
     break;
 
   case XED_ICLASS_LEAVE:
-    next = process_leave(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark));
+    next = process_leave(xptr, xi, iarg);
     break;
 
   case XED_ICLASS_CALL_FAR:
   case XED_ICLASS_CALL_NEAR:
-    next = process_call(iarg->current, &(iarg->highwatermark));
+    next = process_call(iarg);
     break;
 
   case XED_ICLASS_RET_FAR:
   case XED_ICLASS_RET_NEAR:
-    next = process_return(xptr, &(iarg->current), &(iarg->ins), iarg->end, irdebug, iarg->first,
-			  &(iarg->highwatermark), &(iarg->canonical_interval), &(iarg->bp_frames_found));
+    next = process_return(xptr, irdebug, iarg);
     break;
 
   case XED_ICLASS_ADD:   
   case XED_ICLASS_SUB: 
-    next = process_addsub(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark),
-			  &(iarg->canonical_interval), &(iarg->bp_frames_found));
+    next = process_addsub(xptr, xi, iarg);
     break;
 
   case XED_ICLASS_PUSH:
   case XED_ICLASS_PUSHF:  
   case XED_ICLASS_PUSHFD: 
   case XED_ICLASS_PUSHFQ: 
-    next = process_push(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark));
+    next = process_push(xptr, xi, iarg);
     break;
 
   case XED_ICLASS_POP:   
   case XED_ICLASS_POPF:  
   case XED_ICLASS_POPFD: 
   case XED_ICLASS_POPFQ: 
-    next = process_pop(iarg->ins, xptr, xi, iarg->current, &(iarg->highwatermark));
+    next = process_pop(xptr, xi, iarg);
     break;
 
   default:

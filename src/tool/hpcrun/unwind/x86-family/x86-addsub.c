@@ -3,14 +3,14 @@
 
 #include "x86-interval-highwatermark.h"
 #include "x86-decoder.h"
+#include "x86-interval-arg.h"
 
 unwind_interval *
-process_addsub(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi, 
-	       unwind_interval *current, highwatermark_t *highwatermark, 
-	       unwind_interval **canonical_interval,
-	       bool *bp_frames_found)
+process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
-  unwind_interval *next = current;
+  highwatermark_t *hw_tmp = &(iarg->highwatermark);
+
+  unwind_interval *next = iarg->current;
   const xed_operand_t* op0 = xed_inst_operand(xi,0);
   const xed_operand_t* op1 = xed_inst_operand(xi,1);
   xed_operand_enum_t   op0_name = xed_operand_name(op0);
@@ -25,9 +25,9 @@ process_addsub(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
       if (xed_operand_name(op1) == XED_OPERAND_IMM0) {
 	int sign = (iclass_eq(xptr, XED_ICLASS_ADD)) ? -1 : 1;
 	long immedv = sign * xed_decoded_inst_get_signed_immediate(xptr);
-	ra_loc istatus = current->ra_status;
+	ra_loc istatus = iarg->current->ra_status;
 	if ((istatus == RA_STD_FRAME) && (immedv > 0) &&
-	    (highwatermark->state & HW_SP_DECREMENTED)) {
+	    (hw_tmp->state & HW_SP_DECREMENTED)) {
 	  //-------------------------------------------------------------------
 	  // if we are in a standard frame and we see a second subtract,
 	  // it is time to convert interval to a BP frame to minimize
@@ -40,13 +40,13 @@ process_addsub(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------
 	}
-	next = new_ui(ins + xed_decoded_inst_get_length(xptr), 
-		      istatus, current->sp_ra_pos + immedv, current->bp_ra_pos, 
-		      current->bp_status, current->sp_bp_pos + immedv, 
-		      current->bp_bp_pos, current);
+	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
+		      istatus, iarg->current->sp_ra_pos + immedv, iarg->current->bp_ra_pos, 
+		      iarg->current->bp_status, iarg->current->sp_bp_pos + immedv, 
+		      iarg->current->bp_bp_pos, iarg->current);
 
 	if (immedv > 0) {
-	  if (HW_TEST_STATE(highwatermark->state, 0, HW_SP_DECREMENTED)) {
+	  if (HW_TEST_STATE(hw_tmp->state, 0, HW_SP_DECREMENTED)) {
 	    //-----------------------------------------------------------------
 	    // set the highwatermark and canonical interval upon seeing
 	    // the FIRST subtract from SP; take no action on subsequent
@@ -60,27 +60,27 @@ process_addsub(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	    //
 	    // 9 December 2007 -- John Mellor-Crummey
 	    //-----------------------------------------------------------------
-	    highwatermark->uwi = next;
-	    highwatermark->succ_inst_ptr = 
-	      ins + xed_decoded_inst_get_length(xptr);
-	    highwatermark->state = 
-	      HW_NEW_STATE(highwatermark->state, HW_SP_DECREMENTED);
-	    *canonical_interval = next;
+	    hw_tmp->uwi = next;
+	    hw_tmp->succ_inst_ptr = 
+	      iarg->ins + xed_decoded_inst_get_length(xptr);
+	    hw_tmp->state = 
+	      HW_NEW_STATE(hw_tmp->state, HW_SP_DECREMENTED);
+	    iarg->canonical_interval = next;
 	  }
 	}
       } else {
-	if (current->ra_status != RA_BP_FRAME){
+	if (iarg->current->ra_status != RA_BP_FRAME){
 	  //-------------------------------------------------------------------
 	  // no immediate in add/subtract from stack pointer; switch to
 	  // BP_FRAME
 	  //
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------
-	  next = new_ui(ins + xed_decoded_inst_get_length(xptr), RA_BP_FRAME, 
-			current->sp_ra_pos, current->bp_ra_pos, 
-			current->bp_status, current->sp_bp_pos, 
-			current->bp_bp_pos, current);
-	  *bp_frames_found = true;
+	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), RA_BP_FRAME, 
+			iarg->current->sp_ra_pos, iarg->current->bp_ra_pos, 
+			iarg->current->bp_status, iarg->current->sp_bp_pos, 
+			iarg->current->bp_bp_pos, iarg->current);
+	  iarg->bp_frames_found = true;
 	}
       }
     }

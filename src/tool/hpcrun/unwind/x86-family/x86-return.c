@@ -1,6 +1,7 @@
 #include "x86-canonical.h"
 #include "x86-decoder.h"
 #include "x86-interval-highwatermark.h"
+#include "x86-interval-arg.h"
 
 /******************************************************************************
  * forward declarations 
@@ -14,19 +15,16 @@ static bool plt_is_next(char *ins);
  *****************************************************************************/
 
 unwind_interval *
-process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr, 
-	       void **ins_ptr, void *end, bool irdebug, unwind_interval *first, 
-	       highwatermark_t *highwatermark, 
-	       unwind_interval **canonical_interval, bool *bp_frames_found)
+process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
 {
-  unwind_interval *current = *current_ptr;
-  void *ins = *ins_ptr;
-  unwind_interval *next = current;
+  unwind_interval *next = iarg->current;
+  highwatermark_t *hw_tmp = &(iarg->highwatermark);
+
 #ifdef FIX_INTERVALS_AT_RETURN
-  if (current->ra_status == RA_SP_RELATIVE) {
-    int offset = current->sp_ra_pos;
+  if (iarg->current->ra_status == RA_SP_RELATIVE) {
+    int offset = iarg->current->sp_ra_pos;
     if (offset != 0) {
-      unwind_interval *u = current;
+      unwind_interval *u = iarg->current;
       for (;;) {
 	// fix offset
 	u->sp_ra_pos -= offset;
@@ -39,23 +37,27 @@ process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr,
     }
   }
 #endif
-  if (current->bp_status == BP_SAVED) {
-     suspicious_interval(ins);
+  if (iarg->current->bp_status == BP_SAVED) {
+     suspicious_interval(iarg->ins);
 #if 0
+     highwatermark_t *hw_tmp              = &(iarg->highwatermark);
+  
      unwind_interval *c = NULL;
-     unwind_interval *ui = current;
+     unwind_interval *ui = iarg->current;
      while (ui && ui->restored_canonical == 0) ui = ui->prev;
      if (ui && ui->restored_canonical) {
         ui->next = NULL;
-	*bp_frames_found = 0;
-        highwatermark->uwi = NULL;
-	*current_ptr = ui->prev;
+	iarg->bp_frames_found = 0;
+        hw_tmp->uwi = NULL;
+	iarg->current = ui->prev;
 
-        *canonical_interval = ui->prev_canonical;
+        iarg->canonical_interval = ui->prev_canonical;
 
-        if (*canonical_interval) c = *canonical_interval;
+        if (iarg->canonical_interval){
+          c = iarg->canonical_interval;
+        }
         else  { 
-          c = first; /* this may help. */
+          c = iarg->first; /* this may help. */
           ui->restored_canonical = 0; /* don't back up again */
         }
         ui->prev_canonical = c->prev_canonical; 
@@ -70,18 +72,18 @@ process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr,
         ui->bp_bp_pos = c->bp_bp_pos;
 
         // restart at the end of the first interval that we just patched
-        *ins_ptr = ((char *) ui->prev->endaddr) - xed_decoded_inst_get_length(xptr); 
+        iarg->ins = ((char *) ui->prev->endaddr) - xed_decoded_inst_get_length(xptr); 
         return ui;
         // FIXME
      }
 #endif
   }
-  if (ins + xed_decoded_inst_get_length(xptr) < end) {
+  if (iarg->ins + xed_decoded_inst_get_length(xptr) < iarg->end) {
     //-------------------------------------------------------------------------
     // the return is not the last instruction in the interval; 
     // set up an interval for code after the return 
     //-------------------------------------------------------------------------
-    if (plt_is_next(ins + xed_decoded_inst_get_length(xptr))) {
+    if (plt_is_next(iarg->ins + xed_decoded_inst_get_length(xptr))) {
       //-------------------------------------------------------------------------
       // the code following the return is a program linkage table. each entry in 
       // the program linkage table should be invoked with the return address at 
@@ -90,10 +92,14 @@ process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr,
       // "canonical interval" to be restored after then jump at the end of each
       // entry in the PLT. 
       //-------------------------------------------------------------------------
-      *canonical_interval = current;
-    } else {
-      reset_to_canonical_interval(xptr, current, &next, ins, end, irdebug, first, 
-				  highwatermark, canonical_interval, *bp_frames_found); 
+      iarg->canonical_interval = iarg->current;
+    }
+    else {
+#ifdef IARGR
+      reset_to_canonical_interval(xptr, &next, irdebug, iarg);
+#endif
+      reset_to_canonical_interval(xptr, iarg->current, &next, iarg->ins, iarg->end, irdebug, iarg->first, 
+				  hw_tmp, &(iarg->canonical_interval), iarg->bp_frames_found);
     }
   }
   return next;
