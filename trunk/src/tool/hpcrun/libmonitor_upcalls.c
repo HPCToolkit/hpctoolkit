@@ -22,6 +22,7 @@
 //***************************************************************************
 
 #include "monitor.h"
+#include "libmonitor_upcalls.h"
 
 #include "env.h"
 #include "files.h"
@@ -313,51 +314,64 @@ monitor_init_thread(int tid, void *data)
 }
 
 
-//#define LUSH_PTHREADS
-#ifdef LUSH_PTHREADS
-
 void
-monitor_thread_pre_lock()
+monitor_thread_pre_lock(void)
 {
+  TMSG(MONITOR_EXTS, "%s", __func__);
+#ifdef LUSH_PTHREADS
   lush_pthr__lock_pre(&TD_GET(pthr_metrics));
+#endif
 }
 
 
 void
 monitor_thread_post_lock(int result)
 {
+  TMSG(MONITOR_EXTS, "%s", __func__);
+#ifdef LUSH_PTHREADS
   lush_pthr__lock_post(&TD_GET(pthr_metrics));
+#endif
 }
 
 
 void
 monitor_thread_post_trylock(int result)
 {
+  TMSG(MONITOR_EXTS, "%s", __func__);
+#ifdef LUSH_PTHREADS
   lush_pthr__trylock(&TD_GET(pthr_metrics), result);
+#endif
 }
 
 
 void
-monitor_thread_unlock()
+monitor_thread_unlock(void)
 {
+  TMSG(MONITOR_EXTS, "%s", __func__);
+#ifdef LUSH_PTHREADS
   lush_pthr__unlock(&TD_GET(pthr_metrics));
+#endif
 }
 
 
 void
-monitor_thread_pre_cond_wait()
+monitor_thread_pre_cond_wait(void)
 {
+  TMSG(MONITOR_EXTS, "%s", __func__);
+#ifdef LUSH_PTHREADS
   lush_pthr__condwait_pre(&TD_GET(pthr_metrics));
+#endif
 }
 
 
 void
 monitor_thread_post_cond_wait(int result)
 {
+  TMSG(MONITOR_EXTS, "%s", __func__);
+#ifdef LUSH_PTHREADS
   lush_pthr__condwait_post(&TD_GET(pthr_metrics));
+#endif
 }
-
-#endif // LUSH_PTHREADS
 
 
 void

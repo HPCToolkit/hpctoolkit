@@ -72,6 +72,9 @@ libearly.so: early.c
 emain: emain.c
 	$(CC) -o $@ -O -g $< -L. -learly
 
+locks: locks.c
+	gcc -o $@ -g -O $< -lpthread
+
 noext = $(filter-out $(wildcard *.*) makefile Makefile,$(wildcard *))
 
 .PHONY: clean

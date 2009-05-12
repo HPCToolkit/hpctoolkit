@@ -40,6 +40,9 @@ wrap6="MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__"
 wrap7="MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__"
 monitor_wrap_names="$wrap1 $wrap2 $wrap3 $wrap4 $wrap5 $wrap6 $wrap7"
 
+add_csprof_wrap='@hpclink_add_csprof_wrap@'
+extra_wrap_names='@hpclink_extra_wrap_names@'
+
 # Set to -m64 on 64-bit version (for gcc).
 # NM_FLAGS='-m64'
 
@@ -189,7 +192,10 @@ done
 set -- $undef_args "$@"
 
 wrap_args=
-for name in $monitor_wrap_names
+if test "$add_csprof_wrap" != yes ; then
+    extra_wrap_names=
+fi
+for name in $monitor_wrap_names $extra_wrap_names
 do
     wrap_args="${wrap_args} -Wl,--wrap,${name}"
 done
@@ -202,6 +208,12 @@ set -- "$@" "$libcsprof" "${nm_addrs}.o"
 libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
 test -f "$libmonitor" || die "no such file: $libmonitor"
 set -- "$@" "$libmonitor"
+
+if test "$add_csprof_wrap" = yes ; then
+    libcsprof_wrap="${libcsprof_dir}/libcsprof_wrap.a"
+    test -f "$libcsprof_wrap" || die "no such file: $libcsprof_wrap"
+    set -- "$@" "$libcsprof_wrap"
+fi
 
 if test -d "$papi_dir" ; then
     set -- "$@" "-L${papi_dir}" -lpapi $papi_extra_libs
