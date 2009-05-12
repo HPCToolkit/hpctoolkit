@@ -46,6 +46,10 @@ if OPT_ENABLE_HPCRUN_STATIC
   bin_SCRIPTS += scripts/hpclink
 endif
 
+if OPT_ENABLE_MONITOR_EXTS
+  pkglib_LIBRARIES = libcsprof_wrap.a
+endif
+
 pkglibexec_SCRIPTS = scripts/hpclog
 
 
@@ -114,6 +118,11 @@ MY_STATIC_FILES = 			\
 
 MY_LINUX_DYNAMIC_FILES = 		\
 	os/linux/dylib.c
+
+MY_MONITOR_EXT_FILES = \
+	monitor-exts/over_cond.c  \
+	monitor-exts/over_mutex.c \
+	monitor-exts/over_spin.c
 
 
 MY_MIPS_FILES = \
@@ -186,6 +195,9 @@ libcsprof_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_STATIC_FILES)
 
+libcsprof_wrap_a_SOURCES =		\
+	$(MY_MONITOR_EXT_FILES)
+
 libcsprof_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -195,8 +207,14 @@ libcsprof_o_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+libcsprof_wrap_a_CPPFLAGS =		\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
 libcsprof_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libcsprof_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
+libcsprof_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
 libcsprof_o_LDADD   = $(HPC_LIBPROFLEAN)
@@ -247,6 +265,16 @@ if OPT_PAPI_STATIC
     libcsprof_o_CPPFLAGS  += $(PAPI_INC_FLGS)
     libcsprof_o_LDFLAGS   += $(PAPI_LD_FLGS)
 endif
+
+if OPT_ENABLE_LUSH_PTHREADS
+    libcsprof_la_CPPFLAGS += -DLUSH_PTHREADS
+    libcsprof_o_CPPFLAGS  += -DLUSH_PTHREADS
+endif
+
+if OPT_ENABLE_MONITOR_EXTS
+    libcsprof_la_SOURCES  += $(MY_MONITOR_EXT_FILES)
+endif
+
 
 libcsprof_la_SOURCES += utilities/last_func.c
 libcsprof_o_SOURCES  += utilities/last_func.c
