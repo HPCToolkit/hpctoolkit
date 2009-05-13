@@ -27,6 +27,8 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/gcc-attr.h>
+
 #include "lush-pthread.h"
 
 #include "pmsg.h"
@@ -34,23 +36,22 @@
 
 //*************************** Forward Declarations **************************
 
-// FIXME: move elsewhere
+// FIXME: used by GCC_ATTR_VAR_CACHE_ALIGN; move elsewhere
 #define HOST_CACHE_LINE_SZ 64 /*L1*/
-#define GCC_ALIGN_CACHE_LINE_SZ __attribute__ ((aligned (HOST_CACHE_LINE_SZ)))
 
 // NOTE: For a portable alternative, union each cache-aligned variable
 // to with an char array of the appropriate size.
 
 typedef struct {
   
-  long lush_pthr_ps_num_procs        GCC_ALIGN_CACHE_LINE_SZ;
+  long lush_pthr_ps_num_procs        GCC_ATTR_VAR_CACHE_ALIGN;
   long lush_pthr_ps_num_threads;
 
-  long lush_pthr_ps_num_working      GCC_ALIGN_CACHE_LINE_SZ;
+  long lush_pthr_ps_num_working      GCC_ATTR_VAR_CACHE_ALIGN;
 
-  long lush_pthr_ps_num_working_lock GCC_ALIGN_CACHE_LINE_SZ;
+  long lush_pthr_ps_num_working_lock GCC_ATTR_VAR_CACHE_ALIGN;
   
-  long lush_pthr_ps_num_idle_cond    GCC_ALIGN_CACHE_LINE_SZ;
+  long lush_pthr_ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
   
 } lush_pthr_globals_t;
 
