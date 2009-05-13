@@ -80,6 +80,28 @@ public:
   virtual std::string 
   canonicalize(const std::string& name) = 0;
 
+  std::string 
+  canonicalizeCppTemplate(const std::string& name);
+
+};
+
+
+// --------------------------------------------------------------------------
+// 'CppNameMgr' 
+// --------------------------------------------------------------------------
+
+class CppNameMgr : public ProcNameMgr
+{
+public:
+  CppNameMgr() { }
+  virtual ~CppNameMgr() { }
+
+  virtual std::string 
+  canonicalize(const std::string& name) {
+    return canonicalizeCppTemplate(name);
+  }
+
+private:
 };
 
 

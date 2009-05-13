@@ -66,6 +66,51 @@ using std::string;
 //***************************************************************************
 
 //***************************************************************************
+// ProcNameMgr
+//***************************************************************************
+
+// Compute the 'basename' for a function template
+//   f<...>            --> f<>
+//   f<...>()          --> f<>()
+//   f<...>(T<...>* x) --> f<>(T<...>* x)
+//   f<...>::foo()     --> f<>::foo()
+//   f(T<>* x)         --> (no change)
+//
+//   operator<<()      --> (no change)
+//   operator>>()      --> (no change)
+
+// Invariants about function names:
+//   Have at most one pair of ( )
+//   Templates may have multiple nested < >, but have at least one pair
+
+std::string 
+ProcNameMgr::canonicalizeCppTemplate(const std::string& name)
+{
+  // canonicalize C++ templates and overloading
+  size_t pos_langle = name.find_first_of('<'); // returns valid pos or npos
+  size_t pos_rangle = name.find_last_of('>');  // returns valid pos or npos
+  if (0 < pos_langle && pos_langle < pos_rangle
+      && pos_rangle != string::npos) {
+    // INVARIANT: both < and > have been found
+    size_t pos_lparen = name.find_first_of('(');
+    
+    if (pos_lparen == string::npos) {
+      string x = name.substr(0, pos_langle /*len*/);
+      return x + "<...>";
+    }
+    else if (pos_langle < pos_lparen) {
+      pos_rangle = name.find_last_of('>', pos_lparen); // exclude '<'
+      string x = name.substr(0, pos_langle /*len*/);   // exclude '>'
+      string y = name.substr(pos_rangle + 1, string::npos);
+      return x + "<...>" + y;
+    }
+  }
+  
+  return name;
+}
+
+
+//***************************************************************************
 // CilkNameMgr
 //***************************************************************************
 
