@@ -317,60 +317,96 @@ monitor_init_thread(int tid, void *data)
 void
 monitor_thread_pre_lock(void)
 {
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
+
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__lock_pre(&TD_GET(pthr_metrics));
 #endif
+
+  csprof_async_unblock();
 }
 
 
 void
 monitor_thread_post_lock(int result)
 {
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
+
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__lock_post(&TD_GET(pthr_metrics));
 #endif
+
+  csprof_async_unblock();
 }
 
 
 void
 monitor_thread_post_trylock(int result)
 {
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
+
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__trylock(&TD_GET(pthr_metrics), result);
 #endif
+
+  csprof_async_unblock();
 }
 
 
 void
 monitor_thread_unlock(void)
 {
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
+
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__unlock(&TD_GET(pthr_metrics));
 #endif
+
+  csprof_async_unblock();
 }
 
 
 void
 monitor_thread_pre_cond_wait(void)
 {
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
+
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__condwait_pre(&TD_GET(pthr_metrics));
 #endif
+
+  csprof_async_unblock();
 }
 
 
 void
 monitor_thread_post_cond_wait(int result)
 {
+  if (! csprof_is_initialized())
+    return;
+  csprof_async_block();
+
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__condwait_post(&TD_GET(pthr_metrics));
 #endif
+
+  csprof_async_unblock();
 }
 
 
