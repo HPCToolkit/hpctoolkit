@@ -118,14 +118,13 @@ int
 hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
 {
   // FIXME: could share some code with the reader
+
+  int ret = HPCFILE_ERR;
   
+  // Read and sanity check header
   hpcfile_cstree_hdr_t fhdr;
-  hpcfile_cstree_node_t tmp_node;
-  int i, ret;
-  uint32_t tag;
-  
-  // Open file for reading; read and sanity check header
-  if (hpcfile_cstree_read_hdr(infs, &fhdr) != HPCFILE_OK) {
+  ret = hpcfile_cstree_read_hdr(infs, &fhdr);
+  if (ret != HPCFILE_OK) { 
     fprintf(outfs, "** Error reading CCT header **\n");
     return HPCFILE_ERR;
   }
@@ -137,11 +136,13 @@ hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
   // Read and print each node
   unsigned int id_ub = fhdr.num_nodes + HPCFILE_CSTREE_ID_ROOT;
 
+  hpcfile_cstree_node_t tmp_node;
   tmp_node.data.num_metrics = num_metrics;
   tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
 
-  for (i = HPCFILE_CSTREE_ID_ROOT; i < id_ub; ++i) {
+  for (int i = HPCFILE_CSTREE_ID_ROOT; i < id_ub; ++i) {
 
+    uint32_t tag;
     ret = hpcfile_tag__fread(&tag, infs);
     if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
 
@@ -185,6 +186,7 @@ hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
   // exist beyond this point in the stream; don't check for EOF.
   return ret;
 }
+
 
 //***************************************************************************
 
