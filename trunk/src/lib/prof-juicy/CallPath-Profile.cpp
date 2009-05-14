@@ -57,12 +57,13 @@ using std::dec;
 #include <string>
 using std::string;
 
+#include <map>
+
 #include <typeinfo>
 
 #include <cstdio>
 
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>
+#include <alloca.h>
 
 
 //*************************** User Include Files ****************************
@@ -272,27 +273,8 @@ Profile::ddump() const
 //***************************************************************************
 
 // ---------------------------------------------------------
-// hpcfile_cstree_read() and helpers
+// read_cct() and helpers
 // ---------------------------------------------------------
-
-// Allocates space for a new tree node 'node' for the tree 'tree' and
-// returns a pointer to 'node'.  The node should be initialized with
-// data from 'data', but it should not be linked with any other node
-// of the tree.  Note: The first call to this function creates the
-// root node of the call stack tree; the user should record a pointer
-// to this node (e.g. in 'tree') for subsequent access to the call
-// stack tree.
-typedef void* 
-(*hpcfile_cstree_cb__create_node_fn_t)(void*, 
-				       hpcfile_cstree_nodedata_t*);
-
-// Given two tree nodes 'node' and 'parent' allocated with the above
-// function and with 'parent' already linked into the tree, links
-// 'node' into 'tree' such that 'parent' is the parent of 'node'.
-// Note that while nodes have only one parent node, several nodes may
-// have the same parent, indicating that the parent has multiple
-// children.
-typedef void (*hpcfile_cstree_cb__link_parent_fn_t)(void*, void*, void*);
 
 static void* cstree_create_node_CB(void* tree, 
 				   hpcfile_cstree_nodedata_t* data);
@@ -301,15 +283,8 @@ static void  cstree_link_parent_CB(void* tree, void* node, void* parent);
 static void* hpcfile_alloc_CB(size_t sz);
 static void  hpcfile_free_CB(void* mem);
 
-int
-hpcfile_cstree_read(FILE* fs, void* tree, 
-		    int num_metrics,
-		    hpcfile_cstree_cb__create_node_fn_t create_node_fn,
-		    hpcfile_cstree_cb__link_parent_fn_t link_parent_fn,
-		    hpcfile_cb__alloc_fn_t alloc_fn,
-		    hpcfile_cb__free_fn_t free_fn,
-		    char* errbuf,
-		    int errSz);
+void
+read_cct(FILE* infs, void* tree, int num_metrics, FILE* outfs);
 
 
 static void 
@@ -362,19 +337,12 @@ Profile::make(const char* fnm)
 
   CallPath::Profile* prof = new CallPath::Profile(num_metrics);
   if (num_ccts > 0) {
-    const int errSz = 128;
-    char errbuf[errSz];
-
-    ret = hpcfile_cstree_read(fs, prof->cct(), num_metrics,
-			      cstree_create_node_CB, cstree_link_parent_CB,
-			      hpcfile_alloc_CB, hpcfile_free_CB,
-			      errbuf, errSz);
-    
-    if (ret != HPCFILE_OK) {
+    try {
+      read_cct(fs, prof->cct(), num_metrics, NULL /*outfs*/);
+    }
+    catch (const Diagnostics::Exception& x) {
       delete prof;
-      DIAG_Throw(fnm << ": error reading calling context tree (HPC_CSTREE). [" 
-		 << errbuf << "]");
-      //return NULL;
+      DIAG_Throw("error reading calling context tree: " << x.what());
     }
   }
 
@@ -504,142 +472,147 @@ Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
 // 
 //***************************************************************************
 
-// hpcfile_cstree_read: Given an empty (not non-NULL!) tree 'tree',
-// reads tree nodes from the file stream 'fs' and constructs the tree
-// using the user supplied callback functions.  See documentation
-// below for interfaces for callback interfaces.
-//
-// The tree data is thoroughly checked for errors. Returns HPCFILE_OK
-// upon success; HPCFILE_ERR on error.
-// The errbuf is optional; upon an error it is filled.
-int
-hpcfile_cstree_read(FILE* fs, void* tree, 
-		    int num_metrics,
-		    hpcfile_cstree_cb__create_node_fn_t create_node_fn,
-		    hpcfile_cstree_cb__link_parent_fn_t link_parent_fn,
-		    hpcfile_cb__alloc_fn_t alloc_fn,
-		    hpcfile_cb__free_fn_t free_fn,
-		    char* errbuf, int errSz)
+// read_cct: Reads calling tree nodes from the file stream 'fs' and either
+//   1) Given a non-NULL tree 'tree' constructs the tree
+//   2) Echos a textual form of the data to 'outfs' as text for human
+//      inspection.  This text output is not designed for parsing and any
+//      formatting is subject to change.
+// The tree data is thoroughly checked for errors.
+void
+read_cct(FILE* infs, void* tree, int num_metrics, FILE* outfs)
 {
-  hpcfile_cstree_hdr_t fhdr;
-  hpcfile_cstree_node_t tmp_node;
+  typedef std::map<int, void*/*CCT::ANode**/> CCTIdToCCTNodeMap;
+  typedef std::map<int, lush_lip_t*> LipIdToLipMap;
+
+  DIAG_Assert(infs, "Bad file descriptor!");
+  
+  CCTIdToCCTNodeMap cctNodeMap;
+  LipIdToLipMap     lipMap;
+
   int ret = HPCFILE_ERR;
-  uint32_t tag;
-
-  if (errbuf) { errbuf[0] = '\0'; }
   
-  // A vector storing created tree nodes.  The vector indices correspond to
-  // the nodes' persistent ids.
-  void**       node_vec = NULL;
-  lush_lip_t** lip_vec  = NULL;
-
-  if (!fs) { return HPCFILE_ERR; }
-  
-  // Open file for reading; read and sanity check header
-  ret = hpcfile_cstree_read_hdr(fs, &fhdr);
+  // ------------------------------------------------------------
+  // Read and sanity check header
+  // ------------------------------------------------------------
+  hpcfile_cstree_hdr_t fhdr;
+  ret = hpcfile_cstree_read_hdr(infs, &fhdr);
   if (ret != HPCFILE_OK) { 
-    return HPCFILE_ERR; 
+    DIAG_Throw("Error reading CCT header");
   }
 
-  // node id upper bound (exclusive)
-  int id_ub = fhdr.num_nodes + HPCFILE_CSTREE_ID_ROOT;
-
-  // Allocate space for 'node_vec'
-  if (fhdr.num_nodes != 0) {
-    node_vec = (void**)alloc_fn(sizeof(void*) * id_ub);
-    lip_vec  = (lush_lip_t**)alloc_fn(sizeof(void*) * id_ub);
-    for (int i = 0; i < HPCFILE_CSTREE_ID_ROOT; ++i) {
-      node_vec[i] = NULL;
-      lip_vec[i]  = NULL;
-    }
+  if (outfs) {
+    hpcfile_cstree_hdr__fprint(&fhdr, outfs);
+    fputs("\n", outfs);
   }
-  
-  // Read each node, creating it and linking it to its parent 
-  tmp_node.data.num_metrics = num_metrics;
-  tmp_node.data.metrics = (hpcfile_metric_data_t*)alloc_fn(num_metrics * sizeof(hpcfile_uint_t));
-  
-  for (int i = HPCFILE_CSTREE_ID_ROOT; i < id_ub; ++i) {
 
-    ret = hpcfile_tag__fread(&tag, fs);
+  // ------------------------------------------------------------
+  // Read each CCT node
+  // ------------------------------------------------------------
+
+  int numRoots = 0;
+  
+  hpcfile_cstree_node_t ndata;
+  ndata.data.num_metrics = num_metrics;
+  ndata.data.metrics = (hpcfile_metric_data_t*)alloca(num_metrics * sizeof(hpcfile_uint_t));
+  
+  for (uint i = 0; i < fhdr.num_nodes; ++i) {
+
+    uint32_t tag;
+    ret = hpcfile_tag__fread(&tag, infs);
     if (ret != HPCFILE_OK) { 
-      return HPCFILE_ERR; 
+      DIAG_Throw("hpcfile_tag__fread() failed");
     }
 
     // ----------------------------------------------------------
     // Read the LIP
     // ----------------------------------------------------------
+
+    hpcfile_uint_t lip_id = 0;
     lush_lip_t* lip = NULL;
-    hpcfile_uint_t lip_idx = i;
-    
+
     if (tag == HPCFILE_TAG__CSTREE_LIP) {
-      lip = (lush_lip_t*)alloc_fn(sizeof(lush_lip_t));
-      ret = hpcfile_cstree_lip__fread(lip, fs);
+      lip = new lush_lip_t;
+      ret = hpcfile_cstree_lip__fread(lip, infs);
       if (ret != HPCFILE_OK) { 
-	return HPCFILE_ERR; 
+	DIAG_Throw("Error reading CCT LIP" << lip_id); // FIXME: init lip_id
       }
 
-      ret = hpcfile_tag__fread(&tag, fs);
+      ret = hpcfile_tag__fread(&tag, infs);
       if (ret != HPCFILE_OK) { 
-	return HPCFILE_ERR; 
+	DIAG_Throw("hpcfile_tag__fread() failed");
       }
     }
-
-    lip_vec[lip_idx] = lip;
 
     // ----------------------------------------------------------
     // Read the node
     // ----------------------------------------------------------
-    
-    if ( !(tag == HPCFILE_TAG__CSTREE_NODE) ) {
-      ret = HPCFILE_ERR;
-      goto cleanup;
-    }
 
-    ret = hpcfile_cstree_node__fread(&tmp_node, fs);
+    DIAG_Assert(tag == HPCFILE_TAG__CSTREE_NODE, "Bad tag!");
+
+    ret = hpcfile_cstree_node__fread(&ndata, infs);
     if (ret != HPCFILE_OK) {
-      if (errbuf) { snprintf(errbuf, errSz, "Error after node %"PRIu64, tmp_node.id); }
-      goto cleanup; // ret = HPCFILE_ERR
+      DIAG_Throw("Error reading CCT node " << ndata.id);
     }
 
-    lip_idx = tmp_node.data.lip.id;
-    tmp_node.data.lip.ptr = lip_vec[lip_idx];
-
-    if (tmp_node.id_parent >= id_ub) { 
-      if (errbuf) { snprintf(errbuf, errSz, "Invalid parent for node %"PRIu64, tmp_node.id); }
-      ret = HPCFILE_ERR;
-      goto cleanup;
-    } 
-    void* parent = node_vec[tmp_node.id_parent];
-
-    // parent should already exist unless id == HPCFILE_CSTREE_ID_ROOT
-    if (!parent && tmp_node.id != HPCFILE_CSTREE_ID_ROOT) {
-      if (errbuf) { snprintf(errbuf, errSz, "Cannot find parent for node %"PRIu64, tmp_node.id); }
-      ret = HPCFILE_ERR;
-      goto cleanup;
+    // finish handling lip: lip_id inherits the node id
+    lip_id = ndata.id; // FIXME: lip_id should be 0 if not used
+    lipMap.insert(std::make_pair(lip_id, lip));
+    if (lip) {
+      if (outfs) {
+	hpcfile_cstree_lip__fprint(lip, lip_id, outfs, "");
+      }
     }
+
+    if (outfs) {
+      hpcfile_cstree_node__fprint(&ndata, outfs, "  ");
+    }
+
+    // Find LIP for node
+    lush_lip_t* node_lip = NULL;
+    if (ndata.data.lip.id != 0) {
+      LipIdToLipMap::iterator it = lipMap.find(ndata.data.lip.id);
+      if (it != lipMap.end()) {
+	node_lip = it->second;
+      }
+      else {
+	DIAG_Throw("Invalid LIP (" << ndata.data.lip.id << ") for node " << ndata.id);
+      }
+    }
+    ndata.data.lip.ptr = node_lip;
+
+    // Find parent of node
+    void* /*CCT::ANode**/ node_prnt = NULL;
+    if ( !(ndata.id_parent < ndata.id) ) {
+      DIAG_Throw("Invalid parent (" << ndata.id_parent << ") for node " << ndata.id);
+    }
+    
+    if (ndata.id_parent == HPCFILE_CSTREE_NODE_ID_NULL) {
+      numRoots++;
+    }
+    else {
+      CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(ndata.id_parent);
+      if (it != cctNodeMap.end()) {
+	node_prnt = it->second;
+      }
+      else {
+	DIAG_Throw("Cannot find parent for node " << ndata.id);	
+      }
+    }
+
+    DIAG_Assert(numRoots == 1, "Must only have one root node!");
+
 
     // Create node and link to parent
-    void* node = create_node_fn(tree, &tmp_node.data);
-    node_vec[tmp_node.id] = node;
-
-    if (parent) {
-      link_parent_fn(tree, node, parent);
+    void* node = cstree_create_node_CB(tree, &ndata.data);
+    if (node_prnt) {
+      cstree_link_parent_CB(tree, node, node_prnt);
     }
+
+    cctNodeMap.insert(std::make_pair(ndata.id, node));
   }
 
-  free_fn(tmp_node.data.metrics);
-
-
-  // Success! Note: We assume that it is possible for other data to
-  // exist beyond this point in the stream; don't check for EOF.
-  ret = HPCFILE_OK;
-  
-  // Close file and cleanup
- cleanup:
-  if (node_vec) { free_fn(node_vec); }
-  if (lip_vec)  { free_fn(lip_vec); }
-  
-  return ret;
+  // Success! Note: We are not responsible for closing file; other day
+  // may exist.
 }
 
 

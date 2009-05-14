@@ -431,7 +431,7 @@ public:
     { }
 
   virtual ~ADynNode() {
-    delete_lip(m_lip);
+    delete m_lip;
   }
    
   // deep copy of internals (but without children)
@@ -454,7 +454,7 @@ public:
       m_lmId = x.m_lmId;
       m_ip = x.m_ip;
       m_opIdx = x.m_opIdx;
-      delete_lip(m_lip);
+      delete m_lip;
       m_lip = clone_lip(x.m_lip);
       m_cpid = x.m_cpid;
       m_metricdesc = x.m_metricdesc;
@@ -525,16 +525,11 @@ public:
   {
     lush_lip_t* x_clone = NULL;
     if (x) {
-      // NOTE: for consistency with hpcfile_alloc_CB
-      size_t sz = sizeof(lush_lip_t);
-      x_clone = (lush_lip_t*) new char[sz];
-      memcpy(x_clone, x, sz);
+      x_clone = new lush_lip_t;
+      memcpy(x_clone, x, sizeof(lush_lip_t));
     }
     return x_clone;
   }
-
-  static void delete_lip(lush_lip_t* x) 
-  { delete[] (char*)x; }
 
   uint32_t cpid() const 
     { return m_cpid; }

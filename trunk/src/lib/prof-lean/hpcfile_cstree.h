@@ -70,22 +70,6 @@ extern "C" {
 #endif
 
 //***************************************************************************
-// 
-//***************************************************************************
-
-#define HPCFILE_CSTREE_ID_ROOT 1
-
-
-// hpcfile_cstree_fprint: Given an input file stream 'infs',
-// reads tree data from the infs and writes it to 'outfs' as text for
-// human inspection.  This text output is not designed for parsing and
-// any formatting is subject to change.  Returns HPCFILE_OK upon
-// success; HPCFILE_ERR on error.
-int
-hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs);
-
-
-//***************************************************************************
 //
 //***************************************************************************
 
@@ -239,6 +223,24 @@ int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs);
 int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs);
 int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* f, 
 				const char* pres);
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+#define HPCFILE_CSTREE_NODE_ID_NULL 0
+
+#define HPCFILE_CSTREE_ID_ROOT 1
+
+// hpcfile_cstree_fprint: Given an input file stream 'infs',
+// reads tree data from the infs and writes it to 'outfs' as text for
+// human inspection.  This text output is not designed for parsing and
+// any formatting is subject to change.  Returns HPCFILE_OK upon
+// success; HPCFILE_ERR on error.
+int
+hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs);
+
 
 //***************************************************************************
 
