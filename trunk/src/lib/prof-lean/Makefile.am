@@ -63,9 +63,7 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	hpcfile_csprof.h hpcfile_csprof.c \
-	hpcfile_csproflib.h \
 	hpcfile_cstree.h hpcfile_cstree.c \
-	hpcfile_cstreelib.h \
 	hpcfile_general.h hpcfile_general.c \
 	io.h io.c \
 	\

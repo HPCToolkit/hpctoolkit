@@ -67,15 +67,11 @@
 //*************************** User Include Files ****************************
 
 #include "hpcfile_general.h"
-#include "hpcfile_cstreelib.h"
 #include "hpcfile_cstree.h"
 
 //#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
-
-#define HPCFILE_TAG__CSTREE_NODE 13 /* just because */
-#define HPCFILE_TAG__CSTREE_LIP  77 /* feel free to change */
 
 hpcfile_metric_data_t hpcfile_metric_data_ZERO = { .bits = 0 };
 
@@ -83,8 +79,6 @@ hpcfile_metric_data_t hpcfile_metric_data_ZERO = { .bits = 0 };
 
 #define DBG_READ_METRICS 0
 
-static int 
-hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
 
 // HPC_CSTREE format details: 
 //
@@ -114,142 +108,6 @@ hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
 // 2. We can pass chord root ids as an extra parameter in PREORDER walk.
 
 
-
-//***************************************************************************
-// hpcfile_cstree_read()
-//***************************************************************************
-
-// See header file for documentation of public interface.
-// Cf. 'HPC_CSTREE format details' above.
-int
-hpcfile_cstree_read(FILE* fs, void* tree, 
-		    int num_metrics,
-		    hpcfile_cstree_cb__create_node_fn_t create_node_fn,
-		    hpcfile_cstree_cb__link_parent_fn_t link_parent_fn,
-		    hpcfile_cb__alloc_fn_t alloc_fn,
-		    hpcfile_cb__free_fn_t free_fn,
-		    char* errbuf, int errSz)
-{
-  hpcfile_cstree_hdr_t fhdr;
-  hpcfile_cstree_node_t tmp_node;
-  int ret = HPCFILE_ERR;
-  uint32_t tag;
-
-  if (errbuf) { errbuf[0] = '\0'; }
-  
-  // A vector storing created tree nodes.  The vector indices correspond to
-  // the nodes' persistent ids.
-  void**       node_vec = NULL;
-  lush_lip_t** lip_vec  = NULL;
-
-  if (!fs) { return HPCFILE_ERR; }
-  
-  // Open file for reading; read and sanity check header
-  ret = hpcfile_cstree_read_hdr(fs, &fhdr);
-  if (ret != HPCFILE_OK) { 
-    return HPCFILE_ERR; 
-  }
-
-  // node id upper bound (exclusive)
-  unsigned int id_ub = fhdr.num_nodes + HPCFILE_CSTREE_ID_ROOT;
-
-  // Allocate space for 'node_vec'
-  if (fhdr.num_nodes != 0) {
-    node_vec = alloc_fn(sizeof(void*) * id_ub);
-    lip_vec  = alloc_fn(sizeof(void*) * id_ub);
-    for (int i = 0; i < HPCFILE_CSTREE_ID_ROOT; ++i) {
-      node_vec[i] = NULL;
-      lip_vec[i]  = NULL;
-    }
-  }
-  
-  // Read each node, creating it and linking it to its parent 
-  tmp_node.data.num_metrics = num_metrics;
-  tmp_node.data.metrics = alloc_fn(num_metrics * sizeof(hpcfile_uint_t));
-  
-  for (int i = HPCFILE_CSTREE_ID_ROOT; i < id_ub; ++i) {
-
-    ret = hpcfile_tag__fread(&tag, fs);
-    if (ret != HPCFILE_OK) { 
-      return HPCFILE_ERR; 
-    }
-
-    // ----------------------------------------------------------
-    // Read the LIP
-    // ----------------------------------------------------------
-    lush_lip_t* lip = NULL;
-    hpcfile_uint_t lip_idx = i;
-    
-    if (tag == HPCFILE_TAG__CSTREE_LIP) {
-      lip = alloc_fn(sizeof(lush_lip_t));
-      ret = hpcfile_cstree_lip__fread(lip, fs);
-      if (ret != HPCFILE_OK) { 
-	return HPCFILE_ERR; 
-      }
-
-      ret = hpcfile_tag__fread(&tag, fs);
-      if (ret != HPCFILE_OK) { 
-	return HPCFILE_ERR; 
-      }
-    }
-
-    lip_vec[lip_idx] = lip;
-
-    // ----------------------------------------------------------
-    // Read the node
-    // ----------------------------------------------------------
-    
-    if ( !(tag == HPCFILE_TAG__CSTREE_NODE) ) {
-      ret = HPCFILE_ERR;
-      goto cleanup;
-    }
-
-    ret = hpcfile_cstree_node__fread(&tmp_node, fs);
-    if (ret != HPCFILE_OK) {
-      if (errbuf) { snprintf(errbuf, errSz, "Error after node %"PRIu64, tmp_node.id); }
-      goto cleanup; // ret = HPCFILE_ERR
-    }
-
-    lip_idx = tmp_node.data.lip.id;
-    tmp_node.data.lip.ptr = lip_vec[lip_idx];
-
-    if (tmp_node.id_parent >= id_ub) { 
-      if (errbuf) { snprintf(errbuf, errSz, "Invalid parent for node %"PRIu64, tmp_node.id); }
-      ret = HPCFILE_ERR;
-      goto cleanup;
-    } 
-    void* parent = node_vec[tmp_node.id_parent];
-
-    // parent should already exist unless id == HPCFILE_CSTREE_ID_ROOT
-    if (!parent && tmp_node.id != HPCFILE_CSTREE_ID_ROOT) {
-      if (errbuf) { snprintf(errbuf, errSz, "Cannot find parent for node %"PRIu64, tmp_node.id); }
-      ret = HPCFILE_ERR;
-      goto cleanup;
-    }
-
-    // Create node and link to parent
-    void* node = create_node_fn(tree, &tmp_node.data);
-    node_vec[tmp_node.id] = node;
-
-    if (parent) {
-      link_parent_fn(tree, node, parent);
-    }
-  }
-
-  free_fn(tmp_node.data.metrics);
-
-
-  // Success! Note: We assume that it is possible for other data to
-  // exist beyond this point in the stream; don't check for EOF.
-  ret = HPCFILE_OK;
-  
-  // Close file and cleanup
- cleanup:
-  if (node_vec) { free_fn(node_vec); }
-  if (lip_vec)  { free_fn(lip_vec); }
-  
-  return ret;
-}
 
 //***************************************************************************
 // hpcfile_cstree_fprint()

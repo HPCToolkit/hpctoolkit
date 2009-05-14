@@ -38,17 +38,17 @@
 //***************************************************************************
 //
 // File:
-//    hpcfile_cstree.h
+//   $Source$
 //
 // Purpose:
-//    Low-level types and functions for reading/writing a call stack
-//    tree from/to a binary file.
+//   Support functions for reading/writing a calling context tree
+//   from/to a binary file.
 //
-//    These routines *must not* allocate dynamic memory; if such memory
-//    is needed, callbacks to the user's allocator should be used.
+//   These routines *must not* allocate dynamic memory; if such memory
+//   is needed, callbacks to the user's allocator should be used.
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -70,16 +70,22 @@ extern "C" {
 #endif
 
 //***************************************************************************
-//
-// Low-level types and functions for reading/writing a call stack tree
-// from/to a binary file.
-//
-// Basic format of HPC_CSTREE: see implementation file for more details
-//   HPC_CSTREE header
-//   List of tree nodes
-//
-// Data in the file is stored in little-endian format, the ordering of
-// IA-64 instructions and the default mode of an IA-64 processor.
+// 
+//***************************************************************************
+
+#define HPCFILE_CSTREE_ID_ROOT 1
+
+
+// hpcfile_cstree_fprint: Given an input file stream 'infs',
+// reads tree data from the infs and writes it to 'outfs' as text for
+// human inspection.  This text output is not designed for parsing and
+// any formatting is subject to change.  Returns HPCFILE_OK upon
+// success; HPCFILE_ERR on error.
+int
+hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs);
+
+
+//***************************************************************************
 //
 //***************************************************************************
 
@@ -129,6 +135,10 @@ typedef struct hpcfile_cstree_hdr_s {
   uint32_t epoch;             /* epoch index */
 } hpcfile_cstree_hdr_t;
 
+
+int
+hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
+
 int hpcfile_cstree_hdr__init(hpcfile_cstree_hdr_t* x);
 int hpcfile_cstree_hdr__fini(hpcfile_cstree_hdr_t* x);
 
@@ -139,6 +149,10 @@ int hpcfile_cstree_hdr__fprint(hpcfile_cstree_hdr_t* x, FILE* fs);
 // ---------------------------------------------------------
 // hpcfile_cstree_nodedata_t:
 // ---------------------------------------------------------
+
+#define HPCFILE_TAG__CSTREE_NODE 13 /* just because */
+#define HPCFILE_TAG__CSTREE_LIP  77 /* feel free to change */
+
 
 // tallent: was 'size_t'.  If this should change the memcpy in
 // hpcfile_cstree_write_node_hlp should be modified.

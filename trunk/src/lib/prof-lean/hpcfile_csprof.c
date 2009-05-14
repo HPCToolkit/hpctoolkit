@@ -66,7 +66,6 @@
 //*************************** User Include Files ****************************
 
 #include "hpcfile_general.h"
-#include "hpcfile_csproflib.h"
 #include "hpcfile_csprof.h"
 
 //*************************** Forward Declarations **************************
