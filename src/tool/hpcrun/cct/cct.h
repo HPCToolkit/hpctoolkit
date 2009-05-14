@@ -73,7 +73,7 @@
 #include <metrics.h>
 #include <lush/lush-support.h>
 
-#include <hpcfile_cstreelib.h>
+#include <hpcfile_cstree.h>
 
 #define CSPROF_TREE_USES_DOUBLE_LINKING 0
 #define CSPROF_TREE_USES_SORTED_CHILDREN 1

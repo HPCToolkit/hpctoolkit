@@ -59,6 +59,12 @@ using std::string;
 
 #include <typeinfo>
 
+#include <cstdio>
+
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
+
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
@@ -69,7 +75,8 @@ using std::string;
 #include <lib/xml/xml.hpp>
 using namespace xml;
 
-#include <lib/prof-lean/hpcfile_csproflib.h>
+#include <lib/prof-lean/hpcfile_csprof.h>
+#include <lib/prof-lean/hpcfile_cstree.h>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.hpp>
@@ -264,14 +271,46 @@ Profile::ddump() const
 //
 //***************************************************************************
 
-extern "C" {
-  static void* cstree_create_node_CB(void* tree, 
-				     hpcfile_cstree_nodedata_t* data);
-  static void  cstree_link_parent_CB(void* tree, void* node, void* parent);
+// ---------------------------------------------------------
+// hpcfile_cstree_read() and helpers
+// ---------------------------------------------------------
 
-  static void* hpcfile_alloc_CB(size_t sz);
-  static void  hpcfile_free_CB(void* mem);
-}
+// Allocates space for a new tree node 'node' for the tree 'tree' and
+// returns a pointer to 'node'.  The node should be initialized with
+// data from 'data', but it should not be linked with any other node
+// of the tree.  Note: The first call to this function creates the
+// root node of the call stack tree; the user should record a pointer
+// to this node (e.g. in 'tree') for subsequent access to the call
+// stack tree.
+typedef void* 
+(*hpcfile_cstree_cb__create_node_fn_t)(void*, 
+				       hpcfile_cstree_nodedata_t*);
+
+// Given two tree nodes 'node' and 'parent' allocated with the above
+// function and with 'parent' already linked into the tree, links
+// 'node' into 'tree' such that 'parent' is the parent of 'node'.
+// Note that while nodes have only one parent node, several nodes may
+// have the same parent, indicating that the parent has multiple
+// children.
+typedef void (*hpcfile_cstree_cb__link_parent_fn_t)(void*, void*, void*);
+
+static void* cstree_create_node_CB(void* tree, 
+				   hpcfile_cstree_nodedata_t* data);
+static void  cstree_link_parent_CB(void* tree, void* node, void* parent);
+
+static void* hpcfile_alloc_CB(size_t sz);
+static void  hpcfile_free_CB(void* mem);
+
+int
+hpcfile_cstree_read(FILE* fs, void* tree, 
+		    int num_metrics,
+		    hpcfile_cstree_cb__create_node_fn_t create_node_fn,
+		    hpcfile_cstree_cb__link_parent_fn_t link_parent_fn,
+		    hpcfile_cb__alloc_fn_t alloc_fn,
+		    hpcfile_cb__free_fn_t free_fn,
+		    char* errbuf,
+		    int errSz);
+
 
 static void 
 convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
@@ -283,6 +322,7 @@ static void
 cct_fixLeaves(Prof::CCT::ANode* node);
 
 
+//***************************************************************************
 
 namespace Prof {
 
@@ -308,7 +348,7 @@ Profile::make(const char* fnm)
 
   epoch_table_t epochtbl;
   ret = hpcfile_csprof_read(fs, &metadata, &epochtbl, hpcfile_alloc_CB, 
-			     hpcfile_free_CB);
+			    hpcfile_free_CB);
   if (ret != HPCFILE_OK) {
     DIAG_Throw(fnm << ": error reading header (HPC_CSPROF)");
     //return NULL;
@@ -460,6 +500,148 @@ Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
 } // namespace Prof
 
 
+//***************************************************************************
+// 
+//***************************************************************************
+
+// hpcfile_cstree_read: Given an empty (not non-NULL!) tree 'tree',
+// reads tree nodes from the file stream 'fs' and constructs the tree
+// using the user supplied callback functions.  See documentation
+// below for interfaces for callback interfaces.
+//
+// The tree data is thoroughly checked for errors. Returns HPCFILE_OK
+// upon success; HPCFILE_ERR on error.
+// The errbuf is optional; upon an error it is filled.
+int
+hpcfile_cstree_read(FILE* fs, void* tree, 
+		    int num_metrics,
+		    hpcfile_cstree_cb__create_node_fn_t create_node_fn,
+		    hpcfile_cstree_cb__link_parent_fn_t link_parent_fn,
+		    hpcfile_cb__alloc_fn_t alloc_fn,
+		    hpcfile_cb__free_fn_t free_fn,
+		    char* errbuf, int errSz)
+{
+  hpcfile_cstree_hdr_t fhdr;
+  hpcfile_cstree_node_t tmp_node;
+  int ret = HPCFILE_ERR;
+  uint32_t tag;
+
+  if (errbuf) { errbuf[0] = '\0'; }
+  
+  // A vector storing created tree nodes.  The vector indices correspond to
+  // the nodes' persistent ids.
+  void**       node_vec = NULL;
+  lush_lip_t** lip_vec  = NULL;
+
+  if (!fs) { return HPCFILE_ERR; }
+  
+  // Open file for reading; read and sanity check header
+  ret = hpcfile_cstree_read_hdr(fs, &fhdr);
+  if (ret != HPCFILE_OK) { 
+    return HPCFILE_ERR; 
+  }
+
+  // node id upper bound (exclusive)
+  int id_ub = fhdr.num_nodes + HPCFILE_CSTREE_ID_ROOT;
+
+  // Allocate space for 'node_vec'
+  if (fhdr.num_nodes != 0) {
+    node_vec = (void**)alloc_fn(sizeof(void*) * id_ub);
+    lip_vec  = (lush_lip_t**)alloc_fn(sizeof(void*) * id_ub);
+    for (int i = 0; i < HPCFILE_CSTREE_ID_ROOT; ++i) {
+      node_vec[i] = NULL;
+      lip_vec[i]  = NULL;
+    }
+  }
+  
+  // Read each node, creating it and linking it to its parent 
+  tmp_node.data.num_metrics = num_metrics;
+  tmp_node.data.metrics = (hpcfile_metric_data_t*)alloc_fn(num_metrics * sizeof(hpcfile_uint_t));
+  
+  for (int i = HPCFILE_CSTREE_ID_ROOT; i < id_ub; ++i) {
+
+    ret = hpcfile_tag__fread(&tag, fs);
+    if (ret != HPCFILE_OK) { 
+      return HPCFILE_ERR; 
+    }
+
+    // ----------------------------------------------------------
+    // Read the LIP
+    // ----------------------------------------------------------
+    lush_lip_t* lip = NULL;
+    hpcfile_uint_t lip_idx = i;
+    
+    if (tag == HPCFILE_TAG__CSTREE_LIP) {
+      lip = (lush_lip_t*)alloc_fn(sizeof(lush_lip_t));
+      ret = hpcfile_cstree_lip__fread(lip, fs);
+      if (ret != HPCFILE_OK) { 
+	return HPCFILE_ERR; 
+      }
+
+      ret = hpcfile_tag__fread(&tag, fs);
+      if (ret != HPCFILE_OK) { 
+	return HPCFILE_ERR; 
+      }
+    }
+
+    lip_vec[lip_idx] = lip;
+
+    // ----------------------------------------------------------
+    // Read the node
+    // ----------------------------------------------------------
+    
+    if ( !(tag == HPCFILE_TAG__CSTREE_NODE) ) {
+      ret = HPCFILE_ERR;
+      goto cleanup;
+    }
+
+    ret = hpcfile_cstree_node__fread(&tmp_node, fs);
+    if (ret != HPCFILE_OK) {
+      if (errbuf) { snprintf(errbuf, errSz, "Error after node %"PRIu64, tmp_node.id); }
+      goto cleanup; // ret = HPCFILE_ERR
+    }
+
+    lip_idx = tmp_node.data.lip.id;
+    tmp_node.data.lip.ptr = lip_vec[lip_idx];
+
+    if (tmp_node.id_parent >= id_ub) { 
+      if (errbuf) { snprintf(errbuf, errSz, "Invalid parent for node %"PRIu64, tmp_node.id); }
+      ret = HPCFILE_ERR;
+      goto cleanup;
+    } 
+    void* parent = node_vec[tmp_node.id_parent];
+
+    // parent should already exist unless id == HPCFILE_CSTREE_ID_ROOT
+    if (!parent && tmp_node.id != HPCFILE_CSTREE_ID_ROOT) {
+      if (errbuf) { snprintf(errbuf, errSz, "Cannot find parent for node %"PRIu64, tmp_node.id); }
+      ret = HPCFILE_ERR;
+      goto cleanup;
+    }
+
+    // Create node and link to parent
+    void* node = create_node_fn(tree, &tmp_node.data);
+    node_vec[tmp_node.id] = node;
+
+    if (parent) {
+      link_parent_fn(tree, node, parent);
+    }
+  }
+
+  free_fn(tmp_node.data.metrics);
+
+
+  // Success! Note: We assume that it is possible for other data to
+  // exist beyond this point in the stream; don't check for EOF.
+  ret = HPCFILE_OK;
+  
+  // Close file and cleanup
+ cleanup:
+  if (node_vec) { free_fn(node_vec); }
+  if (lip_vec)  { free_fn(lip_vec); }
+  
+  return ret;
+}
+
 
 static void* 
 cstree_create_node_CB(void* a_tree, hpcfile_cstree_nodedata_t* data)
@@ -519,6 +701,10 @@ hpcfile_free_CB(void* mem)
   delete[] (char*)mem;
 }
 
+
+//***************************************************************************
+// 
+//***************************************************************************
 
 // convertOpIPToIP: Find the instruction pointer 'ip' and operation
 // index 'opIdx' from the operation pointer 'opIP'.  The operation

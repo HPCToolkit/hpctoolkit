@@ -95,7 +95,7 @@
 
 #include "name.h"
 
-#include "hpcfile_csproflib.h"
+#include "hpcfile_csprof.h"
 #include "pmsg.h"
 #include "unwind.h"
 #include "fnbounds_interface.h"
