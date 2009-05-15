@@ -315,7 +315,7 @@ Profile::make(const char* fnm)
   // Read profile
   // ------------------------------------------------------------
 
-  FILE* fs = hpcfile_open_for_read(fnm);
+  FILE* fs = hpcio_open_r(fnm);
   if (!fs) { 
     DIAG_Throw(fnm << ": could not open");
   }
@@ -345,7 +345,7 @@ Profile::make(const char* fnm)
     }
   }
 
-  hpcfile_close(fs);
+  hpcio_close(fs);
 
 
   // Extract profiling info

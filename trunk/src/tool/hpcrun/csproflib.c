@@ -102,6 +102,7 @@
 #include "csprof_misc_fn_stat.h"
 
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/hpcio.h>
 
 #include <lush/lush.h>
 #include <lush/lush-backtrace.h>
@@ -448,7 +449,7 @@ int csprof_write_profile_data(csprof_state_t *state)
   TMSG(DATA_WRITE, "CSPROF write_profile_data: Writing %s", fnm);
 
   /* Open file for writing; fail if the file already exists. */
-  fs = hpcfile_open_for_write(fnm, /* overwrite */ 0);
+  fs = hpcio_fopen_w(fnm, /* overwrite */ 0);
 
   hpcfile_csprof_data_t *tmp = csprof_get_metric_data();
   TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
@@ -484,8 +485,8 @@ int csprof_write_profile_data(csprof_state_t *state)
       runner = runner->next;
     }
 
-    hpc_fwrite_le4(&num_ccts, fs);
-    hpc_fwrite_le8(&num_tramp_samps, fs);
+    hpcio_fwrite_le4(&num_ccts, fs);
+    hpcio_fwrite_le8(&num_tramp_samps, fs);
 
     /* write states */
     runner = state;
@@ -521,7 +522,7 @@ int csprof_write_profile_data(csprof_state_t *state)
 
  error:
  end:
-  hpcfile_close(fs);
+  hpcio_close(fs);
 
   return ret;
 }

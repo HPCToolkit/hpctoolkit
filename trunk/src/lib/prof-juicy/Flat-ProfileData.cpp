@@ -256,7 +256,7 @@ ProfileData::read_lm_count(FILE* fs)
 {
   uint32_t count;
 
-  size_t sz = hpc_fread_le4(&count, fs);
+  size_t sz = hpcio_fread_le4(&count, fs);
   if (sz != sizeof(count)) { 
     PROFFLAT_Throw("Error reading <loadmodule_list>.");
   }
@@ -306,7 +306,7 @@ LM::read(FILE *fs)
     PROFFLAT_Throw("Error reading <loadmodule_name>.");
   }
   
-  sz = hpc_fread_le8(&m_load_addr, fs);
+  sz = hpcio_fread_le8(&m_load_addr, fs);
   if (sz != sizeof(m_load_addr)) { 
     PROFFLAT_Throw("Error reading <loadmodule_loadoffset>.");
   }
@@ -318,7 +318,7 @@ LM::read(FILE *fs)
   // <loadmodule_eventcount>
   // -------------------------------------------------------
   uint count = 1;
-  sz = hpc_fread_le4(&count, fs);
+  sz = hpcio_fread_le4(&count, fs);
   if (sz != sizeof(count)) { 
     PROFFLAT_Throw("Error reading <loadmodule_eventcount>.");
   }
@@ -380,7 +380,7 @@ EventData::read(FILE *fs, uint64_t load_addr)
     PROFFLAT_Throw("Error reading <event_x_description>.");
   }
   
-  sz = hpc_fread_le8(&period, fs);
+  sz = hpcio_fread_le8(&period, fs);
   if (sz != sizeof(period)) { 
     PROFFLAT_Throw("Error reading <event_x_period>.");
   }
@@ -398,7 +398,7 @@ EventData::read(FILE *fs, uint64_t load_addr)
   
   // <histogram_non_zero_bucket_count>
   uint64_t ndat;    // number of profile entries
-  sz = hpc_fread_le8(&ndat, fs);
+  sz = hpcio_fread_le8(&ndat, fs);
   if (sz != sizeof(ndat)) { 
     PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_count>.");
   }
@@ -411,12 +411,12 @@ EventData::read(FILE *fs, uint64_t load_addr)
   uint32_t count;   // profile count
   uint64_t offset;  // offset from load address
   for (uint i = 0; i < ndat; ++i) {
-    sz = hpc_fread_le4(&count, fs);        // count
+    sz = hpcio_fread_le4(&count, fs);        // count
     if (sz != sizeof(count)) { 
       PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_x_value>.");
     }
 
-    sz = hpc_fread_le8(&offset, fs);       // offset
+    sz = hpcio_fread_le8(&offset, fs);       // offset
     if (sz != sizeof(offset)) { 
       PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_x_offset>.");
     }
@@ -462,7 +462,7 @@ read_string(FILE *fs, std::string& str)
   int c;
 
   // <string_length> <string_without_terminator>
-  sz = hpc_fread_le4(&len, fs);
+  sz = hpcio_fread_le4(&len, fs);
   if (sz != sizeof(len)) { 
     return 1;
   }
