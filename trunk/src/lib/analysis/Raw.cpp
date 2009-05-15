@@ -108,9 +108,11 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   uint num_ccts = metadata.num_ccts;
 
   if (num_ccts > 0) {
-    Prof::CCT::Tree cct(NULL);
+    using namespace Prof;
+
+    CCT::Tree cct(NULL);
     try {
-      Prof::CallPath::Profile::cct_fread(fs, &cct, num_metrics, stdout);
+      CallPath::Profile::hpcrun_fmt_cct_fread(&cct, num_metrics, fs, stdout);
     }
     catch (const Diagnostics::Exception& x) {
       DIAG_Throw("error reading calling context tree: " << x.what());
