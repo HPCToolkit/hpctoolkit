@@ -271,15 +271,8 @@ Profile::ddump() const
 //
 //***************************************************************************
 
-static void* cstree_create_node_CB(void* tree, 
-				   hpcfile_cstree_nodedata_t* data);
-static void  cstree_link_parent_CB(void* tree, void* node, void* parent);
-
-static void* hpcfmt_alloc(size_t sz);
-static void  hpcfmt_free(void* mem);
-
-static void 
-convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
+static Prof::CCT::ANode* 
+cct_makeNode(Prof::CCT::Tree* cct, hpcfile_cstree_nodedata_t* data);
 
 static void
 cct_fixRoot(Prof::CCT::Tree* tree, const char* progName);
@@ -287,6 +280,11 @@ cct_fixRoot(Prof::CCT::Tree* tree, const char* progName);
 static void
 cct_fixLeaves(Prof::CCT::ANode* node);
 
+static void*
+hpcfmt_alloc(size_t sz);
+
+static void
+hpcfmt_free(void* mem);
 
 //***************************************************************************
 
@@ -407,9 +405,9 @@ Profile::make(const char* fnm)
 
 
 void
-Profile::cct_fread(FILE* infs, void* tree, int num_metrics, FILE* outfs)
+Profile::cct_fread(FILE* infs, CCT::Tree* cct, int num_metrics, FILE* outfs)
 {
-  typedef std::map<int, void*/*CCT::ANode**/> CCTIdToCCTNodeMap;
+  typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
   typedef std::map<int, lush_lip_t*> LipIdToLipMap;
 
   DIAG_Assert(infs, "Bad file descriptor!");
@@ -424,7 +422,7 @@ Profile::cct_fread(FILE* infs, void* tree, int num_metrics, FILE* outfs)
   // ------------------------------------------------------------
   hpcfile_cstree_hdr_t fhdr;
   ret = hpcfile_cstree_read_hdr(infs, &fhdr);
-  if (ret != HPCFILE_OK) { 
+  if (ret != HPCFILE_OK) {
     DIAG_Throw("Error reading CCT header");
   }
 
@@ -437,8 +435,6 @@ Profile::cct_fread(FILE* infs, void* tree, int num_metrics, FILE* outfs)
   // Read each CCT node
   // ------------------------------------------------------------
 
-  int numRoots = 0;
-  
   hpcfile_cstree_node_t ndata;
   ndata.data.num_metrics = num_metrics;
   ndata.data.metrics = (hpcfile_metric_data_t*)alloca(num_metrics * sizeof(hpcfile_uint_t));
@@ -509,15 +505,8 @@ Profile::cct_fread(FILE* infs, void* tree, int num_metrics, FILE* outfs)
     ndata.data.lip.ptr = node_lip;
 
     // Find parent of node
-    void* /*CCT::ANode**/ node_prnt = NULL;
-    if ( !(ndata.id_parent < ndata.id) ) {
-      DIAG_Throw("Invalid parent (" << ndata.id_parent << ") for node " << ndata.id);
-    }
-    
-    if (ndata.id_parent == HPCFILE_CSTREE_NODE_ID_NULL) {
-      numRoots++;
-    }
-    else {
+    CCT::ANode* node_prnt = NULL;
+    if (ndata.id_parent != HPCFILE_CSTREE_NODE_ID_NULL) {
       CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(ndata.id_parent);
       if (it != cctNodeMap.end()) {
 	node_prnt = it->second;
@@ -527,20 +516,27 @@ Profile::cct_fread(FILE* infs, void* tree, int num_metrics, FILE* outfs)
       }
     }
 
-    DIAG_Assert(numRoots == 1, "Must only have one root node!");
+    if ( !(ndata.id_parent < ndata.id) ) {
+      DIAG_Throw("Invalid parent " << ndata.id_parent << " for node " << ndata.id);
+    }
 
 
     // Create node and link to parent
-    void* node = cstree_create_node_CB(tree, &ndata.data);
+    CCT::ANode* node = cct_makeNode(cct, &ndata.data);
+    DIAG_DevMsgIf(0, "cct_fread: " << hex << node << " -> " << node_prnt <<dec);
+
     if (node_prnt) {
-      cstree_link_parent_CB(tree, node, node_prnt);
+      node->Link(node_prnt);
+    }
+    else {
+      DIAG_Assert(cct->empty(), "Must only have one root node!");
+      cct->root(node);
     }
 
     cctNodeMap.insert(std::make_pair(ndata.id, node));
   }
 
-  // Success! Note: We are not responsible for closing file; other day
-  // may exist.
+  // Note: Not responsible for closing file
 }
 
 
@@ -601,18 +597,13 @@ Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
 // 
 //***************************************************************************
 
-
-
-static void* 
-cstree_create_node_CB(void* a_tree, hpcfile_cstree_nodedata_t* data)
+static Prof::CCT::ANode*
+cct_makeNode(Prof::CCT::Tree* cct, hpcfile_cstree_nodedata_t* data)
 {
   using namespace Prof;
-
-  CCT::Tree* tree = (CCT::Tree*)a_tree; 
   
-  VMA ip;
-  ushort opIdx;
-  convertOpIPToIP((VMA)data->ip, ip, opIdx);
+  VMA ip = (VMA)data->ip; // tallent:FIXME: Use ISA::ConvertVMAToOpVMA
+  ushort opIdx = 0;
 
   std::vector<hpcfile_metric_data_t> metricVec;
   metricVec.clear();
@@ -620,80 +611,23 @@ cstree_create_node_CB(void* a_tree, hpcfile_cstree_nodedata_t* data)
     metricVec.push_back(data->metrics[i]);
   }
 
-  DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);
+  DIAG_DevMsgIf(0, "cct_fread: " << hex << data->ip << dec);
   CCT::Call* n = new CCT::Call(NULL, data->as_info, ip, opIdx, data->lip.ptr,
-			       data->cpid, &tree->metadata()->metricDesc(), 
+			       data->cpid, &cct->metadata()->metricDesc(), 
 			       metricVec);
-  
-  // Initialize the tree, if necessary
-  if (tree->empty()) {
-    tree->root(n);
-  }
-  
   return n;
-}
-
-
-static void  
-cstree_link_parent_CB(void* tree, void* node, void* parent)
-{
-  using namespace Prof;
-
-  CCT::Call* p = (CCT::Call*)parent;
-  CCT::Call* n = (CCT::Call*)node;
-  n->Link(p);
-  
-  DIAG_DevMsgIf(0, "cstree_link_parent_CB: parent(" << hex << p << ") child(" 
-		<< n << ")" << dec);
-}
-
-
-static void* 
-hpcfmt_alloc(size_t sz)
-{
-  return (new char[sz]);
-}
-
-
-static void  
-hpcfmt_free(void* mem)
-{
-  delete[] (char*)mem;
-}
-
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-// convertOpIPToIP: Find the instruction pointer 'ip' and operation
-// index 'opIdx' from the operation pointer 'opIP'.  The operation
-// pointer is represented by adding 0, 1, or 2 to the instruction
-// pointer for the first, second and third operation, respectively.
-void 
-convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
-{
-#if 0  
-  opIdx = (ushort)(opIP & 0x3); // the mask ...00011 covers 0, 1 and 2
-  ip = opIP - opIdx;
-#else
-  // FIXME: tallent: Sigh! The above is only true for IA64! Replace
-  // with ISA::ConvertVMAToOpVMA, probably accessed through LM::isa
-  ip = opIP;
-  opIdx = 0;
-#endif
 }
 
 
 // 1. Create a (PGM) root for the CCT
 // 2. Remove the 'monitor_main' placeholder root 
 static void
-cct_fixRoot(Prof::CCT::Tree* tree, const char* progName)
+cct_fixRoot(Prof::CCT::Tree* cct, const char* progName)
 {
   using namespace Prof;
 
   // Add PGM node
-  CCT::ANode* oldroot = tree->root();
+  CCT::ANode* oldroot = cct->root();
   if (!oldroot || oldroot->type() != CCT::ANode::TyRoot) {
     CCT::ANode* newroot = new CCT::Root(progName);
 
@@ -711,7 +645,7 @@ cct_fixRoot(Prof::CCT::Tree* tree, const char* progName)
       delete oldroot;
     }
 
-    tree->root(newroot);
+    cct->root(newroot);
   }
 }
 
@@ -750,3 +684,16 @@ cct_fixLeaves(Prof::CCT::ANode* node)
   }
 }
 
+
+static void* 
+hpcfmt_alloc(size_t sz)
+{
+  return (new char[sz]);
+}
+
+
+static void  
+hpcfmt_free(void* mem)
+{
+  delete[] (char*)mem;
+}
