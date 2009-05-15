@@ -82,38 +82,55 @@ public:
   virtual ~Profile();
   
   // -------------------------------------------------------
-  // Data
+  // name
   // -------------------------------------------------------
   const std::string& name() const 
-    { return m_name; }
-  void name(const char* s) 
-    { m_name = (s) ? s : ""; }
+  { return m_name; }
 
+  void name(const char* s) 
+  { m_name = (s) ? s : ""; }
+  
+  // -------------------------------------------------------
+  // Metrics
+  // -------------------------------------------------------
   uint numMetrics() const
-    { return m_metricdesc.size(); }
+  { return m_metricdesc.size(); }
+  
   SampledMetricDesc* metric(uint i) const 
-    { return m_metricdesc[i]; }
+  { return m_metricdesc[i]; }
+
   const SampledMetricDescVec& metricDesc() const 
-    { return m_metricdesc; }
+  { return m_metricdesc; }
+  
   uint addMetric(SampledMetricDesc* m) {
     m_metricdesc.push_back(m);
     uint m_id = numMetrics() - 1;
     return m_id;
   }
 
-  CCT::Tree* cct() const 
-    { return m_cct; }
-
+  // -------------------------------------------------------
+  // LoadMap
+  // -------------------------------------------------------
   LoadMap* loadMap() const
-    { return m_loadmap; }
-  void loadMap(LoadMap* x) 
-    { m_loadmap = x; }
+  { return m_loadmap; }
 
+  void loadMap(LoadMap* x) 
+  { m_loadmap = x; }
   
+  // -------------------------------------------------------
+  // CCT
+  // -------------------------------------------------------
+  CCT::Tree* cct() const 
+  { return m_cct; }
+
+  // -------------------------------------------------------
+  // Static structure
+  // -------------------------------------------------------
   Prof::Struct::Tree* structure() const
-    { return m_structure; }
+  { return m_structure; }
+
   void structure(Prof::Struct::Tree* x)
-    { m_structure = x; }
+  { m_structure = x; }
 
 
   // -------------------------------------------------------
@@ -132,13 +149,24 @@ public:
   static Profile* 
   make(const char* fnm);
 
-  // cct_fread: Reads calling tree nodes from the file stream 'fs' and
-  // constructs the tree.  If 'outfs' is non-null, a textual form of
-  // the data is echoed to 'outfs' for human inspection.  (This text
-  // output is not designed for parsing and any formatting is subject
-  // to change.)  The tree data is thoroughly checked for errors.
+  // hpcrun_fmt_epoch_fread(): 
+  // hpcrun_fmt_cct_fread(): 
+  //
+  // Reads the appropriate hpcrun_fmt object from the file stream
+  // 'fs', checking for errors, and constructs appropriate
+  // Prof::Profile::CallPath objects.  If 'outfs' is non-null, a
+  // textual form of the data is echoed to 'outfs' for human
+  // inspection.
+
   static void
-  cct_fread(FILE* infs, CCT::Tree* cct, int num_metrics, FILE* outfs);
+  hpcrun_fmt_epoch_fread(Profile* prof, 
+			 hpcfile_csprof_data_t* metadata, 
+			 epoch_table_t* loadmap_tbl,
+			 FILE* infs, std::string locStr, FILE* outfs);
+
+  static void
+  hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics, 
+		       FILE* infs, FILE* outfs);
 
 
   // -------------------------------------------------------
@@ -162,15 +190,15 @@ private:
   void 
   cct_canonicalize();
 
+  // maintain the CCT invariants after merging two profiles
   void 
-  cct_applyLoadMapMergeChanges(std::vector<LoadMap::MergeChange>& mergeChg);
+  cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg);
  
 private:
   std::string m_name;
-
-  CCT::Tree* m_cct;
   SampledMetricDescVec m_metricdesc;
   LoadMap* m_loadmap;
+  CCT::Tree* m_cct;
   Prof::Struct::Tree* m_structure;
 };
 

@@ -104,8 +104,8 @@ Profile::Profile(uint numMetrics)
   for (uint i = 0; i < m_metricdesc.size(); ++i) {
     m_metricdesc[i] = new SampledMetricDesc();
   }
-  m_cct = new CCT::Tree(this);
   m_loadmap = NULL;
+  m_cct = new CCT::Tree(this);
   m_structure = NULL;
 }
 
@@ -115,8 +115,8 @@ Profile::~Profile()
   for (uint i = 0; i < m_metricdesc.size(); ++i) {
     delete m_metricdesc[i];
   }
-  delete m_cct;
   delete m_loadmap;
+  delete m_cct;
   delete m_structure;
 }
 
@@ -136,14 +136,14 @@ Profile::merge(Profile& y)
   }
   
   // -------------------------------------------------------
-  // merge loadmaps
+  // merge LoadMaps
   // -------------------------------------------------------
   std::vector<LoadMap::MergeChange> mergeChg = m_loadmap->merge(*y.loadMap());
-  y.cct_applyLoadMapMergeChanges(mergeChg);
+  y.cct_canonicalizePostMerge(mergeChg);
   // INVARIANT: y's cct now refers to x's loadmap
 
   // -------------------------------------------------------
-  // merge cct
+  // merge CCTs
   // -------------------------------------------------------
   m_cct->merge(y.cct(), &m_metricdesc, x_numMetrics, y.numMetrics());
 }
@@ -292,75 +292,109 @@ namespace Prof {
 
 namespace CallPath {
 
-
 Profile* 
 Profile::make(const char* fnm) 
 {
-  using namespace Prof;
-
-  hpcfile_csprof_data_t metadata;
   int ret;
-
-  // ------------------------------------------------------------
-  // Read profile
-  // ------------------------------------------------------------
 
   FILE* fs = hpcio_open_r(fnm);
   if (!fs) { 
-    DIAG_Throw(fnm << ": could not open");
+    DIAG_Throw("error opening file");
   }
 
+  // ------------------------------------------------------------
+  // Read header (fmt-hdr)
+  // ------------------------------------------------------------
+
+  hpcfile_csprof_data_t metadata;
   epoch_table_t loadmap_tbl;
-  ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, hpcfmt_alloc, 
-			    hpcfmt_free);
+  ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, 
+			    hpcfmt_alloc, hpcfmt_free);
   if (ret != HPCFILE_OK) {
-    DIAG_Throw(fnm << ": error reading header (HPC_CSPROF)");
-    //return NULL;
-  }
-  
-  uint num_metrics = metadata.num_metrics;
-  uint num_ccts = metadata.num_ccts;
-  
-  DIAG_Msg(3, fnm << ": metrics found: " << num_metrics);
-  DIAG_Msg(3, fnm << ": ccts found: " << num_ccts);
-
-  CallPath::Profile* prof = new CallPath::Profile(num_metrics);
-  if (num_ccts > 0) {
-    try {
-      cct_fread(fs, prof->cct(), num_metrics, NULL /*outfs*/);
-    }
-    catch (const Diagnostics::Exception& x) {
-      delete prof;
-      DIAG_Throw("error reading calling context tree: " << x.what());
-    }
+    DIAG_Throw("error reading 'fmt-hdr'");
   }
 
+  // ------------------------------------------------------------
+  // Read each epoch and merge them to form one Profile
+  // ------------------------------------------------------------
+
+  Profile* prof = new Profile(metadata.num_metrics);
+  prof->name("[Profile Name]");
+
+  try {
+    string locStr = fnm; // ":epoch " + 1;
+    hpcrun_fmt_epoch_fread(prof, &metadata, &loadmap_tbl, fs, 
+			   locStr, NULL /*outfs*/);
+  }
+  catch (const Diagnostics::Exception& x) {
+    delete prof;
+    DIAG_Throw("error reading 'epoch': " << x.what());
+  }
+
+  // ------------------------------------------------------------
+  // Cleanup
+  // ------------------------------------------------------------
   hpcio_close(fs);
 
+  hpcfmt_free(metadata.target);
+  for (uint i = 0; i < metadata.num_metrics; i++) {
+    hpcfmt_free(metadata.metrics[i].metric_name);
+  }
+  hpcfmt_free(metadata.metrics);
 
-  // Extract profiling info
-  prof->name("[Profile Name]"); 
-  
-  // ------------------------------------------------------------
-  // LoadMap
-  // ------------------------------------------------------------
-  DIAG_WMsgIf(loadmap_tbl.num_epoch > 1, fnm << ": only processing last loadmap!");
-  const uint loadmap_id  = (loadmap_tbl.num_epoch - 1);
+  epoch_table__free_data(&loadmap_tbl, hpcfmt_free);
 
-  uint num_lm = loadmap_tbl.epoch_modlist[loadmap_id].num_loadmodule;
+  return prof;
+}
+
+
+void
+Profile::hpcrun_fmt_epoch_fread(Profile* prof, hpcfile_csprof_data_t* metadata,
+				epoch_table_t* loadmap_tbl,
+				FILE* infs, std::string locStr, FILE* outfs)
+{
+  using namespace Prof;
+
+  // ------------------------------------------------------------
+  // Epoch header (epoch-hdr)
+  // ------------------------------------------------------------
+
+  // TODO
+
+  // ------------------------------------------------------------
+  // Metric table (metric-tbl)
+  // ------------------------------------------------------------
+
+  uint num_metrics = metadata->num_metrics;
+  DIAG_Msg(3, locStr << ": metrics found: " << num_metrics);
+  for (uint i = 0; i < num_metrics; i++) {
+    SampledMetricDesc* metric = prof->metric(i);
+    metric->name(metadata->metrics[i].metric_name);
+    metric->flags(metadata->metrics[i].flags);
+    metric->period(metadata->metrics[i].sample_period);
+  }
+
+
+  // ------------------------------------------------------------
+  // Load map (loadmap)
+  // ------------------------------------------------------------
+
+  DIAG_WMsgIf(loadmap_tbl->num_epoch > 1, locStr << ": Only processing last loadmap!");
+
+  const uint loadmap_id = (loadmap_tbl->num_epoch - 1);
+  uint num_lm = loadmap_tbl->epoch_modlist[loadmap_id].num_loadmodule;
 
   LoadMap* loadmap = new LoadMap(num_lm);
 
   for (int i = num_lm - 1; i >= 0; --i) { 
-    string nm = loadmap_tbl.epoch_modlist[loadmap_id].loadmodule[i].name;
+    string nm = loadmap_tbl->epoch_modlist[loadmap_id].loadmodule[i].name;
     RealPathMgr::singleton().realpath(nm);
-    VMA loadAddr = loadmap_tbl.epoch_modlist[loadmap_id].loadmodule[i].mapaddr;
-    size_t sz = 0; //loadmap_tbl.epoch_modlist[loadmap_id].loadmodule[i].size;
+    VMA loadAddr = loadmap_tbl->epoch_modlist[loadmap_id].loadmodule[i].mapaddr;
+    size_t sz = 0; //loadmap_tbl->epoch_modlist[loadmap_id].loadmodule[i].size;
 
     LoadMap::LM* lm = new LoadMap::LM(nm, loadAddr, sz);
     loadmap->lm_insert(lm);
   }
-  epoch_table__free_data(&loadmap_tbl, hpcfmt_free);
 
   DIAG_MsgIf(DBG, loadmap->toString());
 
@@ -368,44 +402,32 @@ Profile::make(const char* fnm)
     loadmap->compute_relocAmt();
   }
   catch (const Diagnostics::Exception& x) {
-    DIAG_EMsg("While reading profile '" << fnm << "': Cannot fully process samples from unavailable load modules:\n" << x.what());
+    DIAG_EMsg(locStr << "': Cannot fully process samples from unavailable load modules:\n" << x.what());
   }
   prof->loadMap(loadmap);
 
+
   // ------------------------------------------------------------
-  // Extract metrics
+  // CCT (cct)
   // ------------------------------------------------------------
-  for (uint i = 0; i < num_metrics; i++) {
-    SampledMetricDesc* metric = prof->metric(i);
-    metric->name(metadata.metrics[i].metric_name);
-    metric->flags(metadata.metrics[i].flags);
-    metric->period(metadata.metrics[i].sample_period);
+
+  uint num_ccts = metadata->num_ccts;
+  DIAG_Msg(3, locStr << ": ccts found: " << num_ccts);
+
+  if (num_ccts > 0) {
+    hpcrun_fmt_cct_fread(prof->cct(), num_metrics, infs, outfs);
   }
 
-  // ------------------------------------------------------------
-  // Cleanup
-  // ------------------------------------------------------------
-  for (uint i = 0; i < num_metrics; i++) {
-    hpcfmt_free(metadata.metrics[i].metric_name);
-  }
-  hpcfmt_free(metadata.target);
-  hpcfmt_free(metadata.metrics);
-
-
-  // ------------------------------------------------------------
-  // Postprocess
-  // ------------------------------------------------------------
   cct_fixRoot(prof->cct(), prof->name().c_str());  
   cct_fixLeaves(prof->cct()->root());
 
   prof->cct_canonicalize();
-  
-  return prof;
 }
 
 
 void
-Profile::cct_fread(FILE* infs, CCT::Tree* cct, int num_metrics, FILE* outfs)
+Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics, 
+			      FILE* infs, FILE* outfs)
 {
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
   typedef std::map<int, lush_lip_t*> LipIdToLipMap;
@@ -418,12 +440,12 @@ Profile::cct_fread(FILE* infs, CCT::Tree* cct, int num_metrics, FILE* outfs)
   int ret = HPCFILE_ERR;
   
   // ------------------------------------------------------------
-  // Read and sanity check header
+  // Read header
   // ------------------------------------------------------------
   hpcfile_cstree_hdr_t fhdr;
   ret = hpcfile_cstree_read_hdr(infs, &fhdr);
   if (ret != HPCFILE_OK) {
-    DIAG_Throw("Error reading CCT header");
+    DIAG_Throw("error reading CCT header");
   }
 
   if (outfs) {
@@ -458,7 +480,7 @@ Profile::cct_fread(FILE* infs, CCT::Tree* cct, int num_metrics, FILE* outfs)
       lip = new lush_lip_t;
       ret = hpcfile_cstree_lip__fread(lip, infs);
       if (ret != HPCFILE_OK) { 
-	DIAG_Throw("Error reading CCT LIP" << lip_id); // FIXME: init lip_id
+	DIAG_Throw("error reading CCT LIP" << lip_id); // FIXME: init lip_id
       }
 
       ret = hpcfile_tag__fread(&tag, infs);
@@ -523,7 +545,7 @@ Profile::cct_fread(FILE* infs, CCT::Tree* cct, int num_metrics, FILE* outfs)
 
     // Create node and link to parent
     CCT::ANode* node = cct_makeNode(cct, &ndata.data);
-    DIAG_DevMsgIf(0, "cct_fread: " << hex << node << " -> " << node_prnt <<dec);
+    DIAG_DevMsgIf(0, "hpcrun_fmt_cct_fread: " << hex << node << " -> " << node_prnt <<dec);
 
     if (node_prnt) {
       node->Link(node_prnt);
@@ -535,8 +557,6 @@ Profile::cct_fread(FILE* infs, CCT::Tree* cct, int num_metrics, FILE* outfs)
 
     cctNodeMap.insert(std::make_pair(ndata.id, node));
   }
-
-  // Note: Not responsible for closing file
 }
 
 
@@ -564,7 +584,7 @@ Profile::cct_canonicalize()
 
 
 void 
-Profile::cct_applyLoadMapMergeChanges(std::vector<LoadMap::MergeChange>& mergeChg)
+Profile::cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg)
 {
   CCT::ANode* root = cct()->root();
   
@@ -611,7 +631,7 @@ cct_makeNode(Prof::CCT::Tree* cct, hpcfile_cstree_nodedata_t* data)
     metricVec.push_back(data->metrics[i]);
   }
 
-  DIAG_DevMsgIf(0, "cct_fread: " << hex << data->ip << dec);
+  DIAG_DevMsgIf(0, "hpcrun_fmt_cct_fread: " << hex << data->ip << dec);
   CCT::Call* n = new CCT::Call(NULL, data->as_info, ip, opIdx, data->lip.ptr,
 			       data->cpid, &cct->metadata()->metricDesc(), 
 			       metricVec);
