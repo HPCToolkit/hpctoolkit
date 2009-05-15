@@ -87,8 +87,7 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCprof_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCprof_lean_la-hpcfile_csprof.lo \
-	libHPCprof_lean_la-hpcfile_cstree.lo \
+am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-hpcfmt.lo libHPCprof_lean_la-hpcio.lo \
 	libHPCprof_lean_la-lush-support.lo
 am_libHPCprof_lean_la_OBJECTS = $(am__objects_1)
@@ -323,8 +322,9 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	hpcfile_csprof.h hpcfile_csprof.c \
-	hpcfile_cstree.h hpcfile_cstree.c \
+	hpcrun-fmt.h hpcrun-fmt.c \
+	hpcrunflat-fmt.h \
+	\
 	hpcfmt.h hpcfmt.c \
 	hpcio.h hpcio.c \
 	\
@@ -406,10 +406,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfile_csprof.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfile_cstree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcrun-fmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-lush-support.Plo@am__quote@
 
 .c.o:
@@ -433,19 +432,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
-libHPCprof_lean_la-hpcfile_csprof.lo: hpcfile_csprof.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-hpcfile_csprof.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-hpcfile_csprof.Tpo -c -o libHPCprof_lean_la-hpcfile_csprof.lo `test -f 'hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile_csprof.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libHPCprof_lean_la-hpcfile_csprof.Tpo $(DEPDIR)/libHPCprof_lean_la-hpcfile_csprof.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_csprof.c' object='libHPCprof_lean_la-hpcfile_csprof.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_lean_la-hpcrun-fmt.lo: hpcrun-fmt.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-hpcrun-fmt.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-hpcrun-fmt.Tpo -c -o libHPCprof_lean_la-hpcrun-fmt.lo `test -f 'hpcrun-fmt.c' || echo '$(srcdir)/'`hpcrun-fmt.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libHPCprof_lean_la-hpcrun-fmt.Tpo $(DEPDIR)/libHPCprof_lean_la-hpcrun-fmt.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun-fmt.c' object='libHPCprof_lean_la-hpcrun-fmt.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-hpcfile_csprof.lo `test -f 'hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile_csprof.c
-
-libHPCprof_lean_la-hpcfile_cstree.lo: hpcfile_cstree.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-hpcfile_cstree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-hpcfile_cstree.Tpo -c -o libHPCprof_lean_la-hpcfile_cstree.lo `test -f 'hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile_cstree.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libHPCprof_lean_la-hpcfile_cstree.Tpo $(DEPDIR)/libHPCprof_lean_la-hpcfile_cstree.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_cstree.c' object='libHPCprof_lean_la-hpcfile_cstree.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-hpcfile_cstree.lo `test -f 'hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile_cstree.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-hpcrun-fmt.lo `test -f 'hpcrun-fmt.c' || echo '$(srcdir)/'`hpcrun-fmt.c
 
 libHPCprof_lean_la-hpcfmt.lo: hpcfmt.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-hpcfmt.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-hpcfmt.Tpo -c -o libHPCprof_lean_la-hpcfmt.lo `test -f 'hpcfmt.c' || echo '$(srcdir)/'`hpcfmt.c

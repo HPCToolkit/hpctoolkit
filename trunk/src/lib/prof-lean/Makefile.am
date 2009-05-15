@@ -62,8 +62,9 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	hpcfile_csprof.h hpcfile_csprof.c \
-	hpcfile_cstree.h hpcfile_cstree.c \
+	hpcrun-fmt.h hpcrun-fmt.c \
+	hpcrunflat-fmt.h \
+	\
 	hpcfmt.h hpcfmt.c \
 	hpcio.h hpcio.c \
 	\

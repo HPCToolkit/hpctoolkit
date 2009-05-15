@@ -39,8 +39,9 @@
 #include "metrics.h"
 #include "pmsg.h"
 
-#include "hpcfile_cstree.h"
 #include "csprof_misc_fn_stat.h"
+
+#include <lib/prof-lean/hpcrun-fmt.h>
 
 //*************************** Forward Declarations **************************
 

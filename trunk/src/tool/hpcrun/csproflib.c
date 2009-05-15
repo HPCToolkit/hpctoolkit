@@ -95,12 +95,13 @@
 
 #include "name.h"
 
-#include "hpcfile_csprof.h"
 #include "pmsg.h"
 #include "unwind.h"
 #include "fnbounds_interface.h"
 #include "splay-interval.h"
 #include "csprof_misc_fn_stat.h"
+
+#include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lush/lush.h>
 #include <lush/lush-backtrace.h>

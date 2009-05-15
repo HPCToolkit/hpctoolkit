@@ -68,7 +68,7 @@ using std::string;
 
 #include <lib/banal/bloop-simple.hpp>
 
-#include <lib/prof-lean/hpcfile_csprof.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcrunflat-fmt.h>
 
 #include <lib/support/diagnostics.h>

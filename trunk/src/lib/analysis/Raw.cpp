@@ -59,7 +59,7 @@ using std::string;
 #include "Raw.hpp"
 #include "Util.hpp"
 
-#include <lib/prof-lean/hpcfile_csprof.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-juicy/Flat-ProfileData.hpp>
 
 #include <lib/support/diagnostics.h>
