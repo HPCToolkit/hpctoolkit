@@ -1,0 +1,94 @@
+$Id$
+
+=============================================================================
+hpcrun binary data format (see "Abbreviation notes" below)
+=============================================================================
+
+fmt-hdr [epoch]*
+  
+------------------------------------------------------------
+
+fmt-hdr = fmt-magicno-version{16b} [nv-pair]*
+
+  Possible nv-pairs
+  - program-name
+  - process-id
+  - mpi-rank
+  - canonical-thread-id
+  - topology
+
+------------------------------------------------------------
+
+epoch = epoch-hdr metric-tbl loadmap cct
+
+------------------------------------------------------------
+
+epoch-hdr = epoch-flags{8b}
+            characteristic-rtn-addr-distance{4b}
+            granularity{8b}
+            [nv-pair]*
+
+  Possible flags: lush/non-lush
+
+  Possible nv-pairs: size of LIP
+
+----------------------------------------
+
+metric-tbl = [metric-desc]*
+metric-desc = lstr metric-flags{64b} period{64b}
+
+----------------------------------------
+
+loadmap = [loadmap_entry]+
+loadmap_entry = load_addr{8b} load_offset{8b} lstr flags{4b}
+
+----------------------------------------
+
+cct = [cct-node]*
+cct-node = node-id{4b}                 (neg if node is a leaf)
+           parent-id{4b}
+           lush-assoc{4b}
+           ip{8b}
+           lush-lip
+           (metric-data)*
+
+------------------------------------------------------------
+
+  nv-pair = lstr lstr
+
+  lstr = [char]+
+
+==============================================================================
+
+Abbreviation notes:
+
+  - x{4b} : indicates a size qualifier for x: item x has size 4 bytes
+
+  - [x]*  : a possibly empty list of x: #-of-x{4b} (x)*
+
+  - [x]+  : a non-empty list of x:      #-of-x{4b} (x)+
+
+
+==============================================================================
+
+Primitives (where X = hpcrun_fmt):
+  X_hdr
+  X_epoch
+  X_metric_tbl
+  X_loadmap
+  X_cct_node
+  X_nv_pair
+  X_str
+
+All primitives have an associated structure, e.g.:
+  X_hdr_t
+
+All primitives have three functions:
+  fread
+  fwrite
+  fprint
+
+Notes:
+  - last argument to fread operation will be a memory allocator function
+  - some primitives may need certain 'header' information.  For
+    example, reading a node requires knowing how many metrics there are.
