@@ -63,7 +63,7 @@
 #include <include/uint.h>
 
 #include "MetricDesc.hpp"
-#include "Epoch.hpp"
+#include "LoadMap.hpp"
 #include "CCT-Tree.hpp"
 
 //*************************** Forward Declarations ***************************
@@ -104,10 +104,10 @@ public:
   CCT::Tree* cct() const 
     { return m_cct; }
 
-  Epoch* epoch() const
-    { return m_epoch; }
-  void epoch(Epoch* x) 
-    { m_epoch = x; }
+  LoadMap* loadMap() const
+    { return m_loadmap; }
+  void loadMap(LoadMap* x) 
+    { m_loadmap = x; }
 
   
   Prof::Struct::Tree* structure() const
@@ -157,20 +157,20 @@ public:
   static const int StructMetricIdFlg = 0;
 
 private:
-  // 1. annotate CCT::Tree nodes with associated Prof::Epoch::LM_id_t 
+  // 1. annotate CCT::Tree nodes with associated Prof::LoadMap::LM_id_t 
   // 2. normalize CCT::Tree node IPs (unrelocate)
   void 
   cct_canonicalize();
 
   void 
-  cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg);
+  cct_applyLoadMapMergeChanges(std::vector<LoadMap::MergeChange>& mergeChg);
  
 private:
   std::string m_name;
 
   CCT::Tree* m_cct;
   SampledMetricDescVec m_metricdesc;
-  Epoch* m_epoch;
+  LoadMap* m_loadmap;
   Prof::Struct::Tree* m_structure;
 };
 

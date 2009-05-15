@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_Prof_Epoch_hpp
-#define prof_juicy_Prof_Epoch_hpp
+#ifndef prof_juicy_Prof_LoadMap_hpp
+#define prof_juicy_Prof_LoadMap_hpp
 
 //************************* System Include Files ****************************
 
@@ -80,10 +80,10 @@
 namespace Prof {
 
 //****************************************************************************
-// Epoch
+// LoadMap
 //****************************************************************************
 
-class Epoch : public Unique {
+class LoadMap : public Unique {
 public:
 
   typedef int LM_id_t;
@@ -115,7 +115,7 @@ public:
     void size(size_t x) 
       { m_size = x; }
 
-    // isAvail: this Epoch::LM is active in the sense that the
+    // isAvail: this LoadMap::LM is active in the sense that the
     // associated load module is available and relocation information
     // is accurate.
     bool isAvail() const
@@ -132,7 +132,7 @@ public:
     void compute_relocAmt();
 
 
-    // isUsed: does this Epoch::LM have data in the CCT
+    // isUsed: does this LoadMap::LM have data in the CCT
     // tallent: FIXME: should not be located here
     bool isUsed() const { return m_isUsed; }
     void isUsed(bool x) { m_isUsed = x; }
@@ -148,7 +148,7 @@ public:
     void id(uint x)
       { m_id = x; }
 
-    friend class Epoch;
+    friend class LoadMap;
     
   private: 
     LM_id_t m_id;
@@ -185,11 +185,11 @@ public:
   typedef std::set<LM*, lt_LM_vma> LMSet;
   
 public: 
-  Epoch(const uint i = 16);
-  virtual ~Epoch();
+  LoadMap(const uint i = 16);
+  virtual ~LoadMap();
 
   // assumes ownership
-  void lm_insert(Epoch::LM* x);
+  void lm_insert(LoadMap::LM* x);
   
   // ------------------------------------------------------------
   // Access by id
@@ -259,7 +259,7 @@ public:
   void compute_relocAmt();
 
 
-  // Given an Epoch y, merge y into x = 'this'.  Returns a vector of
+  // Given an LoadMap y, merge y into x = 'this'.  Returns a vector of
   // MergeChange describing changes that were made.  The vector
   // contains at most one MergeChange for each LM_id_t (old_id) in y.
 
@@ -269,7 +269,7 @@ public:
   };
 
   std::vector<MergeChange> 
-  merge(const Epoch& y);
+  merge(const LoadMap& y);
 
   // ------------------------------------------------------------
   // 
@@ -289,11 +289,11 @@ private:
 } // namespace Prof
 
 inline bool 
-operator<(const Prof::Epoch::LM x, const Prof::Epoch::LM y)
+operator<(const Prof::LoadMap::LM x, const Prof::LoadMap::LM y)
 {
   return (x.loadAddr() < y.loadAddr());
 }
 
 //***************************************************************************
 
-#endif /* prof_juicy_Prof_Epoch_hpp */
+#endif /* prof_juicy_Prof_LoadMap_hpp */

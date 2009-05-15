@@ -52,7 +52,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "Epoch.hpp"
+#include "LoadMap.hpp"
 
 #include <lib/binutils/LM.hpp>
 
@@ -66,16 +66,16 @@
 namespace Prof {
 
 
-Epoch::Epoch(uint sz)
+LoadMap::LoadMap(uint sz)
 {
   m_lm_byId.reserve(sz);
 }
 
 
-Epoch::~Epoch()
+LoadMap::~LoadMap()
 {
   for (uint i = 0; i < lm_size(); ++i) {
-    delete lm(i); // Epoch::LM*
+    delete lm(i); // LoadMap::LM*
   }
   m_lm_byId.clear();
   m_lm_byName.clear();
@@ -84,7 +84,7 @@ Epoch::~Epoch()
 
 
 void 
-Epoch::lm_insert(Epoch::LM* x) 
+LoadMap::lm_insert(LoadMap::LM* x) 
 { 
   // FIXME: combine load modules if adjacent
 
@@ -96,20 +96,20 @@ Epoch::lm_insert(Epoch::LM* x)
 
   std::pair<LMSet::iterator, bool> ret = m_lm_byVMA.insert(x);
   if (!ret.second) {
-    const Epoch::LM* y = *(ret.first);
+    const LoadMap::LM* y = *(ret.first);
     if (x->name() != y->name()) {
       // Possibly perform additional checking to see y can be folded into x
-      DIAG_WMsg(1, "New Epoch::LM '" << x->toString()
+      DIAG_WMsg(1, "New LoadMap::LM '" << x->toString()
 		<< "' conflicts with existing '" << y->toString() << "'");
     }
   }
 }
 
 
-std::pair<Epoch::LMSet_nm::iterator, Epoch::LMSet_nm::iterator>
-Epoch::lm_find(const std::string& nm) const
+std::pair<LoadMap::LMSet_nm::iterator, LoadMap::LMSet_nm::iterator>
+LoadMap::lm_find(const std::string& nm) const
 {
-  static Epoch::LM key;
+  static LoadMap::LM key;
   key.name(nm);
 
   std::pair<LMSet_nm::iterator, LMSet_nm::iterator> fnd = 
@@ -118,10 +118,10 @@ Epoch::lm_find(const std::string& nm) const
 }
 
 
-Epoch::LM* 
-Epoch::lm_find(VMA ip) const
+LoadMap::LM* 
+LoadMap::lm_find(VMA ip) const
 {
-  static Epoch::LM key;
+  static LoadMap::LM key;
 
   if (m_lm_byVMA.empty()) {
     return NULL;
@@ -142,7 +142,7 @@ Epoch::lm_find(VMA ip) const
 
 
 void 
-Epoch::compute_relocAmt()
+LoadMap::compute_relocAmt()
 {
   std::string errors;
 
@@ -161,20 +161,20 @@ Epoch::compute_relocAmt()
 }
 
 
-std::vector<Epoch::MergeChange> 
-Epoch::merge(const Epoch& y)
+std::vector<LoadMap::MergeChange> 
+LoadMap::merge(const LoadMap& y)
 {
   std::vector<MergeChange> mergeChg;
   
-  Epoch& x = *this;
+  LoadMap& x = *this;
 
   for (uint i = 0; i < y.lm_size(); ++i) { 
-    Epoch::LM* y_lm = y.lm(i);
+    LoadMap::LM* y_lm = y.lm(i);
     
-    std::pair<Epoch::LMSet_nm::iterator, Epoch::LMSet_nm::iterator> x_fnd = 
+    std::pair<LoadMap::LMSet_nm::iterator, LoadMap::LMSet_nm::iterator> x_fnd = 
       x.lm_find(y_lm->name());
 
-    Epoch::LM* x_lm = (x_fnd.first != x_fnd.second) ? *(x_fnd.first) : NULL;
+    LoadMap::LM* x_lm = (x_fnd.first != x_fnd.second) ? *(x_fnd.first) : NULL;
     bool is_x_lm_uniq = (x_lm && (x_fnd.first == --(x_fnd.second)));
 
     if (is_x_lm_uniq) { // y_lm matches exactly one x_lm
@@ -190,13 +190,13 @@ Epoch::merge(const Epoch& y)
       // y_lm matches zero or greater than one x_lm
 
       // Create x_lm for y_lm.  y_lm->id() is replaced by x_lm->id().
-      x_lm = new Epoch::LM(y_lm->name().c_str(), y_lm->loadAddr(), 
+      x_lm = new LoadMap::LM(y_lm->name().c_str(), y_lm->loadAddr(), 
 			   y_lm->size());
       lm_insert(x_lm);
       mergeChg.push_back(MergeChange(y_lm->id(), x_lm->id()));
     }
 
-    DIAG_Assert(x_lm->isAvail() == y_lm->isAvail(), "Epoch::merge: two Epoch::LM of the same name must both be (un)available: " << x_lm->name());
+    DIAG_Assert(x_lm->isAvail() == y_lm->isAvail(), "LoadMap::merge: two LoadMap::LM of the same name must both be (un)available: " << x_lm->name());
 
     x_lm->isUsedMrg(y_lm->isUsed());
   }
@@ -206,7 +206,7 @@ Epoch::merge(const Epoch& y)
 
 
 std::string
-Epoch::toString() const
+LoadMap::toString() const
 {
   std::ostringstream os;
   dump(os);
@@ -215,11 +215,11 @@ Epoch::toString() const
 
 
 void 
-Epoch::dump(std::ostream& os) const
+LoadMap::dump(std::ostream& os) const
 {
   std::string pre = "  ";
 
-  os << "{ Prof::Epoch\n";
+  os << "{ Prof::LoadMap\n";
   for (uint i = 0; i < lm_size(); ++i) {
     os << pre << i << " : ";
     lm(i)->dump(os);
@@ -237,7 +237,7 @@ Epoch::dump(std::ostream& os) const
 
 
 void 
-Epoch::ddump() const
+LoadMap::ddump() const
 {
   dump(std::cerr);
 }
@@ -245,7 +245,7 @@ Epoch::ddump() const
 
 //****************************************************************************
 
-Epoch::LM::LM(const std::string& name, VMA loadAddr, size_t size)
+LoadMap::LM::LM(const std::string& name, VMA loadAddr, size_t size)
   : m_id(LM_id_NULL), m_name(name), 
     m_loadAddr(loadAddr), m_size(size), 
     m_isAvail(true),
@@ -255,13 +255,13 @@ Epoch::LM::LM(const std::string& name, VMA loadAddr, size_t size)
 }
 
 
-Epoch::LM::~LM()
+LoadMap::LM::~LM()
 {
 }
 
 
 void 
-Epoch::LM::compute_relocAmt()
+LoadMap::LM::compute_relocAmt()
 {
   BinUtil::LM* lm = new BinUtil::LM();
   try {
@@ -279,7 +279,7 @@ Epoch::LM::compute_relocAmt()
 }
 
 std::string
-Epoch::LM::toString() const
+LoadMap::LM::toString() const
 {
   std::ostringstream os;
   dump(os);
@@ -287,7 +287,7 @@ Epoch::LM::toString() const
 }
 
 void 
-Epoch::LM::dump(std::ostream& os) const
+LoadMap::LM::dump(std::ostream& os) const
 { 
   using namespace std;
   os << "0x" << hex << m_loadAddr << dec 
@@ -298,7 +298,7 @@ Epoch::LM::dump(std::ostream& os) const
 
 
 void 
-Epoch::LM::ddump() const
+LoadMap::LM::ddump() const
 {
   dump(std::cerr);
 }

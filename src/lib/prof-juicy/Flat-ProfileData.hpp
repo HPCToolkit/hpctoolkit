@@ -185,7 +185,7 @@ private:
 //---------------------------------------------------------------------------
 // LM: represents flat profile information for a load module
 //
-// FIXME: should use Prof::Epoch
+// FIXME: should use Prof::LoadMap
 //---------------------------------------------------------------------------
 
 class LM {

@@ -150,7 +150,7 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
 // Cf. 'HPC_CSPROF format details' above.
 int
 hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,  
-                    epoch_table_t* epochtbl,
+                    epoch_table_t* loadmap_tbl,
 		    hpcfile_cb__alloc_fn_t alloc_fn,
 		    hpcfile_cb__free_fn_t free_fn)
 {
@@ -236,7 +236,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
 #if 0
   size_t sz;
-  // Read data chunks (except epoch)
+  // Read data chunks
   for (i = 0; i < fhdr.num_data-1; ++i) {
     // Read data tag
     sz = hpcio_fread_le4(&tag, fs);
@@ -292,26 +292,26 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 #endif
     
   // ----------------------------------------------------------
-  // 3. Epochs
+  // 3. LoadMaps
   // ----------------------------------------------------------
 
-  // read number of epochs
-  uint32_t num_epoch;
-  sz = hpcio_fread_le4(&num_epoch, fs);
-  if (sz != sizeof(num_epoch)) { 
+  // read number of loadmaps
+  uint32_t num_loadmap;
+  sz = hpcio_fread_le4(&num_loadmap, fs);
+  if (sz != sizeof(num_loadmap)) { 
     return HPCFILE_ERR; 
   }
 
-  // read epochs 
-  epochtbl->num_epoch = num_epoch; 
-  epochtbl->epoch_modlist = alloc_fn(num_epoch * sizeof(epoch_entry_t));
+  // read loadmaps 
+  loadmap_tbl->num_epoch = num_loadmap; 
+  loadmap_tbl->epoch_modlist = alloc_fn(num_loadmap * sizeof(epoch_entry_t));
 
-  for (int i = 0; i < num_epoch; ++i) {
+  for (int i = 0; i < num_loadmap; ++i) {
     uint32_t num_modules;
     hpcio_fread_le4(&num_modules, fs); 
 
-    epochtbl->epoch_modlist[i].num_loadmodule = num_modules; 
-    epochtbl->epoch_modlist[i].loadmodule = 
+    loadmap_tbl->epoch_modlist[i].num_loadmodule = num_modules; 
+    loadmap_tbl->epoch_modlist[i].loadmodule = 
       alloc_fn(num_modules * sizeof(ldmodule_t));
     
     for (int j = 0; j < num_modules; ++j) { 
@@ -321,11 +321,11 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 	free_fn(str.str);
 	return HPCFILE_ERR;
       }
-      epochtbl->epoch_modlist[i].loadmodule[j].name = str.str;
+      loadmap_tbl->epoch_modlist[i].loadmodule[j].name = str.str;
       hpcio_fread_le8(&vaddr, fs);
       hpcio_fread_le8(&mapaddr, fs); 
-      epochtbl->epoch_modlist[i].loadmodule[j].vaddr = vaddr;
-      epochtbl->epoch_modlist[i].loadmodule[j].mapaddr = mapaddr;
+      loadmap_tbl->epoch_modlist[i].loadmodule[j].vaddr = vaddr;
+      loadmap_tbl->epoch_modlist[i].loadmodule[j].mapaddr = mapaddr;
     }
   }
   
@@ -360,8 +360,8 @@ hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data)
 {
   int ret;
   // Read header and basic data
-  epoch_table_t epochtbl;
-  ret = hpcfile_csprof_read(infs, data, &epochtbl, 
+  epoch_table_t loadmap_tbl;
+  ret = hpcfile_csprof_read(infs, data, &loadmap_tbl, 
 			    (hpcfile_cb__alloc_fn_t)malloc,
 			    (hpcfile_cb__free_fn_t)free);
   if (ret != HPCFILE_OK) { 
@@ -376,14 +376,14 @@ hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data)
   // Print data
   hpcfile_csprof_data__fprint(data, outfs);
 
-  // Print epochs
-  for (int i = 0; i < epochtbl.num_epoch; ++i) {
-    // print an epoch
-    epoch_entry_t* epoch = & epochtbl.epoch_modlist[i];
-    fprintf(outfs, "{epoch %d:\n", i);
+  // Print loadmaps
+  for (int i = 0; i < loadmap_tbl.num_epoch; ++i) {
+    // print a loadmap
+    epoch_entry_t* loadmap = &loadmap_tbl.epoch_modlist[i];
+    fprintf(outfs, "{loadmap %d:\n", i);
 
-    for (int j = 0; j < epoch->num_loadmodule; ++j) {
-      ldmodule_t* lm = & epoch->loadmodule[j];
+    for (int j = 0; j < loadmap->num_loadmodule; ++j) {
+      ldmodule_t* lm = & loadmap->loadmodule[j];
 
       fprintf(outfs, "  lm %d: %s %"PRIx64" -> %"PRIx64"\n",
 	      j, lm->name, lm->vaddr, lm->mapaddr);
@@ -391,7 +391,7 @@ hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data)
     fprintf(outfs, "}\n");
   }
 
-  epoch_table__free_data(&epochtbl, (hpcfile_cb__free_fn_t)free);
+  epoch_table__free_data(&loadmap_tbl, (hpcfile_cb__free_fn_t)free);
 
   // Success! Note: We assume that it is possible for other data to
   // exist beyond this point in the stream; don't check for EOF.
@@ -559,12 +559,12 @@ void
 epoch_table__free_data(epoch_table_t* x, hpcfile_cb__free_fn_t free_fn)
 {
   for (int i = 0; i < x->num_epoch; ++i) {
-    epoch_entry_t* epoch = & x->epoch_modlist[i];
-    for (int j = 0; j < epoch->num_loadmodule; ++j) {
-      ldmodule_t* lm = & epoch->loadmodule[j];
+    epoch_entry_t* loadmap = & x->epoch_modlist[i];
+    for (int j = 0; j < loadmap->num_loadmodule; ++j) {
+      ldmodule_t* lm = & loadmap->loadmodule[j];
       free_fn(lm->name);
     }
-    free_fn(epoch->loadmodule);
+    free_fn(loadmap->loadmodule);
   }
   free_fn(x->epoch_modlist);
 }

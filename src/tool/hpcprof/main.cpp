@@ -88,7 +88,7 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 
 static void
 overlayStaticStructure(Prof::CallPath::Profile* prof, 
-		       Prof::Epoch::LM* epoch_lm,
+		       Prof::LoadMap::LM* loadmap_lm,
 		       Prof::Struct::LM* lmStrct);
 
 //****************************************************************************
@@ -149,24 +149,24 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
 
   try { 
-    Prof::Epoch* epoch = prof->epoch();
+    Prof::LoadMap* loadmap = prof->loadMap();
     Prof::Struct::Tree* structure = prof->structure();
     Prof::Struct::Root* rootStrct = structure->root();
 
-    for (uint i = 0; i < epoch->lm_size(); ++i) {
+    for (uint i = 0; i < loadmap->lm_size(); ++i) {
       // NOTE(tallent): This method will not iterate over all load modules if
       // two map to the same load address (such as may happen in a
       // scalability study)...
-      // Prof::Epoch::LMSet::iterator it = epoch->lm_begin(); it != epoch->lm_end(); ++it
-      Prof::Epoch::LM* epoch_lm = epoch->lm(i); // *it;
+      // Prof::LoadMap::LMSet::iterator it = loadmap->lm_begin(); it != loadmap->lm_end(); ++it
+      Prof::LoadMap::LM* loadmap_lm = loadmap->lm(i); // *it;
 
-      // tallent (FIXME): See note on Epoch::LM::isUsed()
+      // tallent (FIXME): See note on LoadMap::LM::isUsed()
       // FIXME: emit warning if not available, but process anyway
-      if (epoch_lm->isAvail() && epoch_lm->isUsed()) {
-	const string& lm_nm = epoch_lm->name();
+      if (loadmap_lm->isAvail() && loadmap_lm->isUsed()) {
+	const string& lm_nm = loadmap_lm->name();
 
 	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
-	overlayStaticStructure(prof, epoch_lm, lmStrct);
+	overlayStaticStructure(prof, loadmap_lm, lmStrct);
       }
     }
     
@@ -257,10 +257,10 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args)
 
 static void
 overlayStaticStructure(Prof::CallPath::Profile* prof, 
-		       Prof::Epoch::LM* epoch_lm,
+		       Prof::LoadMap::LM* loadmap_lm,
 		       Prof::Struct::LM* lmStrct)
 {
-  const string& lm_nm = epoch_lm->name();
+  const string& lm_nm = loadmap_lm->name();
   BinUtil::LM* lm = NULL;
 
   bool useStruct = (lmStrct->ChildCount() > 0);
@@ -282,7 +282,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof,
     }
   }
 
-  Analysis::CallPath::overlayStaticStructure(prof, epoch_lm, lmStrct, lm);
+  Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
 
   delete lm;
 }

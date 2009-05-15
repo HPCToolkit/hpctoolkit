@@ -91,7 +91,7 @@ am__objects_1 = libHPCprof_juicy_la-Metric-Mgr.lo \
 	libHPCprof_juicy_la-PerfMetric.lo \
 	libHPCprof_juicy_la-DerivedPerfMetrics.lo \
 	libHPCprof_juicy_la-Metric-AExpr.lo \
-	libHPCprof_juicy_la-Epoch.lo \
+	libHPCprof_juicy_la-LoadMap.lo \
 	libHPCprof_juicy_la-Struct-Tree.lo \
 	libHPCprof_juicy_la-Struct-TreeIterator.lo \
 	libHPCprof_juicy_la-CCT-Tree.lo \
@@ -345,7 +345,7 @@ MYSOURCES = \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
 	MetricDesc.hpp \
 	\
-	Epoch.hpp Epoch.cpp \
+	LoadMap.hpp LoadMap.cpp \
 	\
 	Struct-Tree.hpp Struct-Tree.cpp \
 	Struct-TreeIterator.hpp Struct-TreeIterator.cpp \
@@ -439,8 +439,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CCT-TreeIterator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CallPath-Profile.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-DerivedPerfMetrics.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Epoch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Flat-ProfileData.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-LoadMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-AExpr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-Mgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-PerfMetric.Plo@am__quote@
@@ -496,12 +496,12 @@ libHPCprof_juicy_la-Metric-AExpr.lo: Metric-AExpr.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Metric-AExpr.lo `test -f 'Metric-AExpr.cpp' || echo '$(srcdir)/'`Metric-AExpr.cpp
 
-libHPCprof_juicy_la-Epoch.lo: Epoch.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Epoch.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Epoch.Tpo -c -o libHPCprof_juicy_la-Epoch.lo `test -f 'Epoch.cpp' || echo '$(srcdir)/'`Epoch.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-Epoch.Tpo $(DEPDIR)/libHPCprof_juicy_la-Epoch.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Epoch.cpp' object='libHPCprof_juicy_la-Epoch.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_juicy_la-LoadMap.lo: LoadMap.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-LoadMap.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-LoadMap.Tpo -c -o libHPCprof_juicy_la-LoadMap.lo `test -f 'LoadMap.cpp' || echo '$(srcdir)/'`LoadMap.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-LoadMap.Tpo $(DEPDIR)/libHPCprof_juicy_la-LoadMap.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='LoadMap.cpp' object='libHPCprof_juicy_la-LoadMap.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Epoch.lo `test -f 'Epoch.cpp' || echo '$(srcdir)/'`Epoch.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-LoadMap.lo `test -f 'LoadMap.cpp' || echo '$(srcdir)/'`LoadMap.cpp
 
 libHPCprof_juicy_la-Struct-Tree.lo: Struct-Tree.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Struct-Tree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Struct-Tree.Tpo -c -o libHPCprof_juicy_la-Struct-Tree.lo `test -f 'Struct-Tree.cpp' || echo '$(srcdir)/'`Struct-Tree.cpp

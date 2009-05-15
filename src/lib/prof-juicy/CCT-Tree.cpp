@@ -491,7 +491,7 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
 
 ANode* 
 ANode::findDynChild(lush_assoc_info_t as_info, 
-		    Epoch::LM_id_t lm_id, VMA ip, lush_lip_t* lip)
+		    LoadMap::LM_id_t lm_id, VMA ip, lush_lip_t* lip)
 {
   for (ANodeChildIterator it(this); it.Current(); ++it) {
     ANode* child = it.CurNode();
