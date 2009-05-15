@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <assert.h>
 #include "thread_data.h"
 
 #include "handling_sample.h"

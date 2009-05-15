@@ -25,7 +25,7 @@
 
 #include "lush-support-rt.h"
 
-#include <general.h>
+//#include <general.h>
 #include <state.h>
 
 //*************************** Forward Declarations **************************

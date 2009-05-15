@@ -9,13 +9,14 @@
 
 #include "env.h"
 #include "state.h"
-#include "general.h"
 #include "csproflib_private.h"
 #include "mem.h"
 #include "epoch.h"
 #include "name.h"
 #include "thread_data.h"
 #include "pmsg.h"
+#include "csprof_misc_fn_stat.h"
+#include "monitor.h"
 
 
 /* non-threaded profilers can have a single profiling state...
@@ -45,7 +46,7 @@ static state_t_setter *_set_state_internal       = &_set_static_state;
 // get state from thread specific data
 static csprof_state_t *_get_threaded_state(void)
 {
-  MSG(1,"thread asking for state %p",pthread_getspecific(prof_data_key));
+  TMSG(THREAD,"thread asking for state %p",pthread_getspecific(prof_data_key));
   return pthread_getspecific(prof_data_key);
 }
 
@@ -94,16 +95,14 @@ void csprof_set_state(csprof_state_t *state)
   TD_GET(state) = state;
 }
 
-int csprof_state_init(csprof_state_t *x)
+int
+csprof_state_init(csprof_state_t *x)
 {
   /* ia64 Linux has this function return a `long int', which is a 64-bit
      integer.  Tru64 Unix returns an `int'.  it probably won't hurt us
      if we get truncated on ia64, right? */
 
   memset(x, 0, sizeof(*x));
-
-  x->pstate.pid = 0;    // FIXME: OBSOLETE
-  x->pstate.hostid = 0; // FIXME: OBSOLETE
 
   return CSPROF_OK;
 }
@@ -159,7 +158,7 @@ csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
   n = csprof_csdata_insert_backtrace(&state->csdata, state->treenode,
 				     metric_id, path_beg, path_end, increment);
 
-  DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "Treenode is %p", n);
+  TMSG(CCT, "Treenode is %p", n);
   
   state->treenode = n;
   return n;
@@ -178,7 +177,8 @@ csprof_frame_t * csprof_state_expand_buffer(csprof_state_t *state, csprof_frame_
   csprof_frame_t *newbt = csprof_malloc(newsz*sizeof(csprof_frame_t));
 
   if(state->bufstk > state->bufend) {
-    DIE("Invariant bufstk > bufend violated", __FILE__, __LINE__);
+    EMSG("Invariant bufstk > bufend violated");
+    monitor_real_abort();
   }
 
   /* copy frames from old to new */

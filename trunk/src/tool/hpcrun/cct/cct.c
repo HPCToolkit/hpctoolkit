@@ -33,7 +33,6 @@
 //*************************** User Include Files ****************************
 
 #include "cct.h"
-#include "general.h"
 #include "csproflib_private.h"
 #include "mem.h"
 #include "list.h"
@@ -41,6 +40,7 @@
 #include "pmsg.h"
 
 #include "hpcfile_cstree.h"
+#include "csprof_misc_fn_stat.h"
 
 //*************************** Forward Declarations **************************
 
@@ -186,6 +186,7 @@ csprof_cct_node__find_child(csprof_cct_node_t* x,
 int
 csprof_cct__init(csprof_cct_t* x)
 {
+  TMSG(CCT,"Init a CCT");
   memset(x, 0, sizeof(*x));
   x->next_cpid = 1;        // valid call path ids are > 0
 
@@ -238,7 +239,7 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 #define csprof_MY_ADVANCE_PATH_FRAME(x)   (x)--
 #define csprof_MY_IS_PATH_FRAME_AT_END(x) ((x) < path_end)
 
-  MSG(1,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp", x, treenode,
+  TMSG(CCT,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp", x, treenode,
       path_beg, path_end);
 
   csprof_frame_t* frm = path_beg; // current frame 
@@ -255,24 +256,19 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
     tn = x->tree_root;
     x->num_nodes = 1;
 
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
-	       frm->ip, frm->sp);
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx | sp %#lx",
-	       tn->ip, tn->sp);
+    TMSG(CCT, "beg ip %#lx | sp %#lx", frm->ip, frm->sp);
+    TMSG(CCT, "root ip %#lx | sp %#lx", tn->ip, tn->sp);
 
     csprof_MY_ADVANCE_PATH_FRAME(frm);
 
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "nxt beg ip %#lx | sp %#lx",
-	       frm->ip, frm->sp);
+    TMSG(CCT, "nxt beg ip %#lx | sp %#lx", frm->ip, frm->sp);
   }
 
   if (tn == NULL) {
     tn = x->tree_root;
 
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx | sp %#lx",
-	       tn->ip, tn->sp);
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
-	       frm->ip, frm->sp);
+    TMSG(CCT, "(NULL) root ip %#lx | sp %#lx", tn->ip, tn->sp);
+    TMSG(CCT, "beg ip %#lx | sp %#lx", frm->ip, frm->sp);
 
     // tallent: what is this for?
     /* we don't want the tree root calling itself */
@@ -281,12 +277,11 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 	&& frm->sp == tn->sp
 #endif
 	) {
-      MSG(1,"beg ip == tn ip = %lx",tn->ip);
+      TMSG(CCT,"beg ip == tn ip = %lx", tn->ip);
       csprof_MY_ADVANCE_PATH_FRAME(frm);
     }
 
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
-	       frm->ip, frm->sp);
+    TMSG(CCT, "beg ip %#lx | sp %#lx", frm->ip, frm->sp);
   }
 
   while (1) {
@@ -295,14 +290,14 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
     }
 
     // Attempt to find a child 'c' corresponding to 'frm'
-    MSG(1,"finding child in tree w ip = %lx", frm->ip);
+    TMSG(CCT,"finding child in tree w ip = %lx", frm->ip);
 
     csprof_cct_node_t *c;
     c = csprof_cct_node__find_child(tn, frm->as_info, frm->ip, frm->lip, 
 				    frm->sp);
     if (c) {
       // child exists; recur
-      MSG(1,"found child");
+      TMSG(CCT,"found child");
       tn = c;
 
       // If as_frm is 1-to-1 and as_c is not, update the latter
@@ -316,10 +311,10 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
     }
     else {
       // no such child; insert new tail
-      MSG(1,"No child found, inserting new tail");
+      TMSG(CCT,"No child found, inserting new tail");
       
       while (!csprof_MY_IS_PATH_FRAME_AT_END(frm)) {
-	MSG(1,"create node w ip = %lx",frm->ip);
+	TMSG(CCT,"create node w ip = %lx",frm->ip);
 	c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, frm->sp, x);
 	csprof_cct_node__parent_insert(c, tn);
 	x->num_nodes++;
@@ -330,8 +325,7 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
     }
   }
 
-  DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION,
-	     "Inserted in %#lx for count %d", x, x->num_nodes);
+  TMSG(CCT, "Inserted in %#lx for count %d", x, x->num_nodes);
 
   cct_metric_data_increment(metric_id, &tn->metrics[metric_id], increment);
   return tn;

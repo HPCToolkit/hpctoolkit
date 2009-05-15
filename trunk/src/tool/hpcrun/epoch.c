@@ -38,7 +38,6 @@
 #include "mem.h"
 #include "pmsg.h"
 #include "csprof_csdata.h"
-#include "general.h"
 #include "fnbounds_interface.h"
 #include "hpcfile_general.h"
 #include "sample_event.h"
@@ -164,7 +163,7 @@ csprof_write_epoch(csprof_epoch_t *epoch, FILE *fs)
   module_runner = epoch->loaded_modules;
 
   while(module_runner != NULL) {
-    MSG(CSPROF_MSG_DATAFILE, "Writing module %s", module_runner->module_name);
+    TMSG(EPOCH, "Writing module %s", module_runner->module_name);
     csprof_write_epoch_module(module_runner, fs);
 
     module_runner = module_runner->next;
@@ -201,7 +200,7 @@ csprof_write_all_epochs(FILE *fs)
   runner = current_epoch;
 
   while(runner != NULL) {
-    MSG(CSPROF_MSG_DATAFILE, "Writing epoch %d", runner->id);
+    TMSG(EPOCH, "Writing epoch %d", runner->id);
     csprof_write_epoch(runner, fs);
 
     runner = runner->next;
@@ -241,7 +240,7 @@ csprof_check_for_new_epoch(csprof_state_t *state)
     TMSG(MALLOC," NOTYET check for new epoch");
     csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
 
-    MSG(CSPROF_MSG_EPOCH, "Creating new epoch...");
+    TMSG(EPOCH, "Creating new epoch...");
 
     /* we don't have to go through the usual csprof_state_{init,alloc}
        business here because most of the stuff we want is already

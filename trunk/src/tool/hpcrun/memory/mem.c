@@ -18,6 +18,9 @@
 #include "pmsg.h"
 #include "sample_event.h"
 #include "thread_data.h"
+#include "csprof_misc_fn_stat.h"
+#include "monitor.h"
+#include "vptr_add.h"
 
 #include "mem_const.h"
 
@@ -59,7 +62,8 @@ csprof_mem_store__str(csprof_mem_store_t st)
     case CSPROF_MEM_STORE:    return "general";
     case CSPROF_MEM_STORETMP: return "temp";
     default:
-      DIE("programming error", __FILE__, __LINE__);
+      EMSG("csprof_mem_store__str programming error");
+      monitor_real_abort();
       return "";
   }
 }
@@ -124,7 +128,10 @@ csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
   csprof_mmap_info__init(mminfo);
   
   if(allocinf->mmap == NULL) {
-    if(*store != NULL) { DIE("programming error", __FILE__, __LINE__); }
+    if(*store != NULL) {
+      EMSG("csprof_mem__grow programming error: allocinf label failure");
+      monitor_real_abort();
+    }
     allocinf->mmap = mminfo;
     *store = mminfo;
   } else {
@@ -170,7 +177,6 @@ csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp)
     return CSPROF_ERR;
   }
   
-  // MSG(1,"mem init setting status to INIT");
   x->status = CSPROF_MEM_STATUS_INIT;
   return CSPROF_OK;
 }
@@ -189,13 +195,13 @@ csprof_mem__alloc(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
   switch (st) {
     case CSPROF_MEM_STORE:    allocinf = &(x->allocinf); break;
     case CSPROF_MEM_STORETMP: allocinf = &(x->allocinf_tmp); break;
-    default: DIE("programming error", __FILE__, __LINE__);
+    default: EMSG("csprof_mem__alloc programming error"); monitor_real_abort();
   }
 
   TMSG(MEM__ALLOC,"Mem alloc requesting %ld",sz);
   // Sanity check
   if(sz <= 0) { return NULL; }
-  if(!allocinf->mmap) { DIE("programming error", __FILE__, __LINE__); }
+  if(!allocinf->mmap) { EMSG("csprof_mem__alloc programming error: allocinf label"); monitor_real_abort(); }
 
   // Check for space
   m = VPTR_ADD(allocinf->next, sz);
@@ -229,13 +235,13 @@ csprof_mem__free(csprof_mem_t *x, void* ptr, size_t sz, csprof_mem_store_t st)
   switch (st) {
     case CSPROF_MEM_STORE:    allocinf = &(x->allocinf); break;
     case CSPROF_MEM_STORETMP: allocinf = &(x->allocinf_tmp); break;
-    default: DIE("programming error", __FILE__, __LINE__);
+    default: EMSG("csprof_mem__free programming error: pointer setup"); monitor_real_abort();
   }
 
   // Sanity check
   if(!ptr) { return CSPROF_OK; }
   if(sz <= 0) { return CSPROF_OK; }
-  if(!allocinf->mmap) { DIE("programming error", __FILE__, __LINE__); }
+  if(!allocinf->mmap) { EMSG("csprof_mem__free programming error: allocinf"); monitor_real_abort();}
 
   // Check for space
   m = VPTR_ADD(allocinf->next, -sz);
@@ -258,7 +264,7 @@ csprof_mem__is_enabled(csprof_mem_t *x, csprof_mem_store_t st)
     case CSPROF_MEM_STORE:    return (x->store) ? 1 : 0;
     case CSPROF_MEM_STORETMP: return (x->store_tmp) ? 1 : 0;
     default:
-      DIE("programming error", __FILE__, __LINE__);
+      EMSG("programming error: csprof_mem__is_enabled");
       return -1;
   }
 }

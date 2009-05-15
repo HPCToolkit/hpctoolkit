@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <time.h>
 #include <sys/time.h>           /* setitimer() */
 #include <ucontext.h>           /* struct ucontext */
 #include <assert.h>

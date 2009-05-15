@@ -26,7 +26,6 @@
 
 #include "env.h"
 #include "files.h"
-#include "general.h"
 #include "name.h"
 #include "epoch.h"
 #include "structs.h"
@@ -138,7 +137,7 @@ monitor_init_process(int *argc, char **argv, void *data)
   files_set_directory();
 
   pmsg_init();
-  NMSG(PROCESS,"init");
+  TMSG(PROCESS,"init");
 
   csprof_init_internal();
   if (ENABLED(TST)){

@@ -10,7 +10,7 @@
 //*************************** User Include Files ****************************
 
 #include "structs.h"
-#include "general.h"
+#include "pmsg.h"
 
 //*************************** Forward Declarations **************************
 
@@ -25,14 +25,6 @@ typedef void state_t_setter(csprof_state_t *s);
 // ---------------------------------------------------------
 
 void csprof_set_state(csprof_state_t *);
-
-#if 0
-csprof_state_t *csprof_get_state(void);
-csprof_state_t *csprof_get_safe_state(void);
-#ifdef CSPROF_THREADS
-void state_threaded(void);
-#endif
-#endif
 
 /* initialize various parts of a state */
 int csprof_state_init(csprof_state_t *);
@@ -91,7 +83,7 @@ int csprof_state_free(csprof_state_t *);
 #define csprof_bt_ntop_ip(state) ((state->bufstk + 1)->ip)
 #define csprof_bt_ntop_sp(state) ((state->bufstk + 1)->sp)
 
-
+
 /* various flag values for csprof_state_t; pre-shifted for efficiency and
    to enable set/test/clear multiple flags in a single call */
 #define CSPROF_EXC_HANDLING (1 << 0)   /* true while exception processing */
@@ -125,7 +117,7 @@ csprof_state_flag_isset(csprof_state_t *state, unsigned int flag)
     unsigned int state_flags = state->flags;
 
     s1 = s1 + 1;
-    MSG(1,"state flag isset: %x",state_flags & flag);
+    TMSG(STATE,"state flag isset: %x",state_flags & flag);
     return state_flags & flag;
 }
 
@@ -140,7 +132,7 @@ csprof_state_flag_clear(csprof_state_t *state, unsigned int flag)
 {
     state->flags = state->flags & (~flag);
 }
-
+
 /* various macros to determine the state of the trampoline */
 /* we have several different conventions for what state->swizzle_patch does.
    it would probably be more helpful to separate them into distinct

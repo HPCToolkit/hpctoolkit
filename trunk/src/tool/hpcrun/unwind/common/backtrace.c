@@ -20,7 +20,6 @@
 
 #include "backtrace.h"
 #include "state.h"
-#include "general.h"
 #include "pmsg.h"
 #include "monitor.h"
 #include "sample_event.h"
@@ -157,8 +156,6 @@ hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
   if (backtrace_trolled){
     csprof_up_pmsg_count();
   }
-  // MSG(1,"BTIP------------");
-  // dump_backtrace(state,state->unwind);
   
   if (! ENABLED(NO_SAMPLE_FILTERING)) {
     if (hpcrun_filter_sample(unw_len, state->btbuf, state->unwind - 1)){

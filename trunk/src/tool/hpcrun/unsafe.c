@@ -180,7 +180,7 @@ csprof_addr_is_unsafe_in_table(void *addr, void **table_start,
 static inline int
 csprof_is_unsafe_library(void *addr)
 {
-    MSG(1,"calling is unsafe lib");
+    TMSG(PROCESS,"calling is unsafe lib");
   /***  MWF GIANT HACK for NOW  ***/
     return 0;
   /***  END HACK ***/
@@ -196,7 +196,7 @@ csprof_is_unsafe_library(void *addr)
 static int
 csprof_addr_is_unsafe(void *addr)
 {
-    MSG(1,"checking addr is unsafe: %lx",addr);
+    TMSG(PROCESS,"checking addr is unsafe: %lx",addr);
     return csprof_is_unsafe_library(addr);
 #if 0
         || csprof_addr_is_unsafe_in_table(addr, invalid_loaded_procedures_start,
@@ -220,7 +220,7 @@ csprof_context_is_unsafe(void *context)
     void *ra = ctx->uc_mcontext.sc_regs[26];
 
     s3 += 1;
-    MSG(1,"csprof context is unsafe called: pc = %lx, ra = %lx",pc,ra);
+    TMSG(PROCESS,"csprof context is unsafe called: pc = %lx, ra = %lx",pc,ra);
     return 0;
 
 #ifdef NO    

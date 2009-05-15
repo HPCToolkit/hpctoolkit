@@ -6,12 +6,12 @@
 #include <libunwind.h>
 #endif
 
-#include "general.h"
 #include "mem.h"
 #include "epoch.h"
 #include "metrics.h"
 #include "state.h"
 #include "pmsg.h"
+#include "monitor.h"
 
 #include "hpcfile_csprof.h"
 
@@ -29,13 +29,20 @@ csprof_get_max_metrics()
   return csprof_max_metrics;
 }
 
-int csprof_set_max_metrics(int max_metrics)
+int
+csprof_set_max_metrics(int max_metrics)
 {
+  TMSG(METRICS,"Set max metrics to %d", max_metrics);
   if(has_set_max_metrics) {
-    ERRMSG("Unable to set max_metrics multiple times", __FILE__, __LINE__);
+#if 0
+    EMSG("Unable to set max_metrics multiple times");
+    return -1;
+#endif
+    TMSG(METRICS,"Set max metrics called AGAIN with %d", max_metrics);
     return -1;
   }
   else {
+    TMSG(METRICS,"Set 'max_set' flag. Initialize metric data");
     has_set_max_metrics = 1;
     csprof_max_metrics = max_metrics;
     hpcfile_csprof_data__init(&metric_data);
@@ -64,7 +71,7 @@ int
 csprof_new_metric()
 {
   if(metric_data.num_metrics >= csprof_max_metrics) {
-    ERRMSG("Unable to allocate any more metrics", __FILE__, __LINE__);
+    EMSG("Unable to allocate any more metrics");
     return -1;
   }
   else {
@@ -80,11 +87,11 @@ csprof_set_metric_info_and_period(int metric_id, char *name,
 {
   TMSG(METRICS,"id = %d, name = %s, flags = %lx, period = %d",metric_id,name,flags,period);
   if(metric_id >= metric_data.num_metrics) {
-    ERRMSG("Metric id `%d' is not a defined metric",
-           __FILE__, __LINE__, metric_id);
+    EMSG("Metric id `%d' is not a defined metric", metric_id);
   }
   if(name == NULL) {
-    DIE("Must supply a name for metric `%d'", __FILE__, __LINE__, metric_id);
+    EMSG("Must supply a name for metric `%d'", metric_id);
+    monitor_real_abort();
   }
   { 
     hpcfile_csprof_metric_t *metric = &metric_data.metrics[metric_id];
