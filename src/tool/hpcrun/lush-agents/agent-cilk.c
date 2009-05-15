@@ -33,8 +33,7 @@
 
 #include "agent-cilk.h"
 
-#include <general.h> // FIXME: for MSG -- but should not include
-#include <pmsg.h>
+#include <messages/pmsg.h>
 
 //*************************** Forward Declarations **************************
 
@@ -230,11 +229,11 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
 	}
 	break;
-      default: fprintf(stderr, "FIXME: default case (assert)\n");
+      default: EEMSG("FIXME: default case (assert)\n");
     }
   }
   else {
-    fprintf(stderr, "FIXME: Unknown segment! (assert)\n");
+    EEMSG("FIXME: Unknown segment! (assert)\n");
   }
 
 
@@ -386,7 +385,7 @@ init_lcursor(lush_cursor_t* cursor)
     csr->u.cilk_closure = cactus_stack;
   }
   else if (aid_prev != MY_lush_aid) {
-    fprintf(stderr, "FIXME: HOW TO HANDLE MULTIPLE AGENTS?\n");
+    EEMSG("FIXME: HOW TO HANDLE MULTIPLE AGENTS?\n");
   }
 
   // -------------------------------------------------------
@@ -434,18 +433,18 @@ classify_by_unw_segment(cilk_cursor_t* csr)
       }
     }
     else {
-      fprintf(stderr, "FIXME: (assert): neither cilkrt nor user\n");
+      EEMSG("FIXME: (assert): neither cilkrt nor user\n");
     }
   }
   else if (unw_ty_is_master(csr->u.ty)) {
     cur_seg = UnwSeg_CilkSched;
     if ( !(is_user || is_cilkrt) ) {
       // is_user may be true when executing main
-      fprintf(stderr, "FIXME: Unknown segment for master (assert)\n"); 
+      EEMSG("FIXME: Unknown segment for master (assert)\n"); 
     }
   }
   else {
-    fprintf(stderr, "FIXME: Unknown thread type! (assert)\n");
+    EEMSG("FIXME: Unknown thread type! (assert)\n");
   }
 
   return cur_seg;
