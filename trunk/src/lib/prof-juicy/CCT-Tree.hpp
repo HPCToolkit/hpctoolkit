@@ -65,7 +65,7 @@
 
 #include "Struct-Tree.hpp"
 #include "MetricDesc.hpp"
-#include "Epoch.hpp"
+#include "LoadMap.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 
@@ -333,7 +333,7 @@ public:
 
   ANode* 
   findDynChild(lush_assoc_info_t as_info, 
-	       Epoch::LM_id_t lm_id, VMA ip, lush_lip_t* lip);
+	       LoadMap::LM_id_t lm_id, VMA ip, lush_lip_t* lip);
 
 
   // merge y into 'this'
@@ -405,7 +405,7 @@ public:
 	   uint32_t cpid, const SampledMetricDescVec* metricdesc)
     : ANode(type, _parent, strct),
       m_as_info(lush_assoc_info_NULL), 
-      m_lmId(Epoch::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL), m_cpid(cpid),
+      m_lmId(LoadMap::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL), m_cpid(cpid),
       m_metricdesc(metricdesc)
     { }
 
@@ -415,7 +415,7 @@ public:
 	   const SampledMetricDescVec* metricdesc)
     : ANode(type, _parent, strct),
       m_as_info(as_info), 
-      m_lmId(Epoch::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), m_cpid(cpid),
+      m_lmId(LoadMap::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), m_cpid(cpid),
       m_metricdesc(metricdesc)
     { }
 
@@ -426,7 +426,7 @@ public:
 	   std::vector<hpcfile_metric_data_t>& metrics)
     : ANode(type, _parent, strct),
       m_as_info(as_info), 
-      m_lmId(Epoch::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), m_cpid(cpid),
+      m_lmId(LoadMap::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), m_cpid(cpid),
       m_metricdesc(metricdesc), m_metrics(metrics) 
     { }
 
@@ -476,9 +476,9 @@ public:
   lush_assoc_t assoc() const 
   { return lush_assoc_info__get_assoc(m_as_info); }
 
-  Epoch::LM_id_t lm_id() const 
+  LoadMap::LM_id_t lm_id() const 
     { return m_lmId; }
-  void lm_id(Epoch::LM_id_t x)
+  void lm_id(LoadMap::LM_id_t x)
     { m_lmId = x; }
 
   virtual VMA ip() const 
@@ -633,7 +633,7 @@ public:
 private:
   lush_assoc_info_t m_as_info;
 
-  Epoch::LM_id_t m_lmId; // Epoch::LM id
+  LoadMap::LM_id_t m_lmId; // LoadMap::LM id
   VMA m_ip;       // instruction pointer for this node
   ushort m_opIdx; // index in the instruction [OBSOLETE]
 

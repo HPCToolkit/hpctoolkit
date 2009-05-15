@@ -105,7 +105,7 @@ Profile::Profile(uint numMetrics)
     m_metricdesc[i] = new SampledMetricDesc();
   }
   m_cct = new CCT::Tree(this);
-  m_epoch = NULL;
+  m_loadmap = NULL;
   m_structure = NULL;
 }
 
@@ -116,7 +116,7 @@ Profile::~Profile()
     delete m_metricdesc[i];
   }
   delete m_cct;
-  delete m_epoch;
+  delete m_loadmap;
   delete m_structure;
 }
 
@@ -136,11 +136,11 @@ Profile::merge(Profile& y)
   }
   
   // -------------------------------------------------------
-  // merge epochs
+  // merge loadmaps
   // -------------------------------------------------------
-  std::vector<Epoch::MergeChange> mergeChg = m_epoch->merge(*y.epoch());
-  y.cct_applyEpochMergeChanges(mergeChg);
-  // INVARIANT: y's cct now refers to x's epoch
+  std::vector<LoadMap::MergeChange> mergeChg = m_loadmap->merge(*y.loadMap());
+  y.cct_applyLoadMapMergeChanges(mergeChg);
+  // INVARIANT: y's cct now refers to x's loadmap
 
   // -------------------------------------------------------
   // merge cct
@@ -244,8 +244,8 @@ Profile::dump(std::ostream& os) const
 
   //m_metricdesc.dump(os);
 
-  if (m_epoch) {
-    m_epoch->dump(os);
+  if (m_loadmap) {
+    m_loadmap->dump(os);
   }
 
   if (m_cct) {
@@ -310,8 +310,8 @@ Profile::make(const char* fnm)
     DIAG_Throw(fnm << ": could not open");
   }
 
-  epoch_table_t epochtbl;
-  ret = hpcfile_csprof_read(fs, &metadata, &epochtbl, hpcfmt_alloc, 
+  epoch_table_t loadmap_tbl;
+  ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, hpcfmt_alloc, 
 			    hpcfmt_free);
   if (ret != HPCFILE_OK) {
     DIAG_Throw(fnm << ": error reading header (HPC_CSPROF)");
@@ -342,35 +342,35 @@ Profile::make(const char* fnm)
   prof->name("[Profile Name]"); 
   
   // ------------------------------------------------------------
-  // Epoch
+  // LoadMap
   // ------------------------------------------------------------
-  DIAG_WMsgIf(epochtbl.num_epoch > 1, fnm << ": only processing last epoch!");
-  const uint epoch_id  = (epochtbl.num_epoch - 1);
+  DIAG_WMsgIf(loadmap_tbl.num_epoch > 1, fnm << ": only processing last loadmap!");
+  const uint loadmap_id  = (loadmap_tbl.num_epoch - 1);
 
-  uint num_lm = epochtbl.epoch_modlist[epoch_id].num_loadmodule;
+  uint num_lm = loadmap_tbl.epoch_modlist[loadmap_id].num_loadmodule;
 
-  Epoch* epoch = new Epoch(num_lm);
+  LoadMap* loadmap = new LoadMap(num_lm);
 
   for (int i = num_lm - 1; i >= 0; --i) { 
-    string nm = epochtbl.epoch_modlist[epoch_id].loadmodule[i].name;
+    string nm = loadmap_tbl.epoch_modlist[loadmap_id].loadmodule[i].name;
     RealPathMgr::singleton().realpath(nm);
-    VMA loadAddr = epochtbl.epoch_modlist[epoch_id].loadmodule[i].mapaddr;
-    size_t sz = 0; //epochtbl.epoch_modlist[epoch_id].loadmodule[i].size;
+    VMA loadAddr = loadmap_tbl.epoch_modlist[loadmap_id].loadmodule[i].mapaddr;
+    size_t sz = 0; //loadmap_tbl.epoch_modlist[loadmap_id].loadmodule[i].size;
 
-    Epoch::LM* lm = new Epoch::LM(nm, loadAddr, sz);
-    epoch->lm_insert(lm);
+    LoadMap::LM* lm = new LoadMap::LM(nm, loadAddr, sz);
+    loadmap->lm_insert(lm);
   }
-  epoch_table__free_data(&epochtbl, hpcfmt_free);
+  epoch_table__free_data(&loadmap_tbl, hpcfmt_free);
 
-  DIAG_MsgIf(DBG, epoch->toString());
+  DIAG_MsgIf(DBG, loadmap->toString());
 
   try {
-    epoch->compute_relocAmt();
+    loadmap->compute_relocAmt();
   }
   catch (const Diagnostics::Exception& x) {
     DIAG_EMsg("While reading profile '" << fnm << "': Cannot fully process samples from unavailable load modules:\n" << x.what());
   }
-  prof->epoch(epoch);
+  prof->loadMap(loadmap);
 
   // ------------------------------------------------------------
   // Extract metrics
@@ -549,9 +549,9 @@ Profile::cct_canonicalize()
     CCT::ANode* n = it.CurNode();
 
     CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
-    if (n_dyn) { // n_dyn->lm_id() == Epoch::LM_id_NULL
+    if (n_dyn) { // n_dyn->lm_id() == LoadMap::LM_id_NULL
       VMA ip = n_dyn->CCT::ADynNode::ip();
-      Epoch::LM* lm = epoch()->lm_find(ip);
+      LoadMap::LM* lm = loadMap()->lm_find(ip);
       VMA ip_ur = ip - lm->relocAmt();
       DIAG_MsgIf(0, "cct_canonicalize: " << hex << ip << dec << " -> " << lm->id());
 
@@ -564,7 +564,7 @@ Profile::cct_canonicalize()
 
 
 void 
-Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
+Profile::cct_applyLoadMapMergeChanges(std::vector<LoadMap::MergeChange>& mergeChg)
 {
   CCT::ANode* root = cct()->root();
   
@@ -574,9 +574,9 @@ Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
     CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
     if (n_dyn) {
 
-      Epoch::LM_id_t y_lm_id = n_dyn->lm_id();
+      LoadMap::LM_id_t y_lm_id = n_dyn->lm_id();
       for (uint i = 0; i < mergeChg.size(); ++i) {
-	const Epoch::MergeChange& chg = mergeChg[i];
+	const LoadMap::MergeChange& chg = mergeChg[i];
 	if (chg.old_id == y_lm_id) {
 	  n_dyn->lm_id(chg.new_id);
 	  break;

@@ -68,7 +68,7 @@ MYSOURCES = \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
 	MetricDesc.hpp \
 	\
-	Epoch.hpp Epoch.cpp \
+	LoadMap.hpp LoadMap.cpp \
 	\
 	Struct-Tree.hpp Struct-Tree.cpp \
 	Struct-TreeIterator.hpp Struct-TreeIterator.cpp \

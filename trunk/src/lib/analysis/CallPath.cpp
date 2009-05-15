@@ -170,7 +170,7 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 
 static void 
 overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
-		       Prof::Epoch::LM* epoch_lm, 
+		       Prof::LoadMap::LM* loadmap_lm, 
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
 
 
@@ -179,19 +179,19 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 void
 Analysis::CallPath::
 overlayStaticStructure(Prof::CallPath::Profile* prof, 
-		       Prof::Epoch::LM* epoch_lm, 
+		       Prof::LoadMap::LM* loadmap_lm, 
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
   Prof::CCT::Tree* cct = prof->cct();
   if (!cct) { return; }
   
-  overlayStaticStructure(prof, cct->root(), epoch_lm, lmStrct, lm);
+  overlayStaticStructure(prof, cct->root(), loadmap_lm, lmStrct, lm);
 }
 
 
 static void 
 overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node, 
-		       Prof::Epoch::LM* epoch_lm, 
+		       Prof::LoadMap::LM* loadmap_lm, 
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
   // INVARIANT: The parent of 'node' has been fully processed and
@@ -212,7 +212,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
     // process Prof::CCT::ADynNode nodes
     // ---------------------------------------------------
     Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
-    if (n_dyn && (n_dyn->lm_id() == epoch_lm->id())) {
+    if (n_dyn && (n_dyn->lm_id() == loadmap_lm->id())) {
       VMA ip_ur = n_dyn->ip();
       DIAG_DevIf(50) {
 	Prof::CCT::Call* p = node->ancestorCall();
@@ -245,7 +245,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
     // recur 
     // ---------------------------------------------------
     if (!n->isLeaf()) {
-      overlayStaticStructure(prof, n, epoch_lm, lmStrct, lm);
+      overlayStaticStructure(prof, n, loadmap_lm, lmStrct, lm);
     }
   }
 }

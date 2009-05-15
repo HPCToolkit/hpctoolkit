@@ -76,9 +76,10 @@ namespace Analysis {
 
 namespace CallPath {
 
-  // lm is optional and may be NULL
+// lm is optional and may be NULL
 void 
-overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
+overlayStaticStructure(Prof::CallPath::Profile* prof, 
+		       Prof::LoadMap::LM* loadmap_lm,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
 
 void
