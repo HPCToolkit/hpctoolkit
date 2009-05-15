@@ -23,7 +23,8 @@ epoch = epoch-hdr metric-tbl loadmap cct
 
 ------------------------------------------------------------
 
-epoch-hdr = epoch-flags{8b}
+epoch-hdr = "EPOCH"
+            epoch-flags{8b}
             characteristic-rtn-addr-distance{4b}
             granularity{8b}
             [nv-pair]*
@@ -47,9 +48,9 @@ loadmap_entry = load_addr{8b} load_offset{8b} str flags{4b}
 cct = [cct-node]*
 cct-node = node-id{4b}                 (neg if node is a leaf)
            parent-id{4b}
-           lush-assoc{4b}
+           lush-assoc{4b}?
            ip{8b}
-           lush-lip
+           lush-lip?
            (metric-data)*
 
 ------------------------------------------------------------
@@ -83,10 +84,10 @@ Primitives (where X = hpcrun_fmt):
 All primitives have an associated structure, e.g.:
   X_hdr_t
 
-All primitives have three functions:
-  fread
-  fwrite
-  fprint
+All primitives have three functions, e.g.:
+  X_hdr_fread(X_hdr_t*, environment, FILE* fs, alloc)
+  X_hdr_fwrite(X_hdr_t*, environment, FILE* fs)
+  X_hdr_fprint(X_hdr_t*, FILE* fs)
 
 Notes:
   - last argument to fread operation will be a memory allocator function
