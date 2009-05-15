@@ -94,7 +94,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   hpcfile_csprof_data_t metadata;
   int ret;
 
-  FILE* fs = hpcfile_open_for_read(filenm);
+  FILE* fs = hpcio_open_r(filenm);
   if (!fs) { 
     DIAG_Throw(filenm << ": could not open");
   }
@@ -114,7 +114,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
     }
   }
 
-  hpcfile_close(fs);
+  hpcio_close(fs);
 }
 
 

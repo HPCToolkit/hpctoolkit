@@ -58,6 +58,7 @@ extern unsigned long monitor_gettid();
 #include "hpcrun.h"
 #include "hpcpapi.h" /* <papi.h>, etc. */
 #include "rtmap.h"
+
 #include <lib/prof-lean/hpcio.h>
 
 /**************************** Forward Declarations **************************/
@@ -1668,7 +1669,7 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
   if (opt_debug >= 1) { MSGx(stderr, "rtmap count: %d", rtmap->count); }
 
   /* <loadmodule_list> */
-  hpc_fwrite_le4(&(rtmap->count), fs);
+  hpcio_fwrite_le4(&(rtmap->count), fs);
   for (i = 0; i < rtmap->count; ++i) {
     write_module_profile(fs, &(rtmap->module[i]), profdesc, i);
   }
@@ -1694,7 +1695,7 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
 
   /* <loadmodule_name>, <loadmodule_loadoffset> */
   write_string(fs, mod->name);
-  hpc_fwrite_le8(&(mod->offset), fs);
+  hpcio_fwrite_le8(&(mod->offset), fs);
 
   /* <loadmodule_eventcount> */
   if (HPC_GET_SYSPROFS(profdesc)) { 
@@ -1705,7 +1706,7 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
     numPapiEv = HPC_GET_PAPIPROFS(profdesc)->size;
     numEv += numPapiEv; 
   }
-  hpc_fwrite_le4(&numEv, fs);
+  hpcio_fwrite_le4(&numEv, fs);
   
   /* Event data */
   /*   <event_x_name> <event_x_description> <event_x_period> */
@@ -1730,7 +1731,7 @@ write_event_hdr(FILE *fs, char* name, char* desc, uint64_t period)
   /* <event_x_name> <event_x_description> <event_x_period> */
   write_string(fs, name);
   write_string(fs, desc);
-  hpc_fwrite_le8(&period, fs);
+  hpcio_fwrite_le8(&period, fs);
 }
 
 
@@ -1774,7 +1775,7 @@ write_event_data(FILE *fs, char* ename, hpc_hist_bucket* histo,
   for (i = 0; i < ncounters; ++i) {
     if (histo[i] != 0) { count++; inz = i; }
   }
-  hpc_fwrite_le8(&count, fs);
+  hpcio_fwrite_le8(&count, fs);
   
   if (opt_debug >= 3) {
     MSGx(stderr, "  buffer (%p) for %s has %"PRIu64" of %"PRIu64" non-zero counters (last non-zero counter: %"PRIu64")", 
@@ -1786,10 +1787,10 @@ write_event_data(FILE *fs, char* ename, hpc_hist_bucket* histo,
   for (i = 0; i < ncounters; ++i) {
     if (histo[i] != 0) {
       uint32_t cnt = histo[i];
-      hpc_fwrite_le4(&cnt, fs);   /* count */
+      hpcio_fwrite_le4(&cnt, fs);   /* count */
 
       offset = i * bytesPerCodeBlk;
-      hpc_fwrite_le8(&offset, fs); /* offset (in bytes) from load addr */
+      hpcio_fwrite_le8(&offset, fs); /* offset (in bytes) from load addr */
 
       if (opt_debug >= 3) {
         MSGx(stderr, "  (cnt,offset)=(%d,%"PRIx64")", cnt, offset);
@@ -1804,7 +1805,7 @@ write_string(FILE *fs, char *str)
 {
   /* <string_length> <string_without_terminator> */
   uint len = strlen(str);
-  hpc_fwrite_le4(&len, fs);
+  hpcio_fwrite_le4(&len, fs);
   fwrite(str, 1, len, fs);
 }
 

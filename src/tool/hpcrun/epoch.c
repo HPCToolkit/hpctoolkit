@@ -147,12 +147,12 @@ csprof_write_epoch_module(csprof_epoch_module_t *module, FILE *fs)
   uint32_t namelen = strlen(module->module_name);
 
   /* write the string */
-  hpc_fwrite_le4(&namelen, fs);
+  hpcio_fwrite_le4(&namelen, fs);
   fwrite(module->module_name, sizeof(char), namelen, fs);
 
   /* write the appropriate addresses */
-  hpc_fwrite_le8((uint64_t*)&module->vaddr, fs);
-  hpc_fwrite_le8((uint64_t*)&module->mapaddr, fs);
+  hpcio_fwrite_le8((uint64_t*)&module->vaddr, fs);
+  hpcio_fwrite_le8((uint64_t*)&module->mapaddr, fs);
 }
 
 void
@@ -160,7 +160,7 @@ csprof_write_epoch(csprof_epoch_t *epoch, FILE *fs)
 {
   csprof_epoch_module_t *module_runner;
 
-  hpc_fwrite_le4(&epoch->num_modules, fs);
+  hpcio_fwrite_le4(&epoch->num_modules, fs);
 
   module_runner = epoch->loaded_modules;
 
@@ -197,7 +197,7 @@ csprof_write_all_epochs(FILE *fs)
   }
 
   /* indicate how many epochs there are to read */
-  hpc_fwrite_le4(&id_runner, fs);
+  hpcio_fwrite_le4(&id_runner, fs);
 
   runner = current_epoch;
 

@@ -1,4 +1,4 @@
-// -*-Mode: C;-*-
+// -*-Mode: C++;-*- // technically C99
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -118,23 +118,6 @@ void  hpcfile_cb__free(void* mem);
 #endif /* describe callbacks */
 
 //***************************************************************************
-
-// Open and close a file stream for use with the library's read/write
-// routines. 
-//
-// hpcfile_open_for_write, hpcfile_open_for_read: Opens the file
-// pointed to by 'fnm' and returns a file stream for buffered I/O.
-// For writing, if 'overwrite' is 0, it is an error for the file to
-// already exist; if 'overwrite' is 1 any existing file will be
-// overwritten.  For reading, it is an error if the file does not
-// exist.  For any of these errors, or other open errors, NULL is
-// returned; otherwise a non-null FILE pointer is returned.
-//
-// hpcfile_close: Close the file stream.  Returns HPCFILE_OK upon
-// success; HPCFILE_ERR on error.
-FILE* hpcfile_open_for_write(const char* fnm, int overwrite);
-FILE* hpcfile_open_for_read(const char* fnm);
-int   hpcfile_close(FILE* fs);
 
 //***************************************************************************
 //
