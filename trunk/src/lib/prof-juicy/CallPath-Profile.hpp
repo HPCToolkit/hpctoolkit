@@ -138,7 +138,7 @@ public:
   // output is not designed for parsing and any formatting is subject
   // to change.)  The tree data is thoroughly checked for errors.
   static void
-  cct_fread(FILE* infs, void* tree, int num_metrics, FILE* outfs);
+  cct_fread(FILE* infs, CCT::Tree* cct, int num_metrics, FILE* outfs);
 
 
   // -------------------------------------------------------
