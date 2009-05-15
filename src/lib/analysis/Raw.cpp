@@ -59,7 +59,7 @@ using std::string;
 #include "Raw.hpp"
 #include "Util.hpp"
 
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-juicy/CallPath-Profile.hpp>
 #include <lib/prof-juicy/Flat-ProfileData.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -108,9 +108,12 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   uint num_ccts = metadata.num_ccts;
 
   if (num_ccts > 0) {
-    ret = hpcfile_cstree_fprint(fs, num_metrics, stdout);
-    if (ret != HPCFILE_OK) { 
-      DIAG_Throw(filenm << ": error reading HPC_CSTREE.");
+    Prof::CCT::Tree cct(NULL);
+    try {
+      Prof::CallPath::Profile::cct_fread(fs, &cct, num_metrics, stdout);
+    }
+    catch (const Diagnostics::Exception& x) {
+      DIAG_Throw("error reading calling context tree: " << x.what());
     }
   }
 
