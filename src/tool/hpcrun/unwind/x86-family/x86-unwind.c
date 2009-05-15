@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #include <sys/types.h>
 #include <unistd.h> // for getpid
@@ -31,7 +32,6 @@
 #include <x86-decoder.h>
 
 #include "state.h"
-#include "general.h"
 #include "mem.h"
 #include "pmsg.h"
 #include "stack_troll.h"

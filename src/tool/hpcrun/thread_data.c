@@ -3,6 +3,7 @@
 //
 
 #include <stdlib.h>
+#include <assert.h>
 
 #include "pmsg.h"
 #include "mem.h"

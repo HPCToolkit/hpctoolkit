@@ -30,6 +30,7 @@
 
 #include "lush.h"
 #include "lush-backtrace.h"
+#include "minmax.h"
 
 #include <include/uint.h>
 
@@ -109,7 +110,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
     lush_agentid_t aid = lush_cursor_get_aid(&cursor);
     lush_assoc_t as = lush_cursor_get_assoc(&cursor);
 
-    DBGMSG_PUB(CSPROF_DBG_UNWINDING, "Chord: aid:%d assoc:%d", aid, as);
+    TMSG(LUNW, "Chord: aid:%d assoc:%d", aid, as);
   
     // FIXME: short circuit unwind if we hit the 'active return'
 
@@ -124,7 +125,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
       csprof_state_ensure_buffer_avail(state, state->unwind);
 
       unw_word_t ip = lush_cursor_get_ip(&cursor);
-      DBGMSG_PUB(CSPROF_DBG_UNWINDING, "IP:  %p", ip);
+      TMSG(LUNW, "IP:  %p", ip);
       state->unwind->ip = ip;
 
       pchord_len++;
@@ -141,7 +142,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
       csprof_state_ensure_buffer_avail(state, state->unwind);
 
       lush_lip_t* lip = lush_cursor_get_lip(&cursor); // ephemeral
-      DBGMSG_PUB(CSPROF_DBG_UNWINDING, "LIP: %p", *((void**)lip));
+      TMSG(LUNW, "LIP: %p", *((void**)lip));
       
       if (lush_assoc_is_a_to_1(as)) {
 	if (!lip_persistent) {

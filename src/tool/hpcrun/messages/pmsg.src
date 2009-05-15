@@ -8,6 +8,7 @@
  E(ITIMER_CTL),
  E(NONE_CTL),
  E(UNW),
+ E(LUNW), // LUSH unwind
  E(UITREE),
  E(UITREE_VERIFY),
  E(UITREE_LOOKUP),
@@ -32,6 +33,9 @@
  E(THREAD),
  E(PROCESS),
  E(EPOCH),
+ E(CCT),
+ E(UNSAFE),
+ E(STATE),
  E(HANDLING_SAMPLE),
  E(MEM),
  E(MEM2),

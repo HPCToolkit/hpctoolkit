@@ -1,6 +1,5 @@
 #ifndef LIBSTUBS_H
 #define LIBSTUBS_H
-#include "general.h"
 
 /* We need to get handles on "original" function pointers for several
    functions.  This file commonizes the necessary frobbing. */

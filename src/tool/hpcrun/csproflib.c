@@ -100,6 +100,7 @@
 #include "unwind.h"
 #include "fnbounds_interface.h"
 #include "splay-interval.h"
+#include "csprof_misc_fn_stat.h"
 
 #include <lush/lush.h>
 #include <lush/lush-backtrace.h>
@@ -163,8 +164,8 @@ csprof_init_internal(void)
     TMSG(MALLOC," -init_internal-: lush allocation");
     lush_agents = (lush_agent_pool_t*)csprof_malloc(sizeof(lush_agent_pool_t));
     lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
-    MSG(0xfeed, "***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
-	state, lush_agents);
+    EMSG("***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
+	 state, lush_agents);
   }
 
   lush_metrics = (lush_agents) ? 1 : 0;
@@ -224,7 +225,8 @@ csprof_thread_pre_create(void)
 
   int metric_id = 0; // FIXME: should be able to obtain index of first metric
   if ( !(metric_id < csprof_num_recorded_metrics()) ) {
-    DIE("Won't need this once the above is fixed", __FILE__, __LINE__);
+    EMSG("Won't need this once the above is fixed");
+    monitor_real_abort();
   }
 
   // insert into CCT as a placeholder
@@ -265,7 +267,6 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 
   csprof_state_t *state = TD_GET(state);
 
-  state->pstate.thrid = id; // local thread id in state
   state->csdata_ctxt = thr_ctxt;
 
   // start sampling sources
@@ -365,7 +366,7 @@ csprof_check_for_new_epoch(csprof_state_t *state)
     TMSG(MALLOC," -new_epoch-");
     csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
 
-    MSG(CSPROF_MSG_EPOCH, "Creating new epoch...");
+    TMSG(EPOCH, "Creating new epoch...");
 
     /* we don't have to go through the usual csprof_state_{init,alloc}
        business here because most of the stuff we want is already
@@ -409,8 +410,7 @@ void csprof_print_backtrace(csprof_state_t *state)
     csprof_cct_node_t *tn = state->treenode;
 
     while(state->bufend != frame) {
-        ERRMSG("Node: %#lx/%#lx, treenode: %#lx", __FILE__, __LINE__,
-               frame->ip, frame->sp, tn);
+        EMSG("Node: %#lx/%#lx, treenode: %#lx", frame->ip, frame->sp, tn);
         frame++;
         if(tn) tn = tn->parent;
     }

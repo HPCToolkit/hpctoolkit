@@ -1,7 +1,6 @@
 #include <sys/ucontext.h>
 
 #include "interface.h"
-#include "general.h"
 
 extern void *__libc_start_main;
 

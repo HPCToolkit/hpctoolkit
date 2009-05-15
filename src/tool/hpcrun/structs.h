@@ -20,27 +20,17 @@
 
 #define CSPROF_PATH_SZ (PATH_MAX+1) /* path size */
 
-/* not currently used */
-/* contents of the persistent state file for the profiler */
-typedef struct csprof_pstate_t { 
-    long int hostid;            /* host id of the machine FIXME */
-    pid_t pid;                  /* the process's pid */
-    pthread_t thrid;            /* the particular thread */
-    unsigned int ninit;         /* how many times the pid has been init'd */
-} csprof_pstate_t;
-
-typedef enum csprof_status_e {
-  CSPROF_STATUS_UNINIT = 0, /* lib has not been initialized at all */
-  CSPROF_STATUS_INIT,       /* lib has been initialized */
-  CSPROF_STATUS_FINI        /* lib has been finalized (after init) */
-} csprof_status_t;
-
+#if 0
+// moved to unused directory
+#include "structs-junk.h"
+#endif
 
 // ---------------------------------------------------------
 // profiling state of a single thread
 // ---------------------------------------------------------
 
 typedef struct csprof_state_s {
+
   /* information for recording function call returns; do not move this
      block, since `swizzle_return' must be the first member of the
      structure if we are doing backtracing */
@@ -80,8 +70,10 @@ typedef struct csprof_state_s {
      whether we think there was a tail call since the last signal */
   unsigned int flags;
 
+#if 0
   /* persistent state */
   csprof_pstate_t pstate;
+#endif
 
 #if CSPROF_NEED_PSTATE
   char pstate_fnm[CSPROF_PATH_SZ];
