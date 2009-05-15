@@ -56,6 +56,8 @@
 #include <iostream>
 #include <vector>
 
+#include <cstdio>
+
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
@@ -123,10 +125,21 @@ public:
   // WARNING: the merge may change/destroy y
   void merge(Profile& y);
 
+
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
-  static Profile* make(const char* fnm);
+  static Profile* 
+  make(const char* fnm);
+
+  // cct_fread: Reads calling tree nodes from the file stream 'fs' and
+  // constructs the tree.  If 'outfs' is non-null, a textual form of
+  // the data is echoed to 'outfs' for human inspection.  (This text
+  // output is not designed for parsing and any formatting is subject
+  // to change.)  The tree data is thoroughly checked for errors.
+  static void
+  cct_fread(FILE* infs, void* tree, int num_metrics, FILE* outfs);
+
 
   // -------------------------------------------------------
   // Dump contents for inspection

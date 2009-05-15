@@ -271,20 +271,12 @@ Profile::ddump() const
 //
 //***************************************************************************
 
-// ---------------------------------------------------------
-// read_cct() and helpers
-// ---------------------------------------------------------
-
 static void* cstree_create_node_CB(void* tree, 
 				   hpcfile_cstree_nodedata_t* data);
 static void  cstree_link_parent_CB(void* tree, void* node, void* parent);
 
-static void* hpcfile_alloc_CB(size_t sz);
-static void  hpcfile_free_CB(void* mem);
-
-void
-read_cct(FILE* infs, void* tree, int num_metrics, FILE* outfs);
-
+static void* hpcfmt_alloc(size_t sz);
+static void  hpcfmt_free(void* mem);
 
 static void 
 convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
@@ -321,8 +313,8 @@ Profile::make(const char* fnm)
   }
 
   epoch_table_t epochtbl;
-  ret = hpcfile_csprof_read(fs, &metadata, &epochtbl, hpcfile_alloc_CB, 
-			    hpcfile_free_CB);
+  ret = hpcfile_csprof_read(fs, &metadata, &epochtbl, hpcfmt_alloc, 
+			    hpcfmt_free);
   if (ret != HPCFILE_OK) {
     DIAG_Throw(fnm << ": error reading header (HPC_CSPROF)");
     //return NULL;
@@ -337,7 +329,7 @@ Profile::make(const char* fnm)
   CallPath::Profile* prof = new CallPath::Profile(num_metrics);
   if (num_ccts > 0) {
     try {
-      read_cct(fs, prof->cct(), num_metrics, NULL /*outfs*/);
+      cct_fread(fs, prof->cct(), num_metrics, NULL /*outfs*/);
     }
     catch (const Diagnostics::Exception& x) {
       delete prof;
@@ -370,7 +362,7 @@ Profile::make(const char* fnm)
     Epoch::LM* lm = new Epoch::LM(nm, loadAddr, sz);
     epoch->lm_insert(lm);
   }
-  epoch_table__free_data(&epochtbl, hpcfile_free_CB);
+  epoch_table__free_data(&epochtbl, hpcfmt_free);
 
   DIAG_MsgIf(DBG, epoch->toString());
 
@@ -396,10 +388,10 @@ Profile::make(const char* fnm)
   // Cleanup
   // ------------------------------------------------------------
   for (uint i = 0; i < num_metrics; i++) {
-    hpcfile_free_CB(metadata.metrics[i].metric_name);
+    hpcfmt_free(metadata.metrics[i].metric_name);
   }
-  hpcfile_free_CB(metadata.target);
-  hpcfile_free_CB(metadata.metrics);
+  hpcfmt_free(metadata.target);
+  hpcfmt_free(metadata.metrics);
 
 
   // ------------------------------------------------------------
@@ -415,70 +407,7 @@ Profile::make(const char* fnm)
 
 
 void
-Profile::cct_canonicalize()
-{
-  CCT::ANode* root = cct()->root();
-  
-  for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
-    CCT::ANode* n = it.CurNode();
-
-    CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
-    if (n_dyn) { // n_dyn->lm_id() == Epoch::LM_id_NULL
-      VMA ip = n_dyn->CCT::ADynNode::ip();
-      Epoch::LM* lm = epoch()->lm_find(ip);
-      VMA ip_ur = ip - lm->relocAmt();
-      DIAG_MsgIf(0, "cct_canonicalize: " << hex << ip << dec << " -> " << lm->id());
-
-      n_dyn->lm_id(lm->id());
-      n_dyn->ip(ip_ur, n_dyn->opIndex());
-      lm->isUsed(true); // FIXME:
-    }
-  }
-}
-
-
-void 
-Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
-{
-  CCT::ANode* root = cct()->root();
-  
-  for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
-    CCT::ANode* n = it.CurNode();
-    
-    CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
-    if (n_dyn) {
-
-      Epoch::LM_id_t y_lm_id = n_dyn->lm_id();
-      for (uint i = 0; i < mergeChg.size(); ++i) {
-	const Epoch::MergeChange& chg = mergeChg[i];
-	if (chg.old_id == y_lm_id) {
-	  n_dyn->lm_id(chg.new_id);
-	  break;
-	}
-      }
-
-    }
-  }
-}
-
-
-} // namespace CallPath
-
-} // namespace Prof
-
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-// read_cct: Reads calling tree nodes from the file stream 'fs' and either
-//   1) Given a non-NULL tree 'tree' constructs the tree
-//   2) Echos a textual form of the data to 'outfs' as text for human
-//      inspection.  This text output is not designed for parsing and any
-//      formatting is subject to change.
-// The tree data is thoroughly checked for errors.
-void
-read_cct(FILE* infs, void* tree, int num_metrics, FILE* outfs)
+Profile::cct_fread(FILE* infs, void* tree, int num_metrics, FILE* outfs)
 {
   typedef std::map<int, void*/*CCT::ANode**/> CCTIdToCCTNodeMap;
   typedef std::map<int, lush_lip_t*> LipIdToLipMap;
@@ -615,6 +544,65 @@ read_cct(FILE* infs, void* tree, int num_metrics, FILE* outfs)
 }
 
 
+void
+Profile::cct_canonicalize()
+{
+  CCT::ANode* root = cct()->root();
+  
+  for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
+    CCT::ANode* n = it.CurNode();
+
+    CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
+    if (n_dyn) { // n_dyn->lm_id() == Epoch::LM_id_NULL
+      VMA ip = n_dyn->CCT::ADynNode::ip();
+      Epoch::LM* lm = epoch()->lm_find(ip);
+      VMA ip_ur = ip - lm->relocAmt();
+      DIAG_MsgIf(0, "cct_canonicalize: " << hex << ip << dec << " -> " << lm->id());
+
+      n_dyn->lm_id(lm->id());
+      n_dyn->ip(ip_ur, n_dyn->opIndex());
+      lm->isUsed(true); // FIXME:
+    }
+  }
+}
+
+
+void 
+Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
+{
+  CCT::ANode* root = cct()->root();
+  
+  for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
+    CCT::ANode* n = it.CurNode();
+    
+    CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
+    if (n_dyn) {
+
+      Epoch::LM_id_t y_lm_id = n_dyn->lm_id();
+      for (uint i = 0; i < mergeChg.size(); ++i) {
+	const Epoch::MergeChange& chg = mergeChg[i];
+	if (chg.old_id == y_lm_id) {
+	  n_dyn->lm_id(chg.new_id);
+	  break;
+	}
+      }
+
+    }
+  }
+}
+
+
+} // namespace CallPath
+
+} // namespace Prof
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+
+
 static void* 
 cstree_create_node_CB(void* a_tree, hpcfile_cstree_nodedata_t* data)
 {
@@ -661,14 +649,14 @@ cstree_link_parent_CB(void* tree, void* node, void* parent)
 
 
 static void* 
-hpcfile_alloc_CB(size_t sz)
+hpcfmt_alloc(size_t sz)
 {
   return (new char[sz]);
 }
 
 
 static void  
-hpcfile_free_CB(void* mem)
+hpcfmt_free(void* mem)
 {
   delete[] (char*)mem;
 }
