@@ -35,12 +35,12 @@ epoch-hdr = epoch-flags{8b}
 ----------------------------------------
 
 metric-tbl = [metric-desc]*
-metric-desc = lstr metric-flags{64b} period{64b}
+metric-desc = str metric-flags{64b} period{64b}
 
 ----------------------------------------
 
 loadmap = [loadmap_entry]+
-loadmap_entry = load_addr{8b} load_offset{8b} lstr flags{4b}
+loadmap_entry = load_addr{8b} load_offset{8b} str flags{4b}
 
 ----------------------------------------
 
@@ -54,9 +54,9 @@ cct-node = node-id{4b}                 (neg if node is a leaf)
 
 ------------------------------------------------------------
 
-  nv-pair = lstr lstr
+  nv-pair = str str
 
-  lstr = [char]+
+  str = [char]+
 
 ==============================================================================
 
