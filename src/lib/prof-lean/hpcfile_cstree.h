@@ -59,9 +59,9 @@
 
 //*************************** User Include Files ****************************
 
-#include "hpcfile_general.h"
+#include "hpcfmt.h"
 
-#include <lib/prof-lean/lush/lush-support.h>
+#include "lush/lush-support.h"
 
 //*************************** Forward Declarations **************************
 

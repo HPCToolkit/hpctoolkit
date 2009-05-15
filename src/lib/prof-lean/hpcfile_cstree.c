@@ -66,7 +66,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "hpcfile_general.h"
+#include "hpcfmt.h"
 #include "hpcfile_cstree.h"
 
 //#include <lib/support/diagnostics.h>

@@ -39,10 +39,11 @@
 #include "pmsg.h"
 #include "csprof_csdata.h"
 #include "fnbounds_interface.h"
-#include "hpcfile_general.h"
 #include "sample_event.h"
 #include "spinlock.h"
 #include "state.h"
+
+#include <lib/prof-lean/hpcfmt.h>
 
 /* epochs are entirely separate from profiling state */
 static csprof_epoch_t *current_epoch = NULL;
@@ -130,6 +131,7 @@ csprof_epoch_new()
 
 /* writing epochs to disk */
 
+// FIXME: tallent: move to hpcrun-fmt
 #define HPCFILE_EPOCH_MAGIC_STR     "HPC_EPOCH"
 #define HPCFILE_EPOCH_MAGIC_STR_LEN  9 /* exclude '\0' */
 #define HPCFILE_EPOCH_ENDIAN 'l' /* 'l' for little, 'b' for big */

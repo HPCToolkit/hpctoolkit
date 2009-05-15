@@ -21,8 +21,8 @@
 //
 //***************************************************************************
 
-#ifndef HPCFILE_IO_H
-#define HPCFILE_IO_H
+#ifndef prof_lean_hpcio_h
+#define prof_lean_hpcio_h
 
 //************************* System Include Files ****************************
 
@@ -59,4 +59,4 @@ size_t hpc_fwrite_le8(uint64_t* val, FILE* fs);
 } /* extern "C" */
 #endif
 
-#endif
+#endif /* prof_lean_hpcio_h */
