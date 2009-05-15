@@ -52,8 +52,8 @@
 //
 //***************************************************************************
 
-#ifndef HPCFILE_GENERAL_H
-#define HPCFILE_GENERAL_H
+#ifndef prof_lean_hpcfmt_h
+#define prof_lean_hpcfmt_h
 
 //************************* System Include Files ****************************
 
@@ -63,7 +63,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "io.h"
+#include "hpcio.h"
 
 //*************************** Forward Declarations **************************
 
@@ -244,4 +244,4 @@ int hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs);
 } /* extern "C" */
 #endif
 
-#endif
+#endif /* prof_lean_hpcfmt_h */

@@ -64,8 +64,8 @@ include $(top_srcdir)/src/Makeinclude.config
 MYSOURCES = \
 	hpcfile_csprof.h hpcfile_csprof.c \
 	hpcfile_cstree.h hpcfile_cstree.c \
-	hpcfile_general.h hpcfile_general.c \
-	io.h io.c \
+	hpcfmt.h hpcfmt.c \
+	hpcio.h hpcio.c \
 	\
 	lush/lush-support.h lush/lush-support.c
 

@@ -61,7 +61,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "hpcfile_general.h"
+#include "hpcfmt.h"
 
 //*************************** Forward Declarations **************************
 

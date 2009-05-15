@@ -58,7 +58,7 @@ extern unsigned long monitor_gettid();
 #include "hpcrun.h"
 #include "hpcpapi.h" /* <papi.h>, etc. */
 #include "rtmap.h"
-#include <lib/prof-lean/io.h>
+#include <lib/prof-lean/hpcio.h>
 
 /**************************** Forward Declarations **************************/
 

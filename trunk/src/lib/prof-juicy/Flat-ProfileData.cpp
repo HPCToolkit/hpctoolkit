@@ -31,8 +31,8 @@
 
 #include "Flat-ProfileData.hpp"
 
-#include <lib/prof-lean/hpcfile_hpcrun.h>
-#include <lib/prof-lean/io.h>
+#include <lib/prof-lean/hpcrunflat-fmt.h>
+#include <lib/prof-lean/hpcio.h>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
