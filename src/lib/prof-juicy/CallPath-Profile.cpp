@@ -76,8 +76,7 @@ using std::string;
 #include <lib/xml/xml.hpp>
 using namespace xml;
 
-#include <lib/prof-lean/hpcfile_csprof.h>
-#include <lib/prof-lean/hpcfile_cstree.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.hpp>

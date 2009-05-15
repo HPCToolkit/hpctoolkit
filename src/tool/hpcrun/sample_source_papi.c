@@ -33,7 +33,6 @@
  *****************************************************************************/
 
 #include "csprof_options.h"
-#include "hpcfile_csprof.h"
 #include "metrics.h"
 #include "pmsg.h"
 #include "sample_source_common.h"
@@ -44,7 +43,10 @@
 #include "thread_data.h"
 #include "tokenize.h"
 
-#include "lush/lush-backtrace.h"
+#include <lush/lush-backtrace.h>
+
+#include <lib/prof-lean/hpcrun-fmt.h>
+
 
 
 /******************************************************************************

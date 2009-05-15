@@ -6,7 +6,7 @@
 
 #include <sys/types.h>
 
-#include "hpcfile_csprof.h"
+#include <lib/prof-lean/hpcrun-fmt.h>
 
 /* flags for metrics */
 

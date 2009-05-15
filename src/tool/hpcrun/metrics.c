@@ -13,7 +13,7 @@
 #include "pmsg.h"
 #include "monitor.h"
 
-#include "hpcfile_csprof.h"
+#include <lib/prof-lean/hpcrun-fmt.h>
 
 /* total number of metrics we can track simultaneously */
 static int csprof_max_metrics = 0;

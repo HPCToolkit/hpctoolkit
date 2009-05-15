@@ -69,8 +69,8 @@
 
 #include <lib/isa/ISATypes.hpp>
 
+#include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/lush/lush-support.h>
-#include <lib/prof-lean/hpcfile_cstree.h>
 
 #include <lib/xml/xml.hpp>
 

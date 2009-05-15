@@ -60,7 +60,7 @@
 
 #include <include/uint.h> 
 
-#include <lib/prof-lean/hpcfile_csprof.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
 
 //*************************** Forward Declarations **************************//
 
