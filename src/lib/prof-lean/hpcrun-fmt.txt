@@ -78,7 +78,7 @@ Abbreviation notes:
 
 Primitives (where X = hpcrun_fmt):
   X_hdr
-  X_epoch
+  X_epoch_hdr
   X_metric_tbl
   X_loadmap
   X_cct_node
@@ -89,11 +89,21 @@ All primitives have an associated structure, e.g.:
   X_hdr_t
 
 All primitives have three functions, e.g.:
-  X_hdr_fread(X_hdr_t*, environment, FILE* infs, alloc)
-  X_hdr_fwrite(X_hdr_t*, environment, FILE* outfs)
-  X_hdr_fprint(X_hdr_t*, FILE* outfs)
+  int X_hdr_fread(X_hdr_t*, environment, FILE* infs, alloc)
+  int X_hdr_fwrite(X_hdr_t*, environment, FILE* outfs)
+  int X_hdr_fprint(X_hdr_t*, FILE* outfs)
 
 Notes:
-  - last argument to fread operation will be a memory allocator function
-  - some primitives may need certain 'header' information.  For
+
+  - if a primitive object contains lists, the last argument to its
+    fread operation will be a memory allocator function.  If the
+    passed allocator is NULL, then fread assumes appropriate space has
+    already been allocated.  (This is useful for reading CCT nodes,
+    since there is no need to repeatedly allocate and free space for
+    the metrics.)
+
+  - if a primimive needs an allocator for fread, then there should be
+    a corresponding free function.
+
+  - some primitives may need certain environment information.  For
     example, reading a node requires knowing how many metrics there are.

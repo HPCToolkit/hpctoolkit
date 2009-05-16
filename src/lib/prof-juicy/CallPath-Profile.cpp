@@ -547,6 +547,12 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
 
 
     // Create node and link to parent
+
+    // tallent:FIXME: If this is an interior node that has non-zero
+    // metric counts, then split it and create two nodes.  Ensure the
+    // tree merge algorithm will merge interior nodes with interior
+    // nodes and leaf nodes with leaves.
+
     CCT::ANode* node = cct_makeNode(cct, &ndata.data);
     DIAG_DevMsgIf(0, "hpcrun_fmt_cct_fread: " << hex << node << " -> " << node_prnt <<dec);
 
