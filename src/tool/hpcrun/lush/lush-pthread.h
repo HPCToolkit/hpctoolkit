@@ -188,10 +188,6 @@ lush_pthr__thread_fini(lush_pthr_t* x)
 static inline void
 lush_pthr__lock_pre(lush_pthr_t* x)
 {
-  if ( !(x && x->ps_num_working) ) {
-    return; // protect against calls before thread initialization
-  }
-
   MY_atomic_decrement(x->ps_num_working);
   // x->ps_num_working_lock: same
 
@@ -209,10 +205,6 @@ lush_pthr__lock_pre(lush_pthr_t* x)
 static inline void
 lush_pthr__lock_post(lush_pthr_t* x)
 {
-  if ( !(x && x->ps_num_working) ) {
-    return; // protect against calls before thread initialization
-  }
-
   // (1) moving to lock; (2) moving from cond to lock
   bool do_addLock = (x->num_locks == 0 || lush_pthr__isDirectlyInCond(x));
 
@@ -235,9 +227,6 @@ lush_pthr__lock_post(lush_pthr_t* x)
 static inline void
 lush_pthr__trylock(lush_pthr_t* x, int result)
 {
-  if ( !(x && x->ps_num_working_lock) ) {
-    return; // protect against calls before thread initialization
-  }
   if (result != 0) {
     return; // lock was not acquired -- state remains the same
   }
@@ -264,10 +253,6 @@ lush_pthr__trylock(lush_pthr_t* x, int result)
 static inline void
 lush_pthr__unlock(lush_pthr_t* x)
 {
-  if ( !(x && x->ps_num_working_lock) ) {
-    return; // protect against calls before thread initialization
-  }
-
   bool wasDirectlyInCond = lush_pthr__isDirectlyInCond(x);
 
   x->is_working = true; // same
@@ -294,10 +279,6 @@ lush_pthr__unlock(lush_pthr_t* x)
 static inline void
 lush_pthr__condwait_pre(lush_pthr_t* x)
 {
-  if ( !(x && x->ps_num_working) ) {
-    return; // protect against calls before thread initialization
-  }
-
   bool wasDirectlyInCond = lush_pthr__isDirectlyInCond(x);
   int new_num_locks = (x->num_locks - 1);
   
@@ -321,10 +302,6 @@ lush_pthr__condwait_pre(lush_pthr_t* x)
 static inline void
 lush_pthr__condwait_post(lush_pthr_t* x)
 {
-  if ( !(x && x->ps_num_working) ) {
-    return; // protect against calls before thread initialization
-  }
-
   x->is_working = true;
   x->num_locks++;
   x->cond_lock = x->num_locks;
