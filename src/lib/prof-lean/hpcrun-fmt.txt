@@ -10,6 +10,8 @@ fmt-hdr [epoch]*
 
 fmt-hdr = fmt-magicno-version{16b} [nv-pair]*
 
+fmt-magicno-version = "HPCRUN____02.00l"
+
   Possible nv-pairs
   - program-name
   - process-id
@@ -23,11 +25,13 @@ epoch = epoch-hdr metric-tbl loadmap cct
 
 ------------------------------------------------------------
 
-epoch-hdr = "EPOCH"
+epoch-hdr = epoch-tag{8b}
             epoch-flags{8b}
             characteristic-rtn-addr-distance{4b}
             granularity{8b}
             [nv-pair]*
+
+epoch-tag = "EPOCH___"
 
   Possible flags: lush/non-lush
 
@@ -36,7 +40,7 @@ epoch-hdr = "EPOCH"
 ----------------------------------------
 
 metric-tbl = [metric-desc]*
-metric-desc = str metric-flags{64b} period{64b}
+metric-desc = str metric-flags{8b} period{8b}
 
 ----------------------------------------
 
@@ -85,9 +89,9 @@ All primitives have an associated structure, e.g.:
   X_hdr_t
 
 All primitives have three functions, e.g.:
-  X_hdr_fread(X_hdr_t*, environment, FILE* fs, alloc)
-  X_hdr_fwrite(X_hdr_t*, environment, FILE* fs)
-  X_hdr_fprint(X_hdr_t*, FILE* fs)
+  X_hdr_fread(X_hdr_t*, environment, FILE* infs, alloc)
+  X_hdr_fwrite(X_hdr_t*, environment, FILE* outfs)
+  X_hdr_fprint(X_hdr_t*, FILE* outfs)
 
 Notes:
   - last argument to fread operation will be a memory allocator function
