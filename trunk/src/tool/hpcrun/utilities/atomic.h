@@ -4,7 +4,10 @@
 #include "atomic-ops.h"
 
 /* FIXME: atomic_increment and atomic_decrement could be implemented more
-   efficiently on x86-64 and x86.  */
+   efficiently on x86-64 and x86. 
+
+   See lush/lush-pthread.h
+ */
 
 
 static inline long
