@@ -35,7 +35,13 @@
 #define LUSH_PTHR_DBG 0
 
 // FIXME: this should be promoted to the official atomic.h
-#if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 1)
+#if defined(__GNUC__)
+#  define GCC_VERSION (__GNUC__*1000 + __GNUC_MINOR__*100 + __GNUC_PATCHLEVEL__)
+#else
+#  define GCC_VERSION 0
+#endif
+
+#if (GCC_VERSION >= 4100)
 #  define MY_atomic_increment(x) (void)__sync_add_and_fetch(x, 1)
 #  define MY_atomic_decrement(x) (void)__sync_sub_and_fetch(x, 1)
 #else
@@ -43,6 +49,7 @@
 #  define MY_atomic_increment(x) csprof_atomic_increment(x)
 #  define MY_atomic_decrement(x) csprof_atomic_decrement(x)
 #endif
+
 
 #if defined(__cplusplus)
 extern "C" {
