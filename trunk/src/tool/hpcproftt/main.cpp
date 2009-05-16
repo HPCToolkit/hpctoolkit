@@ -203,7 +203,12 @@ main_rawData(const std::vector<string>& profileFiles)
     os << fnm << std::endl;
     os << std::setfill('=') << std::setw(77) << "=" << std::endl;
 
-    Analysis::Raw::writeAsText(fnm); // pass os FIXME
+    try {
+      Analysis::Raw::writeAsText(fnm); // pass os FIXME
+    }
+    catch (const Diagnostics::Exception& x) {
+      DIAG_EMsg("While reading profile '" << fnm << "'...");
+    }
   }
   return 0;
 }

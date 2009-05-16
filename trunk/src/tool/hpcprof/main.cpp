@@ -231,7 +231,7 @@ readProfileFile(const string& prof_fnm)
 {
   Prof::CallPath::Profile* prof = NULL;
   try {
-    prof = Prof::CallPath::Profile::make(prof_fnm.c_str());
+    prof = Prof::CallPath::Profile::make(prof_fnm.c_str(), /*outfs*/ NULL);
   }
   catch (...) {
     DIAG_EMsg("While reading profile '" << prof_fnm << "'...");

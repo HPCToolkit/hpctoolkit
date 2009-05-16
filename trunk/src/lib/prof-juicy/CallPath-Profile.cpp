@@ -292,8 +292,11 @@ namespace Prof {
 
 namespace CallPath {
 
+// TODO: Analysis::Raw::writeAsText_callpath() should use this
+// routine for textual dumping when the format is sanitized.
+
 Profile* 
-Profile::make(const char* fnm) 
+Profile::make(const char* fnm, FILE* outfs) 
 {
   int ret;
 
@@ -324,7 +327,7 @@ Profile::make(const char* fnm)
   try {
     string locStr = fnm; // ":epoch " + 1;
     hpcrun_fmt_epoch_fread(prof, &metadata, &loadmap_tbl, fs, 
-			   locStr, NULL /*outfs*/);
+			   locStr, outfs);
   }
   catch (const Diagnostics::Exception& x) {
     delete prof;

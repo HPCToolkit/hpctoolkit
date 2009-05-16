@@ -147,7 +147,7 @@ public:
   // 
   // -------------------------------------------------------
   static Profile* 
-  make(const char* fnm);
+  make(const char* fnm, FILE* outfs);
 
   // hpcrun_fmt_epoch_fread(): 
   // hpcrun_fmt_cct_fread(): 
