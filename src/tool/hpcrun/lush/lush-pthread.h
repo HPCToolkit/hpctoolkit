@@ -34,6 +34,16 @@
 
 #define LUSH_PTHR_DBG 0
 
+// FIXME: this should be promoted to the official atomic.h
+#if defined(__GNUC__) && (__GNUC__ >= 4) && (__GNUC_MINOR__ >= 1)
+#  define MY_atomic_increment(x) (void)__sync_add_and_fetch(x, 1)
+#  define MY_atomic_decrement(x) (void)__sync_sub_and_fetch(x, 1)
+#else
+#  warning "lush-pthread.h: using slow atomics!"
+#  define MY_atomic_increment(x) csprof_atomic_increment(x)
+#  define MY_atomic_decrement(x) csprof_atomic_decrement(x)
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -135,9 +145,9 @@ lush_pthr__thread_init(lush_pthr_t* x)
   x->num_locks  = 0;
   x->cond_lock  = 0;
   
-  csprof_atomic_increment(x->ps_num_threads);
+  MY_atomic_increment(x->ps_num_threads);
 
-  csprof_atomic_increment(x->ps_num_working);
+  MY_atomic_increment(x->ps_num_working);
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
@@ -154,9 +164,9 @@ lush_pthr__thread_fini(lush_pthr_t* x)
   x->num_locks  = 0;
   x->cond_lock  = 0;
 
-  csprof_atomic_decrement(x->ps_num_threads);
+  MY_atomic_decrement(x->ps_num_threads);
   
-  csprof_atomic_decrement(x->ps_num_working);
+  MY_atomic_decrement(x->ps_num_working);
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
@@ -175,7 +185,7 @@ lush_pthr__lock_pre(lush_pthr_t* x)
     return; // protect against calls before thread initialization
   }
 
-  csprof_atomic_decrement(x->ps_num_working);
+  MY_atomic_decrement(x->ps_num_working);
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
@@ -203,9 +213,9 @@ lush_pthr__lock_post(lush_pthr_t* x)
   x->num_locks++;
   // x->cond_lock: same
 
-  csprof_atomic_increment(x->ps_num_working);
+  MY_atomic_increment(x->ps_num_working);
   if (do_addLock) {
-    csprof_atomic_increment(x->ps_num_working_lock);
+    MY_atomic_increment(x->ps_num_working_lock);
   }
 
   // x->ps_num_idle_cond: same
@@ -234,7 +244,7 @@ lush_pthr__trylock(lush_pthr_t* x, int result)
 
   // x->ps_num_working: // same
   if (do_addLock) {
-    csprof_atomic_increment(x->ps_num_working_lock);
+    MY_atomic_increment(x->ps_num_working_lock);
   }
 
   // x->ps_num_idle_cond: same
@@ -262,7 +272,7 @@ lush_pthr__unlock(lush_pthr_t* x)
   // x->ps_num_working: same
   if ((x->num_locks == 0 && !wasDirectlyInCond) 
       || lush_pthr__isDirectlyInCond(x)) {
-    csprof_atomic_decrement(x->ps_num_working_lock);
+    MY_atomic_decrement(x->ps_num_working_lock);
   }
 
   // x->ps_num_idle_cond: same
@@ -286,11 +296,11 @@ lush_pthr__condwait_pre(lush_pthr_t* x)
   
   // N.B. this order ensures that (num_working - num_working_lock) >= 0
   if (new_num_locks == 0 && !wasDirectlyInCond) {
-    csprof_atomic_decrement(x->ps_num_working_lock);
+    MY_atomic_decrement(x->ps_num_working_lock);
   }
-  csprof_atomic_decrement(x->ps_num_working);
+  MY_atomic_decrement(x->ps_num_working);
 
-  csprof_atomic_increment(x->ps_num_idle_cond);
+  MY_atomic_increment(x->ps_num_idle_cond);
 
   x->is_working = false;
   x->num_locks = new_num_locks;
@@ -312,10 +322,10 @@ lush_pthr__condwait_post(lush_pthr_t* x)
   x->num_locks++;
   x->cond_lock = x->num_locks;
 
-  csprof_atomic_increment(x->ps_num_working);
+  MY_atomic_increment(x->ps_num_working);
   // x->ps_num_working_lock: same, b/c thread is part of 'num_working_cond'
 
-  csprof_atomic_decrement(x->ps_num_idle_cond);
+  MY_atomic_decrement(x->ps_num_idle_cond);
 
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "cwait]"); }
 }
@@ -326,5 +336,9 @@ lush_pthr__condwait_post(lush_pthr_t* x)
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif
+
+#undef MY_atomic_increment
+#undef MY_atomic_decrement
+
 
 #endif /* lush_pthreads_h */
