@@ -113,7 +113,7 @@ static csprof_options_t opts;
 sigset_t prof_sigset;
 #endif
 
-static int csprof_initialized = 0;
+int hpcrun_initialized_private = 0;
 
 extern void _start(void);
 extern int __stop___libc_freeres_ptrs;
@@ -128,11 +128,6 @@ long static_epoch_size;
 
 int lush_metrics = 0; // FIXME: global variable for now
 
-int
-csprof_is_initialized(void)
-{
-  return csprof_initialized;
-}
 
 void
 csprof_init_internal(void)
@@ -185,7 +180,7 @@ csprof_init_internal(void)
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
   SAMPLE_SOURCES(start);
 
-  csprof_initialized = 1;
+  hpcrun_initialized_private = 1;
 }
 
 #ifdef CSPROF_THREADS
@@ -206,7 +201,7 @@ csprof_thread_pre_create(void)
 
   int ret;
 
-  if (!csprof_initialized) {
+  if (!hpcrun_is_initialized()) {
     return NULL;
   }
 
@@ -288,7 +283,7 @@ void
 csprof_thread_fini(csprof_state_t *state)
 {
   TMSG(FINI,"thread fini");
-  if (csprof_initialized) {
+  if (hpcrun_is_initialized()) {
     TMSG(FINI,"thread finit stops sampling");
     SAMPLE_SOURCES(stop);
     lush_pthr__thread_fini(&TD_GET(pthr_metrics));
@@ -314,7 +309,7 @@ csprof_fini_internal(void)
   csprof_unthreaded_data();
   csprof_state_t *state = TD_GET(state);
 
-  if (csprof_initialized) {
+  if (hpcrun_is_initialized()) {
     NMSG(FINI,"process attempting sample shutdown");
     SAMPLE_SOURCES(stop);
     SAMPLE_SOURCES(shutdown);
