@@ -22,6 +22,7 @@
 //***************************************************************************
 
 #include "monitor.h"
+#include "csproflib.h"
 #include "libmonitor_upcalls.h"
 
 #include "env.h"
@@ -158,7 +159,7 @@ static struct _ff {
 void *
 monitor_pre_fork(void)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return NULL;
   csprof_async_block();
 
@@ -180,7 +181,7 @@ monitor_pre_fork(void)
 void
 monitor_post_fork(pid_t child, void *data)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   csprof_async_block();
 
@@ -269,7 +270,7 @@ monitor_thread_pre_create(void)
 {
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return NULL;
   csprof_async_block();
 
@@ -287,7 +288,7 @@ monitor_thread_pre_create(void)
 void
 monitor_thread_post_create(void *dc)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   csprof_async_block();
 
@@ -316,7 +317,7 @@ monitor_init_thread(int tid, void *data)
 void
 monitor_thread_pre_lock(void)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   // csprof_async_block();
 
@@ -332,7 +333,7 @@ monitor_thread_pre_lock(void)
 void
 monitor_thread_post_lock(int result)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   // csprof_async_block();
 
@@ -348,7 +349,7 @@ monitor_thread_post_lock(int result)
 void
 monitor_thread_post_trylock(int result)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   // csprof_async_block();
 
@@ -364,7 +365,7 @@ monitor_thread_post_trylock(int result)
 void
 monitor_thread_unlock(void)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   // csprof_async_block();
 
@@ -380,7 +381,7 @@ monitor_thread_unlock(void)
 void
 monitor_thread_pre_cond_wait(void)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   // csprof_async_block();
 
@@ -396,7 +397,7 @@ monitor_thread_pre_cond_wait(void)
 void
 monitor_thread_post_cond_wait(int result)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   // csprof_async_block();
 
@@ -444,7 +445,7 @@ monitor_reset_stacksize(size_t old_size)
 void
 monitor_pre_dlopen(const char *path, int flags)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   csprof_async_block();
 
@@ -456,7 +457,7 @@ monitor_pre_dlopen(const char *path, int flags)
 void
 monitor_dlopen(const char *path, int flags, void *handle)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   csprof_async_block();
 
@@ -468,7 +469,7 @@ monitor_dlopen(const char *path, int flags, void *handle)
 void
 monitor_dlclose(void *handle)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   csprof_async_block();
 
@@ -480,7 +481,7 @@ monitor_dlclose(void *handle)
 void
 monitor_post_dlclose(void *handle, int ret)
 {
-  if (! csprof_is_initialized())
+  if (! hpcrun_is_initialized())
     return;
   csprof_async_block();
 

@@ -73,11 +73,20 @@
 extern "C" {
 #endif
 
-  // Explicit interface
-  void csprof_init();
-  void csprof_fini();
+// Explicit interface
+void csprof_init();
+void csprof_fini();
 
-  int csprof_is_handling_sample();
+int csprof_is_handling_sample();
+
+extern int hpcrun_initialized_private; /* Should be treated as private */
+
+static inline int
+hpcrun_is_initialized(void)
+{
+  return hpcrun_initialized_private;
+}
+
   
 #if defined(__cplusplus)
 } /* extern "C" */
