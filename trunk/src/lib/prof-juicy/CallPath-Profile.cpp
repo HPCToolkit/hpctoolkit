@@ -311,6 +311,7 @@ Profile::make(const char* fnm, FILE* outfs)
 
   hpcfile_csprof_data_t metadata;
   epoch_table_t loadmap_tbl;
+  // HDR read
   ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, 
 			    hpcfmt_alloc, hpcfmt_free);
   if (ret != HPCFILE_OK) {
