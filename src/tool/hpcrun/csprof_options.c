@@ -11,7 +11,7 @@
 #include "csprof_options.h"
 #include "files.h"
 #include "process_event_list.h"
-#include "csprof_misc_fn_stat.h"
+#include "hpcrun_return_codes.h"
 #include "env.h"
 #include "pmsg.h"
 #include "sample_sources_all.h"
@@ -25,13 +25,13 @@ csprof_options__init(csprof_options_t *x)
 {
   NMSG(OPTIONS,"__init");
   memset(x, 0, sizeof(*x));
-  return CSPROF_OK;
+  return HPCRUN_OK;
 }
 
 int
 csprof_options__fini(csprof_options_t* x)
 {
-  return CSPROF_OK;
+  return HPCRUN_OK;
 }
 
 /* assumes no private 'heap' memory is available yet */
@@ -53,5 +53,5 @@ csprof_options__getopts(csprof_options_t* x)
   
   NMSG(OPTIONS,"--before init of registered sample sources");
 
-  return CSPROF_OK;
+  return HPCRUN_OK;
 }

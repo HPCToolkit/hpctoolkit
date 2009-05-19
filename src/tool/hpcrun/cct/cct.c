@@ -39,7 +39,7 @@
 #include "metrics.h"
 #include "pmsg.h"
 
-#include "csprof_misc_fn_stat.h"
+#include "hpcrun_return_codes.h"
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 
@@ -114,7 +114,7 @@ static int
 csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
 {
   /* Sanity check */
-  if (x->parent != NULL) { return CSPROF_ERR; } /* can only have one parent */
+  if (x->parent != NULL) { return HPCRUN_ERR; } /* can only have one parent */
   
   if (parent != NULL) {
     /* Children are maintained as a doubly linked ring.  A new node
@@ -131,7 +131,7 @@ csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
 
     x->parent = parent;
   }
-  return CSPROF_OK;
+  return HPCRUN_OK;
 }
 
 
@@ -205,13 +205,13 @@ csprof_cct__init(csprof_cct_t* x)
 #endif
 
 
-  return CSPROF_OK;
+  return HPCRUN_OK;
 }
 
 int
 csprof_cct__fini(csprof_cct_t *x)
 {
-  return CSPROF_OK;
+  return HPCRUN_OK;
 }
 
 
@@ -350,13 +350,13 @@ hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree,
 
 /* csprof_cct__write_bin: Write the tree 'x' to the file
    stream 'fs'.  The tree is written in HPC_CSTREE format.  Returns
-   CSPROF_OK upon success; CSPROF_ERR on error. */
+   HPCRUN_OK upon success; HPCRUN_ERR on error. */
 int 
 csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
 		      csprof_cct_t* x, lush_cct_ctxt_t* x_ctxt)
 {
   int ret;
-  if (!fs) { return CSPROF_ERR; }
+  if (!fs) { return HPCRUN_ERR; }
 
   // Collect stats on the creation context
   unsigned int x_ctxt_len = lush_cct_ctxt__length(x_ctxt);
@@ -369,7 +369,7 @@ csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
 
   // splice creation context out of tree
 
-  return (ret == HPCFILE_OK) ? CSPROF_OK : CSPROF_ERR;
+  return (ret == HPCFILE_OK) ? HPCRUN_OK : HPCRUN_ERR;
 }
 
 
@@ -529,8 +529,8 @@ hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
   else {
     ret = hpcfile_cstree_write_node_hlp(fs, node, tmp_node, 
 					id_parent, id_root, my_id);
-    if (ret != CSPROF_OK) { 
-      return CSPROF_ERR; 
+    if (ret != HPCRUN_OK) { 
+      return HPCRUN_ERR; 
     }
     
     // Prepare next id -- assigned in pre-order
@@ -568,7 +568,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 			      hpcfile_uint_t id_root,
 			      hpcfile_uint_t id)
 {
-  int ret = CSPROF_OK;
+  int ret = HPCRUN_OK;
 
   // ---------------------------------------------------------
   // Write LIP if necessary
@@ -609,7 +609,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 
   ret = hpcfile_cstree_node__fwrite(tmp_node, fs);
   if (ret != HPCFILE_OK) { 
-    return CSPROF_ERR; 
+    return HPCRUN_ERR; 
   }
 
   return ret;
@@ -727,11 +727,11 @@ lush_cct_ctxt__write_gbl(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
 			 unsigned int id_root, unsigned int* nodes_written,
 			 hpcfile_cstree_node_t* tmp_node)
 {
-  int ret = CSPROF_OK;
+  int ret = HPCRUN_OK;
   
   // Base case
   if (!cct_ctxt) {
-    return CSPROF_OK;
+    return HPCRUN_OK;
   }
 
   // -------------------------------------------------------
@@ -739,7 +739,7 @@ lush_cct_ctxt__write_gbl(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
   // -------------------------------------------------------
   ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt->parent, id_root,
 				 nodes_written, tmp_node);
-  if (ret != CSPROF_OK) { return CSPROF_ERR; }
+  if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   
   // write this context
   unsigned int lcl_written = 0;
@@ -748,7 +748,7 @@ lush_cct_ctxt__write_gbl(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
   ret = lush_cct_ctxt__write_lcl(fs, cct_ctxt->context, 
 				 lcl_id_root, &lcl_id_lip_root, &lcl_written,
 				 tmp_node);
-  if (ret != CSPROF_OK) { return CSPROF_ERR; }
+  if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   (*nodes_written) += lcl_written;
   
   return ret;
@@ -765,11 +765,11 @@ lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
 			 unsigned int* nodes_written,
 			 hpcfile_cstree_node_t* tmp_node)
 {
-  int ret = CSPROF_OK;
+  int ret = HPCRUN_OK;
 
   // Base case
   if (!node) {
-    return CSPROF_OK;
+    return HPCRUN_OK;
   }
   
   // -------------------------------------------------------
@@ -777,7 +777,7 @@ lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
   // -------------------------------------------------------
   ret = lush_cct_ctxt__write_lcl(fs, node->parent, 
 				 id_root, id_lip_root, nodes_written, tmp_node);
-  if (ret != CSPROF_OK) { return CSPROF_ERR; }
+  if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   
   // write this node
   hpcfile_uint_t my_id          = id_root + (*nodes_written);
@@ -786,8 +786,8 @@ lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
 
   ret = hpcfile_cstree_write_node_hlp(fs, node, tmp_node, 
 				      my_id_parent, my_id_lip_root, my_id);
-  if (ret != CSPROF_OK) {
-    return CSPROF_ERR; 
+  if (ret != HPCRUN_OK) {
+    return HPCRUN_ERR; 
   }
   
   (*nodes_written)++;

@@ -4,6 +4,6 @@
 #define NAME_MAX 1024
 #endif  // NAME_MAX
 
-#define CSPROF_FNM_SZ  (NAME_MAX+1) /* filename size */
+#define HPCRUN_FNM_SZ  (NAME_MAX+1) /* filename size */
 
 #endif // FNAME_MAX_H

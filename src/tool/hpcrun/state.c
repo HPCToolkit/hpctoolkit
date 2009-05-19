@@ -15,7 +15,7 @@
 #include "name.h"
 #include "thread_data.h"
 #include "pmsg.h"
-#include "csprof_misc_fn_stat.h"
+#include "hpcrun_return_codes.h"
 #include "monitor.h"
 
 
@@ -104,12 +104,12 @@ csprof_state_init(csprof_state_t *x)
 
   memset(x, 0, sizeof(*x));
 
-  return CSPROF_OK;
+  return HPCRUN_OK;
 }
 
 /* csprof_state_alloc: Special initialization for items stored in
    private memory.  Private memory must be initialized!  Returns
-   CSPROF_OK upon success; CSPROF_ERR on error. */
+   HPCRUN_OK upon success; HPCRUN_ERR on error. */
 int
 csprof_state_alloc(csprof_state_t *x)
 {
@@ -140,12 +140,12 @@ csprof_state_alloc(csprof_state_t *x)
 #endif
 #endif
 
-  return CSPROF_OK;
+  return HPCRUN_OK;
 }
 
 int csprof_state_fini(csprof_state_t *x){
 
-  return CSPROF_OK;
+  return HPCRUN_OK;
 }
 
 csprof_cct_node_t*
@@ -164,7 +164,8 @@ csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
   return n;
 }
 
-csprof_frame_t * csprof_state_expand_buffer(csprof_state_t *state, csprof_frame_t *unwind){
+csprof_frame_t *
+csprof_state_expand_buffer(csprof_state_t *state, csprof_frame_t *unwind){
   /* how big is the current buffer? */
   size_t sz = state->bufend - state->btbuf;
   size_t newsz = sz*2;
@@ -196,11 +197,12 @@ csprof_frame_t * csprof_state_expand_buffer(csprof_state_t *state, csprof_frame_
 
 /* csprof_state_free: Special finalization for items stored in
    private memory.  Private memory must be initialized!  Returns
-   CSPROF_OK upon success; CSPROF_ERR on error. */
-int csprof_state_free(csprof_state_t *x){
+   HPCRUN_OK upon success; HPCRUN_ERR on error. */
+int
+csprof_state_free(csprof_state_t *x){
   csprof_csdata__fini(&x->csdata);
 
   // no need to free memory
 
-  return CSPROF_OK;
+  return HPCRUN_OK;
 }

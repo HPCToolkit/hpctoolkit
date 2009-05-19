@@ -144,7 +144,7 @@ static void csprof_undo_swizzled_data(csprof_state_t *, void *);
 void *csprof_trampoline2(void **);
 #endif
 
-int csprof_write_profile_data(csprof_state_t *);
+int hpcrun_write_profile_data(csprof_state_t *);
 
 #ifdef CSPROF_THREADS
 void csprof_atexit_handler();

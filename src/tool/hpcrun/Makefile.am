@@ -68,6 +68,7 @@ MY_BASE_FILES =			\
 	utilities/first_func.c		\
 	csprof_options.c		\
 	csproflib.c			\
+	hpcrun_write_data.c		\
 	data.c				\
 	env.c				\
 	epoch.c				\

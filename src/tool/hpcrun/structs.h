@@ -20,11 +20,6 @@
 
 #define CSPROF_PATH_SZ (PATH_MAX+1) /* path size */
 
-#if 0
-// moved to unused directory
-#include "structs-junk.h"
-#endif
-
 // ---------------------------------------------------------
 // profiling state of a single thread
 // ---------------------------------------------------------
@@ -69,15 +64,6 @@ typedef struct csprof_state_s {
   /* various flags, such as whether an exception is being processed or
      whether we think there was a tail call since the last signal */
   unsigned int flags;
-
-#if 0
-  /* persistent state */
-  csprof_pstate_t pstate;
-#endif
-
-#if CSPROF_NEED_PSTATE
-  char pstate_fnm[CSPROF_PATH_SZ];
-#endif
 
   /* call stack data, stored in private memory */
   csprof_csdata_t csdata;

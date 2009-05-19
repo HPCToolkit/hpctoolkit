@@ -100,7 +100,7 @@ typedef struct _mem_s {
 
 // Creates a new pool of memory that is at least as
 // large as 'sz' bytes for the mem store specified by 'st' and returns
-// CSPROF_OK; otherwise returns CSPROF_ERR.
+// HPCRUN_OK; otherwise returns HPCRUN_ERR.
 
 extern int csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st);
 
@@ -108,7 +108,7 @@ extern int csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st);
 // using 'sz' and 'sz_tmp' as the initial sizes (in bytes) of the
 // respective stores.  If either size is 0, the respective store is
 // disabled; however it is an error for both stores to be
-// disabled.  Returns CSPROF_OK upon success; CSPROF_ERR on error.
+// disabled.  Returns HPCRUN_OK upon success; HPCRUN_ERR on error.
 
 extern int csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp);
 extern void *csprof_mem_alloc_main(csprof_mem_t *x, size_t sz);
@@ -130,7 +130,7 @@ extern void *csprof_mem_alloc_main(csprof_mem_t *x, size_t sz);
 // stores; set these parameters to 1 to use default sizes.  Either of
 // the memory stores may be disabled by passing a size of 0,
 // respectively, but it is an error to disable both.  Returns
-// CSPROF_OK upon success; CSPROF_ERR on error.
+// HPCRUN_OK upon success; HPCRUN_ERR on error.
 //
 // * Must be called before any allocations are performed! *
 extern csprof_mem_t *csprof_malloc_init(offset_t sz, offset_t sz_tmp);
