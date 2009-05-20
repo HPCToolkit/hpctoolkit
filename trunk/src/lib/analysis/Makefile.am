@@ -63,6 +63,7 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	CallPath.hpp CallPath.cpp \
+	CallPath-OverheadMetricFact.hpp CallPath-OverheadMetricFact.cpp \
 	\
 	Flat-SrcCorrelation.hpp Flat-SrcCorrelation.cpp \
 	Flat-ObjCorrelation.hpp Flat-ObjCorrelation.cpp \
