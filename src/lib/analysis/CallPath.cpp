@@ -68,6 +68,7 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include "CallPath.hpp"
+#include "CallPath-OverheadMetricFact.hpp"
 #include "Util.hpp"
 
 #include <lib/binutils/LM.hpp>
@@ -349,10 +350,6 @@ coalesceStmts(Prof::CallPath::Profile* prof);
 static void 
 pruneByMetrics(Prof::CallPath::Profile* prof);
 
-static void 
-lush_makeParallelOverhead(Prof::CallPath::Profile* prof);
-
-
 void 
 Analysis::CallPath::normalize(Prof::CallPath::Profile* prof, 
 			      string lush_agent)
@@ -362,7 +359,8 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile* prof,
   coalesceStmts(prof);
 
   if (!lush_agent.empty()) {
-    lush_makeParallelOverhead(prof);
+    OverheadMetricFact overheadMetricFact;
+    overheadMetricFact.make(prof);
   }
 }
 
@@ -496,150 +494,6 @@ pruneByMetrics(Prof::CCT::ANode* node)
 	strct->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
       }
     }
-  }
-}
-
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-class ParallelOverhead
-{
-public:
-  static const string s_tag;
-
-  static inline bool 
-  is_overhead(Prof::CCT::ProcFrm* x)
-  {
-    const string& x_fnm = x->fileName();
-    if (x_fnm.length() >= s_tag.length()) {
-      size_t tag_beg = x_fnm.length() - s_tag.length();
-      return (x_fnm.compare(tag_beg, s_tag.length(), s_tag) == 0);
-    }
-    return false;
-  }
-
-  static inline bool 
-  is_metric_src(Prof::SampledMetricDesc* mdesc)
-  {
-    const string& nm = mdesc->name();
-    return ((nm.find("PAPI_TOT_CYC") == 0) || (nm.find("WALLCLOCK") == 0));
-  }
-
-  static void
-  convertToWorkMetric(Prof::SampledMetricDesc* mdesc)
-  {
-    const string& nm = mdesc->name();
-    if (nm.find("PAPI_TOT_CYC") == 0) {
-      mdesc->name("work (cyc)");
-    }
-    else if (nm.find("WALLCLOCK") == 0) {
-      mdesc->name("work (us)");
-    }
-    else {
-      DIAG_Die(DIAG_Unimplemented);
-    }
-  }
-
-};
-
-const string ParallelOverhead::s_tag = "lush:parallel-overhead";
-
-
-//***************************************************************************
-
-static void 
-lush_makeParallelOverhead(Prof::CCT::ANode* node, 
-			  const std::vector<uint>& m_src, 
-			  const std::vector<uint>& m_dst, 
-			  bool is_overhead_ctxt);
-
-
-// Assumes: metrics are still only at leaves (CCT::Stmt)
-static void 
-lush_makeParallelOverhead(Prof::CallPath::Profile* prof)
-{
-  Prof::CCT::Tree* cct = prof->cct();
-  if (!cct) { return; }
-
-  // ------------------------------------------------------------
-  // Create parallel overhead metric descriptor
-  // Create mapping from source metrics to overhead metrics
-  // ------------------------------------------------------------
-  std::vector<uint> metric_src;
-  std::vector<uint> metric_dst;
-  
-  uint numMetrics_orig = prof->numMetrics();
-  for (uint m_id = 0; m_id < numMetrics_orig; ++m_id) {
-    Prof::SampledMetricDesc* m_desc = prof->metric(m_id);
-    if (ParallelOverhead::is_metric_src(m_desc)) {
-      ParallelOverhead::convertToWorkMetric(m_desc);
-      metric_src.push_back(m_id);
-
-      Prof::SampledMetricDesc* m_new = 
-	new Prof::SampledMetricDesc("overhead", "parallel overhead", 
-				    m_desc->period());
-      uint m_new_id = prof->addMetric(m_new);
-      DIAG_Assert(m_new_id >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
-      metric_dst.push_back(m_new_id);
-    }
-  }
-
-  // ------------------------------------------------------------
-  // Create space for metric values
-  // ------------------------------------------------------------
-  uint n_new_metrics = metric_dst.size();
-
-  for (Prof::CCT::ANodeIterator it(cct->root()); it.Current(); ++it) {
-    Prof::CCT::ANode* x = it.CurNode();
-    Prof::CCT::ADynNode* x_dyn = dynamic_cast<Prof::CCT::ADynNode*>(x);
-    if (x_dyn) {
-      x_dyn->expandMetrics_after(n_new_metrics);
-    }
-  }
-
-  lush_makeParallelOverhead(cct->root(), metric_src, metric_dst, false);
-}
-
-
-static void 
-lush_makeParallelOverhead(Prof::CCT::ANode* node, 
-			  const std::vector<uint>& m_src, 
-			  const std::vector<uint>& m_dst, 
-			  bool isOverheadCtxt)
-{
-  if (!node) { return; }
-
-  // ------------------------------------------------------------
-  // Visit CCT::Stmt nodes (Assumes metrics are only at leaves)
-  // ------------------------------------------------------------
-  if (isOverheadCtxt && (typeid(*node) == typeid(Prof::CCT::Stmt))) {
-    Prof::CCT::Stmt* stmt = dynamic_cast<Prof::CCT::Stmt*>(node);
-    for (uint i = 0; i < m_src.size(); ++i) {
-      uint src_idx = m_src[i];
-      uint dst_idx = m_dst[i];
-      hpcfile_metric_data_t mval = stmt->metric(src_idx);
-      
-      stmt->metricDecr(src_idx, mval);
-      stmt->metricIncr(dst_idx, mval);
-    }
-  }
-
-  // ------------------------------------------------------------
-  // Recur
-  // ------------------------------------------------------------
-  
-  // Note: once set, isOverheadCtxt should remain true for all descendents
-  bool isOverheadCtxt_nxt = isOverheadCtxt;
-  if (!isOverheadCtxt && typeid(*node) == typeid(Prof::CCT::ProcFrm)) {
-    Prof::CCT::ProcFrm* x = dynamic_cast<Prof::CCT::ProcFrm*>(node);
-    isOverheadCtxt_nxt = ParallelOverhead::is_overhead(x);
-  }
-
-  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
-    Prof::CCT::ANode* x = it.CurNode();
-    lush_makeParallelOverhead(x, m_src, m_dst, isOverheadCtxt_nxt);
   }
 }
 
