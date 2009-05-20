@@ -31,7 +31,7 @@
 
 static csprof_cct_node_t*
 csprof_take_profile_sample(csprof_state_t *state, void *context,
-			   int metric_id, unsigned long long metric_units_consumed);
+			   int metric_id, uint64_t metric_incr);
 
 //***************************************************************************
 
@@ -114,7 +114,7 @@ csprof_display_summary(void)
 
 csprof_cct_node_t *
 csprof_sample_event(void *context, int metric_id,
-		    unsigned long long metric_units_consumed, int is_sync)
+		    uint64_t metric_incr, int is_sync)
 {
   fetch_and_add(&num_samples_total, 1L);
 
@@ -152,7 +152,7 @@ csprof_sample_event(void *context, int metric_id,
   if (ljmp == 0) {
 
     if (state != NULL) {
-      node = csprof_take_profile_sample(state, context, metric_id, metric_units_consumed);
+      node = csprof_take_profile_sample(state, context, metric_id, metric_incr);
 
       if (trace_isactive()) {
 	void *pc = context_pc(context);
@@ -197,7 +197,7 @@ csprof_sample_event(void *context, int metric_id,
 
 static csprof_cct_node_t*
 csprof_take_profile_sample(csprof_state_t *state, void *context,
-			   int metric_id, unsigned long long metric_units_consumed)
+			   int metric_id, uint64_t metric_incr)
 {
   void *pc = context_pc(context);
 
@@ -235,7 +235,7 @@ csprof_take_profile_sample(csprof_state_t *state, void *context,
 #endif
   
   csprof_cct_node_t* n;
-  n = csprof_sample_callstack(state, context, metric_id, metric_units_consumed);
+  n = csprof_sample_callstack(state, context, metric_id, metric_incr);
 
   // FIXME: n == -1 if sample is filtered
 #if 0
