@@ -61,7 +61,7 @@ lush_agent_pool_t* lush_agents = NULL;
 
 csprof_cct_node_t*
 lush_backtrace(csprof_state_t* state, ucontext_t* context,
-	       int metric_id, size_t sample_count)
+	       int metric_id, uint64_t metric_incr)
 {
   // ---------------------------------------------------------
   // Record backtrace if:
@@ -70,7 +70,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   // ---------------------------------------------------------
   lush_agentid_t do_metric_idleness = lush_agentid_NULL; // list of agents
 
-  if (sample_count == 0 || metric_id != lush_agents->metric_time) {
+  if (metric_incr == 0 || metric_id != lush_agents->metric_time) {
     // case 1
   }
   else {
@@ -192,7 +192,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
   csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
 
-  const int work = sample_count;
+  const int work = metric_incr;
   csprof_cct_node_t* node = NULL;
   node = csprof_state_insert_backtrace(state, metric_id, 
 				       bt_end, bt_beg, 

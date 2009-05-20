@@ -68,7 +68,7 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
   td->splay_lock                  = 0;
 
   td->trace_file                  = NULL;
-  td->last_us_usage               = 0;
+  td->last_time_us                = 0;
 
   lush_pthr__init(&td->pthr_metrics);
   lush_pthr__thread_init(&td->pthr_metrics);

@@ -62,7 +62,7 @@
 #define ITIMER_METRIC_ID 0
 
 #if !defined(HOST_SYSTEM_IBM_BLUEGENE)
-#  define USE_THREAD_USAGE_FOR_WALLCLOCK
+#  define USE_ELAPSED_TIME_FOR_WALLCLOCK
 #endif
 
 #define RESET_ITIMER_EACH_SAMPLE
@@ -99,7 +99,8 @@
 static int
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
 
-static unsigned long long thread_usage_in_microseconds();
+static uint64_t 
+get_timestamp_us(clockid_t clockid);
 
 
 
@@ -132,8 +133,8 @@ METHOD_FN(_start)
 
   TD_GET(ss_state)[self->evset_idx] = START;
 
-#ifdef USE_THREAD_USAGE_FOR_WALLCLOCK
-  TD_GET(last_us_usage) = thread_usage_in_microseconds();
+#ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
+  TD_GET(last_time_us) = get_timestamp_us(CLOCK_THREAD_CPUTIME_ID);
 #endif
 
   // int rv = setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
@@ -207,7 +208,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
   int ret = csprof_set_max_metrics(1 + lush_metrics);
   
   if (ret > 0) {
-#ifdef USE_THREAD_USAGE_FOR_WALLCLOCK
+#ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
     long sample_period = 1;
 #else
     long sample_period = self->evl.events[0].thresh;
@@ -288,21 +289,19 @@ itimer_obj_reg(void)
  * private operations 
  *****************************************************************************/
 
-static unsigned long long
-thread_usage_in_microseconds()
+// return value is in microseconds
+static uint64_t
+get_timestamp_us(clockid_t clockid)
 {
   struct timespec ts;
-  long notime = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
-
-  if(notime != 0) {
-    EMSG("thread_usage_in_microseconds: clock_gettime failed!"); 
+  long ret = clock_gettime(clockid, &ts);
+  if (ret != 0) {
+    EMSG("get_timestamp_us: clock_gettime failed!"); 
     abort();
   }
 
-  unsigned long long usage = (ts.tv_nsec/1000) + 
-    SECONDS_TO_MICROSECONDS(ts.tv_sec);
-
-  return usage;
+  uint64_t us = (ts.tv_nsec/1000) + SECONDS_TO_MICROSECONDS(ts.tv_sec);
+  return us;
 }
 
 extern int sampling_is_disabled(void);
@@ -313,25 +312,25 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
   // Must check for async block first and avoid any MSG if true.
   if (csprof_async_is_blocked()) {
     csprof_inc_samples_blocked_async();
-  } else {
+  }
+  else {
     TMSG(ITIMER_HANDLER,"Itimer sample event");
 
-#ifdef USE_THREAD_USAGE_FOR_WALLCLOCK
-    unsigned long long current_us_usage = thread_usage_in_microseconds();
-    unsigned long long time_value = current_us_usage - TD_GET(last_us_usage);  /* time in us */
-#else
-    unsigned long long time_value = 1; /* time in samples */
+    uint64_t metric_incr = 1; // default: one time unit
+#ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
+    uint64_t cur_time_us = get_timestamp_us(CLOCK_THREAD_CPUTIME_ID);
+    metric_incr = cur_time_us - TD_GET(last_time_us); // time in us
 #endif
 
-    csprof_sample_event(context, ITIMER_METRIC_ID, time_value, 0);
+    csprof_sample_event(context, ITIMER_METRIC_ID, metric_incr, 0);
   }
-  if (sampling_is_disabled()){
+  if (sampling_is_disabled()) {
     TMSG(SPECIAL,"No itimer restart, due to disabled sampling");
     return 0;
   }
 
 #ifdef RESET_ITIMER_EACH_SAMPLE
-  METHOD_CALL(&_itimer_obj,start);
+  METHOD_CALL(&_itimer_obj, start);
 #endif
 
 #ifdef HOST_SYSTEM_IBM_BLUEGENE

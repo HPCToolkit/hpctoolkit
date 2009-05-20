@@ -1,6 +1,8 @@
 #ifndef SAMPLE_EVENT_H
 #define SAMPLE_EVENT_H
 
+#include <stdint.h>
+
 #include "csprof_csdata.h"
 
 int csprof_is_initialized(void);
@@ -16,7 +18,7 @@ void csprof_inc_samples_filtered(void);
 void csprof_display_summary(void);
 
 csprof_cct_node_t *
-csprof_sample_event(void *context, int metric_id,
-		    unsigned long long metric_units_consumed, int is_sync);
+csprof_sample_event(void *context, int metric_id, uint64_t metric_incr, 
+		    int is_sync);
 
 #endif /* sample_event_h */

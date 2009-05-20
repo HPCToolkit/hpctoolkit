@@ -32,7 +32,7 @@
 
 static csprof_cct_node_t*
 hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
-		 int metric_id, size_t sample_count);
+		 int metric_id, size_t metric_incr);
 
 
 #if (HPC_UNW_LITE)
@@ -57,16 +57,16 @@ test_backtrace_lite(ucontext_t* context);
 //-----------------------------------------------------------------------------
 csprof_cct_node_t*
 csprof_sample_callstack(csprof_state_t *state, ucontext_t* context, 
-			int metric_id, size_t sample_count)
+			int metric_id, uint64_t metric_incr)
 {
   csprof_state_verify_backtrace_invariants(state);
   
   csprof_cct_node_t* n = NULL;
   if (!lush_agents) {
-    n = hpcrun_backtrace(state, context, metric_id, sample_count);
+    n = hpcrun_backtrace(state, context, metric_id, metric_incr);
   }
   else {
-    n = lush_backtrace(state, context, metric_id, sample_count);
+    n = lush_backtrace(state, context, metric_id, metric_incr);
   }
   //HPC_IF_UNW_LITE(test_backtrace_lite(context);)
 
@@ -111,7 +111,7 @@ hpcrun_filter_sample(int len, csprof_frame_t *start, csprof_frame_t *last)
 
 static csprof_cct_node_t*
 hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
-		 int metric_id, size_t sample_count)
+		 int metric_id, uint64_t metric_incr)
 {
   int backtrace_trolled = 0;
 
@@ -175,7 +175,7 @@ hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
   csprof_cct_node_t* n;
   n = csprof_state_insert_backtrace(state, metric_id,
 				    bt_end, bt_beg,
-				    (cct_metric_data_t){.i = sample_count});
+				    (cct_metric_data_t){.i = metric_incr});
   return n;
 }
 

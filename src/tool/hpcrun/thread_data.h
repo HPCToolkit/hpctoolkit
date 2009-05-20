@@ -10,6 +10,7 @@
 
 #include <setjmp.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "sample_sources_registered.h"
 #include "mem.h"
@@ -40,7 +41,7 @@ typedef struct _td_t {
   int             fnbounds_lock;
   int             suspend_sampling;
   FILE*           trace_file;
-  unsigned long long last_us_usage;
+  uint64_t        last_time_us; // microseconds
 
   lush_pthr_t     pthr_metrics;
 } thread_data_t;
