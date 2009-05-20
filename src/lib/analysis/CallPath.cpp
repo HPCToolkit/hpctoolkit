@@ -535,7 +535,7 @@ public:
       mdesc->name("work (cyc)");
     }
     else if (nm.find("WALLCLOCK") == 0) {
-      mdesc->name("work (ms)");
+      mdesc->name("work (us)");
     }
     else {
       DIAG_Die(DIAG_Unimplemented);
