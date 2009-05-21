@@ -130,6 +130,8 @@ Options: Output:\n\
 CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
+  {  0 , "agent-pthread",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
 
   // Source structure correlation options
   {  0 , "name",            CLP::ARG_REQ,  CLP::DUPOPT_CLOB, CLP_SEPARATOR,
@@ -274,10 +276,15 @@ Args::parse(int argc, const char* const argv[])
       Diagnostics_SetDiagnosticFilterLevel(verb);
     }
 
-    // Check for other options: Correlation options
+    // Check for LUSH options (TODO)
     if (parser.isOpt("agent-cilk")) {
-      lush_agent = "cilk magic"; // non-empty
+      lush_agent = "agent-cilk";
     }
+    if (parser.isOpt("agent-pthread")) {
+      lush_agent = "agent-pthread";
+    }
+
+    // Check for other options: Correlation options
     if (parser.isOpt("name")) {
       title = parser.getOptArg("name");
     }
