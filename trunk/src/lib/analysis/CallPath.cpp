@@ -359,8 +359,15 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile* prof,
   coalesceStmts(prof);
 
   if (!lush_agent.empty()) {
-    CilkOverheadMetricFact overheadMetricFact;
-    overheadMetricFact.make(prof);
+    OverheadMetricFact* overheadMetricFact;
+    if (lush_agent == "agent-cilk") {
+      overheadMetricFact = new CilkOverheadMetricFact;
+    }
+    else if (lush_agent == "agent-pthread") {
+      overheadMetricFact = new PthreadOverheadMetricFact;
+    }
+    overheadMetricFact->make(prof);
+    delete overheadMetricFact;
   }
 }
 
