@@ -78,11 +78,6 @@ namespace CallPath {
 
 //***************************************************************************
 
-const string OverheadMetricFact::s_tag = "lush:parallel-overhead";
-
-
-//***************************************************************************
-
 
 // Assumes: metrics are still only at leaves (CCT::Stmt)
 void 
@@ -162,7 +157,7 @@ OverheadMetricFact::make(Prof::CCT::ANode* node,
   bool isOverheadCtxt_nxt = isOverheadCtxt;
   if (!isOverheadCtxt && typeid(*node) == typeid(Prof::CCT::ProcFrm)) {
     Prof::CCT::ProcFrm* x = dynamic_cast<Prof::CCT::ProcFrm*>(node);
-    isOverheadCtxt_nxt = OverheadMetricFact::isOverhead(x);
+    isOverheadCtxt_nxt = isOverhead(x);
   }
 
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
@@ -186,6 +181,44 @@ OverheadMetricFact::convertToWorkMetric(Prof::SampledMetricDesc* mdesc)
     DIAG_Die(DIAG_Unimplemented);
   }
 }
+
+
+//***************************************************************************
+//
+//***************************************************************************
+
+const string PthreadOverheadMetricFact::s_tag = "/libpthread";
+
+
+bool 
+PthreadOverheadMetricFact::isOverhead(const Prof::CCT::ProcFrm* x)
+{
+  const string& x_lm_nm = x->lmName();
+  if (x_lm_nm.length() >= s_tag.length()) {
+    return (x_lm_nm.find(s_tag) != string::npos);
+  }
+  return false;
+}
+
+
+//***************************************************************************
+//
+//***************************************************************************
+
+const string CilkOverheadMetricFact::s_tag = "lush:parallel-overhead";
+
+
+bool 
+CilkOverheadMetricFact::isOverhead(const Prof::CCT::ProcFrm* x)
+{
+  const string& x_fnm = x->fileName();
+  if (x_fnm.length() >= s_tag.length()) {
+    size_t tag_beg = x_fnm.length() - s_tag.length();
+    return (x_fnm.compare(tag_beg, s_tag.length(), s_tag) == 0);
+  }
+  return false;
+}
+
 
 
 } // namespace CallPath
