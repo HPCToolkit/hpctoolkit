@@ -76,6 +76,33 @@ int hpcfile_csprof_read_hdr(FILE* fs, hpcfile_csprof_hdr_t* hdr);
 
 hpcfile_metric_data_t hpcfile_metric_data_ZERO = { .bits = 0 };
 
+int
+hpcrun_fmt_nvpair_fwrite(hpcrun_fmt_nvpair_t *nvp, FILE *outfs)
+{
+  THROW_ERR(hpcrun_fstr_fwrite(nvp->name, outfs));
+  THROW_ERR(hpcrun_fstr_fwrite(nvp->val, outfs));
+
+  return HPCFILE_OK;
+}
+
+int
+hpcrun_fmt_nvpair_fread(hpcrun_fmt_nvpair_t *inp, FILE *infs, alloc_fn alloc)
+{
+  THROW_ERR(hpcrun_fstr_fread(inp->name, infs, alloc));
+  THROW_ERR(hpcrun_fstr_fread(inp->val, infs, alloc));
+
+  return HPCFILE_OK;
+}
+
+int
+hpcrun_fmt_nvpair_fprint(hpcrun_fmt_nvpair_t *nvp, FILE *outfs)
+{
+  fprintf(outfs,"NV(%s,%s)", nvp->name, nvp->val);
+  return HPCFILE_OK;
+}
+
+
+
 // HPC_CSPROF format details: 
 //   List of tagged data chunks that represent data in 'hpcfile_csprof_data_t'
 //   hpcfile_str_t, hpcfile_num8_str_t, etc.
@@ -96,6 +123,8 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
   int i;
 
   if (!fs) { return HPCFILE_ERR; }
+
+
 
   // Write header 
   hpcfile_csprof_hdr__init(&fhdr);

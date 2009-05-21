@@ -59,7 +59,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#if 0
 #include <inttypes.h>
+#endif
 
 //*************************** User Include Files ****************************
 
@@ -104,6 +109,9 @@ typedef uint64_t hpcfile_uint_t;
 
 typedef void* (*hpcfile_cb__alloc_fn_t)(size_t);
 typedef void  (*hpcfile_cb__free_fn_t)(void*);
+
+typedef void* alloc_fn(size_t nbytes);
+typedef void  free_fn(void *mem);
 
 #if 0 /* describe callbacks */
 
@@ -177,6 +185,13 @@ typedef struct hpcfile_str_s {
 
 } hpcfile_str_t;
 
+typedef struct hpcrun_fstr_t {
+
+  uint32_t len; // length of string
+  char str[];   // string data. [Variable length data]
+
+} hprun_fmt_str_t;
+
 int hpcfile_str__init(hpcfile_str_t* x);
 int hpcfile_str__fini(hpcfile_str_t* x);
 
@@ -184,6 +199,9 @@ int hpcfile_str__fread(hpcfile_str_t* x, FILE* fs,
 		       hpcfile_cb__alloc_fn_t alloc_fn);
 int hpcfile_str__fwrite(hpcfile_str_t* x, FILE* fs);
 int hpcfile_str__fprint(hpcfile_str_t* x, FILE* fs);
+
+int hpcrun_fstr_fread(void *str, FILE *infs, alloc_fn alloc);
+int hpcrun_fstr_fwrite(char *, FILE *outfs);
 
 // ---------------------------------------------------------
 // hpcfile_num8_t: One 8 byte number.

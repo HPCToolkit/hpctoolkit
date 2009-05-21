@@ -274,6 +274,47 @@ hpcfile_num8s__fwrite(hpcfile_num8s_t* x, FILE* fs)
   return HPCFILE_OK;
 }
 
+int
+hpcrun_fstr_fread(void *str, FILE *infs, alloc_fn alloc)
+{
+  uint32_t len;
+  char *buf = (char *) str;
+
+  hpcio_fread_le4(&len, infs); // FIXME-MWF Check err from read
+  if (alloc) {
+    buf = (char *) alloc(len+1);
+    *((char **)str) = buf;  // when allocating, assume str is a ref to store a val
+  }
+  if (! buf) {
+    return HPCFILE_ERR;
+  }
+  for(int i=0; i < len; i++){
+    int c = fgetc(infs);
+    if (c == EOF){
+      return HPCFILE_ERR;
+    }
+    *(buf++) = (char) c;
+  }
+  *buf = '\0';
+  return HPCFILE_OK;
+}
+
+int
+hpcrun_fstr_fwrite(char *str, FILE *outfs)
+{
+  uint32_t len = strlen(str);
+
+  hpcio_fwrite_le4(&len, outfs); // FIXME-MWF check error
+  
+  for(int i=0; i < len; i++){
+    int c = fputc(*(str++), outfs);
+    if (c == EOF){
+      return HPCFILE_ERR;
+    }
+  }
+  return HPCFILE_OK;
+}
+
 int 
 hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs)
 {
