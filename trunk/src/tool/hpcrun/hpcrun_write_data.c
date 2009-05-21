@@ -11,6 +11,7 @@
 #include "hpcio.h"
 #include "hpcrun_write_data.h"
 
+#ifdef FIXME
 static int
 hpcrun_write_hdr(FILE *fs, thread_data_t *td)
 {
@@ -22,7 +23,7 @@ hpcrun_write_epoch_list(FILE *fs, thread_data_t *td)
 {
   return HPCRUN_OK;
 }
-
+#endif
 
 // TODO --- convert to New fmt
 //          Be sure to fix corresponding read routines in ../../lib/prof-juicy/CallPath-Profile.cpp
@@ -62,7 +63,8 @@ hpcrun_write_profile_data(csprof_state_t *state)
 
   // File format = fmt-hdr [epoch]*
 
-  thread_data_t *td = csprof_get_thread_data();
+  // FIXME-MWF cache thread data pointer
+  // thread_data_t *td = csprof_get_thread_data(); 
 
 #if 0
   hpcrun_write_hdr(fs, td);

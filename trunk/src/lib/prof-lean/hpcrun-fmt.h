@@ -62,6 +62,7 @@
 //*************************** User Include Files ****************************
 
 #include "hpcfmt.h"
+#include "hpcrun-fmt.h"
 
 #include "lush/lush-support.h"
 
@@ -70,6 +71,44 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
+//***************************************************************************
+//
+// Types. functions, and useful macros for reading/writing a call stack tree from/to a
+// binary file.  
+//
+// See hpcrun-fmt.txt for more specifics on the format and interface
+//
+//***************************************************************************
+
+// macro to propagate the error code of another function
+
+#define THROW_ERR(expr) if (expr) { return HPCFILE_ERR; }
+
+// macro to pass either a pointer to pre-allocated space, or a pointer-to buffer pointer
+// in the latter case, memory will be allocated, and the allocation will be side-effected back
+// to the calling routine.
+//
+// THIS MACRO ONLY WORKS WHEN THE ALLOCATION DECISION IS DETERMINED BY A VAR CALLED "alloc"
+
+#define ALLOC_P(lvalue) (alloc ? (lvalue) : &(lvalue))
+
+#define MAGIC "HPCRUN____02.001"
+
+typedef char hpcrun_fmt_magic_t[sizeof(MAGIC)-1];
+
+typedef struct hpcrun_fmt_nvpair_t {
+  char *name;
+  char *val;
+} hpcrun_fmt_nvpair_t;
+
+typedef struct hpcrun_fmt_hdr_t {
+  hpcrun_fmt_magic_t magic;
+
+  uint32_t            n_nv_p; // # nv pairs below
+  hpcrun_fmt_nvpair_t nv_p[]; // variable size data, so this field MUST BE LAST
+} hpcrun_fmt_hdr_t;
+
 
 //***************************************************************************
 //

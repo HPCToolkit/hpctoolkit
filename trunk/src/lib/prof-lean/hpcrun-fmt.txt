@@ -107,3 +107,20 @@ Notes:
 
   - some primitives may need certain environment information.  For
     example, reading a node requires knowing how many metrics there are.
+
+===================== Notes from Nathan 20 May 09 =======================
+
+Most fread routines will pass allocators. only the cct node reader might pass in
+fully allocated objects.
+
+Allocators will be used for -internal- components. The entire structure (1st argument)
+to a reader is presumed to be fully formed.
+   -- should memset all primitives to 0, however.
+The allocator will be used to allocate space for any variable length component of
+the type being read. No allocator means -all- space, including internal components
+have already been allocated.
+
+All primitives with variable length fields will represent that by a pointer to
+appropriate data type (e.g. std C array indentification).
+
+hdr_fwrite primitive can be variadic (so different sig)
