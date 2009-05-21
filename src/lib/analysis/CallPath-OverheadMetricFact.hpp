@@ -78,22 +78,14 @@ class OverheadMetricFact
 public:
   OverheadMetricFact() { }
   
-  ~OverheadMetricFact() { }
+  virtual ~OverheadMetricFact() { }
   
   // make 'overhead' and 'work' metrics
   void 
   make(Prof::CallPath::Profile* prof);
   
-  static inline bool 
-  isOverhead(const Prof::CCT::ProcFrm* x)
-  {
-    const string& x_fnm = x->fileName();
-    if (x_fnm.length() >= s_tag.length()) {
-      size_t tag_beg = x_fnm.length() - s_tag.length();
-      return (x_fnm.compare(tag_beg, s_tag.length(), s_tag) == 0);
-    }
-    return false;
-  }
+  virtual bool 
+  isOverhead(const Prof::CCT::ProcFrm* x) = 0;
 
 private:
 
@@ -112,10 +104,46 @@ private:
   static void
   convertToWorkMetric(Prof::SampledMetricDesc* mdesc);
 
-  static const string s_tag;  
+};
+
+
+//***************************************************************************
+
+
+class PthreadOverheadMetricFact : public OverheadMetricFact
+{
+public:
+  PthreadOverheadMetricFact() { }
+  virtual ~PthreadOverheadMetricFact() { }
+    
+  virtual bool 
+  isOverhead(const Prof::CCT::ProcFrm* x);
+
+private:
+
+  static const string s_tag;
 
 };
 
+
+//***************************************************************************
+
+class CilkOverheadMetricFact : public OverheadMetricFact
+{
+public:
+  CilkOverheadMetricFact() { }
+  virtual ~CilkOverheadMetricFact() { }
+    
+  virtual bool 
+  isOverhead(const Prof::CCT::ProcFrm* x);
+
+private:
+
+  static const string s_tag;
+
+};
+
+//***************************************************************************
 
 } // namespace CallPath
 

@@ -359,7 +359,7 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile* prof,
   coalesceStmts(prof);
 
   if (!lush_agent.empty()) {
-    OverheadMetricFact overheadMetricFact;
+    CilkOverheadMetricFact overheadMetricFact;
     overheadMetricFact.make(prof);
   }
 }
