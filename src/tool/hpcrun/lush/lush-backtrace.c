@@ -28,11 +28,11 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/uint.h>
+#include <include/min-max.h>
+
 #include "lush.h"
 #include "lush-backtrace.h"
-#include "minmax.h"
-
-#include <include/uint.h>
 
 #include <state.h>
 #include <sample_event.h> // csprof_drop_sample()
