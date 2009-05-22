@@ -126,7 +126,10 @@ real_main(int argc, char* argv[])
   // ------------------------------------------------------------
   { 
     ProcNameMgr* procNameMgr = NULL;
-    if (!args.lush_agent.empty()) {
+    if (args.lush_agent == "agent-c++") {
+      procNameMgr = new CppNameMgr;
+    }
+    else if (args.lush_agent == "agent-cilk") {
       procNameMgr = new CilkNameMgr;
     }
 
