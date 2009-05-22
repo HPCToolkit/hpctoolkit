@@ -128,9 +128,9 @@ Options: Output:\n\
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
-  {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
   {  0 , "agent-pthread",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // Source structure correlation options
@@ -277,11 +277,11 @@ Args::parse(int argc, const char* const argv[])
     }
 
     // Check for LUSH options (TODO)
-    if (parser.isOpt("agent-cilk")) {
-      lush_agent = "agent-cilk";
-    }
     if (parser.isOpt("agent-pthread")) {
       lush_agent = "agent-pthread";
+    }
+    if (parser.isOpt("agent-cilk")) {
+      lush_agent = "agent-cilk";
     }
 
     // Check for other options: Correlation options

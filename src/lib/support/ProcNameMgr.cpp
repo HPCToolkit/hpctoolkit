@@ -69,41 +69,53 @@ using std::string;
 // ProcNameMgr
 //***************************************************************************
 
-// Compute the 'basename' for a function template
-//   f<...>            --> f<>
-//   f<...>()          --> f<>()
-//   f<...>(T<...>* x) --> f<>(T<...>* x)
-//   f<...>::foo()     --> f<>::foo()
-//   f(T<>* x)         --> (no change)
+// Canonicalize C++ templates and overloading: Compute a 'generic'
+// name for a templated function type:
+//   f<...>            		       --> f<>
+//   f<...>()          		       --> f<>()
+//   f<...>(T<...>* x) 		       --> f<>(T<>* x)
+//   f<...>::foo()     		       --> f<>::foo()
+//   f<resultT(objT::*)(a1,a2)>::foo() --> f<>::foo()
+//   f(T<...>* x)      		       --> f(T<>* x)
 //
+// Be careful!
 //   operator<<()      --> (no change)
 //   operator>>()      --> (no change)
 
 // Invariants about function names:
-//   Have at most one pair of ( )
 //   Templates may have multiple nested < >, but have at least one pair
+//   Excluding function pointer types, functions have at most one pair of ( )
 
 std::string 
 ProcNameMgr::canonicalizeCppTemplate(const std::string& name)
 {
-  // canonicalize C++ templates and overloading
-  size_t pos_langle = name.find_first_of('<'); // returns valid pos or npos
-  size_t pos_rangle = name.find_last_of('>');  // returns valid pos or npos
-  if (0 < pos_langle && pos_langle < pos_rangle
-      && pos_rangle != string::npos) {
-    // INVARIANT: both < and > have been found
-    size_t pos_lparen = name.find_first_of('(');
+  size_t posLangle = name.find_first_of('<'); // returns valid pos or npos
+
+  // Ensure we have a name of the form: "...<..." but not "...<<..."
+  if ((0 < posLangle && posLangle < (name.length() - 1))
+      && name[posLangle+1] != '<') {
+
+    string x = name.substr(0, posLangle /*len*/); // exclude '<'
+
+    int nesting = 0;
+    for (uint i = posLangle; i < name.size(); i++) {
+      char c = name[i];
+
+      bool save_c = (nesting == 0);
+      if (c == '<') {
+	nesting++;
+      }
+      else if (c == '>') {
+	nesting--;
+      }
+      save_c = (save_c || (nesting == 0));
+
+      if (save_c) {
+	x += c;
+      }
+    }
     
-    if (pos_lparen == string::npos) {
-      string x = name.substr(0, pos_langle /*len*/);
-      return x + "<...>";
-    }
-    else if (pos_langle < pos_lparen) {
-      pos_rangle = name.find_last_of('>', pos_lparen); // exclude '<'
-      string x = name.substr(0, pos_langle /*len*/);   // exclude '>'
-      string y = name.substr(pos_rangle + 1, string::npos);
-      return x + "<...>" + y;
-    }
+    return x;
   }
   
   return name;
