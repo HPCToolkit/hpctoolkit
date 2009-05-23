@@ -126,11 +126,10 @@ LUSHI_DECL(int, LUSHI_lip_write, ());
 
 
 // --------------------------------------------------------------------------
-// Concurrency
+// Metrics
 // --------------------------------------------------------------------------
 
-LUSHI_DECL(int, LUSHI_do_backtrace, ());
-LUSHI_DECL(double, LUSHI_get_idleness, ());
+LUSHI_DECL(bool, LUSHI_do_metric, (uint64_t incrMetricIn, bool* doMetric, bool* doMetricIdleness, uint64_t* incrMetric, double* incrMetricIdleness));
 
 
 #ifdef __cplusplus

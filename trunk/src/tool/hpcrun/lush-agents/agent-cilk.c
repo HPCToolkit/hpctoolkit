@@ -502,41 +502,46 @@ LUSHI_lip_write()
 
 
 // **************************************************************************
-// Concurrency
+// Metrics
 // **************************************************************************
 
-extern int
-LUSHI_do_backtrace()
-{
-  // Do the unwind if this is a working thread
-  CilkWorkerState* ws = 
-    (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
-  
-  return (ws && CILK_WS_is_working(ws));
-}
-
-
-extern double
-LUSHI_get_idleness()
+extern bool
+LUSHI_do_metric(uint64_t incrMetricIn, 
+		bool* doMetric, bool* doMetricIdleness, 
+		uint64_t* incrMetric, double* incrMetricIdleness)
 {
   // INVARIANT: at least one thread is working
   // INVARIANT: ws is non-NULL
 
   CilkWorkerState* ws = 
     (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
+  bool isWorking = (ws && CILK_WS_is_working(ws));
 
-  double n = CILK_WS_num_workers(ws);
-  double n_working = (double)CILK_Threads_Working;
-  double n_not_working = n - n_working;
+  if (isWorking) {
+    double n = CILK_WS_num_workers(ws);
+    double n_working = (double)CILK_Threads_Working;
+    double n_not_working = n - n_working;
 
-  double idleness = 0.0;
+    // NOTE: if n_working == 0, then Cilk should be in the process of
+    // exiting.  Protect against samples in this timing window.
+    double idleness = 0.0;
+    if (n_working > 0) {
+      idleness = ((double)incrMetricIn * n_not_working) / n_working;
+    }
 
-  // NOTE: if n_working == 0, then Cilk should be in the process of
-  // exiting.  Protect against samples in this timing window.
-  if (n_working > 0) {
-    idleness = n_not_working / n_working;
+    *doMetric = true;
+    *doMetricIdleness = true;
+    *incrMetric = incrMetricIn;
+    *incrMetricIdleness = idleness;
   }
-  return idleness;
+  else {
+    *doMetric = false;
+    *doMetricIdleness = false;
+    //*incrMetric = 0;
+    //*incrMetricIdleness = 0.0;
+  }
+  return *doMetric;
 }
+ 
 
 // **************************************************************************

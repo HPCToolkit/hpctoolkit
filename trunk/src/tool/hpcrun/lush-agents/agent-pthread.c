@@ -175,54 +175,61 @@ LUSHI_lip_write()
 
 
 // **************************************************************************
-// Concurrency
+// Metrics
 // **************************************************************************
 
-extern int
-LUSHI_do_backtrace()
+extern bool
+LUSHI_do_metric(uint64_t incrMetricIn, 
+		bool* doMetric, bool* doMetricIdleness, 
+		uint64_t* incrMetric, double* incrMetricIdleness)
 {
   lush_pthr_t* pthr = &TD_GET(pthr_metrics);
-  return (int)pthr->is_working;
-}
+  bool isWorking = pthr->is_working;
 
+  if (isWorking) {
+    bool is_working_lock = lush_pthr__isWorking_lock(pthr);
+    
+    double num_working      = *(pthr->ps_num_working);
+    double num_working_lock = *(pthr->ps_num_working_lock);
+    double num_idle_cond    = MAX(0, *(pthr->ps_num_idle_cond)); // timing windw
+    
+    // INVARIANT: Since this thread is working, it is either working
+    // while locked or it is working as 'other' (within a condition
+    // variable critical section or without a lock).
+    if (is_working_lock) {
+      num_working_lock = MAX(1, num_working_lock); // account for timing windows
+    }
 
-extern double
-LUSHI_get_idleness()
-{
-  lush_pthr_t* pthr = &TD_GET(pthr_metrics);
-  if (!pthr->is_working) {
-    return 0.0;
-  }
+    double idleness = 0.0;
+    if (is_working_lock) {
+      // -----------------------------------------------------
+      // is_working_lock() : num_idle_lock / num_working_lock
+      // -----------------------------------------------------
+      double num_idle = (*(pthr->ps_num_threads) - num_working);
+      double num_idle_lock = MAX(0, num_idle - num_idle_cond);
+      idleness = (num_idle_lock / num_working_lock);
+    }
+    else {
+      // -----------------------------------------------------
+      // is_working_cond() || is_working : num_idle_cond / num_working_othr
+      // -----------------------------------------------------
+      // INVARIANT: (num_working - num_working_lock) should always be > 0
+      double num_working_othr = MAX(1, num_working - num_working_lock);
+      idleness = (num_idle_cond / num_working_othr);
+    }
 
-  bool is_working_lock = lush_pthr__isWorking_lock(pthr);
-
-  double num_working      = *(pthr->ps_num_working);
-  double num_working_lock = *(pthr->ps_num_working_lock);
-  double num_idle_cond    = MAX(0, *(pthr->ps_num_idle_cond)); // timing window
-
-  // INVARIANT: This thread is working.  Therefore it is either
-  // working while locked or it is working as 'other' (within a
-  // condition variable critical section or without a lock).
-  if (is_working_lock) {
-    num_working_lock = MAX(1, num_working_lock); // account for timing windows
-  }
-
-  if (is_working_lock) {
-    // -----------------------------------------------------
-    // is_working_lock() : num_idle_lock / num_working_lock
-    // -----------------------------------------------------
-    double idleness = (*(pthr->ps_num_threads) - num_working);
-    double num_idle_lock = MAX(0, idleness - num_idle_cond);
-    return (num_idle_lock / num_working_lock);
+    *doMetric = true;
+    *doMetricIdleness = true;
+    *incrMetric = incrMetricIn;
+    *incrMetricIdleness = (double)incrMetricIn * idleness;
   }
   else {
-    // -----------------------------------------------------
-    // is_working_cond() || is_working : num_idle_cond / num_working_othr
-    // -----------------------------------------------------
-    // INVARIANT: (num_working - num_working_lock) should always be > 0
-    double num_working_othr = MAX(1, num_working - num_working_lock);
-    return (num_idle_cond / num_working_othr);
+    *doMetric = false;
+    *doMetricIdleness = false;
+    //*incrMetric = 0;
+    //*incrMetricIdleness = 0.0;
   }
+  return *doMetric;
 }
 
 // **************************************************************************
