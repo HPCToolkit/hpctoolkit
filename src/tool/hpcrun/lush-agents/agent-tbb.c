@@ -171,21 +171,21 @@ LUSHI_lip_write()
 
 
 // **************************************************************************
-// Concurrency
+// Metrics
 // **************************************************************************
 
-extern int
-LUSHI_do_backtrace()
+extern bool
+LUSHI_do_metric(uint64_t incrMetricIn, 
+		bool* doMetric, bool* doMetricIdleness, 
+		uint64_t* incrMetric, double* incrMetricIdleness)
 {
-  // STUB that should be replaced
-  return 0; 
+  *doMetric = true;
+  *doMetricIdleness = false;
+  *incrMetric = incrMetricIn;
+  *incrMetricIdleness = 0.0;
+
+  return *doMetric;
 }
 
-extern double
-LUSHI_get_idleness()
-{
-  // STUB that should be replaced
-  return 0.0;
-}
 
 // **************************************************************************

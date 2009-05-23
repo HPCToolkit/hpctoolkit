@@ -68,7 +68,12 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   //   1) a synchronous unwind or a non-lush-relevant metric
   //   2) a lush agent indicates we should
   // ---------------------------------------------------------
-  lush_agentid_t do_metric_idleness = lush_agentid_NULL; // list of agents
+  bool     doMetric = true;
+  uint64_t incrMetric = metric_incr;
+
+  bool     doMetricIdleness = false;
+  double   incrMetricIdleness = 0.0;
+  lush_agentid_t aidMetricIdleness = lush_agentid_NULL; // list of agents
 
   if (metric_incr == 0 || metric_id != lush_agents->metric_time) {
     // case 1
@@ -77,8 +82,10 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
     // NOTE: metric_id == lush_agents->metric_time
     lush_agentid_t aid = 1; // TODO: multiple agents
     if (lush_agents->metric_idleness != lush_metricid_NULL
-	&& lush_agents->LUSHI_do_backtrace[aid]()) {
-      do_metric_idleness = aid; // case 2
+	&& lush_agents->LUSHI_do_metric[aid](incrMetric, 
+					     &doMetric, &doMetricIdleness,
+					     &incrMetric, &incrMetricIdleness)) {
+      aidMetricIdleness = aid; // case 2
     }
     else {
       return NULL;
@@ -192,23 +199,20 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
   csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
 
-  const int work = metric_incr;
+  // doMetric == true
   csprof_cct_node_t* node = NULL;
-  node = csprof_state_insert_backtrace(state, metric_id, 
-				       bt_end, bt_beg, 
-				       (cct_metric_data_t){.i = work});
-  
-  // FIXME: register active return
+  node = csprof_state_insert_backtrace(state, metric_id,
+				       bt_end, bt_beg,
+				       (cct_metric_data_t){.i = incrMetric});
 
-  if (node && do_metric_idleness) {
-    lush_agentid_t aid = do_metric_idleness;
-    double idleness_fraction = lush_agents->LUSHI_get_idleness[aid]();
-    double idleness = work * idleness_fraction;
-
+  if (doMetricIdleness) {
+    //lush_agentid_t aid = aidMetricIdleness;
     int mid = lush_agents->metric_idleness;
     cct_metric_data_increment(mid, &node->metrics[mid], 
-			      (cct_metric_data_t){.r = idleness});
+			      (cct_metric_data_t){.r = incrMetricIdleness});
   }
+
+  // FIXME: register active return
 
   return node;
 }
