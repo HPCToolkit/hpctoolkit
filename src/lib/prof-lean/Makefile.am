@@ -68,6 +68,8 @@ MYSOURCES = \
 	hpcfmt.h hpcfmt.c \
 	hpcio.h hpcio.c \
 	\
+	timer.h timer.c \
+	\
 	lush/lush-support.h lush/lush-support.c
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
