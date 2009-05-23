@@ -66,6 +66,7 @@ PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
 
 MY_BASE_FILES =			\
 	utilities/first_func.c		\
+	\
 	csprof_options.c		\
 	csproflib.c			\
 	hpcrun_write_data.c		\
@@ -91,24 +92,32 @@ MY_BASE_FILES =			\
 	thread_use.c			\
 	trace.c				\
 	unsafe.c			\
-	messages/pmsg.c			\
-	fnbounds/fnbounds_common.c	\
+	\
+	cct/cct.c			\
+	\
+	unwind/common/backtrace.c	\
+	unwind/common/splay.c		\
+	unwind/common/stack_troll.c	\
+	unwind/common/ui_tree.c		\
+	\
 	lush/lush-backtrace.c		\
 	lush/lush.c			\
 	lush/lushi-cb.c			\
 	lush/lush-support-rt.c		\
 	lush/lush-pthread.c		\
+	\
+	fnbounds/fnbounds_common.c	\
+	\
 	memory/list.c			\
 	memory/mem.c			\
-	cct/cct.c			\
-	unwind/common/backtrace.c	\
-	unwind/common/splay.c		\
-	unwind/common/stack_troll.c	\
-	unwind/common/ui_tree.c		\
+	\
+	messages/pmsg.c			\
+	\
 	utilities/executable-path.c	\
 	utilities/spinlock.c		\
 	utilities/tokenize.c		\
 	utilities/unlink.c
+
 
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_dynamic.c	\

@@ -9,14 +9,14 @@
  * system includes
  *****************************************************************************/
 
-#include <signal.h>
-#include <stdlib.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <assert.h>
+
+#include <signal.h>
 #include <sys/time.h>           /* setitimer() */
 #include <ucontext.h>           /* struct ucontext */
-#include <assert.h>
 
 
 /******************************************************************************
@@ -40,7 +40,9 @@
 #include "simple_oo.h"
 #include "thread_data.h"
 
-#include "lush/lush-backtrace.h"
+#include <lush/lush-backtrace.h>
+
+#include <lib/prof-lean/timer.h>
 
 
 /******************************************************************************
@@ -56,10 +58,8 @@
 #endif
 
 #define SECONDS_PER_HOUR                   3600
-#define MICROSECONDS_PER_SECOND            1000000
-#define SECONDS_TO_MICROSECONDS(s)         ((s) * MICROSECONDS_PER_SECOND)
 
-#define ITIMER_METRIC_ID 0
+#define ITIMER_METRIC_ID 0  /* tallent:FIXME: land mine alert! */
 
 #if !defined(HOST_SYSTEM_IBM_BLUEGENE)
 #  define USE_ELAPSED_TIME_FOR_WALLCLOCK
@@ -99,10 +99,6 @@
 static int
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
 
-static uint64_t 
-get_timestamp_us(clockid_t clockid);
-
-
 
 /******************************************************************************
  * local variables
@@ -134,7 +130,11 @@ METHOD_FN(_start)
   TD_GET(ss_state)[self->evset_idx] = START;
 
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
-  TD_GET(last_time_us) = get_timestamp_us(CLOCK_THREAD_CPUTIME_ID);
+  int ret = time_getTimeCPU(&TD_GET(last_time_us));
+  if (ret != 0) {
+    EMSG("time_getTimeCPU (clock_gettime) failed!");
+    abort();
+  }
 #endif
 
   // int rv = setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
@@ -289,21 +289,6 @@ itimer_obj_reg(void)
  * private operations 
  *****************************************************************************/
 
-// return value is in microseconds
-static uint64_t
-get_timestamp_us(clockid_t clockid)
-{
-  struct timespec ts;
-  long ret = clock_gettime(clockid, &ts);
-  if (ret != 0) {
-    EMSG("get_timestamp_us: clock_gettime failed!"); 
-    abort();
-  }
-
-  uint64_t us = (ts.tv_nsec/1000) + SECONDS_TO_MICROSECONDS(ts.tv_sec);
-  return us;
-}
-
 extern int sampling_is_disabled(void);
 
 static int
@@ -318,8 +303,13 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 
     uint64_t metric_incr = 1; // default: one time unit
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
-    uint64_t cur_time_us = get_timestamp_us(CLOCK_THREAD_CPUTIME_ID);
-    metric_incr = cur_time_us - TD_GET(last_time_us); // time in us
+    uint64_t cur_time_us;
+    int ret = time_getTimeCPU(&cur_time_us);
+    if (ret != 0) {
+      EMSG("time_getTimeCPU (clock_gettime) failed!");
+      abort();
+    }
+    metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
 
     csprof_sample_event(context, ITIMER_METRIC_ID, metric_incr, 0);
