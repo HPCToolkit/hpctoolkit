@@ -17,12 +17,13 @@
 //
 //***************************************************************************
 
-#ifndef prof_lean_time_h
-#define prof_lean_time_h
+#ifndef prof_lean_timer_h
+#define prof_lean_timer_h
 
 //************************* System Include Files ****************************
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #include <time.h> /* clock_gettime() */
 
@@ -96,4 +97,4 @@ time_getTimeReal(uint64_t* time)
 } /* extern "C" */
 #endif
 
-#endif /* prof_lean_time_h */
+#endif /* prof_lean_timer_h */
