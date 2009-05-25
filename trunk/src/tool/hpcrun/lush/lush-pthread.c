@@ -91,6 +91,10 @@ lush_pthr__init(lush_pthr_t* x)
   x->num_locks  = 0;
   x->cond_lock  = 0;
   
+  x->doIdlenessCnt = 0;
+  x->begIdleness = 0;
+  x->idleness    = 0;
+  
   x->ps_num_procs   = &globals.lush_pthr_ps_num_procs;
   x->ps_num_threads = &globals.lush_pthr_ps_num_threads;
 

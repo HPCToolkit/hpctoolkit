@@ -187,6 +187,14 @@ LUSHI_do_metric(uint64_t incrMetricIn,
   bool isWorking = pthr->is_working;
 
   if (isWorking) {
+#if (LUSH_PTHR_SELF_IDLENESS)
+    // NOTE: pthr->idleness is only changed when this thread is not working
+    *doMetric = true;
+    *doMetricIdleness = (pthr->idleness > 0);
+    *incrMetric = incrMetricIn;
+    *incrMetricIdleness = pthr->idleness;
+    pthr->idleness = 0;
+#else
     bool is_working_lock = lush_pthr__isWorking_lock(pthr);
     
     double num_working      = *(pthr->ps_num_working);
@@ -222,12 +230,20 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     *doMetricIdleness = true;
     *incrMetric = incrMetricIn;
     *incrMetricIdleness = (double)incrMetricIn * idleness;
+#endif
   }
   else {
+#if (LUSH_PTHR_SELF_IDLENESS)
+    *doMetric = true;
+    *doMetricIdleness = true;
+    *incrMetric = 0;
+    *incrMetricIdleness = (double)incrMetricIn;
+#else
     *doMetric = false;
     *doMetricIdleness = false;
     //*incrMetric = 0;
     //*incrMetricIdleness = 0.0;
+#endif
   }
   return *doMetric;
 }
