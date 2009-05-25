@@ -28,19 +28,23 @@
 
 //*************************** User Include Files ****************************
 
-#include "atomic.h"
+#include <include/gcc-attr.h>
+#include <include/min-max.h>
+
+#include <utilities/atomic.h>
+
+#include <lib/prof-lean/timer.h>
+
 
 //*************************** Forward Declarations **************************
 
+#define LUSH_PTHR_SELF_IDLENESS 1
+
 #define LUSH_PTHR_DBG 0
 
-// FIXME: this should be promoted to the official atomic.h
-#if defined(__GNUC__)
-#  define GCC_VERSION (__GNUC__*1000 + __GNUC_MINOR__*100 + __GNUC_PATCHLEVEL__)
-#else
-#  define GCC_VERSION 0
-#endif
+//*************************** Forward Declarations **************************
 
+// FIXME: this should be promoted to the official atomic.h
 #if (GCC_VERSION >= 4100)
 #  define MY_atomic_increment(x) (void)__sync_add_and_fetch(x, 1)
 #  define MY_atomic_decrement(x) (void)__sync_sub_and_fetch(x, 1)
@@ -95,6 +99,10 @@ typedef struct {
   int  num_locks;  // number of thread's locks (including a cond-var lock)
   int  cond_lock;  // 0 or the lock number on entry to cond-var critial region
 
+  uint64_t doIdlenessCnt;
+  uint64_t begIdleness; // begin idleness 'timestamp'
+  uint64_t idleness;    // accumulated idleness
+
   // -------------------------------------------------------
   // process wide metrics
   // -------------------------------------------------------
@@ -133,6 +141,32 @@ lush_pthr__isWorking_cond(lush_pthr_t* x)
   return (x->is_working && lush_pthr__isDirectlyInCond(x));
 }
 
+
+#define LUSH_SYNC_SMPL_PERIOD 32
+
+static inline void
+lush_pthr__begIdleness(lush_pthr_t* x)
+{
+  if ((x->doIdlenessCnt % LUSH_SYNC_SMPL_PERIOD) == 0) {
+    uint64_t time = UINT64_MAX;
+    time_getTimeReal(&time);
+    x->begIdleness = time;
+  }
+}
+
+
+static inline void
+lush_pthr__endIdleness(lush_pthr_t* x)
+{
+  if ((x->doIdlenessCnt % LUSH_SYNC_SMPL_PERIOD) == 0) {
+    uint64_t time = 0;
+    time_getTimeReal(&time);
+    x->idleness += LUSH_SYNC_SMPL_PERIOD * MAX(0, time - x->begIdleness);
+    // record an syncronous sample... [must disable async sampling!]
+  }
+  x->doIdlenessCnt++;
+}
+
 //***************************************************************************
 
 void 
@@ -148,16 +182,20 @@ lush_pthr__dump(lush_pthr_t* x, const char* nm);
 static inline void
 lush_pthr__thread_init(lush_pthr_t* x)
 {
+#if (LUSH_PTHR_SELF_IDLENESS)
+  x->is_working = true;
+#else
   x->is_working = true;
   x->num_locks  = 0;
   x->cond_lock  = 0;
-  
+
   MY_atomic_increment(x->ps_num_threads);
 
   MY_atomic_increment(x->ps_num_working);
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
+#endif
 
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "t_init"); }
 }
@@ -167,6 +205,9 @@ lush_pthr__thread_init(lush_pthr_t* x)
 static inline void
 lush_pthr__thread_fini(lush_pthr_t* x)
 {
+#if (LUSH_PTHR_SELF_IDLENESS)
+  x->is_working = false;
+#else
   x->is_working = false;
   x->num_locks  = 0;
   x->cond_lock  = 0;
@@ -177,6 +218,7 @@ lush_pthr__thread_fini(lush_pthr_t* x)
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
+#endif
 
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "t_fini"); }
 }
@@ -188,6 +230,9 @@ lush_pthr__thread_fini(lush_pthr_t* x)
 static inline void
 lush_pthr__lock_pre(lush_pthr_t* x)
 {
+#if (LUSH_PTHR_SELF_IDLENESS)
+  x->is_working = false;
+#else
   MY_atomic_decrement(x->ps_num_working);
   // x->ps_num_working_lock: same
 
@@ -196,6 +241,9 @@ lush_pthr__lock_pre(lush_pthr_t* x)
   x->is_working = false;
   // x->num_locks: same
   // x->cond_lock: same
+#endif
+
+  lush_pthr__begIdleness(x);
 
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "lock["); }
 }
@@ -205,6 +253,11 @@ lush_pthr__lock_pre(lush_pthr_t* x)
 static inline void
 lush_pthr__lock_post(lush_pthr_t* x)
 {
+  lush_pthr__endIdleness(x);
+
+#if (LUSH_PTHR_SELF_IDLENESS)
+  x->is_working = true;
+#else
   // (1) moving to lock; (2) moving from cond to lock
   bool do_addLock = (x->num_locks == 0 || lush_pthr__isDirectlyInCond(x));
 
@@ -218,6 +271,7 @@ lush_pthr__lock_post(lush_pthr_t* x)
   }
 
   // x->ps_num_idle_cond: same
+#endif
 
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "lock]"); }
 }
@@ -231,6 +285,9 @@ lush_pthr__trylock(lush_pthr_t* x, int result)
     return; // lock was not acquired -- state remains the same
   }
 
+#if (LUSH_PTHR_SELF_IDLENESS)
+  x->is_working = true; // same
+#else
   // (1) moving to lock; (2) moving from cond to lock
   bool do_addLock = (x->num_locks == 0 || lush_pthr__isDirectlyInCond(x));
 
@@ -244,6 +301,7 @@ lush_pthr__trylock(lush_pthr_t* x, int result)
   }
 
   // x->ps_num_idle_cond: same
+#endif
 
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "trylock"); }
 }
@@ -253,6 +311,9 @@ lush_pthr__trylock(lush_pthr_t* x, int result)
 static inline void
 lush_pthr__unlock(lush_pthr_t* x)
 {
+#if (LUSH_PTHR_SELF_IDLENESS)
+  x->is_working = true; // same
+#else
   bool wasDirectlyInCond = lush_pthr__isDirectlyInCond(x);
 
   x->is_working = true; // same
@@ -268,6 +329,7 @@ lush_pthr__unlock(lush_pthr_t* x)
   }
 
   // x->ps_num_idle_cond: same
+#endif
 
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "unlock"); }
 }
@@ -279,6 +341,9 @@ lush_pthr__unlock(lush_pthr_t* x)
 static inline void
 lush_pthr__condwait_pre(lush_pthr_t* x)
 {
+#if (LUSH_PTHR_SELF_IDLENESS)
+  x->is_working = false;
+#else
   bool wasDirectlyInCond = lush_pthr__isDirectlyInCond(x);
   int new_num_locks = (x->num_locks - 1);
   
@@ -293,6 +358,9 @@ lush_pthr__condwait_pre(lush_pthr_t* x)
   x->is_working = false;
   x->num_locks = new_num_locks;
   //x->cond_lock: same
+#endif
+
+  lush_pthr__begIdleness(x);
 
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "cwait["); }
 }
@@ -302,6 +370,11 @@ lush_pthr__condwait_pre(lush_pthr_t* x)
 static inline void
 lush_pthr__condwait_post(lush_pthr_t* x)
 {
+  lush_pthr__endIdleness(x);
+
+#if (LUSH_PTHR_SELF_IDLENESS)
+  x->is_working = true;
+#else
   x->is_working = true;
   x->num_locks++;
   x->cond_lock = x->num_locks;
@@ -310,6 +383,7 @@ lush_pthr__condwait_post(lush_pthr_t* x)
   // x->ps_num_working_lock: same, b/c thread is part of 'num_working_cond'
 
   MY_atomic_decrement(x->ps_num_idle_cond);
+#endif
 
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "cwait]"); }
 }
