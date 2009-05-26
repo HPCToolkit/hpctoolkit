@@ -184,14 +184,14 @@ libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 @OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
 libcsprof_la_DEPENDENCIES = $(HPC_LIBPROFLEAN)
 am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
-	csprof_options.c csproflib.c hpcrun_write_data.c data.c env.c \
-	epoch.c files.c handling_sample.c last.c libmonitor_upcalls.c \
-	metrics.c name.c sample_event.c sample_sources_all.c \
-	sample_source_common.c sample_source_itimer.c \
-	sample_source_none.c sample_sources_registered.c \
-	segv_handler.c state.c system_server.c thread_data.c \
-	thread_use.c trace.c unsafe.c cct/cct.c \
-	unwind/common/backtrace.c unwind/common/splay.c \
+	csprof_options.c csproflib.c data.c env.c epoch.c files.c \
+	handling_sample.c hpcrun_write_data.c last.c \
+	libmonitor_upcalls.c metrics.c name.c sample_event.c \
+	sample_sources_all.c sample_source_common.c \
+	sample_source_itimer.c sample_source_none.c \
+	sample_sources_registered.c segv_handler.c state.c \
+	system_server.c thread_data.c thread_use.c trace.c unsafe.c \
+	cct/cct.c unwind/common/backtrace.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	lush/lush-backtrace.c lush/lush.c lush/lushi-cb.c \
 	lush/lush-support-rt.c lush/lush-pthread.c \
@@ -215,12 +215,11 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	utilities/last_func.c
 am__objects_8 = libcsprof_la-first_func.lo \
 	libcsprof_la-csprof_options.lo libcsprof_la-csproflib.lo \
-	libcsprof_la-hpcrun_write_data.lo libcsprof_la-data.lo \
-	libcsprof_la-env.lo libcsprof_la-epoch.lo \
+	libcsprof_la-data.lo libcsprof_la-env.lo libcsprof_la-epoch.lo \
 	libcsprof_la-files.lo libcsprof_la-handling_sample.lo \
-	libcsprof_la-last.lo libcsprof_la-libmonitor_upcalls.lo \
-	libcsprof_la-metrics.lo libcsprof_la-name.lo \
-	libcsprof_la-sample_event.lo \
+	libcsprof_la-hpcrun_write_data.lo libcsprof_la-last.lo \
+	libcsprof_la-libmonitor_upcalls.lo libcsprof_la-metrics.lo \
+	libcsprof_la-name.lo libcsprof_la-sample_event.lo \
 	libcsprof_la-sample_sources_all.lo \
 	libcsprof_la-sample_source_common.lo \
 	libcsprof_la-sample_source_itimer.lo \
@@ -275,13 +274,14 @@ libcsprof_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 pkglibPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(pkglib_PROGRAMS)
 am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
-	csproflib.c hpcrun_write_data.c data.c env.c epoch.c files.c \
-	handling_sample.c last.c libmonitor_upcalls.c metrics.c name.c \
-	sample_event.c sample_sources_all.c sample_source_common.c \
-	sample_source_itimer.c sample_source_none.c \
-	sample_sources_registered.c segv_handler.c state.c \
-	system_server.c thread_data.c thread_use.c trace.c unsafe.c \
-	cct/cct.c unwind/common/backtrace.c unwind/common/splay.c \
+	csproflib.c data.c env.c epoch.c files.c handling_sample.c \
+	hpcrun_write_data.c last.c libmonitor_upcalls.c metrics.c \
+	name.c sample_event.c sample_sources_all.c \
+	sample_source_common.c sample_source_itimer.c \
+	sample_source_none.c sample_sources_registered.c \
+	segv_handler.c state.c system_server.c thread_data.c \
+	thread_use.c trace.c unsafe.c cct/cct.c \
+	unwind/common/backtrace.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	lush/lush-backtrace.c lush/lush.c lush/lushi-cb.c \
 	lush/lush-support-rt.c lush/lush-pthread.c \
@@ -303,11 +303,11 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	sample_source_papi.c utilities/last_func.c
 am__objects_22 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-csprof_options.$(OBJEXT) \
-	libcsprof_o-csproflib.$(OBJEXT) \
-	libcsprof_o-hpcrun_write_data.$(OBJEXT) \
-	libcsprof_o-data.$(OBJEXT) libcsprof_o-env.$(OBJEXT) \
-	libcsprof_o-epoch.$(OBJEXT) libcsprof_o-files.$(OBJEXT) \
+	libcsprof_o-csproflib.$(OBJEXT) libcsprof_o-data.$(OBJEXT) \
+	libcsprof_o-env.$(OBJEXT) libcsprof_o-epoch.$(OBJEXT) \
+	libcsprof_o-files.$(OBJEXT) \
 	libcsprof_o-handling_sample.$(OBJEXT) \
+	libcsprof_o-hpcrun_write_data.$(OBJEXT) \
 	libcsprof_o-last.$(OBJEXT) \
 	libcsprof_o-libmonitor_upcalls.$(OBJEXT) \
 	libcsprof_o-metrics.$(OBJEXT) libcsprof_o-name.$(OBJEXT) \
@@ -604,7 +604,7 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 #############################################################################
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
 pkglib_LTLIBRARIES = $(am__append_1) $(am__append_30) $(am__append_31)
-bin_SCRIPTS = $(am__append_2) $(am__append_3)
+bin_SCRIPTS = scripts/hpcsummary $(am__append_2) $(am__append_3)
 @OPT_ENABLE_MONITOR_EXTS_TRUE@pkglib_LIBRARIES = libcsprof_wrap.a
 pkglibexec_SCRIPTS = scripts/hpclog
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
@@ -616,12 +616,12 @@ MY_BASE_FILES = \
 	\
 	csprof_options.c		\
 	csproflib.c			\
-	hpcrun_write_data.c		\
 	data.c				\
 	env.c				\
 	epoch.c				\
 	files.c				\
 	handling_sample.c		\
+	hpcrun_write_data.c		\
 	last.c				\
 	libmonitor_upcalls.c		\
 	metrics.c			\
@@ -1248,13 +1248,6 @@ libcsprof_la-csproflib.lo: csproflib.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-csproflib.lo `test -f 'csproflib.c' || echo '$(srcdir)/'`csproflib.c
 
-libcsprof_la-hpcrun_write_data.lo: hpcrun_write_data.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-hpcrun_write_data.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-hpcrun_write_data.Tpo -c -o libcsprof_la-hpcrun_write_data.lo `test -f 'hpcrun_write_data.c' || echo '$(srcdir)/'`hpcrun_write_data.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-hpcrun_write_data.Tpo $(DEPDIR)/libcsprof_la-hpcrun_write_data.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_write_data.c' object='libcsprof_la-hpcrun_write_data.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-hpcrun_write_data.lo `test -f 'hpcrun_write_data.c' || echo '$(srcdir)/'`hpcrun_write_data.c
-
 libcsprof_la-data.lo: data.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-data.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-data.Tpo -c -o libcsprof_la-data.lo `test -f 'data.c' || echo '$(srcdir)/'`data.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-data.Tpo $(DEPDIR)/libcsprof_la-data.Plo
@@ -1289,6 +1282,13 @@ libcsprof_la-handling_sample.lo: handling_sample.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='handling_sample.c' object='libcsprof_la-handling_sample.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-handling_sample.lo `test -f 'handling_sample.c' || echo '$(srcdir)/'`handling_sample.c
+
+libcsprof_la-hpcrun_write_data.lo: hpcrun_write_data.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-hpcrun_write_data.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-hpcrun_write_data.Tpo -c -o libcsprof_la-hpcrun_write_data.lo `test -f 'hpcrun_write_data.c' || echo '$(srcdir)/'`hpcrun_write_data.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-hpcrun_write_data.Tpo $(DEPDIR)/libcsprof_la-hpcrun_write_data.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_write_data.c' object='libcsprof_la-hpcrun_write_data.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-hpcrun_write_data.lo `test -f 'hpcrun_write_data.c' || echo '$(srcdir)/'`hpcrun_write_data.c
 
 libcsprof_la-last.lo: last.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-last.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-last.Tpo -c -o libcsprof_la-last.lo `test -f 'last.c' || echo '$(srcdir)/'`last.c
@@ -1724,20 +1724,6 @@ libcsprof_o-csproflib.obj: csproflib.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-csproflib.obj `if test -f 'csproflib.c'; then $(CYGPATH_W) 'csproflib.c'; else $(CYGPATH_W) '$(srcdir)/csproflib.c'; fi`
 
-libcsprof_o-hpcrun_write_data.o: hpcrun_write_data.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcrun_write_data.o -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcrun_write_data.Tpo -c -o libcsprof_o-hpcrun_write_data.o `test -f 'hpcrun_write_data.c' || echo '$(srcdir)/'`hpcrun_write_data.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcrun_write_data.Tpo $(DEPDIR)/libcsprof_o-hpcrun_write_data.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_write_data.c' object='libcsprof_o-hpcrun_write_data.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcrun_write_data.o `test -f 'hpcrun_write_data.c' || echo '$(srcdir)/'`hpcrun_write_data.c
-
-libcsprof_o-hpcrun_write_data.obj: hpcrun_write_data.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcrun_write_data.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcrun_write_data.Tpo -c -o libcsprof_o-hpcrun_write_data.obj `if test -f 'hpcrun_write_data.c'; then $(CYGPATH_W) 'hpcrun_write_data.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_write_data.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcrun_write_data.Tpo $(DEPDIR)/libcsprof_o-hpcrun_write_data.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_write_data.c' object='libcsprof_o-hpcrun_write_data.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcrun_write_data.obj `if test -f 'hpcrun_write_data.c'; then $(CYGPATH_W) 'hpcrun_write_data.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_write_data.c'; fi`
-
 libcsprof_o-data.o: data.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-data.o -MD -MP -MF $(DEPDIR)/libcsprof_o-data.Tpo -c -o libcsprof_o-data.o `test -f 'data.c' || echo '$(srcdir)/'`data.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-data.Tpo $(DEPDIR)/libcsprof_o-data.Po
@@ -1807,6 +1793,20 @@ libcsprof_o-handling_sample.obj: handling_sample.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='handling_sample.c' object='libcsprof_o-handling_sample.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-handling_sample.obj `if test -f 'handling_sample.c'; then $(CYGPATH_W) 'handling_sample.c'; else $(CYGPATH_W) '$(srcdir)/handling_sample.c'; fi`
+
+libcsprof_o-hpcrun_write_data.o: hpcrun_write_data.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcrun_write_data.o -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcrun_write_data.Tpo -c -o libcsprof_o-hpcrun_write_data.o `test -f 'hpcrun_write_data.c' || echo '$(srcdir)/'`hpcrun_write_data.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcrun_write_data.Tpo $(DEPDIR)/libcsprof_o-hpcrun_write_data.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_write_data.c' object='libcsprof_o-hpcrun_write_data.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcrun_write_data.o `test -f 'hpcrun_write_data.c' || echo '$(srcdir)/'`hpcrun_write_data.c
+
+libcsprof_o-hpcrun_write_data.obj: hpcrun_write_data.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcrun_write_data.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcrun_write_data.Tpo -c -o libcsprof_o-hpcrun_write_data.obj `if test -f 'hpcrun_write_data.c'; then $(CYGPATH_W) 'hpcrun_write_data.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_write_data.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcrun_write_data.Tpo $(DEPDIR)/libcsprof_o-hpcrun_write_data.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_write_data.c' object='libcsprof_o-hpcrun_write_data.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcrun_write_data.obj `if test -f 'hpcrun_write_data.c'; then $(CYGPATH_W) 'hpcrun_write_data.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_write_data.c'; fi`
 
 libcsprof_o-last.o: last.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-last.o -MD -MP -MF $(DEPDIR)/libcsprof_o-last.Tpo -c -o libcsprof_o-last.o `test -f 'last.c' || echo '$(srcdir)/'`last.c
