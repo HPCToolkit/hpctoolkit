@@ -36,7 +36,8 @@
 
 csprof_cct_node_t*
 csprof_sample_callstack(csprof_state_t *state, ucontext_t* context, 
-			int metric_id, uint64_t metric_incr);
+			int metric_id, uint64_t metric_incr,
+			int is_sync);
 
 // FIXME: tallent: relocate when 'csprof state' trash is untangled
 void 

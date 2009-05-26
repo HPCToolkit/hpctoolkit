@@ -61,37 +61,39 @@ lush_agent_pool_t* lush_agents = NULL;
 
 csprof_cct_node_t*
 lush_backtrace(csprof_state_t* state, ucontext_t* context,
-	       int metric_id, uint64_t metric_incr)
+	       int metric_id, uint64_t metric_incr,
+	       int is_sync)
 {
   // ---------------------------------------------------------
   // Record backtrace if:
-  //   1) a synchronous unwind or a non-lush-relevant metric
-  //   2) a lush agent indicates we should
+  //   1) a lush agent indicates we should
+  //   2) a non-lush-relevant metric
+  //   3) a synchronous unwind (may have a lush relevant metric)
   // ---------------------------------------------------------
-  bool     doMetric = true;
+  bool     doMetric = false;
   uint64_t incrMetric = metric_incr;
 
   bool     doMetricIdleness = false;
   double   incrMetricIdleness = 0.0;
   lush_agentid_t aidMetricIdleness = lush_agentid_NULL; // list of agents
 
-  if (metric_incr == 0 || metric_id != lush_agents->metric_time) {
-    // case 1
-  }
-  else {
-    // NOTE: metric_id == lush_agents->metric_time
+  if (metric_id == lush_agents->metric_time) {
     lush_agentid_t aid = 1; // TODO: multiple agents
-    if (lush_agents->metric_idleness != lush_metricid_NULL
-	&& lush_agents->LUSHI_do_metric[aid](incrMetric, 
-					     &doMetric, &doMetricIdleness,
-					     &incrMetric, &incrMetricIdleness)) {
-      aidMetricIdleness = aid; // case 2
-    }
-    else {
-      return NULL;
+    if (lush_agents->LUSHI_do_metric[aid](incrMetric, 
+					  &doMetric, &doMetricIdleness,
+					  &incrMetric, &incrMetricIdleness)) {
+      aidMetricIdleness = aid; // case 1
     }
   }
-  
+
+  if (is_sync || metric_id != lush_agents->metric_time) {
+    doMetric = true; // case 2 and 3
+  }
+
+  if (!doMetric) {
+    return NULL;
+  }
+
 
   // ---------------------------------------------------------
   // Perform the backtrace
