@@ -383,7 +383,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_event_count = MAX_EVENTS;
 
   // Must check for async block first and avoid any MSG if true.
-  if (csprof_async_is_blocked()) {
+  if (hpcrun_async_is_blocked()) {
     csprof_inc_samples_blocked_async();
     return;
   }

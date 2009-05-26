@@ -295,7 +295,7 @@ static int
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
   // Must check for async block first and avoid any MSG if true.
-  if (csprof_async_is_blocked()) {
+  if (hpcrun_async_is_blocked()) {
     csprof_inc_samples_blocked_async();
   }
   else {
