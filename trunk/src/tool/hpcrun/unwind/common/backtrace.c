@@ -57,7 +57,8 @@ test_backtrace_lite(ucontext_t* context);
 //-----------------------------------------------------------------------------
 csprof_cct_node_t*
 csprof_sample_callstack(csprof_state_t *state, ucontext_t* context, 
-			int metric_id, uint64_t metric_incr)
+			int metric_id, uint64_t metric_incr,
+			int is_sync)
 {
   csprof_state_verify_backtrace_invariants(state);
   
@@ -66,7 +67,7 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
     n = hpcrun_backtrace(state, context, metric_id, metric_incr);
   }
   else {
-    n = lush_backtrace(state, context, metric_id, metric_incr);
+    n = lush_backtrace(state, context, metric_id, metric_incr, is_sync);
   }
   //HPC_IF_UNW_LITE(test_backtrace_lite(context);)
 

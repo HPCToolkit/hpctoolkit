@@ -58,14 +58,24 @@
 //     - cannot profile any programs that are restricted from using
 //       LD_PRELOAD (for security reasons)
 
-/* system include files */
+//***************************************************************************
+// system include files 
+//***************************************************************************
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <stdbool.h>
 
-/* user include files */
+//***************************************************************************
+// libmonitor include files
+//***************************************************************************
+
+#include <monitor.h>
+
+//***************************************************************************
+// user include files 
+//***************************************************************************
 
 #include <include/uint.h>
 
@@ -90,8 +100,6 @@
 #include "sample_event.h"
 #include "state.h"
 
-#include "monitor.h"
-
 #include "thread_data.h"
 
 #include "name.h"
@@ -107,6 +115,7 @@
 
 #include <lush/lush.h>
 #include <lush/lush-backtrace.h>
+#include <lush/lush-pthread.h>
 
 static csprof_options_t opts;
 
@@ -229,7 +238,7 @@ csprof_thread_pre_create(void)
 
   // insert into CCT as a placeholder
   csprof_cct_node_t* n;
-  n = csprof_sample_event(&context, metric_id, 0 /* metric_units_consumed */, 1);
+  n = csprof_sample_event(&context, metric_id, 0/*metric_incr*/, 1/*is_sync*/);
 
   // tallent: only drop one to account for inlining.
   if (n) { n = n->parent; }
