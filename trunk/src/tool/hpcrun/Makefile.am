@@ -34,7 +34,7 @@ include $(top_srcdir)/src/Makeinclude.config
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
 pkglib_LTLIBRARIES =
-bin_SCRIPTS =
+bin_SCRIPTS = scripts/hpcsummary
 
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libcsprof.la
@@ -69,12 +69,12 @@ MY_BASE_FILES =			\
 	\
 	csprof_options.c		\
 	csproflib.c			\
-	hpcrun_write_data.c		\
 	data.c				\
 	env.c				\
 	epoch.c				\
 	files.c				\
 	handling_sample.c		\
+	hpcrun_write_data.c		\
 	last.c				\
 	libmonitor_upcalls.c		\
 	metrics.c			\
