@@ -7,7 +7,7 @@
 
 int csprof_is_initialized(void);
 
-int  csprof_async_is_blocked(void);
+int  hpcrun_async_is_blocked(void); // tallent:FIXME: def in libmonitor_upcalls.c
 void csprof_disable_sampling(void);
 void csprof_drop_sample(void);
 

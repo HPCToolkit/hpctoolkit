@@ -66,19 +66,19 @@ bool csprof_no_samples = true;
 // thread data is a convenient place to store this.
 //
 static inline void
-csprof_async_block(void)
+hpcrun_async_block(void)
 {
   TD_GET(suspend_sampling) = 1;
 }
 
 static inline void
-csprof_async_unblock(void)
+hpcrun_async_unblock(void)
 {
   TD_GET(suspend_sampling) = 0;
 }
 
 int
-csprof_async_is_blocked(void)
+hpcrun_async_is_blocked(void)
 {
   return (! csprof_td_avail()) || (TD_GET(suspend_sampling) && !ENABLED(ASYNC_RISKY));
 }
@@ -145,7 +145,7 @@ monitor_init_process(int *argc, char **argv, void *data)
     EEMSG("TST debug ctl is active!");
     STDERR_MSG("Std Err message appears");
   }
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 
   return data;
 }
@@ -159,9 +159,10 @@ static struct _ff {
 void *
 monitor_pre_fork(void)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return NULL;
-  csprof_async_block();
+  }
+  hpcrun_async_block();
 
   NMSG(PRE_FORK,"pre_fork call");
 
@@ -172,7 +173,7 @@ monitor_pre_fork(void)
   }
 
   NMSG(PRE_FORK,"finished pre_fork call");
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 
   return (void *)(&from_fork);
 }
@@ -181,9 +182,10 @@ monitor_pre_fork(void)
 void
 monitor_post_fork(pid_t child, void *data)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  csprof_async_block();
+  }
+  hpcrun_async_block();
 
   NMSG(POST_FORK,"Post fork call");
 
@@ -203,20 +205,20 @@ monitor_post_fork(pid_t child, void *data)
   }
 
   NMSG(POST_FORK,"Finished post fork");
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 }
 
 
 void
 monitor_fini_process(int how, void *data)
 {
-  csprof_async_block();
+  hpcrun_async_block();
 
   csprof_fini_internal();
   trace_close();
   fnbounds_fini();
 
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 }
 
 
@@ -254,14 +256,14 @@ monitor_init_mpi(int *argc, char ***argv)
 void
 monitor_init_thread_support(void)
 {
-  csprof_async_block();
+  hpcrun_async_block();
 
   NMSG(THREAD,"REALLY init_thread_support ---");
   csprof_init_thread_support();
   csprof_set_using_threads(1);
   NMSG(THREAD,"Init thread support done");
 
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 }
 
 
@@ -270,16 +272,17 @@ monitor_thread_pre_create(void)
 {
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return NULL;
-  csprof_async_block();
+  }
+  hpcrun_async_block();
 
   NMSG(THREAD,"pre create");
 
   void *ret = csprof_thread_pre_create();
 
   NMSG(THREAD,"->finish pre create");
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 
   return ret;
 }
@@ -288,15 +291,16 @@ monitor_thread_pre_create(void)
 void
 monitor_thread_post_create(void *dc)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  csprof_async_block();
+  }
+  hpcrun_async_block();
 
   NMSG(THREAD,"post create");
   csprof_thread_post_create(dc);
   NMSG(THREAD,"done post create");
 
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 }
 
 
@@ -308,7 +312,7 @@ monitor_init_thread(int tid, void *data)
   NMSG(THREAD,"back from init thread %d",tid);
 
   trace_open();
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 
   return thread_data;
 }
@@ -317,110 +321,116 @@ monitor_init_thread(int tid, void *data)
 void
 monitor_thread_pre_lock(void)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  // csprof_async_block();
+  }
+  //hpcrun_async_block();
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__lock_pre(&TD_GET(pthr_metrics));
 #endif
 
-  // csprof_async_unblock();
+  //hpcrun_async_unblock();
 }
 
 
 void
 monitor_thread_post_lock(int result)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  // csprof_async_block();
+  }
+  //hpcrun_async_block();
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__lock_post(&TD_GET(pthr_metrics));
 #endif
 
-  // csprof_async_unblock();
+  //hpcrun_async_unblock();
 }
 
 
 void
 monitor_thread_post_trylock(int result)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  // csprof_async_block();
+  }
+  // hpcrun_async_block();
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__trylock(&TD_GET(pthr_metrics), result);
 #endif
 
-  // csprof_async_unblock();
+  // hpcrun_async_unblock();
 }
 
 
 void
 monitor_thread_unlock(void)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  // csprof_async_block();
+  }
+  // hpcrun_async_block();
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__unlock(&TD_GET(pthr_metrics));
 #endif
 
-  // csprof_async_unblock();
+  // hpcrun_async_unblock();
 }
 
 
 void
 monitor_thread_pre_cond_wait(void)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  // csprof_async_block();
+  }
+  // hpcrun_async_block();
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__condwait_pre(&TD_GET(pthr_metrics));
 #endif
 
-  // csprof_async_unblock();
+  // hpcrun_async_unblock();
 }
 
 
 void
 monitor_thread_post_cond_wait(int result)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  // csprof_async_block();
+  }
+  //hpcrun_async_block();
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
   lush_pthr__condwait_post(&TD_GET(pthr_metrics));
 #endif
 
-  // csprof_async_unblock();
+  //hpcrun_async_unblock();
 }
 
 
 void
 monitor_fini_thread(void *init_thread_data)
 {
-  csprof_async_block();
+  hpcrun_async_block();
 
   csprof_state_t *state = (csprof_state_t *)init_thread_data;
 
   csprof_thread_fini(state);
   trace_close();
 
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 }
 
 
@@ -445,48 +455,52 @@ monitor_reset_stacksize(size_t old_size)
 void
 monitor_pre_dlopen(const char *path, int flags)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  csprof_async_block();
+  }
+  hpcrun_async_block();
 
   csprof_pre_dlopen(path, flags);
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 }
 
 
 void
 monitor_dlopen(const char *path, int flags, void *handle)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  csprof_async_block();
+  }
+  hpcrun_async_block();
 
   csprof_dlopen(path, flags, handle);
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 }
 
 
 void
 monitor_dlclose(void *handle)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  csprof_async_block();
+  }
+  hpcrun_async_block();
 
   csprof_dlclose(handle);
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 }
 
 
 void
 monitor_post_dlclose(void *handle, int ret)
 {
-  if (! hpcrun_is_initialized())
+  if (! hpcrun_is_initialized()) {
     return;
-  csprof_async_block();
+  }
+  hpcrun_async_block();
 
   csprof_post_dlclose(handle, ret);
-  csprof_async_unblock();
+  hpcrun_async_unblock();
 }
 
 #endif /* ! HPCRUN_STATIC_LINK */
