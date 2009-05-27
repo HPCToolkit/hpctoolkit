@@ -4,16 +4,16 @@
 //***************************************************************************
 //
 // File: 
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    LUSH: Logical Unwind Support for HPCToolkit
+//   LUSH: Logical Unwind Support for HPCToolkit
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 // Author:
-//    Nathan Tallent, Rice University.
+//   Nathan Tallent, Rice University.
 //
 //***************************************************************************
 
@@ -37,6 +37,13 @@ extern "C" {
 
 //*************************** Forward Declarations **************************
 
+// ---------------------------------------------------------
+// LUSH metric id
+// ---------------------------------------------------------
+
+#define lush_metricid_NULL (-1)
+
+
 //***************************************************************************
 // LUSH Agents
 //***************************************************************************
@@ -45,7 +52,7 @@ extern "C" {
 // LUSH agent id
 // ---------------------------------------------------------
 
-#define lush_agentid_NULL 0
+#define lush_agentid_NULL (0)
 typedef int lush_agentid_t;
 
 

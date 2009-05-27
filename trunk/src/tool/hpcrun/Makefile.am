@@ -100,11 +100,13 @@ MY_BASE_FILES =			\
 	unwind/common/stack_troll.c	\
 	unwind/common/ui_tree.c		\
 	\
-	lush/lush-backtrace.c		\
-	lush/lush.c			\
-	lush/lushi-cb.c			\
-	lush/lush-support-rt.c		\
-	lush/lush-pthread.c		\
+	lush/lush-backtrace.h lush/lush-backtrace.c \
+	lush/lush.h lush/lush.c	\
+	lush/lush-pthread.h lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c \
+	\
+	lush/lushi.h \
+	lush/lushi-cb.h	lush/lushi-cb.c	\
 	\
 	fnbounds/fnbounds_common.c	\
 	\

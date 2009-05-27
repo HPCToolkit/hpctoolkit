@@ -71,9 +71,11 @@
 #endif
 
 #include <metrics.h>
-#include <lush/lush-support.h>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
+
+#include <lib/prof-lean/lush/lush-support.h>
+
 
 #define CSPROF_TREE_USES_DOUBLE_LINKING 0
 #define CSPROF_TREE_USES_SORTED_CHILDREN 1
