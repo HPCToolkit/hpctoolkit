@@ -4,10 +4,47 @@
 #include <stdint.h>
 
 #include "csprof_csdata.h"
+#include "thread_data.h"
+
 
 int csprof_is_initialized(void);
 
-int  hpcrun_async_is_blocked(void); // tallent:FIXME: def in libmonitor_upcalls.c
+
+//***************************************************************************
+
+// Whenever a thread enters csprof synchronously via a monitor
+// callback, don't allow it to reenter asynchronously via a signal
+// handler.  Too much of csprof is not signal-handler safe to allow
+// this.  For example, printing debug messages could deadlock if the
+// signal hits while holding the MSG lock.
+//
+// This block is only needed per-thread, so the "suspend_sampling"
+// thread data is a convenient place to store this.
+
+static inline void
+hpcrun_async_block(void)
+{
+  TD_GET(suspend_sampling) = 1;
+}
+
+
+static inline void
+hpcrun_async_unblock(void)
+{
+  TD_GET(suspend_sampling) = 0;
+}
+
+
+static inline int
+hpcrun_async_is_blocked(void)
+{
+  return ( (! csprof_td_avail()) 
+	   || (TD_GET(suspend_sampling) && !ENABLED(ASYNC_RISKY)));
+}
+
+
+//***************************************************************************
+
 void csprof_disable_sampling(void);
 void csprof_drop_sample(void);
 

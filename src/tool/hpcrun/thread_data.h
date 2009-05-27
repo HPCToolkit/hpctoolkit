@@ -16,7 +16,7 @@
 #include "mem.h"
 #include "state.h"
 
-#include <lush/lush-pthread.h>
+#include <lush/lush-pthread.i>
 
 typedef struct {
   sigjmp_buf jb;

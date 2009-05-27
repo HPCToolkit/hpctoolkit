@@ -32,7 +32,8 @@
 
 #include "agent-pthread.h"
 
-#include "thread_data.h" // FIXME: outside of interface
+#include <thread_data.h>       // N.B.: outside of LUSHI interface
+#include <lush/lush-pthread.h> // N.B.: outside of LUSHI interface
 
 //*************************** Forward Declarations **************************
 
