@@ -9,21 +9,16 @@
 #include "thread_data.h"
 #include "hpcrun_return_codes.h"
 #include "hpcio.h"
+#include "hpcfmt.h"
+#include "hpcrun-fmt.h"
 #include "hpcrun_write_data.h"
 
-#ifdef FIXME
-static int
-hpcrun_write_hdr(FILE *fs, thread_data_t *td)
+static char *
+hpcrun_itos(char *buf, int i)
 {
-  return HPCRUN_OK;
+  sprintf(buf, "%d", i);
+  return buf;
 }
-
-static int
-hpcrun_write_epoch_list(FILE *fs, thread_data_t *td)
-{
-  return HPCRUN_OK;
-}
-#endif
 
 // TODO --- convert to New fmt
 //          Be sure to fix corresponding read routines in ../../lib/prof-juicy/CallPath-Profile.cpp
@@ -35,6 +30,8 @@ hpcrun_write_profile_data(csprof_state_t *state)
   FILE* fs;
 
   int ret, ret1, ret2;
+
+  // FIXME: Does this go here? Why not in fini_thread / fini process?
 
 #if defined(HOST_SYSTEM_IBM_BLUEGENE)
   EMSG("Backtrace for last sample event:\n");
@@ -66,6 +63,12 @@ hpcrun_write_profile_data(csprof_state_t *state)
   // FIXME-MWF cache thread data pointer
   // thread_data_t *td = csprof_get_thread_data(); 
 
+  char _tmp[10];
+  hpcrun_fmt_hdr_fwrite(fs,
+                        "program-name", "TBD",
+                        "process_id", "TBD",
+                        "mpi-rank", hpcrun_itos(_tmp, rank),
+                        END_NVPAIRS);
 #if 0
   hpcrun_write_hdr(fs, td);
   hpcrun_write_epoch_list(fs, td);

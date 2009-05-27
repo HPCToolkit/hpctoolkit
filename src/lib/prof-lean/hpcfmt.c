@@ -275,15 +275,15 @@ hpcfile_num8s__fwrite(hpcfile_num8s_t* x, FILE* fs)
 }
 
 int
-hpcrun_fstr_fread(void *str, FILE *infs, alloc_fn alloc)
+hpcrun_fstr_fread(char **str, FILE *infs, alloc_fn alloc)
 {
   uint32_t len;
-  char *buf = (char *) str;
+  char *buf = *str;
 
   hpcio_fread_le4(&len, infs); // FIXME-MWF Check err from read
   if (alloc) {
     buf = (char *) alloc(len+1);
-    *((char **)str) = buf;  // when allocating, assume str is a ref to store a val
+    *str = buf;
   }
   if (! buf) {
     return HPCFILE_ERR;

@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: c;-*- // technically C99
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -81,34 +81,64 @@ extern "C" {
 //
 //***************************************************************************
 
+//***************************************************************************
+//
+//  Macros for defining "LIST_OF" things
+//
+//***************************************************************************
+
+// conventional name for LIST_OF stuff
+
+#define LIST_OF(t) list_of_ ## t
+
+// std representation for a LIST_OF things
+#define REP_LIST_OF(t) \
+struct LIST_OF(t) {    \
+  uint32_t len;        \
+  t *lst;              \
+}
+
+// Macro to typedef a LIST_OF some type
+
+#define typedef_LIST_OF(t) \
+typedef REP_LIST_OF(t) LIST_OF(t)
+
 // macro to propagate the error code of another function
 
 #define THROW_ERR(expr) if (expr) { return HPCFILE_ERR; }
 
-// macro to pass either a pointer to pre-allocated space, or a pointer-to buffer pointer
-// in the latter case, memory will be allocated, and the allocation will be side-effected back
-// to the calling routine.
-//
-// THIS MACRO ONLY WORKS WHEN THE ALLOCATION DECISION IS DETERMINED BY A VAR CALLED "alloc"
+  // ****** name-value pairs (nvpair) ******
 
-#define ALLOC_P(lvalue) (alloc ? (lvalue) : &(lvalue))
+typedef struct nvpair_t {
+  char *name;
+  char *val;
+} nvpair_t;
+
+// Sentinel to mark end of a variadic nv pair list
+
+#define END_NVPAIRS NULL
+
+//***************************************************************************
+// 
+// some type defs for various LIST_OF things (uses macros from this file)
+//
+//***************************************************************************
+
+typedef_LIST_OF(nvpair_t);
+
+// *********  file hdr *************
 
 #define MAGIC "HPCRUN____02.001"
 
-typedef char hpcrun_fmt_magic_t[sizeof(MAGIC)-1];
-
-typedef struct hpcrun_fmt_nvpair_t {
-  char *name;
-  char *val;
-} hpcrun_fmt_nvpair_t;
 
 typedef struct hpcrun_fmt_hdr_t {
-  hpcrun_fmt_magic_t magic;
-
-  uint32_t            n_nv_p; // # nv pairs below
-  hpcrun_fmt_nvpair_t nv_p[]; // variable size data, so this field MUST BE LAST
+  char tag[sizeof(MAGIC)];
+  LIST_OF(nvpair_t) nvps;
 } hpcrun_fmt_hdr_t;
 
+int hpcrun_fmt_hdr_fwrite(FILE *outfs, ...);
+int hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t *hdr, FILE* infs, alloc_fn alloc);
+int hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t *hdr, FILE* outf);
 
 //***************************************************************************
 //

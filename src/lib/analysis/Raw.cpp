@@ -61,6 +61,9 @@ using std::string;
 
 #include <lib/prof-juicy/CallPath-Profile.hpp>
 #include <lib/prof-juicy/Flat-ProfileData.hpp>
+#include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcfmt.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lib/support/diagnostics.h>
 
@@ -98,6 +101,15 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   if (!fs) { 
     DIAG_Throw(filenm << ": could not open");
   }
+
+  // ----------------- new file hdr -----------------------
+  hpcrun_fmt_hdr_t new_hdr;
+  
+  ret = hpcrun_fmt_hdr_fread(&new_hdr, fs, malloc);
+  if (ret != HPCFILE_OK) {
+    DIAG_Throw(filenm << ": error reading 'new hdr'");
+  }
+  hpcrun_fmt_hdr_fprint(&new_hdr, stdout);
 
   ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
   if (ret != HPCFILE_OK) {

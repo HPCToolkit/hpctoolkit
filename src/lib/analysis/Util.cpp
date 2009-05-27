@@ -68,6 +68,8 @@ using std::string;
 
 #include <lib/banal/bloop-simple.hpp>
 
+#include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcrunflat-fmt.h>
 
@@ -97,6 +99,9 @@ Analysis::Util::getProfileType(const std::string& filenm)
   if (strncmp(buf, HPCFILE_CSPROF_MAGIC_STR, 
 	      HPCFILE_CSPROF_MAGIC_STR_LEN) == 0) {
     ty = ProfType_CALLPATH;      
+  }
+  else if (strncmp(buf, MAGIC, sizeof(MAGIC)-1) == 0) {
+    ty = ProfType_CALLPATH;
   }
   else if (strncmp(buf, HPCRUNFILE_MAGIC_STR, 
 		   HPCRUNFILE_MAGIC_STR_LEN) == 0) {
