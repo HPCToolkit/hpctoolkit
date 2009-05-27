@@ -2,8 +2,16 @@
 // $Id$
 //
 
+//************************* System Include Files ****************************
+
 #include <stdlib.h>
 #include <assert.h>
+
+//************************ libmonitor Include Files *************************
+
+#include <monitor.h>
+
+//*************************** User Include Files ****************************
 
 #include "pmsg.h"
 #include "mem.h"
@@ -12,7 +20,10 @@
 
 #include "thread_data.h"
 
-#include <monitor.h>
+#include <lush/lush-pthread.h>
+
+//***************************************************************************
+
 
 static thread_data_t _local_td;
 

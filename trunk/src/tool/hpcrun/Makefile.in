@@ -194,12 +194,12 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	cct/cct.c unwind/common/backtrace.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/list.c memory/mem.c messages/pmsg.c \
-	utilities/executable-path.c utilities/spinlock.c \
-	utilities/tokenize.c utilities/unlink.c \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/list.c \
+	memory/mem.c messages/pmsg.c utilities/executable-path.c \
+	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
 	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
@@ -286,12 +286,12 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	unwind/common/backtrace.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/list.c memory/mem.c messages/pmsg.c \
-	utilities/executable-path.c utilities/spinlock.c \
-	utilities/tokenize.c utilities/unlink.c \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/list.c \
+	memory/mem.c messages/pmsg.c utilities/executable-path.c \
+	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_static.c \
 	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
@@ -653,7 +653,7 @@ MY_BASE_FILES = \
 	\
 	lush/lush-backtrace.h lush/lush-backtrace.c \
 	lush/lush.h lush/lush.c	\
-	lush/lush-pthread.h lush/lush-pthread.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
 	lush/lush-support-rt.h lush/lush-support-rt.c \
 	\
 	lush/lushi.h \

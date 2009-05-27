@@ -102,7 +102,7 @@ MY_BASE_FILES =			\
 	\
 	lush/lush-backtrace.h lush/lush-backtrace.c \
 	lush/lush.h lush/lush.c	\
-	lush/lush-pthread.h lush/lush-pthread.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
 	lush/lush-support-rt.h lush/lush-support-rt.c \
 	\
 	lush/lushi.h \

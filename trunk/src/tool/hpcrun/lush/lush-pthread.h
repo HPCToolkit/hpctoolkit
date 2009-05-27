@@ -31,6 +31,10 @@
 #include <include/gcc-attr.h>
 #include <include/min-max.h>
 
+#include "lush-pthread.i"
+#include "lush-backtrace.h" // for 'lush_agents'
+
+#include <sample_event.h>
 #include <utilities/atomic.h>
 
 #include <lib/prof-lean/timer.h>
@@ -67,56 +71,13 @@ void
 lush_pthreads__init();
 
 
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
+//***************************************************************************
 
-// Working threads are in one of three states
-//   (1)  locked && ~directly_in_cond
-//   (2)  locked &&  directly_in_cond
-//   (3) ~locked
-//
-//   NOTE: A thread in state (2) could additionally grab a lock
-//   unrelated to the cond-var, moving to state (1) until the second
-//   lock is released.
-//
-// Idle threads are in one of three state (mutually exclusive):
-//   [1]  blocked on a lock
-//   [2a] blocked on a cond-var lock
-//   [2b] blocked on a cond-var signal
-//   [--] none of the above, but blocking on the scheduler (not
-// 	  interesting, assuming all cores are utilized)
-//
-//   NOTE: A thread blocking in state [1] could be working within a cond (2).
+void 
+lush_pthr__init(lush_pthr_t* x);
 
-
-typedef struct {
-  
-  // -------------------------------------------------------
-  // thread specific metrics
-  // -------------------------------------------------------
-  bool is_working; // thread is working (not blocked for any reason)
-  int  num_locks;  // number of thread's locks (including a cond-var lock)
-  int  cond_lock;  // 0 or the lock number on entry to cond-var critial region
-
-  uint64_t doIdlenessCnt;
-  uint64_t begIdleness; // begin idleness 'timestamp'
-  uint64_t idleness;    // accumulated idleness
-
-  // -------------------------------------------------------
-  // process wide metrics
-  // -------------------------------------------------------
-  long* ps_num_procs;        // available processor cores
-  long* ps_num_threads;
-
-  long* ps_num_working;      // working (1) + (2) + (3)
-  long* ps_num_working_lock; // working (1)
-  //    ps_num_working_othr  // working (2) + (3)
-
-  //    ps_num_idle_lock     // idleness [1]
-  long* ps_num_idle_cond;    // idleness [2a] + [2b]
-
-} lush_pthr_t;
+void 
+lush_pthr__dump(lush_pthr_t* x, const char* nm);
 
 
 //***************************************************************************
@@ -142,12 +103,16 @@ lush_pthr__isWorking_cond(lush_pthr_t* x)
 }
 
 
-#define LUSH_SYNC_SMPL_PERIOD 32
+//***************************************************************************
+
+
+#define LUSH_SYNC_SMPL_PERIOD (33)
 
 static inline void
 lush_pthr__begIdleness(lush_pthr_t* x)
 {
-  if ((x->doIdlenessCnt % LUSH_SYNC_SMPL_PERIOD) == 0) {
+  x->doIdlenessCnt++;
+  if (x->doIdlenessCnt == LUSH_SYNC_SMPL_PERIOD) {
     uint64_t time = UINT64_MAX;
     time_getTimeReal(&time);
     x->begIdleness = time;
@@ -158,22 +123,24 @@ lush_pthr__begIdleness(lush_pthr_t* x)
 static inline void
 lush_pthr__endIdleness(lush_pthr_t* x)
 {
-  if ((x->doIdlenessCnt % LUSH_SYNC_SMPL_PERIOD) == 0) {
+  if (x->doIdlenessCnt == LUSH_SYNC_SMPL_PERIOD) {
     uint64_t time = 0;
     time_getTimeReal(&time);
     x->idleness += LUSH_SYNC_SMPL_PERIOD * MAX(0, time - x->begIdleness);
-    // record an syncronous sample... [must disable async sampling!]
+    x->doIdlenessCnt = 0;
   }
-  x->doIdlenessCnt++;
 }
 
-//***************************************************************************
 
-void 
-lush_pthr__init(lush_pthr_t* x);
-
-void 
-lush_pthr__dump(lush_pthr_t* x, const char* nm);
+//static inline void
+#define lush_pthr__commitIdleness(/* lush_pthr_t* */ x)		   \
+  if (x->idleness > 0 && !hpcrun_async_is_blocked()) {		   \
+    hpcrun_async_block();					   \
+    ucontext_t context;						   \
+    getcontext(&context); /* FIXME: check for errors */		   \
+    csprof_sample_event(&context, lush_agents->metric_time, 0, 1); \
+    hpcrun_async_unblock();					   \
+  }
 
 
 //***************************************************************************
@@ -257,6 +224,7 @@ lush_pthr__lock_post(lush_pthr_t* x)
 
 #if (LUSH_PTHR_SELF_IDLENESS)
   x->is_working = true;
+  lush_pthr__commitIdleness(x);
 #else
   // (1) moving to lock; (2) moving from cond to lock
   bool do_addLock = (x->num_locks == 0 || lush_pthr__isDirectlyInCond(x));
@@ -374,6 +342,7 @@ lush_pthr__condwait_post(lush_pthr_t* x)
 
 #if (LUSH_PTHR_SELF_IDLENESS)
   x->is_working = true;
+  lush_pthr__commitIdleness(x);
 #else
   x->is_working = true;
   x->num_locks++;

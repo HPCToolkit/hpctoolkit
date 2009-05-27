@@ -79,7 +79,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
 
   if (metric_id == lush_agents->metric_time) {
     lush_agentid_t aid = 1; // TODO: multiple agents
-    if (lush_agents->LUSHI_do_metric[aid](incrMetric, 
+    if (lush_agents->LUSHI_do_metric[aid](metric_incr, 
 					  &doMetric, &doMetricIdleness,
 					  &incrMetric, &incrMetricIdleness)) {
       aidMetricIdleness = aid; // case 1
