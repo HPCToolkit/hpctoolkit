@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: c;-*- // technically C99
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -60,6 +60,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include <sys/stat.h>
 
@@ -69,6 +70,31 @@
 #include "hpcfmt.h"
 
 //*************************** Forward Declarations **************************
+int
+nvpairs_vfwrite(FILE *out, va_list args)
+{
+  va_list _tmp;
+  va_copy(_tmp, args);
+
+  uint32_t len = 0;
+
+  for (char *arg = va_arg(_tmp, char *); arg != END_NVPAIRS; arg = va_arg(_tmp, char *)) {
+    arg = va_arg(_tmp, char *);
+    len++;
+  }
+  va_end(_tmp);
+
+  hpcio_fwrite_le4(&len, out);
+
+  for (char *arg = va_arg(args, char *); arg != END_NVPAIRS; arg = va_arg(args, char *)) {
+    hpcrun_fstr_fwrite(arg, out); // write NAME
+    arg = va_arg(args, char *);
+    hpcrun_fstr_fwrite(arg, out); // write VALUE
+  }
+  return HPCFILE_OK;
+}
+
+//*************************** Main Code **************************
 
 #define DBG_READ_METRICS 0
 
@@ -77,7 +103,7 @@ int hpcfile_csprof_read_hdr(FILE* fs, hpcfile_csprof_hdr_t* hdr);
 hpcfile_metric_data_t hpcfile_metric_data_ZERO = { .bits = 0 };
 
 int
-hpcrun_fmt_nvpair_fwrite(hpcrun_fmt_nvpair_t *nvp, FILE *outfs)
+hpcrun_fmt_nvpair_t_fwrite(nvpair_t *nvp, FILE *outfs)
 {
   THROW_ERR(hpcrun_fstr_fwrite(nvp->name, outfs));
   THROW_ERR(hpcrun_fstr_fwrite(nvp->val, outfs));
@@ -86,21 +112,79 @@ hpcrun_fmt_nvpair_fwrite(hpcrun_fmt_nvpair_t *nvp, FILE *outfs)
 }
 
 int
-hpcrun_fmt_nvpair_fread(hpcrun_fmt_nvpair_t *inp, FILE *infs, alloc_fn alloc)
+hpcrun_fmt_nvpair_t_fread(nvpair_t *inp, FILE *infs, alloc_fn alloc)
 {
-  THROW_ERR(hpcrun_fstr_fread(inp->name, infs, alloc));
-  THROW_ERR(hpcrun_fstr_fread(inp->val, infs, alloc));
+  hpcrun_fstr_fread(&(inp->name), infs, alloc);
+  hpcrun_fstr_fread(&(inp->val), infs, alloc);
 
   return HPCFILE_OK;
 }
 
 int
-hpcrun_fmt_nvpair_fprint(hpcrun_fmt_nvpair_t *nvp, FILE *outfs)
+hpcrun_fmt_nvpair_t_fprint(nvpair_t *nvp, FILE *outfs)
 {
-  fprintf(outfs,"NV(%s,%s)", nvp->name, nvp->val);
+  fprintf(outfs,"NV(%s,%s)\n", nvp->name, nvp->val);
   return HPCFILE_OK;
 }
 
+// static eventually ?? 
+int
+hpcrun_fmt_list_of_nvpair_t_fread(LIST_OF(nvpair_t) *nvps, FILE *in, alloc_fn alloc)
+{
+  hpcio_fread_le4(&(nvps->len), in);
+  if (alloc != NULL) {
+    nvps->lst = (nvpair_t *) alloc(nvps->len * sizeof(nvpair_t));
+  }
+  for (uint32_t i=0; i<nvps->len; i++){
+    hpcrun_fmt_nvpair_t_fread(&(nvps->lst[i]), in, alloc);
+  }
+  return HPCFILE_OK;
+}
+
+// static eventually ??
+int
+hpcrun_fmt_list_of_nvpair_t_fprint(LIST_OF(nvpair_t) *nvps, FILE *out)
+{
+  nvpair_t *p = nvps->lst;
+  for (uint32_t i=0; i<nvps->len; i++,p++){
+    hpcrun_fmt_nvpair_t_fprint(p, out);
+  }
+  return HPCFILE_OK;
+}
+
+int
+hpcrun_fmt_hdr_fwrite(FILE *outfs, ...)
+{
+  va_list args;
+  va_start(args, outfs);
+
+  fwrite(MAGIC, 1, strlen(MAGIC), outfs);
+
+  nvpairs_vfwrite(outfs, args);
+
+  va_end(args);
+
+  return HPCFILE_OK;
+}
+
+int
+hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t *hdr, FILE* infs, alloc_fn alloc)
+{
+
+  fread(&(hdr->tag), 1, strlen(MAGIC), infs);
+  hdr->tag[strlen(MAGIC)] = '\0';
+  hpcrun_fmt_list_of_nvpair_t_fread(&(hdr->nvps), infs, alloc);
+
+  return HPCFILE_OK;
+}
+
+int
+hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t *hdr, FILE* out)
+{
+  fwrite(&(hdr->tag), 1, sizeof(hdr->tag), out);
+  hpcrun_fmt_list_of_nvpair_t_fprint(&(hdr->nvps), out);
+  return HPCFILE_OK;
+}
 
 
 // HPC_CSPROF format details: 
@@ -123,8 +207,6 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
   int i;
 
   if (!fs) { return HPCFILE_ERR; }
-
-
 
   // Write header 
   hpcfile_csprof_hdr__init(&fhdr);

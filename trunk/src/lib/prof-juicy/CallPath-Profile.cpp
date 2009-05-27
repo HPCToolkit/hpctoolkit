@@ -76,6 +76,7 @@ using std::string;
 #include <lib/xml/xml.hpp>
 using namespace xml;
 
+#include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lib/support/diagnostics.h>
@@ -299,10 +300,19 @@ Profile*
 Profile::make(const char* fnm, FILE* outfs) 
 {
   int ret;
+  hpcrun_fmt_hdr_t new_hdr;
 
   FILE* fs = hpcio_open_r(fnm);
   if (!fs) { 
     DIAG_Throw("error opening file");
+  }
+
+  // ------------------------------------------------------------
+  // Read new header 
+  // ------------------------------------------------------------
+  ret = hpcrun_fmt_hdr_fread(&new_hdr, fs, hpcfmt_alloc);
+  if (ret != HPCFILE_OK) {
+    DIAG_Throw("error reading 'new fmt hdr'");
   }
 
   // ------------------------------------------------------------

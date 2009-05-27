@@ -77,8 +77,10 @@ extern "C" {
 #endif
 
 // Common function status values
-#define HPCFILE_OK   1
-#define HPCFILE_ERR -1
+// #define HPCFILE_OK   1
+// #define HPCFILE_ERR -1
+
+enum {HPCFILE_OK = 1, HPCFILE_ERR = -1};
 
 
 // The library should generally be very quiet; these are for
@@ -200,7 +202,7 @@ int hpcfile_str__fread(hpcfile_str_t* x, FILE* fs,
 int hpcfile_str__fwrite(hpcfile_str_t* x, FILE* fs);
 int hpcfile_str__fprint(hpcfile_str_t* x, FILE* fs);
 
-int hpcrun_fstr_fread(void *str, FILE *infs, alloc_fn alloc);
+int hpcrun_fstr_fread(char **str, FILE *infs, alloc_fn alloc);
 int hpcrun_fstr_fwrite(char *, FILE *outfs);
 
 // ---------------------------------------------------------
