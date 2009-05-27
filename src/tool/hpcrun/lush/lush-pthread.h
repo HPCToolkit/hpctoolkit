@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
@@ -132,8 +131,8 @@ lush_pthr__endIdleness(lush_pthr_t* x)
 }
 
 
-//static inline void
-#define lush_pthr__commitIdleness(/* lush_pthr_t* */ x)		   \
+#if 0
+#  define lush_pthr__commitIdleness(/* lush_pthr_t* */ x)	   \
   if (x->idleness > 0 && !hpcrun_async_is_blocked()) {		   \
     hpcrun_async_block();					   \
     ucontext_t context;						   \
@@ -141,7 +140,14 @@ lush_pthr__endIdleness(lush_pthr_t* x)
     csprof_sample_event(&context, lush_agents->metric_time, 0, 1); \
     hpcrun_async_unblock();					   \
   }
-
+#else
+#  include <signal.h>
+#  include <pthread.h>
+#  define lush_pthr__commitIdleness(/* lush_pthr_t* */ x)	   \
+  if (x->idleness > 0) {					   \
+    pthread_kill(pthread_self(), SIGPROF);			   \
+  }
+#endif
 
 //***************************************************************************
 
