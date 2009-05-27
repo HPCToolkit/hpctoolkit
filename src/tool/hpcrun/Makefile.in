@@ -193,11 +193,13 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	system_server.c thread_data.c thread_use.c trace.c unsafe.c \
 	cct/cct.c unwind/common/backtrace.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
-	lush/lush-backtrace.c lush/lush.c lush/lushi-cb.c \
-	lush/lush-support-rt.c lush/lush-pthread.c \
-	fnbounds/fnbounds_common.c memory/list.c memory/mem.c \
-	messages/pmsg.c utilities/executable-path.c \
-	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/list.c memory/mem.c messages/pmsg.c \
+	utilities/executable-path.c utilities/spinlock.c \
+	utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
 	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
@@ -232,8 +234,8 @@ am__objects_8 = libcsprof_la-first_func.lo \
 	libcsprof_la-backtrace.lo libcsprof_la-splay.lo \
 	libcsprof_la-stack_troll.lo libcsprof_la-ui_tree.lo \
 	libcsprof_la-lush-backtrace.lo libcsprof_la-lush.lo \
-	libcsprof_la-lushi-cb.lo libcsprof_la-lush-support-rt.lo \
-	libcsprof_la-lush-pthread.lo libcsprof_la-fnbounds_common.lo \
+	libcsprof_la-lush-pthread.lo libcsprof_la-lush-support-rt.lo \
+	libcsprof_la-lushi-cb.lo libcsprof_la-fnbounds_common.lo \
 	libcsprof_la-list.lo libcsprof_la-mem.lo libcsprof_la-pmsg.lo \
 	libcsprof_la-executable-path.lo libcsprof_la-spinlock.lo \
 	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
@@ -283,11 +285,13 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	thread_use.c trace.c unsafe.c cct/cct.c \
 	unwind/common/backtrace.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
-	lush/lush-backtrace.c lush/lush.c lush/lushi-cb.c \
-	lush/lush-support-rt.c lush/lush-pthread.c \
-	fnbounds/fnbounds_common.c memory/list.c memory/mem.c \
-	messages/pmsg.c utilities/executable-path.c \
-	utilities/spinlock.c utilities/tokenize.c utilities/unlink.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/list.c memory/mem.c messages/pmsg.c \
+	utilities/executable-path.c utilities/spinlock.c \
+	utilities/tokenize.c utilities/unlink.c \
 	fnbounds/fnbounds_static.c \
 	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
@@ -326,9 +330,9 @@ am__objects_22 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-stack_troll.$(OBJEXT) \
 	libcsprof_o-ui_tree.$(OBJEXT) \
 	libcsprof_o-lush-backtrace.$(OBJEXT) \
-	libcsprof_o-lush.$(OBJEXT) libcsprof_o-lushi-cb.$(OBJEXT) \
+	libcsprof_o-lush.$(OBJEXT) libcsprof_o-lush-pthread.$(OBJEXT) \
 	libcsprof_o-lush-support-rt.$(OBJEXT) \
-	libcsprof_o-lush-pthread.$(OBJEXT) \
+	libcsprof_o-lushi-cb.$(OBJEXT) \
 	libcsprof_o-fnbounds_common.$(OBJEXT) \
 	libcsprof_o-list.$(OBJEXT) libcsprof_o-mem.$(OBJEXT) \
 	libcsprof_o-pmsg.$(OBJEXT) \
@@ -647,11 +651,13 @@ MY_BASE_FILES = \
 	unwind/common/stack_troll.c	\
 	unwind/common/ui_tree.c		\
 	\
-	lush/lush-backtrace.c		\
-	lush/lush.c			\
-	lush/lushi-cb.c			\
-	lush/lush-support-rt.c		\
-	lush/lush-pthread.c		\
+	lush/lush-backtrace.h lush/lush-backtrace.c \
+	lush/lush.h lush/lush.c	\
+	lush/lush-pthread.h lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c \
+	\
+	lush/lushi.h \
+	lush/lushi-cb.h	lush/lushi-cb.c	\
 	\
 	fnbounds/fnbounds_common.c	\
 	\
@@ -1458,12 +1464,12 @@ libcsprof_la-lush.lo: lush/lush.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-lush.lo `test -f 'lush/lush.c' || echo '$(srcdir)/'`lush/lush.c
 
-libcsprof_la-lushi-cb.lo: lush/lushi-cb.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-lushi-cb.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-lushi-cb.Tpo -c -o libcsprof_la-lushi-cb.lo `test -f 'lush/lushi-cb.c' || echo '$(srcdir)/'`lush/lushi-cb.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-lushi-cb.Tpo $(DEPDIR)/libcsprof_la-lushi-cb.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lushi-cb.c' object='libcsprof_la-lushi-cb.lo' libtool=yes @AMDEPBACKSLASH@
+libcsprof_la-lush-pthread.lo: lush/lush-pthread.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-lush-pthread.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-lush-pthread.Tpo -c -o libcsprof_la-lush-pthread.lo `test -f 'lush/lush-pthread.c' || echo '$(srcdir)/'`lush/lush-pthread.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-lush-pthread.Tpo $(DEPDIR)/libcsprof_la-lush-pthread.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-pthread.c' object='libcsprof_la-lush-pthread.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-lushi-cb.lo `test -f 'lush/lushi-cb.c' || echo '$(srcdir)/'`lush/lushi-cb.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-lush-pthread.lo `test -f 'lush/lush-pthread.c' || echo '$(srcdir)/'`lush/lush-pthread.c
 
 libcsprof_la-lush-support-rt.lo: lush/lush-support-rt.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-lush-support-rt.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-lush-support-rt.Tpo -c -o libcsprof_la-lush-support-rt.lo `test -f 'lush/lush-support-rt.c' || echo '$(srcdir)/'`lush/lush-support-rt.c
@@ -1472,12 +1478,12 @@ libcsprof_la-lush-support-rt.lo: lush/lush-support-rt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-lush-support-rt.lo `test -f 'lush/lush-support-rt.c' || echo '$(srcdir)/'`lush/lush-support-rt.c
 
-libcsprof_la-lush-pthread.lo: lush/lush-pthread.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-lush-pthread.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-lush-pthread.Tpo -c -o libcsprof_la-lush-pthread.lo `test -f 'lush/lush-pthread.c' || echo '$(srcdir)/'`lush/lush-pthread.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-lush-pthread.Tpo $(DEPDIR)/libcsprof_la-lush-pthread.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-pthread.c' object='libcsprof_la-lush-pthread.lo' libtool=yes @AMDEPBACKSLASH@
+libcsprof_la-lushi-cb.lo: lush/lushi-cb.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-lushi-cb.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-lushi-cb.Tpo -c -o libcsprof_la-lushi-cb.lo `test -f 'lush/lushi-cb.c' || echo '$(srcdir)/'`lush/lushi-cb.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-lushi-cb.Tpo $(DEPDIR)/libcsprof_la-lushi-cb.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lushi-cb.c' object='libcsprof_la-lushi-cb.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-lush-pthread.lo `test -f 'lush/lush-pthread.c' || echo '$(srcdir)/'`lush/lush-pthread.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-lushi-cb.lo `test -f 'lush/lushi-cb.c' || echo '$(srcdir)/'`lush/lushi-cb.c
 
 libcsprof_la-fnbounds_common.lo: fnbounds/fnbounds_common.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-fnbounds_common.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-fnbounds_common.Tpo -c -o libcsprof_la-fnbounds_common.lo `test -f 'fnbounds/fnbounds_common.c' || echo '$(srcdir)/'`fnbounds/fnbounds_common.c
@@ -2144,19 +2150,19 @@ libcsprof_o-lush.obj: lush/lush.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lush.obj `if test -f 'lush/lush.c'; then $(CYGPATH_W) 'lush/lush.c'; else $(CYGPATH_W) '$(srcdir)/lush/lush.c'; fi`
 
-libcsprof_o-lushi-cb.o: lush/lushi-cb.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lushi-cb.o -MD -MP -MF $(DEPDIR)/libcsprof_o-lushi-cb.Tpo -c -o libcsprof_o-lushi-cb.o `test -f 'lush/lushi-cb.c' || echo '$(srcdir)/'`lush/lushi-cb.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lushi-cb.Tpo $(DEPDIR)/libcsprof_o-lushi-cb.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lushi-cb.c' object='libcsprof_o-lushi-cb.o' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-lush-pthread.o: lush/lush-pthread.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lush-pthread.o -MD -MP -MF $(DEPDIR)/libcsprof_o-lush-pthread.Tpo -c -o libcsprof_o-lush-pthread.o `test -f 'lush/lush-pthread.c' || echo '$(srcdir)/'`lush/lush-pthread.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lush-pthread.Tpo $(DEPDIR)/libcsprof_o-lush-pthread.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-pthread.c' object='libcsprof_o-lush-pthread.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lushi-cb.o `test -f 'lush/lushi-cb.c' || echo '$(srcdir)/'`lush/lushi-cb.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lush-pthread.o `test -f 'lush/lush-pthread.c' || echo '$(srcdir)/'`lush/lush-pthread.c
 
-libcsprof_o-lushi-cb.obj: lush/lushi-cb.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lushi-cb.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-lushi-cb.Tpo -c -o libcsprof_o-lushi-cb.obj `if test -f 'lush/lushi-cb.c'; then $(CYGPATH_W) 'lush/lushi-cb.c'; else $(CYGPATH_W) '$(srcdir)/lush/lushi-cb.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lushi-cb.Tpo $(DEPDIR)/libcsprof_o-lushi-cb.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lushi-cb.c' object='libcsprof_o-lushi-cb.obj' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-lush-pthread.obj: lush/lush-pthread.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lush-pthread.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-lush-pthread.Tpo -c -o libcsprof_o-lush-pthread.obj `if test -f 'lush/lush-pthread.c'; then $(CYGPATH_W) 'lush/lush-pthread.c'; else $(CYGPATH_W) '$(srcdir)/lush/lush-pthread.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lush-pthread.Tpo $(DEPDIR)/libcsprof_o-lush-pthread.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-pthread.c' object='libcsprof_o-lush-pthread.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lushi-cb.obj `if test -f 'lush/lushi-cb.c'; then $(CYGPATH_W) 'lush/lushi-cb.c'; else $(CYGPATH_W) '$(srcdir)/lush/lushi-cb.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lush-pthread.obj `if test -f 'lush/lush-pthread.c'; then $(CYGPATH_W) 'lush/lush-pthread.c'; else $(CYGPATH_W) '$(srcdir)/lush/lush-pthread.c'; fi`
 
 libcsprof_o-lush-support-rt.o: lush/lush-support-rt.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lush-support-rt.o -MD -MP -MF $(DEPDIR)/libcsprof_o-lush-support-rt.Tpo -c -o libcsprof_o-lush-support-rt.o `test -f 'lush/lush-support-rt.c' || echo '$(srcdir)/'`lush/lush-support-rt.c
@@ -2172,19 +2178,19 @@ libcsprof_o-lush-support-rt.obj: lush/lush-support-rt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lush-support-rt.obj `if test -f 'lush/lush-support-rt.c'; then $(CYGPATH_W) 'lush/lush-support-rt.c'; else $(CYGPATH_W) '$(srcdir)/lush/lush-support-rt.c'; fi`
 
-libcsprof_o-lush-pthread.o: lush/lush-pthread.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lush-pthread.o -MD -MP -MF $(DEPDIR)/libcsprof_o-lush-pthread.Tpo -c -o libcsprof_o-lush-pthread.o `test -f 'lush/lush-pthread.c' || echo '$(srcdir)/'`lush/lush-pthread.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lush-pthread.Tpo $(DEPDIR)/libcsprof_o-lush-pthread.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-pthread.c' object='libcsprof_o-lush-pthread.o' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-lushi-cb.o: lush/lushi-cb.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lushi-cb.o -MD -MP -MF $(DEPDIR)/libcsprof_o-lushi-cb.Tpo -c -o libcsprof_o-lushi-cb.o `test -f 'lush/lushi-cb.c' || echo '$(srcdir)/'`lush/lushi-cb.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lushi-cb.Tpo $(DEPDIR)/libcsprof_o-lushi-cb.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lushi-cb.c' object='libcsprof_o-lushi-cb.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lush-pthread.o `test -f 'lush/lush-pthread.c' || echo '$(srcdir)/'`lush/lush-pthread.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lushi-cb.o `test -f 'lush/lushi-cb.c' || echo '$(srcdir)/'`lush/lushi-cb.c
 
-libcsprof_o-lush-pthread.obj: lush/lush-pthread.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lush-pthread.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-lush-pthread.Tpo -c -o libcsprof_o-lush-pthread.obj `if test -f 'lush/lush-pthread.c'; then $(CYGPATH_W) 'lush/lush-pthread.c'; else $(CYGPATH_W) '$(srcdir)/lush/lush-pthread.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lush-pthread.Tpo $(DEPDIR)/libcsprof_o-lush-pthread.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-pthread.c' object='libcsprof_o-lush-pthread.obj' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-lushi-cb.obj: lush/lushi-cb.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lushi-cb.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-lushi-cb.Tpo -c -o libcsprof_o-lushi-cb.obj `if test -f 'lush/lushi-cb.c'; then $(CYGPATH_W) 'lush/lushi-cb.c'; else $(CYGPATH_W) '$(srcdir)/lush/lushi-cb.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lushi-cb.Tpo $(DEPDIR)/libcsprof_o-lushi-cb.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lushi-cb.c' object='libcsprof_o-lushi-cb.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lush-pthread.obj `if test -f 'lush/lush-pthread.c'; then $(CYGPATH_W) 'lush/lush-pthread.c'; else $(CYGPATH_W) '$(srcdir)/lush/lush-pthread.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lushi-cb.obj `if test -f 'lush/lushi-cb.c'; then $(CYGPATH_W) 'lush/lushi-cb.c'; else $(CYGPATH_W) '$(srcdir)/lush/lushi-cb.c'; fi`
 
 libcsprof_o-fnbounds_common.o: fnbounds/fnbounds_common.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-fnbounds_common.o -MD -MP -MF $(DEPDIR)/libcsprof_o-fnbounds_common.Tpo -c -o libcsprof_o-fnbounds_common.o `test -f 'fnbounds/fnbounds_common.c' || echo '$(srcdir)/'`fnbounds/fnbounds_common.c
