@@ -202,25 +202,11 @@ hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t *hdr, FILE* out)
 int
 hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
 {
-#if defined(INCLUDE_OLD_H)
-  hpcfile_csprof_hdr_t fhdr;
-#endif
-
   hpcfile_str_t str;
   hpcfile_num8_t num8;
   int i;
 
   if (!fs) { return HPCFILE_ERR; }
-
-#if defined(INCLUDE_OLD_H) // old header
-
-  // Write header 
-  hpcfile_csprof_hdr__init(&fhdr);
-  fhdr.num_data = 3;
-  if (hpcfile_csprof_hdr__fwrite(&fhdr, fs) != HPCFILE_OK) { 
-    return HPCFILE_ERR; 
-  }
-#endif // old header
 
   // ----------------------------------------------------------
   // 1. Target: HPCFILE_TAG__CSPROF_TARGET
@@ -274,10 +260,6 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 		    hpcfile_cb__free_fn_t free_fn)
 {
 
-#if defined(INCLUDE_OLD_H)
-  hpcfile_csprof_hdr_t fhdr;
-#endif
-
   hpcfile_str_t str;
   hpcfile_num8_t num8;
   uint32_t tag;
@@ -287,12 +269,6 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   if (!fs) { return HPCFILE_ERR; }
 
   hpcfile_csprof_data__init(data);
-  
-#if defined(INCLUDE_OLD_H) // old header
-  // Read and sanity check header
-  ret = hpcfile_csprof_read_hdr(fs, &fhdr);
-  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
-#endif // old header
   
   // FIXME: TEMPORARY
 
