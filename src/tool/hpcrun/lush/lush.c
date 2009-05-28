@@ -168,6 +168,8 @@ lush_agent_pool__fini(lush_agent_pool_t* x)
 
 #undef FN_TBL_FREE
   
+  memset(x, 0, sizeof(*x));
+
   return 0;
 }
 
