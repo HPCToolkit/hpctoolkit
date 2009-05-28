@@ -289,7 +289,6 @@ hpcfmt_free(void* mem);
 
 //***************************************************************************
 
-#define NEW_H
 namespace Prof {
 
 namespace CallPath {
