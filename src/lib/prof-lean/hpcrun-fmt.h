@@ -128,7 +128,7 @@ typedef_LIST_OF(nvpair_t);
 
 // *********  file hdr *************
 
-#define MAGIC "HPCRUN____02.001"
+#define MAGIC "HPCRUN____02.00l"
 
 
 typedef struct hpcrun_fmt_hdr_t {
@@ -528,7 +528,6 @@ int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* f,
 #define HPCFILE_CSTREE_NODE_ID_NULL 0
 
 #define HPCFILE_CSTREE_ID_ROOT 1
-
 
 //***************************************************************************
 

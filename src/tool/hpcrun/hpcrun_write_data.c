@@ -69,10 +69,14 @@ hpcrun_write_profile_data(csprof_state_t *state)
                         "process_id", "TBD",
                         "mpi-rank", hpcrun_itos(_tmp, rank),
                         END_NVPAIRS);
-#if 0
-  hpcrun_write_hdr(fs, td);
-  hpcrun_write_epoch_list(fs, td);
-#else
+
+//***************************************************************************
+//
+//        The top level design
+//  hpcrun_write_hdr(fs, td);
+//  hpcrun_write_epoch_list(fs, td);
+//
+//***************************************************************************
 
   hpcfile_csprof_data_t *tmp = csprof_get_metric_data();
   TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
@@ -145,15 +149,16 @@ hpcrun_write_profile_data(csprof_state_t *state)
 
  error:
  end:
-#endif // if 0
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_close(fs);
   TMSG(DATA_WRITE,"Done!");
 
-#if 0
-  return HPCRUN_OK;
-#else
+//***************************************************************************
+//
+//  return HPCRUN_OK;
+//
+//***************************************************************************
+
   return ret;
-#endif
 }
