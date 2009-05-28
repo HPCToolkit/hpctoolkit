@@ -123,7 +123,7 @@ static csprof_options_t opts;
 sigset_t prof_sigset;
 #endif
 
-int hpcrun_initialized_private = 0;
+bool hpcrun_is_initialized_private = false;
 
 extern void _start(void);
 extern int __stop___libc_freeres_ptrs;
@@ -190,7 +190,7 @@ csprof_init_internal(void)
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
   SAMPLE_SOURCES(start);
 
-  hpcrun_initialized_private = 1;
+  hpcrun_is_initialized_private = true;
 }
 
 #ifdef CSPROF_THREADS
@@ -320,13 +320,17 @@ csprof_fini_internal(void)
   csprof_state_t *state = TD_GET(state);
 
   if (hpcrun_is_initialized()) {
+    hpcrun_is_initialized_private = false;
+
     NMSG(FINI,"process attempting sample shutdown");
+
     SAMPLE_SOURCES(stop);
     SAMPLE_SOURCES(shutdown);
 
     // shutdown LUSH agents
     if (lush_agents) {
       lush_agent_pool__fini(lush_agents);
+      lush_agents = NULL;
     }
 
     if (csprof_no_samples) return;

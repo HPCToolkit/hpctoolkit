@@ -69,6 +69,8 @@
 #ifndef CSPROFLIB_H
 #define CSPROFLIB_H
 
+#include <stdbool.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -79,12 +81,12 @@ void csprof_fini();
 
 int csprof_is_handling_sample();
 
-extern int hpcrun_initialized_private; /* Should be treated as private */
+extern bool hpcrun_is_initialized_private; /* Should be treated as private */
 
-static inline int
+static inline bool
 hpcrun_is_initialized(void)
 {
-  return hpcrun_initialized_private;
+  return hpcrun_is_initialized_private;
 }
 
   
