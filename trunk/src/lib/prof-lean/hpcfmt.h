@@ -243,6 +243,12 @@ int hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs);
 
 //***************************************************************************
 
+//***************************************************************************
+//   DBG macro -- convenience only
+//
+
+#define DD(...) do { fprintf(stderr, __VA_ARGS__); fprintf(stderr,"\n");} while (0)
+
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif

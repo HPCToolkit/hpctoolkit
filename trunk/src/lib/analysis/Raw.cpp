@@ -102,6 +102,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
     DIAG_Throw(filenm << ": could not open");
   }
 
+
   // ----------------- new file hdr -----------------------
   hpcrun_fmt_hdr_t new_hdr;
   

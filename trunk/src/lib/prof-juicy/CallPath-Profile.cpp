@@ -289,6 +289,7 @@ hpcfmt_free(void* mem);
 
 //***************************************************************************
 
+#define NEW_H
 namespace Prof {
 
 namespace CallPath {
@@ -300,7 +301,9 @@ Profile*
 Profile::make(const char* fnm, FILE* outfs) 
 {
   int ret;
+
   hpcrun_fmt_hdr_t new_hdr;
+
 
   FILE* fs = hpcio_open_r(fnm);
   if (!fs) { 
@@ -321,6 +324,7 @@ Profile::make(const char* fnm, FILE* outfs)
 
   hpcfile_csprof_data_t metadata;
   epoch_table_t loadmap_tbl;
+
   // HDR read
   ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, 
 			    hpcfmt_alloc, hpcfmt_free);
