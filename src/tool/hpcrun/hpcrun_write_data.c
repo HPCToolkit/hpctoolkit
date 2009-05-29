@@ -13,6 +13,17 @@
 #include "hpcrun-fmt.h"
 #include "hpcrun_write_data.h"
 
+// ******** default values for epoch hdr **********
+//
+//     ===== FIXME: correct these later ===
+//
+
+static const uint64_t default_epoch_flags = 0;
+static const uint32_t default_ra_distance = 1;
+static const uint64_t default_granularity = 1;
+
+// ******** local utilities **********
+
 static char *
 hpcrun_itos(char *buf, int i)
 {
@@ -117,6 +128,22 @@ hpcrun_write_profile_data(csprof_state_t *state)
 
   for (int i=0; i < num_epochs; i++) {
 
+    //
+    //  == epoch header ==
+    //
+
+    TMSG(DATA_WRITE," epoch header");
+    hpcrun_fmt_epoch_hdr_fwrite(fs, default_epoch_flags,
+                                default_ra_distance,
+                                default_granularity,
+                                "LIP-size","2",
+                                END_NVPAIRS);
+
+
+    //
+    // == metrics ==
+    //
+
     TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
 
     TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
@@ -133,10 +160,18 @@ hpcrun_write_profile_data(csprof_state_t *state)
       goto error;
     }
 
+    //
+    // == load map ==
+    //
+
     TMSG(DATA_WRITE, "Preparing to write loadmaps");
     csprof_write_all_epochs(fs);
 
     TMSG(DATA_WRITE, "Done writing loadmaps");
+
+    //
+    // == cct ==
+    //
 
     /* write profile states out to disk */
 
@@ -145,6 +180,7 @@ hpcrun_write_profile_data(csprof_state_t *state)
     while(runner != NULL) {
       if(runner->epoch != NULL) {
         TMSG(DATA_WRITE, "Writing %ld nodes", runner->csdata.num_nodes);
+
         ret2 = csprof_csdata__write_bin(fs, runner->epoch->id, 
                                         &runner->csdata, runner->csdata_ctxt);
           

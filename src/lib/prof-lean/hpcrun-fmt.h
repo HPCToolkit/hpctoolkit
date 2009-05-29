@@ -61,6 +61,7 @@
 
 //*************************** User Include Files ****************************
 
+#include "hpcio.h"
 #include "hpcfmt.h"
 #include "hpcrun-fmt.h"
 
@@ -105,7 +106,7 @@ typedef REP_LIST_OF(t) LIST_OF(t)
 
 // macro to propagate the error code of another function
 
-#define THROW_ERR(expr) if (expr) { return HPCFILE_ERR; }
+#define THROW_HPC_ERR(expr) if (HPCFILE_ERR == (expr)) { return HPCFILE_ERR; }
 
   // ****** name-value pairs (nvpair) ******
 
@@ -142,6 +143,25 @@ typedef struct hpcrun_fmt_hdr_t {
 int hpcrun_fmt_hdr_fwrite(FILE *outfs, ...);
 int hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t *hdr, FILE* infs, alloc_fn alloc);
 int hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t *hdr, FILE* outf);
+
+//*************************************************************************
+//   epoch_hdr
+//*************************************************************************
+
+static const char EPOCH_TAG[] = "EPOCH___";
+
+typedef struct hpcrun_fmt_epoch_hdr_t {
+  char tag[sizeof(EPOCH_TAG)];
+  uint64_t flags;
+  uint32_t ra_distance;
+  uint64_t granularity;
+  LIST_OF(nvpair_t) nvps;
+} hpcrun_fmt_epoch_hdr_t;
+
+int hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *fs, alloc_fn alloc);
+int hpcrun_fmt_epoch_hdr_fwrite(FILE *out, uint64_t flags, uint32_t ra_distance, uint64_t granularity, ...);
+int hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *out);
+
 
 //***************************************************************************
 //

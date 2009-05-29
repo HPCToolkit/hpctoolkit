@@ -117,8 +117,8 @@ hpcfile_metric_data_t hpcfile_metric_data_ZERO = { .bits = 0 };
 int
 hpcrun_fmt_nvpair_t_fwrite(nvpair_t *nvp, FILE *outfs)
 {
-  THROW_ERR(hpcrun_fstr_fwrite(nvp->name, outfs));
-  THROW_ERR(hpcrun_fstr_fwrite(nvp->val, outfs));
+  THROW_HPC_ERR(hpcrun_fstr_fwrite(nvp->name, outfs));
+  THROW_HPC_ERR(hpcrun_fstr_fwrite(nvp->val, outfs));
 
   return HPCFILE_OK;
 }
@@ -164,6 +164,10 @@ hpcrun_fmt_list_of_nvpair_t_fprint(LIST_OF(nvpair_t) *nvps, FILE *out)
   return HPCFILE_OK;
 }
 
+//
+//  ==== hdr ====
+//
+
 int
 hpcrun_fmt_hdr_fwrite(FILE *outfs, ...)
 {
@@ -199,6 +203,56 @@ hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t *hdr, FILE* out)
   return HPCFILE_OK;
 }
 
+//
+// === epoch hdr ====
+//
+
+int
+hpcrun_fmt_epoch_hdr_fwrite(FILE *out, uint64_t flags, uint32_t ra_distance, uint64_t granularity, ...)
+{
+  va_list args;
+  va_start(args, granularity);
+
+  fwrite(EPOCH_TAG, 1, strlen(EPOCH_TAG), out);
+  hpcio_fwrite_le8(&flags, out);
+  hpcio_fwrite_le4(&ra_distance, out);
+  hpcio_fwrite_le8(&granularity, out);
+  nvpairs_vfwrite(out, args);
+  va_end(args);
+
+  return HPCFILE_OK;
+}
+
+int
+hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *fs, alloc_fn alloc)
+{
+  fread(&(ehdr->tag), 1, sizeof(EPOCH_TAG)-1, fs);
+  ehdr->tag[sizeof(EPOCH_TAG)-1] = '\0';
+
+  if (strcmp(ehdr->tag, EPOCH_TAG) != 0){
+    fprintf(stderr,"invalid epoch header tag: %s\n", ehdr->tag);
+    return HPCFILE_ERR;
+  }
+
+  hpcio_fread_le8(&(ehdr->flags), fs);
+  hpcio_fread_le4(&(ehdr->ra_distance), fs);
+  hpcio_fread_le8(&(ehdr->granularity), fs);
+  hpcrun_fmt_list_of_nvpair_t_fread(&(ehdr->nvps), fs, alloc);
+
+  return HPCFILE_OK;
+}
+int
+hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *out)
+{
+  fprintf(out,"{epoch tag: %s}\n", ehdr->tag);
+  fprintf(out,"{epoch flags: %lx}\n",ehdr->flags);
+  fprintf(out,"{epoch characteristic return address distance: %d}\n",ehdr->ra_distance);
+  fprintf(out,"{epoch address granularity (bucket size): %ld}\n",ehdr->granularity);
+
+  hpcrun_fmt_list_of_nvpair_t_fprint(&(ehdr->nvps), out);
+
+  return HPCFILE_OK;
+}
 
 // HPC_CSPROF format details: 
 //   List of tagged data chunks that represent data in 'hpcfile_csprof_data_t'
