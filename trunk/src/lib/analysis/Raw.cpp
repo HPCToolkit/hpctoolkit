@@ -157,6 +157,17 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
 
   for (uint i=0; i < num_epochs; i++) {
 
+    //
+    // == epoch hdr ==
+    //
+    hpcrun_fmt_epoch_hdr_t ehdr;
+
+    ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, fs, malloc);
+    hpcrun_fmt_epoch_hdr_fprint(&ehdr, stdout);
+
+    //
+    // metrics and loadmap
+    //
     ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
     if (ret != HPCFILE_OK) {
       DIAG_Throw(filenm << ": error reading HPC_CSPROF");

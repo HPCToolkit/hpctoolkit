@@ -365,7 +365,17 @@ Profile::make(const char* fnm, FILE* outfs)
   // for each epoch ...
 
   for (uint i=0; i < num_epochs; i++) {
-    // read more metadata
+    //
+    // == epoch header ==
+    //
+
+    hpcrun_fmt_epoch_hdr_t ehdr;
+
+    ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, fs, hpcfmt_alloc);
+
+    //
+    // read metrics and loadmap
+    //
     ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, 
 			      hpcfmt_alloc, hpcfmt_free);
 
