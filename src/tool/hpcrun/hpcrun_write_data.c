@@ -68,7 +68,7 @@ hpcrun_write_profile_data(csprof_state_t *state)
 //     hpcrun_epoch_fwrite()
 //
 // hpcrun_epoch_fwrite()
-//    hpcrun_fmt_epoch_hdr_fwrite(flags, char-rtn-dst, gran, NVPs)
+//    hpcrun_fmt_epoch_hdr_fwrite(flags, char-rtn-dst, gran, NVPs) /* char-rtn-dst = 1 4theMomnt */
 //    hpcrun_fmt_metric_tbl_fwrite()
 //    hpcrun_fmt_loadmap_fwrite()
 //    /* write cct */
@@ -80,6 +80,7 @@ hpcrun_write_profile_data(csprof_state_t *state)
 
   char _tmp[10];
   hpcfile_csprof_data_t *tmp = csprof_get_metric_data();
+  uint32_t num_epochs = 0;
 
   //
   // ==== hdr =====
@@ -100,76 +101,75 @@ hpcrun_write_profile_data(csprof_state_t *state)
 
   csprof_state_t *runner = state;
 
-  uint32_t num_ccts = 0;
-  uint64_t num_tramp_samps = 0;
-
   /* count states */
   while(runner != NULL) {
     if(runner->epoch != NULL) {
-      num_ccts++;
-      num_tramp_samps += runner->trampoline_samples;
+      num_epochs++;
     }
     runner = runner->next;
   }
-  TMSG(DATA_WRITE, "writing # epochs = %d", num_ccts);
-  hpcio_fwrite_le4(&num_ccts, fs);
+  TMSG(DATA_WRITE, "writing # epochs = %d", num_epochs);
+  hpcio_fwrite_le4(&num_epochs, fs);
 
   //
   // for each epoch ...
   //
 
-  TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
+  for (int i=0; i < num_epochs; i++) {
 
-  TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
-  TMSG(DATA_WRITE,"metric data num metrics = %d",tmp->num_metrics);
-  hpcfile_csprof_metric_t *tmp1 = tmp->metrics;
-  for (int i=0;i<tmp->num_metrics;i++,tmp1++){
-    TMSG(DATA_WRITE,"--metric %s period = %ld",tmp1->metric_name,tmp1->sample_period);
-  }
-  ret1 = hpcfile_csprof_write(fs, tmp);
+    TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
 
-  TMSG(DATA_WRITE, "Done writing metric data");
+    TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
+    TMSG(DATA_WRITE,"metric data num metrics = %d",tmp->num_metrics);
+    hpcfile_csprof_metric_t *tmp1 = tmp->metrics;
+    for (int i=0;i<tmp->num_metrics;i++,tmp1++){
+      TMSG(DATA_WRITE,"--metric %s period = %ld",tmp1->metric_name,tmp1->sample_period);
+    }
+    ret1 = hpcfile_csprof_write(fs, tmp);
 
-  if(ret1 != HPCFILE_OK) {
-    goto error;
-  }
+    TMSG(DATA_WRITE, "Done writing metric data");
 
-  TMSG(DATA_WRITE, "Preparing to write epochs");
-  csprof_write_all_epochs(fs);
+    if(ret1 != HPCFILE_OK) {
+      goto error;
+    }
 
-  TMSG(DATA_WRITE, "Done writing epochs");
+    TMSG(DATA_WRITE, "Preparing to write loadmaps");
+    csprof_write_all_epochs(fs);
 
-  /* write profile states out to disk */
+    TMSG(DATA_WRITE, "Done writing loadmaps");
 
-  runner = state;
+    /* write profile states out to disk */
 
-  while(runner != NULL) {
-    if(runner->epoch != NULL) {
-      TMSG(DATA_WRITE, "Writing %ld nodes", runner->csdata.num_nodes);
-      ret2 = csprof_csdata__write_bin(fs, runner->epoch->id, 
-                                      &runner->csdata, runner->csdata_ctxt);
+    runner = state;
+
+    while(runner != NULL) {
+      if(runner->epoch != NULL) {
+        TMSG(DATA_WRITE, "Writing %ld nodes", runner->csdata.num_nodes);
+        ret2 = csprof_csdata__write_bin(fs, runner->epoch->id, 
+                                        &runner->csdata, runner->csdata_ctxt);
           
-      if(ret2 != HPCRUN_OK) {
-        TMSG(DATA_WRITE, "Error writing tree %#lx", &runner->csdata);
-        TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
-        EMSG("could not save profile data to file '%s'", __FILE__, __LINE__, fnm);
-        perror("write_profile_data");
-        ret = HPCRUN_ERR;
+        if(ret2 != HPCRUN_OK) {
+          TMSG(DATA_WRITE, "Error writing tree %#lx", &runner->csdata);
+          TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
+          EMSG("could not save profile data to file '%s'", __FILE__, __LINE__, fnm);
+          perror("write_profile_data");
+          ret = HPCRUN_ERR;
+        }
       }
-    }
-    else {
-      TMSG(DATA_WRITE, "Not writing tree %#lx; null epoch", &runner->csdata);
-      TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
-    }
+      else {
+        TMSG(DATA_WRITE, "Not writing tree %#lx; null epoch", &runner->csdata);
+        TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
+      }
 
-    runner = runner->next;
-  }
+      runner = runner->next;
+    }
           
-  if(ret1 == HPCFILE_OK && ret2 == HPCRUN_OK) {
+    if(ret1 == HPCFILE_OK && ret2 == HPCRUN_OK) {
     TMSG(DATA_WRITE, "saved profile data to file '%s'", fnm);
-  }
-  /* if we've gotten this far, there haven't been any fatal errors */
-  goto end;
+    }
+    /* if we've gotten this far, there haven't been any fatal errors */
+    goto end;
+  } // epoch loop
 
  error:
  end:
