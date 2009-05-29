@@ -340,6 +340,7 @@ Profile::make(const char* fnm, FILE* outfs)
 
   hpcfile_csprof_data_t metadata;
   epoch_table_t loadmap_tbl;
+  uint32_t num_epochs = 0;
 
   // Populate metadata structure FOR NOW
   //  extract target field from nvpairs in new_hdr
@@ -351,33 +352,40 @@ Profile::make(const char* fnm, FILE* outfs)
   // read # epochs
   //
 
-  hpcio_fread_le4(&(metadata.num_ccts), fs);
+  hpcio_fread_le4(&num_epochs, fs);
+  metadata.num_ccts = num_epochs;
 
-  // for each epoch ...
-
-  // read more metadata
-  ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, 
-			    hpcfmt_alloc, hpcfmt_free);
-  if (ret != HPCFILE_OK) {
-    DIAG_Throw("error reading 'fmt-hdr'");
-  }
 
   // ------------------------------------------------------------
   // Read each epoch and merge them to form one Profile
   // ------------------------------------------------------------
 
-  Profile* prof = new Profile(metadata.num_metrics);
-  prof->name("[Profile Name]");
+  Profile *prof;
 
-  try {
-    string locStr = fnm; // ":epoch " + 1;
-    hpcrun_fmt_epoch_fread(prof, &metadata, &loadmap_tbl, fs, 
-			   locStr, outfs);
-  }
-  catch (const Diagnostics::Exception& x) {
-    delete prof;
-    DIAG_Throw("error reading 'epoch': " << x.what());
-  }
+  // for each epoch ...
+
+  for (uint i=0; i < num_epochs; i++) {
+    // read more metadata
+    ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, 
+			      hpcfmt_alloc, hpcfmt_free);
+
+    prof = new Profile(metadata.num_metrics);
+    prof->name("[Profile Name]");
+
+    if (ret != HPCFILE_OK) {
+      DIAG_Throw("error reading 'fmt-hdr'");
+    }
+
+    try {
+      string locStr = fnm; // ":epoch " + 1;
+      hpcrun_fmt_epoch_fread(prof, &metadata, &loadmap_tbl, fs, 
+			     locStr, outfs);
+    }
+    catch (const Diagnostics::Exception& x) {
+      delete prof;
+      DIAG_Throw("error reading 'epoch': " << x.what());
+    }
+  } // epoch loop
 
   // ------------------------------------------------------------
   // Cleanup

@@ -127,6 +127,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
 
   // ----------------- new file hdr -----------------------
   hpcrun_fmt_hdr_t new_hdr;
+  uint32_t num_epochs = 0;
   
   ret = hpcrun_fmt_hdr_fread(&new_hdr, fs, malloc);
   if (ret != HPCFILE_OK) {
@@ -145,32 +146,37 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   // read & print # epochs
   //
 
+  hpcio_fread_le4(&num_epochs, fs);
+  fprintf(stdout,"{num epochs = %d}\n", num_epochs);
+
+  metadata.num_ccts = num_epochs;
+
   //
   // for each epoch ...
   //
 
-  hpcio_fread_le4(&(metadata.num_ccts), fs);
-  fprintf(stdout,"{num epochs = %d}\n", metadata.num_ccts);
+  for (uint i=0; i < num_epochs; i++) {
 
-  ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
-  if (ret != HPCFILE_OK) {
-    DIAG_Throw(filenm << ": error reading HPC_CSPROF");
-  }
+    ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
+    if (ret != HPCFILE_OK) {
+      DIAG_Throw(filenm << ": error reading HPC_CSPROF");
+    }
   
-  uint num_metrics = metadata.num_metrics;
-  uint num_ccts = metadata.num_ccts;
+    uint num_metrics = metadata.num_metrics;
+    uint num_ccts = metadata.num_ccts;
 
-  if (num_ccts > 0) {
-    using namespace Prof;
+    if (num_ccts > 0) {
+      using namespace Prof;
 
-    CCT::Tree cct(NULL);
-    try {
-      CallPath::Profile::hpcrun_fmt_cct_fread(&cct, num_metrics, fs, stdout);
+      CCT::Tree cct(NULL);
+      try {
+	CallPath::Profile::hpcrun_fmt_cct_fread(&cct, num_metrics, fs, stdout);
+      }
+      catch (const Diagnostics::Exception& x) {
+	DIAG_Throw("error reading calling context tree: " << x.what());
+      }
     }
-    catch (const Diagnostics::Exception& x) {
-      DIAG_Throw("error reading calling context tree: " << x.what());
-    }
-  }
+  } // epoch list
 
   hpcio_close(fs);
 }
