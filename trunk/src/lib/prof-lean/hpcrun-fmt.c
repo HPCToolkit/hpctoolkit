@@ -220,19 +220,6 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
 
   if (!fs) { return HPCFILE_ERR; }
 
-#if defined(KEEP_OLD_TARGET)
-  // ----------------------------------------------------------
-  // 1. Target: HPCFILE_TAG__CSPROF_TARGET
-  // ----------------------------------------------------------
-  hpcfile_str__init(&str);
-  str.tag = HPCFILE_TAG__CSPROF_TARGET;
-  if (data->target) {
-    str.length = strlen(data->target);
-    str.str = data->target;
-  }
-  if (hpcfile_str__fwrite(&str, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
-#endif  // defined(KEEP_OLD_TARGET)
-
   // ----------------------------------------------------------
   // 2. Metrics
   // ----------------------------------------------------------
@@ -281,27 +268,6 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
   if (!fs) { return HPCFILE_ERR; }
 
-#if defined(KEEP_OLD_TARGET)
-  // FIXME: TEMPORARY
-
-  hpcfile_csprof_data__init(data);
-
-  // ----------------------------------------------------------
-  // 1. Target
-  // ----------------------------------------------------------
-  ret = hpcfile_tag__fread(&tag, fs); // HPCFILE_STR
-  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
-  
-  str.str = NULL;
-  ret = hpcfile_str__fread(&str, fs, alloc_fn);
-  if (ret != HPCFILE_OK) { 
-    free_fn(str.str);
-    return HPCFILE_ERR;
-  }
-  
-  data->target = str.str;
-#endif // defined(KEEP_OLD_TARGET)
-  
   // ----------------------------------------------------------
   // 2. Metrics
   // ----------------------------------------------------------
@@ -443,21 +409,6 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
     }
   }
   
-  // ----------------------------------------------------------
-  // 4. 
-  // ----------------------------------------------------------
-  uint64_t num_tramp_samples;
-  
-  sz = hpcio_fread_le4(&data->num_ccts, fs);
-  if (sz != sizeof(data->num_ccts)) { 
-    return HPCFILE_ERR; 
-  }
-
-  sz = hpcio_fread_le8(&num_tramp_samples, fs);
-  if (sz != sizeof(num_tramp_samples)) { 
-    return HPCFILE_ERR; 
-  }
-
   // ----------------------------------------------------------
   // 
   // ----------------------------------------------------------

@@ -346,6 +346,15 @@ Profile::make(const char* fnm, FILE* outfs)
 
   metadata.target = hpcrun_fmt_nvpair_search(&(new_hdr.nvps), "target");
 
+  // FIXME-MWF # epochs = # ccts for the moment
+  //
+  // read # epochs
+  //
+
+  hpcio_fread_le4(&(metadata.num_ccts), fs);
+
+  // for each epoch ...
+
   // read more metadata
   ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, 
 			    hpcfmt_alloc, hpcfmt_free);

@@ -139,6 +139,18 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   //  extract target field from nvpairs in new_hdr
 
   metadata.target = hpcrun_fmt_nvpair_search(&(new_hdr.nvps), "target");
+  
+  // FIXME-MWF # epochs = # ccts for the moment
+  //
+  // read & print # epochs
+  //
+
+  //
+  // for each epoch ...
+  //
+
+  hpcio_fread_le4(&(metadata.num_ccts), fs);
+  fprintf(stdout,"{num epochs = %d}\n", metadata.num_ccts);
 
   ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
   if (ret != HPCFILE_OK) {
