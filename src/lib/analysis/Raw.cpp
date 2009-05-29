@@ -103,6 +103,28 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   }
 
 
+//*************************************************************************
+//
+//        The high level printing algorithm
+//
+//
+//  hpcrun_fmt_hdr_fread()
+//  hpcrun_le4_fread(# epochs)
+//  foreach epoch
+//     hpcrun_epoch_fread()
+//
+// hpcrun_epoch_fread()
+//    hpcrun_fmt_epoch_hdr_fread() /* contains flags, char-rtn-dst, gran, NVPs */
+//    hpcrun_fmt_metric_tbl_fread()
+//    hpcrun_fmt_loadmap_fread()
+//    /* read cct */
+//    hpcrun_le4_fread(# cct_nodes)
+//    foreach cct-node
+//       hpcrun_fmt_cct_node_fread(cct_node_t *p)
+//
+//*************************************************************************
+
+
   // ----------------- new file hdr -----------------------
   hpcrun_fmt_hdr_t new_hdr;
   
@@ -111,6 +133,12 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
     DIAG_Throw(filenm << ": error reading 'new hdr'");
   }
   hpcrun_fmt_hdr_fprint(&new_hdr, stdout);
+
+  
+  // Populate metadata structure FOR NOW
+  //  extract target field from nvpairs in new_hdr
+
+  metadata.target = hpcrun_fmt_nvpair_search(&(new_hdr.nvps), "target");
 
   ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
   if (ret != HPCFILE_OK) {

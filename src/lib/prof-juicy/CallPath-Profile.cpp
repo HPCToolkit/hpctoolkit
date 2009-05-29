@@ -309,6 +309,27 @@ Profile::make(const char* fnm, FILE* outfs)
     DIAG_Throw("error opening file");
   }
 
+//*************************************************************************
+//
+//        The high level reading algorithm
+//
+//
+//  hpcrun_fmt_hdr_fread()
+//  hpcrun_le4_fread(# epochs)
+//  foreach epoch
+//     hpcrun_epoch_fread()
+//
+// hpcrun_epoch_fread()
+//    hpcrun_fmt_epoch_hdr_fread() /* contains flags, char-rtn-dst, gran, NVPs */
+//    hpcrun_fmt_metric_tbl_fread()
+//    hpcrun_fmt_loadmap_fread()
+//    /* read cct */
+//    hpcrun_le4_fread(# cct_nodes)
+//    foreach cct-node
+//       hpcrun_fmt_cct_node_fread(cct_node_t *p)
+//
+//*************************************************************************
+
   // ------------------------------------------------------------
   // Read new header 
   // ------------------------------------------------------------
@@ -317,14 +338,15 @@ Profile::make(const char* fnm, FILE* outfs)
     DIAG_Throw("error reading 'new fmt hdr'");
   }
 
-  // ------------------------------------------------------------
-  // Read header (fmt-hdr)
-  // ------------------------------------------------------------
-
   hpcfile_csprof_data_t metadata;
   epoch_table_t loadmap_tbl;
 
-  // HDR read
+  // Populate metadata structure FOR NOW
+  //  extract target field from nvpairs in new_hdr
+
+  metadata.target = hpcrun_fmt_nvpair_search(&(new_hdr.nvps), "target");
+
+  // read more metadata
   ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, 
 			    hpcfmt_alloc, hpcfmt_free);
   if (ret != HPCFILE_OK) {
