@@ -58,27 +58,35 @@ hpcrun_write_profile_data(csprof_state_t *state)
   /* Open file for writing; fail if the file already exists. */
   fs = hpcio_fopen_w(fnm, /* overwrite */ 0);
 
-  // File format = fmt-hdr [epoch]*
-
-  // FIXME-MWF cache thread data pointer
-  // thread_data_t *td = csprof_get_thread_data(); 
+//***************************************************************************
+//
+//        The top level loop
+//
+//  hpcrun_fmt_hdr_fwrite()
+//  hpcrun_le4_fwrite(# epochs)
+//  foreach epoch
+//     hpcrun_epoch_fwrite()
+//
+// hpcrun_epoch_fwrite()
+//    hpcrun_fmt_epoch_hdr_fwrite(flags, char-rtn-dst, gran, NVPs)
+//    hpcrun_fmt_metric_tbl_fwrite()
+//    hpcrun_fmt_loadmap_fwrite()
+//    /* write cct */
+//    hpcrun_le4_fwrite(# cct_nodes)
+//    foreach cct-node
+//       hpcrun_fmt_cct_node_fwrite(cct_node_t *p)
+//
+//***************************************************************************
 
   char _tmp[10];
+  hpcfile_csprof_data_t *tmp = csprof_get_metric_data();
   hpcrun_fmt_hdr_fwrite(fs,
                         "program-name", "TBD",
                         "process_id", "TBD",
                         "mpi-rank", hpcrun_itos(_tmp, rank),
+                        "target", tmp->target,
                         END_NVPAIRS);
 
-//***************************************************************************
-//
-//        The top level design
-//  hpcrun_write_hdr(fs, td);
-//  hpcrun_write_epoch_list(fs, td);
-//
-//***************************************************************************
-
-  hpcfile_csprof_data_t *tmp = csprof_get_metric_data();
   TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
   TMSG(DATA_WRITE,"metric data num metrics = %d",tmp->num_metrics);
   hpcfile_csprof_metric_t *tmp1 = tmp->metrics;

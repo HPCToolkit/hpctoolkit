@@ -118,6 +118,7 @@ typedef struct nvpair_t {
 
 #define END_NVPAIRS NULL
 
+
 //***************************************************************************
 // 
 // some type defs for various LIST_OF things (uses macros from this file)
@@ -125,6 +126,8 @@ typedef struct nvpair_t {
 //***************************************************************************
 
 typedef_LIST_OF(nvpair_t);
+
+char *hpcrun_fmt_nvpair_search(LIST_OF(nvpair_t) *lst, char *name);
 
 // *********  file hdr *************
 

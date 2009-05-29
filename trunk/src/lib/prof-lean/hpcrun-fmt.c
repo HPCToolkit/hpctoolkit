@@ -94,6 +94,18 @@ nvpairs_vfwrite(FILE *out, va_list args)
   return HPCFILE_OK;
 }
 
+char *
+hpcrun_fmt_nvpair_search(LIST_OF(nvpair_t) *lst, char *name)
+{
+  nvpair_t *p = lst->lst;
+  for (int i=0; i<lst->len; p++,i++) {
+    if (strcmp(p->name, name) == 0) {
+      return p->val;
+    }
+  }
+  return "NOT FOUND";
+}
+
 //*************************** Main Code **************************
 
 #define DBG_READ_METRICS 0
@@ -208,6 +220,7 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
 
   if (!fs) { return HPCFILE_ERR; }
 
+#if defined(KEEP_OLD_TARGET)
   // ----------------------------------------------------------
   // 1. Target: HPCFILE_TAG__CSPROF_TARGET
   // ----------------------------------------------------------
@@ -218,7 +231,7 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
     str.str = data->target;
   }
   if (hpcfile_str__fwrite(&str, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
-
+#endif  // defined(KEEP_OLD_TARGET)
 
   // ----------------------------------------------------------
   // 2. Metrics
@@ -268,9 +281,10 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
   if (!fs) { return HPCFILE_ERR; }
 
-  hpcfile_csprof_data__init(data);
-  
+#if defined(KEEP_OLD_TARGET)
   // FIXME: TEMPORARY
+
+  hpcfile_csprof_data__init(data);
 
   // ----------------------------------------------------------
   // 1. Target
@@ -286,7 +300,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   }
   
   data->target = str.str;
-
+#endif // defined(KEEP_OLD_TARGET)
   
   // ----------------------------------------------------------
   // 2. Metrics
