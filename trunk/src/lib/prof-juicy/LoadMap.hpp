@@ -149,6 +149,7 @@ public:
       { m_id = x; }
 
     friend class LoadMap;
+    friend class LoadMapMgr;
     
   private: 
     LM_id_t m_id;
@@ -194,11 +195,12 @@ public:
   // ------------------------------------------------------------
   // Access by id
   // ------------------------------------------------------------
-  uint lm_size() const
+  uint size() const
   { return m_lm_byId.size(); } 
 
   LM* lm(uint i) const
   { return m_lm_byId[i]; }
+
 
   // ------------------------------------------------------------
   // Access by name

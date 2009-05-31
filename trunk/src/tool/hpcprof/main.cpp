@@ -153,7 +153,7 @@ realmain(int argc, char* const* argv)
     Prof::Struct::Tree* structure = prof->structure();
     Prof::Struct::Root* rootStrct = structure->root();
 
-    for (uint i = 0; i < loadmap->lm_size(); ++i) {
+    for (uint i = 0; i < loadmap->size(); ++i) {
       // NOTE(tallent): This method will not iterate over all load modules if
       // two map to the same load address (such as may happen in a
       // scalability study)...

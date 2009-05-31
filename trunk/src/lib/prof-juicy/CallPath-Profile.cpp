@@ -293,21 +293,6 @@ namespace Prof {
 
 namespace CallPath {
 
-// TODO: Analysis::Raw::writeAsText_callpath() should use this
-// routine for textual dumping when the format is sanitized.
-
-Profile* 
-Profile::make(const char* fnm, FILE* outfs) 
-{
-  int ret;
-
-  hpcrun_fmt_hdr_t new_hdr;
-
-
-  FILE* fs = hpcio_open_r(fnm);
-  if (!fs) { 
-    DIAG_Throw("error opening file");
-  }
 
 //*************************************************************************
 //
@@ -330,12 +315,27 @@ Profile::make(const char* fnm, FILE* outfs)
 //
 //*************************************************************************
 
+
+// TODO: Analysis::Raw::writeAsText_callpath() should use this
+// routine for textual dumping when the format is sanitized.
+
+Profile* 
+Profile::make(const char* fnm, FILE* outfs) 
+{
+  int ret;
+
+  FILE* fs = hpcio_open_r(fnm);
+  if (!fs) { 
+    DIAG_Throw("error opening file");
+  }
+
   // ------------------------------------------------------------
-  // Read new header 
+  // Read header
   // ------------------------------------------------------------
-  ret = hpcrun_fmt_hdr_fread(&new_hdr, fs, hpcfmt_alloc);
+  hpcrun_fmt_hdr_t hdr;
+  ret = hpcrun_fmt_hdr_fread(&hdr, fs, hpcfmt_alloc);
   if (ret != HPCFILE_OK) {
-    DIAG_Throw("error reading 'new fmt hdr'");
+    DIAG_Throw("error reading 'fmt-hdr'");
   }
 
   hpcfile_csprof_data_t metadata;
@@ -343,9 +343,9 @@ Profile::make(const char* fnm, FILE* outfs)
   uint32_t num_epochs = 0;
 
   // Populate metadata structure FOR NOW
-  //  extract target field from nvpairs in new_hdr
+  //  extract target field from nvpairs in hdr
 
-  metadata.target = hpcrun_fmt_nvpair_search(&(new_hdr.nvps), "target");
+  metadata.target = hpcrun_fmt_nvpair_search(&(hdr.nvps), "target");
 
   // FIXME-MWF # epochs = # ccts for the moment
   //
@@ -359,32 +359,30 @@ Profile::make(const char* fnm, FILE* outfs)
   // ------------------------------------------------------------
   // Read each epoch and merge them to form one Profile
   // ------------------------------------------------------------
+  Profile* prof = NULL;
 
-  Profile *prof;
-
-  // for each epoch ...
-
-  for (uint i=0; i < num_epochs; i++) {
+  for (uint i = 0; i < num_epochs; ++i) {
     //
     // == epoch header ==
     //
 
     hpcrun_fmt_epoch_hdr_t ehdr;
-
     ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, fs, hpcfmt_alloc);
+    if (ret != HPCFILE_OK) {
+      DIAG_Throw("error reading 'epoch-hdr'");
+    }
 
     //
     // read metrics and loadmap
     //
     ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, 
 			      hpcfmt_alloc, hpcfmt_free);
+    if (ret != HPCFILE_OK) {
+      DIAG_Throw("error reading 'old csprof-hdr'");
+    }
 
     prof = new Profile(metadata.num_metrics);
     prof->name("[Profile Name]");
-
-    if (ret != HPCFILE_OK) {
-      DIAG_Throw("error reading 'fmt-hdr'");
-    }
 
     try {
       string locStr = fnm; // ":epoch " + 1;
@@ -395,7 +393,7 @@ Profile::make(const char* fnm, FILE* outfs)
       delete prof;
       DIAG_Throw("error reading 'epoch': " << x.what());
     }
-  } // epoch loop
+  }
 
   // ------------------------------------------------------------
   // Cleanup

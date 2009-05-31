@@ -68,6 +68,7 @@ MYSOURCES = \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
 	MetricDesc.hpp \
 	\
+	LoadMapMgr.hpp LoadMapMgr.cpp \
 	LoadMap.hpp LoadMap.cpp \
 	\
 	Struct-Tree.hpp Struct-Tree.cpp \
