@@ -74,7 +74,7 @@ LoadMap::LoadMap(uint sz)
 
 LoadMap::~LoadMap()
 {
-  for (uint i = 0; i < lm_size(); ++i) {
+  for (uint i = 0; i < size(); ++i) {
     delete lm(i); // LoadMap::LM*
   }
   m_lm_byId.clear();
@@ -146,7 +146,7 @@ LoadMap::compute_relocAmt()
 {
   std::string errors;
 
-  for (uint i = 0; i < lm_size(); ++i) {
+  for (uint i = 0; i < size(); ++i) {
     try {
       lm(i)->compute_relocAmt();
     }
@@ -168,10 +168,10 @@ LoadMap::merge(const LoadMap& y)
   
   LoadMap& x = *this;
 
-  for (uint i = 0; i < y.lm_size(); ++i) { 
+  for (uint i = 0; i < y.size(); ++i) { 
     LoadMap::LM* y_lm = y.lm(i);
     
-    std::pair<LoadMap::LMSet_nm::iterator, LoadMap::LMSet_nm::iterator> x_fnd = 
+    std::pair<LMSet_nm::iterator, LMSet_nm::iterator> x_fnd = 
       x.lm_find(y_lm->name());
 
     LoadMap::LM* x_lm = (x_fnd.first != x_fnd.second) ? *(x_fnd.first) : NULL;
@@ -190,8 +190,7 @@ LoadMap::merge(const LoadMap& y)
       // y_lm matches zero or greater than one x_lm
 
       // Create x_lm for y_lm.  y_lm->id() is replaced by x_lm->id().
-      x_lm = new LoadMap::LM(y_lm->name().c_str(), y_lm->loadAddr(), 
-			   y_lm->size());
+      x_lm = new LoadMap::LM(y_lm->name(), y_lm->loadAddr(), y_lm->size());
       lm_insert(x_lm);
       mergeChg.push_back(MergeChange(y_lm->id(), x_lm->id()));
     }
@@ -220,7 +219,7 @@ LoadMap::dump(std::ostream& os) const
   std::string pre = "  ";
 
   os << "{ Prof::LoadMap\n";
-  for (uint i = 0; i < lm_size(); ++i) {
+  for (uint i = 0; i < size(); ++i) {
     os << pre << i << " : ";
     lm(i)->dump(os);
     os << std::endl;
