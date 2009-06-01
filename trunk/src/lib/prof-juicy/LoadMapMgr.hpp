@@ -77,26 +77,21 @@ namespace Prof {
 // LoadMapMgr
 //****************************************************************************
 
-class LoadMapMgr : public Unique {
+class LoadMapMgr : public ALoadMap {
 public:
-  typedef std::set<LoadMap::LM*, LoadMap::lt_LM_nm> LMSet_nm;
+  typedef std::set<ALoadMap::LM*, LoadMap::lt_LM_nm> LMSet_nm;
 
 public: 
   LoadMapMgr(const uint i = 16);
   virtual ~LoadMapMgr();
 
   // assumes ownership
-  void lm_insert(LoadMap::LM* x);
+  virtual void 
+  lm_insert(ALoadMap::LM* x);
 
   // ------------------------------------------------------------
-  // Access by id
+  // Access by id: ALoadMap
   // ------------------------------------------------------------
-  uint size() const
-  { return m_lm_byId.size(); } 
-
-  LoadMap::LM* lm(uint i) const
-  { return m_lm_byId[i]; }
-
 
   // ------------------------------------------------------------
   // Access by name
@@ -125,23 +120,17 @@ public:
   // vector of MergeChange describing changes that were made.  The
   // vector contains at most one MergeChange for each LM_id_t (old_id)
   // in y.
-  // 
-  // NOTE: x and y must not conflict! (See lm_insert().)
-
-  std::vector<LoadMap::MergeChange> 
-  merge(const LoadMap& y);
+  std::vector<ALoadMap::MergeChange> 
+  merge(const ALoadMap& y);
 
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
 
-  std::string toString() const;
-
-  void dump(std::ostream& os = std::cerr) const;
-  void ddump() const;
+  virtual void 
+  dump(std::ostream& os = std::cerr) const;
 
 private:
-  LoadMap::LMVec m_lm_byId;
   LMSet_nm m_lm_byName;
 };
 

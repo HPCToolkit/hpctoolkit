@@ -63,7 +63,7 @@
 #include <include/uint.h>
 
 #include "MetricDesc.hpp"
-#include "LoadMap.hpp"
+#include "LoadMapMgr.hpp"
 #include "CCT-Tree.hpp"
 
 //*************************** Forward Declarations ***************************
@@ -109,13 +109,10 @@ public:
   }
 
   // -------------------------------------------------------
-  // LoadMap
+  // LoadMapMgr
   // -------------------------------------------------------
-  LoadMap* loadMap() const
-  { return m_loadmap; }
-
-  void loadMap(LoadMap* x) 
-  { m_loadmap = x; }
+  LoadMapMgr* loadMapMgr() const
+  { return m_loadmapMgr; }
   
   // -------------------------------------------------------
   // CCT
@@ -185,10 +182,11 @@ public:
   static const int StructMetricIdFlg = 0;
 
 private:
-  // 1. annotate CCT::Tree nodes with associated Prof::LoadMap::LM_id_t 
-  // 2. normalize CCT::Tree node IPs (unrelocate)
+  // 1. annotate CCT::Tree nodes with associated ALoadMap::LM_id_t from
+  //    the LoadMap.
+  // 2. normalize CCT::Tree node IPs (unrelocate) to prepare for LoadMapMgr
   void 
-  cct_canonicalize();
+  cct_canonicalize(const LoadMap& loadmap);
 
   // maintain the CCT invariants after merging two profiles
   void 
@@ -197,7 +195,7 @@ private:
 private:
   std::string m_name;
   SampledMetricDescVec m_metricdesc;
-  LoadMap* m_loadmap;
+  LoadMapMgr* m_loadmapMgr;
   CCT::Tree* m_cct;
   Prof::Struct::Tree* m_structure;
 };

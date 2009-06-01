@@ -65,17 +65,13 @@ namespace Prof {
 
 
 LoadMapMgr::LoadMapMgr(uint sz)
+  : ALoadMap(sz)
 {
-  m_lm_byId.reserve(sz);
 }
 
 
 LoadMapMgr::~LoadMapMgr()
 {
-  for (uint i = 0; i < size(); ++i) {
-    delete lm(i); // LoadMapMgr::LM*
-  }
-  m_lm_byId.clear();
   m_lm_byName.clear();
 }
 
@@ -105,7 +101,7 @@ LoadMapMgr::lm_find(const std::string& nm) const
 
 
 std::vector<LoadMap::MergeChange> 
-LoadMapMgr::merge(const LoadMap& y)
+LoadMapMgr::merge(const ALoadMap& y)
 {
   std::vector<LoadMap::MergeChange> mergeChg;
   
@@ -125,26 +121,18 @@ LoadMapMgr::merge(const LoadMap& y)
     }
     else {
       // Create x_lm for y_lm.  y_lm->id() is replaced by x_lm->id().
-      x_lm = new LoadMap::LM(y_lm->name());
+      x_lm = new ALoadMap::LM(y_lm->name());
+      x_lm->isAvail(y_lm->isAvail());
       lm_insert(x_lm);
       mergeChg.push_back(LoadMap::MergeChange(y_lm->id(), x_lm->id()));
     }
-
+    
     DIAG_Assert(x_lm->isAvail() == y_lm->isAvail(), "LoadMapMgr::merge: two LoadMapMgr::LM of the same name must both be (un)available: " << x_lm->name());
 
     x_lm->isUsedMrg(y_lm->isUsed());
   }
   
   return mergeChg;
-}
-
-
-std::string
-LoadMapMgr::toString() const
-{
-  std::ostringstream os;
-  dump(os);
-  return os.str();
 }
 
 
@@ -160,13 +148,6 @@ LoadMapMgr::dump(std::ostream& os) const
     os << std::endl;
   }
   os << "}\n";
-}
-
-
-void 
-LoadMapMgr::ddump() const
-{
-  dump(std::cerr);
 }
 
 
