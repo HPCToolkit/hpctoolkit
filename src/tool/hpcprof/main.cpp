@@ -149,19 +149,17 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
 
   try { 
-    Prof::LoadMap* loadmap = prof->loadMap();
+    Prof::LoadMapMgr* loadmap = prof->loadMapMgr();
     Prof::Struct::Tree* structure = prof->structure();
     Prof::Struct::Root* rootStrct = structure->root();
 
-    for (uint i = 0; i < loadmap->size(); ++i) {
-      // NOTE(tallent): This method will not iterate over all load modules if
-      // two map to the same load address (such as may happen in a
-      // scalability study)...
-      // Prof::LoadMap::LMSet::iterator it = loadmap->lm_begin(); it != loadmap->lm_end(); ++it
-      Prof::LoadMap::LM* loadmap_lm = loadmap->lm(i); // *it;
+    for (Prof::LoadMapMgr::LMSet_nm::iterator it = loadmap->lm_begin_nm();
+	 it != loadmap->lm_end_nm(); ++it) {
+      Prof::ALoadMap::LM* loadmap_lm = *it;
 
-      // tallent (FIXME): See note on LoadMap::LM::isUsed()
-      // FIXME: emit warning if not available, but process anyway
+      // tallent:TODO: The call to LoadMap::compute_relocAmt() in
+      // Profile::hpcrun_fmt_epoch_fread has emitted a warning if a
+      // load module is unavailable.  Probably should be here...
       if (loadmap_lm->isAvail() && loadmap_lm->isUsed()) {
 	const string& lm_nm = loadmap_lm->name();
 

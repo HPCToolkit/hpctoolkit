@@ -105,7 +105,7 @@ Profile::Profile(uint numMetrics)
   for (uint i = 0; i < m_metricdesc.size(); ++i) {
     m_metricdesc[i] = new SampledMetricDesc();
   }
-  m_loadmap = NULL;
+  m_loadmapMgr = new LoadMapMgr;
   m_cct = new CCT::Tree(this);
   m_structure = NULL;
 }
@@ -116,7 +116,7 @@ Profile::~Profile()
   for (uint i = 0; i < m_metricdesc.size(); ++i) {
     delete m_metricdesc[i];
   }
-  delete m_loadmap;
+  delete m_loadmapMgr;
   delete m_cct;
   delete m_structure;
 }
@@ -139,9 +139,10 @@ Profile::merge(Profile& y)
   // -------------------------------------------------------
   // merge LoadMaps
   // -------------------------------------------------------
-  std::vector<LoadMap::MergeChange> mergeChg = m_loadmap->merge(*y.loadMap());
+  std::vector<LoadMap::MergeChange> mergeChg = 
+    m_loadmapMgr->merge(*y.loadMapMgr());
   y.cct_canonicalizePostMerge(mergeChg);
-  // INVARIANT: y's cct now refers to x's loadmap
+  // INVARIANT: y's cct now refers to x's LoadMapMgr
 
   // -------------------------------------------------------
   // merge CCTs
@@ -245,8 +246,8 @@ Profile::dump(std::ostream& os) const
 
   //m_metricdesc.dump(os);
 
-  if (m_loadmap) {
-    m_loadmap->dump(os);
+  if (m_loadmapMgr) {
+    m_loadmapMgr->dump(os);
   }
 
   if (m_cct) {
@@ -448,7 +449,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* prof, hpcfile_csprof_data_t* metadata,
   const uint loadmap_id = (loadmap_tbl->num_epoch - 1);
   uint num_lm = loadmap_tbl->epoch_modlist[loadmap_id].num_loadmodule;
 
-  LoadMap* loadmap = new LoadMap(num_lm);
+  LoadMap loadmap(num_lm);
 
   for (int i = num_lm - 1; i >= 0; --i) { 
     string nm = loadmap_tbl->epoch_modlist[loadmap_id].loadmodule[i].name;
@@ -457,18 +458,17 @@ Profile::hpcrun_fmt_epoch_fread(Profile* prof, hpcfile_csprof_data_t* metadata,
     size_t sz = 0; //loadmap_tbl->epoch_modlist[loadmap_id].loadmodule[i].size;
 
     LoadMap::LM* lm = new LoadMap::LM(nm, loadAddr, sz);
-    loadmap->lm_insert(lm);
+    loadmap.lm_insert(lm);
   }
 
-  DIAG_MsgIf(DBG, loadmap->toString());
+  DIAG_MsgIf(DBG, loadmap.toString());
 
   try {
-    loadmap->compute_relocAmt();
+    loadmap.compute_relocAmt();
   }
   catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(locStr << "': Cannot fully process samples from unavailable load modules:\n" << x.what());
   }
-  prof->loadMap(loadmap);
 
 
   // ------------------------------------------------------------
@@ -485,7 +485,11 @@ Profile::hpcrun_fmt_epoch_fread(Profile* prof, hpcfile_csprof_data_t* metadata,
   cct_fixRoot(prof->cct(), prof->name().c_str());  
   cct_fixLeaves(prof->cct()->root());
 
-  prof->cct_canonicalize();
+  prof->cct_canonicalize(loadmap); // initializes isUsed()
+
+  std::vector<ALoadMap::MergeChange> mergeChg = 
+    prof->loadMapMgr()->merge(loadmap);
+  prof->cct_canonicalizePostMerge(mergeChg);
 }
 
 
@@ -633,7 +637,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
 
 
 void
-Profile::cct_canonicalize()
+Profile::cct_canonicalize(const LoadMap& loadmap)
 {
   CCT::ANode* root = cct()->root();
   
@@ -643,7 +647,7 @@ Profile::cct_canonicalize()
     CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
     if (n_dyn) { // n_dyn->lm_id() == LoadMap::LM_id_NULL
       VMA ip = n_dyn->CCT::ADynNode::ip();
-      LoadMap::LM* lm = loadMap()->lm_find(ip);
+      LoadMap::LM* lm = loadmap.lm_find(ip);
       VMA ip_ur = ip - lm->relocAmt();
       DIAG_MsgIf(0, "cct_canonicalize: " << hex << ip << dec << " -> " << lm->id());
 

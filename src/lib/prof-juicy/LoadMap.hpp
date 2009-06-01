@@ -77,13 +77,14 @@
 
 //*************************** Forward Declarations ***************************
 
+
+//****************************************************************************
+// ALoadMap
+//****************************************************************************
+
 namespace Prof {
 
-//****************************************************************************
-// LoadMap
-//****************************************************************************
-
-class LoadMap : public Unique {
+class ALoadMap : public Unique {
 public:
 
   typedef int LM_id_t;
@@ -115,9 +116,10 @@ public:
     void size(size_t x) 
       { m_size = x; }
 
-    // isAvail: this LoadMap::LM is active in the sense that the
+    // isAvail: this ALoadMap::LM is active in the sense that the
     // associated load module is available and relocation information
-    // is accurate.
+    // is accurate.  NOTE: a module is not available, e.g., if system
+    // libs changed or the user is executing on a different system.
     bool isAvail() const
       { return m_isAvail; }
     void isAvail(bool x)
@@ -132,7 +134,7 @@ public:
     void compute_relocAmt();
 
 
-    // isUsed: does this LoadMap::LM have data in the CCT
+    // isUsed: does this ALoadMap::LM have data in the CCT
     // tallent: FIXME: should not be located here
     bool isUsed() const { return m_isUsed; }
     void isUsed(bool x) { m_isUsed = x; }
@@ -163,34 +165,24 @@ public:
     bool m_isUsed;
   };
 
-  struct lt_LM_nm
-  {
-    inline bool 
-    operator()(const LM* x, const LM* y) const
-    { 
-      return (x->name() < y->name()); 
-    }
-  };
-
-  struct lt_LM_vma
-  {
-    inline bool 
-    operator()(const LM* x, const LM* y) const
-    { 
-      return (x->loadAddr() < y->loadAddr()); 
-    }
-  };
 
   typedef std::vector<LM*> LMVec;
-  typedef std::multiset<LM*, lt_LM_nm> LMSet_nm;
-  typedef std::set<LM*, lt_LM_vma> LMSet;
+
+
+  struct MergeChange {
+    MergeChange(LM_id_t old_, LM_id_t new_) : old_id(old_), new_id(new_) { }
+    LM_id_t old_id /*in y*/, new_id /*in x */;
+  };
+
   
 public: 
-  LoadMap(const uint i = 16);
-  virtual ~LoadMap();
+  ALoadMap(const uint i = 16);
+  virtual ~ALoadMap();
 
   // assumes ownership
-  void lm_insert(LoadMap::LM* x);
+  virtual void 
+  lm_insert(ALoadMap::LM* x) = 0;
+
   
   // ------------------------------------------------------------
   // Access by id
@@ -201,6 +193,68 @@ public:
   LM* lm(uint i) const
   { return m_lm_byId[i]; }
 
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
+  std::string 
+  toString() const;
+
+  virtual void 
+  dump(std::ostream& os = std::cerr) const = 0;
+
+  void 
+  ddump() const;
+
+protected:
+  LMVec m_lm_byId;
+};
+
+} // namespace Prof
+
+
+//****************************************************************************
+// LoadMap
+//****************************************************************************
+
+namespace Prof {
+
+class LoadMap : public ALoadMap {
+public:
+
+  struct lt_LM_nm
+  {
+    inline bool 
+    operator()(const ALoadMap::LM* x, const ALoadMap::LM* y) const
+    { 
+      return (x->name() < y->name()); 
+    }
+  };
+
+  struct lt_LM_vma
+  {
+    inline bool 
+    operator()(const ALoadMap::LM* x, const ALoadMap::LM* y) const
+    { 
+      return (x->loadAddr() < y->loadAddr()); 
+    }
+  };
+
+  typedef std::multiset<ALoadMap::LM*, lt_LM_nm> LMSet_nm;
+  typedef std::set<ALoadMap::LM*, lt_LM_vma> LMSet;
+  
+public: 
+  LoadMap(const uint i = 16);
+  virtual ~LoadMap();
+
+  // assumes ownership
+  virtual void 
+  lm_insert(ALoadMap::LM* x);
+  
+  // ------------------------------------------------------------
+  // Access by id: from ALoadMap
+  // ------------------------------------------------------------
 
   // ------------------------------------------------------------
   // Access by name
@@ -227,7 +281,7 @@ public:
   // ------------------------------------------------------------
   // Access by VMA
   // ------------------------------------------------------------
-  LM* lm_find(VMA ip) const;
+  ALoadMap::LM* lm_find(VMA ip) const;
 
   LMSet::iterator lm_begin() 
   { return m_lm_byVMA.begin(); }
@@ -261,29 +315,24 @@ public:
   void compute_relocAmt();
 
 
-  // Given an LoadMap y, merge y into x = 'this'.  Returns a vector of
-  // MergeChange describing changes that were made.  The vector
-  // contains at most one MergeChange for each LM_id_t (old_id) in y.
-
-  struct MergeChange {
-    MergeChange(LM_id_t old_, LM_id_t new_) : old_id(old_), new_id(new_) { }
-    LM_id_t old_id /*in y*/, new_id /*in x */;
-  };
-
+  // merge: Given an LoadMap y, merge y into x = 'this'.  Returns a
+  // vector of MergeChange describing changes that were made.  The
+  // vector contains at most one MergeChange for each LM_id_t (old_id)
+  // in y.
+  //
+  // NOTE: x and y must not conflict! (See lm_insert().)
   std::vector<MergeChange> 
   merge(const LoadMap& y);
+
 
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
 
-  std::string toString() const;
-
-  void dump(std::ostream& os = std::cerr) const;
-  void ddump() const;
+  virtual void 
+  dump(std::ostream& os = std::cerr) const;
 
 private:
-  LMVec    m_lm_byId;
   LMSet_nm m_lm_byName;
   LMSet    m_lm_byVMA;
 };

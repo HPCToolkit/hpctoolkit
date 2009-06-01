@@ -63,28 +63,133 @@
 
 //****************************************************************************
 
+//****************************************************************************
+// ALoadMap
+//****************************************************************************
+
+
 namespace Prof {
 
 
-LoadMap::LoadMap(uint sz)
+ALoadMap::ALoadMap(uint sz)
 {
   m_lm_byId.reserve(sz);
 }
 
 
-LoadMap::~LoadMap()
+ALoadMap::~ALoadMap()
 {
   for (uint i = 0; i < size(); ++i) {
-    delete lm(i); // LoadMap::LM*
+    delete lm(i); // ALoadMap::LM*
   }
   m_lm_byId.clear();
+}
+
+
+std::string
+ALoadMap::toString() const
+{
+  std::ostringstream os;
+  dump(os);
+  return os.str();
+}
+
+
+void 
+ALoadMap::ddump() const
+{
+  dump(std::cerr);
+}
+
+
+//****************************************************************************
+
+ALoadMap::LM::LM(const std::string& name, VMA loadAddr, size_t size)
+  : m_id(LM_id_NULL), m_name(name), 
+    m_loadAddr(loadAddr), m_size(size), 
+    m_isAvail(true),
+    m_relocAmt(0),
+    m_isUsed(false)
+{
+}
+
+
+ALoadMap::LM::~LM()
+{
+}
+
+
+void 
+ALoadMap::LM::compute_relocAmt()
+{
+  BinUtil::LM* lm = new BinUtil::LM();
+  try {
+    lm->open(m_name.c_str());
+    if (lm->doUnrelocate(m_loadAddr)) {
+      m_relocAmt = m_loadAddr;
+    }
+    delete lm;
+  }
+  catch (...) {
+    delete lm;
+    m_isAvail = false;
+    DIAG_Throw("Cannot open '" << m_name << "'");
+  }
+}
+
+
+std::string
+ALoadMap::LM::toString() const
+{
+  std::ostringstream os;
+  dump(os);
+  return os.str();
+}
+
+
+void 
+ALoadMap::LM::dump(std::ostream& os) const
+{ 
+  using namespace std;
+  os << "0x" << hex << m_loadAddr << dec 
+     << " (+" << m_relocAmt << " = " 
+     << hex << (m_loadAddr + m_relocAmt) << dec << "): " 
+     << m_name << " [" << m_id << "]";
+}
+
+
+void 
+ALoadMap::LM::ddump() const
+{
+  dump(std::cerr);
+}
+
+
+} // namespace Prof
+
+
+//****************************************************************************
+// LoadMap
+//****************************************************************************
+
+namespace Prof {
+
+
+LoadMap::LoadMap(uint sz)
+  : ALoadMap(sz)
+{
+}
+
+
+LoadMap::~LoadMap()
+{
   m_lm_byName.clear();
   m_lm_byVMA.clear();
 }
 
 
 void 
-LoadMap::lm_insert(LoadMap::LM* x) 
+LoadMap::lm_insert(ALoadMap::LM* x) 
 { 
   // FIXME: combine load modules if adjacent
 
@@ -109,7 +214,7 @@ LoadMap::lm_insert(LoadMap::LM* x)
 std::pair<LoadMap::LMSet_nm::iterator, LoadMap::LMSet_nm::iterator>
 LoadMap::lm_find(const std::string& nm) const
 {
-  static LoadMap::LM key;
+  static ALoadMap::LM key;
   key.name(nm);
 
   std::pair<LMSet_nm::iterator, LMSet_nm::iterator> fnd = 
@@ -118,10 +223,10 @@ LoadMap::lm_find(const std::string& nm) const
 }
 
 
-LoadMap::LM* 
+ALoadMap::LM* 
 LoadMap::lm_find(VMA ip) const
 {
-  static LoadMap::LM key;
+  static ALoadMap::LM key;
 
   if (m_lm_byVMA.empty()) {
     return NULL;
@@ -204,15 +309,6 @@ LoadMap::merge(const LoadMap& y)
 }
 
 
-std::string
-LoadMap::toString() const
-{
-  std::ostringstream os;
-  dump(os);
-  return os.str();
-}
-
-
 void 
 LoadMap::dump(std::ostream& os) const
 {
@@ -232,74 +328,6 @@ LoadMap::dump(std::ostream& os) const
     os << pre << lm->toString() << std::endl;
   }
   os << "}\n";
-}
-
-
-void 
-LoadMap::ddump() const
-{
-  dump(std::cerr);
-}
-
-
-//****************************************************************************
-
-LoadMap::LM::LM(const std::string& name, VMA loadAddr, size_t size)
-  : m_id(LM_id_NULL), m_name(name), 
-    m_loadAddr(loadAddr), m_size(size), 
-    m_isAvail(true),
-    m_relocAmt(0),
-    m_isUsed(false)
-{
-}
-
-
-LoadMap::LM::~LM()
-{
-}
-
-
-void 
-LoadMap::LM::compute_relocAmt()
-{
-  BinUtil::LM* lm = new BinUtil::LM();
-  try {
-    lm->open(m_name.c_str());
-    if (lm->doUnrelocate(m_loadAddr)) {
-      m_relocAmt = m_loadAddr;
-    }
-    delete lm;
-  }
-  catch (...) {
-    delete lm;
-    m_isAvail = false;
-    DIAG_Throw("Cannot open '" << m_name << "'");
-  }
-}
-
-std::string
-LoadMap::LM::toString() const
-{
-  std::ostringstream os;
-  dump(os);
-  return os.str();
-}
-
-void 
-LoadMap::LM::dump(std::ostream& os) const
-{ 
-  using namespace std;
-  os << "0x" << hex << m_loadAddr << dec 
-     << " (+" << m_relocAmt << " = " 
-     << hex << (m_loadAddr + m_relocAmt) << dec << "): " 
-     << m_name << " [" << m_id << "]";
-}
-
-
-void 
-LoadMap::LM::ddump() const
-{
-  dump(std::cerr);
 }
 
 
