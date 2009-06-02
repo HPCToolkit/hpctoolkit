@@ -340,21 +340,21 @@ Profile::make(const char* fnm, FILE* outfs)
   }
 
   hpcfile_csprof_data_t metadata;
+
   epoch_table_t loadmap_tbl;
   uint32_t num_epochs = 0;
 
   // Populate metadata structure FOR NOW
   //  extract target field from nvpairs in hdr
 
-  metadata.target = hpcrun_fmt_nvpair_search(&(hdr.nvps), "target");
+  // char *target = hpcrun_fmt_nvpair_search(&(hdr.nvps), "target");
 
-  // FIXME-MWF # epochs = # ccts for the moment
   //
   // read # epochs
   //
 
   hpcio_fread_le4(&num_epochs, fs);
-  metadata.num_ccts = num_epochs;
+  uint32_t num_ccts = num_epochs;
 
 
   // ------------------------------------------------------------
@@ -368,44 +368,46 @@ Profile::make(const char* fnm, FILE* outfs)
     //
 
     hpcrun_fmt_epoch_hdr_t ehdr;
+
     ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, fs, hpcfmt_alloc);
     if (ret != HPCFILE_OK) {
       DIAG_Throw("error reading 'epoch-hdr'");
     }
 
     //
-    // read metrics and loadmap
+    // read metrics 
     //
-    ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl, 
+    metric_tbl_t metric_tbl;
+    ret = hpcrun_fmt_metric_tbl_fread(&metric_tbl, fs, hpcfmt_alloc);
+
+    //
+    // read loadmap
+    //
+    ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl,
 			      hpcfmt_alloc, hpcfmt_free);
     if (ret != HPCFILE_OK) {
       DIAG_Throw("error reading 'old csprof-hdr'");
     }
 
-    prof = new Profile(metadata.num_metrics);
+    prof = new Profile(metric_tbl.len);
     prof->name("[Profile Name]");
 
     try {
       string locStr = fnm; // ":epoch " + 1;
-      hpcrun_fmt_epoch_fread(prof, &metadata, &loadmap_tbl, fs, 
+      hpcrun_fmt_epoch_fread(prof, num_ccts, &metric_tbl, &loadmap_tbl, fs,
 			     locStr, outfs);
     }
     catch (const Diagnostics::Exception& x) {
       delete prof;
       DIAG_Throw("error reading 'epoch': " << x.what());
     }
+    hpcrun_fmt_metric_tbl_free(&metric_tbl, free);
   }
 
   // ------------------------------------------------------------
   // Cleanup
   // ------------------------------------------------------------
   hpcio_close(fs);
-
-  hpcfmt_free(metadata.target);
-  for (uint i = 0; i < metadata.num_metrics; i++) {
-    hpcfmt_free(metadata.metrics[i].metric_name);
-  }
-  hpcfmt_free(metadata.metrics);
 
   epoch_table__free_data(&loadmap_tbl, hpcfmt_free);
 
@@ -414,7 +416,7 @@ Profile::make(const char* fnm, FILE* outfs)
 
 
 void
-Profile::hpcrun_fmt_epoch_fread(Profile* prof, hpcfile_csprof_data_t* metadata,
+Profile::hpcrun_fmt_epoch_fread(Profile* prof, uint32_t num_ccts, metric_tbl_t* metadata,
 				epoch_table_t* loadmap_tbl,
 				FILE* infs, std::string locStr, FILE* outfs)
 {
@@ -430,13 +432,15 @@ Profile::hpcrun_fmt_epoch_fread(Profile* prof, hpcfile_csprof_data_t* metadata,
   // Metric table (metric-tbl)
   // ------------------------------------------------------------
 
-  uint num_metrics = metadata->num_metrics;
+  uint num_metrics = metadata->len;
   DIAG_Msg(3, locStr << ": metrics found: " << num_metrics);
+  metric_desc_t *p = metadata->lst;
   for (uint i = 0; i < num_metrics; i++) {
     SampledMetricDesc* metric = prof->metric(i);
-    metric->name(metadata->metrics[i].metric_name);
-    metric->flags(metadata->metrics[i].flags);
-    metric->period(metadata->metrics[i].sample_period);
+    metric->name(p->name);
+    metric->flags(p->flags);
+    metric->period(p->period);
+    p++;
   }
 
 
@@ -475,7 +479,6 @@ Profile::hpcrun_fmt_epoch_fread(Profile* prof, hpcfile_csprof_data_t* metadata,
   // CCT (cct)
   // ------------------------------------------------------------
 
-  uint num_ccts = metadata->num_ccts;
   DIAG_Msg(3, locStr << ": ccts found: " << num_ccts);
 
   if (num_ccts > 0) {

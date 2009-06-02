@@ -6,6 +6,8 @@
 
 #include <sys/types.h>
 
+#include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 /* flags for metrics */
@@ -47,6 +49,6 @@ void csprof_set_metric_info_and_period(int metric_id, char *name,
 void csprof_record_metric(int metric_id, size_t value);
 
 /* Useful only for csprof itself. */
-hpcfile_csprof_data_t *csprof_get_metric_data();
+metric_tbl_t *hpcrun_get_metric_data();
 
 #endif

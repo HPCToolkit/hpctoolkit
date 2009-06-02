@@ -259,46 +259,63 @@ hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *out)
 //   hpcfile_str_t, hpcfile_num8_str_t, etc.
 //
 
-//***************************************************************************
-// hpcfile_csprof_write()
-//***************************************************************************
-
-// See header file for documentation of public interface.
-// Cf. 'HPC_CSPROF format details' above.
+//
+//   === metric table ===
+//
 int
-hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
+hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t *metric_tbl, FILE *out)
 {
-  hpcfile_str_t str;
-  hpcfile_num8_t num8;
-  int i;
-
-  if (!fs) { return HPCFILE_ERR; }
-
-  // ----------------------------------------------------------
-  // 2. Metrics
-  // ----------------------------------------------------------
-  hpcio_fwrite_le4(&data->num_metrics, fs);
-
-  for (i = 0; i < data->num_metrics; ++i) {
-    hpcfile_csprof_metric_t metric = data->metrics[i];
-    
-    hpcfile_str__init(&str);
-    str.tag = HPCFILE_TAG__CSPROF_EVENT;
-    str.length = strlen(metric.metric_name);
-    str.str = metric.metric_name;
-    if(hpcfile_str__fwrite(&str, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
-    
-    hpcfile_num8__init(&num8);
-    num8.tag = HPCFILE_TAG__CSPROF_METRIC_FLAGS;
-    num8.num = metric.flags;
-    if (hpcfile_num8__fwrite(&num8, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
-    
-    num8.tag = HPCFILE_TAG__CSPROF_PERIOD;
-    num8.num = metric.sample_period;
-    if (hpcfile_num8__fwrite(&num8, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
+  hpcio_fwrite_le4(&(metric_tbl->len), out);
+  metric_desc_t *p = metric_tbl->lst;
+  for(uint32_t i=0; i<metric_tbl->len; p++,i++){
+    hpcrun_fstr_fwrite(p->name, out);
+    hpcio_fwrite_le8(&(p->flags), out);
+    hpcio_fwrite_le8(&(p->period), out);
   }
+  return HPCFILE_OK;
+}
+
+int
+hpcrun_fmt_metric_tbl_fread(metric_tbl_t *metric_tbl, FILE *in, alloc_fn alloc)
+{
+  hpcio_fread_le4(&(metric_tbl->len), in);
+  if (alloc != NULL) {
+    metric_tbl->lst = (metric_desc_t *) alloc(metric_tbl->len * sizeof(metric_desc_t));
+  }
+  metric_desc_t *p = metric_tbl->lst;
+  for(uint32_t i=0; i<metric_tbl->len; p++,i++){
+    hpcrun_fstr_fread(&(p->name), in, alloc);
+    hpcio_fread_le8(&(p->flags), in);
+    hpcio_fread_le8(&(p->period), in);
+  }
+  return HPCFILE_OK;
+}
+
+int
+hpcrun_fmt_metric_tbl_fprint(metric_tbl_t *metric_tbl, FILE *out)
+{
+  fputs("{csprof_data:\n", out);
+
+  fprintf(out, "  metrics: %d\n", metric_tbl->len);
+  metric_desc_t *p = metric_tbl->lst;
+  for(uint32_t i=0; i<metric_tbl->len; p++,i++){
+    fprintf(out, "  { event: %s\t", p->name); 
+    fprintf(out, "  sample period: %"PRIu64" }\n", p->period); 
+  }
+  fputs("  }\n", out);
   
   return HPCFILE_OK;
+}
+
+void
+hpcrun_fmt_metric_tbl_free(metric_tbl_t *metric_tbl, free_fn dealloc)
+{
+  metric_desc_t *p = metric_tbl->lst;
+  for(uint32_t i=0; i<metric_tbl->len; p++,i++){
+    hpcrun_fstr_free(p->name, dealloc);
+    dealloc((void *) p);
+  }
+  metric_tbl->lst = NULL;
 }
 
 //***************************************************************************
@@ -308,123 +325,18 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
 // See header file for documentation of public interface.
 // Cf. 'HPC_CSPROF format details' above.
 int
-hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,  
+hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
                     epoch_table_t* loadmap_tbl,
 		    hpcfile_cb__alloc_fn_t alloc_fn,
 		    hpcfile_cb__free_fn_t free_fn)
 {
 
   hpcfile_str_t str;
-  hpcfile_num8_t num8;
-  uint32_t tag;
   size_t sz;
   int ret;
 
   if (!fs) { return HPCFILE_ERR; }
 
-  // ----------------------------------------------------------
-  // 2. Metrics
-  // ----------------------------------------------------------
-
-  // 2a. number of metrics
-  ret = hpcfile_tag__fread(&tag, fs);
-  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
-
-  data->num_metrics = tag; // FIXME: YUCK
-
-  // 2b. metric descriptions
-  data->metrics = alloc_fn(data->num_metrics * sizeof(hpcfile_csprof_metric_t));
-  
-  for (uint32_t i = 0; i < data->num_metrics; ++i) {
-    // Read metrics data tag
-    ret = hpcfile_tag__fread(&tag, fs);
-    if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
-
-    // read in the name of the  metric
-    str.str = NULL;
-    if (hpcfile_str__fread(&str, fs, alloc_fn) != HPCFILE_OK) {
-      free_fn(str.str);
-      return HPCFILE_ERR;
-    }
-    data->metrics[i].metric_name = str.str;
-
-    // read in the flags of the metric
-    ret = hpcfile_tag__fread(&tag, fs);
-    if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
-
-    ret = hpcfile_num8__fread(&num8, fs);
-    if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
-
-    data->metrics[i].flags = num8.num;
-	  
-    // read in the sample period
-    ret = hpcfile_tag__fread(&tag, fs);
-    if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
-
-    ret = hpcfile_num8__fread(&num8, fs);
-    if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
-	  
-    data->metrics[i].sample_period = num8.num;
-  }
-
-
-#if 0
-  size_t sz;
-  // Read data chunks
-  for (i = 0; i < fhdr.num_data-1; ++i) {
-    // Read data tag
-    sz = hpcio_fread_le4(&tag, fs);
-    if (sz != sizeof(tag)) { return HPCFILE_ERR; }
-
-    // Read data into appropriate structure
-    switch (HPCFILE_TAG_GET_FORMAT(tag)) {
-      case HPCFILE_STR:
-	str.str = NULL;
-	if (hpcfile_str__fread(&str, fs, alloc_fn) != HPCFILE_OK) { 
-	  free_fn(str.str);
-	  return HPCFILE_ERR;
-	}
-
-	data->target = str.str; 
-
-	break;
-      case HPCFILE_NUM8:
-	ret = hpcfile_num8__fread(&num8, fs);
-	if (ret != HPCFILE_OK) { 
-
-	}
-	break;
-
-      case HPCFILE_NUM8S:
-	num8s.nums = NULL;
-	if (hpcfile_num8s__fread(&num8s, fs, alloc_fn) != HPCFILE_OK) { 
-	  free_fn(num8s.nums);
-	  return HPCFILE_ERR;
-	}
-	break;
-
-      default:
-	return HPCFILE_ERR; 
-	break;
-    }
-    
-    // Interpret the data: FIXME sanity check
-    switch (tag) {
-    case HPCFILE_TAG__CSPROF_TARGET: 
-      data->target = str.str; 
-      break;
-    case HPCFILE_TAG__CSPROF_EVENT:
-      data->event = str.str; 
-      break;
-    case HPCFILE_TAG__CSPROF_PERIOD:
-      data->sample_period = num8.num;
-      break;
-    default: 
-      break; // skip 
-    }
-  }
-#endif
-    
   // ----------------------------------------------------------
   // 3. LoadMaps
   // ----------------------------------------------------------
@@ -475,11 +387,11 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
 // See header file for documentation of public interface.
 int
-hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data)
+hpcfile_csprof_fprint(FILE* infs, FILE* outfs, char *target, hpcfile_csprof_data_t* data)
 {
   int ret;
 
-  // Read header and basic data
+  // read loadmap
   epoch_table_t loadmap_tbl;
 
   ret = hpcfile_csprof_read(infs, data, &loadmap_tbl, 
@@ -495,7 +407,7 @@ hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data)
   //-- fputs("\n", outfs);
 
   // Print data
-  hpcfile_csprof_data__fprint(data, outfs);
+  hpcfile_csprof_data__fprint(data, target, outfs);
 
   // Print loadmaps
   for (int i = 0; i < loadmap_tbl.num_epoch; ++i) {
@@ -707,25 +619,8 @@ hpcfile_csprof_data__fini(hpcfile_csprof_data_t* x)
 }
 
 int 
-hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, FILE* fs)
+hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, char *target, FILE* fs)
 {
-  fputs("{csprof_data:\n", fs);
-
-  char* tgt = (x->target) ? x->target : "";
-  fprintf(fs, "  target: %s\n", tgt);
-
-  fprintf(fs, "  metrics: %d\n", x->num_metrics);
-  for (int i = 0; i < x->num_metrics; ++i) {
-    hpcfile_csprof_metric_t metric = x->metrics[i];
-    
-    // (metric.metric_name)
-    fprintf(fs, "  { event: %s\t", metric.metric_name); 
-    fprintf(fs, "  sample period: %"PRIu64" }\n", metric.sample_period); 
-  }
-  fputs("  }\n", fs);
-  
-  fprintf(fs, "  num CCTs: %d\n", x->num_ccts);
-
   return HPCFILE_OK;
 }
 

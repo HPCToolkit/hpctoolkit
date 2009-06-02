@@ -72,6 +72,8 @@
 
 #include <metrics.h>
 
+#include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lib/prof-lean/lush/lush-support.h>
@@ -107,8 +109,8 @@ cct_metric_data_increment(int metric_id,
 			  cct_metric_data_t* x, 
 			  cct_metric_data_t incr)
 {
-  hpcfile_csprof_data_t* mdata = csprof_get_metric_data();
-  hpcfile_csprof_metric_t* minfo = &mdata->metrics[metric_id];
+  metric_tbl_t *mdata = hpcrun_get_metric_data();
+  metric_desc_t *minfo = &(mdata->lst[metric_id]);
   
   if (hpcfile_csprof_metric_is_flag(minfo->flags, HPCFILE_METRIC_FLAG_REAL)) {
     x->r += incr.r;

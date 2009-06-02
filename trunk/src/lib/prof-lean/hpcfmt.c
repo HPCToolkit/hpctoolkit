@@ -315,6 +315,12 @@ hpcrun_fstr_fwrite(char *str, FILE *outfs)
   return HPCFILE_OK;
 }
 
+void
+hpcrun_fstr_free(char *fstr, free_fn dealloc)
+{
+  dealloc((void *)fstr);
+}
+
 int 
 hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs)
 {

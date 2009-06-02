@@ -139,9 +139,8 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   // Populate metadata structure FOR NOW
   //  extract target field from nvpairs in new_hdr
 
-  metadata.target = hpcrun_fmt_nvpair_search(&(new_hdr.nvps), "target");
+  char *target = hpcrun_fmt_nvpair_search(&(new_hdr.nvps), "target");
   
-  // FIXME-MWF # epochs = # ccts for the moment
   //
   // read & print # epochs
   //
@@ -149,7 +148,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   hpcio_fread_le4(&num_epochs, fs);
   fprintf(stdout,"{num epochs = %d}\n", num_epochs);
 
-  metadata.num_ccts = num_epochs;
+  uint32_t num_ccts = num_epochs;
 
   //
   // for each epoch ...
@@ -166,15 +165,24 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
     hpcrun_fmt_epoch_hdr_fprint(&ehdr, stdout);
 
     //
-    // metrics and loadmap
+    // metrics
     //
-    ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
+
+    metric_tbl_t metric_tbl;
+    ret = hpcrun_fmt_metric_tbl_fread(&metric_tbl, fs, malloc);
+    hpcrun_fmt_metric_tbl_fprint(&metric_tbl, stdout);
+
+    //
+    // loadmap
+    // 
+
+    ret = hpcfile_csprof_fprint(fs, stdout, target, &metadata);
+
     if (ret != HPCFILE_OK) {
       DIAG_Throw(filenm << ": error reading HPC_CSPROF");
     }
   
-    uint num_metrics = metadata.num_metrics;
-    uint num_ccts = metadata.num_ccts;
+    uint num_metrics = metric_tbl.len;
 
     if (num_ccts > 0) {
       using namespace Prof;
