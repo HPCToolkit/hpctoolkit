@@ -139,6 +139,7 @@ csprof_epoch_new()
 void
 csprof_write_epoch_header(FILE *fs)
 {
+  ;
 }
 
 void
@@ -156,7 +157,7 @@ csprof_write_epoch_module(csprof_epoch_module_t *module, FILE *fs)
 }
 
 void
-csprof_write_epoch(csprof_epoch_t *epoch, FILE *fs)
+hpcrun_write_epoch(csprof_epoch_t *epoch, FILE *fs)
 {
   csprof_epoch_module_t *module_runner;
 
@@ -165,13 +166,41 @@ csprof_write_epoch(csprof_epoch_t *epoch, FILE *fs)
   module_runner = epoch->loaded_modules;
 
   while(module_runner != NULL) {
-    TMSG(EPOCH, "Writing module %s", module_runner->module_name);
+    TMSG(DATA_WRITE, "Writing module %s", module_runner->module_name);
     csprof_write_epoch_module(module_runner, fs);
 
     module_runner = module_runner->next;
   }
 }
 
+void
+hpcrun_finalize_current_epoch(void)
+{
+  // lazily finalize the last epoch
+  csprof_epoch_lock();
+  if (current_epoch->loaded_modules == NULL) {
+    fnbounds_epoch_finalize();
+  }
+  csprof_epoch_unlock();
+}
+
+//
+// ****FIXME****
+//
+//   Temporarily write out only 1 load map: The current epoch load map
+//
+void
+hpcrun_write_current_loadmap(FILE *fs)
+{
+  uint32_t n_loadmaps = 0;
+  if (!current_epoch) {
+    hpcio_fwrite_le4(&n_loadmaps, fs);
+    return;
+  }
+  n_loadmaps = 1;
+  hpcio_fwrite_le4(&n_loadmaps, fs);
+  hpcrun_write_epoch(current_epoch, fs);
+}
 
 void
 csprof_write_all_epochs(FILE *fs)
@@ -181,13 +210,6 @@ csprof_write_all_epochs(FILE *fs)
      collected. */
   csprof_epoch_t *runner = current_epoch;
   unsigned int id_runner = 0;
-
-  // lazily finalize the last epoch
-  csprof_epoch_lock();
-  if (current_epoch->loaded_modules == NULL) {
-    fnbounds_epoch_finalize();
-  }
-  csprof_epoch_unlock();
 
   while(runner != NULL) {
     runner->id = id_runner;
@@ -202,8 +224,8 @@ csprof_write_all_epochs(FILE *fs)
   runner = current_epoch;
 
   while(runner != NULL) {
-    TMSG(EPOCH, "Writing epoch %d", runner->id);
-    csprof_write_epoch(runner, fs);
+    TMSG(DATA_WRITE, "Writing epoch %d", runner->id);
+    hpcrun_write_epoch(runner, fs);
 
     runner = runner->next;
   }

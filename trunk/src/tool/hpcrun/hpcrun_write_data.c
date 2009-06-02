@@ -116,6 +116,14 @@ hpcrun_write_profile_data(csprof_state_t *state)
     }
     runner = runner->next;
   }
+
+  // ******FIXME*********
+  //
+  //   Limit num_epochs to 1 FOR THE MOMENT!
+  //
+
+  num_epochs = (num_epochs > 1) ? 1 : num_epochs;
+  
   TMSG(DATA_WRITE, "writing # epochs = %d", num_epochs);
   hpcio_fwrite_le4(&num_epochs, fs);
 
@@ -154,7 +162,7 @@ hpcrun_write_profile_data(csprof_state_t *state)
 
     TMSG(DATA_WRITE, "Preparing to write loadmaps");
 
-    csprof_write_all_epochs(fs);
+    hpcrun_write_current_loadmap(fs);
 
     TMSG(DATA_WRITE, "Done writing loadmaps");
 
