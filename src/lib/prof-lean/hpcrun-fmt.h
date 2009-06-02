@@ -162,6 +162,22 @@ int hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *fs, alloc_fn 
 int hpcrun_fmt_epoch_hdr_fwrite(FILE *out, uint64_t flags, uint32_t ra_distance, uint64_t granularity, ...);
 int hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *out);
 
+// ******** metric descriptor and metric table  **********
+
+typedef struct metric_desc_t {
+  char *name;
+  uint64_t flags;
+  uint64_t period;
+} metric_desc_t;
+
+typedef_LIST_OF(metric_desc_t);
+typedef LIST_OF(metric_desc_t) hpcrun_fmt_metric_tbl_t;
+typedef hpcrun_fmt_metric_tbl_t metric_tbl_t;
+
+int hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t *metric_tbl, FILE *out);
+int hpcrun_fmt_metric_tbl_fread(metric_tbl_t *metric_tbl, FILE *in, alloc_fn alloc);
+int hpcrun_fmt_metric_tbl_fprint(metric_tbl_t *metrics, FILE *out);
+void hpcrun_fmt_metric_tbl_free(metric_tbl_t *metric_tbl, free_fn dealloc);
 
 //***************************************************************************
 //
@@ -194,11 +210,11 @@ int hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *out);
 // disk, hopefully this will not need to be changed.
 // ---------------------------------------------------------
 typedef struct hpcfile_csprof_id_s {
-  
+
   char magic_str[HPCFILE_CSPROF_MAGIC_STR_LEN]; 
   char version[HPCFILE_CSPROF_VERSION_LEN];
   char endian;  // 'b' or 'l' (currently, redundant info)
-  
+
 } hpcfile_csprof_id_t;
 
 int hpcfile_csprof_id__init(hpcfile_csprof_id_t* x);
@@ -218,7 +234,7 @@ typedef struct hpcfile_csprof_hdr_s {
 
   // data information
   uint64_t num_data; // number of data chucks following header
-  
+
 } hpcfile_csprof_hdr_t;
 
 int hpcfile_csprof_hdr__init(hpcfile_csprof_hdr_t* x);
@@ -240,7 +256,7 @@ typedef uint64_t hpcfile_csprof_metric_flag_t;
 
 static inline bool
 hpcfile_csprof_metric_is_flag(hpcfile_csprof_metric_flag_t flagbits, 
-			      hpcfile_csprof_metric_flag_t f)
+                              hpcfile_csprof_metric_flag_t f)
 { 
   return (flagbits & f); 
 }
@@ -248,7 +264,7 @@ hpcfile_csprof_metric_is_flag(hpcfile_csprof_metric_flag_t flagbits,
 
 static inline void 
 hpcfile_csprof_metric_set_flag(hpcfile_csprof_metric_flag_t* flagbits, 
-			       hpcfile_csprof_metric_flag_t f)
+                               hpcfile_csprof_metric_flag_t f)
 {
   *flagbits = (*flagbits | f);
 }
@@ -256,7 +272,7 @@ hpcfile_csprof_metric_set_flag(hpcfile_csprof_metric_flag_t* flagbits,
 
 static inline void 
 hpcfile_csprof_metric_unset_flag(hpcfile_csprof_metric_flag_t* flagbits, 
-				 hpcfile_csprof_metric_flag_t f)
+                                 hpcfile_csprof_metric_flag_t f)
 {
   *flagbits = (*flagbits & ~f);
 }
@@ -265,9 +281,9 @@ hpcfile_csprof_metric_unset_flag(hpcfile_csprof_metric_flag_t* flagbits,
 /* hpcfile_csprof_metric_t */
 
 typedef struct hpcfile_csprof_metric_s {
-    char *metric_name;          /* name of the metric */
-    hpcfile_csprof_metric_flag_t flags;  /* metric flags (async, etc.) */
-    uint64_t sample_period;     /* sample period of the metric */
+  char *metric_name;          /* name of the metric */
+  hpcfile_csprof_metric_flag_t flags;  /* metric flags (async, etc.) */
+  uint64_t sample_period;     /* sample period of the metric */
 } hpcfile_csprof_metric_t;
 
 
@@ -295,7 +311,7 @@ typedef struct epoch_entry_s {
   uint32_t num_loadmodule;
   ldmodule_t *loadmodule;
 } epoch_entry_t;
-  
+
 typedef struct epoch_table_s {
   uint32_t num_epoch;
   epoch_entry_t *epoch_modlist;
@@ -311,17 +327,16 @@ void epoch_table__free_data(epoch_table_t* x, hpcfile_cb__free_fn_t free_fn);
 // ---------------------------------------------------------
 
 typedef struct hpcfile_csprof_data_s {
-  char* target;               // name of profiling target
+  // char* target;               // name of profiling target
   uint32_t num_metrics;       // number of metrics recorded
   hpcfile_csprof_metric_t *metrics;
-  uint32_t num_ccts;          // number of CCTs
-  
+  // uint32_t num_ccts;          // number of CCTs
 } hpcfile_csprof_data_t;
 
 int hpcfile_csprof_data__init(hpcfile_csprof_data_t* x);
 int hpcfile_csprof_data__fini(hpcfile_csprof_data_t* x);
 
-int hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, FILE* fs);
+int hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, char *target, FILE* fs);
 
 
 
@@ -383,7 +398,7 @@ hpcfile_csprof_read(FILE* fs,
 // designed for parsing and any formatting is subject to change.
 // Returns HPCFILE_OK upon success; HPCFILE_ERR on error.
 int
-hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data);
+hpcfile_csprof_fprint(FILE* infs, FILE* outfs, char *target, hpcfile_csprof_data_t* data);
 
 
 //***************************************************************************

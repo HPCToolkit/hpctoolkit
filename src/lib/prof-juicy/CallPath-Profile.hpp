@@ -156,8 +156,9 @@ public:
   // inspection.
 
   static void
-  hpcrun_fmt_epoch_fread(Profile* prof, 
-			 hpcfile_csprof_data_t* metadata, 
+  hpcrun_fmt_epoch_fread(Profile* prof,
+			 uint32_t num_ccts,
+			 metric_tbl_t* metadata,
 			 epoch_table_t* loadmap_tbl,
 			 FILE* infs, std::string locStr, FILE* outfs);
 

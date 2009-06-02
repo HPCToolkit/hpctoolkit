@@ -203,7 +203,8 @@ int hpcfile_str__fwrite(hpcfile_str_t* x, FILE* fs);
 int hpcfile_str__fprint(hpcfile_str_t* x, FILE* fs);
 
 int hpcrun_fstr_fread(char **str, FILE *infs, alloc_fn alloc);
-int hpcrun_fstr_fwrite(char *, FILE *outfs);
+int hpcrun_fstr_fwrite(char *str, FILE *outfs);
+void hpcrun_fstr_free(char *str, free_fn dealloc);
 
 // ---------------------------------------------------------
 // hpcfile_num8_t: One 8 byte number.

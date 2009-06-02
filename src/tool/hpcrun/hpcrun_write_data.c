@@ -90,7 +90,6 @@ hpcrun_write_profile_data(csprof_state_t *state)
 //***************************************************************************
 
   char _tmp[10];
-  hpcfile_csprof_data_t *tmp = csprof_get_metric_data();
   uint32_t num_epochs = 0;
 
   //
@@ -101,10 +100,8 @@ hpcrun_write_profile_data(csprof_state_t *state)
                         "program-name", "TBD",
                         "process_id", "TBD",
                         "mpi-rank", hpcrun_itos(_tmp, rank),
-                        "target", tmp->target,
+                        "target", "--FIXME--target_name",
                         END_NVPAIRS);
-
-  // FIXME-MWF: for the moment, # epochs = # ccts
 
   //
   // === # epochs === 
@@ -139,32 +136,24 @@ hpcrun_write_profile_data(csprof_state_t *state)
                                 "LIP-size","2",
                                 END_NVPAIRS);
 
-
     //
     // == metrics ==
     //
 
-    TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
+    metric_tbl_t *metric_tbl = hpcrun_get_metric_data();
 
-    TMSG(DATA_WRITE,"metric data target = %s",tmp->target);
-    TMSG(DATA_WRITE,"metric data num metrics = %d",tmp->num_metrics);
-    hpcfile_csprof_metric_t *tmp1 = tmp->metrics;
-    for (int i=0;i<tmp->num_metrics;i++,tmp1++){
-      TMSG(DATA_WRITE,"--metric %s period = %ld",tmp1->metric_name,tmp1->sample_period);
-    }
-    ret1 = hpcfile_csprof_write(fs, tmp);
+    TMSG(DATA_WRITE,"metric data num metrics = %d",metric_tbl->len);
+
+    hpcrun_fmt_metric_tbl_fwrite(metric_tbl, fs);
 
     TMSG(DATA_WRITE, "Done writing metric data");
-
-    if(ret1 != HPCFILE_OK) {
-      goto error;
-    }
 
     //
     // == load map ==
     //
 
     TMSG(DATA_WRITE, "Preparing to write loadmaps");
+
     csprof_write_all_epochs(fs);
 
     TMSG(DATA_WRITE, "Done writing loadmaps");
@@ -207,7 +196,6 @@ hpcrun_write_profile_data(csprof_state_t *state)
     goto end;
   } // epoch loop
 
- error:
  end:
 
   TMSG(DATA_WRITE,"closing file");

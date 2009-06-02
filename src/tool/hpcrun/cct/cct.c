@@ -204,7 +204,6 @@ csprof_cct__init(csprof_cct_t* x)
   }
 #endif
 
-
   return HPCRUN_OK;
 }
 
