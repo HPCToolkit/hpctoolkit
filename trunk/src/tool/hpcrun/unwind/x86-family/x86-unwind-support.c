@@ -60,3 +60,4 @@ x86_get_branch_target(void *ins, xed_decoded_inst_t *xptr)
   }
   return NULL;
 }
+

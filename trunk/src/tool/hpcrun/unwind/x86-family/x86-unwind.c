@@ -286,8 +286,12 @@ unw_step(unw_cursor_t *cursor)
   step_state rv = unw_step_real(cursor);
   if ( ENABLED(UNW_VALID) ) {
     if (rv == STEP_OK) {
-      validation_status vstat = deep_validate_return_addr(cursor->pc, (void *) &saved);
-      vrecord(saved.pc,cursor->pc,vstat);
+      // try to validate all calls, except the one at the base of the call stack from libmonitor.
+      // rather than recording that as a valid call, it is preferable to ignore it.
+      if (!monitor_in_start_func_wide(cursor->pc)) {
+	validation_status vstat = deep_validate_return_addr(cursor->pc, (void *) &saved);
+	vrecord(saved.pc,cursor->pc,vstat);
+      }
     }
   }
   return rv;
@@ -477,6 +481,7 @@ unw_step_std(unw_cursor_t *cursor)
     if (unw_res == STEP_ERROR || unw_res == STEP_STOP_WEAK) {
       TMSG(UNW_STRATEGY,"--STD_FRAME: SP failed, RETRY w BP");
       unw_res = unw_step_bp(cursor);
+      if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP; 
     }
   } else {
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with BP");
