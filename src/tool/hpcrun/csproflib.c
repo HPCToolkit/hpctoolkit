@@ -297,6 +297,7 @@ csprof_thread_fini(csprof_state_t *state)
     TMSG(FINI,"thread finit stops sampling");
     SAMPLE_SOURCES(stop);
     lush_pthr__thread_fini(&TD_GET(pthr_metrics));
+    hpcrun_finalize_current_epoch();
     hpcrun_write_profile_data(state);
   }
 }
@@ -337,6 +338,7 @@ csprof_fini_internal(void)
 
     fnbounds_fini();
 
+    hpcrun_finalize_current_epoch();
     hpcrun_write_profile_data(state);
 
     csprof_display_summary();

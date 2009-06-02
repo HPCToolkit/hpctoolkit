@@ -354,7 +354,7 @@ Profile::make(const char* fnm, FILE* outfs)
   //
 
   hpcio_fread_le4(&num_epochs, fs);
-  uint32_t num_ccts = num_epochs;
+  uint32_t num_ccts = num_epochs > 1 ? 1 : 1;
 
 
   // ------------------------------------------------------------
@@ -362,7 +362,14 @@ Profile::make(const char* fnm, FILE* outfs)
   // ------------------------------------------------------------
   Profile* prof = NULL;
 
+  // ************ FIXME *************************
+  //
+  if (num_epochs > 1) {
+    // DD("WARNING: num epochs(=%d) > 1. Reducing to 1 for now", num_epochs);
+    num_epochs = 1;
+  }
   for (uint i = 0; i < num_epochs; ++i) {
+
     //
     // == epoch header ==
     //
@@ -509,7 +516,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
   LipIdToLipMap     lipMap;
 
   int ret = HPCFILE_ERR;
-  
+
   // ------------------------------------------------------------
   // Read header
   // ------------------------------------------------------------

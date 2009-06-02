@@ -173,11 +173,11 @@ x86_plt_branch_target(void *ins, xed_decoded_inst_t *xptr)
   if (op0_name == XED_OPERAND_MEM0 && 
       op0_type == XED_OPERAND_TYPE_IMM_CONST) {
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
-    bool ismem = xed_operand_values_accesses_memory(vals);
+    //    bool ismem = xed_operand_values_accesses_memory(vals);
     xed_reg_enum_t reg = xed_operand_values_get_base_reg(vals,0);
     if (reg == XED_REG_RIP) {
       int ins_len = xed_decoded_inst_get_length(xptr);
-      unsigned int len = xed_operand_values_get_memory_operand_length(vals,0);
+      // unsigned int len = xed_operand_values_get_memory_operand_length(vals,0);
       xed_int64_t disp =  xed_operand_values_get_memory_displacement_int64(vals);
       xed_int64_t **memloc = ins + disp + ins_len;
       xed_int64_t *memval = *memloc;

@@ -150,6 +150,13 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
 
   uint32_t num_ccts = num_epochs;
 
+  // ********** FIXME *****************
+  //
+  if (num_epochs > 1){
+    // DD("Temporarily reducing # epochs(=%u) to 1", num_epochs);
+    num_epochs = 1;
+  }
+
   //
   // for each epoch ...
   //

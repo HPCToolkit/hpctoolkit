@@ -79,7 +79,11 @@ void csprof_epoch_lock();
 void csprof_epoch_unlock();
 int csprof_epoch_is_locked();
 
+void hpcrun_finalize_current_epoch(void);
+
 void csprof_write_all_epochs(FILE *);
+void hpcrun_write_current_loadmap(FILE *);
+
 // csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *state);
 
 #endif /* CSPROF_EPOCH_H */
