@@ -1,9 +1,20 @@
 //
 // Validate a return address obtained from an unw_step:
-//   Most useful after a troll operation, but may still be used for QC on all unwinds
+//   Most useful after a troll operation, but may still be used for 
+//   QC on all unwinds
 //
 
+//***************************************************************************
+// system include files 
+//***************************************************************************
+
 #include <stdbool.h>
+
+
+
+//***************************************************************************
+// local include files 
+//***************************************************************************
 
 #include "x86-decoder.h"
 #include "x86-validate-retn-addr.h"
@@ -15,12 +26,30 @@
 #include "x86-unwind-interval.h"
 #include "pmsg.h"
 
+
+
+//****************************************************************************
+// forward declarations 
+//****************************************************************************
+
 extern void *x86_get_branch_target(void *ins, xed_decoded_inst_t *xptr);
+
+
+
+//****************************************************************************
+// local types 
+//****************************************************************************
 
 typedef struct xed_decode_t {
   xed_decoded_inst_t xedd;
   xed_error_enum_t   err;
 } xed_decode_t;
+
+
+
+//****************************************************************************
+// local operations 
+//****************************************************************************
 
 static void
 xed_decode_i(void *ins, xed_decode_t *res)
@@ -30,6 +59,7 @@ xed_decode_i(void *ins, xed_decode_t *res)
   xed_decoded_inst_zero_keep_mode(xptr);
   res->err = xed_decode(xptr, (uint8_t *)ins, 15);
 }
+
 
 static bool
 confirm_call_fetch_addr(void *addr, size_t offset, void **the_call)
@@ -64,6 +94,7 @@ confirm_call_fetch_addr(void *addr, size_t offset, void **the_call)
   return false;
 }
 
+
 static bool
 confirm_call(void *addr, void *routine)
 {
@@ -80,6 +111,7 @@ confirm_call(void *addr, void *routine)
   return (the_call == routine);
 }
 
+
 static bool
 confirm_indirect_call_specific(void *addr, size_t offset)
 {
@@ -94,6 +126,7 @@ confirm_indirect_call_specific(void *addr, size_t offset)
   
 }
 
+
 static bool
 confirm_indirect_call(void *addr)
 {
@@ -105,6 +138,7 @@ confirm_indirect_call(void *addr)
   }
   return false;
 }
+
 
 static bool
 confirm_tail_call(void *addr)
@@ -125,6 +159,62 @@ confirm_tail_call(void *addr)
   TMSG(VALIDATE_UNW,"Tail call status of %p is %s",the_call,rv ? "TRUE" : "FALSE");
   return rv;
 }
+
+
+
+static void *
+x86_plt_branch_target(void *ins, xed_decoded_inst_t *xptr)
+{
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+  xed_operand_enum_t   op0_name = xed_operand_name(op0);
+  xed_operand_type_enum_t op0_type = xed_operand_type(op0);
+
+  if (op0_name == XED_OPERAND_MEM0 && 
+      op0_type == XED_OPERAND_TYPE_IMM_CONST) {
+    xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
+    bool ismem = xed_operand_values_accesses_memory(vals);
+    xed_reg_enum_t reg = xed_operand_values_get_base_reg(vals,0);
+    if (reg == XED_REG_RIP) {
+      int ins_len = xed_decoded_inst_get_length(xptr);
+      unsigned int len = xed_operand_values_get_memory_operand_length(vals,0);
+      xed_int64_t disp =  xed_operand_values_get_memory_displacement_int64(vals);
+      xed_int64_t **memloc = ins + disp + ins_len;
+      xed_int64_t *memval = *memloc;
+      return memval;
+    }
+  }
+  return NULL;
+}
+
+
+static bool
+confirm_plt_call(void *addr, void *routine)
+{
+
+  TMSG(VALIDATE_UNW,"trying to confirm that instruction before %p is call to a routine through the PLT", addr);
+
+  void *the_call;
+
+  if ( ! confirm_call_fetch_addr(addr, 5, &the_call)) {
+    TMSG(VALIDATE_UNW,"No call instruction found @ %p, so PLT call REJECTED",
+         addr - 5);
+    return false;
+  }
+
+  TMSG(VALIDATE_UNW,"Checking at %p for PLT call",the_call);
+
+  xed_decode_t xed;
+  xed_decode_i(the_call, &xed);
+  xed_decoded_inst_t *xptr = &xed.xedd;
+
+  void *target = x86_plt_branch_target(the_call, xptr);
+  return target == routine;
+}
+
+//****************************************************************************
+// interface operations 
+//****************************************************************************
 
 validation_status
 deep_validate_return_addr(void *addr, void *generic)
@@ -150,6 +240,10 @@ deep_validate_return_addr(void *addr, void *generic)
     TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call to this routine. Unwind confirmed",addr);
     return UNW_ADDR_CONFIRMED;
   }
+  if (confirm_plt_call(addr, my_routine)) {
+    TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call through the PLT to this routine. Unwind confirmed",addr);
+    return UNW_ADDR_CONFIRMED;
+  }
   if (confirm_indirect_call(addr)){
     TMSG(VALIDATE_UNW,"Instruction preceeding %p is an indirect call. Unwind is LIKELY ok",addr);
     return UNW_ADDR_PROBABLE;
@@ -162,6 +256,7 @@ deep_validate_return_addr(void *addr, void *generic)
   return UNW_ADDR_WRONG;
 }
 
+
 validation_status
 dbg_val(void *addr, void *pc)
 {
@@ -170,6 +265,7 @@ dbg_val(void *addr, void *pc)
   cursor.pc = pc;
   return deep_validate_return_addr(addr, &cursor);
 }
+
 
 validation_status
 validate_return_addr(void *addr, void *generic)
@@ -181,3 +277,5 @@ validate_return_addr(void *addr, void *generic)
 
   return UNW_ADDR_PROBABLE;
 }
+
+
