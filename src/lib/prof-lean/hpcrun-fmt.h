@@ -128,7 +128,7 @@ typedef struct nvpair_t {
 
 typedef_LIST_OF(nvpair_t);
 
-char *hpcrun_fmt_nvpair_search(LIST_OF(nvpair_t) *lst, char *name);
+char *hpcrun_fmt_nvpair_search(LIST_OF(nvpair_t) *lst, const char *name);
 
 // *********  file hdr *************
 

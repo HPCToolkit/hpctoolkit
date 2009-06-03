@@ -95,7 +95,7 @@ nvpairs_vfwrite(FILE *out, va_list args)
 }
 
 char *
-hpcrun_fmt_nvpair_search(LIST_OF(nvpair_t) *lst, char *name)
+hpcrun_fmt_nvpair_search(LIST_OF(nvpair_t) *lst, const char *name)
 {
   nvpair_t *p = lst->lst;
   for (int i=0; i<lst->len; p++,i++) {
