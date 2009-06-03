@@ -62,9 +62,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
-#if 0
 #include <inttypes.h>
-#endif
+
 
 //*************************** User Include Files ****************************
 
@@ -76,11 +75,11 @@
 extern "C" {
 #endif
 
-// Common function status values
-// #define HPCFILE_OK   1
-// #define HPCFILE_ERR -1
-
-enum {HPCFILE_OK = 1, HPCFILE_ERR = -1};
+  // FIXME: rename to HPCFMT_OK/ERR or just delete
+enum {
+  HPCFILE_OK = 1, 
+  HPCFILE_ERR = -1
+};
 
 
 // The library should generally be very quiet; these are for

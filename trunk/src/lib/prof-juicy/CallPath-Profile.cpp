@@ -408,7 +408,7 @@ Profile::make(const char* fnm, FILE* outfs)
       delete prof;
       DIAG_Throw("error reading 'epoch': " << x.what());
     }
-    hpcrun_fmt_metric_tbl_free(&metric_tbl, free);
+    hpcrun_fmt_metric_tbl_free(&metric_tbl, hpcfmt_free);
   }
 
   // ------------------------------------------------------------

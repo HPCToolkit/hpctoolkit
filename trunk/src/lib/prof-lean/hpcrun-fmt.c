@@ -241,6 +241,7 @@ hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *fs, alloc_fn allo
 
   return HPCFILE_OK;
 }
+
 int
 hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *out)
 {
@@ -267,13 +268,14 @@ hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t *metric_tbl, FILE *out)
 {
   hpcio_fwrite_le4(&(metric_tbl->len), out);
   metric_desc_t *p = metric_tbl->lst;
-  for(uint32_t i=0; i<metric_tbl->len; p++,i++){
+  for (uint32_t i = 0; i < metric_tbl->len; p++, i++) {
     hpcrun_fstr_fwrite(p->name, out);
     hpcio_fwrite_le8(&(p->flags), out);
     hpcio_fwrite_le8(&(p->period), out);
   }
   return HPCFILE_OK;
 }
+
 
 int
 hpcrun_fmt_metric_tbl_fread(metric_tbl_t *metric_tbl, FILE *in, alloc_fn alloc)
@@ -283,13 +285,14 @@ hpcrun_fmt_metric_tbl_fread(metric_tbl_t *metric_tbl, FILE *in, alloc_fn alloc)
     metric_tbl->lst = (metric_desc_t *) alloc(metric_tbl->len * sizeof(metric_desc_t));
   }
   metric_desc_t *p = metric_tbl->lst;
-  for(uint32_t i=0; i<metric_tbl->len; p++,i++){
+  for (uint32_t i = 0; i < metric_tbl->len; p++, i++) {
     hpcrun_fstr_fread(&(p->name), in, alloc);
     hpcio_fread_le8(&(p->flags), in);
     hpcio_fread_le8(&(p->period), in);
   }
   return HPCFILE_OK;
 }
+
 
 int
 hpcrun_fmt_metric_tbl_fprint(metric_tbl_t *metric_tbl, FILE *out)
@@ -298,7 +301,7 @@ hpcrun_fmt_metric_tbl_fprint(metric_tbl_t *metric_tbl, FILE *out)
 
   fprintf(out, "  metrics: %d\n", metric_tbl->len);
   metric_desc_t *p = metric_tbl->lst;
-  for(uint32_t i=0; i<metric_tbl->len; p++,i++){
+  for (uint32_t i = 0; i < metric_tbl->len; p++, i++) {
     fprintf(out, "  { event: %s\t", p->name); 
     fprintf(out, "  sample period: %"PRIu64" }\n", p->period); 
   }
@@ -307,16 +310,18 @@ hpcrun_fmt_metric_tbl_fprint(metric_tbl_t *metric_tbl, FILE *out)
   return HPCFILE_OK;
 }
 
+
 void
 hpcrun_fmt_metric_tbl_free(metric_tbl_t *metric_tbl, free_fn dealloc)
 {
   metric_desc_t *p = metric_tbl->lst;
-  for(uint32_t i=0; i<metric_tbl->len; p++,i++){
+  for (uint32_t i = 0; i < metric_tbl->len; p++, i++) {
     hpcrun_fstr_free(p->name, dealloc);
-    dealloc((void *) p);
   }
+  dealloc((void*)metric_tbl->lst);
   metric_tbl->lst = NULL;
 }
+
 
 //***************************************************************************
 // hpcfile_csprof_read()
