@@ -57,25 +57,28 @@ static volatile int DEBUGGER_WAIT = 1;
 
 bool csprof_no_samples = true;
 
-
 //***************************************************************************
-// interface functions
-//***************************************************************************
-
-// In the monitor callbacks, block two things:
+// *** Important note about libmonitor callbacks ***
 //
-//   1. Skip the callback if csprof is not yet initialized.
+//  In libmonitor callbacks, block two things:
+//
+//   1. Skip the callback if hpcrun is not yet initialized.
 //   2. Block async reentry for the duration of the callback.
 //
 // Init-process and init-thread are where we do the initialization, so
-// they're special.  Also, monitor promises that init and fini process
+// they're special.  Also, libmonitor promises that init and fini process
 // and thread are run in sequence, but dlopen, fork, pthread-create
 // can occur out of sequence (in init constructor).
-//
-#define PROC_NAME_LEN  2048
-void *
-monitor_init_process(int *argc, char **argv, void *data)
+//***************************************************************************
+
+//***************************************************************************
+// process control (via libmonitor)
+//***************************************************************************
+
+void*
+monitor_init_process(int *argc, char **argv, void* data)
 {
+#define PROC_NAME_LEN  2048
   char *process_name;
   char buf[PROC_NAME_LEN];
 
@@ -128,12 +131,25 @@ monitor_init_process(int *argc, char **argv, void *data)
 }
 
 
+void
+monitor_fini_process(int how, void* data)
+{
+  hpcrun_async_block();
+
+  csprof_fini_internal();
+  trace_close();
+  fnbounds_fini();
+
+  hpcrun_async_unblock();
+}
+
+
 static struct _ff {
   int flag;
 } from_fork;
 
 
-void *
+void*
 monitor_pre_fork(void)
 {
   if (! hpcrun_is_initialized()) {
@@ -157,7 +173,7 @@ monitor_pre_fork(void)
 
 
 void
-monitor_post_fork(pid_t child, void *data)
+monitor_post_fork(pid_t child, void* data)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -186,18 +202,9 @@ monitor_post_fork(pid_t child, void *data)
 }
 
 
-void
-monitor_fini_process(int how, void *data)
-{
-  hpcrun_async_block();
-
-  csprof_fini_internal();
-  trace_close();
-  fnbounds_fini();
-
-  hpcrun_async_unblock();
-}
-
+//***************************************************************************
+// MPI control (via libmonitor)
+//***************************************************************************
 
 //
 // On some systems, taking a signal inside MPI_Init breaks MPI_Init.
@@ -228,7 +235,9 @@ monitor_init_mpi(int *argc, char ***argv)
 }
 
 
-#ifdef CSPROF_THREADS
+//***************************************************************************
+// thread control (via libmonitor)
+//***************************************************************************
 
 void
 monitor_init_thread_support(void)
@@ -244,7 +253,7 @@ monitor_init_thread_support(void)
 }
 
 
-void *
+void*
 monitor_thread_pre_create(void)
 {
   // N.B.: monitor_thread_pre_create() can be called before
@@ -252,21 +261,48 @@ monitor_thread_pre_create(void)
   if (! hpcrun_is_initialized()) {
     return NULL;
   }
-  hpcrun_async_block();
 
+  // INVARIANTS at this point:
+  //   1. init-process has occurred.
+  //   2. current execution context is either the spawning process or thread.
+  hpcrun_async_block();
   NMSG(THREAD,"pre create");
 
-  void *ret = csprof_thread_pre_create();
+  // -------------------------------------------------------
+  // Capture new thread's creation context, skipping 1 level of context
+  //   WARNING: Do not move the call to getcontext()
+  // -------------------------------------------------------
+  lush_cct_ctxt_t* thr_ctxt = NULL;
 
+  ucontext_t context;
+  int ret = getcontext(&context);
+  if (ret != 0) {
+    EMSG("error: monitor_thread_pre_create: getcontext = %d", ret);
+    goto fini;
+  }
+
+  int metric_id = 0; // FIXME: obtain index of first metric
+  csprof_cct_node_t* n =
+    hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/, 
+			   0/*skipInner*/, 1/*isSync*/);
+
+  TMSG(THREAD,"before lush malloc");
+  TMSG(MALLOC," -thread_precreate: lush malloc");
+  csprof_state_t* state = csprof_get_state();
+  thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
+  TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
+  thr_ctxt->context = n;
+  thr_ctxt->parent = state->csdata_ctxt;
+
+ fini:
   NMSG(THREAD,"->finish pre create");
   hpcrun_async_unblock();
-
-  return ret;
+  return thr_ctxt;
 }
 
 
 void
-monitor_thread_post_create(void *dc)
+monitor_thread_post_create(void* data)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -274,18 +310,17 @@ monitor_thread_post_create(void *dc)
   hpcrun_async_block();
 
   NMSG(THREAD,"post create");
-  csprof_thread_post_create(dc);
   NMSG(THREAD,"done post create");
 
   hpcrun_async_unblock();
 }
 
 
-void *
-monitor_init_thread(int tid, void *data)
+void* 
+monitor_init_thread(int tid, void* data)
 {
   NMSG(THREAD,"init thread %d",tid);
-  void *thread_data = csprof_thread_init(tid, (lush_cct_ctxt_t*)data);
+  void* thread_data = csprof_thread_init(tid, (lush_cct_ctxt_t*)data);
   NMSG(THREAD,"back from init thread %d",tid);
 
   trace_open();
@@ -294,6 +329,38 @@ monitor_init_thread(int tid, void *data)
   return thread_data;
 }
 
+
+void
+monitor_fini_thread(void* init_thread_data)
+{
+  hpcrun_async_block();
+
+  csprof_state_t *state = (csprof_state_t *)init_thread_data;
+
+  csprof_thread_fini(state);
+  trace_close();
+
+  hpcrun_async_unblock();
+}
+
+
+size_t
+monitor_reset_stacksize(size_t old_size)
+{
+  static const size_t MEG = (1024 * 1024);
+
+  size_t new_size = old_size + MEG;
+
+  if (new_size < 2 * MEG)
+    new_size = 2 * MEG;
+
+  return new_size;
+}
+
+
+//***************************************************************************
+// thread control (via our monitoring extensions)
+//***************************************************************************
 
 void
 monitor_thread_pre_lock(void)
@@ -397,34 +464,9 @@ monitor_thread_post_cond_wait(int result)
 }
 
 
-void
-monitor_fini_thread(void *init_thread_data)
-{
-  hpcrun_async_block();
-
-  csprof_state_t *state = (csprof_state_t *)init_thread_data;
-
-  csprof_thread_fini(state);
-  trace_close();
-
-  hpcrun_async_unblock();
-}
-
-
-#define MEG  (1024 * 1024)
-size_t
-monitor_reset_stacksize(size_t old_size)
-{
-  size_t new_size = old_size + MEG;
-
-  if (new_size < 2 * MEG)
-    new_size = 2 * MEG;
-
-  return new_size;
-}
-
-#endif  /* CSPROF_THREADS */
-
+//***************************************************************************
+// dynamic linking control (via libmonitor)
+//***************************************************************************
 
 
 #ifndef HPCRUN_STATIC_LINK
@@ -443,7 +485,7 @@ monitor_pre_dlopen(const char *path, int flags)
 
 
 void
-monitor_dlopen(const char *path, int flags, void *handle)
+monitor_dlopen(const char *path, int flags, void* handle)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -456,7 +498,7 @@ monitor_dlopen(const char *path, int flags, void *handle)
 
 
 void
-monitor_dlclose(void *handle)
+monitor_dlclose(void* handle)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -469,7 +511,7 @@ monitor_dlclose(void *handle)
 
 
 void
-monitor_post_dlclose(void *handle, int ret)
+monitor_post_dlclose(void* handle, int ret)
 {
   if (! hpcrun_is_initialized()) {
     return;

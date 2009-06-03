@@ -117,6 +117,10 @@
 #include <lush/lush-backtrace.h>
 #include <lush/lush-pthread.h>
 
+//***************************************************************************
+
+extern bool csprof_no_samples;
+
 static csprof_options_t opts;
 
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING) 
@@ -132,12 +136,15 @@ void *static_epoch_offset;
 void *static_epoch_end;
 long static_epoch_size;
 
-//
-// process level setup (assumes pthreads not started yet)
-//
-
 int lush_metrics = 0; // FIXME: global variable for now
 
+
+// FIXME: tallent: We should probably rename libmonitor_upcalls.c to
+// main.c and move all of this stuff into the newly renamed file.
+
+//***************************************************************************
+// process level 
+//***************************************************************************
 
 void
 csprof_init_internal(void)
@@ -151,13 +158,14 @@ csprof_init_internal(void)
      the thread-specific memory manager if need be) */
   /* figure out what libraries we currently have loaded */
 
-    csprof_epoch_lock();
-    csprof_epoch_new();
-    csprof_epoch_unlock();
+  csprof_epoch_lock();
+  csprof_epoch_new();
+  csprof_epoch_unlock();
 
-    // WARNING: a perfmon bug requires us to fork off the fnbounds server before
-    // we call PAPI_init, which is done in argument processing below. Also, fnbounds_init
-    // must be done after the memory allocator is initialized.
+  // WARNING: a perfmon bug requires us to fork off the fnbounds
+  // server before we call PAPI_init, which is done in argument
+  // processing below. Also, fnbounds_init must be done after the
+  // memory allocator is initialized.
   fnbounds_init();
   csprof_options__init(&opts);
   csprof_options__getopts(&opts);
@@ -193,122 +201,6 @@ csprof_init_internal(void)
   hpcrun_is_initialized_private = true;
 }
 
-#ifdef CSPROF_THREADS
-
-void
-csprof_init_thread_support(void)
-{
-  csprof_init_pthread_key();
-  csprof_set_thread0_data();
-  csprof_threaded_data();
-}
-
-void *
-csprof_thread_pre_create(void)
-{
-  // N.B.: Can be called before init-thread-support or even init-process.
-  // Therefore, we ignore any calls before process init time.
-
-  int ret;
-
-  if (!hpcrun_is_initialized()) {
-    return NULL;
-  }
-
-  // INVARIANTS at this point:
-  //   1. init-process has occurred.
-  //   2. current execution context is either the spawning process or thread.
-
-  // -------------------------------------------------------
-  // Capture new thread's creation context.
-  // -------------------------------------------------------
-  csprof_state_t* state = csprof_get_state();
-  ucontext_t context;
-  ret = getcontext(&context);
-  if (ret != 0) {
-    EMSG("error: csprof_thread_pre_create: getcontext = %d", ret);
-    return NULL;
-  }
-
-  int metric_id = 0; // FIXME: should be able to obtain index of first metric
-  if ( !(metric_id < csprof_num_recorded_metrics()) ) {
-    EMSG("Won't need this once the above is fixed");
-    monitor_real_abort();
-  }
-
-  // insert into CCT as a placeholder
-  csprof_cct_node_t* n;
-  n = hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/, 
-			     0/*skipInner*/, 1/*isSync*/);
-
-  // tallent: only drop one to account for inlining.
-  // FIXME: use the skipInner paramter to hpcrun_sample_callpath()
-  if (n) { n = n->parent; }
-    // drop two innermost levels of context
-    //    csprof_thread_pre_create -> monitor_thread_pre_create
-    //for(int i = 0; i < 2 ; i++) { }
-
-  TMSG(THREAD,"before lush malloc");
-  TMSG(MALLOC," -thread_precreate: lush malloc");
-  lush_cct_ctxt_t* thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
-  TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
-  thr_ctxt->context = n;
-  thr_ctxt->parent = state->csdata_ctxt;
-
-  return thr_ctxt;
-
-  // Enable signals (done in post_create)
-}
-
-void
-csprof_thread_post_create(void *dc)
-{
-}
-
-void *
-csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
-{
-  thread_data_t *td = csprof_allocate_thread_data();
-  td->suspend_sampling = 1; // begin: protect against spurious signals
-
-  csprof_set_thread_data(td);
-  csprof_thread_data_init(id,1,0);
-
-  csprof_state_t *state = TD_GET(state);
-
-  state->csdata_ctxt = thr_ctxt;
-
-  // start sampling sources
-  TMSG(INIT,"starting sampling sources");
-
-  SAMPLE_SOURCES(gen_event_set,lush_metrics);
-  SAMPLE_SOURCES(start);
-
-  int ret = monitor_real_pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
-  if (ret){
-    EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
-  }
-  return (void *)state;
-}
-
-void
-csprof_thread_fini(csprof_state_t *state)
-{
-  TMSG(FINI,"thread fini");
-  if (hpcrun_is_initialized()) {
-    TMSG(FINI,"thread finit stops sampling");
-    SAMPLE_SOURCES(stop);
-    lush_pthr__thread_fini(&TD_GET(pthr_metrics));
-    hpcrun_finalize_current_epoch();
-    hpcrun_write_profile_data(state);
-  }
-}
-#endif
-
-// csprof_fini_internal: 
-// errors: handles all errors
-
-extern bool csprof_no_samples;
 
 void
 csprof_fini_internal(void)
@@ -348,6 +240,63 @@ csprof_fini_internal(void)
     pmsg_fini();
   }
 }
+
+
+//***************************************************************************
+// thread level
+//***************************************************************************
+
+void
+csprof_init_thread_support(void)
+{
+  csprof_init_pthread_key();
+  csprof_set_thread0_data();
+  csprof_threaded_data();
+}
+
+
+void *
+csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
+{
+  thread_data_t *td = csprof_allocate_thread_data();
+  td->suspend_sampling = 1; // begin: protect against spurious signals
+
+  csprof_set_thread_data(td);
+  csprof_thread_data_init(id,1,0);
+
+  csprof_state_t *state = TD_GET(state);
+
+  state->csdata_ctxt = thr_ctxt;
+
+  // start sampling sources
+  TMSG(INIT,"starting sampling sources");
+
+  SAMPLE_SOURCES(gen_event_set,lush_metrics);
+  SAMPLE_SOURCES(start);
+
+  int ret = monitor_real_pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
+  if (ret){
+    EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
+  }
+  return (void *)state;
+}
+
+
+void
+csprof_thread_fini(csprof_state_t *state)
+{
+  TMSG(FINI,"thread fini");
+  if (hpcrun_is_initialized()) {
+    TMSG(FINI,"thread finit stops sampling");
+    SAMPLE_SOURCES(stop);
+    lush_pthr__thread_fini(&TD_GET(pthr_metrics));
+    hpcrun_finalize_current_epoch();
+    hpcrun_write_profile_data(state);
+  }
+}
+
+
+//***************************************************************************
 
 csprof_state_t *
 csprof_check_for_new_epoch(csprof_state_t *state)
@@ -405,11 +354,6 @@ csprof_check_for_new_epoch(csprof_state_t *state)
 
     /* and finally, set the new state */
     csprof_set_state(newstate);
-
-#ifdef CSPROF_THREADS
-    ;
-#endif
-
     return newstate;
   }
   else {
@@ -417,18 +361,3 @@ csprof_check_for_new_epoch(csprof_state_t *state)
   }
 }
 
-#if 0
-/* only meant for debugging errors, so it's not subject to the normal
-   DBG variables and suchlike. */
-void csprof_print_backtrace(csprof_state_t *state)
-{
-    csprof_frame_t *frame = state->bufstk;
-    csprof_cct_node_t *tn = state->treenode;
-
-    while(state->bufend != frame) {
-        EMSG("Node: %#lx/%#lx, treenode: %#lx", frame->ip, frame->sp, tn);
-        frame++;
-        if(tn) tn = tn->parent;
-    }
-}
-#endif
