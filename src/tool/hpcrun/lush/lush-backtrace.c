@@ -61,8 +61,8 @@ lush_agent_pool_t* lush_agents = NULL;
 
 csprof_cct_node_t*
 lush_backtrace(csprof_state_t* state, ucontext_t* context,
-	       int metric_id, uint64_t metric_incr,
-	       int is_sync)
+	       int metricId, uint64_t metricIncr,
+	       int skipInner, int isSync)
 {
   // ---------------------------------------------------------
   // Record backtrace if:
@@ -71,22 +71,22 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   //   3) a synchronous unwind (may have a lush relevant metric)
   // ---------------------------------------------------------
   bool     doMetric = false;
-  uint64_t incrMetric = metric_incr;
+  uint64_t incrMetric = metricIncr;
 
   bool     doMetricIdleness = false;
   double   incrMetricIdleness = 0.0;
   lush_agentid_t aidMetricIdleness = lush_agentid_NULL; // list of agents
 
-  if (metric_id == lush_agents->metric_time) {
+  if (metricId == lush_agents->metric_time) {
     lush_agentid_t aid = 1; // TODO: multiple agents
-    if (lush_agents->LUSHI_do_metric[aid](metric_incr, 
+    if (lush_agents->LUSHI_do_metric[aid](metricIncr, 
 					  &doMetric, &doMetricIdleness,
 					  &incrMetric, &incrMetricIdleness)) {
       aidMetricIdleness = aid; // case 1
     }
   }
 
-  if (is_sync || metric_id != lush_agents->metric_time) {
+  if (isSync || metricId != lush_agents->metric_time) {
     doMetric = true; // case 2 and 3
   }
 
@@ -201,9 +201,12 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
   csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
 
-  // doMetric == true
+  if (skipInner) {
+    bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
+  }
+
   csprof_cct_node_t* node = NULL;
-  node = csprof_state_insert_backtrace(state, metric_id,
+  node = csprof_state_insert_backtrace(state, metricId,
 				       bt_end, bt_beg,
 				       (cct_metric_data_t){.i = incrMetric});
 
@@ -263,5 +266,6 @@ canonicalize_chord(csprof_frame_t* chord_beg, lush_assoc_t as,
   
   return chord_end;
 }
+
 
 //***************************************************************************

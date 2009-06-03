@@ -400,7 +400,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     // FIXME: SUBTLE ERROR: metric_id may not be same from csprof_new_metric()!
     // This means lush's 'time' metric should be *last*
     int metric_id = my_events[i];
-    csprof_sample_event(context, metric_id, 
-			1 /*metric_units_consumed*/, 0 /*is_sync*/);
+    hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
+			   0/*skipInner*/, 0/*isSync*/);
   }
 }

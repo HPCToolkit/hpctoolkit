@@ -312,7 +312,8 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
     metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
 
-    csprof_sample_event(context, ITIMER_METRIC_ID, metric_incr, 0);
+    hpcrun_sample_callpath(context, ITIMER_METRIC_ID, metric_incr,
+			   0/*skipInner*/, 0/*isSync*/);
   }
   if (sampling_is_disabled()) {
     TMSG(SPECIAL,"No itimer restart, due to disabled sampling");

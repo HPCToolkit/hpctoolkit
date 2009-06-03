@@ -7,9 +7,10 @@
 //***************************************************************************
 
 #include <stdbool.h>
+#include <assert.h>
+
 #include <sys/types.h>
 #include <ucontext.h>
-
 
 
 //***************************************************************************
@@ -31,8 +32,8 @@
 //***************************************************************************
 
 static csprof_cct_node_t*
-hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
-		 int metric_id, size_t metric_incr);
+_hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
+		  int metricId, size_t metricIncr);
 
 
 #if (HPC_UNW_LITE)
@@ -50,31 +51,29 @@ test_backtrace_lite(ucontext_t* context);
 //***************************************************************************
 
 //-----------------------------------------------------------------------------
-// function: csprof_sample_callstack
+// function: hpcrun_backtrace
 // purpose:
 //     if successful, returns the leaf node representing the sample;
 //     otherwise, returns NULL.
 //-----------------------------------------------------------------------------
 csprof_cct_node_t*
-csprof_sample_callstack(csprof_state_t *state, ucontext_t* context, 
-			int metric_id, uint64_t metric_incr,
-			int is_sync)
+hpcrun_backtrace(csprof_state_t *state, ucontext_t* context, 
+		 int metricId, uint64_t metricIncr,
+		 int skipInner, int isSync)
 {
   csprof_state_verify_backtrace_invariants(state);
   
   csprof_cct_node_t* n = NULL;
   if (!lush_agents) {
-    n = hpcrun_backtrace(state, context, metric_id, metric_incr);
+    n = _hpcrun_backtrace(state, context, metricId, metricIncr);
   }
   else {
-    n = lush_backtrace(state, context, metric_id, metric_incr, is_sync);
+    n = lush_backtrace(state, context, metricId, metricIncr, 
+		       skipInner, isSync);
   }
   //HPC_IF_UNW_LITE(test_backtrace_lite(context);)
 
-  if (!n) {
-    // N.B.: may not be an error for lush_backtrace
-    // EMSG("error: ");
-  }
+  // N.B.: for lush_backtrace() it may be that n = NULL
 
   return n;
 }
@@ -111,8 +110,8 @@ hpcrun_filter_sample(int len, csprof_frame_t *start, csprof_frame_t *last)
 
 
 static csprof_cct_node_t*
-hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
-		 int metric_id, uint64_t metric_incr)
+_hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
+		  int metricId, uint64_t metricIncr)
 {
   int backtrace_trolled = 0;
 
@@ -174,9 +173,9 @@ hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
   csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
 
   csprof_cct_node_t* n;
-  n = csprof_state_insert_backtrace(state, metric_id,
+  n = csprof_state_insert_backtrace(state, metricId,
 				    bt_end, bt_beg,
-				    (cct_metric_data_t){.i = metric_incr});
+				    (cct_metric_data_t){.i = metricIncr});
   return n;
 }
 
@@ -245,6 +244,25 @@ test_backtrace_lite(ucontext_t* context)
 // 
 //***************************************************************************
 
+csprof_frame_t*
+hpcrun_skip_chords(csprof_frame_t* bt_outer, csprof_frame_t* bt_inner, 
+		   int skip)
+{
+  // N.B.: INVARIANT: bt_inner < bt_outer
+  csprof_frame_t* x_inner = bt_inner;
+  for (int i = 0; (x_inner < bt_outer && i < skip); ++i) {
+    // for now, do not support M chords
+    lush_assoc_t as = lush_assoc_info__get_assoc(x_inner->as_info);
+    assert(as == LUSH_ASSOC_NULL || as == LUSH_ASSOC_1_to_1 ||
+	   as == LUSH_ASSOC_1_to_0);
+    
+    x_inner++;
+  }
+  
+  return x_inner;
+}
+
+
 void 
 dump_backtrace(csprof_state_t *state, csprof_frame_t* unwind)
 {
@@ -287,3 +305,4 @@ dump_backtrace(csprof_state_t *state, csprof_frame_t* unwind)
 
   PMSG_LIMIT(EMSG("-- end backtrace ------------------------------------\n"));
 }
+

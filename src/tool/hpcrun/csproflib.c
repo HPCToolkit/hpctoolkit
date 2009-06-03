@@ -238,9 +238,11 @@ csprof_thread_pre_create(void)
 
   // insert into CCT as a placeholder
   csprof_cct_node_t* n;
-  n = csprof_sample_event(&context, metric_id, 0/*metric_incr*/, 1/*is_sync*/);
+  n = hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/, 
+			     0/*skipInner*/, 1/*isSync*/);
 
   // tallent: only drop one to account for inlining.
+  // FIXME: use the skipInner paramter to hpcrun_sample_callpath()
   if (n) { n = n->parent; }
     // drop two innermost levels of context
     //    csprof_thread_pre_create -> monitor_thread_pre_create
