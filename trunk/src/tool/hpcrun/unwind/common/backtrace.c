@@ -33,7 +33,8 @@
 
 static csprof_cct_node_t*
 _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
-		  int metricId, size_t metricIncr);
+		  int metricId, size_t metricIncr,
+		  int skipInner);
 
 
 #if (HPC_UNW_LITE)
@@ -65,7 +66,8 @@ hpcrun_backtrace(csprof_state_t *state, ucontext_t* context,
   
   csprof_cct_node_t* n = NULL;
   if (!lush_agents) {
-    n = _hpcrun_backtrace(state, context, metricId, metricIncr);
+    n = _hpcrun_backtrace(state, context, metricId, metricIncr, 
+			  skipInner);
   }
   else {
     n = lush_backtrace(state, context, metricId, metricIncr, 
@@ -111,7 +113,8 @@ hpcrun_filter_sample(int len, csprof_frame_t *start, csprof_frame_t *last)
 
 static csprof_cct_node_t*
 _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
-		  int metricId, uint64_t metricIncr)
+		  int metricId, uint64_t metricIncr, 
+		  int skipInner)
 {
   int backtrace_trolled = 0;
 
@@ -171,6 +174,10 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
 
   csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
   csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
+
+  if (skipInner) {
+    bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
+  }
 
   csprof_cct_node_t* n;
   n = csprof_state_insert_backtrace(state, metricId,
