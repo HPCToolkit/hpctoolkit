@@ -339,9 +339,8 @@ Profile::make(const char* fnm, FILE* outfs)
     DIAG_Throw("error reading 'fmt-hdr'");
   }
 
-  hpcfile_csprof_data_t metadata;
+  loadmap_t loadmap_tbl;
 
-  epoch_table_t loadmap_tbl;
   uint32_t num_epochs = 0;
 
   // Populate metadata structure FOR NOW
@@ -365,7 +364,6 @@ Profile::make(const char* fnm, FILE* outfs)
   // ************ FIXME *************************
   //
   if (num_epochs > 1) {
-    // DD("WARNING: num epochs(=%d) > 1. Reducing to 1 for now", num_epochs);
     num_epochs = 1;
   }
   for (uint i = 0; i < num_epochs; ++i) {
@@ -390,11 +388,7 @@ Profile::make(const char* fnm, FILE* outfs)
     //
     // read loadmap
     //
-    ret = hpcfile_csprof_read(fs, &metadata, &loadmap_tbl,
-			      hpcfmt_alloc, hpcfmt_free);
-    if (ret != HPCFILE_OK) {
-      DIAG_Throw("error reading 'old csprof-hdr'");
-    }
+    ret = hpcrun_fmt_loadmap_fread(&loadmap_tbl, fs, hpcfmt_alloc);
 
     prof = new Profile(metric_tbl.len);
     prof->name("[Profile Name]");
@@ -409,14 +403,13 @@ Profile::make(const char* fnm, FILE* outfs)
       DIAG_Throw("error reading 'epoch': " << x.what());
     }
     hpcrun_fmt_metric_tbl_free(&metric_tbl, hpcfmt_free);
-  }
+    // free loadmap ??
+  } // epoch loop
 
   // ------------------------------------------------------------
   // Cleanup
   // ------------------------------------------------------------
   hpcio_close(fs);
-
-  epoch_table__free_data(&loadmap_tbl, hpcfmt_free);
 
   return prof;
 }
@@ -424,7 +417,7 @@ Profile::make(const char* fnm, FILE* outfs)
 
 void
 Profile::hpcrun_fmt_epoch_fread(Profile* prof, uint32_t num_ccts, metric_tbl_t* metadata,
-				epoch_table_t* loadmap_tbl,
+				loadmap_t* loadmap_tbl,
 				FILE* infs, std::string locStr, FILE* outfs)
 {
   using namespace Prof;
@@ -455,17 +448,17 @@ Profile::hpcrun_fmt_epoch_fread(Profile* prof, uint32_t num_ccts, metric_tbl_t* 
   // Load map (loadmap)
   // ------------------------------------------------------------
 
-  DIAG_WMsgIf(loadmap_tbl->num_epoch > 1, locStr << ": Only processing last loadmap!");
+  // FIXME: eventually handle multiple epochs 
+  // DIAG_WMsgIf(loadmap_tbl->num_epoch > 1, locStr << ": Only processing last loadmap!");
 
-  const uint loadmap_id = (loadmap_tbl->num_epoch - 1);
-  uint num_lm = loadmap_tbl->epoch_modlist[loadmap_id].num_loadmodule;
+  uint num_lm = loadmap_tbl->len;
 
   LoadMap loadmap(num_lm);
 
   for (int i = num_lm - 1; i >= 0; --i) { 
-    string nm = loadmap_tbl->epoch_modlist[loadmap_id].loadmodule[i].name;
+    string nm = loadmap_tbl->lst[i].name;
     RealPathMgr::singleton().realpath(nm);
-    VMA loadAddr = loadmap_tbl->epoch_modlist[loadmap_id].loadmodule[i].mapaddr;
+    VMA loadAddr = loadmap_tbl->lst[i].mapaddr;
     size_t sz = 0; //loadmap_tbl->epoch_modlist[loadmap_id].loadmodule[i].size;
 
     LoadMap::LM* lm = new LoadMap::LM(nm, loadAddr, sz);

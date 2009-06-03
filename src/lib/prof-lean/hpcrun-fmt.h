@@ -117,9 +117,6 @@ typedef struct nvpair_t {
 
 // Sentinel to mark end of a variadic nv pair list
 
-#define END_NVPAIRS NULL
-
-
 //***************************************************************************
 // 
 // some type defs for various LIST_OF things (uses macros from this file)
@@ -178,6 +175,33 @@ int hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t *metric_tbl, FILE *out);
 int hpcrun_fmt_metric_tbl_fread(metric_tbl_t *metric_tbl, FILE *in, alloc_fn alloc);
 int hpcrun_fmt_metric_tbl_fprint(metric_tbl_t *metrics, FILE *out);
 void hpcrun_fmt_metric_tbl_free(metric_tbl_t *metric_tbl, free_fn dealloc);
+
+// ******** loadmap entry and loadmaps **********
+
+typedef struct loadmap_entry_t {
+  char *name;
+  uint64_t vaddr;
+  uint64_t mapaddr;
+  uint32_t flags;
+} loadmap_entry_t;
+
+// This is an actual list of loadmap_entry_t elements
+
+typedef struct loadmap_src_t {
+  char *name;
+  void *vaddr;
+  void *mapaddr;
+  size_t size;
+  struct loadmap_src_t *next;
+} loadmap_src_t;
+
+typedef_LIST_OF(loadmap_entry_t);
+typedef LIST_OF(loadmap_entry_t) loadmap_t;
+
+int hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t *src, FILE *out);
+int hpcrun_fmt_loadmap_fread(loadmap_t *loadmap, FILE *in, alloc_fn alloc);
+int hpcrun_fmt_loadmap_fprint(loadmap_t *loadmap, FILE *out);
+void hpcrun_fmt_loadmap_free(loadmap_t *loadmap, free_fn dealloc);
 
 //***************************************************************************
 //

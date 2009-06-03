@@ -66,6 +66,7 @@
 
 //*************************** User Include Files ****************************
 
+#include "hpcio.h"
 #include "hpcrun-fmt.h"
 #include "hpcfmt.h"
 
@@ -78,7 +79,7 @@ nvpairs_vfwrite(FILE *out, va_list args)
 
   uint32_t len = 0;
 
-  for (char *arg = va_arg(_tmp, char *); arg != END_NVPAIRS; arg = va_arg(_tmp, char *)) {
+  for (char *arg = va_arg(_tmp, char *); arg != NULL; arg = va_arg(_tmp, char *)) {
     arg = va_arg(_tmp, char *);
     len++;
   }
@@ -86,7 +87,7 @@ nvpairs_vfwrite(FILE *out, va_list args)
 
   hpcio_fwrite_le4(&len, out);
 
-  for (char *arg = va_arg(args, char *); arg != END_NVPAIRS; arg = va_arg(args, char *)) {
+  for (char *arg = va_arg(args, char *); arg != NULL; arg = va_arg(args, char *)) {
     hpcrun_fstr_fwrite(arg, out); // write NAME
     arg = va_arg(args, char *);
     hpcrun_fstr_fwrite(arg, out); // write VALUE
@@ -255,11 +256,6 @@ hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *out)
   return HPCFILE_OK;
 }
 
-// HPC_CSPROF format details: 
-//   List of tagged data chunks that represent data in 'hpcfile_csprof_data_t'
-//   hpcfile_str_t, hpcfile_num8_str_t, etc.
-//
-
 //
 //   === metric table ===
 //
@@ -320,6 +316,71 @@ hpcrun_fmt_metric_tbl_free(metric_tbl_t *metric_tbl, free_fn dealloc)
   }
   dealloc((void*)metric_tbl->lst);
   metric_tbl->lst = NULL;
+}
+
+//
+//   === load map ===
+//
+int
+hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t *src, FILE *out)
+{
+  hpcio_fwrite_le4(&num_modules, out);
+
+  for(int i = 0; i < num_modules; i++) {
+    hpcrun_fstr_fwrite(src->name, out);
+    hpcio_fwrite_le8((uint64_t *)&(src->vaddr), out);
+    hpcio_fwrite_le8((uint64_t *)&(src->mapaddr), out);
+    src = src->next;
+  }
+  
+  return HPCFILE_OK;
+}
+
+int
+hpcrun_fmt_loadmap_fread(loadmap_t *loadmap, FILE *in, alloc_fn alloc)
+{
+  hpcio_fread_le4(&(loadmap->len), in);
+  if (alloc) {
+    loadmap->lst = alloc(loadmap->len * sizeof(loadmap_entry_t));
+  }
+
+  loadmap_entry_t *e = loadmap->lst;
+  for(int i = 0; i < loadmap->len; e++, i++) {
+    hpcrun_fstr_fread(&(e->name), in, alloc);
+    hpcio_fread_le8(&(e->vaddr), in);
+    hpcio_fread_le8(&(e->mapaddr), in);
+    // FIXME ?? (don't know what these are for yet ...
+    e->flags = 0;
+  }
+
+  return HPCFILE_OK;
+}
+
+int
+hpcrun_fmt_loadmap_fprint(loadmap_t *loadmap, FILE *out)
+{
+  loadmap_entry_t* e = loadmap->lst;
+  fprintf(out, "{loadmap:\n");
+
+  for (int i = 0; i < loadmap->len; e++,i++) {
+    fprintf(out, "  lm %d: %s %"PRIx64" -> %"PRIx64"\n",
+            i, e->name, e->vaddr, e->mapaddr);
+  }
+  fprintf(out, "}\n");
+  
+  return HPCFILE_OK;
+}
+
+void
+hpcrun_fmt_loadmap_free(loadmap_t *loadmap, free_fn dealloc)
+{
+  loadmap_entry_t *e = loadmap->lst;
+  for(int i = 0; i < loadmap->len; e++, i++) {
+    hpcrun_fstr_free(e->name, dealloc);
+    e->name = NULL;
+  }
+  dealloc(loadmap->lst);
+  loadmap->lst = NULL;
 }
 
 
