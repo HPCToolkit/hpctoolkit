@@ -159,7 +159,7 @@ public:
   hpcrun_fmt_epoch_fread(Profile* prof,
 			 uint32_t num_ccts,
 			 metric_tbl_t* metadata,
-			 epoch_table_t* loadmap_tbl,
+			 loadmap_t* loadmap_tbl,
 			 FILE* infs, std::string locStr, FILE* outfs);
 
   static void

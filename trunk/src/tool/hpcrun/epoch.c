@@ -77,16 +77,17 @@ csprof_get_epoch()
 
 
 void
-csprof_epoch_add_module(const char *module_name, 
-	void *vaddr,                /* the preferred virtual address */
-  	void *mapaddr,              /* the actual mapped address */
-	size_t size)                /* end addr minus start addr */
+hpcrun_loadmap_add_module(const char *module_name, 
+			  void *vaddr,                /* the preferred virtual address */
+			  void *mapaddr,              /* the actual mapped address */
+			  size_t size)                /* end addr minus start addr */
 {
   TMSG(MALLOC," epoch_add_module");
-  csprof_epoch_module_t *m = (csprof_epoch_module_t *) csprof_malloc2(sizeof(csprof_epoch_module_t));
+
+  loadmap_src_t *m = (loadmap_src_t *) csprof_malloc2(sizeof(loadmap_src_t));
 
   // fill in the fields of the structure
-  m->module_name = module_name;
+  m->name = (char *) module_name;
   m->vaddr = vaddr;
   m->mapaddr = mapaddr;
   m->size = size;
@@ -129,50 +130,6 @@ csprof_epoch_new()
   return e;
 }
 
-/* writing epochs to disk */
-
-// FIXME: tallent: move to hpcrun-fmt
-#define HPCFILE_EPOCH_MAGIC_STR     "HPC_EPOCH"
-#define HPCFILE_EPOCH_MAGIC_STR_LEN  9 /* exclude '\0' */
-#define HPCFILE_EPOCH_ENDIAN 'l' /* 'l' for little, 'b' for big */
-
-void
-csprof_write_epoch_header(FILE *fs)
-{
-  ;
-}
-
-void
-csprof_write_epoch_module(csprof_epoch_module_t *module, FILE *fs)
-{
-  uint32_t namelen = strlen(module->module_name);
-
-  /* write the string */
-  hpcio_fwrite_le4(&namelen, fs);
-  fwrite(module->module_name, sizeof(char), namelen, fs);
-
-  /* write the appropriate addresses */
-  hpcio_fwrite_le8((uint64_t*)&module->vaddr, fs);
-  hpcio_fwrite_le8((uint64_t*)&module->mapaddr, fs);
-}
-
-void
-hpcrun_write_epoch(csprof_epoch_t *epoch, FILE *fs)
-{
-  csprof_epoch_module_t *module_runner;
-
-  hpcio_fwrite_le4(&epoch->num_modules, fs);
-
-  module_runner = epoch->loaded_modules;
-
-  while(module_runner != NULL) {
-    TMSG(DATA_WRITE, "Writing module %s", module_runner->module_name);
-    csprof_write_epoch_module(module_runner, fs);
-
-    module_runner = module_runner->next;
-  }
-}
-
 void
 hpcrun_finalize_current_epoch(void)
 {
@@ -182,24 +139,6 @@ hpcrun_finalize_current_epoch(void)
     fnbounds_epoch_finalize();
   }
   csprof_epoch_unlock();
-}
-
-//
-// ****FIXME****
-//
-//   Temporarily write out only 1 load map: The current epoch load map
-//
-void
-hpcrun_write_current_loadmap(FILE *fs)
-{
-  uint32_t n_loadmaps = 0;
-  if (!current_epoch) {
-    hpcio_fwrite_le4(&n_loadmaps, fs);
-    return;
-  }
-  n_loadmaps = 1;
-  hpcio_fwrite_le4(&n_loadmaps, fs);
-  hpcrun_write_epoch(current_epoch, fs);
 }
 
 void
@@ -230,74 +169,3 @@ csprof_write_all_epochs(FILE *fs)
     runner = runner->next;
   }
 }
-
-#ifdef NOTYET
-csprof_state_t *
-csprof_check_for_new_epoch(csprof_state_t *state)
-{
-  /* ugh, nasty race condition here:
-
-  1. shared library state has changed since the last profile
-  signal, so we enter the if;
-
-  2. somebody else dlclose()'s a library which holds something
-  located in our backtrace.  this is not in itself a problem,
-  since we don't bother doing anything on dlclose()...;
-
-  3. somebody else (thread in step 2 or a different thread)
-  dlopen()'s a new shared object, which begins an entirely
-  new epoch--one which does not include the shared object
-  which resides in our backtrace;
-
-  4. we create a new state which receives the epoch from step 3,
-  not step 1, which is wrong.
-
-  attempt to take baby steps to stop this.  more drastic action
-  would involve grabbing the epoch lock, but I believe that would
-  be unacceptably slow (both in the atomic instruction overhead
-  and the simple fact that most programs are not frequent users
-  of dl*). */
-
-  csprof_epoch_t *current = csprof_get_epoch();
-
-  if(state->epoch != current) {
-    TMSG(MALLOC," NOTYET check for new epoch");
-    csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
-
-    TMSG(EPOCH, "Creating new epoch...");
-
-    /* we don't have to go through the usual csprof_state_{init,alloc}
-       business here because most of the stuff we want is already
-       in `state' */
-    memcpy(newstate, state, sizeof(csprof_state_t));
-
-    /* we do have to reinitialize the tree, though */
-    csprof_csdata__init(&newstate->csdata);
-
-    /* and reinsert backtraces */
-    if(newstate->bufend - newstate->bufstk != 0) {
-      newstate->treenode = NULL;
-      csprof_state_insert_backtrace(newstate, 0, /* pick one */
-                                    newstate->bufend - 1,
-                                    newstate->bufstk,
-                                    0);
-    }
-
-    /* and inform the state about its epoch */
-    newstate->epoch = current;
-
-    /* and finally, set the new state */
-    csprof_set_state(newstate);
-
-#ifdef CSPROF_THREADS
-    // csprof_duplicate_thread_state_reference(newstate);
-    ;
-#endif
-
-    return newstate;
-  }
-  else {
-    return state;
-  }
-}
-#endif

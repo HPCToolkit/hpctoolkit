@@ -31,23 +31,12 @@ hpcrun_itos(char *buf, int i)
   return buf;
 }
 
-// TODO --- convert to New fmt
-//          Be sure to fix corresponding read routines in ../../lib/prof-juicy/CallPath-Profile.cpp
-//                Toplevel read = Profile::make
-
 int
 hpcrun_write_profile_data(csprof_state_t *state)
 {
   FILE* fs;
 
   int ret, ret1, ret2;
-
-  // FIXME: Does this go here? Why not in fini_thread / fini process?
-
-#if defined(HOST_SYSTEM_IBM_BLUEGENE)
-  EMSG("Backtrace for last sample event:\n");
-  dump_backtrace(state, state->unwind);
-#endif
 
   /* Generate a filename */
   char fnm[HPCRUN_FNM_SZ];
@@ -101,27 +90,22 @@ hpcrun_write_profile_data(csprof_state_t *state)
                         "process_id", "TBD",
                         "mpi-rank", hpcrun_itos(_tmp, rank),
                         "target", "--FIXME--target_name",
-                        END_NVPAIRS);
+                        NULL);
 
   //
   // === # epochs === 
   //
 
-  csprof_state_t *runner = state;
-
-  /* count states */
-  while(runner != NULL) {
-    if(runner->epoch != NULL) {
-      num_epochs++;
-    }
-    runner = runner->next;
+  csprof_epoch_t *current_epoch = csprof_get_epoch();
+  for(csprof_epoch_t *ep = current_epoch; ep != NULL; ep = ep->next) {
+    num_epochs++;
   }
+
 
   // ******FIXME*********
   //
   //   Limit num_epochs to 1 FOR THE MOMENT!
   //
-
   num_epochs = (num_epochs > 1) ? 1 : num_epochs;
   
   TMSG(DATA_WRITE, "writing # epochs = %d", num_epochs);
@@ -142,7 +126,7 @@ hpcrun_write_profile_data(csprof_state_t *state)
                                 default_ra_distance,
                                 default_granularity,
                                 "LIP-size","2",
-                                END_NVPAIRS);
+                                NULL);
 
     //
     // == metrics ==
@@ -162,7 +146,7 @@ hpcrun_write_profile_data(csprof_state_t *state)
 
     TMSG(DATA_WRITE, "Preparing to write loadmaps");
 
-    hpcrun_write_current_loadmap(fs);
+    hpcrun_fmt_loadmap_fwrite(current_epoch->num_modules, current_epoch->loaded_modules, fs);
 
     TMSG(DATA_WRITE, "Done writing loadmaps");
 
@@ -172,7 +156,7 @@ hpcrun_write_profile_data(csprof_state_t *state)
 
     /* write profile states out to disk */
 
-    runner = state;
+    csprof_state_t *runner = state;
 
     while(runner != NULL) {
       if(runner->epoch != NULL) {
@@ -198,23 +182,20 @@ hpcrun_write_profile_data(csprof_state_t *state)
     }
           
     if(ret1 == HPCFILE_OK && ret2 == HPCRUN_OK) {
-    TMSG(DATA_WRITE, "saved profile data to file '%s'", fnm);
+      TMSG(DATA_WRITE, "saved profile data to file '%s'", fnm);
     }
     /* if we've gotten this far, there haven't been any fatal errors */
-    goto end;
+    // goto end;
+
+    current_epoch++;
+
   } // epoch loop
 
- end:
+  // end:
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_close(fs);
   TMSG(DATA_WRITE,"Done!");
 
-//***************************************************************************
-//
-//  return HPCRUN_OK;
-//
-//***************************************************************************
-
-  return ret;
+  return HPCRUN_OK;
 }

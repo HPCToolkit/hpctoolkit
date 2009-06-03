@@ -45,6 +45,12 @@
    module earlier during the epoch.
 */
 
+// Local includes
+
+#include "hpcio.h"
+#include "hpcfmt.h"
+#include "hpcrun-fmt.h"
+
 typedef struct csprof_epoch csprof_epoch_t;
 typedef struct csprof_epoch_module csprof_epoch_module_t;
 
@@ -55,7 +61,7 @@ struct csprof_epoch_module
   const char *module_name;
   void *vaddr;                /* the preferred virtual address */
   void *mapaddr;              /* the actual mapped address */
-  size_t size;		/* just what it sounds like */
+  size_t size;		      /* just what it sounds like */
 };
 
 struct csprof_epoch
@@ -63,18 +69,16 @@ struct csprof_epoch
   struct csprof_epoch *next;  /* the next epoch */
   unsigned int id;            /* an identifier for disk writeouts */
   unsigned int num_modules;   /* how many modules are loaded? */
-  struct csprof_epoch_module *loaded_modules;
+  loadmap_src_t *loaded_modules;
 };
 
 csprof_epoch_t *csprof_epoch_new();
 csprof_epoch_t *csprof_get_epoch();
 
-void csprof_epoch_add_module(const char *module_name, 
-	void *vaddr,                /* the preferred virtual address */
-  	void *mapaddr,              /* the actual mapped address */
-	size_t size);               /* end addr minus start addr */
+void hpcrun_loadmap_add_module(const char *module_name, void *vaddr, void *mapaddr, size_t size);
 
 /* avoid weird dynamic loading conflicts */
+
 void csprof_epoch_lock();
 void csprof_epoch_unlock();
 int csprof_epoch_is_locked();
@@ -83,7 +87,5 @@ void hpcrun_finalize_current_epoch(void);
 
 void csprof_write_all_epochs(FILE *);
 void hpcrun_write_current_loadmap(FILE *);
-
-// csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *state);
 
 #endif /* CSPROF_EPOCH_H */

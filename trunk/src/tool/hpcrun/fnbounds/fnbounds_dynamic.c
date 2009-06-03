@@ -453,7 +453,7 @@ fnbounds_epoch_finalize_locked()
   dso_info_t *dso_info, *next;
 
   for (dso_info = dso_open_list; dso_info; dso_info = dso_info->next) {
-    csprof_epoch_add_module(dso_info->name, NULL /* no vaddr */,
+    hpcrun_loadmap_add_module(dso_info->name, NULL /* no vaddr */,
 			    dso_info->start_addr, 
 			    dso_info->end_addr - dso_info->start_addr);
   }
@@ -463,9 +463,9 @@ fnbounds_epoch_finalize_locked()
   // list.
   //
   for (dso_info = dso_closed_list; dso_info;) {
-    csprof_epoch_add_module(dso_info->name, NULL /* no vaddr */,
-			    dso_info->start_addr, 
-			    dso_info->end_addr - dso_info->start_addr);
+    hpcrun_loadmap_add_module(dso_info->name, NULL /* no vaddr */,
+                              dso_info->start_addr, 
+                              dso_info->end_addr - dso_info->start_addr);
     munmap(dso_info->table, dso_info->map_size);
     csprof_delete_ui_range(dso_info->start_addr, dso_info->end_addr);
     next = dso_info->next;

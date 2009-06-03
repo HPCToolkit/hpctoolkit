@@ -94,7 +94,6 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
 {
   if (!filenm) { return; }
 
-  hpcfile_csprof_data_t metadata;
   int ret;
 
   FILE* fs = hpcio_open_r(filenm);
@@ -134,12 +133,6 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
     DIAG_Throw(filenm << ": error reading 'new hdr'");
   }
   hpcrun_fmt_hdr_fprint(&new_hdr, stdout);
-
-  
-  // Populate metadata structure FOR NOW
-  //  extract target field from nvpairs in new_hdr
-
-  char *target = hpcrun_fmt_nvpair_search(&(new_hdr.nvps), "target");
   
   //
   // read & print # epochs
@@ -183,12 +176,14 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
     // loadmap
     // 
 
-    ret = hpcfile_csprof_fprint(fs, stdout, target, &metadata);
-
-    if (ret != HPCFILE_OK) {
-      DIAG_Throw(filenm << ": error reading HPC_CSPROF");
-    }
+    loadmap_t loadmap;
+    ret = hpcrun_fmt_loadmap_fread(&loadmap, fs, malloc);
+    hpcrun_fmt_loadmap_fprint(&loadmap, stdout);
   
+    //
+    // cct
+    //
+
     uint num_metrics = metric_tbl.len;
 
     if (num_ccts > 0) {

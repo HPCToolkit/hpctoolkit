@@ -233,6 +233,12 @@ csprof_fini_internal(void)
     fnbounds_fini();
 
     hpcrun_finalize_current_epoch();
+
+#if defined(HOST_SYSTEM_IBM_BLUEGENE)
+    EMSG("Backtrace for last sample event:\n");
+    dump_backtrace(state, state->unwind);
+#endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
+
     hpcrun_write_profile_data(state);
 
     csprof_display_summary();
@@ -291,6 +297,10 @@ csprof_thread_fini(csprof_state_t *state)
     SAMPLE_SOURCES(stop);
     lush_pthr__thread_fini(&TD_GET(pthr_metrics));
     hpcrun_finalize_current_epoch();
+#if defined(HOST_SYSTEM_IBM_BLUEGENE)
+    EMSG("Backtrace for last sample event:\n");
+    dump_backtrace(state, state->unwind);
+#endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
     hpcrun_write_profile_data(state);
   }
 }
