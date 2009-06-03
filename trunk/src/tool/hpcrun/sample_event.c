@@ -30,9 +30,9 @@
 //*************************** Forward Declarations **************************
 
 static csprof_cct_node_t*
-csprof_take_profile_sample(csprof_state_t *state, void *context,
-			   int metric_id, uint64_t metric_incr,
-			   int is_sync);
+_hpcrun_sample_callpath(csprof_state_t *state, void *context,
+			int metricId, uint64_t metricIncr,
+			int skipInner, int isSync);
 
 //***************************************************************************
 
@@ -74,7 +74,7 @@ csprof_num_samples_total(void)
 }
 
 // The async blocks happen in the signal handlers, without getting to
-// csprof_sample_event, so also increment the total count here.
+// hpcrun_sample_callpath, so also increment the total count here.
 void
 csprof_inc_samples_blocked_async(void)
 {
@@ -113,9 +113,10 @@ csprof_display_summary(void)
   }
 }
 
+
 csprof_cct_node_t *
-csprof_sample_event(void *context, int metric_id,
-		    uint64_t metric_incr, int is_sync)
+hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
+		       int skipInner, int isSync)
 {
   fetch_and_add(&num_samples_total, 1L);
 
@@ -129,7 +130,7 @@ csprof_sample_event(void *context, int metric_id,
   // the read lock, but async samples give up if not avail.
   // This only applies in the dynamic case.
 #ifndef HPCRUN_STATIC_LINK
-  if (is_sync) {
+  if (isSync) {
     while (! csprof_dlopen_read_lock()) ;
   }
   else if (! csprof_dlopen_read_lock()) {
@@ -153,8 +154,8 @@ csprof_sample_event(void *context, int metric_id,
   if (ljmp == 0) {
 
     if (state != NULL) {
-      node = csprof_take_profile_sample(state, context, 
-					metric_id, metric_incr, is_sync);
+      node = _hpcrun_sample_callpath(state, context, metricId, metricIncr,
+				     skipInner, isSync);
 
       if (trace_isactive()) {
 	void *pc = context_pc(context);
@@ -197,10 +198,11 @@ csprof_sample_event(void *context, int metric_id,
   return node;
 }
 
+
 static csprof_cct_node_t*
-csprof_take_profile_sample(csprof_state_t *state, void *context,
-			   int metric_id, uint64_t metric_incr,
-			   int is_sync)
+_hpcrun_sample_callpath(csprof_state_t *state, void *context,
+			int metricId, uint64_t metricIncr, 
+			int skipInner, int isSync)
 {
   void *pc = context_pc(context);
 
@@ -230,15 +232,9 @@ csprof_take_profile_sample(csprof_state_t *state, void *context,
   PMSG(SWIZZLE,"undo swizzled data\n");
   csprof_undo_swizzled_data(state, context);
 #endif
-
-#if defined(__ia64__) && defined(__linux__) 
-  /* force insertion from the root */
-  state->treenode = NULL;
-  state->bufstk = state->bufend;
-#endif
   
-  csprof_cct_node_t* n;
-  n = csprof_sample_callstack(state, context, metric_id, metric_incr, is_sync);
+  csprof_cct_node_t* n =
+    hpcrun_backtrace(state, context, metricId, metricIncr, skipInner, isSync);
 
   // FIXME: n == -1 if sample is filtered
 #if 0

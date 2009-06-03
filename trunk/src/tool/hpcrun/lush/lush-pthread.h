@@ -105,48 +105,55 @@ lush_pthr__isWorking_cond(lush_pthr_t* x)
 //***************************************************************************
 
 
-#define LUSH_SYNC_SMPL_PERIOD (33)
+#define LUSH_SYNC_SMPL_PERIOD (83)
 
 static inline void
 lush_pthr__begIdleness(lush_pthr_t* x)
 {
+#if 1
   x->doIdlenessCnt++;
   if (x->doIdlenessCnt == LUSH_SYNC_SMPL_PERIOD) {
     uint64_t time = UINT64_MAX;
     time_getTimeReal(&time);
     x->begIdleness = time;
   }
+#endif
 }
 
 
 static inline void
 lush_pthr__endIdleness(lush_pthr_t* x)
 {
+#if 1
   if (x->doIdlenessCnt == LUSH_SYNC_SMPL_PERIOD) {
     uint64_t time = 0;
     time_getTimeReal(&time);
     x->idleness += LUSH_SYNC_SMPL_PERIOD * MAX(0, time - x->begIdleness);
     x->doIdlenessCnt = 0;
   }
+#endif
 }
 
 
-#if 0
+#if 1
 #  define lush_pthr__commitIdleness(/* lush_pthr_t* */ x)	   \
   if (x->idleness > 0 && !hpcrun_async_is_blocked()) {		   \
     hpcrun_async_block();					   \
     ucontext_t context;						   \
     getcontext(&context); /* FIXME: check for errors */		   \
-    csprof_sample_event(&context, lush_agents->metric_time, 0, 1); \
-    hpcrun_async_unblock();					   \
+    hpcrun_sample_callpath(&context, lush_agents->metric_time,		  \
+			   0/*metricIncr*/, 0/*skipInner*/, 1/*isSync*/); \
+    hpcrun_async_unblock();						\
   }
-#else
+#elif 0
 #  include <signal.h>
 #  include <pthread.h>
 #  define lush_pthr__commitIdleness(/* lush_pthr_t* */ x)	   \
   if (x->idleness > 0) {					   \
     pthread_kill(pthread_self(), SIGPROF);			   \
   }
+#else 
+#  define lush_pthr__commitIdleness(/* lush_pthr_t* */ x)
 #endif
 
 //***************************************************************************

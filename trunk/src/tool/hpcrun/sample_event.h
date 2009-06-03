@@ -54,8 +54,8 @@ void csprof_inc_samples_filtered(void);
 
 void csprof_display_summary(void);
 
-csprof_cct_node_t *
-csprof_sample_event(void *context, int metric_id, uint64_t metric_incr, 
-		    int is_sync);
+csprof_cct_node_t*
+hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
+		       int skipInner, int isSync);
 
 #endif /* sample_event_h */

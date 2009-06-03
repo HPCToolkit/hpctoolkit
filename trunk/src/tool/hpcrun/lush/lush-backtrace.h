@@ -51,8 +51,8 @@ extern lush_agent_pool_t* lush_agents;
 
 csprof_cct_node_t*
 lush_backtrace(csprof_state_t* state, ucontext_t* context,
-	       int metric_id, uint64_t metric_incr,
-	       int is_sync);
+	       int metricId, uint64_t metricIncr,
+	       int skipInner, int isSync);
 
 
 // **************************************************************************
