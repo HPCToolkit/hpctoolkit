@@ -36,7 +36,7 @@ process_unconditional_branch(xed_decoded_inst_t *xptr, bool irdebug, interval_ar
     TMSG(TAIL_CALL,"indirect unconditional branch ==> possible tail call");
     next->has_tail_calls = true;
   }
-  else if ((possible > iarg->end) || (possible < iarg->first->common.start)) {
+  else if ((possible >= iarg->end) || (possible < iarg->first->common.start)) {
     TMSG(TAIL_CALL,"unconditional branch to address %p outside of current routine (%p to %p)",
          possible, iarg->first->common.start, iarg->end);
     next->has_tail_calls = true;

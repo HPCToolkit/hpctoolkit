@@ -259,8 +259,13 @@ size_t hpcrun_validation_counts[] = {
 void
 hpcrun_validation_summary(void)
 {
-  AMSG("VALIDATION: Confirmed: %ld, Probable: %ld, Wrong: %ld",
+  AMSG("VALIDATION: Confirmed: %ld, Probable: %ld (indirect: %ld, tail: %ld, etc: %ld), Wrong: %ld",
        hpcrun_validation_counts[UNW_ADDR_CONFIRMED],
+       hpcrun_validation_counts[UNW_ADDR_PROBABLE_INDIRECT] +
+         hpcrun_validation_counts[UNW_ADDR_PROBABLE_TAIL] +
+         hpcrun_validation_counts[UNW_ADDR_PROBABLE],
+       hpcrun_validation_counts[UNW_ADDR_PROBABLE_INDIRECT],
+       hpcrun_validation_counts[UNW_ADDR_PROBABLE_TAIL],
        hpcrun_validation_counts[UNW_ADDR_PROBABLE],
        hpcrun_validation_counts[UNW_ADDR_WRONG]);
 }
