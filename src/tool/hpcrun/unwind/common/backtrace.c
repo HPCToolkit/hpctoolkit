@@ -33,7 +33,7 @@
 
 static csprof_cct_node_t*
 _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
-		  int metricId, size_t metricIncr,
+		  int metricId, uint64_t metricIncr,
 		  int skipInner);
 
 
