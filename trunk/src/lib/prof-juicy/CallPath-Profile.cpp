@@ -509,18 +509,11 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
   int ret = HPCFILE_ERR;
 
   // ------------------------------------------------------------
-  // Read header
+  // Read num cct nodes
   // ------------------------------------------------------------
-  hpcfile_cstree_hdr_t fhdr;
-  ret = hpcfile_cstree_read_hdr(infs, &fhdr);
-  if (ret != HPCFILE_OK) {
-    DIAG_Throw("error reading CCT header");
-  }
 
-  if (outfs) {
-    hpcfile_cstree_hdr__fprint(&fhdr, outfs);
-    fputs("\n", outfs);
-  }
+  uint64_t num_nodes = 0;
+  hpcio_fread_le8(&num_nodes, infs);
 
   // ------------------------------------------------------------
   // Read each CCT node
@@ -530,7 +523,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
   ndata.data.num_metrics = num_metrics;
   ndata.data.metrics = (hpcrun_metric_data_t*)alloca(num_metrics * sizeof(hpcfmt_uint_t));
   
-  for (uint i = 0; i < fhdr.num_nodes; ++i) {
+  for (uint i = 0; i < num_nodes; ++i) {
 
     uint32_t tag;
     ret = hpcfile_tag__fread(&tag, infs);

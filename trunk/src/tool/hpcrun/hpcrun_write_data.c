@@ -7,6 +7,7 @@
 #include "files.h"
 #include "state.h"
 #include "thread_data.h"
+#include "csprof_csdata.h"
 #include "hpcrun_return_codes.h"
 #include "hpcio.h"
 #include "hpcfmt.h"
@@ -36,7 +37,7 @@ hpcrun_write_profile_data(csprof_state_t *state)
 {
   FILE* fs;
 
-  int ret, ret1, ret2;
+  int ret;
 
   /* Generate a filename */
   char fnm[HPCRUN_FNM_SZ];
@@ -154,44 +155,26 @@ hpcrun_write_profile_data(csprof_state_t *state)
     // == cct ==
     //
 
-    /* write profile states out to disk */
+    hpcrun_cct_t    *cct           = &(state->csdata);
+    lush_cct_ctxt_t *lush_cct_ctxt = state->csdata_ctxt;
 
-    csprof_state_t *runner = state;
+    TMSG(DATA_WRITE, "Writing %ld nodes", cct->num_nodes);
 
-    while(runner != NULL) {
-      if(runner->epoch != NULL) {
-        TMSG(DATA_WRITE, "Writing %ld nodes", runner->csdata.num_nodes);
-
-        ret2 = csprof_csdata__write_bin(fs, runner->epoch->id, 
-                                        &runner->csdata, runner->csdata_ctxt);
+    ret = csprof_cct__write_bin(fs, cct, lush_cct_ctxt);
           
-        if(ret2 != HPCRUN_OK) {
-          TMSG(DATA_WRITE, "Error writing tree %#lx", &runner->csdata);
-          TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
-          EMSG("could not save profile data to file '%s'", __FILE__, __LINE__, fnm);
-          perror("write_profile_data");
-          ret = HPCRUN_ERR;
-        }
-      }
-      else {
-        TMSG(DATA_WRITE, "Not writing tree %#lx; null epoch", &runner->csdata);
-        TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
-      }
-
-      runner = runner->next;
+    if(ret != HPCRUN_OK) {
+      TMSG(DATA_WRITE, "Error writing tree %#lx", cct);
+      TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);
+      EMSG("could not save profile data to file '%s'", __FILE__, __LINE__, fnm);
+      perror("write_profile_data");
+      ret = HPCRUN_ERR;
     }
-          
-    if(ret1 == HPCFILE_OK && ret2 == HPCRUN_OK) {
+    else {
       TMSG(DATA_WRITE, "saved profile data to file '%s'", fnm);
     }
-    /* if we've gotten this far, there haven't been any fatal errors */
-    // goto end;
-
     current_epoch++;
 
   } // epoch loop
-
-  // end:
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_close(fs);

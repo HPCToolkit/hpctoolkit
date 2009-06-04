@@ -66,7 +66,7 @@
 #include "cct.h"
 
 // public types
-typedef csprof_cct_t csprof_csdata_t;
+typedef hpcrun_cct_t csprof_csdata_t;
 
 // public function interface
 #define csprof_csdata__init          csprof_cct__init

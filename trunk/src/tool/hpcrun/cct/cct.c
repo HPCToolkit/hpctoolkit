@@ -80,7 +80,7 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
 			void* ip,
 			lush_lip_t* lip,
 			void* sp,
-			csprof_cct_t *x)
+			hpcrun_cct_t *x)
 {
   size_t sz = (sizeof(csprof_cct_node_t)
 	       + sizeof(cct_metric_data_t)*(csprof_get_max_metrics() - 1));
@@ -185,7 +185,7 @@ csprof_cct_node__find_child(csprof_cct_node_t* x,
 /* building and deleting trees */
 
 int
-csprof_cct__init(csprof_cct_t* x)
+csprof_cct__init(hpcrun_cct_t* x)
 {
   TMSG(CCT,"Init a CCT");
   memset(x, 0, sizeof(*x));
@@ -208,7 +208,7 @@ csprof_cct__init(csprof_cct_t* x)
 }
 
 int
-csprof_cct__fini(csprof_cct_t *x)
+csprof_cct__fini(hpcrun_cct_t *x)
 {
   return HPCRUN_OK;
 }
@@ -216,7 +216,7 @@ csprof_cct__fini(csprof_cct_t *x)
 
 // find a child with the specified pc. if none exists, create one.
 csprof_cct_node_t*
-csprof_cct_get_child(csprof_cct_t *cct, csprof_cct_node_t *parent, csprof_frame_t *frm)
+csprof_cct_get_child(hpcrun_cct_t *cct, csprof_cct_node_t *parent, csprof_frame_t *frm)
 {
   csprof_cct_node_t *c = csprof_cct_node__find_child(parent, frm->as_info, frm->ip, frm->lip, frm->sp);  
 
@@ -232,7 +232,7 @@ csprof_cct_get_child(csprof_cct_t *cct, csprof_cct_node_t *parent, csprof_frame_
 
 // See usage in header.
 csprof_cct_node_t*
-csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
+csprof_cct_insert_backtrace(hpcrun_cct_t *x, void *treenode, int metric_id,
 			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
 			    cct_metric_data_t increment)
 {
@@ -339,20 +339,19 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 /* writing trees to streams of various kinds */
 
 static int
-hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree, 
+hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree, 
 		     csprof_cct_node_t* root, 
 		     lush_cct_ctxt_t* tree_ctxt,
 		     hpcfmt_uint_t num_metrics,
-		     hpcfmt_uint_t num_nodes,
-                     hpcfmt_uint_t epoch);
+		     hpcfmt_uint_t num_nodes);
 
 
 /* csprof_cct__write_bin: Write the tree 'x' to the file
    stream 'fs'.  The tree is written in HPC_CSTREE format.  Returns
    HPCRUN_OK upon success; HPCRUN_ERR on error. */
+
 int 
-csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
-		      csprof_cct_t* x, lush_cct_ctxt_t* x_ctxt)
+csprof_cct__write_bin(FILE* fs, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt)
 {
   int ret;
   if (!fs) { return HPCRUN_ERR; }
@@ -363,15 +362,13 @@ csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
 
   ret = hpcfile_cstree_write(fs, x, x->tree_root, x_ctxt,
 			     csprof_num_recorded_metrics(),
-			     num_nodes, epoch_id);
+			     num_nodes);
 
 
   // splice creation context out of tree
 
   return (ret == HPCFILE_OK) ? HPCRUN_OK : HPCRUN_ERR;
 }
-
-
 
 //***************************************************************************
 // hpcfile_cstree_write()
@@ -389,7 +386,7 @@ csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
 
 
 static int
-hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
+hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
 			  csprof_cct_node_t* node, 
 			  hpcfile_cstree_node_t* tmp_node,
 			  hpcfmt_uint_t id_parent,
@@ -405,14 +402,14 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 			      hpcfmt_uint_t id);
 
 static int
-hpcfile_cstree_count_nodes(csprof_cct_t* tree, csprof_cct_node_t* node, 
+hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, csprof_cct_node_t* node, 
 			   int lvl_to_skip);
 
 #undef NODE_CHILD_COUNT // FIXME: this is now dead code. can it be expunged?
 
 #ifdef NODE_CHILD_COUNT 
 static int
-node_child_count(csprof_cct_t* tree, csprof_cct_node_t* node);
+node_child_count(hpcrun_cct_t* tree, csprof_cct_node_t* node);
 #endif
 
 
@@ -424,12 +421,11 @@ node_child_count(csprof_cct_t* tree, csprof_cct_node_t* node);
 // at 'root'.  The tree and its context should have 'num_nodes' nodes.
 // Returns HPCFILE_OK upon success; HPCFILE_ERR on error.
 static int
-hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree, 
-		     csprof_cct_node_t* root, 
+hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree, 
+		     csprof_cct_node_t* root,
 		     lush_cct_ctxt_t* tree_ctxt,
 		     hpcfmt_uint_t num_metrics,
-		     hpcfmt_uint_t num_nodes,
-                     hpcfmt_uint_t epoch)
+		     hpcfmt_uint_t num_nodes)
 {
   int ret;
   int lvl_to_skip = 0;
@@ -444,7 +440,6 @@ hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree,
 #endif
   }
     
-
   if (!fs) { return HPCFILE_ERR; }
 
   // -------------------------------------------------------
@@ -458,25 +453,19 @@ hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree,
   // creation context is not interpreted as a leaf.
   
   // -------------------------------------------------------
-  // Write header
+  // Write num cct tree nodes
   // -------------------------------------------------------
-  hpcfile_cstree_hdr_t fhdr;
 
-  hpcfile_cstree_hdr__init(&fhdr);
-  fhdr.epoch = epoch;
-  fhdr.num_nodes = num_nodes;
   if (num_nodes > 0 && lvl_to_skip > 0) { // FIXME: better way...
     int skipped = hpcfile_cstree_count_nodes(tree, root, lvl_to_skip);
-    fhdr.num_nodes -= skipped;
+    num_nodes -= skipped;
   }
-  ret = hpcfile_cstree_hdr__fwrite(&fhdr, fs); 
-  if (ret != HPCFILE_OK) {
-    return HPCFILE_ERR; 
-  }
+  hpcio_fwrite_le8(&num_nodes, fs);
 
   // -------------------------------------------------------
   // Write context
   // -------------------------------------------------------
+
   hpcfmt_uint_t id_root = HPCFILE_CSTREE_ID_ROOT;
   unsigned int num_ctxt_nodes = 0;
   lush_cct_ctxt__write(fs, tree_ctxt, id_root, &num_ctxt_nodes);
@@ -502,7 +491,7 @@ hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree,
 
 
 static int
-hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
+hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
 			  csprof_cct_node_t* node,
 			  hpcfile_cstree_node_t* tmp_node,
 			  hpcfmt_uint_t id_parent,
@@ -616,7 +605,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 
 
 static int
-hpcfile_cstree_count_nodes(csprof_cct_t* tree, csprof_cct_node_t* node, 
+hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, csprof_cct_node_t* node, 
 			   int lvl_to_skip)
 {
   int skipped_subtree_count = 0;
@@ -646,7 +635,7 @@ hpcfile_cstree_count_nodes(csprof_cct_t* tree, csprof_cct_node_t* node,
 
 #ifdef NODE_CHILD_COUNT 
 static int
-node_child_count(csprof_cct_t* tree, csprof_cct_node_t* node)
+node_child_count(hpcrun_cct_t* tree, csprof_cct_node_t* node)
 {
   int children = 0;
   if (node) { 
