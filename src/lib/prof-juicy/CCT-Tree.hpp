@@ -85,7 +85,7 @@
 #define FIXME_CILK_LIP_HACK
 
 inline std::ostream&
-operator<<(std::ostream& os, const hpcfile_metric_data_t x)
+operator<<(std::ostream& os, const hpcrun_metric_data_t x)
 {
   os << "[" << x.i << " " << x.r << "]";
   return os;
@@ -423,7 +423,7 @@ public:
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc,
-	   std::vector<hpcfile_metric_data_t>& metrics)
+	   std::vector<hpcrun_metric_data_t>& metrics)
     : ANode(type, _parent, strct),
       m_as_info(as_info), 
       m_lmId(LoadMap::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), m_cpid(cpid),
@@ -534,14 +534,14 @@ public:
   uint32_t cpid() const 
     { return m_cpid; }
 
-  hpcfile_metric_data_t metric(int i) const 
+  hpcrun_metric_data_t metric(int i) const 
     { return m_metrics[i]; }
   uint numMetrics() const 
     { return m_metrics.size(); }
 
-  void metricIncr(int i, hpcfile_metric_data_t incr)  
+  void metricIncr(int i, hpcrun_metric_data_t incr)
     { ADynNode::metricIncr((*m_metricdesc)[i], &m_metrics[i], incr); }
-  void metricDecr(int i, hpcfile_metric_data_t decr)  
+  void metricDecr(int i, hpcrun_metric_data_t decr)  
     { ADynNode::metricDecr((*m_metricdesc)[i], &m_metrics[i], decr); }
 
 
@@ -565,8 +565,8 @@ public:
   hasMetrics() const 
   {
     for (uint i = 0; i < numMetrics(); i++) {
-      hpcfile_metric_data_t m = metric(i);
-      if (!hpcfile_metric_data_iszero(m)) {
+      hpcrun_metric_data_t m = metric(i);
+      if (!hpcrun_metric_data_iszero(m)) {
 	return true;
       }
     }
@@ -575,7 +575,7 @@ public:
 
   static inline void
   metricIncr(const SampledMetricDesc* mdesc, 
-	     hpcfile_metric_data_t* x, hpcfile_metric_data_t incr)
+	     hpcrun_metric_data_t* x, hpcrun_metric_data_t incr)
   {
     if (hpcfile_csprof_metric_is_flag(mdesc->flags(), 
 				      HPCFILE_METRIC_FLAG_REAL)) {
@@ -588,7 +588,7 @@ public:
   
   static inline void
   metricDecr(const SampledMetricDesc* mdesc, 
-	     hpcfile_metric_data_t* x, hpcfile_metric_data_t decr)
+	     hpcrun_metric_data_t* x, hpcrun_metric_data_t decr)
   {
     if (hpcfile_csprof_metric_is_flag(mdesc->flags(), 
 				      HPCFILE_METRIC_FLAG_REAL)) {
@@ -618,11 +618,11 @@ public:
 
   struct WriteMetricInfo_ {
     const SampledMetricDesc* mdesc;
-    hpcfile_metric_data_t x;
+    hpcrun_metric_data_t x;
   };
       
   static inline WriteMetricInfo_
-  writeMetric(const SampledMetricDesc* mdesc, hpcfile_metric_data_t x) 
+  writeMetric(const SampledMetricDesc* mdesc, hpcrun_metric_data_t x) 
   {
     WriteMetricInfo_ info;
     info.mdesc = mdesc;
@@ -645,7 +645,7 @@ private:
   const SampledMetricDescVec* m_metricdesc; // does not own memory
 
   // FIXME: a vector of doubles, a la Struct::Tree
-  std::vector<hpcfile_metric_data_t> m_metrics;
+  std::vector<hpcrun_metric_data_t> m_metrics;
 };
 
 
@@ -870,7 +870,7 @@ public:
        lush_lip_t* lip,
        uint32_t cpid,
        const SampledMetricDescVec* metricdesc,
-       std::vector<hpcfile_metric_data_t>& metrics);
+       std::vector<hpcrun_metric_data_t>& metrics);
 
   virtual ~Call() 
   { }

@@ -426,8 +426,6 @@ Profile::hpcrun_fmt_epoch_fread(Profile* prof, uint32_t num_ccts, metric_tbl_t* 
   // Epoch header (epoch-hdr)
   // ------------------------------------------------------------
 
-  // TODO
-
   // ------------------------------------------------------------
   // Metric table (metric-tbl)
   // ------------------------------------------------------------
@@ -530,7 +528,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
 
   hpcfile_cstree_node_t ndata;
   ndata.data.num_metrics = num_metrics;
-  ndata.data.metrics = (hpcfile_metric_data_t*)alloca(num_metrics * sizeof(hpcfile_uint_t));
+  ndata.data.metrics = (hpcrun_metric_data_t*)alloca(num_metrics * sizeof(hpcfmt_uint_t));
   
   for (uint i = 0; i < fhdr.num_nodes; ++i) {
 
@@ -544,7 +542,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
     // Read the LIP
     // ----------------------------------------------------------
 
-    hpcfile_uint_t lip_id = 0;
+    hpcfmt_uint_t lip_id = 0;
     lush_lip_t* lip = NULL;
 
     if (tag == HPCFILE_TAG__CSTREE_LIP) {
@@ -704,7 +702,7 @@ cct_makeNode(Prof::CCT::Tree* cct, hpcfile_cstree_nodedata_t* data)
   VMA ip = (VMA)data->ip; // tallent:FIXME: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
-  std::vector<hpcfile_metric_data_t> metricVec;
+  std::vector<hpcrun_metric_data_t> metricVec;
   metricVec.clear();
   for (uint i = 0; i < data->num_metrics; i++) {
     metricVec.push_back(data->metrics[i]);

@@ -342,9 +342,9 @@ static int
 hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree, 
 		     csprof_cct_node_t* root, 
 		     lush_cct_ctxt_t* tree_ctxt,
-		     hpcfile_uint_t num_metrics,
-		     hpcfile_uint_t num_nodes,
-                     hpcfile_uint_t epoch);
+		     hpcfmt_uint_t num_metrics,
+		     hpcfmt_uint_t num_nodes,
+                     hpcfmt_uint_t epoch);
 
 
 /* csprof_cct__write_bin: Write the tree 'x' to the file
@@ -359,7 +359,7 @@ csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
 
   // Collect stats on the creation context
   unsigned int x_ctxt_len = lush_cct_ctxt__length(x_ctxt);
-  hpcfile_uint_t num_nodes = x_ctxt_len + x->num_nodes;
+  hpcfmt_uint_t num_nodes = x_ctxt_len + x->num_nodes;
 
   ret = hpcfile_cstree_write(fs, x, x->tree_root, x_ctxt,
 			     csprof_num_recorded_metrics(),
@@ -392,17 +392,17 @@ static int
 hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
 			  csprof_cct_node_t* node, 
 			  hpcfile_cstree_node_t* tmp_node,
-			  hpcfile_uint_t id_parent,
-			  hpcfile_uint_t id_root,
-			  hpcfile_uint_t* id,
+			  hpcfmt_uint_t id_parent,
+			  hpcfmt_uint_t id_root,
+			  hpcfmt_uint_t* id,
 			  int lvl_to_skip);
 
 static int
 hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 			      hpcfile_cstree_node_t* tmp_node,
-			      hpcfile_uint_t id_parent,
-			      hpcfile_uint_t id_root,
-			      hpcfile_uint_t id);
+			      hpcfmt_uint_t id_parent,
+			      hpcfmt_uint_t id_root,
+			      hpcfmt_uint_t id);
 
 static int
 hpcfile_cstree_count_nodes(csprof_cct_t* tree, csprof_cct_node_t* node, 
@@ -427,9 +427,9 @@ static int
 hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree, 
 		     csprof_cct_node_t* root, 
 		     lush_cct_ctxt_t* tree_ctxt,
-		     hpcfile_uint_t num_metrics,
-		     hpcfile_uint_t num_nodes,
-                     hpcfile_uint_t epoch)
+		     hpcfmt_uint_t num_metrics,
+		     hpcfmt_uint_t num_nodes,
+                     hpcfmt_uint_t epoch)
 {
   int ret;
   int lvl_to_skip = 0;
@@ -477,20 +477,20 @@ hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree,
   // -------------------------------------------------------
   // Write context
   // -------------------------------------------------------
-  hpcfile_uint_t id_root = HPCFILE_CSTREE_ID_ROOT;
+  hpcfmt_uint_t id_root = HPCFILE_CSTREE_ID_ROOT;
   unsigned int num_ctxt_nodes = 0;
   lush_cct_ctxt__write(fs, tree_ctxt, id_root, &num_ctxt_nodes);
 
   // -------------------------------------------------------
   // Write each node, beginning with root
   // -------------------------------------------------------
-  hpcfile_uint_t id_ctxt = HPCFILE_CSTREE_ID_ROOT + num_ctxt_nodes - 1;
-  hpcfile_uint_t id = id_ctxt + 1;
+  hpcfmt_uint_t id_ctxt = HPCFILE_CSTREE_ID_ROOT + num_ctxt_nodes - 1;
+  hpcfmt_uint_t id = id_ctxt + 1;
   hpcfile_cstree_node_t tmp_node;
 
   hpcfile_cstree_node__init(&tmp_node);
   tmp_node.data.num_metrics = num_metrics;
-  tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
+  tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfmt_uint_t));
 
   ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, 
 				  id_ctxt, id, &id,
@@ -505,9 +505,9 @@ static int
 hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
 			  csprof_cct_node_t* node,
 			  hpcfile_cstree_node_t* tmp_node,
-			  hpcfile_uint_t id_parent,
-			  hpcfile_uint_t id_root,
-			  hpcfile_uint_t* id,
+			  hpcfmt_uint_t id_parent,
+			  hpcfmt_uint_t id_root,
+			  hpcfmt_uint_t* id,
 			  int lvl_to_skip)
 {
   int ret;
@@ -517,8 +517,8 @@ hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
   // ---------------------------------------------------------
   // Write this node
   // ---------------------------------------------------------
-  hpcfile_uint_t my_id = *id;
-  hpcfile_uint_t my_id_root = id_root;
+  hpcfmt_uint_t my_id = *id;
+  hpcfmt_uint_t my_id_root = id_root;
 
   int my_lvl_to_skip = lvl_to_skip;
   if (lvl_to_skip > 0) {
@@ -563,16 +563,16 @@ hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
 static int
 hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 			      hpcfile_cstree_node_t* tmp_node,
-			      hpcfile_uint_t id_parent,
-			      hpcfile_uint_t id_root,
-			      hpcfile_uint_t id)
+			      hpcfmt_uint_t id_parent,
+			      hpcfmt_uint_t id_root,
+			      hpcfmt_uint_t id)
 {
   int ret = HPCRUN_OK;
 
   // ---------------------------------------------------------
   // Write LIP if necessary
   // ---------------------------------------------------------
-  hpcfile_uint_t id_lip = 0;
+  hpcfmt_uint_t id_lip = 0;
 
   lush_assoc_t as = lush_assoc_info__get_assoc(node->as_info);
   if (as != LUSH_ASSOC_NULL) {
@@ -598,9 +598,9 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
   tmp_node->data.as_info = node->as_info;
 
   // double casts to avoid warnings when pointer is < 64 bits 
-  tmp_node->data.ip = (hpcfile_vma_t) (unsigned long) node->ip;
+  tmp_node->data.ip = (hpcfmt_vma_t) (unsigned long) node->ip;
   tmp_node->data.lip.id = id_lip;
-  tmp_node->data.sp = (hpcfile_uint_t)(unsigned long) node->sp;
+  tmp_node->data.sp = (hpcfmt_uint_t)(unsigned long) node->sp;
 
   tmp_node->data.cpid = node->cpid;
   memcpy(tmp_node->data.metrics, node->metrics, 
@@ -709,7 +709,7 @@ lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
   hpcfile_cstree_node_t tmp_node;
   hpcfile_cstree_node__init(&tmp_node);
   tmp_node.data.num_metrics = num_metrics;
-  tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
+  tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfmt_uint_t));
     
   ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt, id_root,
 				 nodes_written, &tmp_node);
@@ -779,9 +779,9 @@ lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
   if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   
   // write this node
-  hpcfile_uint_t my_id          = id_root + (*nodes_written);
-  hpcfile_uint_t my_id_parent   = my_id - 1;
-  hpcfile_uint_t my_id_lip_root = (*id_lip_root);
+  hpcfmt_uint_t my_id          = id_root + (*nodes_written);
+  hpcfmt_uint_t my_id_parent   = my_id - 1;
+  hpcfmt_uint_t my_id_lip_root = (*id_lip_root);
 
   ret = hpcfile_cstree_write_node_hlp(fs, node, tmp_node, 
 				      my_id_parent, my_id_lip_root, my_id);

@@ -142,7 +142,7 @@ OverheadMetricFact::make(Prof::CCT::ANode* node,
     for (uint i = 0; i < m_src.size(); ++i) {
       uint src_idx = m_src[i];
       uint dst_idx = m_dst[i];
-      hpcfile_metric_data_t mval = stmt->metric(src_idx);
+      hpcrun_metric_data_t mval = stmt->metric(src_idx);
       
       stmt->metricDecr(src_idx, mval);
       stmt->metricIncr(dst_idx, mval);

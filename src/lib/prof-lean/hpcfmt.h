@@ -97,8 +97,8 @@ enum {
 
 
 // Types with known sizes (for reading/writing)
-typedef uint64_t hpcfile_vma_t;
-typedef uint64_t hpcfile_uint_t;
+typedef uint64_t hpcfmt_vma_t;
+typedef uint64_t hpcfmt_uint_t;
 
 //***************************************************************************
 
@@ -186,12 +186,12 @@ typedef struct hpcfile_str_s {
 
 } hpcfile_str_t;
 
-typedef struct hpcrun_fstr_t {
+typedef struct hpcfmt_fstr_t {
 
   uint32_t len; // length of string
   char str[];   // string data. [Variable length data]
 
-} hprun_fmt_str_t;
+} hpcfmt_fstr_t;
 
 int hpcfile_str__init(hpcfile_str_t* x);
 int hpcfile_str__fini(hpcfile_str_t* x);
@@ -201,9 +201,9 @@ int hpcfile_str__fread(hpcfile_str_t* x, FILE* fs,
 int hpcfile_str__fwrite(hpcfile_str_t* x, FILE* fs);
 int hpcfile_str__fprint(hpcfile_str_t* x, FILE* fs);
 
-int hpcrun_fstr_fread(char **str, FILE *infs, alloc_fn alloc);
-int hpcrun_fstr_fwrite(char *str, FILE *outfs);
-void hpcrun_fstr_free(char *str, free_fn dealloc);
+int hpcfmt_fstr_fread(char **str, FILE *infs, alloc_fn alloc);
+int hpcfmt_fstr_fwrite(char *str, FILE *outfs);
+void hpcfmt_fstr_free(char *str, free_fn dealloc);
 
 // ---------------------------------------------------------
 // hpcfile_num8_t: One 8 byte number.

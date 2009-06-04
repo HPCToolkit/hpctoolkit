@@ -203,6 +203,53 @@ int hpcrun_fmt_loadmap_fread(loadmap_t *loadmap, FILE *in, alloc_fn alloc);
 int hpcrun_fmt_loadmap_fprint(loadmap_t *loadmap, FILE *out);
 void hpcrun_fmt_loadmap_free(loadmap_t *loadmap, free_fn dealloc);
 
+// ******** cct nodes **********
+
+typedef union hpcrun_metric_data_u {
+  uint64_t bits; // for reading/writing
+
+  uint64_t i; // integral data
+  double   r; // real
+  
+} hpcrun_metric_data_t;
+
+extern hpcrun_metric_data_t hpcrun_metric_data_ZERO;
+
+typedef struct hpcrun_fmt_cct_node_t {
+  lush_assoc_info_t as_info;
+
+  // instruction pointer: more accurately, this is an 'operation
+  // pointer'.  The operation in the instruction packet is represented
+  // by adding 0, 1, or 2 to the instruction pointer for the first,
+  // second and third operation, respectively.
+  hpcfmt_vma_t ip;
+
+  union {
+    hpcfmt_uint_t id;  // canonical lip id
+    lush_lip_t*    ptr; // pointer
+  } lip; 
+
+  // 'sp': the stack pointer of this node
+  // tallent: Why is this needed?
+  hpcfmt_uint_t sp;
+
+  uint32_t cpid;
+
+  hpcfmt_uint_t num_metrics;
+  hpcrun_metric_data_t* metrics;
+
+#if defined(NEW_CCT)
+  uint32_t node_id;
+  uint32_t parent_id;
+  uint32_t lush_assoc;
+  uint64_t ip;
+  uint64_t sp;
+  uint64_t lush_lip;
+#endif
+  
+} hpcrun_fmt_cct_node_t;
+
+
 //***************************************************************************
 //
 // Types and functions for reading/writing a call stack tree from/to a
@@ -499,18 +546,9 @@ int hpcfile_cstree_hdr__fprint(hpcfile_cstree_hdr_t* x, FILE* fs);
 // tallent: was 'size_t'.  If this should change the memcpy in
 // hpcfile_cstree_write_node_hlp should be modified.
 
-typedef union hpcfile_metric_data_u {
-  uint64_t bits; // for reading/writing
-
-  uint64_t i; // integral data
-  double   r; // real
   
-} hpcfile_metric_data_t;
-
-extern hpcfile_metric_data_t hpcfile_metric_data_ZERO;
-  
-static inline bool hpcfile_metric_data_iszero(hpcfile_metric_data_t x) {
-  return (x.bits == hpcfile_metric_data_ZERO.bits);
+static inline bool hpcrun_metric_data_iszero(hpcrun_metric_data_t x) {
+  return (x.bits == hpcrun_metric_data_ZERO.bits);
 }
 
 typedef struct hpcfile_cstree_nodedata_s {
@@ -521,21 +559,21 @@ typedef struct hpcfile_cstree_nodedata_s {
   // pointer'.  The operation in the instruction packet is represented
   // by adding 0, 1, or 2 to the instruction pointer for the first,
   // second and third operation, respectively.
-  hpcfile_vma_t ip;
+  hpcfmt_vma_t ip;
 
   union {
-    hpcfile_uint_t id;  // canonical lip id
+    hpcfmt_uint_t id;  // canonical lip id
     lush_lip_t*    ptr; // pointer
   } lip; 
 
   // 'sp': the stack pointer of this node
   // tallent: Why is this needed?
-  hpcfile_uint_t sp;
+  hpcfmt_uint_t sp;
 
   uint32_t cpid;
 
-  hpcfile_uint_t num_metrics;
-  hpcfile_metric_data_t* metrics;
+  hpcfmt_uint_t num_metrics;
+  hpcrun_metric_data_t* metrics;
 
 } hpcfile_cstree_nodedata_t;
 
@@ -558,7 +596,7 @@ int hpcfile_cstree_as_info__fwrite(lush_assoc_info_t* x, FILE* fs);
 
 int hpcfile_cstree_lip__fread(lush_lip_t* x, FILE* fs);
 int hpcfile_cstree_lip__fwrite(lush_lip_t* x, FILE* fs);
-int hpcfile_cstree_lip__fprint(lush_lip_t* x, hpcfile_uint_t id, 
+int hpcfile_cstree_lip__fprint(lush_lip_t* x, hpcfmt_uint_t id, 
 			       FILE* fs, const char* pre);
 
 // ---------------------------------------------------------
@@ -569,8 +607,8 @@ typedef struct hpcfile_cstree_node_s {
 
   hpcfile_cstree_nodedata_t data;
 
-  hpcfile_uint_t id;        // persistent id of self
-  hpcfile_uint_t id_parent; // persistent id of parent
+  hpcfmt_uint_t id;        // persistent id of self
+  hpcfmt_uint_t id_parent; // persistent id of parent
 
 } hpcfile_cstree_node_t;
 
