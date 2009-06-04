@@ -267,11 +267,11 @@ typedef struct csprof_cct_s {
   unsigned int cache_len;     /* maximum size of the arrays */
 #endif
 
-} csprof_cct_t;
+} hpcrun_cct_t;
 
 
-int csprof_cct__init(csprof_cct_t* x);
-int csprof_cct__fini(csprof_cct_t *x);
+int csprof_cct__init(hpcrun_cct_t* x);
+int csprof_cct__fini(hpcrun_cct_t *x);
 
 
 // Given a call path of the following form, insert the path into the
@@ -284,30 +284,29 @@ int csprof_cct__fini(csprof_cct_t *x);
 //              ^ bt_beg                                       ^ bt_end
 //
 csprof_cct_node_t*
-csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
+csprof_cct_insert_backtrace(hpcrun_cct_t *x, void *treenode, int metric_id,
 			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
 			    cct_metric_data_t sample_count);
 
-csprof_cct_node_t *csprof_cct_get_child(csprof_cct_t *cct, 
+csprof_cct_node_t *csprof_cct_get_child(hpcrun_cct_t *cct, 
 					csprof_cct_node_t *parent, 
 					csprof_frame_t *frm);
 
-int csprof_cct__write_txt(FILE* fs, csprof_cct_t* x);
+int csprof_cct__write_txt(FILE* fs, hpcrun_cct_t* x);
 
-int csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
-			  csprof_cct_t* x, lush_cct_ctxt_t* x_ctxt);
+int csprof_cct__write_bin(FILE* fs, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt);
 
-#define csprof_cct__isempty(/* csprof_cct_t* */x) ((x)->tree_root == NULL)
+#define csprof_cct__isempty(/* hpcrun_cct_t* */x) ((x)->tree_root == NULL)
 
 
 void
-csprof_cct_print_path_to_root(csprof_cct_t *tree, csprof_cct_node_t* node);
+csprof_cct_print_path_to_root(hpcrun_cct_t *tree, csprof_cct_node_t* node);
 
 
 /* private interface */
-int csprof_cct__write_txt_q(csprof_cct_t *);
+int csprof_cct__write_txt_q(hpcrun_cct_t *);
 
-int csprof_cct__write_txt_r(FILE *, csprof_cct_t *, csprof_cct_node_t *);
+int csprof_cct__write_txt_r(FILE *, hpcrun_cct_t *, csprof_cct_node_t *);
 
 
 //***************************************************************************

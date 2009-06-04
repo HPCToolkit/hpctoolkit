@@ -140,34 +140,3 @@ hpcrun_finalize_current_epoch(void)
   }
   csprof_epoch_unlock();
 }
-
-#if defined(OLD_EPOCH)
-void
-csprof_write_all_epochs(FILE *fs)
-{
-  /* go through and assign all epochs an id; this id will be used by
-     the callstack data trees to indicate in which epoch they were
-     collected. */
-  csprof_epoch_t *runner = current_epoch;
-  unsigned int id_runner = 0;
-
-  while(runner != NULL) {
-    runner->id = id_runner;
-
-    id_runner++;
-    runner = runner->next;
-  }
-
-  /* indicate how many epochs there are to read */
-  hpcio_fwrite_le4(&id_runner, fs);
-
-  runner = current_epoch;
-
-  while(runner != NULL) {
-    TMSG(DATA_WRITE, "Writing epoch %d", runner->id);
-    hpcrun_write_epoch(runner, fs);
-
-    runner = runner->next;
-  }
-}
-#endif

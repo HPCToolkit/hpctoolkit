@@ -159,7 +159,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
       if (trace_isactive()) {
 	void *pc = context_pc(context);
-	csprof_cct_t *cct = &(td->state->csdata); 
+	hpcrun_cct_t *cct = &(td->state->csdata); 
 	void *func_start_pc, *func_end_pc;
 
 	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc); 
