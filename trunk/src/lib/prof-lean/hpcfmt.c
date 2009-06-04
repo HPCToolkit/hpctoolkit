@@ -275,7 +275,7 @@ hpcfile_num8s__fwrite(hpcfile_num8s_t* x, FILE* fs)
 }
 
 int
-hpcrun_fstr_fread(char **str, FILE *infs, alloc_fn alloc)
+hpcfmt_fstr_fread(char **str, FILE *infs, alloc_fn alloc)
 {
   uint32_t len;
   char *buf = *str;
@@ -300,11 +300,11 @@ hpcrun_fstr_fread(char **str, FILE *infs, alloc_fn alloc)
 }
 
 int
-hpcrun_fstr_fwrite(char *str, FILE *outfs)
+hpcfmt_fstr_fwrite(char *str, FILE *outfs)
 {
   uint32_t len = strlen(str);
 
-  hpcio_fwrite_le4(&len, outfs); // FIXME-MWF check error
+  hpcio_fwrite_le4(&len, outfs);
   
   for(int i=0; i < len; i++){
     int c = fputc(*(str++), outfs);
@@ -316,7 +316,7 @@ hpcrun_fstr_fwrite(char *str, FILE *outfs)
 }
 
 void
-hpcrun_fstr_free(char *fstr, free_fn dealloc)
+hpcfmt_fstr_free(char *fstr, free_fn dealloc)
 {
   dealloc((void *)fstr);
 }

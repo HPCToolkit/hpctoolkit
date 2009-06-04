@@ -277,7 +277,7 @@ Call::Call(ANode* _parent,
 	   lush_lip_t* lip,
 	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc,
-	   std::vector<hpcfile_metric_data_t>& metrics)
+	   std::vector<hpcrun_metric_data_t>& metrics)
   : ADynNode(TyCall, _parent, NULL, 
 	     as_info, ip, opIndex, lip, cpid, metricdesc, metrics)
 {
@@ -407,7 +407,7 @@ void
 ADynNode::expandMetrics_before(uint offset)
 {
   for (uint i = 0; i < offset; ++i) {
-    m_metrics.insert(m_metrics.begin(), hpcfile_metric_data_ZERO);
+    m_metrics.insert(m_metrics.begin(), hpcrun_metric_data_ZERO);
   }
 }
 
@@ -416,7 +416,7 @@ void
 ADynNode::expandMetrics_after(uint offset)
 {
   for (uint i = 0; i < offset; ++i) {
-    m_metrics.push_back(hpcfile_metric_data_ZERO);
+    m_metrics.push_back(hpcrun_metric_data_ZERO);
   }
 }
 
@@ -722,8 +722,8 @@ ADynNode::writeMetricsXML(std::ostream& os, int oFlags, const char* pfx) const
   bool wasMetricWritten = false;
 
   for (uint i = 0; i < numMetrics(); i++) {
-    hpcfile_metric_data_t m = metric(i);
-    if (!hpcfile_metric_data_iszero(m)) {
+    hpcrun_metric_data_t m = metric(i);
+    if (!hpcrun_metric_data_iszero(m)) {
       os << ((!wasMetricWritten) ? pfx : "");
       os << "<M " << "n" << xml::MakeAttrNum(i) 
 	 << " v" << writeMetric((*m_metricdesc)[i], m) << "/>";

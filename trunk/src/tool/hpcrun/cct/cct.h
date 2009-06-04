@@ -102,7 +102,7 @@ struct rbtree
 
 // tallent: was 'size_t'.  If this should change the memcpy in
 // hpcfile_cstree_write_node_hlp should be modified.
-typedef hpcfile_metric_data_t cct_metric_data_t;
+typedef hpcrun_metric_data_t cct_metric_data_t;
 
 static inline void
 cct_metric_data_increment(int metric_id,
@@ -251,7 +251,7 @@ typedef struct csprof_cct_s {
 
   // next_cpid is used for assigning unique persistent ids to CCT nodes
   // to represent call paths
-  int next_cpid; 
+  int next_cpid;
 
 #ifndef CSPROF_TRAMPOLINE_BACKEND
   /* Two cached arrays: one contains a copy of the most recent

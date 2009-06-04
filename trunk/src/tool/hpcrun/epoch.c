@@ -141,6 +141,7 @@ hpcrun_finalize_current_epoch(void)
   csprof_epoch_unlock();
 }
 
+#if defined(OLD_EPOCH)
 void
 csprof_write_all_epochs(FILE *fs)
 {
@@ -169,3 +170,4 @@ csprof_write_all_epochs(FILE *fs)
     runner = runner->next;
   }
 }
+#endif
