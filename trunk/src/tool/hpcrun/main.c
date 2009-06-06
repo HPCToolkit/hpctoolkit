@@ -1,11 +1,10 @@
 // -*-Mode: C++;-*- // technically C99
 // $Id$
 
-
 //***************************************************************************
 // system include files 
 //***************************************************************************
-//
+
 #include <pthread.h>
 #include <unistd.h>
 #include <stdbool.h>
@@ -27,8 +26,8 @@
 // user include files 
 //***************************************************************************
 
+#include "main.h"
 #include "csproflib.h"
-#include "libmonitor_upcalls.h"
 
 #include "env.h"
 #include "files.h"

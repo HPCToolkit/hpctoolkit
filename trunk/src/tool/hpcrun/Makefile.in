@@ -183,11 +183,10 @@ libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 @OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
 libcsprof_la_DEPENDENCIES = $(HPC_LIBPROFLEAN)
-am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
+am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	csprof_options.c csproflib.c data.c env.c epoch.c files.c \
-	handling_sample.c hpcrun_write_data.c last.c \
-	libmonitor_upcalls.c metrics.c name.c sample_event.c \
-	sample_sources_all.c sample_source_common.c \
+	handling_sample.c hpcrun_write_data.c last.c metrics.c name.c \
+	sample_event.c sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_source_none.c \
 	sample_sources_registered.c segv_handler.c state.c \
 	system_server.c thread_data.c thread_use.c trace.c unsafe.c \
@@ -215,13 +214,13 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c \
 	sample_source_papi.c monitor-exts/over_cond.c \
 	monitor-exts/over_mutex.c monitor-exts/over_spin.c \
 	utilities/last_func.c
-am__objects_8 = libcsprof_la-first_func.lo \
+am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-csprof_options.lo libcsprof_la-csproflib.lo \
 	libcsprof_la-data.lo libcsprof_la-env.lo libcsprof_la-epoch.lo \
 	libcsprof_la-files.lo libcsprof_la-handling_sample.lo \
 	libcsprof_la-hpcrun_write_data.lo libcsprof_la-last.lo \
-	libcsprof_la-libmonitor_upcalls.lo libcsprof_la-metrics.lo \
-	libcsprof_la-name.lo libcsprof_la-sample_event.lo \
+	libcsprof_la-metrics.lo libcsprof_la-name.lo \
+	libcsprof_la-sample_event.lo \
 	libcsprof_la-sample_sources_all.lo \
 	libcsprof_la-sample_source_common.lo \
 	libcsprof_la-sample_source_itimer.lo \
@@ -275,15 +274,14 @@ libcsprof_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
 pkglibPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(pkglib_PROGRAMS)
-am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
-	csproflib.c data.c env.c epoch.c files.c handling_sample.c \
-	hpcrun_write_data.c last.c libmonitor_upcalls.c metrics.c \
-	name.c sample_event.c sample_sources_all.c \
-	sample_source_common.c sample_source_itimer.c \
-	sample_source_none.c sample_sources_registered.c \
-	segv_handler.c state.c system_server.c thread_data.c \
-	thread_use.c trace.c unsafe.c cct/cct.c \
-	unwind/common/backtrace.c unwind/common/splay.c \
+am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
+	csprof_options.c csproflib.c data.c env.c epoch.c files.c \
+	handling_sample.c hpcrun_write_data.c last.c metrics.c name.c \
+	sample_event.c sample_sources_all.c sample_source_common.c \
+	sample_source_itimer.c sample_source_none.c \
+	sample_sources_registered.c segv_handler.c state.c \
+	system_server.c thread_data.c thread_use.c trace.c unsafe.c \
+	cct/cct.c unwind/common/backtrace.c unwind/common/splay.c \
 	unwind/common/stack_troll.c unwind/common/ui_tree.c \
 	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
 	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
@@ -306,16 +304,15 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c csprof_options.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	sample_source_papi.c utilities/last_func.c
 am__objects_22 = libcsprof_o-first_func.$(OBJEXT) \
+	libcsprof_o-main.$(OBJEXT) \
 	libcsprof_o-csprof_options.$(OBJEXT) \
 	libcsprof_o-csproflib.$(OBJEXT) libcsprof_o-data.$(OBJEXT) \
 	libcsprof_o-env.$(OBJEXT) libcsprof_o-epoch.$(OBJEXT) \
 	libcsprof_o-files.$(OBJEXT) \
 	libcsprof_o-handling_sample.$(OBJEXT) \
 	libcsprof_o-hpcrun_write_data.$(OBJEXT) \
-	libcsprof_o-last.$(OBJEXT) \
-	libcsprof_o-libmonitor_upcalls.$(OBJEXT) \
-	libcsprof_o-metrics.$(OBJEXT) libcsprof_o-name.$(OBJEXT) \
-	libcsprof_o-sample_event.$(OBJEXT) \
+	libcsprof_o-last.$(OBJEXT) libcsprof_o-metrics.$(OBJEXT) \
+	libcsprof_o-name.$(OBJEXT) libcsprof_o-sample_event.$(OBJEXT) \
 	libcsprof_o-sample_sources_all.$(OBJEXT) \
 	libcsprof_o-sample_source_common.$(OBJEXT) \
 	libcsprof_o-sample_source_itimer.$(OBJEXT) \
@@ -618,6 +615,7 @@ PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
 MY_BASE_FILES = \
 	utilities/first_func.c		\
 	\
+	main.h main.c			\
 	csprof_options.c		\
 	csproflib.c			\
 	data.c				\
@@ -627,7 +625,6 @@ MY_BASE_FILES = \
 	handling_sample.c		\
 	hpcrun_write_data.c		\
 	last.c				\
-	libmonitor_upcalls.c		\
 	metrics.c			\
 	name.c				\
 	sample_event.c			\
@@ -1018,13 +1015,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-hpcrun_write_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-last.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-last_func.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-libmonitor_upcalls.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-pthread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-support-rt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lushi-cb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-main.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-mem.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-metrics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-mips-unwind-interval.Plo@am__quote@
@@ -1081,13 +1078,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-hpcrun_write_data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-last.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-last_func.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-libmonitor_upcalls.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-list.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-pthread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-support-rt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lushi-cb.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-metrics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mips-unwind-interval.Po@am__quote@
@@ -1240,6 +1237,13 @@ libcsprof_la-first_func.lo: utilities/first_func.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-first_func.lo `test -f 'utilities/first_func.c' || echo '$(srcdir)/'`utilities/first_func.c
 
+libcsprof_la-main.lo: main.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-main.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-main.Tpo -c -o libcsprof_la-main.lo `test -f 'main.c' || echo '$(srcdir)/'`main.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-main.Tpo $(DEPDIR)/libcsprof_la-main.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='main.c' object='libcsprof_la-main.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-main.lo `test -f 'main.c' || echo '$(srcdir)/'`main.c
+
 libcsprof_la-csprof_options.lo: csprof_options.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-csprof_options.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-csprof_options.Tpo -c -o libcsprof_la-csprof_options.lo `test -f 'csprof_options.c' || echo '$(srcdir)/'`csprof_options.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-csprof_options.Tpo $(DEPDIR)/libcsprof_la-csprof_options.Plo
@@ -1302,13 +1306,6 @@ libcsprof_la-last.lo: last.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='last.c' object='libcsprof_la-last.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-last.lo `test -f 'last.c' || echo '$(srcdir)/'`last.c
-
-libcsprof_la-libmonitor_upcalls.lo: libmonitor_upcalls.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-libmonitor_upcalls.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-libmonitor_upcalls.Tpo -c -o libcsprof_la-libmonitor_upcalls.lo `test -f 'libmonitor_upcalls.c' || echo '$(srcdir)/'`libmonitor_upcalls.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-libmonitor_upcalls.Tpo $(DEPDIR)/libcsprof_la-libmonitor_upcalls.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='libmonitor_upcalls.c' object='libcsprof_la-libmonitor_upcalls.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-libmonitor_upcalls.lo `test -f 'libmonitor_upcalls.c' || echo '$(srcdir)/'`libmonitor_upcalls.c
 
 libcsprof_la-metrics.lo: metrics.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-metrics.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-metrics.Tpo -c -o libcsprof_la-metrics.lo `test -f 'metrics.c' || echo '$(srcdir)/'`metrics.c
@@ -1702,6 +1699,20 @@ libcsprof_o-first_func.obj: utilities/first_func.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-first_func.obj `if test -f 'utilities/first_func.c'; then $(CYGPATH_W) 'utilities/first_func.c'; else $(CYGPATH_W) '$(srcdir)/utilities/first_func.c'; fi`
 
+libcsprof_o-main.o: main.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-main.o -MD -MP -MF $(DEPDIR)/libcsprof_o-main.Tpo -c -o libcsprof_o-main.o `test -f 'main.c' || echo '$(srcdir)/'`main.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-main.Tpo $(DEPDIR)/libcsprof_o-main.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='main.c' object='libcsprof_o-main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-main.o `test -f 'main.c' || echo '$(srcdir)/'`main.c
+
+libcsprof_o-main.obj: main.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-main.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-main.Tpo -c -o libcsprof_o-main.obj `if test -f 'main.c'; then $(CYGPATH_W) 'main.c'; else $(CYGPATH_W) '$(srcdir)/main.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-main.Tpo $(DEPDIR)/libcsprof_o-main.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='main.c' object='libcsprof_o-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-main.obj `if test -f 'main.c'; then $(CYGPATH_W) 'main.c'; else $(CYGPATH_W) '$(srcdir)/main.c'; fi`
+
 libcsprof_o-csprof_options.o: csprof_options.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-csprof_options.o -MD -MP -MF $(DEPDIR)/libcsprof_o-csprof_options.Tpo -c -o libcsprof_o-csprof_options.o `test -f 'csprof_options.c' || echo '$(srcdir)/'`csprof_options.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-csprof_options.Tpo $(DEPDIR)/libcsprof_o-csprof_options.Po
@@ -1827,20 +1838,6 @@ libcsprof_o-last.obj: last.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='last.c' object='libcsprof_o-last.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-last.obj `if test -f 'last.c'; then $(CYGPATH_W) 'last.c'; else $(CYGPATH_W) '$(srcdir)/last.c'; fi`
-
-libcsprof_o-libmonitor_upcalls.o: libmonitor_upcalls.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-libmonitor_upcalls.o -MD -MP -MF $(DEPDIR)/libcsprof_o-libmonitor_upcalls.Tpo -c -o libcsprof_o-libmonitor_upcalls.o `test -f 'libmonitor_upcalls.c' || echo '$(srcdir)/'`libmonitor_upcalls.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-libmonitor_upcalls.Tpo $(DEPDIR)/libcsprof_o-libmonitor_upcalls.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='libmonitor_upcalls.c' object='libcsprof_o-libmonitor_upcalls.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-libmonitor_upcalls.o `test -f 'libmonitor_upcalls.c' || echo '$(srcdir)/'`libmonitor_upcalls.c
-
-libcsprof_o-libmonitor_upcalls.obj: libmonitor_upcalls.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-libmonitor_upcalls.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-libmonitor_upcalls.Tpo -c -o libcsprof_o-libmonitor_upcalls.obj `if test -f 'libmonitor_upcalls.c'; then $(CYGPATH_W) 'libmonitor_upcalls.c'; else $(CYGPATH_W) '$(srcdir)/libmonitor_upcalls.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-libmonitor_upcalls.Tpo $(DEPDIR)/libcsprof_o-libmonitor_upcalls.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='libmonitor_upcalls.c' object='libcsprof_o-libmonitor_upcalls.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-libmonitor_upcalls.obj `if test -f 'libmonitor_upcalls.c'; then $(CYGPATH_W) 'libmonitor_upcalls.c'; else $(CYGPATH_W) '$(srcdir)/libmonitor_upcalls.c'; fi`
 
 libcsprof_o-metrics.o: metrics.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-metrics.o -MD -MP -MF $(DEPDIR)/libcsprof_o-metrics.Tpo -c -o libcsprof_o-metrics.o `test -f 'metrics.c' || echo '$(srcdir)/'`metrics.c
