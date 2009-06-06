@@ -41,7 +41,8 @@
 
 //*************************** Forward Declarations **************************
 
-#define LUSH_PTHR_SELF_IDLENESS 1
+#define LUSH_PTHR_SELF_IDLENESS    1  /* if 0, attrib idleness to workers */
+#define LUSH_PTHR_SYNC_SMPL_PERIOD 83 /* if !0, sample synchronously */
 
 #define LUSH_PTHR_DBG 0
 
@@ -105,14 +106,12 @@ lush_pthr__isWorking_cond(lush_pthr_t* x)
 //***************************************************************************
 
 
-#define LUSH_SYNC_SMPL_PERIOD (83)
-
 static inline void
-lush_pthr__begIdleness(lush_pthr_t* x)
+lush_pthr__begSmplIdleness(lush_pthr_t* x)
 {
-#if 1
+#if (LUSH_PTHR_SYNC_SMPL_PERIOD)
   x->doIdlenessCnt++;
-  if (x->doIdlenessCnt == LUSH_SYNC_SMPL_PERIOD) {
+  if (x->doIdlenessCnt == LUSH_PTHR_SYNC_SMPL_PERIOD) {
     uint64_t time = UINT64_MAX;
     time_getTimeReal(&time);
     x->begIdleness = time;
@@ -122,13 +121,13 @@ lush_pthr__begIdleness(lush_pthr_t* x)
 
 
 static inline void
-lush_pthr__endIdleness(lush_pthr_t* x)
+lush_pthr__endSmplIdleness(lush_pthr_t* x)
 {
-#if 1
-  if (x->doIdlenessCnt == LUSH_SYNC_SMPL_PERIOD) {
+#if (LUSH_PTHR_SYNC_SMPL_PERIOD)
+  if (x->doIdlenessCnt == LUSH_PTHR_SYNC_SMPL_PERIOD) {
     uint64_t time = 0;
     time_getTimeReal(&time);
-    x->idleness += LUSH_SYNC_SMPL_PERIOD * MAX(0, time - x->begIdleness);
+    x->idleness += LUSH_PTHR_SYNC_SMPL_PERIOD * MAX(0, time - x->begIdleness);
     x->doIdlenessCnt = 0;
   }
 #endif
@@ -136,7 +135,7 @@ lush_pthr__endIdleness(lush_pthr_t* x)
 
 
 #if 1
-#  define lush_pthr__commitIdleness(/* lush_pthr_t* */ x)	   \
+#  define lush_pthr__commitSmplIdleness(/* lush_pthr_t* */ x)	   \
   if (x->idleness > 0 && !hpcrun_async_is_blocked()) {		   \
     hpcrun_async_block();					   \
     ucontext_t context;						   \
@@ -146,14 +145,15 @@ lush_pthr__endIdleness(lush_pthr_t* x)
     hpcrun_async_unblock();						\
   }
 #elif 0
+  // noticably more overhead and won't work with PAPI
 #  include <signal.h>
 #  include <pthread.h>
-#  define lush_pthr__commitIdleness(/* lush_pthr_t* */ x)	   \
+#  define lush_pthr__commitSmplIdleness(/* lush_pthr_t* */ x)	   \
   if (x->idleness > 0) {					   \
     pthread_kill(pthread_self(), SIGPROF);			   \
   }
 #else 
-#  define lush_pthr__commitIdleness(/* lush_pthr_t* */ x)
+#  define lush_pthr__commitSmplIdleness(/* lush_pthr_t* */ x)
 #endif
 
 //***************************************************************************
@@ -212,6 +212,7 @@ lush_pthr__lock_pre(lush_pthr_t* x)
 {
 #if (LUSH_PTHR_SELF_IDLENESS)
   x->is_working = false;
+  lush_pthr__begSmplIdleness(x);
 #else
   MY_atomic_decrement(x->ps_num_working);
   // x->ps_num_working_lock: same
@@ -223,8 +224,6 @@ lush_pthr__lock_pre(lush_pthr_t* x)
   // x->cond_lock: same
 #endif
 
-  lush_pthr__begIdleness(x);
-
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "lock["); }
 }
 
@@ -233,11 +232,10 @@ lush_pthr__lock_pre(lush_pthr_t* x)
 static inline void
 lush_pthr__lock_post(lush_pthr_t* x)
 {
-  lush_pthr__endIdleness(x);
-
 #if (LUSH_PTHR_SELF_IDLENESS)
+  lush_pthr__endSmplIdleness(x);
   x->is_working = true;
-  lush_pthr__commitIdleness(x);
+  lush_pthr__commitSmplIdleness(x);
 #else
   // (1) moving to lock; (2) moving from cond to lock
   bool do_addLock = (x->num_locks == 0 || lush_pthr__isDirectlyInCond(x));
@@ -324,6 +322,7 @@ lush_pthr__condwait_pre(lush_pthr_t* x)
 {
 #if (LUSH_PTHR_SELF_IDLENESS)
   x->is_working = false;
+  lush_pthr__begSmplIdleness(x);
 #else
   bool wasDirectlyInCond = lush_pthr__isDirectlyInCond(x);
   int new_num_locks = (x->num_locks - 1);
@@ -341,8 +340,6 @@ lush_pthr__condwait_pre(lush_pthr_t* x)
   //x->cond_lock: same
 #endif
 
-  lush_pthr__begIdleness(x);
-
   if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "cwait["); }
 }
 
@@ -351,11 +348,10 @@ lush_pthr__condwait_pre(lush_pthr_t* x)
 static inline void
 lush_pthr__condwait_post(lush_pthr_t* x)
 {
-  lush_pthr__endIdleness(x);
-
 #if (LUSH_PTHR_SELF_IDLENESS)
+  lush_pthr__endSmplIdleness(x);
   x->is_working = true;
-  lush_pthr__commitIdleness(x);
+  lush_pthr__commitSmplIdleness(x);
 #else
   x->is_working = true;
   x->num_locks++;
