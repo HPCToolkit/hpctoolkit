@@ -361,8 +361,12 @@ monitor_reset_stacksize(size_t old_size)
 // thread control (via our monitoring extensions)
 //***************************************************************************
 
+// ---------------------------------------------------------
+// mutex_lock
+// ---------------------------------------------------------
+
 void
-monitor_thread_pre_lock(void)
+monitor_thread_pre_mutex_lock(pthread_mutex_t* lock)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -379,7 +383,7 @@ monitor_thread_pre_lock(void)
 
 
 void
-monitor_thread_post_lock(int result)
+monitor_thread_post_mutex_lock(pthread_mutex_t* lock, int result)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -396,7 +400,7 @@ monitor_thread_post_lock(int result)
 
 
 void
-monitor_thread_post_trylock(int result)
+monitor_thread_post_mutex_trylock(pthread_mutex_t* lock, int result)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -413,7 +417,7 @@ monitor_thread_post_trylock(int result)
 
 
 void
-monitor_thread_unlock(void)
+monitor_thread_mutex_unlock(pthread_mutex_t* lock)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -428,6 +432,82 @@ monitor_thread_unlock(void)
   // hpcrun_async_unblock();
 }
 
+
+// ---------------------------------------------------------
+// mutex_lock
+// ---------------------------------------------------------
+
+void
+monitor_thread_pre_spin_lock(pthread_spinlock_t* lock)
+{
+  if (! hpcrun_is_initialized()) {
+    return;
+  }
+  //hpcrun_async_block();
+
+  TMSG(MONITOR_EXTS, "%s", __func__);
+#ifdef LUSH_PTHREADS
+  lush_pthr__lock_pre(&TD_GET(pthr_metrics));
+#endif
+
+  //hpcrun_async_unblock();
+}
+
+
+void
+monitor_thread_post_spin_lock(pthread_spinlock_t* lock, int result)
+{
+  if (! hpcrun_is_initialized()) {
+    return;
+  }
+  //hpcrun_async_block();
+
+  TMSG(MONITOR_EXTS, "%s", __func__);
+#ifdef LUSH_PTHREADS
+  lush_pthr__lock_post(&TD_GET(pthr_metrics));
+#endif
+
+  //hpcrun_async_unblock();
+}
+
+
+void
+monitor_thread_post_spin_trylock(pthread_spinlock_t* lock, int result)
+{
+  if (! hpcrun_is_initialized()) {
+    return;
+  }
+  // hpcrun_async_block();
+
+  TMSG(MONITOR_EXTS, "%s", __func__);
+#ifdef LUSH_PTHREADS
+  lush_pthr__trylock(&TD_GET(pthr_metrics), result);
+#endif
+
+  // hpcrun_async_unblock();
+}
+
+
+void
+monitor_thread_spin_unlock(pthread_spinlock_t* lock)
+{
+  if (! hpcrun_is_initialized()) {
+    return;
+  }
+  // hpcrun_async_block();
+
+  TMSG(MONITOR_EXTS, "%s", __func__);
+#ifdef LUSH_PTHREADS
+  lush_pthr__unlock(&TD_GET(pthr_metrics));
+#endif
+
+  // hpcrun_async_unblock();
+}
+
+
+// ---------------------------------------------------------
+// cond_wait
+// ---------------------------------------------------------
 
 void
 monitor_thread_pre_cond_wait(void)

@@ -28,9 +28,9 @@ MONITOR_WRAP_NAME(pthread_spin_lock)(pthread_spinlock_t *lock)
   int ret;
 
   MONITOR_GET_NAME_WRAP(real_spin_lock, pthread_spin_lock);
-  monitor_thread_pre_lock();
+  monitor_thread_pre_spin_lock(lock);
   ret = (*real_spin_lock)(lock);
-  monitor_thread_post_lock(ret);
+  monitor_thread_post_spin_lock(lock, ret);
 
   return (ret);
 }
@@ -41,9 +41,8 @@ MONITOR_WRAP_NAME(pthread_spin_trylock)(pthread_spinlock_t *lock)
   int ret;
 
   MONITOR_GET_NAME_WRAP(real_spin_trylock, pthread_spin_trylock);
-  monitor_thread_pre_lock();
   ret = (*real_spin_trylock)(lock);
-  monitor_thread_post_trylock(ret);
+  monitor_thread_post_spin_trylock(lock, ret);
 
   return (ret);
 }
@@ -55,7 +54,7 @@ MONITOR_WRAP_NAME(pthread_spin_unlock)(pthread_spinlock_t *lock)
 
   MONITOR_GET_NAME_WRAP(real_spin_unlock, pthread_spin_unlock);
   ret = (*real_spin_unlock)(lock);
-  monitor_thread_unlock();
+  monitor_thread_spin_unlock(lock);
 
   return (ret);
 }
