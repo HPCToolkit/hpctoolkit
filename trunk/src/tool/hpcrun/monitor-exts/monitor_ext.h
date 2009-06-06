@@ -7,6 +7,8 @@
 #ifndef _MONITOR_EXT_H_
 #define _MONITOR_EXT_H_
 
+#include <pthread.h>
+
 #include "pmsg.h"
 
 
@@ -48,10 +50,16 @@
 // The extra monitor callback functions beyond monitor.h.
 //
 
-void monitor_thread_pre_lock(void);
-void monitor_thread_post_lock(int result);
-void monitor_thread_post_trylock(int result);
-void monitor_thread_unlock(void);
+void monitor_thread_pre_mutex_lock(pthread_mutex_t *lock);
+void monitor_thread_post_mutex_lock(pthread_mutex_t *lock, int result);
+void monitor_thread_post_mutex_trylock(pthread_mutex_t *lock, int result);
+void monitor_thread_mutex_unlock(pthread_mutex_t *lock);
+
+void monitor_thread_pre_spin_lock(pthread_spinlock_t *lock);
+void monitor_thread_post_spin_lock(pthread_spinlock_t *lock, int result);
+void monitor_thread_post_spin_trylock(pthread_spinlock_t *lock, int result);
+void monitor_thread_spin_unlock(pthread_spinlock_t *lock);
+
 void monitor_thread_pre_cond_wait(void);
 void monitor_thread_post_cond_wait(int result);
 
