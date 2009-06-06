@@ -9,6 +9,7 @@
 
 #include "pmsg.h"
 
+
 #ifdef HPCRUN_STATIC_LINK
 
 #define MONITOR_WRAP_NAME(name)   __wrap_ ## name
@@ -41,5 +42,18 @@
 #define MONITOR_GET_NAME_WRAP(var, name)  MONITOR_GET_DLSYM(var, name)
 
 #endif  /* MONITOR_STATIC */
+
+
+//
+// The extra monitor callback functions beyond monitor.h.
+//
+
+void monitor_thread_pre_lock(void);
+void monitor_thread_post_lock(int result);
+void monitor_thread_post_trylock(int result);
+void monitor_thread_unlock(void);
+void monitor_thread_pre_cond_wait(void);
+void monitor_thread_post_cond_wait(int result);
+
 
 #endif  /* ! _MONITOR_EXT_H_ */

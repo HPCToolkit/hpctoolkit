@@ -139,8 +139,7 @@ long static_epoch_size;
 int lush_metrics = 0; // FIXME: global variable for now
 
 
-// FIXME: tallent: We should probably rename libmonitor_upcalls.c to
-// main.c and move all of this stuff into the newly renamed file.
+// FIXME: tallent: Move this code into main.c
 
 //***************************************************************************
 // process level 

@@ -7,7 +7,6 @@
 #include <pthread.h>
 #include <stdio.h>
 
-#include "libmonitor_upcalls.h"
 #include "monitor_ext.h"
 #include "pmsg.h"
 

@@ -67,6 +67,7 @@ PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
 MY_BASE_FILES =			\
 	utilities/first_func.c		\
 	\
+	main.h main.c			\
 	csprof_options.c		\
 	csproflib.c			\
 	data.c				\
@@ -76,7 +77,6 @@ MY_BASE_FILES =			\
 	handling_sample.c		\
 	hpcrun_write_data.c		\
 	last.c				\
-	libmonitor_upcalls.c		\
 	metrics.c			\
 	name.c				\
 	sample_event.c			\
