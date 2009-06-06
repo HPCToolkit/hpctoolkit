@@ -72,6 +72,10 @@ lush_pthr_globals_t globals = {
 void 
 lush_pthreads__init()
 {
+  if (!lush_agents) {
+    csprof_abort("LUSH Pthreads monitoring requires LUSH Pthreads agent!");
+  }
+
   globals.lush_pthr_ps_num_procs   = sysconf(_SC_NPROCESSORS_ONLN);
   globals.lush_pthr_ps_num_threads = 0;
   
