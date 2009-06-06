@@ -150,7 +150,6 @@ csprof_init_internal(void)
 {
   /* private memory store for the initial thread is done below */
 
-  lush_pthreads__init();
   csprof_thread_data_init(0,CSPROF_MEM_SZ_DEFAULT,0);
 
   /* epoch poking needs the memory manager init'd() (and
@@ -183,7 +182,8 @@ csprof_init_internal(void)
   }
 
   lush_metrics = (lush_agents) ? 1 : 0;
-  
+  lush_pthreads__init();
+
 
   sigemptyset(&prof_sigset);
   sigaddset(&prof_sigset,SIGPROF);
