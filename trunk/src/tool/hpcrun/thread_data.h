@@ -43,7 +43,7 @@ typedef struct _td_t {
   FILE*           trace_file;
   uint64_t        last_time_us; // microseconds
 
-  lush_pthr_t     pthr_metrics;
+  lushPthr_t      pthr_metrics;
 } thread_data_t;
 
 #define TD_GET(field) csprof_get_thread_data()->field

@@ -44,24 +44,24 @@
 
 typedef struct {
   
-  long lush_pthr_ps_num_procs        GCC_ATTR_VAR_CACHE_ALIGN;
-  long lush_pthr_ps_num_threads;
+  long lushPthr_ps_num_procs        GCC_ATTR_VAR_CACHE_ALIGN;
+  long lushPthr_ps_num_threads;
 
-  long lush_pthr_ps_num_working      GCC_ATTR_VAR_CACHE_ALIGN;
+  long lushPthr_ps_num_working      GCC_ATTR_VAR_CACHE_ALIGN;
 
-  long lush_pthr_ps_num_working_lock GCC_ATTR_VAR_CACHE_ALIGN;
+  long lushPthr_ps_num_working_lock GCC_ATTR_VAR_CACHE_ALIGN;
   
-  long lush_pthr_ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
+  long lushPthr_ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
   
-} lush_pthr_globals_t;
+} lushPthr_globals_t;
 
 
-lush_pthr_globals_t globals = {
-  .lush_pthr_ps_num_procs = 0,
-  .lush_pthr_ps_num_threads = 0,
-  .lush_pthr_ps_num_working = 0,
-  .lush_pthr_ps_num_working_lock = 0,
-  .lush_pthr_ps_num_idle_cond = 0
+lushPthr_globals_t globals = {
+  .lushPthr_ps_num_procs = 0,
+  .lushPthr_ps_num_threads = 0,
+  .lushPthr_ps_num_working = 0,
+  .lushPthr_ps_num_working_lock = 0,
+  .lushPthr_ps_num_idle_cond = 0
 };
 
 
@@ -76,20 +76,20 @@ lush_pthreads__init()
     csprof_abort("LUSH Pthreads monitoring requires LUSH Pthreads agent!");
   }
 
-  globals.lush_pthr_ps_num_procs   = sysconf(_SC_NPROCESSORS_ONLN);
-  globals.lush_pthr_ps_num_threads = 0;
+  globals.lushPthr_ps_num_procs   = sysconf(_SC_NPROCESSORS_ONLN);
+  globals.lushPthr_ps_num_threads = 0;
   
-  globals.lush_pthr_ps_num_working      = 0;
-  globals.lush_pthr_ps_num_working_lock = 0;
+  globals.lushPthr_ps_num_working      = 0;
+  globals.lushPthr_ps_num_working_lock = 0;
 
-  globals.lush_pthr_ps_num_idle_cond    = 0;
+  globals.lushPthr_ps_num_idle_cond    = 0;
 }
 
 
 // **************************************************************************
 
 void 
-lush_pthr__init(lush_pthr_t* x)
+lushPthr_init(lushPthr_t* x)
 {
   x->is_working = false;
   x->num_locks  = 0;
@@ -99,18 +99,18 @@ lush_pthr__init(lush_pthr_t* x)
   x->begIdleness = 0;
   x->idleness    = 0;
   
-  x->ps_num_procs   = &globals.lush_pthr_ps_num_procs;
-  x->ps_num_threads = &globals.lush_pthr_ps_num_threads;
+  x->ps_num_procs   = &globals.lushPthr_ps_num_procs;
+  x->ps_num_threads = &globals.lushPthr_ps_num_threads;
 
-  x->ps_num_working      = &globals.lush_pthr_ps_num_working;
-  x->ps_num_working_lock = &globals.lush_pthr_ps_num_working_lock;
+  x->ps_num_working      = &globals.lushPthr_ps_num_working;
+  x->ps_num_working_lock = &globals.lushPthr_ps_num_working_lock;
   
-  x->ps_num_idle_cond = &globals.lush_pthr_ps_num_idle_cond;
+  x->ps_num_idle_cond = &globals.lushPthr_ps_num_idle_cond;
 }
 
 
 void 
-lush_pthr__dump(lush_pthr_t* x, const char* nm)
+lushPthr_dump(lushPthr_t* x, const char* nm)
 {
   EMSG("lush_pthr(%s):\t is_wrking %d, num_lck %d, cnd_lck %d | "
        "# wrking %ld, wrking_lck %ld, idle_cnd %ld | "

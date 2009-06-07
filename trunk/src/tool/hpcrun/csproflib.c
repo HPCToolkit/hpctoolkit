@@ -294,7 +294,7 @@ csprof_thread_fini(csprof_state_t *state)
   if (hpcrun_is_initialized()) {
     TMSG(FINI,"thread finit stops sampling");
     SAMPLE_SOURCES(stop);
-    lush_pthr__thread_fini(&TD_GET(pthr_metrics));
+    lushPthr_thread_fini(&TD_GET(pthr_metrics));
     hpcrun_finalize_current_epoch();
 #if defined(HOST_SYSTEM_IBM_BLUEGENE)
     EMSG("Backtrace for last sample event:\n");

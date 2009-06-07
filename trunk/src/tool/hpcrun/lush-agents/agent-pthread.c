@@ -184,19 +184,19 @@ LUSHI_do_metric(uint64_t incrMetricIn,
 		bool* doMetric, bool* doMetricIdleness, 
 		uint64_t* incrMetric, double* incrMetricIdleness)
 {
-  lush_pthr_t* pthr = &TD_GET(pthr_metrics);
+  lushPthr_t* pthr = &TD_GET(pthr_metrics);
   bool isWorking = pthr->is_working;
 
   if (isWorking) {
-#if (LUSH_PTHR_SELF_IDLENESS)
+#if (LUSH_PTHR_FN_TY == 1) // attribute to self self
     // NOTE: pthr->idleness is only changed when this thread is not working
     *doMetric = true;
     *doMetricIdleness = (pthr->idleness > 0);
     *incrMetric = incrMetricIn;
     *incrMetricIdleness = pthr->idleness;
     pthr->idleness = 0;
-#else
-    bool is_working_lock = lush_pthr__isWorking_lock(pthr);
+#elif (LUSH_PTHR_FN_TY == 2)
+    bool is_working_lock = lushPthr_isWorking_lock(pthr);
     
     double num_working      = *(pthr->ps_num_working);
     double num_working_lock = *(pthr->ps_num_working_lock);
@@ -231,19 +231,23 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     *doMetricIdleness = true;
     *incrMetric = incrMetricIn;
     *incrMetricIdleness = (double)incrMetricIn * idleness;
+#else
+#  error "agent-pthread.c!"
 #endif
   }
   else {
-#if (LUSH_PTHR_SELF_IDLENESS)
+#if (LUSH_PTHR_FN_TY == 1)
     *doMetric = true;
     *doMetricIdleness = true;
     *incrMetric = 0;
     *incrMetricIdleness = (double)incrMetricIn;
-#else
+#elif (LUSH_PTHR_FN_TY == 2)
     *doMetric = false;
     *doMetricIdleness = false;
     //*incrMetric = 0;
     //*incrMetricIdleness = 0.0;
+#else
+#  error "agent-pthread.c!"
 #endif
   }
   return *doMetric;
