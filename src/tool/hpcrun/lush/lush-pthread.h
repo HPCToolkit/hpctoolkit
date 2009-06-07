@@ -41,8 +41,7 @@
 
 //*************************** Forward Declarations **************************
 
-#define LUSH_PTHR_SELF_IDLENESS    1  /* if 0, attrib idleness to workers */
-#define LUSH_PTHR_SYNC_SMPL_PERIOD 83 /* if !0, sample synchronously */
+#define LUSH_PTHR_FN_TY 1
 
 #define LUSH_PTHR_DBG 0
 
@@ -70,44 +69,27 @@ extern "C" {
 void 
 lush_pthreads__init();
 
+void
+lushPthr_init(lushPthr_t* x);
+
+void
+lushPthr_dump(lushPthr_t* x, const char* nm);
+
+
+#define LUSH_PTHR_FN_REAL0(FN, TY) FN ## _ty ## TY
+#define LUSH_PTHR_FN_REAL1(FN, TY) LUSH_PTHR_FN_REAL0(FN, TY)
+#define LUSH_PTHR_FN(FN)           LUSH_PTHR_FN_REAL1(FN, LUSH_PTHR_FN_TY)
 
 //***************************************************************************
-
-void 
-lush_pthr__init(lush_pthr_t* x);
-
-void 
-lush_pthr__dump(lush_pthr_t* x, const char* nm);
-
-
+// 1. Attribute a thread's idleness to itself (1st person)
 //***************************************************************************
 
-static inline bool
-lush_pthr__isDirectlyInCond(lush_pthr_t* x)
-{
-  return (x->cond_lock != 0 && x->cond_lock == x->num_locks);
-}
+#define LUSH_PTHR_SELF_IDLENESS    1  /* if 0, attrib idleness to workers */
 
-
-static inline bool
-lush_pthr__isWorking_lock(lush_pthr_t* x)
-{
-  return (x->is_working && x->num_locks > 0 && !lush_pthr__isDirectlyInCond(x));
-}
-
-
-static inline bool
-lush_pthr__isWorking_cond(lush_pthr_t* x)
-{
-  return (x->is_working && lush_pthr__isDirectlyInCond(x));
-}
-
-
-//***************************************************************************
-
+#define LUSH_PTHR_SYNC_SMPL_PERIOD 83 /* if !0, sample synchronously */
 
 static inline void
-lush_pthr__begSmplIdleness(lush_pthr_t* x)
+lushPthr_begSmplIdleness(lushPthr_t* x)
 {
 #if (LUSH_PTHR_SYNC_SMPL_PERIOD)
   x->doIdlenessCnt++;
@@ -121,7 +103,7 @@ lush_pthr__begSmplIdleness(lush_pthr_t* x)
 
 
 static inline void
-lush_pthr__endSmplIdleness(lush_pthr_t* x)
+lushPthr_endSmplIdleness(lushPthr_t* x)
 {
 #if (LUSH_PTHR_SYNC_SMPL_PERIOD)
   if (x->doIdlenessCnt == LUSH_PTHR_SYNC_SMPL_PERIOD) {
@@ -134,37 +116,144 @@ lush_pthr__endSmplIdleness(lush_pthr_t* x)
 }
 
 
+static inline void
+lushPthr_sampleIdleness(uint64_t idlenessIncr)
+{
 #if 1
-#  define lush_pthr__commitSmplIdleness(/* lush_pthr_t* */ x)	   \
-  if (x->idleness > 0 && !hpcrun_async_is_blocked()) {		   \
-    hpcrun_async_block();					   \
-    ucontext_t context;						   \
-    getcontext(&context); /* FIXME: check for errors */		   \
-    hpcrun_sample_callpath(&context, lush_agents->metric_time,		  \
-			   0/*metricIncr*/, 0/*skipInner*/, 1/*isSync*/); \
-    hpcrun_async_unblock();						\
+  if (!hpcrun_async_is_blocked()) {
+    hpcrun_async_block();
+    ucontext_t context;
+    getcontext(&context); /* FIXME: check for errors */
+    hpcrun_sample_callpath(&context, lush_agents->metric_time,
+			   0/*metricIncr*/, 0/*skipInner*/, 1/*isSync*/);
+    hpcrun_async_unblock();
   }
-#elif 0
+#endif
+
+#if 0
   // noticably more overhead and won't work with PAPI
 #  include <signal.h>
 #  include <pthread.h>
-#  define lush_pthr__commitSmplIdleness(/* lush_pthr_t* */ x)	   \
-  if (x->idleness > 0) {					   \
-    pthread_kill(pthread_self(), SIGPROF);			   \
-  }
-#else 
-#  define lush_pthr__commitSmplIdleness(/* lush_pthr_t* */ x)
+  pthread_kill(pthread_self(), SIGPROF);
 #endif
+}
+
 
 //***************************************************************************
 
-// create (thread): 
 static inline void
-lush_pthr__thread_init(lush_pthr_t* x)
+lushPthr_thread_init_ty1(lushPthr_t* x)
 {
-#if (LUSH_PTHR_SELF_IDLENESS)
   x->is_working = true;
-#else
+}
+
+
+static inline void
+lushPthr_thread_fini_ty1(lushPthr_t* x)
+{
+  x->is_working = false;
+}
+
+
+static inline void
+lushPthr_lock_pre_ty1(lushPthr_t* x)
+{
+  x->is_working = false;
+  lushPthr_begSmplIdleness(x);
+}
+
+
+static inline void
+lushPthr_lock_post_ty1(lushPthr_t* x)
+{
+  lushPthr_endSmplIdleness(x);
+  x->is_working = true;
+  if (x->idleness > 0) {
+    lushPthr_sampleIdleness(x->idleness);
+  }
+}
+
+
+static inline void
+lushPthr_trylock_ty1(lushPthr_t* x)
+{
+  x->is_working = true; // same
+}
+
+
+static inline void
+lushPthr_unlock_ty1(lushPthr_t* x)
+{
+  x->is_working = true; // same
+}
+
+
+static inline void
+lushPthr_condwait_pre_ty1(lushPthr_t* x)
+{
+  x->is_working = false;
+  lushPthr_begSmplIdleness(x);
+}
+
+
+static inline void
+lushPthr_condwait_post_ty1(lushPthr_t* x)
+{
+  lushPthr_endSmplIdleness(x);
+  x->is_working = true;
+  if (x->idleness > 0) {
+    lushPthr_sampleIdleness(x->idleness);
+  }
+}
+
+
+//***************************************************************************
+// 2. Attribute idleness to working threads (3rd person)
+//***************************************************************************
+
+// Working threads are in one of three states
+//   (1)  locked && ~directly_in_cond
+//   (2)  locked &&  directly_in_cond
+//   (3) ~locked
+//
+//   NOTE: A thread in state (2) could additionally grab a lock
+//   unrelated to the cond-var, moving to state (1) until the second
+//   lock is released.
+//
+// Idle threads are in one of three state (mutually exclusive):
+//   [1]  blocked on a lock
+//   [2a] blocked on a cond-var lock
+//   [2b] blocked on a cond-var signal
+//   [--] none of the above, but blocking on the scheduler (not
+// 	  interesting, assuming all cores are utilized)
+//
+//   NOTE: A thread blocking in state [1] could be working within a cond (2).
+
+static inline bool
+lushPthr_isDirectlyInCond(lushPthr_t* x)
+{
+  return (x->cond_lock != 0 && x->cond_lock == x->num_locks);
+}
+
+
+static inline bool
+lushPthr_isWorking_lock(lushPthr_t* x)
+{
+  return (x->is_working && x->num_locks > 0 && !lushPthr_isDirectlyInCond(x));
+}
+
+
+static inline bool
+lushPthr_isWorking_cond(lushPthr_t* x)
+{
+  return (x->is_working && lushPthr_isDirectlyInCond(x));
+}
+
+//***************************************************************************
+
+static inline void
+lushPthr_thread_init_ty2(lushPthr_t* x)
+{
   x->is_working = true;
   x->num_locks  = 0;
   x->cond_lock  = 0;
@@ -175,19 +264,12 @@ lush_pthr__thread_init(lush_pthr_t* x)
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
-#endif
-
-  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "t_init"); }
 }
 
 
-// destroy (thread): 
 static inline void
-lush_pthr__thread_fini(lush_pthr_t* x)
+lushPthr_thread_fini_ty2(lushPthr_t* x)
 {
-#if (LUSH_PTHR_SELF_IDLENESS)
-  x->is_working = false;
-#else
   x->is_working = false;
   x->num_locks  = 0;
   x->cond_lock  = 0;
@@ -198,22 +280,12 @@ lush_pthr__thread_fini(lush_pthr_t* x)
   // x->ps_num_working_lock: same
 
   // x->ps_num_idle_cond: same
-#endif
-
-  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "t_fini"); }
 }
 
 
-//***************************************************************************
-
-// lock_pre: thread blocks
 static inline void
-lush_pthr__lock_pre(lush_pthr_t* x)
+lushPthr_lock_pre_ty2(lushPthr_t* x)
 {
-#if (LUSH_PTHR_SELF_IDLENESS)
-  x->is_working = false;
-  lush_pthr__begSmplIdleness(x);
-#else
   MY_atomic_decrement(x->ps_num_working);
   // x->ps_num_working_lock: same
 
@@ -222,23 +294,14 @@ lush_pthr__lock_pre(lush_pthr_t* x)
   x->is_working = false;
   // x->num_locks: same
   // x->cond_lock: same
-#endif
-
-  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "lock["); }
 }
 
 
-// lock_post: thread acquires lock and continues
 static inline void
-lush_pthr__lock_post(lush_pthr_t* x)
+lushPthr_lock_post_ty2(lushPthr_t* x)
 {
-#if (LUSH_PTHR_SELF_IDLENESS)
-  lush_pthr__endSmplIdleness(x);
-  x->is_working = true;
-  lush_pthr__commitSmplIdleness(x);
-#else
   // (1) moving to lock; (2) moving from cond to lock
-  bool do_addLock = (x->num_locks == 0 || lush_pthr__isDirectlyInCond(x));
+  bool do_addLock = (x->num_locks == 0 || lushPthr_isDirectlyInCond(x));
 
   x->is_working = true;
   x->num_locks++;
@@ -250,25 +313,14 @@ lush_pthr__lock_post(lush_pthr_t* x)
   }
 
   // x->ps_num_idle_cond: same
-#endif
-
-  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "lock]"); }
 }
 
 
-// trylock: thread may acquire lock, but always continues (never blocks)
 static inline void
-lush_pthr__trylock(lush_pthr_t* x, int result)
+lushPthr_trylock_ty2(lushPthr_t* x)
 {
-  if (result != 0) {
-    return; // lock was not acquired -- state remains the same
-  }
-
-#if (LUSH_PTHR_SELF_IDLENESS)
-  x->is_working = true; // same
-#else
   // (1) moving to lock; (2) moving from cond to lock
-  bool do_addLock = (x->num_locks == 0 || lush_pthr__isDirectlyInCond(x));
+  bool do_addLock = (x->num_locks == 0 || lushPthr_isDirectlyInCond(x));
 
   x->is_working = true; // same
   x->num_locks++;
@@ -280,20 +332,13 @@ lush_pthr__trylock(lush_pthr_t* x, int result)
   }
 
   // x->ps_num_idle_cond: same
-#endif
-
-  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "trylock"); }
 }
 
 
-// unlock: thread releases lock and continues
 static inline void
-lush_pthr__unlock(lush_pthr_t* x)
+lushPthr_unlock_ty2(lushPthr_t* x)
 {
-#if (LUSH_PTHR_SELF_IDLENESS)
-  x->is_working = true; // same
-#else
-  bool wasDirectlyInCond = lush_pthr__isDirectlyInCond(x);
+  bool wasDirectlyInCond = lushPthr_isDirectlyInCond(x);
 
   x->is_working = true; // same
   x->num_locks--;
@@ -303,28 +348,18 @@ lush_pthr__unlock(lush_pthr_t* x)
   
   // x->ps_num_working: same
   if ((x->num_locks == 0 && !wasDirectlyInCond) 
-      || lush_pthr__isDirectlyInCond(x)) {
+      || lushPthr_isDirectlyInCond(x)) {
     MY_atomic_decrement(x->ps_num_working_lock);
   }
 
   // x->ps_num_idle_cond: same
-#endif
-
-  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "unlock"); }
 }
 
 
-//***************************************************************************
-
-// condwait_pre: associated lock is released and thread blocks
 static inline void
-lush_pthr__condwait_pre(lush_pthr_t* x)
+lushPthr_condwait_pre_ty2(lushPthr_t* x)
 {
-#if (LUSH_PTHR_SELF_IDLENESS)
-  x->is_working = false;
-  lush_pthr__begSmplIdleness(x);
-#else
-  bool wasDirectlyInCond = lush_pthr__isDirectlyInCond(x);
+  bool wasDirectlyInCond = lushPthr_isDirectlyInCond(x);
   int new_num_locks = (x->num_locks - 1);
   
   // N.B. this order ensures that (num_working - num_working_lock) >= 0
@@ -338,21 +373,12 @@ lush_pthr__condwait_pre(lush_pthr_t* x)
   x->is_working = false;
   x->num_locks = new_num_locks;
   //x->cond_lock: same
-#endif
-
-  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "cwait["); }
 }
 
 
-// condwait_post: associated lock is acquired and thread continues
 static inline void
-lush_pthr__condwait_post(lush_pthr_t* x)
+lushPthr_condwait_post_ty2(lushPthr_t* x)
 {
-#if (LUSH_PTHR_SELF_IDLENESS)
-  lush_pthr__endSmplIdleness(x);
-  x->is_working = true;
-  lush_pthr__commitSmplIdleness(x);
-#else
   x->is_working = true;
   x->num_locks++;
   x->cond_lock = x->num_locks;
@@ -361,9 +387,108 @@ lush_pthr__condwait_post(lush_pthr_t* x)
   // x->ps_num_working_lock: same, b/c thread is part of 'num_working_cond'
 
   MY_atomic_decrement(x->ps_num_idle_cond);
-#endif
+}
 
-  if (LUSH_PTHR_DBG) { lush_pthr__dump(x, "cwait]"); }
+//***************************************************************************
+// 3. Attribute lock-wait time to the working thread.  
+//***************************************************************************
+
+// TODO type 1: spin locks do not need to use gettimeofday.
+
+// TODO type 3: attribute lock-wait time to the lock in question; then
+// when the working thread unlock, it attributes that idleness to
+// itself.  Do not have to maintain coutners, etc.
+//   
+// Cf. notes in proposal
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+// create (thread): 
+static inline void
+lushPthr_thread_init(lushPthr_t* x)
+{
+  LUSH_PTHR_FN(lushPthr_thread_init)(x);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "t_init"); }
+}
+
+
+// destroy (thread): 
+static inline void
+lushPthr_thread_fini(lushPthr_t* x)
+{
+  LUSH_PTHR_FN(lushPthr_thread_fini)(x);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "t_fini"); }
+}
+
+
+// lock_pre: thread blocks/sleeps
+static inline void
+lushPthr_lock_pre(lushPthr_t* x)
+{
+  LUSH_PTHR_FN(lushPthr_lock_pre)(x);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "lock["); }
+}
+
+
+// lock_post: thread acquires lock and continues
+static inline void
+lushPthr_lock_post(lushPthr_t* x)
+{
+  LUSH_PTHR_FN(lushPthr_lock_post)(x);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "lock]"); }
+}
+
+
+// trylock: thread may acquire lock, but always continues (never blocks)
+static inline void
+lushPthr_trylock(lushPthr_t* x, int result)
+{
+  if (result != 0) {
+    return; // lock was not acquired -- state remains the same
+  }
+
+  LUSH_PTHR_FN(lushPthr_trylock)(x);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "trylock"); }
+}
+
+
+// unlock: thread releases lock and continues
+static inline void
+lushPthr_unlock(lushPthr_t* x)
+{
+  LUSH_PTHR_FN(lushPthr_unlock)(x);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "unlock"); }
+}
+
+
+//***************************************************************************
+
+// condwait_pre: associated lock is released and thread blocks
+static inline void
+lushPthr_condwait_pre(lushPthr_t* x)
+{
+  LUSH_PTHR_FN(lushPthr_condwait_pre)(x);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "cwait["); }
+}
+
+
+// condwait_post: associated lock is acquired and thread continues
+static inline void
+lushPthr_condwait_post(lushPthr_t* x)
+{
+  LUSH_PTHR_FN(lushPthr_condwait_post)(x);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "cwait]"); }
 }
 
 

@@ -375,7 +375,7 @@ monitor_thread_pre_mutex_lock(pthread_mutex_t* lock)
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
-  lush_pthr__lock_pre(&TD_GET(pthr_metrics));
+  lushPthr_lock_pre(&TD_GET(pthr_metrics));
 #endif
 
   //hpcrun_async_unblock();
@@ -392,7 +392,7 @@ monitor_thread_post_mutex_lock(pthread_mutex_t* lock, int result)
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
-  lush_pthr__lock_post(&TD_GET(pthr_metrics));
+  lushPthr_lock_post(&TD_GET(pthr_metrics));
 #endif
 
   //hpcrun_async_unblock();
@@ -409,7 +409,7 @@ monitor_thread_post_mutex_trylock(pthread_mutex_t* lock, int result)
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
-  lush_pthr__trylock(&TD_GET(pthr_metrics), result);
+  lushPthr_trylock(&TD_GET(pthr_metrics), result);
 #endif
 
   // hpcrun_async_unblock();
@@ -426,7 +426,7 @@ monitor_thread_mutex_unlock(pthread_mutex_t* lock)
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
-  lush_pthr__unlock(&TD_GET(pthr_metrics));
+  lushPthr_unlock(&TD_GET(pthr_metrics));
 #endif
 
   // hpcrun_async_unblock();
@@ -447,7 +447,7 @@ monitor_thread_pre_spin_lock(pthread_spinlock_t* lock)
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
-  lush_pthr__lock_pre(&TD_GET(pthr_metrics));
+  lushPthr_lock_pre(&TD_GET(pthr_metrics));
 #endif
 
   //hpcrun_async_unblock();
@@ -464,7 +464,7 @@ monitor_thread_post_spin_lock(pthread_spinlock_t* lock, int result)
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
-  lush_pthr__lock_post(&TD_GET(pthr_metrics));
+  lushPthr_lock_post(&TD_GET(pthr_metrics));
 #endif
 
   //hpcrun_async_unblock();
@@ -481,7 +481,7 @@ monitor_thread_post_spin_trylock(pthread_spinlock_t* lock, int result)
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
-  lush_pthr__trylock(&TD_GET(pthr_metrics), result);
+  lushPthr_trylock(&TD_GET(pthr_metrics), result);
 #endif
 
   // hpcrun_async_unblock();
@@ -498,7 +498,7 @@ monitor_thread_spin_unlock(pthread_spinlock_t* lock)
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
-  lush_pthr__unlock(&TD_GET(pthr_metrics));
+  lushPthr_unlock(&TD_GET(pthr_metrics));
 #endif
 
   // hpcrun_async_unblock();
@@ -519,7 +519,7 @@ monitor_thread_pre_cond_wait(void)
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
-  lush_pthr__condwait_pre(&TD_GET(pthr_metrics));
+  lushPthr_condwait_pre(&TD_GET(pthr_metrics));
 #endif
 
   // hpcrun_async_unblock();
@@ -536,7 +536,7 @@ monitor_thread_post_cond_wait(int result)
 
   TMSG(MONITOR_EXTS, "%s", __func__);
 #ifdef LUSH_PTHREADS
-  lush_pthr__condwait_post(&TD_GET(pthr_metrics));
+  lushPthr_condwait_post(&TD_GET(pthr_metrics));
 #endif
 
   //hpcrun_async_unblock();

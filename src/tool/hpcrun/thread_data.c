@@ -81,8 +81,8 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
   td->trace_file                  = NULL;
   td->last_time_us                = 0;
 
-  lush_pthr__init(&td->pthr_metrics);
-  lush_pthr__thread_init(&td->pthr_metrics);
+  lushPthr_init(&td->pthr_metrics);
+  lushPthr_thread_init(&td->pthr_metrics);
 
   memset(&td->bad_unwind, 0, sizeof(td->bad_unwind));
   memset(&td->mem_error, 0, sizeof(td->mem_error));
