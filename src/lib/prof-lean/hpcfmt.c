@@ -67,6 +67,45 @@
 
 //***************************************************************************
 
+#include "hpcio.h"
+
+int
+hpcfmt_byte4_fwrite(uint32_t val, FILE *out)
+{
+  if ( sizeof(uint32_t) != hpcio_fwrite_le4(&val, out) ) {
+    return HPCFILE_ERR;
+  }
+  return HPCFILE_OK;
+}
+
+int
+hpcfmt_byte4_fread(uint32_t *val, FILE *in)
+{
+  if ( sizeof(uint32_t) != hpcio_fread_le4(val, in) ) {
+    return HPCFILE_ERR;
+  }
+  return HPCFILE_OK;
+}
+
+int
+hpcfmt_byte8_fwrite(uint64_t val, FILE *out)
+{
+  if ( sizeof(uint64_t) != hpcio_fwrite_le8(&val, out) ) {
+    return HPCFILE_ERR;
+  }
+  return HPCFILE_OK;
+}
+
+int
+hpcfmt_byte8_fread(uint64_t *val, FILE *in)
+{
+  if ( sizeof(uint64_t) != hpcio_fread_le8(val, in) ) {
+    return HPCFILE_ERR;
+  }
+  return HPCFILE_OK;
+}
+
+#if defined(OLD_STR)
 int 
 hpcfile_str__init(hpcfile_str_t* x)
 {
@@ -133,6 +172,7 @@ hpcfile_str__fprint(hpcfile_str_t* x, FILE* fs)
 
   return HPCFILE_OK;
 }
+#endif // defined(OLD_STR)
 
 //***************************************************************************
 
@@ -280,7 +320,7 @@ hpcfmt_fstr_fread(char **str, FILE *infs, alloc_fn alloc)
   uint32_t len;
   char *buf = *str;
 
-  hpcio_fread_le4(&len, infs); // FIXME-MWF Check err from read
+  hpcfmt_byte4_fread(&len, infs); // FIXME-MWF Check err from read
   if (alloc) {
     buf = (char *) alloc(len+1);
     *str = buf;
@@ -304,7 +344,7 @@ hpcfmt_fstr_fwrite(char *str, FILE *outfs)
 {
   uint32_t len = strlen(str);
 
-  hpcio_fwrite_le4(&len, outfs);
+  hpcfmt_byte4_fwrite(len, outfs);
   
   for(int i=0; i < len; i++){
     int c = fputc(*(str++), outfs);

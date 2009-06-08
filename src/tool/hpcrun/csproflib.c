@@ -93,7 +93,7 @@
 #include "epoch.h"
 #include "metrics.h"
 #include "trace.h"
-#include "hpcrun_write_data.h"
+#include "write_data.h"
 
 #include "csprof_options.h"
 
