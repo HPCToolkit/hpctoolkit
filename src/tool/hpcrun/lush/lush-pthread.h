@@ -156,7 +156,7 @@ lushPthr_thread_fini_ty1(lushPthr_t* x)
 
 
 static inline void
-lushPthr_lock_pre_ty1(lushPthr_t* x)
+lushPthr_mutexLock_pre_ty1(lushPthr_t* x, pthread_mutex_t* lock)
 {
   x->is_working = false;
   lushPthr_begSmplIdleness(x);
@@ -164,7 +164,7 @@ lushPthr_lock_pre_ty1(lushPthr_t* x)
 
 
 static inline void
-lushPthr_lock_post_ty1(lushPthr_t* x)
+lushPthr_mutexLock_post_ty1(lushPthr_t* x, pthread_mutex_t* lock)
 {
   lushPthr_endSmplIdleness(x);
   x->is_working = true;
@@ -175,14 +175,47 @@ lushPthr_lock_post_ty1(lushPthr_t* x)
 
 
 static inline void
-lushPthr_trylock_ty1(lushPthr_t* x)
+lushPthr_mutexTrylock_ty1(lushPthr_t* x, pthread_mutex_t* lock)
 {
   x->is_working = true; // same
 }
 
 
 static inline void
-lushPthr_unlock_ty1(lushPthr_t* x)
+lushPthr_mutexUnlock_ty1(lushPthr_t* x, pthread_mutex_t* lock)
+{
+  x->is_working = true; // same
+}
+
+
+static inline void
+lushPthr_spinLock_pre_ty1(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  x->is_working = false;
+  lushPthr_begSmplIdleness(x);
+}
+
+
+static inline void
+lushPthr_spinLock_post_ty1(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  lushPthr_endSmplIdleness(x);
+  x->is_working = true;
+  if (x->idleness > 0) {
+    lushPthr_sampleIdleness(x->idleness);
+  }
+}
+
+
+static inline void
+lushPthr_spinTrylock_ty1(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  x->is_working = true; // same
+}
+
+
+static inline void
+lushPthr_spinUnlock_ty1(lushPthr_t* x, pthread_spinlock_t* lock)
 {
   x->is_working = true; // same
 }
@@ -357,6 +390,62 @@ lushPthr_unlock_ty2(lushPthr_t* x)
 
 
 static inline void
+lushPthr_mutexLock_pre_ty2(lushPthr_t* x, pthread_mutex_t* lock)
+{
+  lushPthr_lock_pre_ty2(x);
+}
+
+
+static inline void
+lushPthr_mutexLock_post_ty2(lushPthr_t* x, pthread_mutex_t* lock)
+{
+  lushPthr_lock_post_ty2(x);
+}
+
+
+static inline void
+lushPthr_mutexTrylock_ty2(lushPthr_t* x, pthread_mutex_t* lock)
+{
+  lushPthr_trylock_ty2(x);
+}
+
+
+static inline void
+lushPthr_mutexUnlock_ty2(lushPthr_t* x, pthread_mutex_t* lock)
+{
+  lushPthr_unlock_ty2(x);
+}
+
+
+static inline void
+lushPthr_spinLock_pre_ty2(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  lushPthr_lock_pre_ty2(x);
+}
+
+
+static inline void
+lushPthr_spinLock_post_ty2(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  lushPthr_lock_post_ty2(x);
+}
+
+
+static inline void
+lushPthr_spinTrylock_ty2(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  lushPthr_trylock_ty2(x);
+}
+
+
+static inline void
+lushPthr_spinUnlock_ty2(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  lushPthr_unlock_ty2(x);
+}
+
+
+static inline void
 lushPthr_condwait_pre_ty2(lushPthr_t* x)
 {
   bool wasDirectlyInCond = lushPthr_isDirectlyInCond(x);
@@ -388,6 +477,7 @@ lushPthr_condwait_post_ty2(lushPthr_t* x)
 
   MY_atomic_decrement(x->ps_num_idle_cond);
 }
+
 
 //***************************************************************************
 // 3. Attribute lock-wait time to the working thread.  
@@ -426,51 +516,105 @@ lushPthr_thread_fini(lushPthr_t* x)
 }
 
 
+// ---------------------------------------------------------
+// mutex_lock
+// ---------------------------------------------------------
+
 // lock_pre: thread blocks/sleeps
 static inline void
-lushPthr_lock_pre(lushPthr_t* x)
+lushPthr_mutexLock_pre(lushPthr_t* x, pthread_mutex_t* lock)
 {
-  LUSH_PTHR_FN(lushPthr_lock_pre)(x);
+  LUSH_PTHR_FN(lushPthr_mutexLock_pre)(x, lock);
 
-  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "lock["); }
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "mLock["); }
 }
 
 
 // lock_post: thread acquires lock and continues
 static inline void
-lushPthr_lock_post(lushPthr_t* x)
+lushPthr_mutexLock_post(lushPthr_t* x, pthread_mutex_t* lock)
 {
-  LUSH_PTHR_FN(lushPthr_lock_post)(x);
+  LUSH_PTHR_FN(lushPthr_mutexLock_post)(x, lock);
 
-  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "lock]"); }
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "mLock]"); }
 }
 
 
 // trylock: thread may acquire lock, but always continues (never blocks)
 static inline void
-lushPthr_trylock(lushPthr_t* x, int result)
+lushPthr_mutexTrylock(lushPthr_t* x, pthread_mutex_t* lock, int result)
 {
   if (result != 0) {
     return; // lock was not acquired -- state remains the same
   }
 
-  LUSH_PTHR_FN(lushPthr_trylock)(x);
+  LUSH_PTHR_FN(lushPthr_mutexTrylock)(x, lock);
 
-  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "trylock"); }
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "mTrylock"); }
 }
 
 
 // unlock: thread releases lock and continues
 static inline void
-lushPthr_unlock(lushPthr_t* x)
+lushPthr_mutexUnlock(lushPthr_t* x, pthread_mutex_t* lock)
 {
-  LUSH_PTHR_FN(lushPthr_unlock)(x);
+  LUSH_PTHR_FN(lushPthr_mutexUnlock)(x, lock);
 
-  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "unlock"); }
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "mUnlock"); }
 }
 
 
-//***************************************************************************
+// ---------------------------------------------------------
+// spin_wait
+// ---------------------------------------------------------
+
+// lock_pre: thread blocks/sleeps
+static inline void
+lushPthr_spinLock_pre(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  LUSH_PTHR_FN(lushPthr_spinLock_pre)(x, lock);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sLock["); }
+}
+
+
+// lock_post: thread acquires lock and continues
+static inline void
+lushPthr_spinLock_post(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  LUSH_PTHR_FN(lushPthr_spinLock_post)(x, lock);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sLock]"); }
+}
+
+
+// trylock: thread may acquire lock, but always continues (never blocks)
+static inline void
+lushPthr_spinTrylock(lushPthr_t* x, pthread_spinlock_t* lock, int result)
+{
+  if (result != 0) {
+    return; // lock was not acquired -- state remains the same
+  }
+
+  LUSH_PTHR_FN(lushPthr_spinTrylock)(x, lock);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sTrylock"); }
+}
+
+
+// unlock: thread releases lock and continues
+static inline void
+lushPthr_spinUnlock(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  LUSH_PTHR_FN(lushPthr_spinUnlock)(x, lock);
+
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sUnlock"); }
+}
+
+
+// ---------------------------------------------------------
+// cond_wait
+// ---------------------------------------------------------
 
 // condwait_pre: associated lock is released and thread blocks
 static inline void
