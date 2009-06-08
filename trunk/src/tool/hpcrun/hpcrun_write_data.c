@@ -12,7 +12,7 @@
 #include "hpcio.h"
 #include "hpcfmt.h"
 #include "hpcrun-fmt.h"
-#include "hpcrun_write_data.h"
+#include "write_data.h"
 
 // ******** default values for epoch hdr **********
 //
@@ -110,7 +110,7 @@ hpcrun_write_profile_data(csprof_state_t *state)
   num_epochs = (num_epochs > 1) ? 1 : num_epochs;
   
   TMSG(DATA_WRITE, "writing # epochs = %d", num_epochs);
-  hpcio_fwrite_le4(&num_epochs, fs);
+  hpcfmt_byte4_fwrite(num_epochs, fs);
 
   //
   // for each epoch ...
@@ -167,7 +167,7 @@ hpcrun_write_profile_data(csprof_state_t *state)
       TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);
       EMSG("could not save profile data to file '%s'", __FILE__, __LINE__, fnm);
       perror("write_profile_data");
-      ret = HPCRUN_ERR;
+      ret = HPCRUN_ERR; // FIXME: return this value now
     }
     else {
       TMSG(DATA_WRITE, "saved profile data to file '%s'", fnm);
