@@ -182,7 +182,9 @@ csprof_init_internal(void)
   }
 
   lush_metrics = (lush_agents) ? 1 : 0;
+#ifdef LUSH_PTHREADS
   lush_pthreads__init();
+#endif
 
 
   sigemptyset(&prof_sigset);
