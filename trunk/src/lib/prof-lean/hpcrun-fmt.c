@@ -85,7 +85,7 @@ nvpairs_vfwrite(FILE *out, va_list args)
   }
   va_end(_tmp);
 
-  hpcio_fwrite_le4(&len, out);
+  hpcfmt_byte4_fwrite(len, out);
 
   for (char *arg = va_arg(args, char *); arg != NULL; arg = va_arg(args, char *)) {
     hpcfmt_fstr_fwrite(arg, out); // write NAME
@@ -144,7 +144,7 @@ hpcrun_fmt_nvpair_t_fprint(nvpair_t *nvp, FILE *outfs)
 int
 hpcrun_fmt_list_of_nvpair_t_fread(LIST_OF(nvpair_t) *nvps, FILE *in, alloc_fn alloc)
 {
-  hpcio_fread_le4(&(nvps->len), in);
+  hpcfmt_byte4_fread(&(nvps->len), in);
   if (alloc != NULL) {
     nvps->lst = (nvpair_t *) alloc(nvps->len * sizeof(nvpair_t));
   }
@@ -215,9 +215,9 @@ hpcrun_fmt_epoch_hdr_fwrite(FILE *out, uint64_t flags, uint32_t ra_distance, uin
   va_start(args, granularity);
 
   fwrite(EPOCH_TAG, 1, strlen(EPOCH_TAG), out);
-  hpcio_fwrite_le8(&flags, out);
-  hpcio_fwrite_le4(&ra_distance, out);
-  hpcio_fwrite_le8(&granularity, out);
+  hpcfmt_byte8_fwrite(flags, out);
+  hpcfmt_byte4_fwrite(ra_distance, out);
+  hpcfmt_byte8_fwrite(granularity, out);
   nvpairs_vfwrite(out, args);
   va_end(args);
 
@@ -235,9 +235,9 @@ hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *fs, alloc_fn allo
     return HPCFILE_ERR;
   }
 
-  hpcio_fread_le8(&(ehdr->flags), fs);
-  hpcio_fread_le4(&(ehdr->ra_distance), fs);
-  hpcio_fread_le8(&(ehdr->granularity), fs);
+  hpcfmt_byte8_fread(&(ehdr->flags), fs);
+  hpcfmt_byte4_fread(&(ehdr->ra_distance), fs);
+  hpcfmt_byte8_fread(&(ehdr->granularity), fs);
   hpcrun_fmt_list_of_nvpair_t_fread(&(ehdr->nvps), fs, alloc);
 
   return HPCFILE_OK;
@@ -262,12 +262,12 @@ hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *out)
 int
 hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t *metric_tbl, FILE *out)
 {
-  hpcio_fwrite_le4(&(metric_tbl->len), out);
+  hpcfmt_byte4_fwrite(metric_tbl->len, out);
   metric_desc_t *p = metric_tbl->lst;
   for (uint32_t i = 0; i < metric_tbl->len; p++, i++) {
     hpcfmt_fstr_fwrite(p->name, out);
-    hpcio_fwrite_le8(&(p->flags), out);
-    hpcio_fwrite_le8(&(p->period), out);
+    hpcfmt_byte8_fwrite(p->flags, out);
+    hpcfmt_byte8_fwrite(p->period, out);
   }
   return HPCFILE_OK;
 }
@@ -276,15 +276,15 @@ hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t *metric_tbl, FILE *out)
 int
 hpcrun_fmt_metric_tbl_fread(metric_tbl_t *metric_tbl, FILE *in, alloc_fn alloc)
 {
-  hpcio_fread_le4(&(metric_tbl->len), in);
+  hpcfmt_byte4_fread(&(metric_tbl->len), in);
   if (alloc != NULL) {
     metric_tbl->lst = (metric_desc_t *) alloc(metric_tbl->len * sizeof(metric_desc_t));
   }
   metric_desc_t *p = metric_tbl->lst;
   for (uint32_t i = 0; i < metric_tbl->len; p++, i++) {
     hpcfmt_fstr_fread(&(p->name), in, alloc);
-    hpcio_fread_le8(&(p->flags), in);
-    hpcio_fread_le8(&(p->period), in);
+    hpcfmt_byte8_fread(&(p->flags), in);
+    hpcfmt_byte8_fread(&(p->period), in);
   }
   return HPCFILE_OK;
 }
@@ -324,12 +324,12 @@ hpcrun_fmt_metric_tbl_free(metric_tbl_t *metric_tbl, free_fn dealloc)
 int
 hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t *src, FILE *out)
 {
-  hpcio_fwrite_le4(&num_modules, out);
+  hpcfmt_byte4_fwrite(num_modules, out);
 
   for(int i = 0; i < num_modules; i++) {
     hpcfmt_fstr_fwrite(src->name, out);
-    hpcio_fwrite_le8((uint64_t *)&(src->vaddr), out);
-    hpcio_fwrite_le8((uint64_t *)&(src->mapaddr), out);
+    hpcfmt_byte8_fwrite((uint64_t)src->vaddr, out);
+    hpcfmt_byte8_fwrite((uint64_t)src->mapaddr, out);
     src = src->next;
   }
   
@@ -339,7 +339,7 @@ hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t *src, FILE *out)
 int
 hpcrun_fmt_loadmap_fread(loadmap_t *loadmap, FILE *in, alloc_fn alloc)
 {
-  hpcio_fread_le4(&(loadmap->len), in);
+  hpcfmt_byte4_fread(&(loadmap->len), in);
   if (alloc) {
     loadmap->lst = alloc(loadmap->len * sizeof(loadmap_entry_t));
   }
@@ -347,8 +347,8 @@ hpcrun_fmt_loadmap_fread(loadmap_t *loadmap, FILE *in, alloc_fn alloc)
   loadmap_entry_t *e = loadmap->lst;
   for(int i = 0; i < loadmap->len; e++, i++) {
     hpcfmt_fstr_fread(&(e->name), in, alloc);
-    hpcio_fread_le8(&(e->vaddr), in);
-    hpcio_fread_le8(&(e->mapaddr), in);
+    hpcfmt_byte8_fread(&(e->vaddr), in);
+    hpcfmt_byte8_fread(&(e->mapaddr), in);
     // FIXME ?? (don't know what these are for yet ...
     e->flags = 0;
   }
@@ -384,6 +384,9 @@ hpcrun_fmt_loadmap_free(loadmap_t *loadmap, free_fn dealloc)
 }
 
 
+
+
+#if defined(OLD_READ)
 //***************************************************************************
 // hpcfile_csprof_read()
 //***************************************************************************
@@ -409,7 +412,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
   // read number of loadmaps
   uint32_t num_loadmap;
-  sz = hpcio_fread_le4(&num_loadmap, fs);
+  sz = hpcfmt_byte4_fread(&num_loadmap, fs);
   if (sz != sizeof(num_loadmap)) { 
     return HPCFILE_ERR; 
   }
@@ -420,7 +423,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
   for (int i = 0; i < num_loadmap; ++i) {
     uint32_t num_modules;
-    hpcio_fread_le4(&num_modules, fs); 
+    hpcfmt_byte4_fread(&num_modules, fs); 
 
     loadmap_tbl->epoch_modlist[i].num_loadmodule = num_modules; 
     loadmap_tbl->epoch_modlist[i].loadmodule = 
@@ -434,8 +437,8 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 	return HPCFILE_ERR;
       }
       loadmap_tbl->epoch_modlist[i].loadmodule[j].name = str.str;
-      hpcio_fread_le8(&vaddr, fs);
-      hpcio_fread_le8(&mapaddr, fs); 
+      hpcfmt_byte8_fread(&vaddr, fs);
+      hpcfmt_byte8_fread(&mapaddr, fs); 
       loadmap_tbl->epoch_modlist[i].loadmodule[j].vaddr = vaddr;
       loadmap_tbl->epoch_modlist[i].loadmodule[j].mapaddr = mapaddr;
     }
@@ -667,6 +670,7 @@ epoch_table__free_data(epoch_table_t* x, hpcfile_cb__free_fn_t free_fn)
   }
   free_fn(x->epoch_modlist);
 }
+#endif // defined(OLD_READ)
 
 
 //***************************************************************************

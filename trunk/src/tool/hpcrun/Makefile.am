@@ -75,7 +75,6 @@ MY_BASE_FILES =			\
 	epoch.c				\
 	files.c				\
 	handling_sample.c		\
-	hpcrun_write_data.c		\
 	last.c				\
 	metrics.c			\
 	name.c				\
@@ -92,6 +91,7 @@ MY_BASE_FILES =			\
 	thread_use.c			\
 	trace.c				\
 	unsafe.c			\
+	write_data.c		        \
 	\
 	cct/cct.c			\
 	\

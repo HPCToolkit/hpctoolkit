@@ -175,9 +175,20 @@ int hpcfile_tag__fread(uint32_t* tag, FILE* fs);
 int hpcfile_tag__fwrite(uint32_t tag, FILE* fs);
 
 
+// --------------------------------------------
+// 32 & 64 bit integer quantities
+// --------------------------------------------
+
+extern int hpcfmt_byte4_fwrite(uint32_t val, FILE *out);
+extern int hpcfmt_byte4_fread(uint32_t *val, FILE *in);
+extern int hpcfmt_byte8_fwrite(uint64_t val, FILE *out);
+extern int hpcfmt_byte8_fread(uint64_t *val, FILE *in);
+
+
 // ---------------------------------------------------------
 // hpcfile_str_t: An arbitrary length character string.
 // ---------------------------------------------------------
+
 typedef struct hpcfile_str_s {
   uint32_t tag;    // data/structure format tag
 

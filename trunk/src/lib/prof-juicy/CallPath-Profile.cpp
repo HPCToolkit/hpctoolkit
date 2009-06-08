@@ -352,7 +352,7 @@ Profile::make(const char* fnm, FILE* outfs)
   // read # epochs
   //
 
-  hpcio_fread_le4(&num_epochs, fs);
+  hpcfmt_byte4_fread(&num_epochs, fs);
   uint32_t num_ccts = num_epochs > 1 ? 1 : 1;
 
 
@@ -513,7 +513,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
   // ------------------------------------------------------------
 
   uint64_t num_nodes = 0;
-  hpcio_fread_le8(&num_nodes, infs);
+  hpcfmt_byte8_fread(&num_nodes, infs);
 
   // ------------------------------------------------------------
   // Read each CCT node

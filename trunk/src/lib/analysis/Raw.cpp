@@ -138,7 +138,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   // read & print # epochs
   //
 
-  hpcio_fread_le4(&num_epochs, fs);
+  hpcfmt_byte4_fread(&num_epochs, fs);
   fprintf(stdout,"{num epochs = %d}\n", num_epochs);
 
   uint32_t num_ccts = num_epochs;
