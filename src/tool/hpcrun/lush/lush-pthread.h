@@ -84,9 +84,7 @@ lushPthr_dump(lushPthr_t* x, const char* nm);
 // 1. Attribute a thread's idleness to itself (1st person)
 //***************************************************************************
 
-#define LUSH_PTHR_SELF_IDLENESS    1  /* if 0, attrib idleness to workers */
-
-#define LUSH_PTHR_SYNC_SMPL_PERIOD 83 /* if !0, sample synchronously */
+#define LUSH_PTHR_SYNC_SMPL_PERIOD 33 /* if !0, sample synchronously */
 
 static inline void
 lushPthr_begSmplIdleness(lushPthr_t* x)
@@ -192,18 +190,13 @@ static inline void
 lushPthr_spinLock_pre_ty1(lushPthr_t* x, pthread_spinlock_t* lock)
 {
   x->is_working = false;
-  lushPthr_begSmplIdleness(x);
 }
 
 
 static inline void
 lushPthr_spinLock_post_ty1(lushPthr_t* x, pthread_spinlock_t* lock)
 {
-  lushPthr_endSmplIdleness(x);
   x->is_working = true;
-  if (x->idleness > 0) {
-    lushPthr_sampleIdleness(x->idleness);
-  }
 }
 
 
