@@ -495,7 +495,7 @@ lushPthr_thread_init(lushPthr_t* x)
 {
   LUSH_PTHR_FN(lushPthr_thread_init)(x);
 
-  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "t_init"); }
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "thrInit"); }
 }
 
 
@@ -505,7 +505,7 @@ lushPthr_thread_fini(lushPthr_t* x)
 {
   LUSH_PTHR_FN(lushPthr_thread_fini)(x);
 
-  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "t_fini"); }
+  if (LUSH_PTHR_DBG) { lushPthr_dump(x, "thrFini"); }
 }
 
 

@@ -373,7 +373,7 @@ monitor_thread_pre_mutex_lock(pthread_mutex_t* lock)
   }
   //hpcrun_async_block();
 
-  TMSG(MONITOR_EXTS, "%s", __func__);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
   lushPthr_mutexLock_pre(&TD_GET(pthr_metrics), lock);
 #endif
@@ -390,7 +390,7 @@ monitor_thread_post_mutex_lock(pthread_mutex_t* lock, int result)
   }
   //hpcrun_async_block();
 
-  TMSG(MONITOR_EXTS, "%s", __func__);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
   lushPthr_mutexLock_post(&TD_GET(pthr_metrics), lock);
 #endif
@@ -407,7 +407,7 @@ monitor_thread_post_mutex_trylock(pthread_mutex_t* lock, int result)
   }
   // hpcrun_async_block();
 
-  TMSG(MONITOR_EXTS, "%s", __func__);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
   lushPthr_mutexTrylock(&TD_GET(pthr_metrics), lock, result);
 #endif
@@ -424,7 +424,7 @@ monitor_thread_mutex_unlock(pthread_mutex_t* lock)
   }
   // hpcrun_async_block();
 
-  TMSG(MONITOR_EXTS, "%s", __func__);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
   lushPthr_mutexUnlock(&TD_GET(pthr_metrics), lock);
 #endif
@@ -445,7 +445,7 @@ monitor_thread_pre_spin_lock(pthread_spinlock_t* lock)
   }
   //hpcrun_async_block();
 
-  TMSG(MONITOR_EXTS, "%s", __func__);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
   lushPthr_spinLock_pre(&TD_GET(pthr_metrics), lock);
 #endif
@@ -462,7 +462,7 @@ monitor_thread_post_spin_lock(pthread_spinlock_t* lock, int result)
   }
   //hpcrun_async_block();
 
-  TMSG(MONITOR_EXTS, "%s", __func__);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
   lushPthr_spinLock_post(&TD_GET(pthr_metrics), lock);
 #endif
@@ -479,7 +479,7 @@ monitor_thread_post_spin_trylock(pthread_spinlock_t* lock, int result)
   }
   // hpcrun_async_block();
 
-  TMSG(MONITOR_EXTS, "%s", __func__);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
   lushPthr_spinTrylock(&TD_GET(pthr_metrics), lock, result);
 #endif
@@ -496,7 +496,7 @@ monitor_thread_spin_unlock(pthread_spinlock_t* lock)
   }
   // hpcrun_async_block();
 
-  TMSG(MONITOR_EXTS, "%s", __func__);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
   lushPthr_spinUnlock(&TD_GET(pthr_metrics), lock);
 #endif
@@ -517,7 +517,7 @@ monitor_thread_pre_cond_wait(void)
   }
   // hpcrun_async_block();
 
-  TMSG(MONITOR_EXTS, "%s", __func__);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
   lushPthr_condwait_pre(&TD_GET(pthr_metrics));
 #endif
@@ -534,7 +534,7 @@ monitor_thread_post_cond_wait(int result)
   }
   //hpcrun_async_block();
 
-  TMSG(MONITOR_EXTS, "%s", __func__);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
   lushPthr_condwait_post(&TD_GET(pthr_metrics));
 #endif
