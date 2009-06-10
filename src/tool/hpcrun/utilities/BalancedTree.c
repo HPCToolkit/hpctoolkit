@@ -87,7 +87,7 @@ BalancedTreeNode_t*
 BalancedTree_insert(BalancedTree_t* tree, void* key, bool doAtomic)
 {
   if (doAtomic) {
-    spinlock_lock(tree->lock);
+    spinlock_lock(&tree->lock);
   }
 
   BalancedTreeNode_t* theNode = NULL;
@@ -198,9 +198,9 @@ BalancedTree_insert(BalancedTree_t* tree, void* key, bool doAtomic)
 
  fini:
   if (doAtomic) {
-    spinlock_unlock(tree->lock);
+    spinlock_unlock(&tree->lock);
   }
-  return newNode;
+  return theNode;
 }
 
 
