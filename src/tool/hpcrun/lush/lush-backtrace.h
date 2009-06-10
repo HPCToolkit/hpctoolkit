@@ -49,7 +49,7 @@ extern lush_agent_pool_t* lush_agents;
 // LUSH backtrace
 //***************************************************************************
 
-csprof_cct_node_t*
+hpcrun_cct_node_t*
 lush_backtrace(csprof_state_t* state, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       int skipInner, int isSync);

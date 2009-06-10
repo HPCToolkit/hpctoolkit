@@ -271,7 +271,7 @@ monitor_thread_pre_create(void)
   // Capture new thread's creation context, skipping 1 level of context
   //   WARNING: Do not move the call to getcontext()
   // -------------------------------------------------------
-  lush_cct_ctxt_t* thr_ctxt = NULL;
+  pthread_cct_ctxt_t* thr_ctxt = NULL;
 
   ucontext_t context;
   int ret = getcontext(&context);
@@ -281,14 +281,14 @@ monitor_thread_pre_create(void)
   }
 
   int metric_id = 0; // FIXME: obtain index of first metric
-  csprof_cct_node_t* n =
+  hpcrun_cct_node_t* n =
     hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/, 
 			   0/*skipInner*/, 1/*isSync*/);
 
   TMSG(THREAD,"before lush malloc");
   TMSG(MALLOC," -thread_precreate: lush malloc");
   csprof_state_t* state = csprof_get_state();
-  thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
+  thr_ctxt = csprof_malloc(sizeof(pthread_cct_ctxt_t));
   TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
   thr_ctxt->context = n;
   thr_ctxt->parent = state->csdata_ctxt;
@@ -319,7 +319,7 @@ void*
 monitor_init_thread(int tid, void* data)
 {
   NMSG(THREAD,"init thread %d",tid);
-  void* thread_data = csprof_thread_init(tid, (lush_cct_ctxt_t*)data);
+  void* thread_data = csprof_thread_init(tid, (pthread_cct_ctxt_t*)data);
   NMSG(THREAD,"back from init thread %d",tid);
 
   trace_open();
