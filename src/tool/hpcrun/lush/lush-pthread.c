@@ -112,7 +112,7 @@ lushPthr_init(lushPthr_t* x)
 void 
 lushPthr_dump(lushPthr_t* x, const char* nm)
 {
-  EMSG("lush_pthr(%s):\t is_wrking %d, num_lck %d, cnd_lck %d | "
+  EMSG("lushPthr/%s:\t is_wrking %d, num_lck %d, cnd_lck %d | "
        "# wrking %ld, wrking_lck %ld, idle_cnd %ld | "
        "# procs %ld, threads %d",
        nm, x->is_working, x->num_locks, x->cond_lock,
