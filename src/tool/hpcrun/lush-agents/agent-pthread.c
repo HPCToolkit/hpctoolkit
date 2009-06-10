@@ -232,7 +232,7 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     *incrMetric = incrMetricIn;
     *incrMetricIdleness = (double)incrMetricIn * idleness;
 #else
-#  error "agent-pthread.c!"
+#  warning "agent-pthread.c!"
 #endif
   }
   else {
@@ -247,7 +247,7 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     //*incrMetric = 0;
     //*incrMetricIdleness = 0.0;
 #else
-#  error "agent-pthread.c!"
+#  warning "agent-pthread.c!"
 #endif
   }
   return *doMetric;

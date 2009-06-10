@@ -28,6 +28,8 @@
 
 //*************************** User Include Files ****************************
 
+#include <utilities/BalancedTree.h>
+
 //*************************** Forward Declarations **************************
 
 
@@ -66,6 +68,12 @@ typedef struct {
 
   //    ps_num_idle_lock     // idleness [1]
   long* ps_num_idle_cond;    // idleness [2a] + [2b]
+
+
+  // -------------------------------------------------------
+  // process wide metrics
+  // -------------------------------------------------------
+  BalancedTree_t* syncobjToData;
 
 } lushPthr_t;
 

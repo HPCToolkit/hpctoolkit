@@ -35,6 +35,7 @@
 
 #include <sample_event.h>
 #include <utilities/atomic.h>
+#include <utilities/BalancedTree.h>
 
 #include <lib/prof-lean/timer.h>
 
@@ -67,7 +68,7 @@ extern "C" {
 //***************************************************************************
 
 void 
-lush_pthreads__init();
+lushPthr_processInit();
 
 void
 lushPthr_init(lushPthr_t* x);
@@ -156,6 +157,9 @@ lushPthr_thread_fini_ty1(lushPthr_t* x)
 static inline void
 lushPthr_mutexLock_pre_ty1(lushPthr_t* x, pthread_mutex_t* lock)
 {
+  // N.B.: There is a small window where we could be sampled.  Rather
+  // than setting an 'ignore-sample' flag, we currently depend upon
+  // this happening infrequently.
   x->is_working = false;
   lushPthr_begSmplIdleness(x);
 }
@@ -476,13 +480,95 @@ lushPthr_condwait_post_ty2(lushPthr_t* x)
 // 3. Attribute lock-wait time to the working thread.  
 //***************************************************************************
 
-// TODO type 1: spin locks do not need to use gettimeofday.
+static inline void
+lushPthr_thread_init_ty3(lushPthr_t* x)
+{
+  x->is_working = true;
+}
 
-// TODO type 3: attribute lock-wait time to the lock in question; then
-// when the working thread unlock, it attributes that idleness to
-// itself.  Do not have to maintain coutners, etc.
-//   
-// Cf. notes in proposal
+
+static inline void
+lushPthr_thread_fini_ty3(lushPthr_t* x)
+{
+  x->is_working = false;
+}
+
+
+static inline void
+lushPthr_mutexLock_pre_ty3(lushPthr_t* x, pthread_mutex_t* lock)
+{
+  // N.B.: There is a small window where we could be sampled.  Rather
+  // than setting an 'ignore-sample' flag, we currently depend upon
+  // this happening infrequently.
+  x->is_working = false;
+  lushPthr_begSmplIdleness(x);
+}
+
+
+static inline void
+lushPthr_mutexLock_post_ty3(lushPthr_t* x, pthread_mutex_t* lock)
+{
+  lushPthr_endSmplIdleness(x);
+  x->is_working = true;
+}
+
+
+static inline void
+lushPthr_mutexTrylock_ty3(lushPthr_t* x, pthread_mutex_t* lock)
+{
+  x->is_working = true; // same
+}
+
+
+static inline void
+lushPthr_mutexUnlock_ty3(lushPthr_t* x, pthread_mutex_t* lock)
+{
+  x->is_working = true; // same
+}
+
+
+static inline void
+lushPthr_spinLock_pre_ty3(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  x->is_working = false;
+}
+
+
+static inline void
+lushPthr_spinLock_post_ty3(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  x->is_working = true;
+}
+
+
+static inline void
+lushPthr_spinTrylock_ty3(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  x->is_working = true; // same
+}
+
+
+static inline void
+lushPthr_spinUnlock_ty3(lushPthr_t* x, pthread_spinlock_t* lock)
+{
+  x->is_working = true; // same
+}
+
+
+static inline void
+lushPthr_condwait_pre_ty3(lushPthr_t* x)
+{
+  x->is_working = false;
+  lushPthr_begSmplIdleness(x);
+}
+
+
+static inline void
+lushPthr_condwait_post_ty3(lushPthr_t* x)
+{
+  lushPthr_endSmplIdleness(x);
+  x->is_working = true;
+}
 
 
 //***************************************************************************
