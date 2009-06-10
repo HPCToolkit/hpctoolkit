@@ -148,8 +148,7 @@ int lush_metrics = 0; // FIXME: global variable for now
 void
 csprof_init_internal(void)
 {
-  /* private memory store for the initial thread is done below */
-
+  /* N.B.: initilizes thread's private memory store */
   csprof_thread_data_init(0,CSPROF_MEM_SZ_DEFAULT,0);
 
   /* epoch poking needs the memory manager init'd() (and
@@ -169,7 +168,7 @@ csprof_init_internal(void)
   csprof_options__getopts(&opts);
 
   trace_init(); // this must go after thread initialization
-  trace_open(); 
+  trace_open();
 
   // Initialize LUSH agents
   if (opts.lush_agent_paths[0] != '\0') {
@@ -182,9 +181,13 @@ csprof_init_internal(void)
   }
 
   lush_metrics = (lush_agents) ? 1 : 0;
+
 #ifdef LUSH_PTHREADS
-  lush_pthreads__init();
+  if (!lush_agents) {
+    csprof_abort("LUSH Pthreads monitoring requires LUSH Pthreads agent!");
+  }
 #endif
+  lushPthr_processInit();
 
 
   sigemptyset(&prof_sigset);

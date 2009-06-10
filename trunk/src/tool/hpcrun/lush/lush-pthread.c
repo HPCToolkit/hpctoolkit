@@ -52,6 +52,8 @@ typedef struct {
   long lushPthr_ps_num_working_lock GCC_ATTR_VAR_CACHE_ALIGN;
   
   long lushPthr_ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
+
+  BalancedTree_t lushPthr_syncobjToData; // synch-obj -> data
   
 } lushPthr_globals_t;
 
@@ -62,6 +64,7 @@ lushPthr_globals_t globals = {
   .lushPthr_ps_num_working = 0,
   .lushPthr_ps_num_working_lock = 0,
   .lushPthr_ps_num_idle_cond = 0
+  // lushPthr_syncobjToData
 };
 
 
@@ -70,11 +73,10 @@ lushPthr_globals_t globals = {
 // **************************************************************************
 
 void 
-lush_pthreads__init()
+lushPthr_processInit()
 {
-  if (!lush_agents) {
-    csprof_abort("LUSH Pthreads monitoring requires LUSH Pthreads agent!");
-  }
+  // WARNING: At the moment, this routine is called *after*
+  // lushPthr_init(), at least for the first thread.
 
   globals.lushPthr_ps_num_procs   = sysconf(_SC_NPROCESSORS_ONLN);
   globals.lushPthr_ps_num_threads = 0;
@@ -83,6 +85,8 @@ lush_pthreads__init()
   globals.lushPthr_ps_num_working_lock = 0;
 
   globals.lushPthr_ps_num_idle_cond    = 0;
+
+  BalancedTree_init(&globals.lushPthr_syncobjToData);
 }
 
 
@@ -106,6 +110,8 @@ lushPthr_init(lushPthr_t* x)
   x->ps_num_working_lock = &globals.lushPthr_ps_num_working_lock;
   
   x->ps_num_idle_cond = &globals.lushPthr_ps_num_idle_cond;
+
+  x->syncobjToData = &globals.lushPthr_syncobjToData;
 }
 
 
