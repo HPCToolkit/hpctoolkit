@@ -51,7 +51,7 @@ csprof_frame_t*
 csprof_state_expand_buffer(csprof_state_t *, csprof_frame_t *);
 
 
-csprof_cct_node_t* 
+hpcrun_cct_node_t* 
 csprof_state_insert_backtrace(csprof_state_t *, int, csprof_frame_t *,
 			      csprof_frame_t *, cct_metric_data_t);
 

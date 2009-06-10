@@ -31,7 +31,7 @@
 // forward declarations 
 //***************************************************************************
 
-static csprof_cct_node_t*
+static hpcrun_cct_node_t*
 _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
 		  int metricId, uint64_t metricIncr,
 		  int skipInner);
@@ -57,14 +57,14 @@ test_backtrace_lite(ucontext_t* context);
 //     if successful, returns the leaf node representing the sample;
 //     otherwise, returns NULL.
 //-----------------------------------------------------------------------------
-csprof_cct_node_t*
+hpcrun_cct_node_t*
 hpcrun_backtrace(csprof_state_t *state, ucontext_t* context, 
 		 int metricId, uint64_t metricIncr,
 		 int skipInner, int isSync)
 {
   csprof_state_verify_backtrace_invariants(state);
   
-  csprof_cct_node_t* n = NULL;
+  hpcrun_cct_node_t* n = NULL;
   if (!lush_agents) {
     n = _hpcrun_backtrace(state, context, metricId, metricIncr, 
 			  skipInner);
@@ -111,7 +111,7 @@ hpcrun_filter_sample(int len, csprof_frame_t *start, csprof_frame_t *last)
 }
 
 
-static csprof_cct_node_t*
+static hpcrun_cct_node_t*
 _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
 		  int metricId, uint64_t metricIncr, 
 		  int skipInner)
@@ -179,7 +179,7 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
     bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
   }
 
-  csprof_cct_node_t* n;
+  hpcrun_cct_node_t* n;
   n = csprof_state_insert_backtrace(state, metricId,
 				    bt_end, bt_beg,
 				    (cct_metric_data_t){.i = metricIncr});

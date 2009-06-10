@@ -222,7 +222,7 @@ typedef struct hpcrun_fmt_cct_node_t {
   // pointer'.  The operation in the instruction packet is represented
   // by adding 0, 1, or 2 to the instruction pointer for the first,
   // second and third operation, respectively.
-  hpcfmt_vma_t ip;
+  void *ip;
 
   union {
     hpcfmt_uint_t id;  // canonical lip id
@@ -231,22 +231,18 @@ typedef struct hpcrun_fmt_cct_node_t {
 
   // 'sp': the stack pointer of this node
   // tallent: Why is this needed?
-  hpcfmt_uint_t sp;
+  void *sp;
 
   uint32_t cpid;
 
-  hpcfmt_uint_t num_metrics;
-  hpcrun_metric_data_t* metrics;
-
-#if defined(NEW_CCT)
+#if defined(OLD_CCT)
   uint32_t node_id;
   uint32_t parent_id;
-  uint32_t lush_assoc;
-  uint64_t ip;
-  uint64_t sp;
-  uint64_t lush_lip;
-#endif
-  
+#endif //defined(OLD_CCT)
+
+  uint32_t num_metrics;
+  hpcrun_metric_data_t metrics[];
+
 } hpcrun_fmt_cct_node_t;
 
 

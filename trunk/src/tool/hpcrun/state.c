@@ -148,13 +148,13 @@ int csprof_state_fini(csprof_state_t *x){
   return HPCRUN_OK;
 }
 
-csprof_cct_node_t*
+hpcrun_cct_node_t*
 csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
 			      csprof_frame_t *path_beg,
 			      csprof_frame_t *path_end,
 			      cct_metric_data_t increment)
 {
-  csprof_cct_node_t* n;
+  hpcrun_cct_node_t* n;
   n = csprof_csdata_insert_backtrace(&state->csdata, state->treenode,
 				     metric_id, path_beg, path_end, increment);
 
