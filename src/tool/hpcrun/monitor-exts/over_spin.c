@@ -42,7 +42,7 @@ MONITOR_WRAP_NAME(pthread_spin_trylock)(pthread_spinlock_t *lock)
 
   MONITOR_GET_NAME_WRAP(real_spin_trylock, pthread_spin_trylock);
   ret = (*real_spin_trylock)(lock);
-  monitor_thread_post_spin_trylock(lock, ret);
+  monitor_thread_spin_trylock(lock, ret);
 
   return (ret);
 }
