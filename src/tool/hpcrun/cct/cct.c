@@ -374,7 +374,7 @@ hpcrun_cct_fwrite(hpcrun_cct_t *cct, pthread_cct_ctxt_t *ctxt, FILE *fs)
 
 static int
 hpcfile_cstree_write_node_hlp(FILE* fs, hpcrun_cct_node_t* node,
-			      hpcfile_cstree_node_t* tmp_node,
+			      hpcrun_fmt_cstree_node_t* tmp_node,
 			      hpcfmt_uint_t id_parent,
 			      hpcfmt_uint_t id_root,
 			      hpcfmt_uint_t id)
@@ -410,9 +410,15 @@ hpcfile_cstree_write_node_hlp(FILE* fs, hpcrun_cct_node_t* node,
   tmp_node->data.as_info = node->data.as_info;
 
   // double casts to avoid warnings when pointer is < 64 bits 
+#if defined(OLD_CCT)
   tmp_node->data.ip = (hpcfmt_vma_t) (unsigned long) node->data.ip;
+#endif
+  tmp_node->data.ip = node->data.ip;
   tmp_node->data.lip.id = id_lip;
+#if defined(OLD_CCT)
   tmp_node->data.sp = (hpcfmt_uint_t)(unsigned long) node->data.sp;
+#endif
+  tmp_node->data.sp = node->data.sp;
 
   tmp_node->data.cpid = node->data.cpid;
   memcpy(tmp_node->data.metrics, node->data.metrics, 
@@ -464,7 +470,7 @@ pthread_cct_ctxt_fwrite_lcl(FILE* fs, hpcrun_cct_node_t* node,
 			 unsigned int id_root, 
 			 unsigned int* id_lip_root,
 			 unsigned int* nodes_written,
-			 hpcfile_cstree_node_t* tmp_node)
+			 hpcrun_fmt_cstree_node_t* tmp_node)
 {
   int ret = HPCRUN_OK;
 
@@ -503,7 +509,7 @@ pthread_cct_ctxt_fwrite_lcl(FILE* fs, hpcrun_cct_node_t* node,
 static int
 pthread_cct_ctxt_fwrite_gbl(FILE* fs, pthread_cct_ctxt_t* cct_ctxt,
 			 unsigned int id_root, unsigned int* nodes_written,
-			 hpcfile_cstree_node_t* tmp_node)
+			 hpcrun_fmt_cstree_node_t* tmp_node)
 {
   int ret = HPCRUN_OK;
   
@@ -541,7 +547,7 @@ pthread_cct_ctxt_fwrite(FILE* fs, pthread_cct_ctxt_t* cct_ctxt,
   int ret;
   unsigned int num_metrics = hpcrun_num_recorded_metrics();
 
-  hpcfile_cstree_node_t tmp_node;
+  hpcrun_fmt_cstree_node_t tmp_node;
   hpcfile_cstree_node__init(&tmp_node);
   tmp_node.data.num_metrics = num_metrics;
   tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfmt_uint_t));
@@ -557,7 +563,7 @@ pthread_cct_ctxt_fwrite(FILE* fs, pthread_cct_ctxt_t* cct_ctxt,
 static int
 hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
 			  hpcrun_cct_node_t* node,
-			  hpcfile_cstree_node_t* tmp_node,
+			  hpcrun_fmt_cstree_node_t* tmp_node,
 			  hpcfmt_uint_t id_parent,
 			  hpcfmt_uint_t id_root,
 			  hpcfmt_uint_t* id,
@@ -667,7 +673,7 @@ cstree_write(FILE* fs, hpcrun_cct_t* tree,
   // -------------------------------------------------------
   hpcfmt_uint_t id_ctxt = HPCFILE_CSTREE_ID_ROOT + num_ctxt_nodes - 1;
   hpcfmt_uint_t id = id_ctxt + 1;
-  hpcfile_cstree_node_t tmp_node;
+  hpcrun_fmt_cstree_node_t tmp_node;
 
   hpcfile_cstree_node__init(&tmp_node);
   tmp_node.data.num_metrics = num_metrics;
@@ -681,32 +687,6 @@ cstree_write(FILE* fs, hpcrun_cct_t* tree,
   return ret;
 }
 
-
-
-
-#ifdef NODE_CHILD_COUNT 
-static int
-node_child_count(hpcrun_cct_t* tree, hpcrun_cct_node_t* node)
-{
-  int children = 0;
-  if (node) { 
-    // ---------------------------------------------------------
-    // count children 
-    // (handles either a circular or non-circular structure)
-    // ---------------------------------------------------------
-    hpcrun_cct_node_t* first = csprof_cct_node__first_child(node);
-    hpcrun_cct_node_t* c = first; 
-    while (c) {
-      children++;
-      c = csprof_cct_node__next_sibling(c);
-      if (c == first) { break; }
-    }
-  }
-  return children; 
-}
-#endif
-
-
 //***************************************************************************
 //
 //***************************************************************************
@@ -714,14 +694,14 @@ node_child_count(hpcrun_cct_t* tree, hpcrun_cct_node_t* node)
 static int
 pthread_cct_ctxt_fwrite_gbl(FILE* fs, pthread_cct_ctxt_t* cct_ctxt,
 			 unsigned int id_root, unsigned int* nodes_written,
-			 hpcfile_cstree_node_t* tmp_node);
+			 hpcrun_fmt_cstree_node_t* tmp_node);
 
 static int
 pthread_cct_ctxt_fwrite_lcl(FILE* fs, hpcrun_cct_node_t* node,
 			 unsigned int id_root, 
 			 unsigned int* id_lip_root,
 			 unsigned int* nodes_written,
-			 hpcfile_cstree_node_t* tmp_node);
+			 hpcrun_fmt_cstree_node_t* tmp_node);
 
 
 unsigned int

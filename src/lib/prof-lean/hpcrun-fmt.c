@@ -647,20 +647,20 @@ hpcfile_cstree_hdr__fprint(hpcfile_cstree_hdr_t* x, FILE* fs)
 //***************************************************************************
 
 int 
-hpcfile_cstree_nodedata__init(hpcfile_cstree_nodedata_t* x)
+hpcfile_cstree_nodedata__init(hpcrun_fmt_cct_node2_t* x)
 {
   memset(x, 0, sizeof(*x));
   return HPCFILE_OK;
 }
 
 int 
-hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x)
+hpcfile_cstree_nodedata__fini(hpcrun_fmt_cct_node2_t* x)
 {
   return HPCFILE_OK;
 }
 
 int 
-hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs)
+hpcfile_cstree_nodedata__fread(hpcrun_fmt_cct_node2_t* x, FILE* fs)
 {
   // ASSUMES: space for metrics has been allocated
   
@@ -696,7 +696,7 @@ hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs)
 
 
 int 
-hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs) 
+hpcfile_cstree_nodedata__fwrite(hpcrun_fmt_cct_node2_t* x, FILE* fs) 
 {
   size_t sz;
   int i, ret;
@@ -727,7 +727,7 @@ hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs)
 }
 
 int 
-hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, 
+hpcfile_cstree_nodedata__fprint(hpcrun_fmt_cct_node2_t* x, FILE* fs, 
 				const char* pre)
 {
   char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
@@ -828,7 +828,7 @@ hpcfile_cstree_lip__fprint(lush_lip_t* x, hpcfmt_uint_t id,
 //***************************************************************************
 
 int 
-hpcfile_cstree_node__init(hpcfile_cstree_node_t* x)
+hpcfile_cstree_node__init(hpcrun_fmt_cstree_node_t* x)
 {
   memset(x, 0, sizeof(*x));
   hpcfile_cstree_nodedata__init(&x->data);
@@ -836,14 +836,14 @@ hpcfile_cstree_node__init(hpcfile_cstree_node_t* x)
 }
 
 int 
-hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x)
+hpcfile_cstree_node__fini(hpcrun_fmt_cstree_node_t* x)
 {
   hpcfile_cstree_nodedata__fini(&x->data);  
   return HPCFILE_OK;
 }
 
 int 
-hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs)
+hpcfile_cstree_node__fread(hpcrun_fmt_cstree_node_t* x, FILE* fs)
 {
   size_t sz;
   int ret;
@@ -869,7 +869,7 @@ hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs)
 }
 
 int 
-hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs)
+hpcfile_cstree_node__fwrite(hpcrun_fmt_cstree_node_t* x, FILE* fs)
 {
   size_t sz;
   int ret;
@@ -893,7 +893,7 @@ hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs)
 }
 
 int 
-hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, const char* pre)
+hpcfile_cstree_node__fprint(hpcrun_fmt_cstree_node_t* x, FILE* fs, const char* pre)
 {
   fprintf(fs, "{node: (id: %"PRIu64") (id_parent: %"PRIu64")}\n", 
 	  x->id, x->id_parent);
