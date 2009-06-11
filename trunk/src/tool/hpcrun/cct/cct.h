@@ -71,6 +71,7 @@
 #endif
 
 #include <metrics.h>
+#include "pmsg.h"
 
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -94,10 +95,13 @@ cct_metric_data_increment(int metric_id,
   metric_tbl_t *mdata = hpcrun_get_metric_data();
   metric_desc_t *minfo = &(mdata->lst[metric_id]);
   
+  TMSG(METRIC_INC, "Increment metric id %d @ %p", metric_id, x);
   if (hpcfile_csprof_metric_is_flag(minfo->flags, HPCFILE_METRIC_FLAG_REAL)) {
+    TMSG(METRIC_INC, "Real data %g incremented by %g", x->r, incr.r);
     x->r += incr.r;
   }
   else {
+    TMSG(METRIC_INC, "Integer data %d incremented by %d", x->i, incr.i);
     x->i += incr.i;
   }
 }
@@ -116,7 +120,7 @@ typedef struct hpcrun_cct_node_t
   struct hpcrun_cct_node_t *child;
 
   // data portion ... has variable data so must be last
-  hpcrun_fmt_cct_node_t data;
+  cct_node_data_t data;
 
 } hpcrun_cct_node_t;
 
