@@ -53,7 +53,7 @@ typedef struct {
   
   long lushPthr_ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
 
-  BalancedTree_t lushPthr_syncobjToData; // synch-obj -> data
+  BalancedTree_t lushPthr_syncObjToData; // synch-obj -> data
   
 } lushPthr_globals_t;
 
@@ -64,7 +64,7 @@ lushPthr_globals_t globals = {
   .lushPthr_ps_num_working = 0,
   .lushPthr_ps_num_working_lock = 0,
   .lushPthr_ps_num_idle_cond = 0
-  // lushPthr_syncobjToData
+  // lushPthr_syncObjToData
 };
 
 
@@ -86,7 +86,7 @@ lushPthr_processInit()
 
   globals.lushPthr_ps_num_idle_cond    = 0;
 
-  BalancedTree_init(&globals.lushPthr_syncobjToData);
+  BalancedTree_init(&globals.lushPthr_syncObjToData);
 }
 
 
@@ -111,7 +111,8 @@ lushPthr_init(lushPthr_t* x)
   
   x->ps_num_idle_cond = &globals.lushPthr_ps_num_idle_cond;
 
-  x->syncobjToData = &globals.lushPthr_syncobjToData;
+  x->syncObjToData  = &globals.lushPthr_syncObjToData;
+  x->curSyncObjData = NULL;
 }
 
 

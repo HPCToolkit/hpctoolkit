@@ -188,7 +188,7 @@ LUSHI_do_metric(uint64_t incrMetricIn,
   bool isWorking = pthr->is_working;
 
   if (isWorking) {
-#if (LUSH_PTHR_FN_TY == 1) // attribute to self self
+#if (LUSH_PTHR_FN_TY == 1)
     // NOTE: pthr->idleness is only changed when this thread is not working
     *doMetric = true;
     *doMetricIdleness = (pthr->idleness > 0);
@@ -231,8 +231,13 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     *doMetricIdleness = true;
     *incrMetric = incrMetricIn;
     *incrMetricIdleness = (double)incrMetricIn * idleness;
+#elif (LUSH_PTHR_FN_TY == 3)
+    *doMetric = true;
+    *doMetricIdleness = false;
+    *incrMetric = incrMetricIn;
+    *incrMetricIdleness = 0;
 #else
-#  warning "agent-pthread.c!"
+#  error "agent-pthread.c!"
 #endif
   }
   else {
@@ -246,8 +251,15 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     *doMetricIdleness = false;
     //*incrMetric = 0;
     //*incrMetricIdleness = 0.0;
+#elif (LUSH_PTHR_FN_TY == 3)
+    if (pthr->curSyncObjData) {
+      // INVARIANT: this thread is waiting on pthr->curSyncObjData
+      MY_atomic_add(&pthr->curSyncObjData->idleness, incrMetricIn);
+    }
+    *doMetric = false;
+    *doMetricIdleness = false;
 #else
-#  warning "agent-pthread.c!"
+#  error "agent-pthread.c!"
 #endif
   }
   return *doMetric;

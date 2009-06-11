@@ -73,7 +73,8 @@ typedef struct {
   // -------------------------------------------------------
   // process wide metrics
   // -------------------------------------------------------
-  BalancedTree_t* syncobjToData;
+  BalancedTree_t* syncObjToData;
+  BalancedTreeNode_t* curSyncObjData;
 
 } lushPthr_t;
 

@@ -55,10 +55,13 @@ typedef struct BalancedTreeNode
   struct BalancedTreeNode* left;
   struct BalancedTreeNode* right;
   BalancedTreeColor_t color;
+
+  // interface to the node data [tallent: could be a callback to node data]
   void* key;
 
-  // node data
-  unsigned long count;
+  // node data: [tallent:FIXME: should be opaque node data (a void*)]
+  uint64_t idleness;
+  void*    cct_node;
 
 } BalancedTreeNode_t;
 

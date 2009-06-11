@@ -34,6 +34,7 @@
 #include "lush-backtrace.h" // for 'lush_agents'
 
 #include <sample_event.h>
+#include <cct/cct.h>
 #include <utilities/atomic.h>
 #include <utilities/BalancedTree.h>
 
@@ -52,10 +53,12 @@
 #if (GCC_VERSION >= 4100)
 #  define MY_atomic_increment(x) (void)__sync_add_and_fetch(x, 1)
 #  define MY_atomic_decrement(x) (void)__sync_sub_and_fetch(x, 1)
+#  define MY_atomic_add(x, val)  (void)__sync_add_and_fetch(x, val)
 #else
 #  warning "lush-pthread.h: using slow atomics!"
 #  define MY_atomic_increment(x) csprof_atomic_increment(x)
 #  define MY_atomic_decrement(x) csprof_atomic_decrement(x)
+#  define MY_atomic_add(x, val)  fetch_and_add(x, val);
 #endif
 
 
@@ -115,18 +118,20 @@ lushPthr_endSmplIdleness(lushPthr_t* x)
 }
 
 
-static inline void
+static inline hpcrun_cct_node_t*
 lushPthr_sampleIdleness(uint64_t idlenessIncr)
 {
 #if 1
+  hpcrun_cct_node_t* n = NULL;
   if (!hpcrun_async_is_blocked()) {
     hpcrun_async_block();
     ucontext_t context;
     getcontext(&context); /* FIXME: check for errors */
-    hpcrun_sample_callpath(&context, lush_agents->metric_time,
-			   0/*metricIncr*/, 0/*skipInner*/, 1/*isSync*/);
+    n = hpcrun_sample_callpath(&context, lush_agents->metric_time,
+			       0/*metricIncr*/, 0/*skipInner*/, 1/*isSync*/);
     hpcrun_async_unblock();
   }
+  return n;
 #endif
 
 #if 0
@@ -480,6 +485,19 @@ lushPthr_condwait_post_ty2(lushPthr_t* x)
 // 3. Attribute lock-wait time to the working thread.  
 //***************************************************************************
 
+static inline BalancedTreeNode_t*
+lushPthr_demandSyncObjData(lushPthr_t* x, void* syncObj)
+{
+  BalancedTreeNode_t* fnd = BalancedTree_find(x->syncObjToData, syncObj);
+  if (!fnd) {
+    fnd = BalancedTree_insert(x->syncObjToData, syncObj, true/*atomic*/);
+  }
+  return fnd;
+}
+
+
+//***************************************************************************
+
 static inline void
 lushPthr_thread_init_ty3(lushPthr_t* x)
 {
@@ -500,16 +518,28 @@ lushPthr_mutexLock_pre_ty3(lushPthr_t* x, pthread_mutex_t* lock)
   // N.B.: There is a small window where we could be sampled.  Rather
   // than setting an 'ignore-sample' flag, we currently depend upon
   // this happening infrequently.
-  x->is_working = false;
   lushPthr_begSmplIdleness(x);
+  x->curSyncObjData = NULL; // drop samples
+  x->is_working = false;
 }
 
 
 static inline void
 lushPthr_mutexLock_post_ty3(lushPthr_t* x, pthread_mutex_t* lock)
 {
-  lushPthr_endSmplIdleness(x);
   x->is_working = true;
+  lushPthr_endSmplIdleness(x);
+
+  if (x->idleness > 0) {
+    BalancedTreeNode_t* syncData = lushPthr_demandSyncObjData(x, lock);
+    if (syncData->cct_node) {
+      int mid = lush_agents->metric_idleness;
+      hpcrun_cct_node_t* node = (hpcrun_cct_node_t*)syncData->cct_node;
+      double idleness = x->idleness;
+      cct_metric_data_increment(mid, &node->data.metrics[mid], 
+				(cct_metric_data_t){.r = idleness});
+    }
+  }
 }
 
 
@@ -524,12 +554,17 @@ static inline void
 lushPthr_mutexUnlock_ty3(lushPthr_t* x, pthread_mutex_t* lock)
 {
   x->is_working = true; // same
+
+  x->curSyncObjData = NULL; // drop samples
+  BalancedTreeNode_t* syncData = lushPthr_demandSyncObjData(x, lock);
+  syncData->cct_node = lushPthr_sampleIdleness(0);
 }
 
 
 static inline void
 lushPthr_spinLock_pre_ty3(lushPthr_t* x, pthread_spinlock_t* lock)
 {
+  x->curSyncObjData = lushPthr_demandSyncObjData(x, (void*)lock);
   x->is_working = false;
 }
 
@@ -538,6 +573,7 @@ static inline void
 lushPthr_spinLock_post_ty3(lushPthr_t* x, pthread_spinlock_t* lock)
 {
   x->is_working = true;
+  x->curSyncObjData = NULL;
 }
 
 
@@ -552,6 +588,12 @@ static inline void
 lushPthr_spinUnlock_ty3(lushPthr_t* x, pthread_spinlock_t* lock)
 {
   x->is_working = true; // same
+  
+  BalancedTreeNode_t* syncData = lushPthr_demandSyncObjData(x, (void*)lock);
+  if (syncData->idleness > 0) {
+    uint64_t idle = csprof_atomic_swap_l((long*)&syncData->idleness, 0);
+    lushPthr_sampleIdleness(idle);
+  }
 }
 
 
@@ -559,14 +601,14 @@ static inline void
 lushPthr_condwait_pre_ty3(lushPthr_t* x)
 {
   x->is_working = false;
-  lushPthr_begSmplIdleness(x);
+  //FIXME: lushPthr_begSmplIdleness(x);
 }
 
 
 static inline void
 lushPthr_condwait_post_ty3(lushPthr_t* x)
 {
-  lushPthr_endSmplIdleness(x);
+  //FIXME: lushPthr_endSmplIdleness(x);
   x->is_working = true;
 }
 
