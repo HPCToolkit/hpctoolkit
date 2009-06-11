@@ -72,8 +72,8 @@
 
 #include <metrics.h>
 
-#include "hpcfmt.h"
-#include "hpcrun-fmt.h"
+#include <lib/prof-lean/hpcfmt.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lib/prof-lean/lush/lush-support.h>
 

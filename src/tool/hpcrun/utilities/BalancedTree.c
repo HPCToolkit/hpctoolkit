@@ -54,9 +54,11 @@ BalancedTreeNode_create(void* key, BalancedTreeNode_t* parent)
   x->right = NULL;
   x->parent = parent;
   x->color = BalancedTreeColor_RED;
+
   x->key = key;
 
-  x->count = 0;
+  x->idleness = 0;
+  x->cct_node = NULL;
 
   return x;
 }
