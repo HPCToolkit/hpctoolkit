@@ -118,7 +118,7 @@ variables.  For example, you might submit a job with:
 
 \begin{quote}
 \begin{verbatim}
-qsub -t 60 -n 64 --env HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000000" \
+qsub -t 60 -n 64 --env HPCRUN_EVENT_LIST="WALLCLOCK@1000" \
     /path/to/myprog arg ...
 \end{verbatim}
 \end{quote}

@@ -60,6 +60,7 @@ MYSOURCES = \
 	\
 	hpcrun.tex \
 	hpcrun-flat.tex \
+	hpclink.tex \
 	\
 	hpcstruct.tex \
 	\
@@ -87,6 +88,7 @@ man_MANS = \
 	hpctoolkit.1hpctoolkit \
 	hpcrun.1hpctoolkit \
 	hpcrun-flat.1hpctoolkit \
+	hpclink.1hpctoolkit \
 	hpcstruct.1hpctoolkit \
 	hpcprof.1hpctoolkit \
 	hpcprof-flat.1hpctoolkit \
