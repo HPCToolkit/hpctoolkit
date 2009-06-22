@@ -1,0 +1,217 @@
+%% $Id$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[english]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{babel}
+\usepackage{verbatim}
+
+%% do we have the `hyperref package?
+\IfFileExists{hyperref.sty}{
+   \usepackage[bookmarksopen,bookmarksnumbered]{hyperref}
+}{}
+
+%% do we have the `fancyhdr' or `fancyheadings' package?
+\IfFileExists{fancyhdr.sty}{
+\usepackage[fancyhdr]{latex2man}
+}{
+\IfFileExists{fancyheadings.sty}{
+\usepackage[fancy]{latex2man}
+}{
+\usepackage[nofancy]{latex2man}
+\message{no fancyhdr or fancyheadings package present, discard it}
+}}
+
+%% do we have the `rcsinfo' package?
+\IfFileExists{rcsinfo.sty}{
+\usepackage[nofancy]{rcsinfo}
+\rcsInfo $Id$
+\setDate{\rcsInfoLongDate}
+}{
+\setDate{ 2009/06/21}
+\message{package rcsinfo not present, discard it}
+}
+
+\setVersionWord{Version:}  %%% that's the default, no need to set it.
+\setVersion{=PACKAGE_VERSION=}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\begin{Name}{1}{hpclink}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpclink}
+
+\Prog{hpclink} - statically link an application with the \Prog{hpcrun}
+profiling code
+
+\end{Name}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Synopsis}
+
+\Prog{hpclink} \oOpt{options} \Arg{compiler} arg ...
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Description}
+
+\Prog{hpclink} statically links an application with the \Prog{hpcrun}
+profiling code.  Dynamically linked binaries can be run directly with
+the \Prog{hpcrun} command, but this method does not work with
+statically linked programs.  Instead, the \Prog{hpcrun} code must be
+linked into the application at build time.
+
+This approach does not require source code modifications, and you
+continue to compile your object files as before.  In the application's
+Makefile, locate the last step in the build, that is, the command that
+produces the final, statically linked binary.  Edit that line to put
+the \Prog{hpclink} command at the front of the command line.
+
+The argument list passed to \Prog{hpclink} (\texttt{compiler arg ...})
+should be the same command line used to build the application
+natively, except that you may wish to rename the binary name
+(\texttt{-o output-file}).
+
+See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of
+\textbf{HPCToolkit}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Options}
+
+\begin{Description}
+\item[\Opt{-h}, \Opt{--help}]
+Print help.
+%
+\item[\Opt{-u}, \Opt{--undefined} symbol]
+Pass ``symbol'' to the linker as an undefined symbol.  This option is
+rarely needed, but if \Prog{hpclink} fails with an undefined reference
+to \texttt{\_\_real\_foo}, then the option ``\texttt{-u foo}'' may
+induce the linker to correctly link this symbol.  May be used multiple
+times.
+%
+\item[\Opt{-v}, \Opt{--verbose}]
+Verbose output.
+\end{Description}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Examples}
+
+Compile the ``hello, world'' program with \Prog{gcc} and link in the
+\Prog{hpcrun} code statically.
+
+\begin{verbatim}
+    hpclink gcc -o hello -g -O -static hello.c
+\end{verbatim}
+%
+Link an \Prog{hpcrun}-enabled application from object files and the
+math library.
+
+\begin{verbatim}
+    hpclink gcc -o myprog -static main.o foo.o ... -lm
+\end{verbatim}
+%
+Make both native and \Prog{hpcrun}-enabled versions of an application
+from object files and system libraries with the \Prog{mpixlc}
+compiler.  Note that the argument list to the \Prog{hpclink} command
+is exactly the command to build the native version except for the name
+of the output file.
+
+\begin{verbatim}
+    mpixlc -o myprog main.o foo.o ... -lm -lpthread
+    hpclink mpixlc -o myprog.hpc main.o foo.o ... -lm -lpthread
+\end{verbatim}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Launching Static Programs}
+
+For dynamically linked binaries, the \Prog{hpcrun} script is used to
+launch programs and set environment variables, but on systems with
+separate compute nodes, this is often not available.  In this case, the
+\texttt{HPCRUN\_EVENT\_LIST} environment variable is used to pass the
+profiling events to the \Prog{hpcrun} code.
+
+\begin{verbatim}
+    export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000000"
+    myprog arg ...
+\end{verbatim}
+%
+For example, on a Cray XT system, you might launch a job with a PBS
+script such as the following.
+
+\begin{verbatim}
+    #!/bin/sh
+    #PBS -l size=64
+    #PBS -l walltime=01:00:00
+    cd $PBS_O_WORKDIR
+    export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000000 PAPI_L2_TCM@400000"
+    aprun -n 64 ./myprog arg ...
+\end{verbatim}
+% $ Artificially end math mode.
+%
+The IBM Blue Gene system uses the \texttt{--env} option to pass
+environment variables, so you might launch a job with a command
+such as the following.
+
+\begin{verbatim}
+    qsub -t 60 -n 64 --env HPCRUN_EVENT_LIST="WALLCLOCK@1000" \
+        /path/to/myprog arg ...
+\end{verbatim}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Notes}
+
+The command line passed to \Prog{hpclink} must produce a statically
+linked binary and the \Prog{hpclink} script will fail if it does not.
+
+With some compilers, eg, IBM's XL compilers and the Pathscale
+compilers, interprocedural optimization interferes with
+\Prog{hpclink}'s ability to link, causing \Prog{hpclink} to fail.  In
+this case, it is necessary to disable interprocedural optimization.
+It is not necessary to disable all optimization, just interprocedural
+analysis.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{See Also}
+
+\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}},
+\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Version}
+
+Version: \Version\ of \Date.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{License and Copyright}
+
+\begin{description}
+\item[Copyright] \copyright\ 2008-2009, Rice University.
+\item[License] See \File{README.License}.
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Authors}
+
+\noindent
+Rice HPCToolkit Research Group \\
+Email: \Email{hpc =at= cs.rice.edu} \\
+WWW: \URL{http://hpctoolkit.org}/
+
+\LatexManEnd
+
+\end{document}
+
+%% Local Variables:
+%% eval: (add-hook 'write-file-hooks 'time-stamp)
+%% time-stamp-start: "setDate{ "
+%% time-stamp-format: "%:y/%02m/%02d"
+%% time-stamp-end: "}\n"
+%% time-stamp-line-limit: 50
+%% End:
+
