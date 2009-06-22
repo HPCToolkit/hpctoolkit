@@ -670,13 +670,13 @@ hpcfile_cstree_nodedata__fread(hpcrun_fmt_cct_node2_t* x, FILE* fs)
   ret = hpcfile_cstree_as_info__fread(&x->as_info, fs);
   if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
 
-  sz = hpcio_fread_le8(&x->ip, fs);
+  sz = hpcio_fread_le8((uint64_t*)&x->ip, fs);
   if (sz != sizeof(x->ip)) { return HPCFILE_ERR; }
 
   sz = hpcio_fread_le8(&x->lip.id, fs);
   if (sz != sizeof(x->lip.id)) { return HPCFILE_ERR; }
 
-  sz = hpcio_fread_le8(&x->sp, fs);
+  sz = hpcio_fread_le8((uint64_t*)&x->sp, fs);
   if (sz != sizeof(x->sp)) { return HPCFILE_ERR; }
 
   sz = hpcio_fread_le4(&x->cpid, fs);
@@ -704,13 +704,13 @@ hpcfile_cstree_nodedata__fwrite(hpcrun_fmt_cct_node2_t* x, FILE* fs)
   ret = hpcfile_cstree_as_info__fwrite(&x->as_info, fs);
   if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
 
-  sz = hpcio_fwrite_le8(&x->ip, fs);
+  sz = hpcio_fwrite_le8((uint64_t*)&x->ip, fs);
   if (sz != sizeof(x->ip)) { return HPCFILE_ERR; }
 
   sz = hpcio_fwrite_le8(&x->lip.id, fs);
   if (sz != sizeof(x->lip.id)) { return HPCFILE_ERR; }
 
-  sz = hpcio_fwrite_le8(&x->sp, fs);
+  sz = hpcio_fwrite_le8((uint64_t*)&x->sp, fs);
   if (sz != sizeof(x->sp)) { return HPCFILE_ERR; }
 
   sz = hpcio_fwrite_le4(&x->cpid, fs);
@@ -733,8 +733,7 @@ hpcfile_cstree_nodedata__fprint(hpcrun_fmt_cct_node2_t* x, FILE* fs,
   char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
   lush_assoc_info_sprintf(as_str, x->as_info);
 
-  fprintf(fs, "%s{nodedata: (as: %s) (ip: 0x%"PRIx64") (lip: [%"PRIu64"][%p]) (sp: %"PRIx64") (cpid: %"PRIu32")\n", pre, as_str, x->ip, x->lip.id, x->lip.ptr, 
-	  x->sp, x->cpid);
+  fprintf(fs, "%s{nodedata: (as: %s) (ip: %p) (lip: [%"PRIu64"][%p]) (sp: %p) (cpid: %"PRIu32")\n", pre, as_str, x->ip, x->lip.id, x->lip.ptr, x->sp, x->cpid);
 
   fprintf(fs, "%s  (metrics:", pre);
   for (int i = 0; i < x->num_metrics; ++i) {
