@@ -12,6 +12,7 @@
 
 /* user include files */
 
+#include "env.h"
 #include "handling_sample.h"
 #include "unwind.h"
 #include "mem.h"
@@ -23,6 +24,37 @@
 #include "vptr_add.h"
 
 #include "mem_const.h"
+
+#define DEFAULT_MEMSIZE  (8 * 1024 * 1024)
+#define EXTRA_MEMSIZE    (1024 * 1024)
+#define DEFAULT_PAGESIZE  4096
+
+static size_t hpcrun_max_memsize = DEFAULT_MEMSIZE;
+static size_t sys_pagesize = DEFAULT_PAGESIZE;
+
+static inline size_t
+hpcrun_align_pagesize(size_t size)
+{
+  return ((size + sys_pagesize - 1)/sys_pagesize) * sys_pagesize;
+}
+
+static void
+hpcrun_mem_env_init(void)
+{
+  char *str;
+  long ans;
+
+#ifdef _SC_PAGESIZE
+  if ((ans = sysconf(_SC_PAGESIZE)) > 0) {
+    sys_pagesize = ans;
+  }
+#endif
+
+  str = getenv(HPCRUN_MAX_MEMSIZE);
+  if (str != NULL && sscanf(str, "%ld", &ans) == 1) {
+    hpcrun_max_memsize = hpcrun_align_pagesize(ans);
+  }
+}
 
 /* the system malloc is good about rounding odd amounts to be aligned.
    we need to do the same thing.
@@ -68,6 +100,26 @@ csprof_mem_store__str(csprof_mem_store_t st)
   }
 }
 
+static void *
+hpcrun_mmap_anon(size_t size)
+{
+  int prot, flags, fd;
+
+  size = hpcrun_align_pagesize(size);
+  prot = PROT_READ | PROT_WRITE;
+  fd = -1;
+#if defined(MAP_ANON)
+  flags = MAP_PRIVATE | MAP_ANON;
+#elif defined(MAP_ANONYMOUS)
+  flags = MAP_PRIVATE | MAP_ANONYMOUS;
+#else
+  fd = open("/dev/zero", O_RDWR);
+  flags = MAP_PRIVATE;
+#endif
+
+  return mmap(NULL, size, prot, flags, fd, 0);
+}
+
 // csprof_mem__grow: Creates a new pool of memory that is at least as
 // large as 'sz' bytes for the mem store specified by 'st' and returns
 // HPCRUN_OK; otherwise returns HPCRUN_ERR.
@@ -76,48 +128,23 @@ csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
 {
   // Note: we cannot use our memory stores until we have allocated more mem
   void* mmbeg = NULL;
-  int fd, mmflags, mmprot;
-  size_t mmsz = 0, mmsz_base = 0;
+  size_t mmsz = sz;
 
   csprof_mmap_info_t** store = NULL;
   csprof_mmap_alloc_info_t *allocinf = NULL;
   csprof_mmap_info_t *mminfo = NULL;
-  offset_t *sz_next = NULL;
 
   // Setup pointers
-  if(st == CSPROF_MEM_STORE) {
-    mmsz_base = x->sz_next;
+  if (x != NULL) {
     store = &(x->store);
     allocinf = &(x->allocinf);
-    sz_next = &(x->sz_next);
-  } else if(st == CSPROF_MEM_STORETMP) {
-    mmsz_base = x->sz_next_tmp;
-    store = &(x->store_tmp);
-    allocinf = &(x->allocinf_tmp);
-    sz_next = &(x->sz_next_tmp);
-  } else {
-    EMSG("MEM_GROW programming error");
-    csprof_handle_memory_error();
   }
-
-  if(sz > mmsz_base) { mmsz_base = sz; } // max of 'mmsz_base' and 'sz'
-
-  mmsz = mmsz_base + sizeof(csprof_mmap_info_t);
 
   TMSG(MMAP, "creating new %s memory store of %lu bytes", 
-       csprof_mem_store__str(st), mmsz_base);
+       csprof_mem_store__str(st), mmsz);
 
-  // Open a new memory map for storage: Create a mmap using swap space
-  // as the shared object.
-  // FIXME: Linux had MAP_NORESERVE here; no equivalent on Alpha
-  mmflags = MAP_PRIVATE; // MAP_VARIABLE
-  mmprot = (PROT_READ | PROT_WRITE);
-  if((fd = open("/dev/zero", O_RDWR)) == -1) {
-    mmflags |= MAP_ANONYMOUS;
-  } else {
-    mmflags |= MAP_FILE;
-  }
-  if((mmbeg = mmap(NULL, mmsz, mmprot, mmflags, fd, 0)) == MAP_FAILED) {
+  mmbeg = hpcrun_mmap_anon(mmsz);
+  if (mmbeg == MAP_FAILED) {
     EMSG("mem grow mmap failed");
     return HPCRUN_ERR;
   }
@@ -143,9 +170,6 @@ csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
   allocinf->beg = mmbeg;
   allocinf->end = VPTR_ADD(mmbeg, mmsz);
   
-  // Prepare for (possible) future growth
-  *sz_next = (mmsz_base * 2);
-
   return HPCRUN_OK;
 }
 
@@ -276,12 +300,10 @@ csprof_malloc_init(offset_t sz, offset_t sz_tmp)
   csprof_mem_t *memstore = &(TD_GET(_mem));
 
   if(memstore == NULL) { TMSG(MEM,"malloc_init returns NULL"); return NULL; }
-  if(sz == 1) { sz = CSPROF_MEM_INIT_SZ; }
-  if(sz_tmp == 1) { sz_tmp = CSPROF_MEM_INIT_SZ_TMP; }
-  
-  TMSG(MEM,"csprof_malloc_init called with sz = %ld, sz_tmp = %ld",sz, sz_tmp);
-  int status = csprof_mem__init(memstore, sz, sz_tmp);
 
+  hpcrun_mem_env_init();
+  TMSG(MEM,"csprof_malloc_init called with sz = %ld, sz_tmp = %ld",sz, sz_tmp);
+  int status = csprof_mem__init(memstore, hpcrun_max_memsize, 0);
   if(status == HPCRUN_ERR) {
     return NULL;
   }
@@ -295,12 +317,10 @@ csprof_malloc2_init(offset_t sz, offset_t sz_tmp)
   csprof_mem_t *memstore = &(TD_GET(_mem2));
 
   if(memstore == NULL) { TMSG(MEM2,"malloc_init returns NULL"); return NULL; }
-  if(sz == 1) { sz = CSPROF_MEM_INIT_SZ; }
-  if(sz_tmp == 1) { sz_tmp = CSPROF_MEM_INIT_SZ_TMP; }
-  
-  TMSG(MEM2,"csprof_malloc2_init called with sz = %ld, sz_tmp = %ld",sz, sz_tmp);
-  int status = csprof_mem__init(memstore, sz, sz_tmp);
 
+  hpcrun_mem_env_init();
+  TMSG(MEM2,"csprof_malloc2_init called with sz = %ld, sz_tmp = %ld",sz, sz_tmp);
+  int status = csprof_mem__init(memstore, EXTRA_MEMSIZE, 0);
   if(status == HPCRUN_ERR) {
     return NULL;
   }
@@ -313,6 +333,7 @@ static void *
 csprof_malloc_threaded(csprof_mem_t *memstore, size_t size)
 {
   void *mem;
+  int ret;
 
   // Sanity check
   if (csprof_mem__get_status(memstore) != CSPROF_MEM_STATUS_INIT) {
@@ -333,17 +354,20 @@ csprof_malloc_threaded(csprof_mem_t *memstore, size_t size)
   size = csprof_align_malloc_request(size);
   TMSG(CSP_MALLOC,"requested size after alignment = %ld",size);
 
-  // Try to allocate the memory (should loop at most once)
-  while ((mem = csprof_mem__alloc(memstore, size, CSPROF_MEM_STORE)) == NULL) {
+  mem = csprof_mem__alloc(memstore, size, CSPROF_MEM_STORE);
+  if (mem != NULL)
+    return mem;
 
-    TMSG(CSP_MALLOC,"--inside mem__alloc loop");
-    if((csprof_mem__grow(memstore, size, CSPROF_MEM_STORE) != HPCRUN_OK)) {
-      EMSG("could not allocate swap space for memory manager");
-      csprof_handle_memory_error();  // used to abort
-    }
-  }
+  if (size > EXTRA_MEMSIZE - 1000)
+    return hpcrun_mmap_anon(size);
 
-  return mem;
+  ret = csprof_mem__grow(memstore, EXTRA_MEMSIZE, CSPROF_MEM_STORE);
+  if (ret == HPCRUN_OK)
+    return csprof_mem__alloc(memstore, size, CSPROF_MEM_STORE);
+
+  EMSG("could not allocate swap space for memory manager");
+  csprof_handle_memory_error();  // used to abort
+  return NULL;
 }
 
 void *
