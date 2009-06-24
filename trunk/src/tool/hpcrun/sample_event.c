@@ -29,7 +29,7 @@
 
 //*************************** Forward Declarations **************************
 
-static hpcrun_cct_node_t*
+static csprof_cct_node_t*
 _hpcrun_sample_callpath(csprof_state_t *state, void *context,
 			int metricId, uint64_t metricIncr,
 			int skipInner, int isSync);
@@ -114,7 +114,7 @@ csprof_display_summary(void)
 }
 
 
-hpcrun_cct_node_t *
+csprof_cct_node_t *
 hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
 		       int skipInner, int isSync)
 {
@@ -145,7 +145,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
   thread_data_t *td = csprof_get_thread_data();
   sigjmp_buf_t *it = &(td->bad_unwind);
-  hpcrun_cct_node_t* node = NULL;
+  csprof_cct_node_t* node = NULL;
   csprof_state_t *state = td->state;
 
   csprof_set_handling_sample(td);
@@ -165,11 +165,11 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc); 
 
 	csprof_frame_t frm = {.ip = func_start_pc};
-	hpcrun_cct_node_t* func_proxy = csprof_cct_get_child(cct, node->parent, &frm);
+	csprof_cct_node_t* func_proxy = csprof_cct_get_child(cct, node->parent, &frm);
 
 	// assign it a call path node id if it doesn't have one
-	if (func_proxy->data.cpid == 0) func_proxy->data.cpid = cct->next_cpid++;
-	trace_append(func_proxy->data.cpid);
+	if (func_proxy->cpid == 0) func_proxy->cpid = cct->next_cpid++;
+	trace_append(func_proxy->cpid);
       }
       csprof_state_flag_clear(state, CSPROF_THRU_TRAMP);
     }
@@ -199,7 +199,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 }
 
 
-static hpcrun_cct_node_t*
+static csprof_cct_node_t*
 _hpcrun_sample_callpath(csprof_state_t *state, void *context,
 			int metricId, uint64_t metricIncr, 
 			int skipInner, int isSync)
@@ -233,7 +233,7 @@ _hpcrun_sample_callpath(csprof_state_t *state, void *context,
   csprof_undo_swizzled_data(state, context);
 #endif
   
-  hpcrun_cct_node_t* n =
+  csprof_cct_node_t* n =
     hpcrun_backtrace(state, context, metricId, metricIncr, skipInner, isSync);
 
   // FIXME: n == -1 if sample is filtered

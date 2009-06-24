@@ -156,11 +156,13 @@ hpcrun_write_profile_data(csprof_state_t *state)
     //
 
     hpcrun_cct_t    *cct           = &(state->csdata);
-    pthread_cct_ctxt_t *pthread_cct_ctxt = state->csdata_ctxt;
+    lush_cct_ctxt_t *lush_cct_ctxt = state->csdata_ctxt;
 
-    ret = hpcrun_cct_fwrite(cct, pthread_cct_ctxt, fs);
+    TMSG(DATA_WRITE, "Writing %ld nodes", cct->num_nodes);
+
+    ret = csprof_cct__write_bin(fs, cct, lush_cct_ctxt);
           
-    if(ret != HPCFILE_OK) {
+    if(ret != HPCRUN_OK) {
       TMSG(DATA_WRITE, "Error writing tree %#lx", cct);
       TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);
       EMSG("could not save profile data to file '%s'", __FILE__, __LINE__, fnm);

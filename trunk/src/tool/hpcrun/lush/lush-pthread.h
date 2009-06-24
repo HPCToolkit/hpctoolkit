@@ -118,11 +118,11 @@ lushPthr_endSmplIdleness(lushPthr_t* x)
 }
 
 
-static inline hpcrun_cct_node_t*
+static inline csprof_cct_node_t*
 lushPthr_attribToCallPath(uint64_t idlenessIncr)
 {
 #if 1
-  hpcrun_cct_node_t* n = NULL;
+  csprof_cct_node_t* n = NULL;
   if (!hpcrun_async_is_blocked()) {
     hpcrun_async_block();
     ucontext_t context;
@@ -533,10 +533,10 @@ lushPthr_mutexLock_post_ty3(lushPthr_t* x, pthread_mutex_t* lock)
   if (x->idleness > 0) {
     BalancedTreeNode_t* syncData = lushPthr_demandSyncObjData(x, lock);
     if (syncData->cct_node) {
-      hpcrun_cct_node_t* node = (hpcrun_cct_node_t*)syncData->cct_node;
+      csprof_cct_node_t* node = (csprof_cct_node_t*)syncData->cct_node;
       int mid = lush_agents->metric_idleness;
       double idleness = x->idleness;
-      cct_metric_data_increment(mid, &node->data.metrics[mid], 
+      cct_metric_data_increment(mid, &node->metrics[mid],
 				(cct_metric_data_t){.r = idleness});
     }
     // FIXME: otherwise???

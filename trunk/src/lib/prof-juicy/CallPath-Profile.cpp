@@ -274,7 +274,7 @@ Profile::ddump() const
 //***************************************************************************
 
 static Prof::CCT::ANode* 
-cct_makeNode(Prof::CCT::Tree* cct, hpcrun_fmt_cct_node2_t* data);
+cct_makeNode(Prof::CCT::Tree* cct, hpcfile_cstree_nodedata_t* data);
 
 static void
 cct_fixRoot(Prof::CCT::Tree* tree, const char* progName);
@@ -519,7 +519,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
   // Read each CCT node
   // ------------------------------------------------------------
 
-  hpcrun_fmt_cstree_node_t ndata;
+  hpcfile_cstree_node_t ndata;
   ndata.data.num_metrics = num_metrics;
   ndata.data.metrics = (hpcrun_metric_data_t*)alloca(num_metrics * sizeof(hpcfmt_uint_t));
   
@@ -688,7 +688,7 @@ Profile::cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg)
 //***************************************************************************
 
 static Prof::CCT::ANode*
-cct_makeNode(Prof::CCT::Tree* cct, hpcrun_fmt_cct_node2_t* data)
+cct_makeNode(Prof::CCT::Tree* cct, hpcfile_cstree_nodedata_t* data)
 {
   using namespace Prof;
   

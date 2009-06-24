@@ -105,6 +105,74 @@ hpcfmt_byte8_fread(uint64_t *val, FILE *in)
   return HPCFILE_OK;
 }
 
+#if defined(OLD_STR)
+int 
+hpcfile_str__init(hpcfile_str_t* x)
+{
+  memset(x, 0, sizeof(*x));
+  return HPCFILE_OK;
+}
+
+int 
+hpcfile_str__fini(hpcfile_str_t* x)
+{
+  return HPCFILE_OK;
+}
+
+int 
+hpcfile_str__fread(hpcfile_str_t* x, FILE* fs, 
+		   hpcfile_cb__alloc_fn_t alloc_fn)
+{
+  size_t sz;
+  
+  // [tag has already been read]
+
+  sz = hpcio_fread_le4(&x->length, fs);
+  if (sz != sizeof(x->length)) { return HPCFILE_ERR; }
+
+  if (x->length > 0) { 
+    x->str = alloc_fn((x->length + 1) * 1); // add space for '\0'
+    sz = fread(x->str, 1, x->length, fs);  
+    x->str[x->length] = '\0'; 
+    if (sz != x->length) { return HPCFILE_ERR; }
+  }
+  
+  return HPCFILE_OK;
+}
+
+int 
+hpcfile_str__fwrite(hpcfile_str_t* x, FILE* fs)
+{
+  size_t sz;
+  int ret;
+
+  ret = hpcfile_tag__fwrite(x->tag, fs);
+  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
+
+  sz = hpcio_fwrite_le4(&x->length, fs);
+  if (sz != sizeof(x->length)) { return HPCFILE_ERR; }
+  
+  sz = fwrite(x->str, 1, x->length, fs);
+  if (sz != x->length) { return HPCFILE_ERR; }
+
+  return HPCFILE_OK;
+}
+
+int 
+hpcfile_str__fprint(hpcfile_str_t* x, FILE* fs)
+{
+  fputs("{hpcfile_str: ", fs);
+  
+  fprintf(fs, "(tag: %u)\n", x->tag);
+
+  fprintf(fs, "(length: %u)", x->length);
+  if (x->str) { fprintf(fs, " (str: %s)", x->str); }
+  
+  fputs("\n", fs);
+
+  return HPCFILE_OK;
+}
+#endif // defined(OLD_STR)
 
 //***************************************************************************
 

@@ -131,8 +131,6 @@ csprof_set_thread0_data(void)
 }
 
 // FIXME: use csprof_malloc ??
-//  Also, change return type
-//
 thread_data_t *
 csprof_allocate_thread_data(void)
 {

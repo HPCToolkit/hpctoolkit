@@ -215,31 +215,6 @@ typedef union hpcrun_metric_data_u {
 
 extern hpcrun_metric_data_t hpcrun_metric_data_ZERO;
 
-typedef struct cct_node_data_t {
-  lush_assoc_info_t as_info;
-
-  // instruction pointer: more accurately, this is an 'operation
-  // pointer'.  The operation in the instruction packet is represented
-  // by adding 0, 1, or 2 to the instruction pointer for the first,
-  // second and third operation, respectively.
-
-  void *ip;
-
-  union {
-    hpcfmt_uint_t id;  // canonical lip id
-    lush_lip_t*    ptr; // pointer
-  } lip; 
-
-  // 'sp': the stack pointer of this node
-  // tallent: Why is this needed?
-  void *sp;
-
-  uint32_t cpid;
-
-  uint32_t num_metrics;
-  hpcrun_metric_data_t metrics[];
-} cct_node_data_t;
-
 typedef struct hpcrun_fmt_cct_node_t {
   lush_assoc_info_t as_info;
 
@@ -247,8 +222,7 @@ typedef struct hpcrun_fmt_cct_node_t {
   // pointer'.  The operation in the instruction packet is represented
   // by adding 0, 1, or 2 to the instruction pointer for the first,
   // second and third operation, respectively.
-
-  void *ip;
+  hpcfmt_vma_t ip;
 
   union {
     hpcfmt_uint_t id;  // canonical lip id
@@ -257,39 +231,23 @@ typedef struct hpcrun_fmt_cct_node_t {
 
   // 'sp': the stack pointer of this node
   // tallent: Why is this needed?
-  void *sp;
+  hpcfmt_uint_t sp;
 
   uint32_t cpid;
 
-  uint32_t num_metrics;
-  hpcrun_metric_data_t metrics[];
+  hpcfmt_uint_t num_metrics;
+  hpcrun_metric_data_t* metrics;
 
+#if defined(NEW_CCT)
+  uint32_t node_id;
+  uint32_t parent_id;
+  uint32_t lush_assoc;
+  uint64_t ip;
+  uint64_t sp;
+  uint64_t lush_lip;
+#endif
+  
 } hpcrun_fmt_cct_node_t;
-
-typedef struct hpcrun_fmt_cct_node2_t {
-  lush_assoc_info_t as_info;
-
-  // instruction pointer: more accurately, this is an 'operation
-  // pointer'.  The operation in the instruction packet is represented
-  // by adding 0, 1, or 2 to the instruction pointer for the first,
-  // second and third operation, respectively.
-  void *ip;
-
-  union {
-    hpcfmt_uint_t id;  // canonical lip id
-    lush_lip_t*    ptr; // pointer
-  } lip; 
-
-  // 'sp': the stack pointer of this node
-  // tallent: Why is this needed?
-  void *sp;
-
-  uint32_t cpid;
-
-  uint32_t num_metrics;
-  hpcrun_metric_data_t *metrics;
-
-} hpcrun_fmt_cct_node2_t;
 
 
 //***************************************************************************
@@ -578,7 +536,7 @@ int hpcfile_cstree_hdr__fwrite(hpcfile_cstree_hdr_t* x, FILE* fs);
 int hpcfile_cstree_hdr__fprint(hpcfile_cstree_hdr_t* x, FILE* fs);
 
 // ---------------------------------------------------------
-// hpcrun_fmt_cct_node2_t:
+// hpcfile_cstree_nodedata_t:
 // ---------------------------------------------------------
 
 #define HPCFILE_TAG__CSTREE_NODE 13 /* just because */
@@ -619,12 +577,12 @@ typedef struct hpcfile_cstree_nodedata_s {
 
 } hpcfile_cstree_nodedata_t;
 
-int hpcfile_cstree_nodedata__init(hpcrun_fmt_cct_node2_t* x);
-int hpcfile_cstree_nodedata__fini(hpcrun_fmt_cct_node2_t* x);
+int hpcfile_cstree_nodedata__init(hpcfile_cstree_nodedata_t* x);
+int hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x);
 
-int hpcfile_cstree_nodedata__fread(hpcrun_fmt_cct_node2_t* x, FILE* fs);
-int hpcfile_cstree_nodedata__fwrite(hpcrun_fmt_cct_node2_t* x, FILE* fs);
-int hpcfile_cstree_nodedata__fprint(hpcrun_fmt_cct_node2_t* x, FILE* fs,
+int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs);
+int hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs);
+int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
 				    const char* pre);
 
 // ---------------------------------------------------------
@@ -642,28 +600,24 @@ int hpcfile_cstree_lip__fprint(lush_lip_t* x, hpcfmt_uint_t id,
 			       FILE* fs, const char* pre);
 
 // ---------------------------------------------------------
-// hpcrun_fmt_cstree_node_t: The root node -- the node without a parent -- is
+// hpcfile_cstree_node_t: The root node -- the node without a parent -- is
 // indicated by identical values for 'id' and 'id_parent'
 // ---------------------------------------------------------
-typedef struct hpcfile_cstree_node_t {
+typedef struct hpcfile_cstree_node_s {
 
-#if defined(OLD_CCT)
   hpcfile_cstree_nodedata_t data;
-#endif // defined(OLD_CCT)
 
   hpcfmt_uint_t id;        // persistent id of self
   hpcfmt_uint_t id_parent; // persistent id of parent
 
-  hpcrun_fmt_cct_node2_t data; // the data for a cct node
+} hpcfile_cstree_node_t;
 
-} hpcrun_fmt_cstree_node_t;
+int hpcfile_cstree_node__init(hpcfile_cstree_node_t* x);
+int hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x);
 
-int hpcfile_cstree_node__init(hpcrun_fmt_cstree_node_t* x);
-int hpcfile_cstree_node__fini(hpcrun_fmt_cstree_node_t* x);
-
-int hpcfile_cstree_node__fread(hpcrun_fmt_cstree_node_t* x, FILE* fs);
-int hpcfile_cstree_node__fwrite(hpcrun_fmt_cstree_node_t* x, FILE* fs);
-int hpcfile_cstree_node__fprint(hpcrun_fmt_cstree_node_t* x, FILE* f, 
+int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs);
+int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs);
+int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* f, 
 				const char* pres);
 
 
