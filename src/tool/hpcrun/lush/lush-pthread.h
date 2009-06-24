@@ -119,7 +119,7 @@ lushPthr_endSmplIdleness(lushPthr_t* x)
 
 
 static inline hpcrun_cct_node_t*
-lushPthr_sampleIdleness(uint64_t idlenessIncr)
+lushPthr_attribToCallPath(uint64_t idlenessIncr)
 {
 #if 1
   hpcrun_cct_node_t* n = NULL;
@@ -176,7 +176,7 @@ lushPthr_mutexLock_post_ty1(lushPthr_t* x, pthread_mutex_t* lock)
   lushPthr_endSmplIdleness(x);
   x->is_working = true;
   if (x->idleness > 0) {
-    lushPthr_sampleIdleness(x->idleness);
+    lushPthr_attribToCallPath(x->idleness);
   }
 }
 
@@ -237,7 +237,7 @@ lushPthr_condwait_post_ty1(lushPthr_t* x)
   lushPthr_endSmplIdleness(x);
   x->is_working = true;
   if (x->idleness > 0) {
-    lushPthr_sampleIdleness(x->idleness);
+    lushPthr_attribToCallPath(x->idleness);
   }
 }
 
@@ -533,12 +533,13 @@ lushPthr_mutexLock_post_ty3(lushPthr_t* x, pthread_mutex_t* lock)
   if (x->idleness > 0) {
     BalancedTreeNode_t* syncData = lushPthr_demandSyncObjData(x, lock);
     if (syncData->cct_node) {
-      int mid = lush_agents->metric_idleness;
       hpcrun_cct_node_t* node = (hpcrun_cct_node_t*)syncData->cct_node;
+      int mid = lush_agents->metric_idleness;
       double idleness = x->idleness;
       cct_metric_data_increment(mid, &node->data.metrics[mid], 
 				(cct_metric_data_t){.r = idleness});
     }
+    // FIXME: otherwise???
   }
 }
 
@@ -556,8 +557,11 @@ lushPthr_mutexUnlock_ty3(lushPthr_t* x, pthread_mutex_t* lock)
   x->is_working = true; // same
 
   x->curSyncObjData = NULL; // drop samples
-  BalancedTreeNode_t* syncData = lushPthr_demandSyncObjData(x, lock);
-  syncData->cct_node = lushPthr_sampleIdleness(0);
+  if (x->doIdlenessCnt == 1 ||
+      x->doIdlenessCnt == LUSH_PTHR_SYNC_SMPL_PERIOD/2) {
+    BalancedTreeNode_t* syncData = lushPthr_demandSyncObjData(x, lock);
+    syncData->cct_node = lushPthr_attribToCallPath(0);
+  }
 }
 
 
@@ -588,11 +592,15 @@ static inline void
 lushPthr_spinUnlock_ty3(lushPthr_t* x, pthread_spinlock_t* lock)
 {
   x->is_working = true; // same
-  
-  BalancedTreeNode_t* syncData = lushPthr_demandSyncObjData(x, (void*)lock);
-  if (syncData->idleness > 0) {
-    uint64_t idle = csprof_atomic_swap_l((long*)&syncData->idleness, 0);
-    lushPthr_sampleIdleness(idle);
+
+  x->doIdlenessCnt++;
+  if (x->doIdlenessCnt == LUSH_PTHR_SYNC_SMPL_PERIOD) {
+    BalancedTreeNode_t* syncData = lushPthr_demandSyncObjData(x, (void*)lock);
+    if (syncData->idleness > 0) {
+      x->idleness = csprof_atomic_swap_l((long*)&syncData->idleness, 0);
+      lushPthr_attribToCallPath(x->idleness);
+    }
+    x->doIdlenessCnt = 0;
   }
 }
 
