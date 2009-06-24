@@ -232,10 +232,12 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     *incrMetric = incrMetricIn;
     *incrMetricIdleness = (double)incrMetricIn * idleness;
 #elif (LUSH_PTHR_FN_TY == 3)
+    // Same as 1
     *doMetric = true;
-    *doMetricIdleness = false;
+    *doMetricIdleness = (pthr->idleness > 0);
     *incrMetric = incrMetricIn;
-    *incrMetricIdleness = 0;
+    *incrMetricIdleness = pthr->idleness;
+    pthr->idleness = 0;
 #else
 #  error "agent-pthread.c!"
 #endif
@@ -253,7 +255,7 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     //*incrMetricIdleness = 0.0;
 #elif (LUSH_PTHR_FN_TY == 3)
     if (pthr->curSyncObjData) {
-      // INVARIANT: this thread is waiting on pthr->curSyncObjData
+      // INVARIANT: spin waiting on pthr->curSyncObjData
       MY_atomic_add(&pthr->curSyncObjData->idleness, incrMetricIn);
     }
     *doMetric = false;
