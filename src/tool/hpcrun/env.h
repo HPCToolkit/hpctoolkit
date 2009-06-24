@@ -47,7 +47,6 @@ extern const char* CSPROF_OPT_LUSH_AGENTS;
 /* Names for option environment variables */
 extern const char* CSPROF_OPT_OUT_PATH;
 extern const char* CSPROF_OPT_SAMPLE_PERIOD;
-extern const char* CSPROF_OPT_MEM_SZ;
 extern const char* CSPROF_OPT_TRACE;
 
 extern const char* CSPROF_OPT_VERBOSITY;
@@ -58,5 +57,6 @@ extern const char* CSPROF_OPT_MAX_METRICS;
 extern const char* SWITCH_TO_PAPI;
 
 extern const char* HPCRUN_EVENT_LIST;
+extern const char* HPCRUN_MAX_MEMSIZE;
 
 #endif /* CSPROF_ENV_H */
