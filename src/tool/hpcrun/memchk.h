@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-inline bool
+static inline bool
 memchk(const char *buf,char v,size_t len)
 {
   for(int i=0;i < len;i++){
