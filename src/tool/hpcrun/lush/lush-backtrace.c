@@ -59,7 +59,7 @@ lush_agent_pool_t* lush_agents = NULL;
 // LUSH backtrace
 //***************************************************************************
 
-hpcrun_cct_node_t*
+csprof_cct_node_t*
 lush_backtrace(csprof_state_t* state, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       int skipInner, int isSync)
@@ -205,7 +205,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
     bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
   }
 
-  hpcrun_cct_node_t* node = NULL;
+  csprof_cct_node_t* node = NULL;
   node = csprof_state_insert_backtrace(state, metricId,
 				       bt_end, bt_beg,
 				       (cct_metric_data_t){.i = incrMetric});
@@ -213,7 +213,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   if (doMetricIdleness) {
     //lush_agentid_t aid = aidMetricIdleness;
     int mid = lush_agents->metric_idleness;
-    cct_metric_data_increment(mid, &(node->data.metrics[mid]),
+    cct_metric_data_increment(mid, &(node->metrics[mid]),
 			      (cct_metric_data_t){.r = incrMetricIdleness});
   }
 

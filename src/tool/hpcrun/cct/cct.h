@@ -71,8 +71,8 @@
 #endif
 
 #include <metrics.h>
-#include "pmsg.h"
 
+#include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
@@ -85,6 +85,23 @@
 //*************************** Forward Declarations **************************
 
 
+//***************************************************************************
+// Calling context tree node
+//***************************************************************************
+
+struct rbtree_node;
+
+struct rbtree
+{
+  struct rbtree_node *root;
+};
+
+// --------------------------------------------------------------------------
+// 
+// --------------------------------------------------------------------------
+
+// tallent: was 'size_t'.  If this should change the memcpy in
+// hpcfile_cstree_write_node_hlp should be modified.
 typedef hpcrun_metric_data_t cct_metric_data_t;
 
 static inline void
@@ -95,34 +112,72 @@ cct_metric_data_increment(int metric_id,
   metric_tbl_t *mdata = hpcrun_get_metric_data();
   metric_desc_t *minfo = &(mdata->lst[metric_id]);
   
-  TMSG(METRIC_INC, "Increment metric id %d @ %p", metric_id, x);
   if (hpcfile_csprof_metric_is_flag(minfo->flags, HPCFILE_METRIC_FLAG_REAL)) {
-    TMSG(METRIC_INC, "Real data %g incremented by %g", x->r, incr.r);
     x->r += incr.r;
   }
   else {
-    TMSG(METRIC_INC, "Integer data %d incremented by %d", x->i, incr.i);
     x->i += incr.i;
   }
 }
 
-//
-// Define hpcrun_cct_node_t as a composition of
-//  2 datatypes:
-//      1) The data portion (this datatype definition is shared with hpcrun_fmt)
-//      2) The tree / linking portion
-//
 
-typedef struct hpcrun_cct_node_t
-{
-  struct hpcrun_cct_node_t *parent;
-  struct hpcrun_cct_node_t *sib;
-  struct hpcrun_cct_node_t *child;
 
-  // data portion ... has variable data so must be last
-  cct_node_data_t data;
+/* try to order these so that the most-often referenced things fit into
+   a single cache line... */
+typedef struct csprof_cct_node_s {
 
-} hpcrun_cct_node_t;
+  // ---------------------------------------------------------
+  // 
+  // ---------------------------------------------------------
+
+  lush_assoc_info_t as_info; // LUSH
+
+  /* physical instruction pointer: more accurately, this is an
+     'operation pointer'.  The operation in the instruction packet is
+     represented by adding 0, 1, or 2 to the instruction pointer for
+     the first, second and third operation, respectively. */
+  void* ip;
+
+  lush_lip_t* lip; // LUSH (if assoc != a-to-0, then tack onto end...)
+
+  // ---------------------------------------------------------
+  // tree structure
+  // ---------------------------------------------------------
+
+  /* parent node and the beginning of the child list */
+  struct csprof_cct_node_s *parent, *children;
+
+  /* tree index of children */
+  struct rbtree tree_children;
+
+  /* singly/doubly linked list of siblings */
+  struct csprof_cct_node_s *next_sibling;
+
+  // ---------------------------------------------------------
+  // 
+  // ---------------------------------------------------------
+
+  void *sp;
+  /* sp is only used if we are using trampolines (i.e.,
+     CSPROF_TRAMPOLINE_BACKEND is defined); otherwise its value is
+     set to NULL  */
+
+  // ---------------------------------------------------------
+  // a persistent node id assigned so that we can record a call
+  // stack sample in a trace simply by recording a call path id 
+  // (cpid). The cpid refers to a call stack from the designated 
+  // node up to the root of the CCT
+  // ---------------------------------------------------------
+  int cpid;
+
+  // ---------------------------------------------------------
+  // metrics (N.B.: MUST APPEAR AT END! cf. csprof_cct_node__create)
+  // ---------------------------------------------------------
+  
+  cct_metric_data_t metrics[1]; /* variable-sized array */
+
+} csprof_cct_node_t;
+
 
 #if !defined(CSPROF_LIST_BACKTRACE_CACHE)
 typedef struct csprof_frame_s {
@@ -136,20 +191,20 @@ typedef struct csprof_frame_s {
 
 // returns the number of ancestors walking up the tree
 unsigned int
-csprof_cct_node__ancestor_count(hpcrun_cct_node_t* x);
+csprof_cct_node__ancestor_count(csprof_cct_node_t* x);
 
 // functions for inspecting links to other nodes
 
-#define csprof_cct_node__parent(/* hpcrun_cct_node_t* */ x)       \
+#define csprof_cct_node__parent(/* csprof_cct_node_t* */ x)       \
   (x)->parent
-#define csprof_cct_node__next_sibling(/* hpcrun_cct_node_t* */ x) \
-  (x)->sib
-#define csprof_cct_node__prev_sibling(/* hpcrun_cct_node_t* */ x) \
+#define csprof_cct_node__next_sibling(/* csprof_cct_node_t* */ x) \
+  (x)->next_sibling
+#define csprof_cct_node__prev_sibling(/* csprof_cct_node_t* */ x) \
   (x)->prev_sibling
-#define csprof_cct_node__first_child(/* hpcrun_cct_node_t* */ x)  \
-  (x)->child
-#define csprof_cct_node__last_child(/* hpcrun_cct_node_t* */ x)   \
-  ((x)->child ? (x)->children->prev_sibling : NULL)
+#define csprof_cct_node__first_child(/* csprof_cct_node_t* */ x)  \
+  (x)->children
+#define csprof_cct_node__last_child(/* csprof_cct_node_t* */ x)   \
+  ((x)->children ? (x)->children->prev_sibling : NULL)
 
 
 //***************************************************************************
@@ -163,22 +218,21 @@ csprof_cct_node__ancestor_count(hpcrun_cct_node_t* x);
 // Represents the creation creation of a given calling context tree as
 // a linked list.
 //   get-ctxt(ctxt): [ctxt.context, get-ctxt(ctxt.parent)]
-//
-typedef struct pthread_cct_ctxt_s {
+typedef struct lush_cct_ctxt_s {
   
   // the leaf node of the creation context
-  hpcrun_cct_node_t* context;
+  csprof_cct_node_t* context;
   
-  struct pthread_cct_ctxt_s* parent; // a list of pthread_cct_ctxt_t
+  struct lush_cct_ctxt_s* parent; // a list of lush_cct_ctxt_t
 
-} pthread_cct_ctxt_t;
+} lush_cct_ctxt_t;
 
 
 unsigned int
-pthread_cct_ctxt__length(pthread_cct_ctxt_t* cct_ctxt);
+lush_cct_ctxt__length(lush_cct_ctxt_t* cct_ctxt);
 
 int
-pthread_cct_ctxt__write(FILE* fs, pthread_cct_ctxt_t* cct_ctxt,
+lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
 		     unsigned int id_root, unsigned int* nodes_written);
 
 
@@ -190,9 +244,9 @@ pthread_cct_ctxt__write(FILE* fs, pthread_cct_ctxt_t* cct_ctxt,
 // 
 // ---------------------------------------------------------
 
-typedef struct hpcrun_cct_t {
+typedef struct csprof_cct_s {
 
-  hpcrun_cct_node_t* tree_root;
+  csprof_cct_node_t* tree_root;
   unsigned long num_nodes;
 
   // next_cpid is used for assigning unique persistent ids to CCT nodes
@@ -208,7 +262,7 @@ typedef struct hpcrun_cct_t {
      convenience, the beginning of the array serves as padding instead
      of the end (i.e. the arrays grow from high to smaller indices.) */
   void **cache_bt;
-  hpcrun_cct_node_t **cache_nodes;
+  csprof_cct_node_t **cache_nodes;
   unsigned int cache_top;     /* current top (smallest index) of arrays */
   unsigned int cache_len;     /* maximum size of the arrays */
 #endif
@@ -229,28 +283,30 @@ int csprof_cct__fini(hpcrun_cct_t *x);
 //              ^ path_end                        ^ path_beg
 //              ^ bt_beg                                       ^ bt_end
 //
-hpcrun_cct_node_t*
+csprof_cct_node_t*
 csprof_cct_insert_backtrace(hpcrun_cct_t *x, void *treenode, int metric_id,
 			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
 			    cct_metric_data_t sample_count);
 
-hpcrun_cct_node_t *csprof_cct_get_child(hpcrun_cct_t *cct, 
-					hpcrun_cct_node_t *parent, 
+csprof_cct_node_t *csprof_cct_get_child(hpcrun_cct_t *cct, 
+					csprof_cct_node_t *parent, 
 					csprof_frame_t *frm);
 
-int hpcrun_cct_fwrite(hpcrun_cct_t* x, pthread_cct_ctxt_t* x_ctxt, FILE* fs);
+int csprof_cct__write_txt(FILE* fs, hpcrun_cct_t* x);
+
+int csprof_cct__write_bin(FILE* fs, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt);
 
 #define csprof_cct__isempty(/* hpcrun_cct_t* */x) ((x)->tree_root == NULL)
 
 
 void
-csprof_cct_print_path_to_root(hpcrun_cct_t *tree, hpcrun_cct_node_t* node);
+csprof_cct_print_path_to_root(hpcrun_cct_t *tree, csprof_cct_node_t* node);
 
 
 /* private interface */
 int csprof_cct__write_txt_q(hpcrun_cct_t *);
 
-int csprof_cct__write_txt_r(FILE *, hpcrun_cct_t *, hpcrun_cct_node_t *);
+int csprof_cct__write_txt_r(FILE *, hpcrun_cct_t *, csprof_cct_node_t *);
 
 
 //***************************************************************************

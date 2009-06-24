@@ -58,7 +58,7 @@ hpcrun_get_metric_data(void)
 }
 
 int
-hpcrun_num_recorded_metrics(void)
+csprof_num_recorded_metrics(void)
 {
   return metric_data.len;
 }

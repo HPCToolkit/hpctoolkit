@@ -265,11 +265,8 @@ csprof_init_thread_support(void)
 }
 
 
-//
-// FIXME: td->suspend_samplling = 1 should go after thread_data_init!
-//
 void *
-csprof_thread_init(int id, pthread_cct_ctxt_t* thr_ctxt)
+csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 {
   thread_data_t *td = csprof_allocate_thread_data();
   td->suspend_sampling = 1; // begin: protect against spurious signals

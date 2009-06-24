@@ -67,7 +67,7 @@ typedef struct csprof_state_s {
 
   /* call stack data, stored in private memory */
   csprof_csdata_t csdata;
-  pthread_cct_ctxt_t* csdata_ctxt; // creation context
+  lush_cct_ctxt_t* csdata_ctxt; // creation context
 
   /* our notion of what the current epoch is */
   csprof_epoch_t *epoch;

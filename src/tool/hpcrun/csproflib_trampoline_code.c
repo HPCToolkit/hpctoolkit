@@ -18,7 +18,7 @@ csprof_trampoline2(void **stackptr)
     DBGMSG_PUB(1, "%%trampoline returning to %p", return_ip);
     DBGMSG_PUB(1, "%%stackptr = %p => %p", stackptr, *stackptr);
     {
-        hpcrun_cct_node_t *treenode = (hpcrun_cct_node_t *)state->treenode;
+        csprof_cct_node_t *treenode = (csprof_cct_node_t *)state->treenode;
 
         assert(treenode != NULL);
 

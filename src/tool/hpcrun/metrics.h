@@ -30,7 +30,7 @@ int csprof_get_max_metrics();
 int csprof_set_max_metrics(int max_metrics);
 
 /* Return the number of metrics being recorded. */
-int hpcrun_num_recorded_metrics(void);
+int csprof_num_recorded_metrics();
 
 /* Request a new metric id.  Returns the new metric id on success, -1
    on failure (that is, you are already tracking the maximum number of

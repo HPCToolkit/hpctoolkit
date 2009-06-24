@@ -34,7 +34,7 @@
 // forward declarations
 //***************************************************************************
 
-hpcrun_cct_node_t*
+csprof_cct_node_t*
 hpcrun_backtrace(csprof_state_t *state, ucontext_t* context, 
 		 int metricId, uint64_t metricIncr,
 		 int skipInner, int isSync);
