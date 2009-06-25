@@ -438,7 +438,7 @@ monitor_thread_mutex_unlock(pthread_mutex_t* lock)
 // ---------------------------------------------------------
 
 void
-monitor_thread_pre_spin_lock(pthread_spinlock_t* lock)
+monitor_thread_spin_init(pthread_spinlock_t* lock, int result)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -447,10 +447,48 @@ monitor_thread_pre_spin_lock(pthread_spinlock_t* lock)
 
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
-  lushPthr_spinLock_pre(&TD_GET(pthr_metrics), lock);
+  lushPthr_spinInit(&TD_GET(pthr_metrics), lock);
 #endif
 
   //hpcrun_async_unblock();
+}
+
+
+pthread_spinlock_t*
+monitor_thread_pre_spin_destroy(pthread_spinlock_t* lock)
+{
+  pthread_spinlock_t* real_lock = lock;
+  if (! hpcrun_is_initialized()) {
+    return real_lock;
+  }
+  //hpcrun_async_block();
+
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
+#ifdef LUSH_PTHREADS
+  real_lock = lushPthr_spinDestroy_pre(&TD_GET(pthr_metrics), lock);
+#endif
+
+  //hpcrun_async_unblock();
+  return real_lock;
+}
+
+
+pthread_spinlock_t*
+monitor_thread_pre_spin_lock(pthread_spinlock_t* lock)
+{
+  pthread_spinlock_t* real_lock = lock;
+  if (! hpcrun_is_initialized()) {
+    return real_lock;
+  }
+  //hpcrun_async_block();
+
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
+#ifdef LUSH_PTHREADS
+  real_lock = lushPthr_spinLock_pre(&TD_GET(pthr_metrics), lock);
+#endif
+
+  //hpcrun_async_unblock();
+  return real_lock;
 }
 
 

@@ -43,28 +43,32 @@
 // to with an char array of the appropriate size.
 
 typedef struct {
+   
+  long ps_num_procs        GCC_ATTR_VAR_CACHE_ALIGN;
+  long ps_num_threads;
+
+  long ps_num_working      GCC_ATTR_VAR_CACHE_ALIGN;
+
+  long ps_num_working_lock GCC_ATTR_VAR_CACHE_ALIGN;
   
-  long lushPthr_ps_num_procs        GCC_ATTR_VAR_CACHE_ALIGN;
-  long lushPthr_ps_num_threads;
+  long ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
 
-  long lushPthr_ps_num_working      GCC_ATTR_VAR_CACHE_ALIGN;
-
-  long lushPthr_ps_num_working_lock GCC_ATTR_VAR_CACHE_ALIGN;
-  
-  long lushPthr_ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
-
-  BalancedTree_t lushPthr_syncObjToData; // synch-obj -> data
+#if (LUSH_PTHR_FN_TY == 3)
+  BalancedTree_t syncObjToData; // synch-obj -> data
+  long curSpinLockIdx;
+  SpinLockData_t spinLockData[lushPthr_spinLockDataSZ];
+#endif
   
 } lushPthr_globals_t;
 
 
 lushPthr_globals_t globals = {
-  .lushPthr_ps_num_procs = 0,
-  .lushPthr_ps_num_threads = 0,
-  .lushPthr_ps_num_working = 0,
-  .lushPthr_ps_num_working_lock = 0,
-  .lushPthr_ps_num_idle_cond = 0
-  // lushPthr_syncObjToData
+  .ps_num_procs = 0,
+  .ps_num_threads = 0,
+  .ps_num_working = 0,
+  .ps_num_working_lock = 0,
+  .ps_num_idle_cond = 0
+  // syncObjToData, curSpinLockIdx, spinLockData
 };
 
 
@@ -78,15 +82,18 @@ lushPthr_processInit()
   // WARNING: At the moment, this routine is called *after*
   // lushPthr_init(), at least for the first thread.
 
-  globals.lushPthr_ps_num_procs   = sysconf(_SC_NPROCESSORS_ONLN);
-  globals.lushPthr_ps_num_threads = 0;
+  globals.ps_num_procs   = sysconf(_SC_NPROCESSORS_ONLN);
+  globals.ps_num_threads = 0;
   
-  globals.lushPthr_ps_num_working      = 0;
-  globals.lushPthr_ps_num_working_lock = 0;
+  globals.ps_num_working      = 0;
+  globals.ps_num_working_lock = 0;
 
-  globals.lushPthr_ps_num_idle_cond    = 0;
+  globals.ps_num_idle_cond    = 0;
 
-  BalancedTree_init(&globals.lushPthr_syncObjToData);
+#if (LUSH_PTHR_FN_TY == 3)
+  BalancedTree_init(&globals.syncObjToData);
+  globals.curSpinLockIdx = 0;
+#endif
 }
 
 
@@ -103,16 +110,21 @@ lushPthr_init(lushPthr_t* x)
   x->begIdleness = 0;
   x->idleness    = 0;
   
-  x->ps_num_procs   = &globals.lushPthr_ps_num_procs;
-  x->ps_num_threads = &globals.lushPthr_ps_num_threads;
+  x->ps_num_procs   = &globals.ps_num_procs;
+  x->ps_num_threads = &globals.ps_num_threads;
 
-  x->ps_num_working      = &globals.lushPthr_ps_num_working;
-  x->ps_num_working_lock = &globals.lushPthr_ps_num_working_lock;
+  x->ps_num_working      = &globals.ps_num_working;
+  x->ps_num_working_lock = &globals.ps_num_working_lock;
   
-  x->ps_num_idle_cond = &globals.lushPthr_ps_num_idle_cond;
+  x->ps_num_idle_cond = &globals.ps_num_idle_cond;
 
-  x->syncObjToData  = &globals.lushPthr_syncObjToData;
+#if (LUSH_PTHR_FN_TY == 3)
+  x->syncObjToData  = &globals.syncObjToData;
   x->curSyncObjData = NULL;
+
+  x->curSpinLockIdx = &globals.curSpinLockIdx;
+  x->spinLockData = globals.spinLockData;
+#endif
 }
 
 
