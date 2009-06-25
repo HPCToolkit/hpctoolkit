@@ -33,11 +33,20 @@
 //*************************** Forward Declarations **************************
 
 
-//*************************** Forward Declarations **************************
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
+//***************************************************************************
+
+typedef struct SpinLockData
+{
+  pthread_spinlock_t lock;
+  uint64_t idleness;
+  void*    cct_node;
+
+} SpinLockData_t;
+
 
 //***************************************************************************
 // 
@@ -71,10 +80,17 @@ typedef struct {
 
 
   // -------------------------------------------------------
-  // process wide metrics
+  // LUSH_PTHR_FN_TY == 3
   // -------------------------------------------------------
   BalancedTree_t* syncObjToData;
   BalancedTreeNode_t* curSyncObjData;
+
+#define lushPthr_spinLockDataSZ  (512)
+#define lushPthr_spinLockMagicLo (0x0ff0000)
+#define lushPthr_spinLockMagicHi (lushPthr_spinLockMagicLo + lushPthr_spinLockDataSZ)
+
+  long* curSpinLockIdx;
+  SpinLockData_t* spinLockData;
 
 } lushPthr_t;
 

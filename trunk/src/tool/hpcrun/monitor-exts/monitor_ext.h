@@ -55,8 +55,12 @@ void monitor_thread_post_mutex_lock(pthread_mutex_t *lock, int result);
 void monitor_thread_mutex_trylock(pthread_mutex_t *lock, int result);
 void monitor_thread_mutex_unlock(pthread_mutex_t *lock);
 
-void monitor_thread_pre_spin_lock(pthread_spinlock_t *lock);
+void monitor_thread_spin_init(pthread_spinlock_t *lock, int result);
+pthread_spinlock_t *monitor_thread_pre_spin_destroy(pthread_spinlock_t *lock);
+
+pthread_spinlock_t *monitor_thread_pre_spin_lock(pthread_spinlock_t *lock);
 void monitor_thread_post_spin_lock(pthread_spinlock_t *lock, int result);
+
 void monitor_thread_spin_trylock(pthread_spinlock_t *lock, int result);
 void monitor_thread_spin_unlock(pthread_spinlock_t *lock);
 
