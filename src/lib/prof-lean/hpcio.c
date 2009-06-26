@@ -194,8 +194,102 @@ hpcio_fwrite_le8(uint64_t* val, FILE* fs)
 }
 
 
-#if 0
 
+size_t
+hpcio_fread_be2(uint16_t* val, FILE* fs)
+{
+  uint16_t v = 0; // local copy of val
+  int shift = 0, num_read = 0, c;
+  
+  for (shift = 8; shift >= 0; shift -= 8) {
+    if ( (c = fgetc(fs)) == EOF ) { break; }
+    num_read++;
+    v |= ((uint16_t)(c & 0xff) << shift); // 8, 0
+  }
+
+  *val = v;
+  return num_read;
+}
+
+size_t
+hpcio_fread_be4(uint32_t* val, FILE* fs)
+{
+  uint32_t v = 0; // local copy of val
+  int shift = 0, num_read = 0, c;
+  
+  for (shift = 24; shift >= 0; shift -= 8) {
+    if ( (c = fgetc(fs)) == EOF ) { break; }
+    num_read++;
+    v |= ((uint32_t)(c & 0xff) << shift); // 24, 16, 8, 0
+  }
+
+  *val = v;
+  return num_read;
+}
+
+size_t 
+hpcio_fread_be8(uint64_t* val, FILE* fs)
+{
+  uint64_t v = 0; // local copy of val
+  int shift = 0, num_read = 0, c;
+  
+  for (shift = 56; shift >= 0; shift -= 8) {
+    if ( (c = fgetc(fs)) == EOF ) { break; }
+    num_read++;
+    v |= ((uint64_t)(c & 0xff) << shift); // 56, 48, 40, ... 0
+  }
+
+  *val = v;
+  return num_read;
+}
+
+
+size_t 
+hpcio_fwrite_be2(uint16_t* val, FILE* fs)
+{
+  uint16_t v = *val; // local copy of val
+  int shift = 0, num_write = 0, c;
+  
+  for (shift = 8; shift >= 0; shift -= 8) {
+    c = fputc( ((v >> shift) & 0xff) , fs);
+    if (c == EOF) { break; }
+    num_write++;
+  }
+  return num_write;
+}
+
+
+size_t 
+hpcio_fwrite_be4(uint32_t* val, FILE* fs)
+{
+  uint32_t v = *val; // local copy of val
+  int shift = 0, num_write = 0, c;
+  
+  for (shift = 24; shift >= 0; shift -= 8) {
+    c = fputc( ((v >> shift) & 0xff) , fs);
+    if (c == EOF) { break; }
+    num_write++;
+  }
+  return num_write;
+}
+
+
+size_t 
+hpcio_fwrite_be8(uint64_t* val, FILE* fs)
+{
+  uint64_t v = *val; // local copy of val
+  int shift = 0, num_write = 0, c;
+  
+  for (shift = 56; shift >= 0; shift -= 8) {
+    c = fputc( ((v >> shift) & 0xff) , fs);
+    if (c == EOF) { break; }
+    num_write++;
+  }
+  return num_write;
+}
+
+
+#if 0
 size_t 
 hpcio_fread_be4(uint32_t* val, FILE* fs)
 {
