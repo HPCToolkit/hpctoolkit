@@ -42,7 +42,7 @@ MONITOR_WRAP_NAME(pthread_mutex_trylock)(pthread_mutex_t *lock)
 
   MONITOR_GET_NAME_WRAP(real_mutex_trylock, pthread_mutex_trylock);
   ret = (*real_mutex_trylock)(lock);
-  monitor_thread_mutex_trylock(lock, ret);
+  monitor_thread_post_mutex_trylock(lock, ret);
 
   return ret;
 }
@@ -54,7 +54,7 @@ MONITOR_WRAP_NAME(pthread_mutex_unlock)(pthread_mutex_t *lock)
 
   MONITOR_GET_NAME_WRAP(real_mutex_unlock, pthread_mutex_unlock);
   ret = (*real_mutex_unlock)(lock);
-  monitor_thread_mutex_unlock(lock);
+  monitor_thread_post_mutex_unlock(lock);
 
   return ret;
 }
