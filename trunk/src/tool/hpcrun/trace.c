@@ -15,6 +15,7 @@
 
 #include "env.h"
 #include "files.h"
+#include "hpcio.h"
 #include "monitor.h"
 #include "pmsg.h"
 #include "trace.h"
@@ -75,7 +76,7 @@ trace_open()
     char trace_file[PATH_MAX];
     files_trace_name(trace_file, 0, PATH_MAX);
     thread_data_t *td = csprof_get_thread_data();
-    td->trace_file = fopen(trace_file, "w");
+    td->trace_file = hpcio_fopen_w(trace_file, 0);
     trace_file_validate(td->trace_file != 0, "open");
   }
 }
@@ -85,16 +86,22 @@ void
 trace_append(unsigned int cpid)
 {
   if (tracing) {
-#define NITEMS 1
     struct timeval tv;
     int notime = gettimeofday(&tv, NULL);
     assert(notime == 0 && "in trace_append: gettimeofday failed!"); 
     double microtime = tv.tv_usec + tv.tv_sec * 1000000;
-    trecord_t record = { microtime, cpid };
 
     thread_data_t *td = csprof_get_thread_data();
+#if 1
+    int written = hpcio_fwrite_be8((uint64_t*) &microtime, td->trace_file);
+    written += hpcio_fwrite_be4((uint32_t*)&cpid, td->trace_file);
+    trace_file_validate(written == (sizeof(double) + sizeof(int)), "append");
+#else
+#define NITEMS 1
+    trecord_t record = { microtime, cpid };
     int written = fwrite(&record, TRECORD_SIZE, NITEMS, td->trace_file);
     trace_file_validate(written == NITEMS, "append");
+#endif
   }
 }
 
@@ -108,7 +115,7 @@ trace_close()
     ret = fflush(td->trace_file);
     trace_file_validate(ret == 0, "flush");
 
-    ret = fclose(td->trace_file);
+    ret = hpcio_close(td->trace_file);
     trace_file_validate(ret == 0, "close");
     int rank = monitor_mpi_comm_rank();
     if (rank >= 0) {

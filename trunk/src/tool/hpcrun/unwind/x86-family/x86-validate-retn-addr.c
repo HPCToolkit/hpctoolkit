@@ -24,6 +24,7 @@
 #include "unwind_cursor.h"
 #include "ui_tree.h"
 #include "x86-unwind-interval.h"
+#include "x86-validate-self-modify.c"
 #include "pmsg.h"
 
 
@@ -122,26 +123,27 @@ confirm_call(void *addr, void *routine)
 
 
 static bool
-confirm_indirect_call_specific(void *addr, size_t offset)
+confirm_indirect_call_specific(void *addr, size_t offset, void **call_ins)
 {
-  void *the_call;
-
-  if ( ! confirm_call_fetch_addr(addr, offset, &the_call)) {
+  void *callee;
+  if ( ! confirm_call_fetch_addr(addr, offset, &callee)) {
     TMSG(VALIDATE_UNW,"No call instruction found @ %p, so indirect call at this location rejected",
          addr - offset);
     return false;
   }
-  return (the_call == NULL);
-  
+  if (callee == NULL) {
+    *call_ins = addr - offset;
+  }
+  return (callee == NULL);
 }
 
 
 static bool
-confirm_indirect_call(void *addr)
+confirm_indirect_call(void *addr, void **call_ins)
 {
   TMSG(VALIDATE_UNW,"trying to confirm an indirect call preceeding %p", addr);
   for (size_t i=1;i <= 7;i++) {
-    if (confirm_indirect_call_specific(addr, i)){
+    if (confirm_indirect_call_specific(addr, i, call_ins)){
       return true;
     }
   }
@@ -322,7 +324,9 @@ deep_validate_return_addr(void *addr, void *generic)
     TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call through the PLT to this routine. Unwind confirmed",addr);
     return result;
   }
-  if (confirm_indirect_call(addr)){
+  void *call_ins;
+  if (confirm_indirect_call(addr, &call_ins)){
+    x86_mark_indirect_for_validation(addr, call_ins, callee); 
     TMSG(VALIDATE_UNW,"Instruction preceeding %p is an indirect call. Unwind is LIKELY ok",addr);
     return UNW_ADDR_PROBABLE_INDIRECT;
   }

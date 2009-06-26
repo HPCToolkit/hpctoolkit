@@ -66,8 +66,6 @@ int   hpcio_close(FILE* fs);
 // little-endian file stream 'fs', correctly ordering the bytes before
 // writing.  Returns the number of bytes written.
 //
-// hpcio_fread_beX:  (not needed now)
-// hpcio_fwrite_beX: (not needed now)
 
 size_t hpcio_fread_le2(uint16_t* val, FILE* fs);
 size_t hpcio_fread_le4(uint32_t* val, FILE* fs);
@@ -75,6 +73,13 @@ size_t hpcio_fread_le8(uint64_t* val, FILE* fs);
 size_t hpcio_fwrite_le2(uint16_t* val, FILE* fs);
 size_t hpcio_fwrite_le4(uint32_t* val, FILE* fs);
 size_t hpcio_fwrite_le8(uint64_t* val, FILE* fs);
+
+size_t hpcio_fread_be2(uint16_t* val, FILE* fs);
+size_t hpcio_fread_be4(uint32_t* val, FILE* fs);
+size_t hpcio_fread_be8(uint64_t* val, FILE* fs);
+size_t hpcio_fwrite_be2(uint16_t* val, FILE* fs);
+size_t hpcio_fwrite_be4(uint32_t* val, FILE* fs);
+size_t hpcio_fwrite_be8(uint64_t* val, FILE* fs);
 
 //***************************************************************************
 
