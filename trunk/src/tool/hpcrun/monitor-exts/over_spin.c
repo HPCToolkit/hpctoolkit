@@ -74,9 +74,9 @@ MONITOR_WRAP_NAME(pthread_spin_trylock)(pthread_spinlock_t *lock)
   int ret;
 
   MONITOR_GET_NAME_WRAP(real_spin_trylock, pthread_spin_trylock);
-  // FIXME
+  monitor_thread_pre_spin_trylock(lock); // tallent: needed?
   ret = (*real_spin_trylock)(lock);
-  monitor_thread_spin_trylock(lock, ret);
+  monitor_thread_post_spin_trylock(lock, ret);
 
   return (ret);
 }
@@ -87,9 +87,9 @@ MONITOR_WRAP_NAME(pthread_spin_unlock)(pthread_spinlock_t *lock)
   int ret;
 
   MONITOR_GET_NAME_WRAP(real_spin_unlock, pthread_spin_unlock);
-  // FIXME
+  monitor_thread_pre_spin_unlock(lock); // tallent: needed?
   ret = (*real_spin_unlock)(lock);
-  monitor_thread_spin_unlock(lock);
+  monitor_thread_post_spin_unlock(lock, ret);
 
   return (ret);
 }
