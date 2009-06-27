@@ -24,7 +24,6 @@
 #include "unwind_cursor.h"
 #include "ui_tree.h"
 #include "x86-unwind-interval.h"
-#include "x86-validate-self-modify.c"
 #include "pmsg.h"
 
 
@@ -326,7 +325,9 @@ deep_validate_return_addr(void *addr, void *generic)
   }
   void *call_ins;
   if (confirm_indirect_call(addr, &call_ins)){
+#if 0
     x86_mark_indirect_for_validation(addr, call_ins, callee); 
+#endif
     TMSG(VALIDATE_UNW,"Instruction preceeding %p is an indirect call. Unwind is LIKELY ok",addr);
     return UNW_ADDR_PROBABLE_INDIRECT;
   }
