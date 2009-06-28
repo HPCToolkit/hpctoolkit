@@ -103,6 +103,8 @@ BalancedTree_find(BalancedTree_t* tree, void* key)
 {
   BalancedTreeNode_t* x = tree->root;
 
+  while (spinlock_is_locked(&tree->lock));
+  
   while (x != NULL) {
     if (key == x->key) {
       return x; // found!

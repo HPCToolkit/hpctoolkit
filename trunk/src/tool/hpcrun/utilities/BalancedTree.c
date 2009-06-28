@@ -31,15 +31,11 @@
 
 //*************************** Forward Declarations **************************
 
-// tallent: Since I found a bug in the insertion code, turn off
-// balancing for now
-#define PLEASE_BALANCE_THANK_YOU 0
+static void
+BalancedTree_leftRotate(BalancedTree_t* tree, BalancedTreeNode_t* x);
 
-void 
-BalancedTree_right_rotate(BalancedTree_t*, BalancedTreeNode_t*);
-
-void 
-BalancedTree_left_rotate(BalancedTree_t*, BalancedTreeNode_t*);
+static void
+BalancedTree_rightRotate(BalancedTree_t* tree, BalancedTreeNode_t* y);
 
 //***************************************************************************
 // 
@@ -82,6 +78,7 @@ BalancedTree_init(BalancedTree_t* tree)
 {
   tree->root = NULL;
   tree->size = 0;
+  tree->lock = SPINLOCK_UNLOCKED;
 }
 
 
@@ -92,15 +89,16 @@ BalancedTree_insert(BalancedTree_t* tree, void* key, bool doAtomic)
     spinlock_lock(&tree->lock);
   }
 
-  BalancedTreeNode_t* theNode = NULL;
+  BalancedTreeNode_t* found = NULL;
 
   // ------------------------------------------------------------
   // empty tree
   // ------------------------------------------------------------
   if (!tree->root) {
     tree->root = BalancedTreeNode_create(key, NULL);
+    tree->root->color = BalancedTreeColor_BLACK;
     tree->size = 1;
-    theNode = tree->root;
+    found = tree->root;
     goto fini;
   }
 
@@ -108,23 +106,23 @@ BalancedTree_insert(BalancedTree_t* tree, void* key, bool doAtomic)
   // ------------------------------------------------------------
   // find existing node or new location
   // ------------------------------------------------------------
-  BalancedTreeNode_t* curr = tree->root;
-  BalancedTreeNode_t* parent = NULL;
+  BalancedTreeNode_t* x = tree->root;
+  BalancedTreeNode_t* x_parent = NULL;
 
   int pathDir = 0;
-  while (curr != NULL) {
-    if (key == curr->key) {
-      theNode = curr; // found!
+  while (x != NULL) {
+    if (key == x->key) {
+      found = x; // found!
       goto fini;
     }
     else {
-      parent = curr;
-      if (key < curr->key) {
-	curr = curr->left;
+      x_parent = x;
+      if (key < x->key) {
+	x = x->left;
 	pathDir = -1;
       }
       else {
-	curr = curr->right;
+	x = x->right;
 	pathDir = +1;
       }
     }
@@ -132,139 +130,150 @@ BalancedTree_insert(BalancedTree_t* tree, void* key, bool doAtomic)
 
   // insert (INVARIANT: pathDir is -1 or 1)
   if (pathDir < 0) {
-    theNode = curr = parent->left = BalancedTreeNode_create(key, parent);
+    found = x = x_parent->left = BalancedTreeNode_create(key, x_parent);
   }
   else {
-    theNode = curr = parent->right = BalancedTreeNode_create(key, parent);
+    found = x = x_parent->right = BalancedTreeNode_create(key, x_parent);
   }
   tree->size++;
 
 
+#if 1
   // ------------------------------------------------------------
   // rebalance
   // ------------------------------------------------------------
-#if (PLEASE_BALANCE_THANK_YOU)
-  BalancedTreeNode_t* gparent = NULL;
+  BalancedTreeNode_t* x_gparent = NULL;
 
-  while ((parent = curr->parent) != NULL
-	 && (gparent = parent->parent) != NULL
-	 && curr->parent->color == BalancedTreeColor_RED) {
-    if (parent == gparent->left) {
-      if (gparent->right != NULL 
-	  && gparent->right->color == BalancedTreeColor_RED) {
-	parent->color = BalancedTreeColor_BLACK;
-	gparent->right->color = BalancedTreeColor_BLACK;
-	gparent->color = BalancedTreeColor_RED;
-	curr = gparent;
+  while (x != tree->root && x->parent->color == BalancedTreeColor_RED) {
+
+    x_parent = x->parent;
+    x_gparent = x_parent->parent;
+
+    if (x_parent == x_gparent->left) {
+      BalancedTreeNode_t* y = x_gparent->right;
+      if (y && y->color == BalancedTreeColor_RED) {
+	x_parent->color = BalancedTreeColor_BLACK;
+	y->color = BalancedTreeColor_BLACK;
+	x_gparent->color = BalancedTreeColor_RED;
+	x = x_gparent;
       }
       else {
-	if (curr == parent->right) {
-	  curr = parent;
-	  BalancedTree_left_rotate(tree, curr);
-	  parent = curr->parent;
+	if (x == x_parent->right) {
+	  x = x_parent;
+	  BalancedTree_leftRotate(tree, x);
+	  x_parent = x->parent;
+	  x_gparent = x_parent->parent;
 	}
-	parent->color = BalancedTreeColor_BLACK;
-	if ((gparent = parent->parent) != NULL) {
-	  gparent->color = BalancedTreeColor_RED;
-	  BalancedTree_right_rotate(tree, gparent);
-	}
+	x_parent->color = BalancedTreeColor_BLACK;
+	x_gparent->color = BalancedTreeColor_RED;
+	BalancedTree_rightRotate(tree, x_gparent);
       }
     }
-    /* mirror case */
     else {
-      if (gparent->left != NULL && gparent->left->color == BalancedTreeColor_RED) {
-	parent->color = BalancedTreeColor_BLACK;
-	gparent->left->color = BalancedTreeColor_BLACK;
-	gparent->color = BalancedTreeColor_RED;
-	curr = gparent;
+      BalancedTreeNode_t* y = x_gparent->left;
+      if (y && y->color == BalancedTreeColor_RED) {
+	x_parent->color = BalancedTreeColor_BLACK;
+	y->color = BalancedTreeColor_BLACK;
+	x_gparent->color = BalancedTreeColor_RED;
+	x = x_gparent;
       }
       else {
-	if (curr == parent->left) {
-	  curr = parent;
-	  BalancedTree_right_rotate(tree, curr);
-	  parent = curr->parent;
+	if (x == x_parent->left) {
+	  x = x_parent;
+	  BalancedTree_rightRotate(tree, x);
+	  x_parent = x->parent;
+	  x_gparent = x_parent->parent;
 	}
-	parent->color = BalancedTreeColor_BLACK;
-	if ((gparent = parent->parent) != NULL) {
-	  gparent->color = BalancedTreeColor_RED;
-	  BalancedTree_left_rotate(tree, gparent);
-	}
+	x_parent->color = BalancedTreeColor_BLACK;
+	x_gparent->color = BalancedTreeColor_RED;
+	BalancedTree_leftRotate(tree, x_gparent);
       }
     }
   }
-  if (curr->parent == NULL) {
-    tree->root = curr;
-  }
+
   tree->root->color = BalancedTreeColor_BLACK;
-#endif // PLEASE_BALANCE_THANK_YOU
+#endif
 
  fini:
   if (doAtomic) {
     spinlock_unlock(&tree->lock);
   }
-  return theNode;
+  return found;
 }
 
 
-#if (PLEASE_BALANCE_THANK_YOU)
-/* Rotate the right child of parent upwards */
+//     y           x       |
+//    / \         / \      |
+//   x   c  <==  a   y     |
+//  / \             / \    |
+// a   b           b   c   |
 static void
-BalancedTree_left_rotate(BalancedTree_t* tree, BalancedTreeNode_t* parent)
+BalancedTree_leftRotate(BalancedTree_t* tree, BalancedTreeNode_t* x)
 {
-  BalancedTreeNode_t *curr, *gparent;
-
-  curr = RIGHT(parent);
-  gparent = parent->parent;
-
-  if (curr != NULL) {
-    parent->right = LEFT(curr);
-    if (LEFT(curr) != NULL) {
-      LEFT(curr)->parent = parent;
-    }
-
-    curr->parent = parent->parent;
-    if (gparent == NULL) {
-      tree->root = curr;
+  // set y (INVARIANT: y != NULL)
+  BalancedTreeNode_t* y = x->right;
+  
+  // move b to x's right subtree
+  x->right = y->left;
+  if (y->left != NULL) {
+    y->left->parent = x;
+  }
+  
+  // move y to x's old position
+  y->parent = x->parent;
+  if (x->parent == NULL) {
+    tree->root = y;
+  }
+  else {
+    if (x == x->parent->left) {
+      x->parent->left = y;
     }
     else {
-      int val = (parent == LEFT(gparent));
-
-      gparent->children[val] = curr;
+      x->parent->right = y;
     }
-    LEFT(curr) = parent;
-    parent->parent = curr;
   }
+
+  // move x to y's left
+  y->left = x;
+  x->parent = y;
 }
 
 
-/* Rotate the left child of parent upwards */
+//     y           x       |
+//    / \         / \      |
+//   x   c  ==>  a   y     |
+//  / \             / \    |
+// a   b           b   c   |
 static void
-BalancedTree_right_rotate(BalancedTree_t* tree, BalancedTreeNode_t* parent)
+BalancedTree_rightRotate(BalancedTree_t* tree, BalancedTreeNode_t* y)
 {
-  BalancedTreeNode_t *curr, *gparent;
+  // set x (INVARIANT: x != NULL)
+  BalancedTreeNode_t* x = y->left;
+  
+  // move b to y's left subtree
+  y->left = x->right;
+  if (x->right != NULL) {
+    x->right->parent = y;
+  }
 
-  curr = LEFT(parent);
-  gparent = parent->parent;
-
-  if (curr != NULL) {
-    parent->left = RIGHT(curr);
-    if (RIGHT(curr) != NULL) {
-      RIGHT(curr)->parent = parent;
-    }
-    curr->parent = parent->parent;
-    if (gparent == NULL) {
-      tree->root = curr;
+  // move x to y's old position
+  x->parent = y->parent;
+  if (y->parent == NULL) {
+    tree->root = x;
+  }
+  else {
+    if (y == y->parent->left) {
+      y->parent->left = x;
     }
     else {
-      int val = (parent == LEFT(gparent));
-
-      gparent->children[val] = curr;
+      y->parent->right = x;
     }
-    RIGHT(curr) = parent;
-    parent->parent = curr;
   }
+
+  // move y to x's left
+  x->right = y;
+  y->parent = x;
 }
-#endif // PLEASE_BALANCE_THANK_YOU
 
 
 #if 0
