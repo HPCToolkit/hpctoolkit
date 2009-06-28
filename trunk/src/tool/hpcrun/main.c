@@ -438,57 +438,23 @@ monitor_thread_post_mutex_unlock(pthread_mutex_t* lock)
 // ---------------------------------------------------------
 
 void
-monitor_thread_spin_init(pthread_spinlock_t* lock, int result)
+monitor_thread_pre_spin_lock(pthread_spinlock_t* lock)
 {
   if (! hpcrun_is_initialized()) {
     return;
   }
-  //hpcrun_async_block();
+#if (LUSH_PTHR_FN_TY == 3)
+  hpcrun_async_block();
+#endif
 
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 #ifdef LUSH_PTHREADS
-  lushPthr_spinInit(&TD_GET(pthr_metrics), lock);
+  lushPthr_spinLock_pre(&TD_GET(pthr_metrics), lock);
 #endif
 
-  //hpcrun_async_unblock();
-}
-
-
-pthread_spinlock_t*
-monitor_thread_pre_spin_destroy(pthread_spinlock_t* lock)
-{
-  pthread_spinlock_t* real_lock = lock;
-  if (! hpcrun_is_initialized()) {
-    return real_lock;
-  }
-  //hpcrun_async_block();
-
-  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  real_lock = lushPthr_spinDestroy_pre(&TD_GET(pthr_metrics), lock);
+#if (LUSH_PTHR_FN_TY == 3)
+  hpcrun_async_unblock();
 #endif
-
-  //hpcrun_async_unblock();
-  return real_lock;
-}
-
-
-pthread_spinlock_t*
-monitor_thread_pre_spin_lock(pthread_spinlock_t* lock)
-{
-  pthread_spinlock_t* real_lock = lock;
-  if (! hpcrun_is_initialized()) {
-    return real_lock;
-  }
-  //hpcrun_async_block();
-
-  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  real_lock = lushPthr_spinLock_pre(&TD_GET(pthr_metrics), lock);
-#endif
-
-  //hpcrun_async_unblock();
-  return real_lock;
 }
 
 
@@ -509,25 +475,6 @@ monitor_thread_post_spin_lock(pthread_spinlock_t* lock, int result)
 }
 
 
-pthread_spinlock_t*
-monitor_thread_pre_spin_trylock(pthread_spinlock_t* lock)
-{
-  pthread_spinlock_t* real_lock = lock;
-  if (! hpcrun_is_initialized()) {
-    return real_lock;
-  }
-  // hpcrun_async_block();
-
-  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  real_lock = lushPthr_spinTrylock_pre(&TD_GET(pthr_metrics), lock);
-#endif
-
-  // hpcrun_async_unblock();
-  return real_lock;
-}
-
-
 void
 monitor_thread_post_spin_trylock(pthread_spinlock_t* lock, int result)
 {
@@ -542,25 +489,6 @@ monitor_thread_post_spin_trylock(pthread_spinlock_t* lock, int result)
 #endif
 
   // hpcrun_async_unblock();
-}
-
-
-pthread_spinlock_t*
-monitor_thread_pre_spin_unlock(pthread_spinlock_t* lock)
-{
-  pthread_spinlock_t* real_lock = lock;
-  if (! hpcrun_is_initialized()) {
-    return real_lock;
-  }
-  // hpcrun_async_block();
-
-  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  real_lock = lushPthr_spinUnlock_pre(&TD_GET(pthr_metrics), lock);
-#endif
-
-  // hpcrun_async_unblock();
-  return real_lock;
 }
 
 

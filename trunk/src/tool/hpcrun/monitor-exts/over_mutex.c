@@ -1,7 +1,9 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 /*
  * Override pthread mutex functions.
  *
- * $Id$
  */
 
 #include <pthread.h>

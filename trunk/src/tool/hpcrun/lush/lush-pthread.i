@@ -32,6 +32,7 @@
 
 //*************************** Forward Declarations **************************
 
+//***************************************************************************
 
 #if defined(__cplusplus)
 extern "C" {
@@ -39,13 +40,12 @@ extern "C" {
 
 //***************************************************************************
 
-typedef struct SpinLockData
+typedef struct SyncObjData
 {
-  pthread_spinlock_t lock;
   uint64_t idleness;
   void*    cct_node;
 
-} SpinLockData_t;
+} SyncObjData_t;
 
 
 //***************************************************************************
@@ -78,19 +78,20 @@ typedef struct {
   //    ps_num_idle_lock     // idleness [1]
   long* ps_num_idle_cond;    // idleness [2a] + [2b]
 
-
   // -------------------------------------------------------
   // LUSH_PTHR_FN_TY == 3
   // -------------------------------------------------------
-  BalancedTree_t* syncObjToData;
-  BalancedTreeNode_t* curSyncObjData;
+  BalancedTree_t* syncObjToData; // synch-obj -> data
+  BalancedTreeNode_t* syncObjData;
 
-#define lushPthr_spinLockDataSZ  (512)
+#if 0 // FIXME:remove
+#define lushPthr_spinLockDataSZ  (64)
 #define lushPthr_spinLockMagicLo (0x0ff0000)
 #define lushPthr_spinLockMagicHi (lushPthr_spinLockMagicLo + lushPthr_spinLockDataSZ)
 
-  long* curSpinLockIdx;
-  SpinLockData_t* spinLockData;
+  int nxtSpinLockIdx;
+  SyncObjData_t spinLockData[lushPthr_spinLockDataSZ];
+#endif
 
 } lushPthr_t;
 

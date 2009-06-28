@@ -138,7 +138,6 @@ BalancedTree_insert(BalancedTree_t* tree, void* key, bool doAtomic)
   tree->size++;
 
 
-#if 1
   // ------------------------------------------------------------
   // rebalance
   // ------------------------------------------------------------
@@ -192,7 +191,6 @@ BalancedTree_insert(BalancedTree_t* tree, void* key, bool doAtomic)
   }
 
   tree->root->color = BalancedTreeColor_BLACK;
-#endif
 
  fini:
   if (doAtomic) {

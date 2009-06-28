@@ -53,11 +53,8 @@ typedef struct {
   
   long ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
 
-#if (LUSH_PTHR_FN_TY == 3)
+  // LUSH_PTHR_FN_TY == 3
   BalancedTree_t syncObjToData; // synch-obj -> data
-  long curSpinLockIdx;
-  SpinLockData_t spinLockData[lushPthr_spinLockDataSZ];
-#endif
   
 } lushPthr_globals_t;
 
@@ -68,7 +65,7 @@ lushPthr_globals_t globals = {
   .ps_num_working = 0,
   .ps_num_working_lock = 0,
   .ps_num_idle_cond = 0
-  // syncObjToData, curSpinLockIdx, spinLockData
+  // syncObjToData
 };
 
 
@@ -90,10 +87,8 @@ lushPthr_processInit()
 
   globals.ps_num_idle_cond    = 0;
 
-#if (LUSH_PTHR_FN_TY == 3)
+  // LUSH_PTHR_FN_TY == 3
   BalancedTree_init(&globals.syncObjToData);
-  globals.curSpinLockIdx = 0;
-#endif
 }
 
 
@@ -118,13 +113,11 @@ lushPthr_init(lushPthr_t* x)
   
   x->ps_num_idle_cond = &globals.ps_num_idle_cond;
 
-#if (LUSH_PTHR_FN_TY == 3)
-  x->syncObjToData  = &globals.syncObjToData;
-  x->curSyncObjData = NULL;
-
-  x->curSpinLockIdx = &globals.curSpinLockIdx;
-  x->spinLockData = globals.spinLockData;
-#endif
+  // ------------------------------------------------------------
+  // LUSH_PTHR_FN_TY == 3
+  // ------------------------------------------------------------
+  x->syncObjToData = &globals.syncObjToData;
+  x->syncObjData = NULL;
 }
 
 
