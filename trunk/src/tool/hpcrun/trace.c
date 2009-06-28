@@ -28,7 +28,7 @@
 
 typedef struct trecord_s {
   double time;
-  unsigned int cpid;
+  unsigned int call_path_id;
 } trecord_t;
 
 #define TRECORD_SIZE (sizeof(double) + sizeof(unsigned int))
@@ -83,7 +83,7 @@ trace_open()
 
 
 void
-trace_append(unsigned int cpid)
+trace_append(unsigned int call_path_id)
 {
   if (tracing) {
     struct timeval tv;
@@ -94,11 +94,11 @@ trace_append(unsigned int cpid)
     thread_data_t *td = csprof_get_thread_data();
 #if 1
     int written = hpcio_fwrite_be8((uint64_t*) &microtime, td->trace_file);
-    written += hpcio_fwrite_be4((uint32_t*)&cpid, td->trace_file);
+    written += hpcio_fwrite_be4((uint32_t*)&call_path_id, td->trace_file);
     trace_file_validate(written == (sizeof(double) + sizeof(int)), "append");
 #else
 #define NITEMS 1
-    trecord_t record = { microtime, cpid };
+    trecord_t record = { microtime, call_path_id };
     int written = fwrite(&record, TRECORD_SIZE, NITEMS, td->trace_file);
     trace_file_validate(written == NITEMS, "append");
 #endif

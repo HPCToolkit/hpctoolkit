@@ -783,6 +783,9 @@ string
 Stmt::toString_me(int oFlags) const
 {
   string self = ANode::toString_me(oFlags); // nameDyn()
+  if (cpid() & RETAIN_ID_FOR_TRACE_FLAG) {
+    self += " i" + xml::MakeAttrNum(cpid());
+  }
   return self;
 } 
 

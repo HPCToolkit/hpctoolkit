@@ -32,6 +32,7 @@
 
 //*************************** User Include Files ****************************
 
+#include "atomic-ops.h"
 #include "cct.h"
 #include "csproflib_private.h"
 #include "mem.h"
@@ -75,6 +76,16 @@ static inline bool implies(bool p, bool q) { return (!p || q); }
 //  Just putting the most recently used child at the front of the list would be sufficient
 //
 
+static uint32_t 
+new_persistent_id()
+{
+  // by default, all persistent ids are even; odd ids signify that we need 
+  // to retain them as call path ids associated with a trace.
+  static long global_persistent_id = 2;
+  uint32_t myid = (int) fetch_and_add(&global_persistent_id, 2); 
+  return myid;
+}
+
 static csprof_cct_node_t *
 csprof_cct_node__create(lush_assoc_info_t as_info, 
 			void* ip,
@@ -82,6 +93,7 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
 			void* sp,
 			hpcrun_cct_t *x)
 {
+
   size_t sz = (sizeof(csprof_cct_node_t)
 	       + sizeof(cct_metric_data_t)*(csprof_get_max_metrics() - 1));
   csprof_cct_node_t *node = csprof_malloc(sz);
@@ -92,6 +104,7 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
   node->ip = ip;
   node->lip = lip;         // LUSH
   node->sp = sp;
+  node->persistent_id = new_persistent_id();
 
   node->next_sibling = NULL;
 
@@ -189,7 +202,6 @@ csprof_cct__init(hpcrun_cct_t* x)
 {
   TMSG(CCT,"Init a CCT");
   memset(x, 0, sizeof(*x));
-  x->next_cpid = 1;        // valid call path ids are > 0
 
 #ifndef CSPROF_TRAMPOLINE_BACKEND
   {
@@ -397,9 +409,9 @@ hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
 static int
 hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 			      hpcfile_cstree_node_t* tmp_node,
-			      hpcfmt_uint_t id_parent,
+			      uint32_t id_parent,
 			      hpcfmt_uint_t id_root,
-			      hpcfmt_uint_t id);
+			      uint32_t id);
 
 static int
 hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, csprof_cct_node_t* node, 
@@ -552,9 +564,9 @@ hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
 static int
 hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 			      hpcfile_cstree_node_t* tmp_node,
-			      hpcfmt_uint_t id_parent,
+			      uint32_t id_parent,
 			      hpcfmt_uint_t id_root,
-			      hpcfmt_uint_t id)
+			      uint32_t id)
 {
   int ret = HPCRUN_OK;
 
@@ -567,21 +579,21 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
   if (as != LUSH_ASSOC_NULL) {
     if (lush_assoc_info_is_root_note(node->as_info)
 	|| as == LUSH_ASSOC_1_to_M) {
-      id_lip = id;
+      id_lip = node->persistent_id;
       if (node->lip != NULL) {
 	hpcfile_cstree_lip__fwrite(node->lip, fs);
       }
     }
     else {
-      id_lip = id_root;
+      id_lip = node->persistent_id;
     }
   }
 
   // ---------------------------------------------------------
   // Write the node
   // ---------------------------------------------------------
-  tmp_node->id = id;
-  tmp_node->id_parent = id_parent;
+  tmp_node->id = node->persistent_id;
+  tmp_node->id_parent = node->parent ? node->parent->persistent_id : 0;
 
   // tallent:FIXME: for now I have inlined what was the get_data_fn
   tmp_node->data.as_info = node->as_info;
@@ -589,9 +601,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
   // double casts to avoid warnings when pointer is < 64 bits 
   tmp_node->data.ip = (hpcfmt_vma_t) (unsigned long) node->ip;
   tmp_node->data.lip.id = id_lip;
-  tmp_node->data.sp = (hpcfmt_uint_t)(unsigned long) node->sp;
 
-  tmp_node->data.cpid = node->cpid;
   memcpy(tmp_node->data.metrics, node->metrics, 
 	 tmp_node->data.num_metrics * sizeof(cct_metric_data_t));
 
@@ -768,8 +778,8 @@ lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
   if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   
   // write this node
-  hpcfmt_uint_t my_id          = id_root + (*nodes_written);
-  hpcfmt_uint_t my_id_parent   = my_id - 1;
+  uint32_t my_id          = node->persistent_id;
+  uint32_t my_id_parent   = (node->parent) ? node->parent->persistent_id : 0;
   hpcfmt_uint_t my_id_lip_root = (*id_lip_root);
 
   ret = hpcfile_cstree_write_node_hlp(fs, node, tmp_node, 

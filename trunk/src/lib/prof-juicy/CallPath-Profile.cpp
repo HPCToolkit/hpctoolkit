@@ -274,7 +274,8 @@ Profile::ddump() const
 //***************************************************************************
 
 static Prof::CCT::ANode* 
-cct_makeNode(Prof::CCT::Tree* cct, hpcfile_cstree_nodedata_t* data);
+cct_makeNode(Prof::CCT::Tree* cct, uint32_t id,
+	     hpcfile_cstree_nodedata_t* data);
 
 static void
 cct_fixRoot(Prof::CCT::Tree* tree, const char* progName);
@@ -614,7 +615,8 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
     // the tree merge algorithm will merge interior nodes with
     // interior nodes and leaf nodes with leaves.
 
-    CCT::ANode* node = cct_makeNode(cct, &ndata.data);
+    CCT::ANode* node = cct_makeNode(cct, (ndata.id & RETAIN_ID_FOR_TRACE_FLAG) ? ndata.id : 0, 
+				    &ndata.data);
     DIAG_DevMsgIf(0, "hpcrun_fmt_cct_fread: " << hex << node << " -> " << node_prnt <<dec);
 
     if (node_prnt) {
@@ -688,7 +690,8 @@ Profile::cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg)
 //***************************************************************************
 
 static Prof::CCT::ANode*
-cct_makeNode(Prof::CCT::Tree* cct, hpcfile_cstree_nodedata_t* data)
+cct_makeNode(Prof::CCT::Tree* cct, uint32_t id, 
+	     hpcfile_cstree_nodedata_t* data)
 {
   using namespace Prof;
   
@@ -703,7 +706,7 @@ cct_makeNode(Prof::CCT::Tree* cct, hpcfile_cstree_nodedata_t* data)
 
   DIAG_DevMsgIf(0, "hpcrun_fmt_cct_fread: " << hex << data->ip << dec);
   CCT::Call* n = new CCT::Call(NULL, data->as_info, ip, opIdx, data->lip.ptr,
-			       data->cpid, &cct->metadata()->metricDesc(), 
+			       id, &cct->metadata()->metricDesc(), 
 			       metricVec);
   return n;
 }
