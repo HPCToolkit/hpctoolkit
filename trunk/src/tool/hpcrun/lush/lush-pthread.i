@@ -84,6 +84,9 @@ typedef struct {
   BalancedTree_t* syncObjToData; // synch-obj -> data
   BalancedTreeNode_t* syncObjData;
 
+  void*               cache_lock;
+  BalancedTreeNode_t* cache_syncObjData;
+
 #if 0 // FIXME:remove
 #define lushPthr_spinLockDataSZ  (64)
 #define lushPthr_spinLockMagicLo (0x0ff0000)

@@ -33,6 +33,7 @@
 #include "agent-pthread.h"
 
 #include <thread_data.h>       // N.B.: outside of LUSHI interface
+#include <utilities/atomic.h>  // N.B.: outside of LUSHI interface
 #include <lush/lush-pthread.h> // N.B.: outside of LUSHI interface
 
 //*************************** Forward Declarations **************************
