@@ -566,12 +566,6 @@ typedef struct hpcfile_cstree_nodedata_s {
     lush_lip_t*    ptr; // pointer
   } lip; 
 
-  // 'sp': the stack pointer of this node
-  // tallent: Why is this needed?
-  hpcfmt_uint_t sp;
-
-  uint32_t cpid;
-
   hpcfmt_uint_t num_metrics;
   hpcrun_metric_data_t* metrics;
 
@@ -599,6 +593,9 @@ int hpcfile_cstree_lip__fwrite(lush_lip_t* x, FILE* fs);
 int hpcfile_cstree_lip__fprint(lush_lip_t* x, hpcfmt_uint_t id, 
 			       FILE* fs, const char* pre);
 
+
+#define RETAIN_ID_FOR_TRACE_FLAG 1
+
 // ---------------------------------------------------------
 // hpcfile_cstree_node_t: The root node -- the node without a parent -- is
 // indicated by identical values for 'id' and 'id_parent'
@@ -607,8 +604,8 @@ typedef struct hpcfile_cstree_node_s {
 
   hpcfile_cstree_nodedata_t data;
 
-  hpcfmt_uint_t id;        // persistent id of self
-  hpcfmt_uint_t id_parent; // persistent id of parent
+  uint32_t id;        // persistent id of self
+  uint32_t id_parent; // persistent id of parent
 
 } hpcfile_cstree_node_t;
 

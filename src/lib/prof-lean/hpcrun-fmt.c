@@ -965,12 +965,6 @@ hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs)
   sz = hpcio_fread_le8(&x->lip.id, fs);
   if (sz != sizeof(x->lip.id)) { return HPCFILE_ERR; }
 
-  sz = hpcio_fread_le8(&x->sp, fs);
-  if (sz != sizeof(x->sp)) { return HPCFILE_ERR; }
-
-  sz = hpcio_fread_le4(&x->cpid, fs);
-  if (sz != sizeof(x->cpid)) { return HPCFILE_ERR; }
-
   //DIAG_MsgIf(DBG_READ_METRICS, "reading node ip=%"PRIx64, x->ip);
   for (i = 0; i < x->num_metrics; ++i) {
     sz = hpcio_fread_le8(&x->metrics[i].bits, fs);
@@ -999,13 +993,7 @@ hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs)
   sz = hpcio_fwrite_le8(&x->lip.id, fs);
   if (sz != sizeof(x->lip.id)) { return HPCFILE_ERR; }
 
-  sz = hpcio_fwrite_le8(&x->sp, fs);
-  if (sz != sizeof(x->sp)) { return HPCFILE_ERR; }
-
-  sz = hpcio_fwrite_le4(&x->cpid, fs);
-  if (sz != sizeof(x->cpid)) { return HPCFILE_ERR; }
-
-  for (i = 0; i < x->num_metrics; ++i) {
+    for (i = 0; i < x->num_metrics; ++i) {
     sz = hpcio_fwrite_le8(&x->metrics[i].bits, fs);
     if (sz != sizeof(x->metrics[i])) {
       return HPCFILE_ERR;
@@ -1022,9 +1010,9 @@ hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
   char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
   lush_assoc_info_sprintf(as_str, x->as_info);
 
-  fprintf(fs, "%s{nodedata: (as: %s) (ip: 0x%"PRIx64") (lip: [%"PRIu64"][%p]) (sp: %"PRIx64") (cpid: %"PRIu32")\n", pre, as_str, x->ip, x->lip.id, x->lip.ptr, 
-	  x->sp, x->cpid);
-
+  fprintf(fs, "%s{nodedata: (as: %s) (ip: 0x%"PRIx64") (lip: [%"PRIu64"][%p])\n", pre, as_str, x->ip, x->lip.id, 
+	  x->lip.ptr); 
+	  
   fprintf(fs, "%s  (metrics:", pre);
   for (int i = 0; i < x->num_metrics; ++i) {
     fprintf(fs, " %"PRIu64" ", x->metrics[i].bits);
@@ -1139,12 +1127,12 @@ hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs)
 
   // HPCFILE_TAG__CSTREE_NODE has already been read
 
-  sz = hpcio_fread_le8(&x->id, fs);
+  sz = hpcio_fread_le4(&x->id, fs);
   if (sz != sizeof(x->id)) { 
     return HPCFILE_ERR; 
   }
   
-  sz = hpcio_fread_le8(&x->id_parent, fs);
+  sz = hpcio_fread_le4(&x->id_parent, fs);
   if (sz != sizeof(x->id_parent)) { 
     return HPCFILE_ERR; 
   }
@@ -1168,10 +1156,10 @@ hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs)
     return HPCFILE_ERR; 
   }
 
-  sz = hpcio_fwrite_le8(&x->id, fs);
+  sz = hpcio_fwrite_le4(&x->id, fs);
   if (sz != sizeof(x->id)) { return HPCFILE_ERR; }
   
-  sz = hpcio_fwrite_le8(&x->id_parent, fs);
+  sz = hpcio_fwrite_le4(&x->id_parent, fs);
   if (sz != sizeof(x->id_parent)) { return HPCFILE_ERR; }
   
   if (hpcfile_cstree_nodedata__fwrite(&x->data, fs) != HPCFILE_OK) {
@@ -1184,7 +1172,7 @@ hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs)
 int 
 hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, const char* pre)
 {
-  fprintf(fs, "{node: (id: %"PRIu64") (id_parent: %"PRIu64")}\n", 
+  fprintf(fs, "{node: (id: %"PRIu32") (id_parent: %"PRIu32")}\n", 
 	  x->id, x->id_parent);
 
   hpcfile_cstree_nodedata__fprint(&x->data, fs, pre);

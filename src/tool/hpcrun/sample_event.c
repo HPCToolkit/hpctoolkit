@@ -16,8 +16,9 @@
 #include "backtrace.h"
 #include "csprof_csdata.h"
 #include "csprof_dlfns.h"
-#include "handling_sample.h"
 #include "fnbounds_interface.h"
+#include "handling_sample.h"
+#include "hpcrun-fmt.h"
 #include "interval-interface.h"
 #include "unwind.h"
 #include "csprof-malloc.h"
@@ -166,10 +167,9 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
 	csprof_frame_t frm = {.ip = func_start_pc};
 	csprof_cct_node_t* func_proxy = csprof_cct_get_child(cct, node->parent, &frm);
+	func_proxy->persistent_id |= RETAIN_ID_FOR_TRACE_FLAG; 
 
-	// assign it a call path node id if it doesn't have one
-	if (func_proxy->cpid == 0) func_proxy->cpid = cct->next_cpid++;
-	trace_append(func_proxy->cpid);
+	trace_append(func_proxy->persistent_id);
       }
       csprof_state_flag_clear(state, CSPROF_THRU_TRAMP);
     }

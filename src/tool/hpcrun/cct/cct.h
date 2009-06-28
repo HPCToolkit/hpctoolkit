@@ -163,12 +163,13 @@ typedef struct csprof_cct_node_s {
      set to NULL  */
 
   // ---------------------------------------------------------
-  // a persistent node id assigned so that we can record a call
-  // stack sample in a trace simply by recording a call path id 
-  // (cpid). The cpid refers to a call stack from the designated 
-  // node up to the root of the CCT
+  // a persistent node id is assigned for each node. this id
+  // is used both to reassemble a tree when reading it from 
+  // a file as well as to identify call paths. a call path
+  // can simply be represented by the node id of the deepest
+  // node in the path.
   // ---------------------------------------------------------
-  int cpid;
+  int persistent_id;
 
   // ---------------------------------------------------------
   // metrics (N.B.: MUST APPEAR AT END! cf. csprof_cct_node__create)
@@ -248,10 +249,6 @@ typedef struct csprof_cct_s {
 
   csprof_cct_node_t* tree_root;
   unsigned long num_nodes;
-
-  // next_cpid is used for assigning unique persistent ids to CCT nodes
-  // to represent call paths
-  int next_cpid;
 
 #ifndef CSPROF_TRAMPOLINE_BACKEND
   /* Two cached arrays: one contains a copy of the most recent
