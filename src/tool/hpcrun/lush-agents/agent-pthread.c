@@ -180,8 +180,8 @@ LUSHI_lip_write()
 // **************************************************************************
 
 extern bool
-LUSHI_do_metric(uint64_t incrMetricIn, 
-		bool* doMetric, bool* doMetricIdleness, 
+LUSHI_do_metric(uint64_t incrMetricIn,
+		bool* doMetric, bool* doMetricIdleness,
 		uint64_t* incrMetric, double* incrMetricIdleness)
 {
   lushPthr_t* pthr = &TD_GET(pthr_metrics);
@@ -254,9 +254,9 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     //*incrMetric = 0;
     //*incrMetricIdleness = 0.0;
 #elif (LUSH_PTHR_FN_TY == 3)
-    if (pthr->curSyncObjData) {
-      // INVARIANT: spin waiting on pthr->curSyncObjData
-      MY_atomic_add(&pthr->curSyncObjData->idleness, incrMetricIn);
+    if (pthr->syncObjData) {
+      // INVARIANT: spin waiting on pthr->syncObjData
+      hpcrun_atomicAdd(&pthr->syncObjData->idleness, incrMetricIn);
     }
     *doMetric = false;
     *doMetricIdleness = false;

@@ -1,7 +1,9 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 /*
  * Override pthread cond wait functions.
  *
- * $Id$
  */
 
 #include <pthread.h>
