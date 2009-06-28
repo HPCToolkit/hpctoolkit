@@ -626,6 +626,8 @@ lushPthr_spinLock_pre_ty3(lushPthr_t* restrict x,
 			  pthread_spinlock_t* restrict lock)
 {
   x->syncObjData = lushPthr_demandSyncObjData(x, (void*)lock);
+  x->cache_lock = (void*)lock;
+  x->cache_syncObjData = x->syncObjData;
   x->is_working = false;
 }
 
@@ -652,17 +654,14 @@ lushPthr_spinUnlock_post_ty3(lushPthr_t* restrict x,
 			     pthread_spinlock_t* restrict lock)
 {
   x->is_working = true; // same
-
-  x->doIdlenessCnt++;
-  if (x->doIdlenessCnt == LUSH_PTHR_SYNC_SMPL_PERIOD) {
-#if 0 // FIXME3
-    BalancedTreeNode_t* syncData = lushPthr_demandSyncObjData(x, (void*)lock);
-    if (syncData->idleness > 0) {
-      x->idleness = csprof_atomic_swap_l((long*)&syncData->idleness, 0);
-      lushPthr_attribToCallPath(x->idleness);
-    }
-    x->doIdlenessCnt = 0;
-#endif
+  
+  BalancedTreeNode_t* syncData = x->cache_syncObjData;
+  if (lock != x->cache_lock) {
+    syncData = lushPthr_demandSyncObjData(x, (void*)lock);
+  }
+  if (syncData && syncData->idleness > 0) {
+    x->idleness = csprof_atomic_swap_l((long*)&syncData->idleness, 0);
+    lushPthr_attribToCallPath(x->idleness);
   }
 }
 
