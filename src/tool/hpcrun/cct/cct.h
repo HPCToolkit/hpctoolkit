@@ -233,8 +233,7 @@ unsigned int
 lush_cct_ctxt__length(lush_cct_ctxt_t* cct_ctxt);
 
 int
-lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
-		     unsigned int id_root, unsigned int* nodes_written);
+lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt);
 
 
 //***************************************************************************
