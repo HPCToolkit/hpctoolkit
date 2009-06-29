@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 //*************************** User Include Files ****************************
 
@@ -241,6 +242,13 @@ union lush_lip {
   unsigned char data1[LUSH_LIP_DATA1_SZ];
   uint64_t      data8[LUSH_LIP_DATA8_SZ];
 };
+
+
+static inline void
+lush_lip_init(lush_lip_t* x)
+{
+  memset(x, 0, sizeof(*x));
+}
 
 
 static inline bool
