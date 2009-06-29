@@ -401,17 +401,11 @@ static int
 hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
 			  csprof_cct_node_t* node, 
 			  hpcfile_cstree_node_t* tmp_node,
-			  hpcfmt_uint_t id_parent,
-			  hpcfmt_uint_t id_root,
-			  hpcfmt_uint_t* id,
 			  int lvl_to_skip);
 
 static int
 hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
-			      hpcfile_cstree_node_t* tmp_node,
-			      uint32_t id_parent,
-			      hpcfmt_uint_t id_root,
-			      uint32_t id);
+			      hpcfile_cstree_node_t* tmp_node);
 
 static int
 hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, csprof_cct_node_t* node, 
@@ -478,15 +472,11 @@ hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree,
   // Write context
   // -------------------------------------------------------
 
-  hpcfmt_uint_t id_root = HPCFILE_CSTREE_ID_ROOT;
-  unsigned int num_ctxt_nodes = 0;
-  lush_cct_ctxt__write(fs, tree_ctxt, id_root, &num_ctxt_nodes);
+  lush_cct_ctxt__write(fs, tree_ctxt);
 
   // -------------------------------------------------------
   // Write each node, beginning with root
   // -------------------------------------------------------
-  hpcfmt_uint_t id_ctxt = HPCFILE_CSTREE_ID_ROOT + num_ctxt_nodes - 1;
-  hpcfmt_uint_t id = id_ctxt + 1;
   hpcfile_cstree_node_t tmp_node;
 
   hpcfile_cstree_node__init(&tmp_node);
@@ -494,7 +484,6 @@ hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree,
   tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfmt_uint_t));
 
   ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, 
-				  id_ctxt, id, &id,
 				  lvl_to_skip);
   free(tmp_node.data.metrics);
   
@@ -506,9 +495,6 @@ static int
 hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
 			  csprof_cct_node_t* node,
 			  hpcfile_cstree_node_t* tmp_node,
-			  hpcfmt_uint_t id_parent,
-			  hpcfmt_uint_t id_root,
-			  hpcfmt_uint_t* id,
 			  int lvl_to_skip)
 {
   int ret;
@@ -518,25 +504,14 @@ hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
   // ---------------------------------------------------------
   // Write this node
   // ---------------------------------------------------------
-  hpcfmt_uint_t my_id = *id;
-  hpcfmt_uint_t my_id_root = id_root;
-
   int my_lvl_to_skip = lvl_to_skip;
   if (lvl_to_skip > 0) {
-    my_id = id_parent;
     my_lvl_to_skip--;
   }
   else {
-    ret = hpcfile_cstree_write_node_hlp(fs, node, tmp_node, 
-					id_parent, id_root, my_id);
+    ret = hpcfile_cstree_write_node_hlp(fs, node, tmp_node);
     if (ret != HPCRUN_OK) { 
       return HPCRUN_ERR; 
-    }
-    
-    // Prepare next id -- assigned in pre-order
-    (*id)++;
-    if (lush_assoc_info_is_root_note(node->as_info)) {
-      my_id_root = my_id;
     }
   }
   
@@ -547,7 +522,6 @@ hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
   first = c = csprof_cct_node__first_child(node);
   while (c) {
     ret = hpcfile_cstree_write_node(fs, tree, c, tmp_node, 
-				    my_id, my_id_root, id,
 				    my_lvl_to_skip);
     if (ret != HPCFILE_OK) {
       return HPCFILE_ERR;
@@ -563,10 +537,7 @@ hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
 
 static int
 hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
-			      hpcfile_cstree_node_t* tmp_node,
-			      uint32_t id_parent,
-			      hpcfmt_uint_t id_root,
-			      uint32_t id)
+			      hpcfile_cstree_node_t* tmp_node)
 {
   int ret = HPCRUN_OK;
 
@@ -672,14 +643,10 @@ node_child_count(hpcrun_cct_t* tree, csprof_cct_node_t* node)
 
 static int
 lush_cct_ctxt__write_gbl(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
-			 unsigned int id_root, unsigned int* nodes_written,
 			 hpcfile_cstree_node_t* tmp_node);
 
 static int
 lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
-			 unsigned int id_root, 
-			 unsigned int* id_lip_root,
-			 unsigned int* nodes_written,
 			 hpcfile_cstree_node_t* tmp_node);
 
 
@@ -697,8 +664,7 @@ lush_cct_ctxt__length(lush_cct_ctxt_t* cct_ctxt)
 
 
 int
-lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
-		     unsigned int id_root, unsigned int* nodes_written)
+lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt)
 {
   // N.B.: assumes that calling malloc is acceptible!
 
@@ -710,8 +676,7 @@ lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
   tmp_node.data.num_metrics = num_metrics;
   tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfmt_uint_t));
     
-  ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt, id_root,
-				 nodes_written, &tmp_node);
+  ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt, &tmp_node);
 
   free(tmp_node.data.metrics);
 
@@ -722,7 +687,6 @@ lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
 // Post order write of 'cct_ctxt'
 static int
 lush_cct_ctxt__write_gbl(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
-			 unsigned int id_root, unsigned int* nodes_written,
 			 hpcfile_cstree_node_t* tmp_node)
 {
   int ret = HPCRUN_OK;
@@ -735,32 +699,20 @@ lush_cct_ctxt__write_gbl(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
   // -------------------------------------------------------
   // General case (post order)
   // -------------------------------------------------------
-  ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt->parent, id_root,
-				 nodes_written, tmp_node);
+  ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt->parent, tmp_node);
   if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   
   // write this context
-  unsigned int lcl_written = 0;
-  unsigned int lcl_id_root = id_root + (*nodes_written);
-  unsigned int lcl_id_lip_root = lcl_id_root;
-  ret = lush_cct_ctxt__write_lcl(fs, cct_ctxt->context, 
-				 lcl_id_root, &lcl_id_lip_root, &lcl_written,
-				 tmp_node);
+  ret = lush_cct_ctxt__write_lcl(fs, cct_ctxt->context, tmp_node);
   if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
-  (*nodes_written) += lcl_written;
   
   return ret;
 }
 
 
 // Post order write of 'node'
-//   id_root: the root of the local context chain
-//   id_lip_root: the root of the current (LUSH) bichord
 static int
 lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
-			 unsigned int id_root, 
-			 unsigned int* id_lip_root,
-			 unsigned int* nodes_written,
 			 hpcfile_cstree_node_t* tmp_node)
 {
   int ret = HPCRUN_OK;
@@ -773,24 +725,14 @@ lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
   // -------------------------------------------------------
   // General case (post order)
   // -------------------------------------------------------
-  ret = lush_cct_ctxt__write_lcl(fs, node->parent, 
-				 id_root, id_lip_root, nodes_written, tmp_node);
+  ret = lush_cct_ctxt__write_lcl(fs, node->parent, tmp_node);
   if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   
   // write this node
-  uint32_t my_id          = node->persistent_id;
-  uint32_t my_id_parent   = (node->parent) ? node->parent->persistent_id : 0;
-  hpcfmt_uint_t my_id_lip_root = (*id_lip_root);
+  ret = hpcfile_cstree_write_node_hlp(fs, node, tmp_node);
 
-  ret = hpcfile_cstree_write_node_hlp(fs, node, tmp_node, 
-				      my_id_parent, my_id_lip_root, my_id);
   if (ret != HPCRUN_OK) {
     return HPCRUN_ERR; 
-  }
-  
-  (*nodes_written)++;
-  if (lush_assoc_info_is_root_note(node->as_info)) {
-    (*id_lip_root) = my_id;
   }
   
   return ret;
