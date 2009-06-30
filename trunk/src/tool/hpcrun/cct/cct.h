@@ -266,7 +266,7 @@ typedef struct csprof_cct_s {
 } hpcrun_cct_t;
 
 
-int csprof_cct__init(hpcrun_cct_t* x);
+int csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt);
 int csprof_cct__fini(hpcrun_cct_t *x);
 
 

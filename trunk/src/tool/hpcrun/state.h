@@ -29,7 +29,7 @@ void csprof_set_state(csprof_state_t *);
 /* initialize various parts of a state */
 int csprof_state_init(csprof_state_t *);
 /* initialize dynamically allocated portions of a state */
-int csprof_state_alloc(csprof_state_t *);
+int csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt);
 
 extern csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *);
 

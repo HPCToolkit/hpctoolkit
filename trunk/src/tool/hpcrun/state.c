@@ -85,12 +85,6 @@ csprof_state_t *csprof_get_state()
 
 void csprof_set_state(csprof_state_t *state)
 {
-#if 0
-  csprof_state_t *old = csprof_get_state_internal();
-  state->next = old;
-  _set_state_internal(state);
-#endif
-
   state->next = TD_GET(state);
   TD_GET(state) = state;
 }
@@ -111,11 +105,12 @@ csprof_state_init(csprof_state_t *x)
    private memory.  Private memory must be initialized!  Returns
    HPCRUN_OK upon success; HPCRUN_ERR on error. */
 int
-csprof_state_alloc(csprof_state_t *x)
+csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt)
 {
-  csprof_csdata__init(&x->csdata);
+  csprof_cct__init(&x->csdata, thr_ctxt);
 
   x->epoch = csprof_get_epoch();
+  x->csdata_ctxt = thr_ctxt;
 
 #ifdef CSPROF_TRAMPOLINE_BACKEND
   x->pool = csprof_list_pool_new(32);
@@ -155,8 +150,8 @@ csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
 			      cct_metric_data_t increment)
 {
   csprof_cct_node_t* n;
-  n = csprof_csdata_insert_backtrace(&state->csdata, state->treenode,
-				     metric_id, path_beg, path_end, increment);
+  n = csprof_cct_insert_backtrace(&state->csdata, state->treenode,
+				  metric_id, path_beg, path_end, increment);
 
   TMSG(CCT, "Treenode is %p", n);
   
@@ -200,7 +195,7 @@ csprof_state_expand_buffer(csprof_state_t *state, csprof_frame_t *unwind){
    HPCRUN_OK upon success; HPCRUN_ERR on error. */
 int
 csprof_state_free(csprof_state_t *x){
-  csprof_csdata__fini(&x->csdata);
+  csprof_cct__fini(&x->csdata);
 
   // no need to free memory
 

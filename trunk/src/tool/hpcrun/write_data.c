@@ -7,7 +7,7 @@
 #include "files.h"
 #include "state.h"
 #include "thread_data.h"
-#include "csprof_csdata.h"
+#include "cct.h"
 #include "hpcrun_return_codes.h"
 #include "hpcio.h"
 #include "hpcfmt.h"

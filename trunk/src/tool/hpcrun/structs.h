@@ -8,7 +8,7 @@
 #include <limits.h>             /* PATH_MAX */
 #include <sys/types.h>          /* pid_t, e.g. */
 
-#include "csprof_csdata.h"
+#include "cct.h"
 #include "epoch.h"
 
 #include <lush/lush.h>
@@ -66,7 +66,7 @@ typedef struct csprof_state_s {
   unsigned int flags;
 
   /* call stack data, stored in private memory */
-  csprof_csdata_t csdata;
+  hpcrun_cct_t csdata;
   lush_cct_ctxt_t* csdata_ctxt; // creation context
 
   /* our notion of what the current epoch is */

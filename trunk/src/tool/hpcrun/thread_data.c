@@ -54,7 +54,7 @@ csprof_unthreaded_data(void)
 static offset_t emergency_sz = 4 * 1024 * 1024; // 1 Meg for emergency
 
 void
-csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
+csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp, lush_cct_ctxt_t* thr_ctxt)
 {
   NMSG(THREAD_SPECIFIC,"init thread specific data for %d",id);
   thread_data_t *td = csprof_get_thread_data();
@@ -94,7 +94,7 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
 
   csprof_set_state(state);
   csprof_state_init(state);
-  csprof_state_alloc(state);
+  csprof_state_alloc(state, thr_ctxt);
 
   return;
 }
