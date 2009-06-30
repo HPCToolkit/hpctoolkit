@@ -33,23 +33,32 @@
   if advised of the possibility of such damage.
 */
 #include <sys/time.h>
-#include "interface.h"
+#include "cct.h"
 #include "epoch.h"
+#include "fnbounds_interface.h"
+#include "interface.h"
 #include "mem.h"
 #include "pmsg.h"
-#include "csprof_csdata.h"
-#include "fnbounds_interface.h"
 #include "sample_event.h"
 #include "spinlock.h"
 #include "state.h"
 
 #include <lib/prof-lean/hpcfmt.h>
 
+
+static csprof_epoch_t static_epoch;
+
 /* epochs are entirely separate from profiling state */
 static csprof_epoch_t *current_epoch = NULL;
 
 /* locking functions to ensure that epochs are consistent */
 static spinlock_t epoch_lock = SPINLOCK_UNLOCKED;
+
+csprof_epoch_t *
+csprof_static_epoch() 
+{
+  return &static_epoch;
+}
 
 void
 csprof_epoch_lock() 
@@ -99,19 +108,11 @@ hpcrun_loadmap_add_module(const char *module_name,
 }
 
 
-/* epochs are totally distinct from profiling states */
-csprof_epoch_t *
-csprof_epoch_new()
-{
-  TMSG(MALLOC," epoch-new");
-  csprof_epoch_t *e = csprof_malloc2(sizeof(csprof_epoch_t));
 
-  if(e == NULL) {
-    /* memory subsystem hasn't been initialized yet (happens sometimes
-       with threaded programs) */
-    TMSG(EPOCH, "new epoch skipped (memory not initialized)");
-    return NULL;
-  }
+/* epochs are totally distinct from profiling states */
+void
+csprof_epoch_init(csprof_epoch_t *e)
+{
   struct timeval tv;
   gettimeofday(&tv, NULL);
   TMSG(EPOCH, "new epoch created");
@@ -129,6 +130,23 @@ csprof_epoch_new()
 
   return e;
 }
+
+/* epochs are totally distinct from profiling states */
+csprof_epoch_t *
+csprof_epoch_new()
+{
+  TMSG(MALLOC," epoch-new");
+  csprof_epoch_t *e = csprof_malloc2(sizeof(csprof_epoch_t));
+
+  if(e == NULL) {
+    /* memory subsystem hasn't been initialized yet (happens sometimes
+       with threaded programs) */
+    TMSG(EPOCH, "new epoch skipped (memory not initialized)");
+    return NULL;
+  }
+  csprof_epoch_init(e);
+}
+
 
 void
 hpcrun_finalize_current_epoch(void)

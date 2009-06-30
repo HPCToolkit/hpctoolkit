@@ -82,13 +82,13 @@
 #include "sample_sources_all.h"
 #include "atomic.h"
 #include "backtrace.h"
-#include "files.h"
+#include "cct.h"
 #include "csproflib.h"
 #include "csproflib_private.h"
 #include "csprof_monitor_callbacks.h"
 #include "env.h"
+#include "files.h"
 #include "mem.h"
-#include "csprof_csdata.h"
 #include "segv_handler.h"
 #include "epoch.h"
 #include "metrics.h"
@@ -148,16 +148,10 @@ int lush_metrics = 0; // FIXME: global variable for now
 void
 csprof_init_internal(void)
 {
+  csprof_epoch_init(csprof_static_epoch());
+
   /* N.B.: initilizes thread's private memory store */
-  csprof_thread_data_init(0,CSPROF_MEM_SZ_DEFAULT,0);
-
-  /* epoch poking needs the memory manager init'd() (and
-     the thread-specific memory manager if need be) */
-  /* figure out what libraries we currently have loaded */
-
-  csprof_epoch_lock();
-  csprof_epoch_new();
-  csprof_epoch_unlock();
+  csprof_thread_data_init(0,CSPROF_MEM_SZ_DEFAULT,0, NULL);
 
   // WARNING: a perfmon bug requires us to fork off the fnbounds
   // server before we call PAPI_init, which is done in argument
@@ -272,11 +266,9 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
   td->suspend_sampling = 1; // begin: protect against spurious signals
 
   csprof_set_thread_data(td);
-  csprof_thread_data_init(id,1,0);
+  csprof_thread_data_init(id,1,0,thr_ctxt);
 
-  csprof_state_t *state = TD_GET(state);
-
-  state->csdata_ctxt = thr_ctxt;
+  csprof_state_t* state = TD_GET(state);
 
   // start sampling sources
   TMSG(INIT,"starting sampling sources");
@@ -352,7 +344,7 @@ csprof_check_for_new_epoch(csprof_state_t *state)
     memcpy(newstate, state, sizeof(csprof_state_t));
 
     /* we do have to reinitialize the tree, though */
-    csprof_csdata__init(&newstate->csdata);
+    csprof_cct__init(&newstate->csdata, newstate->csdata_ctxt);
 
     /* and reinsert backtraces */
     if(newstate->bufend - newstate->bufstk != 0) {

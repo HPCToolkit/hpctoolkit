@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "csprof_csdata.h"
+#include "cct.h"
 #include "thread_data.h"
 
 

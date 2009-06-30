@@ -72,7 +72,9 @@ struct csprof_epoch
   loadmap_src_t *loaded_modules;
 };
 
+csprof_epoch_t *csprof_static_epoch();
 csprof_epoch_t *csprof_epoch_new();
+void csprof_epoch_init(csprof_epoch_t *e);
 csprof_epoch_t *csprof_get_epoch();
 
 void hpcrun_loadmap_add_module(const char *module_name, void *vaddr, void *mapaddr, size_t size);

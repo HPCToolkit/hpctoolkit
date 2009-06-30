@@ -52,7 +52,8 @@ extern thread_data_t *(*csprof_get_thread_data)(void);
 extern bool          (*csprof_td_avail)(void);
 extern thread_data_t *csprof_allocate_thread_data(void);
 extern void           csprof_init_pthread_key(void);
-extern void           csprof_thread_data_init(int id,offset_t sz1,offset_t sz2);
+extern void           csprof_thread_data_init(int id,offset_t sz1,offset_t sz2,
+					      lush_cct_ctxt_t* thr_ctxt);
 extern void           csprof_set_thread_data(thread_data_t *td);
 extern void           csprof_set_thread0_data(void);
 extern void           csprof_unthreaded_data(void);

@@ -104,6 +104,7 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
   node->ip = ip;
   node->lip = lip;         // LUSH
   node->sp = sp;
+
   node->persistent_id = new_persistent_id();
 
   node->next_sibling = NULL;
@@ -198,7 +199,7 @@ csprof_cct_node__find_child(csprof_cct_node_t* x,
 /* building and deleting trees */
 
 int
-csprof_cct__init(hpcrun_cct_t* x)
+csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
 {
   TMSG(CCT,"Init a CCT");
   memset(x, 0, sizeof(*x));
@@ -215,6 +216,12 @@ csprof_cct__init(hpcrun_cct_t* x)
     x->cache_nodes = csprof_malloc(sizeof(csprof_cct_node_t*) * l);
   }
 #endif
+
+  // introduce bogus root to handle possible forests
+  x->tree_root = csprof_cct_node__create(lush_assoc_info_NULL, 0, NULL, NULL, x);
+
+  x->tree_root->parent = (ctxt)? ctxt->context : NULL;
+  x->num_nodes = 1;
 
   return HPCRUN_OK;
 }
@@ -261,6 +268,7 @@ csprof_cct_insert_backtrace(hpcrun_cct_t *x, void *treenode, int metric_id,
     return NULL;
   }
 
+#if 0
   if (csprof_cct__isempty(x)) {
     // introduce bogus root to handle possible forests
     x->tree_root = csprof_cct_node__create(frm->as_info, frm->ip, 
@@ -275,6 +283,7 @@ csprof_cct_insert_backtrace(hpcrun_cct_t *x, void *treenode, int metric_id,
 
     TMSG(CCT, "nxt beg ip %#lx | sp %#lx", frm->ip, frm->sp);
   }
+#endif
 
   if (tn == NULL) {
     tn = x->tree_root;
@@ -436,6 +445,7 @@ hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree,
   int ret;
   int lvl_to_skip = 0;
 
+#if 0 
   if (tree_ctxt && tree_ctxt->context) {
     lvl_to_skip = 2;
 #ifdef NODE_CHILD_COUNT 
@@ -445,6 +455,7 @@ hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree,
     if (children == 1) lvl_to_skip = 1;
 #endif
   }
+#endif
     
   if (!fs) { return HPCFILE_ERR; }
 
