@@ -127,24 +127,24 @@ csprof_epoch_init(csprof_epoch_t *e)
      current_epoch */
   e->next = current_epoch;
   current_epoch = e;
-
-  return e;
 }
 
 /* epochs are totally distinct from profiling states */
-csprof_epoch_t *
+csprof_epoch_t*
 csprof_epoch_new()
 {
   TMSG(MALLOC," epoch-new");
   csprof_epoch_t *e = csprof_malloc2(sizeof(csprof_epoch_t));
 
-  if(e == NULL) {
+  if (e == NULL) {
     /* memory subsystem hasn't been initialized yet (happens sometimes
        with threaded programs) */
     TMSG(EPOCH, "new epoch skipped (memory not initialized)");
     return NULL;
   }
   csprof_epoch_init(e);
+  
+  return e;
 }
 
 
