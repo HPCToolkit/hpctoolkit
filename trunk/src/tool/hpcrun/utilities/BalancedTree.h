@@ -63,6 +63,9 @@ typedef struct BalancedTreeNode
   uint64_t idleness;
   void*    cct_node;
 
+  bool isBlockingWork;
+  bool isLocked;
+
 } BalancedTreeNode_t;
 
 

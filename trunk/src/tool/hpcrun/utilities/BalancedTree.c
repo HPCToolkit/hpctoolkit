@@ -56,6 +56,9 @@ BalancedTreeNode_create(void* key, BalancedTreeNode_t* parent)
   x->idleness = 0;
   x->cct_node = NULL;
 
+  x->isBlockingWork = false;
+  x->isLocked = false;
+
   return x;
 }
 

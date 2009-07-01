@@ -119,7 +119,7 @@ lushPthr_init(lushPthr_t* x)
   x->syncObjToData = &globals.syncObjToData;
   x->syncObjData = NULL;
 
-  x->cache_lock = NULL;
+  x->cache_syncObj = NULL;
   x->cache_syncObjData = NULL;
 }
 
