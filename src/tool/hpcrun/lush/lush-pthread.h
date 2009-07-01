@@ -509,39 +509,16 @@ lushPthr_demandSyncObjData(lushPthr_t* restrict x, void* restrict syncObj)
 }
 
 
-#if 0 // FIXME
-static inline SpinLockData_t*
-lushPthr_makeSpinLockData(lushPthr_t* restrict x, 
-			  pthread_spinlock_t* restrict lock)
+static inline BalancedTreeNode_t*
+lushPthr_demandCachedSyncObjData(lushPthr_t* restrict x, 
+				 void* restrict syncObj)
 {
-  // N.B.:
-  // - Assume we are only called from pthread_spin_init.
-  //   Consequently, we don't need to protect from simultaneous
-  //   accesses.  
-  // - Assume the lock is already initialized
-  // 
-  assert( !(lushPthr_spinLockMagicLo <= *lock 
-	    && *lock < lushPthr_spinLockMagicHi) );
-  assert( (*x->nxtSpinLockIdx) < lushPthr_spinLockDataSZ );
-  int fnd_idx = (*x->nxtSpinLockIdx)++;
-  int lck_idx = lushPthr_spinLockMagicLo + fnd_idx;
-  *lock = lck_idx;
-  return &(x->spinLockData[fnd_idx]);
-}
-
-
-static inline SpinLockData_t*
-lushPthr_findSpinLockData(lushPthr_t* restrict x, 
-			  pthread_spinlock_t* restrict lock)
-{
-  SpinLockData_t* fnd = NULL;
-  if (lushPthr_spinLockMagicLo <= *lock && *lock < lushPthr_spinLockMagicHi) {
-    int fnd_idx = *lock - lushPthr_spinLockMagicLo;
-    fnd = &(x->spinLockData[fnd_idx]);
+  if (syncObj != x->cache_syncObj) {
+    x->cache_syncObj = syncObj;
+    x->cache_syncObjData = lushPthr_demandSyncObjData(x, (void*)syncObj);
   }
-  return fnd;
+  return x->cache_syncObjData;
 }
-#endif
 
 
 //***************************************************************************
@@ -564,9 +541,10 @@ static inline void
 lushPthr_mutexLock_pre_ty3(lushPthr_t* restrict x, 
 			   pthread_mutex_t* restrict lock)
 {
-  // N.B.: There is a small window where we could be sampled.  Rather
-  // than setting an 'ignore-sample' flag, we currently depend upon
-  // this happening infrequently.
+  BalancedTreeNode_t* syncData = 
+    lushPthr_demandCachedSyncObjData(x, (void*)lock);
+  syncData->isBlockingWork = (syncData->isLocked);
+
   lushPthr_begSmplIdleness(x);
   x->syncObjData = NULL; // drop samples
   x->is_working = false;
@@ -580,19 +558,17 @@ lushPthr_mutexLock_post_ty3(lushPthr_t* restrict x,
   x->is_working = true;
   lushPthr_endSmplIdleness(x);
 
-#if 0 // FIXME3
-  if (x->idleness > 0) {
-    SyncObjData_t* syncData = lushPthr_demandSyncObjData(x, lock);
-    if (syncData->cct_node) {
-      csprof_cct_node_t* node = (csprof_cct_node_t*)syncData->cct_node;
-      int mid = lush_agents->metric_idleness;
-      double idleness = x->idleness;
-      cct_metric_data_increment(mid, &node->metrics[mid],
-				(cct_metric_data_t){.r = idleness});
-    }
-    // FIXME: otherwise???
+  BalancedTreeNode_t* syncData = 
+    lushPthr_demandCachedSyncObjData(x, (void*)lock);
+  syncData->isLocked = true;
+
+  if (x->idleness > 0 && syncData->cct_node) {
+    csprof_cct_node_t* node = (csprof_cct_node_t*)syncData->cct_node;
+    int mid = lush_agents->metric_idleness;
+    double idleness = x->idleness;
+    cct_metric_data_increment(mid, &node->metrics[mid],
+			      (cct_metric_data_t){.r = idleness});
   }
-#endif
 }
 
 
@@ -609,14 +585,14 @@ lushPthr_mutexUnlock_post_ty3(lushPthr_t* restrict x,
 			      pthread_mutex_t* restrict lock)
 {
   x->is_working = true; // same
+  
+  BalancedTreeNode_t* syncData = 
+    lushPthr_demandCachedSyncObjData(x, (void*)lock);
+  syncData->isLocked = false;
 
-  x->syncObjData = NULL; // drop samples
-  if (x->doIdlenessCnt == 1 ||
-      x->doIdlenessCnt == LUSH_PTHR_SYNC_SMPL_PERIOD/2) {
-#if 0 // FIXME3
-    BalancedTreeNode_t* syncData = lushPthr_demandSyncObjData(x, lock);
+  if (syncData->isBlockingWork) {
+    // FIXME3: may not be blocking and may do more work than necessary
     syncData->cct_node = lushPthr_attribToCallPath(0);
-#endif
   }
 }
 
@@ -625,9 +601,7 @@ static inline void
 lushPthr_spinLock_pre_ty3(lushPthr_t* restrict x, 
 			  pthread_spinlock_t* restrict lock)
 {
-  x->syncObjData = lushPthr_demandSyncObjData(x, (void*)lock);
-  x->cache_lock = (void*)lock;
-  x->cache_syncObjData = x->syncObjData;
+  x->syncObjData = lushPthr_demandCachedSyncObjData(x, (void*)lock);
   x->is_working = false;
 }
 
@@ -655,10 +629,8 @@ lushPthr_spinUnlock_post_ty3(lushPthr_t* restrict x,
 {
   x->is_working = true; // same
   
-  BalancedTreeNode_t* syncData = x->cache_syncObjData;
-  if (lock != x->cache_lock) {
-    syncData = lushPthr_demandSyncObjData(x, (void*)lock);
-  }
+  BalancedTreeNode_t* syncData = 
+    lushPthr_demandCachedSyncObjData(x, (void*)lock);
   if (syncData && syncData->idleness > 0) {
     x->idleness = csprof_atomic_swap_l((long*)&syncData->idleness, 0);
     lushPthr_attribToCallPath(x->idleness);
@@ -670,14 +642,14 @@ static inline void
 lushPthr_condwait_pre_ty3(lushPthr_t* x)
 {
   x->is_working = false;
-  //FIXME: lushPthr_begSmplIdleness(x);
+  //FIXME3: lushPthr_begSmplIdleness(x);
 }
 
 
 static inline void
 lushPthr_condwait_post_ty3(lushPthr_t* x)
 {
-  //FIXME: lushPthr_endSmplIdleness(x);
+  //FIXME3: lushPthr_endSmplIdleness(x);
   x->is_working = true;
 }
 
