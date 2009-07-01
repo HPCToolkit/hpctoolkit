@@ -32,7 +32,7 @@ papi_extra_libs='@papi_extra_libs@'
 
 # FIXME: The wrap list should come from monitor.
 wrap1="main exit _exit dlopen dlclose fork vfork system"
-wrap2="execl execlp execle execv execvp execve"
+wrap2="execl execlp execle execv execvp execve pthread_exit"
 wrap3="pthread_create signal sigaction sigprocmask pthread_sigmask"
 wrap4="MPI_Init mpi_init mpi_init_ mpi_init__"
 wrap5="MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__"
