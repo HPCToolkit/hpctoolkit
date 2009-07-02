@@ -14,6 +14,7 @@
 
 #include "sample_sources_registered.h"
 #include "mem.h"
+#include "newmem.h"
 #include "state.h"
 
 #include <lush/lush-pthread.i>
@@ -25,12 +26,8 @@ typedef struct {
 
 typedef struct _td_t {
   int id;
-  //  main memory store
-  csprof_mem_t    _mem;
-  csprof_mem_t    *memstore;
-  // aux data store (mainly for data output when samples exhausted)
-  csprof_mem_t    _mem2;
-  csprof_mem_t    *memstore2;
+  hpcrun_meminfo_t memstore;
+  int             mem_low;
   csprof_state_t  *state;
   sigjmp_buf_t    bad_unwind;
   sigjmp_buf_t    mem_error;

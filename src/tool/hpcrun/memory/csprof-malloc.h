@@ -36,6 +36,10 @@ extern "C" {
 // NOTE: This memory cannot be freed! 
 //---------------------------------------------------------------------------
 void* csprof_malloc(size_t size);
+void* csprof_malloc_freeable(size_t size);
+
+void hpcrun_reclaim_freeable_mem(void);
+void hpcrun_memory_summary(void);
 
 #if defined(__cplusplus)
 } /* extern "C" */
