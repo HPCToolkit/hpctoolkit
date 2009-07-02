@@ -57,6 +57,7 @@ extern const char* CSPROF_OPT_MAX_METRICS;
 extern const char* SWITCH_TO_PAPI;
 
 extern const char* HPCRUN_EVENT_LIST;
-extern const char* HPCRUN_MAX_MEMSIZE;
+extern const char* HPCRUN_MEMSIZE;
+extern const char* HPCRUN_LOW_MEMSIZE;
 
 #endif /* CSPROF_ENV_H */

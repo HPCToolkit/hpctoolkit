@@ -23,4 +23,5 @@ const char* SWITCH_TO_PAPI           = "SWITCH_TO_PAPI";
 const char* PAPI_EVENT_LIST          = "PAPI_EVENT_LIST";
 
 const char* HPCRUN_EVENT_LIST        = "HPCRUN_EVENT_LIST";
-const char* HPCRUN_MAX_MEMSIZE       = "HPCRUN_MAX_MEMSIZE";
+const char* HPCRUN_MEMSIZE           = "HPCRUN_MEMSIZE";
+const char* HPCRUN_LOW_MEMSIZE       = "HPCRUN_LOW_MEMSIZE";

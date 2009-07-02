@@ -15,6 +15,7 @@
 
 #include "pmsg.h"
 #include "mem.h"
+#include "newmem.h"
 #include "state.h"
 #include "handling_sample.h"
 
@@ -51,8 +52,6 @@ csprof_unthreaded_data(void)
 }
 
 
-static offset_t emergency_sz = 4 * 1024 * 1024; // 1 Meg for emergency
-
 void
 csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp, lush_cct_ctxt_t* thr_ctxt)
 {
@@ -62,6 +61,7 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp, lush_cct_ctxt_t* t
   // initialize thread_data with known bogus bit pattern so that missing
   // initializations will be apparent.
   memset(td, 0xfe, sizeof(thread_data_t)); 
+  hpcrun_make_memstore(&td->memstore);
 
   // sampling control variables
   //   tallent: protect against spurious signals until 'state' is fully
@@ -70,8 +70,7 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp, lush_cct_ctxt_t* t
   csprof_init_handling_sample(td,0);
 
   td->id                          = id;
-  td->memstore                    = csprof_malloc_init(sz, sz_tmp);
-  td->memstore2                   = csprof_malloc2_init(emergency_sz,0);
+  td->mem_low                     = 0;
   td->state                       = NULL;
 
   // locks

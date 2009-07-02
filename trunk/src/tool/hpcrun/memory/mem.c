@@ -1,402 +1,290 @@
-#include <stdio.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <unistd.h>
-// #include <errno.h>
-// #include <string.h>
+// -*-Mode: C++;-*-
+// $Id$
+//
+// The new memory allocator.  We mmap() a large, single region (6 Meg)
+// per thread and dole out pieces via csprof_malloc().  Pieces are
+// either freeable (CCT nodes) or not freeable (everything else).
+// When memory gets low, we write out an epoch and reclaim the CCT
+// nodes.
+//
 
-#include <sys/mman.h>           /* for mmap() */
+#include <sys/mman.h>
 #include <sys/stat.h>
-// #include <sys/types.h>          /* for pthreads */
-#include <setjmp.h>
+#include <sys/types.h>
 
-/* user include files */
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
+#include "csprof-malloc.h"
 #include "env.h"
-#include "handling_sample.h"
-#include "unwind.h"
-#include "mem.h"
+#include "monitor.h"
+#include "newmem.h"
 #include "pmsg.h"
 #include "sample_event.h"
 #include "thread_data.h"
-#include "hpcrun_return_codes.h"
-#include "monitor.h"
-#include "vptr_add.h"
 
-#include "mem_const.h"
-
-#define DEFAULT_MEMSIZE  (8 * 1024 * 1024)
-#define EXTRA_MEMSIZE    (1024 * 1024)
+#define DEFAULT_MEMSIZE   (6 * 1024 * 1024)
+#define BGP_MEMSIZE      (10 * 1024 * 1024)
+#define MIN_LOW_MEMSIZE  (80 * 1024)
 #define DEFAULT_PAGESIZE  4096
 
-static size_t hpcrun_max_memsize = DEFAULT_MEMSIZE;
-static size_t sys_pagesize = DEFAULT_PAGESIZE;
+static size_t memsize = DEFAULT_MEMSIZE;
+static size_t low_memsize = MIN_LOW_MEMSIZE;
+static size_t pagesize = DEFAULT_PAGESIZE;
+static int allow_extra_mmap = 1;
+
+static long num_segments = 0;
+static long num_reclaims = 0;
+static long num_failures = 0;
+static long total_freeable = 0;
+static long total_non_freeable = 0;
+
+static int out_of_mem_mesg = 0;
+
+//------------------------------------------------------------------
+// Internal functions
+//------------------------------------------------------------------
+
+static inline size_t
+round_up(size_t size)
+{
+  return (size + 7) & ~7L;
+}
 
 static inline size_t
 hpcrun_align_pagesize(size_t size)
 {
-  return ((size + sys_pagesize - 1)/sys_pagesize) * sys_pagesize;
+  return ((size + pagesize - 1)/pagesize) * pagesize;
 }
 
+// Look up environ variables and pagesize.
 static void
-hpcrun_mem_env_init(void)
+hpcrun_mem_init(void)
 {
+  static int init_done = 0;
   char *str;
   long ans;
 
+  if (init_done)
+    return;
+
 #ifdef _SC_PAGESIZE
   if ((ans = sysconf(_SC_PAGESIZE)) > 0) {
-    sys_pagesize = ans;
+    pagesize = ans;
   }
 #endif
 
-  str = getenv(HPCRUN_MAX_MEMSIZE);
+#ifdef HOST_SYSTEM_IBM_BLUEGENE
+  memsize = BGP_MEMSIZE;
+  allow_extra_mmap = 0;
+#endif
+
+  str = getenv(HPCRUN_MEMSIZE);
   if (str != NULL && sscanf(str, "%ld", &ans) == 1) {
-    hpcrun_max_memsize = hpcrun_align_pagesize(ans);
+    memsize = hpcrun_align_pagesize(ans);
   }
-}
 
-/* the system malloc is good about rounding odd amounts to be aligned.
-   we need to do the same thing.
-   NOTE: might need to be different for 32-bit vs. 64-bit
- */
-static size_t csprof_align_malloc_request(size_t size){
-  return (size + (8 - 1)) & (~(8 - 1));
-}
-
-static void
-_stop_activity(void)
-{
-  if (csprof_is_handling_sample()){
-    TMSG(MALLOC,"memory allocation failure during sampling. Dropping Sample");
-    csprof_drop_sample();
+  str = getenv(HPCRUN_LOW_MEMSIZE);
+  if (str != NULL && sscanf(str, "%ld", &ans) == 1) {
+    low_memsize = ans;
+  } else {
+    low_memsize = memsize/25;
+    if (low_memsize < MIN_LOW_MEMSIZE)
+      low_memsize = MIN_LOW_MEMSIZE;
   }
-  else {
-    TMSG(MALLOC,"memory allocation failure, NOT sampling. Doing whatever cleanup is necessary");
-    sigjmp_buf_t *it = &(TD_GET(mem_error));
-    siglongjmp(it->jb,9);
-  }
+
+  TMSG(MALLOC, "%s: pagesize = %ld, memsize = %ld, "
+       "low memsize = %ld, extra mmap = %d",
+       __func__, pagesize, memsize, low_memsize, allow_extra_mmap);
+  init_done = 1;
 }
 
-void
-csprof_handle_memory_error(void)
-{
-  csprof_disable_sampling();
-  EEMSG("Sampling disabled due to memory allocation failure");
-  _stop_activity();
-}
-
-// debugging aid
-static const char *
-csprof_mem_store__str(csprof_mem_store_t st)
-{
-  switch (st) {
-    case CSPROF_MEM_STORE:    return "general";
-    case CSPROF_MEM_STORETMP: return "temp";
-    default:
-      EMSG("csprof_mem_store__str programming error");
-      monitor_real_abort();
-      return "";
-  }
-}
-
+//
+// Returns: address of mmap-ed region, else NULL on failure.
+//
+// Note: we leak fds in the rare case of a process that creates many
+// threads running on a system that doesn't allow MAP_ANON.
+//
 static void *
 hpcrun_mmap_anon(size_t size)
 {
   int prot, flags, fd;
+  char *str;
+  void *addr;
 
   size = hpcrun_align_pagesize(size);
   prot = PROT_READ | PROT_WRITE;
   fd = -1;
+
 #if defined(MAP_ANON)
   flags = MAP_PRIVATE | MAP_ANON;
 #elif defined(MAP_ANONYMOUS)
   flags = MAP_PRIVATE | MAP_ANONYMOUS;
 #else
-  fd = open("/dev/zero", O_RDWR);
   flags = MAP_PRIVATE;
+  fd = open("/dev/zero", O_RDWR);
+  if (fd < 0) {
+    str = strerror(errno);
+    EMSG("%s: open /dev/null failed: %s", __func__, str);
+    return NULL;
+  }
 #endif
 
-  return mmap(NULL, size, prot, flags, fd, 0);
+  addr = mmap(NULL, size, prot, flags, fd, 0);
+  if (addr == MAP_FAILED) {
+    str = strerror(errno);
+    EMSG("%s: mmap failed: %s", __func__, str);
+    addr = NULL;
+  }
+
+  TMSG(MALLOC, "%s: size = %ld, fd = %d, addr = %p",
+       __func__, size, fd, addr);
+  return addr;
 }
 
-// csprof_mem__grow: Creates a new pool of memory that is at least as
-// large as 'sz' bytes for the mem store specified by 'st' and returns
-// HPCRUN_OK; otherwise returns HPCRUN_ERR.
-int
-csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
+//------------------------------------------------------------------
+// External functions
+//------------------------------------------------------------------
+
+//
+// memstore layout:
+//
+//   +------------------+------------+----------------+
+//   |  freeable (cct)  |            |  non-freeable  |
+//   +------------------+------------+----------------+
+//   mi_start           mi_low       mi_high
+//
+
+// Allocate space and init a thread's memstore.
+void
+hpcrun_make_memstore(hpcrun_meminfo_t *mi)
 {
-  // Note: we cannot use our memory stores until we have allocated more mem
-  void* mmbeg = NULL;
-  size_t mmsz = sz;
+  hpcrun_mem_init();
 
-  csprof_mmap_info_t** store = NULL;
-  csprof_mmap_alloc_info_t *allocinf = NULL;
-  csprof_mmap_info_t *mminfo = NULL;
-
-  // Setup pointers
-  if (x != NULL) {
-    store = &(x->store);
-    allocinf = &(x->allocinf);
+  mi->mi_start = hpcrun_mmap_anon(memsize);
+  if (mi->mi_start == NULL) {
+    EMSG("%s: mmap failed, shutting down", __func__);
+    monitor_real_abort();
   }
 
-  TMSG(MMAP, "creating new %s memory store of %lu bytes", 
-       csprof_mem_store__str(st), mmsz);
+  mi->mi_size = memsize;
+  mi->mi_low = mi->mi_start;
+  mi->mi_high = mi->mi_start + memsize;
+  num_segments++;
 
-  mmbeg = hpcrun_mmap_anon(mmsz);
-  if (mmbeg == MAP_FAILED) {
-    EMSG("mem grow mmap failed");
-    return HPCRUN_ERR;
-  }
-
-  // Allocate some space at the beginning of the map to store
-  // 'mminfo', add to mmap list and reset allocation information.
-  mminfo = (csprof_mmap_info_t*)mmbeg;
-  csprof_mmap_info__init(mminfo);
-  
-  if(allocinf->mmap == NULL) {
-    if(*store != NULL) {
-      EMSG("csprof_mem__grow programming error: allocinf label failure");
-      monitor_real_abort();
-    }
-    allocinf->mmap = mminfo;
-    *store = mminfo;
-  } else {
-    allocinf->mmap->next = mminfo;
-    allocinf->mmap = mminfo;
-  }
-
-  allocinf->next = VPTR_ADD(mmbeg, sizeof(*mminfo));
-  allocinf->beg = mmbeg;
-  allocinf->end = VPTR_ADD(mmbeg, mmsz);
-  
-  return HPCRUN_OK;
+  TMSG(MALLOC, "new memstore: [%p, %p)", mi->mi_start, mi->mi_high);
 }
 
-// csprof_mem__init: Initialize and prepare memory stores for use,
-// using 'sz' and 'sz_tmp' as the initial sizes (in bytes) of the
-// respective stores.  If either size is 0, the respective store is
-// disabled; however it is an error for both stores to be
-// disabled.  Returns HPCRUN_OK upon success; HPCRUN_ERR on error.
-
-int
-csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp)
+// Reclaim the freeable CCT memory at the low end.
+void
+hpcrun_reclaim_freeable_mem(void)
 {
-  if(sz == 0 && sz_tmp == 0) { return HPCRUN_ERR; }
+  hpcrun_meminfo_t *mi = &TD_GET(memstore);
 
-  memset(x, 0, sizeof(*x));
-
-  x->sz_next     = sz;
-  x->sz_next_tmp = sz_tmp;
-  
-  TMSG(MEM,"csprof mem init about to call grow");
-  if(sz != 0
-     && csprof_mem__grow(x, sz, CSPROF_MEM_STORE) != HPCRUN_OK) {
-    EMSG("** MEM GROW for main store failed");
-    return HPCRUN_ERR;
-  }
-  if(sz_tmp != 0 
-     && csprof_mem__grow(x, sz_tmp, CSPROF_MEM_STORETMP) != HPCRUN_OK) {
-    EMSG("** MEM GROW for tmp store failed");
-    return HPCRUN_ERR;
-  }
-  
-  x->status = CSPROF_MEM_STATUS_INIT;
-  return HPCRUN_OK;
+  mi->mi_low = mi->mi_start;
+  num_reclaims++;
 }
 
-// csprof_mem__alloc: Attempts to allocate 'sz' bytes in the store
-// specified by 'st'.  If there is sufficient space, returns a
-// pointer to the beginning of a block of memory of exactly 'sz'
-// bytes; otherwise returns NULL.
-static void *
-csprof_mem__alloc(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
-{
-  void* m, *new_mem;
-  csprof_mmap_alloc_info_t *allocinf = NULL;
-
-  // Setup pointers
-  switch (st) {
-    case CSPROF_MEM_STORE:    allocinf = &(x->allocinf); break;
-    case CSPROF_MEM_STORETMP: allocinf = &(x->allocinf_tmp); break;
-    default: EMSG("csprof_mem__alloc programming error"); monitor_real_abort();
-  }
-
-  TMSG(MEM__ALLOC,"Mem alloc requesting %ld",sz);
-  // Sanity check
-  if(sz <= 0) { return NULL; }
-  if(!allocinf->mmap) { EMSG("csprof_mem__alloc programming error: allocinf label"); monitor_real_abort(); }
-
-  // Check for space
-  m = VPTR_ADD(allocinf->next, sz);
-  if(m >= allocinf->end) { TMSG(MEM__ALLOC,"request for %ld bytes failed",sz); return NULL; }
-
-  // Allocate the memory
-  new_mem = allocinf->next;
-  allocinf->next = m;        // bump the 'next' pointer
-  
-  TMSG(MEM__ALLOC,"request succeeds");
-  return new_mem;
-}
-
-void *
-csprof_mem_alloc_main(csprof_mem_t *x, size_t sz)
-{
-  return csprof_mem__alloc(x,sz,CSPROF_MEM_STORE);
-}
-
-#if 0
-// csprof_mem__free: Attempts to free 'sz' bytes in the store
-// specified by 'st'.  Returns HPCRUN_OK upon success; HPCRUN_ERR on
-// error.
-static int
-csprof_mem__free(csprof_mem_t *x, void* ptr, size_t sz, csprof_mem_store_t st)
-{
-  void* m;
-  csprof_mmap_alloc_info_t *allocinf = NULL;
-
-  // Setup pointers
-  switch (st) {
-    case CSPROF_MEM_STORE:    allocinf = &(x->allocinf); break;
-    case CSPROF_MEM_STORETMP: allocinf = &(x->allocinf_tmp); break;
-    default: EMSG("csprof_mem__free programming error: pointer setup"); monitor_real_abort();
-  }
-
-  // Sanity check
-  if(!ptr) { return HPCRUN_OK; }
-  if(sz <= 0) { return HPCRUN_OK; }
-  if(!allocinf->mmap) { EMSG("csprof_mem__free programming error: allocinf"); monitor_real_abort();}
-
-  // Check for space
-  m = VPTR_ADD(allocinf->next, -sz);
-  if(m < allocinf->beg) {
-    return HPCRUN_ERR;
-  }
-  
-  // Unallocate the memory
-  allocinf->next = m; 
-
-  return HPCRUN_OK;
-}
-#endif
-// csprof_mem__is_enabled: Returns 1 if the memory store 'st' is
-// enabled, 0 otherwise.
-static int
-csprof_mem__is_enabled(csprof_mem_t *x, csprof_mem_store_t st)
-{
-  switch (st) {
-    case CSPROF_MEM_STORE:    return (x->store) ? 1 : 0;
-    case CSPROF_MEM_STORETMP: return (x->store_tmp) ? 1 : 0;
-    default:
-      EMSG("programming error: csprof_mem__is_enabled");
-      return -1;
-  }
-}
-/* csprof_mmap_info_t and csprof_mmap_alloc_info_t */
-
-csprof_mem_t *
-csprof_malloc_init(offset_t sz, offset_t sz_tmp)
-{
-  csprof_mem_t *memstore = &(TD_GET(_mem));
-
-  if(memstore == NULL) { TMSG(MEM,"malloc_init returns NULL"); return NULL; }
-
-  hpcrun_mem_env_init();
-  TMSG(MEM,"csprof_malloc_init called with sz = %ld, sz_tmp = %ld",sz, sz_tmp);
-  int status = csprof_mem__init(memstore, hpcrun_max_memsize, 0);
-  if(status == HPCRUN_ERR) {
-    return NULL;
-  }
-
-  return memstore;
-}
-
-csprof_mem_t *
-csprof_malloc2_init(offset_t sz, offset_t sz_tmp)
-{
-  csprof_mem_t *memstore = &(TD_GET(_mem2));
-
-  if(memstore == NULL) { TMSG(MEM2,"malloc_init returns NULL"); return NULL; }
-
-  hpcrun_mem_env_init();
-  TMSG(MEM2,"csprof_malloc2_init called with sz = %ld, sz_tmp = %ld",sz, sz_tmp);
-  int status = csprof_mem__init(memstore, EXTRA_MEMSIZE, 0);
-  if(status == HPCRUN_ERR) {
-    return NULL;
-  }
-
-  return memstore;
-}
-
-// See header file for documentation of public interface.
-static void *
-csprof_malloc_threaded(csprof_mem_t *memstore, size_t size)
-{
-  void *mem;
-  int ret;
-
-  // Sanity check
-  if (csprof_mem__get_status(memstore) != CSPROF_MEM_STATUS_INIT) {
-    EMSG("NO MEM STATUS");
-    return NULL;
-  }
-  if (!csprof_mem__is_enabled(memstore, CSPROF_MEM_STORE)) {
-    EMSG("NO MEM ENBL");
-    return NULL;
-  }
-
-  if (size <= 0) {
-    // check to prevent an infinite loop!
-    EMSG("CSPROF_MALLOC: size <=0");
-    return NULL;
-  } 
-
-  size = csprof_align_malloc_request(size);
-  TMSG(CSP_MALLOC,"requested size after alignment = %ld",size);
-
-  mem = csprof_mem__alloc(memstore, size, CSPROF_MEM_STORE);
-  if (mem != NULL)
-    return mem;
-
-  if (size > EXTRA_MEMSIZE - 1000)
-    return hpcrun_mmap_anon(size);
-
-  ret = csprof_mem__grow(memstore, EXTRA_MEMSIZE, CSPROF_MEM_STORE);
-  if (ret == HPCRUN_OK)
-    return csprof_mem__alloc(memstore, size, CSPROF_MEM_STORE);
-
-  EMSG("could not allocate swap space for memory manager");
-  csprof_handle_memory_error();  // used to abort
-  return NULL;
-}
-
+//
+// Returns: address of non-freeable region at the high end,
+// else NULL on failure.
+//
 void *
 csprof_malloc(size_t size)
 {
-  TMSG(CSP_MALLOC,"requesting size %ld",size);
-  csprof_mem_t *memstore = TD_GET(memstore);
-  return csprof_malloc_threaded(memstore, size);
+  hpcrun_meminfo_t *mi = &TD_GET(memstore);
+  void *addr;
+
+  // Non-recoverable out of memory.
+  if (mi->mi_high < mi->mi_start + low_memsize) {
+    if (allow_extra_mmap) {
+      hpcrun_make_memstore(mi);
+    } else {
+      if (! out_of_mem_mesg) {
+	EMSG("%s: out of memory, turning off sampling", __func__);
+	out_of_mem_mesg = 1;
+      }
+      csprof_disable_sampling();
+      TMSG(MALLOC, "%s: size = %ld, failure: out of memory",
+	   __func__, size);
+      num_failures++;
+      return NULL;
+    }
+  }
+  size = round_up(size);
+  addr = mi->mi_high - size;
+
+  // Recoverable out of memory.
+  if (addr <= mi->mi_low) {
+    TD_GET(mem_low) = 1;
+    TMSG(MALLOC, "%s: size = %ld, failure: temporarily out of memory",
+	 __func__, size);
+    num_failures++;
+    return NULL;
+  }
+
+  // Low on memory.
+  if (addr < mi->mi_low + low_memsize) {
+    TD_GET(mem_low) = 1;
+    TMSG(MALLOC, "%s: low on memory, setting epoch flush flag", __func__);
+  }
+
+  mi->mi_high = addr;
+  total_non_freeable += size;
+  TMSG(MALLOC, "%s: size = %ld, addr = %p", __func__, size, addr);
+  return addr;
 }
 
+//
+// Returns: address of freeable region at the high end,
+// else NULL on failure.
+//
 void *
-csprof_malloc2(size_t size)
+csprof_malloc_freeable(size_t size)
 {
-  TMSG(CSP_MALLOC,"requesting size %ld",size);
-  csprof_mem_t *memstore = TD_GET(memstore2);
-  return csprof_malloc_threaded(memstore, size);
+  hpcrun_meminfo_t *mi = &TD_GET(memstore);
+  void *addr, *ans;
+
+  size = round_up(size);
+  addr = mi->mi_low + size;
+
+  // Recoverable out of memory.
+  if (addr >= mi->mi_high) {
+    TD_GET(mem_low) = 1;
+    TMSG(MALLOC, "%s: size = %ld, failure: temporary out of memory",
+	 __func__, size);
+    num_failures++;
+    return NULL;
+  }
+
+  // Low on memory.
+  if (addr + low_memsize > mi->mi_high) {
+    TD_GET(mem_low) = 1;
+    TMSG(MALLOC, "%s: low on memory, setting epoch flush flag", __func__);
+  }
+
+  ans = mi->mi_low;
+  mi->mi_low = addr;
+  total_freeable += size;
+  TMSG(MALLOC, "%s: size = %ld, addr = %p", __func__, size, addr);
+  return ans;
 }
 
-int
-csprof_mmap_info__init(csprof_mmap_info_t *x)
+void
+hpcrun_memory_summary(void)
 {
-  memset(x, 0, sizeof(*x));
-  return HPCRUN_OK;
-}
+  double meg = 1024.0 * 1024.0;
 
-int
-csprof_mmap_alloc_info__init(csprof_mmap_alloc_info_t *x)
-{
-  memset(x, 0, sizeof(*x));
-  return HPCRUN_OK;
-}
+  AMSG("MEMORY: segment size: %.1f meg, num segments: %ld, "
+       "total allocation: %.1f meg, reclaims: %ld",
+       memsize/meg, num_segments,
+       (num_segments * memsize)/meg, num_reclaims);
 
+  AMSG("MEMORY: total freeable: %.1f meg, total non-freeable: %.1f meg, "
+       "malloc failures: %ld",
+       total_freeable/meg, total_non_freeable/meg, num_failures);
+}

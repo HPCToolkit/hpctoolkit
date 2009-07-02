@@ -97,6 +97,8 @@ csprof_display_summary(void)
   long other = num_samples_dropped - segv_count;
   long valid = num_samples_attempted - errant;
 
+  hpcrun_memory_summary();
+
   AMSG("SAMPLE ANOMALIES: blocks: %ld (async: %ld, dlopen: %ld), "
        "errors: %ld (filtered: %ld, segv: %d, other: %ld)",
        blocked, num_samples_blocked_async, num_samples_blocked_dlopen,

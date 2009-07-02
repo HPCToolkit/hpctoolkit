@@ -93,7 +93,7 @@ hpcrun_loadmap_add_module(const char *module_name,
 {
   TMSG(MALLOC," epoch_add_module");
 
-  loadmap_src_t *m = (loadmap_src_t *) csprof_malloc2(sizeof(loadmap_src_t));
+  loadmap_src_t *m = (loadmap_src_t *) csprof_malloc(sizeof(loadmap_src_t));
 
   // fill in the fields of the structure
   m->name = (char *) module_name;
@@ -134,7 +134,7 @@ csprof_epoch_t*
 csprof_epoch_new()
 {
   TMSG(MALLOC," epoch-new");
-  csprof_epoch_t *e = csprof_malloc2(sizeof(csprof_epoch_t));
+  csprof_epoch_t *e = csprof_malloc(sizeof(csprof_epoch_t));
 
   if (e == NULL) {
     /* memory subsystem hasn't been initialized yet (happens sometimes
