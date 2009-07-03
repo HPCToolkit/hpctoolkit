@@ -40,6 +40,7 @@ load_linked(volatile unsigned long* ptr)
 
 #endif
 
+
 #if defined(SC_BODY) 
 
 /* if successful, return 1 */
@@ -53,6 +54,7 @@ store_conditional(volatile unsigned long* ptr, unsigned long val)
 
 #endif
 
+
 #if defined (LL_BODY) && defined(SC_BODY) && !defined(CAS_BODY)
 
 #define CAS_BODY                                                            \
@@ -63,6 +65,7 @@ store_conditional(volatile unsigned long* ptr, unsigned long val)
 
 #endif
 
+
 #if defined(CAS_BODY) 
 
 static inline unsigned long
@@ -71,6 +74,19 @@ compare_and_swap(volatile void *ptr, unsigned long old, unsigned long new)
   unsigned long prev;
   CAS_BODY;
   return prev;
+}
+
+
+#define compare_and_swap_ptr(vptr, oldptr, newptr)			\
+  ((void*) compare_and_swap((volatile void*)vptr,			\
+			    (unsigned long)oldptr, (unsigned long)newptr))
+
+
+// FIXME: tallent: why do we have this version?
+static inline unsigned long
+cmpxchg(volatile void *ptr, unsigned long old, unsigned long new)
+{
+  return compare_and_swap(ptr, old, new);
 }
 
 #endif
@@ -115,16 +131,8 @@ fetch_and_store(volatile long* addr, long new)
   return result;
 }
 
-
-#define fetch_and_store_ptr(vaddr, ptr) ((void *) fetch_and_store((volatile long *)vaddr, (long) ptr))
-
-
-
-static inline unsigned long
-cmpxchg(volatile void *ptr, unsigned long old, unsigned long new)
-{
-  return compare_and_swap(ptr, old, new);
-}
+#define fetch_and_store_ptr(vaddr, ptr) \
+  ((void *) fetch_and_store((volatile long *)vaddr, (long) ptr))
 
 
 #endif // prof_lean_atomic_op_h
