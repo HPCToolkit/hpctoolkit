@@ -13,6 +13,7 @@
 #include "hpcfmt.h"
 #include "hpcrun-fmt.h"
 #include "write_data.h"
+#include "epoch.h"
 
 // ******** default values for epoch hdr **********
 //
@@ -32,12 +33,51 @@ hpcrun_itos(char *buf, int i)
   return buf;
 }
 
-int
-hpcrun_write_profile_data(csprof_state_t *state)
+//***************************************************************************
+//
+//        The top level
+//
+//  hpcrun_fmt_hdr_fwrite()
+//  hpcrun_le4_fwrite(# epochs)
+//  foreach epoch
+//     hpcrun_epoch_fwrite()
+//
+//        Writing an epoch
+//
+//  hpcrun_fmt_epoch_hdr_fwrite(flags, char-rtn-dst, gran, NVPs) /* char-rtn-dst = 1 4theMomnt */
+//  hpcrun_fmt_metric_tbl_fwrite()
+//  hpcrun_fmt_loadmap_fwrite()
+//  hpcrun_le4_fwrite(# cct_nodes)
+//  foreach cct-node
+//    hpcrun_fmt_cct_node_fwrite(cct_node_t *p)
+//
+//***************************************************************************
+
+//***************************************************************************
+//
+// Above functionality is factored into 2 pieces:
+//
+//    1) (Lazily) open the output file, and write the file header
+//    2) Write the epochs
+//
+// This factoring enables the writing of the current set of epochs at anytime during
+// the sampling run.
+// Currently, there are 2 such situations:
+//   1) The end of the sampling run. This is the normal place to write profile data
+//   2) When sample data memory is low. In this case, the profile data is written
+//      out, but the sample memory is reclaimed so that more profile data may be
+//      collected.
+//
+//***************************************************************************
+
+static FILE *
+lazy_open_data_file(void)
 {
   FILE* fs;
 
-  int ret;
+  if ((fs = TD_GET(hpcrun_file))){
+    return fs;
+  }
 
   /* Generate a filename */
   char fnm[HPCRUN_FNM_SZ];
@@ -47,44 +87,19 @@ hpcrun_write_profile_data(csprof_state_t *state)
   if (rank < 0) rank = 0;
   files_profile_name(fnm, rank, HPCRUN_FNM_SZ);
 
-  sigjmp_buf_t *it = &(TD_GET(mem_error));
-
-  if (sigsetjmp(it->jb,1)){
-    EEMSG("***hpcrun failed to write profile data due to memory allocation failure***");
-    return HPCRUN_ERR;
-  }
-
   TMSG(DATA_WRITE, "Filename = %s", fnm);
 
   /* Open file for writing; fail if the file already exists. */
   fs = hpcio_fopen_w(fnm, /* overwrite */ 0);
 
-//***************************************************************************
-//
-//        The top level loop
-//
-//  hpcrun_fmt_hdr_fwrite()
-//  hpcrun_le4_fwrite(# epochs)
-//  foreach epoch
-//     hpcrun_epoch_fwrite()
-//
-// hpcrun_epoch_fwrite()
-//    hpcrun_fmt_epoch_hdr_fwrite(flags, char-rtn-dst, gran, NVPs) /* char-rtn-dst = 1 4theMomnt */
-//    hpcrun_fmt_metric_tbl_fwrite()
-//    hpcrun_fmt_loadmap_fwrite()
-//    /* write cct */
-//    hpcrun_le4_fwrite(# cct_nodes)
-//    foreach cct-node
-//       hpcrun_fmt_cct_node_fwrite(cct_node_t *p)
-//
-//***************************************************************************
+  TD_GET(hpcrun_file) = fs;
 
   char _tmp[10];
-  uint32_t num_epochs = 0;
 
   //
-  // ==== hdr =====
+  // ==== file hdr =====
   //
+
   TMSG(DATA_WRITE,"writing file header");
   hpcrun_fmt_hdr_fwrite(fs,
                         "program-name", "TBD",
@@ -92,6 +107,13 @@ hpcrun_write_profile_data(csprof_state_t *state)
                         "mpi-rank", hpcrun_itos(_tmp, rank),
                         "target", "--FIXME--target_name",
                         NULL);
+  return fs;
+}
+
+static int
+write_epochs(FILE *fs, csprof_state_t *state)
+{
+  uint32_t num_epochs = 0;
 
   //
   // === # epochs === 
@@ -160,21 +182,39 @@ hpcrun_write_profile_data(csprof_state_t *state)
 
     TMSG(DATA_WRITE, "Writing %ld nodes", cct->num_nodes);
 
-    ret = csprof_cct__write_bin(fs, cct, lush_cct_ctxt);
+    int ret = csprof_cct__write_bin(fs, cct, lush_cct_ctxt);
           
     if(ret != HPCRUN_OK) {
       TMSG(DATA_WRITE, "Error writing tree %#lx", cct);
       TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);
-      EMSG("could not save profile data to file '%s'", __FILE__, __LINE__, fnm);
+      EMSG("could not save profile data to hpcrun file");
       perror("write_profile_data");
       ret = HPCRUN_ERR; // FIXME: return this value now
     }
     else {
-      TMSG(DATA_WRITE, "saved profile data to file '%s'", fnm);
+      TMSG(DATA_WRITE, "saved profile data to hpcrun file ");
     }
     current_epoch++;
 
   } // epoch loop
+
+  return HPCRUN_OK;
+}
+
+void
+hpcrun_flush_epochs(void)
+{
+  FILE *fs = lazy_open_data_file();
+  write_epochs(fs, TD_GET(state));
+  hpcrun_epoch_reset();
+}
+
+int
+hpcrun_write_profile_data(csprof_state_t *state)
+{
+
+  FILE* fs = lazy_open_data_file();
+  write_epochs(fs, state);
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_close(fs);

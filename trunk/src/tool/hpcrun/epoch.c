@@ -158,3 +158,11 @@ hpcrun_finalize_current_epoch(void)
   }
   csprof_epoch_unlock();
 }
+
+void
+hpcrun_epoch_reset(void)
+{
+  csprof_state_t *state = csprof_get_state();
+
+  csprof_cct__init(&state->csdata, state->csdata_ctxt); // reset cct
+}

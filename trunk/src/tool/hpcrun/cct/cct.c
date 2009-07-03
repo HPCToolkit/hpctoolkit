@@ -112,6 +112,21 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
   return node;
 }
 
+// FIXME: WRITEME
+
+csprof_cct_node_t* hpcrun_copy_btrace(csprof_cct_node_t* n)
+{
+  return n; 
+}
+
+// FIXME: WRITEME
+
+void copy_thr_ctxt(lush_cct_ctxt_t* thr_ctxt)
+{
+  ;
+}
+
+
 static void
 csprof_cct_node__parent_insert(csprof_cct_node_t *x, csprof_cct_node_t *parent)
 {

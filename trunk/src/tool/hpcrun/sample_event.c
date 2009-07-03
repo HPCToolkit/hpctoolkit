@@ -27,6 +27,7 @@
 #include "sample_sources_all.h"
 #include "ui_tree.h"
 #include "validate_return_addr.h"
+#include "write_data.h"
 
 //*************************** Forward Declarations **************************
 
@@ -193,11 +194,15 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
   }
 
   csprof_clear_handling_sample(td);
+  if (TD_GET(mem_low)) {
+    hpcrun_flush_epochs();
+    hpcrun_reclaim_freeable_mem();
+  }
 #ifndef HPCRUN_STATIC_LINK
   csprof_dlopen_read_unlock();
 #endif
-
-  return node;
+  
+return node;
 }
 
 
