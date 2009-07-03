@@ -29,6 +29,15 @@
 // 
 //***************************************************************************
 
+static inline MCSLockLcl_t*
+fetch_and_store(MCSLockLcl_t** x, MCSLockLcl_t* y)
+{ return y; }
+
+static inline bool
+compare_and_store(MCSLockLcl_t** x, MCSLockLcl_t* y, MCSLockLcl_t* z)
+{ return false; }
+
+
 void
 MCSLock_lock(MCSLock_t* lock, MCSLockLcl_t* lcl, MCSLockOp_t op)
 {
