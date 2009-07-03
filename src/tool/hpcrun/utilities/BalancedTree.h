@@ -30,7 +30,8 @@
 
 #include <include/uint.h>
 
-#include <utilities/spinlock.h>
+#include <lib/prof-lean/spinlock.h>
+
 
 //*************************** Forward Declarations **************************
 

@@ -25,13 +25,14 @@
 
 #include "csprof-malloc.h"
 #include "pmsg.h"
-#include "atomic-ops.h"
 #include "ui_tree.h"
 
 #include "fnbounds_interface.h"
 
 // FIXME: see note in mips-unwind.c
 #include <lib/isa/instructionSets/ppc.h>
+
+#include <lib/prof-lean/atomic-op.h>
 
 
 //*************************** Forward Declarations **************************

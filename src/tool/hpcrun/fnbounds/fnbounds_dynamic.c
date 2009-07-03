@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 //=====================================================================
 // File: fnbounds_dynamic.c  
 // 
@@ -13,7 +16,6 @@
 //  Modification history:
 //     2008 April 28 - created John Mellor-Crummey
 //
-// $Id$
 //=====================================================================
 
 
@@ -49,9 +51,10 @@
 #include "sample_event.h"
 #include "system_server.h"
 #include "unlink.h"
-#include "spinlock.h"
 #include "thread_data.h"
 #include "ui_tree.h"
+
+#include <lib/prof-lean/spinlock.h>
 
 
 //*********************************************************************

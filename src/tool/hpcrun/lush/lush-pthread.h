@@ -37,10 +37,10 @@
 
 #include <sample_event.h>
 #include <cct/cct.h>
-#include <utilities/atomic.h>
 #include <utilities/BalancedTree.h>
 
 #include <lib/prof-lean/timer.h>
+#include <lib/prof-lean/atomic.h>
 
 
 //*************************** Forward Declarations **************************

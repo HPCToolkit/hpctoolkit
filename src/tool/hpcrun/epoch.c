@@ -40,10 +40,10 @@
 #include "mem.h"
 #include "pmsg.h"
 #include "sample_event.h"
-#include "spinlock.h"
 #include "state.h"
 
 #include <lib/prof-lean/hpcfmt.h>
+#include <lib/prof-lean/spinlock.h>
 
 
 static csprof_epoch_t static_epoch;

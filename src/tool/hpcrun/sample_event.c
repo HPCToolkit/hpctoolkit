@@ -6,7 +6,6 @@
 
 //*************************** User Include Files ****************************
 
-#include "atomic-ops.h"
 #include "backtrace.h"
 #include "cct.h"
 #include "csprof_dlfns.h"
@@ -28,6 +27,9 @@
 #include "ui_tree.h"
 #include "validate_return_addr.h"
 #include "write_data.h"
+
+#include <lib/prof-lean/atomic-op.h>
+
 
 //*************************** Forward Declarations **************************
 

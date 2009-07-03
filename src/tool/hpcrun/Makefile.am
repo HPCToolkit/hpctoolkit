@@ -115,15 +115,10 @@ MY_BASE_FILES =			\
 	\
 	messages/pmsg.c			\
 	\
-	utilities/atomic-op-bodies.h \
-	utilities/atomic-ops.h \
-	utilities/atomic.h \
-	utilities/cmpxchg.h \
 	utilities/executable-path.h utilities/executable-path.c \
-	utilities/spinlock.h utilities/spinlock.c \
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c \
-	utilities/BalancedTree.h utilities/BalancedTree.c 
+	utilities/BalancedTree.h utilities/BalancedTree.c
 
 
 MY_DYNAMIC_FILES = 			\

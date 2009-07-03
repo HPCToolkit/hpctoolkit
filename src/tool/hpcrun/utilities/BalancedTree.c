@@ -26,7 +26,7 @@
 
 #include <memory/mem.h>
 
-#include <utilities/spinlock.h>
+#include <lib/prof-lean/spinlock.h>
 
 
 //*************************** Forward Declarations **************************

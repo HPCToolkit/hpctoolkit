@@ -80,7 +80,6 @@
 #include <include/uint.h>
 
 #include "sample_sources_all.h"
-#include "atomic.h"
 #include "backtrace.h"
 #include "cct.h"
 #include "csproflib.h"
@@ -110,6 +109,7 @@
 #include "splay-interval.h"
 #include "hpcrun_return_codes.h"
 
+#include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcio.h>
 
