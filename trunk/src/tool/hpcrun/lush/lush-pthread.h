@@ -500,10 +500,10 @@ lushPthr_demandSyncObjData(lushPthr_t* restrict x, void* restrict syncObj)
   //   insert() waits for find()   to complete => ???
   //   insert   waits for insert() to complete => insert lock
   
-  BalancedTreeNode_t* fnd = BalancedTree_find(x->syncObjToData, syncObj);
+  BalancedTreeNode_t* fnd = 
+    BalancedTree_find(x->syncObjToData, syncObj, true/*protect*/);
   if (!fnd) {
-    //EMSG("lushPthr/demandSyncObjData: %p", syncObj);
-    fnd = BalancedTree_insert(x->syncObjToData, syncObj, true/*atomic*/);
+    fnd = BalancedTree_insert(x->syncObjToData, syncObj, true/*protect*/);
   }
   return fnd;
 }
