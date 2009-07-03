@@ -265,8 +265,12 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
   thread_data_t *td = csprof_allocate_thread_data();
   td->suspend_sampling = 1; // begin: protect against spurious signals
 
+
   csprof_set_thread_data(td);
   csprof_thread_data_init(id,1,0,thr_ctxt);
+
+  // POSSIBLE MEMORY PROBLEM: if thr_ctxt is reclaimed before copy can be made !!!
+  copy_thr_ctxt(thr_ctxt);
 
   csprof_state_t* state = TD_GET(state);
 

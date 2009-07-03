@@ -285,6 +285,9 @@ monitor_thread_pre_create(void)
     hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/, 
 			   0/*skipInner*/, 1/*isSync*/);
 
+  // MFAGAN: NEED TO COPY CONTEXT BTRACE TO NON-FREEABLE MEM
+  n = hpcrun_copy_btrace(n);
+
   TMSG(THREAD,"before lush malloc");
   TMSG(MALLOC," -thread_precreate: lush malloc");
   csprof_state_t* state = csprof_get_state();

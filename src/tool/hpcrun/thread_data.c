@@ -73,6 +73,9 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp, lush_cct_ctxt_t* t
   td->mem_low                     = 0;
   td->state                       = NULL;
 
+  // hpcrun file
+  td->hpcrun_file                 = NULL;
+
   // locks
   td->fnbounds_lock               = 0;
   td->splay_lock                  = 0;

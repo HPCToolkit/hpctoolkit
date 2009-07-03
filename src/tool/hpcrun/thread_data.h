@@ -29,6 +29,7 @@ typedef struct _td_t {
   hpcrun_meminfo_t memstore;
   int             mem_low;
   csprof_state_t  *state;
+  FILE*           hpcrun_file;
   sigjmp_buf_t    bad_unwind;
   sigjmp_buf_t    mem_error;
   int             eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];

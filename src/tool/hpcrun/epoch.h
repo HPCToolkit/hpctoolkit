@@ -90,4 +90,6 @@ void hpcrun_finalize_current_epoch(void);
 void csprof_write_all_epochs(FILE *);
 void hpcrun_write_current_loadmap(FILE *);
 
+void hpcrun_epoch_reset(void);
+
 #endif /* CSPROF_EPOCH_H */
