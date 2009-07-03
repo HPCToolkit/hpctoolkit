@@ -18,8 +18,8 @@
 //
 //***************************************************************************
 
-#ifndef hpcrun_binTree_h
-#define hpcrun_binTree_h
+#ifndef hpcrun_BalancedTree_h
+#define hpcrun_BalancedTree_h
 
 //************************* System Include Files ****************************
 
@@ -102,7 +102,7 @@ BalancedTree_size(BalancedTree_t* tree)
 
 
 static inline BalancedTreeNode_t*
-BalancedTree_find(BalancedTree_t* tree, void* key)
+BalancedTree_find(BalancedTree_t* tree, void* key, bool doProtect)
 {
   BalancedTreeNode_t* x = tree->root;
 
@@ -129,7 +129,7 @@ BalancedTree_find(BalancedTree_t* tree, void* key)
 // have already existed or be newly allocated (using
 // (hpcrun_malloc()).
 BalancedTreeNode_t*
-BalancedTree_insert(BalancedTree_t* tree, void* key, bool doAtomic);
+BalancedTree_insert(BalancedTree_t* tree, void* key, bool doProtect);
 
 
 #if 0
@@ -138,4 +138,4 @@ void BalancedTree_foreach(BalancedTree_t*, BalancedTree_foreach_func, void*);
 #endif
 
 
-#endif /* BalancedTree_h */
+#endif /* hpcrun_BalancedTree_h */

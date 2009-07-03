@@ -86,9 +86,9 @@ BalancedTree_init(BalancedTree_t* tree)
 
 
 BalancedTreeNode_t*
-BalancedTree_insert(BalancedTree_t* tree, void* key, bool doAtomic)
+BalancedTree_insert(BalancedTree_t* tree, void* key, bool doProtect)
 {
-  if (doAtomic) {
+  if (doProtect) {
     spinlock_lock(&tree->lock);
   }
 
@@ -196,7 +196,7 @@ BalancedTree_insert(BalancedTree_t* tree, void* key, bool doAtomic)
   tree->root->color = BalancedTreeColor_BLACK;
 
  fini:
-  if (doAtomic) {
+  if (doProtect) {
     spinlock_unlock(&tree->lock);
   }
   return found;

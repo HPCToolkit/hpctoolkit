@@ -70,6 +70,8 @@ MYSOURCES = \
 	\
 	timer.h timer.c \
 	\
+	MCSLock.h MCSLock.c \
+	\
 	lush/lush-support.h lush/lush-support.c
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
