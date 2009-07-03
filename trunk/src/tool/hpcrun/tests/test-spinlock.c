@@ -1,6 +1,7 @@
 #include <stdio.h>
 
-#include "spinlock.h"
+#include <lib/prof-lean/spinlock.h>
+
 
 spinlock_t l = SPINLOCK_UNLOCKED;
 

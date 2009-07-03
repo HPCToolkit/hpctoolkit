@@ -70,7 +70,10 @@ MYSOURCES = \
 	\
 	timer.h timer.c \
 	\
+	atomic.h \
+	atomic-op.h atomic-op.i \
 	MCSLock.h MCSLock.c \
+	spinlock.h spinlock.c \
 	\
 	lush/lush-support.h lush/lush-support.c
 

@@ -32,7 +32,6 @@
 
 //*************************** User Include Files ****************************
 
-#include "atomic-ops.h"
 #include "cct.h"
 #include "csproflib_private.h"
 #include "mem.h"
@@ -42,6 +41,7 @@
 
 #include "hpcrun_return_codes.h"
 
+#include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 //*************************** Forward Declarations **************************

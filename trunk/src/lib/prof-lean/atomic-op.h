@@ -1,24 +1,41 @@
 // -*-Mode: C++;-*- // technically C99
 // $Id$
 
-#ifndef atomic_ops_h
-#define atomic_ops_h
+//***************************************************************************
+//
+// File: 
+//   $Source$
+//
+// Purpose:
+//   Atomics.
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//   [...]
+//
+//***************************************************************************
+
+#ifndef prof_lean_atomic_op_h
+#define prof_lean_atomic_op_h
 
 //************************* System Include Files ****************************
 
 //*************************** User Include Files ****************************
 
-#include "atomic-op-bodies.h"
+#include "atomic-op.i"
 
 //***************************************************************************
 
 #if defined(LL_BODY)
 
-inline static unsigned long load_linked(volatile unsigned long *ptr)
+inline static unsigned long 
+load_linked(volatile unsigned long* ptr)
 {
-   volatile unsigned long result;
-   LL_BODY;
-   return result;
+  volatile unsigned long result;
+  LL_BODY;
+  return result;
 }
 
 #endif
@@ -26,11 +43,12 @@ inline static unsigned long load_linked(volatile unsigned long *ptr)
 #if defined(SC_BODY) 
 
 /* if successful, return 1 */
-inline static int store_conditional(volatile unsigned long *ptr, unsigned long val)
+inline static int 
+store_conditional(volatile unsigned long* ptr, unsigned long val)
 {
-   int result;
-   SC_BODY;
-   return result;
+  int result;
+  SC_BODY;
+  return result;
 }
 
 #endif
@@ -60,12 +78,12 @@ compare_and_swap(volatile void *ptr, unsigned long old, unsigned long new)
 
 #if defined (LL_BODY) && defined(SC_BODY) 
 
-#define read_modify_write(type, addr, expn, result) {                        \
-    type __new;                                                              \
-    do {                                                                     \
-      result = (type) load_linked((unsigned long *) addr);                   \
-      __new = expn;                                                          \
-    } while (!store_conditional((unsigned long *) addr, (unsigned long) __new));   \
+#define read_modify_write(type, addr, expn, result) {			\
+  type __new;								\
+  do {								        \
+    result = (type) load_linked((unsigned long*)addr);	         	\
+    __new = expn;							\
+  } while (!store_conditional((unsigned long*)addr, (unsigned long) __new)); \
 }
 
 #else
@@ -81,23 +99,32 @@ compare_and_swap(volatile void *ptr, unsigned long old, unsigned long new)
 #endif
 
 static inline long
-fetch_and_add(volatile long *addr, long val)
+fetch_and_add(volatile long* addr, long val)
 {
-    long result;
-    read_modify_write(long, addr, result + val, result);
-    return result;
+  long result;
+  read_modify_write(long, addr, result + val, result);
+  return result;
 }
 
 
 static inline long
-fetch_and_store(volatile long *addr, long new)
+fetch_and_store(volatile long* addr, long new)
 {
-    long result;
-    read_modify_write(long, addr, new, result);
-    return result;
+  long result;
+  read_modify_write(long, addr, new, result);
+  return result;
 }
+
 
 #define fetch_and_store_ptr(vaddr, ptr) ((void *) fetch_and_store((volatile long *)vaddr, (long) ptr))
 
 
-#endif // atomic_ops_h
+
+static inline unsigned long
+cmpxchg(volatile void *ptr, unsigned long old, unsigned long new)
+{
+  return compare_and_swap(ptr, old, new);
+}
+
+
+#endif // prof_lean_atomic_op_h

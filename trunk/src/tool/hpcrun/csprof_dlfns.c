@@ -1,13 +1,29 @@
-//
+// -*-Mode: C++;-*- // technically C99
 // $Id$
+
+//***************************************************************************
 //
+// File: 
+//   $Source$
+//
+// Purpose:
+//   [...]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//   [...]
+//
+//***************************************************************************
 
 #include "csprof_dlfns.h"
-#include "atomic-ops.h"
 #include "fnbounds_interface.h"
 #include "sample_event.h"
-#include "spinlock.h"
 #include "pmsg.h"
+
+#include <lib/prof-lean/atomic-op.h>
+#include <lib/prof-lean/spinlock.h>
 
 
 //

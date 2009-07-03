@@ -14,11 +14,12 @@
 #include "csprof-malloc.h"
 #include "fnbounds_interface.h"
 #include "pmsg.h"
-#include "spinlock.h"
 #include "splay.h"
 #include "splay-interval.h"
 #include "thread_data.h"
 #include "ui_tree.h"
+
+#include <lib/prof-lean/spinlock.h>
 
 
 #define UI_TREE_LOCK  do {	 \

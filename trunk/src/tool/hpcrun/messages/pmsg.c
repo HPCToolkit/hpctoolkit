@@ -17,11 +17,13 @@
 #include "files.h"
 #include "name.h"
 #include "pmsg.h"
-#include "spinlock.h"
 #include "thread_data.h"
 #include "thread_use.h"
 #include "tokenize.h"
 #include "monitor.h"
+
+#include <lib/prof-lean/spinlock.h>
+
 
 static FILE *log_file;
 static spinlock_t pmsg_lock = SPINLOCK_UNLOCKED;

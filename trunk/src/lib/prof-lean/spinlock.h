@@ -1,12 +1,28 @@
 // -*-Mode: C++;-*- // technically C99
 // $Id$
 
-#ifndef _simple_lock_h_
-#define _simple_lock_h_
+//***************************************************************************
+//
+// File: 
+//   $Source$
+//
+// Purpose:
+//   Spin lock
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//   [...]
+//
+//***************************************************************************
+
+#ifndef prof_lean_spinlock_h
+#define prof_lean_spinlock_h
 
 #include <stdbool.h>
 
-#include "cmpxchg.h"
+#include "atomic-op.h"
 
 /*
  * Simple spin lock.
@@ -41,4 +57,4 @@ spinlock_is_locked(spinlock_t *l)
 }
 
 
-#endif  
+#endif // prof_lean_spinlock_h

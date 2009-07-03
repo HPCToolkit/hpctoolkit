@@ -1,8 +1,24 @@
 // -*-Mode: C++;-*- // technically C99
 // $Id$
 
-#ifndef atomic_op_bodies_h
-#define atomic_op_bodies_h
+//***************************************************************************
+//
+// File: 
+//   $Source$
+//
+// Purpose:
+//   Atomics.
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//   [...]
+//
+//***************************************************************************
+
+#ifndef prof_lean_atomic_op_i
+#define prof_lean_atomic_op_i
 
 //************************* System Include Files ****************************
 
@@ -94,4 +110,4 @@
 #error "unknown processor"
 #endif
 
-#endif // atomic_op_bodies_h
+#endif // prof_lean_atomic_op_i

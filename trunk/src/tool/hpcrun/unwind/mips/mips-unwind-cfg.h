@@ -33,12 +33,13 @@
 
 // hpcrun includes
 #  include <memory/mem.h>
-#  include "atomic-ops.h"
 
 #  include "splay-interval.h"
 #  include "splay.h"
 #  include "fnbounds_interface.h"
 #  include "ui_tree.h"
+
+#include <lib/prof-lean/atomic-op.h>
 
 #else
 

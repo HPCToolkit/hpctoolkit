@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "atomic-ops.h"
+#include <lib/prof-lean/atomic-op.h>
+
 #define L_INIT 17
 #define M_INIT 41
 
