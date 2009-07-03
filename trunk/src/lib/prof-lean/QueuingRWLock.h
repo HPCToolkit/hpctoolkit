@@ -76,8 +76,8 @@ typedef enum QueuingRWLockStatus {
 typedef struct QueuingRWLockLcl {
 
   // A queue node
-  struct QueuingRWLockLcl* next;
-  QueuingRWLockStatus_t status;
+  volatile struct QueuingRWLockLcl* next;
+  volatile QueuingRWLockStatus_t status;
   QueuingRWLockOp_t op;
 
 } QueuingRWLockLcl_t;
@@ -98,7 +98,7 @@ QueuingRWLockLcl_init(QueuingRWLockLcl_t* x)
 
 typedef struct QueuingRWLock {
 
-  QueuingRWLockLcl_t* lock; // points to tail
+  volatile QueuingRWLockLcl_t* lock; // points to tail
 
 } QueuingRWLock_t;
 
