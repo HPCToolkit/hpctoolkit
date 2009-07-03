@@ -89,7 +89,8 @@ am__DEPENDENCIES_1 =
 libHPCprof_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-hpcfmt.lo libHPCprof_lean_la-hpcio.lo \
-	libHPCprof_lean_la-timer.lo libHPCprof_lean_la-MCSLock.lo \
+	libHPCprof_lean_la-timer.lo \
+	libHPCprof_lean_la-QueuingRWLock.lo \
 	libHPCprof_lean_la-spinlock.lo \
 	libHPCprof_lean_la-lush-support.lo
 am_libHPCprof_lean_la_OBJECTS = $(am__objects_1)
@@ -334,7 +335,7 @@ MYSOURCES = \
 	\
 	atomic.h \
 	atomic-op.h atomic-op.i \
-	MCSLock.h MCSLock.c \
+	QueuingRWLock.h QueuingRWLock.c \
 	spinlock.h spinlock.c \
 	\
 	lush/lush-support.h lush/lush-support.c
@@ -415,7 +416,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-MCSLock.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-QueuingRWLock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcrun-fmt.Plo@am__quote@
@@ -472,12 +473,12 @@ libHPCprof_lean_la-timer.lo: timer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-timer.lo `test -f 'timer.c' || echo '$(srcdir)/'`timer.c
 
-libHPCprof_lean_la-MCSLock.lo: MCSLock.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-MCSLock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-MCSLock.Tpo -c -o libHPCprof_lean_la-MCSLock.lo `test -f 'MCSLock.c' || echo '$(srcdir)/'`MCSLock.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libHPCprof_lean_la-MCSLock.Tpo $(DEPDIR)/libHPCprof_lean_la-MCSLock.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='MCSLock.c' object='libHPCprof_lean_la-MCSLock.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_lean_la-QueuingRWLock.lo: QueuingRWLock.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-QueuingRWLock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-QueuingRWLock.Tpo -c -o libHPCprof_lean_la-QueuingRWLock.lo `test -f 'QueuingRWLock.c' || echo '$(srcdir)/'`QueuingRWLock.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libHPCprof_lean_la-QueuingRWLock.Tpo $(DEPDIR)/libHPCprof_lean_la-QueuingRWLock.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='QueuingRWLock.c' object='libHPCprof_lean_la-QueuingRWLock.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-MCSLock.lo `test -f 'MCSLock.c' || echo '$(srcdir)/'`MCSLock.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-QueuingRWLock.lo `test -f 'QueuingRWLock.c' || echo '$(srcdir)/'`QueuingRWLock.c
 
 libHPCprof_lean_la-spinlock.lo: spinlock.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-spinlock.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-spinlock.Tpo -c -o libHPCprof_lean_la-spinlock.lo `test -f 'spinlock.c' || echo '$(srcdir)/'`spinlock.c

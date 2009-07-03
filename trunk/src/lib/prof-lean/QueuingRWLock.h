@@ -7,7 +7,7 @@
 //   $Source$
 //
 // Purpose:
-//   A 'reader-writer' MCS lock
+//   A queueing reader-writer lock
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
@@ -17,8 +17,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_lean_MCSLock_h
-#define prof_lean_MCSLock_h
+#ifndef prof_lean_QueuingRWLock_h
+#define prof_lean_QueuingRWLock_h
 
 //************************* System Include Files ****************************
 
@@ -36,88 +36,89 @@
 //***************************************************************************
 
 // ---------------------------------------------------------
-// MCSLockOp_t
+// QueuingRWLockOp_t
 // ---------------------------------------------------------
 
-typedef enum MCSLockOp {
+typedef enum QueuingRWLockOp {
 
-  MCSLockOp_NULL,
-  MCSLockOp_read,
-  MCSLockOp_write
+  QueuingRWLockOp_NULL,
+  QueuingRWLockOp_read,
+  QueuingRWLockOp_write
 
-} MCSLockOp_t;
+} QueuingRWLockOp_t;
 
 
 static inline bool
-MCSLockOp_isParallel(MCSLockOp_t x, MCSLockOp_t y)
+QueuingRWLockOp_isParallel(QueuingRWLockOp_t x, QueuingRWLockOp_t y)
 {
-  return (x == MCSLockOp_read && y == MCSLockOp_read);
+  return (x == QueuingRWLockOp_read && y == QueuingRWLockOp_read);
 };
 
 
 // ---------------------------------------------------------
-// MCSLockStatus_t
+// QueuingRWLockStatus_t
 // ---------------------------------------------------------
 
-typedef enum MCSLockStatus {
+typedef enum QueuingRWLockStatus {
 
-  MCSLockStatus_NULL,
-  MCSLockStatus_Blocked,
-  MCSLockStatus_SelfSignaled,
-  MCSLockStatus_Signaled
+  QueuingRWLockStatus_NULL,
+  QueuingRWLockStatus_Blocked,
+  QueuingRWLockStatus_SelfSignaled,
+  QueuingRWLockStatus_Signaled
 
-} MCSLockStatus_t;
+} QueuingRWLockStatus_t;
 
 
 // ---------------------------------------------------------
-// MCSLockLcl_t
+// QueuingRWLockLcl_t
 // ---------------------------------------------------------
 
-typedef struct MCSLockLcl {
+typedef struct QueuingRWLockLcl {
 
   // A queue node
-  struct MCSLockLcl* next;
-  MCSLockStatus_t status;
-  MCSLockOp_t op;
+  struct QueuingRWLockLcl* next;
+  QueuingRWLockStatus_t status;
+  QueuingRWLockOp_t op;
 
-} MCSLockLcl_t;
+} QueuingRWLockLcl_t;
 
 
 static inline void 
-MCSLockLcl_init(MCSLockLcl_t* x)
+QueuingRWLockLcl_init(QueuingRWLockLcl_t* x)
 {
   x->next = NULL;
-  x->status = MCSLockStatus_NULL;
-  x->op = MCSLockOp_NULL;
+  x->status = QueuingRWLockStatus_NULL;
+  x->op = QueuingRWLockOp_NULL;
 }
 
 
 //***************************************************************************
-// MCSLock
+// QueuingRWLock
 //***************************************************************************
 
-typedef struct MCSLock {
+typedef struct QueuingRWLock {
 
-  MCSLockLcl_t* lock; // points to tail
+  QueuingRWLockLcl_t* lock; // points to tail
 
-} MCSLock_t;
+} QueuingRWLock_t;
 
 
 static inline void 
-MCSLock_init(MCSLock_t* x) 
+QueuingRWLock_init(QueuingRWLock_t* x) 
 {
   x->lock = NULL;
 }
 
 
 void
-MCSLock_lock(MCSLock_t* lock, MCSLockLcl_t* lcl, MCSLockOp_t op);
+QueuingRWLock_lock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl, 
+		   QueuingRWLockOp_t op);
 
 
 void
-MCSLock_unlock(MCSLock_t* lock, MCSLockLcl_t* lcl);
+QueuingRWLock_unlock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl);
 
 
 //***************************************************************************
 
-#endif /* prof_lean_MCSLock_h */
+#endif /* prof_lean_QueuingRWLock_h */

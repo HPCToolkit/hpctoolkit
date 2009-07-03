@@ -72,7 +72,7 @@ MYSOURCES = \
 	\
 	atomic.h \
 	atomic-op.h atomic-op.i \
-	MCSLock.h MCSLock.c \
+	QueuingRWLock.h QueuingRWLock.c \
 	spinlock.h spinlock.c \
 	\
 	lush/lush-support.h lush/lush-support.c

@@ -7,7 +7,7 @@
 //   $Source$
 //
 // Purpose:
-//   A 'reader-writer' MCS lock
+//   A queueing reader-writer lock
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
@@ -21,7 +21,9 @@
 
 //*************************** User Include Files ****************************
 
-#include "MCSLock.h"
+#include "QueuingRWLock.h"
+
+#include "atomic-op.h"
 
 //*************************** Forward Declarations **************************
 
@@ -29,50 +31,42 @@
 // 
 //***************************************************************************
 
-static inline MCSLockLcl_t*
-fetch_and_store(MCSLockLcl_t** x, MCSLockLcl_t* y)
-{ return y; }
-
-static inline bool
-compare_and_store(MCSLockLcl_t** x, MCSLockLcl_t* y, MCSLockLcl_t* z)
-{ return false; }
-
-
 void
-MCSLock_lock(MCSLock_t* lock, MCSLockLcl_t* lcl, MCSLockOp_t op)
+QueuingRWLock_lock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl, 
+		   QueuingRWLockOp_t op)
 {
   lcl->next = NULL;
-  lcl->status = MCSLockStatus_Blocked;
+  lcl->status = QueuingRWLockStatus_Blocked;
   lcl->op = op;
 
-  MCSLockLcl_t* prev = fetch_and_store(&lock->lock, lcl);
+  QueuingRWLockLcl_t* prev = fetch_and_store_ptr(&lock->lock, lcl);
   if (prev) {
     // queue was non-empty
-    if (prev->status != MCSLockStatus_Blocked 
-	&& MCSLockOp_isParallel(prev->op, op)) {
-      lcl->status = MCSLockStatus_SelfSignaled;  // early parallel start
+    if (prev->status != QueuingRWLockStatus_Blocked 
+	&& QueuingRWLockOp_isParallel(prev->op, op)) {
+      lcl->status = QueuingRWLockStatus_SelfSignaled;  // early parallel start
     }
     prev->next = lcl;
-    while (lcl->status == MCSLockStatus_Blocked) ; // spin
+    while (lcl->status == QueuingRWLockStatus_Blocked) {;} // spin
   }
   else {
-    lcl->status = MCSLockStatus_Signaled;
+    lcl->status = QueuingRWLockStatus_Signaled;
   }
   // INVARIANT: lcl->status == SelfSignaled || Signaled
 }
 
 
 void
-MCSLock_unlock(MCSLock_t* lock, MCSLockLcl_t* lcl)
+QueuingRWLock_unlock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl)
 {
-  while (lcl->status != MCSLockStatus_Signaled) ; // spin
+  while (lcl->status != QueuingRWLockStatus_Signaled) {;} // spin
   if (!lcl->next) {
     // no known successor
-    if (compare_and_store(&lock->lock, lcl, NULL)) {
-      return; // compare_and_store() returns true iff it stored
+    if (compare_and_swap_ptr(&lock->lock, lcl, NULL) == lcl) {
+      return; // CAS returns *old* value iff successful
     }
     // another node is linking itself to me
-    while (!lcl->next) ; // 
+    while (!lcl->next) {;}
   }
-  lcl->next->status = MCSLockStatus_Signaled;
+  lcl->next->status = QueuingRWLockStatus_Signaled;
 }
