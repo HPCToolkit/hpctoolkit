@@ -36,6 +36,8 @@
 
 #include <unwind/common/unwind.h> // unw_step()
 
+#include <memory/mem.h>
+
 
 //*************************** Forward Declarations **************************
 
@@ -51,7 +53,9 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
 		 lush_agent_pool_t* pool)
 {
   x->id = id;
-  x->path = strdup(path); // NOTE: assume it's safe to use malloc
+
+  x->path = csprof_malloc(strlen(path) + 1); // strdup() uses malloc
+  strcpy(x->path, path);
 
   //x->dlhandle = dlopen(path, RTLD_LAZY);
   x->dlhandle = monitor_real_dlopen(path, RTLD_LAZY);
@@ -91,7 +95,7 @@ lush_agent__fini(lush_agent_t* x, lush_agent_pool_t* pool)
   monitor_real_dlclose(x->dlhandle);
   handle_any_dlerror();
 
-  free(x->path);
+  //free(x->path);
   return 0;
 }
 
@@ -125,7 +129,7 @@ lush_agent_pool__init(lush_agent_pool_t* x, const char* path)
 
   // 1. Allocate tables first
 #define FN_TBL_ALLOC(BASE, FN, SZ) \
-  BASE->FN = (FN ## _fn_t *) malloc(sizeof(FN ## _fn_t) * (SZ))
+  BASE->FN = (FN ## _fn_t *) csprof_malloc(sizeof(FN ## _fn_t) * (SZ))
   
   FN_TBL_ALLOC(x, LUSHI_init,            num_agents + 1);
   FN_TBL_ALLOC(x, LUSHI_fini,            num_agents + 1);
@@ -154,7 +158,7 @@ int
 lush_agent_pool__fini(lush_agent_pool_t* x)
 {
 #define FN_TBL_FREE(BASE, FN) \
-  free(BASE->FN)
+  /* free(BASE->FN) */
   
   FN_TBL_FREE(x, LUSHI_init);
   FN_TBL_FREE(x, LUSHI_fini);
