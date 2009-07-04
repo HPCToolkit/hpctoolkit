@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <alloca.h>
 
 //*************************** User Include Files ****************************
 
@@ -507,7 +508,7 @@ hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree,
 
   hpcfile_cstree_node__init(&tmp_node);
   tmp_node.data.num_metrics = num_metrics;
-  tmp_node.data.metrics = csprof_malloc(num_metrics * sizeof(hpcfmt_uint_t));
+  tmp_node.data.metrics = alloca(num_metrics * sizeof(hpcfmt_uint_t));
   // FIXME: tallent: could be freeable memory, but fails
 
   ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, lvl_to_skip);
