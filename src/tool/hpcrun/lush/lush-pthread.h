@@ -110,18 +110,16 @@ lushPthr_endSmplIdleness(lushPthr_t* x)
 static inline csprof_cct_node_t*
 lushPthr_attribToCallPath(uint64_t idlenessIncr)
 {
-#if 1
-  csprof_cct_node_t* n = NULL;
-  if (!hpcrun_async_is_blocked()) {
-    hpcrun_async_block();
-    ucontext_t context;
-    getcontext(&context); /* FIXME: check for errors */
-    n = hpcrun_sample_callpath(&context, lush_agents->metric_time,
-			       0/*metricIncr*/, 0/*skipInner*/, 1/*isSync*/);
-    hpcrun_async_unblock();
-  }
+  hpcrun_async_block();
+
+  ucontext_t context;
+  getcontext(&context); /* FIXME: check for errors */
+  csprof_cct_node_t* n = 
+    hpcrun_sample_callpath(&context, lush_agents->metric_time,
+			   0/*metricIncr*/, 0/*skipInner*/, 1/*isSync*/);
+  hpcrun_async_unblock();
+
   return n;
-#endif
 
 #if 0
   // noticably more overhead and won't work with PAPI
@@ -493,18 +491,15 @@ lushPthr_condwait_post_ty2(lushPthr_t* x)
 static inline BalancedTreeNode_t*
 lushPthr_demandSyncObjData(lushPthr_t* restrict x, void* restrict syncObj)
 {
-  // FIXME: a potential problem at ???
-  // allow multiple finds, but exclusive insert
-  //   find()  waits for insert() to complete  => test insert lock
-  //   find() !waits for find()   to complete  => natural
-  //   insert() waits for find()   to complete => ???
-  //   insert   waits for insert() to complete => insert lock
-  
+  hpcrun_async_block();
+
   BalancedTreeNode_t* fnd = 
-    BalancedTree_find(x->syncObjToData, syncObj, true/*protect*/);
+    BalancedTree_find(x->syncObjToData, syncObj, &x->locklcl);
   if (!fnd) {
-    fnd = BalancedTree_insert(x->syncObjToData, syncObj, true/*protect*/);
+    fnd = BalancedTree_insert(x->syncObjToData, syncObj, &x->locklcl);
   }
+
+  hpcrun_async_unblock();
   return fnd;
 }
 

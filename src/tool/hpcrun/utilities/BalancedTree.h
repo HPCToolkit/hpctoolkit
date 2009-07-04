@@ -30,7 +30,7 @@
 
 #include <include/uint.h>
 
-#include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/QueuingRWLock.h>
 
 
 //*************************** Forward Declarations **************************
@@ -63,7 +63,6 @@ typedef struct BalancedTreeNode
   // node data: [tallent:FIXME: should be opaque node data (a void*)]
   uint64_t idleness;
   void*    cct_node;
-
   bool isBlockingWork;
   bool isLocked;
 
@@ -83,7 +82,7 @@ typedef struct BalancedTree
   BalancedTreeNode_t* root;
   uint size;
 
-  spinlock_t lock;
+  QueuingRWLock_t lock;
   
 } BalancedTree_t;
 
@@ -103,15 +102,19 @@ BalancedTree_size(BalancedTree_t* tree)
 
 
 static inline BalancedTreeNode_t*
-BalancedTree_find(BalancedTree_t* tree, void* key, bool doProtect)
+BalancedTree_find(BalancedTree_t* tree, void* key, QueuingRWLockLcl_t* locklcl)
 {
-  BalancedTreeNode_t* x = tree->root;
+  if (locklcl) {
+    QueuingRWLock_lock(&tree->lock, locklcl, QueuingRWLockOp_read);
+  }
 
-  while (spinlock_is_locked(&tree->lock));
-  
+  BalancedTreeNode_t* found = NULL;
+
+  BalancedTreeNode_t* x = tree->root;
   while (x != NULL) {
     if (key == x->key) {
-      return x; // found!
+      found = x; // found!
+      goto fini;
     }
     else if (key < x->key) {
       x = x->left;
@@ -120,8 +123,12 @@ BalancedTree_find(BalancedTree_t* tree, void* key, bool doProtect)
       x = x->right;
     }
   }
-  
-  return NULL;
+
+ fini:
+  if (locklcl) {
+    QueuingRWLock_unlock(&tree->lock, locklcl);
+  }
+  return found;
 }
 
 
@@ -130,7 +137,8 @@ BalancedTree_find(BalancedTree_t* tree, void* key, bool doProtect)
 // have already existed or be newly allocated (using
 // (hpcrun_malloc()).
 BalancedTreeNode_t*
-BalancedTree_insert(BalancedTree_t* tree, void* key, bool doProtect);
+BalancedTree_insert(BalancedTree_t* tree, void* key, 
+		    QueuingRWLockLcl_t* locklcl);
 
 
 #if 0
