@@ -111,12 +111,12 @@ QueuingRWLock_init(QueuingRWLock_t* x)
 
 
 void
-QueuingRWLock_lock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl, 
+QueuingRWLock_lock(QueuingRWLock_t* lock, volatile QueuingRWLockLcl_t* lcl, 
 		   QueuingRWLockOp_t op);
 
 
 void
-QueuingRWLock_unlock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl);
+QueuingRWLock_unlock(QueuingRWLock_t* lock, volatile QueuingRWLockLcl_t* lcl);
 
 
 //***************************************************************************
