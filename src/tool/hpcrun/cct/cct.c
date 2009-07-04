@@ -507,11 +507,10 @@ hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree,
 
   hpcfile_cstree_node__init(&tmp_node);
   tmp_node.data.num_metrics = num_metrics;
-  tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfmt_uint_t));
+  tmp_node.data.metrics = csprof_malloc(num_metrics * sizeof(hpcfmt_uint_t));
+  // FIXME: tallent: could be freeable memory, but fails
 
-  ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, 
-				  lvl_to_skip);
-  free(tmp_node.data.metrics);
+  ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, lvl_to_skip);
   
   return ret;
 }
@@ -692,19 +691,16 @@ lush_cct_ctxt__length(lush_cct_ctxt_t* cct_ctxt)
 int
 lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt)
 {
-  // N.B.: assumes that calling malloc is acceptible!
-
   int ret;
   unsigned int num_metrics = csprof_num_recorded_metrics();
 
   hpcfile_cstree_node_t tmp_node;
   hpcfile_cstree_node__init(&tmp_node);
   tmp_node.data.num_metrics = num_metrics;
-  tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfmt_uint_t));
+  tmp_node.data.metrics = csprof_malloc(num_metrics * sizeof(hpcfmt_uint_t));
+  // FIXME: tallent: could be freeable memory, but fails
     
   ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt, &tmp_node);
-
-  free(tmp_node.data.metrics);
 
   return ret;
 }
