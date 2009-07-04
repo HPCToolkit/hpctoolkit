@@ -30,6 +30,8 @@
 
 #include <utilities/BalancedTree.h>
 
+#include <lib/prof-lean/QueuingRWLock.h>
+
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
@@ -83,6 +85,7 @@ typedef struct {
   // -------------------------------------------------------
   BalancedTree_t* syncObjToData; // synch-obj -> data
   BalancedTreeNode_t* syncObjData;
+  QueuingRWLockLcl_t locklcl;
 
   void*               cache_syncObj;
   BalancedTreeNode_t* cache_syncObjData;
