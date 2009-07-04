@@ -32,7 +32,7 @@
 //***************************************************************************
 
 void
-QueuingRWLock_lock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl, 
+QueuingRWLock_lock(QueuingRWLock_t* lock, volatile QueuingRWLockLcl_t* lcl, 
 		   QueuingRWLockOp_t op)
 {
   lcl->next = NULL;
@@ -57,7 +57,7 @@ QueuingRWLock_lock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl,
 
 
 void
-QueuingRWLock_unlock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl)
+QueuingRWLock_unlock(QueuingRWLock_t* lock, volatile QueuingRWLockLcl_t* lcl)
 {
   while (lcl->status != QueuingRWLockStatus_Signaled) {;} // spin
   if (!lcl->next) {
