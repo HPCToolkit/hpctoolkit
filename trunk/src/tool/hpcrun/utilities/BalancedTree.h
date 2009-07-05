@@ -31,6 +31,7 @@
 #include <include/uint.h>
 
 #include <lib/prof-lean/QueuingRWLock.h>
+#include <lib/prof-lean/spinlock.h>
 
 
 //*************************** Forward Declarations **************************
@@ -40,6 +41,8 @@
 //***************************************************************************
 // 
 //***************************************************************************
+
+typedef void* (*BalancedTree_alloc_fn_t)(size_t);
 
 typedef enum {
 
@@ -57,20 +60,26 @@ typedef struct BalancedTreeNode
   struct BalancedTreeNode* right;
   BalancedTreeColor_t color;
 
-  // interface to the node data [tallent: could be a callback to node data]
+  // node data
   void* key;
-
-  // node data: [tallent:FIXME: should be opaque node data (a void*)]
-  uint64_t idleness;
-  void*    cct_node;
-  bool isBlockingWork;
-  bool isLocked;
+  void* data;
 
 } BalancedTreeNode_t;
 
 
-BalancedTreeNode_t*
-BalancedTreeNode_create(void* key, BalancedTreeNode_t* parent);
+
+static inline BalancedTreeNode_t*
+BalancedTreeNode_alloc(BalancedTree_alloc_fn_t alloc, size_t dataSz)
+{
+  BalancedTreeNode_t* x = alloc(sizeof(BalancedTreeNode_t));
+  x->data = alloc(dataSz);
+  return x;
+}
+
+
+void
+BalancedTreeNode_init(BalancedTreeNode_t* x,
+		      void* key, BalancedTreeNode_t* parent);
 
 
 //***************************************************************************
@@ -82,16 +91,18 @@ typedef struct BalancedTree
   BalancedTreeNode_t* root;
   uint size;
 
+  BalancedTree_alloc_fn_t allocFn;
+  size_t nodeDataSz; // size of BalancedTreeNode_t.data
+
   QueuingRWLock_t lock;
+  spinlock_t spinlock;
   
 } BalancedTree_t;
 
 
-BalancedTree_t*
-BalancedTree_create();
-
 void 
-BalancedTree_init(BalancedTree_t* tree);
+BalancedTree_init(BalancedTree_t* tree, 
+		  BalancedTree_alloc_fn_t allocFn, size_t nodeDataSz);
 
 
 static inline uint
@@ -106,6 +117,7 @@ BalancedTree_find(BalancedTree_t* tree, void* key, QueuingRWLockLcl_t* locklcl)
 {
   if (locklcl) {
     QueuingRWLock_lock(&tree->lock, locklcl, QueuingRWLockOp_read);
+    //while (spinlock_is_locked(&tree->spinlock));
   }
 
   BalancedTreeNode_t* found = NULL;
@@ -134,8 +146,7 @@ BalancedTree_find(BalancedTree_t* tree, void* key, QueuingRWLockLcl_t* locklcl)
 
 // BalancedTree_insert: Insert `key' into `tree' (if it does not
 // already exist).  Returns the node containing the key, which may
-// have already existed or be newly allocated (using
-// (hpcrun_malloc()).
+// have already existed or be newly allocated.
 BalancedTreeNode_t*
 BalancedTree_insert(BalancedTree_t* tree, void* key, 
 		    QueuingRWLockLcl_t* locklcl);

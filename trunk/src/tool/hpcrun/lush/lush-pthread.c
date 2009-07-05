@@ -88,7 +88,8 @@ lushPthr_processInit()
   globals.ps_num_idle_cond    = 0;
 
   // LUSH_PTHR_FN_TY == 3
-  BalancedTree_init(&globals.syncObjToData);
+  BalancedTree_init(&globals.syncObjToData, csprof_malloc, 
+		    sizeof(lushPtr_SyncObjData_t));
 }
 
 

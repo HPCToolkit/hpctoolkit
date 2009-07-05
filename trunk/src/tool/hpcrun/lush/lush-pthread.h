@@ -488,7 +488,7 @@ lushPthr_condwait_post_ty2(lushPthr_t* x)
 // 3. Attribute lock-wait time to the working thread.  
 //***************************************************************************
 
-static inline BalancedTreeNode_t*
+static inline lushPtr_SyncObjData_t*
 lushPthr_demandSyncObjData(lushPthr_t* restrict x, void* restrict syncObj)
 {
   hpcrun_async_block();
@@ -497,14 +497,15 @@ lushPthr_demandSyncObjData(lushPthr_t* restrict x, void* restrict syncObj)
     BalancedTree_find(x->syncObjToData, syncObj, &x->locklcl);
   if (!fnd) {
     fnd = BalancedTree_insert(x->syncObjToData, syncObj, &x->locklcl);
+    lushPtr_SyncObjData_init(fnd->data);
   }
 
   hpcrun_async_unblock();
-  return fnd;
+  return fnd->data;
 }
 
 
-static inline BalancedTreeNode_t*
+static inline lushPtr_SyncObjData_t*
 lushPthr_demandCachedSyncObjData(lushPthr_t* restrict x, 
 				 void* restrict syncObj)
 {
@@ -536,7 +537,7 @@ static inline void
 lushPthr_mutexLock_pre_ty3(lushPthr_t* restrict x, 
 			   pthread_mutex_t* restrict lock)
 {
-  BalancedTreeNode_t* syncData = 
+  lushPtr_SyncObjData_t* syncData = 
     lushPthr_demandCachedSyncObjData(x, (void*)lock);
   syncData->isBlockingWork = (syncData->isLocked);
 
@@ -553,7 +554,7 @@ lushPthr_mutexLock_post_ty3(lushPthr_t* restrict x,
   x->is_working = true;
   lushPthr_endSmplIdleness(x);
 
-  BalancedTreeNode_t* syncData = 
+  lushPtr_SyncObjData_t* syncData = 
     lushPthr_demandCachedSyncObjData(x, (void*)lock);
   syncData->isLocked = true;
 
@@ -581,7 +582,7 @@ lushPthr_mutexUnlock_post_ty3(lushPthr_t* restrict x,
 {
   x->is_working = true; // same
   
-  BalancedTreeNode_t* syncData = 
+  lushPtr_SyncObjData_t* syncData = 
     lushPthr_demandCachedSyncObjData(x, (void*)lock);
   syncData->isLocked = false;
 
@@ -624,7 +625,7 @@ lushPthr_spinUnlock_post_ty3(lushPthr_t* restrict x,
 {
   x->is_working = true; // same
   
-  BalancedTreeNode_t* syncData = 
+  lushPtr_SyncObjData_t* syncData = 
     lushPthr_demandCachedSyncObjData(x, (void*)lock);
   if (syncData && syncData->idleness > 0) {
     x->idleness = csprof_atomic_swap_l((long*)&syncData->idleness, 0);
