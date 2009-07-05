@@ -41,25 +41,18 @@ BalancedTree_rightRotate(BalancedTree_t* tree, BalancedTreeNode_t* y);
 // 
 //***************************************************************************
 
-BalancedTreeNode_t*
-BalancedTreeNode_create(void* key, BalancedTreeNode_t* parent)
-{
-  BalancedTreeNode_t* x = csprof_malloc(sizeof(BalancedTreeNode_t));
 
+void
+BalancedTreeNode_init(BalancedTreeNode_t* x, 
+		      void* key, BalancedTreeNode_t* parent)
+{
   x->left = NULL;
   x->right = NULL;
   x->parent = parent;
   x->color = BalancedTreeColor_RED;
 
   x->key = key;
-
-  x->idleness = 0;
-  x->cct_node = NULL;
-
-  x->isBlockingWork = false;
-  x->isLocked = false;
-
-  return x;
+  // x->data -- client's responsibility
 }
 
 
@@ -67,21 +60,18 @@ BalancedTreeNode_create(void* key, BalancedTreeNode_t* parent)
 // 
 //***************************************************************************
 
-BalancedTree_t*
-BalancedTree_create()
-{
-  BalancedTree_t* tree = csprof_malloc(sizeof(BalancedTree_t));
-  BalancedTree_init(tree);
-  return tree;
-}
-
-
 void 
-BalancedTree_init(BalancedTree_t* tree)
+BalancedTree_init(BalancedTree_t* tree, 
+		  BalancedTree_alloc_fn_t allocFn, size_t nodeDataSz)
 {
   tree->root = NULL;
   tree->size = 0;
+
+  tree->allocFn = allocFn;
+  tree->nodeDataSz = nodeDataSz;
+
   QueuingRWLock_init(&tree->lock);
+  tree->spinlock = SPINLOCK_UNLOCKED;
 }
 
 
@@ -91,15 +81,18 @@ BalancedTree_insert(BalancedTree_t* tree, void* key,
 {
   if (locklcl) {
     QueuingRWLock_lock(&tree->lock, locklcl, QueuingRWLockOp_write);
+    //spinlock_lock(&tree->spinlock);
   }
-
+ 
   BalancedTreeNode_t* found = NULL;
 
   // ------------------------------------------------------------
   // empty tree
   // ------------------------------------------------------------
   if (!tree->root) {
-    tree->root = BalancedTreeNode_create(key, NULL);
+    tree->root = BalancedTreeNode_alloc(tree->allocFn, tree->nodeDataSz);
+    BalancedTreeNode_init(tree->root, key, NULL);
+
     tree->root->color = BalancedTreeColor_BLACK;
     tree->size = 1;
     found = tree->root;
@@ -134,11 +127,14 @@ BalancedTree_insert(BalancedTree_t* tree, void* key,
 
   // insert (INVARIANT: pathDir is -1 or 1)
   if (pathDir < 0) {
-    found = x = x_parent->left = BalancedTreeNode_create(key, x_parent);
+    found = x = x_parent->left = 
+      BalancedTreeNode_alloc(tree->allocFn, tree->nodeDataSz);
   }
   else {
-    found = x = x_parent->right = BalancedTreeNode_create(key, x_parent);
+    found = x = x_parent->right = 
+      BalancedTreeNode_alloc(tree->allocFn, tree->nodeDataSz);
   }
+  BalancedTreeNode_init(x, key, x_parent);
   tree->size++;
 
 
@@ -199,6 +195,7 @@ BalancedTree_insert(BalancedTree_t* tree, void* key,
  fini:
   if (locklcl) {
     QueuingRWLock_unlock(&tree->lock, locklcl);
+    //spinlock_unlock(&tree->spinlock);
   }
   return found;
 }

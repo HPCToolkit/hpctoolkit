@@ -42,19 +42,32 @@ extern "C" {
 
 //***************************************************************************
 
-typedef struct SyncObjData
-{
+
+typedef struct lushPtr_SyncObjData {
+
   uint64_t idleness;
   void*    cct_node;
+  bool isBlockingWork;
+  bool isLocked;
 
-} SyncObjData_t;
+} lushPtr_SyncObjData_t;
+
+
+static inline void 
+lushPtr_SyncObjData_init(lushPtr_SyncObjData_t* x)
+{
+  x->idleness = 0;
+  x->cct_node = NULL;
+  x->isBlockingWork = false;
+  x->isLocked = false;
+}
 
 
 //***************************************************************************
 // 
 //***************************************************************************
 
-typedef struct {
+typedef struct lushPthr {
   
   // -------------------------------------------------------
   // thread specific metrics
@@ -83,12 +96,12 @@ typedef struct {
   // -------------------------------------------------------
   // LUSH_PTHR_FN_TY == 3
   // -------------------------------------------------------
-  BalancedTree_t* syncObjToData; // synch-obj -> data
-  BalancedTreeNode_t* syncObjData;
-  QueuingRWLockLcl_t locklcl;
+  BalancedTree_t*        syncObjToData; // synch-obj -> data
+  lushPtr_SyncObjData_t* syncObjData;
+  QueuingRWLockLcl_t     locklcl;
 
-  void*               cache_syncObj;
-  BalancedTreeNode_t* cache_syncObjData;
+  void*                  cache_syncObj;
+  lushPtr_SyncObjData_t* cache_syncObjData;
 
 } lushPthr_t;
 
