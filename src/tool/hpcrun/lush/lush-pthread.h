@@ -489,18 +489,37 @@ lushPthr_condwait_post_ty2(lushPthr_t* x)
 //***************************************************************************
 
 static inline lushPtr_SyncObjData_t*
+lushPthr_demandSyncObjData_ps(lushPthr_t* restrict x, void* restrict syncObj)
+{
+  //hpcrun_async_block(); // inherited
+
+  BalancedTreeNode_t* fnd = 
+    BalancedTree_find(x->ps_syncObjToData, syncObj, &x->locklcl);
+  if (!fnd) {
+    fnd = BalancedTree_insert(x->ps_syncObjToData, syncObj, &x->locklcl);
+    lushPtr_SyncObjData_init(fnd->data);
+  }
+
+  //hpcrun_async_unblock(); // inherited
+
+  return fnd->data;
+}
+
+
+static inline lushPtr_SyncObjData_t*
 lushPthr_demandSyncObjData(lushPthr_t* restrict x, void* restrict syncObj)
 {
   hpcrun_async_block();
 
   BalancedTreeNode_t* fnd = 
-    BalancedTree_find(x->syncObjToData, syncObj, &x->locklcl);
+    BalancedTree_find(&x->syncObjToData, syncObj, NULL/*lock*/);
   if (!fnd) {
-    fnd = BalancedTree_insert(x->syncObjToData, syncObj, &x->locklcl);
-    lushPtr_SyncObjData_init(fnd->data);
+    fnd = BalancedTree_insert(&x->syncObjToData, syncObj, NULL/*lock*/);
+    fnd->data = lushPthr_demandSyncObjData_ps(x, syncObj);
   }
 
   hpcrun_async_unblock();
+
   return fnd->data;
 }
 
