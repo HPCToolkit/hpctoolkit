@@ -196,6 +196,11 @@ hpcrun_reclaim_freeable_mem(void)
 void *
 csprof_malloc(size_t size)
 {
+  // Special case
+  if (size == 0) {
+    return NULL;
+  }
+
   hpcrun_meminfo_t *mi = &TD_GET(memstore);
   void *addr;
 
