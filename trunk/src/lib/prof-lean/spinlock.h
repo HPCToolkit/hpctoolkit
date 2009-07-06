@@ -31,6 +31,7 @@
 
 typedef volatile long spinlock_t;
 #define SPINLOCK_UNLOCKED ((spinlock_t) 0L)
+#define SPINLOCK_LOCKED ((spinlock_t) 1L)
 
 static inline void 
 spinlock_lock(spinlock_t *l)
@@ -38,7 +39,7 @@ spinlock_lock(spinlock_t *l)
   /* test-and-test-and-set lock */
   for(;;) {
     while (*l);
-    if (cmpxchg(l, 0, 1) == 0) return; 
+    if (compare_and_swap(l, SPINLOCK_UNLOCKED, SPINLOCK_LOCKED) == 0) return; 
   }
 }
 
