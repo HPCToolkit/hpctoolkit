@@ -115,6 +115,18 @@ fetch_and_add(volatile long* addr, long val)
 }
 
 
+#if defined(FAS_BODY)
+
+static inline unsigned long
+fetch_and_store(volatile long* ptr, unsigned long new)
+{
+  unsigned long prev;
+  FAS_BODY;
+  return prev;
+}
+
+#else
+
 static inline long
 fetch_and_store(volatile long* addr, long new)
 {
@@ -122,6 +134,8 @@ fetch_and_store(volatile long* addr, long new)
   read_modify_write(long, addr, new, result);
   return result;
 }
+
+#endif
 
 #define fetch_and_store_ptr(vaddr, ptr) \
   ((void *) fetch_and_store((volatile long *)vaddr, (long) ptr))
