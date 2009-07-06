@@ -117,8 +117,7 @@ MY_BASE_FILES =			\
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c \
-	utilities/BalancedTree.h utilities/BalancedTree.c
+	utilities/unlink.h utilities/unlink.c
 
 
 MY_DYNAMIC_FILES = 			\

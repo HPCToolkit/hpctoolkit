@@ -24,10 +24,6 @@
 
 #include "BalancedTree.h"
 
-#include <memory/mem.h>
-
-#include <lib/prof-lean/spinlock.h>
-
 
 //*************************** Forward Declarations **************************
 

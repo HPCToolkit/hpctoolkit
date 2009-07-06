@@ -200,10 +200,8 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	memory/list.c memory/mem.c messages/pmsg.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c utilities/BalancedTree.h \
-	utilities/BalancedTree.c fnbounds/fnbounds_dynamic.c \
-	csprof_dlfns.c os/linux/dylib.c \
-	unwind/common/default_validation_summary.c \
+	utilities/unlink.c fnbounds/fnbounds_dynamic.c csprof_dlfns.c \
+	os/linux/dylib.c unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -240,7 +238,7 @@ am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-fnbounds_common.lo libcsprof_la-list.lo \
 	libcsprof_la-mem.lo libcsprof_la-pmsg.lo \
 	libcsprof_la-executable-path.lo libcsprof_la-tokenize.lo \
-	libcsprof_la-unlink.lo libcsprof_la-BalancedTree.lo
+	libcsprof_la-unlink.lo
 am__objects_9 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_10 = libcsprof_la-dylib.lo
@@ -294,8 +292,7 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	memory/list.c memory/mem.c messages/pmsg.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c utilities/BalancedTree.h \
-	utilities/BalancedTree.c fnbounds/fnbounds_static.c \
+	utilities/unlink.c fnbounds/fnbounds_static.c \
 	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -338,8 +335,7 @@ am__objects_22 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-list.$(OBJEXT) libcsprof_o-mem.$(OBJEXT) \
 	libcsprof_o-pmsg.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
-	libcsprof_o-tokenize.$(OBJEXT) libcsprof_o-unlink.$(OBJEXT) \
-	libcsprof_o-BalancedTree.$(OBJEXT)
+	libcsprof_o-tokenize.$(OBJEXT) libcsprof_o-unlink.$(OBJEXT)
 am__objects_23 = libcsprof_o-fnbounds_static.$(OBJEXT)
 am__objects_24 = libcsprof_o-default_validation_summary.$(OBJEXT) \
 	libcsprof_o-mips-unwind.$(OBJEXT) \
@@ -669,8 +665,7 @@ MY_BASE_FILES = \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c \
-	utilities/BalancedTree.h utilities/BalancedTree.c
+	utilities/unlink.h utilities/unlink.c
 
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_dynamic.c	\
@@ -1000,7 +995,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_pthread_la-lush-support-rt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_tbb_la-agent-tbb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_tbb_la-lush-support-rt.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-BalancedTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-cct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-csprof_dlfns.Plo@am__quote@
@@ -1065,7 +1059,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-unwind-support.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-validate-retn-addr.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-BalancedTree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-cct.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-csprof_options.Po@am__quote@
@@ -1534,13 +1527,6 @@ libcsprof_la-unlink.lo: utilities/unlink.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/unlink.c' object='libcsprof_la-unlink.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-unlink.lo `test -f 'utilities/unlink.c' || echo '$(srcdir)/'`utilities/unlink.c
-
-libcsprof_la-BalancedTree.lo: utilities/BalancedTree.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-BalancedTree.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-BalancedTree.Tpo -c -o libcsprof_la-BalancedTree.lo `test -f 'utilities/BalancedTree.c' || echo '$(srcdir)/'`utilities/BalancedTree.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-BalancedTree.Tpo $(DEPDIR)/libcsprof_la-BalancedTree.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/BalancedTree.c' object='libcsprof_la-BalancedTree.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-BalancedTree.lo `test -f 'utilities/BalancedTree.c' || echo '$(srcdir)/'`utilities/BalancedTree.c
 
 libcsprof_la-fnbounds_dynamic.lo: fnbounds/fnbounds_dynamic.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-fnbounds_dynamic.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-fnbounds_dynamic.Tpo -c -o libcsprof_la-fnbounds_dynamic.lo `test -f 'fnbounds/fnbounds_dynamic.c' || echo '$(srcdir)/'`fnbounds/fnbounds_dynamic.c
@@ -2290,20 +2276,6 @@ libcsprof_o-unlink.obj: utilities/unlink.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/unlink.c' object='libcsprof_o-unlink.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-unlink.obj `if test -f 'utilities/unlink.c'; then $(CYGPATH_W) 'utilities/unlink.c'; else $(CYGPATH_W) '$(srcdir)/utilities/unlink.c'; fi`
-
-libcsprof_o-BalancedTree.o: utilities/BalancedTree.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-BalancedTree.o -MD -MP -MF $(DEPDIR)/libcsprof_o-BalancedTree.Tpo -c -o libcsprof_o-BalancedTree.o `test -f 'utilities/BalancedTree.c' || echo '$(srcdir)/'`utilities/BalancedTree.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-BalancedTree.Tpo $(DEPDIR)/libcsprof_o-BalancedTree.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/BalancedTree.c' object='libcsprof_o-BalancedTree.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-BalancedTree.o `test -f 'utilities/BalancedTree.c' || echo '$(srcdir)/'`utilities/BalancedTree.c
-
-libcsprof_o-BalancedTree.obj: utilities/BalancedTree.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-BalancedTree.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-BalancedTree.Tpo -c -o libcsprof_o-BalancedTree.obj `if test -f 'utilities/BalancedTree.c'; then $(CYGPATH_W) 'utilities/BalancedTree.c'; else $(CYGPATH_W) '$(srcdir)/utilities/BalancedTree.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-BalancedTree.Tpo $(DEPDIR)/libcsprof_o-BalancedTree.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/BalancedTree.c' object='libcsprof_o-BalancedTree.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-BalancedTree.obj `if test -f 'utilities/BalancedTree.c'; then $(CYGPATH_W) 'utilities/BalancedTree.c'; else $(CYGPATH_W) '$(srcdir)/utilities/BalancedTree.c'; fi`
 
 libcsprof_o-fnbounds_static.o: fnbounds/fnbounds_static.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-fnbounds_static.o -MD -MP -MF $(DEPDIR)/libcsprof_o-fnbounds_static.Tpo -c -o libcsprof_o-fnbounds_static.o `test -f 'fnbounds/fnbounds_static.c' || echo '$(srcdir)/'`fnbounds/fnbounds_static.c

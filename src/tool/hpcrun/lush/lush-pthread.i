@@ -28,8 +28,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <utilities/BalancedTree.h>
-
+#include <lib/prof-lean/BalancedTree.h>
 #include <lib/prof-lean/QueuingRWLock.h>
 
 //*************************** Forward Declarations **************************
