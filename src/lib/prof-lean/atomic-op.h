@@ -81,14 +81,6 @@ compare_and_swap(volatile void *ptr, unsigned long old, unsigned long new)
   ((void*) compare_and_swap((volatile void*)vptr,			\
 			    (unsigned long)oldptr, (unsigned long)newptr))
 
-
-// FIXME: tallent: why do we have this version?
-static inline unsigned long
-cmpxchg(volatile void *ptr, unsigned long old, unsigned long new)
-{
-  return compare_and_swap(ptr, old, new);
-}
-
 #endif
 
 
