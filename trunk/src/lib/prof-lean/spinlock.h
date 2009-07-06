@@ -38,8 +38,11 @@ spinlock_lock(spinlock_t *l)
 {
   /* test-and-test-and-set lock */
   for(;;) {
-    while (*l);
-    if (compare_and_swap(l, SPINLOCK_UNLOCKED, SPINLOCK_LOCKED) == 0) return; 
+    while (*l != SPINLOCK_UNLOCKED); 
+
+    if (fetch_and_store(l, SPINLOCK_LOCKED) == SPINLOCK_UNLOCKED) {
+      return; 
+    }
   }
 }
 
