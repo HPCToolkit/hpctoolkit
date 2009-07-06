@@ -39,12 +39,22 @@
 		       "\tlock; cmpxchg %3, (%1)\n\t"                               \
 		       : "=a" (prev) : "r" (ptr), "a" (old), "r" (new) : "memory") 
 
+#define FAS_BODY                                                                    \
+  __asm__ __volatile__("\n"                                                         \
+		       "\txchg %2, (%1)\n\t"                                        \
+		       : "=a" (prev) : "r" (ptr), "r" (new) : "memory") 
+
 #elif defined(__x86_64__)
 
 #define CAS_BODY                                                                    \
   __asm__ __volatile__("\n"                                                         \
 		       "\tlock; cmpxchgq %3, (%1)\n\t"                              \
 		       : "=a" (prev) : "r" (ptr), "a" (old), "r" (new) : "memory")
+
+#define FAS_BODY                                                                    \
+  __asm__ __volatile__("\n"                                                         \
+		       "\txchg %2, (%1)\n\t"                                        \
+		       : "=a" (prev) : "r" (ptr), "r" (new) : "memory") 
 
 #elif defined(__ia64__)
 
