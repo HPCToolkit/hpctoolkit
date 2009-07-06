@@ -62,7 +62,6 @@ XED2_INC = @XED2_INC@
 XED2_LIB = @XED2_LIB@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
-PROF_LEAN_INC = $(top_srcdir)/src/lib/prof-lean
 
 MY_BASE_FILES =			\
 	utilities/first_func.c		\
@@ -170,8 +169,6 @@ MY_CPP_DEFINES =			\
 MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/messages	        \
 	-I$(srcdir)/fnbounds		\
-	-I$(srcdir)/lush		\
-	-I$(srcdir)/lush-agents		\
 	-I$(srcdir)/memory		\
 	-I$(srcdir)/os/catamount	\
 	-I$(srcdir)/os/linux		\
@@ -181,7 +178,6 @@ MY_INCLUDE_DIRS =			\
 	$(HPC_IFLAGS)			\
 	-I$(HPCFNBOUNDS_INC)		\
 	-I$(LIBMONITOR_INC)		\
-	-I$(PROF_LEAN_INC)		\
 	-I$(SYMTABAPI_INC)
 
 

@@ -47,9 +47,9 @@
 
 // Local includes
 
-#include "hpcio.h"
-#include "hpcfmt.h"
-#include "hpcrun-fmt.h"
+#include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcfmt.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
 
 typedef struct csprof_epoch csprof_epoch_t;
 typedef struct csprof_epoch_module csprof_epoch_module_t;

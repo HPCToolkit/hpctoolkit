@@ -17,7 +17,6 @@
 #include "thread_data.h"
 #include "trace.h"
 #include "handling_sample.h"
-#include "hpcrun-fmt.h"
 #include "interval-interface.h"
 #include "unwind.h"
 #include "csprof-malloc.h"
@@ -29,6 +28,7 @@
 #include "write_data.h"
 
 #include <lib/prof-lean/atomic-op.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
 
 
 //*************************** Forward Declarations **************************

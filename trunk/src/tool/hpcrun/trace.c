@@ -15,11 +15,12 @@
 
 #include "env.h"
 #include "files.h"
-#include "hpcio.h"
 #include "monitor.h"
 #include "pmsg.h"
 #include "trace.h"
 #include "thread_data.h"
+
+#include <lib/prof-lean/hpcio.h>
 
 
 //*********************************************************************
