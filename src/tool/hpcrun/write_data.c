@@ -1,5 +1,9 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 #include <stdio.h>
 #include <setjmp.h>
+
 #include "pmsg.h"
 #include "monitor.h"
 #include "fname_max.h"
@@ -9,11 +13,13 @@
 #include "thread_data.h"
 #include "cct.h"
 #include "hpcrun_return_codes.h"
-#include "hpcio.h"
-#include "hpcfmt.h"
-#include "hpcrun-fmt.h"
 #include "write_data.h"
 #include "epoch.h"
+
+#include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcfmt.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
+
 
 // ******** default values for epoch hdr **********
 //

@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 #ifndef WRITE_DATA_H
 #define WRITE_DATA_H
 
