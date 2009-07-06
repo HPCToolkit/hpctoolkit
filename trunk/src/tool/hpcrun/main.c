@@ -35,7 +35,6 @@
 #include "epoch.h"
 #include "structs.h"
 #include "sample_event.h"
-#include "csprof_monitor_callbacks.h"
 #include "pmsg.h"
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"

@@ -135,7 +135,6 @@ void csprof_init_internal(void);
 void csprof_fini_internal(csprof_state_t *state);
 #endif
 
-#include "csprof_monitor_callbacks.h"
 
 #ifdef CSPROF_TRAMPOLINE_BACKEND
 // capturing function call returns

@@ -71,6 +71,10 @@
 
 #include <stdbool.h>
 
+#include "state.h"
+
+#include <cct/cct.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -89,6 +93,17 @@ hpcrun_is_initialized(void)
   return hpcrun_is_initialized_private;
 }
 
+
+
+extern void csprof_init_thread_support(void);
+extern void *csprof_thread_pre_create(void);
+extern void csprof_thread_post_create(void *dc);
+extern void *csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt);
+extern void csprof_thread_fini(csprof_state_t *state);
+extern void csprof_init_internal(void);
+extern void csprof_fini_internal(void);
+
+
   
 #if defined(__cplusplus)
 } /* extern "C" */
@@ -96,4 +111,4 @@ hpcrun_is_initialized(void)
 
 //***************************************************************************
 
-#endif
+#endif // CSPROFLIB_H

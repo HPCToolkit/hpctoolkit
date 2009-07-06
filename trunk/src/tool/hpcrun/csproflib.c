@@ -84,7 +84,6 @@
 #include "cct.h"
 #include "csproflib.h"
 #include "csproflib_private.h"
-#include "csprof_monitor_callbacks.h"
 #include "env.h"
 #include "files.h"
 #include "mem.h"
