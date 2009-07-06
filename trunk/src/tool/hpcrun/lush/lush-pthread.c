@@ -54,7 +54,7 @@ typedef struct {
   long ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
 
   // LUSH_PTHR_FN_TY == 3
-  BalancedTree_t syncObjToData; // synch-obj -> data
+  BalancedTree_t ps_syncObjToData; // synch-obj -> data
   
 } lushPthr_globals_t;
 
@@ -65,7 +65,7 @@ lushPthr_globals_t globals = {
   .ps_num_working = 0,
   .ps_num_working_lock = 0,
   .ps_num_idle_cond = 0
-  // syncObjToData
+  // ps_syncObjToData
 };
 
 
@@ -88,7 +88,7 @@ lushPthr_processInit()
   globals.ps_num_idle_cond    = 0;
 
   // LUSH_PTHR_FN_TY == 3
-  BalancedTree_init(&globals.syncObjToData, csprof_malloc, 
+  BalancedTree_init(&globals.ps_syncObjToData, csprof_malloc, 
 		    sizeof(lushPtr_SyncObjData_t));
 }
 
@@ -117,7 +117,9 @@ lushPthr_init(lushPthr_t* x)
   // ------------------------------------------------------------
   // LUSH_PTHR_FN_TY == 3
   // ------------------------------------------------------------
-  x->syncObjToData = &globals.syncObjToData;
+  x->ps_syncObjToData = &globals.ps_syncObjToData;
+  BalancedTree_init(&x->syncObjToData, csprof_malloc, 0/*nodeDataSz*/);
+
   x->syncObjData = NULL;
   QueuingRWLockLcl_init(&x->locklcl);
 

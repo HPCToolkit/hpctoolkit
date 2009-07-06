@@ -95,7 +95,9 @@ typedef struct lushPthr {
   // -------------------------------------------------------
   // LUSH_PTHR_FN_TY == 3
   // -------------------------------------------------------
-  BalancedTree_t*        syncObjToData; // synch-obj -> data
+  BalancedTree_t*        ps_syncObjToData; // synch-obj -> data
+  BalancedTree_t         syncObjToData;    // synch-obj -> data
+
   lushPtr_SyncObjData_t* syncObjData;
   QueuingRWLockLcl_t     locklcl;
 
