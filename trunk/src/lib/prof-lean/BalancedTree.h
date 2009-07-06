@@ -18,8 +18,8 @@
 //
 //***************************************************************************
 
-#ifndef hpcrun_BalancedTree_h
-#define hpcrun_BalancedTree_h
+#ifndef prof_lean_BalancedTree_h
+#define prof_lean_BalancedTree_h
 
 //************************* System Include Files ****************************
 
@@ -30,8 +30,8 @@
 
 #include <include/uint.h>
 
-#include <lib/prof-lean/QueuingRWLock.h>
-#include <lib/prof-lean/spinlock.h>
+#include "QueuingRWLock.h"
+#include "spinlock.h"
 
 
 //*************************** Forward Declarations **************************
@@ -158,4 +158,4 @@ void BalancedTree_foreach(BalancedTree_t*, BalancedTree_foreach_func, void*);
 #endif
 
 
-#endif /* hpcrun_BalancedTree_h */
+#endif /* prof_lean_BalancedTree_h */
