@@ -1449,8 +1449,7 @@ AC_ARG_ENABLE([monitor-exts],
   [enable_monitor_exts=$enable_lush_pthreads])
 
 wrap1='pthread_mutex_lock pthread_mutex_trylock pthread_mutex_unlock'
-wrap2='pthread_spin_lock pthread_spin_trylock pthread_spin_unlock \
-  pthread_spin_destroy'
+wrap2='pthread_spin_lock pthread_spin_trylock pthread_spin_unlock pthread_spin_destroy'
 wrap3='pthread_cond_init pthread_cond_destroy pthread_cond_wait'
 wrap4='pthread_cond_timedwait pthread_cond_signal pthread_cond_broadcast'
 
