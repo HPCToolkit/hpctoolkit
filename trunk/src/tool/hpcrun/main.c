@@ -29,22 +29,24 @@
 #include "main.h"
 #include "csproflib.h"
 
+#include "csprof_dlfns.h"
 #include "env.h"
-#include "files.h"
-#include "name.h"
 #include "epoch.h"
-#include "structs.h"
+#include "files.h"
+#include "fnbounds_interface.h"
+#include "name.h"
 #include "sample_event.h"
-#include "pmsg.h"
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
-#include "csprof_dlfns.h"
-#include "fnbounds_interface.h"
+#include "structs.h"
+#include "pmsg.h"
 #include "thread_data.h"
 #include "thread_use.h"
 #include "trace.h"
 
 #include <lush/lush-pthread.h>
+
+#include <monitor-exts/monitor_ext.h>
 
 
 //***************************************************************************
@@ -367,182 +369,264 @@ monitor_reset_stacksize(size_t old_size)
 // mutex_lock
 // ---------------------------------------------------------
 
-void
-monitor_thread_pre_mutex_lock(pthread_mutex_t* lock)
+#ifdef HPCRUN_MONITOR_EXTS
+
+typedef int mutex_lock_fcn(pthread_mutex_t *);
+
+#ifdef HPCRUN_STATIC_LINK
+extern mutex_lock_fcn __real_pthread_mutex_lock;
+extern mutex_lock_fcn __real_pthread_mutex_trylock;
+extern mutex_lock_fcn __real_pthread_mutex_unlock;
+#endif // HPCRUN_STATIC_LINK
+
+static mutex_lock_fcn *real_mutex_lock = NULL;
+static mutex_lock_fcn *real_mutex_trylock = NULL;
+static mutex_lock_fcn *real_mutex_unlock = NULL;
+
+
+int
+MONITOR_EXT_WRAP_NAME(pthread_mutex_lock)(pthread_mutex_t* lock)
 {
-  if (! hpcrun_is_initialized()) {
-    return;
-  }
-  //hpcrun_async_block();
-
+  MONITOR_EXT_GET_NAME_WRAP(real_mutex_lock, pthread_mutex_lock);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  lushPthr_mutexLock_pre(&TD_GET(pthr_metrics), lock);
-#endif
 
-  //hpcrun_async_unblock();
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_mutexLock_pre(&TD_GET(pthr_metrics), lock);
+  }
+  
+  int ret = (*real_mutex_lock)(lock);
+
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_mutexLock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
+  }
+
+  return ret;
 }
 
 
-void
-monitor_thread_post_mutex_lock(pthread_mutex_t* lock, int result)
+int
+MONITOR_EXT_WRAP_NAME(pthread_mutex_trylock)(pthread_mutex_t* lock)
 {
-  if (! hpcrun_is_initialized()) {
-    return;
-  }
-  //hpcrun_async_block();
-
+  MONITOR_EXT_GET_NAME_WRAP(real_mutex_trylock, pthread_mutex_trylock);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  lushPthr_mutexLock_post(&TD_GET(pthr_metrics), lock);
-#endif
 
-  //hpcrun_async_unblock();
+  int ret = (*real_mutex_trylock)(lock);
+
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_mutexTrylock_post(&TD_GET(pthr_metrics), lock, ret);
+  }
+
+  return ret;
 }
 
 
-void
-monitor_thread_post_mutex_trylock(pthread_mutex_t* lock, int result)
+int
+MONITOR_EXT_WRAP_NAME(pthread_mutex_unlock)(pthread_mutex_t* lock)
 {
-  if (! hpcrun_is_initialized()) {
-    return;
-  }
-  //hpcrun_async_block();
-
+  MONITOR_EXT_GET_NAME_WRAP(real_mutex_unlock, pthread_mutex_unlock);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  lushPthr_mutexTrylock_post(&TD_GET(pthr_metrics), lock, result);
-#endif
 
-  //hpcrun_async_unblock();
+  int ret = (*real_mutex_unlock)(lock);
+
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_mutexUnlock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
+  }
+
+  return ret;
 }
 
-
-void
-monitor_thread_post_mutex_unlock(pthread_mutex_t* lock)
-{
-  if (! hpcrun_is_initialized()) {
-    return;
-  }
-  //hpcrun_async_block();
-
-  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  lushPthr_mutexUnlock_post(&TD_GET(pthr_metrics), lock);
-#endif
-
-  //hpcrun_async_unblock();
-}
+#endif // HPCRUN_MONITOR_EXTS
 
 
 // ---------------------------------------------------------
 // spin_lock
 // ---------------------------------------------------------
 
-void
-monitor_thread_pre_spin_lock(pthread_spinlock_t* lock)
+#ifdef HPCRUN_MONITOR_EXTS
+
+typedef int spinlock_fcn(pthread_spinlock_t *);
+
+#ifdef HPCRUN_STATIC_LINK
+extern spinlock_fcn __real_pthread_spin_lock;
+extern spinlock_fcn __real_pthread_spin_trylock;
+extern spinlock_fcn __real_pthread_spin_unlock;
+#endif // HPCRUN_STATIC_LINK
+
+static spinlock_fcn *real_spin_lock = NULL;
+static spinlock_fcn *real_spin_trylock = NULL;
+static spinlock_fcn *real_spin_unlock = NULL;
+
+
+int
+MONITOR_EXT_WRAP_NAME(pthread_spin_lock)(pthread_spinlock_t* lock)
 {
-  if (! hpcrun_is_initialized()) {
-    return;
-  }
-  //hpcrun_async_block();
-
+  MONITOR_EXT_GET_NAME_WRAP(real_spin_lock, pthread_spin_lock);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  lushPthr_spinLock_pre(&TD_GET(pthr_metrics), lock);
-#endif
 
-  //hpcrun_async_unblock();
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_spinLock_pre(&TD_GET(pthr_metrics), lock);
+  }
+
+  int ret = (*real_spin_lock)(lock);
+
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_spinLock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
+  }
+
+  return ret;
 }
 
 
-void
-monitor_thread_post_spin_lock(pthread_spinlock_t* lock, int result)
+int
+MONITOR_EXT_WRAP_NAME(pthread_spin_trylock)(pthread_spinlock_t* lock)
 {
-  if (! hpcrun_is_initialized()) {
-    return;
-  }
-  //hpcrun_async_block();
-
+  MONITOR_EXT_GET_NAME_WRAP(real_spin_trylock, pthread_spin_trylock);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  lushPthr_spinLock_post(&TD_GET(pthr_metrics), lock);
-#endif
 
-  //hpcrun_async_unblock();
+  int ret = (*real_spin_trylock)(lock);
+
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_spinTrylock_post(&TD_GET(pthr_metrics), lock, ret);
+  }
+
+  return ret;
 }
 
 
-void
-monitor_thread_post_spin_trylock(pthread_spinlock_t* lock, int result)
+int
+MONITOR_EXT_WRAP_NAME(pthread_spin_unlock)(pthread_spinlock_t* lock)
 {
-  if (! hpcrun_is_initialized()) {
-    return;
-  }
-  //hpcrun_async_block();
-
+  MONITOR_EXT_GET_NAME_WRAP(real_spin_unlock, pthread_spin_unlock);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  lushPthr_spinTrylock_post(&TD_GET(pthr_metrics), lock, result);
-#endif
 
-  //hpcrun_async_unblock();
+  int ret = (*real_spin_unlock)(lock);
+
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_spinUnlock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
+  }
+
+  return ret;
 }
 
-
-void
-monitor_thread_post_spin_unlock(pthread_spinlock_t* lock, int result)
-{
-  if (! hpcrun_is_initialized()) {
-    return;
-  }
-  //hpcrun_async_block();
-
-  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  lushPthr_spinUnlock_post(&TD_GET(pthr_metrics), lock);
-#endif
-
-  //hpcrun_async_unblock();
-}
+#endif // HPCRUN_MONITOR_EXTS
 
 
 // ---------------------------------------------------------
 // cond_wait
 // ---------------------------------------------------------
 
-void
-monitor_thread_pre_cond_wait(void)
+#ifdef HPCRUN_MONITOR_EXTS
+
+typedef int cond_init_fcn(pthread_cond_t *, const pthread_condattr_t *);
+typedef int cond_destroy_fcn(pthread_cond_t *);
+typedef int cond_wait_fcn(pthread_cond_t *, pthread_mutex_t *);
+typedef int cond_timedwait_fcn(pthread_cond_t *, pthread_mutex_t *,
+			       const struct timespec *);
+typedef int cond_signal_fcn(pthread_cond_t *);
+
+#ifdef HPCRUN_STATIC_LINK
+extern cond_init_fcn    __real_pthread_cond_init;
+extern cond_destroy_fcn __real_pthread_cond_destroy;
+extern cond_wait_fcn      __real_pthread_cond_wait;
+extern cond_timedwait_fcn __real_pthread_cond_timedwait;
+extern cond_signal_fcn __real_pthread_cond_signal;
+extern cond_signal_fcn __real_pthread_cond_broadcast;
+#endif // HPCRUN_STATIC_LINK
+
+static cond_init_fcn    *real_cond_init = NULL;
+static cond_destroy_fcn *real_cond_destroy = NULL;
+static cond_wait_fcn      *real_cond_wait = NULL;
+static cond_timedwait_fcn *real_cond_timedwait = NULL;
+static cond_signal_fcn *real_cond_signal = NULL;
+static cond_signal_fcn *real_cond_broadcast = NULL;
+
+
+// N.B.: glibc defines multiple versions of the cond-wait functions.
+// For some reason, dlsym-ing any one routine does *not* necessarily
+// obtain the correct version.  It turns out to be necessary to
+// override a 'covering set' of the cond-wait functions to obtain a
+// consistent set.
+
+int
+MONITOR_EXT_WRAP_NAME(pthread_cond_init)(pthread_cond_t* cond,
+					 const pthread_condattr_t* attr)
 {
-  if (! hpcrun_is_initialized()) {
-    return;
-  }
-  //hpcrun_async_block();
-
+  MONITOR_EXT_GET_NAME_WRAP(real_cond_init, pthread_cond_init);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  lushPthr_condwait_pre(&TD_GET(pthr_metrics));
-#endif
-
-  //hpcrun_async_unblock();
+  return (*real_cond_init)(cond, attr);
 }
 
 
-void
-monitor_thread_post_cond_wait(int result)
+int
+MONITOR_EXT_WRAP_NAME(pthread_cond_destroy)(pthread_cond_t* cond)
 {
-  if (! hpcrun_is_initialized()) {
-    return;
-  }
-  //hpcrun_async_block();
-
+  MONITOR_EXT_GET_NAME_WRAP(real_cond_destroy, pthread_cond_destroy);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
-#ifdef LUSH_PTHREADS
-  lushPthr_condwait_post(&TD_GET(pthr_metrics));
-#endif
-
-  //hpcrun_async_unblock();
+  return (*real_cond_destroy)(cond);
 }
+
+
+int
+MONITOR_EXT_WRAP_NAME(pthread_cond_wait)(pthread_cond_t* cond,
+					 pthread_mutex_t* mutex)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_cond_wait, pthread_cond_wait);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
+
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_condwait_pre(&TD_GET(pthr_metrics));
+  }
+
+  int ret = (*real_cond_wait)(cond, mutex);
+
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_condwait_post(&TD_GET(pthr_metrics) /*,ret*/);
+  }
+
+  return ret;
+}
+
+
+int
+MONITOR_EXT_WRAP_NAME(pthread_cond_timedwait)(pthread_cond_t* cond,
+					      pthread_mutex_t* mutex,
+					      const struct timespec* tspec)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_cond_timedwait, pthread_cond_timedwait);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
+
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_condwait_pre(&TD_GET(pthr_metrics));
+  }
+
+  int ret = (*real_cond_timedwait)(cond, mutex, tspec);
+
+  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+    lushPthr_condwait_post(&TD_GET(pthr_metrics) /*,ret*/);
+  }
+
+  return ret;
+}
+
+
+int
+MONITOR_EXT_WRAP_NAME(pthread_cond_signal)(pthread_cond_t* cond)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_cond_signal, pthread_cond_signal);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
+  return (*real_cond_signal)(cond);
+}
+
+
+int
+MONITOR_EXT_WRAP_NAME(pthread_cond_broadcast)(pthread_cond_t* cond)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_cond_broadcast, pthread_cond_broadcast);
+  if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
+  return (*real_cond_broadcast)(cond);
+}
+
+#endif // HPCRUN_MONITOR_EXTS
 
 
 //***************************************************************************

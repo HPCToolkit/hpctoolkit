@@ -16,11 +16,11 @@
 
 #ifdef HPCRUN_STATIC_LINK
 
-#define MONITOR_WRAP_NAME(name)   __wrap_ ## name
-#define MONITOR_GET_NAME(var, name)  var = & name
-#define MONITOR_GET_NAME_WRAP(var, name)  var = & __real_ ## name
+#define MONITOR_EXT_WRAP_NAME(name)   __wrap_ ## name
+#define MONITOR_EXT_GET_NAME(var, name)  var = & name
+#define MONITOR_EXT_GET_NAME_WRAP(var, name)  var = & __real_ ## name
 
-#else  /* MONITOR DYNAMIC */
+#else  /* HPCRUN DYNAMIC */
 
 #include <dlfcn.h>
 
@@ -28,7 +28,7 @@
 #define RTLD_NEXT  ((void *) -1L)
 #endif
 
-#define MONITOR_GET_DLSYM(var, name)  do {		\
+#define MONITOR_EXT_GET_DLSYM(var, name)  do {		\
     if (var == NULL) {					\
 	const char *err_str;				\
 	dlerror();					\
@@ -41,12 +41,14 @@
     }							\
 } while (0)
 
-#define MONITOR_WRAP_NAME(name)  name
-#define MONITOR_GET_NAME(var, name)  MONITOR_GET_DLSYM(var, name)
-#define MONITOR_GET_NAME_WRAP(var, name)  MONITOR_GET_DLSYM(var, name)
+#define MONITOR_EXT_WRAP_NAME(name)  name
+#define MONITOR_EXT_GET_NAME(var, name)  MONITOR_EXT_GET_DLSYM(var, name)
+#define MONITOR_EXT_GET_NAME_WRAP(var, name)  MONITOR_EXT_GET_DLSYM(var, name)
 
-#endif  /* MONITOR_STATIC */
+#endif  /* HPCRUN_STATIC_LINK */
 
+
+#if 0 // OBSOLETE
 
 //
 // The extra monitor callback functions beyond monitor.h.
@@ -57,11 +59,6 @@ void monitor_thread_post_mutex_lock(pthread_mutex_t *lock, int result);
 void monitor_thread_post_mutex_trylock(pthread_mutex_t *lock, int result);
 void monitor_thread_post_mutex_unlock(pthread_mutex_t *lock);
 
-#if 0
-pthread_spinlock_t *monitor_thread_pre_spin_init(pthread_spinlock_t *lock);
-pthread_spinlock_t *monitor_thread_pre_spin_destroy(pthread_spinlock_t *lock);
-#endif
-
 void monitor_thread_pre_spin_lock(pthread_spinlock_t *lock);
 void monitor_thread_post_spin_lock(pthread_spinlock_t *lock, int result);
 
@@ -71,8 +68,11 @@ void monitor_thread_post_spin_trylock(pthread_spinlock_t *lock, int result);
 //void monitor_thread_pre_spin_unlock(pthread_spinlock_t *lock);
 void monitor_thread_post_spin_unlock(pthread_spinlock_t *lock, int result);
 
+
 void monitor_thread_pre_cond_wait(void);
 void monitor_thread_post_cond_wait(int result);
+
+#endif // OBSOLETE
 
 
 #endif  /* ! _MONITOR_EXT_H_ */

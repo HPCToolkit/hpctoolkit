@@ -130,6 +130,7 @@ MY_LINUX_DYNAMIC_FILES = 		\
 	os/linux/dylib.c
 
 MY_MONITOR_EXT_FILES = \
+	monitor-exts/monitor_ext.h  \
 	monitor-exts/over_cond.c  \
 	monitor-exts/over_mutex.c \
 	monitor-exts/over_spin.c
@@ -280,6 +281,8 @@ endif
 
 if OPT_ENABLE_MONITOR_EXTS
     libcsprof_la_SOURCES  += $(MY_MONITOR_EXT_FILES)
+    libcsprof_la_CPPFLAGS += -DHPCRUN_MONITOR_EXTS
+    libcsprof_o_CPPFLAGS  += -DHPCRUN_MONITOR_EXTS
 endif
 
 
