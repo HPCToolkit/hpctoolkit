@@ -12,6 +12,11 @@
 #include "monitor_ext.h"
 #include "pmsg.h"
 
+// tallent: Lock interception must be as fast as possible.  Therefore,
+// I am obsoleting the needless layer of callbacks between the
+// interception point and hpcrun.
+#if 0 // OBSOLETE
+
 typedef int mutex_lock_fcn(pthread_mutex_t *);
 
 #ifdef HPCRUN_STATIC_LINK
@@ -25,11 +30,11 @@ static mutex_lock_fcn *real_mutex_trylock = NULL;
 static mutex_lock_fcn *real_mutex_unlock = NULL;
 
 int
-MONITOR_WRAP_NAME(pthread_mutex_lock)(pthread_mutex_t *lock)
+MONITOR_EXT_WRAP_NAME(pthread_mutex_lock)(pthread_mutex_t *lock)
 {
   int ret;
 
-  MONITOR_GET_NAME_WRAP(real_mutex_lock, pthread_mutex_lock);
+  MONITOR_EXT_GET_NAME_WRAP(real_mutex_lock, pthread_mutex_lock);
   monitor_thread_pre_mutex_lock(lock);
   ret = (*real_mutex_lock)(lock);
   monitor_thread_post_mutex_lock(lock, ret);
@@ -38,11 +43,11 @@ MONITOR_WRAP_NAME(pthread_mutex_lock)(pthread_mutex_t *lock)
 }
 
 int
-MONITOR_WRAP_NAME(pthread_mutex_trylock)(pthread_mutex_t *lock)
+MONITOR_EXT_WRAP_NAME(pthread_mutex_trylock)(pthread_mutex_t *lock)
 {
   int ret;
 
-  MONITOR_GET_NAME_WRAP(real_mutex_trylock, pthread_mutex_trylock);
+  MONITOR_EXT_GET_NAME_WRAP(real_mutex_trylock, pthread_mutex_trylock);
   ret = (*real_mutex_trylock)(lock);
   monitor_thread_post_mutex_trylock(lock, ret);
 
@@ -50,13 +55,15 @@ MONITOR_WRAP_NAME(pthread_mutex_trylock)(pthread_mutex_t *lock)
 }
 
 int
-MONITOR_WRAP_NAME(pthread_mutex_unlock)(pthread_mutex_t *lock)
+MONITOR_EXT_WRAP_NAME(pthread_mutex_unlock)(pthread_mutex_t *lock)
 {
   int ret;
 
-  MONITOR_GET_NAME_WRAP(real_mutex_unlock, pthread_mutex_unlock);
+  MONITOR_EXT_GET_NAME_WRAP(real_mutex_unlock, pthread_mutex_unlock);
   ret = (*real_mutex_unlock)(lock);
   monitor_thread_post_mutex_unlock(lock);
 
   return ret;
 }
+
+#endif // OBSOLETE

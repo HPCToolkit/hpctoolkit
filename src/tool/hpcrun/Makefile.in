@@ -109,8 +109,10 @@ DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_27 = -DLUSH_PTHREADS
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_28 = -DLUSH_PTHREADS
 @OPT_ENABLE_MONITOR_EXTS_TRUE@am__append_29 = $(MY_MONITOR_EXT_FILES)
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_30 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_31 = libagent-pthread.la \
+@OPT_ENABLE_MONITOR_EXTS_TRUE@am__append_30 = -DHPCRUN_MONITOR_EXTS
+@OPT_ENABLE_MONITOR_EXTS_TRUE@am__append_31 = -DHPCRUN_MONITOR_EXTS
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_32 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_33 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -212,9 +214,9 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
-	sample_source_papi.c monitor-exts/over_cond.c \
-	monitor-exts/over_mutex.c monitor-exts/over_spin.c \
-	utilities/last_func.c
+	sample_source_papi.c monitor-exts/monitor_ext.h \
+	monitor-exts/over_cond.c monitor-exts/over_mutex.c \
+	monitor-exts/over_spin.c utilities/last_func.c
 am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-csprof_options.lo libcsprof_la-csproflib.lo \
 	libcsprof_la-data.lo libcsprof_la-env.lo libcsprof_la-epoch.lo \
@@ -604,7 +606,7 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Automake rules
 #############################################################################
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
-pkglib_LTLIBRARIES = $(am__append_1) $(am__append_30) $(am__append_31)
+pkglib_LTLIBRARIES = $(am__append_1) $(am__append_32) $(am__append_33)
 bin_SCRIPTS = scripts/hpcsummary $(am__append_2) $(am__append_3)
 @OPT_ENABLE_MONITOR_EXTS_TRUE@pkglib_LIBRARIES = libcsprof_wrap.a
 pkglibexec_SCRIPTS = scripts/hpclog
@@ -677,6 +679,7 @@ MY_LINUX_DYNAMIC_FILES = \
 	os/linux/dylib.c
 
 MY_MONITOR_EXT_FILES = \
+	monitor-exts/monitor_ext.h  \
 	monitor-exts/over_cond.c  \
 	monitor-exts/over_mutex.c \
 	monitor-exts/over_spin.c
@@ -749,10 +752,11 @@ libcsprof_wrap_a_SOURCES = \
 
 libcsprof_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_7) $(am__append_11) $(am__append_17) \
-	$(am__append_22) $(am__append_27)
+	$(am__append_22) $(am__append_27) $(am__append_30)
 libcsprof_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_8) $(am__append_12) \
-	$(am__append_18) $(am__append_25) $(am__append_28)
+	$(am__append_18) $(am__append_25) $(am__append_28) \
+	$(am__append_31)
 libcsprof_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\

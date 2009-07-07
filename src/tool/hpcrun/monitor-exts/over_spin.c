@@ -12,6 +12,11 @@
 #include "monitor_ext.h"
 #include "pmsg.h"
 
+// tallent: Lock interception must be as fast as possible.  Therefore,
+// I am obsoleting the needless layer of callbacks between the
+// interception point and hpcrun.
+#if 0 // OBSOLETE
+
 typedef int spinlock_fcn(pthread_spinlock_t *);
 
 #ifdef HPCRUN_STATIC_LINK
@@ -26,11 +31,11 @@ static spinlock_fcn *real_spin_unlock = NULL;
 
 
 int
-MONITOR_WRAP_NAME(pthread_spin_lock)(pthread_spinlock_t *lock)
+MONITOR_EXT_WRAP_NAME(pthread_spin_lock)(pthread_spinlock_t *lock)
 {
   int ret;
 
-  MONITOR_GET_NAME_WRAP(real_spin_lock, pthread_spin_lock);
+  MONITOR_EXT_GET_NAME_WRAP(real_spin_lock, pthread_spin_lock);
   monitor_thread_pre_spin_lock(lock);
   ret = (*real_spin_lock)(lock);
   monitor_thread_post_spin_lock(lock, ret);
@@ -39,11 +44,11 @@ MONITOR_WRAP_NAME(pthread_spin_lock)(pthread_spinlock_t *lock)
 }
 
 int
-MONITOR_WRAP_NAME(pthread_spin_trylock)(pthread_spinlock_t *lock)
+MONITOR_EXT_WRAP_NAME(pthread_spin_trylock)(pthread_spinlock_t *lock)
 {
   int ret;
 
-  MONITOR_GET_NAME_WRAP(real_spin_trylock, pthread_spin_trylock);
+  MONITOR_EXT_GET_NAME_WRAP(real_spin_trylock, pthread_spin_trylock);
   //monitor_thread_pre_spin_trylock(lock); // tallent: needed?
   ret = (*real_spin_trylock)(lock);
   monitor_thread_post_spin_trylock(lock, ret);
@@ -52,14 +57,16 @@ MONITOR_WRAP_NAME(pthread_spin_trylock)(pthread_spinlock_t *lock)
 }
 
 int
-MONITOR_WRAP_NAME(pthread_spin_unlock)(pthread_spinlock_t *lock)
+MONITOR_EXT_WRAP_NAME(pthread_spin_unlock)(pthread_spinlock_t *lock)
 {
   int ret;
 
-  MONITOR_GET_NAME_WRAP(real_spin_unlock, pthread_spin_unlock);
+  MONITOR_EXT_GET_NAME_WRAP(real_spin_unlock, pthread_spin_unlock);
   //monitor_thread_pre_spin_unlock(lock); // tallent: needed?
   ret = (*real_spin_unlock)(lock);
   monitor_thread_post_spin_unlock(lock, ret);
 
   return (ret);
 }
+
+#endif // OBSOLETE
