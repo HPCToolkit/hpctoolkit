@@ -92,7 +92,7 @@ hpcrun_mem_init(void)
   if (str != NULL && sscanf(str, "%ld", &ans) == 1) {
     low_memsize = ans;
   } else {
-    low_memsize = memsize/25;
+    low_memsize = memsize/40;
     if (low_memsize < MIN_LOW_MEMSIZE)
       low_memsize = MIN_LOW_MEMSIZE;
   }
@@ -186,7 +186,9 @@ hpcrun_reclaim_freeable_mem(void)
   hpcrun_meminfo_t *mi = &TD_GET(memstore);
 
   mi->mi_low = mi->mi_start;
+  TD_GET(mem_low) = 0;
   num_reclaims++;
+  TMSG(MALLOC, "%s: %d", __func__, num_reclaims);
 }
 
 //
@@ -205,7 +207,7 @@ csprof_malloc(size_t size)
   void *addr;
 
   // Non-recoverable out of memory.
-  if (mi->mi_high < mi->mi_start + low_memsize) {
+  if (mi->mi_high < mi->mi_start + 2*low_memsize) {
     if (allow_extra_mmap) {
       hpcrun_make_memstore(mi);
     } else {
