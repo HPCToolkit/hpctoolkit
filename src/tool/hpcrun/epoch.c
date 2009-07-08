@@ -109,7 +109,6 @@ hpcrun_loadmap_add_module(const char *module_name,
 
 
 
-/* epochs are totally distinct from profiling states */
 void
 csprof_epoch_init(csprof_epoch_t *e)
 {
@@ -133,6 +132,7 @@ csprof_epoch_init(csprof_epoch_t *e)
 csprof_epoch_t*
 csprof_epoch_new()
 {
+  TMSG(EPOCH, " --NEW");
   TMSG(MALLOC," epoch-new");
   csprof_epoch_t *e = csprof_malloc(sizeof(csprof_epoch_t));
 
@@ -151,6 +151,7 @@ csprof_epoch_new()
 void
 hpcrun_finalize_current_epoch(void)
 {
+  TMSG(EPOCH, " --Finalize current");
   // lazily finalize the last epoch
   csprof_epoch_lock();
   if (current_epoch->loaded_modules == NULL) {

@@ -283,7 +283,7 @@ monitor_thread_pre_create(void)
 
   int metric_id = 0; // FIXME: obtain index of first metric
   csprof_cct_node_t* n =
-    hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/, 
+    hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/,
 			   0/*skipInner*/, 1/*isSync*/);
 
   // MFAGAN: NEED TO COPY CONTEXT BTRACE TO NON-FREEABLE MEM

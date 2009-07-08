@@ -75,6 +75,7 @@ MY_BASE_FILES =			\
 	files.c				\
 	handling_sample.c		\
 	last.c				\
+	lcp.c                           \
 	metrics.c			\
 	name.c				\
 	sample_event.c			\

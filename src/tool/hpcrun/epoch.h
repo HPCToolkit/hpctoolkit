@@ -66,7 +66,9 @@ struct csprof_epoch_module
 
 struct csprof_epoch
 {
+  // #if defined(OLD_EPOCH)
   struct csprof_epoch *next;  /* the next epoch */
+  // #endif
   unsigned int id;            /* an identifier for disk writeouts */
   unsigned int num_modules;   /* how many modules are loaded? */
   loadmap_src_t *loaded_modules;

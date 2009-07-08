@@ -24,6 +24,7 @@
 
 //************************* System Include Files ****************************
 
+#include <alloca.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -44,6 +45,7 @@
 
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/lush/lush-support.h>
 
 //*************************** Forward Declarations **************************
 
@@ -217,7 +219,7 @@ csprof_cct_node__find_child(csprof_cct_node_t* x,
 int
 csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
 {
-  TMSG(CCT,"Init a CCT");
+  TMSG(CCT_TYPE,"--Init");
   memset(x, 0, sizeof(*x));
 
 #ifndef CSPROF_TRAMPOLINE_BACKEND
@@ -245,6 +247,7 @@ csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
 int
 csprof_cct__fini(hpcrun_cct_t *x)
 {
+  TMSG(CCT_TYPE,"--Fini");
   return HPCRUN_OK;
 }
 
@@ -464,12 +467,6 @@ hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree,
 #if 0 
   if (tree_ctxt && tree_ctxt->context) {
     lvl_to_skip = 2;
-#ifdef NODE_CHILD_COUNT 
-  } else {
-    // this case needs to be coordinated with the context writer. it should skip the same.
-    int children = node_child_count(tree, root);
-    if (children == 1) lvl_to_skip = 1;
-#endif
   }
 #endif
     
@@ -493,7 +490,7 @@ hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree,
     int skipped = hpcfile_cstree_count_nodes(tree, root, lvl_to_skip);
     num_nodes -= skipped;
   }
-  hpcio_fwrite_le8(&num_nodes, fs);
+  hpcfmt_byte8_fwrite(num_nodes, fs);
 
   // -------------------------------------------------------
   // Write context
@@ -510,8 +507,8 @@ hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree,
   tmp_node.data.num_metrics = num_metrics;
   tmp_node.data.metrics = alloca(num_metrics * sizeof(hpcfmt_uint_t));
 
-  ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, lvl_to_skip);
-  
+  ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, 
+				  lvl_to_skip);
   return ret;
 }
 
@@ -559,45 +556,58 @@ hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
   return HPCFILE_OK;
 }
 
-
 static int
 hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 			      hpcfile_cstree_node_t* tmp_node)
 {
   int ret = HPCRUN_OK;
 
+#if defined(OLD_LIP)
   // ---------------------------------------------------------
-  // Write LIP if necessary
+  // Compute LIP id
   // ---------------------------------------------------------
   hpcfmt_uint_t id_lip = 0;
 
   lush_assoc_t as = lush_assoc_info__get_assoc(node->as_info);
+
   if (as != LUSH_ASSOC_NULL) {
     if (lush_assoc_info_is_root_note(node->as_info)
 	|| as == LUSH_ASSOC_1_to_M) {
       id_lip = node->persistent_id;
       if (node->lip != NULL) {
-	hpcfile_cstree_lip__fwrite(node->lip, fs);
+	//  hpcfile_cstree_lip__fwrite(node->lip, fs); FIXME: what to do instead
+	id_lip = node->persistent_id; // FIXME: what to do
       }
     }
     else {
       id_lip = node->persistent_id;
     }
   }
+#endif // defined(OLD_LIP)
 
   // ---------------------------------------------------------
   // Write the node
   // ---------------------------------------------------------
+
   tmp_node->id = node->persistent_id;
   tmp_node->id_parent = node->parent ? node->parent->persistent_id : 0;
 
-  // tallent:FIXME: for now I have inlined what was the get_data_fn
+  // lush data
+  //
   tmp_node->data.as_info = node->as_info;
+  lush_lip_init(&tmp_node->data.real_lip);
+  if (node->lip) {
+    memcpy(&tmp_node->data.real_lip, node->lip, sizeof(lush_lip_t));
+  }
 
   // double casts to avoid warnings when pointer is < 64 bits 
   tmp_node->data.ip = (hpcfmt_vma_t) (unsigned long) node->ip;
-  tmp_node->data.lip.id = id_lip;
 
+#if defined(OLD_LIP)
+  tmp_node->data.lip.id = id_lip;
+  tmp_node->data.lip.ptr = node->lip;
+#endif
+  
   memcpy(tmp_node->data.metrics, node->metrics, 
 	 tmp_node->data.num_metrics * sizeof(cct_metric_data_t));
 
@@ -691,6 +701,8 @@ lush_cct_ctxt__length(lush_cct_ctxt_t* cct_ctxt)
 int
 lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt)
 {
+  // N.B.: assumes that calling malloc is acceptible!
+
   int ret;
   unsigned int num_metrics = csprof_num_recorded_metrics();
 
