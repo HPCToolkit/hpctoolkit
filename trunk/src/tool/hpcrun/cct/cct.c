@@ -35,6 +35,7 @@
 //*************************** User Include Files ****************************
 
 #include "cct.h"
+#include "csprof-malloc.h"
 #include "csproflib_private.h"
 #include "mem.h"
 #include "list.h"
@@ -99,7 +100,14 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
 
   size_t sz = (sizeof(csprof_cct_node_t)
 	       + sizeof(cct_metric_data_t)*(csprof_get_max_metrics() - 1));
-  csprof_cct_node_t *node = csprof_malloc(sz);
+  csprof_cct_node_t *node;
+
+  // FIXME: when multiple epochs really work, this will always be freeable.
+  if (ENABLED(FREEABLE)) {
+    node = csprof_malloc_freeable(sz);
+  } else {
+    node = csprof_malloc(sz);
+  }
 
   memset(node, 0, sz);
 
