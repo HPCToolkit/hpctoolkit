@@ -353,9 +353,14 @@ Profile::make(const char* fnm, FILE* outfs)
   // read # epochs
   //
 
+  // FIXME: convert to read till no more epochs
+  //
   hpcfmt_byte4_fread(&num_epochs, fs);
-  uint32_t num_ccts = num_epochs > 1 ? 1 : 1;
 
+#if defined(OLD_LIMIT_CCTS)
+  uint32_t num_ccts = num_epochs > 1 ? 1 : 1;
+#endif
+  uint32_t num_ccts = num_epochs;
 
   // ------------------------------------------------------------
   // Read each epoch and merge them to form one Profile
@@ -365,7 +370,8 @@ Profile::make(const char* fnm, FILE* outfs)
   // ************ FIXME *************************
   //
   if (num_epochs > 1) {
-    num_epochs = 1;
+    DD("**** DD multiple epochs detected *****");
+    //    num_epochs = 1;
   }
   for (uint i = 0; i < num_epochs; ++i) {
 
@@ -523,15 +529,12 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
   hpcfile_cstree_node_t ndata;
   ndata.data.num_metrics = num_metrics;
   ndata.data.metrics = (hpcrun_metric_data_t*)alloca(num_metrics * sizeof(hpcfmt_uint_t));
+
+
   
   for (uint i = 0; i < num_nodes; ++i) {
 
-    uint32_t tag;
-    ret = hpcfile_tag__fread(&tag, infs);
-    if (ret != HPCFILE_OK) { 
-      DIAG_Throw("hpcfile_tag__fread() failed");
-    }
-
+#if defined(OLD_CCT)
     // ----------------------------------------------------------
     // Read the LIP
     // ----------------------------------------------------------
@@ -539,43 +542,47 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
     hpcfmt_uint_t lip_id = 0;
     lush_lip_t* lip = NULL;
 
-    if (tag == HPCFILE_TAG__CSTREE_LIP) {
-      lip = new lush_lip_t;
-      ret = hpcfile_cstree_lip__fread(lip, infs);
-      if (ret != HPCFILE_OK) { 
-	DIAG_Throw("error reading CCT LIP" << lip_id); // FIXME: init lip_id
-      }
-
-      ret = hpcfile_tag__fread(&tag, infs);
-      if (ret != HPCFILE_OK) { 
-	DIAG_Throw("hpcfile_tag__fread() failed");
-      }
+    lip = new lush_lip_t;
+    ret = hpcfile_cstree_lip__fread(lip, infs);
+    if (ret != HPCFILE_OK) { 
+      DIAG_Throw("error reading CCT LIP" << lip_id); // FIXME: init lip_id
     }
+#endif // defined(OLD_CCT)
 
     // ----------------------------------------------------------
     // Read the node
     // ----------------------------------------------------------
-
-    DIAG_Assert(tag == HPCFILE_TAG__CSTREE_NODE, "Bad tag!");
 
     ret = hpcfile_cstree_node__fread(&ndata, infs);
     if (ret != HPCFILE_OK) {
       DIAG_Throw("Error reading CCT node " << ndata.id);
     }
 
+    // #if defined(OLD_CCT)
+
     // finish handling lip: lip_id inherits the node id
-    lip_id = ndata.id; // FIXME: lip_id should be 0 if not used
+
+    lush_lip_t* lip = NULL;
+    lip = new lush_lip_t;
+
+    hpcfmt_uint_t lip_id = ndata.id; // FIXME: lip_id should be 0 if not used
+    memcpy(lip, &ndata.data.real_lip, sizeof(lush_lip_t));
+    
+    // #if defined(OLD_LIP)
     lipMap.insert(std::make_pair(lip_id, lip));
+    // #endif
     if (lip) {
       if (outfs) {
 	hpcfile_cstree_lip__fprint(lip, lip_id, outfs, "");
       }
     }
+    // #endif // defined(OLD_CCT)
 
     if (outfs) {
       hpcfile_cstree_node__fprint(&ndata, outfs, "  ");
     }
 
+#if defined(OLD_CCT)
     // Find LIP for node
     lush_lip_t* node_lip = NULL;
     if (ndata.data.lip.id != 0) {
@@ -587,7 +594,9 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
 	DIAG_Throw("Invalid LIP (" << ndata.data.lip.id << ") for node " << ndata.id);
       }
     }
-    ndata.data.lip.ptr = node_lip;
+#endif
+
+    ndata.data.lip.ptr = lip;
 
     // Find parent of node
     CCT::ANode* node_prnt = NULL;

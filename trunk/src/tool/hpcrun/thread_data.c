@@ -52,6 +52,68 @@ csprof_unthreaded_data(void)
 }
 
 
+thread_data_t*
+hpcrun_thread_data_new(void)
+{
+  NMSG(THREAD_SPECIFIC,"new thread specific data");
+  thread_data_t *td = csprof_get_thread_data();
+
+  td->suspend_sampling            = 1; // protect against spurious signals
+
+  // initialize thread_data with known bogus bit pattern so that missing
+  // initializations will be apparent.
+  memset(td, 0xfe, sizeof(thread_data_t));
+
+  return td;
+}
+
+void
+hpcrun_thread_memory_init(void)
+{
+  thread_data_t* td = csprof_get_thread_data();
+  hpcrun_make_memstore(&td->memstore);
+}
+
+void
+hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
+{
+  thread_data_t* td = csprof_get_thread_data();
+  csprof_init_handling_sample(td,0);
+
+  td->id                          = id;
+  td->mem_low                     = 0;
+  td->state                       = NULL;
+
+  // lcp list
+  td->lcp_list                    = NULL;
+
+  // hpcrun file
+  td->hpcrun_file                 = NULL;
+
+  // locks
+  td->fnbounds_lock               = 0;
+  td->splay_lock                  = 0;
+
+  td->trace_file                  = NULL;
+  td->last_time_us                = 0;
+
+  lushPthr_init(&td->pthr_metrics);
+  lushPthr_thread_init(&td->pthr_metrics);
+
+  memset(&td->bad_unwind, 0, sizeof(td->bad_unwind));
+  memset(&td->mem_error, 0, sizeof(td->mem_error));
+  memset(&td->eventSet, 0, sizeof(td->eventSet));
+  memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
+
+  TMSG(MALLOC," thread_data_init state");
+  csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
+
+  csprof_set_state(state);
+  csprof_state_init(state);
+  csprof_state_alloc(state, thr_ctxt);
+}
+
+#if defined(OLD_THREAD_DATA)
 void
 csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp, lush_cct_ctxt_t* thr_ctxt)
 {
@@ -72,6 +134,9 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp, lush_cct_ctxt_t* t
   td->id                          = id;
   td->mem_low                     = 0;
   td->state                       = NULL;
+
+  // lcp list
+  td->lcp_list                    = NULL;
 
   // hpcrun file
   td->hpcrun_file                 = NULL;
@@ -100,6 +165,7 @@ csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp, lush_cct_ctxt_t* t
 
   return;
 }
+#endif // defined(OLD_THREAD)
 
 #ifdef CSPROF_THREADS
 #include <pthread.h>

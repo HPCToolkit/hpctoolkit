@@ -564,7 +564,9 @@ typedef struct hpcfile_cstree_nodedata_s {
   union {
     hpcfmt_uint_t id;  // canonical lip id
     lush_lip_t*    ptr; // pointer
-  } lip; 
+  } lip;
+
+  lush_lip_t real_lip;
 
   hpcfmt_uint_t num_metrics;
   hpcrun_metric_data_t* metrics;

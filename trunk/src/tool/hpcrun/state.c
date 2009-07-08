@@ -85,6 +85,7 @@ csprof_state_t *csprof_get_state()
 
 void csprof_set_state(csprof_state_t *state)
 {
+  TMSG(STATE," --Set");
   state->next = TD_GET(state);
   TD_GET(state) = state;
 }
@@ -96,6 +97,7 @@ csprof_state_init(csprof_state_t *x)
      integer.  Tru64 Unix returns an `int'.  it probably won't hurt us
      if we get truncated on ia64, right? */
 
+  TMSG(STATE,"--Init");
   memset(x, 0, sizeof(*x));
 
   return HPCRUN_OK;
@@ -107,6 +109,7 @@ csprof_state_init(csprof_state_t *x)
 int
 csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt)
 {
+  TMSG(STATE,"--Alloc");
   csprof_cct__init(&x->csdata, thr_ctxt);
 
   x->epoch = csprof_get_epoch();
@@ -140,6 +143,7 @@ csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt)
 
 int csprof_state_fini(csprof_state_t *x){
 
+  TMSG(STATE,"--Fini");
   return HPCRUN_OK;
 }
 

@@ -670,7 +670,6 @@ epoch_table__free_data(epoch_table_t* x, hpcfile_cb__free_fn_t free_fn)
   }
   free_fn(x->epoch_modlist);
 }
-#endif // defined(OLD_READ)
 
 
 //***************************************************************************
@@ -693,6 +692,8 @@ hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, char *target, FILE* fs)
 {
   return HPCFILE_OK;
 }
+
+#endif // defined(OLD_READ)
 
 //***************************************************************************
 
@@ -953,51 +954,41 @@ hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs)
 {
   // ASSUMES: space for metrics has been allocated
   
-  size_t sz;
-  int i, ret;
-
-  ret = hpcfile_cstree_as_info__fread(&x->as_info, fs);
-  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
-
-  sz = hpcio_fread_le8(&x->ip, fs);
-  if (sz != sizeof(x->ip)) { return HPCFILE_ERR; }
-
-  sz = hpcio_fread_le8(&x->lip.id, fs);
-  if (sz != sizeof(x->lip.id)) { return HPCFILE_ERR; }
-
-  //DIAG_MsgIf(DBG_READ_METRICS, "reading node ip=%"PRIx64, x->ip);
-  for (i = 0; i < x->num_metrics; ++i) {
-    sz = hpcio_fread_le8(&x->metrics[i].bits, fs);
-    //DIAG_MsgIf(DBG_READ_METRICS, "metrics[%d]=%"PRIu64, i, x->metrics[i]);
-    if (sz != sizeof(x->metrics[i])) {
-      return HPCFILE_ERR;
-    }
+  hpcfmt_byte4_fread(&x->as_info.bits, fs);
+  hpcfmt_byte8_fread(&x->ip, fs);
+  hpcfile_cstree_lip__fread(&x->real_lip, fs);
+#if 0
+  hpcfmt_byte8_fread(&x->lip.id, fs);
+#endif
+  for (int i = 0; i < x->num_metrics; ++i) {
+    hpcfmt_byte8_fread(&x->metrics[i].bits, fs);
   }
 
   return HPCFILE_OK;
 }
 
-
 int 
-hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs) 
+hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs)
 {
-  size_t sz;
-  int i, ret;
+  hpcfmt_byte4_fwrite(x->as_info.bits, fs);
+  hpcfmt_byte8_fwrite(x->ip, fs);
 
-  ret = hpcfile_cstree_as_info__fwrite(&x->as_info, fs);
-  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
+  // lip stuff
 
-  sz = hpcio_fwrite_le8(&x->ip, fs);
-  if (sz != sizeof(x->ip)) { return HPCFILE_ERR; }
+#if defined(OLD_LIP)
+  if (! x->lip.ptr ) {
+    lush_lip_init(&x->real_lip);
+    x->lip.ptr = &x->real_lip;
+  }
+#endif
+  hpcfile_cstree_lip__fwrite(&x->real_lip, fs);
 
-  sz = hpcio_fwrite_le8(&x->lip.id, fs);
-  if (sz != sizeof(x->lip.id)) { return HPCFILE_ERR; }
-
-    for (i = 0; i < x->num_metrics; ++i) {
-    sz = hpcio_fwrite_le8(&x->metrics[i].bits, fs);
-    if (sz != sizeof(x->metrics[i])) {
-      return HPCFILE_ERR;
-    }
+#if 0
+  hpcfmt_byte8_fwrite(x->lip.id, fs);
+  DD("*** DD: Past lush lip write (lip id = %lu", x->lip.id);
+#endif
+  for (int i = 0; i < x->num_metrics; ++i) {
+    hpcfmt_byte8_fwrite(x->metrics[i].bits, fs);
   }
 
   return HPCFILE_OK;
@@ -1058,13 +1049,11 @@ hpcfile_cstree_as_info__fprint(lush_lip_t* x, FILE* fs, const char* pre)
 int 
 hpcfile_cstree_lip__fread(lush_lip_t* x, FILE* fs)
 {
-  size_t sz;
 
   //  HPCFILE_TAG__CSTREE_LIP has already been read
 
   for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
-    sz = hpcio_fread_le8(&x->data8[i], fs);
-    if (sz != sizeof(x->data8[i])) { return HPCFILE_ERR; }
+    hpcfmt_byte8_fread(&x->data8[i], fs);
   }
   
   return HPCFILE_OK;
@@ -1073,17 +1062,8 @@ hpcfile_cstree_lip__fread(lush_lip_t* x, FILE* fs)
 int 
 hpcfile_cstree_lip__fwrite(lush_lip_t* x, FILE* fs)
 {
-  size_t sz;
-  int ret;
-
-  ret = hpcfile_tag__fwrite(HPCFILE_TAG__CSTREE_LIP, fs);
-  if (ret != HPCFILE_OK) {
-    return HPCFILE_ERR; 
-  }
-
   for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
-    sz = hpcio_fwrite_le8(&x->data8[i], fs);
-    if (sz != sizeof(x->data8[i])) { return HPCFILE_ERR; }
+    hpcfmt_byte8_fwrite(x->data8[i], fs);
   }
   
   return HPCFILE_OK;
@@ -1122,20 +1102,10 @@ hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x)
 int 
 hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs)
 {
-  size_t sz;
   int ret;
 
-  // HPCFILE_TAG__CSTREE_NODE has already been read
-
-  sz = hpcio_fread_le4(&x->id, fs);
-  if (sz != sizeof(x->id)) { 
-    return HPCFILE_ERR; 
-  }
-  
-  sz = hpcio_fread_le4(&x->id_parent, fs);
-  if (sz != sizeof(x->id_parent)) { 
-    return HPCFILE_ERR; 
-  }
+  hpcfmt_byte4_fread(&x->id, fs);
+  hpcfmt_byte4_fread(&x->id_parent, fs);
   
   ret = hpcfile_cstree_nodedata__fread(&x->data, fs);
   if (ret != HPCFILE_OK) {
@@ -1148,19 +1118,8 @@ hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs)
 int 
 hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs)
 {
-  size_t sz;
-  int ret;
-
-  ret = hpcfile_tag__fwrite(HPCFILE_TAG__CSTREE_NODE, fs);
-  if (ret != HPCFILE_OK) {
-    return HPCFILE_ERR; 
-  }
-
-  sz = hpcio_fwrite_le4(&x->id, fs);
-  if (sz != sizeof(x->id)) { return HPCFILE_ERR; }
-  
-  sz = hpcio_fwrite_le4(&x->id_parent, fs);
-  if (sz != sizeof(x->id_parent)) { return HPCFILE_ERR; }
+  hpcfmt_byte4_fwrite(x->id, fs);   // if node is leaf, make the id neg
+  hpcfmt_byte4_fwrite(x->id_parent, fs);
   
   if (hpcfile_cstree_nodedata__fwrite(&x->data, fs) != HPCFILE_OK) {
     return HPCFILE_ERR; 

@@ -107,6 +107,7 @@
 #include "fnbounds_interface.h"
 #include "splay-interval.h"
 #include "hpcrun_return_codes.h"
+#include "lcp.h"
 
 #include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -149,8 +150,13 @@ csprof_init_internal(void)
 {
   csprof_epoch_init(csprof_static_epoch());
 
-  /* N.B.: initilizes thread's private memory store */
+#if defined(OLD_THREAD)
   csprof_thread_data_init(0,CSPROF_MEM_SZ_DEFAULT,0, NULL);
+#endif
+
+  hpcrun_thread_data_new();
+  hpcrun_thread_memory_init();
+  hpcrun_thread_data_init(0, NULL);
 
   // WARNING: a perfmon bug requires us to fork off the fnbounds
   // server before we call PAPI_init, which is done in argument
@@ -266,7 +272,14 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 
 
   csprof_set_thread_data(td);
+
+  hpcrun_thread_data_new();
+  hpcrun_thread_memory_init();
+  hpcrun_thread_data_init(id, NULL);
+
+#if defined(OLD_THREAD)
   csprof_thread_data_init(id,1,0,thr_ctxt);
+#endif
 
   // POSSIBLE MEMORY PROBLEM: if thr_ctxt is reclaimed before copy can be made !!!
   copy_thr_ctxt(thr_ctxt);
