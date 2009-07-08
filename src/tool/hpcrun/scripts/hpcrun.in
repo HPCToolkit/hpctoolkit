@@ -340,6 +340,16 @@ f_getoptions()
 	opt_debug=1
         ;;
 
+      -lm | --low-memsize )
+	shift
+	export HPCRUN_LOW_MEMSIZE="$1"
+	;;
+
+      -ms | --memsize )
+	shift
+	export HPCRUN_MEMSIZE="$1"
+	;;
+
       -o | --output)
         shift; opt_out_path="$1"; 
         f_opt_check "-o" "${opt_out_path}";
