@@ -204,7 +204,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
   csprof_dlopen_read_unlock();
 #endif
   
-return node;
+  return node;
 }
 
 
