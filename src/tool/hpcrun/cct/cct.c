@@ -123,14 +123,39 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
   return node;
 }
 
-// FIXME: WRITEME
-
-csprof_cct_node_t* hpcrun_copy_btrace(csprof_cct_node_t* n)
+csprof_cct_node_t*
+hpcrun_copy_btrace(csprof_cct_node_t* n)
 {
-  return n; 
+  if (! n) {
+    TMSG(CCT_CTXT, "incoming cct path = %p", n);
+    return NULL;
+  }
+
+  //
+  // NOTE: cct nodes here are in NON-freeable memory (to be passed to other threads)
+  //
+  csprof_cct_node_t* rv = (csprof_cct_node_t*) csprof_malloc(sizeof(csprof_cct_node_t));
+
+  memcpy(rv, n, sizeof(csprof_cct_node_t));
+  rv->parent   = NULL;
+  rv->children = NULL;
+
+  csprof_cct_node_t* prev = rv;
+  for(n = n->parent; n; n = n->parent){
+    TMSG(CCT_CTXT, "ctxt node(%p) ==> parent(%p) :: child(%p)", n, n->parent, n->children);
+    csprof_cct_node_t* cpy = (csprof_cct_node_t*) csprof_malloc(sizeof(csprof_cct_node_t));
+    memcpy(cpy, n, sizeof(csprof_cct_node_t));
+    cpy->parent   = NULL;
+    cpy->children = NULL;
+
+    prev->parent  = cpy;
+    prev          = cpy;
+  }
+  return rv;
 }
 
-// FIXME: WRITEME
+
+// FIXME: WRITEME ?? possibly unneeded
 
 void copy_thr_ctxt(lush_cct_ctxt_t* thr_ctxt)
 {
