@@ -390,15 +390,19 @@ MONITOR_EXT_WRAP_NAME(pthread_mutex_lock)(pthread_mutex_t* lock)
   MONITOR_EXT_GET_NAME_WRAP(real_mutex_lock, pthread_mutex_lock);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_mutexLock_pre(&TD_GET(pthr_metrics), lock);
   }
+#endif
   
   int ret = (*real_mutex_lock)(lock);
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_mutexLock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
   }
+#endif
 
   return ret;
 }
@@ -412,9 +416,11 @@ MONITOR_EXT_WRAP_NAME(pthread_mutex_trylock)(pthread_mutex_t* lock)
 
   int ret = (*real_mutex_trylock)(lock);
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_mutexTrylock_post(&TD_GET(pthr_metrics), lock, ret);
   }
+#endif
 
   return ret;
 }
@@ -428,9 +434,11 @@ MONITOR_EXT_WRAP_NAME(pthread_mutex_unlock)(pthread_mutex_t* lock)
 
   int ret = (*real_mutex_unlock)(lock);
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_mutexUnlock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
   }
+#endif
 
   return ret;
 }
@@ -466,15 +474,19 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_lock)(pthread_spinlock_t* lock)
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
   pthread_spinlock_t* real_lock = lock;
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     real_lock = lushPthr_spinLock_pre(&TD_GET(pthr_metrics), lock);
   }
+#endif
 
   int ret = (*real_spin_lock)(real_lock);
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_spinLock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
   }
+#endif
 
   return ret;
 }
@@ -487,15 +499,19 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_trylock)(pthread_spinlock_t* lock)
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
   pthread_spinlock_t* real_lock = lock;
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     real_lock = lushPthr_spinTrylock_pre(&TD_GET(pthr_metrics), lock);
   }
+#endif
 
   int ret = (*real_spin_trylock)(real_lock);
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_spinTrylock_post(&TD_GET(pthr_metrics), lock, ret);
   }
+#endif
 
   return ret;
 }
@@ -508,15 +524,19 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_unlock)(pthread_spinlock_t* lock)
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
   pthread_spinlock_t* real_lock = lock;
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     real_lock = lushPthr_spinUnlock_pre(&TD_GET(pthr_metrics), lock);
   }
+#endif
 
   int ret = (*real_spin_unlock)(real_lock);
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_spinUnlock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
   }
+#endif
 
   return ret;
 }
@@ -529,15 +549,19 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_destroy)(pthread_spinlock_t* lock)
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
   pthread_spinlock_t* real_lock = lock;
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     real_lock = lushPthr_spinDestroy_pre(&TD_GET(pthr_metrics), lock);
   }
+#endif
 
   int ret = (*real_spin_destroy)(real_lock);
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_spinDestroy_post(&TD_GET(pthr_metrics), lock /*,ret*/);
   }
+#endif
 
   return ret;
 }
@@ -608,15 +632,19 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_wait)(pthread_cond_t* cond,
   MONITOR_EXT_GET_NAME_WRAP(real_cond_wait, pthread_cond_wait);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_condwait_pre(&TD_GET(pthr_metrics));
   }
+#endif
 
   int ret = (*real_cond_wait)(cond, mutex);
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_condwait_post(&TD_GET(pthr_metrics) /*,ret*/);
   }
+#endif
 
   return ret;
 }
@@ -630,15 +658,19 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_timedwait)(pthread_cond_t* cond,
   MONITOR_EXT_GET_NAME_WRAP(real_cond_timedwait, pthread_cond_timedwait);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_condwait_pre(&TD_GET(pthr_metrics));
   }
+#endif
 
   int ret = (*real_cond_timedwait)(cond, mutex, tspec);
 
-  if (LUSH_PTHREADS && hpcrun_is_initialized()) {
+#ifdef LUSH_PTHREADS
+  if (hpcrun_is_initialized()) {
     lushPthr_condwait_post(&TD_GET(pthr_metrics) /*,ret*/);
   }
+#endif
 
   return ret;
 }
