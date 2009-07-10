@@ -606,6 +606,9 @@ lushPthr_freelstEnq(lushPthr_t* restrict pthr,
     pthr->freelstTail->next = x;
     pthr->freelstTail = x;
   }
+#if (LUSH_DBG_STATS)
+  hpcrun_atomicIncr(&DBG_numLockFreelistCur);
+#endif
 }
 
 
@@ -627,6 +630,9 @@ lushPthr_freelstDeq(lushPthr_t* pthr)
       // Special case: one element
       pthr->freelstTail = NULL;
     }
+#if (LUSH_DBG_STATS)
+    hpcrun_atomicDecr(&DBG_numLockFreelistCur);
+#endif
     
     return x;
   }
@@ -645,6 +651,15 @@ lushPthr_makeSyncObjData_spin(lushPthr_t* restrict pthr,
     assert(0 && "LUSH/Pthreads: exhausted lock memory");
   }
   lushPtr_SyncObjData_init(x); 
+#if (LUSH_DBG_STATS)
+  hpcrun_atomicIncr(&DBG_numLockAlloc);
+  long lockAllocCur = (((lushPthr_mem_ptr - lushPthr_mem_beg)
+			/ sizeof(lushPtr_SyncObjData_t))
+		       - 1 - DBG_numLockFreelistCur);
+  long result;
+  read_modify_write(long, &DBG_maxLockAllocCur, 
+		    MAX(DBG_maxLockAllocCur, lockAllocCur), result);
+#endif
   return x;
 }
 
@@ -705,6 +720,9 @@ lushPthr_demandSyncObjData_ps(lushPthr_t* restrict x, void* restrict syncObj)
   if (!fnd) {
     fnd = BalancedTree_insert(x->ps_syncObjToData, syncObj, &x->locklcl);
     lushPtr_SyncObjData_init(fnd->data);
+#if (LUSH_DBG_STATS)
+    hpcrun_atomicIncr(&DBG_numLockAlloc);
+#endif
   }
 
   //hpcrun_async_unblock(); // inherited
@@ -777,7 +795,7 @@ lushPthr_spin_lock(pthread_spinlock_t* lock)
 
 
 static inline int
-lushPthr_spin_trylock(volatile pthread_spinlock_t* lock)
+lushPthr_spin_trylock(pthread_spinlock_t* lock)
 {
   while (true) {
     if (lushPthr_isSyncDataPointer(*lock)) {
@@ -805,7 +823,7 @@ lushPthr_spin_trylock(volatile pthread_spinlock_t* lock)
 
 
 static inline int
-lushPthr_spin_unlock(volatile pthread_spinlock_t* lock)
+lushPthr_spin_unlock(pthread_spinlock_t* lock)
 {
   while (true) {
     int lockval = *lock;
@@ -846,6 +864,10 @@ lushPthr_mutexLock_pre_ty3(lushPthr_t* restrict x,
   lushPtr_SyncObjData_t* syncData = 
     lushPthr_demandCachedSyncObjData(x, (void*)lock);
   syncData->isBlockingWork = (syncData->isLocked);
+
+#if (LUSH_DBG_STATS)
+  hpcrun_atomicIncr(&DBG_numLockAcq);
+#endif
 
   lushPthr_begSmplIdleness(x);
   x->syncObjData = NULL; // drop samples
@@ -905,6 +927,10 @@ lushPthr_spinLock_pre_ty3(lushPthr_t* restrict x,
 {
   lushPtr_SyncObjData_t* syncData = 
     lushPthr_demandCachedSyncObjData_spin(x, lock);
+
+#if (LUSH_DBG_STATS)
+  hpcrun_atomicIncr(&DBG_numLockAcq);
+#endif
 
   x->syncObjData = syncData;
   x->is_working = false;
