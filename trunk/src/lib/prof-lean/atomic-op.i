@@ -29,8 +29,7 @@
 // *** FIXME: tallent: ***
 // 1. These platform switches should be based on the autoconf host (or
 //    we should just use the gcc intrinsics).
-// 2. If we keep them, we should just use a "int64_t" so we don't need
-//    versions for each size of a "long".
+// 2. We should also replace them with versions that support different types
 
 #if defined(__i386__) 
 
@@ -49,6 +48,11 @@
 #define CAS_BODY                                                                    \
   __asm__ __volatile__("\n"                                                         \
 		       "\tlock; cmpxchgq %3, (%1)\n\t"                              \
+		       : "=a" (prev) : "r" (ptr), "a" (old), "r" (new) : "memory")
+
+#define CAS4_BODY                                                                    \
+  __asm__ __volatile__("\n"                                                         \
+		       "\tlock; cmpxchgl %3, (%1)\n\t"                              \
 		       : "=a" (prev) : "r" (ptr), "a" (old), "r" (new) : "memory")
 
 #define FAS_BODY                                                                    \
