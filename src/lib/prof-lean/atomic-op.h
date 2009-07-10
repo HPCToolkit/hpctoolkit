@@ -22,6 +22,9 @@
 
 //************************* System Include Files ****************************
 
+#include <stdint.h>
+#include <assert.h>
+
 //*************************** User Include Files ****************************
 
 #include "atomic-op.i"
@@ -40,6 +43,7 @@ load_linked(volatile unsigned long* ptr)
 
 #endif
 
+//***************************************************************************
 
 #if defined(SC_BODY) 
 
@@ -54,6 +58,7 @@ store_conditional(volatile unsigned long* ptr, unsigned long val)
 
 #endif
 
+//***************************************************************************
 
 #if defined (LL_BODY) && defined(SC_BODY) && !defined(CAS_BODY)
 
@@ -62,7 +67,6 @@ store_conditional(volatile unsigned long* ptr, unsigned long val)
     prev = load_linked(ptr);                                                \
     if (prev != old || store_conditional(ptr, new)) break;                  \
   }
-
 #endif
 
 
@@ -83,6 +87,23 @@ compare_and_swap(volatile void *ptr, unsigned long old, unsigned long new)
 
 #endif
 
+
+static inline int32_t
+compare_and_swap_i32(volatile int32_t *ptr, int32_t old, int32_t new)
+{
+  int32_t prev;
+#if defined (CAS4_BODY)
+  CAS4_BODY;
+#else
+# warning "compare_and_swap_i32() is unimplemented!"
+  assert(0 && "compare_and_swap_i32() is unimplemented!");
+#endif
+  return prev;
+
+}
+
+
+//***************************************************************************
 
 #if defined (LL_BODY) && defined(SC_BODY) 
 
@@ -106,6 +127,8 @@ compare_and_swap(volatile void *ptr, unsigned long old, unsigned long new)
 
 #endif
 
+//***************************************************************************
+
 static inline long
 fetch_and_add(volatile long* addr, long val)
 {
@@ -114,6 +137,7 @@ fetch_and_add(volatile long* addr, long val)
   return result;
 }
 
+//***************************************************************************
 
 #if defined(FAS_BODY)
 
@@ -121,6 +145,15 @@ static inline unsigned long
 fetch_and_store(volatile long* ptr, unsigned long new)
 {
   unsigned long prev;
+  FAS_BODY;
+  return prev;
+}
+
+
+static inline unsigned long
+fetch_and_store_i32(volatile int32_t* ptr, int32_t new)
+{
+  int32_t prev;
   FAS_BODY;
   return prev;
 }
@@ -140,5 +173,6 @@ fetch_and_store(volatile long* addr, long new)
 #define fetch_and_store_ptr(vaddr, ptr) \
   ((void *) fetch_and_store((volatile long *)vaddr, (long) ptr))
 
+//***************************************************************************
 
 #endif // prof_lean_atomic_op_h
