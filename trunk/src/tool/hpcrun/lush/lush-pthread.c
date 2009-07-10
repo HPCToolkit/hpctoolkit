@@ -37,7 +37,7 @@
 //*************************** Forward Declarations **************************
 
 #if (LUSH_PTHR_FN_TY == 3)
-#  define lushPthr_memSizeElem (4 * 1024 * 1024)
+#  define lushPthr_memSizeElem (5 * 1024 * 1024)
 #else
 #  define lushPthr_memSizeElem (0)
 #endif
@@ -53,10 +53,14 @@ void* lushPthr_mem_end;
 
 void* lushPthr_mem_ptr;
 
+
 #if (LUSH_DBG_STATS)
-int DBG_numLockAcq        = 0; // total lock acquires
-int DBG_numLockAlloc      = 0; // total locks allocated
-int DBG_maxLockAllocSimul = 0; // max locks allocated simultaneously
+long DBG_numLockAcq        = 0; // total lock acquires
+
+long DBG_numLockAlloc      = 0; // total locks allocated
+
+long DBG_maxLockAllocCur    = 0; // max locks allocated simultaneously
+long DBG_numLockFreelistCur = 0; // number of (spin) locks cur. on freelists
 #endif
 
 
@@ -179,8 +183,8 @@ lushPthr_dump(lushPthr_t* x, const char* nm, void* lock)
 #if (LUSH_PTHR_FN_TY == 3) 
   int lckval = (lock) ? *((int*)lock) : 0;
   int lushval = 0;
-  if (lushPthr_isLushPointer(lckval)) {
-    lushPtr_SyncObjData_t* data = lushPthr_getLushPointer(lckval);
+  if (lushPthr_isSyncDataPointer(lckval)) {
+    lushPtr_SyncObjData_t* data = lushPthr_getSyncDataPointer(lckval);
     lushval = data->lock.spin;
   }
   EMSG("lushPthr/%s:\t lck: %p->%#x->%d", nm, lock, lckval, lushval);

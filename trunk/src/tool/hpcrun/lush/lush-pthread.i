@@ -50,9 +50,10 @@ extern "C" {
 //***************************************************************************
 
 #if (LUSH_DBG_STATS)
-extern int DBG_numLockAcq;
-extern int DBG_numLockAlloc;
-extern int DBG_maxLockAllocSimul;
+extern long DBG_numLockAcq;
+extern long DBG_numLockAlloc;
+extern long DBG_maxLockAllocCur;
+extern long DBG_numLockFreelistCur;
 #endif
 
 
