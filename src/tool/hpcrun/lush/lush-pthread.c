@@ -36,8 +36,31 @@
 
 //*************************** Forward Declarations **************************
 
-// FIXME: used by GCC_ATTR_VAR_CACHE_ALIGN; move elsewhere
-#define HOST_CACHE_LINE_SZ 64 /*L1*/
+#if (LUSH_PTHR_FN_TY == 3)
+#  define lushPthr_memSizeElem (4 * 1024 * 1024)
+#else
+#  define lushPthr_memSizeElem (0)
+#endif
+
+// FIXME: tallent: hardcoded size for now
+lushPtr_SyncObjData_t lushPthr_mem[lushPthr_memSizeElem] GCC_ATTR_VAR_CACHE_ALIGN;
+
+#define lushPthr_memSize    (sizeof(lushPthr_mem))
+#define lushPthr_memSizeMax (0x3fffffff) /* lower 30 bits */
+
+void* lushPthr_mem_beg;
+void* lushPthr_mem_end;
+
+void* lushPthr_mem_ptr;
+
+#if (LUSH_DBG_STATS)
+int DBG_numLockAcq        = 0; // total lock acquires
+int DBG_numLockAlloc      = 0; // total locks allocated
+int DBG_maxLockAllocSimul = 0; // max locks allocated simultaneously
+#endif
+
+
+//*************************** Forward Declarations **************************
 
 // NOTE: For a portable alternative, union each cache-aligned variable
 // to with an char array of the appropriate size.
@@ -90,6 +113,25 @@ lushPthr_processInit()
   // LUSH_PTHR_FN_TY == 3
   BalancedTree_init(&globals.ps_syncObjToData, csprof_malloc, 
 		    sizeof(lushPtr_SyncObjData_t));
+
+  lushPthr_mem_beg = (void*)lushPthr_mem;
+  lushPthr_mem_end = (void*)lushPthr_mem + lushPthr_memSize;
+
+  // align with next cache line
+  lushPthr_mem_ptr = (void*)( (uintptr_t)(lushPthr_mem_beg 
+					  + lushPthr_maxValueOfLock
+					  + (HOST_CACHE_LINE_SZ - 1))
+			      & (uintptr_t)~(HOST_CACHE_LINE_SZ - 1) );
+  
+#if (LUSH_PTHR_FN_TY == 3)
+  // sanity check
+  if ( !(sizeof(pthread_spinlock_t) == 4) ) {
+    csprof_abort("LUSH Pthreads found unexpected pthread_spinlock_t type!");
+  }
+  if ( !(lushPthr_memSize < lushPthr_memSizeMax) ) {
+    csprof_abort("LUSH Pthreads found bad mem size!");
+  }
+#endif
 }
 
 
@@ -125,19 +167,33 @@ lushPthr_init(lushPthr_t* x)
 
   x->cache_syncObj = NULL;
   x->cache_syncObjData = NULL;
+
+  x->freelstHead = NULL;
+  x->freelstTail = NULL;
 }
 
 
 void 
-lushPthr_dump(lushPthr_t* x, const char* nm)
+lushPthr_dump(lushPthr_t* x, const char* nm, void* lock)
 {
+#if (LUSH_PTHR_FN_TY == 3) 
+  int lckval = (lock) ? *((int*)lock) : 0;
+  int lushval = 0;
+  if (lushPthr_isLushPointer(lckval)) {
+    lushPtr_SyncObjData_t* data = lushPthr_getLushPointer(lckval);
+    lushval = data->lock.spin;
+  }
+  EMSG("lushPthr/%s:\t lck: %p->%#x->%d", nm, lock, lckval, lushval);
+#else
   EMSG("lushPthr/%s:\t is_wrking %d, num_lck %d, cnd_lck %d | "
        "# wrking %ld, wrking_lck %ld, idle_cnd %ld | "
        "# procs %ld, threads %d",
        nm, x->is_working, x->num_locks, x->cond_lock,
        *x->ps_num_working, *x->ps_num_working_lock, *x->ps_num_idle_cond,
        *x->ps_num_procs, *x->ps_num_threads);
+#endif
 }
+
 
 
 //***************************************************************************

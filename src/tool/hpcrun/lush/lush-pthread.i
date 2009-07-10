@@ -28,6 +28,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/BalancedTree.h>
 #include <lib/prof-lean/QueuingRWLock.h>
 
@@ -41,14 +42,34 @@ extern "C" {
 
 //***************************************************************************
 
+#define LUSH_DBG_STATS 0
+
+// FIXME: used by GCC_ATTR_VAR_CACHE_ALIGN; move elsewhere
+#define HOST_CACHE_LINE_SZ 64 /*L1*/
+
+//***************************************************************************
+
+#if (LUSH_DBG_STATS)
+extern int DBG_numLockAcq;
+extern int DBG_numLockAlloc;
+extern int DBG_maxLockAllocSimul;
+#endif
+
 
 typedef struct lushPtr_SyncObjData {
 
-  uint64_t idleness;
+  union {
+    pthread_spinlock_t spin; // usually an int
+    //pthread_mutex_t  mutexlock
+  } lock GCC_ATTR_VAR_CACHE_ALIGN;
+
+  uint64_t idleness GCC_ATTR_VAR_CACHE_ALIGN;
   void*    cct_node;
   bool isBlockingWork;
   bool isLocked;
 
+  struct lushPtr_SyncObjData* next;
+  
 } lushPtr_SyncObjData_t;
 
 
@@ -59,6 +80,8 @@ lushPtr_SyncObjData_init(lushPtr_SyncObjData_t* x)
   x->cct_node = NULL;
   x->isBlockingWork = false;
   x->isLocked = false;
+
+  x->next = NULL;
 }
 
 
@@ -104,8 +127,29 @@ typedef struct lushPthr {
   void*                  cache_syncObj;
   lushPtr_SyncObjData_t* cache_syncObjData;
 
+  lushPtr_SyncObjData_t* freelstHead;
+  lushPtr_SyncObjData_t* freelstTail;
+  
 } lushPthr_t;
+  
+  
+//***************************************************************************
 
+extern void* lushPthr_mem_beg; // memory begin
+extern void* lushPthr_mem_end; // memory end
+extern void* lushPthr_mem_ptr; // current pointer
+
+
+static inline void* 
+lushPthr_malloc(size_t size) 
+{
+  void* memEnd = hpcrun_atomicAdd(&lushPthr_mem_ptr, size);
+  if (memEnd < lushPthr_mem_end) {
+    return (memEnd - size);
+  }
+  return NULL;
+}
+ 
 
 // **************************************************************************
 

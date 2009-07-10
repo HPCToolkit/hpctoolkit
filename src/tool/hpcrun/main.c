@@ -443,6 +443,7 @@ MONITOR_EXT_WRAP_NAME(pthread_mutex_unlock)(pthread_mutex_t* lock)
   return ret;
 }
 
+
 #endif // HPCRUN_MONITOR_EXTS
 
 
@@ -480,7 +481,11 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_lock)(pthread_spinlock_t* lock)
   }
 #endif
 
+#if (LUSH_PTHR_FN_TY == 3)
+  int ret = lushPthr_spin_lock(lock);
+#else
   int ret = (*real_spin_lock)(real_lock);
+#endif
 
 #ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
@@ -505,7 +510,11 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_trylock)(pthread_spinlock_t* lock)
   }
 #endif
 
+#if (LUSH_PTHR_FN_TY == 3)
+  int ret = lushPthr_spin_trylock(lock);
+#else
   int ret = (*real_spin_trylock)(real_lock);
+#endif
 
 #ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
@@ -530,7 +539,11 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_unlock)(pthread_spinlock_t* lock)
   }
 #endif
 
+#if (LUSH_PTHR_FN_TY == 3)
+  int ret = lushPthr_spin_unlock(lock);
+#else
   int ret = (*real_spin_unlock)(real_lock);
+#endif
 
 #ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
