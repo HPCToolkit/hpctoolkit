@@ -34,6 +34,7 @@ extern void csprof_nmsg(pmsg_category flag,const char *fmt,...);
 extern void csprof_stderr_log_msg(bool copy_to_log, const char *fmt,...);
 extern void csprof_exit_on_error(int ret, int ret_expected, const char *fmt,...);
 extern int  csprof_dbg(dbg_category flag);
+extern void csprof_set_dbg(dbg_category flag, int v);
 extern int  csprof_logfile_fd(void);
 
 extern void csprof_abort_w_info(void (*info)(void),const char *fmt,...);
@@ -54,6 +55,9 @@ extern void csprof_up_pmsg_count(void);
 #define NMSG(f,...) csprof_nmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
 #define EXIT_ON_ERROR(r,e,...) csprof_exit_on_error(r,e,__VA_ARGS__)
 #define DBG(f)      csprof_dbg(DBG_PREFIX(f))
+#define SET(f,v) csprof_set_dbg(DBG_PREFIX(f), v)
+#define ENABLE(f) SET(f,1)
+#define DISABLE(f) SET(f,0)
 #define ENABLED(f)         DBG(f)
 #define IF_ENABLED(f)      if ( ENABLED(f) )
 #define IF_DISABLED(f) if ( ! ENABLED(f) )

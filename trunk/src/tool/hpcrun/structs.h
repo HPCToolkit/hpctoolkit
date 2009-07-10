@@ -65,14 +65,12 @@ typedef struct csprof_state_s {
      whether we think there was a tail call since the last signal */
   unsigned int flags;
 
-  // #if defined(OLD_EPOCH)
   /* call stack data, stored in private memory */
   hpcrun_cct_t csdata;
   lush_cct_ctxt_t* csdata_ctxt; // creation context
 
   /* our notion of what the current epoch is */
   csprof_epoch_t *epoch;
-  // #endif
 
   /* other profiling states which we have seen */
   struct csprof_state_s *next;

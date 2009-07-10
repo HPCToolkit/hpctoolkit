@@ -74,23 +74,23 @@ struct csprof_epoch
   loadmap_src_t *loaded_modules;
 };
 
-csprof_epoch_t *csprof_static_epoch();
-csprof_epoch_t *csprof_epoch_new();
-void csprof_epoch_init(csprof_epoch_t *e);
-csprof_epoch_t *csprof_get_epoch();
+extern csprof_epoch_t* csprof_static_epoch(void);
+extern csprof_epoch_t* csprof_epoch_new(void);
+extern void csprof_epoch_init(csprof_epoch_t *e);
+extern csprof_epoch_t* csprof_get_epoch(void);
 
 void hpcrun_loadmap_add_module(const char *module_name, void *vaddr, void *mapaddr, size_t size);
 
 /* avoid weird dynamic loading conflicts */
 
-void csprof_epoch_lock();
-void csprof_epoch_unlock();
-int csprof_epoch_is_locked();
+extern void csprof_epoch_lock();
+extern void csprof_epoch_unlock();
+extern int csprof_epoch_is_locked();
 
-void hpcrun_finalize_current_epoch(void);
+extern void hpcrun_finalize_current_epoch(void);
 
-void csprof_write_all_epochs(FILE *);
-void hpcrun_write_current_loadmap(FILE *);
+extern void csprof_write_all_epochs(FILE *);
+extern void hpcrun_write_current_loadmap(FILE *);
 
 void hpcrun_epoch_reset(void);
 

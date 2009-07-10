@@ -117,7 +117,7 @@ lazy_open_data_file(void)
 }
 
 static int
-write_epochs(FILE *fs, csprof_state_t *state)
+write_epochs(FILE* fs, csprof_state_t* state)
 {
   uint32_t num_epochs = 0;
 
@@ -125,27 +125,30 @@ write_epochs(FILE *fs, csprof_state_t *state)
   // === # epochs === 
   //
 
-  csprof_epoch_t *current_epoch = csprof_get_epoch();
-  for(csprof_epoch_t *ep = current_epoch; ep != NULL; ep = ep->next) {
+  csprof_state_t* current_state = state;
+  for(csprof_state_t* s = current_state; s; s = s->next) {
     num_epochs++;
   }
 
+  TMSG(EPOCH, "Actual # epochs = %d", num_epochs);
 
-  // ******FIXME*********
-  //
-  //   Limit num_epochs to 1 FOR THE MOMENT!
-  //
-  num_epochs = (num_epochs > 1) ? 1 : num_epochs;
-  
   TMSG(DATA_WRITE, "writing # epochs = %d", num_epochs);
+#if defined(OLD_EPOCH_CNT)
   hpcfmt_byte4_fwrite(num_epochs, fs);
+#endif
 
   //
   // for each epoch ...
   //
 
-  for (int i=0; i < num_epochs; i++) {
+  for(csprof_state_t* s = current_state; s; s = s->next) {
 
+    if (ENABLED(SKIP_ZERO_METRIC_EPOCH)){
+      if (no_metric_samples(&(s->csdata))) {
+	TMSG(DATA_WRITE, "empty cct in epoch -- skipping");
+	continue;
+      }
+    }
     //
     //  == epoch header ==
     //
@@ -173,18 +176,19 @@ write_epochs(FILE *fs, csprof_state_t *state)
     // == load map ==
     //
 
-    TMSG(DATA_WRITE, "Preparing to write loadmaps");
+    TMSG(DATA_WRITE, "Preparing to write loadmap");
 
+    csprof_epoch_t* current_epoch = s->epoch;
     hpcrun_fmt_loadmap_fwrite(current_epoch->num_modules, current_epoch->loaded_modules, fs);
 
-    TMSG(DATA_WRITE, "Done writing loadmaps");
+    TMSG(DATA_WRITE, "Done writing loadmap");
 
     //
     // == cct ==
     //
 
-    hpcrun_cct_t    *cct           = &(state->csdata);
-    lush_cct_ctxt_t *lush_cct_ctxt = state->csdata_ctxt;
+    hpcrun_cct_t*    cct           = &(s->csdata);
+    lush_cct_ctxt_t* lush_cct_ctxt = s->csdata_ctxt;
 
     TMSG(DATA_WRITE, "Writing %ld nodes", cct->num_nodes);
 

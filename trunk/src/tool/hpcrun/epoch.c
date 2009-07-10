@@ -130,23 +130,24 @@ csprof_epoch_init(csprof_epoch_t *e)
 
 /* epochs are totally distinct from profiling states */
 csprof_epoch_t*
-csprof_epoch_new()
+csprof_epoch_new(void)
 {
   TMSG(EPOCH, " --NEW");
   TMSG(MALLOC," epoch-new");
   csprof_epoch_t *e = csprof_malloc(sizeof(csprof_epoch_t));
 
   if (e == NULL) {
-    /* memory subsystem hasn't been initialized yet (happens sometimes
-       with threaded programs) */
-    TMSG(EPOCH, "new epoch skipped (memory not initialized)");
+    EMSG("New epoch requested, but allocation failed!!");
     return NULL;
   }
   csprof_epoch_init(e);
-  
+
+  if (ENABLED(EPOCH)) {
+    ENABLE(EPOCH_CHK);
+  }
+
   return e;
 }
-
 
 void
 hpcrun_finalize_current_epoch(void)
@@ -163,7 +164,21 @@ hpcrun_finalize_current_epoch(void)
 void
 hpcrun_epoch_reset(void)
 {
+  //
+  // create a new epoch list:
+  //  preserve current loadmap
+  //  re-init cct
+  // reset epoch list for thread to point be a list consisting of only the new epoch
+  //
+  //  N.B. the notion of 'epoch' is called 'state' in the code
+  // FIXME: change the naming to reflect this
+  //
+  TMSG(EPOCH_RESET,"--started");
   csprof_state_t *state = csprof_get_state();
-
-  csprof_cct__init(&state->csdata, state->csdata_ctxt); // reset cct
+  csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
+  memcpy(newstate, state, sizeof(csprof_state_t));
+  TMSG(EPOCH_RESET, "check new epoch = old epoch = %d", newstate->epoch == state->epoch);
+  csprof_cct__init(&newstate->csdata, newstate->csdata_ctxt); // reset cct
+  hpcrun_reset_state(newstate);
+  TMSG(EPOCH_RESET," ==> no new state for next sample = %d", newstate->epoch == csprof_get_epoch());
 }

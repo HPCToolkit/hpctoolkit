@@ -154,6 +154,28 @@ hpcrun_copy_btrace(csprof_cct_node_t* n)
   return rv;
 }
 
+static bool
+all_metrics_0(csprof_cct_node_t* node)
+{
+  cct_metric_data_t* metrics = &(node->metrics[0]);
+  int num_metrics            = csprof_num_recorded_metrics();
+  bool rv = true;
+  for (int i=0; i < num_metrics; i++){
+    if (metrics[i].bits) {
+      rv = false;
+      break;
+    }
+  }
+  return rv;
+}
+
+bool
+no_metric_samples(hpcrun_cct_t* cct)
+{
+  return (cct->num_nodes == 1) &&
+          all_metrics_0(cct->tree_root);
+}
+
 
 // FIXME: WRITEME ?? possibly unneeded
 

@@ -83,7 +83,15 @@ csprof_state_t *csprof_get_state()
 #endif // CSPROF_THREADS
 #endif
 
-void csprof_set_state(csprof_state_t *state)
+void
+hpcrun_reset_state(csprof_state_t* state)
+{
+  state->next = NULL;
+  TD_GET(state) = state;
+}
+
+void
+csprof_set_state(csprof_state_t *state)
 {
   TMSG(STATE," --Set");
   state->next = TD_GET(state);
@@ -141,7 +149,75 @@ csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt)
   return HPCRUN_OK;
 }
 
-int csprof_state_fini(csprof_state_t *x){
+csprof_state_t*
+csprof_check_for_new_epoch(csprof_state_t *state)
+{
+  /* ugh, nasty race condition here:
+
+  1. shared library state has changed since the last profile
+  signal, so we enter the if;
+
+  2. somebody else dlclose()'s a library which holds something
+  located in our backtrace.  this is not in itself a problem,
+  since we don't bother doing anything on dlclose()...;
+
+  3. somebody else (thread in step 2 or a different thread)
+  dlopen()'s a new shared object, which begins an entirely
+  new epoch--one which does not include the shared object
+  which resides in our backtrace;
+
+  4. we create a new state which receives the epoch from step 3,
+  not step 1, which is wrong.
+
+  attempt to take baby steps to stop this.  more drastic action
+  would involve grabbing the epoch lock, but I believe that would
+  be unacceptably slow (both in the atomic instruction overhead
+  and the simple fact that most programs are not frequent users
+  of dl*). */
+
+  TMSG(EPOCH_CHK,"Likely need new cct");
+
+  csprof_epoch_t *current = csprof_get_epoch();
+
+  if(state->epoch != current) {
+    TMSG(MALLOC," -new_epoch-");
+    csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
+
+    TMSG(EPOCH, "check_new_epoch creating new state (new epoch/cct pair)...");
+
+    /* we don't have to go through the usual csprof_state_{init,alloc}
+       business here because most of the stuff we want is already
+       in `state' */
+    memcpy(newstate, state, sizeof(csprof_state_t));
+
+    /* we do have to reinitialize the tree, though */
+    csprof_cct__init(&newstate->csdata, newstate->csdata_ctxt);
+
+    /* and reinsert backtraces */
+    if(newstate->bufend - newstate->bufstk != 0) {
+      TMSG(EPOCH_CHK,"New backtraces must be reinserted");
+      newstate->treenode = NULL;
+      csprof_state_insert_backtrace(newstate, 0, /* pick one */
+                                    newstate->bufend - 1,
+                                    newstate->bufstk,
+				    (cct_metric_data_t){ .i = 0 });
+    }
+
+    /* and inform the state about its epoch */
+    newstate->epoch = current;
+
+    /* and finally, set the new state */
+    csprof_set_state(newstate);
+    DISABLE(EPOCH_CHK);
+    return newstate;
+  }
+  else {
+    return state;
+  }
+}
+
+int
+csprof_state_fini(csprof_state_t *x){
 
   TMSG(STATE,"--Fini");
   return HPCRUN_OK;

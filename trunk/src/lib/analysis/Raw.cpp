@@ -126,7 +126,6 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
 
   // ----------------- new file hdr -----------------------
   hpcrun_fmt_hdr_t new_hdr;
-  uint32_t num_epochs = 0;
   
   ret = hpcrun_fmt_hdr_fread(&new_hdr, fs, malloc);
   if (ret != HPCFILE_OK) {
@@ -134,34 +133,37 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   }
   hpcrun_fmt_hdr_fprint(&new_hdr, stdout);
   
+#if defined(OLD_EPOCH_CNT)
   //
   // read & print # epochs
   //
+  uint32_t num_epochs = 0;
 
   hpcfmt_byte4_fread(&num_epochs, fs);
   fprintf(stdout,"{num epochs = %d}\n", num_epochs);
+#endif
 
-  uint32_t num_ccts = num_epochs;
-
-  // ********** FIXME *****************
-  //
-  if (num_epochs > 1){
-    // DD("Temporarily reducing # epochs(=%u) to 1", num_epochs);
-    num_epochs = 1;
-  }
+  uint32_t num_ccts = 1;
+  int actual_epochs = 0;
 
   //
   // for each epoch ...
   //
 
+#if defined(OLD_EPOCH_COUNT)
   for (uint i=0; i < num_epochs; i++) {
-
+#endif
+  for (; !feof(fs); ) {
     //
     // == epoch hdr ==
     //
     hpcrun_fmt_epoch_hdr_t ehdr;
 
-    ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, fs, malloc);
+    int ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, fs, malloc);
+    if (ret == HPCFILE_EOF) {
+      break;
+    }
+    actual_epochs++;
     hpcrun_fmt_epoch_hdr_fprint(&ehdr, stdout);
 
     //
@@ -198,8 +200,8 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
       }
     }
   } // epoch list
-
   hpcio_close(fs);
+  printf("\n{Actual Epochs = %d}\n", actual_epochs);
 }
 
 

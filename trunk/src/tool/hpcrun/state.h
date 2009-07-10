@@ -24,12 +24,11 @@ typedef void state_t_setter(csprof_state_t *s);
 // getting and setting states independent of threading support
 // ---------------------------------------------------------
 
-void csprof_set_state(csprof_state_t *);
+extern void hpcrun_reset_state(csprof_state_t* state);
+extern void csprof_set_state(csprof_state_t* s);
 
-/* initialize various parts of a state */
-int csprof_state_init(csprof_state_t *);
-/* initialize dynamically allocated portions of a state */
-int csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt);
+extern int csprof_state_init(csprof_state_t* s);
+extern int csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt);
 
 extern csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *);
 

@@ -28,20 +28,20 @@ typedef struct {
 typedef struct _td_t {
   int id;
   hpcrun_meminfo_t memstore;
-  int             mem_low;
-  csprof_state_t* state;
-  lcp_list_t*     lcp_list;     // reverse order: head-of-list = current
-  FILE*           hpcrun_file;
-  sigjmp_buf_t    bad_unwind;
-  sigjmp_buf_t    mem_error;
-  int             eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
-  source_state_t  ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
-  int             handling_sample;
-  int             splay_lock;
-  int             fnbounds_lock;
-  int             suspend_sampling;
-  FILE*           trace_file;
-  uint64_t        last_time_us; // microseconds
+  int              mem_low;
+  csprof_state_t*  state;
+  lcp_list_t*      lcp_list;     // reverse order: head-of-list = current
+  FILE*            hpcrun_file;
+  sigjmp_buf_t     bad_unwind;
+  sigjmp_buf_t     mem_error;
+  int              eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
+  source_state_t   ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
+  int              handling_sample;
+  int              splay_lock;
+  int              fnbounds_lock;
+  int              suspend_sampling;
+  FILE*            trace_file;
+  uint64_t         last_time_us; // microseconds
 
   lushPthr_t      pthr_metrics;
 } thread_data_t;

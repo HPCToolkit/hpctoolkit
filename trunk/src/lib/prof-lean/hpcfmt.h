@@ -77,8 +77,9 @@ extern "C" {
 
   // FIXME: rename to HPCFMT_OK/ERR or just delete
 enum {
-  HPCFILE_OK = 1, 
-  HPCFILE_ERR = -1
+  HPCFILE_OK  =  1,
+  HPCFILE_ERR = -1,
+  HPCFILE_EOF = -2,
 };
 
 
@@ -258,7 +259,7 @@ int hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs);
 //   DBG macro -- convenience only
 //
 
-#define DD(...) do { fprintf(stderr, __VA_ARGS__); fprintf(stderr,"\n");} while (0)
+#define DD(...) if (getenv("HPC_VERB")) do { fprintf(stderr, __VA_ARGS__); fprintf(stderr,"\n");} while (0)
 
 #if defined(__cplusplus)
 } /* extern "C" */

@@ -63,6 +63,7 @@
 
 #include <stdio.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 //*************************** User Include Files ****************************
 
@@ -300,6 +301,7 @@ csprof_cct_print_path_to_root(hpcrun_cct_t *tree, csprof_cct_node_t* node);
 
 extern csprof_cct_node_t* hpcrun_copy_btrace(csprof_cct_node_t* n);
 extern void copy_thr_ctxt(lush_cct_ctxt_t* thr_ctxt);
+extern bool no_metric_samples(hpcrun_cct_t* t);
 
 /* private interface */
 int csprof_cct__write_txt_q(hpcrun_cct_t *);
