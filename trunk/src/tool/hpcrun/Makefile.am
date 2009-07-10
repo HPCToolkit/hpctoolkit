@@ -250,8 +250,6 @@ if HOST_CPU_PPC
     libcsprof_o_SOURCES   += $(MY_PPC_FILES)
     libcsprof_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
     libcsprof_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
-    libcsprof_la_CFLAGS += -D__ppc64__
-    libcsprof_o_CFLAGS  += -D__ppc64__
 endif
 
 if HOST_CPU_X86
