@@ -99,7 +99,7 @@
                	: "memory")
 
 
-#elif defined(__ppc64__)
+#elif defined(__powerpc__)
 
   // lwarx r_dest, addr_offset, r_addr
   // stwcx r_src,  addr_offset, r_addr
