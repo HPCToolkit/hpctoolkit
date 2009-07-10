@@ -342,38 +342,45 @@ Profile::make(const char* fnm, FILE* outfs)
 
   loadmap_t loadmap_tbl;
 
+#if defined(OLD_EPOCH_CNT)
   uint32_t num_epochs = 0;
+#endif
 
   // Populate metadata structure FOR NOW
   //  extract target field from nvpairs in hdr
 
   // char *target = hpcrun_fmt_nvpair_search(&(hdr.nvps), "target");
 
+#if defined(OLD_EPOCH_CNT)
   //
   // read # epochs
   //
 
-  // FIXME: convert to read till no more epochs
-  //
   hpcfmt_byte4_fread(&num_epochs, fs);
-
+#endif // OLD_EPOCH_CNT
 #if defined(OLD_LIMIT_CCTS)
   uint32_t num_ccts = num_epochs > 1 ? 1 : 1;
 #endif
-  uint32_t num_ccts = num_epochs;
+  uint32_t num_ccts = 1;
 
   // ------------------------------------------------------------
   // Read each epoch and merge them to form one Profile
   // ------------------------------------------------------------
   Profile* prof = NULL;
 
+#if defined(OLD_EPOCH_COUNT)
   // ************ FIXME *************************
   //
   if (num_epochs > 1) {
-    DD("**** DD multiple epochs detected *****");
+    DD("**** DD multiple epochs (%d)detected *****", num_epochs);
     //    num_epochs = 1;
   }
+
+
   for (uint i = 0; i < num_epochs; ++i) {
+#endif
+  int ctr = 0;
+  for (; !feof(fs);) {
 
     //
     // == epoch header ==
@@ -382,9 +389,15 @@ Profile::make(const char* fnm, FILE* outfs)
     hpcrun_fmt_epoch_hdr_t ehdr;
 
     ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, fs, hpcfmt_alloc);
+
+    if (ret == HPCFILE_EOF) {
+      break;
+    }
     if (ret != HPCFILE_OK) {
       DIAG_Throw("error reading 'epoch-hdr'");
     }
+
+    DD("*** DD process epoch %d", ++ctr);
 
     //
     // read metrics 
@@ -418,6 +431,11 @@ Profile::make(const char* fnm, FILE* outfs)
   // ------------------------------------------------------------
   hpcio_close(fs);
 
+  DD(" **** DD done with file");
+  if (! prof) {
+    DD(" *** DD NULL profile ==> no epochs??");
+  }
+
   return prof;
 }
 
@@ -428,14 +446,6 @@ Profile::hpcrun_fmt_epoch_fread(Profile* prof, uint32_t num_ccts, metric_tbl_t* 
 				FILE* infs, std::string locStr, FILE* outfs)
 {
   using namespace Prof;
-
-  // ------------------------------------------------------------
-  // Epoch header (epoch-hdr)
-  // ------------------------------------------------------------
-
-  // ------------------------------------------------------------
-  // Metric table (metric-tbl)
-  // ------------------------------------------------------------
 
   uint num_metrics = metadata->len;
   DIAG_Msg(3, locStr << ": metrics found: " << num_metrics);

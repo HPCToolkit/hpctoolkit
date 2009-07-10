@@ -225,9 +225,14 @@ hpcrun_fmt_epoch_hdr_fwrite(FILE *out, uint64_t flags, uint32_t ra_distance, uin
 }
 
 int
-hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *fs, alloc_fn alloc)
+hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs, alloc_fn alloc)
 {
-  fread(&(ehdr->tag), 1, sizeof(EPOCH_TAG)-1, fs);
+  strncpy(&(ehdr->tag[0]), "XXXXXXXXXX", sizeof(EPOCH_TAG)-1);
+  int nr = fread(&(ehdr->tag), 1, sizeof(EPOCH_TAG)-1, fs);
+  
+  if (!nr) { // 0 bytes read --> EOF
+    return HPCFILE_EOF;
+  }
   ehdr->tag[sizeof(EPOCH_TAG)-1] = '\0';
 
   if (strcmp(ehdr->tag, EPOCH_TAG) != 0){

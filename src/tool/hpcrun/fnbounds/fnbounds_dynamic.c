@@ -457,8 +457,8 @@ fnbounds_epoch_finalize_locked()
 
   for (dso_info = dso_open_list; dso_info; dso_info = dso_info->next) {
     hpcrun_loadmap_add_module(dso_info->name, NULL /* no vaddr */,
-			    dso_info->start_addr, 
-			    dso_info->end_addr - dso_info->start_addr);
+			      dso_info->start_addr, 
+			      dso_info->end_addr - dso_info->start_addr);
   }
 
   // Purge the DSO closed list: munmap() the fnbounds array, delete

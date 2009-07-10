@@ -38,6 +38,18 @@ hpcrun_lcp_loadmap_init(lcp_t* lcp)
 lcp_t*
 hpcrun_static_lcp(void)
 {
+  TMSG(LCP,"returning static lcp");
   return &_lcp;
 }
 
+lcp_t*
+hpcrun_lcp_new(void)
+{
+  TMSG(LCP,"create new lcp");
+  lcp_t* rv = (lcp_t*) csprof_malloc(sizeof(lcp_t));
+  rv->loadmap = csprof_epoch_new();
+  // cct_new
+  // ctxt = NULL
+
+  return rv;
+}

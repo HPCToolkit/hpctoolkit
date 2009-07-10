@@ -109,7 +109,7 @@ static flag_list_t all_list = {
 static int dbg_flags[N_DBG_CATEGORIES];
 
 void
-dbg_set_flag(pmsg_category flag,int val)
+dbg_set_flag(pmsg_category flag, int val)
 {
   dbg_flags[flag] = val;
 }
@@ -179,6 +179,12 @@ int
 csprof_dbg(dbg_category flag)
 {
   return dbg_flags[flag];
+}
+
+void
+csprof_set_dbg(dbg_category flag, int val)
+{
+  dbg_flags[flag] = val;
 }
 
 #ifdef DBG_PMSG

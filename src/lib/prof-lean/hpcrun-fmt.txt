@@ -4,7 +4,7 @@ $Id$
 hpcrun binary data format (see "Abbreviation notes" below)
 =============================================================================
 
-fmt-hdr [epoch]*
+fmt-hdr {epoch}*
   
 ------------------------------------------------------------
 
@@ -72,6 +72,8 @@ Abbreviation notes:
   - [x]*  : a possibly empty list of x: #-of-x{4b} (x)*
 
   - [x]+  : a non-empty list of x:      #-of-x{4b} (x)+
+
+  - {x}*  : a possibly empty list of x, BUT no preceding count!
 
 
 ==============================================================================
