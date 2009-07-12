@@ -78,7 +78,7 @@ def do_log_file(fname):
         if l.startswith('SUMMARY'):
             obj = re.search(summary_re, l)
             if not obj:
-                warn('bad SUMMARY line:' % fname)
+                warn('bad SUMMARY line in: %s' % fname)
                 file.close
                 return
             samples, blocks, errors = map(int, obj.groups())
@@ -91,7 +91,7 @@ def do_log_file(fname):
             break
         l = file.readline()
     else:
-        warn('unable to find SUMMARY line:' % fname)
+        warn('unable to find SUMMARY line in: %s' % fname)
 
     file.close
     return
