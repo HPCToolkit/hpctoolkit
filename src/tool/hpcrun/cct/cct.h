@@ -155,15 +155,6 @@ typedef struct csprof_cct_node_s {
   struct csprof_cct_node_s *next_sibling;
 
   // ---------------------------------------------------------
-  // 
-  // ---------------------------------------------------------
-
-  void *sp;
-  /* sp is only used if we are using trampolines (i.e.,
-     CSPROF_TRAMPOLINE_BACKEND is defined); otherwise its value is
-     set to NULL  */
-
-  // ---------------------------------------------------------
   // a persistent node id is assigned for each node. this id
   // is used both to reassemble a tree when reading it from 
   // a file as well as to identify call paths. a call path

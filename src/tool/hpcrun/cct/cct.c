@@ -54,8 +54,7 @@
 static csprof_cct_node_t*
 csprof_cct_node__find_child(csprof_cct_node_t* x,
 			    lush_assoc_info_t as_info, void* ip,
-			    lush_lip_t* lip,
-			    void* sp);
+			    lush_lip_t* lip);
 
 static int
 csprof_cct_node__link(csprof_cct_node_t *, csprof_cct_node_t *);
@@ -94,7 +93,6 @@ static csprof_cct_node_t *
 csprof_cct_node__create(lush_assoc_info_t as_info, 
 			void* ip,
 			lush_lip_t* lip,
-			void* sp,
 			hpcrun_cct_t *x)
 {
 
@@ -114,7 +112,6 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
   node->as_info = as_info; // LUSH
   node->ip = ip;
   node->lip = lip;         // LUSH
-  node->sp = sp;
 
   node->persistent_id = new_persistent_id();
 
@@ -230,12 +227,11 @@ csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
 static csprof_cct_node_t*
 csprof_cct_node__find_child(csprof_cct_node_t* x,
 			    lush_assoc_info_t as_info, void* ip,
-			    lush_lip_t* lip,
-			    void* sp)
+			    lush_lip_t* lip)
 {
 #ifdef CSPROF_TRAMPOLINE_BACKEND
   // FIXME:LUSH: match assoc and lip
-  struct rbtree_node *node = rbtree_search(&x->tree_children, ip, sp);
+  struct rbtree_node *node = rbtree_search(&x->tree_children, ip);
 
   return node ? DATA(node) : NULL;
 #else
@@ -291,7 +287,7 @@ csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
 #endif
 
   // introduce bogus root to handle possible forests
-  x->tree_root = csprof_cct_node__create(lush_assoc_info_NULL, 0, NULL, NULL, x);
+  x->tree_root = csprof_cct_node__create(lush_assoc_info_NULL, 0, NULL, x);
 
   x->tree_root->parent = (ctxt)? ctxt->context : NULL;
   x->num_nodes = 1;
@@ -311,10 +307,10 @@ csprof_cct__fini(hpcrun_cct_t *x)
 csprof_cct_node_t*
 csprof_cct_get_child(hpcrun_cct_t *cct, csprof_cct_node_t *parent, csprof_frame_t *frm)
 {
-  csprof_cct_node_t *c = csprof_cct_node__find_child(parent, frm->as_info, frm->ip, frm->lip, frm->sp);  
+  csprof_cct_node_t *c = csprof_cct_node__find_child(parent, frm->as_info, frm->ip, frm->lip);  
 
   if (!c) {
-    c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, frm->sp, cct);
+    c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, cct);
     csprof_cct_node__parent_insert(c, parent);
     cct->num_nodes++;
   }
@@ -342,41 +338,20 @@ csprof_cct_insert_backtrace(hpcrun_cct_t *x, void *treenode, int metric_id,
     return NULL;
   }
 
-#if 0
-  if (csprof_cct__isempty(x)) {
-    // introduce bogus root to handle possible forests
-    x->tree_root = csprof_cct_node__create(frm->as_info, frm->ip, 
-					   frm->lip, frm->sp, x);
-    tn = x->tree_root;
-    x->num_nodes = 1;
-
-    TMSG(CCT, "beg ip %#lx | sp %#lx", frm->ip, frm->sp);
-    TMSG(CCT, "root ip %#lx | sp %#lx", tn->ip, tn->sp);
-
-    csprof_MY_ADVANCE_PATH_FRAME(frm);
-
-    TMSG(CCT, "nxt beg ip %#lx | sp %#lx", frm->ip, frm->sp);
-  }
-#endif
-
   if (tn == NULL) {
     tn = x->tree_root;
 
-    TMSG(CCT, "(NULL) root ip %#lx | sp %#lx", tn->ip, tn->sp);
-    TMSG(CCT, "beg ip %#lx | sp %#lx", frm->ip, frm->sp);
+    TMSG(CCT, "(NULL) root ip %#lx", tn->ip);
+    TMSG(CCT, "beg ip %#lx", frm->ip);
 
     // tallent: what is this for?
     /* we don't want the tree root calling itself */
-    if (frm->ip == tn->ip 
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-	&& frm->sp == tn->sp
-#endif
-	) {
+    if (frm->ip == tn->ip) {
       TMSG(CCT,"beg ip == tn ip = %lx", tn->ip);
       csprof_MY_ADVANCE_PATH_FRAME(frm);
     }
 
-    TMSG(CCT, "beg ip %#lx | sp %#lx", frm->ip, frm->sp);
+    TMSG(CCT, "beg ip %#lx", frm->ip);
   }
 
   while (1) {
@@ -388,8 +363,7 @@ csprof_cct_insert_backtrace(hpcrun_cct_t *x, void *treenode, int metric_id,
     TMSG(CCT,"finding child in tree w ip = %lx", frm->ip);
 
     csprof_cct_node_t *c;
-    c = csprof_cct_node__find_child(tn, frm->as_info, frm->ip, frm->lip, 
-				    frm->sp);
+    c = csprof_cct_node__find_child(tn, frm->as_info, frm->ip, frm->lip);
     if (c) {
       // child exists; recur
       TMSG(CCT,"found child");
@@ -410,7 +384,7 @@ csprof_cct_insert_backtrace(hpcrun_cct_t *x, void *treenode, int metric_id,
       
       while (!csprof_MY_IS_PATH_FRAME_AT_END(frm)) {
 	TMSG(CCT,"create node w ip = %lx",frm->ip);
-	c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, frm->sp, x);
+	c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, x);
 	csprof_cct_node__parent_insert(c, tn);
 	x->num_nodes++;
 	
