@@ -6,7 +6,7 @@ void files_set_executable(char *execname);
 
 void files_trace_name(char *filename, unsigned int mpi_rank, int len);
 void files_profile_name(char *filename, unsigned int mpi_rank, int len);
-void files_log_name(char *filename, int len);
+void files_log_name(char *filename, unsigned int mpi_rank, int len);
 
 const char *files_executable_pathname(void);
 

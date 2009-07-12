@@ -543,13 +543,10 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
 	   module_name, start, end, csprof_num_samples_total());
 
       if (first_warning) { 
-	char log_file[PATH_MAX];
-	files_log_name(log_file, PATH_MAX);
-
 	first_warning = 0;
 
 	STDERR_MSG("hpcrun: warning - load modules at overlapping"
-	   " addresses. See log file %s for implications.", log_file);
+	   " addresses. Check your log files for the implications.");
 
 	EMSG("CAUTION [OVERLAPPING LOAD MODULES] All samples within load\n"
 	   "    modules that map to overlapping address ranges will currently\n"
