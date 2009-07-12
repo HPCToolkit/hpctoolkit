@@ -227,7 +227,7 @@ pmsg_init()
 
   // get name for log file 
   char log_name[PATH_MAX];
-  files_log_name(log_name, PATH_MAX);
+  files_log_name(log_name, 0, PATH_MAX);
 
   // open log file
   log_file = fopen(log_name,"w");
@@ -242,6 +242,21 @@ pmsg_fini(void)
 
   if (log_file != stderr){
     fclose(log_file);
+
+    //----------------------------------------------------------------------
+    // if this is an execution of an MPI program, we opened the log file 
+    // before the MPI rank was known. thus, the name of the log file is 
+    // missing the MPI rank. fix that now by renaming the log file to what 
+    // it should be.
+    //----------------------------------------------------------------------
+    int rank = monitor_mpi_comm_rank();
+    if (rank >= 0) {
+      char old[PATH_MAX];
+      char new[PATH_MAX];
+      files_log_name(old, 0, PATH_MAX);
+      files_log_name(new, rank, PATH_MAX);
+      rename(old, new);
+    }
   }
 }
 

@@ -94,11 +94,9 @@ files_profile_name(char *filename, unsigned int mpi, int len)
 
 
 void
-files_log_name(char *filename, int len)
+files_log_name(char *filename, unsigned int mpi, int len)
 {
-  sprintf(filename, "%s/%s-%lx-%u.%s", 
-	  output_directory, executable_name, os_hostid(), 
-	  os_pid(), CSPROF_LOG_FNM_SFX);
+  files_name(filename, mpi, CSPROF_LOG_FNM_SFX);
 }
 
 void files_set_job_id() 
