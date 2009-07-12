@@ -93,16 +93,10 @@ trace_append(unsigned int call_path_id)
     double microtime = tv.tv_usec + tv.tv_sec * 1000000;
 
     thread_data_t *td = csprof_get_thread_data();
-#if 1
+
     int written = hpcio_fwrite_be8((uint64_t*) &microtime, td->trace_file);
     written += hpcio_fwrite_be4((uint32_t*)&call_path_id, td->trace_file);
     trace_file_validate(written == (sizeof(double) + sizeof(int)), "append");
-#else
-#define NITEMS 1
-    trecord_t record = { microtime, call_path_id };
-    int written = fwrite(&record, TRECORD_SIZE, NITEMS, td->trace_file);
-    trace_file_validate(written == NITEMS, "append");
-#endif
   }
 }
 
