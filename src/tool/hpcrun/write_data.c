@@ -133,9 +133,6 @@ write_epochs(FILE* fs, csprof_state_t* state)
   TMSG(EPOCH, "Actual # epochs = %d", num_epochs);
 
   TMSG(DATA_WRITE, "writing # epochs = %d", num_epochs);
-#if defined(OLD_EPOCH_CNT)
-  hpcfmt_byte4_fwrite(num_epochs, fs);
-#endif
 
   //
   // for each epoch ...

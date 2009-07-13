@@ -591,28 +591,6 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 {
   int ret = HPCRUN_OK;
 
-#if defined(OLD_LIP)
-  // ---------------------------------------------------------
-  // Compute LIP id
-  // ---------------------------------------------------------
-  hpcfmt_uint_t id_lip = 0;
-
-  lush_assoc_t as = lush_assoc_info__get_assoc(node->as_info);
-
-  if (as != LUSH_ASSOC_NULL) {
-    if (lush_assoc_info_is_root_note(node->as_info)
-	|| as == LUSH_ASSOC_1_to_M) {
-      id_lip = node->persistent_id;
-      if (node->lip != NULL) {
-	//  hpcfile_cstree_lip__fwrite(node->lip, fs); FIXME: what to do instead
-	id_lip = node->persistent_id; // FIXME: what to do
-      }
-    }
-    else {
-      id_lip = node->persistent_id;
-    }
-  }
-#endif // defined(OLD_LIP)
 
   // ---------------------------------------------------------
   // Write the node
