@@ -108,6 +108,8 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   TMSG(MALLOC," thread_data_init state");
   csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
 
+  thr_ctxt = copy_thr_ctxt(thr_ctxt);
+
   csprof_set_state(state);
   csprof_state_init(state);
   csprof_state_alloc(state, thr_ctxt);

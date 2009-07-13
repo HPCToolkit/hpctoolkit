@@ -161,7 +161,7 @@ typedef struct csprof_cct_node_s {
   // can simply be represented by the node id of the deepest
   // node in the path.
   // ---------------------------------------------------------
-  int persistent_id;
+  int32_t persistent_id;
 
   // ---------------------------------------------------------
   // metrics (N.B.: MUST APPEAR AT END! cf. csprof_cct_node__create)
@@ -291,7 +291,7 @@ void
 csprof_cct_print_path_to_root(hpcrun_cct_t *tree, csprof_cct_node_t* node);
 
 extern csprof_cct_node_t* hpcrun_copy_btrace(csprof_cct_node_t* n);
-extern void copy_thr_ctxt(lush_cct_ctxt_t* thr_ctxt);
+extern lush_cct_ctxt_t* copy_thr_ctxt(lush_cct_ctxt_t* thr_ctxt);
 extern bool no_metric_samples(hpcrun_cct_t* t);
 
 /* private interface */
