@@ -271,10 +271,7 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 
   hpcrun_thread_data_new();
   hpcrun_thread_memory_init();
-  hpcrun_thread_data_init(id, NULL);
-
-  // POSSIBLE MEMORY PROBLEM: if thr_ctxt is reclaimed before copy can be made !!!
-  copy_thr_ctxt(thr_ctxt);
+  hpcrun_thread_data_init(id, thr_ctxt);
 
   csprof_state_t* state = TD_GET(state);
 

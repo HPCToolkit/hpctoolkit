@@ -282,6 +282,10 @@ monitor_thread_pre_create(void)
   }
 
   int metric_id = 0; // FIXME: obtain index of first metric
+  //FIXME: skipInner below really needs to be 1. right now, it is
+  //       being left as 0 because hpcprof (in some cases) yields
+  //       the name monitor_adjust_stack rather than 
+  //       pthread_create for the resulting innermost frame.
   csprof_cct_node_t* n =
     hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/,
 			   0/*skipInner*/, 1/*isSync*/);
