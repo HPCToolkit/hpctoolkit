@@ -150,10 +150,6 @@ csprof_init_internal(void)
 {
   csprof_epoch_init(csprof_static_epoch());
 
-#if defined(OLD_THREAD)
-  csprof_thread_data_init(0,CSPROF_MEM_SZ_DEFAULT,0, NULL);
-#endif
-
   hpcrun_thread_data_new();
   hpcrun_thread_memory_init();
   hpcrun_thread_data_init(0, NULL);
@@ -276,10 +272,6 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
   hpcrun_thread_data_new();
   hpcrun_thread_memory_init();
   hpcrun_thread_data_init(id, NULL);
-
-#if defined(OLD_THREAD)
-  csprof_thread_data_init(id,1,0,thr_ctxt);
-#endif
 
   // POSSIBLE MEMORY PROBLEM: if thr_ctxt is reclaimed before copy can be made !!!
   copy_thr_ctxt(thr_ctxt);
