@@ -140,10 +140,9 @@ write_epochs(FILE* fs, csprof_state_t* state)
 
   for(csprof_state_t* s = current_state; s; s = s->next) {
 
-    if (ENABLED(SKIP_ZERO_METRIC_EPOCH)){
-      if (no_metric_samples(&(s->csdata))) {
-	TMSG(DATA_WRITE, "empty cct in epoch -- skipping");
-	continue;
+    if (! ENABLED(WRITE_EMPTY_EPOCH)){
+      if (hpcrun_empty_cct(&(s->csdata))){
+	EMSG("Empty cct encountered: it is not written out");
       }
     }
     //
