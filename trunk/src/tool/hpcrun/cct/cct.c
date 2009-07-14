@@ -171,10 +171,20 @@ all_metrics_0(csprof_cct_node_t* node)
 }
 
 bool
+hpcrun_empty_cct(hpcrun_cct_t* cct)
+{
+  bool rv = (cct->num_nodes == 1);
+  if (rv) {
+    TMSG(CCT, "cct %p is empty", cct);
+  }
+  return rv;
+}
+
+bool
 no_metric_samples(hpcrun_cct_t* cct)
 {
   return (cct->num_nodes == 1) &&
-          all_metrics_0(cct->tree_root);
+    ((cct->tree_root->persistent_id == 0) || (all_metrics_0(cct->tree_root)));
 }
 
 

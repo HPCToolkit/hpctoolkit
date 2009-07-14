@@ -342,43 +342,20 @@ Profile::make(const char* fnm, FILE* outfs)
 
   loadmap_t loadmap_tbl;
 
-#if defined(OLD_EPOCH_CNT)
-  uint32_t num_epochs = 0;
-#endif
-
   // Populate metadata structure FOR NOW
   //  extract target field from nvpairs in hdr
 
   // char *target = hpcrun_fmt_nvpair_search(&(hdr.nvps), "target");
 
-#if defined(OLD_EPOCH_CNT)
-  //
-  // read # epochs
-  //
-
-  hpcfmt_byte4_fread(&num_epochs, fs);
-#endif // OLD_EPOCH_CNT
-#if defined(OLD_LIMIT_CCTS)
-  uint32_t num_ccts = num_epochs > 1 ? 1 : 1;
-#endif
   uint32_t num_ccts = 1;
 
   // ------------------------------------------------------------
   // Read each epoch and merge them to form one Profile
   // ------------------------------------------------------------
+  
   Profile* prof = NULL;
+  Profile* merged_prof = prof;
 
-#if defined(OLD_EPOCH_COUNT)
-  // ************ FIXME *************************
-  //
-  if (num_epochs > 1) {
-    DD("**** DD multiple epochs (%d)detected *****", num_epochs);
-    //    num_epochs = 1;
-  }
-
-
-  for (uint i = 0; i < num_epochs; ++i) {
-#endif
   int ctr = 0;
   for (; !feof(fs);) {
 
@@ -424,6 +401,12 @@ Profile::make(const char* fnm, FILE* outfs)
     }
     hpcrun_fmt_metric_tbl_free(&metric_tbl, hpcfmt_free);
     // free loadmap ??
+    if (! merged_prof) {
+      merged_prof = prof;
+    }
+    else {
+      merged_prof->merge(*prof);
+    }
   } // epoch loop
 
   // ------------------------------------------------------------
@@ -432,11 +415,14 @@ Profile::make(const char* fnm, FILE* outfs)
   hpcio_close(fs);
 
   DD(" **** DD done with file");
-  if (! prof) {
-    DD(" *** DD NULL profile ==> no epochs??");
+
+  if (! merged_prof) {
+    DD(" *** DD profile is null ==> No epochs, just a header");
+    merged_prof = new Profile(0);
+    DD("*** DD created new Profile with no metrics");
   }
 
-  return prof;
+  return merged_prof;
 }
 
 
@@ -544,20 +530,6 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
   
   for (uint i = 0; i < num_nodes; ++i) {
 
-#if defined(OLD_CCT)
-    // ----------------------------------------------------------
-    // Read the LIP
-    // ----------------------------------------------------------
-
-    hpcfmt_uint_t lip_id = 0;
-    lush_lip_t* lip = NULL;
-
-    lip = new lush_lip_t;
-    ret = hpcfile_cstree_lip__fread(lip, infs);
-    if (ret != HPCFILE_OK) { 
-      DIAG_Throw("error reading CCT LIP" << lip_id); // FIXME: init lip_id
-    }
-#endif // defined(OLD_CCT)
 
     // ----------------------------------------------------------
     // Read the node
@@ -586,25 +558,10 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
 	hpcfile_cstree_lip__fprint(lip, lip_id, outfs, "");
       }
     }
-    // #endif // defined(OLD_CCT)
 
     if (outfs) {
       hpcfile_cstree_node__fprint(&ndata, outfs, "  ");
     }
-
-#if defined(OLD_CCT)
-    // Find LIP for node
-    lush_lip_t* node_lip = NULL;
-    if (ndata.data.lip.id != 0) {
-      LipIdToLipMap::iterator it = lipMap.find(ndata.data.lip.id);
-      if (it != lipMap.end()) {
-	node_lip = it->second;
-      }
-      else {
-	DIAG_Throw("Invalid LIP (" << ndata.data.lip.id << ") for node " << ndata.id);
-      }
-    }
-#endif
 
     ndata.data.lip.ptr = lip;
 
