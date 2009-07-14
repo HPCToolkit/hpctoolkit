@@ -19,7 +19,7 @@ import sys
 # Global variables
 DATA = []
 DIRLIST = []
-PID2INDEX = {}
+BASE2INDEX = {}
 MAX_TID = 0
 NUM_ERRORS = 0
 
@@ -27,13 +27,11 @@ NUM_ERRORS = 0
 BLOCKS = 'blocks'
 ERRORS = 'errors'
 SAMPLES = 'samples'
+BASE = 'base'
 FILESIZE = 'filesize'
-PID = 'pid'
 NAME = 'name'
 
 # Regular expressions
-log_re = re.compile(r'-(\d+)\.log')
-hpcrun_re = re.compile(r'-(\d+)-[0-9a-fA-F]+-(\d+).hpcrun')
 summary_re = re.compile(r'recorded:\s*(\d+).+blocked:\s*(\d+).+errant:\s*(\d+)')
 
 
@@ -56,17 +54,29 @@ def usage():
 The directory is an HPCToolkit measurements directory,
 or else the current directory if omitted.''' % sys.argv[0]
     sys.exit(0)
-    
+
+
+#
+# Hpcrun and log file names:
+#   <program-name>-<mpi-rank>-<thread-id>-<machine-id>-<pid>.hpcrun
+#   <program-name>-<mpi-rank>-<thread-id>-<machine-id>-<pid>.log
+#
+def parse_name(fname, ext):
+    l = fname[0 : len(fname) - len(ext)].rsplit('-', 4)
+    if len(l) != 5:
+        return (None, None)
+    base = '-'.join([l[0], l[1], l[3], l[4]])
+    tid = int(l[2])
+    return (base, tid)
+
 
 def do_log_file(fname):
-    global DATA, PID2INDEX
+    global DATA, BASE2INDEX
 
-    obj = re.search(log_re, fname)
-    if not obj:
+    (base, tid) = parse_name(fname, '.log')
+    if not base:
         warn('bad .log file name: %s' % fname)
         return
-    pid = int(obj.group(1))
-
     try:
         file = open(fname, 'r')
     except IOError:
@@ -86,8 +96,8 @@ def do_log_file(fname):
                 { BLOCKS : blocks,
                   ERRORS : errors,
                   SAMPLES : samples,
-                  PID : pid })
-            PID2INDEX[pid] = len(DATA) - 1
+                  BASE : base })
+            BASE2INDEX[base] = len(DATA) - 1
             break
         l = file.readline()
     else:
@@ -98,15 +108,14 @@ def do_log_file(fname):
 
 
 def do_hpcrun_file(fname):
-    global DATA, PID2INDEX, MAX_TID
+    global DATA, BASE2INDEX, MAX_TID
 
-    obj = re.search(hpcrun_re, fname)
-    if not obj:
+    (base, tid) = parse_name(fname, '.hpcrun')
+    if not base:
         warn('bad .hpcrun file name: %s' % fname)
         return
-    tid, pid = map(int, obj.groups())
-    n = PID2INDEX[pid]
-    if DATA[n][PID] != pid:
+    n = BASE2INDEX[base]
+    if DATA[n][BASE] != base:
         warn('internal DATA corruption for: %s' % fname)
         return
 
@@ -123,7 +132,7 @@ def do_hpcrun_file(fname):
 
 def display_metric(title, label, metric):
     global DATA
-    
+
     DATA.sort(lambda x, y : cmp(x[metric], y[metric]))
     nproc = len(DATA)
     total = sum([elt[metric] for elt in DATA])
@@ -174,7 +183,7 @@ if len(args) > 0:
         os.chdir(args[0])
     except OSError:
         sys.exit('unable to cd to: %s' % args[0])
-        
+
 DIRLIST = os.listdir('.')
 for file in DIRLIST:
     if file.endswith('.log'):
