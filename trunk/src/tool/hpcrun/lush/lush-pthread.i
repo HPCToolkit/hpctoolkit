@@ -109,12 +109,12 @@ typedef struct lushPthr {
   long* ps_num_procs;        // available processor cores
   long* ps_num_threads;
 
-  long* ps_num_working;      // working (1) + (2) + (3)
-  long* ps_num_working_lock; // working (1)
-  //    ps_num_working_othr  // working (2) + (3)
+  long* ps_num_working;      // working (W_l) + (W_c) + (W_o)
+  long* ps_num_working_lock; // working (W_l)
+  //    ps_num_working_othr  // working (W_c) + (W_o)
 
-  //    ps_num_idle_lock     // idleness [1]
-  long* ps_num_idle_cond;    // idleness [2a] + [2b]
+  //    ps_num_idle_lock     // idleness (I_l)
+  long* ps_num_idle_cond;    // idleness (I_cl) + (I_cv)
 
   // -------------------------------------------------------
   // LUSH_PTHR_FN_TY == 3
