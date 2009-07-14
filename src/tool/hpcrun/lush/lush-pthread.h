@@ -274,24 +274,6 @@ lushPthr_condwait_post_ty1(lushPthr_t* x)
 // 2. Attribute idleness to working threads (3rd person)
 //***************************************************************************
 
-// Working threads are in one of three states
-//   (1)  locked && ~directly_in_cond
-//   (2)  locked &&  directly_in_cond
-//   (3) ~locked
-//
-//   NOTE: A thread in state (2) could additionally grab a lock
-//   unrelated to the cond-var, moving to state (1) until the second
-//   lock is released.
-//
-// Idle threads are in one of three state (mutually exclusive):
-//   [1]  blocked on a lock
-//   [2a] blocked on a cond-var lock
-//   [2b] blocked on a cond-var signal
-//   [--] none of the above, but blocking on the scheduler (not
-// 	  interesting, assuming all cores are utilized)
-//
-//   NOTE: A thread blocking in state [1] could be working within a cond (2).
-
 static inline bool
 lushPthr_isDirectlyInCond(lushPthr_t* x)
 {
@@ -666,7 +648,7 @@ lushPthr_makeSyncObjData_spin(lushPthr_t* restrict pthr,
 
 static inline lushPtr_SyncObjData_t*
 lushPthr_demandSyncObjData_spin(lushPthr_t* restrict pthr,
-				volatile pthread_spinlock_t* restrict lock)
+				pthread_spinlock_t* restrict lock)
 {
   // test-and-test-and-set
   if (!lushPthr_isSyncDataPointer(*lock)) {

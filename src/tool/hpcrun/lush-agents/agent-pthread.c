@@ -202,15 +202,11 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     
     double num_working      = *(pthr->ps_num_working);
     double num_working_lock = *(pthr->ps_num_working_lock);
-    double num_idle_cond    = MAX(0, *(pthr->ps_num_idle_cond)); // timing windw
-    
+    double num_idle_cond    = MAX(0, *(pthr->ps_num_idle_cond)); // timing!
+
     // INVARIANT: Since this thread is working, it is either working
     // while locked or it is working as 'other' (within a condition
     // variable critical section or without a lock).
-    if (is_working_lock) {
-      num_working_lock = MAX(1, num_working_lock); // account for timing windows
-    }
-
     double idleness = 0.0;
     if (is_working_lock) {
       // -----------------------------------------------------
@@ -218,6 +214,7 @@ LUSHI_do_metric(uint64_t incrMetricIn,
       // -----------------------------------------------------
       double num_idle = (*(pthr->ps_num_threads) - num_working);
       double num_idle_lock = MAX(0, num_idle - num_idle_cond);
+      num_working_lock = MAX(1, num_working_lock); // timing windows
       idleness = (num_idle_lock / num_working_lock);
     }
     else {
