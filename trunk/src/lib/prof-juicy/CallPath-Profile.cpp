@@ -732,33 +732,41 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id,
 
 
 // 1. Create a (PGM) root for the CCT
-// 2. Remove the 'monitor_main' placeholder root 
+// 2. Remove the two outermost frames: 
+//      "synthetic-root -> monitor_main"
 static void
 cct_fixRoot(Prof::CCT::Tree* cct, const char* progName)
 {
   using namespace Prof;
 
-  // Add PGM node
-  CCT::ANode* oldroot = cct->root();
-  if (!oldroot || oldroot->type() != CCT::ANode::TyRoot) {
-    CCT::ANode* newroot = new CCT::Root(progName);
+  CCT::ANode* root = cct->root();
 
-    if (oldroot) { 
-      //oldroot->Link(newroot); // 'newroot' is parent of 'n'
-
-      // Move all children of 'oldroot' to 'newroot'
-      for (CCT::ANodeChildIterator it(oldroot); it.Current(); /* */) {
-	CCT::ANode* n = it.CurNode();
-	it++; // advance iterator -- it is pointing at 'n'
-	n->Unlink();
-	n->Link(newroot);
-      }
-      
-      delete oldroot;
-    }
-
-    cct->root(newroot);
+  // idempotent
+  if (root && root->type() == CCT::ANode::TyRoot) {
+    return;
   }
+
+  CCT::ANode* newRoot = new CCT::Root(progName);
+
+  // 1. find the splice point
+  CCT::ANode* spliceRoot = root;
+  if (root && root->ChildCount() == 1) {
+    spliceRoot = root->firstChild();
+  }
+  
+  // 2. splice: move all children of 'spliceRoot' to 'newRoot'
+  if (spliceRoot) {
+    for (CCT::ANodeChildIterator it(spliceRoot); it.Current(); /* */) {
+      CCT::ANode* n = it.CurNode();
+      it++; // advance iterator -- it is pointing at 'n'
+      n->Unlink();
+      n->Link(newRoot);
+    }
+    
+    delete root; // N.B.: also deletes 'spliceRoot'
+  }
+  
+  cct->root(newRoot);
 }
 
 
