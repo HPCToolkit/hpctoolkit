@@ -108,7 +108,7 @@ Tree::~Tree()
 void 
 Tree::merge(const Tree* y, 
 	    const SampledMetricDescVec* new_mdesc,		  
-	    uint x_numMetrics, uint y_numMetrics)
+	    uint x_metricBegIdx, uint y_newMetrics)
 {
   Root* x_root = dynamic_cast<Root*>(root());
   Root* y_root = dynamic_cast<Root*>(y->root());
@@ -116,8 +116,8 @@ Tree::merge(const Tree* y,
   DIAG_Assert(x_root && y_root && x_root->name() == y_root->name(),
 	      "Unexpected root!");
 
-  x_root->merge_prepare(y_numMetrics);
-  x_root->merge(y_root, new_mdesc, x_numMetrics, y_numMetrics);
+  x_root->merge_prepare(y_newMetrics);
+  x_root->merge(y_root, new_mdesc, x_metricBegIdx, y_newMetrics);
 }
 
 
@@ -384,8 +384,11 @@ ADynNode::mergeMetrics(const ADynNode& y, uint beg_idx)
 
   DIAG_Assert(m_cpid == 0 || y.m_cpid == 0, "multiple node ids for a call path"); 
 
-  // if either node has an id, make sure the node after the merge has a node id
-  if (m_cpid == 0) m_cpid = y.m_cpid;
+  // if either node has an id, make sure the node after the merge has
+  // a node id
+  if (m_cpid == 0) {
+    m_cpid = y.m_cpid;
+  }
 
   uint x_end = y.numMetrics() + beg_idx;
   DIAG_Assert(x_end <= numMetrics(), "Insufficient space for merging.");
