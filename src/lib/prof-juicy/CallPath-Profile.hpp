@@ -76,6 +76,11 @@ namespace Prof {
 
 namespace CallPath {
 
+  // symbolic constants
+
+static const bool MULTI_EPOCH  = true;
+static const bool MULTI_THREAD = ! MULTI_EPOCH;
+
 class Profile: public Unique {
 public:
   Profile(uint numMetrics);
@@ -137,7 +142,7 @@ public:
   // Given a Profile y, merge y into x = 'this'
   // ASSUMES: both x and y are in canonical form (cct_canonicalize())
   // WARNING: the merge may change/destroy y
-  void merge(Profile& y);
+  void merge(Profile& y, bool same_epoch);
 
 
   // -------------------------------------------------------
