@@ -216,7 +216,7 @@ readProfileData(std::vector<string>& profileFiles)
   
   for (uint i = 1; i < profileFiles.size(); ++i) {
     Prof::CallPath::Profile* p = readProfileFile(profileFiles[i]);
-    prof->merge(*p);
+    prof->merge(*p, Prof::CallPath::MULTI_THREAD);
     delete p;
   }
   

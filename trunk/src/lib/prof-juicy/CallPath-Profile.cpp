@@ -123,20 +123,26 @@ Profile::~Profile()
 
 
 void 
-Profile::merge(Profile& y)
+Profile::merge(Profile& y, bool same_epoch)
 {
   DIAG_Assert(!m_structure && !y.m_structure, "Profile::merge: profiles should not have structure yet!");
 
 
-  // ADDME: same epoch flag ==> no need to add metrics
-
-  // -------------------------------------------------------
-  // merge metrics
-  // -------------------------------------------------------
+  //
+  // if merging multi-epoch profiles (as opposed to multi-thread profiles)
+  //  no need to add metrics
+  //
   uint x_numMetrics = numMetrics();
-  for (uint i = 0; i < y.numMetrics(); ++i) {
-    const SampledMetricDesc* m = y.metric(i);
-    addMetric(new SampledMetricDesc(*m));
+  if (! same_epoch) {
+
+    // -------------------------------------------------------
+    // merge metrics
+    // -------------------------------------------------------
+
+    for (uint i = 0; i < y.numMetrics(); ++i) {
+      const SampledMetricDesc* m = y.metric(i);
+      addMetric(new SampledMetricDesc(*m));
+    }
   }
   
   // -------------------------------------------------------
@@ -147,13 +153,15 @@ Profile::merge(Profile& y)
   y.cct_canonicalizePostMerge(mergeChg);
   // INVARIANT: y's cct now refers to x's LoadMapMgr
 
-  // ADDME: flag to cct merge code to make sure metrics are added
-  //  rather than put in separate thing
-
-  // -------------------------------------------------------
-  // merge CCTs
-  // -------------------------------------------------------
-  m_cct->merge(y.cct(), &m_metricdesc, x_numMetrics, y.numMetrics());
+  if (! same_epoch) {
+    // -------------------------------------------------------
+    // merge CCTs
+    // -------------------------------------------------------
+    m_cct->merge(y.cct(), &m_metricdesc, x_numMetrics, y.numMetrics());
+  }
+  else {
+    m_cct->merge(y.cct(), &m_metricdesc, 0, 0);
+  }
 }
 
 
@@ -411,7 +419,7 @@ Profile::make(const char* fnm, FILE* outfs)
       merged_prof = prof;
     }
     else {
-      merged_prof->merge(*prof);
+      merged_prof->merge(*prof, MULTI_EPOCH);
     }
   } // epoch loop
 
