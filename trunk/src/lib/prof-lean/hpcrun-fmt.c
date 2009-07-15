@@ -189,7 +189,7 @@ hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t *hdr, FILE* infs, alloc_fn alloc)
 {
 
   fread(&(hdr->tag), 1, strlen(MAGIC), infs);
-  hdr->tag[strlen(MAGIC)] = '\0';
+  //  hdr->tag[strlen(MAGIC)-1] = '\0';
   hpcrun_fmt_list_of_nvpair_t_fread(&(hdr->nvps), infs, alloc);
 
   return HPCFILE_OK;
@@ -198,7 +198,10 @@ hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t *hdr, FILE* infs, alloc_fn alloc)
 int
 hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t *hdr, FILE* out)
 {
+#if defined(OLD_MAGIC)
   fwrite(&(hdr->tag), 1, sizeof(hdr->tag), out);
+#endif
+  fwrite(&(hdr->tag), 1, strlen(MAGIC), out);
   fwrite("\n", 1, 1, out);
   hpcrun_fmt_list_of_nvpair_t_fprint(&(hdr->nvps), out);
   return HPCFILE_OK;
@@ -962,9 +965,7 @@ hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs)
   hpcfmt_byte4_fread(&x->as_info.bits, fs);
   hpcfmt_byte8_fread(&x->ip, fs);
   hpcfile_cstree_lip__fread(&x->real_lip, fs);
-#if 0
-  hpcfmt_byte8_fread(&x->lip.id, fs);
-#endif
+
   for (int i = 0; i < x->num_metrics; ++i) {
     hpcfmt_byte8_fread(&x->metrics[i].bits, fs);
   }
@@ -980,18 +981,8 @@ hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs)
 
   // lip stuff
 
-#if defined(OLD_LIP)
-  if (! x->lip.ptr ) {
-    lush_lip_init(&x->real_lip);
-    x->lip.ptr = &x->real_lip;
-  }
-#endif
   hpcfile_cstree_lip__fwrite(&x->real_lip, fs);
 
-#if 0
-  hpcfmt_byte8_fwrite(x->lip.id, fs);
-  DD("*** DD: Past lush lip write (lip id = %lu", x->lip.id);
-#endif
   for (int i = 0; i < x->num_metrics; ++i) {
     hpcfmt_byte8_fwrite(x->metrics[i].bits, fs);
   }
@@ -1000,14 +991,14 @@ hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs)
 }
 
 int 
-hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, 
+hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
 				const char* pre)
 {
   char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
   lush_assoc_info_sprintf(as_str, x->as_info);
 
-  fprintf(fs, "%s{nodedata: (as: %s) (ip: 0x%"PRIx64") (lip: [%"PRIu64"][%p])\n", pre, as_str, x->ip, x->lip.id, 
-	  x->lip.ptr); 
+  fprintf(fs, "%s{nodedata: (as: %s) (ip: 0x%"PRIx64")", pre, as_str, x->ip);
+  hpcfile_cstree_lip__fprint(&x->real_lip, fs, "");
 	  
   fprintf(fs, "%s  (metrics:", pre);
   for (int i = 0; i < x->num_metrics; ++i) {
@@ -1075,13 +1066,16 @@ hpcfile_cstree_lip__fwrite(lush_lip_t* x, FILE* fs)
 }
 
 int 
-hpcfile_cstree_lip__fprint(lush_lip_t* x, hpcfmt_uint_t id, 
+hpcfile_cstree_lip__fprint(lush_lip_t* x,
 			   FILE* fs, const char* pre)
 {
   char lip_str[LUSH_LIP_STR_MIN_LEN];
   lush_lip_sprintf(lip_str, x);
 
+#if defined(OLD_LIP_PRINT)
   fprintf(fs, "%s{lip:  (id: %"PRIu64") %s}\n", pre, id, lip_str);
+#endif
+  fprintf(fs, "%s{lip:  %s}\n", pre, lip_str);
 
   return HPCFILE_OK;
 }

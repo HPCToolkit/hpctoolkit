@@ -133,15 +133,6 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   }
   hpcrun_fmt_hdr_fprint(&new_hdr, stdout);
   
-#if defined(OLD_EPOCH_CNT)
-  //
-  // read & print # epochs
-  //
-  uint32_t num_epochs = 0;
-
-  hpcfmt_byte4_fread(&num_epochs, fs);
-  fprintf(stdout,"{num epochs = %d}\n", num_epochs);
-#endif
 
   uint32_t num_ccts = 1;
   int actual_epochs = 0;
@@ -150,9 +141,6 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   // for each epoch ...
   //
 
-#if defined(OLD_EPOCH_COUNT)
-  for (uint i=0; i < num_epochs; i++) {
-#endif
   for (; !feof(fs); ) {
     //
     // == epoch hdr ==
