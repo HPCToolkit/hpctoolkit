@@ -103,6 +103,8 @@ Tree::~Tree()
 }
 
 
+// ADDME: add a flag to take care of multi-epoch merge
+//        pass flag to merge_prepare, and merge
 void 
 Tree::merge(const Tree* y, 
 	    const SampledMetricDescVec* new_mdesc,		  
@@ -421,6 +423,7 @@ ADynNode::expandMetrics_after(uint offset)
 }
 
 
+// ADDME: add same_epoch flag to ensure that Metrics not expanded (just return if flag is set)
 void
 ANode::merge_prepare(uint numMetrics)
 {
@@ -454,6 +457,8 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
   if (y->isLeaf()) {
     return;
   }
+
+  // ADDME: pass same_epoch flag to merge_fixup
 
   // ------------------------------------------------------------  
   // 1. If a child d of y _does not_ appear as a child of x, then copy
@@ -512,6 +517,9 @@ ANode::findDynChild(lush_assoc_info_t as_info,
 }
 
 
+//
+// ADDME: same_epoch flag ==> no expand metrics
+//
 void
 ANode::merge_fixup(const SampledMetricDescVec* new_mdesc, int metric_offset)
 {

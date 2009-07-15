@@ -533,16 +533,16 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
 	   start, end, module_name);
 
 
-      EMSG("WARNING [OVERLAPPING LOAD MODULES] \n"
-	   "    Load module %s with address range [%p,%p)\n"
-	   "    is being replaced with\n" 
-	   "    load module %s with address range [%p,%p).\n"
-	   "    This could affect attribution of %ld samples.\n"
-	   "    See 'CAUTION [OVERLAPPING MODULES]'.", 
+      TMSG(WARN_MULTI_EPOCH, "WARNING [OVERLAPPING LOAD MODULES] \n"
+	   		     "    Load module %s with address range [%p,%p)\n"
+	   		     "    is being replaced with\n" 
+	   		     "    load module %s with address range [%p,%p).\n"
+	   		     "    This could affect attribution of %ld samples.\n"
+	   		     "    See 'CAUTION [OVERLAPPING MODULES]'.", 
 	   dso_info->name, dso_info->start_addr, dso_info->end_addr,
 	   module_name, start, end, csprof_num_samples_total());
 
-      if (first_warning) { 
+      if (first_warning && ENABLED(WARN_MULTI_EPOCH)) { 
 	first_warning = 0;
 
 	STDERR_MSG("hpcrun: warning - load modules at overlapping"

@@ -127,6 +127,9 @@ Profile::merge(Profile& y)
 {
   DIAG_Assert(!m_structure && !y.m_structure, "Profile::merge: profiles should not have structure yet!");
 
+
+  // ADDME: same epoch flag ==> no need to add metrics
+
   // -------------------------------------------------------
   // merge metrics
   // -------------------------------------------------------
@@ -143,6 +146,9 @@ Profile::merge(Profile& y)
     m_loadmapMgr->merge(*y.loadMapMgr());
   y.cct_canonicalizePostMerge(mergeChg);
   // INVARIANT: y's cct now refers to x's LoadMapMgr
+
+  // ADDME: flag to cct merge code to make sure metrics are added
+  //  rather than put in separate thing
 
   // -------------------------------------------------------
   // merge CCTs
