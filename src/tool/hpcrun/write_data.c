@@ -143,6 +143,7 @@ write_epochs(FILE* fs, csprof_state_t* state)
     if (! ENABLED(WRITE_EMPTY_EPOCH)){
       if (hpcrun_empty_cct(&(s->csdata))){
 	EMSG("Empty cct encountered: it is not written out");
+	continue;
       }
     }
     //

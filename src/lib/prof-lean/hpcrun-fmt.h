@@ -129,11 +129,15 @@ char *hpcrun_fmt_nvpair_search(LIST_OF(nvpair_t) *lst, const char *name);
 
 // *********  file hdr *************
 
+#if defined(OLD_MAGIC)
 #define MAGIC "HPCRUN____02.00l"
+#endif
+
+static const char MAGIC[] = "HPCRUN____02.00l";
 
 
 typedef struct hpcrun_fmt_hdr_t {
-  char tag[sizeof(MAGIC)];
+  char tag[sizeof(MAGIC)-1];
   LIST_OF(nvpair_t) nvps;
 } hpcrun_fmt_hdr_t;
 
@@ -592,7 +596,7 @@ int hpcfile_cstree_as_info__fwrite(lush_assoc_info_t* x, FILE* fs);
 
 int hpcfile_cstree_lip__fread(lush_lip_t* x, FILE* fs);
 int hpcfile_cstree_lip__fwrite(lush_lip_t* x, FILE* fs);
-int hpcfile_cstree_lip__fprint(lush_lip_t* x, hpcfmt_uint_t id, 
+int hpcfile_cstree_lip__fprint(lush_lip_t* x,
 			       FILE* fs, const char* pre);
 
 

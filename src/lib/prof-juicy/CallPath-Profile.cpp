@@ -553,12 +553,13 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
     // #if defined(OLD_LIP)
     lipMap.insert(std::make_pair(lip_id, lip));
     // #endif
+#if defined(OLD_LIP_PRINT)    
     if (lip) {
       if (outfs) {
 	hpcfile_cstree_lip__fprint(lip, lip_id, outfs, "");
       }
     }
-
+#endif
     if (outfs) {
       hpcfile_cstree_node__fprint(&ndata, outfs, "  ");
     }
