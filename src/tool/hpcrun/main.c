@@ -28,6 +28,7 @@
 
 #include "main.h"
 #include "csproflib.h"
+#include "csprof-malloc.h"
 
 #include "csprof_dlfns.h"
 #include "env.h"

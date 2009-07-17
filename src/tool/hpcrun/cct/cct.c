@@ -37,7 +37,6 @@
 #include "cct.h"
 #include "csprof-malloc.h"
 #include "csproflib_private.h"
-#include "mem.h"
 #include "list.h"
 #include "metrics.h"
 #include "pmsg.h"
@@ -295,9 +294,9 @@ csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
 
     /* initialize cached arrays */
     x->cache_len = l = CSPROF_BACKTRACE_CACHE_INIT_SZ;
-    TMSG(MALLOC,"cct__init allocate cache_bt");
+    TMSG(CCT,"cct__init allocate cache_bt");
     x->cache_bt    = csprof_malloc(sizeof(void*) * l);
-    TMSG(MALLOC,"cct__init allocate cache_nodes");
+    TMSG(CCT,"cct__init allocate cache_nodes");
     x->cache_nodes = csprof_malloc(sizeof(csprof_cct_node_t*) * l);
   }
 #endif

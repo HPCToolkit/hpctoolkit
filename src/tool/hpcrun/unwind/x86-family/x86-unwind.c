@@ -32,7 +32,6 @@
 #include <x86-decoder.h>
 
 #include "state.h"
-#include "mem.h"
 #include "pmsg.h"
 #include "stack_troll.h"
 #include "thread_use.h"

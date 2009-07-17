@@ -37,7 +37,6 @@
 #include "epoch.h"
 #include "fnbounds_interface.h"
 #include "interface.h"
-#include "mem.h"
 #include "pmsg.h"
 #include "sample_event.h"
 #include "state.h"
@@ -91,7 +90,7 @@ hpcrun_loadmap_add_module(const char *module_name,
 			  void *mapaddr,              /* the actual mapped address */
 			  size_t size)                /* end addr minus start addr */
 {
-  TMSG(MALLOC," epoch_add_module");
+  TMSG(EPOCH," epoch_add_module");
 
   loadmap_src_t *m = (loadmap_src_t *) csprof_malloc(sizeof(loadmap_src_t));
 
@@ -133,7 +132,6 @@ csprof_epoch_t*
 csprof_epoch_new(void)
 {
   TMSG(EPOCH, " --NEW");
-  TMSG(MALLOC," epoch-new");
   csprof_epoch_t *e = csprof_malloc(sizeof(csprof_epoch_t));
 
   if (e == NULL) {

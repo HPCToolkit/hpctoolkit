@@ -32,7 +32,9 @@
 #include <lib/prof-lean/lush/lush-support.h>
 
 #include <unwind/common/unwind.h>
-#include <memory/mem.h>
+// #include <memory/mem.h>
+#include <memory/csprof-malloc.h>
+
 
 
 //*************************** Forward Declarations **************************

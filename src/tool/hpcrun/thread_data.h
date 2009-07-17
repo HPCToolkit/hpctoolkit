@@ -13,7 +13,6 @@
 #include <stdint.h>
 
 #include "sample_sources_registered.h"
-#include "mem.h"
 #include "newmem.h"
 #include "state.h"
 #include "lcp.h"

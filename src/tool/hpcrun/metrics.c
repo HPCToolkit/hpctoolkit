@@ -6,7 +6,6 @@
 #include <libunwind.h>
 #endif
 
-#include "mem.h"
 #include "epoch.h"
 #include "metrics.h"
 #include "state.h"
@@ -45,7 +44,7 @@ csprof_set_max_metrics(int max_metrics)
     has_set_max_metrics = 1;
     csprof_max_metrics = max_metrics;
 
-    TMSG(MALLOC," set_max_metrics");
+    TMSG(METRICS," set_max_metrics");
     metric_data.lst = csprof_malloc(max_metrics * sizeof(metric_desc_t));
     return max_metrics;
   }

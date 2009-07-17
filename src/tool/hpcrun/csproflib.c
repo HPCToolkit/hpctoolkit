@@ -86,7 +86,7 @@
 #include "csproflib_private.h"
 #include "env.h"
 #include "files.h"
-#include "mem.h"
+#include "csprof-malloc.h"
 #include "segv_handler.h"
 #include "epoch.h"
 #include "metrics.h"

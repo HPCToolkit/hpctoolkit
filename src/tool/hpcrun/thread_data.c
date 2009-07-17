@@ -14,7 +14,6 @@
 //*************************** User Include Files ****************************
 
 #include "pmsg.h"
-#include "mem.h"
 #include "newmem.h"
 #include "state.h"
 #include "handling_sample.h"
@@ -105,7 +104,7 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   memset(&td->eventSet, 0, sizeof(td->eventSet));
   memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
 
-  TMSG(MALLOC," thread_data_init state");
+  TMSG(THREAD_SPECIFIC," thread_data_init state");
   csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
 
   thr_ctxt = copy_thr_ctxt(thr_ctxt);

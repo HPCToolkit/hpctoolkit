@@ -3,6 +3,10 @@
 
 //************************* System Include Files ****************************
 
+#define VALGRIND
+
+#ifndef VALGRIND
+
 #include <stddef.h>
 
 //*************************** User Include Files ****************************
@@ -155,5 +159,7 @@ extern void* csprof_malloc2(size_t size);
 
 // The first argument for each of these is of type 'csprof_mem_t*'.
 #define csprof_mem__get_status(x) (x)->status
+
+#endif // VALGRIND
 
 #endif
