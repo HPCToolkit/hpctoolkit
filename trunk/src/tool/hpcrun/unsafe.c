@@ -4,7 +4,6 @@
 
 #include <ucontext.h>
 
-#include "mem.h"
 #include "interface.h"
 
 /* FIXME: these constants need to be automagically generated */

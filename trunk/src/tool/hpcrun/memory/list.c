@@ -32,7 +32,6 @@
 #include <stdlib.h>
 
 #include "list.h"
-#include "mem.h"
 #include "pmsg.h"
 
 // TODO check this ...

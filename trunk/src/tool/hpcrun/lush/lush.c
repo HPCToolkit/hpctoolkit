@@ -36,7 +36,9 @@
 
 #include <unwind/common/unwind.h> // unw_step()
 
-#include <memory/mem.h>
+// #include <memory/mem.h>
+
+#include <memory/csprof-malloc.h>
 
 
 //*************************** Forward Declarations **************************

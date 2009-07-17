@@ -13,6 +13,8 @@
 #ifndef csprof_malloc_h
 #define csprof_malloc_h
 
+#include "valgrind.h"
+
 //************************* System Include Files ****************************
 
 #include <stddef.h>
@@ -24,6 +26,8 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
+#if ! defined(VALGRIND) || defined(_IN_MEM_C)
 
 //---------------------------------------------------------------------------
 // Function: csprof_malloc 
@@ -38,6 +42,12 @@ extern "C" {
 void* csprof_malloc(size_t size);
 void* csprof_malloc_freeable(size_t size);
 
+#else
+#define csprof_malloc malloc
+#define csprof_malloc_freeable malloc
+
+#endif // VALGRIND
+
 void hpcrun_reclaim_freeable_mem(void);
 void hpcrun_memory_summary(void);
 
@@ -45,4 +55,4 @@ void hpcrun_memory_summary(void);
 } /* extern "C" */
 #endif
 
-#endif
+#endif // CSPROF_MALLOC_H

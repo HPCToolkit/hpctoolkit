@@ -19,7 +19,16 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "csprof-malloc.h"
+//
+// no redefinition of csprof_malloc and friends inside mem.c
+//
+
+#define _IN_MEM_C 1
+
+#  include "csprof-malloc.h"
+
+#undef _IN_MEM_C
+
 #include "env.h"
 #include "monitor.h"
 #include "newmem.h"

@@ -9,6 +9,7 @@
 #include "backtrace.h"
 #include "cct.h"
 #include "csprof_dlfns.h"
+#include "csprof-malloc.h"
 #include "fnbounds_interface.h"
 #include "metrics_types.h"
 #include "pmsg.h"
