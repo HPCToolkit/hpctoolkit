@@ -70,6 +70,7 @@ MY_BASE_FILES =			\
 	csprof_options.c		\
 	csproflib.c			\
 	data.c				\
+	disabled.c			\
 	env.c				\
 	epoch.c				\
 	files.c				\
@@ -113,7 +114,8 @@ MY_BASE_FILES =			\
 	memory/list.c			\
 	memory/mem.c			\
 	\
-	messages/pmsg.c			\
+	messages/pmsg-sync.c			\
+	messages/pmsg-async.c			\
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c \

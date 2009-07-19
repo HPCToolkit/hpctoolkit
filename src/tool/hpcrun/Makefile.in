@@ -184,9 +184,9 @@ libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 @OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
 libcsprof_la_DEPENDENCIES = $(HPC_LIBPROFLEAN)
 am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
-	csprof_options.c csproflib.c data.c env.c epoch.c files.c \
-	handling_sample.c last.c lcp.c metrics.c name.c sample_event.c \
-	sample_sources_all.c sample_source_common.c \
+	csprof_options.c csproflib.c data.c disabled.c env.c epoch.c \
+	files.c handling_sample.c last.c lcp.c metrics.c name.c \
+	sample_event.c sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_source_none.c \
 	sample_sources_registered.c segv_handler.c state.c \
 	system_server.c thread_data.c thread_use.c trace.c unsafe.c \
@@ -197,11 +197,12 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
 	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
 	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/list.c memory/mem.c messages/pmsg.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c fnbounds/fnbounds_dynamic.c csprof_dlfns.c \
-	os/linux/dylib.c unwind/common/default_validation_summary.c \
+	memory/list.c memory/mem.c messages/pmsg-sync.c \
+	messages/pmsg-async.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
+	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -217,7 +218,8 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	monitor-exts/over_spin.c utilities/last_func.c
 am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-csprof_options.lo libcsprof_la-csproflib.lo \
-	libcsprof_la-data.lo libcsprof_la-env.lo libcsprof_la-epoch.lo \
+	libcsprof_la-data.lo libcsprof_la-disabled.lo \
+	libcsprof_la-env.lo libcsprof_la-epoch.lo \
 	libcsprof_la-files.lo libcsprof_la-handling_sample.lo \
 	libcsprof_la-last.lo libcsprof_la-lcp.lo \
 	libcsprof_la-metrics.lo libcsprof_la-name.lo \
@@ -237,9 +239,9 @@ am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-lush.lo libcsprof_la-lush-pthread.lo \
 	libcsprof_la-lush-support-rt.lo libcsprof_la-lushi-cb.lo \
 	libcsprof_la-fnbounds_common.lo libcsprof_la-list.lo \
-	libcsprof_la-mem.lo libcsprof_la-pmsg.lo \
-	libcsprof_la-executable-path.lo libcsprof_la-tokenize.lo \
-	libcsprof_la-unlink.lo
+	libcsprof_la-mem.lo libcsprof_la-pmsg-sync.lo \
+	libcsprof_la-pmsg-async.lo libcsprof_la-executable-path.lo \
+	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
 am__objects_9 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_10 = libcsprof_la-dylib.lo
@@ -277,9 +279,9 @@ libcsprof_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 pkglibPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(pkglib_PROGRAMS)
 am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
-	csprof_options.c csproflib.c data.c env.c epoch.c files.c \
-	handling_sample.c last.c lcp.c metrics.c name.c sample_event.c \
-	sample_sources_all.c sample_source_common.c \
+	csprof_options.c csproflib.c data.c disabled.c env.c epoch.c \
+	files.c handling_sample.c last.c lcp.c metrics.c name.c \
+	sample_event.c sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_source_none.c \
 	sample_sources_registered.c segv_handler.c state.c \
 	system_server.c thread_data.c thread_use.c trace.c unsafe.c \
@@ -290,10 +292,11 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
 	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
 	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/list.c memory/mem.c messages/pmsg.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c fnbounds/fnbounds_static.c \
+	memory/list.c memory/mem.c messages/pmsg-sync.c \
+	messages/pmsg-async.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	fnbounds/fnbounds_static.c \
 	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -310,8 +313,8 @@ am__objects_22 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-main.$(OBJEXT) \
 	libcsprof_o-csprof_options.$(OBJEXT) \
 	libcsprof_o-csproflib.$(OBJEXT) libcsprof_o-data.$(OBJEXT) \
-	libcsprof_o-env.$(OBJEXT) libcsprof_o-epoch.$(OBJEXT) \
-	libcsprof_o-files.$(OBJEXT) \
+	libcsprof_o-disabled.$(OBJEXT) libcsprof_o-env.$(OBJEXT) \
+	libcsprof_o-epoch.$(OBJEXT) libcsprof_o-files.$(OBJEXT) \
 	libcsprof_o-handling_sample.$(OBJEXT) \
 	libcsprof_o-last.$(OBJEXT) libcsprof_o-lcp.$(OBJEXT) \
 	libcsprof_o-metrics.$(OBJEXT) libcsprof_o-name.$(OBJEXT) \
@@ -335,7 +338,8 @@ am__objects_22 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-lushi-cb.$(OBJEXT) \
 	libcsprof_o-fnbounds_common.$(OBJEXT) \
 	libcsprof_o-list.$(OBJEXT) libcsprof_o-mem.$(OBJEXT) \
-	libcsprof_o-pmsg.$(OBJEXT) \
+	libcsprof_o-pmsg-sync.$(OBJEXT) \
+	libcsprof_o-pmsg-async.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
 	libcsprof_o-tokenize.$(OBJEXT) libcsprof_o-unlink.$(OBJEXT)
 am__objects_23 = libcsprof_o-fnbounds_static.$(OBJEXT)
@@ -620,6 +624,7 @@ MY_BASE_FILES = \
 	csprof_options.c		\
 	csproflib.c			\
 	data.c				\
+	disabled.c			\
 	env.c				\
 	epoch.c				\
 	files.c				\
@@ -663,7 +668,8 @@ MY_BASE_FILES = \
 	memory/list.c			\
 	memory/mem.c			\
 	\
-	messages/pmsg.c			\
+	messages/pmsg-sync.c			\
+	messages/pmsg-async.c			\
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c \
@@ -1003,6 +1009,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-csproflib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-default_validation_summary.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-disabled.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-dylib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-env.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-epoch.Plo@am__quote@
@@ -1030,7 +1037,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-over_cond.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-over_mutex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-over_spin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-pmsg.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-pmsg-async.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-pmsg-sync.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_event.Plo@am__quote@
@@ -1067,6 +1075,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-csproflib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-default_validation_summary.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-disabled.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-env.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-epoch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-executable-path.Po@am__quote@
@@ -1090,7 +1099,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mips-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mips-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-name.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-pmsg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-pmsg-async.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-pmsg-sync.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_event.Po@am__quote@
@@ -1264,6 +1274,13 @@ libcsprof_la-data.lo: data.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='data.c' object='libcsprof_la-data.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-data.lo `test -f 'data.c' || echo '$(srcdir)/'`data.c
+
+libcsprof_la-disabled.lo: disabled.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-disabled.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-disabled.Tpo -c -o libcsprof_la-disabled.lo `test -f 'disabled.c' || echo '$(srcdir)/'`disabled.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-disabled.Tpo $(DEPDIR)/libcsprof_la-disabled.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='disabled.c' object='libcsprof_la-disabled.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-disabled.lo `test -f 'disabled.c' || echo '$(srcdir)/'`disabled.c
 
 libcsprof_la-env.lo: env.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-env.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-env.Tpo -c -o libcsprof_la-env.lo `test -f 'env.c' || echo '$(srcdir)/'`env.c
@@ -1510,12 +1527,19 @@ libcsprof_la-mem.lo: memory/mem.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-mem.lo `test -f 'memory/mem.c' || echo '$(srcdir)/'`memory/mem.c
 
-libcsprof_la-pmsg.lo: messages/pmsg.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-pmsg.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-pmsg.Tpo -c -o libcsprof_la-pmsg.lo `test -f 'messages/pmsg.c' || echo '$(srcdir)/'`messages/pmsg.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-pmsg.Tpo $(DEPDIR)/libcsprof_la-pmsg.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg.c' object='libcsprof_la-pmsg.lo' libtool=yes @AMDEPBACKSLASH@
+libcsprof_la-pmsg-sync.lo: messages/pmsg-sync.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-pmsg-sync.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-pmsg-sync.Tpo -c -o libcsprof_la-pmsg-sync.lo `test -f 'messages/pmsg-sync.c' || echo '$(srcdir)/'`messages/pmsg-sync.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-pmsg-sync.Tpo $(DEPDIR)/libcsprof_la-pmsg-sync.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-sync.c' object='libcsprof_la-pmsg-sync.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-pmsg.lo `test -f 'messages/pmsg.c' || echo '$(srcdir)/'`messages/pmsg.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-pmsg-sync.lo `test -f 'messages/pmsg-sync.c' || echo '$(srcdir)/'`messages/pmsg-sync.c
+
+libcsprof_la-pmsg-async.lo: messages/pmsg-async.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-pmsg-async.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-pmsg-async.Tpo -c -o libcsprof_la-pmsg-async.lo `test -f 'messages/pmsg-async.c' || echo '$(srcdir)/'`messages/pmsg-async.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-pmsg-async.Tpo $(DEPDIR)/libcsprof_la-pmsg-async.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-async.c' object='libcsprof_la-pmsg-async.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-pmsg-async.lo `test -f 'messages/pmsg-async.c' || echo '$(srcdir)/'`messages/pmsg-async.c
 
 libcsprof_la-executable-path.lo: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-executable-path.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-executable-path.Tpo -c -o libcsprof_la-executable-path.lo `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
@@ -1754,6 +1778,20 @@ libcsprof_o-data.obj: data.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='data.c' object='libcsprof_o-data.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-data.obj `if test -f 'data.c'; then $(CYGPATH_W) 'data.c'; else $(CYGPATH_W) '$(srcdir)/data.c'; fi`
+
+libcsprof_o-disabled.o: disabled.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-disabled.o -MD -MP -MF $(DEPDIR)/libcsprof_o-disabled.Tpo -c -o libcsprof_o-disabled.o `test -f 'disabled.c' || echo '$(srcdir)/'`disabled.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-disabled.Tpo $(DEPDIR)/libcsprof_o-disabled.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='disabled.c' object='libcsprof_o-disabled.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-disabled.o `test -f 'disabled.c' || echo '$(srcdir)/'`disabled.c
+
+libcsprof_o-disabled.obj: disabled.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-disabled.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-disabled.Tpo -c -o libcsprof_o-disabled.obj `if test -f 'disabled.c'; then $(CYGPATH_W) 'disabled.c'; else $(CYGPATH_W) '$(srcdir)/disabled.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-disabled.Tpo $(DEPDIR)/libcsprof_o-disabled.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='disabled.c' object='libcsprof_o-disabled.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-disabled.obj `if test -f 'disabled.c'; then $(CYGPATH_W) 'disabled.c'; else $(CYGPATH_W) '$(srcdir)/disabled.c'; fi`
 
 libcsprof_o-env.o: env.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-env.o -MD -MP -MF $(DEPDIR)/libcsprof_o-env.Tpo -c -o libcsprof_o-env.o `test -f 'env.c' || echo '$(srcdir)/'`env.c
@@ -2245,19 +2283,33 @@ libcsprof_o-mem.obj: memory/mem.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-mem.obj `if test -f 'memory/mem.c'; then $(CYGPATH_W) 'memory/mem.c'; else $(CYGPATH_W) '$(srcdir)/memory/mem.c'; fi`
 
-libcsprof_o-pmsg.o: messages/pmsg.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg.o -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg.Tpo -c -o libcsprof_o-pmsg.o `test -f 'messages/pmsg.c' || echo '$(srcdir)/'`messages/pmsg.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg.Tpo $(DEPDIR)/libcsprof_o-pmsg.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg.c' object='libcsprof_o-pmsg.o' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-pmsg-sync.o: messages/pmsg-sync.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg-sync.o -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg-sync.Tpo -c -o libcsprof_o-pmsg-sync.o `test -f 'messages/pmsg-sync.c' || echo '$(srcdir)/'`messages/pmsg-sync.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg-sync.Tpo $(DEPDIR)/libcsprof_o-pmsg-sync.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-sync.c' object='libcsprof_o-pmsg-sync.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg.o `test -f 'messages/pmsg.c' || echo '$(srcdir)/'`messages/pmsg.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg-sync.o `test -f 'messages/pmsg-sync.c' || echo '$(srcdir)/'`messages/pmsg-sync.c
 
-libcsprof_o-pmsg.obj: messages/pmsg.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg.Tpo -c -o libcsprof_o-pmsg.obj `if test -f 'messages/pmsg.c'; then $(CYGPATH_W) 'messages/pmsg.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg.Tpo $(DEPDIR)/libcsprof_o-pmsg.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg.c' object='libcsprof_o-pmsg.obj' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-pmsg-sync.obj: messages/pmsg-sync.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg-sync.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg-sync.Tpo -c -o libcsprof_o-pmsg-sync.obj `if test -f 'messages/pmsg-sync.c'; then $(CYGPATH_W) 'messages/pmsg-sync.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg-sync.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg-sync.Tpo $(DEPDIR)/libcsprof_o-pmsg-sync.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-sync.c' object='libcsprof_o-pmsg-sync.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg.obj `if test -f 'messages/pmsg.c'; then $(CYGPATH_W) 'messages/pmsg.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg-sync.obj `if test -f 'messages/pmsg-sync.c'; then $(CYGPATH_W) 'messages/pmsg-sync.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg-sync.c'; fi`
+
+libcsprof_o-pmsg-async.o: messages/pmsg-async.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg-async.o -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg-async.Tpo -c -o libcsprof_o-pmsg-async.o `test -f 'messages/pmsg-async.c' || echo '$(srcdir)/'`messages/pmsg-async.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg-async.Tpo $(DEPDIR)/libcsprof_o-pmsg-async.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-async.c' object='libcsprof_o-pmsg-async.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg-async.o `test -f 'messages/pmsg-async.c' || echo '$(srcdir)/'`messages/pmsg-async.c
+
+libcsprof_o-pmsg-async.obj: messages/pmsg-async.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg-async.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg-async.Tpo -c -o libcsprof_o-pmsg-async.obj `if test -f 'messages/pmsg-async.c'; then $(CYGPATH_W) 'messages/pmsg-async.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg-async.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg-async.Tpo $(DEPDIR)/libcsprof_o-pmsg-async.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-async.c' object='libcsprof_o-pmsg-async.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg-async.obj `if test -f 'messages/pmsg-async.c'; then $(CYGPATH_W) 'messages/pmsg-async.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg-async.c'; fi`
 
 libcsprof_o-executable-path.o: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-executable-path.o -MD -MP -MF $(DEPDIR)/libcsprof_o-executable-path.Tpo -c -o libcsprof_o-executable-path.o `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c

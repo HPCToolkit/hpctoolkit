@@ -31,6 +31,7 @@
 #include "csprof-malloc.h"
 
 #include "csprof_dlfns.h"
+#include "disabled.h"
 #include "env.h"
 #include "epoch.h"
 #include "files.h"
@@ -56,7 +57,6 @@
 
 static volatile int DEBUGGER_WAIT = 1;
 
-bool csprof_no_samples = true;
 
 //***************************************************************************
 // *** Important note about libmonitor callbacks ***
@@ -111,8 +111,10 @@ monitor_init_process(int *argc, char **argv, void* data)
     s = getenv("CSPROF_OPT_EVENT");
   }
   csprof_sample_sources_from_eventlist(s);
-  csprof_no_samples = csprof_check_named_source("NONE");
-  if (getenv("SHOW_NONE") && csprof_no_samples) {
+  if (csprof_check_named_source("NONE")) {
+    hpcrun_set_disabled();
+  }
+  if (getenv("SHOW_NONE") && hpcrun_get_disabled()) {
     fprintf(stderr,"NOTE: sample source NONE is specified\n");
   }
 

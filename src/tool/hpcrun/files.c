@@ -13,19 +13,13 @@
 #include <stdbool.h>
 
 //***************************************************************
-// globals 
-//***************************************************************
-
-extern bool csprof_no_samples;
-
-
-//***************************************************************
 // local includes 
 //***************************************************************
 
 #include "env.h"
+#include "disabled.h"
 #include "files.h"
-#include "pmsg.h"
+#include "messages.h"
 #include "thread_data.h"
 
 
@@ -36,6 +30,12 @@ extern bool csprof_no_samples;
 
 #define NO_HOST_ID      (-1)
 #define NO_PID          (~0)
+
+
+
+//***************************************************************
+// globals 
+//***************************************************************
 
 
 
@@ -126,7 +126,7 @@ files_set_directory()
     }
     path = default_path;
 
-    if (csprof_no_samples) return;
+    if (hpcrun_get_disabled()) return;
 
     mkdir(default_path, 0755);
     // N.B.: safe to skip checking for errors as realpath will notice them
