@@ -40,6 +40,7 @@
 //*********************************************************************
 
 #include "csprof_dlfns.h"
+#include "disabled.h"
 #include "dylib.h"
 #include "epoch.h"
 #include "files.h"
@@ -159,12 +160,10 @@ static char *nm_command = 0;
 //     start a new server if the process forks
 //---------------------------------------------------------------------
 
-extern bool csprof_no_samples;
-
 int 
 fnbounds_init()
 {
-  if (csprof_no_samples) return 0;
+  if (hpcrun_get_disabled()) return 0;
 
   int result = system_server_start();
   if (result == 0) {
@@ -280,12 +279,11 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
 //     server process
 //---------------------------------------------------------------------
 
-extern bool csprof_no_samples;
 
 void 
 fnbounds_fini()
 {
-  if (csprof_no_samples) return;
+  if (hpcrun_get_disabled()) return;
 
   system_server_shutdown();
   fnbounds_tmpdir_remove();

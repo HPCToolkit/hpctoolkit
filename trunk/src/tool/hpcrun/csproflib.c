@@ -84,6 +84,7 @@
 #include "cct.h"
 #include "csproflib.h"
 #include "csproflib_private.h"
+#include "disabled.h"
 #include "env.h"
 #include "files.h"
 #include "csprof-malloc.h"
@@ -119,7 +120,6 @@
 
 //***************************************************************************
 
-extern bool csprof_no_samples;
 
 static csprof_options_t opts;
 
@@ -227,7 +227,7 @@ csprof_fini_internal(void)
       lush_agents = NULL;
     }
 
-    if (csprof_no_samples) return;
+    if (hpcrun_get_disabled()) return;
 
     fnbounds_fini();
 
