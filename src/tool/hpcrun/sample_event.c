@@ -12,7 +12,6 @@
 #include "csprof-malloc.h"
 #include "fnbounds_interface.h"
 #include "metrics_types.h"
-#include "pmsg.h"
 #include "segv_handler.h"
 #include "state.h"
 #include "thread_data.h"
@@ -27,6 +26,8 @@
 #include "ui_tree.h"
 #include "validate_return_addr.h"
 #include "write_data.h"
+
+#include <messages/messages.h>
 
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>

@@ -20,8 +20,8 @@
 
 #include "dylib.h"
 #include "fnbounds_interface.h"
-#include "pmsg.h"
 
+#include <messages/messages.h>
 
 
 //*****************************************************************************

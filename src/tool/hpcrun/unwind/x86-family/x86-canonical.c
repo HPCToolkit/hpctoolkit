@@ -1,9 +1,9 @@
 #include "x86-interval-highwatermark.h"
 #include "x86-decoder.h"
 #include "x86-unwind-interval.h"
-#include "pmsg.h"
 #include "x86-interval-arg.h"
 
+#include <messages/messages.h>
 
 #define HW_INITIALIZED		0x8
 #define HW_BP_SAVED			0x4

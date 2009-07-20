@@ -37,9 +37,10 @@
 #include "epoch.h"
 #include "fnbounds_interface.h"
 #include "interface.h"
-#include "pmsg.h"
 #include "sample_event.h"
 #include "state.h"
+
+#include <messages/messages.h>
 
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/spinlock.h>

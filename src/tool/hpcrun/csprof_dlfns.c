@@ -20,7 +20,8 @@
 #include "csprof_dlfns.h"
 #include "fnbounds_interface.h"
 #include "sample_event.h"
-#include "pmsg.h"
+
+#include <messages/messages.h>
 
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/spinlock.h>

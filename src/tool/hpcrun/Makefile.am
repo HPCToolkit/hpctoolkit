@@ -114,8 +114,8 @@ MY_BASE_FILES =			\
 	memory/list.c			\
 	memory/mem.c			\
 	\
-	messages/pmsg-sync.c			\
-	messages/pmsg-async.c			\
+	messages/messages-sync.c	\
+	messages/messages-async.c	\
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c \

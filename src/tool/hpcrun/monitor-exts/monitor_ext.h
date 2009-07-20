@@ -11,8 +11,8 @@
 
 #include <pthread.h>
 
-#include "pmsg.h"
 
+#  include <messages/messages.h>
 
 #ifdef HPCRUN_STATIC_LINK
 

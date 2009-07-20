@@ -21,10 +21,10 @@
 
 #include "backtrace.h"
 #include "state.h"
-#include "pmsg.h"
 #include "monitor.h"
 #include "sample_event.h"
 
+#include <messages/messages.h>
 #include <lush/lush-backtrace.h>
 
 //***************************************************************************

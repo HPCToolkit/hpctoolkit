@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "pmsg.h"
 #include "sample_sources_registered.h"
 #include "sample_source.h"
+
+#include <messages/messages.h>
 
 static sample_source_t *registered_sample_sources[MAX_POSSIBLE_SAMPLE_SOURCES];
 

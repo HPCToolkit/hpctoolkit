@@ -7,7 +7,6 @@
 
 #include <stdbool.h>
 
-#include "pmsg.h"
 #include "splay-interval.h"
 #include "x86-unwind-interval.h"
 
@@ -18,6 +17,10 @@
 #include "x86-unwind-analysis.h"
 #include "x86-unwind-interval-fixup.h"
 #include "x86-interval-arg.h"
+
+#include <messages/messages.h>
+
+
 
 /******************************************************************************
  * forward declarations 

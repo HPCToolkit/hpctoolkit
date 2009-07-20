@@ -24,8 +24,8 @@
 #include "unwind_cursor.h"
 #include "ui_tree.h"
 #include "x86-unwind-interval.h"
-#include "pmsg.h"
 
+#include <messages/messages.h>
 
 
 //****************************************************************************

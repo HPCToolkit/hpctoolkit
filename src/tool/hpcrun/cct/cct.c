@@ -39,9 +39,10 @@
 #include "csproflib_private.h"
 #include "list.h"
 #include "metrics.h"
-#include "pmsg.h"
 
 #include "hpcrun_return_codes.h"
+
+#include <messages/messages.h>
 
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>

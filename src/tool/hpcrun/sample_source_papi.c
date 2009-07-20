@@ -34,7 +34,6 @@
 
 #include "csprof_options.h"
 #include "metrics.h"
-#include "pmsg.h"
 #include "sample_source_common.h"
 #include "sample_sources_registered.h"
 #include "sample_event.h"
@@ -42,6 +41,8 @@
 #include "simple_oo.h"
 #include "thread_data.h"
 #include "tokenize.h"
+
+#include <messages/messages.h>
 
 #include <lush/lush-backtrace.h>
 

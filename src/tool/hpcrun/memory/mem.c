@@ -32,9 +32,10 @@
 #include "env.h"
 #include "monitor.h"
 #include "newmem.h"
-#include "pmsg.h"
 #include "sample_event.h"
 #include "thread_data.h"
+
+#include <messages/messages.h>
 
 #define DEFAULT_MEMSIZE   (6 * 1024 * 1024)
 #define BGP_MEMSIZE      (10 * 1024 * 1024)

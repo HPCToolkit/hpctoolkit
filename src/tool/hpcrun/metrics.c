@@ -9,8 +9,9 @@
 #include "epoch.h"
 #include "metrics.h"
 #include "state.h"
-#include "pmsg.h"
 #include "monitor.h"
+
+#include <messages/messages.h>
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>

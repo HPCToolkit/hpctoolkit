@@ -10,7 +10,7 @@
 //*************************** User Include Files ****************************
 
 #include "structs.h"
-#include "pmsg.h"
+#include <messages/messages.h>
 
 //*************************** Forward Declarations **************************
 

@@ -11,12 +11,13 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "pmsg.h"
 #include "simple_oo.h"
 #include "sample_source.h"
 #include "sample_sources_all.h"
 #include "sample_sources_registered.h"
 #include "tokenize.h"
+
+#include <messages/messages.h>
 
 #define csprof_event_abort(...) csprof_abort_w_info(csprof_registered_sources_list, __VA_ARGS__)
 

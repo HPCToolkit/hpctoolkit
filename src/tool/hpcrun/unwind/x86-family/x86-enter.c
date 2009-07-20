@@ -3,9 +3,9 @@
  *****************************************************************************/
 
 #include "x86-interval-highwatermark.h"
-#include "pmsg.h"
 #include "x86-interval-arg.h"
 
+#include <messages/messages.h>
 
 /******************************************************************************
  * interface operations 

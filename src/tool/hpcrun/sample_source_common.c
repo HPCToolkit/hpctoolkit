@@ -1,7 +1,8 @@
 #include <string.h>
 
-#include "pmsg.h"
 #include "sample_source.h"
+
+#include <messages/messages.h>
 
 int
 METHOD_FN(csprof_ss_started)

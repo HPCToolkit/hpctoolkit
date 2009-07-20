@@ -13,7 +13,6 @@
 
 //*************************** User Include Files ****************************
 
-#include "pmsg.h"
 #include "newmem.h"
 #include "state.h"
 #include "handling_sample.h"
@@ -21,6 +20,7 @@
 #include "thread_data.h"
 
 #include <lush/lush-pthread.h>
+#include <messages/messages.h>
 
 //***************************************************************************
 

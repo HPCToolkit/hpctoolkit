@@ -9,10 +9,10 @@
 
 #include <stdio.h>
 
-#include "pmsg.h"
 #include "splay.h"
 #include "splay-interval.h"
 
+#include <messages/messages.h>
 
 //---------------------------------------------------------------------
 // private operations

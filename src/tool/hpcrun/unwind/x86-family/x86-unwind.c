@@ -32,7 +32,6 @@
 #include <x86-decoder.h>
 
 #include "state.h"
-#include "pmsg.h"
 #include "stack_troll.h"
 #include "thread_use.h"
 
@@ -44,6 +43,9 @@
 #include "thread_data.h"
 #include "x86-unwind-interval.h"
 #include "x86-validate-retn-addr.h"
+
+#include <messages/messages.h>
+
 
 
 //****************************************************************************

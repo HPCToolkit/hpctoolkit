@@ -32,7 +32,8 @@
 #include <stdlib.h>
 
 #include "list.h"
-#include "pmsg.h"
+
+#include <messages/messages.h>
 
 // TODO check this ...
 
