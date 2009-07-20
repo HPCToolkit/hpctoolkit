@@ -6,13 +6,14 @@
 #include <setjmp.h>
 #include <signal.h>
 
-#include "pmsg.h"
 #include "monitor.h"
 
 #include "thread_data.h"
 #include "handling_sample.h"
 
 #include "memchk.h"
+
+#include <messages/messages.h>
 
 // FIXME: tallent: should this be together with csprof_drop_sample?
 

@@ -29,11 +29,12 @@
 //**************************************************************************
 
 #include "fnbounds_interface.h"
-#include "pmsg.h"
 #include "ui_tree.h"
 #include "x86-decoder.h"
 #include "x86-unwind-analysis.h"
 #include "x86-interval-arg.h"
+
+#include <messages/messages.h>
 
 
 

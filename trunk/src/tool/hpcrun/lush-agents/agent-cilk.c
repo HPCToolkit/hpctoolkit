@@ -33,7 +33,7 @@
 
 #include "agent-cilk.h"
 
-#include <messages/pmsg.h>
+#include <messages/messages.h>
 
 //*************************** Forward Declarations **************************
 

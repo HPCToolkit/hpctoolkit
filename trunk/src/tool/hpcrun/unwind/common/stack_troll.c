@@ -19,10 +19,11 @@
 
 #include <include/uint.h>
 
-#include "pmsg.h"
 #include "stack_troll.h"
 #include "fnbounds_interface.h"
 #include "validate_return_addr.h"
+
+#include <messages/messages.h>
 
 static const int TROLL_LIMIT = 16;
 

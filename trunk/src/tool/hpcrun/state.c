@@ -13,9 +13,10 @@
 #include "epoch.h"
 #include "name.h"
 #include "thread_data.h"
-#include "pmsg.h"
 #include "hpcrun_return_codes.h"
 #include "monitor.h"
+
+#include <messages/messages.h>
 
 
 /* non-threaded profilers can have a single profiling state...

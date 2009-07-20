@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <setjmp.h>
 
-#include "pmsg.h"
 #include "monitor.h"
 #include "fname_max.h"
 #include "backtrace.h"
@@ -15,6 +14,8 @@
 #include "hpcrun_return_codes.h"
 #include "write_data.h"
 #include "epoch.h"
+
+#include <messages/messages.h>
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>

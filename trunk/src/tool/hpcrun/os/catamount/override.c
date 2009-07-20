@@ -2,7 +2,7 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#include "pmsg.h"
+#include <messages/messages.h>
 
 extern void *__real_calloc(size_t nmemb, size_t size);
 extern void *__real_malloc(size_t size);

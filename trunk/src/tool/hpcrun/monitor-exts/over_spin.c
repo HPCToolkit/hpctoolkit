@@ -10,7 +10,8 @@
 #include <stdio.h>
 
 #include "monitor_ext.h"
-#include "pmsg.h"
+
+#include <messages/messages.h>
 
 // tallent: Lock interception must be as fast as possible.  Therefore,
 // I am obsoleting the needless layer of callbacks between the

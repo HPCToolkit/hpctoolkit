@@ -12,8 +12,9 @@
 // Local includes
 #include "csprof_options.h"
 #include "event_info.h"
-#include "pmsg.h"
 #include "tokenize.h"
+
+#include <messages/messages.h>
 
 #define EVENT_PERIOD_SEPARATOR '@'
 

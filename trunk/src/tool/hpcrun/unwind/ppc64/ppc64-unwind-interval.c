@@ -24,10 +24,11 @@
 #include "ppc64-unwind-interval.h"
 
 #include "csprof-malloc.h"
-#include "pmsg.h"
 #include "ui_tree.h"
 
 #include "fnbounds_interface.h"
+
+#include <messages/messages.h>
 
 // FIXME: see note in mips-unwind.c
 #include <lib/isa/instructionSets/ppc.h>

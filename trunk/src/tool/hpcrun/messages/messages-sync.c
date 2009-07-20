@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+#include "disabled.h"
 #include "fname_max.h"
 #include "files.h"
 #include "name.h"

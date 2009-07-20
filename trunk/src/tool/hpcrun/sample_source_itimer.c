@@ -32,7 +32,6 @@
 
 #include "csprof_options.h"
 #include "metrics.h"
-#include "pmsg.h"
 #include "sample_event.h"
 #include "sample_source.h"
 #include "sample_source_common.h"
@@ -41,6 +40,7 @@
 #include "thread_data.h"
 
 #include <lush/lush-backtrace.h>
+#include <messages/messages.h>
 
 #include <lib/prof-lean/timer.h>
 

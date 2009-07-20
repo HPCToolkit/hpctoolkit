@@ -197,8 +197,8 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
 	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
 	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/list.c memory/mem.c messages/pmsg-sync.c \
-	messages/pmsg-async.c utilities/executable-path.h \
+	memory/list.c memory/mem.c messages/messages-sync.c \
+	messages/messages-async.c utilities/executable-path.h \
 	utilities/executable-path.c utilities/tokenize.h \
 	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
 	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
@@ -239,8 +239,8 @@ am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-lush.lo libcsprof_la-lush-pthread.lo \
 	libcsprof_la-lush-support-rt.lo libcsprof_la-lushi-cb.lo \
 	libcsprof_la-fnbounds_common.lo libcsprof_la-list.lo \
-	libcsprof_la-mem.lo libcsprof_la-pmsg-sync.lo \
-	libcsprof_la-pmsg-async.lo libcsprof_la-executable-path.lo \
+	libcsprof_la-mem.lo libcsprof_la-messages-sync.lo \
+	libcsprof_la-messages-async.lo libcsprof_la-executable-path.lo \
 	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
 am__objects_9 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
@@ -292,8 +292,8 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
 	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
 	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/list.c memory/mem.c messages/pmsg-sync.c \
-	messages/pmsg-async.c utilities/executable-path.h \
+	memory/list.c memory/mem.c messages/messages-sync.c \
+	messages/messages-async.c utilities/executable-path.h \
 	utilities/executable-path.c utilities/tokenize.h \
 	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
 	fnbounds/fnbounds_static.c \
@@ -338,8 +338,8 @@ am__objects_22 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-lushi-cb.$(OBJEXT) \
 	libcsprof_o-fnbounds_common.$(OBJEXT) \
 	libcsprof_o-list.$(OBJEXT) libcsprof_o-mem.$(OBJEXT) \
-	libcsprof_o-pmsg-sync.$(OBJEXT) \
-	libcsprof_o-pmsg-async.$(OBJEXT) \
+	libcsprof_o-messages-sync.$(OBJEXT) \
+	libcsprof_o-messages-async.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
 	libcsprof_o-tokenize.$(OBJEXT) libcsprof_o-unlink.$(OBJEXT)
 am__objects_23 = libcsprof_o-fnbounds_static.$(OBJEXT)
@@ -668,8 +668,8 @@ MY_BASE_FILES = \
 	memory/list.c			\
 	memory/mem.c			\
 	\
-	messages/pmsg-sync.c			\
-	messages/pmsg-async.c			\
+	messages/messages-sync.c	\
+	messages/messages-async.c	\
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c \
@@ -1030,6 +1030,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lushi-cb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-main.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-mem.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-messages-async.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-messages-sync.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-metrics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-mips-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-mips-unwind.Plo@am__quote@
@@ -1037,8 +1039,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-over_cond.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-over_mutex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-over_spin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-pmsg-async.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-pmsg-sync.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_event.Plo@am__quote@
@@ -1095,12 +1095,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lushi-cb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mem.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-messages-async.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-messages-sync.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-metrics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mips-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mips-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-name.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-pmsg-async.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-pmsg-sync.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_event.Po@am__quote@
@@ -1527,19 +1527,19 @@ libcsprof_la-mem.lo: memory/mem.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-mem.lo `test -f 'memory/mem.c' || echo '$(srcdir)/'`memory/mem.c
 
-libcsprof_la-pmsg-sync.lo: messages/pmsg-sync.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-pmsg-sync.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-pmsg-sync.Tpo -c -o libcsprof_la-pmsg-sync.lo `test -f 'messages/pmsg-sync.c' || echo '$(srcdir)/'`messages/pmsg-sync.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-pmsg-sync.Tpo $(DEPDIR)/libcsprof_la-pmsg-sync.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-sync.c' object='libcsprof_la-pmsg-sync.lo' libtool=yes @AMDEPBACKSLASH@
+libcsprof_la-messages-sync.lo: messages/messages-sync.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-messages-sync.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-messages-sync.Tpo -c -o libcsprof_la-messages-sync.lo `test -f 'messages/messages-sync.c' || echo '$(srcdir)/'`messages/messages-sync.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-messages-sync.Tpo $(DEPDIR)/libcsprof_la-messages-sync.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/messages-sync.c' object='libcsprof_la-messages-sync.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-pmsg-sync.lo `test -f 'messages/pmsg-sync.c' || echo '$(srcdir)/'`messages/pmsg-sync.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-messages-sync.lo `test -f 'messages/messages-sync.c' || echo '$(srcdir)/'`messages/messages-sync.c
 
-libcsprof_la-pmsg-async.lo: messages/pmsg-async.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-pmsg-async.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-pmsg-async.Tpo -c -o libcsprof_la-pmsg-async.lo `test -f 'messages/pmsg-async.c' || echo '$(srcdir)/'`messages/pmsg-async.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-pmsg-async.Tpo $(DEPDIR)/libcsprof_la-pmsg-async.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-async.c' object='libcsprof_la-pmsg-async.lo' libtool=yes @AMDEPBACKSLASH@
+libcsprof_la-messages-async.lo: messages/messages-async.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-messages-async.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-messages-async.Tpo -c -o libcsprof_la-messages-async.lo `test -f 'messages/messages-async.c' || echo '$(srcdir)/'`messages/messages-async.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-messages-async.Tpo $(DEPDIR)/libcsprof_la-messages-async.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/messages-async.c' object='libcsprof_la-messages-async.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-pmsg-async.lo `test -f 'messages/pmsg-async.c' || echo '$(srcdir)/'`messages/pmsg-async.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-messages-async.lo `test -f 'messages/messages-async.c' || echo '$(srcdir)/'`messages/messages-async.c
 
 libcsprof_la-executable-path.lo: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-executable-path.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-executable-path.Tpo -c -o libcsprof_la-executable-path.lo `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
@@ -2283,33 +2283,33 @@ libcsprof_o-mem.obj: memory/mem.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-mem.obj `if test -f 'memory/mem.c'; then $(CYGPATH_W) 'memory/mem.c'; else $(CYGPATH_W) '$(srcdir)/memory/mem.c'; fi`
 
-libcsprof_o-pmsg-sync.o: messages/pmsg-sync.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg-sync.o -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg-sync.Tpo -c -o libcsprof_o-pmsg-sync.o `test -f 'messages/pmsg-sync.c' || echo '$(srcdir)/'`messages/pmsg-sync.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg-sync.Tpo $(DEPDIR)/libcsprof_o-pmsg-sync.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-sync.c' object='libcsprof_o-pmsg-sync.o' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-messages-sync.o: messages/messages-sync.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-messages-sync.o -MD -MP -MF $(DEPDIR)/libcsprof_o-messages-sync.Tpo -c -o libcsprof_o-messages-sync.o `test -f 'messages/messages-sync.c' || echo '$(srcdir)/'`messages/messages-sync.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-messages-sync.Tpo $(DEPDIR)/libcsprof_o-messages-sync.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/messages-sync.c' object='libcsprof_o-messages-sync.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg-sync.o `test -f 'messages/pmsg-sync.c' || echo '$(srcdir)/'`messages/pmsg-sync.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-messages-sync.o `test -f 'messages/messages-sync.c' || echo '$(srcdir)/'`messages/messages-sync.c
 
-libcsprof_o-pmsg-sync.obj: messages/pmsg-sync.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg-sync.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg-sync.Tpo -c -o libcsprof_o-pmsg-sync.obj `if test -f 'messages/pmsg-sync.c'; then $(CYGPATH_W) 'messages/pmsg-sync.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg-sync.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg-sync.Tpo $(DEPDIR)/libcsprof_o-pmsg-sync.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-sync.c' object='libcsprof_o-pmsg-sync.obj' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-messages-sync.obj: messages/messages-sync.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-messages-sync.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-messages-sync.Tpo -c -o libcsprof_o-messages-sync.obj `if test -f 'messages/messages-sync.c'; then $(CYGPATH_W) 'messages/messages-sync.c'; else $(CYGPATH_W) '$(srcdir)/messages/messages-sync.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-messages-sync.Tpo $(DEPDIR)/libcsprof_o-messages-sync.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/messages-sync.c' object='libcsprof_o-messages-sync.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg-sync.obj `if test -f 'messages/pmsg-sync.c'; then $(CYGPATH_W) 'messages/pmsg-sync.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg-sync.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-messages-sync.obj `if test -f 'messages/messages-sync.c'; then $(CYGPATH_W) 'messages/messages-sync.c'; else $(CYGPATH_W) '$(srcdir)/messages/messages-sync.c'; fi`
 
-libcsprof_o-pmsg-async.o: messages/pmsg-async.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg-async.o -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg-async.Tpo -c -o libcsprof_o-pmsg-async.o `test -f 'messages/pmsg-async.c' || echo '$(srcdir)/'`messages/pmsg-async.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg-async.Tpo $(DEPDIR)/libcsprof_o-pmsg-async.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-async.c' object='libcsprof_o-pmsg-async.o' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-messages-async.o: messages/messages-async.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-messages-async.o -MD -MP -MF $(DEPDIR)/libcsprof_o-messages-async.Tpo -c -o libcsprof_o-messages-async.o `test -f 'messages/messages-async.c' || echo '$(srcdir)/'`messages/messages-async.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-messages-async.Tpo $(DEPDIR)/libcsprof_o-messages-async.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/messages-async.c' object='libcsprof_o-messages-async.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg-async.o `test -f 'messages/pmsg-async.c' || echo '$(srcdir)/'`messages/pmsg-async.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-messages-async.o `test -f 'messages/messages-async.c' || echo '$(srcdir)/'`messages/messages-async.c
 
-libcsprof_o-pmsg-async.obj: messages/pmsg-async.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-pmsg-async.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-pmsg-async.Tpo -c -o libcsprof_o-pmsg-async.obj `if test -f 'messages/pmsg-async.c'; then $(CYGPATH_W) 'messages/pmsg-async.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg-async.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-pmsg-async.Tpo $(DEPDIR)/libcsprof_o-pmsg-async.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/pmsg-async.c' object='libcsprof_o-pmsg-async.obj' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-messages-async.obj: messages/messages-async.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-messages-async.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-messages-async.Tpo -c -o libcsprof_o-messages-async.obj `if test -f 'messages/messages-async.c'; then $(CYGPATH_W) 'messages/messages-async.c'; else $(CYGPATH_W) '$(srcdir)/messages/messages-async.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-messages-async.Tpo $(DEPDIR)/libcsprof_o-messages-async.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/messages-async.c' object='libcsprof_o-messages-async.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-pmsg-async.obj `if test -f 'messages/pmsg-async.c'; then $(CYGPATH_W) 'messages/pmsg-async.c'; else $(CYGPATH_W) '$(srcdir)/messages/pmsg-async.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-messages-async.obj `if test -f 'messages/messages-async.c'; then $(CYGPATH_W) 'messages/messages-async.c'; else $(CYGPATH_W) '$(srcdir)/messages/messages-async.c'; fi`
 
 libcsprof_o-executable-path.o: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-executable-path.o -MD -MP -MF $(DEPDIR)/libcsprof_o-executable-path.Tpo -c -o libcsprof_o-executable-path.o `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c

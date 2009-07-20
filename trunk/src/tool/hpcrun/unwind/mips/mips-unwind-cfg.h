@@ -50,7 +50,7 @@
 
 
 #if (HPC_UNW_MSG)
-#  include "pmsg.h"
+#  include <messages/messages.h>
 #else
 #  define TMSG(x, ...) /*remove*/
 #  define EMSG(x, ...) /*remove*/

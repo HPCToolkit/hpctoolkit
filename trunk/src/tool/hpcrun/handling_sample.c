@@ -3,7 +3,8 @@
 #include "thread_data.h"
 
 #include "handling_sample.h"
-#include "pmsg.h"
+
+#include <messages/messages.h>
 
 void
 csprof_init_handling_sample(thread_data_t *td, int in)

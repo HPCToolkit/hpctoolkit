@@ -41,12 +41,13 @@
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 #include "structs.h"
-#include "pmsg.h"
 #include "thread_data.h"
 #include "thread_use.h"
 #include "trace.h"
 
+
 #include <lush/lush-pthread.h>
+#include <messages/messages.h>
 
 #include <monitor-exts/monitor_ext.h>
 

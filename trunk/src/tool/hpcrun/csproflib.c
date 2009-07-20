@@ -103,7 +103,6 @@
 
 #include "name.h"
 
-#include "pmsg.h"
 #include "unwind.h"
 #include "fnbounds_interface.h"
 #include "splay-interval.h"
@@ -117,6 +116,7 @@
 #include <lush/lush.h>
 #include <lush/lush-backtrace.h>
 #include <lush/lush-pthread.h>
+#include <messages/messages.h>
 
 //***************************************************************************
 

@@ -8,8 +8,9 @@
 #include <stdlib.h>
 
 #include "lcp.h"
-#include "pmsg.h"
 #include "sample_event.h"
+
+#include <messages/messages.h>
 
 static csprof_epoch_t _loadmap;
 

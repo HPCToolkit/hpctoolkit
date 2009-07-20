@@ -28,9 +28,10 @@
 #include "unwind.h"
 #include "unwind_cursor.h"
 
-#include "pmsg.h"
 #include "splay.h"
 #include "ui_tree.h"
+
+#include <messages/messages.h>
 
 // FIXME: see note in mips-unwind.c
 #include <lib/isa/instructionSets/ppc.h>

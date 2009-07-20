@@ -31,7 +31,7 @@
 
 #include "lush-pthread.h"
 
-#include "pmsg.h"
+#include <messages/messages.h>
 
 
 //*************************** Forward Declarations **************************

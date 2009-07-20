@@ -5,12 +5,15 @@
 
 #include "csprof-malloc.h"
 #include "x86-unwind-interval.h"
-#include "pmsg.h"
 #include "ui_tree.h"
+
+#include <messages/messages.h>
 
 #include <lib/prof-lean/atomic-op.h>
 
 #define STR(s) case s: return #s
+
+
 
 /*************************************************************************************
  * forward declarations

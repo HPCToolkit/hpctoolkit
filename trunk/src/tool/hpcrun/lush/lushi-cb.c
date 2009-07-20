@@ -26,9 +26,9 @@
 //*************************** User Include Files ****************************
 
 #include "lushi-cb.h"
-#include "pmsg.h"
-
 #include "dylib.h"
+
+#include <messages/messages.h>
 
 //*************************** Forward Declarations **************************
 
