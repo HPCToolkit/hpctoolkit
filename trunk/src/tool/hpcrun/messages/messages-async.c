@@ -70,69 +70,69 @@ static void create_msg(char *buf, size_t buflen, bool add_thread_id,
 //*****************************************************************************
 
 void
-csprof_emsg_valist(const char *fmt, va_list args)
+hpcrun_emsg_valist(const char *fmt, va_list args)
 {
-  write_msg_to_log(false, false, NULL, fmt, args);
+  hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
 }
 
 
 void
-csprof_emsg(const char *fmt,...)
+hpcrun_emsg(const char *fmt,...)
 {
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(false, true, NULL, fmt, args);
+  hpcrun_write_msg_to_log(false, true, NULL, fmt, args);
 }
 
 
 void
-csprof_pmsg(pmsg_category flag, const char *tag, const char *fmt,...)
+hpcrun_pmsg(pmsg_category flag, const char *tag, const char *fmt,...)
 {
-  if (! dbg_get_flag(flag)){
+  if (! hpcrun_dbg_get_flag(flag)){
 #if DEBUG_PMSG_ASYNC
-    csprof_emsg("PMSG flag in = %d (%s), flag ctl = %d --> NOPRINT",
-		flag, tbl[flag], dbg_get_flag(flag));
+    hpcrun_emsg("PMSG flag in = %d (%s), flag ctl = %d --> NOPRINT",
+		flag, tbl[flag], hpcrun_dbg_get_flag(flag));
 #endif
     return;
   }
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(false, true, tag, fmt, args);
+  hpcrun_write_msg_to_log(false, true, tag, fmt, args);
 }
 
 
 // like pmsg, except echo message to stderr when flag is set
 void
-csprof_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag, 
+hpcrun_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag, 
 		   const char *fmt,...)
 {
-  if (! dbg_get_flag(flag)){
+  if (! hpcrun_dbg_get_flag(flag)){
     return;
   }
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(echo_stderr, true, tag, fmt, args);
+  hpcrun_write_msg_to_log(echo_stderr, true, tag, fmt, args);
 }
 
 
 void
-csprof_nmsg(pmsg_category flag, const char *fmt, ...)
+hpcrun_nmsg(pmsg_category flag, const char *fmt, ...)
 {
-  if (! dbg_get_flag(flag)){
+  if (! hpcrun_dbg_get_flag(flag)){
     return;
   }
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(false, false, NULL, fmt, args);
+  hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
 }
 
 
 void
-csprof_amsg(const char *fmt,...)
+hpcrun_amsg(const char *fmt,...)
 {
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(false, false, NULL, fmt, args);
+  hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
 }
 
 
@@ -145,8 +145,8 @@ csprof_amsg(const char *fmt,...)
 // TODO -- factor out message composition from writing
 //
 void
-write_msg_to_log(bool echo_stderr, bool add_thread_id, const char *tag,
-		 const char *fmt, va_list args)
+hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id, const char *tag,
+			const char *fmt, va_list args)
 {
   char buf[MSG_BUF_SIZE];
 

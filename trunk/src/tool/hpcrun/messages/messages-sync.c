@@ -120,13 +120,13 @@ static flag_list_t all_list = {
 static int dbg_flags[N_DBG_CATEGORIES];
 
 void
-dbg_set_flag(pmsg_category flag, int val)
+hpcrun_dbg_set_flag(pmsg_category flag, int val)
 {
   dbg_flags[flag] = val;
 }
 
 int
-dbg_get_flag(pmsg_category flag)
+hpcrun_dbg_get_flag(pmsg_category flag)
 {
   return dbg_flags[flag];
 }
@@ -279,7 +279,7 @@ csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
   }
   va_list args;
   va_start(args,fmt);
-  write_msg_to_log(false, false, NULL, fmt, args);
+  hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
   abort();
 }
 
@@ -295,7 +295,7 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
 
   va_list args;
   va_start(args, fmt);
-  write_msg_to_log(false, false, NULL, fmt, args);
+  hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
 
   va_start(args,fmt);
   vfprintf(stderr, fstr, args);
@@ -323,7 +323,7 @@ csprof_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
   if (copy_to_log){
     va_list args;
     va_start(args, fmt);
-    write_msg_to_log(false, false, NULL, fmt, args);
+    hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
   }
 }
 
