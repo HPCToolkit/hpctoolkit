@@ -53,8 +53,6 @@ extern spinlock_t pmsg_lock;
 // interface functions (within messages subsystem)
 //*****************************************************************************
 
-int hpcrun_dbg_get_flag(pmsg_category flag);
-
 void hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id, 
                              const char *tag, const char *fmt, va_list args);
 
