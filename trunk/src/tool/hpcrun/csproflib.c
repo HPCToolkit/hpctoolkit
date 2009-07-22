@@ -242,7 +242,7 @@ csprof_fini_internal(void)
 
     csprof_display_summary();
     
-    pmsg_fini();
+    messages_fini();
   }
 }
 

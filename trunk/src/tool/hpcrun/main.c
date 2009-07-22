@@ -107,6 +107,9 @@ monitor_init_process(int *argc, char **argv, void* data)
   files_set_executable(process_name);
 
   csprof_registered_sources_init();
+
+  messages_init();
+
   char *s = getenv(HPCRUN_EVENT_LIST);
   if (s == NULL){
     s = getenv("CSPROF_OPT_EVENT");
@@ -121,8 +124,9 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   files_set_directory();
 
-  pmsg_init();
   TMSG(PROCESS,"init");
+
+  messages_create_logfile();
 
   csprof_init_internal();
   if (ENABLED(TST)){
