@@ -200,8 +200,10 @@ dump(void)
 }
 #endif
 
+
+
 void
-pmsg_init()
+messages_init()
 {
   __csprof_noisy_msgs = getenv("__CSPROF_NOISY_MSGS");
 
@@ -222,6 +224,12 @@ pmsg_init()
     monitor_real_exit(1);
   }
 
+  log_file = stderr;
+}
+
+void
+messages_create_logfile()
+{
   if (hpcrun_get_disabled()) return;
 
   // get name for log file 
@@ -230,12 +238,11 @@ pmsg_init()
 
   // open log file
   log_file = fopen(log_name,"w");
-  if (!log_file) log_file = stderr;
-
+  if (!log_file) log_file = stderr; // reset to stderr
 }
 
 void
-pmsg_fini(void)
+messages_fini(void)
 {
   if (hpcrun_get_disabled()) return;
 
@@ -282,8 +289,11 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
   strcat(fstr,"\n");
 
   va_list args;
-  va_start(args, fmt);
-  hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
+
+  if (log_file != stderr) {
+    va_start(args, fmt);
+    hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
+  }
 
   va_start(args,fmt);
   vfprintf(stderr, fstr, args);
@@ -308,7 +318,7 @@ csprof_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
   vfprintf(stderr, fstr, args);
   va_end(args);
 
-  if (copy_to_log){
+  if (copy_to_log && log_file != stderr){
     va_list args;
     va_start(args, fmt);
     hpcrun_write_msg_to_log(false, false, NULL, fmt, args);

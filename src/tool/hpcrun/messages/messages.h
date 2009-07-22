@@ -23,8 +23,9 @@ typedef enum {
 } ctl_category;
 #endif
 
-extern void pmsg_init();
-extern void pmsg_fini(void);
+extern void messages_init();
+extern void messages_create_logfile();
+extern void messages_fini(void);
 
 void hpcrun_amsg(const char *fmt,...);
 void hpcrun_emsg(const char *fmt,...);
