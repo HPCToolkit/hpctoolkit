@@ -19,43 +19,45 @@
 
 #include <messages/messages.h>
 
-#define csprof_event_abort(...) csprof_abort_w_info(csprof_registered_sources_list, __VA_ARGS__)
+#define csprof_event_abort(...) \
+  csprof_abort_w_info(csprof_registered_sources_list, __VA_ARGS__)
 
 //
 // FUNCTION DEFINING MACROS
 //
 
 #define _AS0(n) \
-void                                                          \
-csprof_all_sources_ ##n(void)                                 \
-{                                                             \
-  for(int i=0;i < n_sources;i++) {                            \
-    TMSG(AS_MAP,"sample source %d (%s) method call: %s",i,sample_sources[i]->name,#n); \
-    METHOD_CALL(sample_sources[i],n);                  \
-  }                                                           \
+void                                                            \
+csprof_all_sources_ ##n(void)                                   \
+{								\
+  for(int i=0;i < n_sources;i++) {				\
+    TMSG(AS_MAP,"sample source %d (%s) method call: %s",i,	\
+	 sample_sources[i]->name,#n);				\
+    METHOD_CALL(sample_sources[i],n);				\
+  }								\
 }
 
 #define _AS1(n,t,arg) \
-void                                                          \
-csprof_all_sources_ ##n(t arg)                                \
-{                                                             \
-  for(int i=0;i < n_sources;i++) {                            \
-    METHOD_CALL(sample_sources[i],n,arg);              \
-  }                                                           \
+void                                                            \
+csprof_all_sources_ ##n(t arg)                                  \
+{								\
+  for(int i=0;i < n_sources;i++) {				\
+    METHOD_CALL(sample_sources[i],n,arg);			\
+  }								\
 }
 
-#define _ASB(n)                                    \
-bool                                               \
-csprof_all_sources_ ##n(void)                      \
-{                                                  \
-  NMSG(AS_ ##n,"checking %d sources",n_sources);   \
-  for(int i=0;i < n_sources;i++) {                 \
-    if (! METHOD_CALL(sample_sources[i],n)) {      \
-      NMSG(AS_ ##n,"%s not started",sample_sources[i]->name); \
-      return false;                                \
-    }                                              \
-  }                                                \
-  return true;                                     \
+#define _ASB(n)							\
+bool								\
+csprof_all_sources_ ##n(void)					\
+{								\
+  NMSG(AS_ ##n,"checking %d sources",n_sources);		\
+  for(int i=0;i < n_sources;i++) {				\
+    if (! METHOD_CALL(sample_sources[i],n)) {			\
+      NMSG(AS_ ##n,"%s not started",sample_sources[i]->name);	\
+      return false;						\
+    }								\
+  }								\
+  return true;							\
 }
 
 //

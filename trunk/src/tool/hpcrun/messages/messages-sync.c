@@ -168,16 +168,16 @@ lookup(char *s,char *tbl[],int n_entries)
 static void
 csprof_dbg_init(char *in)
 {
-  if (__csprof_noisy_msgs) csprof_emsg("dd input string f init = %s",in);
+  if (__csprof_noisy_msgs) hpcrun_emsg("dd input string f init = %s",in);
   for (char *f=start_tok(in); more_tok(); f=next_tok()){
     if (strcmp(f,"ALL") == 0){
       selected_flag_fill(&all_list,1);
       return;
     }
-    if (__csprof_noisy_msgs) csprof_emsg("checking dd token %s",f);
+    if (__csprof_noisy_msgs) hpcrun_emsg("checking dd token %s",f);
     int ii = lookup(f,dbg_tbl,N_DBG_CATEGORIES);
     if (ii >= 0){
-      if (__csprof_noisy_msgs) csprof_emsg("dd token code = %d",ii);
+      if (__csprof_noisy_msgs) hpcrun_emsg("dd token code = %d",ii);
       dbg_flags[ii] = 1;
     } else {
       fprintf(stderr,"WARNING: dbg flag %s not recognized\n",f);
@@ -185,18 +185,6 @@ csprof_dbg_init(char *in)
   }
 }
 
-// interface to the debug ctl flags
-int
-csprof_dbg(dbg_category flag)
-{
-  return dbg_flags[flag];
-}
-
-void
-csprof_set_dbg(dbg_category flag, int val)
-{
-  dbg_flags[flag] = val;
-}
 
 #ifdef DBG_PMSG
 static void

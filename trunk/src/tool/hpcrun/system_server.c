@@ -247,6 +247,6 @@ system_server_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
   }
   va_list args;
   va_start(args,fmt);
-  csprof_emsg(fmt, args); 
+  hpcrun_emsg(fmt, args); 
   monitor_real_exit(0);
 }
