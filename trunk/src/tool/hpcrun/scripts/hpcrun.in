@@ -431,7 +431,7 @@ f_prepareenv()
     export CSPROF_WAIT=1
   fi
   if [ -n "$dd_list" ]; then
-    export CSPROF_DD=$dd_list
+    export HPCRUN_DEBUG_FLAGS=$dd_list
   fi
   if [ -n "$opt_monitor_debug" ]; then
     export MONITOR_DEBUG=1
@@ -440,7 +440,7 @@ f_prepareenv()
     export CSPROF_OPT_TRACE=1
   fi
   if [ -n "${opt_quiet}" ]; then
-    export CSPROF_OPT_QUIET=1
+    export HPCRUN_QUIET=1
   fi
 
 
@@ -499,7 +499,7 @@ if [ ${ulimit_works}x != x ]; then
 fi
 if [ -n "${opt_debug}" ]; then
   echo hpcrun script LD_PRELOAD = $LD_PRELOAD
-  echo CSPROF_DD = $CSPROF_DD
+  echo HPCRUN_DEBUG_FLAGS = $HPCRUN_DEBUG_FLAGS
   echo event list = $HPCRUN_EVENT_LIST
 fi
 #
