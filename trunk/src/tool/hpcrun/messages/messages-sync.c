@@ -11,11 +11,11 @@
 //
 //*****************************************************************************
 
-//
-// Unified treatement of messages, and control flags
-//
-// Many print/log options.
-//
+
+//*****************************************************************************
+// global includes 
+//*****************************************************************************
+
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -25,6 +25,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdbool.h>
+
+
+
+//*****************************************************************************
+// local includes 
+//*****************************************************************************
 
 #include "disabled.h"
 #include "fname_max.h"
@@ -38,6 +44,9 @@
 #include "monitor.h"
 
 
+//*****************************************************************************
+// global variables 
+//*****************************************************************************
 
 FILE *log_file;
 
@@ -119,17 +128,20 @@ static flag_list_t all_list = {
 #define N_DBG_CATEGORIES sizeof(dbg_tbl)/sizeof(dbg_tbl[0])
 static int dbg_flags[N_DBG_CATEGORIES];
 
-void
-hpcrun_dbg_set_flag(pmsg_category flag, int val)
-{
-  dbg_flags[flag] = val;
-}
 
-int
-hpcrun_dbg_get_flag(pmsg_category flag)
-{
-  return dbg_flags[flag];
-}
+
+//-------------------------------------
+// Log output may be throttled by using 
+// the message limiting mechanism
+//-------------------------------------
+static int global_msg_count = 0;
+
+//-------------------------------------
+// how many unwind msg blocks to permit 
+// (500 is reasonable choice)
+// FIXME: make this an option
+//-------------------------------------
+static int const threshold = 500;
 
 static int defaults[] = {
   DBG_PREFIX(TROLL),
@@ -138,86 +150,32 @@ static int defaults[] = {
 };
 #define NDEFAULTS (sizeof(defaults)/sizeof(defaults[0]))
 
-static void
-flag_fill(int v)
-{
-  for(int i=0; i < N_DBG_CATEGORIES; i++){
-    dbg_flags[i] = v;
-  }
-}
-
-static void
-selected_flag_fill(flag_list_t *flag_list,int v)
-{
-  for (int i=0; i < flag_list->n_entries; i++){
-    dbg_flags[flag_list->entries[i]] = v;
-  }
-}
-
-static int
-lookup(char *s,char *tbl[],int n_entries)
-{
-  for (int i=0; i < n_entries; i++){
-    if (! strcmp(tbl[i],s)){
-      return i;
-    }
-  }
-  return -1;
-}
-
-static void
-csprof_dbg_init(char *in)
-{
-  if (__csprof_noisy_msgs) hpcrun_emsg("dd input string f init = %s",in);
-  for (char *f=start_tok(in); more_tok(); f=next_tok()){
-    if (strcmp(f,"ALL") == 0){
-      selected_flag_fill(&all_list,1);
-      return;
-    }
-    if (__csprof_noisy_msgs) hpcrun_emsg("checking dd token %s",f);
-    int ii = lookup(f,dbg_tbl,N_DBG_CATEGORIES);
-    if (ii >= 0){
-      if (__csprof_noisy_msgs) hpcrun_emsg("dd token code = %d",ii);
-      dbg_flags[ii] = 1;
-    } else {
-      fprintf(stderr,"WARNING: dbg flag %s not recognized\n",f);
-    }
-  }
-}
 
 
-#ifdef DBG_PMSG
-static void
-dump(void)
-{
-  for (int i=0; i < N_DBG_CATEGORIES; i++){
-    if (i < N_DBG_CATEGORIES){
-      fprintf(stderr,"dbg_flags[%s] = %d\n",dbg_tbl[i],dbg_flags[i]);
-    } else {
-      fprintf(stderr,"dbg_flags[UNK] = %d\n",i);
-    }
-  }
-}
-#endif
+//*****************************************************************************
+// forward declarations 
+//*****************************************************************************
+
+static void debug_flag_set_all(int v);
+
+static void debug_flag_process_string(char *in);
+
+static void debug_flag_process_env();
+
+void debug_flag_init();
 
 
+
+//*****************************************************************************
+// interface operations 
+//*****************************************************************************
 
 void
 messages_init()
 {
   __csprof_noisy_msgs = getenv("__CSPROF_NOISY_MSGS");
 
-  flag_fill(0);
-  if (! getenv("CSPROF_QUIET")){
-    for (int i=0; i < NDEFAULTS; i++){
-      dbg_flags[defaults[i]] = 1;
-    }
-  }
-
-  char *s = getenv("CSPROF_DD");
-  if(s){
-    csprof_dbg_init(s);
-  }
+  debug_flag_init();
   spinlock_unlock(&pmsg_lock); // initialize lock for async operations
 
   if (__csprof_noisy_msgs){
@@ -226,6 +184,7 @@ messages_init()
 
   log_file = stderr;
 }
+
 
 void
 messages_create_logfile()
@@ -240,6 +199,7 @@ messages_create_logfile()
   log_file = fopen(log_name,"w");
   if (!log_file) log_file = stderr; // reset to stderr
 }
+
 
 void
 messages_fini(void)
@@ -266,6 +226,28 @@ messages_fini(void)
   }
 }
 
+
+void debug_flag_init()
+{
+  debug_flag_set_all(0);
+  debug_flag_process_env();
+}
+
+
+void
+debug_flag_set(pmsg_category flag, int val)
+{
+  dbg_flags[flag] = val;
+}
+
+
+int
+debug_flag_get(pmsg_category flag)
+{
+  return dbg_flags[flag];
+}
+
+
 void
 csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
 {
@@ -277,6 +259,7 @@ csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
   hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
   abort();
 }
+
 
 void
 csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
@@ -302,6 +285,7 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
   monitor_real_exit(-1);
 }
 
+
 // message to log file, also echo on stderr
 void
 csprof_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
@@ -325,28 +309,20 @@ csprof_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
   }
 }
 
+
 void
 __csprof_dc(void)
 {
   ;
 }
+
+
 int
 csprof_logfile_fd(void)
 {
   return fileno(log_file);
 }
 
-//
-// Log output may be throttled by using the message limiting mechanism
-//
-
-static int global_msg_count = 0;
-
-//
-// how many unwind msg blocks to permit (500 is reasonable choice
-// FIXME: make this an option
-//
-static int const threshold = 500;
 
 int
 csprof_below_pmsg_threshold(void)
@@ -354,8 +330,107 @@ csprof_below_pmsg_threshold(void)
   return (global_msg_count < threshold);
 }
 
+
 void
 csprof_up_pmsg_count(void)
 {
   global_msg_count++;
 }
+
+
+//*****************************************************************************
+// private operations 
+//*****************************************************************************
+
+static void
+debug_flag_set_all(int v)
+{
+  for(int i=0; i < N_DBG_CATEGORIES; i++){
+    debug_flag_set(i, v);
+  }
+}
+
+
+static void
+debug_flag_set_list(flag_list_t *flag_list,int v)
+{
+  for (int i=0; i < flag_list->n_entries; i++){
+    debug_flag_set(flag_list->entries[i], v);
+  }
+}
+
+
+static const char *
+debug_flag_name_get(int i)
+{
+  const char *result = NULL;
+  if (i < N_DBG_CATEGORIES) {
+    result = dbg_tbl[i];
+  }
+  return result; 
+}
+
+
+static int
+debug_flag_name_lookup(const char *s)
+{
+  for (int i = 0; i < N_DBG_CATEGORIES; i++){
+    if (strcmp(dbg_tbl[i],s) == 0){
+      return i;
+    }
+  }
+  return -1;
+}
+
+
+static void
+debug_flag_process_string(char *in)
+{
+  if (__csprof_noisy_msgs) hpcrun_emsg("dd input string f init = %s",in);
+  for (char *f=start_tok(in); more_tok(); f=next_tok()){
+    if (strcmp(f,"ALL") == 0){
+      debug_flag_set_list(&all_list, 1);
+      return;
+    }
+    if (__csprof_noisy_msgs) hpcrun_emsg("checking dd token %s",f);
+    int ii = debug_flag_name_lookup(f);
+    if (ii >= 0){
+      if (__csprof_noisy_msgs) hpcrun_emsg("dd token code = %d",ii);
+      debug_flag_set(ii,1);
+    } else {
+      fprintf(stderr,"WARNING: dbg flag %s not recognized\n",f);
+    }
+  }
+}
+
+static void 
+debug_flag_process_env()
+{
+  if (! getenv("CSPROF_QUIET")){
+    for (int i=0; i < NDEFAULTS; i++){
+      debug_flag_set(defaults[i], 1);
+    }
+  }
+
+  char *s = getenv("CSPROF_DD");
+  if(s){
+    debug_flag_process_string(s);
+  }
+}
+
+
+#ifdef DBG_PMSG
+static void
+debug_flag_dump(void)
+{
+  for (int i=0; i < N_DBG_CATEGORIES; i++){
+    if (i < N_DBG_CATEGORIES){
+      fprintf(stderr,"debug flag %s = %d\n", debug_flag_name_get(i), 
+	      debug_flag_get(i));
+    } else {
+      fprintf(stderr,"debug flag (unknown) = %d\n", i);
+    }
+  }
+}
+#endif
+
