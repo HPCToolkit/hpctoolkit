@@ -1,51 +1,25 @@
 #ifndef messages_h
 #define messages_h
 
+//*****************************************************************************
+// global includes
+//*****************************************************************************
 #include <stdarg.h>
 #include <stdbool.h>
 
-#define DBG_PREFIX(s) DBG_##s
-#define CTL_PREFIX(s) CTL_##s
 
-#undef E
-#define E(s) DBG_PREFIX(s)
-typedef enum {
-#include "messages.flag-defns"
-} pmsg_category;
 
-typedef pmsg_category dbg_category;
+//*****************************************************************************
+// local includes
+//*****************************************************************************
 
-#if 0
-#undef D
-#define D(s) CTL_PREFIX(s)
-typedef enum {
-#include "ctl.src"
-} ctl_category;
-#endif
+#include "messages/debug-flag.h"
 
-extern void messages_init();
-extern void messages_create_logfile();
-extern void messages_fini(void);
 
-void hpcrun_amsg(const char *fmt,...);
-void hpcrun_emsg(const char *fmt,...);
-void hpcrun_emsg_valist(const char *fmt, va_list args);
-void hpcrun_nmsg(pmsg_category flag,const char *fmt,...);
-void hpcrun_pmsg(pmsg_category flag, const char* tag, const char *fmt,...);
 
-extern void csprof_pmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag, const char *fmt,...);
-extern void csprof_stderr_log_msg(bool copy_to_log, const char *fmt,...);
-extern void csprof_exit_on_error(int ret, int ret_expected, const char *fmt,...);
-extern int  debug_flag_get(dbg_category flag);
-extern void debug_flag_set(dbg_category flag, int v);
-
-extern int  csprof_logfile_fd(void);
-
-extern void csprof_abort_w_info(void (*info)(void),const char *fmt,...);
-extern void __csprof_dc(void);
-
-extern int csprof_below_pmsg_threshold(void);
-extern void csprof_up_pmsg_count(void);
+//*****************************************************************************
+// macros
+//*****************************************************************************
 
 #define PMSG_LIMIT(C) if (csprof_below_pmsg_threshold()) C
 
@@ -61,17 +35,38 @@ extern void csprof_up_pmsg_count(void);
 
 #define EXIT_ON_ERROR(r,e,...) csprof_exit_on_error(r,e,__VA_ARGS__)
 
-#define DBG(f)      debug_flag_get(DBG_PREFIX(f))
-#define SET(f,v)    debug_flag_set(DBG_PREFIX(f), v)
+#define csprof_abort(...) csprof_abort_w_info(messages_donothing, __VA_ARGS__)
 
-#define ENABLE(f) SET(f,1)
-#define DISABLE(f) SET(f,0)
 
-#define ENABLED(f)         DBG(f)
 
-#define IF_ENABLED(f)      if ( ENABLED(f) )
-#define IF_DISABLED(f) if ( ! ENABLED(f) )
+//*****************************************************************************
+// forward declarations
+//*****************************************************************************
 
-#define csprof_abort(...) csprof_abort_w_info(__csprof_dc,__VA_ARGS__)
+void messages_init();
+void messages_fini(void);
+
+void messages_logfile_create();
+int  messages_logfile_fd(void);
+
+void messages_donothing(void);
+
+void hpcrun_amsg(const char *fmt,...);
+void hpcrun_emsg(const char *fmt,...);
+void hpcrun_emsg_valist(const char *fmt, va_list args);
+void hpcrun_nmsg(pmsg_category flag,const char *fmt,...);
+void hpcrun_pmsg(pmsg_category flag, const char* tag, const char *fmt,...);
+
+void csprof_pmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag, 
+			const char *fmt,...);
+void csprof_stderr_log_msg(bool copy_to_log, const char *fmt,...);
+void csprof_exit_on_error(int ret, int ret_expected, const char *fmt,...);
+
+void csprof_abort_w_info(void (*info)(void),const char *fmt,...);
+
+int csprof_below_pmsg_threshold(void);
+void csprof_up_pmsg_count(void);
+
+
 
 #endif // messages_h

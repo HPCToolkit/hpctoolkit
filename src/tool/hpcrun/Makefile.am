@@ -114,6 +114,7 @@ MY_BASE_FILES =			\
 	memory/list.c			\
 	memory/mem.c			\
 	\
+	messages/debug-flag.c	        \
 	messages/messages-sync.c	\
 	messages/messages-async.c	\
 	\

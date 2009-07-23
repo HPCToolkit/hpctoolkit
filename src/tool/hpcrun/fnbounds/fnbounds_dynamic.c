@@ -394,13 +394,14 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
   char filename[PATH_MAX];
   char command[MAXPATHLEN+1024];
   char dlname[MAXPATHLEN];
-  int  logfile_fd = csprof_logfile_fd();
+  int  logfile_fd = messages_logfile_fd();
 
   if (nm_command == NULL || incoming_filename == NULL)
     return (NULL);
 
   realpath(incoming_filename, filename);
-  sprintf(dlname, FNBOUNDS_BINARY_FORMAT, fnbounds_tmpdir_get(), mybasename(filename));
+  sprintf(dlname, FNBOUNDS_BINARY_FORMAT, fnbounds_tmpdir_get(), 
+	  mybasename(filename));
 
   sprintf(command, "%s -b %s %s %s 1>&%d 2>&%d\n",
 	  nm_command, ENABLED(DL_BOUND_SCRIPT_DEBUG) ? "-t -v" : "",

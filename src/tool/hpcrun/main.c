@@ -126,7 +126,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   TMSG(PROCESS,"init");
 
-  messages_create_logfile();
+  messages_logfile_create();
 
   csprof_init_internal();
   if (ENABLED(TST)){
