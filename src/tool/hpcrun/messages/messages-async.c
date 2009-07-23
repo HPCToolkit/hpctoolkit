@@ -88,10 +88,10 @@ hpcrun_emsg(const char *fmt,...)
 void
 hpcrun_pmsg(pmsg_category flag, const char *tag, const char *fmt,...)
 {
-  if (! hpcrun_dbg_get_flag(flag)){
+  if (debug_flag_get(flag) == 0){
 #if DEBUG_PMSG_ASYNC
     hpcrun_emsg("PMSG flag in = %d (%s), flag ctl = %d --> NOPRINT",
-		flag, tbl[flag], hpcrun_dbg_get_flag(flag));
+		flag, tbl[flag], debug_flag_get(flag));
 #endif
     return;
   }
@@ -106,7 +106,7 @@ void
 hpcrun_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag, 
 		   const char *fmt,...)
 {
-  if (! hpcrun_dbg_get_flag(flag)){
+  if (debug_flag_get(flag) == 0){
     return;
   }
   va_list args;
@@ -118,7 +118,7 @@ hpcrun_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag,
 void
 hpcrun_nmsg(pmsg_category flag, const char *fmt, ...)
 {
-  if (! hpcrun_dbg_get_flag(flag)){
+  if (debug_flag_get(flag) == 0){
     return;
   }
   va_list args;
