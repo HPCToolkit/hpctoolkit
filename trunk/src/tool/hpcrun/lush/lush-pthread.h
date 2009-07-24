@@ -966,7 +966,7 @@ lushPthr_spinUnlock_post_ty3(lushPthr_t* restrict x,
   lushPtr_SyncObjData_t* syncData = 
     lushPthr_demandCachedSyncObjData_spin(x, lock);
   if (syncData && syncData->idleness > 0) {
-    x->idleness = csprof_atomic_swap_l((long*)&syncData->idleness, 0);
+    x->idleness = fetch_and_store_i64(&(syncData->idleness), 0);
     lushPthr_attribToCallPath(x->idleness);
   }
 }

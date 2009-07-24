@@ -84,14 +84,14 @@ csprof_num_samples_total(void)
 void
 csprof_inc_samples_blocked_async(void)
 {
-  fetch_and_add(&num_samples_total, 1L);
-  fetch_and_add(&num_samples_blocked_async, 1L);
+  atomic_add_i64(&num_samples_total, 1L);
+  atomic_add_i64(&num_samples_blocked_async, 1L);
 }
 
 void
 csprof_inc_samples_filtered(void)
 {
-  fetch_and_add(&num_samples_filtered, 1L);
+  atomic_add_i64(&num_samples_filtered, 1L);
 }
 
 void
@@ -126,7 +126,7 @@ csprof_cct_node_t *
 hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
 		       int skipInner, int isSync)
 {
-  fetch_and_add(&num_samples_total, 1L);
+  atomic_add_i64(&num_samples_total, 1L);
 
   if (_sampling_disabled){
     TMSG(SAMPLE,"global suspension");
@@ -143,13 +143,13 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
   }
   else if (! csprof_dlopen_read_lock()) {
     TMSG(SAMPLE, "skipping sample for dlopen lock");
-    fetch_and_add(&num_samples_blocked_dlopen, 1L);
+    atomic_add_i64(&num_samples_blocked_dlopen, 1L);
     return NULL;
   }
 #endif
 
   TMSG(SAMPLE, "attempting sample");
-  fetch_and_add(&num_samples_attempted, 1L);
+  atomic_add_i64(&num_samples_attempted, 1L);
 
   thread_data_t *td = csprof_get_thread_data();
   sigjmp_buf_t *it = &(td->bad_unwind);
@@ -187,7 +187,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
     // ------------------------------------------------------------
     memset((void *)it->jb, '\0', sizeof(it->jb));
     dump_backtrace(state, state->unwind);
-    fetch_and_add(&num_samples_dropped, 1L);
+    atomic_add_i64(&num_samples_dropped, 1L);
     csprof_up_pmsg_count();
     if (TD_GET(splay_lock)) {
       csprof_release_splay_lock();
