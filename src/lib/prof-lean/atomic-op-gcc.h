@@ -22,10 +22,21 @@
 	__sync_fetch_and_add(addr, val) 
 
 #define fetch_and_add_i32(addr, val) \
-	__sync_fetch_and_add(addr, val) 
+	fetch_and_add(addr, val) 
 
 #define fetch_and_add_i64(addr, val) \
-	__sync_fetch_and_add(addr, val) 
+	fetch_and_add(addr, val) 
+
+
+#define atomic_add(addr, val) \
+	(void) fetch_and_add(addr, val) 
+
+#define atomic_add_i32(addr, val) \
+	atomic_add(addr, val) 
+
+#define atomic_add_i64(addr, val) \
+	atomic_add(addr, val) 
+
 
 
 // -------------------------------------------------------------

@@ -91,7 +91,7 @@ csprof_dlopen_write_unlock(void)
 static void
 csprof_dlopen_downgrade_lock(void)
 {
-  fetch_and_add(&dlopen_num_readers, 1L);
+  atomic_add_i64(&dlopen_num_readers, 1L);
   dlopen_num_writers = 0;
 }
 
@@ -105,7 +105,7 @@ csprof_dlopen_read_lock(void)
 
   spinlock_lock(&dlopen_lock);
   if (dlopen_num_writers == 0 || ENABLED(DLOPEN_RISKY)) {
-    fetch_and_add(&dlopen_num_readers, 1L);
+    atomic_add_i64(&dlopen_num_readers, 1L);
     acquire = 1;
   }
   spinlock_unlock(&dlopen_lock);
@@ -117,7 +117,7 @@ csprof_dlopen_read_lock(void)
 void
 csprof_dlopen_read_unlock(void)
 {
-  fetch_and_add(&dlopen_num_readers, -1L);
+  atomic_add_i64(&dlopen_num_readers, -1L);
 }
 
 
@@ -125,7 +125,7 @@ void
 csprof_pre_dlopen(const char *path, int flags)
 {
   csprof_dlopen_write_lock();
-  fetch_and_add(&num_dlopen_pending, 1L);
+  atomic_add_i64(&num_dlopen_pending, 1L);
 }
 
 
@@ -139,7 +139,7 @@ csprof_dlopen(const char *module_name, int flags, void *handle)
   TMSG(EPOCH, "dlopen: handle = %p, name = %s", handle, module_name);
   csprof_dlopen_downgrade_lock();
   fnbounds_map_open_dsos();
-  fetch_and_add(&num_dlopen_pending, -1L);
+  atomic_add_i64(&num_dlopen_pending, -1L);
   csprof_dlopen_read_unlock();
 }
 
