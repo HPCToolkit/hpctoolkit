@@ -32,7 +32,7 @@
 //***************************************************************************
 
 void
-QueuingRWLock_lock(QueuingRWLock_t* lock, volatile QueuingRWLockLcl_t* lcl, 
+QueuingRWLock_lock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl, 
 		   QueuingRWLockOp_t op)
 {
   lcl->next = NULL;
@@ -58,7 +58,7 @@ QueuingRWLock_lock(QueuingRWLock_t* lock, volatile QueuingRWLockLcl_t* lcl,
 
 
 void
-QueuingRWLock_unlock(QueuingRWLock_t* lock, volatile QueuingRWLockLcl_t* lcl)
+QueuingRWLock_unlock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl)
 {
   while (lcl->status != QueuingRWLockStatus_Signaled) {;} // spin
   if (!lcl->next) {
@@ -71,13 +71,13 @@ QueuingRWLock_unlock(QueuingRWLock_t* lock, volatile QueuingRWLockLcl_t* lcl)
   }
   // INVARIANT: a successor exists
 
-  volatile QueuingRWLockLcl_t* next = lcl->next;
+  QueuingRWLockLcl_t* next = lcl->next;
   QueuingRWLockStatus_t old_nextStatus = next->status;
   next->status = QueuingRWLockStatus_SelfSignaled; // begin passing baton
 
   if (old_nextStatus == QueuingRWLockStatus_Blocked) {
     // initiate parallel start for successors of 'next'
-    for (volatile QueuingRWLockLcl_t* x = next->next;
+    for (QueuingRWLockLcl_t* x = next->next;
 	 x && QueuingRWLockOp_isParallel(next->op, x->op); x = x->next) {
       x->status = QueuingRWLockStatus_SelfSignaled;
     }
