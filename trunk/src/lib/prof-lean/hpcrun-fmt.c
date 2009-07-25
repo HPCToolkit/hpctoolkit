@@ -255,9 +255,9 @@ int
 hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *out)
 {
   fprintf(out,"{epoch tag: %s}\n", ehdr->tag);
-  fprintf(out,"{epoch flags: %lx}\n",ehdr->flags);
+  fprintf(out,"{epoch flags: %llx}\n",ehdr->flags);
   fprintf(out,"{epoch characteristic return address distance: %d}\n",ehdr->ra_distance);
-  fprintf(out,"{epoch address granularity (bucket size): %ld}\n",ehdr->granularity);
+  fprintf(out,"{epoch address granularity (bucket size): %lld}\n",ehdr->granularity);
 
   hpcrun_fmt_list_of_nvpair_t_fprint(&(ehdr->nvps), out);
 
@@ -336,8 +336,8 @@ hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t *src, FILE *out)
 
   for(int i = 0; i < num_modules; i++) {
     hpcfmt_fstr_fwrite(src->name, out);
-    hpcfmt_byte8_fwrite((uint64_t)src->vaddr, out);
-    hpcfmt_byte8_fwrite((uint64_t)src->mapaddr, out);
+    hpcfmt_byte8_fwrite((uint64_t)(unsigned long)src->vaddr, out);
+    hpcfmt_byte8_fwrite((uint64_t)(unsigned long)src->mapaddr, out);
     src = src->next;
   }
   

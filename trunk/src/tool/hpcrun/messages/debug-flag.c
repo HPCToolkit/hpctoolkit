@@ -27,6 +27,7 @@
 //*****************************************************************************
 
 #include "messages/debug-flag.h"
+#include "monitor.h"
 #include "tokenize.h"
 
 
@@ -135,6 +136,7 @@ static void debug_flag_process_string(char *in, int debug_initialization);
 
 static void debug_flag_process_env(int debug_initialization);
 
+static const char *debug_flag_name_get(int i);
 
 
 //*****************************************************************************
@@ -144,11 +146,12 @@ static void debug_flag_process_env(int debug_initialization);
 void debug_flag_init()
 {
   char *df_trace = getenv("HPCRUN_DEBUG_FLAGS_DEBUG");
+  int debug_mode_only = (df_trace == 0) ? 0 : 1;
 
   debug_flag_set_all(0);
-  debug_flag_process_env(df_trace);
+  debug_flag_process_env(debug_mode_only);
 
-  if (df_trace){
+  if (debug_mode_only){
     monitor_real_exit(1);
   }
 }
@@ -165,6 +168,20 @@ int
 debug_flag_get(pmsg_category flag)
 {
   return dbg_flags[flag];
+}
+
+
+void
+debug_flag_dump()
+{
+  for (int i=0; i < N_DBG_CATEGORIES; i++){
+    if (i < N_DBG_CATEGORIES){
+      fprintf(stderr,"debug flag %s = %d\n", debug_flag_name_get(i), 
+	      debug_flag_get(i));
+    } else {
+      fprintf(stderr,"debug flag (unknown) = %d\n", i);
+    }
+  }
 }
 
 
@@ -257,16 +274,3 @@ debug_flag_process_env(int debug_initialization)
   }
 }
 
-
-static void
-debug_flag_dump(void)
-{
-  for (int i=0; i < N_DBG_CATEGORIES; i++){
-    if (i < N_DBG_CATEGORIES){
-      fprintf(stderr,"debug flag %s = %d\n", debug_flag_name_get(i), 
-	      debug_flag_get(i));
-    } else {
-      fprintf(stderr,"debug flag (unknown) = %d\n", i);
-    }
-  }
-}

@@ -61,6 +61,7 @@ void debug_flag_init();
 int  debug_flag_get(dbg_category flag);
 void debug_flag_set(dbg_category flag, int v);
 
+void debug_flag_dump();
 
 
 #endif // debug_flag_h

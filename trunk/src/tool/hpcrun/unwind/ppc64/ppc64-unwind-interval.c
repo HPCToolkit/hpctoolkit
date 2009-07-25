@@ -104,7 +104,7 @@ new_ui(char *start_addr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
   u->sp_arg = sp_arg;
   u->ra_arg = ra_arg;
 
-  fetch_and_add(&ui_cnt, 1);
+  atomic_add(&ui_cnt, 1);
 
   return u;
 }
@@ -144,7 +144,7 @@ void
 suspicious_interval(void *pc) 
 {
   EMSG("suspicous interval for pc = %p", pc);
-  fetch_and_add(&suspicious_cnt,1);
+  atomic_add(&suspicious_cnt,1);
 }
 
 

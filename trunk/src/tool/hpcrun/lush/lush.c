@@ -236,7 +236,11 @@ lush_step_bichord(lush_cursor_t* cursor)
   // Use the Identity agent: Association is 1-to-1
   if (first_aid == lush_agentid_NULL) {
     lush_lip_t* lip = lush_cursor_get_lip(cursor);
-    lip->data8[0] = (uint64_t)ip;
+
+    // avoid warning about casting from pointer to int 
+    // of different size by using a two step cast:
+    // first to long, then to 64 bits
+    lip->data8[0] = (uint64_t)(unsigned long)ip;
 
     ty = LUSH_STEP_CONT;
     lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
