@@ -172,7 +172,11 @@ os_hostid()
 {
   static long hostid = NO_HOST_ID;
 
-  if (hostid == NO_HOST_ID) hostid = gethostid();
+  if (hostid == NO_HOST_ID) {
+    // gethostid returns a 32-bit id.  treat it as unsigned 
+    // to prevent useless sign extension
+    hostid = (uint32_t) gethostid();
+  }
 
   return hostid;
 }
