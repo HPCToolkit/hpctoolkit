@@ -104,13 +104,19 @@ DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 @OPT_PAPI_STATIC_TRUE@am__append_22 = $(MY_PAPI_FILES)
 @OPT_PAPI_STATIC_TRUE@am__append_23 = $(PAPI_INC_FLGS)
 @OPT_PAPI_STATIC_TRUE@am__append_24 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_25 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_26 = -DLUSH_PTHREADS
-@OPT_ENABLE_MONITOR_EXTS_TRUE@am__append_27 = $(MY_MONITOR_EXT_FILES)
-@OPT_ENABLE_MONITOR_EXTS_TRUE@am__append_28 = -DHPCRUN_MONITOR_EXTS
-@OPT_ENABLE_MONITOR_EXTS_TRUE@am__append_29 = -DHPCRUN_MONITOR_EXTS
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_30 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_31 = libagent-pthread.la \
+@OPT_ENABLE_UPC_TRUE@am__append_25 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_26 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_27 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_28 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_29 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_30 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_31 = -DLUSH_PTHREADS
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_32 = -DLUSH_PTHREADS
+@OPT_ENABLE_MONITOR_EXTS_TRUE@am__append_33 = $(MY_MONITOR_EXT_FILES)
+@OPT_ENABLE_MONITOR_EXTS_TRUE@am__append_34 = -DHPCRUN_MONITOR_EXTS
+@OPT_ENABLE_MONITOR_EXTS_TRUE@am__append_35 = -DHPCRUN_MONITOR_EXTS
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_36 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_37 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -213,9 +219,10 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
-	sample_source_papi.c monitor-exts/monitor_ext.h \
-	monitor-exts/over_cond.c monitor-exts/over_mutex.c \
-	monitor-exts/over_spin.c utilities/last_func.c
+	sample_source_papi.c sample_source_upc.c \
+	monitor-exts/monitor_ext.h monitor-exts/over_cond.c \
+	monitor-exts/over_mutex.c monitor-exts/over_spin.c \
+	utilities/last_func.c
 am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-csprof_options.lo libcsprof_la-csproflib.lo \
 	libcsprof_la-data.lo libcsprof_la-disabled.lo \
@@ -264,13 +271,15 @@ am__objects_16 = libcsprof_la-x86-all.lo libcsprof_la-x86-cold-path.lo \
 @HOST_CPU_X86_TRUE@am__objects_17 = $(am__objects_16)
 am__objects_18 = libcsprof_la-sample_source_papi.lo
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_19 = $(am__objects_18)
-am__objects_20 = libcsprof_la-over_cond.lo libcsprof_la-over_mutex.lo \
+am__objects_20 = libcsprof_la-sample_source_upc.lo
+@OPT_ENABLE_UPC_TRUE@am__objects_21 = $(am__objects_20)
+am__objects_22 = libcsprof_la-over_cond.lo libcsprof_la-over_mutex.lo \
 	libcsprof_la-over_spin.lo
-@OPT_ENABLE_MONITOR_EXTS_TRUE@am__objects_21 = $(am__objects_20)
+@OPT_ENABLE_MONITOR_EXTS_TRUE@am__objects_23 = $(am__objects_22)
 am_libcsprof_la_OBJECTS = $(am__objects_8) $(am__objects_9) \
 	$(am__objects_11) $(am__objects_13) $(am__objects_15) \
 	$(am__objects_17) $(am__objects_19) $(am__objects_21) \
-	libcsprof_la-last_func.lo
+	$(am__objects_23) libcsprof_la-last_func.lo
 libcsprof_la_OBJECTS = $(am_libcsprof_la_OBJECTS)
 libcsprof_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libcsprof_la_CFLAGS) \
@@ -309,8 +318,8 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
-	sample_source_papi.c utilities/last_func.c
-am__objects_22 = libcsprof_o-first_func.$(OBJEXT) \
+	sample_source_papi.c sample_source_upc.c utilities/last_func.c
+am__objects_24 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-main.$(OBJEXT) \
 	libcsprof_o-csprof_options.$(OBJEXT) \
 	libcsprof_o-csproflib.$(OBJEXT) libcsprof_o-data.$(OBJEXT) \
@@ -344,16 +353,16 @@ am__objects_22 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-messages-async.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
 	libcsprof_o-tokenize.$(OBJEXT) libcsprof_o-unlink.$(OBJEXT)
-am__objects_23 = libcsprof_o-fnbounds_static.$(OBJEXT)
-am__objects_24 = libcsprof_o-default_validation_summary.$(OBJEXT) \
+am__objects_25 = libcsprof_o-fnbounds_static.$(OBJEXT)
+am__objects_26 = libcsprof_o-default_validation_summary.$(OBJEXT) \
 	libcsprof_o-mips-unwind.$(OBJEXT) \
 	libcsprof_o-mips-unwind-interval.$(OBJEXT)
-@HOST_CPU_MIPS_TRUE@am__objects_25 = $(am__objects_24)
-am__objects_26 = libcsprof_o-default_validation_summary.$(OBJEXT) \
+@HOST_CPU_MIPS_TRUE@am__objects_27 = $(am__objects_26)
+am__objects_28 = libcsprof_o-default_validation_summary.$(OBJEXT) \
 	libcsprof_o-ppc64-unwind.$(OBJEXT) \
 	libcsprof_o-ppc64-unwind-interval.$(OBJEXT)
-@HOST_CPU_PPC_TRUE@am__objects_27 = $(am__objects_26)
-am__objects_28 = libcsprof_o-x86-all.$(OBJEXT) \
+@HOST_CPU_PPC_TRUE@am__objects_29 = $(am__objects_28)
+am__objects_30 = libcsprof_o-x86-all.$(OBJEXT) \
 	libcsprof_o-x86-cold-path.$(OBJEXT) \
 	libcsprof_o-x86-validate-retn-addr.$(OBJEXT) \
 	libcsprof_o-x86-unwind-interval.$(OBJEXT) \
@@ -361,12 +370,15 @@ am__objects_28 = libcsprof_o-x86-all.$(OBJEXT) \
 	libcsprof_o-x86-unwind.$(OBJEXT) \
 	libcsprof_o-x86-unwind-support.$(OBJEXT) \
 	libcsprof_o-x86-linux-dlresolver.$(OBJEXT)
-@HOST_CPU_X86_TRUE@am__objects_29 = $(am__objects_28)
-am__objects_30 = libcsprof_o-sample_source_papi.$(OBJEXT)
-@OPT_PAPI_STATIC_TRUE@am__objects_31 = $(am__objects_30)
-am_libcsprof_o_OBJECTS = $(am__objects_22) $(am__objects_23) \
-	$(am__objects_25) $(am__objects_27) $(am__objects_29) \
-	$(am__objects_31) libcsprof_o-last_func.$(OBJEXT)
+@HOST_CPU_X86_TRUE@am__objects_31 = $(am__objects_30)
+am__objects_32 = libcsprof_o-sample_source_papi.$(OBJEXT)
+@OPT_PAPI_STATIC_TRUE@am__objects_33 = $(am__objects_32)
+am__objects_34 = libcsprof_o-sample_source_upc.$(OBJEXT)
+@OPT_ENABLE_UPC_TRUE@am__objects_35 = $(am__objects_34)
+am_libcsprof_o_OBJECTS = $(am__objects_24) $(am__objects_25) \
+	$(am__objects_27) $(am__objects_29) $(am__objects_31) \
+	$(am__objects_33) $(am__objects_35) \
+	libcsprof_o-last_func.$(OBJEXT)
 libcsprof_o_OBJECTS = $(am_libcsprof_o_OBJECTS)
 libcsprof_o_DEPENDENCIES = $(HPC_LIBPROFLEAN)
 libcsprof_o_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -486,6 +498,8 @@ OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
 OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
+OPT_UPC_IFLAGS = @OPT_UPC_IFLAGS@
+OPT_UPC_LDFLAGS = @OPT_UPC_LDFLAGS@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -612,7 +626,7 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Automake rules
 #############################################################################
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
-pkglib_LTLIBRARIES = $(am__append_1) $(am__append_30) $(am__append_31)
+pkglib_LTLIBRARIES = $(am__append_1) $(am__append_36) $(am__append_37)
 bin_SCRIPTS = scripts/hpcsummary $(am__append_2) $(am__append_3)
 @OPT_ENABLE_MONITOR_EXTS_TRUE@pkglib_LIBRARIES = libcsprof_wrap.a
 pkglibexec_SCRIPTS = scripts/hpclog
@@ -717,6 +731,7 @@ MY_X86_FILES = \
 MY_PAPI_FILES = \
 	sample_source_papi.c
 
+MY_UPC_FILES = sample_source_upc.c
 MY_CPP_DEFINES = \
 	-D_GNU_SOURCE			\
 	-DCSPROF_LAST_EDGE_ONLY=1	\
@@ -752,21 +767,22 @@ MY_X86_INCLUDE_DIRS = \
 
 libcsprof_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
 	$(am__append_4) $(am__append_5) $(am__append_9) \
-	$(am__append_13) $(am__append_19) $(am__append_27) \
-	utilities/last_func.c
+	$(am__append_13) $(am__append_19) $(am__append_25) \
+	$(am__append_33) utilities/last_func.c
 libcsprof_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
 	$(am__append_6) $(am__append_10) $(am__append_14) \
-	$(am__append_22) utilities/last_func.c
+	$(am__append_22) $(am__append_26) utilities/last_func.c
 libcsprof_wrap_a_SOURCES = \
 	$(MY_MONITOR_EXT_FILES)
 
 libcsprof_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_7) $(am__append_11) $(am__append_15) \
-	$(am__append_20) $(am__append_25) $(am__append_28)
+	$(am__append_20) $(am__append_27) $(am__append_31) \
+	$(am__append_34)
 libcsprof_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_8) $(am__append_12) \
-	$(am__append_16) $(am__append_23) $(am__append_26) \
-	$(am__append_29)
+	$(am__append_16) $(am__append_23) $(am__append_28) \
+	$(am__append_32) $(am__append_35)
 libcsprof_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
@@ -778,8 +794,10 @@ libcsprof_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
 libcsprof_o_LDADD = $(HPC_LIBPROFLEAN)
 libcsprof_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(am__append_17) $(am__append_21)
-libcsprof_o_LDFLAGS = $(am__append_18) $(am__append_24)
+	-lpthread -lrt $(am__append_17) $(am__append_21) \
+	$(am__append_29)
+libcsprof_o_LDFLAGS = $(am__append_18) $(am__append_24) \
+	$(am__append_30)
 
 # FIXME: This is specific to Rice.
 MY_AGENT_RTSUPPORT = lush/lush-support-rt.h lush/lush-support-rt.c
@@ -1050,6 +1068,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_itimer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_none.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_papi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_upc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_sources_all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_sources_registered.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-segv_handler.Plo@am__quote@
@@ -1113,6 +1132,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_itimer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_none.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_papi.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_upc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_sources_all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_sources_registered.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-segv_handler.Po@am__quote@
@@ -1692,6 +1712,13 @@ libcsprof_la-sample_source_papi.lo: sample_source_papi.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_source_papi.c' object='libcsprof_la-sample_source_papi.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-sample_source_papi.lo `test -f 'sample_source_papi.c' || echo '$(srcdir)/'`sample_source_papi.c
+
+libcsprof_la-sample_source_upc.lo: sample_source_upc.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-sample_source_upc.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-sample_source_upc.Tpo -c -o libcsprof_la-sample_source_upc.lo `test -f 'sample_source_upc.c' || echo '$(srcdir)/'`sample_source_upc.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-sample_source_upc.Tpo $(DEPDIR)/libcsprof_la-sample_source_upc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_source_upc.c' object='libcsprof_la-sample_source_upc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-sample_source_upc.lo `test -f 'sample_source_upc.c' || echo '$(srcdir)/'`sample_source_upc.c
 
 libcsprof_la-over_cond.lo: monitor-exts/over_cond.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-over_cond.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-over_cond.Tpo -c -o libcsprof_la-over_cond.lo `test -f 'monitor-exts/over_cond.c' || echo '$(srcdir)/'`monitor-exts/over_cond.c
@@ -2588,6 +2615,20 @@ libcsprof_o-sample_source_papi.obj: sample_source_papi.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_source_papi.c' object='libcsprof_o-sample_source_papi.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-sample_source_papi.obj `if test -f 'sample_source_papi.c'; then $(CYGPATH_W) 'sample_source_papi.c'; else $(CYGPATH_W) '$(srcdir)/sample_source_papi.c'; fi`
+
+libcsprof_o-sample_source_upc.o: sample_source_upc.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-sample_source_upc.o -MD -MP -MF $(DEPDIR)/libcsprof_o-sample_source_upc.Tpo -c -o libcsprof_o-sample_source_upc.o `test -f 'sample_source_upc.c' || echo '$(srcdir)/'`sample_source_upc.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-sample_source_upc.Tpo $(DEPDIR)/libcsprof_o-sample_source_upc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_source_upc.c' object='libcsprof_o-sample_source_upc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-sample_source_upc.o `test -f 'sample_source_upc.c' || echo '$(srcdir)/'`sample_source_upc.c
+
+libcsprof_o-sample_source_upc.obj: sample_source_upc.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-sample_source_upc.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-sample_source_upc.Tpo -c -o libcsprof_o-sample_source_upc.obj `if test -f 'sample_source_upc.c'; then $(CYGPATH_W) 'sample_source_upc.c'; else $(CYGPATH_W) '$(srcdir)/sample_source_upc.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-sample_source_upc.Tpo $(DEPDIR)/libcsprof_o-sample_source_upc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_source_upc.c' object='libcsprof_o-sample_source_upc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-sample_source_upc.obj `if test -f 'sample_source_upc.c'; then $(CYGPATH_W) 'sample_source_upc.c'; else $(CYGPATH_W) '$(srcdir)/sample_source_upc.c'; fi`
 
 libcsprof_o-last_func.o: utilities/last_func.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-last_func.o -MD -MP -MF $(DEPDIR)/libcsprof_o-last_func.Tpo -c -o libcsprof_o-last_func.o `test -f 'utilities/last_func.c' || echo '$(srcdir)/'`utilities/last_func.c

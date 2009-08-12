@@ -2,13 +2,13 @@
 #define EVLIST_H
 
 #define MAX_EVL_SIZE 1024
-#define MAX_EVENTS 16
+#define MAX_EVENTS  50 
 
 typedef struct _ev_t {
   int event;
   long thresh;
+  int metric_id;
 } _ev_t;
-
 
 
 typedef struct evlist_t {

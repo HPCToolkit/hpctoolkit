@@ -56,14 +56,6 @@
 
 
 #define OVERFLOW_MODE 0
-
-#define THRESHOLD   10000000
-#ifdef MIN
-#  undef MIN
-#endif
-#define MIN(a,b) ((a)<=(b))?a:b
-
-
 #define WEIGHT_METRIC 0
 
 /******************************************************************************
@@ -72,7 +64,6 @@
 
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
 static void extract_and_check_event(char *in,int *ec,long *th);
-static void extract_ev_thresh(const char *in,int evlen,char *ev,long *th);
 static bool event_name_to_code(char *evname,int *ec);
 
 /******************************************************************************
@@ -307,32 +298,6 @@ papi_obj_reg(void)
 /******************************************************************************
  * private operations 
  *****************************************************************************/
-
-#define DEFAULT_THRESHOLD 1000000L
-
-static void
-extract_ev_thresh(const char *in,int evlen,char *ev,long *th)
-{
-  unsigned int len;
-
-  char *dlm = strrchr(in,'@');
-  if (dlm) {
-    if (isdigit(dlm[1])){ // assume this is the threshold
-      len = MIN(dlm-in,evlen);
-      strncpy(ev,in,len);
-      ev[len] = '\0';
-    }
-    else {
-      dlm = NULL;
-    }
-  }
-  if (!dlm) {
-    len = strlen(in);
-    strncpy(ev,in,len);
-    ev[len] = '\0';
-  }
-  *th = dlm ? strtol(dlm+1,(char **)NULL,10) : DEFAULT_THRESHOLD;
-}
 
 // convert papi event name to code
 // NOTE: return status is true if succeeded, false otherwise

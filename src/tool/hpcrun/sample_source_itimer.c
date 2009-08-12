@@ -289,8 +289,6 @@ itimer_obj_reg(void)
  * private operations 
  *****************************************************************************/
 
-extern int sampling_is_disabled(void);
-
 static int
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {

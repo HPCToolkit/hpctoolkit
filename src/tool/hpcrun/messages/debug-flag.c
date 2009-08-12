@@ -73,6 +73,7 @@ static pmsg_category all_list_entries [] = {
  E(PAPI),
  E(PAPI_SAMPLE),
  E(PAPI_EVENT_NAME),
+ E(UPC),
  E(DBG),
  E(THREAD),
  E(PROCESS),
