@@ -1517,6 +1517,66 @@ if test "${OPT_ENABLE_IBM_BLUEGENE}" = "yes" ; then
 fi
 
 
+#-------------------------------------------------
+# Option: --with-upc=PATH
+#-------------------------------------------------
+
+# The IBM BlueGene UPC sampling source, for which we need header and
+# library files.  On intrepid, these files are in:
+#   inc: /bgsys/drivers/ppcfloor/arch/include/spi
+#   lib: /bgsys/drivers/ppcfloor/runtime/SPI
+#
+# The --with-upc path is just the least common ancestor of these two
+# directories. but we may need to generalize this to --with-upc-inc
+# and --with-upc-lib.
+
+AC_MSG_CHECKING([for UPC])
+
+AC_ARG_WITH([upc],
+  AS_HELP_STRING([--with-upc=PATH],
+      [path to IBM BlueGene UPC installation]),
+  [error_if_missing=yes],
+  [if test "$OPT_ENABLE_IBM_BLUEGENE" = yes ; then
+     with_upc=/bgsys/drivers/ppcfloor
+   else
+     with_upc=no
+   fi
+   error_if_missing=no])
+
+OPT_UPC=no
+OPT_UPC_IFLAGS=
+OPT_UPC_LDFLAGS=
+opt_upc_mesg=no
+
+case "$with_upc" in
+  /* )
+    if test -f "${with_upc}/arch/include/spi/UPC.h" && \
+       test -f "${with_upc}/runtime/SPI/libbgpspi.cnk.a"
+    then
+      OPT_UPC=yes
+      OPT_UPC_IFLAGS="-I ${with_upc}/arch/include"
+      OPT_UPC_LDFLAGS="${with_upc}/runtime/SPI/libbgpspi.cnk.a"
+      opt_upc_mesg="$with_upc"
+    else
+      if test "$error_if_missing" = yes ; then
+	AC_MSG_ERROR([invalid UPC directory: $with_upc])
+      fi
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([UPC directory must be absolute path: $with_upc])
+    ;;
+esac
+
+AC_MSG_RESULT([$opt_upc_mesg])
+
+AM_CONDITIONAL([OPT_ENABLE_UPC], [test "$OPT_UPC" = yes])
+AC_SUBST(OPT_UPC_IFLAGS)
+AC_SUBST(OPT_UPC_LDFLAGS)
+
+
 #----------------------------------------------------------------------------
 # Makefiles to create
 #----------------------------------------------------------------------------
@@ -1598,10 +1658,11 @@ AC_MSG_NOTICE([  libmonitor: $LIBMONITOR])
 AC_MSG_NOTICE([  (old) monitor: $MONITOR])
 AC_MSG_NOTICE([  libunwind: $OPT_LIBUNWIND])
 AC_MSG_NOTICE([  open analysis: $OA])
-AC_MSG_NOTICE([  papi: $OPT_PAPI])
 AC_MSG_NOTICE([  symtabAPI: $SYMTABAPI])
 AC_MSG_NOTICE([  xed2: $XED2])
 AC_MSG_NOTICE([  xerces: $XERCES])
+AC_MSG_NOTICE([  papi: $OPT_PAPI])
+AC_MSG_NOTICE([  upc: $opt_upc_mesg])
 AC_MSG_NOTICE([  build hpcrun: $enable_hpcrun_mesg])
 AC_MSG_NOTICE([  build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  use lush: $enable_lush])

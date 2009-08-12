@@ -788,6 +788,10 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+OPT_UPC_LDFLAGS
+OPT_UPC_IFLAGS
+OPT_ENABLE_UPC_FALSE
+OPT_ENABLE_UPC_TRUE
 OPT_OBJCOPY
 hpclink_extra_wrap_names
 hpclink_add_csprof_wrap
@@ -1035,6 +1039,7 @@ enable_lush_pthreads
 enable_monitor_exts
 with_objcopy
 enable_bluegene
+with_upc
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1726,6 +1731,7 @@ Optional Packages:
   --with-cilk=PATH        use given (MIT) Cilk installation for LUSH agents
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
+  --with-upc=PATH         path to IBM BlueGene UPC installation
 
 Some influential environment variables:
   CC          C compiler command
@@ -4640,13 +4646,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4643: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4649: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4646: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4652: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4649: output\"" >&5)
+  (eval echo "\"\$as_me:4655: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5852,7 +5858,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5855 "configure"' > conftest.$ac_ext
+  echo '#line 5861 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7705,11 +7711,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7708: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7714: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7712: \$? = $ac_status" >&5
+   echo "$as_me:7718: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8044,11 +8050,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8047: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8053: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8051: \$? = $ac_status" >&5
+   echo "$as_me:8057: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8149,11 +8155,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8152: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8158: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8156: \$? = $ac_status" >&5
+   echo "$as_me:8162: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8204,11 +8210,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8207: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8213: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8211: \$? = $ac_status" >&5
+   echo "$as_me:8217: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11004,7 +11010,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11007 "configure"
+#line 11013 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11100,7 +11106,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11103 "configure"
+#line 11109 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14351,11 +14357,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14354: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14360: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14358: \$? = $ac_status" >&5
+   echo "$as_me:14364: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14450,11 +14456,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14453: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14459: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14457: \$? = $ac_status" >&5
+   echo "$as_me:14463: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14502,11 +14508,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14505: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14511: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14509: \$? = $ac_status" >&5
+   echo "$as_me:14515: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19753,6 +19759,82 @@ _ACEOF
 fi
 
 
+#-------------------------------------------------
+# Option: --with-upc=PATH
+#-------------------------------------------------
+
+# The IBM BlueGene UPC sampling source, for which we need header and
+# library files.  On intrepid, these files are in:
+#   inc: /bgsys/drivers/ppcfloor/arch/include/spi
+#   lib: /bgsys/drivers/ppcfloor/runtime/SPI
+#
+# The --with-upc path is just the least common ancestor of these two
+# directories. but we may need to generalize this to --with-upc-inc
+# and --with-upc-lib.
+
+{ $as_echo "$as_me:$LINENO: checking for UPC" >&5
+$as_echo_n "checking for UPC... " >&6; }
+
+
+# Check whether --with-upc was given.
+if test "${with_upc+set}" = set; then
+  withval=$with_upc; error_if_missing=yes
+else
+  if test "$OPT_ENABLE_IBM_BLUEGENE" = yes ; then
+     with_upc=/bgsys/drivers/ppcfloor
+   else
+     with_upc=no
+   fi
+   error_if_missing=no
+fi
+
+
+OPT_UPC=no
+OPT_UPC_IFLAGS=
+OPT_UPC_LDFLAGS=
+opt_upc_mesg=no
+
+case "$with_upc" in
+  /* )
+    if test -f "${with_upc}/arch/include/spi/UPC.h" && \
+       test -f "${with_upc}/runtime/SPI/libbgpspi.cnk.a"
+    then
+      OPT_UPC=yes
+      OPT_UPC_IFLAGS="-I ${with_upc}/arch/include"
+      OPT_UPC_LDFLAGS="${with_upc}/runtime/SPI/libbgpspi.cnk.a"
+      opt_upc_mesg="$with_upc"
+    else
+      if test "$error_if_missing" = yes ; then
+	{ { $as_echo "$as_me:$LINENO: error: invalid UPC directory: $with_upc" >&5
+$as_echo "$as_me: error: invalid UPC directory: $with_upc" >&2;}
+   { (exit 1); exit 1; }; }
+      fi
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    { { $as_echo "$as_me:$LINENO: error: UPC directory must be absolute path: $with_upc" >&5
+$as_echo "$as_me: error: UPC directory must be absolute path: $with_upc" >&2;}
+   { (exit 1); exit 1; }; }
+    ;;
+esac
+
+{ $as_echo "$as_me:$LINENO: result: $opt_upc_mesg" >&5
+$as_echo "$opt_upc_mesg" >&6; }
+
+ if test "$OPT_UPC" = yes; then
+  OPT_ENABLE_UPC_TRUE=
+  OPT_ENABLE_UPC_FALSE='#'
+else
+  OPT_ENABLE_UPC_TRUE='#'
+  OPT_ENABLE_UPC_FALSE=
+fi
+
+
+
+
+
 #----------------------------------------------------------------------------
 # Makefiles to create
 #----------------------------------------------------------------------------
@@ -20091,6 +20173,13 @@ if test -z "${OPT_ENABLE_MONITOR_EXTS_TRUE}" && test -z "${OPT_ENABLE_MONITOR_EX
   { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_MONITOR_EXTS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 $as_echo "$as_me: error: conditional \"OPT_ENABLE_MONITOR_EXTS\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_UPC\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"OPT_ENABLE_UPC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -22511,14 +22600,16 @@ $as_echo "$as_me:   (old) monitor: $MONITOR" >&6;}
 $as_echo "$as_me:   libunwind: $OPT_LIBUNWIND" >&6;}
 { $as_echo "$as_me:$LINENO:   open analysis: $OA" >&5
 $as_echo "$as_me:   open analysis: $OA" >&6;}
-{ $as_echo "$as_me:$LINENO:   papi: $OPT_PAPI" >&5
-$as_echo "$as_me:   papi: $OPT_PAPI" >&6;}
 { $as_echo "$as_me:$LINENO:   symtabAPI: $SYMTABAPI" >&5
 $as_echo "$as_me:   symtabAPI: $SYMTABAPI" >&6;}
 { $as_echo "$as_me:$LINENO:   xed2: $XED2" >&5
 $as_echo "$as_me:   xed2: $XED2" >&6;}
 { $as_echo "$as_me:$LINENO:   xerces: $XERCES" >&5
 $as_echo "$as_me:   xerces: $XERCES" >&6;}
+{ $as_echo "$as_me:$LINENO:   papi: $OPT_PAPI" >&5
+$as_echo "$as_me:   papi: $OPT_PAPI" >&6;}
+{ $as_echo "$as_me:$LINENO:   upc: $opt_upc_mesg" >&5
+$as_echo "$as_me:   upc: $opt_upc_mesg" >&6;}
 { $as_echo "$as_me:$LINENO:   build hpcrun: $enable_hpcrun_mesg" >&5
 $as_echo "$as_me:   build hpcrun: $enable_hpcrun_mesg" >&6;}
 { $as_echo "$as_me:$LINENO:   build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}" >&5

@@ -164,6 +164,8 @@ MY_X86_FILES = \
 MY_PAPI_FILES = 			\
 	sample_source_papi.c
 
+MY_UPC_FILES = sample_source_upc.c
+
 MY_CPP_DEFINES =			\
 	-D_GNU_SOURCE			\
 	-DCSPROF_LAST_EDGE_ONLY=1	\
@@ -274,6 +276,15 @@ if OPT_PAPI_STATIC
     libcsprof_o_SOURCES   += $(MY_PAPI_FILES)
     libcsprof_o_CPPFLAGS  += $(PAPI_INC_FLGS)
     libcsprof_o_LDFLAGS   += $(PAPI_LD_FLGS)
+endif
+
+if OPT_ENABLE_UPC
+    libcsprof_la_SOURCES  += $(MY_UPC_FILES)
+    libcsprof_o_SOURCES   += $(MY_UPC_FILES)
+    libcsprof_la_CPPFLAGS += $(OPT_UPC_IFLAGS)
+    libcsprof_o_CPPFLAGS  += $(OPT_UPC_IFLAGS)
+    libcsprof_la_LDFLAGS  += $(OPT_UPC_LDFLAGS)
+    libcsprof_o_LDFLAGS   += $(OPT_UPC_LDFLAGS)
 endif
 
 if OPT_ENABLE_LUSH_PTHREADS

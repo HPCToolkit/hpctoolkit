@@ -8,6 +8,7 @@
 
 
 int csprof_is_initialized(void);
+int sampling_is_disabled(void);
 
 
 //***************************************************************************
