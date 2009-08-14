@@ -154,8 +154,8 @@ information. (Set <file> to '-' to write to stdout.)\n\
                        NOTE: To disable, set <file> to 'no'.\n";
 
 // FIXME: tallent: do we want this?
-//--csv [<file>]       Comma-separated-value format. {"Analysis_OUT_DB_CSV"}\n\
-//                     Includes flat scope tree and loops. Useful for\n \
+//--csv [<file>]       Comma-separated-value format. {"Analysis_OUT_DB_CSV"}\n
+//                     Includes flat scope tree and loops. Useful for\n
 //                     downstream external tools.\n";
 
 
