@@ -255,9 +255,9 @@ int
 hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t *ehdr, FILE *out)
 {
   fprintf(out,"{epoch tag: %s}\n", ehdr->tag);
-  fprintf(out,"{epoch flags: %llx}\n",ehdr->flags);
-  fprintf(out,"{epoch characteristic return address distance: %d}\n",ehdr->ra_distance);
-  fprintf(out,"{epoch address granularity (bucket size): %lld}\n",ehdr->granularity);
+  fprintf(out,"{epoch flags: %"PRIx64"}\n", ehdr->flags);
+  fprintf(out,"{epoch characteristic return address distance: %d}\n", ehdr->ra_distance);
+  fprintf(out,"{epoch address granularity (bucket size): %"PRIu64"}\n", ehdr->granularity);
 
   hpcrun_fmt_list_of_nvpair_t_fprint(&(ehdr->nvps), out);
 
