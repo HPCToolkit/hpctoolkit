@@ -70,14 +70,14 @@ QueuingRWLock_unlock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl)
     while (!lcl->next) {;}
   }
   // INVARIANT: a successor exists
-
-  QueuingRWLockLcl_t* next = lcl->next;
-  QueuingRWLockStatus_t old_nextStatus = next->status;
+  
+  volatile QueuingRWLockLcl_t* next = lcl->next;
+  volatile QueuingRWLockStatus_t old_nextStatus = next->status;
   next->status = QueuingRWLockStatus_SelfSignaled; // begin passing baton
 
   if (old_nextStatus == QueuingRWLockStatus_Blocked) {
     // initiate parallel start for successors of 'next'
-    for (QueuingRWLockLcl_t* x = next->next;
+    for (volatile QueuingRWLockLcl_t* x = next->next;
 	 x && QueuingRWLockOp_isParallel(next->op, x->op); x = x->next) {
       x->status = QueuingRWLockStatus_SelfSignaled;
     }
