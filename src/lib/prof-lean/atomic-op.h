@@ -20,14 +20,16 @@
 #ifndef prof_lean_atomic_op_h
 #define prof_lean_atomic_op_h
 
-// if using gcc version >= 4.1, use gnu atomics 
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 1 )
+#include <include/gcc-attr.h>
 
-#include "atomic-op-gcc.h"
+
+#if (GCC_VERSION >= 4100)
+
+#  include "atomic-op-gcc.h"
 
 #else
 
-#include "atomic-op-asm.h"
+#  include "atomic-op-asm.h"
 
 #endif
 
