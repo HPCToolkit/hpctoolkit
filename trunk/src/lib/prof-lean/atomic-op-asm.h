@@ -136,6 +136,14 @@ fetch_and_add(volatile long* addr, long val)
   return result;
 }
 
+
+// FIXME: hack to correspond to atomic-op-gcc
+static inline void
+atomic_add_i64(volatile long* addr, long val)
+{
+  fetch_and_add(addr, val);
+}
+
 //***************************************************************************
 
 #if defined(FAS_BODY)
@@ -157,6 +165,13 @@ fetch_and_store_i32(volatile int32_t* ptr, int32_t new)
   return prev;
 }
 
+// FIXME: hack to correspond to atomic-op-gcc
+static inline unsigned long
+fetch_and_store_i64(volatile int64_t* ptr, int64_t new)
+{
+  return fetch_and_store(ptr, new);
+}
+
 #else
 
 static inline long
@@ -171,6 +186,7 @@ fetch_and_store(volatile long* addr, long new)
 
 #define fetch_and_store_ptr(vaddr, ptr) \
   ((void *) fetch_and_store((volatile long *)vaddr, (long) ptr))
+
 
 //***************************************************************************
 
