@@ -633,9 +633,9 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
   // lush data
   //
   tmp_node->data.as_info = node->as_info;
-  lush_lip_init(&tmp_node->data.real_lip);
+  lush_lip_init(&tmp_node->data.lip);
   if (node->lip) {
-    memcpy(&tmp_node->data.real_lip, node->lip, sizeof(lush_lip_t));
+    memcpy(&tmp_node->data.lip, node->lip, sizeof(lush_lip_t));
   }
 
   // double casts to avoid warnings when pointer is < 64 bits 

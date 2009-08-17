@@ -127,7 +127,50 @@ void  hpcfile_cb__free(void* mem);
 
 #endif /* describe callbacks */
 
+
 //***************************************************************************
+//
+//***************************************************************************
+
+static inline int
+hpcfmt_byte4_fwrite(uint32_t val, FILE* outfs)
+{
+  if ( sizeof(uint32_t) != hpcio_fwrite_be4(&val, outfs) ) {
+    return HPCFILE_ERR;
+  }
+  return HPCFILE_OK;
+}
+
+
+static inline int
+hpcfmt_byte4_fread(uint32_t* val, FILE* infs)
+{
+  if ( sizeof(uint32_t) != hpcio_fread_be4(val, infs) ) {
+    return HPCFILE_ERR;
+  }
+  return HPCFILE_OK;
+}
+
+
+static inline int
+hpcfmt_byte8_fwrite(uint64_t val, FILE* outfs)
+{
+  if ( sizeof(uint64_t) != hpcio_fwrite_be8(&val, outfs) ) {
+    return HPCFILE_ERR;
+  }
+  return HPCFILE_OK;
+}
+
+
+static inline int
+hpcfmt_byte8_fread(uint64_t* val, FILE *infs)
+{
+  if ( sizeof(uint64_t) != hpcio_fread_be8(val, infs) ) {
+    return HPCFILE_ERR;
+  }
+  return HPCFILE_OK;
+}
+
 
 //***************************************************************************
 //
@@ -174,16 +217,6 @@ void  hpcfile_cb__free(void* mem);
 
 int hpcfile_tag__fread(uint32_t* tag, FILE* fs);
 int hpcfile_tag__fwrite(uint32_t tag, FILE* fs);
-
-
-// --------------------------------------------
-// 32 & 64 bit integer quantities
-// --------------------------------------------
-
-extern int hpcfmt_byte4_fwrite(uint32_t val, FILE *out);
-extern int hpcfmt_byte4_fread(uint32_t *val, FILE *in);
-extern int hpcfmt_byte8_fwrite(uint64_t val, FILE *out);
-extern int hpcfmt_byte8_fread(uint64_t *val, FILE *in);
 
 
 // ---------------------------------------------------------
@@ -259,6 +292,7 @@ int hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs);
 //   DBG macro -- convenience only
 //
 
+// FIXME: remove and use existing diagnostics package (DIAG_* )
 #define DD(...) if (getenv("HPC_VERB")) do { fprintf(stderr, __VA_ARGS__); fprintf(stderr,"\n");} while (0)
 
 #if defined(__cplusplus)

@@ -119,6 +119,7 @@ hpcio_fread_le2(uint16_t* val, FILE* fs)
   return num_read;
 }
 
+
 size_t
 hpcio_fread_le4(uint32_t* val, FILE* fs)
 {
@@ -134,6 +135,7 @@ hpcio_fread_le4(uint32_t* val, FILE* fs)
   *val = v;
   return num_read;
 }
+
 
 size_t 
 hpcio_fread_le8(uint64_t* val, FILE* fs)
@@ -151,6 +153,7 @@ hpcio_fread_le8(uint64_t* val, FILE* fs)
   return num_read;
 }
 
+
 size_t 
 hpcio_fwrite_le2(uint16_t* val, FILE* fs)
 {
@@ -164,6 +167,7 @@ hpcio_fwrite_le2(uint16_t* val, FILE* fs)
   }
   return num_write;
 }
+
 
 size_t 
 hpcio_fwrite_le4(uint32_t* val, FILE* fs)
@@ -179,6 +183,7 @@ hpcio_fwrite_le4(uint32_t* val, FILE* fs)
   return num_write;
 }
 
+
 size_t 
 hpcio_fwrite_le8(uint64_t* val, FILE* fs)
 {
@@ -192,7 +197,6 @@ hpcio_fwrite_le8(uint64_t* val, FILE* fs)
   }
   return num_write;
 }
-
 
 
 size_t
@@ -211,6 +215,7 @@ hpcio_fread_be2(uint16_t* val, FILE* fs)
   return num_read;
 }
 
+
 size_t
 hpcio_fread_be4(uint32_t* val, FILE* fs)
 {
@@ -226,6 +231,7 @@ hpcio_fread_be4(uint32_t* val, FILE* fs)
   *val = v;
   return num_read;
 }
+
 
 size_t 
 hpcio_fread_be8(uint64_t* val, FILE* fs)

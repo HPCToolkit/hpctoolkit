@@ -142,7 +142,7 @@ public:
   // -------------------------------------------------------
   void merge(const Tree* y, 
 	     const SampledMetricDescVec* new_mdesc, 
-	     uint x_numMetrics, uint y_numMetrics);
+	     uint x_metricBegIdx, uint y_newMetrics);
 
   // -------------------------------------------------------
   // Write contents
