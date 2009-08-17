@@ -62,6 +62,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <inttypes.h>
 
 
@@ -75,70 +76,62 @@
 extern "C" {
 #endif
 
-  // FIXME: rename to HPCFMT_OK/ERR or just delete
+//***************************************************************************
+
 enum {
-  HPCFILE_OK  =  1,
-  HPCFILE_ERR = -1,
-  HPCFILE_EOF = -2,
+  HPCFMT_OK  =  1,
+  HPCFMT_ERR = -1,
+  HPCFMT_EOF = -2,
 };
 
 
-// The library should generally be very quiet; these are for
-// catastrophic circumstances...
-
-// HPCFILE_ERRMSG(format_string, args): prints an error message along
-// with source file location.
-#define HPCFILE_ERRMSG(...)                                            \
-  { fprintf(stderr, "hpcfile error [%s:%d]: ", __FILE__, __LINE__);    \
-    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
-
-// HPCFILE_DIE(format_str, format_str_args): prints an error message
-// and exits.
-#define HPCFILE_DIE(...) HPCFILE_ERRMSG(__VA_ARGS__); { exit(1); }
-
+//***************************************************************************
 
 // Types with known sizes (for reading/writing)
 typedef uint64_t hpcfmt_vma_t;
 typedef uint64_t hpcfmt_uint_t;
 
+
+//***************************************************************************
+// Macros for defining "list of" things
 //***************************************************************************
 
-// Allocation callbacks for use with the library.  In order to conform
-// to the requirments of the HPC profiler, this library may not assume
-// that malloc/free are safe to use for managing dynamic memory.  These
-// callbacks allow the user to specify how dynamic memory ought to
-// allocated/freed.
+#define HPCFMT_List(t) list_of_ ## t
 
-typedef void* (*hpcfile_cb__alloc_fn_t)(size_t);
-typedef void  (*hpcfile_cb__free_fn_t)(void*);
+#define HPCFMT_ListRep(t)			\
+  struct HPCFMT_List(t) {			\
+    uint32_t len;				\
+    t* lst;					\
+  } 
 
-typedef void* alloc_fn(size_t nbytes);
-typedef void  free_fn(void *mem);
+#define HPCFMT_List_declare(t)			\
+  typedef HPCFMT_ListRep(t) HPCFMT_List(t)
 
-#if 0 /* describe callbacks */
 
-// Allocates space for 'sz' bytes and returns a pointer to the
-// beginning of the chuck.  'sz' should never be 0.  FIXME errors
-void* hpcfile_cb__alloc(size_t sz);
+//***************************************************************************
+// Memory allocator/deallocator function types
+//***************************************************************************
+
+// Allocates space for 'nbytes' bytes and returns a pointer to the
+// beginning of the chuck.  'sz' should never be 0.
+typedef void* hpcfmt_alloc_fn(size_t nbytes);
 
 // Deallocates the memory chunk (allocated with the above) beginning
 // at 'mem'.  Note that 'mem' may be NULL.
-void  hpcfile_cb__free(void* mem);
-
-#endif /* describe callbacks */
+typedef void  hpcfmt_free_fn(void* mem);
 
 
 //***************************************************************************
-//
+// Generic reader/writer primitives
 //***************************************************************************
 
 static inline int
 hpcfmt_byte4_fwrite(uint32_t val, FILE* outfs)
 {
   if ( sizeof(uint32_t) != hpcio_fwrite_be4(&val, outfs) ) {
-    return HPCFILE_ERR;
+    return HPCFMT_ERR;
   }
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -146,9 +139,9 @@ static inline int
 hpcfmt_byte4_fread(uint32_t* val, FILE* infs)
 {
   if ( sizeof(uint32_t) != hpcio_fread_be4(val, infs) ) {
-    return HPCFILE_ERR;
+    return HPCFMT_ERR;
   }
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -156,9 +149,9 @@ static inline int
 hpcfmt_byte8_fwrite(uint64_t val, FILE* outfs)
 {
   if ( sizeof(uint64_t) != hpcio_fwrite_be8(&val, outfs) ) {
-    return HPCFILE_ERR;
+    return HPCFMT_ERR;
   }
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -166,134 +159,77 @@ static inline int
 hpcfmt_byte8_fread(uint64_t* val, FILE *infs)
 {
   if ( sizeof(uint64_t) != hpcio_fread_be8(val, infs) ) {
-    return HPCFILE_ERR;
+    return HPCFMT_ERR;
   }
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
 //***************************************************************************
-//
-// Data chunk descriptors for file data that is of uncertain existance
-// or of variable length.  Each chunk begins with a tag to 1) identify
-// the basic data format (or structure) and 2) specify the
-// interpretation of the data.  Consequently, strint data order is not
-// necessary and the file can be easily extended and easily parsed.
-//
+// hpcfmt_str_t
 //***************************************************************************
 
-// ---------------------------------------------------------
-// Data chunk tags:
-//
-// Tag format:
-// [ data tag: 28 bits | format tag: 4 bits ]
-//
-// ---------------------------------------------------------
-
-// Get the format part of the tag
-#define HPCFILE_TAG_GET_FORMAT(tag) ((tag) & 0xf)
-
-// Creates a tag value (not intended for public use)
-#define HPCTAG(dtag, ftag) (((dtag) << 4) | ((ftag) & 0xf))
-
-// Format Tags
-#define HPCFILE_STR    0 /* hpcfile_str_t */
-#define HPCFILE_NUM8   1 /* hpcfile_num8_t */
-#define HPCFILE_NUM8S  2 /* hpcfile_num8s_t */
-
-// CSPROF target name 
-#define HPCFILE_TAG__CSPROF_TARGET   HPCTAG(0, HPCFILE_STR)
-// CSPROF DLL name
-#define HPCFILE_TAG__CSPROF_DLL      HPCTAG(1, HPCFILE_STR)
-// CSPROF DLL load address
-#define HPCFILE_TAG__CSPROF_DLL_ADDR HPCTAG(2, HPCFILE_NUM8S)
-// CSPROF sample event
-#define HPCFILE_TAG__CSPROF_EVENT    HPCTAG(3, HPCFILE_STR)
-// CSPROF sample period
-#define HPCFILE_TAG__CSPROF_PERIOD   HPCTAG(4, HPCFILE_NUM8)
-// CSPROF metric flags
-#define HPCFILE_TAG__CSPROF_METRIC_FLAGS  HPCTAG(5, HPCFILE_NUM8) 
-
-
-int hpcfile_tag__fread(uint32_t* tag, FILE* fs);
-int hpcfile_tag__fwrite(uint32_t tag, FILE* fs);
-
-
-// ---------------------------------------------------------
-// hpcfile_str_t: An arbitrary length character string.
-// ---------------------------------------------------------
-
-typedef struct hpcfile_str_s {
-  uint32_t tag;    // data/structure format tag
-
-  uint32_t length; // length of string
-  char*    str;    // string
-
-} hpcfile_str_t;
-
-typedef struct hpcfmt_fstr_t {
+typedef struct hpcfmt_str_t {
 
   uint32_t len; // length of string
   char str[];   // string data. [Variable length data]
 
-} hpcfmt_fstr_t;
+} hpcfmt_str_t;
 
-int hpcfile_str__init(hpcfile_str_t* x);
-int hpcfile_str__fini(hpcfile_str_t* x);
 
-int hpcfile_str__fread(hpcfile_str_t* x, FILE* fs, 
-		       hpcfile_cb__alloc_fn_t alloc_fn);
-int hpcfile_str__fwrite(hpcfile_str_t* x, FILE* fs);
-int hpcfile_str__fprint(hpcfile_str_t* x, FILE* fs);
+int 
+hpcfmt_str_fread(char** str, FILE* infs, hpcfmt_alloc_fn alloc);
 
-int hpcfmt_fstr_fread(char **str, FILE *infs, alloc_fn alloc);
-int hpcfmt_fstr_fwrite(char *str, FILE *outfs);
-void hpcfmt_fstr_free(char *str, free_fn dealloc);
+int 
+hpcfmt_str_fwrite(char* str, FILE* outfs);
 
-// ---------------------------------------------------------
-// hpcfile_num8_t: One 8 byte number.
-// ---------------------------------------------------------
-typedef struct hpcfile_num8_s {
-  uint32_t tag; // data/structure format tag
-  
-  uint64_t num; // some sort of 8 byte numbers
+void 
+hpcfmt_str_free(char* str, hpcfmt_free_fn dealloc);
 
-} hpcfile_num8_t;
-
-int hpcfile_num8__init(hpcfile_num8_t* x);
-int hpcfile_num8__fini(hpcfile_num8_t* x);
-
-int hpcfile_num8__fread(hpcfile_num8_t* x, FILE* fs);
-int hpcfile_num8__fwrite(hpcfile_num8_t* x, FILE* fs);
-int hpcfile_num8__fprint(hpcfile_num8_t* x, FILE* fs);
-
-// ---------------------------------------------------------
-// hpcfile_num8s_t: An arbitrary length string of 8 byte numbers.
-// ---------------------------------------------------------
-typedef struct hpcfile_num8s_s {
-  uint32_t tag; // data/structure format tag
-  
-  uint32_t  length; // length of string
-  uint64_t* nums;   // string of some sort of 8 byte numbers
-
-} hpcfile_num8s_t;
-
-int hpcfile_num8s__init(hpcfile_num8s_t* x);
-int hpcfile_num8s__fini(hpcfile_num8s_t* x);
-
-int hpcfile_num8s__fread(hpcfile_num8s_t* x, FILE* fs,
-			 hpcfile_cb__alloc_fn_t alloc_fn);
-int hpcfile_num8s__fwrite(hpcfile_num8s_t* x, FILE* fs);
-int hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs);
 
 //***************************************************************************
+// hpcfmt_nvpair_t
+//***************************************************************************
+
+typedef struct hpcfmt_nvpair_t {
+
+  char* name;
+  char* val;
+
+} hpcfmt_nvpair_t;
+
+int
+hpcfmt_nvpair_fwrite(hpcfmt_nvpair_t* nvp, FILE* fs);
+
+int
+hpcfmt_nvpairs_vfwrite(FILE* out, va_list args);
+
+int
+hpcfmt_nvpair_fread(hpcfmt_nvpair_t* inp, FILE* infs, hpcfmt_alloc_fn alloc);
+
+int
+hpcfmt_nvpair_fprint(hpcfmt_nvpair_t* nvp, FILE* fs, const char* pre);
+
 
 //***************************************************************************
-//   DBG macro -- convenience only
-//
+// List of hpcfmt_nvpair_t 
+//***************************************************************************
 
-// FIXME: remove and use existing diagnostics package (DIAG_* )
-#define DD(...) if (getenv("HPC_VERB")) do { fprintf(stderr, __VA_ARGS__); fprintf(stderr,"\n");} while (0)
+HPCFMT_List_declare(hpcfmt_nvpair_t);
+
+int
+hpcfmt_nvpair_list_fread(HPCFMT_List(hpcfmt_nvpair_t)* nvps, 
+			 FILE* infs, hpcfmt_alloc_fn alloc);
+
+int
+hpcfmt_nvpair_list_fprint(HPCFMT_List(hpcfmt_nvpair_t)* nvps, 
+			  FILE* fs, const char* pre);
+
+char*
+hpcrun_fmt_nvpair_search(HPCFMT_List(hpcfmt_nvpair_t)* lst, const char* name);
+
+
+//***************************************************************************
 
 #if defined(__cplusplus)
 } /* extern "C" */

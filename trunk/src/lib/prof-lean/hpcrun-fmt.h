@@ -75,57 +75,6 @@
 extern "C" {
 #endif
 
-//***************************************************************************
-//
-// Types. functions, and useful macros for reading/writing a call
-// stack tree from/to a binary file.
-//
-// See hpcrun-fmt.txt for more specifics on the format and interface
-//
-//***************************************************************************
-
-//***************************************************************************
-//
-//  Macros for defining "LIST_OF" things
-//
-//***************************************************************************
-
-// conventional name for LIST_OF stuff
-
-#define LIST_OF(t) list_of_ ## t
-
-// std representation for a LIST_OF things
-#define REP_LIST_OF(t) \
-struct LIST_OF(t) {    \
-  uint32_t len;        \
-  t *lst;              \
-}
-
-// Macro to typedef a LIST_OF some type
-
-#define typedef_LIST_OF(t) \
-typedef REP_LIST_OF(t) LIST_OF(t)
-
-
-  // ****** name-value pairs (nvpair) ******
-
-typedef struct nvpair_t {
-  char *name;
-  char *val;
-} nvpair_t;
-
-// Sentinel to mark end of a variadic nv pair list
-
-//***************************************************************************
-// 
-// some type defs for various LIST_OF things (uses macros from this file)
-//
-//***************************************************************************
-
-typedef_LIST_OF(nvpair_t);
-
-char *hpcrun_fmt_nvpair_search(LIST_OF(nvpair_t) *lst, const char *name);
-
 
 //***************************************************************************
 // hdr
@@ -146,19 +95,19 @@ typedef struct hpcrun_fmt_hdr_t {
   char version[sizeof(HPCRUN_FMT_Version)];
   char endian;
 
-  LIST_OF(nvpair_t) nvps;
+  HPCFMT_List(hpcfmt_nvpair_t) nvps;
 
 } hpcrun_fmt_hdr_t;
 
 
 int
-hpcrun_fmt_hdr_fwrite(FILE *outfs, ...);
+hpcrun_fmt_hdr_fwrite(FILE* outfs, ...);
 
 int
-hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t *hdr, FILE* infs, alloc_fn alloc);
+hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc);
 
 int
-hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t *hdr, FILE* outf);
+hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);
 
 
 //***************************************************************************
@@ -174,14 +123,14 @@ typedef struct hpcrun_fmt_epoch_hdr_t {
   uint64_t flags;
   uint32_t ra_distance;
   uint64_t granularity;
-  LIST_OF(nvpair_t) nvps;
+  HPCFMT_List(hpcfmt_nvpair_t) nvps;
 
 } hpcrun_fmt_epoch_hdr_t;
 
 
 int
 hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs, 
-			   alloc_fn alloc);
+			   hpcfmt_alloc_fn alloc);
 
 int 
 hpcrun_fmt_epoch_hdr_fwrite(FILE* out, uint64_t flags, uint32_t ra_distance, 
@@ -203,8 +152,10 @@ typedef struct metric_desc_t {
 
 } metric_desc_t;
 
-typedef_LIST_OF(metric_desc_t);
-typedef LIST_OF(metric_desc_t) hpcrun_fmt_metric_tbl_t;
+HPCFMT_List_declare(metric_desc_t);
+
+typedef HPCFMT_List(metric_desc_t) hpcrun_fmt_metric_tbl_t;
+
 typedef hpcrun_fmt_metric_tbl_t metric_tbl_t;
 
 int 
@@ -212,13 +163,13 @@ hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t* metric_tbl, FILE* out);
 
 int
 hpcrun_fmt_metric_tbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
-			    alloc_fn alloc);
+			    hpcfmt_alloc_fn alloc);
 
 int
 hpcrun_fmt_metric_tbl_fprint(metric_tbl_t* metrics, FILE* out);
 
 void
-hpcrun_fmt_metric_tbl_free(metric_tbl_t* metric_tbl, free_fn dealloc);
+hpcrun_fmt_metric_tbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************
@@ -246,20 +197,20 @@ typedef struct loadmap_src_t {
 
 } loadmap_src_t;
 
-typedef_LIST_OF(loadmap_entry_t);
-typedef LIST_OF(loadmap_entry_t) loadmap_t;
+HPCFMT_List_declare(loadmap_entry_t);
+typedef HPCFMT_List(loadmap_entry_t) loadmap_t;
 
 int
 hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* out);
 
 int
-hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* in, alloc_fn alloc);
+hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* in, hpcfmt_alloc_fn alloc);
 
 int
 hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* out);
 
 void
-hpcrun_fmt_loadmap_free(loadmap_t* loadmap, free_fn dealloc);
+hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************
@@ -334,12 +285,12 @@ typedef struct hpcfile_csprof_metric_s {
 } hpcfile_csprof_metric_t;
 
 
-int hpcfile_csprof_metric__init(hpcfile_csprof_metric_t *x);
-int hpcfile_csprof_metric__fini(hpcfile_csprof_metric_t *x);
+int hpcfile_csprof_metric__init(hpcfile_csprof_metric_t* x);
+int hpcfile_csprof_metric__fini(hpcfile_csprof_metric_t* x);
 
-int hpcfile_csprof_metric__fread(hpcfile_csprof_metric_t *x, FILE *fs);
-int hpcfile_csprof_metric__fwrite(hpcfile_csprof_metric_t *x, FILE *fs);
-int hpcfile_csprof_metric__fprint(hpcfile_csprof_metric_t *x, FILE *fs);
+int hpcfile_csprof_metric__fread(hpcfile_csprof_metric_t* x, FILE* fs);
+int hpcfile_csprof_metric__fwrite(hpcfile_csprof_metric_t* x, FILE* fs);
+int hpcfile_csprof_metric__fprint(hpcfile_csprof_metric_t* x, FILE* fs);
 
 
 // --------------------------------------------------------------------------
@@ -352,8 +303,7 @@ int hpcfile_cstree_as_info__fwrite(lush_assoc_info_t* x, FILE* fs);
 
 int hpcfile_cstree_lip__fread(lush_lip_t* x, FILE* fs);
 int hpcfile_cstree_lip__fwrite(lush_lip_t* x, FILE* fs);
-int hpcfile_cstree_lip__fprint(lush_lip_t* x,
-			       FILE* fs, const char* pre);
+int hpcfile_cstree_lip__fprint(lush_lip_t* x, FILE* fs, const char* pre);
 
 
 // --------------------------------------------------------------------------
@@ -427,7 +377,7 @@ int hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x);
 
 int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs);
 int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs);
-int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* f, 
+int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, 
 				const char* pre);
 
 
