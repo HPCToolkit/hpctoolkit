@@ -7,17 +7,17 @@
 //***************************************************************************
 //
 // File:
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    General and helper functions for reading/writing a HPC data
-//    files from/to a binary file.
+//   General and helper functions for reading/writing a HPC data
+//   files from/to a binary file.
 //
-//    These routines *must not* allocate dynamic memory; if such memory
-//    is needed, callbacks to the user's allocator should be used.
+//   These routines *must not* allocate dynamic memory; if such memory
+//   is needed, callbacks to the user's allocator should be used.
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 

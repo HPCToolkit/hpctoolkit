@@ -109,6 +109,8 @@ hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc);
 int
 hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);
 
+// FIXME: need hpcrun_fmt_hdr_free()
+
 
 //***************************************************************************
 // epoch-hdr
@@ -138,6 +140,8 @@ hpcrun_fmt_epoch_hdr_fwrite(FILE* out, uint64_t flags, uint32_t ra_distance,
 
 int
 hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* out);
+
+// FIXME: need hpcrun_fmt_hdr_free()
 
 
 //***************************************************************************

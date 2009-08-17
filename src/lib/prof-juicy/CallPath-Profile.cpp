@@ -328,9 +328,10 @@ Profile::make(const char* fnm, FILE* outfs)
     DIAG_Throw("error reading 'fmt-hdr'");
   }
 
-  // TODO: extract target field from nvpairs in hdr
-  // char *target = hpcrun_fmt_nvpair_search(&(hdr.nvps), "target");
+  // TODO: extract target field from nvpairs in hdr:
+  //   char *target = hpcfmt_nvpair_search(&hdr.nvps, "target");
 
+  // FIXME: hpcrun_fmt_hdr_free()
 
   // ------------------------------------------------------------
   // Read each epoch and merge them to form one Profile
@@ -398,6 +399,8 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'epoch-hdr'");
   }
+
+  // FIXME: hpcrun_fmt_epoch_hdr_free()
   
   // ----------------------------------------
   // metric-tbl
@@ -469,7 +472,8 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
     DIAG_EMsg(locStr << "': Cannot fully process samples from unavailable load modules:\n" << x.what());
   }
 
-  // FIXME: free load map
+  hpcrun_fmt_loadmap_free(&loadmap_tbl, hpcfmt_free);
+
 
   // ------------------------------------------------------------
   // CCT (cct)
