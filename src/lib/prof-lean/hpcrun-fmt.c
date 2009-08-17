@@ -62,7 +62,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <stdarg.h>
 
 #include <sys/stat.h>
 
@@ -73,118 +72,6 @@
 #include "hpcfmt.h"
 
 //*************************** Forward Declarations **************************
-
-
-//***************************************************************************
-//
-//***************************************************************************
-
-int
-nvpairs_vfwrite(FILE *out, va_list args)
-{
-  va_list _tmp;
-  va_copy(_tmp, args);
-
-  uint32_t len = 0;
-
-  for (char *arg = va_arg(_tmp, char *); arg != NULL; arg = va_arg(_tmp, char *)) {
-    arg = va_arg(_tmp, char *);
-    len++;
-  }
-  va_end(_tmp);
-
-  hpcfmt_byte4_fwrite(len, out);
-
-  for (char *arg = va_arg(args, char *); arg != NULL; arg = va_arg(args, char *)) {
-    hpcfmt_fstr_fwrite(arg, out); // write NAME
-    arg = va_arg(args, char *);
-    hpcfmt_fstr_fwrite(arg, out); // write VALUE
-  }
-  return HPCFILE_OK;
-}
-
-
-char *
-hpcrun_fmt_nvpair_search(LIST_OF(nvpair_t) *lst, const char *name)
-{
-  nvpair_t *p = lst->lst;
-  for (int i=0; i<lst->len; p++,i++) {
-    if (strcmp(p->name, name) == 0) {
-      return p->val;
-    }
-  }
-  return "NOT FOUND";
-}
-
-
-//***************************************************************************
-//
-//***************************************************************************
-
-hpcrun_metric_data_t hpcrun_metric_data_ZERO = { .bits = 0 };
-
-static int
-hpcrun_fmt_nvpair_t_fwrite(nvpair_t* nvp, FILE* fs)
-{
-  int ret;
-
-  ret = hpcfmt_fstr_fwrite(nvp->name, fs);
-  if (ret != HPCFILE_OK) { 
-    return HPCFILE_ERR;
-  }
-  
-  ret = hpcfmt_fstr_fwrite(nvp->val, fs);
-  if (ret != HPCFILE_OK) { 
-    return HPCFILE_ERR;
-  }
-
-  return HPCFILE_OK;
-}
-
-
-static int
-hpcrun_fmt_nvpair_t_fread(nvpair_t* inp, FILE* infs, alloc_fn alloc)
-{
-  hpcfmt_fstr_fread(&(inp->name), infs, alloc);
-  hpcfmt_fstr_fread(&(inp->val), infs, alloc);
-
-  return HPCFILE_OK;
-}
-
-
-static int
-hpcrun_fmt_nvpair_t_fprint(nvpair_t* nvp, FILE* fs, const char* pre)
-{
-  fprintf(fs, "%s{nv-pair: %s, %s}\n", pre, nvp->name, nvp->val);
-  return HPCFILE_OK;
-}
-
-
-static int
-hpcrun_fmt_list_of_nvpair_t_fread(LIST_OF(nvpair_t)* nvps, FILE* infs, 
-				  alloc_fn alloc)
-{
-  hpcfmt_byte4_fread(&(nvps->len), infs);
-  if (alloc != NULL) {
-    nvps->lst = (nvpair_t *) alloc(nvps->len * sizeof(nvpair_t));
-  }
-  for (uint32_t i = 0; i < nvps->len; i++) {
-    hpcrun_fmt_nvpair_t_fread(&nvps->lst[i], infs, alloc);
-  }
-  return HPCFILE_OK;
-}
-
-
-static int
-hpcrun_fmt_list_of_nvpair_t_fprint(LIST_OF(nvpair_t)* nvps, FILE* fs,
-				   const char* pre)
-{
-  for (uint32_t i = 0; i < nvps->len; ++i) {
-    hpcrun_fmt_nvpair_t_fprint(&nvps->lst[i], fs, pre);
-  }
-  return HPCFILE_OK;
-}
-
 
 //***************************************************************************
 // hdr
@@ -200,16 +87,16 @@ hpcrun_fmt_hdr_fwrite(FILE* fs, ...)
   fwrite(HPCRUN_FMT_Version, 1, HPCRUN_FMT_VersionLen, fs);
   fwrite(HPCRUN_FMT_Endian,  1, HPCRUN_FMT_EndianLen, fs);
 
-  nvpairs_vfwrite(fs, args);
+  hpcfmt_nvpairs_vfwrite(fs, args);
 
   va_end(args);
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
 int
-hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, alloc_fn alloc)
+hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc)
 {
   char tag[HPCRUN_FMT_MagicLen + 1];
 
@@ -217,26 +104,26 @@ hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, alloc_fn alloc)
   tag[HPCRUN_FMT_MagicLen] = '\0';
 
   if (nr != HPCRUN_FMT_MagicLen) {
-    return HPCFILE_ERR;
+    return HPCFMT_ERR;
   }
   if (strcmp(tag, HPCRUN_FMT_Magic) != 0) {
-    return HPCFILE_ERR;
+    return HPCFMT_ERR;
   }
 
   nr = fread(hdr->version, 1, HPCRUN_FMT_VersionLen, infs);
   tag[HPCRUN_FMT_VersionLen] = '\0';
   if (nr != HPCRUN_FMT_VersionLen) {
-    return HPCFILE_ERR;
+    return HPCFMT_ERR;
   }
 
   nr = fread(&hdr->endian, 1, HPCRUN_FMT_EndianLen, infs);
   if (nr != HPCRUN_FMT_EndianLen) {
-    return HPCFILE_ERR;
+    return HPCFMT_ERR;
   }
 
-  hpcrun_fmt_list_of_nvpair_t_fread(&(hdr->nvps), infs, alloc);
+  hpcfmt_nvpair_list_fread(&(hdr->nvps), infs, alloc);
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -248,10 +135,10 @@ hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* fs)
   fprintf(fs, "{hdr:\n");
   fprintf(fs, "  (version: %s)\n", hdr->version);
   fprintf(fs, "  (endian: %c)\n", hdr->endian);
-  hpcrun_fmt_list_of_nvpair_t_fprint(&hdr->nvps, fs, "  ");
+  hpcfmt_nvpair_list_fprint(&hdr->nvps, fs, "  ");
   fprintf(fs, "}\n");
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -272,17 +159,17 @@ hpcrun_fmt_epoch_hdr_fwrite(FILE* fs, uint64_t flags,
   hpcfmt_byte4_fwrite(ra_distance, fs);
   hpcfmt_byte8_fwrite(granularity, fs);
 
-  nvpairs_vfwrite(fs, args);
+  hpcfmt_nvpairs_vfwrite(fs, args);
 
   va_end(args);
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
 int
 hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs, 
-			   alloc_fn alloc)
+			   hpcfmt_alloc_fn alloc)
 {
   char tag[HPCRUN_FMT_EpochTagLen + 1];
 
@@ -290,24 +177,24 @@ hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
   tag[HPCRUN_FMT_EpochTagLen] = '\0';
   
   if (nr == 0) {
-    return HPCFILE_EOF;
+    return HPCFMT_EOF;
   }
   else if (nr != HPCRUN_FMT_EpochTagLen) {
-    return HPCFILE_ERR;
+    return HPCFMT_ERR;
   }
 
   if (strcmp(tag, HPCRUN_FMT_EpochTag) != 0) {
     //fprintf(stderr,"invalid epoch header tag: %s\n", tag);
-    return HPCFILE_ERR;
+    return HPCFMT_ERR;
   }
 
   // FIXME: please check for errors!
   hpcfmt_byte8_fread(&(ehdr->flags), fs);
   hpcfmt_byte4_fread(&(ehdr->ra_distance), fs);
   hpcfmt_byte8_fread(&(ehdr->granularity), fs);
-  hpcrun_fmt_list_of_nvpair_t_fread(&(ehdr->nvps), fs, alloc);
+  hpcfmt_nvpair_list_fread(&(ehdr->nvps), fs, alloc);
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -319,10 +206,10 @@ hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs)
   fprintf(fs, "  (flags: %"PRIx64") ", ehdr->flags);
   fprintf(fs, "(RA distance: %d) ", ehdr->ra_distance);
   fprintf(fs, "(address granularity: %"PRIu64")\n", ehdr->granularity);
-  hpcrun_fmt_list_of_nvpair_t_fprint(&(ehdr->nvps), fs, "  ");
+  hpcfmt_nvpair_list_fprint(&(ehdr->nvps), fs, "  ");
   fprintf(fs, "}\n");
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -336,16 +223,17 @@ hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t* metric_tbl, FILE* fs)
   hpcfmt_byte4_fwrite(metric_tbl->len, fs);
   metric_desc_t* m_lst = metric_tbl->lst;
   for (uint32_t i = 0; i < metric_tbl->len; ++i) {
-    hpcfmt_fstr_fwrite(m_lst[i].name, fs);
+    hpcfmt_str_fwrite(m_lst[i].name, fs);
     hpcfmt_byte8_fwrite(m_lst[i].flags, fs);
     hpcfmt_byte8_fwrite(m_lst[i].period, fs);
   }
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
 int
-hpcrun_fmt_metric_tbl_fread(metric_tbl_t* metric_tbl, FILE* in, alloc_fn alloc)
+hpcrun_fmt_metric_tbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
+			    hpcfmt_alloc_fn alloc)
 {
   hpcfmt_byte4_fread(&(metric_tbl->len), in);
   if (alloc != NULL) {
@@ -354,11 +242,11 @@ hpcrun_fmt_metric_tbl_fread(metric_tbl_t* metric_tbl, FILE* in, alloc_fn alloc)
   }
   metric_desc_t *p = metric_tbl->lst;
   for (uint32_t i = 0; i < metric_tbl->len; p++, i++) {
-    hpcfmt_fstr_fread(&(p->name), in, alloc);
+    hpcfmt_str_fread(&(p->name), in, alloc);
     hpcfmt_byte8_fread(&(p->flags), in);
     hpcfmt_byte8_fread(&(p->period), in);
   }
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -375,16 +263,16 @@ hpcrun_fmt_metric_tbl_fprint(metric_tbl_t* metric_tbl, FILE* fs)
   }
   fputs("}\n", fs);
   
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
 void
-hpcrun_fmt_metric_tbl_free(metric_tbl_t* metric_tbl, free_fn dealloc)
+hpcrun_fmt_metric_tbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc)
 {
   metric_desc_t *p = metric_tbl->lst;
   for (uint32_t i = 0; i < metric_tbl->len; p++, i++) {
-    hpcfmt_fstr_free(p->name, dealloc);
+    hpcfmt_str_free(p->name, dealloc);
   }
   dealloc((void*)metric_tbl->lst);
   metric_tbl->lst = NULL;
@@ -401,18 +289,18 @@ hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* fs)
   hpcfmt_byte4_fwrite(num_modules, fs);
 
   for(int i = 0; i < num_modules; i++) {
-    hpcfmt_fstr_fwrite(src->name, fs);
+    hpcfmt_str_fwrite(src->name, fs);
     hpcfmt_byte8_fwrite((uint64_t)(unsigned long)src->vaddr, fs);
     hpcfmt_byte8_fwrite((uint64_t)(unsigned long)src->mapaddr, fs);
     src = src->next;
   }
   
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
 int
-hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* fs, alloc_fn alloc)
+hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* fs, hpcfmt_alloc_fn alloc)
 {
   hpcfmt_byte4_fread(&(loadmap->len), fs);
   if (alloc) {
@@ -422,14 +310,15 @@ hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* fs, alloc_fn alloc)
   // FIXME: incomplete and hard-to-understand OSR?  Why not index by i?
   loadmap_entry_t *e = loadmap->lst;
   for(int i = 0; i < loadmap->len; e++, i++) {
-    hpcfmt_fstr_fread(&(e->name), fs, alloc);
+    // FIXME: check for errors
+    hpcfmt_str_fread(&(e->name), fs, alloc);
     hpcfmt_byte8_fread(&(e->vaddr), fs);
     hpcfmt_byte8_fread(&(e->mapaddr), fs);
     // FIXME ?? (don't know what these are for yet ...
     e->flags = 0;
   }
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -446,16 +335,16 @@ hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* fs)
   }
   fprintf(fs, "}\n");
   
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
 void
-hpcrun_fmt_loadmap_free(loadmap_t* loadmap, free_fn dealloc)
+hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc)
 {
   loadmap_entry_t *e = loadmap->lst;
   for(int i = 0; i < loadmap->len; e++, i++) {
-    hpcfmt_fstr_free(e->name, dealloc);
+    hpcfmt_str_free(e->name, dealloc);
     e->name = NULL;
   }
   dealloc(loadmap->lst);
@@ -467,21 +356,21 @@ hpcrun_fmt_loadmap_free(loadmap_t* loadmap, free_fn dealloc)
 // cct
 //***************************************************************************
 
+hpcrun_metric_data_t hpcrun_metric_data_ZERO = { .bits = 0 };
 
-//***************************************************************************
 
 int 
 hpcfile_cstree_nodedata__init(hpcfile_cstree_nodedata_t* x)
 {
   memset(x, 0, sizeof(*x));
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
 int 
 hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x)
 {
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -498,7 +387,7 @@ hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs)
     hpcfmt_byte8_fread(&x->metrics[i].bits, fs);
   }
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -516,7 +405,7 @@ hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs)
     hpcfmt_byte8_fwrite(x->metrics[i].bits, fs);
   }
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -540,7 +429,7 @@ hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
   }
   fprintf(fs, ")\n");
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -552,9 +441,9 @@ hpcfile_cstree_as_info__fread(lush_assoc_info_t* x, FILE* fs)
   size_t sz;
 
   sz = hpcfmt_byte4_fread(&x->bits, fs);
-  if (sz != sizeof(x->bits)) { return HPCFILE_ERR; }
+  if (sz != sizeof(x->bits)) { return HPCFMT_ERR; }
   
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -564,9 +453,9 @@ hpcfile_cstree_as_info__fwrite(lush_assoc_info_t* x, FILE* fs)
   size_t sz;
 
   sz = hpcfmt_byte4_fwrite(x->bits, fs);
-  if (sz != sizeof(x->bits)) { return HPCFILE_ERR; }
+  if (sz != sizeof(x->bits)) { return HPCFMT_ERR; }
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -574,7 +463,7 @@ int
 hpcfile_cstree_as_info__fprint(lush_lip_t* x, FILE* fs, const char* pre)
 {
   // not done
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -584,13 +473,13 @@ int
 hpcfile_cstree_lip__fread(lush_lip_t* x, FILE* fs)
 {
 
-  //  HPCFILE_TAG__CSTREE_LIP has already been read
+  //  HPCFMT_TAG__CSTREE_LIP has already been read
 
   for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
     hpcfmt_byte8_fread(&x->data8[i], fs);
   }
   
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -601,7 +490,7 @@ hpcfile_cstree_lip__fwrite(lush_lip_t* x, FILE* fs)
     hpcfmt_byte8_fwrite(x->data8[i], fs);
   }
   
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -613,7 +502,7 @@ hpcfile_cstree_lip__fprint(lush_lip_t* x, FILE* fs, const char* pre)
 
   fprintf(fs, "%s(lip: %s)", pre, lip_str);
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -624,7 +513,7 @@ hpcfile_cstree_node__init(hpcfile_cstree_node_t* x)
 {
   memset(x, 0, sizeof(*x));
   hpcfile_cstree_nodedata__init(&x->data);
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -632,7 +521,7 @@ int
 hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x)
 {
   hpcfile_cstree_nodedata__fini(&x->data);  
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -645,11 +534,11 @@ hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs)
   hpcfmt_byte4_fread(&x->id_parent, fs);
   
   ret = hpcfile_cstree_nodedata__fread(&x->data, fs);
-  if (ret != HPCFILE_OK) {
-    return HPCFILE_ERR; 
+  if (ret != HPCFMT_OK) {
+    return HPCFMT_ERR; 
   }
   
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -659,11 +548,11 @@ hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs)
   hpcfmt_byte4_fwrite(x->id, fs);   // if node is leaf, make the id neg
   hpcfmt_byte4_fwrite(x->id_parent, fs);
   
-  if (hpcfile_cstree_nodedata__fwrite(&x->data, fs) != HPCFILE_OK) {
-    return HPCFILE_ERR; 
+  if (hpcfile_cstree_nodedata__fwrite(&x->data, fs) != HPCFMT_OK) {
+    return HPCFMT_ERR; 
   }
   
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -677,7 +566,7 @@ hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, const char* pre)
 
   fprintf(fs, "%s}\n", pre);
   
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 //***************************************************************************

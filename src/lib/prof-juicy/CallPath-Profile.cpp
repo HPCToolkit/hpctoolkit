@@ -324,7 +324,7 @@ Profile::make(const char* fnm, FILE* outfs)
   // ------------------------------------------------------------
   hpcrun_fmt_hdr_t hdr;
   ret = hpcrun_fmt_hdr_fread(&hdr, fs, hpcfmt_alloc);
-  if (ret != HPCFILE_OK) {
+  if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'fmt-hdr'");
   }
 
@@ -345,7 +345,7 @@ Profile::make(const char* fnm, FILE* outfs)
     try {
       string locStr = fnm; // ":epoch " + 1;
       ret = hpcrun_fmt_epoch_fread(myprof, fs, locStr, outfs);
-      if (ret == HPCFILE_EOF) {
+      if (ret == HPCFMT_EOF) {
 	break;
       }
     }
@@ -392,10 +392,10 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // ----------------------------------------
   hpcrun_fmt_epoch_hdr_t ehdr;
   ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, infs, hpcfmt_alloc);
-  if (ret == HPCFILE_EOF) {
-    return HPCFILE_EOF;
+  if (ret == HPCFMT_EOF) {
+    return HPCFMT_EOF;
   }
-  if (ret != HPCFILE_OK) {
+  if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'epoch-hdr'");
   }
   
@@ -404,7 +404,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // ----------------------------------------
   metric_tbl_t metric_tbl;
   ret = hpcrun_fmt_metric_tbl_fread(&metric_tbl, infs, hpcfmt_alloc);
-  if (ret != HPCFILE_OK) {
+  if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
   }
 
@@ -415,7 +415,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // ----------------------------------------
   loadmap_t loadmap_tbl;
   ret = hpcrun_fmt_loadmap_fread(&loadmap_tbl, infs, hpcfmt_alloc);
-  if (ret != HPCFILE_OK) {
+  if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'loadmap'");
   }
   
@@ -485,7 +485,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
     prof->loadMapMgr()->merge(loadmap);
   prof->cct_canonicalizePostMerge(mergeChg);
 
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 
@@ -499,7 +499,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
   
   CCTIdToCCTNodeMap cctNodeMap;
 
-  int ret = HPCFILE_ERR;
+  int ret = HPCFMT_ERR;
 
   if (outfs) {
     fprintf(outfs, "{cct:\n"); 
@@ -526,7 +526,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
     // Read the node
     // ----------------------------------------------------------
     ret = hpcfile_cstree_node__fread(&ndata, infs);
-    if (ret != HPCFILE_OK) {
+    if (ret != HPCFMT_OK) {
       DIAG_Throw("Error reading CCT node " << ndata.id);
     }
     if (outfs) {

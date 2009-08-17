@@ -56,16 +56,12 @@ FILE* hpcio_fopen_w(const char* fnm, int overwrite);
 FILE* hpcio_open_r(const char* fnm);
 int   hpcio_close(FILE* fs);
 
+
 //***************************************************************************
 
 // hpcio_fread_leX: Reads 'X' number of little-endian bytes from the file
 // stream 'fs', correctly orders them for the current architecture,
 // and stores the result in 'val'. Returns the number of bytes read.
-//
-// hpcio_fwrite_leX: Write 'X' number of bytes from 'val' to the
-// little-endian file stream 'fs', correctly ordering the bytes before
-// writing.  Returns the number of bytes written.
-//
 
 size_t hpcio_fread_le2(uint16_t* val, FILE* fs);
 size_t hpcio_fread_le4(uint32_t* val, FILE* fs);
@@ -73,6 +69,11 @@ size_t hpcio_fread_le8(uint64_t* val, FILE* fs);
 size_t hpcio_fwrite_le2(uint16_t* val, FILE* fs);
 size_t hpcio_fwrite_le4(uint32_t* val, FILE* fs);
 size_t hpcio_fwrite_le8(uint64_t* val, FILE* fs);
+
+
+// hpcio_fwrite_beX: Write 'X' number of bytes from 'val' to the
+// big-endian file stream 'fs', correctly ordering the bytes before
+// writing.  Returns the number of bytes written.
 
 size_t hpcio_fread_be2(uint16_t* val, FILE* fs);
 size_t hpcio_fread_be4(uint32_t* val, FILE* fs);

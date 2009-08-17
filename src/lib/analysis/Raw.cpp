@@ -101,11 +101,12 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
     DIAG_Throw(filenm << ": could not open");
   }
 
+  // FIXME:tallent: use the code in CallPath::Profile
 
   hpcrun_fmt_hdr_t new_hdr;
   
   ret = hpcrun_fmt_hdr_fread(&new_hdr, fs, malloc);
-  if (ret != HPCFILE_OK) {
+  if (ret != HPCFMT_OK) {
     DIAG_Throw(filenm << ": error reading 'new hdr'");
   }
   hpcrun_fmt_hdr_fprint(&new_hdr, stdout);
@@ -125,7 +126,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
     hpcrun_fmt_epoch_hdr_t ehdr;
 
     int ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, fs, malloc);
-    if (ret == HPCFILE_EOF) {
+    if (ret == HPCFMT_EOF) {
       break;
     }
     num_epochs++;

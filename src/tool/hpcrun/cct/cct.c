@@ -452,7 +452,7 @@ csprof_cct__write_bin(FILE* fs, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt)
 
   // splice creation context out of tree
 
-  return (ret == HPCFILE_OK) ? HPCRUN_OK : HPCRUN_ERR;
+  return (ret == HPCFMT_OK) ? HPCRUN_OK : HPCRUN_ERR;
 }
 
 //***************************************************************************
@@ -499,7 +499,7 @@ node_child_count(hpcrun_cct_t* tree, csprof_cct_node_t* node);
 // hpcfile_cstree_write: Writes all nodes of the tree 'tree' and its
 // context 'tree_ctxt' to file stream 'fs'; writing of 'tree' begins
 // at 'root'.  The tree and its context should have 'num_nodes' nodes.
-// Returns HPCFILE_OK upon success; HPCFILE_ERR on error.
+// Returns HPCFMT_OK upon success; HPCFMT_ERR on error.
 static int
 hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree, 
 		     csprof_cct_node_t* root,
@@ -522,7 +522,7 @@ hpcfile_cstree_write(FILE* fs, hpcrun_cct_t* tree,
     tree_parent_id = tree_ctxt->context->persistent_id;
   }
     
-  if (!fs) { return HPCFILE_ERR; }
+  if (!fs) { return HPCFMT_ERR; }
 
   // -------------------------------------------------------
   // When tree_ctxt is non-null, we will peel off the top
@@ -573,7 +573,7 @@ hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
 {
   int ret;
 
-  if (!node) { return HPCFILE_OK; }
+  if (!node) { return HPCFMT_OK; }
 
   // ---------------------------------------------------------
   // Write this node
@@ -604,15 +604,15 @@ hpcfile_cstree_write_node(FILE* fs, hpcrun_cct_t* tree,
   while (c) {
     ret = hpcfile_cstree_write_node(fs, tree, c, tmp_node, 
 				    my_lvl_to_skip, my_parent);
-    if (ret != HPCFILE_OK) {
-      return HPCFILE_ERR;
+    if (ret != HPCFMT_OK) {
+      return HPCFMT_ERR;
     }
 
     c = csprof_cct_node__next_sibling(c);
     if (c == first) { break; }
   }
   
-  return HPCFILE_OK;
+  return HPCFMT_OK;
 }
 
 static int
@@ -650,7 +650,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
 	 tmp_node->data.num_metrics * sizeof(cct_metric_data_t));
 
   ret = hpcfile_cstree_node__fwrite(tmp_node, fs);
-  if (ret != HPCFILE_OK) { 
+  if (ret != HPCFMT_OK) { 
     return HPCRUN_ERR; 
   }
 
