@@ -62,48 +62,9 @@
 //*************************** User Include Files ****************************
 
 #include "hpcfmt.h"
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
 #include "hpcio.h"
 
-int
-hpcfmt_byte4_fwrite(uint32_t val, FILE *out)
-{
-  if ( sizeof(uint32_t) != hpcio_fwrite_le4(&val, out) ) {
-    return HPCFILE_ERR;
-  }
-  return HPCFILE_OK;
-}
-
-int
-hpcfmt_byte4_fread(uint32_t *val, FILE *in)
-{
-  if ( sizeof(uint32_t) != hpcio_fread_le4(val, in) ) {
-    return HPCFILE_ERR;
-  }
-  return HPCFILE_OK;
-}
-
-int
-hpcfmt_byte8_fwrite(uint64_t val, FILE *out)
-{
-  if ( sizeof(uint64_t) != hpcio_fwrite_le8(&val, out) ) {
-    return HPCFILE_ERR;
-  }
-  return HPCFILE_OK;
-}
-
-int
-hpcfmt_byte8_fread(uint64_t *val, FILE *in)
-{
-  if ( sizeof(uint64_t) != hpcio_fread_le8(val, in) ) {
-    return HPCFILE_ERR;
-  }
-  return HPCFILE_OK;
-}
+//*************************** Forward Declarations **************************
 
 //***************************************************************************
 

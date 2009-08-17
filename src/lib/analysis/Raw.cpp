@@ -102,29 +102,6 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   }
 
 
-//*************************************************************************
-//
-//        The high level printing algorithm
-//
-//
-//  hpcrun_fmt_hdr_fread()
-//  hpcrun_le4_fread(# epochs)
-//  foreach epoch
-//     hpcrun_epoch_fread()
-//
-// hpcrun_epoch_fread()
-//    hpcrun_fmt_epoch_hdr_fread() /* contains flags, char-rtn-dst, gran, NVPs */
-//    hpcrun_fmt_metric_tbl_fread()
-//    hpcrun_fmt_loadmap_fread()
-//    /* read cct */
-//    hpcrun_le4_fread(# cct_nodes)
-//    foreach cct-node
-//       hpcrun_fmt_cct_node_fread(cct_node_t *p)
-//
-//*************************************************************************
-
-
-  // ----------------- new file hdr -----------------------
   hpcrun_fmt_hdr_t new_hdr;
   
   ret = hpcrun_fmt_hdr_fread(&new_hdr, fs, malloc);
@@ -135,7 +112,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   
 
   uint32_t num_ccts = 1;
-  int actual_epochs = 0;
+  int num_epochs = 0;
 
   //
   // for each epoch ...
@@ -151,7 +128,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
     if (ret == HPCFILE_EOF) {
       break;
     }
-    actual_epochs++;
+    num_epochs++;
     hpcrun_fmt_epoch_hdr_fprint(&ehdr, stdout);
 
     //
@@ -189,7 +166,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
     }
   } // epoch list
   hpcio_close(fs);
-  printf("\n{Actual Epochs = %d}\n", actual_epochs);
+  printf("\n{num-epochs: %d}\n", num_epochs);
 }
 
 

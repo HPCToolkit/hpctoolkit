@@ -76,10 +76,6 @@ namespace Prof {
 
 namespace CallPath {
 
-  // symbolic constants
-
-static const bool MULTI_EPOCH  = true;
-static const bool MULTI_THREAD = ! MULTI_EPOCH;
 
 class Profile: public Unique {
 public:
@@ -142,7 +138,7 @@ public:
   // Given a Profile y, merge y into x = 'this'
   // ASSUMES: both x and y are in canonical form (cct_canonicalize())
   // WARNING: the merge may change/destroy y
-  void merge(Profile& y, bool same_epoch);
+  void merge(Profile& y, bool isSameThread);
 
 
   // -------------------------------------------------------
@@ -155,17 +151,14 @@ public:
   // hpcrun_fmt_cct_fread(): 
   //
   // Reads the appropriate hpcrun_fmt object from the file stream
-  // 'fs', checking for errors, and constructs appropriate
+  // 'infs', checking for errors, and constructs appropriate
   // Prof::Profile::CallPath objects.  If 'outfs' is non-null, a
   // textual form of the data is echoed to 'outfs' for human
   // inspection.
 
-  static void
-  hpcrun_fmt_epoch_fread(Profile* prof,
-			 uint32_t num_ccts,
-			 metric_tbl_t* metadata,
-			 loadmap_t* loadmap_tbl,
-			 FILE* infs, std::string locStr, FILE* outfs);
+  static int
+  hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs, 
+			 std::string locStr, FILE* outfs);
 
   static void
   hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics, 

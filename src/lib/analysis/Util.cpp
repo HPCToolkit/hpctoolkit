@@ -96,15 +96,10 @@ Analysis::Util::getProfileType(const std::string& filenm)
   IOUtil::CloseStream(is);
   
   ProfType_t ty = ProfType_NULL;
-  if (strncmp(buf, HPCFILE_CSPROF_MAGIC_STR, 
-	      HPCFILE_CSPROF_MAGIC_STR_LEN) == 0) {
-    ty = ProfType_CALLPATH;      
-  }
-  else if (strncmp(buf, MAGIC, sizeof(MAGIC)-1) == 0) {
+  if (strncmp(buf, HPCRUN_FMT_Magic, HPCRUN_FMT_MagicLen) == 0) {
     ty = ProfType_CALLPATH;
   }
-  else if (strncmp(buf, HPCRUNFILE_MAGIC_STR, 
-		   HPCRUNFILE_MAGIC_STR_LEN) == 0) {
+  else if (strncmp(buf, HPCRUNFILE_MAGIC_STR, HPCRUNFILE_MAGIC_STR_LEN) == 0) {
     ty = ProfType_FLAT;
   }
 

@@ -45,7 +45,6 @@ hpcrun_itos(char *buf, int i)
 //        The top level
 //
 //  hpcrun_fmt_hdr_fwrite()
-//  hpcrun_le4_fwrite(# epochs)
 //  foreach epoch
 //     hpcrun_epoch_fwrite()
 //
