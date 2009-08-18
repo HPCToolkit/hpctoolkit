@@ -131,12 +131,12 @@ Profile::merge(Profile& y, bool isSameThread)
   // merge metrics
   // -------------------------------------------------------
   uint x_numMetrics = numMetrics();
-  uint x_metricBegIdx = 0;
+  uint x_newMetricBegIdx = 0;
   uint y_newMetrics   = 0;
 
   if (!isSameThread) {
     // new metrics columns
-    x_metricBegIdx = x_numMetrics;
+    x_newMetricBegIdx = x_numMetrics;
     y_newMetrics   = y.numMetrics();
 
     for (uint i = 0; i < y.numMetrics(); ++i) {
@@ -157,7 +157,7 @@ Profile::merge(Profile& y, bool isSameThread)
   // -------------------------------------------------------
   // merge CCTs
   // -------------------------------------------------------
-  m_cct->merge(y.cct(), &m_metricdesc, x_metricBegIdx, y_newMetrics);
+  m_cct->merge(y.cct(), &m_metricdesc, x_newMetricBegIdx, y_newMetrics);
 }
 
 

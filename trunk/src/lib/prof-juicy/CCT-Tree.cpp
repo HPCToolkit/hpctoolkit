@@ -106,7 +106,7 @@ Tree::~Tree()
 void 
 Tree::merge(const Tree* y, 
 	    const SampledMetricDescVec* new_mdesc,		  
-	    uint x_metricBegIdx, uint y_newMetrics)
+	    uint x_newMetricBegIdx, uint y_newMetrics)
 {
   Root* x_root = dynamic_cast<Root*>(root());
   Root* y_root = dynamic_cast<Root*>(y->root());
@@ -115,7 +115,7 @@ Tree::merge(const Tree* y,
 	      "Unexpected root!");
 
   x_root->merge_prepare(y_newMetrics);
-  x_root->merge(y_root, new_mdesc, x_metricBegIdx, y_newMetrics);
+  x_root->merge(y_root, new_mdesc, x_newMetricBegIdx, y_newMetrics);
 }
 
 
@@ -447,7 +447,7 @@ ANode::merge_prepare(uint numMetrics)
 // NOTE: assume x already has space to store merged metrics
 void
 ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
-	     uint x_numMetrics, uint y_numMetrics)
+	     uint x_newMetricBegIdx, uint y_newMetrics)
 {
   ANode* x = this;
   
@@ -477,7 +477,7 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
 				  y_child_dyn->lip());
     if (!x_child) {
       y_child->Unlink();
-      y_child->merge_fixup(new_mdesc, x_numMetrics);
+      y_child->merge_fixup(new_mdesc, x_newMetricBegIdx);
       y_child->Link(x);
     }
     else {
@@ -486,8 +486,8 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
 		 << "  y: " << y_child_dyn->toString()
 		 << "  x: " << x_child_dyn->toString());
 
-      x_child_dyn->mergeMetrics(*y_child_dyn, x_numMetrics);
-      x_child->merge(y_child, new_mdesc, x_numMetrics, y_numMetrics);
+      x_child_dyn->mergeMetrics(*y_child_dyn, x_newMetricBegIdx);
+      x_child->merge(y_child, new_mdesc, x_newMetricBegIdx, y_newMetrics);
     }
   }
 }
