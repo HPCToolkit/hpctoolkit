@@ -142,7 +142,7 @@ public:
   // -------------------------------------------------------
   void merge(const Tree* y, 
 	     const SampledMetricDescVec* new_mdesc, 
-	     uint x_metricBegIdx, uint y_newMetrics);
+	     uint x_newMetricBegIdx, uint y_newMetrics);
 
   // -------------------------------------------------------
   // Write contents
@@ -531,6 +531,7 @@ public:
     return x_clone;
   }
 
+  // FIXME:tallent: OBSOLETE
   uint32_t cpid() const 
     { return m_cpid; }
 
