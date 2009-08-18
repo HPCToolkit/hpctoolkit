@@ -80,11 +80,11 @@ extern "C" {
 // hdr
 //***************************************************************************
 
-// N.B.: The header string was designed to be 16 bytes
+// N.B.: The header string is 24 bytes of character data
 
-static const char HPCRUN_FMT_Magic[]   = "HPCRUN____"; // 10 bytes
-static const char HPCRUN_FMT_Version[] = "02.00";      // 5 bytes
-static const char HPCRUN_FMT_Endian[]  = "b";          // 1 byte
+static const char HPCRUN_FMT_Magic[]   = "HPCRUN-profile____"; // 18 bytes
+static const char HPCRUN_FMT_Version[] = "02.00";              // 5 bytes
+static const char HPCRUN_FMT_Endian[]  = "b";                  // 1 byte
 
 static const int HPCRUN_FMT_MagicLen   = (sizeof(HPCRUN_FMT_Magic) - 1);
 static const int HPCRUN_FMT_VersionLen = (sizeof(HPCRUN_FMT_Version) - 1);

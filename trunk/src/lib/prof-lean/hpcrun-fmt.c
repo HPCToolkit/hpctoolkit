@@ -111,7 +111,7 @@ hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc)
   }
 
   nr = fread(hdr->version, 1, HPCRUN_FMT_VersionLen, infs);
-  tag[HPCRUN_FMT_VersionLen] = '\0';
+  hdr->version[HPCRUN_FMT_VersionLen] = '\0';
   if (nr != HPCRUN_FMT_VersionLen) {
     return HPCFMT_ERR;
   }
