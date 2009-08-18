@@ -102,7 +102,7 @@
 /* <header>
    Because these are byte strings, they will not be affected by endianness */
 
-#define HPCRUNFILE_MAGIC_STR "HPCRUN_old"
+#define HPCRUNFILE_MAGIC_STR "HPCRUN____"
 #define HPCRUNFILE_MAGIC_STR_LEN 10  /* exclude '\0' */
 
 #define HPCRUNFILE_VERSION "01.00"

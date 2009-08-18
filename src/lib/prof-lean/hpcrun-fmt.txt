@@ -8,9 +8,9 @@ fmt-hdr {epoch}*
   
 ------------------------------------------------------------
 
-fmt-hdr = fmt-magicno-version{16b} [nv-pair]*
+fmt-hdr = fmt-magicno-version{24b} [nv-pair]*
 
-fmt-magicno-version = "HPCRUN____02.00l"
+fmt-magicno-version = "HPCRUN-profile____" "02.00" "b"
 
   Possible nv-pairs
   - program-name
