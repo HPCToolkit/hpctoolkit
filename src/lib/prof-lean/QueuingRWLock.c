@@ -31,6 +31,13 @@
 // 
 //***************************************************************************
 
+// TODO:tallent: Technically, some of these volatiles shouldn't be
+// necessary and any compiler warnings should be eliminatd with casts.
+// However, 1) at worse they add some extra memory loads; and 2) back
+// in June 09, at least one of them appeared to be necessary for GCC
+// 4.1.2 to generate correct code.  This should be revisited --
+// possibly there was another explanation.
+
 void
 QueuingRWLock_lock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl, 
 		   QueuingRWLockOp_t op)
@@ -39,7 +46,7 @@ QueuingRWLock_lock(QueuingRWLock_t* lock, QueuingRWLockLcl_t* lcl,
   lcl->status = QueuingRWLockStatus_Blocked;
   lcl->op = op;
 
-  QueuingRWLockLcl_t* prev = fetch_and_store_ptr(&lock->lock, lcl);
+  volatile QueuingRWLockLcl_t* prev = fetch_and_store_ptr(&lock->lock, lcl);
   if (prev) {
     // INVARIANT: queue was non-empty
     if (prev->status != QueuingRWLockStatus_Blocked 
