@@ -144,7 +144,6 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
     csprof_state_ensure_buffer_avail(state, state->unwind);
 
     state->unwind->ip = (void *) ip;
-    state->unwind->sp = (void *) 0;
     state->unwind++;
     unw_len++;
 
