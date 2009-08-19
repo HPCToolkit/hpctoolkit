@@ -80,22 +80,12 @@
 #include <lib/prof-lean/lush/lush-support.h>
 
 
-#define CSPROF_TREE_USES_DOUBLE_LINKING 0
-#define CSPROF_TREE_USES_SORTED_CHILDREN 1
-
 //*************************** Forward Declarations **************************
 
 
 //***************************************************************************
 // Calling context tree node
 //***************************************************************************
-
-struct rbtree_node;
-
-struct rbtree
-{
-  struct rbtree_node *root;
-};
 
 // --------------------------------------------------------------------------
 // 
@@ -110,8 +100,8 @@ cct_metric_data_increment(int metric_id,
 			  cct_metric_data_t* x, 
 			  cct_metric_data_t incr)
 {
-  metric_tbl_t *mdata = hpcrun_get_metric_data();
-  metric_desc_t *minfo = &(mdata->lst[metric_id]);
+  metric_tbl_t* mdata = hpcrun_get_metric_data();
+  metric_desc_t* minfo = &(mdata->lst[metric_id]);
   
   if (hpcfile_csprof_metric_is_flag(minfo->flags, HPCFILE_METRIC_FLAG_REAL)) {
     x->r += incr.r;
@@ -122,37 +112,7 @@ cct_metric_data_increment(int metric_id,
 }
 
 
-
-/* try to order these so that the most-often referenced things fit into
-   a single cache line... */
 typedef struct csprof_cct_node_s {
-
-  // ---------------------------------------------------------
-  // 
-  // ---------------------------------------------------------
-
-  lush_assoc_info_t as_info; // LUSH
-
-  /* physical instruction pointer: more accurately, this is an
-     'operation pointer'.  The operation in the instruction packet is
-     represented by adding 0, 1, or 2 to the instruction pointer for
-     the first, second and third operation, respectively. */
-  void* ip;
-
-  lush_lip_t* lip; // LUSH (if assoc != a-to-0, then tack onto end...)
-
-  // ---------------------------------------------------------
-  // tree structure
-  // ---------------------------------------------------------
-
-  /* parent node and the beginning of the child list */
-  struct csprof_cct_node_s *parent, *children;
-
-  /* tree index of children */
-  struct rbtree tree_children;
-
-  /* singly/doubly linked list of siblings */
-  struct csprof_cct_node_s *next_sibling;
 
   // ---------------------------------------------------------
   // a persistent node id is assigned for each node. this id
@@ -164,20 +124,43 @@ typedef struct csprof_cct_node_s {
   int32_t persistent_id;
 
   // ---------------------------------------------------------
+  // 
+  // ---------------------------------------------------------
+  lush_assoc_info_t as_info;
+
+  // physical instruction pointer: more accurately, this is an
+  // 'operation pointer'.  The operation in the instruction packet is
+  // represented by adding 0, 1, or 2 to the instruction pointer for
+  // the first, second and third operation, respectively.
+  void* ip;
+
+  // logical instruction pointer
+  lush_lip_t* lip;
+
+  // ---------------------------------------------------------
+  // tree structure
+  // ---------------------------------------------------------
+
+  // parent node and the beginning of the child list
+  struct csprof_cct_node_s *parent, *children;
+
+  // singly linked list of siblings
+  struct csprof_cct_node_s *next_sibling;
+
+  // ---------------------------------------------------------
   // metrics (N.B.: MUST APPEAR AT END! cf. csprof_cct_node__create)
   // ---------------------------------------------------------
   
-  cct_metric_data_t metrics[1]; /* variable-sized array */
+  cct_metric_data_t metrics[1]; // variable-sized array
 
 } csprof_cct_node_t;
 
 
 #if !defined(CSPROF_LIST_BACKTRACE_CACHE)
 typedef struct csprof_frame_s {
-  lush_assoc_info_t as_info; // LUSH
-  void *ip;
-  lush_lip_t* lip; // LUSH
-  void *sp;
+  lush_assoc_info_t as_info;
+  void* ip;
+  lush_lip_t* lip;
 } csprof_frame_t;
 #endif
 
