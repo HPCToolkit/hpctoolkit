@@ -45,16 +45,17 @@ metric-desc = str metric-flags{8b} period{8b}
 ----------------------------------------
 
 loadmap = [loadmap_entry]+
-loadmap_entry = load_addr{8b} load_offset{8b} str flags{4b}
+loadmap_entry = id{4b} str flags{4b}
 
 ----------------------------------------
 
 cct = [cct-node]*
 cct-node = node-id{4b}                 (neg if node is a leaf)
            parent-id{4b}
-           lush-assoc{4b}?
+           lush-assoc{4b}?             (only with lush)
+           lm-id{2b}
            ip{8b}
-           lush-lip?
+           lush-lip{16b}?              (only with lush)
            (metric-data)*
 
 ------------------------------------------------------------
