@@ -65,13 +65,12 @@ hpcrun_backtrace(csprof_state_t *state, ucontext_t* context,
   csprof_state_verify_backtrace_invariants(state);
   
   csprof_cct_node_t* n = NULL;
-  if (!lush_agents) {
-    n = _hpcrun_backtrace(state, context, metricId, metricIncr, 
-			  skipInner);
+  if (hpcrun_isAgentActive()) {
+    n = lush_backtrace(state, context, metricId, metricIncr, skipInner, 
+		       isSync);
   }
   else {
-    n = lush_backtrace(state, context, metricId, metricIncr, 
-		       skipInner, isSync);
+    n = _hpcrun_backtrace(state, context, metricId, metricIncr, skipInner);
   }
   //HPC_IF_UNW_LITE(test_backtrace_lite(context);)
 
