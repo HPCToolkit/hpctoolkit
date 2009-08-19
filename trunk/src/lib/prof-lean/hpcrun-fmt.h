@@ -279,6 +279,7 @@ hpcfile_csprof_metric_unset_flag(hpcfile_csprof_metric_flag_t* flagbits,
 // --------------------------------------------------------------------------
 // hpcfile_csprof_metric_t
 // --------------------------------------------------------------------------
+// FIXME: is this needed?
 
 typedef struct hpcfile_csprof_metric_s {
 
