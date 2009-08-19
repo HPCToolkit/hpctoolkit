@@ -452,8 +452,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
 
   LoadMap loadmap(num_lm);
 
-  // FIXME: do we need to iterate backward now?
-  for (int i = num_lm - 1; i >= 0; --i) { 
+  for (uint i = 0; i < num_lm; ++i) { 
     string nm = loadmap_tbl.lst[i].name;
     RealPathMgr::singleton().realpath(nm);
     VMA loadAddr = loadmap_tbl.lst[i].mapaddr;
