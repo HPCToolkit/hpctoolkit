@@ -788,11 +788,13 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+OPT_ENABLE_DEVTOOLS_FALSE
+OPT_ENABLE_DEVTOOLS_TRUE
+OPT_OBJCOPY
 OPT_UPC_LDFLAGS
 OPT_UPC_IFLAGS
 OPT_ENABLE_UPC_FALSE
 OPT_ENABLE_UPC_TRUE
-OPT_OBJCOPY
 hpclink_extra_wrap_names
 hpclink_add_csprof_wrap
 OPT_ENABLE_MONITOR_EXTS_FALSE
@@ -804,8 +806,6 @@ OPT_WITH_CILK_FALSE
 OPT_WITH_CILK_TRUE
 OPT_ENABLE_LUSH_FALSE
 OPT_ENABLE_LUSH_TRUE
-OPT_ENABLE_DEVTOOLS_FALSE
-OPT_ENABLE_DEVTOOLS_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
 OPT_ENABLE_HPCRUN_DYNAMIC_TRUE
 OPT_ENABLE_HPCRUN_STATIC_FALSE
@@ -885,6 +885,7 @@ HOST_CPU_MIPS_FALSE
 HOST_CPU_MIPS_TRUE
 HOST_OS_LINUX_FALSE
 HOST_OS_LINUX_TRUE
+MPICXX
 CXXCPP
 am__fastdepCXX_FALSE
 am__fastdepCXX_TRUE
@@ -1031,15 +1032,16 @@ enable_hpcrun
 enable_hpcrun_sync
 enable_hpcrun_async
 enable_hpcrun_static
-enable_devtools
-enable_hpc_binutils
+enable_mpi
 enable_lush
 with_cilk
 enable_lush_pthreads
 enable_monitor_exts
-with_objcopy
 enable_bluegene
 with_upc
+with_objcopy
+enable_hpc_binutils
+enable_devtools
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1053,7 +1055,8 @@ CPP
 CXX
 CXXFLAGS
 CCC
-CXXCPP'
+CXXCPP
+MPICXX'
 
 
 # Initialize some variables set by options.
@@ -1699,12 +1702,13 @@ Optional Features:
   --enable-hpcrun-async   Build hpcrun (asynchronous)
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
-  --enable-devtools       Build development tools (enable debugging)
-  --enable-hpc-binutils   Enable extra HPCToolkit GNU binutils functionality
+  --enable-mpi            Enable MPI support (uses MPICXX variable)
   --enable-lush           use lush backtrace in hpcrun
   --enable-lush-pthreads  enable lush pthreads (temp)
   --enable-monitor-exts   enable extra monitor overrides (temp)
   --enable-bluegene       Enable BlueGene/* support
+  --enable-hpc-binutils   Enable extra HPCToolkit GNU binutils functionality
+  --enable-devtools       Build development tools (enable debugging)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1729,9 +1733,9 @@ Optional Packages:
   --with-xed2=PATH        path to xed2 install directory
   --with-xerces=PATH      use given XercesC installation
   --with-cilk=PATH        use given (MIT) Cilk installation for LUSH agents
+  --with-upc=PATH         path to IBM BlueGene UPC installation
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
-  --with-upc=PATH         path to IBM BlueGene UPC installation
 
 Some influential environment variables:
   CC          C compiler command
@@ -1745,6 +1749,7 @@ Some influential environment variables:
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   CXXCPP      C++ preprocessor
+  MPICXX      MPI C++ compiler
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -2797,10 +2802,14 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 
-{ $as_echo "$as_me:$LINENO: INFO: Entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&5
-$as_echo "$as_me: INFO: Entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&6;}
-{ $as_echo "$as_me:$LINENO: INFO: Entry: CC=${CC} CFLAGS=${CFLAGS}" >&5
-$as_echo "$as_me: INFO: Entry: CC=${CC} CFLAGS=${CFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO: INFO: on entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&5
+$as_echo "$as_me: INFO: on entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO: INFO: on entry: CC=${CC} CFLAGS=${CFLAGS}" >&5
+$as_echo "$as_me: INFO: on entry: CC=${CC} CFLAGS=${CFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO: INFO: on entry: MPICXX=${MPICXX}" >&5
+$as_echo "$as_me: INFO: on entry: MPICXX=${MPICXX}" >&6;}
+
+MPICXX_ORIG=${MPICXX}
 
 #----------------------------------------------------------------------------
 # Setup
@@ -4646,13 +4655,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4649: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4658: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4652: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4661: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4655: output\"" >&5)
+  (eval echo "\"\$as_me:4664: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5858,7 +5867,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5861 "configure"' > conftest.$ac_ext
+  echo '#line 5870 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7711,11 +7720,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7714: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7723: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7718: \$? = $ac_status" >&5
+   echo "$as_me:7727: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8050,11 +8059,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8053: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8062: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8057: \$? = $ac_status" >&5
+   echo "$as_me:8066: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8155,11 +8164,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8158: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8167: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8162: \$? = $ac_status" >&5
+   echo "$as_me:8171: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8210,11 +8219,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8213: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8222: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8217: \$? = $ac_status" >&5
+   echo "$as_me:8226: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11010,7 +11019,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11013 "configure"
+#line 11022 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11106,7 +11115,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11109 "configure"
+#line 11118 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14357,11 +14366,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14360: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14369: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14364: \$? = $ac_status" >&5
+   echo "$as_me:14373: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14456,11 +14465,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14459: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14468: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14463: \$? = $ac_status" >&5
+   echo "$as_me:14472: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14508,11 +14517,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14511: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14520: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14515: \$? = $ac_status" >&5
+   echo "$as_me:14524: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16750,10 +16759,160 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 
-{ $as_echo "$as_me:$LINENO: INFO: ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&5
-$as_echo "$as_me: INFO: ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&6;}
-{ $as_echo "$as_me:$LINENO: INFO: ac_prog: CC=${CC} CFLAGS=${CFLAGS}" >&5
-$as_echo "$as_me: INFO: ac_prog: CC=${CC} CFLAGS=${CFLAGS}" >&6;}
+my_compiler_list="mpicxx   \
+                           mpiCC \
+                          "
+   HPC_check_mpicxx()
+   {
+     my_mpicxx="$1"
+
+     ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+     CXX_ORIG=${CXX}
+     CXX=${my_mpicxx}
+
+     # NOTE: do not cache (AC_CACHE_CHECK) b/c this may be called
+     # multiple times!
+     CAN_MPICXX_LINK="no"
+     { $as_echo "$as_me:$LINENO: checking whether MPI C++ compiler ${CXX} works correctly" >&5
+$as_echo_n "checking whether MPI C++ compiler ${CXX} works correctly... " >&6; }
+     cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#include <mpi.h>
+#include <iostream>
+#include <string>
+
+int
+main ()
+{
+std::string hpctoolkit = "hpctoolkit;"
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_cxx_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext && {
+	 test "$cross_compiling" = yes ||
+	 $as_test_x conftest$ac_exeext
+       }; then
+  CAN_MPICXX_LINK="yes"
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	CAN_MPICXX_LINK="no"
+fi
+
+rm -rf conftest.dSYM
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+
+     { $as_echo "$as_me:$LINENO: result: ${CAN_MPICXX_LINK}" >&5
+$as_echo "${CAN_MPICXX_LINK}" >&6; }
+
+     CXX="${CXX_ORIG}"
+     ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+     if test "$CAN_MPICXX_LINK" = "yes" ; then
+       return 0
+     else
+       return 1
+     fi
+   }
+   { $as_echo "$as_me:$LINENO: checking for MPI C++ compiler" >&5
+$as_echo_n "checking for MPI C++ compiler... " >&6; }
+if test "${ac_cv_path_MPICXX+set}" = set; then
+  $as_echo_n "(cached) " >&6
+else
+  if test -z "$MPICXX"; then
+  ac_path_MPICXX_found=false
+  # Loop through the user's path and test for each of PROGNAME-LIST
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_prog in ${my_compiler_list}; do
+    for ac_exec_ext in '' $ac_executable_extensions; do
+      ac_path_MPICXX="$as_dir/$ac_prog$ac_exec_ext"
+      { test -f "$ac_path_MPICXX" && $as_test_x "$ac_path_MPICXX"; } || continue
+if HPC_check_mpicxx ${ac_path_MPICXX} ; then
+           ac_cv_path_MPICXX=$ac_path_MPICXX
+           ac_path_MPICXX_found=:
+         fi
+      $ac_path_MPICXX_found && break 3
+    done
+  done
+done
+IFS=$as_save_IFS
+  if test -z "$ac_cv_path_MPICXX"; then
+    ac_cv_path_MPICXX=no
+  fi
+else
+  ac_cv_path_MPICXX=$MPICXX
+fi
+
+
+fi
+{ $as_echo "$as_me:$LINENO: result: $ac_cv_path_MPICXX" >&5
+$as_echo "$ac_cv_path_MPICXX" >&6; }
+
+   # AC_PATH_PROGS_FEATURE_CHECK does not call HPC_check_mpicxx if
+   # MPICXX was set in the environment.
+   if test "${ac_path_MPICXX_found}" != ":" -a "${ac_cv_path_MPICXX}" != "no" ; then
+     if ! HPC_check_mpicxx ${ac_cv_path_MPICXX} ; then
+       ac_cv_path_MPICXX=no;
+     fi
+   fi
+
+   # Determine final value of MPICXX
+   if test "${ac_cv_path_MPICXX}" != "no" ; then
+     MPICXX=${ac_cv_path_MPICXX}
+   else
+     MPICXX=
+   fi
+
+
+
+
+
+{ $as_echo "$as_me:$LINENO: INFO: post ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&5
+$as_echo "$as_me: INFO: post ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO: INFO: post ac_prog: CC=${CC} CFLAGS=${CFLAGS}" >&5
+$as_echo "$as_me: INFO: post ac_prog: CC=${CC} CFLAGS=${CFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO: INFO: post ac_prog: MPICXX=${MPICXX} " >&5
+$as_echo "$as_me: INFO: post ac_prog: MPICXX=${MPICXX} " >&6;}
+
 
 # Use C++ compiler for all checks
 ac_ext=cpp
@@ -18441,10 +18600,10 @@ fi
 
 
 
-{ $as_echo "$as_me:$LINENO: INFO: Exit: CXX=${CXX} CXXFLAGS=${CXXFLAGS} HOST_CXXFLAGS=${HOST_CXXFLAGS}" >&5
-$as_echo "$as_me: INFO: Exit: CXX=${CXX} CXXFLAGS=${CXXFLAGS} HOST_CXXFLAGS=${HOST_CXXFLAGS}" >&6;}
-{ $as_echo "$as_me:$LINENO: INFO: Exit: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}" >&5
-$as_echo "$as_me: INFO: Exit: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO: INFO: final: CXX=${CXX} CXXFLAGS=${CXXFLAGS} HOST_CXXFLAGS=${HOST_CXXFLAGS}" >&5
+$as_echo "$as_me: INFO: final: CXX=${CXX} CXXFLAGS=${CXXFLAGS} HOST_CXXFLAGS=${HOST_CXXFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO: INFO: final: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}" >&5
+$as_echo "$as_me: INFO: final: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}" >&6;}
 
 #----------------------------------------------------------------------------
 # Prerequisites: external libraries
@@ -19501,77 +19660,48 @@ fi
 
 
 #-------------------------------------------------
-# enable-devtools: Tools of interest to developers
+# enable-mpi:
 #-------------------------------------------------
 
-{ $as_echo "$as_me:$LINENO: checking whether to build developer tools (devtools)" >&5
-$as_echo_n "checking whether to build developer tools (devtools)... " >&6; }
+{ $as_echo "$as_me:$LINENO: checking whether to build MPI versions (hpcprof-mpi)" >&5
+$as_echo_n "checking whether to build MPI versions (hpcprof-mpi)... " >&6; }
 
-OPT_ENABLE_DEVTOOLS="no"
+OPT_REQ_ENABLE_MPI="auto" # yes, no, auto
 
-# Check whether --enable-devtools was given.
-if test "${enable_devtools+set}" = set; then
-  enableval=$enable_devtools; case "${enableval}" in
-     yes) OPT_ENABLE_DEVTOOLS="yes" ;;
-     no)  OPT_ENABLE_DEVTOOLS="no" ;;
-     *) { { $as_echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-devtools" >&5
-$as_echo "$as_me: error: bad value ${enableval} for --enable-devtools" >&2;}
+# Check whether --enable-mpi was given.
+if test "${enable_mpi+set}" = set; then
+  enableval=$enable_mpi; case "${enableval}" in
+     yes) OPT_REQ_ENABLE_MPI="yes" ;;
+     no)  OPT_REQ_ENABLE_MPI="no" ;;
+     *)   { { $as_echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-mpi" >&5
+$as_echo "$as_me: error: bad value ${enableval} for --enable-mpi" >&2;}
    { (exit 1); exit 1; }; } ;;
    esac
 else
-  OPT_ENABLE_DEVTOOLS=no
+  if test -n "${MPICXX_ORIG}" ; then
+     OPT_REQ_ENABLE_MPI=yes
+   fi
 fi
 
 
-{ $as_echo "$as_me:$LINENO: result: ${OPT_ENABLE_DEVTOOLS}" >&5
-$as_echo "${OPT_ENABLE_DEVTOOLS}" >&6; }
- if test "${OPT_ENABLE_DEVTOOLS}" = "yes"; then
-  OPT_ENABLE_DEVTOOLS_TRUE=
-  OPT_ENABLE_DEVTOOLS_FALSE='#'
-else
-  OPT_ENABLE_DEVTOOLS_TRUE='#'
-  OPT_ENABLE_DEVTOOLS_FALSE=
+OPT_ENABLE_MPI=no
+if test -n "${MPICXX}" -a ${OPT_REQ_ENABLE_MPI} != "no" ; then
+  OPT_ENABLE_MPI=yes
 fi
 
+{ $as_echo "$as_me:$LINENO: result: ${OPT_ENABLE_MPI} (request: ${OPT_REQ_ENABLE_MPI})" >&5
+$as_echo "${OPT_ENABLE_MPI} (request: ${OPT_REQ_ENABLE_MPI})" >&6; }
 
 
-#-------------------------------------------------
-# enable-hpc-binutils: Enable use of HPCToolkit's binutils
-#-------------------------------------------------
-
-{ $as_echo "$as_me:$LINENO: checking whether to enable HPCToolkit GNU binutils functionality" >&5
-$as_echo_n "checking whether to enable HPCToolkit GNU binutils functionality... " >&6; }
-
-OPT_ENABLE_HPC_GNUBINUTILS="yes"
-
-# Check whether --enable-hpc-binutils was given.
-if test "${enable_hpc_binutils+set}" = set; then
-  enableval=$enable_hpc_binutils; case "${enableval}" in
-     yes) OPT_ENABLE_HPC_GNUBINUTILS="yes" ;;
-     no)  OPT_ENABLE_HPC_GNUBINUTILS="no" ;;
-     *) { { $as_echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-hpc-binutils" >&5
-$as_echo "$as_me: error: bad value ${enableval} for --enable-hpc-binutils" >&2;}
-   { (exit 1); exit 1; }; } ;;
-   esac
-else
-  OPT_ENABLE_HPC_GNUBINUTILS=yes
-fi
-
-
-{ $as_echo "$as_me:$LINENO: result: ${OPT_ENABLE_HPC_GNUBINUTILS}" >&5
-$as_echo "${OPT_ENABLE_HPC_GNUBINUTILS}" >&6; }
-
-if test "${OPT_ENABLE_HPC_GNUBINUTILS}" = "yes" ; then
-
-cat >>confdefs.h <<\_ACEOF
-#define HAVE_HPC_GNUBINUTILS /**/
-_ACEOF
-
+if test "${OPT_REQ_ENABLE_MPI}" = "yes" -a "${OPT_ENABLE_MPI}" = no ; then
+  { { $as_echo "$as_me:$LINENO: error: MPI support requested but MPI compiler is invalid!" >&5
+$as_echo "$as_me: error: MPI support requested but MPI compiler is invalid!" >&2;}
+   { (exit 1); exit 1; }; }
 fi
 
 
 #-------------------------------------------------
-# enable-lush
+# enable-lush, enable-lush-pthreads, with-cilk, monitor-exts
 #-------------------------------------------------
 
 # Check whether --enable-lush was given.
@@ -19661,6 +19791,7 @@ else
 fi
 
 
+
 # Check whether --enable-monitor-exts was given.
 if test "${enable_monitor_exts+set}" = set; then
   enableval=$enable_monitor_exts;
@@ -19698,32 +19829,7 @@ fi
 
 
 #-------------------------------------------------
-# with-objcopy
-#-------------------------------------------------
-
-{ $as_echo "$as_me:$LINENO: checking whether configured with objcopy" >&5
-$as_echo_n "checking whether configured with objcopy... " >&6; }
-
-OPT_OBJCOPY=objcopy
-
-
-# Check whether --with-objcopy was given.
-if test "${with_objcopy+set}" = set; then
-  withval=$with_objcopy; if test $withval != no; then
-     OPT_OBJCOPY=${withval}
-   fi
-fi
-
-
-{ $as_echo "$as_me:$LINENO: result: yes (${OPT_OBJCOPY})" >&5
-$as_echo "yes (${OPT_OBJCOPY})" >&6; }
-
-
-
-
-#-------------------------------------------------
 # enable-bluegene: BG/* support
-#   FIXME: should be a better way
 #-------------------------------------------------
 
 { $as_echo "$as_me:$LINENO: checking whether to enable IBM BlueGene/* support" >&5
@@ -19832,6 +19938,100 @@ else
 fi
 
 
+
+
+
+#-------------------------------------------------
+# with-objcopy
+#-------------------------------------------------
+
+{ $as_echo "$as_me:$LINENO: checking whether configured with objcopy" >&5
+$as_echo_n "checking whether configured with objcopy... " >&6; }
+
+OPT_OBJCOPY=objcopy
+
+
+# Check whether --with-objcopy was given.
+if test "${with_objcopy+set}" = set; then
+  withval=$with_objcopy; if test $withval != no; then
+     OPT_OBJCOPY=${withval}
+   fi
+fi
+
+
+{ $as_echo "$as_me:$LINENO: result: yes (${OPT_OBJCOPY})" >&5
+$as_echo "yes (${OPT_OBJCOPY})" >&6; }
+
+
+
+
+#-------------------------------------------------
+# enable-hpc-binutils: Enable use of HPCToolkit's binutils
+#-------------------------------------------------
+
+{ $as_echo "$as_me:$LINENO: checking whether to enable HPCToolkit GNU binutils functionality" >&5
+$as_echo_n "checking whether to enable HPCToolkit GNU binutils functionality... " >&6; }
+
+OPT_ENABLE_HPC_GNUBINUTILS="yes"
+
+# Check whether --enable-hpc-binutils was given.
+if test "${enable_hpc_binutils+set}" = set; then
+  enableval=$enable_hpc_binutils; case "${enableval}" in
+     yes) OPT_ENABLE_HPC_GNUBINUTILS="yes" ;;
+     no)  OPT_ENABLE_HPC_GNUBINUTILS="no" ;;
+     *) { { $as_echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-hpc-binutils" >&5
+$as_echo "$as_me: error: bad value ${enableval} for --enable-hpc-binutils" >&2;}
+   { (exit 1); exit 1; }; } ;;
+   esac
+else
+  OPT_ENABLE_HPC_GNUBINUTILS=yes
+fi
+
+
+{ $as_echo "$as_me:$LINENO: result: ${OPT_ENABLE_HPC_GNUBINUTILS}" >&5
+$as_echo "${OPT_ENABLE_HPC_GNUBINUTILS}" >&6; }
+
+if test "${OPT_ENABLE_HPC_GNUBINUTILS}" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_HPC_GNUBINUTILS /**/
+_ACEOF
+
+fi
+
+
+#-------------------------------------------------
+# enable-devtools: Tools of interest to developers
+#-------------------------------------------------
+
+{ $as_echo "$as_me:$LINENO: checking whether to build developer tools (devtools)" >&5
+$as_echo_n "checking whether to build developer tools (devtools)... " >&6; }
+
+OPT_ENABLE_DEVTOOLS="no"
+
+# Check whether --enable-devtools was given.
+if test "${enable_devtools+set}" = set; then
+  enableval=$enable_devtools; case "${enableval}" in
+     yes) OPT_ENABLE_DEVTOOLS="yes" ;;
+     no)  OPT_ENABLE_DEVTOOLS="no" ;;
+     *) { { $as_echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-devtools" >&5
+$as_echo "$as_me: error: bad value ${enableval} for --enable-devtools" >&2;}
+   { (exit 1); exit 1; }; } ;;
+   esac
+else
+  OPT_ENABLE_DEVTOOLS=no
+fi
+
+
+{ $as_echo "$as_me:$LINENO: result: ${OPT_ENABLE_DEVTOOLS}" >&5
+$as_echo "${OPT_ENABLE_DEVTOOLS}" >&6; }
+ if test "${OPT_ENABLE_DEVTOOLS}" = "yes"; then
+  OPT_ENABLE_DEVTOOLS_TRUE=
+  OPT_ENABLE_DEVTOOLS_FALSE='#'
+else
+  OPT_ENABLE_DEVTOOLS_TRUE='#'
+  OPT_ENABLE_DEVTOOLS_FALSE=
+fi
 
 
 
@@ -20141,13 +20341,6 @@ $as_echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN_DYNAMIC\" was never def
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then
-  { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_DEVTOOLS\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-$as_echo "$as_me: error: conditional \"OPT_ENABLE_DEVTOOLS\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
 if test -z "${OPT_ENABLE_LUSH_TRUE}" && test -z "${OPT_ENABLE_LUSH_FALSE}"; then
   { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_LUSH\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -20180,6 +20373,13 @@ if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
   { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_UPC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 $as_echo "$as_me: error: conditional \"OPT_ENABLE_UPC\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_DEVTOOLS\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"OPT_ENABLE_DEVTOOLS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -22561,9 +22761,11 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
-#
+
+#-------------------------------------------------
 # Summary of the config options.
-#
+#-------------------------------------------------
+
 { $as_echo "$as_me:$LINENO: -------------------" >&5
 $as_echo "$as_me: -------------------" >&6;}
 { $as_echo "$as_me:$LINENO: HPCToolkit summary" >&5
@@ -22572,48 +22774,64 @@ $as_echo "$as_me: HPCToolkit summary" >&6;}
 $as_echo "$as_me: -------------------" >&6;}
 { $as_echo "$as_me:$LINENO:   HPCToolkit version: ${PACKAGE_VERSION}" >&5
 $as_echo "$as_me:   HPCToolkit version: ${PACKAGE_VERSION}" >&6;}
-{ $as_echo "$as_me:$LINENO:   Externals revision: $externals_mesg" >&5
-$as_echo "$as_me:   Externals revision: $externals_mesg" >&6;}
+{ $as_echo "$as_me:$LINENO:   Externals revision: ${externals_mesg}" >&5
+$as_echo "$as_me:   Externals revision: ${externals_mesg}" >&6;}
+{ $as_echo "$as_me:$LINENO: " >&5
+$as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:$LINENO:   prefix: $prefix" >&5
 $as_echo "$as_me:   prefix: $prefix" >&6;}
-{ $as_echo "$as_me:$LINENO:   build: $build" >&5
-$as_echo "$as_me:   build: $build" >&6;}
-{ $as_echo "$as_me:$LINENO:   host:  $host" >&5
-$as_echo "$as_me:   host:  $host" >&6;}
-{ $as_echo "$as_me:$LINENO:   CC, CFLAGS: ${CC} ${CFLAGS} ${HOST_CFLAGS}" >&5
-$as_echo "$as_me:   CC, CFLAGS: ${CC} ${CFLAGS} ${HOST_CFLAGS}" >&6;}
-{ $as_echo "$as_me:$LINENO:   CXX, CXXFLAGS: ${CXX} ${CXXFLAGS} ${HOST_CXXFLAGS}" >&5
-$as_echo "$as_me:   CXX, CXXFLAGS: ${CXX} ${CXXFLAGS} ${HOST_CXXFLAGS}" >&6;}
-{ $as_echo "$as_me:$LINENO:   LDFLAGS: ${LDFLAGS}" >&5
-$as_echo "$as_me:   LDFLAGS: ${LDFLAGS}" >&6;}
-{ $as_echo "$as_me:$LINENO:   binutils: $GNUBINUTILS" >&5
-$as_echo "$as_me:   binutils: $GNUBINUTILS" >&6;}
-{ $as_echo "$as_me:$LINENO:   libdwarf: $LIBDWARF" >&5
-$as_echo "$as_me:   libdwarf: $LIBDWARF" >&6;}
-{ $as_echo "$as_me:$LINENO:   libelf: $LIBELF" >&5
-$as_echo "$as_me:   libelf: $LIBELF" >&6;}
-{ $as_echo "$as_me:$LINENO:   libmonitor: $LIBMONITOR" >&5
-$as_echo "$as_me:   libmonitor: $LIBMONITOR" >&6;}
-{ $as_echo "$as_me:$LINENO:   (old) monitor: $MONITOR" >&5
-$as_echo "$as_me:   (old) monitor: $MONITOR" >&6;}
-{ $as_echo "$as_me:$LINENO:   libunwind: $OPT_LIBUNWIND" >&5
-$as_echo "$as_me:   libunwind: $OPT_LIBUNWIND" >&6;}
-{ $as_echo "$as_me:$LINENO:   open analysis: $OA" >&5
-$as_echo "$as_me:   open analysis: $OA" >&6;}
-{ $as_echo "$as_me:$LINENO:   symtabAPI: $SYMTABAPI" >&5
-$as_echo "$as_me:   symtabAPI: $SYMTABAPI" >&6;}
-{ $as_echo "$as_me:$LINENO:   xed2: $XED2" >&5
-$as_echo "$as_me:   xed2: $XED2" >&6;}
-{ $as_echo "$as_me:$LINENO:   xerces: $XERCES" >&5
-$as_echo "$as_me:   xerces: $XERCES" >&6;}
-{ $as_echo "$as_me:$LINENO:   papi: $OPT_PAPI" >&5
-$as_echo "$as_me:   papi: $OPT_PAPI" >&6;}
-{ $as_echo "$as_me:$LINENO:   upc: $opt_upc_mesg" >&5
-$as_echo "$as_me:   upc: $opt_upc_mesg" >&6;}
-{ $as_echo "$as_me:$LINENO:   build hpcrun: $enable_hpcrun_mesg" >&5
-$as_echo "$as_me:   build hpcrun: $enable_hpcrun_mesg" >&6;}
+{ $as_echo "$as_me:$LINENO:   build:  $build" >&5
+$as_echo "$as_me:   build:  $build" >&6;}
+{ $as_echo "$as_me:$LINENO:   host:   $host" >&5
+$as_echo "$as_me:   host:   $host" >&6;}
+{ $as_echo "$as_me:$LINENO: " >&5
+$as_echo "$as_me: " >&6;}
+{ $as_echo "$as_me:$LINENO:   build hpcrun:      ${enable_hpcrun_mesg}" >&5
+$as_echo "$as_me:   build hpcrun:      ${enable_hpcrun_mesg}" >&6;}
 { $as_echo "$as_me:$LINENO:   build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}" >&5
 $as_echo "$as_me:   build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
-{ $as_echo "$as_me:$LINENO:   use lush: $enable_lush" >&5
-$as_echo "$as_me:   use lush: $enable_lush" >&6;}
+{ $as_echo "$as_me:$LINENO:   mpi support:       ${OPT_ENABLE_MPI}" >&5
+$as_echo "$as_me:   mpi support:       ${OPT_ENABLE_MPI}" >&6;}
+{ $as_echo "$as_me:$LINENO:   hpcrun/lush:       ${enable_lush}" >&5
+$as_echo "$as_me:   hpcrun/lush:       ${enable_lush}" >&6;}
+{ $as_echo "$as_me:$LINENO: " >&5
+$as_echo "$as_me: " >&6;}
+{ $as_echo "$as_me:$LINENO:   CC:       ${CC}" >&5
+$as_echo "$as_me:   CC:       ${CC}" >&6;}
+{ $as_echo "$as_me:$LINENO:   CFLAGS:   ${CFLAGS} ${HOST_CFLAGS}" >&5
+$as_echo "$as_me:   CFLAGS:   ${CFLAGS} ${HOST_CFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO:   CXX:      ${CXX}" >&5
+$as_echo "$as_me:   CXX:      ${CXX}" >&6;}
+{ $as_echo "$as_me:$LINENO:   CXXFLAGS: ${CXXFLAGS} ${HOST_CXXFLAGS}" >&5
+$as_echo "$as_me:   CXXFLAGS: ${CXXFLAGS} ${HOST_CXXFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO:   LDFLAGS:  ${LDFLAGS}" >&5
+$as_echo "$as_me:   LDFLAGS:  ${LDFLAGS}" >&6;}
+{ $as_echo "$as_me:$LINENO:   MPICXX:   ${MPICXX}" >&5
+$as_echo "$as_me:   MPICXX:   ${MPICXX}" >&6;}
+{ $as_echo "$as_me:$LINENO: " >&5
+$as_echo "$as_me: " >&6;}
+{ $as_echo "$as_me:$LINENO:   binutils:     ${GNUBINUTILS}" >&5
+$as_echo "$as_me:   binutils:     ${GNUBINUTILS}" >&6;}
+{ $as_echo "$as_me:$LINENO:   libdwarf:     ${LIBDWARF}" >&5
+$as_echo "$as_me:   libdwarf:     ${LIBDWARF}" >&6;}
+{ $as_echo "$as_me:$LINENO:   libelf:       ${LIBELF}" >&5
+$as_echo "$as_me:   libelf:       ${LIBELF}" >&6;}
+{ $as_echo "$as_me:$LINENO:   libmonitor:   ${LIBMONITOR}" >&5
+$as_echo "$as_me:   libmonitor:   ${LIBMONITOR}" >&6;}
+{ $as_echo "$as_me:$LINENO:   monitor/old:  ${MONITOR}" >&5
+$as_echo "$as_me:   monitor/old:  ${MONITOR}" >&6;}
+{ $as_echo "$as_me:$LINENO:   libunwind:    ${OPT_LIBUNWIND}" >&5
+$as_echo "$as_me:   libunwind:    ${OPT_LIBUNWIND}" >&6;}
+{ $as_echo "$as_me:$LINENO:   OpenAnalysis: ${OA}" >&5
+$as_echo "$as_me:   OpenAnalysis: ${OA}" >&6;}
+{ $as_echo "$as_me:$LINENO:   symtabAPI:    ${SYMTABAPI}" >&5
+$as_echo "$as_me:   symtabAPI:    ${SYMTABAPI}" >&6;}
+{ $as_echo "$as_me:$LINENO:   xed2:         ${XED2}" >&5
+$as_echo "$as_me:   xed2:         ${XED2}" >&6;}
+{ $as_echo "$as_me:$LINENO:   xerces:       ${XERCES}" >&5
+$as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
+{ $as_echo "$as_me:$LINENO:   papi:         ${OPT_PAPI}" >&5
+$as_echo "$as_me:   papi:         ${OPT_PAPI}" >&6;}
+{ $as_echo "$as_me:$LINENO:   upc (BG/P):   ${opt_upc_mesg}" >&5
+$as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
 

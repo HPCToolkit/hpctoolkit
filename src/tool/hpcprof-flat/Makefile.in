@@ -81,6 +81,7 @@ pkglibexec_PROGRAMS = hpcprof-flat-bin$(EXEEXT)
 subdir = src/tool/hpcprof-flat
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
+	$(top_srcdir)/config/hpc-mpiutils.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -200,6 +201,7 @@ MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 MONITOR = @MONITOR@
+MPICXX = @MPICXX@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OA_IFLAGS = @OA_IFLAGS@

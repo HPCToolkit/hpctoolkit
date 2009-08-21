@@ -185,8 +185,9 @@ AC_DEFUN([HPC_DEF_CXXCMP],
 # FIXME: papi 3.5.0 has a bug that doesn't set rpath correctly
 #        for now assume the .a is an appropriate test
 
-# args: ($1): (include-flags lib-path)
-# return 0 for success, 1 otherwise
+# HPC_check_cxx_papi_link()
+#   args: ($1: include-flags, $2: lib-path)
+#   return 0 for success, 1 otherwise
 AC_DEFUN([HPC_DEF_CHECK_CXX_PAPI_LINK],
   [HPC_check_cxx_papi_link()
    {
