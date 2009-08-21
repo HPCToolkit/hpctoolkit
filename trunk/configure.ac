@@ -59,6 +59,7 @@ dnl ******************************************************* EndRiceCopyright *
 #############################################################################
 
 m4_include(config/hpc-cxxutils.m4)
+m4_include(config/hpc-mpiutils.m4)
 
 #----------------------------------------------------------------------------
 # Initialization: 
@@ -90,8 +91,11 @@ AM_MAINTAINER_MODE()
 AC_CANONICAL_BUILD()
 AC_CANONICAL_HOST()
 
-AC_MSG_NOTICE([INFO: Entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
-AC_MSG_NOTICE([INFO: Entry: CC=${CC} CFLAGS=${CFLAGS}])
+AC_MSG_NOTICE([INFO: on entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
+AC_MSG_NOTICE([INFO: on entry: CC=${CC} CFLAGS=${CFLAGS}])
+AC_MSG_NOTICE([INFO: on entry: MPICXX=${MPICXX}])
+
+MPICXX_ORIG=${MPICXX}
 
 #----------------------------------------------------------------------------
 # Setup
@@ -206,11 +210,16 @@ AC_PROG_CXXCPP()
 
 AC_PROG_INSTALL()
 
-AC_MSG_NOTICE([INFO: ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
-AC_MSG_NOTICE([INFO: ac_prog: CC=${CC} CFLAGS=${CFLAGS}])
+HPC_PROG_MPICXX(HPC_MPICXX_LIST)
+
+
+AC_MSG_NOTICE([INFO: post ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
+AC_MSG_NOTICE([INFO: post ac_prog: CC=${CC} CFLAGS=${CFLAGS}])
+AC_MSG_NOTICE([INFO: post ac_prog: MPICXX=${MPICXX} ])
+
 
 # Use C++ compiler for all checks
-AC_LANG(C++)
+AC_LANG([C++])
 
 # Check for header files
 AC_HEADER_STDC()
@@ -532,8 +541,8 @@ AC_SUBST([HOST_HPCPROF_FLAT_LDFLAGS])
 AC_SUBST([HOST_HPCPROFTT_LDFLAGS])
 AC_SUBST([HOST_XPROF_LDFLAGS])
 
-AC_MSG_NOTICE([INFO: Exit: CXX=${CXX} CXXFLAGS=${CXXFLAGS} HOST_CXXFLAGS=${HOST_CXXFLAGS}])
-AC_MSG_NOTICE([INFO: Exit: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}])
+AC_MSG_NOTICE([INFO: final: CXX=${CXX} CXXFLAGS=${CXXFLAGS} HOST_CXXFLAGS=${HOST_CXXFLAGS}])
+AC_MSG_NOTICE([INFO: final: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}])
 
 #----------------------------------------------------------------------------
 # Prerequisites: external libraries
@@ -1336,54 +1345,40 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN_DYNAMIC],
 
 
 #-------------------------------------------------
-# enable-devtools: Tools of interest to developers
+# enable-mpi:
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether to build developer tools (devtools)])
+AC_MSG_CHECKING([whether to build MPI versions (hpcprof-mpi)])
 
-OPT_ENABLE_DEVTOOLS="no"
+OPT_REQ_ENABLE_MPI="auto" # yes, no, auto
 
-AC_ARG_ENABLE([devtools],
-  AS_HELP_STRING([--enable-devtools],
-                 [Build development tools (enable debugging)]),
+AC_ARG_ENABLE([mpi],
+  AS_HELP_STRING([--enable-mpi],
+                 [Enable MPI support (uses MPICXX variable)]),
   [case "${enableval}" in
-     yes) OPT_ENABLE_DEVTOOLS="yes" ;;
-     no)  OPT_ENABLE_DEVTOOLS="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-devtools]) ;;
+     yes) OPT_REQ_ENABLE_MPI="yes" ;;
+     no)  OPT_REQ_ENABLE_MPI="no" ;;
+     *)   AC_MSG_ERROR([bad value ${enableval} for --enable-mpi]) ;;
    esac],
-  [OPT_ENABLE_DEVTOOLS=no])
+  [if test -n "${MPICXX_ORIG}" ; then
+     OPT_REQ_ENABLE_MPI=yes
+   fi])
 
-AC_MSG_RESULT([${OPT_ENABLE_DEVTOOLS}])
-AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
+OPT_ENABLE_MPI=no
+if test -n "${MPICXX}" -a ${OPT_REQ_ENABLE_MPI} != "no" ; then
+  OPT_ENABLE_MPI=yes
+fi
+
+AC_MSG_RESULT([${OPT_ENABLE_MPI} (request: ${OPT_REQ_ENABLE_MPI})])
 
 
-#-------------------------------------------------
-# enable-hpc-binutils: Enable use of HPCToolkit's binutils 
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether to enable HPCToolkit GNU binutils functionality])
-
-OPT_ENABLE_HPC_GNUBINUTILS="yes"
-
-AC_ARG_ENABLE([hpc-binutils],
-  AS_HELP_STRING([--enable-hpc-binutils],
-                 [Enable extra HPCToolkit GNU binutils functionality]),
-  [case "${enableval}" in
-     yes) OPT_ENABLE_HPC_GNUBINUTILS="yes" ;;
-     no)  OPT_ENABLE_HPC_GNUBINUTILS="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-hpc-binutils]) ;;
-   esac],
-  [OPT_ENABLE_HPC_GNUBINUTILS=yes])
-
-AC_MSG_RESULT([${OPT_ENABLE_HPC_GNUBINUTILS}])
-
-if test "${OPT_ENABLE_HPC_GNUBINUTILS}" = "yes" ; then
-  AC_DEFINE([HAVE_HPC_GNUBINUTILS], [], [HPCToolkit binutils])
+if test "${OPT_REQ_ENABLE_MPI}" = "yes" -a "${OPT_ENABLE_MPI}" = no ; then
+  AC_MSG_ERROR([MPI support requested but MPI compiler is invalid!])
 fi
 
 
 #-------------------------------------------------
-# enable-lush
+# enable-lush, enable-lush-pthreads, with-cilk, monitor-exts
 #-------------------------------------------------
 
 AC_ARG_ENABLE([lush],
@@ -1442,6 +1437,7 @@ fi
 AC_MSG_NOTICE([lush pthreads: $enable_lush_pthreads])
 AM_CONDITIONAL([OPT_ENABLE_LUSH_PTHREADS], [test "$enable_lush_pthreads" = yes])
 
+
 AC_ARG_ENABLE([monitor-exts],
   [AS_HELP_STRING([--enable-monitor-exts],
                   [enable extra monitor overrides (temp)])],
@@ -1469,29 +1465,7 @@ AC_SUBST([hpclink_extra_wrap_names])
 
 
 #-------------------------------------------------
-# with-objcopy
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether configured with objcopy])
-
-OPT_OBJCOPY=objcopy
-
-AC_ARG_WITH([objcopy],
-  AS_HELP_STRING([--with-objcopy=<obcopy_path>],
-                 [use given objcopy when hiding hpcrun library symbols]),
-  [if test $withval != no; then
-     OPT_OBJCOPY=${withval}
-   fi],
-  [])
-
-AC_MSG_RESULT([yes (${OPT_OBJCOPY})])
-
-AC_SUBST(OPT_OBJCOPY)
-
-
-#-------------------------------------------------
 # enable-bluegene: BG/* support
-#   FIXME: should be a better way
 #-------------------------------------------------
 
 AC_MSG_CHECKING([whether to enable IBM BlueGene/* support])
@@ -1577,6 +1551,74 @@ AC_SUBST(OPT_UPC_IFLAGS)
 AC_SUBST(OPT_UPC_LDFLAGS)
 
 
+#-------------------------------------------------
+# with-objcopy
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether configured with objcopy])
+
+OPT_OBJCOPY=objcopy
+
+AC_ARG_WITH([objcopy],
+  AS_HELP_STRING([--with-objcopy=<obcopy_path>],
+                 [use given objcopy when hiding hpcrun library symbols]),
+  [if test $withval != no; then
+     OPT_OBJCOPY=${withval}
+   fi],
+  [])
+
+AC_MSG_RESULT([yes (${OPT_OBJCOPY})])
+
+AC_SUBST(OPT_OBJCOPY)
+
+
+#-------------------------------------------------
+# enable-hpc-binutils: Enable use of HPCToolkit's binutils 
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether to enable HPCToolkit GNU binutils functionality])
+
+OPT_ENABLE_HPC_GNUBINUTILS="yes"
+
+AC_ARG_ENABLE([hpc-binutils],
+  AS_HELP_STRING([--enable-hpc-binutils],
+                 [Enable extra HPCToolkit GNU binutils functionality]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_HPC_GNUBINUTILS="yes" ;;
+     no)  OPT_ENABLE_HPC_GNUBINUTILS="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-hpc-binutils]) ;;
+   esac],
+  [OPT_ENABLE_HPC_GNUBINUTILS=yes])
+
+AC_MSG_RESULT([${OPT_ENABLE_HPC_GNUBINUTILS}])
+
+if test "${OPT_ENABLE_HPC_GNUBINUTILS}" = "yes" ; then
+  AC_DEFINE([HAVE_HPC_GNUBINUTILS], [], [HPCToolkit binutils])
+fi
+
+
+#-------------------------------------------------
+# enable-devtools: Tools of interest to developers
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether to build developer tools (devtools)])
+
+OPT_ENABLE_DEVTOOLS="no"
+
+AC_ARG_ENABLE([devtools],
+  AS_HELP_STRING([--enable-devtools],
+                 [Build development tools (enable debugging)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_DEVTOOLS="yes" ;;
+     no)  OPT_ENABLE_DEVTOOLS="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-devtools]) ;;
+   esac],
+  [OPT_ENABLE_DEVTOOLS=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_DEVTOOLS}])
+AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
+
+
 #----------------------------------------------------------------------------
 # Makefiles to create
 #----------------------------------------------------------------------------
@@ -1637,33 +1679,43 @@ AC_CONFIG_COMMANDS()
 
 AC_OUTPUT()
 
-#
+
+#-------------------------------------------------
 # Summary of the config options.
-#
+#-------------------------------------------------
+
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([HPCToolkit summary])
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([  HPCToolkit version: ${PACKAGE_VERSION}])
-AC_MSG_NOTICE([  Externals revision: $externals_mesg])
+AC_MSG_NOTICE([  Externals revision: ${externals_mesg}])
+AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  prefix: $prefix])
-AC_MSG_NOTICE([  build: $build])
-AC_MSG_NOTICE([  host:  $host])
-AC_MSG_NOTICE([  CC, CFLAGS: ${CC} ${CFLAGS} ${HOST_CFLAGS}])
-AC_MSG_NOTICE([  CXX, CXXFLAGS: ${CXX} ${CXXFLAGS} ${HOST_CXXFLAGS}])
-AC_MSG_NOTICE([  LDFLAGS: ${LDFLAGS}])
-AC_MSG_NOTICE([  binutils: $GNUBINUTILS])
-AC_MSG_NOTICE([  libdwarf: $LIBDWARF])
-AC_MSG_NOTICE([  libelf: $LIBELF])
-AC_MSG_NOTICE([  libmonitor: $LIBMONITOR])
-AC_MSG_NOTICE([  (old) monitor: $MONITOR])
-AC_MSG_NOTICE([  libunwind: $OPT_LIBUNWIND])
-AC_MSG_NOTICE([  open analysis: $OA])
-AC_MSG_NOTICE([  symtabAPI: $SYMTABAPI])
-AC_MSG_NOTICE([  xed2: $XED2])
-AC_MSG_NOTICE([  xerces: $XERCES])
-AC_MSG_NOTICE([  papi: $OPT_PAPI])
-AC_MSG_NOTICE([  upc: $opt_upc_mesg])
-AC_MSG_NOTICE([  build hpcrun: $enable_hpcrun_mesg])
+AC_MSG_NOTICE([  build:  $build])
+AC_MSG_NOTICE([  host:   $host])
+AC_MSG_NOTICE([])
+AC_MSG_NOTICE([  build hpcrun:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}])
-AC_MSG_NOTICE([  use lush: $enable_lush])
+AC_MSG_NOTICE([  mpi support:       ${OPT_ENABLE_MPI}])
+AC_MSG_NOTICE([  hpcrun/lush:       ${enable_lush}])
+AC_MSG_NOTICE([])
+AC_MSG_NOTICE([  CC:       ${CC}])
+AC_MSG_NOTICE([  CFLAGS:   ${CFLAGS} ${HOST_CFLAGS}])
+AC_MSG_NOTICE([  CXX:      ${CXX}])
+AC_MSG_NOTICE([  CXXFLAGS: ${CXXFLAGS} ${HOST_CXXFLAGS}])
+AC_MSG_NOTICE([  LDFLAGS:  ${LDFLAGS}])
+AC_MSG_NOTICE([  MPICXX:   ${MPICXX}])
+AC_MSG_NOTICE([])
+AC_MSG_NOTICE([  binutils:     ${GNUBINUTILS}])
+AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
+AC_MSG_NOTICE([  libelf:       ${LIBELF}])
+AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
+AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
+AC_MSG_NOTICE([  libunwind:    ${OPT_LIBUNWIND}])
+AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
+AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
+AC_MSG_NOTICE([  xed2:         ${XED2}])
+AC_MSG_NOTICE([  xerces:       ${XERCES}])
+AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
+AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
 
