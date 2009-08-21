@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-## $Id: Makefile.am 1780 2008-12-31 20:24:21Z tallent $
+## $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 

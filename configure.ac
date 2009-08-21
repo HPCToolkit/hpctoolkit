@@ -1180,9 +1180,6 @@ AM_CONDITIONAL(OPT_ENABLE_HPCRUN_FLAT, test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes")
 
 #-------------------------------------------------
 # enable-hpcrun:
-# enable-hpcrun-sync: 
-# enable-hpcrun-async: 
-#   - on Linux, requires libunwind
 #-------------------------------------------------
 
 AC_ARG_ENABLE([hpcrun],
@@ -1204,89 +1201,46 @@ then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (missing prerequisites)'
 fi
-if test "$hpc_cpu_x86" = yes && test "$XED2" = no ; then
-  OPT_ENABLE_HPCRUN=no
-  enable_hpcrun_mesg='no (missing prerequisites)'
-fi
+
+# tallent: $hpc_cpu_x86 is never set
+#if test "$hpc_cpu_x86" = yes && test "$XED2" = no ; then
+#  OPT_ENABLE_HPCRUN=no
+#  enable_hpcrun_mesg='no (missing prerequisites)'
+#fi
 
 AC_MSG_RESULT([$enable_hpcrun_mesg])
 AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "$OPT_ENABLE_HPCRUN" = yes])
 
 
-AC_MSG_CHECKING([whether to build hpcrun (synchronous)])
 
-OPT_ENABLE_HPCRUN_SYNC=no
-
-AC_ARG_ENABLE([hpcrun-sync],
-  AS_HELP_STRING([--enable-hpcrun-sync],
-                 [Build hpcrun (synchronous)]),
-  [case "${enableval}" in
-     yes) OPT_ENABLE_HPCRUN_SYNC="yes" ;;
-     no)  OPT_ENABLE_HPCRUN_SYNC="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-hpcrun-sync]) ;;
-   esac],
-  [OPT_ENABLE_HPCRUN_SYNC=no])
-
-AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_SYNC}])
-AM_CONDITIONAL(OPT_ENABLE_HPCRUN_SYNC, test "${OPT_ENABLE_HPCRUN_SYNC}" = "yes")
-
-# FIXME: tallent: this should be redundant with the default build
-AC_MSG_CHECKING([whether to build hpcrun (asynchronous)])
-
-OPT_ENABLE_HPCRUN_ASYNC=no
-
-AC_ARG_ENABLE([hpcrun-async],
-  AS_HELP_STRING([--enable-hpcrun-async],
-                 [Build hpcrun (asynchronous)]),
-  [case "${enableval}" in
-     yes) OPT_ENABLE_HPCRUN_ASYNC="yes" ;;
-     no)  OPT_ENABLE_HPCRUN_ASYNC="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-hpcrun-async]) ;;
-   esac],
-  [OPT_ENABLE_HPCRUN_ASYNC=no])
-
-AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_ASYNC}])
-AM_CONDITIONAL(OPT_ENABLE_HPCRUN_ASYNC, test "${OPT_ENABLE_HPCRUN_ASYNC}" = "yes")
-
-
-# On Linux, verify we have libunwind!!!
-if test "${OPT_ENABLE_HPCRUN_SYNC}" = "yes" || 
-   test "${OPT_ENABLE_HPCRUN_ASYNC}" = "yes" ; then
-  if test "${OPT_HAVE_LIBUNWIND}" = "no" && test "${HOST_OS}" = "Linux"; then
-    AC_MSG_ERROR([libunwind is needed to build hpcrun on Linux])
-  fi
-fi
-
-
-#
-# Find location of libstdc++.
-#
-# FIXME -- Is there an Autoconf macro for this?
-# 
-# FIXME (tallent): Actually, this is completely broken for
-# cross-compiling (there is no reason for the paths to be persistent)
-# and generally suspect.  This is used to set LD_LIBRARY_PATH and we
-# should not be responsible for configuring runtime paths for
-# libstdc++.
-#
-if test -n "${is_cross_compile}" ; then
-  # For now, assume GCC.  We cannot use the more general test because
-  # 'ldd' cannot execute in cross-compile mode.
-  HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
-else
-  src="/tmp/hello.$$.cc"
-  obj="/tmp/hello.$$.out"
-  cat <<EOF > "$src"
-main(){}
-EOF
-  ${CXX} -o "$obj" "$src"
-  HPCRUN_LIBCXX_PATH=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
-  rm -f "$src" "$obj"
-fi
-
-HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
-
-AC_SUBST([HPCRUN_LIBCXX_PATH])
+dnl # Find location of libstdc++.
+dnl #
+dnl # FIXME -- Is there an Autoconf macro for this?
+dnl # 
+dnl # FIXME (tallent): Actually, this is completely broken for
+dnl # cross-compiling (there is no reason for the paths to be persistent)
+dnl # and generally suspect.  This is used to set LD_LIBRARY_PATH and we
+dnl # should not be responsible for configuring runtime paths for
+dnl # libstdc++.
+dnl #
+dnl if test -n "${is_cross_compile}" ; then
+dnl   # For now, assume GCC.  We cannot use the more general test because
+dnl   # 'ldd' cannot execute in cross-compile mode.
+dnl   HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
+dnl else
+dnl   src="/tmp/hello.$$.cc"
+dnl   obj="/tmp/hello.$$.out"
+dnl   cat <<EOF > "$src"
+dnl main(){}
+dnl EOF
+dnl   ${CXX} -o "$obj" "$src"
+dnl   HPCRUN_LIBCXX_PATH=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
+dnl   rm -f "$src" "$obj"
+dnl fi
+dnl
+dnl HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
+dnl
+dnl AC_SUBST([HPCRUN_LIBCXX_PATH])
 
 
 #-------------------------------------------------
@@ -1366,9 +1320,9 @@ AC_ARG_ENABLE([mpi],
 
 # tallent: FIXME: for now require an explicit request to enable MPI.
 # Once hpcprof-mpi is ready, the second test should be replaced with:
-#   ${OPT_REQ_ENABLE_MPI} != "no"
+#   "${OPT_REQ_ENABLE_MPI}" != "no"
 OPT_ENABLE_MPI=no
-if test -n "${MPICXX}" -a ${OPT_REQ_ENABLE_MPI} = "yes" ; then
+if test -n "${MPICXX}" -a "${OPT_REQ_ENABLE_MPI}" = "yes" ; then
   OPT_ENABLE_MPI=yes
 fi
 
