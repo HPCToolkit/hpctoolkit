@@ -26,7 +26,8 @@ elf_inc="${libelfdir}/include"
 # CC=gcc  \
 
 set -- \
-    CFLAGS="-g -O2 -fPIC -I${elf_inc}"  \
+    CC="$CC" \
+    CFLAGS="-g -O2 -fPIC -I${elf_inc} $CFLAGS"  \
     CPPFLAGS="-I${elf_inc}"  \
     LDFLAGS="-L${libelf_lib}"  \
     --prefix="$prefix"  \
