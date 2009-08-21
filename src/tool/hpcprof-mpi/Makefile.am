@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-## $Id$
+## $Id: Makefile.am 1780 2008-12-31 20:24:21Z tallent $
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -42,7 +42,7 @@
 #
 # Description:
 #   *Process with automake to produce Makefile.in*
-#
+#   
 #   Note: All local variables are prefixed with MY to prevent name
 #   clashes with automatic automake variables.
 #
@@ -52,42 +52,53 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
 # Local settings
 #############################################################################
+
+MYSOURCES = \
+	main.cpp \
+	Args.hpp Args.cpp
+
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
+
+MYLDFLAGS = @HOST_CXXFLAGS@
+
+MYLDADD = \
+	@HOST_LIBTREPOSITORY@ \
+	$(HPC_LIBANALYSIS) $(HPC_LIBBANAL) $(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
+	@HOST_HPCPROF_LDFLAGS@ \
+	-lm
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS = \
-	hpcstruct \
-	hpcprof \
-	hpcprof-flat \
-	hpcproftt \
-	\
-	hpclump \
-	\
-	misc
+CXX = $(MPICXX)
 
+bin_PROGRAMS = hpcprof-mpi
 
-if OPT_ENABLE_HPCRUN_FLAT
-  SUBDIRS += hpcrun-flat
-endif
+#hpcprof_mpi_LINK
+hpcprof_mpi_SOURCES  = $(MYSOURCES)
+hpcprof_mpi_CFLAGS   = $(MYCFLAGS)
+hpcprof_mpi_CXXFLAGS = $(MYCXXFLAGS)
+hpcprof_mpi_LDFLAGS  = $(MYLDFLAGS)
+hpcprof_mpi_LDADD    = $(MYLDADD)
 
-if OPT_ENABLE_HPCRUN
-  SUBDIRS += \
-	hpcrun \
-	hpcfnbounds
-endif
-
-if OPT_ENABLE_HPCRUN
-  SUBDIRS += hpcprof-mpi 
-endif
-
-#if OPT_ENABLE_DEVTOOLS
-#  SUBDIRS += hpclump
-#endif
+MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
-# Other rules
+# Common rules
 #############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules
+

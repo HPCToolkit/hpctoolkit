@@ -1364,8 +1364,11 @@ AC_ARG_ENABLE([mpi],
      OPT_REQ_ENABLE_MPI=yes
    fi])
 
+# tallent: FIXME: for now require an explicit request to enable MPI.
+# Once hpcprof-mpi is ready, the second test should be replaced with:
+#   ${OPT_REQ_ENABLE_MPI} != "no"
 OPT_ENABLE_MPI=no
-if test -n "${MPICXX}" -a ${OPT_REQ_ENABLE_MPI} != "no" ; then
+if test -n "${MPICXX}" -a ${OPT_REQ_ENABLE_MPI} = "yes" ; then
   OPT_ENABLE_MPI=yes
 fi
 
@@ -1375,6 +1378,8 @@ AC_MSG_RESULT([${OPT_ENABLE_MPI} (request: ${OPT_REQ_ENABLE_MPI})])
 if test "${OPT_REQ_ENABLE_MPI}" = "yes" -a "${OPT_ENABLE_MPI}" = no ; then
   AC_MSG_ERROR([MPI support requested but MPI compiler is invalid!])
 fi
+
+AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
 
 
 #-------------------------------------------------
@@ -1639,6 +1644,7 @@ AC_CONFIG_FILES([ \
   src/tool/hpcfnbounds/Makefile \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
+  src/tool/hpcprof-mpi/Makefile \
   src/tool/hpcprof-flat/Makefile \
   src/tool/hpcproftt/Makefile \
   src/tool/hpcrun/Makefile \
