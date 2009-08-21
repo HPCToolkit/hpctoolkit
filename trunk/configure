@@ -812,11 +812,6 @@ OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
 OPT_ENABLE_HPCRUN_DYNAMIC_TRUE
 OPT_ENABLE_HPCRUN_STATIC_FALSE
 OPT_ENABLE_HPCRUN_STATIC_TRUE
-HPCRUN_LIBCXX_PATH
-OPT_ENABLE_HPCRUN_ASYNC_FALSE
-OPT_ENABLE_HPCRUN_ASYNC_TRUE
-OPT_ENABLE_HPCRUN_SYNC_FALSE
-OPT_ENABLE_HPCRUN_SYNC_TRUE
 OPT_ENABLE_HPCRUN_FALSE
 OPT_ENABLE_HPCRUN_TRUE
 OPT_ENABLE_HPCRUN_FLAT_FALSE
@@ -1031,8 +1026,6 @@ with_symtabAPI
 with_xed2
 with_xerces
 enable_hpcrun
-enable_hpcrun_sync
-enable_hpcrun_async
 enable_hpcrun_static
 enable_mpi
 enable_lush
@@ -1700,8 +1693,6 @@ Optional Features:
   --enable-dependency-tracking   do not reject slow dependency extractors
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-hpcrun         build hpcrun (default yes)
-  --enable-hpcrun-sync    Build hpcrun (synchronous)
-  --enable-hpcrun-async   Build hpcrun (asynchronous)
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
@@ -4657,13 +4648,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4660: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4651: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4663: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4654: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4666: output\"" >&5)
+  (eval echo "\"\$as_me:4657: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5869,7 +5860,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5872 "configure"' > conftest.$ac_ext
+  echo '#line 5863 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7722,11 +7713,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7725: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7716: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7729: \$? = $ac_status" >&5
+   echo "$as_me:7720: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8061,11 +8052,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8064: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8055: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8068: \$? = $ac_status" >&5
+   echo "$as_me:8059: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8166,11 +8157,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8169: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8160: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8173: \$? = $ac_status" >&5
+   echo "$as_me:8164: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8221,11 +8212,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8224: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8215: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8228: \$? = $ac_status" >&5
+   echo "$as_me:8219: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11021,7 +11012,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11024 "configure"
+#line 11015 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11117,7 +11108,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11120 "configure"
+#line 11111 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14368,11 +14359,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14371: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14362: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14375: \$? = $ac_status" >&5
+   echo "$as_me:14366: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14467,11 +14458,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14470: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14461: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14474: \$? = $ac_status" >&5
+   echo "$as_me:14465: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14519,11 +14510,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14522: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14513: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14526: \$? = $ac_status" >&5
+   echo "$as_me:14517: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19437,9 +19428,6 @@ fi
 
 #-------------------------------------------------
 # enable-hpcrun:
-# enable-hpcrun-sync:
-# enable-hpcrun-async:
-#   - on Linux, requires libunwind
 #-------------------------------------------------
 
 # Check whether --enable-hpcrun was given.
@@ -19464,10 +19452,12 @@ then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (missing prerequisites)'
 fi
-if test "$hpc_cpu_x86" = yes && test "$XED2" = no ; then
-  OPT_ENABLE_HPCRUN=no
-  enable_hpcrun_mesg='no (missing prerequisites)'
-fi
+
+# tallent: $hpc_cpu_x86 is never set
+#if test "$hpc_cpu_x86" = yes && test "$XED2" = no ; then
+#  OPT_ENABLE_HPCRUN=no
+#  enable_hpcrun_mesg='no (missing prerequisites)'
+#fi
 
 { $as_echo "$as_me:$LINENO: result: $enable_hpcrun_mesg" >&5
 $as_echo "$enable_hpcrun_mesg" >&6; }
@@ -19480,107 +19470,6 @@ else
 fi
 
 
-
-{ $as_echo "$as_me:$LINENO: checking whether to build hpcrun (synchronous)" >&5
-$as_echo_n "checking whether to build hpcrun (synchronous)... " >&6; }
-
-OPT_ENABLE_HPCRUN_SYNC=no
-
-# Check whether --enable-hpcrun-sync was given.
-if test "${enable_hpcrun_sync+set}" = set; then
-  enableval=$enable_hpcrun_sync; case "${enableval}" in
-     yes) OPT_ENABLE_HPCRUN_SYNC="yes" ;;
-     no)  OPT_ENABLE_HPCRUN_SYNC="no" ;;
-     *) { { $as_echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-hpcrun-sync" >&5
-$as_echo "$as_me: error: bad value ${enableval} for --enable-hpcrun-sync" >&2;}
-   { (exit 1); exit 1; }; } ;;
-   esac
-else
-  OPT_ENABLE_HPCRUN_SYNC=no
-fi
-
-
-{ $as_echo "$as_me:$LINENO: result: ${OPT_ENABLE_HPCRUN_SYNC}" >&5
-$as_echo "${OPT_ENABLE_HPCRUN_SYNC}" >&6; }
- if test "${OPT_ENABLE_HPCRUN_SYNC}" = "yes"; then
-  OPT_ENABLE_HPCRUN_SYNC_TRUE=
-  OPT_ENABLE_HPCRUN_SYNC_FALSE='#'
-else
-  OPT_ENABLE_HPCRUN_SYNC_TRUE='#'
-  OPT_ENABLE_HPCRUN_SYNC_FALSE=
-fi
-
-
-# FIXME: tallent: this should be redundant with the default build
-{ $as_echo "$as_me:$LINENO: checking whether to build hpcrun (asynchronous)" >&5
-$as_echo_n "checking whether to build hpcrun (asynchronous)... " >&6; }
-
-OPT_ENABLE_HPCRUN_ASYNC=no
-
-# Check whether --enable-hpcrun-async was given.
-if test "${enable_hpcrun_async+set}" = set; then
-  enableval=$enable_hpcrun_async; case "${enableval}" in
-     yes) OPT_ENABLE_HPCRUN_ASYNC="yes" ;;
-     no)  OPT_ENABLE_HPCRUN_ASYNC="no" ;;
-     *) { { $as_echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-hpcrun-async" >&5
-$as_echo "$as_me: error: bad value ${enableval} for --enable-hpcrun-async" >&2;}
-   { (exit 1); exit 1; }; } ;;
-   esac
-else
-  OPT_ENABLE_HPCRUN_ASYNC=no
-fi
-
-
-{ $as_echo "$as_me:$LINENO: result: ${OPT_ENABLE_HPCRUN_ASYNC}" >&5
-$as_echo "${OPT_ENABLE_HPCRUN_ASYNC}" >&6; }
- if test "${OPT_ENABLE_HPCRUN_ASYNC}" = "yes"; then
-  OPT_ENABLE_HPCRUN_ASYNC_TRUE=
-  OPT_ENABLE_HPCRUN_ASYNC_FALSE='#'
-else
-  OPT_ENABLE_HPCRUN_ASYNC_TRUE='#'
-  OPT_ENABLE_HPCRUN_ASYNC_FALSE=
-fi
-
-
-
-# On Linux, verify we have libunwind!!!
-if test "${OPT_ENABLE_HPCRUN_SYNC}" = "yes" ||
-   test "${OPT_ENABLE_HPCRUN_ASYNC}" = "yes" ; then
-  if test "${OPT_HAVE_LIBUNWIND}" = "no" && test "${HOST_OS}" = "Linux"; then
-    { { $as_echo "$as_me:$LINENO: error: libunwind is needed to build hpcrun on Linux" >&5
-$as_echo "$as_me: error: libunwind is needed to build hpcrun on Linux" >&2;}
-   { (exit 1); exit 1; }; }
-  fi
-fi
-
-
-#
-# Find location of libstdc++.
-#
-# FIXME -- Is there an Autoconf macro for this?
-#
-# FIXME (tallent): Actually, this is completely broken for
-# cross-compiling (there is no reason for the paths to be persistent)
-# and generally suspect.  This is used to set LD_LIBRARY_PATH and we
-# should not be responsible for configuring runtime paths for
-# libstdc++.
-#
-if test -n "${is_cross_compile}" ; then
-  # For now, assume GCC.  We cannot use the more general test because
-  # 'ldd' cannot execute in cross-compile mode.
-  HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
-else
-  src="/tmp/hello.$$.cc"
-  obj="/tmp/hello.$$.out"
-  cat <<EOF > "$src"
-main(){}
-EOF
-  ${CXX} -o "$obj" "$src"
-  HPCRUN_LIBCXX_PATH=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
-  rm -f "$src" "$obj"
-fi
-
-HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
 
 
 
@@ -19688,9 +19577,9 @@ fi
 
 # tallent: FIXME: for now require an explicit request to enable MPI.
 # Once hpcprof-mpi is ready, the second test should be replaced with:
-#   ${OPT_REQ_ENABLE_MPI} != "no"
+#   "${OPT_REQ_ENABLE_MPI}" != "no"
 OPT_ENABLE_MPI=no
-if test -n "${MPICXX}" -a ${OPT_REQ_ENABLE_MPI} = "yes" ; then
+if test -n "${MPICXX}" -a "${OPT_REQ_ENABLE_MPI}" = "yes" ; then
   OPT_ENABLE_MPI=yes
 fi
 
@@ -20324,20 +20213,6 @@ if test -z "${OPT_ENABLE_HPCRUN_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FALSE}"; 
   { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_HPCRUN\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 $as_echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OPT_ENABLE_HPCRUN_SYNC_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_SYNC_FALSE}"; then
-  { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_HPCRUN_SYNC\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-$as_echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN_SYNC\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OPT_ENABLE_HPCRUN_ASYNC_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_ASYNC_FALSE}"; then
-  { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_HPCRUN_ASYNC\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-$as_echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN_ASYNC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
