@@ -67,6 +67,7 @@
 #include <lib/binutils/LM.hpp>
 
 #include <lib/prof-juicy/CallPath-Profile.hpp>
+#include <lib/prof-juicy/Struct-Tree.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -76,6 +77,31 @@ namespace Analysis {
 
 namespace CallPath {
 
+// ---------------------------------------------------------
+//
+// ---------------------------------------------------------
+
+Prof::CallPath::Profile* 
+read(std::vector<string>& profileFiles);
+
+Prof::CallPath::Profile* 
+read(const string& prof_fnm);
+
+
+void
+readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
+
+
+// ---------------------------------------------------------
+// 
+// ---------------------------------------------------------
+
+void
+overlayStaticStructureMain(Prof::CallPath::Profile* prof, 
+			   Prof::LoadMap::LM* loadmap_lm,
+			   Prof::Struct::LM* lmStrct);
+
+
 // lm is optional and may be NULL
 void 
 overlayStaticStructure(Prof::CallPath::Profile* prof, 
@@ -84,6 +110,11 @@ overlayStaticStructure(Prof::CallPath::Profile* prof,
 
 void
 normalize(Prof::CallPath::Profile* prof, string lush_agent);
+
+
+// ---------------------------------------------------------
+//
+// ---------------------------------------------------------
 
 void 
 write(Prof::CallPath::Profile* prof, std::ostream& os, 

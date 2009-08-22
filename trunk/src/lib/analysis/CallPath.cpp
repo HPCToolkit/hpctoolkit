@@ -71,6 +71,9 @@ using std::string;
 #include "CallPath-OverheadMetricFact.hpp"
 #include "Util.hpp"
 
+#include <lib/prof-juicy-x/XercesUtil.hpp>
+#include <lib/prof-juicy-x/PGMReader.hpp>
+
 #include <lib/binutils/LM.hpp>
 
 #include <lib/xml/xml.hpp>
@@ -82,67 +85,55 @@ using namespace xml;
 
 //*************************** Forward Declarations ***************************
 
-#define DBG_LUSH 0
-
-typedef std::set<Prof::CCT::ANode*> CCTANodeSet;
 
 //****************************************************************************
-// Dump a CSProfTree 
+// 
 //****************************************************************************
 
 namespace Analysis {
 
 namespace CallPath {
 
-void
-write(Prof::CallPath::Profile* prof, std::ostream& os, 
-      string& title, bool prettyPrint)
+
+Prof::CallPath::Profile* 
+read(std::vector<string>& profileFiles)
 {
-  static const char* experimentDTD =
-#include <lib/xml/hpc-experiment.dtd.h>
-
-  using namespace Prof;
-
-  int oFlags = 0;
-  if (!prettyPrint) { 
-    oFlags |= CCT::Tree::OFlg_Compressed;
+  Prof::CallPath::Profile* prof = read(profileFiles[0]);
+  
+  for (uint i = 1; i < profileFiles.size(); ++i) {
+    Prof::CallPath::Profile* p = read(profileFiles[i]);
+    prof->merge(*p, /*isSameThread*/false);
+    delete p;
   }
-  DIAG_If(5) {
-    oFlags |= CCT::Tree::OFlg_Debug;
-  }
-
-  string name = (title.empty()) ? prof->name() : title;
-
-  os << "<?xml version=\"1.0\"?>" << std::endl;
-  os << "<!DOCTYPE hpc-experiment [\n" << experimentDTD << "]>" << std::endl;
-  os << "<HPCToolkitExperiment version=\"2.0\">\n";
-  os << "<Header n" << MakeAttrStr(name) << ">\n";
-  os << "  <Info/>\n";
-  os << "</Header>\n";
-
-  os << "<SecCallPathProfile i=\"0\" n" << MakeAttrStr(name) << ">\n";
-
-  // ------------------------------------------------------------
-  // 
-  // ------------------------------------------------------------
-  os << "<SecHeader>\n";
-  prof->writeXML_hdr(os, oFlags);
-  os << "  <Info/>\n";
-  os << "</SecHeader>\n";
-  os.flush();
-
-  // ------------------------------------------------------------
-  // 
-  // ------------------------------------------------------------
-  os << "<SecCallPathProfileData>\n";
-  prof->cct()->writeXML(os, oFlags);
-  os << "</SecCallPathProfileData>\n";
-
-  os << "</SecCallPathProfile>\n";
-  os << "</HPCToolkitExperiment>\n";
-  os.flush();
-
+  
+  return prof;
 }
+
+
+Prof::CallPath::Profile* 
+read(const string& prof_fnm)
+{
+  Prof::CallPath::Profile* prof = NULL;
+  try {
+    prof = Prof::CallPath::Profile::make(prof_fnm.c_str(), /*outfs*/ NULL);
+  }
+  catch (...) {
+    DIAG_EMsg("While reading profile '" << prof_fnm << "'...");
+    throw;
+  }
+  return prof;
+}
+
+
+void
+readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args)
+{
+  DocHandlerArgs docargs; // NOTE: override for replacePath()
+
+  Prof::Struct::readStructure(*structure, args.structureFiles,
+			      PGMDocHandler::Doc_STRUCT, docargs);
+}
+
 
 } // namespace CallPath
 
@@ -150,7 +141,43 @@ write(Prof::CallPath::Profile* prof, std::ostream& os,
 
 
 //****************************************************************************
-// Routines for Inferring Call Frames (based on STRUCTURE information)
+// Overlaying static structure on a CCT
+//****************************************************************************
+
+void
+Analysis::CallPath::
+overlayStaticStructureMain(Prof::CallPath::Profile* prof, 
+			   Prof::LoadMap::LM* loadmap_lm,
+			   Prof::Struct::LM* lmStrct)
+{
+  const string& lm_nm = loadmap_lm->name();
+  BinUtil::LM* lm = NULL;
+
+  bool useStruct = (lmStrct->ChildCount() > 0);
+
+  if (useStruct) {
+    DIAG_Msg(1, "STRUCTURE: " << lm_nm);
+  }
+  else {
+    DIAG_Msg(1, "Line map : " << lm_nm);
+
+    try {
+      lm = new BinUtil::LM();
+      lm->open(lm_nm.c_str());
+      lm->read(BinUtil::LM::ReadFlg_Proc);
+    }
+    catch (...) {
+      DIAG_EMsg("While reading '" << lm_nm << "'...");
+      throw;
+    }
+  }
+
+  Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
+
+  delete lm;
+}
+
+
 //****************************************************************************
 
 typedef std::map<Prof::Struct::ANode*, Prof::CCT::ANode*> StructToCCTMap;
@@ -341,7 +368,7 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 
 
 //***************************************************************************
-// Routines for normalizing the ScopeTree
+// Normaling the CCT
 //***************************************************************************
 
 static void 
@@ -507,4 +534,68 @@ pruneByMetrics(Prof::CCT::ANode* node)
   }
 }
 
+
+//****************************************************************************
+// write
+//****************************************************************************
+
+namespace Analysis {
+
+namespace CallPath {
+
+void
+write(Prof::CallPath::Profile* prof, std::ostream& os, 
+      string& title, bool prettyPrint)
+{
+  static const char* experimentDTD =
+#include <lib/xml/hpc-experiment.dtd.h>
+
+  using namespace Prof;
+
+  int oFlags = 0;
+  if (!prettyPrint) { 
+    oFlags |= CCT::Tree::OFlg_Compressed;
+  }
+  DIAG_If(5) {
+    oFlags |= CCT::Tree::OFlg_Debug;
+  }
+
+  string name = (title.empty()) ? prof->name() : title;
+
+  os << "<?xml version=\"1.0\"?>" << std::endl;
+  os << "<!DOCTYPE hpc-experiment [\n" << experimentDTD << "]>" << std::endl;
+  os << "<HPCToolkitExperiment version=\"2.0\">\n";
+  os << "<Header n" << MakeAttrStr(name) << ">\n";
+  os << "  <Info/>\n";
+  os << "</Header>\n";
+
+  os << "<SecCallPathProfile i=\"0\" n" << MakeAttrStr(name) << ">\n";
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+  os << "<SecHeader>\n";
+  prof->writeXML_hdr(os, oFlags);
+  os << "  <Info/>\n";
+  os << "</SecHeader>\n";
+  os.flush();
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+  os << "<SecCallPathProfileData>\n";
+  prof->cct()->writeXML(os, oFlags);
+  os << "</SecCallPathProfileData>\n";
+
+  os << "</SecCallPathProfile>\n";
+  os << "</HPCToolkitExperiment>\n";
+  os.flush();
+
+}
+
+} // namespace CallPath
+
+} // namespace Analysis
+
 //***************************************************************************
+

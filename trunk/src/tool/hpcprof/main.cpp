@@ -65,28 +65,11 @@ using std::string;
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
 
-#include <lib/prof-juicy-x/XercesUtil.hpp>
-#include <lib/prof-juicy-x/PGMReader.hpp>
-
-#include <lib/binutils/LM.hpp>
-
 #include <lib/support/diagnostics.h>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/realpath.h>
 
-//*************************** Forward Declarations ***************************
-
-static Prof::CallPath::Profile* 
-readProfileData(std::vector<string>& profileFiles);
-
-static void
-readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
-
-static void
-overlayStaticStructure(Prof::CallPath::Profile* prof, 
-		       Prof::LoadMap::LM* loadmap_lm,
-		       Prof::Struct::LM* lmStrct);
 
 //****************************************************************************
 
@@ -130,14 +113,14 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Read profile data
   // ------------------------------------------------------------
-  Prof::CallPath::Profile* prof = readProfileData(args.profileFiles);
+  Prof::CallPath::Profile* prof = Analysis::CallPath::read(args.profileFiles);
 
   // ------------------------------------------------------------
   // Seed structure information
   // ------------------------------------------------------------
   Prof::Struct::Tree* structure = new Prof::Struct::Tree("");
   if (!args.structureFiles.empty()) {
-    readStructure(structure, args);
+    Analysis::CallPath::readStructure(structure, args);
   }
   prof->structure(structure);
 
@@ -161,7 +144,8 @@ realmain(int argc, char* const* argv)
 	const string& lm_nm = loadmap_lm->name();
 
 	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
-	overlayStaticStructure(prof, loadmap_lm, lmStrct);
+	Analysis::CallPath::overlayStaticStructureMain(prof, loadmap_lm, 
+						       lmStrct);
       }
     }
     
@@ -202,82 +186,3 @@ realmain(int argc, char* const* argv)
 
 //****************************************************************************
 
-static Prof::CallPath::Profile* 
-readProfileFile(const string& prof_fnm);
-
-
-static Prof::CallPath::Profile* 
-readProfileData(std::vector<string>& profileFiles)
-{
-  Prof::CallPath::Profile* prof = readProfileFile(profileFiles[0]);
-  
-  for (uint i = 1; i < profileFiles.size(); ++i) {
-    Prof::CallPath::Profile* p = readProfileFile(profileFiles[i]);
-    prof->merge(*p, /*isSameThread*/false);
-    delete p;
-  }
-  
-  return prof;
-}
-
-
-static Prof::CallPath::Profile* 
-readProfileFile(const string& prof_fnm)
-{
-  Prof::CallPath::Profile* prof = NULL;
-  try {
-    prof = Prof::CallPath::Profile::make(prof_fnm.c_str(), /*outfs*/ NULL);
-  }
-  catch (...) {
-    DIAG_EMsg("While reading profile '" << prof_fnm << "'...");
-    throw;
-  }
-  return prof;
-}
-
-
-//****************************************************************************
-
-
-static void
-readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args)
-{
-  DocHandlerArgs docargs; // NOTE: override for replacePath()
-
-  Prof::Struct::readStructure(*structure, args.structureFiles,
-			      PGMDocHandler::Doc_STRUCT, docargs);
-}
-
-//****************************************************************************
-
-static void
-overlayStaticStructure(Prof::CallPath::Profile* prof, 
-		       Prof::LoadMap::LM* loadmap_lm,
-		       Prof::Struct::LM* lmStrct)
-{
-  const string& lm_nm = loadmap_lm->name();
-  BinUtil::LM* lm = NULL;
-
-  bool useStruct = (lmStrct->ChildCount() > 0);
-
-  if (useStruct) {
-    DIAG_Msg(1, "STRUCTURE: " << lm_nm);
-  }
-  else {
-    DIAG_Msg(1, "Line map : " << lm_nm);
-
-    try {
-      lm = new BinUtil::LM();
-      lm->open(lm_nm.c_str());
-      lm->read(BinUtil::LM::ReadFlg_Proc);
-    }
-    catch (...) {
-      DIAG_EMsg("While reading '" << lm_nm << "'...");
-      throw;
-    }
-  }
-
-  Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
-
-  delete lm;
-}
