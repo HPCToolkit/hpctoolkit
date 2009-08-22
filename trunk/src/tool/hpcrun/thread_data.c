@@ -77,14 +77,11 @@ void
 hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
 {
   thread_data_t* td = csprof_get_thread_data();
-  csprof_init_handling_sample(td,0);
+  csprof_init_handling_sample(td, 0, id);
 
   td->id                          = id;
   td->mem_low                     = 0;
   td->state                       = NULL;
-
-  // lcp list
-  td->lcp_list                    = NULL;
 
   // hpcrun file
   td->hpcrun_file                 = NULL;
@@ -122,7 +119,7 @@ static pthread_key_t _csprof_key;
 void
 csprof_init_pthread_key(void)
 {
-  NMSG(THREAD_SPECIFIC,"creating _csprof_key");
+  TMSG(THREAD_SPECIFIC,"creating _csprof_key");
   int bad = pthread_key_create(&_csprof_key, NULL);
   if (bad){
     EMSG("pthread_key_create returned non-zero = %d",bad);
@@ -141,7 +138,7 @@ csprof_set_thread_data(thread_data_t *td)
 void
 csprof_set_thread0_data(void)
 {
-  NMSG(THREAD_SPECIFIC,"set thread0 data");
+  TMSG(THREAD_SPECIFIC,"set thread0 data");
   csprof_set_thread_data(&_local_td);
 }
 

@@ -235,7 +235,7 @@ _hpcrun_sample_callpath(csprof_state_t *state, void *context,
   }
 #endif
   state->context_pc = pc;
-  TMSG(SAMPLE, "Signalled at %#lx", pc);
+  TMSG(SAMPLE, "Signalled at %lx", pc);
 
   /* check to see if shared library state has changed out from under us */
   state = csprof_check_for_new_epoch(state);

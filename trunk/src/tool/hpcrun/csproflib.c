@@ -107,7 +107,6 @@
 #include "fnbounds_interface.h"
 #include "splay-interval.h"
 #include "hpcrun_return_codes.h"
-#include "lcp.h"
 
 #include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/hpcrun-fmt.h>

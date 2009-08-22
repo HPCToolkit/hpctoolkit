@@ -76,7 +76,6 @@ MY_BASE_FILES =			\
 	files.c				\
 	handling_sample.c		\
 	last.c				\
-	lcp.c                           \
 	metrics.c			\
 	name.c				\
 	sample_event.c			\
@@ -117,6 +116,7 @@ MY_BASE_FILES =			\
 	messages/debug-flag.c	        \
 	messages/messages-sync.c	\
 	messages/messages-async.c	\
+	messages/fmt.c	                \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c \

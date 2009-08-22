@@ -16,6 +16,7 @@
 // global includes 
 //*****************************************************************************
 
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -23,6 +24,7 @@
 #include <string.h>
 #include <sys/param.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <stdbool.h>
 
@@ -40,9 +42,10 @@
 #include "thread_use.h"
 #include "monitor.h"
 
-#include "messages/debug-flag.h"
-#include "messages/messages.h"
-#include "messages/messages.i"
+#include <messages/debug-flag.h>
+#include <messages/messages.h>
+#include <messages/messages.i>
+#include <messages/fmt.h>
 
 
 //*****************************************************************************
@@ -51,6 +54,10 @@
 
 FILE *log_file;
 
+
+//*****************************************************************************
+// file local (static) variables 
+//*****************************************************************************
 
 //-------------------------------------
 // Log output may be throttled by using 
@@ -65,13 +72,11 @@ static int global_msg_count = 0;
 //-------------------------------------
 static int const threshold = 500;
 
-
+static int log_file_fd = 2;   // initially log_file is stderr
 
 //*****************************************************************************
 // forward declarations 
 //*****************************************************************************
-
-
 
 
 //*****************************************************************************
@@ -85,7 +90,8 @@ messages_init()
 
   spinlock_unlock(&pmsg_lock); // initialize lock for async operations
 
-  log_file = stderr;
+  log_file    = stderr;
+  log_file_fd = 2;      // std unix stderr
 }
 
 
@@ -98,9 +104,22 @@ messages_logfile_create()
   char log_name[PATH_MAX];
   files_log_name(log_name, 0, PATH_MAX);
 
+
   // open log file
   log_file = fopen(log_name,"w");
-  if (!log_file) log_file = stderr; // reset to stderr
+  if (!log_file) {
+    log_file = stderr; // reset to stderr
+    log_file_fd = 2;
+  }
+  else {
+    log_file_fd = fileno(log_file);
+  }
+#if 0
+  log_file_fd = open(log_name, O_RDWR | O_CREAT);
+  if (log_file_fd == -1) {
+    log_file_fd = 2; // cannot open log_file ==> revert to stderr
+  }
+#endif
 }
 
 
@@ -109,8 +128,17 @@ messages_fini(void)
 {
   if (hpcrun_get_disabled()) return;
 
+#if 0
+  if (log_file_fd != 2) {
+    int rv = close(log_file_fd);
+    if (rv) {
+      static char close_err[] = "An error occurred during the close of the log file! Be warned!\n";
+      write(2, close_err, strlen(close_err));
+    }
+#else
   if (log_file != stderr){
     fclose(log_file);
+#endif
 
     //----------------------------------------------------------------------
     // if this is an execution of an MPI program, we opened the log file 
@@ -136,9 +164,9 @@ csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
   if (ret == ret_expected) {
     return;
   }
-  va_list args;
-  va_start(args,fmt);
-  hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
+  va_list_box box;
+  va_list_box_start(box, fmt);
+  hpcrun_write_msg_to_log(false, false, NULL, fmt, &box);
   abort();
 }
 
@@ -153,16 +181,18 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
   strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
   strcat(fstr,"\n");
 
-  va_list args;
+  va_list_box box;
 
   if (log_file != stderr) {
-    va_start(args, fmt);
-    hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
+    va_list_box_start(box, fmt);
+    hpcrun_write_msg_to_log(false, false, NULL, fmt, &box);
   }
 
-  va_start(args,fmt);
-  vfprintf(stderr, fstr, args);
-  va_end(args);
+  char buf[1024] = "";
+  va_list_box_start(box, fmt);
+  Fmt_vns(buf, sizeof(buf), fstr, &box);
+  write(2, buf, strlen(buf));
+  va_list_box_end(box);
   info();
   monitor_real_exit(-1);
 }
@@ -174,20 +204,21 @@ csprof_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
 {
   // massage fmt string to end in a newline
   char fstr[MSG_BUF_SIZE];
-  va_list args;
+  va_list_box box;
 
   fstr[0] = '\0';
   strncat(fstr, fmt, MSG_BUF_SIZE - 5);
   strcat(fstr,"\n");
 
-  va_start(args, fmt);
-  vfprintf(stderr, fstr, args);
-  va_end(args);
+  char buf[1024] = "";
+  va_list_box_start(box, fmt);
+  Fmt_vns(buf, sizeof(buf), fstr, &box);
+  write(2, buf, strlen(buf));
+  va_list_box_end(box);
 
   if (copy_to_log && log_file != stderr){
-    va_list args;
-    va_start(args, fmt);
-    hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
+    va_list_box_start(box, fmt);
+    hpcrun_write_msg_to_log(false, false, NULL, fmt, &box);
   }
 }
 
@@ -201,7 +232,7 @@ messages_donothing(void)
 int
 messages_logfile_fd(void)
 {
-  return fileno(log_file);
+  return log_file_fd;
 }
 
 

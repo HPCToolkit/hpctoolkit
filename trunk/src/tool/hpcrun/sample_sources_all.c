@@ -1,9 +1,4 @@
 //
-// TODO: NONE unimplemented ????
-//
-
-
-//
 // The sample sources data structure
 //
 
@@ -67,6 +62,17 @@ csprof_all_sources_ ##n(void)					\
 static sample_source_t *sample_sources[MAX_SAMPLE_SOURCES];
 
 static int n_sources = 0;
+
+sample_source_t *
+hpcrun_fetch_source_by_name(const char *src)
+{
+  for(int i=0; i < n_sources; i++){
+    if (strcmp(sample_sources[i]->name, src) == 0) {
+      return sample_sources[i];
+    }
+  }
+  return NULL;
+}
 
 bool
 csprof_check_named_source(const char *src)

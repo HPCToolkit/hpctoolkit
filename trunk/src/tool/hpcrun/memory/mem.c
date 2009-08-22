@@ -151,7 +151,7 @@ hpcrun_mmap_anon(size_t size)
     addr = NULL;
   }
 
-  TMSG(MALLOC, "%s: size = %ld, fd = %d, addr = %p",
+  NMSG(MALLOC, "%s: size = %ld, fd = %d, addr = %p",
        __func__, size, fd, addr);
   return addr;
 }
@@ -186,7 +186,7 @@ hpcrun_make_memstore(hpcrun_meminfo_t *mi)
   mi->mi_high = mi->mi_start + memsize;
   num_segments++;
 
-  TMSG(MALLOC, "new memstore: [%p, %p)", mi->mi_start, mi->mi_high);
+  NMSG(MALLOC, "new memstore: [%p, %p)", mi->mi_start, mi->mi_high);
 }
 
 // Reclaim the freeable CCT memory at the low end.

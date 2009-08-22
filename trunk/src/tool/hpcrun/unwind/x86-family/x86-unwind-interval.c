@@ -73,7 +73,7 @@ void
 suspicious_interval(void *pc) 
 {
   TMSG(SUSPICIOUS_INTERVAL,"suspicious interval for pc = %p", pc);
-  fetch_and_add(&suspicious_cnt,1);
+  (void) fetch_and_add(&suspicious_cnt,1);
 }
 
 unwind_interval *

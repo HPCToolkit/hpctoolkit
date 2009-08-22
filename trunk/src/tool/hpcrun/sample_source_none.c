@@ -30,6 +30,7 @@
 #include "metrics.h"
 #include "sample_event.h"
 #include "sample_source.h"
+#include "sample_source_none_event.h"
 #include "sample_source_common.h"
 #include "sample_sources_registered.h"
 #include "simple_oo.h"
@@ -78,7 +79,14 @@ METHOD_FN(supports_event,const char *ev_str)
 static void
 METHOD_FN(process_event_list,int lush_metrics)
 {
-  TMSG(OPTIONS,"NONE is on the event list");
+
+  char *_use_log = strchr(METHOD_CALL(self,get_event_str),'@');
+  if ( _use_log) {
+    METHOD_CALL(self, store_event, NONE_USE_LOG, 1);
+  }
+  else {
+    METHOD_CALL(self, store_event, NONE_USE_LOG, 0);
+  }
 }
 
 static void

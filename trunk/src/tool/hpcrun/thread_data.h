@@ -15,7 +15,6 @@
 #include "sample_sources_registered.h"
 #include "newmem.h"
 #include "state.h"
-#include "lcp.h"
 
 #include <lush/lush-pthread.i>
 
@@ -29,7 +28,6 @@ typedef struct _td_t {
   hpcrun_meminfo_t memstore;
   int              mem_low;
   csprof_state_t*  state;
-  lcp_list_t*      lcp_list;     // reverse order: head-of-list = current
   FILE*            hpcrun_file;
   sigjmp_buf_t     bad_unwind;
   sigjmp_buf_t     mem_error;

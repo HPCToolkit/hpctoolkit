@@ -5,7 +5,10 @@
 
 #include <stdbool.h>
 
+#include "sample_source.h"
+
 extern void csprof_sample_sources_from_eventlist(char *evl);
+extern sample_source_t* hpcrun_fetch_source_by_name(const char *src);
 extern bool csprof_check_named_source(const char *src);
 extern void csprof_all_sources_init(void);
 extern void csprof_all_sources_process_event_list(int lush_metrics);
