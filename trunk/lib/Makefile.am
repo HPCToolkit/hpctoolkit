@@ -1,9 +1,15 @@
 # -*-Mode: makefile;-*-
-## $Id$
 
 ## * BeginRiceCopyright *****************************************************
+##
+## $HeadURL$
+## $Id$
+##
+## -----------------------------------
+## Part of HPCToolkit (hpctoolkit.org)
+## -----------------------------------
 ## 
-## Copyright ((c)) 2002, Rice University 
+## Copyright ((c)) 2002-2009, Rice University 
 ## All rights reserved.
 ## 
 ## Redistribution and use in source and binary forms, with or without
@@ -36,16 +42,16 @@
 ## ******************************************************* EndRiceCopyright *
 
 #############################################################################
-#
-# File:
-#   $Source$
-#
-# Description:
-#   *Process with automake to produce Makefile.in*
-#
-#   Note: All local variables are prefixed with MY to prevent name
-#   clashes with automatic automake variables.
-#
+##
+## File:
+##   $HeadURL$
+##
+## Description:
+##   *Process with automake to produce Makefile.in*
+##
+##   Note: All local variables are prefixed with MY to prevent name
+##   clashes with automatic automake variables.
+##
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)

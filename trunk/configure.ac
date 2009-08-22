@@ -1,9 +1,15 @@
 dnl -*-Mode: autoconf;-*-
-dnl $Id$
 
 dnl * BeginRiceCopyright *****************************************************
+dnl
+dnl $HeadURL$
+dnl $Id$
+dnl
+dnl -----------------------------------
+dnl Part of HPCToolkit (hpctoolkit.org)
+dnl -----------------------------------
 dnl 
-dnl Copyright ((c)) 2002-2007, Rice University 
+dnl Copyright ((c)) 2002-2009, Rice University 
 dnl All rights reserved.
 dnl 
 dnl Redistribution and use in source and binary forms, with or without
@@ -35,28 +41,28 @@ dnl if advised of the possibility of such damage.
 dnl 
 dnl ******************************************************* EndRiceCopyright *
 
-#############################################################################
-#
-# File:
-#   $Source$
-#
-# Description:
-#   autoconf input file for HPCToolkit.
-#   *Process with autoconf to produce configure*
-#
-# Modification history:
-#   2004/03/03 - Nathan Tallent
-#   ...
-#
-# Organization:
-# 1. Autoconf dependencies (autoconf version/automake version)
-# 2. Special options that need to be checked before compiler tests
-# 3. Basic prerequisites (compiler tests, tools, system, etc.)
-# 4. Host-specific settings and tests 
-# 5. Process and test --with/--enable options (which may need the host-specific settings)
-# 6. Generate output
-#
-#############################################################################
+dnl ##########################################################################
+dnl
+dnl  File:
+dnl    $HeadURL$
+dnl
+dnl  Description:
+dnl    autoconf input file for HPCToolkit.
+dnl    *Process with autoconf to produce configure*
+dnl
+dnl  Modification history:
+dnl    2004/03/03 - Nathan Tallent
+dnl    ...
+dnl
+dnl  Organization:
+dnl  1. Autoconf dependencies (autoconf version/automake version)
+dnl  2. Special options that need to be checked before compiler tests
+dnl  3. Basic prerequisites (compiler tests, tools, system, etc.)
+dnl  4. Host-specific settings and tests 
+dnl  5. Process and test --with/--enable options (which may need the host-specific settings)
+dnl  6. Generate output
+dnl
+dnl ##########################################################################
 
 m4_include(config/hpc-cxxutils.m4)
 m4_include(config/hpc-mpiutils.m4)
