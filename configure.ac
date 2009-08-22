@@ -1213,34 +1213,34 @@ AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "$OPT_ENABLE_HPCRUN" = yes])
 
 
 
-dnl # Find location of libstdc++.
-dnl #
-dnl # FIXME -- Is there an Autoconf macro for this?
-dnl # 
-dnl # FIXME (tallent): Actually, this is completely broken for
-dnl # cross-compiling (there is no reason for the paths to be persistent)
-dnl # and generally suspect.  This is used to set LD_LIBRARY_PATH and we
-dnl # should not be responsible for configuring runtime paths for
-dnl # libstdc++.
-dnl #
-dnl if test -n "${is_cross_compile}" ; then
-dnl   # For now, assume GCC.  We cannot use the more general test because
-dnl   # 'ldd' cannot execute in cross-compile mode.
-dnl   HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
-dnl else
-dnl   src="/tmp/hello.$$.cc"
-dnl   obj="/tmp/hello.$$.out"
-dnl   cat <<EOF > "$src"
-dnl main(){}
-dnl EOF
-dnl   ${CXX} -o "$obj" "$src"
-dnl   HPCRUN_LIBCXX_PATH=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
-dnl   rm -f "$src" "$obj"
-dnl fi
-dnl
-dnl HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
-dnl
-dnl AC_SUBST([HPCRUN_LIBCXX_PATH])
+# Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
+# hpcfnbounds.
+#
+# FIXME (tallent): This is completely broken for cross-compiling
+# (there is no reason for the paths to be persistent).  Moreover, we
+# should not be responsible for configuring runtime paths for
+# libstdc++.
+#
+# FIXME -- Is there an Autoconf macro for this?
+#
+if test -n "${is_cross_compile}" ; then
+  # For now, assume GCC.  We cannot use the more general test because
+  # 'ldd' cannot execute in cross-compile mode.
+  HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
+else
+  src="/tmp/hello.$$.cc"
+  obj="/tmp/hello.$$.out"
+  cat <<EOF > "$src"
+main(){}
+EOF
+  ${CXX} -o "$obj" "$src"
+  HPCRUN_LIBCXX_PATH=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
+  rm -f "$src" "$obj"
+fi
+
+HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
+
+AC_SUBST([HPCRUN_LIBCXX_PATH])
 
 
 #-------------------------------------------------
