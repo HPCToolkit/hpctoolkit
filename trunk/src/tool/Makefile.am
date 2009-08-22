@@ -86,7 +86,7 @@ if OPT_ENABLE_HPCRUN
 	hpcfnbounds
 endif
 
-if OPT_ENABLE_HPCRUN
+if OPT_ENABLE_MPI
   SUBDIRS += hpcprof-mpi 
 endif
 

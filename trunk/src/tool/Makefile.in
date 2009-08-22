@@ -37,7 +37,11 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @OPT_ENABLE_HPCRUN_FLAT_TRUE@am__append_1 = hpcrun-flat
-@OPT_ENABLE_HPCRUN_TRUE@am__append_2 = hpcrun hpcfnbounds hpcprof-mpi
+@OPT_ENABLE_HPCRUN_TRUE@am__append_2 = \
+@OPT_ENABLE_HPCRUN_TRUE@	hpcrun \
+@OPT_ENABLE_HPCRUN_TRUE@	hpcfnbounds
+
+@OPT_ENABLE_MPI_TRUE@am__append_3 = hpcprof-mpi 
 subdir = src/tool
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -251,7 +255,7 @@ AUTOMAKE_OPTIONS = foreign
 # Automake rules
 #############################################################################
 SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump misc \
-	$(am__append_1) $(am__append_2)
+	$(am__append_1) $(am__append_2) $(am__append_3)
 all: all-recursive
 
 .SUFFIXES:
