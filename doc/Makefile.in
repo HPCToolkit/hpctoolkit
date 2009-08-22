@@ -17,16 +17,6 @@
 # -*-Mode: makefile;-*-
 
 #############################################################################
-#
-# File:
-#   $Source$
-#
-# Description:
-#   *Process with automake to produce Makefile.in*
-#
-#   Note: All local variables are prefixed with MY to prevent name
-#   clashes with automatic automake variables.
-#
 #############################################################################
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
