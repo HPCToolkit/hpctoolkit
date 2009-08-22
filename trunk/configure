@@ -812,6 +812,7 @@ OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
 OPT_ENABLE_HPCRUN_DYNAMIC_TRUE
 OPT_ENABLE_HPCRUN_STATIC_FALSE
 OPT_ENABLE_HPCRUN_STATIC_TRUE
+HPCRUN_LIBCXX_PATH
 OPT_ENABLE_HPCRUN_FALSE
 OPT_ENABLE_HPCRUN_TRUE
 OPT_ENABLE_HPCRUN_FLAT_FALSE
@@ -4648,13 +4649,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4651: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4652: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4654: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4655: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4657: output\"" >&5)
+  (eval echo "\"\$as_me:4658: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5860,7 +5861,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5863 "configure"' > conftest.$ac_ext
+  echo '#line 5864 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7713,11 +7714,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7716: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7717: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7720: \$? = $ac_status" >&5
+   echo "$as_me:7721: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8052,11 +8053,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8055: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8056: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8059: \$? = $ac_status" >&5
+   echo "$as_me:8060: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8157,11 +8158,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8160: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8161: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8164: \$? = $ac_status" >&5
+   echo "$as_me:8165: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8212,11 +8213,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8215: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8216: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8219: \$? = $ac_status" >&5
+   echo "$as_me:8220: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11012,7 +11013,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11015 "configure"
+#line 11016 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11108,7 +11109,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11111 "configure"
+#line 11112 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14359,11 +14360,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14362: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14363: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14366: \$? = $ac_status" >&5
+   echo "$as_me:14367: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14458,11 +14459,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14461: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14462: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14465: \$? = $ac_status" >&5
+   echo "$as_me:14466: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14510,11 +14511,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14513: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14514: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14517: \$? = $ac_status" >&5
+   echo "$as_me:14518: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19470,6 +19471,34 @@ else
 fi
 
 
+
+
+# Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
+# hpcfnbounds.
+#
+# FIXME (tallent): This is completely broken for cross-compiling
+# (there is no reason for the paths to be persistent).  Moreover, we
+# should not be responsible for configuring runtime paths for
+# libstdc++.
+#
+# FIXME -- Is there an Autoconf macro for this?
+#
+if test -n "${is_cross_compile}" ; then
+  # For now, assume GCC.  We cannot use the more general test because
+  # 'ldd' cannot execute in cross-compile mode.
+  HPCRUN_LIBCXX_PATH=`${CXX} -print-file-name=libstdc++.so`
+else
+  src="/tmp/hello.$$.cc"
+  obj="/tmp/hello.$$.out"
+  cat <<EOF > "$src"
+main(){}
+EOF
+  ${CXX} -o "$obj" "$src"
+  HPCRUN_LIBCXX_PATH=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
+  rm -f "$src" "$obj"
+fi
+
+HPCRUN_LIBCXX_PATH=`dirname $HPCRUN_LIBCXX_PATH`
 
 
 
