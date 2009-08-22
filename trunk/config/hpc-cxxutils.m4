@@ -1,9 +1,15 @@
 # -*-Mode: m4;-*-
-# $Id: hpc-cxxutils.m4 78 2007-07-03 02:50:55Z eraxxon $
 
 ## * BeginRiceCopyright *****************************************************
+##
+## $HeadURL$
+## $Id$
+##
+## -----------------------------------
+## Part of HPCToolkit (hpctoolkit.org)
+## -----------------------------------
 ## 
-## Copyright ((c)) 2002, Rice University 
+## Copyright ((c)) 2002-2009, Rice University 
 ## All rights reserved.
 ## 
 ## Redistribution and use in source and binary forms, with or without
@@ -38,7 +44,7 @@
 #############################################################################
 #
 # File:
-#   $Source$
+#   $HeadURL$
 #
 # Description:
 #   HPC custom C++ macros for use with autoconf.
