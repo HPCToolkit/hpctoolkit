@@ -38,6 +38,7 @@
 #include "fnbounds_interface.h"
 #include "name.h"
 #include "sample_event.h"
+#include "sample_source_none_event.h"
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 #include "structs.h"
@@ -115,11 +116,16 @@ monitor_init_process(int *argc, char **argv, void* data)
     s = getenv("CSPROF_OPT_EVENT");
   }
   csprof_sample_sources_from_eventlist(s);
-  if (csprof_check_named_source("NONE")) {
-    hpcrun_set_disabled();
+  sample_source_t* _none = hpcrun_fetch_source_by_name("NONE");
+  if (_none) {
+    METHOD_CALL(_none, process_event_list, 0);
+    if (! _none->evl.events[NONE_USE_LOG].thresh) {
+      hpcrun_set_disabled();
+    }
   }
   if (getenv("SHOW_NONE") && hpcrun_get_disabled()) {
-    fprintf(stderr,"NOTE: sample source NONE is specified\n");
+    static char none_msg[] = "NOTE: sample source NONE is specified\n";
+    write(2, none_msg, strlen(none_msg));
   }
 
   files_set_directory();
@@ -252,10 +258,10 @@ monitor_init_thread_support(void)
 {
   hpcrun_async_block();
 
-  NMSG(THREAD,"REALLY init_thread_support ---");
+  TMSG(THREAD,"REALLY init_thread_support ---");
   csprof_init_thread_support();
   csprof_set_using_threads(1);
-  NMSG(THREAD,"Init thread support done");
+  TMSG(THREAD,"Init thread support done");
 
   hpcrun_async_unblock();
 }
@@ -274,7 +280,7 @@ monitor_thread_pre_create(void)
   //   1. init-process has occurred.
   //   2. current execution context is either the spawning process or thread.
   hpcrun_async_block();
-  NMSG(THREAD,"pre create");
+  TMSG(THREAD,"pre create");
 
   // -------------------------------------------------------
   // Capture new thread's creation context, skipping 1 level of context
@@ -310,7 +316,7 @@ monitor_thread_pre_create(void)
   thr_ctxt->parent = state->csdata_ctxt;
 
  fini:
-  NMSG(THREAD,"->finish pre create");
+  TMSG(THREAD,"->finish pre create");
   hpcrun_async_unblock();
   return thr_ctxt;
 }
@@ -324,8 +330,8 @@ monitor_thread_post_create(void* data)
   }
   hpcrun_async_block();
 
-  NMSG(THREAD,"post create");
-  NMSG(THREAD,"done post create");
+  TMSG(THREAD,"post create");
+  TMSG(THREAD,"done post create");
 
   hpcrun_async_unblock();
 }
@@ -336,7 +342,7 @@ monitor_init_thread(int tid, void* data)
 {
   NMSG(THREAD,"init thread %d",tid);
   void* thread_data = csprof_thread_init(tid, (lush_cct_ctxt_t*)data);
-  NMSG(THREAD,"back from init thread %d",tid);
+  TMSG(THREAD,"back from init thread %d",tid);
 
   trace_open();
   hpcrun_async_unblock();

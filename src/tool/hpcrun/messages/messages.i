@@ -29,7 +29,7 @@
 //*****************************************************************************
 
 #include <lib/prof-lean/spinlock.h>
-
+#include <messages/fmt.h>
 
 
 //*****************************************************************************
@@ -54,7 +54,7 @@ extern spinlock_t pmsg_lock;
 //*****************************************************************************
 
 void hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id, 
-                             const char *tag, const char *fmt, va_list args);
+                             const char *tag, const char *fmt, va_list_box* box);
 
 
 #endif

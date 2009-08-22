@@ -13,8 +13,8 @@
 // local includes
 //*****************************************************************************
 
-#include "messages/debug-flag.h"
-
+#include <messages/debug-flag.h>
+#include <messages/fmt.h>
 
 
 //*****************************************************************************
@@ -27,11 +27,12 @@
 #define EMSG            hpcrun_emsg
 #define EEMSG(...)      csprof_stderr_log_msg(true,__VA_ARGS__)
 
-#define AMSG         hpcrun_amsg
-#define PMSG(f,...)  hpcrun_pmsg(DBG_PREFIX(f), NULL, __VA_ARGS__)
-#define TMSG(f,...)  hpcrun_pmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
-#define ETMSG(f,...) hpcrun_pmsg_stderr(true,DBG_PREFIX(f), #f, __VA_ARGS__)
-#define NMSG(f,...)  hpcrun_nmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
+#define AMSG           hpcrun_amsg
+#define PMSG(f,...)    hpcrun_pmsg(DBG_PREFIX(f), NULL, __VA_ARGS__)
+#define TMSG(f,...)    hpcrun_pmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
+#define ETMSG(f,...)   hpcrun_pmsg_stderr(true,DBG_PREFIX(f), #f, __VA_ARGS__)
+#define NMSG(f,...)    hpcrun_nmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
+#define ENMSG(f, ...)  hpcrun_nmsg_stderr(true, DBG_PREFIX(f), #f, __VA_ARGS__)
 
 #define EXIT_ON_ERROR(r,e,...) csprof_exit_on_error(r,e,__VA_ARGS__)
 
@@ -53,11 +54,13 @@ void messages_donothing(void);
 
 void hpcrun_amsg(const char *fmt,...);
 void hpcrun_emsg(const char *fmt,...);
-void hpcrun_emsg_valist(const char *fmt, va_list args);
-void hpcrun_nmsg(pmsg_category flag,const char *fmt,...);
+void hpcrun_emsg_valist(const char *fmt, va_list_box* box);
+void hpcrun_nmsg(pmsg_category flag, const char* tag, const char *fmt,...);
 void hpcrun_pmsg(pmsg_category flag, const char* tag, const char *fmt,...);
 
-void csprof_pmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag, 
+void hpcrun_pmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag, 
+			const char *fmt,...);
+void hpcrun_nmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag, 
 			const char *fmt,...);
 void csprof_stderr_log_msg(bool copy_to_log, const char *fmt,...);
 void csprof_exit_on_error(int ret, int ret_expected, const char *fmt,...);

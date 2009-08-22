@@ -6,10 +6,13 @@
 
 #include <messages/messages.h>
 
+//
+// id specifically passed in, since id has not been set yet!!
+//
 void
-csprof_init_handling_sample(thread_data_t *td, int in)
+csprof_init_handling_sample(thread_data_t *td, int in, int id)
 {
-  TMSG(HANDLING_SAMPLE,"INIT called f thread %d",td->id);
+  NMSG(HANDLING_SAMPLE,"INIT called f thread %d", id);
   td->handling_sample = in;
 }
 

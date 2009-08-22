@@ -1,0 +1,6 @@
+#ifndef SAMPLE_SOURCE_NONE_EVENT_H
+#define SAMPLE_SOURCE_NONE_EVENT_H
+
+enum none_event { NONE_USE_LOG = 0 };
+
+#endif // SAMPLE_SOURCE_NONE_EVENT_H

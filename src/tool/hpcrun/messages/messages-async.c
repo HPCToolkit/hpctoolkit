@@ -36,6 +36,8 @@
 #include "disabled.h"
 #include "messages.h"
 #include "messages.i"
+#include "fmt.h"
+#include "sample_event.h"
 #include "thread_data.h"
 #include "thread_use.h"
 
@@ -62,7 +64,7 @@ spinlock_t pmsg_lock = SPINLOCK_UNLOCKED;
 //*****************************************************************************
 
 static void create_msg(char *buf, size_t buflen, bool add_thread_id, 
-		       const char *tag, const char *fmt, va_list args);
+		       const char *tag, const char *fmt, va_list_box* box);
 
 
 //*****************************************************************************
@@ -70,18 +72,18 @@ static void create_msg(char *buf, size_t buflen, bool add_thread_id,
 //*****************************************************************************
 
 void
-hpcrun_emsg_valist(const char *fmt, va_list args)
+hpcrun_emsg_valist(const char *fmt, va_list_box* box)
 {
-  hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
+  hpcrun_write_msg_to_log(false, false, NULL, fmt, box);
 }
 
 
 void
 hpcrun_emsg(const char *fmt,...)
 {
-  va_list args;
-  va_start(args,fmt);
-  hpcrun_write_msg_to_log(false, true, NULL, fmt, args);
+  va_list_box box;
+  va_list_box_start(box, fmt);
+  hpcrun_write_msg_to_log(false, true, NULL, fmt, &box);
 }
 
 
@@ -95,44 +97,58 @@ hpcrun_pmsg(pmsg_category flag, const char *tag, const char *fmt,...)
 #endif
     return;
   }
-  va_list args;
-  va_start(args,fmt);
-  hpcrun_write_msg_to_log(false, true, tag, fmt, args);
+  va_list_box box;
+  va_list_box_start(box, fmt);
+  hpcrun_write_msg_to_log(false, true, tag, fmt, &box);
 }
 
 
 // like pmsg, except echo message to stderr when flag is set
 void
 hpcrun_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag, 
-		   const char *fmt,...)
+		   const char *fmt ,...)
 {
   if (debug_flag_get(flag) == 0){
     return;
   }
-  va_list args;
-  va_start(args,fmt);
-  hpcrun_write_msg_to_log(echo_stderr, true, tag, fmt, args);
+  va_list_box box;
+  va_list_box_start(box, fmt);
+  hpcrun_write_msg_to_log(echo_stderr, true, tag, fmt, &box);
+}
+
+
+// like nmsg, except echo message to stderr when flag is set
+void
+hpcrun_nmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag, 
+		   const char *fmt ,...)
+{
+  if (debug_flag_get(flag) == 0){
+    return;
+  }
+  va_list_box box;
+  va_list_box_start(box, fmt);
+  hpcrun_write_msg_to_log(echo_stderr, false, tag, fmt, &box);
 }
 
 
 void
-hpcrun_nmsg(pmsg_category flag, const char *fmt, ...)
+hpcrun_nmsg(pmsg_category flag, const char* tag, const char *fmt, ...)
 {
   if (debug_flag_get(flag) == 0){
     return;
   }
-  va_list args;
-  va_start(args,fmt);
-  hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
+  va_list_box box;
+  va_list_box_start(box, fmt);
+  hpcrun_write_msg_to_log(false, false, tag, fmt, &box);
 }
 
 
 void
 hpcrun_amsg(const char *fmt,...)
 {
-  va_list args;
-  va_start(args,fmt);
-  hpcrun_write_msg_to_log(false, false, NULL, fmt, args);
+  va_list_box box;
+  va_list_box_start(box, fmt);
+  hpcrun_write_msg_to_log(false, false, NULL, fmt, &box);
 }
 
 
@@ -141,12 +157,9 @@ hpcrun_amsg(const char *fmt,...)
 // interface operations (within message subsystem) 
 //*****************************************************************************
 
-//
-// TODO -- factor out message composition from writing
-//
 void
 hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id, const char *tag,
-			const char *fmt, va_list args)
+			const char *fmt, va_list_box* box)
 {
   char buf[MSG_BUF_SIZE];
 
@@ -154,21 +167,28 @@ hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id, const char *tag,
     return;
   }
 
-  create_msg(buf, sizeof(buf), add_thread_id, tag, fmt, args);
-  va_end(args);
+  create_msg(&buf[0], sizeof(buf), add_thread_id, tag, fmt, box);
+  va_list_boxp_end(box);
 
   if (echo_stderr){
-    fprintf(stderr,"%s",buf);
+    write(2, buf, strlen(buf));
   }
 
   if (hpcrun_get_disabled()) return;
 
   spinlock_lock(&pmsg_lock);
+
+#if 0
   fprintf(log_file, "%s", buf);
   fflush(log_file);
+#endif
+
+  // use write to logfile file descriptor, instead of fprintf stuff
+  //
+  write(messages_logfile_fd(), buf, strlen(buf));
+
   spinlock_unlock(&pmsg_lock);
 }
-
 
 
 //*****************************************************************************
@@ -177,29 +197,31 @@ hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id, const char *tag,
 
 static void
 create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag, 
-	   const char *fmt, va_list args)
+	   const char *fmt, va_list_box* box)
 {
   char fstr[MSG_BUF_SIZE];
+  int  tmp_id = -1;
 
   fstr[0] = '\0';
 
   if (add_thread_id) {
     if (csprof_using_threads_p()) {
-      sprintf(fstr, "[%d]: ", TD_GET(id));
+      tmp_id = TD_GET(id);
+      Fmt_ns(fstr, sizeof(fstr), "[%d]: ", tmp_id);
     }
   }
   if (ENABLED(PID)) {
-    sprintf(fstr, "[%d]: ", getpid());
+    Fmt_ns(fstr, sizeof(fstr), "[%d]: ", getpid());
   }
 
   if (tag) {
     char* fstr_end = fstr + strlen(fstr);
-    sprintf(fstr_end, "%-5s: ", tag);
+    Fmt_ns(fstr_end, sizeof(fstr) - strlen(fstr), "%-5s: ", tag);
   }
 
   strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
   strcat(fstr,"\n");
 
-  vsnprintf(buf, buflen - 2, fstr, args);
+  Fmt_vns(buf, buflen - 2, fstr, box);
 }
 

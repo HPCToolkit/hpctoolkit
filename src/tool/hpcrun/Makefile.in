@@ -192,7 +192,7 @@ libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 libcsprof_la_DEPENDENCIES = $(HPC_LIBPROFLEAN)
 am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	csprof_options.c csproflib.c data.c disabled.c env.c epoch.c \
-	files.c handling_sample.c last.c lcp.c metrics.c name.c \
+	files.c handling_sample.c last.c metrics.c name.c \
 	sample_event.c sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_source_none.c \
 	sample_sources_registered.c segv_handler.c state.c \
@@ -206,10 +206,11 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
 	memory/list.c memory/mem.c messages/debug-flag.c \
 	messages/messages-sync.c messages/messages-async.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c fnbounds/fnbounds_dynamic.c csprof_dlfns.c \
-	os/linux/dylib.c unwind/common/default_validation_summary.c \
+	messages/fmt.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
+	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -229,9 +230,8 @@ am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-data.lo libcsprof_la-disabled.lo \
 	libcsprof_la-env.lo libcsprof_la-epoch.lo \
 	libcsprof_la-files.lo libcsprof_la-handling_sample.lo \
-	libcsprof_la-last.lo libcsprof_la-lcp.lo \
-	libcsprof_la-metrics.lo libcsprof_la-name.lo \
-	libcsprof_la-sample_event.lo \
+	libcsprof_la-last.lo libcsprof_la-metrics.lo \
+	libcsprof_la-name.lo libcsprof_la-sample_event.lo \
 	libcsprof_la-sample_sources_all.lo \
 	libcsprof_la-sample_source_common.lo \
 	libcsprof_la-sample_source_itimer.lo \
@@ -249,8 +249,8 @@ am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-fnbounds_common.lo libcsprof_la-list.lo \
 	libcsprof_la-mem.lo libcsprof_la-debug-flag.lo \
 	libcsprof_la-messages-sync.lo libcsprof_la-messages-async.lo \
-	libcsprof_la-executable-path.lo libcsprof_la-tokenize.lo \
-	libcsprof_la-unlink.lo
+	libcsprof_la-fmt.lo libcsprof_la-executable-path.lo \
+	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
 am__objects_9 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_10 = libcsprof_la-dylib.lo
@@ -291,7 +291,7 @@ pkglibPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(pkglib_PROGRAMS)
 am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	csprof_options.c csproflib.c data.c disabled.c env.c epoch.c \
-	files.c handling_sample.c last.c lcp.c metrics.c name.c \
+	files.c handling_sample.c last.c metrics.c name.c \
 	sample_event.c sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_source_none.c \
 	sample_sources_registered.c segv_handler.c state.c \
@@ -305,9 +305,10 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
 	memory/list.c memory/mem.c messages/debug-flag.c \
 	messages/messages-sync.c messages/messages-async.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c fnbounds/fnbounds_static.c \
+	messages/fmt.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	fnbounds/fnbounds_static.c \
 	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -327,9 +328,8 @@ am__objects_24 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-disabled.$(OBJEXT) libcsprof_o-env.$(OBJEXT) \
 	libcsprof_o-epoch.$(OBJEXT) libcsprof_o-files.$(OBJEXT) \
 	libcsprof_o-handling_sample.$(OBJEXT) \
-	libcsprof_o-last.$(OBJEXT) libcsprof_o-lcp.$(OBJEXT) \
-	libcsprof_o-metrics.$(OBJEXT) libcsprof_o-name.$(OBJEXT) \
-	libcsprof_o-sample_event.$(OBJEXT) \
+	libcsprof_o-last.$(OBJEXT) libcsprof_o-metrics.$(OBJEXT) \
+	libcsprof_o-name.$(OBJEXT) libcsprof_o-sample_event.$(OBJEXT) \
 	libcsprof_o-sample_sources_all.$(OBJEXT) \
 	libcsprof_o-sample_source_common.$(OBJEXT) \
 	libcsprof_o-sample_source_itimer.$(OBJEXT) \
@@ -351,7 +351,7 @@ am__objects_24 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-list.$(OBJEXT) libcsprof_o-mem.$(OBJEXT) \
 	libcsprof_o-debug-flag.$(OBJEXT) \
 	libcsprof_o-messages-sync.$(OBJEXT) \
-	libcsprof_o-messages-async.$(OBJEXT) \
+	libcsprof_o-messages-async.$(OBJEXT) libcsprof_o-fmt.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
 	libcsprof_o-tokenize.$(OBJEXT) libcsprof_o-unlink.$(OBJEXT)
 am__objects_25 = libcsprof_o-fnbounds_static.$(OBJEXT)
@@ -648,7 +648,6 @@ MY_BASE_FILES = \
 	files.c				\
 	handling_sample.c		\
 	last.c				\
-	lcp.c                           \
 	metrics.c			\
 	name.c				\
 	sample_event.c			\
@@ -689,6 +688,7 @@ MY_BASE_FILES = \
 	messages/debug-flag.c	        \
 	messages/messages-sync.c	\
 	messages/messages-async.c	\
+	messages/fmt.c	                \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c \
@@ -1040,12 +1040,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-executable-path.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-files.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-first_func.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-fmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-fnbounds_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-fnbounds_dynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-handling_sample.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-last.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-last_func.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lcp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-pthread.Plo@am__quote@
@@ -1107,12 +1107,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-executable-path.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-files.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-first_func.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-fmt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-fnbounds_common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-fnbounds_static.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-handling_sample.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-last.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-last_func.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lcp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-list.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-pthread.Po@am__quote@
@@ -1344,13 +1344,6 @@ libcsprof_la-last.lo: last.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-last.lo `test -f 'last.c' || echo '$(srcdir)/'`last.c
 
-libcsprof_la-lcp.lo: lcp.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-lcp.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-lcp.Tpo -c -o libcsprof_la-lcp.lo `test -f 'lcp.c' || echo '$(srcdir)/'`lcp.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-lcp.Tpo $(DEPDIR)/libcsprof_la-lcp.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lcp.c' object='libcsprof_la-lcp.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-lcp.lo `test -f 'lcp.c' || echo '$(srcdir)/'`lcp.c
-
 libcsprof_la-metrics.lo: metrics.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-metrics.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-metrics.Tpo -c -o libcsprof_la-metrics.lo `test -f 'metrics.c' || echo '$(srcdir)/'`metrics.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-metrics.Tpo $(DEPDIR)/libcsprof_la-metrics.Plo
@@ -1574,6 +1567,13 @@ libcsprof_la-messages-async.lo: messages/messages-async.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/messages-async.c' object='libcsprof_la-messages-async.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-messages-async.lo `test -f 'messages/messages-async.c' || echo '$(srcdir)/'`messages/messages-async.c
+
+libcsprof_la-fmt.lo: messages/fmt.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-fmt.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-fmt.Tpo -c -o libcsprof_la-fmt.lo `test -f 'messages/fmt.c' || echo '$(srcdir)/'`messages/fmt.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-fmt.Tpo $(DEPDIR)/libcsprof_la-fmt.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/fmt.c' object='libcsprof_la-fmt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-fmt.lo `test -f 'messages/fmt.c' || echo '$(srcdir)/'`messages/fmt.c
 
 libcsprof_la-executable-path.lo: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-executable-path.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-executable-path.Tpo -c -o libcsprof_la-executable-path.lo `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
@@ -1903,20 +1903,6 @@ libcsprof_o-last.obj: last.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='last.c' object='libcsprof_o-last.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-last.obj `if test -f 'last.c'; then $(CYGPATH_W) 'last.c'; else $(CYGPATH_W) '$(srcdir)/last.c'; fi`
-
-libcsprof_o-lcp.o: lcp.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lcp.o -MD -MP -MF $(DEPDIR)/libcsprof_o-lcp.Tpo -c -o libcsprof_o-lcp.o `test -f 'lcp.c' || echo '$(srcdir)/'`lcp.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lcp.Tpo $(DEPDIR)/libcsprof_o-lcp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lcp.c' object='libcsprof_o-lcp.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lcp.o `test -f 'lcp.c' || echo '$(srcdir)/'`lcp.c
-
-libcsprof_o-lcp.obj: lcp.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-lcp.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-lcp.Tpo -c -o libcsprof_o-lcp.obj `if test -f 'lcp.c'; then $(CYGPATH_W) 'lcp.c'; else $(CYGPATH_W) '$(srcdir)/lcp.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-lcp.Tpo $(DEPDIR)/libcsprof_o-lcp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lcp.c' object='libcsprof_o-lcp.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-lcp.obj `if test -f 'lcp.c'; then $(CYGPATH_W) 'lcp.c'; else $(CYGPATH_W) '$(srcdir)/lcp.c'; fi`
 
 libcsprof_o-metrics.o: metrics.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-metrics.o -MD -MP -MF $(DEPDIR)/libcsprof_o-metrics.Tpo -c -o libcsprof_o-metrics.o `test -f 'metrics.c' || echo '$(srcdir)/'`metrics.c
@@ -2365,6 +2351,20 @@ libcsprof_o-messages-async.obj: messages/messages-async.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/messages-async.c' object='libcsprof_o-messages-async.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-messages-async.obj `if test -f 'messages/messages-async.c'; then $(CYGPATH_W) 'messages/messages-async.c'; else $(CYGPATH_W) '$(srcdir)/messages/messages-async.c'; fi`
+
+libcsprof_o-fmt.o: messages/fmt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-fmt.o -MD -MP -MF $(DEPDIR)/libcsprof_o-fmt.Tpo -c -o libcsprof_o-fmt.o `test -f 'messages/fmt.c' || echo '$(srcdir)/'`messages/fmt.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-fmt.Tpo $(DEPDIR)/libcsprof_o-fmt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/fmt.c' object='libcsprof_o-fmt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-fmt.o `test -f 'messages/fmt.c' || echo '$(srcdir)/'`messages/fmt.c
+
+libcsprof_o-fmt.obj: messages/fmt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-fmt.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-fmt.Tpo -c -o libcsprof_o-fmt.obj `if test -f 'messages/fmt.c'; then $(CYGPATH_W) 'messages/fmt.c'; else $(CYGPATH_W) '$(srcdir)/messages/fmt.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-fmt.Tpo $(DEPDIR)/libcsprof_o-fmt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='messages/fmt.c' object='libcsprof_o-fmt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-fmt.obj `if test -f 'messages/fmt.c'; then $(CYGPATH_W) 'messages/fmt.c'; else $(CYGPATH_W) '$(srcdir)/messages/fmt.c'; fi`
 
 libcsprof_o-executable-path.o: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-executable-path.o -MD -MP -MF $(DEPDIR)/libcsprof_o-executable-path.Tpo -c -o libcsprof_o-executable-path.o `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
