@@ -54,50 +54,61 @@
 //
 //***************************************************************************
 
+#ifndef Analysis_ArgsHPCProf_hpp
+#define Analysis_ArgsHPCProf_hpp
+
 //************************* System Include Files ****************************
 
 #include <iostream>
-using std::cerr;
-using std::endl;
-
 #include <string>
-using std::string;
+#include <vector>
 
 //*************************** User Include Files ****************************
 
+#include <include/uint.h>
+
 #include "Args.hpp"
+
+#include <lib/support/CmdLineParser.hpp>
 
 //*************************** Forward Declarations **************************
 
-// Cf. DIAG_Die.
-#define ARG_ERROR(streamArgs)                                        \
-  { std::ostringstream WeIrDnAmE;                                    \
-    WeIrDnAmE << streamArgs /*<< std::ends*/;                        \
-    printError(std::cerr, WeIrDnAmE.str());                          \
-    exit(1); }
-
 //***************************************************************************
 
+namespace Analysis {
 
-//***************************************************************************
-// Args
-//***************************************************************************
+class ArgsHPCProf : public Analysis::Args {
+public: 
+  ArgsHPCProf(); 
+  virtual ~ArgsHPCProf();
 
-Args::Args()
-{
-}
+  // Parse the command line
+  void parse(int argc, const char* const argv[]);
+
+  // Version and Usage information
+  void printVersion(std::ostream& os) const;
+  void printUsage(std::ostream& os) const;
+  
+  // Error
+  void printError(std::ostream& os, const char* msg) const;
+  void printError(std::ostream& os, const std::string& msg) const;
+
+  // Dump
+  virtual void dump(std::ostream& os = std::cerr) const;
+
+public:
+  // Parsed Data: Command
+  virtual const std::string getCmd() const = 0;
+
+private:
+  void Ctor();
+
+private:
+  static CmdLineParser::OptArgDesc optArgs[];
+  CmdLineParser parser;
+}; 
+
+} // namespace Analysis
 
 
-Args::~Args()
-{
-}
-
-
-const std::string
-Args::getCmd() const
-{ 
-  // avoid error messages with: <path>/hpcprof-mpi
-  static string cmd = "hpcprof";
-  return cmd; // parser.getCmd(); 
-}
-
+#endif // Analysis_ArgsHPCProf_hpp 

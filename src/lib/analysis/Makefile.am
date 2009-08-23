@@ -77,6 +77,8 @@ MYSOURCES = \
 	Raw.hpp Raw.cpp	\
 	\
 	Args.hpp Args.cpp \
+	ArgsHPCProf.hpp ArgsHPCProf.cpp \
+	\
 	Util.hpp Util.cpp \
 	TextUtil.hpp TextUtil.cpp
 

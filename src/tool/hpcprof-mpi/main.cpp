@@ -113,8 +113,9 @@ main(int argc, char* const* argv)
 int
 realmain(int argc, char* const* argv) 
 {
-  Args args(argc, argv); 
-  // exits on special options (--help, --version)
+  Args args;
+  args.parse(argc, argv);
+  // exits on special options (e.g, --help, --version)
 
   // -------------------------------------------------------
   MPI_Init(&argc, (char***)&argv);
