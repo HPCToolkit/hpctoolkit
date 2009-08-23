@@ -67,44 +67,20 @@
 
 #include <include/uint.h>
 
-#include <lib/analysis/Args.hpp>
-
-#include <lib/support/CmdLineParser.hpp>
+#include <lib/analysis/ArgsHPCProf.hpp>
 
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
 
-class Args : public Analysis::Args {
+class Args : public Analysis::ArgsHPCProf {
 public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  virtual ~Args(); 
-
-  // Parse the command line
-  void parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void printVersion(std::ostream& os) const;
-  void printUsage(std::ostream& os) const;
-  
-  // Error
-  void printError(std::ostream& os, const char* msg) const;
-  void printError(std::ostream& os, const std::string& msg) const;
-
-  // Dump
-  virtual void dump(std::ostream& os = std::cerr) const;
+  Args();
+  virtual ~Args();
 
 public:
   // Parsed Data: Command
-  const std::string& getCmd() const;
-
-private:
-  void Ctor();
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
+  virtual const std::string getCmd() const;
 }; 
 
 #endif // Args_hpp 

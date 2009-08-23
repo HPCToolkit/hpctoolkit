@@ -113,7 +113,9 @@ main(int argc, char* const* argv)
 int
 realmain(int argc, char* const* argv) 
 {
-  Args args(argc, argv);
+  Args args;
+  args.parse(argc, argv);
+  
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   // ------------------------------------------------------------
