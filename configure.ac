@@ -82,7 +82,7 @@ m4_include(config/hpc-mpiutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [TRUNK-4.9.9], 
+AC_INIT([hpctoolkit], [4.9.9], 
         [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
@@ -131,12 +131,12 @@ AC_MSG_CHECKING([for svn revision])
 
 svn_revision=`svn info $srcdir 2>/dev/null | grep -e '^Revision' | awk '{ print $2 }'`
 if test "x$svn_revision" != x ; then
-    PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
+    PACKAGE_VERSION="${PACKAGE_VERSION} (r${svn_revision})"
     rm -f "$version_file"
     echo "$svn_revision" > "$version_file"
 elif test -f "$version_file" ; then
     svn_revision=`cat $version_file`
-    PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
+    PACKAGE_VERSION="${PACKAGE_VERSION} (r${svn_revision})"
 else
     svn_revision=0
 fi
