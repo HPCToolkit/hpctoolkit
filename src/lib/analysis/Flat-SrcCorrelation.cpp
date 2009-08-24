@@ -77,7 +77,7 @@ using namespace xml;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
-#include <lib/support/Files.hpp>
+#include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 #include <lib/support/pathfind.h>

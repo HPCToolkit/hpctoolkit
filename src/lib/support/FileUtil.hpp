@@ -59,14 +59,22 @@
 
 namespace FileUtil {
 
+// ---------------------------------------------------------
+// 
+// ---------------------------------------------------------
 
 // ... is a NULL terminated list of file names 
-// CopyFile appends these files into destFile 
+// copyFile appends these files into destFile 
 //          returns NULL upon success
 //          otherwise returns an error message in a static variable 
-//          which is overwritten with each call to CopyFile
+//          which is overwritten with each call to copyFile
 extern const char* 
-CopyFile(const char* destFile, ...); 
+copyFile(const char* destFile, ...); 
+
+
+// deletes fname (unlink) 
+extern int 
+DeleteFile(const char *fname);
 
 
 extern int 
@@ -91,20 +99,22 @@ extern const char*
 tmpname(); 
 
 
+// ---------------------------------------------------------
+// 
+// ---------------------------------------------------------
+
 // count how often char appears in file
 // return that number or -1 upon failure to open file for reading
 extern int 
 CountChar(const char* file, char c); 
 
 
-// deletes fname (unlink) 
-extern int 
-DeleteFile(const char *fname);
-
-
 extern bool 
 isReadable(const char *fileName);
 
+// ---------------------------------------------------------
+// 
+// ---------------------------------------------------------
 
 // 'basename': returns the 'fname.ext' component of fname=/path/fname.ext
 extern std::string 

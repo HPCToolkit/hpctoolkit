@@ -358,7 +358,7 @@ copySourceFile(const string& filenm, const string& dstDir,
   // mkdir(x, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
 	
-  // could use CopyFile; see StaticFiles::Copy
+  // could use FileUtil::copyFile; see StaticFiles::Copy
   if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
     DIAG_DevMsgIf(0, "cp " << fnm_to);
   } 

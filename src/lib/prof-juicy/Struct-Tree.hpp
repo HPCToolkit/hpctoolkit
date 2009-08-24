@@ -75,7 +75,7 @@
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Files.hpp>
+#include <lib/support/FileUtil.hpp>
 #include <lib/support/Logic.hpp>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/RealPathMgr.hpp>
