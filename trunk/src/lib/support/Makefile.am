@@ -80,7 +80,7 @@ MYSOURCES = \
 	StrUtil.hpp StrUtil.cpp \
 	\
 	IOUtil.hpp IOUtil.cpp \
-	Files.hpp Files.cpp \
+	FileUtil.hpp FileUtil.cpp \
 	SrcFile.hpp SrcFile.cpp \
 	RealPathMgr.hpp RealPathMgr.cpp \
 	findinstall.h findinstall.c \

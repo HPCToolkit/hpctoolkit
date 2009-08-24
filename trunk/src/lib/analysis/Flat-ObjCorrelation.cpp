@@ -82,7 +82,7 @@ using Analysis::TextUtil::ColumnFormatter;
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Files.hpp>
+#include <lib/support/FileUtil.hpp>
 #include <lib/support/StrUtil.hpp> 
 
 //*************************** Forward Declarations ***************************

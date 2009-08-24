@@ -68,7 +68,7 @@ using std::string;
 #include "Args.hpp"
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Files.hpp>
+#include <lib/support/FileUtil.hpp>
 
 //*************************** Forward Declarations **************************
 

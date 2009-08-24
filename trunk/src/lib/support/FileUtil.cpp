@@ -65,7 +65,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "Files.hpp"
+#include "FileUtil.hpp"
 
 #include "diagnostics.h"
 #include "StrUtil.hpp"
@@ -91,14 +91,14 @@ cpy(int srcFd, int dstFd)
 namespace FileUtil {
 
 const char* 
-CopyFile(const char* destFile, ...) 
+copyFile(const char* destFile, ...) 
 {
   static string error; 
   error = ""; 
   va_list srcFiles;
   va_start(srcFiles, destFile);
 
-  IFTRACE << "CopyFile: destFile = " << destFile ; 
+  IFTRACE << "copyFile: destFile = " << destFile ; 
   int dstFd = open(destFile, O_WRONLY | O_CREAT | O_TRUNC, 
 		    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); 
   if (dstFd < 0) {
