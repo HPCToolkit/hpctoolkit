@@ -51,14 +51,12 @@
 
 #include "simple_oo.h"
 #include "sample_source.h"
+#include "sample_source_common.h"
 #include "sample_sources_all.h"
 #include "sample_sources_registered.h"
 #include "tokenize.h"
 
 #include <messages/messages.h>
-
-#define csprof_event_abort(...) \
-  csprof_abort_w_info(csprof_registered_sources_list, __VA_ARGS__)
 
 //
 // FUNCTION DEFINING MACROS
@@ -159,9 +157,8 @@ add_source(sample_source_t *ss)
 void
 csprof_sample_sources_from_eventlist(char *evl)
 {
-  if (evl == 0){
-    csprof_abort("*** No sampling sources are specified --- aborting");
-    return;
+  if (evl == NULL) {
+    hpcrun_ssfail_none();
   }
 
   TMSG(EVENTS,"evl (before processing) = |%s|",evl);
@@ -173,7 +170,7 @@ csprof_sample_sources_from_eventlist(char *evl)
       METHOD_CALL(s,add_event,event);
     }
     else {
-      csprof_event_abort("Requested event %s is not supported!",event);
+      hpcrun_ssfail_unknown(event);
     }
   }
 }

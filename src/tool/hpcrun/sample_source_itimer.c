@@ -49,6 +49,7 @@
  * system includes
  *****************************************************************************/
 
+#include <errno.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -165,7 +166,10 @@ METHOD_FN(_start)
             // assume that all sample source ops are suspended.
   }
   TMSG(ITIMER_CTL,"starting itimer");
-  setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
+  if (setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL) != 0) {
+    EMSG("setitimer failed (%d): %s", errno, strerror(errno));
+    hpcrun_ssfail_start("itimer");
+  }
 
   TD_GET(ss_state)[self->evset_idx] = START;
 
