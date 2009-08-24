@@ -93,7 +93,7 @@ csprof_registered_sources_list(void)
   write(2, _hdr, strlen(_hdr));
   for (int i=0;i<nregs;i++){
     char buf[1024] = "";
-    Fmt_ns(buf, sizeof(buf), "    %s\n", registered_sample_sources[i]->name);
+    hpcrun_msg_ns(buf, sizeof(buf), "    %s\n", registered_sample_sources[i]->name);
     write(2, buf, strlen(buf));
   }
 }

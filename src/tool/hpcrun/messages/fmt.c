@@ -41,6 +41,10 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
+//*****************************************************************************
+// global includes 
+//*****************************************************************************
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -51,9 +55,52 @@
 #include <float.h>
 #include <ctype.h>
 #include <math.h>
+
+//*****************************************************************************
+// local includes 
+//*****************************************************************************
+
 #include "fmt.h"
 
+//*****************************************************************************
+// macros
+//*****************************************************************************
+
 #define T Fmt_T
+
+#define pad(n,c) do { int nn = (n); \
+	while (nn-- > 0) \
+		put((c), cl); } while (0)
+
+//
+// Useful constants for floating point manipulation
+//
+//
+
+//
+// 308 decimal digits = max # of digits to left of decimal point (when not using scientific notation
+//
+//
+#define	MAXEXP		308
+
+//
+// 128 bit fraction takes up 39 decimal digits; max reasonable precision
+//
+#define	MAXFRACT	39
+
+//
+// default precisions
+//
+#define	DEFPREC		6
+#define	DEFLPREC	14
+
+// max digits to left + max digits to right + decimal point
+#define	FPBUF_LEN	(MAXEXP+MAXFRACT+1)
+
+//***********************************
+// structures and data types
+//***********************************
+
 
 struct buf {
   char *buf;
@@ -61,9 +108,16 @@ struct buf {
   int size;
 };
 
-#define pad(n,c) do { int nn = (n); \
-	while (nn-- > 0) \
-		put((c), cl); } while (0)
+//***********************************
+// local data
+//***********************************
+
+static const char *Fmt_flags = "-+ 0";
+
+//***********************************
+// private operations
+//***********************************
+
 static void
 cvt_s(int code, va_list_box *box,
       int put(int c, void *cl), void *cl,
@@ -71,7 +125,7 @@ cvt_s(int code, va_list_box *box,
 {
   char *str = va_arg(box->ap, char *);
 
-  Fmt_puts(str, strlen(str), put, cl, flags,
+  hpcrun_msg_puts(str, strlen(str), put, cl, flags,
            width, precision);
 }
 
@@ -103,7 +157,7 @@ cvt_d(int code, va_list_box *box,
   while ((m /= 10) > 0);
   if (val < 0)
     *--p = '-';
-  Fmt_putd(p, (buf + sizeof buf) - p, put, cl, flags,
+  hpcrun_msg_putd(p, (buf + sizeof buf) - p, put, cl, flags,
            width, precision);
 }
 
@@ -125,7 +179,7 @@ cvt_u(int code, va_list_box *box,
   do
     *--p = m%10 + '0';
   while ((m /= 10) > 0);
-  Fmt_putd(p, (buf + sizeof buf) - p, put, cl, flags,
+  hpcrun_msg_putd(p, (buf + sizeof buf) - p, put, cl, flags,
            width, precision);
 }
 
@@ -148,7 +202,7 @@ cvt_o(int code, va_list_box *box,
   do
     *--p = (m&0x7) + '0';
   while ((m>>= 3) != 0);
-  Fmt_putd(p, (buf + sizeof buf) - p, put, cl, flags,
+  hpcrun_msg_putd(p, (buf + sizeof buf) - p, put, cl, flags,
            width, precision);
 }
 
@@ -171,7 +225,7 @@ cvt_x(int code, va_list_box *box,
   do
     *--p = "0123456789abcdef"[m&0xf];
   while ((m>>= 4) != 0);
-  Fmt_putd(p, (buf + sizeof buf) - p, put, cl, flags,
+  hpcrun_msg_putd(p, (buf + sizeof buf) - p, put, cl, flags,
            width, precision);
 }
 
@@ -187,7 +241,7 @@ cvt_p(int code, va_list_box *box,
   do
     *--p = "0123456789abcdef"[m&0xf];
   while ((m>>= 4) != 0);
-  Fmt_putd(p, (buf + sizeof buf) - p, put, cl, flags,
+  hpcrun_msg_putd(p, (buf + sizeof buf) - p, put, cl, flags,
            width, precision);
 }
 
@@ -208,31 +262,6 @@ cvt_c(int code, va_list_box *box,
   if ( flags['-'])
     pad(width - 1, ' ');
 }
-
-//
-// Useful constants for floating point manipulation
-//
-//
-
-//
-// 308 decimal digits = max # of digits to left of decimal point (when not using scientific notation
-//
-//
-#define	MAXEXP		308
-
-//
-// 128 bit fraction takes up 39 decimal digits; max reasonable precision
-//
-#define	MAXFRACT	39
-
-//
-// default precisions
-//
-#define	DEFPREC		6
-#define	DEFLPREC	14
-
-// max digits to left + max digits to right + decimal point
-#define	FPBUF_LEN	(MAXEXP+MAXFRACT+1)
 
 //
 // rounding routine used by f.p. conversion
@@ -324,27 +353,6 @@ help_cvt_f(char* buf, size_t buflen, double num, int prec, bool* neg)
   return t - buf - 1;
 }
 
-//
-// unit testing stuff for cvt
-//
-#if 0
-
-#define chk_cvt(fp, prec, is_neg) \
-do {                                                                           \
-  neg = is_neg;                                                                \
-  int rv = cvt(nbuf, FPBUF_LEN, fp, prec, &neg);                               \
-  char* _t = *nbuf ? nbuf : nbuf+1;                                            \
-  _t[rv] = '\0';                                                               \
-  printf("float fp(@ prec:%d) %f = %s\n", prec, fp, _t);                       \
-} while(0)
-
-  chk_cvt(0.99, 1, false);
-  chk_cvt(3.1415, DEFPREC, false);
-  chk_cvt(3.1415e10, 3, false);
-  chk_cvt(3.1415, 3, false);
-
-#endif // unit testing
-
 static void
 cvt_f(int code, va_list_box* box,
       int put(int c, void* cl), void* cl,
@@ -370,9 +378,24 @@ cvt_f(int code, va_list_box* box,
     _t[0] = '-';
     rv++;
   }
-  Fmt_putd(_t, strlen(_t), put, cl, flags,
+  hpcrun_msg_putd(_t, strlen(_t), put, cl, flags,
            width, precision);
 }
+
+static int
+fixed_len_insert(int c, void* cl)
+{
+  struct buf* p = (struct buf*) cl;
+  if (! (p->bp >= p->buf + p->size)) {
+    *p->bp++ = (char) c;
+  }
+
+  return c;
+}
+
+//*****************************************************************************
+// local conversion character table
+//*****************************************************************************
 
 static T cvt[256] = {
  /*   0-  7 */ 0,     0, 0,     0,     0,     0,     0,     0,
@@ -393,22 +416,12 @@ static T cvt[256] = {
  /* 120-127 */ cvt_x, 0, 0,     0,     0,     0,     0,     0
 };
 
-static const char *Fmt_flags = "-+ 0";
-
-static int
-fixed_len_insert(int c, void* cl)
-{
-  struct buf* p = (struct buf*) cl;
-  if (! (p->bp >= p->buf + p->size)) {
-    *p->bp++ = (char) c;
-  }
-
-  return c;
-}
-
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
 
 void
-Fmt_puts(const char *str, int len,
+hpcrun_msg_puts(const char *str, int len,
          int put(int c, void *cl), void *cl,
          unsigned char flags[], int width, int precision)
 {
@@ -434,28 +447,28 @@ Fmt_puts(const char *str, int len,
 }
 
 void
-Fmt_fmt(int put(int c, void *), void *cl,
+hpcrun_msg_fmt(int put(int c, void *), void *cl,
 	const char *fmt, ...)
 {
   va_list_box box;
   va_start(box.ap, fmt);
-  Fmt_vfmt(put, cl, fmt, &box);
+  hpcrun_msg_vfmt(put, cl, fmt, &box);
   va_end(box.ap);
 }
 
 int
-Fmt_ns(char* buf, size_t len, const char* fmt, ...)
+hpcrun_msg_ns(char* buf, size_t len, const char* fmt, ...)
 {
   int nchars;
   va_list_box box;
   va_list_box_start(box, fmt);
-  nchars = Fmt_vns(buf, len, fmt, &box);
+  nchars = hpcrun_msg_vns(buf, len, fmt, &box);
   va_list_box_end(box);
   return nchars;
 }
 
 int
-Fmt_vns(char* buf, size_t len, const char* fmt, va_list_box* box)
+hpcrun_msg_vns(char* buf, size_t len, const char* fmt, va_list_box* box)
 {
   struct buf cl = {
     .buf  = buf,
@@ -463,13 +476,13 @@ Fmt_vns(char* buf, size_t len, const char* fmt, va_list_box* box)
     .size = len,
   };
 
-  Fmt_vfmt(fixed_len_insert, &cl, fmt, box);
+  hpcrun_msg_vfmt(fixed_len_insert, &cl, fmt, box);
   fixed_len_insert((int) '\0', &cl);
   return cl.bp - cl.buf -1;
 }
 
 void
-Fmt_vfmt(int put(int c, void *cl), void *cl,
+hpcrun_msg_vfmt(int put(int c, void *cl), void *cl,
          const char *fmt, va_list_box *box)
 {
   while (*fmt)
@@ -522,7 +535,7 @@ Fmt_vfmt(int put(int c, void *cl), void *cl,
 }
 
 T
-Fmt_register(int code, T newcvt)
+hpcrun_msg_register(int code, T newcvt)
 {
   T old;
 
@@ -532,7 +545,7 @@ Fmt_register(int code, T newcvt)
 }
 
 void
-Fmt_putd(const char *str, int len,
+hpcrun_msg_putd(const char *str, int len,
          int put(int c, void *cl), void *cl,
          unsigned char flags[], int width, int precision)
 {

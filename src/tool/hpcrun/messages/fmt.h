@@ -60,19 +60,19 @@ typedef void (*T)(int code, va_list_box *box,
 	int put(int c, void *cl), void *cl,
 	unsigned char flags[256], int width, int precision);
 
-extern void Fmt_fmt (int put(int c, void *cl), void *cl,
+extern void hpcrun_msg_fmt (int put(int c, void *cl), void *cl,
 	const char *fmt, ...);
-extern void Fmt_vfmt(int put(int c, void *cl), void *cl,
+extern void hpcrun_msg_vfmt(int put(int c, void *cl), void *cl,
 	const char *fmt, va_list_box *box);
 
-extern int Fmt_ns(char* buf, size_t len, const char* fmt, ...);
-extern int Fmt_vns(char* buf, size_t len, const char* fmt, va_list_box* box);
+extern int hpcrun_msg_ns(char* buf, size_t len, const char* fmt, ...);
+extern int hpcrun_msg_vns(char* buf, size_t len, const char* fmt, va_list_box* box);
 
-extern T Fmt_register(int code, T cvt);
-extern void Fmt_putd(const char *str, int len,
+extern T hpcrun_msg_register(int code, T cvt);
+extern void hpcrun_msg_putd(const char *str, int len,
 	int put(int c, void *cl), void *cl,
 	unsigned char flags[256], int width, int precision);
-extern void Fmt_puts(const char *str, int len,
+extern void hpcrun_msg_puts(const char *str, int len,
 	int put(int c, void *cl), void *cl,
 	unsigned char flags[256], int width, int precision);
 #undef T
