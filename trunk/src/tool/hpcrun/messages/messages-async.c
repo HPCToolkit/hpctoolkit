@@ -250,21 +250,21 @@ create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag,
   if (add_thread_id) {
     if (csprof_using_threads_p()) {
       tmp_id = TD_GET(id);
-      Fmt_ns(fstr, sizeof(fstr), "[%d]: ", tmp_id);
+      hpcrun_msg_ns(fstr, sizeof(fstr), "[%d]: ", tmp_id);
     }
   }
   if (ENABLED(PID)) {
-    Fmt_ns(fstr, sizeof(fstr), "[%d]: ", getpid());
+    hpcrun_msg_ns(fstr, sizeof(fstr), "[%d]: ", getpid());
   }
 
   if (tag) {
     char* fstr_end = fstr + strlen(fstr);
-    Fmt_ns(fstr_end, sizeof(fstr) - strlen(fstr), "%-5s: ", tag);
+    hpcrun_msg_ns(fstr_end, sizeof(fstr) - strlen(fstr), "%-5s: ", tag);
   }
 
   strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
   strcat(fstr,"\n");
 
-  Fmt_vns(buf, buflen - 2, fstr, box);
+  hpcrun_msg_vns(buf, buflen - 2, fstr, box);
 }
 
