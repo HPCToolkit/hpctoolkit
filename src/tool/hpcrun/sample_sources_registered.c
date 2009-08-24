@@ -43,6 +43,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "sample_sources_registered.h"
 #include "sample_source.h"
