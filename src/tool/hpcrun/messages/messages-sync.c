@@ -255,7 +255,7 @@ csprof_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
 
   char buf[1024] = "";
   va_list_box_start(box, fmt);
-  Fmt_vns(buf, sizeof(buf), fstr, &box);
+  hpcrun_msg_vns(buf, sizeof(buf), fstr, &box);
   write(2, buf, strlen(buf));
   va_list_box_end(box);
 
