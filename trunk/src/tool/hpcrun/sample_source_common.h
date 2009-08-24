@@ -52,4 +52,11 @@ extern char *METHOD_FN(csprof_ss_get_event_str);
 extern int   METHOD_FN(csprof_ss_started);
 extern void  METHOD_FN(csprof_ss_start);
 
+void hpcrun_ssfail_none(void);
+void hpcrun_ssfail_unknown(char *event);
+void hpcrun_ssfail_unsupported(char *source, char *event);
+void hpcrun_ssfail_derived(char *source, char *event);
+void hpcrun_ssfail_conflict(char *source, char *event);
+void hpcrun_ssfail_start(char *source);
+
 #endif // COMMON_SAMPLE_SOURCE_H

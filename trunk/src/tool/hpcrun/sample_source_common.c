@@ -41,9 +41,11 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "sample_source.h"
+#include "sample_source_common.h"
 
 #include <messages/messages.h>
 
@@ -101,4 +103,66 @@ METHOD_FN(csprof_ss_hard_stop)
 {
   METHOD_CALL(self,stop);
   self->state = HARD_STOP;
+}
+
+//------------------------------------------------------------
+// Sample Source Failure Messages (ssfail)
+//------------------------------------------------------------
+
+static char *prefix = "HPCToolkit fatal error";
+
+// The none and unknown event failures happen before we set up the log
+// file, so we can only write to stderr.
+void
+hpcrun_ssfail_none(void)
+{
+  STDERR_MSG("%s: no sampling source specified.\n"
+      "Set HPCRUN_EVENT_LIST to a comma-separated list of EVENT@PERIOD pairs\n"
+      "and rerun your program.  If you truly want to run with no events, then\n"
+      "set HPCRUN_EVENT_LIST=NONE.",
+      prefix);
+  exit(1);
+}
+
+void
+hpcrun_ssfail_unknown(char *event)
+{
+  STDERR_MSG("%s: event %s is unknown or unsupported.",
+	     prefix, event);
+  exit(1);
+}
+
+void
+hpcrun_ssfail_unsupported(char *source, char *event)
+{
+  EEMSG("%s: %s event %s is not supported on this platform.",
+	prefix, source, event);
+  exit(1);
+}
+
+void
+hpcrun_ssfail_derived(char *source, char *event)
+{
+  EEMSG("%s: %s event %s is a derived event and thus cannot be profiled.",
+	prefix, source, event);
+  exit(1);
+}
+
+void
+hpcrun_ssfail_conflict(char *source, char *event)
+{
+  EEMSG("%s: %s event %s cannot be profiled in this sequence.\n"
+	"Either it conflicts with another event, or it exceeds the number of\n"
+	"hardware counters.",
+	prefix, source, event);
+  exit(1);
+}
+
+void
+hpcrun_ssfail_start(char *source)
+{
+  EEMSG("%s: sample source %s failed to start.\n"
+	"Check the event list and the HPCToolkit installation and try again.",
+	prefix, source);
+  exit(1);
 }

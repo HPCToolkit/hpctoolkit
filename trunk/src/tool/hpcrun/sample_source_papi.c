@@ -103,8 +103,8 @@
  *****************************************************************************/
 
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
-static void extract_and_check_event(char *in,int *ec,long *th);
-static bool event_name_to_code(char *evname,int *ec);
+static int  event_is_derived(int ev_code);
+static void event_fatal_error(int ev_code, int papi_ret);
 
 /******************************************************************************
  * local variables
@@ -119,7 +119,11 @@ METHOD_FN(init)
   TMSG(PAPI,"PAPI_library_init = %d", ret);
   TMSG(PAPI,"PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
   if (ret != PAPI_VER_CURRENT){
-    csprof_abort("Failed: PAPI_library_init. Looking for version %d, got version %d",PAPI_VER_CURRENT,ret);
+    STDERR_MSG("Fatal error: PAPI_library_init() failed with version mismatch.\n"
+        "HPCToolkit was compiled with version 0x%x but run on version 0x%x.\n"
+        "Check the HPCToolkit installation and try again.",
+	PAPI_VER_CURRENT, ret);
+    exit(1);
   }
   self->state = INIT;
 }
@@ -133,8 +137,8 @@ METHOD_FN(_start)
   TMSG(PAPI,"starting PAPI w event set %d",eventSet);
   int ret = PAPI_start(eventSet);
   if (ret != PAPI_OK){
-    csprof_abort("Failed to start papi f eventset %d. Return code = %d ==> %s",eventSet,ret,
-		 PAPI_strerror(ret));
+    EMSG("PAPI_start failed with %s (%d)", PAPI_strerror(ret), ret);
+    hpcrun_ssfail_start("PAPI");
   }
 
   TD_GET(ss_state)[self->evset_idx] = START;
@@ -164,7 +168,8 @@ METHOD_FN(stop)
   long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));
   int ret = PAPI_stop(eventSet, values);
   if (ret != PAPI_OK){
-    EMSG("Failed to stop papi f eventset %d. Return code = %d ==> %s",eventSet,ret,PAPI_strerror(ret));
+    EMSG("Failed to stop papi f eventset %d. Return code = %d ==> %s",
+	 eventSet,ret,PAPI_strerror(ret));
   }
 
   TD_GET(ss_state)[self->evset_idx] = STOP;
@@ -179,6 +184,8 @@ METHOD_FN(shutdown)
   self->state = UNINIT;
 }
 
+// Return true if PAPI recognizes the name, whether supported or not.
+// We'll handle unsupported events later.
 static int
 METHOD_FN(supports_event,const char *ev_str)
 {
@@ -191,25 +198,35 @@ METHOD_FN(supports_event,const char *ev_str)
   long th;
 
   extract_ev_thresh(ev_str,sizeof(evtmp),evtmp,&th);
-  return event_name_to_code(evtmp,&ec);
+  return PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK;
 }
  
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   char *event;
-  int i;
-
+  int i, ret;
   int num_lush_metrics = 0;
 
   char *evlist = self->evl.evl_spec;
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
+    char name[1024];
     int evcode;
     long thresh;
 
     TMSG(PAPI,"checking event spec = %s",event);
-    extract_and_check_event(event,&evcode,&thresh);
-    
+    extract_ev_thresh(event, sizeof(name), name, &thresh);
+    ret = PAPI_event_name_to_code(name, &evcode);
+    if (ret != PAPI_OK) {
+      EMSG("unexpected failure in PAPI process_event_list(): "
+	   "PAPI_event_name_to_code() returned %s (%d)",
+	   PAPI_strerror(ret), ret);
+      hpcrun_ssfail_unsupported("PAPI", name);
+    }
+    if (PAPI_query_event(evcode) != PAPI_OK) {
+      hpcrun_ssfail_unsupported("PAPI", name);
+    }
+
     // FIXME:LUSH: need a more flexible metric interface
     if (lush_metrics == 1 && strncmp(event, "PAPI_TOT_CYC", 12) == 0) {
       num_lush_metrics++;
@@ -268,13 +285,12 @@ METHOD_FN(gen_event_set,int lush_metrics)
     int evcode = self->evl.events[i].event;
     ret = PAPI_add_event(eventSet, evcode);
     if (ret != PAPI_OK) {
-      char nm[256];
-      PAPI_event_code_to_name(evcode,nm);
-
-      csprof_abort("Failure: PAPI_add_event:, trying to add event %s, got ret code = %d ==> %s",
-		   nm, ret, PAPI_strerror(ret));
+      EMSG("failure in PAPI gen_event_set(): PAPI_add_event() returned: %s (%d)",
+	   PAPI_strerror(ret), ret);
+      event_fatal_error(evcode, ret);
     }
   }
+
   for (i = 0; i < nevents; i++) {
     int evcode = self->evl.events[i].event;
     long thresh = self->evl.events[i].thresh;
@@ -283,8 +299,9 @@ METHOD_FN(gen_event_set,int lush_metrics)
 			papi_event_handler);
     TMSG(PAPI,"PAPI_overflow = %d", ret);
     if (ret != PAPI_OK) {
-      csprof_abort("Failure: PAPI_overflow.Return code = %d ==> %s", 
-		   ret, PAPI_strerror(ret));
+      EMSG("failure in PAPI gen_event_set(): PAPI_overflow() returned: %s (%d)",
+	   PAPI_strerror(ret), ret);
+      event_fatal_error(evcode, ret);
     }
   }
   thread_data_t *td = csprof_get_thread_data();
@@ -339,45 +356,44 @@ papi_obj_reg(void)
  * private operations 
  *****************************************************************************/
 
-// convert papi event name to code
-// NOTE: return status is true if succeeded, false otherwise
-
-static bool
-event_name_to_code(char *evname,int *ec)
+// Returns: 1 if the event code is a derived event.
+// The papi_avail(1) utility shows how to do this.
+static int
+event_is_derived(int ev_code)
 {
   PAPI_event_info_t info;
 
-  int ret = PAPI_event_name_to_code(evname, ec);
-  if (ret != PAPI_OK) {
-    TMSG(PAPI_EVENT_NAME,"event name to code failed with name = %s",evname);
-    TMSG(PAPI_EVENT_NAME,"event_code_to_name failed: %d",ret);
-    TMSG(PAPI_EVENT_NAME,"PAPI_event_name_to_code fails:, errcode = %s",PAPI_strerror(ret));
-    return false;
+  // "Is derived" is kind of a bad thing, so if any unexpected failure
+  // occurs, we'll return the "bad" answer.
+  if (PAPI_get_event_info(ev_code, &info) != PAPI_OK
+      || info.derived == NULL) {
+    return 1;
   }
-  ret = PAPI_query_event(*ec);
-  if (ret != PAPI_OK) {
-    TMSG(PAPI_EVENT_NAME,"PAPI query event failed: %d",ret);
-    TMSG(PAPI_EVENT_NAME,"PAPI_query_event fails:, errcode = %s",PAPI_strerror(ret));
-    return false;
+  if (info.count == 1
+      || strlen(info.derived) == 0
+      || strcmp(info.derived, "NOT_DERIVED") == 0
+      || strcmp(info.derived, "DERIVED_CMPD") == 0) {
+    return 0;
   }
-  ret = PAPI_get_event_info(*ec, &info);
-  if (ret != PAPI_OK) {
-    TMSG(PAPI_EVENT_NAME,"PAPI_get_event_info failed :%d",ret);
-    TMSG(PAPI_EVENT_NAME,"PAPI_get_event_info fails:, errcode = %s",PAPI_strerror(ret));
-    return false;
-  }
-  return true;
+  return 1;
 }
 
 static void
-extract_and_check_event(char *in,int *ec,long *th)
+event_fatal_error(int ev_code, int papi_ret)
 {
-  char evbuf[1024];
+  char name[1024];
 
-  extract_ev_thresh(in,sizeof(evbuf),evbuf,th);
-  if (! event_name_to_code(evbuf,ec)){
-    csprof_abort("Strange PAPI failure. Previously validated event spec %s now fails to produce a valid event code.",in);
+  PAPI_event_code_to_name(ev_code, name);
+  if (PAPI_query_event(ev_code) != PAPI_OK) {
+    hpcrun_ssfail_unsupported("PAPI", name);
   }
+  if (event_is_derived(ev_code)) {
+    hpcrun_ssfail_derived("PAPI", name);
+  }
+  if (papi_ret == PAPI_ECNFLCT) {
+    hpcrun_ssfail_conflict("PAPI", name);
+  }
+  hpcrun_ssfail_unsupported("PAPI", name);
 }
 
 static void
