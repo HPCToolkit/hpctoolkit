@@ -51,10 +51,7 @@
 #include <float.h>
 #include <ctype.h>
 #include <math.h>
-#include "cii20-assert.h"
-#include "except.h"
 #include "fmt.h"
-#include "cii20-mem.h"
 
 #define T Fmt_T
 
@@ -73,7 +70,7 @@ cvt_s(int code, va_list_box *box,
       unsigned char flags[], int width, int precision)
 {
   char *str = va_arg(box->ap, char *);
-  assert(str);
+
   Fmt_puts(str, strlen(str), put, cl, flags,
            width, precision);
 }
@@ -376,29 +373,6 @@ cvt_f(int code, va_list_box* box,
   Fmt_putd(_t, strlen(_t), put, cl, flags,
            width, precision);
 }
-static void
-old_cvt_f(int code, va_list_box *box,
-      int put(int c, void *cl), void *cl,
-      unsigned char flags[], int width, int precision)
-{
-  char buf[DBL_MAX_10_EXP+1+1+99+1];
-  if (precision < 0)
-    precision = 6;
-  if (code == 'g' && precision == 0)
-    precision = 1;
-  {
-    static char fmt[] = "%.dd?";
-    assert(precision <= 99);
-    fmt[4] = code;
-    fmt[3] =      precision%10 + '0';
-    fmt[2] = (precision/10)%10 + '0';
-    sprintf(buf, fmt, va_arg(box->ap, double));
-  }
-  Fmt_putd(buf, strlen(buf), put, cl, flags,
-           width, precision);
-}
-
-const Except_T Fmt_Overflow = { "Formatting Overflow" };
 
 static T cvt[256] = {
  /*   0-  7 */ 0,     0, 0,     0,     0,     0,     0,     0,
@@ -422,37 +396,6 @@ static T cvt[256] = {
 static const char *Fmt_flags = "-+ 0";
 
 static int
-outc(int c, void *cl)
-{
-  FILE *f = cl;
-  return putc(c, f);
-}
-
-static int
-insert(int c, void *cl)
-{
-  struct buf *p = cl;
-  if (p->bp >= p->buf + p->size){
-    RAISE(Fmt_Overflow);
-  }
-  *p->bp++ = c;
-  return c;
-}
-
-static int
-append(int c, void *cl)
-{
-  struct buf *p = cl;
-  if (p->bp >= p->buf + p->size) {
-    RESIZE(p->buf, 2*p->size);
-    p->bp = p->buf + p->size;
-    p->size *= 2;
-  }
-  *p->bp++ = c;
-  return c;
-}
-
-static int
 fixed_len_insert(int c, void* cl)
 {
   struct buf* p = (struct buf*) cl;
@@ -469,9 +412,6 @@ Fmt_puts(const char *str, int len,
          int put(int c, void *cl), void *cl,
          unsigned char flags[], int width, int precision)
 {
-  assert(str);
-  assert(len >= 0);
-  assert(flags);
   if (width == INT_MIN)
     width = 0;
   if (width < 0) {
@@ -503,74 +443,6 @@ Fmt_fmt(int put(int c, void *), void *cl,
   va_end(box.ap);
 }
 
-void
-Fmt_print(const char *fmt, ...)
-{
-  va_list_box box;
-  va_start(box.ap, fmt);
-  Fmt_vfmt(outc, stdout, fmt, &box);
-  va_end(box.ap);
-}
-
-void
-Fmt_fprint(FILE *stream, const char *fmt, ...)
-{
-  va_list_box box;
-  va_start(box.ap, fmt);
-  Fmt_vfmt(outc, stream, fmt, &box);
-  va_end(box.ap);
-}
-
-int
-Fmt_sfmt(char *buf, int size, const char *fmt, ...)
-{
-  int len;
-  va_list_box box;
-  va_start(box.ap, fmt);
-  len = Fmt_vsfmt(buf, size, fmt, &box);
-  va_end(box.ap);
-  return len;
-}
-
-int
-Fmt_vsfmt(char *buf, int size, const char *fmt,
-          va_list_box *box)
-{
-  struct buf cl;
-  assert(buf);
-  assert(size > 0);
-  assert(fmt);
-  cl.buf = cl.bp = buf;
-  cl.size = size;
-  Fmt_vfmt(insert, &cl, fmt, box);
-  insert(0, &cl);
-  return cl.bp - cl.buf - 1;
-}
-
-char*
-Fmt_string(const char *fmt, ...)
-{
-  char *str;
-  va_list_box box;
-  assert(fmt);	
-  va_start(box.ap, fmt);
-  str = Fmt_vstring(fmt, &box);
-  va_end(box.ap);
-  return str;
-}
-
-char*
-Fmt_vstring(const char *fmt, va_list_box *box)
-{
-  struct buf cl;
-  assert(fmt);
-  cl.size = 256;
-  cl.buf = cl.bp = ALLOC(cl.size);
-  Fmt_vfmt(append, &cl, fmt, box);
-  append(0, &cl);
-  return RESIZE(cl.buf, cl.bp - cl.buf);
-}
-
 int
 Fmt_ns(char* buf, size_t len, const char* fmt, ...)
 {
@@ -600,8 +472,6 @@ void
 Fmt_vfmt(int put(int c, void *cl), void *cl,
          const char *fmt, va_list_box *box)
 {
-  assert(put);
-  assert(fmt);
   while (*fmt)
     if (*fmt != '%' || *++fmt == '%')
       put((unsigned char)*fmt++, cl);
@@ -613,7 +483,6 @@ Fmt_vfmt(int put(int c, void *cl), void *cl,
         if (Fmt_flags) {
           unsigned char c = *fmt;
           for ( ; c && strchr(Fmt_flags, c); c = *++fmt) {
-            assert(flags[c] < 255);
             flags[c]++;
           }
         }
@@ -621,12 +490,10 @@ Fmt_vfmt(int put(int c, void *cl), void *cl,
           int n;
           if (*fmt == '*') {
             n = va_arg(box->ap, int);
-            assert(n != INT_MIN);
             fmt++;
           } else
             for (n = 0; isdigit(*fmt); fmt++) {
               int d = *fmt - '0';
-              assert(n <= (INT_MAX - d)/10);
               n = 10*n + d;
             }
           width = n;
@@ -635,12 +502,10 @@ Fmt_vfmt(int put(int c, void *cl), void *cl,
           int n;
           if (*fmt == '*') {
             n = va_arg(box->ap, int);
-            assert(n != INT_MIN);
             fmt++;
           } else
             for (n = 0; isdigit(*fmt); fmt++) {
               int d = *fmt - '0';
-              assert(n <= (INT_MAX - d)/10);
               n = 10*n + d;
             }
           precision = n;
@@ -660,8 +525,7 @@ T
 Fmt_register(int code, T newcvt)
 {
   T old;
-  assert(0 < code
-         && code < (int)(sizeof (cvt)/sizeof (cvt[0])));
+
   old = cvt[code];
   cvt[code] = newcvt;
   return old;
@@ -673,9 +537,7 @@ Fmt_putd(const char *str, int len,
          unsigned char flags[], int width, int precision)
 {
   int sign;
-  assert(str);
-  assert(len >= 0);
-  assert(flags);
+
   if (width == INT_MIN)
     width = 0;
   if (width < 0) {
