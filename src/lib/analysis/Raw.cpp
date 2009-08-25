@@ -165,7 +165,8 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
 
       CCT::Tree cct(NULL);
       try {
-	CallPath::Profile::hpcrun_fmt_cct_fread(&cct, ehdr.flags, num_metrics, fs, stdout);
+	CallPath::Profile::hpcrun_fmt_cct_fread(&cct, ehdr.flags, 
+						num_metrics, fs, stdout);
       }
       catch (const Diagnostics::Exception& x) {
 	DIAG_Throw("error reading calling context tree: " << x.what());

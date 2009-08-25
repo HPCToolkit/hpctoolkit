@@ -162,7 +162,7 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc)
 //***************************************************************************
 
 int
-hpcrun_fmt_epoch_hdr_fwrite(FILE* fs, uint64_t flags,
+hpcrun_fmt_epoch_hdr_fwrite(FILE* fs, epoch_flags_t flags,
 			    uint32_t ra_distance, uint64_t granularity, ...)
 {
   va_list args;
@@ -170,7 +170,7 @@ hpcrun_fmt_epoch_hdr_fwrite(FILE* fs, uint64_t flags,
 
   fwrite(HPCRUN_FMT_EpochTag, 1, HPCRUN_FMT_EpochTagLen, fs);
 
-  hpcfmt_byte8_fwrite(flags, fs);
+  hpcfmt_byte8_fwrite(flags.bits, fs);
   hpcfmt_byte4_fwrite(ra_distance, fs);
   hpcfmt_byte8_fwrite(granularity, fs);
 
@@ -203,7 +203,7 @@ hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
     return HPCFMT_ERR;
   }
 
-  THROW_IF_HPCERR(hpcfmt_byte8_fread(&(ehdr->flags), fs));
+  THROW_IF_HPCERR(hpcfmt_byte8_fread(&(ehdr->flags.bits), fs));
   THROW_IF_HPCERR(hpcfmt_byte4_fread(&(ehdr->ra_distance), fs));
   THROW_IF_HPCERR(hpcfmt_byte8_fread(&(ehdr->granularity), fs));
   THROW_IF_HPCERR(hpcfmt_nvpair_list_fread(&(ehdr->nvps), fs, alloc));
@@ -217,7 +217,7 @@ hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs)
 {
   fprintf(fs, "%s\n", HPCRUN_FMT_EpochTag);
   fprintf(fs, "{epoch-hdr:\n");
-  fprintf(fs, "  (flags: %"PRIx64") ", ehdr->flags);
+  fprintf(fs, "  (flags: %"PRIx64") ", ehdr->flags.bits);
   fprintf(fs, "(RA distance: %d) ", ehdr->ra_distance);
   fprintf(fs, "(address granularity: %"PRIu64")\n", ehdr->granularity);
   hpcfmt_nvpair_list_fprint(&(ehdr->nvps), fs, "  ");
@@ -398,23 +398,20 @@ hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x)
 
 
 int 
-hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, uint64_t flags, FILE* fs)
+hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, 
+			       epoch_flags_t flags, FILE* fs)
 {
   // ASSUMES: space for metrics has been allocated
 
-  // interpret the flag bits
-  epoch_flags_t eflags;
-  eflags.all = flags;
-
   x->as_info = lush_assoc_info_NULL;
-  if (eflags.flags.lush_active) {
+  if (flags.flags.lush_active) {
     THROW_IF_HPCERR(hpcfmt_byte4_fread(&x->as_info.bits, fs));
   }
 
   THROW_IF_HPCERR(hpcfmt_byte8_fread(&x->ip, fs));
 
   lush_lip_init(&x->lip);
-  if (eflags.flags.lush_active) {
+  if (flags.flags.lush_active) {
     hpcfile_cstree_lip__fread(&x->lip, fs);
   }
 
@@ -448,14 +445,10 @@ hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, epoch_flags_t flag
 
 
 int 
-hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, uint64_t flags,
-				const char* pre)
+hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, 
+				epoch_flags_t flags, const char* pre)
 {
-  // interpret the flag bits
-  epoch_flags_t eflags;
-  eflags.all = flags;
-
-  if (eflags.flags.lush_active) {
+  if (flags.flags.lush_active) {
     char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
     lush_assoc_info_sprintf(as_str, x->as_info);
 
@@ -464,7 +457,7 @@ hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, uint64_t
 
   fprintf(fs, "(ip: 0x%"PRIx64") ", x->ip);
 
-  if (eflags.flags.lush_active) {
+  if (flags.flags.lush_active) {
     hpcfile_cstree_lip__fprint(&x->lip, fs, "");
   }
 
@@ -576,7 +569,8 @@ hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x)
 
 
 int 
-hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, uint64_t flags, FILE* fs)
+hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, 
+			   epoch_flags_t flags, FILE* fs)
 {
   int ret;
 
@@ -593,7 +587,8 @@ hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, uint64_t flags, FILE* fs)
 
 
 int 
-hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs)
+hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, 
+			    epoch_flags_t flags, FILE* fs)
 {
   THROW_IF_HPCERR(hpcfmt_byte4_fwrite(x->id, fs));   // if node is leaf, make the id neg
   THROW_IF_HPCERR(hpcfmt_byte4_fwrite(x->id_parent, fs));
@@ -607,7 +602,8 @@ hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE*
 
 
 int 
-hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, uint64_t flags, const char* pre)
+hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, 
+			    epoch_flags_t flags, const char* pre)
 {
   fprintf(fs, "%s{node: (id: %d) (id_parent: %d) ",
 	  pre, x->id, x->id_parent);

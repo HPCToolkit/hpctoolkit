@@ -75,7 +75,7 @@
 //*****************************************************************************
 
 static epoch_flags_t epoch_flags = {
-  .all = 0
+  .bits = 0
 };
 static const uint32_t default_ra_distance = 1;
 static const uint64_t default_granularity = 1;
@@ -208,7 +208,7 @@ write_epochs(FILE* fs, csprof_state_t* state)
 
     epoch_flags.flags.lush_active = hpcrun_isAgentActive();
     
-    hpcrun_fmt_epoch_hdr_fwrite(fs, epoch_flags.all,
+    hpcrun_fmt_epoch_hdr_fwrite(fs, epoch_flags,
                                 default_ra_distance,
                                 default_granularity,
                                 "LIP-size","2",

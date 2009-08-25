@@ -283,11 +283,14 @@ union lush_lip {
   uint64_t      data8[LUSH_LIP_DATA8_SZ];
 };
 
+extern lush_lip_t lush_lip_NULL;
+
 
 static inline void
 lush_lip_init(lush_lip_t* x)
 {
-  memset(x, 0, sizeof(*x));
+  //memset(x, 0, sizeof(*x));
+  *x = lush_lip_NULL;
 }
 
 
