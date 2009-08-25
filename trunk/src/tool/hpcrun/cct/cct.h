@@ -82,6 +82,7 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/epoch_flags.h>
 
 #include <lib/prof-lean/lush/lush-support.h>
 
@@ -214,7 +215,7 @@ unsigned int
 lush_cct_ctxt__length(lush_cct_ctxt_t* cct_ctxt);
 
 int
-lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt);
+lush_cct_ctxt__write(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctxt);
 
 
 //***************************************************************************
@@ -271,7 +272,7 @@ csprof_cct_node_t *csprof_cct_get_child(hpcrun_cct_t *cct,
 
 int csprof_cct__write_txt(FILE* fs, hpcrun_cct_t* x);
 
-int csprof_cct__write_bin(FILE* fs, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt);
+int csprof_cct__write_bin(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt);
 
 #define csprof_cct__isempty(/* hpcrun_cct_t* */x) ((x)->tree_root == NULL)
 

@@ -41,8 +41,16 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
+//*****************************************************************************
+// system includes
+//*****************************************************************************
+
 #include <stdio.h>
 #include <setjmp.h>
+
+//*****************************************************************************
+// local includes
+//*****************************************************************************
 
 #include "monitor.h"
 #include "fname_max.h"
@@ -60,18 +68,22 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/epoch_flags.h>
+#include <lush/lush-backtrace.h>
 
+//*****************************************************************************
+// structs and types
+//*****************************************************************************
 
-// ******** default values for epoch hdr **********
-//
-//     ===== FIXME: correct these later ===
-//
-
-static const uint64_t default_epoch_flags = 0;
+static epoch_flags_t epoch_flags = {
+  .all = 0
+};
 static const uint32_t default_ra_distance = 1;
 static const uint64_t default_granularity = 1;
 
-// ******** local utilities **********
+//*****************************************************************************
+// local utilities
+//*****************************************************************************
 
 static char *
 hpcrun_itos(char *buf, int i)
@@ -191,7 +203,13 @@ write_epochs(FILE* fs, csprof_state_t* state)
     //
 
     TMSG(DATA_WRITE," epoch header");
-    hpcrun_fmt_epoch_hdr_fwrite(fs, default_epoch_flags,
+    //
+    // set epoch flags before writing
+    //
+
+    epoch_flags.flags.lush_active = hpcrun_isAgentActive();
+    
+    hpcrun_fmt_epoch_hdr_fwrite(fs, epoch_flags.all,
                                 default_ra_distance,
                                 default_granularity,
                                 "LIP-size","2",
@@ -229,7 +247,7 @@ write_epochs(FILE* fs, csprof_state_t* state)
 
     TMSG(DATA_WRITE, "Writing %ld nodes", cct->num_nodes);
 
-    int ret = csprof_cct__write_bin(fs, cct, lush_cct_ctxt);
+    int ret = csprof_cct__write_bin(fs, epoch_flags, cct, lush_cct_ctxt);
           
     if(ret != HPCRUN_OK) {
       TMSG(DATA_WRITE, "Error writing tree %#lx", cct);

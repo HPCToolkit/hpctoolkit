@@ -483,7 +483,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // ------------------------------------------------------------
   // CCT (cct)
   // ------------------------------------------------------------
-  hpcrun_fmt_cct_fread(prof->cct(), num_metrics, infs, outfs);
+  hpcrun_fmt_cct_fread(prof->cct(), ehdr.flags, num_metrics, infs, outfs);
 
   cct_fixRoot(prof->cct(), prof->name().c_str());  
   cct_fixLeaves(prof->cct()->root());
@@ -499,7 +499,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
 
 
 void
-Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics, 
+Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, uint64_t flags, int num_metrics, 
 			      FILE* infs, FILE* outfs)
 {
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
@@ -534,12 +534,12 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics,
     // ----------------------------------------------------------
     // Read the node
     // ----------------------------------------------------------
-    ret = hpcfile_cstree_node__fread(&ndata, infs);
+    ret = hpcfile_cstree_node__fread(&ndata, flags, infs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("Error reading CCT node " << ndata.id);
     }
     if (outfs) {
-      hpcfile_cstree_node__fprint(&ndata, outfs, "  ");
+      hpcfile_cstree_node__fprint(&ndata, outfs, flags, "  ");
     }
 
     // Find parent of node
