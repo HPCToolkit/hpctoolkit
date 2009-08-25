@@ -499,8 +499,8 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
 
 
 void
-Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, uint64_t flags, int num_metrics, 
-			      FILE* infs, FILE* outfs)
+Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
+			      int num_metrics, FILE* infs, FILE* outfs)
 {
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
 
@@ -649,8 +649,11 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id,
   VMA ip = (VMA)data->ip; // tallent:FIXME: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
-  lush_lip_t* lip = new lush_lip_t;
-  memcpy(lip, &data->lip, sizeof(lush_lip_t));
+  lush_lip_t* lip = NULL;
+  if (!lush_lip_eq(&data->lip, &lush_lip_NULL)) {
+    lip = new lush_lip_t;
+    memcpy(lip, &data->lip, sizeof(lush_lip_t));
+  }
 
   std::vector<hpcrun_metric_data_t> metricVec;
   metricVec.clear();

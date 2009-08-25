@@ -125,19 +125,21 @@ hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);
 static const char HPCRUN_FMT_EpochTag[] = "EPOCH___";
 static const int  HPCRUN_FMT_EpochTagLen = (sizeof(HPCRUN_FMT_EpochTag) - 1);
 
+
 typedef struct epoch_flags_bitfield {
   bool lush_active : 1;
-  uint64_t rest1   : 63;
+  uint64_t rest    : 63;
 } epoch_flags_bitfield;
 
 typedef union epoch_flags_t {
   epoch_flags_bitfield flags;
-  uint64_t             all;
+  uint64_t             bits;
 } epoch_flags_t;
+
 
 typedef struct hpcrun_fmt_epoch_hdr_t {
 
-  uint64_t flags;
+  epoch_flags_t flags;
   uint32_t ra_distance;
   uint64_t granularity;
   HPCFMT_List(hpcfmt_nvpair_t) nvps;
@@ -150,8 +152,8 @@ hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
 			   hpcfmt_alloc_fn alloc);
 
 int 
-hpcrun_fmt_epoch_hdr_fwrite(FILE* out, uint64_t flags, uint32_t ra_distance, 
-			    uint64_t granularity, ...);
+hpcrun_fmt_epoch_hdr_fwrite(FILE* out, epoch_flags_t flags, 
+			    uint32_t ra_distance, uint64_t granularity, ...);
 
 int
 hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* out);
@@ -377,10 +379,9 @@ typedef struct hpcfile_cstree_nodedata_s {
 int hpcfile_cstree_nodedata__init(hpcfile_cstree_nodedata_t* x);
 int hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x);
 
-int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, uint64_t flags, FILE* fs);
+int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, epoch_flags_t flags, FILE* fs);
 int hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, epoch_flags_t flags, FILE* fs);
-int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, uint64_t flags,
-				    const char* pre);
+int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, epoch_flags_t flags, const char* pre);
 
 
 typedef struct hpcfile_cstree_node_s {
@@ -395,9 +396,9 @@ typedef struct hpcfile_cstree_node_s {
 int hpcfile_cstree_node__init(hpcfile_cstree_node_t* x);
 int hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x);
 
-int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, uint64_t flags, FILE* fs);
+int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
 int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
-int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, uint64_t flags,
+int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, epoch_flags_t flags,
 				const char* pre);
 
 
