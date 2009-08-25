@@ -74,7 +74,6 @@
 #include "hpcrun-fmt.h"
 
 #include "lush/lush-support.h"
-#include <lib/prof-lean/epoch_flags.h>
 
 //*************************** Forward Declarations **************************
 
@@ -126,6 +125,15 @@ hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);
 static const char HPCRUN_FMT_EpochTag[] = "EPOCH___";
 static const int  HPCRUN_FMT_EpochTagLen = (sizeof(HPCRUN_FMT_EpochTag) - 1);
 
+typedef struct epoch_flags_bitfield {
+  bool lush_active : 1;
+  uint64_t rest1   : 63;
+} epoch_flags_bitfield;
+
+typedef union epoch_flags_t {
+  epoch_flags_bitfield flags;
+  uint64_t             all;
+} epoch_flags_t;
 
 typedef struct hpcrun_fmt_epoch_hdr_t {
 
