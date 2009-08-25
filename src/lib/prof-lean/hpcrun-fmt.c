@@ -148,6 +148,15 @@ hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* fs)
 }
 
 
+void
+hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc)
+{
+  if (!dealloc) {
+    dealloc(hdr->nvps.lst);
+  }
+}
+
+
 //***************************************************************************
 // epoch-hdr
 //***************************************************************************
@@ -194,11 +203,10 @@ hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
     return HPCFMT_ERR;
   }
 
-  // FIXME: please check for errors!
-  hpcfmt_byte8_fread(&(ehdr->flags), fs);
-  hpcfmt_byte4_fread(&(ehdr->ra_distance), fs);
-  hpcfmt_byte8_fread(&(ehdr->granularity), fs);
-  hpcfmt_nvpair_list_fread(&(ehdr->nvps), fs, alloc);
+  THROW_IF_HPCERR(hpcfmt_byte8_fread(&(ehdr->flags), fs));
+  THROW_IF_HPCERR(hpcfmt_byte4_fread(&(ehdr->ra_distance), fs));
+  THROW_IF_HPCERR(hpcfmt_byte8_fread(&(ehdr->granularity), fs));
+  THROW_IF_HPCERR(hpcfmt_nvpair_list_fread(&(ehdr->nvps), fs, alloc));
 
   return HPCFMT_OK;
 }
@@ -218,6 +226,14 @@ hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs)
   return HPCFMT_OK;
 }
 
+
+void
+hpcrun_fmt_epoch_hdr_free(hpcrun_fmt_epoch_hdr_t* ehdr, hpcfmt_free_fn dealloc)
+{
+  if (!dealloc) {
+    dealloc(ehdr->nvps.lst);
+  }
+}
 
 //***************************************************************************
 // metric-tbl
@@ -241,16 +257,16 @@ int
 hpcrun_fmt_metric_tbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
 			    hpcfmt_alloc_fn alloc)
 {
-  hpcfmt_byte4_fread(&(metric_tbl->len), in);
+  THROW_IF_HPCERR(hpcfmt_byte4_fread(&(metric_tbl->len), in));
   if (alloc != NULL) {
     metric_tbl->lst = 
       (metric_desc_t *) alloc(metric_tbl->len * sizeof(metric_desc_t));
   }
   metric_desc_t *p = metric_tbl->lst;
   for (uint32_t i = 0; i < metric_tbl->len; p++, i++) {
-    hpcfmt_str_fread(&(p->name), in, alloc);
-    hpcfmt_byte8_fread(&(p->flags), in);
-    hpcfmt_byte8_fread(&(p->period), in);
+    THROW_IF_HPCERR(hpcfmt_str_fread(&(p->name), in, alloc));
+    THROW_IF_HPCERR(hpcfmt_byte8_fread(&(p->flags), in));
+    THROW_IF_HPCERR(hpcfmt_byte8_fread(&(p->period), in));
   }
   return HPCFMT_OK;
 }
@@ -308,7 +324,7 @@ hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* fs)
 int
 hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* fs, hpcfmt_alloc_fn alloc)
 {
-  hpcfmt_byte4_fread(&(loadmap->len), fs);
+  THROW_IF_HPCERR(hpcfmt_byte4_fread(&(loadmap->len), fs));
   if (alloc) {
     loadmap->lst = alloc(loadmap->len * sizeof(loadmap_entry_t));
   }
@@ -316,10 +332,11 @@ hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* fs, hpcfmt_alloc_fn alloc)
   // FIXME: incomplete and hard-to-understand OSR?  Why not index by i?
   loadmap_entry_t *e = loadmap->lst;
   for(int i = 0; i < loadmap->len; e++, i++) {
-    // FIXME: check for errors
-    hpcfmt_str_fread(&(e->name), fs, alloc);
-    hpcfmt_byte8_fread(&(e->vaddr), fs);
-    hpcfmt_byte8_fread(&(e->mapaddr), fs);
+
+    THROW_IF_HPCERR(hpcfmt_str_fread(&(e->name), fs, alloc));
+    THROW_IF_HPCERR(hpcfmt_byte8_fread(&(e->vaddr), fs));
+    THROW_IF_HPCERR(hpcfmt_byte8_fread(&(e->mapaddr), fs));
+
     // FIXME ?? (don't know what these are for yet ...
     e->flags = 0;
   }
@@ -391,10 +408,10 @@ hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, uint64_t flags, FIL
 
   x->as_info = lush_assoc_info_NULL;
   if (eflags.flags.lush_active) {
-    hpcfmt_byte4_fread(&x->as_info.bits, fs);
+    THROW_IF_HPCERR(hpcfmt_byte4_fread(&x->as_info.bits, fs));
   }
 
-  hpcfmt_byte8_fread(&x->ip, fs);
+  THROW_IF_HPCERR(hpcfmt_byte8_fread(&x->ip, fs));
 
   lush_lip_init(&x->lip);
   if (eflags.flags.lush_active) {
@@ -402,7 +419,7 @@ hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, uint64_t flags, FIL
   }
 
   for (int i = 0; i < x->num_metrics; ++i) {
-    hpcfmt_byte8_fread(&x->metrics[i].bits, fs);
+    THROW_IF_HPCERR(hpcfmt_byte8_fread(&x->metrics[i].bits, fs));
   }
 
   return HPCFMT_OK;
@@ -509,7 +526,7 @@ hpcfile_cstree_lip__fread(lush_lip_t* x, FILE* fs)
   //  HPCFMT_TAG__CSTREE_LIP has already been read
 
   for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
-    hpcfmt_byte8_fread(&x->data8[i], fs);
+    THROW_IF_HPCERR(hpcfmt_byte8_fread(&x->data8[i], fs));
   }
   
   return HPCFMT_OK;
@@ -563,8 +580,8 @@ hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, uint64_t flags, FILE* fs)
 {
   int ret;
 
-  hpcfmt_byte4_fread(&x->id, fs);
-  hpcfmt_byte4_fread(&x->id_parent, fs);
+  THROW_IF_HPCERR(hpcfmt_byte4_fread(&x->id, fs));
+  THROW_IF_HPCERR(hpcfmt_byte4_fread(&x->id_parent, fs));
   
   ret = hpcfile_cstree_nodedata__fread(&x->data, flags, fs);
   if (ret != HPCFMT_OK) {
@@ -578,8 +595,8 @@ hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, uint64_t flags, FILE* fs)
 int 
 hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs)
 {
-  hpcfmt_byte4_fwrite(x->id, fs);   // if node is leaf, make the id neg
-  hpcfmt_byte4_fwrite(x->id_parent, fs);
+  THROW_IF_HPCERR(hpcfmt_byte4_fwrite(x->id, fs));   // if node is leaf, make the id neg
+  THROW_IF_HPCERR(hpcfmt_byte4_fwrite(x->id_parent, fs));
   
   if (hpcfile_cstree_nodedata__fwrite(&x->data, flags, fs) != HPCFMT_OK) {
     return HPCFMT_ERR; 
