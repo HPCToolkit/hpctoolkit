@@ -76,7 +76,6 @@
 #include "hpcio.h"
 #include "hpcrun-fmt.h"
 #include "hpcfmt.h"
-#include <lib/prof-lean/epoch_flags.h>
 
 //*************************** Forward Declarations **************************
 
