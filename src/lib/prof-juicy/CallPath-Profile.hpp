@@ -167,7 +167,7 @@ public:
 			 std::string locStr, FILE* outfs);
 
   static void
-  hpcrun_fmt_cct_fread(CCT::Tree* cct, int num_metrics, 
+  hpcrun_fmt_cct_fread(CCT::Tree* cct, uint64_t flags, int num_metrics,
 		       FILE* infs, FILE* outfs);
 
 

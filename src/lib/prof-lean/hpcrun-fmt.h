@@ -74,6 +74,7 @@
 #include "hpcrun-fmt.h"
 
 #include "lush/lush-support.h"
+#include <lib/prof-lean/epoch_flags.h>
 
 //*************************** Forward Declarations **************************
 
@@ -368,9 +369,9 @@ typedef struct hpcfile_cstree_nodedata_s {
 int hpcfile_cstree_nodedata__init(hpcfile_cstree_nodedata_t* x);
 int hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x);
 
-int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs);
-int hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs);
-int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
+int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, uint64_t flags, FILE* fs);
+int hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, epoch_flags_t flags, FILE* fs);
+int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, uint64_t flags,
 				    const char* pre);
 
 
@@ -386,9 +387,9 @@ typedef struct hpcfile_cstree_node_s {
 int hpcfile_cstree_node__init(hpcfile_cstree_node_t* x);
 int hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x);
 
-int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs);
-int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs);
-int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, 
+int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, uint64_t flags, FILE* fs);
+int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
+int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, uint64_t flags,
 				const char* pre);
 
 
