@@ -202,6 +202,18 @@ public:
 
   friend class ProcInsnIterator;
 
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  static bool 
+  isProcBFDSym(asymbol* sym) 
+  {
+    return (!bfd_is_und_section(sym->section)
+	    && (sym->flags & BSF_FUNCTION));
+  }
+
 private:
   // Should not be used
   Proc() { } 

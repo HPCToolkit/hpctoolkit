@@ -64,10 +64,9 @@ using std::string;
 #include <sstream>
 
 #include <iostream>
+#include <iomanip>
 using std::cerr;
 using std::endl;
-using std::hex;
-using std::dec;
 
 #include <cstring>
 
@@ -96,6 +95,9 @@ using std::dec;
 //*************************** Forward Declarations **************************
 
 #define DBG_BLD_PROC_MAP 0
+
+static void
+dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasPrinted);
 
 //***************************************************************************
 
@@ -505,14 +507,14 @@ BinUtil::LM::dump(std::ostream& o, int flags, const char* pre) const
   
   o << std::showbase;
   o << p1 << "Load Module Information:\n";
-  DumpModuleInfo(o, p2.c_str());
+  dumpModuleInfo(o, p2.c_str());
 
   o << p1 << "Load Module Contents:\n";
   dumpme(o, p2.c_str());
 
   if (flags & DUMP_Flg_SymTab) {
     o << p2 << "Symbol Table (" << m_bfdSymTabSz << "):\n";
-    DumpSymTab(o, p2.c_str());
+    dumpSymTab(o, p2.c_str());
   }
   
   o << p2 << "Sections (" << numSegs() << "):\n";
@@ -542,8 +544,8 @@ BinUtil::LM::dumpProcMap(std::ostream& os, unsigned flag,
 {
   for (ProcMap::const_iterator it = m_procMap.begin(); 
        it != m_procMap.end(); ++it) {
-    os << it->first.toString() << " --> " << hex << "Ox" << it->second 
-       << dec << endl;
+    os << it->first.toString() << " --> " << std::hex << "Ox" << it->second 
+       << std::dec << endl;
     if (flag != 0) {
       os << it->second->toString();
     }
@@ -671,7 +673,7 @@ BinUtil::LM::readSegs()
 
 
 void
-BinUtil::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
+BinUtil::LM::dumpModuleInfo(std::ostream& o, const char* pre) const
 {
   string p(pre);
 
@@ -695,10 +697,10 @@ BinUtil::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
       DIAG_Die("Invalid load module type: " << type());
   }
   
-  o << p << "Load VMA: " << hex << m_begVMA << dec << "\n";
+  o << p << "Load VMA: " << std::hex << m_begVMA << std::dec << "\n";
 
   o << p << "Text(beg,end): " 
-    << hex << textBeg() << ", " << textEnd() << dec << "\n";
+    << std::hex << textBeg() << ", " << textEnd() << std::dec << "\n";
   
   o << p << "Endianness: `"
     << ( (bfd_big_endian(m_bfd)) ? "Big'\n" : "Little'\n" );
@@ -778,24 +780,57 @@ BinUtil::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
 
 
 void
-BinUtil::LM::DumpSymTab(std::ostream& o, const char* pre) const
+BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
 
-  o << p << "------------------- Symbol Table Dump ------------------\n";
+  o << p << "--------------- Symbol Table Dump (Unsorted) --------------\n";
 
-  // There is something strange about MIPS/IRIX symbol tables (dynamic).
-  // Every function symbol seems to have section *ABS*.  Thus, we
-  // can't obtain any relevant section information from the symbol
-  // itself.  I haven't noticed this on any other platform.
   for (uint i = 0; i < m_bfdSymTabSz; i++) {
-    asymbol *sym = m_bfdSymTabSort[i]; // m_bfdSymTab[i];
-    o << p1 << hex << (bfd_vma)bfd_asymbol_value(sym) << ": " << dec
-      << "[" << sym->section->name << "] "
-      << ((sym->flags & BSF_FUNCTION) ? " * " : "   ")
-      << bfd_asymbol_name(sym) << endl;
-  } 
+    asymbol* sym = m_bfdSymTab[i];
+
+    // value, name, section name
+    o << p1 << std::hex << std::setw(16) 
+      << (bfd_vma)bfd_asymbol_value(sym) << ": " << std::setw(0) << std::dec
+      << bfd_asymbol_name(sym)
+      << " [sec: " << sym->section->name << "] ";
+    
+    // flags
+    o << "[flg: " << std::hex << sym->flags << std::dec << " ";
+    bool hasPrintedFlag = false;
+    dumpSymFlag(o, sym, BSF_LOCAL,       "LCL",  hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_GLOBAL,      "GBL",  hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_FUNCTION,    "FUNC", hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_WEAK,        "WEAK", hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_SECTION_SYM, "SEC",  hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_FILE,        "FILE", hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_DYNAMIC,     "DYN",  hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_OBJECT,      "OBJ",  hasPrintedFlag);
+    o << "]";
+
+    if (BinUtil::Proc::isProcBFDSym(sym)) {
+      o << " *proc*";
+    }
+
+    o << endl;
+  }
+
+  o << p << "-----------------------------------------------------------\n";
+}
+
+
+static void
+dumpSymFlag(std::ostream& o, 
+	    asymbol* sym, int flag, const char* txt, bool& hasPrinted)
+{
+  if ((sym->flags & flag)) {
+    if (hasPrinted) {
+      o << ",";
+    }
+    o << txt;
+    hasPrinted = true;			\
+  }
 }
 
 
@@ -836,8 +871,8 @@ BinUtil::Exe::dump(std::ostream& o, int flags, const char* pre) const
 void
 BinUtil::Exe::dumpme(std::ostream& o, const char* pre) const
 {
-  o << pre << "Program start address: " << hex << GetStartVMA()
-    << dec << endl;
+  o << pre << "Program start address: " << std::hex << GetStartVMA()
+    << std::dec << endl;
 }
 
 //***************************************************************************

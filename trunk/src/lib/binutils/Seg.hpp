@@ -115,26 +115,33 @@ public:
 
   // Return true if virtual memory address 'vma' is within the section
   // WARNING: vma must be unrelocated
-  bool isIn(VMA vma) const { return (m_begVMA <= vma && vma < m_endVMA); }
+  bool 
+  isIn(VMA vma) const { return (m_begVMA <= vma && vma < m_endVMA); }
 
   // Convenient wrappers for the 'LM' versions of the same.
-  MachInsn* findMachInsn(VMA vma, ushort &sz) const {
+  MachInsn* 
+  findMachInsn(VMA vma, ushort &sz) const {
     return m_lm->findMachInsn(vma, sz);
   }
-  Insn* findInsn(VMA vma, ushort opIndex) const {
+  
+  Insn* 
+  findInsn(VMA vma, ushort opIndex) const {
     return m_lm->findInsn(vma, opIndex);
   }
-  bool GetSourceFileInfo(VMA vma, ushort opIndex,
-			 std::string& func, std::string& file, 
-			 SrcFile::ln& line) const {
+
+  bool 
+  GetSourceFileInfo(VMA vma, ushort opIndex,
+		    std::string& func, std::string& file, 
+		    SrcFile::ln& line) const {
     return m_lm->GetSourceFileInfo(vma, opIndex, func, file, line);
   }
 
-  bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
-			 VMA endVMA, ushort eOpIndex,
-			 std::string& func, std::string& file,
-			 SrcFile::ln& begLine, SrcFile::ln& endLine,
-			 uint flags = 1) const {
+  bool 
+  GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
+		    VMA endVMA, ushort eOpIndex,
+		    std::string& func, std::string& file,
+		    SrcFile::ln& begLine, SrcFile::ln& endLine,
+		    uint flags = 1) const {
     return m_lm->GetSourceFileInfo(begVMA, bOpIndex, endVMA, eOpIndex,
 				   func, file, begLine, endLine, flags);
   }
@@ -146,11 +153,15 @@ public:
   //   0 : short dump (without instructions)
   //   1 : full dump
 
-  std::string toString(int flags = LM::DUMP_Short, const char* pre = "") const;
+  std::string 
+  toString(int flags = LM::DUMP_Short, const char* pre = "") const;
 
-  virtual void dump(std::ostream& o = std::cerr, 
-		    int flags = LM::DUMP_Short, const char* pre = "") const;
-  void ddump() const;
+  virtual void 
+  dump(std::ostream& o = std::cerr, 
+       int flags = LM::DUMP_Short, const char* pre = "") const;
+  
+  void 
+  ddump() const;
   
 protected:
   // Should not be used
