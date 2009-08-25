@@ -592,7 +592,7 @@ hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE*
 int 
 hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, uint64_t flags, const char* pre)
 {
-  fprintf(fs, "%s{node: (id: %"PRIu32") (id_parent: %"PRIu32") ", 
+  fprintf(fs, "%s{node: (id: %d) (id_parent: %d) ",
 	  pre, x->id, x->id_parent);
 
   hpcfile_cstree_nodedata__fprint(&x->data, fs, flags, pre); // pre + "  "

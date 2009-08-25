@@ -82,7 +82,6 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/epoch_flags.h>
 
 #include <lib/prof-lean/lush/lush-support.h>
 
@@ -130,9 +129,6 @@ typedef struct csprof_cct_node_s {
   // ---------------------------------------------------------
   int32_t persistent_id;
 
-  // ---------------------------------------------------------
-  // 
-  // ---------------------------------------------------------
   lush_assoc_info_t as_info;
 
   // physical instruction pointer: more accurately, this is an
