@@ -68,7 +68,6 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/epoch_flags.h>
 #include <lush/lush-backtrace.h>
 
 //*****************************************************************************
@@ -221,7 +220,7 @@ write_epochs(FILE* fs, csprof_state_t* state)
 
     metric_tbl_t *metric_tbl = hpcrun_get_metric_data();
 
-    TMSG(DATA_WRITE,"metric data num metrics = %d",metric_tbl->len);
+    TMSG(DATA_WRITE, "metric data num metrics = %d", metric_tbl->len);
 
     hpcrun_fmt_metric_tbl_fwrite(metric_tbl, fs);
 

@@ -87,7 +87,6 @@
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/lush/lush-support.h>
-#include <lib/prof-lean/epoch_flags.h>
 
 //*************************** Forward Declarations **************************
 
@@ -500,17 +499,6 @@ csprof_cct__write_bin(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_c
 // hpcfile_cstree_write()
 //***************************************************************************
 
-// tallent: I moved this here from hpcfile_cstree.c.  With LUSH, the
-// cct writing is becoming more complicated.  Because, 1) to support
-// LUSH the callback interface is no longer sufficient; 2) we want
-// writing to be stremlined; and 3) there is no need for a CCT
-// feedback loop (as with experiment databases), I no longer think
-// that we benefit from an abstract tree writer.  I do think an
-// abstract reader is useful and it can be maintain its simple
-// interface given a reasonable format.
-// -- PLEASE remove once we agree this is a good decision. --
-
-
 static int
 hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 			  csprof_cct_node_t* node, 
@@ -600,7 +588,7 @@ hpcfile_cstree_write(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   tmp_node.data.num_metrics = num_metrics;
   tmp_node.data.metrics = alloca(num_metrics * sizeof(hpcfmt_uint_t));
 
-  ret = hpcfile_cstree_write_node(fs, flags, tree, root, &tmp_node, 
+  ret = hpcfile_cstree_write_node(fs, flags, tree, root, &tmp_node,
 				  lvl_to_skip, tree_parent_id);
   return ret;
 }
@@ -628,6 +616,16 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
     my_parent = node->parent->persistent_id;
   }
 
+  csprof_cct_node_t* first, *c;
+  first = c = csprof_cct_node__first_child(node);
+
+  // no children ==> node is a leaf ==> persistent_id should be negative
+  //
+  if (! first) {
+    node->persistent_id = -(node->persistent_id);
+    TMSG(LEAF_NODE_WRITE, "changing sign of leaf node id %d", node->persistent_id);
+  }
+
   if (lvl_to_skip <= 0) {
     ret = hpcfile_cstree_write_node_hlp(fs, flags, node, tmp_node, my_parent);
     if (ret != HPCRUN_OK) { 
@@ -640,8 +638,6 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   // ---------------------------------------------------------
   // Write children (handles either a circular or non-circular structure)
   // ---------------------------------------------------------
-  csprof_cct_node_t* first, *c;
-  first = c = csprof_cct_node__first_child(node);
   while (c) {
     ret = hpcfile_cstree_write_node(fs, flags, tree, c, tmp_node, 
 				    my_lvl_to_skip, my_parent);
