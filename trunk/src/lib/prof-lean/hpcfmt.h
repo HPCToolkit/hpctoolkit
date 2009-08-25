@@ -76,6 +76,10 @@
 
 #include "hpcio.h"
 
+//*************************** Macros ****************************
+
+#define THROW_IF_HPCERR(v) if ( (v) == HPCFMT_ERR ) return HPCFMT_ERR;
+
 //*************************** Forward Declarations **************************
 
 #if defined(__cplusplus)
