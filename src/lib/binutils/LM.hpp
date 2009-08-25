@@ -438,10 +438,10 @@ private:
 
   // Dump helper routines
   void 
-  DumpModuleInfo(std::ostream& o = std::cerr, const char* pre = "") const;
+  dumpModuleInfo(std::ostream& o = std::cerr, const char* pre = "") const;
 
   void 
-  DumpSymTab(std::ostream& o = std::cerr, const char* pre = "") const;
+  dumpSymTab(std::ostream& o = std::cerr, const char* pre = "") const;
 
   friend class TextSeg; // for TextSeg::Create_InitializeProcs();
 

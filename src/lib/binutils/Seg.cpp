@@ -220,16 +220,13 @@ BinUtil::TextSeg::ctor_initProcs()
   // ------------------------------------------------------------
 
   bfd* abfd = m_lm->abfd();
-  asymbol** symtab = m_lm->bfdSymTab();
+  asymbol** symtab = m_lm->bfdSymTab(); // sorted
   uint symtabSz = m_lm->bfdSymTabSz();
 
-  // FIXME:PERF exploit the fact that the symbol table is sorted by vma
+  // FIXME:PERF: exploit sortedness of 'symtab' to start iteration
   for (uint i = 0; i < symtabSz; i++) {
-    asymbol* sym = symtab[i]; 
-    if (isIn(bfd_asymbol_value(sym)) 
-	&& (sym->flags & BSF_FUNCTION)
-        && !bfd_is_und_section(sym->section)) {
-
+    asymbol* sym = symtab[i];
+    if (isIn(bfd_asymbol_value(sym)) && Proc::isProcBFDSym(sym)) {
       // NOTE: initially we have [begVMA, endVMA) where endVMA is the
       // *end* of the last insn.  This is changed after decoding below.
       VMA begVMA = bfd_asymbol_value(sym);
@@ -283,6 +280,8 @@ BinUtil::TextSeg::ctor_initProcs()
       // Finding the end VMA (end of last insn).  The computation is
       // as follows because sometimes the debug information is
       // *wrong*. (Intel 9 has generated significant over-estimates).
+      //
+      // N.B. exploits the fact that the symbol table is sorted by vma
       VMA endVMA_approx = findProcEnd(i);
       if (dbg) {
 	if (!dbg->name.empty()) {
@@ -490,7 +489,7 @@ BinUtil::TextSeg::findProcEnd(int funcSymIndex) const
     if (!isIn(bfd_asymbol_value(sym))) {
       break;
     }
-    if ((sym->flags & BSF_FUNCTION) && !bfd_is_und_section(sym->section)) {
+    if (Proc::isProcBFDSym(sym)) {
       ret = bfd_asymbol_value(sym); 
       break;
     } 
