@@ -843,6 +843,17 @@ class Stmt: public ADynNode {
     : ADynNode(TyStmt, _parent, NULL, cpid, metricdesc)
   { }
 
+  Stmt(ANode* _parent,
+       lush_assoc_info_t as_info,
+       VMA ip, ushort opIdx, 
+       lush_lip_t* lip,
+       uint32_t cpid,
+       const SampledMetricDescVec* metricdesc,
+       std::vector<hpcrun_metric_data_t>& metrics)
+    : ADynNode(TyStmt, _parent, NULL, 
+	       as_info, ip, opIdx, lip, cpid, metricdesc, metrics)
+  { }
+
   virtual ~Stmt()
   { }
 
@@ -853,8 +864,6 @@ class Stmt: public ADynNode {
     }
     return *this;
   }
-
-  Stmt& operator=(const Call& x);
 
   // Dump contents for inspection
   virtual std::string 

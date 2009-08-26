@@ -257,18 +257,6 @@ Loop::~Loop()
 }
 
 
-Stmt& 
-Stmt::operator=(const Call& x) 
-{
-  ADynNode::operator=(x);
-
-  // NOTE: the above copies the type field -- reset it
-  m_type = TyStmt;
-
-  return *this;
-}
-
-
 Call::Call(ANode* _parent, uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc)
   : ADynNode(TyCall, _parent, NULL, cpid, metricdesc)

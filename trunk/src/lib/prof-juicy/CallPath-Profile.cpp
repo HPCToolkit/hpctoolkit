@@ -187,7 +187,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       nm = strct->name().c_str();
     }
     else if (type == 2) { // File
-      nm = ((strct->type() == Struct::ANode::TyALIEN) ? 
+      nm = ((typeid(*strct) == typeid(Struct::Alien)) ? 
 	    dynamic_cast<Struct::Alien*>(strct)->fileName().c_str() :
 	    dynamic_cast<Struct::File*>(strct)->name().c_str());
     }
@@ -197,7 +197,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     else {
       DIAG_Die(DIAG_UnexpectedInput);
     }
-
+    
     os << "    <" << entry_nm << " i" << MakeAttrNum(id) 
        << " n" << MakeAttrStr(nm) << "/>\n";
   }
@@ -207,14 +207,14 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 static bool 
 writeXML_FileFilter(const Struct::ANode& x, long type)
 {
-  return (x.type() == Struct::ANode::TyFILE || x.type() == Struct::ANode::TyALIEN);
+  return (typeid(x) == typeid(Struct::File) || typeid(x) == typeid(Struct::Alien));
 }
 
 
 static bool 
 writeXML_ProcFilter(const Struct::ANode& x, long type)
 {
-  return (x.type() == Struct::ANode::TyPROC || x.type() == Struct::ANode::TyALIEN);
+  return (typeid(x) == typeid(Struct::Proc) || typeid(x) == typeid(Struct::Alien));
 }
 
 
@@ -295,9 +295,6 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id,
 
 static void
 cct_fixRoot(Prof::CCT::Tree* tree, const char* progName);
-
-static void
-cct_fixLeaves(Prof::CCT::ANode* node);
 
 static void*
 hpcfmt_alloc(size_t sz);
@@ -486,7 +483,6 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   hpcrun_fmt_cct_fread(prof->cct(), ehdr.flags, num_metrics, infs, outfs);
 
   cct_fixRoot(prof->cct(), prof->name().c_str());  
-  cct_fixLeaves(prof->cct()->root());
 
   prof->cct_canonicalize(loadmap); // initializes isUsed()
 
@@ -641,11 +637,19 @@ Profile::cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg)
 //***************************************************************************
 
 static Prof::CCT::ANode*
-cct_makeNode(Prof::CCT::Tree* cct, uint32_t id, 
+cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits, 
 	     hpcfile_cstree_nodedata_t* data)
 {
   using namespace Prof;
-  
+
+  bool isLeaf = false;
+
+  int id = (int)id_bits;
+  if (id < 0) {
+    id = -id;
+    isLeaf = true;
+  }
+
   VMA ip = (VMA)data->ip; // tallent:FIXME: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
@@ -667,11 +671,17 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id,
   // (that does not need to be recorded in the cctNodeMap).  Ensure
   // the tree merge algorithm will merge interior nodes with
   // interior nodes and leaf nodes with leaves.
-  
+
   DIAG_DevMsgIf(0, "hpcrun_fmt_cct_fread: " << hex << data->ip << dec);
-  CCT::Call* n = new CCT::Call(NULL, data->as_info, ip, opIdx, lip,
-			       id, &cct->metadata()->metricDesc(), 
-			       metricVec);
+  Prof::CCT::ANode* n = NULL;
+  if (isLeaf) {
+    n = new CCT::Stmt(NULL, data->as_info, ip, opIdx, lip, id, 
+		      &cct->metadata()->metricDesc(), metricVec);
+  }
+  else {
+    n = new CCT::Call(NULL, data->as_info, ip, opIdx, lip, id, 
+		      &cct->metadata()->metricDesc(), metricVec);
+  }
   return n;
 }
 
@@ -687,7 +697,7 @@ cct_fixRoot(Prof::CCT::Tree* cct, const char* progName)
   CCT::ANode* root = cct->root();
 
   // idempotent
-  if (root && root->type() == CCT::ANode::TyRoot) {
+  if (root && typeid(*root) == typeid(CCT::Root)) {
     return;
   }
 
@@ -712,41 +722,6 @@ cct_fixRoot(Prof::CCT::Tree* cct, const char* progName)
   }
   
   cct->root(newRoot);
-}
-
-
-// Convert leaves (CCT::Call) to CCT::Stmt
-//
-// FIXME: There should be a better way of doing this.  Can it be
-// avoided altogether, by reading the tree in correctly?
-static void
-cct_fixLeaves(Prof::CCT::ANode* node)
-{
-  using namespace Prof;
-
-  if (!node) { return; }
-
-  // For each immediate child of this node...
-  for (CCT::ANodeChildIterator it(node); it.Current(); /* */) {
-    CCT::ADynNode* x = dynamic_cast<CCT::ADynNode*>(it.CurNode());
-    DIAG_Assert(x, "");
-    it++; // advance iterator -- it is pointing at 'x'
-
-    DIAG_DevMsgIf(0, "cct_fixLeaves: parent(" << hex << node << ") child(" << x
-		  << "): " << x->ip() << dec);
-    if (x->isLeaf() && typeid(*x) == typeid(CCT::Call)) {
-      // This x is a leaf. Convert.
-      CCT::Stmt* x_new = new CCT::Stmt(NULL, x->cpid(), x->metricdesc());
-      *x_new = *(dynamic_cast<CCT::Call*>(x));
-      
-      x_new->Link(node);
-      x->Unlink();
-      delete x;
-    }
-    else if (!x->isLeaf()) {
-      cct_fixLeaves(x);
-    }
-  }
 }
 
 
