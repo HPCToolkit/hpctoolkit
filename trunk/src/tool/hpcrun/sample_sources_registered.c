@@ -87,13 +87,10 @@ csprof_registered_sources_init(void)
 }
 
 void
-csprof_registered_sources_list(void)
+hpcrun_display_avail_events(void)
 {
-  static char _hdr[] = "Registered Sample Sources:\n";
-  write(2, _hdr, strlen(_hdr));
-  for (int i=0;i<nregs;i++){
-    char buf[1024] = "";
-    hpcrun_msg_ns(buf, sizeof(buf), "    %s\n", registered_sample_sources[i]->name);
-    write(2, buf, strlen(buf));
+  for (int i = 0; i < nregs; i++) {
+    METHOD_CALL(registered_sample_sources[i], display_events);
   }
+  exit(0);
 }

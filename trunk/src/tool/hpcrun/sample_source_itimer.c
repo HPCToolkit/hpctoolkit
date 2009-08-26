@@ -180,9 +180,6 @@ METHOD_FN(_start)
     abort();
   }
 #endif
-
-  // int rv = setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
-  // return rv
 }
 
 static void
@@ -281,6 +278,18 @@ METHOD_FN(gen_event_set,int lush_metrics)
   monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
 }
 
+static void
+METHOD_FN(display_events)
+{
+  printf("===========================================================================\n");
+  printf("Available itimer events\n");
+  printf("===========================================================================\n");
+  printf("Name\t\tDescription\n");
+  printf("---------------------------------------------------------------------------\n");
+  printf("WALLCLOCK\tWall clock time used by the process in microseconds\n");
+  printf("\n");
+}
+
 /***************************************************************************
  * object
  ***************************************************************************/
@@ -303,6 +312,7 @@ sample_source_t _itimer_obj = {
   .supports_event = supports_event,
   .process_event_list = process_event_list,
   .gen_event_set = gen_event_set,
+  .display_events = display_events,
 
   // data
   .evl = {
@@ -379,4 +389,3 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 
   return 0; /* tell monitor that the signal has been handled */
 }
-

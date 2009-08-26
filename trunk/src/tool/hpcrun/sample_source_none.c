@@ -145,6 +145,11 @@ METHOD_FN(gen_event_set,int lush_metrics)
   td->eventSet[self->evset_idx] = 0xDEAD; // Event sets not relevant for itimer
 }
 
+static void
+METHOD_FN(display_events)
+{
+}
+
 /***************************************************************************
  * object
  ***************************************************************************/
@@ -167,6 +172,7 @@ sample_source_t _none_obj = {
   .supports_event = supports_event,
   .process_event_list = process_event_list,
   .gen_event_set = gen_event_set,
+  .display_events = display_events,
 
   // data
   .evl = {
