@@ -324,6 +324,12 @@ METHOD_FN(shutdown)
   TMSG(UPC, "shutdown on core 0");
 }
 
+static void
+METHOD_FN(display_events)
+{
+  printf("All available UPC events (coming soon).\n");
+}
+
 //----------------------------------------------------------------------
 // Object and constructor
 //----------------------------------------------------------------------
@@ -345,6 +351,7 @@ sample_source_t _upc_obj = {
   .supports_event = supports_event,
   .process_event_list = process_event_list,
   .gen_event_set = gen_event_set,
+  .display_events = display_events,
 
   // data
   .evl = {

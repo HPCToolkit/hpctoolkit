@@ -84,7 +84,6 @@ typedef struct _obj_s {
   METHOD_DEF(int,started);
   VMETHOD_DEF(hard_stop);
   VMETHOD_DEF(start);
-  
 
   // specific methods
 
@@ -95,6 +94,7 @@ typedef struct _obj_s {
   METHOD_DEF(int,supports_event,const char *ev_str);
   VMETHOD_DEF(process_event_list,int lush_agents);
   VMETHOD_DEF(gen_event_set,int lush_agents);
+  VMETHOD_DEF(display_events);
 
   // data
   evlist_t       evl;       // event list

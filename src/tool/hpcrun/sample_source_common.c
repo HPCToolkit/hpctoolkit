@@ -110,6 +110,7 @@ METHOD_FN(csprof_ss_hard_stop)
 //------------------------------------------------------------
 
 static char *prefix = "HPCToolkit fatal error";
+static char *hpcrun_L = "See 'hpcrun -L <program>' for a list of available events.";
 
 // The none and unknown event failures happen before we set up the log
 // file, so we can only write to stderr.
@@ -119,32 +120,32 @@ hpcrun_ssfail_none(void)
   STDERR_MSG("%s: no sampling source specified.\n"
       "Set HPCRUN_EVENT_LIST to a comma-separated list of EVENT@PERIOD pairs\n"
       "and rerun your program.  If you truly want to run with no events, then\n"
-      "set HPCRUN_EVENT_LIST=NONE.",
-      prefix);
+      "set HPCRUN_EVENT_LIST=NONE.\n%s",
+      prefix, hpcrun_L);
   exit(1);
 }
 
 void
 hpcrun_ssfail_unknown(char *event)
 {
-  STDERR_MSG("%s: event %s is unknown or unsupported.",
-	     prefix, event);
+  STDERR_MSG("%s: event %s is unknown or unsupported.\n%s",
+	     prefix, event, hpcrun_L);
   exit(1);
 }
 
 void
 hpcrun_ssfail_unsupported(char *source, char *event)
 {
-  EEMSG("%s: %s event %s is not supported on this platform.",
-	prefix, source, event);
+  EEMSG("%s: %s event %s is not supported on this platform.\n%s",
+	prefix, source, event, hpcrun_L);
   exit(1);
 }
 
 void
 hpcrun_ssfail_derived(char *source, char *event)
 {
-  EEMSG("%s: %s event %s is a derived event and thus cannot be profiled.",
-	prefix, source, event);
+  EEMSG("%s: %s event %s is a derived event and thus cannot be profiled.\n%s",
+	prefix, source, event, hpcrun_L);
   exit(1);
 }
 
@@ -153,8 +154,8 @@ hpcrun_ssfail_conflict(char *source, char *event)
 {
   EEMSG("%s: %s event %s cannot be profiled in this sequence.\n"
 	"Either it conflicts with another event, or it exceeds the number of\n"
-	"hardware counters.",
-	prefix, source, event);
+	"hardware counters.\n%s",
+	prefix, source, event, hpcrun_L);
   exit(1);
 }
 
@@ -162,7 +163,7 @@ void
 hpcrun_ssfail_start(char *source)
 {
   EEMSG("%s: sample source %s failed to start.\n"
-	"Check the event list and the HPCToolkit installation and try again.",
-	prefix, source);
+	"Check the event list and the HPCToolkit installation and try again.\n%s",
+	prefix, source, hpcrun_L);
   exit(1);
 }

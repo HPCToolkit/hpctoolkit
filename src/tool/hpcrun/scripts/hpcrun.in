@@ -335,9 +335,9 @@ f_getoptions()
         ;;
 
       -L)
-        # shift; opt_debug="$1";
-        # f_opt_check "-L" "${opt_debug}";
-	opt_debug=1
+	opt_ev_list=LIST
+	LL="$opt_ev_list "
+	add_cmd_if_empty=yes
         ;;
 
       -lm | --low-memsize )
@@ -374,6 +374,9 @@ f_getoptions()
 
   # FIXME: this is fundamentally broken if args contain spaces.
   cmd_to_profile="$*"
+  if test -z "$cmd_to_profile" && test "x$add_cmd_if_empty" = xyes ; then
+    cmd_to_profile=/bin/ls
+  fi
   f_error_on_nil "${cmd_to_profile}" "** no command to profile\n";
 }
 

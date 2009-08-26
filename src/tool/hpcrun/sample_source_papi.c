@@ -308,6 +308,64 @@ METHOD_FN(gen_event_set,int lush_metrics)
   td->eventSet[self->evset_idx] = eventSet;
 }
 
+static void
+METHOD_FN(display_events)
+{
+  PAPI_event_info_t info;
+  char name[200], *prof;
+  int ev, ret, num_total, num_prof;
+
+  printf("===========================================================================\n");
+  printf("Available PAPI preset events\n");
+  printf("===========================================================================\n");
+  printf("Name\t    Profilable\tDescription\n");
+  printf("---------------------------------------------------------------------------\n");
+
+  num_total = 0;
+  num_prof = 0;
+  ev = PAPI_PRESET_MASK;
+  ret = PAPI_enum_event(&ev, PAPI_ENUM_FIRST);
+  while (ret == PAPI_OK) {
+    if (PAPI_query_event(ev) == PAPI_OK) {
+      PAPI_event_code_to_name(ev, name);
+      PAPI_get_event_info(ev, &info);
+      if (event_is_derived(ev)) {
+	prof = "No";
+      } else {
+	prof = "Yes";
+	num_prof++;
+      }
+      num_total++;
+      printf("%-10s\t%s\t%s\n", name, prof, info.long_descr);
+    }
+    ret = PAPI_enum_event(&ev, PAPI_ENUM_ALL);
+  }
+  printf("Total PAPI events: %d, able to profile: %d\n",
+	 num_total, num_prof);
+  printf("\n");
+
+  printf("===========================================================================\n");
+  printf("Available native events\n");
+  printf("===========================================================================\n");
+  printf("Name\t\t\t\tDescription\n");
+  printf("---------------------------------------------------------------------------\n");
+
+  num_total = 0;
+  ev = PAPI_NATIVE_MASK;
+  ret = PAPI_enum_event(&ev, PAPI_ENUM_FIRST);
+  while (ret == PAPI_OK) {
+    if (PAPI_query_event(ev) == PAPI_OK) {
+      PAPI_event_code_to_name(ev, name);
+      PAPI_get_event_info(ev, &info);
+      num_total++;
+      printf("%-30s\t%s\n", name, info.long_descr);
+    }
+    ret = PAPI_enum_event(&ev, PAPI_ENUM_ALL);
+  }
+  printf("Total native events: %d\n", num_total);
+  printf("\n");
+}
+
 /***************************************************************************
  * object
  ***************************************************************************/
@@ -330,6 +388,7 @@ sample_source_t _papi_obj = {
   .supports_event = supports_event,
   .process_event_list = process_event_list,
   .gen_event_set = gen_event_set,
+  .display_events = display_events,
 
   // data
   .evl = {
