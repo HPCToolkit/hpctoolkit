@@ -61,7 +61,7 @@
  *   BGP_UPC_Stop();
  *   for each event
  *      BGP_UPC_Read_Counter_Value(event, BGP_UPC_READ_EXCLUSIVE);
- *      if (counter > threshold)
+ *      if (counter >= threshold)
  *         BGP_UPC_Set_Counter_Value(event, 0);
  *         BGP_UPC_Set_Counter_Threshold_Value(event, threshold);
  *   BGP_UPC_Start(0);
@@ -160,7 +160,7 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
     ev = myself->evl.events[k].event;
     counter = BGP_UPC_Read_Counter_Value(ev, BGP_UPC_READ_EXCLUSIVE);
     threshold = myself->evl.events[k].thresh;
-    if (counter > threshold) {
+    if (counter >= threshold) {
       if (do_sample) {
 	hpcrun_sample_callpath(context, myself->evl.events[k].metric_id,
 			       1, 0, 0);
