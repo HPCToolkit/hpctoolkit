@@ -236,11 +236,13 @@ cvt_p(int code, va_list_box *box,
 {
   uintptr_t m = (uintptr_t)va_arg(box->ap, void*);
   char buf[43];
-  char *p = buf + sizeof buf;
+  char* p = buf + sizeof buf;
   precision = INT_MIN;
   do
     *--p = "0123456789abcdef"[m&0xf];
   while ((m>>= 4) != 0);
+  put('0', cl);
+  put('x', cl);
   hpcrun_msg_putd(p, (buf + sizeof buf) - p, put, cl, flags,
            width, precision);
 }
