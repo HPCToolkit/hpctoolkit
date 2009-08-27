@@ -292,6 +292,11 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
       string str = parser.getOptArg("structure");
       StrUtil::tokenize_str(str, CLP_SEPARATOR, structureFiles);
     }
+
+    // Check for special hpcprof options:
+    if (parser.isOpt("force")) {
+      isHPCProfForce = true;
+    }
     
     // Check for other options: Output options
     bool isDbDirSet = false;
@@ -315,10 +320,6 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
       profileFiles[i] = parser.getArg(i);
     }
 
-    // TEMPORARY
-    if (profileFiles.size() > 16 && !parser.isOpt("force")) {
-      ARG_ERROR("Currently, hpcprof permits at most 16 profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.  We are working on solutions.");
-    }
 
     // TEMPORARY: parse first file name to determine name of database
     string mynm;

@@ -126,6 +126,7 @@ public:
 
   // Profile files
   std::vector<std::string> profileFiles;
+  bool isHPCProfForce;
 
   // FIXME: computed metrics require interior values (implications for
   // hpcviewer?)... perhaps this should only be an output option.

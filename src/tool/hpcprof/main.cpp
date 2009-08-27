@@ -115,12 +115,17 @@ realmain(int argc, char* const* argv)
 {
   Args args;
   args.parse(argc, argv);
-  
+
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   // ------------------------------------------------------------
   // Read profile data
   // ------------------------------------------------------------
+
+  if ( !(args.profileFiles.size() <= 16 || args.isHPCProfForce) ) {
+    DIAG_Throw("There are " << args.profileFiles.size() << " profile files to process. " << args.getCmd() << " currently limits the number of profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.");
+  }
+
   Prof::CallPath::Profile* prof = Analysis::CallPath::read(args.profileFiles);
 
   // ------------------------------------------------------------
