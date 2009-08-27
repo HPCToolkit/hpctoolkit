@@ -338,7 +338,7 @@ METHOD_FN(display_events)
       num_total++;
       printf("%-10s\t%s\t%s\n", name, prof, info.long_descr);
     }
-    ret = PAPI_enum_event(&ev, PAPI_ENUM_ALL);
+    ret = PAPI_enum_event(&ev, PAPI_ENUM_EVENTS);
   }
   printf("Total PAPI events: %d, able to profile: %d\n",
 	 num_total, num_prof);
@@ -360,7 +360,7 @@ METHOD_FN(display_events)
       num_total++;
       printf("%-30s\t%s\n", name, info.long_descr);
     }
-    ret = PAPI_enum_event(&ev, PAPI_ENUM_ALL);
+    ret = PAPI_enum_event(&ev, PAPI_ENUM_EVENTS);
   }
   printf("Total native events: %d\n", num_total);
   printf("\n");
