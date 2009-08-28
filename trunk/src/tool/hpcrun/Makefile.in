@@ -186,7 +186,7 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_event.c sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_source_none.c \
 	sample_sources_registered.c segv_handler.c state.c \
-	system_server.c thread_data.c thread_use.c trace.c unsafe.c \
+	system_server.c thread_data.c thread_use.c trace.c \
 	write_data.c cct/cct.c unwind/common/backtrace.c \
 	unwind/common/splay.c unwind/common/stack_troll.c \
 	unwind/common/ui_tree.c lush/lush-backtrace.h \
@@ -230,17 +230,17 @@ am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-segv_handler.lo libcsprof_la-state.lo \
 	libcsprof_la-system_server.lo libcsprof_la-thread_data.lo \
 	libcsprof_la-thread_use.lo libcsprof_la-trace.lo \
-	libcsprof_la-unsafe.lo libcsprof_la-write_data.lo \
-	libcsprof_la-cct.lo libcsprof_la-backtrace.lo \
-	libcsprof_la-splay.lo libcsprof_la-stack_troll.lo \
-	libcsprof_la-ui_tree.lo libcsprof_la-lush-backtrace.lo \
-	libcsprof_la-lush.lo libcsprof_la-lush-pthread.lo \
-	libcsprof_la-lush-support-rt.lo libcsprof_la-lushi-cb.lo \
-	libcsprof_la-fnbounds_common.lo libcsprof_la-list.lo \
-	libcsprof_la-mem.lo libcsprof_la-debug-flag.lo \
-	libcsprof_la-messages-sync.lo libcsprof_la-messages-async.lo \
-	libcsprof_la-fmt.lo libcsprof_la-executable-path.lo \
-	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
+	libcsprof_la-write_data.lo libcsprof_la-cct.lo \
+	libcsprof_la-backtrace.lo libcsprof_la-splay.lo \
+	libcsprof_la-stack_troll.lo libcsprof_la-ui_tree.lo \
+	libcsprof_la-lush-backtrace.lo libcsprof_la-lush.lo \
+	libcsprof_la-lush-pthread.lo libcsprof_la-lush-support-rt.lo \
+	libcsprof_la-lushi-cb.lo libcsprof_la-fnbounds_common.lo \
+	libcsprof_la-list.lo libcsprof_la-mem.lo \
+	libcsprof_la-debug-flag.lo libcsprof_la-messages-sync.lo \
+	libcsprof_la-messages-async.lo libcsprof_la-fmt.lo \
+	libcsprof_la-executable-path.lo libcsprof_la-tokenize.lo \
+	libcsprof_la-unlink.lo
 am__objects_9 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_10 = libcsprof_la-dylib.lo
@@ -285,7 +285,7 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_event.c sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_source_none.c \
 	sample_sources_registered.c segv_handler.c state.c \
-	system_server.c thread_data.c thread_use.c trace.c unsafe.c \
+	system_server.c thread_data.c thread_use.c trace.c \
 	write_data.c cct/cct.c unwind/common/backtrace.c \
 	unwind/common/splay.c unwind/common/stack_troll.c \
 	unwind/common/ui_tree.c lush/lush-backtrace.h \
@@ -329,9 +329,9 @@ am__objects_24 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-system_server.$(OBJEXT) \
 	libcsprof_o-thread_data.$(OBJEXT) \
 	libcsprof_o-thread_use.$(OBJEXT) libcsprof_o-trace.$(OBJEXT) \
-	libcsprof_o-unsafe.$(OBJEXT) libcsprof_o-write_data.$(OBJEXT) \
-	libcsprof_o-cct.$(OBJEXT) libcsprof_o-backtrace.$(OBJEXT) \
-	libcsprof_o-splay.$(OBJEXT) libcsprof_o-stack_troll.$(OBJEXT) \
+	libcsprof_o-write_data.$(OBJEXT) libcsprof_o-cct.$(OBJEXT) \
+	libcsprof_o-backtrace.$(OBJEXT) libcsprof_o-splay.$(OBJEXT) \
+	libcsprof_o-stack_troll.$(OBJEXT) \
 	libcsprof_o-ui_tree.$(OBJEXT) \
 	libcsprof_o-lush-backtrace.$(OBJEXT) \
 	libcsprof_o-lush.$(OBJEXT) libcsprof_o-lush-pthread.$(OBJEXT) \
@@ -652,7 +652,6 @@ MY_BASE_FILES = \
 	thread_data.c			\
 	thread_use.c			\
 	trace.c				\
-	unsafe.c			\
 	write_data.c		        \
 	\
 	cct/cct.c			\
@@ -1072,7 +1071,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-trace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ui_tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-unlink.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-unsafe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-write_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-cold-path.Plo@am__quote@
@@ -1136,7 +1134,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-trace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ui_tree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-unlink.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-unsafe.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-write_data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-cold-path.Po@am__quote@
@@ -1429,13 +1426,6 @@ libcsprof_la-trace.lo: trace.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='trace.c' object='libcsprof_la-trace.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-trace.lo `test -f 'trace.c' || echo '$(srcdir)/'`trace.c
-
-libcsprof_la-unsafe.lo: unsafe.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-unsafe.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-unsafe.Tpo -c -o libcsprof_la-unsafe.lo `test -f 'unsafe.c' || echo '$(srcdir)/'`unsafe.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-unsafe.Tpo $(DEPDIR)/libcsprof_la-unsafe.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unsafe.c' object='libcsprof_la-unsafe.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-unsafe.lo `test -f 'unsafe.c' || echo '$(srcdir)/'`unsafe.c
 
 libcsprof_la-write_data.lo: write_data.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-write_data.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-write_data.Tpo -c -o libcsprof_la-write_data.lo `test -f 'write_data.c' || echo '$(srcdir)/'`write_data.c
@@ -2087,20 +2077,6 @@ libcsprof_o-trace.obj: trace.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='trace.c' object='libcsprof_o-trace.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-trace.obj `if test -f 'trace.c'; then $(CYGPATH_W) 'trace.c'; else $(CYGPATH_W) '$(srcdir)/trace.c'; fi`
-
-libcsprof_o-unsafe.o: unsafe.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-unsafe.o -MD -MP -MF $(DEPDIR)/libcsprof_o-unsafe.Tpo -c -o libcsprof_o-unsafe.o `test -f 'unsafe.c' || echo '$(srcdir)/'`unsafe.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-unsafe.Tpo $(DEPDIR)/libcsprof_o-unsafe.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unsafe.c' object='libcsprof_o-unsafe.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-unsafe.o `test -f 'unsafe.c' || echo '$(srcdir)/'`unsafe.c
-
-libcsprof_o-unsafe.obj: unsafe.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-unsafe.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-unsafe.Tpo -c -o libcsprof_o-unsafe.obj `if test -f 'unsafe.c'; then $(CYGPATH_W) 'unsafe.c'; else $(CYGPATH_W) '$(srcdir)/unsafe.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-unsafe.Tpo $(DEPDIR)/libcsprof_o-unsafe.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unsafe.c' object='libcsprof_o-unsafe.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-unsafe.obj `if test -f 'unsafe.c'; then $(CYGPATH_W) 'unsafe.c'; else $(CYGPATH_W) '$(srcdir)/unsafe.c'; fi`
 
 libcsprof_o-write_data.o: write_data.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-write_data.o -MD -MP -MF $(DEPDIR)/libcsprof_o-write_data.Tpo -c -o libcsprof_o-write_data.o `test -f 'write_data.c' || echo '$(srcdir)/'`write_data.c

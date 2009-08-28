@@ -106,17 +106,15 @@ typedef struct hpcrun_fmt_hdr_t {
 } hpcrun_fmt_hdr_t;
 
 
-int
-hpcrun_fmt_hdr_fwrite(FILE* outfs, ...);
+extern int hpcrun_fmt_hdr_fwrite(FILE* outfs, ...);
 
-int
-hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc);
+extern int hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc);
 
-int
-hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);
+extern int hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);
 
-// FIXME: need hpcrun_fmt_hdr_free()
+extern void hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 
+extern void hpcrun_fmt_epoch_hdr_free(hpcrun_fmt_epoch_hdr_t* ehdr, hpcfmt_free_fn dealloc);
 
 //***************************************************************************
 // epoch-hdr
@@ -147,19 +145,13 @@ typedef struct hpcrun_fmt_epoch_hdr_t {
 } hpcrun_fmt_epoch_hdr_t;
 
 
-int
-hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs, 
-			   hpcfmt_alloc_fn alloc);
+extern int hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
+				      hpcfmt_alloc_fn alloc);
 
-int 
-hpcrun_fmt_epoch_hdr_fwrite(FILE* out, epoch_flags_t flags, 
-			    uint32_t ra_distance, uint64_t granularity, ...);
+extern int hpcrun_fmt_epoch_hdr_fwrite(FILE* out, epoch_flags_t flags, 
+				       uint32_t ra_distance, uint64_t granularity, ...);
 
-int
-hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* out);
-
-// FIXME: need hpcrun_fmt_hdr_free()
-
+extern int hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* out);
 
 //***************************************************************************
 // metric-tbl
@@ -179,18 +171,14 @@ typedef HPCFMT_List(metric_desc_t) hpcrun_fmt_metric_tbl_t;
 
 typedef hpcrun_fmt_metric_tbl_t metric_tbl_t;
 
-int 
-hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t* metric_tbl, FILE* out);
+extern int hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t* metric_tbl, FILE* out);
 
-int
-hpcrun_fmt_metric_tbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
-			    hpcfmt_alloc_fn alloc);
+extern int hpcrun_fmt_metric_tbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
+				       hpcfmt_alloc_fn alloc);
 
-int
-hpcrun_fmt_metric_tbl_fprint(metric_tbl_t* metrics, FILE* out);
+extern int hpcrun_fmt_metric_tbl_fprint(metric_tbl_t* metrics, FILE* out);
 
-void
-hpcrun_fmt_metric_tbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
+extern void hpcrun_fmt_metric_tbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************
@@ -221,17 +209,13 @@ typedef struct loadmap_src_t {
 HPCFMT_List_declare(loadmap_entry_t);
 typedef HPCFMT_List(loadmap_entry_t) loadmap_t;
 
-int
-hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* out);
+extern int hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* out);
 
-int
-hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* in, hpcfmt_alloc_fn alloc);
+extern int hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* in, hpcfmt_alloc_fn alloc);
 
-int
-hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* out);
+extern int hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* out);
 
-void
-hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc);
+extern void hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************
@@ -376,12 +360,12 @@ typedef struct hpcfile_cstree_nodedata_s {
 
 } hpcfile_cstree_nodedata_t;
 
-int hpcfile_cstree_nodedata__init(hpcfile_cstree_nodedata_t* x);
-int hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x);
+extern int hpcfile_cstree_nodedata__init(hpcfile_cstree_nodedata_t* x);
+extern int hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x);
 
-int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, epoch_flags_t flags, FILE* fs);
-int hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, epoch_flags_t flags, FILE* fs);
-int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, epoch_flags_t flags, const char* pre);
+extern int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, epoch_flags_t flags, FILE* fs);
+extern int hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, epoch_flags_t flags, FILE* fs);
+extern int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, epoch_flags_t flags, const char* pre);
 
 
 typedef struct hpcfile_cstree_node_s {
@@ -393,13 +377,13 @@ typedef struct hpcfile_cstree_node_s {
 
 } hpcfile_cstree_node_t;
 
-int hpcfile_cstree_node__init(hpcfile_cstree_node_t* x);
-int hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x);
+extern int hpcfile_cstree_node__init(hpcfile_cstree_node_t* x);
+extern int hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x);
 
-int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
-int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
-int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, epoch_flags_t flags,
-				const char* pre);
+extern int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
+extern int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
+extern int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, epoch_flags_t flags,
+				       const char* pre);
 
 
 //***************************************************************************

@@ -130,7 +130,6 @@ MY_BASE_FILES =			\
 	thread_data.c			\
 	thread_use.c			\
 	trace.c				\
-	unsafe.c			\
 	write_data.c		        \
 	\
 	cct/cct.c			\
