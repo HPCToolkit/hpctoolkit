@@ -110,7 +110,7 @@ typedef struct csprof_state_s {
   lush_cct_ctxt_t* csdata_ctxt; // creation context
 
   /* our notion of what the current epoch is */
-  csprof_epoch_t *epoch;
+  hpcrun_epoch_t *epoch;
 
   /* other profiling states which we have seen */
   struct csprof_state_s *next;

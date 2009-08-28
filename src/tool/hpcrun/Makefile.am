@@ -229,14 +229,12 @@ MY_INCLUDE_DIRS =			\
 
 
 MY_MIPS_INCLUDE_DIRS = \
-	-I$(srcdir)/processor/mips \
 	-I$(srcdir)/unwind/mips
 
 MY_PPC_INCLUDE_DIRS = 		\
 	-I$(srcdir)/unwind/ppc64
 
 MY_X86_INCLUDE_DIRS =		\
-	-I$(srcdir)/processor/x86-64	\
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
 

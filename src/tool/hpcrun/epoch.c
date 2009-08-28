@@ -76,7 +76,7 @@
 #include "cct.h"
 #include "epoch.h"
 #include "fnbounds_interface.h"
-#include "interface.h"
+// #include "interface.h"
 #include "sample_event.h"
 #include "state.h"
 
@@ -86,40 +86,40 @@
 #include <lib/prof-lean/spinlock.h>
 
 
-static csprof_epoch_t static_epoch;
+static hpcrun_epoch_t static_epoch;
 
 /* epochs are entirely separate from profiling state */
-static csprof_epoch_t *current_epoch = NULL;
+static hpcrun_epoch_t *current_epoch = NULL;
 
 /* locking functions to ensure that epochs are consistent */
 static spinlock_t epoch_lock = SPINLOCK_UNLOCKED;
 
-csprof_epoch_t *
-csprof_static_epoch() 
+hpcrun_epoch_t*
+hpcrun_static_epoch() 
 {
   return &static_epoch;
 }
 
 void
-csprof_epoch_lock() 
+hpcrun_epoch_lock() 
 {
   spinlock_lock(&epoch_lock);
 }
 
 void
-csprof_epoch_unlock()
+hpcrun_epoch_unlock()
 {
   spinlock_unlock(&epoch_lock);
 }
 
 int
-csprof_epoch_is_locked()
+hpcrun_epoch_is_locked()
 {
   return spinlock_is_locked(&epoch_lock);
 }
 
-csprof_epoch_t *
-csprof_get_epoch()
+hpcrun_epoch_t*
+hpcrun_get_epoch()
 {
   return current_epoch;
 }
@@ -150,7 +150,7 @@ hpcrun_loadmap_add_module(const char *module_name,
 
 
 void
-csprof_epoch_init(csprof_epoch_t *e)
+hpcrun_epoch_init(hpcrun_epoch_t *e)
 {
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -169,17 +169,17 @@ csprof_epoch_init(csprof_epoch_t *e)
 }
 
 /* epochs are totally distinct from profiling states */
-csprof_epoch_t*
-csprof_epoch_new(void)
+hpcrun_epoch_t*
+hpcrun_epoch_new(void)
 {
   TMSG(EPOCH, " --NEW");
-  csprof_epoch_t *e = csprof_malloc(sizeof(csprof_epoch_t));
+  hpcrun_epoch_t *e = csprof_malloc(sizeof(hpcrun_epoch_t));
 
   if (e == NULL) {
     EMSG("New epoch requested, but allocation failed!!");
     return NULL;
   }
-  csprof_epoch_init(e);
+  hpcrun_epoch_init(e);
 
   if (ENABLED(EPOCH)) {
     ENABLE(EPOCH_CHK);
@@ -193,11 +193,11 @@ hpcrun_finalize_current_epoch(void)
 {
   TMSG(EPOCH, " --Finalize current");
   // lazily finalize the last epoch
-  csprof_epoch_lock();
+  hpcrun_epoch_lock();
   if (current_epoch->loaded_modules == NULL) {
     fnbounds_epoch_finalize();
   }
-  csprof_epoch_unlock();
+  hpcrun_epoch_unlock();
 }
 
 void
@@ -219,5 +219,5 @@ hpcrun_epoch_reset(void)
   TMSG(EPOCH_RESET, "check new epoch = old epoch = %d", newstate->epoch == state->epoch);
   csprof_cct__init(&newstate->csdata, newstate->csdata_ctxt); // reset cct
   hpcrun_reset_state(newstate);
-  TMSG(EPOCH_RESET," ==> no new state for next sample = %d", newstate->epoch == csprof_get_epoch());
+  TMSG(EPOCH_RESET," ==> no new state for next sample = %d", newstate->epoch == hpcrun_get_epoch());
 }

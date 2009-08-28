@@ -101,7 +101,7 @@ int csprof_context_is_unsafe(void *);
 /* initializes 'epoch' with the list of loaded executable segments.
    'previous_epoch' points to, well, the previous epoch in case some of
    the storage there can be profitably reused */
-void csprof_epoch_get_loaded_modules(csprof_epoch_t *, csprof_epoch_t *);
+void csprof_epoch_get_loaded_modules(hpcrun_epoch_t *, hpcrun_epoch_t *);
 
 /* 'nlx' = 'non-local-exit'; this function handles the guts of when we
    do longjmps or similar operations (exception handling comes to mind).

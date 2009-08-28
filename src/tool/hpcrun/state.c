@@ -160,7 +160,7 @@ csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt)
   TMSG(STATE,"--Alloc");
   csprof_cct__init(&x->csdata, thr_ctxt);
 
-  x->epoch = csprof_get_epoch();
+  x->epoch = hpcrun_get_epoch();
   x->csdata_ctxt = thr_ctxt;
 
 #ifdef CSPROF_TRAMPOLINE_BACKEND
@@ -217,7 +217,7 @@ csprof_check_for_new_epoch(csprof_state_t *state)
 
   TMSG(EPOCH_CHK,"Likely need new cct");
 
-  csprof_epoch_t *current = csprof_get_epoch();
+  hpcrun_epoch_t *current = hpcrun_get_epoch();
 
   if(state->epoch != current) {
     TMSG(MALLOC," -new_epoch-");
