@@ -111,8 +111,11 @@ The special option '--' can be used to stop hpcrun option parsing; this is\n\
 especially useful when <command> takes arguments of its own.\n\
 \n\
 Options: Informational\n\
-  -l, --events-short   List available events (NB: some may not be profilable)\n\
-  -L, --events-long    Similar to above but with more information.\n\
+  -l, --list-events-short\n\
+                       List available events. (N.B.: some may not be\n\
+                       profilable)\n\
+  -L, --list-events-long\n\
+                       Similar to above but with more information.\n\
   --paths              Print paths for external PAPI and MONITOR.\n\
   -V, --version        Print version information.\n\
   -h, --help           Print help.\n\
@@ -155,8 +158,8 @@ NOTES:\n\
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Options: info
-  { 'l', "events-short", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
-  { 'L', "events-long",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
+  { 'l', "list-events-short", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
+  { 'L', "list-events-long",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
   {  0 , "paths",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
 
   // Options: profiling
@@ -277,11 +280,11 @@ Args::parse(int argc, const char* const argv[])
     }
      
     // Check for informational options
-    if (parser.isOpt("events-short")) { 
+    if (parser.isOpt("list-events-short")) { 
       listEvents = LIST_SHORT;
       requireCmd = false;
     } 
-    if (parser.isOpt("events-long")) { 
+    if (parser.isOpt("list-events-long")) { 
       listEvents = LIST_LONG;
       requireCmd = false;
     } 
