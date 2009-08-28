@@ -74,8 +74,8 @@
 //*************************** User Include Files ****************************
 
 #include "hpcio.h"
-#include "hpcrun-fmt.h"
 #include "hpcfmt.h"
+#include "hpcrun-fmt.h"
 
 //*************************** Forward Declarations **************************
 

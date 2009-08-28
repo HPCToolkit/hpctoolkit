@@ -71,7 +71,6 @@
 
 #include "hpcio.h"
 #include "hpcfmt.h"
-#include "hpcrun-fmt.h"
 
 #include "lush/lush-support.h"
 
@@ -114,7 +113,6 @@ extern int hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);
 
 extern void hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 
-
 //***************************************************************************
 // epoch-hdr
 //***************************************************************************
@@ -153,7 +151,6 @@ extern int hpcrun_fmt_epoch_hdr_fwrite(FILE* out, epoch_flags_t flags,
 extern int hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* out);
 
 extern void hpcrun_fmt_epoch_hdr_free(hpcrun_fmt_epoch_hdr_t* ehdr, hpcfmt_free_fn dealloc);
-
 
 //***************************************************************************
 // metric-tbl
