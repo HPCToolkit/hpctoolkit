@@ -131,6 +131,8 @@ Usage:
 Options: Informational
   -V, --version        Print version information.
   -h, --help           Print help.
+  -l, -L --list-events List available events. (N.B.: some may not be
+                       profilable)
 
 Options: Profiling (Defaults shown in curly brackets {})
   -o <outpath>, --output <outpath>
@@ -184,7 +186,7 @@ Options: Profiling (Defaults shown in curly brackets {})
      provide access to a set of native events with names that are 
      specific to the platform's processor. A complete list of events
      supported by the PAPI library for your platform may be obtained by 
-     running the command "hpcrun-flat -L". Any event whose name begins
+     running the command "hpcrun -L". Any event whose name begins
      with the PAPI_ prefix that is listed as "Profilable" can be used
      as an event in a -e specification. Any native event may be used as
      a sampling source. For hardware performance counter events, the
@@ -208,8 +210,8 @@ Options: Profiling (Defaults shown in curly brackets {})
      EXAMPLE
        hpcrun -e PAPI_TOT_INS@1000000 -e PAPI_FP_INS@100000 A_PROGRAM
 
-       The above command line would sample A_PROGRAM every 1,000,000 instructions
-       and every 100,000 floating point instructions.
+       The above command line would sample A_PROGRAM every 1,000,000
+       instructions and every 100,000 floating point instructions.
 
 NOTES:
 * hpcrun uses preloaded shared libraries to initiate profiling. For this
@@ -334,7 +336,7 @@ f_getoptions()
 	LL="$opt_ev_list "
         ;;
 
-      -L)
+      -L | -l | --list-events)
 	opt_ev_list=LIST
 	LL="$opt_ev_list "
 	add_cmd_if_empty=yes
