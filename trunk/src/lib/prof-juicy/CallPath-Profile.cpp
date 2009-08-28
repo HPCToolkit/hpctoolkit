@@ -325,7 +325,7 @@ Profile::make(const char* fnm, FILE* outfs)
 
   string progNm = hpcfmt_nvpair_search(&hdr.nvps, "program-name");
 
-  // FIXME: hpcrun_fmt_hdr_free()
+  hpcrun_fmt_hdr_free(&hdr, free);
 
   // ------------------------------------------------------------
   // Read each epoch and merge them to form one Profile
@@ -396,8 +396,6 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
     DIAG_Throw("error reading 'epoch-hdr'");
   }
 
-  // FIXME: hpcrun_fmt_epoch_hdr_free()
-  
   // ----------------------------------------
   // metric-tbl
   // ----------------------------------------
@@ -481,6 +479,9 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
     prof->loadMapMgr()->merge(loadmap);
   prof->cct_canonicalizePostMerge(mergeChg);
 
+
+  hpcrun_fmt_epoch_hdr_free(&ehdr, free);
+  
   return HPCFMT_OK;
 }
 
