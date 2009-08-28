@@ -105,8 +105,9 @@ namespace Prof {
 namespace CallPath {
 
 
-Profile::Profile(uint numMetrics)
+Profile::Profile(const std::string name, uint numMetrics)
 {
+  m_name = name;
   m_metricdesc.resize(numMetrics);
   for (uint i = 0; i < m_metricdesc.size(); ++i) {
     m_metricdesc[i] = new SampledMetricDesc();
@@ -293,15 +294,6 @@ static Prof::CCT::ANode*
 cct_makeNode(Prof::CCT::Tree* cct, uint32_t id,
 	     hpcfile_cstree_nodedata_t* data);
 
-static void
-cct_fixRoot(Prof::CCT::Tree* tree, const char* progName);
-
-static void*
-hpcfmt_alloc(size_t sz);
-
-static void
-hpcfmt_free(void* mem);
-
 //***************************************************************************
 
 namespace Prof {
@@ -326,13 +318,12 @@ Profile::make(const char* fnm, FILE* outfs)
   // Read header
   // ------------------------------------------------------------
   hpcrun_fmt_hdr_t hdr;
-  ret = hpcrun_fmt_hdr_fread(&hdr, fs, hpcfmt_alloc);
+  ret = hpcrun_fmt_hdr_fread(&hdr, fs, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'fmt-hdr'");
   }
 
-  // TODO: extract target field from nvpairs in hdr:
-  //   char *target = hpcfmt_nvpair_search(&hdr.nvps, "target");
+  string progNm = hpcfmt_nvpair_search(&hdr.nvps, "program-name");
 
   // FIXME: hpcrun_fmt_hdr_free()
 
@@ -348,7 +339,7 @@ Profile::make(const char* fnm, FILE* outfs)
 
     try {
       string locStr = fnm; // ":epoch " + 1;
-      ret = hpcrun_fmt_epoch_fread(myprof, fs, locStr, outfs);
+      ret = hpcrun_fmt_epoch_fread(myprof, fs, progNm, locStr, outfs);
       if (ret == HPCFMT_EOF) {
 	break;
       }
@@ -367,7 +358,8 @@ Profile::make(const char* fnm, FILE* outfs)
   }
 
   if (! prof) {
-    prof = new Profile(0);
+    prof = new Profile(progNm, 0);
+    prof->cct_canonicalize();
   }
 
   // ------------------------------------------------------------
@@ -381,7 +373,8 @@ Profile::make(const char* fnm, FILE* outfs)
 
 int
 Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs, 
-				std::string locStr, FILE* outfs)
+				std::string progName, std::string locStr,
+				FILE* outfs)
 {
   using namespace Prof;
 
@@ -395,7 +388,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // epoch-hdr
   // ----------------------------------------
   hpcrun_fmt_epoch_hdr_t ehdr;
-  ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, infs, hpcfmt_alloc);
+  ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, infs, malloc);
   if (ret == HPCFMT_EOF) {
     return HPCFMT_EOF;
   }
@@ -409,7 +402,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // metric-tbl
   // ----------------------------------------
   metric_tbl_t metric_tbl;
-  ret = hpcrun_fmt_metric_tbl_fread(&metric_tbl, infs, hpcfmt_alloc);
+  ret = hpcrun_fmt_metric_tbl_fread(&metric_tbl, infs, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
   }
@@ -420,7 +413,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // loadmap
   // ----------------------------------------
   loadmap_t loadmap_tbl;
-  ret = hpcrun_fmt_loadmap_fread(&loadmap_tbl, infs, hpcfmt_alloc);
+  ret = hpcrun_fmt_loadmap_fread(&loadmap_tbl, infs, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'loadmap'");
   }
@@ -429,8 +422,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // Create Profile
   // ------------------------------------------------------------
 
-  prof = new Profile(num_metrics);
-  prof->name("[Profile Name]");
+  prof = new Profile(progName, num_metrics);
   
   // ----------------------------------------
   // metric-tbl
@@ -446,7 +438,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
     metric->period(m_lst[i].period);
   }
 
-  hpcrun_fmt_metric_tbl_free(&metric_tbl, hpcfmt_free);
+  hpcrun_fmt_metric_tbl_free(&metric_tbl, free);
 
   // ----------------------------------------
   // loadmap
@@ -474,7 +466,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
     DIAG_EMsg(locStr << "': Cannot fully process samples from unavailable load modules:\n" << x.what());
   }
 
-  hpcrun_fmt_loadmap_free(&loadmap_tbl, hpcfmt_free);
+  hpcrun_fmt_loadmap_free(&loadmap_tbl, free);
 
 
   // ------------------------------------------------------------
@@ -482,8 +474,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // ------------------------------------------------------------
   hpcrun_fmt_cct_fread(prof->cct(), ehdr.flags, num_metrics, infs, outfs);
 
-  cct_fixRoot(prof->cct(), prof->name().c_str());  
-
+  prof->cct_canonicalize();
   prof->cct_canonicalize(loadmap); // initializes isUsed()
 
   std::vector<ALoadMap::MergeChange> mergeChg = 
@@ -576,6 +567,45 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
   if (outfs) {
     fprintf(outfs, "}\n"); 
   }
+}
+
+
+// 1. Create a (PGM) root for the CCT
+// 2. Remove the two outermost frames: 
+//      "synthetic-root -> monitor_main"
+void
+Profile::cct_canonicalize()
+{
+  using namespace Prof;
+
+  CCT::ANode* root = m_cct->root();
+
+  // idempotent
+  if (root && typeid(*root) == typeid(CCT::Root)) {
+    return;
+  }
+
+  CCT::ANode* newRoot = new CCT::Root(m_name);
+
+  // 1. find the splice point
+  CCT::ANode* spliceRoot = root;
+  if (root && root->ChildCount() == 1) {
+    spliceRoot = root->firstChild();
+  }
+  
+  // 2. splice: move all children of 'spliceRoot' to 'newRoot'
+  if (spliceRoot) {
+    for (CCT::ANodeChildIterator it(spliceRoot); it.Current(); /* */) {
+      CCT::ANode* n = it.CurNode();
+      it++; // advance iterator -- it is pointing at 'n'
+      n->Unlink();
+      n->Link(newRoot);
+    }
+    
+    delete root; // N.B.: also deletes 'spliceRoot'
+  }
+  
+  m_cct->root(newRoot);
 }
 
 
@@ -685,55 +715,3 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits,
   return n;
 }
 
-
-// 1. Create a (PGM) root for the CCT
-// 2. Remove the two outermost frames: 
-//      "synthetic-root -> monitor_main"
-static void
-cct_fixRoot(Prof::CCT::Tree* cct, const char* progName)
-{
-  using namespace Prof;
-
-  CCT::ANode* root = cct->root();
-
-  // idempotent
-  if (root && typeid(*root) == typeid(CCT::Root)) {
-    return;
-  }
-
-  CCT::ANode* newRoot = new CCT::Root(progName);
-
-  // 1. find the splice point
-  CCT::ANode* spliceRoot = root;
-  if (root && root->ChildCount() == 1) {
-    spliceRoot = root->firstChild();
-  }
-  
-  // 2. splice: move all children of 'spliceRoot' to 'newRoot'
-  if (spliceRoot) {
-    for (CCT::ANodeChildIterator it(spliceRoot); it.Current(); /* */) {
-      CCT::ANode* n = it.CurNode();
-      it++; // advance iterator -- it is pointing at 'n'
-      n->Unlink();
-      n->Link(newRoot);
-    }
-    
-    delete root; // N.B.: also deletes 'spliceRoot'
-  }
-  
-  cct->root(newRoot);
-}
-
-
-static void* 
-hpcfmt_alloc(size_t sz)
-{
-  return (new char[sz]);
-}
-
-
-static void  
-hpcfmt_free(void* mem)
-{
-  delete[] (char*)mem;
-}
