@@ -128,98 +128,58 @@ Usage:
    hpcrun [profiling-options] <command> [command-arguments]
    hpcrun [info-options]
 
+hpcrun profiles the execution of an arbitrary command <command> using
+statistical sampling (rather than instrumentation).  It collects
+per-thread call path profiles that represent the full calling context of
+sample points.  Sample points may be generated from multiple simultaneous
+sampling sources.  hpcrun profiles complex applications that use forks,
+execs, threads, and dynamic linking/unlinking; it may be used in conjuction
+with parallel process launchers such as MPICH's mpiexec and SLURM's srun.
+
+To profile a statically linked executable, make sure to link with hpclink.
+
+To configure hpcrun's sampling sources, specify events and periods using
+the -e/--event option.  For an event 'e' and period 'p', after every 'p'
+instances of 'e', a sample is generated that causes hpcrun to inspect the
+and record information about the monitored <command>.
+
+When <command> terminates, a profile measurement databse will be written to
+the directory:
+  hpctoolkit-<command>-measurements[-<jobid>]
+where <jobid> is a PBS or Sun Grid Engine job identifier.
+
+hpcrun enables a user to abort a process and write the partial profiling
+data to disk by sending the Interrupt signal (INT or Ctrl-C).  This can be
+extremely useful on long-running or misbehaving applications.
+
 Options: Informational
-  -V, --version        Print version information.
-  -h, --help           Print help.
   -l, -L --list-events List available events. (N.B.: some may not be
                        profilable)
+  -V, --version        Print version information.
+  -h, --help           Print help.
 
 Options: Profiling (Defaults shown in curly brackets {})
-  -o <outpath>, --output <outpath>
-     The directory in which to store profiles collected with hpcrun.
-     By default, hpcrun stores call stack profile files (suffix .csp)
-     and log files (suffix .log) in a subdirectory of the current 
-     directory. 
-
-     If PBS or the Sun Grid Engine is being used for job control, the 
-     default subdirectory name will have the form 
-     hpctoolkit-<yourappname>-measurements-<jobid>, where <yourappname>
-     is the name of your executable, and <jobid> corresponds
-     to a job identifier from PBS or the Sun Grid Engine.
-
-     If you are not using PBS or the Sun Grid Engine for job control, 
-     then the name of the default output directory will have the form 
-     hpctoolkit-<yourappname>-measurements. 
-
-     If you measure multiple runs of the same executable with hpcrun 
-     from within the same working directory without specifying an output 
-     path using -o or running under a batch system's job control, profiles 
-     from multiple runs will be placed in the same output directory.  The 
-     only way to distinguish profiles from multiple runs will be by their 
-     creation times or the measurement data that the profiles contain.
-
   -e <event>[@<period>], --event <event>[@<period>]
-     This argument is used to specify an event that hpcrun should
-     use as the basis for statistical sampling along with the event 
-     period.  This argument may be used multiple times to specify that 
-     multiple events should be used as sample sources. Each event can 
-     have a distinct period.
+                       An event to profile and its corresponding sample
+                       period. <event> may be either a PAPI, native
+                       processor event or WALLCLOCK (microseconds).  May pass
+                       multiple times as implementations permit.
+                       {WALLCLOCK@5000}.
 
-     If no event is specified, the default event specification is
-     WALLCLOCK@5000 (a sample event every 5000 microseconds). You may
-     specify a shorter or longer period for WALLCLOCK events. Your 
-     operating system may silently ensure that your period is not too 
-     short and round your specified period up to the system's minimum. 
-     If you want to know your system's minimum period, check the man 
-     page for setitimer for further information. 
+                       N.B.: WALLCLOCK and hardware events cannot be mixed.
+  -o <outpath>, --output <outpath>
+                       Directory for output data.
+                       {hpctoolkit-<command>-measurements[-<jobid>]}
 
-     Besides the WALLCLOCK event, one can also use hardware performance
-     counter events to measure execution behavior. hpcrun uses the PAPI 
-     library to provide access to hardware performance counter events.  
-     If you have not configured HPCToolkit to use the PAPI library, you 
-     will be unable to measure hardware performance counter events.
-
-     The PAPI library supports a large collection of hardware counter 
-     events.  Some events have standard names across all platforms, e.g. 
-     PAPI_TOT_CYC, the event that measures total cycles. In addition to 
-     events whose names begin with the PAPI_ prefix, platforms also 
-     provide access to a set of native events with names that are 
-     specific to the platform's processor. A complete list of events
-     supported by the PAPI library for your platform may be obtained by 
-     running the command "hpcrun -L". Any event whose name begins
-     with the PAPI_ prefix that is listed as "Profilable" can be used
-     as an event in a -e specification. Any native event may be used as
-     a sampling source. For hardware performance counter events, the
-     PERIOD component of a -e specification indicates the sampling period 
-     in terms of the number of events between samples.
-
-     Restrictions:
-     
-     hpcrun supports only the WALLCLOCK event based on the Linux interval 
-     timer and hardware performance counter events supported by the PAPI 
-     library.
-
-     The WALLCLOCK event is triggered by the Unix itimer feature. The "PERIOD"
-     component of the WALLCLOCK event is the number of microseconds between
-     samples.
-
-     In a single execution, you cannot measure both the WALLCLOCK event
-     and PAPI events; you may however measure multiple PAPI events in a
-     single execution.
-
-     EXAMPLE
-       hpcrun -e PAPI_TOT_INS@1000000 -e PAPI_FP_INS@100000 A_PROGRAM
-
-       The above command line would sample A_PROGRAM every 1,000,000
-       instructions and every 100,000 floating point instructions.
+                       Bug: Without a <jobid> or an output option, multiple
+                       profiles of the same <command> will be placed in the
+                       same output directory.
 
 NOTES:
-* hpcrun uses preloaded shared libraries to initiate profiling. For this
-  reason, modifications to the hpcrun launcher script will be necessary to 
-  profile programs that use library preloading.
+* hpcrun uses preloaded shared libraries to initiate profiling.  For this
+  reason, it cannot be used to profile setuid programs.
+* Bug: hpcrun cannot currently profile programs that themselves use preloading.
 
-* hpcrun cannot be used to profile setuid commands since preloading of shared
-  libraries is not permitted for setuid programs.
 EOF
 }
 

@@ -90,20 +90,24 @@ static const char* usage_summary2 =
 "[info-options]\n";
 
 static const char* usage_details = "\
-hpcrun profiles the execution of an arbitrary command <command> using\n\
-statistical sampling.  It supports multiple sample sources during one\n\
-execution and creates an IP (instruction pointer) histogram, or flat profile,\n\
-for each sample source.  Specifically, for an event 'e' and period 'p', after\n\
-every 'p' instances of 'e' a counter associated with the instruction of the\n\
-current IP is incremented.  hpcrun profiles complex applications (forks,\n\
-execs, threads and dynamically loaded libraries) and may be used in\n\
-conjunction with parallel process launchers such as MPICH's mpiexec and\n\
-SLURM's srun.\n\
+hpcrun-flat profiles the execution of an arbitrary command <command> using\n\
+statistical sampling (rather than instrumentation).  It collects per-thread\n\
+flat profiles, or IP (instruction pointer) histograms.  Sample points may\n\
+be generated from multiple simultaneous sampling sources.  hpcrun-flat\n\
+profiles complex applications that use forks, execs, and threads (but not\n\
+dynamic linking/unlinking); it may be used in conjuction with parallel\n\
+process launchers such as MPICH's mpiexec and SLURM's srun.\n\
 \n\
-When <command> terminates normally, a profile -- a histogram of counts for\n\
-instructions in each load module -- will be written to a file with the name\n\
-  <command>.hpcrun.<hostname>.<pid>.<tid>\n\
-hpcrun allows the user to abort a process and write the partial profiling\n\
+To configure hpcrun's sampling sources, specify events and periods using\n\
+the -e/--event option.  For an event 'e' and period 'p', after every 'p'\n\
+instances of 'e', a sample is generated that causes hpcrun to inspect the\n\
+and record information about the monitored <command>.\n\
+\n\
+When <command> terminates, per-thread profiles are written to files with\n\
+the names of the form:\n\
+  <command>.hpcrun-flat.<hostname>.<pid>.<tid>\n\
+\n\
+hpcrun-flat enables a user to abort a process and write the partial profiling\n\
 data to disk by sending the Interrupt signal (INT or Ctrl-C).  This can be\n\
 extremely useful on long-running or misbehaving applications.\n\
 \n\
@@ -134,8 +138,8 @@ Options: Profiling (Defaults shown in curly brackets {})\n\
   -e <event>[:<period>], --event <event>[:<period>]\n\
                        An event to profile and its corresponding sample\n\
                        period. <event> may be either a PAPI or native\n\
-                       processor event.  {PAPI_TOT_CYC:999999}. May pass\n\
-                       multiple times.\n\
+                       processor event.  May pass multiple times.\n\
+                       {PAPI_TOT_CYC:999999}.\n\
                        o Recommended: always specify sampling period.\n\
                        o Special event: WALLCLK (use once, without period)\n\
                        o Hardware and drivers limit possibilities.\n\
@@ -145,11 +149,11 @@ Options: Profiling (Defaults shown in curly brackets {})\n\
                        Profile style flag {PAPI_POSIX_PROFIL}\n\
 \n\
 NOTES:\n\
-* Because hpcrun uses LD_PRELOAD to initiate profiling, it cannot be used\n\
-  to profile setuid commands.\n\
+* hpcrun-flat uses preloaded shared libraries to initiate profiling.  For\n\
+  this reason, it cannot be used to profile setuid programs.\n\
 * For the same reason, it cannot profile statically linked applications.\n\
-* Bug: For non-recursive profiling, LD_PRELOAD is currently unsetenv'd.\n\
-  Child processes that otherwise depend LD_PRELOAD will likely die.\n\
+* Bug: hpcrun-flat cannot currently profile programs that themselves use\n\
+  preloading.\n\
 ";
 
 
