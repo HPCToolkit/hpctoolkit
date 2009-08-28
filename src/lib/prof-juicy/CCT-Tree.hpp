@@ -681,6 +681,7 @@ operator<<(std::ostream& os, const ADynNode::WriteMetricInfo_& info)
 class Root: public ANode {
 public: 
   // Constructor/Destructor
+  Root(const std::string& nm);
   Root(const char* nm);
   virtual ~Root();
 

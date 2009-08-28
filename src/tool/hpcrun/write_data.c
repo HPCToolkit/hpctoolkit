@@ -159,10 +159,10 @@ lazy_open_data_file(void)
 
   TMSG(DATA_WRITE,"writing file header");
   hpcrun_fmt_hdr_fwrite(fs,
-                        "program-name", "TBD",
-                        "process_id", "TBD",
+                        "program-name", "[Program Name]", // FIXME
                         "mpi-rank", hpcrun_itos(_tmp, rank),
-                        "target", "--FIXME--target_name",
+                        "process-id", "TBD", // FIXME
+                        "thread-id", "TBD",  // FIXME
                         NULL);
   return fs;
 }

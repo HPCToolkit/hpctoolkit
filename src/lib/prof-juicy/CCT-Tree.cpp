@@ -191,6 +191,13 @@ ANode::IntToNodeType(long i)
 //***************************************************************************
 
 
+Root::Root(const std::string& nm) 
+  : ANode(TyRoot, NULL),
+    m_name(nm)
+{ 
+}
+
+
 Root::Root(const char* nm) 
   : ANode(TyRoot, NULL) 
 { 

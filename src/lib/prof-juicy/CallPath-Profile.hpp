@@ -85,7 +85,7 @@ namespace CallPath {
 
 class Profile: public Unique {
 public:
-  Profile(uint numMetrics);
+  Profile(const std::string name, uint numMetrics);
   virtual ~Profile();
   
   // -------------------------------------------------------
@@ -94,8 +94,11 @@ public:
   const std::string& name() const 
   { return m_name; }
 
-  void name(const char* s) 
-  { m_name = (s) ? s : ""; }
+  void name(const std::string& x) 
+  { m_name = x; }
+
+  void name(const char* x) 
+  { m_name = (x) ? x : ""; }
   
   // -------------------------------------------------------
   // Metrics
@@ -163,7 +166,7 @@ public:
   // inspection.
 
   static int
-  hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs, 
+  hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs, std::string progName,
 			 std::string locStr, FILE* outfs);
 
   static void
@@ -190,6 +193,9 @@ private:
   // 1. annotate CCT::Tree nodes with associated ALoadMap::LM_id_t from
   //    the LoadMap.
   // 2. normalize CCT::Tree node IPs (unrelocate) to prepare for LoadMapMgr
+  void 
+  cct_canonicalize();
+
   void 
   cct_canonicalize(const LoadMap& loadmap);
 

@@ -236,7 +236,7 @@ hpcfmt_nvpair_list_fprint(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
 			  FILE* fs, const char* pre);
 
 char*
-hpcrun_fmt_nvpair_search(HPCFMT_List(hpcfmt_nvpair_t)* lst, const char* name);
+hpcfmt_nvpair_search(HPCFMT_List(hpcfmt_nvpair_t)* lst, const char* name);
 
 
 //***************************************************************************
