@@ -33,7 +33,7 @@ cat "$config_orig" |
 	> "$config"
 
 # Note: tallent: the last two regexps above depend on GNU sed's -r
-# option.  Should be until SymTabAPI gets its house in order.
+# option.  Should be ok until SymTabAPI gets its house in order.
 
 test $? -eq 0 || die "configure failed"
 
