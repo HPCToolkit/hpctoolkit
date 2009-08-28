@@ -232,7 +232,7 @@ write_epochs(FILE* fs, csprof_state_t* state)
 
     TMSG(DATA_WRITE, "Preparing to write loadmap");
 
-    csprof_epoch_t* current_epoch = s->epoch;
+    hpcrun_epoch_t* current_epoch = s->epoch;
     hpcrun_fmt_loadmap_fwrite(current_epoch->num_modules, current_epoch->loaded_modules, fs);
 
     TMSG(DATA_WRITE, "Done writing loadmap");

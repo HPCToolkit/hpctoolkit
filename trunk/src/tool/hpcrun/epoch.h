@@ -91,7 +91,7 @@
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
-typedef struct csprof_epoch csprof_epoch_t;
+typedef struct csprof_epoch hpcrun_epoch_t;
 typedef struct csprof_epoch_module csprof_epoch_module_t;
 
 /* an individual load module--shared library or program binary */
@@ -114,18 +114,18 @@ struct csprof_epoch
   loadmap_src_t *loaded_modules;
 };
 
-extern csprof_epoch_t* csprof_static_epoch(void);
-extern csprof_epoch_t* csprof_epoch_new(void);
-extern void csprof_epoch_init(csprof_epoch_t *e);
-extern csprof_epoch_t* csprof_get_epoch(void);
+extern hpcrun_epoch_t* hpcrun_static_epoch(void);
+extern hpcrun_epoch_t* hpcrun_epoch_new(void);
+extern void hpcrun_epoch_init(hpcrun_epoch_t *e);
+extern hpcrun_epoch_t* hpcrun_get_epoch(void);
 
 void hpcrun_loadmap_add_module(const char *module_name, void *vaddr, void *mapaddr, size_t size);
 
 /* avoid weird dynamic loading conflicts */
 
-extern void csprof_epoch_lock();
-extern void csprof_epoch_unlock();
-extern int csprof_epoch_is_locked();
+extern void hpcrun_epoch_lock();
+extern void hpcrun_epoch_unlock();
+extern int hpcrun_epoch_is_locked();
 
 extern void hpcrun_finalize_current_epoch(void);
 

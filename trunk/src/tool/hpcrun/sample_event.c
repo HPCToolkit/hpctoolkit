@@ -263,7 +263,7 @@ _hpcrun_sample_callpath(csprof_state_t *state, void *context,
   if(/* trampoline isn't exactly active during exception handling */
      csprof_state_flag_isset(state, CSPROF_EXC_HANDLING)
      /* dynamical libraries are in flux; don't bother */
-     /* || csprof_epoch_is_locked() */
+     /* || hpcrun_epoch_is_locked() */
      /* general checking for addresses in libraries */
      || csprof_context_is_unsafe(context)) {
     EMSG("Reached trampoline code !!");

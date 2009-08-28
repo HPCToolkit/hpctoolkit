@@ -568,7 +568,7 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
     } else {
       // the entry on the closed list was not the same module
       fnbounds_epoch_finalize_locked();
-      csprof_epoch_new();
+      hpcrun_epoch_new();
       TMSG(EPOCH, "new epoch cause: start = %p, end = %p, name = %s", 
 	   start, end, module_name);
 
@@ -648,7 +648,7 @@ new_dso_info_t(const char *name, void **table, struct fnbounds_file_header *fh,
   int namelen = strlen(name) + 1;
   dso_info_t *r  = dso_info_allocate();
   
-  TMSG(DSO," new_dso_info_t");
+  TMSG(DSO," new_dso_info_t for module %s", name);
   r->name = (char *) csprof_malloc(namelen);
   strcpy(r->name, name);
   r->table = table;
@@ -659,7 +659,7 @@ new_dso_info_t(const char *name, void **table, struct fnbounds_file_header *fh,
   r->end_addr = endaddr;
 
   dso_list_add(&dso_open_list, r);
-  TMSG(EPOCH, "new dso: start = %p, end = %p, name = %s",
+  TMSG(DSO, "new dso: start = %p, end = %p, name = %s",
        startaddr, endaddr, name);
 
   return r;

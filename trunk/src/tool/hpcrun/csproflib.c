@@ -153,7 +153,7 @@ int lush_metrics = 0; // FIXME: global variable for now
 void
 csprof_init_internal(void)
 {
-  csprof_epoch_init(csprof_static_epoch());
+  hpcrun_epoch_init(hpcrun_static_epoch());
 
   hpcrun_thread_data_new();
   hpcrun_thread_memory_init();

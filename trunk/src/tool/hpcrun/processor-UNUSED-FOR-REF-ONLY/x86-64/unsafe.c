@@ -151,10 +151,10 @@ csprof_context_is_unsafe(void *context)
     plt_found = 1;
   }
   if(!memcpy_found) {
-    csprof_epoch_t *e = csprof_get_epoch();
+    hpcrun_epoch_t *e = hpcrun_get_epoch();
 
     if(e == NULL) {
-      TMSG(UNSAFE,"csprof_get_epoch fails");
+      TMSG(UNSAFE,"hpcrun_get_epoch fails");
       return 1;
     }
     else {
@@ -170,10 +170,10 @@ csprof_context_is_unsafe(void *context)
   }
 #ifdef NO
   if(!csproflib_found) {
-    csprof_epoch_t *e = csprof_get_epoch();
+    hpcrun_epoch_t *e = hpcrun_get_epoch();
 
     if(e == NULL) {
-      TMSG(UNSAFE,"csprof_get_epoch #2 fails");
+      TMSG(UNSAFE,"hpcrun_get_epoch #2 fails");
       return 1;
     }
     else {
