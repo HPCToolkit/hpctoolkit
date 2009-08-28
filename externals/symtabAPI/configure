@@ -25,10 +25,15 @@ test -f "$config_orig" || die "missing config file: $config"
 rm -f "$config"
 
 cat "$config_orig" |
-    sed \
+    sed -r \
 	-e "s,^GCC *=.*\$,GCC = $CC," \
 	-e "s,^GXX *=.*\$,GXX = $CXX," \
+	-e "s,^(CFLAGS\s*=.*)\$,\1 $CFLAGS," \
+	-e "s,^(CXXFLAGS\s*=.*)\$,\1 $CXXFLAGS," \
 	> "$config"
+
+# Note: tallent: the last two regexps above depend on GNU sed's -r
+# option.  Should be until SymTabAPI gets its house in order.
 
 test $? -eq 0 || die "configure failed"
 
