@@ -89,8 +89,16 @@ csprof_registered_sources_init(void)
 void
 hpcrun_display_avail_events(void)
 {
+  // Special hack to put WALLCLOCK first.
   for (int i = 0; i < nregs; i++) {
-    METHOD_CALL(registered_sample_sources[i], display_events);
+    if (strcasecmp(registered_sample_sources[i]->name, "itimer") == 0) {
+      METHOD_CALL(registered_sample_sources[i], display_events);
+    }
+  }
+  for (int i = 0; i < nregs; i++) {
+    if (strcasecmp(registered_sample_sources[i]->name, "itimer") != 0) {
+      METHOD_CALL(registered_sample_sources[i], display_events);
+    }
   }
   exit(0);
 }

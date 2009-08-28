@@ -137,6 +137,28 @@ bgp_event_name_to_code(const char *name)
   return -1;
 }
 
+/*
+ * Trim the category from the event description.  The BGP description
+ * begins with a category: which is somewhat redundant with the name
+ * of the event.  For example:
+ *    name                      description
+ *    BGP_PU0_JPIPE_ADD_SUB     P0 CPU:  Add/Sub in J-pipe
+ */
+static char *
+trim_event_desc(char *desc)
+{
+  char *new;
+
+  new = strchr(desc, ':');
+  if (new == NULL) {
+    return desc;
+  }
+  new += 1;
+  new += strspn(new, " \t");
+
+  return new;
+}
+
 //----------------------------------------------------------------------
 // Method functions and signal handler
 //----------------------------------------------------------------------
@@ -215,8 +237,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     extract_ev_thresh(event, EVENT_NAME_SIZE, name, &threshold);
     code = bgp_event_name_to_code(name);
     if (code < 0) {
-      EMSG("bad UPC event: %s", event);
-      monitor_real_abort();
+      EMSG("unexpected failure in UPC process_event_list(): "
+	   "unable to find code for event %s", event);
+      hpcrun_ssfail_unsupported("UPC", event);
     }
     METHOD_CALL(self, store_event, code, threshold);
   }
@@ -258,20 +281,20 @@ METHOD_FN(gen_event_set, int lush_metrics)
     if (ret < 0) {
       EMSG("BGP_UPC_Monitor_Event failed on event %s(%d), ret = %d",
 	   name, ev, ret);
-      monitor_real_abort();
+      hpcrun_ssfail_unsupported("UPC", name);
     }
     ret = BGP_UPC_Set_Counter_Value(ev, 0);
     if (ret < 0) {
       EMSG("BGP_UPC_Set_Counter_Value failed on event %s(%d), ret = %d",
 	   name, ev, ret);
-      monitor_real_abort();
+      hpcrun_ssfail_unsupported("UPC", name);
     }
 
     ret = BGP_UPC_Set_Counter_Threshold_Value(ev, self->evl.events[k].thresh);
     if (ret < 0) {
       EMSG("BGP_UPC_Set_Counter_Threshold_Value failed on event %s(%d), ret = %d",
 	   name, ev, ret);
-      monitor_real_abort();
+      hpcrun_ssfail_unsupported("UPC", name);
     }
     TMSG(UPC, "monitor event %s(%d), threshold %ld",
 	 name, ev, self->evl.events[k].thresh);
@@ -280,8 +303,8 @@ METHOD_FN(gen_event_set, int lush_metrics)
   myself = self;
   ret = monitor_sigaction(SIGXCPU, &hpcrun_upc_handler, 0, NULL);
   if (ret < 0) {
-    EMSG("monitor_sigaction failed on SIGXCPU");
-    monitor_real_abort();
+    EEMSG("HPCToolkit fatal error: unable to install signal handler for SIGXCPU");
+    exit(1);
   }
   TMSG(UPC, "installed signal handler for SIGXCPU");
 }
@@ -295,7 +318,7 @@ METHOD_FN(_start)
   int ret = BGP_UPC_Start(0);
   if (ret < 0) {
     EMSG("BGP_UPC_Start failed on core 0, ret = %d", ret);
-    monitor_real_abort();
+    hpcrun_ssfail_start("UPC");
   }
 
   TD_GET(ss_state)[self->evset_idx] = START;
@@ -327,7 +350,45 @@ METHOD_FN(shutdown)
 static void
 METHOD_FN(display_events)
 {
-  printf("All available UPC events (coming soon).\n");
+  char name[EVENT_NAME_SIZE];
+  char desc[2048];
+  int ev, num_total;
+
+  printf("===========================================================================\n");
+  printf("Available BG/P UPC events on core 0\n");
+  printf("===========================================================================\n");
+  printf("Name\t\t\t\t\tDescription\n");
+  printf("---------------------------------------------------------------------------\n");
+
+  num_total = 0;
+  for (ev = BGP_UPC_MINIMUM_EVENT_ID; ev <= BGP_UPC_MAXIMUM_EVENT_ID; ev++) {
+    if (BGP_UPC_Get_Event_Name(ev, EVENT_NAME_SIZE, name) >= 0
+	&& BGP_UPC_Get_Event_Description(ev, 2040, desc) >= 0
+	&& strstr(name, "PU0") != NULL) {
+      printf("%-35s\t%s\n", name, trim_event_desc(desc));
+      num_total++;
+    }
+  }
+  printf("UPC events on core 0: %d\n", num_total);
+  printf("\n");
+
+  printf("===========================================================================\n");
+  printf("Other BG/P UPC events (not all available)\n");
+  printf("===========================================================================\n");
+  printf("Name\t\t\t\t\tDescription\n");
+  printf("---------------------------------------------------------------------------\n");
+
+  num_total = 0;
+  for (ev = BGP_UPC_MINIMUM_EVENT_ID; ev <= BGP_UPC_MAXIMUM_EVENT_ID; ev++) {
+    if (BGP_UPC_Get_Event_Name(ev, EVENT_NAME_SIZE, name) >= 0
+	&& BGP_UPC_Get_Event_Description(ev, 2040, desc) >= 0
+	&& strstr(name, "PU0") == NULL) {
+      printf("%-35s\t%s\n", name, trim_event_desc(desc));
+      num_total++;
+    }
+  }
+  printf("Other UPC events: %d\n", num_total);
+  printf("\n");
 }
 
 //----------------------------------------------------------------------
