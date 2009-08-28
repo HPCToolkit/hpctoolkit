@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2009/08/27}
+\setDate{ 2009/08/28}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -46,7 +46,7 @@
 
 \Prog{hpcrun} is a call path profiler based on statistical sampling.
 It supports multiple sample sources during one execution.
-\Prog{hpcrun} profiles complex applications (forks, execs, threads and dynamically loaded libraries) and may be used in conjunction with parallel process launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
+\Prog{hpcrun} profiles complex applications (forks, execs, threads and dynamic linking) and may be used in conjunction with parallel process launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
 
 See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
@@ -58,16 +58,27 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 
 \Prog{hpcrun} \oOpt{profiling-options} \Arg{command} \oOpt{command-arguments}
 
+\Prog{hpcrun} \oOpt{info-options}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcrun} profiles the execution of an arbitrary command \Arg{command} using statistical sampling.
-It creates call path profiles and supports multiple sample sources during one execution.
-Specifically, for an event \emph{e} and period \emph{p}, after every \emph{p} instances of \emph{e} a call path sample is collected and stored.
-\Prog{hpcrun} profiles complex applications (forks, execs, threads and dynamically loaded libraries) and may be used in conjunction with parallel process launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
+\Prog{hpcrun} profiles the execution of an arbitrary command \Arg{command} using statistical sampling (rather than instrumentation).
+It collects per-thread call path profiles that represent the full calling context of sample points.
+Sample points may be generated from multiple simultaneous sampling sources.
+\Prog{hpcrun} profiles complex applications that use forks, execs, threads, and dynamic linking/unlinking; it may be used in conjuction with parallel process launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
 
-When \Arg{command} terminates normally, a profile will be written to a file with the name\\
-\SP\SP\SP \Arg{command}.\Arg{hostname}.\Arg{pid}.\Arg{tid}.csp
+To profile a statically linked executable, make sure to link with \HTMLhref{hpclink.html}{\Cmd{hpclink}{1}}.
+
+To configure \Prog{hpcrun}'s sampling sources, specify events and periods using the \texttt{-e/--event} option.
+For an event \emph{e} and period \emph{p}, after every \emph{p} instances of \emph{e}, a sample is generated that causes \Prog{hpcrun} to inspect the and record information about the monitored \Arg{command}.
+
+When \Arg{command} terminates, a profile measurement databse will be written to the directory:\\
+\SP\SP\SP hpctoolkit-\Arg{command}-measurements[-\Arg{jobid}]\\
+where \Arg{jobid} is a PBS or Sun Grid Engine job identifier.
+
+\Prog{hpcrun} enables a user to abort a process and write the partial profiling data to disk by sending the Interrupt signal (INT or Ctrl-C).
+This can be extremely useful on long-running or misbehaving applications.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,6 +94,7 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: Informational}
 
 \begin{Description}
+\item[\Opt{-l}, \Opt{-L}, \Opt{--list-events-short}] List available events. (N.B.: some may not be profilable)
 \item[\Opt{-V}, \Opt{--version}] Print version information.
 \item[\Opt{-h}, \Opt{--help}] Print help.
 \item[\Opt{-l}, \Opt{-L}, \Opt{--list-events}] List available events. (N.B.: some may not be profilable)
@@ -91,13 +103,23 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: Profiling}
 
 \begin{Description}
-  \item[\OptArg{-e}{event\Lbr:period\Rbr}]  An event to profile and its corresponding sample period. \Arg{event} may be either a PAPI or native processor event. \{\verb+WALLCLOCK:5000+\} May pass multiple times. 
+  \item[\OptArg{-e}{event\Lbr@period\Rbr}, \OptArg{--event}{event\Lbr@period\Rbr}] 
+   An event to profile and its corresponding sample period. \Arg{event} may be either a PAPI, native processor event, or WALLCLOCK (microseconds).  May pass multiple times as implementations permits.  \{\verb+WALLCLOCK@5000+\}
   \begin{itemize}
     \item It is recommended to always specify the sampling period for each profiling event.
-    \item The special event WALLCLOCK may be used to profile the `wall clock.'  It may be used only \emph{once} and cannot be used with another event. It is an error to specify a period.
-    \item Hardware and drivers 1) limit the maximum number of events that can be monitored simultaneously, and 2) forbid certain combinations of events. Check your documentation.
+    \item The special event WALLCLOCK may be used to profile the `wall clock.'  It may be used only \emph{once} and cannot be used with another event. Its period is in microseconds.
+    \item Hardware and drivers 1) limit the maximum number of events that can be monitored simultaneously, and 2) forbid certain combinations of events. 
+    \item See the ``Sample sources'' under \textbf{NOTES} for additional details.
   \end{itemize}
-  \item[\OptoArg{-o}{outpath}, \OptoArg{--output}{outpath}] Directory for output data.  \{\texttt{.}\}
+
+  \item[\OptoArg{-o}{outpath}, \OptoArg{--output}{outpath}]
+  Directory for output data.
+  \{\verb+hpctoolkit-<command>-measurements[-<jobid>]+\}
+
+  \begin{itemize}
+  Bug: Without a \Arg{jobid} or an output option, multiple profiles of the same <command> will be placed in the same output directory.
+  \end{itemize}
+
 \end{Description}
 
 
@@ -109,12 +131,12 @@ The following examples lists some useful events for different processor architec
 In each case, the special option \texttt{--} is used to clearly demarcate the end of \Prog{hpcrun} options.
 
 \begin{enumerate}
-\item \verb+hpcrun -e WALLCLOCK:5000 zoo+
+\item \verb+hpcrun -e WALLCLOCK@5000 zoo+
 
 \item Opteron, (Rev B-F)
   \begin{enumerate}
-    \item \verb+hpcrun -e DC_L2_REFILL:1300013 -e PAPI_L2_DCM:510011 -e PAPI_STL_ICY:5300013 -e PAPI_TOT_CYC:13000019 zoo+ (\verb+DC_L2_REFILL+ is an approximation of L1 D-cache misses).
-    \item \verb+hpcrun -e PAPI_L2_DCM:510011 -e PAPI_TLB_DM:510013 -e PAPI_STL_ICY:5300013 -e PAPI_TOT_CYC:13000019 zoo+
+    \item \verb+hpcrun -e DC_L2_REFILL@1300013 -e PAPI_L2_DCM@510011 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo+ (\verb+DC_L2_REFILL+ is an approximation of L1 D-cache misses).
+    \item \verb+hpcrun -e PAPI_L2_DCM@510011 -e PAPI_TLB_DM@510013 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo+
   \end{enumerate}
 
 \end{enumerate}
@@ -122,8 +144,73 @@ In each case, the special option \texttt{--} is used to clearly demarcate the en
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Notes}
 
+\subsection{Sample sources}
+
+\Prog{hpcrun} uses the PAPI library to provide access to hardware performance counter events.
+If you have not configured HPCToolkit to use the PAPI library, you will be unable to measure hardware performance counter events.
+
+The PAPI library supports a large collection of hardware counter events.
+Some events have standard names across all platforms, e.g. \verb+PAPI_TOT_CYC+, the event that measures total cycles.
+In addition to events whose names begin with the \verb+PAPI_+ prefix, platforms also provide access to a set of native events with names that are specific to the platform's processor.
+A complete list of events supported by the PAPI library for your platform may be obtained by using the \texttt{--list-events} option.
+Any event whose name begins with the \verb+PAPI_+ prefix that is listed as "Profilable" can be used as an event in a sampling source --- provided it does not conflict with another event.
+
+The precise rules for selecting good events and periods are complex.
 \begin{itemize}
-  \item Because hpcrun uses \verb+LD_PRELOAD+ to initiate profiling, it cannot be used to profile setuid commands.
+
+\item \textbf{Choosing sampling events.}
+We recommend using PAPI events in general.
+However, some PAPI events are not profilable because of PAPI implementation details.
+Also, PAPI's standard event list may not cover an architectural feature you are interested in.
+In such cases, it is necessary to resort to native events.
+In many cases, you will have to consult the architecture's manual to fully understand what the event means: there is no standard event list or naming scheme and events sometimes have unusual meanings.
+
+\item \textbf{Number of sampling events.}
+Currently, hpcrun does not multiplex hardware counters.
+This means that the number of events that you may concurrently profile against is limited by your architecture's performance monitoring unit.
+Note that some architectures hard-wire one or more counters to a specific event (such as cycles).
+
+\item \textbf{Choosing sampling periods.}
+The key requirement in choosing sampling periods is that you obtain enough samples to provide statistical significance.
+We usually recommend a sampling rate between 100s-1000s of samples per second.
+This usually only produces 1-5\% execution time overhead.
+
+Choosing sampling rates depends on the architecture and sometimes the application.
+
+Choosing periods for cycle and instruction-related events are usually easy.
+Cycles directly relates to the clock speed.
+Instruction-related events relates to the issue rate and width.
+
+Choosing periods for other events seems harder because different applications uses resources differently.
+For example, some applications are memory intensive and others are not.
+However, if the goal is to identify rate-limiting factors of the architecture, then it is not necessary to consider the application.
+For example, if the goal is to determine whether L2 D-cache latency is a limiting factor, then it is only necessary to work backward from the architecture's specifications to determine what number of L2 D-cache misses per second would be problematic.
+
+\item \textbf{Architectural event conflicts.}
+With some performance monitoring units, certain events may not be concurrently used with other events.
+
+\item \textbf{Architectural interrupt delay.}
+On most out-of-order pipelined architectures, a hardware counter interrupt is not precisely attributed to the instruction that induced the counter to overflow.
+The gap is commonly 50-70 instructions.
+This means that one should not assume that aggregation at the source line level is fully precise.
+(E.g., if a L1 D-cache miss is attributed to a statement that has been compiled to register-only operations, assume the miss is attributed to a nearby load.)
+However, aggregation at the procedure and loop level is reliable.
+
+\item \textbf{System itimer (WALLCLOCK).}
+On Linux systems, the kernel will not deliver itimer interrupts faster than the unit of a jiffy, which defaults to 4 milliseconds; see the itimer man page.
+One can configure the kernel to use a value as small as 1 millisecond, but it is unlikely the kernel will actually deliver itimer signals at that rate when a period of 1000 microseconds is requested.
+
+However, on Linux one can get quite close to the kernel Hz rate by setting the itimer interval to something less than the Hz rate.
+For example, if the Hz rate is 1000 microseconds, one can use 500 microseconds (or just 1) and obtain about 999 interrupts per second.
+\end{itemize}
+
+
+
+\subsection{Miscellaneous}
+
+\begin{itemize}
+  \item \Prog{hpcrun-flat} uses preloaded shared libraries to initiate profiling.  For this reason, it cannot be used to profile setuid programs.
+  \item Bug: \Prog{hpcrun-flat} cannot currently profile programs that themselves use preloading.
 \end{itemize}
 
 
@@ -151,6 +238,8 @@ Version: \Version\ of \Date.
 \noindent
 Nathan Tallent \\
 John Mellor-Crummey \\
+Mark Krentel \\
+Mike Fagan \\
 Rob Fowler \\
 Email: \Email{hpc =at= cs.rice.edu} \\
 WWW: \URL{http://hpctoolkit.org}.
