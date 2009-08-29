@@ -238,4 +238,3 @@ hpcfmt_nvpair_search(HPCFMT_List(hpcfmt_nvpair_t)* lst, const char* name)
   }
   return "NOT FOUND";
 }
-
