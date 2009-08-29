@@ -60,21 +60,84 @@
 namespace FileUtil {
 
 // ---------------------------------------------------------
-// 
+// file names
 // ---------------------------------------------------------
 
-// ... is a NULL terminated list of file names 
-// copyFile appends these files into destFile 
-//          returns NULL upon success
-//          otherwise returns an error message in a static variable 
-//          which is overwritten with each call to copyFile
+// 'basename': returns the 'fname.ext' component of '/path/fname.ext'
+extern std::string
+basename(const char* fname);
+
+inline std::string 
+basename(const std::string& fname)
+{
+  return basename(fname.c_str());
+}
+
+
+// 'dirname': returns the '/path' component of "/path/fname.ext"
+extern std::string 
+dirname(const char* fname); 
+
+inline std::string
+dirname(const std::string& fname)
+{
+  return dirname(fname.c_str());
+}
+
+
+static inline bool
+fnmatch(const std::string pattern, const char* string, int flags = 0)
+{
+  int fnd = ::fnmatch(pattern.c_str(), string, flags);
+  return (fnd == 0);
+#if 0
+  if (fnd == 0) {
+    return true;
+  }
+  else if (fnd != FNM_NOMATCH) {
+    // error
+  }
+#endif
+}
+
+
+bool
+fnmatch(const std::vector<std::string>& patternVec, 
+	const char* string, 
+	int flags = 0);
+  
+
+// ---------------------------------------------------------
+// file tests
+// ---------------------------------------------------------
+
+extern bool
+isReadable(const char* path);
+
+bool
+isDir(const char* path);
+
+// count how often char appears in file
+// return that number or -1 upon failure to open file for reading
+extern int
+countChar(const char* file, char c);
+
+
+// ---------------------------------------------------------
+// file operations
+// ---------------------------------------------------------
+
+// copy: takes a NULL terminated list of file name and appends these
+// files into destFile.  It returns NULL upon success; otherwise
+// returns an error message in a static variable which is overwritten
+// with each call.
 extern const char* 
-copyFile(const char* destFile, ...); 
+copy(const char* destFile, ...);
 
 
 // deletes fname (unlink) 
-extern int 
-DeleteFile(const char *fname);
+extern int
+remove(const char* fname);
 
 
 extern int 
@@ -95,70 +158,11 @@ mkdirUnique(const std::string& dirnm)
 // retuns a name that can safely be used for a temporary file 
 // in a static variable, which is overwritten with each call to 
 // tmpname
-extern const char* 
-tmpname(); 
+extern const char*
+tmpname();
 
 
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
-
-// count how often char appears in file
-// return that number or -1 upon failure to open file for reading
-extern int 
-CountChar(const char* file, char c); 
-
-
-extern bool 
-isReadable(const char *fileName);
-
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
-
-// 'basename': returns the 'fname.ext' component of fname=/path/fname.ext
-extern std::string 
-basename(const char* fname); 
-
-inline std::string 
-basename(const std::string& fname)
-{
-  return basename(fname.c_str());
-}
-
-
-// 'dirname': returns the '/path' component of fname=/path/fname.ext
-extern std::string 
-dirname(const char* fname); 
-
-inline std::string 
-dirname(const std::string& fname)
-{
-  return dirname(fname.c_str());
-}
-
-
-static inline bool 
-fnmatch(const std::string pattern, const char* string, int flags = 0)
-{
-  int fnd = ::fnmatch(pattern.c_str(), string, flags);
-  return (fnd == 0);
-#if 0
-  if (fnd == 0) {
-    return true;
-  }
-  else if (fnd != FNM_NOMATCH) {
-    // error
-  }
-#endif
-}
-
-
-bool 
-fnmatch(const std::vector<std::string>& patternVec, 
-	const char* string, 
-	int flags = 0);
-  
 } // end of FileUtil namespace
+
 
 #endif // support_FileUtil_hpp

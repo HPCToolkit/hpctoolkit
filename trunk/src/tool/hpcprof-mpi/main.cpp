@@ -66,9 +66,14 @@
 #include <string>
 using std::string;
 
+#include <cstdlib> // getenv()
+#include <cmath>   // ceil()
+
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
+
+#include <lib/analysis/Util.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.hpp>
@@ -117,27 +122,115 @@ realmain(int argc, char* const* argv)
   args.parse(argc, argv);
   // exits on special options (e.g, --help, --version)
 
-  // -------------------------------------------------------
-  MPI_Init(&argc, (char***)&argv);
-  // -------------------------------------------------------
-
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank); 
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+  MPI_Init(&argc, (char***)&argv);
 
-  int sendbuf = rank;
-  int recvbuf;
-  MPI_Allreduce(&sendbuf, &recvbuf, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  const int rootRank = 0;
+  int myRank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myRank); 
+
+  int numRanks;
+  MPI_Comm_size(MPI_COMM_WORLD, &numRanks);
+
+  // -------------------------------------------------------
+  // Debugging hook
+  // -------------------------------------------------------
+  const char* HPCPROF_WAIT = getenv("HPCPROF_WAIT");
+  if (HPCPROF_WAIT) {
+    int waitRank = rootRank;
+    if (strlen(HPCPROF_WAIT) > 0) {
+      waitRank = atoi(HPCPROF_WAIT);
+    }
+
+    volatile int DEBUGGER_WAIT = 1;
+    if (myRank == waitRank) {
+      while (DEBUGGER_WAIT);
+    }
+  }
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  char* sendFilesBuf = NULL;
+  uint sendFilesBufSz = 0;
+  uint sendFilesChunkSz = 0;
+  uint pathLenMax = 0;
   
-  printf("rank= %d recvbuf= %d\n", rank, recvbuf);
+  if (myRank == rootRank) {
+    std::pair<std::vector<std::string>*, uint> pair = 
+      Analysis::Util::groupProfileArgs(args.profileFiles);
+    
+    std::vector<std::string>* canonicalFiles = pair.first;
+    pathLenMax = pair.second;
+
+    uint chunkSz = (uint)
+      ceil( (double)canonicalFiles->size() / (double)numRanks);
+    
+    sendFilesChunkSz = chunkSz * (pathLenMax+1);
+    sendFilesBufSz = sendFilesChunkSz * numRanks;
+    sendFilesBuf = new char[sendFilesBufSz];
+    memset(sendFilesBuf, '\0', sendFilesBufSz);
+
+    for (uint i = 0, j = 0; i < canonicalFiles->size(); 
+	 i++, j += (pathLenMax+1)) {
+      const std::string& nm = (*canonicalFiles)[i];
+      strncpy(&sendFilesBuf[j], nm.c_str(), pathLenMax);
+      sendFilesBuf[j + pathLenMax] = '\0';
+    }
+
+    delete canonicalFiles;
+  }
+  
+  // TODO: broadcast groups
+  const uint metadataBufSz = 2;
+  uint metadataBuf[metadataBufSz];
+  metadataBuf[0] = sendFilesChunkSz;
+  metadataBuf[1] = pathLenMax;
+
+  MPI_Bcast((void*)metadataBuf, metadataBufSz, MPI_UNSIGNED, 
+	    rootRank, MPI_COMM_WORLD);
+
+  if (myRank != rootRank) {
+    sendFilesChunkSz = metadataBuf[0];
+    pathLenMax = metadataBuf[1];
+  }
+
+  uint recvFilesChunkSz = sendFilesChunkSz;
+  const char* recvFilesBuf = new char[recvFilesChunkSz];
+  
+  MPI_Scatter((void*)sendFilesBuf, sendFilesChunkSz, MPI_CHAR,
+	      (void*)recvFilesBuf, recvFilesChunkSz, MPI_CHAR,
+	      rootRank, MPI_COMM_WORLD);
+  
+  delete[] sendFilesBuf;
+
+  
+  std::vector<std::string> profileFiles;
+  for (uint i = 0; i < recvFilesChunkSz; i += (pathLenMax+1)) {
+    string nm = &recvFilesBuf[i];
+    if (!nm.empty()) {
+      profileFiles.push_back(nm);
+    }
+  }
+
+  delete[] recvFilesBuf;
+
+  for (uint i = 0; i < profileFiles.size(); ++i) {
+    const std::string& nm = profileFiles[i];
+    std::cout << "[" << myRank << "]: " << nm << std::endl;
+  }
 
   // -------------------------------------------------------
   // MPI_Finalize() called in parent
   // -------------------------------------------------------
   
   return 0;
-} 
+}
 
 
 //****************************************************************************
