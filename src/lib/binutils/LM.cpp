@@ -799,14 +799,15 @@ BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
     // flags
     o << "[flg: " << std::hex << sym->flags << std::dec << " ";
     bool hasPrintedFlag = false;
-    dumpSymFlag(o, sym, BSF_LOCAL,       "LCL",  hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_GLOBAL,      "GBL",  hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_FUNCTION,    "FUNC", hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_WEAK,        "WEAK", hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_SECTION_SYM, "SEC",  hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_FILE,        "FILE", hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_DYNAMIC,     "DYN",  hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_OBJECT,      "OBJ",  hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_LOCAL,        "LCL",     hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_GLOBAL,       "GBL",     hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_FUNCTION,     "FUNC",    hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_WEAK,         "WEAK",    hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_SECTION_SYM,  "SEC",     hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_FILE,         "FILE",    hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_DYNAMIC,      "DYN",     hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_OBJECT,       "OBJ",     hasPrintedFlag);
+    dumpSymFlag(o, sym, BSF_THREAD_LOCAL, "THR_LCL", hasPrintedFlag);
     o << "]";
 
     if (BinUtil::Proc::isProcBFDSym(sym)) {
