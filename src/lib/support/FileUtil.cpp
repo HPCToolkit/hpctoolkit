@@ -76,172 +76,10 @@ using std::string;
 using std::endl;
 
 //***************************************************************************
-
-static void
-cpy(int srcFd, int dstFd) 
-{
-  char buf[256]; 
-  ssize_t nRead; 
-  while ((nRead = read(srcFd, buf, 256)) > 0) {
-    write(dstFd, buf, nRead); 
-  } 
-} 
-
+//
+//***************************************************************************
 
 namespace FileUtil {
-
-const char* 
-copyFile(const char* destFile, ...) 
-{
-  static string error; 
-  error = ""; 
-  va_list srcFiles;
-  va_start(srcFiles, destFile);
-
-  IFTRACE << "copyFile: destFile = " << destFile ; 
-  int dstFd = open(destFile, O_WRONLY | O_CREAT | O_TRUNC, 
-		    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); 
-  if (dstFd < 0) {
-    error = string("Could not open ") + destFile + ": " + strerror(errno); 
-    IFTRACE << " Error: " << error << endl; 
-    return error.c_str(); 
-  } 
-  
-  char* srcFile; 
-  while ( (srcFile = va_arg(srcFiles, char*)) ) {
-    int srcFd = open(srcFile, O_RDONLY); 
-    if ((srcFd < 0) || (dstFd < 0)) {
-      error = string("Could not open ") + srcFile + ": " + strerror(errno); 
-    } 
-    else { 
-      IFTRACE << " " << srcFile; 
-      cpy(srcFd, dstFd); 
-      close(srcFd); 
-    }
-  } 
-  IFTRACE << endl;
-  close(dstFd); 
-  if (error.length() > 0) {
-    return error.c_str(); 
-  } 
-  else {
-    return NULL; 
-  } 
-} 
-
-
-int 
-mkdir(const char* dir)
-{
-  int ret = ::mkdir(dir, 00755); 
-  return ret;
-} 
-
-
-std::pair<string, bool>
-mkdirUnique(const char* dirnm)
-{
-  string dirnm_new = dirnm;
-  bool is_done = false;
-
-  mode_t mkmode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-
-  int ret = ::mkdir(dirnm, mkmode);
-  if (ret == -1) {
-    if (errno == EEXIST) {
-      // attempt to create dirnm+pid;
-      pid_t pid = getpid();
-      string pid_str = StrUtil::toStr(pid);
-      dirnm_new = dirnm_new + "-" + pid_str;
-      DIAG_Msg(1, "Directory '" << dirnm << "' already exists. Trying " << dirnm_new);
-      ret = ::mkdir(dirnm_new.c_str(), mkmode);
-      if (ret == -1) {
-	DIAG_Die("Could not create alternate directory " << dirnm_new);
-      }
-      else {
-	DIAG_Msg(1, "Created directory: " << dirnm_new);
-	is_done = true;
-      }
-    } 
-    else {
-      DIAG_Die("Could not create database directory " << dirnm);
-    }
-  }
-  
-  return make_pair(dirnm_new, is_done);
-}
-
-
-int 
-CountChar(const char* file, char c) 
-{
-  int srcFd = open(file, O_RDONLY); 
-  if (srcFd < 0) {
-    return -1; 
-  } 
-  int count = 0;
-  char buf[256]; 
-  ssize_t nRead; 
-  while ((nRead = read(srcFd, buf, 256)) > 0) {
-    for (int i = 0; i < nRead; i++) {
-      if (buf[i] == c) count++; 
-    }
-  }
-  return count; 
-} 
-
-
-const char* 
-tmpname()   
-{
-  // below is a hack to replace the deprecated tmpnam which g++ 3.2.2 will
-  // no longer allow. the mkstemp routine, which is touted as the replacement
-  // for tmpnam, provides a file descriptor as a return value. there is
-  // unfortunately no way to interface this with the ofstream class constructor
-  // which requires a filename. thus, a hack is born ...
-  // John Mellor-Crummey 5/7/2003
-  
-  // eraxxon: GNU is right that 'tmpnam' can be dangerous, but
-  // 'mkstemp' is not strictly part of C++! We could create an
-  // interface to 'mkstemp' within a C file, but this is getting
-  // cumbersome... and 'tmpnam' is not quite a WMD.
-
-#ifdef __GNUC__
-  static char tmpfilename[MAXPATHLEN];
-
-  // creating a unique temp name with the new mkstemp interface now 
-  // requires opening, closing, and deleting a file when all we want
-  // is the filename. sigh ...
-  strcpy(tmpfilename,"/tmp/hpcviewtmpXXXXXX");
-  close(mkstemp(tmpfilename));
-  unlink(tmpfilename);
-
-  return tmpfilename;
-#else
-  return tmpnam(NULL); 
-#endif
-}
-
-
-int
-DeleteFile(const char* file) 
-{ 
-  return unlink(file); 
-}
-
-
-bool
-isReadable(const char *fileName)
-{
-  bool result = false;
-  struct stat sbuf;
-  if (stat(fileName, &sbuf) == 0) {
-    // the file is readable if the return code is OK
-    result = true;
-  }
-  return result;
-}
-
 
 string 
 basename(const char* fName) 
@@ -291,3 +129,194 @@ fnmatch(const std::vector<std::string>& patternVec,
 }
 
 } // end of FileUtil namespace
+
+
+//***************************************************************************
+//
+//***************************************************************************
+
+namespace FileUtil {
+
+bool
+isReadable(const char* path)
+{
+  struct stat sbuf;
+  if (stat(path, &sbuf) == 0) {
+    return true; // the file is readable
+  }
+  return false;
+}
+
+
+bool
+isDir(const char* path)
+{
+  struct stat sbuf;
+  if (stat(path, &sbuf) == 0) {
+    return (S_ISDIR(sbuf.st_mode) 
+	    /*|| S_ISLNK(sbuf.st_mode) && isDir(readlink(path))*/);
+  }
+  return false; // unknown
+}
+
+
+int 
+countChar(const char* path, char c) 
+{
+  int srcFd = open(path, O_RDONLY); 
+  if (srcFd < 0) {
+    return -1; 
+  } 
+  int count = 0;
+  char buf[256]; 
+  ssize_t nRead; 
+  while ((nRead = read(srcFd, buf, 256)) > 0) {
+    for (int i = 0; i < nRead; i++) {
+      if (buf[i] == c) count++; 
+    }
+  }
+  return count; 
+} 
+
+} // end of FileUtil namespace
+
+
+//***************************************************************************
+//
+//***************************************************************************
+
+static void
+cpy(int srcFd, int dstFd) 
+{
+  char buf[256]; 
+  ssize_t nRead; 
+  while ((nRead = read(srcFd, buf, 256)) > 0) {
+    write(dstFd, buf, nRead); 
+  } 
+} 
+
+
+namespace FileUtil {
+
+const char* 
+copy(const char* destFile, ...) 
+{
+  static string error; 
+  error = ""; 
+  va_list srcFiles;
+  va_start(srcFiles, destFile);
+
+  IFTRACE << "copyFile: destFile = " << destFile ; 
+  int dstFd = open(destFile, O_WRONLY | O_CREAT | O_TRUNC, 
+		    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); 
+  if (dstFd < 0) {
+    error = string("Could not open ") + destFile + ": " + strerror(errno); 
+    IFTRACE << " Error: " << error << endl; 
+    return error.c_str(); 
+  } 
+  
+  char* srcFile; 
+  while ( (srcFile = va_arg(srcFiles, char*)) ) {
+    int srcFd = open(srcFile, O_RDONLY); 
+    if ((srcFd < 0) || (dstFd < 0)) {
+      error = string("Could not open ") + srcFile + ": " + strerror(errno); 
+    } 
+    else { 
+      IFTRACE << " " << srcFile; 
+      cpy(srcFd, dstFd); 
+      close(srcFd); 
+    }
+  } 
+  IFTRACE << endl;
+  close(dstFd); 
+  if (error.length() > 0) {
+    return error.c_str(); 
+  } 
+  else {
+    return NULL; 
+  } 
+} 
+
+
+int
+remove(const char* file) 
+{ 
+  return unlink(file); 
+}
+
+
+int 
+mkdir(const char* dir)
+{
+  int ret = ::mkdir(dir, 00755); 
+  return ret;
+} 
+
+
+std::pair<string, bool>
+mkdirUnique(const char* dirnm)
+{
+  string dirnm_new = dirnm;
+  bool is_done = false;
+
+  mode_t mkmode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+
+  int ret = ::mkdir(dirnm, mkmode);
+  if (ret == -1) {
+    if (errno == EEXIST) {
+      // attempt to create dirnm+pid;
+      pid_t pid = getpid();
+      string pid_str = StrUtil::toStr(pid);
+      dirnm_new = dirnm_new + "-" + pid_str;
+      DIAG_Msg(1, "Directory '" << dirnm << "' already exists. Trying " << dirnm_new);
+      ret = ::mkdir(dirnm_new.c_str(), mkmode);
+      if (ret == -1) {
+	DIAG_Die("Could not create alternate directory " << dirnm_new);
+      }
+      else {
+	DIAG_Msg(1, "Created directory: " << dirnm_new);
+	is_done = true;
+      }
+    } 
+    else {
+      DIAG_Die("Could not create database directory " << dirnm);
+    }
+  }
+  
+  return make_pair(dirnm_new, is_done);
+}
+
+
+const char* 
+tmpname()   
+{
+  // below is a hack to replace the deprecated tmpnam which g++ 3.2.2 will
+  // no longer allow. the mkstemp routine, which is touted as the replacement
+  // for tmpnam, provides a file descriptor as a return value. there is
+  // unfortunately no way to interface this with the ofstream class constructor
+  // which requires a filename. thus, a hack is born ...
+  // John Mellor-Crummey 5/7/2003
+  
+  // eraxxon: GNU is right that 'tmpnam' can be dangerous, but
+  // 'mkstemp' is not strictly part of C++! We could create an
+  // interface to 'mkstemp' within a C file, but this is getting
+  // cumbersome... and 'tmpnam' is not quite a WMD.
+
+#ifdef __GNUC__
+  static char tmpfilename[MAXPATHLEN];
+
+  // creating a unique temp name with the new mkstemp interface now 
+  // requires opening, closing, and deleting a file when all we want
+  // is the filename. sigh ...
+  strcpy(tmpfilename,"/tmp/hpcviewtmpXXXXXX");
+  close(mkstemp(tmpfilename));
+  unlink(tmpfilename);
+
+  return tmpfilename;
+#else
+  return tmpnam(NULL); 
+#endif
+}
+
+} // end of FileUtil namespace
+

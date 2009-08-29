@@ -103,6 +103,12 @@ copySourceFiles(Prof::Struct::Root* structure,
 		const Analysis::PathTupleVec& pathVec, 
 		const string& dstDir);
 
+// ------------------------------------------------------------
+
+std::pair<std::vector<std::string>*, uint>
+groupProfileArgs(const std::vector<std::string>& inPaths);
+
+
 } // namespace Util
 
 } // namespace Analysis

@@ -64,13 +64,18 @@ using std::dec;
 #include <string>
 using std::string;
 
-#include <cstring>
-
+#include <algorithm>
 #include <typeinfo>
+
+#include <cstring> // strlen()
+
+#include <dirent.h> // scandir()
 
 //*************************** User Include Files ****************************
 
 #include "Util.hpp"
+
+#include <include/uint.h>
 
 #include <lib/banal/bloop-simple.hpp>
 
@@ -91,8 +96,11 @@ using std::string;
 // 
 //***************************************************************************
 
+namespace Analysis {
+namespace Util {
+
 Analysis::Util::ProfType_t 
-Analysis::Util::getProfileType(const std::string& filenm)
+getProfileType(const std::string& filenm)
 {
   static const int bufSZ = 32;
   char buf[bufSZ] = { '\0' };
@@ -112,11 +120,16 @@ Analysis::Util::getProfileType(const std::string& filenm)
   return ty;
 }
 
+} // end of Util namespace
+} // end of Analysis namespace
+
 
 //***************************************************************************
 // 
 //***************************************************************************
 
+namespace Analysis {
+namespace Util {
 
 // Always consult the load module's structure information
 // (Struct::LM) and perform a lookup by VMA first.  If this fails:
@@ -133,8 +146,8 @@ Analysis::Util::getProfileType(const std::string& filenm)
 // Struct::Stmt map is consulted which is ambiguous in the presence of
 // inlinine (Struct::Alien).
 Prof::Struct::ACodeNode*
-Analysis::Util::demandStructure(VMA vma, Prof::Struct::LM* lmStrct, 
-				BinUtil::LM* lm, bool useStruct)
+demandStructure(VMA vma, Prof::Struct::LM* lmStrct, 
+		BinUtil::LM* lm, bool useStruct)
 {
   using namespace Prof;
   Struct::ACodeNode* strct = lmStrct->findByVMA(vma);
@@ -150,6 +163,9 @@ Analysis::Util::demandStructure(VMA vma, Prof::Struct::LM* lmStrct,
   }
   return strct;
 }
+
+} // end of Util namespace
+} // end of Analysis namespace
 
 
 //***************************************************************************
@@ -170,14 +186,17 @@ Flat_Filter(const Prof::Struct::ANode& x, long type)
 }
 
 
+namespace Analysis {
+namespace Util {
+
 // copySourceFiles: For every Prof::Struct::File and
 // Prof::Struct::Alien x in 'structure' that can be reached with paths
 // in 'pathVec', copy x to its appropriate viewname path and update
 // x's path to be relative to this location.
 void
-Analysis::Util::copySourceFiles(Prof::Struct::Root* structure, 
-				const Analysis::PathTupleVec& pathVec,
-				const string& dstDir)
+copySourceFiles(Prof::Struct::Root* structure, 
+		const Analysis::PathTupleVec& pathVec,
+		const string& dstDir)
 {
   // Prevent multiple copies of the same file (Alien scopes)
   std::map<string, string> processedFiles;
@@ -212,6 +231,9 @@ Analysis::Util::copySourceFiles(Prof::Struct::Root* structure,
     }
   }
 }
+
+} // end of Util namespace
+} // end of Analysis namespace
 
 
 
@@ -368,6 +390,80 @@ copySourceFile(const string& filenm, const string& dstDir,
 
   return fnm_new;
 }
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+static int 
+hpcrunFileFilter(const struct dirent* entry)
+{
+  static const char* ext = ".hpcrun";
+  static const uint extLen = strlen(ext);
+
+  // FileUtil::fnmatch("*.hpcrun", entry->d_name);
+  uint nmLen = strlen(entry->d_name);
+  if (nmLen > extLen) {
+    int cmpbeg = (nmLen - extLen);
+    return (strncmp(&entry->d_name[cmpbeg], ext, extLen) == 0);
+  }
+  return false;
+}
+
+
+namespace Analysis {
+namespace Util {
+
+std::pair<std::vector<std::string>*, uint>
+groupProfileArgs(const std::vector<std::string>& inPaths)
+{
+  std::vector<std::string>* outPaths = new std::vector<std::string>;
+  std::vector<int> outGropus;
+  uint pathLenMax = 0;
+
+  for (std::vector<std::string>::const_iterator it = inPaths.begin(); 
+       it != inPaths.end(); ++it) {
+    std::string path = *it;
+    if (FileUtil::isDir(path.c_str())) {
+      // ensure 'path' ends in '/'
+      if (path[path.length() - 1] != '/') {
+	path += "/";
+      }
+
+      struct dirent** dirEntries = NULL;
+      int dirEntriesSz = scandir(path.c_str(), &dirEntries,
+				 hpcrunFileFilter, alphasort);
+      if (dirEntriesSz < 0) {
+	DIAG_Throw("could not read directory: " << path);
+      }
+      else {
+	for (int i = 0; i < dirEntriesSz; ++i) {
+	  string nm = path + dirEntries[i]->d_name;
+	  free(dirEntries[i]);
+	  outPaths->push_back(nm);
+	  pathLenMax = std::max(pathLenMax, (uint)nm.length());
+	}
+	free(dirEntries);
+      }
+      
+      // TODO: collect group
+
+    }
+    else {
+      outPaths->push_back(path);
+      pathLenMax = std::max(pathLenMax, (uint)path.length());
+    }
+  }
+  
+  return std::make_pair(outPaths, pathLenMax);
+}
+
+
+} // end of Util namespace
+} // end of Analysis namespace
+
+
 
 
 //****************************************************************************
