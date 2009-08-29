@@ -77,18 +77,6 @@
 #include "hpcfmt.h"
 #include "hpcrun-fmt.h"
 
-//*************************** Local Functions **************************
-
-static 
-void
-nvps_dealloc(HPCFMT_List(hpcfmt_nvpair_t)* nvps, hpcfmt_free_fn dealloc)
-{
-  for (int i = 0; i < nvps->len; i++) {
-    dealloc(nvps->lst[i].name);
-    dealloc(nvps->lst[i].val);
-  }
-  dealloc(nvps->lst);
-}
 
 //***************************************************************************
 // hdr
@@ -163,7 +151,7 @@ void
 hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc)
 {
   if (dealloc) {
-    nvps_dealloc(&(hdr->nvps), dealloc);
+    hpcfmt_nvpair_free(&(hdr->nvps), dealloc);
   }
 }
 
@@ -242,7 +230,7 @@ void
 hpcrun_fmt_epoch_hdr_free(hpcrun_fmt_epoch_hdr_t* ehdr, hpcfmt_free_fn dealloc)
 {
   if (dealloc) {
-    nvps_dealloc(&(ehdr->nvps), dealloc);
+    hpcfmt_nvpair_free(&(ehdr->nvps), dealloc);
   }
 }
 

@@ -323,7 +323,14 @@ Profile::make(const char* fnm, FILE* outfs)
     DIAG_Throw("error reading 'fmt-hdr'");
   }
 
-  string progNm = hpcfmt_nvpair_search(&hdr.nvps, "program-name");
+  string progNm;
+
+  // search for known name-value pairs
+  const char* val = NULL;
+  val = hpcfmt_nvpair_search(&hdr.nvps, "program-name");
+  if (val) {
+    progNm = val;
+  }
 
   hpcrun_fmt_hdr_free(&hdr, free);
 
