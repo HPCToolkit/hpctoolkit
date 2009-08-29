@@ -70,6 +70,8 @@
 #include "hpcfmt.h"
 #include "hpcio.h"
 
+#include <include/uint.h>
+
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
@@ -226,15 +228,24 @@ hpcfmt_nvpair_list_fprint(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
 }
 
 
-char*
-hpcfmt_nvpair_search(HPCFMT_List(hpcfmt_nvpair_t)* lst, const char* name)
+const char*
+hpcfmt_nvpair_search(HPCFMT_List(hpcfmt_nvpair_t)* nvps, const char* name)
 {
-  // FIXME: incomplete and hard-to-understand OSR?  Why not index by i?
-  hpcfmt_nvpair_t* p = lst->lst;
-  for (int i = 0; i < lst->len; p++,i++) {
-    if (strcmp(p->name, name) == 0) {
-      return p->val;
+  for (uint32_t i = 0; i < nvps->len; ++i) {
+    if (strcmp(nvps->lst[i].name, name) == 0) {
+      return nvps->lst[i].val;
     }
   }
-  return "NOT FOUND";
+  return NULL;
+}
+
+
+void
+hpcfmt_nvpair_free(HPCFMT_List(hpcfmt_nvpair_t)* nvps, hpcfmt_free_fn dealloc)
+{
+  for (uint32_t i = 0; i < nvps->len; ++i) {
+    dealloc(nvps->lst[i].name);
+    dealloc(nvps->lst[i].val);
+  }
+  dealloc(nvps->lst);
 }
