@@ -372,10 +372,12 @@ nextInsn(uint32_t* insn)
 //  |-------------|
 // A|             |
 //  | RA          | <- stored by caller
+//  | CR          |    (64-bit ABI only) 
 //  | SP <---     | <- stored w/ stwu
-//  |-------/-----|
-// B|      /      |                          Typical frame
-//  | RA  /       | <- (by C)
+//  |--------/----|
+// B|       /     |                          Typical frame
+//  | RA   /      | <- (by C)
+//  | CR  /       |    (64-bit ABI only) 
 //  | SP / <- <-  | <- (stwu)
 //  |-------/--|--|
 // C|      /   |  |                          Possible nasty frame

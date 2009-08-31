@@ -125,7 +125,11 @@ ucontext_sp(ucontext_t *context)
 static inline void*
 getNxtPCFromSP(void** sp)
 {
+#ifdef __PPC64__
+  static const int RA_OFFSET_FROM_SP = 2;
+#else
   static const int RA_OFFSET_FROM_SP = 1;
+#endif
   return *(sp + RA_OFFSET_FROM_SP);
 }
 
