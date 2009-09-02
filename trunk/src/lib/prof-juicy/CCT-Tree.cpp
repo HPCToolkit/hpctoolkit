@@ -264,23 +264,22 @@ Loop::~Loop()
 }
 
 
-Call::Call(ANode* _parent, uint32_t cpid,
-	   const SampledMetricDescVec* metricdesc)
-  : ADynNode(TyCall, _parent, NULL, cpid, metricdesc)
+Call::Call(ANode* _parent, uint cpId, const SampledMetricDescVec* metricdesc)
+  : ADynNode(TyCall, _parent, NULL, cpId, metricdesc)
 {
   Call_Check(this, _parent);
 }
 
 
 Call::Call(ANode* _parent, 
+	   uint cpId,
 	   lush_assoc_info_t as_info,
 	   VMA ip, ushort opIndex, 
 	   lush_lip_t* lip,
-	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc,
 	   std::vector<hpcrun_metric_data_t>& metrics)
   : ADynNode(TyCall, _parent, NULL, 
-	     as_info, ip, opIndex, lip, cpid, metricdesc, metrics)
+	     cpId, as_info, ip, opIndex, lip, metricdesc, metrics)
 {
   Call_Check(this, _parent);
 }
@@ -381,13 +380,12 @@ ADynNode::mergeMetrics(const ADynNode& y, uint beg_idx)
   }
 #endif
 
-  DIAG_Assert(m_cpid == 0 || y.m_cpid == 0, "multiple node ids for a call path"); 
-
-  // if either node has an id, make sure the node after the merge has
-  // a node id
-  if (m_cpid == 0) {
-    m_cpid = y.m_cpid;
-  }
+  // FIXME: Temporary 'assert' and 'if'. In reality, the assertion
+  // below may not hold because we may have to merge two nodes with
+  // non-NULL (and then fixup).  However, if it does hold, we have
+  // temporarily have dodged a bullet.
+  DIAG_Assert(m_cpId == 0 || y.m_cpId == 0, "ADynNode::mergeMetrics: conflicting cpIds!");
+  if (m_cpId == 0) { m_cpId = y.m_cpId; }
 
   uint x_end = y.numMetrics() + beg_idx;
   DIAG_Assert(x_end <= numMetrics(), "Insufficient space for merging.");
@@ -788,8 +786,8 @@ string
 Stmt::toString_me(int oFlags) const
 {
   string self = ANode::toString_me(oFlags); // nameDyn()
-  if (cpid() & RETAIN_ID_FOR_TRACE_FLAG) {
-    self += " i" + xml::MakeAttrNum(cpid());
+  if (hpcrun_fmt_do_retain_id(cpId())) {
+    self += " i" + xml::MakeAttrNum(cpId());
   }
   return self;
 } 

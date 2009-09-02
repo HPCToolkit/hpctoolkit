@@ -340,7 +340,14 @@ typedef struct hpcrun_fmt_cct_node_t {
 // FIXME: this code should be replaced by hpcrun_fmt_cct_node
 // --------------------------------------------------------------------------
 
-#define RETAIN_ID_FOR_TRACE_FLAG 1 // FIXME
+#define HPCRUN_FMT_RetainIdFlag (0x1)
+
+static inline bool
+hpcrun_fmt_do_retain_id(uint32_t id)
+{
+  return (id & HPCRUN_FMT_RetainIdFlag);
+}
+
 
 typedef struct hpcfile_cstree_nodedata_s {
 
