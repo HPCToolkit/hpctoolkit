@@ -210,8 +210,14 @@ public:
   static bool 
   isProcBFDSym(asymbol* sym) 
   {
-    return (!bfd_is_und_section(sym->section)
-	    && (sym->flags & BSF_FUNCTION));
+    flagword flg = sym->flags;
+
+    return ( ((flg & BSF_FUNCTION) && !bfd_is_und_section(sym->section))
+	     ||
+	     ((flg & BSF_GLOBAL) && !(flg & BSF_OBJECT) 
+	      && !(flg & BSF_THREAD_LOCAL)
+	      && !bfd_is_abs_section(sym->section) 
+	      && !bfd_is_und_section(sym->section)) );
   }
 
 private:
