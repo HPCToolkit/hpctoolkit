@@ -224,7 +224,7 @@ public:
     : NonUniformDegreeTreeNode(_parent), m_type(type), m_strct(strct)
   { 
     static uint uniqueId = 1;
-    m_uid = uniqueId++; 
+    m_id = uniqueId++; 
   }
 
   virtual ~ANode()
@@ -232,7 +232,7 @@ public:
   
   // shallow copy (in the sense the children are not copied)
   ANode(const ANode& x)
-    : m_type(x.m_type), m_strct(x.m_strct) // do not copy 'm_uid'
+    : m_type(x.m_type), m_strct(x.m_strct) // do not copy 'm_id'
   { 
     ZeroLinks();
   }
@@ -242,7 +242,7 @@ public:
     if (this != &x) {
       m_type = x.m_type;
       m_strct = x.m_strct;
-      // do not copy 'm_uid'
+      // do not copy 'm_id'
     }
     return *this;
   }
@@ -254,7 +254,7 @@ public:
   NodeType type() const { return m_type; }
 
   // id: a unique id; 0 is reserved for a NULL value
-  uint id() const { return m_uid; }
+  uint id() const { return m_id; }
 
   // 'name()' is overridden by some derived classes
   virtual const std::string& name() const { return NodeTypeToName(type()); }
@@ -382,9 +382,8 @@ protected:
   void merge_fixup(const SampledMetricDescVec* mdesc, int metric_offset);
   
 protected:
-  // private: 
   NodeType m_type;
-  uint m_uid; 
+  uint m_id; // unique id
   Struct::ACodeNode* m_strct;
 };
 
@@ -408,32 +407,35 @@ public:
   // -------------------------------------------------------
   
   ADynNode(NodeType type, ANode* _parent, Struct::ACodeNode* strct,
-	   uint32_t cpid, const SampledMetricDescVec* metricdesc)
+	   uint cpId, const SampledMetricDescVec* metricdesc)
     : ANode(type, _parent, strct),
-      m_as_info(lush_assoc_info_NULL), 
-      m_lmId(LoadMap::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL), m_cpid(cpid),
+      m_cpId(cpId),
+      m_as_info(lush_assoc_info_NULL),
+      m_lmId(LoadMap::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL),
       m_metricdesc(metricdesc)
     { }
 
   ADynNode(NodeType type, ANode* _parent, Struct::ACodeNode* strct,
-	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
-	   uint32_t cpid,
+	   uint32_t cpId, lush_assoc_info_t as_info, 
+	   VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc)
     : ANode(type, _parent, strct),
+      m_cpId(cpId),
       m_as_info(as_info), 
-      m_lmId(LoadMap::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), m_cpid(cpid),
+      m_lmId(LoadMap::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
       m_metricdesc(metricdesc)
     { }
 
   ADynNode(NodeType type, ANode* _parent, Struct::ACodeNode* strct,
-	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
-	   uint32_t cpid,
+	   uint32_t cpId, lush_assoc_info_t as_info, 
+	   VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc,
 	   std::vector<hpcrun_metric_data_t>& metrics)
     : ANode(type, _parent, strct),
-      m_as_info(as_info), 
-      m_lmId(LoadMap::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), m_cpid(cpid),
-      m_metricdesc(metricdesc), m_metrics(metrics) 
+      m_cpId(cpId),
+      m_as_info(as_info),
+      m_lmId(LoadMap::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
+      m_metricdesc(metricdesc), m_metrics(metrics)
     { }
 
   virtual ~ADynNode() {
@@ -443,11 +445,11 @@ public:
   // deep copy of internals (but without children)
   ADynNode(const ADynNode& x)
     : ANode(x),
+      m_cpId(x.m_cpId),
       m_as_info(x.m_as_info), 
       m_lmId(x.m_lmId),
       m_ip(x.m_ip), m_opIdx(x.m_opIdx), 
       m_lip(clone_lip(x.m_lip)),
-      m_cpid(x.m_cpid),
       m_metricdesc(x.m_metricdesc),
       m_metrics(x.m_metrics) 
     { }
@@ -456,13 +458,13 @@ public:
   ADynNode& operator=(const ADynNode& x) {
     if (this != &x) {
       ANode::operator=(x);
+      m_cpId = x.m_cpId;
       m_as_info = x.m_as_info;
       m_lmId = x.m_lmId;
       m_ip = x.m_ip;
       m_opIdx = x.m_opIdx;
       delete m_lip;
       m_lip = clone_lip(x.m_lip);
-      m_cpid = x.m_cpid;
       m_metricdesc = x.m_metricdesc;
       m_metrics = x.m_metrics;
     }
@@ -473,6 +475,13 @@ public:
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
+
+  // call path id: a persistent call path id (persistent in the sense
+  // that it must be consistent with hpctrace).  0 is reserved as a
+  // NULL value.
+  uint cpId() const
+    { return m_cpId; }
+
 
   lush_assoc_info_t assocInfo() const 
     { return m_as_info; }
@@ -536,10 +545,6 @@ public:
     }
     return x_clone;
   }
-
-  // FIXME:tallent: OBSOLETE
-  uint32_t cpid() const 
-    { return m_cpid; }
 
   hpcrun_metric_data_t metric(int i) const 
     { return m_metrics[i]; }
@@ -638,15 +643,15 @@ public:
   }
 
 private:
+  uint m_cpId; // dynamic id
+
   lush_assoc_info_t m_as_info;
 
   LoadMap::LM_id_t m_lmId; // LoadMap::LM id
-  VMA m_ip;       // instruction pointer for this node
-  ushort m_opIdx; // index in the instruction [OBSOLETE]
+  VMA m_ip;                // instruction pointer for this node
+  ushort m_opIdx;          // index in the instruction [OBSOLETE]
 
-  lush_lip_t* m_lip; // lush logical ip
-
-  uint32_t m_cpid; // call path node handle for tracing
+  lush_lip_t* m_lip; // logical ip
 
   // FIXME: convert to metric-id a la Metric::Mgr
   const SampledMetricDescVec* m_metricdesc; // does not own memory
@@ -840,19 +845,19 @@ private:
 class Stmt: public ADynNode {
  public:
   // Constructor/Destructor
-  Stmt(ANode* _parent, uint32_t cpid, const SampledMetricDescVec* metricdesc)
-    : ADynNode(TyStmt, _parent, NULL, cpid, metricdesc)
+  Stmt(ANode* _parent, uint cpId, const SampledMetricDescVec* metricdesc)
+    : ADynNode(TyStmt, _parent, NULL, cpId, metricdesc)
   { }
 
   Stmt(ANode* _parent,
+       uint32_t cpId,
        lush_assoc_info_t as_info,
        VMA ip, ushort opIdx, 
        lush_lip_t* lip,
-       uint32_t cpid,
        const SampledMetricDescVec* metricdesc,
        std::vector<hpcrun_metric_data_t>& metrics)
     : ADynNode(TyStmt, _parent, NULL, 
-	       as_info, ip, opIdx, lip, cpid, metricdesc, metrics)
+	       cpId, as_info, ip, opIdx, lip, metricdesc, metrics)
   { }
 
   virtual ~Stmt()
@@ -879,13 +884,13 @@ class Stmt: public ADynNode {
 class Call: public ADynNode {
 public:
   // Constructor/Destructor
-  Call(ANode* _parent, uint32_t cpid, const SampledMetricDescVec* metricdesc);
+  Call(ANode* _parent, uint cpId, const SampledMetricDescVec* metricdesc);
 
   Call(ANode* _parent, 
+       uint32_t cpId,
        lush_assoc_info_t as_info,
        VMA ip, ushort opIdx, 
        lush_lip_t* lip,
-       uint32_t cpid,
        const SampledMetricDescVec* metricdesc,
        std::vector<hpcrun_metric_data_t>& metrics);
 

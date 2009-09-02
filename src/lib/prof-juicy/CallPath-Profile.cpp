@@ -680,14 +680,15 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits,
   using namespace Prof;
 
   bool isLeaf = false;
+  uint cpId = 0;
 
-  int id = (int)id_bits;
-  if (id < 0) {
-    id = -id;
+  int id_tmp = (int)id_bits;
+  if (id_tmp < 0) {
     isLeaf = true;
+    id_tmp = -id_tmp;
   }
-  if ( !(id & RETAIN_ID_FOR_TRACE_FLAG) ) {
-    id = 0;
+  if (hpcrun_fmt_do_retain_id(id_bits)) {
+    cpId = id_tmp;
   }
 
   VMA ip = (VMA)data->ip; // tallent:FIXME: Use ISA::ConvertVMAToOpVMA
@@ -715,11 +716,11 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits,
   DIAG_DevMsgIf(0, "hpcrun_fmt_cct_fread: " << hex << data->ip << dec);
   Prof::CCT::ANode* n = NULL;
   if (isLeaf) {
-    n = new CCT::Stmt(NULL, data->as_info, ip, opIdx, lip, id, 
+    n = new CCT::Stmt(NULL, cpId, data->as_info, ip, opIdx, lip,
 		      &cct->metadata()->metricDesc(), metricVec);
   }
   else {
-    n = new CCT::Call(NULL, data->as_info, ip, opIdx, lip, id, 
+    n = new CCT::Call(NULL, cpId, data->as_info, ip, opIdx, lip,
 		      &cct->metadata()->metricDesc(), metricVec);
   }
   return n;

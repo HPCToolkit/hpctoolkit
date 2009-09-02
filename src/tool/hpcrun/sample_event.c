@@ -214,7 +214,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
 	csprof_frame_t frm = {.ip = func_start_pc};
 	csprof_cct_node_t* func_proxy = csprof_cct_get_child(cct, node->parent, &frm);
-	func_proxy->persistent_id |= RETAIN_ID_FOR_TRACE_FLAG; 
+	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag; 
 
 	trace_append(func_proxy->persistent_id);
       }
