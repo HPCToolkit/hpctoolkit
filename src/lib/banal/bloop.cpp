@@ -337,8 +337,7 @@ banal::bloop::makeStructure(BinUtil::LM* lm,
   // 3. Normalize
   if (doNormalizeTy != NormTy_None) {
     bool doNormalizeUnsafe = (doNormalizeTy == NormTy_All);
-    bool result = normalize(lmStrct, doNormalizeUnsafe);
-    DIAG_Assert(result, "Normalization result should never be false!");
+    normalize(lmStrct, doNormalizeUnsafe);
   }
 
   return lmStrct;
@@ -362,7 +361,7 @@ banal::bloop::normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
   changed |= mergePerfectlyNestedLoops(lmStrct);
   changed |= removeEmptyNodes(lmStrct);
   
-  return true; // no errors
+  return changed;
 }
 
 
@@ -1221,6 +1220,7 @@ CDS_ScopeFilter(const Struct::ANode& x, long type)
 	  || x.type() == Struct::ANode::TyALIEN);
 }
 
+
 static bool
 coalesceDuplicateStmts(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe)
 {
@@ -1336,8 +1336,9 @@ coalesceDuplicateStmts(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap,
 // 'scope' to support support node deletion (case 1 above).  When we
 // have visited all children of 'scope' we place it in 'visited'.
 static bool
-CDS_Main(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap, Struct::ANodeSet* visited, 
-	 Struct::ANodeSet* toDelete, int level)
+CDS_Main(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap,
+	 Struct::ANodeSet* visited, Struct::ANodeSet* toDelete,
+	 int level)
 {
   bool changed = false;
   
