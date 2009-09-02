@@ -557,8 +557,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
     // Create node and link to parent
     // ----------------------------------------------------------
 
-    uint32_t id = (ndata.id & RETAIN_ID_FOR_TRACE_FLAG) ? ndata.id : 0;
-    CCT::ANode* node = cct_makeNode(cct, id, &ndata.data);
+    CCT::ANode* node = cct_makeNode(cct, ndata.id, &ndata.data);
     DIAG_DevMsgIf(0, "hpcrun_fmt_cct_fread: " << hex << node << " -> " << node_parent <<dec);
 
     if (node_parent) {
@@ -686,6 +685,9 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits,
   if (id < 0) {
     id = -id;
     isLeaf = true;
+  }
+  if ( !(id & RETAIN_ID_FOR_TRACE_FLAG) ) {
+    id = 0;
   }
 
   VMA ip = (VMA)data->ip; // tallent:FIXME: Use ISA::ConvertVMAToOpVMA
