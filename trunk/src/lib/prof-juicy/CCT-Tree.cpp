@@ -381,9 +381,9 @@ ADynNode::mergeMetrics(const ADynNode& y, uint beg_idx)
 #endif
 
   // FIXME: Temporary 'assert' and 'if'. In reality, the assertion
-  // below may not hold because we may have to merge two nodes with
-  // non-NULL (and then fixup).  However, if it does hold, we have
-  // temporarily have dodged a bullet.
+  // below may not hold because we will have to support merging two
+  // nodes with non-NULL cpIds.  However, if it does hold, we have
+  // temporarily dodged a bullet.
   DIAG_Assert(m_cpId == 0 || y.m_cpId == 0, "ADynNode::mergeMetrics: conflicting cpIds!");
   if (m_cpId == 0) { m_cpId = y.m_cpId; }
 
