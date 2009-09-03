@@ -94,21 +94,9 @@
 typedef struct csprof_epoch hpcrun_epoch_t;
 typedef struct csprof_epoch_module csprof_epoch_module_t;
 
-/* an individual load module--shared library or program binary */
-struct csprof_epoch_module
-{
-  struct csprof_epoch_module *next; /* just what it sounds like */
-  const char *module_name;
-  void *vaddr;                /* the preferred virtual address */
-  void *mapaddr;              /* the actual mapped address */
-  size_t size;		      /* just what it sounds like */
-};
-
 struct csprof_epoch
 {
-  // #if defined(OLD_EPOCH)
   struct csprof_epoch *next;  /* the next epoch */
-  // #endif
   unsigned int id;            /* an identifier for disk writeouts */
   unsigned int num_modules;   /* how many modules are loaded? */
   loadmap_src_t *loaded_modules;
