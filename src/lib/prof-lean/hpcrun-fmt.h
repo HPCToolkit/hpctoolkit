@@ -105,13 +105,18 @@ typedef struct hpcrun_fmt_hdr_t {
 } hpcrun_fmt_hdr_t;
 
 
-extern int hpcrun_fmt_hdr_fwrite(FILE* outfs, ...);
+extern int 
+hpcrun_fmt_hdr_fwrite(FILE* outfs, ...);
 
-extern int hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc);
+extern int 
+hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc);
 
-extern int hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);
+extern int 
+hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);
 
-extern void hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
+extern void 
+hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
+
 
 //***************************************************************************
 // epoch-hdr
@@ -142,15 +147,20 @@ typedef struct hpcrun_fmt_epoch_hdr_t {
 } hpcrun_fmt_epoch_hdr_t;
 
 
-extern int hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
-				      hpcfmt_alloc_fn alloc);
+extern int 
+hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
+			   hpcfmt_alloc_fn alloc);
 
-extern int hpcrun_fmt_epoch_hdr_fwrite(FILE* out, epoch_flags_t flags, 
-				       uint32_t ra_distance, uint64_t granularity, ...);
+extern int 
+hpcrun_fmt_epoch_hdr_fwrite(FILE* out, epoch_flags_t flags, 
+			    uint32_t ra_distance, uint64_t granularity, ...);
 
-extern int hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* out);
+extern int 
+hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* out);
+  
+extern void 
+hpcrun_fmt_epoch_hdr_free(hpcrun_fmt_epoch_hdr_t* ehdr, hpcfmt_free_fn dealloc);
 
-extern void hpcrun_fmt_epoch_hdr_free(hpcrun_fmt_epoch_hdr_t* ehdr, hpcfmt_free_fn dealloc);
 
 //***************************************************************************
 // metric-tbl
@@ -170,14 +180,18 @@ typedef HPCFMT_List(metric_desc_t) hpcrun_fmt_metric_tbl_t;
 
 typedef hpcrun_fmt_metric_tbl_t metric_tbl_t;
 
-extern int hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t* metric_tbl, FILE* out);
+extern int 
+hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t* metric_tbl, FILE* out);
 
-extern int hpcrun_fmt_metric_tbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
+extern int 
+hpcrun_fmt_metric_tbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
 				       hpcfmt_alloc_fn alloc);
 
-extern int hpcrun_fmt_metric_tbl_fprint(metric_tbl_t* metrics, FILE* out);
+extern int 
+hpcrun_fmt_metric_tbl_fprint(metric_tbl_t* metrics, FILE* out);
 
-extern void hpcrun_fmt_metric_tbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
+extern void 
+hpcrun_fmt_metric_tbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************
@@ -208,13 +222,17 @@ typedef struct loadmap_src_t {
 HPCFMT_List_declare(loadmap_entry_t);
 typedef HPCFMT_List(loadmap_entry_t) loadmap_t;
 
-extern int hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* out);
+extern int 
+hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* out);
 
-extern int hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* in, hpcfmt_alloc_fn alloc);
+extern int 
+hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* in, hpcfmt_alloc_fn alloc);
 
-extern int hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* out);
+extern int 
+hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* out);
 
-extern void hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc);
+extern void 
+hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************
@@ -236,7 +254,9 @@ typedef union hpcrun_metric_data_u {
 
 extern hpcrun_metric_data_t hpcrun_metric_data_ZERO;
 
-static inline bool hpcrun_metric_data_iszero(hpcrun_metric_data_t x) {
+static inline bool 
+hpcrun_metric_data_iszero(hpcrun_metric_data_t x) 
+{
   return (x.bits == hpcrun_metric_data_ZERO.bits);
 }
 
@@ -317,8 +337,21 @@ int hpcfile_cstree_lip__fprint(lush_lip_t* x, FILE* fs, const char* pre);
 
 #define HPCRUN_FMT_CCTNode_NULL 0
 
+#define HPCRUN_FMT_RetainIdFlag (0x1)
+
+static inline bool
+hpcrun_fmt_do_retain_id(uint32_t id)
+{
+  return (id & HPCRUN_FMT_RetainIdFlag);
+}
+
 
 typedef struct hpcrun_fmt_cct_node_t {
+
+#if 0
+  uint32_t id;
+  uint32_t id_parent;
+#endif
 
   lush_assoc_info_t as_info;
 
@@ -336,59 +369,49 @@ typedef struct hpcrun_fmt_cct_node_t {
 } hpcrun_fmt_cct_node_t;
 
 
+extern int 
+hpcfile_cstree_nodedata__init(hpcrun_fmt_cct_node_t* x);
+
+extern int 
+hpcfile_cstree_nodedata__fini(hpcrun_fmt_cct_node_t* x);
+
+extern int 
+hpcfile_cstree_nodedata__fread(hpcrun_fmt_cct_node_t* x, epoch_flags_t flags, FILE* fs);
+
+extern int 
+hpcfile_cstree_nodedata__fwrite(hpcrun_fmt_cct_node_t* x, epoch_flags_t flags, FILE* fs);
+
+extern int 
+hpcfile_cstree_nodedata__fprint(hpcrun_fmt_cct_node_t* x, FILE* fs, epoch_flags_t flags, const char* pre);
+
+
 // --------------------------------------------------------------------------
 // FIXME: this code should be replaced by hpcrun_fmt_cct_node
 // --------------------------------------------------------------------------
 
-#define HPCRUN_FMT_RetainIdFlag (0x1)
-
-static inline bool
-hpcrun_fmt_do_retain_id(uint32_t id)
-{
-  return (id & HPCRUN_FMT_RetainIdFlag);
-}
-
-
-typedef struct hpcfile_cstree_nodedata_s {
-
-  lush_assoc_info_t as_info;
-
-  // instruction pointer: more accurately, this is an 'operation
-  // pointer'.  The operation in the instruction packet is represented
-  // by adding 0, 1, or 2 to the instruction pointer for the first,
-  // second and third operation, respectively.
-  hpcfmt_vma_t ip;
-
-  lush_lip_t lip;
-
-  hpcfmt_uint_t num_metrics;
-  hpcrun_metric_data_t* metrics;
-
-} hpcfile_cstree_nodedata_t;
-
-extern int hpcfile_cstree_nodedata__init(hpcfile_cstree_nodedata_t* x);
-extern int hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x);
-
-extern int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, epoch_flags_t flags, FILE* fs);
-extern int hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, epoch_flags_t flags, FILE* fs);
-extern int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, epoch_flags_t flags, const char* pre);
-
-
 typedef struct hpcfile_cstree_node_s {
 
-  hpcfile_cstree_nodedata_t data;
+  hpcrun_fmt_cct_node_t data;
 
   uint32_t id;        // persistent id of self
   uint32_t id_parent; // persistent id of parent
 
 } hpcfile_cstree_node_t;
 
-extern int hpcfile_cstree_node__init(hpcfile_cstree_node_t* x);
-extern int hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x);
+extern int 
+hpcfile_cstree_node__init(hpcfile_cstree_node_t* x);
 
-extern int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
-extern int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
-extern int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, epoch_flags_t flags,
+extern int 
+hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x);
+
+extern int 
+hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
+
+extern int 
+hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
+
+extern int 
+hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, epoch_flags_t flags,
 				       const char* pre);
 
 

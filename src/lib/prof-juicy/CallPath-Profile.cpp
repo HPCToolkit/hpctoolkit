@@ -287,12 +287,12 @@ Profile::ddump() const
 
 
 //***************************************************************************
-//
+// 
 //***************************************************************************
 
 static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
 cct_makeNode(Prof::CCT::Tree* cct, uint32_t id,
-	     hpcfile_cstree_nodedata_t* data);
+	     hpcrun_fmt_cct_node_t* data);
 
 //***************************************************************************
 
@@ -701,12 +701,10 @@ Profile::cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg)
 
 
 //***************************************************************************
-// 
-//***************************************************************************
 
 static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
 cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits, 
-	     hpcfile_cstree_nodedata_t* data)
+	     hpcrun_fmt_cct_node_t* data)
 {
   using namespace Prof;
 
@@ -780,4 +778,5 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits,
 
   return std::make_pair(n, n_leaf);
 }
+
 
