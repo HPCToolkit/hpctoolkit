@@ -153,7 +153,10 @@ lazy_open_data_file(void)
   }
 
   char mpiRankStr[bufSZ];
-  snprintf(mpiRankStr, bufSZ, "%d", rank);
+  mpiRankStr[0] = '\0';
+  if (monitor_mpi_comm_rank() >= 0) {
+    snprintf(mpiRankStr, bufSZ, "%d", rank);
+  }
 
   char tidStr[bufSZ];
   snprintf(tidStr, bufSZ, "%d", td->id);

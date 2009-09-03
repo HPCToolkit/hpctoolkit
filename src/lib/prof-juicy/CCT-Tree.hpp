@@ -223,8 +223,8 @@ public:
   ANode(NodeType type, ANode* _parent, Struct::ACodeNode* strct = NULL)
     : NonUniformDegreeTreeNode(_parent), m_type(type), m_strct(strct)
   { 
-    static uint uniqueId = 1;
-    m_id = uniqueId++; 
+    static uint uniqueId = 2; // To support reading/writing, ids must be
+    m_id = uniqueId += 2;     // consistent with HPCRUN_FMT_RetainIdFlag.
   }
 
   virtual ~ANode()
