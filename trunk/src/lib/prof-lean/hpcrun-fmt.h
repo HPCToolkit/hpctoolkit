@@ -348,10 +348,8 @@ hpcrun_fmt_do_retain_id(uint32_t id)
 
 typedef struct hpcrun_fmt_cct_node_t {
 
-#if 0
   uint32_t id;
   uint32_t id_parent;
-#endif
 
   lush_assoc_info_t as_info;
 
@@ -369,51 +367,24 @@ typedef struct hpcrun_fmt_cct_node_t {
 } hpcrun_fmt_cct_node_t;
 
 
+static inline void
+hpcrun_fmt_cct_node_init(hpcrun_fmt_cct_node_t* x)
+{
+  memset(x, 0, sizeof(*x));
+}
+
+// N.B.: assumes space for metrics has been allocated
 extern int 
-hpcfile_cstree_nodedata__init(hpcrun_fmt_cct_node_t* x);
-
-extern int 
-hpcfile_cstree_nodedata__fini(hpcrun_fmt_cct_node_t* x);
-
-extern int 
-hpcfile_cstree_nodedata__fread(hpcrun_fmt_cct_node_t* x, epoch_flags_t flags, FILE* fs);
-
-extern int 
-hpcfile_cstree_nodedata__fwrite(hpcrun_fmt_cct_node_t* x, epoch_flags_t flags, FILE* fs);
-
-extern int 
-hpcfile_cstree_nodedata__fprint(hpcrun_fmt_cct_node_t* x, FILE* fs, epoch_flags_t flags, const char* pre);
-
-
-// --------------------------------------------------------------------------
-// FIXME: this code should be replaced by hpcrun_fmt_cct_node
-// --------------------------------------------------------------------------
-
-typedef struct hpcfile_cstree_node_s {
-
-  hpcrun_fmt_cct_node_t data;
-
-  uint32_t id;        // persistent id of self
-  uint32_t id_parent; // persistent id of parent
-
-} hpcfile_cstree_node_t;
+hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x, 
+			  epoch_flags_t flags, FILE* fs);
 
 extern int 
-hpcfile_cstree_node__init(hpcfile_cstree_node_t* x);
+hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x, 
+			   epoch_flags_t flags, FILE* fs);
 
 extern int 
-hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x);
-
-extern int 
-hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
-
-extern int 
-hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, epoch_flags_t flags, FILE* fs);
-
-extern int 
-hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, epoch_flags_t flags,
-				       const char* pre);
-
+hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs, 
+			   epoch_flags_t flags, const char* pre);
 
 
 //***************************************************************************

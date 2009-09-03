@@ -381,100 +381,6 @@ hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc)
 hpcrun_metric_data_t hpcrun_metric_data_ZERO = { .bits = 0 };
 
 
-int 
-hpcfile_cstree_nodedata__init(hpcrun_fmt_cct_node_t* x)
-{
-  memset(x, 0, sizeof(*x));
-  return HPCFMT_OK;
-}
-
-
-int 
-hpcfile_cstree_nodedata__fini(hpcrun_fmt_cct_node_t* x)
-{
-  return HPCFMT_OK;
-}
-
-
-int 
-hpcfile_cstree_nodedata__fread(hpcrun_fmt_cct_node_t* x, 
-			       epoch_flags_t flags, FILE* fs)
-{
-  // ASSUMES: space for metrics has been allocated
-
-  x->as_info = lush_assoc_info_NULL;
-  if (flags.flags.lush_active) {
-    HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&x->as_info.bits, fs));
-  }
-
-  HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&x->ip, fs));
-
-  lush_lip_init(&x->lip);
-  if (flags.flags.lush_active) {
-    hpcfile_cstree_lip__fread(&x->lip, fs);
-  }
-
-  for (int i = 0; i < x->num_metrics; ++i) {
-    HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&x->metrics[i].bits, fs));
-  }
-
-  return HPCFMT_OK;
-}
-
-
-int 
-hpcfile_cstree_nodedata__fwrite(hpcrun_fmt_cct_node_t* x, epoch_flags_t flags, FILE* fs)
-{
-  if (flags.flags.lush_active) {
-    hpcfmt_byte4_fwrite(x->as_info.bits, fs);
-  }
-
-  hpcfmt_byte8_fwrite(x->ip, fs);
-
-  if (flags.flags.lush_active) {
-    hpcfile_cstree_lip__fwrite(&x->lip, fs);
-  }
-
-  for (int i = 0; i < x->num_metrics; ++i) {
-    hpcfmt_byte8_fwrite(x->metrics[i].bits, fs);
-  }
-
-  return HPCFMT_OK;
-}
-
-
-int 
-hpcfile_cstree_nodedata__fprint(hpcrun_fmt_cct_node_t* x, FILE* fs, 
-				epoch_flags_t flags, const char* pre)
-{
-  if (flags.flags.lush_active) {
-    char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
-    lush_assoc_info_sprintf(as_str, x->as_info);
-
-    fprintf(fs, "(as: %s) ", as_str);
-  }
-
-  fprintf(fs, "(ip: 0x%"PRIx64") ", x->ip);
-
-  if (flags.flags.lush_active) {
-    hpcfile_cstree_lip__fprint(&x->lip, fs, "");
-  }
-
-  fprintf(fs, "\n");
-
-  fprintf(fs, "%s(metrics:", pre);
-  for (int i = 0; i < x->num_metrics; ++i) {
-    fprintf(fs, " %"PRIu64, x->metrics[i].bits);
-    if (i + 1 < x->num_metrics) {
-      fprintf(fs, " ");
-    }
-  }
-  fprintf(fs, ")\n");
-
-  return HPCFMT_OK;
-}
-
-
 //***************************************************************************
 
 int 
@@ -551,34 +457,26 @@ hpcfile_cstree_lip__fprint(lush_lip_t* x, FILE* fs, const char* pre)
 //***************************************************************************
 
 int 
-hpcfile_cstree_node__init(hpcfile_cstree_node_t* x)
+hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x, 
+			  epoch_flags_t flags, FILE* fs)
 {
-  memset(x, 0, sizeof(*x));
-  hpcfile_cstree_nodedata__init(&x->data);
-  return HPCFMT_OK;
-}
-
-
-int 
-hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x)
-{
-  hpcfile_cstree_nodedata__fini(&x->data);  
-  return HPCFMT_OK;
-}
-
-
-int 
-hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, 
-			   epoch_flags_t flags, FILE* fs)
-{
-  int ret;
-
   HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&x->id_parent, fs));
-  
-  ret = hpcfile_cstree_nodedata__fread(&x->data, flags, fs);
-  if (ret != HPCFMT_OK) {
-    return HPCFMT_ERR; 
+
+  x->as_info = lush_assoc_info_NULL;
+  if (flags.flags.lush_active) {
+    HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&x->as_info.bits, fs));
+  }
+
+  HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&x->ip, fs));
+
+  lush_lip_init(&x->lip);
+  if (flags.flags.lush_active) {
+    hpcfile_cstree_lip__fread(&x->lip, fs);
+  }
+
+  for (int i = 0; i < x->num_metrics; ++i) {
+    HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&x->metrics[i].bits, fs));
   }
   
   return HPCFMT_OK;
@@ -586,14 +484,24 @@ hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x,
 
 
 int 
-hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, 
+hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x, 
 			    epoch_flags_t flags, FILE* fs)
 {
   HPCFMT_ThrowIfError(hpcfmt_byte4_fwrite(x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_byte4_fwrite(x->id_parent, fs));
 
-  if (hpcfile_cstree_nodedata__fwrite(&x->data, flags, fs) != HPCFMT_OK) {
-    return HPCFMT_ERR; 
+  if (flags.flags.lush_active) {
+    hpcfmt_byte4_fwrite(x->as_info.bits, fs);
+  }
+
+  hpcfmt_byte8_fwrite(x->ip, fs);
+
+  if (flags.flags.lush_active) {
+    hpcfile_cstree_lip__fwrite(&x->lip, fs);
+  }
+
+  for (int i = 0; i < x->num_metrics; ++i) {
+    hpcfmt_byte8_fwrite(x->metrics[i].bits, fs);
   }
   
   return HPCFMT_OK;
@@ -601,13 +509,35 @@ hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x,
 
 
 int 
-hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, 
+hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs, 
 			    epoch_flags_t flags, const char* pre)
 {
   fprintf(fs, "%s{node: (id: %d) (id_parent: %d) ",
 	  pre, x->id, x->id_parent);
 
-  hpcfile_cstree_nodedata__fprint(&x->data, fs, flags, pre); // pre + "  "
+  if (flags.flags.lush_active) {
+    char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
+    lush_assoc_info_sprintf(as_str, x->as_info);
+
+    fprintf(fs, "(as: %s) ", as_str);
+  }
+
+  fprintf(fs, "(ip: 0x%"PRIx64") ", x->ip);
+
+  if (flags.flags.lush_active) {
+    hpcfile_cstree_lip__fprint(&x->lip, fs, "");
+  }
+
+  fprintf(fs, "\n");
+
+  fprintf(fs, "%s(metrics:", pre);
+  for (int i = 0; i < x->num_metrics; ++i) {
+    fprintf(fs, " %"PRIu64, x->metrics[i].bits);
+    if (i + 1 < x->num_metrics) {
+      fprintf(fs, " ");
+    }
+  }
+  fprintf(fs, ")\n");
 
   fprintf(fs, "%s}\n", pre);
   
