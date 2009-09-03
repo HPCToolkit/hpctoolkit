@@ -237,10 +237,7 @@ typedef struct metric_desc_t {
 
 
 HPCFMT_List_declare(metric_desc_t);
-
-typedef HPCFMT_List(metric_desc_t) hpcrun_fmt_metric_tbl_t;
-
-typedef hpcrun_fmt_metric_tbl_t metric_tbl_t;
+typedef HPCFMT_List(metric_desc_t) metric_tbl_t; // hpcrun_metricTbl_t
 
 
 extern int 
@@ -263,40 +260,44 @@ hpcrun_fmt_metric_tbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 typedef struct loadmap_entry_t {
 
+  uint16_t id;      // 0 is reserved as a NULL value
   char* name;
-  uint64_t vaddr;
-  uint64_t mapaddr;
-  uint32_t flags;
+  uint64_t vaddr;   // FIXME: obsolete
+  uint64_t mapaddr; // FIXME: obsolete
+  uint64_t flags;
 
 } loadmap_entry_t;
 
-// This is an actual list of loadmap_entry_t elements
-
-typedef struct loadmap_src_t {
-
-  char* name;
-  void* vaddr;
-  void* mapaddr;
-  size_t size;
-  struct loadmap_src_t* next;
-
-} loadmap_src_t;
 
 HPCFMT_List_declare(loadmap_entry_t);
-typedef HPCFMT_List(loadmap_entry_t) loadmap_t;
+typedef HPCFMT_List(loadmap_entry_t) loadmap_t; // hpcrun_loadmap_t
 
 
 extern int 
-hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* in, hpcfmt_alloc_fn alloc);
+hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* infs, hpcfmt_alloc_fn alloc);
 
 extern int 
-hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* out);
+hpcrun_fmt_loadmap_fwrite(loadmap_t* src, FILE* outfs);
 
 extern int 
-hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* out);
+hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* outfs);
 
 extern void 
 hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc);
+
+
+extern int
+hpcrun_fmt_loadmapEntry_fread(loadmap_entry_t* x, FILE* infs, 
+			      hpcfmt_alloc_fn alloc);
+
+extern int
+hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, FILE* outfs);
+
+extern int
+hpcrun_fmt_loadmapEntry_fprint(loadmap_entry_t* x, FILE* outfs);
+
+extern void 
+hpcrun_fmt_loadmapEntry_free(loadmap_entry_t* x, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************

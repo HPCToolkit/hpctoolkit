@@ -135,6 +135,7 @@ hpcrun_loadmap_add_module(const char *module_name,
   loadmap_src_t *m = (loadmap_src_t *) csprof_malloc(sizeof(loadmap_src_t));
 
   // fill in the fields of the structure
+  m->id = 0; // FIXME:tallent
   m->name = (char *) module_name;
   m->vaddr = vaddr;
   m->mapaddr = mapaddr;

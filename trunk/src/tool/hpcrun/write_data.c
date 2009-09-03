@@ -233,7 +233,22 @@ write_epochs(FILE* fs, csprof_state_t* state)
     TMSG(DATA_WRITE, "Preparing to write loadmap");
 
     hpcrun_epoch_t* current_epoch = s->epoch;
-    hpcrun_fmt_loadmap_fwrite(current_epoch->num_modules, current_epoch->loaded_modules, fs);
+    
+    hpcfmt_byte4_fwrite(current_epoch->num_modules, fs);
+
+    loadmap_src_t* lm_src = current_epoch->loaded_modules;
+    for (uint32_t i = 0; i < current_epoch->num_modules; i++) {
+      loadmap_entry_t lm_entry;
+      lm_entry.id = lm_src->id;
+      lm_entry.name = lm_src->name;
+      lm_entry.vaddr = (uint64_t)lm_src->vaddr;
+      lm_entry.mapaddr = (uint64_t)lm_src->mapaddr;
+      lm_entry.flags = 0;
+
+      hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
+
+      lm_src = lm_src->next;
+    }
 
     TMSG(DATA_WRITE, "Done writing loadmap");
 
