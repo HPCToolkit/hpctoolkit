@@ -88,7 +88,7 @@ extern "C" {
 // N.B.: The header string is 24 bytes of character data
 
 static const char HPCRUN_FMT_Magic[]   = "HPCRUN-profile____"; // 18 bytes
-static const char HPCRUN_FMT_Version[] = "01.98";              // 5 bytes
+static const char HPCRUN_FMT_Version[] = "01.9A";              // 5 bytes
 static const char HPCRUN_FMT_Endian[]  = "b";                  // 1 byte
 
 static const int HPCRUN_FMT_MagicLen   = (sizeof(HPCRUN_FMT_Magic) - 1);
@@ -327,12 +327,16 @@ typedef struct hpcrun_fmt_cct_node_t {
 
   lush_assoc_info_t as_info;
 
+  // load module id.  0 is reserved as a NULL value
+  uint16_t lm_id;
+
   // instruction pointer: more accurately, this is an 'operation
   // pointer'.  The operation in the instruction packet is represented
   // by adding 0, 1, or 2 to the instruction pointer for the first,
   // second and third operation, respectively.
   hpcfmt_vma_t ip;
 
+  // logical instruction pointer
   lush_lip_t lip;
 
   hpcfmt_uint_t num_metrics;

@@ -669,19 +669,21 @@ hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
   tmp_node->id = node->persistent_id;
   tmp_node->id_parent = my_parent;
 
-  //
-  // lush data (conditional)
-  //
   if (flags.flags.lush_active) {
     tmp_node->as_info = node->as_info;
+  }
+  
+  tmp_node->lm_id = 0; // FIXME:tallent
+
+  // double casts to avoid warnings when pointer is < 64 bits 
+  tmp_node->ip = (hpcfmt_vma_t) (unsigned long) node->ip;
+
+  if (flags.flags.lush_active) {
     lush_lip_init(&tmp_node->lip);
     if (node->lip) {
       memcpy(&tmp_node->lip, node->lip, sizeof(lush_lip_t));
     }
   }
-
-  // double casts to avoid warnings when pointer is < 64 bits 
-  tmp_node->ip = (hpcfmt_vma_t) (unsigned long) node->ip;
 
   memcpy(tmp_node->metrics, node->metrics, 
 	 tmp_node->num_metrics * sizeof(cct_metric_data_t));

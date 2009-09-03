@@ -102,6 +102,9 @@ hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc)
   if (nr != HPCRUN_FMT_VersionLen) {
     return HPCFMT_ERR;
   }
+  if (strcmp(hdr->version, HPCRUN_FMT_Version) != 0) { // TODO: numeric test
+    // TODO: set error message
+  }
 
   nr = fread(&hdr->endian, 1, HPCRUN_FMT_EndianLen, infs);
   if (nr != HPCRUN_FMT_EndianLen) {
@@ -398,7 +401,7 @@ hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, FILE* fs)
 int
 hpcrun_fmt_loadmapEntry_fprint(loadmap_entry_t* x, FILE* fs)
 {
-  fprintf(fs, "  {(id: %"PRIu16") (nm: %s) (%#"PRIx64" %#"PRIx64") (flg: %#"PRIx64")}\n",
+  fprintf(fs, "  {(id: %"PRIu16") (nm: %s) (0x%"PRIx64" 0x%"PRIx64") (flg: 0x%"PRIx64")}\n",
 	  x->id, x->name, x->vaddr, x->mapaddr, x->flags);
   return HPCFMT_OK;
 }
@@ -428,6 +431,8 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
     HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&x->as_info.bits, fs));
   }
 
+  HPCFMT_ThrowIfError(hpcfmt_byte2_fread(&x->lm_id, fs));
+
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&x->ip, fs));
 
   lush_lip_init(&x->lip);
@@ -453,6 +458,8 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
   if (flags.flags.lush_active) {
     hpcfmt_byte4_fwrite(x->as_info.bits, fs);
   }
+
+  hpcfmt_byte2_fwrite(x->lm_id, fs);
 
   hpcfmt_byte8_fwrite(x->ip, fs);
 
@@ -482,7 +489,7 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
     fprintf(fs, "(as: %s) ", as_str);
   }
 
-  fprintf(fs, "(ip: 0x%"PRIx64") ", x->ip);
+  fprintf(fs, "(lm_id: %"PRIu16") (ip: 0x%"PRIx64") ", x->lm_id, x->ip);
 
   if (flags.flags.lush_active) {
     hpcrun_fmt_lip_fprint(&x->lip, fs, "");
