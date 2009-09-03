@@ -322,6 +322,10 @@ Profile::make(const char* fnm, FILE* outfs)
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'fmt-hdr'");
   }
+  if (outfs) {
+    hpcrun_fmt_hdr_fprint(&hdr, outfs);
+  }
+
 
   string progNm;
 
@@ -340,6 +344,7 @@ Profile::make(const char* fnm, FILE* outfs)
   
   Profile* prof = NULL;
 
+  uint num_epochs = 0;
   while ( !feof(fs) ) {
 
     Profile* myprof = NULL;
@@ -362,11 +367,17 @@ Profile::make(const char* fnm, FILE* outfs)
     else {
       prof->merge(*myprof, /*isSameThread*/true);
     }
+
+    num_epochs++;
   }
 
   if (! prof) {
     prof = new Profile(progNm, 0);
     prof->cct_canonicalize();
+  }
+
+  if (outfs) {
+    fprintf(outfs, "\n{num-epochs: %d}\n", num_epochs);
   }
 
   // ------------------------------------------------------------
@@ -402,6 +413,9 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'epoch-hdr'");
   }
+  if (outfs) {
+    hpcrun_fmt_epoch_hdr_fprint(&ehdr, outfs);
+  }
 
   // ----------------------------------------
   // metric-tbl
@@ -410,6 +424,9 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   ret = hpcrun_fmt_metric_tbl_fread(&metric_tbl, infs, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
+  }
+  if (outfs) {
+    hpcrun_fmt_metric_tbl_fprint(&metric_tbl, outfs);
   }
 
   uint num_metrics = metric_tbl.len;
@@ -422,7 +439,10 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'loadmap'");
   }
-  
+  if (outfs) {
+    hpcrun_fmt_loadmap_fprint(&loadmap_tbl, outfs);
+  }
+
   // ------------------------------------------------------------
   // Create Profile
   // ------------------------------------------------------------
@@ -726,9 +746,9 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits,
   // ----------------------------------------------------------
   // Create nodes.  
   //
-  // Note that is possible for an interior node to have
+  // Note that it is possible for an interior node to have
   // a non-zero metric count.  If this is the case, the node should be
-  // expanded into two sibling nodes: 1) an interior node with metrics
+  // split into two sibling nodes: 1) an interior node with metrics
   // == 0 (that has cpId == 0 *and* that is the primary return node);
   // and 2) a leaf node with the metrics and the cpId.
   // ----------------------------------------------------------
