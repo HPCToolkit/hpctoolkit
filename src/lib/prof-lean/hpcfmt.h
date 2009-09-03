@@ -189,10 +189,10 @@ int
 hpcfmt_str_fread(char** str, FILE* infs, hpcfmt_alloc_fn alloc);
 
 int 
-hpcfmt_str_fwrite(char* str, FILE* outfs);
+hpcfmt_str_fwrite(const char* str, FILE* outfs);
 
 void 
-hpcfmt_str_free(char* str, hpcfmt_free_fn dealloc);
+hpcfmt_str_free(const char* str, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************

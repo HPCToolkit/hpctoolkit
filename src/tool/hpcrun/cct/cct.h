@@ -99,7 +99,7 @@
 
 // tallent: was 'size_t'.  If this should change the memcpy in
 // hpcfile_cstree_write_node_hlp should be modified.
-typedef hpcrun_metric_data_t cct_metric_data_t;
+typedef hpcrun_metricVal_t cct_metric_data_t;
 
 static inline void
 cct_metric_data_increment(int metric_id,
@@ -109,7 +109,7 @@ cct_metric_data_increment(int metric_id,
   metric_tbl_t* mdata = hpcrun_get_metric_data();
   metric_desc_t* minfo = &(mdata->lst[metric_id]);
   
-  if (hpcfile_csprof_metric_is_flag(minfo->flags, HPCFILE_METRIC_FLAG_REAL)) {
+  if (hpcrun_metricFlags_isFlag(minfo->flags, HPCRUN_MetricFlag_Real)) {
     x->r += incr.r;
   }
   else {

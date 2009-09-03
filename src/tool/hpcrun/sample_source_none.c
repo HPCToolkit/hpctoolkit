@@ -138,7 +138,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
     int metric_id = csprof_new_metric();
     TMSG(ITIMER_CTL,"No event set for NONE sample source");
     csprof_set_metric_info_and_period(metric_id, "NONE",
-				      HPCFILE_METRIC_FLAG_ASYNC,
+				      HPCRUN_MetricFlag_Async,
 				      1);
   }
   thread_data_t *td = csprof_get_thread_data();

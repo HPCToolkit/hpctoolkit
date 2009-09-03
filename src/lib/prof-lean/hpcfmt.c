@@ -84,7 +84,7 @@ int
 hpcfmt_str_fread(char** str, FILE* infs, hpcfmt_alloc_fn alloc)
 {
   uint32_t len;
-  char *buf = *str;
+  char* buf = *str;
 
   HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&len, infs));
   if (alloc) {
@@ -107,13 +107,13 @@ hpcfmt_str_fread(char** str, FILE* infs, hpcfmt_alloc_fn alloc)
 
 
 int
-hpcfmt_str_fwrite(char* str, FILE* outfs)
+hpcfmt_str_fwrite(const char* str, FILE* outfs)
 {
   uint32_t len = strlen(str);
 
   hpcfmt_byte4_fwrite(len, outfs);
   
-  for(int i=0; i < len; i++){
+  for(int i = 0; i < len; i++){
     int c = fputc(*(str++), outfs);
     if (c == EOF){
       return HPCFMT_ERR;
@@ -124,9 +124,9 @@ hpcfmt_str_fwrite(char* str, FILE* outfs)
 
 
 void
-hpcfmt_str_free(char *fstr, hpcfmt_free_fn dealloc)
+hpcfmt_str_free(const char* str, hpcfmt_free_fn dealloc)
 {
-  dealloc((void *)fstr);
+  dealloc((void *)str);
 }
 
 
