@@ -291,8 +291,7 @@ Profile::ddump() const
 //***************************************************************************
 
 static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
-cct_makeNode(Prof::CCT::Tree* cct, uint32_t id,
-	     hpcrun_fmt_cct_node_t* data);
+cct_makeNode(Prof::CCT::Tree* cct, hpcrun_fmt_cct_node_t* data);
 
 //***************************************************************************
 
@@ -543,9 +542,9 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
   // Read each CCT node
   // ------------------------------------------------------------
 
-  hpcfile_cstree_node_t ndata;
-  ndata.data.num_metrics = num_metrics;
-  ndata.data.metrics = 
+  hpcrun_fmt_cct_node_t nodeFmt;
+  nodeFmt.num_metrics = num_metrics;
+  nodeFmt.metrics = 
     (hpcrun_metric_data_t*)alloca(num_metrics * sizeof(hpcfmt_uint_t));
 
   for (uint i = 0; i < num_nodes; ++i) {
@@ -553,36 +552,35 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
     // ----------------------------------------------------------
     // Read the node
     // ----------------------------------------------------------
-    ret = hpcfile_cstree_node__fread(&ndata, flags, infs);
+    ret = hpcrun_fmt_cct_node_fread(&nodeFmt, flags, infs);
     if (ret != HPCFMT_OK) {
-      DIAG_Throw("Error reading CCT node " << ndata.id);
+      DIAG_Throw("Error reading CCT node " << nodeFmt.id);
     }
     if (outfs) {
-      hpcfile_cstree_node__fprint(&ndata, outfs, flags, "  ");
+      hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, flags, "  ");
     }
 
     // Find parent of node
     CCT::ANode* node_parent = NULL;
-    if (ndata.id_parent != HPCRUN_FMT_CCTNode_NULL) {
-      CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(ndata.id_parent);
+    if (nodeFmt.id_parent != HPCRUN_FMT_CCTNode_NULL) {
+      CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(nodeFmt.id_parent);
       if (it != cctNodeMap.end()) {
 	node_parent = it->second;
       }
       else {
-	DIAG_Throw("Cannot find parent for node " << ndata.id);	
+	DIAG_Throw("Cannot find parent for node " << nodeFmt.id);	
       }
     }
 
-    if ( !(ndata.id_parent < ndata.id) ) {
-      DIAG_Throw("Invalid parent " << ndata.id_parent << " for node " << ndata.id);
+    if ( !(nodeFmt.id_parent < nodeFmt.id) ) {
+      DIAG_Throw("Invalid parent " << nodeFmt.id_parent << " for node " << nodeFmt.id);
     }
 
     // ----------------------------------------------------------
     // Create node and link to parent
     // ----------------------------------------------------------
 
-    std::pair<CCT::ANode*, CCT::ANode*> nodes = 
-      cct_makeNode(cct, ndata.id, &ndata.data);
+    std::pair<CCT::ANode*, CCT::ANode*> nodes = cct_makeNode(cct, &nodeFmt);
     CCT::ANode* node = nodes.first;
     CCT::ANode* node_sib = nodes.second;
 
@@ -599,7 +597,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
       cct->root(node);
     }
 
-    cctNodeMap.insert(std::make_pair(ndata.id, node));
+    cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
   }
 
   if (outfs) {
@@ -703,8 +701,7 @@ Profile::cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg)
 //***************************************************************************
 
 static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
-cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits, 
-	     hpcrun_fmt_cct_node_t* data)
+cct_makeNode(Prof::CCT::Tree* cct, hpcrun_fmt_cct_node_t* nodeFmt)
 {
   using namespace Prof;
 
@@ -714,35 +711,35 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits,
   bool isLeaf = false;
   uint cpId = 0;
 
-  int id_tmp = (int)id_bits;
+  int id_tmp = (int)nodeFmt->id;
   if (id_tmp < 0) {
     isLeaf = true;
     id_tmp = -id_tmp;
   }
-  if (hpcrun_fmt_do_retain_id(id_bits)) {
+  if (hpcrun_fmt_do_retain_id(nodeFmt->id)) {
     cpId = id_tmp;
   }
 
-  VMA ip = (VMA)data->ip; // tallent:FIXME: Use ISA::ConvertVMAToOpVMA
+  VMA ip = (VMA)nodeFmt->ip; // tallent:FIXME: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
   lush_lip_t* lip = NULL;
-  if (!lush_lip_eq(&data->lip, &lush_lip_NULL)) {
+  if (!lush_lip_eq(&nodeFmt->lip, &lush_lip_NULL)) {
     lip = new lush_lip_t;
-    memcpy(lip, &data->lip, sizeof(lush_lip_t));
+    memcpy(lip, &nodeFmt->lip, sizeof(lush_lip_t));
   }
 
   bool hasMetrics = false;
-  std::vector<hpcrun_metric_data_t> metricVec(data->num_metrics);
-  for (uint i = 0; i < data->num_metrics; i++) {
-    hpcrun_metric_data_t m = data->metrics[i];
+  std::vector<hpcrun_metric_data_t> metricVec(nodeFmt->num_metrics);
+  for (uint i = 0; i < nodeFmt->num_metrics; i++) {
+    hpcrun_metric_data_t m = nodeFmt->metrics[i];
     metricVec[i] = m;
     if (!hpcrun_metric_data_iszero(m)) {
       hasMetrics = true;
     }
   }
 
-  DIAG_DevMsgIf(0, "cct_makeNode: " << hex << data->ip << dec);
+  DIAG_DevMsgIf(0, "cct_makeNode: " << hex << nodeFmt->ip << dec);
 
 
   // ----------------------------------------------------------
@@ -758,7 +755,7 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits,
   Prof::CCT::ANode* n_leaf = NULL;
 
   if (hasMetrics || isLeaf) {
-    n = new CCT::Stmt(NULL, cpId, data->as_info, ip, opIdx, lip,
+    n = new CCT::Stmt(NULL, cpId, nodeFmt->as_info, ip, opIdx, lip,
 		      &cct->metadata()->metricDesc(), metricVec);
   }
 
@@ -766,12 +763,12 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits,
     if (hasMetrics) {
       n_leaf = n;
 
-      std::vector<hpcrun_metric_data_t> metricVec0(data->num_metrics);
-      n = new CCT::Call(NULL, 0, data->as_info, ip, opIdx, lip,
+      std::vector<hpcrun_metric_data_t> metricVec0(nodeFmt->num_metrics);
+      n = new CCT::Call(NULL, 0, nodeFmt->as_info, ip, opIdx, lip,
 			&cct->metadata()->metricDesc(), metricVec0);
     }
     else {
-      n = new CCT::Call(NULL, cpId, data->as_info, ip, opIdx, lip,
+      n = new CCT::Call(NULL, cpId, nodeFmt->as_info, ip, opIdx, lip,
 			&cct->metadata()->metricDesc(), metricVec);
     }
   }

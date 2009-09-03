@@ -502,12 +502,12 @@ csprof_cct__write_bin(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_c
 static int
 hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 			  csprof_cct_node_t* node, 
-			  hpcfile_cstree_node_t* tmp_node,
+			  hpcrun_fmt_cct_node_t* tmp_node,
 			  int lvl_to_skip, int32_t parent_id);
 
 static int
 hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags, csprof_cct_node_t* node,
-			      hpcfile_cstree_node_t* tmp_node, 
+			      hpcrun_fmt_cct_node_t* tmp_node, 
 			      int32_t parent_id);
 
 static int
@@ -582,11 +582,11 @@ hpcfile_cstree_write(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   // -------------------------------------------------------
   // Write each node, beginning with root
   // -------------------------------------------------------
-  hpcfile_cstree_node_t tmp_node;
+  hpcrun_fmt_cct_node_t tmp_node;
 
-  hpcfile_cstree_node__init(&tmp_node);
-  tmp_node.data.num_metrics = num_metrics;
-  tmp_node.data.metrics = alloca(num_metrics * sizeof(hpcfmt_uint_t));
+  hpcrun_fmt_cct_node_init(&tmp_node);
+  tmp_node.num_metrics = num_metrics;
+  tmp_node.metrics = alloca(num_metrics * sizeof(hpcfmt_uint_t));
 
   ret = hpcfile_cstree_write_node(fs, flags, tree, root, &tmp_node,
 				  lvl_to_skip, tree_parent_id);
@@ -597,7 +597,7 @@ hpcfile_cstree_write(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 static int
 hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 			  csprof_cct_node_t* node,
-			  hpcfile_cstree_node_t* tmp_node,
+			  hpcrun_fmt_cct_node_t* tmp_node,
 			  int lvl_to_skip, int32_t parent_id)
 {
   int ret;
@@ -652,9 +652,11 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   return HPCFMT_OK;
 }
 
+
 static int
-hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,csprof_cct_node_t* node,
-			      hpcfile_cstree_node_t* tmp_node,
+hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
+			      csprof_cct_node_t* node,
+			      hpcrun_fmt_cct_node_t* tmp_node,
                               int32_t my_parent)
 {
   int ret = HPCRUN_OK;
@@ -671,20 +673,20 @@ hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,csprof_cct_node_t* n
   // lush data (conditional)
   //
   if (flags.flags.lush_active) {
-    tmp_node->data.as_info = node->as_info;
-    lush_lip_init(&tmp_node->data.lip);
+    tmp_node->as_info = node->as_info;
+    lush_lip_init(&tmp_node->lip);
     if (node->lip) {
-      memcpy(&tmp_node->data.lip, node->lip, sizeof(lush_lip_t));
+      memcpy(&tmp_node->lip, node->lip, sizeof(lush_lip_t));
     }
   }
 
   // double casts to avoid warnings when pointer is < 64 bits 
-  tmp_node->data.ip = (hpcfmt_vma_t) (unsigned long) node->ip;
+  tmp_node->ip = (hpcfmt_vma_t) (unsigned long) node->ip;
 
-  memcpy(tmp_node->data.metrics, node->metrics, 
-	 tmp_node->data.num_metrics * sizeof(cct_metric_data_t));
+  memcpy(tmp_node->metrics, node->metrics, 
+	 tmp_node->num_metrics * sizeof(cct_metric_data_t));
 
-  ret = hpcfile_cstree_node__fwrite(tmp_node, flags, fs);
+  ret = hpcrun_fmt_cct_node_fwrite(tmp_node, flags, fs);
   if (ret != HPCFMT_OK) { 
     return HPCRUN_ERR; 
   }
@@ -751,11 +753,11 @@ node_child_count(hpcrun_cct_t* tree, csprof_cct_node_t* node)
 
 static int
 lush_cct_ctxt__write_gbl(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctxt,
-			 hpcfile_cstree_node_t* tmp_node);
+			 hpcrun_fmt_cct_node_t* tmp_node);
 
 static int
 lush_cct_ctxt__write_lcl(FILE* fs, epoch_flags_t flags, csprof_cct_node_t* node,
-			 hpcfile_cstree_node_t* tmp_node);
+			 hpcrun_fmt_cct_node_t* tmp_node);
 
 
 unsigned int
@@ -779,10 +781,10 @@ lush_cct_ctxt__write(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctxt)
   int ret;
   unsigned int num_metrics = csprof_num_recorded_metrics();
 
-  hpcfile_cstree_node_t tmp_node;
-  hpcfile_cstree_node__init(&tmp_node);
-  tmp_node.data.num_metrics = num_metrics;
-  tmp_node.data.metrics = alloca(num_metrics * sizeof(hpcfmt_uint_t));
+  hpcrun_fmt_cct_node_t tmp_node;
+  hpcrun_fmt_cct_node_init(&tmp_node);
+  tmp_node.num_metrics = num_metrics;
+  tmp_node.metrics = alloca(num_metrics * sizeof(hpcfmt_uint_t));
     
   ret = lush_cct_ctxt__write_gbl(fs, flags, cct_ctxt, &tmp_node);
 
@@ -793,7 +795,7 @@ lush_cct_ctxt__write(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctxt)
 // Post order write of 'cct_ctxt'
 static int
 lush_cct_ctxt__write_gbl(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctxt,
-			 hpcfile_cstree_node_t* tmp_node)
+			 hpcrun_fmt_cct_node_t* tmp_node)
 {
   int ret = HPCRUN_OK;
   
@@ -819,7 +821,7 @@ lush_cct_ctxt__write_gbl(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctx
 // Post order write of 'node'
 static int
 lush_cct_ctxt__write_lcl(FILE* fs, epoch_flags_t flags, csprof_cct_node_t* node,
-			 hpcfile_cstree_node_t* tmp_node)
+			 hpcrun_fmt_cct_node_t* tmp_node)
 {
   int ret = HPCRUN_OK;
 
