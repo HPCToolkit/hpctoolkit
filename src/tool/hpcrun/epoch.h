@@ -94,6 +94,22 @@
 typedef struct csprof_epoch hpcrun_epoch_t;
 typedef struct csprof_epoch_module csprof_epoch_module_t;
 
+// FIXME:tallent: I moved the declaration of loadmap_src_t from
+// hpcrun-fmt.h.  Most likely, the guts of loadmap_src_t should simply
+// be replaced with loadmap_entry_t.
+
+typedef struct loadmap_src_t {
+  uint id;
+  char* name;
+  void* vaddr;
+  void* mapaddr;
+  size_t size;
+
+  struct loadmap_src_t* next;
+
+} loadmap_src_t;
+
+
 struct csprof_epoch
 {
   struct csprof_epoch *next;  /* the next epoch */

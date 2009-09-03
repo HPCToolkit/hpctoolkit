@@ -45,7 +45,7 @@ metric-desc = str metric-flags{8b} period{8b}
 ----------------------------------------
 
 loadmap = [loadmap_entry]+
-loadmap_entry = id{4b} str flags{4b}
+loadmap_entry = id{2b} str flags{8b}
 
 ----------------------------------------
 

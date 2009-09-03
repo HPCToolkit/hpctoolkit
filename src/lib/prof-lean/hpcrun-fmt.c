@@ -317,16 +317,9 @@ hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* fs, hpcfmt_alloc_fn alloc)
     loadmap->lst = alloc(loadmap->len * sizeof(loadmap_entry_t));
   }
 
-  // FIXME: incomplete and hard-to-understand OSR?  Why not index by i?
-  loadmap_entry_t* e = loadmap->lst;
-  for(int i = 0; i < loadmap->len; e++, i++) {
-
-    HPCFMT_ThrowIfError(hpcfmt_str_fread(&(e->name), fs, alloc));
-    HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(e->vaddr), fs));
-    HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(e->mapaddr), fs));
-
-    // FIXME ?? (don't know what these are for yet ...
-    e->flags = 0;
+  for (uint32_t i = 0; i < loadmap->len; i++) {
+    loadmap_entry_t* e = &loadmap->lst[i];
+    HPCFMT_ThrowIfError(hpcrun_fmt_loadmapEntry_fread(e, fs, alloc));
   }
 
   return HPCFMT_OK;
@@ -334,15 +327,13 @@ hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* fs, hpcfmt_alloc_fn alloc)
 
 
 int
-hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* fs)
+hpcrun_fmt_loadmap_fwrite(loadmap_t* loadmap, FILE* fs)
 {
-  hpcfmt_byte4_fwrite(num_modules, fs);
+  hpcfmt_byte4_fwrite(loadmap->len, fs);
 
-  for(int i = 0; i < num_modules; i++) {
-    hpcfmt_str_fwrite(src->name, fs);
-    hpcfmt_byte8_fwrite((uint64_t)(unsigned long)src->vaddr, fs);
-    hpcfmt_byte8_fwrite((uint64_t)(unsigned long)src->mapaddr, fs);
-    src = src->next;
+  for (uint32_t i = 0; i < loadmap->len; i++) {
+    loadmap_entry_t* e = &loadmap->lst[i];
+    HPCFMT_ThrowIfError(hpcrun_fmt_loadmapEntry_fwrite(e, fs));
   }
   
   return HPCFMT_OK;
@@ -352,13 +343,10 @@ hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* fs)
 int
 hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* fs)
 {
-  loadmap_entry_t* e = loadmap->lst;
   fprintf(fs, "{loadmap:\n");
-
-  // FIXME: incomplete and hard-to-understand OSR?  Why not index by i?
-  for (int i = 0; i < loadmap->len; e++,i++) {
-    fprintf(fs, "  lm %d: %s %"PRIx64" -> %"PRIx64"\n",
-            i, e->name, e->vaddr, e->mapaddr);
+  for (uint32_t i = 0; i < loadmap->len; i++) {
+    loadmap_entry_t* e = &loadmap->lst[i];
+    HPCFMT_ThrowIfError(hpcrun_fmt_loadmapEntry_fprint(e, fs));
   }
   fprintf(fs, "}\n");
   
@@ -369,13 +357,58 @@ hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* fs)
 void
 hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc)
 {
-  loadmap_entry_t *e = loadmap->lst;
-  for(int i = 0; i < loadmap->len; e++, i++) {
-    hpcfmt_str_free(e->name, dealloc);
-    e->name = NULL;
+  for (uint32_t i = 0; i < loadmap->len; i++) {
+    loadmap_entry_t* e = &loadmap->lst[i];
+    hpcrun_fmt_loadmapEntry_free(e, dealloc);
   }
   dealloc(loadmap->lst);
   loadmap->lst = NULL;
+}
+
+
+//***************************************************************************
+
+int
+hpcrun_fmt_loadmapEntry_fread(loadmap_entry_t* x, FILE* fs, 
+			      hpcfmt_alloc_fn alloc)
+{
+  HPCFMT_ThrowIfError(hpcfmt_byte2_fread(&(x->id), fs));
+  HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->name), fs, alloc));
+  HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->vaddr), fs));
+  HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->mapaddr), fs));
+  HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->flags), fs));
+  
+  return HPCFMT_OK;
+}
+
+
+int
+hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, FILE* fs)
+{
+  HPCFMT_ThrowIfError(hpcfmt_byte2_fwrite(x->id, fs));
+  HPCFMT_ThrowIfError(hpcfmt_str_fwrite(x->name, fs));
+  HPCFMT_ThrowIfError(hpcfmt_byte8_fwrite(x->vaddr, fs));
+  HPCFMT_ThrowIfError(hpcfmt_byte8_fwrite(x->mapaddr, fs));
+  HPCFMT_ThrowIfError(hpcfmt_byte8_fwrite(x->flags, fs));
+  
+  return HPCFMT_OK;
+}
+
+
+int
+hpcrun_fmt_loadmapEntry_fprint(loadmap_entry_t* x, FILE* fs)
+{
+  fprintf(fs, "  {(id: %"PRIu16") (nm: %s) (%#"PRIx64" %#"PRIx64") (flg: %#"PRIx64")}\n",
+	  x->id, x->name, x->vaddr, x->mapaddr, x->flags);
+  return HPCFMT_OK;
+}
+
+
+void
+hpcrun_fmt_loadmapEntry_free(loadmap_entry_t* x, hpcfmt_free_fn dealloc)
+{
+  hpcfmt_str_free(x->name, dealloc);
+  x->name = NULL;
 }
 
 
