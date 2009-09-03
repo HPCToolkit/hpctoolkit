@@ -545,7 +545,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
   hpcrun_fmt_cct_node_t nodeFmt;
   nodeFmt.num_metrics = num_metrics;
   nodeFmt.metrics = 
-    (hpcrun_metric_data_t*)alloca(num_metrics * sizeof(hpcfmt_uint_t));
+    (hpcrun_metricVal_t*)alloca(num_metrics * sizeof(hpcrun_metricVal_t));
 
   for (uint i = 0; i < num_nodes; ++i) {
 
@@ -562,7 +562,7 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
 
     // Find parent of node
     CCT::ANode* node_parent = NULL;
-    if (nodeFmt.id_parent != HPCRUN_FMT_CCTNode_NULL) {
+    if (nodeFmt.id_parent != HPCRUN_FMT_CCTNodeId_NULL) {
       CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(nodeFmt.id_parent);
       if (it != cctNodeMap.end()) {
 	node_parent = it->second;
@@ -716,7 +716,7 @@ cct_makeNode(Prof::CCT::Tree* cct, hpcrun_fmt_cct_node_t* nodeFmt)
     isLeaf = true;
     id_tmp = -id_tmp;
   }
-  if (hpcrun_fmt_do_retain_id(nodeFmt->id)) {
+  if (hpcrun_fmt_doRetainId(nodeFmt->id)) {
     cpId = id_tmp;
   }
 
@@ -730,11 +730,11 @@ cct_makeNode(Prof::CCT::Tree* cct, hpcrun_fmt_cct_node_t* nodeFmt)
   }
 
   bool hasMetrics = false;
-  std::vector<hpcrun_metric_data_t> metricVec(nodeFmt->num_metrics);
+  std::vector<hpcrun_metricVal_t> metricVec(nodeFmt->num_metrics);
   for (uint i = 0; i < nodeFmt->num_metrics; i++) {
-    hpcrun_metric_data_t m = nodeFmt->metrics[i];
+    hpcrun_metricVal_t m = nodeFmt->metrics[i];
     metricVec[i] = m;
-    if (!hpcrun_metric_data_iszero(m)) {
+    if (!hpcrun_metricVal_isZero(m)) {
       hasMetrics = true;
     }
   }
@@ -763,7 +763,7 @@ cct_makeNode(Prof::CCT::Tree* cct, hpcrun_fmt_cct_node_t* nodeFmt)
     if (hasMetrics) {
       n_leaf = n;
 
-      std::vector<hpcrun_metric_data_t> metricVec0(nodeFmt->num_metrics);
+      std::vector<hpcrun_metricVal_t> metricVec0(nodeFmt->num_metrics);
       n = new CCT::Call(NULL, 0, nodeFmt->as_info, ip, opIdx, lip,
 			&cct->metadata()->metricDesc(), metricVec0);
     }

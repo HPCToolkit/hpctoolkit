@@ -138,13 +138,13 @@ class SampledMetricDesc : public MetricDesc
 {
 public:
   SampledMetricDesc() 
-    : m_flags(HPCFILE_METRIC_FLAG_NULL), m_period(0) 
+    : m_flags(HPCRUN_MetricFlag_NULL), m_period(0) 
     { }
 
   SampledMetricDesc(const char* name, const char* description,
 		    unsigned long period)
     : MetricDesc(name, description),
-      m_flags(HPCFILE_METRIC_FLAG_NULL), m_period(period)
+      m_flags(HPCRUN_MetricFlag_NULL), m_period(period)
     { }
 
   virtual ~SampledMetricDesc() 
@@ -167,12 +167,12 @@ public:
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
-  hpcfile_csprof_metric_flag_t 
+  hpcrun_metricFlags_t
   flags() const
   { return m_flags; }
   
   void
-  flags(hpcfile_csprof_metric_flag_t x) 
+  flags(hpcrun_metricFlags_t x) 
   { m_flags = x; }
 
   uint64_t 
@@ -192,7 +192,7 @@ public:
 
 protected:
 private:  
-  hpcfile_csprof_metric_flag_t m_flags;  // flags of the metric
+  hpcrun_metricFlags_t m_flags;  // flags of the metric
   uint64_t m_period; // sampling period
 };
 

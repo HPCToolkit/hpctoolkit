@@ -258,7 +258,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
     int metric_id = csprof_new_metric();
     TMSG(ITIMER_CTL,"setting metric id = %d,period = %ld",metric_id,sample_period);
     csprof_set_metric_info_and_period(metric_id, "WALLCLOCK (us)",
-				      HPCFILE_METRIC_FLAG_ASYNC,
+				      HPCRUN_MetricFlag_Async,
 				      sample_period);
     
     // FIXME:LUSH: need a more flexible metric interface
@@ -268,7 +268,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
       lush_agents->metric_idleness = mid_idleness;
 
       csprof_set_metric_info_and_period(mid_idleness, "idleness (ms)",
-					HPCFILE_METRIC_FLAG_ASYNC | HPCFILE_METRIC_FLAG_REAL,
+					HPCRUN_MetricFlag_Async | HPCRUN_MetricFlag_Real,
 					sample_period);
     }
   }

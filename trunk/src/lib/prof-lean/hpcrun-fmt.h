@@ -106,10 +106,10 @@ typedef struct hpcrun_fmt_hdr_t {
 
 
 extern int 
-hpcrun_fmt_hdr_fwrite(FILE* outfs, ...);
+hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc);
 
 extern int 
-hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc);
+hpcrun_fmt_hdr_fwrite(FILE* outfs, ...);
 
 extern int 
 hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);
@@ -166,13 +166,75 @@ hpcrun_fmt_epoch_hdr_free(hpcrun_fmt_epoch_hdr_t* ehdr, hpcfmt_free_fn dealloc);
 // metric-tbl
 //***************************************************************************
 
+// --------------------------------------------------------------------------
+// hpcrun_metricFlags_t
+// --------------------------------------------------------------------------
+
+typedef uint64_t hpcrun_metricFlags_t;
+
+#define HPCRUN_MetricFlag_NULL  0x0
+#define HPCRUN_MetricFlag_Async (1 << 1)
+#define HPCRUN_MetricFlag_Real  (1 << 2)
+
+
+static inline bool
+hpcrun_metricFlags_isFlag(hpcrun_metricFlags_t flagbits, 
+			  hpcrun_metricFlags_t f)
+{ 
+  return (flagbits & f); 
+}
+
+
+static inline void 
+hpcrun_metricFlags_setFlag(hpcrun_metricFlags_t* flagbits, 
+			   hpcrun_metricFlags_t f)
+{
+  *flagbits = (*flagbits | f);
+}
+
+
+static inline void 
+hpcrun_metricFlags_unsetFlag(hpcrun_metricFlags_t* flagbits, 
+			     hpcrun_metricFlags_t f)
+{
+  *flagbits = (*flagbits & ~f);
+}
+
+
+// --------------------------------------------------------------------------
+// hpcrun_metricVal_t
+// --------------------------------------------------------------------------
+
+typedef union hpcrun_metricVal_u {
+
+  uint64_t bits; // for reading/writing
+
+  uint64_t i; // integral data
+  double   r; // real
+  
+} hpcrun_metricVal_t;
+
+extern hpcrun_metricVal_t hpcrun_metricVal_ZERO;
+
+static inline bool 
+hpcrun_metricVal_isZero(hpcrun_metricVal_t x) 
+{
+  return (x.bits == hpcrun_metricVal_ZERO.bits);
+}
+
+
+// --------------------------------------------------------------------------
+// metric_desc_t
+// --------------------------------------------------------------------------
+
 typedef struct metric_desc_t {
 
   char* name;
-  uint64_t flags;
+  hpcrun_metricFlags_t flags;
   uint64_t period;
 
 } metric_desc_t;
+
 
 HPCFMT_List_declare(metric_desc_t);
 
@@ -180,12 +242,13 @@ typedef HPCFMT_List(metric_desc_t) hpcrun_fmt_metric_tbl_t;
 
 typedef hpcrun_fmt_metric_tbl_t metric_tbl_t;
 
-extern int 
-hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t* metric_tbl, FILE* out);
 
 extern int 
 hpcrun_fmt_metric_tbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
 				       hpcfmt_alloc_fn alloc);
+
+extern int 
+hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t* metric_tbl, FILE* out);
 
 extern int 
 hpcrun_fmt_metric_tbl_fprint(metric_tbl_t* metrics, FILE* out);
@@ -222,11 +285,12 @@ typedef struct loadmap_src_t {
 HPCFMT_List_declare(loadmap_entry_t);
 typedef HPCFMT_List(loadmap_entry_t) loadmap_t;
 
-extern int 
-hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* out);
 
 extern int 
 hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* in, hpcfmt_alloc_fn alloc);
+
+extern int 
+hpcrun_fmt_loadmap_fwrite(uint32_t num_modules, loadmap_src_t* src, FILE* out);
 
 extern int 
 hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* out);
@@ -239,115 +303,24 @@ hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc);
 // cct
 //***************************************************************************
 
-// --------------------------------------------------------------------------
-// hpcrun_metric_data_t
-// --------------------------------------------------------------------------
+#define HPCRUN_FMT_CCTNodeId_NULL (0)
 
-typedef union hpcrun_metric_data_u {
-
-  uint64_t bits; // for reading/writing
-
-  uint64_t i; // integral data
-  double   r; // real
-  
-} hpcrun_metric_data_t;
-
-extern hpcrun_metric_data_t hpcrun_metric_data_ZERO;
-
-static inline bool 
-hpcrun_metric_data_iszero(hpcrun_metric_data_t x) 
-{
-  return (x.bits == hpcrun_metric_data_ZERO.bits);
-}
-
-
-// --------------------------------------------------------------------------
-// hpcfile_csprof_metric_flag_t
-// --------------------------------------------------------------------------
-
-typedef uint64_t hpcfile_csprof_metric_flag_t;
-
-#define HPCFILE_METRIC_FLAG_NULL  0x0
-#define HPCFILE_METRIC_FLAG_ASYNC (1 << 1)
-#define HPCFILE_METRIC_FLAG_REAL  (1 << 2)
-
+#define HPCRUN_FMT_RetainIdFlag (0x1)
 
 static inline bool
-hpcfile_csprof_metric_is_flag(hpcfile_csprof_metric_flag_t flagbits, 
-                              hpcfile_csprof_metric_flag_t f)
-{ 
-  return (flagbits & f); 
-}
-
-
-static inline void 
-hpcfile_csprof_metric_set_flag(hpcfile_csprof_metric_flag_t* flagbits, 
-                               hpcfile_csprof_metric_flag_t f)
+hpcrun_fmt_doRetainId(uint32_t id)
 {
-  *flagbits = (*flagbits | f);
+  return (id & HPCRUN_FMT_RetainIdFlag);
 }
-
-
-static inline void 
-hpcfile_csprof_metric_unset_flag(hpcfile_csprof_metric_flag_t* flagbits, 
-                                 hpcfile_csprof_metric_flag_t f)
-{
-  *flagbits = (*flagbits & ~f);
-}
-
-
-// --------------------------------------------------------------------------
-// hpcfile_csprof_metric_t
-// --------------------------------------------------------------------------
-// FIXME: is this needed?
-
-typedef struct hpcfile_csprof_metric_s {
-
-  char *metric_name;          /* name of the metric */
-  hpcfile_csprof_metric_flag_t flags;  /* metric flags (async, etc.) */
-  uint64_t sample_period;     /* sample period of the metric */
-
-} hpcfile_csprof_metric_t;
-
-
-int hpcfile_csprof_metric__init(hpcfile_csprof_metric_t* x);
-int hpcfile_csprof_metric__fini(hpcfile_csprof_metric_t* x);
-
-int hpcfile_csprof_metric__fread(hpcfile_csprof_metric_t* x, FILE* fs);
-int hpcfile_csprof_metric__fwrite(hpcfile_csprof_metric_t* x, FILE* fs);
-int hpcfile_csprof_metric__fprint(hpcfile_csprof_metric_t* x, FILE* fs);
-
-
-// --------------------------------------------------------------------------
-//
-// --------------------------------------------------------------------------
-
-int hpcfile_cstree_as_info__fread(lush_assoc_info_t* x, FILE* fs);
-int hpcfile_cstree_as_info__fwrite(lush_assoc_info_t* x, FILE* fs);
-
-
-int hpcfile_cstree_lip__fread(lush_lip_t* x, FILE* fs);
-int hpcfile_cstree_lip__fwrite(lush_lip_t* x, FILE* fs);
-int hpcfile_cstree_lip__fprint(lush_lip_t* x, FILE* fs, const char* pre);
 
 
 // --------------------------------------------------------------------------
 // hpcrun_fmt_cct_node_t
 // --------------------------------------------------------------------------
 
-#define HPCRUN_FMT_CCTNode_NULL 0
-
-#define HPCRUN_FMT_RetainIdFlag (0x1)
-
-static inline bool
-hpcrun_fmt_do_retain_id(uint32_t id)
-{
-  return (id & HPCRUN_FMT_RetainIdFlag);
-}
-
-
 typedef struct hpcrun_fmt_cct_node_t {
 
+  // id and parent id.  0 is reserved as a NULL value
   uint32_t id;
   uint32_t id_parent;
 
@@ -362,7 +335,7 @@ typedef struct hpcrun_fmt_cct_node_t {
   lush_lip_t lip;
 
   hpcfmt_uint_t num_metrics;
-  hpcrun_metric_data_t* metrics;
+  hpcrun_metricVal_t* metrics;
   
 } hpcrun_fmt_cct_node_t;
 
@@ -372,6 +345,7 @@ hpcrun_fmt_cct_node_init(hpcrun_fmt_cct_node_t* x)
 {
   memset(x, 0, sizeof(*x));
 }
+
 
 // N.B.: assumes space for metrics has been allocated
 extern int 
@@ -385,6 +359,20 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 extern int 
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs, 
 			   epoch_flags_t flags, const char* pre);
+
+
+// --------------------------------------------------------------------------
+// 
+// --------------------------------------------------------------------------
+
+int 
+hpcrun_fmt_lip_fread(lush_lip_t* x, FILE* fs);
+
+int 
+hpcrun_fmt_lip_fwrite(lush_lip_t* x, FILE* fs);
+
+int 
+hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre);
 
 
 //***************************************************************************

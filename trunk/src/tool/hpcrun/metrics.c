@@ -121,7 +121,7 @@ csprof_new_metric()
 
 void
 csprof_set_metric_info_and_period(int metric_id, char *name,
-				  uint64_t flags, size_t period)
+				  hpcrun_metricFlags_t flags, size_t period)
 {
   TMSG(METRICS,"id = %d, name = %s, flags = %lx, period = %d", metric_id, name,flags, period);
   if(metric_id >= metric_data.len) {
@@ -140,7 +140,7 @@ csprof_set_metric_info_and_period(int metric_id, char *name,
 }
 
 void
-csprof_set_metric_info(int metric_id, char *name, uint64_t flags)
+csprof_set_metric_info(int metric_id, char *name, hpcrun_metricFlags_t flags)
 {
   csprof_set_metric_info_and_period(metric_id, name, flags, 1);
 }
