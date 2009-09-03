@@ -95,6 +95,7 @@ static const int HPCRUN_FMT_MagicLen   = (sizeof(HPCRUN_FMT_Magic) - 1);
 static const int HPCRUN_FMT_VersionLen = (sizeof(HPCRUN_FMT_Version) - 1);
 static const int HPCRUN_FMT_EndianLen  = (sizeof(HPCRUN_FMT_Endian) - 1);
 
+
 typedef struct hpcrun_fmt_hdr_t {
 
   char version[sizeof(HPCRUN_FMT_Version)];
@@ -116,6 +117,17 @@ hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);
 
 extern void 
 hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
+
+
+// Note: use #defines to avoid warnings about unused "static const
+// char*" variable in a cross-compiler way.
+#define HPCRUN_FMT_NV_prog    "program-name"
+#define HPCRUN_FMT_NV_path    "path-name"
+#define HPCRUN_FMT_NV_jobId   "job-id"
+#define HPCRUN_FMT_NV_mpiRank "mpi-rank"
+#define HPCRUN_FMT_NV_tid     "thread-id"
+#define HPCRUN_FMT_NV_hostid  "host-id"
+#define HPCRUN_FMT_NV_pid     "process-id"
 
 
 //***************************************************************************

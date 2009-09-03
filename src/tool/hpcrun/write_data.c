@@ -84,12 +84,6 @@ static const uint64_t default_granularity = 1;
 // local utilities
 //*****************************************************************************
 
-static char *
-hpcrun_itos(char *buf, int i)
-{
-  sprintf(buf, "%d", i);
-  return buf;
-}
 
 //***************************************************************************
 //
@@ -130,15 +124,15 @@ hpcrun_itos(char *buf, int i)
 static FILE *
 lazy_open_data_file(void)
 {
-  FILE* fs;
+  thread_data_t* td = csprof_get_thread_data();
 
-  if ((fs = TD_GET(hpcrun_file))){
+  FILE* fs = td->hpcrun_file;
+  if (fs) {
     return fs;
   }
 
   /* Generate a filename */
   char fnm[HPCRUN_FNM_SZ];
-
 
   int rank = monitor_mpi_comm_rank();
   if (rank < 0) rank = 0;
@@ -149,9 +143,27 @@ lazy_open_data_file(void)
   /* Open file for writing; fail if the file already exists. */
   fs = hpcio_fopen_w(fnm, /* overwrite */ 0);
 
-  TD_GET(hpcrun_file) = fs;
+  td->hpcrun_file = fs;
 
-  char _tmp[10];
+  const uint bufSZ = 32;
+
+  const char* jobIdStr = os_job_id();
+  if (!jobIdStr) {
+    jobIdStr = "";
+  }
+
+  char mpiRankStr[bufSZ];
+  snprintf(mpiRankStr, bufSZ, "%d", rank);
+
+  char tidStr[bufSZ];
+  snprintf(tidStr, bufSZ, "%d", td->id);
+
+  char hostidStr[bufSZ];
+  snprintf(hostidStr, bufSZ, "%lx", os_hostid());
+
+  char pidStr[bufSZ];
+  snprintf(pidStr, bufSZ, "%u", os_pid());
+
 
   //
   // ==== file hdr =====
@@ -159,10 +171,14 @@ lazy_open_data_file(void)
 
   TMSG(DATA_WRITE,"writing file header");
   hpcrun_fmt_hdr_fwrite(fs,
-                        "program-name", "[Program Name]", // FIXME
-                        "mpi-rank", hpcrun_itos(_tmp, rank),
-                        "process-id", "TBD", // FIXME
-                        "thread-id", "TBD",  // FIXME
+                        HPCRUN_FMT_NV_prog, files_executable_name(),
+                        HPCRUN_FMT_NV_path, files_executable_pathname(),
+                        HPCRUN_FMT_NV_jobId, jobIdStr,
+                        HPCRUN_FMT_NV_mpiRank, mpiRankStr,
+                        HPCRUN_FMT_NV_tid, tidStr,
+                        HPCRUN_FMT_NV_hostid, hostidStr,
+                        HPCRUN_FMT_NV_pid, pidStr,
+                        "nasty-message", "Please support <lm-id, lm-offset>!",
                         NULL);
   return fs;
 }

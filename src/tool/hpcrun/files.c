@@ -86,12 +86,9 @@
 // forward declarations 
 //***************************************************************
 
-static char *files_name(char *filename, unsigned int mpi, const char *suffix);
-
-static unsigned int os_pid();
-static long os_hostid();
 static char *os_realpath(const char *inpath, char *outpath);
 
+static char *files_name(char *filename, unsigned int mpi, const char *suffix);
 
 
 //***************************************************************
@@ -142,9 +139,6 @@ files_log_name(char *filename, unsigned int mpi, int len)
   files_name(filename, mpi, CSPROF_LOG_FNM_SFX);
 }
 
-void files_set_job_id() 
-{
-}
 
 void 
 files_set_directory()
@@ -152,20 +146,11 @@ files_set_directory()
   char *path = getenv(CSPROF_OPT_OUT_PATH);
 
   if (path == NULL || strlen(path) == 0) {
-    char *jid = NULL;
+    const char *jid = os_job_id();
     if (jid == NULL) {
-      jid = getenv("COBALT_JOBID"); /* check for Cobalt job id */
-    }
-    if (jid == NULL) {
-      jid = getenv("PBS_JOBID"); /* check for PBS job id */
-    }
-    if (jid == NULL) {
-      jid = getenv("JOB_ID"); /* check for Sun Grid Engine job id */
-    }
-    if (jid == NULL) {
-      sprintf(default_path,"./hpctoolkit-%s-measurements", executable_name);
+      sprintf(default_path, "./hpctoolkit-%s-measurements", executable_name);
     } else {
-      sprintf(default_path,"./hpctoolkit-%s-measurements-%s", executable_name, jid);
+      sprintf(default_path, "./hpctoolkit-%s-measurements-%s", executable_name, jid);
     }
     path = default_path;
 
@@ -205,12 +190,9 @@ files_set_executable(char *execname)
 }
 
 
-//***************************************************************
-// private operations
-//***************************************************************
+//*****************************************************************************
 
-
-static long
+long
 os_hostid()
 {
   static long hostid = NO_HOST_ID;
@@ -225,7 +207,7 @@ os_hostid()
 }
 
 
-static unsigned int
+unsigned int
 os_pid()
 {
   static unsigned int pid = NO_PID;
@@ -234,6 +216,27 @@ os_pid()
 
   return pid;
 }
+
+const char* 
+os_job_id()
+{
+  char *jid = NULL;
+  if (jid == NULL) {
+    jid = getenv("COBALT_JOBID"); /* check for Cobalt job id */
+  }
+  if (jid == NULL) {
+    jid = getenv("PBS_JOBID"); /* check for PBS job id */
+  }
+  if (jid == NULL) {
+    jid = getenv("JOB_ID"); /* check for Sun Grid Engine job id */
+  }
+  return jid;
+}
+
+
+//***************************************************************
+// private operations
+//***************************************************************
 
 static char *
 os_realpath(const char *inpath, char *outpath)
