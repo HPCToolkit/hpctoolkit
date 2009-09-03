@@ -44,6 +44,8 @@
 #ifndef files_h
 #define files_h
 
+//*****************************************************************************
+
 void files_set_directory();                   // location from environment variable
 void files_set_executable(char *execname);   
 
@@ -54,6 +56,12 @@ void files_log_name(char *filename, unsigned int mpi_rank, int len);
 const char *files_executable_pathname(void);
 
 const char *files_executable_name();
+
+//*****************************************************************************
+
+unsigned int os_pid();
+long os_hostid();
+const char* os_job_id();
 
 #endif // files_h
 
