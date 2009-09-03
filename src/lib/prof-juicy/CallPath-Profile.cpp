@@ -87,7 +87,7 @@ using namespace xml;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.hpp>
-
+#include <lib/support/StrUtil.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -300,25 +300,36 @@ namespace Prof {
 
 namespace CallPath {
 
-
-// TODO: Analysis::Raw::writeAsText_callpath() should use this
-// routine for textual dumping when the format is sanitized.
-
 Profile* 
 Profile::make(const char* fnm, FILE* outfs) 
 {
   int ret;
 
   FILE* fs = hpcio_open_r(fnm);
-  if (!fs) { 
+  if (!fs) {
     DIAG_Throw("error opening file");
   }
+
+  Profile* prof = NULL;
+  ret = hpcrun_fmt_fread(prof, fs, fnm, outfs);
+  
+  hpcio_close(fs);
+
+  return prof;
+}
+
+
+int
+Profile::hpcrun_fmt_fread(Profile* &prof, FILE* infs, 
+			  std::string ctxtStr, FILE* outfs)
+{
+  int ret;
 
   // ------------------------------------------------------------
   // Read header
   // ------------------------------------------------------------
   hpcrun_fmt_hdr_t hdr;
-  ret = hpcrun_fmt_hdr_fread(&hdr, fs, malloc);
+  ret = hpcrun_fmt_hdr_fread(&hdr, infs, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'fmt-hdr'");
   }
@@ -342,16 +353,16 @@ Profile::make(const char* fnm, FILE* outfs)
   // Read each epoch and merge them to form one Profile
   // ------------------------------------------------------------
   
-  Profile* prof = NULL;
+  prof = NULL;
 
   uint num_epochs = 0;
-  while ( !feof(fs) ) {
+  while ( !feof(infs) ) {
 
     Profile* myprof = NULL;
 
     try {
-      string locStr = fnm; // ":epoch " + 1;
-      ret = hpcrun_fmt_epoch_fread(myprof, fs, progNm, locStr, outfs);
+      ctxtStr += ": epoch " + StrUtil::toStr(num_epochs + 1);
+      ret = hpcrun_fmt_epoch_fread(myprof, infs, progNm, ctxtStr, outfs);
       if (ret == HPCFMT_EOF) {
 	break;
       }
@@ -380,18 +391,13 @@ Profile::make(const char* fnm, FILE* outfs)
     fprintf(outfs, "\n{num-epochs: %d}\n", num_epochs);
   }
 
-  // ------------------------------------------------------------
-  // Cleanup
-  // ------------------------------------------------------------
-  hpcio_close(fs);
-
-  return prof;
+  return HPCFMT_OK;
 }
 
 
 int
 Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs, 
-				std::string progName, std::string locStr,
+				std::string progName, std::string ctxtStr,
 				FILE* outfs)
 {
   using namespace Prof;
@@ -453,8 +459,6 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // metric-tbl
   // ----------------------------------------
 
-  DIAG_Msg(3, locStr << ": metrics found: " << num_metrics);
-
   metric_desc_t* m_lst = metric_tbl.lst;
   for (uint i = 0; i < num_metrics; i++) {
     SampledMetricDesc* metric = prof->metric(i);
@@ -488,7 +492,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
     loadmap.compute_relocAmt();
   }
   catch (const Diagnostics::Exception& x) {
-    DIAG_EMsg(locStr << "': Cannot fully process samples from unavailable load modules:\n" << x.what());
+    DIAG_EMsg(ctxtStr << ": Cannot fully process samples from unavailable load modules:\n" << x.what());
   }
 
   hpcrun_fmt_loadmap_free(&loadmap_tbl, free);
