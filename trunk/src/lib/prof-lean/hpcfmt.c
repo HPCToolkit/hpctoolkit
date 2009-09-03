@@ -86,7 +86,7 @@ hpcfmt_str_fread(char** str, FILE* infs, hpcfmt_alloc_fn alloc)
   uint32_t len;
   char *buf = *str;
 
-  THROW_IF_HPCERR(hpcfmt_byte4_fread(&len, infs));
+  HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&len, infs));
   if (alloc) {
     buf = (char *) alloc(len+1);
     *str = buf;
@@ -206,7 +206,7 @@ int
 hpcfmt_nvpair_list_fread(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
 			 FILE* infs, hpcfmt_alloc_fn alloc)
 {
-  THROW_IF_HPCERR(hpcfmt_byte4_fread(&(nvps->len), infs));
+  HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&(nvps->len), infs));
   if (alloc != NULL) {
     nvps->lst = (hpcfmt_nvpair_t*) alloc(nvps->len * sizeof(hpcfmt_nvpair_t));
   }
