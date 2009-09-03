@@ -134,6 +134,26 @@ typedef void  hpcfmt_free_fn(void* mem);
 //***************************************************************************
 
 static inline int
+hpcfmt_byte2_fwrite(uint16_t val, FILE* outfs)
+{
+  if ( sizeof(uint16_t) != hpcio_fwrite_be2(&val, outfs) ) {
+    return HPCFMT_ERR;
+  }
+  return HPCFMT_OK;
+}
+
+
+static inline int
+hpcfmt_byte2_fread(uint16_t* val, FILE* infs)
+{
+  if ( sizeof(uint16_t) != hpcio_fread_be2(val, infs) ) {
+    return HPCFMT_ERR;
+  }
+  return HPCFMT_OK;
+}
+
+
+static inline int
 hpcfmt_byte4_fwrite(uint32_t val, FILE* outfs)
 {
   if ( sizeof(uint32_t) != hpcio_fwrite_be4(&val, outfs) ) {
