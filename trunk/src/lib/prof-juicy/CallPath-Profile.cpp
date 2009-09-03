@@ -337,17 +337,6 @@ Profile::hpcrun_fmt_fread(Profile* &prof, FILE* infs,
   }
 
 
-  string progNm;
-
-  // search for known name-value pairs
-  const char* val = NULL;
-  val = hpcfmt_nvpair_search(&hdr.nvps, "program-name");
-  if (val) {
-    progNm = val;
-  }
-
-  hpcrun_fmt_hdr_free(&hdr, free);
-
   // ------------------------------------------------------------
   // Read each epoch and merge them to form one Profile
   // ------------------------------------------------------------
@@ -361,7 +350,7 @@ Profile::hpcrun_fmt_fread(Profile* &prof, FILE* infs,
 
     try {
       ctxtStr += ": epoch " + StrUtil::toStr(num_epochs + 1);
-      ret = hpcrun_fmt_epoch_fread(myprof, infs, progNm, ctxtStr, outfs);
+      ret = hpcrun_fmt_epoch_fread(myprof, infs, &hdr.nvps, ctxtStr, outfs);
       if (ret == HPCFMT_EOF) {
 	break;
       }
@@ -382,7 +371,7 @@ Profile::hpcrun_fmt_fread(Profile* &prof, FILE* infs,
   }
 
   if (! prof) {
-    prof = new Profile(progNm, 0);
+    prof = new Profile("[program-name]", 0);
     prof->cct_canonicalize();
   }
 
@@ -390,14 +379,16 @@ Profile::hpcrun_fmt_fread(Profile* &prof, FILE* infs,
     fprintf(outfs, "\n{num-epochs: %d}\n", num_epochs);
   }
 
+  hpcrun_fmt_hdr_free(&hdr, free);
+
   return HPCFMT_OK;
 }
 
 
 int
 Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs, 
-				std::string progName, std::string ctxtStr,
-				FILE* outfs)
+				HPCFMT_List(hpcfmt_nvpair_t)* hdrNVPairs,
+				std::string ctxtStr, FILE* outfs)
 {
   using namespace Prof;
 
@@ -452,16 +443,48 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // Create Profile
   // ------------------------------------------------------------
 
-  prof = new Profile(progName, num_metrics);
+  // ----------------------------------------
+  // obtain meta information
+  // ----------------------------------------
+
+  const char* val;
+
+  string progNm;
+  val = hpcfmt_nvpair_search(hdrNVPairs, HPCRUN_FMT_NV_prog);
+  if (val && strlen(val) > 0) {
+    progNm = val;
+  }
+
+  string mpiRank, tid;
+  //const char* jobid = hpcfmt_nvpair_search(hdrNVPairs, HPCRUN_FMT_NV_jobId);
+  val = hpcfmt_nvpair_search(hdrNVPairs, HPCRUN_FMT_NV_mpiRank);
+  if (val) { mpiRank = val; }
+  val = hpcfmt_nvpair_search(hdrNVPairs, HPCRUN_FMT_NV_tid);
+  if (val) { tid = val; }
+
+
+  prof = new Profile(progNm, num_metrics);
   
   // ----------------------------------------
   // metric-tbl
   // ----------------------------------------
 
+  string m_sfx;
+  if (!mpiRank.empty() && !tid.empty()) {
+    m_sfx = " [" + mpiRank + "," + tid + "]";
+  }
+  else if (!mpiRank.empty()) {
+    m_sfx = " [" + mpiRank + "]";
+  }
+  else if (!tid.empty()) {
+    m_sfx = " [" + tid + "]";    
+  }
+
   metric_desc_t* m_lst = metric_tbl.lst;
   for (uint i = 0; i < num_metrics; i++) {
     SampledMetricDesc* metric = prof->metric(i);
-    metric->name(m_lst[i].name);
+    string m_nm = m_lst[i].name + m_sfx;
+    metric->name(m_nm);
     metric->flags(m_lst[i].flags);
     metric->period(m_lst[i].period);
   }

@@ -89,17 +89,18 @@ public:
   virtual ~Profile();
   
   // -------------------------------------------------------
-  // name
+  // meta data
   // -------------------------------------------------------
   const std::string& name() const 
   { return m_name; }
-
+  
   void name(const std::string& x) 
   { m_name = x; }
 
   void name(const char* x) 
   { m_name = (x) ? x : ""; }
-  
+
+
   // -------------------------------------------------------
   // Metrics
   // -------------------------------------------------------
@@ -168,7 +169,8 @@ public:
 		   std::string ctxtStr, FILE* outfs);
 
   static int
-  hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs, std::string progName,
+  hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs, 
+			 HPCFMT_List(hpcfmt_nvpair_t)* hdrNVPairs,
 			 std::string ctxtStr, FILE* outfs);
 
   static void
@@ -206,10 +208,16 @@ private:
   cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg);
  
 private:
+  //typedef std::map<std::string, std::string> StrToStrMap;
+  //StrToStrMap m_nvPairMap;
   std::string m_name;
+  
   SampledMetricDescVec m_metricdesc;
+
   LoadMapMgr* m_loadmapMgr;
+
   CCT::Tree* m_cct;
+
   Prof::Struct::Tree* m_structure;
 };
 
