@@ -290,7 +290,7 @@ Profile::ddump() const
 //
 //***************************************************************************
 
-static Prof::CCT::ANode* 
+static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
 cct_makeNode(Prof::CCT::Tree* cct, uint32_t id,
 	     hpcfile_cstree_nodedata_t* data);
 
@@ -557,14 +557,21 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
     // Create node and link to parent
     // ----------------------------------------------------------
 
-    CCT::ANode* node = cct_makeNode(cct, ndata.id, &ndata.data);
+    std::pair<CCT::ANode*, CCT::ANode*> nodes = 
+      cct_makeNode(cct, ndata.id, &ndata.data);
+    CCT::ANode* node = nodes.first;
+    CCT::ANode* node_sib = nodes.second;
+
     DIAG_DevMsgIf(0, "hpcrun_fmt_cct_fread: " << hex << node << " -> " << node_parent <<dec);
 
     if (node_parent) {
       node->Link(node_parent);
+      if (node_sib) {
+	node_sib->Link(node_parent);
+      }
     }
     else {
-      DIAG_Assert(cct->empty(), "Must only have one root node!");
+      DIAG_Assert(cct->empty() && !node_sib, "Must only have one root node!");
       cct->root(node);
     }
 
@@ -673,12 +680,15 @@ Profile::cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg)
 // 
 //***************************************************************************
 
-static Prof::CCT::ANode*
+static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
 cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits, 
 	     hpcfile_cstree_nodedata_t* data)
 {
   using namespace Prof;
 
+  // ----------------------------------------------------------
+  // Gather node parameters
+  // ----------------------------------------------------------
   bool isLeaf = false;
   uint cpId = 0;
 
@@ -700,29 +710,50 @@ cct_makeNode(Prof::CCT::Tree* cct, uint32_t id_bits,
     memcpy(lip, &data->lip, sizeof(lush_lip_t));
   }
 
-  std::vector<hpcrun_metric_data_t> metricVec;
-  metricVec.clear();
+  bool hasMetrics = false;
+  std::vector<hpcrun_metric_data_t> metricVec(data->num_metrics);
   for (uint i = 0; i < data->num_metrics; i++) {
-    metricVec.push_back(data->metrics[i]);
+    hpcrun_metric_data_t m = data->metrics[i];
+    metricVec[i] = m;
+    if (!hpcrun_metric_data_iszero(m)) {
+      hasMetrics = true;
+    }
   }
 
-  // tallent:FIXME: If this is an interior node that has non-zero
-  // metric counts, then create an interior node without metrics
-  // (associated with the node-id) and a leaf node with metrics
-  // (that does not need to be recorded in the cctNodeMap).  Ensure
-  // the tree merge algorithm will merge interior nodes with
-  // interior nodes and leaf nodes with leaves.
+  DIAG_DevMsgIf(0, "cct_makeNode: " << hex << data->ip << dec);
 
-  DIAG_DevMsgIf(0, "hpcrun_fmt_cct_fread: " << hex << data->ip << dec);
+
+  // ----------------------------------------------------------
+  // Create nodes.  
+  //
+  // Note that is possible for an interior node to have
+  // a non-zero metric count.  If this is the case, the node should be
+  // expanded into two sibling nodes: 1) an interior node with metrics
+  // == 0 (that has cpId == 0 *and* that is the primary return node);
+  // and 2) a leaf node with the metrics and the cpId.
+  // ----------------------------------------------------------
   Prof::CCT::ANode* n = NULL;
-  if (isLeaf) {
+  Prof::CCT::ANode* n_leaf = NULL;
+
+  if (hasMetrics || isLeaf) {
     n = new CCT::Stmt(NULL, cpId, data->as_info, ip, opIdx, lip,
 		      &cct->metadata()->metricDesc(), metricVec);
   }
-  else {
-    n = new CCT::Call(NULL, cpId, data->as_info, ip, opIdx, lip,
-		      &cct->metadata()->metricDesc(), metricVec);
+
+  if (!isLeaf) {
+    if (hasMetrics) {
+      n_leaf = n;
+
+      std::vector<hpcrun_metric_data_t> metricVec0(data->num_metrics);
+      n = new CCT::Call(NULL, 0, data->as_info, ip, opIdx, lip,
+			&cct->metadata()->metricDesc(), metricVec0);
+    }
+    else {
+      n = new CCT::Call(NULL, cpId, data->as_info, ip, opIdx, lip,
+			&cct->metadata()->metricDesc(), metricVec);
+    }
   }
-  return n;
+
+  return std::make_pair(n, n_leaf);
 }
 
