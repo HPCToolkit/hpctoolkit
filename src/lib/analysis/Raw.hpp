@@ -76,7 +76,7 @@ namespace Raw {
 void 
 writeAsText(/*destination,*/ const char* filenm);
 
-inline void 
+static inline void 
 writeAsText(/*destination,*/ const std::string& filenm)
 { writeAsText(filenm.c_str()); }
 

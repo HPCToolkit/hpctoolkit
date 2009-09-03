@@ -90,8 +90,14 @@ namespace CallPath {
 Prof::CallPath::Profile* 
 read(std::vector<string>& profileFiles);
 
-Prof::CallPath::Profile* 
-read(const string& prof_fnm);
+Prof::CallPath::Profile*
+read(const char* prof_fnm);
+
+static inline Prof::CallPath::Profile*
+read(const string& prof_fnm)
+{
+  return read(prof_fnm.c_str());
+}
 
 
 void

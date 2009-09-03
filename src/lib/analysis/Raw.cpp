@@ -100,81 +100,15 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
 {
   if (!filenm) { return; }
 
-  int ret;
-
-  FILE* fs = hpcio_open_r(filenm);
-  if (!fs) { 
-    DIAG_Throw(filenm << ": could not open");
+  Prof::CallPath::Profile* prof = NULL;
+  try {
+    prof = Prof::CallPath::Profile::make(filenm, stdout);
   }
-
-  // FIXME:tallent: use the code in CallPath::Profile
-
-  hpcrun_fmt_hdr_t new_hdr;
-  
-  ret = hpcrun_fmt_hdr_fread(&new_hdr, fs, malloc);
-  if (ret != HPCFMT_OK) {
-    DIAG_Throw(filenm << ": error reading 'new hdr'");
+  catch (...) {
+    DIAG_EMsg("While reading '" << filenm << "'...");
+    throw;
   }
-  hpcrun_fmt_hdr_fprint(&new_hdr, stdout);
-  
-
-  uint32_t num_ccts = 1;
-  int num_epochs = 0;
-
-  //
-  // for each epoch ...
-  //
-
-  for (; !feof(fs); ) {
-    //
-    // == epoch hdr ==
-    //
-    hpcrun_fmt_epoch_hdr_t ehdr;
-
-    int ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, fs, malloc);
-    if (ret == HPCFMT_EOF) {
-      break;
-    }
-    num_epochs++;
-    hpcrun_fmt_epoch_hdr_fprint(&ehdr, stdout);
-
-    //
-    // metrics
-    //
-
-    metric_tbl_t metric_tbl;
-    ret = hpcrun_fmt_metric_tbl_fread(&metric_tbl, fs, malloc);
-    hpcrun_fmt_metric_tbl_fprint(&metric_tbl, stdout);
-
-    //
-    // loadmap
-    // 
-
-    loadmap_t loadmap;
-    ret = hpcrun_fmt_loadmap_fread(&loadmap, fs, malloc);
-    hpcrun_fmt_loadmap_fprint(&loadmap, stdout);
-  
-    //
-    // cct
-    //
-
-    uint num_metrics = metric_tbl.len;
-
-    if (num_ccts > 0) {
-      using namespace Prof;
-
-      CCT::Tree cct(NULL);
-      try {
-	CallPath::Profile::hpcrun_fmt_cct_fread(&cct, ehdr.flags, 
-						num_metrics, fs, stdout);
-      }
-      catch (const Diagnostics::Exception& x) {
-	DIAG_Throw("error reading calling context tree: " << x.what());
-      }
-    }
-  } // epoch list
-  hpcio_close(fs);
-  printf("\n{num-epochs: %d}\n", num_epochs);
+  delete prof;
 }
 
 
@@ -188,7 +122,7 @@ Analysis::Raw::writeAsText_flat(const char* filenm)
     prof.openread(filenm);
   }
   catch (...) {
-    DIAG_EMsg("While reading '" << filenm << "'");
+    DIAG_EMsg("While reading '" << filenm << "'...");
     throw;
   }
 
