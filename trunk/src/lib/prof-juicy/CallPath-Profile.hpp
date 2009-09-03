@@ -156,18 +156,20 @@ public:
   static Profile* 
   make(const char* fnm, FILE* outfs);
 
-  // hpcrun_fmt_epoch_fread(): 
-  // hpcrun_fmt_cct_fread(): 
-  //
-  // Reads the appropriate hpcrun_fmt object from the file stream
-  // 'infs', checking for errors, and constructs appropriate
-  // Prof::Profile::CallPath objects.  If 'outfs' is non-null, a
-  // textual form of the data is echoed to 'outfs' for human
-  // inspection.
+  
+  // hpcrun_fmt_*(): Reads the appropriate hpcrun_fmt object from the
+  // file stream 'infs', checking for errors, and constructs
+  // appropriate Prof::Profile::CallPath objects.  If 'outfs' is
+  // non-null, a textual form of the data is echoed to 'outfs' for
+  // human inspection.
+
+  static int
+  hpcrun_fmt_fread(Profile* &prof, FILE* infs, 
+		   std::string ctxtStr, FILE* outfs);
 
   static int
   hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs, std::string progName,
-			 std::string locStr, FILE* outfs);
+			 std::string ctxtStr, FILE* outfs);
 
   static void
   hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags, int num_metrics,
