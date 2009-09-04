@@ -295,7 +295,7 @@ lush_lip_init(lush_lip_t* x)
 
 
 static inline bool
-lush_lip_eq(lush_lip_t* x, lush_lip_t* y)
+lush_lip_eq(const lush_lip_t* x, const lush_lip_t* y)
 {
   return ((x == y) || (x && y 
 		       && x->data8[0] == y->data8[0]
@@ -306,7 +306,7 @@ lush_lip_eq(lush_lip_t* x, lush_lip_t* y)
 #define LUSH_LIP_STR_MIN_LEN (20 * LUSH_LIP_DATA8_SZ) /* 0x + 16 + space */
 
 const char* 
-lush_lip_sprintf(char* str, lush_lip_t* x);
+lush_lip_sprintf(char* str, const lush_lip_t* x);
 
 
 // **************************************************************************

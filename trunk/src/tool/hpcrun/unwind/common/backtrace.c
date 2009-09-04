@@ -105,7 +105,7 @@ hpcrun_backtrace(csprof_state_t *state, ucontext_t* context,
   csprof_state_verify_backtrace_invariants(state);
   
   csprof_cct_node_t* n = NULL;
-  if (hpcrun_isAgentActive()) {
+  if (hpcrun_isLogicalUnwind()) {
     n = lush_backtrace(state, context, metricId, metricIncr, skipInner, 
 		       isSync);
   }
