@@ -266,9 +266,7 @@ csprof_cct_node_t *csprof_cct_get_child(hpcrun_cct_t *cct,
 					csprof_cct_node_t *parent, 
 					csprof_frame_t *frm);
 
-int csprof_cct__write_txt(FILE* fs, hpcrun_cct_t* x);
-
-int csprof_cct__write_bin(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt);
+int hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt);
 
 #define csprof_cct__isempty(/* hpcrun_cct_t* */x) ((x)->tree_root == NULL)
 
@@ -279,11 +277,6 @@ csprof_cct_print_path_to_root(hpcrun_cct_t *tree, csprof_cct_node_t* node);
 extern csprof_cct_node_t* hpcrun_copy_btrace(csprof_cct_node_t* n);
 extern lush_cct_ctxt_t* copy_thr_ctxt(lush_cct_ctxt_t* thr_ctxt);
 extern bool hpcrun_empty_cct(hpcrun_cct_t* cct);
-
-/* private interface */
-int csprof_cct__write_txt_q(hpcrun_cct_t *);
-
-int csprof_cct__write_txt_r(FILE *, hpcrun_cct_t *, csprof_cct_node_t *);
 
 
 //***************************************************************************
