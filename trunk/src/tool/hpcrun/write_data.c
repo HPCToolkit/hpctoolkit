@@ -280,7 +280,7 @@ write_epochs(FILE* fs, csprof_state_t* state)
 
     TMSG(DATA_WRITE, "Writing %ld nodes", cct->num_nodes);
 
-    int ret = csprof_cct__write_bin(fs, epoch_flags, cct, lush_cct_ctxt);
+    int ret = hpcrun_cct_fwrite(fs, epoch_flags, cct, lush_cct_ctxt);
           
     if(ret != HPCRUN_OK) {
       TMSG(DATA_WRITE, "Error writing tree %#lx", cct);

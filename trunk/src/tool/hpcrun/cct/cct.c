@@ -471,12 +471,12 @@ hpcfile_cstree_write(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 		     hpcfmt_uint_t num_nodes);
 
 
-/* csprof_cct__write_bin: Write the tree 'x' to the file
+/* hpcrun_cct_fwrite: Write the tree 'x' to the file
    stream 'fs'.  The tree is written in HPC_CSTREE format.  Returns
    HPCRUN_OK upon success; HPCRUN_ERR on error. */
 
 int 
-csprof_cct__write_bin(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt)
+hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt)
 {
   int ret;
   if (!fs) { return HPCRUN_ERR; }
