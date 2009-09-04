@@ -85,9 +85,8 @@ LoadMapMgr::~LoadMapMgr()
 void 
 LoadMapMgr::lm_insert(LoadMap::LM* x)
 { 
-  int id = m_lm_byId.size();
-  x->id(id);
   m_lm_byId.push_back(x);
+  x->id(m_lm_byId.size()); // 1-based id
   
   std::pair<LMSet_nm::iterator, bool> ret = m_lm_byName.insert(x);
   DIAG_Assert(ret.second, "LoadMapMgr::lm_insert(): conflict inserting: " 
@@ -113,7 +112,7 @@ LoadMapMgr::merge(const ALoadMap& y)
   
   LoadMapMgr& x = *this;
 
-  for (uint i = 0; i < y.size(); ++i) { 
+  for (LM_id_t i = 1; i <= y.size(); ++i) { 
     LoadMap::LM* y_lm = y.lm(i);
     
     LMSet_nm::iterator x_fnd = x.lm_find(y_lm->name());
@@ -148,7 +147,7 @@ LoadMapMgr::dump(std::ostream& os) const
   std::string pre = "  ";
 
   os << "{ Prof::LoadMapMgr\n";
-  for (uint i = 0; i < size(); ++i) {
+  for (LM_id_t i = 1; i <= size(); ++i) {
     os << pre << i << " : ";
     lm(i)->dump(os);
     os << std::endl;

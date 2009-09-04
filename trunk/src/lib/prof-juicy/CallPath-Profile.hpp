@@ -178,6 +178,19 @@ public:
 		       FILE* infs, FILE* outfs);
 
 
+  // hpcrun_fmt_*_fwrite(): Write the appropriate hpcrun_fmt object
+  // to the file stream 'outfs', checking for errors.
+
+  static int
+  hpcrun_fmt_fwrite(Profile* prof, FILE* outfs);
+
+  static int
+  hpcrun_fmt_epoch_fwrite(Profile* prof, FILE* outfs);
+
+  static int
+  hpcrun_fmt_cct_fwrite(CCT::Tree* cct, epoch_flags_t flags, FILE* outfs);
+
+
   // -------------------------------------------------------
   // Dump contents for inspection
   // -------------------------------------------------------
