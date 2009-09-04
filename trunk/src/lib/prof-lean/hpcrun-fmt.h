@@ -253,17 +253,31 @@ typedef HPCFMT_List(metric_desc_t) metric_tbl_t; // hpcrun_metricTbl_t
 
 
 extern int 
-hpcrun_fmt_metric_tbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
-				       hpcfmt_alloc_fn alloc);
+hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
+			   hpcfmt_alloc_fn alloc);
 
 extern int 
-hpcrun_fmt_metric_tbl_fwrite(metric_tbl_t* metric_tbl, FILE* out);
+hpcrun_fmt_metricTbl_fwrite(metric_tbl_t* metric_tbl, FILE* out);
 
 extern int 
-hpcrun_fmt_metric_tbl_fprint(metric_tbl_t* metrics, FILE* out);
+hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, FILE* out);
 
 extern void 
-hpcrun_fmt_metric_tbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
+hpcrun_fmt_metricTbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
+
+
+extern int
+hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* infs, 
+			    hpcfmt_alloc_fn alloc);
+
+extern int
+hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* outfs);
+
+extern int
+hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* outfs, const char* pre);
+
+extern void
+hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************
@@ -289,7 +303,7 @@ extern int
 hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* infs, hpcfmt_alloc_fn alloc);
 
 extern int 
-hpcrun_fmt_loadmap_fwrite(loadmap_t* src, FILE* outfs);
+hpcrun_fmt_loadmap_fwrite(loadmap_t* loadmap, FILE* outfs);
 
 extern int 
 hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* outfs);
@@ -306,7 +320,8 @@ extern int
 hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, FILE* outfs);
 
 extern int
-hpcrun_fmt_loadmapEntry_fprint(loadmap_entry_t* x, FILE* outfs);
+hpcrun_fmt_loadmapEntry_fprint(loadmap_entry_t* x, FILE* outfs, 
+			       const char* pre);
 
 extern void 
 hpcrun_fmt_loadmapEntry_free(loadmap_entry_t* x, hpcfmt_free_fn dealloc);
@@ -382,13 +397,13 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 // 
 // --------------------------------------------------------------------------
 
-int 
+extern int 
 hpcrun_fmt_lip_fread(lush_lip_t* x, FILE* fs);
 
-int 
+extern int 
 hpcrun_fmt_lip_fwrite(lush_lip_t* x, FILE* fs);
 
-int 
+extern int 
 hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre);
 
 

@@ -325,7 +325,7 @@ Profile::hpcrun_fmt_fread(Profile* &prof, FILE* infs,
   int ret;
 
   // ------------------------------------------------------------
-  // Read header
+  // hdr
   // ------------------------------------------------------------
   hpcrun_fmt_hdr_t hdr;
   ret = hpcrun_fmt_hdr_fread(&hdr, infs, malloc);
@@ -338,7 +338,7 @@ Profile::hpcrun_fmt_fread(Profile* &prof, FILE* infs,
 
 
   // ------------------------------------------------------------
-  // Read each epoch and merge them to form one Profile
+  // epoch: Read each epoch and merge them to form one Profile
   // ------------------------------------------------------------
   
   prof = NULL;
@@ -376,7 +376,7 @@ Profile::hpcrun_fmt_fread(Profile* &prof, FILE* infs,
   }
 
   if (outfs) {
-    fprintf(outfs, "\n{num-epochs: %d}\n", num_epochs);
+    fprintf(outfs, "\n[You look fine today! (num-epochs: %d)]\n", num_epochs);
   }
 
   hpcrun_fmt_hdr_free(&hdr, free);
@@ -417,12 +417,12 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   // metric-tbl
   // ----------------------------------------
   metric_tbl_t metric_tbl;
-  ret = hpcrun_fmt_metric_tbl_fread(&metric_tbl, infs, malloc);
+  ret = hpcrun_fmt_metricTbl_fread(&metric_tbl, infs, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
   }
   if (outfs) {
-    hpcrun_fmt_metric_tbl_fprint(&metric_tbl, outfs);
+    hpcrun_fmt_metricTbl_fprint(&metric_tbl, outfs);
   }
 
   uint num_metrics = metric_tbl.len;
@@ -462,6 +462,10 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
   val = hpcfmt_nvpair_search(hdrNVPairs, HPCRUN_FMT_NV_tid);
   if (val) { tid = val; }
 
+  //bool doNewFormat = true; // FIXME:nasty-message
+  //val = hpcfmt_nvpair_search(hdrNVPairs, "nasty-message");
+  //if (val) { doNewFormat = false; }
+
 
   prof = new Profile(progNm, num_metrics);
   
@@ -489,7 +493,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
     metric->period(m_lst[i].period);
   }
 
-  hpcrun_fmt_metric_tbl_free(&metric_tbl, free);
+  hpcrun_fmt_metricTbl_free(&metric_tbl, free);
 
   // ----------------------------------------
   // loadmap
@@ -521,7 +525,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
 
 
   // ------------------------------------------------------------
-  // CCT (cct)
+  // cct
   // ------------------------------------------------------------
   hpcrun_fmt_cct_fread(prof->cct(), ehdr.flags, num_metrics, infs, outfs);
 
@@ -539,7 +543,7 @@ Profile::hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs,
 }
 
 
-void
+int
 Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
 			      int num_metrics, FILE* infs, FILE* outfs)
 {
@@ -626,7 +630,13 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
   if (outfs) {
     fprintf(outfs, "}\n"); 
   }
+
+  return HPCFMT_OK;
 }
+
+
+
+//***************************************************************************
 
 
 // 1. Create a (PGM) root for the CCT

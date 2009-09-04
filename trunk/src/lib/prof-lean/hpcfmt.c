@@ -193,7 +193,7 @@ hpcfmt_nvpair_fread(hpcfmt_nvpair_t* inp, FILE* infs, hpcfmt_alloc_fn alloc)
 int
 hpcfmt_nvpair_fprint(hpcfmt_nvpair_t* nvp, FILE* fs, const char* pre)
 {
-  fprintf(fs, "%s{nv-pair: %s, %s}\n", pre, nvp->name, nvp->val);
+  fprintf(fs, "%s[nv-pair: %s, %s]\n", pre, nvp->name, nvp->val);
   return HPCFMT_OK;
 }
 
