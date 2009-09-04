@@ -96,7 +96,7 @@ static const uint64_t default_granularity = 1;
 //        Writing an epoch
 //
 //  hpcrun_fmt_epoch_hdr_fwrite(flags, char-rtn-dst, gran, NVPs) /* char-rtn-dst = 1 4theMomnt */
-//  hpcrun_fmt_metric_tbl_fwrite()
+//  hpcrun_fmt_metricTbl_fwrite()
 //  hpcrun_fmt_loadmap_fwrite()
 //  hpcrun_le4_fwrite(# cct_nodes)
 //  foreach cct-node
@@ -230,7 +230,7 @@ write_epochs(FILE* fs, csprof_state_t* state)
     hpcrun_fmt_epoch_hdr_fwrite(fs, epoch_flags,
                                 default_ra_distance,
                                 default_granularity,
-                                "LIP-size","2",
+                                "TODO:epoch-name","TODO:epoch-value",
                                 NULL);
 
     //
@@ -241,7 +241,7 @@ write_epochs(FILE* fs, csprof_state_t* state)
 
     TMSG(DATA_WRITE, "metric data num metrics = %d", metric_tbl->len);
 
-    hpcrun_fmt_metric_tbl_fwrite(metric_tbl, fs);
+    hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
 
     TMSG(DATA_WRITE, "Done writing metric data");
 

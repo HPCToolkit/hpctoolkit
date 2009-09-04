@@ -158,8 +158,8 @@ public:
   make(const char* fnm, FILE* outfs);
 
   
-  // hpcrun_fmt_*(): Reads the appropriate hpcrun_fmt object from the
-  // file stream 'infs', checking for errors, and constructs
+  // hpcrun_fmt_*_fread(): Reads the appropriate hpcrun_fmt object
+  // from the file stream 'infs', checking for errors, and constructs
   // appropriate Prof::Profile::CallPath objects.  If 'outfs' is
   // non-null, a textual form of the data is echoed to 'outfs' for
   // human inspection.
@@ -173,7 +173,7 @@ public:
 			 HPCFMT_List(hpcfmt_nvpair_t)* hdrNVPairs,
 			 std::string ctxtStr, FILE* outfs);
 
-  static void
+  static int
   hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags, int num_metrics,
 		       FILE* infs, FILE* outfs);
 
