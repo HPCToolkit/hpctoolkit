@@ -85,7 +85,7 @@ ALoadMap::ALoadMap(uint sz)
 
 ALoadMap::~ALoadMap()
 {
-  for (uint i = 0; i < size(); ++i) {
+  for (LM_id_t i = 1; i <= size(); ++i) {
     delete lm(i); // ALoadMap::LM*
   }
   m_lm_byId.clear();
@@ -199,9 +199,8 @@ LoadMap::lm_insert(ALoadMap::LM* x)
 { 
   // FIXME: combine load modules if adjacent
 
-  int id = m_lm_byId.size();
-  x->id(id);
   m_lm_byId.push_back(x);
+  x->id(m_lm_byId.size()); // 1-based id
   
   m_lm_byName.insert(x); // multiset insert always successful 
 
@@ -257,7 +256,7 @@ LoadMap::compute_relocAmt()
 {
   std::string errors;
 
-  for (uint i = 0; i < size(); ++i) {
+  for (LM_id_t i = 1; i <= size(); ++i) {
     try {
       lm(i)->compute_relocAmt();
     }
@@ -279,7 +278,7 @@ LoadMap::merge(const LoadMap& y)
   
   LoadMap& x = *this;
 
-  for (uint i = 0; i < y.size(); ++i) { 
+  for (LM_id_t i = 1; i <= y.size(); ++i) { 
     LoadMap::LM* y_lm = y.lm(i);
     
     std::pair<LMSet_nm::iterator, LMSet_nm::iterator> x_fnd = 
@@ -321,7 +320,7 @@ LoadMap::dump(std::ostream& os) const
   std::string pre = "  ";
 
   os << "{ Prof::LoadMap\n";
-  for (uint i = 0; i < size(); ++i) {
+  for (LM_id_t i = 1; i <= size(); ++i) {
     os << pre << i << " : ";
     lm(i)->dump(os);
     os << std::endl;

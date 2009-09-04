@@ -93,8 +93,9 @@ namespace Prof {
 class ALoadMap : public Unique {
 public:
 
-  typedef int LM_id_t;
-  static const LM_id_t LM_id_NULL = -1;
+  // N.B.: Life is much easier if this is consistent with hpcrun-fmt
+  typedef uint LM_id_t;
+  static const LM_id_t LM_id_NULL = 0;
 
   class LM : public Unique {
   public:
@@ -153,7 +154,7 @@ public:
     void ddump() const;
 
   private:
-    void id(uint x)
+    void id(LM_id_t x)
       { m_id = x; }
 
     friend class LoadMap;
@@ -191,13 +192,14 @@ public:
 
   
   // ------------------------------------------------------------
-  // Access by id
+  // Access by id (1-based!)
   // ------------------------------------------------------------
   uint size() const
   { return m_lm_byId.size(); } 
 
-  LM* lm(uint i) const
-  { return m_lm_byId[i]; }
+  // N.B.: 1-based since 0 is a NULL value
+  LM* lm(LM_id_t i) const
+  { return m_lm_byId[(i - 1)]; }
 
 
   // ------------------------------------------------------------

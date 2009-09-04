@@ -635,6 +635,94 @@ Profile::hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags,
 }
 
 
+//***************************************************************************
+
+int
+Profile::hpcrun_fmt_fwrite(Profile* prof, FILE* fs)
+{
+  // ------------------------------------------------------------
+  // header
+  // ------------------------------------------------------------
+  hpcrun_fmt_hdr_fwrite(fs, 
+			"TODO:hdr-name","TODO:hdr-value",
+			NULL);
+
+  // ------------------------------------------------------------
+  // epoch
+  // ------------------------------------------------------------
+  hpcrun_fmt_epoch_fwrite(prof, fs);
+
+  return HPCFMT_OK;
+}
+
+
+int
+Profile::hpcrun_fmt_epoch_fwrite(Profile* prof, FILE* fs)
+{
+  // ------------------------------------------------------------
+  // epoch-hdr
+  // ------------------------------------------------------------
+
+  epoch_flags_t eflgs; // TODO:is-LUSH && FIXME_CILK_LIP_HACK
+  hpcrun_fmt_epoch_hdr_fwrite(fs, eflgs,
+			      0 /*TODO:default_ra_distance*/,
+			      0 /*TODO:default_granularity*/,
+			      "TODO:epoch-name","TODO:epoch-value",
+			      NULL);
+
+  // ------------------------------------------------------------
+  // metric-tbl
+  // ------------------------------------------------------------
+
+  hpcfmt_byte4_fwrite(prof->numMetrics(), fs);
+  for (uint i = 0; i < prof->numMetrics(); i++) {
+    const SampledMetricDesc* m = prof->metric(i);
+
+    metric_desc_t mdesc;
+    mdesc.name = const_cast<char*>(m->name().c_str());
+    mdesc.flags = m->flags();
+    mdesc.period = m->period();
+
+    hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
+  }
+
+
+  // ------------------------------------------------------------
+  // loadmap
+  // ------------------------------------------------------------
+
+  LoadMapMgr* loadMapMgr = prof->loadMapMgr();
+
+  hpcfmt_byte4_fwrite(loadMapMgr->size(), fs);
+  for (ALoadMap::LM_id_t i = 1; i <= loadMapMgr->size(); i++) {
+    const ALoadMap::LM* lm = loadMapMgr->lm(i);
+
+    loadmap_entry_t lm_entry;
+    lm_entry.id = lm->id();
+    lm_entry.name = const_cast<char*>(lm->name().c_str());
+    lm_entry.vaddr = 0;
+    lm_entry.mapaddr = 0;
+    lm_entry.flags = 0; // TODO:flags
+    
+    hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
+  }
+
+  // ------------------------------------------------------------
+  // cct
+  // ------------------------------------------------------------
+  hpcrun_fmt_cct_fwrite(NULL, eflgs, fs);
+
+  return HPCFMT_OK;
+}
+
+
+int
+Profile::hpcrun_fmt_cct_fwrite(CCT::Tree* cct, epoch_flags_t flags, FILE* fs)
+{
+  // NOTE: find the original root...
+  return HPCFMT_OK;
+}
+
 
 //***************************************************************************
 
