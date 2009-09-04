@@ -86,11 +86,15 @@ extern "C" {
 extern lush_agent_pool_t* lush_agents;
 
 
+// TODO: distinguish between logical unwind and third-person metric
+// attribution
+
 static inline bool 
-hpcrun_isAgentActive() 
+hpcrun_isLogicalUnwind()
 {
   return (lush_agents != NULL);
 }
+
 
 
 //***************************************************************************

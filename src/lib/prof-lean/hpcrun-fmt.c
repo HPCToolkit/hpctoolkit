@@ -457,7 +457,7 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
   HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&x->id_parent, fs));
 
   x->as_info = lush_assoc_info_NULL;
-  if (flags.flags.lush_active) {
+  if (flags.flags.isLogicalUnwind) {
     HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&x->as_info.bits, fs));
   }
 
@@ -466,7 +466,7 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&x->ip, fs));
 
   lush_lip_init(&x->lip);
-  if (flags.flags.lush_active) {
+  if (flags.flags.isLogicalUnwind) {
     hpcrun_fmt_lip_fread(&x->lip, fs);
   }
 
@@ -485,7 +485,7 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
   HPCFMT_ThrowIfError(hpcfmt_byte4_fwrite(x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_byte4_fwrite(x->id_parent, fs));
 
-  if (flags.flags.lush_active) {
+  if (flags.flags.isLogicalUnwind) {
     hpcfmt_byte4_fwrite(x->as_info.bits, fs);
   }
 
@@ -493,7 +493,7 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 
   hpcfmt_byte8_fwrite(x->ip, fs);
 
-  if (flags.flags.lush_active) {
+  if (flags.flags.isLogicalUnwind) {
     hpcrun_fmt_lip_fwrite(&x->lip, fs);
   }
 
@@ -512,7 +512,7 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
   fprintf(fs, "%s[node: (id: %d) (id_parent: %d) ",
 	  pre, x->id, x->id_parent);
 
-  if (flags.flags.lush_active) {
+  if (flags.flags.isLogicalUnwind) {
     char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
     lush_assoc_info_sprintf(as_str, x->as_info);
 
@@ -521,7 +521,7 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 
   fprintf(fs, "(lm_id: %"PRIu16") (ip: 0x%"PRIx64") ", x->lm_id, x->ip);
 
-  if (flags.flags.lush_active) {
+  if (flags.flags.isLogicalUnwind) {
     hpcrun_fmt_lip_fprint(&x->lip, fs, "");
   }
 

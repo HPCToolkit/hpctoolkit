@@ -225,7 +225,7 @@ write_epochs(FILE* fs, csprof_state_t* state)
     // set epoch flags before writing
     //
 
-    epoch_flags.flags.lush_active = hpcrun_isAgentActive();
+    epoch_flags.flags.isLogicalUnwind = hpcrun_isLogicalUnwind();
     
     hpcrun_fmt_epoch_hdr_fwrite(fs, epoch_flags,
                                 default_ra_distance,

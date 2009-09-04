@@ -116,7 +116,7 @@ lush_assoc_info_sprintf(char* str, lush_assoc_info_t as_info)
 lush_lip_t lush_lip_NULL = { .data8 = {0, 0} };
 
 const char* 
-lush_lip_sprintf(char* str, lush_lip_t* x)
+lush_lip_sprintf(char* str, const lush_lip_t* x)
 {
   str[0] = '\0';
 

@@ -117,8 +117,10 @@ Tree::merge(const Tree* y,
   Root* x_root = dynamic_cast<Root*>(root());
   Root* y_root = dynamic_cast<Root*>(y->root());
 
-  DIAG_Assert(x_root && y_root && x_root->name() == y_root->name(),
-	      "Unexpected root!");
+  // Merge pre-condition: if both x and y are of type CCT::Root, the
+  // merge pre-condition is satisfied.
+  DIAG_Assert(x_root && y_root,
+	      "Prof::CCT::Tree::merge: Merge precondition fails!");
 
   x_root->merge_prepare(y_newMetrics);
   x_root->merge(y_root, new_mdesc, x_newMetricBegIdx, y_newMetrics);
@@ -440,8 +442,9 @@ ANode::merge_prepare(uint numMetrics)
 }
 
 
-// Let y be a node corresponding to 'this' = x and assume x is already
-// merged.  Given y, merge y's children into x.
+// Let 'this' = x and let y be a node corresponding to x in the sense
+// that we may think of y as being locally merged with x.  Given y,
+// merge y's children into x.
 // NOTE: assume we can destroy y...
 // NOTE: assume x already has space to store merged metrics
 void

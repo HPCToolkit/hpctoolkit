@@ -139,8 +139,8 @@ static const int  HPCRUN_FMT_EpochTagLen = (sizeof(HPCRUN_FMT_EpochTag) - 1);
 
 
 typedef struct epoch_flags_bitfield {
-  bool lush_active : 1;
-  uint64_t rest    : 63;
+  bool isLogicalUnwind : 1;
+  uint64_t unused      : 63;
 } epoch_flags_bitfield;
 
 typedef union epoch_flags_t {

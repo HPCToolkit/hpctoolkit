@@ -141,7 +141,7 @@ public:
 
   bool empty() const { return (m_root == NULL); }
 
-  const CallPath::Profile* metadata() { return m_metadata; }
+  const CallPath::Profile* metadata() const { return m_metadata; }
   
   // -------------------------------------------------------
   // Given a Tree, merge into 'this'

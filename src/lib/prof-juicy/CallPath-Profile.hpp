@@ -158,37 +158,35 @@ public:
   make(const char* fnm, FILE* outfs);
 
   
-  // hpcrun_fmt_*_fread(): Reads the appropriate hpcrun_fmt object
-  // from the file stream 'infs', checking for errors, and constructs
+  // fmt_*_fread(): Reads the appropriate hpcrun_fmt object from the
+  // file stream 'infs', checking for errors, and constructs
   // appropriate Prof::Profile::CallPath objects.  If 'outfs' is
   // non-null, a textual form of the data is echoed to 'outfs' for
   // human inspection.
 
   static int
-  hpcrun_fmt_fread(Profile* &prof, FILE* infs, 
-		   std::string ctxtStr, FILE* outfs);
+  fmt_fread(Profile* &prof, FILE* infs, std::string ctxtStr, FILE* outfs);
 
   static int
-  hpcrun_fmt_epoch_fread(Profile* &prof, FILE* infs, 
-			 HPCFMT_List(hpcfmt_nvpair_t)* hdrNVPairs,
-			 std::string ctxtStr, FILE* outfs);
+  fmt_epoch_fread(Profile* &prof, FILE* infs, 
+		  HPCFMT_List(hpcfmt_nvpair_t)* hdrNVPairs,
+		  std::string ctxtStr, FILE* outfs);
 
   static int
-  hpcrun_fmt_cct_fread(CCT::Tree* cct, epoch_flags_t flags, int num_metrics,
-		       FILE* infs, FILE* outfs);
+  fmt_cct_fread(Profile& prof, FILE* infs, FILE* outfs);
 
 
-  // hpcrun_fmt_*_fwrite(): Write the appropriate hpcrun_fmt object
-  // to the file stream 'outfs', checking for errors.
-
-  static int
-  hpcrun_fmt_fwrite(Profile* prof, FILE* outfs);
+  // fmt_*_fwrite(): Write the appropriate object as hpcrun_fmt to the
+  // file stream 'outfs', checking for errors.
 
   static int
-  hpcrun_fmt_epoch_fwrite(Profile* prof, FILE* outfs);
+  fmt_fwrite(const Profile& prof, FILE* outfs);
 
   static int
-  hpcrun_fmt_cct_fwrite(CCT::Tree* cct, epoch_flags_t flags, FILE* outfs);
+  fmt_epoch_fwrite(const Profile& prof, FILE* outfs);
+
+  static int
+  fmt_cct_fwrite(const Profile& prof, FILE* fs);
 
 
   // -------------------------------------------------------
@@ -221,9 +219,12 @@ private:
   cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg);
  
 private:
+  std::string m_name;
+
   //typedef std::map<std::string, std::string> StrToStrMap;
   //StrToStrMap m_nvPairMap;
-  std::string m_name;
+  
+  epoch_flags_t m_flags;
   
   SampledMetricDescVec m_metricdesc;
 
