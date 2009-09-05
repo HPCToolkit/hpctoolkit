@@ -63,6 +63,7 @@
 //************************* System Include Files ****************************
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 //*************************** Cilk Include Files ****************************
@@ -100,15 +101,17 @@ union cilk_ip {
   // superimposed with:
   // ------------------------------------------------------------
   struct {
-    void* ip;
-    //uint32_t status;
+    // NOTE: coordinate with lush_lip_getLMId() and lush_lip_getIP()
+    uint64_t lm_id;
+    uint64_t ip;
   } u;
 };
 
 static inline void 
-cilk_ip_init(cilk_ip_t* x, void* ip /*uint32_t status*/)
+cilk_ip_set(cilk_ip_t* x, void* ip /*uint32_t status*/)
 {
-  x->u.ip = ip;
+  //lush_lip_setLMId(lip, ...); // FIXME
+  x->u.ip = (uint64_t)ip;
   //x->u.status = status;
 }
 

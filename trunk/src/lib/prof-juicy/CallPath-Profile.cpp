@@ -183,18 +183,24 @@ Profile::merge_fixCCT(std::vector<LoadMap::MergeChange>& mergeChg)
     
     CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
     if (n_dyn) {
+      lush_lip_t* lip = n_dyn->lip();
 
-      LoadMap::LM_id_t y_lm_id = n_dyn->lmId();
-      // FIXME:lush: also translate lip's
-
+      LoadMap::LM_id_t lmId1, lmId2;
+      lmId1 = n_dyn->lmId_real();
+      lmId2 = (lip) ? lush_lip_getLMId(lip) : LoadMap::LM_id_NULL;
+      
       for (uint i = 0; i < mergeChg.size(); ++i) {
 	const LoadMap::MergeChange& chg = mergeChg[i];
-	if (chg.old_id == y_lm_id) {
-	  n_dyn->lmId(chg.new_id);
-	  break;
+	if (chg.old_id == lmId1) {
+	  n_dyn->lmId_real(chg.new_id);
+	  if (lmId2 == LoadMap::LM_id_NULL) {
+	    break; // quick exit in the common case
+	  }
+	}
+	if (chg.old_id == lmId2) {
+	  lush_lip_setLMId(lip, chg.new_id);
 	}
       }
-
     }
   }
 }
@@ -503,7 +509,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
   val = hpcfmt_nvpair_search(hdrNVPairs, HPCRUN_FMT_NV_tid);
   if (val) { tid = val; }
 
-  // FIXME: temporary (nasty-message)
+  // FIXME: temporary for dual-interpretations
   bool isNewFormat = true; 
   val = hpcfmt_nvpair_search(hdrNVPairs, "nasty-message");
   if (val) { isNewFormat = false; }
@@ -582,7 +588,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
   // ------------------------------------------------------------
   // cct
   // ------------------------------------------------------------
-  LoadMap* loadmap_p = (isNewFormat) ? NULL : &loadmap; // FIXME: temporary
+  LoadMap* loadmap_p = (isNewFormat) ? NULL : &loadmap; // FIXME:temporary
   fmt_cct_fread(*prof, infs, loadmap_p, outfs);
 
   prof->cct_canonicalize();
@@ -905,7 +911,8 @@ cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt,
 
   if (lip) {
     if (loadmap) {
-      VMA lip_ip = lip->data8[0]; // FIXME
+      VMA lip_ip = lush_lip_getIP(lip);
+
       LoadMap::LM* lm = loadmap->lm_find(lip_ip);
       
       lush_lip_setLMId(lip, lm->id());
