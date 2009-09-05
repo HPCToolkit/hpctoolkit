@@ -87,9 +87,6 @@
 
 //*************************** Forward Declarations ***************************
 
-// Hack for interpreting Cilk-like LIPs.
-#define FIXME_CILK_LIP_HACK
-
 inline std::ostream&
 operator<<(std::ostream& os, const hpcrun_metricVal_t x)
 {
@@ -129,26 +126,35 @@ public:
   // Constructor/Destructor
   // -------------------------------------------------------
   
-  Tree(const CallPath::Profile* metadata); // FIXME: metrics and epoch
+  Tree(const CallPath::Profile* metadata);
 
   virtual ~Tree();
 
   // -------------------------------------------------------
   // Tree data
   // -------------------------------------------------------
-  ANode* root() const { return m_root; }
-  void   root(ANode* x) { m_root = x; }
+  ANode*
+  root() const
+  { return m_root; }
 
-  bool empty() const { return (m_root == NULL); }
+  void
+  root(ANode* x)
+  { m_root = x; }
 
-  const CallPath::Profile* metadata() const { return m_metadata; }
+  bool
+  empty() const
+  { return (m_root == NULL); }
+
+  const CallPath::Profile*
+  metadata() const
+  { return m_metadata; }
   
   // -------------------------------------------------------
   // Given a Tree, merge into 'this'
   // -------------------------------------------------------
-  void merge(const Tree* y, 
-	     const SampledMetricDescVec* new_mdesc, 
-	     uint x_newMetricBegIdx, uint y_newMetrics);
+  void
+  merge(const Tree* y, const SampledMetricDescVec* new_mdesc, 
+	uint x_newMetricBegIdx, uint y_newMetrics);
 
   // -------------------------------------------------------
   // Write contents
@@ -159,13 +165,15 @@ public:
   std::ostream& 
   dump(std::ostream& os = std::cerr, int oFlags = 0) const;
   
-  void ddump() const;
+  void
+  ddump() const;
 
 
   // Given a set of flags 'flags', determines whether we need to
   // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
   // or xml::ESC_FALSE. 
-  static int doXMLEscape(int oFlags);
+  static int
+  doXMLEscape(int oFlags);
  
 private:
   ANode* m_root;
@@ -251,46 +259,61 @@ public:
   // --------------------------------------------------------
   // General data
   // --------------------------------------------------------
-  NodeType type() const { return m_type; }
+  NodeType
+  type() const
+  { return m_type; }
 
   // id: a unique id; 0 is reserved for a NULL value
-  uint id() const { return m_id; }
+  uint
+  id() const
+  { return m_id; }
 
   // 'name()' is overridden by some derived classes
-  virtual const std::string& name() const { return NodeTypeToName(type()); }
+  virtual const std::string&
+  name() const
+  { return NodeTypeToName(type()); }
 
 
   // structure: static structure id for this node; the same static
   // structure will have the same structure().
   Struct::ACodeNode* 
-  structure() const  { return m_strct; }
+  structure() const
+  { return m_strct; }
 
   void 
-  structure(Struct::ACodeNode* strct) { m_strct = strct; }
+  structure(Struct::ACodeNode* strct)
+  { m_strct = strct; }
 
   uint 
-  structureId() const { return (m_strct) ? m_strct->id() : 0; }
+  structureId() const
+  { return (m_strct) ? m_strct->id() : 0; }
 
   SrcFile::ln 
-  begLine() const { return (m_strct) ? m_strct->begLine() : ln_NULL; }
+  begLine() const
+  { return (m_strct) ? m_strct->begLine() : ln_NULL; }
 
   SrcFile::ln 
-  endLine() const { return (m_strct) ? m_strct->endLine() : ln_NULL;  }
+  endLine() const
+  { return (m_strct) ? m_strct->endLine() : ln_NULL;  }
   
 
   // --------------------------------------------------------
   // Tree navigation 
   // --------------------------------------------------------
-  ANode* parent() const 
+  ANode*
+  parent() const 
   { return static_cast<ANode*>(NonUniformDegreeTreeNode::Parent()); }
 
-  ANode* firstChild() const
+  ANode*
+  firstChild() const
   { return static_cast<ANode*>(NonUniformDegreeTreeNode::FirstChild()); }
 
-  ANode* lastChild() const
+  ANode*
+  lastChild() const
   { return static_cast<ANode*>(NonUniformDegreeTreeNode::LastChild()); }
 
-  ANode* nextSibling() const
+  ANode*
+  nextSibling() const
   {
     // siblings are linked in a circular list
     if ((parent()->lastChild() != this)) {
@@ -299,7 +322,8 @@ public:
     return NULL;  
   }
 
-  ANode* prevSibling() const
+  ANode*
+  prevSibling() const
   {
     // siblings are linked in a circular list
     if ((parent()->firstChild() != this)) {
@@ -308,7 +332,8 @@ public:
     return NULL;
   }
 
-  bool isLeaf() const 
+  bool
+  isLeaf() const 
   { return (NonUniformDegreeTreeNode::FirstChild() == NULL); }
   
 
@@ -366,20 +391,26 @@ public:
   std::ostream& 
   dump(std::ostream& os = std::cerr, int oFlags = 0, const char *pre = "") const;
 
-  void ddump() const;
+  void
+  ddump() const;
 
-  void ddump_me() const;
+  void
+  ddump_me() const;
   
-  virtual std::string codeName() const;
+  virtual std::string
+  codeName() const;
 
 protected:
 
-  bool writeXML_pre(std::ostream& os = std::cerr, int oFlags = 0,
-		    const char *prefix = "") const;
-  void writeXML_post(std::ostream& os = std::cerr, int oFlags = 0, 
-		     const char *prefix = "") const;
+  bool
+  writeXML_pre(std::ostream& os = std::cerr, int oFlags = 0,
+	       const char *prefix = "") const;
+  void
+  writeXML_post(std::ostream& os = std::cerr, int oFlags = 0, 
+		const char *prefix = "") const;
 
-  void merge_fixup(const SampledMetricDescVec* mdesc, int metric_offset);
+  void
+  merge_fixup(const SampledMetricDescVec* mdesc, int metric_offset);
   
 protected:
   NodeType m_type;
@@ -473,70 +504,99 @@ public:
 
 
   // -------------------------------------------------------
-  // 
+  // call path id
   // -------------------------------------------------------
 
   // call path id: a persistent call path id (persistent in the sense
   // that it must be consistent with hpctrace).  0 is reserved as a
   // NULL value.
-  uint cpId() const
-    { return m_cpId; }
 
+  uint 
+  cpId() const
+  { return m_cpId; }
+  
 
-  lush_assoc_info_t assocInfo() const 
-    { return m_as_info; }
-  void assocInfo(lush_assoc_info_t x) 
-    { m_as_info = x; }
+  // -------------------------------------------------------
+  // logical unwinding association
+  // -------------------------------------------------------
 
-  lush_assoc_t assoc() const 
+  lush_assoc_info_t 
+  assocInfo() const 
+  { return m_as_info; }
+
+  void 
+  assocInfo(lush_assoc_info_t x) 
+  { m_as_info = x; }
+
+  lush_assoc_t 
+  assoc() const 
   { return lush_assoc_info__get_assoc(m_as_info); }
 
-  LoadMap::LM_id_t lmId() const 
-    { return m_lmId; }
-  void lmId(LoadMap::LM_id_t x)
-    { m_lmId = x; }
 
-  virtual VMA ip() const 
+  // -------------------------------------------------------
+  // load-module id, ip
+  // -------------------------------------------------------
+
+  LoadMap::LM_id_t
+  lmId() const 
   {
-#ifdef FIXME_CILK_LIP_HACK
-    if (lip_cilk_isvalid()) { return lip_cilk(); }
-#endif
+    if (isValid_lip()) { return lush_lip_getLMId(m_lip); }
+    return m_lmId; 
+  }
+
+  LoadMap::LM_id_t
+  lmId_real() const
+  { return m_lmId; }
+
+  void
+  lmId(LoadMap::LM_id_t x)
+  { 
+    if (isValid_lip()) { lush_lip_setLMId(m_lip, x); return; }
+    m_lmId = x; 
+  }
+
+  void
+  lmId_real(LoadMap::LM_id_t x)
+  { m_lmId = x; }
+
+  virtual VMA 
+  ip() const 
+  {
+    if (isValid_lip()) { return lush_lip_getIP(m_lip); }
     return m_ip; 
   }
 
-  void ip(VMA ip, ushort opIdx) 
+  VMA 
+  ip_real() const 
+  { return m_ip; }
+
+  void 
+  ip(VMA ip, ushort opIdx) 
   { 
-#ifdef FIXME_CILK_LIP_HACK
-    if (lip_cilk_isvalid()) { lip_cilk(ip); m_opIdx = 0; return; }
-#endif
-    m_ip = ip; m_opIdx = opIdx; 
+    if (isValid_lip()) { lush_lip_setIP(m_lip, ip); m_opIdx = 0; return; }
+    m_ip = ip; m_opIdx = opIdx;
   }
 
-  ushort opIndex() const 
+  ushort
+  opIndex() const 
   { return m_opIdx; }
 
 
-#ifdef FIXME_CILK_LIP_HACK
-  VMA ip_real() const 
-  { return m_ip; }
 
-  bool lip_cilk_isvalid() const 
-  { return m_lip && (lip_cilk() != 0) && (lip_cilk() != (VMA)m_lip); }
+  // -------------------------------------------------------
+  // logical ip
+  // -------------------------------------------------------
 
-  VMA lip_cilk() const 
-  { return m_lip->data8[0]; }
+  lush_lip_t*
+  lip() const 
+  { return m_lip; }
   
-  void lip_cilk(VMA ip) 
-  { m_lip->data8[0] = ip; }
-#endif
+  void
+  lip(lush_lip_t* lip) 
+  { m_lip = lip; }
 
-
-  lush_lip_t* lip() const 
-    { return m_lip; }
-  void lip(lush_lip_t* lip) 
-    { m_lip = lip; }
-
-  static lush_lip_t* clone_lip(lush_lip_t* x) 
+  static lush_lip_t*
+  clone_lip(lush_lip_t* x) 
   {
     lush_lip_t* x_clone = NULL;
     if (x) {
@@ -546,32 +606,30 @@ public:
     return x_clone;
   }
 
-  hpcrun_metricVal_t metric(int i) const 
-    { return m_metrics[i]; }
-  uint numMetrics() const 
-    { return m_metrics.size(); }
-
-  void metricIncr(int i, hpcrun_metricVal_t incr)
-    { ADynNode::metricIncr((*m_metricdesc)[i], &m_metrics[i], incr); }
-  void metricDecr(int i, hpcrun_metricVal_t decr)  
-    { ADynNode::metricDecr((*m_metricdesc)[i], &m_metrics[i], decr); }
-
-
-  const SampledMetricDescVec* metricdesc() const 
-    { return m_metricdesc; }
-  void metricdesc(const SampledMetricDescVec* x) 
-    { m_metricdesc = x; }
-
+  bool 
+  isValid_lip() const 
+  { return (m_lip && (lush_lip_getLMId(m_lip) != 0)); }
 
   // -------------------------------------------------------
-  // 
+  // metrics
   // -------------------------------------------------------
 
-  void mergeMetrics(const ADynNode& y, uint beg_idx = 0);
-  void appendMetrics(const ADynNode& y);
+  const SampledMetricDescVec*
+  metricdesc() const 
+  { return m_metricdesc; }
+  
+  void
+  metricdesc(const SampledMetricDescVec* x) 
+  { m_metricdesc = x; }
 
-  void expandMetrics_before(uint offset);
-  void expandMetrics_after(uint offset);
+
+  hpcrun_metricVal_t
+  metric(int i) const 
+  { return m_metrics[i]; }
+  
+  uint
+  numMetrics() const 
+  { return m_metrics.size(); }
 
   bool 
   hasMetrics() const 
@@ -584,6 +642,15 @@ public:
     }
     return false;
   }
+
+  void
+  metricIncr(int i, hpcrun_metricVal_t incr)
+  { ADynNode::metricIncr((*m_metricdesc)[i], &m_metrics[i], incr); }
+  
+  void
+  metricDecr(int i, hpcrun_metricVal_t decr)  
+  { ADynNode::metricDecr((*m_metricdesc)[i], &m_metrics[i], decr); }
+
 
   static inline void
   metricIncr(const SampledMetricDesc* mdesc, 
@@ -609,14 +676,31 @@ public:
     }
   }
 
+  void
+  mergeMetrics(const ADynNode& y, uint beg_idx = 0);
+  
+  void
+  appendMetrics(const ADynNode& y);
+
+  void
+  expandMetrics_before(uint offset);
+  
+  void
+  expandMetrics_after(uint offset);
+
+
   // -------------------------------------------------------
   // Dump contents for inspection
   // -------------------------------------------------------
 
-  std::string assocInfo_str() const;
-  std::string lip_str() const;
+  std::string
+  assocInfo_str() const;
+  
+  std::string
+  lip_str() const;
 
-  std::string nameDyn() const;
+  std::string
+  nameDyn() const;
 
   void 
   writeDyn(std::ostream& os, int oFlags = 0, const char* prefix = "") const;
@@ -687,7 +771,8 @@ public:
   Root(const char* nm);
   virtual ~Root();
 
-  const std::string& name() const { return m_name; }
+  const std::string&
+  name() const { return m_name; }
   
   // Dump contents for inspection
   virtual std::string
@@ -713,7 +798,7 @@ public:
   // shallow copy (in the sense the children are not copied)
   ProcFrm(const ProcFrm& x)
     : ANode(x)
-    { }
+  { }
 
   // -------------------------------------------------------
   // Static structure
@@ -721,7 +806,8 @@ public:
   // NOTE: m_strct is either Struct::Proc or Struct::Alien
 
   const std::string& 
-  lmName() const { 
+  lmName() const
+  { 
     if (m_strct) { 
       return m_strct->AncLM()->name();
     }
@@ -731,13 +817,15 @@ public:
   }
 
   uint 
-  lmId() const { 
+  lmId() const
+  { 
     return (m_strct) ? m_strct->AncLM()->id() : 0;
   }
 
 
   const std::string& 
-  fileName() const {
+  fileName() const
+  {
     if (m_strct) {
       return (isAlien()) ? 
 	dynamic_cast<Struct::Alien*>(m_strct)->fileName() :
@@ -749,7 +837,8 @@ public:
   }
 
   uint 
-  fileId() const {
+  fileId() const
+  {
     uint id = 0;
     if (m_strct) {
       id = (isAlien()) ? m_strct->id() : m_strct->AncFile()->id();
@@ -759,7 +848,8 @@ public:
 
 
   const std::string& 
-  procName() const {
+  procName() const
+  {
     // Struct::Proc or Struct::Alien
     if (m_strct) { 
       return m_strct->name();
@@ -775,13 +865,15 @@ public:
 
 
   uint 
-  procId() const { 
+  procId() const
+  { 
     return (m_strct) ? m_strct->id() : 0;
   }
 
 
   // Alien
-  bool isAlien() const {
+  bool isAlien() const
+  {
     return (m_strct && m_strct->type() == Struct::ANode::TyALIEN);
   }
 
@@ -860,7 +952,8 @@ class Stmt: public ADynNode {
   virtual ~Stmt()
   { }
 
-  Stmt& operator=(const Stmt& x) 
+  Stmt&
+  operator=(const Stmt& x) 
   {
     if (this != &x) {
       ADynNode::operator=(x);
@@ -895,15 +988,16 @@ public:
   { }
   
   // Node data
-  virtual VMA ip() const 
+  virtual VMA 
+  ip() const 
   {
-#ifdef FIXME_CILK_LIP_HACK
-    if (lip_cilk_isvalid()) { return (lip_cilk() - 1); }
-#endif
+    if (isValid_lip()) { return (lush_lip_getIP(lip()) - 1); }
     return (ADynNode::ip_real() - 1);
   }
   
-  VMA ra() const { return ADynNode::ip_real(); }
+  VMA 
+  ra() const 
+  { return ADynNode::ip_real(); }
     
   // Dump contents for inspection
   virtual std::string 

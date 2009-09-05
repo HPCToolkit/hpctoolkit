@@ -308,13 +308,13 @@ LUSHI_step_pnote(lush_cursor_t* cursor)
 
 #define SET_LIP_AND_TY(cl, lip, ty)				\
   if (!cl) {							\
-    cilk_ip_init(lip, NULL /*0*/);				\
+    cilk_ip_set(lip, NULL /*0*/);				\
     ty = LUSH_STEP_END_CHORD;					\
   }								\
   else {							\
     /* NOTE: interior lips should act like a return address; */	\
     /*   therefore, we add 1                                 */	\
-    cilk_ip_init(lip, CILKFRM_PROC(cl->frame) + 1);		\
+    cilk_ip_set(lip, CILKFRM_PROC(cl->frame) + 1);		\
     ty = LUSH_STEP_CONT;					\
   } 
 
@@ -335,7 +335,7 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
       ty = LUSH_STEP_END_CHORD;
     }
     else {
-      cilk_ip_init(lip, csr->u.ref_ip /*0*/);
+      cilk_ip_set(lip, csr->u.ref_ip /*0*/);
       ty = LUSH_STEP_CONT;
       csr_set_flag(csr, UnwFlg_BegLNote);
     }
