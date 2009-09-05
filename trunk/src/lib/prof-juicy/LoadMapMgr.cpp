@@ -118,17 +118,16 @@ LoadMapMgr::merge(const ALoadMap& y)
     LMSet_nm::iterator x_fnd = x.lm_find(y_lm->name());
     LoadMap::LM* x_lm = (x_fnd != x.lm_end_nm()) ? *x_fnd : NULL;
 
-    if (x_lm) {
-      if (x_lm->id() != y_lm->id()) {
-	// y_lm->id() is replaced by x_lm->id()
-	mergeChg.push_back(LoadMap::MergeChange(y_lm->id(), x_lm->id()));
-      }
-    }
-    else {
-      // Create x_lm for y_lm.  y_lm->id() is replaced by x_lm->id().
+    // Post-INVARIANT: A corresponding x_lm exists
+    if (!x_lm) {
+      // Create x_lm for y_lm.
       x_lm = new ALoadMap::LM(y_lm->name());
       x_lm->isAvail(y_lm->isAvail());
       lm_insert(x_lm);
+    }
+
+    if (x_lm->id() != y_lm->id()) {
+      // y_lm->id() is replaced by x_lm->id()
       mergeChg.push_back(LoadMap::MergeChange(y_lm->id(), x_lm->id()));
     }
     

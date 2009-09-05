@@ -276,12 +276,12 @@ Call::Call(ANode* _parent, uint cpId, const SampledMetricDescVec* metricdesc)
 Call::Call(ANode* _parent, 
 	   uint cpId,
 	   lush_assoc_info_t as_info,
-	   VMA ip, ushort opIndex, 
+	   LoadMap::LM_id_t lmId, VMA ip, ushort opIndex, 
 	   lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc,
 	   std::vector<hpcrun_metricVal_t>& metrics)
   : ADynNode(TyCall, _parent, NULL, 
-	     cpId, as_info, ip, opIndex, lip, metricdesc, metrics)
+	     cpId, as_info, lmId, ip, opIndex, lip, metricdesc, metrics)
 {
   Call_Check(this, _parent);
 }
@@ -474,7 +474,7 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
     it++; // advance iterator -- it is pointing at 'child'
 
     ANode* x_child = findDynChild(y_child_dyn->assocInfo(),
-				  y_child_dyn->lm_id(),
+				  y_child_dyn->lmId(),
 				  y_child_dyn->ip_real(),
 				  y_child_dyn->lip());
     if (!x_child) {
@@ -506,7 +506,7 @@ ANode::findDynChild(lush_assoc_info_t as_info,
     lush_assoc_t as = lush_assoc_info__get_assoc(as_info);
 
     if (child_dyn 
-	&& child_dyn->lm_id() == lm_id
+	&& child_dyn->lmId() == lm_id
 	&& child_dyn->ip_real() == ip
 	&& lush_lip_eq(child_dyn->lip(), lip)
 	&& lush_assoc_class_eq(child_dyn->assoc(), as) 

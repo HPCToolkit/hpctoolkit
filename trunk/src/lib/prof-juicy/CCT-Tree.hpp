@@ -417,24 +417,24 @@ public:
 
   ADynNode(NodeType type, ANode* _parent, Struct::ACodeNode* strct,
 	   uint32_t cpId, lush_assoc_info_t as_info, 
-	   VMA ip, ushort opIdx, lush_lip_t* lip,
+	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc)
     : ANode(type, _parent, strct),
       m_cpId(cpId),
       m_as_info(as_info), 
-      m_lmId(LoadMap::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
+      m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
       m_metricdesc(metricdesc)
     { }
 
   ADynNode(NodeType type, ANode* _parent, Struct::ACodeNode* strct,
 	   uint32_t cpId, lush_assoc_info_t as_info, 
-	   VMA ip, ushort opIdx, lush_lip_t* lip,
+	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc,
 	   std::vector<hpcrun_metricVal_t>& metrics)
     : ANode(type, _parent, strct),
       m_cpId(cpId),
       m_as_info(as_info),
-      m_lmId(LoadMap::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
+      m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
       m_metricdesc(metricdesc), m_metrics(metrics)
     { }
 
@@ -491,9 +491,9 @@ public:
   lush_assoc_t assoc() const 
   { return lush_assoc_info__get_assoc(m_as_info); }
 
-  LoadMap::LM_id_t lm_id() const 
+  LoadMap::LM_id_t lmId() const 
     { return m_lmId; }
-  void lm_id(LoadMap::LM_id_t x)
+  void lmId(LoadMap::LM_id_t x)
     { m_lmId = x; }
 
   virtual VMA ip() const 
@@ -849,12 +849,12 @@ class Stmt: public ADynNode {
   Stmt(ANode* _parent,
        uint32_t cpId,
        lush_assoc_info_t as_info,
-       VMA ip, ushort opIdx, 
+       LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, 
        lush_lip_t* lip,
        const SampledMetricDescVec* metricdesc,
        std::vector<hpcrun_metricVal_t>& metrics)
     : ADynNode(TyStmt, _parent, NULL, 
-	       cpId, as_info, ip, opIdx, lip, metricdesc, metrics)
+	       cpId, as_info, lmId, ip, opIdx, lip, metricdesc, metrics)
   { }
 
   virtual ~Stmt()
@@ -886,7 +886,7 @@ public:
   Call(ANode* _parent, 
        uint32_t cpId,
        lush_assoc_info_t as_info,
-       VMA ip, ushort opIdx, 
+       LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, 
        lush_lip_t* lip,
        const SampledMetricDescVec* metricdesc,
        std::vector<hpcrun_metricVal_t>& metrics);

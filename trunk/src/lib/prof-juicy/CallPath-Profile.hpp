@@ -173,7 +173,7 @@ public:
 		  std::string ctxtStr, FILE* outfs);
 
   static int
-  fmt_cct_fread(Profile& prof, FILE* infs, FILE* outfs);
+  fmt_cct_fread(Profile& prof, FILE* infs, LoadMap* loadmap, FILE* outfs);
 
 
   // fmt_*_fwrite(): Write the appropriate object as hpcrun_fmt to the
@@ -205,18 +205,12 @@ public:
   static const int StructMetricIdFlg = 0;
 
 private:
-  // 1. annotate CCT::Tree nodes with associated ALoadMap::LM_id_t from
-  //    the LoadMap.
-  // 2. normalize CCT::Tree node IPs (unrelocate) to prepare for LoadMapMgr
   void 
   cct_canonicalize();
 
+  // apply CCT MergeChange after merging two profiles
   void 
-  cct_canonicalize(const LoadMap& loadmap);
-
-  // maintain the CCT invariants after merging two profiles
-  void 
-  cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg);
+  merge_fixCCT(std::vector<LoadMap::MergeChange>& mergeChg);
  
 private:
   std::string m_name;

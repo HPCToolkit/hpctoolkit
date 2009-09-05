@@ -33,7 +33,7 @@ epoch-hdr = epoch-tag{8b}
 
 epoch-tag = "EPOCH___"
 
-  Possible flags: lush/non-lush
+  Possible flags: is-logical-unwinding
 
   Possible nv-pairs: size of LIP
 
@@ -52,10 +52,10 @@ loadmap_entry = id{2b} str flags{8b}
 cct = [cct-node]*
 cct-node = node-id{4b}                 (neg if node is a leaf)
            parent-id{4b}
-           lush-assoc{4b}?             (only with lush)
+           lush-assoc{4b}?             (only with logical unwinding)
            lm-id{2b}
-           ip{8b}
-           lush-lip{16b}?              (only with lush)
+           ip{8b}                      (unrelocated instruction pointer)
+           lush-lip{16b}?              (only with logical unwinding)
            (metric-data)*
 
 ------------------------------------------------------------
