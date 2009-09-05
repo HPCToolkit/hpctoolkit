@@ -95,6 +95,8 @@ namespace Prof {
 
 namespace CCT {
 
+uint Tree::raToCallsiteOfst = 1;
+
 
 Tree::Tree(const CallPath::Profile* metadata)
   : m_root(NULL), m_metadata(metadata)
@@ -114,13 +116,24 @@ Tree::merge(const Tree* y,
 	    const SampledMetricDescVec* new_mdesc,		  
 	    uint x_newMetricBegIdx, uint y_newMetrics)
 {
-  Root* x_root = dynamic_cast<Root*>(root());
-  Root* y_root = dynamic_cast<Root*>(y->root());
+  CCT::ANode* x_root = root();
+  CCT::ANode* y_root = y->root();
 
-  // Merge pre-condition: if both x and y are of type CCT::Root, the
-  // merge pre-condition is satisfied.
-  DIAG_Assert(x_root && y_root,
-	      "Prof::CCT::Tree::merge: Merge precondition fails!");
+  // Merge pre-condition: both x and y should be "locally merged",
+  // i.e. they should be equal except for metrics and children.
+  bool isPrecondition = false;
+  if (typeid(*x_root) == typeid(CCT::Root)
+      && typeid(*y_root) == typeid(CCT::Root)) {
+    isPrecondition = true;
+  }
+  else {
+    ADynNode* x_dyn = dynamic_cast<ADynNode*>(x_root);
+    ADynNode* y_dyn = dynamic_cast<ADynNode*>(y_root);
+    if (x_dyn && y_dyn && ADynNode::isMergable(*x_dyn, *y_dyn)) {
+      isPrecondition = true;
+    }
+  }
+  DIAG_Assert(isPrecondition, "Prof::CCT::Tree::merge: Merge precondition fails!");
 
   x_root->merge_prepare(y_newMetrics);
   x_root->merge(y_root, new_mdesc, x_newMetricBegIdx, y_newMetrics);
@@ -473,45 +486,33 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
     DIAG_Assert(y_child_dyn, "");
     it++; // advance iterator -- it is pointing at 'child'
 
-    ANode* x_child = findDynChild(y_child_dyn->assocInfo(),
-				  y_child_dyn->lmId(),
-				  y_child_dyn->ip_real(),
-				  y_child_dyn->lip());
-    if (!x_child) {
+    ADynNode* x_child_dyn = findDynChild(*y_child_dyn);
+
+    if (!x_child_dyn) {
       y_child->Unlink();
       y_child->merge_fixup(new_mdesc, x_newMetricBegIdx);
       y_child->Link(x);
     }
     else {
-      ADynNode* x_child_dyn = dynamic_cast<ADynNode*>(x_child);
       DIAG_MsgIf(0, "ANode::merge: Merging y into x:\n"
 		 << "  y: " << y_child_dyn->toString()
 		 << "  x: " << x_child_dyn->toString());
 
       x_child_dyn->mergeMetrics(*y_child_dyn, x_newMetricBegIdx);
-      x_child->merge(y_child, new_mdesc, x_newMetricBegIdx, y_newMetrics);
+      x_child_dyn->merge(y_child, new_mdesc, x_newMetricBegIdx, y_newMetrics);
     }
   }
 }
 
 
-ANode* 
-ANode::findDynChild(lush_assoc_info_t as_info, 
-		    LoadMap::LM_id_t lm_id, VMA ip, lush_lip_t* lip)
+ADynNode* 
+ANode::findDynChild(const ADynNode& y_dyn)
 {
   for (ANodeChildIterator it(this); it.Current(); ++it) {
-    ANode* child = it.CurNode();
-    ADynNode* child_dyn = dynamic_cast<ADynNode*>(child);
-    
-    lush_assoc_t as = lush_assoc_info__get_assoc(as_info);
-
-    if (child_dyn 
-	&& child_dyn->lmId() == lm_id
-	&& child_dyn->ip_real() == ip
-	&& lush_lip_eq(child_dyn->lip(), lip)
-	&& lush_assoc_class_eq(child_dyn->assoc(), as) 
-	&& lush_assoc_info__path_len_eq(child_dyn->assocInfo(), as_info)) {
-      return child;
+    ANode* x = it.CurNode();
+    ADynNode* x_dyn = dynamic_cast<ADynNode*>(x);
+    if (x_dyn && ADynNode::isMergable(*x_dyn, y_dyn)) {
+      return x_dyn;
     }
   }
   return NULL;

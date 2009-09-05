@@ -152,8 +152,8 @@ typedef union epoch_flags_t {
 typedef struct hpcrun_fmt_epoch_hdr_t {
 
   epoch_flags_t flags;
-  uint32_t ra_distance;
-  uint64_t granularity;
+  uint64_t measurementGranularity;
+  uint32_t raToCallsiteOfst;
   HPCFMT_List(hpcfmt_nvpair_t) nvps;
 
 } hpcrun_fmt_epoch_hdr_t;
@@ -165,7 +165,8 @@ hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
 
 extern int 
 hpcrun_fmt_epoch_hdr_fwrite(FILE* out, epoch_flags_t flags, 
-			    uint32_t ra_distance, uint64_t granularity, ...);
+			    uint64_t measurementGranularity, 
+			    uint32_t raToCallsiteOfst, ...);
 
 extern int 
 hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* out);

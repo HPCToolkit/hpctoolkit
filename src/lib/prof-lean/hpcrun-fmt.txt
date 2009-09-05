@@ -27,8 +27,8 @@ epoch = epoch-hdr metric-tbl loadmap cct
 
 epoch-hdr = epoch-tag{8b}
             epoch-flags{8b}
-            characteristic-rtn-addr-distance{4b}
-            granularity{8b}
+            measurement-granularity{8b}
+            ra-to-callsite-offset{4b}
             [nv-pair]*
 
 epoch-tag = "EPOCH___"

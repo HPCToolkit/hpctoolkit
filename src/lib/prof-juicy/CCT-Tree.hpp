@@ -109,6 +109,7 @@ namespace CallPath {
 namespace CCT {
 
 class ANode;
+class ADynNode;
 
 class Tree: public Unique {
 public:
@@ -120,6 +121,9 @@ public:
     OFlg_Debug           = (1 << 3), // Debug: show xtra source line info
     OFlg_DebugAll        = (1 << 4), // Debug: (may be invalid format)
   };
+
+  // N.B.: An easy implementation for now (but not thread-safe!)
+  static uint raToCallsiteOfst; 
 
 public:
   // -------------------------------------------------------
@@ -362,9 +366,8 @@ public:
   merge(ANode* y, const SampledMetricDescVec* new_mdesc,
 	uint x_numMetrics, uint y_numMetrics);
 
-  ANode* 
-  findDynChild(lush_assoc_info_t as_info, 
-	       LoadMap::LM_id_t lm_id, VMA ip, lush_lip_t* lip);
+  CCT::ADynNode* 
+  findDynChild(const ADynNode& y_dyn);
 
 
   // merge y into 'this'
@@ -674,6 +677,21 @@ public:
     else {
       x->i -= decr.i;
     }
+  }
+
+  // -------------------------------------------------------
+  // merging
+  // -------------------------------------------------------
+
+  static bool 
+  isMergable(const ADynNode& x, const ADynNode& y)
+  {
+    // N.B.: order is based on early failure rather than logical order
+    return (x.lmId_real() == y.lmId_real()
+	    && x.ip_real() == y.ip_real()
+	    && lush_lip_eq(x.lip(), y.lip())
+	    && lush_assoc_class_eq(x.assoc(), y.assoc())
+	    && lush_assoc_info__path_len_eq(x.assocInfo(), y.assocInfo()));
   }
 
   void
@@ -991,8 +1009,8 @@ public:
   virtual VMA 
   ip() const 
   {
-    if (isValid_lip()) { return (lush_lip_getIP(lip()) - 1); }
-    return (ADynNode::ip_real() - 1);
+    if (isValid_lip()) { return (lush_lip_getIP(lip()) - Tree::raToCallsiteOfst); }
+    return (ADynNode::ip_real() - Tree::raToCallsiteOfst);
   }
   
   VMA 

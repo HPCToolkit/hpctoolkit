@@ -77,8 +77,16 @@
 static epoch_flags_t epoch_flags = {
   .bits = 0
 };
-static const uint32_t default_ra_distance = 1;
-static const uint64_t default_granularity = 1;
+
+static const uint64_t default_measurement_granularity = 1;
+
+static const uint32_t default_ra_to_callsite_distance =
+#if defined(HOST_PLATFORM_MIPS64LE_LINUX)
+  8 // move past branch delay slot
+#else
+  1 // probably sufficient all architectures without a branch-delay slot
+#endif
+  ;
 
 //*****************************************************************************
 // local utilities
@@ -228,8 +236,8 @@ write_epochs(FILE* fs, csprof_state_t* state)
     epoch_flags.flags.isLogicalUnwind = hpcrun_isLogicalUnwind();
     
     hpcrun_fmt_epoch_hdr_fwrite(fs, epoch_flags,
-                                default_ra_distance,
-                                default_granularity,
+                                default_measurement_granularity,
+                                default_ra_to_callsite_distance,
                                 "TODO:epoch-name","TODO:epoch-value",
                                 NULL);
 

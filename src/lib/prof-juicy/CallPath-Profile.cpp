@@ -108,12 +108,19 @@ namespace CallPath {
 Profile::Profile(const std::string name, uint numMetrics)
 {
   m_name = name;
+  m_flags.bits = 0;
+  m_measurementGranularity = 0;
+  m_raToCallsiteOfst = 0;
+
   m_metricdesc.resize(numMetrics);
   for (uint i = 0; i < m_metricdesc.size(); ++i) {
     m_metricdesc[i] = new SampledMetricDesc();
   }
+  
   m_loadmapMgr = new LoadMapMgr;
+
   m_cct = new CCT::Tree(this);
+
   m_structure = NULL;
 }
 
@@ -135,9 +142,12 @@ Profile::merge(Profile& y, bool isSameThread)
   DIAG_Assert(!m_structure && !y.m_structure, "Profile::merge: profiles should not have structure yet!");
 
   // -------------------------------------------------------
-  // merge name, flags
+  // merge name, flags, etc
   // -------------------------------------------------------
-  DIAG_WMsgIf(m_flags.bits != y.m_flags.bits, "Prof::Profile::merge(): ignoring incompatible flags");
+  DIAG_WMsgIf( !(m_flags.bits == y.m_flags.bits
+		 && m_measurementGranularity == y.m_measurementGranularity
+		 && m_raToCallsiteOfst == y.m_raToCallsiteOfst),
+	       "Prof::Profile::merge(): ignoring incompatible flags");
 
   // -------------------------------------------------------
   // merge metrics
@@ -419,8 +429,13 @@ Profile::fmt_fread(Profile* &prof, FILE* infs,
 
   if (! prof) {
     prof = new Profile("[program-name]", 0);
-    prof->cct_canonicalize();
   }
+
+  prof->canonicalize();
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   if (outfs) {
     fprintf(outfs, "\n[You look fine today! (num-epochs: %d)]\n", num_epochs);
@@ -521,7 +536,13 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
   // ----------------------------------------
   
   prof = new Profile(progNm, num_metrics);
+
   prof->m_flags = ehdr.flags;
+  prof->m_measurementGranularity = ehdr.measurementGranularity;
+  prof->m_raToCallsiteOfst = ehdr.raToCallsiteOfst;
+  
+  CCT::Tree::raToCallsiteOfst = prof->m_raToCallsiteOfst;
+
   
   // ----------------------------------------
   // add metrics
@@ -560,7 +581,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
     string nm = loadmap_tbl.lst[i].name;
     RealPathMgr::singleton().realpath(nm);
     VMA loadAddr = loadmap_tbl.lst[i].mapaddr;
-    size_t sz = 0; //loadmap_tbl->epoch_modlist[loadmap_id].loadmodule[i].size;
+    size_t sz = 0;
 
     LoadMap::LM* lm = new LoadMap::LM(nm, loadAddr, sz);
     loadmap.lm_insert(lm);
@@ -590,8 +611,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
   // ------------------------------------------------------------
   LoadMap* loadmap_p = (isNewFormat) ? NULL : &loadmap; // FIXME:temporary
   fmt_cct_fread(*prof, infs, loadmap_p, outfs);
-
-  prof->cct_canonicalize();
 
 
   hpcrun_fmt_epoch_hdr_free(&ehdr, free);
@@ -722,8 +741,8 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs)
   // ------------------------------------------------------------
   
   hpcrun_fmt_epoch_hdr_fwrite(fs, prof.m_flags,
-			      0 /*TODO:default_ra_distance*/,
-			      0 /*TODO:default_granularity*/,
+			      prof.m_measurementGranularity,
+			      prof.m_raToCallsiteOfst,
 			      "TODO:epoch-name","TODO:epoch-value",
 			      NULL);
 
@@ -758,7 +777,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs)
     lm_entry.id = lm->id();
     lm_entry.name = const_cast<char*>(lm->name().c_str());
     lm_entry.vaddr = 0;
-    lm_entry.mapaddr = 0;
+    lm_entry.mapaddr = lm->id(); // avoid problems reading as a LoadMap!
     lm_entry.flags = 0; // TODO:flags
     
     hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
@@ -783,14 +802,13 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs)
   nodeFmt.metrics = 
     (hpcrun_metricVal_t*) alloca(numMetrics * sizeof(hpcrun_metricVal_t));
 
-  CCT::ANode* root = prof.cct()->root(); // FIXME: find the original root...
+  // N.B.: only write out nodes of type CCT::ADynNode!
 
+  CCT::ANode* root = prof.cct()->root();
   for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
     CCT::ANode* n = it.CurNode();
 
     CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
-    DIAG_Assert(n_dyn, "Profile::fmt_cct_fwrite: " << DIAG_UnexpectedInput);
-    
     if (n_dyn) {
       fmt_cct_makeNode(nodeFmt, *n_dyn, prof.m_flags);
       int ret = hpcrun_fmt_cct_node_fwrite(&nodeFmt, prof.m_flags, fs);
@@ -806,11 +824,12 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs)
 
 //***************************************************************************
 
-// 1. Create a (PGM) root for the CCT
-// 2. Remove the two outermost frames: 
+// 1. Create a CCT::Root node for the CCT
+// 2. Remove the two outermost nodes corresponding to:
 //      "synthetic-root -> monitor_main"
+//    (if they exist).
 void
-Profile::cct_canonicalize()
+Profile::canonicalize()
 {
   using namespace Prof;
 

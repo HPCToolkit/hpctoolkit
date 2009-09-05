@@ -146,7 +146,7 @@ public:
   // -------------------------------------------------------
 
   // Given a Profile y, merge y into x = 'this'
-  // ASSUMES: both x and y are in canonical form (cct_canonicalize())
+  // ASSUMES: both x and y are in canonical form (canonicalize())
   // WARNING: the merge may change/destroy y
   void merge(Profile& y, bool isSameThread);
 
@@ -178,6 +178,9 @@ public:
 
   // fmt_*_fwrite(): Write the appropriate object as hpcrun_fmt to the
   // file stream 'outfs', checking for errors.
+  //
+  // N.B.: hpcrun-fmt cannot represent static structure.  Therefore,
+  // fmt_cct_fwrite() only writes out nodes of type CCT::ADynNode.
 
   static int
   fmt_fwrite(const Profile& prof, FILE* outfs);
@@ -206,7 +209,7 @@ public:
 
 private:
   void 
-  cct_canonicalize();
+  canonicalize();
 
   // apply CCT MergeChange after merging two profiles
   void 
@@ -214,12 +217,13 @@ private:
  
 private:
   std::string m_name;
+  epoch_flags_t m_flags;
+  uint64_t m_measurementGranularity;
+  uint32_t m_raToCallsiteOfst;
 
   //typedef std::map<std::string, std::string> StrToStrMap;
   //StrToStrMap m_nvPairMap;
-  
-  epoch_flags_t m_flags;
-  
+
   SampledMetricDescVec m_metricdesc;
 
   LoadMapMgr* m_loadmapMgr;
