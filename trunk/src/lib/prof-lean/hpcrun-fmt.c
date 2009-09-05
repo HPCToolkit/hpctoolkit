@@ -185,8 +185,8 @@ hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
   }
 
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(ehdr->flags.bits), fs));
-  HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&(ehdr->ra_distance), fs));
-  HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(ehdr->granularity), fs));
+  HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(ehdr->measurementGranularity), fs));
+  HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&(ehdr->raToCallsiteOfst), fs));
   HPCFMT_ThrowIfError(hpcfmt_nvpair_list_fread(&(ehdr->nvps), fs, alloc));
 
   return HPCFMT_OK;
@@ -195,16 +195,17 @@ hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
 
 int
 hpcrun_fmt_epoch_hdr_fwrite(FILE* fs, epoch_flags_t flags,
-			    uint32_t ra_distance, uint64_t granularity, ...)
+			    uint64_t measurementGranularity, 
+			    uint32_t raToCallsiteOfst, ...)
 {
   va_list args;
-  va_start(args, granularity);
+  va_start(args, raToCallsiteOfst);
 
   fwrite(HPCRUN_FMT_EpochTag, 1, HPCRUN_FMT_EpochTagLen, fs);
 
   hpcfmt_byte8_fwrite(flags.bits, fs);
-  hpcfmt_byte4_fwrite(ra_distance, fs);
-  hpcfmt_byte8_fwrite(granularity, fs);
+  hpcfmt_byte8_fwrite(measurementGranularity, fs);
+  hpcfmt_byte4_fwrite(raToCallsiteOfst, fs);
 
   hpcfmt_nvpairs_vfwrite(fs, args);
 
@@ -219,9 +220,10 @@ hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs)
 {
   fprintf(fs, "%s\n", HPCRUN_FMT_EpochTag);
   fprintf(fs, "[epoch-hdr:\n");
-  fprintf(fs, "  (flags: %"PRIx64") ", ehdr->flags.bits);
-  fprintf(fs, "(RA distance: %d) ", ehdr->ra_distance);
-  fprintf(fs, "(address granularity: %"PRIu64")\n", ehdr->granularity);
+  fprintf(fs, "  (flags: %"PRIx64")\n", ehdr->flags.bits);
+  fprintf(fs, "  (measurement-granularity: %"PRIu64")\n", 
+	  ehdr->measurementGranularity);
+  fprintf(fs, "  (RA-to-callsite-offset: %"PRIu32")\n", ehdr->raToCallsiteOfst);
   hpcfmt_nvpair_list_fprint(&(ehdr->nvps), fs, "  ");
   fprintf(fs, "]\n");
 
@@ -509,7 +511,7 @@ int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs, 
 			   epoch_flags_t flags, const char* pre)
 {
-  fprintf(fs, "%s[node: (id: %d) (id_parent: %d) ",
+  fprintf(fs, "%s[node: (id: %d) (id-parent: %d) ",
 	  pre, x->id, x->id_parent);
 
   if (flags.flags.isLogicalUnwind) {
@@ -519,7 +521,7 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
     fprintf(fs, "(as: %s) ", as_str);
   }
 
-  fprintf(fs, "(lm_id: %"PRIu16") (ip: 0x%"PRIx64") ", x->lm_id, x->ip);
+  fprintf(fs, "(lm-id: %"PRIu16") (ip: 0x%"PRIx64") ", x->lm_id, x->ip);
 
   if (flags.flags.isLogicalUnwind) {
     hpcrun_fmt_lip_fprint(&x->lip, fs, "");
