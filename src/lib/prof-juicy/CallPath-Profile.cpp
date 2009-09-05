@@ -164,12 +164,39 @@ Profile::merge(Profile& y, bool isSameThread)
   // -------------------------------------------------------
   std::vector<LoadMap::MergeChange> mergeChg = 
     m_loadmapMgr->merge(*y.loadMapMgr());
-  y.cct_canonicalizePostMerge(mergeChg);
+  y.merge_fixCCT(mergeChg);
 
   // -------------------------------------------------------
   // merge CCTs
   // -------------------------------------------------------
   m_cct->merge(y.cct(), &m_metricdesc, x_newMetricBegIdx, y_newMetrics);
+}
+
+
+void 
+Profile::merge_fixCCT(std::vector<LoadMap::MergeChange>& mergeChg)
+{
+  CCT::ANode* root = cct()->root();
+  
+  for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
+    CCT::ANode* n = it.CurNode();
+    
+    CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
+    if (n_dyn) {
+
+      LoadMap::LM_id_t y_lm_id = n_dyn->lmId();
+      // FIXME:lush: also translate lip's
+
+      for (uint i = 0; i < mergeChg.size(); ++i) {
+	const LoadMap::MergeChange& chg = mergeChg[i];
+	if (chg.old_id == y_lm_id) {
+	  n_dyn->lmId(chg.new_id);
+	  break;
+	}
+      }
+
+    }
+  }
 }
 
 
@@ -297,7 +324,9 @@ Profile::ddump() const
 
 static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
 cct_makeNode(const Prof::CCT::Tree& cct, 
-	     const hpcrun_fmt_cct_node_t& nodeFmt);
+	     const hpcrun_fmt_cct_node_t& nodeFmt,
+	     Prof::CallPath::Profile& prof,
+	     Prof::LoadMap* loadmap);
 
 static void
 fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, 
@@ -474,19 +503,22 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
   val = hpcfmt_nvpair_search(hdrNVPairs, HPCRUN_FMT_NV_tid);
   if (val) { tid = val; }
 
-  //bool doNewFormat = true; // FIXME:nasty-message
-  //val = hpcfmt_nvpair_search(hdrNVPairs, "nasty-message");
-  //if (val) { doNewFormat = false; }
-
+  // FIXME: temporary (nasty-message)
+  bool isNewFormat = true; 
+  val = hpcfmt_nvpair_search(hdrNVPairs, "nasty-message");
+  if (val) { isNewFormat = false; }
 
   //val = hpcfmt_nvpair_search(ehdr.&nvps, "to-find");
 
-
+  // ----------------------------------------
+  // 
+  // ----------------------------------------
+  
   prof = new Profile(progNm, num_metrics);
   prof->m_flags = ehdr.flags;
   
   // ----------------------------------------
-  // metric-tbl
+  // add metrics
   // ----------------------------------------
 
   string m_sfx;
@@ -512,7 +544,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
   hpcrun_fmt_metricTbl_free(&metric_tbl, free);
 
   // ----------------------------------------
-  // loadmap
+  // add loadmap
   // ----------------------------------------
   uint num_lm = loadmap_tbl.len;
 
@@ -526,6 +558,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
 
     LoadMap::LM* lm = new LoadMap::LM(nm, loadAddr, sz);
     loadmap.lm_insert(lm);
+    
+    DIAG_Assert(lm->id() == i + 1, "FIXME: Profile::fmt_epoch_fread: Expect lm id's to be in order to support dual-interpretations.");
   }
 
   DIAG_MsgIf(DBG, loadmap.toString());
@@ -537,20 +571,21 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
     DIAG_EMsg(ctxtStr << ": Cannot fully process samples from unavailable load modules:\n" << x.what());
   }
 
+  std::vector<ALoadMap::MergeChange> mergeChg = 
+    prof->loadMapMgr()->merge(loadmap);
+  DIAG_Assert(mergeChg.empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);
+
+
   hpcrun_fmt_loadmap_free(&loadmap_tbl, free);
 
 
   // ------------------------------------------------------------
   // cct
   // ------------------------------------------------------------
-  fmt_cct_fread(*prof, infs, outfs);
+  LoadMap* loadmap_p = (isNewFormat) ? NULL : &loadmap; // FIXME: temporary
+  fmt_cct_fread(*prof, infs, loadmap_p, outfs);
 
   prof->cct_canonicalize();
-  prof->cct_canonicalize(loadmap); // initializes isUsed()
-
-  std::vector<ALoadMap::MergeChange> mergeChg = 
-    prof->loadMapMgr()->merge(loadmap);
-  prof->cct_canonicalizePostMerge(mergeChg);
 
 
   hpcrun_fmt_epoch_hdr_free(&ehdr, free);
@@ -560,7 +595,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
 
 
 int
-Profile::fmt_cct_fread(Profile& prof, FILE* infs, FILE* outfs)
+Profile::fmt_cct_fread(Profile& prof, FILE* infs, LoadMap* loadmap, FILE* outfs)
 {
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
 
@@ -624,11 +659,11 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, FILE* outfs)
 
     CCT::Tree* cct = prof.cct();
 
-    std::pair<CCT::ANode*, CCT::ANode*> nodes = cct_makeNode(*cct, nodeFmt);
-    CCT::ANode* node = nodes.first;
-    CCT::ANode* node_sib = nodes.second;
+    std::pair<CCT::ANode*, CCT::ANode*> n2 = cct_makeNode(*cct, nodeFmt, prof, loadmap);
+    CCT::ANode* node = n2.first;
+    CCT::ANode* node_sib = n2.second;
 
-    DIAG_DevMsgIf(0, "fmt_cct_fread: " << hex << node << " -> " << node_parent <<dec);
+    DIAG_DevMsgIf(0, "fmt_cct_fread: " << hex << node << " -> " << node_parent << dec);
 
     if (node_parent) {
       node->Link(node_parent);
@@ -765,7 +800,6 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs)
 
 //***************************************************************************
 
-
 // 1. Create a (PGM) root for the CCT
 // 2. Remove the two outermost frames: 
 //      "synthetic-root -> monitor_main"
@@ -805,54 +839,6 @@ Profile::cct_canonicalize()
 }
 
 
-void
-Profile::cct_canonicalize(const LoadMap& loadmap)
-{
-  CCT::ANode* root = cct()->root();
-  
-  for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
-    CCT::ANode* n = it.CurNode();
-
-    CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
-    if (n_dyn) { // n_dyn->lm_id() == LoadMap::LM_id_NULL
-      VMA ip = n_dyn->CCT::ADynNode::ip();
-      LoadMap::LM* lm = loadmap.lm_find(ip);
-      VMA ip_ur = ip - lm->relocAmt();
-      DIAG_MsgIf(0, "cct_canonicalize: " << hex << ip << dec << " -> " << lm->id());
-
-      n_dyn->lm_id(lm->id());
-      n_dyn->ip(ip_ur, n_dyn->opIndex());
-      lm->isUsed(true); // FIXME:
-    }
-  }
-}
-
-
-void 
-Profile::cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg)
-{
-  CCT::ANode* root = cct()->root();
-  
-  for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
-    CCT::ANode* n = it.CurNode();
-    
-    CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
-    if (n_dyn) {
-
-      LoadMap::LM_id_t y_lm_id = n_dyn->lm_id();
-      for (uint i = 0; i < mergeChg.size(); ++i) {
-	const LoadMap::MergeChange& chg = mergeChg[i];
-	if (chg.old_id == y_lm_id) {
-	  n_dyn->lm_id(chg.new_id);
-	  break;
-	}
-      }
-
-    }
-  }
-}
-
-
 } // namespace CallPath
 
 } // namespace Prof
@@ -862,7 +848,9 @@ Profile::cct_canonicalizePostMerge(std::vector<LoadMap::MergeChange>& mergeChg)
 
 
 static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
-cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt)
+cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt,
+	     Prof::CallPath::Profile& prof, /*FIXME:temp*/
+	     Prof::LoadMap* loadmap /*FIXME:temp*/)
 {
   using namespace Prof;
 
@@ -870,8 +858,11 @@ cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt)
   // Gather node parameters
   // ----------------------------------------------------------
   bool isLeaf = false;
-  uint cpId = 0;
 
+  // ----------------------------------------
+  // cpId
+  // ----------------------------------------
+  uint cpId = 0;
   int id_tmp = (int)nodeFmt.id;
   if (id_tmp < 0) {
     isLeaf = true;
@@ -881,15 +872,55 @@ cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt)
     cpId = id_tmp;
   }
 
-  VMA ip = (VMA)nodeFmt.ip; // tallent:FIXME: Use ISA::ConvertVMAToOpVMA
+  // ----------------------------------------
+  // lmId and ip
+  // ----------------------------------------
+  ALoadMap::LM_id_t lmId = nodeFmt.lm_id;
+
+  VMA ip = (VMA)nodeFmt.ip; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
+  if (loadmap) {
+    VMA ip_orig = ip;
+    LoadMap::LM* lm = loadmap->lm_find(ip_orig);
+
+    ip = ip_orig - lm->relocAmt(); // unrelocated ip
+    lmId = lm->id();
+  }
+
+  if (lmId != ALoadMap::LM_id_NULL) {
+    prof.loadMapMgr()->lm(lmId)->isUsed(true);
+  }
+
+  DIAG_MsgIf(0, "cct_makeNode(: " << hex << ip << dec << ", " << lmId << ")");
+
+  // ----------------------------------------  
+  // lip
+  // ----------------------------------------
   lush_lip_t* lip = NULL;
   if (!lush_lip_eq(&nodeFmt.lip, &lush_lip_NULL)) {
     lip = new lush_lip_t;
     memcpy(lip, &nodeFmt.lip, sizeof(lush_lip_t));
   }
 
+  if (lip) {
+    if (loadmap) {
+      VMA lip_ip = lip->data8[0]; // FIXME
+      LoadMap::LM* lm = loadmap->lm_find(lip_ip);
+      
+      lush_lip_setLMId(lip, lm->id());
+      lush_lip_setIP(lip, lip_ip - lm->relocAmt()); // unrelocated ip
+    }
+
+    ALoadMap::LM_id_t lip_lmId = lush_lip_getLMId(lip);
+    if (lip_lmId != ALoadMap::LM_id_NULL) {
+      prof.loadMapMgr()->lm(lip_lmId)->isUsed(true);
+    }
+  }
+
+  // ----------------------------------------  
+  // metrics
+  // ----------------------------------------  
   bool hasMetrics = false;
   std::vector<hpcrun_metricVal_t> metricVec(nodeFmt.num_metrics);
   for (uint i = 0; i < nodeFmt.num_metrics; i++) {
@@ -899,8 +930,6 @@ cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt)
       hasMetrics = true;
     }
   }
-
-  DIAG_DevMsgIf(0, "cct_makeNode: " << hex << nodeFmt.ip << dec);
 
 
   // ----------------------------------------------------------
@@ -916,7 +945,7 @@ cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt)
   Prof::CCT::ANode* n_leaf = NULL;
 
   if (hasMetrics || isLeaf) {
-    n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, ip, opIdx, lip,
+    n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, lmId, ip, opIdx, lip,
 		      &(cct.metadata()->metricDesc()), metricVec);
   }
 
@@ -925,11 +954,11 @@ cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt)
       n_leaf = n;
 
       std::vector<hpcrun_metricVal_t> metricVec0(nodeFmt.num_metrics);
-      n = new CCT::Call(NULL, 0, nodeFmt.as_info, ip, opIdx, lip,
+      n = new CCT::Call(NULL, 0, nodeFmt.as_info, lmId, ip, opIdx, lip,
 			&(cct.metadata()->metricDesc()), metricVec0);
     }
     else {
-      n = new CCT::Call(NULL, cpId, nodeFmt.as_info, ip, opIdx, lip,
+      n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, ip, opIdx, lip,
 			&(cct.metadata()->metricDesc()), metricVec);
     }
   }
@@ -951,7 +980,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt,
     n_fmt.as_info = n_dyn.assocInfo();
   }
       
-  n_fmt.lm_id = n_dyn.lm_id();
+  n_fmt.lm_id = n_dyn.lmId();
   
   n_fmt.ip = n_dyn.Prof::CCT::ADynNode::ip();
 

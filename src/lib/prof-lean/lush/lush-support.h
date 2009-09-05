@@ -309,6 +309,38 @@ const char*
 lush_lip_sprintf(char* str, const lush_lip_t* x);
 
 
+// ---------------------------------------------------------
+// Temporary interpreters for current set of agents
+// ---------------------------------------------------------
+
+static inline uint16_t
+lush_lip_getLMId(const lush_lip_t* x)
+{
+  return (uint16_t)x->data8[0];
+}
+
+
+static inline void
+lush_lip_setLMId(lush_lip_t* x, uint16_t lmId)
+{
+  x->data8[0] = (uint64_t)lmId;
+}
+
+
+static inline uint64_t
+lush_lip_getIP(const lush_lip_t* x)
+{
+  return (uint64_t)x->data8[1];
+}
+
+
+static inline void
+lush_lip_setIP(lush_lip_t* x, uint64_t ip)
+{
+  x->data8[1] = ip;
+}
+
+
 // **************************************************************************
 
 #if defined(__cplusplus)

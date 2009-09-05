@@ -246,7 +246,7 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
     // process Prof::CCT::ADynNode nodes
     // ---------------------------------------------------
     Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
-    if (n_dyn && (n_dyn->lm_id() == loadmap_lm->id())) {
+    if (n_dyn && (n_dyn->lmId() == loadmap_lm->id())) {
       VMA ip_ur = n_dyn->ip();
       DIAG_DevIf(50) {
 	Prof::CCT::Call* p = node->ancestorCall();
