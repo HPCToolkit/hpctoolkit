@@ -34,7 +34,7 @@ dnl
 dnl  $Id$
 dnl
 
-AC_INIT([externals], [TRUNK-4.9.2],
+AC_INIT([externals], [4.9.9],
         [hpc@cs.rice.edu], [hpctoolkit-externals])
 AC_CONFIG_AUX_DIR([config])
 AC_PREREQ(2.63)
