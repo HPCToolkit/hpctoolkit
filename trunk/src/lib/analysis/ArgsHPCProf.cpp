@@ -88,12 +88,12 @@ static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_summary =
-"[options] <profile-file>...\n";
+"[options] <profile-dir-or-file>...\n";
 
 static const char* usage_details = "\
 hpcprof correlates call path profiling metrics with static source code\n\
 structure and generates an Experiment database for use with hpcviewer. It\n\
-expects a list of call path profile files.\n\
+expects a list of call path profile directories or files.\n\
 \n\
 Options: General:\n\
   -v [<n>], --verbose [<n>]\n\

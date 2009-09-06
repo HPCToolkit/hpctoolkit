@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2009/02/09}
+\setDate{ 2009/09/05}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -51,13 +51,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcprof} \oOpt{options} \Arg{profile-file}...
+\Prog{hpcprof} \oOpt{options} \Arg{profile-dir-or-file}...
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
 \Prog{hpcprof} correlates call path profiling metrics with static source code structure and generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
-It expects a list of call path profile files.
+It expects a list of call path profile directories or files.
 
 For best results, two other options should be used: \textbf{-I} to provide paths for source code directories and \textbf{-S} to provide source code structure from \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}.
 
