@@ -447,20 +447,25 @@ string
 BinUtil::TextSeg::findProcName(bfd* abfd, asymbol* procSym) const
 {
   string procName;
-  const char* func = NULL, * file = NULL;
-  uint bfd_line = 0;
 
-  // cf. LM::GetSourceFileInfo
+  // cf. LM::GetSourceFileInfo()
   asection* bfdSeg = bfd_get_section_by_name(abfd, name().c_str());
-  bfd_vma secBase = bfd_section_vma(abfd, bfdSeg);
-  bfd_vma symVal = bfd_asymbol_value(procSym);
+
+  bfd_boolean bfd_fnd = false;
+  const char* bfd_func = NULL;
+
   if (bfdSeg) {
-    bfd_find_nearest_line(abfd, bfdSeg, m_lm->bfdSymTab(),
-			  symVal - secBase, &file, &func, &bfd_line);
+    bfd_vma secBase = bfd_section_vma(abfd, bfdSeg);
+    bfd_vma symVal = bfd_asymbol_value(procSym);
+    
+    const char* file = NULL;
+    uint line = 0;
+    bfd_fnd = bfd_find_nearest_line(abfd, bfdSeg, m_lm->bfdSymTab(),
+				    symVal - secBase, &file, &bfd_func, &line);
   }
 
-  if (func && (strlen(func) > 0)) {
-    procName = func;
+  if (bfd_fnd && bfd_func && (strlen(bfd_func) > 0)) {
+    procName = bfd_func;
   } 
   else {
     procName = bfd_asymbol_name(procSym);
