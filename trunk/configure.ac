@@ -131,12 +131,12 @@ AC_MSG_CHECKING([for svn revision])
 
 svn_revision=`svn info $srcdir 2>/dev/null | grep -e '^Revision' | awk '{ print $2 }'`
 if test "x$svn_revision" != x ; then
-    PACKAGE_VERSION="${PACKAGE_VERSION} (r${svn_revision})"
+    PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
     rm -f "$version_file"
     echo "$svn_revision" > "$version_file"
 elif test -f "$version_file" ; then
     svn_revision=`cat $version_file`
-    PACKAGE_VERSION="${PACKAGE_VERSION} (r${svn_revision})"
+    PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
 else
     svn_revision=0
 fi
