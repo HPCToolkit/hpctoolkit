@@ -55,7 +55,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign no-dist
 
 #############################################################################
 # Local settings
@@ -163,7 +163,7 @@ MYSRC = @abs_top_srcdir@
 MYINFO = @abs_top_srcdir@/configure
 MYPREFIX = @abs_top_builddir@
 
-hpc-dist:
+dist hpc-dist:
 	top_dir=`$(SHELL) -c "cd $(MYSRC) && pwd"` ; \
 	nm_cur=`basename $${top_dir}` ; \
 	nm_new="$(MYDIST)" ; \
