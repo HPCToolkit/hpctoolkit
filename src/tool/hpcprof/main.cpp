@@ -122,11 +122,19 @@ realmain(int argc, char* const* argv)
   // Read profile data
   // ------------------------------------------------------------
 
-  if ( !(args.profileFiles.size() <= 16 || args.isHPCProfForce) ) {
-    DIAG_Throw("There are " << args.profileFiles.size() << " profile files to process. " << args.getCmd() << " currently limits the number of profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.");
+  std::pair<std::vector<std::string>*, uint> pair = 
+    Analysis::Util::normalizeProfileArgs(args.profileFiles);
+  
+  std::vector<std::string>* profileFiles = pair.first;
+
+  if ( !(profileFiles->size() <= 16 || args.isHPCProfForce) ) {
+    DIAG_Throw("There are " << profileFiles->size() << " profile files to process. " << args.getCmd() << " currently limits the number of profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.");
   }
 
-  Prof::CallPath::Profile* prof = Analysis::CallPath::read(args.profileFiles);
+  Prof::CallPath::Profile* prof = Analysis::CallPath::read(*profileFiles);
+
+  delete profileFiles;
+
 
   // ------------------------------------------------------------
   // Seed structure information

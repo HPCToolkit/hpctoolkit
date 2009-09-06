@@ -416,7 +416,7 @@ namespace Analysis {
 namespace Util {
 
 std::pair<std::vector<std::string>*, uint>
-groupProfileArgs(const std::vector<std::string>& inPaths)
+normalizeProfileArgs(const std::vector<std::string>& inPaths)
 {
   std::vector<std::string>* outPaths = new std::vector<std::string>;
   std::vector<int> outGropus;

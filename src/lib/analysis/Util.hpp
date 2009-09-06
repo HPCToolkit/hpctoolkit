@@ -106,7 +106,7 @@ copySourceFiles(Prof::Struct::Root* structure,
 // ------------------------------------------------------------
 
 std::pair<std::vector<std::string>*, uint>
-groupProfileArgs(const std::vector<std::string>& inPaths);
+normalizeProfileArgs(const std::vector<std::string>& inPaths);
 
 
 } // namespace Util

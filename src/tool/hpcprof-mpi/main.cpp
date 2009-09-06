@@ -163,7 +163,7 @@ realmain(int argc, char* const* argv)
   
   if (myRank == rootRank) {
     std::pair<std::vector<std::string>*, uint> pair = 
-      Analysis::Util::groupProfileArgs(args.profileFiles);
+      Analysis::Util::normalizeProfileArgs(args.profileFiles);
     
     std::vector<std::string>* canonicalFiles = pair.first;
     pathLenMax = pair.second;
