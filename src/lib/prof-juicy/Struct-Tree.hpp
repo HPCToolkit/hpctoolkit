@@ -60,11 +60,13 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+
 #include <string>
-#include <list> // STL
-#include <set>  // STL
-#include <map>  // STL
-#include <string>
+#include <list>
+#include <set>
+#include <map>
+
+#include <typeinfo>
  
 //*************************** User Include Files ****************************
 
@@ -240,21 +242,26 @@ class ANode: public NonUniformDegreeTreeNode {
 public:
   enum ANodeTy {
     TyRoot = 0,
-    TyGROUP,
+    TyGroup,
     TyLM,
-    TyFILE,
-    TyPROC,
-    TyALIEN,
-    TyLOOP,
-    TySTMT,
-    TyREF,
+    TyFile,
+    TyProc,
+    TyAlien,
+    TyLoop,
+    TyStmt,
+    TyRef,
     TyANY,
     TyNUMBER
   };
 
-  static const std::string& ANodeTyToName(ANodeTy tp);
-  static const std::string& ANodeTyToXMLelement(ANodeTy tp);
-  static ANodeTy            IntToANodeTy(long i);
+  static const std::string&
+  ANodeTyToName(ANodeTy tp);
+
+  static const std::string&
+  ANodeTyToXMLelement(ANodeTy tp);
+
+  static ANodeTy
+  IntToANodeTy(long i);
 
 protected:
   ANode(const ANode& x)
@@ -273,7 +280,7 @@ public:
   ANode(ANodeTy ty, ANode* parent = NULL)
     : NonUniformDegreeTreeNode(parent), m_type(ty)
   { 
-    m_uid = s_nextUniqueId++;
+    m_id = s_nextUniqueId++;
     m_metrics = new DoubleVector();
   }
 
@@ -300,7 +307,7 @@ public:
   // id: a unique id; 0 is reserved for a NULL value
   uint
   id() const
-  { return m_uid; }
+  { return m_id; }
 
   // maxId: the maximum id of all structure nodes
   static uint
@@ -358,21 +365,41 @@ public:
   // ancestor: find first ANode in path from this to root with given type
   // (Note: We assume that a node *can* be an ancestor of itself.)
   // --------------------------------------------------------
-  ANode* ancestor(ANodeTy type) const;
-  ANode* ancestor(ANodeTy ty1, ANodeTy ty2) const;
-  ANode* ancestor(ANodeTy ty1, ANodeTy ty2, ANodeTy ty3) const;
+  ANode*
+  ancestor(ANodeTy type) const;
 
-  Root*  AncRoot() const;   // return ancestor(TyRoot)
-  Group* AncGroup() const;  // return ancestor(TyGROUP)
-  LM*    AncLM() const;     // return ancestor(TyLM)
-  File*  AncFile() const;   // return ancestor(TyFILE)
-  Proc*  AncProc() const;   // return ancestor(TyPROC)
-  Alien* AncAlien() const;  // return ancestor(TyALIEN)
-  Loop*  AncLoop() const;   // return ancestor(TyLOOP)
-  Stmt*  AncStmt() const;   // return ancestor(TySTMT)
+  ANode*
+  ancestor(ANodeTy ty1, ANodeTy ty2) const;
+
+  ANode*
+  ancestor(ANodeTy ty1, ANodeTy ty2, ANodeTy ty3) const;
+
+  Root*
+  ancestorRoot() const;
+
+  Group*
+  ancestorGroup() const;
+
+  LM*
+  ancestorLM() const;
+
+  File*
+  ancestorFile() const;
+
+  Proc*
+  ancestorProc() const;
+
+  Alien*
+  ancestorAlien() const;
+
+  Loop*
+  ancestorLoop() const;
+
+  Stmt*
+  ancestorStmt() const;
 
   ACodeNode*
-  ancestorProcCtxt() const; // return ancestor(TyALIEN|TyPROC)
+  ancestorProcCtxt() const; // return ancestor(TyAlien|TyProc)
 
   ACodeNode*
   ACodeNodeParent() const;
@@ -583,8 +610,8 @@ private:
   static uint s_nextUniqueId;
   
 protected:
-  ANodeTy m_type;
-  uint m_uid;
+  ANodeTy m_type; // obsolete with typeid(), but hard to replace
+  uint m_id;
   DoubleVector* m_metrics;
 };
 
@@ -790,7 +817,8 @@ protected:
   void
   relocateIf() 
   {
-    if (parent() && type() == ANode::TyPROC) {
+    if (parent() && type() == ANode::TyProc) { 
+                 // typeid(*this) == typeid(ANode::Proc)
       relocate();
     }
   }
@@ -930,17 +958,17 @@ private:
 //   (including user-defined ones)
 // --------------------------------------------------------------------------
 class Group: public ACodeNode {
-public: 
+public:
   Group(const char* nm, ANode* parent,
 	int begLn = ln_NULL, int endLn = ln_NULL)
-    : ACodeNode(TyGROUP, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyGroup, parent, begLn, endLn, 0, 0)
   {
     Ctor(nm, parent);
   }
   
   Group(const std::string& nm, ANode* parent,
 	     int begLn = ln_NULL, int endLn = ln_NULL)
-    : ACodeNode(TyGROUP, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyGroup, parent, begLn, endLn, 0, 0)
   {
     Ctor(nm.c_str(), parent);
   }
@@ -1147,14 +1175,14 @@ public:
   // --------------------------------------------------------
   File(const char* filenm, ANode *parent, 
        SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : ACodeNode(TyFILE, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyFile, parent, begLn, endLn, 0, 0)
   {
     Ctor(filenm, parent);
   }
   
   File(const std::string& filenm, ANode *parent, 
        SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : ACodeNode(TyFILE, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyFile, parent, begLn, endLn, 0, 0)
   {
     Ctor(filenm.c_str(), parent);
   }
@@ -1261,14 +1289,14 @@ public:
   // --------------------------------------------------------
   Proc(const char* name, ACodeNode* parent, const char* linkname, bool hasSym,
        SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : ACodeNode(TyPROC, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyProc, parent, begLn, endLn, 0, 0)
   {
     Ctor(name, parent, linkname, hasSym);
   }
   
   Proc(const std::string& name, ACodeNode* parent, const std::string& linkname,
        bool hasSym, SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : ACodeNode(TyPROC, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyProc, parent, begLn, endLn, 0, 0)
   {
     Ctor(name.c_str(), parent, linkname.c_str(), hasSym);
   }
@@ -1397,7 +1425,7 @@ public:
   // --------------------------------------------------------
   Alien(ACodeNode* parent, const char* filenm, const char* procnm,
 	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : ACodeNode(TyALIEN, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyAlien, parent, begLn, endLn, 0, 0)
   {
     Ctor(parent, filenm, procnm);
   }
@@ -1405,7 +1433,7 @@ public:
   Alien(ACodeNode* parent, 
 	     const std::string& filenm, const std::string& procnm,
 	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : ACodeNode(TyALIEN, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyAlien, parent, begLn, endLn, 0, 0)
   {
     Ctor(parent, filenm.c_str(), procnm.c_str());
   }
@@ -1487,11 +1515,11 @@ public:
   // --------------------------------------------------------
   Loop(ACodeNode* parent, 
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : ACodeNode(TyLOOP, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyLoop, parent, begLn, endLn, 0, 0)
   {
     ANodeTy t = (parent) ? parent->type() : TyANY;
-    DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyFILE) || 
-		(t == TyPROC) || (t == TyALIEN) || (t == TyLOOP), "");
+    DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile) || 
+		(t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
   }
 
   virtual ~Loop()
@@ -1537,13 +1565,13 @@ public:
   // --------------------------------------------------------
   Stmt(ACodeNode* parent, SrcFile::ln begLn, SrcFile::ln endLn,
        VMA begVMA = 0, VMA endVMA = 0)
-    : ACodeNode(TySTMT, parent, begLn, endLn, begVMA, endVMA),
+    : ACodeNode(TyStmt, parent, begLn, endLn, begVMA, endVMA),
       m_sortId((int)begLn)
   {
     ANodeTy t = (parent) ? parent->type() : TyANY;
-    DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyFILE)
-		|| (t == TyPROC) || (t == TyALIEN) || (t == TyLOOP), "");
-    Proc* p = AncProc();
+    DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile)
+		|| (t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
+    Proc* p = ancestorProc();
     if (p) { 
       p->AddToStmtMap(this);
       //DIAG_DevIf(0) { LoadMod()->verifyStmtMap(); }
@@ -1599,7 +1627,7 @@ private:
 class Ref: public ACodeNode {
 public: 
   Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName);
-  // parent->type() == TySTMT 
+  // parent->type() == TyStmt 
   
   uint
   BegPos() const

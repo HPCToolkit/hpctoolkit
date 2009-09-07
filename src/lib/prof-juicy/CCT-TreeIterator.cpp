@@ -83,24 +83,24 @@ namespace CCT {
 bool
 HasANodeTy(const ANode& node, long type)
 {
-  return (type == ANode::TyANY || node.type() == ANode::IntToNodeType(type));
+  return (type == ANode::TyANY || node.type() == ANode::IntToANodeType(type));
 }
 
 
 const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
-  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyRoot).c_str(),
+  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyRoot).c_str(),
 	      ANode::TyRoot),
-  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyProcFrm).c_str(),
+  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyProcFrm).c_str(),
 	      ANode::TyProcFrm),
-  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyProc).c_str(),
+  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyProc).c_str(),
 	      ANode::TyProc),
-  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyLoop).c_str(),
+  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyLoop).c_str(),
 	      ANode::TyLoop),
-  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyStmt).c_str(),
+  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyStmt).c_str(),
 	      ANode::TyStmt),
-  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyCall).c_str(),
+  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyCall).c_str(),
 	      ANode::TyCall),
-  ANodeFilter(HasANodeTy, ANode::NodeTypeToName(ANode::TyANY).c_str(),
+  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyANY).c_str(),
 	      ANode::TyANY)
 };
 

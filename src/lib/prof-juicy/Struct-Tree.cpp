@@ -189,7 +189,7 @@ ANode::operator=(const ANode& x)
   // shallow copy
   if (&x != this) {
     m_type    = x.m_type;
-    m_uid     = x.m_uid;
+    m_id      = x.m_id;
     m_metrics = x.m_metrics;
     
     zeroLinks(); // NonUniformDegreeTreeNode
@@ -252,11 +252,11 @@ Group::Ctor(const char* nm, ANode* parent)
 {
   DIAG_Assert(nm, "");
   ANodeTy t = (parent) ? parent->type() : TyANY;
-  DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGROUP) || (t == TyLM) 
-	      || (t == TyFILE) || (t == TyPROC) || (t == TyALIEN) 
-	      || (t == TyLOOP), "");
+  DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGroup) || (t == TyLM) 
+	      || (t == TyFile) || (t == TyProc) || (t == TyAlien) 
+	      || (t == TyLoop), "");
   m_name = nm;
-  AncRoot()->AddToGroupMap(this);
+  ancestorRoot()->AddToGroupMap(this);
 }
 
 
@@ -278,14 +278,14 @@ LM::Ctor(const char* nm, ANode* parent)
 {
   DIAG_Assert(nm, "");
   ANodeTy t = (parent) ? parent->type() : TyANY;
-  DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGROUP), "");
+  DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGroup), "");
 
   m_name = nm;
   m_fileMap = new FileMap();
   m_procMap = NULL;
   m_stmtMap = NULL;
 
-  Root* root = AncRoot();
+  Root* root = ancestorRoot();
   if (root) {
     root->AddToLoadModMap(this);
   }
@@ -323,12 +323,12 @@ void
 File::Ctor(const char* fname, ANode* parent)
 {
   ANodeTy t = (parent) ? parent->type() : TyANY;
-  DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGROUP) || (t == TyLM), "");
+  DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGroup) || (t == TyLM), "");
 
   m_name = (fname) ? fname : "";
   m_procMap = new ProcMap();
 
-  AncLM()->AddToFileMap(this);
+  ancestorLM()->AddToFileMap(this);
 }
 
 
@@ -369,7 +369,7 @@ Proc::Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym)
 {
   DIAG_Assert(n, "");
   ANodeTy t = (parent) ? parent->type() : TyANY;
-  DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyFILE), "");
+  DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile), "");
 
   m_name = (n) ? n : "";
   m_linkname = (ln) ? ln : "";
@@ -379,7 +379,7 @@ Proc::Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym)
     relocate();
   }
 
-  File* fileStrct = AncFile();
+  File* fileStrct = ancestorFile();
   if (fileStrct) { 
     fileStrct->AddToProcMap(this); 
   }
@@ -424,8 +424,8 @@ void
 Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm)
 {
   ANodeTy t = (parent) ? parent->type() : TyANY;
-  DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyALIEN) 
-	      || (t == TyPROC) || (t == TyLOOP), "");
+  DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyAlien) 
+	      || (t == TyProc) || (t == TyLoop), "");
 
   m_filenm = (filenm) ? filenm : "";
   s_realpathMgr.realpath(m_filenm);
@@ -447,9 +447,9 @@ Alien::operator=(const Alien& x)
 
 
 Ref::Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName) 
-  : ACodeNode(TyREF, parent, parent->begLine(), parent->begLine(), 0, 0)
+  : ACodeNode(TyRef, parent, parent->begLine(), parent->begLine(), 0, 0)
 {
-  DIAG_Assert(parent->type() == TySTMT, "");
+  DIAG_Assert(parent->type() == TyStmt, "");
   begPos = _begPos;
   endPos = _endPos;
   m_name = refName;
@@ -554,7 +554,7 @@ ANode::leastCommonAncestor(ANode* n1, ANode* n2)
 
 
 Root*
-ANode::AncRoot() const 
+ANode::ancestorRoot() const 
 {
   // iff this is called during ANode construction within the Root 
   // construction dyn_cast does not do the correct thing
@@ -572,58 +572,58 @@ ANode::AncRoot() const
 
 
 Group*
-ANode::AncGroup() const 
+ANode::ancestorGroup() const 
 {
-  dyn_cast_return(ANode, Group, ancestor(TyGROUP));
+  dyn_cast_return(ANode, Group, ancestor(TyGroup));
 }
 
 
 LM*
-ANode::AncLM() const 
+ANode::ancestorLM() const 
 {
   dyn_cast_return(ANode, LM, ancestor(TyLM));
 }
 
 
 File*
-ANode::AncFile() const 
+ANode::ancestorFile() const 
 {
-  dyn_cast_return(ANode, File, ancestor(TyFILE));
+  dyn_cast_return(ANode, File, ancestor(TyFile));
 }
 
 
 Proc*
-ANode::AncProc() const 
+ANode::ancestorProc() const 
 {
-  dyn_cast_return(ANode, Proc, ancestor(TyPROC));
+  dyn_cast_return(ANode, Proc, ancestor(TyProc));
 }
 
 
 Alien*
-ANode::AncAlien() const 
+ANode::ancestorAlien() const 
 {
-  dyn_cast_return(ANode, Alien, ancestor(TyALIEN));
+  dyn_cast_return(ANode, Alien, ancestor(TyAlien));
 }
 
 
 Loop*
-ANode::AncLoop() const 
+ANode::ancestorLoop() const 
 {
-  dyn_cast_return(ANode, Loop, ancestor(TyLOOP));
+  dyn_cast_return(ANode, Loop, ancestor(TyLoop));
 }
 
 
 Stmt*
-ANode::AncStmt() const 
+ANode::ancestorStmt() const 
 {
-  dyn_cast_return(ANode, Stmt, ancestor(TySTMT));
+  dyn_cast_return(ANode, Stmt, ancestor(TyStmt));
 }
 
 
 ACodeNode*
 ANode::ancestorProcCtxt() const 
 {
-  return dynamic_cast<ACodeNode*>(ancestor(TyPROC, TyALIEN));
+  return dynamic_cast<ACodeNode*>(ancestor(TyProc, TyAlien));
 }
 
 
@@ -762,8 +762,8 @@ ANode::isMergable(ANode* toNode, ANode* fromNode)
 {
   ANode::ANodeTy toTy = toNode->type(), fromTy = fromNode->type();
 
-  // 1. For now, merges are only defined on TyLOOPs and TyGROUPs
-  bool goodTy = (toTy == TyLOOP || toTy == TyGROUP);
+  // 1. For now, merges are only defined on TyLoops and TyGroups
+  bool goodTy = (toTy == TyLoop || toTy == TyGroup);
 
   // 2. Check bounds
   bool goodBnds = true;
@@ -902,10 +902,10 @@ ACodeNode*
 LM::findByVMA(VMA vma)
 {
   if (!m_procMap) {
-    buildMap(m_procMap, ANode::TyPROC);
+    buildMap(m_procMap, ANode::TyProc);
   }
   if (!m_stmtMap) {
-    buildMap(m_stmtMap, ANode::TySTMT);
+    buildMap(m_stmtMap, ANode::TyStmt);
   }
   
   // Attempt to find StatementRange and then Proc
@@ -965,7 +965,7 @@ LM::verifyStmtMap() const
 { 
   if (!m_stmtMap) {
     VMAToStmtRangeMap* mp;
-    buildMap(mp, ANode::TySTMT);
+    buildMap(mp, ANode::TyStmt);
     verifyMap(mp, "stmtMap"); 
     delete mp;
     return true; 
@@ -1017,7 +1017,7 @@ ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 
   // never propagate changes outside an Alien
   if (propagate && begLn != ln_NULL 
-      && ACodeNodeParent() && type() != ANode::TyALIEN) {
+      && ACodeNodeParent() && type() != ANode::TyAlien) {
     ACodeNodeParent()->expandLineRange(m_begLn, m_endLn);
   }
 }
@@ -1048,7 +1048,7 @@ ACodeNode::expandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
     if (changed) {
       // never propagate changes outside an Alien
       relocateIf();
-      if (propagate && ACodeNodeParent() && type() != ANode::TyALIEN) {
+      if (propagate && ACodeNodeParent() && type() != ANode::TyAlien) {
         ACodeNodeParent()->expandLineRange(m_begLn, m_endLn);
       }
     }
@@ -1132,7 +1132,7 @@ ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
       fnd = dynamic_cast<ACodeNode*>(it.Current());
       DIAG_Assert(fnd, "");
       if  (fnd->containsLine(ln)) {
-	if (fnd->type() == TySTMT) {  
+	if (fnd->type() == TyStmt) {  
 	  return fnd; // never look inside LINE_SCOPEs 
 	} 
 	
@@ -1144,7 +1144,7 @@ ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
       } 
     }
   }
-  if (fnd && fnd->type() == TyPROC) {
+  if (fnd && fnd->type() == TyProc) {
     return const_cast<ACodeNode*>(this);
   }
   else {
@@ -1162,7 +1162,7 @@ ACodeNode::compare(const ACodeNode* x, const ACodeNode* y)
       // We have two ACodeNode's with identical line intervals...
       
       // Use lexicographic comparison for procedures
-      if (x->type() == ANode::TyPROC && y->type() == ANode::TyPROC) {
+      if (x->type() == ANode::TyProc && y->type() == ANode::TyProc) {
 	Proc *px = (Proc*)x, *py = (Proc*)y;
 	int cmp1 = px->name().compare(py->name());
 	if (cmp1 != 0) { return cmp1; }
@@ -1244,8 +1244,8 @@ ACodeNode::codeName() const
 string
 ACodeNode::codeName_LM_F() const 
 {
-  File* fileStrct = AncFile();
-  LM* lmStrct = (fileStrct) ? fileStrct->AncLM() : NULL;
+  File* fileStrct = ancestorFile();
+  LM* lmStrct = (fileStrct) ? fileStrct->ancestorLM() : NULL;
   string nm;
   if (lmStrct && fileStrct) {
     nm = "[" + lmStrct->name() + "]<" + fileStrct->name() + ">";
@@ -1266,7 +1266,7 @@ string
 File::codeName() const 
 {
   string nm;
-  LM* lmStrct = AncLM();
+  LM* lmStrct = ancestorLM();
   if (lmStrct) {
     nm = "[" + lmStrct->name() + "]";
   }
@@ -1681,7 +1681,7 @@ ACodeNode::CSV_dump(const Root& root, ostream& os,
 {
   ANodeTy myANodeTy = this->type();
   // do not display info for single lines
-  if (myANodeTy == TySTMT)
+  if (myANodeTy == TyStmt)
     return;
   // print file name, routine name, start and end line, loop level
   os << (file_name ? file_name : name().c_str()) << "," 

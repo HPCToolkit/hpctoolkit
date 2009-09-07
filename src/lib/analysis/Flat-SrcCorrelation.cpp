@@ -334,25 +334,25 @@ Driver::write_txt(std::ostream &os) const
   if (m_args.txt_summary & Analysis::Args::TxtSum_fFile) { 
     string nm = "File summary:";
     write_txt_secSummary(os, colFmt, nm, 
-			 &ANodeTyFilter[Struct::ANode::TyFILE]);
+			 &ANodeTyFilter[Struct::ANode::TyFile]);
   }
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fProc) { 
     string nm = "Procedure summary:";
     write_txt_secSummary(os, colFmt, nm, 
-			 &ANodeTyFilter[Struct::ANode::TyPROC]);
+			 &ANodeTyFilter[Struct::ANode::TyProc]);
   }
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fLoop) { 
     string nm = "Loop summary (dependent on structure information):";
     write_txt_secSummary(os, colFmt, nm, 
-			 &ANodeTyFilter[Struct::ANode::TyLOOP]);
+			 &ANodeTyFilter[Struct::ANode::TyLoop]);
   }
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fStmt) { 
     string nm = "Statement summary:";
     write_txt_secSummary(os, colFmt, nm, 
-			 &ANodeTyFilter[Struct::ANode::TySTMT]);
+			 &ANodeTyFilter[Struct::ANode::TyStmt]);
   }
   
   if (m_args.txt_srcAnnotation) {
@@ -360,7 +360,7 @@ Driver::write_txt(std::ostream &os) const
     bool hasFnmGlobs = !fnmGlobs.empty();
 
     Struct::ANodeIterator 
-      it(m_structure.root(), &ANodeTyFilter[Struct::ANode::TyFILE]);
+      it(m_structure.root(), &ANodeTyFilter[Struct::ANode::TyFile]);
     for (Struct::ANode* strct = NULL; (strct = it.CurNode()); it++) {
       Struct::File* fileStrct = dynamic_cast<Struct::File*>(strct);
       const string& fnm = fileStrct->name();
@@ -454,7 +454,7 @@ Driver::write_txt_annotateFile(std::ostream& os,
   Prof::Struct::ANodeSortedIterator 
     it(fileStrct, 
        Prof::Struct::ANodeSortedIterator::cmpByLine, 
-       &Prof::Struct::ANodeTyFilter[Prof::Struct::ANode::TySTMT]);
+       &Prof::Struct::ANodeTyFilter[Prof::Struct::ANode::TyStmt]);
   for (Prof::Struct::ANode* node = NULL; (node = it.Current()); it++) {
     Prof::Struct::ACodeNode* strct = 
       dynamic_cast<Prof::Struct::ACodeNode*>(node); // always true

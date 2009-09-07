@@ -262,9 +262,9 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
       strct->metricIncr(CallPath::Profile::StructMetricIdFlg, 1.0);
 
       // 2. Demand a procedure frame for 'n_dyn' and its scope within it
-      Struct::ANode* scope_strct = strct->ancestor(Struct::ANode::TyLOOP,
-						   Struct::ANode::TyALIEN,
-						   Struct::ANode::TyPROC);
+      Struct::ANode* scope_strct = strct->ancestor(Struct::ANode::TyLoop,
+						   Struct::ANode::TyAlien,
+						   Struct::ANode::TyProc);
       scope_strct->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
 
       Prof::CCT::ANode* scope_frame = 
@@ -302,7 +302,7 @@ demandScopeInFrame(Prof::CCT::ADynNode* node,
     frameScope = (*it).second;
   }
   else {
-    Prof::Struct::Proc* procStrct = strct->AncProc();
+    Prof::Struct::Proc* procStrct = strct->ancestorProc();
     makeFrame(node, procStrct, strctToCCTMap);
 
     it = strctToCCTMap.find(strct);

@@ -59,10 +59,14 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+
 #include <string>
+
 #include <deque>
 #include <map>
-#include <iostream>
+
+#include <typeinfo>
 
 #include <cctype>
 
@@ -92,7 +96,7 @@ namespace bloop {
     using namespace Prof;
     bool t1 = ctxtNameEqFuzzy(callCtxt->name(), x);
     bool t2 = false;
-    if (callCtxt->type() == Struct::ANode::TyPROC) {
+    if (typeid(*callCtxt) == typeid(Struct::Proc)) {
       const Struct::Proc* pStrct = dynamic_cast<const Struct::Proc*>(callCtxt);
       t2 = ctxtNameEqFuzzy(pStrct->linkName(), x);
     }
@@ -173,40 +177,40 @@ public:
   
   Prof::Struct::ACodeNode* 
   curScope() const 
-  {
-    return (m_ctxtStack.empty()) ? NULL : m_ctxtStack.front().scope();
-  }
+  { return (m_ctxtStack.empty()) ? NULL : m_ctxtStack.front().scope(); }
   
-  bool 
+  bool
   isParentScope(Prof::Struct::ACodeNode* scope) const 
-  {
-    return (findCtxt(scope) != NULL);
-  }
+  { return (findCtxt(scope) != NULL); }
 
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
 
   // Assume we know that file names match
-  static bool 
+  static bool
   containsLineFzy(Prof::Struct::ACodeNode* x, SrcFile::ln line, 
 		  bool loopIsAlien = false);
 
-  static bool 
+  static bool
   containsIntervalFzy(Prof::Struct::ACodeNode* x, 
 		      SrcFile::ln begLn, SrcFile::ln endLn);
 
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  std::string toString(int flags = 0) const;
+  std::string
+  toString(int flags = 0) const;
 
   // flags = -1: compressed dump / 0: normal dump / 1: extra info
-  std::ostream& dump(std::ostream& os, int flags = 0) const;
+  std::ostream&
+  dump(std::ostream& os, int flags = 0) const;
 
-  void ddump(int flags = 0) const;
+  void
+  ddump(int flags = 0) const;
 
-  void debug(int x);
+  void
+  debug(int x);
 
 private:
 
@@ -219,20 +223,29 @@ private:
 	 Prof::Struct::Loop* loop = NULL)
       : m_ctxt(ctxt), m_loop(loop), 
 	m_filenm( (isAlien()) ? 
-		    dynamic_cast<Prof::Struct::Alien*>(ctxt)->fileName()
-		  : dynamic_cast<Prof::Struct::Proc*>(ctxt)->AncFile()->name() )
+		    static_cast<Prof::Struct::Alien*>(ctxt)->fileName()
+		  : static_cast<Prof::Struct::Proc*>(ctxt)->ancestorFile()->name() )
     { }
     ~Ctxt() { }
 
     // enclosing (calling) context (Struct::Proc, Struct::Alien)
-    Prof::Struct::ACodeNode* ctxt() const { return m_ctxt; }
+    Prof::Struct::ACodeNode*
+    ctxt() const
+    { return m_ctxt; }
     
     // enclosing file name
-    const std::string& fileName() const { return m_filenm; }
+    const std::string&
+    fileName() const
+    { return m_filenm; }
 
     // current enclosing loop
-    Prof::Struct::Loop*  loop() const { return m_loop; }
-    Prof::Struct::Loop*& loop()       { return m_loop; }
+    Prof::Struct::Loop*
+    loop() const
+    { return m_loop; }
+
+    Prof::Struct::Loop*&
+    loop()
+    { return m_loop; }
     
     // current enclosing scope
     Prof::Struct::ACodeNode* 
@@ -250,26 +263,38 @@ private:
     // whether the current context contains the line.  In the case
     // where a file name is available *and* matches the context, the
     // line matching is more lenient.
-    bool containsLine(const string& filenm, SrcFile::ln line) const {
+    bool
+    containsLine(const string& filenm, SrcFile::ln line) const 
+    {
       return (fileName() == filenm 
 	      && LocationMgr::containsLineFzy(ctxt(), line));
     }
 
-    bool containsLine(SrcFile::ln line) const;
+    bool
+    containsLine(SrcFile::ln line) const;
     
-    bool isAlien() const 
-    { return (m_ctxt->type() == Prof::Struct::ANode::TyALIEN); }
+    bool
+    isAlien() const 
+    { return (typeid(*m_ctxt) == typeid(Prof::Struct::Alien)); }
     
-    int  level() const { return m_level; }
-    int& level()       { return m_level; }
+    int
+    level() const
+    { return m_level; }
+
+    int&
+    level()
+    { return m_level; }
 
     // debugging:
     //   flags: -1: tight dump / 0: normal dump
-    std::string toString(int flags = 0, const char* pre = "") const;
+    std::string
+    toString(int flags = 0, const char* pre = "") const;
 
-    std::ostream& dump(std::ostream& os, 
-		       int flags = 0, const char* pre = "") const;
-    void ddump() const;
+    std::ostream&
+    dump(std::ostream& os, int flags = 0, const char* pre = "") const;
+
+    void
+    ddump() const;
 
   private:
     Prof::Struct::ACodeNode*  m_ctxt;
