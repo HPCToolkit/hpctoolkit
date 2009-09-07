@@ -691,9 +691,9 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, LoadMap* loadmap, FILE* outfs)
     DIAG_DevMsgIf(0, "fmt_cct_fread: " << hex << node << " -> " << node_parent << dec);
 
     if (node_parent) {
-      node->Link(node_parent);
+      node->link(node_parent);
       if (node_sib) {
-	node_sib->Link(node_parent);
+	node_sib->link(node_parent);
       }
     }
     else {
@@ -844,7 +844,7 @@ Profile::canonicalize()
 
   // 1. find the splice point
   CCT::ANode* spliceRoot = root;
-  if (root && root->ChildCount() == 1) {
+  if (root && root->childCount() == 1) {
     spliceRoot = root->firstChild();
   }
   
@@ -853,8 +853,8 @@ Profile::canonicalize()
     for (CCT::ANodeChildIterator it(spliceRoot); it.Current(); /* */) {
       CCT::ANode* n = it.CurNode();
       it++; // advance iterator -- it is pointing at 'n'
-      n->Unlink();
-      n->Link(newRoot);
+      n->unlink();
+      n->link(newRoot);
     }
     
     delete root; // N.B.: also deletes 'spliceRoot'

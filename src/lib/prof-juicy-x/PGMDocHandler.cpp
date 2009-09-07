@@ -666,7 +666,7 @@ PGMDocHandler::ProcessGroupDocEndTag()
       Struct::ANode* shadowNode = entry->GetShadow();
       if (!shadowNode) {
 	shadowNode = curNode->clone();
-	shadowNode->Link(parentNode);
+	shadowNode->link(parentNode);
 	entry->SetShadow(shadowNode);
       }
       parentNode = shadowNode;
@@ -674,8 +674,8 @@ PGMDocHandler::ProcessGroupDocEndTag()
     
     // 3. Make the top node a child of the most recent shadow node
     Struct::ANode* topNode = GetScope(0);
-    topNode->Unlink();
-    topNode->Link(parentNode);
+    topNode->unlink();
+    topNode->link(parentNode);
   }
 }
 

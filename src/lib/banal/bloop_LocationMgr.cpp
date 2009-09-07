@@ -162,7 +162,7 @@ LocationMgr::locate(Struct::Loop* loop, Struct::ACodeNode* proposed_scope,
 		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
   determineContext(proposed_scope, filenm, procnm, line);
   Ctxt& encl_ctxt = topCtxtRef();
-  loop->LinkAndSetLineRange(encl_ctxt.scope());
+  loop->linkAndSetLineRange(encl_ctxt.scope());
 }
 
 
@@ -176,7 +176,7 @@ LocationMgr::locate(Struct::Stmt* stmt, Struct::ACodeNode* proposed_scope,
   // FIXME (minor): manage stmt cache! if stmt already exists, only add vma
   determineContext(proposed_scope, filenm, procnm, line);
   Ctxt& encl_ctxt = topCtxtRef();
-  stmt->LinkAndSetLineRange(encl_ctxt.scope());
+  stmt->linkAndSetLineRange(encl_ctxt.scope());
 }
 
 
@@ -628,8 +628,8 @@ LocationMgr::fixScopeTree(Struct::ACodeNode* from_scope,
 			       cur_ctxt->type() == Struct::ANode::TyALIEN), "");
     
     // 1. cur2_scope becomes a sibling of cur_ctxt
-    cur2_scope->Unlink();
-    cur2_scope->Link(cur_ctxt->Parent());
+    cur2_scope->unlink();
+    cur2_scope->link(cur_ctxt->parent());
 
     if (cur_ctxt->type() == Struct::ANode::TyALIEN) {
       // for [cur1_scope ... cur2_scope] (which we know is non-empty)
@@ -638,10 +638,10 @@ LocationMgr::fixScopeTree(Struct::ACodeNode* from_scope,
       for (Struct::ACodeNode *x = cur1_scope, *x_old = NULL;
 	   x != cur2_scope->ACodeNodeParent(); 
 	   x_old = x, x = x->ACodeNodeParent()) {
-	x->SetLineRange(begLn, endLn, 0 /*propagate*/); // FIXME
+	x->setLineRange(begLn, endLn, 0 /*propagate*/); // FIXME
 	
-	if ((x_old && x->ChildCount() >= 2) 
-	    || (!x_old && x->ChildCount() >= 1)) {
+	if ((x_old && x->childCount() >= 2) 
+	    || (!x_old && x->childCount() >= 1)) {
 	  alienateScopeTree(x, dynamic_cast<Struct::Alien*>(cur_ctxt), x_old);
 	}
       }
@@ -664,7 +664,7 @@ LocationMgr::alienateScopeTree(Struct::ACodeNode* scope, Struct::Alien* alien,
   Struct::ACodeNode* clone = 
     demandAlienStrct(scope, alien->fileName(), alien->name(), 
 		     alien->begLine(), /*tosOnCreate*/ false);
-  clone->SetLineRange(alien->begLine(), alien->endLine(), 0 /*propagate*/);
+  clone->setLineRange(alien->begLine(), alien->endLine(), 0 /*propagate*/);
   
   // move non-alien children of 'scope' into 'clone'
   for (Struct::ACodeNodeChildIterator it(scope); it.Current(); /* */) {
@@ -673,8 +673,8 @@ LocationMgr::alienateScopeTree(Struct::ACodeNode* scope, Struct::Alien* alien,
 
     if (child->type() != Struct::ANode::TyALIEN && child != exclude
 	&& !scope->containsInterval(child->begLine(), child->endLine())) {
-      child->Unlink();
-      child->Link(clone);
+      child->unlink();
+      child->link(clone);
     }
   }
 }

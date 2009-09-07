@@ -859,7 +859,7 @@ Driver::hasStructure(const string& lmname, Prof::Struct::Tree& structure,
   else {
     Prof::Struct::LM* lmStrct = 
       Prof::Struct::LM::demand(structure.root(), lmname);
-    bool hasStruct = (lmStrct->ChildCount() > 0);
+    bool hasStruct = (!lmStrct->isLeaf());
     hasStructureTbl.insert(make_pair(lmname, hasStruct));
     if (!hasStruct && !m_args.structureFiles.empty()) {
       DIAG_WMsg(2, "No STRUCTURE for " << lmname << ".");

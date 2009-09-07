@@ -410,8 +410,8 @@ buildLMSkeleton(Struct::LM* lmStrct, BinUtil::LM* lm, ProcNameMgr* procNmMgr)
 
     if (parent) {
       Struct::Proc* parentScope = lmStrct->findProc(parent->begVMA());
-      pStrct->Unlink();
-      pStrct->Link(parentScope);
+      pStrct->unlink();
+      pStrct->link(parentScope);
     }
   }
 
@@ -496,7 +496,7 @@ demandProcNode(Struct::File* fStrct, BinUtil::Proc* p, ProcNameMgr* procNmMgr)
     DIAG_DevMsg(3, "Merging multiple instances of procedure [" 
 		<< pStrct->toStringXML() << "] with " << procNm << " " 
 		<< procLnNm << " " << bounds.toString());
-    pStrct->ExpandLineRange(begLn, endLn);
+    pStrct->expandLineRange(begLn, endLn);
   }
   if (p->hasSymbolic()) {
     pStrct->hasSymbolic(p->hasSymbolic()); // optimistically set
@@ -1152,7 +1152,7 @@ mergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
 	  && LocationMgr::containsIntervalFzy(parent, alien->begLine(), 
 					      alien->endLine()))  {
 	// Move all children of 'alien' into 'parent'
-	changed = Struct::ANode::Merge(parent, alien);
+	changed = Struct::ANode::merge(parent, alien);
 	DIAG_Assert(changed, "mergeBogusAlienStrct: merge failed.");
       }
     }
@@ -1393,7 +1393,7 @@ CDS_InspectStmt(Struct::Stmt* stmt1, SortIdToStmtMap* stmtMap,
     
     // Find the least common ancestor.  At most it should be a
     // procedure scope.
-    Struct::ANode* lca = Struct::ANode::LeastCommonAncestor(stmt1, stmt2);
+    Struct::ANode* lca = Struct::ANode::leastCommonAncestor(stmt1, stmt2);
     DIAG_Assert(lca, "");
     
     // Because we have the lca and know that the descendent nodes are
@@ -1421,7 +1421,7 @@ CDS_InspectStmt(Struct::Stmt* stmt1, SortIdToStmtMap* stmtMap,
       // Case 2: Duplicate statements in different loops (or scopes).
       // Merge the nodes from stmt2->lca into those from stmt1->lca.
       DIAG_DevMsgIf(DBG_CDS, "  Merge: " << stmt1 << " <- " << stmt2);
-      changed = Struct::ANode::MergePaths(lca, stmt1, stmt2);
+      changed = Struct::ANode::mergePaths(lca, stmt1, stmt2);
       if (changed) {
 	// We may have created instances of case 1.  Furthermore,
 	// while neither statement is deleted ('stmtMap' is still
@@ -1474,13 +1474,13 @@ mergePerfectlyNestedLoops(Struct::ANode* node)
     Struct::ACodeNode* n_CI = dynamic_cast<Struct::ACodeNode*>(node); 
     bool perfNested = (child->type() == Struct::ANode::TyLOOP &&
 		       node->type() == Struct::ANode::TyLOOP &&
-		       node->ChildCount() == 1);
+		       node->childCount() == 1);
     if (perfNested && SrcFile::isValid(child->begLine(), child->endLine()) &&
 	child->begLine() == n_CI->begLine() &&
 	child->endLine() == n_CI->endLine()) { 
 
       // Move all children of 'child' so that they are children of 'node'
-      changed = Struct::ANode::Merge(node, child);
+      changed = Struct::ANode::merge(node, child);
       DIAG_Assert(changed, "mergePerfectlyNestedLoops: merge failed.");
     }
   } 
@@ -1514,7 +1514,7 @@ removeEmptyNodes(Struct::ANode* node)
 
     // 2. Trim this node if necessary
     if (removeEmptyNodes_isEmpty(child)) {
-      child->Unlink(); // unlink 'child' from tree
+      child->unlink(); // unlink 'child' from tree
       delete child;
       changed = true;
     }
@@ -1534,12 +1534,12 @@ removeEmptyNodes_isEmpty(const Struct::ANode* node)
 {
   if ((node->type() == Struct::ANode::TyFILE 
        || node->type() == Struct::ANode::TyALIEN)
-      && node->ChildCount() == 0) {
+      && node->isLeaf()) {
     return true;
   }
   if ((node->type() == Struct::ANode::TyPROC 
        || node->type() == Struct::ANode::TyLOOP)
-      && node->ChildCount() == 0) {
+      && node->isLeaf()) {
     const Struct::ACodeNode* n = dynamic_cast<const Struct::ACodeNode*>(node);
     return n->vmaSet().empty();
   }
@@ -1570,7 +1570,7 @@ deleteContents(Struct::ANodeSet* s)
   // Delete nodes in toDelete
   for (Struct::ANodeSet::iterator it = s->begin(); it != s->end(); ++it) {
     Struct::ANode* n = (*it);
-    n->Unlink(); // unlink 'n' from tree
+    n->unlink(); // unlink 'n' from tree
     delete n;
   }
   s->clear();
