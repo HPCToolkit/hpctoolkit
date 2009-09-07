@@ -464,7 +464,7 @@ BinUtil::TextSeg::findProcName(bfd* abfd, asymbol* procSym) const
 				    symVal - secBase, &file, &bfd_func, &line);
   }
 
-  if (bfd_fnd && bfd_func && (strlen(bfd_func) > 0)) {
+  if (bfd_fnd && bfd_func && bfd_func[0] != '\0') {
     procName = bfd_func;
   } 
   else {
