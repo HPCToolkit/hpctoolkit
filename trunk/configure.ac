@@ -124,6 +124,9 @@ AC_SUBST([HPCTOOLKIT_PLATFORM])
 # the result in a file), else expect the answer to be in the file.
 # Note: svn update changes the revision number, so svn info must take
 # precedence over the file.
+#
+# *** N.B.: since PACKAGE_VERSION is also used in the 'dist' tarball,
+# it is better not to include spaces or special characters within. ***
 
 version_file="${srcdir}/.svn-revision"
 
