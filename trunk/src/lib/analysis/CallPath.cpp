@@ -159,7 +159,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile* prof,
   const string& lm_nm = loadmap_lm->name();
   BinUtil::LM* lm = NULL;
 
-  bool useStruct = (lmStrct->ChildCount() > 0);
+  bool useStruct = (lmStrct->childCount() > 0);
 
   if (useStruct) {
     DIAG_Msg(1, "STRUCTURE: " << lm_nm);
@@ -271,8 +271,8 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 	demandScopeInFrame(n_dyn, scope_strct, strctToCCTMap);
 
       // 3. Link 'n' to its parent
-      n->Unlink();
-      n->Link(scope_frame);
+      n->unlink();
+      n->link(scope_frame);
     }
     
     // ---------------------------------------------------
@@ -322,7 +322,7 @@ makeFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
 	  StructToCCTMap& strctToCCTMap)
 {
   Prof::CCT::ProcFrm* frame = new Prof::CCT::ProcFrm(NULL, procStrct);
-  frame->Link(node->Parent());
+  frame->link(node->Parent());
   strctToCCTMap.insert(std::make_pair(procStrct, frame));
 
   makeFrameStructure(frame, procStrct, strctToCCTMap);
@@ -464,7 +464,7 @@ coalesceStmts(Prof::CCT::ANode* node)
 	c1->mergeMetrics(*c);
 	
 	// remove 'child' from tree
-	child->Unlink();
+	child->unlink();
 	delete child;
 	// NOTE: could clear Prof::CallPath::Profile::StructMetricIdFlg
       }
@@ -526,7 +526,7 @@ pruneByMetrics(Prof::CCT::ANode* node)
     bool isTy = (typeid(*x) == typeid(Prof::CCT::ProcFrm) || 
 		 typeid(*x) == typeid(Prof::CCT::Loop));
     if (x->isLeaf() && isTy) {
-      x->Unlink(); // unlink 'x' from tree
+      x->unlink(); // unlink 'x' from tree
       DIAG_DevMsgIf(0, "pruneByMetrics: " << hex << x << dec << " (sid: " << x->structureId() << ")");
       delete x;
     }

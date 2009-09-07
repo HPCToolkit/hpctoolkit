@@ -82,6 +82,8 @@
 
 #include "IteratorStack.hpp"
 
+#include <include/uint.h>
+
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
@@ -95,10 +97,10 @@ public:
   // constructor initializes empty node then links
   // it to its parent and siblings (if any)
   //-----------------------------------------------
-  NonUniformDegreeTreeNode(NonUniformDegreeTreeNode *_parent = 0)
+  NonUniformDegreeTreeNode(NonUniformDegreeTreeNode* parent = 0)
   {
-    ZeroLinks();
-    Link(_parent); // link to parent and siblings if any
+    zeroLinks();
+    link(parent); // link to parent and siblings if any
   }
   
   NonUniformDegreeTreeNode(const NonUniformDegreeTreeNode& other) {
@@ -109,11 +111,11 @@ public:
   {
     // shallow copy
     if (&other != this) {
-      parent       = other.parent;
-      children     = other.children;
-      next_sibling = other.next_sibling;
-      prev_sibling = other.prev_sibling;
-      child_count  = other.child_count;
+      m_parent       = other.m_parent;
+      m_children     = other.m_children;
+      m_next_sibling = other.m_next_sibling;
+      m_prev_sibling = other.m_prev_sibling;
+      m_child_count  = other.m_child_count;
     }
     return *this;
   }
@@ -124,10 +126,10 @@ public:
   //-----------------------------------------------
   virtual ~NonUniformDegreeTreeNode()
   {
-    if (child_count > 0) {
-      NonUniformDegreeTreeNode *next, *start = children;
-      for (int i = child_count; i-- > 0; ) {
-	next = start->next_sibling;
+    if (m_child_count > 0) {
+      NonUniformDegreeTreeNode *next, *start = m_children;
+      for (int i = m_child_count; i-- > 0; ) {
+	next = start->m_next_sibling;
 	delete start;
 	start = next;
       }
@@ -135,43 +137,50 @@ public:
   }
   
   // link/unlink a node to a parent and siblings 
-  void Link(NonUniformDegreeTreeNode *_parent);
-  void LinkBefore(NonUniformDegreeTreeNode *sibling);
-  void LinkAfter(NonUniformDegreeTreeNode *sibling);
-  void Unlink();
+  void link(NonUniformDegreeTreeNode *parent);
+  void linkBefore(NonUniformDegreeTreeNode *sibling);
+  void linkAfter(NonUniformDegreeTreeNode *sibling);
+  void unlink();
 
   // returns the number of ancestors walking up the tree
-  unsigned int AncestorCount() const;
+  uint ancestorCount() const;
   
   // functions for inspecting links to other nodes
-  unsigned int ChildCount() const { return child_count; };
+  uint childCount() const { return m_child_count; };
 
-  virtual std::string ToString() const; 
+  bool isLeaf() const { return (m_child_count == 0); }
+
+  virtual std::string toString() const; 
+
 public:
-  NonUniformDegreeTreeNode *Parent() const { return parent; };
-  NonUniformDegreeTreeNode *NextSibling() const { return next_sibling; };
-  NonUniformDegreeTreeNode *PrevSibling() const { return prev_sibling; };
-  NonUniformDegreeTreeNode *FirstChild() const { return children; };
+  // N.B.: For derived classes, these may get in the way...
+  NonUniformDegreeTreeNode *Parent() const { return m_parent; };
+  NonUniformDegreeTreeNode *NextSibling() const { return m_next_sibling; };
+  NonUniformDegreeTreeNode *PrevSibling() const { return m_prev_sibling; };
+  NonUniformDegreeTreeNode *FirstChild() const { return m_children; };
   NonUniformDegreeTreeNode *LastChild() const
-    { return children ? children->prev_sibling : 0; };
+    { return m_children ? m_children->m_prev_sibling : 0; };
 
 protected:
   // useful for resetting parent/child/etc links after cloning
-  void ZeroLinks() {
+  void zeroLinks() {
     // no parent
-    parent = NULL;
+    m_parent = NULL;
 
     // no children
-    children = NULL;
-    child_count = 0;
+    m_children = NULL;
+    m_child_count = 0;
 
     // initial circular list of siblings includes only self
-    next_sibling = prev_sibling = this;
+    m_next_sibling = m_prev_sibling = this;
   }
 
 protected:
-  NonUniformDegreeTreeNode *parent, *children, *next_sibling, *prev_sibling;
-  unsigned int child_count;
+  NonUniformDegreeTreeNode* m_parent;
+  NonUniformDegreeTreeNode* m_children;
+  NonUniformDegreeTreeNode* m_next_sibling;
+  NonUniformDegreeTreeNode* m_prev_sibling;
+  uint m_child_count;
 
   friend class NonUniformDegreeTreeNodeChildIterator;
   friend class NonUniformDegreeTreeIterator;
@@ -185,9 +194,9 @@ protected:
 
 class NonUniformDegreeTreeNodeChildIterator : public StackableIterator {
 public:
-  NonUniformDegreeTreeNodeChildIterator(const NonUniformDegreeTreeNode* _parent,
+  NonUniformDegreeTreeNodeChildIterator(const NonUniformDegreeTreeNode* parent,
 					bool _forward = true)
-    : parent(_parent), currentChild(0), forward(_forward)
+    : m_parent(parent), currentChild(0), forward(_forward)
   {
     Reset();
   }
@@ -198,7 +207,7 @@ public:
 
   void Reset(void) 
   {
-    currentChild = forward ? parent->FirstChild() : parent->LastChild();
+    currentChild = forward ? m_parent->FirstChild() : m_parent->LastChild();
   }
 
   // prefix increment
@@ -208,7 +217,7 @@ public:
       currentChild = (forward ? currentChild->NextSibling() 
    		              : currentChild->PrevSibling());
       const NonUniformDegreeTreeNode* pastEnd = 
-	forward ? parent->FirstChild() : parent->LastChild();
+	forward ? m_parent->FirstChild() : m_parent->LastChild();
       if (currentChild == pastEnd) {
 	currentChild = NULL;
       }
@@ -236,7 +245,7 @@ private:
     return Current();
   }
 
-  const NonUniformDegreeTreeNode *parent;
+  const NonUniformDegreeTreeNode *m_parent;
   NonUniformDegreeTreeNode *currentChild;
   bool forward;
 };

@@ -232,8 +232,8 @@ private:
   static const std::string NodeNames[TyNUMBER];
   
 public:
-  ANode(NodeType type, ANode* _parent, Struct::ACodeNode* strct = NULL)
-    : NonUniformDegreeTreeNode(_parent), m_type(type), m_strct(strct)
+  ANode(NodeType type, ANode* parent, Struct::ACodeNode* strct = NULL)
+    : NonUniformDegreeTreeNode(parent), m_type(type), m_strct(strct)
   { 
     static uint uniqueId = 2; // To support reading/writing, ids must be
     m_id = uniqueId += 2;     // consistent with HPCRUN_FMT_RetainIdFlag.
@@ -246,7 +246,7 @@ public:
   ANode(const ANode& x)
     : m_type(x.m_type), m_strct(x.m_strct) // do not copy 'm_id'
   { 
-    ZeroLinks();
+    zeroLinks();
   }
 
   ANode& operator=(const ANode& x) 
@@ -336,10 +336,6 @@ public:
     return NULL;
   }
 
-  bool
-  isLeaf() const 
-  { return (NonUniformDegreeTreeNode::FirstChild() == NULL); }
-  
 
   // --------------------------------------------------------
   // Ancestor: find first node in path from this to root with given type
@@ -440,32 +436,32 @@ public:
   // 
   // -------------------------------------------------------
   
-  ADynNode(NodeType type, ANode* _parent, Struct::ACodeNode* strct,
+  ADynNode(NodeType type, ANode* parent, Struct::ACodeNode* strct,
 	   uint cpId, const SampledMetricDescVec* metricdesc)
-    : ANode(type, _parent, strct),
+    : ANode(type, parent, strct),
       m_cpId(cpId),
       m_as_info(lush_assoc_info_NULL),
       m_lmId(LoadMap::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL),
       m_metricdesc(metricdesc)
     { }
 
-  ADynNode(NodeType type, ANode* _parent, Struct::ACodeNode* strct,
+  ADynNode(NodeType type, ANode* parent, Struct::ACodeNode* strct,
 	   uint32_t cpId, lush_assoc_info_t as_info, 
 	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc)
-    : ANode(type, _parent, strct),
+    : ANode(type, parent, strct),
       m_cpId(cpId),
       m_as_info(as_info), 
       m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
       m_metricdesc(metricdesc)
     { }
 
-  ADynNode(NodeType type, ANode* _parent, Struct::ACodeNode* strct,
+  ADynNode(NodeType type, ANode* parent, Struct::ACodeNode* strct,
 	   uint32_t cpId, lush_assoc_info_t as_info, 
 	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc,
 	   std::vector<hpcrun_metricVal_t>& metrics)
-    : ANode(type, _parent, strct),
+    : ANode(type, parent, strct),
       m_cpId(cpId),
       m_as_info(as_info),
       m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
@@ -809,7 +805,7 @@ private:
 class ProcFrm: public ANode {
 public:
   // Constructor/Destructor
-  ProcFrm(ANode* _parent, Struct::ACodeNode* strct = NULL);
+  ProcFrm(ANode* parent, Struct::ACodeNode* strct = NULL);
 
   virtual ~ProcFrm();
 
@@ -917,7 +913,7 @@ private:
 class Proc: public ANode {
 public: 
   // Constructor/Destructor
-  Proc(ANode* _parent, Struct::ACodeNode* strct = NULL);
+  Proc(ANode* parent, Struct::ACodeNode* strct = NULL);
   virtual ~Proc();
   
   // Dump contents for inspection
@@ -933,7 +929,7 @@ public:
 class Loop: public ANode {
 public: 
   // Constructor/Destructor
-  Loop(ANode* _parent, Struct::ACodeNode* strct = NULL);
+  Loop(ANode* parent, Struct::ACodeNode* strct = NULL);
 
   virtual ~Loop();
 
@@ -952,18 +948,18 @@ private:
 class Stmt: public ADynNode {
  public:
   // Constructor/Destructor
-  Stmt(ANode* _parent, uint cpId, const SampledMetricDescVec* metricdesc)
-    : ADynNode(TyStmt, _parent, NULL, cpId, metricdesc)
+  Stmt(ANode* parent, uint cpId, const SampledMetricDescVec* metricdesc)
+    : ADynNode(TyStmt, parent, NULL, cpId, metricdesc)
   { }
 
-  Stmt(ANode* _parent,
+  Stmt(ANode* parent,
        uint32_t cpId,
        lush_assoc_info_t as_info,
        LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, 
        lush_lip_t* lip,
        const SampledMetricDescVec* metricdesc,
        std::vector<hpcrun_metricVal_t>& metrics)
-    : ADynNode(TyStmt, _parent, NULL, 
+    : ADynNode(TyStmt, parent, NULL, 
 	       cpId, as_info, lmId, ip, opIdx, lip, metricdesc, metrics)
   { }
 
@@ -992,9 +988,9 @@ class Stmt: public ADynNode {
 class Call: public ADynNode {
 public:
   // Constructor/Destructor
-  Call(ANode* _parent, uint cpId, const SampledMetricDescVec* metricdesc);
+  Call(ANode* parent, uint cpId, const SampledMetricDescVec* metricdesc);
 
-  Call(ANode* _parent, 
+  Call(ANode* parent, 
        uint32_t cpId,
        lush_assoc_info_t as_info,
        LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, 

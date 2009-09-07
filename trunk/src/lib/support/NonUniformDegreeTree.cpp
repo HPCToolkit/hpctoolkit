@@ -89,103 +89,103 @@ using std::endl;
 // circular doubly-linked list of its siblings 
 // (if any)
 //-----------------------------------------------
-void NonUniformDegreeTreeNode::Link(NonUniformDegreeTreeNode *newParent)
+void NonUniformDegreeTreeNode::link(NonUniformDegreeTreeNode *newParent)
 {
-  DIAG_Assert(this->parent == 0, ""); // can only have one parent
+  DIAG_Assert(this->m_parent == 0, ""); // can only have one parent
   if (newParent != 0) {
     // children maintained as a doubly linked ring. 
     // a new node is linked at the end of the ring (as a predecessor 
-    // of "parent->children") which points to first child in the ring
+    // of "m_parent->children") which points to first child in the ring
     
-    NonUniformDegreeTreeNode *first_sibling = newParent->children;
-    if (first_sibling) LinkAfter(first_sibling->prev_sibling);
+    NonUniformDegreeTreeNode *first_sibling = newParent->m_children;
+    if (first_sibling) linkAfter(first_sibling->m_prev_sibling);
     else {
-      newParent->children = this; // solitary child
-      newParent->child_count++;
-      parent = newParent;
+      newParent->m_children = this; // solitary child
+      newParent->m_child_count++;
+      m_parent = newParent;
     }
   }
 }
 
 
 //-----------------------------------------------
-void NonUniformDegreeTreeNode::LinkAfter(NonUniformDegreeTreeNode *sibling)
+void NonUniformDegreeTreeNode::linkAfter(NonUniformDegreeTreeNode *sibling)
 {
   DIAG_Assert(sibling != NULL, "");
-  DIAG_Assert(this->parent == NULL, ""); // can only have one parent
+  DIAG_Assert(this->m_parent == NULL, ""); // can only have one parent
   
-  this->parent = sibling->parent;
-  if (parent) parent->child_count++;
+  this->m_parent = sibling->m_parent;
+  if (m_parent) m_parent->m_child_count++;
     
   // children maintained as a doubly linked ring. 
     
   // link forward chain
-  next_sibling = sibling->next_sibling;
-  sibling->next_sibling = this;
+  m_next_sibling = sibling->m_next_sibling;
+  sibling->m_next_sibling = this;
       
   // link backward chain
-  prev_sibling = sibling;
-  next_sibling->prev_sibling = this;
+  m_prev_sibling = sibling;
+  m_next_sibling->m_prev_sibling = this;
 }
 
 
 //-----------------------------------------------
-void NonUniformDegreeTreeNode::LinkBefore(NonUniformDegreeTreeNode *sibling)
+void NonUniformDegreeTreeNode::linkBefore(NonUniformDegreeTreeNode *sibling)
 {
   DIAG_Assert(sibling != NULL, "");
-  LinkAfter(sibling->prev_sibling);
-  if (parent && sibling == parent->children) {
-    parent->children = this;
+  linkAfter(sibling->m_prev_sibling);
+  if (m_parent && sibling == m_parent->m_children) {
+    m_parent->m_children = this;
   }
 }
 
 //-----------------------------------------------
 // unlinks a node from a parent and siblings
 //-----------------------------------------------
-void NonUniformDegreeTreeNode::Unlink()
+void NonUniformDegreeTreeNode::unlink()
 {
-  if (parent != 0) {
+  if (m_parent != 0) {
     // children maintained as a doubly linked ring. 
     // excise this node from from the ring 
-    if (--(parent->child_count) == 0) {
+    if (--(m_parent->m_child_count) == 0) {
       // current node is removed as only child of parent
       // leaving it linked in a circularly linked list with
       // itself
-      parent->children = 0;
+      m_parent->m_children = 0;
     } else {
       // fix link from parent to the ring if necessary
-      if (parent->children == this)
-	parent->children = next_sibling;
+      if (m_parent->m_children == this)
+	m_parent->m_children = m_next_sibling;
 	
       // relink predecessor's forward link
-      prev_sibling->next_sibling = next_sibling;
+      m_prev_sibling->m_next_sibling = m_next_sibling;
       
       // relink successor's backward link
-      next_sibling->prev_sibling = prev_sibling;
+      m_next_sibling->m_prev_sibling = m_prev_sibling;
       
       // relink own pointers into self-circular configuration
-      prev_sibling = this;
-      next_sibling = this;
+      m_prev_sibling = this;
+      m_next_sibling = this;
     }
   }
-  this->parent = 0;
+  this->m_parent = 0;
 }
 
 
 unsigned int
-NonUniformDegreeTreeNode::AncestorCount() const
+NonUniformDegreeTreeNode::ancestorCount() const
 {
   unsigned int ancestorCount = 0;
-  for (NonUniformDegreeTreeNode* ancestor = parent;
+  for (NonUniformDegreeTreeNode* ancestor = m_parent;
        ancestor;
-       ancestor = ancestor->parent) {
+       ancestor = ancestor->m_parent) {
     ancestorCount++;
   }
   return ancestorCount;
 }
 
 std::string
-NonUniformDegreeTreeNode::ToString() const
+NonUniformDegreeTreeNode::toString() const
 {
   return "NonUniformDegreeTreeNode: " + StrUtil::toStr((void*)this);
 }
@@ -243,7 +243,7 @@ NonUniformDegreeTreeIterator::IteratorToPushIfAny(void *current)
     }
   }
 
-  return (node->ChildCount() > 0)
+  return (node->childCount() > 0)
        ? new NonUniformDegreeTreeNodeChildIterator(node, IterationIsForward())
        : 0;
 }
@@ -258,7 +258,7 @@ NonUniformDegreeTreeIterator::DumpAndReset(std::ostream& os)
 {
   os << "NonUniformDegreeTreeIterator: " << endl; 
   while (Current()) {
-    os << Current()->ToString() << endl; 
+    os << Current()->toString() << endl; 
     (*this)++; 
   } 
   Reset(); 
@@ -269,7 +269,7 @@ NonUniformDegreeTreeNodeChildIterator::DumpAndReset(std::ostream& os)
 {
   os << "NonUniformDegreeTreeNodeChildIterator: " << endl; 
   while (Current()) {
-    os << Current()->ToString() << endl; 
+    os << Current()->toString() << endl; 
     (*this)++; 
   } 
   Reset(); 

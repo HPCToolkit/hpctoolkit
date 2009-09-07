@@ -229,20 +229,20 @@ Root::~Root()
 string ProcFrm::BOGUS;
 
 static void
-Call_Check(Call* n, ANode* _parent) 
+Call_Check(Call* n, ANode* parent) 
 {
-  DIAG_Assert((_parent == NULL) 
-	      || (_parent->type() == ANode::TyRoot)
-	      || (_parent->type() == ANode::TyLoop) 
-	      || (_parent->type() == ANode::TyProcFrm) 
-	      || (_parent->type() == ANode::TyCall), "");
+  DIAG_Assert((parent == NULL) 
+	      || (parent->type() == ANode::TyRoot)
+	      || (parent->type() == ANode::TyLoop) 
+	      || (parent->type() == ANode::TyProcFrm) 
+	      || (parent->type() == ANode::TyCall), "");
 }
 
 
-ProcFrm::ProcFrm(ANode* _parent, Struct::ACodeNode* strct)
-  : ANode(TyProcFrm, _parent, strct)
+ProcFrm::ProcFrm(ANode* parent, Struct::ACodeNode* strct)
+  : ANode(TyProcFrm, parent, strct)
 {
-  Call_Check(NULL, _parent);
+  Call_Check(NULL, parent);
 }
 
 
@@ -251,12 +251,12 @@ ProcFrm::~ProcFrm()
 }
 
 
-Proc::Proc(ANode* _parent, Struct::ACodeNode* strct)
-  : ANode(TyProc, _parent, strct)
+Proc::Proc(ANode* parent, Struct::ACodeNode* strct)
+  : ANode(TyProc, parent, strct)
 {
-  DIAG_Assert((_parent == NULL)
-	      || (_parent->type() == TyCall)
-	      || (_parent->type() == TyLoop), "");
+  DIAG_Assert((parent == NULL)
+	      || (parent->type() == TyCall)
+	      || (parent->type() == TyLoop), "");
 }
 
 Proc::~Proc()
@@ -264,13 +264,13 @@ Proc::~Proc()
 }
 
 
-Loop::Loop(ANode* _parent, Struct::ACodeNode* strct)
-  : ANode(TyLoop, _parent, strct)
+Loop::Loop(ANode* parent, Struct::ACodeNode* strct)
+  : ANode(TyLoop, parent, strct)
 {
-  DIAG_Assert((_parent == NULL)
-	      || (_parent->type() == TyCall) 
-	      || (_parent->type() == TyProcFrm) 
-	      || (_parent->type() == TyLoop), "");
+  DIAG_Assert((parent == NULL)
+	      || (parent->type() == TyCall) 
+	      || (parent->type() == TyProcFrm) 
+	      || (parent->type() == TyLoop), "");
 }
 
 
@@ -279,24 +279,24 @@ Loop::~Loop()
 }
 
 
-Call::Call(ANode* _parent, uint cpId, const SampledMetricDescVec* metricdesc)
-  : ADynNode(TyCall, _parent, NULL, cpId, metricdesc)
+Call::Call(ANode* parent, uint cpId, const SampledMetricDescVec* metricdesc)
+  : ADynNode(TyCall, parent, NULL, cpId, metricdesc)
 {
-  Call_Check(this, _parent);
+  Call_Check(this, parent);
 }
 
 
-Call::Call(ANode* _parent, 
+Call::Call(ANode* parent, 
 	   uint cpId,
 	   lush_assoc_info_t as_info,
 	   LoadMap::LM_id_t lmId, VMA ip, ushort opIndex, 
 	   lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc,
 	   std::vector<hpcrun_metricVal_t>& metrics)
-  : ADynNode(TyCall, _parent, NULL, 
+  : ADynNode(TyCall, parent, NULL, 
 	     cpId, as_info, lmId, ip, opIndex, lip, metricdesc, metrics)
 {
-  Call_Check(this, _parent);
+  Call_Check(this, parent);
 }
 
 
@@ -325,20 +325,20 @@ ANode::ancestor(NodeType tp) const
 } 
 
 
-#if 0
-
-int IsAncestorOf(ANode* _parent, ANode *son, int difference)
+#if 0 // is this obsolete?
+int
+isAncestorOf(ANode* parent, ANode* son, int difference)
 {
   ANode *iter = son;
-  while (iter && difference > 0 && iter != _parent) {
+  while (iter && difference > 0 && iter != parent) {
     iter = iter->Parent();
     difference--;
   }
-  if (iter && iter == _parent)
-     return 1;
+  if (iter && iter == parent) {
+    return 1;
+  }
   return 0;
 }
-
 #endif
 
 
@@ -489,9 +489,9 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
     ADynNode* x_child_dyn = findDynChild(*y_child_dyn);
 
     if (!x_child_dyn) {
-      y_child->Unlink();
+      y_child->unlink();
       y_child->merge_fixup(new_mdesc, x_newMetricBegIdx);
-      y_child->Link(x);
+      y_child->link(x);
     }
     else {
       DIAG_MsgIf(0, "ANode::merge: Merging y into x:\n"
@@ -556,11 +556,11 @@ ANode::merge_node(ANode* y)
   for (ANodeChildIterator it(y); it.Current(); /* */) {
     ANode* y_child = it.CurNode();
     it++; // advance iterator -- it is pointing at 'y_child'
-    y_child->Unlink();
-    y_child->Link(x);
+    y_child->unlink();
+    y_child->link(x);
   }
   
-  y->Unlink();
+  y->unlink();
   delete y;
 }
 

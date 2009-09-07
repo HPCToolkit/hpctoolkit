@@ -192,20 +192,20 @@ ANode::operator=(const ANode& x)
     m_uid     = x.m_uid;
     m_metrics = x.m_metrics;
     
-    ZeroLinks(); // NonUniformDegreeTreeNode
+    zeroLinks(); // NonUniformDegreeTreeNode
   }
   return *this;
 }
 
 
 void 
-ACodeNode::LinkAndSetLineRange(ACodeNode* parent)
+ACodeNode::linkAndSetLineRange(ACodeNode* parent)
 {
-  this->Link(parent);
+  this->link(parent);
   if (begLine() != ln_NULL) {
     SrcFile::ln bLn = std::min(parent->begLine(), begLine());
     SrcFile::ln eLn = std::max(parent->endLine(), endLine());
-    parent->SetLineRange(bLn, eLn);
+    parent->setLineRange(bLn, eLn);
   }
 }
 
@@ -261,11 +261,11 @@ Group::Ctor(const char* nm, ANode* parent)
 
 
 Group* 
-Group::demand(Root* pgm, const string& nm, ANode* _parent)
+Group::demand(Root* pgm, const string& nm, ANode* parent)
 {
   Group* grp = pgm->findGroup(nm);
   if (!grp) {
-    grp = new Group(nm, _parent);
+    grp = new Group(nm, parent);
   }
   return grp;
 }
@@ -376,7 +376,7 @@ Proc::Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym)
   m_hasSym = hasSym;
   m_stmtMap = new StmtMap();
   if (parent) {
-    Relocate();
+    relocate();
   }
 
   File* fileStrct = AncFile();
@@ -529,7 +529,7 @@ int IsAncestorOf(ANode *parent, ANode *son, int difference)
 
 
 ANode* 
-ANode::LeastCommonAncestor(ANode* n1, ANode* n2)
+ANode::leastCommonAncestor(ANode* n1, ANode* n2)
 {
   // Collect all ancestors of n1 and n2.  The root will be at the front
   // of the ancestor list.
@@ -632,7 +632,7 @@ ANode::ancestorProcCtxt() const
 //***************************************************************************
 
 int 
-ANode::Distance(ANode* anc, ANode* desc)
+ANode::distance(ANode* anc, ANode* desc)
 {
   int distance = 0;
   for (ANode* x = desc; x != NULL; x = x->parent()) {
@@ -648,13 +648,12 @@ ANode::Distance(ANode* anc, ANode* desc)
 
 
 bool 
-ANode::ArePathsOverlapping(ANode* lca, ANode* desc1, 
-			       ANode* desc2)
+ANode::arePathsOverlapping(ANode* lca, ANode* desc1, ANode* desc2)
 {
   // Ensure that d1 is on the longest path
   ANode* d1 = desc1, *d2 = desc2;
-  int dist1 = Distance(lca, d1);
-  int dist2 = Distance(lca, d2);
+  int dist1 = distance(lca, d1);
+  int dist2 = distance(lca, d2);
   if (dist2 > dist1) {
     ANode* t = d1;
     d1 = d2;
@@ -675,7 +674,7 @@ ANode::ArePathsOverlapping(ANode* lca, ANode* desc1,
 
 
 bool
-ANode::MergePaths(ANode* lca, ANode* toDesc, ANode* fromDesc)
+ANode::mergePaths(ANode* lca, ANode* toDesc, ANode* fromDesc)
 {
   bool merged = false;
   // Should we verify that lca is really the lca?
@@ -712,8 +711,8 @@ ANode::MergePaths(ANode* lca, ANode* toDesc, ANode* fromDesc)
   for ( ; fromPathIt != fromPath.rend(); ++fromPathIt, ++toPathIt) {
     ANode* from = (*fromPathIt);
     ANode* to = (*toPathIt);
-    if (IsMergable(to, from)) {
-      merged |= Merge(to, from);
+    if (isMergable(to, from)) {
+      merged |= merge(to, from);
     }
   }
   
@@ -722,7 +721,7 @@ ANode::MergePaths(ANode* lca, ANode* toDesc, ANode* fromDesc)
 
 
 bool 
-ANode::Merge(ANode* toNode, ANode* fromNode)
+ANode::merge(ANode* toNode, ANode* fromNode)
 {
   // Do we really want this?
   //if (!IsMergable(toNode, fromNode)) {
@@ -735,8 +734,8 @@ ANode::Merge(ANode* toNode, ANode* fromNode)
     ANode* child = dynamic_cast<ANode*>(it.Current());
     it++; // advance iterator -- it is pointing at 'child'
     
-    child->Unlink();
-    child->Link(toNode);
+    child->unlink();
+    child->link(toNode);
   }
   
   // 2. If merging ACodeNodes, update line ranges
@@ -746,12 +745,12 @@ ANode::Merge(ANode* toNode, ANode* fromNode)
   if (toCI && fromCI) {
     SrcFile::ln begLn = std::min(toCI->begLine(), fromCI->begLine());
     SrcFile::ln endLn = std::max(toCI->endLine(), fromCI->endLine());
-    toCI->SetLineRange(begLn, endLn);
+    toCI->setLineRange(begLn, endLn);
     toCI->vmaSet().merge(fromCI->vmaSet()); // merge VMAs
   }
   
   // 3. Unlink 'fromNode' from the tree and delete it
-  fromNode->Unlink();
+  fromNode->unlink();
   delete fromNode;
   
   return true;
@@ -759,7 +758,7 @@ ANode::Merge(ANode* toNode, ANode* fromNode)
 
 
 bool 
-ANode::IsMergable(ANode* toNode, ANode* fromNode)
+ANode::isMergable(ANode* toNode, ANode* fromNode)
 {
   ANode::ANodeTy toTy = toNode->type(), fromTy = fromNode->type();
 
@@ -818,19 +817,19 @@ ANode::pruneByMetrics()
   std::vector<ANode*> toBeRemoved;
   
   for (ANodeChildIterator it(this, NULL); it.Current(); ++it) {
-    ANode* si = it.CurNode();
-    if (si->hasMetrics()) {
-      si->pruneByMetrics();
+    ANode* x = it.CurNode();
+    if (x->hasMetrics()) {
+      x->pruneByMetrics();
     }
     else {
-      toBeRemoved.push_back(si);
+      toBeRemoved.push_back(x);
     }
   }
   
   for (uint i = 0; i < toBeRemoved.size(); i++) {
-    ANode* si = toBeRemoved[i];
-    si->Unlink();
-    delete si;
+    ANode* x = toBeRemoved[i];
+    x->unlink();
+    delete x;
   }
 }
 
@@ -1007,32 +1006,32 @@ File::findProc(const char* name, const char* linkname) const
 //***************************************************************************
 
 void 
-ACodeNode::SetLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate) 
+ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate) 
 {
   checkLineRange(begLn, endLn);
   
   m_begLn = begLn;
   m_endLn = endLn;
   
-  RelocateIf();
+  relocateIf();
 
   // never propagate changes outside an Alien
   if (propagate && begLn != ln_NULL 
       && ACodeNodeParent() && type() != ANode::TyALIEN) {
-    ACodeNodeParent()->ExpandLineRange(m_begLn, m_endLn);
+    ACodeNodeParent()->expandLineRange(m_begLn, m_endLn);
   }
 }
 
 
 void 
-ACodeNode::ExpandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
+ACodeNode::expandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
   checkLineRange(begLn, endLn);
 
   if (begLn == ln_NULL) {
     DIAG_Assert(m_begLn == ln_NULL, "");
     // simply relocate at beginning of sibling list 
-    RelocateIf();
+    relocateIf();
   } 
   else {
     bool changed = false;
@@ -1048,9 +1047,9 @@ ACodeNode::ExpandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 
     if (changed) {
       // never propagate changes outside an Alien
-      RelocateIf();
+      relocateIf();
       if (propagate && ACodeNodeParent() && type() != ANode::TyALIEN) {
-        ACodeNodeParent()->ExpandLineRange(m_begLn, m_endLn);
+        ACodeNodeParent()->expandLineRange(m_begLn, m_endLn);
       }
     }
   }
@@ -1058,7 +1057,7 @@ ACodeNode::ExpandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 
 
 void
-ACodeNode::Relocate() 
+ACodeNode::relocate() 
 {
   ACodeNode* prev = dynamic_cast<ACodeNode*>(prevSibling());
   ACodeNode* next = dynamic_cast<ACodeNode*>(nextSibling());
@@ -1070,17 +1069,17 @@ ACodeNode::Relocate()
   } 
   
   // INVARIANT: The parent scope contains at least two children
-  DIAG_Assert(parent()->ChildCount() >= 2, "");
+  DIAG_Assert(parent()->childCount() >= 2, "");
 
   ANode* prnt = parent();
-  Unlink();
+  unlink();
 
-  //if (prnt->FirstChild() == NULL) {
-  //  Link(prnt);
+  //if (prnt->firstChild() == NULL) {
+  //  link(prnt);
   //}
   if (m_begLn == ln_NULL) {
     // insert as first child
-    LinkBefore(prnt->FirstChild());
+    linkBefore(prnt->firstChild());
   } 
   else {
     // insert after sibling with sibling->begLine() <= begLine() 
@@ -1093,10 +1092,10 @@ ACodeNode::Relocate()
       }
     } 
     if (sibling != NULL) {
-      LinkAfter(sibling);
+      linkAfter(sibling);
     } 
     else {
-      LinkBefore(prnt->FirstChild());
+      linkBefore(prnt->FirstChild());
     } 
   }
 }
@@ -1224,7 +1223,7 @@ ACodeNode::nextSiblingNonOverlapping() const
 //***************************************************************************
 
 string
-ACodeNode::LineRange() const
+ACodeNode::lineRange() const
 {
   string self = "l=" + StrUtil::toStr(m_begLn) + "-" + StrUtil::toStr(m_endLn);
   return self;
@@ -1641,11 +1640,11 @@ File::CSV_dump(const Root& root, ostream& os,
 	       int lLevel) const 
 {
   // print file name, routine name, start and end line, loop level
-  os << BaseName() << ",," << m_begLn << "," << m_endLn << ",";
+  os << baseName() << ",," << m_begLn << "," << m_endLn << ",";
   CSV_DumpSelf(root, os);
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
        it.Current(); it++) {
-    it.Current()->CSV_dump(root, os, BaseName().c_str());
+    it.Current()->CSV_dump(root, os, baseName().c_str());
   }
 }
 
@@ -1822,7 +1821,7 @@ ostream&
 ACodeNode::dumpme(ostream& os, int oFlags, const char* prefix) const
 { 
   os << prefix << toString_id(oFlags) << " " 
-     << LineRange() << " " << m_vmaSet.toString();
+     << lineRange() << " " << m_vmaSet.toString();
   return os;
 }
 
@@ -1938,9 +1937,9 @@ Ref::RelocateRef()
     return;
   } 
   ANode* prnt = parent();
-  Unlink();
+  unlink();
   if (prnt->firstChild() == NULL) {
-    Link(prnt);
+    link(prnt);
   } 
   else {
     // insert after sibling with sibling->endPos < begPos 
@@ -1956,10 +1955,10 @@ Ref::RelocateRef()
     if (sibling != NULL) {
       Ref *nxt = dynamic_cast<Ref*>(sibling->nextSibling());
       DIAG_Assert((nxt == NULL) || (nxt->begPos > endPos), "");
-      LinkAfter(sibling);
+      linkAfter(sibling);
     } 
     else {
-      LinkBefore(prnt->FirstChild());
+      linkBefore(prnt->FirstChild());
     } 
   }
 }

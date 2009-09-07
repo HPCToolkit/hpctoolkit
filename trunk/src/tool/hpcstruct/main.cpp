@@ -148,7 +148,7 @@ real_main(int argc, char* argv[])
 					      args.isForwardSubstitution,
 					      procNameMgr,
 					      args.dbgProcGlob);
-    lmStrct->Link(rootStrct);
+    lmStrct->link(rootStrct);
     
     const char* osnm = 
       (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();

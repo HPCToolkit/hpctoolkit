@@ -127,9 +127,9 @@ Const::dump(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 double 
-Neg::eval(const Struct::ANode* si) const
+Neg::eval(const Struct::ANode* node) const
 {
-  double result = m_expr->eval(si);
+  double result = m_expr->eval(node);
 
   //IFTRACE << "neg=" << -result << endl; 
   AEXPR_CHECK(result);
@@ -175,10 +175,10 @@ Power::~Power()
 
 
 double 
-Power::eval(const Struct::ANode* si) const
+Power::eval(const Struct::ANode* node) const
 {
-  double b = base->eval(si);
-  double e = exponent->eval(si);
+  double b = base->eval(node);
+  double e = exponent->eval(node);
   double result = pow(b, e);
   
   //IFTRACE << "pow=" << pow(b, e) << endl; 
@@ -213,10 +213,10 @@ Divide::~Divide()
 
 
 double 
-Divide::eval(const Struct::ANode* si) const
+Divide::eval(const Struct::ANode* node) const
 {
-  double n = numerator->eval(si);
-  double d = denominator->eval(si);
+  double n = numerator->eval(node);
+  double d = denominator->eval(node);
   double result = n / d;
 
   //IFTRACE << "divident=" << n/d << endl; 
@@ -256,10 +256,10 @@ Minus::~Minus()
 
 
 double 
-Minus::eval(const Struct::ANode* si) const
+Minus::eval(const Struct::ANode* node) const
 {
-  double m = minuend->eval(si);
-  double s = subtrahend->eval(si);
+  double m = minuend->eval(node);
+  double s = subtrahend->eval(node);
   double result = (m - s);
   
   //IFTRACE << "diff=" << m-s << endl; 
@@ -296,9 +296,9 @@ Plus::~Plus()
 
 
 double 
-Plus::eval(const Struct::ANode* si) const
+Plus::eval(const Struct::ANode* node) const
 {
-  double result = eval_sum(si, m_opands, m_sz);
+  double result = eval_sum(node, m_opands, m_sz);
 
   //IFTRACE << "sum=" << result << endl; 
   AEXPR_CHECK(result);
@@ -336,11 +336,11 @@ Times::~Times()
 
 
 double 
-Times::eval(const Struct::ANode* si) const
+Times::eval(const Struct::ANode* node) const
 {
   double result = 1.0;
   for (int i = 0; i < m_sz; ++i) {
-    double x = m_opands[i]->eval(si);
+    double x = m_opands[i]->eval(node);
     result *= x;
   }
   //IFTRACE << "result=" << result << endl; 
@@ -379,11 +379,11 @@ Max::~Max()
 
 
 double 
-Max::eval(const Struct::ANode* si) const
+Max::eval(const Struct::ANode* node) const
 {
-  double result = m_opands[0]->eval(si);
+  double result = m_opands[0]->eval(node);
   for (int i = 1; i < m_sz; ++i) {
-    double x = m_opands[i]->eval(si);
+    double x = m_opands[i]->eval(node);
     result = std::max(result, x);
   }
 
@@ -423,11 +423,11 @@ Min::~Min()
 
 
 double 
-Min::eval(const Struct::ANode* si) const
+Min::eval(const Struct::ANode* node) const
 {
-  double result = m_opands[0]->eval(si);
+  double result = m_opands[0]->eval(node);
   for (int i = 1; i < m_sz; ++i) {
-    double x = m_opands[i]->eval(si);
+    double x = m_opands[i]->eval(node);
     result = std::min(result, x);
   }
 
@@ -467,9 +467,9 @@ Mean::~Mean()
 
 
 double 
-Mean::eval(const Struct::ANode* si) const
+Mean::eval(const Struct::ANode* node) const
 {
-  double result = eval_mean(si, m_opands, m_sz);
+  double result = eval_mean(node, m_opands, m_sz);
 
   //IFTRACE << "mean=" << result << endl; 
   AEXPR_CHECK(result);
@@ -507,9 +507,9 @@ StdDev::~StdDev()
 
 
 double 
-StdDev::eval(const Struct::ANode* si) const
+StdDev::eval(const Struct::ANode* node) const
 {
-  std::pair<double, double> v_m = eval_variance(si, m_opands, m_sz);
+  std::pair<double, double> v_m = eval_variance(node, m_opands, m_sz);
   double result = sqrt(v_m.first);
 
   //IFTRACE << "stddev=" << result << endl; 
@@ -548,9 +548,9 @@ CoefVar::~CoefVar()
 
 
 double 
-CoefVar::eval(const Struct::ANode* si) const
+CoefVar::eval(const Struct::ANode* node) const
 {
-  std::pair<double, double> v_m = eval_variance(si, m_opands, m_sz);
+  std::pair<double, double> v_m = eval_variance(node, m_opands, m_sz);
   double sdev = sqrt(v_m.first); // always non-negative
   double mean = v_m.second;
   double result = 0.0;
@@ -594,9 +594,9 @@ RStdDev::~RStdDev()
 
 
 double 
-RStdDev::eval(const Struct::ANode* si) const
+RStdDev::eval(const Struct::ANode* node) const
 {
-  std::pair<double, double> v_m = eval_variance(si, m_opands, m_sz);
+  std::pair<double, double> v_m = eval_variance(node, m_opands, m_sz);
   double sdev = sqrt(v_m.first); // always non-negative
   double mean = v_m.second;
   double result = 0.0;

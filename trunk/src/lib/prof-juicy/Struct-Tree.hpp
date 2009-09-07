@@ -163,7 +163,7 @@ public:
   Tree(const char* name, Root* root = NULL);
 
   Tree(const std::string& name, Root* root = NULL)
-    { Tree(name.c_str(), root); }
+  { Tree(name.c_str(), root); }
 
   virtual ~Tree();
 
@@ -171,12 +171,20 @@ public:
   // -------------------------------------------------------
   // Tree data
   // -------------------------------------------------------
-  Root* root() const { return m_root; }
-  void  root(Root* x) { m_root = x; }
-
-  bool empty() const { return (m_root == NULL); }
+  Root*
+  root() const
+  { return m_root; }
   
-  std::string name() const;
+  void
+  root(Root* x)
+  { m_root = x; }
+
+  bool
+  empty() const
+  { return (m_root == NULL); }
+  
+  std::string
+  name() const;
 
 
   // -------------------------------------------------------
@@ -249,8 +257,11 @@ public:
   static ANodeTy            IntToANodeTy(long i);
 
 protected:
-  ANode(const ANode& x) { *this = x; }
-  ANode& operator=(const ANode& x);
+  ANode(const ANode& x)
+  { *this = x; }
+  
+  ANode&
+  operator=(const ANode& x);
 
 private:
   static const std::string ScopeNames[TyNUMBER];
@@ -282,33 +293,48 @@ public:
   // --------------------------------------------------------
   // General data
   // --------------------------------------------------------
-  ANodeTy type() const { return m_type; }
+  ANodeTy
+  type() const
+  { return m_type; }
 
   // id: a unique id; 0 is reserved for a NULL value
-  uint id() const { return m_uid; }
+  uint
+  id() const
+  { return m_uid; }
 
   // maxId: the maximum id of all structure nodes
-  static uint maxId() { return s_nextUniqueId - 1; }
+  static uint
+  maxId()
+  { return s_nextUniqueId - 1; }
 
   // name: 
   // nameQual: qualified name [built dynamically]
-  virtual const std::string& name() const { return ANodeTyToName(type()); }
-  virtual std::string nameQual() const { return name(); }
+  virtual const std::string&
+  name() const
+  { return ANodeTyToName(type()); }
+
+  virtual std::string
+  nameQual() const
+  { return name(); }
 
 
   // --------------------------------------------------------
   // Tree navigation 
   // --------------------------------------------------------
-  ANode* parent() const 
+  ANode*
+  parent() const 
   { return static_cast<ANode*>(NonUniformDegreeTreeNode::Parent()); }
 
-  ANode* firstChild() const
+  ANode*
+  firstChild() const
   { return static_cast<ANode*>(NonUniformDegreeTreeNode::FirstChild()); }
 
-  ANode* lastChild() const
+  ANode*
+  lastChild() const
   { return static_cast<ANode*>(NonUniformDegreeTreeNode::LastChild()); }
 
-  ANode* nextSibling() const
+  ANode*
+  nextSibling() const
   {
     // siblings are linked in a circular list
     if ((parent()->lastChild() != this)) {
@@ -317,7 +343,8 @@ public:
     return NULL;  
   }
   
-  ANode* prevSibling() const
+  ANode*
+  prevSibling() const
   { 
     // siblings are linked in a circular list
     if ((parent()->firstChild() != this)) {
@@ -326,9 +353,6 @@ public:
     return NULL;
   }
   
-  bool isLeaf() const 
-  { return (NonUniformDegreeTreeNode::FirstChild() == NULL); }
-
 
   // --------------------------------------------------------
   // ancestor: find first ANode in path from this to root with given type
@@ -347,17 +371,19 @@ public:
   Loop*  AncLoop() const;   // return ancestor(TyLOOP)
   Stmt*  AncStmt() const;   // return ancestor(TySTMT)
 
-  ACodeNode* ancestorProcCtxt() const; // return ancestor(TyALIEN|TyPROC)
+  ACodeNode*
+  ancestorProcCtxt() const; // return ancestor(TyALIEN|TyPROC)
 
-  ACodeNode* ACodeNodeParent() const;
+  ACodeNode*
+  ACodeNodeParent() const;
 
 
   // --------------------------------------------------------
   // Metrics
   // --------------------------------------------------------
 
-  bool 
-  hasMetrics() const 
+  bool
+  hasMetrics() const
   {
     uint end = numMetrics();
     for (uint i = 0; i < end; ++i) {
@@ -368,28 +394,28 @@ public:
     return false;
   }
 
-  bool 
-  hasMetric(int mId) const 
+  bool
+  hasMetric(int mId) const
   {
     double x = (*m_metrics)[mId];
     return (x != 0.0);
   }
   
-  double 
-  metric(int mId) const 
+  double
+  metric(int mId) const
   {
     return (*m_metrics)[mId];
   }
 
-  void 
-  metricIncr(int mId, double d) 
+  void
+  metricIncr(int mId, double d)
   {
     // NOTE: VectorTmpl::operator[] automatically 'adds' the index if necessary
     (*m_metrics)[mId] += d;
   }
 
-  uint 
-  numMetrics() const 
+  uint
+  numMetrics() const
   {
     return m_metrics->GetNumElements();
   }
@@ -398,23 +424,23 @@ public:
   // inclusive interval for batch processing.  In particular, 'raw'
   // metrics are independent of all other raw metrics.
   void
-  accumulateMetrics(uint mBegId, uint mEndId) 
+  accumulateMetrics(uint mBegId, uint mEndId)
   {
-    // NOTE: Must not call HasPerfData() since this node may not have
+    // NOTE: Must not call hasMetrics() since this node may not have
     // any metric data yet!
     double* valVec = new double[mEndId + 1];
     accumulateMetrics(mBegId, mEndId, valVec);
     delete[] valVec;
   }
 
-  void 
+  void
   accumulateMetrics(uint mBegId)
   {
     accumulateMetrics(mBegId, mBegId);
   }
 
-  // traverses the tree and removes all nodes for which HasPerfData() is false
-  void 
+  // traverses the tree and removes all nodes for which hasMetrics() is false
+  void
   pruneByMetrics();
 
 
@@ -428,19 +454,21 @@ public:
   // Paths and Merging
   // --------------------------------------------------------
 
-  // LeastCommonAncestor: Given two ANode nodes, return the least
+  // leastCommonAncestor: Given two ANode nodes, return the least
   // common ancestor (deepest nested common ancestor) or NULL.
-  static ANode* LeastCommonAncestor(ANode* n1, ANode* n2);
+  static ANode*
+  leastCommonAncestor(ANode* n1, ANode* n2);
 
 
-  // Distance: Given two ANode nodes, a node and some ancestor,
+  // distance: Given two ANode nodes, a node and some ancestor,
   // return the distance of the path between the two.  The distance
   // between a node and its direct ancestor is 1.  If there is no path
   // between the two nodes, returns a negative number; if the two
   // nodes are equal, returns 0.
-  static int Distance(ANode* ancestor, ANode* descendent);
+  static int
+  distance(ANode* ancestor, ANode* descendent);
 
-  // ArePathsOverlapping: Given two nodes and their least common
+  // arePathsOverlapping: Given two nodes and their least common
   // ancestor, lca, returns whether the paths from the nodes to lca
   // overlap.
   //
@@ -459,81 +487,95 @@ public:
   //
   // 3. Divergent:   lca ---...--- d1
   //                    \---...--- d2
-  static bool ArePathsOverlapping(ANode* lca, ANode* desc1, 
-				  ANode* desc2);
+  static bool
+  arePathsOverlapping(ANode* lca, ANode* desc1, ANode* desc2);
   
   // MergePaths: Given divergent paths (as defined above), merges the path
   // from 'toDesc' into 'fromDesc'. If a merge takes place returns true.
-  static bool MergePaths(ANode* lca, 
-			 ANode* toDesc, ANode* fromDesc);
+  static bool
+  mergePaths(ANode* lca, ANode* toDesc, ANode* fromDesc);
   
   // Merge: Given two nodes, 'fromNode' and 'toNode', merges the
   // former into the latter, if possible.  If the merge takes place,
   // deletes 'fromNode' and returns true; otherwise returns false.
-  static bool Merge(ANode* toNode, ANode* fromNode);
+  static bool
+  merge(ANode* toNode, ANode* fromNode);
 
   // IsMergable: Returns whether 'fromNode' is capable of being merged
   // into 'toNode'
-  static bool IsMergable(ANode* toNode, ANode* fromNode);
+  static bool
+  isMergable(ANode* toNode, ANode* fromNode);
   
   
   // --------------------------------------------------------
   // XML output
   // --------------------------------------------------------
 
-  std::string 
+  std::string
   toStringXML(int oFlags = 0, const char* pre = "") const;
   
-  virtual std::string 
+  virtual std::string
   toXML(int oFlags = 0) const;
 
-  virtual std::ostream& 
+  virtual std::ostream&
   writeXML(std::ostream& os = std::cout, int oFlags = 0,
 	   const char* pre = "") const;
 
-  std::ostream& 
+  std::ostream&
   writeMetricsXML(std::ostream& os = std::cout, int oFlags = 0, 
 		  const char* prefix = "") const;
 
-  void ddumpXML() const;
+  void
+  ddumpXML() const;
 
   // --------------------------------------------------------
   // Other output
   // --------------------------------------------------------
 
-  void CSV_DumpSelf(const Root &root, std::ostream& os = std::cout) const;
-  virtual void CSV_dump(const Root &root, std::ostream& os = std::cout, 
-			const char* file_name = NULL, 
-			const char* proc_name = NULL,
-			int lLevel = 0) const;
+  void
+  CSV_DumpSelf(const Root &root, std::ostream& os = std::cout) const;
+
+  virtual void
+  CSV_dump(const Root &root, std::ostream& os = std::cout, 
+	   const char* file_name = NULL, 
+	   const char* proc_name = NULL,
+	   int lLevel = 0) const;
 
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
 
-  virtual std::string Types() const; // instance's base and derived types 
+  virtual std::string
+  Types() const; // instance's base and derived types 
 
-  std::string toString(int oFlags = 0, const char* pre = "") const;
+  std::string
+  toString(int oFlags = 0, const char* pre = "") const;
 
-  std::string toString_id(int oFlags = 0) const;
-  std::string toString_me(int oFlags = 0, const char* pre = "") const;
+  std::string
+  toString_id(int oFlags = 0) const;
+
+  std::string
+  toString_me(int oFlags = 0, const char* pre = "") const;
 
   // dump
-  std::ostream& 
+  std::ostream&
   dump(std::ostream& os = std::cerr, int oFlags = 0, 
        const char* pre = "") const;
   
   void ddump() const;
 
-  virtual std::ostream& 
-  dumpme(std::ostream& os = std::cerr, int oFlags = 0, 
+  virtual std::ostream&
+  dumpme(std::ostream& os = std::cerr, int oFlags = 0,
 	 const char* pre = "") const;
 
 protected:
-  bool writeXML_pre(std::ostream& os = std::cout,
-		    int oFlags = 0, const char* prefix = "") const;
-  void writeXML_post(std::ostream& os = std::cout,
-		     int oFlags = 0, const char* prefix = "") const;
+  bool
+  writeXML_pre(std::ostream& os = std::cout, int oFlags = 0,
+	       const char* prefix = "") const;
+
+  void
+  writeXML_post(std::ostream& os = std::cout, int oFlags = 0,
+		const char* prefix = "") const;
 private:
   void ctorCheck() const;
   void dtorCheck() const;
@@ -559,7 +601,7 @@ protected:
 	   VMA begVMA = 0, VMA endVMA = 0)
     : ANode(t, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
   { 
-    SetLineRange(begLn, endLn);
+    setLineRange(begLn, endLn);
     if (begVMA != 0 && endVMA != 0) {
       m_vmaSet.insert(begVMA, endVMA);
     }
@@ -571,7 +613,7 @@ protected:
   { *this = x; }
 
 
-  ACodeNode& 
+  ACodeNode&
   operator=(const ACodeNode& x)
   {
     // shallow copy
@@ -592,7 +634,7 @@ public:
   virtual ~ACodeNode()
   { }
 
-  virtual ANode* 
+  virtual ANode*
   clone() 
   { return new ACodeNode(*this); }
 
@@ -602,20 +644,33 @@ public:
   // --------------------------------------------------------
 
   // Line range in source code
-  SrcFile::ln  begLine() const { return m_begLn; }
-  SrcFile::ln& begLine()       { return m_begLn; }
+  SrcFile::ln
+  begLine() const
+  { return m_begLn; }
 
-  SrcFile::ln  endLine() const { return m_endLn; }
-  SrcFile::ln& endLine()       { return m_endLn; }
+  void
+  begLine(SrcFile::ln x)
+  { m_begLn = x; }
+
+  SrcFile::ln
+  endLine() const
+  { return m_endLn; }
+
+  void
+  endLine(SrcFile::ln x)
+  { m_endLn = x; }
   
-  // SetLineRange: 
-  void SetLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate = 1);
+  void
+  setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate = 1);
   
-  void ExpandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate = 1);
+  void
+  expandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate = 1);
 
-  void LinkAndSetLineRange(ACodeNode* parent);
+  void
+  linkAndSetLineRange(ACodeNode* parent);
 
-  void checkLineRange(SrcFile::ln begLn, SrcFile::ln endLn)
+  void
+  checkLineRange(SrcFile::ln begLn, SrcFile::ln endLn)
   {
     DIAG_Assert(Logic::equiv(begLn == ln_NULL, endLn == ln_NULL),
 		"ACodeNode::checkLineRange: b=" << begLn << " e=" << endLn);
@@ -625,10 +680,20 @@ public:
 		"ACodeNode::checkLineRange: b=" << m_begLn << " e=" << m_endLn);
   }
   
+  // -------------------------------------------------------
   // A set of *unrelocated* VMAs associated with this scope
-  VMAIntervalSet&       vmaSet()       { return m_vmaSet; }
-  const VMAIntervalSet& vmaSet() const { return m_vmaSet; }
+  // -------------------------------------------------------
+
+  const VMAIntervalSet&
+  vmaSet() const
+  { return m_vmaSet; }
+
+  VMAIntervalSet&
+  vmaSet()
+  { return m_vmaSet; }
+
   
+  // -------------------------------------------------------
   // containsLine: returns true if this scope contains line number
   //   'ln'.  A non-zero beg_epsilon and end_epsilon allows fuzzy
   //   matches by expanding the interval of the scope.
@@ -639,17 +704,26 @@ public:
   //   the scope.
   //
   // Note: We assume that it makes no sense to compare against ln_NULL.
-  bool containsLine(SrcFile::ln ln) const
-    { return (m_begLn != ln_NULL && (m_begLn <= ln && ln <= m_endLn)); }
-  bool containsLine(SrcFile::ln ln, int beg_epsilon, int end_epsilon) const;
-  bool containsInterval(SrcFile::ln begLn, SrcFile::ln endLn) const
-    { return (containsLine(begLn) && containsLine(endLn)); }
-  bool containsInterval(SrcFile::ln begLn, SrcFile::ln endLn,
-			int beg_epsilon, int end_epsilon) const
-    { return (containsLine(begLn, beg_epsilon, end_epsilon) 
-	      && containsLine(endLn, beg_epsilon, end_epsilon)); }
+  // -------------------------------------------------------
+  bool
+  containsLine(SrcFile::ln ln) const
+  { return (m_begLn != ln_NULL && (m_begLn <= ln && ln <= m_endLn)); }
 
-  ACodeNode* ACodeNodeWithLine(SrcFile::ln ln) const;
+  bool
+  containsLine(SrcFile::ln ln, int beg_epsilon, int end_epsilon) const;
+
+  bool
+  containsInterval(SrcFile::ln begLn, SrcFile::ln endLn) const
+  { return (containsLine(begLn) && containsLine(endLn)); }
+
+  bool
+  containsInterval(SrcFile::ln begLn, SrcFile::ln endLn,
+		   int beg_epsilon, int end_epsilon) const
+  { return (containsLine(begLn, beg_epsilon, end_epsilon) 
+	    && containsLine(endLn, beg_epsilon, end_epsilon)); }
+
+  ACodeNode*
+  ACodeNodeWithLine(SrcFile::ln ln) const;
 
 
   // compare: Return negative if x < y; 0 if x == y; positive
@@ -658,14 +732,16 @@ public:
   static int 
   compare(const ACodeNode* x, const ACodeNode* y);
 
-  ACodeNode* nextSiblingNonOverlapping() const;
+  ACodeNode*
+  nextSiblingNonOverlapping() const;
 
 
   // --------------------------------------------------------
   // 
   // --------------------------------------------------------
 
-  virtual std::string nameQual() const { return codeName(); }
+  virtual std::string
+  nameQual() const { return codeName(); }
 
   // returns a string representing the code name in the form:
   //  loadmodName
@@ -673,39 +749,49 @@ public:
   //  [loadmodName]<fileName>procName
   //  [loadmodName]<fileName>begLn-endLn
 
-  virtual std::string codeName() const;
+  virtual std::string
+  codeName() const;
   
-  std::string LineRange() const;
+  std::string
+  lineRange() const;
 
 
   // --------------------------------------------------------
   // XML output
   // --------------------------------------------------------
 
-  virtual std::string toXML(int oFlags = 0) const;
+  virtual std::string
+  toXML(int oFlags = 0) const;
 
-  virtual std::string XMLLineRange(int oFlags) const;
-  virtual std::string XMLVMAIntervals(int oFlags) const;
+  virtual std::string
+  XMLLineRange(int oFlags) const;
 
-  virtual void CSV_dump(const Root &root, std::ostream& os = std::cout, 
-               const char* file_name = NULL, const char* proc_name = NULL,
-               int lLevel = 0) const;
+  virtual std::string
+  XMLVMAIntervals(int oFlags) const;
+
+  virtual void
+  CSV_dump(const Root &root, std::ostream& os = std::cout, 
+	   const char* file_name = NULL, const char* proc_name = NULL,
+	   int lLevel = 0) const;
 
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
   
-  virtual std::ostream& dumpme(std::ostream& os = std::cerr,
-			       int oFlags = 0,
-			       const char* pre = "") const;
+  virtual std::ostream&
+  dumpme(std::ostream& os = std::cerr, int oFlags = 0,
+	 const char* pre = "") const;
 
 protected: 
   // NOTE: currently designed for PROCs
-  void Relocate();
+  void
+  relocate();
   
-  void RelocateIf() {
-    if (Parent() && type() == ANode::TyPROC) {
-      Relocate();
+  void
+  relocateIf() 
+  {
+    if (parent() && type() == ANode::TyPROC) {
+      relocate();
     }
   }
 
@@ -759,14 +845,20 @@ public:
   virtual const std::string& name() const { return m_name; }
   void name(const char* n) { m_name = n; }
   void name(const std::string& n) { m_name = n; }
-  
+
+  // --------------------------------------------------------  
+  //
+  // --------------------------------------------------------
+
   // find by RealPathMgr
-  LM* findLM(const char* nm) const;
+  LM*
+  findLM(const char* nm) const;
 
-  LM* findLM(const std::string& nm) const 
-    { return findLM(nm.c_str()); }
+  LM*
+  findLM(const std::string& nm) const 
+  { return findLM(nm.c_str()); }
 
-  Group* 
+  Group*
   findGroup(const char* nm) const
   {
     GroupMap::iterator it = groupMap->find(nm);
@@ -774,11 +866,11 @@ public:
     return x;
   }
 
-  Group* 
+  Group*
   findGroup(const std::string& nm) const
-    { return findGroup(nm.c_str()); }
+  { return findGroup(nm.c_str()); }
 
-  virtual ANode* 
+  virtual ANode*
   clone() 
   { return new Root(*this); }
 
@@ -787,28 +879,34 @@ public:
   // XML output
   // --------------------------------------------------------
 
-  virtual std::string toXML(int oFlags = 0) const;
+  virtual std::string
+  toXML(int oFlags = 0) const;
 
   virtual std::ostream&
   writeXML(std::ostream& os = std::cout, int oFlags = 0, 
 	   const char* pre = "") const;
 
-  void CSV_TreeDump(std::ostream& os = std::cout) const;
+  void
+  CSV_TreeDump(std::ostream& os = std::cout) const;
 
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
   
-  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int oFlags = 0,
-			       const char* pre = "") const;
+  virtual std::ostream&
+  dumpme(std::ostream& os = std::cerr, int oFlags = 0,
+	 const char* pre = "") const;
    
 protected: 
 private: 
-  void Ctor(const char* nm);
+  void
+  Ctor(const char* nm);
 
-  void AddToGroupMap(Group* grp);
-  void AddToLoadModMap(LM* lm);
+  void
+  AddToGroupMap(Group* grp);
+
+  void
+  AddToLoadModMap(LM* lm);
  
   friend class Group;
   friend class LM;
@@ -850,28 +948,32 @@ public:
   virtual ~Group() { }
   
   static Group* 
-  demand(Root* pgm, const std::string& nm, ANode* _parent);
+  demand(Root* pgm, const std::string& nm, ANode* parent);
 
-  virtual const std::string& name() const { return m_name; } // same as grpName
+  virtual const std::string&
+  name() const { return m_name; } // same as grpName
 
-  virtual std::string codeName() const;
+  virtual std::string
+  codeName() const;
 
   virtual ANode* 
   clone() 
   { return new Group(*this); }
 
-  virtual std::string toXML(int oFlags = 0) const;
+  virtual std::string
+  toXML(int oFlags = 0) const;
 
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
   
-  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int oFlags = 0,
-			       const char* pre = "") const;
+  virtual std::ostream&
+  dumpme(std::ostream& os = std::cerr, int oFlags = 0,
+	 const char* pre = "") const;
 
 private:
-  void Ctor(const char* nm, ANode* parent);
+  void
+  Ctor(const char* nm, ANode* parent);
 
 private: 
   std::string m_name;
@@ -910,11 +1012,11 @@ public:
     delete m_stmtMap;
   }
 
-  virtual ANode* 
+  virtual ANode*
   clone() 
   { return new LM(*this); }
 
-  static LM* 
+  static LM*
   demand(Root* pgm, const std::string& lm_fnm);
 
 
@@ -922,11 +1024,17 @@ public:
   // 
   // --------------------------------------------------------
 
-  virtual const std::string& name() const { return m_name; }
+  virtual const std::string&
+  name() const
+  { return m_name; }
 
-  virtual std::string codeName() const { return name(); }
+  virtual std::string
+  codeName() const
+  { return name(); }
 
-  std::string BaseName() const  { return FileUtil::basename(m_name); }
+  std::string
+  baseName() const
+  { return FileUtil::basename(m_name); }
 
 
   // --------------------------------------------------------
@@ -934,8 +1042,12 @@ public:
   // --------------------------------------------------------
 
   // findFile: find using RealPathMgr
-  File* findFile(const char* nm) const;
-  File* findFile(const std::string& nm) const { return findFile(nm.c_str()); }
+  File*
+  findFile(const char* nm) const;
+
+  File*
+  findFile(const std::string& nm) const
+  { return findFile(nm.c_str()); }
 
   // findByVMA: find scope by *unrelocated* VMA
   // findProc:
@@ -964,7 +1076,7 @@ public:
   // Output
   // --------------------------------------------------------
 
-  virtual std::string 
+  virtual std::string
   toXML(int oFlags = 0) const;
 
   virtual std::ostream&
@@ -972,24 +1084,30 @@ public:
 	   const char* pre = "") const;
 
 
-  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
-			       int oFlags = 0,
-			       const char* pre = "") const;
-  void dumpmaps() const;
+  virtual std::ostream&
+  dumpme(std::ostream& os = std::cerr, int oFlags = 0,
+	 const char* pre = "") const;
 
-  bool verifyStmtMap() const;
+  void
+  dumpmaps() const;
+
+  bool
+  verifyStmtMap() const;
 
 public:
   typedef VMAIntervalMap<Proc*> VMAToProcMap;
   typedef VMAIntervalMap<Stmt*> VMAToStmtRangeMap;
 
 protected: 
-  void Ctor(const char* nm, ANode* parent);
+  void
+  Ctor(const char* nm, ANode* parent);
 
-  void AddToFileMap(File* file);
+  void
+  AddToFileMap(File* file);
 
   template<typename T> 
-  void buildMap(VMAIntervalMap<T>*& m, ANode::ANodeTy ty) const;
+  void
+  buildMap(VMAIntervalMap<T>*& m, ANode::ANodeTy ty) const;
 
   template<typename T>
   static bool 
@@ -1016,10 +1134,11 @@ private:
 class File: public ACodeNode {
 protected:
   File(const File& x) 
-  : ACodeNode(x.m_type) 
+    : ACodeNode(x.m_type) 
   { *this = x; }
 
-  File& operator=(const File& x);
+  File&
+  operator=(const File& x);
 
 public: 
 
@@ -1057,15 +1176,23 @@ public:
   // 
   // --------------------------------------------------------
 
-  virtual const std::string& name() const { return m_name; }
+  virtual const std::string&
+  name() const
+  { return m_name; }
 
-  virtual std::string codeName() const;
+  virtual std::string
+  codeName() const;
 
 
-  void name(const char* fname) { m_name = fname; }
-  void name(const std::string& fname) { m_name = fname; }
+  void
+  name(const char* fname) { m_name = fname; }
 
-  std::string BaseName() const { return FileUtil::basename(m_name); }
+  void
+  name(const std::string& fname) { m_name = fname; }
+
+  std::string
+  baseName() const
+  { return FileUtil::basename(m_name); }
 
 
   // --------------------------------------------------------
@@ -1074,10 +1201,10 @@ public:
 
   // FindProc: Attempt to find the procedure within the multimap.  If
   // 'lnm' is provided, require that link names match.
-  Proc* 
+  Proc*
   findProc(const char* name, const char* linkname = NULL) const;
 
-  Proc* 
+  Proc*
   findProc(const std::string& name, const std::string& linkname = "") const
   { return findProc(name.c_str(), linkname.c_str()); }
 
@@ -1099,9 +1226,12 @@ public:
 	 const char* pre = "") const;
   
 private: 
-  void Ctor(const char* filenm, ANode* parent);
+  void
+  Ctor(const char* filenm, ANode* parent);
 
-  void AddToProcMap(Proc* proc);
+  void
+  AddToProcMap(Proc* proc);
+
   friend class Proc;
 
 private:
@@ -1169,18 +1299,33 @@ public:
   // 
   // --------------------------------------------------------
 
-  virtual const std::string& name() const { return m_name; }
+  virtual const std::string&
+  name() const
+  { return m_name; }
 
-  virtual std::string codeName() const;
+  virtual std::string
+  codeName() const;
 
 
-  void name(const char* n) { m_name = n; }
-  void name(const std::string& n) { m_name = n; }
+  void
+  name(const char* n)
+  { m_name = n; }
 
-  const std::string& linkName() const { return m_linkname; }
+  void
+  name(const std::string& n)
+  { m_name = n; }
 
-  bool hasSymbolic() const { return m_hasSym; }
-  void hasSymbolic(bool x) { m_hasSym = x; }
+  const std::string&
+  linkName() const
+  { return m_linkname; }
+
+  bool
+  hasSymbolic() const
+  { return m_hasSym; }
+  
+  void
+  hasSymbolic(bool x)
+  { m_hasSym = x; }
 
 
   // --------------------------------------------------------
@@ -1188,7 +1333,7 @@ public:
   // --------------------------------------------------------
 
   // FIXME: confusion between native and alien statements
-  Stmt* 
+  Stmt*
   findStmt(SrcFile::ln begLn)
   {
     StmtMap::iterator it = m_stmtMap->find(begLn);
@@ -1201,22 +1346,24 @@ public:
   // Output
   // --------------------------------------------------------
 
-  virtual std::string 
+  virtual std::string
   toXML(int oFlags = 0) const;
 
-  virtual void 
+  virtual void
   CSV_dump(const Root &root, std::ostream& os = std::cout, 
 	   const char* file_name = NULL, const char* proc_name = NULL,
 	   int lLevel = 0) const;
   
-  virtual std::ostream& 
+  virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, int oFlags = 0,
 	 const char* pre = "") const;
   
 private:
-  void Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym);
+  void
+  Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym);
 
-  void AddToStmtMap(Stmt* stmt);
+  void
+  AddToStmtMap(Stmt* stmt);
 
   friend class Stmt;
 
@@ -1266,7 +1413,7 @@ public:
   virtual ~Alien()
   { }
 
-  virtual ANode* 
+  virtual ANode*
   clone()
   { return new Alien(*this); }
 
@@ -1275,34 +1422,49 @@ public:
   // 
   // --------------------------------------------------------
 
-  const std::string& fileName() const { return m_filenm; }
-  void fileName(const std::string& fnm) { m_filenm = fnm; }
+  const std::string&
+  fileName() const
+  { return m_filenm; }
 
-  virtual const std::string& name() const { return m_name; }
-  void                       name(const char* n) { m_name = n; }
-  void                       name(const std::string& n) { m_name = n; }
+  void
+  fileName(const std::string& fnm)
+  { m_filenm = fnm; }
+
+  virtual const std::string&
+  name() const
+  { return m_name; }
+
+  void
+  name(const char* n)
+  { m_name = n; }
+
+  void
+  name(const std::string& n)
+  { m_name = n; }
   
-  virtual std::string codeName() const;
+  virtual std::string
+  codeName() const;
 
 
   // --------------------------------------------------------
   // Output
   // --------------------------------------------------------
 
-  virtual std::string 
+  virtual std::string
   toXML(int oFlags = 0) const;
 
-  virtual void 
-  CSV_dump(const Root &root, std::ostream& os = std::cout, 
+  virtual void
+  CSV_dump(const Root &root, std::ostream& os = std::cout,
 	   const char* file_name = NULL, const char* proc_name = NULL,
 	   int lLevel = 0) const;
   
-  virtual std::ostream& 
+  virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, int oFlags = 0,
 	 const char* pre = "") const;
 
 private:
-  void Ctor(ACodeNode* parent, const char* filenm, const char* procnm);
+  void
+  Ctor(ACodeNode* parent, const char* filenm, const char* procnm);
 
 private:
   std::string m_filenm;
@@ -1344,7 +1506,8 @@ public:
   // 
   // --------------------------------------------------------
 
-  virtual std::string codeName() const;
+  virtual std::string
+  codeName() const;
 
 
   // --------------------------------------------------------
@@ -1403,18 +1566,23 @@ public:
   virtual std::string codeName() const;
 
   // a handle for sorting within the enclosing procedure context
-  int  sortId() { return m_sortId; }
-  void sortId(int x) { m_sortId = x; }
+  int
+  sortId()
+  { return m_sortId; }
+
+  void
+  sortId(int x)
+  { m_sortId = x; }
 
 
   // --------------------------------------------------------
   // Output
   // --------------------------------------------------------
 
-  virtual std::string 
+  virtual std::string
   toXML(int oFlags = 0) const;
   
-  virtual std::ostream& 
+  virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, int oFlags = 0,
 	 const char* pre = "") const;
 
@@ -1433,16 +1601,27 @@ public:
   Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName);
   // parent->type() == TySTMT 
   
-  uint BegPos() const { return begPos; };
-  uint EndPos() const   { return endPos; };
+  uint
+  BegPos() const
+  { return begPos; };
+
+  uint
+  EndPos() const
+  { return endPos; };
   
-  virtual const std::string& name() const { return m_name; }
+  virtual const std::string&
+  name() const
+  { return m_name; }
 
-  virtual std::string codeName() const;
+  virtual std::string
+  codeName() const;
 
-  virtual ANode* clone() { return new Ref(*this); }
+  virtual ANode*
+  clone()
+  { return new Ref(*this); }
 
-  virtual std::string toXML(int oFlags = 0) const;
+  virtual std::string
+  toXML(int oFlags = 0) const;
 
   // --------------------------------------------------------
   // debugging
