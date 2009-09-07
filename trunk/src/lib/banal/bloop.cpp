@@ -73,6 +73,8 @@ using std::string;
 #include <list>
 #include <vector>
 
+#include <typeinfo>
+
 #include <algorithm>
 
 #include <cstring>
@@ -651,7 +653,7 @@ buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
 
   std::vector<bool> isNodeProcessed(tarj->getRIFG()->getHighWaterMarkNodeId() + 1);
   
-  bloop::LocationMgr locMgr(enclosingProc->AncLM());
+  bloop::LocationMgr locMgr(enclosingProc->ancestorLM());
   if (isDbg) {
     locMgr.debug(1);
   }
@@ -705,7 +707,7 @@ buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
 				  procNmMgr);
       isNodeProcessed[qnode.fgNode] = true;
       qnode.scope = myScope;
-      if (myScope->type() == Struct::ANode::TyLOOP) {
+      if (typeid(*myScope) == typeid(Struct::Loop)) {
 	nLoops++;
       }
     }
@@ -724,7 +726,7 @@ buildProcLoopNests(Struct::Proc* enclosingProc, BinUtil::Proc* p,
       myScope = buildLoopAndStmts(locMgr, qnode.scope, p, 
 				  tarj, cfg, kid, isIrrIvalLoop, procNmMgr);
       isNodeProcessed[kid] = true;
-      if (myScope->type() == Struct::ANode::TyLOOP) {
+      if (typeid(*myScope) == typeid(Struct::Loop)) {
 	nLoops++;
       }
       
@@ -1112,10 +1114,10 @@ mergeBogusAlienStrct(Prof::Struct::LM* lmStrct)
   bool changed = false;
     
   for (Struct::ANodeIterator it(lmStrct, 
-				&Struct::ANodeTyFilter[Struct::ANode::TyPROC]);
+				&Struct::ANodeTyFilter[Struct::ANode::TyProc]);
        it.Current(); ++it) {
     Struct::Proc* proc = dynamic_cast<Struct::Proc*>(it.Current());
-    Struct::File* file = proc->AncFile();
+    Struct::File* file = proc->ancestorFile();
     changed |= mergeBogusAlienStrct(proc, file);
   }
   
@@ -1138,15 +1140,15 @@ mergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
     changed |= mergeBogusAlienStrct(child, file);
     
     // 2. Merge an alien node if it is redundant with its procedure context
-    if (child->type() == Struct::ANode::TyALIEN) {
+    if (typeid(*child) == typeid(Struct::Alien)) {
       Struct::Alien* alien = dynamic_cast<Struct::Alien*>(child);
       Struct::ACodeNode* parent = alien->ACodeNodeParent();
       
       Struct::ACodeNode* procCtxt = parent->ancestorProcCtxt();
-      const string& procCtxtFnm = (procCtxt->type() == Struct::ANode::TyALIEN) ?
+      const string& procCtxtFnm = (typeid(*procCtxt) == typeid(Struct::Alien)) ?
 	dynamic_cast<Struct::Alien*>(procCtxt)->fileName() : file->name();
       
-      // FIXME: Looking at this again, don't we know that 'procCtxtFnm' is alien?
+      // FIXME: Looking again, don't we know that 'procCtxtFnm' is alien?
       if (alien->fileName() == procCtxtFnm
 	  && ctxtNameEqFuzzy(procCtxt, alien->name())
 	  && LocationMgr::containsIntervalFzy(parent, alien->begLine(), 
@@ -1216,8 +1218,8 @@ CDS_InspectStmt(Struct::Stmt* stmt1, SortIdToStmtMap* stmtMap,
 static bool 
 CDS_ScopeFilter(const Struct::ANode& x, long type)
 {
-  return (x.type() == Struct::ANode::TyPROC 
-	  || x.type() == Struct::ANode::TyALIEN);
+  return (x.type() == Struct::ANode::TyProc 
+	  || x.type() == Struct::ANode::TyAlien);
 }
 
 
@@ -1353,7 +1355,7 @@ CDS_Main(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap,
     
     if (toDelete->find(child) != toDelete->end()) { continue; }
     
-    if (child->type() == Struct::ANode::TyALIEN) { continue; }
+    if (typeid(*child) == typeid(Struct::Alien)) { continue; }
     
     DIAG_DevMsgIf(DBG_CDS, "CDS: " << child);
 
@@ -1362,7 +1364,7 @@ CDS_Main(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap,
 				      level + 1);
     
     // 2. Examine 'child'
-    if (child->type() == Struct::ANode::TySTMT) {
+    if (typeid(*child) == typeid(Struct::Stmt)) {
       // Note: 'child' may be deleted or a restart exception may be thrown
       Struct::Stmt* stmt = dynamic_cast<Struct::Stmt*>(child);
       changed |= CDS_InspectStmt(stmt, stmtMap, toDelete, level);
@@ -1472,8 +1474,8 @@ mergePerfectlyNestedLoops(Struct::ANode* node)
     // Perfectly nested test: child is a loop; parent is a loop; and
     //   this is only child.  
     Struct::ACodeNode* n_CI = dynamic_cast<Struct::ACodeNode*>(node); 
-    bool perfNested = (child->type() == Struct::ANode::TyLOOP &&
-		       node->type() == Struct::ANode::TyLOOP &&
+    bool perfNested = (typeid(*child) == typeid(Struct::Loop) &&
+		       typeid(*node) == typeid(Struct::Loop) &&
 		       node->childCount() == 1);
     if (perfNested && SrcFile::isValid(child->begLine(), child->endLine()) &&
 	child->begLine() == n_CI->begLine() &&
@@ -1532,13 +1534,13 @@ removeEmptyNodes(Struct::ANode* node)
 static bool 
 removeEmptyNodes_isEmpty(const Struct::ANode* node)
 {
-  if ((node->type() == Struct::ANode::TyFILE 
-       || node->type() == Struct::ANode::TyALIEN)
+  if ((typeid(*node) == typeid(Struct::File) 
+       || typeid(*node) == typeid(Struct::Alien))
       && node->isLeaf()) {
     return true;
   }
-  if ((node->type() == Struct::ANode::TyPROC 
-       || node->type() == Struct::ANode::TyLOOP)
+  if ((typeid(*node) == typeid(Struct::Proc) 
+       || typeid(*node) == typeid(Struct::Loop))
       && node->isLeaf()) {
     const Struct::ACodeNode* n = dynamic_cast<const Struct::ACodeNode*>(node);
     return n->vmaSet().empty();

@@ -63,6 +63,8 @@ using std::endl;
 #include <string>
 using std::string;
 
+#include <typeinfo>
+
 //************************ Xerces Include Files ******************************
 
 #include <xercesc/sax/ErrorHandler.hpp>
@@ -620,7 +622,7 @@ PGMDocHandler::FindCurrentFile()
 {
   for (unsigned int i = 0; i < scopeStack.Depth(); ++i) {
     Struct::ANode* s = GetScope(i);
-    if (s->type() == Struct::ANode::TyFILE) {
+    if (typeid(*s) == typeid(Struct::File)) {
       return dynamic_cast<Struct::File*>(s);
     }
   }
@@ -628,12 +630,12 @@ PGMDocHandler::FindCurrentFile()
 }
 
 
-unsigned int
+uint
 PGMDocHandler::FindEnclosingGroupScopeDepth() 
 {
-  for (unsigned int i = 1; i < scopeStack.Depth(); ++i) {
-    Struct::ANode* s = GetScope(i);
-    if (s->type() == Struct::ANode::TyGROUP) {
+  for (uint i = 1; i < scopeStack.Depth(); ++i) {
+    Struct::ANode* x = GetScope(i);
+    if (typeid(*x) == typeid(Struct::Group)) {
       return i + 1; // depth is index + 1
     }
   }

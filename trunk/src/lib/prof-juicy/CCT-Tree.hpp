@@ -60,8 +60,11 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
-#include <vector>
+
 #include <string>
+#include <vector>
+
+#include <typeinfo>
 
 #include <cstring> // for memcpy
 
@@ -214,7 +217,7 @@ class Call;
 // ---------------------------------------------------------
 class ANode: public NonUniformDegreeTreeNode, public Unique {
 public:
-  enum NodeType {
+  enum ANodeTy {
     TyRoot = 0,
     TyProcFrm,
     TyProc,
@@ -225,14 +228,17 @@ public:
     TyNUMBER
   };
   
-  static const std::string& NodeTypeToName(NodeType tp);
-  static NodeType           IntToNodeType(long i);
+  static const std::string&
+  ANodeTyToName(ANodeTy tp);
+  
+  static ANodeTy
+  IntToANodeType(long i);
 
 private:
   static const std::string NodeNames[TyNUMBER];
   
 public:
-  ANode(NodeType type, ANode* parent, Struct::ACodeNode* strct = NULL)
+  ANode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct = NULL)
     : NonUniformDegreeTreeNode(parent), m_type(type), m_strct(strct)
   { 
     static uint uniqueId = 2; // To support reading/writing, ids must be
@@ -263,7 +269,7 @@ public:
   // --------------------------------------------------------
   // General data
   // --------------------------------------------------------
-  NodeType
+  ANodeTy
   type() const
   { return m_type; }
 
@@ -275,28 +281,28 @@ public:
   // 'name()' is overridden by some derived classes
   virtual const std::string&
   name() const
-  { return NodeTypeToName(type()); }
+  { return ANodeTyToName(type()); }
 
 
   // structure: static structure id for this node; the same static
   // structure will have the same structure().
-  Struct::ACodeNode* 
+  Struct::ACodeNode*
   structure() const
   { return m_strct; }
 
-  void 
+  void
   structure(Struct::ACodeNode* strct)
   { m_strct = strct; }
 
-  uint 
+  uint
   structureId() const
   { return (m_strct) ? m_strct->id() : 0; }
 
-  SrcFile::ln 
+  SrcFile::ln
   begLine() const
   { return (m_strct) ? m_strct->begLine() : ln_NULL; }
 
-  SrcFile::ln 
+  SrcFile::ln
   endLine() const
   { return (m_strct) ? m_strct->endLine() : ln_NULL;  }
   
@@ -338,17 +344,29 @@ public:
 
 
   // --------------------------------------------------------
-  // Ancestor: find first node in path from this to root with given type
+  // ancestor: find first ANode in path from this to root with given type
+  // (Note: We assume that a node *can* be an ancestor of itself.)
   // --------------------------------------------------------
-  // a node may be an ancestor of itself
-  ANode*   ancestor(NodeType tp) const;
+  ANode*
+  ancestor(ANodeTy tp) const;
   
-  Root*    ancestorRoot() const;
-  ProcFrm* ancestorProcFrm() const;
-  Proc*    ancestorProc() const;
-  Loop*    ancestorLoop() const;
-  Stmt*    ancestorStmt() const;
-  Call*    ancestorCall() const;
+  Root*
+  ancestorRoot() const;
+
+  ProcFrm*
+  ancestorProcFrm() const;
+
+  Proc*
+  ancestorProc() const;
+
+  Loop*
+  ancestorLoop() const;
+
+  Stmt*
+  ancestorStmt() const;
+
+  Call*
+  ancestorCall() const;
 
 
   // --------------------------------------------------------
@@ -412,8 +430,8 @@ protected:
   merge_fixup(const SampledMetricDescVec* mdesc, int metric_offset);
   
 protected:
-  NodeType m_type;
-  uint m_id; // unique id
+  ANodeTy m_type; // obsolete with typeid(), but hard to replace
+  uint m_id;
   Struct::ACodeNode* m_strct;
 };
 
@@ -436,7 +454,7 @@ public:
   // 
   // -------------------------------------------------------
   
-  ADynNode(NodeType type, ANode* parent, Struct::ACodeNode* strct,
+  ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
 	   uint cpId, const SampledMetricDescVec* metricdesc)
     : ANode(type, parent, strct),
       m_cpId(cpId),
@@ -445,7 +463,7 @@ public:
       m_metricdesc(metricdesc)
     { }
 
-  ADynNode(NodeType type, ANode* parent, Struct::ACodeNode* strct,
+  ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
 	   uint32_t cpId, lush_assoc_info_t as_info, 
 	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc)
@@ -456,7 +474,7 @@ public:
       m_metricdesc(metricdesc)
     { }
 
-  ADynNode(NodeType type, ANode* parent, Struct::ACodeNode* strct,
+  ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
 	   uint32_t cpId, lush_assoc_info_t as_info, 
 	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc,
@@ -823,7 +841,7 @@ public:
   lmName() const
   { 
     if (m_strct) { 
-      return m_strct->AncLM()->name();
+      return m_strct->ancestorLM()->name();
     }
     else {
       return BOGUS; 
@@ -832,9 +850,7 @@ public:
 
   uint 
   lmId() const
-  { 
-    return (m_strct) ? m_strct->AncLM()->id() : 0;
-  }
+  { return (m_strct) ? m_strct->ancestorLM()->id() : 0; }
 
 
   const std::string& 
@@ -843,7 +859,7 @@ public:
     if (m_strct) {
       return (isAlien()) ? 
 	dynamic_cast<Struct::Alien*>(m_strct)->fileName() :
-	m_strct->AncFile()->name();
+	m_strct->ancestorFile()->name();
     }
     else {
       return BOGUS;
@@ -855,7 +871,7 @@ public:
   {
     uint id = 0;
     if (m_strct) {
-      id = (isAlien()) ? m_strct->id() : m_strct->AncFile()->id();
+      id = (isAlien()) ? m_strct->id() : m_strct->ancestorFile()->id();
     }
     return id;
   }
@@ -880,16 +896,13 @@ public:
 
   uint 
   procId() const
-  { 
-    return (m_strct) ? m_strct->id() : 0;
-  }
+  { return (m_strct) ? m_strct->id() : 0; }
 
 
   // Alien
-  bool isAlien() const
-  {
-    return (m_strct && m_strct->type() == Struct::ANode::TyALIEN);
-  }
+  bool
+  isAlien() const
+  { return (m_strct && typeid(*m_strct) == typeid(Struct::Alien)); }
 
   // -------------------------------------------------------
   //

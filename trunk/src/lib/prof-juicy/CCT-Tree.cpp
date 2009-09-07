@@ -178,7 +178,7 @@ namespace Prof {
 namespace CCT {
 
 //***************************************************************************
-// NodeType `methods' (could completely replace with dynamic typing)
+// ANodeTy `methods' (could completely replace with dynamic typing)
 //***************************************************************************
 
 const string ANode::NodeNames[ANode::TyNUMBER] = {
@@ -187,17 +187,17 @@ const string ANode::NodeNames[ANode::TyNUMBER] = {
 
 
 const string&
-ANode::NodeTypeToName(NodeType tp)
+ANode::ANodeTyToName(ANodeTy tp)
 {
   return NodeNames[tp]; 
 }
 
 
-ANode::NodeType
-ANode::IntToNodeType(long i) 
+ANode::ANodeTy
+ANode::IntToANodeType(long i) 
 {
   DIAG_Assert((i >= 0) && (i < TyNUMBER), "");
-  return (NodeType)i;
+  return (ANodeTy)i;
 }
 
 
@@ -315,7 +315,7 @@ Call::Call(ANode* parent,
 
 
 ANode* 
-ANode::ancestor(NodeType tp) const
+ANode::ancestor(ANodeTy tp) const
 {
   ANode* s = const_cast<ANode*>(this); 
   while (s && s->type() != tp) {
@@ -573,7 +573,7 @@ ANode::merge_node(ANode* y)
 string
 ANode::codeName() const
 { 
-  string self = NodeTypeToName(type()) + " "
+  string self = ANodeTyToName(type()) + " "
     //+ GetFile() + ":" 
     + StrUtil::toStr(begLine()) + "-" + StrUtil::toStr(endLine());
   return self;
@@ -583,7 +583,7 @@ ANode::codeName() const
 string
 ProcFrm::codeName() const
 { 
-  string self = NodeTypeToName(type()) + " "
+  string self = ANodeTyToName(type()) + " "
     + procName() + " @ "
     + fileName() + ":" 
     + StrUtil::toStr(begLine()) + "-" + StrUtil::toStr(endLine());
@@ -652,7 +652,7 @@ string
 ANode::toString_me(int oFlags) const
 { 
   string self;
-  self = NodeTypeToName(type());
+  self = ANodeTyToName(type());
 
   // FIXME: tallent: temporary override
   if (type() == ANode::TyProcFrm) {
@@ -903,7 +903,7 @@ ANode::writeXML_post(ostream &os, int oFlags, const char *prefix) const
     os << prefix << "</" << tag << ">" << endl;
   }
   else {
-    os << prefix << "</" << NodeTypeToName(type()) << ">" << endl;
+    os << prefix << "</" << ANodeTyToName(type()) << ">" << endl;
   }
 }
 

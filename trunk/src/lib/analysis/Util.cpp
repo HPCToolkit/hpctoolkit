@@ -181,8 +181,8 @@ copySourceFileMain(const string& fnm_orig,
 static bool 
 Flat_Filter(const Prof::Struct::ANode& x, long type)
 {
-  return (x.type() == Prof::Struct::ANode::TyFILE 
-	  || x.type() == Prof::Struct::ANode::TyALIEN);
+  return (x.type() == Prof::Struct::ANode::TyFile 
+	  || x.type() == Prof::Struct::ANode::TyAlien);
 }
 
 
