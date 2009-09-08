@@ -330,7 +330,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     string vma = getAttr(attributes, attrVMA);
     if (vma.empty()) { vma = getAttr(attributes, attrVMALong); }
 
-    DIAG_Assert(m_curLM && m_curFile && !m_curProc, "Parse error!");
+    DIAG_Assert(m_curLM && m_curFile && !m_curProc, "Parse error: Support for nested procedures is disabled (cf. buildLMSkeleton())!");
     
     // -----------------------------------------------------
     // Find/Create the procedure.
