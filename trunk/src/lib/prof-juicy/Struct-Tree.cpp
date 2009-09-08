@@ -901,13 +901,6 @@ LM::findFile(const char* nm) const
 ACodeNode*
 LM::findByVMA(VMA vma)
 {
-  if (!m_procMap) {
-    buildMap(m_procMap, ANode::TyProc);
-  }
-  if (!m_stmtMap) {
-    buildMap(m_stmtMap, ANode::TyStmt);
-  }
-  
   // Attempt to find StatementRange and then Proc
   ACodeNode* found = findStmt(vma);
   if (!found) {
@@ -1016,8 +1009,8 @@ ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
   relocateIf();
 
   // never propagate changes outside an Alien
-  if (propagate && begLn != ln_NULL 
-      && ACodeNodeParent() && type() != ANode::TyAlien) {
+  if (propagate && SrcFile::isValid(begLn) 
+      && ACodeNodeParent() && typeid(*this) != typeid(Struct::Alien)) {
     ACodeNodeParent()->expandLineRange(m_begLn, m_endLn);
   }
 }

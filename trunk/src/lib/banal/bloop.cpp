@@ -498,7 +498,9 @@ demandProcNode(Struct::File* fStrct, BinUtil::Proc* p, ProcNameMgr* procNmMgr)
     DIAG_DevMsg(3, "Merging multiple instances of procedure [" 
 		<< pStrct->toStringXML() << "] with " << procNm << " " 
 		<< procLnNm << " " << bounds.toString());
-    pStrct->expandLineRange(begLn, endLn);
+    if (SrcFile::isValid(begLn)) {
+      pStrct->expandLineRange(begLn, endLn);
+    }
   }
   if (p->hasSymbolic()) {
     pStrct->hasSymbolic(p->hasSymbolic()); // optimistically set

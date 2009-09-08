@@ -348,8 +348,10 @@ BinUtil::TextSeg::ctor_initProcs()
     Proc* parent = m_lm->findProc(parentVMA);
     DIAG_AssertWarn(parent, "Could not find parent within this section:\n" 
 		    << child->toString());
-    DIAG_Assert(parent != child, "Procedure has itself as parent!\n" 
-		<< child->toString());
+    if (parent == child) {
+      DIAG_WMsg(0, "Procedure has itself as parent!\n" << child->toString());
+      continue; // skip
+    }
     child->parent(parent);
   }
 }

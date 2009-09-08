@@ -1080,20 +1080,26 @@ public:
   // findByVMA: find scope by *unrelocated* VMA
   // findProc:
   // findStmt
-  ACodeNode* 
+  ACodeNode*
   findByVMA(VMA vma);
   
-  Proc* 
-  findProc(VMA vma) 
+  Proc*
+  findProc(VMA vma)
   {
+    if (!m_procMap) {
+      buildMap(m_procMap, ANode::TyProc);
+    }
     VMAInterval toFind(vma, vma+1); // [vma, vma+1)
     VMAIntervalMap<Proc*>::iterator it = m_procMap->find(toFind);
     return (it != m_procMap->end()) ? it->second : NULL;
   }
 
-  Stmt* 
+  Stmt*
   findStmt(VMA vma)
   {
+    if (!m_stmtMap) {
+      buildMap(m_stmtMap, ANode::TyStmt);
+    }
     VMAInterval toFind(vma, vma+1); // [vma, vma+1)
     VMAIntervalMap<Stmt*>::iterator it = m_stmtMap->find(toFind);
     return (it != m_stmtMap->end()) ? it->second : NULL;
