@@ -1084,15 +1084,7 @@ public:
   findByVMA(VMA vma);
   
   Proc*
-  findProc(VMA vma)
-  {
-    if (!m_procMap) {
-      buildMap(m_procMap, ANode::TyProc);
-    }
-    VMAInterval toFind(vma, vma+1); // [vma, vma+1)
-    VMAIntervalMap<Proc*>::iterator it = m_procMap->find(toFind);
-    return (it != m_procMap->end()) ? it->second : NULL;
-  }
+  findProc(VMA vma);
 
   Stmt*
   findStmt(VMA vma)
