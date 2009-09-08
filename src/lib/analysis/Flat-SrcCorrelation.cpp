@@ -515,7 +515,7 @@ Driver::write_txt_hdr(std::ostream& os, const std::string& hdr) const
 void 
 Driver::write_config(std::ostream &os) const
 {
-  os << "<HPCVIEW>\n\n";
+  os << "<HPCPROF>\n\n";
 
   // title
   os << "<TITLE name=\"" << m_args.title << "\"/>\n\n";
@@ -556,7 +556,7 @@ Driver::write_config(std::ostream &os) const
   }
   if (!m_mMgr.empty()) { os << "\n"; }
   
-  os << "</HPCVIEW>\n";
+  os << "</HPCPROF>\n";
 }
 
 
