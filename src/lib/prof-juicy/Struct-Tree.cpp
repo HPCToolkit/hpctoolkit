@@ -68,6 +68,8 @@ using std::endl;
 #include <string>
 using std::string;
 
+#include <typeinfo>
+
 #include <algorithm>
 
 //*************************** User Include Files ****************************
@@ -910,6 +912,18 @@ LM::findByVMA(VMA vma)
 }
 
 
+Proc*
+LM::findProc(VMA vma)
+{
+  if (!m_procMap) {
+    buildMap(m_procMap, ANode::TyProc);
+  }
+  VMAInterval toFind(vma, vma+1); // [vma, vma+1)
+  VMAIntervalMap<Proc*>::iterator it = m_procMap->find(toFind);
+  return (it != m_procMap->end()) ? it->second : NULL;
+}
+
+
 template<typename T>
 void 
 LM::buildMap(VMAIntervalMap<T>*& m, ANode::ANodeTy ty) const
@@ -1010,7 +1024,10 @@ ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 
   // never propagate changes outside an Alien
   if (propagate && SrcFile::isValid(begLn) 
-      && ACodeNodeParent() && typeid(*this) != typeid(Struct::Alien)) {
+      && ACodeNodeParent() 
+      && type() != ANode::TyAlien 
+      // tallent: for some reason this is not equivalent to the above...
+      /* typeid(*this) != typeid(Struct::Alien)*/) {
     ACodeNodeParent()->expandLineRange(m_begLn, m_endLn);
   }
 }
