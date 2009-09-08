@@ -405,6 +405,8 @@ buildLMSkeleton(Struct::LM* lmStrct, BinUtil::LM* lm, ProcNameMgr* procNmMgr)
   // -------------------------------------------------------
   // 2. Establish nesting information:
   // -------------------------------------------------------
+  // FIXME: disable until we are sure we can handle this (cf. MOAB)
+#if 0
   for (ProcStrctToProcMap::iterator it = mp->begin(); it != mp->end(); ++it) {
     Struct::Proc* pStrct = it->first;
     BinUtil::Proc* p = it->second;
@@ -416,6 +418,7 @@ buildLMSkeleton(Struct::LM* lmStrct, BinUtil::LM* lm, ProcNameMgr* procNmMgr)
       pStrct->link(parentScope);
     }
   }
+#endif
 
   // FIXME (minor): The following order is appropriate when we have
   // symbolic information. I.e. we, 1) establish nesting information
