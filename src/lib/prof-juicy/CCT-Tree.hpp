@@ -701,7 +701,8 @@ public:
   isMergable(const ADynNode& x, const ADynNode& y)
   {
     // N.B.: order is based on early failure rather than logical order
-    return (x.lmId_real() == y.lmId_real()
+    return (x.isLeaf() == y.isLeaf()
+	    && x.lmId_real() == y.lmId_real()
 	    && x.ip_real() == y.ip_real()
 	    && lush_lip_eq(x.lip(), y.lip())
 	    && lush_assoc_class_eq(x.assoc(), y.assoc())
