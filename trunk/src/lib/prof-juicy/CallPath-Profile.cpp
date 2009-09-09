@@ -631,7 +631,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, LoadMap* loadmap, FILE* outfs)
   int ret = HPCFMT_ERR;
 
   if (outfs) {
-    fprintf(outfs, "{cct:\n"); 
+    fprintf(outfs, "[cct:\n"); 
   }
 
   // ------------------------------------------------------------
@@ -705,7 +705,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, LoadMap* loadmap, FILE* outfs)
   }
 
   if (outfs) {
-    fprintf(outfs, "}\n"); 
+    fprintf(outfs, "]\n");
   }
 
   return HPCFMT_OK;
