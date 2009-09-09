@@ -3282,6 +3282,9 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 
+nobuild_cookie=.dont-build
+version_file="${srcdir}/.svn-revision"
+
 #
 # is_cross_compile: non-empty string if cross-compiling
 #
@@ -3290,23 +3293,26 @@ if test "x$build" != "x$host" ; then
    is_cross_compile=${host}
 fi
 
-
-if test "x$prefix" = xNONE ; then
-    prefix="`pwd`/${host_cpu}-${host_os}"
+#
+# Warn if not using gcc, but give a pass if you're trying to cross
+# compile.  Some packages don't build well without gcc.  This is not a
+# great test, since autoconf identifies Intel icc as gcc, and binutils
+# barfs on icc. (grrr)
+#
+ext_warn_non_gcc=no
+if test "x$GCC" != xyes && test "x$is_cross_compile" = x ; then
+    ext_warn_non_gcc=yes
 fi
 
-
-nobuild_cookie=.dont-build
-version_file="${srcdir}/.svn-revision"
-
 #
-# Default prefix: local subdir with host cpu-os.
+# Ignore the user's prefix and always use our own.  It wouldn't work
+# as you might think and it just causes confusion.
 #
-# AC requires this to be absolute path.
-#
-if test "x$prefix" = xNONE ; then
-    prefix="`pwd`/${host_cpu}-${host_os}"
+ext_warn_user_prefix=no
+if test "x$prefix" != xNONE ; then
+    ext_warn_user_prefix=yes
 fi
+prefix="`pwd`/${host_cpu}-${host_os}"
 
 #
 # Append svn revision to PACKAGE_VERSION.
@@ -5285,10 +5291,10 @@ $as_echo "$as_me: Externals summary" >&6;}
 $as_echo "$as_me: ------------------" >&6;}
 { $as_echo "$as_me:$LINENO: prefix: $prefix" >&5
 $as_echo "$as_me: prefix: $prefix" >&6;}
-if test -n "${is_cross_compile}" ; then
-    { $as_echo "$as_me:$LINENO: build: $build" >&5
+{ $as_echo "$as_me:$LINENO: svn revision: $svn_revision" >&5
+$as_echo "$as_me: svn revision: $svn_revision" >&6;}
+{ $as_echo "$as_me:$LINENO: build: $build" >&5
 $as_echo "$as_me: build: $build" >&6;}
-fi
 { $as_echo "$as_me:$LINENO: host: $host" >&5
 $as_echo "$as_me: host: $host" >&6;}
 { $as_echo "$as_me:$LINENO: CC, CFLAGS: $CC $CFLAGS" >&5
@@ -5320,3 +5326,26 @@ $as_echo "$as_me: xerces: $xerces_avail" >&6;}
 { $as_echo "$as_me:$LINENO: mpi: $with_mpi" >&5
 $as_echo "$as_me: mpi: $with_mpi" >&6;}
 
+if test "$ext_warn_user_prefix" = yes ; then
+    { $as_echo "$as_me:$LINENO: WARNING: The prefix option is not used.
+Externals builds various packages needed by HPCToolkit and installs
+them to its own intermediate directory.  Then, HPCToolkit copies the
+files that it needs to the real install directory.  Thus, the prefix
+option is not used for this build." >&5
+$as_echo "$as_me: WARNING: The prefix option is not used.
+Externals builds various packages needed by HPCToolkit and installs
+them to its own intermediate directory.  Then, HPCToolkit copies the
+files that it needs to the real install directory.  Thus, the prefix
+option is not used for this build." >&2;}
+fi
+
+if test "$ext_warn_non_gcc" = yes ; then
+    { $as_echo "$as_me:$LINENO: WARNING: Not using the GNU C compiler.
+This is not necessarily an error, but some of these packages may not
+compile cleanly without gcc or g++.  If the build fails, try using the
+default values of CC and CXX before reporting an error." >&5
+$as_echo "$as_me: WARNING: Not using the GNU C compiler.
+This is not necessarily an error, but some of these packages may not
+compile cleanly without gcc or g++.  If the build fails, try using the
+default values of CC and CXX before reporting an error." >&2;}
+fi

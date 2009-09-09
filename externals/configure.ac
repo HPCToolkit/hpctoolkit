@@ -1,7 +1,7 @@
 dnl
 dnl  Externals configure.
 dnl
-dnl  Copyright (c) 2008, Rice University.
+dnl  Copyright (c) 2008-2009, Rice University.
 dnl  All rights reserved.
 dnl
 dnl  Redistribution and use in source and binary forms, with or without
@@ -89,6 +89,9 @@ AC_PROG_CXX
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
+nobuild_cookie=.dont-build
+version_file="${srcdir}/.svn-revision"
+
 #
 # is_cross_compile: non-empty string if cross-compiling
 #
@@ -97,23 +100,26 @@ if test "x$build" != "x$host" ; then
    is_cross_compile=${host}
 fi
 
-
-if test "x$prefix" = xNONE ; then
-    prefix="`pwd`/${host_cpu}-${host_os}"
+#
+# Warn if not using gcc, but give a pass if you're trying to cross
+# compile.  Some packages don't build well without gcc.  This is not a
+# great test, since autoconf identifies Intel icc as gcc, and binutils
+# barfs on icc. (grrr)
+#
+ext_warn_non_gcc=no
+if test "x$GCC" != xyes && test "x$is_cross_compile" = x ; then
+    ext_warn_non_gcc=yes
 fi
 
-
-nobuild_cookie=.dont-build
-version_file="${srcdir}/.svn-revision"
-
 #
-# Default prefix: local subdir with host cpu-os.
+# Ignore the user's prefix and always use our own.  It wouldn't work
+# as you might think and it just causes confusion.
 #
-# AC requires this to be absolute path.
-#
-if test "x$prefix" = xNONE ; then
-    prefix="`pwd`/${host_cpu}-${host_os}"
+ext_warn_user_prefix=no
+if test "x$prefix" != xNONE ; then
+    ext_warn_user_prefix=yes
 fi
+prefix="`pwd`/${host_cpu}-${host_os}"
 
 #
 # Append svn revision to PACKAGE_VERSION.
@@ -846,9 +852,8 @@ AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([Externals summary])
 AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([prefix: $prefix])
-if test -n "${is_cross_compile}" ; then
-    AC_MSG_NOTICE([build: $build])
-fi
+AC_MSG_NOTICE([svn revision: $svn_revision])
+AC_MSG_NOTICE([build: $build])
 AC_MSG_NOTICE([host: $host])
 AC_MSG_NOTICE([CC, CFLAGS: $CC $CFLAGS])
 AC_MSG_NOTICE([CXX, CXXFLAGS: $CXX $CXXFLAGS])
@@ -865,3 +870,17 @@ AC_MSG_NOTICE([xed2: $xed2_avail])
 AC_MSG_NOTICE([xerces: $xerces_avail])
 AC_MSG_NOTICE([mpi: $with_mpi])
 
+if test "$ext_warn_user_prefix" = yes ; then
+    AC_MSG_WARN([The prefix option is not used.
+Externals builds various packages needed by HPCToolkit and installs
+them to its own intermediate directory.  Then, HPCToolkit copies the
+files that it needs to the real install directory.  Thus, the prefix
+option is not used for this build.])
+fi
+
+if test "$ext_warn_non_gcc" = yes ; then
+    AC_MSG_WARN([Not using the GNU C compiler.
+This is not necessarily an error, but some of these packages may not
+compile cleanly without gcc or g++.  If the build fails, try using the
+default values of CC and CXX before reporting an error.])
+fi
