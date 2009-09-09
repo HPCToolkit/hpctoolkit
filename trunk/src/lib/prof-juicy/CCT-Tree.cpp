@@ -456,9 +456,9 @@ ANode::merge_prepare(uint numMetrics)
 
 
 // Let 'this' = x and let y be a node corresponding to x in the sense
-// that we may think of y as being locally merged with x.  Given y,
-// merge y's children into x.
-// NOTE: assume we can destroy y...
+// that we may think of y as being locally merged with x (according to
+// ADynNode::isMergable()).  Given y, merge y's children into x.
+// NOTE: assume we can destroy y... 
 // NOTE: assume x already has space to store merged metrics
 void
 ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
