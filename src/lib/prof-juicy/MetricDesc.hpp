@@ -108,25 +108,55 @@ public:
   // -------------------------------------------------------
   // name, description: The metric name and a description
   // -------------------------------------------------------
-  const std::string& name() const        { return m_name; }
-  void               name(const char* x) { m_name = (x) ? x : ""; }
-  void               name(const std::string& x) { m_name = x; }
+  const std::string&
+  name() const
+  { return m_name; }
 
-  const std::string& description() const { return m_description; }
-  void description(const char* x)        { m_description = (x) ? x : ""; }
-  void description(const std::string& x) { m_description = x; }
+  void
+  name(const char* x)
+  { m_name = (x) ? x : ""; }
+
+  void
+  name(const std::string& x)
+  { m_name = x; }
+
+  const std::string&
+  description() const
+  { return m_description; }
+
+  void
+  description(const char* x)
+  { m_description = (x) ? x : ""; }
+
+  void
+  description(const std::string& x)
+  { m_description = x; }
 
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
 
-  void dump(std::ostream& os = std::cerr) const { }
-  void ddump() const { }
+  void
+  dump(std::ostream& os = std::cerr) const
+  { }
+
+  void
+  ddump() const
+  { }
 
 protected:
 private:  
   std::string m_name;
   std::string m_description;
+};
+
+
+//***************************************************************************//
+// MetricDescVec
+//***************************************************************************//
+
+class MetricDescVec : public std::vector<MetricDesc*>
+{
 };
 
 
@@ -198,7 +228,7 @@ private:
 
 
 //***************************************************************************//
-// SampledMetricDesc
+// SampledMetricDescVec
 //***************************************************************************//
 
 class SampledMetricDescVec : public std::vector<SampledMetricDesc*>

@@ -458,8 +458,8 @@ ANode::merge_prepare(uint numMetrics)
 // Let 'this' = x and let y be a node corresponding to x in the sense
 // that we may think of y as being locally merged with x (according to
 // ADynNode::isMergable()).  Given y, merge y's children into x.
-// NOTE: assume we can destroy y... 
-// NOTE: assume x already has space to store merged metrics
+// N.B.: assume we can destroy y... 
+// N.B.: assume x already has space to store merged metrics
 void
 ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
 	     uint x_newMetricBegIdx, uint y_newMetrics)
@@ -474,11 +474,12 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
   }
 
   // ------------------------------------------------------------  
-  // 1. If a child d of y _does not_ appear as a child of x, then copy
-  //    (subtree) d [fixing d's metrics], make it a child of x and
-  //    return.
-  // 2. If a child d of y _does_ have a corresponding child c of x,
-  //    merge [the metrics of] d into c and recur.
+  // 1. If a child y_child of y _does not_ appear as a child of x,
+  //    then copy (subtree) y_child [fixing its metrics], make it a
+  //    child of x and return.
+  // 2. If a child y_child of y _does_ have a corresponding child
+  //    x_child of x, merge [the metrics of] y_child into x_child and
+  //    recur.
   // ------------------------------------------------------------  
   for (ANodeChildIterator it(y); it.Current(); /* */) {
     ANode* y_child = it.CurNode();
@@ -489,11 +490,13 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
     ADynNode* x_child_dyn = findDynChild(*y_child_dyn);
 
     if (!x_child_dyn) {
+      // case 1
       y_child->unlink();
       y_child->merge_fixup(new_mdesc, x_newMetricBegIdx);
       y_child->link(x);
     }
     else {
+      // case 2
       DIAG_MsgIf(0, "ANode::merge: Merging y into x:\n"
 		 << "  y: " << y_child_dyn->toString()
 		 << "  x: " << x_child_dyn->toString());

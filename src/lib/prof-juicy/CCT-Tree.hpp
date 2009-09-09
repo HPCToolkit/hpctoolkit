@@ -403,10 +403,10 @@ public:
 
   std::ostream& 
   writeXML(std::ostream& os = std::cerr, int oFlags = 0,
-	   const char *pre = "") const;
+	   const char* pre = "") const;
 
   std::ostream& 
-  dump(std::ostream& os = std::cerr, int oFlags = 0, const char *pre = "") const;
+  dump(std::ostream& os = std::cerr, int oFlags = 0, const char* pre = "") const;
 
   void
   ddump() const;
@@ -421,10 +421,10 @@ protected:
 
   bool
   writeXML_pre(std::ostream& os = std::cerr, int oFlags = 0,
-	       const char *prefix = "") const;
+	       const char* prefix = "") const;
   void
   writeXML_post(std::ostream& os = std::cerr, int oFlags = 0, 
-		const char *prefix = "") const;
+		const char* prefix = "") const;
 
   void
   merge_fixup(const SampledMetricDescVec* mdesc, int metric_offset);
@@ -623,7 +623,7 @@ public:
     return x_clone;
   }
 
-  bool 
+  bool
   isValid_lip() const 
   { return (m_lip && (lush_lip_getLMId(m_lip) != 0)); }
 
@@ -641,8 +641,8 @@ public:
 
 
   hpcrun_metricVal_t
-  metric(int i) const 
-  { return m_metrics[i]; }
+  metric(int mId) const 
+  { return m_metrics[mId]; }
   
   uint
   numMetrics() const 
@@ -661,12 +661,12 @@ public:
   }
 
   void
-  metricIncr(int i, hpcrun_metricVal_t incr)
-  { ADynNode::metricIncr((*m_metricdesc)[i], &m_metrics[i], incr); }
+  metricIncr(int mId, hpcrun_metricVal_t incr)
+  { ADynNode::metricIncr((*m_metricdesc)[mId], &m_metrics[mId], incr); }
   
   void
-  metricDecr(int i, hpcrun_metricVal_t decr)  
-  { ADynNode::metricDecr((*m_metricdesc)[i], &m_metrics[i], decr); }
+  metricDecr(int mId, hpcrun_metricVal_t decr)
+  { ADynNode::metricDecr((*m_metricdesc)[mId], &m_metrics[mId], decr); }
 
 
   static inline void

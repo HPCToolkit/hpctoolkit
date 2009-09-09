@@ -133,9 +133,13 @@ public:
     return (it != m_uniqnmToMetricMap.end()) ? it->second : NULL;
   }
 
-  uint size() const { return m_metrics.size(); }
+  uint
+  size() const
+  { return m_metrics.size(); }
 
-  bool empty() const { return m_metrics.empty(); }
+  bool
+  empty() const
+  { return m_metrics.empty(); }
 
   // Given m, insert m into the tables, ensuring it has a unique name
   // by qualifying it if necessary.  Returns true if the name was
@@ -155,9 +159,9 @@ public:
   // helper tables
   // ------------------------------------------------------------
 
-  const StringPerfMetricVecMap& fnameToFMetricMap() const { 
-    return m_fnameToFMetricMap;
-  }
+  const StringPerfMetricVecMap&
+  fnameToFMetricMap() const
+  { return m_fnameToFMetricMap; }
 
 
   // ------------------------------------------------------------

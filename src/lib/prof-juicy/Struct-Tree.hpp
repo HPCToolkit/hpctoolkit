@@ -72,8 +72,6 @@
 
 #include <include/uint.h>
 
-#include "PerfMetric.hpp"
-
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -106,7 +104,7 @@ namespace Struct {
 class DoubleVector : public VectorTmpl<double> {
 public: 
   DoubleVector() 
-    : VectorTmpl<double>(0.0, true/*autoExtend*/, 16/*size*/) { }
+    : VectorTmpl<double>(0.0 /*emptyElem*/, true/*autoExtend*/, 16/*size*/) { }
 };
 
 
@@ -263,13 +261,6 @@ public:
   static ANodeTy
   IntToANodeTy(long i);
 
-protected:
-  ANode(const ANode& x)
-  { *this = x; }
-  
-  ANode&
-  operator=(const ANode& x);
-
 private:
   static const std::string ScopeNames[TyNUMBER];
 
@@ -279,7 +270,7 @@ public:
   // --------------------------------------------------------
   ANode(ANodeTy ty, ANode* parent = NULL)
     : NonUniformDegreeTreeNode(parent), m_type(ty)
-  { 
+  {
     m_id = s_nextUniqueId++;
     m_metrics = new DoubleVector();
   }
@@ -296,6 +287,15 @@ public:
   clone()
   { return new ANode(*this); }
 
+
+protected:
+  ANode(const ANode& x)
+  { *this = x; }
+  
+  ANode&
+  operator=(const ANode& x);
+
+public:
 
   // --------------------------------------------------------
   // General data
@@ -644,7 +644,7 @@ protected:
   operator=(const ACodeNode& x)
   {
     // shallow copy
-    if (&x != this) {
+    if (this != &x) {
       ANode::operator=(x);
       m_begLn = x.m_begLn;
       m_endLn = x.m_endLn;

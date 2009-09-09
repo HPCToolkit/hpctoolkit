@@ -103,7 +103,7 @@ Driver::Driver(const Analysis::Args& args,
 
 Driver::~Driver()
 {
-} 
+}
 
 
 int

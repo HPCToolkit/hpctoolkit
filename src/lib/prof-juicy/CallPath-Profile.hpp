@@ -224,6 +224,7 @@ private:
   //typedef std::map<std::string, std::string> StrToStrMap;
   //StrToStrMap m_nvPairMap;
 
+  // FIXME: Metric::Mgr?
   SampledMetricDescVec m_metricdesc;
 
   LoadMapMgr* m_loadmapMgr;
