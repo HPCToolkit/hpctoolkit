@@ -93,11 +93,8 @@ MYSOURCES = \
 	\
 	HashTable.hpp HashTable.cpp \
 	HashTableSortedIterator.hpp HashTableSortedIterator.cpp \
-	IntVector.hpp IntVector.cpp \
 	IteratorStack.hpp IteratorStack.cpp \
 	NonUniformDegreeTree.hpp NonUniformDegreeTree.cpp \
-	OffsetLengthList.hpp OffsetLengthList.cpp \
-	PointerMap.hpp PointerMap.cpp \
 	PointerStack.hpp PointerStack.cpp \
 	PtrSet.hpp PtrSet.cpp \
 	PtrSetIterator.hpp PtrSetIterator.cpp \
@@ -106,11 +103,8 @@ MYSOURCES = \
 	Set.hpp Set.cpp \
 	StackableIterator.hpp StackableIterator.cpp \
 	Unique.hpp Unique.cpp \
-	VectorSupport.hpp VectorSupport.cpp \
-	VectorTmpl.hpp VectorTmpl.cpp \
 	WordSet.hpp WordSet.cpp
 
-# Deprecated: StringHashTable.*
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
