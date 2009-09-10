@@ -253,7 +253,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     threshold = self->evl.events[k].thresh;
     BGP_UPC_Get_Event_Name(code, EVENT_NAME_SIZE, name);
     csprof_set_metric_info_and_period(metric_id, strdup(name),
-				      HPCFILE_METRIC_FLAG_ASYNC, threshold);
+				      HPCRUN_MetricFlag_Async, threshold);
     self->evl.events[k].metric_id = metric_id;
     TMSG(UPC, "add event %s(%d), threshold %ld, metric %d",
 	 name, code, threshold, metric_id);
