@@ -110,7 +110,7 @@ public:
   PerfMetric*
   metric(int i) 
   { 
-    return m_metrics[i]; 
+    return m_metrics[i];
   }
 
   const PerfMetric* 

@@ -56,9 +56,6 @@
 
 //************************* System Include Files ****************************
 
-#include <cstdio> // for 'fopen'
-#include <cstring> // for 'strcmp'
-
 #include <iostream>
 using std::ostream;
 using std::hex;
@@ -72,12 +69,14 @@ using std::string;
 
 #include <algorithm>
 
+#include <cstring> // for 'strcmp'
+
+
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
 
 #include "Struct-Tree.hpp"
-#include "PerfMetric.hpp"
 
 #include <lib/xml/xml.hpp>
 
@@ -184,21 +183,6 @@ ANode::IntToANodeTy(long i)
 //***************************************************************************
 // ANode, etc: constructors/destructors
 //***************************************************************************
-
-ANode& 
-ANode::operator=(const ANode& x) 
-{
-  // shallow copy
-  if (&x != this) {
-    m_type    = x.m_type;
-    m_id      = x.m_id;
-    m_metrics = x.m_metrics;
-    
-    zeroLinks(); // NonUniformDegreeTreeNode
-  }
-  return *this;
-}
-
 
 void 
 ACodeNode::linkAndSetLineRange(ACodeNode* parent)
@@ -794,7 +778,7 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, double* valVec)
   }
 
   it.Reset(); 
-  if (it.Current() != NULL) { // it's not a leaf 
+  if (it.Current()) { // 'this' is not a leaf 
     // initialize helper data
     for (uint i = mBegId; i <= mEndId; ++i) {
       valVec[i] = 0.0; 
@@ -802,12 +786,12 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, double* valVec)
 
     for (; it.Current(); it++) { 
       for (uint i = mBegId; i <= mEndId; ++i) {
-	valVec[i] += it.CurNode()->metric(i);
+	valVec[i] += it.CurNode()->demandMetric(i, mEndId+1/*size*/);
       }
-    } 
+    }
     
     for (uint i = mBegId; i <= mEndId; ++i) {
-      metricIncr(i, valVec[i]);
+      demandMetricIncr(i, valVec[i], mEndId+1/*size*/);
     }
   }
 }
@@ -1539,7 +1523,7 @@ ANode::writeMetricsXML(ostream& os, int oFlags, const char* pfx) const
   for (uint i = 0; i < numMetrics(); i++) {
     if (hasMetric(i)) {
       os << ((!wasMetricWritten) ? pfx : "");
-      os << "<M n=\"" << i << "\" v=\"" << metric(i) << "\"/>";
+      os << "<M n=\"" << i << "\" v=\"" << Xmetric(i) << "\"/>";
       wasMetricWritten = true;
     }
   }
@@ -1609,7 +1593,7 @@ ANode::CSV_DumpSelf(const Root& root, ostream& os) const
 { 
   char temp[32];
   for (uint i = 0; i < numMetrics(); i++) {
-    double val = (hasMetric(i) ? metric(i) : 0);
+    double val = (hasMetric(i) ? Xmetric(i) : 0);
     os << "," << val;
 #if 0
     // FIXME: tallent: Conversioon from static perf-table to MetricDescMgr
@@ -1620,7 +1604,7 @@ ANode::CSV_DumpSelf(const Root& root, ostream& os) const
 #endif
 
     if (percent) {
-      double percVal = val / root.metric(i) * 100;
+      double percVal = val / root.Xmetric(i) * 100;
       sprintf(temp, "%5.2lf", percVal);
       os << "," << temp;
     }
@@ -1796,7 +1780,7 @@ ANode::dump(ostream& os, int oFlags, const char* pre) const
   for (uint i = 0; i < numMetrics(); i++) {
     os << i << " = " ;
     if (hasMetric(i)) {
-      os << metric(i);
+      os << Xmetric(i);
     } 
     else {
       os << "UNDEF";

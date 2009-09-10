@@ -259,13 +259,13 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
       Struct::ACodeNode* strct = 
 	Analysis::Util::demandStructure(ip_ur, lmStrct, lm, useStruct);
       n->structure(strct);
-      strct->metricIncr(CallPath::Profile::StructMetricIdFlg, 1.0);
+      strct->demandMetricIncr(CallPath::Profile::StructMetricIdFlg, 1.0);
 
       // 2. Demand a procedure frame for 'n_dyn' and its scope within it
       Struct::ANode* scope_strct = strct->ancestor(Struct::ANode::TyLoop,
 						   Struct::ANode::TyAlien,
 						   Struct::ANode::TyProc);
-      scope_strct->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
+      scope_strct->demandMetricIncr(CallPath::Profile::StructMetricIdFlg, 1.0);
 
       Prof::CCT::ANode* scope_frame = 
 	demandScopeInFrame(n_dyn, scope_strct, strctToCCTMap);
@@ -513,18 +513,20 @@ pruneByMetrics(Prof::CallPath::Profile* prof)
 static void 
 pruneByMetrics(Prof::CCT::ANode* node)
 {
+  using namespace Prof;
+
   if (!node) { return; }
 
-  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
-    Prof::CCT::ANode* x = it.CurNode();
+  for (CCT::ANodeChildIterator it(node); it.Current(); /* */) {
+    CCT::ANode* x = it.CurNode();
     it++; // advance iterator -- it is pointing at 'x'
 
     // 1. Recursively do any trimming for this tree's children
     pruneByMetrics(x);
 
     // 2. Trim this node if necessary
-    bool isTy = (typeid(*x) == typeid(Prof::CCT::ProcFrm) || 
-		 typeid(*x) == typeid(Prof::CCT::Loop));
+    bool isTy = (typeid(*x) == typeid(CCT::ProcFrm) || 
+		 typeid(*x) == typeid(CCT::Loop));
     if (x->isLeaf() && isTy) {
       x->unlink(); // unlink 'x' from tree
       DIAG_DevMsgIf(0, "pruneByMetrics: " << hex << x << dec << " (sid: " << x->structureId() << ")");
@@ -532,9 +534,9 @@ pruneByMetrics(Prof::CCT::ANode* node)
     }
     else {
       // We are keeping the node -- set the static structure flag
-      Prof::Struct::ACodeNode* strct = x->structure();
+      Struct::ACodeNode* strct = x->structure();
       if (strct) {
-	strct->metricIncr(Prof::CallPath::Profile::StructMetricIdFlg, 1.0);
+	strct->demandMetricIncr(CallPath::Profile::StructMetricIdFlg, 1.0);
       }
     }
   }

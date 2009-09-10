@@ -187,8 +187,8 @@ ANodeSortedIterator::cmpByMetric_fn(const void* a, const void *b)
   ANode* x = *(ANode**) a;
   ANode* y = *(ANode**) b;
 
-  double vx = x->hasMetric(cmpByMetric_mId) ? x->metric(cmpByMetric_mId) : 0.0;
-  double vy = y->hasMetric(cmpByMetric_mId) ? y->metric(cmpByMetric_mId) : 0.0;
+  double vx = x->hasMetric(cmpByMetric_mId) ? x->Xmetric(cmpByMetric_mId) : 0.0;
+  double vy = y->hasMetric(cmpByMetric_mId) ? y->Xmetric(cmpByMetric_mId) : 0.0;
   double difference = vy - vx;
   
   if (difference < 0) return -1;	
