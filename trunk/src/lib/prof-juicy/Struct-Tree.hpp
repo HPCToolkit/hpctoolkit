@@ -72,6 +72,8 @@
 
 #include <include/uint.h>
 
+#include "Metric-IData.hpp"
+
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -82,7 +84,6 @@
 #include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
 #include <lib/support/Unique.hpp>
-#include <lib/support/VectorTmpl.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -100,13 +101,6 @@ namespace Struct {
 
 
 //*************************** Forward Declarations **************************
-
-class DoubleVector : public VectorTmpl<double> {
-public: 
-  DoubleVector() 
-    : VectorTmpl<double>(0.0 /*emptyElem*/, true/*autoExtend*/, 16/*size*/) { }
-};
-
 
 namespace Prof {
 namespace Struct {
@@ -208,6 +202,9 @@ private:
 } // namespace Prof
 
 
+//***************************************************************************
+
+
 namespace Prof {
 namespace Struct {
 
@@ -236,7 +233,8 @@ class Ref;
 // ---------------------------------------------------------
 // ANode: The base node for a program scope tree
 // ---------------------------------------------------------
-class ANode: public NonUniformDegreeTreeNode {
+class ANode: public NonUniformDegreeTreeNode,
+	     public Metric::IData {
 public:
   enum ANodeTy {
     TyRoot = 0,
@@ -269,17 +267,17 @@ public:
   // Create/Destroy
   // --------------------------------------------------------
   ANode(ANodeTy ty, ANode* parent = NULL)
-    : NonUniformDegreeTreeNode(parent), m_type(ty)
+    : NonUniformDegreeTreeNode(parent), 
+      Metric::IData(),
+      m_type(ty)
   {
     m_id = s_nextUniqueId++;
-    m_metrics = new DoubleVector();
   }
 
   virtual ~ANode()
   {
     DIAG_DevMsgIf(0, "~ANode::ANode: " << toString_id()
 		  << " " << std::hex << this << std::dec);
-    delete m_metrics;
   }
   
   // clone: return a shallow copy, unlinked from the tree
@@ -293,7 +291,18 @@ protected:
   { *this = x; }
   
   ANode&
-  operator=(const ANode& x);
+  operator=(const ANode& x) 
+  {
+    // shallow copy
+    if (this != &x) {
+      NonUniformDegreeTreeNode::zeroLinks();
+      Metric::IData::operator=(x);
+      m_type    = x.m_type;
+      m_id      = x.m_id;
+    }
+    return *this;
+  }
+
 
 public:
 
@@ -408,44 +417,6 @@ public:
   // --------------------------------------------------------
   // Metrics
   // --------------------------------------------------------
-
-  bool
-  hasMetrics() const
-  {
-    uint end = numMetrics();
-    for (uint i = 0; i < end; ++i) {
-      if (hasMetric(i)) {
-	return true;
-      }
-    }
-    return false;
-  }
-
-  bool
-  hasMetric(int mId) const
-  {
-    double x = (*m_metrics)[mId];
-    return (x != 0.0);
-  }
-  
-  double
-  metric(int mId) const
-  {
-    return (*m_metrics)[mId];
-  }
-
-  void
-  metricIncr(int mId, double d)
-  {
-    // NOTE: VectorTmpl::operator[] automatically 'adds' the index if necessary
-    (*m_metrics)[mId] += d;
-  }
-
-  uint
-  numMetrics() const
-  {
-    return m_metrics->GetNumElements();
-  }
 
   // accumulates metrics from children. [mBegId, mEndId] forms an
   // inclusive interval for batch processing.  In particular, 'raw'
@@ -612,7 +583,6 @@ private:
 protected:
   ANodeTy m_type; // obsolete with typeid(), but hard to replace
   uint m_id;
-  DoubleVector* m_metrics;
 };
 
 
@@ -849,7 +819,8 @@ protected:
     *this = x; 
   }
   
-  Root& operator=(const Root& x);
+  Root&
+  operator=(const Root& x);
 
 public: 
   Root(const char* nm)
@@ -1014,7 +985,8 @@ private:
 // --------------------------------------------------------------------------
 class LM: public ACodeNode {
 protected:
-  LM& operator=(const LM& x);
+  LM& 
+  operator=(const LM& x);
 
 public: 
 
@@ -1277,8 +1249,12 @@ private:
 // --------------------------------------------------------------------------
 class Proc: public ACodeNode {
 protected:
-  Proc(const Proc& x) : ACodeNode(x.m_type) { *this = x; }
-  Proc& operator=(const Proc& x);
+  Proc(const Proc& x)
+    : ACodeNode(x.m_type) 
+  { *this = x; }
+
+  Proc&
+  operator=(const Proc& x);
 
 public: 
 
@@ -1413,8 +1389,12 @@ private:
 // --------------------------------------------------------------------------
 class Alien: public ACodeNode {
 protected:
-  Alien(const Alien& x) : ACodeNode(x.m_type) { *this = x; }
-  Alien& operator=(const Alien& x);
+  Alien(const Alien& x)
+    : ACodeNode(x.m_type)
+  { *this = x; }
+
+  Alien&
+  operator=(const Alien& x);
 
 public: 
 

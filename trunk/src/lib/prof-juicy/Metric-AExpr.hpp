@@ -237,7 +237,7 @@ public:
 
   double eval(const Struct::ANode* node) const
   {
-    return node->metric(index);
+    return node->demandMetric(index);
   }
   
   std::ostream& dump(std::ostream& os = std::cout) const;

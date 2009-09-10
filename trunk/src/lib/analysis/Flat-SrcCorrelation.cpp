@@ -393,7 +393,7 @@ Driver::write_txt_secSummary(std::ostream& os,
       const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
       if (mm) {
 	const Prof::SampledMetricDesc& desc = mm->rawdesc();
-	double smpl = rootStrct->metric(i) / (double)desc.period();
+	double smpl = rootStrct->Xmetric(i) / (double)desc.period();
 	colFmt.genCol(i, smpl);
       }
       else {
@@ -404,7 +404,7 @@ Driver::write_txt_secSummary(std::ostream& os,
 
     // Program metric summary
     for (uint i = 0; i < m_mMgr.size(); ++i) {
-      colFmt.genCol(i, rootStrct->metric(i));
+      colFmt.genCol(i, rootStrct->Xmetric(i));
     }
     os << std::endl;
   }
@@ -413,7 +413,7 @@ Driver::write_txt_secSummary(std::ostream& os,
     for (; it.Current(); it++) {
       Prof::Struct::ANode* strct = it.Current();
       for (uint i = 0; i < m_mMgr.size(); ++i) {
-	colFmt.genCol(i, strct->metric(i), rootStrct->metric(i));
+	colFmt.genCol(i, strct->Xmetric(i), rootStrct->Xmetric(i));
       }
       os << " " << strct->nameQual() << std::endl;
     } 
@@ -475,7 +475,7 @@ Driver::write_txt_annotateFile(std::ostream& os,
     // Generate columns for ln_metric
     os << std::setw(linew) << std::setfill(' ') << ln_metric;
     for (uint i = 0; i < m_mMgr.size(); ++i) {
-      colFmt.genCol(i, strct->metric(i), rootStrct->metric(i));
+      colFmt.genCol(i, strct->Xmetric(i), rootStrct->Xmetric(i));
     }
 
     // Generate source file line for ln_metric, if necessary
@@ -787,6 +787,8 @@ Driver::correlateRaw(PerfMetric* metric,
   unsigned long period = profevent.mdesc().period();
   bool doUnrelocate = lm->doUnrelocate(lm_load_addr);
 
+  uint numMetrics = m_mMgr.size();
+
   for (uint i = 0; i < profevent.num_data(); ++i) {
     const Prof::Flat::Datum& dat = profevent.datum(i);
     VMA vma = dat.first; // relocated VMA
@@ -800,11 +802,11 @@ Driver::correlateRaw(PerfMetric* metric,
     Prof::Struct::ANode* strct = 
       Util::demandStructure(vma_ur, lmStrct, lm, useStruct);
 
-    strct->metricIncr(metric->Index(), events); // implicit add!
+    strct->demandMetricIncr(metric->Index(), events, numMetrics/*size*/);
     DIAG_DevMsg(6, "Metric associate: " 
 		<< metric->Name() << ":0x" << hex << vma_ur << dec 
 		<< " --> +" << events << "=" 
-		<< strct->metric(metric->Index()) << " :: " 
+		<< strct->Xmetric(metric->Index()) << " :: " 
 		<< strct->toXML());
   }
 }
@@ -916,12 +918,14 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
   Prof::Struct::ANodeIterator it(strct, NULL/*filter*/, false/*leavesOnly*/,
 				 IteratorStack::PostOrder);
       
+  uint numMetrics = m_mMgr.size();
+
   for (; it.Current(); it++) {
     for (uint mId = mBegId; mId <= mEndId; ++mId) {
       const Prof::Metric::AExpr* expr = mExprVec[mId];
       double val = expr->eval(it.CurNode());
       // if (!Prof::Metric::AExpr::isok(val)) ...
-      it.CurNode()->metricIncr(mId, val);
+      it.CurNode()->demandMetricIncr(mId, val, numMetrics/*size*/);
     }
   }
 }
