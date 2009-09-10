@@ -112,9 +112,7 @@ Tree::~Tree()
 
 
 void 
-Tree::merge(const Tree* y, 
-	    const SampledMetricDescVec* new_mdesc,		  
-	    uint x_newMetricBegIdx, uint y_newMetrics)
+Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics)
 {
   CCT::ANode* x_root = root();
   CCT::ANode* y_root = y->root();
@@ -136,7 +134,7 @@ Tree::merge(const Tree* y,
   DIAG_Assert(isPrecondition, "Prof::CCT::Tree::merge: Merge precondition fails!");
 
   x_root->merge_prepare(y_newMetrics);
-  x_root->merge(y_root, new_mdesc, x_newMetricBegIdx, y_newMetrics);
+  x_root->merge(y_root, x_newMetricBegIdx, y_newMetrics);
 }
 
 
@@ -279,22 +277,19 @@ Loop::~Loop()
 }
 
 
-Call::Call(ANode* parent, uint cpId, const SampledMetricDescVec* metricdesc)
-  : ADynNode(TyCall, parent, NULL, cpId, metricdesc)
+Call::Call(ANode* parent, uint cpId)
+  : ADynNode(TyCall, parent, NULL, cpId)
 {
   Call_Check(this, parent);
 }
 
 
 Call::Call(ANode* parent, 
-	   uint cpId,
-	   lush_assoc_info_t as_info,
-	   LoadMap::LM_id_t lmId, VMA ip, ushort opIndex, 
-	   lush_lip_t* lip,
-	   const SampledMetricDescVec* metricdesc,
-	   std::vector<hpcrun_metricVal_t>& metrics)
+	   uint cpId, lush_assoc_info_t as_info,
+	   LoadMap::LM_id_t lmId, VMA ip, ushort opIndex, lush_lip_t* lip,
+	   const Metric::IData& metrics)
   : ADynNode(TyCall, parent, NULL, 
-	     cpId, as_info, lmId, ip, opIndex, lip, metricdesc, metrics)
+	     cpId, as_info, lmId, ip, opIndex, lip, metrics)
 {
   Call_Check(this, parent);
 }
@@ -406,34 +401,7 @@ ADynNode::mergeMetrics(const ADynNode& y, uint beg_idx)
   DIAG_Assert(x_end <= numMetrics(), "Insufficient space for merging.");
 
   for (uint x_i = beg_idx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
-    metricIncr((*m_metricdesc)[x_i], &m_metrics[x_i], y.metric(y_i));
-  }
-}
-
-
-void 
-ADynNode::appendMetrics(const ADynNode& y)
-{
-  for (uint i = 0; i < y.numMetrics(); ++i) {
-    m_metrics.push_back(y.metric(i));
-  }
-}
-
-
-void 
-ADynNode::expandMetrics_before(uint offset)
-{
-  for (uint i = 0; i < offset; ++i) {
-    m_metrics.insert(m_metrics.begin(), hpcrun_metricVal_ZERO);
-  }
-}
-
-
-void 
-ADynNode::expandMetrics_after(uint offset)
-{
-  for (uint i = 0; i < offset; ++i) {
-    m_metrics.push_back(hpcrun_metricVal_ZERO);
+    metricIncr(x_i, y.metric(y_i));
   }
 }
 
@@ -461,8 +429,7 @@ ANode::merge_prepare(uint numMetrics)
 // N.B.: assume we can destroy y... 
 // N.B.: assume x already has space to store merged metrics
 void
-ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
-	     uint x_newMetricBegIdx, uint y_newMetrics)
+ANode::merge(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics)
 {
   ANode* x = this;
   
@@ -492,7 +459,7 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
     if (!x_child_dyn) {
       // case 1
       y_child->unlink();
-      y_child->merge_fixup(new_mdesc, x_newMetricBegIdx);
+      y_child->merge_fixup(x_newMetricBegIdx);
       y_child->link(x);
     }
     else {
@@ -502,7 +469,7 @@ ANode::merge(ANode* y, const SampledMetricDescVec* new_mdesc,
 		 << "  x: " << x_child_dyn->toString());
 
       x_child_dyn->mergeMetrics(*y_child_dyn, x_newMetricBegIdx);
-      x_child_dyn->merge(y_child, new_mdesc, x_newMetricBegIdx, y_newMetrics);
+      x_child_dyn->merge(y_child, x_newMetricBegIdx, y_newMetrics);
     }
   }
 }
@@ -523,19 +490,18 @@ ANode::findDynChild(const ADynNode& y_dyn)
 
 
 void
-ANode::merge_fixup(const SampledMetricDescVec* new_mdesc, int metric_offset)
+ANode::merge_fixup(int newMetrics)
 {
   ADynNode* x_dyn = dynamic_cast<ADynNode*>(this);
   if (x_dyn) {
-    x_dyn->expandMetrics_before(metric_offset);
-    x_dyn->metricdesc(new_mdesc);
+    x_dyn->expandMetrics_before(newMetrics);
   }
 
   for (ANodeChildIterator it(this); it.Current(); ++it) {
     ANode* child = it.CurNode();
     ADynNode* child_dyn = dynamic_cast<ADynNode*>(child);
     if (child_dyn) {
-      child->merge_fixup(new_mdesc, metric_offset);
+      child->merge_fixup(newMetrics);
     }
   }
 }
@@ -719,8 +685,8 @@ ADynNode::writeDyn(std::ostream& o, int oFlags, const char* pre) const
     << hex << m_lip << " [lip " << lip_str() << "]" << dec;
 
   o << p << " [metrics";
-  for (uint i = 0; i < m_metrics.size(); ++i) {
-    o << " " << m_metrics[i];
+  for (uint i = 0; i < numMetrics(); ++i) {
+    o << " " << metric(i);
   }
   o << "]" << endl;
 }
@@ -732,11 +698,11 @@ ADynNode::writeMetricsXML(std::ostream& os, int oFlags, const char* pfx) const
   bool wasMetricWritten = false;
 
   for (uint i = 0; i < numMetrics(); i++) {
-    hpcrun_metricVal_t m = metric(i);
-    if (!hpcrun_metricVal_isZero(m)) {
+    if (hasMetric(i)) {
+      double m = metric(i);
       os << ((!wasMetricWritten) ? pfx : "");
       os << "<M " << "n" << xml::MakeAttrNum(i) 
-	 << " v" << writeMetric((*m_metricdesc)[i], m) << "/>";
+	 << " v" << xml::MakeAttrNum(m) << "/>";
       wasMetricWritten = true;
     }
   }

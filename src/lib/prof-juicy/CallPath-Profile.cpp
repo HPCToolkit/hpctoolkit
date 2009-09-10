@@ -179,7 +179,7 @@ Profile::merge(Profile& y, bool isSameThread)
   // -------------------------------------------------------
   // merge CCTs
   // -------------------------------------------------------
-  m_cct->merge(y.cct(), &m_metricdesc, x_newMetricBegIdx, y_newMetrics);
+  m_cct->merge(y.cct(), x_newMetricBegIdx, y_newMetrics);
 }
 
 
@@ -756,7 +756,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs)
 
     metric_desc_t mdesc;
     mdesc.name = const_cast<char*>(m->name().c_str());
-    mdesc.flags = m->flags();
+    mdesc.flags = (m->flags() | HPCRUN_MetricFlag_Real);
     mdesc.period = m->period();
 
     hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
@@ -948,10 +948,18 @@ cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt,
   // metrics
   // ----------------------------------------  
   bool hasMetrics = false;
-  std::vector<hpcrun_metricVal_t> metricVec(nodeFmt.num_metrics);
+  Metric::IData metricData(nodeFmt.num_metrics);
   for (uint i = 0; i < nodeFmt.num_metrics; i++) {
+    SampledMetricDesc* mdesc = prof.metric(i);
     hpcrun_metricVal_t m = nodeFmt.metrics[i];
-    metricVec[i] = m;
+
+    if (hpcrun_metricFlags_isFlag(mdesc->flags(), HPCRUN_MetricFlag_Real)) {
+      metricData.metric(i) = m.r;
+    }
+    else {
+      metricData.metric(i) = (double)m.i;
+    }
+
     if (!hpcrun_metricVal_isZero(m)) {
       hasMetrics = true;
     }
@@ -972,20 +980,20 @@ cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt,
 
   if (hasMetrics || isLeaf) {
     n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, lmId, ip, opIdx, lip,
-		      &(cct.metadata()->metricDesc()), metricVec);
+		      metricData);
   }
 
   if (!isLeaf) {
     if (hasMetrics) {
       n_leaf = n;
 
-      std::vector<hpcrun_metricVal_t> metricVec0(nodeFmt.num_metrics);
+      Metric::IData metricData0(nodeFmt.num_metrics);
       n = new CCT::Call(NULL, 0, nodeFmt.as_info, lmId, ip, opIdx, lip,
-			&(cct.metadata()->metricDesc()), metricVec0);
+			metricData0);
     }
     else {
       n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, ip, opIdx, lip,
-			&(cct.metadata()->metricDesc()), metricVec);
+		        metricData);
     }
   }
 
@@ -1018,7 +1026,9 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt,
   }
 
   for (uint i = 0; i < n_dyn.numMetrics(); ++i) {
-    n_fmt.metrics[i] = n_dyn.metric(i);
+    hpcrun_metricVal_t m; // C99: (hpcrun_metricVal_t){.r = n_dyn.metric(i)};
+    m.r = n_dyn.metric(i);
+    n_fmt.metrics[i] = m;
   }
 }
 

@@ -1523,7 +1523,7 @@ ANode::writeMetricsXML(ostream& os, int oFlags, const char* pfx) const
   for (uint i = 0; i < numMetrics(); i++) {
     if (hasMetric(i)) {
       os << ((!wasMetricWritten) ? pfx : "");
-      os << "<M n=\"" << i << "\" v=\"" << Xmetric(i) << "\"/>";
+      os << "<M n=\"" << i << "\" v=\"" << metric(i) << "\"/>";
       wasMetricWritten = true;
     }
   }
@@ -1593,7 +1593,7 @@ ANode::CSV_DumpSelf(const Root& root, ostream& os) const
 { 
   char temp[32];
   for (uint i = 0; i < numMetrics(); i++) {
-    double val = (hasMetric(i) ? Xmetric(i) : 0);
+    double val = (hasMetric(i) ? metric(i) : 0);
     os << "," << val;
 #if 0
     // FIXME: tallent: Conversioon from static perf-table to MetricDescMgr
@@ -1604,7 +1604,7 @@ ANode::CSV_DumpSelf(const Root& root, ostream& os) const
 #endif
 
     if (percent) {
-      double percVal = val / root.Xmetric(i) * 100;
+      double percVal = val / root.metric(i) * 100;
       sprintf(temp, "%5.2lf", percVal);
       os << "," << temp;
     }
@@ -1780,7 +1780,7 @@ ANode::dump(ostream& os, int oFlags, const char* pre) const
   for (uint i = 0; i < numMetrics(); i++) {
     os << i << " = " ;
     if (hasMetric(i)) {
-      os << Xmetric(i);
+      os << metric(i);
     } 
     else {
       os << "UNDEF";

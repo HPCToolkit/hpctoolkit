@@ -290,10 +290,10 @@ protected:
   ANode(const ANode& x)
   { *this = x; }
   
+  // deep copy of internals (but without children)
   ANode&
   operator=(const ANode& x) 
   {
-    // shallow copy
     if (this != &x) {
       NonUniformDegreeTreeNode::zeroLinks();
       Metric::IData::operator=(x);

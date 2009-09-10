@@ -73,7 +73,10 @@
 #include <include/uint.h>
 
 #include "Struct-Tree.hpp"
+
 #include "MetricDesc.hpp"
+#include "Metric-IData.hpp"
+
 #include "LoadMap.hpp"
 
 #include <lib/isa/ISATypes.hpp>
@@ -160,8 +163,7 @@ public:
   // Given a Tree, merge into 'this'
   // -------------------------------------------------------
   void
-  merge(const Tree* y, const SampledMetricDescVec* new_mdesc, 
-	uint x_newMetricBegIdx, uint y_newMetrics);
+  merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics);
 
   // -------------------------------------------------------
   // Write contents
@@ -215,7 +217,8 @@ class Call;
 // ---------------------------------------------------------
 // ANode: The base node for a call stack profile tree.
 // ---------------------------------------------------------
-class ANode: public NonUniformDegreeTreeNode, public Unique {
+class ANode: public NonUniformDegreeTreeNode, 
+	     public Unique {
 public:
   enum ANodeTy {
     TyRoot = 0,
@@ -377,8 +380,7 @@ public:
   merge_prepare(uint numMetrics);
 
   void 
-  merge(ANode* y, const SampledMetricDescVec* new_mdesc,
-	uint x_numMetrics, uint y_numMetrics);
+  merge(ANode* y, uint x_numMetrics, uint y_numMetrics);
 
   CCT::ADynNode* 
   findDynChild(const ADynNode& y_dyn);
@@ -427,7 +429,7 @@ protected:
 		const char* prefix = "") const;
 
   void
-  merge_fixup(const SampledMetricDescVec* mdesc, int metric_offset);
+  merge_fixup(int newMetrics);
   
 protected:
   ANodeTy m_type; // obsolete with typeid(), but hard to replace
@@ -447,65 +449,63 @@ int ANodeLineComp(ANode* x, ANode* y);
 // ---------------------------------------------------------
 // ANode: represents dynamic nodes
 // ---------------------------------------------------------
-class ADynNode : public ANode {
+class ADynNode : public ANode, public Metric::IData {
 public:
 
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
   
-  ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
-	   uint cpId, const SampledMetricDescVec* metricdesc)
+  ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct, uint cpId)
     : ANode(type, parent, strct),
+      Metric::IData(),
       m_cpId(cpId),
       m_as_info(lush_assoc_info_NULL),
-      m_lmId(LoadMap::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL),
-      m_metricdesc(metricdesc)
+      m_lmId(LoadMap::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL)
     { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
 	   uint32_t cpId, lush_assoc_info_t as_info, 
-	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
-	   const SampledMetricDescVec* metricdesc)
+	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip)
     : ANode(type, parent, strct),
+      Metric::IData(),
       m_cpId(cpId),
       m_as_info(as_info), 
-      m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
-      m_metricdesc(metricdesc)
-    { }
+      m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip)
+  { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
 	   uint32_t cpId, lush_assoc_info_t as_info, 
 	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
-	   const SampledMetricDescVec* metricdesc,
-	   std::vector<hpcrun_metricVal_t>& metrics)
+	   const Metric::IData& metrics)
     : ANode(type, parent, strct),
+      Metric::IData(metrics),
       m_cpId(cpId),
       m_as_info(as_info),
-      m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
-      m_metricdesc(metricdesc), m_metrics(metrics)
-    { }
+      m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip)
+  { }
 
-  virtual ~ADynNode() {
-    delete m_lip;
-  }
+  virtual ~ADynNode() 
+  { delete m_lip; }
    
   // deep copy of internals (but without children)
   ADynNode(const ADynNode& x)
     : ANode(x),
+      Metric::IData(x),
       m_cpId(x.m_cpId),
       m_as_info(x.m_as_info), 
       m_lmId(x.m_lmId),
       m_ip(x.m_ip), m_opIdx(x.m_opIdx), 
-      m_lip(clone_lip(x.m_lip)),
-      m_metricdesc(x.m_metricdesc),
-      m_metrics(x.m_metrics) 
+      m_lip(clone_lip(x.m_lip))
     { }
 
   // deep copy of internals (but without children)
-  ADynNode& operator=(const ADynNode& x) {
+  ADynNode&
+  operator=(const ADynNode& x)
+  {
     if (this != &x) {
       ANode::operator=(x);
+      Metric::IData::operator=(x);
       m_cpId = x.m_cpId;
       m_as_info = x.m_as_info;
       m_lmId = x.m_lmId;
@@ -513,8 +513,6 @@ public:
       m_opIdx = x.m_opIdx;
       delete m_lip;
       m_lip = clone_lip(x.m_lip);
-      m_metricdesc = x.m_metricdesc;
-      m_metrics = x.m_metrics;
     }
     return *this;
   }
@@ -599,7 +597,6 @@ public:
   { return m_opIdx; }
 
 
-
   // -------------------------------------------------------
   // logical ip
   // -------------------------------------------------------
@@ -624,74 +621,9 @@ public:
   }
 
   bool
-  isValid_lip() const 
+  isValid_lip() const
   { return (m_lip && (lush_lip_getLMId(m_lip) != 0)); }
 
-  // -------------------------------------------------------
-  // metrics
-  // -------------------------------------------------------
-
-  const SampledMetricDescVec*
-  metricdesc() const 
-  { return m_metricdesc; }
-  
-  void
-  metricdesc(const SampledMetricDescVec* x) 
-  { m_metricdesc = x; }
-
-
-  hpcrun_metricVal_t
-  metric(int mId) const 
-  { return m_metrics[mId]; }
-  
-  uint
-  numMetrics() const 
-  { return m_metrics.size(); }
-
-  bool 
-  hasMetrics() const 
-  {
-    for (uint i = 0; i < numMetrics(); i++) {
-      hpcrun_metricVal_t m = metric(i);
-      if (!hpcrun_metricVal_isZero(m)) {
-	return true;
-      }
-    }
-    return false;
-  }
-
-  void
-  metricIncr(int mId, hpcrun_metricVal_t incr)
-  { ADynNode::metricIncr((*m_metricdesc)[mId], &m_metrics[mId], incr); }
-  
-  void
-  metricDecr(int mId, hpcrun_metricVal_t decr)
-  { ADynNode::metricDecr((*m_metricdesc)[mId], &m_metrics[mId], decr); }
-
-
-  static inline void
-  metricIncr(const SampledMetricDesc* mdesc, 
-	     hpcrun_metricVal_t* x, hpcrun_metricVal_t incr)
-  {
-    if (hpcrun_metricFlags_isFlag(mdesc->flags(), HPCRUN_MetricFlag_Real)) {
-      x->r += incr.r;
-    }
-    else {
-      x->i += incr.i;
-    }
-  }
-  
-  static inline void
-  metricDecr(const SampledMetricDesc* mdesc, 
-	     hpcrun_metricVal_t* x, hpcrun_metricVal_t decr)
-  {
-    if (hpcrun_metricFlags_isFlag(mdesc->flags(), HPCRUN_MetricFlag_Real)) {
-      x->r -= decr.r;
-    }
-    else {
-      x->i -= decr.i;
-    }
-  }
 
   // -------------------------------------------------------
   // merging
@@ -713,13 +645,12 @@ public:
   mergeMetrics(const ADynNode& y, uint beg_idx = 0);
   
   void
-  appendMetrics(const ADynNode& y);
-
-  void
-  expandMetrics_before(uint offset);
+  expandMetrics_before(uint num)
+  { insertMetricsBefore(num); }  // FIXME: obsolete:
   
   void
-  expandMetrics_after(uint offset);
+  expandMetrics_after(uint num)
+  { ensureMetricsSize(numMetrics() + num); } // FIXME: obsolete:
 
 
   // -------------------------------------------------------
@@ -743,19 +674,6 @@ public:
   writeMetricsXML(std::ostream& os, int oFlags = 0, 
 		  const char* prefix = "") const;
 
-  struct WriteMetricInfo_ {
-    const SampledMetricDesc* mdesc;
-    hpcrun_metricVal_t x;
-  };
-      
-  static inline WriteMetricInfo_
-  writeMetric(const SampledMetricDesc* mdesc, hpcrun_metricVal_t x) 
-  {
-    WriteMetricInfo_ info;
-    info.mdesc = mdesc;
-    info.x = x;
-    return info;
-  }
 
 private:
   uint m_cpId; // dynamic id
@@ -767,26 +685,7 @@ private:
   ushort m_opIdx;          // index in the instruction [OBSOLETE]
 
   lush_lip_t* m_lip; // logical ip
-
-  // FIXME: convert to metric-id a la Metric::Mgr
-  const SampledMetricDescVec* m_metricdesc; // does not own memory
-
-  // FIXME: a vector of doubles, a la Struct::Tree
-  std::vector<hpcrun_metricVal_t> m_metrics;
 };
-
-
-inline std::ostream&
-operator<<(std::ostream& os, const ADynNode::WriteMetricInfo_& info)
-{
-  if (hpcrun_metricFlags_isFlag(info.mdesc->flags(), HPCRUN_MetricFlag_Real)) {
-    os << xml::MakeAttrNum(info.x.r);
-  }
-  else {
-    os << xml::MakeAttrNum(info.x.i);
-  }
-  return os;
-}
 
 
 //***************************************************************************
@@ -962,19 +861,16 @@ private:
 class Stmt: public ADynNode {
  public:
   // Constructor/Destructor
-  Stmt(ANode* parent, uint cpId, const SampledMetricDescVec* metricdesc)
-    : ADynNode(TyStmt, parent, NULL, cpId, metricdesc)
+  Stmt(ANode* parent, uint cpId)
+    : ADynNode(TyStmt, parent, NULL, cpId)
   { }
 
   Stmt(ANode* parent,
-       uint32_t cpId,
-       lush_assoc_info_t as_info,
-       LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, 
-       lush_lip_t* lip,
-       const SampledMetricDescVec* metricdesc,
-       std::vector<hpcrun_metricVal_t>& metrics)
+       uint32_t cpId, lush_assoc_info_t as_info,
+       LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
+       const Metric::IData& metrics)
     : ADynNode(TyStmt, parent, NULL, 
-	       cpId, as_info, lmId, ip, opIdx, lip, metricdesc, metrics)
+	       cpId, as_info, lmId, ip, opIdx, lip, metrics)
   { }
 
   virtual ~Stmt()
@@ -1002,15 +898,12 @@ class Stmt: public ADynNode {
 class Call: public ADynNode {
 public:
   // Constructor/Destructor
-  Call(ANode* parent, uint cpId, const SampledMetricDescVec* metricdesc);
+  Call(ANode* parent, uint cpId);
 
   Call(ANode* parent, 
-       uint32_t cpId,
-       lush_assoc_info_t as_info,
-       LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, 
-       lush_lip_t* lip,
-       const SampledMetricDescVec* metricdesc,
-       std::vector<hpcrun_metricVal_t>& metrics);
+       uint32_t cpId, lush_assoc_info_t as_info,
+       LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
+       const Metric::IData& metrics);
 
   virtual ~Call() 
   { }
