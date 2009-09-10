@@ -88,15 +88,14 @@ am__objects_1 = libHPCsupport_la-CmdLineParser.lo \
 	libHPCsupport_la-RealPathMgr.lo \
 	libHPCsupport_la-findinstall.lo libHPCsupport_la-pathfind.lo \
 	libHPCsupport_la-realpath.lo libHPCsupport_la-Logic.lo \
-	libHPCsupport_la-ProcNameMgr.lo libHPCsupport_la-HashTable.lo \
-	libHPCsupport_la-HashTableSortedIterator.lo \
-	libHPCsupport_la-IteratorStack.lo \
+	libHPCsupport_la-ProcNameMgr.lo \
 	libHPCsupport_la-NonUniformDegreeTree.lo \
-	libHPCsupport_la-PointerStack.lo libHPCsupport_la-PtrSet.lo \
-	libHPCsupport_la-PtrSetIterator.lo \
-	libHPCsupport_la-QuickSort.lo libHPCsupport_la-Set.lo \
+	libHPCsupport_la-IteratorStack.lo \
 	libHPCsupport_la-StackableIterator.lo \
-	libHPCsupport_la-Unique.lo libHPCsupport_la-WordSet.lo
+	libHPCsupport_la-WordSet.lo libHPCsupport_la-HashTable.lo \
+	libHPCsupport_la-HashTableSortedIterator.lo \
+	libHPCsupport_la-PointerStack.lo libHPCsupport_la-QuickSort.lo \
+	libHPCsupport_la-Unique.lo
 am_libHPCsupport_la_OBJECTS = $(am__objects_1)
 libHPCsupport_la_OBJECTS = $(am_libHPCsupport_la_OBJECTS)
 libHPCsupport_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -364,19 +363,17 @@ MYSOURCES = \
 	\
 	ProcNameMgr.hpp ProcNameMgr.cpp \
 	\
+	NonUniformDegreeTree.hpp NonUniformDegreeTree.cpp \
+	IteratorStack.hpp IteratorStack.cpp \
+	StackableIterator.hpp StackableIterator.cpp \
+	\
+	WordSet.hpp WordSet.cpp \
 	HashTable.hpp HashTable.cpp \
 	HashTableSortedIterator.hpp HashTableSortedIterator.cpp \
-	IteratorStack.hpp IteratorStack.cpp \
-	NonUniformDegreeTree.hpp NonUniformDegreeTree.cpp \
+	\
 	PointerStack.hpp PointerStack.cpp \
-	PtrSet.hpp PtrSet.cpp \
-	PtrSetIterator.hpp PtrSetIterator.cpp \
-	PtrStack.hpp \
 	QuickSort.hpp QuickSort.cpp \
-	Set.hpp Set.cpp \
-	StackableIterator.hpp StackableIterator.cpp \
-	Unique.hpp Unique.cpp \
-	WordSet.hpp WordSet.cpp
+	Unique.hpp Unique.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
@@ -468,11 +465,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-NonUniformDegreeTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-PointerStack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-ProcNameMgr.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-PtrSet.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-PtrSetIterator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-QuickSort.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-RealPathMgr.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Set.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-SrcFile.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-StackableIterator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-StrUtil.Plo@am__quote@
@@ -645,6 +639,34 @@ libHPCsupport_la-ProcNameMgr.lo: ProcNameMgr.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-ProcNameMgr.lo `test -f 'ProcNameMgr.cpp' || echo '$(srcdir)/'`ProcNameMgr.cpp
 
+libHPCsupport_la-NonUniformDegreeTree.lo: NonUniformDegreeTree.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-NonUniformDegreeTree.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-NonUniformDegreeTree.Tpo -c -o libHPCsupport_la-NonUniformDegreeTree.lo `test -f 'NonUniformDegreeTree.cpp' || echo '$(srcdir)/'`NonUniformDegreeTree.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-NonUniformDegreeTree.Tpo $(DEPDIR)/libHPCsupport_la-NonUniformDegreeTree.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='NonUniformDegreeTree.cpp' object='libHPCsupport_la-NonUniformDegreeTree.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-NonUniformDegreeTree.lo `test -f 'NonUniformDegreeTree.cpp' || echo '$(srcdir)/'`NonUniformDegreeTree.cpp
+
+libHPCsupport_la-IteratorStack.lo: IteratorStack.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-IteratorStack.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-IteratorStack.Tpo -c -o libHPCsupport_la-IteratorStack.lo `test -f 'IteratorStack.cpp' || echo '$(srcdir)/'`IteratorStack.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-IteratorStack.Tpo $(DEPDIR)/libHPCsupport_la-IteratorStack.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='IteratorStack.cpp' object='libHPCsupport_la-IteratorStack.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-IteratorStack.lo `test -f 'IteratorStack.cpp' || echo '$(srcdir)/'`IteratorStack.cpp
+
+libHPCsupport_la-StackableIterator.lo: StackableIterator.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-StackableIterator.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-StackableIterator.Tpo -c -o libHPCsupport_la-StackableIterator.lo `test -f 'StackableIterator.cpp' || echo '$(srcdir)/'`StackableIterator.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-StackableIterator.Tpo $(DEPDIR)/libHPCsupport_la-StackableIterator.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='StackableIterator.cpp' object='libHPCsupport_la-StackableIterator.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-StackableIterator.lo `test -f 'StackableIterator.cpp' || echo '$(srcdir)/'`StackableIterator.cpp
+
+libHPCsupport_la-WordSet.lo: WordSet.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-WordSet.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-WordSet.Tpo -c -o libHPCsupport_la-WordSet.lo `test -f 'WordSet.cpp' || echo '$(srcdir)/'`WordSet.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-WordSet.Tpo $(DEPDIR)/libHPCsupport_la-WordSet.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='WordSet.cpp' object='libHPCsupport_la-WordSet.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-WordSet.lo `test -f 'WordSet.cpp' || echo '$(srcdir)/'`WordSet.cpp
+
 libHPCsupport_la-HashTable.lo: HashTable.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-HashTable.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-HashTable.Tpo -c -o libHPCsupport_la-HashTable.lo `test -f 'HashTable.cpp' || echo '$(srcdir)/'`HashTable.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-HashTable.Tpo $(DEPDIR)/libHPCsupport_la-HashTable.Plo
@@ -659,40 +681,12 @@ libHPCsupport_la-HashTableSortedIterator.lo: HashTableSortedIterator.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-HashTableSortedIterator.lo `test -f 'HashTableSortedIterator.cpp' || echo '$(srcdir)/'`HashTableSortedIterator.cpp
 
-libHPCsupport_la-IteratorStack.lo: IteratorStack.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-IteratorStack.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-IteratorStack.Tpo -c -o libHPCsupport_la-IteratorStack.lo `test -f 'IteratorStack.cpp' || echo '$(srcdir)/'`IteratorStack.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-IteratorStack.Tpo $(DEPDIR)/libHPCsupport_la-IteratorStack.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='IteratorStack.cpp' object='libHPCsupport_la-IteratorStack.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-IteratorStack.lo `test -f 'IteratorStack.cpp' || echo '$(srcdir)/'`IteratorStack.cpp
-
-libHPCsupport_la-NonUniformDegreeTree.lo: NonUniformDegreeTree.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-NonUniformDegreeTree.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-NonUniformDegreeTree.Tpo -c -o libHPCsupport_la-NonUniformDegreeTree.lo `test -f 'NonUniformDegreeTree.cpp' || echo '$(srcdir)/'`NonUniformDegreeTree.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-NonUniformDegreeTree.Tpo $(DEPDIR)/libHPCsupport_la-NonUniformDegreeTree.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='NonUniformDegreeTree.cpp' object='libHPCsupport_la-NonUniformDegreeTree.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-NonUniformDegreeTree.lo `test -f 'NonUniformDegreeTree.cpp' || echo '$(srcdir)/'`NonUniformDegreeTree.cpp
-
 libHPCsupport_la-PointerStack.lo: PointerStack.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-PointerStack.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-PointerStack.Tpo -c -o libHPCsupport_la-PointerStack.lo `test -f 'PointerStack.cpp' || echo '$(srcdir)/'`PointerStack.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-PointerStack.Tpo $(DEPDIR)/libHPCsupport_la-PointerStack.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PointerStack.cpp' object='libHPCsupport_la-PointerStack.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-PointerStack.lo `test -f 'PointerStack.cpp' || echo '$(srcdir)/'`PointerStack.cpp
-
-libHPCsupport_la-PtrSet.lo: PtrSet.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-PtrSet.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-PtrSet.Tpo -c -o libHPCsupport_la-PtrSet.lo `test -f 'PtrSet.cpp' || echo '$(srcdir)/'`PtrSet.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-PtrSet.Tpo $(DEPDIR)/libHPCsupport_la-PtrSet.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PtrSet.cpp' object='libHPCsupport_la-PtrSet.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-PtrSet.lo `test -f 'PtrSet.cpp' || echo '$(srcdir)/'`PtrSet.cpp
-
-libHPCsupport_la-PtrSetIterator.lo: PtrSetIterator.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-PtrSetIterator.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-PtrSetIterator.Tpo -c -o libHPCsupport_la-PtrSetIterator.lo `test -f 'PtrSetIterator.cpp' || echo '$(srcdir)/'`PtrSetIterator.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-PtrSetIterator.Tpo $(DEPDIR)/libHPCsupport_la-PtrSetIterator.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PtrSetIterator.cpp' object='libHPCsupport_la-PtrSetIterator.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-PtrSetIterator.lo `test -f 'PtrSetIterator.cpp' || echo '$(srcdir)/'`PtrSetIterator.cpp
 
 libHPCsupport_la-QuickSort.lo: QuickSort.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-QuickSort.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-QuickSort.Tpo -c -o libHPCsupport_la-QuickSort.lo `test -f 'QuickSort.cpp' || echo '$(srcdir)/'`QuickSort.cpp
@@ -701,33 +695,12 @@ libHPCsupport_la-QuickSort.lo: QuickSort.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-QuickSort.lo `test -f 'QuickSort.cpp' || echo '$(srcdir)/'`QuickSort.cpp
 
-libHPCsupport_la-Set.lo: Set.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-Set.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-Set.Tpo -c -o libHPCsupport_la-Set.lo `test -f 'Set.cpp' || echo '$(srcdir)/'`Set.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-Set.Tpo $(DEPDIR)/libHPCsupport_la-Set.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Set.cpp' object='libHPCsupport_la-Set.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-Set.lo `test -f 'Set.cpp' || echo '$(srcdir)/'`Set.cpp
-
-libHPCsupport_la-StackableIterator.lo: StackableIterator.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-StackableIterator.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-StackableIterator.Tpo -c -o libHPCsupport_la-StackableIterator.lo `test -f 'StackableIterator.cpp' || echo '$(srcdir)/'`StackableIterator.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-StackableIterator.Tpo $(DEPDIR)/libHPCsupport_la-StackableIterator.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='StackableIterator.cpp' object='libHPCsupport_la-StackableIterator.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-StackableIterator.lo `test -f 'StackableIterator.cpp' || echo '$(srcdir)/'`StackableIterator.cpp
-
 libHPCsupport_la-Unique.lo: Unique.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-Unique.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-Unique.Tpo -c -o libHPCsupport_la-Unique.lo `test -f 'Unique.cpp' || echo '$(srcdir)/'`Unique.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-Unique.Tpo $(DEPDIR)/libHPCsupport_la-Unique.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Unique.cpp' object='libHPCsupport_la-Unique.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-Unique.lo `test -f 'Unique.cpp' || echo '$(srcdir)/'`Unique.cpp
-
-libHPCsupport_la-WordSet.lo: WordSet.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-WordSet.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-WordSet.Tpo -c -o libHPCsupport_la-WordSet.lo `test -f 'WordSet.cpp' || echo '$(srcdir)/'`WordSet.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-WordSet.Tpo $(DEPDIR)/libHPCsupport_la-WordSet.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='WordSet.cpp' object='libHPCsupport_la-WordSet.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-WordSet.lo `test -f 'WordSet.cpp' || echo '$(srcdir)/'`WordSet.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo
