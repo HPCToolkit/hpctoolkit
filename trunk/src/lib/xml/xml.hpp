@@ -149,6 +149,37 @@ namespace xml {
   // -------------------------------------------------------  
   // Writes attribute value, beginning with 'attB' and ending with 'attE'
   // -------------------------------------------------------  
+
+  // FIXME: replace the WriteAttr* with this; replace instances of
+  // MakeAttr that go to ostreams with Write.
+#if 0
+  struct WriteMetricInfo_ {
+    const SampledMetricDesc* mdesc;
+    hpcrun_metricVal_t x;
+  };
+  
+  static inline WriteMetricInfo_
+  writeMetric(const SampledMetricDesc* mdesc, hpcrun_metricVal_t x) 
+  {
+    WriteMetricInfo_ info;
+    info.mdesc = mdesc;
+    info.x = x;
+    return info;
+  }
+
+  inline std::ostream&
+  operator<<(std::ostream& os, const ADynNode::WriteMetricInfo_& info)
+  {
+    if (hpcrun_metricFlags_isFlag(info.mdesc->flags(), HPCRUN_MetricFlag_Real)) {
+      os << xml::MakeAttrNum(info.x.r);
+    }
+    else {
+      os << xml::MakeAttrNum(info.x.i);
+    }
+    return os;
+  }
+#endif
+
   bool 
   WriteAttrStr(std::ostream& os, const char* s, int flags = ESC_TRUE);
 
@@ -204,7 +235,7 @@ namespace xml {
   }
 
   inline std::string 
-  MakeAttrNum(double x, const char* format = "%.15f") {
+  MakeAttrNum(double x, const char* format = "%g" /*"%.15f"*/) {
     return (attB + StrUtil::toStr(x, format) + attE);
   }
 

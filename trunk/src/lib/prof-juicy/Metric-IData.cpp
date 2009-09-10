@@ -85,25 +85,25 @@ namespace Metric {
 //***************************************************************************
 
 std::string
-IData::toString(int oFlags, const char* pre) const
+IData::metricsToString(int oFlags, const char* pre) const
 {
   std::ostringstream os;
-  dump(os, oFlags, pre);
+  metricsDump(os, oFlags, pre);
   return os.str();
 }
 
 
 std::ostream&
-IData::dump(std::ostream& os, int oFlags, const char* pre) const
+IData::metricsDump(std::ostream& os, int oFlags, const char* pre) const
 {
   return os;
 }
 
 
 void
-IData::ddump() const
+IData::metricsDDump() const
 {
-  dump();
+  metricsDump();
 }
 
 //***************************************************************************

@@ -160,21 +160,35 @@ public:
   { return (m_metrics && mId < m_metrics->size() && hasMetric(mId)); }
 
 
-  double
-  Xmetric(size_t mId) const
+  const double
+  metric(size_t mId) const
   { return (*m_metrics)[mId]; }
 
-  double
+  double&
+  metric(size_t mId)
+  { return (*m_metrics)[mId]; }
+
+
+  const double
   demandMetric(size_t mId, size_t size = 0) const
   {
     size_t sz = std::max(size, mId+1);
     ensureMetricsSize(sz);
-    return Xmetric(mId);
+    return metric(mId);
+  }
+
+  double&
+  demandMetric(size_t mId, size_t size = 0)
+  {
+    size_t sz = std::max(size, mId+1);
+    ensureMetricsSize(sz);
+    return metric(mId);
   }
 
 
+  // FIXME: delete
   void
-  XmetricIncr(size_t mId, double incr)
+  metricIncr(size_t mId, double incr)
   { (*m_metrics)[mId] += incr; }
 
   void
@@ -182,17 +196,21 @@ public:
   {
     size_t sz = std::max(size, mId+1);
     ensureMetricsSize(sz);
-    XmetricIncr(mId, incr);
+    metricIncr(mId, incr);
   }
 
-#if 0  
-  insertBefore() 
+  // FIXME: delete
+  void
+  metricDecr(size_t mId, double decr)
+  { (*m_metrics)[mId] -= decr; }
+
+  void
+  demandMetricDecr(size_t mId, double decr, size_t size = 0)
   {
-    // FIXME
-    if (!m_metrics) {...;}
-    ...;
+    size_t sz = std::max(size, mId+1);
+    ensureMetricsSize(sz);
+    metricDecr(mId, decr);
   }
-#endif
 
   // ensureMetricsSize: ensures a vector of the requested size exists
   void
@@ -203,6 +221,14 @@ public:
     }
     else if (size > m_metrics->size()) {
       m_metrics->resize(size, 0.0 /*value*/); // inserts at end
+    }
+  }
+
+  void
+  insertMetricsBefore(size_t numMetrics) 
+  {
+    for (uint i = 0; i < numMetrics; ++i) {
+      m_metrics->insert(m_metrics->begin(), 0.0);
     }
   }
   
@@ -216,15 +242,15 @@ public:
   // --------------------------------------------------------
   
   std::string
-  toString(int oFlags = 0, const char* pre = "") const;
+  metricsToString(int oFlags = 0, const char* pre = "") const;
   
   std::ostream& 
-  dump(std::ostream& os = std::cerr, int oFlags = 0,
-       const char* pre = "") const;
+  metricsDump(std::ostream& os = std::cerr, int oFlags = 0,
+	      const char* pre = "") const;
 
   void
-  ddump() const;
-
+  metricsDDump() const;
+  
 private:
   mutable MetricVec* m_metrics; // 'mutable' for ensureMetricsSize()
 };
