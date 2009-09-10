@@ -50,8 +50,6 @@
 
 //*************************** User Include Files ****************************
 
-#include "VectorTmpl.hpp"
-
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
@@ -104,32 +102,6 @@ namespace SrcFile {
 
 } // namespace SrcFile
 
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-namespace SrcFile {
-
-
-class SrcFile {
-public: 
-  SrcFile(const char* fName); 
-  
-  bool Known() const { return known; }; 
-  
-  bool GetLine(unsigned int i, 
-		  char* lineBuf, unsigned int bufSize) const; 
-                 // returns true upon success
-		 
-  void dump(std::ostream &out = std::cerr) const; 
-private: 
-  VectorTmpl<std::string> line; 
-  bool known; 
-  std::string fName; 
-}; 
-
-} // namespace SrcFile
 
 
 #endif /* support_SrcFile_hpp */

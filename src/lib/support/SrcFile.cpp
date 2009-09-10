@@ -43,12 +43,7 @@
 
 //************************* System Include Files ****************************
 
-#include <cstdio> // for 'fopen'
-#include <cstring>
-
 #include <iostream>
-using std::ostream;
-using std::endl;
 
 //*************************** User Include Files ****************************
 
@@ -56,64 +51,6 @@ using std::endl;
 
 //*************************** Forward Declarations **************************
 
-#define MAXLINESIZE 2048
 
 //***************************************************************************
 
-namespace SrcFile {
-
-
-SrcFile::SrcFile(const char* fN) 
-  : fName((fN) ? fN : "")
-{
-   FILE *srcFile = fopen(fN, "r");
-   known = (srcFile != NULL); 
-   if (known) {
-     char lineBuf[MAXLINESIZE];
-     unsigned int ln = 1; 
-     while (fgets(lineBuf, MAXLINESIZE, srcFile) != NULL) {
-       int llen = strlen(lineBuf); 
-       if (lineBuf[llen-1] == '\n') {
-	 lineBuf[llen-1] = '\0'; 
-       } 
-       line[ln++] = lineBuf; 
-     }
-   } 
-}
-
-
-bool 
-SrcFile::GetLine(unsigned int i, 
-		 char* lineBuf, unsigned int bufSize) const 
-{
-  bool ok = false; 
-  if (known && (i < line.GetNumElements())) {
-    std::string& linei = ((SrcFile*) this)->line[i];
-    unsigned int len = linei.length();
-    if (bufSize > len) { 
-      strncpy(lineBuf, linei.c_str(), len);
-      lineBuf[len] = '\0';
-      ok = true; 
-    }
-  } 
-  return ok; 
-} 
-
-
-void 
-SrcFile::dump(ostream &out) const 
-{
-  out << "-----------------------------------" << endl; 
-  out << "SrcFile:: fName=" << fName << " known=" 
-      << ((known) ? "true" : "false") << " START" << endl; 
-  if (known) { 
-    for (unsigned int i = 1; i < line.GetNumElements(); i++) {
-      out << ((SrcFile*) this)->line[i] << endl; 
-    }
-  }
-  out << "SrcFile:: fName=" << fName << " END" << endl; 
-  out << "-----------------------------------" << endl << endl; 
-} 
-
-
-} // namespace SrcFile
