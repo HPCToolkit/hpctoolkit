@@ -91,19 +91,17 @@ MYSOURCES = \
 	\
 	ProcNameMgr.hpp ProcNameMgr.cpp \
 	\
+	NonUniformDegreeTree.hpp NonUniformDegreeTree.cpp \
+	IteratorStack.hpp IteratorStack.cpp \
+	StackableIterator.hpp StackableIterator.cpp \
+	\
+	WordSet.hpp WordSet.cpp \
 	HashTable.hpp HashTable.cpp \
 	HashTableSortedIterator.hpp HashTableSortedIterator.cpp \
-	IteratorStack.hpp IteratorStack.cpp \
-	NonUniformDegreeTree.hpp NonUniformDegreeTree.cpp \
+	\
 	PointerStack.hpp PointerStack.cpp \
-	PtrSet.hpp PtrSet.cpp \
-	PtrSetIterator.hpp PtrSetIterator.cpp \
-	PtrStack.hpp \
 	QuickSort.hpp QuickSort.cpp \
-	Set.hpp Set.cpp \
-	StackableIterator.hpp StackableIterator.cpp \
-	Unique.hpp Unique.cpp \
-	WordSet.hpp WordSet.cpp
+	Unique.hpp Unique.cpp
 
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 

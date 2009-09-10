@@ -69,7 +69,7 @@
 //#include "CCT-Tree.hpp"
 
 #include <lib/support/NonUniformDegreeTree.hpp>
-#include <lib/support/PtrSetIterator.hpp>
+#include <lib/support/WordSet.hpp>
 
 //*************************** Forward Declarations **************************
 
