@@ -150,8 +150,8 @@ OverheadMetricFact::make(Prof::CCT::ANode* node,
       uint dst_idx = m_dst[i];
       double mval = stmt->metric(src_idx);
       
-      stmt->metricDecr(src_idx, mval);
-      stmt->metricIncr(dst_idx, mval);
+      stmt->metric(src_idx) -= mval;
+      stmt->metric(dst_idx) += mval;
     }
   }
 

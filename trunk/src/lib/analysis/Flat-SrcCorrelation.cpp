@@ -802,7 +802,7 @@ Driver::correlateRaw(PerfMetric* metric,
     Prof::Struct::ANode* strct = 
       Util::demandStructure(vma_ur, lmStrct, lm, useStruct);
 
-    strct->demandMetricIncr(metric->Index(), events, numMetrics/*size*/);
+    strct->demandMetric(metric->Index(), numMetrics/*size*/) += events;
     DIAG_DevMsg(6, "Metric associate: " 
 		<< metric->Name() << ":0x" << hex << vma_ur << dec 
 		<< " --> +" << events << "=" 
@@ -925,7 +925,7 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
       const Prof::Metric::AExpr* expr = mExprVec[mId];
       double val = expr->eval(it.CurNode());
       // if (!Prof::Metric::AExpr::isok(val)) ...
-      it.CurNode()->demandMetricIncr(mId, val, numMetrics/*size*/);
+      it.CurNode()->demandMetric(mId, numMetrics/*size*/) += val;
     }
   }
 }

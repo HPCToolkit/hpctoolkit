@@ -259,13 +259,13 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
       Struct::ACodeNode* strct = 
 	Analysis::Util::demandStructure(ip_ur, lmStrct, lm, useStruct);
       n->structure(strct);
-      strct->demandMetricIncr(CallPath::Profile::StructMetricIdFlg, 1.0);
+      strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
       // 2. Demand a procedure frame for 'n_dyn' and its scope within it
       Struct::ANode* scope_strct = strct->ancestor(Struct::ANode::TyLoop,
 						   Struct::ANode::TyAlien,
 						   Struct::ANode::TyProc);
-      scope_strct->demandMetricIncr(CallPath::Profile::StructMetricIdFlg, 1.0);
+      scope_strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
       Prof::CCT::ANode* scope_frame = 
 	demandScopeInFrame(n_dyn, scope_strct, strctToCCTMap);
@@ -536,7 +536,7 @@ pruneByMetrics(Prof::CCT::ANode* node)
       // We are keeping the node -- set the static structure flag
       Struct::ACodeNode* strct = x->structure();
       if (strct) {
-	strct->demandMetricIncr(CallPath::Profile::StructMetricIdFlg, 1.0);
+	strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
       }
     }
   }

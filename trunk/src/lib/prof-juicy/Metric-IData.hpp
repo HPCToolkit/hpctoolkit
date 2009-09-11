@@ -186,31 +186,9 @@ public:
   }
 
 
-  // FIXME: delete
-  void
-  metricIncr(size_t mId, double incr)
-  { (*m_metrics)[mId] += incr; }
-
-  void
-  demandMetricIncr(size_t mId, double incr, size_t size = 0)
-  {
-    size_t sz = std::max(size, mId+1);
-    ensureMetricsSize(sz);
-    metricIncr(mId, incr);
-  }
-
-  // FIXME: delete
-  void
-  metricDecr(size_t mId, double decr)
-  { (*m_metrics)[mId] -= decr; }
-
-  void
-  demandMetricDecr(size_t mId, double decr, size_t size = 0)
-  {
-    size_t sz = std::max(size, mId+1);
-    ensureMetricsSize(sz);
-    metricDecr(mId, decr);
-  }
+  // --------------------------------------------------------
+  // 
+  // --------------------------------------------------------
 
   // ensureMetricsSize: ensures a vector of the requested size exists
   void
