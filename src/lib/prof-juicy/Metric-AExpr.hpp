@@ -48,7 +48,7 @@
 // Currently supported expressions are
 //   Const  : double constant                      : leaf
 //   Var    : variable with a String name          : leaf
-//   Neg    : minus times a node                   : unary
+//   Neg    : negation                             : unary
 //   Power  : power expressed in base and exponent : binary
 //   Divide : division expression                  : binary
 //   Minus  : subtraction expression               : binary
@@ -73,7 +73,7 @@
 
 //************************* User Include Files *******************************
 
-#include "Struct-Tree.hpp"
+#include "Metric-IData.hpp"
 
 #include <lib/support/NaN.h>
 
@@ -87,11 +87,15 @@ namespace Metric {
 
 // ----------------------------------------------------------------------
 // class AExpr
-//   The base class for all concrete evaluation tree node classes
+//   The base class for all concrete evaluation classes
 // ----------------------------------------------------------------------
 
 class AExpr
 {
+  // TODO: replace AExpr** with AExprVec
+public:
+  typedef std::vector<AExpr*> AExprVec;
+
 public:
   AExpr()
   { }
@@ -99,32 +103,35 @@ public:
   virtual ~AExpr() 
   { }
 
-  virtual double eval(const Struct::ANode* node) const = 0;
+  virtual double 
+  eval(const Metric::IData& mdata) const = 0;
 
-  static bool isok(double x) {
-    return !(c_isnan_d(x) || c_isinf_d(x));
-  }
+  static bool 
+  isok(double x) 
+  { return !(c_isnan_d(x) || c_isinf_d(x)); }
 
-  virtual std::ostream& dump(std::ostream& os = std::cout) const = 0;
+  virtual std::ostream& 
+  dump(std::ostream& os = std::cout) const = 0;
   
-  virtual std::string toString() const;
+  virtual std::string 
+  toString() const;
 
 protected:
   static double
-  eval_sum(const Struct::ANode* node, AExpr** opands, int sz) 
+  evalSum(const Metric::IData& mdata, AExpr** opands, int sz) 
   {
     double result = 0.0;
     for (int i = 0; i < sz; ++i) {
-      double x = opands[i]->eval(node);
+      double x = opands[i]->eval(mdata);
       result += x;
     }
     return result;
   }
 
   static double
-  eval_mean(const Struct::ANode* node, AExpr** opands, int sz) 
+  evalMean(const Metric::IData& mdata, AExpr** opands, int sz) 
   {
-    double sum = eval_sum(node, opands, sz);
+    double sum = evalSum(mdata, opands, sz);
     double result = sum / (double) sz;
     return result;
   }
@@ -132,13 +139,13 @@ protected:
   
   // returns <variance, mean>
   static std::pair<double, double>
-  eval_variance(const Struct::ANode* node, AExpr** opands, int sz) 
+  evalVariance(const Metric::IData& mdata, AExpr** opands, int sz) 
   {
     double* x = new double[sz];
     
     double x_mean = 0.0; // mean
     for (int i = 0; i < sz; ++i) {
-      double t = opands[i]->eval(node);
+      double t = opands[i]->eval(mdata);
       x[i] = t;
       x_mean += t;
     }
@@ -156,8 +163,8 @@ protected:
     return std::make_pair(x_var, x_mean);
   }
 
-  static void dump_opands(std::ostream& os, AExpr** opands, int sz,
-			  const char* sep = ", ");
+  static void 
+  dump_opands(std::ostream& os, AExpr** opands, int sz, const char* sep = ", ");
   
 };
 
@@ -177,12 +184,12 @@ public:
   ~Const() 
   { }
 
-  double eval(const Struct::ANode* node) const
-  {
-    return m_c;
-  }
+  double 
+  eval(const Metric::IData& mdata) const
+  { return m_c; }
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  std::ostream& 
+  dump(std::ostream& os = std::cout) const;
   
 private:
   double m_c;
@@ -199,18 +206,16 @@ class Neg : public AExpr
 public:
   // Assumes ownership of AExpr
   Neg(AExpr* expr)
-  { 
-    m_expr = expr; 
-  }
+  { m_expr = expr; }
 
   ~Neg()
-  { 
-    delete m_expr; 
-  }
+  { delete m_expr; }
 
-  double eval(const Struct::ANode* node) const;
+  double 
+  eval(const Metric::IData& mdata) const;
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  std::ostream& 
+  dump(std::ostream& os = std::cout) const;
   
 private:
   AExpr* m_expr;
@@ -226,25 +231,23 @@ private:
 class Var : public AExpr
 {
 public:
-  Var(std::string n, int i)
-    : name(n), index(i) 
-  { 
-  }
+  Var(std::string name, int metricId)
+    : m_name(name), m_metricId(metricId) 
+  { }
   
   ~Var()
-  { 
-  }
+  { }
 
-  double eval(const Struct::ANode* node) const
-  {
-    return node->demandMetric(index);
-  }
+  double 
+  eval(const Metric::IData& mdata) const
+  { return mdata.demandMetric(m_metricId); }
   
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  std::ostream& 
+  dump(std::ostream& os = std::cout) const;
   
 private:
-  std::string name;
-  int index;
+  std::string m_name;
+  int m_metricId;
 };
 
 
@@ -257,14 +260,25 @@ class Power : public AExpr
 {
 public:
   // Assumes ownership of AExpr
-  Power(AExpr* b, AExpr* e);
-  ~Power();
-  double eval(const Struct::ANode* node) const;
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  Power(AExpr* base, AExpr* exponent)
+    : m_base(base), m_exponent(exponent) 
+  { }
+
+  ~Power()
+  { 
+    delete m_base; 
+    delete m_exponent; 
+  }
+
+  double
+  eval(const Metric::IData& mdata) const;
+
+  std::ostream&
+  dump(std::ostream& os = std::cout) const;
 
 private:
-  AExpr* base;
-  AExpr* exponent;
+  AExpr* m_base;
+  AExpr* m_exponent;
 };
 
 
@@ -277,16 +291,26 @@ class Divide : public AExpr
 {
 public:
   // Assumes ownership of AExpr
-  Divide(AExpr* num, AExpr* denom);
-  ~Divide();
+  Divide(AExpr* numerator, AExpr* denominator)
+    : m_numerator(numerator), m_denominator(denominator) 
+  { }
 
-  double eval(const Struct::ANode* node) const;
+  ~Divide()
+  { 
+    delete m_numerator; 
+    delete m_denominator; 
+  }
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+
+  double
+  eval(const Metric::IData& mdata) const;
+
+  std::ostream&
+  dump(std::ostream& os = std::cout) const;
 
 private:
-  AExpr* numerator;
-  AExpr* denominator;
+  AExpr* m_numerator;
+  AExpr* m_denominator;
 };
 
 
@@ -299,16 +323,25 @@ class Minus : public AExpr
 {
 public:
   // Assumes ownership of AExpr
-  Minus(AExpr* m, AExpr* s);
-  ~Minus();
+  Minus(AExpr* minuend, AExpr* subtrahend)
+    : m_minuend(minuend), m_subtrahend(subtrahend) 
+  { }
 
-  double eval(const Struct::ANode* node) const;
+  ~Minus()
+  {
+    delete m_minuend;
+    delete m_subtrahend;
+  }
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  double 
+  eval(const Metric::IData& mdata) const;
+
+  std::ostream& 
+  dump(std::ostream& os = std::cout) const;
 
 private:
-  AExpr* minuend;
-  AExpr* subtrahend;
+  AExpr* m_minuend;
+  AExpr* m_subtrahend;
 };
 
 
@@ -321,12 +354,17 @@ class Plus : public AExpr
 {
 public:
   // Assumes ownership of AExpr
-  Plus(AExpr** oprnds, int numOprnds);
+  Plus(AExpr** oprnds, int numOprnds)
+    : m_opands(oprnds), m_sz(numOprnds) 
+  { }
+
   ~Plus();
   
-  double eval(const Struct::ANode* node) const;
+  double 
+  eval(const Metric::IData& mdata) const;
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  std::ostream& 
+  dump(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -343,12 +381,17 @@ class Times : public AExpr
 {
 public:
   // Assumes ownership of AExpr
-  Times(AExpr** oprnds, int numOprnds);
+  Times(AExpr** oprnds, int numOprnds)
+    : m_opands(oprnds), m_sz(numOprnds) 
+  { }
+
   ~Times();
 
-  double eval(const Struct::ANode* node) const;
+  double 
+  eval(const Metric::IData& mdata) const;
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  std::ostream& 
+  dump(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -364,12 +407,17 @@ class Max : public AExpr
 {
 public:
   // Assumes ownership of AExpr
-  Max(AExpr** oprnds, int numOprnds);
+  Max(AExpr** oprnds, int numOprnds)
+    : m_opands(oprnds), m_sz(numOprnds) 
+  { }
+
   ~Max();
 
-  double eval(const Struct::ANode* node) const;
+  double 
+  eval(const Metric::IData& mdata) const;
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  std::ostream& 
+  dump(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -385,12 +433,17 @@ class Min : public AExpr
 {
 public:
   // Assumes ownership of AExpr
-  Min(AExpr** oprnds, int numOprnds);
+  Min(AExpr** oprnds, int numOprnds)
+    : m_opands(oprnds), m_sz(numOprnds) 
+  { }
+
   ~Min();
 
-  double eval(const Struct::ANode* node) const;
+  double
+  eval(const Metric::IData& mdata) const;
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  std::ostream&
+  dump(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -406,12 +459,17 @@ class Mean : public AExpr
 {
 public:
   // Assumes ownership of AExpr
-  Mean(AExpr** oprnds, int numOprnds);
+  Mean(AExpr** oprnds, int numOprnds)
+    : m_opands(oprnds), m_sz(numOprnds) 
+  { }
+
   ~Mean();
 
-  double eval(const Struct::ANode* node) const;
+  double
+  eval(const Metric::IData& mdata) const;
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  std::ostream&
+  dump(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -427,12 +485,17 @@ class StdDev : public AExpr
 {
 public:
   // Assumes ownership of AExpr
-  StdDev(AExpr** oprnds, int numOprnds);
+  StdDev(AExpr** oprnds, int numOprnds)
+    : m_opands(oprnds), m_sz(numOprnds) 
+  { }
+
   ~StdDev();
 
-  double eval(const Struct::ANode* node) const;
+  double
+  eval(const Metric::IData& mdata) const;
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  std::ostream&
+  dump(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -448,12 +511,17 @@ class CoefVar : public AExpr
 {
 public:
   // Assumes ownership of AExpr
-  CoefVar(AExpr** oprnds, int numOprnds);
+  CoefVar(AExpr** oprnds, int numOprnds)
+    : m_opands(oprnds), m_sz(numOprnds) 
+  { }
+
   ~CoefVar();
 
-  double eval(const Struct::ANode* node) const;
+  double
+  eval(const Metric::IData& mdata) const;
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  std::ostream&
+  dump(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -469,12 +537,17 @@ class RStdDev : public AExpr
 {
 public:
   // Assumes ownership of AExpr
-  RStdDev(AExpr** oprnds, int numOprnds);
+  RStdDev(AExpr** oprnds, int numOprnds)
+    : m_opands(oprnds), m_sz(numOprnds) 
+  { }
+
   ~RStdDev();
 
-  double eval(const Struct::ANode* node) const;
+  double
+  eval(const Metric::IData& mdata) const;
 
-  std::ostream& dump(std::ostream& os = std::cout) const;
+  std::ostream&
+  dump(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;

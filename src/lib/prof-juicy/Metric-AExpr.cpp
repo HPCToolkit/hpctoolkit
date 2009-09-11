@@ -43,7 +43,7 @@
 
 // ----------------------------------------------------------------------
 //
-//   the implementation of evaluation tree nodes
+//   the implementation of evaluation expressions
 //
 // ----------------------------------------------------------------------
 
@@ -127,9 +127,9 @@ Const::dump(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 double 
-Neg::eval(const Struct::ANode* node) const
+Neg::eval(const Metric::IData& mdata) const
 {
-  double result = m_expr->eval(node);
+  double result = m_expr->eval(mdata);
 
   //IFTRACE << "neg=" << -result << endl; 
   AEXPR_CHECK(result);
@@ -140,7 +140,9 @@ Neg::eval(const Struct::ANode* node) const
 std::ostream& 
 Neg::dump(std::ostream& os) const
 { 
-  os << "(-"; m_expr->dump(os); os << ")"; 
+  os << "(-";
+  m_expr->dump(os);
+  os << ")"; 
   return os;
 }
 
@@ -152,7 +154,7 @@ Neg::dump(std::ostream& os) const
 std::ostream& 
 Var::dump(std::ostream& os) const
 { 
-  os << name; 
+  os << m_name; 
   return os;
 }
 
@@ -161,24 +163,11 @@ Var::dump(std::ostream& os) const
 // class Power
 // ----------------------------------------------------------------------
 
-Power::Power(AExpr* b, AExpr* e) 
-  : base(b), exponent(e) 
-{ 
-}
-
-
-Power::~Power() 
-{ 
-  delete base; 
-  delete exponent; 
-}
-
-
 double 
-Power::eval(const Struct::ANode* node) const
+Power::eval(const Metric::IData& mdata) const
 {
-  double b = base->eval(node);
-  double e = exponent->eval(node);
+  double b = m_base->eval(mdata);
+  double e = m_exponent->eval(mdata);
   double result = pow(b, e);
   
   //IFTRACE << "pow=" << pow(b, e) << endl; 
@@ -190,7 +179,11 @@ Power::eval(const Struct::ANode* node) const
 std::ostream& 
 Power::dump(std::ostream& os) const
 {
-  os << "("; base->dump(os); os << "**"; exponent->dump(os); os << ")";
+  os << "(";
+  m_base->dump(os);
+  os << "**";
+  m_exponent->dump(os);
+  os << ")";
   return os;
 }
 
@@ -199,24 +192,11 @@ Power::dump(std::ostream& os) const
 // class Divide
 // ----------------------------------------------------------------------
 
-Divide::Divide(AExpr* num, AExpr* denom)
-  : numerator(num), denominator(denom) 
-{ 
-}
-
-
-Divide::~Divide() 
-{ 
-  delete numerator; 
-  delete denominator; 
-}
-
-
 double 
-Divide::eval(const Struct::ANode* node) const
+Divide::eval(const Metric::IData& mdata) const
 {
-  double n = numerator->eval(node);
-  double d = denominator->eval(node);
+  double n = m_numerator->eval(mdata);
+  double d = m_denominator->eval(mdata);
   double result = n / d;
 
   //IFTRACE << "divident=" << n/d << endl; 
@@ -229,9 +209,9 @@ std::ostream&
 Divide::dump(std::ostream& os) const
 {
   os << "("; 
-  numerator->dump(os); 
+  m_numerator->dump(os); 
   os << " / "; 
-  denominator->dump(os); 
+  m_denominator->dump(os); 
   os << ")";
   return os;
 }
@@ -241,25 +221,11 @@ Divide::dump(std::ostream& os) const
 // class Minus
 // ----------------------------------------------------------------------
 
-Minus::Minus(AExpr* m, AExpr* s) 
-  : minuend(m), subtrahend(s) 
-{ 
-  // if (minuend == NULL || subtrahend == NULL) { ... }
-}
-
-
-Minus::~Minus() 
-{ 
-  delete minuend; 
-  delete subtrahend; 
-}
-
-
 double 
-Minus::eval(const Struct::ANode* node) const
+Minus::eval(const Metric::IData& mdata) const
 {
-  double m = minuend->eval(node);
-  double s = subtrahend->eval(node);
+  double m = m_minuend->eval(mdata);
+  double s = m_subtrahend->eval(mdata);
   double result = (m - s);
   
   //IFTRACE << "diff=" << m-s << endl; 
@@ -271,7 +237,10 @@ Minus::eval(const Struct::ANode* node) const
 std::ostream& 
 Minus::dump(std::ostream& os) const
 {
-  os << "("; minuend->dump(os); os << " - "; subtrahend->dump(os); os << ")";
+  os << "(";
+  m_minuend->dump(os);
+  os << " - ";
+  m_subtrahend->dump(os); os << ")";
   return os;
 }
 
@@ -279,12 +248,6 @@ Minus::dump(std::ostream& os) const
 // ----------------------------------------------------------------------
 // class Plus
 // ----------------------------------------------------------------------
-
-Plus::Plus(AExpr** oprnds, int numOprnds)
-  : m_opands(oprnds), m_sz(numOprnds) 
-{ 
-}
-
 
 Plus::~Plus() 
 {
@@ -296,9 +259,9 @@ Plus::~Plus()
 
 
 double 
-Plus::eval(const Struct::ANode* node) const
+Plus::eval(const Metric::IData& mdata) const
 {
-  double result = eval_sum(node, m_opands, m_sz);
+  double result = evalSum(mdata, m_opands, m_sz);
 
   //IFTRACE << "sum=" << result << endl; 
   AEXPR_CHECK(result);
@@ -320,12 +283,6 @@ Plus::dump(std::ostream& os) const
 // class Times
 // ----------------------------------------------------------------------
 
-Times::Times(AExpr** oprnds, int numOprnds) 
-  : m_opands(oprnds), m_sz(numOprnds) 
-{ 
-}
-
-
 Times::~Times() 
 {
   for (int i = 0; i < m_sz; ++i) {
@@ -336,11 +293,11 @@ Times::~Times()
 
 
 double 
-Times::eval(const Struct::ANode* node) const
+Times::eval(const Metric::IData& mdata) const
 {
   double result = 1.0;
   for (int i = 0; i < m_sz; ++i) {
-    double x = m_opands[i]->eval(node);
+    double x = m_opands[i]->eval(mdata);
     result *= x;
   }
   //IFTRACE << "result=" << result << endl; 
@@ -363,12 +320,6 @@ Times::dump(std::ostream& os) const
 // class Max
 // ----------------------------------------------------------------------
 
-Max::Max(AExpr** oprnds, int numOprnds) 
-  : m_opands(oprnds), m_sz(numOprnds) 
-{ 
-}
-
-
 Max::~Max() 
 {
   for (int i = 0; i < m_sz; ++i) {
@@ -379,11 +330,11 @@ Max::~Max()
 
 
 double 
-Max::eval(const Struct::ANode* node) const
+Max::eval(const Metric::IData& mdata) const
 {
-  double result = m_opands[0]->eval(node);
+  double result = m_opands[0]->eval(mdata);
   for (int i = 1; i < m_sz; ++i) {
-    double x = m_opands[i]->eval(node);
+    double x = m_opands[i]->eval(mdata);
     result = std::max(result, x);
   }
 
@@ -407,12 +358,6 @@ Max::dump(std::ostream& os) const
 // class Min
 // ----------------------------------------------------------------------
 
-Min::Min(AExpr** oprnds, int numOprnds) 
-  : m_opands(oprnds), m_sz(numOprnds) 
-{ 
-}
-
-
 Min::~Min() 
 {
   for (int i = 0; i < m_sz; ++i) {
@@ -423,11 +368,11 @@ Min::~Min()
 
 
 double 
-Min::eval(const Struct::ANode* node) const
+Min::eval(const Metric::IData& mdata) const
 {
-  double result = m_opands[0]->eval(node);
+  double result = m_opands[0]->eval(mdata);
   for (int i = 1; i < m_sz; ++i) {
-    double x = m_opands[i]->eval(node);
+    double x = m_opands[i]->eval(mdata);
     result = std::min(result, x);
   }
 
@@ -451,12 +396,6 @@ Min::dump(std::ostream& os) const
 // class Mean
 // ----------------------------------------------------------------------
 
-Mean::Mean(AExpr** oprnds, int numOprnds)
-  : m_opands(oprnds), m_sz(numOprnds) 
-{ 
-}
-
-
 Mean::~Mean() 
 {
   for (int i = 0; i < m_sz; ++i) {
@@ -467,9 +406,9 @@ Mean::~Mean()
 
 
 double 
-Mean::eval(const Struct::ANode* node) const
+Mean::eval(const Metric::IData& mdata) const
 {
-  double result = eval_mean(node, m_opands, m_sz);
+  double result = evalMean(mdata, m_opands, m_sz);
 
   //IFTRACE << "mean=" << result << endl; 
   AEXPR_CHECK(result);
@@ -491,12 +430,6 @@ Mean::dump(std::ostream& os) const
 // class StdDev
 // ----------------------------------------------------------------------
 
-StdDev::StdDev(AExpr** oprnds, int numOprnds)
-  : m_opands(oprnds), m_sz(numOprnds) 
-{ 
-}
-
-
 StdDev::~StdDev() 
 {
   for (int i = 0; i < m_sz; ++i) {
@@ -507,9 +440,9 @@ StdDev::~StdDev()
 
 
 double 
-StdDev::eval(const Struct::ANode* node) const
+StdDev::eval(const Metric::IData& mdata) const
 {
-  std::pair<double, double> v_m = eval_variance(node, m_opands, m_sz);
+  std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
   double result = sqrt(v_m.first);
 
   //IFTRACE << "stddev=" << result << endl; 
@@ -532,12 +465,6 @@ StdDev::dump(std::ostream& os) const
 // class CoefVar
 // ----------------------------------------------------------------------
 
-CoefVar::CoefVar(AExpr** oprnds, int numOprnds)
-  : m_opands(oprnds), m_sz(numOprnds) 
-{ 
-}
-
-
 CoefVar::~CoefVar() 
 {
   for (int i = 0; i < m_sz; ++i) {
@@ -548,9 +475,9 @@ CoefVar::~CoefVar()
 
 
 double 
-CoefVar::eval(const Struct::ANode* node) const
+CoefVar::eval(const Metric::IData& mdata) const
 {
-  std::pair<double, double> v_m = eval_variance(node, m_opands, m_sz);
+  std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
   double sdev = sqrt(v_m.first); // always non-negative
   double mean = v_m.second;
   double result = 0.0;
@@ -578,12 +505,6 @@ CoefVar::dump(std::ostream& os) const
 // class RStdDev
 // ----------------------------------------------------------------------
 
-RStdDev::RStdDev(AExpr** oprnds, int numOprnds)
-  : m_opands(oprnds), m_sz(numOprnds) 
-{ 
-}
-
-
 RStdDev::~RStdDev() 
 {
   for (int i = 0; i < m_sz; ++i) {
@@ -594,9 +515,9 @@ RStdDev::~RStdDev()
 
 
 double 
-RStdDev::eval(const Struct::ANode* node) const
+RStdDev::eval(const Metric::IData& mdata) const
 {
-  std::pair<double, double> v_m = eval_variance(node, m_opands, m_sz);
+  std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
   double sdev = sqrt(v_m.first); // always non-negative
   double mean = v_m.second;
   double result = 0.0;
