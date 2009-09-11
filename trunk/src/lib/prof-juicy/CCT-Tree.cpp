@@ -134,7 +134,7 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics)
   DIAG_Assert(isPrecondition, "Prof::CCT::Tree::merge: Merge precondition fails!");
 
   x_root->merge_prepare(y_newMetrics);
-  x_root->merge(y_root, x_newMetricBegIdx, y_newMetrics);
+  x_root->mergeDeep(y_root, x_newMetricBegIdx, y_newMetrics);
 }
 
 
@@ -381,55 +381,8 @@ ANode::ancestorCall() const
 //**********************************************************************
 
 
-void 
-ADynNode::mergeMetrics(const ADynNode& y, uint beg_idx)
-{
-#if 0
-  if (numMetrics() != y.numMetrics()) {
-    m_metrics.resize(y.numMetrics());
-  }
-#endif
-
-  // FIXME: Temporary 'assert' and 'if'. In reality, the assertion
-  // below may not hold because we will have to support merging two
-  // nodes with non-NULL cpIds.  However, if it does hold, we have
-  // temporarily dodged a bullet.
-  DIAG_Assert(m_cpId == 0 || y.m_cpId == 0, "ADynNode::mergeMetrics: conflicting cpIds!");
-  if (m_cpId == 0) { m_cpId = y.m_cpId; }
-
-  uint x_end = y.numMetrics() + beg_idx;
-  DIAG_Assert(x_end <= numMetrics(), "Insufficient space for merging.");
-
-  for (uint x_i = beg_idx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
-    metric(x_i) += y.metric(y_i);
-  }
-}
-
-
 void
-ANode::merge_prepare(uint numMetrics)
-{
-  ADynNode* dyn = dynamic_cast<ADynNode*>(this);
-  if (dyn) {
-    dyn->expandMetrics_after(numMetrics);
-    DIAG_MsgIf(0, "Expanding " << hex << dyn << dec << " +" << numMetrics << " -> " << dyn->numMetrics());
-  }
-
-  // Recur on children
-  for (ANodeChildIterator it(this); it.Current(); ++it) {
-    ANode* child = it.CurNode();
-    child->merge_prepare(numMetrics);
-  }
-}
-
-
-// Let 'this' = x and let y be a node corresponding to x in the sense
-// that we may think of y as being locally merged with x (according to
-// ADynNode::isMergable()).  Given y, merge y's children into x.
-// N.B.: assume we can destroy y... 
-// N.B.: assume x already has space to store merged metrics
-void
-ANode::merge(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics)
+ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics)
 {
   ANode* x = this;
   
@@ -468,9 +421,71 @@ ANode::merge(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics)
 		 << "  y: " << y_child_dyn->toString()
 		 << "  x: " << x_child_dyn->toString());
 
-      x_child_dyn->mergeMetrics(*y_child_dyn, x_newMetricBegIdx);
-      x_child_dyn->merge(y_child, x_newMetricBegIdx, y_newMetrics);
+      x_child_dyn->mergeLocal(*y_child_dyn, x_newMetricBegIdx);
+      x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, y_newMetrics);
     }
+  }
+}
+
+
+void
+ANode::merge(ANode* y)
+{
+  ANode* x = this;
+  
+  // 1. copy y's metrics into x
+  ADynNode* x_dyn = dynamic_cast<ADynNode*>(x);
+  if (x_dyn) {
+    ADynNode* y_dyn = dynamic_cast<ADynNode*>(y);
+    DIAG_Assert(y_dyn, "");
+    x_dyn->mergeLocal(*y_dyn);
+  }
+  
+  // 2. copy y's children into x
+  for (ANodeChildIterator it(y); it.Current(); /* */) {
+    ANode* y_child = it.CurNode();
+    it++; // advance iterator -- it is pointing at 'y_child'
+    y_child->unlink();
+    y_child->link(x);
+  }
+  
+  y->unlink();
+  delete y;
+}
+
+
+void 
+ADynNode::mergeLocal(const ADynNode& y, uint metricBegIdx)
+{
+  // FIXME: Temporary 'assert' and 'if'. In reality, the assertion
+  // below may not hold because we will have to support merging two
+  // nodes with non-NULL cpIds.  However, if it does hold, we have
+  // temporarily dodged a bullet.
+  DIAG_Assert(m_cpId == 0 || y.m_cpId == 0, "ADynNode::mergeLocal: conflicting cpIds!");
+  if (m_cpId == 0) { m_cpId = y.m_cpId; }
+
+  uint x_end = y.numMetrics() + metricBegIdx;
+  DIAG_Assert(x_end <= numMetrics(), "Insufficient space for merging.");
+
+  for (uint x_i = metricBegIdx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
+    metric(x_i) += y.metric(y_i);
+  }
+}
+
+
+void
+ANode::merge_prepare(uint newMetrics)
+{
+  ADynNode* dyn = dynamic_cast<ADynNode*>(this);
+  if (dyn) {
+    dyn->ensureMetricsSize(dyn->numMetrics() + newMetrics);
+    DIAG_MsgIf(0, "Expanding " << hex << dyn << dec << " +" << newMetrics << " -> " << dyn->numMetrics());
+  }
+
+  // Recur on children
+  for (ANodeChildIterator it(this); it.Current(); ++it) {
+    ANode* child = it.CurNode();
+    child->merge_prepare(newMetrics);
   }
 }
 
@@ -494,7 +509,7 @@ ANode::merge_fixup(int newMetrics)
 {
   ADynNode* x_dyn = dynamic_cast<ADynNode*>(this);
   if (x_dyn) {
-    x_dyn->expandMetrics_before(newMetrics);
+    x_dyn->insertMetricsBefore(newMetrics);
   }
 
   for (ANodeChildIterator it(this); it.Current(); ++it) {
@@ -506,32 +521,6 @@ ANode::merge_fixup(int newMetrics)
   }
 }
 
-
-// merge y into 'this' = x
-void
-ANode::merge_node(ANode* y)
-{
-  ANode* x = this;
-  
-  // 1. copy y's metrics into x
-  ADynNode* x_dyn = dynamic_cast<ADynNode*>(x);
-  if (x_dyn) {
-    ADynNode* y_dyn = dynamic_cast<ADynNode*>(y);
-    DIAG_Assert(y_dyn, "");
-    x_dyn->mergeMetrics(*y_dyn);
-  }
-  
-  // 2. copy y's children into x
-  for (ANodeChildIterator it(y); it.Current(); /* */) {
-    ANode* y_child = it.CurNode();
-    it++; // advance iterator -- it is pointing at 'y_child'
-    y_child->unlink();
-    y_child->link(x);
-  }
-  
-  y->unlink();
-  delete y;
-}
 
 //**********************************************************************
 // ANode, etc: CodeName methods

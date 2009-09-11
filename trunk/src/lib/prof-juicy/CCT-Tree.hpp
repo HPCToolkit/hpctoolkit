@@ -376,19 +376,30 @@ public:
   // merging
   // --------------------------------------------------------
 
+  // mergeDeep: Let 'this' = x and let y be a node corresponding to x
+  //   in the sense that we may think of y as being locally merged
+  //   with x (according to ADynNode::isMergable()).  Given y,
+  //   recursively merge y's children into x.
+  // N.B.: assume we can destroy y.
+  // N.B.: assume x already has space to store merged metrics
   void 
-  merge_prepare(uint numMetrics);
+  mergeDeep(ANode* y, uint x_numMetrics, uint y_numMetrics);
 
+  // merge: Let 'this' = x and let y be a node corresponding to x.
+  //   Merge y into x.  
+  // N.B.: assume we can destroy y.
   void 
-  merge(ANode* y, uint x_numMetrics, uint y_numMetrics);
+  merge(ANode* y);
+  
+
+  // virtual void mergeLocal();
+
 
   CCT::ADynNode* 
   findDynChild(const ADynNode& y_dyn);
 
-
-  // merge y into 'this'
   void 
-  merge_node(ANode* y);
+  merge_prepare(uint numMetrics);
 
 
   // --------------------------------------------------------
@@ -642,16 +653,8 @@ public:
   }
 
   void
-  mergeMetrics(const ADynNode& y, uint beg_idx = 0);
+  mergeLocal(const ADynNode& y, uint metricBegIdx = 0);
   
-  void
-  expandMetrics_before(uint num)
-  { insertMetricsBefore(num); }  // FIXME: obsolete:
-  
-  void
-  expandMetrics_after(uint num)
-  { ensureMetricsSize(numMetrics() + num); } // FIXME: obsolete:
-
 
   // -------------------------------------------------------
   // Dump contents for inspection

@@ -124,7 +124,7 @@ OverheadMetricFact::make(Prof::CallPath::Profile* prof)
     Prof::CCT::ANode* x = it.CurNode();
     Prof::CCT::ADynNode* x_dyn = dynamic_cast<Prof::CCT::ADynNode*>(x);
     if (x_dyn) {
-      x_dyn->expandMetrics_after(n_new_metrics);
+      x_dyn->ensureMetricsSize(x_dyn->numMetrics() + n_new_metrics);
     }
   }
 
