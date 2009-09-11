@@ -923,7 +923,7 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
   for (; it.Current(); it++) {
     for (uint mId = mBegId; mId <= mEndId; ++mId) {
       const Prof::Metric::AExpr* expr = mExprVec[mId];
-      double val = expr->eval(it.CurNode());
+      double val = expr->eval(*it.CurNode());
       // if (!Prof::Metric::AExpr::isok(val)) ...
       it.CurNode()->demandMetric(mId, numMetrics/*size*/) += val;
     }
