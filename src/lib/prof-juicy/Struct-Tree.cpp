@@ -791,7 +791,7 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, double* valVec)
     }
     
     for (uint i = mBegId; i <= mEndId; ++i) {
-      demandMetricIncr(i, valVec[i], mEndId+1/*size*/);
+      demandMetric(i, mEndId+1/*size*/) += valVec[i];
     }
   }
 }

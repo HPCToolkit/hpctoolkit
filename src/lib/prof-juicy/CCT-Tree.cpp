@@ -401,7 +401,7 @@ ADynNode::mergeMetrics(const ADynNode& y, uint beg_idx)
   DIAG_Assert(x_end <= numMetrics(), "Insufficient space for merging.");
 
   for (uint x_i = beg_idx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
-    metricIncr(x_i, y.metric(y_i));
+    metric(x_i) += y.metric(y_i);
   }
 }
 
