@@ -180,7 +180,7 @@ namespace CCT {
 //***************************************************************************
 
 const string ANode::NodeNames[ANode::TyNUMBER] = {
-  "Root", "P", "Pr", "L", "S", "C", "Any"
+  "Root", "P", "Pr", "L", "C", "S", "Any"
 };
 
 
@@ -198,101 +198,13 @@ ANode::IntToANodeType(long i)
   return (ANodeTy)i;
 }
 
+uint ANode::s_nextUniqueId = 2;
 
 //***************************************************************************
 // ANode, etc: constructors/destructors
 //***************************************************************************
 
-
-Root::Root(const std::string& nm) 
-  : ANode(TyRoot, NULL),
-    m_name(nm)
-{ 
-}
-
-
-Root::Root(const char* nm) 
-  : ANode(TyRoot, NULL) 
-{ 
-  DIAG_Assert(nm, "");
-  m_name = nm; 
-}
-
-
-Root::~Root() 
-{
-}
-
-
 string ProcFrm::BOGUS;
-
-static void
-Call_Check(Call* n, ANode* parent) 
-{
-  DIAG_Assert((parent == NULL) 
-	      || (parent->type() == ANode::TyRoot)
-	      || (parent->type() == ANode::TyLoop) 
-	      || (parent->type() == ANode::TyProcFrm) 
-	      || (parent->type() == ANode::TyCall), "");
-}
-
-
-ProcFrm::ProcFrm(ANode* parent, Struct::ACodeNode* strct)
-  : ANode(TyProcFrm, parent, strct)
-{
-  Call_Check(NULL, parent);
-}
-
-
-ProcFrm::~ProcFrm()
-{
-}
-
-
-Proc::Proc(ANode* parent, Struct::ACodeNode* strct)
-  : ANode(TyProc, parent, strct)
-{
-  DIAG_Assert((parent == NULL)
-	      || (parent->type() == TyCall)
-	      || (parent->type() == TyLoop), "");
-}
-
-Proc::~Proc()
-{
-}
-
-
-Loop::Loop(ANode* parent, Struct::ACodeNode* strct)
-  : ANode(TyLoop, parent, strct)
-{
-  DIAG_Assert((parent == NULL)
-	      || (parent->type() == TyCall) 
-	      || (parent->type() == TyProcFrm) 
-	      || (parent->type() == TyLoop), "");
-}
-
-
-Loop::~Loop()
-{
-}
-
-
-Call::Call(ANode* parent, uint cpId)
-  : ADynNode(TyCall, parent, NULL, cpId)
-{
-  Call_Check(this, parent);
-}
-
-
-Call::Call(ANode* parent, 
-	   uint cpId, lush_assoc_info_t as_info,
-	   LoadMap::LM_id_t lmId, VMA ip, ushort opIndex, lush_lip_t* lip,
-	   const Metric::IData& metrics)
-  : ADynNode(TyCall, parent, NULL, 
-	     cpId, as_info, lmId, ip, opIndex, lip, metrics)
-{
-  Call_Check(this, parent);
-}
 
 
 //***************************************************************************
@@ -342,7 +254,8 @@ ANode::ancestorRoot() const
 {
   if (Parent() == NULL) {
     return NULL;
-  }  else { 
+  }
+  else { 
     dyn_cast_return(ANode, Root, ancestor(TyRoot));
   }
 }
@@ -362,17 +275,17 @@ ANode::ancestorLoop() const
 }
 
 
-Stmt*
-ANode::ancestorStmt() const 
-{
-  dyn_cast_return(ANode, Stmt, ancestor(TyStmt));
-}
-
-
 Call*
 ANode::ancestorCall() const
 {
   dyn_cast_return(ANode, Call, ancestor(TyCall)); 
+}
+
+
+Stmt*
+ANode::ancestorStmt() const 
+{
+  dyn_cast_return(ANode, Stmt, ancestor(TyStmt));
 }
 
 
@@ -737,6 +650,22 @@ ProcFrm::toString_me(int oFlags) const
 
 
 string
+Proc::toString_me(int oFlags) const
+{
+  string self = ANode::toString_me(oFlags); //+ " i" + MakeAttr(id);
+  return self;
+}
+
+
+string 
+Loop::toString_me(int oFlags) const
+{
+  string self = ANode::toString_me(oFlags); //+ " i" + MakeAttr(id);
+  return self;
+}
+
+
+string
 Call::toString_me(int oFlags) const
 {
   string self = ANode::toString_me(oFlags); // nameDyn()
@@ -753,22 +682,6 @@ Stmt::toString_me(int oFlags) const
   }
   return self;
 } 
-
-
-string 
-Loop::toString_me(int oFlags) const
-{
-  string self = ANode::toString_me(oFlags); //+ " i" + MakeAttr(id);
-  return self;
-}
-
-
-string
-Proc::toString_me(int oFlags) const
-{
-  string self = ANode::toString_me(oFlags); //+ " i" + MakeAttr(id);
-  return self;
-}
 
 
 std::ostream&
@@ -885,11 +798,11 @@ ANode::Types() const
   if (dynamic_cast<const Loop*>(this)) {
     types += "Loop "; 
   } 
-  if (dynamic_cast<const Stmt*>(this)) {
-    types += "Stmt "; 
-  } 
   if (dynamic_cast<const Call*>(this)) {
     types += "Call "; 
+  } 
+  if (dynamic_cast<const Stmt*>(this)) {
+    types += "Stmt "; 
   } 
   return types; 
 } 

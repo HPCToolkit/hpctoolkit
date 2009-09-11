@@ -993,7 +993,7 @@ cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt,
     }
     else {
       n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, ip, opIdx, lip,
-		        metricData);
+			metricData);
     }
   }
 

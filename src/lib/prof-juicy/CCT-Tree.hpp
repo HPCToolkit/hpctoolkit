@@ -211,13 +211,14 @@ class Root;
 class ProcFrm;
 class Proc; 
 class Loop; 
-class Stmt;
 class Call;
+class Stmt;
 
 // ---------------------------------------------------------
 // ANode: The base node for a call stack profile tree.
 // ---------------------------------------------------------
 class ANode: public NonUniformDegreeTreeNode, 
+	     public Metric::IData,
 	     public Unique {
 public:
   enum ANodeTy {
@@ -225,8 +226,8 @@ public:
     TyProcFrm,
     TyProc,
     TyLoop,
-    TyStmt,
     TyCall,
+    TyStmt,
     TyANY,
     TyNUMBER
   };
@@ -242,28 +243,45 @@ private:
   
 public:
   ANode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct = NULL)
-    : NonUniformDegreeTreeNode(parent), m_type(type), m_strct(strct)
+    : NonUniformDegreeTreeNode(parent), 
+      Metric::IData(),
+      m_type(type), m_id(s_nextUniqueId), m_strct(strct)
   { 
-    static uint uniqueId = 2; // To support reading/writing, ids must be
-    m_id = uniqueId += 2;     // consistent with HPCRUN_FMT_RetainIdFlag.
+    s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
+  }
+
+  ANode(ANodeTy type, 
+	ANode* parent, Struct::ACodeNode* strct, const Metric::IData& metrics)
+    : NonUniformDegreeTreeNode(parent),
+      Metric::IData(metrics),
+      m_type(type), m_id(s_nextUniqueId), m_strct(strct)
+  { 
+    s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
   }
 
   virtual ~ANode()
   { }
   
-  // shallow copy (in the sense the children are not copied)
+  // deep copy of internals (but without children)
   ANode(const ANode& x)
-    : m_type(x.m_type), m_strct(x.m_strct) // do not copy 'm_id'
+    : NonUniformDegreeTreeNode(NULL),
+      Metric::IData(x),
+      m_type(x.m_type), /*m_id: skip*/ m_strct(x.m_strct)
   { 
     zeroLinks();
+    s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
   }
 
-  ANode& operator=(const ANode& x) 
+  // deep copy of internals (but without children)
+  ANode&
+  operator=(const ANode& x)
   {
     if (this != &x) {
+      //NonUniformDegreeTreeNode::operator=(x);
+      Metric::IData::operator=(x);
       m_type = x.m_type;
+      // m_id: skip
       m_strct = x.m_strct;
-      // do not copy 'm_id'
     }
     return *this;
   }
@@ -277,6 +295,9 @@ public:
   { return m_type; }
 
   // id: a unique id; 0 is reserved for a NULL value
+  //
+  // N.B.: To support reading/writing, ids must be consistent with
+  // HPCRUN_FMT_RetainIdFlag.
   uint
   id() const
   { return m_id; }
@@ -365,11 +386,11 @@ public:
   Loop*
   ancestorLoop() const;
 
-  Stmt*
-  ancestorStmt() const;
-
   Call*
   ancestorCall() const;
+
+  Stmt*
+  ancestorStmt() const;
 
 
   // --------------------------------------------------------
@@ -441,6 +462,9 @@ protected:
 
   void
   merge_fixup(int newMetrics);
+
+private:
+  static uint s_nextUniqueId;
   
 protected:
   ANodeTy m_type; // obsolete with typeid(), but hard to replace
@@ -460,7 +484,7 @@ int ANodeLineComp(ANode* x, ANode* y);
 // ---------------------------------------------------------
 // ANode: represents dynamic nodes
 // ---------------------------------------------------------
-class ADynNode : public ANode, public Metric::IData {
+class ADynNode : public ANode {
 public:
 
   // -------------------------------------------------------
@@ -469,40 +493,36 @@ public:
   
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct, uint cpId)
     : ANode(type, parent, strct),
-      Metric::IData(),
       m_cpId(cpId),
       m_as_info(lush_assoc_info_NULL),
       m_lmId(LoadMap::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL)
     { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
-	   uint32_t cpId, lush_assoc_info_t as_info, 
+	   uint cpId, lush_assoc_info_t as_info, 
 	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip)
     : ANode(type, parent, strct),
-      Metric::IData(),
       m_cpId(cpId),
       m_as_info(as_info), 
       m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip)
   { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
-	   uint32_t cpId, lush_assoc_info_t as_info, 
+	   uint cpId, lush_assoc_info_t as_info, 
 	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const Metric::IData& metrics)
-    : ANode(type, parent, strct),
-      Metric::IData(metrics),
+    : ANode(type, parent, strct, metrics),
       m_cpId(cpId),
       m_as_info(as_info),
       m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip)
   { }
 
-  virtual ~ADynNode() 
+  virtual ~ADynNode()
   { delete m_lip; }
    
   // deep copy of internals (but without children)
   ADynNode(const ADynNode& x)
     : ANode(x),
-      Metric::IData(x),
       m_cpId(x.m_cpId),
       m_as_info(x.m_as_info), 
       m_lmId(x.m_lmId),
@@ -516,7 +536,6 @@ public:
   {
     if (this != &x) {
       ANode::operator=(x);
-      Metric::IData::operator=(x);
       m_cpId = x.m_cpId;
       m_as_info = x.m_as_info;
       m_lmId = x.m_lmId;
@@ -702,9 +721,18 @@ private:
 class Root: public ANode {
 public: 
   // Constructor/Destructor
-  Root(const std::string& nm);
-  Root(const char* nm);
-  virtual ~Root();
+  Root(const std::string& nm)
+    : ANode(TyRoot, NULL),
+      m_name(nm)
+  { }
+
+  Root(const char* nm)
+    : ANode(TyRoot, NULL),
+      m_name((nm) ? nm : "")
+  { }
+
+  virtual ~Root()
+  { }
 
   const std::string&
   name() const { return m_name; }
@@ -726,9 +754,12 @@ private:
 class ProcFrm: public ANode {
 public:
   // Constructor/Destructor
-  ProcFrm(ANode* parent, Struct::ACodeNode* strct = NULL);
+  ProcFrm(ANode* parent, Struct::ACodeNode* strct = NULL)
+    : ANode(TyProcFrm, parent, strct)
+  { }
 
-  virtual ~ProcFrm();
+  virtual ~ProcFrm()
+  { }
 
   // shallow copy (in the sense the children are not copied)
   ProcFrm(const ProcFrm& x)
@@ -829,8 +860,12 @@ private:
 class Proc: public ANode {
 public: 
   // Constructor/Destructor
-  Proc(ANode* parent, Struct::ACodeNode* strct = NULL);
-  virtual ~Proc();
+  Proc(ANode* parent, Struct::ACodeNode* strct = NULL)
+    : ANode(TyProc, parent, strct)
+  { }
+  
+  virtual ~Proc()
+  { }
   
   // Dump contents for inspection
   virtual std::string 
@@ -845,9 +880,12 @@ public:
 class Loop: public ANode {
 public: 
   // Constructor/Destructor
-  Loop(ANode* parent, Struct::ACodeNode* strct = NULL);
+  Loop(ANode* parent, Struct::ACodeNode* strct = NULL)
+    : ANode(TyLoop, parent, strct)
+  { }
 
-  virtual ~Loop();
+  virtual ~Loop()
+  { }
 
   // Dump contents for inspection
   virtual std::string 
@@ -858,56 +896,25 @@ private:
 
 
 // --------------------------------------------------------------------------
-// Stmt
-// --------------------------------------------------------------------------
-  
-class Stmt: public ADynNode {
- public:
-  // Constructor/Destructor
-  Stmt(ANode* parent, uint cpId)
-    : ADynNode(TyStmt, parent, NULL, cpId)
-  { }
-
-  Stmt(ANode* parent,
-       uint32_t cpId, lush_assoc_info_t as_info,
-       LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
-       const Metric::IData& metrics)
-    : ADynNode(TyStmt, parent, NULL, 
-	       cpId, as_info, lmId, ip, opIdx, lip, metrics)
-  { }
-
-  virtual ~Stmt()
-  { }
-
-  Stmt&
-  operator=(const Stmt& x) 
-  {
-    if (this != &x) {
-      ADynNode::operator=(x);
-    }
-    return *this;
-  }
-
-  // Dump contents for inspection
-  virtual std::string 
-  toString_me(int oFlags = 0) const;
-};
-
-
-// --------------------------------------------------------------------------
 // Call (callsite)
 // --------------------------------------------------------------------------
 
 class Call: public ADynNode {
 public:
   // Constructor/Destructor
-  Call(ANode* parent, uint cpId);
+  Call(ANode* parent, uint cpId)
+    : ADynNode(TyCall, parent, NULL, cpId)
+  { }
 
-  Call(ANode* parent, 
-       uint32_t cpId, lush_assoc_info_t as_info,
+  Call(ANode* parent,
+       uint cpId, lush_assoc_info_t as_info,
        LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
-       const Metric::IData& metrics);
-
+       const Metric::IData& metrics)
+    : ADynNode(TyCall, parent, NULL,
+	       cpId, as_info, lmId, ip, opIdx, lip,
+	       metrics)
+  { }
+  
   virtual ~Call() 
   { }
   
@@ -927,6 +934,44 @@ public:
   virtual std::string 
   toString_me(int oFlags = 0) const;
 
+};
+
+
+// --------------------------------------------------------------------------
+// Stmt
+// --------------------------------------------------------------------------
+  
+class Stmt: public ADynNode {
+ public:
+  // Constructor/Destructor
+  Stmt(ANode* parent, uint cpId)
+    : ADynNode(TyStmt, parent, NULL, cpId)
+  { }
+
+  Stmt(ANode* parent, 
+       uint cpId, lush_assoc_info_t as_info,
+       LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
+       const Metric::IData& metrics)
+    : ADynNode(TyStmt, parent, NULL,
+	       cpId, as_info, lmId, ip, opIdx, lip,
+	       metrics)
+  { }
+  
+  virtual ~Stmt()
+  { }
+
+  Stmt&
+  operator=(const Stmt& x)
+  {
+    if (this != &x) {
+      ADynNode::operator=(x);
+    }
+    return *this;
+  }
+
+  // Dump contents for inspection
+  virtual std::string 
+  toString_me(int oFlags = 0) const;
 };
 
 
