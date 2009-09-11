@@ -411,16 +411,12 @@ public:
   // N.B.: assume we can destroy y.
   void 
   merge(ANode* y);
-  
 
-  // virtual void mergeLocal();
-
+  virtual void
+  merge_me(const ANode& y, uint metricBegIdx = 0);
 
   CCT::ADynNode* 
   findDynChild(const ADynNode& y_dyn);
-
-  void 
-  merge_prepare(uint numMetrics);
 
 
   // --------------------------------------------------------
@@ -460,8 +456,19 @@ protected:
   writeXML_post(std::ostream& os = std::cerr, int oFlags = 0, 
 		const char* prefix = "") const;
 
+  // --------------------------------------------------------
+  // 
+  // --------------------------------------------------------
+
+  // NOTE: We could now use Metric::IData to create metrics on demand
+  friend void Tree::merge(const Tree* y, 
+			  uint x_newMetricBegIdx, uint y_newMetrics);
+
+  void 
+  mergeDeep_pre(uint numMetrics);
+
   void
-  merge_fixup(int newMetrics);
+  mergeDeep_fixup(int newMetrics);
 
 private:
   static uint s_nextUniqueId;
@@ -671,8 +678,8 @@ public:
 	    && lush_assoc_info__path_len_eq(x.assocInfo(), y.assocInfo()));
   }
 
-  void
-  mergeLocal(const ADynNode& y, uint metricBegIdx = 0);
+  virtual void
+  merge_me(const ANode& y, uint metricBegIdx = 0);
   
 
   // -------------------------------------------------------
