@@ -278,7 +278,7 @@ lush_step_bichord(lush_cursor_t* cursor)
     lush_lip_t* lip = lush_cursor_get_lip(cursor);
 
     //lush_lip_setLMId(lip, ...); // FIXME
-    lush_lip_setIP(lip, (uint64_t)ip);
+    lush_lip_setIP(lip, (uint64_t)(uintptr_t)ip); // 32-bit warnings
 
     ty = LUSH_STEP_CONT;
     lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);

@@ -268,8 +268,8 @@ write_epochs(FILE* fs, csprof_state_t* state)
       loadmap_entry_t lm_entry;
       lm_entry.id = lm_src->id;
       lm_entry.name = lm_src->name;
-      lm_entry.vaddr = (uint64_t)lm_src->vaddr;
-      lm_entry.mapaddr = (uint64_t)lm_src->mapaddr;
+      lm_entry.vaddr = (uint64_t)(uintptr_t)lm_src->vaddr; // 32-bit warnings
+      lm_entry.mapaddr = (uint64_t)(uintptr_t)lm_src->mapaddr;
       lm_entry.flags = 0;
 
       hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
