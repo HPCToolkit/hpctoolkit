@@ -68,6 +68,27 @@ using std::string;
 
 
 // ************************************************************************* //
+// DataDisplayInfo
+// ************************************************************************* //
+
+DataDisplayInfo::~DataDisplayInfo() 
+{
+}
+
+
+string 
+DataDisplayInfo::toString() const 
+{
+  string str = string("DisplayInfo ") + 
+    "name=" + name + " " + 
+    "color=" + color + " " + 
+    "width=" + StrUtil::toStr(width) + " " + 
+    "asInt=" + ((formatAsInt) ? "true" : "false"); 
+  return str;
+}
+
+
+// ************************************************************************* //
 // PerfMetric
 // ************************************************************************* //
 
@@ -131,24 +152,102 @@ PerfMetric::toString(int flags) const
   return str;
 }
   
+// *************************************************************************
+// FilePerfMetric
+// *************************************************************************
 
-// ************************************************************************* //
-// DataDisplayInfo
-// ************************************************************************* //
-
-DataDisplayInfo::~DataDisplayInfo() 
-{
+FilePerfMetric::FilePerfMetric(const char* nm, 
+			       const char* nativeNm,
+			       const char* displayNm, 
+			       bool doDisp, bool dispPercent, bool doSort, 
+			       const char* file,
+			       const char* type,
+			       bool isunit_ev) 
+  : PerfMetric(nm, nativeNm, displayNm, doDisp, dispPercent, false, doSort),
+    m_file(file), m_type(type), m_isunit_event(isunit_ev)
+{ 
+  // trace = 1;
 }
 
 
-string 
-DataDisplayInfo::toString() const 
+FilePerfMetric::FilePerfMetric(const std::string& nm, 
+			       const std::string& nativeNm, 
+			       const std::string& displayNm,
+			       bool doDisp, bool dispPercent, bool doSort, 
+			       const std::string& file, 
+			       const std::string& type,
+			       bool isunit_ev)
+  : PerfMetric(nm, nativeNm, displayNm, doDisp, dispPercent, false, doSort),
+    m_file(file), m_type(type), m_isunit_event(isunit_ev)
+{ 
+  // trace = 1;
+}
+
+
+FilePerfMetric::~FilePerfMetric() 
 {
-  string str = string("DisplayInfo ") + 
-    "name=" + name + " " + 
-    "color=" + color + " " + 
-    "width=" + StrUtil::toStr(width) + " " + 
-    "asInt=" + ((formatAsInt) ? "true" : "false"); 
+  IFTRACE << "~FilePerfMetric " << toString() << endl; 
+}
+
+
+string
+FilePerfMetric::toString(int flags) const 
+{
+  string unitstr = isunit_event() ? " [events]" : " [samples]";
+  string rawstr = " {" + m_rawdesc.description() + ":" + StrUtil::toStr(m_rawdesc.period()) + " ev/smpl}";
+  string str = PerfMetric::toString() + unitstr + rawstr;
+
+  if (flags) {
+    str += "file='" + m_file + "' " + "type='" + m_type + "'";
+  }
   return str;
+} 
+
+
+// **************************************************************************
+// 
+// **************************************************************************
+
+ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm,
+				       bool doDisp, bool dispPercent, 
+				       bool isPercent,  bool doSort,
+      				       Prof::Metric::AExpr* expr)
+  : PerfMetric(nm, "", displayNm, doDisp, dispPercent, isPercent, doSort)
+{
+  Ctor(nm, expr);
 }
 
+
+ComputedPerfMetric::ComputedPerfMetric(const std::string& nm,
+				       const std::string& displayNm,
+				       bool doDisp, bool dispPercent, 
+				       bool isPercent,  bool doSort,
+				       Prof::Metric::AExpr* expr)
+  : PerfMetric(nm, "", displayNm, doDisp, dispPercent, isPercent, doSort)
+{
+  Ctor(nm.c_str(), expr);
+}
+
+
+void
+ComputedPerfMetric::Ctor(const char* nm, Prof::Metric::AExpr* expr)
+{
+  m_exprTree = expr;
+}
+
+
+ComputedPerfMetric::~ComputedPerfMetric() 
+{
+  IFTRACE << "~ComputedPerfMetric " << toString() << endl; 
+  delete m_exprTree;
+}
+
+
+string
+ComputedPerfMetric::toString(int flags) const 
+{
+  string str = PerfMetric::toString() + " {" + m_exprTree->toString() + "}";
+  return str;
+} 
+
+// **************************************************************************

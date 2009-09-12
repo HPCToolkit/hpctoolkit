@@ -426,9 +426,8 @@ public:
   {
     // NOTE: Must not call hasMetrics() since this node may not have
     // any metric data yet!
-    double* valVec = new double[mEndId + 1];
-    accumulateMetrics(mBegId, mEndId, valVec);
-    delete[] valVec;
+    Metric::IData mVec(mEndId + 1);
+    accumulateMetrics(mBegId, mEndId, mVec);
   }
 
   void
@@ -444,7 +443,7 @@ public:
 
 private:
   void
-  accumulateMetrics(uint mBegId, uint mEndId, double* valVec);
+  accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec);
 
 public:
 

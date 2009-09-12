@@ -112,7 +112,7 @@ ProfileData::~ProfileData()
   }
   clear();
 
-  for (SampledMetricDescVec::iterator it = m_mdescs.begin();
+  for (Metric::SampledDescVec::iterator it = m_mdescs.begin();
        it != m_mdescs.end(); ++it) {
     delete (*it);
   }
@@ -229,7 +229,7 @@ ProfileData::mdescs(LM* proflm)
 
   for (uint i = 0; i < sz; ++i) {
     const EventData& profevent = proflm->event(i);
-    m_mdescs[i] = new SampledMetricDesc(profevent.mdesc());
+    m_mdescs[i] = new Metric::SampledDesc(profevent.mdesc());
   }
 }
 

@@ -105,9 +105,9 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
       throw;
     }
 
-    const Prof::SampledMetricDescVec& mdescs = prof.mdescs();
+    const Prof::Metric::SampledDescVec& mdescs = prof.mdescs();
     for (uint j = 0; j < mdescs.size(); ++j) {
-      const Prof::SampledMetricDesc& m_raw = *mdescs[j];
+      const Prof::Metric::SampledDesc& m_raw = *mdescs[j];
       
       string nativeNm = StrUtil::toStr(j);
       bool sortby = empty();

@@ -57,7 +57,7 @@
 
 #include <include/uint.h>
 
-#include "DerivedPerfMetrics.hpp"
+#include "PerfMetric.hpp"
 
 #include <lib/support/Unique.hpp>
 
@@ -75,17 +75,17 @@ public:
   typedef std::map<std::string, PerfMetric*> StringPerfMetricMap;
   typedef std::map<std::string, PerfMetricVec> StringPerfMetricVecMap;
 
-public: 
+public:
   Mgr();
-  ~Mgr(); 
+  ~Mgr();
 
   void 
-  makeRawMetrics(const std::vector<std::string>& profileFiles, 
+  makeRawMetrics(const std::vector<std::string>& profileFiles,
 		 bool isunit_ev = true,
 		 bool ispercent = true);
 
   void 
-  makeRawMetrics(const std::string& profileFile, 
+  makeRawMetrics(const std::string& profileFile,
 		 bool isunit_ev = true,
 		 bool ispercent = true)
   {
@@ -93,7 +93,7 @@ public:
     makeRawMetrics(vec, isunit_ev, ispercent);
   }
 
-  void 
+  void
   makeSummaryMetrics();
 
 
@@ -108,27 +108,27 @@ public:
   //   
   // ------------------------------------------------------------
   PerfMetric*
-  metric(int i) 
-  { 
+  metric(int i)
+  {
     return m_metrics[i];
   }
 
-  const PerfMetric* 
-  metric(int i) const 
-  { 
-    return m_metrics[i]; 
+  const PerfMetric*
+  metric(int i) const
+  {
+    return m_metrics[i];
   }
 
-  PerfMetric* 
+  PerfMetric*
   metric(const std::string& uniqNm)
-  { 
+  {
     StringPerfMetricMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
     return (it != m_uniqnmToMetricMap.end()) ? it->second : NULL;
   }
 
-  const PerfMetric* 
-  metric(const std::string& uniqNm) const 
-  { 
+  const PerfMetric*
+  metric(const std::string& uniqNm) const
+  {
     StringPerfMetricMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
     return (it != m_uniqnmToMetricMap.end()) ? it->second : NULL;
   }
@@ -149,10 +149,10 @@ public:
   insert(PerfMetric* m);
 
   // Return the (first) metric this has the sort-by attribute set
-  PerfMetric* 
+  PerfMetric*
   findSortBy() const;
 
-  bool 
+  bool
   hasDerived() const;
   
   // ------------------------------------------------------------
@@ -167,13 +167,13 @@ public:
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
-  std::string 
+  std::string
   toString(const char* pre = "") const;
 
-  void 
+  void
   dump(std::ostream& o = std::cerr, const char* pre = "") const;
 
-  void 
+  void
   ddump() const;
 
 public:
@@ -181,7 +181,7 @@ public:
   typedef std::list<FilePerfMetric*> MetricList_t;
 
 private:
-  std::string 
+  std::string
   makeUniqueName(const std::string& nm);
 
   void
@@ -193,7 +193,7 @@ private:
   PerfMetricVec m_metrics;
 
   // non-unique-metric name to PerfMetricVec table (i.e., name excludes
-  // qualifications added by insertUnique()
+  // qualifications added by insert()
   StringPerfMetricVecMap m_nuniqnmToMetricMap;
 
   // unique-metric name to PerfMetricVec table

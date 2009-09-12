@@ -74,7 +74,7 @@
 
 #include "Struct-Tree.hpp"
 
-#include "MetricDesc.hpp"
+#include "Metric-ADesc.hpp"
 #include "Metric-IData.hpp"
 
 #include "LoadMap.hpp"
@@ -206,11 +206,11 @@ namespace CCT {
 
 class ANode;     // Everyone's base class 
 
-class Root; 
+class Root;
 
 class ProcFrm;
-class Proc; 
-class Loop; 
+class Proc;
+class Loop;
 class Call;
 class Stmt;
 

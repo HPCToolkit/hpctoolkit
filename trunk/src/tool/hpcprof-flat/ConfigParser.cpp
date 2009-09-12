@@ -78,7 +78,6 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 #include <lib/prof-juicy-x/MathMLExprParser.hpp>
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 
-#include <lib/prof-juicy/DerivedPerfMetrics.hpp>
 #include <lib/prof-juicy/Struct-Tree.hpp>
 #include <lib/prof-juicy/PerfMetric.hpp>
 

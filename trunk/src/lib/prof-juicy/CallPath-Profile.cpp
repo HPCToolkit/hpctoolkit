@@ -114,7 +114,7 @@ Profile::Profile(const std::string name, uint numMetrics)
 
   m_metricdesc.resize(numMetrics);
   for (uint i = 0; i < m_metricdesc.size(); ++i) {
-    m_metricdesc[i] = new SampledMetricDesc();
+    m_metricdesc[i] = new Metric::SampledDesc();
   }
   
   m_loadmapMgr = new LoadMapMgr;
@@ -162,8 +162,8 @@ Profile::merge(Profile& y, bool isSameThread)
     y_newMetrics   = y.numMetrics();
 
     for (uint i = 0; i < y.numMetrics(); ++i) {
-      const SampledMetricDesc* m = y.metric(i);
-      addMetric(new SampledMetricDesc(*m));
+      const Metric::SampledDesc* m = y.metric(i);
+      addMetric(new Metric::SampledDesc(*m));
     }
   }
   
@@ -273,7 +273,7 @@ Profile::writeXML_hdr(std::ostream& os, int oFlags, const char* pre) const
   os << "  <MetricTable>\n";
   uint n_metrics = numMetrics();
   for (uint i = 0; i < n_metrics; i++) {
-    const SampledMetricDesc* m = metric(i);
+    const Metric::SampledDesc* m = metric(i);
     os << "    <Metric i" << MakeAttrNum(i) 
        << " n" << MakeAttrStr(m->name()) << ">\n";
     os << "      <Info>" 
@@ -561,7 +561,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
 
   metric_desc_t* m_lst = metric_tbl.lst;
   for (uint i = 0; i < num_metrics; i++) {
-    SampledMetricDesc* metric = prof->metric(i);
+    Metric::SampledDesc* metric = prof->metric(i);
     string m_nm = m_lst[i].name + m_sfx;
     metric->name(m_nm);
     metric->flags(m_lst[i].flags);
@@ -752,7 +752,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs)
 
   hpcfmt_byte4_fwrite(prof.numMetrics(), fs);
   for (uint i = 0; i < prof.numMetrics(); i++) {
-    const SampledMetricDesc* m = prof.metric(i);
+    const Metric::SampledDesc* m = prof.metric(i);
 
     metric_desc_t mdesc;
     mdesc.name = const_cast<char*>(m->name().c_str());
@@ -950,7 +950,7 @@ cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt,
   bool hasMetrics = false;
   Metric::IData metricData(nodeFmt.num_metrics);
   for (uint i = 0; i < nodeFmt.num_metrics; i++) {
-    SampledMetricDesc* mdesc = prof.metric(i);
+    Metric::SampledDesc* mdesc = prof.metric(i);
     hpcrun_metricVal_t m = nodeFmt.metrics[i];
 
     if (hpcrun_metricFlags_isFlag(mdesc->flags(), HPCRUN_MetricFlag_Real)) {

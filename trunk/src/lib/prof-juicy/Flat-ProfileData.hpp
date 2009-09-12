@@ -76,7 +76,7 @@
 
 #include <include/uint.h>
 
-#include "MetricDesc.hpp"
+#include "Metric-ADesc.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 
@@ -126,7 +126,7 @@ public:
   // -------------------------------------------------------
   // Metrics
   // -------------------------------------------------------
-  const SampledMetricDescVec& mdescs() { return m_mdescs; }
+  const Metric::SampledDescVec& mdescs() { return m_mdescs; }
 
   // -------------------------------------------------------
   // open/read: Throws an exception on an error!
@@ -163,7 +163,7 @@ private:
 
 private:
   std::string m_name;
-  SampledMetricDescVec m_mdescs;
+  Metric::SampledDescVec m_mdescs;
 
   // temporary data
   FILE* m_fs;
@@ -186,7 +186,7 @@ public:
   EventData();
   ~EventData();
   
-  const SampledMetricDesc& mdesc() const { return m_mdesc; }
+  const Metric::SampledDesc& mdesc() const { return m_mdesc; }
 
   int  bucket_size() const { return sizeof(bucketsz_t); }
   uint outofrange() const { return m_outofrange; }
@@ -213,7 +213,7 @@ public:
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
-  SampledMetricDesc m_mdesc;
+  Metric::SampledDesc m_mdesc;
   uint m_outofrange;
   uint m_overflow;
   std::vector<Datum> m_sparsevec;
