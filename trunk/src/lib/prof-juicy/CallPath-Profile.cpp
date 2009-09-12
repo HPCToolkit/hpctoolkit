@@ -268,7 +268,7 @@ writeXML_ProcFilter(const Struct::ANode& x, long type)
 
 
 std::ostream& 
-Profile::writeXML_hdr(std::ostream& os, int oFlags, const char* pre) const
+Profile::writeXML_hdr(std::ostream& os, int oFlags, const char* pfx) const
 {
   os << "  <MetricTable>\n";
   uint n_metrics = numMetrics();
@@ -279,6 +279,7 @@ Profile::writeXML_hdr(std::ostream& os, int oFlags, const char* pre) const
     os << "      <Info>" 
        << "<NV n=\"period\" v" << MakeAttrNum(m->period()) << "/>"
        << "<NV n=\"flags\" v" << MakeAttrNum(m->flags(), 16) << "/>"
+      //<< "<NV n=\"isvalue\" v=\"true\"/>" // TODO:value
        << "</Info>\n";
     os << "    </Metric>\n";
   }
@@ -339,9 +340,8 @@ Profile::ddump() const
 //***************************************************************************
 
 static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
-cct_makeNode(const Prof::CCT::Tree& cct, 
+cct_makeNode(Prof::CallPath::Profile& prof,
 	     const hpcrun_fmt_cct_node_t& nodeFmt,
-	     Prof::CallPath::Profile& prof,
 	     Prof::LoadMap* loadmap);
 
 static void
@@ -684,7 +684,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, LoadMap* loadmap, FILE* outfs)
 
     CCT::Tree* cct = prof.cct();
 
-    std::pair<CCT::ANode*, CCT::ANode*> n2 = cct_makeNode(*cct, nodeFmt, prof, loadmap);
+    std::pair<CCT::ANode*, CCT::ANode*> n2 = cct_makeNode(prof, nodeFmt, loadmap);
     CCT::ANode* node = n2.first;
     CCT::ANode* node_sib = n2.second;
 
@@ -871,10 +871,9 @@ Profile::canonicalize()
 
 //***************************************************************************
 
-
 static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
-cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt,
-	     Prof::CallPath::Profile& prof, /*FIXME:temp*/
+cct_makeNode(Prof::CallPath::Profile& prof,
+	     const hpcrun_fmt_cct_node_t& nodeFmt,
 	     Prof::LoadMap* loadmap /*FIXME:temp*/)
 {
   using namespace Prof;
@@ -953,12 +952,15 @@ cct_makeNode(const Prof::CCT::Tree& cct, const hpcrun_fmt_cct_node_t& nodeFmt,
     Metric::SampledDesc* mdesc = prof.metric(i);
     hpcrun_metricVal_t m = nodeFmt.metrics[i];
 
+    double mval = 0;
     if (hpcrun_metricFlags_isFlag(mdesc->flags(), HPCRUN_MetricFlag_Real)) {
-      metricData.metric(i) = m.r;
+      mval = m.r;
     }
     else {
-      metricData.metric(i) = (double)m.i;
+      mval = (double)m.i;
     }
+
+    metricData.metric(i) = mval; // * mdesc->period(); // TODO:value
 
     if (!hpcrun_metricVal_isZero(m)) {
       hasMetrics = true;

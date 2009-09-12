@@ -69,6 +69,8 @@ using std::string;
 
 #include "Metric-IData.hpp"
 
+#include <lib/xml/xml.hpp>
+
 #include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
@@ -85,26 +87,46 @@ namespace Metric {
 //***************************************************************************
 
 std::string
-IData::metricsToString(int oFlags, const char* pre) const
+IData::toStringMetrics(int oFlags, const char* pfx) const
 {
   std::ostringstream os;
-  metricsDump(os, oFlags, pre);
+  dumpMetrics(os, oFlags, pfx);
   return os.str();
 }
 
 
+std::ostream& 
+IData::writeMetricsXML(std::ostream& os, int oFlags, const char* pfx) const
+{
+  bool wasMetricWritten = false;
+
+  for (uint i = 0; i < numMetrics(); i++) {
+    if (hasMetric(i)) {
+      double m = metric(i);
+      os << ((!wasMetricWritten) ? pfx : "");
+      os << "<M " << "n" << xml::MakeAttrNum(i) 
+	 << " v" << xml::MakeAttrNum(m) << "/>";
+      wasMetricWritten = true;
+    }
+  }
+
+  return os;
+}
+
+
 std::ostream&
-IData::metricsDump(std::ostream& os, int oFlags, const char* pre) const
+IData::dumpMetrics(std::ostream& os, int oFlags, const char* pfx) const
 {
   return os;
 }
 
 
 void
-IData::metricsDDump() const
+IData::ddumpMetrics() const
 {
-  metricsDump();
+  dumpMetrics();
 }
+
 
 //***************************************************************************
 

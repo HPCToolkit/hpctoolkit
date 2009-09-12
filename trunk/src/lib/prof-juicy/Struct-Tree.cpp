@@ -1459,7 +1459,7 @@ ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
 {
   bool doTag = (type() != TyRoot);
   bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ? 
-		    hasMetrics() && isLeaf() : hasMetrics());
+		    isLeaf() && hasMetrics() : hasMetrics());
   bool isXMLLeaf = isLeaf() && !doMetrics;
 
   // 1. Write element name
@@ -1511,23 +1511,6 @@ ANode::writeXML(ostream& os, int oFlags, const char* pfx) const
   if (doPost) {
     writeXML_post(os, oFlags, pfx);
   }
-  return os;
-}
-
-
-ostream& 
-ANode::writeMetricsXML(ostream& os, int oFlags, const char* pfx) const 
-{
-  bool wasMetricWritten = false;
-  
-  for (uint i = 0; i < numMetrics(); i++) {
-    if (hasMetric(i)) {
-      os << ((!wasMetricWritten) ? pfx : "");
-      os << "<M n=\"" << i << "\" v=\"" << metric(i) << "\"/>";
-      wasMetricWritten = true;
-    }
-  }
-  
   return os;
 }
 
@@ -1701,47 +1684,6 @@ Root::CSV_TreeDump(ostream& os) const
 //***************************************************************************
 // ANode, etc: Output and Debugging support 
 //***************************************************************************
-
-string 
-ANode::Types() const
-{
-  string types;
-  if (dynamic_cast<const ANode*>(this)) {
-    types += "ANode ";
-  } 
-  if (dynamic_cast<const ACodeNode*>(this)) {
-    types += "ACodeNode ";
-  } 
-  if (dynamic_cast<const Root*>(this)) {
-    types += "Root ";
-  } 
-  if (dynamic_cast<const Group*>(this)) {
-    types += "Group ";
-  } 
-  if (dynamic_cast<const LM*>(this)) {
-    types += "LM ";
-  } 
-  if (dynamic_cast<const File*>(this)) {
-    types += "File ";
-  } 
-  if (dynamic_cast<const Proc*>(this)) {
-    types += "Proc ";
-  } 
-  if (dynamic_cast<const Alien*>(this)) {
-    types += "Alien ";
-  } 
-  if (dynamic_cast<const Loop*>(this)) {
-    types += "Loop ";
-  } 
-  if (dynamic_cast<const Stmt*>(this)) {
-    types += "Stmt ";
-  } 
-  if (dynamic_cast<const Ref*>(this)) {
-    types += "Ref ";
-  }
-  return types;
-}
-
 
 string 
 ANode::toString(int oFlags, const char* pre) const

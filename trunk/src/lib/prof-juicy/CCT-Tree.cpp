@@ -497,7 +497,6 @@ makeProcNameDbg(const Prof::CCT::ANode* node)
 }
  
 
-
 //**********************************************************************
 // ANode, etc: Dump contents for inspection
 //**********************************************************************
@@ -583,25 +582,6 @@ ADynNode::writeDyn(std::ostream& o, int oFlags, const char* pre) const
     o << " " << metric(i);
   }
   o << "]" << endl;
-}
-
-
-std::ostream&
-ADynNode::writeMetricsXML(std::ostream& os, int oFlags, const char* pfx) const
-{
-  bool wasMetricWritten = false;
-
-  for (uint i = 0; i < numMetrics(); i++) {
-    if (hasMetric(i)) {
-      double m = metric(i);
-      os << ((!wasMetricWritten) ? pfx : "");
-      os << "<M " << "n" << xml::MakeAttrNum(i) 
-	 << " v" << xml::MakeAttrNum(m) << "/>";
-      wasMetricWritten = true;
-    }
-  }
-
-  return os;
 }
 
 
@@ -723,27 +703,26 @@ ANode::ddump_me() const
 
 
 bool
-ANode::writeXML_pre(ostream& os, int oFlags, const char *prefix) const
+ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
 {
-  const ADynNode* this_dyn = dynamic_cast<const ADynNode*>(this);
-
   bool doTag = (type() != TyRoot);
-  bool hasMetrics = (this_dyn && this_dyn->hasMetrics());
-  bool isXMLLeaf = isLeaf() && !hasMetrics;
+  bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ? 
+		    isLeaf() && hasMetrics() : hasMetrics());
+  bool isXMLLeaf = isLeaf() && !doMetrics;
 
   // 1. Write element name
   if (doTag) {
     if (isXMLLeaf) {
-      os << prefix << "<" << toString_me(oFlags) << "/>" << endl;
+      os << pfx << "<" << toString_me(oFlags) << "/>" << endl;
     }
     else {
-      os << prefix << "<" << toString_me(oFlags) << ">" << endl;
+      os << pfx << "<" << toString_me(oFlags) << ">" << endl;
     }
   }
 
   // 2. Write associated metrics
-  if (hasMetrics) {
-    this_dyn->writeMetricsXML(os, oFlags, prefix);
+  if (doMetrics) {
+    writeMetricsXML(os, oFlags, pfx);
     os << endl;
   }
 
@@ -752,7 +731,7 @@ ANode::writeXML_pre(ostream& os, int oFlags, const char *prefix) const
 
 
 void
-ANode::writeXML_post(ostream &os, int oFlags, const char *prefix) const
+ANode::writeXML_post(ostream &os, int oFlags, const char* pfx) const
 {
   bool doTag = (type() != ANode::TyRoot);
   if (!doTag) {
@@ -763,41 +742,12 @@ ANode::writeXML_post(ostream &os, int oFlags, const char *prefix) const
     // FIXME: tallent: temporary override
     const ProcFrm* fr = dynamic_cast<const ProcFrm*>(this);
     string tag = fr->isAlien() ? "Pr" : "PF";
-    os << prefix << "</" << tag << ">" << endl;
+    os << pfx << "</" << tag << ">" << endl;
   }
   else {
-    os << prefix << "</" << ANodeTyToName(type()) << ">" << endl;
+    os << pfx << "</" << ANodeTyToName(type()) << ">" << endl;
   }
 }
-
-
-string 
-ANode::Types() const
-{
-  string types; 
-  if (dynamic_cast<const ANode*>(this)) {
-    types += "ANode "; 
-  } 
-  if (dynamic_cast<const Root*>(this)) {
-    types += "Root "; 
-  } 
-  if (dynamic_cast<const ProcFrm*>(this)) {
-    types += "ProcFrm "; 
-  } 
-  if (dynamic_cast<const Proc*>(this)) {
-    types += "Proc "; 
-  } 
-  if (dynamic_cast<const Loop*>(this)) {
-    types += "Loop "; 
-  } 
-  if (dynamic_cast<const Call*>(this)) {
-    types += "Call "; 
-  } 
-  if (dynamic_cast<const Stmt*>(this)) {
-    types += "Stmt "; 
-  } 
-  return types; 
-} 
 
 
 //**********************************************************************

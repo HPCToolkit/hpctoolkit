@@ -560,7 +560,7 @@ write(Prof::CallPath::Profile* prof, std::ostream& os,
 
   using namespace Prof;
 
-  int oFlags = 0;
+  int oFlags = CCT::Tree::OFlg_LeafMetricsOnly;
   if (!prettyPrint) { 
     oFlags |= CCT::Tree::OFlg_Compressed;
   }

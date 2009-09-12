@@ -518,10 +518,6 @@ public:
   writeXML(std::ostream& os = std::cout, int oFlags = 0,
 	   const char* pre = "") const;
 
-  std::ostream&
-  writeMetricsXML(std::ostream& os = std::cout, int oFlags = 0, 
-		  const char* prefix = "") const;
-
   void
   ddumpXML() const;
 
@@ -541,9 +537,6 @@ public:
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
-
-  virtual std::string
-  Types() const; // instance's base and derived types 
 
   std::string
   toString(int oFlags = 0, const char* pre = "") const;
