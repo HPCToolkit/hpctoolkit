@@ -68,14 +68,14 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
+	LoadMapMgr.hpp LoadMapMgr.cpp \
+	LoadMap.hpp LoadMap.cpp \
+	\
 	Metric-Mgr.hpp Metric-Mgr.cpp \
 	Metric-ADesc.hpp \
 	Metric-IData.hpp Metric-IData.cpp \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
-	PerfMetric.hpp PerfMetric.cpp \
-	\
-	LoadMapMgr.hpp LoadMapMgr.cpp \
-	LoadMap.hpp LoadMap.cpp \
+	Metric-OLD.hpp Metric-OLD.cpp \
 	\
 	Struct-Tree.hpp Struct-Tree.cpp \
 	Struct-TreeIterator.hpp Struct-TreeIterator.cpp \

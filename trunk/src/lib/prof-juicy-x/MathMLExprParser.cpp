@@ -65,7 +65,7 @@ using std::atoi;
 
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 
-#include <lib/prof-juicy/PerfMetric.hpp>
+#include <lib/prof-juicy/Metric-OLD.hpp>
 
 #include <lib/support/NaN.h>
 #include <lib/support/Trace.hpp>
