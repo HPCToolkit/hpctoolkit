@@ -140,13 +140,17 @@ public:
   // 
   // -------------------------------------------------------
 
-  void
-  dump(std::ostream& os = std::cerr) const
-  { }
+  std::string
+  toString() const;
+
+  std::ostream&
+  dump(std::ostream& os = std::cerr) const;
+
+  virtual std::ostream&
+  dump_me(std::ostream& os = std::cerr) const;
 
   void
-  ddump() const
-  { }
+  ddump() const;
 
 protected:
 private:  
@@ -222,11 +226,8 @@ public:
   // 
   // -------------------------------------------------------
 
-  void
-  dump(std::ostream& os = std::cerr) const { }
-
-  void
-  ddump() const { }
+  virtual std::ostream&
+  dump_me(std::ostream& os = std::cerr) const;
 
 protected:
 private:  
