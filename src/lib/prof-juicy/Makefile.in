@@ -82,7 +82,6 @@ am__objects_1 = libHPCprof_juicy_la-Metric-Mgr.lo \
 	libHPCprof_juicy_la-Metric-IData.lo \
 	libHPCprof_juicy_la-Metric-AExpr.lo \
 	libHPCprof_juicy_la-PerfMetric.lo \
-	libHPCprof_juicy_la-DerivedPerfMetrics.lo \
 	libHPCprof_juicy_la-LoadMapMgr.lo \
 	libHPCprof_juicy_la-LoadMap.lo \
 	libHPCprof_juicy_la-Struct-Tree.lo \
@@ -336,11 +335,10 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 #############################################################################
 MYSOURCES = \
 	Metric-Mgr.hpp Metric-Mgr.cpp \
-	MetricDesc.hpp \
+	Metric-ADesc.hpp \
 	Metric-IData.hpp Metric-IData.cpp \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
 	PerfMetric.hpp PerfMetric.cpp \
-	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
 	\
 	LoadMapMgr.hpp LoadMapMgr.cpp \
 	LoadMap.hpp LoadMap.cpp \
@@ -436,7 +434,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CCT-Tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CCT-TreeIterator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CallPath-Profile.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-DerivedPerfMetrics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Flat-ProfileData.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-LoadMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-LoadMapMgr.Plo@am__quote@
@@ -495,13 +492,6 @@ libHPCprof_juicy_la-PerfMetric.lo: PerfMetric.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PerfMetric.cpp' object='libHPCprof_juicy_la-PerfMetric.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-PerfMetric.lo `test -f 'PerfMetric.cpp' || echo '$(srcdir)/'`PerfMetric.cpp
-
-libHPCprof_juicy_la-DerivedPerfMetrics.lo: DerivedPerfMetrics.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-DerivedPerfMetrics.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-DerivedPerfMetrics.Tpo -c -o libHPCprof_juicy_la-DerivedPerfMetrics.lo `test -f 'DerivedPerfMetrics.cpp' || echo '$(srcdir)/'`DerivedPerfMetrics.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-DerivedPerfMetrics.Tpo $(DEPDIR)/libHPCprof_juicy_la-DerivedPerfMetrics.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedPerfMetrics.cpp' object='libHPCprof_juicy_la-DerivedPerfMetrics.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-DerivedPerfMetrics.lo `test -f 'DerivedPerfMetrics.cpp' || echo '$(srcdir)/'`DerivedPerfMetrics.cpp
 
 libHPCprof_juicy_la-LoadMapMgr.lo: LoadMapMgr.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-LoadMapMgr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-LoadMapMgr.Tpo -c -o libHPCprof_juicy_la-LoadMapMgr.lo `test -f 'LoadMapMgr.cpp' || echo '$(srcdir)/'`LoadMapMgr.cpp

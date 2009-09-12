@@ -392,7 +392,7 @@ Driver::write_txt_secSummary(std::ostream& os,
       const PerfMetric* m = m_mMgr.metric(i);
       const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
       if (mm) {
-	const Prof::SampledMetricDesc& desc = mm->rawdesc();
+	const Prof::Metric::SampledDesc& desc = mm->rawdesc();
 	double smpl = rootStrct->metric(i) / (double)desc.period();
 	colFmt.genCol(i, smpl);
       }
@@ -614,7 +614,7 @@ Driver::populateStructure(Prof::Struct::Tree& structure)
 
 void
 Driver::correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
-				      Prof::Struct::Tree& structure) 
+				      Prof::Struct::Tree& structure)
 {
   computeRawMetrics(mMgr, structure);
   

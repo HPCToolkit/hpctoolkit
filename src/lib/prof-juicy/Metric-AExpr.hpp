@@ -41,9 +41,12 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-// ----------------------------------------------------------------------
+//***************************************************************************
 //
 // class Prof::Metric::AExpr and derived classes
+//
+// An abstract expression that can represents derived expressions that
+// are directly computed (as opposed to iteratively computed).
 //
 // Currently supported expressions are
 //   Const  : double constant                      : leaf
@@ -61,7 +64,7 @@
 //   CoefVar: coefficient of variance              : n-ary
 //   RStdDev: relative standard deviation          : n-ary
 //
-// ----------------------------------------------------------------------
+//***************************************************************************
 
 #ifndef prof_juicy_Prof_Metric_AExpr_hpp
 #define prof_juicy_Prof_Metric_AExpr_hpp
@@ -178,7 +181,7 @@ class Const : public AExpr
 {
 public:
   Const(double c) 
-    : m_c(c) 
+    : m_c(c)
   { }
 
   ~Const() 

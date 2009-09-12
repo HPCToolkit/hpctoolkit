@@ -770,28 +770,28 @@ ANode::isMergable(ANode* toNode, ANode* fromNode)
 //***************************************************************************
 
 void
-ANode::accumulateMetrics(uint mBegId, uint mEndId, double* valVec)
+ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 {
   ANodeChildIterator it(this); 
-  for (; it.Current(); it++) { 
-    it.CurNode()->accumulateMetrics(mBegId, mEndId, valVec);
+  for (; it.Current(); it++) {
+    it.CurNode()->accumulateMetrics(mBegId, mEndId, mVec);
   }
 
-  it.Reset(); 
+  it.Reset();
   if (it.Current()) { // 'this' is not a leaf 
     // initialize helper data
     for (uint i = mBegId; i <= mEndId; ++i) {
-      valVec[i] = 0.0; 
+      mVec.metric(i) = 0.0;
     }
 
-    for (; it.Current(); it++) { 
+    for (; it.Current(); it++) {
       for (uint i = mBegId; i <= mEndId; ++i) {
-	valVec[i] += it.CurNode()->demandMetric(i, mEndId+1/*size*/);
+	mVec.metric(i) += it.CurNode()->demandMetric(i, mEndId+1/*size*/);
       }
     }
     
     for (uint i = mBegId; i <= mEndId; ++i) {
-      demandMetric(i, mEndId+1/*size*/) += valVec[i];
+      demandMetric(i, mEndId+1/*size*/) += mVec.metric(i);
     }
   }
 }

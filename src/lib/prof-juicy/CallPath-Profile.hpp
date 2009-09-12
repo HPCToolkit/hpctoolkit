@@ -68,8 +68,8 @@
 
 #include <include/uint.h>
 
-#include "MetricDesc.hpp"
 #include "LoadMapMgr.hpp"
+#include "Metric-ADesc.hpp"
 #include "CCT-Tree.hpp"
 
 //*************************** Forward Declarations ***************************
@@ -107,13 +107,13 @@ public:
   uint numMetrics() const
   { return m_metricdesc.size(); }
   
-  SampledMetricDesc* metric(uint i) const 
+  Metric::SampledDesc* metric(uint i) const 
   { return m_metricdesc[i]; }
 
-  const SampledMetricDescVec& metricDesc() const 
+  const Metric::SampledDescVec& metricDesc() const 
   { return m_metricdesc; }
   
-  uint addMetric(SampledMetricDesc* m) {
+  uint addMetric(Metric::SampledDesc* m) {
     m_metricdesc.push_back(m);
     uint m_id = numMetrics() - 1;
     return m_id;
@@ -225,7 +225,7 @@ private:
   //StrToStrMap m_nvPairMap;
 
   // FIXME: Metric::Mgr?
-  SampledMetricDescVec m_metricdesc;
+  Metric::SampledDescVec m_metricdesc;
 
   LoadMapMgr* m_loadmapMgr;
 

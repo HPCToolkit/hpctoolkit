@@ -101,13 +101,13 @@ OverheadMetricFact::make(Prof::CallPath::Profile* prof)
   
   uint numMetrics_orig = prof->numMetrics();
   for (uint m_id = 0; m_id < numMetrics_orig; ++m_id) {
-    Prof::SampledMetricDesc* m_desc = prof->metric(m_id);
+    Prof::Metric::SampledDesc* m_desc = prof->metric(m_id);
     if (OverheadMetricFact::isMetricSrc(m_desc)) {
       OverheadMetricFact::convertToWorkMetric(m_desc);
       metric_src.push_back(m_id);
 
-      Prof::SampledMetricDesc* m_new = 
-	new Prof::SampledMetricDesc("overhead", "parallel overhead", 
+      Prof::Metric::SampledDesc* m_new = 
+	new Prof::Metric::SampledDesc("overhead", "parallel overhead", 
 				    m_desc->period());
       uint m_new_id = prof->addMetric(m_new);
       DIAG_Assert(m_new_id >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
@@ -119,13 +119,9 @@ OverheadMetricFact::make(Prof::CallPath::Profile* prof)
   // Create space for metric values
   // ------------------------------------------------------------
   uint n_new_metrics = metric_dst.size();
-
   for (Prof::CCT::ANodeIterator it(cct->root()); it.Current(); ++it) {
     Prof::CCT::ANode* x = it.CurNode();
-    Prof::CCT::ADynNode* x_dyn = dynamic_cast<Prof::CCT::ADynNode*>(x);
-    if (x_dyn) {
-      x_dyn->ensureMetricsSize(x_dyn->numMetrics() + n_new_metrics);
-    }
+    x->ensureMetricsSize(x->numMetrics() + n_new_metrics);
   }
 
   make(cct->root(), metric_src, metric_dst, false);
@@ -174,7 +170,7 @@ OverheadMetricFact::make(Prof::CCT::ANode* node,
 
 
 void
-OverheadMetricFact::convertToWorkMetric(Prof::SampledMetricDesc* mdesc)
+OverheadMetricFact::convertToWorkMetric(Prof::Metric::SampledDesc* mdesc)
 {
   const string& nm = mdesc->name();
   if (nm.find("PAPI_TOT_CYC") == 0) {

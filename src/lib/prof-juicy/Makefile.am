@@ -69,11 +69,10 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	Metric-Mgr.hpp Metric-Mgr.cpp \
-	MetricDesc.hpp \
+	Metric-ADesc.hpp \
 	Metric-IData.hpp Metric-IData.cpp \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
 	PerfMetric.hpp PerfMetric.cpp \
-	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
 	\
 	LoadMapMgr.hpp LoadMapMgr.cpp \
 	LoadMap.hpp LoadMap.cpp \

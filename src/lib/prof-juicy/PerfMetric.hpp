@@ -52,10 +52,16 @@
 
 #include <include/uint.h>
 
+#include "Metric-ADesc.hpp"
+#include "Metric-AExpr.hpp"
+
 #include <lib/support/diagnostics.h>
 
 //************************ Forward Declarations ******************************
 
+//****************************************************************************
+// *** OBSOLETE ***
+//****************************************************************************
 
 //****************************************************************************
 
@@ -92,6 +98,10 @@ private:
   bool formatAsInt; 
 }; 
 
+
+//****************************************************************************
+//
+//****************************************************************************
 
 class PerfMetric {
 public:
@@ -167,6 +177,88 @@ private:
   
 protected: 
   uint m_id;
+};
+
+
+//****************************************************************************
+//
+//****************************************************************************
+
+class FilePerfMetric : public PerfMetric {
+public: 
+  // NOTE: NativeName() is the 'select' attribute
+  FilePerfMetric(const char* nm, const char* nativeNm, const char* displayNm,
+		 bool display, bool dispPercent, bool sortBy, 
+		 const char* fname, const char* ftype,
+		 bool isuint_ev); 
+  FilePerfMetric(const std::string& nm, const std::string& nativeNm, 
+		 const std::string& displayNm,
+		 bool display, bool dispPercent, bool sortBy, 
+		 const std::string& fname, const std::string& ftype, 
+		 bool isunit_ev); 
+
+  virtual ~FilePerfMetric(); 
+
+  // --------------------------------------------------------
+  
+  const std::string& FileName() const { return m_file; }
+  const std::string& FileType() const { return m_type; } // HPCRUN, PROFILE
+
+  const Prof::Metric::SampledDesc& 
+  rawdesc() const 
+  { 
+    return m_rawdesc; 
+  }
+
+  void 
+  rawdesc(const Prof::Metric::SampledDesc& rawdesc) 
+  { 
+    m_rawdesc = rawdesc; 
+  }
+  
+
+  bool isunit_event() const { return m_isunit_event; }
+
+  // --------------------------------------------------------
+
+
+  virtual std::string toString(int flags = 0) const; 
+
+private: 
+  std::string m_file;
+  std::string m_type; // for later use
+  bool m_isunit_event;
+  
+  Prof::Metric::SampledDesc m_rawdesc;
+};
+
+
+//****************************************************************************
+//
+//****************************************************************************
+
+class ComputedPerfMetric : public PerfMetric {
+public: 
+  ComputedPerfMetric(const char* nm, const char* displayNm,
+		     bool display, bool dispPercent, bool sortBy, 
+		     bool propagateComputed, 
+		     Prof::Metric::AExpr* expr);
+  ComputedPerfMetric(const std::string& nm, const std::string& displayNm,
+		     bool display, bool dispPercent, bool sortBy, 
+		     bool propagateComputed, 
+		     Prof::Metric::AExpr* expr);
+
+  virtual ~ComputedPerfMetric(); 
+
+  virtual std::string toString(int flags = 0) const; 
+
+  const Prof::Metric::AExpr* expr() const { return m_exprTree; }
+
+private:
+  void Ctor(const char* nm, Prof::Metric::AExpr* expr);
+
+private: 
+  Prof::Metric::AExpr* m_exprTree; 
 };
 
 

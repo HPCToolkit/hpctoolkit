@@ -72,32 +72,36 @@
 
 namespace Prof {
 
+namespace Metric {
+
 //***************************************************************************//
-// MetricDesc
+// ADesc
 //***************************************************************************//
 
-class MetricDesc
+class ADesc
 {
 public:
-  MetricDesc() 
-    { }
+  ADesc() 
+  { }
 
-  MetricDesc(const char* name, const char* description)
+  ADesc(const char* name, const char* description)
     : m_name((name) ? name : ""), 
       m_description((description) ? description : "")
-    { }
+  { }
 
-  MetricDesc(const std::string& name, const std::string& description)
+  ADesc(const std::string& name, const std::string& description)
     : m_name(name), m_description(description)
-    { }
+  { }
 
-  virtual ~MetricDesc() { }
+  virtual ~ADesc() { }
 
-  MetricDesc(const MetricDesc& x)
+  ADesc(const ADesc& x)
     : m_name(x.m_name), m_description(x.m_description)
-    { }
+  { }
 
-  MetricDesc& operator=(const MetricDesc& x) {
+  ADesc&
+  operator=(const ADesc& x) 
+  {
     if (this != &x) {
       m_name        = x.m_name;
       m_description = x.m_description;
@@ -152,42 +156,43 @@ private:
 
 
 //***************************************************************************//
-// MetricDescVec
+// ADescVec
 //***************************************************************************//
 
-class MetricDescVec : public std::vector<MetricDesc*>
+class ADescVec : public std::vector<ADesc*>
 {
 };
 
 
 //***************************************************************************//
-// SampledMetricDesc
+// SampledDesc
 //***************************************************************************//
 
-class SampledMetricDesc : public MetricDesc
+class SampledDesc : public ADesc
 {
 public:
-  SampledMetricDesc() 
+  SampledDesc() 
     : m_flags(HPCRUN_MetricFlag_NULL), m_period(0) 
-    { }
+  { }
 
-  SampledMetricDesc(const char* name, const char* description,
-		    unsigned long period)
-    : MetricDesc(name, description),
+  SampledDesc(const char* name, const char* description, uint64_t period)
+    : ADesc(name, description),
       m_flags(HPCRUN_MetricFlag_NULL), m_period(period)
-    { }
+  { }
 
-  virtual ~SampledMetricDesc() 
-    { }
-
-  SampledMetricDesc(const SampledMetricDesc& x)
-    : MetricDesc(x.name(), x.description()), 
+  virtual ~SampledDesc() 
+  { }
+  
+  SampledDesc(const SampledDesc& x)
+    : ADesc(x),
       m_flags(x.m_flags), m_period(x.m_period)
-    { }
-
-  SampledMetricDesc& operator=(const SampledMetricDesc& x) {
-    MetricDesc::operator=(x);
+  { }
+  
+  SampledDesc&
+  operator=(const SampledDesc& x) 
+  {
     if (this != &x) {
+      ADesc::operator=(x);
       m_flags = x.m_flags;      
       m_period = x.m_period;
     }
@@ -217,8 +222,11 @@ public:
   // 
   // -------------------------------------------------------
 
-  void dump(std::ostream& os = std::cerr) const { }
-  void ddump() const { }
+  void
+  dump(std::ostream& os = std::cerr) const { }
+
+  void
+  ddump() const { }
 
 protected:
 private:  
@@ -228,16 +236,18 @@ private:
 
 
 //***************************************************************************//
-// SampledMetricDescVec
+// SampledDescVec
 //***************************************************************************//
 
-class SampledMetricDescVec : public std::vector<SampledMetricDesc*>
+class SampledDescVec : public std::vector<SampledDesc*>
 {
 };
 
+
+} // namespace Metric
 
 } // namespace Prof
 
 //***************************************************************************
 
-#endif /* prof_juicy_MetricDesc */
+#endif /* prof_juicy_ADesc */
