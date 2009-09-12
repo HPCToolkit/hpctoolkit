@@ -91,29 +91,37 @@ public:
   // -------------------------------------------------------
   // meta data
   // -------------------------------------------------------
-  const std::string& name() const 
+  const std::string&
+  name() const 
   { return m_name; }
   
-  void name(const std::string& x) 
+  void
+  name(const std::string& x) 
   { m_name = x; }
 
-  void name(const char* x) 
+  void
+  name(const char* x) 
   { m_name = (x) ? x : ""; }
 
 
   // -------------------------------------------------------
   // Metrics
   // -------------------------------------------------------
-  uint numMetrics() const
+  uint
+  numMetrics() const
   { return m_metricdesc.size(); }
   
-  Metric::SampledDesc* metric(uint i) const 
+  Metric::SampledDesc* 
+  metric(uint i) const 
   { return m_metricdesc[i]; }
 
-  const Metric::SampledDescVec& metricDesc() const 
+  const Metric::SampledDescVec&
+  metricDesc() const 
   { return m_metricdesc; }
   
-  uint addMetric(Metric::SampledDesc* m) {
+  uint
+  addMetric(Metric::SampledDesc* m)
+  {
     m_metricdesc.push_back(m);
     uint m_id = numMetrics() - 1;
     return m_id;
@@ -122,22 +130,26 @@ public:
   // -------------------------------------------------------
   // LoadMapMgr
   // -------------------------------------------------------
-  LoadMapMgr* loadMapMgr() const
+  LoadMapMgr*
+  loadMapMgr() const
   { return m_loadmapMgr; }
   
   // -------------------------------------------------------
   // CCT
   // -------------------------------------------------------
-  CCT::Tree* cct() const 
+  CCT::Tree*
+  cct() const 
   { return m_cct; }
 
   // -------------------------------------------------------
   // Static structure
   // -------------------------------------------------------
-  Prof::Struct::Tree* structure() const
+  Prof::Struct::Tree*
+  structure() const
   { return m_structure; }
 
-  void structure(Prof::Struct::Tree* x)
+  void
+  structure(Prof::Struct::Tree* x)
   { m_structure = x; }
 
 
@@ -148,7 +160,8 @@ public:
   // Given a Profile y, merge y into x = 'this'
   // ASSUMES: both x and y are in canonical form (canonicalize())
   // WARNING: the merge may change/destroy y
-  void merge(Profile& y, bool isSameThread);
+  void
+  merge(Profile& y, bool isSameThread);
 
 
   // -------------------------------------------------------
@@ -193,17 +206,20 @@ public:
 
 
   // -------------------------------------------------------
-  // Dump contents for inspection
+  // Output
   // -------------------------------------------------------
 
   std::ostream& 
-  writeXML_hdr(std::ostream& os = std::cerr, 
-	       int oFlags = 0, const char *pre = "") const;
+  writeXML_hdr(std::ostream& os, int oFlags = 0, const char* pfx = "") const;
 
+  // TODO: move Analysis::CallPath::write() here?
   //std::ostream& writeXML_cct(...) const;
 
-  virtual std::ostream& dump(std::ostream& os = std::cerr) const;
-  virtual void ddump() const;
+  std::ostream&
+  dump(std::ostream& os = std::cerr) const;
+
+  void
+  ddump() const;
 
   static const int StructMetricIdFlg = 0;
 
@@ -224,8 +240,7 @@ private:
   //typedef std::map<std::string, std::string> StrToStrMap;
   //StrToStrMap m_nvPairMap;
 
-  // FIXME: Metric::Mgr?
-  Metric::SampledDescVec m_metricdesc;
+  Metric::SampledDescVec m_metricdesc; // FIXME: Metric::Mgr?
 
   LoadMapMgr* m_loadmapMgr;
 

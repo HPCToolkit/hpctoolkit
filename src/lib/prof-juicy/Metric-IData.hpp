@@ -220,14 +220,18 @@ public:
   // --------------------------------------------------------
   
   std::string
-  metricsToString(int oFlags = 0, const char* pre = "") const;
-  
+  toStringMetrics(int oFlags = 0, const char* pfx = "") const;
+
   std::ostream& 
-  metricsDump(std::ostream& os = std::cerr, int oFlags = 0,
-	      const char* pre = "") const;
+  writeMetricsXML(std::ostream& os, int oFlags, const char* pfx = "") const;
+
+  std::ostream&
+  dumpMetrics(std::ostream& os = std::cerr, int oFlags = 0,
+	      const char* pfx = "") const;
 
   void
-  metricsDDump() const;
+  ddumpMetrics() const;
+
   
 private:
   mutable MetricVec* m_metrics; // 'mutable' for ensureMetricsSize()

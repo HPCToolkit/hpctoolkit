@@ -422,21 +422,19 @@ public:
   // --------------------------------------------------------
   // Output
   // --------------------------------------------------------
-  virtual std::string 
-  Types() const; // this instance's base and derived types
 
-  std::string 
-  toString(int oFlags = 0, const char* pre = "") const;
+  std::string
+  toString(int oFlags = 0, const char* pfx = "") const;
 
-  virtual std::string 
-  toString_me(int oFlags = 0) const; 
+  virtual std::string
+  toString_me(int oFlags = 0) const;
 
-  std::ostream& 
+  std::ostream&
   writeXML(std::ostream& os = std::cerr, int oFlags = 0,
-	   const char* pre = "") const;
+	   const char* pfx = "") const;
 
-  std::ostream& 
-  dump(std::ostream& os = std::cerr, int oFlags = 0, const char* pre = "") const;
+  std::ostream&
+  dump(std::ostream& os = std::cerr, int oFlags = 0, const char* pfx = "") const;
 
   void
   ddump() const;
@@ -451,10 +449,10 @@ protected:
 
   bool
   writeXML_pre(std::ostream& os = std::cerr, int oFlags = 0,
-	       const char* prefix = "") const;
+	       const char* pfx = "") const;
   void
   writeXML_post(std::ostream& os = std::cerr, int oFlags = 0, 
-		const char* prefix = "") const;
+		const char* pfx = "") const;
 
   // --------------------------------------------------------
   // 
@@ -697,11 +695,6 @@ public:
 
   void 
   writeDyn(std::ostream& os, int oFlags = 0, const char* prefix = "") const;
-
-  // writeMetricsXML: write metrics (sparsely)
-  std::ostream& 
-  writeMetricsXML(std::ostream& os, int oFlags = 0, 
-		  const char* prefix = "") const;
 
 
 private:
