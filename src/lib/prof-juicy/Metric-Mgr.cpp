@@ -111,11 +111,10 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
       
       string nativeNm = StrUtil::toStr(j);
       bool sortby = empty();
-      FilePerfMetric* m = new FilePerfMetric(m_raw.name(), nativeNm,
-					     m_raw.name(),
+      FilePerfMetric* m = new FilePerfMetric(m_raw.name(), m_raw.name(),
 					     true/*display*/, ispercent,
-					     sortby, proffnm, string("HPCRUN"),
-					     isunit_ev);
+					     sortby, proffnm, nativeNm, 
+					     string("HPCRUN"), isunit_ev);
       m->rawdesc(m_raw);
       insert(m);
     }
@@ -226,7 +225,7 @@ Mgr::insert(PerfMetric* m)
     string nm_new = nm + "-" + StrUtil::toStr(qualifier);
     
     m->Name(nm_new);
-    m->DisplayInfo().Name(nm_new);
+    m->dispName(nm_new);
     ans = true; 
 
     mvec.push_back(m);

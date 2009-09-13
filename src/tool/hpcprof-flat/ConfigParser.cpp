@@ -430,9 +430,9 @@ ProcessFILE(DOMNode* fileNode,
   }
 
   if (!metricFile.empty()) { 
-    mMgr.insert(new FilePerfMetric(metricNm, nativeNm, metricDispNm, 
-				   metricDoDisp, metricDoPercent, 
-				   metricDoSortBy, metricFile, 
+    mMgr.insert(new FilePerfMetric(metricNm, metricDispNm, metricDoDisp,
+				   metricDoPercent, metricDoSortBy, 
+				   metricFile, nativeNm, 
 				   metricFileType, true /*isunit_ev*/));
   } 
   else {
