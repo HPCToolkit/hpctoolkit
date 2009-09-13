@@ -66,129 +66,20 @@ using std::string;
 
 //****************************************************************************
 
-
-// ************************************************************************* //
-// DataDisplayInfo
-// ************************************************************************* //
-
-DataDisplayInfo::~DataDisplayInfo() 
-{
-}
-
-
-string 
-DataDisplayInfo::toString() const 
-{
-  string str = string("DisplayInfo ") + 
-    "name=" + name + " " + 
-    "color=" + color + " " + 
-    "width=" + StrUtil::toStr(width) + " " + 
-    "asInt=" + ((formatAsInt) ? "true" : "false"); 
-  return str;
-}
-
-
 // ************************************************************************* //
 // PerfMetric
 // ************************************************************************* //
 
-PerfMetric::PerfMetric(const char *nm, const char *nativeNm, 
-		       const char* displayNm, 
-		       bool disp, bool dispPercent, bool isPercent, bool sort)
- : name(nm), nativeName(nativeNm), dispInfo(NULL), 
-   display(disp), m_dispPercent(dispPercent), m_isPercent(isPercent), 
-   sortBy(sort) 
-{
-  Ctor(nm, displayNm);
-}
-
-
-PerfMetric::PerfMetric(const std::string& nm, const std::string& nativeNm, 
-		       const std::string& displayNm, 
-		       bool disp, bool dispPercent, bool isPercent, bool sort)
- : name(nm), nativeName(nativeNm), dispInfo(NULL), 
-   display(disp), m_dispPercent(dispPercent), m_isPercent(isPercent), 
-   sortBy(sort) 
-{
-  Ctor(nm.c_str(), displayNm.c_str());
-}
-
-
-void
-PerfMetric::Ctor(const char *nm, const char* displayNm)
-{
-  // trace = 1; 
-  m_id = 0;
-  
-  DIAG_Assert((displayNm != NULL) && (strlen(displayNm) > 0), ""); 
-  dispInfo = new DataDisplayInfo(displayNm, NULL, 9, false); 
-}
-
-
-PerfMetric::~PerfMetric() 
-{
-  delete dispInfo; 
-}
-
-
 string
 PerfMetric::toString(int flags) const 
 {
-  const string& dnm = dispInfo->Name();
-
-  string str(name);
-  
-  if (dnm != name) {
-    " (" + dispInfo->Name() + ")";
-  }
-  
-  if (flags) {
-    str += string("PerfMetric: ") + 
-      "name=" + name + " " + 
-      "display=" + ((display) ? "true " : "false ") + 
-      "perfInfoIndex=" + StrUtil::toStr(m_id) + " " + 
-      "dispInfo=" + dispInfo->toString(); 
-  }
-  return str;
+  return name;
 }
+
   
 // *************************************************************************
 // FilePerfMetric
 // *************************************************************************
-
-FilePerfMetric::FilePerfMetric(const char* nm, 
-			       const char* nativeNm,
-			       const char* displayNm, 
-			       bool doDisp, bool dispPercent, bool doSort, 
-			       const char* file,
-			       const char* type,
-			       bool isunit_ev) 
-  : PerfMetric(nm, nativeNm, displayNm, doDisp, dispPercent, false, doSort),
-    m_file(file), m_type(type), m_isunit_event(isunit_ev)
-{ 
-  // trace = 1;
-}
-
-
-FilePerfMetric::FilePerfMetric(const std::string& nm, 
-			       const std::string& nativeNm, 
-			       const std::string& displayNm,
-			       bool doDisp, bool dispPercent, bool doSort, 
-			       const std::string& file, 
-			       const std::string& type,
-			       bool isunit_ev)
-  : PerfMetric(nm, nativeNm, displayNm, doDisp, dispPercent, false, doSort),
-    m_file(file), m_type(type), m_isunit_event(isunit_ev)
-{ 
-  // trace = 1;
-}
-
-
-FilePerfMetric::~FilePerfMetric() 
-{
-  IFTRACE << "~FilePerfMetric " << toString() << endl; 
-}
-
 
 string
 FilePerfMetric::toString(int flags) const 
@@ -197,9 +88,6 @@ FilePerfMetric::toString(int flags) const
   string rawstr = " {" + m_rawdesc.description() + ":" + StrUtil::toStr(m_rawdesc.period()) + " ev/smpl}";
   string str = PerfMetric::toString() + unitstr + rawstr;
 
-  if (flags) {
-    str += "file='" + m_file + "' " + "type='" + m_type + "'";
-  }
   return str;
 } 
 
@@ -207,40 +95,6 @@ FilePerfMetric::toString(int flags) const
 // **************************************************************************
 // 
 // **************************************************************************
-
-ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm,
-				       bool doDisp, bool dispPercent, 
-				       bool isPercent,  bool doSort,
-      				       Prof::Metric::AExpr* expr)
-  : PerfMetric(nm, "", displayNm, doDisp, dispPercent, isPercent, doSort)
-{
-  Ctor(nm, expr);
-}
-
-
-ComputedPerfMetric::ComputedPerfMetric(const std::string& nm,
-				       const std::string& displayNm,
-				       bool doDisp, bool dispPercent, 
-				       bool isPercent,  bool doSort,
-				       Prof::Metric::AExpr* expr)
-  : PerfMetric(nm, "", displayNm, doDisp, dispPercent, isPercent, doSort)
-{
-  Ctor(nm.c_str(), expr);
-}
-
-
-void
-ComputedPerfMetric::Ctor(const char* nm, Prof::Metric::AExpr* expr)
-{
-  m_exprTree = expr;
-}
-
-
-ComputedPerfMetric::~ComputedPerfMetric() 
-{
-  IFTRACE << "~ComputedPerfMetric " << toString() << endl; 
-  delete m_exprTree;
-}
 
 
 string

@@ -248,9 +248,10 @@ Driver::write_experiment(std::ostream &os) const
   for (uint i = 0; i < m_mMgr.size(); ++i) {
     const PerfMetric* m = m_mMgr.metric(i);
     os << "    <Metric i" << MakeAttrNum(i)
-       << " n" << MakeAttrStr(m->DisplayInfo().Name())
+       << " n" << MakeAttrStr(m->dispName())
        << " show=\"" << ((m->Display()) ? "1" : "0") << "\"/>";
     os << "<Info>"
+      //<< "<NV n=\"units\" v=\"events\"/>" // or "samples"
        << "<NV n=\"percent\" v=\"" << ((m->dispPercent()) ? "1" : "0") << "\"/>"
        << "</Info>\n";
   }
@@ -288,9 +289,9 @@ Driver::write_csv(std::ostream &os) const
   os << "File name,Routine name,Start line,End line,Loop level";
   for (uint i = 0; i < m_mMgr.size(); ++i) {
     const PerfMetric* m = m_mMgr.metric(i); 
-    os << "," << m->DisplayInfo().Name();
+    os << "," << m->dispName();
     if (m->dispPercent())
-      os << "," << m->DisplayInfo().Name() << " (%)";
+      os << "," << m->dispName() << " (%)";
   }
   os << endl;
   
@@ -546,7 +547,7 @@ Driver::write_config(std::ostream &os) const
     if (mm) {
       const char* sortbystr = ((i == 0) ? " sortBy=\"true\"" : "");
       os << "<METRIC name=\"" << m->Name() 
-	 << "\" displayName=\"" << m->DisplayInfo().Name() << "\"" 
+	 << "\" displayName=\"" << m->dispName() << "\"" 
 	 << sortbystr << ">\n";
       os << "  <FILE name=\"" << mm->FileName() 
 	 << "\" select=\"" << mm->NativeName()
