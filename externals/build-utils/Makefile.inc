@@ -149,6 +149,7 @@ reinstall: build
 	@rm -f $(INSTALL_COOKIE)
 	$(INSTALL_CMD)
 	touch $(INSTALL_COOKIE)
+	@echo "$(PKG_NAME) build complete"
 
 install:
 	@if test -f $(NOBUILD_COOKIE) ; then  \

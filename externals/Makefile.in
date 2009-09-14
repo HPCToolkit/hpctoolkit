@@ -46,20 +46,38 @@ DIST_FILES = LICENSE Makefile.conf.in Makefile.in README*  \
 	.svn-revision build-utils config distfiles
 
 NOBUILD_COOKIE = .dont-build
+FAILURE_FILE = BUILD-FAILURE
 
-.PHONY: all install install-all $(PACKAGES)
+.PHONY: all begin-build install install-all $(PACKAGES)
 .PHONY: fetch fetch-all clean clean-all
 .PHONY: distclean distclean-all distclean-plus dist
 
-all install install-all: $(PACKAGES)
+all install install-all: begin-build $(PACKAGES)
 	@echo "Externals build complete at `date`"
 
-$(PACKAGES):
-	$(MAKE) -C $@ install
-
 libdwarf: libelf
-
 symtabAPI: libdwarf libelf libunwind libxml2
+
+#
+# Catch package failures and save them in FAILURE_FILE.  This allows
+# us to report the failure after a successful target.  Externals's
+# top-level targets are entire package builds, so the output in a
+# parallel build often hides the error from another package.
+#
+begin-build:
+	rm -f $(FAILURE_FILE)
+
+$(PACKAGES): begin-build
+	@if $(MAKE) -C $@ install ; then \
+		if test -f $(FAILURE_FILE) ; then \
+			echo "BUILD FAILURE in the following packages:" ; \
+			cat $(FAILURE_FILE) ; \
+		fi ; \
+	else \
+		echo $@ >>$(FAILURE_FILE) ; \
+		echo "BUILD FAILURE:" $@ ;  \
+		exit 2 ; \
+	fi
 
 fetch fetch-all:
 	@for pkg in $(PACKAGES) ; do  \

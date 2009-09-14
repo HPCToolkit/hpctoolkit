@@ -89,6 +89,7 @@ AC_PROG_CXX
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
+failure_file=BUILD-FAILURE
 nobuild_cookie=.dont-build
 version_file="${srcdir}/.svn-revision"
 
@@ -844,6 +845,8 @@ esac
 AC_SUBST([with_mpi])
 
 AC_OUTPUT
+
+rm -f "$failure_file"
 
 #
 # Display a summary of the config options.

@@ -3282,6 +3282,7 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 
+failure_file=BUILD-FAILURE
 nobuild_cookie=.dont-build
 version_file="${srcdir}/.svn-revision"
 
@@ -5279,6 +5280,8 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
+
+rm -f "$failure_file"
 
 #
 # Display a summary of the config options.
