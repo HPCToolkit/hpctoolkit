@@ -18627,7 +18627,7 @@ hpc_ext_libs_dir=lib/hpctoolkit/ext-libs
 #-------------------------------------------------
 
 # External's minimum svn rev number, or else a fatal error.
-EXTERNALS_MIN_REV=2396
+EXTERNALS_MIN_REV=2469
 
 
 # Check whether --with-dummy-blank-line was given.
