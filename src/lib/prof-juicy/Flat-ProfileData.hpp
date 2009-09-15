@@ -187,6 +187,7 @@ public:
   ~EventData();
   
   const Metric::SampledDesc& mdesc() const { return m_mdesc; }
+  Metric::SampledDesc& mdesc() { return m_mdesc; }
 
   int  bucket_size() const { return sizeof(bucketsz_t); }
   uint outofrange() const { return m_outofrange; }
@@ -244,7 +245,7 @@ public:
   // -------------------------------------------------------
   // read: Throws an exception on an error!
   // -------------------------------------------------------
-  void read(FILE*);
+  void read(FILE*, const char* filename = NULL);
 
   // -------------------------------------------------------
   // 

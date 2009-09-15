@@ -101,14 +101,14 @@ private:
        bool isOverheadCtxt);
 
   static inline bool 
-  isMetricSrc(const Prof::Metric::SampledDesc* mdesc)
+  isMetricSrc(const Prof::Metric::ADesc* mdesc)
   {
     const string& nm = mdesc->name();
     return ((nm.find("PAPI_TOT_CYC") == 0) || (nm.find("WALLCLOCK") == 0));
   }
 
   static void
-  convertToWorkMetric(Prof::Metric::SampledDesc* mdesc);
+  convertToWorkMetric(Prof::Metric::ADesc* mdesc);
 
 };
 

@@ -332,7 +332,7 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr)
 		<< " metricDispNm=" << metricDispNm);
 		
   // should have exactly one child
-  DOMNode *metricImpl = node->getFirstChild();
+  DOMNode* metricImpl = node->getFirstChild();
 
   for ( ; metricImpl != NULL; metricImpl = metricImpl->getNextSibling()) {
 
@@ -344,7 +344,7 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr)
       continue;
     }
     
-    const XMLCh *metricType = metricImpl->getNodeName();
+    const XMLCh* metricType = metricImpl->getNodeName();
 
     if (XMLString::equals(metricType, FILE)) {
 
@@ -354,10 +354,10 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr)
     }
     else if (XMLString::equals(metricType,COMPUTE)) {
 
-      bool propagateComputed = false; // tallent
-        // (getAttr(metricImpl, PROPAGATEATTR) == "computed"); 
+      //bool propagateComputed = false; // tallent
+      // (getAttr(metricImpl, PROPAGATEATTR) == "computed"); 
 
-      DOMNode *child = metricImpl->getFirstChild();
+      DOMNode* child = metricImpl->getFirstChild();
       for (; child != NULL; child = child->getNextSibling()) {
 	if (child->getNodeType() == DOMNode::TEXT_NODE) {
 	  // DTD ensures this can't contain anything but white space
@@ -367,12 +367,12 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr)
 	  continue;
 	}
 
-	Prof::Metric::AExpr* expr = 
-	  makeMathMLExpr(metricNm.c_str(), child, mMgr);
-	mMgr.insert(new ComputedPerfMetric(metricNm, 
-					   metricDoDisp, metricDoPercent, 
-					   propagateComputed/*isPercent*/,
-					   metricDoSortBy, expr));
+	using namespace Prof;
+	Metric::AExpr* expr = makeMathMLExpr(metricNm.c_str(), child, mMgr);
+	mMgr.insert(new Metric::DerivedDesc(metricNm, metricNm, expr,
+					    metricDoDisp, metricDoSortBy,
+					    metricDoPercent, 
+					    false/*isPercent*/));
       }
     } 
     else {
@@ -429,10 +429,13 @@ ProcessFILE(DOMNode* fileNode,
     nativeNm = "0";
   }
 
-  if (!metricFile.empty()) { 
-    mMgr.insert(new FilePerfMetric(metricNm, metricDoDisp, metricDoPercent,
-				   metricDoSortBy, metricFile, nativeNm, 
-				   metricFileType, true /*isunit_ev*/));
+  if (!metricFile.empty()) {
+    using namespace Prof;
+    mMgr.insert(new Metric::SampledDesc(metricNm, metricNm,
+					0/*period*/, true /*isUnitsEvents*/,
+					metricFile, nativeNm, metricFileType,
+					metricDoDisp, metricDoSortBy,
+					metricDoPercent));
   }
   else {
     ConfigParser_Throw("METRIC '" << metricNm << "' FILE name empty.");

@@ -111,16 +111,16 @@ public:
   numMetrics() const
   { return m_metricdesc.size(); }
   
-  Metric::SampledDesc* 
+  Metric::ADesc* 
   metric(uint i) const 
   { return m_metricdesc[i]; }
 
-  const Metric::SampledDescVec&
+  const Metric::ADescVec&
   metricDesc() const 
   { return m_metricdesc; }
   
   uint
-  addMetric(Metric::SampledDesc* m)
+  addMetric(Metric::ADesc* m)
   {
     m_metricdesc.push_back(m);
     uint m_id = numMetrics() - 1;
@@ -240,7 +240,7 @@ private:
   //typedef std::map<std::string, std::string> StrToStrMap;
   //StrToStrMap m_nvPairMap;
 
-  Metric::SampledDescVec m_metricdesc; // FIXME: Metric::Mgr?
+  Metric::ADescVec m_metricdesc; // FIXME: Metric::Mgr?
 
   LoadMapMgr* m_loadmapMgr;
 

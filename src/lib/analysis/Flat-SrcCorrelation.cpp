@@ -246,13 +246,13 @@ Driver::write_experiment(std::ostream &os) const
 
   os << "  <MetricTable>\n";
   for (uint i = 0; i < m_mMgr.size(); ++i) {
-    const PerfMetric* m = m_mMgr.metric(i);
+    const Prof::Metric::ADesc* m = m_mMgr.metric(i);
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
        << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\"/>";
     os << "<Info>"
-       << "<NV n=\"units\" v=\"events\"/>" // or "samples"
-       << "<NV n=\"percent\" v=\"" << ((m->dispPercent()) ? "1" : "0") << "\"/>"
+       << "<NV n=\"units\" v=\"events\"/>" // or "samples" m->isUnitsEvents()
+       << "<NV n=\"percent\" v=\"" << ((m->doDispPercent()) ? "1" : "0") << "\"/>"
        << "</Info>\n";
   }
   os << "  </MetricTable>\n";
@@ -288,9 +288,9 @@ Driver::write_csv(std::ostream &os) const
 {
   os << "File name,Routine name,Start line,End line,Loop level";
   for (uint i = 0; i < m_mMgr.size(); ++i) {
-    const PerfMetric* m = m_mMgr.metric(i); 
+    const Prof::Metric::ADesc* m = m_mMgr.metric(i); 
     os << "," << m->name();
-    if (m->dispPercent()) {
+    if (m->doDispPercent()) {
       os << "," << m->name() << " (%)";
     }
   }
@@ -310,7 +310,7 @@ Driver::write_txt(std::ostream &os) const
 
   //write_experiment(os);
 
-  PerfMetric* m_sortby = m_mMgr.findSortBy();
+  Metric::ADesc* m_sortby = m_mMgr.findSortKey();
   DIAG_Assert(m_sortby, "INVARIANT: at least on sort-by metric must exist");
 
   Struct::Root* rootStrct = m_structure.root();
@@ -382,20 +382,21 @@ Driver::write_txt_secSummary(std::ostream& os,
 			     const Prof::Struct::ANodeFilter* filter) const
 {
   using Analysis::TextUtil::ColumnFormatter;
+  using namespace Prof;
 
   write_txt_hdr(os, title);
 
-  Prof::Struct::Root* rootStrct = m_structure.root();
-  PerfMetric* m_sortby = m_mMgr.findSortBy();
+  Struct::Root* rootStrct = m_structure.root();
+  Metric::ADesc* m_sortby = m_mMgr.findSortKey();
 
   if (!filter) {
     // Program *sample* summary
     for (uint i = 0; i < m_mMgr.size(); ++i) {
-      const PerfMetric* m = m_mMgr.metric(i);
-      const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
+      const Metric::ADesc* m = m_mMgr.metric(i);
+      const Metric::SampledDesc* mm =
+	dynamic_cast<const Metric::SampledDesc*>(m);
       if (mm) {
-	const Prof::Metric::SampledDesc& desc = mm->rawdesc();
-	double smpl = rootStrct->metric(i) / (double)desc.period();
+	double smpl = rootStrct->metric(i) / (double)mm->period();
 	colFmt.genCol(i, smpl);
       }
       else {
@@ -411,9 +412,9 @@ Driver::write_txt_secSummary(std::ostream& os,
     os << std::endl;
   }
   else {
-    Prof::Struct::ANodeSortedIterator it(rootStrct, Prof::Struct::ANodeSortedIterator::cmpByMetric(m_sortby->id()), filter, false/*leavesOnly*/);
+    Struct::ANodeSortedIterator it(rootStrct, Struct::ANodeSortedIterator::cmpByMetric(m_sortby->id()), filter, false/*leavesOnly*/);
     for (; it.Current(); it++) {
-      Prof::Struct::ANode* strct = it.Current();
+      Struct::ANode* strct = it.Current();
       for (uint i = 0; i < m_mMgr.size(); ++i) {
 	colFmt.genCol(i, strct->metric(i), rootStrct->metric(i));
       }
@@ -543,8 +544,9 @@ Driver::write_config(std::ostream &os) const
 
   // metrics
   for (uint i = 0; i < m_mMgr.size(); i++) {
-    const PerfMetric* m = m_mMgr.metric(i);
-    const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
+    using namespace Prof;
+    const Metric::ADesc* m = m_mMgr.metric(i);
+    const Metric::SampledDesc* mm = dynamic_cast<const Metric::SampledDesc*>(m);
     if (mm) {
       const char* sortbystr = ((i == 0) ? " sortBy=\"true\"" : "");
       os << "<METRIC name=\"" << m->name() 
@@ -640,7 +642,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
 {
   StringToBoolMap hasStructureTbl;
   
-  const Prof::Metric::Mgr::StringPerfMetricVecMap& fnameToFMetricMap = 
+  const Prof::Metric::Mgr::StringToADescVecMap& fnameToFMetricMap = 
     mMgr.fnameToFMetricMap();
 
   //-------------------------------------------------------
@@ -648,7 +650,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
   // profile files to one load module to amortize the overhead of
   // reading symbol tables and debugging information.
   //-------------------------------------------------------
-  Prof::Metric::Mgr::StringPerfMetricVecMap::const_iterator it = 
+  Prof::Metric::Mgr::StringToADescVecMap::const_iterator it = 
     fnameToFMetricMap.begin();
   
   ProfToMetricsTupleVec batchJob;
@@ -695,8 +697,9 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
     VMAIntervalSet ivalset; // cheat using a VMAInterval set
 
     for (uint i = 0; i < mMgr.size(); i++) {
-      const PerfMetric* m = mMgr.metric(i);
-      const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
+      const Prof::Metric::ADesc* m = mMgr.metric(i);
+      const Prof::Metric::SampledDesc* mm =
+	dynamic_cast<const Prof::Metric::SampledDesc*>(m);
       if (mm) {
 	ivalset.insert(VMAInterval(m->id(), m->id() + 1)); // [ )
       }
@@ -734,7 +737,7 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
   for (uint i = 0; i < profToMetricsVec.size(); ++i) {
 
     Prof::Flat::ProfileData* prof = profToMetricsVec[i].first;
-    Prof::Metric::Mgr::PerfMetricVec* metrics = profToMetricsVec[i].second;
+    Prof::Metric::ADescVec* metrics = profToMetricsVec[i].second;
 
     
     using Prof::Flat::ProfileData;
@@ -755,14 +758,17 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
       //-------------------------------------------------------
       // For each metric, insert performance data into scope tree
       //-------------------------------------------------------
-      for (Prof::Metric::Mgr::PerfMetricVec::iterator it = metrics->begin();
+      using namespace Prof;
+      for (Metric::ADescVec::iterator it = metrics->begin();
 	   it != metrics->end(); ++it) {
-	FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
-	DIAG_Assert(m->isUnitEvent(), "Assumes metric should compute events!");
+	Metric::SampledDesc* m = dynamic_cast<Metric::SampledDesc*>(*it);
+	DIAG_Assert(m->isUnitsEvents(), "Assume metric's units is events!");
 	uint mIdx = (uint)StrUtil::toUInt64(m->profileRelId());
-	
 	const Prof::Flat::EventData& profevent = proflm->event(mIdx);
-	m->rawdesc(profevent.mdesc());
+	if (!m->period()) {
+	  // N.B.: 'period' is missing when metric derives from config file
+	  m->period(profevent.mdesc().period());
+	}
 	
 	correlateRaw(m, profevent, proflm->load_addr(), 
 		     structure, lmStrct, lm, useStruct);
@@ -778,7 +784,7 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
 // map), correlation is by VMA.  Otherwise correlation is performed
 // using file, function and line debugging information.
 void
-Driver::correlateRaw(PerfMetric* metric,
+Driver::correlateRaw(Prof::Metric::ADesc* metric,
 		     const Prof::Flat::EventData& profevent,
 		     VMA lm_load_addr,
 		     Prof::Struct::Tree& structure,
@@ -817,14 +823,14 @@ Driver::correlateRaw(PerfMetric* metric,
 // A batch is a vector of [Prof::Flat::Profile, <metric-vector>] pairs
 bool
 Driver::getNextRawBatch(ProfToMetricsTupleVec& batchJob,
-			Prof::Metric::Mgr::StringPerfMetricVecMap::const_iterator& it, 
-			const Prof::Metric::Mgr::StringPerfMetricVecMap::const_iterator& it_end)
+			Prof::Metric::Mgr::StringToADescVecMap::const_iterator& it, 
+			const Prof::Metric::Mgr::StringToADescVecMap::const_iterator& it_end)
 {
   for (uint i = 0; i < profileBatchSz; ++i) {
     if (it != it_end) {
       const string& fnm = it->first;
-      Prof::Metric::Mgr::PerfMetricVec& metrics = 
-	const_cast<Prof::Metric::Mgr::PerfMetricVec&>(it->second);
+      Prof::Metric::ADescVec& metrics = 
+	const_cast<Prof::Metric::ADescVec&>(it->second);
       Prof::Flat::ProfileData* prof = readProf(fnm);
       batchJob.push_back(make_pair(prof, &metrics));
       it++;
@@ -878,7 +884,7 @@ void
 Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr, 
 			      Prof::Struct::Tree& structure)
 {
-  using Prof::Metric::AExpr;
+  using namespace Prof;
 
   // INVARIANT: All raw metrics have interior (and leaf) values before
   // derived metrics are computed.
@@ -886,11 +892,12 @@ Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr,
   // 1. Compute batch jobs: a derived metric with id 'x' only depends
   //    on metrics with id's strictly less than 'x'.
   VMAIntervalSet ivalset; // cheat using a VMAInterval set
-  const AExpr** mExprVec = new const AExpr*[mMgr.size()];
+  const Metric::AExpr** mExprVec = new const Metric::AExpr*[mMgr.size()];
 
   for (uint i = 0; i < mMgr.size(); i++) {
-    const PerfMetric* m = mMgr.metric(i);
-    const ComputedPerfMetric* mm = dynamic_cast<const ComputedPerfMetric*>(m);
+    const Metric::ADesc* m = mMgr.metric(i);
+    const Metric::DerivedDesc* mm =
+      dynamic_cast<const Metric::DerivedDesc*>(m);
     if (mm) {
       ivalset.insert(VMAInterval(m->id(), m->id() + 1)); // [ )
       mExprVec[i] = mm->expr();

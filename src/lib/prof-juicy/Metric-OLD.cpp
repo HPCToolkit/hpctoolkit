@@ -66,6 +66,8 @@ using std::string;
 
 //****************************************************************************
 
+#if 0 // OBSOLETE
+
 // ************************************************************************* //
 // PerfMetric
 // ************************************************************************* //
@@ -100,8 +102,10 @@ FilePerfMetric::toString(int flags) const
 string
 ComputedPerfMetric::toString(int flags) const 
 {
-  string str = PerfMetric::toString() + " {" + m_exprTree->toString() + "}";
+  string str = PerfMetric::toString() + " {" + m_expr->toString() + "}";
   return str;
 } 
 
 // **************************************************************************
+
+#endif
