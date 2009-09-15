@@ -68,8 +68,8 @@
 
 #include <include/uint.h>
 
+#include "Metric-Mgr.hpp"
 #include "LoadMapMgr.hpp"
-#include "Metric-ADesc.hpp"
 #include "CCT-Tree.hpp"
 
 //*************************** Forward Declarations ***************************
@@ -83,9 +83,9 @@ namespace Prof {
 namespace CallPath {
 
 
-class Profile: public Unique {
+class Profile: public Unique { // non copyable
 public:
-  Profile(const std::string name, uint numMetrics);
+  Profile(const std::string name);
   virtual ~Profile();
   
   // -------------------------------------------------------
@@ -105,34 +105,29 @@ public:
 
 
   // -------------------------------------------------------
-  // Metrics
+  // MetricMgr
   // -------------------------------------------------------
-  uint
-  numMetrics() const
-  { return m_metricdesc.size(); }
-  
-  Metric::ADesc* 
-  metric(uint i) const 
-  { return m_metricdesc[i]; }
 
-  const Metric::ADescVec&
-  metricDesc() const 
-  { return m_metricdesc; }
-  
-  uint
-  addMetric(Metric::ADesc* m)
-  {
-    m_metricdesc.push_back(m);
-    uint m_id = numMetrics() - 1;
-    return m_id;
-  }
+  const Metric::Mgr&
+  metricMgr() const
+  { return m_mMgr; }
+
+  Metric::Mgr&
+  metricMgr()
+  { return m_mMgr; }
+
 
   // -------------------------------------------------------
   // LoadMapMgr
   // -------------------------------------------------------
-  LoadMapMgr*
+  const LoadMapMgr&
   loadMapMgr() const
   { return m_loadmapMgr; }
+
+  LoadMapMgr&
+  loadMapMgr()
+  { return m_loadmapMgr; }
+
   
   // -------------------------------------------------------
   // CCT
@@ -140,6 +135,7 @@ public:
   CCT::Tree*
   cct() const 
   { return m_cct; }
+
 
   // -------------------------------------------------------
   // Static structure
@@ -240,9 +236,9 @@ private:
   //typedef std::map<std::string, std::string> StrToStrMap;
   //StrToStrMap m_nvPairMap;
 
-  Metric::ADescVec m_metricdesc; // FIXME: Metric::Mgr?
+  Metric::Mgr m_mMgr;
 
-  LoadMapMgr* m_loadmapMgr;
+  LoadMapMgr m_loadmapMgr;
 
   CCT::Tree* m_cct;
 

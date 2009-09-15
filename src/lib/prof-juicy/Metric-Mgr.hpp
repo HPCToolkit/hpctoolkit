@@ -107,16 +107,12 @@ public:
   //   
   // ------------------------------------------------------------
   Metric::ADesc*
-  metric(int i)
-  {
-    return m_metrics[i];
-  }
+  metric(uint i)
+  { return m_metrics[i]; }
 
   const Metric::ADesc*
-  metric(int i) const
-  {
-    return m_metrics[i];
-  }
+  metric(uint i) const
+  { return m_metrics[i]; }
 
   Metric::ADesc*
   metric(const std::string& uniqNm)
@@ -154,6 +150,7 @@ public:
   bool
   hasDerived() const;
   
+
   // ------------------------------------------------------------
   // helper tables
   // ------------------------------------------------------------
@@ -192,7 +189,7 @@ private:
   Metric::ADescVec m_metrics;
 
   // non-unique-metric name to Metric::ADescVec table (i.e., name excludes
-  // qualifications added by insert()
+  // qualifications added by insert())
   StringToADescVecMap m_nuniqnmToMetricMap;
 
   // unique-metric name to Metric::ADescVec table
