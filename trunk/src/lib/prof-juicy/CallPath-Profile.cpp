@@ -162,8 +162,8 @@ Profile::merge(Profile& y, bool isSameThread)
     y_newMetrics   = y.numMetrics();
 
     for (uint i = 0; i < y.numMetrics(); ++i) {
-      const Metric::SampledDesc* m = y.metric(i);
-      addMetric(new Metric::SampledDesc(*m));
+      const Metric::ADesc* m = y.metric(i);
+      addMetric(m->clone());
     }
   }
   
@@ -273,14 +273,18 @@ Profile::writeXML_hdr(std::ostream& os, int oFlags, const char* pfx) const
   os << "  <MetricTable>\n";
   uint n_metrics = numMetrics();
   for (uint i = 0; i < n_metrics; i++) {
-    const Metric::SampledDesc* m = metric(i);
+    const Metric::ADesc* m = metric(i);
+    const Metric::SampledDesc* mm = dynamic_cast<const Metric::SampledDesc*>(m);
+
     os << "    <Metric i" << MakeAttrNum(i) 
        << " n" << MakeAttrStr(m->name()) << ">\n";
     os << "      <Info>" 
-       << "<NV n=\"units\" v=\"events\"/>" // or "samples"
-       << "<NV n=\"period\" v" << MakeAttrNum(m->period()) << "/>"
-       << "<NV n=\"flags\" v" << MakeAttrNum(m->flags(), 16) << "/>"
-       << "</Info>\n";
+       << "<NV n=\"units\" v=\"events\"/>"; // or "samples"
+    if (mm) {
+      os << "<NV n=\"period\" v" << MakeAttrNum(mm->period()) << "/>"
+	 << "<NV n=\"flags\" v" << MakeAttrNum(mm->flags(), 16) << "/>";
+    }
+    os << "</Info>\n";
     os << "    </Metric>\n";
   }
   os << "  </MetricTable>\n";
@@ -561,11 +565,14 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
 
   metric_desc_t* m_lst = metric_tbl.lst;
   for (uint i = 0; i < num_metrics; i++) {
-    Metric::SampledDesc* metric = prof->metric(i);
+    Metric::ADesc* xmdesc = prof->metric(i);
+    Metric::SampledDesc* mdesc = dynamic_cast<Metric::SampledDesc*>(xmdesc);
+    DIAG_Assert(mdesc, "FIXME: should not initially create as SampledDesc!");
+
     string m_nm = m_lst[i].name + m_sfx;
-    metric->name(m_nm);
-    metric->flags(m_lst[i].flags);
-    metric->period(m_lst[i].period);
+    mdesc->name(m_nm);
+    mdesc->flags(m_lst[i].flags);
+    mdesc->period(m_lst[i].period);
   }
 
   hpcrun_fmt_metricTbl_free(&metric_tbl, free);
@@ -752,12 +759,12 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs)
 
   hpcfmt_byte4_fwrite(prof.numMetrics(), fs);
   for (uint i = 0; i < prof.numMetrics(); i++) {
-    const Metric::SampledDesc* m = prof.metric(i);
+    const Metric::ADesc* m = prof.metric(i);
 
     metric_desc_t mdesc;
     mdesc.name = const_cast<char*>(m->name().c_str());
-    mdesc.flags = (m->flags() | HPCRUN_MetricFlag_Real);
-    mdesc.period = m->period();
+    mdesc.flags = HPCRUN_MetricFlag_Real;
+    mdesc.period = 1;
 
     hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
   }
@@ -949,7 +956,10 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   bool hasMetrics = false;
   Metric::IData metricData(nodeFmt.num_metrics);
   for (uint i = 0; i < nodeFmt.num_metrics; i++) {
-    Metric::SampledDesc* mdesc = prof.metric(i);
+    Metric::ADesc* xmdesc = prof.metric(i);
+    Metric::SampledDesc* mdesc = dynamic_cast<Metric::SampledDesc*>(xmdesc);
+    DIAG_Assert(mdesc, "FIXME: should not initially create as SampledDesc!");
+
     hpcrun_metricVal_t m = nodeFmt.metrics[i];
 
     double mval = 0;

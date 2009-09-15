@@ -69,6 +69,8 @@ using std::vector;
 
 #include <algorithm>
 
+#include <typeinfo>
+
 #include <cmath> // pow
 
 //*************************** User Include Files ****************************
@@ -103,17 +105,17 @@ ColumnFormatter::ColumnFormatter(const Prof::Metric::Mgr& metricMgr,
   m_isForceable.resize(m_mMgr.size(), false);
 
   for (uint mId = 0; mId < m_mMgr.size(); ++mId) {
-    const PerfMetric* m = m_mMgr.metric(mId);
+    const Prof::Metric::ADesc* m = m_mMgr.metric(mId);
     if (!m->isVisible()) {
       continue;
     }
     
-    m_isForceable[mId] = ((dynamic_cast<const FilePerfMetric*>(m) != NULL) 
+    m_isForceable[mId] = (typeid(*m) == typeid(Prof::Metric::SampledDesc)
 			  || !m->isPercent());
 
     // Compute annotation widths. 
     // NOTE: decimal digits shown as 'd' below
-    if (m->dispPercent()) {
+    if (m->doDispPercent()) {
       m_dispPercent[mId] = true;
       if (m_numDecPct >= 1) { 
 	// xxx.dd% or x.dE-yy% (latter for small values)
@@ -158,7 +160,7 @@ ColumnFormatter::genColHeaderSummary()
 
   uint colId = 1;
   for (uint mId = 0; mId < m_mMgr.size(); ++mId) {
-    const PerfMetric* m = m_mMgr.metric(mId);
+    const Prof::Metric::ADesc* m = m_mMgr.metric(mId);
 
     m_os << std::fixed << std::setw(4) << std::setfill(' ');
     if (m->isVisible()) {
@@ -191,7 +193,7 @@ ColumnFormatter::genCol(uint mId, double metricVal, double metricTot,
 
   if (dispPercent) {
     // convert 'val' to a percent if necessary
-    const PerfMetric* m = m_mMgr.metric(mId);
+    const Prof::Metric::ADesc* m = m_mMgr.metric(mId);
     if (!m->isPercent() && metricTot != 0.0) {
       val = (metricVal / metricTot) * 100.0; // make the percent
     }

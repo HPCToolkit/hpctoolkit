@@ -89,7 +89,9 @@ namespace CallPath {
 void 
 OverheadMetricFact::make(Prof::CallPath::Profile* prof)
 {
-  Prof::CCT::Tree* cct = prof->cct();
+  using namespace Prof;
+  
+  CCT::Tree* cct = prof->cct();
   if (!cct) { return; }
 
   // ------------------------------------------------------------
@@ -101,14 +103,13 @@ OverheadMetricFact::make(Prof::CallPath::Profile* prof)
   
   uint numMetrics_orig = prof->numMetrics();
   for (uint m_id = 0; m_id < numMetrics_orig; ++m_id) {
-    Prof::Metric::SampledDesc* m_desc = prof->metric(m_id);
+    Metric::ADesc* m_desc = prof->metric(m_id);
     if (OverheadMetricFact::isMetricSrc(m_desc)) {
       OverheadMetricFact::convertToWorkMetric(m_desc);
       metric_src.push_back(m_id);
 
-      Prof::Metric::SampledDesc* m_new = 
-	new Prof::Metric::SampledDesc("overhead", "parallel overhead", 
-				    m_desc->period());
+      Metric::DerivedDesc* m_new = 
+	new Metric::DerivedDesc("overhead", "parallel overhead", NULL/*expr*/);
       uint m_new_id = prof->addMetric(m_new);
       DIAG_Assert(m_new_id >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
       metric_dst.push_back(m_new_id);
@@ -119,8 +120,8 @@ OverheadMetricFact::make(Prof::CallPath::Profile* prof)
   // Create space for metric values
   // ------------------------------------------------------------
   uint n_new_metrics = metric_dst.size();
-  for (Prof::CCT::ANodeIterator it(cct->root()); it.Current(); ++it) {
-    Prof::CCT::ANode* x = it.CurNode();
+  for (CCT::ANodeIterator it(cct->root()); it.Current(); ++it) {
+    CCT::ANode* x = it.CurNode();
     x->ensureMetricsSize(x->numMetrics() + n_new_metrics);
   }
 
@@ -170,7 +171,7 @@ OverheadMetricFact::make(Prof::CCT::ANode* node,
 
 
 void
-OverheadMetricFact::convertToWorkMetric(Prof::Metric::SampledDesc* mdesc)
+OverheadMetricFact::convertToWorkMetric(Prof::Metric::ADesc* mdesc)
 {
   const string& nm = mdesc->name();
   if (nm.find("PAPI_TOT_CYC") == 0) {

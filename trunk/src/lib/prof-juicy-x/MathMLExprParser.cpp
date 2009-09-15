@@ -180,7 +180,7 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
 	std::string str = make_string(nodeValue);
 	IFTRACE << "str --" << str << "--" << endl; 
 
-	const PerfMetric* m = mMgr.metric(str);
+	const Prof::Metric::ADesc* m = mMgr.metric(str);
 	if (!m) {
 	  MathML_Throw("Undefined metric '" + str + "' encountered");
 	}

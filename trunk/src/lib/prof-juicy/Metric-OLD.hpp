@@ -74,6 +74,8 @@
 //
 //****************************************************************************
 
+#if 0 // OBSOLETE
+
 class PerfMetric {
 public:
   
@@ -145,21 +147,22 @@ class FilePerfMetric : public PerfMetric {
 public: 
   FilePerfMetric(const char* name, 
 		 bool isVisible, bool dispPercent, bool isSortKey, 
-		 const char* profName, const char* nativeNm, const char* ftype,
-		 bool isunit_ev)
+		 const char* profName, const char* profRelId,
+		 const char* profType,
+		 bool isUnitEvent)
     : PerfMetric(name, isVisible, dispPercent, false, isSortKey),
-      m_profName(profName), m_nativeName(nativeNm), m_type(ftype),
-      m_isUnitEvent(isunit_ev)
+      m_profName(profName), m_profileRelId(profRelId), m_profileType(profType),
+      m_isUnitEvent(isUnitEvent)
   { }
 
   FilePerfMetric(const std::string& name, 
 		 bool isVisible, bool dispPercent, bool isSortKey, 
-		 const std::string& profName, const std::string& nativeNm,
-		 const std::string& ftype, 
-		 bool isunit_ev)
+		 const std::string& profName, const std::string& profRelId,
+		 const std::string& profType, 
+		 bool isUnitEvent)
     : PerfMetric(name, isVisible, dispPercent, false, isSortKey),
-      m_profName(profName), m_nativeName(nativeNm), m_type(ftype),
-      m_isUnitEvent(isunit_ev)
+      m_profName(profName), m_profileRelId(profRelId), m_profileType(profType),
+      m_isUnitEvent(isUnitEvent)
   { }
   
   virtual ~FilePerfMetric()
@@ -188,12 +191,12 @@ public:
   // ('select' attribute in HPCPROF config file)
   const std::string&
   profileRelId() const
-  { return m_nativeName; }
+  { return m_profileRelId; }
 
   // most likely obsolete
   const std::string&
   profileType() const
-  { return m_type; } // HPCRUN, PROFILE
+  { return m_profileType; } // HPCRUN, PROFILE
 
 
   // ------------------------------------------------------------
@@ -213,8 +216,8 @@ public:
 
 private: 
   std::string m_profName;
-  std::string m_nativeName;
-  std::string m_type;
+  std::string m_profileRelId;
+  std::string m_profileType;
   bool m_isUnitEvent;
   
   Prof::Metric::SampledDesc m_rawdesc;
@@ -231,22 +234,22 @@ public:
 		     bool isPercent, bool isSortKey,
 		     Prof::Metric::AExpr* expr)
     : PerfMetric(name, isVisible, dispPercent, isPercent, isSortKey),
-      m_exprTree(expr)
+      m_expr(expr)
   { }
 
   ComputedPerfMetric(const std::string& name, bool isVisible, bool dispPercent,
 		     bool isPercent, bool isSortKey,
 		     Prof::Metric::AExpr* expr)
     : PerfMetric(name, isVisible, dispPercent, isPercent, isSortKey),
-      m_exprTree(expr)
+      m_expr(expr)
   { }
 
   virtual ~ComputedPerfMetric()
-  { delete m_exprTree; }
+  { delete m_expr; }
 
   const Prof::Metric::AExpr*
   expr() const
-  { return m_exprTree; }
+  { return m_expr; }
 
 #if 0
   // FIXME:tallent This only applies to computed metrics.  It appears
@@ -259,7 +262,7 @@ public:
   virtual std::string toString(int flags = 0) const;
 
 private: 
-  Prof::Metric::AExpr* m_exprTree; 
+  Prof::Metric::AExpr* m_expr; 
 };
 
 
@@ -270,5 +273,7 @@ private:
 //} // namespace Prof
 
 //****************************************************************************
+
+#endif
 
 #endif // prof_juicy_Prof_Metric_ADesc_hpp

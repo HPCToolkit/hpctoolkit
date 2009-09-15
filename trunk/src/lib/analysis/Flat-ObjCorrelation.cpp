@@ -174,8 +174,9 @@ MetricCursor::MetricCursor(const Prof::Metric::Mgr& metricMgr,
   // NOTE: only handles raw events
 
   for (uint i = 0; i < metricMgr.size(); ++i) {
-    const PerfMetric* m = metricMgr.metric(i);
-    const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
+    const Prof::Metric::ADesc* m = metricMgr.metric(i);
+    const Prof::Metric::SampledDesc* mm =
+      dynamic_cast<const Prof::Metric::SampledDesc*>(m);
     if (mm) {
       uint mIdx = (uint)StrUtil::toUInt64(mm->profileRelId());
       const Prof::Flat::EventData& profevent = proflm.event(mIdx);
@@ -315,7 +316,7 @@ correlateWithObject(const Prof::Metric::Mgr& metricMgr,
 {
   using Prof::Metric::Mgr;
 
-  const Mgr::StringPerfMetricVecMap& fnameToFMetricMap = 
+  const Mgr::StringToADescVecMap& fnameToFMetricMap = 
     metricMgr.fnameToFMetricMap();
   DIAG_Assert(fnameToFMetricMap.size() == 1, DIAG_UnexpectedInput);
 

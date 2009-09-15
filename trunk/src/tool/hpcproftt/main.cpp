@@ -183,7 +183,7 @@ main_objCorrelation(const Args& args)
     // 1. Create metric descriptors
     Prof::Metric::Mgr metricMgr;
     metricMgr.makeRawMetrics(fnm, 
-			     false/*isunit_ev*/, 
+			     false/*isUnitsEvents*/, 
 			     args.obj_metricsAsPercents);
     
     // 2. Correlate
@@ -233,9 +233,11 @@ makeDerivedMetrics(Prof::Metric::Mgr& metricMgr, const string& metrics)
   metricMgr.makeSummaryMetrics();
   
   if (metrics == "sum-only") {
+    using namespace Prof;
+
     for (uint i = 0; i < metricMgr.size(); i++) {
-      PerfMetric* m = metricMgr.metric(i);
-      FilePerfMetric* mm = dynamic_cast<FilePerfMetric*>(m);
+      Metric::ADesc* m = metricMgr.metric(i);
+      Metric::SampledDesc* mm = dynamic_cast<Metric::SampledDesc*>(m);
       if (mm) {
 	mm->isVisible(false);
 	mm->isSortKey(false);
@@ -243,8 +245,8 @@ makeDerivedMetrics(Prof::Metric::Mgr& metricMgr, const string& metrics)
     }
 
     for (uint i = 0; i < metricMgr.size(); i++) {
-      PerfMetric* m = metricMgr.metric(i);
-      ComputedPerfMetric* mm = dynamic_cast<ComputedPerfMetric*>(m);
+      Metric::ADesc* m = metricMgr.metric(i);
+      Metric::DerivedDesc* mm = dynamic_cast<Metric::DerivedDesc*>(m);
       if (mm) {
 	mm->isSortKey(true);
 	break;

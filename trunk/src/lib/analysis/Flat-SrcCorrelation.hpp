@@ -117,7 +117,7 @@ public:
   typedef std::map<string, bool> StringToBoolMap;
 
   typedef std::pair<Prof::Flat::ProfileData*, 
-		    Prof::Metric::Mgr::PerfMetricVec*> ProfToMetricsTuple;
+		    Prof::Metric::ADescVec*> ProfToMetricsTuple;
   typedef std::vector<ProfToMetricsTuple> ProfToMetricsTupleVec;
 
 private:
@@ -141,7 +141,7 @@ private:
 			bool useStruct);
 
   void
-  correlateRaw(PerfMetric* metric,
+  correlateRaw(Prof::Metric::ADesc* metric,
 	       const Prof::Flat::EventData& profevent,
 	       VMA lm_load_addr,
 	       Prof::Struct::Tree& structure,
@@ -151,8 +151,8 @@ private:
   
   bool
   getNextRawBatch(ProfToMetricsTupleVec& batchJob,
-		  Prof::Metric::Mgr::StringPerfMetricVecMap::const_iterator& it,
-		  const Prof::Metric::Mgr::StringPerfMetricVecMap::const_iterator& it_end);
+		  Prof::Metric::Mgr::StringToADescVecMap::const_iterator& it,
+		  const Prof::Metric::Mgr::StringToADescVecMap::const_iterator& it_end);
 
   void
   clearRawBatch(ProfToMetricsTupleVec& batchJob);

@@ -76,6 +76,7 @@
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
+#include <lib/support/StrUtil.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -179,7 +180,7 @@ ProfileData::read()
   
   for (uint i = 0; i < count; ++i) {
     LM* proflm = new LM();
-    proflm->read(m_fs);
+    proflm->read(m_fs, m_name.c_str());
     insert(make_pair(proflm->name(), proflm));
   }
 
@@ -207,7 +208,7 @@ ProfileData::read_metrics()
   DIAG_Assert(count > 0, "At least one LM must exist in a profile!");
 
   LM* proflm = new LM();
-  proflm->read(m_fs);
+  proflm->read(m_fs, m_name.c_str());
 
   // -------------------------------------------------------
   // gather metrics
@@ -240,12 +241,12 @@ ProfileData::fopen(const char* filename)
   struct stat statbuf;
   int ret = stat(filename, &statbuf);
   if (ret != 0) {
-    PROFFLAT_Throw("Cannot stat file:" << filename);
+    PROFFLAT_Throw("Cannot stat file: '" << filename << "'");
   }
 
   FILE* fs = ::fopen(filename, "r");
   if (!fs) {
-    PROFFLAT_Throw("Cannot open file:" << filename);
+    PROFFLAT_Throw("Cannot open file: '" << filename << "'");
   }
 
   return fs;
@@ -335,7 +336,7 @@ LM::~LM()
 
 
 void
-LM::read(FILE *fs)
+LM::read(FILE *fs, const char* filename)
 {
   size_t sz;
 
@@ -368,7 +369,15 @@ LM::read(FILE *fs)
   // Event data
   // -------------------------------------------------------
   for (uint i = 0; i < count; ++i) {
-    m_eventvec[i].read(fs, m_load_addr);
+    EventData& edata = m_eventvec[i];
+    edata.read(fs, m_load_addr);
+
+    Metric::SampledDesc& mdesc = edata.mdesc();
+    if (filename) {
+      mdesc.profileName(filename);
+    }
+    mdesc.profileRelId(StrUtil::toStr(i));
+    mdesc.profileType("HPCRUN");
   }
 }
 
@@ -428,6 +437,8 @@ EventData::read(FILE *fs, uint64_t load_addr)
   m_mdesc.name(name);
   m_mdesc.description(desc);
   m_mdesc.period(period);
+  //m_mdesc.flags();
+
 
   // -------------------------------------------------------
   // <event_x_data>

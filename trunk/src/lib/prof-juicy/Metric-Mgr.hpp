@@ -71,9 +71,8 @@ namespace Metric {
 
 class Mgr : public Unique { // non copyable
 public:
-  typedef std::vector<PerfMetric*> PerfMetricVec;
-  typedef std::map<std::string, PerfMetric*> StringPerfMetricMap;
-  typedef std::map<std::string, PerfMetricVec> StringPerfMetricVecMap;
+  typedef std::map<std::string, Metric::ADesc*> StringToADescMap;
+  typedef std::map<std::string, Metric::ADescVec> StringToADescVecMap;
 
 public:
   Mgr();
@@ -81,16 +80,16 @@ public:
 
   void 
   makeRawMetrics(const std::vector<std::string>& profileFiles,
-		 bool isunit_ev = true,
-		 bool ispercent = true);
+		 bool isUnitsEvents = true,
+		 bool doDispPercent = true);
 
   void 
   makeRawMetrics(const std::string& profileFile,
-		 bool isunit_ev = true,
-		 bool ispercent = true)
+		 bool isUnitsEvents = true,
+		 bool doDispPercent = true)
   {
     std::vector<std::string> vec(1, profileFile);
-    makeRawMetrics(vec, isunit_ev, ispercent);
+    makeRawMetrics(vec, isUnitsEvents, doDispPercent);
   }
 
   void
@@ -107,29 +106,29 @@ public:
   //   i.e. metrics with ids strictly less than its own.
   //   
   // ------------------------------------------------------------
-  PerfMetric*
+  Metric::ADesc*
   metric(int i)
   {
     return m_metrics[i];
   }
 
-  const PerfMetric*
+  const Metric::ADesc*
   metric(int i) const
   {
     return m_metrics[i];
   }
 
-  PerfMetric*
+  Metric::ADesc*
   metric(const std::string& uniqNm)
   {
-    StringPerfMetricMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
+    StringToADescMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
     return (it != m_uniqnmToMetricMap.end()) ? it->second : NULL;
   }
 
-  const PerfMetric*
+  const Metric::ADesc*
   metric(const std::string& uniqNm) const
   {
-    StringPerfMetricMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
+    StringToADescMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
     return (it != m_uniqnmToMetricMap.end()) ? it->second : NULL;
   }
 
@@ -146,11 +145,11 @@ public:
   // modified, false otherwise.
   // NOTE: Assumes ownership of 'm'
   bool 
-  insert(PerfMetric* m);
+  insert(Metric::ADesc* m);
 
   // Return the (first) metric this has the sort-by attribute set
-  PerfMetric*
-  findSortBy() const;
+  Metric::ADesc*
+  findSortKey() const;
 
   bool
   hasDerived() const;
@@ -159,7 +158,7 @@ public:
   // helper tables
   // ------------------------------------------------------------
 
-  const StringPerfMetricVecMap&
+  const StringToADescVecMap&
   fnameToFMetricMap() const
   { return m_fnameToFMetricMap; }
 
@@ -178,29 +177,29 @@ public:
 
 public:
 
-  typedef std::list<FilePerfMetric*> MetricList_t;
+  typedef std::list<Prof::Metric::SampledDesc*> MetricList_t;
 
 private:
   std::string
   makeUniqueName(const std::string& nm);
 
   void
-  makeSummaryMetric(const std::string& m_nm, const PerfMetricVec& m_opands);
+  makeSummaryMetric(const std::string& m_nm, const Metric::ADescVec& m_opands);
 
   
 private:
   // the metric table
-  PerfMetricVec m_metrics;
+  Metric::ADescVec m_metrics;
 
-  // non-unique-metric name to PerfMetricVec table (i.e., name excludes
+  // non-unique-metric name to Metric::ADescVec table (i.e., name excludes
   // qualifications added by insert()
-  StringPerfMetricVecMap m_nuniqnmToMetricMap;
+  StringToADescVecMap m_nuniqnmToMetricMap;
 
-  // unique-metric name to PerfMetricVec table
-  StringPerfMetricMap m_uniqnmToMetricMap;
+  // unique-metric name to Metric::ADescVec table
+  StringToADescMap m_uniqnmToMetricMap;
 
-  // profile file name to FilePerfMetric table
-  StringPerfMetricVecMap m_fnameToFMetricMap;
+  // profile file name to Metric::SampledDesc table
+  StringToADescVecMap m_fnameToFMetricMap;
 };
 
 //****************************************************************************

@@ -70,6 +70,7 @@ using std::string;
 #include "Metric-ADesc.hpp"
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/StrUtil.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -87,9 +88,11 @@ namespace Metric {
 std::string
 ADesc::toString() const
 {
-  std::ostringstream os;
-  dump(os);
-  return os.str();
+  return m_name;
+
+  //std::ostringstream os;
+  //dump(os);
+  //return os.str();
 }
 
 
@@ -100,9 +103,11 @@ ADesc::dump(std::ostream& os) const
   return os;
 }
 
+
 std::ostream&
 ADesc::dump_me(std::ostream& os) const
 {
+  os << m_name;
   return os;
 }
 
@@ -118,8 +123,37 @@ ADesc::ddump() const
 // SampledDesc
 //***************************************************************************
 
+std::string
+SampledDesc::toString() const
+{
+  string units = isUnitsEvents() ? " [events]" : " [samples]";
+  string xtra = " {" + description() + ":" + StrUtil::toStr(period()) + " ev/smpl}";
+  string str = ADesc::toString() + units + xtra;
+  return str;
+}
+
+
 std::ostream&
 SampledDesc::dump_me(std::ostream& os) const
+{
+  return os;
+}
+
+
+//***************************************************************************
+// DerivedDesc
+//***************************************************************************
+
+std::string
+DerivedDesc::toString() const
+{
+  string str = ADesc::toString() + " {" + m_expr->toString() + "}";
+  return str;
+}
+
+
+std::ostream&
+DerivedDesc::dump_me(std::ostream& os) const
 {
   return os;
 }
