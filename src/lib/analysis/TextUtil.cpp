@@ -104,7 +104,7 @@ ColumnFormatter::ColumnFormatter(const Prof::Metric::Mgr& metricMgr,
 
   for (uint mId = 0; mId < m_mMgr.size(); ++mId) {
     const PerfMetric* m = m_mMgr.metric(mId);
-    if (!m->Display()) {
+    if (!m->isVisible()) {
       continue;
     }
     
@@ -161,7 +161,7 @@ ColumnFormatter::genColHeaderSummary()
     const PerfMetric* m = m_mMgr.metric(mId);
 
     m_os << std::fixed << std::setw(4) << std::setfill(' ');
-    if (m->Display()) {
+    if (m->isVisible()) {
       m_os << colId;
       colId++;
     }

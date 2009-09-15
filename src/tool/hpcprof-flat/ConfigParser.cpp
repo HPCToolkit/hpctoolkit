@@ -369,7 +369,7 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr)
 
 	Prof::Metric::AExpr* expr = 
 	  makeMathMLExpr(metricNm.c_str(), child, mMgr);
-	mMgr.insert(new ComputedPerfMetric(metricNm, metricDispNm, 
+	mMgr.insert(new ComputedPerfMetric(metricNm, 
 					   metricDoDisp, metricDoPercent, 
 					   propagateComputed/*isPercent*/,
 					   metricDoSortBy, expr));
@@ -430,11 +430,10 @@ ProcessFILE(DOMNode* fileNode,
   }
 
   if (!metricFile.empty()) { 
-    mMgr.insert(new FilePerfMetric(metricNm, metricDispNm, metricDoDisp,
-				   metricDoPercent, metricDoSortBy, 
-				   metricFile, nativeNm, 
+    mMgr.insert(new FilePerfMetric(metricNm, metricDoDisp, metricDoPercent,
+				   metricDoSortBy, metricFile, nativeNm, 
 				   metricFileType, true /*isunit_ev*/));
-  } 
+  }
   else {
     ConfigParser_Throw("METRIC '" << metricNm << "' FILE name empty.");
   }

@@ -237,8 +237,8 @@ makeDerivedMetrics(Prof::Metric::Mgr& metricMgr, const string& metrics)
       PerfMetric* m = metricMgr.metric(i);
       FilePerfMetric* mm = dynamic_cast<FilePerfMetric*>(m);
       if (mm) {
-	mm->Display(false);
-	mm->SortBy(false);
+	mm->isVisible(false);
+	mm->isSortKey(false);
       }
     }
 
@@ -246,7 +246,7 @@ makeDerivedMetrics(Prof::Metric::Mgr& metricMgr, const string& metrics)
       PerfMetric* m = metricMgr.metric(i);
       ComputedPerfMetric* mm = dynamic_cast<ComputedPerfMetric*>(m);
       if (mm) {
-	mm->SortBy(true);
+	mm->isSortKey(true);
 	break;
       }
     }

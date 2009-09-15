@@ -111,9 +111,9 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
       
       string nativeNm = StrUtil::toStr(j);
       bool sortby = empty();
-      FilePerfMetric* m = new FilePerfMetric(m_raw.name(), m_raw.name(),
-					     true/*display*/, ispercent,
-					     sortby, proffnm, nativeNm, 
+      FilePerfMetric* m = new FilePerfMetric(m_raw.name(), true/*display*/,
+					     ispercent, sortby, proffnm,
+					     nativeNm, 
 					     string("HPCRUN"), isunit_ev);
       m->rawdesc(m_raw);
       insert(m);
@@ -153,7 +153,7 @@ Mgr::makeSummaryMetric(const string& m_nm, const PerfMetricVec& m_opands)
   Metric::AExpr** opands = new Metric::AExpr*[m_opands.size()];
   for (uint i = 0; i < m_opands.size(); ++i) {
     PerfMetric* m = m_opands[i];
-    opands[i] = new Metric::Var(m->Name(), m->Index());
+    opands[i] = new Metric::Var(m->name(), m->id());
   }
 
   bool doDisplay = true;
@@ -195,9 +195,7 @@ Mgr::makeSummaryMetric(const string& m_nm, const PerfMetricVec& m_opands)
     DIAG_Die(DIAG_UnexpectedInput);
   }
   
-  insert(new ComputedPerfMetric(m_nm, m_nm, doDisplay/*display*/, 
-				dispPercent/*dispPercent*/, 
-				isPercent/*isPercent*/, 
+  insert(new ComputedPerfMetric(m_nm, doDisplay, dispPercent, isPercent, 
 				true/*sortby*/, expr));
 }
 
@@ -212,10 +210,10 @@ Mgr::insert(PerfMetric* m)
   // 1. metric table
   uint id = m_metrics.size();
   m_metrics.push_back(m);
-  m->Index(id);
+  m->id(id);
 
   // 2. metric name to PerfMetricVec table
-  const string& nm = m->Name();
+  const string& nm = m->name();
   StringPerfMetricVecMap::iterator it = m_nuniqnmToMetricMap.find(nm);
   if (it != m_nuniqnmToMetricMap.end()) {
     PerfMetricVec& mvec = it->second;
@@ -224,8 +222,7 @@ Mgr::insert(PerfMetric* m)
     int qualifier = mvec.size();
     string nm_new = nm + "-" + StrUtil::toStr(qualifier);
     
-    m->Name(nm_new);
-    m->dispName(nm_new);
+    m->name(nm_new);
     ans = true; 
 
     mvec.push_back(m);
@@ -242,7 +239,7 @@ Mgr::insert(PerfMetric* m)
   // 4. profile file name to FilePerfMetric table
   FilePerfMetric* m_fm = dynamic_cast<FilePerfMetric*>(m);
   if (m_fm) {
-    const string& fnm = m_fm->FileName();
+    const string& fnm = m_fm->profileName();
     StringPerfMetricVecMap::iterator it = m_fnameToFMetricMap.find(fnm);
     if (it != m_fnameToFMetricMap.end()) {
       PerfMetricVec& mvec = it->second;
@@ -263,7 +260,7 @@ Mgr::findSortBy() const
   PerfMetric* m_sortby = NULL;
   for (uint i = 0; i < m_metrics.size(); ++i) {
     PerfMetric* m = m_metrics[i]; 
-    if (m->SortBy()) {
+    if (m->isSortKey()) {
       m_sortby = m;
       break;
     }

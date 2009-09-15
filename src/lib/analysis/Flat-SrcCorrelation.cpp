@@ -248,8 +248,8 @@ Driver::write_experiment(std::ostream &os) const
   for (uint i = 0; i < m_mMgr.size(); ++i) {
     const PerfMetric* m = m_mMgr.metric(i);
     os << "    <Metric i" << MakeAttrNum(i)
-       << " n" << MakeAttrStr(m->dispName())
-       << " show=\"" << ((m->Display()) ? "1" : "0") << "\"/>";
+       << " n" << MakeAttrStr(m->name())
+       << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\"/>";
     os << "<Info>"
        << "<NV n=\"units\" v=\"events\"/>" // or "samples"
        << "<NV n=\"percent\" v=\"" << ((m->dispPercent()) ? "1" : "0") << "\"/>"
@@ -289,9 +289,10 @@ Driver::write_csv(std::ostream &os) const
   os << "File name,Routine name,Start line,End line,Loop level";
   for (uint i = 0; i < m_mMgr.size(); ++i) {
     const PerfMetric* m = m_mMgr.metric(i); 
-    os << "," << m->dispName();
-    if (m->dispPercent())
-      os << "," << m->dispName() << " (%)";
+    os << "," << m->name();
+    if (m->dispPercent()) {
+      os << "," << m->name() << " (%)";
+    }
   }
   os << endl;
   
@@ -410,7 +411,7 @@ Driver::write_txt_secSummary(std::ostream& os,
     os << std::endl;
   }
   else {
-    Prof::Struct::ANodeSortedIterator it(rootStrct, Prof::Struct::ANodeSortedIterator::cmpByMetric(m_sortby->Index()), filter, false/*leavesOnly*/);
+    Prof::Struct::ANodeSortedIterator it(rootStrct, Prof::Struct::ANodeSortedIterator::cmpByMetric(m_sortby->id()), filter, false/*leavesOnly*/);
     for (; it.Current(); it++) {
       Prof::Struct::ANode* strct = it.Current();
       for (uint i = 0; i < m_mMgr.size(); ++i) {
@@ -546,12 +547,12 @@ Driver::write_config(std::ostream &os) const
     const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
     if (mm) {
       const char* sortbystr = ((i == 0) ? " sortBy=\"true\"" : "");
-      os << "<METRIC name=\"" << m->Name() 
-	 << "\" displayName=\"" << m->dispName() << "\"" 
+      os << "<METRIC name=\"" << m->name() 
+	 << "\" displayName=\"" << m->name() << "\"" 
 	 << sortbystr << ">\n";
-      os << "  <FILE name=\"" << mm->FileName() 
-	 << "\" select=\"" << mm->NativeName()
-	 << "\" type=\"" << mm->FileType() << "\"/>\n";
+      os << "  <FILE name=\"" << mm->profileName() 
+	 << "\" select=\"" << mm->profileRelId()
+	 << "\" type=\"" << mm->profileType() << "\"/>\n";
       os << "</METRIC>\n\n";
     }
   }
@@ -697,7 +698,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
       const PerfMetric* m = mMgr.metric(i);
       const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
       if (mm) {
-	ivalset.insert(VMAInterval(m->Index(), m->Index() + 1)); // [ )
+	ivalset.insert(VMAInterval(m->id(), m->id() + 1)); // [ )
       }
     }
     
@@ -757,8 +758,8 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
       for (Prof::Metric::Mgr::PerfMetricVec::iterator it = metrics->begin();
 	   it != metrics->end(); ++it) {
 	FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
-	DIAG_Assert(m->isunit_event(), "Assumes metric should compute events!");
-	uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
+	DIAG_Assert(m->isUnitEvent(), "Assumes metric should compute events!");
+	uint mIdx = (uint)StrUtil::toUInt64(m->profileRelId());
 	
 	const Prof::Flat::EventData& profevent = proflm->event(mIdx);
 	m->rawdesc(profevent.mdesc());
@@ -803,12 +804,11 @@ Driver::correlateRaw(PerfMetric* metric,
     Prof::Struct::ANode* strct = 
       Util::demandStructure(vma_ur, lmStrct, lm, useStruct);
 
-    strct->demandMetric(metric->Index(), numMetrics/*size*/) += events;
+    strct->demandMetric(metric->id(), numMetrics/*size*/) += events;
     DIAG_DevMsg(6, "Metric associate: " 
-		<< metric->Name() << ":0x" << hex << vma_ur << dec 
+		<< metric->name() << ":0x" << hex << vma_ur << dec 
 		<< " --> +" << events << "=" 
-		<< strct->metric(metric->Index()) << " :: " 
-		<< strct->toXML());
+		<< strct->metric(metric->id()) << " :: " << strct->toXML());
   }
 }
 
@@ -892,7 +892,7 @@ Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr,
     const PerfMetric* m = mMgr.metric(i);
     const ComputedPerfMetric* mm = dynamic_cast<const ComputedPerfMetric*>(m);
     if (mm) {
-      ivalset.insert(VMAInterval(m->Index(), m->Index() + 1)); // [ )
+      ivalset.insert(VMAInterval(m->id(), m->id() + 1)); // [ )
       mExprVec[i] = mm->expr();
       DIAG_Assert(mExprVec[i], DIAG_UnexpectedInput);
     }
