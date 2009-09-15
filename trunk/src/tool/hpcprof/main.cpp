@@ -150,12 +150,12 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
 
   try { 
-    Prof::LoadMapMgr* loadmap = prof->loadMapMgr();
+    const Prof::LoadMapMgr& loadmap = prof->loadMapMgr();
     Prof::Struct::Tree* structure = prof->structure();
     Prof::Struct::Root* rootStrct = structure->root();
 
-    for (Prof::LoadMapMgr::LMSet_nm::iterator it = loadmap->lm_begin_nm();
-	 it != loadmap->lm_end_nm(); ++it) {
+    for (Prof::LoadMapMgr::LMSet_nm::const_iterator it = loadmap.lm_begin_nm();
+	 it != loadmap.lm_end_nm(); ++it) {
       Prof::ALoadMap::LM* loadmap_lm = *it;
 
       // tallent:TODO: The call to LoadMap::compute_relocAmt() in
