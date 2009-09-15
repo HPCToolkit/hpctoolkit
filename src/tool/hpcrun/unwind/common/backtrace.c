@@ -179,6 +179,11 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
     if (ret < 0) {
       break;
     }
+    if (hpcrun_addr_in_trampoline(ip)) {
+      // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
+      // counting a return from a sampled frame using a trampoline
+      unw_throw();
+    }
 
     csprof_state_ensure_buffer_avail(state, state->unwind);
 
