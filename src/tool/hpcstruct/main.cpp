@@ -128,36 +128,36 @@ real_main(int argc, char* argv[])
   }
   
   // ------------------------------------------------------------
-  // Build and print the ScopeTree
+  // Build and print the program structure tree
   // ------------------------------------------------------------
-  { 
-    ProcNameMgr* procNameMgr = NULL;
-    if (args.lush_agent == "agent-c++") {
-      procNameMgr = new CppNameMgr;
-    }
-    else if (args.lush_agent == "agent-cilk") {
-      procNameMgr = new CilkNameMgr;
-    }
 
-    Prof::Struct::Root* rootStrct = new Prof::Struct::Root("");
-    Prof::Struct::Tree* strctTree = new Prof::Struct::Tree("", rootStrct);
+  const char* osnm = (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();
+  std::ostream* os = IOUtil::OpenOStream(osnm);
 
-    using namespace banal::bloop;
-    Prof::Struct::LM* lmStrct = makeStructure(lm, args.doNormalizeTy, 
-					      args.isIrreducibleIntervalLoop,
-					      args.isForwardSubstitution,
-					      procNameMgr,
-					      args.dbgProcGlob);
-    lmStrct->link(rootStrct);
-    
-    const char* osnm = 
-      (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();
-    std::ostream* os = IOUtil::OpenOStream(osnm);
-    writeStructure(*os, strctTree, args.prettyPrintOutput);
-    IOUtil::CloseStream(os);
-
-    delete strctTree;
+  ProcNameMgr* procNameMgr = NULL;
+  if (args.lush_agent == "agent-c++") {
+    procNameMgr = new CppNameMgr;
   }
+  else if (args.lush_agent == "agent-cilk") {
+    procNameMgr = new CilkNameMgr;
+  }
+  
+  Prof::Struct::Root* rootStrct = new Prof::Struct::Root("");
+  Prof::Struct::Tree* strctTree = new Prof::Struct::Tree("", rootStrct);
+  
+  using namespace banal::bloop;
+  Prof::Struct::LM* lmStrct = makeStructure(lm, args.doNormalizeTy, 
+					    args.isIrreducibleIntervalLoop,
+					    args.isForwardSubstitution,
+					    procNameMgr,
+					    args.dbgProcGlob);
+  lmStrct->link(rootStrct);
+  
+  writeStructure(*os, strctTree, args.prettyPrintOutput);
+  IOUtil::CloseStream(os);
+  
+  delete strctTree;
+  
   
   // Cleanup
   delete lm;
