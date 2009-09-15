@@ -72,7 +72,6 @@ MYSOURCES = \
 	Metric-ADesc.hpp Metric-ADesc.cpp \
 	Metric-IData.hpp Metric-IData.cpp \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
-	Metric-OLD.hpp Metric-OLD.cpp \
 	\
 	LoadMapMgr.hpp LoadMapMgr.cpp \
 	LoadMap.hpp LoadMap.cpp \

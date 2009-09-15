@@ -82,7 +82,6 @@ am__objects_1 = libHPCprof_juicy_la-Metric-Mgr.lo \
 	libHPCprof_juicy_la-Metric-ADesc.lo \
 	libHPCprof_juicy_la-Metric-IData.lo \
 	libHPCprof_juicy_la-Metric-AExpr.lo \
-	libHPCprof_juicy_la-Metric-OLD.lo \
 	libHPCprof_juicy_la-LoadMapMgr.lo \
 	libHPCprof_juicy_la-LoadMap.lo \
 	libHPCprof_juicy_la-Struct-Tree.lo \
@@ -339,7 +338,6 @@ MYSOURCES = \
 	Metric-ADesc.hpp Metric-ADesc.cpp \
 	Metric-IData.hpp Metric-IData.cpp \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
-	Metric-OLD.hpp Metric-OLD.cpp \
 	\
 	LoadMapMgr.hpp LoadMapMgr.cpp \
 	LoadMap.hpp LoadMap.cpp \
@@ -442,7 +440,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-AExpr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-IData.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-Mgr.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-OLD.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Struct-Tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Struct-TreeIterator.Plo@am__quote@
 
@@ -494,13 +491,6 @@ libHPCprof_juicy_la-Metric-AExpr.lo: Metric-AExpr.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-AExpr.cpp' object='libHPCprof_juicy_la-Metric-AExpr.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Metric-AExpr.lo `test -f 'Metric-AExpr.cpp' || echo '$(srcdir)/'`Metric-AExpr.cpp
-
-libHPCprof_juicy_la-Metric-OLD.lo: Metric-OLD.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Metric-OLD.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Metric-OLD.Tpo -c -o libHPCprof_juicy_la-Metric-OLD.lo `test -f 'Metric-OLD.cpp' || echo '$(srcdir)/'`Metric-OLD.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-Metric-OLD.Tpo $(DEPDIR)/libHPCprof_juicy_la-Metric-OLD.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-OLD.cpp' object='libHPCprof_juicy_la-Metric-OLD.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Metric-OLD.lo `test -f 'Metric-OLD.cpp' || echo '$(srcdir)/'`Metric-OLD.cpp
 
 libHPCprof_juicy_la-LoadMapMgr.lo: LoadMapMgr.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-LoadMapMgr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-LoadMapMgr.Tpo -c -o libHPCprof_juicy_la-LoadMapMgr.lo `test -f 'LoadMapMgr.cpp' || echo '$(srcdir)/'`LoadMapMgr.cpp
