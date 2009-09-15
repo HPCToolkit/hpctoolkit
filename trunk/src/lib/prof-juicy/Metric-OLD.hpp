@@ -77,59 +77,63 @@
 class PerfMetric {
 public:
   
-  PerfMetric(const char* nm, const char* displayNm,
-	     bool disp, bool dispPercent, bool isPercent, bool sort)
-    : name(nm), m_dispName(displayNm), display(disp), 
-      m_dispPercent(dispPercent), m_isPercent(isPercent), sortBy(sort), m_id(0)
+  PerfMetric(const char* name, bool isVisible, bool dispPercent,
+	     bool isPercent, bool isSortKey)
+    : m_id(0), m_name(name),
+      m_isVisible(isVisible), m_isSortKey(isSortKey),
+      m_dispPercent(dispPercent), m_isPercent(isPercent)
   { }
   
-  PerfMetric(const std::string& nm, const std::string& displayNm, 
-	     bool disp, bool dispPercent, bool isPercent, bool sort)
-    : name(nm), m_dispName(displayNm), display(disp), 
-      m_dispPercent(dispPercent), m_isPercent(isPercent), sortBy(sort), m_id(0)
+  PerfMetric(const std::string& name, bool isVisible, bool dispPercent,
+	     bool isPercent, bool isSortKey)
+    : m_id(0), m_name(name),
+      m_isVisible(isVisible), m_isSortKey(isSortKey),
+      m_dispPercent(dispPercent), m_isPercent(isPercent)
   { }
   
   virtual ~PerfMetric() { }
 
-  const std::string& Name() const          { return name; }
-  void               Name(const std::string& nm)  { name = nm; }
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
-  const std::string& dispName() const          { return m_dispName; }
-  void               dispName(const std::string& nm)  { m_dispName = nm; }
+  // id: index within Metric-Mgr
+  uint id() const   { return m_id; }
+  void id(uint id)  { m_id = id; }
 
-  // set by outside
-  uint Index() const   { return m_id; }
-  void Index(uint id)  { m_id = id; }
-  
-  bool Display() const                { return display; }
-  void Display(bool display_)         { display = display_; }
+  const std::string& name() const { return m_name; }
+  void               name(const std::string& name) { m_name = name; }
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
+  // isVisible
+  bool isVisible() const                { return m_isVisible; }
+  void isVisible(bool isVisible)        { m_isVisible = isVisible; }
+
+  bool isSortKey() const                { return m_isSortKey; }
+  void isSortKey(bool isSortKey)        { m_isSortKey = isSortKey; }
 
   // display as a percentage
-  bool dispPercent() const            { return m_dispPercent; }
+  bool dispPercent() const              { return m_dispPercent; }
 
-  // value is already a percent (if not, it must be converted to
-  // display as percentage).  This is especially critical for computed
-  // metrics where dispPercent is ambiguous.
-  bool isPercent() const              { return m_isPercent; }
-
-  bool SortBy() const                 { return sortBy; }
-  void SortBy(bool sortBy_)           { sortBy = sortBy_; }
+  // Metric values should be interpreted as percents.  This is
+  // important only if the value is to converted to be displayed as a
+  // percent.  It is usually only relavent for derived metrics.
+  bool isPercent() const                 { return m_isPercent; }
 
   virtual std::string toString(int flags = 0) const;
 
 
 private: 
-  std::string name;
-  std::string m_dispName;
-  bool display; 
-
-  bool m_dispPercent; 
-  bool m_isPercent; 
-
-  bool sortBy;
-  
-protected: 
   uint m_id;
+  std::string m_name;
+
+  bool m_isVisible;
+  bool m_isSortKey;
+  bool m_dispPercent;
+  bool m_isPercent;
 };
 
 
@@ -139,45 +143,62 @@ protected:
 
 class FilePerfMetric : public PerfMetric {
 public: 
-  FilePerfMetric(const char* nm, const char* displayNm,
-		 bool display, bool dispPercent, bool sortBy, 
-		 const char* fname, const char* nativeNm, const char* ftype,
+  FilePerfMetric(const char* name, 
+		 bool isVisible, bool dispPercent, bool isSortKey, 
+		 const char* profName, const char* nativeNm, const char* ftype,
 		 bool isunit_ev)
-    : PerfMetric(nm, displayNm, display, dispPercent, false, sortBy),
-      m_file(fname), m_nativeName(nativeNm), m_type(ftype),
-      m_isunit_event(isunit_ev)
+    : PerfMetric(name, isVisible, dispPercent, false, isSortKey),
+      m_profName(profName), m_nativeName(nativeNm), m_type(ftype),
+      m_isUnitEvent(isunit_ev)
   { }
 
-  FilePerfMetric(const std::string& nm, const std::string& displayNm,
-		 bool display, bool dispPercent, bool sortBy, 
-		 const std::string& fname, const std::string& nativeNm,
+  FilePerfMetric(const std::string& name, 
+		 bool isVisible, bool dispPercent, bool isSortKey, 
+		 const std::string& profName, const std::string& nativeNm,
 		 const std::string& ftype, 
 		 bool isunit_ev)
-    : PerfMetric(nm, displayNm, display, dispPercent, false, sortBy),
-      m_file(fname), m_nativeName(nativeNm), m_type(ftype),
-      m_isunit_event(isunit_ev)
+    : PerfMetric(name, isVisible, dispPercent, false, isSortKey),
+      m_profName(profName), m_nativeName(nativeNm), m_type(ftype),
+      m_isUnitEvent(isunit_ev)
   { }
   
   virtual ~FilePerfMetric()
   { }
 
-  const std::string&
-  FileName() const
-  { return m_file; }
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
-  // metric id within profile file ('select' attribute in HPCPROF config file)
+  // A chinsy way of indicating the metric units of events rather than samples
+  bool
+  isUnitEvent() const
+  { return m_isUnitEvent; }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
+  // associated profile filename (if available)
   const std::string&
-  NativeName() const
+  profileName() const
+  { return m_profName; }
+
+  // profile-relative-id: metric id within associated profile file
+  // ('select' attribute in HPCPROF config file)
+  const std::string&
+  profileRelId() const
   { return m_nativeName; }
 
+  // most likely obsolete
   const std::string&
-  FileType() const
+  profileType() const
   { return m_type; } // HPCRUN, PROFILE
 
-  bool
-  isunit_event() const
-  { return m_isunit_event; }
 
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   const Prof::Metric::SampledDesc& 
   rawdesc() const 
@@ -191,10 +212,10 @@ public:
   virtual std::string toString(int flags = 0) const;
 
 private: 
-  std::string m_file;
+  std::string m_profName;
   std::string m_nativeName;
   std::string m_type;
-  bool m_isunit_event;
+  bool m_isUnitEvent;
   
   Prof::Metric::SampledDesc m_rawdesc;
 };
@@ -206,19 +227,17 @@ private:
 
 class ComputedPerfMetric : public PerfMetric {
 public: 
-  ComputedPerfMetric(const char* nm, const char* displayNm,
-		     bool disp, bool dispPercent, bool isPercent, bool doSort, 
-		     //bool propagateComputed, 
+  ComputedPerfMetric(const char* name, bool isVisible, bool dispPercent, 
+		     bool isPercent, bool isSortKey,
 		     Prof::Metric::AExpr* expr)
-    : PerfMetric(nm, displayNm, disp, dispPercent, isPercent, doSort),
+    : PerfMetric(name, isVisible, dispPercent, isPercent, isSortKey),
       m_exprTree(expr)
   { }
 
-  ComputedPerfMetric(const std::string& nm, const std::string& displayNm,
-		     bool disp, bool dispPercent, bool isPercent, bool doSort, 
-		     //bool propagateComputed, 
+  ComputedPerfMetric(const std::string& name, bool isVisible, bool dispPercent,
+		     bool isPercent, bool isSortKey,
 		     Prof::Metric::AExpr* expr)
-    : PerfMetric(nm, displayNm, disp, dispPercent, isPercent, doSort),
+    : PerfMetric(name, isVisible, dispPercent, isPercent, isSortKey),
       m_exprTree(expr)
   { }
 

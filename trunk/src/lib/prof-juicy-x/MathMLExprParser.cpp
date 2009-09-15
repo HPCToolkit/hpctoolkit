@@ -185,8 +185,8 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
 	  MathML_Throw("Undefined metric '" + str + "' encountered");
 	}
 
-	IFTRACE << "index --" << m->Index() << "--" << endl;
-	evalNode = new Prof::Metric::Var(str, m->Index());
+	IFTRACE << "index --" << m->id() << "--" << endl;
+	evalNode = new Prof::Metric::Var(str, m->id());
       }
       return evalNode;
     }
@@ -196,7 +196,7 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
     DOMNode *child = node->getFirstChild();
 
     // if it is an apply node
-    if (XMLString::equals(nodeName,APPLY)) {
+    if (XMLString::equals(nodeName, APPLY)) {
       IFTRACE << nodeName << endl; 
 
       // find the node that could be the operator

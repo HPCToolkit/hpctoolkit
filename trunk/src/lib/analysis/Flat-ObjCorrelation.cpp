@@ -177,7 +177,7 @@ MetricCursor::MetricCursor(const Prof::Metric::Mgr& metricMgr,
     const PerfMetric* m = metricMgr.metric(i);
     const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
     if (mm) {
-      uint mIdx = (uint)StrUtil::toUInt64(mm->NativeName());
+      uint mIdx = (uint)StrUtil::toUInt64(mm->profileRelId());
       const Prof::Flat::EventData& profevent = proflm.event(mIdx);
       m_metricDescs.push_back(&profevent);
     }

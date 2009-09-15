@@ -73,7 +73,7 @@ using std::string;
 string
 PerfMetric::toString(int flags) const 
 {
-  return name;
+  return m_name;
 }
 
   
@@ -84,7 +84,7 @@ PerfMetric::toString(int flags) const
 string
 FilePerfMetric::toString(int flags) const 
 {
-  string unitstr = isunit_event() ? " [events]" : " [samples]";
+  string unitstr = isUnitEvent() ? " [events]" : " [samples]";
   string rawstr = " {" + m_rawdesc.description() + ":" + StrUtil::toStr(m_rawdesc.period()) + " ev/smpl}";
   string str = PerfMetric::toString() + unitstr + rawstr;
 
