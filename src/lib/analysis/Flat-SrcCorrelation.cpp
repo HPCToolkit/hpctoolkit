@@ -251,7 +251,7 @@ Driver::write_experiment(std::ostream &os) const
        << " n" << MakeAttrStr(m->dispName())
        << " show=\"" << ((m->Display()) ? "1" : "0") << "\"/>";
     os << "<Info>"
-      //<< "<NV n=\"units\" v=\"events\"/>" // or "samples"
+       << "<NV n=\"units\" v=\"events\"/>" // or "samples"
        << "<NV n=\"percent\" v=\"" << ((m->dispPercent()) ? "1" : "0") << "\"/>"
        << "</Info>\n";
   }

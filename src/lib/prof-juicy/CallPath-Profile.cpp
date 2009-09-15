@@ -277,7 +277,7 @@ Profile::writeXML_hdr(std::ostream& os, int oFlags, const char* pfx) const
     os << "    <Metric i" << MakeAttrNum(i) 
        << " n" << MakeAttrStr(m->name()) << ">\n";
     os << "      <Info>" 
-      //<< "<NV n=\"units\" v=\"events\"/>" // or "samples"
+       << "<NV n=\"units\" v=\"events\"/>" // or "samples"
        << "<NV n=\"period\" v" << MakeAttrNum(m->period()) << "/>"
        << "<NV n=\"flags\" v" << MakeAttrNum(m->flags(), 16) << "/>"
        << "</Info>\n";
@@ -960,7 +960,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
       mval = (double)m.i;
     }
 
-    metricData.metric(i) = mval; // * mdesc->period(); // TODO:value
+    metricData.metric(i) = mval * mdesc->period();
 
     if (!hpcrun_metricVal_isZero(m)) {
       hasMetrics = true;
