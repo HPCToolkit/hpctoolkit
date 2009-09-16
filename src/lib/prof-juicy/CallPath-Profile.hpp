@@ -108,23 +108,27 @@ public:
   // MetricMgr
   // -------------------------------------------------------
 
-  const Metric::Mgr&
+  const Metric::Mgr*
   metricMgr() const
   { return m_mMgr; }
 
-  Metric::Mgr&
+  Metric::Mgr*
   metricMgr()
   { return m_mMgr; }
+
+  void
+  metricMgr(Metric::Mgr* mMgr)
+  { m_mMgr = mMgr; }
 
 
   // -------------------------------------------------------
   // LoadMapMgr
   // -------------------------------------------------------
-  const LoadMapMgr&
+  const LoadMapMgr*
   loadMapMgr() const
   { return m_loadmapMgr; }
 
-  LoadMapMgr&
+  LoadMapMgr*
   loadMapMgr()
   { return m_loadmapMgr; }
 
@@ -166,7 +170,7 @@ public:
   enum {
     // read-write flags
     RFlg_onlyMetricDescs = (1 << 1), // only read metric descriptors
-    WFlg_noMetrics       = (1 << 2)
+    WFlg_noMetrics       = (1 << 2)  // write no metric descs or values
   };
 
 
@@ -182,12 +186,12 @@ public:
 
   static int
   fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
-	    std::string ctxtStr, FILE* outfs);
+	    std::string ctxtStr, const char* filename, FILE* outfs);
 
   static int
   fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 		  HPCFMT_List(hpcfmt_nvpair_t)* hdrNVPairs,
-		  std::string ctxtStr, FILE* outfs);
+		  std::string ctxtStr, const char* filename, FILE* outfs);
 
   static int
   fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
@@ -201,13 +205,13 @@ public:
   // fmt_cct_fwrite() only writes out nodes of type CCT::ADynNode.
 
   static int
-  fmt_fwrite(const Profile& prof, FILE* outfs);
+  fmt_fwrite(const Profile& prof, FILE* outfs, uint wFlags);
 
   static int
-  fmt_epoch_fwrite(const Profile& prof, FILE* outfs);
+  fmt_epoch_fwrite(const Profile& prof, FILE* outfs, uint wFlags);
 
   static int
-  fmt_cct_fwrite(const Profile& prof, FILE* fs);
+  fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags);
 
 
   // -------------------------------------------------------
@@ -245,9 +249,9 @@ private:
   //typedef std::map<std::string, std::string> StrToStrMap;
   //StrToStrMap m_nvPairMap;
 
-  Metric::Mgr m_mMgr;
+  Metric::Mgr* m_mMgr;
 
-  LoadMapMgr m_loadmapMgr;
+  LoadMapMgr* m_loadmapMgr;
 
   CCT::Tree* m_cct;
 

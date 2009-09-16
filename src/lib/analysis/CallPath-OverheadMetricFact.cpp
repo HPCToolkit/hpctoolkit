@@ -101,16 +101,16 @@ OverheadMetricFact::make(Prof::CallPath::Profile* prof)
   std::vector<uint> metric_src;
   std::vector<uint> metric_dst;
   
-  uint numMetrics_orig = prof->metricMgr().size();
+  uint numMetrics_orig = prof->metricMgr()->size();
   for (uint m_id = 0; m_id < numMetrics_orig; ++m_id) {
-    Metric::ADesc* m_desc = prof->metricMgr().metric(m_id);
+    Metric::ADesc* m_desc = prof->metricMgr()->metric(m_id);
     if (OverheadMetricFact::isMetricSrc(m_desc)) {
       OverheadMetricFact::convertToWorkMetric(m_desc);
       metric_src.push_back(m_id);
 
       Metric::DerivedDesc* m_new = 
 	new Metric::DerivedDesc("overhead", "parallel overhead", NULL/*expr*/);
-      prof->metricMgr().insert(m_new);
+      prof->metricMgr()->insert(m_new);
       DIAG_Assert(m_new->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
       metric_dst.push_back(m_new->id());
     }
