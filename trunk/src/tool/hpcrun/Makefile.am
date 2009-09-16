@@ -191,7 +191,7 @@ MY_PPC_FILES = \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
         \
-        trampoline/ppc64/tramp.S
+        trampoline/ppc64/ppc64-tramp.S
 
 
 MY_X86_FILES = \
@@ -204,7 +204,7 @@ MY_X86_FILES = \
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
         \
-        trampoline/x86-family/tramp.S
+        trampoline/x86-family/x86-tramp.S
 
 
 MY_PAPI_FILES = 			\

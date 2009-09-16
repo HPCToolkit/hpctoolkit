@@ -204,14 +204,15 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
-	unwind/x86-family/x86-all.c unwind/x86-family/x86-cold-path.c \
+	trampoline/ppc64/ppc64-tramp.S unwind/x86-family/x86-all.c \
+	unwind/x86-family/x86-cold-path.c \
 	unwind/x86-family/x86-validate-retn-addr.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
-	trampoline/x86-family/tramp.S sample_source_papi.c \
+	trampoline/x86-family/x86-tramp.S sample_source_papi.c \
 	sample_source_upc.c monitor-exts/monitor_ext.h \
 	monitor-exts/over_cond.c monitor-exts/over_mutex.c \
 	monitor-exts/over_spin.c utilities/last_func.c
@@ -251,14 +252,15 @@ am__objects_12 = libcsprof_la-default_validation_summary.lo \
 @HOST_CPU_MIPS_TRUE@am__objects_13 = $(am__objects_12)
 am__objects_14 = libcsprof_la-default_validation_summary.lo \
 	libcsprof_la-ppc64-unwind.lo \
-	libcsprof_la-ppc64-unwind-interval.lo
+	libcsprof_la-ppc64-unwind-interval.lo \
+	libcsprof_la-ppc64-tramp.lo
 @HOST_CPU_PPC_TRUE@am__objects_15 = $(am__objects_14)
 am__objects_16 = libcsprof_la-x86-all.lo libcsprof_la-x86-cold-path.lo \
 	libcsprof_la-x86-validate-retn-addr.lo \
 	libcsprof_la-x86-unwind-interval.lo \
 	libcsprof_la-x86-unwind-interval-fixup.lo \
 	libcsprof_la-x86-unwind.lo libcsprof_la-x86-unwind-support.lo \
-	libcsprof_la-x86-linux-dlresolver.lo libcsprof_la-tramp.lo
+	libcsprof_la-x86-linux-dlresolver.lo libcsprof_la-x86-tramp.lo
 @HOST_CPU_X86_TRUE@am__objects_17 = $(am__objects_16)
 am__objects_18 = libcsprof_la-sample_source_papi.lo
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_19 = $(am__objects_18)
@@ -303,14 +305,15 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
-	unwind/x86-family/x86-all.c unwind/x86-family/x86-cold-path.c \
+	trampoline/ppc64/ppc64-tramp.S unwind/x86-family/x86-all.c \
+	unwind/x86-family/x86-cold-path.c \
 	unwind/x86-family/x86-validate-retn-addr.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
-	trampoline/x86-family/tramp.S sample_source_papi.c \
+	trampoline/x86-family/x86-tramp.S sample_source_papi.c \
 	sample_source_upc.c utilities/last_func.c
 am__objects_24 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-main.$(OBJEXT) \
@@ -353,7 +356,8 @@ am__objects_26 = libcsprof_o-default_validation_summary.$(OBJEXT) \
 @HOST_CPU_MIPS_TRUE@am__objects_27 = $(am__objects_26)
 am__objects_28 = libcsprof_o-default_validation_summary.$(OBJEXT) \
 	libcsprof_o-ppc64-unwind.$(OBJEXT) \
-	libcsprof_o-ppc64-unwind-interval.$(OBJEXT)
+	libcsprof_o-ppc64-unwind-interval.$(OBJEXT) \
+	libcsprof_o-ppc64-tramp.$(OBJEXT)
 @HOST_CPU_PPC_TRUE@am__objects_29 = $(am__objects_28)
 am__objects_30 = libcsprof_o-x86-all.$(OBJEXT) \
 	libcsprof_o-x86-cold-path.$(OBJEXT) \
@@ -363,7 +367,7 @@ am__objects_30 = libcsprof_o-x86-all.$(OBJEXT) \
 	libcsprof_o-x86-unwind.$(OBJEXT) \
 	libcsprof_o-x86-unwind-support.$(OBJEXT) \
 	libcsprof_o-x86-linux-dlresolver.$(OBJEXT) \
-	libcsprof_o-tramp.$(OBJEXT)
+	libcsprof_o-x86-tramp.$(OBJEXT)
 @HOST_CPU_X86_TRUE@am__objects_31 = $(am__objects_30)
 am__objects_32 = libcsprof_o-sample_source_papi.$(OBJEXT)
 @OPT_PAPI_STATIC_TRUE@am__objects_33 = $(am__objects_32)
@@ -720,7 +724,9 @@ MY_MIPS_FILES = \
 MY_PPC_FILES = \
 	unwind/common/default_validation_summary.c \
 	unwind/ppc64/ppc64-unwind.c \
-	unwind/ppc64/ppc64-unwind-interval.c
+	unwind/ppc64/ppc64-unwind-interval.c \
+        \
+        trampoline/ppc64/ppc64-tramp.S
 
 MY_X86_FILES = \
 	unwind/x86-family/x86-all.c			\
@@ -732,7 +738,7 @@ MY_X86_FILES = \
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
         \
-        trampoline/x86-family/tramp.S
+        trampoline/x86-family/x86-tramp.S
 
 MY_PAPI_FILES = \
 	sample_source_papi.c
@@ -1065,6 +1071,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-over_cond.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-over_mutex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-over_spin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-tramp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ppc64-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_event.Plo@am__quote@
@@ -1084,7 +1091,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-thread_use.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-tokenize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-trace.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-tramp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-trampoline.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ui_tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-unlink.Plo@am__quote@
@@ -1092,6 +1098,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-cold-path.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-linux-dlresolver.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-tramp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-unwind-interval-fixup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-unwind-support.Plo@am__quote@
@@ -1130,6 +1137,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mips-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-mips-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-name.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-tramp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ppc64-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_event.Po@am__quote@
@@ -1149,7 +1157,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-thread_use.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-tokenize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-trace.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-tramp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-trampoline.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ui_tree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-unlink.Po@am__quote@
@@ -1157,6 +1164,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-cold-path.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-linux-dlresolver.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-tramp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-unwind-interval-fixup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-x86-unwind-support.Po@am__quote@
@@ -1187,26 +1195,47 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCCAS_FALSE@	$(LTCPPASCOMPILE) -c -o $@ $<
 
-libcsprof_la-tramp.lo: trampoline/x86-family/tramp.S
-@am__fastdepCCAS_TRUE@	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_la-tramp.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-tramp.Tpo -c -o libcsprof_la-tramp.lo `test -f 'trampoline/x86-family/tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/tramp.S
-@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_la-tramp.Tpo $(DEPDIR)/libcsprof_la-tramp.Plo
-@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/tramp.S' object='libcsprof_la-tramp.lo' libtool=yes @AMDEPBACKSLASH@
+libcsprof_la-ppc64-tramp.lo: trampoline/ppc64/ppc64-tramp.S
+@am__fastdepCCAS_TRUE@	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_la-ppc64-tramp.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-ppc64-tramp.Tpo -c -o libcsprof_la-ppc64-tramp.lo `test -f 'trampoline/ppc64/ppc64-tramp.S' || echo '$(srcdir)/'`trampoline/ppc64/ppc64-tramp.S
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_la-ppc64-tramp.Tpo $(DEPDIR)/libcsprof_la-ppc64-tramp.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/ppc64/ppc64-tramp.S' object='libcsprof_la-ppc64-tramp.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCCAS_FALSE@	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_la-tramp.lo `test -f 'trampoline/x86-family/tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/tramp.S
+@am__fastdepCCAS_FALSE@	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_la-ppc64-tramp.lo `test -f 'trampoline/ppc64/ppc64-tramp.S' || echo '$(srcdir)/'`trampoline/ppc64/ppc64-tramp.S
 
-libcsprof_o-tramp.o: trampoline/x86-family/tramp.S
-@am__fastdepCCAS_TRUE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_o-tramp.o -MD -MP -MF $(DEPDIR)/libcsprof_o-tramp.Tpo -c -o libcsprof_o-tramp.o `test -f 'trampoline/x86-family/tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/tramp.S
-@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_o-tramp.Tpo $(DEPDIR)/libcsprof_o-tramp.Po
-@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/tramp.S' object='libcsprof_o-tramp.o' libtool=no @AMDEPBACKSLASH@
+libcsprof_la-x86-tramp.lo: trampoline/x86-family/x86-tramp.S
+@am__fastdepCCAS_TRUE@	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_la-x86-tramp.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-x86-tramp.Tpo -c -o libcsprof_la-x86-tramp.lo `test -f 'trampoline/x86-family/x86-tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/x86-tramp.S
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_la-x86-tramp.Tpo $(DEPDIR)/libcsprof_la-x86-tramp.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/x86-tramp.S' object='libcsprof_la-x86-tramp.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCCAS_FALSE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_o-tramp.o `test -f 'trampoline/x86-family/tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/tramp.S
+@am__fastdepCCAS_FALSE@	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_la-x86-tramp.lo `test -f 'trampoline/x86-family/x86-tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/x86-tramp.S
 
-libcsprof_o-tramp.obj: trampoline/x86-family/tramp.S
-@am__fastdepCCAS_TRUE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_o-tramp.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-tramp.Tpo -c -o libcsprof_o-tramp.obj `if test -f 'trampoline/x86-family/tramp.S'; then $(CYGPATH_W) 'trampoline/x86-family/tramp.S'; else $(CYGPATH_W) '$(srcdir)/trampoline/x86-family/tramp.S'; fi`
-@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_o-tramp.Tpo $(DEPDIR)/libcsprof_o-tramp.Po
-@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/tramp.S' object='libcsprof_o-tramp.obj' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-ppc64-tramp.o: trampoline/ppc64/ppc64-tramp.S
+@am__fastdepCCAS_TRUE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_o-ppc64-tramp.o -MD -MP -MF $(DEPDIR)/libcsprof_o-ppc64-tramp.Tpo -c -o libcsprof_o-ppc64-tramp.o `test -f 'trampoline/ppc64/ppc64-tramp.S' || echo '$(srcdir)/'`trampoline/ppc64/ppc64-tramp.S
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ppc64-tramp.Tpo $(DEPDIR)/libcsprof_o-ppc64-tramp.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/ppc64/ppc64-tramp.S' object='libcsprof_o-ppc64-tramp.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCCAS_FALSE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_o-tramp.obj `if test -f 'trampoline/x86-family/tramp.S'; then $(CYGPATH_W) 'trampoline/x86-family/tramp.S'; else $(CYGPATH_W) '$(srcdir)/trampoline/x86-family/tramp.S'; fi`
+@am__fastdepCCAS_FALSE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_o-ppc64-tramp.o `test -f 'trampoline/ppc64/ppc64-tramp.S' || echo '$(srcdir)/'`trampoline/ppc64/ppc64-tramp.S
+
+libcsprof_o-ppc64-tramp.obj: trampoline/ppc64/ppc64-tramp.S
+@am__fastdepCCAS_TRUE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_o-ppc64-tramp.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-ppc64-tramp.Tpo -c -o libcsprof_o-ppc64-tramp.obj `if test -f 'trampoline/ppc64/ppc64-tramp.S'; then $(CYGPATH_W) 'trampoline/ppc64/ppc64-tramp.S'; else $(CYGPATH_W) '$(srcdir)/trampoline/ppc64/ppc64-tramp.S'; fi`
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_o-ppc64-tramp.Tpo $(DEPDIR)/libcsprof_o-ppc64-tramp.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/ppc64/ppc64-tramp.S' object='libcsprof_o-ppc64-tramp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_o-ppc64-tramp.obj `if test -f 'trampoline/ppc64/ppc64-tramp.S'; then $(CYGPATH_W) 'trampoline/ppc64/ppc64-tramp.S'; else $(CYGPATH_W) '$(srcdir)/trampoline/ppc64/ppc64-tramp.S'; fi`
+
+libcsprof_o-x86-tramp.o: trampoline/x86-family/x86-tramp.S
+@am__fastdepCCAS_TRUE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_o-x86-tramp.o -MD -MP -MF $(DEPDIR)/libcsprof_o-x86-tramp.Tpo -c -o libcsprof_o-x86-tramp.o `test -f 'trampoline/x86-family/x86-tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/x86-tramp.S
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_o-x86-tramp.Tpo $(DEPDIR)/libcsprof_o-x86-tramp.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/x86-tramp.S' object='libcsprof_o-x86-tramp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_o-x86-tramp.o `test -f 'trampoline/x86-family/x86-tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/x86-tramp.S
+
+libcsprof_o-x86-tramp.obj: trampoline/x86-family/x86-tramp.S
+@am__fastdepCCAS_TRUE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_o-x86-tramp.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-x86-tramp.Tpo -c -o libcsprof_o-x86-tramp.obj `if test -f 'trampoline/x86-family/x86-tramp.S'; then $(CYGPATH_W) 'trampoline/x86-family/x86-tramp.S'; else $(CYGPATH_W) '$(srcdir)/trampoline/x86-family/x86-tramp.S'; fi`
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_o-x86-tramp.Tpo $(DEPDIR)/libcsprof_o-x86-tramp.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/x86-tramp.S' object='libcsprof_o-x86-tramp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_o-x86-tramp.obj `if test -f 'trampoline/x86-family/x86-tramp.S'; then $(CYGPATH_W) 'trampoline/x86-family/x86-tramp.S'; else $(CYGPATH_W) '$(srcdir)/trampoline/x86-family/x86-tramp.S'; fi`
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
