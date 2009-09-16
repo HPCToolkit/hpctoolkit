@@ -102,7 +102,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
 
   Prof::CallPath::Profile* prof = NULL;
   try {
-    prof = Prof::CallPath::Profile::make(filenm, stdout);
+    prof = Prof::CallPath::Profile::make(filenm, 0/*rFlags*/, stdout);
   }
   catch (...) {
     DIAG_EMsg("While reading '" << filenm << "'...");

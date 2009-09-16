@@ -163,8 +163,15 @@ public:
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
+  enum {
+    // read-write flags
+    RFlg_onlyMetricDescs = (1 << 1), // only read metric descriptors
+    WFlg_noMetrics       = (1 << 2)
+  };
+
+
   static Profile* 
-  make(const char* fnm, FILE* outfs);
+  make(const char* fnm, uint rwFlags, FILE* outfs);
 
   
   // fmt_*_fread(): Reads the appropriate hpcrun_fmt object from the
@@ -174,15 +181,17 @@ public:
   // human inspection.
 
   static int
-  fmt_fread(Profile* &prof, FILE* infs, std::string ctxtStr, FILE* outfs);
+  fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
+	    std::string ctxtStr, FILE* outfs);
 
   static int
-  fmt_epoch_fread(Profile* &prof, FILE* infs, 
+  fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 		  HPCFMT_List(hpcfmt_nvpair_t)* hdrNVPairs,
 		  std::string ctxtStr, FILE* outfs);
 
   static int
-  fmt_cct_fread(Profile& prof, FILE* infs, LoadMap* loadmap, FILE* outfs);
+  fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
+		LoadMap* loadmap, FILE* outfs);
 
 
   // fmt_*_fwrite(): Write the appropriate object as hpcrun_fmt to the
