@@ -121,7 +121,7 @@ real_main(int argc, char* argv[])
     lm = new BinUtil::LM();
     lm->open(args.in_filenm.c_str());
     lm->read(BinUtil::LM::ReadFlg_ALL);
-  } 
+  }
   catch (...) {
     DIAG_EMsg("Exception encountered while reading " << args.in_filenm);
     throw;

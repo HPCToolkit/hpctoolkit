@@ -334,7 +334,7 @@ Profile::ddump() const
 static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
 cct_makeNode(Prof::CallPath::Profile& prof,
 	     const hpcrun_fmt_cct_node_t& nodeFmt,
-	     Prof::LoadMap* loadmap);
+	     uint rFlags, Prof::LoadMap* loadmap);
 
 static void
 fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, 
@@ -349,7 +349,7 @@ namespace Prof {
 namespace CallPath {
 
 Profile* 
-Profile::make(const char* fnm, FILE* outfs) 
+Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 {
   int ret;
 
@@ -359,7 +359,7 @@ Profile::make(const char* fnm, FILE* outfs)
   }
 
   Profile* prof = NULL;
-  ret = fmt_fread(prof, fs, fnm, outfs);
+  ret = fmt_fread(prof, fs, rFlags, fnm, outfs);
   
   hpcio_close(fs);
 
@@ -368,7 +368,7 @@ Profile::make(const char* fnm, FILE* outfs)
 
 
 int
-Profile::fmt_fread(Profile* &prof, FILE* infs, 
+Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
 		   std::string ctxtStr, FILE* outfs)
 {
   int ret;
@@ -399,7 +399,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs,
 
     try {
       ctxtStr += ": epoch " + StrUtil::toStr(num_epochs + 1);
-      ret = fmt_epoch_fread(myprof, infs, &hdr.nvps, ctxtStr, outfs);
+      ret = fmt_epoch_fread(myprof, infs, rFlags, &hdr.nvps, ctxtStr, outfs);
       if (ret == HPCFMT_EOF) {
 	break;
       }
@@ -440,7 +440,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs,
 
 
 int
-Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, 
+Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 			 HPCFMT_List(hpcfmt_nvpair_t)* hdrNVPairs,
 			 std::string ctxtStr, FILE* outfs)
 {
@@ -608,7 +608,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
   // cct
   // ------------------------------------------------------------
   LoadMap* loadmap_p = (isNewFormat) ? NULL : &loadmap; // FIXME:temporary
-  fmt_cct_fread(*prof, infs, loadmap_p, outfs);
+  fmt_cct_fread(*prof, infs, rFlags, loadmap_p, outfs);
 
 
   hpcrun_fmt_epoch_hdr_free(&ehdr, free);
@@ -618,7 +618,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs,
 
 
 int
-Profile::fmt_cct_fread(Profile& prof, FILE* infs, LoadMap* loadmap, FILE* outfs)
+Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
+		       LoadMap* loadmap, FILE* outfs)
 {
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
 
@@ -681,7 +682,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, LoadMap* loadmap, FILE* outfs)
 
     CCT::Tree* cct = prof.cct();
 
-    std::pair<CCT::ANode*, CCT::ANode*> n2 = cct_makeNode(prof, nodeFmt, loadmap);
+    std::pair<CCT::ANode*, CCT::ANode*> n2 = 
+      cct_makeNode(prof, nodeFmt, rFlags, loadmap);
     CCT::ANode* node = n2.first;
     CCT::ANode* node_sib = n2.second;
 
@@ -871,6 +873,7 @@ Profile::canonicalize()
 static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
 cct_makeNode(Prof::CallPath::Profile& prof,
 	     const hpcrun_fmt_cct_node_t& nodeFmt,
+	     uint rFlags,
 	     Prof::LoadMap* loadmap /*FIXME:temp*/)
 {
   using namespace Prof;
@@ -967,6 +970,9 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     }
   }
 
+  if (rFlags & Prof::CallPath::Profile::RFlg_onlyMetricDescs) {
+    metricData.clearMetrics();
+  }
 
   // ----------------------------------------------------------
   // Create nodes.  

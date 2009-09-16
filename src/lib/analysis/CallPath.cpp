@@ -121,7 +121,8 @@ read(const char* prof_fnm)
 {
   Prof::CallPath::Profile* prof = NULL;
   try {
-    prof = Prof::CallPath::Profile::make(prof_fnm, /*outfs*/ NULL);
+    uint rFlags = 0;
+    prof = Prof::CallPath::Profile::make(prof_fnm, rFlags, /*outfs*/ NULL);
   }
   catch (...) {
     DIAG_EMsg("While reading profile '" << prof_fnm << "'...");
