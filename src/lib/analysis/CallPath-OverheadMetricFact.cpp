@@ -87,13 +87,10 @@ namespace CallPath {
 
 // Assumes: metrics are still only at leaves (CCT::Stmt)
 void 
-OverheadMetricFact::make(Prof::CallPath::Profile* prof)
+OverheadMetricFact::make(Prof::CallPath::Profile& prof)
 {
   using namespace Prof;
   
-  CCT::Tree* cct = prof->cct();
-  if (!cct) { return; }
-
   // ------------------------------------------------------------
   // Create parallel overhead metric descriptor
   // Create mapping from source metrics to overhead metrics
@@ -101,16 +98,16 @@ OverheadMetricFact::make(Prof::CallPath::Profile* prof)
   std::vector<uint> metric_src;
   std::vector<uint> metric_dst;
   
-  uint numMetrics_orig = prof->metricMgr()->size();
+  uint numMetrics_orig = prof.metricMgr()->size();
   for (uint m_id = 0; m_id < numMetrics_orig; ++m_id) {
-    Metric::ADesc* m_desc = prof->metricMgr()->metric(m_id);
+    Metric::ADesc* m_desc = prof.metricMgr()->metric(m_id);
     if (OverheadMetricFact::isMetricSrc(m_desc)) {
       OverheadMetricFact::convertToWorkMetric(m_desc);
       metric_src.push_back(m_id);
 
       Metric::DerivedDesc* m_new = 
 	new Metric::DerivedDesc("overhead", "parallel overhead", NULL/*expr*/);
-      prof->metricMgr()->insert(m_new);
+      prof.metricMgr()->insert(m_new);
       DIAG_Assert(m_new->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
       metric_dst.push_back(m_new->id());
     }
@@ -120,12 +117,12 @@ OverheadMetricFact::make(Prof::CallPath::Profile* prof)
   // Create space for metric values
   // ------------------------------------------------------------
   uint n_new_metrics = metric_dst.size();
-  for (CCT::ANodeIterator it(cct->root()); it.Current(); ++it) {
+  for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
     CCT::ANode* x = it.CurNode();
     x->ensureMetricsSize(x->numMetrics() + n_new_metrics);
   }
 
-  make(cct->root(), metric_src, metric_dst, false);
+  make(prof.cct()->root(), metric_src, metric_dst, false);
 }
 
 

@@ -73,6 +73,8 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/uint.h>
+
 #include "CallPath.hpp"
 #include "CallPath-OverheadMetricFact.hpp"
 #include "Util.hpp"
@@ -101,8 +103,8 @@ namespace Analysis {
 namespace CallPath {
 
 
-Prof::CallPath::Profile* 
-read(std::vector<string>& profileFiles)
+Prof::CallPath::Profile*
+read(const std::vector<string>& profileFiles, uint rFlags)
 {
   Prof::CallPath::Profile* prof = read(profileFiles[0]);
   
@@ -116,12 +118,11 @@ read(std::vector<string>& profileFiles)
 }
 
 
-Prof::CallPath::Profile* 
-read(const char* prof_fnm)
+Prof::CallPath::Profile*
+read(const char* prof_fnm, uint rFlags)
 {
   Prof::CallPath::Profile* prof = NULL;
   try {
-    uint rFlags = 0;
     prof = Prof::CallPath::Profile::make(prof_fnm, rFlags, /*outfs*/ NULL);
   }
   catch (...) {
@@ -153,7 +154,38 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args)
 
 void
 Analysis::CallPath::
-overlayStaticStructureMain(Prof::CallPath::Profile* prof, 
+overlayStaticStructureMain(Prof::CallPath::Profile& prof, string agent)
+{
+  const Prof::LoadMapMgr* loadmap = prof.loadMapMgr();
+  Prof::Struct::Root* rootStrct = prof.structure()->root();
+  
+  for (Prof::LoadMapMgr::LMSet_nm::const_iterator it = loadmap->lm_begin_nm();
+       it != loadmap->lm_end_nm(); ++it) {
+    Prof::ALoadMap::LM* loadmap_lm = *it;
+    
+    // tallent:TODO: The call to LoadMap::compute_relocAmt() in
+    // Profile::hpcrun_fmt_epoch_fread has emitted a warning if a
+    // load module is unavailable.  Probably should be here...
+    if (loadmap_lm->isAvail() && loadmap_lm->isUsed()) {
+      const string& lm_nm = loadmap_lm->name();
+      
+      Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
+      Analysis::CallPath::overlayStaticStructureMain(prof, loadmap_lm, 
+						     lmStrct);
+    }
+  }
+  
+  Analysis::CallPath::normalize(prof, agent);
+  
+  // Note: Use StructMetricIdFlg to flag that static structure is used
+  rootStrct->accumulateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
+  rootStrct->pruneByMetrics();
+}
+
+
+void
+Analysis::CallPath::
+overlayStaticStructureMain(Prof::CallPath::Profile& prof, 
 			   Prof::LoadMap::LM* loadmap_lm,
 			   Prof::Struct::LM* lmStrct)
 {
@@ -204,7 +236,7 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 
 
 static void 
-overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
+overlayStaticStructure(Prof::CallPath::Profile& prof, Prof::CCT::ANode* node,
 		       Prof::LoadMap::LM* loadmap_lm, 
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
 
@@ -213,19 +245,16 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 // using a preorder walk over the CCT.
 void
 Analysis::CallPath::
-overlayStaticStructure(Prof::CallPath::Profile* prof, 
+overlayStaticStructure(Prof::CallPath::Profile& prof, 
 		       Prof::LoadMap::LM* loadmap_lm, 
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
-  Prof::CCT::Tree* cct = prof->cct();
-  if (!cct) { return; }
-  
-  overlayStaticStructure(prof, cct->root(), loadmap_lm, lmStrct, lm);
+  overlayStaticStructure(prof, prof.cct()->root(), loadmap_lm, lmStrct, lm);
 }
 
 
 static void 
-overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node, 
+overlayStaticStructure(Prof::CallPath::Profile& prof, Prof::CCT::ANode* node, 
 		       Prof::LoadMap::LM* loadmap_lm, 
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
@@ -292,8 +321,8 @@ overlayStaticStructure(Prof::CallPath::Profile* prof, Prof::CCT::ANode* node,
 //
 // INVARIANT: symbolic information has been added to 'node'.
 static Prof::CCT::ANode*
-demandScopeInFrame(Prof::CCT::ADynNode* node, 
-		   Prof::Struct::ANode* strct, 
+demandScopeInFrame(Prof::CCT::ADynNode* node,
+		   Prof::Struct::ANode* strct,
 		   StructToCCTMap& strctToCCTMap)
 {
   Prof::CCT::ANode* frameScope = NULL;
@@ -379,13 +408,13 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 //***************************************************************************
 
 static void 
-coalesceStmts(Prof::CallPath::Profile* prof);
+coalesceStmts(Prof::CallPath::Profile& prof);
 
 static void 
-pruneByMetrics(Prof::CallPath::Profile* prof);
+pruneByMetrics(Prof::CallPath::Profile& prof);
 
 void 
-Analysis::CallPath::normalize(Prof::CallPath::Profile* prof, 
+Analysis::CallPath::normalize(Prof::CallPath::Profile& prof, 
 			      string lush_agent)
 {
   pruneByMetrics(prof);
@@ -416,12 +445,9 @@ coalesceStmts(Prof::CCT::ANode* node);
 
 
 static void 
-coalesceStmts(Prof::CallPath::Profile* prof)
+coalesceStmts(Prof::CallPath::Profile& prof)
 {
-  Prof::CCT::Tree* cct = prof->cct();
-  if (!cct) { return; }
-  
-  coalesceStmts(cct->root());
+  coalesceStmts(prof.cct()->root());
 }
 
 
@@ -502,12 +528,9 @@ static void
 pruneByMetrics(Prof::CCT::ANode* node);
 
 static void 
-pruneByMetrics(Prof::CallPath::Profile* prof)
+pruneByMetrics(Prof::CallPath::Profile& prof)
 {
-  Prof::CCT::Tree* cct = prof->cct();
-  if (!cct) { return; }
-  
-  pruneByMetrics(cct->root());
+  pruneByMetrics(prof.cct()->root());
 }
 
 
@@ -553,7 +576,7 @@ namespace Analysis {
 namespace CallPath {
 
 void
-write(Prof::CallPath::Profile* prof, std::ostream& os, 
+write(Prof::CallPath::Profile& prof, std::ostream& os, 
       string& title, bool prettyPrint)
 {
   static const char* experimentDTD =
@@ -569,7 +592,7 @@ write(Prof::CallPath::Profile* prof, std::ostream& os,
     oFlags |= CCT::Tree::OFlg_Debug;
   }
 
-  string name = (title.empty()) ? prof->name() : title;
+  string name = (title.empty()) ? prof.name() : title;
 
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE hpc-experiment [\n" << experimentDTD << "]>" << std::endl;
@@ -584,7 +607,7 @@ write(Prof::CallPath::Profile* prof, std::ostream& os,
   // 
   // ------------------------------------------------------------
   os << "<SecHeader>\n";
-  prof->writeXML_hdr(os, oFlags);
+  prof.writeXML_hdr(os, oFlags);
   os << "  <Info/>\n";
   os << "</SecHeader>\n";
   os.flush();
@@ -593,7 +616,7 @@ write(Prof::CallPath::Profile* prof, std::ostream& os,
   // 
   // ------------------------------------------------------------
   os << "<SecCallPathProfileData>\n";
-  prof->cct()->writeXML(os, oFlags);
+  prof.cct()->writeXML(os, oFlags);
   os << "</SecCallPathProfileData>\n";
 
   os << "</SecCallPathProfile>\n";
