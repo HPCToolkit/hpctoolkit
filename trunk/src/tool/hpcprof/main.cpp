@@ -125,15 +125,15 @@ realmain(int argc, char* const* argv)
   std::pair<std::vector<std::string>*, uint> pair = 
     Analysis::Util::normalizeProfileArgs(args.profileFiles);
   
-  std::vector<std::string>* profileFiles = pair.first;
+  std::vector<std::string>* profFiles = pair.first;
 
-  if ( !(profileFiles->size() <= 16 || args.isHPCProfForce) ) {
-    DIAG_Throw("There are " << profileFiles->size() << " profile files to process. " << args.getCmd() << " currently limits the number of profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.");
+  if ( !(profFiles->size() <= 16 || args.isHPCProfForce) ) {
+    DIAG_Throw("There are " << profFiles->size() << " profile files to process. " << args.getCmd() << " currently limits the number of profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.");
   }
 
-  Prof::CallPath::Profile* prof = Analysis::CallPath::read(*profileFiles);
+  Prof::CallPath::Profile* prof = Analysis::CallPath::read(*profFiles);
 
-  delete profileFiles;
+  delete profFiles;
 
 
   // ------------------------------------------------------------
@@ -150,12 +150,12 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
 
   try { 
-    const Prof::LoadMapMgr& loadmap = prof->loadMapMgr();
+    const Prof::LoadMapMgr* loadmap = prof->loadMapMgr();
     Prof::Struct::Tree* structure = prof->structure();
     Prof::Struct::Root* rootStrct = structure->root();
 
-    for (Prof::LoadMapMgr::LMSet_nm::const_iterator it = loadmap.lm_begin_nm();
-	 it != loadmap.lm_end_nm(); ++it) {
+    for (Prof::LoadMapMgr::LMSet_nm::const_iterator it = loadmap->lm_begin_nm();
+	 it != loadmap->lm_end_nm(); ++it) {
       Prof::ALoadMap::LM* loadmap_lm = *it;
 
       // tallent:TODO: The call to LoadMap::compute_relocAmt() in

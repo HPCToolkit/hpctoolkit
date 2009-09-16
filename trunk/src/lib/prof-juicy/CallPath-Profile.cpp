@@ -112,6 +112,10 @@ Profile::Profile(const std::string name)
   m_measurementGranularity = 0;
   m_raToCallsiteOfst = 0;
 
+  m_mMgr = new Metric::Mgr;
+
+  m_loadmapMgr = new LoadMapMgr;
+
   m_cct = new CCT::Tree(this);
 
   m_structure = NULL;
@@ -120,6 +124,8 @@ Profile::Profile(const std::string name)
 
 Profile::~Profile()
 {
+  delete m_mMgr;
+  delete m_loadmapMgr;
   delete m_cct;
   delete m_structure;
 }
@@ -141,19 +147,19 @@ Profile::merge(Profile& y, bool isSameThread)
   // -------------------------------------------------------
   // merge metrics 
   // -------------------------------------------------------
-  uint x_numMetrics = m_mMgr.size();
+  uint x_numMetrics = m_mMgr->size();
   uint x_newMetricBegIdx = 0;
   uint y_newMetrics   = 0;
 
   if (!isSameThread) {
     // new metrics columns
     x_newMetricBegIdx = x_numMetrics;
-    y_newMetrics      = y.metricMgr().size();
+    y_newMetrics      = y.metricMgr()->size();
 
     // (FIXME: create MetricMgr::merge())
-    for (uint i = 0; i < y.metricMgr().size(); ++i) {
-      const Metric::ADesc* m = y.metricMgr().metric(i);
-      m_mMgr.insert(m->clone());
+    for (uint i = 0; i < y.metricMgr()->size(); ++i) {
+      const Metric::ADesc* m = y.metricMgr()->metric(i);
+      m_mMgr->insert(m->clone());
     }
   }
   
@@ -163,7 +169,7 @@ Profile::merge(Profile& y, bool isSameThread)
   // Post-INVARIANT: y's cct refers to x's LoadMapMgr
   // -------------------------------------------------------
   std::vector<LoadMap::MergeChange> mergeChg = 
-    m_loadmapMgr.merge(y.loadMapMgr());
+    m_loadmapMgr->merge(*y.loadMapMgr());
   y.merge_fixCCT(mergeChg);
 
   // -------------------------------------------------------
@@ -261,9 +267,9 @@ std::ostream&
 Profile::writeXML_hdr(std::ostream& os, int oFlags, const char* pfx) const
 {
   os << "  <MetricTable>\n";
-  uint n_metrics = m_mMgr.size();
+  uint n_metrics = m_mMgr->size();
   for (uint i = 0; i < n_metrics; i++) {
-    const Metric::ADesc* m = m_mMgr.metric(i);
+    const Metric::ADesc* m = m_mMgr->metric(i);
     const Metric::SampledDesc* mm = dynamic_cast<const Metric::SampledDesc*>(m);
 
     os << "    <Metric i" << MakeAttrNum(i) 
@@ -304,9 +310,9 @@ Profile::dump(std::ostream& os) const
 {
   os << m_name << std::endl;
 
-  m_mMgr.dump(os);
+  m_mMgr->dump(os);
 
-  m_loadmapMgr.dump(os);
+  m_loadmapMgr->dump(os);
 
   if (m_cct) {
     m_cct->dump(os);
@@ -359,7 +365,7 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
   }
 
   Profile* prof = NULL;
-  ret = fmt_fread(prof, fs, rFlags, fnm, outfs);
+  ret = fmt_fread(prof, fs, rFlags, fnm, fnm, outfs);
   
   hpcio_close(fs);
 
@@ -369,7 +375,7 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 
 int
 Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
-		   std::string ctxtStr, FILE* outfs)
+		   std::string ctxtStr, const char* filename, FILE* outfs)
 {
   int ret;
 
@@ -399,7 +405,8 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
 
     try {
       ctxtStr += ": epoch " + StrUtil::toStr(num_epochs + 1);
-      ret = fmt_epoch_fread(myprof, infs, rFlags, &hdr.nvps, ctxtStr, outfs);
+      ret = fmt_epoch_fread(myprof, infs, rFlags, &hdr.nvps, 
+			    ctxtStr, filename, outfs);
       if (ret == HPCFMT_EOF) {
 	break;
       }
@@ -442,7 +449,8 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
 int
 Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 			 HPCFMT_List(hpcfmt_nvpair_t)* hdrNVPairs,
-			 std::string ctxtStr, FILE* outfs)
+			 std::string ctxtStr, const char* filename,
+			 FILE* outfs)
 {
   using namespace Prof;
 
@@ -548,13 +556,13 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m_sfx = " [" + mpiRank + "]";
   }
   else if (!tid.empty()) {
-    m_sfx = " [" + tid + "]";    
+    m_sfx = " [" + tid + "]";
   }
 
   metric_desc_t* m_lst = metric_tbl.lst;
   for (uint i = 0; i < num_metrics; i++) {
     string m_nm = m_lst[i].name + m_sfx;
-    string profFile = "TODO";
+    string profFile = (filename) ? filename : "";
     string profRelId = StrUtil::toStr(i);
 
     Metric::SampledDesc* m = 
@@ -563,7 +571,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 			      profFile, profRelId, "HPCRUN");
     m->flags(m_lst[i].flags);
     
-    prof->metricMgr().insert(m);
+    prof->metricMgr()->insert(m);
   }
 
   hpcrun_fmt_metricTbl_free(&metric_tbl, free);
@@ -597,7 +605,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   }
 
   std::vector<ALoadMap::MergeChange> mergeChg = 
-    prof->loadMapMgr().merge(loadmap);
+    prof->loadMapMgr()->merge(loadmap);
   DIAG_Assert(mergeChg.empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);
 
 
@@ -644,7 +652,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
 
   hpcrun_fmt_cct_node_t nodeFmt;
-  nodeFmt.num_metrics = prof.metricMgr().size();
+  nodeFmt.num_metrics = prof.metricMgr()->size();
   nodeFmt.metrics = (hpcrun_metricVal_t*)alloca(nodeFmt.num_metrics * sizeof(hpcrun_metricVal_t));
 
   for (uint i = 0; i < num_nodes; ++i) {
@@ -714,7 +722,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 //***************************************************************************
 
 int
-Profile::fmt_fwrite(const Profile& prof, FILE* fs)
+Profile::fmt_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 {
   // ------------------------------------------------------------
   // header
@@ -726,14 +734,14 @@ Profile::fmt_fwrite(const Profile& prof, FILE* fs)
   // ------------------------------------------------------------
   // epoch
   // ------------------------------------------------------------
-  fmt_epoch_fwrite(prof, fs);
+  fmt_epoch_fwrite(prof, fs, wFlags);
 
   return HPCFMT_OK;
 }
 
 
 int
-Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs)
+Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 {
   // ------------------------------------------------------------
   // epoch-hdr
@@ -749,9 +757,14 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs)
   // metric-tbl
   // ------------------------------------------------------------
 
-  hpcfmt_byte4_fwrite(prof.metricMgr().size(), fs);
-  for (uint i = 0; i < prof.metricMgr().size(); i++) {
-    const Metric::ADesc* m = prof.metricMgr().metric(i);
+  uint numMetrics = prof.metricMgr()->size();
+  if (wFlags & Profile::WFlg_noMetrics) {
+    numMetrics = 0;
+  }
+
+  hpcfmt_byte4_fwrite(numMetrics, fs);
+  for (uint i = 0; i < numMetrics; i++) {
+    const Metric::ADesc* m = prof.metricMgr()->metric(i);
 
     metric_desc_t mdesc;
     mdesc.name = const_cast<char*>(m->name().c_str());
@@ -766,7 +779,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs)
   // loadmap
   // ------------------------------------------------------------
 
-  const LoadMapMgr& loadMapMgr = prof.loadMapMgr();
+  const LoadMapMgr& loadMapMgr = *(prof.loadMapMgr());
 
   hpcfmt_byte4_fwrite(loadMapMgr.size(), fs);
   for (ALoadMap::LM_id_t i = 1; i <= loadMapMgr.size(); i++) {
@@ -785,16 +798,19 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs)
   // ------------------------------------------------------------
   // cct
   // ------------------------------------------------------------
-  fmt_cct_fwrite(prof, fs);
+  fmt_cct_fwrite(prof, fs, wFlags);
 
   return HPCFMT_OK;
 }
 
 
 int
-Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs)
+Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 {
-  uint numMetrics = prof.metricMgr().size();
+  uint numMetrics = prof.metricMgr()->size();
+  if (wFlags & Profile::WFlg_noMetrics) {
+    numMetrics = 0;
+  }
 
   hpcrun_fmt_cct_node_t nodeFmt;
   nodeFmt.num_metrics = numMetrics;
@@ -913,7 +929,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   }
 
   if (lmId != ALoadMap::LM_id_NULL) {
-    prof.loadMapMgr().lm(lmId)->isUsed(true);
+    prof.loadMapMgr()->lm(lmId)->isUsed(true);
   }
 
   DIAG_MsgIf(0, "cct_makeNode(: " << hex << ip << dec << ", " << lmId << ")");
@@ -939,7 +955,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
     ALoadMap::LM_id_t lip_lmId = lush_lip_getLMId(lip);
     if (lip_lmId != ALoadMap::LM_id_NULL) {
-      prof.loadMapMgr().lm(lip_lmId)->isUsed(true);
+      prof.loadMapMgr()->lm(lip_lmId)->isUsed(true);
     }
   }
 
@@ -949,7 +965,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   bool hasMetrics = false;
   Metric::IData metricData(nodeFmt.num_metrics);
   for (uint i = 0; i < nodeFmt.num_metrics; i++) {
-    Metric::ADesc* adesc = prof.metricMgr().metric(i);
+    Metric::ADesc* adesc = prof.metricMgr()->metric(i);
     Metric::SampledDesc* mdesc = dynamic_cast<Metric::SampledDesc*>(adesc);
     DIAG_Assert(mdesc, "inconsistency: no corresponding SampledDesc!");
 
@@ -963,7 +979,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
       mval = (double)m.i;
     }
 
-    metricData.metric(i) = mval * mdesc->period();
+    metricData.metric(i) = mval * (double)mdesc->period();
 
     if (!hpcrun_metricVal_isZero(m)) {
       hasMetrics = true;
@@ -1033,7 +1049,9 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt,
     }
   }
 
-  for (uint i = 0; i < n_dyn.numMetrics(); ++i) {
+  // Note: use n_fmt.num_metrics rather than n_dyn.numMetrics() to
+  // support skipping the writing of metrics.
+  for (uint i = 0; i < n_fmt.num_metrics; ++i) {
     hpcrun_metricVal_t m; // C99: (hpcrun_metricVal_t){.r = n_dyn.metric(i)};
     m.r = n_dyn.metric(i);
     n_fmt.metrics[i] = m;
