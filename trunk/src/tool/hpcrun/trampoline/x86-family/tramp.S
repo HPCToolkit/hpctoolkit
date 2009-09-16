@@ -58,7 +58,7 @@ hpcrun_trampoline:
 
 	# Head back into the normal program
 	leave
-	jmp	%rcx
+	jmp	*%rcx
 
 	.size hpcrun_trampoline,.-hpcrun_trampoline
 

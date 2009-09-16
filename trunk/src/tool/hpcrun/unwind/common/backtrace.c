@@ -66,6 +66,7 @@
 
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
+#include <trampoline/common/trampoline.h>
 
 //***************************************************************************
 // forward declarations 
