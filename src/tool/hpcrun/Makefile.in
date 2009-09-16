@@ -187,20 +187,20 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_source_itimer.c sample_source_none.c \
 	sample_sources_registered.c segv_handler.c state.c \
 	system_server.c thread_data.c thread_use.c trace.c \
-	write_data.c cct/cct.c unwind/common/backtrace.c \
-	unwind/common/splay.c unwind/common/stack_troll.c \
-	unwind/common/ui_tree.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/list.c memory/mem.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	fnbounds/fnbounds_dynamic.c csprof_dlfns.c os/linux/dylib.c \
-	unwind/common/default_validation_summary.c \
+	write_data.c cct/cct.c trampoline/common/trampoline.c \
+	unwind/common/backtrace.c unwind/common/splay.c \
+	unwind/common/stack_troll.c unwind/common/ui_tree.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/list.c \
+	memory/mem.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c fnbounds/fnbounds_dynamic.c csprof_dlfns.c \
+	os/linux/dylib.c unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -211,10 +211,10 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
-	sample_source_papi.c sample_source_upc.c \
-	monitor-exts/monitor_ext.h monitor-exts/over_cond.c \
-	monitor-exts/over_mutex.c monitor-exts/over_spin.c \
-	utilities/last_func.c
+	trampoline/x86-family/tramp.S sample_source_papi.c \
+	sample_source_upc.c monitor-exts/monitor_ext.h \
+	monitor-exts/over_cond.c monitor-exts/over_mutex.c \
+	monitor-exts/over_spin.c utilities/last_func.c
 am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-csprof_options.lo libcsprof_la-csproflib.lo \
 	libcsprof_la-data.lo libcsprof_la-disabled.lo \
@@ -231,16 +231,16 @@ am__objects_8 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-system_server.lo libcsprof_la-thread_data.lo \
 	libcsprof_la-thread_use.lo libcsprof_la-trace.lo \
 	libcsprof_la-write_data.lo libcsprof_la-cct.lo \
-	libcsprof_la-backtrace.lo libcsprof_la-splay.lo \
-	libcsprof_la-stack_troll.lo libcsprof_la-ui_tree.lo \
-	libcsprof_la-lush-backtrace.lo libcsprof_la-lush.lo \
-	libcsprof_la-lush-pthread.lo libcsprof_la-lush-support-rt.lo \
-	libcsprof_la-lushi-cb.lo libcsprof_la-fnbounds_common.lo \
-	libcsprof_la-list.lo libcsprof_la-mem.lo \
-	libcsprof_la-debug-flag.lo libcsprof_la-messages-sync.lo \
-	libcsprof_la-messages-async.lo libcsprof_la-fmt.lo \
-	libcsprof_la-executable-path.lo libcsprof_la-tokenize.lo \
-	libcsprof_la-unlink.lo
+	libcsprof_la-trampoline.lo libcsprof_la-backtrace.lo \
+	libcsprof_la-splay.lo libcsprof_la-stack_troll.lo \
+	libcsprof_la-ui_tree.lo libcsprof_la-lush-backtrace.lo \
+	libcsprof_la-lush.lo libcsprof_la-lush-pthread.lo \
+	libcsprof_la-lush-support-rt.lo libcsprof_la-lushi-cb.lo \
+	libcsprof_la-fnbounds_common.lo libcsprof_la-list.lo \
+	libcsprof_la-mem.lo libcsprof_la-debug-flag.lo \
+	libcsprof_la-messages-sync.lo libcsprof_la-messages-async.lo \
+	libcsprof_la-fmt.lo libcsprof_la-executable-path.lo \
+	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
 am__objects_9 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_10 = libcsprof_la-dylib.lo
@@ -258,7 +258,7 @@ am__objects_16 = libcsprof_la-x86-all.lo libcsprof_la-x86-cold-path.lo \
 	libcsprof_la-x86-unwind-interval.lo \
 	libcsprof_la-x86-unwind-interval-fixup.lo \
 	libcsprof_la-x86-unwind.lo libcsprof_la-x86-unwind-support.lo \
-	libcsprof_la-x86-linux-dlresolver.lo
+	libcsprof_la-x86-linux-dlresolver.lo libcsprof_la-tramp.lo
 @HOST_CPU_X86_TRUE@am__objects_17 = $(am__objects_16)
 am__objects_18 = libcsprof_la-sample_source_papi.lo
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_19 = $(am__objects_18)
@@ -286,19 +286,19 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_source_itimer.c sample_source_none.c \
 	sample_sources_registered.c segv_handler.c state.c \
 	system_server.c thread_data.c thread_use.c trace.c \
-	write_data.c cct/cct.c unwind/common/backtrace.c \
-	unwind/common/splay.c unwind/common/stack_troll.c \
-	unwind/common/ui_tree.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/list.c memory/mem.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	fnbounds/fnbounds_static.c \
+	write_data.c cct/cct.c trampoline/common/trampoline.c \
+	unwind/common/backtrace.c unwind/common/splay.c \
+	unwind/common/stack_troll.c unwind/common/ui_tree.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/list.c \
+	memory/mem.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c fnbounds/fnbounds_static.c \
 	unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -310,7 +310,8 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
-	sample_source_papi.c sample_source_upc.c utilities/last_func.c
+	trampoline/x86-family/tramp.S sample_source_papi.c \
+	sample_source_upc.c utilities/last_func.c
 am__objects_24 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-main.$(OBJEXT) \
 	libcsprof_o-csprof_options.$(OBJEXT) \
@@ -330,6 +331,7 @@ am__objects_24 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-thread_data.$(OBJEXT) \
 	libcsprof_o-thread_use.$(OBJEXT) libcsprof_o-trace.$(OBJEXT) \
 	libcsprof_o-write_data.$(OBJEXT) libcsprof_o-cct.$(OBJEXT) \
+	libcsprof_o-trampoline.$(OBJEXT) \
 	libcsprof_o-backtrace.$(OBJEXT) libcsprof_o-splay.$(OBJEXT) \
 	libcsprof_o-stack_troll.$(OBJEXT) \
 	libcsprof_o-ui_tree.$(OBJEXT) \
@@ -360,7 +362,8 @@ am__objects_30 = libcsprof_o-x86-all.$(OBJEXT) \
 	libcsprof_o-x86-unwind-interval-fixup.$(OBJEXT) \
 	libcsprof_o-x86-unwind.$(OBJEXT) \
 	libcsprof_o-x86-unwind-support.$(OBJEXT) \
-	libcsprof_o-x86-linux-dlresolver.$(OBJEXT)
+	libcsprof_o-x86-linux-dlresolver.$(OBJEXT) \
+	libcsprof_o-tramp.$(OBJEXT)
 @HOST_CPU_X86_TRUE@am__objects_31 = $(am__objects_30)
 am__objects_32 = libcsprof_o-sample_source_papi.$(OBJEXT)
 @OPT_PAPI_STATIC_TRUE@am__objects_33 = $(am__objects_32)
@@ -381,6 +384,11 @@ SCRIPTS = $(bin_SCRIPTS) $(pkglibexec_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
+CPPASCOMPILE = $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
+LTCPPASCOMPILE = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
@@ -410,6 +418,9 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
+CCAS = @CCAS@
+CCASDEPMODE = @CCASDEPMODE@
+CCASFLAGS = @CCASFLAGS@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
@@ -656,6 +667,8 @@ MY_BASE_FILES = \
 	\
 	cct/cct.c			\
 	\
+        trampoline/common/trampoline.c \
+        \
 	unwind/common/backtrace.c	\
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
@@ -717,7 +730,9 @@ MY_X86_FILES = \
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
 	unwind/x86-family/x86-unwind.c		        \
 	unwind/x86-family/x86-unwind-support.c		\
-	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c
+	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
+        \
+        trampoline/x86-family/tramp.S
 
 MY_PAPI_FILES = \
 	sample_source_papi.c
@@ -832,7 +847,7 @@ MYCPPFLAGS_CC = $(MYCPPFLAGS) $(AM_CFLAGS)   $(CFLAGS)   $(MYCFLAGS)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .S .c .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -1069,6 +1084,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-thread_use.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-tokenize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-trace.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-tramp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-trampoline.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-ui_tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-unlink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-write_data.Plo@am__quote@
@@ -1132,6 +1149,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-thread_use.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-tokenize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-trace.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-tramp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-trampoline.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-ui_tree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-unlink.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-write_data.Po@am__quote@
@@ -1146,6 +1165,48 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_wrap_a-over_cond.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_wrap_a-over_mutex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_wrap_a-over_spin.Po@am__quote@
+
+.S.o:
+@am__fastdepCCAS_TRUE@	$(CPPASCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(CPPASCOMPILE) -c -o $@ $<
+
+.S.obj:
+@am__fastdepCCAS_TRUE@	$(CPPASCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(CPPASCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.S.lo:
+@am__fastdepCCAS_TRUE@	$(LTCPPASCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(LTCPPASCOMPILE) -c -o $@ $<
+
+libcsprof_la-tramp.lo: trampoline/x86-family/tramp.S
+@am__fastdepCCAS_TRUE@	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_la-tramp.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-tramp.Tpo -c -o libcsprof_la-tramp.lo `test -f 'trampoline/x86-family/tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/tramp.S
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_la-tramp.Tpo $(DEPDIR)/libcsprof_la-tramp.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/tramp.S' object='libcsprof_la-tramp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_la-tramp.lo `test -f 'trampoline/x86-family/tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/tramp.S
+
+libcsprof_o-tramp.o: trampoline/x86-family/tramp.S
+@am__fastdepCCAS_TRUE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_o-tramp.o -MD -MP -MF $(DEPDIR)/libcsprof_o-tramp.Tpo -c -o libcsprof_o-tramp.o `test -f 'trampoline/x86-family/tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/tramp.S
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_o-tramp.Tpo $(DEPDIR)/libcsprof_o-tramp.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/tramp.S' object='libcsprof_o-tramp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_o-tramp.o `test -f 'trampoline/x86-family/tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/tramp.S
+
+libcsprof_o-tramp.obj: trampoline/x86-family/tramp.S
+@am__fastdepCCAS_TRUE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT libcsprof_o-tramp.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-tramp.Tpo -c -o libcsprof_o-tramp.obj `if test -f 'trampoline/x86-family/tramp.S'; then $(CYGPATH_W) 'trampoline/x86-family/tramp.S'; else $(CYGPATH_W) '$(srcdir)/trampoline/x86-family/tramp.S'; fi`
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libcsprof_o-tramp.Tpo $(DEPDIR)/libcsprof_o-tramp.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/tramp.S' object='libcsprof_o-tramp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o libcsprof_o-tramp.obj `if test -f 'trampoline/x86-family/tramp.S'; then $(CYGPATH_W) 'trampoline/x86-family/tramp.S'; else $(CYGPATH_W) '$(srcdir)/trampoline/x86-family/tramp.S'; fi`
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -1440,6 +1501,13 @@ libcsprof_la-cct.lo: cct/cct.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct/cct.c' object='libcsprof_la-cct.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-cct.lo `test -f 'cct/cct.c' || echo '$(srcdir)/'`cct/cct.c
+
+libcsprof_la-trampoline.lo: trampoline/common/trampoline.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-trampoline.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-trampoline.Tpo -c -o libcsprof_la-trampoline.lo `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-trampoline.Tpo $(DEPDIR)/libcsprof_la-trampoline.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='trampoline/common/trampoline.c' object='libcsprof_la-trampoline.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-trampoline.lo `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
 
 libcsprof_la-backtrace.lo: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-backtrace.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-backtrace.Tpo -c -o libcsprof_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
@@ -2105,6 +2173,20 @@ libcsprof_o-cct.obj: cct/cct.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cct/cct.c' object='libcsprof_o-cct.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-cct.obj `if test -f 'cct/cct.c'; then $(CYGPATH_W) 'cct/cct.c'; else $(CYGPATH_W) '$(srcdir)/cct/cct.c'; fi`
+
+libcsprof_o-trampoline.o: trampoline/common/trampoline.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-trampoline.o -MD -MP -MF $(DEPDIR)/libcsprof_o-trampoline.Tpo -c -o libcsprof_o-trampoline.o `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-trampoline.Tpo $(DEPDIR)/libcsprof_o-trampoline.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='trampoline/common/trampoline.c' object='libcsprof_o-trampoline.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-trampoline.o `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
+
+libcsprof_o-trampoline.obj: trampoline/common/trampoline.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-trampoline.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-trampoline.Tpo -c -o libcsprof_o-trampoline.obj `if test -f 'trampoline/common/trampoline.c'; then $(CYGPATH_W) 'trampoline/common/trampoline.c'; else $(CYGPATH_W) '$(srcdir)/trampoline/common/trampoline.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-trampoline.Tpo $(DEPDIR)/libcsprof_o-trampoline.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='trampoline/common/trampoline.c' object='libcsprof_o-trampoline.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-trampoline.obj `if test -f 'trampoline/common/trampoline.c'; then $(CYGPATH_W) 'trampoline/common/trampoline.c'; else $(CYGPATH_W) '$(srcdir)/trampoline/common/trampoline.c'; fi`
 
 libcsprof_o-backtrace.o: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-backtrace.o -MD -MP -MF $(DEPDIR)/libcsprof_o-backtrace.Tpo -c -o libcsprof_o-backtrace.o `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c

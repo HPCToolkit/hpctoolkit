@@ -214,8 +214,10 @@ if test "${ac_cv_prog_cc_c99}" = "no" ; then
   AC_MSG_ERROR([${CC} ${CFLAGS} does not support C99 mode!])
 fi
 AM_PROG_CC_C_O()
+AM_PROG_AS()
 
 AC_PROG_CXXCPP()
+
 
 AC_PROG_INSTALL()
 
@@ -295,6 +297,7 @@ case ${host} in
     # __i386 / __x86_64 && __linux
     HOST_OS="Linux"
     HOST_CPU_X86=yes
+    AC_DEFINE([HOST_CPU_x86_64], [], []) # bogus to include 386
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
 
@@ -330,6 +333,7 @@ case ${host} in
   i386*-*-darwin* | i686*-*-darwin*)
     HOST_OS="MacOS"
     HOST_CPU_X86=yes
+    AC_DEFINE([HOST_CPU_x86_64], [], []) # bogus to include 386
     AC_DEFINE([HOST_OS_MACOS], [], [])
     ;;
 

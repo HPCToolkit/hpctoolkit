@@ -29,6 +29,7 @@ extern void hpcrun_trampoline_end;
 // interface operations
 //******************************************************************************
 
+
 // returns 1 if address is in the assembly language trampoline code, else 0.
 int
 hpcrun_addr_in_trampoline(void *addr)
@@ -42,7 +43,7 @@ hpcrun_trampoline_handler()
 {
   void *return_address;
 
-  return target_address;
+  return return_address;
 }
 
 
