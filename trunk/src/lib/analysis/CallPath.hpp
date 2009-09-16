@@ -88,15 +88,15 @@ namespace CallPath {
 // ---------------------------------------------------------
 
 Prof::CallPath::Profile* 
-read(std::vector<string>& profileFiles);
+read(const std::vector<string>& profileFiles, uint rFlags = 0);
 
 Prof::CallPath::Profile*
-read(const char* prof_fnm);
+read(const char* prof_fnm, uint rFlags = 0);
 
 static inline Prof::CallPath::Profile*
-read(const string& prof_fnm)
+read(const string& prof_fnm, uint rFlags = 0)
 {
-  return read(prof_fnm.c_str());
+  return read(prof_fnm.c_str(), rFlags);
 }
 
 
@@ -109,19 +109,22 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 // ---------------------------------------------------------
 
 void
-overlayStaticStructureMain(Prof::CallPath::Profile* prof, 
+overlayStaticStructureMain(Prof::CallPath::Profile& prof, string agent);
+
+void
+overlayStaticStructureMain(Prof::CallPath::Profile& prof, 
 			   Prof::LoadMap::LM* loadmap_lm,
 			   Prof::Struct::LM* lmStrct);
 
 
 // lm is optional and may be NULL
 void 
-overlayStaticStructure(Prof::CallPath::Profile* prof, 
+overlayStaticStructure(Prof::CallPath::Profile& prof, 
 		       Prof::LoadMap::LM* loadmap_lm,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
 
 void
-normalize(Prof::CallPath::Profile* prof, string lush_agent);
+normalize(Prof::CallPath::Profile& prof, string lush_agent);
 
 
 // ---------------------------------------------------------
@@ -129,7 +132,7 @@ normalize(Prof::CallPath::Profile* prof, string lush_agent);
 // ---------------------------------------------------------
 
 void 
-write(Prof::CallPath::Profile* prof, std::ostream& os, 
+write(Prof::CallPath::Profile& prof, std::ostream& os, 
       std::string& title, bool prettyPrint = true);
 
 } // namespace CallPath

@@ -71,8 +71,11 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/uint.h>
+
 #include "Args.hpp"
 
+#include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -80,6 +83,13 @@ using std::string;
 
 
 //*************************** Forward Declarations ***************************
+
+typedef std::vector<std::string> StringVec;
+
+StringVec* 
+getMyProfileFiles(StringVec& profileFiles, 
+		  int myRank, int numRanks, int rootRank = 0);
+
 
 //****************************************************************************
 
@@ -95,21 +105,26 @@ main(int argc, char* const* argv)
   }
   catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(x.message());
-    exit(1);
-  } 
+    ret = 1;
+    goto exit;
+  }
   catch (const std::bad_alloc& x) {
     DIAG_EMsg("[std::bad_alloc] " << x.what());
-    exit(1);
-  } 
+    ret = 1;
+    goto exit;
+  }
   catch (const std::exception& x) {
     DIAG_EMsg("[std::exception] " << x.what());
-    exit(1);
-  } 
+    ret = 1;
+    goto exit;
+  }
   catch (...) {
     DIAG_EMsg("Unknown exception encountered!");
-    exit(2);
+    ret = 2;
+    goto exit;
   }
 
+ exit:
   MPI_Finalize();
   return ret;
 }
@@ -119,21 +134,18 @@ int
 realmain(int argc, char* const* argv) 
 {
   Args args;
-  args.parse(argc, argv);
-  // exits on special options (e.g, --help, --version)
+  args.parse(argc, argv); // may call exit()
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   // -------------------------------------------------------
-  // 
+  // MPI initialize
   // -------------------------------------------------------
   MPI_Init(&argc, (char***)&argv);
 
   const int rootRank = 0;
-  int myRank;
+  int myRank, numRanks;
   MPI_Comm_rank(MPI_COMM_WORLD, &myRank); 
-
-  int numRanks;
   MPI_Comm_size(MPI_COMM_WORLD, &numRanks);
 
   // -------------------------------------------------------
@@ -153,19 +165,71 @@ realmain(int argc, char* const* argv)
   }
 
   // -------------------------------------------------------
-  // 
+  // Form local CCT from my set of profile files
   // -------------------------------------------------------
+  StringVec* profFiles = 
+    getMyProfileFiles(args.profileFiles, myRank, numRanks,rootRank);
 
+  uint rFlags = Prof::CallPath::Profile::RFlg_onlyMetricDescs;
+  Prof::CallPath::Profile* prof = Analysis::CallPath::read(*profFiles, rFlags);
+
+#if 0
+  for (uint i = 0; i < profFiles->size(); ++i) {
+    const std::string& nm = (*profFiles)[i];
+    std::cout << "[" << myRank << "]: " << nm << std::endl;
+  }
+#endif
+
+  // ------------------------------------------------------------
+  // Create canonical CCT
+  // ------------------------------------------------------------
+
+  // ------------------------------------------------------------
+  // Add static structure to canonical CCT; form dense node ids
+  // ------------------------------------------------------------
+
+  // ------------------------------------------------------------
+  // Create summary and thread-level metrics
+  // ------------------------------------------------------------
+
+  // keep prof->metricMgr()
+
+  delete profFiles;
+  delete prof;
+
+
+  // -------------------------------------------------------
+  // MPI_Finalize() called in parent
+  // -------------------------------------------------------
+  
+  return 0;
+}
+
+
+//****************************************************************************
+
+
+// getMyProfileFiles: creates canonical list of profiles files and
+//   distributes chunks of size ceil(numFiles / numRanks) to each process.
+//   The last process may have a smaller chunk than the others.
+StringVec* 
+getMyProfileFiles(StringVec& profileFiles, 
+		  int myRank, int numRanks, int rootRank)
+{
   char* sendFilesBuf = NULL;
   uint sendFilesBufSz = 0;
   uint sendFilesChunkSz = 0;
   uint pathLenMax = 0;
   
+  // -------------------------------------------------------
+  // root creates canonical and grouped list of files
+  // -------------------------------------------------------
+
   if (myRank == rootRank) {
-    std::pair<std::vector<std::string>*, uint> pair = 
-      Analysis::Util::normalizeProfileArgs(args.profileFiles);
+    std::pair<StringVec*, uint> pair = 
+      Analysis::Util::normalizeProfileArgs(profileFiles);
     
-    std::vector<std::string>* canonicalFiles = pair.first;
+    StringVec* canonicalFiles = pair.first;
     pathLenMax = pair.second;
 
     uint chunkSz = (uint)
@@ -185,6 +249,10 @@ realmain(int argc, char* const* argv)
 
     delete canonicalFiles;
   }
+
+  // -------------------------------------------------------
+  // prepare parameters for scatter
+  // -------------------------------------------------------
   
   // TODO: broadcast groups
   const uint metadataBufSz = 2;
@@ -200,6 +268,10 @@ realmain(int argc, char* const* argv)
     pathLenMax = metadataBuf[1];
   }
 
+  // -------------------------------------------------------
+  // evenly distribute profile files across all processes
+  // -------------------------------------------------------
+
   uint recvFilesChunkSz = sendFilesChunkSz;
   const char* recvFilesBuf = new char[recvFilesChunkSz];
   
@@ -210,28 +282,15 @@ realmain(int argc, char* const* argv)
   delete[] sendFilesBuf;
 
   
-  std::vector<std::string> profileFiles;
+  StringVec* myProfileFiles = new StringVec;
   for (uint i = 0; i < recvFilesChunkSz; i += (pathLenMax+1)) {
     string nm = &recvFilesBuf[i];
     if (!nm.empty()) {
-      profileFiles.push_back(nm);
+      myProfileFiles->push_back(nm);
     }
   }
 
   delete[] recvFilesBuf;
 
-  for (uint i = 0; i < profileFiles.size(); ++i) {
-    const std::string& nm = profileFiles[i];
-    std::cout << "[" << myRank << "]: " << nm << std::endl;
-  }
-
-  // -------------------------------------------------------
-  // MPI_Finalize() called in parent
-  // -------------------------------------------------------
-  
-  return 0;
+  return myProfileFiles;
 }
-
-
-//****************************************************************************
-

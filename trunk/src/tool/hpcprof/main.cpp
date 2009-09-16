@@ -119,9 +119,8 @@ realmain(int argc, char* const* argv)
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   // ------------------------------------------------------------
-  // Read profile data
+  // Form one CCT from profile data
   // ------------------------------------------------------------
-
   std::pair<std::vector<std::string>*, uint> pair = 
     Analysis::Util::normalizeProfileArgs(args.profileFiles);
   
@@ -135,9 +134,8 @@ realmain(int argc, char* const* argv)
 
   delete profFiles;
 
-
   // ------------------------------------------------------------
-  // Seed structure information
+  // Overlay static structure with CCT's dynamic call paths
   // ------------------------------------------------------------
   Prof::Struct::Tree* structure = new Prof::Struct::Tree("");
   if (!args.structureFiles.empty()) {
@@ -145,41 +143,7 @@ realmain(int argc, char* const* argv)
   }
   prof->structure(structure);
 
-  // ------------------------------------------------------------
-  // Add static structure to dynamic call paths
-  // ------------------------------------------------------------
-
-  try { 
-    const Prof::LoadMapMgr* loadmap = prof->loadMapMgr();
-    Prof::Struct::Tree* structure = prof->structure();
-    Prof::Struct::Root* rootStrct = structure->root();
-
-    for (Prof::LoadMapMgr::LMSet_nm::const_iterator it = loadmap->lm_begin_nm();
-	 it != loadmap->lm_end_nm(); ++it) {
-      Prof::ALoadMap::LM* loadmap_lm = *it;
-
-      // tallent:TODO: The call to LoadMap::compute_relocAmt() in
-      // Profile::hpcrun_fmt_epoch_fread has emitted a warning if a
-      // load module is unavailable.  Probably should be here...
-      if (loadmap_lm->isAvail() && loadmap_lm->isUsed()) {
-	const string& lm_nm = loadmap_lm->name();
-
-	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
-	Analysis::CallPath::overlayStaticStructureMain(prof, loadmap_lm, 
-						       lmStrct);
-      }
-    }
-    
-    Analysis::CallPath::normalize(prof, args.lush_agent);
-
-    // Note: Use StructMetricIdFlg to flag that static structure is used
-    rootStrct->accumulateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
-    rootStrct->pruneByMetrics();
-  }
-  catch (...) {
-    DIAG_EMsg("While preparing hpc-experiment...");
-    throw;
-  }
+  Analysis::CallPath::overlayStaticStructureMain(*prof, args.lush_agent);
   
   // ------------------------------------------------------------
   // Generate Experiment database
@@ -198,7 +162,7 @@ realmain(int argc, char* const* argv)
   string experiment_fnm = db_dir + "/" + args.out_db_experiment;
   std::ostream* os = IOUtil::OpenOStream(experiment_fnm.c_str());
   bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);
-  Analysis::CallPath::write(prof, *os, args.title, prettyPrint);
+  Analysis::CallPath::write(*prof, *os, args.title, prettyPrint);
   IOUtil::CloseStream(os);
 
   delete prof;

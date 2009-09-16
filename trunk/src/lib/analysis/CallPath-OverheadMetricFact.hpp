@@ -88,7 +88,7 @@ public:
   
   // make 'overhead' and 'work' metrics
   void 
-  make(Prof::CallPath::Profile* prof);
+  make(Prof::CallPath::Profile& prof);
   
   virtual bool 
   isOverhead(const Prof::CCT::ProcFrm* x) = 0;
