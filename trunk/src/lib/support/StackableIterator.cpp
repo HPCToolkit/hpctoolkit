@@ -63,7 +63,6 @@
 //*************************** User Include Files ****************************
 
 #include "StackableIterator.hpp"
-#include "DumpMsgHandler.hpp"
 
 //*************************** Forward Declarations **************************
 
@@ -98,9 +97,11 @@ bool StackableIterator::IsValid() const
 
 void StackableIterator::Dump() 
 {
+#if 0
   dumpHandler.Dump("[%s %x; current = %x]\n", typeid(this).name(), this, 
 		   CurrentUpCall());
   DumpUpCall();
+#endif
 }
 
 

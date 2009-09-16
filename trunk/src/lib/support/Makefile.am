@@ -69,12 +69,12 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	CmdLineParser.hpp CmdLineParser.cpp \
+	\
 	diagnostics.h diagnostics.cpp \
-	DumpMsgHandler.hpp DumpMsgHandler.cpp \
 	Exception.hpp Exception.cpp \
 	Trace.hpp Trace.cpp \
 	\
-	bstring.h \
+	Logic.hpp Logic.cpp \
 	NaN.h NaN.c \
 	CStrUtil.h CStrUtil.cpp \
 	StrUtil.hpp StrUtil.cpp \
@@ -86,8 +86,6 @@ MYSOURCES = \
 	findinstall.h findinstall.c \
 	pathfind.h pathfind.cpp \
 	realpath.h realpath.c \
-	\
-	Logic.hpp Logic.cpp \
 	\
 	ProcNameMgr.hpp ProcNameMgr.cpp \
 	\

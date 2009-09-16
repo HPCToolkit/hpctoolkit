@@ -62,7 +62,6 @@
 
 #include "IteratorStack.hpp"
 #include "PointerStack.hpp"
-#include "DumpMsgHandler.hpp"
 #include "diagnostics.h"
 
 //*************************** Forward Declarations **************************
@@ -293,14 +292,14 @@ void IteratorStack::InitTraversal(TraversalOrder torder,
 
 void IteratorStack::DumpUpCall()
 {
-  dumpHandler.BeginScope();
+  //dumpHandler.BeginScope();
   int depth = iteratorStackRepr->pstack.Depth();
   for (; --depth >= 0; ) {
     StackableIterator* it = 
       (StackableIterator*) iteratorStackRepr->pstack.Get(depth);
     it->Dump();
   }
-  dumpHandler.EndScope();
+  //dumpHandler.EndScope();
 }
 
 
