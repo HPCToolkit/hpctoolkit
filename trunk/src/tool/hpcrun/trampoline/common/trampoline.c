@@ -41,7 +41,7 @@ hpcrun_addr_in_trampoline(void *addr)
 void *
 hpcrun_trampoline_handler()
 {
-  void *return_address;
+  void *return_address = 0;
 
   return return_address;
 }
