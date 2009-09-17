@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef CCTAnalysis_hpp
-#define CCTAnalysis_hpp
+#ifndef ParallelAnalysis_hpp
+#define ParallelAnalysis_hpp
 
 //**************************** MPI Include Files ****************************
 
@@ -69,6 +69,8 @@
 
 #include <cmath>
 
+#include <stdint.h>
+
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
@@ -79,23 +81,38 @@
 
 //***************************************************************************
 
+namespace ParallelAnalysis {
 
-namespace CCTAnalysis {
-
+// reduce: Uses a tree-based reduction to reduce the CCTs at every
+// rank into a canonical CCT at the tree's root, rank 0.  Assumes
+// 0-based ranks.  Uses lg(maxRank) barriers, one at each level of the
+// binary tree.
 void
 reduce(Prof::CallPath::Profile* profile, int myRank, int maxRank, 
        MPI_Comm comm = MPI_COMM_WORLD);
 
+// broadcast: Use a tree-based broadcast to broadcast the profile at
+// the tree's root (rank 0) to every other rank.  Assumes 0-based
+// ranks.  Uses lg(maxRank) barriers, one at each level of the binary
+// tree.
 void
-broadcast(Prof::CallPath::Profile* profile, int myRank, int maxRank, 
+broadcast(Prof::CallPath::Profile*& profile, int myRank, int maxRank, 
 	  MPI_Comm comm = MPI_COMM_WORLD);
 
+// mergeNonLocal: merge profile on rank_y into profile on rank_x
 void
-mergeNonLocal(Prof::CallPath::Profile* profile, int myRank, 
-	      int rank_x, int rank_y, MPI_Comm comm = MPI_COMM_WORLD);
+mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
+	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
+
+void
+pack(Prof::CallPath::Profile* profile, uint8_t** buffer, size_t* bufferSz);
+
+Prof::CallPath::Profile*
+unpack(uint8_t* buffer, size_t bufferSz);
 
 
-} // namespace CCTAnalysis
+
+} // namespace ParallelAnalysis
 
 
 //***************************************************************************
@@ -125,14 +142,16 @@ namespace RankTree {
 // 
 // Given node i, its level is floor(log2(i))
 
-static inline int 
+const int rootRank = 0;
+
+inline int 
 make1BasedRank(int rank0)
 {
   return (rank0 + 1);
 }
 
 
-static inline int 
+inline int 
 make0BasedRank(int rank1)
 {
   return (rank1 - 1);
@@ -140,7 +159,7 @@ make0BasedRank(int rank1)
 
 
 // Given a 0-based rank for a node in the binary tree, returns its level
-static inline int 
+inline int 
 parent(int rank0)
 {
   int rank1 = make1BasedRank(rank0);
@@ -151,7 +170,7 @@ parent(int rank0)
 
 // Given a 0-based rank for a node in the binary tree, returns a
 // 0-based rank for its left child
-static inline int 
+inline int 
 leftChild(int rank0)
 {
   int rank1 = make1BasedRank(rank0);
@@ -162,7 +181,7 @@ leftChild(int rank0)
 
 // Given a 0-based rank for a node in the binary tree, returns a
 // 0-based rank for its right child
-static inline int 
+inline int 
 rightChild(int rank0)
 {
   int rank1 = make1BasedRank(rank0);
@@ -173,7 +192,7 @@ rightChild(int rank0)
 
 // level: Given a 0-based rank for a node in the binary tree, returns
 // its parent's 0-based rank
-static inline int 
+inline int 
 level(int rank0)
 {
   int rank1 = make1BasedRank(rank0);
@@ -184,7 +203,7 @@ level(int rank0)
 
 // begNode: Given a tree level, return the first node (0-based rank)
 // on that level
-static inline int 
+inline int 
 begNode(int level)
 {
   int rank1 = (int) pow(2.0, level);
@@ -192,7 +211,7 @@ begNode(int level)
 }
 
 
-static inline int 
+inline int 
 endNode(int level)
 {
   int rank1 = (int) pow(2.0, level + 1) - 1;
@@ -204,4 +223,4 @@ endNode(int level)
 
 
 
-#endif // CCTAnalysis_hpp 
+#endif // ParallelAnalysis_hpp 

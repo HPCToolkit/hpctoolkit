@@ -168,46 +168,59 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   // Form local CCT from my set of profile files
   // -------------------------------------------------------
+  Prof::CallPath::Profile* profLcl = NULL;
+
   StringVec* profFiles = 
     getMyProfileFiles(args.profileFiles, myRank, numRanks,rootRank);
 
   uint rFlags = Prof::CallPath::Profile::RFlg_onlyMetricDescs;
-  Prof::CallPath::Profile* prof = Analysis::CallPath::read(*profFiles, rFlags);
+  profLcl = Analysis::CallPath::read(*profFiles, rFlags);
 
-#if 0
-  for (uint i = 0; i < profFiles->size(); ++i) {
-    const std::string& nm = (*profFiles)[i];
-    std::cout << "[" << myRank << "]: " << nm << std::endl;
+  // Obtain the metric manager (warning: replaces the manager in profLcl)
+  Prof::Metric::Mgr* metricMgr = profLcl->metricMgr();
+  profLcl->metricMgr(new Prof::Metric::Mgr);
+
+  // ------------------------------------------------------------
+  // Create canonical CCT (no metrics)
+  // ------------------------------------------------------------
+  Prof::CallPath::Profile* profGbl = NULL;
+
+  // POST-INVARIANT: rank 0's 'profLcl' the canonical CCT
+  ParallelAnalysis::reduce(profLcl, myRank, numRanks - 1);
+  if (myRank == rootRank) {
+    profGbl = profLcl;
+    profLcl = NULL;
   }
-#endif
 
-  // ------------------------------------------------------------
-  // Create canonical CCT
-  // ------------------------------------------------------------
-
-#if 0
-  // POST-INVARIANT: rank 0's CCT will have the canonical structure
-  CCTAnalysis::reduce(prof, myRank, numRanks - 1);
-
-  // POST-INVARIANT: each CCT will have canonical structure + its
-  //   local metrics NOTE: on each merge, create local mapping of
-  //   old->new node ids
-  CCTAnalysis::broadcast(prof, myRank, numRanks - 1);
-#endif
+  // POST-INVARIANT: 'profGbl' is the canonical CCT
+  ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1);
+  delete profLcl;
 
   // ------------------------------------------------------------
   // Add static structure to canonical CCT; form dense node ids
   // ------------------------------------------------------------
 
+  Prof::Struct::Tree* structure = new Prof::Struct::Tree("");
+  if (!args.structureFiles.empty()) {
+    Analysis::CallPath::readStructure(structure, args);
+  }
+  profGbl->structure(structure);
+
+  Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.lush_agent);
+
+  // TODO: renumber nodes densly
+
   // ------------------------------------------------------------
   // Create summary and thread-level metrics
   // ------------------------------------------------------------
 
-  // keep prof->metricMgr()
+  FILE* fs = hpcio_open_r("foo.hpcrun");
+  Prof::CallPath::Profile::fmt_fwrite(*profGbl, fs, 0);
+  hpcio_close(fs);
 
   delete profFiles;
-  delete prof;
-
+  delete metricMgr;
+  delete profGbl;
 
   // -------------------------------------------------------
   // MPI_Finalize() called in parent
@@ -301,6 +314,13 @@ getMyProfileFiles(StringVec& profileFiles,
   }
 
   delete[] recvFilesBuf;
+
+  if (0) {
+    for (uint i = 0; i < myProfileFiles->size(); ++i) {
+      const std::string& nm = (*myProfileFiles)[i];
+      std::cout << "[" << myRank << "]: " << nm << std::endl;
+    }
+  }
 
   return myProfileFiles;
 }
