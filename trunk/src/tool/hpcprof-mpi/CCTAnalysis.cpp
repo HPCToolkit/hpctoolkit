@@ -67,6 +67,8 @@ using std::string;
 
 #include <algorithm>
 
+#include <stdint.h>
+
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
@@ -83,16 +85,12 @@ using std::string;
 //***************************************************************************
 
 
-namespace CCTAnalysis {
+namespace ParallelAnalysis {
 
-#if 0
 //***************************************************************************
 // 
 //***************************************************************************
 
-// reduce: form a canonical CCT structure
-//
-// use lg(n) barriers, level-by-level
 void
 reduce(Prof::CallPath::Profile* profile,
        int myRank, int maxRank, MPI_Comm comm)
@@ -102,18 +100,16 @@ reduce(Prof::CallPath::Profile* profile,
     int i_end = std::min(maxRank, RankTree::endNode(level));
     
     for (int i = i_beg; i <= i_end; i += 2) {
+      int parent = RankTree::parent(i);
+      int lchild = i;     // left child of parent
+      int rchild = i + 1; // right child of parent (if it exists)
 
-      // INVARIANTS:
-      //   - i is left child of i_parent
-      //   - (i + 1) is right child of i_parent (if it exists)
-      int i_parent = RankTree::parent(i);
+      // merge lchild into parent
+      mergeNonLocal(profile, parent, lchild, myRank);
 
-      // merge i into i_parent
-      mergeNonLocal(profile, i_parent, i, myRank);
-
-      // merge (i + 1) into i_parent
-      if ((i + 1) <= i_end) {
-	mergeNonLocal(profile, i_parent, i + 1, myRank);
+      // merge rchild into parent
+      if (rchild <= i_end) {
+	mergeNonLocal(profile, parent, rchild, myRank);
       }
     }
     
@@ -123,22 +119,27 @@ reduce(Prof::CallPath::Profile* profile,
 
 
 void
-broadcast(Prof::CallPath::Profile* profile,
-	  int myRank, int maxRank, MPI_Comm comm) 
+broadcast(Prof::CallPath::Profile*& profile,
+	  int myRank, int maxRank, MPI_Comm comm)
 {
-  // use lg(n) barriers, level-by-level
-
+  if (myRank != RankTree::rootRank) {
+    DIAG_Assert(!profile, "ParallelAnalysis::broadcast: " << DIAG_UnexpectedInput);
+    profile = new Prof::CallPath::Profile("[ParallelAnalysis::broadcast]");
+  }
+  
   int max_level = RankTree::level(maxRank);
   for (int level = 0; level < max_level; ++level) {
     int i_beg = RankTree::begNode(level);
     int i_end = std::min(maxRank, RankTree::endNode(level));
     
     for (int i = i_beg; i <= i_end; ++i) {
+      // merge i into its left child (i_lchild)
       int i_lchild = RankTree::leftChild(i);
       if (i_lchild <= maxRank) {
 	mergeNonLocal(profile, i_lchild, i, myRank);
       }
 
+      // merge i into its right child (i_rchild)
       int i_rchild = RankTree::rightChild(i);
       if (i_rchild <= maxRank) {
 	mergeNonLocal(profile, i_rchild, i, myRank);
@@ -150,56 +151,81 @@ broadcast(Prof::CallPath::Profile* profile,
 }
 
 
-// merge from y into x
 void
-mergeNonLocal(Prof::CallPath::Profile* profile, int myRank, 
-	      int rank_x, int rank_y, MPI_Comm comm)
+mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
+	      int myRank, MPI_Comm comm)
 {
+  MPI_Status mpistat;
+
+  Prof::CallPath::Profile* profile_x = NULL;
+  Prof::CallPath::Profile* profile_y = NULL;
+
+  uint8_t* profileBuf = NULL;
+  size_t profileBufSz = 0;
+
   if (myRank == rank_x) {
-    // TODO: create CCT receive buffer
+    profile_x = profile;
 
-    // rank_x receives from rank_y
-    MPI_Status status;
-    MPI_Recv(buf, count, datatype, rank_y, tag, comm, status);
+    // rank_x receives profile buffer size from rank_y
+    MPI_Recv(&profileBufSz, 1, MPI_UNSIGNED_LONG, rank_y, 0, comm, &mpistat);
 
-    Prof::CallPath::Profile* profile_y = cct_unpack(buffer, bufferSz);
-    // TODO: merge profile_y into profile
+    profileBuf = new uint8_t[profileBufSz];
+
+    // rank_x receives profile from rank_y
+    MPI_Recv(profileBuf, profileBufSz, MPI_BYTE, rank_y, 0, comm, &mpistat);
+
+    profile_y = unpack(profileBuf, profileBufSz);
+    delete[] profileBuf;
+    
+    profile_x->merge(*profile_y, /*isSameThread*/false);
   }
 
   if (myRank == rank_y) {
-    void* buffer = NULL;
-    size_t buferSz = 0;
-    int ret = cct_pack(profile, buffer, bufferSz);
+    profile_y = profile;
 
-    // rank_y sends to rank_x
-    MPI_Send(buffer, bufferSz, MPI_BYTE, rank_x, tag, comm);
+    pack(profile_y, &profileBuf, &profileBufSz);
+
+    // rank_y sends profile buffer size to rank_x
+    MPI_Send(&profileBufSz, 1, MPI_UNSIGNED_LONG, rank_x, 0, comm);
+
+    // rank_y sends profile to rank_x
+    MPI_Send(profileBuf, profileBufSz, MPI_BYTE, rank_x, 0, comm);
+
+    free(profileBuf);
   }
 }
 
 
 //***************************************************************************
 
-// Tie a memory buffer to a FILE stream!
-
 void
-cct_pack(Prof::CallPath::Profile* profile, void** buffer, size_t* bufferSz)
+pack(Prof::CallPath::Profile* profile, uint8_t** buffer, size_t* bufferSz)
 {
-  // FILE *open_memstream(char **ptr, size_t *sizeloc);
-  FILE* fs = open_memstream(&buffer, &bufferSz);
-  profile->write(fs); // TODO: Prof::CallPath::Profile::write()
+  // open_memstream: mallocs buffer and sets bufferSz
+  FILE* fs = open_memstream((char**)buffer, bufferSz);
+
+  uint wFlags = 0;
+  Prof::CallPath::Profile::fmt_fwrite(*profile, fs, wFlags);
+
+  fclose(fs);
 }
 
 
 Prof::CallPath::Profile*
-cct_unpack(void* buffer, size_t bufferSz)
+unpack(uint8_t* buffer, size_t bufferSz)
 {
-  // FILE *fmemopen(void *buf, size_t size, const char *mode);
   FILE* fs = fmemopen(buffer, bufferSz, "r");
-  Prof::CallPath::Profile* prof = Prof::CallPath::Profile::make(fs);
+
+  Prof::CallPath::Profile* prof = NULL;
+  uint rFlags = 0;
+  Prof::CallPath::Profile::fmt_fread(prof, fs, rFlags,
+				     "ParallelAnalysis::unpack", NULL, NULL);
+
+  fclose(fs);
   return prof;
 }
 
-//***************************************************************************
-#endif
 
-} // namespace CCTAnalysis
+//***************************************************************************
+
+} // namespace ParallelAnalysis
