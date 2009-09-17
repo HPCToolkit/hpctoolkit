@@ -161,7 +161,7 @@ trace_close()
     ret = fflush(td->trace_file);
     trace_file_validate(ret == 0, "flush");
 
-    ret = hpcio_close(td->trace_file);
+    ret = hpcio_fclose(td->trace_file);
     trace_file_validate(ret == 0, "close");
     int rank = monitor_mpi_comm_rank();
     if (rank >= 0) {
