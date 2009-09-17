@@ -6,6 +6,10 @@
 	.global hpcrun_trampoline
 	.type hpcrun_trampoline,@function	
 hpcrun_trampoline:
+	push	%rbp	# need to save a slot for the "real" return address
+
+#	regular standard frame here
+
 	push	%rbp
 	mov	%rsp, %rbp
 
@@ -15,7 +19,8 @@ hpcrun_trampoline:
 	# the base pointer (unlikely, but who knows?).
 	# save return value registers
 	
-	# FIXME: this is probably inefficient...saving more than we need
+
+	push	%rcx
 	push	%rbx
 	push	%rax
 	push	%rdx
@@ -39,7 +44,8 @@ hpcrun_trampoline:
 	# the trampoline returns us our proper return address in %rax.
 	# shove it onto the stack so that 'ret' will go to the proper
 	# location upon returning from this function.
-	mov	%rax, %rcx
+
+	mov	%rax, 8(%rbp)
 
 	# pop all the registers back into place
 	pop	%r8
@@ -55,10 +61,11 @@ hpcrun_trampoline:
 	pop	%rdx
 	pop	%rax
 	pop	%rbx
+	pop	%rcx
 
 	# Head back into the normal program
 	leave
-	jmp	*%rcx
+#	jmp	*%rcx
 
 	.size hpcrun_trampoline,.-hpcrun_trampoline
 
