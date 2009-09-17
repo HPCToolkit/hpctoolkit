@@ -73,7 +73,7 @@ using std::string;
 
 #include <include/uint.h>
 
-#include "CCTAnalysis.hpp"
+#include "ParallelAnalysis.hpp"
 
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
