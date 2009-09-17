@@ -94,10 +94,12 @@ hpcio_fopen_w(const char* fnm, int overwrite)
     // Open file for writing; fail if the file already exists.  
     fd = open(fnm, O_WRONLY | O_CREAT | O_EXCL, mode);
     if (fd < 0) { return NULL; }  
-  } else if (overwrite == 1) {
+  }
+  else if (overwrite == 1) {
     // Open file for writing; truncate file already exists.
     fd = open(fnm, O_WRONLY | O_CREAT | O_TRUNC, mode); 
-  } else {
+  }
+  else {
     return NULL; // blech
   }
   
@@ -109,7 +111,7 @@ hpcio_fopen_w(const char* fnm, int overwrite)
 
 // See header for interface information.
 FILE* 
-hpcio_open_r(const char* fnm)
+hpcio_fopen_r(const char* fnm)
 {
   FILE* fs = fopen(fnm, "r");
   return fs;
@@ -118,7 +120,7 @@ hpcio_open_r(const char* fnm)
 
 // See header for interface information.
 int   
-hpcio_close(FILE* fs)
+hpcio_fclose(FILE* fs)
 {
   if (fs) {
     if (fclose(fs) == EOF) { 

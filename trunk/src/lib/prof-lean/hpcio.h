@@ -90,8 +90,8 @@ extern "C" {
 // hpcio_close: Close the file stream.  Returns 0 upon success; 
 // non-zero on error.
 FILE* hpcio_fopen_w(const char* fnm, int overwrite);
-FILE* hpcio_open_r(const char* fnm);
-int   hpcio_close(FILE* fs);
+FILE* hpcio_fopen_r(const char* fnm);
+int   hpcio_fclose(FILE* fs);
 
 
 //***************************************************************************

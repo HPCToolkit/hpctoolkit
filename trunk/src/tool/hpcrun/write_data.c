@@ -323,7 +323,7 @@ hpcrun_write_profile_data(csprof_state_t *state)
   write_epochs(fs, state);
 
   TMSG(DATA_WRITE,"closing file");
-  hpcio_close(fs);
+  hpcio_fclose(fs);
   TMSG(DATA_WRITE,"Done!");
 
   return HPCRUN_OK;

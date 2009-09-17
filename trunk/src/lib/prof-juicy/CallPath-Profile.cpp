@@ -359,7 +359,7 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 {
   int ret;
 
-  FILE* fs = hpcio_open_r(fnm);
+  FILE* fs = hpcio_fopen_r(fnm);
   if (!fs) {
     DIAG_Throw("error opening file");
   }
@@ -367,7 +367,7 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
   Profile* prof = NULL;
   ret = fmt_fread(prof, fs, rFlags, fnm, fnm, outfs);
   
-  hpcio_close(fs);
+  hpcio_fclose(fs);
 
   return prof;
 }
