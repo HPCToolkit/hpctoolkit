@@ -79,7 +79,8 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_1 = hpcprof_mpi-main.$(OBJEXT) hpcprof_mpi-Args.$(OBJEXT)
+am__objects_1 = hpcprof_mpi-main.$(OBJEXT) hpcprof_mpi-Args.$(OBJEXT) \
+	hpcprof_mpi-CCTAnalysis.$(OBJEXT)
 am_hpcprof_mpi_OBJECTS = $(am__objects_1)
 hpcprof_mpi_OBJECTS = $(am_hpcprof_mpi_OBJECTS)
 am__DEPENDENCIES_1 = $(HPC_LIBANALYSIS) $(HPC_LIBBANAL) \
@@ -336,7 +337,8 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 #############################################################################
 MYSOURCES = \
 	main.cpp \
-	Args.hpp Args.cpp
+	Args.hpp Args.cpp \
+	CCTAnalysis.hpp CCTAnalysis.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
@@ -437,6 +439,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi-Args.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi-CCTAnalysis.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi-main.Po@am__quote@
 
 .cpp.o:
@@ -487,6 +490,20 @@ hpcprof_mpi-Args.obj: Args.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcprof_mpi-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+
+hpcprof_mpi-CCTAnalysis.o: CCTAnalysis.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-CCTAnalysis.o -MD -MP -MF $(DEPDIR)/hpcprof_mpi-CCTAnalysis.Tpo -c -o hpcprof_mpi-CCTAnalysis.o `test -f 'CCTAnalysis.cpp' || echo '$(srcdir)/'`CCTAnalysis.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_mpi-CCTAnalysis.Tpo $(DEPDIR)/hpcprof_mpi-CCTAnalysis.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CCTAnalysis.cpp' object='hpcprof_mpi-CCTAnalysis.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-CCTAnalysis.o `test -f 'CCTAnalysis.cpp' || echo '$(srcdir)/'`CCTAnalysis.cpp
+
+hpcprof_mpi-CCTAnalysis.obj: CCTAnalysis.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-CCTAnalysis.obj -MD -MP -MF $(DEPDIR)/hpcprof_mpi-CCTAnalysis.Tpo -c -o hpcprof_mpi-CCTAnalysis.obj `if test -f 'CCTAnalysis.cpp'; then $(CYGPATH_W) 'CCTAnalysis.cpp'; else $(CYGPATH_W) '$(srcdir)/CCTAnalysis.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_mpi-CCTAnalysis.Tpo $(DEPDIR)/hpcprof_mpi-CCTAnalysis.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CCTAnalysis.cpp' object='hpcprof_mpi-CCTAnalysis.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-CCTAnalysis.obj `if test -f 'CCTAnalysis.cpp'; then $(CYGPATH_W) 'CCTAnalysis.cpp'; else $(CYGPATH_W) '$(srcdir)/CCTAnalysis.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

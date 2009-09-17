@@ -74,6 +74,7 @@ using std::string;
 #include <include/uint.h>
 
 #include "Args.hpp"
+#include "CCTAnalysis.hpp"
 
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
@@ -184,6 +185,16 @@ realmain(int argc, char* const* argv)
   // Create canonical CCT
   // ------------------------------------------------------------
 
+#if 0
+  // POST-INVARIANT: rank 0's CCT will have the canonical structure
+  CCTAnalysis::reduce(prof, myRank, numRanks - 1);
+
+  // POST-INVARIANT: each CCT will have canonical structure + its
+  //   local metrics NOTE: on each merge, create local mapping of
+  //   old->new node ids
+  CCTAnalysis::broadcast(prof, myRank, numRanks - 1);
+#endif
+
   // ------------------------------------------------------------
   // Add static structure to canonical CCT; form dense node ids
   // ------------------------------------------------------------
@@ -207,7 +218,6 @@ realmain(int argc, char* const* argv)
 
 
 //****************************************************************************
-
 
 // getMyProfileFiles: creates canonical list of profiles files and
 //   distributes chunks of size ceil(numFiles / numRanks) to each process.
@@ -294,3 +304,5 @@ getMyProfileFiles(StringVec& profileFiles,
 
   return myProfileFiles;
 }
+
+//***************************************************************************

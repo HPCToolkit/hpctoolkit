@@ -69,7 +69,8 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	main.cpp \
-	Args.hpp Args.cpp
+	Args.hpp Args.cpp \
+	CCTAnalysis.hpp CCTAnalysis.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
