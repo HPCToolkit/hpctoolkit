@@ -74,7 +74,7 @@ using std::string;
 #include <include/uint.h>
 
 #include "Args.hpp"
-#include "CCTAnalysis.hpp"
+#include "ParallelAnalysis.hpp"
 
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
