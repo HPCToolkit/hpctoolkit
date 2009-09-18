@@ -118,7 +118,7 @@ OverheadMetricFact::make(Prof::CallPath::Profile& prof)
   // ------------------------------------------------------------
   uint n_new_metrics = metric_dst.size();
   for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
-    CCT::ANode* x = it.CurNode();
+    CCT::ANode* x = it.current();
     x->ensureMetricsSize(x->numMetrics() + n_new_metrics);
   }
 
@@ -161,7 +161,7 @@ OverheadMetricFact::make(Prof::CCT::ANode* node,
   }
 
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
-    Prof::CCT::ANode* x = it.CurNode();
+    Prof::CCT::ANode* x = it.current();
     make(x, m_src, m_dst, isOverheadCtxt_nxt);
   }
 }

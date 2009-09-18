@@ -269,7 +269,7 @@ overlayStaticStructure(Prof::CallPath::Profile& prof, Prof::CCT::ANode* node,
 
   // For each immediate child of this node...
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
-    Prof::CCT::ANode* n = it.CurNode();
+    Prof::CCT::ANode* n = it.current();
     it++; // advance iterator -- it is pointing at 'n' 
     
     // ---------------------------------------------------
@@ -375,7 +375,7 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 {
   for (Prof::Struct::ACodeNodeChildIterator it(node_strct); 
        it.Current(); ++it) {
-    Prof::Struct::ACodeNode* n_strct = it.CurNode();
+    Prof::Struct::ACodeNode* n_strct = it.current();
 
     // Done: if we reach the natural base case or embedded proceedure
     if (n_strct->isLeaf() || typeid(*n_strct) == typeid(Prof::Struct::Proc)) {
@@ -474,7 +474,7 @@ coalesceStmts(Prof::CCT::ANode* node)
   
   // For each immediate child of this node...
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
-    Prof::CCT::ANode* child = it.CurNode();
+    Prof::CCT::ANode* child = it.current();
     it++; // advance iterator -- it is pointing at 'child'
     
     bool inspect = (child->isLeaf() 
@@ -542,7 +542,7 @@ pruneByMetrics(Prof::CCT::ANode* node)
   if (!node) { return; }
 
   for (CCT::ANodeChildIterator it(node); it.Current(); /* */) {
-    CCT::ANode* x = it.CurNode();
+    CCT::ANode* x = it.current();
     it++; // advance iterator -- it is pointing at 'x'
 
     // 1. Recursively do any trimming for this tree's children

@@ -203,7 +203,7 @@ copySourceFiles(Prof::Struct::Root* structure,
 
   Prof::Struct::ANodeFilter filter(Flat_Filter, "Flat_Filter", 0);
   for (Prof::Struct::ANodeIterator it(structure, &filter); it.Current(); ++it) {
-    Prof::Struct::ANode* strct = it.CurNode();
+    Prof::Struct::ANode* strct = it.current();
 
     // Note: 'fnm_orig' will be not be absolute if it is not possible
     // to resolve it on the current filesystem. (cf. RealPathMgr)

@@ -142,8 +142,9 @@ void
 Tree::renumberIdsDensly()
 {
   uint nodeId = 1; // cf. s_nextUniqueId
-  for (CCT::ANodeIterator it(m_root); it.CurNode(); ++it) {
-    CCT::ANode* n = it.CurNode();
+  for (ANodeSortedChildIterator it(m_root, ANodeSortedIterator::cmpByStructureId);
+       it.current(); it++) {
+    CCT::ANode* n = it.current();
     n->id(nodeId);
     nodeId++;
   }
@@ -327,7 +328,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics)
   //    recur.
   // ------------------------------------------------------------  
   for (ANodeChildIterator it(y); it.Current(); /* */) {
-    ANode* y_child = it.CurNode();
+    ANode* y_child = it.current();
     ADynNode* y_child_dyn = dynamic_cast<ADynNode*>(y_child);
     DIAG_Assert(y_child_dyn, "ANode::mergeDeep");
     it++; // advance iterator -- it is pointing at 'child'
@@ -363,7 +364,7 @@ ANode::merge(ANode* y)
   
   // 2. copy y's children into x
   for (ANodeChildIterator it(y); it.Current(); /* */) {
-    ANode* y_child = it.CurNode();
+    ANode* y_child = it.current();
     it++; // advance iterator -- it is pointing at 'y_child'
     y_child->unlink();
     y_child->link(x);
@@ -409,7 +410,7 @@ ADynNode*
 ANode::findDynChild(const ADynNode& y_dyn)
 {
   for (ANodeChildIterator it(this); it.Current(); ++it) {
-    ANode* x = it.CurNode();
+    ANode* x = it.current();
     ADynNode* x_dyn = dynamic_cast<ADynNode*>(x);
     if (x_dyn && ADynNode::isMergable(*x_dyn, y_dyn)) {
       return x_dyn;
@@ -422,8 +423,8 @@ ANode::findDynChild(const ADynNode& y_dyn)
 void
 ANode::mergeDeep_pre(uint newMetrics)
 {
-  for (ANodeIterator it(this); it.CurNode(); ++it) {
-    ANode* n = it.CurNode();
+  for (ANodeIterator it(this); it.Current(); ++it) {
+    ANode* n = it.current();
     n->ensureMetricsSize(n->numMetrics() + newMetrics);
   }
 }
@@ -432,8 +433,8 @@ ANode::mergeDeep_pre(uint newMetrics)
 void
 ANode::mergeDeep_fixup(int newMetrics)
 {
-  for (ANodeIterator it(this); it.CurNode(); ++it) {
-    ANode* n = it.CurNode();
+  for (ANodeIterator it(this); it.Current(); ++it) {
+    ANode* n = it.current();
     n->insertMetricsBefore(newMetrics);
   }
 }
@@ -487,7 +488,7 @@ makeProcNameDbg(const Prof::CCT::ANode* node)
   }
 
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
-    const Prof::CCT::ANode* n = it.CurNode();
+    const Prof::CCT::ANode* n = it.current();
 
     // Build name from ADynNode
     const Prof::CCT::ADynNode* n_dyn = 
@@ -680,8 +681,8 @@ ANode::writeXML(ostream &os, int oFlags, const char *pre) const
   bool doPost = writeXML_pre(os, oFlags, pre);
   string prefix = pre + indent;
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureId);
-       it.Current(); it++) {
-    ANode* n = it.Current();
+       it.current(); it++) {
+    ANode* n = it.current();
     n->writeXML(os, oFlags, prefix.c_str());
   }
   if (doPost) {

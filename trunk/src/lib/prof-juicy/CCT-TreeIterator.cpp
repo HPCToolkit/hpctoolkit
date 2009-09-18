@@ -126,7 +126,7 @@ ANodeSortedIterator(const ANode* node,
 		    bool leavesOnly)
 {
   ANodeIterator it(node, filterFunc, leavesOnly);
-  for (ANode* cur = NULL; (cur = it.CurNode()); it++) {
+  for (ANode* cur = NULL; (cur = it.current()); it++) {
     scopes.Add((unsigned long) cur);
   }
   ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
@@ -134,14 +134,14 @@ ANodeSortedIterator(const ANode* node,
 
 
 void
-ANodeSortedIterator::DumpAndReset(ostream& os)
+ANodeSortedIterator::dumpAndReset(ostream& os)
 {
   os << "ANodeSortedIterator: " << endl;
-  while (Current()) {
-    os << Current()->toString_me() << endl;
+  while (current()) {
+    os << current()->toString_me() << endl;
     (*this)++;
   } 
-  Reset();
+  reset();
 }
 
 
@@ -184,7 +184,7 @@ ANodeSortedChildIterator(const ANode* node,
 			 const ANodeFilter* f)
 {
   ANodeChildIterator it(node, f);
-  for (ANode* cur = NULL; (cur = it.CurNode()); it++) {
+  for (ANode* cur = NULL; (cur = it.current()); it++) {
     scopes.Add((unsigned long) cur);
   }
   ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
@@ -192,14 +192,14 @@ ANodeSortedChildIterator(const ANode* node,
 
 
 void
-ANodeSortedChildIterator::DumpAndReset(ostream& os)
+ANodeSortedChildIterator::dumpAndReset(ostream& os)
 {
   os << "ANodeSortedChildIterator: " << endl;
-  while (Current()) {
-    os << Current()->toString_me() << endl;
+  while (current()) {
+    os << current()->toString_me() << endl;
     (*this)++;
   }
-  Reset();
+  reset();
 }
 
 //***************************************************************************

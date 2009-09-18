@@ -668,7 +668,7 @@ LocationMgr::alienateScopeTree(Struct::ACodeNode* scope, Struct::Alien* alien,
   
   // move non-alien children of 'scope' into 'clone'
   for (Struct::ACodeNodeChildIterator it(scope); it.Current(); /* */) {
-    Struct::ACodeNode* child = it.CurNode();
+    Struct::ACodeNode* child = it.current();
     it++; // advance iterator -- it is pointing at 'child'
 
     if (typeid(*child) != typeid(Struct::Alien) && child != exclude

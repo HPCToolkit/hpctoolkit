@@ -774,7 +774,7 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 {
   ANodeChildIterator it(this); 
   for (; it.Current(); it++) {
-    it.CurNode()->accumulateMetrics(mBegId, mEndId, mVec);
+    it.current()->accumulateMetrics(mBegId, mEndId, mVec);
   }
 
   it.Reset();
@@ -786,7 +786,7 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 
     for (; it.Current(); it++) {
       for (uint i = mBegId; i <= mEndId; ++i) {
-	mVec.metric(i) += it.CurNode()->demandMetric(i, mEndId+1/*size*/);
+	mVec.metric(i) += it.current()->demandMetric(i, mEndId+1/*size*/);
       }
     }
     
@@ -803,7 +803,7 @@ ANode::pruneByMetrics()
   std::vector<ANode*> toBeRemoved;
   
   for (ANodeChildIterator it(this, NULL); it.Current(); ++it) {
-    ANode* x = it.CurNode();
+    ANode* x = it.current();
     if (x->hasMetrics()) {
       x->pruneByMetrics();
     }
@@ -1505,8 +1505,8 @@ ANode::writeXML(ostream& os, int oFlags, const char* pfx) const
   bool doPost = writeXML_pre(os, oFlags, pfx);
   string pfx_new = pfx + indent;
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
-       it.Current(); it++) {
-    it.Current()->writeXML(os, oFlags, pfx_new.c_str());
+       it.current(); it++) {
+    it.current()->writeXML(os, oFlags, pfx_new.c_str());
   }
   if (doPost) {
     writeXML_post(os, oFlags, pfx);
@@ -1532,8 +1532,8 @@ Root::writeXML(ostream& os, int oFlags, const char* pfx) const
   // N.B.: Assume that my children are LM's
   bool doPost = ANode::writeXML_pre(os, oFlags, pfx);
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
-       it.Current(); it++) {
-    ANode* scope = it.Current();
+       it.current(); it++) {
+    ANode* scope = it.current();
     scope->writeXML(os, oFlags, pfx);
   }
   if (doPost) {
@@ -1556,8 +1556,8 @@ LM::writeXML(ostream& os, int oFlags, const char* pre) const
   bool doPost = ANode::writeXML_pre(os, oFlags, pre);
   string prefix = pre + indent;
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
-       it.Current(); it++) {
-    ANode* scope = it.Current();
+       it.current(); it++) {
+    ANode* scope = it.current();
     scope->writeXML(os, oFlags, prefix.c_str());
   }
   if (doPost) {
@@ -1605,8 +1605,8 @@ ANode::CSV_dump(const Root& root, ostream& os,
   os << name() << ",,,,";
   CSV_DumpSelf(root, os);
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
-       it.Current(); it++) {
-    it.Current()->CSV_dump(root, os);
+       it.current(); it++) {
+    it.current()->CSV_dump(root, os);
   }
 }
 
@@ -1620,8 +1620,8 @@ File::CSV_dump(const Root& root, ostream& os,
   os << baseName() << ",," << m_begLn << "," << m_endLn << ",";
   CSV_DumpSelf(root, os);
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
-       it.Current(); it++) {
-    it.Current()->CSV_dump(root, os, baseName().c_str());
+       it.current(); it++) {
+    it.current()->CSV_dump(root, os, baseName().c_str());
   }
 }
 
@@ -1636,8 +1636,8 @@ Proc::CSV_dump(const Root& root, ostream& os,
      << ",0";
   CSV_DumpSelf(root, os);
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
-       it.Current(); it++) {
-    it.CurNode()->CSV_dump(root, os, file_name, name().c_str(), 1);
+       it.current(); it++) {
+    it.current()->CSV_dump(root, os, file_name, name().c_str(), 1);
   } 
 }
 
@@ -1668,8 +1668,8 @@ ACodeNode::CSV_dump(const Root& root, ostream& os,
     os << lLevel;
   CSV_DumpSelf(root, os);
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
-       it.Current(); it++) {
-    it.CurNode()->CSV_dump(root, os, file_name, proc_name, lLevel+1);
+       it.current(); it++) {
+    it.current()->CSV_dump(root, os, file_name, proc_name, lLevel+1);
   } 
 }
 
@@ -1731,7 +1731,7 @@ ANode::dump(ostream& os, int oFlags, const char* pre) const
   }
   
   for (ANodeChildIterator it(this); it.Current(); it++) {
-    it.CurNode()->dump(os, oFlags, prefix.c_str());
+    it.current()->dump(os, oFlags, prefix.c_str());
   } 
   return os;
 }
