@@ -121,6 +121,8 @@ Profile::Profile(const std::string name)
   m_cct = new CCT::Tree(this);
 
   m_structure = NULL;
+
+  canonicalize();
 }
 
 
@@ -141,10 +143,22 @@ Profile::merge(Profile& y, bool isSameThread)
   // -------------------------------------------------------
   // merge name, flags, etc
   // -------------------------------------------------------
+  if (m_flags.bits == 0) {
+    m_flags.bits = y.m_flags.bits;
+  }
+
+  if (m_measurementGranularity == 0) {
+    m_measurementGranularity = y.m_measurementGranularity;
+  }
+
+  if (m_raToCallsiteOfst == 0) {
+    m_raToCallsiteOfst = y.m_raToCallsiteOfst;
+  }
+
   DIAG_WMsgIf( !(m_flags.bits == y.m_flags.bits
 		 && m_measurementGranularity == y.m_measurementGranularity
 		 && m_raToCallsiteOfst == y.m_raToCallsiteOfst),
-	       "Prof::Profile::merge(): ignoring incompatible flags");
+	       "CallPath::Profile::merge(): ignoring incompatible flags");
 
   // -------------------------------------------------------
   // merge metrics 
@@ -654,6 +668,11 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   }
 
   CCT::Tree* cct = prof.cct();
+  
+  if (numNodes > 0) {
+    delete cct->root();
+    cct->root(NULL);
+  }
 
   hpcrun_fmt_cct_node_t nodeFmt;
   nodeFmt.num_metrics = prof.metricMgr()->size();

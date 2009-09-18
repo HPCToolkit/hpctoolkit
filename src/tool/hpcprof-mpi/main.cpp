@@ -180,11 +180,6 @@ realmain(int argc, char* const* argv)
   Prof::Metric::Mgr* metricMgr = profLcl->metricMgr();
   profLcl->metricMgr(new Prof::Metric::Mgr);
 
-
-  FILE* fs = hpcio_fopen_w("canonical-cct.hpcrun", 1);
-  Prof::CallPath::Profile::fmt_fwrite(*profLcl, fs, 0);
-  hpcio_fclose(fs);
-
   // ------------------------------------------------------------
   // Create canonical CCT (no metrics)
   // ------------------------------------------------------------
@@ -201,6 +196,12 @@ realmain(int argc, char* const* argv)
   ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1);
   delete profLcl;
 
+  if (0 && myRank == rootRank) {
+    FILE* fs = hpcio_fopen_w("canonical-cct.hpcrun", 1);
+    Prof::CallPath::Profile::fmt_fwrite(*profGbl, fs, 0);
+    hpcio_fclose(fs);
+  }
+
   // ------------------------------------------------------------
   // Add static structure to canonical CCT; form dense node ids
   // ------------------------------------------------------------
@@ -213,19 +214,23 @@ realmain(int argc, char* const* argv)
 
   Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.lush_agent);
 
-  // TODO: renumber nodes densly
 
   // ------------------------------------------------------------
   // Create summary and thread-level metrics
   // ------------------------------------------------------------
 
+  // TODO:
+
+  profGbl->cct()->renumberIdsDensly();
+
+  // -------------------------------------------------------
+  // Cleanup: MPI_Finalize() called in parent
+  // -------------------------------------------------------
+
   delete profFiles;
   delete metricMgr;
   delete profGbl;
 
-  // -------------------------------------------------------
-  // MPI_Finalize() called in parent
-  // -------------------------------------------------------
   
   return 0;
 }
