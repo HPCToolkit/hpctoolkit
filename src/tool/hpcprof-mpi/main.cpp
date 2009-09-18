@@ -228,15 +228,13 @@ realmain(int argc, char* const* argv)
   // TODO: create summary metrics.  Each process has a set for each group
 
   for (uint i = 0; i < profFiles->size(); ++i) {
-#if 0
     string& fnm = (*profFiles)[i];
     Prof::CallPath::Profile* prof = Analysis::CallPath::read(fnm);
     profGbl->merge(*prof, /*isSameThread*/false); // where to overlay metrics
 
-    // TODO: 
+    // TODO: incrementally update metric
 
     delete prof;
-#endif
   }
 
 
