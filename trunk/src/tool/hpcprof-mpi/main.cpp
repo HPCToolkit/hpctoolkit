@@ -180,19 +180,19 @@ realmain(int argc, char* const* argv)
   Prof::Metric::Mgr* metricMgr = profLcl->metricMgr();
   profLcl->metricMgr(new Prof::Metric::Mgr);
 
-  // ------------------------------------------------------------
+  // -------------------------------------------------------
   // Create canonical CCT (no metrics)
-  // ------------------------------------------------------------
+  // -------------------------------------------------------
   Prof::CallPath::Profile* profGbl = NULL;
 
-  // POST-INVARIANT: rank 0's 'profLcl' the canonical CCT
+  // Post-INVARIANT: rank 0's 'profLcl' the canonical CCT
   ParallelAnalysis::reduce(profLcl, myRank, numRanks - 1);
   if (myRank == rootRank) {
     profGbl = profLcl;
     profLcl = NULL;
   }
 
-  // POST-INVARIANT: 'profGbl' is the canonical CCT
+  // Post-INVARIANT: 'profGbl' is the canonical CCT
   ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1);
   delete profLcl;
 
@@ -202,9 +202,12 @@ realmain(int argc, char* const* argv)
     hpcio_fclose(fs);
   }
 
-  // ------------------------------------------------------------
+  // -------------------------------------------------------
   // Add static structure to canonical CCT; form dense node ids
-  // ------------------------------------------------------------
+  //
+  // Post-INVARIANT: each process has canonical CCT with dense node
+  // ids; corresponding nodes have idential ids.
+  // -------------------------------------------------------
 
   Prof::Struct::Tree* structure = new Prof::Struct::Tree("");
   if (!args.structureFiles.empty()) {
@@ -212,16 +215,30 @@ realmain(int argc, char* const* argv)
   }
   profGbl->structure(structure);
 
+  // FIXME: iterator should sort by lm/ip so static structure is added
+  // in same way
   Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.lush_agent);
 
-
-  // ------------------------------------------------------------
-  // Create summary and thread-level metrics
-  // ------------------------------------------------------------
-
-  // TODO:
-
   profGbl->cct()->renumberIdsDensly();
+
+  // -------------------------------------------------------
+  // Create summary and thread-level metrics
+  // -------------------------------------------------------
+
+  // TODO: create summary metrics.  Each process has a set for each group
+
+  for (uint i = 0; i < profFiles->size(); ++i) {
+#if 0
+    string& fnm = (*profFiles)[i];
+    Prof::CallPath::Profile* prof = Analysis::CallPath::read(fnm);
+    profGbl->merge(*prof, /*isSameThread*/false); // where to overlay metrics
+
+    // TODO: 
+
+    delete prof;
+#endif
+  }
+
 
   // -------------------------------------------------------
   // Cleanup: MPI_Finalize() called in parent

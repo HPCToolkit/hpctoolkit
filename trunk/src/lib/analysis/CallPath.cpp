@@ -106,11 +106,16 @@ namespace CallPath {
 Prof::CallPath::Profile*
 read(const std::vector<string>& profileFiles, uint rFlags)
 {
-  Prof::CallPath::Profile* prof = read(profileFiles[0]);
+  Prof::CallPath::Profile* prof = read(profileFiles[0], rFlags);
+
+  bool isSameThread = false;
+  if (rFlags & Prof::CallPath::Profile::RFlg_onlyMetricDescs) {
+    isSameThread = true;
+  }
   
   for (uint i = 1; i < profileFiles.size(); ++i) {
-    Prof::CallPath::Profile* p = read(profileFiles[i]);
-    prof->merge(*p, /*isSameThread*/false);
+    Prof::CallPath::Profile* p = read(profileFiles[i], rFlags);
+    prof->merge(*p, isSameThread);
     delete p;
   }
   

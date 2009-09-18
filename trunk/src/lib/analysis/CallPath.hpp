@@ -87,7 +87,7 @@ namespace CallPath {
 //
 // ---------------------------------------------------------
 
-Prof::CallPath::Profile* 
+Prof::CallPath::Profile*
 read(const std::vector<string>& profileFiles, uint rFlags = 0);
 
 Prof::CallPath::Profile*
