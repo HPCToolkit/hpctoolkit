@@ -166,6 +166,13 @@ public:
   merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics);
 
   // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  void
+  renumberIdsDensly();
+
+  // -------------------------------------------------------
   // Write contents
   // -------------------------------------------------------
   std::ostream& 
@@ -294,6 +301,7 @@ public:
   type() const
   { return m_type; }
 
+
   // id: a unique id; 0 is reserved for a NULL value
   //
   // N.B.: To support reading/writing, ids must be consistent with
@@ -301,6 +309,11 @@ public:
   uint
   id() const
   { return m_id; }
+
+  void
+  id(uint id)
+  { m_id = id; }
+
 
   // 'name()' is overridden by some derived classes
   virtual const std::string&

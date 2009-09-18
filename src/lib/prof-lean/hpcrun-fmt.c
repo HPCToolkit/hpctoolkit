@@ -282,7 +282,7 @@ hpcrun_fmt_metricTbl_fwrite(metric_tbl_t* metric_tbl, FILE* fs)
 int
 hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metric_tbl, FILE* fs)
 {
-  fprintf(fs, "[metric-tbl: (len: %u)\n", metric_tbl->len);
+  fprintf(fs, "[metric-tbl: (num-entries: %u)\n", metric_tbl->len);
   for (uint32_t i = 0; i < metric_tbl->len; i++) {
     metric_desc_t* x = &metric_tbl->lst[i];
     hpcrun_fmt_metricDesc_fprint(x, fs, "  ");
@@ -380,7 +380,7 @@ hpcrun_fmt_loadmap_fwrite(loadmap_t* loadmap, FILE* fs)
 int
 hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* fs)
 {
-  fprintf(fs, "[loadmap: (len: %u)\n", loadmap->len);
+  fprintf(fs, "[loadmap: (num-entries: %u)\n", loadmap->len);
   for (uint32_t i = 0; i < loadmap->len; i++) {
     loadmap_entry_t* e = &loadmap->lst[i];
     HPCFMT_ThrowIfError(hpcrun_fmt_loadmapEntry_fprint(e, fs, "  "));
