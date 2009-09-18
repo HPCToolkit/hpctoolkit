@@ -126,8 +126,7 @@ public:
   operator=(const IData& x)
   {
     if (this != &x) {
-      delete m_metrics;
-      m_metrics = NULL;
+      clearMetrics();
       if (x.m_metrics) {
 	m_metrics = new MetricVec(*(x.m_metrics));
       }
@@ -188,7 +187,10 @@ public:
 
   void
   clearMetrics()
-  { delete m_metrics; }
+  { 
+    delete m_metrics;
+    m_metrics = NULL;
+  }
 
 
   // --------------------------------------------------------
@@ -210,6 +212,9 @@ public:
   void
   insertMetricsBefore(size_t numMetrics) 
   {
+    if (numMetrics > 0 && !m_metrics) {
+      m_metrics = new MetricVec();
+    }
     for (uint i = 0; i < numMetrics; ++i) {
       m_metrics->insert(m_metrics->begin(), 0.0);
     }

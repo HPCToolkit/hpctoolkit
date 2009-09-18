@@ -123,8 +123,8 @@ extern const ANodeFilter ANodeTyFilter[ANode::TyNUMBER];
 
 // NOTE: To support insertion and deletion of nodes during the lifetime of a
 // ANodeChildIterator using Link() and Unlink(), use *reverse* iteration.
-//   Link()   : new_node->LinkAfter(node_parent->LastChild())
-//   Unlink() : won't disturb FirstChild() pointer (until one node is left)
+//   link()   : new_node->LinkAfter(node_parent->LastChild())
+//   unlink() : won't disturb FirstChild() pointer (until one node is left)
 
 class ANodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
@@ -322,14 +322,8 @@ public:
     ptrSetIt->Reset();
   }
 
-  void dumpAndReset(std::ostream &os = std::cerr);
-
-#if 0
-  // both of these are buried in other parts of the HPCView code :-(
-  ACodeNode* CurNode() const { return dynamic_cast<ACodeNode*>(Current()); }
-
-  ACodeNode* CurCode() const { return dynamic_cast<ACodeNode*>(Current()); }
-#endif
+  void
+  dumpAndReset(std::ostream &os = std::cerr);
 
 private:
   WordSet scopes;
@@ -340,5 +334,7 @@ private:
 } // namespace Struct
 
 } // namespace Prof
+
+//***************************************************************************
 
 #endif /* prof_juicy_Prof_Struct_TreeIterator_hpp */

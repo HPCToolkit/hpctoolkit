@@ -138,7 +138,7 @@ Profile::~Profile()
 void 
 Profile::merge(Profile& y, bool isSameThread)
 {
-  DIAG_Assert(!m_structure && !y.m_structure, "Profile::merge: profiles should not have structure yet!");
+  DIAG_Assert(!y.m_structure, "Profile::merge: source profile should not have structure yet!");
 
   // -------------------------------------------------------
   // merge name, flags, etc
@@ -1046,7 +1046,10 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     if (hasMetrics) {
       n_leaf = n;
 
-      Metric::IData metricData0(nodeFmt.num_metrics);
+      uint mSz = ((rFlags & Prof::CallPath::Profile::RFlg_onlyMetricDescs) 
+		  ? 0 : nodeFmt.num_metrics);
+      Metric::IData metricData0(mSz);
+      
       n = new CCT::Call(NULL, 0, nodeFmt.as_info, lmId, ip, opIdx, lip,
 			metricData0);
     }

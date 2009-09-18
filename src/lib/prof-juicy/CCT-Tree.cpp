@@ -111,7 +111,7 @@ Tree::~Tree()
 }
 
 
-void 
+void
 Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics)
 {
   CCT::ANode* x_root = root();
@@ -379,7 +379,7 @@ void
 ANode::merge_me(const ANode& y, uint metricBegIdx)
 {
   uint x_end = y.numMetrics() + metricBegIdx;
-  DIAG_Assert(x_end <= numMetrics(), "Insufficient space for merging.");
+  DIAG_Assert(x_end <= numMetrics(), "ANode::merge_me: Insufficient space for merging metrics.");
 
   for (uint x_i = metricBegIdx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
     metric(x_i) += y.metric(y_i);
@@ -406,15 +406,32 @@ ADynNode::merge_me(const ANode& y, uint metricBegIdx)
 }
 
 
-ADynNode* 
+ADynNode*
 ANode::findDynChild(const ADynNode& y_dyn)
 {
+  // 'this' is either CCT::ADynNode or CCT::Root
+
   for (ANodeChildIterator it(this); it.Current(); ++it) {
     ANode* x = it.current();
+
+#if 1
     ADynNode* x_dyn = dynamic_cast<ADynNode*>(x);
     if (x_dyn && ADynNode::isMergable(*x_dyn, y_dyn)) {
       return x_dyn;
     }
+#else
+    // find first ADynNode descendent (see comments in header)
+    ADynNode* x_dyn = NULL;
+    while ( !(x_dyn = dynamic_cast<ADynNode*>(x)) ) {
+      DIAG_Assert(x_dyn->childCount() == 1, "ANode::findDynChild!");
+      x = x_dyn->firstChild();
+    }
+    DIAG_Assert(x_dyn, "ANode::findDynChild!");
+    
+    if (ADynNode::isMergable(*x_dyn, y_dyn)) {
+      return x_dyn;
+    }
+#endif
   }
   return NULL;
 }

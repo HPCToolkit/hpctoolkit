@@ -416,19 +416,30 @@ public:
   //   recursively merge y's children into x.
   // N.B.: assume we can destroy y.
   // N.B.: assume x already has space to store merged metrics
-  void 
+  void
   mergeDeep(ANode* y, uint x_numMetrics, uint y_numMetrics);
 
   // merge: Let 'this' = x and let y be a node corresponding to x.
   //   Merge y into x.  
   // N.B.: assume we can destroy y.
-  void 
+  void
   merge(ANode* y);
 
   virtual void
   merge_me(const ANode& y, uint metricBegIdx = 0);
 
-  CCT::ADynNode* 
+  // findDynChild: Let z = 'this' be an interior ADynNode (otherwise the
+  //   return value is trivially NULL).  Given an ADynNode y_dyn, finds
+  //   the first direct ADynNode descendent x_dyn, if any, for which
+  //   ADynNode::isMergable(x_dyn, y_dyn) holds.
+  // 
+  // If the CCT does not have structure information, we only need
+  //   to inspect the children of z.  Otherwise, it is necessary to find
+  //   the collection of z's direct ADynNode descendents.  In this case,
+  //   we assume the structured-CCT has been normalized which implies
+  //   that every non-ADynNode between z and a direct ADynNode
+  //   descendent x_dyn has only one child.
+  CCT::ADynNode*
   findDynChild(const ADynNode& y_dyn);
 
 
