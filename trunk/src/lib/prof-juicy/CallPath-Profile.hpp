@@ -233,11 +233,11 @@ public:
   static const int StructMetricIdFlg = 0;
 
 private:
-  void 
+  void
   canonicalize();
 
   // apply CCT MergeChange after merging two profiles
-  void 
+  void
   merge_fixCCT(std::vector<LoadMap::MergeChange>& mergeChg);
  
 private:
