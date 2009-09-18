@@ -138,6 +138,18 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics)
 }
 
 
+void 
+Tree::renumberIdsDensly()
+{
+  uint nodeId = 1; // cf. s_nextUniqueId
+  for (CCT::ANodeIterator it(m_root); it.CurNode(); ++it) {
+    CCT::ANode* n = it.CurNode();
+    n->id(nodeId);
+    nodeId++;
+  }
+}
+
+
 std::ostream&
 Tree::writeXML(std::ostream& os, int oFlags) const
 {

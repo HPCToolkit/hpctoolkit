@@ -180,6 +180,11 @@ realmain(int argc, char* const* argv)
   Prof::Metric::Mgr* metricMgr = profLcl->metricMgr();
   profLcl->metricMgr(new Prof::Metric::Mgr);
 
+
+  FILE* fs = hpcio_fopen_w("canonical-cct.hpcrun", 1);
+  Prof::CallPath::Profile::fmt_fwrite(*profLcl, fs, 0);
+  hpcio_fclose(fs);
+
   // ------------------------------------------------------------
   // Create canonical CCT (no metrics)
   // ------------------------------------------------------------
@@ -213,10 +218,6 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Create summary and thread-level metrics
   // ------------------------------------------------------------
-
-  FILE* fs = hpcio_fopen_w("canonical-cct.hpcrun", 1);
-  Prof::CallPath::Profile::fmt_fwrite(*profGbl, fs, 0);
-  hpcio_fclose(fs);
 
   delete profFiles;
   delete metricMgr;

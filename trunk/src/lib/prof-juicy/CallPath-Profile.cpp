@@ -71,6 +71,8 @@ using std::string;
 
 #include <alloca.h>
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 //*************************** User Include Files ****************************
 
@@ -343,8 +345,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 	     uint rFlags, Prof::LoadMap* loadmap);
 
 static void
-fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, 
-		 const Prof::CCT::ADynNode& n_dyn,
+fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
 		 epoch_flags_t flags);
 
 
@@ -402,9 +403,10 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   while ( !feof(infs) ) {
 
     Profile* myprof = NULL;
-
+    
+    string myCtxtStr = "epoch " + StrUtil::toStr(num_epochs + 1);
     try {
-      ctxtStr += ": epoch " + StrUtil::toStr(num_epochs + 1);
+      ctxtStr += ": " + myCtxtStr;
       ret = fmt_epoch_fread(myprof, infs, rFlags, &hdr.nvps, 
 			    ctxtStr, filename, outfs);
       if (ret == HPCFMT_EOF) {
@@ -413,7 +415,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
     }
     catch (const Diagnostics::Exception& x) {
       delete myprof;
-      DIAG_Throw("error reading 'epoch': " << x.what());
+      DIAG_Throw("error reading " << myCtxtStr << ": " << x.what());
     }
 
     if (! prof) {
@@ -637,25 +639,27 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 
   int ret = HPCFMT_ERR;
 
-  if (outfs) {
-    fprintf(outfs, "[cct:\n"); 
-  }
-
   // ------------------------------------------------------------
-  // Read num cct nodes
+  // Read number of cct nodes
   // ------------------------------------------------------------
-  uint64_t num_nodes = 0;
-  hpcfmt_byte8_fread(&num_nodes, infs);
+  uint64_t numNodes = 0;
+  hpcfmt_byte8_fread(&numNodes, infs);
 
   // ------------------------------------------------------------
   // Read each CCT node
   // ------------------------------------------------------------
 
+  if (outfs) {
+    fprintf(outfs, "[cct: (num-nodes: %"PRIu64")\n", numNodes);
+  }
+
+  CCT::Tree* cct = prof.cct();
+
   hpcrun_fmt_cct_node_t nodeFmt;
   nodeFmt.num_metrics = prof.metricMgr()->size();
   nodeFmt.metrics = (hpcrun_metricVal_t*)alloca(nodeFmt.num_metrics * sizeof(hpcrun_metricVal_t));
 
-  for (uint i = 0; i < num_nodes; ++i) {
+  for (uint i = 0; i < numNodes; ++i) {
 
     // ----------------------------------------------------------
     // Read the node
@@ -687,8 +691,6 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // ----------------------------------------------------------
     // Create node and link to parent
     // ----------------------------------------------------------
-
-    CCT::Tree* cct = prof.cct();
 
     std::pair<CCT::ANode*, CCT::ANode*> n2 = 
       cct_makeNode(prof, nodeFmt, rFlags, loadmap);
@@ -807,6 +809,26 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 int
 Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 {
+  int ret;
+  
+  // ------------------------------------------------------------
+  // Write number of cct nodes
+  // ------------------------------------------------------------
+
+  uint64_t numNodes = 0;
+  uint nodeId = 2; // cf. s_nextUniqueId
+  for (CCT::ANodeIterator it(prof.cct()->root()); it.CurNode(); ++it) {
+    CCT::ANode* n = it.CurNode();
+    n->id(nodeId);
+    nodeId += 2;
+    numNodes++;
+  }
+  hpcfmt_byte8_fwrite(numNodes, fs);
+
+  // ------------------------------------------------------------
+  // Write each CCT node
+  // ------------------------------------------------------------
+
   uint numMetrics = prof.metricMgr()->size();
   if (wFlags & Profile::WFlg_noMetrics) {
     numMetrics = 0;
@@ -817,19 +839,13 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   nodeFmt.metrics = 
     (hpcrun_metricVal_t*) alloca(numMetrics * sizeof(hpcrun_metricVal_t));
 
-  // N.B.: only write out nodes of type CCT::ADynNode!
-
-  CCT::ANode* root = prof.cct()->root();
-  for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
+  for (CCT::ANodeIterator it(prof.cct()->root()); it.CurNode(); ++it) {
     CCT::ANode* n = it.CurNode();
+    fmt_cct_makeNode(nodeFmt, *n, prof.m_flags);
 
-    CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
-    if (n_dyn) {
-      fmt_cct_makeNode(nodeFmt, *n_dyn, prof.m_flags);
-      int ret = hpcrun_fmt_cct_node_fwrite(&nodeFmt, prof.m_flags, fs);
-      if (ret != HPCFMT_OK) {
-	return HPCFMT_ERR;
-      }
+    ret = hpcrun_fmt_cct_node_fwrite(&nodeFmt, prof.m_flags, fs);
+    if (ret != HPCFMT_OK) {
+      return HPCFMT_ERR;
     }
   }
 
@@ -871,7 +887,7 @@ Profile::canonicalize()
       n->unlink();
       n->link(newRoot);
     }
-    
+
     delete root; // N.B.: also deletes 'spliceRoot'
   }
   
@@ -1026,35 +1042,50 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
 
 static void
-fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, 
-		 const Prof::CCT::ADynNode& n_dyn,
+fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
 		 epoch_flags_t flags)
 {
-  n_fmt.id = (n_dyn.isLeaf()) ? -(n_dyn.id()) : n_dyn.id();
+  n_fmt.id = (n.isLeaf()) ? -(n.id()) : n.id();
 
-  n_fmt.id_parent = (n_dyn.parent()) ? n_dyn.parent()->id() : 0;
+  n_fmt.id_parent = (n.parent()) ? n.parent()->id() : 0;
 
-  if (flags.flags.isLogicalUnwind) {
-    n_fmt.as_info = n_dyn.assocInfo();
+  const Prof::CCT::ADynNode* n_dyn_p = 
+    dynamic_cast<const Prof::CCT::ADynNode*>(&n);
+  if (typeid(n) == typeid(Prof::CCT::Root)) {
+    n_fmt.as_info = lush_assoc_info_NULL;
+    n_fmt.lm_id   = Prof::ALoadMap::LM_id_NULL;
+    n_fmt.ip      = 0;
+    lush_lip_init(&(n_fmt.lip));
+    memset(n_fmt.metrics, 0, n_fmt.num_metrics * sizeof(hpcrun_metricVal_t));
   }
-      
-  n_fmt.lm_id = n_dyn.lmId();
-  
-  n_fmt.ip = n_dyn.Prof::CCT::ADynNode::ip();
+  else if (n_dyn_p) {
+    const Prof::CCT::ADynNode& n_dyn = *n_dyn_p;
 
-  if (flags.flags.isLogicalUnwind) {
-    lush_lip_init(&n_fmt.lip);
-    if (n_dyn.lip()) {
-      memcpy(&n_fmt.lip, n_dyn.lip(), sizeof(lush_lip_t));
+    if (flags.flags.isLogicalUnwind) {
+      n_fmt.as_info = n_dyn.assocInfo();
+    }
+    
+    n_fmt.lm_id = n_dyn.lmId();
+    
+    n_fmt.ip = n_dyn.Prof::CCT::ADynNode::ip();
+
+    if (flags.flags.isLogicalUnwind) {
+      lush_lip_init(&(n_fmt.lip));
+      if (n_dyn.lip()) {
+	memcpy(&n_fmt.lip, n_dyn.lip(), sizeof(lush_lip_t));
+      }
+    }
+
+    // Note: use n_fmt.num_metrics rather than n_dyn.numMetrics() to
+    // support skipping the writing of metrics.
+    for (uint i = 0; i < n_fmt.num_metrics; ++i) {
+      hpcrun_metricVal_t m; // C99: (hpcrun_metricVal_t){.r = n_dyn.metric(i)};
+      m.r = n_dyn.metric(i);
+      n_fmt.metrics[i] = m;
     }
   }
-
-  // Note: use n_fmt.num_metrics rather than n_dyn.numMetrics() to
-  // support skipping the writing of metrics.
-  for (uint i = 0; i < n_fmt.num_metrics; ++i) {
-    hpcrun_metricVal_t m; // C99: (hpcrun_metricVal_t){.r = n_dyn.metric(i)};
-    m.r = n_dyn.metric(i);
-    n_fmt.metrics[i] = m;
+  else {
+    DIAG_Die("fmt_cct_makeNode: unknown CCT node type");
   }
 }
 
