@@ -1138,7 +1138,7 @@ mergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
   if (!node) { return changed; }
 
   for (Struct::ACodeNodeChildIterator it(node); it.Current(); /* */) {
-    Struct::ACodeNode* child = it.CurNode();
+    Struct::ACodeNode* child = it.current();
     it++; // advance iterator -- it is pointing at 'child'
     
     // 1. Recursively do any merging for this tree's children

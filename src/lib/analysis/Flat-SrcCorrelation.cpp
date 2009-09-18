@@ -363,7 +363,7 @@ Driver::write_txt(std::ostream &os) const
 
     Struct::ANodeIterator 
       it(m_structure.root(), &ANodeTyFilter[Struct::ANode::TyFile]);
-    for (Struct::ANode* strct = NULL; (strct = it.CurNode()); it++) {
+    for (Struct::ANode* strct = NULL; (strct = it.current()); it++) {
       Struct::File* fileStrct = dynamic_cast<Struct::File*>(strct);
       const string& fnm = fileStrct->name();
       if (fnm != Struct::Tree::UnknownFileNm 
@@ -413,8 +413,8 @@ Driver::write_txt_secSummary(std::ostream& os,
   }
   else {
     Struct::ANodeSortedIterator it(rootStrct, Struct::ANodeSortedIterator::cmpByMetric(m_sortby->id()), filter, false/*leavesOnly*/);
-    for (; it.Current(); it++) {
-      Struct::ANode* strct = it.Current();
+    for (; it.current(); it++) {
+      Struct::ANode* strct = it.current();
       for (uint i = 0; i < m_mMgr.size(); ++i) {
 	colFmt.genCol(i, strct->metric(i), rootStrct->metric(i));
       }
@@ -458,7 +458,7 @@ Driver::write_txt_annotateFile(std::ostream& os,
     it(fileStrct, 
        Prof::Struct::ANodeSortedIterator::cmpByLine, 
        &Prof::Struct::ANodeTyFilter[Prof::Struct::ANode::TyStmt]);
-  for (Prof::Struct::ANode* node = NULL; (node = it.Current()); it++) {
+  for (Prof::Struct::ANode* node = NULL; (node = it.current()); it++) {
     Prof::Struct::ACodeNode* strct = 
       dynamic_cast<Prof::Struct::ACodeNode*>(node); // always true
     SrcFile::ln ln_metric = strct->begLine();
@@ -931,9 +931,9 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
   for (; it.Current(); it++) {
     for (uint mId = mBegId; mId <= mEndId; ++mId) {
       const Prof::Metric::AExpr* expr = mExprVec[mId];
-      double val = expr->eval(*it.CurNode());
+      double val = expr->eval(*it.current());
       // if (!Prof::Metric::AExpr::isok(val)) ...
-      it.CurNode()->demandMetric(mId, numMetrics/*size*/) += val;
+      it.current()->demandMetric(mId, numMetrics/*size*/) += val;
     }
   }
 }

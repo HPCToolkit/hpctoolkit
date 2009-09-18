@@ -73,17 +73,6 @@
 
 //*************************** Forward Declarations **************************
 
-// tallent: For performance tuning; see usage below.  Unnecessary
-// dynamic casting -- every NonUniformDegreeTreeNode is a ANode --
-// was consuming 15-20% of execution time.
-#define PROF_STRUCT_TREE__USE_DYNAMIC_CAST 0
-#if (PROF_STRUCT_TREE__USE_DYNAMIC_CAST)
-# define STRUCT_USELESS_DCAST(t, x) dynamic_cast<t>(x)
-#else
-# define STRUCT_USELESS_DCAST(t, x) (t)(x)
-#endif
-
-
 //***************************************************************************
 
 namespace Prof {
@@ -99,18 +88,23 @@ typedef bool (*ANodeFilterFct)(const ANode& x, long addArg);
 class ANodeFilter {
 public:
   ANodeFilter(ANodeFilterFct f, const char* n, long a) 
-    : fct(f), name(n), arg(a) 
+    : fct(f), m_name(n), arg(a) 
   { }
   
-  virtual ~ANodeFilter() { }
+  virtual ~ANodeFilter()
+  { }
 
-  bool Apply(const ANode& s) const { return fct(s, arg); }
+  bool
+  apply(const ANode& s) const
+  { return fct(s, arg); }
 
-  const char* Name() const { return name; }
+  const char*
+  name() const
+  { return m_name; }
 
 private:
   const ANodeFilterFct fct;
-  const char* name;
+  const char* m_name;
   long arg;
 };
 
@@ -143,29 +137,25 @@ public:
   { }
 
 
-  // NOTE: really ANode
-  virtual NonUniformDegreeTreeNode* 
+  ANode*
+  current() const 
+  { return static_cast<ANode*>(Current()); }
+
+
+  virtual NonUniformDegreeTreeNode*
   Current() const
   {
-    NonUniformDegreeTreeNode* x_base;
-    ANode* x = NULL;
+    NonUniformDegreeTreeNode* x_base = NULL;
     while ( (x_base = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
-      x = STRUCT_USELESS_DCAST(ANode*, x_base);
-      if ((filter == NULL) || filter->Apply(*x)) {
+      ANode* x = static_cast<ANode*>(x_base);
+      if ((filter == NULL) || filter->apply(*x)) {
 	break;
       }
-      ((ANodeChildIterator*)this)->operator++();
-    } 
-    return STRUCT_USELESS_DCAST(ANode*, x_base);
+      const_cast<ANodeChildIterator*>(this)->operator++();
+    }
+    return x_base;
   }
   
-
-  ANode* 
-  CurNode() const 
-  {
-    return STRUCT_USELESS_DCAST(ANode*, Current());
-  }
-
 private: 
   const ANodeFilter* filter; 
 };
@@ -177,8 +167,8 @@ public:
     : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/false)
   { }
 
-  ACodeNode* 
-  CurNode() const 
+  ACodeNode*
+  current() const 
   { 
     return dynamic_cast<ACodeNode*>(Current()); 
   }
@@ -207,31 +197,26 @@ public:
 				    ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
 				    : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES)),
       filter(_filter)
-  {
-  }
+  { }
 
 
-  // Note: really ANode
+  ANode*
+  current() const
+  { return static_cast<ANode*>(Current()); }
+
+
   virtual NonUniformDegreeTreeNode*
   Current() const
   {
-    NonUniformDegreeTreeNode* x_base;
-    ANode* x = NULL;
+    NonUniformDegreeTreeNode* x_base = NULL;
     while ( (x_base = NonUniformDegreeTreeIterator::Current()) ) {
-      x = STRUCT_USELESS_DCAST(ANode*, x_base);
-      if ((filter == NULL) || filter->Apply(*x)) { 
-	break; 	
+      ANode* x = static_cast<ANode*>(x_base);
+      if ((filter == NULL) || filter->apply(*x)) {
+	break;
       }
-      ((ANodeIterator*)this)->operator++();
+      const_cast<ANodeIterator*>(this)->operator++();
     } 
-    return STRUCT_USELESS_DCAST(ANode*, x_base);
-  }
-
-
-  ANode* 
-  CurNode() const 
-  { 
-    return STRUCT_USELESS_DCAST(ANode*, Current());
+    return x_base;
   }
 
 private: 
@@ -252,7 +237,7 @@ public:
 
   static int cmpByName(const void* x, const void* y);
   static int cmpByLine(const void* x, const void* y);
-  static int cmpById(const void* a, const void* b);
+  static int cmpById(const void* x, const void* y);
 
   static cmp_fptr_t 
   cmpByMetric(uint mId)
@@ -260,7 +245,7 @@ public:
     cmpByMetric_mId = mId;
     return cmpByMetric_fn;
   }
-  static int cmpByMetric_fn(const void* a, const void *b);
+  static int cmpByMetric_fn(const void* x, const void* y);
   static int cmpByMetric_mId; // need a fuctor/closure to avoid this
 
 
@@ -276,26 +261,29 @@ public:
   }
 
   ANode*
-  Current() const
+  current() const
   {
-    ANode* cur = NULL;
+    ANode* x = NULL;
     if (ptrSetIt->Current()) {
-      cur = (ANode*) (*ptrSetIt->Current());
+      x = reinterpret_cast<ANode*>(*ptrSetIt->Current());
     }
-    return cur;
+    return x;
   }
 
-  void operator++(int)
+  void
+  operator++(int)
   {
     (*ptrSetIt)++;
   }
 
-  void Reset()
+  void
+  reset()
   {
     ptrSetIt->Reset();
   }
 
-  void DumpAndReset(std::ostream &os = std::cerr);
+  void
+  dumpAndReset(std::ostream &os = std::cerr);
 
 private:
   WordSet scopes;
@@ -314,29 +302,34 @@ public:
     delete ptrSetIt;
   }
 
-  ANode* Current() const
+  ANode*
+  current() const
   {
-    ANode* cur = NULL;
+    ANode* x = NULL;
     if (ptrSetIt->Current()) {
-      cur = (ANode*) (*ptrSetIt->Current());
+      x = reinterpret_cast<ANode*>(*ptrSetIt->Current());
     }
-    return cur;
+    return x;
   }
 
-  void operator++(int)
+  void
+  operator++(int)
   { (*ptrSetIt)++; }
 
-  void Reset()
+  void
+  reset()
   {
     ptrSetIt->Reset();
   }
 
-  void DumpAndReset(std::ostream &os = std::cerr);
+  void dumpAndReset(std::ostream &os = std::cerr);
 
+#if 0
   // both of these are buried in other parts of the HPCView code :-(
   ACodeNode* CurNode() const { return dynamic_cast<ACodeNode*>(Current()); }
 
-  ACodeNode* CurCode()  const { return dynamic_cast<ACodeNode*>(Current()); }
+  ACodeNode* CurCode() const { return dynamic_cast<ACodeNode*>(Current()); }
+#endif
 
 private:
   WordSet scopes;

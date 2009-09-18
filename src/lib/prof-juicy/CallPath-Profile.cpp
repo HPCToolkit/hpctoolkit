@@ -200,8 +200,8 @@ Profile::merge_fixCCT(std::vector<LoadMap::MergeChange>& mergeChg)
 {
   CCT::ANode* root = cct()->root();
   
-  for (CCT::ANodeIterator it(root); it.CurNode(); ++it) {
-    CCT::ANode* n = it.CurNode();
+  for (CCT::ANodeIterator it(root); it.Current(); ++it) {
+    CCT::ANode* n = it.current();
     
     CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
     if (n_dyn) {
@@ -239,7 +239,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
   }
 
   for (Struct::ANodeIterator it(root, filter); it.Current(); ++it) {
-    Struct::ANode* strct = it.CurNode();
+    Struct::ANode* strct = it.current();
     
     uint id = strct->id();
     const char* nm = NULL;
@@ -836,8 +836,8 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 
   uint64_t numNodes = 0;
   uint nodeId = 2; // cf. s_nextUniqueId
-  for (CCT::ANodeIterator it(prof.cct()->root()); it.CurNode(); ++it) {
-    CCT::ANode* n = it.CurNode();
+  for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
+    CCT::ANode* n = it.current();
     n->id(nodeId);
     nodeId += 2;
     numNodes++;
@@ -858,8 +858,8 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   nodeFmt.metrics = 
     (hpcrun_metricVal_t*) alloca(numMetrics * sizeof(hpcrun_metricVal_t));
 
-  for (CCT::ANodeIterator it(prof.cct()->root()); it.CurNode(); ++it) {
-    CCT::ANode* n = it.CurNode();
+  for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
+    CCT::ANode* n = it.current();
     fmt_cct_makeNode(nodeFmt, *n, prof.m_flags);
 
     ret = hpcrun_fmt_cct_node_fwrite(&nodeFmt, prof.m_flags, fs);
@@ -901,7 +901,7 @@ Profile::canonicalize()
   // 2. splice: move all children of 'spliceRoot' to 'newRoot'
   if (spliceRoot) {
     for (CCT::ANodeChildIterator it(spliceRoot); it.Current(); /* */) {
-      CCT::ANode* n = it.CurNode();
+      CCT::ANode* n = it.current();
       it++; // advance iterator -- it is pointing at 'n'
       n->unlink();
       n->link(newRoot);

@@ -73,15 +73,6 @@
 
 //*************************** Forward Declarations **************************
 
-// tallent: cf. Struct-TreeIterator.hpp
-#define PROF_CCT_TREE__USE_DYNAMIC_CAST 0
-#if (PROF_CCT_TREE__USE_DYNAMIC_CAST)
-# define CCT_USELESS_DCAST(t, x) dynamic_cast<t>(x)
-#else
-# define CCT_USELESS_DCAST(t, x) (t)(x)
-#endif
-
-
 //***************************************************************************
 
 namespace Prof {
@@ -97,18 +88,23 @@ typedef bool (*ANodeFilterFct)(const ANode& x, long addArg);
 class ANodeFilter {
 public:
   ANodeFilter(ANodeFilterFct f, const char* n, long a) 
-    : fct(f), name(n), arg(a) 
+    : fct(f), m_name(n), arg(a) 
   { }
   
-  virtual ~ANodeFilter() { }
+  virtual ~ANodeFilter()
+  { }
 
-  bool Apply(const ANode& s) const { return fct(s, arg); }
+  bool
+  apply(const ANode& s) const
+  { return fct(s, arg); }
 
-  const char* Name() const { return name; }
+  const char*
+  name() const
+  { return m_name; }
 
 private:
   const ANodeFilterFct fct;
-  const char* name;
+  const char* m_name;
   long arg;
 };
 
@@ -127,8 +123,8 @@ extern const ANodeFilter ANodeTyFilter[ANode::TyNUMBER];
 
 // NOTE: To support insertion and deletion of nodes during the lifetime of a
 // ANodeChildIterator using Link() and Unlink(), use *reverse* iteration.
-//   Link()   : new_node->LinkAfter(node_parent->LastChild())
-//   Unlink() : won't disturb FirstChild() pointer (until one node is left)
+//   link()   : new_node->LinkAfter(node_parent->LastChild())
+//   unlink() : won't disturb FirstChild() pointer (until one node is left)
 
 class ANodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
@@ -141,29 +137,25 @@ public:
   { }
 
 
-  // NOTE: really ANode
-  virtual NonUniformDegreeTreeNode* 
+  ANode*
+  current() const 
+  { return static_cast<ANode*>(Current()); }
+
+
+  virtual NonUniformDegreeTreeNode*
   Current() const
   {
-    NonUniformDegreeTreeNode* x_base;
-    ANode* x = NULL;
+    NonUniformDegreeTreeNode* x_base = NULL;
     while ( (x_base = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
-      x = CCT_USELESS_DCAST(ANode*, x_base);
-      if ((filter == NULL) || filter->Apply(*x)) {
+      ANode* x = static_cast<ANode*>(x_base);
+      if ((filter == NULL) || filter->apply(*x)) {
 	break;
       }
-      ((ANodeChildIterator*)this)->operator++();
-    } 
-    return CCT_USELESS_DCAST(ANode*, x_base);
+      const_cast<ANodeChildIterator*>(this)->operator++();
+    }
+    return x_base;
   }
   
-
-  ANode* 
-  CurNode() const 
-  {
-    return CCT_USELESS_DCAST(ANode*, Current());
-  }
-
 private: 
   const ANodeFilter* filter; 
 };
@@ -190,31 +182,26 @@ public:
 				    ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
 				    : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES)),
       filter(_filter)
-  {
-  }
+  { }
 
 
-  // Note: really ANode
+  ANode*
+  current() const
+  { return static_cast<ANode*>(Current()); }
+
+
   virtual NonUniformDegreeTreeNode*
   Current() const
   {
-    NonUniformDegreeTreeNode* x_base;
-    ANode* x = NULL;
+    NonUniformDegreeTreeNode* x_base = NULL;
     while ( (x_base = NonUniformDegreeTreeIterator::Current()) ) {
-      x = CCT_USELESS_DCAST(ANode*, x_base);
-      if ((filter == NULL) || filter->Apply(*x)) { 
-	break; 	
+      ANode* x = static_cast<ANode*>(x_base);
+      if ((filter == NULL) || filter->apply(*x)) {
+	break;
       }
-      ((ANodeIterator*)this)->operator++();
+      const_cast<ANodeIterator*>(this)->operator++();
     } 
-    return CCT_USELESS_DCAST(ANode*, x_base);
-  }
-
-
-  ANode* 
-  CurNode() const 
-  { 
-    return CCT_USELESS_DCAST(ANode*, Current());
+    return x_base;
   }
 
 private: 
@@ -249,26 +236,29 @@ public:
   }
 
   ANode*
-  Current() const
+  current() const
   {
-    ANode* cur = NULL;
+    ANode* x = NULL;
     if (ptrSetIt->Current()) {
-      cur = (ANode*) (*ptrSetIt->Current());
+      x = reinterpret_cast<ANode*>(*ptrSetIt->Current());
     }
-    return cur;
+    return x;
   }
 
-  void operator++(int)
+  void
+  operator++(int)
   {
     (*ptrSetIt)++;
   }
 
-  void Reset()
+  void
+  reset()
   {
     ptrSetIt->Reset();
   }
 
-  void DumpAndReset(std::ostream &os = std::cerr);
+  void
+  dumpAndReset(std::ostream &os = std::cerr);
 
 private:
   WordSet scopes;
@@ -287,24 +277,28 @@ public:
     delete ptrSetIt;
   }
 
-  ANode* Current() const
+  ANode*
+  current() const
   {
-    ANode* cur = NULL;
+    ANode* x = NULL;
     if (ptrSetIt->Current()) {
-      cur = (ANode*) (*ptrSetIt->Current());
+      x = reinterpret_cast<ANode*>(*ptrSetIt->Current());
     }
-    return cur;
+    return x;
   }
 
-  void operator++(int)
+  void
+  operator++(int)
   { (*ptrSetIt)++; }
 
-  void Reset()
+  void
+  reset()
   {
     ptrSetIt->Reset();
   }
 
-  void DumpAndReset(std::ostream &os = std::cerr);
+  void
+  dumpAndReset(std::ostream &os = std::cerr);
 
 private:
   WordSet scopes;
