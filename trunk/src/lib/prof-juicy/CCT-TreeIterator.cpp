@@ -60,6 +60,7 @@
 using std::ostream;
 using std::endl;
 
+#include <stdint.h>
 
 //*************************** User Include Files ****************************
 
@@ -171,6 +172,37 @@ ANodeSortedIterator::cmpByStructureId(const void* a, const void* b)
   uint x_id = x->structureId();
   uint y_id = y->structureId();
   return (x_id - y_id);
+}
+
+
+int
+ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
+{
+  ANode* x = (*(ANode**)a);
+  ANode* y = (*(ANode**)b);
+
+  ADynNode* x_dyn = dynamic_cast<ADynNode*>(x);
+  ADynNode* y_dyn = dynamic_cast<ADynNode*>(y);
+
+  if (x_dyn && y_dyn) {
+    int diff_lmId = x_dyn->lmId() - y_dyn->lmId();
+    if (diff_lmId != 0) {
+      return diff_lmId;
+    }
+    intptr_t diff_ip = (intptr_t)(x_dyn->ip() - y_dyn->ip());
+    if (diff_ip == 0)     { return 0; }
+    else if (diff_ip < 0) { return -1; }
+    else                  { return 1; }
+  }
+  else if (x_dyn) {
+    return -1;
+  }
+  else if (y_dyn) {
+    return 1;
+  }
+  else {
+    return 0;
+  }
 }
 
 

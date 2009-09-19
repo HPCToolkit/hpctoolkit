@@ -121,19 +121,23 @@ extern const ANodeFilter ANodeTyFilter[ANode::TyNUMBER];
 //   particular order is guaranteed.
 //*****************************************************************************
 
-// NOTE: To support insertion and deletion of nodes during the lifetime of a
-// ANodeChildIterator using Link() and Unlink(), use *reverse* iteration.
-//   link()   : new_node->LinkAfter(node_parent->LastChild())
-//   unlink() : won't disturb FirstChild() pointer (until one node is left)
+// NOTE: To support insertion and deletion of nodes during the
+// lifetime of a ANodeChildIterator using link() and unlink(), use
+// *reverse* iteration.
+//   link()   : links newNode after the iteration start point:
+//                newNode->linkAfter(newParent->LastChild())
+//   unlink() : won't disturb the iteration end point:
+//                parent->FirstChild()
+//              until the last node is removed
 
 class ANodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
 
   // If filter == NULL enumerate all entries; otherwise, only entries
   // with filter->fct(e) == true
-  ANodeChildIterator(const ANode* root, const ANodeFilter* _filter = NULL)
+  ANodeChildIterator(const ANode* root, const ANodeFilter* filter = NULL)
     : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/false), 
-      filter(_filter)
+      m_filter(filter)
   { }
 
 
@@ -148,7 +152,7 @@ public:
     NonUniformDegreeTreeNode* x_base = NULL;
     while ( (x_base = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
       ANode* x = static_cast<ANode*>(x_base);
-      if ((filter == NULL) || filter->apply(*x)) {
+      if ((m_filter == NULL) || m_filter->apply(*x)) {
 	break;
       }
       const_cast<ANodeChildIterator*>(this)->operator++();
@@ -157,7 +161,7 @@ public:
   }
   
 private: 
-  const ANodeFilter* filter; 
+  const ANodeFilter* m_filter; 
 };
 
 
@@ -189,14 +193,14 @@ public:
   // If filter == NULL enumerate all entries; otherwise, only entries
   // with filter->fct(e) == true
   ANodeIterator(const ANode* root,
-		const ANodeFilter* _filter = NULL,
+		const ANodeFilter* filter = NULL,
 		bool leavesOnly = false,
 		TraversalOrder torder = PreOrder)
     : NonUniformDegreeTreeIterator(root, torder, 
 				   ((leavesOnly) 
 				    ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
 				    : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES)),
-      filter(_filter)
+      m_filter(filter)
   { }
 
 
@@ -211,7 +215,7 @@ public:
     NonUniformDegreeTreeNode* x_base = NULL;
     while ( (x_base = NonUniformDegreeTreeIterator::Current()) ) {
       ANode* x = static_cast<ANode*>(x_base);
-      if ((filter == NULL) || filter->apply(*x)) {
+      if ((m_filter == NULL) || m_filter->apply(*x)) {
 	break;
       }
       const_cast<ANodeIterator*>(this)->operator++();
@@ -220,7 +224,7 @@ public:
   }
 
 private: 
-  const ANodeFilter* filter;
+  const ANodeFilter* m_filter;
 };  
 
 

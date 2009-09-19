@@ -258,8 +258,9 @@ overlayStaticStructure(Prof::CallPath::Profile& prof, Prof::CCT::ANode* node,
 		       Prof::LoadMap::LM* loadmap_lm, 
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
-  // INVARIANT: The parent of 'node' has been fully processed and
-  // lives within a correctly located procedure frame.
+  // INVARIANT: The parent of 'node' has been fully processed
+  // w.r.t. the given load module and lives within a correctly located
+  // procedure frame.
   
   if (!node) { return; }
 
@@ -274,6 +275,9 @@ overlayStaticStructure(Prof::CallPath::Profile& prof, Prof::CCT::ANode* node,
     
     // ---------------------------------------------------
     // process Prof::CCT::ADynNode nodes
+    // 
+    // N.B.: Since we process w.r.t. one load module at a time, we may
+    //   see non-ADynNode nodes!
     // ---------------------------------------------------
     Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
     if (n_dyn && (n_dyn->lmId() == loadmap_lm->id())) {
@@ -352,7 +356,7 @@ makeFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
 	  StructToCCTMap& strctToCCTMap)
 {
   Prof::CCT::ProcFrm* frame = new Prof::CCT::ProcFrm(NULL, procStrct);
-  frame->link(node->Parent());
+  frame->link(node->parent());
   strctToCCTMap.insert(std::make_pair(procStrct, frame));
 
   makeFrameStructure(frame, procStrct, strctToCCTMap);
