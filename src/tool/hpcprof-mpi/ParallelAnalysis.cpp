@@ -177,7 +177,7 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
     profile_y = unpack(profileBuf, profileBufSz);
     delete[] profileBuf;
     
-    profile_x->merge(*profile_y, /*isSameThread*/false);
+    profile_x->merge(*profile_y, Prof::CallPath::Profile::Merge_createMetrics);
   }
 
   if (myRank == rank_y) {

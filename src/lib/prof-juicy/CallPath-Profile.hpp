@@ -120,6 +120,22 @@ public:
   metricMgr(Metric::Mgr* mMgr)
   { m_mMgr = mMgr; }
 
+  // isMetricMgrVirtual: It is sometimes useful for the metric manager
+  //   to contain descriptions of metrics for which there are no
+  //   corresponding values.  We call this a virtual metric manager.
+  //   The main use of this is when profiles are read with the
+  //   RFlg_virtualMetrics flag.
+  //
+  // NOTE: alternatively, we could have the metric manager read just
+  // enough of each file to pull out the metric descriptors (just as
+  // it does for flat information).
+  bool
+  isMetricMgrVirtual() const
+  { return m_isMetricMgrVirtual; }
+
+  void
+  isMetricMgrVirtual(bool x)
+  { m_isMetricMgrVirtual = x; }
 
   // -------------------------------------------------------
   // LoadMapMgr
@@ -156,21 +172,29 @@ public:
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
+  enum {
+    Merge_createMetrics = -1,
+    Merge_overlapMetrics = 0
+  };
 
-  // Given a Profile y, merge y into x = 'this'
+  // merge: Given a Profile y, merge y into x = 'this'.  The 'metricsMapTo'
+  //   parameter indicates how to merge y's metrics into x.
+  //
+  //   Merge_createMetrics : create new metrics in x
+  //   >= 0                : first metric in y maps to given metric id in x
+  //
   // ASSUMES: both x and y are in canonical form (canonicalize())
   // WARNING: the merge may change/destroy y
   void
-  merge(Profile& y, bool isSameThread);
-
+  merge(Profile& y, int metricsMapTo);
 
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
   enum {
     // read-write flags
-    RFlg_onlyMetricDescs = (1 << 1), // only read metric descriptors
-    WFlg_noMetrics       = (1 << 2)  // write no metric descs or values
+    RFlg_virtualMetrics = (1 << 1), // only read metric descriptors
+    WFlg_noMetrics      = (1 << 2)  // write no metric descs or values
   };
 
 
@@ -250,6 +274,7 @@ private:
   //StrToStrMap m_nvPairMap;
 
   Metric::Mgr* m_mMgr;
+  bool m_isMetricMgrVirtual;
 
   LoadMapMgr* m_loadmapMgr;
 
