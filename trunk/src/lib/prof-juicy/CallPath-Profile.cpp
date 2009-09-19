@@ -115,6 +115,7 @@ Profile::Profile(const std::string name)
   m_raToCallsiteOfst = 0;
 
   m_mMgr = new Metric::Mgr;
+  m_isMetricMgrVirtual = false;
 
   m_loadmapMgr = new LoadMapMgr;
 
@@ -136,7 +137,7 @@ Profile::~Profile()
 
 
 void 
-Profile::merge(Profile& y, bool isSameThread)
+Profile::merge(Profile& y, int metricsMapTo)
 {
   DIAG_Assert(!y.m_structure, "Profile::merge: source profile should not have structure yet!");
 
@@ -163,16 +164,39 @@ Profile::merge(Profile& y, bool isSameThread)
   // -------------------------------------------------------
   // merge metrics 
   // -------------------------------------------------------
-  uint x_numMetrics = m_mMgr->size();
+
+  DIAG_Assert(m_isMetricMgrVirtual == y.m_isMetricMgrVirtual,
+	      "CallPath::Profile::merge(): incompatible metrics");
+
   uint x_newMetricBegIdx = 0;
-  uint y_newMetrics   = 0;
+  uint y_newMetrics      = 0;
+  bool doAddMetricDescs  = false;
 
-  if (!isSameThread) {
-    // new metrics columns
-    x_newMetricBegIdx = x_numMetrics;
-    y_newMetrics      = y.metricMgr()->size();
+  if (metricsMapTo >= Merge_overlapMetrics) {
+    // virtual metrics: assume complete overlap (and that metric descs exist)
+    // otherwise:       support partial overlap
+    x_newMetricBegIdx = (int)metricsMapTo;
+    y_newMetrics = (isMetricMgrVirtual()) ? 0 : 0; // FIXME: partial overlap
+    doAddMetricDescs = false;                      // FIXME: partial overlap
+  }
+  else if (metricsMapTo == Merge_createMetrics) {
+    if (isMetricMgrVirtual()) {
+      // do not add metric values
+      x_newMetricBegIdx = 0;
+      y_newMetrics = 0;
+    }
+    else {
+      x_newMetricBegIdx = m_mMgr->size();
+      y_newMetrics      = y.metricMgr()->size();
+    }
+    doAddMetricDescs = true;
+  }
+  else {
+    DIAG_Die(DIAG_UnexpectedInput);
+  }
 
-    // (FIXME: create MetricMgr::merge())
+  if (doAddMetricDescs) {
+    //  (FIXME: create MetricMgr::merge())
     for (uint i = 0; i < y.metricMgr()->size(); ++i) {
       const Metric::ADesc* m = y.metricMgr()->metric(i);
       m_mMgr->insert(m->clone());
@@ -436,7 +460,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
       prof = myprof;
     }
     else {
-      prof->merge(*myprof, /*isSameThread*/true);
+      prof->merge(*myprof, Profile::Merge_overlapMetrics);
     }
 
     num_epochs++;
@@ -588,6 +612,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m->flags(m_lst[i].flags);
     
     prof->metricMgr()->insert(m);
+  }
+
+  if (rFlags & Prof::CallPath::Profile::RFlg_virtualMetrics) {
+    prof->isMetricMgrVirtual(true);
   }
 
   hpcrun_fmt_metricTbl_free(&metric_tbl, free);
@@ -1021,7 +1049,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     }
   }
 
-  if (rFlags & Prof::CallPath::Profile::RFlg_onlyMetricDescs) {
+  if (rFlags & Prof::CallPath::Profile::RFlg_virtualMetrics) {
     metricData.clearMetrics();
   }
 
@@ -1046,7 +1074,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     if (hasMetrics) {
       n_leaf = n;
 
-      uint mSz = ((rFlags & Prof::CallPath::Profile::RFlg_onlyMetricDescs) 
+      uint mSz = ((rFlags & Prof::CallPath::Profile::RFlg_virtualMetrics) 
 		  ? 0 : nodeFmt.num_metrics);
       Metric::IData metricData0(mSz);
       

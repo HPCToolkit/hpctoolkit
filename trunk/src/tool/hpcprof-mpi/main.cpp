@@ -173,12 +173,13 @@ realmain(int argc, char* const* argv)
   StringVec* profFiles = 
     getMyProfileFiles(args.profileFiles, myRank, numRanks,rootRank);
 
-  uint rFlags = Prof::CallPath::Profile::RFlg_onlyMetricDescs;
+  uint rFlags = Prof::CallPath::Profile::RFlg_virtualMetrics;
   profLcl = Analysis::CallPath::read(*profFiles, rFlags);
 
   // Obtain the metric manager (warning: replaces the manager in profLcl)
   Prof::Metric::Mgr* metricMgr = profLcl->metricMgr();
   profLcl->metricMgr(new Prof::Metric::Mgr);
+  profLcl->isMetricMgrVirtual(false);
 
   // -------------------------------------------------------
   // Create canonical CCT (no metrics)
@@ -230,7 +231,7 @@ realmain(int argc, char* const* argv)
   for (uint i = 0; i < profFiles->size(); ++i) {
     string& fnm = (*profFiles)[i];
     Prof::CallPath::Profile* prof = Analysis::CallPath::read(fnm);
-    profGbl->merge(*prof, /*isSameThread*/false); // where to overlay metrics
+    profGbl->merge(*prof, Prof::CallPath::Profile::Merge_createMetrics);
 
     // TODO: incrementally update metric
 

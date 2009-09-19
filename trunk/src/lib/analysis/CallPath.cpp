@@ -108,14 +108,9 @@ read(const std::vector<string>& profileFiles, uint rFlags)
 {
   Prof::CallPath::Profile* prof = read(profileFiles[0], rFlags);
 
-  bool isSameThread = false;
-  if (rFlags & Prof::CallPath::Profile::RFlg_onlyMetricDescs) {
-    isSameThread = true;
-  }
-  
   for (uint i = 1; i < profileFiles.size(); ++i) {
     Prof::CallPath::Profile* p = read(profileFiles[i], rFlags);
-    prof->merge(*p, isSameThread);
+    prof->merge(*p, Prof::CallPath::Profile::Merge_createMetrics);
     delete p;
   }
   
