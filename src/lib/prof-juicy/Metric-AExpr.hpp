@@ -79,6 +79,7 @@
 #include "Metric-IData.hpp"
 
 #include <lib/support/NaN.h>
+#include <lib/support/Unique.hpp>
 
 //************************ Forward Declarations ******************************
 
@@ -93,7 +94,8 @@ namespace Metric {
 //   The base class for all concrete evaluation classes
 // ----------------------------------------------------------------------
 
-class AExpr
+class AExpr 
+  : public Unique // disable copying, for now
 {
   // TODO: replace AExpr** with AExprVec
 public:
@@ -103,20 +105,20 @@ public:
   AExpr()
   { }
 
-  virtual ~AExpr() 
+  virtual ~AExpr()
   { }
 
-  virtual double 
+  virtual double
   eval(const Metric::IData& mdata) const = 0;
 
-  static bool 
-  isok(double x) 
+  static bool
+  isok(double x)
   { return !(c_isnan_d(x) || c_isinf_d(x)); }
 
-  virtual std::ostream& 
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const = 0;
   
-  virtual std::string 
+  virtual std::string
   toString() const;
 
 protected:
@@ -184,14 +186,14 @@ public:
     : m_c(c)
   { }
 
-  ~Const() 
+  ~Const()
   { }
 
-  double 
+  virtual double
   eval(const Metric::IData& mdata) const
   { return m_c; }
 
-  std::ostream& 
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
   
 private:
@@ -214,10 +216,10 @@ public:
   ~Neg()
   { delete m_expr; }
 
-  double 
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream& 
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
   
 private:
@@ -227,8 +229,7 @@ private:
 
 // ----------------------------------------------------------------------
 // class Var
-//   Represent a variable -- the evaluator better deals with the symbol
-//   table
+//   Represent a variable
 // ----------------------------------------------------------------------
 
 class Var : public AExpr
@@ -241,11 +242,11 @@ public:
   ~Var()
   { }
 
-  double 
+  virtual double
   eval(const Metric::IData& mdata) const
   { return mdata.demandMetric(m_metricId); }
   
-  std::ostream& 
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
   
 private:
@@ -273,10 +274,10 @@ public:
     delete m_exponent; 
   }
 
-  double
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream&
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
@@ -305,10 +306,10 @@ public:
   }
 
 
-  double
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream&
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
@@ -336,10 +337,10 @@ public:
     delete m_subtrahend;
   }
 
-  double 
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream& 
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
@@ -363,10 +364,10 @@ public:
 
   ~Plus();
   
-  double 
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream& 
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
@@ -390,10 +391,10 @@ public:
 
   ~Times();
 
-  double 
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream& 
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
@@ -416,10 +417,10 @@ public:
 
   ~Max();
 
-  double 
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream& 
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
@@ -442,10 +443,10 @@ public:
 
   ~Min();
 
-  double
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream&
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
@@ -468,10 +469,10 @@ public:
 
   ~Mean();
 
-  double
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream&
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
@@ -494,10 +495,10 @@ public:
 
   ~StdDev();
 
-  double
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream&
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
@@ -520,10 +521,10 @@ public:
 
   ~CoefVar();
 
-  double
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream&
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
@@ -546,10 +547,10 @@ public:
 
   ~RStdDev();
 
-  double
+  virtual double
   eval(const Metric::IData& mdata) const;
 
-  std::ostream&
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
