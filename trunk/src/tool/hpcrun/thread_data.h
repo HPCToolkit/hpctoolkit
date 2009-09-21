@@ -79,6 +79,12 @@ typedef struct _td_t {
   int              splay_lock;
   int              fnbounds_lock;
   int              suspend_sampling;
+  //
+  // trampoline related storage
+  //
+  bool             tramp_present;      // TRUE if there is a trampoline installed, FALSE otherwise
+  void*            tramp_retn_addr;    // the return address that the trampoline replaced
+  void*            tramp_loc;          // current (stack) location of the trampoline
   FILE*            trace_file;
   uint64_t         last_time_us; // microseconds
 

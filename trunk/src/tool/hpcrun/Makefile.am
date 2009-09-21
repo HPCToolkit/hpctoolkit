@@ -220,6 +220,7 @@ MY_CPP_DEFINES =			\
 	-DINLINE_FN=1
 
 MY_INCLUDE_DIRS =			\
+        -I$(top_srcdir)/src/tool        \
 	-I$(srcdir)/messages	        \
 	-I$(srcdir)/fnbounds		\
 	-I$(srcdir)/memory		\
