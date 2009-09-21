@@ -141,7 +141,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
 				      HPCRUN_MetricFlag_Async,
 				      1);
   }
-  thread_data_t *td = csprof_get_thread_data();
+  thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD; // Event sets not relevant for itimer
 }
 

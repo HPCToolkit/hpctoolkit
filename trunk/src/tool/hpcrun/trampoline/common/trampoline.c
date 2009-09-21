@@ -58,18 +58,18 @@ fetch_retn_addr(void)
 void
 hpcrun_init_trampoline_info(void)
 {
-  thread_data_t* td   = csprof_get_thread_data();
+  thread_data_t* td   = hpcrun_get_thread_data();
 
   td->tramp_present   = false;
   td->tramp_retn_addr = NULL;
   td->tramp_loc       = NULL;
 }
 
-// returns 1 if address is in the assembly language trampoline code, else 0.
+// returns true if address is in the assembly language trampoline code, else false.
 bool
 hpcrun_addr_in_trampoline(void* addr)
 {
-    return (&hpcrun_trampoline <= addr && addr <= &hpcrun_trampoline_end);
+    return (&hpcrun_trampoline < addr && addr <= &hpcrun_trampoline_end);
 }
 
 
@@ -100,5 +100,5 @@ void
 hpcrun_trampoline_remove(void* addr, void* old_return_address)
 {
   *((void**)addr) = old_return_address;
-  TD_GET(tramp_present) = false;
+  hpcrun_init_trampoline_info();
 }

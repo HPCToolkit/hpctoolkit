@@ -81,14 +81,14 @@ local_true(void)
   return true;
 }
 
-thread_data_t *(*csprof_get_thread_data)(void) = &local_td;
-bool          (*csprof_td_avail)(void)         = &local_true;
+thread_data_t *(*hpcrun_get_thread_data)(void) = &local_td;
+bool          (*hpcrun_td_avail)(void)         = &local_true;
 
 void
-csprof_unthreaded_data(void)
+hpcrun_unthreaded_data(void)
 {
-  csprof_get_thread_data = &local_td;
-  csprof_td_avail        = &local_true;
+  hpcrun_get_thread_data = &local_td;
+  hpcrun_td_avail        = &local_true;
 
 }
 
@@ -97,7 +97,7 @@ thread_data_t*
 hpcrun_thread_data_new(void)
 {
   NMSG(THREAD_SPECIFIC,"new thread specific data");
-  thread_data_t *td = csprof_get_thread_data();
+  thread_data_t *td = hpcrun_get_thread_data();
 
   td->suspend_sampling            = 1; // protect against spurious signals
 
@@ -111,14 +111,14 @@ hpcrun_thread_data_new(void)
 void
 hpcrun_thread_memory_init(void)
 {
-  thread_data_t* td = csprof_get_thread_data();
+  thread_data_t* td = hpcrun_get_thread_data();
   hpcrun_make_memstore(&td->memstore);
 }
 
 void
 hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
 {
-  thread_data_t* td = csprof_get_thread_data();
+  thread_data_t* td = hpcrun_get_thread_data();
   csprof_init_handling_sample(td, 0, id);
 
   td->id                          = id;
@@ -164,7 +164,7 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
 static pthread_key_t _csprof_key;
 
 void
-csprof_init_pthread_key(void)
+hpcrun_init_pthread_key(void)
 {
   TMSG(THREAD_SPECIFIC,"creating _csprof_key");
   int bad = pthread_key_create(&_csprof_key, NULL);
@@ -175,7 +175,7 @@ csprof_init_pthread_key(void)
 
 
 void
-csprof_set_thread_data(thread_data_t *td)
+hpcrun_set_thread_data(thread_data_t *td)
 {
   NMSG(THREAD_SPECIFIC,"setting td");
   pthread_setspecific(_csprof_key,(void *) td);
@@ -183,15 +183,15 @@ csprof_set_thread_data(thread_data_t *td)
 
 
 void
-csprof_set_thread0_data(void)
+hpcrun_set_thread0_data(void)
 {
   TMSG(THREAD_SPECIFIC,"set thread0 data");
-  csprof_set_thread_data(&_local_td);
+  hpcrun_set_thread_data(&_local_td);
 }
 
 // FIXME: use csprof_malloc ??
 thread_data_t *
-csprof_allocate_thread_data(void)
+hpcrun_allocate_thread_data(void)
 {
   NMSG(THREAD_SPECIFIC,"malloc thread data");
   return malloc(sizeof(thread_data_t));
@@ -215,10 +215,10 @@ thread_specific_td(void)
 }
 
 void
-csprof_threaded_data(void)
+hpcrun_threaded_data(void)
 {
-  assert(csprof_get_thread_data == &local_td);
-  csprof_get_thread_data = &thread_specific_td;
-  csprof_td_avail        = &thread_specific_td_avail;
+  assert(hpcrun_get_thread_data == &local_td);
+  hpcrun_get_thread_data = &thread_specific_td;
+  hpcrun_td_avail        = &thread_specific_td_avail;
 }
 #endif // defined(CSPROF_THREADS)

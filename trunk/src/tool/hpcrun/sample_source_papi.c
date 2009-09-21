@@ -131,7 +131,7 @@ METHOD_FN(init)
 static void
 METHOD_FN(_start)
 {
-  thread_data_t *td = csprof_get_thread_data();
+  thread_data_t *td = hpcrun_get_thread_data();
   int eventSet = td->eventSet[self->evset_idx];
 
   TMSG(PAPI,"starting PAPI w event set %d",eventSet);
@@ -147,7 +147,7 @@ METHOD_FN(_start)
 static void
 METHOD_FN(stop)
 {
-  thread_data_t *td = csprof_get_thread_data();
+  thread_data_t *td = hpcrun_get_thread_data();
 
   int eventSet = td->eventSet[self->evset_idx];
   int nevents  = self->evl.nevents;
@@ -304,7 +304,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
       event_fatal_error(evcode, ret);
     }
   }
-  thread_data_t *td = csprof_get_thread_data();
+  thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = eventSet;
 }
 

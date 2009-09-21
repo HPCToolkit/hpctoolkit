@@ -161,7 +161,7 @@ METHOD_FN(init)
 static void
 METHOD_FN(_start)
 {
-  if (! csprof_td_avail()){
+  if (! hpcrun_td_avail()){
     return; // in the unlikely event that we are trying to start, but thread data is unavailable,
             // assume that all sample source ops are suspended.
   }
@@ -272,7 +272,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
 					sample_period);
     }
   }
-  thread_data_t *td = csprof_get_thread_data();
+  thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD; // Event sets not relevant for itimer
 
   monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);

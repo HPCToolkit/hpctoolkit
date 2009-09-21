@@ -61,6 +61,9 @@
 // macros
 //*****************************************************************************
 
+#define DBG_PREFIX(s) DBG_##s
+#define CTL_PREFIX(s) CTL_##s
+
 #define DBG(f)            debug_flag_get(DBG_PREFIX(f))
 #define SET(f,v)          debug_flag_set(DBG_PREFIX(f), v)
 
@@ -78,9 +81,6 @@
 // type declarations
 //*****************************************************************************
 
-
-#define DBG_PREFIX(s) DBG_##s
-#define CTL_PREFIX(s) CTL_##s
 
 typedef enum {
 
@@ -105,6 +105,5 @@ int  debug_flag_get(dbg_category flag);
 void debug_flag_set(dbg_category flag, int v);
 
 void debug_flag_dump();
-
 
 #endif // debug_flag_h

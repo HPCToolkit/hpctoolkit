@@ -120,7 +120,7 @@ trace_open()
   if (tracing) {
     char trace_file[PATH_MAX];
     files_trace_name(trace_file, 0, PATH_MAX);
-    thread_data_t *td = csprof_get_thread_data();
+    thread_data_t *td = hpcrun_get_thread_data();
     td->trace_file = hpcio_fopen_w(trace_file, 0);
     trace_file_validate(td->trace_file != 0, "open");
   }
@@ -143,7 +143,7 @@ trace_append(unsigned int call_path_id)
     assert(notime == 0 && "in trace_append: gettimeofday failed!"); 
     microtime.data.dbl = tv.tv_usec + tv.tv_sec * 1000000;
 
-    thread_data_t *td = csprof_get_thread_data();
+    thread_data_t *td = hpcrun_get_thread_data();
 
     int written = hpcio_fwrite_be8(&microtime.data.ui64, td->trace_file);
     written += hpcio_fwrite_be4((uint32_t*)&call_path_id, td->trace_file);
@@ -157,7 +157,7 @@ trace_close()
 {
   if (tracing) {
     int ret;
-    thread_data_t *td = csprof_get_thread_data();
+    thread_data_t *td = hpcrun_get_thread_data();
     ret = fflush(td->trace_file);
     trace_file_validate(ret == 0, "flush");
 

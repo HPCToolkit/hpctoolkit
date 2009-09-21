@@ -191,7 +191,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
   TMSG(SAMPLE, "attempting sample");
   atomic_add_i64(&num_samples_attempted, 1L);
 
-  thread_data_t *td = csprof_get_thread_data();
+  thread_data_t *td = hpcrun_get_thread_data();
   sigjmp_buf_t *it = &(td->bad_unwind);
   csprof_cct_node_t* node = NULL;
   csprof_state_t *state = td->state;
