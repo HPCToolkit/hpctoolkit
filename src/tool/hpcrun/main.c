@@ -49,6 +49,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 #ifdef LINUX
 #include <linux/unistd.h>
@@ -70,12 +71,16 @@
 #include "csproflib.h"
 #include "csprof-malloc.h"
 
+#include <messages/debug-flag.h>
 #include "csprof_dlfns.h"
 #include "disabled.h"
 #include "env.h"
 #include "epoch.h"
 #include "files.h"
 #include "fnbounds_interface.h"
+
+#include "globals.h"
+
 #include "name.h"
 #include "sample_event.h"
 #include "sample_source_none_event.h"
@@ -92,6 +97,11 @@
 
 #include <monitor-exts/monitor_ext.h>
 
+//***************************************************************************
+// global variables
+//***************************************************************************
+
+bool use_tramp = false; // set this once, to avoid flag checking in multiple places
 
 //***************************************************************************
 // local variables 
@@ -150,6 +160,11 @@ monitor_init_process(int *argc, char **argv, void* data)
   csprof_registered_sources_init();
 
   messages_init();
+
+  //
+  // set global var indicating status of trampoline usage
+  //
+  use_tramp = (DBG(USE_TRAMP) != 0);
 
   char *s = getenv(HPCRUN_EVENT_LIST);
   if (s == NULL){

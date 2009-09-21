@@ -91,17 +91,17 @@ typedef struct _td_t {
   lushPthr_t      pthr_metrics;
 } thread_data_t;
 
-#define TD_GET(field) csprof_get_thread_data()->field
+#define TD_GET(field) hpcrun_get_thread_data()->field
 
-extern thread_data_t *(*csprof_get_thread_data)(void);
-extern bool          (*csprof_td_avail)(void);
-extern thread_data_t *csprof_allocate_thread_data(void);
-extern void           csprof_init_pthread_key(void);
+extern thread_data_t *(*hpcrun_get_thread_data)(void);
+extern bool          (*hpcrun_td_avail)(void);
+extern thread_data_t *hpcrun_allocate_thread_data(void);
+extern void           hpcrun_init_pthread_key(void);
 
-extern void           csprof_set_thread_data(thread_data_t *td);
-extern void           csprof_set_thread0_data(void);
-extern void           csprof_unthreaded_data(void);
-extern void           csprof_threaded_data(void);
+extern void           hpcrun_set_thread_data(thread_data_t *td);
+extern void           hpcrun_set_thread0_data(void);
+extern void           hpcrun_unthreaded_data(void);
+extern void           hpcrun_threaded_data(void);
 
 extern thread_data_t* hpcrun_thread_data_new(void);
 extern void           hpcrun_thread_memory_init(void);

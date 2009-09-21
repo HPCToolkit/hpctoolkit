@@ -82,7 +82,7 @@ hpcrun_async_unblock(void)
 static inline int
 hpcrun_async_is_blocked(void)
 {
-  return ( (! csprof_td_avail()) 
+  return ( (! hpcrun_td_avail()) 
 	   || (TD_GET(suspend_sampling) && !ENABLED(ASYNC_RISKY)));
 }
 

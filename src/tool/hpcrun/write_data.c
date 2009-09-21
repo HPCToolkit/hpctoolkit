@@ -132,7 +132,7 @@ static const uint32_t default_ra_to_callsite_distance =
 static FILE *
 lazy_open_data_file(void)
 {
-  thread_data_t* td = csprof_get_thread_data();
+  thread_data_t* td = hpcrun_get_thread_data();
 
   FILE* fs = td->hpcrun_file;
   if (fs) {

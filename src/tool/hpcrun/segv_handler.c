@@ -71,7 +71,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
   if (csprof_is_handling_sample()) {
     segv_count++;
 
-    thread_data_t *td = csprof_get_thread_data();
+    thread_data_t *td = hpcrun_get_thread_data();
 
     // -----------------------------------------------------
     // print context

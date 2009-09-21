@@ -215,7 +215,7 @@ csprof_fini_internal(void)
     EMSG("WARNING: process fini could not block SIGPROF, ret = %d",ret);
   }
 
-  csprof_unthreaded_data();
+  hpcrun_unthreaded_data();
   csprof_state_t *state = TD_GET(state);
 
   if (hpcrun_is_initialized()) {
@@ -259,20 +259,20 @@ csprof_fini_internal(void)
 void
 csprof_init_thread_support(void)
 {
-  csprof_init_pthread_key();
-  csprof_set_thread0_data();
-  csprof_threaded_data();
+  hpcrun_init_pthread_key();
+  hpcrun_set_thread0_data();
+  hpcrun_threaded_data();
 }
 
 
 void *
 csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 {
-  thread_data_t *td = csprof_allocate_thread_data();
+  thread_data_t *td = hpcrun_allocate_thread_data();
   td->suspend_sampling = 1; // begin: protect against spurious signals
 
 
-  csprof_set_thread_data(td);
+  hpcrun_set_thread_data(td);
 
   hpcrun_thread_data_new();
   hpcrun_thread_memory_init();
