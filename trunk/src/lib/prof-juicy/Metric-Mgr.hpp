@@ -174,8 +174,6 @@ public:
 
 public:
 
-  typedef std::list<Prof::Metric::SampledDesc*> MetricList_t;
-
 private:
   std::string
   makeUniqueName(const std::string& nm);
