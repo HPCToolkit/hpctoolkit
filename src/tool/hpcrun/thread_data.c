@@ -132,6 +132,11 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   td->fnbounds_lock               = 0;
   td->splay_lock                  = 0;
 
+  // trampolines
+  td->tramp_present               = false;
+  td->tramp_retn_addr             = NULL;
+  td->tramp_loc                   = NULL;
+
   td->trace_file                  = NULL;
   td->last_time_us                = 0;
 
