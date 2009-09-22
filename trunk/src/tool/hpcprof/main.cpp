@@ -121,18 +121,16 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Form one CCT from profile data
   // ------------------------------------------------------------
-  std::pair<std::vector<std::string>*, uint> pair = 
+  Analysis::Util::NormalizeProfileArgs_t nArgs = 
     Analysis::Util::normalizeProfileArgs(args.profileFiles);
-  
-  std::vector<std::string>* profFiles = pair.first;
 
-  if ( !(profFiles->size() <= 16 || args.isHPCProfForce) ) {
-    DIAG_Throw("There are " << profFiles->size() << " profile files to process. " << args.getCmd() << " currently limits the number of profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.");
+  if ( !(nArgs.paths->size() <= 16 || args.isHPCProfForce) ) {
+    DIAG_Throw("There are " << nArgs.paths->size() << " profile files to process. " << args.getCmd() << " currently limits the number of profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.");
   }
 
-  Prof::CallPath::Profile* prof = Analysis::CallPath::read(*profFiles);
+  Prof::CallPath::Profile* prof = Analysis::CallPath::read(*nArgs.paths, NULL);
 
-  delete profFiles;
+  nArgs.destroy();
 
   // ------------------------------------------------------------
   // Overlay static structure with CCT's dynamic call paths

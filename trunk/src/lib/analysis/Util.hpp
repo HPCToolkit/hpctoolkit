@@ -80,6 +80,10 @@ namespace Analysis {
 
 namespace Util {
 
+// --------------------------------------------------------------------------
+//
+// --------------------------------------------------------------------------
+
 enum ProfType_t {
   ProfType_NULL,
   ProfType_CALLPATH,
@@ -89,24 +93,64 @@ enum ProfType_t {
 ProfType_t
 getProfileType(const std::string& filenm);
 
-// ------------------------------------------------------------
+// --------------------------------------------------------------------------
+//
+// --------------------------------------------------------------------------
 
 Prof::Struct::ACodeNode*
 demandStructure(VMA vma, Prof::Struct::LM* lmStrct, BinUtil::LM* lm, 
 		bool useStruct);
 
 
-// ------------------------------------------------------------
+// --------------------------------------------------------------------------
+//
+// --------------------------------------------------------------------------
 
 void 
 copySourceFiles(Prof::Struct::Root* structure, 
 		const Analysis::PathTupleVec& pathVec, 
 		const string& dstDir);
 
-// ------------------------------------------------------------
+// --------------------------------------------------------------------------
+//
+// --------------------------------------------------------------------------
 
-std::pair<std::vector<std::string>*, uint>
-normalizeProfileArgs(const std::vector<std::string>& inPaths);
+typedef std::vector<std::string> StringVec;
+typedef std::vector<uint> UIntVec;
+
+class NormalizeProfileArgs_t {
+public:
+  NormalizeProfileArgs_t()
+  {
+    paths = new StringVec;
+    pathLenMax = 0;
+    groupMap = new UIntVec;
+    groupMax = 0;
+  }
+
+  ~NormalizeProfileArgs_t()
+  { /* no delete b/c no deep copy constructor */ }
+
+  void
+  destroy()
+  {
+    delete paths;
+    paths = NULL;
+    delete groupMap;
+    groupMap = NULL;
+  }
+
+public:
+  StringVec* paths;
+  uint       pathLenMax;
+
+  UIntVec* groupMap;
+  uint     groupMax; // 1-based group numbering
+};
+
+
+NormalizeProfileArgs_t
+normalizeProfileArgs(const StringVec& inPaths);
 
 
 } // namespace Util

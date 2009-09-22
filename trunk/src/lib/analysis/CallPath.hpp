@@ -69,6 +69,7 @@
 #include <include/uint.h>
 
 #include "Args.hpp"
+#include "Util.hpp"
 
 #include <lib/binutils/LM.hpp>
 
@@ -88,7 +89,8 @@ namespace CallPath {
 // ---------------------------------------------------------
 
 Prof::CallPath::Profile*
-read(const std::vector<string>& profileFiles, uint rFlags = 0);
+read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
+     uint rFlags = 0);
 
 Prof::CallPath::Profile*
 read(const char* prof_fnm, uint rFlags = 0);
