@@ -79,7 +79,7 @@
 #include "files.h"
 #include "fnbounds_interface.h"
 
-#include "globals.h"
+//#include "globals.h"
 
 #include "name.h"
 #include "sample_event.h"
