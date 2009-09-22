@@ -13,16 +13,16 @@
 
 #include <stdbool.h>
 
-extern void hpcrun_init_trampoline_info(void);
+void hpcrun_init_trampoline_info(void);
 
-// returns 1 if address is in the assembly language trampoline code, else 0.
-extern bool hpcrun_addr_in_trampoline(void* addr);
+// returns true if address is in the assembly language trampoline code, else false.
 
-extern void* hpcrun_trampoline_handler(void);
+bool hpcrun_trampoline_interior(void* addr);
+bool hpcrun_trampoline_at_entry(void* addr);
 
-extern void hpcrun_trampoline_insert(void* addr);
+void* hpcrun_trampoline_handler(void);
 
-extern void hpcrun_trampoline_remove(void* addr, void* old_return_address);
+void hpcrun_trampoline_insert(void* addr);
+void hpcrun_trampoline_remove(void* addr, void* old_return_address);
 
 #endif // trampoline_h
-

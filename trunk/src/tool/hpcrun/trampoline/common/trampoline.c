@@ -67,11 +67,16 @@ hpcrun_init_trampoline_info(void)
 
 // returns true if address is in the assembly language trampoline code, else false.
 bool
-hpcrun_addr_in_trampoline(void* addr)
+hpcrun_trampoline_interior(void* addr)
 {
     return (&hpcrun_trampoline < addr && addr <= &hpcrun_trampoline_end);
 }
 
+bool
+hpcrun_trampoline_at_entry(void* addr)
+{
+  return (addr == &hpcrun_trampoline);
+}
 
 void*
 hpcrun_trampoline_handler(void)

@@ -176,19 +176,32 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
     int ret;
 
     unw_word_t ip = 0;
-    ret = unw_get_reg(&cursor, UNW_REG_IP, &ip);
-    if (ret < 0) {
-      break;
-    }
-    if (hpcrun_addr_in_trampoline(ip)) {
+    unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    if (hpcrun_trampoline_interior(ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
       // counting a return from a sampled frame using a trampoline
       unw_throw();
     }
-
+    if (hpcrun_trampoline_at_entry(ip)) {
+      if (unw_len == 0){
+	//
+	// Possibly change later to do something more sophisticated ...
+	//
+	unw_throw();
+      }
+      else {
+	// *** maybe put a break here, as backtrace is now done ***
+	// put cached backtrace prefix + current unwind into cct
+	// remove current trampoline
+	// insert trampoline to new location
+      }
+    }
+    
     csprof_state_ensure_buffer_avail(state, state->unwind);
 
-    state->unwind->ip = (void *) ip;
+    state->unwind->ip     = (void *) ip;
+    state->unwind->ra_loc = NULL;
+    csprof_frame_t* prev = state->unwind;
     state->unwind++;
     unw_len++;
 
@@ -199,6 +212,7 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
     if (ret <= 0) {
       break;
     }
+    unw_get_reg(&cursor, UNW_RA_LOC, &prev->ra_loc);
   }
   if (backtrace_trolled){
     csprof_up_pmsg_count();

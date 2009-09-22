@@ -196,12 +196,19 @@ unw_init(void)
   csprof_interval_tree_init();
 }
 
-
 int 
-unw_get_reg(unw_cursor_t *cursor, int reg_id, void **reg_value)
+unw_get_reg(unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
 {
-  assert(reg_id == UNW_REG_IP);
-  *reg_value = cursor->pc;
+  switch (reg_id) {
+    case UNW_REG_IP:
+      *reg_value = cursor->pc;
+      break;
+    case UNW_RA_LOC:
+      *reg_value = cursor->ra_loc;
+      break;
+    default:
+      return ~0;
+  }
   return 0;
 }
 
@@ -211,12 +218,13 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
 {
   mcontext_t *mc = GET_MCONTEXT(context);
 
-  cursor->pc = MCONTEXT_PC(mc); 
-  cursor->bp = MCONTEXT_BP(mc);
-  cursor->sp = MCONTEXT_SP(mc);
+  cursor->pc 	 = MCONTEXT_PC(mc); 
+  cursor->bp 	 = MCONTEXT_BP(mc);
+  cursor->sp 	 = MCONTEXT_SP(mc);
+  cursor->ra_loc = NULL;
 
-  TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, bp=%p", 
-       cursor->pc, cursor->ra, cursor->sp, cursor->bp);
+  TMSG(UNW, "init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
+       cursor->pc, cursor->ra_loc, cursor->sp, cursor->bp);
 
   cursor->flags = 0; // trolling_used
   cursor->intvl = csprof_addr_to_interval(cursor->pc);
@@ -243,8 +251,8 @@ unw_step_real(unw_cursor_t *cursor)
   }
 
   // current frame  
-  void** bp = cursor->bp;  
-  void*  sp = cursor->sp;  
+  void** bp = cursor->bp;
+  void*  sp = cursor->sp;
   void*  pc = cursor->pc;
   unwind_interval* uw = (unwind_interval *)cursor->intvl;
 
@@ -389,6 +397,7 @@ unw_step_sp(unw_cursor_t *cursor)
 
   void** next_bp = NULL;
   void** next_sp = (void **)(sp + uw->sp_ra_pos);
+  void*  ra_loc  = (void*) next_sp;
   void*  next_pc  = *next_sp;
 
   TMSG(UNW,"sp potential advance cursor: next_sp=%p ==> next_pc = %p",
@@ -447,9 +456,10 @@ unw_step_sp(unw_cursor_t *cursor)
 	   " New sp = %p, old sp = %p", cursor->pc, next_sp, cursor->sp);
       return STEP_ERROR;
     }
-    cursor->pc = next_pc;
-    cursor->bp = next_bp;
-    cursor->sp = next_sp;
+    cursor->pc 	   = next_pc;
+    cursor->bp 	   = next_bp;
+    cursor->sp 	   = next_sp;
+    cursor->ra_loc = ra_loc;
   }
 
   TMSG(UNW,"==== sp advance ok ===");
@@ -487,6 +497,7 @@ unw_step_bp(unw_cursor_t *cursor)
   next_sp  = (void **)((void *)bp + uw->bp_bp_pos);
   next_bp  = *next_sp;
   next_sp  = (void **)((void *)bp + uw->bp_ra_pos);
+  void* ra_loc = (void*) next_sp;
   next_pc  = *next_sp;
   next_sp += 1;
   if ((void *)next_sp > sp) {
@@ -502,9 +513,11 @@ unw_step_bp(unw_cursor_t *cursor)
       TMSG(UNW_STRATEGY,"BP cannot build interval for next_pc(%p)", next_pc);
       return STEP_ERROR;
     } else {
-      cursor->pc    = next_pc;
-      cursor->bp    = next_bp;
-      cursor->sp    = next_sp;
+      cursor->pc     = next_pc;
+      cursor->bp     = next_bp;
+      cursor->sp     = next_sp;
+      cursor->ra_loc = ra_loc;
+
       cursor->intvl = (splay_interval_t *)uw;
       TMSG(UNW,"cursor advances ==>has_intvl=%d, bp=%p, sp=%p, pc=%p",
 	   cursor->intvl != NULL, next_bp, next_sp, next_pc);
@@ -604,7 +617,8 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 
   if (ret != TROLL_INVALID) {
     void  **next_sp = ((void **)((unsigned long) cursor->sp + tmp_ra_offset));
-    void *next_pc = *next_sp;
+    void *next_pc   = *next_sp;
+    void *ra_loc    = (void*) next_sp;
 
     // the current base pointer is a good assumption for the caller's BP
     void **next_bp = (void **) cursor->bp; 
@@ -622,9 +636,10 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 		      next_pc, next_sp));
       PMSG_LIMIT(PMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc));
 
-      cursor->pc = next_pc;
-      cursor->bp = next_bp;
-      cursor->sp = next_sp;
+      cursor->pc     = next_pc;
+      cursor->bp     = next_bp;
+      cursor->sp     = next_sp;
+      cursor->ra_loc = ra_loc;
 
       cursor->flags = 1; // trolling_used
       return; // success!
