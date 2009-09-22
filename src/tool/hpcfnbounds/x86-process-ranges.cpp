@@ -987,20 +987,26 @@ process_pop(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
   if (op0_name == XED_OPERAND_REG0) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
     if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
-      add_protected_range(push_rbp + ins_offset + 1, ins + ins_offset + 1);
+      if (push_rbp) {
+        add_protected_range(push_rbp + ins_offset + 1, ins + ins_offset + 1);
+      }
     } else {
       if (push_other) {
 	if (push_other_reg == regname) {
-	  add_protected_range(push_other + ins_offset + 1, 
-			      ins + ins_offset + 1);
+          if (push_other) {
+	    add_protected_range(push_other + ins_offset + 1, 
+				ins + ins_offset + 1);
+	  }
 	} else {
 	  // it must match some push. assume the latest.
 	  char *push_latest = (push_other > push_rbp) ? push_other : push_rbp;
 	  // ... unless we've started to see bad instructions, which makes
 	  //     it likely that we're walking through data
 	  if (push_latest > last_bad)
-	    add_protected_range(push_latest + ins_offset + 1, 
-				ins + ins_offset + 1);
+	    if (push_latest) {
+	      add_protected_range(push_latest + ins_offset + 1, 
+				  ins + ins_offset + 1);
+	    }
 	}
       }
     }
