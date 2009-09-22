@@ -104,12 +104,16 @@ namespace CallPath {
 
 
 Prof::CallPath::Profile*
-read(const std::vector<string>& profileFiles, uint rFlags)
+read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
+     uint rFlags)
 {
   Prof::CallPath::Profile* prof = read(profileFiles[0], rFlags);
 
   for (uint i = 1; i < profileFiles.size(); ++i) {
     Prof::CallPath::Profile* p = read(profileFiles[i], rFlags);
+    if (groupMap) {
+      // TODO: change metric names
+    }
     prof->merge(*p, Prof::CallPath::Profile::Merge_createMetrics);
     delete p;
   }

@@ -415,16 +415,14 @@ hpcrunFileFilter(const struct dirent* entry)
 namespace Analysis {
 namespace Util {
 
-std::pair<std::vector<std::string>*, uint>
-normalizeProfileArgs(const std::vector<std::string>& inPaths)
+NormalizeProfileArgs_t
+normalizeProfileArgs(const StringVec& inPaths)
 {
-  std::vector<std::string>* outPaths = new std::vector<std::string>;
-  std::vector<int> outGropus;
-  uint pathLenMax = 0;
+  NormalizeProfileArgs_t out;
 
-  for (std::vector<std::string>::const_iterator it = inPaths.begin(); 
+  for (StringVec::const_iterator it = inPaths.begin(); 
        it != inPaths.end(); ++it) {
-    std::string path = *it;
+    std::string path = *it; // copy
     if (FileUtil::isDir(path.c_str())) {
       // ensure 'path' ends in '/'
       if (path[path.length() - 1] != '/') {
@@ -438,11 +436,13 @@ normalizeProfileArgs(const std::vector<std::string>& inPaths)
 	DIAG_Throw("could not read directory: " << path);
       }
       else {
+	out.groupMax++; // obtain next group;
 	for (int i = 0; i < dirEntriesSz; ++i) {
 	  string nm = path + dirEntries[i]->d_name;
 	  free(dirEntries[i]);
-	  outPaths->push_back(nm);
-	  pathLenMax = std::max(pathLenMax, (uint)nm.length());
+	  out.paths->push_back(nm);
+	  out.pathLenMax = std::max(out.pathLenMax, (uint)nm.length());
+	  out.groupMap->push_back(out.groupMax);
 	}
 	free(dirEntries);
       }
@@ -451,12 +451,14 @@ normalizeProfileArgs(const std::vector<std::string>& inPaths)
 
     }
     else {
-      outPaths->push_back(path);
-      pathLenMax = std::max(pathLenMax, (uint)path.length());
+      out.groupMax++; // obtain next group;
+      out.paths->push_back(path);
+      out.pathLenMax = std::max(out.pathLenMax, (uint)path.length());
+      out.groupMap->push_back(out.groupMax);
     }
   }
   
-  return std::make_pair(outPaths, pathLenMax);
+  return out;
 }
 
 

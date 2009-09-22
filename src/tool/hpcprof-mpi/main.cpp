@@ -68,6 +68,7 @@ using std::string;
 
 #include <cstdlib> // getenv()
 #include <cmath>   // ceil()
+#include <climits> // UCHAR_MAX
 
 //*************************** User Include Files ****************************
 
@@ -87,9 +88,9 @@ using std::string;
 
 typedef std::vector<std::string> StringVec;
 
-StringVec* 
-getMyProfileFiles(StringVec& profileFiles, 
-		  int myRank, int numRanks, int rootRank = 0);
+Analysis::Util::NormalizeProfileArgs_t
+myNormalizeProfileArgs(StringVec& profileFiles, 
+		       int myRank, int numRanks, int rootRank = 0);
 
 
 //****************************************************************************
@@ -170,11 +171,11 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   Prof::CallPath::Profile* profLcl = NULL;
 
-  StringVec* profFiles = 
-    getMyProfileFiles(args.profileFiles, myRank, numRanks,rootRank);
+  Analysis::Util::NormalizeProfileArgs_t nArgs = 
+    myNormalizeProfileArgs(args.profileFiles, myRank, numRanks,rootRank);
 
   uint rFlags = Prof::CallPath::Profile::RFlg_virtualMetrics;
-  profLcl = Analysis::CallPath::read(*profFiles, rFlags);
+  profLcl = Analysis::CallPath::read(*nArgs.paths, nArgs.groupMap, rFlags);
 
   // Obtain the metric manager (warning: replaces the manager in profLcl)
   Prof::Metric::Mgr* metricMgr = profLcl->metricMgr();
@@ -228,12 +229,13 @@ realmain(int argc, char* const* argv)
 
   // TODO: create summary metrics.  Each process has a set for each group
 
-  for (uint i = 0; i < profFiles->size(); ++i) {
-    string& fnm = (*profFiles)[i];
+  for (uint i = 0; i < nArgs.paths->size(); ++i) {
+    string& fnm = (*nArgs.paths)[i];
     Prof::CallPath::Profile* prof = Analysis::CallPath::read(fnm);
     profGbl->merge(*prof, Prof::CallPath::Profile::Merge_createMetrics);
 
     // TODO: incrementally update metric
+    
 
     delete prof;
   }
@@ -243,7 +245,7 @@ realmain(int argc, char* const* argv)
   // Cleanup: MPI_Finalize() called in parent
   // -------------------------------------------------------
 
-  delete profFiles;
+  nArgs.destroy();
   delete metricMgr;
   delete profGbl;
 
@@ -254,16 +256,19 @@ realmain(int argc, char* const* argv)
 
 //****************************************************************************
 
-// getMyProfileFiles: creates canonical list of profiles files and
+// myNormalizeProfileArgs: creates canonical list of profiles files and
 //   distributes chunks of size ceil(numFiles / numRanks) to each process.
 //   The last process may have a smaller chunk than the others.
-StringVec* 
-getMyProfileFiles(StringVec& profileFiles, 
-		  int myRank, int numRanks, int rootRank)
+Analysis::Util::NormalizeProfileArgs_t
+myNormalizeProfileArgs(StringVec& profileFiles,
+		       int myRank, int numRanks, int rootRank)
 {
+  Analysis::Util::NormalizeProfileArgs_t out;
+
   char* sendFilesBuf = NULL;
   uint sendFilesBufSz = 0;
   uint sendFilesChunkSz = 0;
+  uint groupIdLen = 1;
   uint pathLenMax = 0;
   
   // -------------------------------------------------------
@@ -271,28 +276,33 @@ getMyProfileFiles(StringVec& profileFiles,
   // -------------------------------------------------------
 
   if (myRank == rootRank) {
-    std::pair<StringVec*, uint> pair = 
+    Analysis::Util::NormalizeProfileArgs_t nArgs = 
       Analysis::Util::normalizeProfileArgs(profileFiles);
     
-    StringVec* canonicalFiles = pair.first;
-    pathLenMax = pair.second;
+    StringVec* canonicalFiles = nArgs.paths;
+    pathLenMax = nArgs.pathLenMax;
+
+    DIAG_Assert(nArgs.groupMax <= UCHAR_MAX, "myNormalizeProfileArgs: 'groupMax' cannot be packed into a uchar!");
 
     uint chunkSz = (uint)
       ceil( (double)canonicalFiles->size() / (double)numRanks);
     
-    sendFilesChunkSz = chunkSz * (pathLenMax+1);
+    sendFilesChunkSz = chunkSz * (groupIdLen + pathLenMax + 1);
     sendFilesBufSz = sendFilesChunkSz * numRanks;
     sendFilesBuf = new char[sendFilesBufSz];
     memset(sendFilesBuf, '\0', sendFilesBufSz);
 
     for (uint i = 0, j = 0; i < canonicalFiles->size(); 
-	 i++, j += (pathLenMax+1)) {
+	 i++, j += (groupIdLen + pathLenMax + 1)) {
       const std::string& nm = (*canonicalFiles)[i];
-      strncpy(&sendFilesBuf[j], nm.c_str(), pathLenMax);
-      sendFilesBuf[j + pathLenMax] = '\0';
+      uint groupId = (*nArgs.groupMap)[i];
+
+      sendFilesBuf[j] = (char)groupId;
+      strncpy(&(sendFilesBuf[j + groupIdLen]), nm.c_str(), pathLenMax);
+      sendFilesBuf[j + groupIdLen + pathLenMax] = '\0';
     }
 
-    delete canonicalFiles;
+    nArgs.destroy();
   }
 
   // -------------------------------------------------------
@@ -326,25 +336,26 @@ getMyProfileFiles(StringVec& profileFiles,
   
   delete[] sendFilesBuf;
 
-  
-  StringVec* myProfileFiles = new StringVec;
-  for (uint i = 0; i < recvFilesChunkSz; i += (pathLenMax+1)) {
-    string nm = &recvFilesBuf[i];
+
+  for (uint i = 0; i < recvFilesChunkSz; i += (groupIdLen + pathLenMax + 1)) {
+    uint groupId = recvFilesBuf[i];
+    string nm = &recvFilesBuf[i + groupIdLen];
     if (!nm.empty()) {
-      myProfileFiles->push_back(nm);
+      out.paths->push_back(nm);
+      out.groupMap->push_back(groupId);
     }
   }
 
   delete[] recvFilesBuf;
 
   if (0) {
-    for (uint i = 0; i < myProfileFiles->size(); ++i) {
-      const std::string& nm = (*myProfileFiles)[i];
+    for (uint i = 0; i < out.paths->size(); ++i) {
+      const std::string& nm = (*out.paths)[i];
       std::cout << "[" << myRank << "]: " << nm << std::endl;
     }
   }
 
-  return myProfileFiles;
+  return out;
 }
 
 //***************************************************************************
