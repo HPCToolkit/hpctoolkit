@@ -157,15 +157,6 @@ files_set_directory()
     // N.B.: safe to skip checking for errors as realpath will notice them
   }
 
-  // FIXME: tallent: This was located within the computation of the
-  // default path, which surely was an error... I have moved it here,
-  // but that doesn't appear to make much sense here either: Why
-  // potentially set "default_path" but not "output_directory"?  And
-  // why not move it into main.c?
-  if (hpcrun_get_disabled()) {
-    return;
-  }
-
   int ret = mkdir(path, 0755);
   if (ret != 0 && errno != EEXIST) {
     csprof_abort("hpcrun: could not create output directory `%s': %s", path, strerror(errno));

@@ -183,7 +183,9 @@ monitor_init_process(int *argc, char **argv, void* data)
     write(2, none_msg, strlen(none_msg));
   }
 
-  files_set_directory();
+  if (!hpcrun_get_disabled()) {
+    files_set_directory();
+  }
 
   TMSG(PROCESS,"init");
 
