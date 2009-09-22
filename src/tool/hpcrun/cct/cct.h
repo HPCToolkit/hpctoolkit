@@ -163,6 +163,7 @@ typedef struct csprof_cct_node_s {
 typedef struct csprof_frame_s {
   lush_assoc_info_t as_info;
   void* ip;
+  void* ra_loc;
   lush_lip_t* lip;
 } csprof_frame_t;
 #endif

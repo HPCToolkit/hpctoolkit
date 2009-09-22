@@ -79,7 +79,7 @@ typedef struct _unw_c_t {
   void *pc;
   void **bp;
   void **sp;
-  void *ra;
+  void *ra_loc;
 
   UNW_CURSOR_INTERVAL_t intvl;
 

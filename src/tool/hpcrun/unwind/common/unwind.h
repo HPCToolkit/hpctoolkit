@@ -91,23 +91,26 @@ typedef void* unw_word_t;
 // unw_init
 // ----------------------------------------------------------
 
-extern void unw_init();
+void unw_init();
 
 
 // ----------------------------------------------------------
 // unw_get_reg
 // ----------------------------------------------------------
 
-#define UNW_REG_IP 1
+typedef enum {
+  UNW_REG_IP,
+  UNW_RA_LOC
+} unw_reg_code_t;
 
-extern int unw_get_reg(unw_cursor_t *c, int reg_id, void **reg_value);
+int unw_get_reg(unw_cursor_t *c, unw_reg_code_t reg_id, void **reg_value);
 
 
 // ----------------------------------------------------------
 // unw_init_cursor
 // ----------------------------------------------------------
 
-extern void unw_init_cursor(unw_cursor_t* cursor, void* context);
+void unw_init_cursor(unw_cursor_t* cursor, void* context);
 
 
 // ----------------------------------------------------------
@@ -128,7 +131,7 @@ typedef enum {
   STEP_STOP_WEAK = 3
 } step_state;
 
-extern step_state unw_step(unw_cursor_t *c);
+step_state unw_step(unw_cursor_t *c);
 
 
 //***************************************************************************
@@ -153,7 +156,7 @@ extern step_state unw_step(unw_cursor_t *c);
 // ----------------------------------------------------------
 
 // FIXME: tallent: the code in x86-unwind.c probably should be common
-extern void unw_throw();
+void unw_throw();
 
 
 //***************************************************************************
