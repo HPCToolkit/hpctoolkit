@@ -145,6 +145,7 @@ files_set_directory()
 {  
   char *path = getenv(CSPROF_OPT_OUT_PATH);
 
+  // compute path for default measurement directory
   if (path == NULL || strlen(path) == 0) {
     const char *jid = os_job_id();
     if (jid == NULL) {
@@ -153,22 +154,27 @@ files_set_directory()
       sprintf(default_path, "./hpctoolkit-%s-measurements-%s", executable_name, jid);
     }
     path = default_path;
-
-    if (hpcrun_get_disabled()) return;
-
-    mkdir(default_path, 0755);
     // N.B.: safe to skip checking for errors as realpath will notice them
   }
 
-  int dir_error = 0;
-  if (os_realpath(path, output_directory) == NULL) dir_error = 1;
-  else {
-    struct stat sbuf;
-    int sresult = stat(output_directory, &sbuf);
-    if ((sresult != 0) || (S_ISDIR(sbuf.st_rdev) != 0)) dir_error = 1;
+  // FIXME: tallent: This was located within the computation of the
+  // default path, which surely was an error... I have moved it here,
+  // but that doesn't appear to make much sense here either: Why
+  // potentially set "default_path" but not "output_directory"?  And
+  // why not move it into main.c?
+  if (hpcrun_get_disabled()) {
+    return;
   }
 
-  if (dir_error) csprof_abort("hpcrun: could not access path `%s': %s", path, strerror(errno));
+  int ret = mkdir(path, 0755);
+  if (ret != 0 && errno != EEXIST) {
+    csprof_abort("hpcrun: could not create output directory `%s': %s", path, strerror(errno));
+  }
+
+  char* rpath = os_realpath(path, output_directory);
+  if (!rpath) {
+    csprof_abort("hpcrun: could not access directory `%s': %s", path, strerror(errno));
+  }
 }
 
 
