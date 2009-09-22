@@ -590,18 +590,18 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   string m_sfx;
   if (!mpiRank.empty() && !tid.empty()) {
-    m_sfx = " [" + mpiRank + "," + tid + "]";
+    m_sfx = ".[" + mpiRank + "," + tid + "]";
   }
   else if (!mpiRank.empty()) {
-    m_sfx = " [" + mpiRank + "]";
+    m_sfx = ".[" + mpiRank + "]";
   }
   else if (!tid.empty()) {
-    m_sfx = " [" + tid + "]";
+    m_sfx = ".[" + tid + "]";
   }
 
   metric_desc_t* m_lst = metric_tbl.lst;
   for (uint i = 0; i < num_metrics; i++) {
-    string m_nm = m_lst[i].name + m_sfx;
+    string m_nm = m_lst[i].name;
     string profFile = (filename) ? filename : "";
     string profRelId = StrUtil::toStr(i);
 
@@ -609,6 +609,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       new Metric::SampledDesc(m_nm, m_nm, m_lst[i].period,
 			      true /*isUnitsEvents*/,
 			      profFile, profRelId, "HPCRUN");
+    m->nameSfx(m_sfx);
     m->flags(m_lst[i].flags);
     
     prof->metricMgr()->insert(m);
