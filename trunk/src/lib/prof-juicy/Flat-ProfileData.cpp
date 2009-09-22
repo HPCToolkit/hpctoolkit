@@ -434,7 +434,7 @@ EventData::read(FILE *fs, uint64_t load_addr)
     PROFFLAT_Throw("Error reading <event_x_period>.");
   }
   
-  m_mdesc.name(name);
+  m_mdesc.nameBase(name);
   m_mdesc.description(desc);
   m_mdesc.period(period);
   //m_mdesc.flags();

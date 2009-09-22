@@ -172,10 +172,10 @@ OverheadMetricFact::convertToWorkMetric(Prof::Metric::ADesc* mdesc)
 {
   const string& nm = mdesc->name();
   if (nm.find("PAPI_TOT_CYC") == 0) {
-    mdesc->name("work (cyc)");
+    mdesc->nameBase("work (cyc)");
   }
   else if (nm.find("WALLCLOCK") == 0) {
-    mdesc->name("work (us)");
+    mdesc->nameBase("work (us)");
   }
   else {
     DIAG_Die(DIAG_Unimplemented);

@@ -227,7 +227,15 @@ realmain(int argc, char* const* argv)
   // Create summary and thread-level metrics
   // -------------------------------------------------------
 
-  // TODO: create summary metrics.  Each process has a set for each group
+  // TODO:
+  //   - create summary metrics.  Each process has a set for each group
+  //     - while reading profiles, add group ids
+  //     - during merge, also merge metrics (if virtual and with special flag)
+  //     - sort out-of-order (summed) metrics
+  //     - create summary metrics and broadcast to everyone
+  //       [it is necessary to see all profiles for a group to create
+  //       summary metrics]
+
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];

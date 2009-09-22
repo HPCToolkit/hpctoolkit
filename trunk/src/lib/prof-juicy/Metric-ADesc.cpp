@@ -88,7 +88,7 @@ namespace Metric {
 std::string
 ADesc::toString() const
 {
-  return m_name;
+  return name();
 
   //std::ostringstream os;
   //dump(os);
@@ -107,7 +107,7 @@ ADesc::dump(std::ostream& os) const
 std::ostream&
 ADesc::dump_me(std::ostream& os) const
 {
-  os << m_name;
+  os << name();
   return os;
 }
 

@@ -89,19 +89,19 @@ public:
       m_doDispPercent(true), m_isPercent(false)
   { }
 
-  ADesc(const char* name, const char* description,
+  ADesc(const char* nameBase, const char* description,
 	bool isVisible = true, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
-    : m_id(0), m_name((name) ? name : ""), 
+    : m_id(0), m_nameBase((nameBase) ? nameBase : ""), 
       m_description((description) ? description : ""),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent)
   { }
 
-  ADesc(const std::string& name, const std::string& description,
+  ADesc(const std::string& nameBase, const std::string& description,
 	bool isVisible = true, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
-    : m_id(0), m_name(name), m_description(description),
+    : m_id(0), m_nameBase(nameBase), m_description(description),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent)
   { }
@@ -110,7 +110,9 @@ public:
   { }
 
   ADesc(const ADesc& x)
-    : m_id(x.m_id), m_name(x.m_name), m_description(x.m_description),
+    : m_id(x.m_id), 
+      m_nameBase(x.m_nameBase), m_namePfx(x.m_namePfx), m_nameSfx(x.m_nameSfx),
+      m_description(x.m_description),
       m_isVisible(x.m_isVisible), m_isSortKey(x.m_isSortKey),
       m_doDispPercent(x.m_doDispPercent), m_isPercent(x.m_isPercent)
   { }
@@ -120,7 +122,9 @@ public:
   {
     if (this != &x) {
       m_id            = x.m_id;
-      m_name          = x.m_name;
+      m_nameBase      = x.m_nameBase;
+      m_namePfx       = x.m_namePfx;
+      m_nameSfx       = x.m_nameSfx;
       m_description   = x.m_description;
       m_isVisible     = x.m_isVisible;
       m_isSortKey     = x.m_isSortKey;
@@ -136,7 +140,7 @@ public:
 
 
   // -------------------------------------------------------
-  // id, name, description: The metric id, name and a description
+  // id:
   // -------------------------------------------------------
 
   uint
@@ -148,18 +152,57 @@ public:
   { m_id = id; }
 
 
-  const std::string&
+  // -------------------------------------------------------
+  // name: <prefix> <base> <suffix>
+  // -------------------------------------------------------
+
+  const std::string
   name() const
-  { return m_name; }
+  { return m_namePfx + m_nameBase + m_nameSfx; }
+
+
+  const std::string&
+  nameBase() const
+  { return m_nameBase; }
 
   void
-  name(const char* x)
-  { m_name = (x) ? x : ""; }
+  nameBase(const char* x)
+  { m_nameBase = (x) ? x : ""; }
 
   void
-  name(const std::string& x)
-  { m_name = x; }
+  nameBase(const std::string& x)
+  { m_nameBase = x; }
 
+
+  const std::string&
+  namePfx() const
+  { return m_namePfx; }
+
+  void
+  namePfx(const char* x)
+  { m_namePfx = (x) ? x : ""; }
+
+  void
+  namePfx(const std::string& x)
+  { m_namePfx = x; }
+
+
+  const std::string&
+  nameSfx() const
+  { return m_nameSfx; }
+
+  void
+  nameSfx(const char* x)
+  { m_nameSfx = (x) ? x : ""; }
+
+  void
+  nameSfx(const std::string& x)
+  { m_nameSfx = x; }
+
+
+  // -------------------------------------------------------
+  // description:
+  // -------------------------------------------------------
 
   const std::string&
   description() const
@@ -237,7 +280,9 @@ public:
 protected:
 private:  
   uint m_id;
-  std::string m_name;
+
+  std::string m_nameBase, m_namePfx, m_nameSfx;
+
   std::string m_description;
 
   bool m_isVisible;
@@ -268,26 +313,26 @@ public:
       m_period(0), m_flags(HPCRUN_MetricFlag_NULL), m_isUnitsEvents(false)
   { }
 
-  SampledDesc(const char* name, const char* description,
+  SampledDesc(const char* nameBase, const char* description,
 	      uint64_t period, bool isUnitsEvents,
 	      const char* profName, const char* profRelId,
 	      const char* profType,
 	      bool isVisible = true, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
-    : ADesc(name, description,
+    : ADesc(nameBase, description,
 	    isVisible, isSortKey, doDispPercent, isPercent),
       m_period(period), m_flags(HPCRUN_MetricFlag_NULL),
       m_isUnitsEvents(isUnitsEvents),
       m_profName(profName), m_profileRelId(profRelId), m_profileType(profType)
   { }
 
-  SampledDesc(const std::string& name, const std::string& description,
+  SampledDesc(const std::string& nameBase, const std::string& description,
 	      uint64_t period, bool isUnitsEvents,
 	      const std::string& profName, const std::string& profRelId,
 	      const std::string& profType, 
 	      bool isVisible = true, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
-    : ADesc(name, description,
+    : ADesc(nameBase, description,
 	    isVisible, isSortKey, doDispPercent, isPercent),
       m_period(period), m_flags(HPCRUN_MetricFlag_NULL),
       m_isUnitsEvents(isUnitsEvents),
@@ -312,7 +357,7 @@ public:
       ADesc::operator=(x);
       m_period = x.m_period;
       m_flags  = x.m_flags;
-      m_isUnitsEvents   = x.m_isUnitsEvents;
+      m_isUnitsEvents = x.m_isUnitsEvents;
       m_profName      = x.m_profName;
       m_profileRelId  = x.m_profileRelId;
       m_profileType   = x.m_profileType;
@@ -430,20 +475,20 @@ class SampledDescVec : public std::vector<SampledDesc*>
 class DerivedDesc : public ADesc
 {
 public:
-  DerivedDesc(const char* name, const char* description,
+  DerivedDesc(const char* nameBase, const char* description,
 	      Metric::AExpr* expr,
 	      bool isVisible = true, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
-    : ADesc(name, description,
+    : ADesc(nameBase, description,
 	    isVisible, isSortKey, doDispPercent, isPercent),
       m_expr(expr)
   { }
 
-  DerivedDesc(const std::string& name, const std::string& description,
+  DerivedDesc(const std::string& nameBase, const std::string& description,
 	      Metric::AExpr* expr,
 	      bool isVisible = true, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
-    : ADesc(name, description,
+    : ADesc(nameBase, description,
 	    isVisible, isSortKey, doDispPercent, isPercent),
       m_expr(expr)
   { }

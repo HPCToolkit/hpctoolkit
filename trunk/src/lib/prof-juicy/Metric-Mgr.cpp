@@ -215,17 +215,19 @@ Mgr::insert(Metric::ADesc* m)
   m->id(id);
 
   // 2. metric name to Metric::ADescVec table
-  const string& nm = m->name();
+  string nm = m->name();
   StringToADescVecMap::iterator it = m_nuniqnmToMetricMap.find(nm);
   if (it != m_nuniqnmToMetricMap.end()) {
     Metric::ADescVec& mvec = it->second;
 
-    // ensure uniqueness
+    // ensure uniqueness: qualifier is an integer >= 1
     int qualifier = mvec.size();
-    string nm_new = nm + "-" + StrUtil::toStr(qualifier);
+    const string& nm_sfx = m->nameSfx();
+    string sfx_new = nm_sfx + "." + StrUtil::toStr(qualifier);
     
-    m->name(nm_new);
-    ans = true; 
+    m->nameSfx(sfx_new);
+    nm = m->name(); // update 'nm'
+    ans = true;
 
     mvec.push_back(m);
   }
