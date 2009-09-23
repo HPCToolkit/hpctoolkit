@@ -137,7 +137,7 @@ Profile::~Profile()
 
 
 void 
-Profile::merge(Profile& y, int metricsMapTo)
+Profile::merge(Profile& y, int mergeTy)
 {
   DIAG_Assert(!y.m_structure, "Profile::merge: source profile should not have structure yet!");
 
@@ -165,43 +165,57 @@ Profile::merge(Profile& y, int metricsMapTo)
   // merge metrics 
   // -------------------------------------------------------
 
+  // FIXME: when we determine the right semantics, clean this up and
+  // move to a Metric::Mgr::merge()
+
   DIAG_Assert(m_isMetricMgrVirtual == y.m_isMetricMgrVirtual,
 	      "CallPath::Profile::merge(): incompatible metrics");
 
   uint x_newMetricBegIdx = 0;
   uint y_newMetrics      = 0;
-  bool doAddMetricDescs  = false;
+  bool doInsertMetricDescs = false;
+  bool doInsertMetricDescsByName = false;
 
-  if (metricsMapTo >= Merge_overlapMetrics) {
+  if (mergeTy >= Merge_mergeMetricById) {
     // virtual metrics: assume complete overlap (and that metric descs exist)
     // otherwise:       support partial overlap
-    x_newMetricBegIdx = (int)metricsMapTo;
+    x_newMetricBegIdx = (int)mergeTy;
     y_newMetrics = (isMetricMgrVirtual()) ? 0 : 0; // FIXME: partial overlap
-    doAddMetricDescs = false;                      // FIXME: partial overlap
+    doInsertMetricDescs = false;                   // FIXME: partial overlap
   }
-  else if (metricsMapTo == Merge_createMetrics) {
+  else if (mergeTy == Merge_mergeMetricByName) {
+    DIAG_Assert( (isMetricMgrVirtual() && y.isMetricMgrVirtual())
+		 || (metricMgr()->empty() && y.metricMgr()->empty()),
+		 DIAG_Unimplemented);
+    doInsertMetricDescsByName = true;
+    // do not add metric values
+  }
+  else if (mergeTy == Merge_createMetric) {
     if (isMetricMgrVirtual()) {
       // do not add metric values
-      x_newMetricBegIdx = 0;
-      y_newMetrics = 0;
     }
     else {
       x_newMetricBegIdx = m_mMgr->size();
       y_newMetrics      = y.metricMgr()->size();
     }
-    doAddMetricDescs = true;
+    doInsertMetricDescs = true;
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
 
-  if (doAddMetricDescs) {
-    //  (FIXME: create MetricMgr::merge())
-    for (uint i = 0; i < y.metricMgr()->size(); ++i) {
-      const Metric::ADesc* m = y.metricMgr()->metric(i);
-      m_mMgr->insert(m->clone());
+  for (uint i = 0; i < y.metricMgr()->size(); ++i) {
+    const Metric::ADesc* m = y.metricMgr()->metric(i);
+    Metric::ADesc* m_new = m->clone();
+    if (doInsertMetricDescs) {
+      m_mMgr->insert(m_new);
+    }
+    if (doInsertMetricDescsByName) {
+      bool ret = m_mMgr->insertIf(m_new);
+      if (!ret) { delete m_new; }
     }
   }
+
   
   // -------------------------------------------------------
   // merge LoadMaps
@@ -460,7 +474,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
       prof = myprof;
     }
     else {
-      prof->merge(*myprof, Profile::Merge_overlapMetrics);
+      prof->merge(*myprof, Profile::Merge_mergeMetricById);
     }
 
     num_epochs++;
@@ -597,6 +611,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   }
   else if (!tid.empty()) {
     m_sfx = ".[" + tid + "]";
+  }
+
+  if (rFlags & Prof::CallPath::Profile::RFlg_noMetricSfx) {
+    m_sfx = "";
   }
 
   metric_desc_t* m_lst = metric_tbl.lst;

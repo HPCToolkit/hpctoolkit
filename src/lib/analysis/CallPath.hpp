@@ -90,15 +90,15 @@ namespace CallPath {
 
 Prof::CallPath::Profile*
 read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
-     uint rFlags = 0);
+     int mergeTy, uint rFlags = 0);
 
 Prof::CallPath::Profile*
-read(const char* prof_fnm, uint rFlags = 0);
+read(const char* prof_fnm, uint groupId, uint rFlags = 0);
 
 static inline Prof::CallPath::Profile*
-read(const string& prof_fnm, uint rFlags = 0)
+read(const string& prof_fnm, uint groupId, uint rFlags = 0)
 {
-  return read(prof_fnm.c_str(), rFlags);
+  return read(prof_fnm.c_str(), groupId, rFlags);
 }
 
 

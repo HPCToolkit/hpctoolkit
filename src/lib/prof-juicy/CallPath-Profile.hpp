@@ -83,7 +83,9 @@ namespace Prof {
 namespace CallPath {
 
 
-class Profile: public Unique { // non copyable
+class Profile 
+  : public Unique // non copyable
+{ 
 public:
   Profile(const std::string name);
   virtual ~Profile();
@@ -119,6 +121,7 @@ public:
   void
   metricMgr(Metric::Mgr* mMgr)
   { m_mMgr = mMgr; }
+
 
   // isMetricMgrVirtual: It is sometimes useful for the metric manager
   //   to contain descriptions of metrics for which there are no
@@ -173,20 +176,22 @@ public:
   // 
   // -------------------------------------------------------
   enum {
-    Merge_createMetrics = -1,
-    Merge_overlapMetrics = 0
+    Merge_createMetric      = -2,
+    Merge_mergeMetricByName = -1,
+    Merge_mergeMetricById   = 0
   };
 
   // merge: Given a Profile y, merge y into x = 'this'.  The 'metricsMapTo'
   //   parameter indicates how to merge y's metrics into x.
   //
-  //   Merge_createMetrics : create new metrics in x
-  //   >= 0                : first metric in y maps to given metric id in x
+  //   < 0  : semantics as indicated
+  //   >= 0 : merge metrics by id (first metric in y maps to given
+  //          metric id in x
   //
   // ASSUMES: both x and y are in canonical form (canonicalize())
   // WARNING: the merge may change/destroy y
   void
-  merge(Profile& y, int metricsMapTo);
+  merge(Profile& y, int mergeTy);
 
   // -------------------------------------------------------
   // 
@@ -194,7 +199,9 @@ public:
   enum {
     // read-write flags
     RFlg_virtualMetrics = (1 << 1), // only read metric descriptors
-    WFlg_noMetrics      = (1 << 2)  // write no metric descs or values
+    RFlg_noMetricSfx    = (1 << 2), // do not add metric suffixes
+
+    WFlg_noMetrics      = (1 << 16)  // write no metric descs or values
   };
 
 

@@ -105,16 +105,15 @@ namespace CallPath {
 
 Prof::CallPath::Profile*
 read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
-     uint rFlags)
+     int mergeTy, uint rFlags)
 {
-  Prof::CallPath::Profile* prof = read(profileFiles[0], rFlags);
+  uint groupId = (groupMap) ? (*groupMap)[0] : 0;
+  Prof::CallPath::Profile* prof = read(profileFiles[0], groupId, rFlags);
 
   for (uint i = 1; i < profileFiles.size(); ++i) {
-    Prof::CallPath::Profile* p = read(profileFiles[i], rFlags);
-    if (groupMap) {
-      // TODO: change metric names
-    }
-    prof->merge(*p, Prof::CallPath::Profile::Merge_createMetrics);
+    groupId = (groupMap) ? (*groupMap)[i] : 0;
+    Prof::CallPath::Profile* p = read(profileFiles[i], groupId, rFlags);
+    prof->merge(*p, mergeTy);
     delete p;
   }
   
@@ -123,8 +122,12 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
 
 
 Prof::CallPath::Profile*
-read(const char* prof_fnm, uint rFlags)
+read(const char* prof_fnm, uint groupId, uint rFlags)
 {
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
   Prof::CallPath::Profile* prof = NULL;
   try {
     prof = Prof::CallPath::Profile::make(prof_fnm, rFlags, /*outfs*/ NULL);
@@ -133,6 +136,20 @@ read(const char* prof_fnm, uint rFlags)
     DIAG_EMsg("While reading profile '" << prof_fnm << "'...");
     throw;
   }
+
+  // -------------------------------------------------------
+  // Potentially update the profile's metrics
+  // -------------------------------------------------------
+
+  if (groupId) {
+    Prof::Metric::Mgr* metricMgr = prof->metricMgr();
+    for (uint i = 0; i < metricMgr->size(); ++i) {
+      Prof::Metric::ADesc* m = metricMgr->metric(i);
+      m->namePfx(StrUtil::toStr(groupId));
+    }
+    //metricMgr->recomputeMaps(); // not strictly necessary
+  }
+
   return prof;
 }
 
