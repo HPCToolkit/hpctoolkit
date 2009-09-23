@@ -125,6 +125,7 @@ broadcast(Prof::CallPath::Profile*& profile,
   if (myRank != RankTree::rootRank) {
     DIAG_Assert(!profile, "ParallelAnalysis::broadcast: " << DIAG_UnexpectedInput);
     profile = new Prof::CallPath::Profile("[ParallelAnalysis::broadcast]");
+    profile->isMetricMgrVirtual(true);
   }
   
   int max_level = RankTree::level(maxRank);
@@ -205,7 +206,7 @@ pack(Prof::CallPath::Profile* profile, uint8_t** buffer, size_t* bufferSz)
   // open_memstream: mallocs buffer and sets bufferSz
   FILE* fs = open_memstream((char**)buffer, bufferSz);
 
-  uint wFlags = 0;
+  uint wFlags = Prof::CallPath::Profile::WFlg_virtualMetrics;
   Prof::CallPath::Profile::fmt_fwrite(*profile, fs, wFlags);
 
   fclose(fs);
@@ -218,7 +219,7 @@ unpack(uint8_t* buffer, size_t bufferSz)
   FILE* fs = fmemopen(buffer, bufferSz, "r");
 
   Prof::CallPath::Profile* prof = NULL;
-  uint rFlags = 0;
+  uint rFlags = Prof::CallPath::Profile::RFlg_virtualMetrics;
   Prof::CallPath::Profile::fmt_fread(prof, fs, rFlags,
 				     "ParallelAnalysis::unpack", NULL, NULL);
 

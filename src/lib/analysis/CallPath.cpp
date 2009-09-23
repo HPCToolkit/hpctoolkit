@@ -89,7 +89,10 @@ using namespace xml;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
+#include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
+#include <lib/support/realpath.h>
+
 
 //*************************** Forward Declarations ***************************
 
@@ -593,7 +596,7 @@ pruneByMetrics(Prof::CCT::ANode* node)
 
 
 //****************************************************************************
-// write
+// 
 //****************************************************************************
 
 namespace Analysis {
@@ -601,8 +604,29 @@ namespace Analysis {
 namespace CallPath {
 
 void
+makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
+{
+  // prepare output directory (N.B.: chooses a unique name!)
+  string db_dir = args.db_dir; // make copy
+  std::pair<string, bool> ret = FileUtil::mkdirUnique(db_dir);
+  db_dir = RealPath(ret.first.c_str());  // exits on failure...
+    
+  DIAG_Msg(1, "Copying source files reached by PATH option to " << db_dir);
+  // NOTE: makes file names in structure relative to database
+  Analysis::Util::copySourceFiles(prof.structure()->root(), 
+				  args.searchPathTpls, db_dir);
+  
+  string experiment_fnm = db_dir + "/" + args.out_db_experiment;
+  std::ostream* os = IOUtil::OpenOStream(experiment_fnm.c_str());
+  bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);
+  Analysis::CallPath::write(prof, *os, args.title, prettyPrint);
+  IOUtil::CloseStream(os);
+}
+
+
+void
 write(Prof::CallPath::Profile& prof, std::ostream& os, 
-      string& title, bool prettyPrint)
+      const string& title, bool prettyPrint)
 {
   static const char* experimentDTD =
 #include <lib/xml/hpc-experiment.dtd.h>
