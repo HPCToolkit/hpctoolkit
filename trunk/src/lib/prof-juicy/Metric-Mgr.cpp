@@ -207,54 +207,30 @@ Mgr::makeSummaryMetric(const string& m_nm, const Metric::ADescVec& m_opands)
 bool 
 Mgr::insert(Metric::ADesc* m)
 { 
-  bool ans = false;
-  
   // 1. metric table
   uint id = m_metrics.size();
   m_metrics.push_back(m);
   m->id(id);
 
-  // 2. metric name to Metric::ADescVec table
+  // 2. insert in maps and ensure name is unique
+  bool changed = insertInMapsAndMakeUniqueName(m);
+  return changed;
+}
+
+
+bool 
+Mgr::insertIf(Metric::ADesc* m)
+{ 
+  // 1. try to find existing metric
   string nm = m->name();
-  StringToADescVecMap::iterator it = m_nuniqnmToMetricMap.find(nm);
-  if (it != m_nuniqnmToMetricMap.end()) {
-    Metric::ADescVec& mvec = it->second;
-
-    // ensure uniqueness: qualifier is an integer >= 1
-    int qualifier = mvec.size();
-    const string& nm_sfx = m->nameSfx();
-    string sfx_new = nm_sfx + "." + StrUtil::toStr(qualifier);
-    
-    m->nameSfx(sfx_new);
-    nm = m->name(); // update 'nm'
-    ans = true;
-
-    mvec.push_back(m);
+  StringToADescMap::iterator it = m_uniqnmToMetricMap.find(nm);
+  if (it == m_uniqnmToMetricMap.end()) {
+    return false;
   }
-  else {
-    m_nuniqnmToMetricMap.insert(make_pair(nm, Metric::ADescVec(1, m)));
-  }
-
-  // 3. unique name to Metric::ADesc table
-  std::pair<StringToADescMap::iterator, bool> ret = 
-    m_uniqnmToMetricMap.insert(make_pair(nm, m));
-  DIAG_Assert(ret.second, "Found duplicate entry; should be unique name!");
   
-  // 4. profile file name to Metric::SampledDesc table
-  Metric::SampledDesc* m_fm = dynamic_cast<Metric::SampledDesc*>(m);
-  if (m_fm) {
-    const string& fnm = m_fm->profileName();
-    StringToADescVecMap::iterator it = m_fnameToFMetricMap.find(fnm);
-    if (it != m_fnameToFMetricMap.end()) {
-      Metric::ADescVec& mvec = it->second;
-      mvec.push_back(m_fm);
-    }
-    else {
-      m_fnameToFMetricMap.insert(make_pair(fnm, Metric::ADescVec(1, m_fm)));
-    }
-  }
-
-  return ans;
+  // 2. insert if it doesn't exist
+  insert(m);
+  return true;
 }
 
 
@@ -273,7 +249,7 @@ Mgr::findSortKey() const
 }
 
 
-bool 
+bool
 Mgr::hasDerived() const
 {
   for (uint i = 0; i < m_metrics.size(); ++i) {
@@ -285,6 +261,25 @@ Mgr::hasDerived() const
   return false;
 }
 
+
+//****************************************************************************
+
+void
+Mgr::recomputeMaps()
+{
+  // clear maps
+  m_nuniqnmToMetricMap.clear();
+  m_uniqnmToMetricMap.clear();
+  m_fnameToFMetricMap.clear();
+
+  for (uint i = 0; i < m_metrics.size(); ++i) {
+    Metric::ADesc* m = m_metrics[i]; 
+    insertInMapsAndMakeUniqueName(m);
+  }
+}
+
+
+//****************************************************************************
 
 string
 Mgr::toString(const char* pre) const
@@ -308,6 +303,59 @@ void
 Mgr::ddump() const
 {
   dump(std::cerr);
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+
+bool 
+Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
+{ 
+  bool ans = false;
+
+  // 1. metric name to Metric::ADescVec table
+  string nm = m->name();
+  StringToADescVecMap::iterator it = m_nuniqnmToMetricMap.find(nm);
+  if (it != m_nuniqnmToMetricMap.end()) {
+    Metric::ADescVec& mvec = it->second;
+
+    // ensure uniqueness: qualifier is an integer >= 1
+    int qualifier = mvec.size();
+    const string& nm_sfx = m->nameSfx();
+    string sfx_new = nm_sfx + "." + StrUtil::toStr(qualifier);
+    
+    m->nameSfx(sfx_new);
+    nm = m->name(); // update 'nm'
+    ans = true;
+
+    mvec.push_back(m);
+  }
+  else {
+    m_nuniqnmToMetricMap.insert(make_pair(nm, Metric::ADescVec(1, m)));
+  }
+
+  // 2. unique name to Metric::ADesc table
+  std::pair<StringToADescMap::iterator, bool> ret = 
+    m_uniqnmToMetricMap.insert(make_pair(nm, m));
+  DIAG_Assert(ret.second, "Found duplicate entry; should be unique name!");
+  
+  // 3. profile file name to Metric::SampledDesc table
+  Metric::SampledDesc* m_fm = dynamic_cast<Metric::SampledDesc*>(m);
+  if (m_fm) {
+    const string& fnm = m_fm->profileName();
+    StringToADescVecMap::iterator it = m_fnameToFMetricMap.find(fnm);
+    if (it != m_fnameToFMetricMap.end()) {
+      Metric::ADescVec& mvec = it->second;
+      mvec.push_back(m_fm);
+    }
+    else {
+      m_fnameToFMetricMap.insert(make_pair(fnm, Metric::ADescVec(1, m_fm)));
+    }
+  }
+
+  return ans;
 }
 
 //****************************************************************************

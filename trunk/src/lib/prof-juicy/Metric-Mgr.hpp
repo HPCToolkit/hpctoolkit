@@ -69,7 +69,9 @@ namespace Metric {
 
 //****************************************************************************
 
-class Mgr : public Unique { // non copyable
+class Mgr
+  : public Unique // non copyable
+{
 public:
   typedef std::map<std::string, Metric::ADesc*> StringToADescMap;
   typedef std::map<std::string, Metric::ADescVec> StringToADescVecMap;
@@ -136,12 +138,28 @@ public:
   empty() const
   { return m_metrics.empty(); }
 
+
+  // ------------------------------------------------------------
+  // insert
+  // ------------------------------------------------------------
+
   // Given m, insert m into the tables, ensuring it has a unique name
   // by qualifying it if necessary.  Returns true if the name was
   // modified, false otherwise.
   // NOTE: Assumes ownership of 'm'
   bool 
   insert(Metric::ADesc* m);
+
+  // Given m, insert m into the tables if the metric name does not
+  // exist.  Returns true if inserted (assuming ownership) and false
+  // otherwise.
+  bool 
+  insertIf(Metric::ADesc* m);
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   // Return the (first) metric this has the sort-by attribute set
   Metric::ADesc*
@@ -152,14 +170,17 @@ public:
   
 
   // ------------------------------------------------------------
-  // helper tables
+  // helper maps/tables
   // ------------------------------------------------------------
 
   const StringToADescVecMap&
   fnameToFMetricMap() const
   { return m_fnameToFMetricMap; }
 
+  void
+  recomputeMaps();
 
+  
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
@@ -175,8 +196,8 @@ public:
 public:
 
 private:
-  std::string
-  makeUniqueName(const std::string& nm);
+  bool
+  insertInMapsAndMakeUniqueName(Metric::ADesc* m);
 
   void
   makeSummaryMetric(const std::string& m_nm, const Metric::ADescVec& m_opands);

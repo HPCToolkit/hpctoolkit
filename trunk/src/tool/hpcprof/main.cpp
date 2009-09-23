@@ -128,7 +128,9 @@ realmain(int argc, char* const* argv)
     DIAG_Throw("There are " << nArgs.paths->size() << " profile files to process. " << args.getCmd() << " currently limits the number of profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.");
   }
 
-  Prof::CallPath::Profile* prof = Analysis::CallPath::read(*nArgs.paths, NULL);
+  int mergeTy = Prof::CallPath::Profile::Merge_createMetric;
+  Prof::CallPath::Profile* prof = 
+    Analysis::CallPath::read(*nArgs.paths, NULL, mergeTy);
 
   nArgs.destroy();
 
