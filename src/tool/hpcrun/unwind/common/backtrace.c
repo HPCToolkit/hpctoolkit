@@ -78,16 +78,6 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
 		  int skipInner);
 
 
-#if (HPC_UNW_LITE)
-static int
-hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context);
-
-static int
-test_backtrace_lite(ucontext_t* context);
-#endif
-
-
-
 //***************************************************************************
 // interface functions
 //***************************************************************************
@@ -143,11 +133,7 @@ hpcrun_backtrace(csprof_state_t *state, ucontext_t* context,
 static int
 hpcrun_filter_sample(int len, csprof_frame_t *start, csprof_frame_t *last)
 {
-#if (HPC_UNW_LITE)
-  return ( !(len > 1) );
-#else
   return ( !(monitor_in_start_func_narrow(last->ip) && (len > 1)) );
-#endif
 }
 
 
@@ -243,66 +229,6 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
 				    (cct_metric_data_t){.i = metricIncr});
   return n;
 }
-
-
-#if (HPC_UNW_LITE)
-static int 
-hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
-{
-  // special trivial case: size == 0 (N.B.: permit size < 0)
-  if (size <= 0) {
-    return 0;
-  }
-
-  // INVARIANT: 'size' > 0; 'buffer' is non-empty; 'context' is non-NULL
-  if ( !(size > 0 && buffer && context) ) {
-    return -1; // error
-  }
-
-  unw_init();
-
-  unw_cursor_t cursor;
-  unw_init_cursor(&cursor, context);
-
-  int my_size = 0;
-  while (my_size < size) {
-    int ret;
-
-    unw_word_t ip = 0;
-    ret = unw_get_reg(&cursor, UNW_REG_IP, &ip);
-    if (ret < 0) { /* ignore error */ }
-
-    buffer[my_size] = ip; // my_size < size
-    my_size++;
-
-    ret = unw_step(&cursor);
-    if (ret <= 0) {
-      // N.B. (ret < 0) indicates an unwind error, which we ignore
-      break;
-    }
-  }
-  
-  return my_size;
-}
-#endif
-
-
-#if (HPC_UNW_LITE)
-static int
-test_backtrace_lite(ucontext_t* context)
-{
-  const int bufsz = 100;
-
-  void* buffer[bufsz];
-  int sz = hpcrun_backtrace_lite(buffer, bufsz, context);
-
-  for (int i = 0; i < sz; ++i) {
-    TMSG(UNW, "backtrace_lite: pc=%p", buffer[i]);
-  }
-
-  return sz;
-}
-#endif
 
 
 //***************************************************************************
