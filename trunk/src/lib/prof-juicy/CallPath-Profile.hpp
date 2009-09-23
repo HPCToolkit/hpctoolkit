@@ -197,16 +197,27 @@ public:
   // 
   // -------------------------------------------------------
   enum {
-    // read-write flags
-    RFlg_virtualMetrics = (1 << 1), // only read metric descriptors
-    RFlg_noMetricSfx    = (1 << 2), // do not add metric suffixes
+    // only read metric table, even if CCT nodes have metrics
+    RFlg_virtualMetrics = (1 << 0),
 
-    WFlg_noMetrics      = (1 << 16)  // write no metric descs or values
+    // do not add suffixes to metric descriptors
+    RFlg_noMetricSfx    = (1 << 1),
+
+    // CCT nodes have no metrics, even if metric table is non-empty
+    RFlg_noMetricValues = (1 << 2),
+
+    // only write metric descriptors, even if CCT nodes have metrics
+    WFlg_virtualMetrics = (1 << 15)
   };
 
+  // if non-zero, indicates that CCT nodes do not have metric values
+  // even if the metric table is non-empty
+  static const char* FmtEpoch_NV_virtualMetrics;
 
+
+  // make: build a Profile from profile file 'fnm'
   static Profile* 
-  make(const char* fnm, uint rwFlags, FILE* outfs);
+  make(const char* fnm, uint rFlags, FILE* outfs);
 
   
   // fmt_*_fread(): Reads the appropriate hpcrun_fmt object from the

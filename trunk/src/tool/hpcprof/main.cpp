@@ -72,9 +72,7 @@ using std::string;
 #include <lib/analysis/Util.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
-#include <lib/support/realpath.h>
 
 
 //****************************************************************************
@@ -149,24 +147,10 @@ realmain(int argc, char* const* argv)
   // Generate Experiment database
   // ------------------------------------------------------------
 
-  // prepare output directory (N.B.: chooses a unique name!)
-  string db_dir = args.db_dir; // make copy
-  std::pair<string, bool> ret = FileUtil::mkdirUnique(db_dir);
-  db_dir = RealPath(ret.first.c_str());  // exits on failure...
-    
-  DIAG_Msg(1, "Copying source files reached by PATH option to " << db_dir);
-  // NOTE: makes file names in structure relative to database
-  Analysis::Util::copySourceFiles(prof->structure()->root(), 
-				  args.searchPathTpls, db_dir);
-
-  string experiment_fnm = db_dir + "/" + args.out_db_experiment;
-  std::ostream* os = IOUtil::OpenOStream(experiment_fnm.c_str());
-  bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);
-  Analysis::CallPath::write(*prof, *os, args.title, prettyPrint);
-  IOUtil::CloseStream(os);
+  Analysis::CallPath::makeDatabase(*prof, args);
 
   delete prof;
-  return (0);
+  return 0;
 }
 
 //****************************************************************************

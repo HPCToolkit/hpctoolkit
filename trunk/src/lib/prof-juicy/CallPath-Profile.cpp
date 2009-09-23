@@ -69,6 +69,8 @@ using std::string;
 
 #include <cstdio>
 
+#include <cstring> // strcmp
+
 #include <alloca.h>
 
 #define __STDC_FORMAT_MACROS
@@ -407,6 +409,9 @@ namespace Prof {
 
 namespace CallPath {
 
+const char* Profile::FmtEpoch_NV_virtualMetrics = "is-virtual-metrics";
+
+
 Profile* 
 Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 {
@@ -585,6 +590,14 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   //val = hpcfmt_nvpair_search(ehdr.&nvps, "to-find");
 
+  bool isVirtualMetrics = false;
+  val = hpcfmt_nvpair_search(&(ehdr.nvps), FmtEpoch_NV_virtualMetrics);
+  if (val && strcmp(val, "0") != 0) {
+    isVirtualMetrics = true;
+    rFlags |= RFlg_noMetricValues;
+  }
+
+
   // ----------------------------------------
   // 
   // ----------------------------------------
@@ -613,7 +626,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m_sfx = ".[" + tid + "]";
   }
 
-  if (rFlags & Prof::CallPath::Profile::RFlg_noMetricSfx) {
+  if (rFlags & RFlg_noMetricSfx) {
     m_sfx = "";
   }
 
@@ -633,7 +646,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     prof->metricMgr()->insert(m);
   }
 
-  if (rFlags & Prof::CallPath::Profile::RFlg_virtualMetrics) {
+  if (isVirtualMetrics || (rFlags & RFlg_virtualMetrics) ) {
     prof->isMetricMgrVirtual(true);
   }
 
@@ -721,8 +734,13 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     cct->root(NULL);
   }
 
+  uint numMetrics = prof.metricMgr()->size();
+  if (rFlags & RFlg_noMetricValues) {
+    numMetrics = 0;
+  }
+  
   hpcrun_fmt_cct_node_t nodeFmt;
-  nodeFmt.num_metrics = prof.metricMgr()->size();
+  nodeFmt.num_metrics = numMetrics;
   nodeFmt.metrics = (hpcrun_metricVal_t*)alloca(nodeFmt.num_metrics * sizeof(hpcrun_metricVal_t));
 
   for (uint i = 0; i < numNodes; ++i) {
@@ -814,11 +832,16 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   // ------------------------------------------------------------
   // epoch-hdr
   // ------------------------------------------------------------
-  
+  const char* virtualMetrics = "0";
+  if (prof.isMetricMgrVirtual() || (wFlags & WFlg_virtualMetrics) ) {
+    virtualMetrics = "1";
+  }
+ 
   hpcrun_fmt_epoch_hdr_fwrite(fs, prof.m_flags,
 			      prof.m_measurementGranularity,
 			      prof.m_raToCallsiteOfst,
-			      "TODO:epoch-name","TODO:epoch-value",
+			      "TODO:epoch-name", "TODO:epoch-value",
+			      FmtEpoch_NV_virtualMetrics, virtualMetrics,
 			      NULL);
 
   // ------------------------------------------------------------
@@ -826,9 +849,6 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   // ------------------------------------------------------------
 
   uint numMetrics = prof.metricMgr()->size();
-  if (wFlags & Profile::WFlg_noMetrics) {
-    numMetrics = 0;
-  }
 
   hpcfmt_byte4_fwrite(numMetrics, fs);
   for (uint i = 0; i < numMetrics; i++) {
@@ -896,7 +916,7 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   // ------------------------------------------------------------
 
   uint numMetrics = prof.metricMgr()->size();
-  if (wFlags & Profile::WFlg_noMetrics) {
+  if (prof.isMetricMgrVirtual() || (wFlags & WFlg_virtualMetrics) ) {
     numMetrics = 0;
   }
 
@@ -1044,6 +1064,10 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------  
   // metrics
   // ----------------------------------------  
+
+  bool doZeroMetrics = prof.isMetricMgrVirtual() 
+    || (rFlags & Prof::CallPath::Profile::RFlg_virtualMetrics);
+
   bool hasMetrics = false;
   Metric::IData metricData(nodeFmt.num_metrics);
   for (uint i = 0; i < nodeFmt.num_metrics; i++) {
@@ -1068,7 +1092,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     }
   }
 
-  if (rFlags & Prof::CallPath::Profile::RFlg_virtualMetrics) {
+  if (doZeroMetrics) {
     metricData.clearMetrics();
   }
 
@@ -1093,8 +1117,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     if (hasMetrics) {
       n_leaf = n;
 
-      uint mSz = ((rFlags & Prof::CallPath::Profile::RFlg_virtualMetrics) 
-		  ? 0 : nodeFmt.num_metrics);
+      uint mSz = (doZeroMetrics) ? 0 : nodeFmt.num_metrics;
       Metric::IData metricData0(mSz);
       
       n = new CCT::Call(NULL, 0, nodeFmt.as_info, lmId, ip, opIdx, lip,

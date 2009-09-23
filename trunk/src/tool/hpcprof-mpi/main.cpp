@@ -180,11 +180,6 @@ realmain(int argc, char* const* argv)
   profLcl = Analysis::CallPath::read(*nArgs.paths, nArgs.groupMap,
 				     mergeTy, rFlags);
 
-  // Obtain the metric manager (warning: replaces the manager in profLcl)
-  Prof::Metric::Mgr* metricMgr = profLcl->metricMgr();
-  profLcl->metricMgr(new Prof::Metric::Mgr);
-  profLcl->isMetricMgrVirtual(false);
-
   // -------------------------------------------------------
   // Create canonical CCT (no metrics)
   // -------------------------------------------------------
@@ -192,14 +187,15 @@ realmain(int argc, char* const* argv)
 
   // Post-INVARIANT: rank 0's 'profLcl' the canonical CCT
   ParallelAnalysis::reduce(profLcl, myRank, numRanks - 1);
+
   if (myRank == rootRank) {
     profGbl = profLcl;
     profLcl = NULL;
   }
+  delete profLcl;
 
   // Post-INVARIANT: 'profGbl' is the canonical CCT
   ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1);
-  delete profLcl;
 
   if (0 && myRank == rootRank) {
     FILE* fs = hpcio_fopen_w("canonical-cct.hpcrun", 1);
@@ -238,29 +234,39 @@ realmain(int argc, char* const* argv)
   //     - create summary metrics and broadcast to everyone
   //       [it is necessary to see all profiles for a group to create
   //       summary metrics]
+  //     - create local metrics and summary metric values
 
+  //Prof::Metric::Mgr* metricMgr = profGbl->metricMgr();
+  //profLcl->metricMgr(new Prof::Metric::Mgr);
+  //profLcl->isMetricMgrVirtual(false);
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
     Prof::CallPath::Profile* prof = Analysis::CallPath::read(fnm, groupId);
-    profGbl->merge(*prof, Prof::CallPath::Profile::Merge_createMetric);
+    //profGbl->merge(*prof, Prof::CallPath::Profile::Merge_createMetric);
 
     // TODO: incrementally update metric
 
     delete prof;
   }
 
+  nArgs.destroy();
+
+  // ------------------------------------------------------------
+  // Generate Experiment database
+  // ------------------------------------------------------------
+
+  if (myRank == rootRank) {
+    Analysis::CallPath::makeDatabase(*profGbl, args);
+  }
 
   // -------------------------------------------------------
   // Cleanup: MPI_Finalize() called in parent
   // -------------------------------------------------------
 
-  nArgs.destroy();
-  delete metricMgr;
   delete profGbl;
 
-  
   return 0;
 }
 
