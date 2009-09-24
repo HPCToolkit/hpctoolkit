@@ -97,14 +97,6 @@ ADesc::toString() const
 
 
 std::ostream&
-ADesc::dump(std::ostream& os) const
-{
-  dump_me(os);
-  return os;
-}
-
-
-std::ostream&
 ADesc::dump_me(std::ostream& os) const
 {
   os << toString();
@@ -156,6 +148,26 @@ DerivedDesc::toString() const
 
 std::ostream&
 DerivedDesc::dump_me(std::ostream& os) const
+{
+  os << toString();
+  return os;
+}
+
+
+//***************************************************************************
+// DerivedItrvDesc
+//***************************************************************************
+
+std::string
+DerivedItrvDesc::toString() const
+{
+  string str = ADesc::toString() + " {" + m_expr->toString() + "}";
+  return str;
+}
+
+
+std::ostream&
+DerivedItrvDesc::dump_me(std::ostream& os) const
 {
   os << toString();
   return os;
