@@ -329,19 +329,6 @@ csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
   TMSG(CCT_TYPE,"--Init");
   memset(x, 0, sizeof(*x));
 
-#ifndef CSPROF_TRAMPOLINE_BACKEND
-  {
-    unsigned int l;
-
-    /* initialize cached arrays */
-    x->cache_len = l = CSPROF_BACKTRACE_CACHE_INIT_SZ;
-    TMSG(CCT,"cct__init allocate cache_bt");
-    x->cache_bt    = csprof_malloc(sizeof(void*) * l);
-    TMSG(CCT,"cct__init allocate cache_nodes");
-    x->cache_nodes = csprof_malloc(sizeof(csprof_cct_node_t*) * l);
-  }
-#endif
-
   // introduce bogus root to handle possible forests
   x->tree_root = csprof_cct_node__create(lush_assoc_info_NULL, 0, NULL, x);
 
@@ -361,7 +348,7 @@ csprof_cct__fini(hpcrun_cct_t *x)
 
 // find a child with the specified pc. if none exists, create one.
 csprof_cct_node_t*
-csprof_cct_get_child(hpcrun_cct_t *cct, csprof_cct_node_t *parent, csprof_frame_t *frm)
+csprof_cct_get_child(hpcrun_cct_t *cct, csprof_cct_node_t* parent, hpcrun_frame_t *frm)
 {
   csprof_cct_node_t *c = csprof_cct_node__find_child(parent, frm->as_info, frm->ip, frm->lip);  
 
@@ -377,8 +364,8 @@ csprof_cct_get_child(hpcrun_cct_t *cct, csprof_cct_node_t *parent, csprof_frame_
 
 // See usage in header.
 csprof_cct_node_t*
-csprof_cct_insert_backtrace(hpcrun_cct_t *x, void *treenode, int metric_id,
-			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
+csprof_cct_insert_backtrace(hpcrun_cct_t* x, csprof_cct_node_t* treenode, int metric_id,
+			    hpcrun_frame_t* path_beg, hpcrun_frame_t* path_end,
 			    cct_metric_data_t increment)
 {
 #define csprof_MY_ADVANCE_PATH_FRAME(x)   (x)--
@@ -387,8 +374,8 @@ csprof_cct_insert_backtrace(hpcrun_cct_t *x, void *treenode, int metric_id,
   TMSG(CCT,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp", x, treenode,
       path_beg, path_end);
 
-  csprof_frame_t* frm = path_beg; // current frame 
-  csprof_cct_node_t *tn = (csprof_cct_node_t *)treenode;
+  hpcrun_frame_t* frm   = path_beg; // current frame 
+  csprof_cct_node_t* tn = treenode;
 
   if ( !(path_beg >= path_end) ) {
     return NULL;

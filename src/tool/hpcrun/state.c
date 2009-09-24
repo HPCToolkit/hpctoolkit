@@ -169,7 +169,7 @@ csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt)
   x->backtrace = csprof_list_new(x->pool);
 #else
   TMSG(STATE," state_alloc TRAMP");
-  x->btbuf = csprof_malloc(sizeof(csprof_frame_t)*32);
+  x->btbuf = csprof_malloc(sizeof(hpcrun_frame_t)*32);
   x->bufend = x->btbuf + 32;
   x->bufstk = x->bufend;
   x->treenode = NULL;
@@ -179,7 +179,7 @@ csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt)
   x->backtrace = csprof_list_new(x->pool);
 #else
   TMSG(STATE," state_alloc btbuf (no TRAMP)");
-  x->btbuf = csprof_malloc(sizeof(csprof_frame_t) * CSPROF_BACKTRACE_CACHE_INIT_SZ);
+  x->btbuf = csprof_malloc(sizeof(hpcrun_frame_t) * CSPROF_BACKTRACE_CACHE_INIT_SZ);
   x->bufend = x->btbuf + CSPROF_BACKTRACE_CACHE_INIT_SZ;
   x->bufstk = x->bufend;
   x->treenode = NULL;
@@ -265,8 +265,8 @@ csprof_state_fini(csprof_state_t *x){
 
 csprof_cct_node_t*
 csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
-			      csprof_frame_t *path_beg,
-			      csprof_frame_t *path_end,
+			      hpcrun_frame_t *path_beg,
+			      hpcrun_frame_t *path_end,
 			      cct_metric_data_t increment)
 {
   csprof_cct_node_t* n;
@@ -279,8 +279,8 @@ csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
   return n;
 }
 
-csprof_frame_t *
-csprof_state_expand_buffer(csprof_state_t *state, csprof_frame_t *unwind){
+hpcrun_frame_t *
+csprof_state_expand_buffer(csprof_state_t *state, hpcrun_frame_t *unwind){
   /* how big is the current buffer? */
   size_t sz = state->bufend - state->btbuf;
   size_t newsz = sz*2;
@@ -290,7 +290,7 @@ csprof_state_expand_buffer(csprof_state_t *state, csprof_frame_t *unwind){
   size_t recsz = unwind - state->btbuf;
   /* get new buffer */
   TMSG(STATE," state_expand_buffer");
-  csprof_frame_t *newbt = csprof_malloc(newsz*sizeof(csprof_frame_t));
+  hpcrun_frame_t *newbt = csprof_malloc(newsz*sizeof(hpcrun_frame_t));
 
   if(state->bufstk > state->bufend) {
     EMSG("Invariant bufstk > bufend violated");
@@ -298,8 +298,8 @@ csprof_state_expand_buffer(csprof_state_t *state, csprof_frame_t *unwind){
   }
 
   /* copy frames from old to new */
-  memcpy(newbt, state->btbuf, recsz*sizeof(csprof_frame_t));
-  memcpy(newbt+newsz-btsz, state->bufend-btsz, btsz*sizeof(csprof_frame_t));
+  memcpy(newbt, state->btbuf, recsz*sizeof(hpcrun_frame_t));
+  memcpy(newbt+newsz-btsz, state->bufend-btsz, btsz*sizeof(hpcrun_frame_t));
 
   /* setup new pointers */
   state->btbuf = newbt;

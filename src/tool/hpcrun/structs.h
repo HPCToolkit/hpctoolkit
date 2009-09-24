@@ -64,7 +64,7 @@
 // profiling state of a single thread
 // ---------------------------------------------------------
 
-typedef struct csprof_state_s {
+typedef struct csprof_state_t {
 
   /* information for recording function call returns; do not move this
      block, since `swizzle_return' must be the first member of the
@@ -79,7 +79,7 @@ typedef struct csprof_state_s {
 
   void *last_pc;
   void *unwind_pc;
-  csprof_frame_t *unwind;
+  hpcrun_frame_t *unwind;
   void *context_pc;
 
   // btbuf                                                      bufend
@@ -93,10 +93,10 @@ typedef struct csprof_state_s {
   //                      unwind         bufstk
   
 
-  csprof_frame_t *btbuf;      // innermost frame in new backtrace
-  csprof_frame_t *bufend;     // 
-  csprof_frame_t *bufstk;     // innermost frame in cached backtrace
-  void *treenode;             /* cached pointer into the tree */
+  hpcrun_frame_t *btbuf;      // innermost frame in new backtrace
+  hpcrun_frame_t *bufend;     // 
+  hpcrun_frame_t *bufstk;     // innermost frame in cached backtrace
+  csprof_cct_node_t*   treenode;   // cached pointer into the tree
 
   /* how many bogus samples we took */
   unsigned long trampoline_samples;
@@ -113,7 +113,7 @@ typedef struct csprof_state_s {
   hpcrun_epoch_t *epoch;
 
   /* other profiling states which we have seen */
-  struct csprof_state_s *next;
+  struct csprof_state_t* next;
 
   /* support for alternate profilers whose needs we don't provide */
   void *extra_state;

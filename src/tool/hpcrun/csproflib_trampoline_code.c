@@ -82,7 +82,7 @@ csprof_trampoline2(void **stackptr)
 
     if(return_ip != csprof_bt_top_ip(state)) {
 #if !defined(CSPROF_PERF)
-      csprof_frame_t *x = state->bufstk - 1;
+      hpcrun_frame_t *x = state->bufstk - 1;
 
 #if 0
       for( ; x != state->bufend; ++x) {

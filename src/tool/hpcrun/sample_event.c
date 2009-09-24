@@ -163,7 +163,7 @@ csprof_display_summary(void)
 
 
 csprof_cct_node_t *
-hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
+hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 		       int skipInner, int isSync)
 {
   atomic_add_i64(&num_samples_total, 1L);
@@ -212,7 +212,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
 	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc); 
 
-	csprof_frame_t frm = {.ip = func_start_pc};
+	hpcrun_frame_t frm = {.ip = func_start_pc};
 	csprof_cct_node_t* func_proxy = csprof_cct_get_child(cct, node->parent, &frm);
 	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag; 
 

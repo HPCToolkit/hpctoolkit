@@ -58,11 +58,11 @@
 //***************************************************************************
 
 #include "unwind.h"
-
 #include "backtrace.h"
-#include "state.h"
-#include "monitor.h"
-#include "sample_event.h"
+
+#include <hpcrun/state.h>
+#include <monitor.h>
+#include <hpcrun/sample_event.h>
 
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
@@ -131,7 +131,7 @@ hpcrun_backtrace(csprof_state_t *state, ucontext_t* context,
 //     sample's callstack would be 1, and we ignore it.
 //-----------------------------------------------------------------------------
 static int
-hpcrun_filter_sample(int len, csprof_frame_t *start, csprof_frame_t *last)
+hpcrun_filter_sample(int len, hpcrun_frame_t *start, hpcrun_frame_t *last)
 {
   return ( !(monitor_in_start_func_narrow(last->ip) && (len > 1)) );
 }
@@ -153,6 +153,12 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
   // are accessible to a dumping routine that will tell us where we ran 
   // into a problem.
   //--------------------------------------------------------------------
+
+  //
+  // FIXME-TRAMP: cannot reset the backtrace buffer to beginning each time
+  // if a tramp has been set.
+  //   OR ELSE: figure out something else to do about cached backtrace...
+  //
   state->unwind   = state->btbuf; // innermost
   state->bufstk   = state->bufend;
   state->treenode = NULL;
@@ -185,9 +191,10 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
     
     csprof_state_ensure_buffer_avail(state, state->unwind);
 
+    state->unwind->cursor = cursor;
     state->unwind->ip     = (void *) ip;
     state->unwind->ra_loc = NULL;
-    csprof_frame_t* prev = state->unwind;
+    hpcrun_frame_t* prev = state->unwind;
     state->unwind++;
     unw_len++;
 
@@ -198,7 +205,7 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
     if (ret <= 0) {
       break;
     }
-    unw_get_reg(&cursor, UNW_RA_LOC, &prev->ra_loc);
+    prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
   }
   if (backtrace_trolled){
     csprof_up_pmsg_count();
@@ -207,7 +214,7 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
   if (! ENABLED(NO_SAMPLE_FILTERING)) {
     if (hpcrun_filter_sample(unw_len, state->btbuf, state->unwind - 1)){
       TMSG(SAMPLE_FILTER, "filter sample of length %d", unw_len);
-      csprof_frame_t *fr = state->btbuf;
+      hpcrun_frame_t *fr = state->btbuf;
       for (int i = 0; i < unw_len; i++, fr++){
 	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p",i,fr->ip);
       }
@@ -216,8 +223,8 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
     }
   }
 
-  csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
-  csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
+  hpcrun_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
+  hpcrun_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
 
   if (skipInner) {
     bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
@@ -235,12 +242,12 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
 // 
 //***************************************************************************
 
-csprof_frame_t*
-hpcrun_skip_chords(csprof_frame_t* bt_outer, csprof_frame_t* bt_inner, 
+hpcrun_frame_t*
+hpcrun_skip_chords(hpcrun_frame_t* bt_outer, hpcrun_frame_t* bt_inner, 
 		   int skip)
 {
   // N.B.: INVARIANT: bt_inner < bt_outer
-  csprof_frame_t* x_inner = bt_inner;
+  hpcrun_frame_t* x_inner = bt_inner;
   for (int i = 0; (x_inner < bt_outer && i < skip); ++i) {
     // for now, do not support M chords
     lush_assoc_t as = lush_assoc_info__get_assoc(x_inner->as_info);
@@ -255,7 +262,7 @@ hpcrun_skip_chords(csprof_frame_t* bt_outer, csprof_frame_t* bt_inner,
 
 
 void 
-dump_backtrace(csprof_state_t *state, csprof_frame_t* unwind)
+dump_backtrace(csprof_state_t *state, hpcrun_frame_t* unwind)
 {
   static const int msg_limit = 100;
   int msg_cnt = 0;
@@ -266,7 +273,7 @@ dump_backtrace(csprof_state_t *state, csprof_frame_t* unwind)
   PMSG_LIMIT(EMSG("-- begin new backtrace (innermost first) ------------"));
 
   if (unwind) {
-    for (csprof_frame_t* x = state->btbuf; x < unwind; ++x) {
+    for (hpcrun_frame_t* x = state->btbuf; x < unwind; ++x) {
       lush_assoc_info_sprintf(as_str, x->as_info);
       lush_lip_sprintf(lip_str, x->lip);
       PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
@@ -281,7 +288,7 @@ dump_backtrace(csprof_state_t *state, csprof_frame_t* unwind)
 
   if (msg_cnt <= msg_limit && state->bufstk != state->bufend) {
     PMSG_LIMIT(EMSG("-- begin cached backtrace ---------------------------"));
-    for (csprof_frame_t* x = state->bufstk; x < state->bufend; ++x) {
+    for (hpcrun_frame_t* x = state->bufstk; x < state->bufend; ++x) {
       lush_assoc_info_sprintf(as_str, x->as_info);
       lush_lip_sprintf(lip_str, x->lip);
       PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
