@@ -56,6 +56,8 @@ using std::vector;
 
 #include <typeinfo>
 
+#include <climits>
+
 //************************* User Include Files *******************************
 
 #include "Metric-Mgr.hpp"
@@ -73,6 +75,8 @@ namespace Prof {
 namespace Metric {
 
 //****************************************************************************
+
+uint Mgr::npos = UINT_MAX;
 
 Mgr::Mgr()
 {
@@ -330,6 +334,33 @@ Mgr::hasDerived() const
   }
   return false;
 }
+
+//****************************************************************************
+
+uint
+Mgr::findGroup(const Mgr& y) const
+{
+  const Mgr* x = this;
+
+  bool found = true; // optimistic
+  std::vector<uint> metricMap(y.size());
+  
+  for (uint i = 0; i < y.size(); ++i) {
+    const Metric::ADesc* y_m = y.metric(i);
+    string mNm = y_m->name();
+    const Metric::ADesc* x_m = x->metric(mNm);
+    
+    if (!x_m || (i > 0 && x_m->id() != (metricMap[i-1] + 1))) {
+      found = false;
+      break;
+    }
+    
+    metricMap[i] = x_m->id();
+  }
+
+  return (found && !metricMap.empty()) ? metricMap[0] : Mgr::npos;
+}
+
 
 //****************************************************************************
 

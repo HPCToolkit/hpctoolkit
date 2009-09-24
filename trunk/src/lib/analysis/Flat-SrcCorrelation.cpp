@@ -769,7 +769,7 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
 	uint mIdx = (uint)StrUtil::toUInt64(m->profileRelId());
 	const Prof::Flat::EventData& profevent = proflm->event(mIdx);
 	if (!m->period()) {
-	  // N.B.: 'period' is missing when metric derives from config file
+	  // N.B.: 'period' is missing when metric's provenance is config file
 	  m->period(profevent.mdesc().period());
 	}
 	
