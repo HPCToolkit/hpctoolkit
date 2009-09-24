@@ -62,7 +62,7 @@ using std::endl;
 
 #include <include/uint.h>
 
-#include "Metric-AExpr.hpp"
+#include "Metric-AExprItrv.hpp"
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/NaN.h>
@@ -76,7 +76,7 @@ using std::endl;
 # define AEXPR_CHECK(x) 
 #endif
 
-static double epsilon = 0.000001;
+//static double epsilon = 0.000001;
 
 //****************************************************************************
 
@@ -86,11 +86,11 @@ namespace Metric {
 
 
 // ----------------------------------------------------------------------
-// class AExpr
+// class AExprItrv
 // ----------------------------------------------------------------------
 
 std::string
-AExpr::toString() const
+AExprItrv::toString() const
 {
   std::ostringstream os;
   dump(os);
@@ -98,255 +98,26 @@ AExpr::toString() const
 }
 
 
-void 
-AExpr::dump_opands(std::ostream& os, AExpr** opands, int sz, const char* sep)
+void
+AExprItrv::ddump() const
 {
-  for (int i = 0; i < sz; ++i) {
-    opands[i]->dump(os);
-    if (i < (sz - 1)) {
-      os << sep;
-    }
-  }
+  dump(std::cerr);
+  std::cerr.flush();
 }
 
 
 // ----------------------------------------------------------------------
-// class Const
+// class MaxItrv
 // ----------------------------------------------------------------------
 
 std::ostream& 
-Const::dump(std::ostream& os) const
-{ 
-  os << "(" << m_c << ")"; 
+MaxItrv::dump_me(std::ostream& os) const
+{
+  os << "max()";
   return os;
 }
 
-
-// ----------------------------------------------------------------------
-// class Neg
-// ----------------------------------------------------------------------
-
-double 
-Neg::eval(const Metric::IData& mdata) const
-{
-  double result = m_expr->eval(mdata);
-
-  AEXPR_CHECK(result);
-  return -result;
-}
-
-
-std::ostream& 
-Neg::dump(std::ostream& os) const
-{ 
-  os << "(-";
-  m_expr->dump(os);
-  os << ")"; 
-  return os;
-}
-
-
-// ----------------------------------------------------------------------
-// class Var
-// ----------------------------------------------------------------------
-
-std::ostream& 
-Var::dump(std::ostream& os) const
-{ 
-  os << m_name; 
-  return os;
-}
-
-
-// ----------------------------------------------------------------------
-// class Power
-// ----------------------------------------------------------------------
-
-double 
-Power::eval(const Metric::IData& mdata) const
-{
-  double b = m_base->eval(mdata);
-  double e = m_exponent->eval(mdata);
-  double result = pow(b, e);
-  
-  AEXPR_CHECK(result);
-  return result;
-}
-
-
-std::ostream& 
-Power::dump(std::ostream& os) const
-{
-  os << "(";
-  m_base->dump(os);
-  os << "**";
-  m_exponent->dump(os);
-  os << ")";
-  return os;
-}
-
-
-// ----------------------------------------------------------------------
-// class Divide
-// ----------------------------------------------------------------------
-
-double 
-Divide::eval(const Metric::IData& mdata) const
-{
-  double n = m_numerator->eval(mdata);
-  double d = m_denominator->eval(mdata);
-  double result = n / d;
-
-  AEXPR_CHECK(result);
-  return result;
-}
-
-
-std::ostream& 
-Divide::dump(std::ostream& os) const
-{
-  os << "("; 
-  m_numerator->dump(os); 
-  os << " / "; 
-  m_denominator->dump(os); 
-  os << ")";
-  return os;
-}
-
-
-// ----------------------------------------------------------------------
-// class Minus
-// ----------------------------------------------------------------------
-
-double 
-Minus::eval(const Metric::IData& mdata) const
-{
-  double m = m_minuend->eval(mdata);
-  double s = m_subtrahend->eval(mdata);
-  double result = (m - s);
-  
-  AEXPR_CHECK(result);
-  return result;
-}
-
-
-std::ostream& 
-Minus::dump(std::ostream& os) const
-{
-  os << "(";
-  m_minuend->dump(os);
-  os << " - ";
-  m_subtrahend->dump(os); os << ")";
-  return os;
-}
-
-
-// ----------------------------------------------------------------------
-// class Plus
-// ----------------------------------------------------------------------
-
-Plus::~Plus() 
-{
-  for (int i = 0; i < m_sz; ++i) {
-    delete m_opands[i];
-  }
-  delete[] m_opands;
-}
-
-
-double 
-Plus::eval(const Metric::IData& mdata) const
-{
-  double result = evalSum(mdata, m_opands, m_sz);
-
-  AEXPR_CHECK(result);
-  return result;
-}
-
-
-std::ostream& 
-Plus::dump(std::ostream& os) const
-{
-  os << "(";
-  dump_opands(os, m_opands, m_sz, " + ");
-  os << ")";
-  return os;
-}
-
-
-// ----------------------------------------------------------------------
-// class Times
-// ----------------------------------------------------------------------
-
-Times::~Times() 
-{
-  for (int i = 0; i < m_sz; ++i) {
-    delete m_opands[i];
-  }
-  delete[] m_opands;
-}
-
-
-double 
-Times::eval(const Metric::IData& mdata) const
-{
-  double result = 1.0;
-  for (int i = 0; i < m_sz; ++i) {
-    double x = m_opands[i]->eval(mdata);
-    result *= x;
-  }
-
-  AEXPR_CHECK(result);
-  return result;
-}
-
-
-std::ostream& 
-Times::dump(std::ostream& os) const
-{
-  os << "(";
-  dump_opands(os, m_opands, m_sz, " * ");
-  os << ")";
-  return os;
-}
-
-
-// ----------------------------------------------------------------------
-// class Max
-// ----------------------------------------------------------------------
-
-Max::~Max() 
-{
-  for (int i = 0; i < m_sz; ++i) {
-    delete m_opands[i];
-  }
-  delete[] m_opands;
-}
-
-
-double 
-Max::eval(const Metric::IData& mdata) const
-{
-  double result = m_opands[0]->eval(mdata);
-  for (int i = 1; i < m_sz; ++i) {
-    double x = m_opands[i]->eval(mdata);
-    result = std::max(result, x);
-  }
-
-  AEXPR_CHECK(result);
-  return result;
-}
-
-
-std::ostream& 
-Max::dump(std::ostream& os) const
-{
-  os << "max(";
-  dump_opands(os, m_opands, m_sz);
-  os << ")";
-  return os;
-}
-
+#if 0
 
 // ----------------------------------------------------------------------
 // class Min
@@ -370,6 +141,7 @@ Min::eval(const Metric::IData& mdata) const
     result = std::min(result, x);
   }
 
+  //IFTRACE << "min=" << result << endl;   
   AEXPR_CHECK(result);
   return result;
 }
@@ -403,6 +175,7 @@ Mean::eval(const Metric::IData& mdata) const
 {
   double result = evalMean(mdata, m_opands, m_sz);
 
+  //IFTRACE << "mean=" << result << endl; 
   AEXPR_CHECK(result);
   return result;
 }
@@ -437,6 +210,7 @@ StdDev::eval(const Metric::IData& mdata) const
   std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
   double result = sqrt(v_m.first);
 
+  //IFTRACE << "stddev=" << result << endl; 
   AEXPR_CHECK(result);
   return result;
 }
@@ -476,6 +250,7 @@ CoefVar::eval(const Metric::IData& mdata) const
     result = sdev / mean;
   }
 
+  //IFTRACE << "r-stddev=" << result << endl; 
   AEXPR_CHECK(result);
   return result;
 }
@@ -515,6 +290,7 @@ RStdDev::eval(const Metric::IData& mdata) const
     result = (sdev / mean) * 100;
   }
 
+  //IFTRACE << "r-stddev=" << result << endl; 
   AEXPR_CHECK(result);
   return result;
 }
@@ -528,6 +304,8 @@ RStdDev::dump(std::ostream& os) const
   os << ")";
   return os;
 }
+
+#endif
 
 //****************************************************************************
 

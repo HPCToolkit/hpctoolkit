@@ -67,6 +67,7 @@
 #include <include/uint.h>
 
 #include "Metric-AExpr.hpp"
+#include "Metric-AExprItrv.hpp"
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 
@@ -276,7 +277,11 @@ public:
   toString() const;
 
   std::ostream&
-  dump(std::ostream& os = std::cerr) const;
+  dump(std::ostream& os = std::cerr) const
+  {
+    dump_me(os);
+    return os;
+  }
 
   virtual std::ostream&
   dump_me(std::ostream& os = std::cerr) const;
@@ -547,6 +552,78 @@ private:
   Prof::Metric::AExpr* m_expr;
 };
 
+
+//***************************************************************************//
+// DerivedItrvDesc
+//***************************************************************************//
+
+class DerivedItrvDesc : public ADesc
+{
+public:
+  DerivedItrvDesc(const char* nameBase, const char* description,
+		  Metric::AExprItrv* expr,
+		  bool isVisible = true, bool isSortKey = false,
+		  bool doDispPercent = true, bool isPercent = false)
+    : ADesc(nameBase, description,
+	    isVisible, isSortKey, doDispPercent, isPercent),
+      m_expr(expr)
+  { }
+
+  DerivedItrvDesc(const std::string& nameBase, const std::string& description,
+	      Metric::AExprItrv* expr,
+	      bool isVisible = true, bool isSortKey = false,
+	      bool doDispPercent = true, bool isPercent = false)
+    : ADesc(nameBase, description,
+	    isVisible, isSortKey, doDispPercent, isPercent),
+      m_expr(expr)
+  { }
+
+  virtual ~DerivedItrvDesc()
+  { }
+  
+  DerivedItrvDesc(const DerivedItrvDesc& x)
+    : ADesc(x),
+      m_expr(x.m_expr)
+  { }
+  
+  DerivedItrvDesc&
+  operator=(const DerivedItrvDesc& x) 
+  {
+    if (this != &x) {
+      ADesc::operator=(x);
+      m_expr = x.m_expr;
+    }
+    return *this;
+  }
+
+  virtual DerivedItrvDesc*
+  clone() const
+  { return new DerivedItrvDesc(*this); }
+
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  const Metric::AExprItrv*
+  expr() const
+  { return m_expr; }
+
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  virtual std::string
+  toString() const;
+
+  virtual std::ostream&
+  dump_me(std::ostream& os = std::cerr) const;
+
+protected:
+private:
+  Prof::Metric::AExprItrv* m_expr;
+};
 
 
 } // namespace Metric
