@@ -239,8 +239,9 @@ realmain(int argc, char* const* argv)
       Analysis::CallPath::read(fnm, groupId, rFlags);
     profGbl->merge(*prof, Prof::CallPath::Profile::Merge_mergeMetricByName);
 
-    // TODO: compute interior values for SampledDesc metrics
+    // TODO: accumulateMetrics() for SampledDesc metrics just merged
     // TODO: incrementally update values for DerivedItrvDesc metrics
+    // TODO: write local values to disk
 
     delete prof;
   }

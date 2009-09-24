@@ -175,6 +175,20 @@ public:
 
 
   // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
+  static uint npos;
+
+  // findGroup: finds the group of metrics in 'x' = 'this' that
+  //   correspond to those in 'y' (i.e., a mapping between 'y' and
+  //   'x').  Returns the first index of the group if found; otherwise
+  //   Mgr::npos.
+  uint
+  findGroup(const Mgr& y_mMgr) const;
+
+  
+  // ------------------------------------------------------------
   // helper maps/tables
   // ------------------------------------------------------------
 

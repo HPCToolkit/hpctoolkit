@@ -199,28 +199,8 @@ Profile::mergeMetrics(Profile& y, int mergeTy,
   // Translate Merge_mergeMetricByName to a primitive merge type
   // -------------------------------------------------------
   if (mergeTy == Merge_mergeMetricByName) {
-    
-    mergeTy = Merge_mergeMetricById; // optimistic
-
-    // attempt to find a mapping of y's metrics to x's
-    std::vector<uint> metricMap(y.metricMgr()->size());
-
-    for (uint i = 0; i < y.metricMgr()->size(); ++i) {
-      const Metric::ADesc* m_y = y.metricMgr()->metric(i);
-      string mNm = m_y->name();
-      const Metric::ADesc* m_x = m_mMgr->metric(mNm);
-      
-      if (!m_x || (i > 0 && m_x->id() != (metricMap[i-1] + 1))) {
-	mergeTy = Merge_createMetric;
-	break;
-      }
-
-      metricMap[i] = m_x->id();
-    }
-     
-    if (mergeTy == Merge_mergeMetricById && !metricMap.empty()) {
-      mergeTy = metricMap[0];
-    }
+    uint mapsTo = m_mMgr->findGroup(*y.metricMgr());
+    mergeTy = (mapsTo == Metric::Mgr::npos) ? Merge_createMetric : (int)mapsTo;
   }
 
   // -------------------------------------------------------
@@ -347,7 +327,7 @@ Profile::writeXML_hdr(std::ostream& os, int oFlags, const char* pfx) const
        << " n" << MakeAttrStr(m->name())
        << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\""
        << " compute=\"" << ((m->isComputed()) ? "0" : "1") << "\">\n";
-    os << "      <Info>" 
+    os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()
     if (mm) {
       os << "<NV n=\"period\" v" << MakeAttrNum(mm->period()) << "/>"
