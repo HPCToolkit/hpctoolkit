@@ -87,7 +87,8 @@ public:
   ADesc()
     : m_id(0),
       m_isVisible(true), m_isSortKey(false),
-      m_doDispPercent(true), m_isPercent(false)
+      m_doDispPercent(true), m_isPercent(false),
+      m_isComputed(false)
   { }
 
   ADesc(const char* nameBase, const char* description,
@@ -96,7 +97,8 @@ public:
     : m_id(0), m_nameBase((nameBase) ? nameBase : ""), 
       m_description((description) ? description : ""),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
-      m_doDispPercent(doDispPercent), m_isPercent(isPercent)
+      m_doDispPercent(doDispPercent), m_isPercent(isPercent),
+      m_isComputed(false)
   { }
 
   ADesc(const std::string& nameBase, const std::string& description,
@@ -104,7 +106,8 @@ public:
 	bool doDispPercent = true, bool isPercent = false)
     : m_id(0), m_nameBase(nameBase), m_description(description),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
-      m_doDispPercent(doDispPercent), m_isPercent(isPercent)
+      m_doDispPercent(doDispPercent), m_isPercent(isPercent),
+      m_isComputed(false)
   { }
 
   virtual ~ADesc()
@@ -115,7 +118,8 @@ public:
       m_nameBase(x.m_nameBase), m_namePfx(x.m_namePfx), m_nameSfx(x.m_nameSfx),
       m_description(x.m_description),
       m_isVisible(x.m_isVisible), m_isSortKey(x.m_isSortKey),
-      m_doDispPercent(x.m_doDispPercent), m_isPercent(x.m_isPercent)
+      m_doDispPercent(x.m_doDispPercent), m_isPercent(x.m_isPercent),
+      m_isComputed(x.m_isComputed)
   { }
 
   ADesc&
@@ -131,6 +135,7 @@ public:
       m_isSortKey     = x.m_isSortKey;
       m_doDispPercent = x.m_doDispPercent;
       m_isPercent     = x.m_isPercent;
+      m_isComputed    = x.m_isComputed;
     }
     return *this;
   }
@@ -235,8 +240,8 @@ public:
   { return m_isVisible; }
 
   void
-  isVisible(bool isVisible)
-  { m_isVisible = isVisible; }
+  isVisible(bool x)
+  { m_isVisible = x; }
 
 
   bool
@@ -244,8 +249,8 @@ public:
   { return m_isSortKey; }
 
   void
-  isSortKey(bool isSortKey)
-  { m_isSortKey = isSortKey; }
+  isSortKey(bool x)
+  { m_isSortKey = x; }
 
 
   // display as a percentage
@@ -254,8 +259,8 @@ public:
   { return m_doDispPercent; }
 
   void
-  doDispPercent(bool doDispPercent)
-  { m_doDispPercent = doDispPercent; }
+  doDispPercent(bool x)
+  { m_doDispPercent = x; }
 
 
   // Metric values should be interpreted as percents.  This is
@@ -268,6 +273,18 @@ public:
   bool
   isPercent() const
   { return m_isPercent; }
+
+
+  // has the metric been fully computed (e.g., have value been
+  // propagated from leaves to interior nodes)
+  bool
+  isComputed() const
+  { return m_isComputed; }
+
+  void
+  isComputed(bool x)
+  { m_isComputed = x; }
+
 
   // -------------------------------------------------------
   // 
@@ -301,6 +318,7 @@ private:
   bool m_isSortKey;
   bool m_doDispPercent;
   bool m_isPercent;
+  bool m_isComputed;
 };
 
 
@@ -460,7 +478,7 @@ public:
   dump_me(std::ostream& os = std::cerr) const;
 
 protected:
-private:  
+private:
   uint64_t m_period;             // sampling period
   hpcrun_metricFlags_t m_flags;  // flags of the metric
   bool m_isUnitsEvents;

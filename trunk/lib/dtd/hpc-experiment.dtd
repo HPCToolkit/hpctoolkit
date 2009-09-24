@@ -30,7 +30,7 @@
   <!-- ****************************************************************** -->
   <!ELEMENT SecHeader (MetricTable?, LoadModuleTable?, FileTable?, ProcedureTable?, Info*)>
 
-    <!-- MetricTable: (i)d; (n)ame; fmt: format; show -->
+    <!-- MetricTable: (i)d; (n)ame; fmt: format; show; compute -->
     <!ELEMENT MetricTable (Metric)*>
 
     <!ELEMENT Metric (MetricFormula?, Info?)>
@@ -38,7 +38,8 @@
 	      i    CDATA #REQUIRED
 	      n    CDATA #REQUIRED
 	      fmt  CDATA #IMPLIED
-	      show (1|0) "1">
+	      show (1|0) "1"
+	      compute (1|0) "1">
 
     <!-- MetricFormula represents derived metrics: (frm): formula; (t)ype -->
     <!ELEMENT MetricFormula (Info?)>

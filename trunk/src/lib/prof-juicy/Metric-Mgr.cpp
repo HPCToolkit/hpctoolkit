@@ -323,7 +323,8 @@ Mgr::hasDerived() const
 {
   for (uint i = 0; i < m_metrics.size(); ++i) {
     Metric::ADesc* m = m_metrics[i]; 
-    if (typeid(*m) == typeid(Prof::Metric::DerivedDesc)) {
+    if (typeid(*m) == typeid(Prof::Metric::DerivedDesc) ||
+	typeid(*m) == typeid(Prof::Metric::DerivedItrvDesc)) {
       return true;
     }
   }
