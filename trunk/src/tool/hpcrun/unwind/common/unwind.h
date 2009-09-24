@@ -99,12 +99,12 @@ void unw_init();
 // ----------------------------------------------------------
 
 typedef enum {
-  UNW_REG_IP,
-  UNW_RA_LOC
+  UNW_REG_IP
 } unw_reg_code_t;
 
 int unw_get_reg(unw_cursor_t *c, unw_reg_code_t reg_id, void **reg_value);
 
+void* hpcrun_unw_get_ra_loc(unw_cursor_t* c);
 
 // ----------------------------------------------------------
 // unw_init_cursor

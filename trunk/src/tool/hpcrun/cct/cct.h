@@ -73,11 +73,8 @@
 
 //*************************** User Include Files ****************************
 
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-#include "list.h"
-#endif
-
-#include <metrics.h>
+#include <unwind/common/unwind_cursor.h>
+#include <hpcrun/metrics.h>
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
@@ -118,7 +115,7 @@ cct_metric_data_increment(int metric_id,
 }
 
 
-typedef struct csprof_cct_node_s {
+typedef struct csprof_cct_node_t {
 
   // ---------------------------------------------------------
   // a persistent node id is assigned for each node. this id
@@ -145,10 +142,11 @@ typedef struct csprof_cct_node_s {
   // ---------------------------------------------------------
 
   // parent node and the beginning of the child list
-  struct csprof_cct_node_s *parent, *children;
+  struct csprof_cct_node_t* parent;
+  struct csprof_cct_node_t* children;
 
   // singly linked list of siblings
-  struct csprof_cct_node_s *next_sibling;
+  struct csprof_cct_node_t* next_sibling;
 
   // ---------------------------------------------------------
   // metrics (N.B.: MUST APPEAR AT END! cf. csprof_cct_node__create)
@@ -158,15 +156,17 @@ typedef struct csprof_cct_node_s {
 
 } csprof_cct_node_t;
 
+//
+// frame_t values are stored in the backtrace buffer
+//
 
-#if !defined(CSPROF_LIST_BACKTRACE_CACHE)
-typedef struct csprof_frame_s {
+typedef struct hpcrun_frame_t {
+  unw_cursor_t cursor;       // hold a copy of the cursor for this frame
   lush_assoc_info_t as_info;
   void* ip;
   void* ra_loc;
   lush_lip_t* lip;
-} csprof_frame_t;
-#endif
+} hpcrun_frame_t;
 
 
 // returns the number of ancestors walking up the tree
@@ -223,24 +223,10 @@ lush_cct_ctxt__write(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctxt);
 // 
 // ---------------------------------------------------------
 
-typedef struct csprof_cct_s {
+typedef struct csprof_cct_t {
 
   csprof_cct_node_t* tree_root;
   unsigned long num_nodes;
-
-#ifndef CSPROF_TRAMPOLINE_BACKEND
-  /* Two cached arrays: one contains a copy of the most recent
-     backtrace (with the first element being the *top* of the call
-     stack); the other contains corresponding node pointers into the
-     tree (where the last element will point to the tree root).  We
-     try to resize these arrays as little as possible.  For
-     convenience, the beginning of the array serves as padding instead
-     of the end (i.e. the arrays grow from high to smaller indices.) */
-  void **cache_bt;
-  csprof_cct_node_t **cache_nodes;
-  unsigned int cache_top;     /* current top (smallest index) of arrays */
-  unsigned int cache_len;     /* maximum size of the arrays */
-#endif
 
 } hpcrun_cct_t;
 
@@ -259,13 +245,13 @@ int csprof_cct__fini(hpcrun_cct_t *x);
 //              ^ bt_beg                                       ^ bt_end
 //
 csprof_cct_node_t*
-csprof_cct_insert_backtrace(hpcrun_cct_t *x, void *treenode, int metric_id,
-			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
+csprof_cct_insert_backtrace(hpcrun_cct_t *x, csprof_cct_node_t* treenode, int metric_id,
+			    hpcrun_frame_t *path_beg, hpcrun_frame_t *path_end,
 			    cct_metric_data_t sample_count);
 
 csprof_cct_node_t *csprof_cct_get_child(hpcrun_cct_t *cct, 
 					csprof_cct_node_t *parent, 
-					csprof_frame_t *frm);
+					hpcrun_frame_t *frm);
 
 int hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt);
 

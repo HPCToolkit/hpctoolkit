@@ -74,16 +74,16 @@
 #include <include/gcc-attr.h>
 #include <x86-decoder.h>
 
-#include "state.h"
+#include <hpcrun/state.h>
 #include "stack_troll.h"
 #include "thread_use.h"
 
-#include "unwind.h"
-#include "backtrace.h"
+#include <unwind/common/unwind.h>
+#include <unwind/common/backtrace.h>
 #include "splay.h"
 #include "ui_tree.h"
 
-#include "thread_data.h"
+#include <hpcrun/thread_data.h>
 #include "x86-unwind-interval.h"
 #include "x86-validate-retn-addr.h"
 
@@ -199,12 +199,13 @@ unw_init(void)
 int 
 unw_get_reg(unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
 {
+  //
+  // only implement 1 reg for the moment.
+  //  add more if necessary
+  //
   switch (reg_id) {
     case UNW_REG_IP:
       *reg_value = cursor->pc;
-      break;
-    case UNW_RA_LOC:
-      *reg_value = cursor->ra_loc;
       break;
     default:
       return ~0;
@@ -236,6 +237,24 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
 
   if (MYDBG) { dump_ui((unwind_interval *)cursor->intvl, 0); }
 }
+
+//
+// Unwinder support for trampolines augments the
+// cursor with 'ra_loc' field.
+//
+// This is NOT part of libunwind interface, so
+// it does not use the unw_get_reg.
+//
+// Instead, we use the following procedure to abstractly
+// fetch the ra_loc
+//
+
+void*
+hpcrun_unw_get_ra_loc(unw_cursor_t* cursor)
+{
+  return cursor->ra_loc;
+}
+
 
 step_state
 unw_step_real(unw_cursor_t *cursor)
