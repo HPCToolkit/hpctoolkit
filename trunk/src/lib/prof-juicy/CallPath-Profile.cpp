@@ -344,9 +344,10 @@ Profile::writeXML_hdr(std::ostream& os, int oFlags, const char* pfx) const
     const Metric::SampledDesc* mm = dynamic_cast<const Metric::SampledDesc*>(m);
 
     os << "    <Metric i" << MakeAttrNum(i) 
-       << " n" << MakeAttrStr(m->name()) << ">\n";
+       << " n" << MakeAttrStr(m->name())
+       << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\">\n";
     os << "      <Info>" 
-       << "<NV n=\"units\" v=\"events\"/>"; // or "samples"
+       << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()
     if (mm) {
       os << "<NV n=\"period\" v" << MakeAttrNum(mm->period()) << "/>"
 	 << "<NV n=\"flags\" v" << MakeAttrNum(mm->flags(), 16) << "/>";

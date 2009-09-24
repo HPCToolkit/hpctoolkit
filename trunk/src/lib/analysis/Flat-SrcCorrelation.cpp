@@ -249,11 +249,12 @@ Driver::write_experiment(std::ostream &os) const
     const Prof::Metric::ADesc* m = m_mMgr.metric(i);
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
-       << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\"/>";
-    os << "<Info>"
+       << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\">\n";
+    os << "      <Info>" 
        << "<NV n=\"units\" v=\"events\"/>" // or "samples" m->isUnitsEvents()
        << "<NV n=\"percent\" v=\"" << ((m->doDispPercent()) ? "1" : "0") << "\"/>"
        << "</Info>\n";
+    os << "    </Metric>\n";
   }
   os << "  </MetricTable>\n";
 
