@@ -227,12 +227,7 @@ realmain(int argc, char* const* argv)
   // Create summary and thread-level metrics
   // -------------------------------------------------------
 
-  //Prof::Metric::Mgr* mrgMetricMgr = profGbl->metricMgr();
-  //Prof::Metric::Mgr* sumMetricMgr = new Prof::Metric::Mgr;
-
-  // TODO: create summary metrics descriptors
-
-  //profGbl->metricMgr(sumMetricMgr);
+  profGbl->metricMgr()->makeItrvSummaryMetrics();
   profGbl->isMetricMgrVirtual(false);
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
@@ -244,7 +239,8 @@ realmain(int argc, char* const* argv)
       Analysis::CallPath::read(fnm, groupId, rFlags);
     profGbl->merge(*prof, Prof::CallPath::Profile::Merge_mergeMetricByName);
 
-    // TODO: create local metrics and incrementally update summary metrics
+    // TODO: compute interior values for SampledDesc metrics
+    // TODO: incrementally update values for DerivedItrvDesc metrics
 
     delete prof;
   }
