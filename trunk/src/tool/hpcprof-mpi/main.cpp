@@ -227,19 +227,22 @@ realmain(int argc, char* const* argv)
   // Create summary and thread-level metrics
   // -------------------------------------------------------
 
-  Prof::Metric::Mgr* mrgMetricMgr = profGbl->metricMgr();
-  Prof::Metric::Mgr* sumMetricMgr = new Prof::Metric::Mgr;
+  //Prof::Metric::Mgr* mrgMetricMgr = profGbl->metricMgr();
+  //Prof::Metric::Mgr* sumMetricMgr = new Prof::Metric::Mgr;
 
   // TODO: create summary metrics descriptors
 
-  profGbl->metricMgr(sumMetricMgr);
+  //profGbl->metricMgr(sumMetricMgr);
   profGbl->isMetricMgrVirtual(false);
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
-    Prof::CallPath::Profile* prof = Analysis::CallPath::read(fnm, groupId);
-    profGbl->merge(*prof, Prof::CallPath::Profile::Merge_createMetric /*Merge_mergeMetricByName*/);
+    uint rFlags = Prof::CallPath::Profile::RFlg_noMetricSfx;
+
+    Prof::CallPath::Profile* prof =
+      Analysis::CallPath::read(fnm, groupId, rFlags);
+    profGbl->merge(*prof, Prof::CallPath::Profile::Merge_mergeMetricByName);
 
     // TODO: create local metrics and incrementally update summary metrics
 
@@ -247,7 +250,7 @@ realmain(int argc, char* const* argv)
   }
 
   nArgs.destroy();
-  delete mrgMetricMgr;
+  //delete mrgMetricMgr;
 
   // ------------------------------------------------------------
   // Generate Experiment database
