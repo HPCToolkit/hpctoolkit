@@ -186,8 +186,8 @@ public:
   std::string
   toString(const char* pre = "") const;
 
-  void
-  dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  std::ostream&
+  dump(std::ostream& os = std::cerr, const char* pre = "") const;
 
   void
   ddump() const;

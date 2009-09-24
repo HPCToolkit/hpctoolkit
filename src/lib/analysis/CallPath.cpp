@@ -150,7 +150,7 @@ read(const char* prof_fnm, uint groupId, uint rFlags)
       Prof::Metric::ADesc* m = metricMgr->metric(i);
       m->namePfx(StrUtil::toStr(groupId));
     }
-    //metricMgr->recomputeMaps(); // not strictly necessary
+    metricMgr->recomputeMaps();
   }
 
   return prof;
