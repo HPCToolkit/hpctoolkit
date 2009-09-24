@@ -107,7 +107,7 @@ ADesc::dump(std::ostream& os) const
 std::ostream&
 ADesc::dump_me(std::ostream& os) const
 {
-  os << name() << std::flush;
+  os << toString();
   return os;
 }
 
@@ -115,7 +115,8 @@ ADesc::dump_me(std::ostream& os) const
 void
 ADesc::ddump() const
 {
-  dump();
+  dump(std::cerr);
+  std::cerr.flush();
 }
 
 
@@ -136,6 +137,7 @@ SampledDesc::toString() const
 std::ostream&
 SampledDesc::dump_me(std::ostream& os) const
 {
+  os << toString();
   return os;
 }
 
@@ -155,6 +157,7 @@ DerivedDesc::toString() const
 std::ostream&
 DerivedDesc::dump_me(std::ostream& os) const
 {
+  os << toString();
   return os;
 }
 

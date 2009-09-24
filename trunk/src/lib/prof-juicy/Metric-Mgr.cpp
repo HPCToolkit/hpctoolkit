@@ -286,12 +286,25 @@ Mgr::toString(const char* pre) const
 }
 
 
-void
-Mgr::dump(std::ostream& o, const char* pre) const
+std::ostream&
+Mgr::dump(std::ostream& os, const char* pre) const
 {
+  os << "[ metric table:" << std::endl;
   for (uint i = 0; i < m_metrics.size(); i++) {
-    o << m_metrics[i]->toString() + "\n";
+    os << "  " << m_metrics[i]->toString() << std::endl;
   }
+  os << "]" << std::endl;
+
+  os << "[ unique-name-to-metric:" << std::endl;
+  for (StringToADescMap::const_iterator it = m_uniqnmToMetricMap.begin();
+       it !=  m_uniqnmToMetricMap.end(); ++it) {
+    const string& nm = it->first;
+    Metric::ADesc* m = it->second;
+    os << "  " << nm << " -> " << m->toString() << std::endl;
+  }
+  os << "]" << std::endl;
+
+  return os;
 }
 
 
@@ -299,6 +312,7 @@ void
 Mgr::ddump() const
 {
   dump(std::cerr);
+  std::cerr.flush();
 }
 
 
@@ -309,7 +323,7 @@ Mgr::ddump() const
 bool 
 Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
 { 
-  bool ans = false;
+  bool isChanged = false;
 
   // 1. metric name to Metric::ADescVec table
   string nm = m->name();
@@ -328,7 +342,7 @@ Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
     
     m->nameSfx(sfx_new);
     nm = m->name(); // update 'nm'
-    ans = true;
+    isChanged = true;
 
     mvec.push_back(m);
   }
@@ -355,7 +369,7 @@ Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
     }
   }
 
-  return ans;
+  return isChanged;
 }
 
 //****************************************************************************
