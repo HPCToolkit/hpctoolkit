@@ -176,18 +176,20 @@ public:
   // 
   // -------------------------------------------------------
   enum {
-    Merge_createMetric      = -2,
-    Merge_mergeMetricByName = -1,
-    Merge_mergeMetricById   = 0
+    // merge y's metrics into x's by name: the group of names in y
+    // are merged with a matching group of names in x or are created
+    Merge_mergeMetricByName = -2,
+
+    // for each metric in y, create a corresponding metric in x
+    Merge_createMetric = -1,
+
+    // merge y's metrics into x's by id: first metric in y maps to
+    // given metric id in x (assumes complete overlap)
+    Merge_mergeMetricById = 0 // or >= 0
   };
 
-  // merge: Given a Profile y, merge y into x = 'this'.  The 'metricsMapTo'
+  // merge: Given a Profile y, merge y into x = 'this'.  The 'mergeTy'
   //   parameter indicates how to merge y's metrics into x.
-  //
-  //   < 0  : semantics as indicated
-  //   >= 0 : merge metrics by id (first metric in y maps to given
-  //          metric id in x
-  //
   // ASSUMES: both x and y are in canonical form (canonicalize())
   // WARNING: the merge may change/destroy y
   void
@@ -277,6 +279,10 @@ public:
 private:
   void
   canonicalize();
+
+  void
+  mergeMetrics(Profile& y, int mergeTy, 
+	       uint& x_newMetricBegIdx, uint& y_newMetrics);
 
   // apply CCT MergeChange after merging two profiles
   void

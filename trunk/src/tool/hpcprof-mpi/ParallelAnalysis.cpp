@@ -104,7 +104,8 @@ reduce(Prof::CallPath::Profile* profile,
       int lchild = i;     // left child of parent
       int rchild = i + 1; // right child of parent (if it exists)
 
-      // merge lchild into parent
+      // merge lchild into parent (merge left child first to maintain
+      // metric order)
       mergeNonLocal(profile, parent, lchild, myRank);
 
       // merge rchild into parent

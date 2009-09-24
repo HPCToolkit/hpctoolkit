@@ -181,11 +181,12 @@ realmain(int argc, char* const* argv)
 				     mergeTy, rFlags);
 
   // -------------------------------------------------------
-  // Create canonical CCT (no metrics)
+  // Create canonical CCT (metrics merged by <group>.<name>.*)
   // -------------------------------------------------------
   Prof::CallPath::Profile* profGbl = NULL;
 
-  // Post-INVARIANT: rank 0's 'profLcl' the canonical CCT
+  // Post-INVARIANT: rank 0's 'profLcl' the canonical CCT.  Metrics
+  // are merged (and sorted by always merging left-child before right)
   ParallelAnalysis::reduce(profLcl, myRank, numRanks - 1);
 
   if (myRank == rootRank) {
@@ -196,7 +197,7 @@ realmain(int argc, char* const* argv)
 
   // Post-INVARIANT: 'profGbl' is the canonical CCT
   ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1);
-
+  
   if (0 && myRank == rootRank) {
     FILE* fs = hpcio_fopen_w("canonical-cct.hpcrun", 1);
     Prof::CallPath::Profile::fmt_fwrite(*profGbl, fs, 0);
@@ -226,32 +227,27 @@ realmain(int argc, char* const* argv)
   // Create summary and thread-level metrics
   // -------------------------------------------------------
 
-  // TODO:
-  //   - create summary metrics.  Each process has a set for each group
-  //     = while reading profiles, add group ids
-  //     = during merge, also merge metrics (if virtual and with special flag)
-  //     - sort out-of-order (summed) metrics
-  //     - create summary metrics and broadcast to everyone
-  //       [it is necessary to see all profiles for a group to create
-  //       summary metrics]
-  //     - create local metrics and summary metric values
+  Prof::Metric::Mgr* mrgMetricMgr = profGbl->metricMgr();
+  Prof::Metric::Mgr* sumMetricMgr = new Prof::Metric::Mgr;
 
-  //Prof::Metric::Mgr* metricMgr = profGbl->metricMgr();
-  //profLcl->metricMgr(new Prof::Metric::Mgr);
-  //profLcl->isMetricMgrVirtual(false);
+  // TODO: create summary metrics descriptors
+
+  profGbl->metricMgr(sumMetricMgr);
+  profGbl->isMetricMgrVirtual(false);
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
     Prof::CallPath::Profile* prof = Analysis::CallPath::read(fnm, groupId);
-    //profGbl->merge(*prof, Prof::CallPath::Profile::Merge_createMetric);
+    profGbl->merge(*prof, Prof::CallPath::Profile::Merge_createMetric /*Merge_mergeMetricByName*/);
 
-    // TODO: incrementally update metric
+    // TODO: create local metrics and incrementally update summary metrics
 
     delete prof;
   }
 
   nArgs.destroy();
+  delete mrgMetricMgr;
 
   // ------------------------------------------------------------
   // Generate Experiment database

@@ -147,15 +147,14 @@ public:
   // by qualifying it if necessary.  Returns true if the name was
   // modified, false otherwise.
   // NOTE: Assumes ownership of 'm'
-  bool 
+  bool
   insert(Metric::ADesc* m);
 
   // Given m, insert m into the tables if the metric name does not
   // exist.  Returns true if inserted (assuming ownership) and false
   // otherwise.
-  bool 
+  bool
   insertIf(Metric::ADesc* m);
-
 
   // ------------------------------------------------------------
   // 
@@ -167,7 +166,7 @@ public:
 
   bool
   hasDerived() const;
-  
+
 
   // ------------------------------------------------------------
   // helper maps/tables

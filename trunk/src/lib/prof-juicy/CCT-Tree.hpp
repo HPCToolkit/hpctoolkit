@@ -479,13 +479,6 @@ protected:
   // 
   // --------------------------------------------------------
 
-  // NOTE: We could now use Metric::IData to create metrics on demand
-  friend void Tree::merge(const Tree* y, 
-			  uint x_newMetricBegIdx, uint y_newMetrics);
-
-  void 
-  mergeDeep_pre(uint numMetrics);
-
   void
   mergeDeep_fixup(int newMetrics);
 
