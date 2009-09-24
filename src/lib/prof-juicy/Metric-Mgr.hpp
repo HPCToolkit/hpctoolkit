@@ -80,6 +80,7 @@ public:
   Mgr();
   ~Mgr();
 
+  // N.B.: currently only for flat profiles
   void 
   makeRawMetrics(const std::vector<std::string>& profileFiles,
 		 bool isUnitsEvents = true,
@@ -94,8 +95,13 @@ public:
     makeRawMetrics(vec, isUnitsEvents, doDispPercent);
   }
 
+  
+  // N.B.: These are preliminary implementations
   void
   makeSummaryMetrics();
+
+  void
+  makeItrvSummaryMetrics();
 
 
   // ------------------------------------------------------------
@@ -200,6 +206,9 @@ private:
 
   void
   makeSummaryMetric(const std::string& m_nm, const Metric::ADescVec& m_opands);
+
+  void
+  makeItrvSummaryMetric(const std::string& m_nm, uint srcId);
 
   
 private:

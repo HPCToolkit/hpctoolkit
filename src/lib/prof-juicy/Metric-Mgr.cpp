@@ -138,6 +138,7 @@ Mgr::makeSummaryMetrics()
       string min_nm = "Min-" + m_nm;
       string max_nm = "Max-" + m_nm;
       string sum_nm = "Sum-" + m_nm;
+
       makeSummaryMetric(mean_nm, mvec);
       //makeSummaryMetric(rsd_nm, mvec);
       makeSummaryMetric(cv_nm, mvec);
@@ -145,6 +146,26 @@ Mgr::makeSummaryMetrics()
       makeSummaryMetric(max_nm, mvec);
       makeSummaryMetric(sum_nm, mvec);
     }
+  }
+}
+
+
+void 
+Mgr::makeItrvSummaryMetrics()
+{
+  // N.B.: Probably too specific; currently assumes we should make
+  // summary metrics for each entry in the table.
+  uint numSrcMetrics = m_metrics.size();
+  for (uint i = 0; i < numSrcMetrics; ++i) {
+    Metric::ADesc* m = m_metrics[i];
+    m->isVisible(false);
+
+    string m_nm = m->name();
+    //string mean_nm = "Mean-" + m_nm;
+    string max_nm = "Max-" + m_nm;
+    
+    //makeItrvSummaryMetric(mean_nm, m->id());
+    makeItrvSummaryMetric(max_nm, m->id());
   }
 }
 
@@ -202,6 +223,57 @@ Mgr::makeSummaryMetric(const string& m_nm, const Metric::ADescVec& m_opands)
 }
 
 
+void
+Mgr::makeItrvSummaryMetric(const string& m_nm, uint srcId)
+{
+  bool isVisible = true;
+  bool doDispPercent = true;
+  bool isPercent = false;
+
+  // This is a a cheesy way of creating the metrics, but it is good
+  // enough for now.  Perhaps, this can be pushed into a metric parser
+  // as mathxml is retired.
+  Metric::AExprItrv* expr = NULL;
+  if (m_nm.find("Mean", 0) == 0) {
+    //expr = new Metric::Mean(opands, m_opands.size());
+    doDispPercent = false;
+  }
+  else if (m_nm.find("StdDev", 0) == 0) {
+    //expr = new Metric::StdDev(opands, m_opands.size());
+    doDispPercent = false;
+  }
+  else if (m_nm.find("RStdDev", 0) == 0) {
+    //expr = new Metric::RStdDev(opands, m_opands.size());
+    isPercent = true;
+  }
+  else if (m_nm.find("CoefVar", 0) == 0) {
+    //expr = new Metric::CoefVar(opands, m_opands.size());
+    doDispPercent = false;
+  }
+  else if (m_nm.find("Min", 0) == 0) {
+    //expr = new Metric::Min(opands, m_opands.size());
+    doDispPercent = false;
+  }
+  else if (m_nm.find("Max", 0) == 0) {
+    expr = new Metric::MaxItrv(0, srcId);
+    doDispPercent = false;
+  }
+  else if (m_nm.find("Sum", 0) == 0) {
+    //expr = new Metric::Plus(opands, m_opands.size());
+  }
+  else {
+    DIAG_Die(DIAG_UnexpectedInput);
+  }
+  
+  
+  DerivedItrvDesc* m = 
+    new DerivedItrvDesc(m_nm, m_nm, expr, isVisible, true/*isSortKey*/,
+			doDispPercent, isPercent);
+  insert(m);
+  expr->dstId(m->id());
+}
+
+
 //----------------------------------------------------------------------------
 
 bool
@@ -236,7 +308,7 @@ Mgr::findSortKey() const
 {
   Metric::ADesc* m_sortby = NULL;
   for (uint i = 0; i < m_metrics.size(); ++i) {
-    Metric::ADesc* m = m_metrics[i]; 
+    Metric::ADesc* m = m_metrics[i];
     if (m->isSortKey()) {
       m_sortby = m;
       break;

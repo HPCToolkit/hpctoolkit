@@ -92,12 +92,16 @@ class AExprItrv
   : public Unique // disable copying, for now
 {
 public:
-  AExprItrv(uint dstId)
-    : m_dstId(dstId)
+  AExprItrv(uint dstId, uint srcId)
+    : m_dstId(dstId), m_srcId(srcId)
   { }
 
   virtual ~AExprItrv()
   { }
+
+  void
+  dstId(uint x)
+  { m_dstId = x; }
 
   // ------------------------------------------------------------
   //
@@ -107,7 +111,7 @@ public:
   initialize(Metric::IData& mdata) const = 0;
 
   virtual double
-  update(Metric::IData& mdata, uint srcId, uint numSrc = 1) const = 0;
+  update(Metric::IData& mdata, uint numSrc = 1) const = 0;
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const = 0;
@@ -129,6 +133,10 @@ public:
   double&
   dstVar(Metric::IData& mdata) const
   { return var(mdata, m_dstId); }
+
+  double
+  srcVar(Metric::IData& mdata) const
+  { return var(mdata, m_srcId); }
 
 
   // ------------------------------------------------------------
@@ -161,6 +169,7 @@ public:
 
 protected:
   uint m_dstId;
+  uint m_srcId;
 };
 
 
@@ -171,9 +180,8 @@ protected:
 class MaxItrv : public AExprItrv
 {
 public:
-  // Assumes ownership of AExprItrv
-  MaxItrv(uint dstId)
-    : AExprItrv(dstId)
+  MaxItrv(uint dstId, uint srcId)
+    : AExprItrv(dstId, srcId)
   { }
 
   ~MaxItrv()
@@ -185,9 +193,9 @@ public:
   { return (dstVar(mdata) = 0.0); }
 
   virtual double
-  update(Metric::IData& mdata, uint srcId, uint numSrc = 1) const
+  update(Metric::IData& mdata, uint numSrc = 1) const
   {
-    double x = std::max(dstVar(mdata), var(mdata, srcId));
+    double x = std::max(dstVar(mdata), srcVar(mdata));
     return (dstVar(mdata) = x);
   }
 
