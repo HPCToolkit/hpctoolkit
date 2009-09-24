@@ -249,7 +249,8 @@ Driver::write_experiment(std::ostream &os) const
     const Prof::Metric::ADesc* m = m_mMgr.metric(i);
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
-       << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\">\n";
+       << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\""
+       << " compute=\"" << ((m->isComputed()) ? "0" : "1") << "\">\n";
     os << "      <Info>" 
        << "<NV n=\"units\" v=\"events\"/>" // or "samples" m->isUnitsEvents()
        << "<NV n=\"percent\" v=\"" << ((m->doDispPercent()) ? "1" : "0") << "\"/>"
@@ -698,11 +699,12 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
     VMAIntervalSet ivalset; // cheat using a VMAInterval set
 
     for (uint i = 0; i < mMgr.size(); i++) {
-      const Prof::Metric::ADesc* m = mMgr.metric(i);
-      const Prof::Metric::SampledDesc* mm =
-	dynamic_cast<const Prof::Metric::SampledDesc*>(m);
+      Prof::Metric::ADesc* m = mMgr.metric(i);
+      Prof::Metric::SampledDesc* mm =
+	dynamic_cast<Prof::Metric::SampledDesc*>(m);
       if (mm) {
 	ivalset.insert(VMAInterval(m->id(), m->id() + 1)); // [ )
+	mm->isComputed(true); // proleptic
       }
     }
     
@@ -896,13 +898,13 @@ Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr,
   const Metric::AExpr** mExprVec = new const Metric::AExpr*[mMgr.size()];
 
   for (uint i = 0; i < mMgr.size(); i++) {
-    const Metric::ADesc* m = mMgr.metric(i);
-    const Metric::DerivedDesc* mm =
-      dynamic_cast<const Metric::DerivedDesc*>(m);
+    Metric::ADesc* m = mMgr.metric(i);
+    Metric::DerivedDesc* mm = dynamic_cast<Metric::DerivedDesc*>(m);
     if (mm) {
       ivalset.insert(VMAInterval(m->id(), m->id() + 1)); // [ )
       mExprVec[i] = mm->expr();
       DIAG_Assert(mExprVec[i], DIAG_UnexpectedInput);
+      mm->isComputed(true); // proleptic
     }
   }
   
