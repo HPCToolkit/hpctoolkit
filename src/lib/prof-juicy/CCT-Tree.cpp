@@ -133,7 +133,6 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics)
   }
   DIAG_Assert(isPrecondition, "Prof::CCT::Tree::merge: Merge precondition fails!");
 
-  x_root->mergeDeep_pre(y_newMetrics);
   x_root->mergeDeep(y_root, x_newMetricBegIdx, y_newMetrics);
 }
 
@@ -378,11 +377,15 @@ ANode::merge(ANode* y)
 void 
 ANode::merge_me(const ANode& y, uint metricBegIdx)
 {
-  uint x_end = y.numMetrics() + metricBegIdx;
-  DIAG_Assert(x_end <= numMetrics(), "ANode::merge_me: Insufficient space for merging metrics.");
+  ANode* x = this;
+  
+  uint x_end = metricBegIdx + y.numMetrics(); // open upper bound
+  if ( !(x_end <= x->numMetrics()) ) {
+    ensureMetricsSize(x_end);
+  }
 
   for (uint x_i = metricBegIdx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
-    metric(x_i) += y.metric(y_i);
+    x->metric(x_i) += y.metric(y_i);
   }
 }
 
@@ -426,16 +429,6 @@ ANode::findDynChild(const ADynNode& y_dyn)
     }
   }
   return NULL;
-}
-
-
-void
-ANode::mergeDeep_pre(uint newMetrics)
-{
-  for (ANodeIterator it(this); it.Current(); ++it) {
-    ANode* n = it.current();
-    n->ensureMetricsSize(n->numMetrics() + newMetrics);
-  }
 }
 
 

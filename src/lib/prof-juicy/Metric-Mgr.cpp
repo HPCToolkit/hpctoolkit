@@ -204,7 +204,7 @@ Mgr::makeSummaryMetric(const string& m_nm, const Metric::ADescVec& m_opands)
 
 //----------------------------------------------------------------------------
 
-bool 
+bool
 Mgr::insert(Metric::ADesc* m)
 { 
   // 1. metric table
@@ -218,17 +218,14 @@ Mgr::insert(Metric::ADesc* m)
 }
 
 
-bool 
+bool
 Mgr::insertIf(Metric::ADesc* m)
 { 
-  // 1. try to find existing metric
   string nm = m->name();
-  StringToADescMap::iterator it = m_uniqnmToMetricMap.find(nm);
-  if (it == m_uniqnmToMetricMap.end()) {
-    return false;
+  if (metric(nm)) {
+    return false; // already exists
   }
-  
-  // 2. insert if it doesn't exist
+
   insert(m);
   return true;
 }
@@ -260,7 +257,6 @@ Mgr::hasDerived() const
   }
   return false;
 }
-
 
 //****************************************************************************
 
@@ -324,7 +320,11 @@ Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
     // ensure uniqueness: qualifier is an integer >= 1
     int qualifier = mvec.size();
     const string& nm_sfx = m->nameSfx();
-    string sfx_new = nm_sfx + "." + StrUtil::toStr(qualifier);
+    string sfx_new = nm_sfx;
+    if (!sfx_new.empty()) {
+      sfx_new += ".";
+    }
+    sfx_new += StrUtil::toStr(qualifier);
     
     m->nameSfx(sfx_new);
     nm = m->name(); // update 'nm'

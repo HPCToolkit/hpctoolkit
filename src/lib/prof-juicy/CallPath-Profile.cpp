@@ -166,58 +166,8 @@ Profile::merge(Profile& y, int mergeTy)
   // -------------------------------------------------------
   // merge metrics 
   // -------------------------------------------------------
-
-  // FIXME: when we determine the right semantics, clean this up and
-  // move to a Metric::Mgr::merge()
-
-  DIAG_Assert(m_isMetricMgrVirtual == y.m_isMetricMgrVirtual,
-	      "CallPath::Profile::merge(): incompatible metrics");
-
-  uint x_newMetricBegIdx = 0;
-  uint y_newMetrics      = 0;
-  bool doInsertMetricDescs = false;
-  bool doInsertMetricDescsByName = false;
-
-  if (mergeTy >= Merge_mergeMetricById) {
-    // virtual metrics: assume complete overlap (and that metric descs exist)
-    // otherwise:       support partial overlap
-    x_newMetricBegIdx = (int)mergeTy;
-    y_newMetrics = (isMetricMgrVirtual()) ? 0 : 0; // FIXME: partial overlap
-    doInsertMetricDescs = false;                   // FIXME: partial overlap
-  }
-  else if (mergeTy == Merge_mergeMetricByName) {
-    DIAG_Assert( (isMetricMgrVirtual() && y.isMetricMgrVirtual())
-		 || (metricMgr()->empty() && y.metricMgr()->empty()),
-		 DIAG_Unimplemented);
-    doInsertMetricDescsByName = true;
-    // do not add metric values
-  }
-  else if (mergeTy == Merge_createMetric) {
-    if (isMetricMgrVirtual()) {
-      // do not add metric values
-    }
-    else {
-      x_newMetricBegIdx = m_mMgr->size();
-      y_newMetrics      = y.metricMgr()->size();
-    }
-    doInsertMetricDescs = true;
-  }
-  else {
-    DIAG_Die(DIAG_UnexpectedInput);
-  }
-
-  for (uint i = 0; i < y.metricMgr()->size(); ++i) {
-    const Metric::ADesc* m = y.metricMgr()->metric(i);
-    Metric::ADesc* m_new = m->clone();
-    if (doInsertMetricDescs) {
-      m_mMgr->insert(m_new);
-    }
-    if (doInsertMetricDescsByName) {
-      bool ret = m_mMgr->insertIf(m_new);
-      if (!ret) { delete m_new; }
-    }
-  }
-
+  uint x_newMetricBegIdx = 0, y_newMetrics = 0;
+  mergeMetrics(y, mergeTy, x_newMetricBegIdx, y_newMetrics);
   
   // -------------------------------------------------------
   // merge LoadMaps
@@ -232,6 +182,71 @@ Profile::merge(Profile& y, int mergeTy)
   // merge CCTs
   // -------------------------------------------------------
   m_cct->merge(y.cct(), x_newMetricBegIdx, y_newMetrics);
+}
+
+
+void
+Profile::mergeMetrics(Profile& y, int mergeTy, 
+		      uint& x_newMetricBegIdx, uint& y_newMetrics)
+{
+  x_newMetricBegIdx = 0; // first metric in y maps to (metricsMapTo)
+  y_newMetrics      = 0; // number of new metrics y introduces
+
+  DIAG_Assert(m_isMetricMgrVirtual == y.m_isMetricMgrVirtual,
+	      "CallPath::Profile::merge(): incompatible metrics");
+
+  // -------------------------------------------------------
+  // Translate Merge_mergeMetricByName to a primitive merge type
+  // -------------------------------------------------------
+  if (mergeTy == Merge_mergeMetricByName) {
+    
+    mergeTy = Merge_mergeMetricById; // optimistic
+
+    // attempt to find a mapping of y's metrics to x's
+    std::vector<uint> metricMap(y.metricMgr()->size());
+
+    for (uint i = 0; i < y.metricMgr()->size(); ++i) {
+      const Metric::ADesc* m_y = y.metricMgr()->metric(i);
+      string mNm = m_y->name();
+      const Metric::ADesc* m_x = m_mMgr->metric(mNm);
+      
+      if (!m_x || (i > 0 && m_x->id() != (metricMap[i-1] + 1))) {
+	mergeTy = Merge_createMetric;
+	break;
+      }
+
+      metricMap[i] = m_x->id();
+    }
+     
+    if (mergeTy == Merge_mergeMetricById && !metricMap.empty()) {
+      mergeTy = metricMap[0];
+    }
+  }
+
+  // -------------------------------------------------------
+  // process primitive merge types
+  // -------------------------------------------------------
+  if (mergeTy == Merge_createMetric) {
+    uint x_numMetrics = m_mMgr->size();
+    for (uint i = 0; i < y.metricMgr()->size(); ++i) {
+      const Metric::ADesc* m = y.metricMgr()->metric(i);
+      m_mMgr->insert(m->clone());
+    }
+
+    if (!isMetricMgrVirtual()) {
+      x_newMetricBegIdx = x_numMetrics;
+      y_newMetrics      = y.metricMgr()->size();
+    }
+  }
+  else if (mergeTy >= Merge_mergeMetricById) {
+    if (!isMetricMgrVirtual()) {
+      x_newMetricBegIdx = (int)mergeTy;
+      y_newMetrics      = 0; // no metric descriptors to insert
+    }
+  }
+  else {
+    DIAG_Die(DIAG_UnexpectedInput);
+  }
 }
 
 
@@ -617,13 +632,13 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   string m_sfx;
   if (!mpiRank.empty() && !tid.empty()) {
-    m_sfx = ".[" + mpiRank + "," + tid + "]";
+    m_sfx = "[" + mpiRank + "," + tid + "]";
   }
   else if (!mpiRank.empty()) {
-    m_sfx = ".[" + mpiRank + "]";
+    m_sfx = "[" + mpiRank + "]";
   }
   else if (!tid.empty()) {
-    m_sfx = ".[" + tid + "]";
+    m_sfx = "[" + tid + "]";
   }
 
   if (rFlags & RFlg_noMetricSfx) {

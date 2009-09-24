@@ -158,7 +158,14 @@ public:
 
   const std::string
   name() const
-  { return m_namePfx + m_nameBase + m_nameSfx; }
+  {
+    // acceptable to create on demand
+    std::string nm;
+    if (!m_namePfx.empty()) { nm += m_namePfx + "."; }
+    nm += m_nameBase;
+    if (!m_nameSfx.empty()) { nm += "." + m_nameSfx; }
+    return nm;
+  }
 
 
   const std::string&
@@ -278,7 +285,7 @@ public:
   ddump() const;
 
 protected:
-private:  
+private:
   uint m_id;
 
   std::string m_nameBase, m_namePfx, m_nameSfx;

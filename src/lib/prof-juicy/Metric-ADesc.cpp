@@ -107,7 +107,7 @@ ADesc::dump(std::ostream& os) const
 std::ostream&
 ADesc::dump_me(std::ostream& os) const
 {
-  os << name();
+  os << name() << std::flush;
   return os;
 }
 
