@@ -73,10 +73,6 @@
 #include "list.h"
 #include "epoch.h"
 
-#ifdef USE_STRUCTS
-#include "structs.h"
-#endif
-
 #include "state.h"
 
 //*************************** Forward Declarations **************************

@@ -85,10 +85,6 @@
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 
-#ifdef USE_STRUCTS
-#include "structs.h"
-#endif
-
 #include "state.h"
 
 #include "thread_data.h"
