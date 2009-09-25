@@ -374,38 +374,62 @@ processProfile(Prof::CallPath::Profile* profGbl,
   Prof::Metric::Mgr* mMgrGbl = profGbl->metricMgr();
   Prof::CCT::Tree* cctGbl = profGbl->cct();
 
+  // -------------------------------------------------------
   // read profile file
+  // -------------------------------------------------------
+
   uint rFlags = Prof::CallPath::Profile::RFlg_noMetricSfx;
   Prof::CallPath::Profile* prof = 
     Analysis::CallPath::read(profileFile, groupId, rFlags);
 
-#if 0
-  // FIXME two issues with merging
-  //   1. when the CCT was normalized, several IP/LIPs were lost!!!
-  //   2. when merging y's metrics into x's, the metrics will not be found!
-  //        x: [a b c d] [a b e f]   y: [a b e f]
-
+  // -------------------------------------------------------
   // merge into canonical CCT
+  // -------------------------------------------------------
+
   uint mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
+
+  // Add some structure information to leaves so that 'prof' can be
+  // merged with the structured canonical CCT.
+  //
+  // (Background: When CCT::Stmts are merged in
+  // Analysis::CallPath::coalesceStmts(), IP/LIP information is not
+  // retained.  This means that many leaves in 'prof' will not
+  // correctly find their corresponding node in profGbl.
+  prof->structure(profGbl->structure());
+  Analysis::CallPath::noteStaticStructureOnLeaves(*prof);
+  prof->structure(NULL);
 
   uint mBeg = profGbl->merge(*prof, mergeTy);   // [closed begin
   uint mEnd = mBeg + prof->metricMgr()->size(); //  open end)
 
+  // -------------------------------------------------------
   // compute local and derived metrics
+  // -------------------------------------------------------
+
   if (mBeg < mEnd) {
     cctGbl->root()->accumulateMetrics(mBeg, mEnd - 1); // [ ]
 
     // TODO: faster: find exact indices for derived metrics
-    cctGbl->root()->computeMetricsItrv(*mMgrGbl, ...);
+    //cctGbl->root()->computeMetricsItrv(*mMgrGbl, ...);
   }
 
+  // -------------------------------------------------------
   // TODO: write local values to disk
+  // -------------------------------------------------------
+  
 
+  // -------------------------------------------------------
   // reinitialize metric values since space may be used again
+  // -------------------------------------------------------
+
   if (mBeg < mEnd) {
     cctGbl->root()->zeroMetricsDeep(mBeg, mEnd - 1); // [ ]
   }
-#endif
+
+  // -------------------------------------------------------
+
+  // FIXME: when merging y's metrics into x's, the metrics will not be found!
+  //        x: [a b c d] [a b e f]   y: [a b e f]
 
   // - Driver::computeDerivedBatch() does not need to be PostOrder
   // - use PostOrder in accumulateMetrics

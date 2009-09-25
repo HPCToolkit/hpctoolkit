@@ -176,6 +176,29 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args)
 // Overlaying static structure on a CCT
 //****************************************************************************
 
+typedef std::map<Prof::Struct::ANode*, Prof::CCT::ANode*> StructToCCTMap;
+
+static void
+overlayStaticStructure(Prof::CCT::ANode* node,
+		       Prof::LoadMap::LM* loadmap_lm, 
+		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
+
+static Prof::CCT::ANode*
+demandScopeInFrame(Prof::CCT::ADynNode* node, Prof::Struct::ANode* strct, 
+		   StructToCCTMap& strctToCCTMap);
+
+static Prof::CCT::ProcFrm*
+makeFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
+	  StructToCCTMap& strctToCCTMap);
+
+static void
+makeFrameStructure(Prof::CCT::ANode* node_frame,
+		   Prof::Struct::ACodeNode* node_strct,
+		   StructToCCTMap& strctToCCTMap);
+
+
+//****************************************************************************
+
 void
 Analysis::CallPath::
 overlayStaticStructureMain(Prof::CallPath::Profile& prof, string agent)
@@ -241,45 +264,51 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 }
 
 
-//****************************************************************************
-
-typedef std::map<Prof::Struct::ANode*, Prof::CCT::ANode*> StructToCCTMap;
-
-static Prof::CCT::ANode*
-demandScopeInFrame(Prof::CCT::ADynNode* node, Prof::Struct::ANode* strct, 
-		   StructToCCTMap& strctToCCTMap);
-
-static Prof::CCT::ProcFrm*
-makeFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
-	  StructToCCTMap& strctToCCTMap);
-
-static void
-makeFrameStructure(Prof::CCT::ANode* node_frame,
-		   Prof::Struct::ACodeNode* node_strct,
-		   StructToCCTMap& strctToCCTMap);
-
-
-static void 
-overlayStaticStructure(Prof::CallPath::Profile& prof, Prof::CCT::ANode* node,
-		       Prof::LoadMap::LM* loadmap_lm, 
-		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
-
-
 // overlayStaticStructure: Create frames for CCT::Call and CCT::Stmt
 // using a preorder walk over the CCT.
 void
 Analysis::CallPath::
-overlayStaticStructure(Prof::CallPath::Profile& prof, 
-		       Prof::LoadMap::LM* loadmap_lm, 
+overlayStaticStructure(Prof::CallPath::Profile& prof,
+		       Prof::LoadMap::LM* loadmap_lm,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
-  overlayStaticStructure(prof, prof.cct()->root(), loadmap_lm, lmStrct, lm);
+  overlayStaticStructure(prof.cct()->root(), loadmap_lm, lmStrct, lm);
 }
 
 
-static void 
-overlayStaticStructure(Prof::CallPath::Profile& prof, Prof::CCT::ANode* node, 
-		       Prof::LoadMap::LM* loadmap_lm, 
+
+void
+Analysis::CallPath::
+noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
+{
+  const Prof::Struct::Root* rootStrct = prof.structure()->root();
+
+  Prof::CCT::ANodeIterator it(prof.cct()->root(), NULL/*filter*/,
+			      true/*leavesOnly*/, IteratorStack::PreOrder);
+  for (Prof::CCT::ANode* n = NULL; (n = it.current()); ++it) {
+    Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
+    if (n_dyn) {
+      Prof::LoadMap::LM* loadmap_lm = prof.loadMapMgr()->lm(n_dyn->lmId());
+      const string& lm_nm = loadmap_lm->name();
+
+      const Prof::Struct::LM* lmStrct = rootStrct->findLM(lm_nm);
+      DIAG_Assert(lmStrct, "failed to find Struct::LM: " << lm_nm);
+
+      VMA ip_ur = n_dyn->ip();
+      const Prof::Struct::ACodeNode* strct = lmStrct->findByVMA(ip_ur);
+      DIAG_Assert(strct, "failed to find structure: (" << n_dyn->lmId() << ", " << hex << ip_ur << dec << ")");
+      
+      n->structure(strct);
+    }
+  }
+}
+
+
+//****************************************************************************
+
+static void
+overlayStaticStructure(Prof::CCT::ANode* node,
+		       Prof::LoadMap::LM* loadmap_lm,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
   // INVARIANT: The parent of 'node' has been fully processed
@@ -305,19 +334,19 @@ overlayStaticStructure(Prof::CallPath::Profile& prof, Prof::CCT::ANode* node,
     // ---------------------------------------------------
     Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
     if (n_dyn && (n_dyn->lmId() == loadmap_lm->id())) {
-      VMA ip_ur = n_dyn->ip();
-      DIAG_DevIf(50) {
-	Prof::CCT::Call* p = node->ancestorCall();
-	DIAG_DevMsg(0, "overlayStaticStructure: " << hex << ((p) ? p->ip() : 0) << " --> " << ip_ur << dec);
-      }
-
       using namespace Prof;
 
       // 1. Add symbolic information to 'n_dyn'
+      VMA ip_ur = n_dyn->ip();
       Struct::ACodeNode* strct = 
 	Analysis::Util::demandStructure(ip_ur, lmStrct, lm, useStruct);
       n->structure(strct);
       strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
+
+      if (0) {
+	//Prof::CCT::Call* p = node->ancestorCall(); // ((p) ? p->ip() : 0)
+	DIAG_MsgIf(1, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << ip_ur << ") --> struct " << strct << dec << " " << strct->toString_me());
+      }
 
       // 2. Demand a procedure frame for 'n_dyn' and its scope within it
       Struct::ANode* scope_strct = strct->ancestor(Struct::ANode::TyLoop,
@@ -337,7 +366,7 @@ overlayStaticStructure(Prof::CallPath::Profile& prof, Prof::CCT::ANode* node,
     // recur 
     // ---------------------------------------------------
     if (!n->isLeaf()) {
-      overlayStaticStructure(prof, n, loadmap_lm, lmStrct, lm);
+      overlayStaticStructure(n, loadmap_lm, lmStrct, lm);
     }
   }
 }
@@ -481,10 +510,12 @@ coalesceStmts(Prof::CallPath::Profile& prof)
 
 // coalesceStmts: In the CCT collected by hpcrun, leaf nodes
 // (CCT::Stmt) are distinct according to instruction pointer.  After
-// static structure has been overlayed, they have been coalesced by
+// static structure has been overlayed, CCT::Stmt's live within a
+// procedure frame (alien or native) and have been coalesced by
 // Struct::Stmt.  However, because structure information distinguishes
-// callsites from statements, we still want to coalesce CCT::Stmts by
-// line.
+// callsites from statements, a callsite and statement may map to the
+// same source file line.  Therefore, it is necessary to coalesce
+// CCT::Stmts by line.
 //
 // NOTE: After static structure has been overlayed on the CCT, a
 // node's child statement nodes obey the non-overlapping principle of
@@ -494,43 +525,41 @@ coalesceStmts(Prof::CCT::ANode* node)
 {
   typedef std::map<SrcFile::ln, Prof::CCT::Stmt*> LineToStmtMap;
 
-  if (!node) { 
-    return; 
+  if (!node) {
+    return;
   }
 
+  // A <line> -> <stmt> is sufficient because procedure frames
+  // identify a unique load module and source file.
   LineToStmtMap stmtMap;
   
   // For each immediate child of this node...
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
-    Prof::CCT::ANode* child = it.current();
-    it++; // advance iterator -- it is pointing at 'child'
+    Prof::CCT::ANode* n = it.current();
+    it++; // advance iterator -- it is pointing at 'n'
     
-    bool inspect = (child->isLeaf() 
-		    && (typeid(*child) == typeid(Prof::CCT::Stmt)));
-
-    if (inspect) {
-      // This child is a leaf. Test for duplicate source line info.
-      Prof::CCT::Stmt* c = dynamic_cast<Prof::CCT::Stmt*>(child);
-      SrcFile::ln line = c->begLine();
+    if ( n->isLeaf() && (typeid(*n) == typeid(Prof::CCT::Stmt)) ) {
+      // Test for duplicate source line info.
+      Prof::CCT::Stmt* n_stmt = static_cast<Prof::CCT::Stmt*>(n);
+      SrcFile::ln line = n_stmt->begLine();
       LineToStmtMap::iterator it = stmtMap.find(line);
       if (it != stmtMap.end()) {
 	// found -- we have a duplicate
-	Prof::CCT::Stmt* c1 = (*it).second;
-	c1->merge_me(*c);
+	Prof::CCT::Stmt* n_stmt1 = (*it).second;
+	n_stmt1->merge_me(*n_stmt);
 	
-	// remove 'child' from tree
-	child->unlink();
-	delete child;
-	// NOTE: could clear Prof::CallPath::Profile::StructMetricIdFlg
+	// remove 'n_stmt' from tree
+	n_stmt->unlink();
+	delete n_stmt; // NOTE: could clear corresponding StructMetricIdFlg
       }
-      else { 
+      else {
 	// no entry found -- add
-	stmtMap.insert(std::make_pair(line, c));
+	stmtMap.insert(std::make_pair(line, n_stmt));
       }
     }
-    else if (!child->isLeaf()) {
+    else if (!n->isLeaf()) {
       // Recur
-      coalesceStmts(child);
+      coalesceStmts(n);
     }
   }
 }

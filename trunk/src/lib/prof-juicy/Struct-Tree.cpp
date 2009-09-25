@@ -161,7 +161,7 @@ Tree::ddump() const
 //***************************************************************************
 
 const string ANode::ScopeNames[ANode::TyNUMBER] = {
-  "PGM", "GRP", "LM", "FIL", "PRC", "A", "LP", "SR", "REF", "ANY"
+  "Pgm", "Group", "LM", "File", "Proc", "Alien", "Loop", "Stmt", "Ref", "ANY"
 };
 
 
@@ -882,7 +882,7 @@ LM::findFile(const char* nm) const
 
 
 ACodeNode*
-LM::findByVMA(VMA vma)
+LM::findByVMA(VMA vma) const
 {
   // Attempt to find StatementRange and then Proc
   ACodeNode* found = findStmt(vma);
@@ -894,7 +894,7 @@ LM::findByVMA(VMA vma)
 
 
 Proc*
-LM::findProc(VMA vma)
+LM::findProc(VMA vma) const
 {
   if (!m_procMap) {
     buildMap(m_procMap, ANode::TyProc);
@@ -906,24 +906,17 @@ LM::findProc(VMA vma)
 
 
 template<typename T>
-void 
-LM::buildMap(VMAIntervalMap<T>*& m, ANode::ANodeTy ty) const
+void
+LM::buildMap(VMAIntervalMap<T>*& mp, ANode::ANodeTy ty) const
 {
-  if (!m) {
-    m = new VMAIntervalMap<T>;
+  if (!mp) {
+    mp = new VMAIntervalMap<T>;
   }
   
   ANodeIterator it(this, &ANodeTyFilter[ty]);
   for (; it.Current(); ++it) {
     T x = dynamic_cast<T>(it.Current());
-
-    const VMAIntervalSet& vmaset = x->vmaSet();
-    for (VMAIntervalSet::const_iterator it = vmaset.begin();
-	 it != vmaset.end(); ++it) {
-      const VMAInterval& vmaint = *it;
-      DIAG_MsgIf(0, vmaint.toString());
-      m->insert(std::make_pair(vmaint, x));
-    }
+    insertInMap(mp, x);
   }
 }
 
