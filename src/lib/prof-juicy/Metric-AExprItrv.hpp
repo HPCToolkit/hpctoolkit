@@ -123,11 +123,11 @@ public:
 
   static double&
   var(Metric::IData& mdata, uint mId)
-  { return mdata.metric(mId); }
+  { return mdata.demandMetric(mId); }
 
   static double
   var(const Metric::IData& mdata, uint mId)
-  { return mdata.metric(mId); }
+  { return mdata.demandMetric(mId); }
 
 
   double&
