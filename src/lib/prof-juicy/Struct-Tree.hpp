@@ -415,7 +415,7 @@ public:
 
 
   // --------------------------------------------------------
-  // Metrics
+  // Metrics (cf. CCT::ANode)
   // --------------------------------------------------------
 
   // accumulates metrics from children. [mBegId, mEndId] forms an
@@ -424,8 +424,7 @@ public:
   void
   accumulateMetrics(uint mBegId, uint mEndId)
   {
-    // NOTE: Must not call hasMetrics() since this node may not have
-    // any metric data yet!
+    // NOTE: this node may not have metric data yet!
     Metric::IData mVec(mEndId + 1);
     accumulateMetrics(mBegId, mEndId, mVec);
   }

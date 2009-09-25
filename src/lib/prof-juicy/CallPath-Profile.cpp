@@ -138,7 +138,7 @@ Profile::~Profile()
 }
 
 
-void 
+uint 
 Profile::merge(Profile& y, int mergeTy)
 {
   DIAG_Assert(!y.m_structure, "Profile::merge: source profile should not have structure yet!");
@@ -167,7 +167,8 @@ Profile::merge(Profile& y, int mergeTy)
   // merge metrics 
   // -------------------------------------------------------
   uint x_newMetricBegIdx = 0, y_newMetrics = 0;
-  mergeMetrics(y, mergeTy, x_newMetricBegIdx, y_newMetrics);
+  uint firstMergedMetric =
+    mergeMetrics(y, mergeTy, x_newMetricBegIdx, y_newMetrics);
   
   // -------------------------------------------------------
   // merge LoadMaps
@@ -182,13 +183,17 @@ Profile::merge(Profile& y, int mergeTy)
   // merge CCTs
   // -------------------------------------------------------
   m_cct->merge(y.cct(), x_newMetricBegIdx, y_newMetrics);
+
+  return firstMergedMetric;
 }
 
 
-void
+uint
 Profile::mergeMetrics(Profile& y, int mergeTy, 
 		      uint& x_newMetricBegIdx, uint& y_newMetrics)
 {
+  uint begMergeIdx = 0;
+
   x_newMetricBegIdx = 0; // first metric in y maps to (metricsMapTo)
   y_newMetrics      = 0; // number of new metrics y introduces
 
@@ -207,26 +212,31 @@ Profile::mergeMetrics(Profile& y, int mergeTy,
   // process primitive merge types
   // -------------------------------------------------------
   if (mergeTy == Merge_createMetric) {
-    uint x_numMetrics = m_mMgr->size();
+    begMergeIdx = m_mMgr->size();
+
     for (uint i = 0; i < y.metricMgr()->size(); ++i) {
       const Metric::ADesc* m = y.metricMgr()->metric(i);
       m_mMgr->insert(m->clone());
     }
 
     if (!isMetricMgrVirtual()) {
-      x_newMetricBegIdx = x_numMetrics;
+      x_newMetricBegIdx = begMergeIdx;
       y_newMetrics      = y.metricMgr()->size();
     }
   }
   else if (mergeTy >= Merge_mergeMetricById) {
+    begMergeIdx = (uint)mergeTy;
+
     if (!isMetricMgrVirtual()) {
-      x_newMetricBegIdx = (int)mergeTy;
+      x_newMetricBegIdx = begMergeIdx;
       y_newMetrics      = 0; // no metric descriptors to insert
     }
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
+
+  return begMergeIdx;
 }
 
 

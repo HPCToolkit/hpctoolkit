@@ -407,6 +407,33 @@ public:
 
 
   // --------------------------------------------------------
+  // Metrics (cf. Struct::ANode)
+  // --------------------------------------------------------
+
+  // accumulates metrics from children. [mBegId, mEndId] forms an
+  // inclusive interval for batch processing.  In particular, 'raw'
+  // metrics are independent of all other raw metrics.
+  void
+  accumulateMetrics(uint mBegId, uint mEndId)
+  {
+    // NOTE: this node may not have metric data yet!
+    Metric::IData mVec(mEndId + 1);
+    accumulateMetrics(mBegId, mEndId, mVec);
+  }
+
+  void
+  accumulateMetrics(uint mBegId)
+  {
+    accumulateMetrics(mBegId, mBegId);
+  }
+
+private:
+  void
+  accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec);
+
+public:
+
+  // --------------------------------------------------------
   // merging
   // --------------------------------------------------------
 
@@ -472,7 +499,7 @@ protected:
   writeXML_pre(std::ostream& os = std::cerr, int oFlags = 0,
 	       const char* pfx = "") const;
   void
-  writeXML_post(std::ostream& os = std::cerr, int oFlags = 0, 
+  writeXML_post(std::ostream& os = std::cerr, int oFlags = 0,
 		const char* pfx = "") const;
 
   // --------------------------------------------------------

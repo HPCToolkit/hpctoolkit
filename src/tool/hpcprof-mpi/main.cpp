@@ -92,6 +92,9 @@ Analysis::Util::NormalizeProfileArgs_t
 myNormalizeProfileArgs(StringVec& profileFiles, 
 		       int myRank, int numRanks, int rootRank = 0);
 
+void
+processProfile(Prof::CallPath::Profile* profGbl,
+	       string& profileFile, uint groupId);
 
 //****************************************************************************
 
@@ -233,21 +236,10 @@ realmain(int argc, char* const* argv)
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
-    uint rFlags = Prof::CallPath::Profile::RFlg_noMetricSfx;
-
-    Prof::CallPath::Profile* prof =
-      Analysis::CallPath::read(fnm, groupId, rFlags);
-    profGbl->merge(*prof, Prof::CallPath::Profile::Merge_mergeMetricByName);
-
-    // TODO: accumulateMetrics() for SampledDesc metrics just merged
-    // TODO: incrementally update values for DerivedItrvDesc metrics
-    // TODO: write local values to disk
-
-    delete prof;
+    processProfile(profGbl, fnm, groupId);
   }
 
   nArgs.destroy();
-  //delete mrgMetricMgr;
 
   // ------------------------------------------------------------
   // Generate Experiment database
@@ -372,3 +364,34 @@ myNormalizeProfileArgs(StringVec& profileFiles,
 }
 
 //***************************************************************************
+
+void
+processProfile(Prof::CallPath::Profile* profGbl,
+	       string& profileFile, uint groupId)
+{
+  // read profile file
+  uint rFlags = Prof::CallPath::Profile::RFlg_noMetricSfx;
+  Prof::CallPath::Profile* prof = 
+    Analysis::CallPath::read(profileFile, groupId, rFlags);
+  
+  // merge into canonical CCT
+  uint mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
+
+  uint mBeg = profGbl->merge(*prof, mergeTy); // [closed begin
+  uint mEnd = prof->metricMgr()->size();      //  open end)
+
+  if (mBeg < mEnd) {
+    // FIXME: must clear metrics since we reuse the space
+
+    profGbl->cct()->root()->accumulateMetrics(mBeg, mEnd - 1); // [ ]
+  }
+
+  
+  // TODO: incrementally update values for DerivedItrvDesc metrics
+  // TODO: write local values to disk
+  
+  delete prof;
+}
+
+//***************************************************************************
+

@@ -301,8 +301,40 @@ ANode::ancestorStmt() const
 }
 
 
+//***************************************************************************
+// Metrics
+//***************************************************************************
+
+void
+ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
+{
+  ANodeChildIterator it(this); 
+  for (; it.Current(); it++) {
+    it.current()->accumulateMetrics(mBegId, mEndId, mVec);
+  }
+
+  it.Reset();
+  if (it.Current()) { // 'this' is not a leaf 
+    // initialize helper data
+    for (uint i = mBegId; i <= mEndId; ++i) {
+      mVec.metric(i) = 0.0;
+    }
+
+    for (; it.Current(); it++) {
+      for (uint i = mBegId; i <= mEndId; ++i) {
+	mVec.metric(i) += it.current()->demandMetric(i, mEndId+1/*size*/);
+      }
+    }
+    
+    for (uint i = mBegId; i <= mEndId; ++i) {
+      demandMetric(i, mEndId+1/*size*/) += mVec.metric(i);
+    }
+  }
+}
+
+
 //**********************************************************************
-// 
+// Merging
 //**********************************************************************
 
 

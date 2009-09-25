@@ -189,10 +189,11 @@ public:
   };
 
   // merge: Given a Profile y, merge y into x = 'this'.  The 'mergeTy'
-  //   parameter indicates how to merge y's metrics into x.
+  //   parameter indicates how to merge y's metrics into x.  Returns
+  //   the index of the first merged metric in x.
   // ASSUMES: both x and y are in canonical form (canonicalize())
   // WARNING: the merge may change/destroy y
-  void
+  uint
   merge(Profile& y, int mergeTy);
 
   // -------------------------------------------------------
@@ -280,7 +281,7 @@ private:
   void
   canonicalize();
 
-  void
+  uint
   mergeMetrics(Profile& y, int mergeTy, 
 	       uint& x_newMetricBegIdx, uint& y_newMetrics);
 

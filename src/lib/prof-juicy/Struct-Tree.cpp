@@ -614,6 +614,61 @@ ANode::ancestorProcCtxt() const
 
 
 //***************************************************************************
+// Metrics
+//***************************************************************************
+
+void
+ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
+{
+  ANodeChildIterator it(this); 
+  for (; it.Current(); it++) {
+    it.current()->accumulateMetrics(mBegId, mEndId, mVec);
+  }
+
+  it.Reset();
+  if (it.Current()) { // 'this' is not a leaf 
+    // initialize helper data
+    for (uint i = mBegId; i <= mEndId; ++i) {
+      mVec.metric(i) = 0.0;
+    }
+
+    for (; it.Current(); it++) {
+      for (uint i = mBegId; i <= mEndId; ++i) {
+	mVec.metric(i) += it.current()->demandMetric(i, mEndId+1/*size*/);
+      }
+    }
+    
+    for (uint i = mBegId; i <= mEndId; ++i) {
+      demandMetric(i, mEndId+1/*size*/) += mVec.metric(i);
+    }
+  }
+}
+
+
+void 
+ANode::pruneByMetrics()
+{
+  std::vector<ANode*> toBeRemoved;
+  
+  for (ANodeChildIterator it(this, NULL); it.Current(); ++it) {
+    ANode* x = it.current();
+    if (x->hasMetrics()) {
+      x->pruneByMetrics();
+    }
+    else {
+      toBeRemoved.push_back(x);
+    }
+  }
+  
+  for (uint i = 0; i < toBeRemoved.size(); i++) {
+    ANode* x = toBeRemoved[i];
+    x->unlink();
+    delete x;
+  }
+}
+
+
+//***************************************************************************
 // ANode: Paths and Merging
 //***************************************************************************
 
@@ -762,61 +817,6 @@ ANode::isMergable(ANode* toNode, ANode* fromNode)
   }
 
   return ((toTy == fromTy) && goodTy && goodBnds);
-}
-
-
-//***************************************************************************
-// ANode Metric Data
-//***************************************************************************
-
-void
-ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
-{
-  ANodeChildIterator it(this); 
-  for (; it.Current(); it++) {
-    it.current()->accumulateMetrics(mBegId, mEndId, mVec);
-  }
-
-  it.Reset();
-  if (it.Current()) { // 'this' is not a leaf 
-    // initialize helper data
-    for (uint i = mBegId; i <= mEndId; ++i) {
-      mVec.metric(i) = 0.0;
-    }
-
-    for (; it.Current(); it++) {
-      for (uint i = mBegId; i <= mEndId; ++i) {
-	mVec.metric(i) += it.current()->demandMetric(i, mEndId+1/*size*/);
-      }
-    }
-    
-    for (uint i = mBegId; i <= mEndId; ++i) {
-      demandMetric(i, mEndId+1/*size*/) += mVec.metric(i);
-    }
-  }
-}
-
-
-void 
-ANode::pruneByMetrics()
-{
-  std::vector<ANode*> toBeRemoved;
-  
-  for (ANodeChildIterator it(this, NULL); it.Current(); ++it) {
-    ANode* x = it.current();
-    if (x->hasMetrics()) {
-      x->pruneByMetrics();
-    }
-    else {
-      toBeRemoved.push_back(x);
-    }
-  }
-  
-  for (uint i = 0; i < toBeRemoved.size(); i++) {
-    ANode* x = toBeRemoved[i];
-    x->unlink();
-    delete x;
-  }
 }
 
 
