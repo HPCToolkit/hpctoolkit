@@ -74,6 +74,7 @@
 
 #include "Struct-Tree.hpp"
 
+#include "Metric-Mgr.hpp"
 #include "Metric-ADesc.hpp"
 #include "Metric-IData.hpp"
 
@@ -410,6 +411,9 @@ public:
   // Metrics (cf. Struct::ANode)
   // --------------------------------------------------------
 
+  void
+  zeroMetricsDeep(uint mBegId, uint mEndId);
+
   // accumulates metrics from children. [mBegId, mEndId] forms an
   // inclusive interval for batch processing.  In particular, 'raw'
   // metrics are independent of all other raw metrics.
@@ -426,6 +430,9 @@ public:
   {
     accumulateMetrics(mBegId, mBegId);
   }
+
+  void
+  computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId);
 
 private:
   void

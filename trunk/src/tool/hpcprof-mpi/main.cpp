@@ -239,6 +239,8 @@ realmain(int argc, char* const* argv)
     processProfile(profGbl, fnm, groupId);
   }
 
+  // TODO: finalize local summary metrics and send to master
+
   nArgs.destroy();
 
   // ------------------------------------------------------------
@@ -369,26 +371,44 @@ void
 processProfile(Prof::CallPath::Profile* profGbl,
 	       string& profileFile, uint groupId)
 {
+  Prof::Metric::Mgr* mMgrGbl = profGbl->metricMgr();
+  Prof::CCT::Tree* cctGbl = profGbl->cct();
+
   // read profile file
   uint rFlags = Prof::CallPath::Profile::RFlg_noMetricSfx;
   Prof::CallPath::Profile* prof = 
     Analysis::CallPath::read(profileFile, groupId, rFlags);
-  
+
+#if 0
+  // FIXME two issues with merging
+  //   1. when the CCT was normalized, several IP/LIPs were lost!!!
+  //   2. when merging y's metrics into x's, the metrics will not be found!
+  //        x: [a b c d] [a b e f]   y: [a b e f]
+
   // merge into canonical CCT
   uint mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
 
-  uint mBeg = profGbl->merge(*prof, mergeTy); // [closed begin
-  uint mEnd = prof->metricMgr()->size();      //  open end)
+  uint mBeg = profGbl->merge(*prof, mergeTy);   // [closed begin
+  uint mEnd = mBeg + prof->metricMgr()->size(); //  open end)
 
+  // compute local and derived metrics
   if (mBeg < mEnd) {
-    // FIXME: must clear metrics since we reuse the space
+    cctGbl->root()->accumulateMetrics(mBeg, mEnd - 1); // [ ]
 
-    profGbl->cct()->root()->accumulateMetrics(mBeg, mEnd - 1); // [ ]
+    // TODO: faster: find exact indices for derived metrics
+    cctGbl->root()->computeMetricsItrv(*mMgrGbl, ...);
   }
 
-  
-  // TODO: incrementally update values for DerivedItrvDesc metrics
   // TODO: write local values to disk
+
+  // reinitialize metric values since space may be used again
+  if (mBeg < mEnd) {
+    cctGbl->root()->zeroMetricsDeep(mBeg, mEnd - 1); // [ ]
+  }
+#endif
+
+  // - Driver::computeDerivedBatch() does not need to be PostOrder
+  // - use PostOrder in accumulateMetrics
   
   delete prof;
 }
