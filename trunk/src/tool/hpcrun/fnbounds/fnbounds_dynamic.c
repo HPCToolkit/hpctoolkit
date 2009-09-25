@@ -88,9 +88,6 @@
 #include "fnbounds_interface.h"
 #include "monitor.h"
 
-#ifdef USE_STRUCTS
-#include "structs.h"
-#endif
 #include "state.h"
 
 #include "sample_event.h"

@@ -49,10 +49,6 @@
 
 //*************************** User Include Files ****************************
 
-#ifdef USE_STRUCTS
-#include "structs.h"
-#endif
-
 #include <cct/cct.h>
 #include "epoch.h"
 
