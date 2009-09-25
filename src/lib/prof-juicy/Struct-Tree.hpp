@@ -583,11 +583,11 @@ protected:
 // --------------------------------------------------------------------------
 class ACodeNode : public ANode {
 protected: 
-  ACodeNode(ANodeTy t, ANode* parent = NULL, 
+  ACodeNode(ANodeTy ty, ANode* parent = NULL, 
 	   SrcFile::ln begLn = ln_NULL,
 	   SrcFile::ln endLn = ln_NULL,
 	   VMA begVMA = 0, VMA endVMA = 0)
-    : ANode(t, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
+    : ANode(ty, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
   { 
     setLineRange(begLn, endLn);
     if (begVMA != 0 && endVMA != 0) {
@@ -1040,17 +1040,37 @@ public:
   findFile(const std::string& nm) const
   { return findFile(nm.c_str()); }
 
+
+  // --------------------------------------------------------
+  // search by VMA
+  // --------------------------------------------------------
+
   // findByVMA: find scope by *unrelocated* VMA
-  // findProc:
-  // findStmt
+  // findProc: VMA interval -> Struct::Proc*
+  // findStmt: VMA interval -> Struct::Stmt*
+  //
+  // N.B. these maps are maintained when new Struct::Proc or
+  // Struct::Stmt are created
   ACodeNode*
-  findByVMA(VMA vma);
+  findByVMA(VMA vma) const;
   
+
   Proc*
-  findProc(VMA vma);
+  findProc(VMA vma) const;
+
+  bool
+  insertProcIf(Proc* proc) const
+  {
+    if (m_procMap) {
+      insertInMap(m_procMap, proc);
+      return true;
+    }
+    return false;
+  }
+
 
   Stmt*
-  findStmt(VMA vma)
+  findStmt(VMA vma) const
   {
     if (!m_stmtMap) {
       buildMap(m_stmtMap, ANode::TyStmt);
@@ -1058,6 +1078,26 @@ public:
     VMAInterval toFind(vma, vma+1); // [vma, vma+1)
     VMAIntervalMap<Stmt*>::iterator it = m_stmtMap->find(toFind);
     return (it != m_stmtMap->end()) ? it->second : NULL;
+  }
+
+  bool
+  insertStmtIf(Stmt* stmt) const
+  {
+    if (m_stmtMap) {
+      insertInMap(m_stmtMap, stmt);
+      return true;
+    }
+    return false;
+  }
+
+  bool
+  eraseStmtIf(Stmt* stmt) const
+  {
+    if (m_stmtMap) {
+      eraseFromMap(m_stmtMap, stmt);
+      return true;
+    }
+    return false;
   }
 
 
@@ -1087,29 +1127,60 @@ public:
   typedef VMAIntervalMap<Proc*> VMAToProcMap;
   typedef VMAIntervalMap<Stmt*> VMAToStmtRangeMap;
 
-protected: 
+protected:
   void
   Ctor(const char* nm, ANode* parent);
 
   void
   AddToFileMap(File* file);
 
-  template<typename T> 
-  void
-  buildMap(VMAIntervalMap<T>*& m, ANode::ANodeTy ty) const;
 
   template<typename T>
-  static bool 
-  verifyMap(VMAIntervalMap<T>* m, const char* map_nm);
+  void
+  buildMap(VMAIntervalMap<T>*& mp, ANode::ANodeTy ty) const;
+
+  template<typename T>
+  void
+  insertInMap(VMAIntervalMap<T>* mp, T x) const
+  {
+    const VMAIntervalSet& vmaset = x->vmaSet();
+    for (VMAIntervalSet::const_iterator it = vmaset.begin();
+	 it != vmaset.end(); ++it) {
+      const VMAInterval& vmaint = *it;
+      DIAG_MsgIf(0, vmaint.toString());
+      mp->insert(std::make_pair(vmaint, x));
+    }
+  }
+
+
+  template<typename T>
+  void
+  eraseFromMap(VMAIntervalMap<T>* mp, T x) const
+  {
+    const VMAIntervalSet& vmaset = x->vmaSet();
+    for (VMAIntervalSet::const_iterator it = vmaset.begin();
+	 it != vmaset.end(); ++it) {
+      const VMAInterval& vmaint = *it;
+      mp->erase(vmaint);
+    }
+  }
+
+
+  template<typename T>
+  static bool
+  verifyMap(VMAIntervalMap<T>* mp, const char* map_nm);
+
 
   friend class File;
 
 private:
   std::string m_name; // the load module name
 
-  FileMap*           m_fileMap; // mapped by RealPathMgr
-  VMAToProcMap*      m_procMap;
-  VMAToStmtRangeMap* m_stmtMap;
+  // maps to support fast lookups; building them does not logically
+  // change the object
+  FileMap*                   m_fileMap; // mapped by RealPathMgr
+  mutable VMAToProcMap*      m_procMap;
+  mutable VMAToStmtRangeMap* m_stmtMap;
 
   static RealPathMgr& s_realpathMgr;
 };
@@ -1241,7 +1312,7 @@ private:
 class Proc: public ACodeNode {
 protected:
   Proc(const Proc& x)
-    : ACodeNode(x.m_type) 
+    : ACodeNode(x.m_type)
   { *this = x; }
 
   Proc&
@@ -1271,8 +1342,8 @@ public:
     delete m_stmtMap;
   }
 
-  virtual ANode* 
-  clone() 
+  virtual ANode*
+  clone()
   { return new Proc(*this); }
 
   // demand: if didCreate is non-NULL, it will be set to true if a new
@@ -1280,7 +1351,7 @@ public:
   // Note: currently sets hasSymbolic() to false on creation
   static Proc*
   demand(File* file, const std::string& name, const std::string& linkname,
-	 SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL, 
+	 SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL,
 	 bool* didCreate = NULL);
 
   static Proc*
@@ -1540,11 +1611,17 @@ public:
     ANodeTy t = (parent) ? parent->type() : TyANY;
     DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile)
 		|| (t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
-    Proc* p = ancestorProc();
-    if (p) { 
-      p->AddToStmtMap(this);
-      //DIAG_DevIf(0) { LoadMod()->verifyStmtMap(); }
+
+    LM* lmStrct = NULL;
+    Proc* pStrct = ancestorProc();
+    if (pStrct) {
+      pStrct->AddToStmtMap(this);
+      lmStrct = pStrct->ancestorLM();
     }
+    if (lmStrct && begVMA) {
+      lmStrct->insertStmtIf(this);
+    }
+    
     //DIAG_DevMsg(3, "Stmt::Stmt: " << toString_me());
   }
 

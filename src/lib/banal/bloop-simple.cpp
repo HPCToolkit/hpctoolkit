@@ -117,12 +117,20 @@ banal::bloop::makeStructureSimple(Struct::LM* lmStrct,
   Struct::Proc* procStrct = Struct::Proc::demand(fileStrct, procnm, "",
 						 line, line);
   Struct::Stmt* stmtStrct = procStrct->findStmt(line);
-  if (!stmtStrct) {
-    VMA begVMA = vma;
 
-    BinUtil::Insn* insn = lm->findInsn(vma, 0 /*opIdx*/);
-    VMA endVMA = (insn) ? insn->endVMA() : vma + 1;
+  VMA begVMA = vma, endVMA = vma + 1;
+  BinUtil::Insn* insn = lm->findInsn(vma, 0 /*opIdx*/);
+  if (insn) {
+    endVMA = insn->endVMA();
+  }
 
+  if (stmtStrct) {
+    lmStrct->eraseStmtIf(stmtStrct);
+    stmtStrct->vmaSet().insert(begVMA, endVMA);
+    lmStrct->insertStmtIf(stmtStrct);
+  }
+  else {
+    // N.B.: calls lmStrct->insertStmtIf()
     stmtStrct = new Struct::Stmt(procStrct, line, line, begVMA, endVMA);
   }
 

@@ -329,8 +329,8 @@ public:
   { return m_strct; }
 
   void
-  structure(Struct::ACodeNode* strct)
-  { m_strct = strct; }
+  structure(const Struct::ACodeNode* strct)
+  { m_strct = const_cast<Struct::ACodeNode*>(strct); }
 
   uint
   structureId() const
@@ -712,16 +712,36 @@ public:
   // merging
   // -------------------------------------------------------
 
-  static bool 
+  static bool
   isMergable(const ADynNode& x, const ADynNode& y)
   {
-    // N.B.: order is based on early failure rather than logical order
-    return (x.isLeaf() == y.isLeaf()
-	    && x.lmId_real() == y.lmId_real()
-	    && x.ip_real() == y.ip_real()
-	    && lush_lip_eq(x.lip(), y.lip())
-	    && lush_assoc_class_eq(x.assoc(), y.assoc())
-	    && lush_assoc_info__path_len_eq(x.assocInfo(), y.assocInfo()));
+    if (x.isLeaf() == y.isLeaf()
+	&& x.lmId_real() == y.lmId_real()) {
+
+      // 1. additional tests for standard merge condition (N.B.: order
+      //    is based on early failure rather than conceptual grouping)
+      if (x.ip_real() == y.ip_real()
+	  && lush_lip_eq(x.lip(), y.lip())
+	  && lush_assoc_class_eq(x.assoc(), y.assoc())
+	  && lush_assoc_info__path_len_eq(x.assocInfo(), y.assocInfo())) {
+	return true;
+      }
+      
+      // 2. special merge condition for hpcprof-mpi when IPs have been
+      //    lost after Analysis::CallPath::coalesceStmts().
+      //    (Typically, merges occur before structure information is
+      //    added, so this will turn into a nop in the common case.)
+      Struct::ACodeNode* x_strct = x.structure();
+      Struct::ACodeNode* y_strct = y.structure();
+      if (x.isLeaf() /* both are leaves */
+	  && x_strct && y_strct
+	  && x_strct->parent() == y_strct->parent()
+	  && x_strct->begLine() == y_strct->begLine()) {
+	return true;
+      }
+    }
+    
+    return false;
   }
 
   virtual void
