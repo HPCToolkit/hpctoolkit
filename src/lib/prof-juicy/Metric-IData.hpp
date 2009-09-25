@@ -185,6 +185,17 @@ public:
   }
 
 
+  // zeroMetrics: takes bounds of the form [mBegId, mEndId]
+  // N.B.: does not have demandZeroMetrics() semantics
+  void
+  zeroMetrics(uint mBegId, uint mEndId)
+  {
+    for (uint i = mBegId; i <= mEndId; ++i) {
+      metric(i) = 0.0;
+    }
+  }
+
+
   void
   clearMetrics()
   { 

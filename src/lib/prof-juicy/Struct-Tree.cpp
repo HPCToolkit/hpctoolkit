@@ -627,10 +627,7 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 
   it.Reset();
   if (it.Current()) { // 'this' is not a leaf 
-    // initialize helper data
-    for (uint i = mBegId; i <= mEndId; ++i) {
-      mVec.metric(i) = 0.0;
-    }
+    mVec.zeroMetrics(mBegId, mEndId); // initialize helper data
 
     for (; it.Current(); it++) {
       for (uint i = mBegId; i <= mEndId; ++i) {

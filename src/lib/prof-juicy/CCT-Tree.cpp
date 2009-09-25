@@ -306,6 +306,16 @@ ANode::ancestorStmt() const
 //***************************************************************************
 
 void
+ANode::zeroMetricsDeep(uint mBegId, uint mEndId)
+{
+  for (ANodeIterator it(this); it.Current(); ++it) {
+    ANode* n = it.current();
+    n->zeroMetrics(mBegId, mEndId);
+  }
+}
+
+
+void
 ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 {
   ANodeChildIterator it(this); 
@@ -315,10 +325,7 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 
   it.Reset();
   if (it.Current()) { // 'this' is not a leaf 
-    // initialize helper data
-    for (uint i = mBegId; i <= mEndId; ++i) {
-      mVec.metric(i) = 0.0;
-    }
+    mVec.zeroMetrics(mBegId, mEndId); // initialize helper data
 
     for (; it.Current(); it++) {
       for (uint i = mBegId; i <= mEndId; ++i) {
@@ -328,6 +335,25 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
     
     for (uint i = mBegId; i <= mEndId; ++i) {
       demandMetric(i, mEndId+1/*size*/) += mVec.metric(i);
+    }
+  }
+}
+
+
+void
+ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
+{
+  // N.B. pre-order walk assumes point-wise metrics
+  for (ANodeIterator it(this); it.Current(); ++it) {
+    ANode* n = it.current();
+    for (uint mId = mBegId; mId <= mEndId; ++mId) {
+      const Metric::ADesc* m = mMgr.metric(mId);
+      const Metric::DerivedItrvDesc* mm =
+	dynamic_cast<const Metric::DerivedItrvDesc*>(m);
+      if (mm) {
+	const Metric::AExprItrv* expr = mm->expr();
+	expr->update(*n);
+      }
     }
   }
 }

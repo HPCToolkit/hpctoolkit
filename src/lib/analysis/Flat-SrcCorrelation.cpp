@@ -925,6 +925,9 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
 			    const Prof::Metric::AExpr** mExprVec,
 			    uint mBegId, uint mEndId)
 {
+  // tallent: Actually, this doesn't really have to be PostOrder.
+  // Cf. CCT::ANode::computeMetricsItrv().
+
   Prof::Struct::Root* strct = structure.root();
   Prof::Struct::ANodeIterator it(strct, NULL/*filter*/, false/*leavesOnly*/,
 				 IteratorStack::PostOrder);
