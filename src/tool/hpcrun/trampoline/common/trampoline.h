@@ -13,6 +13,19 @@
 
 #include <stdbool.h>
 
+// *****************************************************************************
+//    Constants
+// *****************************************************************************
+
+enum trampoline_constants {
+  CACHED_BACKTRACE_SIZE = 32
+};
+
+// *****************************************************************************
+//    Interface Functions
+// *****************************************************************************
+
+
 void hpcrun_init_trampoline_info(void);
 
 // returns true if address is in the assembly language trampoline code, else false.

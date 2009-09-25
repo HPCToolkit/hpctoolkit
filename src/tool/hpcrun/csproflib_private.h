@@ -73,7 +73,11 @@
 #include "list.h"
 #include "epoch.h"
 
+#ifdef USE_STRUCTS
 #include "structs.h"
+#endif
+
+#include "state.h"
 
 //*************************** Forward Declarations **************************
 
@@ -84,7 +88,7 @@ typedef void (*sig_handler_func_t)(int, siginfo_t *, void *);
 //***************************************************************************
 
 //***************************************************************************
-// helper structures for csprof_state_t: 
+// helper structures for state_t: 
 //***************************************************************************
 
 // Defaults (see general.h for verbosity and debug)
@@ -139,18 +143,18 @@ static int csprof_pfmon_info__fini(csprof_pfmon_info_t* pfm);
 
 #if 0
 void csprof_init_internal(void);
-void csprof_fini_internal(csprof_state_t *state);
+void csprof_fini_internal(state_t *state);
 #endif
 
 
 #ifdef CSPROF_TRAMPOLINE_BACKEND
 // capturing function call returns
-static void csprof_undo_swizzled_data(csprof_state_t *, void *);
+static void csprof_undo_swizzled_data(state_t *, void *);
 
 void *csprof_trampoline2(void **);
 #endif
 
-int hpcrun_write_profile_data(csprof_state_t *);
+int hpcrun_write_profile_data(state_t *);
 
 #ifdef CSPROF_THREADS
 void csprof_atexit_handler();

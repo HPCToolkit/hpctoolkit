@@ -63,6 +63,7 @@ hpcrun_init_trampoline_info(void)
   td->tramp_present   = false;
   td->tramp_retn_addr = NULL;
   td->tramp_loc       = NULL;
+  td->tramp_cct_node  = NULL;
 }
 
 // returns true if address is in the assembly language trampoline code, else false.
@@ -101,9 +102,11 @@ hpcrun_trampoline_insert(void* addr)
 }
 
 
-void 
+void
 hpcrun_trampoline_remove(void* addr, void* old_return_address)
 {
-  *((void**)addr) = old_return_address;
+  if (TD_GET(tramp_present)){
+    *((void**)addr) = old_return_address;
+  }
   hpcrun_init_trampoline_info();
 }

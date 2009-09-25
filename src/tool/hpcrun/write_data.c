@@ -195,7 +195,7 @@ lazy_open_data_file(void)
 }
 
 static int
-write_epochs(FILE* fs, csprof_state_t* state)
+write_epochs(FILE* fs, state_t* state)
 {
   uint32_t num_epochs = 0;
 
@@ -203,8 +203,8 @@ write_epochs(FILE* fs, csprof_state_t* state)
   // === # epochs === 
   //
 
-  csprof_state_t* current_state = state;
-  for(csprof_state_t* s = current_state; s; s = s->next) {
+  state_t* current_state = state;
+  for(state_t* s = current_state; s; s = s->next) {
     num_epochs++;
   }
 
@@ -216,7 +216,7 @@ write_epochs(FILE* fs, csprof_state_t* state)
   // for each epoch ...
   //
 
-  for(csprof_state_t* s = current_state; s; s = s->next) {
+  for(state_t* s = current_state; s; s = s->next) {
 
     if (! ENABLED(WRITE_EMPTY_EPOCH)){
       if (hpcrun_empty_cct(&(s->csdata))){
@@ -316,7 +316,7 @@ hpcrun_flush_epochs(void)
 }
 
 int
-hpcrun_write_profile_data(csprof_state_t *state)
+hpcrun_write_profile_data(state_t *state)
 {
 
   FILE* fs = lazy_open_data_file();

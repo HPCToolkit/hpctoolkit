@@ -48,9 +48,12 @@
 
 #include <stdbool.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include <sys/types.h>
 #include <ucontext.h>
+
+#include <string.h>
 
 
 //***************************************************************************
@@ -73,7 +76,7 @@
 //***************************************************************************
 
 static csprof_cct_node_t*
-_hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
+_hpcrun_backtrace(state_t* state, ucontext_t* context,
 		  int metricId, uint64_t metricIncr,
 		  int skipInner);
 
@@ -89,7 +92,7 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
 //     otherwise, returns NULL.
 //-----------------------------------------------------------------------------
 csprof_cct_node_t*
-hpcrun_backtrace(csprof_state_t *state, ucontext_t* context, 
+hpcrun_backtrace(state_t *state, ucontext_t* context, 
 		 int metricId, uint64_t metricIncr,
 		 int skipInner, int isSync)
 {
@@ -138,11 +141,12 @@ hpcrun_filter_sample(int len, hpcrun_frame_t *start, hpcrun_frame_t *last)
 
 
 static csprof_cct_node_t*
-_hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
+_hpcrun_backtrace(state_t* state, ucontext_t* context,
 		  int metricId, uint64_t metricIncr, 
 		  int skipInner)
 {
-  int backtrace_trolled = 0;
+  int  backtrace_trolled = 0;
+  bool tramp_found       = false;
 
   unw_cursor_t cursor;
   unw_init_cursor(&cursor, context);
@@ -154,11 +158,6 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
   // into a problem.
   //--------------------------------------------------------------------
 
-  //
-  // FIXME-TRAMP: cannot reset the backtrace buffer to beginning each time
-  // if a tramp has been set.
-  //   OR ELSE: figure out something else to do about cached backtrace...
-  //
   state->unwind   = state->btbuf; // innermost
   state->bufstk   = state->bufend;
   state->treenode = NULL;
@@ -182,10 +181,8 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
 	unw_throw();
       }
       else {
-	// *** maybe put a break here, as backtrace is now done ***
-	// put cached backtrace prefix + current unwind into cct
-	// remove current trampoline
-	// insert trampoline to new location
+	tramp_found = true;
+	break;
       }
     }
     
@@ -226,14 +223,35 @@ _hpcrun_backtrace(csprof_state_t* state, ucontext_t* context,
   hpcrun_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
   hpcrun_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
 
-  if (skipInner) {
-    bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
+  if (!tramp_found) {
+    if (skipInner) {
+      bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
+    }
   }
 
   csprof_cct_node_t* n;
   n = csprof_state_insert_backtrace(state, metricId,
 				    bt_end, bt_beg,
 				    (cct_metric_data_t){.i = metricIncr});
+  if (tramp_found) {
+    //
+    // join current backtrace fragment to previous trampoline-marked suffix
+    // and copy backtrace to cached-backtrace
+    //
+  }
+  else {
+    hpcrun_cached_bt_adjust_size(bt_end - bt_beg);
+    thread_data_t* td = hpcrun_get_thread_data();
+    memmove(td->cached_bt, bt_beg, (void*)bt_end - (void*)bt_beg);
+  }
+  if (ENABLED(USE_TRAMP)){
+    //
+    // remove current trampoline
+    //
+    // insert trampoline into ra_loc of state->btbuf
+    //
+  }
+
   return n;
 }
 
@@ -262,7 +280,7 @@ hpcrun_skip_chords(hpcrun_frame_t* bt_outer, hpcrun_frame_t* bt_inner,
 
 
 void 
-dump_backtrace(csprof_state_t *state, hpcrun_frame_t* unwind)
+dump_backtrace(state_t *state, hpcrun_frame_t* unwind)
 {
   static const int msg_limit = 100;
   int msg_cnt = 0;

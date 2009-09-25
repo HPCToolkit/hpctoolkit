@@ -49,28 +49,93 @@
 
 //*************************** User Include Files ****************************
 
+#ifdef USE_STRUCTS
 #include "structs.h"
+#endif
+
+#include <cct/cct.h>
+#include "epoch.h"
+
+#include <lush/lush.h>
+
 #include <messages/messages.h>
+
+//*************************** Datatypes **************************
+
+//***************************************************************************
+
+// ---------------------------------------------------------
+// profiling state of a single thread
+// ---------------------------------------------------------
+
+typedef struct state_t {
+
+  /* last pc where we were signaled; useful for catching problems in
+     threaded builds of the profiler (can be useful for debugging in
+     non-threaded builds, too) */
+
+  void *last_pc;
+  void *unwind_pc;
+  hpcrun_frame_t *unwind;
+  void *context_pc;
+
+  // btbuf                                                      bufend
+  // |                                                            |
+  // v low VMAs                                                   v
+  // +------------------------------------------------------------+
+  // [new backtrace         )              [cached backtrace      )
+  // +------------------------------------------------------------+
+  //                        ^              ^ 
+  //                        |              |
+  //                      unwind         bufstk
+  
+
+  hpcrun_frame_t *btbuf;      // innermost frame in new backtrace
+  hpcrun_frame_t *bufend;     // 
+  hpcrun_frame_t *bufstk;     // innermost frame in cached backtrace
+  csprof_cct_node_t*   treenode;   // cached pointer into the tree
+
+  /* how many bogus samples we took */
+  unsigned long trampoline_samples;
+
+  /* various flags, such as whether an exception is being processed or
+     whether we think there was a tail call since the last signal */
+  unsigned int flags;
+
+  /* call stack data, stored in private memory */
+  hpcrun_cct_t csdata;
+  lush_cct_ctxt_t* csdata_ctxt; // creation context
+
+  /* our notion of what the current epoch is */
+  hpcrun_epoch_t *epoch;
+
+  /* other profiling states which we have seen */
+  struct state_t* next;
+
+  /* support for alternate profilers whose needs we don't provide */
+  void *extra_state;
+
+} state_t;
 
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
 
-typedef csprof_state_t *state_t_f(void);
+typedef state_t *state_t_f(void);
 
-typedef void state_t_setter(csprof_state_t *s);
+typedef void state_t_setter(state_t *s);
 
 // ---------------------------------------------------------
 // getting and setting states independent of threading support
 // ---------------------------------------------------------
 
-extern void hpcrun_reset_state(csprof_state_t* state);
-extern void csprof_set_state(csprof_state_t* s);
+extern void hpcrun_reset_state(state_t* state);
+extern void csprof_set_state(state_t* s);
 
-extern int csprof_state_init(csprof_state_t* s);
-extern int csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt);
+extern int csprof_state_init(state_t* s);
+extern int csprof_state_alloc(state_t *x, lush_cct_ctxt_t* thr_ctxt);
 
-extern csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *);
+extern state_t *csprof_check_for_new_epoch(state_t *);
 
 // ---------------------------------------------------------
 // expand the internal backtrace buffer
@@ -87,11 +152,11 @@ extern csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *);
   }
 
 hpcrun_frame_t*
-csprof_state_expand_buffer(csprof_state_t *, hpcrun_frame_t *);
+csprof_state_expand_buffer(state_t *, hpcrun_frame_t *);
 
 
 csprof_cct_node_t* 
-csprof_state_insert_backtrace(csprof_state_t *, int, hpcrun_frame_t *,
+csprof_state_insert_backtrace(state_t *, int, hpcrun_frame_t *,
 			      hpcrun_frame_t *, cct_metric_data_t);
 
 #if defined(CSPROF_PERF)
@@ -110,9 +175,9 @@ do { \
 #endif
 
 /* finalize various parts of a state */
-int csprof_state_fini(csprof_state_t *);
+int csprof_state_fini(state_t *);
 /* destroy dynamically allocated portions of a state */
-int csprof_state_free(csprof_state_t *);
+int csprof_state_free(state_t *);
 
 #define csprof_state_has_empty_backtrace(state) ((state)->bufend - (state)->bufstk == 0)
 #define csprof_bt_pop(state) do { state->bufstk++; } while(0)
@@ -123,7 +188,7 @@ int csprof_state_free(csprof_state_t *);
 #define csprof_bt_ntop_sp(state) ((state->bufstk + 1)->sp)
 
 
-/* various flag values for csprof_state_t; pre-shifted for efficiency and
+/* various flag values for state_t; pre-shifted for efficiency and
    to enable set/test/clear multiple flags in a single call */
 #define CSPROF_EXC_HANDLING (1 << 0)   /* true while exception processing */
 #define CSPROF_TAIL_CALL (1 << 1)      /* true if we're unable to swap tramp;
@@ -150,7 +215,7 @@ int csprof_state_free(csprof_state_t *);
 #define CSPROF_MALLOCING_DURING_REALLOC (1 << 7)
 
 static inline int
-csprof_state_flag_isset(csprof_state_t *state, unsigned int flag)
+csprof_state_flag_isset(state_t *state, unsigned int flag)
 {
     extern int s1;
     unsigned int state_flags = state->flags;
@@ -161,13 +226,13 @@ csprof_state_flag_isset(csprof_state_t *state, unsigned int flag)
 }
 
 static inline void
-csprof_state_flag_set(csprof_state_t *state, unsigned int flag)
+csprof_state_flag_set(state_t *state, unsigned int flag)
 {
     state->flags = state->flags | flag;
 }
 
 static inline void
-csprof_state_flag_clear(csprof_state_t *state, unsigned int flag)
+csprof_state_flag_clear(state_t *state, unsigned int flag)
 {
     state->flags = state->flags & (~flag);
 }
@@ -175,7 +240,7 @@ csprof_state_flag_clear(csprof_state_t *state, unsigned int flag)
 /* various macros to determine the state of the trampoline */
 /* we have several different conventions for what state->swizzle_patch does.
    it would probably be more helpful to separate them into distinct
-   variables inside the csprof_state_t structure, but right now they're
+   variables inside the state_t structure, but right now they're
    here to stay.  and anyway, if we did that, we'd have the same number
    of functions, because we'd constantly have to be disambiguating which
    member we actually want to access.
@@ -209,23 +274,23 @@ csprof_state_flag_clear(csprof_state_t *state, unsigned int flag)
 #define CSPROF_SWIZZLE_REGISTER ((void **)41)
 
 static inline int
-csprof_swizzle_patch_is_valid(csprof_state_t *state)
+csprof_swizzle_patch_is_valid(state_t *state)
 {
     return state->swizzle_patch != 0;
 }
 
 static inline int
-csprof_swizzle_patch_is_register(csprof_state_t *state)
+csprof_swizzle_patch_is_register(state_t *state)
 {
     return (((void **)0) < state->swizzle_patch)
         && (state->swizzle_patch < CSPROF_SWIZZLE_REGISTER);
 }
 
 static inline int
-csprof_swizzle_patch_is_address(csprof_state_t *state)
+csprof_swizzle_patch_is_address(state_t *state)
 {
     return CSPROF_SWIZZLE_REGISTER <= state->swizzle_patch;
 }
-#endif
+#endif // CSPROF_TRAMPOLINE_BACKEND
 
-#endif
+#endif // STATE_H

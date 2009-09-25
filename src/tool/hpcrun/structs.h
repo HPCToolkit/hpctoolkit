@@ -48,15 +48,10 @@
 #include <limits.h>             /* PATH_MAX */
 #include <sys/types.h>          /* pid_t, e.g. */
 
-#include "cct.h"
+#include <cct/cct.h>
 #include "epoch.h"
 
 #include <lush/lush.h>
-
-// FIXME: tallent: Collecting all these defs here is a VERY BAD IDEA
-// because it easily results in circular header dependencies.  They
-// should be distributed.  I have already distributed csprof_state
-// stuff.
 
 #define CSPROF_PATH_SZ (PATH_MAX+1) /* path size */
 
@@ -64,14 +59,7 @@
 // profiling state of a single thread
 // ---------------------------------------------------------
 
-typedef struct csprof_state_t {
-
-  /* information for recording function call returns; do not move this
-     block, since `swizzle_return' must be the first member of the
-     structure if we are doing backtracing */
-
-  void *swizzle_return;
-  void **swizzle_patch;
+typedef struct state_t {
 
   /* last pc where we were signaled; useful for catching problems in
      threaded builds of the profiler (can be useful for debugging in
@@ -113,17 +101,11 @@ typedef struct csprof_state_t {
   hpcrun_epoch_t *epoch;
 
   /* other profiling states which we have seen */
-  struct csprof_state_t* next;
+  struct state_t* next;
 
   /* support for alternate profilers whose needs we don't provide */
   void *extra_state;
 
-} csprof_state_t;
+} state_t;
 
-#define CSPROF_SAMPLING_ENABLED 1
-
-#define CLEAR_FLAGS(state, flagvals) state->flags &= ~(flagvals)
-#define SET_FLAGS(state, flagvals) state->flags |= (flagvals)
-#define TEST_FLAGS(state, flagvals) (state->flags & (flagvals))
-
-#endif
+#endif // structs.h

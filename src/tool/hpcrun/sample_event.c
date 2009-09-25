@@ -76,7 +76,7 @@
 //*************************** Forward Declarations **************************
 
 static csprof_cct_node_t*
-_hpcrun_sample_callpath(csprof_state_t *state, void *context,
+_hpcrun_sample_callpath(state_t *state, void *context,
 			int metricId, uint64_t metricIncr,
 			int skipInner, int isSync);
 
@@ -194,7 +194,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
   thread_data_t *td = hpcrun_get_thread_data();
   sigjmp_buf_t *it = &(td->bad_unwind);
   csprof_cct_node_t* node = NULL;
-  csprof_state_t *state = td->state;
+  state_t *state = td->state;
 
   csprof_set_handling_sample(td);
 
@@ -252,7 +252,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
 
 static csprof_cct_node_t*
-_hpcrun_sample_callpath(csprof_state_t *state, void *context,
+_hpcrun_sample_callpath(state_t *state, void *context,
 			int metricId, uint64_t metricIncr, 
 			int skipInner, int isSync)
 {
