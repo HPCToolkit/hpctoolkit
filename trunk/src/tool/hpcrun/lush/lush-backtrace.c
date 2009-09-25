@@ -100,7 +100,7 @@ lush_agent_pool_t* lush_agents = NULL;
 //***************************************************************************
 
 csprof_cct_node_t*
-lush_backtrace(csprof_state_t* state, ucontext_t* context,
+lush_backtrace(state_t* state, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       int skipInner, int isSync)
 {

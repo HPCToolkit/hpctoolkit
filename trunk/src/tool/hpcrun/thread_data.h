@@ -53,6 +53,7 @@
 #include <setjmp.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "sample_sources_registered.h"
 #include "newmem.h"
@@ -69,7 +70,7 @@ typedef struct _td_t {
   int id;
   hpcrun_meminfo_t memstore;
   int              mem_low;
-  csprof_state_t*  state;
+  state_t*         state;
   FILE*            hpcrun_file;
   sigjmp_buf_t     bad_unwind;
   sigjmp_buf_t     mem_error;
@@ -82,9 +83,14 @@ typedef struct _td_t {
   //
   // trampoline related storage
   //
-  bool             tramp_present;      // TRUE if there is a trampoline installed, FALSE otherwise
-  void*            tramp_retn_addr;    // the return address that the trampoline replaced
-  void*            tramp_loc;          // current (stack) location of the trampoline
+  bool               tramp_present;      // TRUE if there is a trampoline installed, FALSE otherwise
+  void*              tramp_retn_addr;    // the return address that the trampoline replaced
+  void*              tramp_loc;          // current (stack) location of the trampoline
+  hpcrun_frame_t*    cached_bt;          // the latest backtrace buffer (start)
+  hpcrun_frame_t*    cached_bt_end;      // the latest backtrace buffer (end)
+  hpcrun_frame_t*    tramp_frame;        // (cached) frame associated with current trampoline location
+  csprof_cct_node_t* tramp_cct_node;     // cct node associated with the trampoline
+
   FILE*            trace_file;
   uint64_t         last_time_us; // microseconds
 
@@ -93,19 +99,20 @@ typedef struct _td_t {
 
 #define TD_GET(field) hpcrun_get_thread_data()->field
 
-extern thread_data_t *(*hpcrun_get_thread_data)(void);
-extern bool          (*hpcrun_td_avail)(void);
-extern thread_data_t *hpcrun_allocate_thread_data(void);
-extern void           hpcrun_init_pthread_key(void);
+thread_data_t *(*hpcrun_get_thread_data)(void);
+bool          (*hpcrun_td_avail)(void);
+thread_data_t *hpcrun_allocate_thread_data(void);
+void           hpcrun_init_pthread_key(void);
 
-extern void           hpcrun_set_thread_data(thread_data_t *td);
-extern void           hpcrun_set_thread0_data(void);
-extern void           hpcrun_unthreaded_data(void);
-extern void           hpcrun_threaded_data(void);
+void           hpcrun_set_thread_data(thread_data_t *td);
+void           hpcrun_set_thread0_data(void);
+void           hpcrun_unthreaded_data(void);
+void           hpcrun_threaded_data(void);
 
-extern thread_data_t* hpcrun_thread_data_new(void);
-extern void           hpcrun_thread_memory_init(void);
-extern void           hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt);
+thread_data_t* hpcrun_thread_data_new(void);
+void           hpcrun_thread_memory_init(void);
+void           hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt);
+void           hpcrun_cached_bt_adjust_size(size_t n);
 
 // utilities to match previous api
 #define csprof_get_state()  TD_GET(state)

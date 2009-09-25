@@ -172,7 +172,7 @@ csprof_init_internal(void)
 
   // Initialize LUSH agents
   if (opts.lush_agent_paths[0] != '\0') {
-    csprof_state_t* state = TD_GET(state);
+    state_t* state = TD_GET(state);
     TMSG(MALLOC," -init_internal-: lush allocation");
     lush_agents = (lush_agent_pool_t*)csprof_malloc(sizeof(lush_agent_pool_t));
     lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
@@ -216,7 +216,7 @@ csprof_fini_internal(void)
   }
 
   hpcrun_unthreaded_data();
-  csprof_state_t *state = TD_GET(state);
+  state_t *state = TD_GET(state);
 
   if (hpcrun_is_initialized()) {
     hpcrun_is_initialized_private = false;
@@ -278,7 +278,7 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
   hpcrun_thread_memory_init();
   hpcrun_thread_data_init(id, thr_ctxt);
 
-  csprof_state_t* state = TD_GET(state);
+  state_t* state = TD_GET(state);
 
   // start sampling sources
   TMSG(INIT,"starting sampling sources");
@@ -295,7 +295,7 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 
 
 void
-csprof_thread_fini(csprof_state_t *state)
+csprof_thread_fini(state_t *state)
 {
   TMSG(FINI,"thread fini");
   if (hpcrun_is_initialized()) {

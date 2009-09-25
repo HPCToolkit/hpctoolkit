@@ -84,7 +84,13 @@
 #include "sample_source_none_event.h"
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
+
+#ifdef USE_STRUCTS
 #include "structs.h"
+#endif
+
+#include "state.h"
+
 #include "thread_data.h"
 #include "thread_use.h"
 #include "trace.h"
@@ -353,7 +359,7 @@ monitor_thread_pre_create(void)
 
   TMSG(THREAD,"before lush malloc");
   TMSG(MALLOC," -thread_precreate: lush malloc");
-  csprof_state_t* state = csprof_get_state();
+  state_t* state = csprof_get_state();
   thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
   TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
   thr_ctxt->context = n;
@@ -400,7 +406,7 @@ monitor_fini_thread(void* init_thread_data)
 {
   hpcrun_async_block();
 
-  csprof_state_t *state = (csprof_state_t *)init_thread_data;
+  state_t *state = (state_t *)init_thread_data;
 
   csprof_thread_fini(state);
   trace_close();

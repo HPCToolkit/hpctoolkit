@@ -49,7 +49,7 @@
 void *
 csprof_trampoline2(void **stackptr)
 {
-    csprof_state_t *state;
+    state_t *state;
     void *return_ip;
     struct lox l;
     int should_insert;

@@ -213,9 +213,9 @@ hpcrun_epoch_reset(void)
   // FIXME: change the naming to reflect this
   //
   TMSG(EPOCH_RESET,"--started");
-  csprof_state_t *state = csprof_get_state();
-  csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
-  memcpy(newstate, state, sizeof(csprof_state_t));
+  state_t *state = csprof_get_state();
+  state_t *newstate = csprof_malloc(sizeof(state_t));
+  memcpy(newstate, state, sizeof(state_t));
   TMSG(EPOCH_RESET, "check new epoch = old epoch = %d", newstate->epoch == state->epoch);
   csprof_cct__init(&newstate->csdata, newstate->csdata_ctxt); // reset cct
   hpcrun_reset_state(newstate);

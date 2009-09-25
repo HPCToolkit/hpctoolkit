@@ -59,79 +59,16 @@
 #include <messages/messages.h>
 
 
-/* non-threaded profilers can have a single profiling state...
-   but it can't be statically allocated because of epochs */
-
-#if 0
-static csprof_state_t *current_state;
-
-/* fetching states */
-
-// get the static state variable, used for thread init of
-// initial thread
-static csprof_state_t *_get_static_state(void){
-  return current_state;
-}
-
-static void _set_static_state(csprof_state_t *state){
-  current_state = state;
-}
-#endif
-
-#if 0
-#ifdef CSPROF_THREADS
-static state_t_f      *csprof_get_state_internal = &_get_static_state;
-static state_t_setter *_set_state_internal       = &_set_static_state;
-
-// get state from thread specific data
-static csprof_state_t *_get_threaded_state(void)
-{
-  TMSG(THREAD,"thread asking for state %p",pthread_getspecific(prof_data_key));
-  return pthread_getspecific(prof_data_key);
-}
-
-void _set_threaded_state(csprof_state_t *state)
-{
-  pthread_setspecific(prof_data_key, state);
-}
-
-void state_threaded(void)
-{
-  csprof_get_state_internal = &_get_threaded_state;
-  _set_state_internal       = &_set_threaded_state;
-}
-#else // ! CSPROF_THREADS
-#define csprof_get_state_internal _get_static_state
-#define _set_state_internal       _set_static_state
-
-// get main thread safe state
-csprof_state_t *csprof_get_safe_state(void)
-{
-  return _get_static_state();
-}
-
-csprof_state_t *csprof_get_state()
-{
-  csprof_state_t *state = csprof_get_state_internal();
-
-  if (state == NULL) {
-    csprof_state_init(state);
-    state = csprof_get_state_internal();
-  }
-  return state;
-}
-#endif // CSPROF_THREADS
-#endif
 
 void
-hpcrun_reset_state(csprof_state_t* state)
+hpcrun_reset_state(state_t* state)
 {
   state->next = NULL;
   TD_GET(state) = state;
 }
 
 void
-csprof_set_state(csprof_state_t *state)
+csprof_set_state(state_t *state)
 {
   TMSG(STATE," --Set");
   state->next = TD_GET(state);
@@ -139,7 +76,7 @@ csprof_set_state(csprof_state_t *state)
 }
 
 int
-csprof_state_init(csprof_state_t *x)
+csprof_state_init(state_t *x)
 {
   /* ia64 Linux has this function return a `long int', which is a 64-bit
      integer.  Tru64 Unix returns an `int'.  it probably won't hurt us
@@ -155,7 +92,7 @@ csprof_state_init(csprof_state_t *x)
    private memory.  Private memory must be initialized!  Returns
    HPCRUN_OK upon success; HPCRUN_ERR on error. */
 int
-csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt)
+csprof_state_alloc(state_t *x, lush_cct_ctxt_t* thr_ctxt)
 {
   TMSG(STATE,"--Alloc");
   csprof_cct__init(&x->csdata, thr_ctxt);
@@ -189,8 +126,8 @@ csprof_state_alloc(csprof_state_t *x, lush_cct_ctxt_t* thr_ctxt)
   return HPCRUN_OK;
 }
 
-csprof_state_t*
-csprof_check_for_new_epoch(csprof_state_t *state)
+state_t*
+csprof_check_for_new_epoch(state_t *state)
 {
   /* ugh, nasty race condition here:
 
@@ -221,14 +158,14 @@ csprof_check_for_new_epoch(csprof_state_t *state)
 
   if(state->epoch != current) {
     TMSG(MALLOC," -new_epoch-");
-    csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
+    state_t *newstate = csprof_malloc(sizeof(state_t));
 
     TMSG(EPOCH, "check_new_epoch creating new state (new epoch/cct pair)...");
 
     /* we don't have to go through the usual csprof_state_{init,alloc}
        business here because most of the stuff we want is already
        in `state' */
-    memcpy(newstate, state, sizeof(csprof_state_t));
+    memcpy(newstate, state, sizeof(state_t));
 
     /* we do have to reinitialize the tree, though */
     csprof_cct__init(&newstate->csdata, newstate->csdata_ctxt);
@@ -257,14 +194,14 @@ csprof_check_for_new_epoch(csprof_state_t *state)
 }
 
 int
-csprof_state_fini(csprof_state_t *x){
+csprof_state_fini(state_t *x){
 
   TMSG(STATE,"--Fini");
   return HPCRUN_OK;
 }
 
 csprof_cct_node_t*
-csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
+csprof_state_insert_backtrace(state_t *state, int metric_id,
 			      hpcrun_frame_t *path_beg,
 			      hpcrun_frame_t *path_end,
 			      cct_metric_data_t increment)
@@ -279,8 +216,8 @@ csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
   return n;
 }
 
-hpcrun_frame_t *
-csprof_state_expand_buffer(csprof_state_t *state, hpcrun_frame_t *unwind){
+hpcrun_frame_t* 
+csprof_state_expand_buffer(state_t *state, hpcrun_frame_t *unwind){
   /* how big is the current buffer? */
   size_t sz = state->bufend - state->btbuf;
   size_t newsz = sz*2;
@@ -314,7 +251,7 @@ csprof_state_expand_buffer(csprof_state_t *state, hpcrun_frame_t *unwind){
    private memory.  Private memory must be initialized!  Returns
    HPCRUN_OK upon success; HPCRUN_ERR on error. */
 int
-csprof_state_free(csprof_state_t *x){
+csprof_state_free(state_t *x){
   csprof_cct__fini(&x->csdata);
 
   // no need to free memory
