@@ -233,6 +233,8 @@ realmain(int argc, char* const* argv)
   profGbl->metricMgr()->makeItrvSummaryMetrics();
   profGbl->isMetricMgrVirtual(false);
 
+  // TODO: initialize local summary metrics
+
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
@@ -316,7 +318,6 @@ myNormalizeProfileArgs(StringVec& profileFiles,
   // prepare parameters for scatter
   // -------------------------------------------------------
   
-  // TODO: broadcast groups
   const uint metadataBufSz = 2;
   uint metadataBuf[metadataBufSz];
   metadataBuf[0] = sendFilesChunkSz;
@@ -377,7 +378,6 @@ processProfile(Prof::CallPath::Profile* profGbl,
   // -------------------------------------------------------
   // read profile file
   // -------------------------------------------------------
-
   uint rFlags = Prof::CallPath::Profile::RFlg_noMetricSfx;
   Prof::CallPath::Profile* prof = 
     Analysis::CallPath::read(profileFile, groupId, rFlags);
@@ -385,7 +385,6 @@ processProfile(Prof::CallPath::Profile* profGbl,
   // -------------------------------------------------------
   // merge into canonical CCT
   // -------------------------------------------------------
-
   uint mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
 
   // Add some structure information to leaves so that 'prof' can be
@@ -403,14 +402,13 @@ processProfile(Prof::CallPath::Profile* profGbl,
   uint mEnd = mBeg + prof->metricMgr()->size(); //  open end)
 
   // -------------------------------------------------------
-  // compute local and derived metrics
+  // compute local metrics and update local derived metrics
   // -------------------------------------------------------
-
   if (mBeg < mEnd) {
     cctGbl->root()->accumulateMetrics(mBeg, mEnd - 1); // [ ]
 
     // TODO: faster: find exact indices for derived metrics
-    //cctGbl->root()->computeMetricsItrv(*mMgrGbl, ...);
+    cctGbl->root()->computeMetricsItrv(*mMgrGbl, 0, mMgrGbl->size() - 1);
   }
 
   // -------------------------------------------------------
@@ -421,18 +419,17 @@ processProfile(Prof::CallPath::Profile* profGbl,
   // -------------------------------------------------------
   // reinitialize metric values since space may be used again
   // -------------------------------------------------------
-
   if (mBeg < mEnd) {
     cctGbl->root()->zeroMetricsDeep(mBeg, mEnd - 1); // [ ]
   }
 
   // -------------------------------------------------------
-
   // FIXME: when merging y's metrics into x's, the metrics will not be found!
   //        x: [a b c d] [a b e f]   y: [a b e f]
-
-  // - Driver::computeDerivedBatch() does not need to be PostOrder
-  // - use PostOrder in accumulateMetrics
+  // TODO:
+  //   - Driver::computeDerivedBatch() does not need to be PostOrder
+  //   - use PostOrder in accumulateMetrics
+  // -------------------------------------------------------
   
   delete prof;
 }
