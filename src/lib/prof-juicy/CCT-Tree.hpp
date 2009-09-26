@@ -432,7 +432,8 @@ public:
   }
 
   void
-  computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId);
+  computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+		     Metric::AExprItrv::FnTy fn, uint srcArg);
 
 private:
   void

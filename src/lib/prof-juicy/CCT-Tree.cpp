@@ -341,8 +341,13 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 
 
 void
-ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
+ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+			  Metric::AExprItrv::FnTy fn, uint srcArg)
 {
+  if (mBegId == Prof::Metric::Mgr::npos || mEndId == Prof::Metric::Mgr::npos) {
+    return;
+  }
+  
   // N.B. pre-order walk assumes point-wise metrics
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
@@ -352,7 +357,16 @@ ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
 	dynamic_cast<const Metric::DerivedItrvDesc*>(m);
       if (mm) {
 	const Metric::AExprItrv* expr = mm->expr();
-	expr->update(*n);
+	switch (fn) {
+	  case Metric::AExprItrv::FnInit:
+	    expr->initialize(*n); break;
+	  case Metric::AExprItrv::FnUpdate:
+	    expr->update(*n, srcArg); break;
+	  case Metric::AExprItrv::FnFini:
+	    expr->finalize(*n, srcArg); break;
+	  default:
+	    DIAG_Die(DIAG_UnexpectedInput);
+	}
       }
     }
   }

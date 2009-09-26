@@ -107,6 +107,8 @@ public:
   //
   // ------------------------------------------------------------
 
+  enum FnTy { FnInit, FnUpdate, FnFini };
+
   virtual double
   initialize(Metric::IData& mdata) const = 0;
 
