@@ -174,7 +174,7 @@ csprof_check_for_new_epoch(state_t *state)
     if(newstate->bufend - newstate->bufstk != 0) {
       TMSG(EPOCH_CHK,"New backtraces must be reinserted");
       newstate->treenode = NULL;
-      csprof_state_insert_backtrace(newstate, 0, /* pick one */
+      hpcrun_state_insert_backtrace(newstate, 0, /* pick one */
                                     newstate->bufend - 1,
                                     newstate->bufstk,
 				    (cct_metric_data_t){ .i = 0 });
@@ -201,7 +201,7 @@ csprof_state_fini(state_t *x){
 }
 
 csprof_cct_node_t*
-csprof_state_insert_backtrace(state_t *state, int metric_id,
+hpcrun_state_insert_backtrace(state_t *state, int metric_id,
 			      hpcrun_frame_t *path_beg,
 			      hpcrun_frame_t *path_end,
 			      cct_metric_data_t increment)

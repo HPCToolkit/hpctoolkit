@@ -138,8 +138,10 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   td->tramp_retn_addr             = NULL;
   td->tramp_loc                   = NULL;
   td->cached_bt                   = csprof_malloc(sizeof(hpcrun_frame_t) * CACHED_BACKTRACE_SIZE);
-  td->cached_bt_end               = td->cached_bt + CACHED_BACKTRACE_SIZE;
+  td->cached_bt_end               = td->cached_bt;          
+  td->cached_bt_buf_end           = td->cached_bt + CACHED_BACKTRACE_SIZE;
   td->tramp_frame                 = NULL;
+  td->tramp_cct_node              = NULL;
 
   td->trace_file                  = NULL;
   td->last_time_us                = 0;
@@ -166,15 +168,16 @@ void
 hpcrun_cached_bt_adjust_size(size_t n)
 {
   thread_data_t *td = hpcrun_get_thread_data();
-  if ((td->cached_bt_end - td->cached_bt) >= n) {
+  if ((td->cached_bt_buf_end - td->cached_bt) >= n) {
     return; // cached backtrace buffer is already big enough
   }
 
   hpcrun_frame_t* newbuf = csprof_malloc(n * sizeof(hpcrun_frame_t));
-  memcpy(newbuf, td->cached_bt, td->cached_bt_end - td->cached_bt);
-  td->cached_bt     = newbuf;
-  td->cached_bt_end = newbuf+n;
-
+  memcpy(newbuf, td->cached_bt, (void*)td->cached_bt_buf_end - (void*)td->cached_bt);
+  size_t idx            = td->cached_bt_end - td->cached_bt;
+  td->cached_bt         = newbuf;
+  td->cached_bt_buf_end = newbuf+n;
+  td->cached_bt_end     = newbuf + idx;
 }
 
 #ifdef CSPROF_THREADS

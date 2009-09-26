@@ -162,7 +162,7 @@ unw_init(void)
 
 
 int 
-unw_get_reg(unw_cursor_t *cursor, int reg_id, void **reg_value)
+unw_get_reg(unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
 {
   assert(reg_id == UNW_REG_IP);
   *reg_value = cursor->pc;

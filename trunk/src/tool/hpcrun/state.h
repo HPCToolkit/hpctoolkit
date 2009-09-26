@@ -152,7 +152,7 @@ csprof_state_expand_buffer(state_t *, hpcrun_frame_t *);
 
 
 csprof_cct_node_t* 
-csprof_state_insert_backtrace(state_t *, int, hpcrun_frame_t *,
+hpcrun_state_insert_backtrace(state_t *, int, hpcrun_frame_t *,
 			      hpcrun_frame_t *, cct_metric_data_t);
 
 #if defined(CSPROF_PERF)

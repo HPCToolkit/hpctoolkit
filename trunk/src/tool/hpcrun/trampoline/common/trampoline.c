@@ -20,6 +20,7 @@
 
 #include "trampoline.h"
 #include <hpcrun/thread_data.h>
+#include <cct/cct.h>
 
 
 //******************************************************************************
@@ -79,34 +80,52 @@ hpcrun_trampoline_at_entry(void* addr)
   return (addr == &hpcrun_trampoline);
 }
 
+csprof_cct_node_t*
+hpcrun_trampoline_advance(void)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  csprof_cct_node_t* node = td->tramp_cct_node;
+  node = node->parent;
+  td->tramp_frame++;
+  // 
+  return node;
+}
+
+void 
+hpcrun_trampoline_insert(csprof_cct_node_t* node)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  void* addr        = td->tramp_frame->ra_loc;
+  if (! addr) {
+    hpcrun_init_trampoline_info();
+    return;
+  }
+  save_retn_addr(addr);
+  *((void**)addr) = &hpcrun_trampoline;
+  td->tramp_cct_node = node;
+  td->tramp_present = true;
+}
+
+
+void
+hpcrun_trampoline_remove(void)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  if (td->tramp_present){
+    *((void**)td->tramp_loc) = td->tramp_retn_addr;
+  }
+  hpcrun_init_trampoline_info();
+}
+
+
 void*
 hpcrun_trampoline_handler(void)
 {
   printf("trampoline fired!\n");
   void* ra = fetch_retn_addr();
-  // After trampoline is invoked, it is effectively removed
   
-  // FIXME: re-insert trampoline up the ladder
+  csprof_cct_node_t* n = hpcrun_trampoline_advance();
+  hpcrun_trampoline_insert(n);
 
   return ra;
-}
-
-
-void 
-hpcrun_trampoline_insert(void* addr)
-{
-  save_retn_addr(addr);
-  *((void**)addr) = &hpcrun_trampoline;
-
-  TD_GET(tramp_present) = true;
-}
-
-
-void
-hpcrun_trampoline_remove(void* addr, void* old_return_address)
-{
-  if (TD_GET(tramp_present)){
-    *((void**)addr) = old_return_address;
-  }
-  hpcrun_init_trampoline_info();
 }
