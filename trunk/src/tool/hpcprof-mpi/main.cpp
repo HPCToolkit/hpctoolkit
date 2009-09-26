@@ -94,7 +94,8 @@ myNormalizeProfileArgs(StringVec& profileFiles,
 
 void
 processProfile(Prof::CallPath::Profile* profGbl,
-	       string& profileFile, uint groupId);
+	       string& profileFile, uint groupId,
+	       uint mDrvdBeg, uint mDrvdEnd);
 
 //****************************************************************************
 
@@ -230,18 +231,31 @@ realmain(int argc, char* const* argv)
   // Create summary and thread-level metrics
   // -------------------------------------------------------
 
-  profGbl->metricMgr()->makeItrvSummaryMetrics();
+  uint mDrvdBeg = Prof::Metric::Mgr::npos; // [ ]
+  uint mDrvdEnd = Prof::Metric::Mgr::npos;
+
+  mDrvdBeg = profGbl->metricMgr()->makeItrvSummaryMetrics();
+  if (mDrvdBeg != Prof::Metric::Mgr::npos) {
+    mDrvdEnd = profGbl->metricMgr()->size() - 1;
+  }
+
   profGbl->isMetricMgrVirtual(false);
 
-  // TODO: initialize local summary metrics
+  Prof::CCT::ANode* cctRoot = profGbl->cct()->root();
+  cctRoot->computeMetricsItrv(*profGbl->metricMgr(), mDrvdBeg, mDrvdEnd,
+			      Prof::Metric::AExprItrv::FnInit, 0);
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
-    processProfile(profGbl, fnm, groupId);
+    processProfile(profGbl, fnm, groupId, mDrvdBeg, mDrvdEnd);
   }
 
-  // TODO: finalize local summary metrics and send to master
+  uint numUpdates = nArgs.paths->size();
+  cctRoot->computeMetricsItrv(*profGbl->metricMgr(), mDrvdBeg, mDrvdEnd,
+			      Prof::Metric::AExprItrv::FnFini, numUpdates);
+
+  // TODO: send local summary to master
 
   nArgs.destroy();
 
@@ -370,7 +384,8 @@ myNormalizeProfileArgs(StringVec& profileFiles,
 
 void
 processProfile(Prof::CallPath::Profile* profGbl,
-	       string& profileFile, uint groupId)
+	       string& profileFile, uint groupId,
+	       uint mDrvdBeg, uint mDrvdEnd)
 {
   Prof::Metric::Mgr* mMgrGbl = profGbl->metricMgr();
   Prof::CCT::Tree* cctGbl = profGbl->cct();
@@ -407,8 +422,9 @@ processProfile(Prof::CallPath::Profile* profGbl,
   if (mBeg < mEnd) {
     cctGbl->root()->accumulateMetrics(mBeg, mEnd - 1); // [ ]
 
-    // TODO: faster: find exact indices for derived metrics
-    cctGbl->root()->computeMetricsItrv(*mMgrGbl, 0, mMgrGbl->size() - 1);
+
+    cctGbl->root()->computeMetricsItrv(*mMgrGbl, mDrvdBeg, mDrvdEnd,
+				       Prof::Metric::AExprItrv::FnUpdate, 1);
   }
 
   // -------------------------------------------------------

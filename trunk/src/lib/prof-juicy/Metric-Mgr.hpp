@@ -100,7 +100,7 @@ public:
   void
   makeSummaryMetrics();
 
-  void
+  uint
   makeItrvSummaryMetrics();
 
 
@@ -218,10 +218,10 @@ private:
   bool
   insertInMapsAndMakeUniqueName(Metric::ADesc* m);
 
-  void
+  Metric::DerivedDesc*
   makeSummaryMetric(const std::string& m_nm, const Metric::ADescVec& m_opands);
 
-  void
+  Metric::DerivedItrvDesc*
   makeItrvSummaryMetric(const std::string& m_nm, uint srcId);
 
   

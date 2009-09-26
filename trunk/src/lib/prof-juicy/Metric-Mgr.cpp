@@ -154,11 +154,14 @@ Mgr::makeSummaryMetrics()
 }
 
 
-void 
+uint 
 Mgr::makeItrvSummaryMetrics()
 {
   // N.B.: Probably too specific; currently assumes we should make
   // summary metrics for each entry in the table.
+
+  uint firstId = Metric::Mgr::npos;
+
   uint numSrcMetrics = m_metrics.size();
   for (uint i = 0; i < numSrcMetrics; ++i) {
     Metric::ADesc* m = m_metrics[i];
@@ -169,12 +172,18 @@ Mgr::makeItrvSummaryMetrics()
     string max_nm = "Max-" + m_nm;
     
     //makeItrvSummaryMetric(mean_nm, m->id());
-    makeItrvSummaryMetric(max_nm, m->id());
+    Metric::ADesc* m_new = makeItrvSummaryMetric(max_nm, m->id());
+    
+    if (firstId == Metric::Mgr::npos) {
+      firstId = m_new->id();
+    }
   }
+  
+  return firstId;
 }
 
 
-void
+Metric::DerivedDesc*
 Mgr::makeSummaryMetric(const string& m_nm, const Metric::ADescVec& m_opands)
 {
   Metric::AExpr** opands = new Metric::AExpr*[m_opands.size()];
@@ -221,13 +230,17 @@ Mgr::makeSummaryMetric(const string& m_nm, const Metric::ADescVec& m_opands)
   else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
-  
-  insert(new DerivedDesc(m_nm, m_nm, expr, isVisible, true/*isSortKey*/,
-			 doDispPercent, isPercent));
+ 
+  DerivedDesc* m =
+    new DerivedDesc(m_nm, m_nm, expr, isVisible, true/*isSortKey*/,
+		    doDispPercent, isPercent);
+  insert(m);
+
+  return m;
 }
 
 
-void
+Metric::DerivedItrvDesc*
 Mgr::makeItrvSummaryMetric(const string& m_nm, uint srcId)
 {
   bool isVisible = true;
@@ -269,12 +282,13 @@ Mgr::makeItrvSummaryMetric(const string& m_nm, uint srcId)
     DIAG_Die(DIAG_UnexpectedInput);
   }
   
-  
-  DerivedItrvDesc* m = 
+  DerivedItrvDesc* m =
     new DerivedItrvDesc(m_nm, m_nm, expr, isVisible, true/*isSortKey*/,
 			doDispPercent, isPercent);
   insert(m);
   expr->dstId(m->id());
+
+  return m;
 }
 
 
