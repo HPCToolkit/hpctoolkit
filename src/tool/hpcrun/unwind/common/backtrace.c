@@ -91,6 +91,13 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 //     if successful, returns the leaf node representing the sample;
 //     otherwise, returns NULL.
 //-----------------------------------------------------------------------------
+
+//
+// TODO: one more flag:
+//   backtrace needs to either:
+//       IGNORE_TRAMPOLINE (usually, but not always called when isSync is true)
+//       PLACE_TRAMPOLINE  (standard for normal async samples).
+//             
 csprof_cct_node_t*
 hpcrun_backtrace(state_t *state, ucontext_t* context, 
 		 int metricId, uint64_t metricIncr,
@@ -106,7 +113,6 @@ hpcrun_backtrace(state_t *state, ucontext_t* context,
   else {
     n = _hpcrun_backtrace(state, context, metricId, metricIncr, skipInner);
   }
-  //HPC_IF_UNW_LITE(test_backtrace_lite(context);)
 
   // N.B.: for lush_backtrace() it may be that n = NULL
 
@@ -223,33 +229,43 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
   hpcrun_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
   hpcrun_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
 
-  if (!tramp_found) {
-    if (skipInner) {
-      bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
-    }
+  //
+  // FOR THE MOMENT
+  //   Ignore skipInner issues with trampolines.
+  //   Eventually, this will need to be addressed
+  //
+  if (skipInner) {
+    EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d)", skipInner);
+    bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
   }
 
   csprof_cct_node_t* n;
-  n = csprof_state_insert_backtrace(state, metricId,
+  n = hpcrun_state_insert_backtrace(state, metricId,
 				    bt_end, bt_beg,
 				    (cct_metric_data_t){.i = metricIncr});
+
+  thread_data_t* td = hpcrun_get_thread_data();
   if (tramp_found) {
     //
-    // join current backtrace fragment to previous trampoline-marked suffix
-    // and copy backtrace to cached-backtrace
+    // join current backtrace fragment to previous trampoline-marked prefix
+    // and make this new joined backtrace the cached-backtrace
     //
+    hpcrun_frame_t* prefix          = td->tramp_frame;
+    size_t          new_frag_size   = bt_end - bt_beg + 1;
+    hpcrun_cached_bt_adjust_size(new_frag_size + (td->cached_bt_end - prefix));
+    memmove(td->cached_bt + new_frag_size, prefix, (void*)(td->cached_bt_end) - (void*)prefix);
+    memcpy(td->cached_bt, bt_beg, sizeof(hpcrun_frame_t)*new_frag_size);
   }
   else {
-    hpcrun_cached_bt_adjust_size(bt_end - bt_beg);
-    thread_data_t* td = hpcrun_get_thread_data();
-    memmove(td->cached_bt, bt_beg, (void*)bt_end - (void*)bt_beg);
+    hpcrun_cached_bt_adjust_size(bt_end - bt_beg + 1);
+    memmove(td->cached_bt, bt_beg, (void*)(bt_end+1) - (void*)bt_beg);
+
+    td->cached_bt_end = td->cached_bt + (bt_end + 1 - bt_beg);
   }
   if (ENABLED(USE_TRAMP)){
-    //
-    // remove current trampoline
-    //
-    // insert trampoline into ra_loc of state->btbuf
-    //
+    hpcrun_trampoline_remove();
+    td->tramp_frame = td->cached_bt;
+    hpcrun_trampoline_insert(n->parent);
   }
 
   return n;

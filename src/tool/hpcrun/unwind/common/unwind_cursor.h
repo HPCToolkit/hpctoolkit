@@ -79,7 +79,9 @@ typedef struct unw_cursor_t {
   void *pc;
   void **bp;
   void **sp;
-  void *ra_loc;
+  void *ra;
+
+  void *ra_loc;  // for trampolines
 
   UNW_CURSOR_INTERVAL_t intvl;
 

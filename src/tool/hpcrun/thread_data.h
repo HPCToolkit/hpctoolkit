@@ -86,8 +86,9 @@ typedef struct _td_t {
   bool               tramp_present;      // TRUE if there is a trampoline installed, FALSE otherwise
   void*              tramp_retn_addr;    // the return address that the trampoline replaced
   void*              tramp_loc;          // current (stack) location of the trampoline
-  hpcrun_frame_t*    cached_bt;          // the latest backtrace buffer (start)
-  hpcrun_frame_t*    cached_bt_end;      // the latest backtrace buffer (end)
+  hpcrun_frame_t*    cached_bt;          // the latest backtrace (start)
+  hpcrun_frame_t*    cached_bt_end;      // the latest backtrace (end)
+  hpcrun_frame_t*    cached_bt_buf_end;  // the end of the cached backtrace buffer
   hpcrun_frame_t*    tramp_frame;        // (cached) frame associated with current trampoline location
   csprof_cct_node_t* tramp_cct_node;     // cct node associated with the trampoline
 

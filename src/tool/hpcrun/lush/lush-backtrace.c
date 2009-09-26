@@ -246,7 +246,7 @@ lush_backtrace(state_t* state, ucontext_t* context,
   }
 
   csprof_cct_node_t* node = NULL;
-  node = csprof_state_insert_backtrace(state, metricId,
+  node = hpcrun_state_insert_backtrace(state, metricId,
 				       bt_end, bt_beg,
 				       (cct_metric_data_t){.i = incrMetric});
 
