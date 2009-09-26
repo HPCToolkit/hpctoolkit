@@ -89,11 +89,15 @@ using std::string;
 typedef std::vector<std::string> StringVec;
 
 Analysis::Util::NormalizeProfileArgs_t
-myNormalizeProfileArgs(StringVec& profileFiles, 
+myNormalizeProfileArgs(StringVec& profileFiles,
 		       int myRank, int numRanks, int rootRank = 0);
 
+uint
+makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
+		       uint& mDrvdBeg, uint& mDrvdEnd);
+
 void
-processProfile(Prof::CallPath::Profile* profGbl,
+processProfile(Prof::CallPath::Profile& profGbl,
 	       string& profileFile, uint groupId,
 	       uint mDrvdBeg, uint mDrvdEnd);
 
@@ -189,7 +193,7 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   Prof::CallPath::Profile* profGbl = NULL;
 
-  // Post-INVARIANT: rank 0's 'profLcl' the canonical CCT.  Metrics
+  // Post-INVARIANT: rank 0's 'profLcl' is the canonical CCT.  Metrics
   // are merged (and sorted by always merging left-child before right)
   ParallelAnalysis::reduce(profLcl, myRank, numRanks - 1);
 
@@ -228,19 +232,13 @@ realmain(int argc, char* const* argv)
   profGbl->cct()->renumberIdsDensly();
 
   // -------------------------------------------------------
-  // Create summary and thread-level metrics
+  // Create summary metrics and thread-level metrics
   // -------------------------------------------------------
 
-  uint mDrvdBeg = Prof::Metric::Mgr::npos; // [ ]
-  uint mDrvdEnd = Prof::Metric::Mgr::npos;
+  uint mDrvdBeg, mDrvdEnd; // [ ]
+  uint numDrvd = makeDerivedMetricDescs(*profGbl, mDrvdBeg, mDrvdEnd);
 
-  mDrvdBeg = profGbl->metricMgr()->makeItrvSummaryMetrics();
-  if (mDrvdBeg != Prof::Metric::Mgr::npos) {
-    mDrvdEnd = profGbl->metricMgr()->size() - 1;
-  }
-
-  profGbl->isMetricMgrVirtual(false);
-
+  // 1. create local summary metrics (and thread-level metrics)
   Prof::CCT::ANode* cctRoot = profGbl->cct()->root();
   cctRoot->computeMetricsItrv(*profGbl->metricMgr(), mDrvdBeg, mDrvdEnd,
 			      Prof::Metric::AExprItrv::FnInit, 0);
@@ -248,14 +246,24 @@ realmain(int argc, char* const* argv)
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
-    processProfile(profGbl, fnm, groupId, mDrvdBeg, mDrvdEnd);
+    processProfile(*profGbl, fnm, groupId, mDrvdBeg, mDrvdEnd);
   }
 
-  uint numUpdates = nArgs.paths->size();
-  cctRoot->computeMetricsItrv(*profGbl->metricMgr(), mDrvdBeg, mDrvdEnd,
-			      Prof::Metric::AExprItrv::FnFini, numUpdates);
+  // 2. create global summary metrics
+  ParallelAnalysis::DblMatrix* packedMetrics =
+    new ParallelAnalysis::DblMatrix(1 /*TODO*/, numDrvd);
+  uint numUpdatesLcl = nArgs.paths->size();
 
-  // TODO: send local summary to master
+  // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
+  ParallelAnalysis::reduce(std::make_pair(profGbl, packedMetrics),
+			   myRank, numRanks - 1);
+  delete packedMetrics;
+
+  if (myRank == rootRank) {
+    uint numUpdates = numUpdatesLcl; // TODO: reduction
+    cctRoot->computeMetricsItrv(*profGbl->metricMgr(), mDrvdBeg, mDrvdEnd,
+				Prof::Metric::AExprItrv::FnFini, numUpdates);
+  }
 
   nArgs.destroy();
 
@@ -382,13 +390,34 @@ myNormalizeProfileArgs(StringVec& profileFiles,
 
 //***************************************************************************
 
+uint
+makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
+		       uint& mDrvdBeg, uint& mDrvdEnd)
+{
+  uint numDrvd = 0;
+  mDrvdBeg = Prof::Metric::Mgr::npos; // [ ]
+  mDrvdEnd = Prof::Metric::Mgr::npos;
+
+  // create derived metrics
+  mDrvdBeg = profGbl.metricMgr()->makeItrvSummaryMetrics();
+  if (mDrvdBeg != Prof::Metric::Mgr::npos) {
+    mDrvdEnd = profGbl.metricMgr()->size() - 1;
+    numDrvd = (mDrvdEnd - mDrvdBeg) + 1;
+  }
+
+  profGbl.isMetricMgrVirtual(false);
+
+  return numDrvd;
+}
+
+
 void
-processProfile(Prof::CallPath::Profile* profGbl,
+processProfile(Prof::CallPath::Profile& profGbl,
 	       string& profileFile, uint groupId,
 	       uint mDrvdBeg, uint mDrvdEnd)
 {
-  Prof::Metric::Mgr* mMgrGbl = profGbl->metricMgr();
-  Prof::CCT::Tree* cctGbl = profGbl->cct();
+  Prof::Metric::Mgr* mMgrGbl = profGbl.metricMgr();
+  Prof::CCT::Tree* cctGbl = profGbl.cct();
 
   // -------------------------------------------------------
   // read profile file
@@ -409,11 +438,11 @@ processProfile(Prof::CallPath::Profile* profGbl,
   // Analysis::CallPath::coalesceStmts(), IP/LIP information is not
   // retained.  This means that many leaves in 'prof' will not
   // correctly find their corresponding node in profGbl.
-  prof->structure(profGbl->structure());
+  prof->structure(profGbl.structure());
   Analysis::CallPath::noteStaticStructureOnLeaves(*prof);
   prof->structure(NULL);
 
-  uint mBeg = profGbl->merge(*prof, mergeTy);   // [closed begin
+  uint mBeg = profGbl.merge(*prof, mergeTy);   // [closed begin
   uint mEnd = mBeg + prof->metricMgr()->size(); //  open end)
 
   // -------------------------------------------------------

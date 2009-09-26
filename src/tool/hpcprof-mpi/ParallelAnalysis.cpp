@@ -92,34 +92,6 @@ namespace ParallelAnalysis {
 //***************************************************************************
 
 void
-reduce(Prof::CallPath::Profile* profile,
-       int myRank, int maxRank, MPI_Comm comm)
-{
-  for (int level = RankTree::level(maxRank); level >= 1; --level) {
-    int i_beg = RankTree::begNode(level);
-    int i_end = std::min(maxRank, RankTree::endNode(level));
-    
-    for (int i = i_beg; i <= i_end; i += 2) {
-      int parent = RankTree::parent(i);
-      int lchild = i;     // left child of parent
-      int rchild = i + 1; // right child of parent (if it exists)
-
-      // merge lchild into parent (merge left child first to maintain
-      // metric order)
-      mergeNonLocal(profile, parent, lchild, myRank);
-
-      // merge rchild into parent
-      if (rchild <= i_end) {
-	mergeNonLocal(profile, parent, rchild, myRank);
-      }
-    }
-    
-    MPI_Barrier(comm);
-  }
-}
-
-
-void
 broadcast(Prof::CallPath::Profile*& profile,
 	  int myRank, int maxRank, MPI_Comm comm)
 {
@@ -176,7 +148,7 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
     // rank_x receives profile from rank_y
     MPI_Recv(profileBuf, profileBufSz, MPI_BYTE, rank_y, 0, comm, &mpistat);
 
-    profile_y = unpack(profileBuf, profileBufSz);
+    profile_y = unpackProfile(profileBuf, profileBufSz);
     delete[] profileBuf;
     
     int mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
@@ -186,7 +158,7 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
   if (myRank == rank_y) {
     profile_y = profile;
 
-    pack(profile_y, &profileBuf, &profileBufSz);
+    packProfile(profile_y, &profileBuf, &profileBufSz);
 
     // rank_y sends profile buffer size to rank_x
     MPI_Send(&profileBufSz, 1, MPI_UNSIGNED_LONG, rank_x, 0, comm);
@@ -199,10 +171,19 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
 }
 
 
+void
+mergeNonLocal(std::pair<Prof::CallPath::Profile*, ParallelAnalysis::DblMatrix*>,
+	      int rank_x, int rank_y, int myRank, MPI_Comm comm)
+{
+  // TODO
+}
+
+
 //***************************************************************************
 
 void
-pack(Prof::CallPath::Profile* profile, uint8_t** buffer, size_t* bufferSz)
+packProfile(Prof::CallPath::Profile* profile,
+	    uint8_t** buffer, size_t* bufferSz)
 {
   // open_memstream: mallocs buffer and sets bufferSz
   FILE* fs = open_memstream((char**)buffer, bufferSz);
@@ -215,7 +196,7 @@ pack(Prof::CallPath::Profile* profile, uint8_t** buffer, size_t* bufferSz)
 
 
 Prof::CallPath::Profile*
-unpack(uint8_t* buffer, size_t bufferSz)
+unpackProfile(uint8_t* buffer, size_t bufferSz)
 {
   FILE* fs = fmemopen(buffer, bufferSz, "r");
 

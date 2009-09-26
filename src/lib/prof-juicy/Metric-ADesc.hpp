@@ -505,6 +505,7 @@ class SampledDescVec : public std::vector<SampledDesc*>
 class DerivedDesc : public ADesc
 {
 public:
+  // Constructor: assumes ownership of 'expr'
   DerivedDesc(const char* nameBase, const char* description,
 	      Metric::AExpr* expr,
 	      bool isVisible = true, bool isSortKey = false,
@@ -524,12 +525,12 @@ public:
   { }
 
   virtual ~DerivedDesc()
-  { }
+  { delete m_expr; }
   
   DerivedDesc(const DerivedDesc& x)
     : ADesc(x),
       m_expr(x.m_expr)
-  { }
+  { DIAG_Die(DIAG_Unimplemented << "must copy expr!"); }
   
   DerivedDesc&
   operator=(const DerivedDesc& x) 
@@ -537,6 +538,7 @@ public:
     if (this != &x) {
       ADesc::operator=(x);
       m_expr = x.m_expr;
+      DIAG_Die(DIAG_Unimplemented << "must copy expr!");
     }
     return *this;
   }
@@ -578,6 +580,7 @@ private:
 class DerivedItrvDesc : public ADesc
 {
 public:
+  // Constructor: assumes ownership of 'expr'
   DerivedItrvDesc(const char* nameBase, const char* description,
 		  Metric::AExprItrv* expr,
 		  bool isVisible = true, bool isSortKey = false,
@@ -597,12 +600,12 @@ public:
   { }
 
   virtual ~DerivedItrvDesc()
-  { }
+  { delete m_expr; }
   
   DerivedItrvDesc(const DerivedItrvDesc& x)
     : ADesc(x),
       m_expr(x.m_expr)
-  { }
+  { DIAG_Die(DIAG_Unimplemented << "must copy expr!"); }
   
   DerivedItrvDesc&
   operator=(const DerivedItrvDesc& x) 
@@ -610,6 +613,7 @@ public:
     if (this != &x) {
       ADesc::operator=(x);
       m_expr = x.m_expr;
+      DIAG_Die(DIAG_Unimplemented << "must copy expr!");
     }
     return *this;
   }
