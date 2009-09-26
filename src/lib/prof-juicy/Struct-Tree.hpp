@@ -1053,8 +1053,19 @@ public:
   // Struct::Stmt are created
   ACodeNode*
   findByVMA(VMA vma) const;
-  
 
+  void
+  computeVMAMaps() const
+  {
+    delete m_procMap;
+    m_procMap = NULL;
+    delete m_stmtMap;
+    m_stmtMap = NULL;
+    findProc(0);
+    findStmt(0);
+  }
+
+  
   Proc*
   findProc(VMA vma) const;
 
@@ -1100,7 +1111,7 @@ public:
     return false;
   }
 
-
+  
   // --------------------------------------------------------
   // Output
   // --------------------------------------------------------

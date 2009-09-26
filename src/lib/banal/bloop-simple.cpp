@@ -125,9 +125,15 @@ banal::bloop::makeStructureSimple(Struct::LM* lmStrct,
   }
 
   if (stmtStrct) {
-    lmStrct->eraseStmtIf(stmtStrct);
+    if (0) {
+      // disable: potentially expensive to maintain
+      lmStrct->eraseStmtIf(stmtStrct);
+    }
     stmtStrct->vmaSet().insert(begVMA, endVMA);
-    lmStrct->insertStmtIf(stmtStrct);
+    if (0) {
+      // disable: potentially expensive to maintain
+      lmStrct->insertStmtIf(stmtStrct);
+    }
   }
   else {
     // N.B.: calls lmStrct->insertStmtIf()
