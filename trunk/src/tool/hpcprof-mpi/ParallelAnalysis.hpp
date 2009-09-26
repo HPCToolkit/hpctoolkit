@@ -77,42 +77,9 @@
 
 #include <lib/prof-juicy/CallPath-Profile.hpp>
 
+#include <lib/support/Unique.hpp>
+
 //*************************** Forward Declarations **************************
-
-//***************************************************************************
-
-namespace ParallelAnalysis {
-
-// reduce: Uses a tree-based reduction to reduce the CCTs at every
-// rank into a canonical CCT at the tree's root, rank 0.  Assumes
-// 0-based ranks.  Uses lg(maxRank) barriers, one at each level of the
-// binary tree.
-void
-reduce(Prof::CallPath::Profile* profile, int myRank, int maxRank, 
-       MPI_Comm comm = MPI_COMM_WORLD);
-
-// broadcast: Use a tree-based broadcast to broadcast the profile at
-// the tree's root (rank 0) to every other rank.  Assumes 0-based
-// ranks.  Uses lg(maxRank) barriers, one at each level of the binary
-// tree.
-void
-broadcast(Prof::CallPath::Profile*& profile, int myRank, int maxRank, 
-	  MPI_Comm comm = MPI_COMM_WORLD);
-
-// mergeNonLocal: merge profile on rank_y into profile on rank_x
-void
-mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
-	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
-
-void
-pack(Prof::CallPath::Profile* profile, uint8_t** buffer, size_t* bufferSz);
-
-Prof::CallPath::Profile*
-unpack(uint8_t* buffer, size_t bufferSz);
-
-
-
-} // namespace ParallelAnalysis
 
 
 //***************************************************************************
@@ -222,5 +189,153 @@ endNode(int level)
 } // namespace RankTree
 
 
+//***************************************************************************
+// DblMatrix: a packable matrix
+//***************************************************************************
+
+namespace ParallelAnalysis {
+
+class DblMatrix
+  : public Unique // prevent copying
+{
+public:
+  DblMatrix(uint numRow, uint numCol)
+    : m_numRow(numRow), m_numCol(numCol)
+  {
+    m_packedMatrix = new double[(numRow * numCol) + m_numHdr];
+    m_packedMatrix[m_numRowIdx] = (double)m_numRow;
+    m_packedMatrix[m_numColIdx] = (double)m_numCol;
+  }
+
+  DblMatrix(double* packedMatrix)
+  {
+    // assumes ownership of 'packedMatrix'
+    m_packedMatrix = packedMatrix;
+    m_numRow = (uint)m_packedMatrix[m_numRowIdx];
+    m_numCol = (uint)m_packedMatrix[m_numColIdx];
+  }
+
+
+  ~DblMatrix()
+  { delete[] m_packedMatrix; }
+
+
+  // 0 based indexing
+  double
+  idx(uint idxRow, uint idxCol) const
+  { return m_packedMatrix[m_numHdr + (m_numRow * idxRow) + idxCol]; }
+
+  double&
+  idx(uint idxRow, uint idxCol)
+  { return m_packedMatrix[m_numHdr + (m_numRow * idxRow) + idxCol]; }
+
+  
+  double*
+  data() const
+  { return m_packedMatrix; }
+
+  uint
+  numElements() const
+  { return m_numRow * m_numCol; }
+
+private:
+  uint m_numRow;
+  uint m_numCol;
+
+  double* m_packedMatrix; // use row-major layout
+
+  static const uint m_numHdr = 2;
+  static const uint m_numRowIdx = 0;
+  static const uint m_numColIdx = 1;
+};
+
+} // namespace ParallelAnalysis
+
+
+//***************************************************************************
+// reduce/broadcast
+//***************************************************************************
+
+namespace ParallelAnalysis {
+
+// ------------------------------------------------------------------------
+// reduce: Uses a tree-based reduction to reduce the profile at every
+// rank into a canonical profile at the tree's root, rank 0.  Assumes
+// 0-based ranks.  Uses lg(maxRank) barriers, one at each level of the
+// binary tree.
+// 
+// T: Prof::CallPath::Profile*
+// T: std::pair<Prof::CallPath::Profile*, ParallelAnalysis::DblMatrix*>
+// ------------------------------------------------------------------------
+
+template<typename T>
+void
+reduce(T object, int myRank, int maxRank, MPI_Comm comm = MPI_COMM_WORLD)
+{
+  for (int level = RankTree::level(maxRank); level >= 1; --level) {
+    int i_beg = RankTree::begNode(level);
+    int i_end = std::min(maxRank, RankTree::endNode(level));
+    
+    for (int i = i_beg; i <= i_end; i += 2) {
+      int parent = RankTree::parent(i);
+      int lchild = i;     // left child of parent
+      int rchild = i + 1; // right child of parent (if it exists)
+
+      // merge lchild into parent (merging left child first maintains
+      // metric order for CallPath::Profiles)
+      mergeNonLocal(object, parent, lchild, myRank);
+
+      // merge rchild into parent
+      if (rchild <= i_end) {
+	mergeNonLocal(object, parent, rchild, myRank);
+      }
+    }
+    
+    MPI_Barrier(comm);
+  }
+}
+
+
+// ------------------------------------------------------------------------
+// broadcast: Use a tree-based broadcast to broadcast the profile at
+// the tree's root (rank 0) to every other rank.  Assumes 0-based
+// ranks.  Uses lg(maxRank) barriers, one at each level of the binary
+// tree.
+// ------------------------------------------------------------------------
+void
+broadcast(Prof::CallPath::Profile*& profile, int myRank, int maxRank, 
+	  MPI_Comm comm = MPI_COMM_WORLD);
+
+
+// ------------------------------------------------------------------------
+// mergeNonLocal: merge profile on rank_y into profile on rank_x
+// ------------------------------------------------------------------------
+
+void
+mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
+	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
+
+void
+packProfile(Prof::CallPath::Profile* profile,
+	    uint8_t** buffer, size_t* bufferSz);
+
+Prof::CallPath::Profile*
+unpackProfile(uint8_t* buffer, size_t bufferSz);
+
+
+// ------------------------------------------------------------------------
+// mergeNonLocal: 
+// ------------------------------------------------------------------------
+
+void
+mergeNonLocal(std::pair<Prof::CallPath::Profile*, ParallelAnalysis::DblMatrix*>,
+	      int rank_x, int rank_y, int myRank,
+	      MPI_Comm comm = MPI_COMM_WORLD);
+
+
+} // namespace ParallelAnalysis
+
+
+//***************************************************************************
 
 #endif // ParallelAnalysis_hpp 

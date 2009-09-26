@@ -113,11 +113,11 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
 
     const Metric::SampledDescVec& mdescs = prof.mdescs();
     for (uint j = 0; j < mdescs.size(); ++j) {
-      const Metric::SampledDesc& m_raw = *mdescs[j];
+      const Metric::SampledDesc& mSmpl = *mdescs[j];
 
       bool isSortKey = (empty());
       
-      Metric::SampledDesc* m = new Metric::SampledDesc(m_raw);
+      Metric::SampledDesc* m = new Metric::SampledDesc(mSmpl);
       m->isSortKey(isSortKey);
       m->doDispPercent(doDispPercent);
       m->isUnitsEvents(isUnitsEvents);
@@ -133,15 +133,15 @@ Mgr::makeSummaryMetrics()
 {
   StringToADescVecMap::iterator it = m_nuniqnmToMetricMap.begin();
   for ( ; it != m_nuniqnmToMetricMap.end(); ++it) {
-    const string& m_nm = it->first;
+    const string& mNm = it->first;
     Metric::ADescVec& mvec = it->second;
     if (mvec.size() > 1) {
-      string mean_nm = "Mean-" + m_nm;
-      //string rsd_nm = "RStdDev-" + m_nm;
-      string cv_nm = "CoefVar-" + m_nm;
-      string min_nm = "Min-" + m_nm;
-      string max_nm = "Max-" + m_nm;
-      string sum_nm = "Sum-" + m_nm;
+      string mean_nm = "Mean-" + mNm;
+      //string rsd_nm = "RStdDev-" + mNm;
+      string cv_nm = "CoefVar-" + mNm;
+      string min_nm = "Min-" + mNm;
+      string max_nm = "Max-" + mNm;
+      string sum_nm = "Sum-" + mNm;
 
       makeSummaryMetric(mean_nm, mvec);
       //makeSummaryMetric(rsd_nm, mvec);
@@ -158,7 +158,7 @@ uint
 Mgr::makeItrvSummaryMetrics()
 {
   // N.B.: Probably too specific; currently assumes we should make
-  // summary metrics for each entry in the table.
+  // summary metrics for each entry in m_metrics
 
   uint firstId = Metric::Mgr::npos;
 
@@ -167,15 +167,15 @@ Mgr::makeItrvSummaryMetrics()
     Metric::ADesc* m = m_metrics[i];
     m->isVisible(false);
 
-    string m_nm = m->name();
-    //string mean_nm = "Mean-" + m_nm;
-    string max_nm = "Max-" + m_nm;
+    string mNm = m->name();
+    //string mean_nm = "Mean-" + mNm;
+    string max_nm = "Max-" + mNm;
     
     //makeItrvSummaryMetric(mean_nm, m->id());
-    Metric::ADesc* m_new = makeItrvSummaryMetric(max_nm, m->id());
+    Metric::ADesc* mSum = makeItrvSummaryMetric(max_nm, m->id());
     
     if (firstId == Metric::Mgr::npos) {
-      firstId = m_new->id();
+      firstId = mSum->id();
     }
   }
   
@@ -184,11 +184,11 @@ Mgr::makeItrvSummaryMetrics()
 
 
 Metric::DerivedDesc*
-Mgr::makeSummaryMetric(const string& m_nm, const Metric::ADescVec& m_opands)
+Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
 {
-  Metric::AExpr** opands = new Metric::AExpr*[m_opands.size()];
-  for (uint i = 0; i < m_opands.size(); ++i) {
-    Metric::ADesc* m = m_opands[i];
+  Metric::AExpr** opands = new Metric::AExpr*[mOpands.size()];
+  for (uint i = 0; i < mOpands.size(); ++i) {
+    Metric::ADesc* m = mOpands[i];
     opands[i] = new Metric::Var(m->name(), m->id());
   }
 
@@ -200,39 +200,39 @@ Mgr::makeSummaryMetric(const string& m_nm, const Metric::ADescVec& m_opands)
   // enough for now.  Perhaps, this can be pushed into a metric parser
   // as mathxml is retired.
   Metric::AExpr* expr = NULL;
-  if (m_nm.find("Mean", 0) == 0) {
-    expr = new Metric::Mean(opands, m_opands.size());
+  if (mNm.find("Mean", 0) == 0) {
+    expr = new Metric::Mean(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (m_nm.find("StdDev", 0) == 0) {
-    expr = new Metric::StdDev(opands, m_opands.size());
+  else if (mNm.find("StdDev", 0) == 0) {
+    expr = new Metric::StdDev(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (m_nm.find("RStdDev", 0) == 0) {
-    expr = new Metric::RStdDev(opands, m_opands.size());
+  else if (mNm.find("RStdDev", 0) == 0) {
+    expr = new Metric::RStdDev(opands, mOpands.size());
     isPercent = true;
   }
-  else if (m_nm.find("CoefVar", 0) == 0) {
-    expr = new Metric::CoefVar(opands, m_opands.size());
+  else if (mNm.find("CoefVar", 0) == 0) {
+    expr = new Metric::CoefVar(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (m_nm.find("Min", 0) == 0) {
-    expr = new Metric::Min(opands, m_opands.size());
+  else if (mNm.find("Min", 0) == 0) {
+    expr = new Metric::Min(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (m_nm.find("Max", 0) == 0) {
-    expr = new Metric::Max(opands, m_opands.size());
+  else if (mNm.find("Max", 0) == 0) {
+    expr = new Metric::Max(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (m_nm.find("Sum", 0) == 0) {
-    expr = new Metric::Plus(opands, m_opands.size());
+  else if (mNm.find("Sum", 0) == 0) {
+    expr = new Metric::Plus(opands, mOpands.size());
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
  
   DerivedDesc* m =
-    new DerivedDesc(m_nm, m_nm, expr, isVisible, true/*isSortKey*/,
+    new DerivedDesc(mNm, mNm, expr, isVisible, true/*isSortKey*/,
 		    doDispPercent, isPercent);
   insert(m);
 
@@ -241,7 +241,7 @@ Mgr::makeSummaryMetric(const string& m_nm, const Metric::ADescVec& m_opands)
 
 
 Metric::DerivedItrvDesc*
-Mgr::makeItrvSummaryMetric(const string& m_nm, uint srcId)
+Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
 {
   bool isVisible = true;
   bool doDispPercent = true;
@@ -251,39 +251,39 @@ Mgr::makeItrvSummaryMetric(const string& m_nm, uint srcId)
   // enough for now.  Perhaps, this can be pushed into a metric parser
   // as mathxml is retired.
   Metric::AExprItrv* expr = NULL;
-  if (m_nm.find("Mean", 0) == 0) {
-    //expr = new Metric::Mean(opands, m_opands.size());
+  if (mNm.find("Mean", 0) == 0) {
+    //expr = new Metric::Mean(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (m_nm.find("StdDev", 0) == 0) {
-    //expr = new Metric::StdDev(opands, m_opands.size());
+  else if (mNm.find("StdDev", 0) == 0) {
+    //expr = new Metric::StdDev(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (m_nm.find("RStdDev", 0) == 0) {
-    //expr = new Metric::RStdDev(opands, m_opands.size());
+  else if (mNm.find("RStdDev", 0) == 0) {
+    //expr = new Metric::RStdDev(opands, mOpands.size());
     isPercent = true;
   }
-  else if (m_nm.find("CoefVar", 0) == 0) {
-    //expr = new Metric::CoefVar(opands, m_opands.size());
+  else if (mNm.find("CoefVar", 0) == 0) {
+    //expr = new Metric::CoefVar(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (m_nm.find("Min", 0) == 0) {
-    //expr = new Metric::Min(opands, m_opands.size());
+  else if (mNm.find("Min", 0) == 0) {
+    //expr = new Metric::Min(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (m_nm.find("Max", 0) == 0) {
+  else if (mNm.find("Max", 0) == 0) {
     expr = new Metric::MaxItrv(0, srcId);
     doDispPercent = false;
   }
-  else if (m_nm.find("Sum", 0) == 0) {
-    //expr = new Metric::Plus(opands, m_opands.size());
+  else if (mNm.find("Sum", 0) == 0) {
+    //expr = new Metric::Plus(opands, mOpands.size());
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
   
   DerivedItrvDesc* m =
-    new DerivedItrvDesc(m_nm, m_nm, expr, isVisible, true/*isSortKey*/,
+    new DerivedItrvDesc(mNm, mNm, expr, isVisible, true/*isSortKey*/,
 			doDispPercent, isPercent);
   insert(m);
   expr->dstId(m->id());
@@ -324,15 +324,15 @@ Mgr::insertIf(Metric::ADesc* m)
 Metric::ADesc*
 Mgr::findSortKey() const
 {
-  Metric::ADesc* m_sortby = NULL;
+  Metric::ADesc* mSortby = NULL;
   for (uint i = 0; i < m_metrics.size(); ++i) {
     Metric::ADesc* m = m_metrics[i];
     if (m->isSortKey()) {
-      m_sortby = m;
+      mSortby = m;
       break;
     }
   }
-  return m_sortby;
+  return mSortby;
 }
 
 
@@ -474,16 +474,16 @@ Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
   DIAG_Assert(ret.second, "Found duplicate entry; should be unique name!");
   
   // 3. profile file name to Metric::SampledDesc table
-  Metric::SampledDesc* m_fm = dynamic_cast<Metric::SampledDesc*>(m);
-  if (m_fm) {
-    const string& fnm = m_fm->profileName();
+  Metric::SampledDesc* mSmpl = dynamic_cast<Metric::SampledDesc*>(m);
+  if (mSmpl) {
+    const string& fnm = mSmpl->profileName();
     StringToADescVecMap::iterator it = m_fnameToFMetricMap.find(fnm);
     if (it != m_fnameToFMetricMap.end()) {
       Metric::ADescVec& mvec = it->second;
-      mvec.push_back(m_fm);
+      mvec.push_back(mSmpl);
     }
     else {
-      m_fnameToFMetricMap.insert(make_pair(fnm, Metric::ADescVec(1, m_fm)));
+      m_fnameToFMetricMap.insert(make_pair(fnm, Metric::ADescVec(1, mSmpl)));
     }
   }
 
