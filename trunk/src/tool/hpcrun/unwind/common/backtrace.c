@@ -214,11 +214,48 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     csprof_up_pmsg_count();
   }
   
+  hpcrun_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
+  hpcrun_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
+
+  thread_data_t* td = hpcrun_get_thread_data();
+
+  if (tramp_found) {
+    //
+    // join current backtrace fragment to previous trampoline-marked prefix
+    // and make this new conjoined backtrace the cached-backtrace
+    //
+    hpcrun_frame_t* prefix          = td->tramp_frame + 1;
+    size_t          new_frag_size   = bt_end - bt_beg + 1;
+    size_t          old_frag_size   = td->cached_bt_end - prefix;
+    hpcrun_cached_bt_adjust_size(new_frag_size + old_frag_size);
+
+    // put the old prefix in place
+    memmove(td->cached_bt + new_frag_size, prefix, 
+	    (void*)(td->cached_bt_end) - (void*)prefix);
+
+    // put the new suffix in place
+    memcpy(td->cached_bt, bt_beg, 
+	   sizeof(hpcrun_frame_t)*new_frag_size);
+
+    // update the length of the conjoined backtrace
+    td->cached_bt_end = td->cached_bt + new_frag_size + old_frag_size;
+  }
+  else {
+    hpcrun_cached_bt_adjust_size(bt_end - bt_beg + 1);
+    memmove(td->cached_bt, bt_beg, (void*)(bt_end+1) - (void*)bt_beg);
+
+    td->cached_bt_end = td->cached_bt + (bt_end + 1 - bt_beg);
+  }
+
   if (! ENABLED(NO_SAMPLE_FILTERING)) {
-    if (hpcrun_filter_sample(unw_len, state->btbuf, state->unwind - 1)){
-      TMSG(SAMPLE_FILTER, "filter sample of length %d", unw_len);
-      hpcrun_frame_t *fr = state->btbuf;
-      for (int i = 0; i < unw_len; i++, fr++){
+    hpcrun_frame_t* top_frame    = td->cached_bt;  
+    hpcrun_frame_t* bottom_frame = td->cached_bt_end-1;
+    int num_frames = bottom_frame - top_frame + 1; 
+	
+    if (hpcrun_filter_sample(num_frames, top_frame, bottom_frame)){
+      TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
+      hpcrun_frame_t *fr = top_frame;
+      for (int i = 0; i < num_frames; i++, fr++){
 	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p",i,fr->ip);
       }
       csprof_inc_samples_filtered();
@@ -226,16 +263,13 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     }
   }
 
-  hpcrun_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
-  hpcrun_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
-
   //
-  // FOR THE MOMENT
-  //   Ignore skipInner issues with trampolines.
-  //   Eventually, this will need to be addressed
+  // FIXME: For the moment, ignore skipInner issues with trampolines.
+  //        Eventually, this will need to be addressed
   //
   if (skipInner) {
-    EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d)", skipInner);
+    EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
+	 skipInner);
     bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
   }
 
@@ -244,24 +278,6 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 				    bt_end, bt_beg,
 				    (cct_metric_data_t){.i = metricIncr});
 
-  thread_data_t* td = hpcrun_get_thread_data();
-  if (tramp_found) {
-    //
-    // join current backtrace fragment to previous trampoline-marked prefix
-    // and make this new joined backtrace the cached-backtrace
-    //
-    hpcrun_frame_t* prefix          = td->tramp_frame;
-    size_t          new_frag_size   = bt_end - bt_beg + 1;
-    hpcrun_cached_bt_adjust_size(new_frag_size + (td->cached_bt_end - prefix));
-    memmove(td->cached_bt + new_frag_size, prefix, (void*)(td->cached_bt_end) - (void*)prefix);
-    memcpy(td->cached_bt, bt_beg, sizeof(hpcrun_frame_t)*new_frag_size);
-  }
-  else {
-    hpcrun_cached_bt_adjust_size(bt_end - bt_beg + 1);
-    memmove(td->cached_bt, bt_beg, (void*)(bt_end+1) - (void*)bt_beg);
-
-    td->cached_bt_end = td->cached_bt + (bt_end + 1 - bt_beg);
-  }
   if (ENABLED(USE_TRAMP)){
     hpcrun_trampoline_remove();
     td->tramp_frame = td->cached_bt;
