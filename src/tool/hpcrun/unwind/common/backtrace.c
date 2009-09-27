@@ -248,7 +248,9 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 
     // update the length of the conjoined backtrace
     td->cached_bt_end = td->cached_bt + new_frame_count + old_frame_count;
-    state->treenode = td->tramp_cct_node; // start insertion at trampoline
+
+    // start insertion below caller's frame, which is marked with the trampoline
+    state->treenode = td->tramp_cct_node->parent; 
   }
   else {
     hpcrun_cached_bt_adjust_size(new_frame_count);
@@ -293,7 +295,7 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
   if (ENABLED(USE_TRAMP)){
     hpcrun_trampoline_remove();
     td->tramp_frame = td->cached_bt;
-    hpcrun_trampoline_insert(n->parent);
+    hpcrun_trampoline_insert(n);
   }
 
   return n;
