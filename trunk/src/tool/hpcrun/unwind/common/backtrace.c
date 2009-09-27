@@ -166,7 +166,6 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 
   state->unwind   = state->btbuf; // innermost
   state->bufstk   = state->bufend;
-  state->treenode = NULL;
 
   int unw_len = 0;
   while (true) {
@@ -174,20 +173,28 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 
     unw_word_t ip = 0;
     unw_get_reg(&cursor, UNW_REG_IP, &ip);
+
     if (hpcrun_trampoline_interior(ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
-      // counting a return from a sampled frame using a trampoline
+      // counting a return from a sampled frame using a trampoline.
+      // drop the sample. 
+      // FIXME: sharpen the information to indicate why the sample is 
+      //        being dropped.
       unw_throw();
     }
+
     if (hpcrun_trampoline_at_entry(ip)) {
       if (unw_len == 0){
-	//
-	// Possibly change later to do something more sophisticated ...
-	//
+	// we are about to enter the trampoline code to synchronously 
+	// record a return. for now, simply do nothing ...
+	// FIXME: with a bit more effort, we could charge 
+	//        the sample to the return address in the caller. 
 	unw_throw();
-      }
-      else {
+      } else {
+	// we have encountered a trampoline in the middle of an unwind.
 	tramp_found = true;
+
+	// no need to unwind further. the outer frames are already known.
 	break;
       }
     }
@@ -210,12 +217,15 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     }
     prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
   }
+
   if (backtrace_trolled){
     csprof_up_pmsg_count();
   }
   
-  hpcrun_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
-  hpcrun_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
+  hpcrun_frame_t* bt_first = state->btbuf;      // innermost, inclusive 
+  hpcrun_frame_t* bt_last  = state->unwind - 1; // outermost, inclusive
+  hpcrun_frame_t* bt_end   = bt_last + 1;       // beyond the last frame
+  size_t new_frame_count   = bt_end - bt_first;
 
   thread_data_t* td = hpcrun_get_thread_data();
 
@@ -224,39 +234,41 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     // join current backtrace fragment to previous trampoline-marked prefix
     // and make this new conjoined backtrace the cached-backtrace
     //
-    hpcrun_frame_t* prefix          = td->tramp_frame + 1;
-    size_t          new_frag_size   = bt_end - bt_beg + 1;
-    size_t          old_frag_size   = td->cached_bt_end - prefix;
-    hpcrun_cached_bt_adjust_size(new_frag_size + old_frag_size);
+    hpcrun_frame_t* prefix = td->tramp_frame + 1; // skip top frame
+    size_t old_frame_count = td->cached_bt_end - prefix;
+
+    hpcrun_cached_bt_adjust_size(new_frame_count + old_frame_count);
 
     // put the old prefix in place
-    memmove(td->cached_bt + new_frag_size, prefix, 
-	    (void*)(td->cached_bt_end) - (void*)prefix);
+    memmove(td->cached_bt + new_frame_count, prefix, 
+	   sizeof(hpcrun_frame_t) * old_frame_count);
 
     // put the new suffix in place
-    memcpy(td->cached_bt, bt_beg, 
-	   sizeof(hpcrun_frame_t)*new_frag_size);
+    memcpy(td->cached_bt, bt_first, sizeof(hpcrun_frame_t) * new_frame_count);
 
     // update the length of the conjoined backtrace
-    td->cached_bt_end = td->cached_bt + new_frag_size + old_frag_size;
+    td->cached_bt_end = td->cached_bt + new_frame_count + old_frame_count;
+    state->treenode = td->tramp_cct_node; // start insertion at trampoline
   }
   else {
-    hpcrun_cached_bt_adjust_size(bt_end - bt_beg + 1);
-    memmove(td->cached_bt, bt_beg, (void*)(bt_end+1) - (void*)bt_beg);
+    hpcrun_cached_bt_adjust_size(new_frame_count);
+    memmove(td->cached_bt, bt_first, sizeof(hpcrun_frame_t) * new_frame_count);
 
-    td->cached_bt_end = td->cached_bt + (bt_end + 1 - bt_beg);
+    td->cached_bt_end = td->cached_bt + new_frame_count;
+
+    state->treenode = NULL; // start insertion at root of tree
   }
 
   if (! ENABLED(NO_SAMPLE_FILTERING)) {
-    hpcrun_frame_t* top_frame    = td->cached_bt;  
-    hpcrun_frame_t* bottom_frame = td->cached_bt_end-1;
-    int num_frames = bottom_frame - top_frame + 1; 
+    hpcrun_frame_t* first_frame  = td->cached_bt;  
+    hpcrun_frame_t* last_frame   = td->cached_bt_end - 1;
+    int num_frames               = last_frame - first_frame + 1; 
 	
-    if (hpcrun_filter_sample(num_frames, top_frame, bottom_frame)){
+    if (hpcrun_filter_sample(num_frames, first_frame, last_frame)){
       TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
-      hpcrun_frame_t *fr = top_frame;
+      hpcrun_frame_t *fr = first_frame;
       for (int i = 0; i < num_frames; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p",i,fr->ip);
+	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p", i, fr->ip);
       }
       csprof_inc_samples_filtered();
       return 0;
@@ -270,12 +282,12 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
   if (skipInner) {
     EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
 	 skipInner);
-    bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
+    bt_first = hpcrun_skip_chords(bt_last, bt_first, skipInner);
   }
 
   csprof_cct_node_t* n;
   n = hpcrun_state_insert_backtrace(state, metricId,
-				    bt_end, bt_beg,
+				    bt_last, bt_first,
 				    (cct_metric_data_t){.i = metricIncr});
 
   if (ENABLED(USE_TRAMP)){
