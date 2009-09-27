@@ -30,31 +30,10 @@
 extern void hpcrun_trampoline;
 extern void hpcrun_trampoline_end;
 
-//******************************************************************************
-// local data and operations
-//******************************************************************************
-
-//
-// save return addresses for trampolines in Thread Local Data
-//
-
-static void
-save_retn_addr(void* addr)
-{
-  TD_GET(tramp_loc)       = addr;
-  TD_GET(tramp_retn_addr) = *((void**) addr);
-}
-
-static void*
-fetch_retn_addr(void)
-{
-  return TD_GET(tramp_retn_addr);
-}
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
-
 
 void
 hpcrun_init_trampoline_info(void)
@@ -67,18 +46,23 @@ hpcrun_init_trampoline_info(void)
   td->tramp_cct_node  = NULL;
 }
 
-// returns true if address is in the assembly language trampoline code, else false.
+
+// returns true if address is inside the assembly language trampoline code;
+// returns false if at first address of trampoline code or outside.
 bool
 hpcrun_trampoline_interior(void* addr)
 {
     return (&hpcrun_trampoline < addr && addr <= &hpcrun_trampoline_end);
 }
 
+
+// returns true iff at first address of trampoline code. 
 bool
 hpcrun_trampoline_at_entry(void* addr)
 {
   return (addr == &hpcrun_trampoline);
 }
+
 
 csprof_cct_node_t*
 hpcrun_trampoline_advance(void)
@@ -87,9 +71,9 @@ hpcrun_trampoline_advance(void)
   csprof_cct_node_t* node = td->tramp_cct_node;
   node = node->parent;
   td->tramp_frame++;
-  // 
   return node;
 }
+
 
 void 
 hpcrun_trampoline_insert(csprof_cct_node_t* node)
@@ -100,7 +84,13 @@ hpcrun_trampoline_insert(csprof_cct_node_t* node)
     hpcrun_init_trampoline_info();
     return;
   }
-  save_retn_addr(addr);
+
+  // save location where trampoline was placed
+  td->tramp_loc       = addr;
+
+  // save the return address overwritten with trampoline address 
+  td->tramp_retn_addr = *((void**) addr);
+
   *((void**)addr) = &hpcrun_trampoline;
   td->tramp_cct_node = node;
   td->tramp_present = true;
@@ -122,10 +112,13 @@ void*
 hpcrun_trampoline_handler(void)
 {
   printf("trampoline fired!\n");
-  void* ra = fetch_retn_addr();
+  thread_data_t* td = hpcrun_get_thread_data();
+
+  // get the address where we need to return
+  void* ra = td->tramp_retn_addr;
   
   csprof_cct_node_t* n = hpcrun_trampoline_advance();
   hpcrun_trampoline_insert(n);
 
-  return ra;
+  return ra; // our assembly code caller will return to ra
 }
