@@ -88,7 +88,7 @@ Mgr::~Mgr()
   for (uint i = 0; i < m_metrics.size(); ++i) {
     delete m_metrics[i];
   }
-} 
+}
 
 //----------------------------------------------------------------------------
 
@@ -155,15 +155,23 @@ Mgr::makeSummaryMetrics()
 
 
 uint 
-Mgr::makeItrvSummaryMetrics()
+Mgr::makeItrvSummaryMetrics(uint srcBegIdx, uint srcEndIdx)
 {
   // N.B.: Probably too specific; currently assumes we should make
   // summary metrics for each entry in m_metrics
 
-  uint firstId = Metric::Mgr::npos;
+  uint firstId = Mgr::npos;
 
-  uint numSrcMetrics = m_metrics.size();
-  for (uint i = 0; i < numSrcMetrics; ++i) {
+  if (!m_metrics.empty()) {
+    if (srcBegIdx == Mgr::npos) {
+      srcBegIdx = 0;
+    }
+    if (srcEndIdx == Mgr::npos) {
+      srcEndIdx = m_metrics.size() - 1;
+    }
+  }
+
+  for (uint i = srcBegIdx; i <= srcEndIdx; ++i) {
     Metric::ADesc* m = m_metrics[i];
     m->isVisible(false);
 
