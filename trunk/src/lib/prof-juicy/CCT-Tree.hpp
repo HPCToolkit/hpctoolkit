@@ -170,7 +170,8 @@ public:
   // 
   // -------------------------------------------------------
 
-  void
+  // renumberIdsDensly: returns the maximum id
+  uint
   renumberIdsDensly();
 
   // -------------------------------------------------------

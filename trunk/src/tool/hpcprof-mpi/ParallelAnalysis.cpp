@@ -176,6 +176,8 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*, ParallelAnalysis::DblMatrix*>,
 	      int rank_x, int rank_y, int myRank, MPI_Comm comm)
 {
   // TODO
+  // packMetrics
+  // unpackMetrics
 }
 
 
@@ -208,6 +210,10 @@ unpackProfile(uint8_t* buffer, size_t bufferSz)
   fclose(fs);
   return prof;
 }
+
+
+//***************************************************************************
+
 
 
 //***************************************************************************

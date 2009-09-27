@@ -229,7 +229,7 @@ realmain(int argc, char* const* argv)
   // in same way
   Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.lush_agent);
 
-  profGbl->cct()->renumberIdsDensly();
+  uint maxCCTId = profGbl->cct()->renumberIdsDensly();
 
   // -------------------------------------------------------
   // Create summary metrics and thread-level metrics
@@ -251,7 +251,7 @@ realmain(int argc, char* const* argv)
 
   // 2. create global summary metrics
   ParallelAnalysis::DblMatrix* packedMetrics =
-    new ParallelAnalysis::DblMatrix(1 /*TODO*/, numDrvd);
+    new ParallelAnalysis::DblMatrix(maxCCTId + 1, numDrvd);
   uint numUpdatesLcl = nArgs.paths->size();
 
   // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
@@ -405,6 +405,9 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
     numDrvd = (mDrvdEnd - mDrvdBeg) + 1;
   }
 
+  // TODO: create another copy of derived metrics (for reduction) and
+  // fix expressions so that the sources refer to the correct indices.
+
   profGbl.isMetricMgrVirtual(false);
 
   return numDrvd;
@@ -442,7 +445,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
   Analysis::CallPath::noteStaticStructureOnLeaves(*prof);
   prof->structure(NULL);
 
-  uint mBeg = profGbl.merge(*prof, mergeTy);   // [closed begin
+  uint mBeg = profGbl.merge(*prof, mergeTy);    // [closed begin
   uint mEnd = mBeg + prof->metricMgr()->size(); //  open end)
 
   // -------------------------------------------------------
@@ -459,7 +462,6 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // TODO: write local values to disk
   // -------------------------------------------------------
-  
 
   // -------------------------------------------------------
   // reinitialize metric values since space may be used again
@@ -467,14 +469,6 @@ processProfile(Prof::CallPath::Profile& profGbl,
   if (mBeg < mEnd) {
     cctGbl->root()->zeroMetricsDeep(mBeg, mEnd - 1); // [ ]
   }
-
-  // -------------------------------------------------------
-  // FIXME: when merging y's metrics into x's, the metrics will not be found!
-  //        x: [a b c d] [a b e f]   y: [a b e f]
-  // TODO:
-  //   - Driver::computeDerivedBatch() does not need to be PostOrder
-  //   - use PostOrder in accumulateMetrics
-  // -------------------------------------------------------
   
   delete prof;
 }

@@ -101,7 +101,8 @@ public:
   makeSummaryMetrics();
 
   uint
-  makeItrvSummaryMetrics();
+  makeItrvSummaryMetrics(uint srcBegIdx = Mgr::npos,
+			 uint srcEndIdx = Mgr::npos); // [ ]
 
 
   // ------------------------------------------------------------

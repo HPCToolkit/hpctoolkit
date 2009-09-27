@@ -137,16 +137,17 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics)
 }
 
 
-void 
+uint 
 Tree::renumberIdsDensly()
 {
-  uint nodeId = 1; // cf. s_nextUniqueId
-  for (ANodeSortedChildIterator it(m_root, ANodeSortedIterator::cmpByStructureId);
+  uint nextId = 1; // cf. s_nextUniqueId
+  for (ANodeSortedIterator it(m_root, ANodeSortedIterator::cmpByStructureId);
        it.current(); it++) {
     CCT::ANode* n = it.current();
-    n->id(nodeId);
-    nodeId++;
+    n->id(nextId);
+    nextId++;
   }
+  return (nextId - 1);
 }
 
 
