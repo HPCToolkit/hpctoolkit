@@ -712,8 +712,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
     for (VMAIntervalSet::iterator it = ivalset.begin(); 
 	 it != ivalset.end(); ++it) {
       const VMAInterval& ival = *it;
-      structure.root()->accumulateMetrics((uint)ival.beg(), 
-					  (uint)ival.end() - 1); // [ ]
+      structure.root()->accumulateMetrics((uint)ival.beg(), (uint)ival.end());
     }
   }
 }
@@ -913,7 +912,7 @@ Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr,
        it != ivalset.end(); ++it) {
     const VMAInterval& ival = *it;
     computeDerivedBatch(structure, mExprVec,
-			(uint)ival.beg(), (uint)ival.end() - 1); // [ ]
+			(uint)ival.beg(), (uint)ival.end());
   }
 
   delete[] mExprVec;
@@ -935,7 +934,7 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
   uint numMetrics = m_mMgr.size();
 
   for (; it.Current(); it++) {
-    for (uint mId = mBegId; mId <= mEndId; ++mId) {
+    for (uint mId = mBegId; mId < mEndId; ++mId) {
       const Prof::Metric::AExpr* expr = mExprVec[mId];
       double val = expr->eval(*it.current());
       // if (!Prof::Metric::AExpr::isok(val)) ...

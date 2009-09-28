@@ -293,9 +293,9 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       nm = strct->name().c_str();
     }
     else if (type == 2) { // File
-      nm = ((typeid(*strct) == typeid(Struct::Alien)) ? 
-	    dynamic_cast<Struct::Alien*>(strct)->fileName().c_str() :
-	    dynamic_cast<Struct::File*>(strct)->name().c_str());
+      nm = ((typeid(*strct) == typeid(Struct::Alien)) ?
+	    static_cast<Struct::Alien*>(strct)->fileName().c_str() :
+	    static_cast<Struct::File*>(strct)->name().c_str());
     }
     else if (type == 3) { // Proc
       nm = strct->name().c_str();
@@ -325,11 +325,11 @@ writeXML_ProcFilter(const Struct::ANode& x, long type)
 
 
 std::ostream& 
-Profile::writeXML_hdr(std::ostream& os, int oFlags, const char* pfx) const
+Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
+		      int oFlags, const char* pfx) const
 {
   os << "  <MetricTable>\n";
-  uint n_metrics = m_mMgr->size();
-  for (uint i = 0; i < n_metrics; i++) {
+  for (uint i = metricBeg; i < metricEnd; i++) {
     const Metric::ADesc* m = m_mMgr->metric(i);
     const Metric::SampledDesc* mm = dynamic_cast<const Metric::SampledDesc*>(m);
 

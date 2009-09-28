@@ -666,12 +666,15 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   using namespace Prof;
 
   int oFlags = CCT::Tree::OFlg_LeafMetricsOnly;
-  if (!prettyPrint) { 
+  if (!prettyPrint) {
     oFlags |= CCT::Tree::OFlg_Compressed;
   }
   DIAG_If(5) {
     oFlags |= CCT::Tree::OFlg_Debug;
   }
+
+  uint metricBegId = 0;
+  uint metricEndId = prof.metricMgr()->size();
 
   string name = (title.empty()) ? prof.name() : title;
 
@@ -688,7 +691,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   // 
   // ------------------------------------------------------------
   os << "<SecHeader>\n";
-  prof.writeXML_hdr(os, oFlags);
+  prof.writeXML_hdr(os, metricBegId, metricEndId, oFlags);
   os << "  <Info/>\n";
   os << "</SecHeader>\n";
   os.flush();
@@ -697,7 +700,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   // 
   // ------------------------------------------------------------
   os << "<SecCallPathProfileData>\n";
-  prof.cct()->writeXML(os, oFlags);
+  prof.cct()->writeXML(os, metricBegId, metricEndId, oFlags);
   os << "</SecCallPathProfileData>\n";
 
   os << "</SecCallPathProfile>\n";
