@@ -620,23 +620,27 @@ ANode::ancestorProcCtxt() const
 void
 ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 {
-  ANodeChildIterator it(this); 
+  if ( !(mBegId < mEndId) ) {
+    return; // short circuit
+  }
+
+  ANodeChildIterator it(this);
   for (; it.Current(); it++) {
     it.current()->accumulateMetrics(mBegId, mEndId, mVec);
   }
 
   it.Reset();
-  if (it.Current()) { // 'this' is not a leaf 
+  if (it.Current()) { // 'this' is not a leaf
     mVec.zeroMetrics(mBegId, mEndId); // initialize helper data
 
     for (; it.Current(); it++) {
-      for (uint i = mBegId; i <= mEndId; ++i) {
-	mVec.metric(i) += it.current()->demandMetric(i, mEndId+1/*size*/);
+      for (uint i = mBegId; i < mEndId; ++i) {
+	mVec.metric(i) += it.current()->demandMetric(i, mEndId/*size*/);
       }
     }
     
-    for (uint i = mBegId; i <= mEndId; ++i) {
-      demandMetric(i, mEndId+1/*size*/) += mVec.metric(i);
+    for (uint i = mBegId; i < mEndId; ++i) {
+      demandMetric(i, mEndId/*size*/) += mVec.metric(i);
     }
   }
 }
@@ -1464,7 +1468,7 @@ ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
 
   // 2. Write associated metrics
   if (doMetrics) {
-    writeMetricsXML(os, oFlags, pfx);
+    writeMetricsXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
     os << endl;
   }
   

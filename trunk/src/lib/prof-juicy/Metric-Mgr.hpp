@@ -52,6 +52,7 @@
 #include <vector>
 #include <map>
 
+#include <climits>
 
 //************************* User Include Files *******************************
 
@@ -100,9 +101,10 @@ public:
   void
   makeSummaryMetrics();
 
+  // [srcBegId, srcEndId)
   uint
-  makeItrvSummaryMetrics(uint srcBegIdx = Mgr::npos,
-			 uint srcEndIdx = Mgr::npos); // [ ]
+  makeItrvSummaryMetrics(uint srcBegId = Mgr::npos,
+			 uint srcEndId = Mgr::npos);
 
 
   // ------------------------------------------------------------
@@ -179,7 +181,7 @@ public:
   // 
   // ------------------------------------------------------------
 
-  static uint npos;
+  static const uint npos = UINT_MAX;
 
   // findGroup: finds the group of metrics in 'x' = 'this' that
   //   correspond to those in 'y' (i.e., a mapping between 'y' and

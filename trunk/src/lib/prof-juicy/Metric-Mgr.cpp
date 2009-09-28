@@ -56,8 +56,6 @@ using std::vector;
 
 #include <typeinfo>
 
-#include <climits>
-
 //************************* User Include Files *******************************
 
 #include "Metric-Mgr.hpp"
@@ -75,8 +73,6 @@ namespace Prof {
 namespace Metric {
 
 //****************************************************************************
-
-uint Mgr::npos = UINT_MAX;
 
 Mgr::Mgr()
 {
@@ -154,24 +150,22 @@ Mgr::makeSummaryMetrics()
 }
 
 
-uint 
-Mgr::makeItrvSummaryMetrics(uint srcBegIdx, uint srcEndIdx)
+uint
+Mgr::makeItrvSummaryMetrics(uint srcBegId, uint srcEndId)
 {
   // N.B.: Probably too specific; currently assumes we should make
   // summary metrics for each entry in m_metrics
 
-  uint firstId = Mgr::npos;
-
-  if (!m_metrics.empty()) {
-    if (srcBegIdx == Mgr::npos) {
-      srcBegIdx = 0;
-    }
-    if (srcEndIdx == Mgr::npos) {
-      srcEndIdx = m_metrics.size() - 1;
-    }
+  if (srcBegId == Mgr::npos) {
+    srcBegId = 0;
+  }
+  if (srcEndId == Mgr::npos) {
+    srcEndId = m_metrics.size();
   }
 
-  for (uint i = srcBegIdx; i <= srcEndIdx; ++i) {
+  uint firstId = Mgr::npos;
+
+  for (uint i = srcBegId; i < srcEndId; ++i) {
     Metric::ADesc* m = m_metrics[i];
     m->isVisible(false);
 

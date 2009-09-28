@@ -88,15 +88,16 @@ using std::string;
 
 typedef std::vector<std::string> StringVec;
 
-Analysis::Util::NormalizeProfileArgs_t
+static Analysis::Util::NormalizeProfileArgs_t
 myNormalizeProfileArgs(StringVec& profileFiles,
 		       int myRank, int numRanks, int rootRank = 0);
 
-uint
+static uint
 makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
-		       uint& mDrvdBeg, uint& mDrvdEnd);
+		       uint& mDrvdBeg, uint& mDrvdEnd,
+		       uint& mXDrvdBeg, uint& mXDrvdEnd);
 
-void
+static void
 processProfile(Prof::CallPath::Profile& profGbl,
 	       string& profileFile, uint groupId,
 	       uint mDrvdBeg, uint mDrvdEnd);
@@ -235,8 +236,10 @@ realmain(int argc, char* const* argv)
   // Create summary metrics and thread-level metrics
   // -------------------------------------------------------
 
-  uint mDrvdBeg, mDrvdEnd; // [ ]
-  uint numDrvd = makeDerivedMetricDescs(*profGbl, mDrvdBeg, mDrvdEnd);
+  uint mDrvdBeg, mDrvdEnd;   // [ )
+  uint mXDrvdBeg, mXDrvdEnd; // [ )
+  uint numDrvd = makeDerivedMetricDescs(*profGbl, mDrvdBeg, mDrvdEnd,
+					mXDrvdBeg, mXDrvdEnd);
 
   // 1. create local summary metrics (and thread-level metrics)
   Prof::CCT::ANode* cctRoot = profGbl->cct()->root();
@@ -290,7 +293,7 @@ realmain(int argc, char* const* argv)
 // myNormalizeProfileArgs: creates canonical list of profiles files and
 //   distributes chunks of size ceil(numFiles / numRanks) to each process.
 //   The last process may have a smaller chunk than the others.
-Analysis::Util::NormalizeProfileArgs_t
+static Analysis::Util::NormalizeProfileArgs_t
 myNormalizeProfileArgs(StringVec& profileFiles,
 		       int myRank, int numRanks, int rootRank)
 {
@@ -390,23 +393,40 @@ myNormalizeProfileArgs(StringVec& profileFiles,
 
 //***************************************************************************
 
-uint
+static uint
 makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
-		       uint& mDrvdBeg, uint& mDrvdEnd)
+		       uint& mDrvdBeg, uint& mDrvdEnd,
+		       uint& mXDrvdBeg, uint& mXDrvdEnd)
 {
   uint numDrvd = 0;
-  mDrvdBeg = Prof::Metric::Mgr::npos; // [ ]
+  mDrvdBeg = Prof::Metric::Mgr::npos; // [ )
   mDrvdEnd = Prof::Metric::Mgr::npos;
 
-  // create derived metrics
-  mDrvdBeg = profGbl.metricMgr()->makeItrvSummaryMetrics();
-  if (mDrvdBeg != Prof::Metric::Mgr::npos) {
-    mDrvdEnd = profGbl.metricMgr()->size() - 1;
-    numDrvd = (mDrvdEnd - mDrvdBeg) + 1;
-  }
+  mXDrvdBeg = Prof::Metric::Mgr::npos; // [ )
+  mXDrvdEnd = Prof::Metric::Mgr::npos;
 
-  // TODO: create another copy of derived metrics (for reduction) and
-  // fix expressions so that the sources refer to the correct indices.
+  uint numSrc = profGbl.metricMgr()->size();
+
+  // create derived metrics
+  if (numSrc > 0) {
+    uint mSrcBeg = 0;
+    uint mSrcEnd = numSrc;
+
+    // official set of derived metrics
+    mDrvdBeg = profGbl.metricMgr()->makeItrvSummaryMetrics(mSrcBeg, mSrcEnd);
+    if (mDrvdBeg != Prof::Metric::Mgr::npos) {
+      mDrvdEnd = profGbl.metricMgr()->size();
+      numDrvd = (mDrvdEnd - mDrvdBeg);
+    }
+
+    // temporary set of extra derived metrics (for reduction)
+    mXDrvdBeg = profGbl.metricMgr()->makeItrvSummaryMetrics(mSrcBeg, mSrcEnd);
+    if (mXDrvdBeg != Prof::Metric::Mgr::npos) {
+      mXDrvdEnd = profGbl.metricMgr()->size();
+    }
+
+    // TODO: later fix expressions to point to extra metrics
+  }
 
   profGbl.isMetricMgrVirtual(false);
 
@@ -414,7 +434,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 }
 
 
-void
+static void
 processProfile(Prof::CallPath::Profile& profGbl,
 	       string& profileFile, uint groupId,
 	       uint mDrvdBeg, uint mDrvdEnd)
@@ -451,13 +471,11 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // compute local metrics and update local derived metrics
   // -------------------------------------------------------
-  if (mBeg < mEnd) {
-    cctGbl->root()->accumulateMetrics(mBeg, mEnd - 1); // [ ]
+  cctGbl->root()->accumulateMetrics(mBeg, mEnd);
 
 
-    cctGbl->root()->computeMetricsItrv(*mMgrGbl, mDrvdBeg, mDrvdEnd,
-				       Prof::Metric::AExprItrv::FnUpdate, 1);
-  }
+  cctGbl->root()->computeMetricsItrv(*mMgrGbl, mDrvdBeg, mDrvdEnd,
+				     Prof::Metric::AExprItrv::FnUpdate, 1);
 
   // -------------------------------------------------------
   // TODO: write local values to disk
@@ -466,9 +484,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // reinitialize metric values since space may be used again
   // -------------------------------------------------------
-  if (mBeg < mEnd) {
-    cctGbl->root()->zeroMetricsDeep(mBeg, mEnd - 1); // [ ]
-  }
+  cctGbl->root()->zeroMetricsDeep(mBeg, mEnd);
   
   delete prof;
 }

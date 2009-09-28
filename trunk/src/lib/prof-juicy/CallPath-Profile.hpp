@@ -264,7 +264,13 @@ public:
   // -------------------------------------------------------
 
   std::ostream& 
-  writeXML_hdr(std::ostream& os, int oFlags = 0, const char* pfx = "") const;
+  writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
+	       int oFlags, const char* pfx = "") const;
+
+  std::ostream&
+  writeXML_hdr(std::ostream& os, int oFlags = 0, const char* pfx = "") const
+  { return writeXML_hdr(os, 0, m_mMgr->size(), oFlags, pfx); }
+
 
   // TODO: move Analysis::CallPath::write() here?
   //std::ostream& writeXML_cct(...) const;

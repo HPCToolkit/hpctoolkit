@@ -123,10 +123,10 @@ public:
 
   enum {
     // Output flags
-    OFlg_Compressed      = (1 << 1), // Write in compressed format
-    OFlg_LeafMetricsOnly = (1 << 2), // Write metrics only at leaves
-    OFlg_Debug           = (1 << 3), // Debug: show xtra source line info
-    OFlg_DebugAll        = (1 << 4), // Debug: (may be invalid format)
+    OFlg_Compressed      = (1 << 0), // Write in compressed format
+    OFlg_LeafMetricsOnly = (1 << 1), // Write metrics only at leaves (outdated)
+    OFlg_Debug           = (1 << 2), // Debug: show xtra source line info
+    OFlg_DebugAll        = (1 << 3), // Debug: (may be invalid format)
   };
 
   // N.B.: An easy implementation for now (but not thread-safe!)
@@ -178,7 +178,10 @@ public:
   // Write contents
   // -------------------------------------------------------
   std::ostream& 
-  writeXML(std::ostream& os = std::cerr, int oFlags = 0) const;
+  writeXML(std::ostream& os,
+	   uint metricBeg = Metric::IData::npos,
+	   uint metricEnd = Metric::IData::npos,
+	   int oFlags = 0) const;
 
   std::ostream& 
   dump(std::ostream& os = std::cerr, int oFlags = 0) const;
@@ -412,26 +415,26 @@ public:
   // Metrics (cf. Struct::ANode)
   // --------------------------------------------------------
 
+  // [mBeg, mEnd)
   void
   zeroMetricsDeep(uint mBegId, uint mEndId);
 
-  // accumulates metrics from children. [mBegId, mEndId] forms an
-  // inclusive interval for batch processing.  In particular, 'raw'
-  // metrics are independent of all other raw metrics.
+  // accumulates metrics from children. [mBegId, mEndId) forms an
+  // interval for batch processing.
   void
   accumulateMetrics(uint mBegId, uint mEndId)
   {
     // NOTE: this node may not have metric data yet!
-    Metric::IData mVec(mEndId + 1);
+    Metric::IData mVec(mEndId);
     accumulateMetrics(mBegId, mEndId, mVec);
   }
 
   void
   accumulateMetrics(uint mBegId)
-  {
-    accumulateMetrics(mBegId, mBegId);
-  }
+  { accumulateMetrics(mBegId, mBegId + 1); }
 
+
+  // [mBeg, mEnd)
   void
   computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 		     Metric::AExprItrv::FnTy fn, uint srcArg);
@@ -487,8 +490,10 @@ public:
   toString_me(int oFlags = 0) const;
 
   std::ostream&
-  writeXML(std::ostream& os = std::cerr, int oFlags = 0,
-	   const char* pfx = "") const;
+  writeXML(std::ostream& os,
+	   uint metricBeg = Metric::IData::npos,
+	   uint metricEnd = Metric::IData::npos,
+	   int oFlags = 0, const char* pfx = "") const;
 
   std::ostream&
   dump(std::ostream& os = std::cerr, int oFlags = 0, const char* pfx = "") const;
@@ -505,11 +510,13 @@ public:
 protected:
 
   bool
-  writeXML_pre(std::ostream& os = std::cerr, int oFlags = 0,
+  writeXML_pre(std::ostream& os, 
+	       uint metricBeg = Metric::IData::npos,
+	       uint metricEnd = Metric::IData::npos,
+	       int oFlags = 0,
 	       const char* pfx = "") const;
   void
-  writeXML_post(std::ostream& os = std::cerr, int oFlags = 0,
-		const char* pfx = "") const;
+  writeXML_post(std::ostream& os, int oFlags = 0, const char* pfx = "") const;
 
   // --------------------------------------------------------
   // 

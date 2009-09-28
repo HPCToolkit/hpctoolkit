@@ -166,7 +166,7 @@ private:
   void 
   computeDerivedMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure);
 
-  // [mBegId, mEndId]
+  // [mBegId, mEndId)
   void 
   computeDerivedBatch(Prof::Struct::Tree& structure, 
 		      const Prof::Metric::AExpr** mExprVec,

@@ -152,10 +152,11 @@ Tree::renumberIdsDensly()
 
 
 std::ostream&
-Tree::writeXML(std::ostream& os, int oFlags) const
+Tree::writeXML(std::ostream& os, uint metricBeg, uint metricEnd,
+	       int oFlags) const
 {
   if (m_root) {
-    m_root->writeXML(os, oFlags);
+    m_root->writeXML(os, metricBeg, metricEnd, oFlags);
   }
   return os;
 }
@@ -164,9 +165,7 @@ Tree::writeXML(std::ostream& os, int oFlags) const
 std::ostream& 
 Tree::dump(std::ostream& os, int oFlags) const
 {
-  if (m_root) {
-    m_root->writeXML(os, oFlags);
-  }
+  writeXML(os, Metric::IData::npos, Metric::IData::npos, oFlags);
   return os;
 }
 
@@ -309,6 +308,10 @@ ANode::ancestorStmt() const
 void
 ANode::zeroMetricsDeep(uint mBegId, uint mEndId)
 {
+  if ( !(mBegId < mEndId) ) {
+    return; // short circuit
+  }
+
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
     n->zeroMetrics(mBegId, mEndId);
@@ -319,23 +322,27 @@ ANode::zeroMetricsDeep(uint mBegId, uint mEndId)
 void
 ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 {
-  ANodeChildIterator it(this); 
+  if ( !(mBegId < mEndId) ) {
+    return; // short circuit
+  }
+
+  ANodeChildIterator it(this);
   for (; it.Current(); it++) {
     it.current()->accumulateMetrics(mBegId, mEndId, mVec);
   }
 
   it.Reset();
-  if (it.Current()) { // 'this' is not a leaf 
+  if (it.Current()) { // 'this' is not a leaf
     mVec.zeroMetrics(mBegId, mEndId); // initialize helper data
 
     for (; it.Current(); it++) {
-      for (uint i = mBegId; i <= mEndId; ++i) {
-	mVec.metric(i) += it.current()->demandMetric(i, mEndId+1/*size*/);
+      for (uint i = mBegId; i < mEndId; ++i) {
+	mVec.metric(i) += it.current()->demandMetric(i, mEndId/*size*/);
       }
     }
     
-    for (uint i = mBegId; i <= mEndId; ++i) {
-      demandMetric(i, mEndId+1/*size*/) += mVec.metric(i);
+    for (uint i = mBegId; i < mEndId; ++i) {
+      demandMetric(i, mEndId/*size*/) += mVec.metric(i);
     }
   }
 }
@@ -345,14 +352,14 @@ void
 ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 			  Metric::AExprItrv::FnTy fn, uint srcArg)
 {
-  if (mBegId == Prof::Metric::Mgr::npos || mEndId == Prof::Metric::Mgr::npos) {
+  if ( !(mBegId < mEndId) ) {
     return;
   }
   
   // N.B. pre-order walk assumes point-wise metrics
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
-    for (uint mId = mBegId; mId <= mEndId; ++mId) {
+    for (uint mId = mBegId; mId < mEndId; ++mId) {
       const Metric::ADesc* m = mMgr.metric(mId);
       const Metric::DerivedItrvDesc* mm =
 	dynamic_cast<const Metric::DerivedItrvDesc*>(m);
@@ -590,10 +597,10 @@ makeProcNameDbg(const Prof::CCT::ANode* node)
 //**********************************************************************
 
 string 
-ANode::toString(int oFlags, const char* pre) const
+ANode::toString(int oFlags, const char* pfx) const
 {
   std::ostringstream os;
-  writeXML(os, oFlags, pre);
+  writeXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
   return os.str();
 }
 
@@ -655,9 +662,9 @@ ADynNode::nameDyn() const
 
 
 void
-ADynNode::writeDyn(std::ostream& o, int oFlags, const char* pre) const
+ADynNode::writeDyn(std::ostream& o, int oFlags, const char* pfx) const
 {
-  string p(pre);
+  string p(pfx);
 
   o << std::showbase;
 
@@ -745,32 +752,33 @@ Stmt::toString_me(int oFlags) const
 
 
 std::ostream&
-ANode::writeXML(ostream &os, int oFlags, const char *pre) const 
+ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
+		int oFlags, const char* pfx) const
 {
   string indent = "  ";
-  if (oFlags & CCT::Tree::OFlg_Compressed) { 
-    pre = ""; 
+  if (oFlags & CCT::Tree::OFlg_Compressed) {
+    pfx = ""; 
     indent = ""; 
   }
   
-  bool doPost = writeXML_pre(os, oFlags, pre);
-  string prefix = pre + indent;
+  bool doPost = writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
+  string prefix = pfx + indent;
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureId);
        it.current(); it++) {
     ANode* n = it.current();
-    n->writeXML(os, oFlags, prefix.c_str());
+    n->writeXML(os, metricBeg, metricEnd, oFlags, prefix.c_str());
   }
   if (doPost) {
-    writeXML_post(os, oFlags, pre);
+    writeXML_post(os, oFlags, pfx);
   }
   return os;
 }
 
 
 std::ostream&
-ANode::dump(ostream &os, int oFlags, const char *pre) const 
+ANode::dump(ostream& os, int oFlags, const char* pfx) const 
 {
-  writeXML(os, oFlags, pre); 
+  writeXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx); 
   return os;
 }
 
@@ -778,7 +786,8 @@ ANode::dump(ostream &os, int oFlags, const char *pre) const
 void
 ANode::ddump() const
 {
-  writeXML(std::cerr, Tree::OFlg_DebugAll, "");
+  writeXML(std::cerr, Metric::IData::npos, Metric::IData::npos,
+	   Tree::OFlg_DebugAll, "");
 } 
 
 
@@ -791,11 +800,13 @@ ANode::ddump_me() const
 
 
 bool
-ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
+ANode::writeXML_pre(ostream& os, uint metricBeg, uint metricEnd,
+		    int oFlags, const char* pfx) const
 {
   bool doTag = (type() != TyRoot);
-  bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ? 
-		    isLeaf() && hasMetrics() : hasMetrics());
+  bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly)
+		    ? isLeaf() && hasMetrics(metricBeg, metricEnd)
+		    : hasMetrics(metricBeg, metricEnd));
   bool isXMLLeaf = isLeaf() && !doMetrics;
 
   // 1. Write element name
@@ -810,7 +821,7 @@ ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
 
   // 2. Write associated metrics
   if (doMetrics) {
-    writeMetricsXML(os, oFlags, pfx);
+    writeMetricsXML(os, metricBeg, metricEnd, oFlags, pfx);
     os << endl;
   }
 

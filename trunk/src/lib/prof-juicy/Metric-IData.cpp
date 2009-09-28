@@ -95,12 +95,18 @@ IData::toStringMetrics(int oFlags, const char* pfx) const
 }
 
 
-std::ostream& 
-IData::writeMetricsXML(std::ostream& os, int oFlags, const char* pfx) const
+std::ostream&
+IData::writeMetricsXML(std::ostream& os, uint mBegId, uint mEndId,
+		       int oFlags, const char* pfx) const
 {
   bool wasMetricWritten = false;
 
-  for (uint i = 0; i < numMetrics(); i++) {
+  if (mBegId == IData::npos) {
+    mBegId = 0;
+  }
+  mEndId = std::min(numMetrics(), mEndId);
+
+  for (uint i = mBegId; i < mEndId; i++) {
     if (hasMetric(i)) {
       double m = metric(i);
       os << ((!wasMetricWritten) ? pfx : "");
