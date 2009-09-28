@@ -173,6 +173,14 @@ public:
   Metric::ADesc*
   findSortKey() const;
 
+  // Return the last metric that is visible
+  Metric::ADesc*
+  findFirstVisible() const;
+
+  // Return the last metric that is visible
+  Metric::ADesc*
+  findLastVisible() const;
+
   bool
   hasDerived() const;
 

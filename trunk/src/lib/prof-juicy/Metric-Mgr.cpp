@@ -326,15 +326,45 @@ Mgr::insertIf(Metric::ADesc* m)
 Metric::ADesc*
 Mgr::findSortKey() const
 {
-  Metric::ADesc* mSortby = NULL;
+  Metric::ADesc* found = NULL;
   for (uint i = 0; i < m_metrics.size(); ++i) {
     Metric::ADesc* m = m_metrics[i];
     if (m->isSortKey()) {
-      mSortby = m;
+      found = m;
       break;
     }
   }
-  return mSortby;
+  return found;
+}
+
+
+Metric::ADesc*
+Mgr::findFirstVisible() const
+{
+  Metric::ADesc* found = NULL;
+  for (uint i = 0; i < m_metrics.size(); ++i) {
+    Metric::ADesc* m = m_metrics[i];
+    if (m->isVisible()) {
+      found = m;
+      break;
+    }
+  }
+  return found;
+}
+
+
+Metric::ADesc*
+Mgr::findLastVisible() const
+{
+  Metric::ADesc* found = NULL;
+  for (uint i = m_metrics.size() - 1; i >= 0; --i) {
+    Metric::ADesc* m = m_metrics[i];
+    if (m->isVisible()) {
+      found = m;
+      break;
+    }
+  }
+  return found;
 }
 
 

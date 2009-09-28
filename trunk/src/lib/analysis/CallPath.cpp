@@ -676,6 +676,13 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   uint metricBegId = 0;
   uint metricEndId = prof.metricMgr()->size();
 
+  if (true /* CCT::Tree::OFlg_VisibleMetricsOnly*/) {
+    Metric::ADesc* mBeg = prof.metricMgr()->findFirstVisible();
+    Metric::ADesc* mEnd = prof.metricMgr()->findLastVisible();
+    metricBegId = (mBeg) ? mBeg->id()     : Metric::Mgr::npos;
+    metricEndId = (mEnd) ? mEnd->id() + 1 : Metric::Mgr::npos;
+  }
+
   string name = (title.empty()) ? prof.name() : title;
 
   os << "<?xml version=\"1.0\"?>" << std::endl;

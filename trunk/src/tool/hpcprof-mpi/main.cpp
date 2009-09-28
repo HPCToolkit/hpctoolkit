@@ -424,8 +424,13 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
     if (mXDrvdBeg != Prof::Metric::Mgr::npos) {
       mXDrvdEnd = profGbl.metricMgr()->size();
     }
+    
+    for (uint i = mXDrvdBeg; i < mXDrvdEnd; ++i) {
+      Prof::Metric::ADesc* m = profGbl.metricMgr()->metric(i);
+      m->isVisible(false);
+    }
 
-    // TODO: later fix expressions to point to extra metrics
+    // TODO: fix official derived metrics to point to extra metrics
   }
 
   profGbl.isMetricMgrVirtual(false);
