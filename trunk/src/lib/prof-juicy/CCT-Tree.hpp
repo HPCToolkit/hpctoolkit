@@ -166,13 +166,27 @@ public:
   void
   merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics);
 
+
   // -------------------------------------------------------
-  // 
+  // dense ids (only used when explicitly requested)
   // -------------------------------------------------------
 
   // renumberIdsDensly: returns the maximum id
   uint
   renumberIdsDensly();
+
+  uint
+  maxDenseId()
+  { return m_maxDenseId; }
+
+
+  // -------------------------------------------------------
+  // nodeId -> ANode map (built on demand)
+  // -------------------------------------------------------
+
+  ANode*
+  findNode(uint nodeId) const;
+
 
   // -------------------------------------------------------
   // Write contents
@@ -195,10 +209,18 @@ public:
   // or xml::ESC_FALSE. 
   static int
   doXMLEscape(int oFlags);
- 
+
+public:
+  typedef std::map<uint, ANode*> NodeIdToANodeMap;
+
 private:
   ANode* m_root;
+
   const CallPath::Profile* m_metadata; // does not own
+
+  uint m_maxDenseId;
+  
+  mutable NodeIdToANodeMap* m_nodeidMap;
 };
 
 

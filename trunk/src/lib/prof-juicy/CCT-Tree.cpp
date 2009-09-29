@@ -99,7 +99,7 @@ uint Tree::raToCallsiteOfst = 1;
 
 
 Tree::Tree(const CallPath::Profile* metadata)
-  : m_root(NULL), m_metadata(metadata)
+  : m_root(NULL), m_metadata(metadata), m_maxDenseId(0), m_nodeidMap(NULL)
 {
 }
 
@@ -108,6 +108,7 @@ Tree::~Tree()
 {
   delete m_root; 
   m_metadata = NULL;
+  delete m_nodeidMap; 
 }
 
 
@@ -147,7 +148,23 @@ Tree::renumberIdsDensly()
     n->id(nextId);
     nextId++;
   }
-  return (nextId - 1);
+  m_maxDenseId = (nextId - 1);
+  return m_maxDenseId;
+}
+
+
+ANode*
+Tree::findNode(uint nodeId) const
+{
+  if (!m_nodeidMap) {
+    m_nodeidMap = new NodeIdToANodeMap;
+    for (ANodeIterator it(m_root); it.Current(); ++it) {
+      ANode* n = it.current();
+      m_nodeidMap->insert(std::make_pair(n->id(), n));
+    }
+  }
+  NodeIdToANodeMap::iterator it = m_nodeidMap->find(nodeId);
+  return (it != m_nodeidMap->end()) ? it->second : NULL;
 }
 
 
