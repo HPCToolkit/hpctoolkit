@@ -699,7 +699,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // cct
   // ------------------------------------------------------------
   LoadMap* loadmap_p = (isNewFormat) ? NULL : &loadmap; // FIXME:temporary
-  fmt_cct_fread(*prof, infs, rFlags, loadmap_p, outfs);
+  fmt_cct_fread(*prof, infs, rFlags, loadmap_p, ctxtStr, outfs);
 
 
   hpcrun_fmt_epoch_hdr_free(&ehdr, free);
@@ -710,7 +710,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
 int
 Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
-		       LoadMap* loadmap, FILE* outfs)
+		       LoadMap* loadmap, std::string ctxtStr, FILE* outfs)
 {
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
 
@@ -797,7 +797,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       }
     }
     else {
-      DIAG_Assert(cct->empty() && !node_sib, "Must only have one root node!");
+      DIAG_AssertWarn(cct->empty(), ctxtStr << ": must only have one root node!");
+      DIAG_AssertWarn(!node_sib, ctxtStr << ": root node cannot be split into interior and leaf!");
       cct->root(node);
     }
 
