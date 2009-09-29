@@ -68,6 +68,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstring> // for memset()
 
 #include <stdint.h>
 
@@ -199,17 +200,20 @@ class PackedMetrics
   : public Unique // prevent copying
 {
 public:
-  PackedMetrics(uint numNodes, uint numMetrics,
-		uint mBegId, uint mEndId)
-    : m_numNodes(numNodes), m_numMetrics(numMetrics),
+  // [mBegId, mEndId)
+  PackedMetrics(uint numNodes, uint mBegId, uint mEndId)
+    : m_numNodes(numNodes), m_numMetrics(mEndId - mBegId),
       m_mBegId(mBegId), m_mEndId(mEndId)
   {
     size_t sz = dataSize();
     m_packedData = new double[sz];
-    m_packedData[m_numNodesIdx]   = (double)m_numNodes;
-    m_packedData[m_numMetricsIdx] = (double)m_numMetrics;
-    m_packedData[m_mBegIdIdx]     = (double)m_mBegId;
-    m_packedData[m_mEndIdIdx]     = (double)m_mEndId;
+
+    // initialize first (unused) row to avoid bogus valgrind warnings
+    memset(m_packedData, 0, (m_numHdr + m_numMetrics) * sizeof(double));
+
+    m_packedData[m_numNodesIdx] = (double)m_numNodes;
+    m_packedData[m_mBegIdIdx]   = (double)m_mBegId;
+    m_packedData[m_mEndIdIdx]   = (double)m_mEndId;
   }
 
   // PackedMetrics(double* packedMatrix) { }
@@ -218,14 +222,15 @@ public:
   { delete[] m_packedData; }
 
 
-  // 0 based indexing
+  // 0 based indexing (row-major layout)
   double
   idx(uint idxNodes, uint idxMetrics) const
-  { return m_packedData[m_numHdr + (m_numNodes * idxNodes) + idxMetrics]; }
+  { return m_packedData[m_numHdr + (m_numMetrics * idxNodes) + idxMetrics]; }
+
 
   double&
   idx(uint idxNodes, uint idxMetrics)
-  { return m_packedData[m_numHdr + (m_numNodes * idxNodes) + idxMetrics]; }
+  { return m_packedData[m_numHdr + (m_numMetrics * idxNodes) + idxMetrics]; }
 
   
   uint
@@ -250,7 +255,6 @@ public:
   verify() const
   {
     return (m_numNodes      == (uint)m_packedData[m_numNodesIdx]
-	    && m_numMetrics == (uint)m_packedData[m_numMetricsIdx]
 	    && m_mBegId     == (uint)m_packedData[m_mBegIdIdx]
 	    && m_mEndId     == (uint)m_packedData[m_mEndIdIdx]);
   }
@@ -266,16 +270,14 @@ public:
   { return (m_numNodes * m_numMetrics) + m_numHdr; }
 
 private:
-  static const uint m_numHdr = 4;
+  static const uint m_numHdr = 3;
   static const uint m_numNodesIdx   = 0;
-  static const uint m_numMetricsIdx = 1;
-  static const uint m_mBegIdIdx     = 2;
-  static const uint m_mEndIdIdx     = 3;
+  static const uint m_mBegIdIdx     = 1;
+  static const uint m_mEndIdIdx     = 2;
 
-  uint m_numNodes; // rows
+  uint m_numNodes;   // rows
   uint m_numMetrics; // columns
-
-  uint m_mBegId, m_mEndId;
+  uint m_mBegId, m_mEndId; // [ )
 
   double* m_packedData; // use row-major layout
 

@@ -230,7 +230,7 @@ realmain(int argc, char* const* argv)
   // in same way
   Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.lush_agent);
 
-  uint maxCCTId = profGbl->cct()->renumberIdsDensly();
+  uint maxCCTId = profGbl->cct()->makeDensePreorderIds();
 
   // -------------------------------------------------------
   // Create summary metrics and thread-level metrics
@@ -238,8 +238,7 @@ realmain(int argc, char* const* argv)
 
   uint mDrvdBeg, mDrvdEnd;   // [ )
   uint mXDrvdBeg, mXDrvdEnd; // [ )
-  uint numDrvd = makeDerivedMetricDescs(*profGbl, mDrvdBeg, mDrvdEnd,
-					mXDrvdBeg, mXDrvdEnd);
+  makeDerivedMetricDescs(*profGbl, mDrvdBeg, mDrvdEnd, mXDrvdBeg, mXDrvdEnd);
 
   // 1. create local summary metrics (and thread-level metrics)
   Prof::CCT::ANode* cctRoot = profGbl->cct()->root();
@@ -254,8 +253,7 @@ realmain(int argc, char* const* argv)
 
   // 2. create global summary metrics
   ParallelAnalysis::PackedMetrics* packedMetrics =
-    new ParallelAnalysis::PackedMetrics(maxCCTId + 1, numDrvd,
-					mXDrvdBeg, mXDrvdEnd);
+    new ParallelAnalysis::PackedMetrics(maxCCTId + 1, mXDrvdBeg, mXDrvdEnd);
   uint numUpdatesLcl = nArgs.paths->size();
 
   // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics

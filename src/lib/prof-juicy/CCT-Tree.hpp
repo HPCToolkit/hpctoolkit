@@ -171,9 +171,9 @@ public:
   // dense ids (only used when explicitly requested)
   // -------------------------------------------------------
 
-  // renumberIdsDensly: returns the maximum id
+  // makeDensePreorderIds: returns the maximum id
   uint
-  renumberIdsDensly();
+  makeDensePreorderIds();
 
   uint
   maxDenseId()
@@ -499,6 +499,16 @@ public:
   //   the collection of z's direct ADynNode descendents.
   CCT::ADynNode*
   findDynChild(const ADynNode& y_dyn);
+
+
+  // --------------------------------------------------------
+  // 
+  // --------------------------------------------------------
+
+  // makeDensePreorderIds: given the *next* id to use, return the
+  //   *next* id to use
+  uint
+  makeDensePreorderIds(uint nextId);
 
 
   // --------------------------------------------------------

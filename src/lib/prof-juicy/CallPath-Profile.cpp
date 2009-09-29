@@ -861,8 +861,10 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   for (uint i = 0; i < numMetrics; i++) {
     const Metric::ADesc* m = prof.metricMgr()->metric(i);
 
+    string nm = m->name();
+    
     metric_desc_t mdesc;
-    mdesc.name = const_cast<char*>(m->name().c_str());
+    mdesc.name = const_cast<char*>(nm.c_str());
     mdesc.flags = HPCRUN_MetricFlag_Real;
     mdesc.period = 1;
 

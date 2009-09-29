@@ -138,19 +138,12 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics)
 }
 
 
-uint 
-Tree::renumberIdsDensly()
+uint
+Tree::makeDensePreorderIds()
 {
-  // N.B.: use a sorted iterator to support hpcprof-mpi where we need
-  // to ensure multiple processes obtain the same numbering.
-
   uint nextId = 1; // cf. s_nextUniqueId
-  for (ANodeSortedIterator it(m_root, ANodeSortedIterator::cmpByStructureId);
-       it.current(); it++) {
-    CCT::ANode* n = it.current();
-    n->id(nextId);
-    nextId++;
-  }
+  nextId = m_root->makeDensePreorderIds(nextId);
+
   m_maxDenseId = (nextId - 1);
   return m_maxDenseId;
 }
@@ -539,6 +532,28 @@ ANode::mergeDeep_fixup(int newMetrics)
     ANode* n = it.current();
     n->insertMetricsBefore(newMetrics);
   }
+}
+
+//**********************************************************************
+// 
+//**********************************************************************
+
+uint 
+ANode::makeDensePreorderIds(uint nextId)
+{
+  // N.B.: use a sorted iterator to support hpcprof-mpi where we need
+  // to ensure multiple processes obtain the same numbering.
+  
+  id(nextId);
+  nextId++;
+  
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureId);
+       it.current(); it++) {
+    CCT::ANode* n = it.current();
+    nextId = n->makeDensePreorderIds(nextId);
+  }
+
+  return nextId;
 }
 
 
