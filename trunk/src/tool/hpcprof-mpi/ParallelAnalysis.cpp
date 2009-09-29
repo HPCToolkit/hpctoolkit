@@ -153,6 +153,8 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
     
     int mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
     profile_x->merge(*profile_y, mergeTy);
+
+    delete profile_y;
   }
 
   if (myRank == rank_y) {
