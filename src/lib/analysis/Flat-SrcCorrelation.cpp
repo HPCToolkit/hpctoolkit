@@ -250,7 +250,7 @@ Driver::write_experiment(std::ostream &os) const
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
        << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\""
-       << " compute=\"" << ((m->isComputed()) ? "0" : "1") << "\">\n";
+       << " aggregate=\"" << ((m->isComputed()) ? "0" : "1") << "\">\n";
     os << "      <Info>" 
        << "<NV n=\"units\" v=\"events\"/>" // or "samples" m->isUnitsEvents()
        << "<NV n=\"percent\" v=\"" << ((m->doDispPercent()) ? "1" : "0") << "\"/>"

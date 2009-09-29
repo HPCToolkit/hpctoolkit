@@ -336,7 +336,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     os << "    <Metric i" << MakeAttrNum(i) 
        << " n" << MakeAttrStr(m->name())
        << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\""
-       << " compute=\"" << ((m->isComputed()) ? "0" : "1") << "\">\n";
+       << " aggregate=\"" << ((m->isComputed()) ? "0" : "1") << "\">\n";
     os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()
     if (mm) {
