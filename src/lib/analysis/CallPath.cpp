@@ -548,8 +548,8 @@ coalesceStmts(Prof::CCT::ANode* node)
       LineToStmtMap::iterator it = stmtMap.find(line);
       if (it != stmtMap.end()) {
 	// found -- we have a duplicate
-	Prof::CCT::Stmt* n_stmt1 = (*it).second;
-	n_stmt1->merge_me(*n_stmt);
+	Prof::CCT::Stmt* n_stmtOrig = (*it).second;
+	n_stmtOrig->merge_me(*n_stmt);
 	
 	// remove 'n_stmt' from tree
 	n_stmt->unlink();

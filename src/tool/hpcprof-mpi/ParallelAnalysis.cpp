@@ -173,17 +173,17 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
 
 void
 mergeNonLocal(std::pair<Prof::CallPath::Profile*,
-	                ParallelAnalysis::DblMatrix*> data,
+	                ParallelAnalysis::PackedMetrics*> data,
 	      int rank_x, int rank_y, int myRank, MPI_Comm comm)
 {
   MPI_Status mpistat;
 
   if (myRank == rank_x) {
     Prof::CallPath::Profile* profile_x = data.first;
-    ParallelAnalysis::DblMatrix* packedMetrics_x = data.second;
+    ParallelAnalysis::PackedMetrics* packedMetrics_x = data.second;
 
     // rank_x receives metric data from rank_y
-    MPI_Recv(packedMetrics_x->data(), packedMetrics_x->dataNumElements(),
+    MPI_Recv(packedMetrics_x->data(), packedMetrics_x->dataSize(),
 	     MPI_DOUBLE, rank_y, 0, comm, &mpistat);
     DIAG_Assert(packedMetrics_x->verify(), DIAG_UnexpectedInput);
     
@@ -192,12 +192,12 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*,
 
   if (myRank == rank_y) {
     Prof::CallPath::Profile* profile_y = data.first;
-    ParallelAnalysis::DblMatrix* packedMetrics_y = data.second;
+    ParallelAnalysis::PackedMetrics* packedMetrics_y = data.second;
 
     packMetrics(*profile_y, *packedMetrics_y);
     
     // rank_y sends metric data to rank_x
-    MPI_Send(packedMetrics_y->data(), packedMetrics_y->dataNumElements(),
+    MPI_Send(packedMetrics_y->data(), packedMetrics_y->dataSize(),
 	     MPI_DOUBLE, rank_x, 0, comm);
   }
 }
@@ -238,20 +238,19 @@ unpackProfile(uint8_t* buffer, size_t bufferSz)
 
 void
 packMetrics(const Prof::CallPath::Profile& profile,
-	    ParallelAnalysis::DblMatrix& packedMetrics)
+	    ParallelAnalysis::PackedMetrics& packedMetrics)
 {
   Prof::CCT::Tree& cct = *profile.cct();
 
-  // TODO: *** ids of extra derived metrics ***
-  uint mBegId = Prof::Metric::IData::npos, mEndId = Prof::Metric::IData::npos;
+  uint mBegId = packedMetrics.mBegId(), mEndId = packedMetrics.mEndId();
 
-  DIAG_Assert(packedMetrics.numRow() == cct.maxDenseId() + 1, "");
-  //DIAG_Assert(packedMetrics.numCol() == mEndId - mBegId, "");
+  DIAG_Assert(packedMetrics.numNodes() == cct.maxDenseId() + 1, "");
+  DIAG_Assert(packedMetrics.numMetrics() == mEndId - mBegId, "");
 
   for (Prof::CCT::ANodeIterator it(cct.root()); it.Current(); ++it) {
     Prof::CCT::ANode* n = it.current();
     for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
-      packedMetrics.idx(n->id(), mId1) = n->metric(mId2);
+      packedMetrics.idx(n->id(), mId1) = n->demandMetric(mId2);
     }
   }
 }
@@ -259,20 +258,19 @@ packMetrics(const Prof::CallPath::Profile& profile,
 
 void
 unpackMetrics(Prof::CallPath::Profile& profile,
-	      const ParallelAnalysis::DblMatrix& packedMetrics)
+	      const ParallelAnalysis::PackedMetrics& packedMetrics)
 {
   Prof::CCT::Tree& cct = *profile.cct();
 
-  // TODO: *** ids of extra derived metrics *** 
-  uint mBegId = Prof::Metric::IData::npos, mEndId = Prof::Metric::IData::npos;
+  uint mBegId = packedMetrics.mBegId(), mEndId = packedMetrics.mEndId();
 
-  DIAG_Assert(packedMetrics.numRow() == cct.maxDenseId() + 1, "");
-  //DIAG_Assert(packedMetrics.numCol() == mEndId - mBegId, "");
+  DIAG_Assert(packedMetrics.numNodes() == cct.maxDenseId() + 1, "");
+  DIAG_Assert(packedMetrics.numMetrics() == mEndId - mBegId, "");
 
-  for (uint nodeId = 1; nodeId < packedMetrics.numRow(); ++nodeId) {
+  for (uint nodeId = 1; nodeId < packedMetrics.numNodes(); ++nodeId) {
     for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
       Prof::CCT::ANode* n = cct.findNode(nodeId);
-      n->metric(mId2) = packedMetrics.idx(nodeId, mId1);
+      n->demandMetric(mId2) = packedMetrics.idx(nodeId, mId1);
     }
   }
 
