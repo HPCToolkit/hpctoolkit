@@ -122,7 +122,7 @@ realmain(int argc, char* const* argv)
   Analysis::Util::NormalizeProfileArgs_t nArgs = 
     Analysis::Util::normalizeProfileArgs(args.profileFiles);
 
-  if ( !(nArgs.paths->size() <= 16 || args.isHPCProfForce) ) {
+  if ( !(nArgs.paths->size() <= 32 || args.isHPCProfForce) ) {
     DIAG_Throw("There are " << nArgs.paths->size() << " profile files to process. " << args.getCmd() << " currently limits the number of profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.");
   }
 

@@ -116,7 +116,7 @@ Options: Source Structure Correlation:\n\
                        May pass multiple times (e.g., for shared libraries).\n\
 \n\
 Options: Special:\n\
-  --force              Currently, hpcprof permits at most 16 profile-files\n\
+  --force              Currently, hpcprof permits at most 32 profile-files\n\
                        to prevent unmanageably large Experiment databases.\n\
                        Use this option to remove this limit.  We are working\n\
                        on solutions.\n\
