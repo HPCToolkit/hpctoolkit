@@ -202,7 +202,8 @@ public:
   DblMatrix(uint numRow, uint numCol)
     : m_numRow(numRow), m_numCol(numCol)
   {
-    m_packedMatrix = new double[(numRow * numCol) + m_numHdr];
+    size_t sz = dataNumElements();
+    m_packedMatrix = new double[sz];
     m_packedMatrix[m_numRowIdx] = (double)m_numRow;
     m_packedMatrix[m_numColIdx] = (double)m_numCol;
   }
@@ -230,13 +231,30 @@ public:
   { return m_packedMatrix[m_numHdr + (m_numRow * idxRow) + idxCol]; }
 
   
+  uint
+  numRow() const
+  { return m_numRow; }
+
+  uint
+  numCol() const
+  { return m_numCol; }
+
+
+  bool
+  verify() const
+  {
+    return (m_numRow == (uint)m_packedMatrix[m_numRowIdx] &&
+	    m_numCol == (uint)m_packedMatrix[m_numColIdx]);
+  }
+
+  
   double*
   data() const
   { return m_packedMatrix; }
 
   uint
-  numElements() const
-  { return m_numRow * m_numCol; }
+  dataNumElements() const
+  { return (m_numRow * m_numCol) + m_numHdr; }
 
 private:
   uint m_numRow;
@@ -265,7 +283,7 @@ namespace ParallelAnalysis {
 // binary tree.
 // 
 // T: Prof::CallPath::Profile*
-// T: std::pair<Prof::CallPath::Profile*, ParallelAnalysis::DblMatrix*>
+// T: std::pair<Prof::CallPath::Profile&, ParallelAnalysis::DblMatrix&>
 // ------------------------------------------------------------------------
 
 template<typename T>
@@ -316,7 +334,7 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
 	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 
 void
-packProfile(Prof::CallPath::Profile* profile,
+packProfile(const Prof::CallPath::Profile& profile,
 	    uint8_t** buffer, size_t* bufferSz);
 
 Prof::CallPath::Profile*
@@ -332,6 +350,16 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*, ParallelAnalysis::DblMatrix*>,
 	      int rank_x, int rank_y, int myRank,
 	      MPI_Comm comm = MPI_COMM_WORLD);
 
+// packMetrics: pack the given metric values from 'profile' into
+// 'packedMetrics'
+void
+packMetrics(const Prof::CallPath::Profile& profile,
+	    ParallelAnalysis::DblMatrix& packedMetrics);
+
+// unpackMetrics: unpack 'packedMetrics' into profile and apply metric update
+void
+unpackMetrics(Prof::CallPath::Profile& profile,
+	      const ParallelAnalysis::DblMatrix& packedMetrics);
 
 } // namespace ParallelAnalysis
 

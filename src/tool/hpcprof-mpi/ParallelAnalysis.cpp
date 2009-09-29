@@ -131,11 +131,11 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
 {
   MPI_Status mpistat;
 
-  Prof::CallPath::Profile* profile_x = NULL;
-  Prof::CallPath::Profile* profile_y = NULL;
-
   uint8_t* profileBuf = NULL;
   size_t profileBufSz = 0;
+
+  Prof::CallPath::Profile* profile_x = NULL;
+  Prof::CallPath::Profile* profile_y = NULL;
 
   if (myRank == rank_x) {
     profile_x = profile;
@@ -158,7 +158,7 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
   if (myRank == rank_y) {
     profile_y = profile;
 
-    packProfile(profile_y, &profileBuf, &profileBufSz);
+    packProfile(*profile_y, &profileBuf, &profileBufSz);
 
     // rank_y sends profile buffer size to rank_x
     MPI_Send(&profileBufSz, 1, MPI_UNSIGNED_LONG, rank_x, 0, comm);
@@ -172,26 +172,48 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
 
 
 void
-mergeNonLocal(std::pair<Prof::CallPath::Profile*, ParallelAnalysis::DblMatrix*>,
+mergeNonLocal(std::pair<Prof::CallPath::Profile*,
+	                ParallelAnalysis::DblMatrix*> data,
 	      int rank_x, int rank_y, int myRank, MPI_Comm comm)
 {
-  // TODO
-  // packMetrics
-  // unpackMetrics
+  MPI_Status mpistat;
+
+  if (myRank == rank_x) {
+    Prof::CallPath::Profile* profile_x = data.first;
+    ParallelAnalysis::DblMatrix* packedMetrics_x = data.second;
+
+    // rank_x receives metric data from rank_y
+    MPI_Recv(packedMetrics_x->data(), packedMetrics_x->dataNumElements(),
+	     MPI_DOUBLE, rank_y, 0, comm, &mpistat);
+    DIAG_Assert(packedMetrics_x->verify(), DIAG_UnexpectedInput);
+    
+    unpackMetrics(*profile_x, *packedMetrics_x);
+  }
+
+  if (myRank == rank_y) {
+    Prof::CallPath::Profile* profile_y = data.first;
+    ParallelAnalysis::DblMatrix* packedMetrics_y = data.second;
+
+    packMetrics(*profile_y, *packedMetrics_y);
+    
+    // rank_y sends metric data to rank_x
+    MPI_Send(packedMetrics_y->data(), packedMetrics_y->dataNumElements(),
+	     MPI_DOUBLE, rank_x, 0, comm);
+  }
 }
 
 
 //***************************************************************************
 
 void
-packProfile(Prof::CallPath::Profile* profile,
+packProfile(const Prof::CallPath::Profile& profile,
 	    uint8_t** buffer, size_t* bufferSz)
 {
   // open_memstream: mallocs buffer and sets bufferSz
   FILE* fs = open_memstream((char**)buffer, bufferSz);
 
   uint wFlags = Prof::CallPath::Profile::WFlg_virtualMetrics;
-  Prof::CallPath::Profile::fmt_fwrite(*profile, fs, wFlags);
+  Prof::CallPath::Profile::fmt_fwrite(profile, fs, wFlags);
 
   fclose(fs);
 }
@@ -213,6 +235,49 @@ unpackProfile(uint8_t* buffer, size_t bufferSz)
 
 
 //***************************************************************************
+
+void
+packMetrics(const Prof::CallPath::Profile& profile,
+	    ParallelAnalysis::DblMatrix& packedMetrics)
+{
+  Prof::CCT::Tree& cct = *profile.cct();
+
+  // TODO: *** ids of extra derived metrics ***
+  uint mBegId = Prof::Metric::IData::npos, mEndId = Prof::Metric::IData::npos;
+
+  DIAG_Assert(packedMetrics.numRow() == cct.maxDenseId() + 1, "");
+  //DIAG_Assert(packedMetrics.numCol() == mEndId - mBegId, "");
+
+  for (Prof::CCT::ANodeIterator it(cct.root()); it.Current(); ++it) {
+    Prof::CCT::ANode* n = it.current();
+    for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
+      packedMetrics.idx(n->id(), mId1) = n->metric(mId2);
+    }
+  }
+}
+
+
+void
+unpackMetrics(Prof::CallPath::Profile& profile,
+	      const ParallelAnalysis::DblMatrix& packedMetrics)
+{
+  Prof::CCT::Tree& cct = *profile.cct();
+
+  // TODO: *** ids of extra derived metrics *** 
+  uint mBegId = Prof::Metric::IData::npos, mEndId = Prof::Metric::IData::npos;
+
+  DIAG_Assert(packedMetrics.numRow() == cct.maxDenseId() + 1, "");
+  //DIAG_Assert(packedMetrics.numCol() == mEndId - mBegId, "");
+
+  for (uint nodeId = 1; nodeId < packedMetrics.numRow(); ++nodeId) {
+    for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
+      Prof::CCT::ANode* n = cct.findNode(nodeId);
+      n->metric(mId2) = packedMetrics.idx(nodeId, mId1);
+    }
+  }
+
+  // TODO: apply Metric::AExprItrv::update() [*** ids of original drvd metrics]
+}
 
 
 
