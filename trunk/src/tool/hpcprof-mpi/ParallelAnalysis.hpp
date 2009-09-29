@@ -190,81 +190,95 @@ endNode(int level)
 
 
 //***************************************************************************
-// DblMatrix: a packable matrix
+// PackedMetrics: a packable matrix
 //***************************************************************************
 
 namespace ParallelAnalysis {
 
-class DblMatrix
+class PackedMetrics
   : public Unique // prevent copying
 {
 public:
-  DblMatrix(uint numRow, uint numCol)
-    : m_numRow(numRow), m_numCol(numCol)
+  PackedMetrics(uint numNodes, uint numMetrics,
+		uint mBegId, uint mEndId)
+    : m_numNodes(numNodes), m_numMetrics(numMetrics),
+      m_mBegId(mBegId), m_mEndId(mEndId)
   {
-    size_t sz = dataNumElements();
-    m_packedMatrix = new double[sz];
-    m_packedMatrix[m_numRowIdx] = (double)m_numRow;
-    m_packedMatrix[m_numColIdx] = (double)m_numCol;
+    size_t sz = dataSize();
+    m_packedData = new double[sz];
+    m_packedData[m_numNodesIdx]   = (double)m_numNodes;
+    m_packedData[m_numMetricsIdx] = (double)m_numMetrics;
+    m_packedData[m_mBegIdIdx]     = (double)m_mBegId;
+    m_packedData[m_mEndIdIdx]     = (double)m_mEndId;
   }
 
-  DblMatrix(double* packedMatrix)
-  {
-    // assumes ownership of 'packedMatrix'
-    m_packedMatrix = packedMatrix;
-    m_numRow = (uint)m_packedMatrix[m_numRowIdx];
-    m_numCol = (uint)m_packedMatrix[m_numColIdx];
-  }
+  // PackedMetrics(double* packedMatrix) { }
 
-
-  ~DblMatrix()
-  { delete[] m_packedMatrix; }
+  ~PackedMetrics()
+  { delete[] m_packedData; }
 
 
   // 0 based indexing
   double
-  idx(uint idxRow, uint idxCol) const
-  { return m_packedMatrix[m_numHdr + (m_numRow * idxRow) + idxCol]; }
+  idx(uint idxNodes, uint idxMetrics) const
+  { return m_packedData[m_numHdr + (m_numNodes * idxNodes) + idxMetrics]; }
 
   double&
-  idx(uint idxRow, uint idxCol)
-  { return m_packedMatrix[m_numHdr + (m_numRow * idxRow) + idxCol]; }
+  idx(uint idxNodes, uint idxMetrics)
+  { return m_packedData[m_numHdr + (m_numNodes * idxNodes) + idxMetrics]; }
 
   
   uint
-  numRow() const
-  { return m_numRow; }
+  numNodes() const
+  { return m_numNodes; }
 
   uint
-  numCol() const
-  { return m_numCol; }
+  numMetrics() const
+  { return m_numMetrics; }
+
+
+  uint
+  mBegId() const
+  { return m_mBegId; }
+
+  uint
+  mEndId() const
+  { return m_mEndId; }
 
 
   bool
   verify() const
   {
-    return (m_numRow == (uint)m_packedMatrix[m_numRowIdx] &&
-	    m_numCol == (uint)m_packedMatrix[m_numColIdx]);
+    return (m_numNodes      == (uint)m_packedData[m_numNodesIdx]
+	    && m_numMetrics == (uint)m_packedData[m_numMetricsIdx]
+	    && m_mBegId     == (uint)m_packedData[m_mBegIdIdx]
+	    && m_mEndId     == (uint)m_packedData[m_mEndIdIdx]);
   }
 
   
   double*
   data() const
-  { return m_packedMatrix; }
+  { return m_packedData; }
 
+  // dataSize: size in terms of elements
   uint
-  dataNumElements() const
-  { return (m_numRow * m_numCol) + m_numHdr; }
+  dataSize() const
+  { return (m_numNodes * m_numMetrics) + m_numHdr; }
 
 private:
-  uint m_numRow;
-  uint m_numCol;
+  static const uint m_numHdr = 4;
+  static const uint m_numNodesIdx   = 0;
+  static const uint m_numMetricsIdx = 1;
+  static const uint m_mBegIdIdx     = 2;
+  static const uint m_mEndIdIdx     = 3;
 
-  double* m_packedMatrix; // use row-major layout
+  uint m_numNodes; // rows
+  uint m_numMetrics; // columns
 
-  static const uint m_numHdr = 2;
-  static const uint m_numRowIdx = 0;
-  static const uint m_numColIdx = 1;
+  uint m_mBegId, m_mEndId;
+
+  double* m_packedData; // use row-major layout
+
 };
 
 } // namespace ParallelAnalysis
@@ -283,7 +297,7 @@ namespace ParallelAnalysis {
 // binary tree.
 // 
 // T: Prof::CallPath::Profile*
-// T: std::pair<Prof::CallPath::Profile&, ParallelAnalysis::DblMatrix&>
+// T: std::pair<Prof::CallPath::Profile*, ParallelAnalysis::PackedMetrics*>
 // ------------------------------------------------------------------------
 
 template<typename T>
@@ -346,7 +360,8 @@ unpackProfile(uint8_t* buffer, size_t bufferSz);
 // ------------------------------------------------------------------------
 
 void
-mergeNonLocal(std::pair<Prof::CallPath::Profile*, ParallelAnalysis::DblMatrix*>,
+mergeNonLocal(std::pair<Prof::CallPath::Profile*,
+                        ParallelAnalysis::PackedMetrics*> data,
 	      int rank_x, int rank_y, int myRank,
 	      MPI_Comm comm = MPI_COMM_WORLD);
 
@@ -354,12 +369,12 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*, ParallelAnalysis::DblMatrix*>,
 // 'packedMetrics'
 void
 packMetrics(const Prof::CallPath::Profile& profile,
-	    ParallelAnalysis::DblMatrix& packedMetrics);
+	    ParallelAnalysis::PackedMetrics& packedMetrics);
 
 // unpackMetrics: unpack 'packedMetrics' into profile and apply metric update
 void
 unpackMetrics(Prof::CallPath::Profile& profile,
-	      const ParallelAnalysis::DblMatrix& packedMetrics);
+	      const ParallelAnalysis::PackedMetrics& packedMetrics);
 
 } // namespace ParallelAnalysis
 

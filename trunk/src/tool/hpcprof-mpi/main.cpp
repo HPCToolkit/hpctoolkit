@@ -253,8 +253,9 @@ realmain(int argc, char* const* argv)
   }
 
   // 2. create global summary metrics
-  ParallelAnalysis::DblMatrix* packedMetrics =
-    new ParallelAnalysis::DblMatrix(maxCCTId + 1, numDrvd);
+  ParallelAnalysis::PackedMetrics* packedMetrics =
+    new ParallelAnalysis::PackedMetrics(maxCCTId + 1, numDrvd,
+					mXDrvdBeg, mXDrvdEnd);
   uint numUpdatesLcl = nArgs.paths->size();
 
   // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics

@@ -141,6 +141,9 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics)
 uint 
 Tree::renumberIdsDensly()
 {
+  // N.B.: use a sorted iterator to support hpcprof-mpi where we need
+  // to ensure multiple processes obtain the same numbering.
+
   uint nextId = 1; // cf. s_nextUniqueId
   for (ANodeSortedIterator it(m_root, ANodeSortedIterator::cmpByStructureId);
        it.current(); it++) {
@@ -429,7 +432,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics)
     DIAG_Assert(y_child_dyn, "ANode::mergeDeep");
     it++; // advance iterator -- it is pointing at 'child'
 
-    ADynNode* x_child_dyn = findDynChild(*y_child_dyn);
+    ADynNode* x_child_dyn = x->findDynChild(*y_child_dyn);
 
     if (!x_child_dyn) {
       // case 1
