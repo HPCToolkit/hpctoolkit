@@ -88,31 +88,52 @@ public:
   // constructor/destructor
   // -------------------------------------------------------
   VMAInterval(VMA beg, VMA end)
-    : m_beg(beg), m_end(end) { }
+    : m_beg(beg), m_end(end)
+  { }
+
   VMAInterval(const char* formattedstr)
-    { fromString(formattedstr); }
+  { fromString(formattedstr); }
 
   VMAInterval(const VMAInterval& x)
-    { *this = x; }
+    : m_beg(x.m_beg), m_end(x.m_end)
+  { }
 
-  VMAInterval& operator=(const VMAInterval& x) {
-    m_beg = x.m_beg;
-    m_end = x.m_end;
+  VMAInterval&
+  operator=(const VMAInterval& x)
+  {
+    if (this != &x) {
+      m_beg = x.m_beg;
+      m_end = x.m_end;
+    }
     return *this;
   }
 
-  ~VMAInterval() { }
+  ~VMAInterval()
+  { }
 
   // -------------------------------------------------------
   // data
   // -------------------------------------------------------
-  VMA  beg() const { return m_beg; }
-  void beg(VMA x)  { m_beg = x; }
+  VMA
+  beg() const
+  { return m_beg; }
   
-  VMA  end() const { return m_end; }
-  void end(VMA x)  { m_end = x; }
+  void
+  beg(VMA x)
+  { m_beg = x; }
+  
+  VMA
+  end() const
+  { return m_end; }
+  
+  void
+  end(VMA x)
+  { m_end = x; }
 
-  bool empty() const { return m_beg >= m_end; }
+  bool
+  empty() const
+  { return m_beg >= m_end; }
+
 
   // -------------------------------------------------------
   // interval comparison
@@ -123,32 +144,42 @@ public:
   //  a.     <x> 
   //  b.           <x>
   //  c.  <x>
-  bool overlaps(VMAInterval x) const
-    { 
-      return (contains(x) 
-	      || (x.beg() <= beg() && beg() <  x.end())
-	      || (x.beg() <  end() && end() <= x.end()));
-    }
+  bool
+  overlaps(VMAInterval x) const
+  {
+    return (contains(x) 
+	    || (x.beg() <= beg() && beg() <  x.end())
+	    || (x.beg() <  end() && end() <= x.end()));
+  }
   
   // contains: does this interval contain x
-  bool contains(VMAInterval x) const
-    { return ((beg() <= x.beg()) && (end() >= x.end())); }
+  bool
+  contains(VMAInterval x) const
+  { return ((beg() <= x.beg()) && (end() >= x.end())); }
   
   // -------------------------------------------------------
   // print/read/write
   // -------------------------------------------------------
 
   // Format: "[lb1-ub1)"
-  std::string toString() const;
+  std::string
+  toString() const;
 
-  void fromString(const char* formattedstr);
-  void fromString(std::string& formattedstr)
-    { fromString(formattedstr.c_str()); }
+  void
+  fromString(const char* formattedstr);
 
-  std::ostream& dump(std::ostream& os) const;
-  std::istream& slurp(std::istream& is);
+  void
+  fromString(std::string& formattedstr)
+  { fromString(formattedstr.c_str()); }
+
+  std::ostream&
+  dump(std::ostream& os) const;
   
-  void ddump() const;
+  std::istream&
+  slurp(std::istream& is);
+  
+  void
+  ddump() const;
   
 private:
   VMA m_beg;
@@ -174,9 +205,9 @@ operator<(const VMAInterval& x, const VMAInterval& y)
 
 class lt_VMAInterval {
 public:
-  bool operator() (const VMAInterval& x, const VMAInterval& y) const {
-    return (x < y);
-  }
+  bool
+  operator() (const VMAInterval& x, const VMAInterval& y) const
+  { return (x < y); }
 };
 
 
@@ -224,10 +255,14 @@ public:
   // -------------------------------------------------------
   // constructor/destructor
   // -------------------------------------------------------
-  VMAIntervalSet() { }
+  VMAIntervalSet()
+  { }
+
   VMAIntervalSet(const char* formattedstr)
-    { fromString(formattedstr); }
-  ~VMAIntervalSet() { }
+  { fromString(formattedstr); }
+  
+  virtual ~VMAIntervalSet()
+  { }
 
   // -------------------------------------------------------
   // cloning (proscribe by hiding copy constructor and operator=)
@@ -241,36 +276,51 @@ public:
   // insert: Insert a VMA or VMAInterval and maintain the
   // non-overlapping interval invariant. Merges intervals that overlap
   // or intersect only at a boundary.
-  std::pair<iterator, bool> insert(const VMA beg, const VMA end)
-    { return insert(value_type(beg, end)); }
-  std::pair<iterator, bool> insert(const value_type& x);
+  std::pair<iterator, bool>
+  insert(const VMA beg, const VMA end)
+  { return insert(value_type(beg, end)); }
+
+  std::pair<iterator, bool>
+  insert(const value_type& x);
 
   // erase: Erase a VMA or VMAInterval and maintain the
   // non-overlapping interval invariant
-  void erase(const VMA beg, const VMA end)
-    { return erase(value_type(beg, end)); }
-  void erase(const key_type& x);
+  void
+  erase(const VMA beg, const VMA end)
+  { return erase(value_type(beg, end)); }
+
+  void
+  erase(const key_type& x);
 
   // find: []
 
   // merge: Merge 'x' with this set
-  void merge(const VMAIntervalSet& x);
+  void
+  merge(const VMAIntervalSet& x);
 
   // -------------------------------------------------------
   // print/read/write
   // -------------------------------------------------------
 
   // Format: space-separated list of intervals: "{[lb1-ub1) [lb2-ub2) ...}"
-  std::string toString() const;
+  std::string
+  toString() const;
 
-  void fromString(const char* formattedstr);
-  void fromString(std::string& formattedstr)
-    { fromString(formattedstr.c_str()); }
+  void
+  fromString(const char* formattedstr);
 
-  std::ostream& dump(std::ostream& os) const;
-  std::istream& slurp(std::istream& is);
+  void
+  fromString(std::string& formattedstr)
+  { fromString(formattedstr.c_str()); }
 
-  void ddump() const;
+  std::ostream&
+  dump(std::ostream& os) const;
+
+  std::istream&
+  slurp(std::istream& is);
+
+  void
+  ddump() const;
 
 
 private:
@@ -354,10 +404,10 @@ public:
   // constructor/destructor
   // -------------------------------------------------------
   VMAIntervalMap()
-    { }
+  { }
 
-  ~VMAIntervalMap()
-    { }
+  virtual ~VMAIntervalMap()
+  { }
 
   // -------------------------------------------------------
   // cloning (proscribe by hiding copy constructor and operator=)
@@ -374,7 +424,8 @@ public:
 
   // find: Given a VMAInterval x, find the element mapped to the
   //   interval that equals or contains x.
-  iterator find(const key_type& toFind)
+  iterator
+  find(const key_type& toFind)
   {
     // find lb where lb is the first element !< x;
     reverse_iterator lb_r(this->lower_bound(toFind));
@@ -399,8 +450,9 @@ public:
     return this->end();
   }
   
-  const_iterator find(const key_type& x) const
-    { return const_cast<VMAIntervalMap*>(this)->find(x); }
+  const_iterator
+  find(const key_type& x) const
+  { return const_cast<VMAIntervalMap*>(this)->find(x); }
 
   
   // use inherited std::map routines
@@ -408,14 +460,16 @@ public:
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  std::string toString() const
+  std::string
+  toString() const
   {
     std::ostringstream os;
     dump(os);
     return os.str();
   }
   
-  std::ostream& dump(std::ostream& os) const
+  std::ostream&
+  dump(std::ostream& os) const
   {
     for (const_iterator it = this->begin(); it != this->end(); ++it) {
       os << it->first.toString() << " --> " << it->second << std::endl;
@@ -423,7 +477,8 @@ public:
     return os;
   }
   
-  std::ostream& ddump() const
+  std::ostream&
+  ddump() const
   {
     return dump(std::cerr);
   }
