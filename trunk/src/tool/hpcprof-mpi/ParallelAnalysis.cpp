@@ -244,15 +244,18 @@ packMetrics(const Prof::CallPath::Profile& profile,
 {
   Prof::CCT::Tree& cct = *profile.cct();
 
-  uint mBegId = packedMetrics.mBegId(), mEndId = packedMetrics.mEndId();
+  // pack derived metrics [mDrvdBeg, mDrvdEnd) from 'profile' into
+  // 'packedMetrics'
+  uint mDrvdBeg = packedMetrics.mDrvdBegId();
+  uint mDrvdEnd = packedMetrics.mDrvdEndId();
 
   DIAG_Assert(packedMetrics.numNodes() == cct.maxDenseId() + 1, "");
-  DIAG_Assert(packedMetrics.numMetrics() == mEndId - mBegId, "");
+  DIAG_Assert(packedMetrics.numMetrics() == mDrvdEnd - mDrvdBeg, "");
 
   for (Prof::CCT::ANodeIterator it(cct.root()); it.Current(); ++it) {
     Prof::CCT::ANode* n = it.current();
-    for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
-      packedMetrics.idx(n->id(), mId1) = n->demandMetric(mId2);
+    for (uint mId1 = 0, mId2 = mDrvdBeg; mId2 < mDrvdEnd; ++mId1, ++mId2) {
+      packedMetrics.idx(n->id(), mId1) = n->metric(mId2);
     }
   }
 }
@@ -264,6 +267,8 @@ unpackMetrics(Prof::CallPath::Profile& profile,
 {
   Prof::CCT::Tree& cct = *profile.cct();
 
+  // 1. unpack 'packedMetrics' into temporary derived metrics [mBegId,
+  //    mEndId) in 'profile'
   uint mBegId = packedMetrics.mBegId(), mEndId = packedMetrics.mEndId();
 
   DIAG_Assert(packedMetrics.numNodes() == cct.maxDenseId() + 1, "");
@@ -276,8 +281,8 @@ unpackMetrics(Prof::CallPath::Profile& profile,
     }
   }
 
-  // update derived metrics [mDrvdBeg, mDrvdEnd) based on new
-  // values in [mBegId, mEndId)
+  // 2. update derived metrics [mDrvdBeg, mDrvdEnd) based on new
+  //    values in [mBegId, mEndId)
   uint mDrvdBeg = packedMetrics.mDrvdBegId();
   uint mDrvdEnd = packedMetrics.mDrvdEndId();
   cct.root()->computeMetricsItrv(*profile.metricMgr(), mDrvdBeg, mDrvdEnd,
