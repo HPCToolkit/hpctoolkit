@@ -112,14 +112,21 @@ public:
   //
   // ------------------------------------------------------------
 
-  enum FnTy { FnInit, FnUpdate, FnFini };
+  enum FnTy { FnInit, FnInitSrc, FnUpdate, FnFini };
 
+  // initializes 'dstId'
   virtual double
   initialize(Metric::IData& mdata) const = 0;
 
+  // initializes 'srcId'
   virtual double
-  update(Metric::IData& mdata, uint numSrc = 1) const = 0;
+  initializeSrc(Metric::IData& mdata) const = 0;
 
+  // updates 'dstId' using 'srdId'
+  virtual double
+  update(Metric::IData& mdata) const = 0;
+
+  // finalizes 'dstId' give the total number of sources
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const = 0;
 
@@ -141,8 +148,13 @@ public:
   dstVar(Metric::IData& mdata) const
   { return var(mdata, m_dstId); }
 
-  double
+
+  double&
   srcVar(Metric::IData& mdata) const
+  { return var(mdata, m_srcId); }
+
+  double
+  srcVar(const Metric::IData& mdata) const
   { return var(mdata, m_srcId); }
 
 
@@ -200,7 +212,11 @@ public:
   { return (dstVar(mdata) = 0.0); }
 
   virtual double
-  update(Metric::IData& mdata, uint numSrc = 1) const
+  initializeSrc(Metric::IData& mdata) const
+  { return (srcVar(mdata) = 0.0); }
+
+  virtual double
+  update(Metric::IData& mdata) const
   {
     double x = std::max(dstVar(mdata), srcVar(mdata));
     return (dstVar(mdata) = x);

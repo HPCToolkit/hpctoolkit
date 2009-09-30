@@ -381,8 +381,10 @@ ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 	switch (fn) {
 	  case Metric::AExprItrv::FnInit:
 	    expr->initialize(*n); break;
+	  case Metric::AExprItrv::FnInitSrc:
+	    expr->initializeSrc(*n); break;
 	  case Metric::AExprItrv::FnUpdate:
-	    expr->update(*n, srcArg); break;
+	    expr->update(*n); break;
 	  case Metric::AExprItrv::FnFini:
 	    expr->finalize(*n, srcArg); break;
 	  default:

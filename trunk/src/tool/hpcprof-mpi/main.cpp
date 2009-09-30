@@ -414,11 +414,6 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   cctRoot->computeMetricsItrv(metricMgr, mDrvdBeg, mDrvdEnd,
 			      Prof::Metric::AExprItrv::FnInit, 0);
 
-  // N.B.: initialize extra derived metric storage since it will serve
-  // as an input during the summary metrics reduction
-  cctRoot->computeMetricsItrv(metricMgr, mXDrvdBeg, mXDrvdEnd,
-			      Prof::Metric::AExprItrv::FnInit, 0);
-
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
@@ -429,7 +424,7 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   // create global summary metrics
   // -------------------------------------------------------
 
-  // 1. change definitions of derived metrics [mDrvdBeg, mDrvdEnd) to
+  // 1. Change definitions of derived metrics [mDrvdBeg, mDrvdEnd) to
   //    point to the local summary values that will be in [mXDrvdBeg,
   //    mXDrvdEnd) durring the reduction
   for (uint i = mDrvdBeg, j = mXDrvdBeg; i < mDrvdEnd; ++i, ++j) {
@@ -442,17 +437,24 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
     expr->srcId(j);
   }
 
+  // 2. Initialize extra derived metric storage [mXDrvdBeg, mXDrvdEnd)
+  //    since it will serve as an input during the summary metrics
+  //    reduction
+  cctRoot->computeMetricsItrv(metricMgr, mXDrvdBeg, mXDrvdEnd,
+			      Prof::Metric::AExprItrv::FnInitSrc, 0);
+
+  // 3. Reduction
   uint maxCCTId = profGbl.cct()->maxDenseId();
 
   ParallelAnalysis::PackedMetrics* packedMetrics =
     new ParallelAnalysis::PackedMetrics(maxCCTId + 1, mXDrvdBeg, mXDrvdEnd,
 					mDrvdBeg, mDrvdEnd);
 
-  // 2. Reduction: Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
+  // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
   ParallelAnalysis::reduce(std::make_pair(&profGbl, packedMetrics),
 			   myRank, numRanks - 1);
 
-  // 3. Finalize metrics
+  // 4. Finalize metrics
   if (myRank == rootRank) {
     for (uint grpId = 1; grpId < groupIdToGroupMetricsMap.size(); ++grpId) {
       const VMAIntervalSet* ivalset = groupIdToGroupMetricsMap[grpId];
@@ -592,7 +594,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
 
 
   cctGbl->root()->computeMetricsItrv(*mMgrGbl, mDrvdBeg, mDrvdEnd,
-				     Prof::Metric::AExprItrv::FnUpdate, 1);
+				     Prof::Metric::AExprItrv::FnUpdate, 0);
 
   // -------------------------------------------------------
   // TODO: write local values to disk
