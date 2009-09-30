@@ -113,6 +113,7 @@ void
 hpcrun_thread_memory_init(void)
 {
   thread_data_t* td = hpcrun_get_thread_data();
+  td->memstore.mi_start = NULL;
   hpcrun_make_memstore(&td->memstore);
 }
 

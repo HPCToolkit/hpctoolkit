@@ -60,25 +60,19 @@
 #include <string.h>
 #include <unistd.h>
 
-//
 // no redefinition of csprof_malloc and friends inside mem.c
-//
-
 #define _IN_MEM_C 1
-
 #  include "csprof-malloc.h"
-
 #undef _IN_MEM_C
 
 #include "env.h"
-#include "monitor.h"
 #include "newmem.h"
 #include "sample_event.h"
 #include "thread_data.h"
 
 #include <messages/messages.h>
 
-#define DEFAULT_MEMSIZE   (6 * 1024 * 1024)
+#define DEFAULT_MEMSIZE   (4 * 1024 * 1024)
 #define BGP_MEMSIZE      (10 * 1024 * 1024)
 #define MIN_LOW_MEMSIZE  (80 * 1024)
 #define DEFAULT_PAGESIZE  4096
@@ -211,17 +205,25 @@ hpcrun_mmap_anon(size_t size)
 //
 
 // Allocate space and init a thread's memstore.
+// If failure, shutdown sampling and leave old memstore in place.
 void
 hpcrun_make_memstore(hpcrun_meminfo_t *mi)
 {
+  void *addr;
+
   hpcrun_mem_init();
 
-  mi->mi_start = hpcrun_mmap_anon(memsize);
-  if (mi->mi_start == NULL) {
-    EMSG("%s: mmap failed, shutting down", __func__);
-    monitor_real_abort();
+  addr = hpcrun_mmap_anon(memsize);
+  if (addr == NULL) {
+    if (! out_of_mem_mesg) {
+      EMSG("%s: out of memory, shutting down sampling", __func__);
+      out_of_mem_mesg = 1;
+    }
+    csprof_disable_sampling();
+    return;
   }
 
+  mi->mi_start = addr;
   mi->mi_size = memsize;
   mi->mi_low = mi->mi_start;
   mi->mi_high = mi->mi_start + memsize;
@@ -249,48 +251,50 @@ hpcrun_reclaim_freeable_mem(void)
 void *
 csprof_malloc(size_t size)
 {
-  // Special case
+  hpcrun_meminfo_t *mi;
+  void *addr;
+
+  // Lush wants to ask for 0 bytes and get back NULL.
   if (size == 0) {
     return NULL;
   }
 
-  hpcrun_meminfo_t *mi = &TD_GET(memstore);
-  void *addr;
+  mi = &TD_GET(memstore);
+  size = round_up(size);
 
-  // Non-recoverable out of memory.
-  if (mi->mi_high < mi->mi_start + 2*low_memsize) {
+  // See if we need to allocate a new memstore.
+  if (mi->mi_start == NULL
+      || mi->mi_high - mi->mi_low < low_memsize
+      || mi->mi_high - mi->mi_low < size) {
     if (allow_extra_mmap) {
       hpcrun_make_memstore(mi);
     } else {
       if (! out_of_mem_mesg) {
-	EMSG("%s: out of memory, turning off sampling", __func__);
+	EMSG("%s: out of memory, shutting down sampling", __func__);
 	out_of_mem_mesg = 1;
       }
       csprof_disable_sampling();
-      TMSG(MALLOC, "%s: size = %ld, failure: out of memory",
-	   __func__, size);
-      num_failures++;
-      return NULL;
     }
   }
-  size = round_up(size);
-  addr = mi->mi_high - size;
 
-  // Recoverable out of memory.
-  if (addr <= mi->mi_low) {
-    TD_GET(mem_low) = 1;
-    TMSG(MALLOC, "%s: size = %ld, failure: temporarily out of memory",
+  // There is no memstore, for some reason.
+  if (mi->mi_start == NULL) {
+    TMSG(MALLOC, "%s: size = %ld, failure: no memstore",
 	 __func__, size);
     num_failures++;
     return NULL;
   }
 
-  // Low on memory.
-  if (addr < mi->mi_low + low_memsize) {
-    TD_GET(mem_low) = 1;
-    TMSG(MALLOC, "%s: low on memory, setting epoch flush flag", __func__);
+  // Not enough space in existing memstore.
+  addr = mi->mi_high - size;
+  if (addr <= mi->mi_low) {
+    TMSG(MALLOC, "%s: size = %ld, failure: out of memory",
+	 __func__, size);
+    num_failures++;
+    return NULL;
   }
 
+  // Success
   mi->mi_high = addr;
   total_non_freeable += size;
   TMSG(MALLOC, "%s: size = %ld, addr = %p", __func__, size, addr);
@@ -304,6 +308,10 @@ csprof_malloc(size_t size)
 void *
 csprof_malloc_freeable(size_t size)
 {
+  return csprof_malloc(size);
+
+  // For now, don't bother with freeable memory.
+#if 0
   hpcrun_meminfo_t *mi = &TD_GET(memstore);
   void *addr, *ans;
 
@@ -330,6 +338,7 @@ csprof_malloc_freeable(size_t size)
   total_freeable += size;
   TMSG(MALLOC, "%s: size = %ld, addr = %p", __func__, size, addr);
   return ans;
+#endif
 }
 
 void
