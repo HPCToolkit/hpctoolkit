@@ -234,29 +234,32 @@ std::string
 subdirs_to_pathlist(const char* path, int recursive)
 {
   std::string resultPath;
-  
-  struct dirent* dire;
-  DIR*           dir;
-  struct  stat   statbuf;
  
-  dir = opendir(path);
-  if (!dir) { return resultPath; /*empty string*/ }
+  DIR* dir = opendir(path);
+  if (!dir) {
+    return resultPath; // empty string
+  }
   
-  int first = 1;
+  bool isFirst = true;
+
+  struct dirent* dire;
   while( (dire = readdir(dir)) ) {
-    /* skip ".", ".." */
+    // skip ".", ".."
     if (strcmp(dire->d_name, ".") == 0) { continue; }
     if (strcmp(dire->d_name, "..") == 0) { continue; }	
     /* if (dire->d_name[0] == '.') { continue; } hidden files/directories */
    
-    /* add directories */
+    // add directories
     std::string file = std::string(path) + "/" + dire->d_name;
-    stat(file.c_str(), &statbuf);
-    if ( S_ISDIR(statbuf.st_mode) ) { 
-      if (first == 0) { resultPath += ":"; }
-      if (recursive > 0) { file += "/*"; }
+    if (dire->d_type == DT_DIR) {
+      if (!isFirst) {
+	resultPath += ":";
+      }
+      if (recursive > 0) {
+	file += "/*";
+      }
       resultPath += file;
-      first = 0;
+      isFirst = false;
     }
   }
   closedir(dir);
