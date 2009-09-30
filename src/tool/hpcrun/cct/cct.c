@@ -323,17 +323,34 @@ csprof_cct_node__find_child(csprof_cct_node_t* x,
 
 /* building and deleting trees */
 
-int
-csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
+void
+hpcrun_cct_make_root(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
 {
-  TMSG(CCT_TYPE,"--Init");
-  memset(x, 0, sizeof(*x));
+  if (! hpcrun_metrics_finalized()) {
+    TMSG(MAX_METRICS, "WARNING: cct_make_root called when metrics NOT finalized!");
+    return;
+  }
 
   // introduce bogus root to handle possible forests
   x->tree_root = csprof_cct_node__create(lush_assoc_info_NULL, 0, NULL, x);
 
   x->tree_root->parent = (ctxt)? ctxt->context : NULL;
   x->num_nodes = 1;
+}
+
+int
+csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
+{
+  TMSG(CCT_TYPE,"--Init");
+  memset(x, 0, sizeof(*x));
+
+  if (! hpcrun_metrics_finalized()) {
+    TMSG(MAX_METRICS, "WARNING: cct__init called when metrics NOT finalized!");
+
+    return HPCRUN_ERR;
+  }
+
+  hpcrun_cct_make_root(x, ctxt);
 
   return HPCRUN_OK;
 }
