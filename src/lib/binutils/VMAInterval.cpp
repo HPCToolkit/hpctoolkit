@@ -197,9 +197,10 @@ VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
     return ret;
   }
 
+  // -------------------------------------------------------
   // find [lb, ub) where lb is the first element !< x and ub is the
-  // first element > x.  IOW, since intervals cannot be duplicated, if
-  // lb != end() then (lb >= x < ub)
+  // first element > x.  IOW, if lb != end() then (x <= lb < ub).
+  // -------------------------------------------------------
   std::pair<VMAIntervalSet::iterator, VMAIntervalSet::iterator> lu = 
     equal_range(x);
   VMAIntervalSet::iterator lb = lu.first;
@@ -220,14 +221,16 @@ VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
     }
   }
   
+  // -------------------------------------------------------
   // Detect the appropriate case.  Note that case 0 is a NOP.
-  VMA lb_beg = lb->beg();
-  VMA ub_end = ub->end();
+  // -------------------------------------------------------
+  VMA lb_beg = (lb != end()) ? lb->beg() : 0;
+  VMA ub_end = (ub != end()) ? ub->end() : 0;
 
   if (lb != end() && lb->contains(x)) {
     // Case 0: do nothing
   }
-  else if (lb == end() && ub == end()) { // size >= 1
+  else if (lb == end() && ub == end()) {
     if (empty()) {
       // Case 1a: insert x
       ret = My_t::insert(x);
@@ -239,6 +242,8 @@ VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
     }
   }
   else if (lb == end()) {
+    // INVARIANT: ub != end()
+    
     if (x.end() < ub->beg()) {
       // Case 1b: insert x
       ret = My_t::insert(x);
@@ -251,6 +256,8 @@ VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
     }
   }
   else if (ub == end()) {
+    // INVARIANT: lb != end() 
+
     if (lb->end() < x.beg()) {
       // Case 1c: insert x
       ret = My_t::insert(x);
@@ -262,6 +269,8 @@ VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
     }
   }
   else {
+    // INVARIANT: lb != end() && ub != end()
+
     if (lb->end() < x.beg() && x.end() < ub->beg()) {
       // Case 1d: insert x
       ret = My_t::insert(x);
@@ -300,10 +309,11 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
   if (x.empty()) {
     return;
   }
-  
+
+  // -------------------------------------------------------
   // find [lb, ub) where lb is the first element !< x and ub is the
-  // first element > x.  IOW, since intervals cannot be duplicated, if
-  // lb != end() then (lb = x < ub) and lb equiv x.
+  // first element > x.  IOW, if lb != end() then (x <= lb < ub).
+  // -------------------------------------------------------
   std::pair<VMAIntervalSet::iterator, VMAIntervalSet::iterator> lu = 
     equal_range(x);
   VMAIntervalSet::iterator lb = lu.first;
@@ -324,10 +334,12 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
     }
   }
   
+  // -------------------------------------------------------
   // Detect the appropriate case.  Note that we do not have to
   // explicitly consider Case 1 since it amounts to a NOP.
-  VMA lb_beg = lb->beg();
-  VMA ub_end = ub->end();
+  // -------------------------------------------------------
+  VMA lb_beg = (lb != end()) ? lb->beg() : 0;
+  VMA ub_end = (ub != end()) ? ub->end() : 0;
 
   if (lb != end() && lb->contains(x)) {
     // Case 0: split interval: erase [lb, ub); 
@@ -348,6 +360,8 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
     }
   }
   else if (lb == end()) {
+    // INVARIANT: ub != end()
+
     if ( !(x.end() < ub->beg()) ) {
       // Case 3a: erase [begin(), ub + 1); insert [x.end(), ub->end())
       VMAIntervalSet::iterator end = ub;
@@ -358,6 +372,8 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
     }
   }
   else if (ub == end()) {
+    // INVARIANT: lb != end() 
+
     if ( !(lb->end() < x.beg()) ) {
       // Case 2a: erase [lb, end()); insert [lb->beg(), x.beg())
       My_t::erase(lb, end());
@@ -367,6 +383,8 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
     }
   }
   else {
+    // INVARIANT: lb != end() && ub != end()
+
     if (x.beg() <= lb->end() && x.end() < ub->beg()) {
       // Case 2b: erase [lb, ub); insert [lb->beg(), x.beg())
       My_t::erase(lb, ub);
