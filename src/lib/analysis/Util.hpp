@@ -125,7 +125,7 @@ public:
     paths = new StringVec;
     pathLenMax = 0;
     groupMap = new UIntVec;
-    groupMax = 0;
+    groupMax = 0; // 1-based group numbering
   }
 
   ~NormalizeProfileArgs_t()
