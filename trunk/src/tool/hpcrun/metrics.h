@@ -45,6 +45,7 @@
 #define CSPROF_METRICS_H
 
 #include <sys/types.h>
+#include <stdbool.h>
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
@@ -57,6 +58,8 @@
 // 2) metric info needs to exist in a library so csprof (hpcrun),
 //    xcsprof (hpcprof) and hpcfile can use it.  hpcfile at least
 //    satisfies this.
+
+bool hpcrun_metrics_finalized(void);
 
 int 
 csprof_get_max_metrics();

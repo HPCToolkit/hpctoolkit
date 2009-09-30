@@ -200,6 +200,14 @@ csprof_init_internal(void)
   SAMPLE_SOURCES(init);
   SAMPLE_SOURCES(process_event_list,lush_metrics);
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
+
+  // set up initial cct tree node, now that metrics are finalized
+  
+  TMSG(MAX_METRICS,"process init calls hpcrun_cct_make_root");
+  hpcrun_cct_make_root(&(TD_GET(state)->csdata), NULL);
+
+  // start the sampling process
+
   SAMPLE_SOURCES(start);
 
   hpcrun_is_initialized_private = true;

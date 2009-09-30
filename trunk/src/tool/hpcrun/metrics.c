@@ -46,6 +46,8 @@
 #include <libunwind.h>
 #endif
 
+#include <stdbool.h>
+
 #include "epoch.h"
 #include "metrics.h"
 #include "state.h"
@@ -64,11 +66,20 @@ static int csprof_max_metrics = 0;
 static metric_tbl_t metric_data;
 
 /* setting the total number of metrics to track */
-static int has_set_max_metrics = 0;
+static int has_set_max_metrics = false;
+
+bool
+hpcrun_metrics_finalized(void)
+{
+  return has_set_max_metrics;
+}
 
 int
 csprof_get_max_metrics()
 {
+  if (! has_set_max_metrics) {
+    EMSG("WARNING: csprof_get_max_metrics called BEFORE metrics are finalized!");
+  }
   return csprof_max_metrics;
 }
 
@@ -82,7 +93,7 @@ csprof_set_max_metrics(int max_metrics)
   }
   else {
     TMSG(METRICS,"Set 'max_set' flag. Initialize metric data");
-    has_set_max_metrics = 1;
+    has_set_max_metrics = true;
     csprof_max_metrics = max_metrics;
 
     TMSG(METRICS," set_max_metrics");
