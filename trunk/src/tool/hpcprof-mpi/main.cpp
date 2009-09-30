@@ -66,9 +66,13 @@
 #include <string>
 using std::string;
 
+#include <vector>
+using std::vector;
+
 #include <cstdlib> // getenv()
 #include <cmath>   // ceil()
 #include <climits> // UCHAR_MAX
+#include <cctype>  // isdigit()
 
 //*************************** User Include Files ****************************
 
@@ -80,27 +84,30 @@ using std::string;
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
 
+#include <lib/binutils/VMAInterval.hpp>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.hpp>
 
 
 //*************************** Forward Declarations ***************************
 
-typedef std::vector<std::string> StringVec;
-
 static Analysis::Util::NormalizeProfileArgs_t
-myNormalizeProfileArgs(StringVec& profileFiles,
+myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
+		       vector<uint>& groupIdToGroupSizeMap,
 		       int myRank, int numRanks, int rootRank = 0);
 
 static void
-makeMetrics(Analysis::Util::NormalizeProfileArgs_t& nArgs,
+makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
+	    const vector<uint>& groupIdToGroupSizeMap,
 	    Prof::CallPath::Profile& profGbl,
 	    int myRank, int numRanks, int rootRank);
 
 static uint
 makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 		       uint& mDrvdBeg, uint& mDrvdEnd,
-		       uint& mXDrvdBeg, uint& mXDrvdEnd);
+		       uint& mXDrvdBeg, uint& mXDrvdEnd,
+		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap);
 
 static void
 processProfile(Prof::CallPath::Profile& profGbl,
@@ -185,8 +192,11 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   Prof::CallPath::Profile* profLcl = NULL;
 
+  vector<uint> groupIdToGroupSizeMap; // only filled for rootRank
+
   Analysis::Util::NormalizeProfileArgs_t nArgs = 
-    myNormalizeProfileArgs(args.profileFiles, myRank, numRanks, rootRank);
+    myNormalizeProfileArgs(args.profileFiles, groupIdToGroupSizeMap,
+			   myRank, numRanks, rootRank);
 
   int mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
   uint rFlags = (Prof::CallPath::Profile::RFlg_virtualMetrics 
@@ -241,7 +251,8 @@ realmain(int argc, char* const* argv)
   // Create summary metrics and thread-level metrics
   // -------------------------------------------------------
 
-  makeMetrics(nArgs, *profGbl, myRank, numRanks, rootRank);
+  makeMetrics(nArgs, groupIdToGroupSizeMap,
+	      *profGbl, myRank, numRanks, rootRank);
 
   nArgs.destroy();
 
@@ -269,7 +280,8 @@ realmain(int argc, char* const* argv)
 //   distributes chunks of size ceil(numFiles / numRanks) to each process.
 //   The last process may have a smaller chunk than the others.
 static Analysis::Util::NormalizeProfileArgs_t
-myNormalizeProfileArgs(StringVec& profileFiles,
+myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
+		       vector<uint>& groupIdToGroupSizeMap,
 		       int myRank, int numRanks, int rootRank)
 {
   Analysis::Util::NormalizeProfileArgs_t out;
@@ -279,7 +291,8 @@ myNormalizeProfileArgs(StringVec& profileFiles,
   uint sendFilesChunkSz = 0;
   uint groupIdLen = 1;
   uint pathLenMax = 0;
-  
+  uint groupIdMax = 0;
+
   // -------------------------------------------------------
   // root creates canonical and grouped list of files
   // -------------------------------------------------------
@@ -288,8 +301,9 @@ myNormalizeProfileArgs(StringVec& profileFiles,
     Analysis::Util::NormalizeProfileArgs_t nArgs = 
       Analysis::Util::normalizeProfileArgs(profileFiles);
     
-    StringVec* canonicalFiles = nArgs.paths;
+    Analysis::Util::StringVec* canonicalFiles = nArgs.paths;
     pathLenMax = nArgs.pathLenMax;
+    groupIdMax = nArgs.groupMax;
 
     DIAG_Assert(nArgs.groupMax <= UCHAR_MAX, "myNormalizeProfileArgs: 'groupMax' cannot be packed into a uchar!");
 
@@ -301,11 +315,16 @@ myNormalizeProfileArgs(StringVec& profileFiles,
     sendFilesBuf = new char[sendFilesBufSz];
     memset(sendFilesBuf, '\0', sendFilesBufSz);
 
+    groupIdToGroupSizeMap.resize(groupIdMax + 1);
+    
     for (uint i = 0, j = 0; i < canonicalFiles->size(); 
 	 i++, j += (groupIdLen + pathLenMax + 1)) {
       const std::string& nm = (*canonicalFiles)[i];
       uint groupId = (*nArgs.groupMap)[i];
 
+      groupIdToGroupSizeMap[groupId]++;
+
+      // pack into sendFilesBuf
       sendFilesBuf[j] = (char)groupId;
       strncpy(&(sendFilesBuf[j + groupIdLen]), nm.c_str(), pathLenMax);
       sendFilesBuf[j + groupIdLen + pathLenMax] = '\0';
@@ -318,10 +337,11 @@ myNormalizeProfileArgs(StringVec& profileFiles,
   // prepare parameters for scatter
   // -------------------------------------------------------
   
-  const uint metadataBufSz = 2;
+  const uint metadataBufSz = 3;
   uint metadataBuf[metadataBufSz];
   metadataBuf[0] = sendFilesChunkSz;
   metadataBuf[1] = pathLenMax;
+  metadataBuf[2] = groupIdMax;
 
   MPI_Bcast((void*)metadataBuf, metadataBufSz, MPI_UNSIGNED, 
 	    rootRank, MPI_COMM_WORLD);
@@ -329,6 +349,7 @@ myNormalizeProfileArgs(StringVec& profileFiles,
   if (myRank != rootRank) {
     sendFilesChunkSz = metadataBuf[0];
     pathLenMax = metadataBuf[1];
+    groupIdMax = metadataBuf[2];
   }
 
   // -------------------------------------------------------
@@ -354,6 +375,9 @@ myNormalizeProfileArgs(StringVec& profileFiles,
     }
   }
 
+  out.pathLenMax = pathLenMax;
+  out.groupMax = groupIdMax;
+
   delete[] recvFilesBuf;
 
   if (0) {
@@ -369,13 +393,16 @@ myNormalizeProfileArgs(StringVec& profileFiles,
 //***************************************************************************
 
 static void
-makeMetrics(Analysis::Util::NormalizeProfileArgs_t& nArgs,
+makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
+	    const vector<uint>& groupIdToGroupSizeMap,
 	    Prof::CallPath::Profile& profGbl,
 	    int myRank, int numRanks, int rootRank)
 {
   uint mDrvdBeg, mDrvdEnd;   // [ )
   uint mXDrvdBeg, mXDrvdEnd; // [ )
-  makeDerivedMetricDescs(profGbl, mDrvdBeg, mDrvdEnd, mXDrvdBeg, mXDrvdEnd);
+  vector<VMAIntervalSet*> groupIdToGroupMetricsMap(nArgs.groupMax + 1, NULL);
+  makeDerivedMetricDescs(profGbl, mDrvdBeg, mDrvdEnd, mXDrvdBeg, mXDrvdEnd,
+			 groupIdToGroupMetricsMap);
 
   Prof::Metric::Mgr& metricMgr = *profGbl.metricMgr();
 
@@ -385,6 +412,11 @@ makeMetrics(Analysis::Util::NormalizeProfileArgs_t& nArgs,
 
   Prof::CCT::ANode* cctRoot = profGbl.cct()->root();
   cctRoot->computeMetricsItrv(metricMgr, mDrvdBeg, mDrvdEnd,
+			      Prof::Metric::AExprItrv::FnInit, 0);
+
+  // N.B.: initialize extra derived metric storage since it will serve
+  // as an input during the summary metrics reduction
+  cctRoot->computeMetricsItrv(metricMgr, mXDrvdBeg, mXDrvdEnd,
 			      Prof::Metric::AExprItrv::FnInit, 0);
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
@@ -415,26 +447,40 @@ makeMetrics(Analysis::Util::NormalizeProfileArgs_t& nArgs,
   ParallelAnalysis::PackedMetrics* packedMetrics =
     new ParallelAnalysis::PackedMetrics(maxCCTId + 1, mXDrvdBeg, mXDrvdEnd,
 					mDrvdBeg, mDrvdEnd);
-  uint numUpdatesLcl = nArgs.paths->size();
 
   // 2. Reduction: Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
   ParallelAnalysis::reduce(std::make_pair(&profGbl, packedMetrics),
 			   myRank, numRanks - 1);
-  delete packedMetrics;
 
   // 3. Finalize metrics
   if (myRank == rootRank) {
-    uint numUpdates = numUpdatesLcl; // TODO: reduction
-    cctRoot->computeMetricsItrv(metricMgr, mDrvdBeg, mDrvdEnd,
-				Prof::Metric::AExprItrv::FnFini, numUpdates);
+    for (uint grpId = 1; grpId < groupIdToGroupMetricsMap.size(); ++grpId) {
+      const VMAIntervalSet* ivalset = groupIdToGroupMetricsMap[grpId];
+      DIAG_Assert(ivalset->size() == 1, DIAG_UnexpectedInput);
+
+      const VMAInterval& ival = *(ivalset->begin());
+      uint mBeg = (uint)ival.beg(), mEnd = (uint)ival.end();
+
+      uint numInputs = groupIdToGroupSizeMap[grpId];
+
+      cctRoot->computeMetricsItrv(metricMgr, mBeg, mEnd,
+				  Prof::Metric::AExprItrv::FnFini, numInputs);
+    }
   }
+
+  for (uint grpId = 1; grpId < groupIdToGroupMetricsMap.size(); ++grpId) {
+    delete groupIdToGroupMetricsMap[grpId];
+  }
+
+  delete packedMetrics;
 }
 
 
 static uint
 makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 		       uint& mDrvdBeg, uint& mDrvdEnd,
-		       uint& mXDrvdBeg, uint& mXDrvdEnd)
+		       uint& mXDrvdBeg, uint& mXDrvdEnd,
+		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap)
 {
   uint numDrvd = 0;
   mDrvdBeg = Prof::Metric::Mgr::npos; // [ )
@@ -455,6 +501,36 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
     if (mDrvdBeg != Prof::Metric::Mgr::npos) {
       mDrvdEnd = profGbl.metricMgr()->size();
       numDrvd = (mDrvdEnd - mDrvdBeg);
+    }
+
+    for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
+      Prof::Metric::ADesc* m = profGbl.metricMgr()->metric(i);
+
+      // FIXME: clutzy, but after the CCT redution, metric prefixes
+      // have been collapsed into the name.
+      string nm = m->name();
+
+      // extract group id
+      size_t endGroupId = nm.find_first_of('.');
+      DIAG_Assert(endGroupId != string::npos, DIAG_UnexpectedInput);
+
+      size_t begGroupId = endGroupId;
+      while (begGroupId > 0 && isdigit(nm[begGroupId - 1]) ) {
+	begGroupId--;
+      }
+      DIAG_Assert(begGroupId < endGroupId, DIAG_UnexpectedInput);
+
+      string grpStr = nm.substr(begGroupId, (endGroupId - begGroupId));
+      uint groupId = (uint)StrUtil::toUInt64(grpStr);
+
+      DIAG_Assert(groupId > 0, DIAG_UnexpectedInput);
+      DIAG_Assert(groupId < groupIdToGroupMetricsMap.size(), DIAG_UnexpectedInput);
+
+      VMAIntervalSet*& ivalset = groupIdToGroupMetricsMap[groupId];
+      if (!ivalset) {
+	ivalset = new VMAIntervalSet;
+      }
+      ivalset->insert(i, i + 1); // [ )
     }
 
     // temporary set of extra derived metrics (for reduction)

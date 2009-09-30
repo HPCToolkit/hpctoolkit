@@ -213,9 +213,9 @@ public:
     // initialize first (unused) row to avoid bogus valgrind warnings
     memset(m_packedData, 0, (m_numHdr + m_numMetrics) * sizeof(double));
 
-    m_packedData[m_numNodesIdx] = (double)m_numNodes;
-    m_packedData[m_mBegIdIdx]   = (double)m_mBegId;
-    m_packedData[m_mEndIdIdx]   = (double)m_mEndId;
+    m_packedData[m_numNodesIdx]   = (double)m_numNodes;
+    m_packedData[m_mBegIdIdx]     = (double)m_mBegId;
+    m_packedData[m_mEndIdIdx]     = (double)m_mEndId;
   }
 
   // PackedMetrics(double* packedMatrix) { }
@@ -281,7 +281,7 @@ public:
   { return (m_numNodes * m_numMetrics) + m_numHdr; }
 
 private:
-  static const uint m_numHdr = 3;
+  static const uint m_numHdr = 4;
   static const uint m_numNodesIdx   = 0;
   static const uint m_mBegIdIdx     = 1;
   static const uint m_mEndIdIdx     = 2;
