@@ -92,6 +92,11 @@ static Analysis::Util::NormalizeProfileArgs_t
 myNormalizeProfileArgs(StringVec& profileFiles,
 		       int myRank, int numRanks, int rootRank = 0);
 
+static void
+makeMetrics(Analysis::Util::NormalizeProfileArgs_t& nArgs,
+	    Prof::CallPath::Profile& profGbl,
+	    int myRank, int numRanks, int rootRank);
+
 static uint
 makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 		       uint& mDrvdBeg, uint& mDrvdEnd,
@@ -230,42 +235,13 @@ realmain(int argc, char* const* argv)
   // in same way
   Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.lush_agent);
 
-  uint maxCCTId = profGbl->cct()->makeDensePreorderIds();
+  profGbl->cct()->makeDensePreorderIds();
 
   // -------------------------------------------------------
   // Create summary metrics and thread-level metrics
   // -------------------------------------------------------
 
-  uint mDrvdBeg, mDrvdEnd;   // [ )
-  uint mXDrvdBeg, mXDrvdEnd; // [ )
-  makeDerivedMetricDescs(*profGbl, mDrvdBeg, mDrvdEnd, mXDrvdBeg, mXDrvdEnd);
-
-  // 1. create local summary metrics (and thread-level metrics)
-  Prof::CCT::ANode* cctRoot = profGbl->cct()->root();
-  cctRoot->computeMetricsItrv(*profGbl->metricMgr(), mDrvdBeg, mDrvdEnd,
-			      Prof::Metric::AExprItrv::FnInit, 0);
-
-  for (uint i = 0; i < nArgs.paths->size(); ++i) {
-    string& fnm = (*nArgs.paths)[i];
-    uint groupId = (*nArgs.groupMap)[i];
-    processProfile(*profGbl, fnm, groupId, mDrvdBeg, mDrvdEnd);
-  }
-
-  // 2. create global summary metrics
-  ParallelAnalysis::PackedMetrics* packedMetrics =
-    new ParallelAnalysis::PackedMetrics(maxCCTId + 1, mXDrvdBeg, mXDrvdEnd);
-  uint numUpdatesLcl = nArgs.paths->size();
-
-  // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
-  ParallelAnalysis::reduce(std::make_pair(profGbl, packedMetrics),
-			   myRank, numRanks - 1);
-  delete packedMetrics;
-
-  if (myRank == rootRank) {
-    uint numUpdates = numUpdatesLcl; // TODO: reduction
-    cctRoot->computeMetricsItrv(*profGbl->metricMgr(), mDrvdBeg, mDrvdEnd,
-				Prof::Metric::AExprItrv::FnFini, numUpdates);
-  }
+  makeMetrics(nArgs, *profGbl, myRank, numRanks, rootRank);
 
   nArgs.destroy();
 
@@ -392,6 +368,69 @@ myNormalizeProfileArgs(StringVec& profileFiles,
 
 //***************************************************************************
 
+static void
+makeMetrics(Analysis::Util::NormalizeProfileArgs_t& nArgs,
+	    Prof::CallPath::Profile& profGbl,
+	    int myRank, int numRanks, int rootRank)
+{
+  uint mDrvdBeg, mDrvdEnd;   // [ )
+  uint mXDrvdBeg, mXDrvdEnd; // [ )
+  makeDerivedMetricDescs(profGbl, mDrvdBeg, mDrvdEnd, mXDrvdBeg, mXDrvdEnd);
+
+  Prof::Metric::Mgr& metricMgr = *profGbl.metricMgr();
+
+  // -------------------------------------------------------
+  // create local summary metrics (and thread-level metrics)
+  // -------------------------------------------------------
+
+  Prof::CCT::ANode* cctRoot = profGbl.cct()->root();
+  cctRoot->computeMetricsItrv(metricMgr, mDrvdBeg, mDrvdEnd,
+			      Prof::Metric::AExprItrv::FnInit, 0);
+
+  for (uint i = 0; i < nArgs.paths->size(); ++i) {
+    string& fnm = (*nArgs.paths)[i];
+    uint groupId = (*nArgs.groupMap)[i];
+    processProfile(profGbl, fnm, groupId, mDrvdBeg, mDrvdEnd);
+  }
+
+  // -------------------------------------------------------
+  // create global summary metrics
+  // -------------------------------------------------------
+
+  // 1. change definitions of derived metrics [mDrvdBeg, mDrvdEnd) to
+  //    point to the local summary values that will be in [mXDrvdBeg,
+  //    mXDrvdEnd) durring the reduction
+  for (uint i = mDrvdBeg, j = mXDrvdBeg; i < mDrvdEnd; ++i, ++j) {
+    Prof::Metric::ADesc* m = metricMgr.metric(i);
+    Prof::Metric::DerivedItrvDesc* mm =
+      dynamic_cast<Prof::Metric::DerivedItrvDesc*>(m);
+    DIAG_Assert(mm, DIAG_UnexpectedInput);
+
+    Prof::Metric::AExprItrv* expr = mm->expr();
+    expr->srcId(j);
+  }
+
+  uint maxCCTId = profGbl.cct()->maxDenseId();
+
+  ParallelAnalysis::PackedMetrics* packedMetrics =
+    new ParallelAnalysis::PackedMetrics(maxCCTId + 1, mXDrvdBeg, mXDrvdEnd,
+					mDrvdBeg, mDrvdEnd);
+  uint numUpdatesLcl = nArgs.paths->size();
+
+  // 2. Reduction: Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
+  ParallelAnalysis::reduce(std::make_pair(&profGbl, packedMetrics),
+			   myRank, numRanks - 1);
+  delete packedMetrics;
+
+  // 3. Finalize metrics
+  if (myRank == rootRank) {
+    uint numUpdates = numUpdatesLcl; // TODO: reduction
+    cctRoot->computeMetricsItrv(metricMgr, mDrvdBeg, mDrvdEnd,
+				Prof::Metric::AExprItrv::FnFini, numUpdates);
+  }
+}
+
+
 static uint
 makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 		       uint& mDrvdBeg, uint& mDrvdEnd,
@@ -428,8 +467,6 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
       Prof::Metric::ADesc* m = profGbl.metricMgr()->metric(i);
       m->isVisible(false);
     }
-
-    // TODO: fix official derived metrics to point to extra metrics
   }
 
   profGbl.isMetricMgrVirtual(false);

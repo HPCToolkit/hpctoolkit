@@ -201,9 +201,11 @@ class PackedMetrics
 {
 public:
   // [mBegId, mEndId)
-  PackedMetrics(uint numNodes, uint mBegId, uint mEndId)
+  PackedMetrics(uint numNodes, uint mBegId, uint mEndId,
+		uint mDrvdBegId, uint mDrvdEndId)
     : m_numNodes(numNodes), m_numMetrics(mEndId - mBegId),
-      m_mBegId(mBegId), m_mEndId(mEndId)
+      m_mBegId(mBegId), m_mEndId(mEndId),
+      m_mDrvdBegId(mDrvdBegId), m_mDrvdEndId(mDrvdEndId)
   {
     size_t sz = dataSize();
     m_packedData = new double[sz];
@@ -251,6 +253,15 @@ public:
   { return m_mEndId; }
 
 
+  uint
+  mDrvdBegId() const
+  { return m_mDrvdBegId; }
+
+  uint
+  mDrvdEndId() const
+  { return m_mDrvdEndId; }
+
+
   bool
   verify() const
   {
@@ -278,6 +289,8 @@ private:
   uint m_numNodes;   // rows
   uint m_numMetrics; // columns
   uint m_mBegId, m_mEndId; // [ )
+
+  uint m_mDrvdBegId, m_mDrvdEndId; // [ )
 
   double* m_packedData; // use row-major layout
 

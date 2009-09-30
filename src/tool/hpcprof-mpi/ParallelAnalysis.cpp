@@ -276,7 +276,12 @@ unpackMetrics(Prof::CallPath::Profile& profile,
     }
   }
 
-  // TODO: apply Metric::AExprItrv::update() [*** ids of original drvd metrics]
+  // update derived metrics [mDrvdBeg, mDrvdEnd) based on new
+  // values in [mBegId, mEndId)
+  uint mDrvdBeg = packedMetrics.mDrvdBegId();
+  uint mDrvdEnd = packedMetrics.mDrvdEndId();
+  cct.root()->computeMetricsItrv(*profile.metricMgr(), mDrvdBeg, mDrvdEnd,
+				 Prof::Metric::AExprItrv::FnUpdate, 1/*TODO*/);
 }
 
 
