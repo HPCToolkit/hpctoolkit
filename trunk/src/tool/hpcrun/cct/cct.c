@@ -141,6 +141,7 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
   csprof_cct_node_t *node;
 
   // FIXME: when multiple epochs really work, this will always be freeable.
+  // WARN ME (krentel) if/when we really use freeable memory.
   if (ENABLED(FREEABLE)) {
     node = csprof_malloc_freeable(sz);
   } else {
