@@ -552,7 +552,7 @@ public:
   // 
   // -------------------------------------------------------
 
-  const Metric::AExpr*
+  Metric::AExpr*
   expr() const
   { return m_expr; }
 
@@ -627,7 +627,7 @@ public:
   // 
   // -------------------------------------------------------
 
-  const Metric::AExprItrv*
+  Metric::AExprItrv*
   expr() const
   { return m_expr; }
 
