@@ -286,7 +286,7 @@ unpackMetrics(Prof::CallPath::Profile& profile,
   uint mDrvdBeg = packedMetrics.mDrvdBegId();
   uint mDrvdEnd = packedMetrics.mDrvdEndId();
   cct.root()->computeMetricsItrv(*profile.metricMgr(), mDrvdBeg, mDrvdEnd,
-				 Prof::Metric::AExprItrv::FnUpdate, 1/*TODO*/);
+				 Prof::Metric::AExprItrv::FnUpdate, 0);
 }
 
 

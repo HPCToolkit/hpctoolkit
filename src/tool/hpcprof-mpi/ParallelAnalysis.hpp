@@ -213,9 +213,9 @@ public:
     // initialize first (unused) row to avoid bogus valgrind warnings
     memset(m_packedData, 0, (m_numHdr + m_numMetrics) * sizeof(double));
 
-    m_packedData[m_numNodesIdx]   = (double)m_numNodes;
-    m_packedData[m_mBegIdIdx]     = (double)m_mBegId;
-    m_packedData[m_mEndIdIdx]     = (double)m_mEndId;
+    m_packedData[m_numNodesIdx] = (double)m_numNodes;
+    m_packedData[m_mBegIdIdx]   = (double)m_mBegId;
+    m_packedData[m_mEndIdIdx]   = (double)m_mEndId;
   }
 
   // PackedMetrics(double* packedMatrix) { }
