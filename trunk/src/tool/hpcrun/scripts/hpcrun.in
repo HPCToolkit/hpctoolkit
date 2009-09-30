@@ -56,7 +56,7 @@
 
 # Relative paths are relative to HPCTOOLKIT.
 hpcfnbounds_dir='libexec/hpctoolkit'
-libcsprof_dir='lib/hpctoolkit'
+hpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 
@@ -108,9 +108,9 @@ case "$hpcfnbounds_dir" in
   /* ) ;;
   * ) hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
 esac
-case "$libcsprof_dir" in
+case "$hpcrun_dir" in
   /* ) ;;
-  * ) libcsprof_dir="${HPCTOOLKIT}/${libcsprof_dir}" ;;
+  * ) hpcrun_dir="${HPCTOOLKIT}/${hpcrun_dir}" ;;
 esac
 case "$libmonitor_dir" in
   /* ) ;;
@@ -178,7 +178,7 @@ Options: Profiling (Defaults shown in curly brackets {})
 NOTES:
 * hpcrun uses preloaded shared libraries to initiate profiling.  For this
   reason, it cannot be used to profile setuid programs.
-* Bug: hpcrun cannot currently profile programs that themselves use preloading.
+* hpcrun may not be able to profile programs that themselves use preloading.
 
 EOF
 }
@@ -211,19 +211,13 @@ EOF
 
 f_checkenv()
 {
-  RLD_LIB="${libcsprof_dir}/libcsprof.so:${libmonitor_dir}/libmonitor.so"
+  my_preload="${hpcrun_dir}/libcsprof.so ${libmonitor_dir}/libmonitor.so"
 
-  # preload our library first before loading all of those specified in
-  # the application binary (signified by DEFAULT).
-  # this turns our sampling on at the beginning of the application
-  # when our library is loaded.
-
-  sysname=`uname`
-
-  if [ "$sysname" = "OSF1" ]; then
-    _RLD_LIST="${RLD_LIB}:DEFAULT"
+  # N.B.: LD_PRELOAD is whitespace-separated
+  if [ -z "${LD_PRELOAD}" ]; then
+    LD_PRELOAD="${my_preload}"
   else
-    LD_PRELOAD="${RLD_LIB}"
+    LD_PRELOAD="${my_preload} ${LD_PRELOAD}"
   fi
 }
 
@@ -354,14 +348,7 @@ f_getexec()
 #
 f_prepareenv()
 {
-  sysname=`uname`
-
-  # export the profiler library
-  if [ $sysname = "OSF1" ]; then
-    export _RLD_LIST
-  else
-    export LD_PRELOAD
-  fi
+  export LD_PRELOAD
 
   export CSPROF_NM_COMMAND="${hpcfnbounds_dir}/hpcfnbounds"
 
@@ -447,7 +434,7 @@ if test -x "$_EXEC" ; then
   echo "$file_out" | grep -E -i -e 'elf.*dynamic' >/dev/null 2>&1
   if test $? -eq 0 ; then
     appl_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
-    file_out=`file -L "${libcsprof_dir}/libcsprof.so"`
+    file_out=`file -L "${hpcrun_dir}/libcsprof.so"`
     csprof_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
     if test "$appl_bit" != "$csprof_bit" ; then
       echo "cannot run application $_EXEC" 1>&2
@@ -467,10 +454,5 @@ if [ -n "${opt_debug}" ]; then
   echo HPCRUN_DEBUG_FLAGS = $HPCRUN_DEBUG_FLAGS
   echo event list = $HPCRUN_EVENT_LIST
 fi
-#
-# !!! WOW !!
-# prevent wierdo error:
-# *** glibc detected *** double free or corruption (out): 0x0000000000501030 ***
-#
-#export MALLOC_CHECK_=0
+
 exec ${cmd_to_profile}
