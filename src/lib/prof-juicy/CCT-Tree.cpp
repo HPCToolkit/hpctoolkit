@@ -376,7 +376,7 @@ ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
       const Metric::ADesc* m = mMgr.metric(mId);
       const Metric::DerivedItrvDesc* mm =
 	dynamic_cast<const Metric::DerivedItrvDesc*>(m);
-      if (mm) {
+      if (mm && mm->expr()) {
 	const Metric::AExprItrv* expr = mm->expr();
 	switch (fn) {
 	  case Metric::AExprItrv::FnInit:

@@ -276,7 +276,8 @@ public:
 
 
   // has the metric been fully computed (e.g., have value been
-  // propagated from leaves to interior nodes)
+  // aggregated from leaves to interior nodes) [we may want to split
+  // this into isAggregated and isComputed]
   bool
   isComputed() const
   { return m_isComputed; }
@@ -627,6 +628,7 @@ public:
   // 
   // -------------------------------------------------------
 
+  // N.B.: expr may be NULL if this metric is used as a helper
   Metric::AExprItrv*
   expr() const
   { return m_expr; }

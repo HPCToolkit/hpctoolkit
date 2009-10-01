@@ -180,7 +180,7 @@ Mgr::makeItrvSummaryMetrics(uint srcBegId, uint srcEndId)
     string max_nm  = "Max-" + mNm;
     
     mNew = makeItrvSummaryMetric(mean_nm, m->id());
-    //makeItrvSummaryMetric(cv_nm, m->id());
+    makeItrvSummaryMetric(cv_nm, m->id());
     makeItrvSummaryMetric(min_nm, m->id());
     makeItrvSummaryMetric(max_nm, m->id());
     
@@ -253,7 +253,7 @@ Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
 Metric::DerivedItrvDesc*
 Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
 {
-  bool needXtraSource = false;
+  bool needDst2Id = false;
 
   bool isVisible = true;
   bool doDispPercent = true;
@@ -268,9 +268,9 @@ Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
     doDispPercent = false;
   }
   else if (mNm.find("StdDev", 0) == 0) {
-    //expr = new Metric::StdDevItrv(0, srcId);
+    expr = new Metric::StdDevItrv(0, 0, srcId);
     doDispPercent = false;
-    needXtraSource = true;
+    needDst2Id = true;
   }
   else if (mNm.find("RStdDev", 0) == 0) {
     //expr = new Metric::RStdDev(opands, mOpands.size());
@@ -300,6 +300,16 @@ Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
 			doDispPercent, isPercent);
   insert(m);
   expr->dstId(m->id());
+
+  if (needDst2Id) {
+    string m2Nm = mNm + "-helper";
+    DerivedItrvDesc* m2 =
+      new DerivedItrvDesc(m2Nm, m2Nm, NULL/*expr*/, false/*isVisible*/,
+			  false/*isSortKey*/, false/*doDispPercent*/,
+			  false/*isPercent*/);
+    insert(m2);
+    expr->dst2Id(m2->id());
+  }
 
   return m;
 }
