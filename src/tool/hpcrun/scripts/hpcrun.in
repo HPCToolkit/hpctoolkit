@@ -2,53 +2,61 @@
 # Testing: set -x: line by line (set -n: syntax)
 # set -x
 
-# $Id$
 ## * BeginRiceCopyright *****************************************************
- # Copyright ((c)) 2002, Rice University 
- # All rights reserved.
- # 
- # Redistribution and use in source and binary forms, with or without
- # modification, are permitted provided that the following conditions are
- # met:
- # 
- # * Redistributions of source code must retain the above copyright
- #   notice, this list of conditions and the following disclaimer.
- # 
- # * Redistributions in binary form must reproduce the above copyright
- #   notice, this list of conditions and the following disclaimer in the
- #   documentation and/or other materials provided with the distribution.
- # 
- # * Neither the name of Rice University (RICE) nor the names of its
- #   contributors may be used to endorse or promote products derived from
- #   this software without specific prior written permission.
- # 
- # This software is provided by RICE and contributors "as is" and any
- # express or implied warranties, including, but not limited to, the
- # implied warranties of merchantability and fitness for a particular
- # purpose are disclaimed. In no event shall RICE or contributors be
- # liable for any direct, indirect, incidental, special, exemplary, or
- # consequential damages (including, but not limited to, procurement of
- # substitute goods or services; loss of use, data, or profits; or
- # business interruption) however caused and on any theory of liability,
- # whether in contract, strict liability, or tort (including negligence
- # or otherwise) arising in any way out of the use of this software, even
- # if advised of the possibility of such damage.
+##
+## $HeadURL$
+## $Id$
+##
+## -----------------------------------
+## Part of HPCToolkit (hpctoolkit.org)
+## -----------------------------------
+## 
+## Copyright ((c)) 2002-2009, Rice University 
+## All rights reserved.
+## 
+## Redistribution and use in source and binary forms, with or without
+## modification, are permitted provided that the following conditions are
+## met:
+## 
+## * Redistributions of source code must retain the above copyright
+##   notice, this list of conditions and the following disclaimer.
+## 
+## * Redistributions in binary form must reproduce the above copyright
+##   notice, this list of conditions and the following disclaimer in the
+##   documentation and/or other materials provided with the distribution.
+## 
+## * Neither the name of Rice University (RICE) nor the names of its
+##   contributors may be used to endorse or promote products derived from
+##   this software without specific prior written permission.
+## 
+## This software is provided by RICE and contributors "as is" and any
+## express or implied warranties, including, but not limited to, the
+## implied warranties of merchantability and fitness for a particular
+## purpose are disclaimed. In no event shall RICE or contributors be
+## liable for any direct, indirect, incidental, special, exemplary, or
+## consequential damages (including, but not limited to, procurement of
+## substitute goods or services; loss of use, data, or profits; or
+## business interruption) however caused and on any theory of liability,
+## whether in contract, strict liability, or tort (including negligence
+## or otherwise) arising in any way out of the use of this software, even
+## if advised of the possibility of such damage. 
+## 
 ## ******************************************************* EndRiceCopyright *
 
 ## **************************************************************************
 ##
 ## File: 
-##    hpcrun: Launch the call stack profiler by setting up a preloaded
-##    library that will intercept an application's execution and start
-##    the profiler.  This script processes arguments and passes them
-##    to the profiling library through environment variables.
+##   hpcrun: Launch the call stack profiler by setting up a preloaded
+##   library that will intercept an application's execution and start
+##   the profiler.  This script processes arguments and passes them
+##   to the profiling library through environment variables.
 ##
 ## Author:
-##    Written by Nathan Tallent, Rice University.
+##   Written by Nathan Tallent, Rice University.
 ##    
 ## **************************************************************************
 
-#############################################################################
+# ***************************************************************************
 
 # If this script can't find its own install prefix, or if the script
 # is moved elsewhere, then set HPCTOOLKIT here.
@@ -80,23 +88,9 @@ opt_ev_list=''
 opt_trace=""
 opt_quiet=''
 
-#######################
-
-# Use mechanism below to turn on default -dd options
-
-#dd_list="UNW_CONFIG PREFER_BP"
-#L2="$dd_list "
-
-#####################
-
-# These option variables cannot be modified with personal defaults.
+# ***************************************************************************
 
 cmd_to_profile=""
-
-#############################################################################
-
-# Note: All function names are prefixed with 'f_' in order to make
-# function calls very clear.
 
 cmd="$0"
 
@@ -121,12 +115,17 @@ case "$papi_libdir" in
   * ) papi_libdir="${HPCTOOLKIT}/${papi_libdir}" ;;
 esac
 
-f_usage()
+
+# ***************************************************************************
+#
+# ***************************************************************************
+
+hpc_usage()
 {
   cat <<EOF
 Usage:
-   hpcrun [profiling-options] <command> [command-arguments]
-   hpcrun [info-options]
+  hpcrun [profiling-options] <command> [command-arguments]
+  hpcrun [info-options]
 
 hpcrun profiles the execution of an arbitrary command <command> using
 statistical sampling (rather than instrumentation).  It collects
@@ -192,7 +191,7 @@ EOF
 #      call path traces is an experimental capability. ] 
 
 
-f_version()
+hpc_version()
 {
   cat <<EOF
 hpcrun: A member of HPCToolkit, version @PACKAGE_VERSION@
@@ -200,7 +199,7 @@ EOF
 }
 
 
-f_erroneous_option()
+hpc_erroneous_option()
 {
   cat <<EOF
 hpcrun: Unknown option switch: $@
@@ -209,50 +208,40 @@ EOF
 }
 
 
-f_checkenv()
-{
-  my_preload="${hpcrun_dir}/libcsprof.so ${libmonitor_dir}/libmonitor.so"
-
-  # N.B.: LD_PRELOAD is whitespace-separated
-  if [ -z "${LD_PRELOAD}" ]; then
-    LD_PRELOAD="${my_preload}"
-  else
-    LD_PRELOAD="${my_preload} ${LD_PRELOAD}"
-  fi
-}
-
 # args: ($1, $2): (string_to_check, string_for_error_msg[optional])
-f_error_on_nil()
+hpc_error_on_nil()
 {
   if [ -z "$1" ]; then
     if [ -n "$2" ]; then printf "$2"; fi
-    f_usage
+    hpc_usage
     exit 1
   fi
 }
 
+
 # args: ($1, $2): (option, option_value)
-f_opt_check()
+hpc_opt_check()
 {
   # 'option_value' should be non-nil
-  f_error_on_nil "$2" "** no value for option $1\n"
+  hpc_error_on_nil "$2" "** no value for option $1\n"
     
   # 'option_value' should not start with '-'
   if ( echo "$2" | grep '^-.*' >/dev/null 2>&1 ); then
     printf "** invalid value for option $1: $2\n"
-    f_usage
+    hpc_usage
     exit 1
   fi
 }
 
+
 # args: ($1..$n): all arguments given to this script
-f_getoptions()
+hpc_getoptions()
 {
   # We can't easily use 'getopt' or 'getopts' because we have to
   # protect options given to the command to profile.
 
   if [ -z "$1" ]; then
-    f_usage
+    hpc_usage
     exit 0
   fi
 
@@ -261,11 +250,11 @@ f_getoptions()
     case $1 in
       # special options
       -h | --help)
-        f_usage; exit 0;
+        hpc_usage; exit 0;
         ;;
 
       -V | --version)
-        f_version; exit 0;
+        hpc_version; exit 0;
         ;;
 
       -md)  opt_monitor_debug=1 ;;
@@ -279,7 +268,7 @@ f_getoptions()
        # general options
       -a) 
         shift; opt_lush_agents="$1";
-        f_opt_check "-a" "${opt_lush_agents}";
+        hpc_opt_check "-a" "${opt_lush_agents}";
         ;;
 
       -e | --event) 
@@ -308,7 +297,7 @@ f_getoptions()
 
       -o | --output)
         shift; opt_out_path="$1"; 
-        f_opt_check "-o" "${opt_out_path}";
+        hpc_opt_check "-o" "${opt_out_path}";
         ;;
 
       -t) 
@@ -319,7 +308,7 @@ f_getoptions()
         opt_quiet=1
 	;;
       -*)
-        f_erroneous_option $1;
+        hpc_erroneous_option $1;
         exit 1;
         ;;
 
@@ -333,26 +322,25 @@ f_getoptions()
   if test -z "$cmd_to_profile" && test "x$add_cmd_if_empty" = xyes ; then
     cmd_to_profile=/bin/ls
   fi
-  f_error_on_nil "${cmd_to_profile}" "** no command to profile\n";
+  hpc_error_on_nil "${cmd_to_profile}" "** no command to profile\n";
 }
+
 
 # get the executable from the list of (remaining) args
-f_getexec()
+hpc_getexec()
 {
-    _EXEC=$1
+  _EXEC=$1
 }
 
-# assumes: all hpcrun control variables have been set
-#
-# adds the unwind nm file to the LD_PRELOAD
-#
-f_prepareenv()
+
+hpc_prepareenv()
 {
-  export LD_PRELOAD
+  # --------------------------------------------------------
+  # export profiler options
+  # --------------------------------------------------------
 
   export CSPROF_NM_COMMAND="${hpcfnbounds_dir}/hpcfnbounds"
 
-  # export profiler options
   if [ -n "${opt_lush_agents}" ]; then
     CSPROF_OPT_LUSH_AGENTS="${opt_lush_agents}"
     export CSPROF_OPT_LUSH_AGENTS
@@ -361,14 +349,6 @@ f_prepareenv()
     CSPROF_OPT_OUT_PATH="${opt_out_path}"
     export CSPROF_OPT_OUT_PATH
   fi
-#  if [ -n "${opt_period}" ]; then
-#    CSPROF_OPT_SAMPLE_PERIOD="${opt_period}"
-#    export CSPROF_OPT_SAMPLE_PERIOD
-#  fi
-#  if [ -n "${opt_memsize}" ]; then
-#    CSPROF_OPT_MEM_SZ="${opt_memsize}"
-#    export CSPROF_OPT_MEM_SZ
-#  fi
   if [ -n "${opt_ev_list}" ]; then
     HPCRUN_EVENT_LIST="${opt_ev_list}"
   else
@@ -395,31 +375,51 @@ f_prepareenv()
     export HPCRUN_QUIET=1
   fi
 
-
+  # --------------------------------------------------------
+  # PATH
+  # --------------------------------------------------------
   # Make sure that `.' is in the PATH so that we can find the command
   # to profile if in the current directory. [We can get around this,
   # but for now it is the quickest thing.] 
   export PATH=".:${PATH}" 
 
-  # set up the LD_LIBRARY_PATH
-  case "$papi_libdir" in
-      /* )
-	  LD_LIBRARY_PATH="${papi_libdir}:$LD_LIBRARY_PATH"
-	  ;;
-  esac
+  # --------------------------------------------------------
+  # LD_PRELOAD (N.B.: whitespace-separated)
+  # --------------------------------------------------------
+  my_preload="${hpcrun_dir}/libcsprof.so ${libmonitor_dir}/libmonitor.so"
+
+  if [ -z "${LD_PRELOAD}" ]; then
+    LD_PRELOAD="${my_preload}"
+  else
+    LD_PRELOAD="${my_preload} ${LD_PRELOAD}"
+  fi
+
+  unset my_preload
+  export LD_PRELOAD
+
+  # --------------------------------------------------------
+  # LD_LIBRARY_PATH
+  # --------------------------------------------------------
+  if [ -z "${LD_LIBRARY_PATH}" ]; then
+    LD_LIBRARY_PATH="${papi_libdir}"
+  else
+    LD_LIBRARY_PATH="${papi_libdir}:${LD_LIBRARY_PATH}"
+  fi
+
   export LD_LIBRARY_PATH
 }
 
-#############################################################################
+
+# ***************************************************************************
 # Main
-#############################################################################
+# ***************************************************************************
+
 # $n: argument n, with $0 being the command name
 # $*: all arguments from $1 to $n
 
-f_checkenv 
+hpc_getoptions "$@"
 
-f_getoptions "$@"
-f_getexec $cmd_to_profile
+hpc_getexec $cmd_to_profile
 
 #
 # Sanity checks before launching the application.
@@ -444,7 +444,7 @@ if test -x "$_EXEC" ; then
   fi
 fi
 
-f_prepareenv
+hpc_prepareenv
 
 if [ ${ulimit_works}x != x ]; then
    ulimit -c unlimited
