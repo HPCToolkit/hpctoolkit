@@ -72,6 +72,7 @@
 
 #include "Metric-IData.hpp"
 
+#include <lib/support/diagnostics.h>
 #include <lib/support/NaN.h>
 #include <lib/support/Unique.hpp>
 
@@ -218,7 +219,53 @@ public:
   virtual double
   update(Metric::IData& mdata) const
   {
-    double x = std::max(dstVar(mdata), srcVar(mdata));
+    double x = dstVar(mdata), y = srcVar(mdata);
+    double z = std::max(x, y);
+    DIAG_MsgIf(0, "MaxItrv: max("<< x << ", " << y << ") = " << z);
+    return (dstVar(mdata) = z);
+  }
+
+  virtual double
+  finalize(Metric::IData& mdata, uint numSrc) const
+  { return dstVar(mdata); }
+
+
+  virtual std::ostream&
+  dump_me(std::ostream& os = std::cout) const;
+
+private:
+};
+
+
+// ----------------------------------------------------------------------
+// MinItrv
+// ----------------------------------------------------------------------
+
+class MinItrv : public AExprItrv
+{
+public:
+  MinItrv(uint dstId, uint srcId)
+    : AExprItrv(dstId, srcId)
+  { }
+
+  ~MinItrv()
+  { }
+
+
+  virtual double
+  initialize(Metric::IData& mdata) const
+  { return (dstVar(mdata) = DBL_MAX); }
+
+  virtual double
+  initializeSrc(Metric::IData& mdata) const
+  { return (srcVar(mdata) = DBL_MAX); }
+
+  virtual double
+  update(Metric::IData& mdata) const
+  {
+    double x = dstVar(mdata), y = srcVar(mdata);
+    double z = std::min(x, y);
+    DIAG_MsgIf(1, "MinItrv: min("<< x << ", " << y << ") = " << z);
     return (dstVar(mdata) = x);
   }
 
@@ -231,37 +278,10 @@ public:
   dump_me(std::ostream& os = std::cout) const;
 
 private:
-
 };
 
 
 #if 0
-// ----------------------------------------------------------------------
-// Min
-// ----------------------------------------------------------------------
-
-class Min : public AExprItrv
-{
-public:
-  // Assumes ownership of AExprItrv
-  Min(AExprItrv** oprnds, int numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
-  { }
-
-  ~Min();
-
-  double
-  eval(const Metric::IData& mdata) const;
-
-  std::ostream&
-  dump(std::ostream& os = std::cout) const;
-
-private:
-  AExprItrv** m_opands;
-  int m_sz;
-};
-
-
 // ----------------------------------------------------------------------
 // Mean
 // ----------------------------------------------------------------------

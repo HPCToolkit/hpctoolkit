@@ -590,8 +590,11 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // compute local metrics and update local derived metrics
   // -------------------------------------------------------
-  cctGbl->root()->accumulateMetrics(mBeg, mEnd);
+  cctGbl->root()->aggregateMetrics(mBeg, mEnd);
 
+  if (0) {
+    profGbl.cct()->writeXML(std::cerr, mBeg, mEnd);
+  }
 
   cctGbl->root()->computeMetricsItrv(*mMgrGbl, mDrvdBeg, mDrvdEnd,
 				     Prof::Metric::AExprItrv::FnUpdate, 0);

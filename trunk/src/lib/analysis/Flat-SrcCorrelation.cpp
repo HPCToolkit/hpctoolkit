@@ -712,7 +712,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
     for (VMAIntervalSet::iterator it = ivalset.begin(); 
 	 it != ivalset.end(); ++it) {
       const VMAInterval& ival = *it;
-      structure.root()->accumulateMetrics((uint)ival.beg(), (uint)ival.end());
+      structure.root()->aggregateMetrics((uint)ival.beg(), (uint)ival.end());
     }
   }
 }

@@ -418,20 +418,20 @@ public:
   // Metrics (cf. CCT::ANode)
   // --------------------------------------------------------
 
-  // accumulates metrics from children. [mBegId, mEndId) forms an
+  // aggregates metrics from children. [mBegId, mEndId) forms an
   // inclusive interval for batch processing.  In particular, 'raw'
   // metrics are independent of all other raw metrics.
   void
-  accumulateMetrics(uint mBegId, uint mEndId)
+  aggregateMetrics(uint mBegId, uint mEndId)
   {
     // NOTE: this node may not have metric data yet!
     Metric::IData mVec(mEndId);
-    accumulateMetrics(mBegId, mEndId, mVec);
+    aggregateMetrics(mBegId, mEndId, mVec);
   }
 
   void
-  accumulateMetrics(uint mBegId)
-  { accumulateMetrics(mBegId, mBegId + 1); }
+  aggregateMetrics(uint mBegId)
+  { aggregateMetrics(mBegId, mBegId + 1); }
 
   // traverses the tree and removes all nodes for which hasMetrics() is false
   void
@@ -440,7 +440,7 @@ public:
 
 private:
   void
-  accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec);
+  aggregateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec);
 
 public:
 
