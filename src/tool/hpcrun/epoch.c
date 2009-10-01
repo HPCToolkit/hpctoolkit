@@ -125,7 +125,7 @@ hpcrun_get_epoch()
 
 
 void
-hpcrun_loadmap_add_module(const char *module_name, 
+hpcrun_loadmap_add_module(const char *module_name,
 			  void *vaddr,                /* the preferred virtual address */
 			  void *mapaddr,              /* the actual mapped address */
 			  size_t size)                /* end addr minus start addr */
@@ -136,7 +136,7 @@ hpcrun_loadmap_add_module(const char *module_name,
 
   // fill in the fields of the structure
   m->id = 0; // FIXME:tallent
-  m->name = (char *) module_name;
+  m->name = (char*) module_name;
   m->vaddr = vaddr;
   m->mapaddr = mapaddr;
   m->size = size;
@@ -150,7 +150,7 @@ hpcrun_loadmap_add_module(const char *module_name,
 
 
 void
-hpcrun_epoch_init(hpcrun_epoch_t *e)
+hpcrun_epoch_init(hpcrun_epoch_t* e)
 {
   struct timeval tv;
   gettimeofday(&tv, NULL);

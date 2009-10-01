@@ -141,12 +141,17 @@ lush_backtrace(state_t* state, ucontext_t* context,
 
   lush_cursor_t cursor;
   lush_init_unw(&cursor, lush_agents, context);
-
-  // FIXME: unwind/common/backtrace.c
+  
+#if 0   // FIXME BTBUF no state here
   state->unwind   = state->btbuf;  // innermost
   state->bufstk   = state->bufend;
   state->treenode = NULL;
-
+#endif
+  // FIXME: unwind/common/backtrace.c
+  thread_data_t* td = hpcrun_get_thread_data();
+  td->unwind   = td->btbuf;  // innermost
+  td->bufstk   = td->bufend;
+  td->treenode = NULL;
 
   // ---------------------------------------------------------
   // Step through bichords
@@ -163,32 +168,32 @@ lush_backtrace(state_t* state, ucontext_t* context,
   
     // FIXME: short circuit unwind if we hit the 'active return'
 
-    csprof_state_ensure_buffer_avail(state, state->unwind);
-    hpcrun_frame_t* chord_beg = state->unwind; // innermost note
+    hpcrun_ensure_btbuf_avail();
+    hpcrun_frame_t* chord_beg = td->unwind; // innermost note
     uint pchord_len = 0, lchord_len = 0;
 
     // ---------------------------------------------------------
     // Step through p-notes of p-chord
     // ---------------------------------------------------------
     while (lush_step_pnote(&cursor) != LUSH_STEP_END_CHORD) {
-      csprof_state_ensure_buffer_avail(state, state->unwind);
+      hpcrun_ensure_btbuf_avail();
 
       unw_word_t ip = lush_cursor_get_ip(&cursor);
       TMSG(LUNW, "IP:  %p", ip);
-      state->unwind->ip = ip;
+      td->unwind->ip = ip;
 
       pchord_len++;
-      state->unwind++;
+      td->unwind++;
     }
 
-    state->unwind = chord_beg;
+    td->unwind = chord_beg;
 
     // ---------------------------------------------------------
     // Step through l-notes of l-chord
     // ---------------------------------------------------------
     lush_lip_t* lip_persistent = NULL;
     while (lush_step_lnote(&cursor) != LUSH_STEP_END_CHORD) {
-      csprof_state_ensure_buffer_avail(state, state->unwind);
+      hpcrun_ensure_btbuf_avail();
 
       lush_lip_t* lip = lush_cursor_get_lip(&cursor); // ephemeral
       TMSG(LUNW, "LIP: %p", *((void**)lip));
@@ -203,10 +208,10 @@ lush_backtrace(state_t* state, ucontext_t* context,
 	// INVARIANT: as must be 1-to-M
 	lip_persistent = lush_lip_clone(lip);
       }
-      state->unwind->lip = lip_persistent;
+      td->unwind->lip = lip_persistent;
 
       lchord_len++;
-      state->unwind++;
+      td->unwind++;
     }
 
     // ---------------------------------------------------------
@@ -216,7 +221,7 @@ lush_backtrace(state_t* state, ucontext_t* context,
     chord_end = canonicalize_chord(chord_beg, as, pchord_len, lchord_len);
     unw_len++;
 
-    state->unwind = chord_end;
+    td->unwind = chord_end;
   }
 
   if (ty == LUSH_STEP_ERROR) {
@@ -235,11 +240,15 @@ lush_backtrace(state_t* state, ucontext_t* context,
   // insert backtrace into calling context tree (if sensible)
   // ---------------------------------------------------------
   if (MYDBG) {
-    dump_backtrace(state, state->unwind);
+    dump_backtrace(state, td->unwind);
   }
 
+#if 0  // FIXME BTBUF no state
   hpcrun_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
   hpcrun_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
+#endif
+  hpcrun_frame_t* bt_beg = td->btbuf;      // innermost, inclusive 
+  hpcrun_frame_t* bt_end = td->unwind - 1; // outermost, inclusive
 
   if (skipInner) {
     bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);

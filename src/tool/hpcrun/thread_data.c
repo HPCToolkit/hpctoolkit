@@ -82,8 +82,8 @@ local_true(void)
   return true;
 }
 
-thread_data_t *(*hpcrun_get_thread_data)(void) = &local_td;
-bool          (*hpcrun_td_avail)(void)         = &local_true;
+thread_data_t* (*hpcrun_get_thread_data)(void)  = &local_td;
+bool           (*hpcrun_td_avail)(void)         = &local_true;
 
 void
 hpcrun_unthreaded_data(void)
@@ -117,6 +117,10 @@ hpcrun_thread_memory_init(void)
   hpcrun_make_memstore(&td->memstore);
 }
 
+enum _local_int_const {
+  BACKTRACE_INIT_SZ = 32
+};
+
 void
 hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
 {
@@ -126,6 +130,12 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   td->id                          = id;
   td->mem_low                     = 0;
   td->state                       = NULL;
+
+  // backtrace buffer
+  td->btbuf = csprof_malloc(sizeof(hpcrun_frame_t) * BACKTRACE_INIT_SZ);
+  td->bufend = td->btbuf + BACKTRACE_INIT_SZ;
+  td->bufstk = td->bufend;  // FIXME: is this needed?
+  td->treenode = NULL;
 
   // hpcrun file
   td->hpcrun_file                 = NULL;
@@ -155,14 +165,16 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   memset(&td->eventSet, 0, sizeof(td->eventSet));
   memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
 
-  TMSG(THREAD_SPECIFIC," thread_data_init state");
-  state_t *state = csprof_malloc(sizeof(state_t));
+  td->state              = csprof_malloc(sizeof(state_t));
+  td->state->csdata_ctxt = thr_ctxt;
 
   thr_ctxt = copy_thr_ctxt(thr_ctxt);
 
+#if OLD_STATE
   csprof_set_state(state);
   csprof_state_init(state);
   csprof_state_alloc(state, thr_ctxt);
+#endif
 }
 
 void
@@ -180,6 +192,51 @@ hpcrun_cached_bt_adjust_size(size_t n)
   td->cached_bt_buf_end = newbuf+n;
   td->cached_bt_end     = newbuf + idx;
 }
+
+hpcrun_frame_t* 
+hpcrun_expand_btbuf(void){
+  thread_data_t* td = hpcrun_get_thread_data();
+  hpcrun_frame_t* unwind = td->unwind;
+
+  /* how big is the current buffer? */
+  size_t sz = td->bufend - td->btbuf;
+  size_t newsz = sz*2;
+  /* how big is the current backtrace? */
+  size_t btsz = td->bufend - td->bufstk;
+  /* how big is the backtrace we're recording? */
+  size_t recsz = unwind - td->btbuf;
+  /* get new buffer */
+  TMSG(STATE," state_expand_buffer");
+  hpcrun_frame_t *newbt = csprof_malloc(newsz*sizeof(hpcrun_frame_t));
+
+  if(td->bufstk > td->bufend) {
+    EMSG("Invariant bufstk > bufend violated");
+    monitor_real_abort();
+  }
+
+  /* copy frames from old to new */
+  memcpy(newbt, td->btbuf, recsz*sizeof(hpcrun_frame_t));
+  memcpy(newbt+newsz-btsz, td->bufend-btsz, btsz*sizeof(hpcrun_frame_t));
+
+  /* setup new pointers */
+  td->btbuf = newbt;
+  td->bufend = newbt+newsz;
+  td->bufstk = newbt+newsz-btsz;
+
+  /* return new unwind pointer */
+  return newbt+recsz;
+}
+
+void
+hpcrun_ensure_btbuf_avail(void)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  if (td->unwind == td->bufend) {
+    td->unwind = hpcrun_expand_btbuf();
+    td->bufstk = td->bufend;
+  }
+}
+
 
 #ifdef CSPROF_THREADS
 #include <pthread.h>
@@ -244,4 +301,5 @@ hpcrun_threaded_data(void)
   hpcrun_get_thread_data = &thread_specific_td;
   hpcrun_td_avail        = &thread_specific_td_avail;
 }
-#endif // defined(CSPROF_THREADS)
+
+#endif

@@ -62,6 +62,7 @@
 
 #include "unwind.h"
 #include "backtrace.h"
+#include <hpcrun/thread_data.h>
 
 #include <hpcrun/state.h>
 #include <monitor.h>
@@ -99,11 +100,11 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 //       PLACE_TRAMPOLINE  (standard for normal async samples).
 //             
 csprof_cct_node_t*
-hpcrun_backtrace(state_t *state, ucontext_t* context, 
+hpcrun_backtrace(state_t* state, ucontext_t* context, 
 		 int metricId, uint64_t metricIncr,
 		 int skipInner, int isSync)
 {
-  csprof_state_verify_backtrace_invariants(state);
+  csprof_state_verify_backtrace_invariants();
   
   csprof_cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
@@ -164,8 +165,14 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
   // into a problem.
   //--------------------------------------------------------------------
 
+#if 0  // FIXME BTBUF no state
   state->unwind   = state->btbuf; // innermost
   state->bufstk   = state->bufend;
+#endif
+
+  thread_data_t* td = hpcrun_get_thread_data();
+  td->unwind   = td->btbuf; // innermost
+  td->bufstk   = td->bufend;
 
   int unw_len = 0;
   while (true) {
@@ -199,16 +206,18 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
       }
     }
     
-    csprof_state_ensure_buffer_avail(state, state->unwind);
+    hpcrun_ensure_btbuf_avail();
 
-    state->unwind->cursor = cursor;
-    state->unwind->ip     = (void *) ip;
-    state->unwind->ra_loc = NULL;
-    hpcrun_frame_t* prev = state->unwind;
-    state->unwind++;
+    td->unwind->cursor = cursor;
+    td->unwind->ip     = (void *) ip;
+    td->unwind->ra_loc = NULL;
+    hpcrun_frame_t* prev = td->unwind;
+    td->unwind++;
     unw_len++;
 
+#ifdef OLD_STATE
     state->unwind_pc = (void *) ip; // mark starting point in case of failure
+#endif
 
     ret = unw_step(&cursor);
     backtrace_trolled = (ret == STEP_TROLL);
@@ -222,12 +231,16 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     csprof_up_pmsg_count();
   }
   
+#if 0  // FIXME BTBUF no state
   hpcrun_frame_t* bt_first = state->btbuf;      // innermost, inclusive 
   hpcrun_frame_t* bt_last  = state->unwind - 1; // outermost, inclusive
   hpcrun_frame_t* bt_end   = bt_last + 1;       // beyond the last frame
   size_t new_frame_count   = bt_end - bt_first;
-
-  thread_data_t* td = hpcrun_get_thread_data();
+#endif
+  hpcrun_frame_t* bt_first = td->btbuf;      // innermost, inclusive 
+  hpcrun_frame_t* bt_last  = td->unwind - 1; // outermost, inclusive
+  hpcrun_frame_t* bt_end   = bt_last + 1;       // beyond the last frame
+  size_t new_frame_count   = bt_end - bt_first;
 
   if (tramp_found) {
     //
@@ -250,7 +263,7 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     td->cached_bt_end = td->cached_bt + new_frame_count + old_frame_count;
 
     // start insertion below caller's frame, which is marked with the trampoline
-    state->treenode = td->tramp_cct_node->parent; 
+    td->treenode = td->tramp_cct_node->parent;
   }
   else {
     hpcrun_cached_bt_adjust_size(new_frame_count);
@@ -258,7 +271,7 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 
     td->cached_bt_end = td->cached_bt + new_frame_count;
 
-    state->treenode = NULL; // start insertion at root of tree
+    td->treenode = NULL; // start insertion at root of tree
   }
 
   if (! ENABLED(NO_SAMPLE_FILTERING)) {
@@ -326,7 +339,7 @@ hpcrun_skip_chords(hpcrun_frame_t* bt_outer, hpcrun_frame_t* bt_inner,
 
 
 void 
-dump_backtrace(state_t *state, hpcrun_frame_t* unwind)
+dump_backtrace(state_t* state, hpcrun_frame_t* unwind)
 {
   static const int msg_limit = 100;
   int msg_cnt = 0;
@@ -336,8 +349,9 @@ dump_backtrace(state_t *state, hpcrun_frame_t* unwind)
 
   PMSG_LIMIT(EMSG("-- begin new backtrace (innermost first) ------------"));
 
+  thread_data_t* td = hpcrun_get_thread_data();
   if (unwind) {
-    for (hpcrun_frame_t* x = state->btbuf; x < unwind; ++x) {
+    for (hpcrun_frame_t* x = td->btbuf; x < unwind; ++x) {
       lush_assoc_info_sprintf(as_str, x->as_info);
       lush_lip_sprintf(lip_str, x->lip);
       PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
@@ -350,9 +364,9 @@ dump_backtrace(state_t *state, hpcrun_frame_t* unwind)
     }
   }
 
-  if (msg_cnt <= msg_limit && state->bufstk != state->bufend) {
+  if (msg_cnt <= msg_limit && td->bufstk != td->bufend) {
     PMSG_LIMIT(EMSG("-- begin cached backtrace ---------------------------"));
-    for (hpcrun_frame_t* x = state->bufstk; x < state->bufend; ++x) {
+    for (hpcrun_frame_t* x = td->bufstk; x < td->bufend; ++x) {
       lush_assoc_info_sprintf(as_str, x->as_info);
       lush_lip_sprintf(lip_str, x->lip);
       PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));

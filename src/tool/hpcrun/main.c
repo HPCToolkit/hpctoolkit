@@ -122,12 +122,19 @@ static volatile int DEBUGGER_WAIT = 1;
 // process control (via libmonitor)
 //***************************************************************************
 
+enum _local_const {
+  PROC_NAME_LEN = 2048
+};
+
 void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
+#if 0
 #define PROC_NAME_LEN  2048
-  char *process_name;
-  char buf[PROC_NAME_LEN];
+#endif
+
+  char* process_name;
+  char  buf[PROC_NAME_LEN];
 
   if (getenv("CSPROF_WAIT")) {
     while(DEBUGGER_WAIT);
@@ -147,7 +154,7 @@ monitor_init_process(int *argc, char **argv, void* data)
     }
   }
 
-  csprof_set_using_threads(0);
+  hpcrun_set_using_threads(false);
 
   files_set_executable(process_name);
 
@@ -306,7 +313,7 @@ monitor_init_thread_support(void)
 
   TMSG(THREAD,"REALLY init_thread_support ---");
   csprof_init_thread_support();
-  csprof_set_using_threads(1);
+  hpcrun_set_using_threads(1);
   TMSG(THREAD,"Init thread support done");
 
   hpcrun_async_unblock();

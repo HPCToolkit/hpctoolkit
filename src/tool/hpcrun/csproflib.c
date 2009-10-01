@@ -198,13 +198,13 @@ csprof_init_internal(void)
 
   // sample source setup
   SAMPLE_SOURCES(init);
-  SAMPLE_SOURCES(process_event_list,lush_metrics);
-  SAMPLE_SOURCES(gen_event_set,lush_metrics);
+  SAMPLE_SOURCES(process_event_list, lush_metrics);
+  SAMPLE_SOURCES(gen_event_set, lush_metrics);
 
-  // set up initial cct tree node, now that metrics are finalized
+  // set up initial 'state' [FIXME: state ==> epoch] now that metrics are finalized
   
-  TMSG(MAX_METRICS,"process init calls hpcrun_cct_make_root");
-  hpcrun_cct_make_root(&(TD_GET(state)->csdata), NULL);
+  TMSG(MAX_METRICS,"process init setting up initial state/epoch");
+  hpcrun_state_init();
 
   // start the sampling process
 
@@ -273,7 +273,7 @@ csprof_init_thread_support(void)
 }
 
 
-void *
+void*
 csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 {
   thread_data_t *td = hpcrun_allocate_thread_data();
@@ -288,10 +288,14 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 
   state_t* state = TD_GET(state);
 
-  // start sampling sources
-  TMSG(INIT,"starting sampling sources");
-
+  // handle event sets for sample sources
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
+
+  // set up initial 'state' [FIXME: state ==> epoch] now that metrics are finalized
+  TMSG(MAX_METRICS,"process init setting up initial state/epoch");
+  hpcrun_state_init();
+
+  // start the sample sources
   SAMPLE_SOURCES(start);
 
   int ret = monitor_real_pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);

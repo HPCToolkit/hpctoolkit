@@ -248,7 +248,7 @@ create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag,
   fstr[0] = '\0';
 
   if (add_thread_id) {
-    if (csprof_using_threads_p()) {
+    if (hpcrun_using_threads_p()) {
       tmp_id = TD_GET(id);
       hpcrun_msg_ns(fstr, sizeof(fstr), "[%d]: ", tmp_id);
     }

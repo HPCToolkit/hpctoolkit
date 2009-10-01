@@ -42,6 +42,13 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
+// system include files
+//******************************************************************************
+
+#include <stdbool.h>
+#include <inttypes.h>
+
+//******************************************************************************
 // local include files
 //******************************************************************************
 
@@ -52,7 +59,7 @@
 //******************************************************************************
 // local variables
 //******************************************************************************
-static int csprof_using_threads;
+static bool using_threads;
 
 
 
@@ -61,14 +68,14 @@ static int csprof_using_threads;
 //******************************************************************************
 
 void
-csprof_set_using_threads(int flag)
+hpcrun_set_using_threads(bool flag)
 {
-  csprof_using_threads = flag;
+  using_threads = flag;
 }
 
 
-int
-csprof_using_threads_p()
+bool
+hpcrun_using_threads_p()
 {
-  return csprof_using_threads;
+  return using_threads;
 }
