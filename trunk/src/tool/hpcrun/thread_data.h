@@ -66,19 +66,91 @@ typedef struct {
 } sigjmp_buf_t;
 
 
-typedef struct _td_t {
+/* ******
+   TODO:
+
+   thread_data_t needs more structure.
+   Organize according to following plan:
+
+   backtrace_buffer
+     factor out of the current 'state', and put it as a separate item in thread_data
+     it will become an opaque datatype
+   state will become epoch (list)
+     each epoch has:
+       loadmap   (currently called epoch)
+       cct       (the main sample data container)
+       cct_ctxt  (pthread creation context)
+    exceptions package (items used when somethign goes wrong)
+        bad_unwind
+        mem_error
+        handling_sample (used to distinguish a sample-based segv from a user segv)
+        (each of the 'lock' elements is true if this thread owns the lock.
+         locks must be released in an exceptional situation)
+	fnbounds_lock   
+	splay_lock
+    sample source package
+       event_set
+       ss_state
+    trampoline
+       all trampoline-related items should be collected into a struct
+       NOTE: a single backtrace_buffer item will replace the collection of fields
+             that currently implement the cached backtrace.
+    io_support
+       This is a collection of files:
+         trace_file
+         hpcrun_file
+
+    suspend_sample
+       Stands on its own
+
+    lushPthr_t
+       lush items can stand along
+ */
+
+
+typedef struct thread_data_t {
+  // monitor-generated thread id
   int id;
+
+  // csprof_malloc memory data structures
+
   hpcrun_meminfo_t memstore;
   int              mem_low;
+
+  // backtrace buffer
+
+  // btbuf                                                      bufend
+  // |                                                            |
+  // v low VMAs                                                   v
+  // +------------------------------------------------------------+
+  // [new backtrace         )              [cached backtrace      )
+  // +------------------------------------------------------------+
+  //                        ^              ^ 
+  //                        |              |
+  //                      unwind         bufstk
+  
+  hpcrun_frame_t*       unwind;    // current frame
+  hpcrun_frame_t*       btbuf; 	   // innermost frame in new backtrace
+  hpcrun_frame_t*       bufend;	   // 
+  hpcrun_frame_t*       bufstk;	   // innermost frame in cached backtrace
+  csprof_cct_node_t*   treenode;   // cached pointer into the tree
+
+  // the loadmap + cct + cct_ctxt = epoch
   state_t*         state;
-  FILE*            hpcrun_file;
+
+  // exception stuff
   sigjmp_buf_t     bad_unwind;
   sigjmp_buf_t     mem_error;
-  int              eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
-  source_state_t   ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
   int              handling_sample;
   int              splay_lock;
   int              fnbounds_lock;
+
+  int              eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
+  source_state_t   ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
+
+  // stand-alone flag to suspend sampling during some synchronous calls to an hpcrun
+  // mechanism
+  //
   int              suspend_sampling;
   //
   // trampoline related storage
@@ -90,9 +162,12 @@ typedef struct _td_t {
   hpcrun_frame_t*    cached_bt_end;      // the latest backtrace (end)
   hpcrun_frame_t*    cached_bt_buf_end;  // the end of the cached backtrace buffer
   hpcrun_frame_t*    tramp_frame;        // (cached) frame associated with current trampoline location
-  csprof_cct_node_t* tramp_cct_node;     // cct node associated with the trampoline
+  csprof_cct_node_t* tramp_cct_node;     //  cct node associated with the trampoline
 
+  // IO support
+  FILE*            hpcrun_file;
   FILE*            trace_file;
+
   uint64_t         last_time_us; // microseconds
 
   lushPthr_t      pthr_metrics;
@@ -105,10 +180,12 @@ bool          (*hpcrun_td_avail)(void);
 thread_data_t *hpcrun_allocate_thread_data(void);
 void           hpcrun_init_pthread_key(void);
 
-void           hpcrun_set_thread_data(thread_data_t *td);
-void           hpcrun_set_thread0_data(void);
-void           hpcrun_unthreaded_data(void);
-void           hpcrun_threaded_data(void);
+hpcrun_frame_t* hpcrun_expand_btbuf(void);
+void           	hpcrun_ensure_btbuf_avail(void);
+void           	hpcrun_set_thread_data(thread_data_t *td);
+void           	hpcrun_set_thread0_data(void);
+void           	hpcrun_unthreaded_data(void);
+void           	hpcrun_threaded_data(void);
 
 thread_data_t* hpcrun_thread_data_new(void);
 void           hpcrun_thread_memory_init(void);

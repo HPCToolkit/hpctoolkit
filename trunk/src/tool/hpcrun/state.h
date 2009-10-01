@@ -66,38 +66,6 @@
 
 typedef struct state_t {
 
-  /* last pc where we were signaled; useful for catching problems in
-     threaded builds of the profiler (can be useful for debugging in
-     non-threaded builds, too) */
-
-  void *last_pc;
-  void *unwind_pc;
-  hpcrun_frame_t *unwind;
-  void *context_pc;
-
-  // btbuf                                                      bufend
-  // |                                                            |
-  // v low VMAs                                                   v
-  // +------------------------------------------------------------+
-  // [new backtrace         )              [cached backtrace      )
-  // +------------------------------------------------------------+
-  //                        ^              ^ 
-  //                        |              |
-  //                      unwind         bufstk
-  
-
-  hpcrun_frame_t *btbuf;      // innermost frame in new backtrace
-  hpcrun_frame_t *bufend;     // 
-  hpcrun_frame_t *bufstk;     // innermost frame in cached backtrace
-  csprof_cct_node_t*   treenode;   // cached pointer into the tree
-
-  /* how many bogus samples we took */
-  unsigned long trampoline_samples;
-
-  /* various flags, such as whether an exception is being processed or
-     whether we think there was a tail call since the last signal */
-  unsigned int flags;
-
   /* call stack data, stored in private memory */
   hpcrun_cct_t csdata;
   lush_cct_ctxt_t* csdata_ctxt; // creation context
@@ -108,8 +76,25 @@ typedef struct state_t {
   /* other profiling states which we have seen */
   struct state_t* next;
 
+#ifdef OLD_STATE
   /* support for alternate profilers whose needs we don't provide */
   void *extra_state;
+
+  /* how many bogus samples we took */
+  unsigned long trampoline_samples;
+
+  /* various flags, such as whether an exception is being processed or
+     whether we think there was a tail call since the last signal */
+  unsigned int flags;
+  /* last pc where we were signaled; useful for catching problems in
+     threaded builds of the profiler (can be useful for debugging in
+     non-threaded builds, too) */
+
+  void *last_pc;
+  void *unwind_pc;
+  void *context_pc;
+
+#endif
 
 } state_t;
 
@@ -117,22 +102,24 @@ typedef struct state_t {
 
 //***************************************************************************
 
-typedef state_t *state_t_f(void);
+typedef state_t* state_t_f(void);
 
-typedef void state_t_setter(state_t *s);
+typedef void state_t_setter(state_t* s);
 
 // ---------------------------------------------------------
 // getting and setting states independent of threading support
 // ---------------------------------------------------------
 
 extern void hpcrun_reset_state(state_t* state);
+#ifdef OLD_STATE
 extern void csprof_set_state(state_t* s);
 
 extern int csprof_state_init(state_t* s);
 extern int csprof_state_alloc(state_t *x, lush_cct_ctxt_t* thr_ctxt);
+#endif // OLD_STATE
 
-extern state_t *csprof_check_for_new_epoch(state_t *);
-
+state_t* csprof_check_for_new_epoch(state_t *);
+void hpcrun_state_init(void);
 // ---------------------------------------------------------
 // expand the internal backtrace buffer
 // ---------------------------------------------------------
@@ -141,32 +128,35 @@ extern state_t *csprof_check_for_new_epoch(state_t *);
 // Undoubtedly a better solution than this is possible, but this at
 // least is a more appropriate location.
 
+#ifdef OLD_STATE
 #define csprof_state_ensure_buffer_avail(state, unwind)               \
-  if (unwind == state->bufend) {				      \
-    unwind = csprof_state_expand_buffer(state, unwind);		      \
-    state->bufstk = state->bufend;				      \
+  thread_data_t* td = hpcrun_get_thread_data();                       \
+  if (unwind == td->bufend) {				              \
+    unwind = hpcrun_expand_btbuf();				      \
+    td->bufstk = td->bufend;				              \
   }
 
 hpcrun_frame_t*
 csprof_state_expand_buffer(state_t *, hpcrun_frame_t *);
-
+#endif
 
 csprof_cct_node_t* 
 hpcrun_state_insert_backtrace(state_t *, int, hpcrun_frame_t *,
 			      hpcrun_frame_t *, cct_metric_data_t);
 
 #if defined(CSPROF_PERF)
-#define csprof_state_verify_backtrace_invariants(state)
+#define csprof_state_verify_backtrace_invariants()
 #else
-#define csprof_state_verify_backtrace_invariants(state) \
+#define csprof_state_verify_backtrace_invariants() \
 do { \
-    int condition = (state->btbuf < state->bufend) /* obvious */\
-        && (state->btbuf <= state->bufstk) /* stk between beg and end */\
-        && (state->bufstk <= state->bufend);\
+  thread_data_t* td = hpcrun_get_thread_data(); \
+  int condition = (td->btbuf < td->bufend) /* obvious */		\
+    && (td->btbuf <= td->bufstk) /* stk between beg and end */	\
+    && (td->bufstk <= td->bufend);				\
 \
-    if(!condition) {\
-        DIE("Backtrace invariant violated", __FILE__, __LINE__);\
-    }\
+  if(!condition) {							\
+    DIE("Backtrace invariant violated", __FILE__, __LINE__);		\
+  }									\
 } while(0);
 #endif
 
@@ -175,6 +165,7 @@ int csprof_state_fini(state_t *);
 /* destroy dynamically allocated portions of a state */
 int csprof_state_free(state_t *);
 
+#ifdef OLD_STATE
 #define csprof_state_has_empty_backtrace(state) ((state)->bufend - (state)->bufstk == 0)
 #define csprof_bt_pop(state) do { state->bufstk++; } while(0)
 #define csprof_bt_top_ip(state) (state->bufstk->ip)
@@ -232,5 +223,6 @@ csprof_state_flag_clear(state_t *state, unsigned int flag)
 {
     state->flags = state->flags & (~flag);
 }
+#endif // OLD_STATE
 
 #endif // STATE_H

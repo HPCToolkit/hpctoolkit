@@ -346,7 +346,7 @@ csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
   memset(x, 0, sizeof(*x));
 
   if (! hpcrun_metrics_finalized()) {
-    TMSG(MAX_METRICS, "WARNING: cct__init called when metrics NOT finalized!");
+    EMSG("WARNING: cct__init called when metrics NOT finalized!");
 
     return HPCRUN_ERR;
   }

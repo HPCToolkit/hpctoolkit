@@ -218,7 +218,9 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
 	trace_append(func_proxy->persistent_id);
       }
+#ifdef OLD_STATE
       csprof_state_flag_clear(state, CSPROF_THRU_TRAMP);
+#endif
     }
   }
   else {
@@ -226,7 +228,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
     // recover from SEGVs and dropped samples
     // ------------------------------------------------------------
     memset((void *)it->jb, '\0', sizeof(it->jb));
-    dump_backtrace(state, state->unwind);
+    dump_backtrace(state, td->unwind);
     atomic_add_i64(&num_samples_dropped, 1L);
     csprof_up_pmsg_count();
     if (TD_GET(splay_lock)) {
@@ -274,7 +276,9 @@ _hpcrun_sample_callpath(state_t *state, void *context,
     return;
   }
 #endif
+#ifdef OLD_STATE
   state->context_pc = pc;
+#endif
   TMSG(SAMPLE, "Signalled at %lx", pc);
 
   /* check to see if shared library state has changed out from under us */
@@ -298,9 +302,11 @@ _hpcrun_sample_callpath(state_t *state, void *context,
   }
 #endif
 
+#ifdef OLD_STATE
   csprof_state_flag_clear(state, (CSPROF_TAIL_CALL 
 				  | CSPROF_EPILOGUE_RA_RELOADED 
 				  | CSPROF_EPILOGUE_SP_RESET));
+#endif
   
   return n;
 }

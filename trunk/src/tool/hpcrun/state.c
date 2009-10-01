@@ -67,6 +67,7 @@ hpcrun_reset_state(state_t* state)
   TD_GET(state) = state;
 }
 
+#ifdef OLD_STATE
 void
 csprof_set_state(state_t *state)
 {
@@ -92,42 +93,32 @@ csprof_state_init(state_t *x)
    private memory.  Private memory must be initialized!  Returns
    HPCRUN_OK upon success; HPCRUN_ERR on error. */
 int
-csprof_state_alloc(state_t *x, lush_cct_ctxt_t* thr_ctxt)
+csprof_state_alloc(state_t* x, lush_cct_ctxt_t* thr_ctxt)
 {
-  TMSG(STATE,"--Alloc");
+  TMSG(STATE,"init");
   csprof_cct__init(&x->csdata, thr_ctxt);
 
   x->epoch = hpcrun_get_epoch();
   x->csdata_ctxt = thr_ctxt;
 
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-  x->pool = csprof_list_pool_new(32);
-#if defined(CSPROF_LIST_BACKTRACE_CACHE)
-  x->backtrace = csprof_list_new(x->pool);
-#else
-  TMSG(STATE," state_alloc TRAMP");
-  x->btbuf = csprof_malloc(sizeof(hpcrun_frame_t)*32);
-  x->bufend = x->btbuf + 32;
-  x->bufstk = x->bufend;
-  x->treenode = NULL;
-#endif
-#else
-#if defined(CSPROF_LIST_BACKTRACE_CACHE)
-  x->backtrace = csprof_list_new(x->pool);
-#else
-  TMSG(STATE," state_alloc btbuf (no TRAMP)");
-  x->btbuf = csprof_malloc(sizeof(hpcrun_frame_t) * CSPROF_BACKTRACE_CACHE_INIT_SZ);
-  x->bufend = x->btbuf + CSPROF_BACKTRACE_CACHE_INIT_SZ;
-  x->bufstk = x->bufend;
-  x->treenode = NULL;
-#endif
+  return HPCRUN_OK;
+}
 #endif
 
-  return HPCRUN_OK;
+void
+hpcrun_state_init(void)
+{
+  TMSG(STATE,"init");
+  thread_data_t* td    = hpcrun_get_thread_data();
+  state_t*       state = td->state;
+
+  csprof_cct__init(&(state->csdata), state->csdata_ctxt);
+  state->epoch = hpcrun_get_epoch();
+  state->next  = NULL;
 }
 
 state_t*
-csprof_check_for_new_epoch(state_t *state)
+csprof_check_for_new_epoch(state_t* state)
 {
   /* ugh, nasty race condition here:
 
@@ -154,11 +145,11 @@ csprof_check_for_new_epoch(state_t *state)
 
   TMSG(EPOCH_CHK,"Likely need new cct");
 
-  hpcrun_epoch_t *current = hpcrun_get_epoch();
+  hpcrun_epoch_t* current = hpcrun_get_epoch();
 
   if(state->epoch != current) {
     TMSG(MALLOC," -new_epoch-");
-    state_t *newstate = csprof_malloc(sizeof(state_t));
+    state_t* newstate = csprof_malloc(sizeof(state_t));
 
     TMSG(EPOCH, "check_new_epoch creating new state (new epoch/cct pair)...");
 
@@ -170,21 +161,26 @@ csprof_check_for_new_epoch(state_t *state)
     /* we do have to reinitialize the tree, though */
     csprof_cct__init(&newstate->csdata, newstate->csdata_ctxt);
 
+    thread_data_t* td = hpcrun_get_thread_data();
     /* and reinsert backtraces */
-    if(newstate->bufend - newstate->bufstk != 0) {
+
+    if(td->bufend - td->bufstk != 0) {
+
+
       TMSG(EPOCH_CHK,"New backtraces must be reinserted");
-      newstate->treenode = NULL;
+      td->treenode = NULL;
       hpcrun_state_insert_backtrace(newstate, 0, /* pick one */
-                                    newstate->bufend - 1,
-                                    newstate->bufstk,
+                                    td->bufend - 1,
+                                    td->bufstk,
 				    (cct_metric_data_t){ .i = 0 });
     }
 
     /* and inform the state about its epoch */
     newstate->epoch = current;
+    newstate->next  = state;
 
     /* and finally, set the new state */
-    csprof_set_state(newstate);
+    TD_GET(state) = newstate;
     DISABLE(EPOCH_CHK);
     return newstate;
   }
@@ -206,16 +202,21 @@ hpcrun_state_insert_backtrace(state_t *state, int metric_id,
 			      hpcrun_frame_t *path_end,
 			      cct_metric_data_t increment)
 {
+  thread_data_t* td = hpcrun_get_thread_data();
   csprof_cct_node_t* n;
-  n = csprof_cct_insert_backtrace(&state->csdata, state->treenode,
+  n = csprof_cct_insert_backtrace(&state->csdata, td->treenode,
 				  metric_id, path_beg, path_end, increment);
 
   TMSG(CCT, "Treenode is %p", n);
   
-  state->treenode = n;
+  td->treenode = n;
   return n;
 }
 
+#ifdef OLD_STATE
+//
+// FIXME -- expand buffer now a thread_data op
+//
 hpcrun_frame_t* 
 csprof_state_expand_buffer(state_t *state, hpcrun_frame_t *unwind){
   /* how big is the current buffer? */
@@ -258,3 +259,4 @@ csprof_state_free(state_t *x){
 
   return HPCRUN_OK;
 }
+#endif
