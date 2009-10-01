@@ -333,7 +333,7 @@ ANode::zeroMetricsDeep(uint mBegId, uint mEndId)
 
 
 void
-ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
+ANode::aggregateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 {
   if ( !(mBegId < mEndId) ) {
     return; // short circuit
@@ -341,7 +341,7 @@ ANode::accumulateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 
   ANodeChildIterator it(this);
   for (; it.Current(); it++) {
-    it.current()->accumulateMetrics(mBegId, mEndId, mVec);
+    it.current()->aggregateMetrics(mBegId, mEndId, mVec);
   }
 
   it.Reset();

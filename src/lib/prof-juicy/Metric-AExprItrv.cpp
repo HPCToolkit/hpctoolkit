@@ -117,45 +117,20 @@ MaxItrv::dump_me(std::ostream& os) const
   return os;
 }
 
-#if 0
 
 // ----------------------------------------------------------------------
-// class Min
+// class MinItrv
 // ----------------------------------------------------------------------
-
-Min::~Min() 
-{
-  for (int i = 0; i < m_sz; ++i) {
-    delete m_opands[i];
-  }
-  delete[] m_opands;
-}
-
-
-double 
-Min::eval(const Metric::IData& mdata) const
-{
-  double result = m_opands[0]->eval(mdata);
-  for (int i = 1; i < m_sz; ++i) {
-    double x = m_opands[i]->eval(mdata);
-    result = std::min(result, x);
-  }
-
-  //IFTRACE << "min=" << result << endl;   
-  AEXPR_CHECK(result);
-  return result;
-}
-
 
 std::ostream& 
-Min::dump(std::ostream& os) const
+MinItrv::dump_me(std::ostream& os) const
 {
-  os << "min(";
-  dump_opands(os, m_opands, m_sz);
-  os << ")";
+  os << "min()";
   return os;
 }
 
+
+#if 0
 
 // ----------------------------------------------------------------------
 // class Mean

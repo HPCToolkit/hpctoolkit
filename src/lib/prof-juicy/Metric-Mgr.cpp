@@ -73,6 +73,8 @@ namespace Prof {
 namespace Metric {
 
 //****************************************************************************
+//
+//****************************************************************************
 
 Mgr::Mgr()
 {
@@ -86,7 +88,7 @@ Mgr::~Mgr()
   }
 }
 
-//----------------------------------------------------------------------------
+//****************************************************************************
 
 void 
 Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
@@ -169,15 +171,18 @@ Mgr::makeItrvSummaryMetrics(uint srcBegId, uint srcEndId)
     Metric::ADesc* m = m_metrics[i];
     m->isVisible(false);
 
+    Metric::ADesc* mNew = NULL;
     string mNm = m->name();
+
     //string mean_nm = "Mean-" + mNm;
+    string min_nm = "Min-" + mNm;
     string max_nm = "Max-" + mNm;
     
-    //makeItrvSummaryMetric(mean_nm, m->id());
-    Metric::ADesc* mSum = makeItrvSummaryMetric(max_nm, m->id());
+    mNew = makeItrvSummaryMetric(min_nm, m->id());
+    makeItrvSummaryMetric(max_nm, m->id());
     
-    if (firstId == Metric::Mgr::npos) {
-      firstId = mSum->id();
+    if (firstId == Mgr::npos) {
+      firstId = mNew->id();
     }
   }
   
@@ -249,9 +254,9 @@ Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
   bool doDispPercent = true;
   bool isPercent = false;
 
-  // This is a a cheesy way of creating the metrics, but it is good
-  // enough for now.  Perhaps, this can be pushed into a metric parser
-  // as mathxml is retired.
+  // This is a a cheesy way of creating the metrics, but 1) it is good
+  // enough for now and 2) we don't yet have a clearly better plan.
+
   Metric::AExprItrv* expr = NULL;
   if (mNm.find("Mean", 0) == 0) {
     //expr = new Metric::Mean(opands, mOpands.size());
@@ -270,7 +275,7 @@ Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
     doDispPercent = false;
   }
   else if (mNm.find("Min", 0) == 0) {
-    //expr = new Metric::Min(opands, mOpands.size());
+    expr = new Metric::MinItrv(0, srcId);
     doDispPercent = false;
   }
   else if (mNm.find("Max", 0) == 0) {
@@ -294,7 +299,7 @@ Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
 }
 
 
-//----------------------------------------------------------------------------
+//****************************************************************************
 
 bool
 Mgr::insert(Metric::ADesc* m)
@@ -380,6 +385,7 @@ Mgr::hasDerived() const
   }
   return false;
 }
+
 
 //****************************************************************************
 

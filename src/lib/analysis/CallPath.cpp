@@ -225,7 +225,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof, string agent)
   Analysis::CallPath::normalize(prof, agent);
   
   // Note: Use StructMetricIdFlg to flag that static structure is used
-  rootStrct->accumulateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
+  rootStrct->aggregateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
   rootStrct->pruneByMetrics();
 }
 
