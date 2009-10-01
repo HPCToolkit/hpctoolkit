@@ -174,11 +174,14 @@ Mgr::makeItrvSummaryMetrics(uint srcBegId, uint srcEndId)
     Metric::ADesc* mNew = NULL;
     string mNm = m->name();
 
-    //string mean_nm = "Mean-" + mNm;
-    string min_nm = "Min-" + mNm;
-    string max_nm = "Max-" + mNm;
+    string mean_nm = "Mean-" + mNm;
+    string cv_nm   = "StdDev-" + mNm;
+    string min_nm  = "Min-" + mNm;
+    string max_nm  = "Max-" + mNm;
     
-    mNew = makeItrvSummaryMetric(min_nm, m->id());
+    mNew = makeItrvSummaryMetric(mean_nm, m->id());
+    //makeItrvSummaryMetric(cv_nm, m->id());
+    makeItrvSummaryMetric(min_nm, m->id());
     makeItrvSummaryMetric(max_nm, m->id());
     
     if (firstId == Mgr::npos) {
@@ -250,6 +253,8 @@ Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
 Metric::DerivedItrvDesc*
 Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
 {
+  bool needXtraSource = false;
+
   bool isVisible = true;
   bool doDispPercent = true;
   bool isPercent = false;
@@ -259,20 +264,21 @@ Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
 
   Metric::AExprItrv* expr = NULL;
   if (mNm.find("Mean", 0) == 0) {
-    //expr = new Metric::Mean(opands, mOpands.size());
+    expr = new Metric::MeanItrv(0, srcId);
     doDispPercent = false;
   }
   else if (mNm.find("StdDev", 0) == 0) {
-    //expr = new Metric::StdDev(opands, mOpands.size());
+    //expr = new Metric::StdDevItrv(0, srcId);
     doDispPercent = false;
+    needXtraSource = true;
   }
   else if (mNm.find("RStdDev", 0) == 0) {
     //expr = new Metric::RStdDev(opands, mOpands.size());
-    isPercent = true;
+    //isPercent = true;
   }
   else if (mNm.find("CoefVar", 0) == 0) {
     //expr = new Metric::CoefVar(opands, mOpands.size());
-    doDispPercent = false;
+    //doDispPercent = false;
   }
   else if (mNm.find("Min", 0) == 0) {
     expr = new Metric::MinItrv(0, srcId);

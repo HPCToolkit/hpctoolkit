@@ -67,6 +67,7 @@
 #include <string>
 
 #include <cfloat>
+#include <cmath>
 
 //************************* User Include Files *******************************
 
@@ -197,14 +198,15 @@ protected:
 // MaxItrv
 // ----------------------------------------------------------------------
 
-class MaxItrv : public AExprItrv
+class MaxItrv
+  : public AExprItrv
 {
 public:
   MaxItrv(uint dstId, uint srcId)
     : AExprItrv(dstId, srcId)
   { }
 
-  ~MaxItrv()
+  virtual ~MaxItrv()
   { }
 
 
@@ -241,14 +243,15 @@ private:
 // MinItrv
 // ----------------------------------------------------------------------
 
-class MinItrv : public AExprItrv
+class MinItrv
+  : public AExprItrv
 {
 public:
   MinItrv(uint dstId, uint srcId)
     : AExprItrv(dstId, srcId)
   { }
 
-  ~MinItrv()
+  virtual ~MinItrv()
   { }
 
 
@@ -265,8 +268,8 @@ public:
   {
     double x = dstVar(mdata), y = srcVar(mdata);
     double z = std::min(x, y);
-    DIAG_MsgIf(1, "MinItrv: min("<< x << ", " << y << ") = " << z);
-    return (dstVar(mdata) = x);
+    DIAG_MsgIf(0, "MinItrv: min("<< x << ", " << y << ") = " << z);
+    return (dstVar(mdata) = z);
   }
 
   virtual double
@@ -281,59 +284,123 @@ private:
 };
 
 
+// ----------------------------------------------------------------------
+// MeanItrv
+// ----------------------------------------------------------------------
+
+class MeanItrv
+  : public AExprItrv
+{
+public:
+  MeanItrv(uint dstId, uint srcId)
+    : AExprItrv(dstId, srcId)
+  { }
+
+  virtual ~MeanItrv()
+  { }
+
+
+  virtual double
+  initialize(Metric::IData& mdata) const
+  { return (dstVar(mdata) = 0.0); }
+
+  virtual double
+  initializeSrc(Metric::IData& mdata) const
+  { return (srcVar(mdata) = 0.0); }
+
+  virtual double
+  update(Metric::IData& mdata) const
+  {
+    double x = dstVar(mdata), y = srcVar(mdata);
+    double z = x + y;
+    DIAG_MsgIf(0, "MeanItrv: +("<< x << ", " << y << ") = " << z);
+    return (dstVar(mdata) = z);
+  }
+
+  virtual double
+  finalize(Metric::IData& mdata, uint numSrc) const
+  {
+    double z = dstVar(mdata);
+    if (numSrc > 0) {
+      z /= (double)numSrc;
+      dstVar(mdata) = z;
+    }
+    return z;
+  }
+
+
+  virtual std::ostream&
+  dump_me(std::ostream& os = std::cout) const;
+
+private:
+};
+
+
+// ----------------------------------------------------------------------
+// StdDevItrv: standard deviation
+// ----------------------------------------------------------------------
+
+class StdDevItrv 
+  : public AExprItrv
+{
+public:
+  StdDevItrv(uint dstId, uint xtraId, uint srcId)
+    : AExprItrv(dstId, srcId),
+      m_xtraId(xtraId)
+  { }
+
+  virtual ~StdDevItrv()
+  { }
+
+
+  virtual double
+  initialize(Metric::IData& mdata) const
+  {
+    var(mdata, m_xtraId) = 0.0;
+    return (dstVar(mdata) = 0.0);
+  }
+
+  virtual double
+  initializeSrc(Metric::IData& mdata) const
+  { return (srcVar(mdata) = 0.0); }
+
+  virtual double
+  update(Metric::IData& mdata) const
+  {
+    double x1 = dstVar(mdata), x2 = var(mdata, m_xtraId);
+    double y = srcVar(mdata);
+    double z1 = x1 + y;       // sum
+    double z2 = x2 + (y * y); // sum of squares
+    var(mdata, m_xtraId) = z2;
+    return (dstVar(mdata) = z1);
+  }
+
+  virtual double
+  finalize(Metric::IData& mdata, uint numSrc) const
+  {
+    double x1 = dstVar(mdata), x2 = var(mdata, m_xtraId);
+    double z1 = x1, z2;
+    if (numSrc > 0) {
+      z1 = x1 / numSrc; // (mean)^2
+      z1 *= z1;
+      z2 = x2 / numSrc; // (sum of squares)/N
+
+      z1 = sqrt(z2 - z1); // stddev
+      dstVar(mdata) = z1;
+    }
+    return z1;
+  }
+
+
+  virtual std::ostream&
+  dump_me(std::ostream& os = std::cout) const;
+
+private:
+  uint m_xtraId;
+};
+
+
 #if 0
-// ----------------------------------------------------------------------
-// Mean
-// ----------------------------------------------------------------------
-
-class Mean : public AExprItrv
-{
-public:
-  // Assumes ownership of AExprItrv
-  Mean(AExprItrv** oprnds, int numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
-  { }
-
-  ~Mean();
-
-  double
-  eval(const Metric::IData& mdata) const;
-
-  std::ostream&
-  dump(std::ostream& os = std::cout) const;
-
-private:
-  AExprItrv** m_opands;
-  int m_sz;
-};
-
-
-// ----------------------------------------------------------------------
-// StdDev: standard deviation
-// ----------------------------------------------------------------------
-
-class StdDev : public AExprItrv
-{
-public:
-  // Assumes ownership of AExprItrv
-  StdDev(AExprItrv** oprnds, int numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
-  { }
-
-  ~StdDev();
-
-  double
-  eval(const Metric::IData& mdata) const;
-
-  std::ostream&
-  dump(std::ostream& os = std::cout) const;
-
-private:
-  AExprItrv** m_opands;
-  int m_sz;
-};
-
-
 // ----------------------------------------------------------------------
 // CoefVar: relative standard deviation
 // ----------------------------------------------------------------------
