@@ -434,7 +434,9 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
     DIAG_Assert(mm, DIAG_UnexpectedInput);
 
     Prof::Metric::AExprItrv* expr = mm->expr();
-    expr->srcId(j);
+    if (expr) {
+      expr->srcId(j);
+    }
   }
 
   // 2. Initialize extra derived metric storage [mXDrvdBeg, mXDrvdEnd)
@@ -467,6 +469,11 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 
       cctRoot->computeMetricsItrv(metricMgr, mBeg, mEnd,
 				  Prof::Metric::AExprItrv::FnFini, numInputs);
+    }
+
+    for (uint i = 0; i < metricMgr.size(); ++i) {
+      Prof::Metric::ADesc* m = metricMgr.metric(i);
+      m->isComputed(true);
     }
   }
 

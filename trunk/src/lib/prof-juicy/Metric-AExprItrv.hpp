@@ -95,7 +95,11 @@ class AExprItrv
 {
 public:
   AExprItrv(uint dstId, uint srcId)
-    : m_dstId(dstId), m_srcId(srcId)
+    : m_dstId(dstId), m_dst2Id(Metric::IData::npos), m_srcId(srcId)
+  { }
+
+  AExprItrv(uint dstId, uint dst2Id, uint srcId)
+    : m_dstId(dstId), m_dst2Id(dst2Id), m_srcId(srcId)
   { }
 
   virtual ~AExprItrv()
@@ -104,6 +108,10 @@ public:
   void
   dstId(uint x)
   { m_dstId = x; }
+
+  void
+  dst2Id(uint x)
+  { m_dst2Id = x; }
 
   void
   srcId(uint x)
@@ -146,17 +154,30 @@ public:
   { return mdata.demandMetric(mId); }
 
 
+  double
+  dstVar(const Metric::IData& mdata) const
+  { return var(mdata, m_dstId); }
+
   double&
   dstVar(Metric::IData& mdata) const
   { return var(mdata, m_dstId); }
 
 
+  double
+  dst2Var(const Metric::IData& mdata) const
+  { return var(mdata, m_dst2Id); }
+
   double&
-  srcVar(Metric::IData& mdata) const
-  { return var(mdata, m_srcId); }
+  dst2Var(Metric::IData& mdata) const
+  { return var(mdata, m_dst2Id); }
+
 
   double
   srcVar(const Metric::IData& mdata) const
+  { return var(mdata, m_srcId); }
+
+  double&
+  srcVar(Metric::IData& mdata) const
   { return var(mdata, m_srcId); }
 
 
@@ -190,6 +211,7 @@ public:
 
 protected:
   uint m_dstId;
+  uint m_dst2Id;
   uint m_srcId;
 };
 
@@ -221,10 +243,11 @@ public:
   virtual double
   update(Metric::IData& mdata) const
   {
-    double x = dstVar(mdata), y = srcVar(mdata);
-    double z = std::max(x, y);
-    DIAG_MsgIf(0, "MaxItrv: max("<< x << ", " << y << ") = " << z);
-    return (dstVar(mdata) = z);
+    double d = dstVar(mdata), s = srcVar(mdata);
+    double z = std::max(d, s);
+    DIAG_MsgIf(0, "MaxItrv: max("<< d << ", " << s << ") = " << z);
+    dstVar(mdata) = z;
+    return z;
   }
 
   virtual double
@@ -266,10 +289,11 @@ public:
   virtual double
   update(Metric::IData& mdata) const
   {
-    double x = dstVar(mdata), y = srcVar(mdata);
-    double z = std::min(x, y);
-    DIAG_MsgIf(0, "MinItrv: min("<< x << ", " << y << ") = " << z);
-    return (dstVar(mdata) = z);
+    double d = dstVar(mdata), s = srcVar(mdata);
+    double z = std::min(d, s);
+    DIAG_MsgIf(0, "MinItrv: min("<< d << ", " << s << ") = " << z);
+    dstVar(mdata) = z;
+    return z;
   }
 
   virtual double
@@ -311,18 +335,20 @@ public:
   virtual double
   update(Metric::IData& mdata) const
   {
-    double x = dstVar(mdata), y = srcVar(mdata);
-    double z = x + y;
-    DIAG_MsgIf(0, "MeanItrv: +("<< x << ", " << y << ") = " << z);
-    return (dstVar(mdata) = z);
+    double d = dstVar(mdata), s = srcVar(mdata);
+    double z = d + s;
+    DIAG_MsgIf(0, "MeanItrv: +("<< d << ", " << s << ") = " << z);
+    dstVar(mdata) = z;
+    return z;
   }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
   {
-    double z = dstVar(mdata);
+    double d = dstVar(mdata);
+    double z = d;
     if (numSrc > 0) {
-      z /= (double)numSrc;
+      z = d / (double)numSrc;
       dstVar(mdata) = z;
     }
     return z;
@@ -344,9 +370,8 @@ class StdDevItrv
   : public AExprItrv
 {
 public:
-  StdDevItrv(uint dstId, uint xtraId, uint srcId)
-    : AExprItrv(dstId, srcId),
-      m_xtraId(xtraId)
+  StdDevItrv(uint dstId, uint dst2Id, uint srcId)
+    : AExprItrv(dstId, dst2Id, srcId)
   { }
 
   virtual ~StdDevItrv()
@@ -356,7 +381,7 @@ public:
   virtual double
   initialize(Metric::IData& mdata) const
   {
-    var(mdata, m_xtraId) = 0.0;
+    dst2Var(mdata) = 0.0;
     return (dstVar(mdata) = 0.0);
   }
 
@@ -367,28 +392,27 @@ public:
   virtual double
   update(Metric::IData& mdata) const
   {
-    double x1 = dstVar(mdata), x2 = var(mdata, m_xtraId);
-    double y = srcVar(mdata);
-    double z1 = x1 + y;       // sum
-    double z2 = x2 + (y * y); // sum of squares
-    var(mdata, m_xtraId) = z2;
-    return (dstVar(mdata) = z1);
+    double d1 = dstVar(mdata), d2 = dst2Var(mdata), s = srcVar(mdata);
+    double z1 = d1 + s;       // running sum
+    double z2 = d2 + (s * s); // running sum of squares
+    dstVar(mdata)  = z1;
+    dst2Var(mdata) = z2;
+    return z1;
   }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
   {
-    double x1 = dstVar(mdata), x2 = var(mdata, m_xtraId);
-    double z1 = x1, z2;
+    double d1 = dstVar(mdata), d2 = dst2Var(mdata);
+    double z = d1;
     if (numSrc > 0) {
-      z1 = x1 / numSrc; // (mean)^2
-      z1 *= z1;
-      z2 = x2 / numSrc; // (sum of squares)/N
-
-      z1 = sqrt(z2 - z1); // stddev
-      dstVar(mdata) = z1;
+      double mean = d1 / numSrc;
+      double z1 = (mean * mean); // (mean)^2
+      double z2 = d2 / numSrc;   // (sum of squares)/N
+      z = sqrt(z2 - z1);         // stddev
+      dstVar(mdata) = z;
     }
-    return z1;
+    return z;
   }
 
 
@@ -396,7 +420,6 @@ public:
   dump_me(std::ostream& os = std::cout) const;
 
 private:
-  uint m_xtraId;
 };
 
 
