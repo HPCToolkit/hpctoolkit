@@ -89,21 +89,26 @@ extract_ev_thresh(const char *in, int evlen, char *ev, long *th)
 {
   unsigned int len;
 
-  char *dlm = strrchr(in,'@');
+  char *dlm = strrchr(in, '@');
+  if (!dlm) {
+    dlm = strrchr(in, ':');
+  }
   if (dlm) {
-    if (isdigit(dlm[1])){ // assume this is the threshold
-      len = MIN(dlm-in,evlen);
-      strncpy(ev,in,len);
+    if (isdigit(dlm[1])) { // assume this is the threshold
+      len = MIN(dlm - in, evlen);
+      strncpy(ev, in, len);
       ev[len] = '\0';
     }
     else {
       dlm = NULL;
     }
   }
+
   if (!dlm) {
     len = strlen(in);
-    strncpy(ev,in,len);
+    strncpy(ev, in, len);
     ev[len] = '\0';
   }
+  
   *th = dlm ? strtol(dlm+1,(char **)NULL,10) : DEFAULT_THRESHOLD;
 }

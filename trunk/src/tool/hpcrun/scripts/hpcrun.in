@@ -273,8 +273,10 @@ hpc_getoptions()
 
       -e | --event) 
         shift; 
-        # replace : separator with @ to retain support for old syntax
-	LLL=`echo $1 | tr ':' '@'`
+	# Please FIXME: dynamically scoped LLL and LL variables???
+        # BUG!: replace : separator with @ to retain support for old syntax
+	#LLL=`echo $1 | tr ':' '@'`
+	LLL="$1"
         opt_ev_list="$LL$LLL";
 	LL="$opt_ev_list "
         ;;
