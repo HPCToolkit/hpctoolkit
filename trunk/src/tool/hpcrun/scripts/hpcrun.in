@@ -409,6 +409,16 @@ hpc_prepareenv()
   fi
 
   export LD_LIBRARY_PATH
+
+  # --------------------------------------------------------
+  # 
+  # --------------------------------------------------------
+
+  if [ -n "${opt_debug}" ]; then
+    echo "LD_PRELOAD:         \"${LD_PRELOAD}\""
+    echo "HPCRUN_DEBUG_FLAGS: \"${HPCRUN_DEBUG_FLAGS}\""
+    echo "HPCRUN_EVENT_LIST:  \"${HPCRUN_EVENT_LIST}\""
+  fi
 }
 
 
@@ -450,11 +460,6 @@ hpc_prepareenv
 
 if [ ${ulimit_works}x != x ]; then
    ulimit -c unlimited
-fi
-if [ -n "${opt_debug}" ]; then
-  echo hpcrun script LD_PRELOAD = $LD_PRELOAD
-  echo HPCRUN_DEBUG_FLAGS = $HPCRUN_DEBUG_FLAGS
-  echo event list = $HPCRUN_EVENT_LIST
 fi
 
 exec ${cmd_to_profile}
