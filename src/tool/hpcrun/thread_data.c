@@ -169,12 +169,6 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   td->state->csdata_ctxt = thr_ctxt;
 
   thr_ctxt = copy_thr_ctxt(thr_ctxt);
-
-#if OLD_STATE
-  csprof_set_state(state);
-  csprof_state_init(state);
-  csprof_state_alloc(state, thr_ctxt);
-#endif
 }
 
 void

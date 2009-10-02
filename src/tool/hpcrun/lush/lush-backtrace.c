@@ -142,11 +142,6 @@ lush_backtrace(state_t* state, ucontext_t* context,
   lush_cursor_t cursor;
   lush_init_unw(&cursor, lush_agents, context);
   
-#if 0   // FIXME BTBUF no state here
-  state->unwind   = state->btbuf;  // innermost
-  state->bufstk   = state->bufend;
-  state->treenode = NULL;
-#endif
   // FIXME: unwind/common/backtrace.c
   thread_data_t* td = hpcrun_get_thread_data();
   td->unwind   = td->btbuf;  // innermost
@@ -243,10 +238,6 @@ lush_backtrace(state_t* state, ucontext_t* context,
     dump_backtrace(state, td->unwind);
   }
 
-#if 0  // FIXME BTBUF no state
-  hpcrun_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
-  hpcrun_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
-#endif
   hpcrun_frame_t* bt_beg = td->btbuf;      // innermost, inclusive 
   hpcrun_frame_t* bt_end = td->unwind - 1; // outermost, inclusive
 

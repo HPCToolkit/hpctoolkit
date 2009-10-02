@@ -84,14 +84,6 @@ typedef void (*sig_handler_func_t)(int, siginfo_t *, void *);
 //***************************************************************************
 
 //***************************************************************************
-// helper structures for state_t: 
-//***************************************************************************
-
-// Defaults (see general.h for verbosity and debug)
-#define CSPROF_BACKTRACE_CACHE_INIT_SZ 32
-
-
-//***************************************************************************
 // csprof_pfmon_info
 //***************************************************************************
 
@@ -103,54 +95,7 @@ typedef void (*sig_handler_func_t)(int, siginfo_t *, void *);
 //   PMD: performance monitor data register
 //   PSR: processor status register
 
-#if 0
-#define CSPROF_PFMON_N_EVENTS     2
-#define CSPROF_PFMON_N_PMCS       PMU_MAX_PMCS
-#define CSPROF_PFMON_N_PMDS       PMU_MAX_PMDS
-
-// List of events to monitor
-char *csprof_pfmon_evt_list[CSPROF_PFMON_N_EVENTS] = {
-  "cpu_cycles",
-  "IA64_INST_RETIRED"
-};
-
-// ---------------------------------------------------------
-// csprof_pfmon_info_t:
-// ---------------------------------------------------------
-typedef struct csprof_pfmon_info_s {
-
-  // pfmon data structures 
-  pfmlib_param_t evt;       // basic params: events, etc.
-  pfmlib_options_t opt;     // options
-  pfarg_context_t ctx[1];   // monitoring context
-  pfarg_reg_t pmc[CSPROF_PFMON_N_PMCS]; // to write/read PMC registers
-  pfarg_reg_t pmd[CSPROF_PFMON_N_PMDS]; // to write/read PMD registers
-  struct sigaction sigact;  // signal handler
-
-} csprof_pfmon_info_t;
-
-static int csprof_pfmon_info__init(csprof_pfmon_info_t* pfm);
-static int csprof_pfmon_info__fini(csprof_pfmon_info_t* pfm);
-
-//***************************************************************************
-#endif /* 0 */
-
-/* FIXME: make the explicit interface return a value */
-
-#if 0
-void csprof_init_internal(void);
-void csprof_fini_internal(state_t *state);
-#endif
-
-
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-// capturing function call returns
-static void csprof_undo_swizzled_data(state_t *, void *);
-
-void *csprof_trampoline2(void **);
-#endif
-
-int hpcrun_write_profile_data(state_t *);
+int hpcrun_write_profile_data(state_t*);
 
 #ifdef CSPROF_THREADS
 void csprof_atexit_handler();

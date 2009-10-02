@@ -76,14 +76,8 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
     // -----------------------------------------------------
     // print context
     // -----------------------------------------------------
-#ifdef OLD_STATE
-    state_t* state = td->state;
-    void* unw_pc = (state) ? state->unwind_pc : NULL;
-#endif
     void* ctxt_pc = context_pc(context);
-#ifdef OLD_STATE
-    PMSG_LIMIT(EMSG("error: segv: context-pc=%p, unwind-pc=%p", ctxt_pc, unw_pc));
-#endif
+
     PMSG_LIMIT(EMSG("error: segv: context-pc=%p", ctxt_pc));
     // TODO: print more context details
 

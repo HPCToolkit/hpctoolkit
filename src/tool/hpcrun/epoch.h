@@ -72,8 +72,8 @@
   or otherwise) arising in any way out of the use of this software, even
   if advised of the possibility of such damage.
 */
-#ifndef CSPROF_EPOCH_H
-#define CSPROF_EPOCH_H
+#ifndef EPOCH_H
+#define EPOCH_H
 
 #include <stdio.h>
 
@@ -118,24 +118,24 @@ struct csprof_epoch
   loadmap_src_t *loaded_modules;
 };
 
-extern hpcrun_epoch_t* hpcrun_static_epoch(void);
-extern hpcrun_epoch_t* hpcrun_epoch_new(void);
-extern void hpcrun_epoch_init(hpcrun_epoch_t *e);
-extern hpcrun_epoch_t* hpcrun_get_epoch(void);
+hpcrun_epoch_t* hpcrun_static_epoch(void);
+hpcrun_epoch_t* hpcrun_epoch_new(void);
+void            hpcrun_epoch_init(hpcrun_epoch_t* e);
+hpcrun_epoch_t* hpcrun_get_epoch(void);
 
-void hpcrun_loadmap_add_module(const char *module_name, void *vaddr, void *mapaddr, size_t size);
+void hpcrun_loadmap_add_module(const char* module_name, void* vaddr, void* mapaddr, size_t size);
 
 /* avoid weird dynamic loading conflicts */
 
-extern void hpcrun_epoch_lock();
-extern void hpcrun_epoch_unlock();
-extern int hpcrun_epoch_is_locked();
+void hpcrun_epoch_lock();
+void hpcrun_epoch_unlock();
+int  hpcrun_epoch_is_locked();
 
-extern void hpcrun_finalize_current_epoch(void);
+void hpcrun_finalize_current_epoch(void);
 
-extern void csprof_write_all_epochs(FILE *);
-extern void hpcrun_write_current_loadmap(FILE *);
+void csprof_write_all_epochs(FILE *);
+void hpcrun_write_current_loadmap(FILE *);
 
 void hpcrun_epoch_reset(void);
 
-#endif /* CSPROF_EPOCH_H */
+#endif // EPOCH_H
