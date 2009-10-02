@@ -218,9 +218,6 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
 	trace_append(func_proxy->persistent_id);
       }
-#ifdef OLD_STATE
-      csprof_state_flag_clear(state, CSPROF_THRU_TRAMP);
-#endif
     }
   }
   else {
@@ -276,13 +273,10 @@ _hpcrun_sample_callpath(state_t *state, void *context,
     return;
   }
 #endif
-#ifdef OLD_STATE
-  state->context_pc = pc;
-#endif
   TMSG(SAMPLE, "Signalled at %lx", pc);
 
   /* check to see if shared library state has changed out from under us */
-  state = csprof_check_for_new_epoch(state);
+  state = hpcrun_check_for_new_epoch(state);
 
 #ifdef USE_TRAMP
   PMSG(SWIZZLE,"undo swizzled data\n");
@@ -302,11 +296,5 @@ _hpcrun_sample_callpath(state_t *state, void *context,
   }
 #endif
 
-#ifdef OLD_STATE
-  csprof_state_flag_clear(state, (CSPROF_TAIL_CALL 
-				  | CSPROF_EPILOGUE_RA_RELOADED 
-				  | CSPROF_EPILOGUE_SP_RESET));
-#endif
-  
   return n;
 }

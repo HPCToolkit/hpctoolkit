@@ -67,44 +67,6 @@ hpcrun_reset_state(state_t* state)
   TD_GET(state) = state;
 }
 
-#ifdef OLD_STATE
-void
-csprof_set_state(state_t *state)
-{
-  TMSG(STATE," --Set");
-  state->next = TD_GET(state);
-  TD_GET(state) = state;
-}
-
-int
-csprof_state_init(state_t *x)
-{
-  /* ia64 Linux has this function return a `long int', which is a 64-bit
-     integer.  Tru64 Unix returns an `int'.  it probably won't hurt us
-     if we get truncated on ia64, right? */
-
-  TMSG(STATE,"--Init");
-  memset(x, 0, sizeof(*x));
-
-  return HPCRUN_OK;
-}
-
-/* csprof_state_alloc: Special initialization for items stored in
-   private memory.  Private memory must be initialized!  Returns
-   HPCRUN_OK upon success; HPCRUN_ERR on error. */
-int
-csprof_state_alloc(state_t* x, lush_cct_ctxt_t* thr_ctxt)
-{
-  TMSG(STATE,"init");
-  csprof_cct__init(&x->csdata, thr_ctxt);
-
-  x->epoch = hpcrun_get_epoch();
-  x->csdata_ctxt = thr_ctxt;
-
-  return HPCRUN_OK;
-}
-#endif
-
 void
 hpcrun_state_init(void)
 {
@@ -118,7 +80,7 @@ hpcrun_state_init(void)
 }
 
 state_t*
-csprof_check_for_new_epoch(state_t* state)
+hpcrun_check_for_new_epoch(state_t* state)
 {
   /* ugh, nasty race condition here:
 
@@ -212,51 +174,3 @@ hpcrun_state_insert_backtrace(state_t *state, int metric_id,
   td->treenode = n;
   return n;
 }
-
-#ifdef OLD_STATE
-//
-// FIXME -- expand buffer now a thread_data op
-//
-hpcrun_frame_t* 
-csprof_state_expand_buffer(state_t *state, hpcrun_frame_t *unwind){
-  /* how big is the current buffer? */
-  size_t sz = state->bufend - state->btbuf;
-  size_t newsz = sz*2;
-  /* how big is the current backtrace? */
-  size_t btsz = state->bufend - state->bufstk;
-  /* how big is the backtrace we're recording? */
-  size_t recsz = unwind - state->btbuf;
-  /* get new buffer */
-  TMSG(STATE," state_expand_buffer");
-  hpcrun_frame_t *newbt = csprof_malloc(newsz*sizeof(hpcrun_frame_t));
-
-  if(state->bufstk > state->bufend) {
-    EMSG("Invariant bufstk > bufend violated");
-    monitor_real_abort();
-  }
-
-  /* copy frames from old to new */
-  memcpy(newbt, state->btbuf, recsz*sizeof(hpcrun_frame_t));
-  memcpy(newbt+newsz-btsz, state->bufend-btsz, btsz*sizeof(hpcrun_frame_t));
-
-  /* setup new pointers */
-  state->btbuf = newbt;
-  state->bufend = newbt+newsz;
-  state->bufstk = newbt+newsz-btsz;
-
-  /* return new unwind pointer */
-  return newbt+recsz;
-}
-
-/* csprof_state_free: Special finalization for items stored in
-   private memory.  Private memory must be initialized!  Returns
-   HPCRUN_OK upon success; HPCRUN_ERR on error. */
-int
-csprof_state_free(state_t *x){
-  csprof_cct__fini(&x->csdata);
-
-  // no need to free memory
-
-  return HPCRUN_OK;
-}
-#endif

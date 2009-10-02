@@ -173,7 +173,7 @@ hpcrun_epoch_t*
 hpcrun_epoch_new(void)
 {
   TMSG(EPOCH, " --NEW");
-  hpcrun_epoch_t *e = csprof_malloc(sizeof(hpcrun_epoch_t));
+  hpcrun_epoch_t* e = csprof_malloc(sizeof(hpcrun_epoch_t));
 
   if (e == NULL) {
     EMSG("New epoch requested, but allocation failed!!");

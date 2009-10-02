@@ -104,7 +104,7 @@ hpcrun_backtrace(state_t* state, ucontext_t* context,
 		 int metricId, uint64_t metricIncr,
 		 int skipInner, int isSync)
 {
-  csprof_state_verify_backtrace_invariants();
+  hpcrun_verify_backtrace_invariants();
   
   csprof_cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
@@ -165,11 +165,6 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
   // into a problem.
   //--------------------------------------------------------------------
 
-#if 0  // FIXME BTBUF no state
-  state->unwind   = state->btbuf; // innermost
-  state->bufstk   = state->bufend;
-#endif
-
   thread_data_t* td = hpcrun_get_thread_data();
   td->unwind   = td->btbuf; // innermost
   td->bufstk   = td->bufend;
@@ -215,10 +210,6 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     td->unwind++;
     unw_len++;
 
-#ifdef OLD_STATE
-    state->unwind_pc = (void *) ip; // mark starting point in case of failure
-#endif
-
     ret = unw_step(&cursor);
     backtrace_trolled = (ret == STEP_TROLL);
     if (ret <= 0) {
@@ -231,12 +222,6 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     csprof_up_pmsg_count();
   }
   
-#if 0  // FIXME BTBUF no state
-  hpcrun_frame_t* bt_first = state->btbuf;      // innermost, inclusive 
-  hpcrun_frame_t* bt_last  = state->unwind - 1; // outermost, inclusive
-  hpcrun_frame_t* bt_end   = bt_last + 1;       // beyond the last frame
-  size_t new_frame_count   = bt_end - bt_first;
-#endif
   hpcrun_frame_t* bt_first = td->btbuf;      // innermost, inclusive 
   hpcrun_frame_t* bt_last  = td->unwind - 1; // outermost, inclusive
   hpcrun_frame_t* bt_end   = bt_last + 1;       // beyond the last frame

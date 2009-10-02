@@ -76,25 +76,6 @@ typedef struct state_t {
   /* other profiling states which we have seen */
   struct state_t* next;
 
-#ifdef OLD_STATE
-  /* support for alternate profilers whose needs we don't provide */
-  void *extra_state;
-
-  /* how many bogus samples we took */
-  unsigned long trampoline_samples;
-
-  /* various flags, such as whether an exception is being processed or
-     whether we think there was a tail call since the last signal */
-  unsigned int flags;
-  /* last pc where we were signaled; useful for catching problems in
-     threaded builds of the profiler (can be useful for debugging in
-     non-threaded builds, too) */
-
-  void *last_pc;
-  void *unwind_pc;
-  void *context_pc;
-
-#endif
 
 } state_t;
 
@@ -111,14 +92,8 @@ typedef void state_t_setter(state_t* s);
 // ---------------------------------------------------------
 
 extern void hpcrun_reset_state(state_t* state);
-#ifdef OLD_STATE
-extern void csprof_set_state(state_t* s);
 
-extern int csprof_state_init(state_t* s);
-extern int csprof_state_alloc(state_t *x, lush_cct_ctxt_t* thr_ctxt);
-#endif // OLD_STATE
-
-state_t* csprof_check_for_new_epoch(state_t *);
+state_t* hpcrun_check_for_new_epoch(state_t *);
 void hpcrun_state_init(void);
 // ---------------------------------------------------------
 // expand the internal backtrace buffer
@@ -128,26 +103,15 @@ void hpcrun_state_init(void);
 // Undoubtedly a better solution than this is possible, but this at
 // least is a more appropriate location.
 
-#ifdef OLD_STATE
-#define csprof_state_ensure_buffer_avail(state, unwind)               \
-  thread_data_t* td = hpcrun_get_thread_data();                       \
-  if (unwind == td->bufend) {				              \
-    unwind = hpcrun_expand_btbuf();				      \
-    td->bufstk = td->bufend;				              \
-  }
-
-hpcrun_frame_t*
-csprof_state_expand_buffer(state_t *, hpcrun_frame_t *);
-#endif
 
 csprof_cct_node_t* 
 hpcrun_state_insert_backtrace(state_t *, int, hpcrun_frame_t *,
 			      hpcrun_frame_t *, cct_metric_data_t);
 
 #if defined(CSPROF_PERF)
-#define csprof_state_verify_backtrace_invariants()
+#define hpcrun_verify_backtrace_invariants()
 #else
-#define csprof_state_verify_backtrace_invariants() \
+#define hpcrun_verify_backtrace_invariants() \
 do { \
   thread_data_t* td = hpcrun_get_thread_data(); \
   int condition = (td->btbuf < td->bufend) /* obvious */		\
@@ -159,70 +123,5 @@ do { \
   }									\
 } while(0);
 #endif
-
-/* finalize various parts of a state */
-int csprof_state_fini(state_t *);
-/* destroy dynamically allocated portions of a state */
-int csprof_state_free(state_t *);
-
-#ifdef OLD_STATE
-#define csprof_state_has_empty_backtrace(state) ((state)->bufend - (state)->bufstk == 0)
-#define csprof_bt_pop(state) do { state->bufstk++; } while(0)
-#define csprof_bt_top_ip(state) (state->bufstk->ip)
-#define csprof_bt_top_sp(state) (state->bufstk->sp)
-/* `ntop' == `next top'; any better ideas? */
-#define csprof_bt_ntop_ip(state) ((state->bufstk + 1)->ip)
-#define csprof_bt_ntop_sp(state) ((state->bufstk + 1)->sp)
-
-
-/* various flag values for state_t; pre-shifted for efficiency and
-   to enable set/test/clear multiple flags in a single call */
-#define CSPROF_EXC_HANDLING (1 << 0)   /* true while exception processing */
-#define CSPROF_TAIL_CALL (1 << 1)      /* true if we're unable to swap tramp;
-                                          usually this only happens when tail
-                                          calls occur */
-#define CSPROF_THRU_TRAMP (1 << 2)     /* true if we've been through a trampoline
-                                          since the last signal we hit */
-#define CSPROF_BOGUS_CRD (1 << 3)      /* true if we discovered from
-                                          the unwind process that the
-                                          current context's CRD is
-                                          totally bogus
-                                          (e.g. NON_CONTEXT for a
-                                          perfectly ordinary stack
-                                          frame procedure...) */
-/* true if we discovered during the unwinding that the return address has
-   already been reloaded from the stack */
-#define CSPROF_EPILOGUE_RA_RELOADED (1 << 4)
-/* true if we discovered during the unwinding that the stack/frame pointer
-   has been resest */
-#define CSPROF_EPILOGUE_SP_RESET (1 << 5)
-/* true if we received a signal whilst executing the trampoline */
-#define CSPROF_SIGNALED_DURING_TRAMPOLINE (1 << 6)
-/* true if this malloc has realloc in its call chain */
-#define CSPROF_MALLOCING_DURING_REALLOC (1 << 7)
-
-static inline int
-csprof_state_flag_isset(state_t *state, unsigned int flag)
-{
-    extern int s1;
-    unsigned int state_flags = state->flags;
-
-    s1 = s1 + 1;
-    TMSG(STATE,"state flag isset: %x",state_flags & flag);
-    return state_flags & flag;
-}
-
-static inline void
-csprof_state_flag_set(state_t *state, unsigned int flag)
-{
-    state->flags = state->flags | flag;
-}
-
-static inline void
-csprof_state_flag_clear(state_t *state, unsigned int flag)
-{
-    state->flags = state->flags & (~flag);
-}
-#endif // OLD_STATE
 
 #endif // STATE_H
