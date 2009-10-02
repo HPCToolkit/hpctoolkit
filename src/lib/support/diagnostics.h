@@ -120,7 +120,6 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 // false. Stops at 'Diagnostics_TheMostVisitedBreakpointInHistory'.
 
 // DIAG_AssertWarn: Print a warning if 'expr' evaluates to false.
-// Stops at 'Diagnostics_TheMostVisitedBreakpointInHistory'.
 
 // DIAG_Die: Print an error message and die.  Stops at
 // 'Diagnostics_TheMostVisitedBreakpointInHistory'.
