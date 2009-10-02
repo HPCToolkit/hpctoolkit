@@ -146,22 +146,35 @@ Profile::merge(Profile& y, int mergeTy)
   // -------------------------------------------------------
   // merge name, flags, etc
   // -------------------------------------------------------
+
+  // Note: these values can be 'null' if the hpcrun-fmt data had no epochs
   if (m_flags.bits == 0) {
     m_flags.bits = y.m_flags.bits;
+  }
+  else if (y.m_flags.bits == 0) {
+    y.m_flags.bits = m_flags.bits;
   }
 
   if (m_measurementGranularity == 0) {
     m_measurementGranularity = y.m_measurementGranularity;
   }
+  else if (y.m_measurementGranularity == 0) {
+    y.m_measurementGranularity = m_measurementGranularity;
+  }
 
   if (m_raToCallsiteOfst == 0) {
     m_raToCallsiteOfst = y.m_raToCallsiteOfst;
   }
+  else if (y.m_raToCallsiteOfst == 0) {
+    y.m_raToCallsiteOfst = m_raToCallsiteOfst;
+  }
 
-  DIAG_WMsgIf( !(m_flags.bits == y.m_flags.bits
-		 && m_measurementGranularity == y.m_measurementGranularity
-		 && m_raToCallsiteOfst == y.m_raToCallsiteOfst),
-	       "CallPath::Profile::merge(): ignoring incompatible flags");
+  DIAG_WMsgIf(m_flags.bits != y.m_flags.bits,
+	      "CallPath::Profile::merge(): ignoring incompatible flags");
+  DIAG_Assert(m_measurementGranularity == y.m_measurementGranularity,
+	      "CallPath::Profile::merge(): ignoring incompatible measurement-granularity: " << m_measurementGranularity << " vs. " << y.m_measurementGranularity);
+  DIAG_WMsgIf(m_raToCallsiteOfst != y.m_raToCallsiteOfst,
+	      "CallPath::Profile::merge(): ignoring incompatible RA-to-callsite-offset" << m_raToCallsiteOfst << " vs. " << y.m_raToCallsiteOfst);
 
   // -------------------------------------------------------
   // merge metrics 
