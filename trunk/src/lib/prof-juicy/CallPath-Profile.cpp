@@ -171,7 +171,7 @@ Profile::merge(Profile& y, int mergeTy)
 
   DIAG_WMsgIf(m_flags.bits != y.m_flags.bits,
 	      "CallPath::Profile::merge(): ignoring incompatible flags");
-  DIAG_Assert(m_measurementGranularity == y.m_measurementGranularity,
+  DIAG_WMsgIf(m_measurementGranularity != y.m_measurementGranularity,
 	      "CallPath::Profile::merge(): ignoring incompatible measurement-granularity: " << m_measurementGranularity << " vs. " << y.m_measurementGranularity);
   DIAG_WMsgIf(m_raToCallsiteOfst != y.m_raToCallsiteOfst,
 	      "CallPath::Profile::merge(): ignoring incompatible RA-to-callsite-offset" << m_raToCallsiteOfst << " vs. " << y.m_raToCallsiteOfst);
