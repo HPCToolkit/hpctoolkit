@@ -41,8 +41,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef CSPROF_METRICS_H
-#define CSPROF_METRICS_H
+#ifndef METRICS_H
+#define METRICS_H
 
 #include <sys/types.h>
 #include <stdbool.h>
@@ -59,41 +59,27 @@
 //    xcsprof (hpcprof) and hpcfile can use it.  hpcfile at least
 //    satisfies this.
 
+#include <stdbool.h>
+#include <stdlib.h>
+
+#include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcfmt.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
+
 bool hpcrun_metrics_finalized(void);
 
-int 
-csprof_get_max_metrics();
+void hpcrun_pre_allocate_metrics(size_t num);
 
-/* Set the maximum number of metrics that can be tracked by the library
-   simultaneously.  This function can only be called for effect once. */
-int 
-csprof_set_max_metrics(int max_metrics);
+int hpcrun_get_num_metrics(void);
 
-/* Return the number of metrics being recorded. */
-int 
-csprof_num_recorded_metrics();
+metric_desc_t* hpcrun_id2metric(int id);
 
-/* Request a new metric id.  Returns the new metric id on success, -1
-   on failure (that is, you are already tracking the maximum number of
-   metrics possible). */
-int 
-csprof_new_metric();
+metric_list_t* hpcrun_get_metric_data(void);
 
-/* Associate `name' with `metric_id' for later processing.  The sample
-   period defaults to `1' for this metric. */
-void 
-csprof_set_metric_info(int metric_id, char *name, hpcrun_metricFlags_t flags);
+int hpcrun_new_metric(void);
 
-/* A more detailed version of `csprof_set_metric_info'. */
-void 
-csprof_set_metric_info_and_period(int metric_id, char *name,
-				  hpcrun_metricFlags_t flags, size_t period);
+void hpcrun_set_metric_info_and_period(int metric_id, char *name,
+				       hpcrun_metricFlags_t flags, size_t period);
+void hpcrun_set_metric_info(int metric_id, char *name, hpcrun_metricFlags_t flags);
 
-/* Record `value' for `metric_id'. */
-void 
-csprof_record_metric(int metric_id, size_t value);
-
-metric_tbl_t* 
-hpcrun_get_metric_data();
-
-#endif
+#endif // METRICS_H

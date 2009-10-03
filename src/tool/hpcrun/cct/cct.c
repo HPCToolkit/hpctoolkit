@@ -137,7 +137,7 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
 {
 
   size_t sz = (sizeof(csprof_cct_node_t)
-	       + sizeof(cct_metric_data_t)*(csprof_get_max_metrics() - 1));
+	       + sizeof(cct_metric_data_t)*hpcrun_get_num_metrics());
   csprof_cct_node_t *node;
 
   // FIXME: when multiple epochs really work, this will always be freeable.
@@ -200,7 +200,7 @@ static bool
 all_metrics_0(csprof_cct_node_t* node)
 {
   cct_metric_data_t* metrics = &(node->metrics[0]);
-  int num_metrics            = csprof_num_recorded_metrics();
+  int num_metrics            = hpcrun_get_num_metrics();
   bool rv = true;
   for (int i=0; i < num_metrics; i++){
     if (metrics[i].bits) {
@@ -327,10 +327,12 @@ csprof_cct_node__find_child(csprof_cct_node_t* x,
 void
 hpcrun_cct_make_root(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
 {
+#ifdef OLD_METRICS
   if (! hpcrun_metrics_finalized()) {
     TMSG(MAX_METRICS, "WARNING: cct_make_root called when metrics NOT finalized!");
     return;
   }
+#endif
 
   // introduce bogus root to handle possible forests
   x->tree_root = csprof_cct_node__create(lush_assoc_info_NULL, 0, NULL, x);
@@ -345,11 +347,13 @@ csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
   TMSG(CCT_TYPE,"--Init");
   memset(x, 0, sizeof(*x));
 
+#ifdef OLD_METRICS
   if (! hpcrun_metrics_finalized()) {
     EMSG("WARNING: cct__init called when metrics NOT finalized!");
 
     return HPCRUN_ERR;
   }
+#endif
 
   hpcrun_cct_make_root(x, ctxt);
 
@@ -491,7 +495,7 @@ hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_ctxt_
   hpcfmt_uint_t num_nodes = x_ctxt_len + x->num_nodes;
 
   ret = hpcfile_cstree_write(fs, flags, x, x->tree_root, x_ctxt,
-			     csprof_num_recorded_metrics(),
+			     hpcrun_get_num_metrics(),
 			     num_nodes);
 
 
@@ -786,7 +790,7 @@ lush_cct_ctxt__write(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctxt)
   // N.B.: assumes that calling malloc is acceptible!
 
   int ret;
-  unsigned int num_metrics = csprof_num_recorded_metrics();
+  unsigned int num_metrics = hpcrun_get_num_metrics();
 
   hpcrun_fmt_cct_node_t tmp_node;
   hpcrun_fmt_cct_node_init(&tmp_node);

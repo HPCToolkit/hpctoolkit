@@ -238,14 +238,14 @@ METHOD_FN(process_event_list, int lush_metrics)
   int nevents = (self->evl).nevents;
   TMSG(PAPI,"nevents = %d", nevents);
 
-  csprof_set_max_metrics(nevents + num_lush_metrics);
+  hpcrun_pre_allocate_metrics(nevents + num_lush_metrics);
 
   for (i = 0; i < nevents; i++) {
     char buffer[PAPI_MAX_STR_LEN];
-    int metric_id = csprof_new_metric(); /* weight */
+    int metric_id = hpcrun_new_metric(); /* weight */
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
     TMSG(PAPI, "metric for event %d = %s", i, buffer);
-    csprof_set_metric_info_and_period(metric_id, strdup(buffer),
+    hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
 				      HPCRUN_MetricFlag_Async,
 				      self->evl.events[i].thresh);
 

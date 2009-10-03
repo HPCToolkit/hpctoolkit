@@ -103,8 +103,7 @@ cct_metric_data_increment(int metric_id,
 			  cct_metric_data_t* x, 
 			  cct_metric_data_t incr)
 {
-  metric_tbl_t* mdata = hpcrun_get_metric_data();
-  metric_desc_t* minfo = &(mdata->lst[metric_id]);
+  metric_desc_t* minfo = hpcrun_id2metric(metric_id);
   
   if (hpcrun_metricFlags_isFlag(minfo->flags, HPCRUN_MetricFlag_Real)) {
     x->r += incr.r;
@@ -152,7 +151,7 @@ typedef struct csprof_cct_node_t {
   // metrics (N.B.: MUST APPEAR AT END! cf. csprof_cct_node__create)
   // ---------------------------------------------------------
   
-  cct_metric_data_t metrics[1]; // variable-sized array
+  cct_metric_data_t metrics[]; // variable-sized array
 
 } csprof_cct_node_t;
 

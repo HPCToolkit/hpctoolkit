@@ -47,6 +47,7 @@
 #endif
 
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "epoch.h"
 #include "metrics.h"
@@ -59,14 +60,20 @@
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
-/* total number of metrics we can track simultaneously */
-static int csprof_max_metrics = 0;
-/* information about tracked metrics */
+// number of metrics requested
+static int n_metrics = 0;
 
-static metric_tbl_t metric_data;
+// information about tracked metrics
+static metric_list_t* metric_data = NULL;
 
-/* setting the total number of metrics to track */
-static int has_set_max_metrics = false;
+// flag to indicate that metric allocation is finalized
+static bool has_set_max_metrics = false;
+
+// some sample sources will pre-allocate some metrics ...
+static metric_list_t* pre_alloc = NULL;
+
+// need an index-->metric desc mapping, so that samples will increment metrics correctly
+static metric_desc_t** id2metric;
 
 bool
 hpcrun_metrics_finalized(void)
@@ -74,15 +81,115 @@ hpcrun_metrics_finalized(void)
   return has_set_max_metrics;
 }
 
-int
-csprof_get_max_metrics()
+
+void
+hpcrun_pre_allocate_metrics(size_t num)
 {
-  if (! has_set_max_metrics) {
-    EMSG("WARNING: csprof_get_max_metrics called BEFORE metrics are finalized!");
+  if (has_set_max_metrics) {
+    return;
   }
-  return csprof_max_metrics;
+  for(int i=0; i < num; i++){
+    metric_list_t* n = (metric_list_t*) csprof_malloc(sizeof(metric_list_t));
+    n->next = pre_alloc;
+    pre_alloc = n;
+  }
+  // NOTE: actual metric count not incremented until a new metric is requested
 }
 
+//
+// first call to get_num_metrics will finalize
+// the metric info table
+//
+int
+hpcrun_get_num_metrics(void){
+  //
+  // create id->descriptor table
+  if (!has_set_max_metrics) {
+    id2metric = csprof_malloc(n_metrics * sizeof(metric_desc_t*));
+    for(metric_list_t* l = metric_data; l; l = l->next){
+      id2metric[l->id] = &(l->val);
+    }
+  }
+  has_set_max_metrics = true;
+  return n_metrics;
+}
+
+metric_desc_t*
+hpcrun_id2metric(int id)
+{
+  if ((0 <= id) && (id < n_metrics)) {
+    return id2metric[id];
+  }
+  return NULL;
+}
+
+metric_list_t*
+hpcrun_get_metric_data(void)
+{
+  return metric_data;
+}
+
+int
+hpcrun_new_metric(void)
+{
+  if (has_set_max_metrics) {
+    return 0;
+  }
+
+  metric_list_t* n = NULL;
+
+  // if there are pre-alllocated metrics, use them
+  if (pre_alloc) {
+    n = pre_alloc;
+    pre_alloc = pre_alloc->next;
+  }
+  else {
+    n = (metric_list_t*) csprof_malloc(sizeof(metric_list_t));
+  }
+  n->next = metric_data;
+  n->id   = n_metrics;
+  metric_data = n;
+  n_metrics++;
+
+  return metric_data->id;
+}
+
+void
+hpcrun_set_metric_info_and_period(int metric_id, char *name,
+				  hpcrun_metricFlags_t flags, size_t period)
+{
+  if (has_set_max_metrics) {
+    return;
+  }
+
+  metric_desc_t* metric = NULL;
+  for (metric_list_t* l = metric_data; l; l = l->next){
+    if (l->id == metric_id){
+      metric = &(l->val);
+      break;
+    }
+  }
+  TMSG(METRICS,"name = %s, flags = %lx, period = %d", name, flags, period);
+  if (! metric) {
+    EMSG("Metric id is NULL (likely unallocated)");
+    monitor_real_abort();
+  }
+  if(name == NULL) {
+    EMSG("Must supply a name for metric");
+    monitor_real_abort();
+  }
+  metric->name = name;
+  metric->period = period;
+  metric->flags = flags;
+}
+
+void
+hpcrun_set_metric_info(int metric_id, char *name, hpcrun_metricFlags_t flags)
+{
+  hpcrun_set_metric_info_and_period(metric_id, name, flags, 1);
+}
+
+#ifdef OLD_METRICS
 int
 csprof_set_max_metrics(int max_metrics)
 {
@@ -102,15 +209,10 @@ csprof_set_max_metrics(int max_metrics)
   }
 }
 
-metric_tbl_t*
-hpcrun_get_metric_data(void)
-{
-  return &metric_data;
-}
-
 int
 csprof_num_recorded_metrics(void)
 {
+  // finalize if not yet final
   return metric_data.len;
 }
 
@@ -130,43 +232,12 @@ csprof_new_metric()
   }
 }
 
-void
-csprof_set_metric_info_and_period(int metric_id, char *name,
-				  hpcrun_metricFlags_t flags, size_t period)
+int
+csprof_get_max_metrics()
 {
-  TMSG(METRICS,"id = %d, name = %s, flags = %lx, period = %d", metric_id, name,flags, period);
-  if(metric_id >= metric_data.len) {
-    EMSG("Metric id `%d' is not a defined metric", metric_id);
+  if (! has_set_max_metrics) {
+    EMSG("WARNING: csprof_get_max_metrics called BEFORE metrics are finalized!");
   }
-  if(name == NULL) {
-    EMSG("Must supply a name for metric `%d'", metric_id);
-    monitor_real_abort();
-  }
-  { 
-    metric_desc_t *metric = &(metric_data.lst[metric_id]);
-    metric->name = name;
-    metric->period = period;
-    metric->flags = flags;
-  }
+  return csprof_max_metrics;
 }
-
-void
-csprof_set_metric_info(int metric_id, char *name, hpcrun_metricFlags_t flags)
-{
-  csprof_set_metric_info_and_period(metric_id, name, flags, 1);
-}
-
-#if 0
-void
-csprof_record_metric(int metric_id, size_t value)
-{
-
-#ifdef NO
-  /* step out of c_r_m_w_u and c_r_m */
-  csprof_record_metric_with_unwind(metric_id, value, 2);
-#endif
-  /** Try it with 1 **/
-  csprof_record_metric_with_unwind(metric_id, value, 1);
-}
-
 #endif
