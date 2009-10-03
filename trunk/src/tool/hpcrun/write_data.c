@@ -245,9 +245,11 @@ write_epochs(FILE* fs, state_t* state)
     // == metrics ==
     //
 
-    metric_tbl_t *metric_tbl = hpcrun_get_metric_data();
+    metric_list_t *metric_tbl = hpcrun_get_metric_data();
 
+#if OLD_METRICS
     TMSG(DATA_WRITE, "metric data num metrics = %d", metric_tbl->len);
+#endif
 
     hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
 

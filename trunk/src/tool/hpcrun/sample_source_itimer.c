@@ -246,31 +246,29 @@ METHOD_FN(process_event_list,int lush_metrics)
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
-  int ret = csprof_set_max_metrics(1 + lush_metrics);
+  hpcrun_pre_allocate_metrics(1 + lush_metrics);
   
-  if (ret > 0) {
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
-    long sample_period = 1;
+  long sample_period = 1;
 #else
-    long sample_period = self->evl.events[0].thresh;
+  long sample_period = self->evl.events[0].thresh;
 #endif
 
-    int metric_id = csprof_new_metric();
-    TMSG(ITIMER_CTL,"setting metric id = %d,period = %ld",metric_id,sample_period);
-    csprof_set_metric_info_and_period(metric_id, "WALLCLOCK (us)",
-				      HPCRUN_MetricFlag_Async,
-				      sample_period);
+  int metric_id = hpcrun_new_metric();
+  TMSG(ITIMER_CTL,"setting metric ITIMER,period = %ld",sample_period);
+  hpcrun_set_metric_info_and_period(metric_id, "WALLCLOCK (us)",
+				    HPCRUN_MetricFlag_Async,
+				    sample_period);
     
-    // FIXME:LUSH: need a more flexible metric interface
-    if (lush_metrics == 1) {
-      int mid_idleness = csprof_new_metric();
-      lush_agents->metric_time = metric_id;
-      lush_agents->metric_idleness = mid_idleness;
+  // FIXME:LUSH: need a more flexible metric interface
+  if (lush_metrics == 1) {
+    int mid_idleness = hpcrun_new_metric();
+    lush_agents->metric_time = metric_id;
+    lush_agents->metric_idleness = mid_idleness;
 
-      csprof_set_metric_info_and_period(mid_idleness, "idleness (ms)",
-					HPCRUN_MetricFlag_Async | HPCRUN_MetricFlag_Real,
-					sample_period);
-    }
+    hpcrun_set_metric_info_and_period(mid_idleness, "idleness (ms)",
+				      HPCRUN_MetricFlag_Async | HPCRUN_MetricFlag_Real,
+				      sample_period);
   }
   thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD; // Event sets not relevant for itimer

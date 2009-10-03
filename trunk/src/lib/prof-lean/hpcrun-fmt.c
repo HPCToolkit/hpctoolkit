@@ -267,14 +267,23 @@ hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* fs,
 }
 
 
+//
+// metric list ==> written out as metric tbl
+//
 int
-hpcrun_fmt_metricTbl_fwrite(metric_tbl_t* metric_tbl, FILE* fs)
+hpcrun_fmt_metricTbl_fwrite(metric_list_t* metric_tbl, FILE* fs)
 {
-  hpcfmt_byte4_fwrite(metric_tbl->len, fs);
-  for (uint32_t i = 0; i < metric_tbl->len; i++) {
-    metric_desc_t* x = &metric_tbl->lst[i];
+  uint32_t len = 0;
+  for (metric_list_t* n = metric_tbl; n; n = n->next){
+    len++;
+  }
+
+  hpcfmt_byte4_fwrite(len, fs);
+  for (metric_list_t* n = metric_tbl; n; n = n->next){
+    metric_desc_t* x = &(n->val);
     hpcrun_fmt_metricDesc_fwrite(x, fs);
   }
+
   return HPCFMT_OK;
 }
 

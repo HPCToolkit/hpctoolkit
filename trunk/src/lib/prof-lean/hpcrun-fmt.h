@@ -249,6 +249,14 @@ typedef struct metric_desc_t {
 } metric_desc_t;
 
 
+typedef struct metric_list_t {
+  struct metric_list_t* next;
+  metric_desc_t val;
+  int id;
+} metric_list_t;
+
+
+
 HPCFMT_List_declare(metric_desc_t);
 typedef HPCFMT_List(metric_desc_t) metric_tbl_t; // hpcrun_metricTbl_t
 
@@ -258,7 +266,7 @@ hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* in,
 			   hpcfmt_alloc_fn alloc);
 
 extern int 
-hpcrun_fmt_metricTbl_fwrite(metric_tbl_t* metric_tbl, FILE* out);
+hpcrun_fmt_metricTbl_fwrite(metric_list_t* metric_tbl, FILE* out);
 
 extern int 
 hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, FILE* out);
