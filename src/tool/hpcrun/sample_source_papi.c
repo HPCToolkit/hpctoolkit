@@ -253,11 +253,11 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       // there should be one lush metric; its source is the last event
       assert(num_lush_metrics == 1 && (i == (nevents - 1)));
-      int mid_idleness = csprof_new_metric();
+      int mid_idleness = hpcrun_new_metric();
       lush_agents->metric_time = metric_id;
       lush_agents->metric_idleness = mid_idleness;
 
-      csprof_set_metric_info_and_period(mid_idleness, "idleness",
+      hpcrun_set_metric_info_and_period(mid_idleness, "idleness",
 					HPCRUN_MetricFlag_Async | HPCRUN_MetricFlag_Real,
 					self->evl.events[i].thresh);
     }
