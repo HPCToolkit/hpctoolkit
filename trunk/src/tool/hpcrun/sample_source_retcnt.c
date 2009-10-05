@@ -128,20 +128,23 @@ METHOD_FN(process_event_list,int lush_metrics)
   }
 }
 
+//
+// Event sets not relevant for this sample source
+//
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
-  int ret = csprof_set_max_metrics(1 + lush_metrics);
+  int ret = hpcrun_pre_allocate_metrics(1 + lush_metrics);
   
   if (ret > 0) {
-    int metric_id = csprof_new_metric();
+    int metric_id = hpcrun_new_metric();
     TMSG(RETCNT_CTL,"No event set for RETCNT sample source");
-    csprof_set_metric_info_and_period(metric_id, "RETCNT",
+    hpcrun_set_metric_info_and_period(metric_id, "RETCNT",
 				      HPCRUN_MetricFlag_Async,
 				      1);
   }
   thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD; // Event sets not relevant for itimer
+  td->eventSet[self->evset_idx] = 0xDEAD;
 }
 
 static void
@@ -180,6 +183,7 @@ sample_source_t _retcnt_obj = {
   },
   .evset_idx = 2,
   .name = "RETCNT",
+  .cls  = SFWARE,
   .state = UNINIT
 };
 

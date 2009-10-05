@@ -66,7 +66,7 @@ csprof_ss_register(sample_source_t *src)
 }
 
 
-sample_source_t *
+sample_source_t*
 csprof_source_can_process(char *event)
 {
   for (int i=0;i < nregs;i++){

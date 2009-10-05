@@ -101,7 +101,7 @@ hpcrun_isLogicalUnwind()
 // LUSH backtrace
 //***************************************************************************
 
-csprof_cct_node_t*
+cct_node_t*
 lush_backtrace(state_t* state, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       int skipInner, int isSync);

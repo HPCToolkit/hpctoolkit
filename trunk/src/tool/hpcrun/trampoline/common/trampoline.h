@@ -47,8 +47,8 @@ bool hpcrun_trampoline_at_entry(void* addr);
 
 void* hpcrun_trampoline_handler(void);
 
-void hpcrun_trampoline_insert(csprof_cct_node_t* node);
+void hpcrun_trampoline_insert(cct_node_t* node);
 void hpcrun_trampoline_remove(void);
-csprof_cct_node_t* hpcrun_trampoline_advance(void);
+cct_node_t* hpcrun_trampoline_advance(void);
 
 #endif // trampoline_h

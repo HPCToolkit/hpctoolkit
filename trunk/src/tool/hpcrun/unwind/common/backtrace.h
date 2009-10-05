@@ -74,18 +74,18 @@
 // forward declarations
 //***************************************************************************
 
-csprof_cct_node_t*
+cct_node_t*
 hpcrun_backtrace(state_t *state, ucontext_t* context, 
 		 int metricId, uint64_t metricIncr,
 		 int skipInner, int isSync);
 
-hpcrun_frame_t*
-hpcrun_skip_chords(hpcrun_frame_t* bt_outer, hpcrun_frame_t* bt_inner, 
+frame_t*
+hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
 		   int skip);
 
 // FIXME: tallent: relocate when 'csprof state' trash is untangled
 void 
-dump_backtrace(state_t *state, hpcrun_frame_t *unwind);
+dump_backtrace(state_t *state, frame_t *unwind);
 
 //***************************************************************************
 

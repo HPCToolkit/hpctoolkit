@@ -116,6 +116,12 @@ METHOD_FN(supports_event,const char *ev_str)
   return (strstr(ev_str,"NONE") != NULL);
 }
  
+
+//
+// Special NONE protocol:
+//  if event is NONE@xxx, then create log file and process the TMSG logging
+//  if eveint is just plain NONE, then no log file (or any other evidence of hpcrun) 
+//
 static void
 METHOD_FN(process_event_list,int lush_metrics)
 {
@@ -129,6 +135,9 @@ METHOD_FN(process_event_list,int lush_metrics)
   }
 }
 
+//
+// Event sets not relevant for this sample source
+//
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
@@ -141,7 +150,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
 				    1);
 
   thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD; // Event sets not relevant for itimer
+  td->eventSet[self->evset_idx] = 0xDEAD; 
 }
 
 static void
@@ -180,6 +189,7 @@ sample_source_t _none_obj = {
   },
   .evset_idx = 2,
   .name = "NONE",
+  .cls  = HDWARE,
   .state = UNINIT
 };
 

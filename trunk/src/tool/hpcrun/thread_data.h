@@ -129,11 +129,11 @@ typedef struct thread_data_t {
   //                        |              |
   //                      unwind         bufstk
   
-  hpcrun_frame_t*       unwind;    // current frame
-  hpcrun_frame_t*       btbuf; 	   // innermost frame in new backtrace
-  hpcrun_frame_t*       bufend;	   // 
-  hpcrun_frame_t*       bufstk;	   // innermost frame in cached backtrace
-  csprof_cct_node_t*   treenode;   // cached pointer into the tree
+  frame_t*       unwind;    // current frame
+  frame_t*       btbuf; 	   // innermost frame in new backtrace
+  frame_t*       bufend;	   // 
+  frame_t*       bufstk;	   // innermost frame in cached backtrace
+  cct_node_t*   treenode;   // cached pointer into the tree
 
   // the loadmap + cct + cct_ctxt = epoch
   state_t*         state;
@@ -158,11 +158,11 @@ typedef struct thread_data_t {
   bool               tramp_present;      // TRUE if there is a trampoline installed, FALSE otherwise
   void*              tramp_retn_addr;    // the return address that the trampoline replaced
   void*              tramp_loc;          // current (stack) location of the trampoline
-  hpcrun_frame_t*    cached_bt;          // the latest backtrace (start)
-  hpcrun_frame_t*    cached_bt_end;      // the latest backtrace (end)
-  hpcrun_frame_t*    cached_bt_buf_end;  // the end of the cached backtrace buffer
-  hpcrun_frame_t*    tramp_frame;        // (cached) frame associated with current trampoline location
-  csprof_cct_node_t* tramp_cct_node;     //  cct node associated with the trampoline
+  frame_t*    cached_bt;          // the latest backtrace (start)
+  frame_t*    cached_bt_end;      // the latest backtrace (end)
+  frame_t*    cached_bt_buf_end;  // the end of the cached backtrace buffer
+  frame_t*    tramp_frame;        // (cached) frame associated with current trampoline location
+  cct_node_t* tramp_cct_node;     //  cct node associated with the trampoline
 
   // IO support
   FILE*            hpcrun_file;
@@ -180,7 +180,7 @@ bool          (*hpcrun_td_avail)(void);
 thread_data_t *hpcrun_allocate_thread_data(void);
 void           hpcrun_init_pthread_key(void);
 
-hpcrun_frame_t* hpcrun_expand_btbuf(void);
+frame_t* hpcrun_expand_btbuf(void);
 void           	hpcrun_ensure_btbuf_avail(void);
 void           	hpcrun_set_thread_data(thread_data_t *td);
 void           	hpcrun_set_thread0_data(void);

@@ -397,6 +397,7 @@ sample_source_t _papi_obj = {
   },
   .evset_idx = 1,
   .name = "papi",
+  .cls  = HDWARE,
   .state = UNINIT
 };
 

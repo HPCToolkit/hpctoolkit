@@ -104,9 +104,9 @@ void hpcrun_state_init(void);
 // least is a more appropriate location.
 
 
-csprof_cct_node_t* 
-hpcrun_state_insert_backtrace(state_t *, int, hpcrun_frame_t *,
-			      hpcrun_frame_t *, cct_metric_data_t);
+cct_node_t* 
+hpcrun_state_insert_backtrace(state_t *, int, frame_t *,
+			      frame_t *, cct_metric_data_t);
 
 #if defined(CSPROF_PERF)
 #define hpcrun_verify_backtrace_invariants()

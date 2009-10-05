@@ -217,7 +217,7 @@ hpcrun_epoch_reset(void)
   state_t *newstate = csprof_malloc(sizeof(state_t));
   memcpy(newstate, state, sizeof(state_t));
   TMSG(EPOCH_RESET, "check new epoch = old epoch = %d", newstate->epoch == state->epoch);
-  csprof_cct__init(&newstate->csdata, newstate->csdata_ctxt); // reset cct
+  hpcrun_cct_init(&newstate->csdata, newstate->csdata_ctxt); // reset cct
   hpcrun_reset_state(newstate);
   TMSG(EPOCH_RESET," ==> no new state for next sample = %d", newstate->epoch == hpcrun_get_epoch());
 }
