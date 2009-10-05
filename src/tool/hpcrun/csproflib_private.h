@@ -97,8 +97,6 @@ typedef void (*sig_handler_func_t)(int, siginfo_t *, void *);
 
 int hpcrun_write_profile_data(state_t*);
 
-#ifdef CSPROF_THREADS
 void csprof_atexit_handler();
-#endif
 
 #endif

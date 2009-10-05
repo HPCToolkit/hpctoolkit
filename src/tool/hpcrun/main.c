@@ -129,10 +129,6 @@ enum _local_const {
 void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
-#if 0
-#define PROC_NAME_LEN  2048
-#endif
-
   char* process_name;
   char  buf[PROC_NAME_LEN];
 

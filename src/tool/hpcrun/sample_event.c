@@ -257,44 +257,15 @@ _hpcrun_sample_callpath(state_t *state, void *context,
 {
   void *pc = context_pc(context);
 
-  TMSG(SAMPLE,"csprof take profile sample");
-#ifdef USE_TRAMP
-  if(/* trampoline isn't exactly active during exception handling */
-     csprof_state_flag_isset(state, CSPROF_EXC_HANDLING)
-     /* dynamical libraries are in flux; don't bother */
-     /* || hpcrun_epoch_is_locked() */
-     /* general checking for addresses in libraries */
-     || csprof_context_is_unsafe(context)) {
-    EMSG("Reached trampoline code !!");
-    /* ugh, don't even bother */
-    state->trampoline_samples++;
-    // _zflags();
-
-    return;
-  }
-#endif
-  TMSG(SAMPLE, "Signalled at %lx", pc);
+  TMSG(SAMPLE,"csprof take profile sample @ %p",pc);
 
   /* check to see if shared library state has changed out from under us */
   state = hpcrun_check_for_new_epoch(state);
 
-#ifdef USE_TRAMP
-  PMSG(SWIZZLE,"undo swizzled data\n");
-  csprof_undo_swizzled_data(state, context);
-#endif
-  
   cct_node_t* n =
     hpcrun_backtrace(state, context, metricId, metricIncr, skipInner, isSync);
 
   // FIXME: n == -1 if sample is filtered
-#if 0
-  if (!n) {
-#ifdef USE_TRAMP
-    PMSG(SWIZZLE,"about to swizzle w context\n");
-    csprof_swizzle_with_context(state, (void *)context);
-#endif
-  }
-#endif
 
   return n;
 }
