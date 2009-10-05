@@ -74,7 +74,7 @@ hpcrun_state_init(void)
   thread_data_t* td    = hpcrun_get_thread_data();
   state_t*       state = td->state;
 
-  csprof_cct__init(&(state->csdata), state->csdata_ctxt);
+  hpcrun_cct_init(&(state->csdata), state->csdata_ctxt);
   state->epoch = hpcrun_get_epoch();
   state->next  = NULL;
 }
@@ -121,7 +121,7 @@ hpcrun_check_for_new_epoch(state_t* state)
     memcpy(newstate, state, sizeof(state_t));
 
     /* we do have to reinitialize the tree, though */
-    csprof_cct__init(&newstate->csdata, newstate->csdata_ctxt);
+    hpcrun_cct_init(&newstate->csdata, newstate->csdata_ctxt);
 
     thread_data_t* td = hpcrun_get_thread_data();
     /* and reinsert backtraces */
@@ -158,19 +158,18 @@ csprof_state_fini(state_t *x){
   return HPCRUN_OK;
 }
 
-csprof_cct_node_t*
+cct_node_t*
 hpcrun_state_insert_backtrace(state_t *state, int metric_id,
-			      hpcrun_frame_t *path_beg,
-			      hpcrun_frame_t *path_end,
+			      frame_t *path_beg,
+			      frame_t *path_end,
 			      cct_metric_data_t increment)
 {
   thread_data_t* td = hpcrun_get_thread_data();
-  csprof_cct_node_t* n;
-  n = csprof_cct_insert_backtrace(&state->csdata, td->treenode,
+  cct_node_t* n;
+  n = hpcrun_cct_insert_backtrace(&state->csdata, td->treenode,
 				  metric_id, path_beg, path_end, increment);
 
   TMSG(CCT, "Treenode is %p", n);
   
-  td->treenode = n;
   return n;
 }

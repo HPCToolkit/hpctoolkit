@@ -64,11 +64,11 @@ hpcrun_trampoline_at_entry(void* addr)
 }
 
 
-csprof_cct_node_t*
+cct_node_t*
 hpcrun_trampoline_advance(void)
 {
   thread_data_t* td = hpcrun_get_thread_data();
-  csprof_cct_node_t* node = td->tramp_cct_node;
+  cct_node_t* node = td->tramp_cct_node;
   node = node->parent;
   td->tramp_frame++;
   return node;
@@ -76,7 +76,7 @@ hpcrun_trampoline_advance(void)
 
 
 void 
-hpcrun_trampoline_insert(csprof_cct_node_t* node)
+hpcrun_trampoline_insert(cct_node_t* node)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   void* addr        = td->tramp_frame->ra_loc;
@@ -117,7 +117,7 @@ hpcrun_trampoline_handler(void)
   // get the address where we need to return
   void* ra = td->tramp_retn_addr;
   
-  csprof_cct_node_t* n = hpcrun_trampoline_advance();
+  cct_node_t* n = hpcrun_trampoline_advance();
   hpcrun_trampoline_insert(n);
 
   return ra; // our assembly code caller will return to ra

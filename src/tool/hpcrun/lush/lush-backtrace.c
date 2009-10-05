@@ -83,8 +83,8 @@
 
 #define MYDBG 0
 
-static hpcrun_frame_t*
-canonicalize_chord(hpcrun_frame_t* chord_beg, lush_assoc_t as,
+static frame_t*
+canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
 		   uint pchord_len, uint lchord_len);
 
 
@@ -99,7 +99,7 @@ lush_agent_pool_t* lush_agents = NULL;
 // LUSH backtrace
 //***************************************************************************
 
-csprof_cct_node_t*
+cct_node_t*
 lush_backtrace(state_t* state, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       int skipInner, int isSync)
@@ -164,7 +164,7 @@ lush_backtrace(state_t* state, ucontext_t* context,
     // FIXME: short circuit unwind if we hit the 'active return'
 
     hpcrun_ensure_btbuf_avail();
-    hpcrun_frame_t* chord_beg = td->unwind; // innermost note
+    frame_t* chord_beg = td->unwind; // innermost note
     uint pchord_len = 0, lchord_len = 0;
 
     // ---------------------------------------------------------
@@ -212,7 +212,7 @@ lush_backtrace(state_t* state, ucontext_t* context,
     // ---------------------------------------------------------
     // canonicalize frames to form a chord
     // ---------------------------------------------------------
-    hpcrun_frame_t* chord_end;
+    frame_t* chord_end;
     chord_end = canonicalize_chord(chord_beg, as, pchord_len, lchord_len);
     unw_len++;
 
@@ -238,14 +238,14 @@ lush_backtrace(state_t* state, ucontext_t* context,
     dump_backtrace(state, td->unwind);
   }
 
-  hpcrun_frame_t* bt_beg = td->btbuf;      // innermost, inclusive 
-  hpcrun_frame_t* bt_end = td->unwind - 1; // outermost, inclusive
+  frame_t* bt_beg = td->btbuf;      // innermost, inclusive 
+  frame_t* bt_end = td->unwind - 1; // outermost, inclusive
 
   if (skipInner) {
     bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
   }
 
-  csprof_cct_node_t* node = NULL;
+  cct_node_t* node = NULL;
   node = hpcrun_state_insert_backtrace(state, metricId,
 				       bt_end, bt_beg,
 				       (cct_metric_data_t){.i = incrMetric});
@@ -264,8 +264,8 @@ lush_backtrace(state_t* state, ucontext_t* context,
 
 
 // returns the end of the chord (exclusive)
-static hpcrun_frame_t* 
-canonicalize_chord(hpcrun_frame_t* chord_beg, lush_assoc_t as,
+static frame_t* 
+canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
 		   uint pchord_len, uint lchord_len)
 {
   // Set assoc and fill empty p-notes/l-notes
@@ -274,9 +274,9 @@ canonicalize_chord(hpcrun_frame_t* chord_beg, lush_assoc_t as,
   //   [chord_beg = innermost ... outermost, chord_end)
 
   uint chord_len = MAX(pchord_len, lchord_len);
-  hpcrun_frame_t* chord_end  = chord_beg + chord_len; // N.B.: exclusive
-  hpcrun_frame_t* pchord_end = chord_beg + pchord_len;
-  hpcrun_frame_t* lchord_end = chord_beg + lchord_len;
+  frame_t* chord_end  = chord_beg + chord_len; // N.B.: exclusive
+  frame_t* pchord_end = chord_beg + pchord_len;
+  frame_t* lchord_end = chord_beg + lchord_len;
 
   unw_word_t ip = 0;
   lush_lip_t* lip = NULL;
@@ -290,7 +290,7 @@ canonicalize_chord(hpcrun_frame_t* chord_beg, lush_assoc_t as,
   // else: default is fine for a-to-0 and 1-to-1
   
   uint path_len = chord_len;
-  for (hpcrun_frame_t* x = chord_beg; x < chord_end; ++x, --path_len) {
+  for (frame_t* x = chord_beg; x < chord_end; ++x, --path_len) {
     lush_assoc_info__set_assoc(x->as_info, as);
     lush_assoc_info__set_path_len(x->as_info, path_len);
     

@@ -62,8 +62,8 @@
 //
 //***************************************************************************
 
-#ifndef csprof_cct_h
-#define csprof_cct_h
+#ifndef cct_h
+#define cct_h
 
 //************************* System Include Files ****************************
 
@@ -81,7 +81,6 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lib/prof-lean/lush/lush-support.h>
-
 
 //*************************** Forward Declarations **************************
 
@@ -114,7 +113,7 @@ cct_metric_data_increment(int metric_id,
 }
 
 
-typedef struct csprof_cct_node_t {
+typedef struct cct_node_t {
 
   // ---------------------------------------------------------
   // a persistent node id is assigned for each node. this id
@@ -141,58 +140,35 @@ typedef struct csprof_cct_node_t {
   // ---------------------------------------------------------
 
   // parent node and the beginning of the child list
-  struct csprof_cct_node_t* parent;
-  struct csprof_cct_node_t* children;
+  struct cct_node_t* parent;
+  struct cct_node_t* children;
 
   // singly linked list of siblings
-  struct csprof_cct_node_t* next_sibling;
+  struct cct_node_t* next_sibling;
 
   // ---------------------------------------------------------
-  // metrics (N.B.: MUST APPEAR AT END! cf. csprof_cct_node__create)
+  // metrics (variable-sized array N.B.: MUST APPEAR AT END OF STRUCTURE!)
   // ---------------------------------------------------------
   
   cct_metric_data_t metrics[]; // variable-sized array
 
-} csprof_cct_node_t;
+} cct_node_t;
 
 //
 // frame_t values are stored in the backtrace buffer
 //
 
-typedef struct hpcrun_frame_t {
+typedef struct frame_t {
   unw_cursor_t cursor;       // hold a copy of the cursor for this frame
   lush_assoc_info_t as_info;
   void* ip;
   void* ra_loc;
   lush_lip_t* lip;
-} hpcrun_frame_t;
-
-
-// returns the number of ancestors walking up the tree
-unsigned int
-csprof_cct_node__ancestor_count(csprof_cct_node_t* x);
-
-// functions for inspecting links to other nodes
-
-#define csprof_cct_node__parent(/* csprof_cct_node_t* */ x)       \
-  (x)->parent
-#define csprof_cct_node__next_sibling(/* csprof_cct_node_t* */ x) \
-  (x)->next_sibling
-#define csprof_cct_node__prev_sibling(/* csprof_cct_node_t* */ x) \
-  (x)->prev_sibling
-#define csprof_cct_node__first_child(/* csprof_cct_node_t* */ x)  \
-  (x)->children
-#define csprof_cct_node__last_child(/* csprof_cct_node_t* */ x)   \
-  ((x)->children ? (x)->children->prev_sibling : NULL)
-
+} frame_t;
 
 //***************************************************************************
 // LUSH: thread creation context
 //***************************************************************************
-
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
 
 // Represents the creation creation of a given calling context tree as
 // a linked list.
@@ -200,7 +176,7 @@ csprof_cct_node__ancestor_count(csprof_cct_node_t* x);
 typedef struct lush_cct_ctxt_s {
   
   // the leaf node of the creation context
-  csprof_cct_node_t* context;
+  cct_node_t* context;
   
   struct lush_cct_ctxt_s* parent; // a list of lush_cct_ctxt_t
 
@@ -218,21 +194,17 @@ lush_cct_ctxt__write(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctxt);
 // Calling context tree
 //***************************************************************************
 
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
+typedef struct hpcrun_cct_t {
 
-typedef struct csprof_cct_t {
-
-  csprof_cct_node_t* tree_root;
+  cct_node_t* tree_root;
   unsigned long num_nodes;
 
 } hpcrun_cct_t;
 
 
 void hpcrun_cct_make_root(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt);
-int csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt);
-int csprof_cct__fini(hpcrun_cct_t *x);
+int  hpcrun_cct_init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt);
+int  hpcrun_cct_fini(hpcrun_cct_t *x);
 
 
 // Given a call path of the following form, insert the path into the
@@ -244,28 +216,21 @@ int csprof_cct__fini(hpcrun_cct_t *x);
 //              ^ path_end                        ^ path_beg
 //              ^ bt_beg                                       ^ bt_end
 //
-csprof_cct_node_t*
-csprof_cct_insert_backtrace(hpcrun_cct_t *x, csprof_cct_node_t* treenode, int metric_id,
-			    hpcrun_frame_t *path_beg, hpcrun_frame_t *path_end,
-			    cct_metric_data_t sample_count);
+cct_node_t* hpcrun_cct_insert_backtrace(hpcrun_cct_t *x, cct_node_t* treenode, int metric_id,
+					frame_t *path_beg, frame_t *path_end,
+					cct_metric_data_t sample_count);
 
-csprof_cct_node_t *csprof_cct_get_child(hpcrun_cct_t *cct, 
-					csprof_cct_node_t *parent, 
-					hpcrun_frame_t *frm);
+cct_node_t* hpcrun_cct_get_child(hpcrun_cct_t *cct, 
+				 cct_node_t *parent, 
+				 frame_t *frm);
 
 int hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt);
 
-#define csprof_cct__isempty(/* hpcrun_cct_t* */x) ((x)->tree_root == NULL)
-
-
-void
-csprof_cct_print_path_to_root(hpcrun_cct_t *tree, csprof_cct_node_t* node);
-
-extern csprof_cct_node_t* hpcrun_copy_btrace(csprof_cct_node_t* n);
-extern lush_cct_ctxt_t* copy_thr_ctxt(lush_cct_ctxt_t* thr_ctxt);
-extern bool hpcrun_empty_cct(hpcrun_cct_t* cct);
+cct_node_t* hpcrun_copy_btrace(cct_node_t* n);
+lush_cct_ctxt_t* copy_thr_ctxt(lush_cct_ctxt_t* thr_ctxt);
+bool hpcrun_empty_cct(hpcrun_cct_t* cct);
 
 
 //***************************************************************************
 
-#endif /* csprof_cct_h */
+#endif // cct_h

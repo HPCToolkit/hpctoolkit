@@ -71,9 +71,10 @@ typedef enum {
 } source_state_t;
 
 typedef enum {
-  ITIMER,
-  PAPI
-} sample_source_id_t;
+  HDWARE,    // use sample counters or other hardware.
+             // NOTE: *Currently limited to only 1 HDWARE class sample source*
+  SFWARE     // software-based, only return counts for the moment
+} ss_class_t;
 
 typedef struct _obj_s {
   // common methods
@@ -99,8 +100,9 @@ typedef struct _obj_s {
   // data
   evlist_t       evl;       // event list
   int            evset_idx; // index of sample source
-  char *         name;      // text name of sample source
+  char*          name;      // text name of sample source
   source_state_t state;     // state of sample source: limited to UNINIT or INIT
+  ss_class_t     cls;       // kind of sample source: see ss_class_t typedef at top of file
   
 } sample_source_t;
 

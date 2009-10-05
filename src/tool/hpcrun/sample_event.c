@@ -75,7 +75,7 @@
 
 //*************************** Forward Declarations **************************
 
-static csprof_cct_node_t*
+static cct_node_t*
 _hpcrun_sample_callpath(state_t *state, void *context,
 			int metricId, uint64_t metricIncr,
 			int skipInner, int isSync);
@@ -162,7 +162,7 @@ csprof_display_summary(void)
 }
 
 
-csprof_cct_node_t *
+cct_node_t *
 hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 		       int skipInner, int isSync)
 {
@@ -193,7 +193,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
   thread_data_t *td = hpcrun_get_thread_data();
   sigjmp_buf_t *it = &(td->bad_unwind);
-  csprof_cct_node_t* node = NULL;
+  cct_node_t* node = NULL;
   state_t *state = td->state;
 
   csprof_set_handling_sample(td);
@@ -212,8 +212,8 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
 	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc); 
 
-	hpcrun_frame_t frm = {.ip = func_start_pc};
-	csprof_cct_node_t* func_proxy = csprof_cct_get_child(cct, node->parent, &frm);
+	frame_t frm = {.ip = func_start_pc};
+	cct_node_t* func_proxy = hpcrun_cct_get_child(cct, node->parent, &frm);
 	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag; 
 
 	trace_append(func_proxy->persistent_id);
@@ -250,7 +250,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 }
 
 
-static csprof_cct_node_t*
+static cct_node_t*
 _hpcrun_sample_callpath(state_t *state, void *context,
 			int metricId, uint64_t metricIncr, 
 			int skipInner, int isSync)
@@ -283,7 +283,7 @@ _hpcrun_sample_callpath(state_t *state, void *context,
   csprof_undo_swizzled_data(state, context);
 #endif
   
-  csprof_cct_node_t* n =
+  cct_node_t* n =
     hpcrun_backtrace(state, context, metricId, metricIncr, skipInner, isSync);
 
   // FIXME: n == -1 if sample is filtered

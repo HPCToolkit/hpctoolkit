@@ -44,7 +44,7 @@
 //***************************************************************************
 //
 // File:
-//   csprof_cct.c
+//   cct.c
 //
 // Purpose:
 //   A variable degree-tree for storing call stack samples.  Each node
@@ -75,12 +75,11 @@
 //*************************** User Include Files ****************************
 
 #include "cct.h"
-#include "csprof-malloc.h"
-#include "csproflib_private.h"
-#include "list.h"
-#include "metrics.h"
+#include <memory/csprof-malloc.h>
+#include <hpcrun/csproflib_private.h>
+#include <hpcrun/metrics.h>
 
-#include "hpcrun_return_codes.h"
+#include <hpcrun/hpcrun_return_codes.h>
 
 #include <messages/messages.h>
 
@@ -88,16 +87,29 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/lush/lush-support.h>
 
+//*************************** Local Macros **************************
+
+#define node_parent(/* cct_node_t* */ x)       \
+  (x)->parent
+#define node_next_sibling(/* cct_node_t* */ x) \
+  (x)->next_sibling
+#define node_prev_sibling(/* cct_node_t* */ x) \
+  (x)->prev_sibling
+#define node_first_child(/* cct_node_t* */ x)  \
+  (x)->children
+#define node_last_child(/* cct_node_t* */ x)   \
+  ((x)->children ? (x)->children->prev_sibling : NULL)
+
 //*************************** Forward Declarations **************************
 
 /* cstree callbacks (CB) */
-static csprof_cct_node_t*
-csprof_cct_node__find_child(csprof_cct_node_t* x,
+static cct_node_t*
+cct_node_find_child(cct_node_t* x,
 			    lush_assoc_info_t as_info, void* ip,
 			    lush_lip_t* lip);
 
 static int
-csprof_cct_node__link(csprof_cct_node_t *, csprof_cct_node_t *);
+cct_node_link(cct_node_t *, cct_node_t *);
 
 //*************************** Forward Declarations **************************
 
@@ -129,16 +141,15 @@ new_persistent_id()
   return myid;
 }
 
-static csprof_cct_node_t *
-csprof_cct_node__create(lush_assoc_info_t as_info, 
+static cct_node_t*
+cct_node_create(lush_assoc_info_t as_info, 
 			void* ip,
 			lush_lip_t* lip,
 			hpcrun_cct_t *x)
 {
-
-  size_t sz = (sizeof(csprof_cct_node_t)
+  size_t sz = (sizeof(cct_node_t)
 	       + sizeof(cct_metric_data_t)*hpcrun_get_num_metrics());
-  csprof_cct_node_t *node;
+  cct_node_t *node;
 
   // FIXME: when multiple epochs really work, this will always be freeable.
   // WARN ME (krentel) if/when we really use freeable memory.
@@ -161,8 +172,8 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
   return node;
 }
 
-csprof_cct_node_t*
-hpcrun_copy_btrace(csprof_cct_node_t* n)
+cct_node_t*
+hpcrun_copy_btrace(cct_node_t* n)
 {
   return n;
 
@@ -176,17 +187,17 @@ hpcrun_copy_btrace(csprof_cct_node_t* n)
   //
   // NOTE: cct nodes here are in NON-freeable memory (to be passed to other threads)
   //
-  csprof_cct_node_t* rv = (csprof_cct_node_t*) csprof_malloc(sizeof(csprof_cct_node_t));
+  cct_node_t* rv = (cct_node_t*) csprof_malloc(sizeof(cct_node_t));
 
-  memcpy(rv, n, sizeof(csprof_cct_node_t));
+  memcpy(rv, n, sizeof(cct_node_t));
   rv->parent   = NULL;
   rv->children = NULL;
 
-  csprof_cct_node_t* prev = rv;
+  cct_node_t* prev = rv;
   for(n = n->parent; n; n = n->parent){
     TMSG(CCT_CTXT, "ctxt node(%p) ==> parent(%p) :: child(%p)", n, n->parent, n->children);
-    csprof_cct_node_t* cpy = (csprof_cct_node_t*) csprof_malloc(sizeof(csprof_cct_node_t));
-    memcpy(cpy, n, sizeof(csprof_cct_node_t));
+    cct_node_t* cpy = (cct_node_t*) csprof_malloc(sizeof(cct_node_t));
+    memcpy(cpy, n, sizeof(cct_node_t));
     cpy->parent   = NULL;
     cpy->children = NULL;
 
@@ -197,7 +208,7 @@ hpcrun_copy_btrace(csprof_cct_node_t* n)
 }
 
 static bool
-all_metrics_0(csprof_cct_node_t* node)
+all_metrics_0(cct_node_t* node)
 {
   cct_metric_data_t* metrics = &(node->metrics[0]);
   int num_metrics            = hpcrun_get_num_metrics();
@@ -240,19 +251,15 @@ copy_thr_ctxt(lush_cct_ctxt_t* thr_ctxt)
 
 
 static void
-csprof_cct_node__parent_insert(csprof_cct_node_t *x, csprof_cct_node_t *parent)
+cct_node_parent_insert(cct_node_t *x, cct_node_t *parent)
 {
-  csprof_cct_node__link(x, parent);
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-  // FIXME:LUSH: for lush, must match assoc and lip
-  rbtree_insert(&parent->tree_children, x);
-#endif
+  cct_node_link(x, parent);
 }
 
-/* csprof_cct_node__link: links a node to a parent and at
+/* cct_node_link: links a node to a parent and at
    the end of the circular doubly-linked list of its siblings (if any) */
 static int
-csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
+cct_node_link(cct_node_t* x, cct_node_t* parent)
 {
   /* Sanity check */
   if (x->parent != NULL) { return HPCRUN_ERR; } /* can only have one parent */
@@ -261,7 +268,7 @@ csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
     /* Children are maintained as a doubly linked ring.  A new node
        is linked at the end of the ring (as a predecessor of
        "parent->children") which points to first child in the ring */
-    csprof_cct_node_t *first_sibling = parent->children;
+    cct_node_t *first_sibling = parent->children;
     if (first_sibling) {
       x->next_sibling = parent->children;
       parent->children = x;
@@ -276,26 +283,20 @@ csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
 }
 
 
-// csprof_cct_node__find_child: finds the child of 'x' with
+// cct_node_find_child: finds the child of 'x' with
 // instruction pointer equal to 'ip'.
 //
 // tallent: I slightly sanitized the different versions, but FIXME
 //
-static csprof_cct_node_t*
-csprof_cct_node__find_child(csprof_cct_node_t* x,
+static cct_node_t*
+cct_node_find_child(cct_node_t* x,
 			    lush_assoc_info_t as_info, void* ip,
 			    lush_lip_t* lip)
 {
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-  // FIXME:LUSH: match assoc and lip
-  struct rbtree_node *node = rbtree_search(&x->tree_children, ip);
-
-  return node ? DATA(node) : NULL;
-#else
-  csprof_cct_node_t* c, *first;
+  cct_node_t* c, *first;
   lush_assoc_t as = lush_assoc_info__get_assoc(as_info);
       
-  first = c = csprof_cct_node__first_child(x);
+  first = c = node_first_child(x);
   if (c) {
     do {
       // LUSH
@@ -308,14 +309,12 @@ csprof_cct_node__find_child(csprof_cct_node_t* x,
 	return c;
       }
 
-      c = csprof_cct_node__next_sibling(c);
+      c = node_next_sibling(c);
     } while (c != NULL);
   }
 
   return NULL;
-#endif
 }
-
 
 
 //***************************************************************************
@@ -328,14 +327,14 @@ void
 hpcrun_cct_make_root(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
 {
   // introduce bogus root to handle possible forests
-  x->tree_root = csprof_cct_node__create(lush_assoc_info_NULL, 0, NULL, x);
+  x->tree_root = cct_node_create(lush_assoc_info_NULL, 0, NULL, x);
 
   x->tree_root->parent = (ctxt)? ctxt->context : NULL;
   x->num_nodes = 1;
 }
 
 int
-csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
+hpcrun_cct_init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
 {
   TMSG(CCT_TYPE,"--Init");
   memset(x, 0, sizeof(*x));
@@ -346,7 +345,7 @@ csprof_cct__init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt)
 }
 
 int
-csprof_cct__fini(hpcrun_cct_t *x)
+hpcrun_cct_fini(hpcrun_cct_t *x)
 {
   TMSG(CCT_TYPE,"--Fini");
   return HPCRUN_OK;
@@ -354,14 +353,14 @@ csprof_cct__fini(hpcrun_cct_t *x)
 
 
 // find a child with the specified pc. if none exists, create one.
-csprof_cct_node_t*
-csprof_cct_get_child(hpcrun_cct_t *cct, csprof_cct_node_t* parent, hpcrun_frame_t *frm)
+cct_node_t*
+hpcrun_cct_get_child(hpcrun_cct_t *cct, cct_node_t* parent, frame_t *frm)
 {
-  csprof_cct_node_t *c = csprof_cct_node__find_child(parent, frm->as_info, frm->ip, frm->lip);  
+  cct_node_t *c = cct_node_find_child(parent, frm->as_info, frm->ip, frm->lip);  
 
   if (!c) {
-    c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, cct);
-    csprof_cct_node__parent_insert(c, parent);
+    c = cct_node_create(frm->as_info, frm->ip, frm->lip, cct);
+    cct_node_parent_insert(c, parent);
     cct->num_nodes++;
   }
 
@@ -370,19 +369,19 @@ csprof_cct_get_child(hpcrun_cct_t *cct, csprof_cct_node_t* parent, hpcrun_frame_
 } 
 
 // See usage in header.
-csprof_cct_node_t*
-csprof_cct_insert_backtrace(hpcrun_cct_t* x, csprof_cct_node_t* treenode, int metric_id,
-			    hpcrun_frame_t* path_beg, hpcrun_frame_t* path_end,
+cct_node_t*
+hpcrun_cct_insert_backtrace(hpcrun_cct_t* x, cct_node_t* treenode, int metric_id,
+			    frame_t* path_beg, frame_t* path_end,
 			    cct_metric_data_t increment)
 {
-#define csprof_MY_ADVANCE_PATH_FRAME(x)   (x)--
-#define csprof_MY_IS_PATH_FRAME_AT_END(x) ((x) < path_end)
+#define MY_ADVANCE_PATH_FRAME(x)   (x)--
+#define MY_IS_PATH_FRAME_AT_END(x) ((x) < path_end)
 
   TMSG(CCT,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp", x, treenode,
       path_beg, path_end);
 
-  hpcrun_frame_t* frm   = path_beg; // current frame 
-  csprof_cct_node_t* tn = treenode;
+  frame_t* frm   = path_beg; // current frame 
+  cct_node_t* tn = treenode;
 
   if ( !(path_beg >= path_end) ) {
     return NULL;
@@ -398,22 +397,22 @@ csprof_cct_insert_backtrace(hpcrun_cct_t* x, csprof_cct_node_t* treenode, int me
     /* we don't want the tree root calling itself */
     if (frm->ip == tn->ip) {
       TMSG(CCT,"beg ip == tn ip = %lx", tn->ip);
-      csprof_MY_ADVANCE_PATH_FRAME(frm);
+      MY_ADVANCE_PATH_FRAME(frm);
     }
 
     TMSG(CCT, "beg ip %#lx", frm->ip);
   }
 
   while (1) {
-    if (csprof_MY_IS_PATH_FRAME_AT_END(frm)) {
+    if (MY_IS_PATH_FRAME_AT_END(frm)) {
       break;
     }
 
     // Attempt to find a child 'c' corresponding to 'frm'
     TMSG(CCT,"finding child in tree w ip = %lx", frm->ip);
 
-    csprof_cct_node_t *c;
-    c = csprof_cct_node__find_child(tn, frm->as_info, frm->ip, frm->lip);
+    cct_node_t *c;
+    c = cct_node_find_child(tn, frm->as_info, frm->ip, frm->lip);
     if (c) {
       // child exists; recur
       TMSG(CCT,"found child");
@@ -426,20 +425,20 @@ csprof_cct_insert_backtrace(hpcrun_cct_t* x, csprof_cct_node_t* treenode, int me
 	// INVARIANT: c->as_info must be either M-to-1 or 1-to-M
 	lush_assoc_info__set_assoc(c->as_info, LUSH_ASSOC_1_to_1);
       }
-      csprof_MY_ADVANCE_PATH_FRAME(frm);
+      MY_ADVANCE_PATH_FRAME(frm);
     }
     else {
       // no such child; insert new tail
       TMSG(CCT,"No child found, inserting new tail");
       
-      while (!csprof_MY_IS_PATH_FRAME_AT_END(frm)) {
+      while (!MY_IS_PATH_FRAME_AT_END(frm)) {
 	TMSG(CCT,"create node w ip = %lx",frm->ip);
-	c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, x);
-	csprof_cct_node__parent_insert(c, tn);
+	c = cct_node_create(frm->as_info, frm->ip, frm->lip, x);
+	cct_node_parent_insert(c, tn);
 	x->num_nodes++;
 	
 	tn = c;
-	csprof_MY_ADVANCE_PATH_FRAME(frm);
+	MY_ADVANCE_PATH_FRAME(frm);
       }
     }
   }
@@ -459,7 +458,7 @@ csprof_cct_insert_backtrace(hpcrun_cct_t* x, csprof_cct_node_t* treenode, int me
 
 static int
 hpcfile_cstree_write(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree, 
-		     csprof_cct_node_t* root, 
+		     cct_node_t* root, 
 		     lush_cct_ctxt_t* tree_ctxt,
 		     hpcfmt_uint_t num_metrics,
 		     hpcfmt_uint_t num_nodes);
@@ -495,24 +494,24 @@ hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_ctxt_
 
 static int
 hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
-			  csprof_cct_node_t* node, 
+			  cct_node_t* node, 
 			  hpcrun_fmt_cct_node_t* tmp_node,
 			  int lvl_to_skip, int32_t parent_id);
 
 static int
-hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags, csprof_cct_node_t* node,
+hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags, cct_node_t* node,
 			      hpcrun_fmt_cct_node_t* tmp_node, 
 			      int32_t parent_id);
 
 static int
-hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, csprof_cct_node_t* node, 
+hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, cct_node_t* node, 
 			   int lvl_to_skip);
 
 #undef NODE_CHILD_COUNT // FIXME: this is now dead code. can it be expunged?
 
 #ifdef NODE_CHILD_COUNT 
 static int
-node_child_count(hpcrun_cct_t* tree, csprof_cct_node_t* node);
+node_child_count(hpcrun_cct_t* tree, cct_node_t* node);
 #endif
 
 
@@ -525,7 +524,7 @@ node_child_count(hpcrun_cct_t* tree, csprof_cct_node_t* node);
 // Returns HPCFMT_OK upon success; HPCFMT_ERR on error.
 static int
 hpcfile_cstree_write(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree, 
-		     csprof_cct_node_t* root,
+		     cct_node_t* root,
 		     lush_cct_ctxt_t* tree_ctxt,
 		     hpcfmt_uint_t num_metrics,
 		     hpcfmt_uint_t num_nodes)
@@ -590,7 +589,7 @@ hpcfile_cstree_write(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 
 static int
 hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
-			  csprof_cct_node_t* node,
+			  cct_node_t* node,
 			  hpcrun_fmt_cct_node_t* tmp_node,
 			  int lvl_to_skip, int32_t parent_id)
 {
@@ -610,8 +609,8 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
     my_parent = node->parent->persistent_id;
   }
 
-  csprof_cct_node_t* first, *c;
-  first = c = csprof_cct_node__first_child(node);
+  cct_node_t* first, *c;
+  first = c = node_first_child(node);
 
   // no children ==> node is a leaf ==> persistent_id should be negative
   //
@@ -639,7 +638,7 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
       return HPCFMT_ERR;
     }
 
-    c = csprof_cct_node__next_sibling(c);
+    c = node_next_sibling(c);
     if (c == first) { break; }
   }
   
@@ -649,7 +648,7 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 
 static int
 hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
-			      csprof_cct_node_t* node,
+			      cct_node_t* node,
 			      hpcrun_fmt_cct_node_t* tmp_node,
                               int32_t my_parent)
 {
@@ -692,7 +691,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
 
 
 static int
-hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, csprof_cct_node_t* node, 
+hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, cct_node_t* node, 
 			   int lvl_to_skip)
 {
   int skipped_subtree_count = 0;
@@ -706,11 +705,11 @@ hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, csprof_cct_node_t* node,
       // (handles either a circular or non-circular structure)
       // ---------------------------------------------------------
       int kids = 0;
-      csprof_cct_node_t* first = csprof_cct_node__first_child(node);
-      csprof_cct_node_t* c = first; 
+      cct_node_t* first = node_first_child(node);
+      cct_node_t* c = first; 
       while (c) {
 	kids += hpcfile_cstree_count_nodes(tree, c, lvl_to_skip);
-	c = csprof_cct_node__next_sibling(c);
+	c = node_next_sibling(c);
 	if (c == first) { break; }
       }
       skipped_subtree_count += kids; 
@@ -722,7 +721,7 @@ hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, csprof_cct_node_t* node,
 
 #ifdef NODE_CHILD_COUNT 
 static int
-node_child_count(hpcrun_cct_t* tree, csprof_cct_node_t* node)
+node_child_count(hpcrun_cct_t* tree, cct_node_t* node)
 {
   int children = 0;
   if (node) { 
@@ -730,11 +729,11 @@ node_child_count(hpcrun_cct_t* tree, csprof_cct_node_t* node)
     // count children 
     // (handles either a circular or non-circular structure)
     // ---------------------------------------------------------
-    csprof_cct_node_t* first = csprof_cct_node__first_child(node);
-    csprof_cct_node_t* c = first; 
+    cct_node_t* first = node_first_child(node);
+    cct_node_t* c = first; 
     while (c) {
       children++;
-      c = csprof_cct_node__next_sibling(c);
+      c = node_next_sibling(c);
       if (c == first) { break; }
     }
   }
@@ -752,7 +751,7 @@ lush_cct_ctxt__write_gbl(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctx
 			 hpcrun_fmt_cct_node_t* tmp_node);
 
 static int
-lush_cct_ctxt__write_lcl(FILE* fs, epoch_flags_t flags, csprof_cct_node_t* node,
+lush_cct_ctxt__write_lcl(FILE* fs, epoch_flags_t flags, cct_node_t* node,
 			 hpcrun_fmt_cct_node_t* tmp_node);
 
 
@@ -761,7 +760,7 @@ lush_cct_ctxt__length(lush_cct_ctxt_t* cct_ctxt)
 {
   unsigned int len = 0;
   for (lush_cct_ctxt_t* ctxt = cct_ctxt; (ctxt); ctxt = ctxt->parent) {
-    for (csprof_cct_node_t* x = ctxt->context; (x); x = x->parent) {
+    for (cct_node_t* x = ctxt->context; (x); x = x->parent) {
       len++;
     }
   }
@@ -816,7 +815,7 @@ lush_cct_ctxt__write_gbl(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctx
 
 // Post order write of 'node'
 static int
-lush_cct_ctxt__write_lcl(FILE* fs, epoch_flags_t flags, csprof_cct_node_t* node,
+lush_cct_ctxt__write_lcl(FILE* fs, epoch_flags_t flags, cct_node_t* node,
 			 hpcrun_fmt_cct_node_t* tmp_node)
 {
   int ret = HPCRUN_OK;
@@ -826,7 +825,7 @@ lush_cct_ctxt__write_lcl(FILE* fs, epoch_flags_t flags, csprof_cct_node_t* node,
     return HPCRUN_OK;
   }
 
-  csprof_cct_node_t* parent = node->parent;
+  cct_node_t* parent = node->parent;
   int32_t parent_id = (parent ? parent->persistent_id : 0); 
 
   // -------------------------------------------------------

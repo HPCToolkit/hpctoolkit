@@ -148,14 +148,14 @@ lushPthr_endSmplIdleness(lushPthr_t* x)
 }
 
 
-static inline csprof_cct_node_t*
+static inline cct_node_t*
 lushPthr_attribToCallPath(uint64_t idlenessIncr)
 {
   hpcrun_async_block();
 
   ucontext_t context;
   getcontext(&context); // FIXME: check for errors
-  csprof_cct_node_t* n = 
+  cct_node_t* n = 
     hpcrun_sample_callpath(&context, lush_agents->metric_time,
 			   0/*metricIncr*/, 1/*skipInner*/, 1/*isSync*/);
   hpcrun_async_unblock();
@@ -909,7 +909,7 @@ lushPthr_mutexLock_post_ty3(lushPthr_t* restrict x,
   syncData->isLocked = true;
 
   if (x->idleness > 0 && syncData->cct_node) {
-    csprof_cct_node_t* node = (csprof_cct_node_t*)syncData->cct_node;
+    cct_node_t* node = (cct_node_t*)syncData->cct_node;
     int mid = lush_agents->metric_idleness;
     double idleness = x->idleness;
     cct_metric_data_increment(mid, &node->metrics[mid],

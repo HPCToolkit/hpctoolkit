@@ -132,7 +132,7 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   td->state                       = NULL;
 
   // backtrace buffer
-  td->btbuf = csprof_malloc(sizeof(hpcrun_frame_t) * BACKTRACE_INIT_SZ);
+  td->btbuf = csprof_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
   td->bufend = td->btbuf + BACKTRACE_INIT_SZ;
   td->bufstk = td->bufend;  // FIXME: is this needed?
   td->treenode = NULL;
@@ -148,7 +148,7 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   td->tramp_present               = false;
   td->tramp_retn_addr             = NULL;
   td->tramp_loc                   = NULL;
-  td->cached_bt                   = csprof_malloc(sizeof(hpcrun_frame_t) * CACHED_BACKTRACE_SIZE);
+  td->cached_bt                   = csprof_malloc(sizeof(frame_t) * CACHED_BACKTRACE_SIZE);
   td->cached_bt_end               = td->cached_bt;          
   td->cached_bt_buf_end           = td->cached_bt + CACHED_BACKTRACE_SIZE;
   td->tramp_frame                 = NULL;
@@ -179,7 +179,7 @@ hpcrun_cached_bt_adjust_size(size_t n)
     return; // cached backtrace buffer is already big enough
   }
 
-  hpcrun_frame_t* newbuf = csprof_malloc(n * sizeof(hpcrun_frame_t));
+  frame_t* newbuf = csprof_malloc(n * sizeof(frame_t));
   memcpy(newbuf, td->cached_bt, (void*)td->cached_bt_buf_end - (void*)td->cached_bt);
   size_t idx            = td->cached_bt_end - td->cached_bt;
   td->cached_bt         = newbuf;
@@ -187,10 +187,10 @@ hpcrun_cached_bt_adjust_size(size_t n)
   td->cached_bt_end     = newbuf + idx;
 }
 
-hpcrun_frame_t* 
+frame_t* 
 hpcrun_expand_btbuf(void){
   thread_data_t* td = hpcrun_get_thread_data();
-  hpcrun_frame_t* unwind = td->unwind;
+  frame_t* unwind = td->unwind;
 
   /* how big is the current buffer? */
   size_t sz = td->bufend - td->btbuf;
@@ -201,7 +201,7 @@ hpcrun_expand_btbuf(void){
   size_t recsz = unwind - td->btbuf;
   /* get new buffer */
   TMSG(STATE," state_expand_buffer");
-  hpcrun_frame_t *newbt = csprof_malloc(newsz*sizeof(hpcrun_frame_t));
+  frame_t *newbt = csprof_malloc(newsz*sizeof(frame_t));
 
   if(td->bufstk > td->bufend) {
     EMSG("Invariant bufstk > bufend violated");
@@ -209,8 +209,8 @@ hpcrun_expand_btbuf(void){
   }
 
   /* copy frames from old to new */
-  memcpy(newbt, td->btbuf, recsz*sizeof(hpcrun_frame_t));
-  memcpy(newbt+newsz-btsz, td->bufend-btsz, btsz*sizeof(hpcrun_frame_t));
+  memcpy(newbt, td->btbuf, recsz*sizeof(frame_t));
+  memcpy(newbt+newsz-btsz, td->bufend-btsz, btsz*sizeof(frame_t));
 
   /* setup new pointers */
   td->btbuf = newbt;

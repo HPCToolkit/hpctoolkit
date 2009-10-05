@@ -243,6 +243,9 @@ METHOD_FN(process_event_list,int lush_metrics)
   itimer.it_interval.tv_usec =  AUTOMATIC_ITIMER_RESET_MICROSECONDS(microseconds);
 }
 
+//
+// Event sets not relevant for this sample source
+//
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
@@ -260,7 +263,6 @@ METHOD_FN(gen_event_set,int lush_metrics)
 				    HPCRUN_MetricFlag_Async,
 				    sample_period);
     
-  // FIXME:LUSH: need a more flexible metric interface
   if (lush_metrics == 1) {
     int mid_idleness = hpcrun_new_metric();
     lush_agents->metric_time = metric_id;
@@ -271,7 +273,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
 				      sample_period);
   }
   thread_data_t *td = hpcrun_get_thread_data();
-  td->eventSet[self->evset_idx] = 0xDEAD; // Event sets not relevant for itimer
+  td->eventSet[self->evset_idx] = 0xDEAD;
 
   monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
 }
@@ -319,6 +321,7 @@ sample_source_t _itimer_obj = {
   },
   .evset_idx = 0,
   .name = "itimer",
+  .cls  = HDWARE,
   .state = UNINIT
 };
 

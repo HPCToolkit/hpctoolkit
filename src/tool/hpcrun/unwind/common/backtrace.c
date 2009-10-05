@@ -60,8 +60,10 @@
 // local include files
 //***************************************************************************
 
-#include "unwind.h"
-#include "backtrace.h"
+#include <cct/cct.h>
+
+#include <unwind/common/unwind.h>
+#include <unwind/common/backtrace.h>
 #include <hpcrun/thread_data.h>
 
 #include <hpcrun/state.h>
@@ -76,7 +78,7 @@
 // forward declarations 
 //***************************************************************************
 
-static csprof_cct_node_t*
+static cct_node_t*
 _hpcrun_backtrace(state_t* state, ucontext_t* context,
 		  int metricId, uint64_t metricIncr,
 		  int skipInner);
@@ -99,14 +101,14 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 //       IGNORE_TRAMPOLINE (usually, but not always called when isSync is true)
 //       PLACE_TRAMPOLINE  (standard for normal async samples).
 //             
-csprof_cct_node_t*
+cct_node_t*
 hpcrun_backtrace(state_t* state, ucontext_t* context, 
 		 int metricId, uint64_t metricIncr,
 		 int skipInner, int isSync)
 {
   hpcrun_verify_backtrace_invariants();
   
-  csprof_cct_node_t* n = NULL;
+  cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
     n = lush_backtrace(state, context, metricId, metricIncr, skipInner, 
 		       isSync);
@@ -141,13 +143,13 @@ hpcrun_backtrace(state_t* state, ucontext_t* context,
 //     sample's callstack would be 1, and we ignore it.
 //-----------------------------------------------------------------------------
 static int
-hpcrun_filter_sample(int len, hpcrun_frame_t *start, hpcrun_frame_t *last)
+hpcrun_filter_sample(int len, frame_t *start, frame_t *last)
 {
   return ( !(monitor_in_start_func_narrow(last->ip) && (len > 1)) );
 }
 
 
-static csprof_cct_node_t*
+static cct_node_t*
 _hpcrun_backtrace(state_t* state, ucontext_t* context,
 		  int metricId, uint64_t metricIncr, 
 		  int skipInner)
@@ -206,7 +208,7 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     td->unwind->cursor = cursor;
     td->unwind->ip     = (void *) ip;
     td->unwind->ra_loc = NULL;
-    hpcrun_frame_t* prev = td->unwind;
+    frame_t* prev = td->unwind;
     td->unwind++;
     unw_len++;
 
@@ -222,51 +224,51 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     csprof_up_pmsg_count();
   }
   
-  hpcrun_frame_t* bt_first = td->btbuf;      // innermost, inclusive 
-  hpcrun_frame_t* bt_last  = td->unwind - 1; // outermost, inclusive
-  hpcrun_frame_t* bt_end   = bt_last + 1;       // beyond the last frame
+  frame_t* bt_first = td->btbuf;      // innermost, inclusive 
+  frame_t* bt_last  = td->unwind - 1; // outermost, inclusive
+  frame_t* bt_end   = bt_last + 1;       // beyond the last frame
   size_t new_frame_count   = bt_end - bt_first;
+
+  cct_node_t* cct_cursor = NULL;
 
   if (tramp_found) {
     //
     // join current backtrace fragment to previous trampoline-marked prefix
     // and make this new conjoined backtrace the cached-backtrace
     //
-    hpcrun_frame_t* prefix = td->tramp_frame + 1; // skip top frame
+    frame_t* prefix = td->tramp_frame + 1; // skip top frame
     size_t old_frame_count = td->cached_bt_end - prefix;
 
     hpcrun_cached_bt_adjust_size(new_frame_count + old_frame_count);
 
     // put the old prefix in place
     memmove(td->cached_bt + new_frame_count, prefix, 
-	   sizeof(hpcrun_frame_t) * old_frame_count);
+	   sizeof(frame_t) * old_frame_count);
 
     // put the new suffix in place
-    memcpy(td->cached_bt, bt_first, sizeof(hpcrun_frame_t) * new_frame_count);
+    memcpy(td->cached_bt, bt_first, sizeof(frame_t) * new_frame_count);
 
     // update the length of the conjoined backtrace
     td->cached_bt_end = td->cached_bt + new_frame_count + old_frame_count;
 
     // start insertion below caller's frame, which is marked with the trampoline
-    td->treenode = td->tramp_cct_node->parent;
+    cct_cursor   = td->tramp_cct_node->parent;
   }
   else {
     hpcrun_cached_bt_adjust_size(new_frame_count);
-    memmove(td->cached_bt, bt_first, sizeof(hpcrun_frame_t) * new_frame_count);
+    memmove(td->cached_bt, bt_first, sizeof(frame_t) * new_frame_count);
 
     td->cached_bt_end = td->cached_bt + new_frame_count;
-
-    td->treenode = NULL; // start insertion at root of tree
   }
 
   if (! ENABLED(NO_SAMPLE_FILTERING)) {
-    hpcrun_frame_t* first_frame  = td->cached_bt;  
-    hpcrun_frame_t* last_frame   = td->cached_bt_end - 1;
+    frame_t* first_frame  = td->cached_bt;  
+    frame_t* last_frame   = td->cached_bt_end - 1;
     int num_frames               = last_frame - first_frame + 1; 
 	
     if (hpcrun_filter_sample(num_frames, first_frame, last_frame)){
       TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
-      hpcrun_frame_t *fr = first_frame;
+      frame_t *fr = first_frame;
       for (int i = 0; i < num_frames; i++, fr++){
 	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p", i, fr->ip);
       }
@@ -285,10 +287,10 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     bt_first = hpcrun_skip_chords(bt_last, bt_first, skipInner);
   }
 
-  csprof_cct_node_t* n;
-  n = hpcrun_state_insert_backtrace(state, metricId,
-				    bt_last, bt_first,
-				    (cct_metric_data_t){.i = metricIncr});
+  cct_node_t* n;
+  n = hpcrun_cct_insert_backtrace(&(state->csdata), cct_cursor, metricId,
+				  bt_last, bt_first,
+				  (cct_metric_data_t){.i = metricIncr});
 
   if (ENABLED(USE_TRAMP)){
     hpcrun_trampoline_remove();
@@ -304,12 +306,12 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 // 
 //***************************************************************************
 
-hpcrun_frame_t*
-hpcrun_skip_chords(hpcrun_frame_t* bt_outer, hpcrun_frame_t* bt_inner, 
+frame_t*
+hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
 		   int skip)
 {
   // N.B.: INVARIANT: bt_inner < bt_outer
-  hpcrun_frame_t* x_inner = bt_inner;
+  frame_t* x_inner = bt_inner;
   for (int i = 0; (x_inner < bt_outer && i < skip); ++i) {
     // for now, do not support M chords
     lush_assoc_t as = lush_assoc_info__get_assoc(x_inner->as_info);
@@ -324,7 +326,7 @@ hpcrun_skip_chords(hpcrun_frame_t* bt_outer, hpcrun_frame_t* bt_inner,
 
 
 void 
-dump_backtrace(state_t* state, hpcrun_frame_t* unwind)
+dump_backtrace(state_t* state, frame_t* unwind)
 {
   static const int msg_limit = 100;
   int msg_cnt = 0;
@@ -336,7 +338,7 @@ dump_backtrace(state_t* state, hpcrun_frame_t* unwind)
 
   thread_data_t* td = hpcrun_get_thread_data();
   if (unwind) {
-    for (hpcrun_frame_t* x = td->btbuf; x < unwind; ++x) {
+    for (frame_t* x = td->btbuf; x < unwind; ++x) {
       lush_assoc_info_sprintf(as_str, x->as_info);
       lush_lip_sprintf(lip_str, x->lip);
       PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
@@ -351,7 +353,7 @@ dump_backtrace(state_t* state, hpcrun_frame_t* unwind)
 
   if (msg_cnt <= msg_limit && td->bufstk != td->bufend) {
     PMSG_LIMIT(EMSG("-- begin cached backtrace ---------------------------"));
-    for (hpcrun_frame_t* x = td->bufstk; x < td->bufend; ++x) {
+    for (frame_t* x = td->bufstk; x < td->bufend; ++x) {
       lush_assoc_info_sprintf(as_str, x->as_info);
       lush_lip_sprintf(lip_str, x->lip);
       PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
@@ -366,4 +368,3 @@ dump_backtrace(state_t* state, hpcrun_frame_t* unwind)
 
   PMSG_LIMIT(EMSG("-- end backtrace ------------------------------------\n"));
 }
-
