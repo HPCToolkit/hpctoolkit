@@ -106,8 +106,6 @@ hpcrun_backtrace(state_t* state, ucontext_t* context,
 		 int metricId, uint64_t metricIncr,
 		 int skipInner, int isSync)
 {
-  hpcrun_verify_backtrace_invariants();
-  
   cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
     n = lush_backtrace(state, context, metricId, metricIncr, skipInner, 

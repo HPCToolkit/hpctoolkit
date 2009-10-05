@@ -108,20 +108,4 @@ cct_node_t*
 hpcrun_state_insert_backtrace(state_t *, int, frame_t *,
 			      frame_t *, cct_metric_data_t);
 
-#if defined(CSPROF_PERF)
-#define hpcrun_verify_backtrace_invariants()
-#else
-#define hpcrun_verify_backtrace_invariants() \
-do { \
-  thread_data_t* td = hpcrun_get_thread_data(); \
-  int condition = (td->btbuf < td->bufend) /* obvious */		\
-    && (td->btbuf <= td->bufstk) /* stk between beg and end */	\
-    && (td->bufstk <= td->bufend);				\
-\
-  if(!condition) {							\
-    DIE("Backtrace invariant violated", __FILE__, __LINE__);		\
-  }									\
-} while(0);
-#endif
-
 #endif // STATE_H

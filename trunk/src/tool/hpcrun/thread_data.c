@@ -46,8 +46,9 @@
 
 //************************* System Include Files ****************************
 
-#include <stdlib.h>
 #include <assert.h>
+#include <pthread.h>
+#include <stdlib.h>
 
 //************************ libmonitor Include Files *************************
 
@@ -232,9 +233,6 @@ hpcrun_ensure_btbuf_avail(void)
 }
 
 
-#ifdef CSPROF_THREADS
-#include <pthread.h>
-
 static pthread_key_t _csprof_key;
 
 void
@@ -296,4 +294,3 @@ hpcrun_threaded_data(void)
   hpcrun_td_avail        = &thread_specific_td_avail;
 }
 
-#endif
