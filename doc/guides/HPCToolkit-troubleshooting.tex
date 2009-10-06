@@ -179,7 +179,7 @@ Now, we switch to our home directory \verb|/h/user/T1| to collect
 some profile data for \verb|app1|.
 When we run \hpcprof\ (without the \verb|-I| flag) as follows:
 \begin{quote}
-  \verb|hpcprof -S app1.hpcstruct hpctoolkit-measurements/|
+  \verb|hpcprof -S app1.hpcstruct hpctoolkit-app1-measurements/|
 \end{quote}
 This results in the output
 \begin{quote}
@@ -200,7 +200,7 @@ is unavailable. The other lost files, however, can be found by using
 the proper \verb|-I| flag:
 \begin{quote}
 \begin{verbatim}
-hpcprof -I /projs/Apps/'*' -S app1.hpcstruct hpctoolkit-measurements/
+hpcprof -I /projs/Apps/'*' -S app1.hpcstruct hpctoolkit-app1-measurements/
 \end{verbatim}
 \end{quote}
 
