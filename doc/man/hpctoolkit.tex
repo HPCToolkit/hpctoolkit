@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2009/06/21}
+\setDate{ 2009/10/05}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -123,11 +123,13 @@ Typically, this involves compiler options similar to \verb+-O3 -g+.
 
 \item \textbf{Measure}.
 Profile with \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} or \HTMLhref{hpcrun-flat.html}{\Cmd{hpcrun-flat}{1}}.
-Assume we wish to use two different sets of events and that the results are placed in \File{profile-file-1} and \File{profile-file-2}.
+Assume we wish to use two different sets of events.
 \begin{verbatim}
   hpcrun[-flat] <event-set-1> zoo
   hpcrun[-flat] <event-set-2> zoo
 \end{verbatim}
+\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} will by default place the results in a measurement directory named \File{hpctoolkit-<app-name>-measurements}.
+\HTMLhref{hpcrun-flat.html}{\Cmd{hpcrun-flat}{1}} by default creates data files in the current directory; assume the results are placed in \File{profile-file-1} and \File{profile-file-2}.
 
 \item \textbf{Recover static source code structure}. 
 Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to recover program structure and write it to the file \File{zoo.hpcstruct}
@@ -139,7 +141,11 @@ Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to recover program structure a
 Create an Experiment database using \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.  (The version of \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} must match the version of \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.)
 Assume the generated Experiment database is named \File{hpctoolkit-database}.
 \begin{verbatim}
-  hpcprof[-flat] -I path-to-zoo/'*' -S zoo.hpcstruct profile-file-1 profile-file-2
+  hpcprof -I path-to-zoo/'*' -S zoo.hpcstruct hpctoolkit-zoo-measurements
+\end{verbatim}
+or
+\begin{verbatim}
+  hpcprof-flat -I path-to-zoo/'*' -S zoo.hpcstruct profile-file-1 profile-file-2
 \end{verbatim}
 
 \item \textbf{Visualize}.
