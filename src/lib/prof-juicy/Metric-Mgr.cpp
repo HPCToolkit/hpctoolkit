@@ -410,20 +410,25 @@ Mgr::findGroup(const Mgr& y) const
 {
   const Mgr* x = this;
 
+  // N.B.: Cases like the following are handled by the fact that
+  // lookups in x are by unique name.
+  //   x: [a b c d] [a b e f]
+  //   y: [a b e f]
+
   bool found = true; // optimistic
   std::vector<uint> metricMap(y.size());
   
-  for (uint i = 0; i < y.size(); ++i) {
-    const Metric::ADesc* y_m = y.metric(i);
+  for (uint y_i = 0; y_i < y.size(); ++y_i) {
+    const Metric::ADesc* y_m = y.metric(y_i);
     string mNm = y_m->name();
     const Metric::ADesc* x_m = x->metric(mNm);
     
-    if (!x_m || (i > 0 && x_m->id() != (metricMap[i-1] + 1))) {
+    if (!x_m || (y_i > 0 && x_m->id() != (metricMap[y_i - 1] + 1))) {
       found = false;
       break;
     }
     
-    metricMap[i] = x_m->id();
+    metricMap[y_i] = x_m->id();
   }
 
   return (found && !metricMap.empty()) ? metricMap[0] : Mgr::npos;
