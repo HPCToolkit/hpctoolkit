@@ -796,9 +796,6 @@ OPT_UPC_IFLAGS
 OPT_ENABLE_UPC_FALSE
 OPT_ENABLE_UPC_TRUE
 hpclink_extra_wrap_names
-hpclink_add_csprof_wrap
-OPT_ENABLE_MONITOR_EXTS_FALSE
-OPT_ENABLE_MONITOR_EXTS_TRUE
 OPT_ENABLE_LUSH_PTHREADS_FALSE
 OPT_ENABLE_LUSH_PTHREADS_TRUE
 OPT_CILK_IFLAGS
@@ -1037,7 +1034,6 @@ enable_mpi
 enable_lush
 with_cilk
 enable_lush_pthreads
-enable_monitor_exts
 enable_bluegene
 with_upc
 with_objcopy
@@ -1706,7 +1702,6 @@ Optional Features:
   --enable-mpi            Enable MPI support (uses MPICXX variable)
   --enable-lush           use lush backtrace in hpcrun
   --enable-lush-pthreads  enable lush pthreads (temp)
-  --enable-monitor-exts   enable extra monitor overrides (temp)
   --enable-bluegene       Enable BlueGene/* support
   --enable-hpc-binutils   Enable extra HPCToolkit GNU binutils functionality
   --enable-devtools       Build development tools (enable debugging)
@@ -4661,13 +4656,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4664: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4659: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4667: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4662: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4670: output\"" >&5)
+  (eval echo "\"\$as_me:4665: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5873,7 +5868,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5876 "configure"' > conftest.$ac_ext
+  echo '#line 5871 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7726,11 +7721,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7729: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7724: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7733: \$? = $ac_status" >&5
+   echo "$as_me:7728: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8065,11 +8060,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8068: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8063: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8072: \$? = $ac_status" >&5
+   echo "$as_me:8067: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8170,11 +8165,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8173: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8168: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8177: \$? = $ac_status" >&5
+   echo "$as_me:8172: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8225,11 +8220,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8228: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8223: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8232: \$? = $ac_status" >&5
+   echo "$as_me:8227: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11025,7 +11020,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11028 "configure"
+#line 11023 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11121,7 +11116,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11124 "configure"
+#line 11119 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14372,11 +14367,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14375: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14370: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14379: \$? = $ac_status" >&5
+   echo "$as_me:14374: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14471,11 +14466,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14474: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14469: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14478: \$? = $ac_status" >&5
+   echo "$as_me:14473: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14523,11 +14518,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14526: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14521: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14530: \$? = $ac_status" >&5
+   echo "$as_me:14525: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19769,7 +19764,7 @@ fi
 
 
 #-------------------------------------------------
-# enable-lush, enable-lush-pthreads, with-cilk, monitor-exts
+# enable-lush, enable-lush-pthreads, with-cilk
 #-------------------------------------------------
 
 # Check whether --enable-lush was given.
@@ -19830,9 +19825,8 @@ fi
 
 
 
-# Note: the --enable-lush-pthreads and --enable-monitor-exts options
-# are mostly temporary and may go away or may be folded into other
-# options.
+# Note: the --enable-lush-pthreads option may be temporary and may be
+# folded into other options.
 
 # Check whether --enable-lush-pthreads was given.
 if test "${enable_lush_pthreads+set}" = set; then
@@ -19848,6 +19842,16 @@ $as_echo "$as_me: error: enable-lush-pthreads requires enable-lush" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
+wrap1='pthread_mutex_lock pthread_mutex_trylock pthread_mutex_unlock'
+wrap2='pthread_spin_lock pthread_spin_trylock pthread_spin_unlock pthread_spin_destroy'
+wrap3='pthread_cond_init pthread_cond_destroy pthread_cond_wait'
+wrap4='pthread_cond_timedwait pthread_cond_signal pthread_cond_broadcast'
+
+hpclink_extra_wrap_names=
+if test "$enable_lush_pthreads" = yes ; then
+  hpclink_extra_wrap_names="$wrap1 $wrap2 $wrap3 $wrap4"
+fi
+
 { $as_echo "$as_me:$LINENO: lush pthreads: $enable_lush_pthreads" >&5
 $as_echo "$as_me: lush pthreads: $enable_lush_pthreads" >&6;}
  if test "$enable_lush_pthreads" = yes; then
@@ -19857,40 +19861,6 @@ else
   OPT_ENABLE_LUSH_PTHREADS_TRUE='#'
   OPT_ENABLE_LUSH_PTHREADS_FALSE=
 fi
-
-
-
-# Check whether --enable-monitor-exts was given.
-if test "${enable_monitor_exts+set}" = set; then
-  enableval=$enable_monitor_exts;
-else
-  enable_monitor_exts=$enable_lush_pthreads
-fi
-
-
-wrap1='pthread_mutex_lock pthread_mutex_trylock pthread_mutex_unlock'
-wrap2='pthread_spin_lock pthread_spin_trylock pthread_spin_unlock pthread_spin_destroy'
-wrap3='pthread_cond_init pthread_cond_destroy pthread_cond_wait'
-wrap4='pthread_cond_timedwait pthread_cond_signal pthread_cond_broadcast'
-
-if test "$enable_monitor_exts" = yes ; then
-  hpclink_add_csprof_wrap=yes
-  hpclink_extra_wrap_names="$wrap1 $wrap2 $wrap3 $wrap4"
-else
-  hpclink_add_csprof_wrap=no
-  hpclink_extra_wrap_names=
-fi
-
-{ $as_echo "$as_me:$LINENO: monitor extensions: $enable_monitor_exts" >&5
-$as_echo "$as_me: monitor extensions: $enable_monitor_exts" >&6;}
- if test "$enable_monitor_exts" = yes; then
-  OPT_ENABLE_MONITOR_EXTS_TRUE=
-  OPT_ENABLE_MONITOR_EXTS_FALSE='#'
-else
-  OPT_ENABLE_MONITOR_EXTS_TRUE='#'
-  OPT_ENABLE_MONITOR_EXTS_FALSE=
-fi
-
 
 
 
@@ -20427,13 +20397,6 @@ if test -z "${OPT_ENABLE_LUSH_PTHREADS_TRUE}" && test -z "${OPT_ENABLE_LUSH_PTHR
   { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_LUSH_PTHREADS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 $as_echo "$as_me: error: conditional \"OPT_ENABLE_LUSH_PTHREADS\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${OPT_ENABLE_MONITOR_EXTS_TRUE}" && test -z "${OPT_ENABLE_MONITOR_EXTS_FALSE}"; then
-  { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_MONITOR_EXTS\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-$as_echo "$as_me: error: conditional \"OPT_ENABLE_MONITOR_EXTS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi

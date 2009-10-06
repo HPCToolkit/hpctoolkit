@@ -47,6 +47,7 @@
 
 #include <pthread.h>
 #include <unistd.h>
+#include <setjmp.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
@@ -429,6 +430,52 @@ monitor_reset_stacksize(size_t old_size)
 
 
 //***************************************************************************
+// (sig)longjmp for trampoline (via monitor extensions)
+//***************************************************************************
+
+typedef void longjmp_fcn(jmp_buf, int);
+typedef void siglongjmp_fcn(sigjmp_buf, int);
+
+#ifdef HPCRUN_STATIC_LINK
+extern longjmp_fcn    __real_longjmp;
+extern siglongjmp_fcn __real_siglongjmp;
+#endif
+
+static longjmp_fcn    *real_longjmp = NULL;
+static siglongjmp_fcn *real_siglongjmp = NULL;
+
+
+void
+MONITOR_EXT_WRAP_NAME(longjmp)(jmp_buf buf, int val)
+{
+  hpcrun_async_block();
+  MONITOR_EXT_GET_NAME_WRAP(real_longjmp, longjmp);
+
+  hpcrun_async_unblock();
+  (*real_longjmp)(buf, val);
+
+  // Never reached, but silence a compiler warning.
+  EEMSG("return from real longjmp(), should never get here");
+  _exit(1);
+}
+
+
+void
+MONITOR_EXT_WRAP_NAME(siglongjmp)(sigjmp_buf buf, int val)
+{
+  hpcrun_async_block();
+  MONITOR_EXT_GET_NAME_WRAP(real_siglongjmp, siglongjmp);
+
+  hpcrun_async_unblock();
+  (*real_siglongjmp)(buf, val);
+
+  // Never reached, but silence a compiler warning.
+  EEMSG("return from real siglongjmp(), should never get here");
+  _exit(1);
+}
+
+
+//***************************************************************************
 // thread control (via our monitoring extensions)
 //***************************************************************************
 
@@ -436,7 +483,7 @@ monitor_reset_stacksize(size_t old_size)
 // mutex_lock
 // ---------------------------------------------------------
 
-#ifdef HPCRUN_MONITOR_EXTS
+#ifdef LUSH_PTHREADS
 
 typedef int mutex_lock_fcn(pthread_mutex_t *);
 
@@ -457,19 +504,15 @@ MONITOR_EXT_WRAP_NAME(pthread_mutex_lock)(pthread_mutex_t* lock)
   MONITOR_EXT_GET_NAME_WRAP(real_mutex_lock, pthread_mutex_lock);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_mutexLock_pre(&TD_GET(pthr_metrics), lock);
   }
-#endif
   
   int ret = (*real_mutex_lock)(lock);
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_mutexLock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
   }
-#endif
 
   return ret;
 }
@@ -483,11 +526,9 @@ MONITOR_EXT_WRAP_NAME(pthread_mutex_trylock)(pthread_mutex_t* lock)
 
   int ret = (*real_mutex_trylock)(lock);
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_mutexTrylock_post(&TD_GET(pthr_metrics), lock, ret);
   }
-#endif
 
   return ret;
 }
@@ -501,24 +542,21 @@ MONITOR_EXT_WRAP_NAME(pthread_mutex_unlock)(pthread_mutex_t* lock)
 
   int ret = (*real_mutex_unlock)(lock);
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_mutexUnlock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
   }
-#endif
 
   return ret;
 }
 
-
-#endif // HPCRUN_MONITOR_EXTS
+#endif // LUSH_PTHREADS
 
 
 // ---------------------------------------------------------
 // spin_lock
 // ---------------------------------------------------------
 
-#ifdef HPCRUN_MONITOR_EXTS
+#ifdef LUSH_PTHREADS
 
 typedef int spinlock_fcn(pthread_spinlock_t *);
 
@@ -542,11 +580,9 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_lock)(pthread_spinlock_t* lock)
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
   pthread_spinlock_t* real_lock = lock;
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     real_lock = lushPthr_spinLock_pre(&TD_GET(pthr_metrics), lock);
   }
-#endif
 
 #if (LUSH_PTHR_FN_TY == 3)
   int ret = lushPthr_spin_lock(lock);
@@ -554,11 +590,9 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_lock)(pthread_spinlock_t* lock)
   int ret = (*real_spin_lock)(real_lock);
 #endif
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_spinLock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
   }
-#endif
 
   return ret;
 }
@@ -571,11 +605,9 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_trylock)(pthread_spinlock_t* lock)
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
   pthread_spinlock_t* real_lock = lock;
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     real_lock = lushPthr_spinTrylock_pre(&TD_GET(pthr_metrics), lock);
   }
-#endif
 
 #if (LUSH_PTHR_FN_TY == 3)
   int ret = lushPthr_spin_trylock(lock);
@@ -583,11 +615,9 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_trylock)(pthread_spinlock_t* lock)
   int ret = (*real_spin_trylock)(real_lock);
 #endif
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_spinTrylock_post(&TD_GET(pthr_metrics), lock, ret);
   }
-#endif
 
   return ret;
 }
@@ -600,11 +630,9 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_unlock)(pthread_spinlock_t* lock)
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
   pthread_spinlock_t* real_lock = lock;
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     real_lock = lushPthr_spinUnlock_pre(&TD_GET(pthr_metrics), lock);
   }
-#endif
 
 #if (LUSH_PTHR_FN_TY == 3)
   int ret = lushPthr_spin_unlock(lock);
@@ -612,11 +640,9 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_unlock)(pthread_spinlock_t* lock)
   int ret = (*real_spin_unlock)(real_lock);
 #endif
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_spinUnlock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
   }
-#endif
 
   return ret;
 }
@@ -629,32 +655,27 @@ MONITOR_EXT_WRAP_NAME(pthread_spin_destroy)(pthread_spinlock_t* lock)
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
   pthread_spinlock_t* real_lock = lock;
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     real_lock = lushPthr_spinDestroy_pre(&TD_GET(pthr_metrics), lock);
   }
-#endif
 
   int ret = (*real_spin_destroy)(real_lock);
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_spinDestroy_post(&TD_GET(pthr_metrics), lock /*,ret*/);
   }
-#endif
 
   return ret;
 }
 
-
-#endif // HPCRUN_MONITOR_EXTS
+#endif // LUSH_PTHREADS
 
 
 // ---------------------------------------------------------
 // cond_wait
 // ---------------------------------------------------------
 
-#ifdef HPCRUN_MONITOR_EXTS
+#ifdef LUSH_PTHREADS
 
 typedef int cond_init_fcn(pthread_cond_t *, const pthread_condattr_t *);
 typedef int cond_destroy_fcn(pthread_cond_t *);
@@ -712,19 +733,15 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_wait)(pthread_cond_t* cond,
   MONITOR_EXT_GET_NAME_WRAP(real_cond_wait, pthread_cond_wait);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_condwait_pre(&TD_GET(pthr_metrics));
   }
-#endif
 
   int ret = (*real_cond_wait)(cond, mutex);
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_condwait_post(&TD_GET(pthr_metrics) /*,ret*/);
   }
-#endif
 
   return ret;
 }
@@ -738,19 +755,15 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_timedwait)(pthread_cond_t* cond,
   MONITOR_EXT_GET_NAME_WRAP(real_cond_timedwait, pthread_cond_timedwait);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_condwait_pre(&TD_GET(pthr_metrics));
   }
-#endif
 
   int ret = (*real_cond_timedwait)(cond, mutex, tspec);
 
-#ifdef LUSH_PTHREADS
   if (hpcrun_is_initialized()) {
     lushPthr_condwait_post(&TD_GET(pthr_metrics) /*,ret*/);
   }
-#endif
 
   return ret;
 }
@@ -773,7 +786,7 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_broadcast)(pthread_cond_t* cond)
   return (*real_cond_broadcast)(cond);
 }
 
-#endif // HPCRUN_MONITOR_EXTS
+#endif // LUSH_PTHREADS
 
 
 //***************************************************************************

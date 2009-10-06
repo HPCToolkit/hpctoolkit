@@ -38,9 +38,10 @@ wrap4="MPI_Init mpi_init mpi_init_ mpi_init__"
 wrap5="MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__"
 wrap6="MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__"
 wrap7="MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__"
-monitor_wrap_names="$wrap1 $wrap2 $wrap3 $wrap4 $wrap5 $wrap6 $wrap7"
+wrap8="longjmp siglongjmp"
+monitor_wrap_names="$wrap1 $wrap2 $wrap3 $wrap4 $wrap5 $wrap6 $wrap7 $wrap8"
 
-add_csprof_wrap='@hpclink_add_csprof_wrap@'
+add_csprof_wrap=no
 extra_wrap_names='@hpclink_extra_wrap_names@'
 
 # Set to -m64 on 64-bit version (for gcc).
@@ -192,9 +193,6 @@ done
 set -- $undef_args "$@"
 
 wrap_args=
-if test "$add_csprof_wrap" != yes ; then
-    extra_wrap_names=
-fi
 for name in $monitor_wrap_names $extra_wrap_names
 do
     wrap_args="${wrap_args} -Wl,--wrap,${name}"
@@ -209,6 +207,7 @@ libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
 test -f "$libmonitor" || die "no such file: $libmonitor"
 set -- "$@" "$libmonitor"
 
+# Currently not used, may be readded, may be dropped.
 if test "$add_csprof_wrap" = yes ; then
     libcsprof_wrap="${libcsprof_dir}/libcsprof_wrap.a"
     test -f "$libcsprof_wrap" || die "no such file: $libcsprof_wrap"
