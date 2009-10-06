@@ -1350,7 +1350,7 @@ AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
 
 
 #-------------------------------------------------
-# enable-lush, enable-lush-pthreads, with-cilk, monitor-exts
+# enable-lush, enable-lush-pthreads, with-cilk
 #-------------------------------------------------
 
 AC_ARG_ENABLE([lush],
@@ -1392,9 +1392,8 @@ AM_CONDITIONAL([OPT_WITH_CILK], [test "$OPT_WITH_CILK" = yes])
 AC_SUBST([OPT_CILK_IFLAGS])
 
 
-# Note: the --enable-lush-pthreads and --enable-monitor-exts options
-# are mostly temporary and may go away or may be folded into other
-# options.
+# Note: the --enable-lush-pthreads option may be temporary and may be
+# folded into other options.
 
 AC_ARG_ENABLE([lush-pthreads],
   [AS_HELP_STRING([--enable-lush-pthreads],
@@ -1406,33 +1405,19 @@ if test "$enable_lush_pthreads" = yes && test "$enable_lush" = no ; then
   AC_MSG_ERROR([enable-lush-pthreads requires enable-lush])
 fi
 
-AC_MSG_NOTICE([lush pthreads: $enable_lush_pthreads])
-AM_CONDITIONAL([OPT_ENABLE_LUSH_PTHREADS], [test "$enable_lush_pthreads" = yes])
-
-
-AC_ARG_ENABLE([monitor-exts],
-  [AS_HELP_STRING([--enable-monitor-exts],
-                  [enable extra monitor overrides (temp)])],
-  [],
-  [enable_monitor_exts=$enable_lush_pthreads])
-
 wrap1='pthread_mutex_lock pthread_mutex_trylock pthread_mutex_unlock'
 wrap2='pthread_spin_lock pthread_spin_trylock pthread_spin_unlock pthread_spin_destroy'
 wrap3='pthread_cond_init pthread_cond_destroy pthread_cond_wait'
 wrap4='pthread_cond_timedwait pthread_cond_signal pthread_cond_broadcast'
 
-if test "$enable_monitor_exts" = yes ; then
-  hpclink_add_csprof_wrap=yes
+hpclink_extra_wrap_names=
+if test "$enable_lush_pthreads" = yes ; then
   hpclink_extra_wrap_names="$wrap1 $wrap2 $wrap3 $wrap4"
-else
-  hpclink_add_csprof_wrap=no
-  hpclink_extra_wrap_names=
 fi
 
-AC_MSG_NOTICE([monitor extensions: $enable_monitor_exts])
-AM_CONDITIONAL([OPT_ENABLE_MONITOR_EXTS], [test "$enable_monitor_exts" = yes])
+AC_MSG_NOTICE([lush pthreads: $enable_lush_pthreads])
+AM_CONDITIONAL([OPT_ENABLE_LUSH_PTHREADS], [test "$enable_lush_pthreads" = yes])
 
-AC_SUBST([hpclink_add_csprof_wrap])
 AC_SUBST([hpclink_extra_wrap_names])
 
 

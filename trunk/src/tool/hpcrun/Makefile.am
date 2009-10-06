@@ -73,9 +73,10 @@ include $(top_srcdir)/src/Makeinclude.config
 
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
-pkglib_LTLIBRARIES =
 bin_SCRIPTS = scripts/hpcsummary
+pkglibexec_SCRIPTS = scripts/hpclog
 
+pkglib_LTLIBRARIES =
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libcsprof.la
   bin_SCRIPTS += scripts/hpcrun
@@ -85,12 +86,6 @@ if OPT_ENABLE_HPCRUN_STATIC
   pkglib_PROGRAMS = libcsprof.o
   bin_SCRIPTS += scripts/hpclink
 endif
-
-if OPT_ENABLE_MONITOR_EXTS
-  pkglib_LIBRARIES = libcsprof_wrap.a
-endif
-
-pkglibexec_SCRIPTS = scripts/hpclog
 
 
 LIBMONITOR_INC = @LIBMONITOR_INC@
@@ -174,12 +169,6 @@ MY_STATIC_FILES = 			\
 MY_LINUX_DYNAMIC_FILES = 		\
 	os/linux/dylib.c
 
-MY_MONITOR_EXT_FILES = \
-	monitor-exts/monitor_ext.h  \
-	monitor-exts/over_cond.c  \
-	monitor-exts/over_mutex.c \
-	monitor-exts/over_spin.c
-
 
 MY_MIPS_FILES = \
 	unwind/common/default_validation_summary.c \
@@ -253,9 +242,6 @@ libcsprof_la_SOURCES = 			\
 libcsprof_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_STATIC_FILES)
-
-libcsprof_wrap_a_SOURCES =		\
-	$(MY_MONITOR_EXT_FILES)
 
 libcsprof_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
@@ -336,13 +322,6 @@ if OPT_ENABLE_LUSH_PTHREADS
     libcsprof_la_CPPFLAGS += -DLUSH_PTHREADS
     libcsprof_o_CPPFLAGS  += -DLUSH_PTHREADS
 endif
-
-if OPT_ENABLE_MONITOR_EXTS
-    libcsprof_la_SOURCES  += $(MY_MONITOR_EXT_FILES)
-    libcsprof_la_CPPFLAGS += -DHPCRUN_MONITOR_EXTS
-    libcsprof_o_CPPFLAGS  += -DHPCRUN_MONITOR_EXTS
-endif
-
 
 libcsprof_la_SOURCES += utilities/last_func.c
 libcsprof_o_SOURCES  += utilities/last_func.c
