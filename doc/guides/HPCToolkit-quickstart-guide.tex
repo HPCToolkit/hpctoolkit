@@ -135,7 +135,7 @@ for more information.
 This command will produce a file {\tt myprogram.hpcstruct} that should be passed to {\tt hpcprof} with the {\tt -S} argument.
 \item{ \em Correlating measurements to source code.}\\
 \lindent {\tt hpcprof -S myprogram.hpcstruct -I path-to-myprogram-src \verb+\+ \\ 
-\lindent \lindent hpctoolkit-myprogram-measurements/*.hpcrun}\\[1ex]
+\lindent \lindent hpctoolkit-myprogram-measurements}\\[1ex]
 This command will produce a directory with the name {\tt hpctoolkit-myprogram-database}. If this database directory already exists, {\tt hpcprof} will append its process id at the end of the aforementioned directory name to yield a unique name.
 \item{ \em Viewing application performance measurements.}\\
 \lindent {\tt hpcviewer {\tt hpctoolkit-myprogram-database}}\\[1ex]

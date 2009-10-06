@@ -177,9 +177,9 @@ The \verb|app1| executable is installed on our path.
 
 Now, we switch to our home directory \verb|/h/user/T1| to collect
 some profile data for \verb|app1|.
-When we run \hpcstruct\ (without the \verb|-I| flag) as follows:
+When we run \hpcprof\ (without the \verb|-I| flag) as follows:
 \begin{quote}
-  \verb|hpcstruct -S app1.hpcstruct */*.hpcrun|
+  \verb|hpcprof -S app1.hpcstruct hpctoolkit-measurements/|
 \end{quote}
 This results in the output
 \begin{quote}
@@ -200,7 +200,7 @@ is unavailable. The other lost files, however, can be found by using
 the proper \verb|-I| flag:
 \begin{quote}
 \begin{verbatim}
-hpcstruct -I /projs/Apps/'*' -S app1.hpcstruct */*.hpcrun
+hpcprof -I /projs/Apps/'*' -S app1.hpcstruct hpctoolkit-measurements/
 \end{verbatim}
 \end{quote}
 
