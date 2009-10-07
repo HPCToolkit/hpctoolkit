@@ -1350,7 +1350,8 @@ Optional Packages:
   --with-symtabAPI=PATH   path to symtabAPI install directory (default build)
   --with-xed2=PATH        path to xed2 install directory (default build)
   --with-xerces=PATH      path to xerces/c install directory (default build)
-  --with-mpi=PATH         pass the MPI path to libmonitor (default no)
+  --with-mpi=PATH         pass the MPI path to old monitor, not used by
+                          libmonitor (default no)
 
 Some influential environment variables:
   CC          C compiler command
@@ -4137,7 +4138,7 @@ xerces_platform=linux
 #
 # Option: --with-mpi=PATH
 #
-# Pass the MPI path to libmonitor.
+# Pass the MPI path to old monitor.
 #
 
 # Check whether --with-mpi was given.

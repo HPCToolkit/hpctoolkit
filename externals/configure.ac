@@ -821,11 +821,12 @@ xerces_platform=linux
 #
 # Option: --with-mpi=PATH
 #
-# Pass the MPI path to libmonitor.
+# Pass the MPI path to old monitor.
 #
 AC_ARG_WITH([mpi],
     [AS_HELP_STRING([--with-mpi=PATH],
-	[pass the MPI path to libmonitor (default no)])],
+	[pass the MPI path to old monitor,
+	 not used by libmonitor (default no)])],
     [],
     [with_mpi=no])
 
