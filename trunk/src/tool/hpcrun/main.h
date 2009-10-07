@@ -44,5 +44,10 @@
 #ifndef main_h
 #define main_h
 
+#include <setjmp.h>
+
+typedef void siglongjmp_fcn(sigjmp_buf, int);
+
+siglongjmp_fcn *hpcrun_get_real_siglongjmp(void);
 
 #endif  // ! main_h

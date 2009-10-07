@@ -434,7 +434,6 @@ monitor_reset_stacksize(size_t old_size)
 //***************************************************************************
 
 typedef void longjmp_fcn(jmp_buf, int);
-typedef void siglongjmp_fcn(sigjmp_buf, int);
 
 #ifdef HPCRUN_STATIC_LINK
 extern longjmp_fcn    __real_longjmp;
@@ -443,6 +442,14 @@ extern siglongjmp_fcn __real_siglongjmp;
 
 static longjmp_fcn    *real_longjmp = NULL;
 static siglongjmp_fcn *real_siglongjmp = NULL;
+
+
+siglongjmp_fcn *
+hpcrun_get_real_siglongjmp(void)
+{
+  MONITOR_EXT_GET_NAME_WRAP(real_siglongjmp, siglongjmp);
+  return real_siglongjmp;
+}
 
 
 void
@@ -464,7 +471,7 @@ void
 MONITOR_EXT_WRAP_NAME(siglongjmp)(sigjmp_buf buf, int val)
 {
   hpcrun_async_block();
-  MONITOR_EXT_GET_NAME_WRAP(real_siglongjmp, siglongjmp);
+  hpcrun_get_real_siglongjmp();
 
   hpcrun_async_unblock();
   (*real_siglongjmp)(buf, val);
