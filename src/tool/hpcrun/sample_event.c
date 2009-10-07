@@ -42,6 +42,7 @@
 // ******************************************************* EndRiceCopyright *
 
 
+#include <setjmp.h>
 #include <string.h>
 
 //*************************** User Include Files ****************************
@@ -51,6 +52,7 @@
 #include "csprof_dlfns.h"
 #include "csprof-malloc.h"
 #include "fnbounds_interface.h"
+#include "main.h"
 #include "metrics_types.h"
 #include "segv_handler.h"
 #include "state.h"
@@ -110,7 +112,7 @@ csprof_drop_sample(void)
 {
   TMSG(DROP, "dropping sample");
   sigjmp_buf_t *it = &(TD_GET(bad_unwind));
-  siglongjmp(it->jb,9);
+  (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }
 
 long

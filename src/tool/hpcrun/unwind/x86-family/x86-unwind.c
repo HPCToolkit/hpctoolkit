@@ -88,6 +88,7 @@
 #include "x86-validate-retn-addr.h"
 
 #include <messages/messages.h>
+#include "main.h"
 
 
 
@@ -622,7 +623,7 @@ drop_sample(void)
   csprof_up_pmsg_count();
 
   sigjmp_buf_t *it = &(TD_GET(bad_unwind));
-  siglongjmp(it->jb,9);
+  (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }
 
 

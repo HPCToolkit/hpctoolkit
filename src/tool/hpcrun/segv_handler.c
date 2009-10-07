@@ -51,6 +51,7 @@
 
 #include "monitor.h"
 
+#include "main.h"
 #include "thread_data.h"
 #include "handling_sample.h"
 
@@ -89,8 +90,9 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
       EMSG("error: segv handler: invalid jmpbuf");
       return 0; // monitor_real_abort();
     }
-    
-    siglongjmp(it->jb,9);
+
+    (*hpcrun_get_real_siglongjmp())(it->jb, 9);
+    return 0;
   }
   else {
     // pass segv to another handler
