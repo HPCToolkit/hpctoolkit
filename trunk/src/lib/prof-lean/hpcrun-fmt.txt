@@ -40,12 +40,12 @@ epoch-tag = "EPOCH___"
 ----------------------------------------
 
 metric-tbl = [metric-desc]*
-metric-desc = str metric-flags{8b} period{8b}
+metric-desc = name-str description-str metric-flags{8b} period{8b}
 
 ----------------------------------------
 
 loadmap = [loadmap_entry]+
-loadmap_entry = id{2b} str flags{8b}
+loadmap_entry = id{2b} name-str flags{8b}
 
 ----------------------------------------
 

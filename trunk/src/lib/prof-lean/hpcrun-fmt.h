@@ -243,6 +243,7 @@ hpcrun_metricVal_isZero(hpcrun_metricVal_t x)
 typedef struct metric_desc_t {
 
   char* name;
+  char* description;
   hpcrun_metricFlags_t flags;
   uint64_t period;
 
@@ -264,17 +265,17 @@ typedef metric_desc_t* metric_desc_p_t;
 HPCFMT_List_declare(metric_desc_p_t);
 typedef HPCFMT_List(metric_desc_p_t) metric_desc_p_tbl_t; // HPCFMT_List of metric_desc_t*
 
-extern int 
+extern int
 hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
 			   hpcfmt_alloc_fn alloc);
 
-extern int 
+extern int
 hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* out);
 
-extern int 
+extern int
 hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, FILE* out);
 
-extern void 
+extern void
 hpcrun_fmt_metricTbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 

@@ -314,6 +314,7 @@ int
 hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs, hpcfmt_alloc_fn alloc)
 {
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->name), fs, alloc));
+  HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->description), fs, alloc));
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->flags), fs));
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->period), fs));
   return HPCFMT_OK;
@@ -324,6 +325,7 @@ int
 hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* fs)
 {
   hpcfmt_str_fwrite(x->name, fs);
+  hpcfmt_str_fwrite(x->description, fs);
   hpcfmt_byte8_fwrite(x->flags, fs);
   hpcfmt_byte8_fwrite(x->period, fs);
   return HPCFMT_OK;
@@ -333,7 +335,7 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* fs)
 int
 hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* fs, const char* pre)
 {
-  fprintf(fs, "%s[(event: %s) (flg: 0x%"PRIx64") (period: %"PRIu64")]\n", pre, x->name, x->flags, x->period);
+  fprintf(fs, "%s[(nm: %s) (desc: %s) (flg: 0x%"PRIx64") (period: %"PRIu64")]\n", pre, x->name, x->description, x->flags, x->period);
   return HPCFMT_OK;
 }
 
@@ -343,6 +345,7 @@ hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc)
 {
   hpcfmt_str_free(x->name, dealloc);
   x->name = NULL;
+  x->description = NULL;
 }
 
 
