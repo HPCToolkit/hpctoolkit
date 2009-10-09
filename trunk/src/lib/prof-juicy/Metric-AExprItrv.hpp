@@ -47,14 +47,22 @@
 //
 // An abstract expression that represents derived expressions that
 // are iteratively computed (as opposed to directly computed).
+// 
+// Since all sources are *not* known in advance, it is necessary to
+// use an 'accumulator' that is iteratively updated and serves as both
+// an input and output on each update.  This implies that is is
+// necesary, in general, to have an initialization routine so the
+// accumulator is correctly initialized before the first update.
+// Additionally, since some metrics rely on the total number of
+// inputs, a finaliation routine is also necessary.
 //
 // Currently supported expressions are
-//   Max    : max expression                       : n-ary
-//   Min    : min expression                       : n-ary
-//   Mean   : mean (arithmetic) expression         : n-ary
-//   StdDev : standard deviation expression        : n-ary
-//   CoefVar: coefficient of variance              : n-ary
-//   RStdDev: relative standard deviation          : n-ary
+//   Max    : max expression
+//   Min    : min expression
+//   Mean   : mean (arithmetic) expression
+//   StdDev : standard deviation expression
+//   CoefVar: coefficient of variance
+//   RStdDev: relative standard deviation
 //
 //***************************************************************************
 
