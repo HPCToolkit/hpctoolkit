@@ -370,6 +370,8 @@ ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
   }
   
   // N.B. pre-order walk assumes point-wise metrics
+  // Cf. Analysis::Flat::Driver::computeDerivedBatch().
+
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
     for (uint mId = mBegId; mId < mEndId; ++mId) {
