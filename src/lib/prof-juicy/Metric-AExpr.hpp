@@ -48,6 +48,8 @@
 // An abstract expression that can represents derived expressions that
 // are directly computed (as opposed to iteratively computed).
 //
+// Assumes all sources are known when evaluation rule is invoked.
+//
 // Currently supported expressions are
 //   Const  : double constant                      : leaf
 //   Var    : variable with a String name          : leaf
