@@ -52,7 +52,6 @@
 
 #include "csprof_options.h"
 #include "files.h"
-#include "process_event_list.h"
 #include "hpcrun_return_codes.h"
 #include "env.h"
 #include "sample_sources_all.h"
