@@ -70,7 +70,6 @@
 #include "metrics.h"
 #include "sample_event.h"
 #include "sample_source.h"
-#include "sample_source_none_event.h"
 #include "sample_source_common.h"
 #include "sample_sources_registered.h"
 #include "simple_oo.h"
@@ -78,7 +77,9 @@
 
 #include <messages/messages.h>
 
+// ******** Local Constants ****************
 
+enum none_event { NONE_USE_LOG = 0 };
 
 // ******* METHOD DEFINITIONS ***********
 
@@ -137,22 +138,18 @@ METHOD_FN(process_event_list,int lush_metrics)
 
 //
 // Event sets not relevant for this sample source
+// It DOES NOT SAMPLE, so there are NO event sets
 //
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
-  hpcrun_pre_allocate_metrics(1 + lush_metrics);
-  
-  int metric_id = hpcrun_new_metric();
-  TMSG(ITIMER_CTL,"No event set for NONE sample source");
-  hpcrun_set_metric_info_and_period(metric_id, "NONE",
-				    HPCRUN_MetricFlag_Async,
-				    1);
-
   thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD; 
 }
 
+//
+// There are no events defined for this sample source
+//
 static void
 METHOD_FN(display_events)
 {
@@ -167,6 +164,7 @@ sample_source_t _none_obj = {
 
   .add_event     = csprof_ss_add_event,
   .store_event   = csprof_ss_store_event,
+  .store_metric_id = csprof_ss_store_metric_id,
   .get_event_str = csprof_ss_get_event_str,
   .started       = csprof_ss_started,
   .start         = csprof_ss_start,
@@ -187,7 +185,7 @@ sample_source_t _none_obj = {
     .evl_spec = {[0] = '\0'},
     .nevents = 0
   },
-  .evset_idx = 2,
+  .evset_idx = -1,
   .name = "NONE",
   .cls  = HDWARE,
   .state = UNINIT

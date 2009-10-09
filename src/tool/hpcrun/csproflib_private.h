@@ -70,9 +70,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "list.h"
 #include "epoch.h"
-
 #include "state.h"
 
 //*************************** Forward Declarations **************************

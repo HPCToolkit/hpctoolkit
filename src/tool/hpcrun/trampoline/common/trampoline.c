@@ -21,6 +21,8 @@
 #include "trampoline.h"
 #include <hpcrun/thread_data.h>
 #include <cct/cct.h>
+#include <messages/messages.h>
+#include <hpcrun/sample_event.h>
 
 
 //******************************************************************************
@@ -69,7 +71,9 @@ hpcrun_trampoline_advance(void)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   cct_node_t* node = td->tramp_cct_node;
+  TMSG(TRAMP, "Advance from node %p...", node);
   node = node->parent;
+  TMSG(TRAMP, " ... to node %p", node);
   td->tramp_frame++;
   return node;
 }
@@ -78,6 +82,7 @@ hpcrun_trampoline_advance(void)
 void 
 hpcrun_trampoline_insert(cct_node_t* node)
 {
+  TMSG(TRAMP, "insert into node %p", node);
   thread_data_t* td = hpcrun_get_thread_data();
   void* addr        = td->tramp_frame->ra_loc;
   if (! addr) {
@@ -100,6 +105,7 @@ hpcrun_trampoline_insert(cct_node_t* node)
 void
 hpcrun_trampoline_remove(void)
 {
+  TMSG(TRAMP,"removed");
   thread_data_t* td = hpcrun_get_thread_data();
   if (td->tramp_present){
     *((void**)td->tramp_loc) = td->tramp_retn_addr;
@@ -111,7 +117,8 @@ hpcrun_trampoline_remove(void)
 void*
 hpcrun_trampoline_handler(void)
 {
-  printf("trampoline fired!\n");
+  hpcrun_async_block();
+  EMSG("Trampoline fired!");
   thread_data_t* td = hpcrun_get_thread_data();
 
   // get the address where we need to return
@@ -120,5 +127,6 @@ hpcrun_trampoline_handler(void)
   cct_node_t* n = hpcrun_trampoline_advance();
   hpcrun_trampoline_insert(n);
 
+  hpcrun_async_unblock();
   return ra; // our assembly code caller will return to ra
 }

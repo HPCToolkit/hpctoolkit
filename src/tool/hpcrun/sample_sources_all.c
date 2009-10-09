@@ -100,9 +100,18 @@ csprof_all_sources_ ##n(void)					\
 // END Function Defining Macros
 //
 
-static sample_source_t *sample_sources[MAX_SAMPLE_SOURCES];
+//*******************************************************************
+// Local variables
+//*******************************************************************
 
+static sample_source_t* sample_sources[MAX_SAMPLE_SOURCES];
 static int n_sources = 0;
+static int n_hdware_sources;
+
+//*******************************************************************
+// Interface functions
+//*******************************************************************
+
 
 sample_source_t *
 hpcrun_fetch_source_by_name(const char *src)
@@ -127,7 +136,7 @@ csprof_check_named_source(const char *src)
 }
 
 static int
-in_sources(sample_source_t *ss)
+in_sources(sample_source_t* ss)
 {
   for(int i=0; i < n_sources; i++){
     if (sample_sources[i] == ss)
@@ -138,24 +147,33 @@ in_sources(sample_source_t *ss)
 
 
 static void
-add_source(sample_source_t *ss)
+add_source(sample_source_t* ss)
 {
   NMSG(AS_add_source,"%s",ss->name);
   if (n_sources == MAX_SAMPLE_SOURCES){
     // check to see is ss already present
     if (! in_sources(ss)){
-      csprof_abort("Too many sample sources");
+      csprof_abort("Too many total (hdware + sw) sample sources");
+    }
+    return;
+  }
+  if (ss->cls == HDWARE && n_hdware_sources == MAX_HDWARE_SAMPLE_SOURCES) {
+    if (! in_sources(ss)) {
+      csprof_abort("Too many hdware sample sources");
     }
     return;
   }
   sample_sources[n_sources] = ss;
   n_sources++;
+  if (ss->cls == HDWARE) {
+    n_hdware_sources++;
+  }
   NMSG(AS_add_source,"# sources now = %d",n_sources);
 }
 
 
 void
-csprof_sample_sources_from_eventlist(char *evl)
+csprof_sample_sources_from_eventlist(char* evl)
 {
   if (evl == NULL) {
     hpcrun_ssfail_none();

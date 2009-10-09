@@ -798,12 +798,6 @@ dump_dso_info_t(dso_info_t *r)
   printf("%p-%p %s [dso_info_t *%p, table=%p, nsymbols=%d, relocatable=%d]\n",
 	 r->start_addr, r->end_addr, r->name, 
          r, r->table, r->nsymbols, r->relocate);
-#if 0
-  printf("record addr = %p: name = '%s', table = %p, nsymbols = 0x%x, "
-	 "start = %p, end = %p, relocate = %d\n",
-         r, r->name, r->table, r->nsymbols, r->start_addr, 
-	 r->end_addr, r->relocate);
-#endif
 }
 
 

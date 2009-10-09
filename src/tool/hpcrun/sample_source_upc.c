@@ -241,7 +241,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 	   "unable to find code for event %s", event);
       hpcrun_ssfail_unsupported("UPC", event);
     }
-    METHOD_CALL(self, store_event, code, threshold);
+    METHOD_CALL(self, store_event, code, threshold, metric_id);
   }
 
   nevents = self->evl.nevents;
@@ -400,6 +400,7 @@ sample_source_t _upc_obj = {
   // common methods
   .add_event   = csprof_ss_add_event,
   .store_event = csprof_ss_store_event,
+  .store_metric_id = csprof_ss_store_metric_id,
   .get_event_str = csprof_ss_get_event_str,
   .started       = csprof_ss_started,
   .start         = csprof_ss_start,
@@ -419,7 +420,7 @@ sample_source_t _upc_obj = {
     .evl_spec = {[0] = '\0'},
     .nevents = 0
   },
-  .evset_idx = 1,
+  .evset_idx = -1,
   .name = "upc",
   .cls  = HDWARE,
   .state = UNINIT

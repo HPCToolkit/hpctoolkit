@@ -162,12 +162,6 @@ lushPthr_attribToCallPath(uint64_t idlenessIncr)
 
   return n;
 
-#if 0
-  // noticably more overhead and won't work with PAPI
-#  include <signal.h>
-#  include <pthread.h>
-  pthread_kill(pthread_self(), SIGPROF);
-#endif
 }
 
 

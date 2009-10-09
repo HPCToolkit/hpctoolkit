@@ -100,13 +100,16 @@
 #define node_last_child(/* cct_node_t* */ x)   \
   ((x)->children ? (x)->children->prev_sibling : NULL)
 
+#define MY_ADVANCE_PATH_FRAME(x)   (x)--
+#define MY_IS_PATH_FRAME_AT_END(x) ((x) < path_end)
+
 //*************************** Forward Declarations **************************
 
 /* cstree callbacks (CB) */
 static cct_node_t*
 cct_node_find_child(cct_node_t* x,
-			    lush_assoc_info_t as_info, void* ip,
-			    lush_lip_t* lip);
+		    lush_assoc_info_t as_info, void* ip,
+		    lush_lip_t* lip);
 
 static int
 cct_node_link(cct_node_t *, cct_node_t *);
@@ -143,9 +146,9 @@ new_persistent_id()
 
 static cct_node_t*
 cct_node_create(lush_assoc_info_t as_info, 
-			void* ip,
-			lush_lip_t* lip,
-			hpcrun_cct_t *x)
+		void* ip,
+		lush_lip_t* lip,
+		hpcrun_cct_t *x)
 {
   size_t sz = (sizeof(cct_node_t)
 	       + sizeof(cct_metric_data_t)*hpcrun_get_num_metrics());
@@ -374,33 +377,27 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* x, cct_node_t* treenode, int metric_id
 			    frame_t* path_beg, frame_t* path_end,
 			    cct_metric_data_t increment)
 {
-#define MY_ADVANCE_PATH_FRAME(x)   (x)--
-#define MY_IS_PATH_FRAME_AT_END(x) ((x) < path_end)
-
-  TMSG(CCT,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp", x, treenode,
+  TMSG(CCT,"Insert backtrace w x=%p, tn=%p, strt=%p, end=%p", x, treenode,
       path_beg, path_end);
 
   frame_t* frm   = path_beg; // current frame 
   cct_node_t* tn = treenode;
 
   if ( !(path_beg >= path_end) ) {
+    EMSG("Attempted backtrace insertion where path_beg >= path_end!!!");
     return NULL;
   }
 
   if (tn == NULL) {
     tn = x->tree_root;
 
-    TMSG(CCT, "(NULL) root ip %#lx", tn->ip);
-    TMSG(CCT, "beg ip %#lx", frm->ip);
-
-    // tallent: what is this for?
-    /* we don't want the tree root calling itself */
+    TMSG(CCT, "Starting tree node = (NULL), so begin search @ cct root");
     if (frm->ip == tn->ip) {
-      TMSG(CCT,"beg ip == tn ip = %lx", tn->ip);
+      TMSG(CCT,"beg ip == tn ip = %p", tn->ip);
       MY_ADVANCE_PATH_FRAME(frm);
     }
 
-    TMSG(CCT, "beg ip %#lx", frm->ip);
+    TMSG(CCT, "beg ip %p", frm->ip);
   }
 
   while (1) {
@@ -409,13 +406,13 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* x, cct_node_t* treenode, int metric_id
     }
 
     // Attempt to find a child 'c' corresponding to 'frm'
-    TMSG(CCT,"finding child in tree w ip = %lx", frm->ip);
+    TMSG(CCT,"looking for child in tree w ip = %p", frm->ip);
 
-    cct_node_t *c;
+    cct_node_t* c;
     c = cct_node_find_child(tn, frm->as_info, frm->ip, frm->lip);
     if (c) {
       // child exists; recur
-      TMSG(CCT,"found child");
+      TMSG(CCT,"found child @ node %p", c);
       tn = c;
 
       // If as_frm is 1-to-1 and as_c is not, update the latter
@@ -432,8 +429,8 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* x, cct_node_t* treenode, int metric_id
       TMSG(CCT,"No child found, inserting new tail");
       
       while (!MY_IS_PATH_FRAME_AT_END(frm)) {
-	TMSG(CCT,"create node w ip = %lx",frm->ip);
 	c = cct_node_create(frm->as_info, frm->ip, frm->lip, x);
+	TMSG(CCT, "create node %p w ip = %p", c, frm->ip);
 	cct_node_parent_insert(c, tn);
 	x->num_nodes++;
 	
@@ -443,7 +440,7 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* x, cct_node_t* treenode, int metric_id
     }
   }
 
-  TMSG(CCT, "Inserted in %#lx for count %d", x, x->num_nodes);
+  TMSG(CCT, "Total nodes after backtrace insertion = %d", x->num_nodes);
 
   cct_metric_data_increment(metric_id, &tn->metrics[metric_id], increment);
   return tn;

@@ -77,6 +77,18 @@
 
 #include <messages/messages.h>
 
+// ******** Local Constants ****************
+
+//
+// There is only 1 "event" associated with a return count
+// so the event id is necessarily 0.
+//
+static const int RETCNT_EVENT = 0;
+//
+// The "period" for a return count event
+//  is irrelevant (so it is arbitrarily 0).
+//
+static const int IRRELEVANT = 0;
 
 
 // ******* METHOD DEFINITIONS ***********
@@ -115,34 +127,30 @@ METHOD_FN(supports_event,const char *ev_str)
   return (strstr(ev_str,"RETCNT") != NULL);
 }
  
-static void
-METHOD_FN(process_event_list,int lush_metrics)
-{
 
-  char *_use_log = strchr(METHOD_CALL(self,get_event_str),'@');
-  if ( _use_log) {
-    METHOD_CALL(self, store_event, RETCNT_USE_LOG, 1);
-  }
-  else {
-    METHOD_CALL(self, store_event, RETCNT_USE_LOG, 0);
-  }
+static void
+METHOD_FN(process_event_list, int lush_metrics)
+{
+  int metric_id = hpcrun_new_metric();
+  TMSG(RETCNT_CTL, "Setting up return counts(trampolines)");
+
+  hpcrun_set_metric_info_and_period(metric_id, "RETCNT",
+				    HPCRUN_MetricFlag_Async,
+				    1);
+
+  METHOD_CALL(self, store_event, RETCNT_EVENT, IRRELEVANT);
+  METHOD_CALL(self, store_metric_id, RETCNT_EVENT, metric_id);
+
+  // turn on trampoline processing
+  ENABLE(USE_TRAMP);
 }
 
 //
-// Event sets not relevant for this sample source
+// Event sets not truly relevant for this sample source
 //
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
-  int ret = hpcrun_pre_allocate_metrics(1 + lush_metrics);
-  
-  if (ret > 0) {
-    int metric_id = hpcrun_new_metric();
-    TMSG(RETCNT_CTL,"No event set for RETCNT sample source");
-    hpcrun_set_metric_info_and_period(metric_id, "RETCNT",
-				      HPCRUN_MetricFlag_Async,
-				      1);
-  }
   thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD;
 }
@@ -150,6 +158,13 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
+  printf("===========================================================================\n");
+  printf("Available return-count events\n");
+  printf("===========================================================================\n");
+  printf("Name\t\tDescription\n");
+  printf("---------------------------------------------------------------------------\n");
+  printf("RETCNT\teach time a procedure returns, the return count for that procedure is incremented\n");
+  printf("\n");
 }
 
 /***************************************************************************
@@ -161,6 +176,7 @@ sample_source_t _retcnt_obj = {
 
   .add_event     = csprof_ss_add_event,
   .store_event   = csprof_ss_store_event,
+  .store_metric_id = csprof_ss_store_metric_id,
   .get_event_str = csprof_ss_get_event_str,
   .started       = csprof_ss_started,
   .start         = csprof_ss_start,
@@ -181,7 +197,7 @@ sample_source_t _retcnt_obj = {
     .evl_spec = {[0] = '\0'},
     .nevents = 0
   },
-  .evset_idx = 2,
+  .evset_idx = -1,
   .name = "RETCNT",
   .cls  = SFWARE,
   .state = UNINIT

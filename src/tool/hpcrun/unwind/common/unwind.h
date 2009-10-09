@@ -156,7 +156,7 @@ step_state unw_step(unw_cursor_t *c);
 // ----------------------------------------------------------
 
 // FIXME: tallent: the code in x86-unwind.c probably should be common
-void unw_throw();
+void unw_throw(void);
 
 
 //***************************************************************************

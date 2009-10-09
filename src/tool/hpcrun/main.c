@@ -249,14 +249,6 @@ monitor_post_fork(pid_t child, void* data)
   if (!SAMPLE_SOURCES(started)){
     NMSG(POST_FORK,"sample sources re-init+re-start");
     SAMPLE_SOURCES(init);
-#if 0
-	//--------------------------------------------------------
-	// comment out event list processing in post fork because 
-	// we inherit an initialized event list across the fork 
-	// 2008 06 08 - John Mellor-Crummey
-	//-----------------------------------------------------
-    SAMPLE_SOURCES(process_event_list);
-#endif
     SAMPLE_SOURCES(gen_event_set,0); // FIXME: pass lush_metrics here somehow
     SAMPLE_SOURCES(start);
   }

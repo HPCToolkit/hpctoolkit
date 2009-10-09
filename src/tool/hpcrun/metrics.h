@@ -76,6 +76,8 @@ metric_desc_t* hpcrun_id2metric(int id);
 
 metric_list_t* hpcrun_get_metric_data(void);
 
+metric_desc_p_tbl_t* hpcrun_get_metric_tbl(void);
+
 int hpcrun_new_metric(void);
 
 void hpcrun_set_metric_info_and_period(int metric_id, char *name,

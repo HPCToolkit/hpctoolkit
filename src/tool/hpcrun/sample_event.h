@@ -48,6 +48,7 @@
 
 #include "cct.h"
 #include "thread_data.h"
+#include <trampoline/common/trampoline.h>
 
 
 int csprof_is_initialized(void);
@@ -80,10 +81,12 @@ hpcrun_async_unblock(void)
 
 
 static inline int
-hpcrun_async_is_blocked(void)
+hpcrun_async_is_blocked(void* pc)
 {
   return ( (! hpcrun_td_avail()) 
-	   || (TD_GET(suspend_sampling) && !ENABLED(ASYNC_RISKY)));
+	   || (TD_GET(suspend_sampling) && !ENABLED(ASYNC_RISKY))
+	   || hpcrun_trampoline_interior(pc)
+	   || hpcrun_trampoline_at_entry(pc) );
 }
 
 

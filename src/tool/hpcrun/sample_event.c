@@ -257,7 +257,7 @@ _hpcrun_sample_callpath(state_t *state, void *context,
 			int metricId, uint64_t metricIncr, 
 			int skipInner, int isSync)
 {
-  void *pc = context_pc(context);
+  void* pc = context_pc(context);
 
   TMSG(SAMPLE,"csprof take profile sample @ %p",pc);
 

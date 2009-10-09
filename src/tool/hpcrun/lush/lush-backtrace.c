@@ -223,14 +223,6 @@ lush_backtrace(state_t* state, ucontext_t* context,
     csprof_drop_sample(); // NULL
   }
 
-#if 0
-  // FIXME: cf. csprof_sample_filter in backtrace.c
-  if ( !(monitor_in_start_func_narrow(bt_end->ip) && unw_len > 1) ) {
-    csprof_inc_samples_filtered();
-    return NULL;
-  }
-#endif
-
   // ---------------------------------------------------------
   // insert backtrace into calling context tree (if sensible)
   // ---------------------------------------------------------

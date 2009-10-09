@@ -245,7 +245,7 @@ write_epochs(FILE* fs, state_t* state)
     // == metrics ==
     //
 
-    metric_list_t *metric_tbl = hpcrun_get_metric_data();
+    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl();
 
     hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
 

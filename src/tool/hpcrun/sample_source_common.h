@@ -46,11 +46,16 @@
 
 #include "sample_source.h"
 
-extern void  METHOD_FN(csprof_ss_add_event,const char *ev);
-extern void  METHOD_FN(csprof_ss_store_event,int event_id,long thresh);
-extern char *METHOD_FN(csprof_ss_get_event_str);
-extern int   METHOD_FN(csprof_ss_started);
-extern void  METHOD_FN(csprof_ss_start);
+void  METHOD_FN(csprof_ss_add_event, const char* ev);
+void  METHOD_FN(csprof_ss_store_event, int event_id, long thresh);
+void  METHOD_FN(csprof_ss_store_metric_id, int event_id, int metric_id);
+char* METHOD_FN(csprof_ss_get_event_str);
+int   METHOD_FN(csprof_ss_started);
+void  METHOD_FN(csprof_ss_start);
+
+// Interface (NON method) functions
+
+int hpcrun_event2metric(sample_source_t* ss, int event_idx);
 
 void hpcrun_ssfail_none(void);
 void hpcrun_ssfail_unknown(char *event);
