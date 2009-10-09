@@ -84,7 +84,7 @@
 #include <messages/messages.h>
 
 #include <lib/prof-lean/timer.h>
-
+#include <unwind/common/unwind.h>
 
 /******************************************************************************
  * macros
@@ -99,8 +99,6 @@
 #endif
 
 #define SECONDS_PER_HOUR                   3600
-
-#define ITIMER_METRIC_ID 0  /* tallent:FIXME: land mine alert! */
 
 #if !defined(HOST_SYSTEM_IBM_BLUEGENE)
 #  define USE_ELAPSED_TIME_FOR_WALLCLOCK
@@ -131,14 +129,20 @@
 
 #endif // !defined(RESET_ITIMER_EACH_SAMPLE)
 
+/******************************************************************************
+ * local constants
+ *****************************************************************************/
 
+enum _local_const {
+  ITIMER_EVENT = 0    // itimer has only 1 event
+};
 
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
 
 static int
-csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
+itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
 
 
 /******************************************************************************
@@ -225,7 +229,7 @@ METHOD_FN(process_event_list,int lush_metrics)
     TMSG(OPTIONS,"WALLCLOCK event default period (5000) selected");
   }
   
-  METHOD_CALL(self,store_event,WALLCLOCK,period);
+  METHOD_CALL(self, store_event, ITIMER_EVENT, period);
   TMSG(OPTIONS,"wallclock period set to %ld",period);
 
   int seconds = period / 1000000;
@@ -241,14 +245,7 @@ METHOD_FN(process_event_list,int lush_metrics)
   /* macros define whether automatic restart or not */
   itimer.it_interval.tv_sec  =  AUTOMATIC_ITIMER_RESET_SECONDS(seconds);
   itimer.it_interval.tv_usec =  AUTOMATIC_ITIMER_RESET_MICROSECONDS(microseconds);
-}
 
-//
-// Event sets not relevant for this sample source
-//
-static void
-METHOD_FN(gen_event_set,int lush_metrics)
-{
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
   
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
@@ -258,11 +255,11 @@ METHOD_FN(gen_event_set,int lush_metrics)
 #endif
 
   int metric_id = hpcrun_new_metric();
+  METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
   TMSG(ITIMER_CTL,"setting metric ITIMER,period = %ld",sample_period);
   hpcrun_set_metric_info_and_period(metric_id, "WALLCLOCK (us)",
 				    HPCRUN_MetricFlag_Async,
 				    sample_period);
-    
   if (lush_metrics == 1) {
     int mid_idleness = hpcrun_new_metric();
     lush_agents->metric_time = metric_id;
@@ -274,8 +271,16 @@ METHOD_FN(gen_event_set,int lush_metrics)
   }
   thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD;
+}
 
-  monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
+//
+// Event "sets" not possible for this sample source.
+// It has only 1 event.
+//
+static void
+METHOD_FN(gen_event_set,int lush_metrics)
+{
+  monitor_sigaction(CSPROF_PROFILE_SIGNAL, &itimer_signal_handler, 0, NULL);
 }
 
 static void
@@ -299,6 +304,7 @@ sample_source_t _itimer_obj = {
 
   .add_event     = csprof_ss_add_event,
   .store_event   = csprof_ss_store_event,
+  .store_metric_id = csprof_ss_store_metric_id,
   .get_event_str = csprof_ss_get_event_str,
   .started       = csprof_ss_started,
   .start         = csprof_ss_start,
@@ -319,7 +325,7 @@ sample_source_t _itimer_obj = {
     .evl_spec = {[0] = '\0'},
     .nevents = 0
   },
-  .evset_idx = 0,
+  .evset_idx = -1,
   .name = "itimer",
   .cls  = HDWARE,
   .state = UNINIT
@@ -345,10 +351,11 @@ itimer_obj_reg(void)
  *****************************************************************************/
 
 static int
-csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
+itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
   // Must check for async block first and avoid any MSG if true.
-  if (hpcrun_async_is_blocked()) {
+  void* pc = context_pc(context);
+  if (hpcrun_async_is_blocked(pc)) {
     csprof_inc_samples_blocked_async();
   }
   else {
@@ -365,7 +372,8 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
     metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
 
-    hpcrun_sample_callpath(context, ITIMER_METRIC_ID, metric_incr,
+    int metric_id = hpcrun_event2metric(&_itimer_obj, ITIMER_EVENT);
+    hpcrun_sample_callpath(context, metric_id, metric_incr,
 			   0/*skipInner*/, 0/*isSync*/);
   }
   if (sampling_is_disabled()) {

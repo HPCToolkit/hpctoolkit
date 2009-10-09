@@ -232,8 +232,8 @@ METHOD_FN(process_event_list, int lush_metrics)
       num_lush_metrics++;
     }
 
-    TMSG(PAPI,"got event code = %x, thresh = %ld",evcode,thresh);
-    METHOD_CALL(self,store_event,evcode,thresh);
+    TMSG(PAPI,"got event code = %x, thresh = %ld", evcode, thresh);
+    METHOD_CALL(self, store_event, evcode, thresh);
   }
   int nevents = (self->evl).nevents;
   TMSG(PAPI,"nevents = %d", nevents);
@@ -243,6 +243,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   for (i = 0; i < nevents; i++) {
     char buffer[PAPI_MAX_STR_LEN];
     int metric_id = hpcrun_new_metric(); /* weight */
+    METHOD_CALL(self, store_metric_id, i, metric_id);
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
     TMSG(PAPI, "metric for event %d = %s", i, buffer);
     hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
@@ -284,6 +285,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
   for (i = 0; i < nevents; i++) {
     int evcode = self->evl.events[i].event;
     ret = PAPI_add_event(eventSet, evcode);
+    TMSG(PAPI, "PAPI_add_event(eventSet=%d, event_code=%x)", eventSet, evcode);
     if (ret != PAPI_OK) {
       EMSG("failure in PAPI gen_event_set(): PAPI_add_event() returned: %s (%d)",
 	   PAPI_strerror(ret), ret);
@@ -295,6 +297,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
     int evcode = self->evl.events[i].event;
     long thresh = self->evl.events[i].thresh;
 
+    TMSG(PAPI, "PAPI_overflow(eventSet=%d, evcode=%x, thresh=%d)", eventSet, evcode, thresh);
     ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
 			papi_event_handler);
     TMSG(PAPI,"PAPI_overflow = %d", ret);
@@ -375,6 +378,7 @@ sample_source_t _papi_obj = {
 
   .add_event   = csprof_ss_add_event,
   .store_event = csprof_ss_store_event,
+  .store_metric_id = csprof_ss_store_metric_id,
   .get_event_str = csprof_ss_get_event_str,
   .started       = csprof_ss_started,
   .start         = csprof_ss_start,
@@ -395,7 +399,7 @@ sample_source_t _papi_obj = {
     .evl_spec = {[0] = '\0'},
     .nevents = 0
   },
-  .evset_idx = 1,
+  .evset_idx = -1,
   .name = "papi",
   .cls  = HDWARE,
   .state = UNINIT
@@ -465,14 +469,14 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_event_count = MAX_EVENTS;
 
   // Must check for async block first and avoid any MSG if true.
-  if (hpcrun_async_is_blocked()) {
+  if (hpcrun_async_is_blocked(pc)) {
     csprof_inc_samples_blocked_async();
     return;
   }
 
   TMSG(PAPI_SAMPLE,"papi event happened, ovec = %ld",ovec);
 
-  int ret = PAPI_get_overflow_event_index(event_set, ovec, my_events, 
+  int ret = PAPI_get_overflow_event_index(event_set, ovec, my_events,
 					  &my_event_count);
   if (ret != PAPI_OK) {
     csprof_abort("Failed inside papi_event_handler at get_overflow_event_index."
@@ -481,7 +485,8 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   for (i = 0; i < my_event_count; i++) {
     // FIXME: SUBTLE ERROR: metric_id may not be same from csprof_new_metric()!
     // This means lush's 'time' metric should be *last*
-    int metric_id = my_events[i];
+    int metric_id = hpcrun_event2metric(&_papi_obj, my_events[i]);
+    TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
     hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
   }

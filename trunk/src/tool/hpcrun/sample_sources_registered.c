@@ -56,12 +56,13 @@ static sample_source_t *registered_sample_sources[MAX_POSSIBLE_SAMPLE_SOURCES];
 static int nregs = 0;
 
 void
-csprof_ss_register(sample_source_t *src)
+csprof_ss_register(sample_source_t* src)
 {
   if (nregs >= MAX_POSSIBLE_SAMPLE_SOURCES){
     EMSG("Sample source named %s NOT registered due to # sample sources exceeded",src->name);
     return;
   }
+  src->evset_idx                     = nregs;
   registered_sample_sources[nregs++] = src;
 }
 

@@ -352,7 +352,11 @@ hpc_prepareenv()
     export CSPROF_OPT_OUT_PATH
   fi
   if [ -n "${opt_ev_list}" ]; then
-    HPCRUN_EVENT_LIST="${opt_ev_list}"
+    if [ "${opt_ev_list}" = "RETCNT" ]; then
+      HPCRUN_EVENT_LIST="WALLCLOCK@5000 RETCNT"
+    else
+      HPCRUN_EVENT_LIST="${opt_ev_list}"
+    fi  
   else
     HPCRUN_EVENT_LIST="WALLCLOCK@5000"
   fi

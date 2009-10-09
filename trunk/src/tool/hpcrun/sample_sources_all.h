@@ -44,7 +44,8 @@
 #ifndef ALL_SAMPLE_SOURCES_H
 #define ALL_SAMPLE_SOURCES_H
 
-#define MAX_SAMPLE_SOURCES 1
+#define MAX_SAMPLE_SOURCES 2
+#define MAX_HDWARE_SAMPLE_SOURCES 1
 
 #include <stdbool.h>
 

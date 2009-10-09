@@ -127,6 +127,8 @@ csprof_check_fence(void *ip);
 static void 
 drop_sample(void);
 
+static void 
+_drop_sample(bool no_backtrace);
 
 static int
 unw_step_prefer_sp(void);
@@ -377,7 +379,7 @@ unw_step(unw_cursor_t *cursor)
 void
 unw_throw(void)
 {
-  drop_sample();
+  _drop_sample(true);
 }
 
 
@@ -612,10 +614,13 @@ t2_dbg_unw_step(unw_cursor_t *cursor)
 //****************************************************************************
 
 static void 
-drop_sample(void)
+_drop_sample(bool no_backtrace)
 {
   if (DEBUG_NO_LONGJMP) return;
 
+  if (no_backtrace) {
+    return;
+  }
   if (csprof_below_pmsg_threshold()) {
     dump_backtrace(TD_GET(state),0);
   }
@@ -626,6 +631,11 @@ drop_sample(void)
   (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }
 
+static void
+drop_sample(void)
+{
+  _drop_sample(false);
+}
 
 static void
 update_cursor_with_troll(unw_cursor_t *cursor, int offset)

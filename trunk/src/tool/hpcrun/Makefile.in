@@ -170,16 +170,16 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	files.c handling_sample.c last.c metrics.c name.c \
 	sample_event.c sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_source_none.c \
-	sample_sources_registered.c segv_handler.c state.c \
-	system_server.c thread_data.c thread_use.c trace.c \
-	write_data.c cct/cct.c trampoline/common/trampoline.c \
-	unwind/common/backtrace.c unwind/common/splay.c \
-	unwind/common/stack_troll.c unwind/common/ui_tree.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/list.c \
+	sample_source_retcnt.c sample_sources_registered.c \
+	segv_handler.c state.c system_server.c thread_data.c \
+	thread_use.c trace.c write_data.c cct/cct.c \
+	trampoline/common/trampoline.c unwind/common/backtrace.c \
+	unwind/common/splay.c unwind/common/stack_troll.c \
+	unwind/common/ui_tree.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
 	memory/mem.c messages/debug-flag.c messages/messages-sync.c \
 	messages/messages-async.c messages/fmt.c \
 	utilities/executable-path.h utilities/executable-path.c \
@@ -210,6 +210,7 @@ am__objects_7 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-sample_source_common.lo \
 	libcsprof_la-sample_source_itimer.lo \
 	libcsprof_la-sample_source_none.lo \
+	libcsprof_la-sample_source_retcnt.lo \
 	libcsprof_la-sample_sources_registered.lo \
 	libcsprof_la-segv_handler.lo libcsprof_la-state.lo \
 	libcsprof_la-system_server.lo libcsprof_la-thread_data.lo \
@@ -220,11 +221,11 @@ am__objects_7 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-ui_tree.lo libcsprof_la-lush-backtrace.lo \
 	libcsprof_la-lush.lo libcsprof_la-lush-pthread.lo \
 	libcsprof_la-lush-support-rt.lo libcsprof_la-lushi-cb.lo \
-	libcsprof_la-fnbounds_common.lo libcsprof_la-list.lo \
-	libcsprof_la-mem.lo libcsprof_la-debug-flag.lo \
-	libcsprof_la-messages-sync.lo libcsprof_la-messages-async.lo \
-	libcsprof_la-fmt.lo libcsprof_la-executable-path.lo \
-	libcsprof_la-tokenize.lo libcsprof_la-unlink.lo
+	libcsprof_la-fnbounds_common.lo libcsprof_la-mem.lo \
+	libcsprof_la-debug-flag.lo libcsprof_la-messages-sync.lo \
+	libcsprof_la-messages-async.lo libcsprof_la-fmt.lo \
+	libcsprof_la-executable-path.lo libcsprof_la-tokenize.lo \
+	libcsprof_la-unlink.lo
 am__objects_8 = libcsprof_la-fnbounds_dynamic.lo \
 	libcsprof_la-csprof_dlfns.lo
 am__objects_9 = libcsprof_la-dylib.lo
@@ -266,16 +267,16 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	files.c handling_sample.c last.c metrics.c name.c \
 	sample_event.c sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_source_none.c \
-	sample_sources_registered.c segv_handler.c state.c \
-	system_server.c thread_data.c thread_use.c trace.c \
-	write_data.c cct/cct.c trampoline/common/trampoline.c \
-	unwind/common/backtrace.c unwind/common/splay.c \
-	unwind/common/stack_troll.c unwind/common/ui_tree.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/list.c \
+	sample_source_retcnt.c sample_sources_registered.c \
+	segv_handler.c state.c system_server.c thread_data.c \
+	thread_use.c trace.c write_data.c cct/cct.c \
+	trampoline/common/trampoline.c unwind/common/backtrace.c \
+	unwind/common/splay.c unwind/common/stack_troll.c \
+	unwind/common/ui_tree.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
 	memory/mem.c messages/debug-flag.c messages/messages-sync.c \
 	messages/messages-async.c messages/fmt.c \
 	utilities/executable-path.h utilities/executable-path.c \
@@ -308,6 +309,7 @@ am__objects_21 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-sample_source_common.$(OBJEXT) \
 	libcsprof_o-sample_source_itimer.$(OBJEXT) \
 	libcsprof_o-sample_source_none.$(OBJEXT) \
+	libcsprof_o-sample_source_retcnt.$(OBJEXT) \
 	libcsprof_o-sample_sources_registered.$(OBJEXT) \
 	libcsprof_o-segv_handler.$(OBJEXT) libcsprof_o-state.$(OBJEXT) \
 	libcsprof_o-system_server.$(OBJEXT) \
@@ -323,8 +325,7 @@ am__objects_21 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-lush-support-rt.$(OBJEXT) \
 	libcsprof_o-lushi-cb.$(OBJEXT) \
 	libcsprof_o-fnbounds_common.$(OBJEXT) \
-	libcsprof_o-list.$(OBJEXT) libcsprof_o-mem.$(OBJEXT) \
-	libcsprof_o-debug-flag.$(OBJEXT) \
+	libcsprof_o-mem.$(OBJEXT) libcsprof_o-debug-flag.$(OBJEXT) \
 	libcsprof_o-messages-sync.$(OBJEXT) \
 	libcsprof_o-messages-async.$(OBJEXT) libcsprof_o-fmt.$(OBJEXT) \
 	libcsprof_o-executable-path.$(OBJEXT) \
@@ -637,6 +638,7 @@ MY_BASE_FILES = \
 	sample_source_common.c		\
 	sample_source_itimer.c		\
 	sample_source_none.c            \
+        sample_source_retcnt.c          \
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	state.c				\
@@ -665,7 +667,6 @@ MY_BASE_FILES = \
 	\
 	fnbounds/fnbounds_common.c	\
 	\
-	memory/list.c			\
 	memory/mem.c			\
 	\
 	messages/debug-flag.c	        \
@@ -989,7 +990,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-handling_sample.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-last.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-last_func.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-pthread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-support-rt.Plo@am__quote@
@@ -1011,6 +1011,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_itimer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_none.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_papi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_retcnt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_source_upc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_sources_all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-sample_sources_registered.Plo@am__quote@
@@ -1055,7 +1056,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-handling_sample.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-last.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-last_func.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-list.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-pthread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-support-rt.Po@am__quote@
@@ -1077,6 +1077,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_itimer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_none.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_papi.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_retcnt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_source_upc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_sources_all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-sample_sources_registered.Po@am__quote@
@@ -1355,6 +1356,13 @@ libcsprof_la-sample_source_none.lo: sample_source_none.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-sample_source_none.lo `test -f 'sample_source_none.c' || echo '$(srcdir)/'`sample_source_none.c
 
+libcsprof_la-sample_source_retcnt.lo: sample_source_retcnt.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-sample_source_retcnt.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-sample_source_retcnt.Tpo -c -o libcsprof_la-sample_source_retcnt.lo `test -f 'sample_source_retcnt.c' || echo '$(srcdir)/'`sample_source_retcnt.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-sample_source_retcnt.Tpo $(DEPDIR)/libcsprof_la-sample_source_retcnt.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_source_retcnt.c' object='libcsprof_la-sample_source_retcnt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-sample_source_retcnt.lo `test -f 'sample_source_retcnt.c' || echo '$(srcdir)/'`sample_source_retcnt.c
+
 libcsprof_la-sample_sources_registered.lo: sample_sources_registered.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-sample_sources_registered.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-sample_sources_registered.Tpo -c -o libcsprof_la-sample_sources_registered.lo `test -f 'sample_sources_registered.c' || echo '$(srcdir)/'`sample_sources_registered.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-sample_sources_registered.Tpo $(DEPDIR)/libcsprof_la-sample_sources_registered.Plo
@@ -1494,13 +1502,6 @@ libcsprof_la-fnbounds_common.lo: fnbounds/fnbounds_common.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fnbounds/fnbounds_common.c' object='libcsprof_la-fnbounds_common.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-fnbounds_common.lo `test -f 'fnbounds/fnbounds_common.c' || echo '$(srcdir)/'`fnbounds/fnbounds_common.c
-
-libcsprof_la-list.lo: memory/list.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-list.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-list.Tpo -c -o libcsprof_la-list.lo `test -f 'memory/list.c' || echo '$(srcdir)/'`memory/list.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-list.Tpo $(DEPDIR)/libcsprof_la-list.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='memory/list.c' object='libcsprof_la-list.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-list.lo `test -f 'memory/list.c' || echo '$(srcdir)/'`memory/list.c
 
 libcsprof_la-mem.lo: memory/mem.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-mem.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-mem.Tpo -c -o libcsprof_la-mem.lo `test -f 'memory/mem.c' || echo '$(srcdir)/'`memory/mem.c
@@ -1943,6 +1944,20 @@ libcsprof_o-sample_source_none.obj: sample_source_none.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-sample_source_none.obj `if test -f 'sample_source_none.c'; then $(CYGPATH_W) 'sample_source_none.c'; else $(CYGPATH_W) '$(srcdir)/sample_source_none.c'; fi`
 
+libcsprof_o-sample_source_retcnt.o: sample_source_retcnt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-sample_source_retcnt.o -MD -MP -MF $(DEPDIR)/libcsprof_o-sample_source_retcnt.Tpo -c -o libcsprof_o-sample_source_retcnt.o `test -f 'sample_source_retcnt.c' || echo '$(srcdir)/'`sample_source_retcnt.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-sample_source_retcnt.Tpo $(DEPDIR)/libcsprof_o-sample_source_retcnt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_source_retcnt.c' object='libcsprof_o-sample_source_retcnt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-sample_source_retcnt.o `test -f 'sample_source_retcnt.c' || echo '$(srcdir)/'`sample_source_retcnt.c
+
+libcsprof_o-sample_source_retcnt.obj: sample_source_retcnt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-sample_source_retcnt.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-sample_source_retcnt.Tpo -c -o libcsprof_o-sample_source_retcnt.obj `if test -f 'sample_source_retcnt.c'; then $(CYGPATH_W) 'sample_source_retcnt.c'; else $(CYGPATH_W) '$(srcdir)/sample_source_retcnt.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-sample_source_retcnt.Tpo $(DEPDIR)/libcsprof_o-sample_source_retcnt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_source_retcnt.c' object='libcsprof_o-sample_source_retcnt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-sample_source_retcnt.obj `if test -f 'sample_source_retcnt.c'; then $(CYGPATH_W) 'sample_source_retcnt.c'; else $(CYGPATH_W) '$(srcdir)/sample_source_retcnt.c'; fi`
+
 libcsprof_o-sample_sources_registered.o: sample_sources_registered.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-sample_sources_registered.o -MD -MP -MF $(DEPDIR)/libcsprof_o-sample_sources_registered.Tpo -c -o libcsprof_o-sample_sources_registered.o `test -f 'sample_sources_registered.c' || echo '$(srcdir)/'`sample_sources_registered.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-sample_sources_registered.Tpo $(DEPDIR)/libcsprof_o-sample_sources_registered.Po
@@ -2222,20 +2237,6 @@ libcsprof_o-fnbounds_common.obj: fnbounds/fnbounds_common.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fnbounds/fnbounds_common.c' object='libcsprof_o-fnbounds_common.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-fnbounds_common.obj `if test -f 'fnbounds/fnbounds_common.c'; then $(CYGPATH_W) 'fnbounds/fnbounds_common.c'; else $(CYGPATH_W) '$(srcdir)/fnbounds/fnbounds_common.c'; fi`
-
-libcsprof_o-list.o: memory/list.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-list.o -MD -MP -MF $(DEPDIR)/libcsprof_o-list.Tpo -c -o libcsprof_o-list.o `test -f 'memory/list.c' || echo '$(srcdir)/'`memory/list.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-list.Tpo $(DEPDIR)/libcsprof_o-list.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='memory/list.c' object='libcsprof_o-list.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-list.o `test -f 'memory/list.c' || echo '$(srcdir)/'`memory/list.c
-
-libcsprof_o-list.obj: memory/list.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-list.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-list.Tpo -c -o libcsprof_o-list.obj `if test -f 'memory/list.c'; then $(CYGPATH_W) 'memory/list.c'; else $(CYGPATH_W) '$(srcdir)/memory/list.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-list.Tpo $(DEPDIR)/libcsprof_o-list.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='memory/list.c' object='libcsprof_o-list.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-list.obj `if test -f 'memory/list.c'; then $(CYGPATH_W) 'memory/list.c'; else $(CYGPATH_W) '$(srcdir)/memory/list.c'; fi`
 
 libcsprof_o-mem.o: memory/mem.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-mem.o -MD -MP -MF $(DEPDIR)/libcsprof_o-mem.Tpo -c -o libcsprof_o-mem.o `test -f 'memory/mem.c' || echo '$(srcdir)/'`memory/mem.c

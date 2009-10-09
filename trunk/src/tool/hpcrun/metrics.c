@@ -75,6 +75,13 @@ static metric_list_t* pre_alloc = NULL;
 // need an index-->metric desc mapping, so that samples will increment metrics correctly
 static metric_desc_t** id2metric;
 
+// local metric_tbl serves 2 purposes:
+//    1) mapping from metric_id ==> metric desc, so that samples will increment correct metric slot
+//       in the cct node
+//    2) metric info is written out in metric_tbl form
+//
+static metric_desc_p_tbl_t metric_tbl;
+
 bool
 hpcrun_metrics_finalized(void)
 {
@@ -103,10 +110,14 @@ hpcrun_pre_allocate_metrics(size_t num)
 int
 hpcrun_get_num_metrics(void){
   //
-  // create id->descriptor table
+  // create id->descriptor table and metric_tbl
+  //
   if (!has_set_max_metrics) {
     id2metric = csprof_malloc(n_metrics * sizeof(metric_desc_t*));
+    metric_tbl.len = n_metrics;
+    metric_tbl.lst = id2metric;
     for(metric_list_t* l = metric_data; l; l = l->next){
+      TMSG(METRICS_FINALIZE,"metric_tbl[%d] = %s", l->id, l->val.name);
       id2metric[l->id] = &(l->val);
     }
   }
@@ -121,6 +132,12 @@ hpcrun_id2metric(int id)
     return id2metric[id];
   }
   return NULL;
+}
+
+metric_desc_p_tbl_t*
+hpcrun_get_metric_tbl(void)
+{
+  return &metric_tbl;
 }
 
 metric_list_t*
@@ -169,7 +186,7 @@ hpcrun_set_metric_info_and_period(int metric_id, char *name,
       break;
     }
   }
-  TMSG(METRICS,"name = %s, flags = %lx, period = %d", name, flags, period);
+  TMSG(METRICS,"id = %d, name = %s, flags = %lx, period = %d", metric_id, name, flags, period);
   if (! metric) {
     EMSG("Metric id is NULL (likely unallocated)");
     monitor_real_abort();

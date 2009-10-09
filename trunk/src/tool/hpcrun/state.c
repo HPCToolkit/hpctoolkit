@@ -55,10 +55,8 @@
 #include "thread_data.h"
 #include "hpcrun_return_codes.h"
 #include "monitor.h"
-
+#include <trampoline/common/trampoline.h>
 #include <messages/messages.h>
-
-
 
 void
 hpcrun_reset_state(state_t* state)
@@ -105,45 +103,24 @@ hpcrun_check_for_new_epoch(state_t* state)
   and the simple fact that most programs are not frequent users
   of dl*). */
 
-  TMSG(EPOCH_CHK,"Likely need new cct");
-
   hpcrun_epoch_t* current = hpcrun_get_epoch();
 
   if(state->epoch != current) {
+    TMSG(EPOCH, "Need new epoch!");
     TMSG(MALLOC," -new_epoch-");
     state_t* newstate = csprof_malloc(sizeof(state_t));
 
     TMSG(EPOCH, "check_new_epoch creating new state (new epoch/cct pair)...");
 
-    /* we don't have to go through the usual csprof_state_{init,alloc}
-       business here because most of the stuff we want is already
-       in `state' */
     memcpy(newstate, state, sizeof(state_t));
-
-    /* we do have to reinitialize the tree, though */
     hpcrun_cct_init(&newstate->csdata, newstate->csdata_ctxt);
 
-    thread_data_t* td = hpcrun_get_thread_data();
-    /* and reinsert backtraces */
+    hpcrun_trampoline_remove();
 
-    if(td->bufend - td->bufstk != 0) {
-
-
-      TMSG(EPOCH_CHK,"New backtraces must be reinserted");
-      td->treenode = NULL;
-      hpcrun_state_insert_backtrace(newstate, 0, /* pick one */
-                                    td->bufend - 1,
-                                    td->bufstk,
-				    (cct_metric_data_t){ .i = 0 });
-    }
-
-    /* and inform the state about its epoch */
     newstate->epoch = current;
     newstate->next  = state;
 
-    /* and finally, set the new state */
     TD_GET(state) = newstate;
-    DISABLE(EPOCH_CHK);
     return newstate;
   }
   else {

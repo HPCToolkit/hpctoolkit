@@ -221,11 +221,6 @@ hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id, const char *tag,
 
   spinlock_lock(&pmsg_lock);
 
-#if 0
-  fprintf(log_file, "%s", buf);
-  fflush(log_file);
-#endif
-
   // use write to logfile file descriptor, instead of fprintf stuff
   //
   write(messages_logfile_fd(), buf, strlen(buf));

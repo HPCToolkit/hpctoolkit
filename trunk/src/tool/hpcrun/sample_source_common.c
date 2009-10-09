@@ -57,34 +57,55 @@ METHOD_FN(csprof_ss_started)
 }
 
 void
-METHOD_FN(csprof_ss_add_event,const char *ev)
+METHOD_FN(csprof_ss_add_event, const char *ev)
 {
   char *evl = self->evl.evl_spec;
 
   NMSG(SS_COMMON,"add event %s to evl |%s|",ev,evl);
-  strcat(evl,ev);
+  strcat(evl, ev);
   strcat(evl," ");
   NMSG(SS_COMMON,"evl after event added = |%s|",evl);
 }
 
 void
-METHOD_FN(csprof_ss_store_event,int event_id,long thresh)
+METHOD_FN(csprof_ss_store_event, int event_id, long thresh)
 {
-  evlist_t *_p       = &(self->evl);
-  int *ev  = &(_p->nevents);
+  TMSG(SAMPLE_SOURCE,"%s: store event %d thresh = %ld", self->name, event_id, thresh);
+  evlist_t *_p = &(self->evl);
+  int* ev      = &(_p->nevents);
   if (*ev >= MAX_EVENTS) {
-    EMSG("Too many events entered for sample source. Event code %d ignored",event_id);
+    EMSG("Too many events entered for sample source. Event code %d ignored", event_id);
     return;
   }
-  _ev_t *current_event  = &(_p->events[*ev]);
+  _ev_t* current_event  = &(_p->events[*ev]);
 
-  current_event->event  = event_id;
-  current_event->thresh = thresh;
+  current_event->event     = event_id;
+  current_event->thresh    = thresh;
 
   (*ev)++;
+  TMSG(SAMPLE_SOURCE,"%s now has %d events", self->name, *ev);
 }
 
-char *
+void
+METHOD_FN(csprof_ss_store_metric_id, int event_idx, int metric_id)
+{
+
+  TMSG(SAMPLE_SOURCE, "%s event[%d] = metric_id %d", self->name, event_idx, metric_id);
+  evlist_t *_p = &(self->evl);
+  int n_events = _p->nevents;
+
+  if (event_idx >= n_events) {
+    EMSG("Trying to store metric_id(=%d) for an invalid event index(=%d)."
+	 "Only %d events recorded for sample source %s", metric_id, event_idx, n_events, self->name);
+    return;
+  }
+  _ev_t* current_event  = &(_p->events[event_idx]);
+
+  current_event->metric_id = metric_id;
+}
+
+
+char* 
 METHOD_FN(csprof_ss_get_event_str)
 {
   return (self->evl).evl_spec;
@@ -166,4 +187,26 @@ hpcrun_ssfail_start(char *source)
 	"Check the event list and the HPCToolkit installation and try again.\n%s",
 	prefix, source, hpcrun_L);
   exit(1);
+}
+
+// **********************************************************
+// Interface (NON method) functions
+// **********************************************************
+
+int
+hpcrun_event2metric(sample_source_t* ss, int event_idx)
+{
+  TMSG(SAMPLE_SOURCE, "%s fetching metric_id for event %d", ss->name, event_idx);
+  evlist_t *_p = &(ss->evl);
+  int n_events = _p->nevents;
+
+  if (event_idx >= n_events) {
+    EMSG("Trying to fetch metric id an invalid event index."
+	 "Only %d events recorded for sample source %s. Returning 0", event_idx, n_events, ss->name);
+    return 0;
+  }
+  _ev_t* current_event  = &(_p->events[event_idx]);
+
+  TMSG(SAMPLE_SOURCE, "Fetched metric id = %d", current_event->metric_id);
+  return current_event->metric_id;
 }

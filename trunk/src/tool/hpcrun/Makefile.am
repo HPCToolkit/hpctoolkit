@@ -118,6 +118,7 @@ MY_BASE_FILES =			\
 	sample_source_common.c		\
 	sample_source_itimer.c		\
 	sample_source_none.c            \
+        sample_source_retcnt.c          \
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	state.c				\
@@ -146,7 +147,6 @@ MY_BASE_FILES =			\
 	\
 	fnbounds/fnbounds_common.c	\
 	\
-	memory/list.c			\
 	memory/mem.c			\
 	\
 	messages/debug-flag.c	        \

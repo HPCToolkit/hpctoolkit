@@ -75,6 +75,10 @@
 #include <trampoline/common/trampoline.h>
 
 //***************************************************************************
+// local constants & macros
+//***************************************************************************
+
+//***************************************************************************
 // forward declarations 
 //***************************************************************************
 
@@ -108,7 +112,7 @@ hpcrun_backtrace(state_t* state, ucontext_t* context,
 {
   cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
-    n = lush_backtrace(state, context, metricId, metricIncr, skipInner, 
+    n = lush_backtrace(state, context, metricId, metricIncr, skipInner,
 		       isSync);
   }
   else {
@@ -230,6 +234,7 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
   cct_node_t* cct_cursor = NULL;
 
   if (tramp_found) {
+    TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
     //
     // join current backtrace fragment to previous trampoline-marked prefix
     // and make this new conjoined backtrace the cached-backtrace

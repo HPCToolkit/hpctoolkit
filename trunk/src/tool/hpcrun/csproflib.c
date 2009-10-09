@@ -203,7 +203,7 @@ csprof_init_internal(void)
 
   // set up initial 'state' [FIXME: state ==> epoch] now that metrics are finalized
   
-  TMSG(MAX_METRICS,"process init setting up initial state/epoch");
+  TMSG(STATE,"process init setting up initial state/epoch");
   hpcrun_state_init();
 
   // start the sampling process
@@ -292,7 +292,7 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
 
   // set up initial 'state' [FIXME: state ==> epoch] now that metrics are finalized
-  TMSG(MAX_METRICS,"process init setting up initial state/epoch");
+  TMSG(STATE,"process init setting up initial state/epoch");
   hpcrun_state_init();
 
   // start the sample sources
