@@ -924,16 +924,13 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
 			    const Prof::Metric::AExpr** mExprVec,
 			    uint mBegId, uint mEndId)
 {
-  // tallent: Actually, this doesn't really have to be PostOrder.
+  // N.B. pre-order walk assumes point-wise metrics
   // Cf. CCT::ANode::computeMetricsItrv().
 
   Prof::Struct::Root* strct = structure.root();
-  Prof::Struct::ANodeIterator it(strct, NULL/*filter*/, false/*leavesOnly*/,
-				 IteratorStack::PostOrder);
-      
   uint numMetrics = m_mMgr.size();
 
-  for (; it.Current(); it++) {
+  for (Prof::Struct::ANodeIterator it(strct); it.Current(); it++) {
     for (uint mId = mBegId; mId < mEndId; ++mId) {
       const Prof::Metric::AExpr* expr = mExprVec[mId];
       double val = expr->eval(*it.current());
