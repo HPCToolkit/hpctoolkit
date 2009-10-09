@@ -6,7 +6,7 @@
 #
 
 PKG_NAME=libmonitor
-src=libmonitor-0.x-r111
+src=libmonitor-0.x-r113
 
 . ../build-utils/configure.inc
 pre_configure
