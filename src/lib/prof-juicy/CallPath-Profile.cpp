@@ -652,13 +652,13 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   metric_desc_t* m_lst = metric_tbl.lst;
   for (uint i = 0; i < num_metrics; i++) {
-    string m_nm = m_lst[i].name;
+    string nm = m_lst[i].name;
+    string desc = m_lst[i].description;
     string profFile = (filename) ? filename : "";
     string profRelId = StrUtil::toStr(i);
 
     Metric::SampledDesc* m = 
-      new Metric::SampledDesc(m_nm, m_nm, m_lst[i].period,
-			      true /*isUnitsEvents*/,
+      new Metric::SampledDesc(nm, desc, m_lst[i].period, true/*isUnitsEvents*/,
 			      profFile, profRelId, "HPCRUN");
     m->nameSfx(m_sfx);
     m->flags(m_lst[i].flags);
@@ -876,9 +876,11 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     const Metric::ADesc* m = prof.metricMgr()->metric(i);
 
     string nm = m->name();
+    const string& desc = m->description();
     
     metric_desc_t mdesc;
     mdesc.name = const_cast<char*>(nm.c_str());
+    mdesc.description = const_cast<char*>(desc.c_str());
     mdesc.flags = HPCRUN_MetricFlag_Real;
     mdesc.period = 1;
 
