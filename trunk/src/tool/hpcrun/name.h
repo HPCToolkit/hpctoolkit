@@ -63,7 +63,7 @@
  * interface functions
  *****************************************************************************/
 
-extern void csprof_set_executable_name(char *argv0);
-extern const char *csprof_get_executable_name();
+extern void hpcrun_set_executable_name(char *argv0);
+extern const char *hpcrun_get_executable_name();
 
 #endif

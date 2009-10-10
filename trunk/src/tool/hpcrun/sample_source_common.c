@@ -50,14 +50,14 @@
 #include <messages/messages.h>
 
 int
-METHOD_FN(csprof_ss_started)
+METHOD_FN(hpcrun_ss_started)
 {
   NMSG(SS_COMMON,"check start for %s = %d",self->name,self->state);
   return (self->state == START);
 }
 
 void
-METHOD_FN(csprof_ss_add_event, const char *ev)
+METHOD_FN(hpcrun_ss_add_event, const char *ev)
 {
   char *evl = self->evl.evl_spec;
 
@@ -68,7 +68,7 @@ METHOD_FN(csprof_ss_add_event, const char *ev)
 }
 
 void
-METHOD_FN(csprof_ss_store_event, int event_id, long thresh)
+METHOD_FN(hpcrun_ss_store_event, int event_id, long thresh)
 {
   TMSG(SAMPLE_SOURCE,"%s: store event %d thresh = %ld", self->name, event_id, thresh);
   evlist_t *_p = &(self->evl);
@@ -87,7 +87,7 @@ METHOD_FN(csprof_ss_store_event, int event_id, long thresh)
 }
 
 void
-METHOD_FN(csprof_ss_store_metric_id, int event_idx, int metric_id)
+METHOD_FN(hpcrun_ss_store_metric_id, int event_idx, int metric_id)
 {
 
   TMSG(SAMPLE_SOURCE, "%s event[%d] = metric_id %d", self->name, event_idx, metric_id);
@@ -106,13 +106,13 @@ METHOD_FN(csprof_ss_store_metric_id, int event_idx, int metric_id)
 
 
 char* 
-METHOD_FN(csprof_ss_get_event_str)
+METHOD_FN(hpcrun_ss_get_event_str)
 {
   return (self->evl).evl_spec;
 }
 
 void
-METHOD_FN(csprof_ss_start)
+METHOD_FN(hpcrun_ss_start)
 {
   if (self->state != HARD_STOP){
     METHOD_CALL(self,_start);
@@ -120,7 +120,7 @@ METHOD_FN(csprof_ss_start)
 }
 
 void
-METHOD_FN(csprof_ss_hard_stop)
+METHOD_FN(hpcrun_ss_hard_stop)
 {
   METHOD_CALL(self,stop);
   self->state = HARD_STOP;

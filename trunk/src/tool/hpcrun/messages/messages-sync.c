@@ -203,7 +203,7 @@ messages_fini(void)
 
 
 void
-csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
+hpcrun_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
 {
   if (ret == ret_expected) {
     return;
@@ -216,7 +216,7 @@ csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
 
 
 void
-csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
+hpcrun_abort_w_info(void (*info)(void), const char *fmt, ...)
 {
   // massage fmt string to end in a newline
   char fstr[MSG_BUF_SIZE];
@@ -244,7 +244,7 @@ csprof_abort_w_info(void (*info)(void), const char *fmt, ...)
 
 // message to log file, also echo on stderr
 void
-csprof_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
+hpcrun_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
 {
   // massage fmt string to end in a newline
   char fstr[MSG_BUF_SIZE];
@@ -281,14 +281,14 @@ messages_logfile_fd(void)
 
 
 int
-csprof_below_pmsg_threshold(void)
+hpcrun_below_pmsg_threshold(void)
 {
   return (global_msg_count < threshold);
 }
 
 
 void
-csprof_up_pmsg_count(void)
+hpcrun_up_pmsg_count(void)
 {
   global_msg_count++;
 }

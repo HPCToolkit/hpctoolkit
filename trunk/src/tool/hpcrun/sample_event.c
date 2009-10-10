@@ -49,7 +49,7 @@
 
 #include "backtrace.h"
 #include "cct.h"
-#include "csprof_dlfns.h"
+#include "hpcrun_dlfns.h"
 #include "csprof-malloc.h"
 #include "fnbounds_interface.h"
 #include "main.h"
@@ -101,14 +101,14 @@ sampling_is_disabled(void)
 }
 
 void
-csprof_disable_sampling(void)
+hpcrun_disable_sampling(void)
 {
   TMSG(SPECIAL,"Sampling disabled");
   _sampling_disabled = 1;
 }
 
 void
-csprof_drop_sample(void)
+hpcrun_drop_sample(void)
 {
   TMSG(DROP, "dropping sample");
   sigjmp_buf_t *it = &(TD_GET(bad_unwind));
@@ -116,7 +116,7 @@ csprof_drop_sample(void)
 }
 
 long
-csprof_num_samples_total(void)
+hpcrun_num_samples_total(void)
 {
   return num_samples_total;
 }
@@ -124,20 +124,20 @@ csprof_num_samples_total(void)
 // The async blocks happen in the signal handlers, without getting to
 // hpcrun_sample_callpath, so also increment the total count here.
 void
-csprof_inc_samples_blocked_async(void)
+hpcrun_inc_samples_blocked_async(void)
 {
   atomic_add_i64(&num_samples_total, 1L);
   atomic_add_i64(&num_samples_blocked_async, 1L);
 }
 
 void
-csprof_inc_samples_filtered(void)
+hpcrun_inc_samples_filtered(void)
 {
   atomic_add_i64(&num_samples_filtered, 1L);
 }
 
 void
-csprof_display_summary(void)
+hpcrun_display_summary(void)
 {
   long blocked = num_samples_blocked_async + num_samples_blocked_dlopen;
   long errant = num_samples_dropped + num_samples_filtered;
@@ -172,7 +172,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
   if (_sampling_disabled){
     TMSG(SAMPLE,"global suspension");
-    csprof_all_sources_stop();
+    hpcrun_all_sources_stop();
     return NULL;
   }
 
@@ -181,9 +181,9 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
   // This only applies in the dynamic case.
 #ifndef HPCRUN_STATIC_LINK
   if (isSync) {
-    while (! csprof_dlopen_read_lock()) ;
+    while (! hpcrun_dlopen_read_lock()) ;
   }
-  else if (! csprof_dlopen_read_lock()) {
+  else if (! hpcrun_dlopen_read_lock()) {
     TMSG(SAMPLE, "skipping sample for dlopen lock");
     atomic_add_i64(&num_samples_blocked_dlopen, 1L);
     return NULL;
@@ -198,7 +198,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
   cct_node_t* node = NULL;
   state_t *state = td->state;
 
-  csprof_set_handling_sample(td);
+  hpcrun_set_handling_sample(td);
 
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
@@ -229,23 +229,23 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
     memset((void *)it->jb, '\0', sizeof(it->jb));
     dump_backtrace(state, td->unwind);
     atomic_add_i64(&num_samples_dropped, 1L);
-    csprof_up_pmsg_count();
+    hpcrun_up_pmsg_count();
     if (TD_GET(splay_lock)) {
-      csprof_release_splay_lock();
+      hpcrun_release_splay_lock();
     }
     if (TD_GET(fnbounds_lock)) {
       fnbounds_release_lock();
     }
   }
 
-  csprof_clear_handling_sample(td);
+  hpcrun_clear_handling_sample(td);
   if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
     hpcrun_finalize_current_epoch();
     hpcrun_flush_epochs();
     hpcrun_reclaim_freeable_mem();
   }
 #ifndef HPCRUN_STATIC_LINK
-  csprof_dlopen_read_unlock();
+  hpcrun_dlopen_read_unlock();
 #endif
   
   return node;

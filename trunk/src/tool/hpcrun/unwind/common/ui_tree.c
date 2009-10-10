@@ -96,7 +96,7 @@ static void free_ui_tree_locked(interval_tree_node *tree);
 
 
 void
-csprof_interval_tree_init(void)
+hpcrun_interval_tree_init(void)
 {
   TMSG(UITREE, "init unwind interval tree");
   ui_tree_root = NULL;
@@ -105,7 +105,7 @@ csprof_interval_tree_init(void)
 
 
 void
-csprof_release_splay_lock(void)
+hpcrun_release_splay_lock(void)
 {
   UI_TREE_UNLOCK;
 }
@@ -113,17 +113,17 @@ csprof_release_splay_lock(void)
 
 /*
  * Return a node from the free list if non-empty, else make a new one
- * via csprof_malloc().  Each architecture has a different struct
+ * via hpcrun_malloc().  Each architecture has a different struct
  * size, but they all extend interval tree nodes, which is all we use
  * here.
  *
- * Note: the claim is that all calls to csprof_ui_malloc() go through
- * csprof_addr_to_interval() and thus the free list doesn't need its
+ * Note: the claim is that all calls to hpcrun_ui_malloc() go through
+ * hpcrun_addr_to_interval() and thus the free list doesn't need its
  * own lock (maybe a little sleazy, and be careful the code doesn't
  * grow to violate this assumption).
  */
 void *
-csprof_ui_malloc(size_t ui_size)
+hpcrun_ui_malloc(size_t ui_size)
 {
     void *ans;
 
@@ -136,7 +136,7 @@ csprof_ui_malloc(size_t ui_size)
     ans = (void *)ui_free_list;
     ui_free_list = RIGHT(ui_free_list);
   } else {
-    ans = csprof_malloc(ui_size);
+    ans = hpcrun_malloc(ui_size);
   }
 
   if (ans != NULL)
@@ -154,10 +154,10 @@ csprof_ui_malloc(size_t ui_size)
  * Returns: pointer to unwind_interval struct if found, else NULL.
  */
 splay_interval_t *
-csprof_addr_to_interval(void *addr)
+hpcrun_addr_to_interval(void *addr)
 {
   UI_TREE_LOCK;
-  splay_interval_t *retval = csprof_addr_to_interval_locked(addr);
+  splay_interval_t *retval = hpcrun_addr_to_interval_locked(addr);
   UI_TREE_UNLOCK;
 
   return retval;
@@ -165,7 +165,7 @@ csprof_addr_to_interval(void *addr)
 
 
 /*
- * The locked version of csprof_addr_to_interval().  Lookup the PC
+ * The locked version of hpcrun_addr_to_interval().  Lookup the PC
  * address in the interval tree and return a pointer to the interval
  * containing that address.
  *
@@ -173,7 +173,7 @@ csprof_addr_to_interval(void *addr)
  * The caller must hold the ui-tree lock.
  */
 splay_interval_t *
-csprof_addr_to_interval_locked(void *addr)
+hpcrun_addr_to_interval_locked(void *addr)
 {
   void *fcn_start, *fcn_end;
   interval_status istat;
@@ -262,7 +262,7 @@ csprof_addr_to_interval_locked(void *addr)
  * tree, and move the deleted nodes to the unwind free list.
  */
 void
-csprof_delete_ui_range(void *start, void *end)
+hpcrun_delete_ui_range(void *start, void *end)
 {
   interval_tree_node *del_tree;
 
@@ -291,8 +291,8 @@ csprof_delete_ui_range(void *start, void *end)
 
 /*
  * The ui free routines are in the private section in order to enforce
- * locking.  Free is only called from csprof_addr_to_interval() or
- * csprof_delete_ui_range() where the free list is already locked.
+ * locking.  Free is only called from hpcrun_addr_to_interval() or
+ * hpcrun_delete_ui_range() where the free list is already locked.
  *
  * Free the nodes in post order, since putting a node on the free list
  * modifies its child pointers.
@@ -324,23 +324,23 @@ free_ui_node_locked(interval_tree_node *node)
 
 
 static void
-csprof_print_interval_tree_r(FILE* fs, interval_tree_node *node);
+hpcrun_print_interval_tree_r(FILE* fs, interval_tree_node *node);
 
 
 void
-csprof_print_interval_tree()
+hpcrun_print_interval_tree()
 {
   FILE* fs = stdout;
 
   fprintf(fs, "Interval tree:\n");
-  csprof_print_interval_tree_r(fs, ui_tree_root);
+  hpcrun_print_interval_tree_r(fs, ui_tree_root);
   fprintf(fs, "\n");
   fflush(fs);
 }
 
 
 static void
-csprof_print_interval_tree_r(FILE* fs, interval_tree_node *node)
+hpcrun_print_interval_tree_r(FILE* fs, interval_tree_node *node)
 {
   // Base case
   if (node == NULL) {
@@ -350,6 +350,6 @@ csprof_print_interval_tree_r(FILE* fs, interval_tree_node *node)
   fprintf(fs, "  {%p start=%p end=%p}\n", node, START(node), END(node));
 
   // Recur
-  csprof_print_interval_tree_r(fs, RIGHT(node));
-  csprof_print_interval_tree_r(fs, LEFT(node));
+  hpcrun_print_interval_tree_r(fs, RIGHT(node));
+  hpcrun_print_interval_tree_r(fs, LEFT(node));
 }

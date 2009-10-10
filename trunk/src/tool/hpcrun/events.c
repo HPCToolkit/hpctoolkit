@@ -68,9 +68,9 @@
 #include <papiStdEventDefs.h>
 #include <papi.h>
 
-#include "csprof_events.h"
+#include "hpcrun_events.h"
 
-papi_event_t csprof_event_table[] = {
+papi_event_t hpcrun_event_table[] = {
 { PAPI_L1_DCM,  "PAPI_L1_DCM",  "Level 1 data cache misses" },
 { PAPI_L1_ICM,  "PAPI_L1_ICM",  "Level 1 instruction cache misses" },
 { PAPI_L2_DCM,  "PAPI_L2_DCM",  "Level 2 data cache misses" },
@@ -146,9 +146,9 @@ papi_event_t csprof_event_table[] = {
 /****************************************************************************/
 
 const papi_event_t *
-csprof_event_by_name(const char *name)
+hpcrun_event_by_name(const char *name)
 { 
-  papi_event_t *i = csprof_event_table;
+  papi_event_t *i = hpcrun_event_table;
   for (; i->name != NULL; i++) {
     if (strcmp(name, i->name) == 0) return i;
   }
@@ -156,9 +156,9 @@ csprof_event_by_name(const char *name)
 }
 
 const papi_event_t *
-csprof_event_by_code(int code)
+hpcrun_event_by_code(int code)
 {
-  papi_event_t *i = csprof_event_table;
+  papi_event_t *i = hpcrun_event_table;
   for (; i->name != NULL; i++) {
    if (i->code == code) return i;
   }
@@ -172,7 +172,7 @@ csprof_event_by_code(int code)
  * 70 characters 
  */
 void 
-csprof_write_wrapped_event_list(FILE* fs, const papi_event_t* e)
+hpcrun_write_wrapped_event_list(FILE* fs, const papi_event_t* e)
 {
   /* initial values */
   static char *sep = "  ";
@@ -192,7 +192,7 @@ csprof_write_wrapped_event_list(FILE* fs, const papi_event_t* e)
     fputs("\n", fs);
     sep = "  ";
     linelen = 0;
-    csprof_write_wrapped_event_list(fs, e);
+    hpcrun_write_wrapped_event_list(fs, e);
     return;
   }
 
@@ -205,7 +205,7 @@ csprof_write_wrapped_event_list(FILE* fs, const papi_event_t* e)
   Write the event and its description to stream 'fs'
 */
 void 
-csprof_write_event(FILE* fs, const papi_event_t* e)
+hpcrun_write_event(FILE* fs, const papi_event_t* e)
 {
   if (!e) { return; }
   

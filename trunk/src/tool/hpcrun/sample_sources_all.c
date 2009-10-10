@@ -64,7 +64,7 @@
 
 #define _AS0(n) \
 void                                                            \
-csprof_all_sources_ ##n(void)                                   \
+hpcrun_all_sources_ ##n(void)                                   \
 {								\
   for(int i=0;i < n_sources;i++) {				\
     TMSG(AS_MAP,"sample source %d (%s) method call: %s",i,	\
@@ -75,7 +75,7 @@ csprof_all_sources_ ##n(void)                                   \
 
 #define _AS1(n,t,arg) \
 void                                                            \
-csprof_all_sources_ ##n(t arg)                                  \
+hpcrun_all_sources_ ##n(t arg)                                  \
 {								\
   for(int i=0;i < n_sources;i++) {				\
     METHOD_CALL(sample_sources[i],n,arg);			\
@@ -84,7 +84,7 @@ csprof_all_sources_ ##n(t arg)                                  \
 
 #define _ASB(n)							\
 bool								\
-csprof_all_sources_ ##n(void)					\
+hpcrun_all_sources_ ##n(void)					\
 {								\
   NMSG(AS_ ##n,"checking %d sources",n_sources);		\
   for(int i=0;i < n_sources;i++) {				\
@@ -125,7 +125,7 @@ hpcrun_fetch_source_by_name(const char *src)
 }
 
 bool
-csprof_check_named_source(const char *src)
+hpcrun_check_named_source(const char *src)
 {
   for(int i=0; i < n_sources; i++){
     if (strcmp(sample_sources[i]->name, src) == 0) {
@@ -153,13 +153,13 @@ add_source(sample_source_t* ss)
   if (n_sources == MAX_SAMPLE_SOURCES){
     // check to see is ss already present
     if (! in_sources(ss)){
-      csprof_abort("Too many total (hardware + software) sample sources");
+      hpcrun_abort("Too many total (hardware + software) sample sources");
     }
     return;
   }
   if (ss->cls == SS_HARDWARE && n_hardware_sources == MAX_HARDWARE_SAMPLE_SOURCES) {
     if (! in_sources(ss)) {
-      csprof_abort("Too many hardware sample sources");
+      hpcrun_abort("Too many hardware sample sources");
     }
     return;
   }
@@ -173,7 +173,7 @@ add_source(sample_source_t* ss)
 
 
 void
-csprof_sample_sources_from_eventlist(char* evl)
+hpcrun_sample_sources_from_eventlist(char* evl)
 {
   if (evl == NULL) {
     hpcrun_ssfail_none();
@@ -186,7 +186,7 @@ csprof_sample_sources_from_eventlist(char* evl)
     if (strcasecmp(event, "LIST") == 0) {
       hpcrun_display_avail_events();
     }
-    else if ( (s = csprof_source_can_process(event)) ){
+    else if ( (s = hpcrun_source_can_process(event)) ){
       add_source(s);
       METHOD_CALL(s,add_event,event);
     }

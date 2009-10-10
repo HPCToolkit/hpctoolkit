@@ -41,7 +41,7 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-void csprof_set_last_sample_addr(unsigned long addr);
-unsigned long csprof_get_last_sample_addr();
-void csprof_increment_raw_sample_count();
-unsigned long csprof_get_raw_sample_count();
+void hpcrun_set_last_sample_addr(unsigned long addr);
+unsigned long hpcrun_get_last_sample_addr();
+void hpcrun_increment_raw_sample_count();
+unsigned long hpcrun_get_raw_sample_count();

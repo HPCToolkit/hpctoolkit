@@ -108,7 +108,7 @@ hpcrun_check_for_new_epoch(state_t* state)
   if(state->epoch != current) {
     TMSG(EPOCH, "Need new epoch!");
     TMSG(MALLOC," -new_epoch-");
-    state_t* newstate = csprof_malloc(sizeof(state_t));
+    state_t* newstate = hpcrun_malloc(sizeof(state_t));
 
     TMSG(EPOCH, "check_new_epoch creating new state (new epoch/cct pair)...");
 
@@ -129,7 +129,7 @@ hpcrun_check_for_new_epoch(state_t* state)
 }
 
 int
-csprof_state_fini(state_t *x){
+hpcrun_state_fini(state_t *x){
 
   TMSG(STATE,"--Fini");
   return HPCRUN_OK;

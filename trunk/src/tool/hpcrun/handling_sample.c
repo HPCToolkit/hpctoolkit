@@ -53,7 +53,7 @@
 // id specifically passed in, since id has not been set yet!!
 //
 void
-csprof_init_handling_sample(thread_data_t *td, int in, int id)
+hpcrun_init_handling_sample(thread_data_t *td, int in, int id)
 {
   NMSG(HANDLING_SAMPLE,"INIT called f thread %d", id);
   td->handling_sample = in;
@@ -61,7 +61,7 @@ csprof_init_handling_sample(thread_data_t *td, int in, int id)
 
 
 void
-csprof_set_handling_sample(thread_data_t *td)
+hpcrun_set_handling_sample(thread_data_t *td)
 {
   assert(td->handling_sample == 0);
 
@@ -70,7 +70,7 @@ csprof_set_handling_sample(thread_data_t *td)
 
 
 void
-csprof_clear_handling_sample(thread_data_t *td)
+hpcrun_clear_handling_sample(thread_data_t *td)
 {
   assert(td->handling_sample == 0xDEADBEEF);
 
@@ -79,7 +79,7 @@ csprof_clear_handling_sample(thread_data_t *td)
 
 
 int
-csprof_is_handling_sample(void)
+hpcrun_is_handling_sample(void)
 {
   return (TD_GET(handling_sample) == 0xDEADBEEF);
 }

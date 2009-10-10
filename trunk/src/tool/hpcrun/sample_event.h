@@ -51,7 +51,6 @@
 #include <trampoline/common/trampoline.h>
 
 
-int csprof_is_initialized(void);
 int sampling_is_disabled(void);
 
 
@@ -92,14 +91,14 @@ hpcrun_async_is_blocked(void* pc)
 
 //***************************************************************************
 
-void csprof_disable_sampling(void);
-void csprof_drop_sample(void);
+void hpcrun_disable_sampling(void);
+void hpcrun_drop_sample(void);
 
-long csprof_num_samples_total(void);
-void csprof_inc_samples_blocked_async(void);
-void csprof_inc_samples_filtered(void);
+long hpcrun_num_samples_total(void);
+void hpcrun_inc_samples_blocked_async(void);
+void hpcrun_inc_samples_filtered(void);
 
-void csprof_display_summary(void);
+void hpcrun_display_summary(void);
 
 cct_node_t*
 hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 

@@ -132,7 +132,7 @@ hpcrun_loadmap_add_module(const char *module_name,
 {
   TMSG(EPOCH," epoch_add_module");
 
-  loadmap_src_t *m = (loadmap_src_t *) csprof_malloc(sizeof(loadmap_src_t));
+  loadmap_src_t *m = (loadmap_src_t *) hpcrun_malloc(sizeof(loadmap_src_t));
 
   // fill in the fields of the structure
   m->id = 0; // FIXME:tallent
@@ -156,7 +156,7 @@ hpcrun_epoch_init(hpcrun_epoch_t* e)
   gettimeofday(&tv, NULL);
   TMSG(EPOCH, "new epoch created");
   TMSG(EPOCH, "new epoch time: sec = %ld, usec = %d, samples = %ld",
-       (long)tv.tv_sec, (int)tv.tv_usec, csprof_num_samples_total());
+       (long)tv.tv_sec, (int)tv.tv_usec, hpcrun_num_samples_total());
 
   memset(e, 0, sizeof(*e));
 
@@ -173,7 +173,7 @@ hpcrun_epoch_t*
 hpcrun_epoch_new(void)
 {
   TMSG(EPOCH, " --NEW");
-  hpcrun_epoch_t* e = csprof_malloc(sizeof(hpcrun_epoch_t));
+  hpcrun_epoch_t* e = hpcrun_malloc(sizeof(hpcrun_epoch_t));
 
   if (e == NULL) {
     EMSG("New epoch requested, but allocation failed!!");
@@ -213,8 +213,8 @@ hpcrun_epoch_reset(void)
   // FIXME: change the naming to reflect this
   //
   TMSG(EPOCH_RESET,"--started");
-  state_t *state = csprof_get_state();
-  state_t *newstate = csprof_malloc(sizeof(state_t));
+  state_t *state = hpcrun_get_state();
+  state_t *newstate = hpcrun_malloc(sizeof(state_t));
   memcpy(newstate, state, sizeof(state_t));
   TMSG(EPOCH_RESET, "check new epoch = old epoch = %d", newstate->epoch == state->epoch);
   hpcrun_cct_init(&newstate->csdata, newstate->csdata_ctxt); // reset cct

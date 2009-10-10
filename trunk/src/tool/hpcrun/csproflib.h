@@ -65,8 +65,8 @@
 //   simply use the appropriate launching script described in the
 //   documentation.
 //
-//   2. Explicit: You can manually call csprof_init() and
-//   csprof_fini() or use the the appropriate launching program
+//   2. Explicit: You can manually call hpcrun_init() and
+//   hpcrun_fini() or use the the appropriate launching program
 //   described in the documentation.  This may be preferable if you
 //   cannot or do not wish to use LD_PRELOAD.  It is also useful for
 //   debugging.
@@ -87,10 +87,10 @@ extern "C" {
 #endif
 
 // Explicit interface
-void csprof_init();
-void csprof_fini();
+void hpcrun_init();
+void hpcrun_fini();
 
-int csprof_is_handling_sample();
+int hpcrun_is_handling_sample();
 
 extern bool hpcrun_is_initialized_private; /* Should be treated as private */
 
@@ -102,13 +102,13 @@ hpcrun_is_initialized(void)
 
 
 
-extern void csprof_init_thread_support(void);
-extern void *csprof_thread_pre_create(void);
-extern void csprof_thread_post_create(void *dc);
-extern void *csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt);
-extern void csprof_thread_fini(state_t *state);
-extern void csprof_init_internal(void);
-extern void csprof_fini_internal(void);
+extern void hpcrun_init_thread_support(void);
+extern void *hpcrun_thread_pre_create(void);
+extern void hpcrun_thread_post_create(void *dc);
+extern void *hpcrun_thread_init(int id, lush_cct_ctxt_t* thr_ctxt);
+extern void hpcrun_thread_fini(state_t *state);
+extern void hpcrun_init_internal(void);
+extern void hpcrun_fini_internal(void);
 
 
   

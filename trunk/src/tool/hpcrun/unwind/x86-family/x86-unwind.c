@@ -122,7 +122,7 @@ static void
 update_cursor_with_troll(unw_cursor_t *cursor, int offset);
 
 static int 
-csprof_check_fence(void *ip);
+hpcrun_check_fence(void *ip);
 
 static void 
 drop_sample(void);
@@ -196,7 +196,7 @@ void
 unw_init(void)
 {
   x86_family_decoder_init();
-  csprof_interval_tree_init();
+  hpcrun_interval_tree_init();
 }
 
 int 
@@ -231,7 +231,7 @@ unw_init_cursor(unw_cursor_t* cursor, void* context)
        cursor->pc, cursor->ra_loc, cursor->sp, cursor->bp);
 
   cursor->flags = 0; // trolling_used
-  cursor->intvl = csprof_addr_to_interval(cursor->pc);
+  cursor->intvl = hpcrun_addr_to_interval(cursor->pc);
 
   if (!cursor->intvl) {
     // TMSG(TROLL,"UNW INIT calls stack troll");
@@ -267,7 +267,7 @@ unw_step_real(unw_cursor_t *cursor)
   // check if we have reached the end of our unwind, which is
   // demarcated with a fence. 
   //-----------------------------------------------------------
-  if (csprof_check_fence(cursor->pc)){
+  if (hpcrun_check_fence(cursor->pc)){
     TMSG(UNW,"current pc in monitor fence", cursor->pc);
     return STEP_STOP;
   }
@@ -460,7 +460,7 @@ unw_step_sp(unw_cursor_t *cursor)
     }
   }
   next_sp += 1;
-  cursor->intvl = csprof_addr_to_interval(((char *)next_pc) - 1);
+  cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) - 1);
 
   if (! cursor->intvl){
     if (((void *)next_sp) >= monitor_stack_bottom()){
@@ -525,7 +525,7 @@ unw_step_bp(unw_cursor_t *cursor)
   if ((void *)next_sp > sp) {
     // this condition is a weak correctness check. only
     // try building an interval for the return address again if it succeeds
-    uw = (unwind_interval *)csprof_addr_to_interval(((char *)next_pc) - 1);
+    uw = (unwind_interval *)hpcrun_addr_to_interval(((char *)next_pc) - 1);
     if (! uw){
       if (((void *)next_sp) >= monitor_stack_bottom()) {
         TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom,"
@@ -621,11 +621,11 @@ _drop_sample(bool no_backtrace)
   if (no_backtrace) {
     return;
   }
-  if (csprof_below_pmsg_threshold()) {
+  if (hpcrun_below_pmsg_threshold()) {
     dump_backtrace(TD_GET(state),0);
   }
 
-  csprof_up_pmsg_count();
+  hpcrun_up_pmsg_count();
 
   sigjmp_buf_t *it = &(TD_GET(bad_unwind));
   (*hpcrun_get_real_siglongjmp())(it->jb, 9);
@@ -660,7 +660,7 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
       drop_sample();
     }
 
-    cursor->intvl = csprof_addr_to_interval(((char *)next_pc) + offset);
+    cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) + offset);
     if (cursor->intvl) {
       PMSG_LIMIT(PMSG(TROLL,"Trolling advances cursor to pc = %p, sp = %p", 
 		      next_pc, next_sp));
@@ -689,7 +689,7 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
 
 
 static int 
-csprof_check_fence(void *ip)
+hpcrun_check_fence(void *ip)
 {
   return monitor_in_start_func_wide(ip);
 }

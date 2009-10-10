@@ -95,7 +95,7 @@ static void call_sampling_method(sampling_source_globals_t *g,
  *****************************************************************************/
 
 void
-csprof_add_sample_source(sample_source_globals_t *_ssgtd)
+hpcrun_add_sample_source(sample_source_globals_t *_ssgtd)
 {
   ssgd->next = ssgd;
   ssgd = _ssgd;
@@ -104,21 +104,21 @@ csprof_add_sample_source(sample_source_globals_t *_ssgtd)
 //
 // START/STOP inversion
 void
-csprof_start_sampling(thread_data_t *td)
+hpcrun_start_sampling(thread_data_t *td)
 {
   call_sampling_methods(SAMPLING_START, td);
 }
 
 
 void
-csprof_stop_sampling(thread_data_t *td)
+hpcrun_stop_sampling(thread_data_t *td)
 {
   call_sampling_methods(SAMPLING_STOP, td);
 }
 
 
 void
-csprof_init_sampling()
+hpcrun_init_sampling()
 {
   call_sampling_methods(SAMPLING_INIT, td);
 }

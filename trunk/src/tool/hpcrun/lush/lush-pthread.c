@@ -155,7 +155,7 @@ lushPthr_processInit()
   globals.ps_num_idle_cond    = 0;
 
   // LUSH_PTHR_FN_TY == 3
-  BalancedTree_init(&globals.ps_syncObjToData, csprof_malloc, 
+  BalancedTree_init(&globals.ps_syncObjToData, hpcrun_malloc, 
 		    sizeof(lushPtr_SyncObjData_t));
 
   lushPthr_mem_beg = (void*)lushPthr_mem;
@@ -170,10 +170,10 @@ lushPthr_processInit()
 #if (LUSH_PTHR_FN_TY == 3)
   // sanity check
   if ( !(sizeof(pthread_spinlock_t) == 4) ) {
-    csprof_abort("LUSH Pthreads found unexpected pthread_spinlock_t type!");
+    hpcrun_abort("LUSH Pthreads found unexpected pthread_spinlock_t type!");
   }
   if ( !(lushPthr_memSize < lushPthr_memSizeMax) ) {
-    csprof_abort("LUSH Pthreads found bad mem size!");
+    hpcrun_abort("LUSH Pthreads found bad mem size!");
   }
 #endif
 }
@@ -204,7 +204,7 @@ lushPthr_init(lushPthr_t* x)
   // LUSH_PTHR_FN_TY == 3
   // ------------------------------------------------------------
   x->ps_syncObjToData = &globals.ps_syncObjToData;
-  BalancedTree_init(&x->syncObjToData, csprof_malloc, 0/*nodeDataSz*/);
+  BalancedTree_init(&x->syncObjToData, hpcrun_malloc, 0/*nodeDataSz*/);
 
   x->syncObjData = NULL;
   QueuingRWLockLcl_init(&x->locklcl);

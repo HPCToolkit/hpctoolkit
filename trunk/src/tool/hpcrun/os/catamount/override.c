@@ -80,20 +80,20 @@ void *__wrap_realloc(void *ptr, size_t size){
 
 /* override various functions here */
 
-int _csprof_in_malloc = 0;
-int csprof_need_more = 0;
+int _hpcrun_in_malloc = 0;
+int hpcrun_need_more = 0;
 
 void *__wrap_malloc(size_t s){
   void *alloc;
 
-  _csprof_in_malloc = 1;
+  _hpcrun_in_malloc = 1;
   alloc = __real_malloc(s);
-  if (csprof_need_more){
+  if (hpcrun_need_more){
     assert(0);
     /* alloc more space here */
-    csprof_need_more = 0;
+    hpcrun_need_more = 0;
   }
-  _csprof_in_malloc = 0;
+  _hpcrun_in_malloc = 0;
   return alloc;
 }
 

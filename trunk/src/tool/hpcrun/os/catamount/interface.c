@@ -67,28 +67,28 @@ void *static_epoch_offset = (void *)&_start;
 void *static_epoch_end    = (void *)&__stop___libc_freeres_ptrs;
 char *static_executable_name = NULL; 
 
-void csprof_init_process(struct monitor_start_main_args *m)
+void hpcrun_init_process(struct monitor_start_main_args *m)
 {
   static_executable_name =  strdup((m->argv)[0]);
-  csprof_init_internal();
+  hpcrun_init_internal();
 }
 
-void csprof_fini_process()
+void hpcrun_fini_process()
 {
-  csprof_fini_internal();
+  hpcrun_fini_internal();
 }
 
-void csprof_epoch_get_loaded_modules(csprof_epoch_t *epoch,
-				     csprof_epoch_t *previous_epoch)
+void hpcrun_epoch_get_loaded_modules(hpcrun_epoch_t *epoch,
+				     hpcrun_epoch_t *previous_epoch)
 {
-  csprof_epoch_module_t *newmod;
+  hpcrun_epoch_module_t *newmod;
 
   if (previous_epoch == NULL) {
     long static_epoch_size = 
       ((long) static_epoch_end) - ((long)static_epoch_offset);
 
     MSG(1,"synthesize initial epoch");
-    newmod = csprof_malloc(sizeof(csprof_epoch_module_t));
+    newmod = hpcrun_malloc(sizeof(hpcrun_epoch_module_t));
     newmod->module_name = static_executable_name;
     newmod->mapaddr = static_epoch_offset;
     newmod->vaddr = NULL;

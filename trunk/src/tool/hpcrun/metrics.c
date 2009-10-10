@@ -96,7 +96,7 @@ hpcrun_pre_allocate_metrics(size_t num)
     return;
   }
   for(int i=0; i < num; i++){
-    metric_list_t* n = (metric_list_t*) csprof_malloc(sizeof(metric_list_t));
+    metric_list_t* n = (metric_list_t*) hpcrun_malloc(sizeof(metric_list_t));
     n->next = pre_alloc;
     pre_alloc = n;
   }
@@ -113,7 +113,7 @@ hpcrun_get_num_metrics(void){
   // create id->descriptor table and metric_tbl
   //
   if (!has_set_max_metrics) {
-    id2metric = csprof_malloc(n_metrics * sizeof(metric_desc_t*));
+    id2metric = hpcrun_malloc(n_metrics * sizeof(metric_desc_t*));
     metric_tbl.len = n_metrics;
     metric_tbl.lst = id2metric;
     for(metric_list_t* l = metric_data; l; l = l->next){
@@ -161,7 +161,7 @@ hpcrun_new_metric(void)
     pre_alloc = pre_alloc->next;
   }
   else {
-    n = (metric_list_t*) csprof_malloc(sizeof(metric_list_t));
+    n = (metric_list_t*) hpcrun_malloc(sizeof(metric_list_t));
   }
   n->next = metric_data;
   n->id   = n_metrics;

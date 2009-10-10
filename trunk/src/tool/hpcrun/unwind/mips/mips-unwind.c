@@ -325,7 +325,7 @@ context_pc(void* context)
 void
 unw_init(void)
 {
-  HPC_IFNO_UNW_LITE(csprof_interval_tree_init();)
+  HPC_IFNO_UNW_LITE(hpcrun_interval_tree_init();)
 }
 
 

@@ -223,7 +223,7 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
   }
 
   if (backtrace_trolled){
-    csprof_up_pmsg_count();
+    hpcrun_up_pmsg_count();
   }
   
   frame_t* bt_first = td->btbuf;      // innermost, inclusive 
@@ -275,7 +275,7 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
       for (int i = 0; i < num_frames; i++, fr++){
 	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p", i, fr->ip);
       }
-      csprof_inc_samples_filtered();
+      hpcrun_inc_samples_filtered();
       return 0;
     }
   }

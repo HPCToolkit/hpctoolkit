@@ -75,7 +75,7 @@
 #include "lush-backtrace.h"
 
 #include <state.h>
-#include <sample_event.h> // csprof_drop_sample()
+#include <sample_event.h> // hpcrun_drop_sample()
 #include <unwind/common/backtrace.h> // dump_backtrace()
 
 
@@ -220,7 +220,7 @@ lush_backtrace(state_t* state, ucontext_t* context,
   }
 
   if (ty == LUSH_STEP_ERROR) {
-    csprof_drop_sample(); // NULL
+    hpcrun_drop_sample(); // NULL
   }
 
   // ---------------------------------------------------------

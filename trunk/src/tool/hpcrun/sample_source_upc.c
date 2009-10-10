@@ -92,7 +92,7 @@
 
 #include "monitor.h"
 
-#include "csprof_options.h"
+#include "hpcrun_options.h"
 #include "metrics.h"
 #include "sample_event.h"
 #include "sample_source.h"
@@ -174,7 +174,7 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
 
   // Check for async block and avoid any MSG if true.
   if (hpcrun_async_is_blocked()) {
-    csprof_inc_samples_blocked_async();
+    hpcrun_inc_samples_blocked_async();
     do_sample = 0;
   }
 
@@ -398,12 +398,12 @@ METHOD_FN(display_events)
 sample_source_t _upc_obj = {
 
   // common methods
-  .add_event   = csprof_ss_add_event,
-  .store_event = csprof_ss_store_event,
-  .store_metric_id = csprof_ss_store_metric_id,
-  .get_event_str = csprof_ss_get_event_str,
-  .started       = csprof_ss_started,
-  .start         = csprof_ss_start,
+  .add_event   = hpcrun_ss_add_event,
+  .store_event = hpcrun_ss_store_event,
+  .store_metric_id = hpcrun_ss_store_metric_id,
+  .get_event_str = hpcrun_ss_get_event_str,
+  .started       = hpcrun_ss_started,
+  .start         = hpcrun_ss_start,
 
   // specific methods
   .init = init,
@@ -429,5 +429,5 @@ sample_source_t _upc_obj = {
 static void __attribute__ ((constructor))
 upc_obj_reg(void)
 {
-  csprof_ss_register(&_upc_obj);
+  hpcrun_ss_register(&_upc_obj);
 }

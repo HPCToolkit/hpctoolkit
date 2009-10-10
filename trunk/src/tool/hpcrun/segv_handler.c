@@ -59,17 +59,17 @@
 
 #include <messages/messages.h>
 
-// FIXME: tallent: should this be together with csprof_drop_sample?
+// FIXME: tallent: should this be together with hpcrun_drop_sample?
 
 /* catch SIGSEGVs */
 
 int segv_count = 0;
-extern int csprof_sample;
+extern int hpcrun_sample;
 
 int
 hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
 {
-  if (csprof_is_handling_sample()) {
+  if (hpcrun_is_handling_sample()) {
     segv_count++;
 
     thread_data_t *td = hpcrun_get_thread_data();

@@ -72,7 +72,7 @@
 	var = dlsym(RTLD_NEXT, #name );			\
 	err_str = dlerror();				\
 	if (var == NULL) {				\
-	    csprof_abort("dlsym(%s) failed: %s", #name , err_str); \
+	    hpcrun_abort("dlsym(%s) failed: %s", #name , err_str); \
 	}						\
 	TMSG(MONITOR_EXTS, "%s() = %p", #name , var);	\
     }							\

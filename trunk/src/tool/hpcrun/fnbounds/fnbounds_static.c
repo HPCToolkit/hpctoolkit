@@ -54,8 +54,8 @@
 // machine-generated file
 //-------------------------------------------------------------------------
 
-extern void *csprof_nm_addrs[];
-extern int   csprof_nm_addrs_len;
+extern void *hpcrun_nm_addrs[];
+extern int   hpcrun_nm_addrs_len;
 
 int 
 fnbounds_init()
@@ -84,7 +84,7 @@ int
 fnbounds_enclosing_addr(void *addr, void **start, void **end)
 {
   return
-    fnbounds_table_lookup(csprof_nm_addrs, csprof_nm_addrs_len,
+    fnbounds_table_lookup(hpcrun_nm_addrs, hpcrun_nm_addrs_len,
 			  addr, start, end);
 }
 
@@ -98,8 +98,8 @@ fnbounds_fini()
 void 
 fnbounds_epoch_finalize()
 {
-  void *start = csprof_nm_addrs[0];
-  void *end = csprof_nm_addrs[csprof_nm_addrs_len - 1];
+  void *start = hpcrun_nm_addrs[0];
+  void *end = hpcrun_nm_addrs[hpcrun_nm_addrs_len - 1];
 
   hpcrun_loadmap_add_module(files_executable_pathname(), 0 /* no vaddr */,
                             start, end - start);

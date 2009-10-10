@@ -126,14 +126,14 @@ void
 hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
 {
   thread_data_t* td = hpcrun_get_thread_data();
-  csprof_init_handling_sample(td, 0, id);
+  hpcrun_init_handling_sample(td, 0, id);
 
   td->id                          = id;
   td->mem_low                     = 0;
   td->state                       = NULL;
 
   // backtrace buffer
-  td->btbuf = csprof_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
+  td->btbuf = hpcrun_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
   td->bufend = td->btbuf + BACKTRACE_INIT_SZ;
   td->bufstk = td->bufend;  // FIXME: is this needed?
   td->treenode = NULL;
@@ -149,7 +149,7 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   td->tramp_present               = false;
   td->tramp_retn_addr             = NULL;
   td->tramp_loc                   = NULL;
-  td->cached_bt                   = csprof_malloc(sizeof(frame_t) * CACHED_BACKTRACE_SIZE);
+  td->cached_bt                   = hpcrun_malloc(sizeof(frame_t) * CACHED_BACKTRACE_SIZE);
   td->cached_bt_end               = td->cached_bt;          
   td->cached_bt_buf_end           = td->cached_bt + CACHED_BACKTRACE_SIZE;
   td->tramp_frame                 = NULL;
@@ -166,7 +166,7 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   memset(&td->eventSet, 0, sizeof(td->eventSet));
   memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
 
-  td->state              = csprof_malloc(sizeof(state_t));
+  td->state              = hpcrun_malloc(sizeof(state_t));
   td->state->csdata_ctxt = thr_ctxt;
 
   thr_ctxt = copy_thr_ctxt(thr_ctxt);
@@ -180,7 +180,7 @@ hpcrun_cached_bt_adjust_size(size_t n)
     return; // cached backtrace buffer is already big enough
   }
 
-  frame_t* newbuf = csprof_malloc(n * sizeof(frame_t));
+  frame_t* newbuf = hpcrun_malloc(n * sizeof(frame_t));
   memcpy(newbuf, td->cached_bt, (void*)td->cached_bt_buf_end - (void*)td->cached_bt);
   size_t idx            = td->cached_bt_end - td->cached_bt;
   td->cached_bt         = newbuf;
@@ -202,7 +202,7 @@ hpcrun_expand_btbuf(void){
   size_t recsz = unwind - td->btbuf;
   /* get new buffer */
   TMSG(STATE," state_expand_buffer");
-  frame_t *newbt = csprof_malloc(newsz*sizeof(frame_t));
+  frame_t *newbt = hpcrun_malloc(newsz*sizeof(frame_t));
 
   if(td->bufstk > td->bufend) {
     EMSG("Invariant bufstk > bufend violated");
@@ -233,13 +233,13 @@ hpcrun_ensure_btbuf_avail(void)
 }
 
 
-static pthread_key_t _csprof_key;
+static pthread_key_t _hpcrun_key;
 
 void
 hpcrun_init_pthread_key(void)
 {
-  TMSG(THREAD_SPECIFIC,"creating _csprof_key");
-  int bad = pthread_key_create(&_csprof_key, NULL);
+  TMSG(THREAD_SPECIFIC,"creating _hpcrun_key");
+  int bad = pthread_key_create(&_hpcrun_key, NULL);
   if (bad){
     EMSG("pthread_key_create returned non-zero = %d",bad);
   }
@@ -250,7 +250,7 @@ void
 hpcrun_set_thread_data(thread_data_t *td)
 {
   NMSG(THREAD_SPECIFIC,"setting td");
-  pthread_setspecific(_csprof_key,(void *) td);
+  pthread_setspecific(_hpcrun_key,(void *) td);
 }
 
 
@@ -261,7 +261,7 @@ hpcrun_set_thread0_data(void)
   hpcrun_set_thread_data(&_local_td);
 }
 
-// FIXME: use csprof_malloc ??
+// FIXME: use hpcrun_malloc ??
 thread_data_t *
 hpcrun_allocate_thread_data(void)
 {
@@ -272,14 +272,14 @@ hpcrun_allocate_thread_data(void)
 static bool
 thread_specific_td_avail(void)
 {
-  thread_data_t *ret = (thread_data_t *) pthread_getspecific(_csprof_key);
+  thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
   return !(ret == NULL);
 }
 
 thread_data_t *
 thread_specific_td(void)
 {
-  thread_data_t *ret = (thread_data_t *) pthread_getspecific(_csprof_key);
+  thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
   if (!ret){
     monitor_real_abort();
   }

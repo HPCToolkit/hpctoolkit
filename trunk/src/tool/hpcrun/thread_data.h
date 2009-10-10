@@ -112,7 +112,7 @@ typedef struct thread_data_t {
   // monitor-generated thread id
   int id;
 
-  // csprof_malloc memory data structures
+  // hpcrun_malloc memory data structures
 
   hpcrun_meminfo_t memstore;
   int              mem_low;
@@ -193,6 +193,6 @@ void           hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt);
 void           hpcrun_cached_bt_adjust_size(size_t n);
 
 // utilities to match previous api
-#define csprof_get_state()  TD_GET(state)
+#define hpcrun_get_state()  TD_GET(state)
 
 #endif // !defined(THREAD_DATA_H)

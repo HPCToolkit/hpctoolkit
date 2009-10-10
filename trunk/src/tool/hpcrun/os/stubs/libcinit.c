@@ -43,6 +43,6 @@
 
 #include "../general.h"
 
-void csprof_os_libc_init()
+void hpcrun_os_libc_init()
 {
 }

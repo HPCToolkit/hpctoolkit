@@ -69,7 +69,7 @@
  * local includes
  *****************************************************************************/
 
-#include "csprof_options.h"
+#include "hpcrun_options.h"
 #include "disabled.h"
 #include "metrics.h"
 #include "sample_event.h"
@@ -175,12 +175,12 @@ METHOD_FN(display_events)
 sample_source_t _none_obj = {
   // common methods
 
-  .add_event     = csprof_ss_add_event,
-  .store_event   = csprof_ss_store_event,
-  .store_metric_id = csprof_ss_store_metric_id,
-  .get_event_str = csprof_ss_get_event_str,
-  .started       = csprof_ss_started,
-  .start         = csprof_ss_start,
+  .add_event     = hpcrun_ss_add_event,
+  .store_event   = hpcrun_ss_store_event,
+  .store_metric_id = hpcrun_ss_store_metric_id,
+  .get_event_str = hpcrun_ss_get_event_str,
+  .started       = hpcrun_ss_started,
+  .start         = hpcrun_ss_start,
 
   // specific methods
 
@@ -214,7 +214,7 @@ static void none_obj_reg(void) __attribute__ ((constructor));
 static void
 none_obj_reg(void)
 {
-  csprof_ss_register(&_none_obj);
+  hpcrun_ss_register(&_none_obj);
 }
 
 

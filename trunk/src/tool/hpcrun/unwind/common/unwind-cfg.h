@@ -61,7 +61,7 @@
 // unwinder into a library.
 //
 // - We must avoid dynamic allocation which rules out the use of
-//   csprof_malloc.  This implies we cannot use 'build_intervals()' to
+//   hpcrun_malloc.  This implies we cannot use 'build_intervals()' to
 //   build all the intervals for a routine.  Nor can we use the interval
 //   splay tree to store the intervals across invocations of unw_step().
 //   Therefore we must use intervals in a special way and pass them

@@ -53,8 +53,8 @@
 //
 //***************************************************************************
 
-#ifndef csprof_malloc_h
-#define csprof_malloc_h
+#ifndef hpcrun_malloc_h
+#define hpcrun_malloc_h
 
 #include "valgrind.h"
 
@@ -73,7 +73,7 @@ extern "C" {
 #if ! defined(VALGRIND) || defined(_IN_MEM_C)
 
 //---------------------------------------------------------------------------
-// Function: csprof_malloc 
+// Function: hpcrun_malloc 
 //
 // Purpose: return a pointer to a block of memory of the *exact* size 
 //      (in bytes) requested.  If there is insufficient memory, an attempt 
@@ -82,12 +82,12 @@ extern "C" {
 // 
 // NOTE: This memory cannot be freed! 
 //---------------------------------------------------------------------------
-void* csprof_malloc(size_t size);
-void* csprof_malloc_freeable(size_t size);
+void* hpcrun_malloc(size_t size);
+void* hpcrun_malloc_freeable(size_t size);
 
 #else
-#define csprof_malloc malloc
-#define csprof_malloc_freeable malloc
+#define hpcrun_malloc malloc
+#define hpcrun_malloc_freeable malloc
 
 #endif // VALGRIND
 
