@@ -82,7 +82,7 @@
 
 #include "name.h"
 #include "sample_event.h"
-#include "sample_source_none_event.h"
+#include "sample_source_none.h"
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 
