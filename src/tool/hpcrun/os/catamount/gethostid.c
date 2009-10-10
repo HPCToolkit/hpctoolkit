@@ -53,6 +53,6 @@ long int gethostid(void){
 
 long gethostid(void)
 {
-  return csprof_get_mpirank();
+  return hpcrun_get_mpirank();
 }
 #endif

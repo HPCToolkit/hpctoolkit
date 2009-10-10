@@ -51,7 +51,7 @@
 #define CSPROF_PATH_SZ (PATH_MAX+1) /* path size */
 
 /* represents options for the library */
-typedef struct csprof_options_s {
+typedef struct hpcrun_options_s {
   char lush_agent_paths[CSPROF_PATH_SZ]; /* paths for LUSH agents */
 
   char out_path[CSPROF_PATH_SZ]; /* path for output */
@@ -61,7 +61,7 @@ typedef struct csprof_options_s {
 
   //  unsigned int max_metrics;
 
-} csprof_options_t;
+} hpcrun_options_t;
 
 #define CSPROF_OUT_PATH          "."
 #define CSPROF_EVENT       "microseconds"
@@ -70,8 +70,8 @@ typedef struct csprof_options_s {
 #define CSPROF_MEM_SZ_INIT       128 // small for mem stress test
 #define CSPROF_MEM_SZ_DEFAULT  CSPROF_MEM_SZ_INIT
 
-int csprof_options__init(csprof_options_t* x);
-int csprof_options__fini(csprof_options_t* x);
-int csprof_options__getopts(csprof_options_t* x);
+int hpcrun_options__init(hpcrun_options_t* x);
+int hpcrun_options__fini(hpcrun_options_t* x);
+int hpcrun_options__getopts(hpcrun_options_t* x);
 
 #endif

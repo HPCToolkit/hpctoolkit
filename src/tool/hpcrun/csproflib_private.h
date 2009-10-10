@@ -82,7 +82,7 @@ typedef void (*sig_handler_func_t)(int, siginfo_t *, void *);
 //***************************************************************************
 
 //***************************************************************************
-// csprof_pfmon_info
+// hpcrun_pfmon_info
 //***************************************************************************
 
 // Abbrev. Quick Reference (See "Intel Itanium Architecture Software
@@ -95,6 +95,6 @@ typedef void (*sig_handler_func_t)(int, siginfo_t *, void *);
 
 int hpcrun_write_profile_data(state_t*);
 
-void csprof_atexit_handler();
+void hpcrun_atexit_handler();
 
 #endif

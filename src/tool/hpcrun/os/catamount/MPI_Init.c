@@ -117,7 +117,7 @@ static void remember_rank()
   int rank; 
 
   if (MPI_Comm_rank(MPI_COMM_WORLD, &rank) == MPI_SUCCESS) {
-    csprof_set_mpirank(rank);
+    hpcrun_set_mpirank(rank);
   }
 }
 

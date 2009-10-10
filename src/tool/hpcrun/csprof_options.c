@@ -50,7 +50,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "csprof_options.h"
+#include "hpcrun_options.h"
 #include "files.h"
 #include "hpcrun_return_codes.h"
 #include "env.h"
@@ -63,7 +63,7 @@
 /* FIXME: this needs to be split up a little bit for different backends */
 
 int
-csprof_options__init(csprof_options_t *x)
+hpcrun_options__init(hpcrun_options_t *x)
 {
   NMSG(OPTIONS,"__init");
   memset(x, 0, sizeof(*x));
@@ -71,14 +71,14 @@ csprof_options__init(csprof_options_t *x)
 }
 
 int
-csprof_options__fini(csprof_options_t* x)
+hpcrun_options__fini(hpcrun_options_t* x)
 {
   return HPCRUN_OK;
 }
 
 /* assumes no private 'heap' memory is available yet */
 int
-csprof_options__getopts(csprof_options_t* x)
+hpcrun_options__getopts(hpcrun_options_t* x)
 {
   /* Option: CSPROF_OPT_LUSH_AGENTS */
   char *s = getenv(CSPROF_OPT_LUSH_AGENTS);

@@ -273,7 +273,7 @@ confirm_tail_call(void *addr, void *target_fn)
   }
 
   TMSG(VALIDATE_UNW,"Checking routine %p for possible tail calls", callee);
-  unwind_interval *ri = (unwind_interval *) csprof_addr_to_interval(callee);
+  unwind_interval *ri = (unwind_interval *) hpcrun_addr_to_interval(callee);
   bool rv = (ri && ri->has_tail_calls);
 
   if (rv) return contains_tail_call_to_f(callee, target_fn);
@@ -330,7 +330,7 @@ confirm_plt_call(void *addr, void *callee)
   void *plt_callee = x86_plt_branch_target(plt_ins, xptr);
   if (plt_callee == callee) return UNW_ADDR_CONFIRMED;
 
-  unwind_interval *plt_callee_ui = (unwind_interval *) csprof_addr_to_interval(plt_callee);
+  unwind_interval *plt_callee_ui = (unwind_interval *) hpcrun_addr_to_interval(plt_callee);
   if (plt_callee_ui && plt_callee_ui->has_tail_calls) return contains_tail_call_to_f(plt_callee, callee);
 
   return UNW_ADDR_WRONG;

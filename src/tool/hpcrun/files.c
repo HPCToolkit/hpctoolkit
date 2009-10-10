@@ -159,12 +159,12 @@ files_set_directory()
 
   int ret = mkdir(path, 0755);
   if (ret != 0 && errno != EEXIST) {
-    csprof_abort("hpcrun: could not create output directory `%s': %s", path, strerror(errno));
+    hpcrun_abort("hpcrun: could not create output directory `%s': %s", path, strerror(errno));
   }
 
   char* rpath = os_realpath(path, output_directory);
   if (!rpath) {
-    csprof_abort("hpcrun: could not access directory `%s': %s", path, strerror(errno));
+    hpcrun_abort("hpcrun: could not access directory `%s': %s", path, strerror(errno));
   }
 }
 

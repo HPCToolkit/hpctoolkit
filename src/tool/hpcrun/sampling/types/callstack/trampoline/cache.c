@@ -49,8 +49,8 @@
    the cached arrays at depth 'depth'.  Note that depth is 1 based and a
    depth of 1 refers to the last element of the array. */
 static int
-cache_set(csprof_cct_t* x, unsigned int depth, void* ip,
-	  csprof_cct_node_t* node)
+cache_set(hpcrun_cct_t* x, unsigned int depth, void* ip,
+	  hpcrun_cct_node_t* node)
 {
     unsigned int i;
 
@@ -69,7 +69,7 @@ cache_set(csprof_cct_t* x, unsigned int depth, void* ip,
 
 /* cache_set_depth: sets the cache depth to 'depth' */
 static int 
-cache_set_depth(csprof_cct_t* x, unsigned int depth)
+cache_set_depth(hpcrun_cct_t* x, unsigned int depth)
 {
     if (depth > x->cache_len) { 
         cache_resize(x, depth);
@@ -81,19 +81,19 @@ cache_set_depth(csprof_cct_t* x, unsigned int depth)
 /* cache_resize: resizes the cache, ensuring that it is at least of
    size 'depth' */
 static int 
-cache_resize(csprof_cct_t* x, unsigned int depth)
+cache_resize(hpcrun_cct_t* x, unsigned int depth)
 {
     if (depth > x->cache_len) {
         // only grow larger
         void** old_bt                          = x->cache_bt;
-        csprof_cct_node_t** old_nodes = x->cache_nodes;
+        hpcrun_cct_node_t** old_nodes = x->cache_nodes;
         unsigned int old_len = x->cache_len, padding = 0;
     
         x->cache_len = x->cache_len * 2;
         if (depth > x->cache_len) { x->cache_len = depth; }
     
-        x->cache_bt    = csprof_malloc(sizeof(void*) * x->cache_len);
-        x->cache_nodes = csprof_malloc(sizeof(csprof_cct_node_t*) * 
+        x->cache_bt    = hpcrun_malloc(sizeof(void*) * x->cache_len);
+        x->cache_nodes = hpcrun_malloc(sizeof(hpcrun_cct_node_t*) * 
                                        x->cache_len);
         DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION,
                    "resizing cct cache: %d -> %d length", old_len, x->cache_len);
@@ -112,7 +112,7 @@ cache_resize(csprof_cct_t* x, unsigned int depth)
    Note that 'depth' is 1 based and that 1 refers to the bottom of the
    stack (the root of the tree). */
 static void* 
-cache_get_bt(csprof_cct_t* x, unsigned int depth)
+cache_get_bt(hpcrun_cct_t* x, unsigned int depth)
 {
     unsigned int i = x->cache_len - depth;
     if (depth > x->cache_len || i < x->cache_top) { return NULL; }
@@ -122,8 +122,8 @@ cache_get_bt(csprof_cct_t* x, unsigned int depth)
 /* cache_get_node: Gets the cache node at depth 'depth'. 
    Note that 'depth' is 1 based and that 1 refers to the bottom of the
    stack (the root of the tree). */
-static csprof_cct_node_t* 
-cache_get_node(csprof_cct_t* x, unsigned int depth)
+static hpcrun_cct_node_t* 
+cache_get_node(hpcrun_cct_t* x, unsigned int depth)
 {
     unsigned int i = x->cache_len - depth;
     if (depth > x->cache_len || i < x->cache_top) { return NULL; }

@@ -115,7 +115,7 @@ enum lush_step {
 static inline lush_lip_t*
 lush_lip_clone(lush_lip_t* x)
 {
-  lush_lip_t* x_clone = csprof_malloc(sizeof(lush_lip_t));
+  lush_lip_t* x_clone = hpcrun_malloc(sizeof(lush_lip_t));
   memcpy(x_clone, x, sizeof(lush_lip_t));
   return x_clone;
 }

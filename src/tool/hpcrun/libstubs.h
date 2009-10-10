@@ -51,8 +51,8 @@
 #ifndef HPCRUN_STATIC_LINK
 #define CSPROF_GRAB_FUNCPTR(our_name, platform_name) \
 do { \
-    csprof_ ## our_name = dlsym(RTLD_NEXT, #platform_name); \
-    if(csprof_ ## our_name == NULL) { \
+    hpcrun_ ## our_name = dlsym(RTLD_NEXT, #platform_name); \
+    if(hpcrun_ ## our_name == NULL) { \
         printf("Error in locating " #platform_name "\n"); \
         exit(0); \
     } \
@@ -60,8 +60,8 @@ do { \
 #else
 #define CSPROF_GRAB_FUNCPTR(our_name, platform_name) \
 do { \
-    csprof_ ## our_name = &platform_name; \
-    /* printf("csprof_" #our_name " = %p\n",csprof_ ## our_name); */ \
+    hpcrun_ ## our_name = &platform_name; \
+    /* printf("hpcrun_" #our_name " = %p\n",hpcrun_ ## our_name); */ \
 } while(0)
 #endif
 /* we assume that we have a function `init_library_stubs' and a

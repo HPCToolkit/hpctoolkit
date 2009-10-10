@@ -91,24 +91,24 @@ static char *basename(char *string);
  * interface functions
  *****************************************************************************/
 
-void csprof_set_executable_name(char *argv0)
+void hpcrun_set_executable_name(char *argv0)
 {
   // executable_name = strdup(basename(argv0));
   executable_name = basename(argv0);
 }
 
-const char *csprof_get_executable_name()
+const char *hpcrun_get_executable_name()
 {
    return executable_name;
 }
 
 
-void csprof_set_mpirank(int rank)
+void hpcrun_set_mpirank(int rank)
 {
   mpirank = rank;
 }
 
-int csprof_get_mpirank()
+int hpcrun_get_mpirank()
 {
    return mpirank;
 }

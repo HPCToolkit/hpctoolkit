@@ -72,7 +72,7 @@
  * local includes
  *****************************************************************************/
 
-#include "csprof_options.h"
+#include "hpcrun_options.h"
 #include "metrics.h"
 #include "sample_source_common.h"
 #include "sample_sources_registered.h"
@@ -277,7 +277,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
   ret = PAPI_create_eventset(&eventSet);
   PMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret, eventSet);
   if (ret != PAPI_OK) {
-    csprof_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", 
+    hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", 
 		 ret, PAPI_strerror(ret));
   }
 
@@ -376,12 +376,12 @@ METHOD_FN(display_events)
 sample_source_t _papi_obj = {
   // common methods
 
-  .add_event   = csprof_ss_add_event,
-  .store_event = csprof_ss_store_event,
-  .store_metric_id = csprof_ss_store_metric_id,
-  .get_event_str = csprof_ss_get_event_str,
-  .started       = csprof_ss_started,
-  .start         = csprof_ss_start,
+  .add_event   = hpcrun_ss_add_event,
+  .store_event = hpcrun_ss_store_event,
+  .store_metric_id = hpcrun_ss_store_metric_id,
+  .get_event_str = hpcrun_ss_get_event_str,
+  .started       = hpcrun_ss_started,
+  .start         = hpcrun_ss_start,
 
   // specific methods
 
@@ -413,7 +413,7 @@ static void papi_obj_reg(void) __attribute__ ((constructor));
 static void
 papi_obj_reg(void)
 {
-  csprof_ss_register(&_papi_obj);
+  hpcrun_ss_register(&_papi_obj);
 }
 
 /******************************************************************************
@@ -470,7 +470,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   // Must check for async block first and avoid any MSG if true.
   if (hpcrun_async_is_blocked(pc)) {
-    csprof_inc_samples_blocked_async();
+    hpcrun_inc_samples_blocked_async();
     return;
   }
 
@@ -479,11 +479,11 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int ret = PAPI_get_overflow_event_index(event_set, ovec, my_events,
 					  &my_event_count);
   if (ret != PAPI_OK) {
-    csprof_abort("Failed inside papi_event_handler at get_overflow_event_index."
+    hpcrun_abort("Failed inside papi_event_handler at get_overflow_event_index."
 		 "Return code = %d ==> %s", ret, PAPI_strerror(ret));
   }
   for (i = 0; i < my_event_count; i++) {
-    // FIXME: SUBTLE ERROR: metric_id may not be same from csprof_new_metric()!
+    // FIXME: SUBTLE ERROR: metric_id may not be same from hpcrun_new_metric()!
     // This means lush's 'time' metric should be *last*
     int metric_id = hpcrun_event2metric(&_papi_obj, my_events[i]);
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);

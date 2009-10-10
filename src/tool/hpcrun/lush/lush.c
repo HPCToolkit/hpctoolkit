@@ -96,7 +96,7 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
 {
   x->id = id;
 
-  x->path = csprof_malloc(strlen(path) + 1); // strdup() uses malloc
+  x->path = hpcrun_malloc(strlen(path) + 1); // strdup() uses malloc
   strcpy(x->path, path);
 
   //x->dlhandle = dlopen(path, RTLD_LAZY);
@@ -171,7 +171,7 @@ lush_agent_pool__init(lush_agent_pool_t* x, const char* path)
 
   // 1. Allocate tables first
 #define FN_TBL_ALLOC(BASE, FN, SZ) \
-  BASE->FN = (FN ## _fn_t *) csprof_malloc(sizeof(FN ## _fn_t) * (SZ))
+  BASE->FN = (FN ## _fn_t *) hpcrun_malloc(sizeof(FN ## _fn_t) * (SZ))
   
   FN_TBL_ALLOC(x, LUSHI_init,            num_agents + 1);
   FN_TBL_ALLOC(x, LUSHI_fini,            num_agents + 1);

@@ -79,7 +79,7 @@
 // local includes
 //*********************************************************************
 
-#include "csprof_dlfns.h"
+#include "hpcrun_dlfns.h"
 #include "disabled.h"
 #include "dylib.h"
 #include "epoch.h"
@@ -512,7 +512,7 @@ fnbounds_epoch_finalize_locked()
                               dso_info->start_addr, 
                               dso_info->end_addr - dso_info->start_addr);
     munmap(dso_info->table, dso_info->map_size);
-    csprof_delete_ui_range(dso_info->start_addr, dso_info->end_addr);
+    hpcrun_delete_ui_range(dso_info->start_addr, dso_info->end_addr);
     next = dso_info->next;
     dso_list_remove(&dso_closed_list, dso_info);
     dso_info_free(dso_info);
@@ -582,7 +582,7 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
 	   		     "    This could affect attribution of %ld samples.\n"
 	   		     "    See 'CAUTION [OVERLAPPING MODULES]'.", 
 	   dso_info->name, dso_info->start_addr, dso_info->end_addr,
-	   module_name, start, end, csprof_num_samples_total());
+	   module_name, start, end, hpcrun_num_samples_total());
 
       if (first_warning && ENABLED(WARN_MULTI_EPOCH)) { 
 	first_warning = 0;
@@ -623,7 +623,7 @@ fnbounds_dso_info_get(void *pc)
   // risk, then analyzing the new DSO here allows us to sample inside
   // an init constructor.
   //
-  if (!dso_open && ENABLED(DLOPEN_RISKY) && csprof_dlopen_pending() > 0) {
+  if (!dso_open && ENABLED(DLOPEN_RISKY) && hpcrun_dlopen_pending() > 0) {
     char module_name[PATH_MAX];
     void *mstart, *mend;
       
@@ -651,7 +651,7 @@ new_dso_info_t(const char *name, void **table, struct fnbounds_file_header *fh,
   dso_info_t *r  = dso_info_allocate();
   
   TMSG(DSO," new_dso_info_t for module %s", name);
-  r->name = (char *) csprof_malloc(namelen);
+  r->name = (char *) hpcrun_malloc(namelen);
   strcpy(r->name, name);
   r->table = table;
   r->map_size = map_size;
@@ -775,7 +775,7 @@ dso_info_allocate()
     dso_list_remove(&dso_free_list, new);
   } else {
     TMSG(DSO," dso_info_allocate");
-    new = (dso_info_t *) csprof_malloc(sizeof(dso_info_t));
+    new = (dso_info_t *) hpcrun_malloc(sizeof(dso_info_t));
   }
   return new;
 }

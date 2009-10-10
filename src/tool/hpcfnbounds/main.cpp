@@ -375,14 +375,14 @@ static void
 dump_file_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
 {
   if (c_fmt_fp() != NULL) {
-    fprintf(c_fmt_fp(), "unsigned long csprof_nm_addrs[] = {\n");
+    fprintf(c_fmt_fp(), "unsigned long hpcrun_nm_addrs[] = {\n");
   }
 
   dump_symbols(syms, symvec, fn_discovery);
 
   if (c_fmt_fp() != NULL) {
-    fprintf(c_fmt_fp(), "};\nint csprof_nm_addrs_len = "
-	   "sizeof(csprof_nm_addrs) / sizeof(csprof_nm_addrs[0]);\n");
+    fprintf(c_fmt_fp(), "};\nint hpcrun_nm_addrs_len = "
+	   "sizeof(hpcrun_nm_addrs) / sizeof(hpcrun_nm_addrs[0]);\n");
   }
 }
 
@@ -403,8 +403,8 @@ dump_header_info(int relocatable)
   }
 
   if (c_fmt_fp() != NULL) {
-    fprintf(c_fmt_fp(), "unsigned int csprof_relocatable = %d;\n", relocatable);
-    fprintf(c_fmt_fp(), "unsigned int csprof_stripped = %d;\n", 0);
+    fprintf(c_fmt_fp(), "unsigned int hpcrun_relocatable = %d;\n", relocatable);
+    fprintf(c_fmt_fp(), "unsigned int hpcrun_stripped = %d;\n", 0);
   }
 
   if (text_fmt_fp() != NULL) {

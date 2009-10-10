@@ -43,7 +43,7 @@
 
 //
 // The new memory allocator.  We mmap() a large, single region (6 Meg)
-// per thread and dole out pieces via csprof_malloc().  Pieces are
+// per thread and dole out pieces via hpcrun_malloc().  Pieces are
 // either freeable (CCT nodes) or not freeable (everything else).
 // When memory gets low, we write out an epoch and reclaim the CCT
 // nodes.
@@ -60,7 +60,7 @@
 #include <string.h>
 #include <unistd.h>
 
-// no redefinition of csprof_malloc and friends inside mem.c
+// no redefinition of hpcrun_malloc and friends inside mem.c
 #define _IN_MEM_C 1
 #  include "csprof-malloc.h"
 #undef _IN_MEM_C
@@ -219,7 +219,7 @@ hpcrun_make_memstore(hpcrun_meminfo_t *mi)
       EMSG("%s: out of memory, shutting down sampling", __func__);
       out_of_mem_mesg = 1;
     }
-    csprof_disable_sampling();
+    hpcrun_disable_sampling();
     return;
   }
 
@@ -249,7 +249,7 @@ hpcrun_reclaim_freeable_mem(void)
 // else NULL on failure.
 //
 void *
-csprof_malloc(size_t size)
+hpcrun_malloc(size_t size)
 {
   hpcrun_meminfo_t *mi;
   void *addr;
@@ -273,7 +273,7 @@ csprof_malloc(size_t size)
 	EMSG("%s: out of memory, shutting down sampling", __func__);
 	out_of_mem_mesg = 1;
       }
-      csprof_disable_sampling();
+      hpcrun_disable_sampling();
     }
   }
 
@@ -306,9 +306,9 @@ csprof_malloc(size_t size)
 // else NULL on failure.
 //
 void *
-csprof_malloc_freeable(size_t size)
+hpcrun_malloc_freeable(size_t size)
 {
-  return csprof_malloc(size);
+  return hpcrun_malloc(size);
 
   // For now, don't bother with freeable memory.
 #if 0

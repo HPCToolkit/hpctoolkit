@@ -91,8 +91,8 @@
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
-typedef struct csprof_epoch hpcrun_epoch_t;
-typedef struct csprof_epoch_module csprof_epoch_module_t;
+typedef struct hpcrun_epoch hpcrun_epoch_t;
+typedef struct hpcrun_epoch_module hpcrun_epoch_module_t;
 
 // FIXME:tallent: I moved the declaration of loadmap_src_t from
 // hpcrun-fmt.h.  Most likely, the guts of loadmap_src_t should simply
@@ -110,9 +110,9 @@ typedef struct loadmap_src_t {
 } loadmap_src_t;
 
 
-struct csprof_epoch
+struct hpcrun_epoch
 {
-  struct csprof_epoch *next;  /* the next epoch */
+  struct hpcrun_epoch *next;  /* the next epoch */
   unsigned int id;            /* an identifier for disk writeouts */
   unsigned int num_modules;   /* how many modules are loaded? */
   loadmap_src_t *loaded_modules;
@@ -133,7 +133,7 @@ int  hpcrun_epoch_is_locked();
 
 void hpcrun_finalize_current_epoch(void);
 
-void csprof_write_all_epochs(FILE *);
+void hpcrun_write_all_epochs(FILE *);
 void hpcrun_write_current_loadmap(FILE *);
 
 void hpcrun_epoch_reset(void);

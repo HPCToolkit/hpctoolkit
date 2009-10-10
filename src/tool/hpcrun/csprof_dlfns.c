@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#include "csprof_dlfns.h"
+#include "hpcrun_dlfns.h"
 #include "fnbounds_interface.h"
 #include "sample_event.h"
 
@@ -91,7 +91,7 @@ static long num_dlopen_pending = 0;
 
 // We use this only in the DLOPEN_RISKY case.
 long
-csprof_dlopen_pending(void)
+hpcrun_dlopen_pending(void)
 {
   return num_dlopen_pending;
 }
@@ -99,7 +99,7 @@ csprof_dlopen_pending(void)
 
 // Writers always wait until they acquire the lock.
 static void
-csprof_dlopen_write_lock(void)
+hpcrun_dlopen_write_lock(void)
 {
   int acquire = 0;
 
@@ -120,7 +120,7 @@ csprof_dlopen_write_lock(void)
 
 
 static void
-csprof_dlopen_write_unlock(void)
+hpcrun_dlopen_write_unlock(void)
 {
   dlopen_num_writers = 0;
 }
@@ -129,7 +129,7 @@ csprof_dlopen_write_unlock(void)
 // Downgrade the dlopen lock from a writers lock to a readers lock.
 // Must already hold the writers lock.
 static void
-csprof_dlopen_downgrade_lock(void)
+hpcrun_dlopen_downgrade_lock(void)
 {
   atomic_add_i64(&dlopen_num_readers, 1L);
   dlopen_num_writers = 0;
@@ -139,7 +139,7 @@ csprof_dlopen_downgrade_lock(void)
 // Readers try to acquire a lock, but they don't wait if that fails.
 // Returns: 1 if acquired, else 0 if not.
 int
-csprof_dlopen_read_lock(void)
+hpcrun_dlopen_read_lock(void)
 {
   int acquire = 0;
 
@@ -155,16 +155,16 @@ csprof_dlopen_read_lock(void)
 
 
 void
-csprof_dlopen_read_unlock(void)
+hpcrun_dlopen_read_unlock(void)
 {
   atomic_add_i64(&dlopen_num_readers, -1L);
 }
 
 
 void 
-csprof_pre_dlopen(const char *path, int flags)
+hpcrun_pre_dlopen(const char *path, int flags)
 {
-  csprof_dlopen_write_lock();
+  hpcrun_dlopen_write_lock();
   atomic_add_i64(&num_dlopen_pending, 1L);
 }
 
@@ -174,20 +174,20 @@ csprof_pre_dlopen(const char *path, int flags)
 // and that order is consistent with sampling.
 //
 void 
-csprof_dlopen(const char *module_name, int flags, void *handle)
+hpcrun_dlopen(const char *module_name, int flags, void *handle)
 {
   TMSG(EPOCH, "dlopen: handle = %p, name = %s", handle, module_name);
-  csprof_dlopen_downgrade_lock();
+  hpcrun_dlopen_downgrade_lock();
   fnbounds_map_open_dsos();
   atomic_add_i64(&num_dlopen_pending, -1L);
-  csprof_dlopen_read_unlock();
+  hpcrun_dlopen_read_unlock();
 }
 
 
 void
-csprof_dlclose(void *handle)
+hpcrun_dlclose(void *handle)
 {
-  csprof_dlopen_write_lock();
+  hpcrun_dlopen_write_lock();
 }
 
 
@@ -196,9 +196,9 @@ csprof_dlclose(void *handle)
 // and that is a LOR with sampling.
 //
 void
-csprof_post_dlclose(void *handle, int ret)
+hpcrun_post_dlclose(void *handle, int ret)
 {
   TMSG(EPOCH, "dlclose: handle = %p", handle);
   fnbounds_unmap_closed_dsos();
-  csprof_dlopen_write_unlock();
+  hpcrun_dlopen_write_unlock();
 }

@@ -56,7 +56,7 @@ static sample_source_t *registered_sample_sources[MAX_POSSIBLE_SAMPLE_SOURCES];
 static int nregs = 0;
 
 void
-csprof_ss_register(sample_source_t* src)
+hpcrun_ss_register(sample_source_t* src)
 {
   if (nregs >= MAX_POSSIBLE_SAMPLE_SOURCES){
     EMSG("Sample source named %s NOT registered due to # sample sources exceeded",src->name);
@@ -68,7 +68,7 @@ csprof_ss_register(sample_source_t* src)
 
 
 sample_source_t*
-csprof_source_can_process(char *event)
+hpcrun_source_can_process(char *event)
 {
   for (int i=0;i < nregs;i++){
     if (METHOD_CALL(registered_sample_sources[i],supports_event,event)){
@@ -79,7 +79,7 @@ csprof_source_can_process(char *event)
 }
 
 void
-csprof_registered_sources_init(void)
+hpcrun_registered_sources_init(void)
 {
   for (int i=0;i<nregs;i++){
     METHOD_CALL(registered_sample_sources[i],init);

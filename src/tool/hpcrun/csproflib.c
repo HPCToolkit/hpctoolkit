@@ -100,7 +100,7 @@
 #include "trace.h"
 #include "write_data.h"
 
-#include "csprof_options.h"
+#include "hpcrun_options.h"
 
 #include "sample_event.h"
 #include "state.h"
@@ -126,7 +126,7 @@
 //***************************************************************************
 
 
-static csprof_options_t opts;
+static hpcrun_options_t opts;
 
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING) 
 sigset_t prof_sigset;
@@ -151,7 +151,7 @@ int lush_metrics = 0; // FIXME: global variable for now
 //***************************************************************************
 
 void
-csprof_init_internal(void)
+hpcrun_init_internal(void)
 {
   hpcrun_epoch_init(hpcrun_static_epoch());
 
@@ -164,8 +164,8 @@ csprof_init_internal(void)
   // processing below. Also, fnbounds_init must be done after the
   // memory allocator is initialized.
   fnbounds_init();
-  csprof_options__init(&opts);
-  csprof_options__getopts(&opts);
+  hpcrun_options__init(&opts);
+  hpcrun_options__getopts(&opts);
 
   trace_init(); // this must go after thread initialization
   trace_open();
@@ -174,7 +174,7 @@ csprof_init_internal(void)
   if (opts.lush_agent_paths[0] != '\0') {
     state_t* state = TD_GET(state);
     TMSG(MALLOC," -init_internal-: lush allocation");
-    lush_agents = (lush_agent_pool_t*)csprof_malloc(sizeof(lush_agent_pool_t));
+    lush_agents = (lush_agent_pool_t*)hpcrun_malloc(sizeof(lush_agent_pool_t));
     lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
     EMSG("***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
 	 state, lush_agents);
@@ -184,7 +184,7 @@ csprof_init_internal(void)
 
 #ifdef LUSH_PTHREADS
   if (!lush_agents) {
-    csprof_abort("LUSH Pthreads monitoring requires LUSH Pthreads agent!");
+    hpcrun_abort("LUSH Pthreads monitoring requires LUSH Pthreads agent!");
   }
 #endif
   lushPthr_processInit();
@@ -215,7 +215,7 @@ csprof_init_internal(void)
 
 
 void
-csprof_fini_internal(void)
+hpcrun_fini_internal(void)
 {
   NMSG(FINI,"process");
   int ret = monitor_real_sigprocmask(SIG_BLOCK,&prof_sigset,NULL);
@@ -253,7 +253,7 @@ csprof_fini_internal(void)
 
     hpcrun_write_profile_data(state);
 
-    csprof_display_summary();
+    hpcrun_display_summary();
     
     messages_fini();
   }
@@ -265,7 +265,7 @@ csprof_fini_internal(void)
 //***************************************************************************
 
 void
-csprof_init_thread_support(void)
+hpcrun_init_thread_support(void)
 {
   hpcrun_init_pthread_key();
   hpcrun_set_thread0_data();
@@ -274,7 +274,7 @@ csprof_init_thread_support(void)
 
 
 void*
-csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
+hpcrun_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 {
   thread_data_t *td = hpcrun_allocate_thread_data();
   td->suspend_sampling = 1; // begin: protect against spurious signals
@@ -307,7 +307,7 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 
 
 void
-csprof_thread_fini(state_t *state)
+hpcrun_thread_fini(state_t *state)
 {
   TMSG(FINI,"thread fini");
   if (hpcrun_is_initialized()) {

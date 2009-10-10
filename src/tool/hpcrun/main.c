@@ -73,7 +73,7 @@
 #include "csprof-malloc.h"
 
 #include <messages/debug-flag.h>
-#include "csprof_dlfns.h"
+#include "hpcrun_dlfns.h"
 #include "disabled.h"
 #include "env.h"
 #include "epoch.h"
@@ -155,7 +155,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   files_set_executable(process_name);
 
-  csprof_registered_sources_init();
+  hpcrun_registered_sources_init();
 
   messages_init();
 
@@ -163,7 +163,7 @@ monitor_init_process(int *argc, char **argv, void* data)
   if (s == NULL){
     s = getenv("CSPROF_OPT_EVENT");
   }
-  csprof_sample_sources_from_eventlist(s);
+  hpcrun_sample_sources_from_eventlist(s);
 
   hpcrun_process_sample_source_none();
 
@@ -175,7 +175,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   messages_logfile_create();
 
-  csprof_init_internal();
+  hpcrun_init_internal();
   if (ENABLED(TST)){
     EEMSG("TST debug ctl is active!");
     STDERR_MSG("Std Err message appears");
@@ -191,7 +191,7 @@ monitor_fini_process(int how, void* data)
 {
   hpcrun_async_block();
 
-  csprof_fini_internal();
+  hpcrun_fini_internal();
   trace_close();
   fnbounds_fini();
 
@@ -292,7 +292,7 @@ monitor_init_thread_support(void)
   hpcrun_async_block();
 
   TMSG(THREAD,"REALLY init_thread_support ---");
-  csprof_init_thread_support();
+  hpcrun_init_thread_support();
   hpcrun_set_using_threads(1);
   TMSG(THREAD,"Init thread support done");
 
@@ -342,8 +342,8 @@ monitor_thread_pre_create(void)
 
   TMSG(THREAD,"before lush malloc");
   TMSG(MALLOC," -thread_precreate: lush malloc");
-  state_t* state = csprof_get_state();
-  thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
+  state_t* state = hpcrun_get_state();
+  thr_ctxt = hpcrun_malloc(sizeof(lush_cct_ctxt_t));
   TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
   thr_ctxt->context = n;
   thr_ctxt->parent = state->csdata_ctxt;
@@ -374,7 +374,7 @@ void*
 monitor_init_thread(int tid, void* data)
 {
   NMSG(THREAD,"init thread %d",tid);
-  void* thread_data = csprof_thread_init(tid, (lush_cct_ctxt_t*)data);
+  void* thread_data = hpcrun_thread_init(tid, (lush_cct_ctxt_t*)data);
   TMSG(THREAD,"back from init thread %d",tid);
 
   trace_open();
@@ -391,7 +391,7 @@ monitor_fini_thread(void* init_thread_data)
 
   state_t *state = (state_t *)init_thread_data;
 
-  csprof_thread_fini(state);
+  hpcrun_thread_fini(state);
   trace_close();
 
   hpcrun_async_unblock();
@@ -794,7 +794,7 @@ monitor_pre_dlopen(const char *path, int flags)
   }
   hpcrun_async_block();
 
-  csprof_pre_dlopen(path, flags);
+  hpcrun_pre_dlopen(path, flags);
   hpcrun_async_unblock();
 }
 
@@ -807,7 +807,7 @@ monitor_dlopen(const char *path, int flags, void* handle)
   }
   hpcrun_async_block();
 
-  csprof_dlopen(path, flags, handle);
+  hpcrun_dlopen(path, flags, handle);
   hpcrun_async_unblock();
 }
 
@@ -820,7 +820,7 @@ monitor_dlclose(void* handle)
   }
   hpcrun_async_block();
 
-  csprof_dlclose(handle);
+  hpcrun_dlclose(handle);
   hpcrun_async_unblock();
 }
 
@@ -833,7 +833,7 @@ monitor_post_dlclose(void* handle, int ret)
   }
   hpcrun_async_block();
 
-  csprof_post_dlclose(handle, ret);
+  hpcrun_post_dlclose(handle, ret);
   hpcrun_async_unblock();
 }
 

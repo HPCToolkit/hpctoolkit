@@ -44,14 +44,14 @@
 #ifndef _CSPROF_DLFNS_H_
 #define _CSPROF_DLFNS_H_
 
-int  csprof_dlopen_read_lock(void);
-void csprof_dlopen_read_unlock(void);
+int  hpcrun_dlopen_read_lock(void);
+void hpcrun_dlopen_read_unlock(void);
 
-void csprof_pre_dlopen(const char *path, int flags);
-void csprof_dlopen(const char *module_name, int flags, void *handle);
-void csprof_dlclose(void *handle);
-void csprof_post_dlclose(void *handle, int ret);
+void hpcrun_pre_dlopen(const char *path, int flags);
+void hpcrun_dlopen(const char *module_name, int flags, void *handle);
+void hpcrun_dlclose(void *handle);
+void hpcrun_post_dlclose(void *handle, int ret);
 
-long csprof_dlopen_pending(void);
+long hpcrun_dlopen_pending(void);
 
 #endif

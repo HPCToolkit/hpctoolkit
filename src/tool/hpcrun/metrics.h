@@ -53,7 +53,7 @@
 
 // tallent: I have moved flags into hpcfile_csprof.h.  The flags don't
 // really belong there but:
-// 1) metrics.c uses hpcfile_csprof_data_t to implement metrics
+// 1) metrics.c uses hpcfile_hpcrun_data_t to implement metrics
 //    info, which already confuses boundaries
 // 2) metric info needs to exist in a library so csprof (hpcrun),
 //    xcsprof (hpcprof) and hpcfile can use it.  hpcfile at least

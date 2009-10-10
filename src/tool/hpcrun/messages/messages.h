@@ -64,11 +64,11 @@
 // macros
 //*****************************************************************************
 
-#define PMSG_LIMIT(C) if (csprof_below_pmsg_threshold()) C
+#define PMSG_LIMIT(C) if (hpcrun_below_pmsg_threshold()) C
 
-#define STDERR_MSG(...) csprof_stderr_log_msg(false,__VA_ARGS__)
+#define STDERR_MSG(...) hpcrun_stderr_log_msg(false,__VA_ARGS__)
 #define EMSG            hpcrun_emsg
-#define EEMSG(...)      csprof_stderr_log_msg(true,__VA_ARGS__)
+#define EEMSG(...)      hpcrun_stderr_log_msg(true,__VA_ARGS__)
 
 #define AMSG           hpcrun_amsg
 #define PMSG(f,...)    hpcrun_pmsg(DBG_PREFIX(f), NULL, __VA_ARGS__)
@@ -77,9 +77,9 @@
 #define NMSG(f,...)    hpcrun_nmsg(DBG_PREFIX(f), #f, __VA_ARGS__)
 #define ENMSG(f, ...)  hpcrun_nmsg_stderr(true, DBG_PREFIX(f), #f, __VA_ARGS__)
 
-#define EXIT_ON_ERROR(r,e,...) csprof_exit_on_error(r,e,__VA_ARGS__)
+#define EXIT_ON_ERROR(r,e,...) hpcrun_exit_on_error(r,e,__VA_ARGS__)
 
-#define csprof_abort(...) csprof_abort_w_info(messages_donothing, __VA_ARGS__)
+#define hpcrun_abort(...) hpcrun_abort_w_info(messages_donothing, __VA_ARGS__)
 
 
 
@@ -105,13 +105,13 @@ void hpcrun_pmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag,
 			const char *fmt,...);
 void hpcrun_nmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag, 
 			const char *fmt,...);
-void csprof_stderr_log_msg(bool copy_to_log, const char *fmt,...);
-void csprof_exit_on_error(int ret, int ret_expected, const char *fmt,...);
+void hpcrun_stderr_log_msg(bool copy_to_log, const char *fmt,...);
+void hpcrun_exit_on_error(int ret, int ret_expected, const char *fmt,...);
 
-void csprof_abort_w_info(void (*info)(void),const char *fmt,...);
+void hpcrun_abort_w_info(void (*info)(void),const char *fmt,...);
 
-int csprof_below_pmsg_threshold(void);
-void csprof_up_pmsg_count(void);
+int hpcrun_below_pmsg_threshold(void);
+void hpcrun_up_pmsg_count(void);
 
 
 

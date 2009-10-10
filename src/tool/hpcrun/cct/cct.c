@@ -157,9 +157,9 @@ cct_node_create(lush_assoc_info_t as_info,
   // FIXME: when multiple epochs really work, this will always be freeable.
   // WARN ME (krentel) if/when we really use freeable memory.
   if (ENABLED(FREEABLE)) {
-    node = csprof_malloc_freeable(sz);
+    node = hpcrun_malloc_freeable(sz);
   } else {
-    node = csprof_malloc(sz);
+    node = hpcrun_malloc(sz);
   }
 
   memset(node, 0, sz);
@@ -190,7 +190,7 @@ hpcrun_copy_btrace(cct_node_t* n)
   //
   // NOTE: cct nodes here are in NON-freeable memory (to be passed to other threads)
   //
-  cct_node_t* rv = (cct_node_t*) csprof_malloc(sizeof(cct_node_t));
+  cct_node_t* rv = (cct_node_t*) hpcrun_malloc(sizeof(cct_node_t));
 
   memcpy(rv, n, sizeof(cct_node_t));
   rv->parent   = NULL;
@@ -199,7 +199,7 @@ hpcrun_copy_btrace(cct_node_t* n)
   cct_node_t* prev = rv;
   for(n = n->parent; n; n = n->parent){
     TMSG(CCT_CTXT, "ctxt node(%p) ==> parent(%p) :: child(%p)", n, n->parent, n->children);
-    cct_node_t* cpy = (cct_node_t*) csprof_malloc(sizeof(cct_node_t));
+    cct_node_t* cpy = (cct_node_t*) hpcrun_malloc(sizeof(cct_node_t));
     memcpy(cpy, n, sizeof(cct_node_t));
     cpy->parent   = NULL;
     cpy->children = NULL;

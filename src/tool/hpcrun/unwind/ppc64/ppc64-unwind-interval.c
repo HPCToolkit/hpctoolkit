@@ -128,7 +128,7 @@ unw_interval_t *
 new_ui(char *start_addr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
        unw_interval_t *prev)
 {
-  unw_interval_t* u = (unw_interval_t*)csprof_ui_malloc(sizeof(unw_interval_t));
+  unw_interval_t* u = (unw_interval_t*)hpcrun_ui_malloc(sizeof(unw_interval_t));
 
   u->common.start = start_addr;
   u->common.end = 0;

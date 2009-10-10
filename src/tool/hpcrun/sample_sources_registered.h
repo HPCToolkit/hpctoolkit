@@ -47,9 +47,9 @@
 #include "sample_source.h"
 #define MAX_POSSIBLE_SAMPLE_SOURCES 5
 
-extern void             csprof_ss_register(sample_source_t *src);
-extern sample_source_t *csprof_source_can_process(char *event);
-extern void csprof_registered_sources_init(void);
-extern void hpcrun_display_avail_events(void);
+void hpcrun_ss_register(sample_source_t *src);
+sample_source_t *hpcrun_source_can_process(char *event);
+void hpcrun_registered_sources_init(void);
+void hpcrun_display_avail_events(void);
 
 #endif // REGISTERED_SAMPLE_SOURCES_H

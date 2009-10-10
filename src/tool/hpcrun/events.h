@@ -76,13 +76,13 @@ typedef struct papi_event {
 extern "C" {
 #endif
 
-  extern papi_event_t csprof_event_table[];
+  extern papi_event_t hpcrun_event_table[];
   
-  const papi_event_t *csprof_event_by_name(const char *name);
-  const papi_event_t *csprof_event_by_code(int code);
+  const papi_event_t *hpcrun_event_by_name(const char *name);
+  const papi_event_t *hpcrun_event_by_code(int code);
   
-  void csprof_write_wrapped_event_list(FILE* fs, const papi_event_t* e);
-  void csprof_write_event(FILE* fs, const papi_event_t* e);
+  void hpcrun_write_wrapped_event_list(FILE* fs, const papi_event_t* e);
+  void hpcrun_write_event(FILE* fs, const papi_event_t* e);
 
 #ifdef __cplusplus
 }

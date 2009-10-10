@@ -124,7 +124,7 @@ demand_interval(void* pc, bool isTopFrame)
   }
 #else
   // N.B.: calls build_intervals() if necessary
-  return (UNW_INTERVAL_t)csprof_addr_to_interval(pc);
+  return (UNW_INTERVAL_t)hpcrun_addr_to_interval(pc);
 #endif
 }
 
@@ -155,7 +155,7 @@ unw_interval_t*
 new_ui(char* start_addr, framety_t ty, int flgs,
        int sp_arg, int fp_arg, int ra_arg, unw_interval_t* prev)
 {
-  unw_interval_t* u = (unw_interval_t*)csprof_ui_malloc(sizeof(unw_interval_t));
+  unw_interval_t* u = (unw_interval_t*)hpcrun_ui_malloc(sizeof(unw_interval_t));
 
   u->common.start = start_addr;
   u->common.end = 0;

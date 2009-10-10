@@ -71,7 +71,7 @@
  * local includes
  *****************************************************************************/
 
-#include "csprof_options.h"
+#include "hpcrun_options.h"
 #include "metrics.h"
 #include "sample_event.h"
 #include "sample_source.h"
@@ -302,12 +302,12 @@ METHOD_FN(display_events)
 sample_source_t _itimer_obj = {
   // common methods
 
-  .add_event     = csprof_ss_add_event,
-  .store_event   = csprof_ss_store_event,
-  .store_metric_id = csprof_ss_store_metric_id,
-  .get_event_str = csprof_ss_get_event_str,
-  .started       = csprof_ss_started,
-  .start         = csprof_ss_start,
+  .add_event     = hpcrun_ss_add_event,
+  .store_event   = hpcrun_ss_store_event,
+  .store_metric_id = hpcrun_ss_store_metric_id,
+  .get_event_str = hpcrun_ss_get_event_str,
+  .started       = hpcrun_ss_started,
+  .start         = hpcrun_ss_start,
 
   // specific methods
 
@@ -341,7 +341,7 @@ static void itimer_obj_reg(void) __attribute__ ((constructor));
 static void
 itimer_obj_reg(void)
 {
-  csprof_ss_register(&_itimer_obj);
+  hpcrun_ss_register(&_itimer_obj);
 }
 
 
@@ -356,7 +356,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   // Must check for async block first and avoid any MSG if true.
   void* pc = context_pc(context);
   if (hpcrun_async_is_blocked(pc)) {
-    csprof_inc_samples_blocked_async();
+    hpcrun_inc_samples_blocked_async();
   }
   else {
     TMSG(ITIMER_HANDLER,"Itimer sample event");
