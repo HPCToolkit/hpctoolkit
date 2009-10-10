@@ -157,7 +157,7 @@ add_source(sample_source_t* ss)
     }
     return;
   }
-  if (ss->cls == HDWARE && n_hdware_sources == MAX_HDWARE_SAMPLE_SOURCES) {
+  if (ss->cls == SS_HARDWARE && n_hdware_sources == MAX_HARDWARE_SAMPLE_SOURCES) {
     if (! in_sources(ss)) {
       csprof_abort("Too many hdware sample sources");
     }
@@ -165,7 +165,7 @@ add_source(sample_source_t* ss)
   }
   sample_sources[n_sources] = ss;
   n_sources++;
-  if (ss->cls == HDWARE) {
+  if (ss->cls == SS_HARDWARE) {
     n_hdware_sources++;
   }
   NMSG(AS_add_source,"# sources now = %d",n_sources);
