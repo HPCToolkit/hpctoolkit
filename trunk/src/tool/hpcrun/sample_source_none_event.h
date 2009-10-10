@@ -41,9 +41,10 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef SAMPLE_SOURCE_NONE_EVENT_H
-#define SAMPLE_SOURCE_NONE_EVENT_H
+#ifndef SAMPLE_SOURCE_NONE_H
+#define SAMPLE_SOURCE_NONE_H
 
-enum none_event { NONE_USE_LOG = 0 };
+void
+hpcrun_process_sample_source_none();
 
-#endif // SAMPLE_SOURCE_NONE_EVENT_H
+#endif // SAMPLE_SOURCE_NONE_H

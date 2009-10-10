@@ -106,7 +106,7 @@ csprof_all_sources_ ##n(void)					\
 
 static sample_source_t* sample_sources[MAX_SAMPLE_SOURCES];
 static int n_sources = 0;
-static int n_hdware_sources;
+static int n_hardware_sources;
 
 //*******************************************************************
 // Interface functions
@@ -153,20 +153,20 @@ add_source(sample_source_t* ss)
   if (n_sources == MAX_SAMPLE_SOURCES){
     // check to see is ss already present
     if (! in_sources(ss)){
-      csprof_abort("Too many total (hdware + sw) sample sources");
+      csprof_abort("Too many total (hardware + software) sample sources");
     }
     return;
   }
-  if (ss->cls == SS_HARDWARE && n_hdware_sources == MAX_HARDWARE_SAMPLE_SOURCES) {
+  if (ss->cls == SS_HARDWARE && n_hardware_sources == MAX_HARDWARE_SAMPLE_SOURCES) {
     if (! in_sources(ss)) {
-      csprof_abort("Too many hdware sample sources");
+      csprof_abort("Too many hardware sample sources");
     }
     return;
   }
   sample_sources[n_sources] = ss;
   n_sources++;
   if (ss->cls == SS_HARDWARE) {
-    n_hdware_sources++;
+    n_hardware_sources++;
   }
   NMSG(AS_add_source,"# sources now = %d",n_sources);
 }
