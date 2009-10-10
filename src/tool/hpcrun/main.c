@@ -164,17 +164,8 @@ monitor_init_process(int *argc, char **argv, void* data)
     s = getenv("CSPROF_OPT_EVENT");
   }
   csprof_sample_sources_from_eventlist(s);
-  sample_source_t* _none = hpcrun_fetch_source_by_name("NONE");
-  if (_none) {
-    METHOD_CALL(_none, process_event_list, 0);
-    if (! _none->evl.events[NONE_USE_LOG].thresh) {
-      hpcrun_set_disabled();
-    }
-  }
-  if (getenv("SHOW_NONE") && hpcrun_get_disabled()) {
-    static char none_msg[] = "NOTE: sample source NONE is specified\n";
-    write(2, none_msg, strlen(none_msg));
-  }
+
+  hpcrun_process_sample_source_none();
 
   if (!hpcrun_get_disabled()) {
     files_set_directory();
