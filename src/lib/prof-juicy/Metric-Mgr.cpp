@@ -135,14 +135,12 @@ Mgr::makeSummaryMetrics()
     Metric::ADescVec& mvec = it->second;
     if (mvec.size() > 1) {
       string mean_nm = "Mean-" + mNm;
-      //string rsd_nm = "RStdDev-" + mNm;
-      string cv_nm = "CoefVar-" + mNm;
-      string min_nm = "Min-" + mNm;
-      string max_nm = "Max-" + mNm;
-      string sum_nm = "Sum-" + mNm;
+      string cv_nm   = "CoefVar-" + mNm; // "RStdDev-"
+      string min_nm  = "Min-" + mNm;
+      string max_nm  = "Max-" + mNm;
+      string sum_nm  = "Sum-" + mNm;
 
       makeSummaryMetric(mean_nm, mvec);
-      //makeSummaryMetric(rsd_nm, mvec);
       makeSummaryMetric(cv_nm, mvec);
       makeSummaryMetric(min_nm, mvec);
       makeSummaryMetric(max_nm, mvec);
@@ -178,11 +176,13 @@ Mgr::makeItrvSummaryMetrics(uint srcBegId, uint srcEndId)
     string cv_nm   = "CoefVar-" + mNm;
     string min_nm  = "Min-" + mNm;
     string max_nm  = "Max-" + mNm;
+    string sum_nm  = "Sum-" + mNm;
     
     mNew = makeItrvSummaryMetric(mean_nm, m->id());
     makeItrvSummaryMetric(cv_nm, m->id());
     makeItrvSummaryMetric(min_nm, m->id());
     makeItrvSummaryMetric(max_nm, m->id());
+    makeItrvSummaryMetric(sum_nm, m->id());
     
     if (firstId == Mgr::npos) {
       firstId = mNew->id();
@@ -291,8 +291,7 @@ Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
     doDispPercent = false;
   }
   else if (mNm.find("Sum", 0) == 0) {
-    // TODO
-    //expr = new Metric::Plus(opands, mOpands.size());
+    expr = new Metric::SumItrv(0, srcId);
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);

@@ -57,12 +57,13 @@
 // inputs, a finaliation routine is also necessary.
 //
 // Currently supported expressions are
-//   Max    : max expression
-//   Min    : min expression
-//   Mean   : mean (arithmetic) expression
-//   StdDev : standard deviation expression
-//   CoefVar: coefficient of variance
-//   RStdDev: relative standard deviation
+//   MinItrv    : min expression
+//   MaxItrv    : max expression
+//   SumItrv    : sum expression
+//   MeanItrv   : mean (arithmetic) expression
+//   StdDevItrv : standard deviation expression
+//   CoefVarItrv: coefficient of variance
+//   RStdDevItrv: relative standard deviation
 //
 //***************************************************************************
 
@@ -262,6 +263,52 @@ protected:
 
 
 // ----------------------------------------------------------------------
+// MinItrv
+// ----------------------------------------------------------------------
+
+class MinItrv
+  : public AExprItrv
+{
+public:
+  MinItrv(uint dstId, uint srcId)
+    : AExprItrv(dstId, srcId)
+  { }
+
+  virtual ~MinItrv()
+  { }
+
+
+  virtual double
+  initialize(Metric::IData& mdata) const
+  { return (dstVar(mdata) = DBL_MAX); }
+
+  virtual double
+  initializeSrc(Metric::IData& mdata) const
+  { return (srcVar(mdata) = DBL_MAX); }
+
+  virtual double
+  update(Metric::IData& mdata) const
+  {
+    double d = dstVar(mdata), s = srcVar(mdata);
+    double z = std::min(d, s);
+    DIAG_MsgIf(0, "MinItrv: min("<< d << ", " << s << ") = " << z);
+    dstVar(mdata) = z;
+    return z;
+  }
+
+  virtual double
+  finalize(Metric::IData& mdata, uint numSrc) const
+  { return dstVar(mdata); }
+
+
+  virtual std::ostream&
+  dump_me(std::ostream& os = std::cout) const;
+
+private:
+};
+
+
+// ----------------------------------------------------------------------
 // MaxItrv
 // ----------------------------------------------------------------------
 
@@ -308,35 +355,35 @@ private:
 
 
 // ----------------------------------------------------------------------
-// MinItrv
+// SumItrv
 // ----------------------------------------------------------------------
 
-class MinItrv
+class SumItrv
   : public AExprItrv
 {
 public:
-  MinItrv(uint dstId, uint srcId)
+  SumItrv(uint dstId, uint srcId)
     : AExprItrv(dstId, srcId)
   { }
 
-  virtual ~MinItrv()
+  virtual ~SumItrv()
   { }
 
 
   virtual double
   initialize(Metric::IData& mdata) const
-  { return (dstVar(mdata) = DBL_MAX); }
+  { return (dstVar(mdata) = 0.0); }
 
   virtual double
   initializeSrc(Metric::IData& mdata) const
-  { return (srcVar(mdata) = DBL_MAX); }
+  { return (srcVar(mdata) = 0.0); }
 
   virtual double
   update(Metric::IData& mdata) const
   {
     double d = dstVar(mdata), s = srcVar(mdata);
-    double z = std::min(d, s);
-    DIAG_MsgIf(0, "MinItrv: min("<< d << ", " << s << ") = " << z);
+    double z = d + s;
+    DIAG_MsgIf(0, "SumItrv: +("<< d << ", " << s << ") = " << z);
     dstVar(mdata) = z;
     return z;
   }
