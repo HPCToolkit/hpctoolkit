@@ -175,7 +175,7 @@ Mgr::makeItrvSummaryMetrics(uint srcBegId, uint srcEndId)
     string mNm = m->name();
 
     string mean_nm = "Mean-" + mNm;
-    string cv_nm   = "StdDev-" + mNm;
+    string cv_nm   = "CoefVar-" + mNm;
     string min_nm  = "Min-" + mNm;
     string max_nm  = "Max-" + mNm;
     
@@ -273,12 +273,14 @@ Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
     needDst2Id = true;
   }
   else if (mNm.find("RStdDev", 0) == 0) {
-    //expr = new Metric::RStdDev(opands, mOpands.size());
-    //isPercent = true;
+    expr = new Metric::RStdDevItrv(0, 0, srcId);
+    isPercent = true;
+    needDst2Id = true;
   }
   else if (mNm.find("CoefVar", 0) == 0) {
-    //expr = new Metric::CoefVar(opands, mOpands.size());
-    //doDispPercent = false;
+    expr = new Metric::CoefVarItrv(0, 0, srcId);
+    doDispPercent = false;
+    needDst2Id = true;
   }
   else if (mNm.find("Min", 0) == 0) {
     expr = new Metric::MinItrv(0, srcId);
@@ -289,6 +291,7 @@ Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
     doDispPercent = false;
   }
   else if (mNm.find("Sum", 0) == 0) {
+    // TODO
     //expr = new Metric::Plus(opands, mOpands.size());
   }
   else {

@@ -154,35 +154,28 @@ StdDevItrv::dump_me(std::ostream& os) const
 }
 
 
-#if 0
 // ----------------------------------------------------------------------
-// class CoefVar
+// class CoefVarItrv
 // ----------------------------------------------------------------------
 
-std::ostream& 
-CoefVar::dump(std::ostream& os) const
+std::ostream&
+CoefVarItrv::dump_me(std::ostream& os) const
 {
-  os << "coefvar(";
-  dump_opands(os, m_opands, m_sz);
-  os << ")";
+  os << "coefvar()";
   return os;
 }
 
 
 // ----------------------------------------------------------------------
-// class RStdDev
+// class RStdDevItrv
 // ----------------------------------------------------------------------
 
-std::ostream& 
-RStdDev::dump(std::ostream& os) const
+std::ostream&
+RStdDevItrv::dump_me(std::ostream& os) const
 {
-  os << "r-stddev(";
-  dump_opands(os, m_opands, m_sz);
-  os << ")";
+  os << "r-stddev()";
   return os;
 }
-
-#endif
 
 //****************************************************************************
 
