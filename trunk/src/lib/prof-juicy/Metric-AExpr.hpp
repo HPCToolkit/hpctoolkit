@@ -59,8 +59,8 @@
 //   Minus  : subtraction expression               : binary
 //   Plus   : addition expression                  : n-ary
 //   Times  : multiplication expression            : n-ary
-//   Max    : max expression                       : n-ary
 //   Min    : min expression                       : n-ary
+//   Max    : max expression                       : n-ary
 //   Mean   : mean (arithmetic) expression         : n-ary
 //   StdDev : standard deviation expression        : n-ary
 //   CoefVar: coefficient of variance              : n-ary
@@ -183,7 +183,8 @@ protected:
 //   Represent a double constant
 // ----------------------------------------------------------------------
 
-class Const : public AExpr
+class Const
+  : public AExpr
 {
 public:
   Const(double c) 
@@ -210,7 +211,8 @@ private:
 //   Represent a negative value of an AExpr
 // ----------------------------------------------------------------------
 
-class Neg : public AExpr
+class Neg
+  : public AExpr
 {  
 public:
   // Assumes ownership of AExpr
@@ -236,7 +238,8 @@ private:
 //   Represent a variable
 // ----------------------------------------------------------------------
 
-class Var : public AExpr
+class Var
+  : public AExpr
 {
 public:
   Var(std::string name, int metricId)
@@ -264,7 +267,8 @@ private:
 //   Represent a power expression
 // ----------------------------------------------------------------------
 
-class Power : public AExpr
+class Power
+  : public AExpr
 {
 public:
   // Assumes ownership of AExpr
@@ -295,7 +299,8 @@ private:
 //   Represent the division
 // ----------------------------------------------------------------------
 
-class Divide : public AExpr
+class Divide
+  : public AExpr
 {
 public:
   // Assumes ownership of AExpr
@@ -327,7 +332,8 @@ private:
 //   Represent the subtraction
 // ----------------------------------------------------------------------
 
-class Minus : public AExpr
+class Minus
+  : public AExpr
 {
 public:
   // Assumes ownership of AExpr
@@ -358,7 +364,8 @@ private:
 //   Represent addition
 // ----------------------------------------------------------------------
 
-class Plus : public AExpr
+class Plus
+  : public AExpr
 {
 public:
   // Assumes ownership of AExpr
@@ -385,7 +392,8 @@ private:
 //   Represent multiplication
 // ----------------------------------------------------------------------
 
-class Times : public AExpr
+class Times
+  : public AExpr
 {
 public:
   // Assumes ownership of AExpr
@@ -408,36 +416,11 @@ private:
 
 
 // ----------------------------------------------------------------------
-// Max
-// ----------------------------------------------------------------------
-
-class Max : public AExpr
-{
-public:
-  // Assumes ownership of AExpr
-  Max(AExpr** oprnds, int numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
-  { }
-
-  ~Max();
-
-  virtual double
-  eval(const Metric::IData& mdata) const;
-
-  virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
-
-private:
-  AExpr** m_opands;
-  int m_sz;
-};
-
-
-// ----------------------------------------------------------------------
 // Min
 // ----------------------------------------------------------------------
 
-class Min : public AExpr
+class Min
+  : public AExpr
 {
 public:
   // Assumes ownership of AExpr
@@ -460,10 +443,38 @@ private:
 
 
 // ----------------------------------------------------------------------
+// Max
+// ----------------------------------------------------------------------
+
+class Max
+  : public AExpr
+{
+public:
+  // Assumes ownership of AExpr
+  Max(AExpr** oprnds, int numOprnds)
+    : m_opands(oprnds), m_sz(numOprnds) 
+  { }
+
+  ~Max();
+
+  virtual double
+  eval(const Metric::IData& mdata) const;
+
+  virtual std::ostream&
+  dump(std::ostream& os = std::cout) const;
+
+private:
+  AExpr** m_opands;
+  int m_sz;
+};
+
+
+// ----------------------------------------------------------------------
 // Mean
 // ----------------------------------------------------------------------
 
-class Mean : public AExpr
+class Mean
+  : public AExpr
 {
 public:
   // Assumes ownership of AExpr
@@ -489,7 +500,8 @@ private:
 // StdDev: standard deviation
 // ----------------------------------------------------------------------
 
-class StdDev : public AExpr
+class StdDev
+  : public AExpr
 {
 public:
   // Assumes ownership of AExpr
@@ -515,7 +527,8 @@ private:
 // CoefVar: relative standard deviation
 // ----------------------------------------------------------------------
 
-class CoefVar : public AExpr
+class CoefVar
+  : public AExpr
 {
 public:
   // Assumes ownership of AExpr
@@ -541,7 +554,8 @@ private:
 // RStdDev: relative standard deviation
 // ----------------------------------------------------------------------
 
-class RStdDev : public AExpr
+class RStdDev
+  : public AExpr
 {
 public:
   // Assumes ownership of AExpr
