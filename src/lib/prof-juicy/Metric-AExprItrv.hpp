@@ -102,6 +102,9 @@ class AExprItrv
   : public Unique // disable copying, for now
 {
 public:
+  static const double epsilon = 0.000001;
+
+public:
   AExprItrv(uint dstId, uint srcId)
     : m_dstId(dstId), m_dst2Id(Metric::IData::npos), m_srcId(srcId)
   { }
@@ -196,6 +199,40 @@ public:
   static bool
   isok(double x)
   { return !(c_isnan_d(x) || c_isinf_d(x)); }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
+  double
+  updateStdDev(Metric::IData& mdata) const
+  {
+    double d1 = dstVar(mdata), d2 = dst2Var(mdata), s = srcVar(mdata);
+    double z1 = d1 + s;       // running sum
+    double z2 = d2 + (s * s); // running sum of squares
+    dstVar(mdata)  = z1;
+    dst2Var(mdata) = z2;
+    return z1;
+  }
+
+  double
+  finalizeStdDev(Metric::IData& mdata, uint numSrc) const
+  {
+    double d1 = dstVar(mdata), d2 = dst2Var(mdata);
+    double sdev = d1;
+    if (numSrc > 0) {
+      double mean = d1 / numSrc;
+      double z1 = (mean * mean); // (mean)^2
+      double z2 = d2 / numSrc;   // (sum of squares)/N
+      sdev = sqrt(z2 - z1);      // stddev
+
+      dstVar(mdata) = sdev;
+      dst2Var(mdata) = mean;
+    }
+    return sdev;
+  }
+
 
   // ------------------------------------------------------------
   //
@@ -399,27 +436,61 @@ public:
 
   virtual double
   update(Metric::IData& mdata) const
+  { return updateStdDev(mdata); }
+
+  virtual double
+  finalize(Metric::IData& mdata, uint numSrc) const
+  { return finalizeStdDev(mdata, numSrc); }
+
+
+  virtual std::ostream&
+  dump_me(std::ostream& os = std::cout) const;
+
+private:
+};
+
+
+// ----------------------------------------------------------------------
+// CoefVarItrv: relative standard deviation
+// ----------------------------------------------------------------------
+
+class CoefVarItrv 
+  : public AExprItrv
+{
+public:
+  CoefVarItrv(uint dstId, uint dst2Id, uint srcId)
+    : AExprItrv(dstId, dst2Id, srcId)
+  { }
+
+  virtual ~CoefVarItrv()
+  { }
+
+
+  virtual double
+  initialize(Metric::IData& mdata) const
   {
-    double d1 = dstVar(mdata), d2 = dst2Var(mdata), s = srcVar(mdata);
-    double z1 = d1 + s;       // running sum
-    double z2 = d2 + (s * s); // running sum of squares
-    dstVar(mdata)  = z1;
-    dst2Var(mdata) = z2;
-    return z1;
+    dst2Var(mdata) = 0.0;
+    return (dstVar(mdata) = 0.0);
   }
+
+  virtual double
+  initializeSrc(Metric::IData& mdata) const
+  { return (srcVar(mdata) = 0.0); }
+
+  virtual double
+  update(Metric::IData& mdata) const
+  { return updateStdDev(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
   {
-    double d1 = dstVar(mdata), d2 = dst2Var(mdata);
-    double z = d1;
-    if (numSrc > 0) {
-      double mean = d1 / numSrc;
-      double z1 = (mean * mean); // (mean)^2
-      double z2 = d2 / numSrc;   // (sum of squares)/N
-      z = sqrt(z2 - z1);         // stddev
-      dstVar(mdata) = z;
+    double sdev = finalizeStdDev(mdata, numSrc);
+    double mean = dst2Var(mdata);
+    double z = 0.0;
+    if (mean > epsilon) {
+      z = sdev / mean;
     }
+    dstVar(mdata) = z;
     return z;
   }
 
@@ -431,58 +502,57 @@ private:
 };
 
 
-#if 0
 // ----------------------------------------------------------------------
-// CoefVar: relative standard deviation
+// RStdDevItrv: relative standard deviation
 // ----------------------------------------------------------------------
 
-class CoefVar : public AExprItrv
+class RStdDevItrv 
+  : public AExprItrv
 {
 public:
-  // Assumes ownership of AExprItrv
-  CoefVar(AExprItrv** oprnds, int numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
+  RStdDevItrv(uint dstId, uint dst2Id, uint srcId)
+    : AExprItrv(dstId, dst2Id, srcId)
   { }
 
-  ~CoefVar();
-
-  double
-  eval(const Metric::IData& mdata) const;
-
-  std::ostream&
-  dump(std::ostream& os = std::cout) const;
-
-private:
-  AExprItrv** m_opands;
-  int m_sz;
-};
-
-
-// ----------------------------------------------------------------------
-// RStdDev: relative standard deviation
-// ----------------------------------------------------------------------
-
-class RStdDev : public AExprItrv
-{
-public:
-  // Assumes ownership of AExprItrv
-  RStdDev(AExprItrv** oprnds, int numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
+  virtual ~RStdDevItrv()
   { }
 
-  ~RStdDev();
 
-  double
-  eval(const Metric::IData& mdata) const;
+  virtual double
+  initialize(Metric::IData& mdata) const
+  {
+    dst2Var(mdata) = 0.0;
+    return (dstVar(mdata) = 0.0);
+  }
 
-  std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  virtual double
+  initializeSrc(Metric::IData& mdata) const
+  { return (srcVar(mdata) = 0.0); }
+
+  virtual double
+  update(Metric::IData& mdata) const
+  { return updateStdDev(mdata); }
+
+  virtual double
+  finalize(Metric::IData& mdata, uint numSrc) const
+  {
+    double sdev = finalizeStdDev(mdata, numSrc);
+    double mean = dst2Var(mdata);
+    double z = 0.0;
+    if (mean > epsilon) {
+      z = (sdev / mean) * 100;
+    }
+    dstVar(mdata) = z;
+    return z;
+  }
+
+
+  virtual std::ostream&
+  dump_me(std::ostream& os = std::cout) const;
 
 private:
-  AExprItrv** m_opands;
-  int m_sz;
 };
-#endif
+
 
 //****************************************************************************
 

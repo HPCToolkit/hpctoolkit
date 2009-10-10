@@ -76,7 +76,6 @@ using std::endl;
 # define AEXPR_CHECK(x) 
 #endif
 
-static double epsilon = 0.000001;
 
 //****************************************************************************
 
