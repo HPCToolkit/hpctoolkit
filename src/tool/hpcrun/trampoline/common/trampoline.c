@@ -23,6 +23,7 @@
 #include <cct/cct.h>
 #include <messages/messages.h>
 #include <hpcrun/sample_event.h>
+#include <hpcrun/sample_source_retcnt.h>
 
 
 //******************************************************************************
@@ -118,12 +119,14 @@ void*
 hpcrun_trampoline_handler(void)
 {
   hpcrun_async_block();
-  EMSG("Trampoline fired!");
+  TMSG(TRAMP, "Trampoline fired!");
   thread_data_t* td = hpcrun_get_thread_data();
 
   // get the address where we need to return
   void* ra = td->tramp_retn_addr;
-  
+
+  hpcrun_retcnt_inc(td->tramp_cct_node, 1);
+
   cct_node_t* n = hpcrun_trampoline_advance();
   hpcrun_trampoline_insert(n);
 

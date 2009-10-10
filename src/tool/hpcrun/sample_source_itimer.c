@@ -327,7 +327,7 @@ sample_source_t _itimer_obj = {
   },
   .evset_idx = -1,
   .name = "itimer",
-  .cls  = HDWARE,
+  .cls  = SS_HARDWARE,
   .state = UNINIT
 };
 

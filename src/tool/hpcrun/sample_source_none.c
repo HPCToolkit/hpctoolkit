@@ -187,7 +187,7 @@ sample_source_t _none_obj = {
   },
   .evset_idx = -1,
   .name = "NONE",
-  .cls  = HDWARE,
+  .cls  = SS_HARDWARE,
   .state = UNINIT
 };
 

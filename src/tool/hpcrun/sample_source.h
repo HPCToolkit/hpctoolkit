@@ -71,9 +71,9 @@ typedef enum {
 } source_state_t;
 
 typedef enum {
-  HDWARE,    // use sample counters or other hardware.
-             // NOTE: *Currently limited to only 1 HDWARE class sample source*
-  SFWARE     // software-based, only return counts for the moment
+  SS_HARDWARE,    // use sample counters or other hardware.
+                  // NOTE: *Currently limited to only 1 hardware class sample source*
+  SS_SOFTWARE     // software-based, only return counts for the moment
 } ss_class_t;
 
 typedef struct sample_source_t {

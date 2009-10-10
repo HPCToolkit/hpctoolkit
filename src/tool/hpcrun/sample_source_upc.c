@@ -422,7 +422,7 @@ sample_source_t _upc_obj = {
   },
   .evset_idx = -1,
   .name = "upc",
-  .cls  = HDWARE,
+  .cls  = SS_HARDWARE,
   .state = UNINIT
 };
 

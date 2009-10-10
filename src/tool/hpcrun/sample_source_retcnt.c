@@ -74,6 +74,7 @@
 #include "sample_sources_registered.h"
 #include "simple_oo.h"
 #include "thread_data.h"
+#include <cct/cct.h>
 
 #include <messages/messages.h>
 
@@ -146,7 +147,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 }
 
 //
-// Event sets not truly relevant for this sample source
+// Event sets not truly relevant for this sample source,
 //
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
@@ -199,7 +200,7 @@ sample_source_t _retcnt_obj = {
   },
   .evset_idx = -1,
   .name = "RETCNT",
-  .cls  = SFWARE,
+  .cls  = SS_SOFTWARE,
   .state = UNINIT
 };
 
@@ -214,4 +215,26 @@ static void
 retcnt_obj_reg(void)
 {
   csprof_ss_register(&_retcnt_obj);
+}
+
+// ***************************************************************************
+//  Interface functions
+// ***************************************************************************
+
+// increment the return count
+//
+// N.B. : This function is necessary to avoid exposing the retcnt_obj.
+//        For the case of the retcnt sample source, the handler (the trampoline)
+//        is separate from the sample source code.
+//        Consequently, the interaction with metrics must be done procedurally
+
+void
+hpcrun_retcnt_inc(cct_node_t* node, int incr)
+{
+  int metric_id = hpcrun_event2metric(&_retcnt_obj, RETCNT_EVENT);
+
+  TMSG(TRAMP, "Increment retcnt (metric id = %d), by %d", metric_id, incr);
+  cct_metric_data_increment(metric_id,
+			    &node->metrics[metric_id],
+			    (cct_metric_data_t){.i = incr});
 }
