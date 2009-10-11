@@ -47,6 +47,7 @@
 #include <stdbool.h>
 
 #include "csprof-malloc.h"
+#include "hpcrun_stats.h"
 #include "x86-unwind-interval.h"
 #include "ui_tree.h"
 
@@ -91,32 +92,15 @@ const unwind_interval poison_ui = {
 
 
 
-long ui_cnt = 0;
-long suspicious_cnt = 0;
-
-
 /*************************************************************************************
  * interface operations 
  ************************************************************************************/
-
-long 
-ui_count(void)
-{
-  return ui_cnt;
-}
-
-long 
-suspicious_count(void)
-{
-  return suspicious_cnt;
-}
-
 
 void
 suspicious_interval(void *pc) 
 {
   TMSG(SUSPICIOUS_INTERVAL,"suspicious interval for pc = %p", pc);
-  (void) fetch_and_add(&suspicious_cnt,1);
+  hpcrun_stats_num_unwind_intervals_suspicious_inc();
 }
 
 unwind_interval *
@@ -129,7 +113,7 @@ new_ui(char *start,
 
 # include "mem_error_gen.h" // **** SPECIAL PURPOSE CODE TO INDUCE MEM FAILURE (conditionally included) ***
 
-  (void) fetch_and_add(&ui_cnt, 1);
+  hpcrun_stats_num_unwind_intervals_total_inc();
 
   u->common.start = start;
   u->common.end = 0;

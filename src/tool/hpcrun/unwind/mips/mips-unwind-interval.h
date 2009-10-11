@@ -174,8 +174,6 @@ void
 ui_dump(unw_interval_t* u);
 
 // FIXME: these should be part of the common interface
-long ui_count();
-long suspicious_count();
 void suspicious_interval(void *pc);
 void ui_link(unw_interval_t* current, unw_interval_t* next);
 

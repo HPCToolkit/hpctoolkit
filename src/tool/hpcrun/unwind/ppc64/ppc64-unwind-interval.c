@@ -95,15 +95,6 @@ sp_ty_string(sp_ty_t ty);
 
 
 //***************************************************************************
-// global variables
-//***************************************************************************
-
-long ui_cnt = 0;
-long suspicious_cnt = 0;
-
-
-
-//***************************************************************************
 // interface operations
 //***************************************************************************
 
@@ -144,7 +135,7 @@ new_ui(char *start_addr, sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
   u->sp_arg = sp_arg;
   u->ra_arg = ra_arg;
 
-  atomic_add(&ui_cnt, 1);
+  hpcrun_stats_num_unwind_intervals_total_inc();
 
   return u;
 }
@@ -166,25 +157,11 @@ ui_dump(unw_interval_t* u)
 
 //***************************************************************************
 
-long 
-ui_count(void)
-{
-  return ui_cnt;
-}
-
-
-long 
-suspicious_count(void)
-{
-  return suspicious_cnt;
-}
-
-
 void
 suspicious_interval(void *pc) 
 {
   EMSG("suspicous interval for pc = %p", pc);
-  atomic_add(&suspicious_cnt,1);
+  hpcrun_stats_num_unwind_intervals_suspicious_inc();
 }
 
 
