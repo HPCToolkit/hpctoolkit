@@ -119,9 +119,7 @@ extern "C" {
   void dump_ui_log(unwind_interval *u);
   void dump_ui_dbg(unwind_interval *u);
   void dump_ui_troll(unwind_interval *u);
-  long ui_count();
 
-  long suspicious_count();
   void suspicious_interval(void *pc);
 
 #ifdef __cplusplus

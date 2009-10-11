@@ -67,6 +67,7 @@
 #include <include/uint.h>
 #include <include/gcc-attr.h>
 
+#include "hpcrun_stats.h"
 #include "mips-unwind-cfg.h"
 #include "mips-unwind-interval.h"
 
@@ -85,13 +86,6 @@ mips_build_intervals(uint32_t* beg_insn, uint32_t* end_insn,
 static void*
 mips_find_proc(void* pc, void* module_beg);
 
-
-//***************************************************************************
-// global variables
-//***************************************************************************
-
-long ui_cnt = 0;
-long suspicious_cnt = 0;
 
 
 //***************************************************************************
@@ -173,7 +167,7 @@ new_ui(char* start_addr, framety_t ty, int flgs,
   u->fp_arg = fp_arg;
   u->ra_arg = ra_arg;
 
-  fetch_and_add(&ui_cnt, 1);
+  hpcrun_stats_num_unwind_intervals_total_inc();
 
   return u;
 }
@@ -196,25 +190,13 @@ ui_dump(unw_interval_t* u)
 
 //***************************************************************************
 
-long 
-ui_count(void)
-{
-  return ui_cnt;
-}
-
-
-long 
-suspicious_count(void)
-{
-  return suspicious_cnt;
-}
 
 
 void
 suspicious_interval(void *pc) 
 {
   EMSG("suspicous interval for pc = %p", pc);
-  HPC_IFNO_UNW_LITE(fetch_and_add(&suspicious_cnt,1);)
+  hpcrun_stats_num_unwind_intervals_suspicious_inc();
 }
 
 
