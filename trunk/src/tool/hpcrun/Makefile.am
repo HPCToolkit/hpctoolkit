@@ -102,8 +102,7 @@ MY_BASE_FILES =			\
 	utilities/first_func.c		\
 	\
 	main.h main.c			\
-	csprof_options.c		\
-	csproflib.c			\
+	hpcrun_options.c		\
 	data.c				\
 	disabled.c			\
 	env.c				\
@@ -161,7 +160,7 @@ MY_BASE_FILES =			\
 
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_dynamic.c	\
-	csprof_dlfns.c
+	hpcrun_dlfns.c
 
 MY_STATIC_FILES = 			\
 	fnbounds/fnbounds_static.c
