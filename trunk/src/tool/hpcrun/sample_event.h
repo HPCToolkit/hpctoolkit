@@ -94,12 +94,6 @@ hpcrun_async_is_blocked(void* pc)
 void hpcrun_disable_sampling(void);
 void hpcrun_drop_sample(void);
 
-long hpcrun_num_samples_total(void);
-void hpcrun_inc_samples_blocked_async(void);
-void hpcrun_inc_samples_filtered(void);
-
-void hpcrun_display_summary(void);
-
 cct_node_t*
 hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
 		       int skipInner, int isSync);

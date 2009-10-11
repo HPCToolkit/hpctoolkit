@@ -50,6 +50,7 @@
 #include "backtrace.h"
 #include "cct.h"
 #include "hpcrun_dlfns.h"
+#include "hpcrun_stats.h"
 #include "csprof-malloc.h"
 #include "fnbounds_interface.h"
 #include "main.h"
@@ -84,13 +85,6 @@ _hpcrun_sample_callpath(state_t *state, void *context,
 
 //***************************************************************************
 
-static long num_samples_total = 0;
-static long num_samples_attempted = 0;
-static long num_samples_blocked_async = 0;
-static long num_samples_blocked_dlopen = 0;
-static long num_samples_dropped = 0;
-static long num_samples_filtered = 0;
-
 static int _sampling_disabled = 0;
 
 
@@ -115,60 +109,12 @@ hpcrun_drop_sample(void)
   (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }
 
-long
-hpcrun_num_samples_total(void)
-{
-  return num_samples_total;
-}
-
-// The async blocks happen in the signal handlers, without getting to
-// hpcrun_sample_callpath, so also increment the total count here.
-void
-hpcrun_inc_samples_blocked_async(void)
-{
-  atomic_add_i64(&num_samples_total, 1L);
-  atomic_add_i64(&num_samples_blocked_async, 1L);
-}
-
-void
-hpcrun_inc_samples_filtered(void)
-{
-  atomic_add_i64(&num_samples_filtered, 1L);
-}
-
-void
-hpcrun_display_summary(void)
-{
-  long blocked = num_samples_blocked_async + num_samples_blocked_dlopen;
-  long errant = num_samples_dropped + num_samples_filtered;
-  long other = num_samples_dropped - segv_count;
-  long valid = num_samples_attempted - errant;
-
-  hpcrun_memory_summary();
-
-  AMSG("SAMPLE ANOMALIES: blocks: %ld (async: %ld, dlopen: %ld), "
-       "errors: %ld (filtered: %ld, segv: %d, other: %ld)",
-       blocked, num_samples_blocked_async, num_samples_blocked_dlopen,
-       errant, num_samples_filtered, segv_count, other);
-
-  AMSG("SUMMARY: samples: %ld (recorded: %ld, blocked: %ld, errant: %ld), "
-       "intervals: %ld (suspicious: %ld)%s",
-       num_samples_total, valid, blocked, errant,
-       ui_count(), suspicious_count(),
-       _sampling_disabled ? " SAMPLING WAS DISABLED" : "");
-  // logs, retentions || adj.: recorded, retained, written
-
-  if (ENABLED(UNW_VALID)) {
-    hpcrun_validation_summary();
-  }
-}
-
 
 cct_node_t *
 hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 		       int skipInner, int isSync)
 {
-  atomic_add_i64(&num_samples_total, 1L);
+  hpcrun_stats_num_samples_total();
 
   if (_sampling_disabled){
     TMSG(SAMPLE,"global suspension");
@@ -185,13 +131,13 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
   }
   else if (! hpcrun_dlopen_read_lock()) {
     TMSG(SAMPLE, "skipping sample for dlopen lock");
-    atomic_add_i64(&num_samples_blocked_dlopen, 1L);
+    hpcrun_stats_num_samples_blocked_dlopen_inc();
     return NULL;
   }
 #endif
 
   TMSG(SAMPLE, "attempting sample");
-  atomic_add_i64(&num_samples_attempted, 1L);
+  hpcrun_stats_num_samples_attempted_inc();
 
   thread_data_t *td = hpcrun_get_thread_data();
   sigjmp_buf_t *it = &(td->bad_unwind);
@@ -228,7 +174,9 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
     // ------------------------------------------------------------
     memset((void *)it->jb, '\0', sizeof(it->jb));
     dump_backtrace(state, td->unwind);
-    atomic_add_i64(&num_samples_dropped, 1L);
+
+    hpcrun_stats_num_samples_dropped();
+
     hpcrun_up_pmsg_count();
     if (TD_GET(splay_lock)) {
       hpcrun_release_splay_lock();

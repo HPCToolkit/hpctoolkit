@@ -76,14 +76,15 @@
 #include "disabled.h"
 #include "env.h"
 
-#include "hpcrun_dlfns.h"
 #include "disabled.h"
 #include "env.h"
 #include "epoch.h"
 #include "files.h"
 #include "fnbounds_interface.h"
+#include "hpcrun_dlfns.h"
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
+#include "hpcrun_stats.h"
 
 #include "metrics.h"
 #include "name.h"
@@ -285,7 +286,7 @@ hpcrun_fini_internal(void)
 
     hpcrun_write_profile_data(state);
 
-    hpcrun_display_summary();
+    hpcrun_stats_print_summary();
     
     messages_fini();
   }

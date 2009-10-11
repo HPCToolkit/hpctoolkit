@@ -72,6 +72,7 @@
  *****************************************************************************/
 
 #include "hpcrun_options.h"
+#include "hpcrun_stats.h"
 #include "metrics.h"
 #include "sample_event.h"
 #include "sample_source.h"
@@ -356,7 +357,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   // Must check for async block first and avoid any MSG if true.
   void* pc = context_pc(context);
   if (hpcrun_async_is_blocked(pc)) {
-    hpcrun_inc_samples_blocked_async();
+    hpcrun_stats_num_samples_blocked_async_inc();
   }
   else {
     TMSG(ITIMER_HANDLER,"Itimer sample event");

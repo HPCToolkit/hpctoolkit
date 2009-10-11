@@ -80,6 +80,7 @@
 //*********************************************************************
 
 #include "hpcrun_dlfns.h"
+#include "hpcrun_stats.h"
 #include "disabled.h"
 #include "dylib.h"
 #include "epoch.h"
@@ -582,7 +583,7 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
 	   		     "    This could affect attribution of %ld samples.\n"
 	   		     "    See 'CAUTION [OVERLAPPING MODULES]'.", 
 	   dso_info->name, dso_info->start_addr, dso_info->end_addr,
-	   module_name, start, end, hpcrun_num_samples_total());
+	   module_name, start, end, hpcrun_stats_num_samples_total());
 
       if (first_warning && ENABLED(WARN_MULTI_EPOCH)) { 
 	first_warning = 0;

@@ -73,6 +73,7 @@
  *****************************************************************************/
 
 #include "hpcrun_options.h"
+#include "hpcrun_stats.h"
 #include "metrics.h"
 #include "sample_source_common.h"
 #include "sample_sources_registered.h"
@@ -470,7 +471,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   // Must check for async block first and avoid any MSG if true.
   if (hpcrun_async_is_blocked(pc)) {
-    hpcrun_inc_samples_blocked_async();
+    hpcrun_stats_num_samples_blocked_async_inc();
     return;
   }
 
