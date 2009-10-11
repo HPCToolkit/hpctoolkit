@@ -109,7 +109,6 @@ MY_BASE_FILES =			\
 	epoch.c				\
 	files.c				\
 	handling_sample.c		\
-	last.c				\
 	metrics.c			\
 	name.c				\
 	sample_event.c			\
