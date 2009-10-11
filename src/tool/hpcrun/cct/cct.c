@@ -76,7 +76,6 @@
 
 #include "cct.h"
 #include <memory/csprof-malloc.h>
-#include <hpcrun/csproflib_private.h>
 #include <hpcrun/metrics.h>
 
 #include <hpcrun/hpcrun_return_codes.h>
