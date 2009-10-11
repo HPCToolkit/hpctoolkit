@@ -49,6 +49,7 @@
 #include <setjmp.h>
 #include <signal.h>
 
+#include "hpcrun_stats.h"
 #include "monitor.h"
 
 #include "main.h"
@@ -63,14 +64,13 @@
 
 /* catch SIGSEGVs */
 
-int segv_count = 0;
 extern int hpcrun_sample;
 
 int
 hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
 {
   if (hpcrun_is_handling_sample()) {
-    segv_count++;
+    hpcrun_stats_num_samples_segv_inc();
 
     thread_data_t *td = hpcrun_get_thread_data();
 

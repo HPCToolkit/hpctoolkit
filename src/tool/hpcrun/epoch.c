@@ -76,6 +76,7 @@
 #include "cct.h"
 #include "epoch.h"
 #include "fnbounds_interface.h"
+#include "hpcrun_stats.h"
 #include "sample_event.h"
 #include "state.h"
 
@@ -156,7 +157,7 @@ hpcrun_epoch_init(hpcrun_epoch_t* e)
   gettimeofday(&tv, NULL);
   TMSG(EPOCH, "new epoch created");
   TMSG(EPOCH, "new epoch time: sec = %ld, usec = %d, samples = %ld",
-       (long)tv.tv_sec, (int)tv.tv_usec, hpcrun_num_samples_total());
+       (long)tv.tv_sec, (int)tv.tv_usec, hpcrun_stats_num_samples_total());
 
   memset(e, 0, sizeof(*e));
 

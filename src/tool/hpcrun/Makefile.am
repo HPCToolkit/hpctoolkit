@@ -103,6 +103,7 @@ MY_BASE_FILES =			\
 	\
 	main.h main.c			\
 	hpcrun_options.c		\
+	hpcrun_stats.c			\
 	disabled.c			\
 	env.c				\
 	epoch.c				\

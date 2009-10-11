@@ -64,6 +64,7 @@
 
 #include <unwind/common/unwind.h>
 #include <unwind/common/backtrace.h>
+#include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/thread_data.h>
 
 #include <hpcrun/state.h>
@@ -275,7 +276,7 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
       for (int i = 0; i < num_frames; i++, fr++){
 	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p", i, fr->ip);
       }
-      hpcrun_inc_samples_filtered();
+      hpcrun_stats_num_samples_filtered_inc();
       return 0;
     }
   }
