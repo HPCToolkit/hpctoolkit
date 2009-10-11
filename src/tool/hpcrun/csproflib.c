@@ -89,7 +89,6 @@
 #include "backtrace.h"
 #include "cct.h"
 #include "csproflib.h"
-#include "csproflib_private.h"
 #include "disabled.h"
 #include "env.h"
 #include "files.h"
