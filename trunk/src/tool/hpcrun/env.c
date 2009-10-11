@@ -54,12 +54,6 @@ const char* CSPROF_OPT_OUT_PATH      = "CSPROF_OPT_OUT_PATH";
 const char* CSPROF_OPT_SAMPLE_PERIOD = "CSPROF_OPT_SAMPLE_PERIOD";
 const char* CSPROF_OPT_TRACE         = "CSPROF_OPT_TRACE";
 
-const char* CSPROF_OPT_VERBOSITY     = "CSPROF_OPT_VERBOSITY";
-const char* CSPROF_OPT_DEBUG         = "CSPROF_OPT_DEBUG";
-
-const char* CSPROF_OPT_MAX_METRICS   = "CSPROF_OPT_MAX_METRICS";
-
-const char* SWITCH_TO_PAPI           = "SWITCH_TO_PAPI";
 const char* PAPI_EVENT_LIST          = "PAPI_EVENT_LIST";
 
 const char* HPCRUN_EVENT_LIST        = "HPCRUN_EVENT_LIST";
