@@ -69,40 +69,95 @@
 //***************************************************************************
 
 #include "main.h"
-#include "csproflib.h"
-#include "csprof-malloc.h"
 
-#include <messages/debug-flag.h>
+#include "backtrace.h"
+#include "cct.h"
+#include "csprof-malloc.h"
+#include "disabled.h"
+#include "env.h"
+
 #include "hpcrun_dlfns.h"
 #include "disabled.h"
 #include "env.h"
 #include "epoch.h"
 #include "files.h"
 #include "fnbounds_interface.h"
+#include "hpcrun_options.h"
+#include "hpcrun_return_codes.h"
 
+#include "metrics.h"
 #include "name.h"
 #include "sample_event.h"
 #include "sample_source_none.h"
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
-
+#include "segv_handler.h"
+#include "splay-interval.h"
 #include "state.h"
-
 #include "thread_data.h"
 #include "thread_use.h"
 #include "trace.h"
+#include "unwind.h"
+#include "write_data.h"
 
-
+#include <include/uint.h>
 #include <lush/lush-pthread.h>
 #include <messages/messages.h>
+#include <messages/debug-flag.h>
 
+#include <lib/prof-lean/atomic.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/hpcio.h>
+
+#include <lush/lush.h>
+#include <lush/lush-backtrace.h>
+#include <lush/lush-pthread.h>
+#include <messages/messages.h>
 #include <monitor-exts/monitor_ext.h>
+
+
+
+//***************************************************************************
+// constants
+//***************************************************************************
+
+enum _local_const {
+  PROC_NAME_LEN = 2048
+};
+
+
+
+//***************************************************************************
+// global variables
+//***************************************************************************
+
+int lush_metrics = 0; // FIXME: global variable for now
+
+
 
 //***************************************************************************
 // local variables 
 //***************************************************************************
 
 static volatile int DEBUGGER_WAIT = 1;
+
+static hpcrun_options_t opts;
+static bool hpcrun_is_initialized_private = false;
+
+static sigset_t prof_sigset;
+
+
+
+//***************************************************************************
+// inline functions
+//***************************************************************************
+
+static inline bool
+hpcrun_is_initialized(void)
+{
+  return hpcrun_is_initialized_private;
+}
+
 
 
 //***************************************************************************
@@ -120,12 +175,191 @@ static volatile int DEBUGGER_WAIT = 1;
 //***************************************************************************
 
 //***************************************************************************
-// process control (via libmonitor)
+// internal operations 
 //***************************************************************************
 
-enum _local_const {
-  PROC_NAME_LEN = 2048
-};
+//------------------------------------
+// process level 
+//------------------------------------
+
+void
+hpcrun_init_internal(void)
+{
+  hpcrun_epoch_init(hpcrun_static_epoch());
+
+  hpcrun_thread_data_new();
+  hpcrun_thread_memory_init();
+  hpcrun_thread_data_init(0, NULL);
+
+  // WARNING: a perfmon bug requires us to fork off the fnbounds
+  // server before we call PAPI_init, which is done in argument
+  // processing below. Also, fnbounds_init must be done after the
+  // memory allocator is initialized.
+  fnbounds_init();
+  hpcrun_options__init(&opts);
+  hpcrun_options__getopts(&opts);
+
+  trace_init(); // this must go after thread initialization
+  trace_open();
+
+  // Initialize LUSH agents
+  if (opts.lush_agent_paths[0] != '\0') {
+    state_t* state = TD_GET(state);
+    TMSG(MALLOC," -init_internal-: lush allocation");
+    lush_agents = (lush_agent_pool_t*)hpcrun_malloc(sizeof(lush_agent_pool_t));
+    lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
+    EMSG("***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
+	 state, lush_agents);
+  }
+
+  lush_metrics = (lush_agents) ? 1 : 0;
+
+#ifdef LUSH_PTHREADS
+  if (!lush_agents) {
+    hpcrun_abort("LUSH Pthreads monitoring requires LUSH Pthreads agent!");
+  }
+#endif
+  lushPthr_processInit();
+
+
+  sigemptyset(&prof_sigset);
+  sigaddset(&prof_sigset,SIGPROF);
+
+  setup_segv();
+  unw_init();
+
+  // sample source setup
+  SAMPLE_SOURCES(init);
+  SAMPLE_SOURCES(process_event_list, lush_metrics);
+  SAMPLE_SOURCES(gen_event_set, lush_metrics);
+
+  // set up initial 'state' [FIXME: state ==> epoch] now that metrics are finalized
+  
+  TMSG(STATE,"process init setting up initial state/epoch");
+  hpcrun_state_init();
+
+  // start the sampling process
+
+  SAMPLE_SOURCES(start);
+
+  hpcrun_is_initialized_private = true;
+}
+
+
+void
+hpcrun_fini_internal(void)
+{
+  NMSG(FINI,"process");
+  int ret = monitor_real_sigprocmask(SIG_BLOCK,&prof_sigset,NULL);
+  if (ret){
+    EMSG("WARNING: process fini could not block SIGPROF, ret = %d",ret);
+  }
+
+  hpcrun_unthreaded_data();
+  state_t *state = TD_GET(state);
+
+  if (hpcrun_is_initialized()) {
+    hpcrun_is_initialized_private = false;
+
+    NMSG(FINI,"process attempting sample shutdown");
+
+    SAMPLE_SOURCES(stop);
+    SAMPLE_SOURCES(shutdown);
+
+    // shutdown LUSH agents
+    if (lush_agents) {
+      lush_agent_pool__fini(lush_agents);
+      lush_agents = NULL;
+    }
+
+    if (hpcrun_get_disabled()) return;
+
+    fnbounds_fini();
+
+    hpcrun_finalize_current_epoch();
+
+#if defined(HOST_SYSTEM_IBM_BLUEGENE)
+    EMSG("Backtrace for last sample event:\n");
+    dump_backtrace(state, state->unwind);
+#endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
+
+    hpcrun_write_profile_data(state);
+
+    hpcrun_display_summary();
+    
+    messages_fini();
+  }
+}
+
+
+//------------------------------------
+// thread level 
+//------------------------------------
+
+void
+hpcrun_init_thread_support(void)
+{
+  hpcrun_init_pthread_key();
+  hpcrun_set_thread0_data();
+  hpcrun_threaded_data();
+}
+
+
+void*
+hpcrun_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
+{
+  thread_data_t *td = hpcrun_allocate_thread_data();
+  td->suspend_sampling = 1; // begin: protect against spurious signals
+
+
+  hpcrun_set_thread_data(td);
+
+  hpcrun_thread_data_new();
+  hpcrun_thread_memory_init();
+  hpcrun_thread_data_init(id, thr_ctxt);
+
+  state_t* state = TD_GET(state);
+
+  // handle event sets for sample sources
+  SAMPLE_SOURCES(gen_event_set,lush_metrics);
+
+  // set up initial 'state' [FIXME: state ==> epoch] now that metrics are finalized
+  TMSG(STATE,"process init setting up initial state/epoch");
+  hpcrun_state_init();
+
+  // start the sample sources
+  SAMPLE_SOURCES(start);
+
+  int ret = monitor_real_pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
+  if (ret){
+    EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
+  }
+  return (void *)state;
+}
+
+
+void
+hpcrun_thread_fini(state_t *state)
+{
+  TMSG(FINI,"thread fini");
+  if (hpcrun_is_initialized()) {
+    TMSG(FINI,"thread finit stops sampling");
+    SAMPLE_SOURCES(stop);
+    lushPthr_thread_fini(&TD_GET(pthr_metrics));
+    hpcrun_finalize_current_epoch();
+#if defined(HOST_SYSTEM_IBM_BLUEGENE)
+    EMSG("Backtrace for last sample event:\n");
+    dump_backtrace(state, state->unwind);
+#endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
+    hpcrun_write_profile_data(state);
+  }
+}
+
+
+
+//***************************************************************************
+// process control (via libmonitor)
+//***************************************************************************
 
 void*
 monitor_init_process(int *argc, char **argv, void* data)

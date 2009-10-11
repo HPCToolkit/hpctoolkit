@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/csproflib.c $
+// $Id: csproflib.c 2593 2009-10-11 01:36:06Z johnmc $
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,7 +44,7 @@
 //***************************************************************************
 //
 // File: 
-//    $HeadURL$
+//    $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/csproflib.c $
 //
 // Purpose:
 //    Initialize, finalize csprof

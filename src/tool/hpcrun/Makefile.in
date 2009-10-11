@@ -166,9 +166,9 @@ libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 @OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
 libcsprof_la_DEPENDENCIES = $(HPC_LIBPROFLEAN)
 am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
-	csprof_options.c csproflib.c data.c disabled.c env.c epoch.c \
-	files.c handling_sample.c last.c metrics.c name.c \
-	sample_event.c sample_sources_all.c sample_source_common.c \
+	hpcrun_options.c data.c disabled.c env.c epoch.c files.c \
+	handling_sample.c last.c metrics.c name.c sample_event.c \
+	sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_source_none.c \
 	sample_source_retcnt.c sample_sources_registered.c \
 	segv_handler.c state.c system_server.c thread_data.c \
@@ -184,7 +184,7 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	messages/messages-async.c messages/fmt.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c fnbounds/fnbounds_dynamic.c csprof_dlfns.c \
+	utilities/unlink.c fnbounds/fnbounds_dynamic.c hpcrun_dlfns.c \
 	os/linux/dylib.c unwind/common/default_validation_summary.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
@@ -200,12 +200,12 @@ am__libcsprof_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/x86-family/x86-tramp.S sample_source_papi.c \
 	sample_source_upc.c utilities/last_func.c
 am__objects_7 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
-	libcsprof_la-csprof_options.lo libcsprof_la-csproflib.lo \
-	libcsprof_la-data.lo libcsprof_la-disabled.lo \
-	libcsprof_la-env.lo libcsprof_la-epoch.lo \
-	libcsprof_la-files.lo libcsprof_la-handling_sample.lo \
-	libcsprof_la-last.lo libcsprof_la-metrics.lo \
-	libcsprof_la-name.lo libcsprof_la-sample_event.lo \
+	libcsprof_la-hpcrun_options.lo libcsprof_la-data.lo \
+	libcsprof_la-disabled.lo libcsprof_la-env.lo \
+	libcsprof_la-epoch.lo libcsprof_la-files.lo \
+	libcsprof_la-handling_sample.lo libcsprof_la-last.lo \
+	libcsprof_la-metrics.lo libcsprof_la-name.lo \
+	libcsprof_la-sample_event.lo \
 	libcsprof_la-sample_sources_all.lo \
 	libcsprof_la-sample_source_common.lo \
 	libcsprof_la-sample_source_itimer.lo \
@@ -227,7 +227,7 @@ am__objects_7 = libcsprof_la-first_func.lo libcsprof_la-main.lo \
 	libcsprof_la-executable-path.lo libcsprof_la-tokenize.lo \
 	libcsprof_la-unlink.lo
 am__objects_8 = libcsprof_la-fnbounds_dynamic.lo \
-	libcsprof_la-csprof_dlfns.lo
+	libcsprof_la-hpcrun_dlfns.lo
 am__objects_9 = libcsprof_la-dylib.lo
 @HOST_OS_LINUX_TRUE@am__objects_10 = $(am__objects_9)
 am__objects_11 = libcsprof_la-default_validation_summary.lo \
@@ -263,9 +263,9 @@ libcsprof_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 pkglibPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(pkglib_PROGRAMS)
 am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
-	csprof_options.c csproflib.c data.c disabled.c env.c epoch.c \
-	files.c handling_sample.c last.c metrics.c name.c \
-	sample_event.c sample_sources_all.c sample_source_common.c \
+	hpcrun_options.c data.c disabled.c env.c epoch.c files.c \
+	handling_sample.c last.c metrics.c name.c sample_event.c \
+	sample_sources_all.c sample_source_common.c \
 	sample_source_itimer.c sample_source_none.c \
 	sample_source_retcnt.c sample_sources_registered.c \
 	segv_handler.c state.c system_server.c thread_data.c \
@@ -298,10 +298,10 @@ am__libcsprof_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_source_upc.c utilities/last_func.c
 am__objects_21 = libcsprof_o-first_func.$(OBJEXT) \
 	libcsprof_o-main.$(OBJEXT) \
-	libcsprof_o-csprof_options.$(OBJEXT) \
-	libcsprof_o-csproflib.$(OBJEXT) libcsprof_o-data.$(OBJEXT) \
-	libcsprof_o-disabled.$(OBJEXT) libcsprof_o-env.$(OBJEXT) \
-	libcsprof_o-epoch.$(OBJEXT) libcsprof_o-files.$(OBJEXT) \
+	libcsprof_o-hpcrun_options.$(OBJEXT) \
+	libcsprof_o-data.$(OBJEXT) libcsprof_o-disabled.$(OBJEXT) \
+	libcsprof_o-env.$(OBJEXT) libcsprof_o-epoch.$(OBJEXT) \
+	libcsprof_o-files.$(OBJEXT) \
 	libcsprof_o-handling_sample.$(OBJEXT) \
 	libcsprof_o-last.$(OBJEXT) libcsprof_o-metrics.$(OBJEXT) \
 	libcsprof_o-name.$(OBJEXT) libcsprof_o-sample_event.$(OBJEXT) \
@@ -622,8 +622,7 @@ MY_BASE_FILES = \
 	utilities/first_func.c		\
 	\
 	main.h main.c			\
-	csprof_options.c		\
-	csproflib.c			\
+	hpcrun_options.c		\
 	data.c				\
 	disabled.c			\
 	env.c				\
@@ -680,7 +679,7 @@ MY_BASE_FILES = \
 
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_dynamic.c	\
-	csprof_dlfns.c
+	hpcrun_dlfns.c
 
 MY_STATIC_FILES = \
 	fnbounds/fnbounds_static.c
@@ -971,9 +970,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libagent_tbb_la-lush-support-rt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-cct.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-csprof_dlfns.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-csprof_options.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-csproflib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-debug-flag.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-default_validation_summary.Plo@am__quote@
@@ -988,6 +984,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-fnbounds_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-fnbounds_dynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-handling_sample.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-hpcrun_dlfns.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-hpcrun_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-last.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-last_func.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-lush-backtrace.Plo@am__quote@
@@ -1039,8 +1037,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_la-x86-validate-retn-addr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-cct.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-csprof_options.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-csproflib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-debug-flag.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-default_validation_summary.Po@am__quote@
@@ -1054,6 +1050,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-fnbounds_common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-fnbounds_static.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-handling_sample.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-hpcrun_options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-last.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-last_func.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcsprof_o-lush-backtrace.Po@am__quote@
@@ -1244,19 +1241,12 @@ libcsprof_la-main.lo: main.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-main.lo `test -f 'main.c' || echo '$(srcdir)/'`main.c
 
-libcsprof_la-csprof_options.lo: csprof_options.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-csprof_options.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-csprof_options.Tpo -c -o libcsprof_la-csprof_options.lo `test -f 'csprof_options.c' || echo '$(srcdir)/'`csprof_options.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-csprof_options.Tpo $(DEPDIR)/libcsprof_la-csprof_options.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='csprof_options.c' object='libcsprof_la-csprof_options.lo' libtool=yes @AMDEPBACKSLASH@
+libcsprof_la-hpcrun_options.lo: hpcrun_options.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-hpcrun_options.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-hpcrun_options.Tpo -c -o libcsprof_la-hpcrun_options.lo `test -f 'hpcrun_options.c' || echo '$(srcdir)/'`hpcrun_options.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-hpcrun_options.Tpo $(DEPDIR)/libcsprof_la-hpcrun_options.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_options.c' object='libcsprof_la-hpcrun_options.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-csprof_options.lo `test -f 'csprof_options.c' || echo '$(srcdir)/'`csprof_options.c
-
-libcsprof_la-csproflib.lo: csproflib.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-csproflib.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-csproflib.Tpo -c -o libcsprof_la-csproflib.lo `test -f 'csproflib.c' || echo '$(srcdir)/'`csproflib.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-csproflib.Tpo $(DEPDIR)/libcsprof_la-csproflib.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='csproflib.c' object='libcsprof_la-csproflib.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-csproflib.lo `test -f 'csproflib.c' || echo '$(srcdir)/'`csproflib.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-hpcrun_options.lo `test -f 'hpcrun_options.c' || echo '$(srcdir)/'`hpcrun_options.c
 
 libcsprof_la-data.lo: data.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-data.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-data.Tpo -c -o libcsprof_la-data.lo `test -f 'data.c' || echo '$(srcdir)/'`data.c
@@ -1566,12 +1556,12 @@ libcsprof_la-fnbounds_dynamic.lo: fnbounds/fnbounds_dynamic.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-fnbounds_dynamic.lo `test -f 'fnbounds/fnbounds_dynamic.c' || echo '$(srcdir)/'`fnbounds/fnbounds_dynamic.c
 
-libcsprof_la-csprof_dlfns.lo: csprof_dlfns.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-csprof_dlfns.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-csprof_dlfns.Tpo -c -o libcsprof_la-csprof_dlfns.lo `test -f 'csprof_dlfns.c' || echo '$(srcdir)/'`csprof_dlfns.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-csprof_dlfns.Tpo $(DEPDIR)/libcsprof_la-csprof_dlfns.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='csprof_dlfns.c' object='libcsprof_la-csprof_dlfns.lo' libtool=yes @AMDEPBACKSLASH@
+libcsprof_la-hpcrun_dlfns.lo: hpcrun_dlfns.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-hpcrun_dlfns.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-hpcrun_dlfns.Tpo -c -o libcsprof_la-hpcrun_dlfns.lo `test -f 'hpcrun_dlfns.c' || echo '$(srcdir)/'`hpcrun_dlfns.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_la-hpcrun_dlfns.Tpo $(DEPDIR)/libcsprof_la-hpcrun_dlfns.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_dlfns.c' object='libcsprof_la-hpcrun_dlfns.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-csprof_dlfns.lo `test -f 'csprof_dlfns.c' || echo '$(srcdir)/'`csprof_dlfns.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -c -o libcsprof_la-hpcrun_dlfns.lo `test -f 'hpcrun_dlfns.c' || echo '$(srcdir)/'`hpcrun_dlfns.c
 
 libcsprof_la-dylib.lo: os/linux/dylib.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_la_CPPFLAGS) $(CPPFLAGS) $(libcsprof_la_CFLAGS) $(CFLAGS) -MT libcsprof_la-dylib.lo -MD -MP -MF $(DEPDIR)/libcsprof_la-dylib.Tpo -c -o libcsprof_la-dylib.lo `test -f 'os/linux/dylib.c' || echo '$(srcdir)/'`os/linux/dylib.c
@@ -1720,33 +1710,19 @@ libcsprof_o-main.obj: main.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-main.obj `if test -f 'main.c'; then $(CYGPATH_W) 'main.c'; else $(CYGPATH_W) '$(srcdir)/main.c'; fi`
 
-libcsprof_o-csprof_options.o: csprof_options.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-csprof_options.o -MD -MP -MF $(DEPDIR)/libcsprof_o-csprof_options.Tpo -c -o libcsprof_o-csprof_options.o `test -f 'csprof_options.c' || echo '$(srcdir)/'`csprof_options.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-csprof_options.Tpo $(DEPDIR)/libcsprof_o-csprof_options.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='csprof_options.c' object='libcsprof_o-csprof_options.o' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-hpcrun_options.o: hpcrun_options.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcrun_options.o -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcrun_options.Tpo -c -o libcsprof_o-hpcrun_options.o `test -f 'hpcrun_options.c' || echo '$(srcdir)/'`hpcrun_options.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcrun_options.Tpo $(DEPDIR)/libcsprof_o-hpcrun_options.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_options.c' object='libcsprof_o-hpcrun_options.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-csprof_options.o `test -f 'csprof_options.c' || echo '$(srcdir)/'`csprof_options.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcrun_options.o `test -f 'hpcrun_options.c' || echo '$(srcdir)/'`hpcrun_options.c
 
-libcsprof_o-csprof_options.obj: csprof_options.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-csprof_options.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-csprof_options.Tpo -c -o libcsprof_o-csprof_options.obj `if test -f 'csprof_options.c'; then $(CYGPATH_W) 'csprof_options.c'; else $(CYGPATH_W) '$(srcdir)/csprof_options.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-csprof_options.Tpo $(DEPDIR)/libcsprof_o-csprof_options.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='csprof_options.c' object='libcsprof_o-csprof_options.obj' libtool=no @AMDEPBACKSLASH@
+libcsprof_o-hpcrun_options.obj: hpcrun_options.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-hpcrun_options.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-hpcrun_options.Tpo -c -o libcsprof_o-hpcrun_options.obj `if test -f 'hpcrun_options.c'; then $(CYGPATH_W) 'hpcrun_options.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_options.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-hpcrun_options.Tpo $(DEPDIR)/libcsprof_o-hpcrun_options.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcrun_options.c' object='libcsprof_o-hpcrun_options.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-csprof_options.obj `if test -f 'csprof_options.c'; then $(CYGPATH_W) 'csprof_options.c'; else $(CYGPATH_W) '$(srcdir)/csprof_options.c'; fi`
-
-libcsprof_o-csproflib.o: csproflib.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-csproflib.o -MD -MP -MF $(DEPDIR)/libcsprof_o-csproflib.Tpo -c -o libcsprof_o-csproflib.o `test -f 'csproflib.c' || echo '$(srcdir)/'`csproflib.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-csproflib.Tpo $(DEPDIR)/libcsprof_o-csproflib.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='csproflib.c' object='libcsprof_o-csproflib.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-csproflib.o `test -f 'csproflib.c' || echo '$(srcdir)/'`csproflib.c
-
-libcsprof_o-csproflib.obj: csproflib.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-csproflib.obj -MD -MP -MF $(DEPDIR)/libcsprof_o-csproflib.Tpo -c -o libcsprof_o-csproflib.obj `if test -f 'csproflib.c'; then $(CYGPATH_W) 'csproflib.c'; else $(CYGPATH_W) '$(srcdir)/csproflib.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcsprof_o-csproflib.Tpo $(DEPDIR)/libcsprof_o-csproflib.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='csproflib.c' object='libcsprof_o-csproflib.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-csproflib.obj `if test -f 'csproflib.c'; then $(CYGPATH_W) 'csproflib.c'; else $(CYGPATH_W) '$(srcdir)/csproflib.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -c -o libcsprof_o-hpcrun_options.obj `if test -f 'hpcrun_options.c'; then $(CYGPATH_W) 'hpcrun_options.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_options.c'; fi`
 
 libcsprof_o-data.o: data.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libcsprof_o_CPPFLAGS) $(CPPFLAGS) $(libcsprof_o_CFLAGS) $(CFLAGS) -MT libcsprof_o-data.o -MD -MP -MF $(DEPDIR)/libcsprof_o-data.Tpo -c -o libcsprof_o-data.o `test -f 'data.c' || echo '$(srcdir)/'`data.c
