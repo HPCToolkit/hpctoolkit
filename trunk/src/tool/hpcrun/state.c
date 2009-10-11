@@ -49,7 +49,6 @@
 
 #include "env.h"
 #include "state.h"
-#include "csproflib_private.h"
 #include "epoch.h"
 #include "name.h"
 #include "thread_data.h"
