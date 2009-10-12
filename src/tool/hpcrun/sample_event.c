@@ -114,7 +114,7 @@ cct_node_t *
 hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 		       int skipInner, int isSync)
 {
-  hpcrun_stats_num_samples_total();
+  hpcrun_stats_num_samples_total_inc();
 
   if (_sampling_disabled){
     TMSG(SAMPLE,"global suspension");
