@@ -1,8 +1,0 @@
-#!/bin/csh
-setenv DB $1
-setenv OUTPUT hpctoolkit-`echo ${DB} | awk -F - '{print $2;}'`-tracedb
-mkdir ${OUTPUT}
-foreach f ( ${DB}/*.hpcrun )
-  hpcprof -o ${OUTPUT}/`basename $f .hpcrun` $f
-  cp `dirname $f`/`basename $f .hpcrun`.cst ${OUTPUT}/`basename $f .hpcrun`/trace.bin
-end

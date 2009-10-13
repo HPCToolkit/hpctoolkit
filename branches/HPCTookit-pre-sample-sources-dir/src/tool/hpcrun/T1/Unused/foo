@@ -1,5 +1,0 @@
-#!/bin/bash 
-#export MONITOR_DEBUG=1
-export LD_PRELOAD=./prof.so:../monitor/x86_64-Linux/libmonitor.so
-exec "$@"
-
