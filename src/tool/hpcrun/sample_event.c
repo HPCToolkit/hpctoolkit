@@ -85,20 +85,13 @@ _hpcrun_sample_callpath(state_t *state, void *context,
 
 //***************************************************************************
 
-static int _sampling_disabled = 0;
-
-
-int
-sampling_is_disabled(void)
-{
-  return _sampling_disabled;
-}
+bool _hpcrun_sampling_disabled = false;
 
 void
 hpcrun_disable_sampling(void)
 {
   TMSG(SPECIAL,"Sampling disabled");
-  _sampling_disabled = 1;
+  _hpcrun_sampling_disabled = true;
 }
 
 void
@@ -116,7 +109,7 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 {
   hpcrun_stats_num_samples_total_inc();
 
-  if (_sampling_disabled){
+  if (hpcrun_is_sampling_disabled()) {
     TMSG(SAMPLE,"global suspension");
     hpcrun_all_sources_stop();
     return NULL;

@@ -49,10 +49,11 @@
 
 #include <memory/hpcrun-malloc.h>
 #include <messages/messages.h>
+#include <memory/hpcrun-malloc.h>
+
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <unwind/common/validate_return_addr.h>
-
 
 
 //***************************************************************************
@@ -274,7 +275,7 @@ hpcrun_stats_print_summary(void)
        "intervals: %ld (suspicious: %ld)%s",
        num_samples_total, valid, blocked, errant,
        num_unwind_intervals_total,  num_unwind_intervals_suspicious,
-       sampling_is_disabled() ? " SAMPLING WAS DISABLED" : "");
+       hpcrun_is_sampling_disabled() ? " SAMPLING WAS DISABLED" : "");
   // logs, retentions || adj.: recorded, retained, written
 
   if (ENABLED(UNW_VALID)) {

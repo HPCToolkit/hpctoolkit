@@ -378,7 +378,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     hpcrun_sample_callpath(context, metric_id, metric_incr,
 			   0/*skipInner*/, 0/*isSync*/);
   }
-  if (sampling_is_disabled()) {
+  if (hpcrun_is_sampling_disabled()) {
     TMSG(SPECIAL, "No itimer restart, due to disabled sampling");
     return 0;
   }
