@@ -49,7 +49,6 @@
 
 #include <memory/hpcrun-malloc.h>
 #include <messages/messages.h>
-#include <memory/hpcrun-malloc.h>
 
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
