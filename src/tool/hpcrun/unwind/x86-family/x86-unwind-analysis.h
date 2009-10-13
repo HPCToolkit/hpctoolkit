@@ -46,7 +46,7 @@
 
 #include "xed-interface.h"
 #include "x86-unwind-interval.h"
-#include "csprof-malloc.h"
+#include <memory/hpcrun-malloc.h>
 
 extern void *x86_get_branch_target(void *ins,xed_decoded_inst_t *xptr);
 

@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample_source_upc.c $
+// $Id: sample_source_upc.c 2590 2009-10-10 23:46:44Z johnmc $
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -90,17 +90,18 @@
 #include <spi/kernel_interface.h>
 #undef INIT
 
-#include "monitor.h"
+#include <monitor.h>
 
-#include "hpcrun_options.h"
-#include "metrics.h"
-#include "sample_event.h"
-#include "sample_source.h"
-#include "sample_source_common.h"
-#include "sample_sources_registered.h"
 #include "simple_oo.h"
-#include "thread_data.h"
-#include "tokenize.h"
+#include "sample_source_obj.h"
+#include "common.h"
+
+#include <hpcrun/hpcrun_options.h>
+#include <hpcrun/metrics.h>
+#include <hpcrun/sample_event.h>
+#include <hpcrun/sample_sources_registered.h>
+#include <hpcrun/thread_data.h>
+#include <hpcrun/tokenize.h>
 
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>

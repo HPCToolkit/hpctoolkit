@@ -46,8 +46,8 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#include "csprof-malloc.h"
-#include "hpcrun_stats.h"
+#include <memory/hpcrun-malloc.h>
+#include <hpcrun/hpcrun_stats.h>
 #include "x86-unwind-interval.h"
 #include "ui_tree.h"
 

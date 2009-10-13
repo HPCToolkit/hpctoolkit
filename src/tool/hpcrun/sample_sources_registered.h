@@ -44,7 +44,7 @@
 #ifndef REGISTERED_SAMPLE_SOURCES_H
 #define REGISTERED_SAMPLE_SOURCES_H
 
-#include "sample_source.h"
+#include <sample-sources/sample_source_obj.h>
 #define MAX_POSSIBLE_SAMPLE_SOURCES 5
 
 void hpcrun_ss_register(sample_source_t *src);

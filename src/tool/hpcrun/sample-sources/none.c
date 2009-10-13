@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample_source_none.c $
+// $Id: sample_source_none.c 2590 2009-10-10 23:46:44Z johnmc $
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -69,15 +69,15 @@
  * local includes
  *****************************************************************************/
 
-#include "hpcrun_options.h"
-#include "disabled.h"
-#include "metrics.h"
-#include "sample_event.h"
-#include "sample_source.h"
-#include "sample_source_common.h"
-#include "sample_sources_registered.h"
+#include <hpcrun/hpcrun_options.h>
+#include <hpcrun/disabled.h>
+#include <hpcrun/metrics.h>
+#include <sample_event.h>
+#include "sample_source_obj.h"
+#include "common.h"
+#include <hpcrun/sample_sources_registered.h>
 #include "simple_oo.h"
-#include "thread_data.h"
+#include <hpcrun/thread_data.h>
 
 #include <messages/messages.h>
 

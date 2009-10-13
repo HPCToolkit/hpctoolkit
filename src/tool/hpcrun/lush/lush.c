@@ -78,7 +78,7 @@
 
 #include <unwind/common/unwind.h> // unw_step()
 
-#include <memory/csprof-malloc.h>
+#include <memory/hpcrun-malloc.h>
 
 
 //*************************** Forward Declarations **************************

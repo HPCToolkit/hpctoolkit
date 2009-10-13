@@ -47,7 +47,7 @@
 #include <unistd.h>
 
 #include "sample_sources_registered.h"
-#include "sample_source.h"
+#include <sample-sources/sample_source_obj.h>
 
 #include <messages/messages.h>
 
