@@ -45,13 +45,11 @@
 #define SAMPLE_EVENT_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "cct.h"
 #include "thread_data.h"
 #include <trampoline/common/trampoline.h>
-
-
-int sampling_is_disabled(void);
 
 
 //***************************************************************************
@@ -91,8 +89,20 @@ hpcrun_async_is_blocked(void* pc)
 
 //***************************************************************************
 
-void hpcrun_disable_sampling(void);
-void hpcrun_drop_sample(void);
+extern bool _hpcrun_sampling_disabled; // private!
+
+static inline bool
+hpcrun_is_sampling_disabled()
+{
+  return _hpcrun_sampling_disabled;
+}
+
+
+void
+hpcrun_disable_sampling();
+
+void
+hpcrun_drop_sample();
 
 cct_node_t*
 hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
