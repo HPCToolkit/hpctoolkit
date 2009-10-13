@@ -82,6 +82,8 @@ using std::string;
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 #include <lib/prof-juicy-x/PGMReader.hpp>
 
+#include <lib/prof-lean/hpcrun-metric.h>
+
 #include <lib/binutils/LM.hpp>
 
 #include <lib/xml/xml.hpp>
@@ -437,7 +439,7 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
        it.Current(); ++it) {
     Prof::Struct::ACodeNode* n_strct = it.current();
 
-    // Done: if we reach the natural base case or embedded proceedure
+    // Done: if we reach the natural base case or embedded procedure
     if (n_strct->isLeaf() || typeid(*n_strct) == typeid(Prof::Struct::Proc)) {
       continue;
     }
@@ -467,19 +469,25 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 // Normaling the CCT
 //***************************************************************************
 
-static void 
-coalesceStmts(Prof::CallPath::Profile& prof);
-
-static void 
+static void
 pruneByMetrics(Prof::CallPath::Profile& prof);
 
-void 
+static void
+coalesceStmts(Prof::CallPath::Profile& prof);
+
+static void
+makeReturnCountMetric(Prof::CallPath::Profile& prof);
+
+
+void
 Analysis::CallPath::normalize(Prof::CallPath::Profile& prof, 
 			      string lush_agent)
 {
   pruneByMetrics(prof);
 
   coalesceStmts(prof);
+
+  makeReturnCountMetric(prof);
 
   if (!lush_agent.empty()) {
     OverheadMetricFact* overheadMetricFact = NULL;
@@ -514,17 +522,17 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
 // computing inclusive values and pruning nodes whose metric values
 // are all zero.
 
-static void 
+static void
 pruneByMetrics(Prof::CCT::ANode* node);
 
-static void 
+static void
 pruneByMetrics(Prof::CallPath::Profile& prof)
 {
   pruneByMetrics(prof.cct()->root());
 }
 
 
-static void 
+static void
 pruneByMetrics(Prof::CCT::ANode* node)
 {
   using namespace Prof;
@@ -559,11 +567,11 @@ pruneByMetrics(Prof::CCT::ANode* node)
 
 //***************************************************************************
 
-static void 
+static void
 coalesceStmts(Prof::CCT::ANode* node);
 
 
-static void 
+static void
 coalesceStmts(Prof::CallPath::Profile& prof)
 {
   coalesceStmts(prof.cct()->root());
@@ -582,7 +590,7 @@ coalesceStmts(Prof::CallPath::Profile& prof)
 // NOTE: After static structure has been overlayed on the CCT, a
 // node's child statement nodes obey the non-overlapping principle of
 // a source code.
-static void 
+static void
 coalesceStmts(Prof::CCT::ANode* node)
 {
   typedef std::map<SrcFile::ln, Prof::CCT::Stmt*> LineToStmtMap;
@@ -622,6 +630,67 @@ coalesceStmts(Prof::CCT::ANode* node)
     else if (!n->isLeaf()) {
       // Recur
       coalesceStmts(n);
+    }
+  }
+}
+
+
+//***************************************************************************
+
+// makeReturnCountMetric: A return count refers to the number of times
+// a given CCT node is called by its parent context.  However, when
+// hpcrun records return counts, there is no structure (e.g. procedure
+// frames) in the CCT.  An an example, in the CCT fragment below, the
+// return count [3] at 0xc means that 0xc returned to 0xbeef 3 times.
+// Simlarly, 0xbeef returned to its caller 5 times.
+//
+//              |               |
+//       ip: 0xbeef [5]         |
+//       /      |      \        |
+//   0xa [1]  0xb [2]  0xc [3]  |
+//      |       |       |       |
+//
+// To be able to say procedure F is called by procedure G x times
+// within this context, it is necessary to aggregate these counts at
+// the newly added procedure frames (Struct::ProcFrm).
+
+static void
+makeReturnCountMetric(Prof::CallPath::Profile& prof)
+{
+  std::vector<uint> retCntId;
+
+  // -------------------------------------------------------
+  // find return count metrics, if any
+  // -------------------------------------------------------
+  const Prof::Metric::Mgr* metricMgr = prof.metricMgr();
+  for (uint i = 0; i < metricMgr->size(); ++i) {
+    const Prof::Metric::ADesc* m = metricMgr->metric(i);
+    if (m->nameBase().find(HPCRUN_METRIC_RetCnt) != string::npos) {
+      retCntId.push_back(m->id());
+    }
+  }
+
+  if (retCntId.empty()) {
+    return;
+  }
+
+  // -------------------------------------------------------
+  // propagate and aggregate return counts
+  // -------------------------------------------------------
+  Prof::CCT::ANodeIterator it(prof.cct()->root(), NULL/*filter*/,
+			      false/*leavesOnly*/, IteratorStack::PostOrder);
+  for (Prof::CCT::ANode* n = NULL; (n = it.current()); ++it) {
+    Prof::CCT::ANode* n_parent = n->parent();
+
+    bool isFrame = (typeid(*n) == typeid(Prof::CCT::ProcFrm)
+		    && !(static_cast<Prof::CCT::ProcFrm*>(n)->isAlien()));
+    if (!isFrame && n_parent) {
+      for (uint i = 0; i < retCntId.size(); ++i) {
+	// N.B. we can assume return count metric exists
+	uint mId = retCntId[i];
+	n_parent->demandMetric(mId) += n->demandMetric(mId);
+	n->metric(mId) = 0.0;
+      }
     }
   }
 }

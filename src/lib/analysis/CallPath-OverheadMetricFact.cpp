@@ -115,6 +115,7 @@ OverheadMetricFact::make(Prof::CallPath::Profile& prof)
 
   // ------------------------------------------------------------
   // Create space for metric values
+  //   (N.B.: could avoid this by using demandMetric below)
   // ------------------------------------------------------------
   uint n_new_metrics = metric_dst.size();
   for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
