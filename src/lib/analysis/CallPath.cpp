@@ -500,6 +500,65 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
 
 //***************************************************************************
 
+// pruneByMetrics: 
+// 
+// Background: This function name should be surprising since we have
+// not computed metrics for interior nodes yet.  
+//
+// Observe that the fully dynamic CCT is sparse in the sense that *every*
+// node must have some non-zero inclusive metric value.  This is true
+// because every leaf node represents a sample point.  However, when
+// static structure is added, the CCT may contain 'spurious' static
+// scopes.  Since such scopes will not have STATEMENT nodes as
+// children, we can prune them by removing empty scopes rather than
+// computing inclusive values and pruning nodes whose metric values
+// are all zero.
+
+static void 
+pruneByMetrics(Prof::CCT::ANode* node);
+
+static void 
+pruneByMetrics(Prof::CallPath::Profile& prof)
+{
+  pruneByMetrics(prof.cct()->root());
+}
+
+
+static void 
+pruneByMetrics(Prof::CCT::ANode* node)
+{
+  using namespace Prof;
+
+  if (!node) { return; }
+
+  for (CCT::ANodeChildIterator it(node); it.Current(); /* */) {
+    CCT::ANode* x = it.current();
+    it++; // advance iterator -- it is pointing at 'x'
+
+    // 1. Recursively do any trimming for this tree's children
+    pruneByMetrics(x);
+
+    // 2. Trim this node if necessary
+    bool isTy = (typeid(*x) == typeid(CCT::ProcFrm) || 
+		 typeid(*x) == typeid(CCT::Loop));
+    if (x->isLeaf() && isTy) {
+      x->unlink(); // unlink 'x' from tree
+      DIAG_DevMsgIf(0, "pruneByMetrics: " << hex << x << dec << " (sid: " << x->structureId() << ")");
+      delete x;
+    }
+    else {
+      // We are keeping the node -- set the static structure flag
+      Struct::ACodeNode* strct = x->structure();
+      if (strct) {
+	strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
+      }
+    }
+  }
+}
+
+
+//***************************************************************************
+
 static void 
 coalesceStmts(Prof::CCT::ANode* node);
 
@@ -568,65 +627,6 @@ coalesceStmts(Prof::CCT::ANode* node)
 }
 
 
-//***************************************************************************
-
-// pruneByMetrics: 
-// 
-// Background: This function name should be surprising since we have
-// not computed metrics for interior nodes yet.  
-//
-// Observe that the fully dynamic CCT is sparse in the sense that *every*
-// node must have some non-zero inclusive metric value.  This is true
-// because every leaf node represents a sample point.  However, when
-// static structure is added, the CCT may contain 'spurious' static
-// scopes.  Since such scopes will not have STATEMENT nodes as
-// children, we can prune them by removing empty scopes rather than
-// computing inclusive values and pruning nodes whose metric values
-// are all zero.
-
-static void 
-pruneByMetrics(Prof::CCT::ANode* node);
-
-static void 
-pruneByMetrics(Prof::CallPath::Profile& prof)
-{
-  pruneByMetrics(prof.cct()->root());
-}
-
-
-static void 
-pruneByMetrics(Prof::CCT::ANode* node)
-{
-  using namespace Prof;
-
-  if (!node) { return; }
-
-  for (CCT::ANodeChildIterator it(node); it.Current(); /* */) {
-    CCT::ANode* x = it.current();
-    it++; // advance iterator -- it is pointing at 'x'
-
-    // 1. Recursively do any trimming for this tree's children
-    pruneByMetrics(x);
-
-    // 2. Trim this node if necessary
-    bool isTy = (typeid(*x) == typeid(CCT::ProcFrm) || 
-		 typeid(*x) == typeid(CCT::Loop));
-    if (x->isLeaf() && isTy) {
-      x->unlink(); // unlink 'x' from tree
-      DIAG_DevMsgIf(0, "pruneByMetrics: " << hex << x << dec << " (sid: " << x->structureId() << ")");
-      delete x;
-    }
-    else {
-      // We are keeping the node -- set the static structure flag
-      Struct::ACodeNode* strct = x->structure();
-      if (strct) {
-	strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
-      }
-    }
-  }
-}
-
-
 //****************************************************************************
 // 
 //****************************************************************************
@@ -665,7 +665,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
 
   using namespace Prof;
 
-  int oFlags = CCT::Tree::OFlg_LeafMetricsOnly;
+  int oFlags = 0; // CCT::Tree::OFlg_LeafMetricsOnly;
   if (!prettyPrint) {
     oFlags |= CCT::Tree::OFlg_Compressed;
   }
