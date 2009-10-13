@@ -1,0 +1,39 @@
+
+<!-- $Id -->
+<!-- DTD for XHTML 1.0 extended by MathML -->
+<!-- David Carlisle -->
+
+<!-- XHTML -->
+<!ENTITY % xhtml 
+   PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   SYSTEM "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" >
+
+
+
+<!ENTITY % mathml SYSTEM "mathml.dtd">
+
+
+<!-- add MathML to HTML Content model -->
+<!ENTITY % misc "ins | del | script | noscript | math">
+
+
+<!-- load XHTML and MathML -->
+%xhtml;
+%mathml;
+
+<!-- minimalist OpenMath DTD -->
+
+<!ELEMENT OMA (OMA |OMS | OMV |OMI)* >
+<!ELEMENT OMS EMPTY >
+<!ELEMENT OMV EMPTY >
+<!ELEMENT OMI (#PCDATA) >
+<!ATTLIST OMS name CDATA #IMPLIED>
+<!ATTLIST OMS cd CDATA #IMPLIED>
+<!ATTLIST OMS xref CDATA #IMPLIED>
+<!ATTLIST OMV xref CDATA #IMPLIED>
+<!ATTLIST OMA xref CDATA #IMPLIED>
+<!ATTLIST OMA xmlns CDATA #IMPLIED>
+<!ATTLIST OMV name CDATA #IMPLIED>
+
+
+
