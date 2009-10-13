@@ -1,0 +1,23 @@
+f2.1.f90:
+
+/usr/local/pgi/7.0.3/linux86-64/7.0-3/bin/pgf901 f2.1.f90 -opt 1 -nohpf -nostatic -x 19 0x400000 -quad -x 59 4 -x 59 4 -x 15 2 -x 49 0x400004 -x 51 0x20 -x 57 0x4c -x 58 0x10000 -x 124 0x1000 -x 57 0xfb0000 -x 58 0x78031040 -x 48 4608 -x 49 0x100 -x 120 0x200 -stdinc /usr/local/pgi/7.0.3/linux86-64/7.0-3/include:/usr/local/include:/usr/lib64/gcc-lib/x86_64-suse-linux/3.3.3/include:/usr/lib64/gcc-lib/x86_64-suse-linux/3.3.3/include:/usr/include -def unix -def __unix -def __unix__ -def linux -def __linux -def __linux__ -def __NO_MATH_INLINES -def __x86_64__ -def __LONG_MAX__=9223372036854775807L -def '__SIZE_TYPE__=unsigned long int' -def '__PTRDIFF_TYPE__=long int' -def __THROW= -def __extension__= -def __amd64__ -def __SSE__ -def __MMX__ -def __SSE2__ -def __SSE3__ -freeform -vect 48 -output /tmp/pgf90rnweZc_YP7If.ilm
+  0 inform,   0 warnings,   0 severes, 0 fatal for msin
+  0 inform,   0 warnings,   0 severes, 0 fatal for mcos
+  0 inform,   0 warnings,   0 severes, 0 fatal for mlog
+  0 inform,   0 warnings,   0 severes, 0 fatal for foob
+  0 inform,   0 warnings,   0 severes, 0 fatal for f1
+PGF90/x86-64 Linux 7.0-3: compilation successful
+
+/usr/local/pgi/7.0.3/linux86-64/7.0-3/bin/pgf902 /tmp/pgf90rnweZc_YP7If.ilm -fn f2.1.f90 -opt 1 -x 51 0x20 -x 119 0xa10000 -x 122 0x40 -x 123 0x1000 -x 127 4 -x 127 16 -x 19 0x400000 -x 28 0x40000 -x 70 0x8000 -x 122 1 -quad -x 59 4 -x 59 4 -tp k8-64e -x 124 0x1400 -y 15 2 -x 57 0x3b0000 -x 58 0x48000000 -x 49 0x100 -x 120 0x200 -astype 0 -x 124 1 -cmdline '+pgf90 f2.1.f90 -v -Bstatic -o f2.1' -asm /tmp/pgf90znwelzoxSYty.s
+  0 inform,   0 warnings,   0 severes, 0 fatal for msin
+  0 inform,   0 warnings,   0 severes, 0 fatal for mcos
+  0 inform,   0 warnings,   0 severes, 0 fatal for mlog
+  0 inform,   0 warnings,   0 severes, 0 fatal for foob
+  0 inform,   0 warnings,   0 severes, 0 fatal for f1
+PGF90/x86-64 Linux 7.0-3: compilation successful
+
+/usr/bin/as /tmp/pgf90znwelzoxSYty.s -o f2.1.o
+
+/usr/bin/ld /usr/lib64/crt1.o /usr/lib64/crti.o /usr/local/pgi/7.0.3/linux86-64/7.0-3/lib/trace_init.o /usr/lib64/gcc-lib/x86_64-suse-linux/3.3.3/crtbegin.o /usr/local/pgi/7.0.3/linux86-64/7.0-3/lib/f90main.o -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/local/pgi/7.0.3/linux86-64/7.0-3/lib/pgi.ld -L/usr/local/pgi/7.0.3/linux86-64/7.0-3/lib -L/usr/lib64 -L/usr/lib64/gcc-lib/x86_64-suse-linux/3.3.3 -rpath /usr/local/pgi/7.0.3/linux86-64/7.0-3/lib -Bstatic f2.1.o -o f2.1 -lpgf90 -lpgf90_rpm1 -lpgf902 -lpgf90rtl -lpgftnrtl -lnspgc -lpgc -lrt -lpthread -lm -lgcc -lgcc_eh -lc -lgcc -lgcc_eh -lc /usr/lib64/gcc-lib/x86_64-suse-linux/3.3.3/crtend.o /usr/lib64/crtn.o
+Unlinking /tmp/pgf90rnweZc_YP7If.ilm
+Unlinking /tmp/pgf90znwelzoxSYty.s
