@@ -113,10 +113,10 @@ MY_BASE_FILES =			\
 	name.c				\
 	sample_event.c			\
 	sample_sources_all.c		\
-	sample_source_common.c		\
-	sample_source_itimer.c		\
-	sample_source_none.c            \
-        sample_source_retcnt.c          \
+        sample-sources/common.c         \
+	sample-sources/itimer.c		\
+	sample-sources/none.c           \
+        sample-sources/retcnt.c         \
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	state.c				\
@@ -195,9 +195,9 @@ MY_X86_FILES = \
 
 
 MY_PAPI_FILES = 			\
-	sample_source_papi.c
+	sample-sources/papi.c
 
-MY_UPC_FILES = sample_source_upc.c
+MY_UPC_FILES = sample-sources/upc.c
 
 MY_CPP_DEFINES =			\
 	-D_GNU_SOURCE			\

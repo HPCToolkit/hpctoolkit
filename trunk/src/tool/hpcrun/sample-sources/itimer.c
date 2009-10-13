@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample_source_itimer.c $
+// $Id: sample_source_itimer.c 2600 2009-10-11 22:22:41Z johnmc $
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -70,16 +70,17 @@
 /******************************************************************************
  * local includes
  *****************************************************************************/
+#include "sample_source_obj.h"
+#include "common.h"
 
-#include "hpcrun_options.h"
-#include "hpcrun_stats.h"
-#include "metrics.h"
-#include "sample_event.h"
-#include "sample_source.h"
-#include "sample_source_common.h"
-#include "sample_sources_registered.h"
-#include "simple_oo.h"
-#include "thread_data.h"
+#include <hpcrun/hpcrun_options.h>
+#include <hpcrun/hpcrun_stats.h>
+
+#include <hpcrun/metrics.h>
+#include <hpcrun/sample_event.h>
+#include <hpcrun/sample_sources_registered.h>
+#include "sample_source_obj.h"
+#include <hpcrun/thread_data.h>
 
 #include <lush/lush-backtrace.h>
 #include <messages/messages.h>
@@ -204,12 +205,12 @@ METHOD_FN(stop)
 static void
 METHOD_FN(shutdown)
 {
-  METHOD_CALL(self,stop); // make sure stop has been called
+  METHOD_CALL(self, stop); // make sure stop has been called
   self->state = UNINIT;
 }
 
 static int
-METHOD_FN(supports_event,const char *ev_str)
+METHOD_FN(supports_event, const char *ev_str)
 {
   return (strstr(ev_str,"WALLCLOCK") != NULL);
 }
@@ -218,7 +219,7 @@ METHOD_FN(supports_event,const char *ev_str)
 #define WALLCLOCK 0
 
 static void
-METHOD_FN(process_event_list,int lush_metrics)
+METHOD_FN(process_event_list, int lush_metrics)
 {
   long period = 5000L;
 
@@ -279,7 +280,7 @@ METHOD_FN(process_event_list,int lush_metrics)
 // It has only 1 event.
 //
 static void
-METHOD_FN(gen_event_set,int lush_metrics)
+METHOD_FN(gen_event_set, int lush_metrics)
 {
   monitor_sigaction(CSPROF_PROFILE_SIGNAL, &itimer_signal_handler, 0, NULL);
 }
@@ -378,7 +379,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 			   0/*skipInner*/, 0/*isSync*/);
   }
   if (sampling_is_disabled()) {
-    TMSG(SPECIAL,"No itimer restart, due to disabled sampling");
+    TMSG(SPECIAL, "No itimer restart, due to disabled sampling");
     return 0;
   }
 

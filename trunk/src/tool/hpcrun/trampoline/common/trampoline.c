@@ -23,7 +23,7 @@
 #include <cct/cct.h>
 #include <messages/messages.h>
 #include <hpcrun/sample_event.h>
-#include <hpcrun/sample_source_retcnt.h>
+#include <sample-sources/retcnt.h>
 
 
 //******************************************************************************

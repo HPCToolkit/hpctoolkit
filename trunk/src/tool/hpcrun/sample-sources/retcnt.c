@@ -66,14 +66,15 @@
  * local includes
  *****************************************************************************/
 
-#include "hpcrun_options.h"
-#include "metrics.h"
-#include "sample_event.h"
-#include "sample_source.h"
-#include "sample_source_common.h"
-#include "sample_sources_registered.h"
 #include "simple_oo.h"
-#include "thread_data.h"
+#include "sample_source_obj.h"
+#include "common.h"
+
+#include <hpcrun/hpcrun_options.h>
+#include <hpcrun/metrics.h>
+#include <hpcrun/sample_event.h>
+#include <hpcrun/sample_sources_registered.h>
+#include <hpcrun/thread_data.h>
 #include <cct/cct.h>
 
 #include <messages/messages.h>

@@ -45,22 +45,30 @@
 // The sample sources data structure
 //
 
+//*******************************************************************
+// System includes
+//*******************************************************************
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 
-#include "simple_oo.h"
-#include "sample_source.h"
-#include "sample_source_common.h"
+//*******************************************************************
+// Local Includes
+//*******************************************************************
+
 #include "sample_sources_all.h"
 #include "sample_sources_registered.h"
-#include "tokenize.h"
 
+#include <sample-sources/simple_oo.h>
+#include <sample-sources/sample_source_obj.h>
+#include <sample-sources/common.h>
+#include <utilities/tokenize.h>
 #include <messages/messages.h>
 
-//
-// FUNCTION DEFINING MACROS
-//
+//*******************************************************************
+// Function Defining Macros
+//*******************************************************************
 
 #define _AS0(n) \
 void                                                            \

@@ -45,7 +45,7 @@
 #define CSPROF_OPTIONS_H
 #include <limits.h>
 
-#include "sample_source.h"
+#include <sample-sources/sample_source_obj.h>
 #include "event_info.h"
 
 #define CSPROF_PATH_SZ (PATH_MAX+1) /* path size */

@@ -45,10 +45,13 @@
 //***************************************************************************
 // local include files
 //***************************************************************************
+#include "sample_event.h"
 
+#include <memory/hpcrun-malloc.h>
 #include <messages/messages.h>
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <unwind/common/validate_return_addr.h>
 
 
 

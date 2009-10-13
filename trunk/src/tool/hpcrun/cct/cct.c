@@ -75,7 +75,7 @@
 //*************************** User Include Files ****************************
 
 #include "cct.h"
-#include <memory/csprof-malloc.h>
+#include <memory/hpcrun-malloc.h>
 #include <hpcrun/metrics.h>
 
 #include <hpcrun/hpcrun_return_codes.h>

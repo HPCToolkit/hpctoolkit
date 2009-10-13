@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/memory/csprof-malloc.h $
+// $Id: csprof-malloc.h 2590 2009-10-10 23:46:44Z johnmc $
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -41,24 +41,61 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
+//***************************************************************************
 //
-// RETCNT sample source simple oo interface
+// File:
+//    csprof-malloc.h
 //
+// Purpose:
+//    An interface to and implementation of privately managed dynamic
+//    memory. This interface enables the profiler to allocate storage  
+//    when recording a profile sample inside malloc.
 //
+//***************************************************************************
 
-#ifndef sample_source_retcnt_h
-#define sample_source_retcnt_h
+#ifndef hpcrun_malloc_h
+#define hpcrun_malloc_h
 
-/******************************************************************************
- * local includes 
- *****************************************************************************/
+#include "valgrind.h"
 
-#include <cct/cct.h>
+//************************* System Include Files ****************************
 
-/******************************************************************************
- * interface operations
- *****************************************************************************/
+#include <stddef.h>
 
-void hpcrun_retcnt_inc(cct_node_t* node, int incr);
+//*************************** User Include Files ****************************
 
-#endif // sample_source_retcnt_h
+//*************************** Forward Declarations **************************
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+#if ! defined(VALGRIND) || defined(_IN_MEM_C)
+
+//---------------------------------------------------------------------------
+// Function: hpcrun_malloc 
+//
+// Purpose: return a pointer to a block of memory of the *exact* size 
+//      (in bytes) requested.  If there is insufficient memory, an attempt 
+//      will be made to allocate more.  If this is not possible, an error 
+//      is printed and the program is terminated.
+// 
+// NOTE: This memory cannot be freed! 
+//---------------------------------------------------------------------------
+void* hpcrun_malloc(size_t size);
+void* hpcrun_malloc_freeable(size_t size);
+
+#else
+#define hpcrun_malloc malloc
+#define hpcrun_malloc_freeable malloc
+
+#endif // VALGRIND
+
+void hpcrun_reclaim_freeable_mem(void);
+void hpcrun_memory_summary(void);
+
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
+
+#endif // CSPROF_MALLOC_H

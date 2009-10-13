@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample_source_common.h $
+// $Id: sample_source_common.h 2590 2009-10-10 23:46:44Z johnmc $
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -41,61 +41,27 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//    csprof-malloc.h
-//
-// Purpose:
-//    An interface to and implementation of privately managed dynamic
-//    memory. This interface enables the profiler to allocate storage  
-//    when recording a profile sample inside malloc.
-//
-//***************************************************************************
+#ifndef COMMON_SAMPLE_SOURCE_H
+#define COMMON_SAMPLE_SOURCE_H
 
-#ifndef hpcrun_malloc_h
-#define hpcrun_malloc_h
+#include "sample_source_obj.h"
 
-#include "valgrind.h"
+void  METHOD_FN(hpcrun_ss_add_event, const char* ev);
+void  METHOD_FN(hpcrun_ss_store_event, int event_id, long thresh);
+void  METHOD_FN(hpcrun_ss_store_metric_id, int event_id, int metric_id);
+char* METHOD_FN(hpcrun_ss_get_event_str);
+int   METHOD_FN(hpcrun_ss_started);
+void  METHOD_FN(hpcrun_ss_start);
 
-//************************* System Include Files ****************************
+// Interface (NON method) functions
 
-#include <stddef.h>
+int hpcrun_event2metric(sample_source_t* ss, int event_idx);
 
-//*************************** User Include Files ****************************
+void hpcrun_ssfail_none(void);
+void hpcrun_ssfail_unknown(char *event);
+void hpcrun_ssfail_unsupported(char *source, char *event);
+void hpcrun_ssfail_derived(char *source, char *event);
+void hpcrun_ssfail_conflict(char *source, char *event);
+void hpcrun_ssfail_start(char *source);
 
-//*************************** Forward Declarations **************************
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-#if ! defined(VALGRIND) || defined(_IN_MEM_C)
-
-//---------------------------------------------------------------------------
-// Function: hpcrun_malloc 
-//
-// Purpose: return a pointer to a block of memory of the *exact* size 
-//      (in bytes) requested.  If there is insufficient memory, an attempt 
-//      will be made to allocate more.  If this is not possible, an error 
-//      is printed and the program is terminated.
-// 
-// NOTE: This memory cannot be freed! 
-//---------------------------------------------------------------------------
-void* hpcrun_malloc(size_t size);
-void* hpcrun_malloc_freeable(size_t size);
-
-#else
-#define hpcrun_malloc malloc
-#define hpcrun_malloc_freeable malloc
-
-#endif // VALGRIND
-
-void hpcrun_reclaim_freeable_mem(void);
-void hpcrun_memory_summary(void);
-
-#if defined(__cplusplus)
-} /* extern "C" */
-#endif
-
-#endif // CSPROF_MALLOC_H
+#endif // COMMON_SAMPLE_SOURCE_H

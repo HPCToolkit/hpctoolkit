@@ -62,7 +62,7 @@
 
 // no redefinition of hpcrun_malloc and friends inside mem.c
 #define _IN_MEM_C 1
-#  include "csprof-malloc.h"
+#  include "hpcrun-malloc.h"
 #undef _IN_MEM_C
 
 #include "env.h"

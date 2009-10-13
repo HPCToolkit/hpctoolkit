@@ -70,11 +70,9 @@
 
 #include "main.h"
 
-#include "backtrace.h"
-#include "cct.h"
-#include "csprof-malloc.h"
-#include "disabled.h"
-#include "env.h"
+#include <unwind/common/backtrace.h>
+#include <cct/cct.h>
+#include <memory/hpcrun-malloc.h>
 
 #include "disabled.h"
 #include "env.h"
@@ -89,16 +87,16 @@
 #include "metrics.h"
 #include "name.h"
 #include "sample_event.h"
-#include "sample_source_none.h"
+#include <sample-sources/none.h>
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 #include "segv_handler.h"
-#include "splay-interval.h"
+#include <unwind/common/splay-interval.h>
 #include "state.h"
 #include "thread_data.h"
 #include "thread_use.h"
 #include "trace.h"
-#include "unwind.h"
+#include <unwind/common/unwind.h>
 #include "write_data.h"
 
 #include <include/uint.h>

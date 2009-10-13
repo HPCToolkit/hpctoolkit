@@ -54,7 +54,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "csprof-malloc.h"
+#include <memory/hpcrun-malloc.h>
 #include "fnbounds_interface.h"
 #include "splay.h"
 #include "splay-interval.h"

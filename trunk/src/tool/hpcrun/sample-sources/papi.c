@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample_source_papi.c $
+// $Id: sample_source_papi.c 2600 2009-10-11 22:22:41Z johnmc $
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -65,28 +65,26 @@
  * libmonitor
  *****************************************************************************/
 
-#include "monitor.h"
+#include <monitor.h>
 
 
 /******************************************************************************
  * local includes
  *****************************************************************************/
 
-#include "hpcrun_options.h"
-#include "hpcrun_stats.h"
-#include "metrics.h"
-#include "sample_source_common.h"
-#include "sample_sources_registered.h"
-#include "sample_event.h"
-#include "sample_source.h"
 #include "simple_oo.h"
-#include "thread_data.h"
-#include "tokenize.h"
+#include "sample_source_obj.h"
+#include "common.h"
 
+#include <hpcrun/hpcrun_options.h>
+#include <hpcrun/hpcrun_stats.h>
+#include <hpcrun/metrics.h>
+#include <hpcrun/sample_sources_registered.h>
+#include <hpcrun/sample_event.h>
+#include <hpcrun/thread_data.h>
+#include <utilities/tokenize.h>
 #include <messages/messages.h>
-
 #include <lush/lush-backtrace.h>
-
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 
@@ -179,7 +177,7 @@ METHOD_FN(stop)
 static void
 METHOD_FN(shutdown)
 {
-  METHOD_CALL(self,stop); // make sure stop has been called
+  METHOD_CALL(self, stop); // make sure stop has been called
   PAPI_shutdown();
 
   self->state = UNINIT;
