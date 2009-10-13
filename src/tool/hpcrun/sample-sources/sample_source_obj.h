@@ -101,7 +101,7 @@ typedef struct sample_source_t {
   // data
   evlist_t       evl;       // event list
   int            evset_idx; // index of sample source
-  char*          name;      // text name of sample source
+  const char*    name;      // text name of sample source
   source_state_t state;     // state of sample source: limited to UNINIT or INIT
   ss_class_t     cls;       // kind of sample source: see ss_class_t typedef at top of file
   

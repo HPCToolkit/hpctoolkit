@@ -41,51 +41,48 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef METRICS_H
-#define METRICS_H
+//***************************************************************************
+//
+// File:
+//   $HeadURL$
+//
+// Purpose:
+//   hpcrun metrics.
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
-#include <sys/types.h>
+#ifndef prof_lean_hpcrun_metric_h
+#define prof_lean_hpcrun_metric_h
+
+//************************* System Include Files ****************************
+
 #include <stdbool.h>
 
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
+//*************************** User Include Files ****************************
 
-// tallent: I have moved flags into hpcfile_csprof.h.  The flags don't
-// really belong there but:
-// 1) metrics.c uses hpcfile_hpcrun_data_t to implement metrics
-//    info, which already confuses boundaries
-// 2) metric info needs to exist in a library so csprof (hpcrun),
-//    xcsprof (hpcprof) and hpcfile can use it.  hpcfile at least
-//    satisfies this.
+//*************************** Forward Declarations **************************
 
-#include <stdbool.h>
-#include <stdlib.h>
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
 
-bool hpcrun_metrics_finalized(void);
+//***************************************************************************
+// 
+//***************************************************************************
 
-void hpcrun_pre_allocate_metrics(size_t num);
+// N.B. use a macro rather than a 'const char*' because the latter is
+// treated as a constant variable and not an actual constant.
+#define /*const char**/ HPCRUN_METRIC_RetCnt "RETCNT"
 
-int hpcrun_get_num_metrics(void);
+//***************************************************************************
 
-metric_desc_t* hpcrun_id2metric(int id);
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
 
-metric_list_t* hpcrun_get_metric_data(void);
+#endif /* prof_lean_hpcrun_metric_h */
 
-metric_desc_p_tbl_t* hpcrun_get_metric_tbl(void);
-
-int hpcrun_new_metric(void);
-
-void
-hpcrun_set_metric_info_and_period(int metric_id, const char* name,
-				  hpcrun_metricFlags_t flags, size_t period);
-
-void
-hpcrun_set_metric_info(int metric_id, const char* name,
-		       hpcrun_metricFlags_t flags);
-
-#endif // METRICS_H

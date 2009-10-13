@@ -68,6 +68,8 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
+	hpcrun-metric.h \
+	\
 	hpcrun-fmt.h hpcrun-fmt.c \
 	hpcrunflat-fmt.h \
 	\
