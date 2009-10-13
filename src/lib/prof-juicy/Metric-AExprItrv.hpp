@@ -51,10 +51,10 @@
 // Since all sources are *not* known in advance, it is necessary to
 // use an 'accumulator' that is iteratively updated and serves as both
 // an input and output on each update.  This implies that is is
-// necesary, in general, to have an initialization routine so the
+// necessary, in general, to have an initialization routine so the
 // accumulator is correctly initialized before the first update.
 // Additionally, since some metrics rely on the total number of
-// inputs, a finaliation routine is also necessary.
+// inputs, a finalization routine is also necessary.
 //
 // Currently supported expressions are
 //   MinItrv    : min expression
