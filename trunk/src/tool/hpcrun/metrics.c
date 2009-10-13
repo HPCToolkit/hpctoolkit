@@ -172,7 +172,7 @@ hpcrun_new_metric(void)
 }
 
 void
-hpcrun_set_metric_info_and_period(int metric_id, char *name,
+hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				  hpcrun_metricFlags_t flags, size_t period)
 {
   if (has_set_max_metrics) {
@@ -195,14 +195,15 @@ hpcrun_set_metric_info_and_period(int metric_id, char *name,
     EMSG("Must supply a name for metric");
     monitor_real_abort();
   }
-  metric->name = name;
-  metric->description = name; // TODO
+  metric->name = (char*)name;
+  metric->description = (char*)name; // TODO
   metric->period = period;
   metric->flags = flags;
 }
 
 void
-hpcrun_set_metric_info(int metric_id, char *name, hpcrun_metricFlags_t flags)
+hpcrun_set_metric_info(int metric_id, const char* name,
+		       hpcrun_metricFlags_t flags)
 {
   hpcrun_set_metric_info_and_period(metric_id, name, flags, 1);
 }

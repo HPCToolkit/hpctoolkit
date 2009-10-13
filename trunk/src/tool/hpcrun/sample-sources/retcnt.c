@@ -79,6 +79,11 @@
 
 #include <messages/messages.h>
 
+#include <lib/prof-lean/hpcrun-metric.h>
+
+
+//***************************************************************************
+
 // ******** Local Constants ****************
 
 //
@@ -104,7 +109,7 @@ METHOD_FN(init)
 static void
 METHOD_FN(_start)
 {
-  TMSG(RETCNT_CTL,"starting RETCNT");
+  TMSG(RETCNT_CTL,"starting " HPCRUN_METRIC_RetCnt);
 
   TD_GET(ss_state)[self->evset_idx] = START;
 }
@@ -112,7 +117,7 @@ METHOD_FN(_start)
 static void
 METHOD_FN(stop)
 {
-  TMSG(RETCNT_CTL,"stopping RETCNT");
+  TMSG(RETCNT_CTL,"stopping " HPCRUN_METRIC_RetCnt);
   TD_GET(ss_state)[self->evset_idx] = STOP;
 }
 
@@ -126,7 +131,7 @@ METHOD_FN(shutdown)
 static int
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str,"RETCNT") != NULL);
+  return (strstr(ev_str, HPCRUN_METRIC_RetCnt) != NULL);
 }
  
 
@@ -136,7 +141,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   int metric_id = hpcrun_new_metric();
   TMSG(RETCNT_CTL, "Setting up return counts(trampolines)");
 
-  hpcrun_set_metric_info_and_period(metric_id, "RETCNT",
+  hpcrun_set_metric_info_and_period(metric_id, HPCRUN_METRIC_RetCnt,
 				    HPCRUN_MetricFlag_Async,
 				    1);
 
@@ -165,7 +170,7 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("RETCNT\teach time a procedure returns, the return count for that procedure is incremented\n");
+  printf(HPCRUN_METRIC_RetCnt "\teach time a procedure returns, the return count for that procedure is incremented\n");
   printf("\n");
 }
 
@@ -200,7 +205,7 @@ sample_source_t _retcnt_obj = {
     .nevents = 0
   },
   .evset_idx = -1,
-  .name = "RETCNT",
+  .name = HPCRUN_METRIC_RetCnt,
   .cls  = SS_SOFTWARE,
   .state = UNINIT
 };
