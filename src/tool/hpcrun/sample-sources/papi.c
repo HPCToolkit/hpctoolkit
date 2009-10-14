@@ -128,7 +128,7 @@ METHOD_FN(init)
 }
 
 static void
-METHOD_FN(_start)
+METHOD_FN(start)
 {
   thread_data_t *td = hpcrun_get_thread_data();
   int eventSet = td->eventSet[self->evset_idx];
@@ -189,14 +189,14 @@ static int
 METHOD_FN(supports_event,const char *ev_str)
 {
   if (self->state == UNINIT){
-    METHOD_CALL(self,init);
+    METHOD_CALL(self, init);
   }
   
   char evtmp[1024];
   int ec;
   long th;
 
-  extract_ev_thresh(ev_str,sizeof(evtmp),evtmp,&th);
+  extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th);
   return PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK;
 }
  
@@ -379,13 +379,11 @@ sample_source_t _papi_obj = {
   .store_event = hpcrun_ss_store_event,
   .store_metric_id = hpcrun_ss_store_metric_id,
   .get_event_str = hpcrun_ss_get_event_str,
-  .started       = hpcrun_ss_started,
-  .start         = hpcrun_ss_start,
 
   // specific methods
 
   .init = init,
-  ._start = _start,
+  .start = start,
   .stop  = stop,
   .shutdown = shutdown,
   .supports_event = supports_event,

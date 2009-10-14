@@ -49,19 +49,12 @@
 
 #include <messages/messages.h>
 
-int
-METHOD_FN(hpcrun_ss_started)
-{
-  NMSG(SS_COMMON,"check start for %s = %d",self->name,self->state);
-  return (self->state == START);
-}
-
 void
 METHOD_FN(hpcrun_ss_add_event, const char *ev)
 {
   char *evl = self->evl.evl_spec;
 
-  NMSG(SS_COMMON,"add event %s to evl |%s|",ev,evl);
+  NMSG(SS_COMMON,"add event %s to evl |%s|", ev, evl);
   strcat(evl, ev);
   strcat(evl," ");
   NMSG(SS_COMMON,"evl after event added = |%s|",evl);
@@ -111,24 +104,32 @@ METHOD_FN(hpcrun_ss_get_event_str)
   return (self->evl).evl_spec;
 }
 
-void
-METHOD_FN(hpcrun_ss_start)
+// **********************************************************
+// Interface (NON method) functions
+// **********************************************************
+
+int
+hpcrun_event2metric(sample_source_t* ss, int event_idx)
 {
-  if (self->state != HARD_STOP){
-    METHOD_CALL(self,_start);
+  TMSG(SAMPLE_SOURCE, "%s fetching metric_id for event %d", ss->name, event_idx);
+  evlist_t *_p = &(ss->evl);
+  int n_events = _p->nevents;
+
+  if (event_idx >= n_events) {
+    EMSG("Trying to fetch metric id an invalid event index."
+	 "Only %d events recorded for sample source %s. Returning 0", event_idx, n_events, ss->name);
+    return 0;
   }
+  _ev_t* current_event  = &(_p->events[event_idx]);
+
+  TMSG(SAMPLE_SOURCE, "Fetched metric id = %d", current_event->metric_id);
+  return current_event->metric_id;
 }
 
-void
-METHOD_FN(hpcrun_ss_hard_stop)
-{
-  METHOD_CALL(self,stop);
-  self->state = HARD_STOP;
-}
-
-//------------------------------------------------------------
+// **********************************************************
 // Sample Source Failure Messages (ssfail)
-//------------------------------------------------------------
+// **********************************************************
+
 
 static char *prefix = "HPCToolkit fatal error";
 static char *hpcrun_L = "See 'hpcrun -L <program>' for a list of available events.";
@@ -189,24 +190,3 @@ hpcrun_ssfail_start(char *source)
   exit(1);
 }
 
-// **********************************************************
-// Interface (NON method) functions
-// **********************************************************
-
-int
-hpcrun_event2metric(sample_source_t* ss, int event_idx)
-{
-  TMSG(SAMPLE_SOURCE, "%s fetching metric_id for event %d", ss->name, event_idx);
-  evlist_t *_p = &(ss->evl);
-  int n_events = _p->nevents;
-
-  if (event_idx >= n_events) {
-    EMSG("Trying to fetch metric id an invalid event index."
-	 "Only %d events recorded for sample source %s. Returning 0", event_idx, n_events, ss->name);
-    return 0;
-  }
-  _ev_t* current_event  = &(_p->events[event_idx]);
-
-  TMSG(SAMPLE_SOURCE, "Fetched metric id = %d", current_event->metric_id);
-  return current_event->metric_id;
-}

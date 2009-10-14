@@ -165,7 +165,7 @@ METHOD_FN(init)
 }
 
 static void
-METHOD_FN(_start)
+METHOD_FN(start)
 {
   if (! hpcrun_td_avail()){
     return; // in the unlikely event that we are trying to start, but thread data is unavailable,
@@ -308,13 +308,11 @@ sample_source_t _itimer_obj = {
   .store_event   = hpcrun_ss_store_event,
   .store_metric_id = hpcrun_ss_store_metric_id,
   .get_event_str = hpcrun_ss_get_event_str,
-  .started       = hpcrun_ss_started,
-  .start         = hpcrun_ss_start,
 
   // specific methods
 
   .init = init,
-  ._start = _start,
+  .start = start,
   .stop  = stop,
   .shutdown = shutdown,
   .supports_event = supports_event,
