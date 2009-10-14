@@ -301,50 +301,10 @@ METHOD_FN(display_events)
  * object
  ***************************************************************************/
 
-sample_source_t _itimer_obj = {
-  // common methods
+#define ss_name itimer
+#define ss_cls SS_HARDWARE
 
-  .add_event     = hpcrun_ss_add_event,
-  .store_event   = hpcrun_ss_store_event,
-  .store_metric_id = hpcrun_ss_store_metric_id,
-  .get_event_str = hpcrun_ss_get_event_str,
-
-  // specific methods
-
-  .init = init,
-  .start = start,
-  .stop  = stop,
-  .shutdown = shutdown,
-  .supports_event = supports_event,
-  .process_event_list = process_event_list,
-  .gen_event_set = gen_event_set,
-  .display_events = display_events,
-
-  // data
-  .evl = {
-    .evl_spec = {[0] = '\0'},
-    .nevents = 0
-  },
-  .evset_idx = -1,
-  .name = "itimer",
-  .cls  = SS_HARDWARE,
-  .state = UNINIT
-};
-
-
-/******************************************************************************
- * constructor 
- *****************************************************************************/
-
-static void itimer_obj_reg(void) __attribute__ ((constructor));
-
-static void
-itimer_obj_reg(void)
-{
-  hpcrun_ss_register(&_itimer_obj);
-}
-
-
+#include "ss_obj.h"
 
 /******************************************************************************
  * private operations 
