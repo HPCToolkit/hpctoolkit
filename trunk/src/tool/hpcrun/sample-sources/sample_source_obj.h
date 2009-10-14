@@ -83,14 +83,11 @@ typedef struct sample_source_t {
   VMETHOD_DEF(store_event, int event_id, long thresh);
   VMETHOD_DEF(store_metric_id, int event_idx, int metric_id);
   METHOD_DEF(char*, get_event_str);
-  METHOD_DEF(int, started);
-  VMETHOD_DEF(hard_stop);
-  VMETHOD_DEF(start);
 
   // specific methods
 
   VMETHOD_DEF(init);
-  VMETHOD_DEF(_start);
+  VMETHOD_DEF(start);
   VMETHOD_DEF(stop);
   VMETHOD_DEF(shutdown);
   METHOD_DEF(int, supports_event, const char* ev_str);
