@@ -277,7 +277,9 @@ hpcrun_fini_internal(void)
 
     hpcrun_finalize_current_epoch();
 
-#if defined(HOST_SYSTEM_IBM_BLUEGENE)
+    // FIXME: Is this still necessary?
+    // Currently breaks the build due to lack of state->unwind.
+#if 0
     EMSG("Backtrace for last sample event:\n");
     dump_backtrace(state, state->unwind);
 #endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
@@ -346,10 +348,13 @@ hpcrun_thread_fini(state_t *state)
     SAMPLE_SOURCES(stop);
     lushPthr_thread_fini(&TD_GET(pthr_metrics));
     hpcrun_finalize_current_epoch();
-#if defined(HOST_SYSTEM_IBM_BLUEGENE)
+
+    // FIXME: currently breaks the build.
+#if 0
     EMSG("Backtrace for last sample event:\n");
     dump_backtrace(state, state->unwind);
 #endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
+
     hpcrun_write_profile_data(state);
   }
 }

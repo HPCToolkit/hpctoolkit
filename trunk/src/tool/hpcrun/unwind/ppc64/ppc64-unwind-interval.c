@@ -63,11 +63,12 @@
 
 #include "ppc64-unwind-interval.h"
 
-#include "csprof-malloc.h"
+#include "hpcrun-malloc.h"
 #include "ui_tree.h"
 
 #include "fnbounds_interface.h"
 
+#include <hpcrun/hpcrun_stats.h>
 #include <messages/messages.h>
 
 // FIXME: see note in mips-unwind.c

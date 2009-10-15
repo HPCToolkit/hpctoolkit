@@ -97,11 +97,12 @@
 #include "common.h"
 
 #include <hpcrun/hpcrun_options.h>
+#include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
-#include <hpcrun/tokenize.h>
+#include <utilities/tokenize.h>
 
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
@@ -174,8 +175,9 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
   BGP_UPC_Stop();
 
   // Check for async block and avoid any MSG if true.
-  if (hpcrun_async_is_blocked()) {
-    hpcrun_inc_samples_blocked_async();
+  // FIXME: NULL is bogus here and should be the program counter.
+  if (hpcrun_async_is_blocked(NULL)) {
+    hpcrun_stats_num_samples_blocked_async_inc();
     do_sample = 0;
   }
 
@@ -193,7 +195,7 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
     }
   }
 
-  if (! sampling_is_disabled()) {
+  if (! hpcrun_is_sampling_disabled()) {
     BGP_UPC_Start(0);
   }
 
@@ -242,7 +244,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 	   "unable to find code for event %s", event);
       hpcrun_ssfail_unsupported("UPC", event);
     }
-    METHOD_CALL(self, store_event, code, threshold, metric_id);
+    METHOD_CALL(self, store_event, code, threshold);
   }
 
   nevents = self->evl.nevents;
