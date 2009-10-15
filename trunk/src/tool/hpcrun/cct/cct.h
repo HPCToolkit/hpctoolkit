@@ -99,7 +99,7 @@ typedef hpcrun_metricVal_t cct_metric_data_t;
 
 static inline void
 cct_metric_data_increment(int metric_id,
-			  cct_metric_data_t* x, 
+			  cct_metric_data_t* x,
 			  cct_metric_data_t incr)
 {
   metric_desc_t* minfo = hpcrun_id2metric(metric_id);

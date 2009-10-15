@@ -93,11 +93,11 @@
  *****************************************************************************/
 
 #if defined(CATAMOUNT)
-#   define CSPROF_PROFILE_SIGNAL           SIGALRM
-#   define CSPROF_PROFILE_TIMER            ITIMER_REAL
+#   define HPCRUN_PROFILE_SIGNAL           SIGALRM
+#   define HPCRUN_PROFILE_TIMER            ITIMER_REAL
 #else
-#  define CSPROF_PROFILE_SIGNAL            SIGPROF
-#  define CSPROF_PROFILE_TIMER             ITIMER_PROF
+#  define HPCRUN_PROFILE_SIGNAL            SIGPROF
+#  define HPCRUN_PROFILE_TIMER             ITIMER_PROF
 #endif
 
 #define SECONDS_PER_HOUR                   3600
@@ -160,8 +160,6 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT; // no actual init actions necessary for itimer
-  sigemptyset(&sigset_itimer);
-  sigaddset(&sigset_itimer, CSPROF_PROFILE_SIGNAL);
 }
 
 static void
@@ -172,7 +170,7 @@ METHOD_FN(start)
             // assume that all sample source ops are suspended.
   }
   TMSG(ITIMER_CTL,"starting itimer");
-  if (setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL) != 0) {
+  if (setitimer(HPCRUN_PROFILE_TIMER, &itimer, NULL) != 0) {
     EMSG("setitimer failed (%d): %s", errno, strerror(errno));
     hpcrun_ssfail_start("itimer");
   }
@@ -196,10 +194,9 @@ METHOD_FN(stop)
 
   timerclear(&itimer.it_value);
   timerclear(&itimer.it_interval);
-  rc = setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
+  rc = setitimer(HPCRUN_PROFILE_TIMER, &itimer, NULL);
   TMSG(ITIMER_CTL,"stopping itimer");
   TD_GET(ss_state)[self->evset_idx] = STOP;
-  // return rc;
 }
 
 static void
@@ -215,9 +212,6 @@ METHOD_FN(supports_event, const char *ev_str)
   return (strstr(ev_str,"WALLCLOCK") != NULL);
 }
  
-// (arbitrary) code for WALLCLOCK event
-#define WALLCLOCK 0
-
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
@@ -258,7 +252,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   int metric_id = hpcrun_new_metric();
   METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
-  TMSG(ITIMER_CTL,"setting metric ITIMER,period = %ld",sample_period);
+  TMSG(ITIMER_CTL, "setting metric ITIMER,period = %ld", sample_period);
   hpcrun_set_metric_info_and_period(metric_id, "WALLCLOCK (us)",
 				    HPCRUN_MetricFlag_Async,
 				    sample_period);
@@ -282,7 +276,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
-  monitor_sigaction(CSPROF_PROFILE_SIGNAL, &itimer_signal_handler, 0, NULL);
+  sigemptyset(&sigset_itimer);
+  sigaddset(&sigset_itimer, HPCRUN_PROFILE_SIGNAL);
+  monitor_sigaction(HPCRUN_PROFILE_SIGNAL, &itimer_signal_handler, 0, NULL);
 }
 
 static void

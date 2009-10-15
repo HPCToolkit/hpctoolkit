@@ -44,12 +44,13 @@
 #ifndef COMMON_SAMPLE_SOURCE_H
 #define COMMON_SAMPLE_SOURCE_H
 
-#include "sample_source_obj.h"
+#include "common-method-def.h"
 
 void  METHOD_FN(hpcrun_ss_add_event, const char* ev);
 void  METHOD_FN(hpcrun_ss_store_event, int event_id, long thresh);
 void  METHOD_FN(hpcrun_ss_store_metric_id, int event_id, int metric_id);
 char* METHOD_FN(hpcrun_ss_get_event_str);
+bool  METHOD_FN(hpcrun_ss_started);
 
 // Interface (NON method) functions
 

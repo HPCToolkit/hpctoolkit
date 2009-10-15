@@ -224,6 +224,7 @@ typedef union hpcrun_metricVal_u {
 
   uint64_t i; // integral data
   double   r; // real
+  void*    p; // address data
   
 } hpcrun_metricVal_t;
 

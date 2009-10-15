@@ -55,6 +55,7 @@
 #include "fnbounds_interface.h"
 #include "main.h"
 #include "metrics_types.h"
+#include "metrics.h"
 #include "segv_handler.h"
 #include "state.h"
 #include "thread_data.h"
@@ -104,7 +105,8 @@ hpcrun_drop_sample(void)
 
 
 cct_node_t *
-hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
+hpcrun_sample_callpath(void *context, int metricId,
+		       uint64_t metricIncr,
 		       int skipInner, int isSync)
 {
   hpcrun_stats_num_samples_total_inc();
@@ -195,7 +197,8 @@ hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr,
 
 static cct_node_t*
 _hpcrun_sample_callpath(state_t *state, void *context,
-			int metricId, uint64_t metricIncr, 
+			int metricId,
+			uint64_t metricIncr, 
 			int skipInner, int isSync)
 {
   void* pc = context_pc(context);

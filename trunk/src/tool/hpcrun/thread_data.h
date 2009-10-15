@@ -145,6 +145,7 @@ typedef struct thread_data_t {
   int              splay_lock;
   int              fnbounds_lock;
 
+  // sample sources
   int              eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
   source_state_t   ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
 

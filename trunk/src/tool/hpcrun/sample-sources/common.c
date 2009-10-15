@@ -48,9 +48,10 @@
 #include "common.h"
 
 #include <messages/messages.h>
+#include <hpcrun/thread_data.h>
 
 void
-METHOD_FN(hpcrun_ss_add_event, const char *ev)
+CMETHOD_FN(add_event, const char *ev)
 {
   char *evl = self->evl.evl_spec;
 
@@ -61,7 +62,7 @@ METHOD_FN(hpcrun_ss_add_event, const char *ev)
 }
 
 void
-METHOD_FN(hpcrun_ss_store_event, int event_id, long thresh)
+CMETHOD_FN(store_event, int event_id, long thresh)
 {
   TMSG(SAMPLE_SOURCE,"%s: store event %d thresh = %ld", self->name, event_id, thresh);
   evlist_t *_p = &(self->evl);
@@ -80,7 +81,7 @@ METHOD_FN(hpcrun_ss_store_event, int event_id, long thresh)
 }
 
 void
-METHOD_FN(hpcrun_ss_store_metric_id, int event_idx, int metric_id)
+CMETHOD_FN(store_metric_id, int event_idx, int metric_id)
 {
 
   TMSG(SAMPLE_SOURCE, "%s event[%d] = metric_id %d", self->name, event_idx, metric_id);
@@ -99,9 +100,15 @@ METHOD_FN(hpcrun_ss_store_metric_id, int event_idx, int metric_id)
 
 
 char* 
-METHOD_FN(hpcrun_ss_get_event_str)
+CMETHOD_FN(get_event_str)
 {
   return (self->evl).evl_spec;
+}
+
+bool
+CMETHOD_FN(started)
+{
+  return (TD_GET(ss_state)[self->evset_idx] == START);
 }
 
 // **********************************************************
