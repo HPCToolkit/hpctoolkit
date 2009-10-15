@@ -108,7 +108,8 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 //             
 cct_node_t*
 hpcrun_backtrace(state_t* state, ucontext_t* context, 
-		 int metricId, uint64_t metricIncr,
+		 int metricId,
+		 uint64_t metricIncr,
 		 int skipInner, int isSync)
 {
   cct_node_t* n = NULL;
@@ -154,7 +155,8 @@ hpcrun_filter_sample(int len, frame_t *start, frame_t *last)
 
 static cct_node_t*
 _hpcrun_backtrace(state_t* state, ucontext_t* context,
-		  int metricId, uint64_t metricIncr, 
+		  int metricId,
+		  uint64_t metricIncr,
 		  int skipInner)
 {
   int  backtrace_trolled = 0;

@@ -59,7 +59,6 @@ void hpcrun_all_sources_process_event_list(int lush_metrics);
 void hpcrun_all_sources_gen_event_set(int lush_metrics);
 void hpcrun_all_sources_start(void);
 void hpcrun_all_sources_stop(void);
-void hpcrun_all_sources_hard_stop(void);
 void hpcrun_all_sources_shutdown(void);
 bool  hpcrun_all_sources_started(void);
 

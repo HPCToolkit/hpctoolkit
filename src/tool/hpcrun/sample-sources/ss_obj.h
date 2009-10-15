@@ -26,6 +26,7 @@ sample_source_t obj_name() = {
   .store_event   = hpcrun_ss_store_event,
   .store_metric_id = hpcrun_ss_store_metric_id,
   .get_event_str = hpcrun_ss_get_event_str,
+  .started       = hpcrun_ss_started,
 
   // specific methods
 

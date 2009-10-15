@@ -195,8 +195,8 @@ hpcrun_set_metric_info_and_period(int metric_id, const char* name,
     EMSG("Must supply a name for metric");
     monitor_real_abort();
   }
-  metric->name = (char*)name;
-  metric->description = (char*)name; // TODO
+  metric->name = (char*) name;
+  metric->description = (char*) name; // TODO
   metric->period = period;
   metric->flags = flags;
 }

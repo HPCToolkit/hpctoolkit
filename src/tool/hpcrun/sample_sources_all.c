@@ -60,6 +60,7 @@
 #include "sample_sources_all.h"
 #include "sample_sources_registered.h"
 
+#include "thread_data.h"
 #include <sample-sources/simple_oo.h>
 #include <sample-sources/sample_source_obj.h>
 #include <sample-sources/common.h>
@@ -204,7 +205,6 @@ hpcrun_sample_sources_from_eventlist(char* evl)
   }
 }
 
-
 // The mapped operations
 
 _AS1(process_event_list,int,lush_metrics)
@@ -213,3 +213,4 @@ _AS1(gen_event_set,int,lush_metrics)
 _AS0(start)
 _AS0(stop)
 _AS0(shutdown)
+_ASB(started)
