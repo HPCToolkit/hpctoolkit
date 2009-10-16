@@ -133,7 +133,6 @@ typedef struct thread_data_t {
   frame_t*       btbuf; 	   // innermost frame in new backtrace
   frame_t*       bufend;	   // 
   frame_t*       bufstk;	   // innermost frame in cached backtrace
-  cct_node_t*   treenode;   // cached pointer into the tree
 
   // the loadmap + cct + cct_ctxt = epoch
   state_t*         state;
@@ -190,7 +189,7 @@ void           	hpcrun_threaded_data(void);
 
 thread_data_t* hpcrun_thread_data_new(void);
 void           hpcrun_thread_memory_init(void);
-void           hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt);
+void           hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt);
 void           hpcrun_cached_bt_adjust_size(size_t n);
 
 // utilities to match previous api

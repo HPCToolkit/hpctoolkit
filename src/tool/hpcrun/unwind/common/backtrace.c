@@ -229,10 +229,10 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
     hpcrun_up_pmsg_count();
   }
   
-  frame_t* bt_first = td->btbuf;      // innermost, inclusive 
-  frame_t* bt_last  = td->unwind - 1; // outermost, inclusive
-  frame_t* bt_end   = bt_last + 1;       // beyond the last frame
-  size_t new_frame_count   = bt_end - bt_first;
+  frame_t* bt_beg  = td->btbuf;      // innermost, inclusive
+  frame_t* bt_last = td->unwind - 1; // outermost, inclusive
+  frame_t* bt_end  = bt_last + 1;    // outermost, exclusive
+  size_t new_frame_count = bt_end - bt_beg;
 
   cct_node_t* cct_cursor = NULL;
 
@@ -252,7 +252,7 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 	   sizeof(frame_t) * old_frame_count);
 
     // put the new suffix in place
-    memcpy(td->cached_bt, bt_first, sizeof(frame_t) * new_frame_count);
+    memcpy(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
 
     // update the length of the conjoined backtrace
     td->cached_bt_end = td->cached_bt + new_frame_count + old_frame_count;
@@ -262,19 +262,19 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
   }
   else {
     hpcrun_cached_bt_adjust_size(new_frame_count);
-    memmove(td->cached_bt, bt_first, sizeof(frame_t) * new_frame_count);
+    memmove(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
 
     td->cached_bt_end = td->cached_bt + new_frame_count;
   }
 
   if (! ENABLED(NO_SAMPLE_FILTERING)) {
-    frame_t* first_frame  = td->cached_bt;  
-    frame_t* last_frame   = td->cached_bt_end - 1;
-    int num_frames               = last_frame - first_frame + 1; 
+    frame_t* beg_frame  = td->cached_bt;
+    frame_t* last_frame = td->cached_bt_end - 1;
+    int num_frames      = last_frame - beg_frame + 1;
 	
-    if (hpcrun_filter_sample(num_frames, first_frame, last_frame)){
+    if (hpcrun_filter_sample(num_frames, beg_frame, last_frame)){
       TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
-      frame_t *fr = first_frame;
+      frame_t *fr = beg_frame;
       for (int i = 0; i < num_frames; i++, fr++){
 	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p", i, fr->ip);
       }
@@ -290,12 +290,12 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
   if (skipInner) {
     EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
 	 skipInner);
-    bt_first = hpcrun_skip_chords(bt_last, bt_first, skipInner);
+    bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
   }
 
   cct_node_t* n;
   n = hpcrun_cct_insert_backtrace(&(state->csdata), cct_cursor, metricId,
-				  bt_last, bt_first,
+				  bt_last, bt_beg,
 				  (cct_metric_data_t){.i = metricIncr});
 
   if (ENABLED(USE_TRAMP)){

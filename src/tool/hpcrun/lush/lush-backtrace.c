@@ -146,7 +146,6 @@ lush_backtrace(state_t* state, ucontext_t* context,
   thread_data_t* td = hpcrun_get_thread_data();
   td->unwind   = td->btbuf;  // innermost
   td->bufstk   = td->bufend;
-  td->treenode = NULL;
 
   // ---------------------------------------------------------
   // Step through bichords
@@ -232,15 +231,16 @@ lush_backtrace(state_t* state, ucontext_t* context,
 
   frame_t* bt_beg = td->btbuf;      // innermost, inclusive 
   frame_t* bt_end = td->unwind - 1; // outermost, inclusive
+  cct_node_t* cct_cursor = NULL;
 
   if (skipInner) {
     bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
   }
 
   cct_node_t* node = NULL;
-  node = hpcrun_state_insert_backtrace(state, metricId,
-				       bt_end, bt_beg,
-				       (cct_metric_data_t){.i = incrMetric});
+  node = hpcrun_cct_insert_backtrace(&(state->csdata), cct_cursor, metricId,
+				     bt_end, bt_beg,
+				     (cct_metric_data_t){.i = metricIncr});
 
   if (doMetricIdleness) {
     //lush_agentid_t aid = aidMetricIdleness;
