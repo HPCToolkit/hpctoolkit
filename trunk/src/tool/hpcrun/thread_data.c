@@ -123,7 +123,7 @@ enum _local_int_const {
 };
 
 void
-hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
+hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   hpcrun_init_handling_sample(td, 0, id);
@@ -136,7 +136,6 @@ hpcrun_thread_data_init(int id, lush_cct_ctxt_t* thr_ctxt)
   td->btbuf = hpcrun_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
   td->bufend = td->btbuf + BACKTRACE_INIT_SZ;
   td->bufstk = td->bufend;  // FIXME: is this needed?
-  td->treenode = NULL;
 
   // hpcrun file
   td->hpcrun_file                 = NULL;

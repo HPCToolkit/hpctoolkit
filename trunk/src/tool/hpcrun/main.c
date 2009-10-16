@@ -307,7 +307,7 @@ hpcrun_init_thread_support(void)
 
 
 void*
-hpcrun_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
+hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
 {
   thread_data_t *td = hpcrun_allocate_thread_data();
   td->suspend_sampling = 1; // begin: protect against spurious signals
@@ -557,7 +557,7 @@ monitor_thread_pre_create(void)
   // Capture new thread's creation context, skipping 1 level of context
   //   WARNING: Do not move the call to getcontext()
   // -------------------------------------------------------
-  lush_cct_ctxt_t* thr_ctxt = NULL;
+  cct_ctxt_t* thr_ctxt = NULL;
 
   ucontext_t context;
   int ret = getcontext(&context);
@@ -581,7 +581,7 @@ monitor_thread_pre_create(void)
   TMSG(THREAD,"before lush malloc");
   TMSG(MALLOC," -thread_precreate: lush malloc");
   state_t* state = hpcrun_get_state();
-  thr_ctxt = hpcrun_malloc(sizeof(lush_cct_ctxt_t));
+  thr_ctxt = hpcrun_malloc(sizeof(cct_ctxt_t));
   TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
   thr_ctxt->context = n;
   thr_ctxt->parent = state->csdata_ctxt;
@@ -612,7 +612,7 @@ void*
 monitor_init_thread(int tid, void* data)
 {
   NMSG(THREAD,"init thread %d",tid);
-  void* thread_data = hpcrun_thread_init(tid, (lush_cct_ctxt_t*)data);
+  void* thread_data = hpcrun_thread_init(tid, (cct_ctxt_t*)data);
   TMSG(THREAD,"back from init thread %d",tid);
 
   trace_open();

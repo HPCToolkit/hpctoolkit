@@ -68,7 +68,7 @@ typedef struct state_t {
 
   /* call stack data, stored in private memory */
   hpcrun_cct_t csdata;
-  lush_cct_ctxt_t* csdata_ctxt; // creation context
+  cct_ctxt_t* csdata_ctxt; // creation context
 
   /* our notion of what the current epoch is */
   hpcrun_epoch_t *epoch;
@@ -95,17 +95,6 @@ extern void hpcrun_reset_state(state_t* state);
 
 state_t* hpcrun_check_for_new_epoch(state_t *);
 void hpcrun_state_init(void);
-// ---------------------------------------------------------
-// expand the internal backtrace buffer
-// ---------------------------------------------------------
 
-// tallent: move this macro here from processor/x86-64/backtrace.c.
-// Undoubtedly a better solution than this is possible, but this at
-// least is a more appropriate location.
-
-
-cct_node_t* 
-hpcrun_state_insert_backtrace(state_t *, int, frame_t *,
-			      frame_t *, cct_metric_data_t);
 
 #endif // STATE_H

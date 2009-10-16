@@ -64,6 +64,7 @@ hpcrun_reset_state(state_t* state)
   TD_GET(state) = state;
 }
 
+
 void
 hpcrun_state_init(void)
 {
@@ -75,6 +76,7 @@ hpcrun_state_init(void)
   state->epoch = hpcrun_get_epoch();
   state->next  = NULL;
 }
+
 
 state_t*
 hpcrun_check_for_new_epoch(state_t* state)
@@ -127,6 +129,7 @@ hpcrun_check_for_new_epoch(state_t* state)
   }
 }
 
+
 int
 hpcrun_state_fini(state_t *x){
 
@@ -134,18 +137,3 @@ hpcrun_state_fini(state_t *x){
   return HPCRUN_OK;
 }
 
-cct_node_t*
-hpcrun_state_insert_backtrace(state_t *state, int metric_id,
-			      frame_t *path_beg,
-			      frame_t *path_end,
-			      cct_metric_data_t increment)
-{
-  thread_data_t* td = hpcrun_get_thread_data();
-  cct_node_t* n;
-  n = hpcrun_cct_insert_backtrace(&state->csdata, td->treenode,
-				  metric_id, path_beg, path_end, increment);
-
-  TMSG(CCT, "Treenode is %p", n);
-  
-  return n;
-}

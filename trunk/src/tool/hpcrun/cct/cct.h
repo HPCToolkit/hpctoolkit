@@ -113,6 +113,10 @@ cct_metric_data_increment(int metric_id,
 }
 
 
+// --------------------------------------------------------------------------
+// 
+// --------------------------------------------------------------------------
+
 typedef struct cct_node_t {
 
   // ---------------------------------------------------------
@@ -154,9 +158,31 @@ typedef struct cct_node_t {
 
 } cct_node_t;
 
-//
-// frame_t values are stored in the backtrace buffer
-//
+
+static inline cct_node_t*
+cct_node_parent(cct_node_t* x)
+{
+  return x->parent;
+}
+
+
+static inline cct_node_t*
+cct_node_nextSibling(cct_node_t* x)
+{
+  return x->next_sibling;
+}
+
+
+static inline cct_node_t*
+cct_node_firstChild(cct_node_t* x)
+{
+  return x->children;
+}
+
+
+// --------------------------------------------------------------------------
+// frame_t: similar to cct_node_t, but specialized for the backtrace buffer
+// --------------------------------------------------------------------------
 
 typedef struct frame_t {
   unw_cursor_t cursor;       // hold a copy of the cursor for this frame
@@ -166,28 +192,29 @@ typedef struct frame_t {
   lush_lip_t* lip;
 } frame_t;
 
+
 //***************************************************************************
-// LUSH: thread creation context
+// thread creation context
 //***************************************************************************
 
 // Represents the creation creation of a given calling context tree as
 // a linked list.
 //   get-ctxt(ctxt): [ctxt.context, get-ctxt(ctxt.parent)]
-typedef struct lush_cct_ctxt_s {
+typedef struct cct_ctxt_t {
   
   // the leaf node of the creation context
   cct_node_t* context;
   
-  struct lush_cct_ctxt_s* parent; // a list of lush_cct_ctxt_t
+  struct cct_ctxt_t* parent; // a list of cct_ctxt_t
 
-} lush_cct_ctxt_t;
+} cct_ctxt_t;
 
 
 unsigned int
-lush_cct_ctxt__length(lush_cct_ctxt_t* cct_ctxt);
+cct_ctxt_length(cct_ctxt_t* cct_ctxt);
 
 int
-lush_cct_ctxt__write(FILE* fs, epoch_flags_t flags, lush_cct_ctxt_t* cct_ctxt);
+cct_ctxt_write(FILE* fs, epoch_flags_t flags, cct_ctxt_t* cct_ctxt);
 
 
 //***************************************************************************
@@ -202,9 +229,14 @@ typedef struct hpcrun_cct_t {
 } hpcrun_cct_t;
 
 
-void hpcrun_cct_make_root(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt);
-int  hpcrun_cct_init(hpcrun_cct_t* x, lush_cct_ctxt_t* ctxt);
-int  hpcrun_cct_fini(hpcrun_cct_t *x);
+void
+hpcrun_cct_make_root(hpcrun_cct_t* x, cct_ctxt_t* ctxt);
+
+int
+hpcrun_cct_init(hpcrun_cct_t* x, cct_ctxt_t* ctxt);
+
+int
+hpcrun_cct_fini(hpcrun_cct_t *x);
 
 
 // Given a call path of the following form, insert the path into the
@@ -216,19 +248,27 @@ int  hpcrun_cct_fini(hpcrun_cct_t *x);
 //              ^ path_end                        ^ path_beg
 //              ^ bt_beg                                       ^ bt_end
 //
-cct_node_t* hpcrun_cct_insert_backtrace(hpcrun_cct_t *x, cct_node_t* treenode, int metric_id,
-					frame_t *path_beg, frame_t *path_end,
-					cct_metric_data_t sample_count);
+cct_node_t*
+hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
+			    int metric_id,
+			    frame_t* path_beg, frame_t* path_end,
+			    cct_metric_data_t sample_count);
 
-cct_node_t* hpcrun_cct_get_child(hpcrun_cct_t *cct, 
-				 cct_node_t *parent, 
-				 frame_t *frm);
+cct_node_t*
+hpcrun_cct_get_child(hpcrun_cct_t* cct, cct_node_t* parent, frame_t* frm);
 
-int hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* x, lush_cct_ctxt_t* x_ctxt);
+int
+hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags, 
+		  hpcrun_cct_t* x, cct_ctxt_t* x_ctxt);
 
-cct_node_t* hpcrun_copy_btrace(cct_node_t* n);
-lush_cct_ctxt_t* copy_thr_ctxt(lush_cct_ctxt_t* thr_ctxt);
-bool hpcrun_empty_cct(hpcrun_cct_t* cct);
+cct_node_t*
+hpcrun_copy_btrace(cct_node_t* n);
+
+cct_ctxt_t*
+copy_thr_ctxt(cct_ctxt_t* thr_ctxt);
+
+bool
+hpcrun_empty_cct(hpcrun_cct_t* cct);
 
 
 //***************************************************************************
