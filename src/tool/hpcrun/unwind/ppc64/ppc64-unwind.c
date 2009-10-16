@@ -169,16 +169,17 @@ unw_get_reg(unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
   return 0;
 }
 
+
 //
 // unimplemented for now
 //  fix when trampoline support is added
 //
-
 void*
 hpcrun_unw_get_ra_loc(unw_cursor_t* cursor)
 {
   return NULL;
 }
+
 
 void 
 unw_init_cursor(unw_cursor_t *cursor, void *context)
@@ -350,5 +351,12 @@ unw_step(unw_cursor_t *cursor)
   cursor->flags = UnwFlg_NULL;
 
   return STEP_OK;
+}
+
+
+void
+unw_throw()
+{
+  // unimplemented
 }
 
