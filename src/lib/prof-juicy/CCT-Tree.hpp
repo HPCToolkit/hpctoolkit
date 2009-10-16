@@ -118,7 +118,9 @@ namespace CCT {
 class ANode;
 class ADynNode;
 
-class Tree: public Unique {
+class Tree
+  : public Unique
+{
 public:
 
   enum {
@@ -251,9 +253,11 @@ class Stmt;
 // ---------------------------------------------------------
 // ANode: The base node for a call stack profile tree.
 // ---------------------------------------------------------
-class ANode: public NonUniformDegreeTreeNode, 
-	     public Metric::IData,
-	     public Unique {
+class ANode
+  : public NonUniformDegreeTreeNode, 
+    public Metric::IData,
+    public Unique
+{
 public:
   enum ANodeTy {
     TyRoot = 0,
@@ -578,7 +582,9 @@ int ANodeLineComp(ANode* x, ANode* y);
 // ---------------------------------------------------------
 // ANode: represents dynamic nodes
 // ---------------------------------------------------------
-class ADynNode : public ANode {
+class ADynNode
+  : public ANode
+{
 public:
 
   // -------------------------------------------------------
@@ -827,7 +833,9 @@ private:
 // Root
 // --------------------------------------------------------------------------
 
-class Root: public ANode {
+class Root
+  : public ANode
+{
 public: 
   // Constructor/Destructor
   Root(const std::string& nm)
@@ -860,7 +868,9 @@ private:
 // ProcFrm
 // --------------------------------------------------------------------------
 
-class ProcFrm: public ANode {
+class ProcFrm
+  : public ANode
+{
 public:
   // Constructor/Destructor
   ProcFrm(ANode* parent, Struct::ACodeNode* strct = NULL)
@@ -951,13 +961,13 @@ public:
   //
   // -------------------------------------------------------
 
-  virtual std::string 
+  virtual std::string
   toString_me(int oFlags = 0) const;
 
-  virtual std::string 
+  virtual std::string
   codeName() const;
  
-private: 
+private:
   static std::string BOGUS;
 };
 
@@ -966,7 +976,9 @@ private:
 // Proc: FIXME: Not used!
 // --------------------------------------------------------------------------
 
-class Proc: public ANode {
+class Proc
+  : public ANode
+{
 public: 
   // Constructor/Destructor
   Proc(ANode* parent, Struct::ACodeNode* strct = NULL)
@@ -986,7 +998,9 @@ public:
 // Loop
 // --------------------------------------------------------------------------
 
-class Loop: public ANode {
+class Loop
+  : public ANode
+{
 public: 
   // Constructor/Destructor
   Loop(ANode* parent, Struct::ACodeNode* strct = NULL)
@@ -1008,7 +1022,9 @@ private:
 // Call (callsite)
 // --------------------------------------------------------------------------
 
-class Call: public ADynNode {
+class Call
+  : public ADynNode
+{
 public:
   // Constructor/Destructor
   Call(ANode* parent, uint cpId)
@@ -1050,7 +1066,9 @@ public:
 // Stmt
 // --------------------------------------------------------------------------
   
-class Stmt: public ADynNode {
+class Stmt
+  : public ADynNode
+{
  public:
   // Constructor/Destructor
   Stmt(ANode* parent, uint cpId)
