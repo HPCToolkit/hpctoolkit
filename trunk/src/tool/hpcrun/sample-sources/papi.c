@@ -326,7 +326,10 @@ METHOD_FN(display_events)
   num_total = 0;
   num_prof = 0;
   ev = PAPI_PRESET_MASK;
+  ret = PAPI_OK;
+#ifdef PAPI_ENUM_FIRST
   ret = PAPI_enum_event(&ev, PAPI_ENUM_FIRST);
+#endif
   while (ret == PAPI_OK) {
     if (PAPI_query_event(ev) == PAPI_OK) {
       PAPI_event_code_to_name(ev, name);
@@ -354,7 +357,10 @@ METHOD_FN(display_events)
 
   num_total = 0;
   ev = PAPI_NATIVE_MASK;
+  ret = PAPI_OK;
+#ifdef PAPI_ENUM_FIRST
   ret = PAPI_enum_event(&ev, PAPI_ENUM_FIRST);
+#endif
   while (ret == PAPI_OK) {
     if (PAPI_query_event(ev) == PAPI_OK) {
       PAPI_event_code_to_name(ev, name);
