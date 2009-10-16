@@ -71,10 +71,12 @@
 #include <include/uint.h>
 
 #include "unwind.h"
-#include "stack_troll.h"
 
 #include "mips-unwind-cfg.h"
 #include "mips-unwind-interval.h"
+
+#include "stack_troll.h"
+#include "sample_event.h"
 
 // FIXME: Abuse the isa library by cherry-picking this special header.
 // One possibility is to simply use the ISA lib -- doesn't xed
@@ -550,3 +552,9 @@ unw_step(unw_cursor_t* cursor)
   return (didTroll) ? STEP_TROLL : STEP_OK;
 }
 
+
+void
+unw_throw()
+{
+  hpcrun_drop_sample();
+}
