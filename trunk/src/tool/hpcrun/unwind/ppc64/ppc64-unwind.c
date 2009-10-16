@@ -63,10 +63,12 @@
 
 //*************************** User Include Files ****************************
 
-#include "ppc64-unwind-interval.h"
-
 #include "unwind.h"
 #include "unwind_cursor.h"
+
+#include "ppc64-unwind-interval.h"
+
+#include "sample_event.h"
 
 #include "splay.h"
 #include "ui_tree.h"
@@ -357,6 +359,5 @@ unw_step(unw_cursor_t *cursor)
 void
 unw_throw()
 {
-  // unimplemented
+  hpcrun_drop_sample();
 }
-
