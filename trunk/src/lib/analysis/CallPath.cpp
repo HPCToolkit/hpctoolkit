@@ -653,7 +653,6 @@ coalesceStmts(Prof::CCT::ANode* node)
 // To be able to say procedure F is called by procedure G x times
 // within this context, it is necessary to aggregate these counts at
 // the newly added procedure frames (Struct::ProcFrm).
-
 static void
 makeReturnCountMetric(Prof::CallPath::Profile& prof)
 {
@@ -686,7 +685,6 @@ makeReturnCountMetric(Prof::CallPath::Profile& prof)
 		    && !(static_cast<Prof::CCT::ProcFrm*>(n)->isAlien()));
     if (!isFrame && n_parent) {
       for (uint i = 0; i < retCntId.size(); ++i) {
-	// N.B. we can assume return count metric exists
 	uint mId = retCntId[i];
 	n_parent->demandMetric(mId) += n->demandMetric(mId);
 	n->metric(mId) = 0.0;
