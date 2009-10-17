@@ -732,15 +732,15 @@ public:
   // -------------------------------------------------------
 
   lush_lip_t*
-  lip() const 
+  lip() const
   { return m_lip; }
   
   void
-  lip(lush_lip_t* lip) 
-  { m_lip = lip; }
+  lip(const lush_lip_t* lip)
+  { m_lip = const_cast<lush_lip_t*>(lip); }
 
   static lush_lip_t*
-  clone_lip(lush_lip_t* x) 
+  clone_lip(const lush_lip_t* x)
   {
     lush_lip_t* x_clone = NULL;
     if (x) {
