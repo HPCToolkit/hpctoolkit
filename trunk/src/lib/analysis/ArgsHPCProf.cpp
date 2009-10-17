@@ -324,7 +324,7 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     // TEMPORARY: parse first file name to determine name of database
     string mynm;
     if (!isDbDirSet) {
-      // hpctoolkit-<nm>-measurements[-xxx]/<nm>-000000-tid-hostid-pid.hpcrun
+      // hpctoolkit-<nm>-measurements[-sfx]/<nm>-000000-tid-hostid-pid.hpcrun
       const string& fnm = profileFiles[0];
       size_t pos1 = fnm.find("hpctoolkit-");
       size_t pos2 = fnm.find("-measurements");
@@ -333,14 +333,17 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
 	size_t nm_end = pos2 - 1;
 	mynm = fnm.substr(nm_beg, nm_end - nm_beg + 1);
 	
-	string id;
-	size_t id_beg = fnm.find_first_of('-', pos2 + 1);
-	size_t id_end = fnm.find_first_of('/', pos2 + 1);
-	if (id_end != string::npos && id_beg < id_end) {
-	  id = fnm.substr(id_beg, id_end - id_beg);
+	string sfx;
+	size_t sfx_beg = fnm.find_first_of('-', pos2 + 1); // [inclusive
+	size_t sfx_end = fnm.find_first_of('/', pos2 + 1); // exclusive)
+	if (sfx_end == string::npos) {
+	  sfx_end = fnm.size();
+	}
+	if (sfx_beg < sfx_end) {
+	  sfx = fnm.substr(sfx_beg, sfx_end - sfx_beg);
 	}
 	
-	db_dir = Analysis_DB_DIR_pfx "-" + mynm + "-" Analysis_DB_DIR_nm + id;
+	db_dir = Analysis_DB_DIR_pfx "-" + mynm + "-" Analysis_DB_DIR_nm + sfx;
       }
     }
 
