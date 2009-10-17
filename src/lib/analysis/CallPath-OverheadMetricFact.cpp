@@ -105,8 +105,15 @@ OverheadMetricFact::make(Prof::CallPath::Profile& prof)
       OverheadMetricFact::convertToWorkMetric(m_desc);
       metric_src.push_back(m_id);
 
-      Metric::DerivedDesc* m_new = 
-	new Metric::DerivedDesc("overhead", "parallel overhead", NULL/*expr*/);
+      string nm = "overhead";
+      const string& nm_sfx = m_desc->nameSfx();
+      if (!nm_sfx.empty()) {
+	nm += " " + nm_sfx;
+      }
+      string desc = "parallel overhead";
+
+      Metric::DerivedDesc* m_new =
+	new Metric::DerivedDesc(nm, desc, NULL/*expr*/);
       prof.metricMgr()->insert(m_new);
       DIAG_Assert(m_new->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
       metric_dst.push_back(m_new->id());
