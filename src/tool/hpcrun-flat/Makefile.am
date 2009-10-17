@@ -67,19 +67,19 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-MYSOURCES_HPCRUN = \
+MYSOURCES_HPCRunFlat = \
 	hpcrun.h hpcrun.cpp \
 	Args.hpp Args.cpp \
 	hpcpapi.h hpcpapi.c \
 	dlpapi.h dlpapi.c 
 
-MYSOURCES_LIBHPCRUN_PRELOAD = \
+MYSOURCES_LibHPCRunFlat_PRELOAD = \
 	monitor_preload.c \
 	monitor.h monitor.c \
 	hpcpapi.h hpcpapi.c \
 	rtmap.h rtmap.c 
 
-MYSOURCES_LIBHPCRUN_STATIC = \
+MYSOURCES_LibHPCRunFlat_STATIC = \
 	monitor_static.cpp \
 	monitor.h monitor.c \
 	hpcpapi.h hpcpapi.c \
@@ -130,7 +130,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 
 bin_PROGRAMS            = hpcrun-flat
-hpcrun_flat_SOURCES     = $(MYSOURCES_HPCRUN)
+hpcrun_flat_SOURCES     = $(MYSOURCES_HPCRunFlat)
 hpcrun_flat_CFLAGS      = $(MYCFLAGS_HPCRUN)
 hpcrun_flat_CXXFLAGS    = $(MYCXXFLAGS_HPCRUN)
 hpcrun_flat_LDFLAGS     = $(MYLDFLAGS_HPCRUN)
@@ -139,18 +139,18 @@ hpcrun_flat_LDADD       = $(MYLDADD_HPCRUN)
 # N.B.: We only care about the dynamically linked version of this
 # library.  An install-hook below ensures only intercepted symbols
 # will be visible.
-pkglib_LTLIBRARIES      = libhpcrun.la
-libhpcrun_la_SOURCES    = $(MYSOURCES_LIBHPCRUN_PRELOAD)
-libhpcrun_la_CFLAGS     = $(MYCFLAGS)
-libhpcrun_la_LDFLAGS    = $(MYLDFLAGS_LIBHPCRUN_PRELOAD)
-libhpcrun_la_LIBADD     = $(MYLDADD_LIBHPCRUN_PRELOAD)
+pkglib_LTLIBRARIES        = libhpcrun-flat.la
+libhpcrun_flat_la_SOURCES = $(MYSOURCES_LibHPCRunFlat_PRELOAD)
+libhpcrun_flat_la_CFLAGS  = $(MYCFLAGS)
+libhpcrun_flat_la_LDFLAGS = $(MYLDFLAGS_LIBHPCRUN_PRELOAD)
+libhpcrun_flat_la_LIBADD  = $(MYLDADD_LIBHPCRUN_PRELOAD)
 
 # N.B.: We use the PROGRAMS macro primarily to get free linking, since
 # using lib_LTLIBRARIES doesn't work.  An install-hook below moves
 # this from bin to lib in the installation.
 ##lib_LTLIBRARIES             += libhpcrun-static.o
 #bin_PROGRAMS               += libhpcrun-static.o
-#libhpcrun_static_o_SOURCES  = $(MYSOURCES_LIBHPCRUN_STATIC)
+#libhpcrun_static_o_SOURCES  = $(MYSOURCES_LibHPCRunFlat_STATIC)
 #libhpcrun_static_o_CFLAGS   = $(MYCFLAGS)
 #libhpcrun_static_o_CXXFLAGS = $(MYCXXFLAGS)
 #libhpcrun_static_o_LDFLAGS  = $(MYLDFLAGS_LIBHPCRUN_STATIC)
@@ -173,7 +173,7 @@ MY_INTERCEPTED_SYMS_COMMON = \
 	_exit _Exit \
 	pthread_create
 
-MY_INTERCEPTED_SYMS_LIBHPCRUNSO = \
+MY_INTERCEPTED_SYMS_LibHPCRunSO = \
 	_init _fini \
 	$(MY_INTERCEPTED_SYMS_COMMON)
 
@@ -188,11 +188,11 @@ install-exec-hook: myinstall-exec
 myinstall-exec: myinstall-libhpcrunso myinstall-libhpcrun-static
 
 
-MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LIBHPCRUNSO))
+MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LibHPCRunSO))
 
 myinstall-libhpcrunso:
-	rm -f $(pkglibdir)/libhpcrun.a
-	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(pkglibdir)/libhpcrun.so
+	rm -f $(pkglibdir)/libhpcrun-flat.a
+	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(pkglibdir)/libhpcrun-flat.so
 
 myinstall-libhpcrun-static: 
 #	mv $(bindir)/libhpcrun-static.o $(libdir)/.

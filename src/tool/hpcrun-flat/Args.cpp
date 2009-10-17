@@ -133,7 +133,7 @@ Options: Profiling (Defaults shown in curly brackets {})\n\
                        Select thread profiling mode. {each}\n\
                          each: Separate profiles for each thread.\n\
                          all:  Combined profiles of all threads.\n\
-                       Only POSIX threads are supported; the WALLCLK event\n\
+                       Only POSIX threads are supported; the WALLCLOCK event\n\
                        cannot be used in a multithreaded process.\n\
   -e <event>[:<period>], --event <event>[:<period>]\n\
                        An event to profile and its corresponding sample\n\
@@ -141,7 +141,7 @@ Options: Profiling (Defaults shown in curly brackets {})\n\
                        processor event.  May pass multiple times.\n\
                        {PAPI_TOT_CYC:999999}.\n\
                        o Recommended: always specify sampling period.\n\
-                       o Special event: WALLCLK (use once, without period)\n\
+                       o Special event: WALLCLOCK (use once, without period)\n\
                        o Hardware and drivers limit possibilities.\n\
   -o <outpath>, --output <outpath>\n\
                        Directory for output data {.}\n\

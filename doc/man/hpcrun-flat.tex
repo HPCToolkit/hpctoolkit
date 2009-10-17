@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2009/08/28}
+\setDate{ 2009/10/16}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -114,13 +114,13 @@ Default values for an option's optional arguments are shown in \{\}.
     \item \textbf{all} Create one combined profile of all threads.
   \end{itemize}
   Note that only POSIX threads are supported.
-  Also note that the WALLCLK event cannot be used in a multithreaded process.
+  Also note that the WALLCLOCK event cannot be used in a multithreaded process.
 
   \item[\OptArg{-e}{event\Lbr:period\Rbr}, \OptArg{--event}{event\Lbr:period\Rbr}] 
    An event to profile and its corresponding sample period. \Arg{event} may be either a PAPI or native processor event. May pass multiple times.  \{\verb+PAPI_TOT_CYC:999999+\} 
   \begin{itemize}
     \item It is recommended to always specify the sampling period for each profiling event.
-    \item The special event WALLCLK may be used to profile the `wall clock.'  It may be used only \emph{once} and cannot be used with another event. It is an error to specify a period.
+    \item The special event WALLCLOCK may be used to profile the `wall clock.'  It may be used only \emph{once} and cannot be used with another event. It is an error to specify a period.
     \item Hardware and drivers 1) limit the maximum number of events that can be monitored simultaneously, and 2) forbid certain combinations of events.  Check your documentation.
     \item See the ``Sample sources'' under \textbf{NOTES} for additional details.
   \end{itemize}
@@ -137,7 +137,7 @@ The following examples lists some useful events for different processor architec
 In each case, the special option \texttt{--} is used to clearly demarcate the end of \Prog{hpcrun-flat} options.
 
 \begin{enumerate}
-\item \verb+hpcrun-flat -e WALLCLK -- zoo+
+\item \verb+hpcrun-flat -e WALLCLOCK -- zoo+
 \item Opteron, (Rev B-F)
   \begin{enumerate}
     \item \verb+hpcrun-flat -e DC_L2_REFILL:1300013 -e PAPI_L2_DCM:510011 -e PAPI_STL_ICY:5300013 -e PAPI_TOT_CYC:13000019 -- zoo+ (\verb+DC_L2_REFILL+ is an approximation of L1 D-cache misses).

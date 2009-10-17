@@ -322,6 +322,8 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
+	hpcrun-metric.h \
+	\
 	hpcrun-fmt.h hpcrun-fmt.c \
 	hpcrunflat-fmt.h \
 	\

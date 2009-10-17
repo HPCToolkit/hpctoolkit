@@ -90,7 +90,7 @@
 # define HPCRUN_NAME "hpcrun-flat"
 #endif
 
-#define HPCRUN_LIB  "libhpcrun.so"
+#define HPCRUN_LIB  "libhpcrun-flat.so"
 
 typedef enum enum_hpc_threadprof_t {
   HPCRUN_THREADPROF_EACH = 0, /* separate profile for each thread */
@@ -103,11 +103,11 @@ typedef enum enum_hpc_threadprof_t {
 
 /* Special system supported events */
 
-#define HPCRUN_EVENT_WALLCLK_STR     "WALLCLK"
-#define HPCRUN_EVENT_WALLCLK_STRLN   7
+#define HPCRUN_EVENT_WALLCLK_STR     "WALLCLOCK"
+#define HPCRUN_EVENT_WALLCLK_STRLN   9
 
-#define HPCRUN_EVENT_FWALLCLK_STR    "FWALLCLK"
-#define HPCRUN_EVENT_FWALLCLK_STRLN  8
+#define HPCRUN_EVENT_FWALLCLK_STR    "FWALLCLOCK"
+#define HPCRUN_EVENT_FWALLCLK_STRLN  10
 
 /****************************************************************************/
 
