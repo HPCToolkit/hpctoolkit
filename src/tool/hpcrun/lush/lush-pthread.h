@@ -115,7 +115,7 @@ lushPthr_dump(lushPthr_t* x, const char* nm, void* lock);
 #define LUSH_PTHR_FN(FN)           LUSH_PTHR_FN_REAL1(FN, LUSH_PTHR_FN_TY)
 
 //***************************************************************************
-// 1. Attribute a thread's idleness to itself (1st person)
+// 1. Attribute a thread's idleness to victim (itself)
 //***************************************************************************
 
 #define LUSH_PTHR_SYNC_SMPL_PERIOD 33 /* if !0, sample synchronously */
@@ -305,7 +305,7 @@ lushPthr_condwait_post_ty1(lushPthr_t* x)
 
 
 //***************************************************************************
-// 2. Attribute idleness to working threads (3rd person)
+// 2. Attribute idleness to suspects (threads holding locks)
 //***************************************************************************
 
 static inline bool
@@ -566,7 +566,7 @@ lushPthr_condwait_post_ty2(lushPthr_t* x)
 
 
 //***************************************************************************
-// 3. Attribute lock-wait time to the working thread.  
+// 3. Attribute lock-wait time to the perpetrator.
 //***************************************************************************
 
 // N.B. consistent with the pthreads implementation
