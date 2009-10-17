@@ -716,12 +716,12 @@ MONITOR_EXT_WRAP_NAME(siglongjmp)(sigjmp_buf buf, int val)
 typedef int mutex_lock_fcn(pthread_mutex_t *);
 
 #ifdef HPCRUN_STATIC_LINK
-extern mutex_lock_fcn __real_pthread_mutex_lock;
+//extern mutex_lock_fcn __real_pthread_mutex_lock;
 extern mutex_lock_fcn __real_pthread_mutex_trylock;
 extern mutex_lock_fcn __real_pthread_mutex_unlock;
 #endif // HPCRUN_STATIC_LINK
 
-static mutex_lock_fcn *real_mutex_lock = NULL;
+//static mutex_lock_fcn *real_mutex_lock = NULL;
 static mutex_lock_fcn *real_mutex_trylock = NULL;
 static mutex_lock_fcn *real_mutex_unlock = NULL;
 
@@ -729,14 +729,19 @@ static mutex_lock_fcn *real_mutex_unlock = NULL;
 int
 MONITOR_EXT_WRAP_NAME(pthread_mutex_lock)(pthread_mutex_t* lock)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_mutex_lock, pthread_mutex_lock);
+  // N.B.: do not use dlsym() to obtain "real_pthread_mutex_lock"
+  // because dlsym() indirectly calls calloc(), which can call
+  // pthread_mutex_lock().
+  extern int __pthread_mutex_lock(pthread_mutex_t* lock);
+  //MONITOR_EXT_GET_NAME_WRAP(real_mutex_lock, pthread_mutex_lock);
+
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
 
   if (hpcrun_is_initialized()) {
     lushPthr_mutexLock_pre(&TD_GET(pthr_metrics), lock);
   }
-  
-  int ret = (*real_mutex_lock)(lock);
+
+  int ret = __pthread_mutex_lock(lock);
 
   if (hpcrun_is_initialized()) {
     lushPthr_mutexLock_post(&TD_GET(pthr_metrics), lock /*,ret*/);
