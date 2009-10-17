@@ -392,7 +392,7 @@ hpc_prepareenv()
   # --------------------------------------------------------
   # LD_PRELOAD (N.B.: whitespace-separated)
   # --------------------------------------------------------
-  my_preload="${hpcrun_dir}/libcsprof.so ${libmonitor_dir}/libmonitor.so"
+  my_preload="${hpcrun_dir}/libhpcrun.so ${libmonitor_dir}/libmonitor.so"
 
   if [ -z "${LD_PRELOAD}" ]; then
     LD_PRELOAD="${my_preload}"
@@ -440,7 +440,7 @@ hpc_getexec $cmd_to_profile
 #
 # Sanity checks before launching the application.
 #
-# In the dynamic case, verify that the application and libcsprof are
+# In the dynamic case, verify that the application and libhpcrun are
 # either both 32-bit or both 64-bit.  Give a pass to scripts,
 # statically-linked binaries (which we don't really support via
 # hpcrun) and programs on PATH (for now).
@@ -450,11 +450,11 @@ if test -x "$_EXEC" ; then
   echo "$file_out" | grep -E -i -e 'elf.*dynamic' >/dev/null 2>&1
   if test $? -eq 0 ; then
     appl_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
-    file_out=`file -L "${hpcrun_dir}/libcsprof.so"`
-    csprof_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
-    if test "$appl_bit" != "$csprof_bit" ; then
+    file_out=`file -L "${hpcrun_dir}/libhpcrun.so"`
+    hpcrun_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
+    if test "$appl_bit" != "$hpcrun_bit" ; then
       echo "cannot run application $_EXEC" 1>&2
-      echo "application is $appl_bit but hpctoolkit is $csprof_bit" 1>&2
+      echo "application is $appl_bit but hpctoolkit is $hpcrun_bit" 1>&2
       exit 1
     fi
   fi

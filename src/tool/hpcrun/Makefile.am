@@ -78,12 +78,12 @@ pkglibexec_SCRIPTS = scripts/hpclog
 
 pkglib_LTLIBRARIES =
 if OPT_ENABLE_HPCRUN_DYNAMIC
-  pkglib_LTLIBRARIES += libcsprof.la
+  pkglib_LTLIBRARIES += libhpcrun.la
   bin_SCRIPTS += scripts/hpcrun
 endif
 
 if OPT_ENABLE_HPCRUN_STATIC
-  pkglib_PROGRAMS = libcsprof.o
+  pkglib_PROGRAMS = libhpcrun.o
   bin_SCRIPTS += scripts/hpclink
 endif
 
@@ -233,96 +233,96 @@ MY_X86_INCLUDE_DIRS =		\
 	-I$(XED2_INC)
 
 
-libcsprof_la_SOURCES = 			\
+libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_DYNAMIC_FILES)
 
-libcsprof_o_SOURCES = 			\
+libhpcrun_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_STATIC_FILES)
 
-libcsprof_la_CPPFLAGS =			\
+libhpcrun_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
-libcsprof_o_CPPFLAGS =			\
+libhpcrun_o_CPPFLAGS =			\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
-libcsprof_wrap_a_CPPFLAGS =		\
+libhpcrun_wrap_a_CPPFLAGS =		\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
-libcsprof_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libcsprof_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
-libcsprof_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
-libcsprof_la_LIBADD = $(HPC_LIBPROFLEAN)
-libcsprof_o_LDADD   = $(HPC_LIBPROFLEAN)
+libhpcrun_la_LIBADD = $(HPC_LIBPROFLEAN)
+libhpcrun_o_LDADD   = $(HPC_LIBPROFLEAN)
 
-libcsprof_la_LDFLAGS = -Wl,-Bsymbolic 	\
+libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt
 
-libcsprof_o_LDFLAGS =
+libhpcrun_o_LDFLAGS =
 
 if HOST_OS_LINUX
-    libcsprof_la_SOURCES += $(MY_LINUX_DYNAMIC_FILES)
+    libhpcrun_la_SOURCES += $(MY_LINUX_DYNAMIC_FILES)
 endif
 
 
 if HOST_CPU_MIPS
-    libcsprof_la_SOURCES  += $(MY_MIPS_FILES)
-    libcsprof_o_SOURCES   += $(MY_MIPS_FILES)
-    libcsprof_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-    libcsprof_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
+    libhpcrun_la_SOURCES  += $(MY_MIPS_FILES)
+    libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
+    libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+    libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
 endif
 
 if HOST_CPU_PPC
-    libcsprof_la_SOURCES  += $(MY_PPC_FILES)
-    libcsprof_o_SOURCES   += $(MY_PPC_FILES)
-    libcsprof_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-    libcsprof_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
+    libhpcrun_la_SOURCES  += $(MY_PPC_FILES)
+    libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
+    libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+    libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
 endif
 
 if HOST_CPU_X86
-    libcsprof_la_SOURCES  += $(MY_X86_FILES)
-    libcsprof_o_SOURCES   += $(MY_X86_FILES)
-    libcsprof_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-    libcsprof_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
-    libcsprof_la_LDFLAGS  += $(XED2_LIB)/libxed.a
-    libcsprof_o_LDFLAGS   += $(XED2_LIB)/libxed.a
+    libhpcrun_la_SOURCES  += $(MY_X86_FILES)
+    libhpcrun_o_SOURCES   += $(MY_X86_FILES)
+    libhpcrun_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+    libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
+    libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
+    libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
 endif
 
 if OPT_PAPI_DYNAMIC
-    libcsprof_la_SOURCES  += $(MY_PAPI_FILES)
-    libcsprof_la_CPPFLAGS += $(PAPI_INC_FLGS)
-    libcsprof_la_LDFLAGS  += $(PAPI_LD_FLGS)
+    libhpcrun_la_SOURCES  += $(MY_PAPI_FILES)
+    libhpcrun_la_CPPFLAGS += $(PAPI_INC_FLGS)
+    libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
 endif
 
 if OPT_PAPI_STATIC
-    libcsprof_o_SOURCES   += $(MY_PAPI_FILES)
-    libcsprof_o_CPPFLAGS  += $(PAPI_INC_FLGS)
-    libcsprof_o_LDFLAGS   += $(PAPI_LD_FLGS)
+    libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
+    libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
+    libhpcrun_o_LDFLAGS   += $(PAPI_LD_FLGS)
 endif
 
 if OPT_ENABLE_UPC
-    libcsprof_la_SOURCES  += $(MY_UPC_FILES)
-    libcsprof_o_SOURCES   += $(MY_UPC_FILES)
-    libcsprof_la_CPPFLAGS += $(OPT_UPC_IFLAGS)
-    libcsprof_o_CPPFLAGS  += $(OPT_UPC_IFLAGS)
-    libcsprof_la_LDFLAGS  += $(OPT_UPC_LDFLAGS)
-    libcsprof_o_LDFLAGS   += $(OPT_UPC_LDFLAGS)
+    libhpcrun_la_SOURCES  += $(MY_UPC_FILES)
+    libhpcrun_o_SOURCES   += $(MY_UPC_FILES)
+    libhpcrun_la_CPPFLAGS += $(OPT_UPC_IFLAGS)
+    libhpcrun_o_CPPFLAGS  += $(OPT_UPC_IFLAGS)
+    libhpcrun_la_LDFLAGS  += $(OPT_UPC_LDFLAGS)
+    libhpcrun_o_LDFLAGS   += $(OPT_UPC_LDFLAGS)
 endif
 
 if OPT_ENABLE_LUSH_PTHREADS
-    libcsprof_la_CPPFLAGS += -DLUSH_PTHREADS
-    libcsprof_o_CPPFLAGS  += -DLUSH_PTHREADS
+    libhpcrun_la_CPPFLAGS += -DLUSH_PTHREADS
+    libhpcrun_o_CPPFLAGS  += -DLUSH_PTHREADS
 endif
 
-libcsprof_la_SOURCES += utilities/last_func.c
-libcsprof_o_SOURCES  += utilities/last_func.c
+libhpcrun_la_SOURCES += utilities/last_func.c
+libhpcrun_o_SOURCES  += utilities/last_func.c
 
 
 # FIXME: This is specific to Rice.
