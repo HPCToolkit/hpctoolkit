@@ -1066,8 +1066,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------
   lush_lip_t* lip = NULL;
   if (!lush_lip_eq(&nodeFmt.lip, &lush_lip_NULL)) {
-    lip = new lush_lip_t;
-    memcpy(lip, &nodeFmt.lip, sizeof(lush_lip_t));
+    lip = CCT::ADynNode::clone_lip(&nodeFmt.lip);
   }
 
   if (lip) {
@@ -1145,7 +1144,9 @@ cct_makeNode(Prof::CallPath::Profile& prof,
       uint mSz = (doZeroMetrics) ? 0 : nodeFmt.num_metrics;
       Metric::IData metricData0(mSz);
       
-      n = new CCT::Call(NULL, 0, nodeFmt.as_info, lmId, ip, opIdx, lip,
+      lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
+
+      n = new CCT::Call(NULL, 0, nodeFmt.as_info, lmId, ip, opIdx, lipCopy,
 			metricData0);
     }
     else {
