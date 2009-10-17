@@ -99,24 +99,24 @@ OverheadMetricFact::make(Prof::CallPath::Profile& prof)
   std::vector<uint> metric_dst;
   
   uint numMetrics_orig = prof.metricMgr()->size();
-  for (uint m_id = 0; m_id < numMetrics_orig; ++m_id) {
-    Metric::ADesc* m_desc = prof.metricMgr()->metric(m_id);
-    if (OverheadMetricFact::isMetricSrc(m_desc)) {
-      OverheadMetricFact::convertToWorkMetric(m_desc);
-      metric_src.push_back(m_id);
+  for (uint mId = 0; mId < numMetrics_orig; ++mId) {
+    Metric::ADesc* mDesc = prof.metricMgr()->metric(mId);
+    if (OverheadMetricFact::isMetricSrc(mDesc)) {
+      OverheadMetricFact::convertToWorkMetric(mDesc);
+      metric_src.push_back(mId);
 
       string nm = "overhead";
-      const string& nm_sfx = m_desc->nameSfx();
-      if (!nm_sfx.empty()) {
-	nm += " " + nm_sfx;
-      }
       string desc = "parallel overhead";
-
-      Metric::DerivedDesc* m_new =
+      Metric::DerivedDesc* mDesc_new =
 	new Metric::DerivedDesc(nm, desc, NULL/*expr*/);
-      prof.metricMgr()->insert(m_new);
-      DIAG_Assert(m_new->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
-      metric_dst.push_back(m_new->id());
+
+      mDesc_new->namePfx(mDesc->namePfx());
+      mDesc_new->nameSfx(mDesc->nameSfx());
+
+      prof.metricMgr()->insert(mDesc_new);
+      DIAG_Assert(mDesc_new->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
+      
+      metric_dst.push_back(mDesc_new->id());
     }
   }
 
