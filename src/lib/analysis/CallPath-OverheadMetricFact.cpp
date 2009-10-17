@@ -92,8 +92,8 @@ OverheadMetricFact::make(Prof::CallPath::Profile& prof)
   using namespace Prof;
   
   // ------------------------------------------------------------
-  // Create parallel overhead metric descriptor
-  // Create mapping from source metrics to overhead metrics
+  // Create overhead metric descriptors and mapping from source
+  //   metrics to overhead metrics
   // ------------------------------------------------------------
   std::vector<uint> metric_src;
   std::vector<uint> metric_dst;
@@ -114,15 +114,8 @@ OverheadMetricFact::make(Prof::CallPath::Profile& prof)
   }
 
   // ------------------------------------------------------------
-  // Create space for metric values
-  //   (N.B.: could avoid this by using demandMetric below)
+  // Create overhead metric values
   // ------------------------------------------------------------
-  uint n_new_metrics = metric_dst.size();
-  for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
-    CCT::ANode* x = it.current();
-    x->ensureMetricsSize(x->numMetrics() + n_new_metrics);
-  }
-
   make(prof.cct()->root(), metric_src, metric_dst, false);
 }
 
@@ -139,14 +132,16 @@ OverheadMetricFact::make(Prof::CCT::ANode* node,
   // Visit CCT::Stmt nodes (Assumes metrics are only at leaves)
   // ------------------------------------------------------------
   if (isOverheadCtxt && (typeid(*node) == typeid(Prof::CCT::Stmt))) {
-    Prof::CCT::Stmt* stmt = dynamic_cast<Prof::CCT::Stmt*>(node);
+    Prof::CCT::Stmt* stmt = static_cast<Prof::CCT::Stmt*>(node);
     for (uint i = 0; i < m_src.size(); ++i) {
       uint src_idx = m_src[i];
       uint dst_idx = m_dst[i];
-      double mval = stmt->metric(src_idx);
-      
-      stmt->metric(src_idx) -= mval;
-      stmt->metric(dst_idx) += mval;
+
+      if (stmt->hasMetric(src_idx)) {
+	double mval = stmt->metric(src_idx);
+	stmt->demandMetric(dst_idx) += mval;
+	stmt->metric(src_idx) = 0.0;
+      }
     }
   }
 
@@ -156,8 +151,9 @@ OverheadMetricFact::make(Prof::CCT::ANode* node,
   
   // Note: once set, isOverheadCtxt should remain true for all descendents
   bool isOverheadCtxt_nxt = isOverheadCtxt;
-  if (!isOverheadCtxt && typeid(*node) == typeid(Prof::CCT::ProcFrm)) {
-    Prof::CCT::ProcFrm* x = dynamic_cast<Prof::CCT::ProcFrm*>(node);
+  if (!isOverheadCtxt && typeid(*node) == typeid(Prof::CCT::ProcFrm)
+      /* TODO: or Prof::CCT::Proc */) {
+    Prof::CCT::ProcFrm* x = static_cast<Prof::CCT::ProcFrm*>(node);
     isOverheadCtxt_nxt = isOverhead(x);
   }
 
