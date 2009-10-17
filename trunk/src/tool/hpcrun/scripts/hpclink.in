@@ -1,9 +1,9 @@
 #!/bin/sh
 #
-#  Link application with libcsprof, libmonitor, PAPI and Xed2
+#  Link application with libhpcrun, libmonitor, PAPI and Xed2
 #  statically by editing the compile line.
 #
-#  Usage: csprof-link [options] compiler file ...
+#  Usage: hpcrun-link [options] compiler file ...
 #
 #     -h, --help
 #     -u, --undefined  <symbol>
@@ -22,7 +22,7 @@
 # Relative paths are relative to HPCTOOLKIT.
 ext_libs_dir='@hpc_ext_libs_dir@'
 hpcfnbounds_dir='libexec/hpctoolkit'
-libcsprof_dir='lib/hpctoolkit'
+libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 xed2_dir='@XED2_RUN_DIR@'
 
@@ -41,7 +41,7 @@ wrap7="MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__"
 wrap8="longjmp siglongjmp"
 monitor_wrap_names="$wrap1 $wrap2 $wrap3 $wrap4 $wrap5 $wrap6 $wrap7 $wrap8"
 
-add_csprof_wrap=no
+add_hpcrun_wrap=no
 extra_wrap_names='@hpclink_extra_wrap_names@'
 
 # Set to -m64 on 64-bit version (for gcc).
@@ -97,9 +97,9 @@ case "$hpcfnbounds_dir" in
     /* ) ;;
     * )  hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
 esac
-case "$libcsprof_dir" in
+case "$libhpcrun_dir" in
     /* ) ;;
-    * )  libcsprof_dir="${HPCTOOLKIT}/${libcsprof_dir}" ;;
+    * )  libhpcrun_dir="${HPCTOOLKIT}/${libhpcrun_dir}" ;;
 esac
 case "$libmonitor_dir" in
     /* ) ;;
@@ -177,7 +177,7 @@ done
 #
 # Step 2 -- Build the new compile line.
 #
-#   wrap-args, undef-args, $@, libcsprof, nm-addrs, monitor, PAPI, Xed2,
+#   wrap-args, undef-args, $@, libhpcrun, nm-addrs, monitor, PAPI, Xed2,
 #   -lpthread, -ldl, repeat-application-libs.
 #
 if test "$verbose" = yes ; then
@@ -199,19 +199,19 @@ do
 done
 set -- $wrap_args "$@"
 
-libcsprof="${libcsprof_dir}/libcsprof.o"
-test -f "$libcsprof" || die "no such file: $libcsprof"
-set -- "$@" "$libcsprof" "${nm_addrs}.o"
+libhpcrun="${libhpcrun_dir}/libhpcrun.o"
+test -f "$libhpcrun" || die "no such file: $libhpcrun"
+set -- "$@" "$libhpcrun" "${nm_addrs}.o"
 
 libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
 test -f "$libmonitor" || die "no such file: $libmonitor"
 set -- "$@" "$libmonitor"
 
 # Currently not used, may be readded, may be dropped.
-if test "$add_csprof_wrap" = yes ; then
-    libcsprof_wrap="${libcsprof_dir}/libcsprof_wrap.a"
-    test -f "$libcsprof_wrap" || die "no such file: $libcsprof_wrap"
-    set -- "$@" "$libcsprof_wrap"
+if test "$add_hpcrun_wrap" = yes ; then
+    libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
+    test -f "$libhpcrun_wrap" || die "no such file: $libhpcrun_wrap"
+    set -- "$@" "$libhpcrun_wrap"
 fi
 
 if test -d "$papi_dir" ; then
