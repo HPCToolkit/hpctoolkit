@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample_source.h $
-// $Id: sample_source.h 2587 2009-10-10 20:14:47Z johnmc $
+// $HeadURL$
+// $Id$
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
