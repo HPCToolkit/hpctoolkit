@@ -460,13 +460,17 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   if (myRank == rootRank) {
     for (uint grpId = 1; grpId < groupIdToGroupMetricsMap.size(); ++grpId) {
       const VMAIntervalSet* ivalset = groupIdToGroupMetricsMap[grpId];
-      DIAG_Assert(ivalset->size() == 1, DIAG_UnexpectedInput);
 
+      // degenerate case: group has no metrics and therefore no derived metrics
+      if (!ivalset) { continue; }
+
+      DIAG_Assert(ivalset->size() == 1, DIAG_UnexpectedInput);
+      
       const VMAInterval& ival = *(ivalset->begin());
       uint mBeg = (uint)ival.beg(), mEnd = (uint)ival.end();
-
+      
       uint numInputs = groupIdToGroupSizeMap[grpId];
-
+      
       cctRoot->computeMetricsItrv(metricMgr, mBeg, mEnd,
 				  Prof::Metric::AExprItrv::FnFini, numInputs);
     }
