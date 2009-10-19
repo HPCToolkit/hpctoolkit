@@ -661,11 +661,12 @@ makeReturnCountMetric(Prof::CallPath::Profile& prof)
   // -------------------------------------------------------
   // find return count metrics, if any
   // -------------------------------------------------------
-  const Prof::Metric::Mgr* metricMgr = prof.metricMgr();
+  Prof::Metric::Mgr* metricMgr = prof.metricMgr();
   for (uint i = 0; i < metricMgr->size(); ++i) {
-    const Prof::Metric::ADesc* m = metricMgr->metric(i);
+    Prof::Metric::ADesc* m = metricMgr->metric(i);
     if (m->nameBase().find(HPCRUN_METRIC_RetCnt) != string::npos) {
       retCntId.push_back(m->id());
+      m->isComputed(true); // FIXME: ask hpcviewer not to make (I)/(E) versions
     }
   }
 
