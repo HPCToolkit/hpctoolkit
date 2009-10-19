@@ -507,6 +507,10 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   if (! prof) {
     prof = new Profile("[program-name]");
+
+    if (rFlags & RFlg_virtualMetrics) {
+      prof->isMetricMgrVirtual(true);
+    }
   }
 
   prof->canonicalize();

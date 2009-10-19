@@ -380,7 +380,7 @@ Metric::ADesc*
 Mgr::findLastVisible() const
 {
   Metric::ADesc* found = NULL;
-  for (uint i = m_metrics.size() - 1; i >= 0; --i) {
+  for (int i = m_metrics.size() - 1; i >= 0; --i) { // i may be < 0
     Metric::ADesc* m = m_metrics[i];
     if (m->isVisible()) {
       found = m;
