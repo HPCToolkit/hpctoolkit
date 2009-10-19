@@ -68,11 +68,9 @@
 // user include files 
 //***************************************************************************
 
-#include "main.h"
+#include <include/uint.h>
 
-#include <unwind/common/backtrace.h>
-#include <cct/cct.h>
-#include <memory/hpcrun-malloc.h>
+#include "main.h"
 
 #include "disabled.h"
 #include "env.h"
@@ -83,37 +81,41 @@
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
 #include "hpcrun_stats.h"
+#include "name.h"
 
 #include "metrics.h"
-#include "name.h"
+
 #include "sample_event.h"
 #include <sample-sources/none.h>
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 #include "segv_handler.h"
-#include <unwind/common/splay-interval.h>
+
 #include "state.h"
 #include "thread_data.h"
 #include "thread_use.h"
 #include "trace.h"
-#include <unwind/common/unwind.h>
 #include "write_data.h"
 
-#include <include/uint.h>
+#include <memory/hpcrun-malloc.h>
+
+#include <monitor-exts/monitor_ext.h>
+
+#include <cct/cct.h>
+
+#include <unwind/common/backtrace.h>
+#include <unwind/common/unwind.h>
+#include <unwind/common/splay-interval.h>
+
+#include <lush/lush-backtrace.h>
 #include <lush/lush-pthread.h>
-#include <messages/messages.h>
-#include <messages/debug-flag.h>
 
 #include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcio.h>
 
-#include <lush/lush.h>
-#include <lush/lush-backtrace.h>
-#include <lush/lush-pthread.h>
 #include <messages/messages.h>
-#include <monitor-exts/monitor_ext.h>
-
+#include <messages/debug-flag.h>
 
 
 //***************************************************************************
