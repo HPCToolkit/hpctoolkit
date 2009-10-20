@@ -75,9 +75,17 @@ using std::string;
 #include <lib/support/RealPathMgr.hpp>
 
 
-//****************************************************************************
+//*************************** Forward Declarations ***************************
 
-int realmain(int argc, char* const* argv);
+static int
+realmain(int argc, char* const* argv);
+
+static void
+makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
+	    Prof::CallPath::Profile& prof);
+
+
+//****************************************************************************
 
 int 
 main(int argc, char* const* argv) 
@@ -108,7 +116,7 @@ main(int argc, char* const* argv)
 }
 
 
-int
+static int
 realmain(int argc, char* const* argv) 
 {
   Args args;
@@ -127,10 +135,11 @@ realmain(int argc, char* const* argv)
   }
 
   int mergeTy = Prof::CallPath::Profile::Merge_createMetric;
-  Prof::CallPath::Profile* prof = 
-    Analysis::CallPath::read(*nArgs.paths, NULL, mergeTy);
+  Analysis::Util::UIntVec* groupMap =
+    (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
-  nArgs.destroy();
+  Prof::CallPath::Profile* prof =
+    Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy);
 
   // ------------------------------------------------------------
   // Overlay static structure with CCT's dynamic call paths
@@ -143,6 +152,16 @@ realmain(int argc, char* const* argv)
 
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.lush_agent);
   
+  // -------------------------------------------------------
+  // Create summary metrics
+  // -------------------------------------------------------
+
+  if (false) {
+    makeMetrics(nArgs, *prof);
+  }
+
+  nArgs.destroy();
+
   // ------------------------------------------------------------
   // Generate Experiment database
   // ------------------------------------------------------------
@@ -155,3 +174,53 @@ realmain(int argc, char* const* argv)
 
 //****************************************************************************
 
+
+static void
+makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
+	    Prof::CallPath::Profile& prof)
+{
+  Prof::Metric::Mgr& metricMgr = *prof.metricMgr();
+
+  Prof::CCT::ANode* cctRoot = prof.cct()->root();
+
+  // -------------------------------------------------------
+  // create derived metrics
+  // -------------------------------------------------------
+
+  uint numDrvd = 0;
+  uint mDrvdBeg, mDrvdEnd; // [ )
+
+  uint numSrc = metricMgr.size();
+  uint mSrcBeg, mSrcEnd;   // [ )
+
+  if (numSrc > 0) {
+    mSrcBeg = 0;
+    mSrcEnd = numSrc;
+
+    mDrvdBeg = metricMgr.makeSummaryMetrics(mSrcBeg, mSrcEnd);
+    if (mDrvdBeg != Prof::Metric::Mgr::npos) {
+      mDrvdEnd = metricMgr.size();
+      numDrvd = (mDrvdEnd - mDrvdBeg);
+    }
+  }
+
+  // -------------------------------------------------------
+  // aggregate metrics
+  // -------------------------------------------------------
+  cctRoot->aggregateMetrics(mSrcBeg, mSrcEnd);
+
+  for (uint i = mSrcBeg; i < mSrcEnd; ++i) {
+    Prof::Metric::ADesc* m = metricMgr.metric(i);
+    m->isComputed(true);
+  }
+
+  // -------------------------------------------------------
+  // compute derived metrics
+  // -------------------------------------------------------
+  cctRoot->computeMetrics(metricMgr, mDrvdBeg, mDrvdEnd);
+
+  for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
+    Prof::Metric::ADesc* m = metricMgr.metric(i);
+    m->isComputed(true);
+  }
+}
