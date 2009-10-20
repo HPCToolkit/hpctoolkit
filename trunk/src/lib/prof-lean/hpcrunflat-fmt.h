@@ -108,13 +108,13 @@
 /* <header>
    Because these are byte strings, they will not be affected by endianness */
 
-#define HPCRUNFILE_MAGIC_STR "HPCRUN____"
-#define HPCRUNFILE_MAGIC_STR_LEN 10  /* exclude '\0' */
+#define HPCRUNFLAT_FMT_Magic "HPCRUN-FLAT_______"
+#define HPCRUNFLAT_FMT_MagicLen 18  /* exclude '\0' */
 
-#define HPCRUNFILE_VERSION "01.00"
-#define HPCRUNFILE_VERSION_LEN 5 /* exclude '\0' */
+#define HPCRUNFLAT_Version "01.00"
+#define HPCRUNFLAT_VersionLen 5 /* exclude '\0' */
 
-#define HPCRUNFILE_ENDIAN 'l' /* l for little */
+#define HPCRUNFLAT_FMT_Endian 'l' /* l for little */
 
 /****************************************************************************/
 
