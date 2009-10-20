@@ -85,7 +85,11 @@ using std::string;
 #include <lib/support/diagnostics.h>
 #include <lib/support/SrcFile.hpp>
 
+
 //*************************** Forward Declarations ***************************
+
+static int
+realmain(int argc, char* const* argv);
 
 // A list of addresses (VMAs)
 typedef std::list<VMA> VMAList;
@@ -97,14 +101,15 @@ typedef std::map<SrcFile::ln, VMAList*> LineToVMAListMap;
 typedef std::map<SrcFile::ln, VMAList*>::iterator LineToVMAListMapIt;
 typedef std::map<SrcFile::ln, VMAList*>::value_type LineToVMAListMapItVal;
 
-void ClearLineToVMAListMap(LineToVMAListMap* map);
+void
+ClearLineToVMAListMap(LineToVMAListMap* map);
 
 // Dump Helpers
-void DumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm);
+void
+DumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm);
+
 
 //****************************************************************************
-
-int realmain(int argc, char* const* argv);
 
 int 
 main(int argc, char* const* argv) 
@@ -135,7 +140,7 @@ main(int argc, char* const* argv)
 }
 
 
-int
+static int
 realmain(int argc, char* const argv[])
 {
   Args args(argc, argv);

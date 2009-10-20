@@ -77,8 +77,9 @@ using std::endl;
 
 //*************************** Forward Declarations ***************************
 
-int
-real_main(int argc, char* argv[]);
+static int
+realmain(int argc, char* argv[]);
+
 
 //****************************************************************************
 
@@ -86,7 +87,7 @@ int
 main(int argc, char* argv[])
 {
   try {
-    return real_main(argc, argv);
+    return realmain(argc, argv);
   }
   catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(x.message());
@@ -107,8 +108,8 @@ main(int argc, char* argv[])
 }
 
 
-int
-real_main(int argc, char* argv[])
+static int
+realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
