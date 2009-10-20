@@ -341,16 +341,5 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   METHOD_CALL(&_itimer_obj, start);
 #endif
 
-#ifdef HOST_SYSTEM_IBM_BLUEGENE
-  //
-  // On BG/P, siglongjmp() is broken.  If we catch a SEGV,
-  // siglongjmp() out of it and return from the itimer handler, then
-  // the itimer signal will still be blocked in the application
-  // program, thus blocking further samples.  We can work around this
-  // problem by resetting the signal mask here.
-  //
-  monitor_real_sigprocmask(SIG_UNBLOCK, &sigset_itimer, NULL);
-#endif
-
   return 0; /* tell monitor that the signal has been handled */
 }
