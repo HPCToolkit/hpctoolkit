@@ -92,6 +92,9 @@ using std::vector;
 
 //*************************** Forward Declarations ***************************
 
+static int
+realmain(int argc, char* const* argv);
+
 static Analysis::Util::NormalizeProfileArgs_t
 myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 		       vector<uint>& groupIdToGroupSizeMap,
@@ -114,9 +117,8 @@ processProfile(Prof::CallPath::Profile& profGbl,
 	       string& profileFile, uint groupId,
 	       uint mDrvdBeg, uint mDrvdEnd);
 
-//****************************************************************************
 
-int realmain(int argc, char* const* argv);
+//****************************************************************************
 
 int 
 main(int argc, char* const* argv) 
@@ -153,7 +155,7 @@ main(int argc, char* const* argv)
 }
 
 
-int
+static int
 realmain(int argc, char* const* argv) 
 {
   Args args;
@@ -251,8 +253,8 @@ realmain(int argc, char* const* argv)
   // Create summary metrics and thread-level metrics
   // -------------------------------------------------------
 
-  makeMetrics(nArgs, groupIdToGroupSizeMap,
-	      *profGbl, myRank, numRanks, rootRank);
+  makeMetrics(nArgs, groupIdToGroupSizeMap, *profGbl,
+	      myRank, numRanks, rootRank);
 
   nArgs.destroy();
 
