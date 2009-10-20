@@ -362,6 +362,34 @@ ANode::aggregateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 
 
 void
+ANode::computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
+{
+  if ( !(mBegId < mEndId) ) {
+    return;
+  }
+  
+  // N.B. pre-order walk assumes point-wise metrics
+  // Cf. Analysis::Flat::Driver::computeDerivedBatch().
+
+  uint numMetrics = mMgr.size();
+
+  for (ANodeIterator it(this); it.Current(); ++it) {
+    ANode* n = it.current();
+    for (uint mId = mBegId; mId < mEndId; ++mId) {
+      const Metric::ADesc* m = mMgr.metric(mId);
+      const Metric::DerivedDesc* mm =
+	dynamic_cast<const Metric::DerivedDesc*>(m);
+      if (mm && mm->expr()) {
+	const Metric::AExpr* expr = mm->expr();
+	double val = expr->eval(*n);
+	n->demandMetric(mId, numMetrics/*size*/) = val;
+      }
+    }
+  }
+}
+
+
+void
 ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 			  Metric::AExprItrv::FnTy fn, uint srcArg)
 {

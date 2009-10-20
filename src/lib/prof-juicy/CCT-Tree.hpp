@@ -439,9 +439,9 @@ public:
 
   // --------------------------------------------------------
   // Metrics (cf. Struct::ANode)
+  //   N.B.: Intervals are in the form: [mBegId, mEndId)
   // --------------------------------------------------------
 
-  // [mBeg, mEnd)
   void
   zeroMetricsDeep(uint mBegId, uint mEndId);
 
@@ -460,7 +460,9 @@ public:
   { aggregateMetrics(mBegId, mBegId + 1); }
 
 
-  // [mBeg, mEnd)
+  void
+  computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId);
+
   void
   computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 		     Metric::AExprItrv::FnTy fn, uint srcArg);
