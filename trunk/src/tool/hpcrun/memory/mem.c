@@ -73,7 +73,6 @@
 #include <messages/messages.h>
 
 #define DEFAULT_MEMSIZE   (4 * 1024 * 1024)
-#define BGP_MEMSIZE      (10 * 1024 * 1024)
 #define MIN_LOW_MEMSIZE  (80 * 1024)
 #define DEFAULT_PAGESIZE  4096
 
@@ -121,11 +120,6 @@ hpcrun_mem_init(void)
   if ((ans = sysconf(_SC_PAGESIZE)) > 0) {
     pagesize = ans;
   }
-#endif
-
-#ifdef HOST_SYSTEM_IBM_BLUEGENE
-  memsize = BGP_MEMSIZE;
-  allow_extra_mmap = 0;
 #endif
 
   str = getenv(HPCRUN_MEMSIZE);
