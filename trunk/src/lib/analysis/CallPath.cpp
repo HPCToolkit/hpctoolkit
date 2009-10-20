@@ -146,7 +146,7 @@ read(const char* prof_fnm, uint groupId, uint rFlags)
   // Potentially update the profile's metrics
   // -------------------------------------------------------
 
-  if (groupId) {
+  if (groupId > 0) {
     Prof::Metric::Mgr* metricMgr = prof->metricMgr();
     for (uint i = 0; i < metricMgr->size(); ++i) {
       Prof::Metric::ADesc* m = metricMgr->metric(i);
