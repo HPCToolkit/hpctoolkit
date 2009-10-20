@@ -68,6 +68,9 @@ using std::string;
 //************************ Forward Declarations ******************************
 
 static int
+realmain(int argc, char* const* argv);
+
+static int
 main_srcCorrelation(const Args& args);
 
 static int
@@ -78,8 +81,6 @@ main_rawData(const std::vector<string>& profileFiles);
 
 
 //****************************************************************************
-
-int realmain(int argc, char* const* argv);
 
 int 
 main(int argc, char* const* argv) 
@@ -110,7 +111,7 @@ main(int argc, char* const* argv)
 }
 
 
-int 
+static int 
 realmain(int argc, char* const* argv) 
 {
   Args args(argc, argv);  // exits if error on command line
