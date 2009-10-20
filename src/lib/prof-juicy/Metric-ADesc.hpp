@@ -162,14 +162,27 @@ public:
   // name: <prefix> <base> <suffix>
   // -------------------------------------------------------
 
+  static const char nameSep = '.';
+
   const std::string
   name() const
   {
     // acceptable to create on demand
     std::string nm;
-    if (!m_namePfx.empty()) { nm += m_namePfx + "."; }
+    if (!m_namePfx.empty()) { nm += m_namePfx + nameSep; }
     nm += m_nameBase;
-    if (!m_nameSfx.empty()) { nm += "." + m_nameSfx; }
+    if (!m_nameSfx.empty()) { nm += nameSep + m_nameSfx; }
+    return nm;
+  }
+
+
+  const std::string
+  namePfxBase() const
+  {
+    // acceptable to create on demand
+    std::string nm;
+    if (!m_namePfx.empty()) { nm += m_namePfx + nameSep; }
+    nm += m_nameBase;
     return nm;
   }
 

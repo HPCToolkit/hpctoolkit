@@ -156,7 +156,7 @@ realmain(int argc, char* const* argv)
   // Create summary metrics
   // -------------------------------------------------------
 
-  if (false) {
+  if (args.isHPCProfMetric) {
     makeMetrics(nArgs, *prof);
   }
 
@@ -179,29 +179,28 @@ static void
 makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 	    Prof::CallPath::Profile& prof)
 {
-  Prof::Metric::Mgr& metricMgr = *prof.metricMgr();
+  Prof::Metric::Mgr& mMgr = *prof.metricMgr();
 
   Prof::CCT::ANode* cctRoot = prof.cct()->root();
 
   // -------------------------------------------------------
   // create derived metrics
   // -------------------------------------------------------
+  uint numSrc = mMgr.size();
+  uint mSrcBeg = 0, mSrcEnd = numSrc; // [ )
 
   uint numDrvd = 0;
-  uint mDrvdBeg, mDrvdEnd; // [ )
+  uint mDrvdBeg = 0, mDrvdEnd = 0; // [ )
 
-  uint numSrc = metricMgr.size();
-  uint mSrcBeg, mSrcEnd;   // [ )
-
-  if (numSrc > 0) {
-    mSrcBeg = 0;
-    mSrcEnd = numSrc;
-
-    mDrvdBeg = metricMgr.makeSummaryMetrics(mSrcBeg, mSrcEnd);
-    if (mDrvdBeg != Prof::Metric::Mgr::npos) {
-      mDrvdEnd = metricMgr.size();
-      numDrvd = (mDrvdEnd - mDrvdBeg);
-    }
+  mDrvdBeg = mMgr.makeSummaryMetrics(mSrcBeg, mSrcEnd);
+  if (mDrvdBeg != Prof::Metric::Mgr::npos) {
+    mDrvdEnd = mMgr.size();
+    numDrvd = (mDrvdEnd - mDrvdBeg);
+  }
+  
+  for (uint i = mSrcBeg; i < mSrcEnd; ++i) {
+    Prof::Metric::ADesc* m = mMgr.metric(i);
+    m->isVisible(false);
   }
 
   // -------------------------------------------------------
@@ -210,17 +209,17 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   cctRoot->aggregateMetrics(mSrcBeg, mSrcEnd);
 
   for (uint i = mSrcBeg; i < mSrcEnd; ++i) {
-    Prof::Metric::ADesc* m = metricMgr.metric(i);
+    Prof::Metric::ADesc* m = mMgr.metric(i);
     m->isComputed(true);
   }
 
   // -------------------------------------------------------
   // compute derived metrics
   // -------------------------------------------------------
-  cctRoot->computeMetrics(metricMgr, mDrvdBeg, mDrvdEnd);
+  cctRoot->computeMetrics(mMgr, mDrvdBeg, mDrvdEnd);
 
   for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
-    Prof::Metric::ADesc* m = metricMgr.metric(i);
+    Prof::Metric::ADesc* m = mMgr.metric(i);
     m->isComputed(true);
   }
 }
