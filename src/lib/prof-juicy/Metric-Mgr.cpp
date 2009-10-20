@@ -126,36 +126,72 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
 }
 
 
-void 
-Mgr::makeSummaryMetrics()
+uint 
+Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
 {
-  StringToADescVecMap::iterator it = m_nuniqnmToMetricMap.begin();
-  for ( ; it != m_nuniqnmToMetricMap.end(); ++it) {
+  StringToADescVecMap nmToMetricMap;
+
+  if (srcBegId == Mgr::npos) {
+    srcBegId = 0;
+  }
+  if (srcEndId == Mgr::npos) {
+    srcEndId = m_metrics.size();
+  }
+
+  // -------------------------------------------------------
+  // collect like metrics
+  // -------------------------------------------------------
+  for (uint i = srcBegId; i < srcEndId; ++i) {
+    Metric::ADesc* m = m_metrics[i];
+    string nm = m->namePfx() + m->nameBase();
+
+    StringToADescVecMap::iterator it = nmToMetricMap.find(nm);
+    if (it != nmToMetricMap.end()) {
+      Metric::ADescVec& mvec = it->second;
+      mvec.push_back(m);
+    }
+    else {
+      nmToMetricMap.insert(make_pair(nm, Metric::ADescVec(1, m)));
+    }
+  }
+
+  // -------------------------------------------------------
+  // create summary metrics
+  // -------------------------------------------------------
+  uint firstId = Mgr::npos;
+
+  StringToADescVecMap::iterator it = nmToMetricMap.begin();
+  for ( ; it != nmToMetricMap.end(); ++it) {
     const string& mNm = it->first;
     Metric::ADescVec& mvec = it->second;
     if (mvec.size() > 1) {
+      Metric::ADesc* mNew = NULL;
+
       string mean_nm = "Mean-" + mNm;
-      string cv_nm   = "CoefVar-" + mNm; // "RStdDev-"
+      string cv_nm   = "CoefVar-" + mNm;
       string min_nm  = "Min-" + mNm;
       string max_nm  = "Max-" + mNm;
       string sum_nm  = "Sum-" + mNm;
 
-      makeSummaryMetric(mean_nm, mvec);
+      mNew = makeSummaryMetric(mean_nm, mvec);
       makeSummaryMetric(cv_nm, mvec);
       makeSummaryMetric(min_nm, mvec);
       makeSummaryMetric(max_nm, mvec);
       makeSummaryMetric(sum_nm, mvec);
+
+      if (firstId == Mgr::npos) {
+	firstId = mNew->id();
+      }
     }
   }
+
+  return firstId;
 }
 
 
 uint
-Mgr::makeItrvSummaryMetrics(uint srcBegId, uint srcEndId)
+Mgr::makeSummaryMetricsItrv(uint srcBegId, uint srcEndId)
 {
-  // N.B.: Probably too specific; currently assumes we should make
-  // summary metrics for each entry in m_metrics
-
   if (srcBegId == Mgr::npos) {
     srcBegId = 0;
   }

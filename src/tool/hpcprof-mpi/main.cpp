@@ -392,6 +392,7 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   return out;
 }
 
+
 //***************************************************************************
 
 static void
@@ -512,7 +513,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
     uint mSrcEnd = numSrc;
 
     // official set of derived metrics
-    mDrvdBeg = profGbl.metricMgr()->makeItrvSummaryMetrics(mSrcBeg, mSrcEnd);
+    mDrvdBeg = profGbl.metricMgr()->makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
     if (mDrvdBeg != Prof::Metric::Mgr::npos) {
       mDrvdEnd = profGbl.metricMgr()->size();
       numDrvd = (mDrvdEnd - mDrvdBeg);
@@ -549,7 +550,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
     }
 
     // temporary set of extra derived metrics (for reduction)
-    mXDrvdBeg = profGbl.metricMgr()->makeItrvSummaryMetrics(mSrcBeg, mSrcEnd);
+    mXDrvdBeg = profGbl.metricMgr()->makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
     if (mXDrvdBeg != Prof::Metric::Mgr::npos) {
       mXDrvdEnd = profGbl.metricMgr()->size();
     }
