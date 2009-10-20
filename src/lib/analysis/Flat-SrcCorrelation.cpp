@@ -925,7 +925,7 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
 			    uint mBegId, uint mEndId)
 {
   // N.B. pre-order walk assumes point-wise metrics
-  // Cf. CCT::ANode::computeMetricsItrv().
+  // Cf. CCT::ANode::computeMetrics() && computeMetricsItrv().
 
   Prof::Struct::Root* strct = structure.root();
   uint numMetrics = m_mMgr.size();
@@ -935,7 +935,7 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
       const Prof::Metric::AExpr* expr = mExprVec[mId];
       double val = expr->eval(*it.current());
       // if (!Prof::Metric::AExpr::isok(val)) ...
-      it.current()->demandMetric(mId, numMetrics/*size*/) += val;
+      it.current()->demandMetric(mId, numMetrics/*size*/) = val;
     }
   }
 }
