@@ -1702,9 +1702,9 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
   }
   
   /* <header> */
-  fwrite(HPCRUNFILE_MAGIC_STR, 1, HPCRUNFILE_MAGIC_STR_LEN, fs);
-  fwrite(HPCRUNFILE_VERSION, 1, HPCRUNFILE_VERSION_LEN, fs);
-  fputc(HPCRUNFILE_ENDIAN, fs);
+  fwrite(HPCRUNFLAT_FMT_Magic, 1, HPCRUNFLAT_FMT_MagicLen, fs);
+  fwrite(HPCRUNFLAT_Version, 1, HPCRUNFLAT_VersionLen, fs);
+  fputc(HPCRUNFLAT_FMT_Endian, fs);
 
   if (opt_debug >= 1) { MSGx(stderr, "rtmap count: %d", rtmap->count); }
 

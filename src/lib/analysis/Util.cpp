@@ -113,7 +113,7 @@ getProfileType(const std::string& filenm)
   if (strncmp(buf, HPCRUN_FMT_Magic, HPCRUN_FMT_MagicLen) == 0) {
     ty = ProfType_CALLPATH;
   }
-  else if (strncmp(buf, HPCRUNFILE_MAGIC_STR, HPCRUNFILE_MAGIC_STR_LEN) == 0) {
+  else if (strncmp(buf, HPCRUNFLAT_FMT_Magic, HPCRUNFLAT_FMT_MagicLen) == 0) {
     ty = ProfType_FLAT;
   }
 

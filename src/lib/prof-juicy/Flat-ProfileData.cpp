@@ -256,19 +256,19 @@ ProfileData::fopen(const char* filename)
 void
 ProfileData::read_header(FILE* fs)
 {
-  char magic_str[HPCRUNFILE_MAGIC_STR_LEN];
-  char version[HPCRUNFILE_VERSION_LEN];
+  char magic_str[HPCRUNFLAT_FMT_MagicLen];
+  char version[HPCRUNFLAT_VersionLen];
   char endian;
   int c;
   size_t sz;
 
-  sz = fread((char*)magic_str, 1, HPCRUNFILE_MAGIC_STR_LEN, fs);
-  if (sz != HPCRUNFILE_MAGIC_STR_LEN) { 
+  sz = fread((char*)magic_str, 1, HPCRUNFLAT_FMT_MagicLen, fs);
+  if (sz != HPCRUNFLAT_FMT_MagicLen) { 
     PROFFLAT_Throw("Error reading <header>.");
   }
   
-  sz = fread((char*)version, 1, HPCRUNFILE_VERSION_LEN, fs);
-  if (sz != HPCRUNFILE_VERSION_LEN) { 
+  sz = fread((char*)version, 1, HPCRUNFLAT_VersionLen, fs);
+  if (sz != HPCRUNFLAT_VersionLen) { 
     PROFFLAT_Throw("Error reading <header>.");
   }
   
@@ -279,14 +279,14 @@ ProfileData::read_header(FILE* fs)
   
 
   // sanity check header
-  if (strncmp(magic_str, HPCRUNFILE_MAGIC_STR, 
-	      HPCRUNFILE_MAGIC_STR_LEN) != 0) { 
+  if (strncmp(magic_str, HPCRUNFLAT_FMT_Magic, 
+	      HPCRUNFLAT_FMT_MagicLen) != 0) { 
     PROFFLAT_Throw("Error reading <header>: bad magic string.");
   }
-  if (strncmp(version, HPCRUNFILE_VERSION, HPCRUNFILE_VERSION_LEN) != 0) { 
+  if (strncmp(version, HPCRUNFLAT_Version, HPCRUNFLAT_VersionLen) != 0) { 
     PROFFLAT_Throw("Error reading <header>: bad version.");
   }
-  if (endian != HPCRUNFILE_ENDIAN) { 
+  if (endian != HPCRUNFLAT_FMT_Endian) { 
     PROFFLAT_Throw("Error reading <header>: bad endianness.");
   }
 }
