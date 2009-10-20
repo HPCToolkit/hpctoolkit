@@ -201,10 +201,12 @@ realmain(int argc, char* const* argv)
 			   myRank, numRanks, rootRank);
 
   int mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
-  uint rFlags = (Prof::CallPath::Profile::RFlg_virtualMetrics 
+  uint rFlags = (Prof::CallPath::Profile::RFlg_virtualMetrics
 		 | Prof::CallPath::Profile::RFlg_noMetricSfx);
-  profLcl = Analysis::CallPath::read(*nArgs.paths, nArgs.groupMap,
-				     mergeTy, rFlags);
+  Analysis::Util::UIntVec* groupMap =
+    (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
+
+  profLcl = Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags);
 
   // -------------------------------------------------------
   // Create canonical CCT (metrics merged by <group>.<name>.*)
@@ -417,9 +419,12 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   cctRoot->computeMetricsItrv(metricMgr, mDrvdBeg, mDrvdEnd,
 			      Prof::Metric::AExprItrv::FnInit, 0);
 
+  Analysis::Util::UIntVec* groupMap =
+    (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
+
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
-    uint groupId = (*nArgs.groupMap)[i];
+    uint groupId = (groupMap) ? (*groupMap)[i] : 0;
     processProfile(profGbl, fnm, groupId, mDrvdBeg, mDrvdEnd);
   }
 
@@ -579,7 +584,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // read profile file
   // -------------------------------------------------------
   uint rFlags = Prof::CallPath::Profile::RFlg_noMetricSfx;
-  Prof::CallPath::Profile* prof = 
+  Prof::CallPath::Profile* prof =
     Analysis::CallPath::read(profileFile, groupId, rFlags);
 
   // -------------------------------------------------------
