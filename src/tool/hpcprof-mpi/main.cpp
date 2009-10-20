@@ -503,6 +503,8 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 		       uint& mXDrvdBeg, uint& mXDrvdEnd,
 		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap)
 {
+  Prof::Metric::Mgr& mMgrGbl = *(profGbl.metricMgr());
+
   uint numDrvd = 0;
   mDrvdBeg = Prof::Metric::Mgr::npos; // [ )
   mDrvdEnd = Prof::Metric::Mgr::npos;
@@ -510,22 +512,29 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   mXDrvdBeg = Prof::Metric::Mgr::npos; // [ )
   mXDrvdEnd = Prof::Metric::Mgr::npos;
 
-  uint numSrc = profGbl.metricMgr()->size();
+  uint numSrc = mMgrGbl.size();
 
   // create derived metrics
   if (numSrc > 0) {
     uint mSrcBeg = 0;
     uint mSrcEnd = numSrc;
 
+    // -------------------------------------------------------
     // official set of derived metrics
-    mDrvdBeg = profGbl.metricMgr()->makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
+    // -------------------------------------------------------
+    mDrvdBeg = mMgrGbl.makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
     if (mDrvdBeg != Prof::Metric::Mgr::npos) {
-      mDrvdEnd = profGbl.metricMgr()->size();
+      mDrvdEnd = mMgrGbl.size();
       numDrvd = (mDrvdEnd - mDrvdBeg);
     }
 
+    for (uint i = mSrcBeg; i < mSrcEnd; ++i) {
+      Prof::Metric::ADesc* m = mMgrGbl.metric(i);
+      m->isVisible(false);
+    }
+
     for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
-      Prof::Metric::ADesc* m = profGbl.metricMgr()->metric(i);
+      Prof::Metric::ADesc* m = mMgrGbl.metric(i);
 
       // FIXME: clutzy, but after the CCT redution, metric prefixes
       // have been collapsed into the name.
@@ -554,14 +563,16 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
       ivalset->insert(i, i + 1); // [ )
     }
 
+    // -------------------------------------------------------
     // temporary set of extra derived metrics (for reduction)
-    mXDrvdBeg = profGbl.metricMgr()->makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
+    // -------------------------------------------------------
+    mXDrvdBeg = mMgrGbl.makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
     if (mXDrvdBeg != Prof::Metric::Mgr::npos) {
-      mXDrvdEnd = profGbl.metricMgr()->size();
+      mXDrvdEnd = mMgrGbl.size();
     }
     
     for (uint i = mXDrvdBeg; i < mXDrvdEnd; ++i) {
-      Prof::Metric::ADesc* m = profGbl.metricMgr()->metric(i);
+      Prof::Metric::ADesc* m = mMgrGbl.metric(i);
       m->isVisible(false);
     }
   }
