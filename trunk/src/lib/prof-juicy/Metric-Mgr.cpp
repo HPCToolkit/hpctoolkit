@@ -203,7 +203,6 @@ Mgr::makeSummaryMetricsItrv(uint srcBegId, uint srcEndId)
 
   for (uint i = srcBegId; i < srcEndId; ++i) {
     Metric::ADesc* m = m_metrics[i];
-    m->isVisible(false);
 
     Metric::ADesc* mNew = NULL;
     string mNm = m->name();
