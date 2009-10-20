@@ -131,6 +131,7 @@ public:
   // FIXME: computed metrics require interior values (implications for
   // hpcviewer?)... perhaps this should only be an output option.
   bool metrics_computeInteriorValues;
+  bool isHPCProfMetric;
 
   // LUSH agent (prototype)
   std::string lush_agent;

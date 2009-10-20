@@ -143,7 +143,7 @@ Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
   // -------------------------------------------------------
   for (uint i = srcBegId; i < srcEndId; ++i) {
     Metric::ADesc* m = m_metrics[i];
-    string nm = m->namePfx() + m->nameBase();
+    string nm = m->namePfxBase();
 
     StringToADescVecMap::iterator it = nmToMetricMap.find(nm);
     if (it != nmToMetricMap.end()) {
@@ -213,11 +213,11 @@ Mgr::makeSummaryMetricsItrv(uint srcBegId, uint srcEndId)
     string max_nm  = "Max-" + mNm;
     string sum_nm  = "Sum-" + mNm;
     
-    mNew = makeItrvSummaryMetric(mean_nm, m->id());
-    makeItrvSummaryMetric(cv_nm, m->id());
-    makeItrvSummaryMetric(min_nm, m->id());
-    makeItrvSummaryMetric(max_nm, m->id());
-    makeItrvSummaryMetric(sum_nm, m->id());
+    mNew = makeSummaryMetricItrv(mean_nm, m->id());
+    makeSummaryMetricItrv(cv_nm, m->id());
+    makeSummaryMetricItrv(min_nm, m->id());
+    makeSummaryMetricItrv(max_nm, m->id());
+    makeSummaryMetricItrv(sum_nm, m->id());
     
     if (firstId == Mgr::npos) {
       firstId = mNew->id();
@@ -286,7 +286,7 @@ Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
 
 
 Metric::DerivedItrvDesc*
-Mgr::makeItrvSummaryMetric(const string& mNm, uint srcId)
+Mgr::makeSummaryMetricItrv(const string& mNm, uint srcId)
 {
   bool needDst2Id = false;
 

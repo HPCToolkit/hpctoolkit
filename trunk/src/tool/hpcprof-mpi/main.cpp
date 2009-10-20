@@ -505,76 +505,68 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 {
   Prof::Metric::Mgr& mMgrGbl = *(profGbl.metricMgr());
 
-  uint numDrvd = 0;
-  mDrvdBeg = Prof::Metric::Mgr::npos; // [ )
-  mDrvdEnd = Prof::Metric::Mgr::npos;
-
-  mXDrvdBeg = Prof::Metric::Mgr::npos; // [ )
-  mXDrvdEnd = Prof::Metric::Mgr::npos;
-
   uint numSrc = mMgrGbl.size();
+  uint mSrcBeg = 0, mSrcEnd = numSrc; // [ )
 
-  // create derived metrics
-  if (numSrc > 0) {
-    uint mSrcBeg = 0;
-    uint mSrcEnd = numSrc;
+  uint numDrvd = 0;
+  mDrvdBeg = mDrvdEnd = 0;   // [ )
+  mXDrvdBeg = mXDrvdEnd = 0; // [ )
 
-    // -------------------------------------------------------
-    // official set of derived metrics
-    // -------------------------------------------------------
-    mDrvdBeg = mMgrGbl.makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
-    if (mDrvdBeg != Prof::Metric::Mgr::npos) {
-      mDrvdEnd = mMgrGbl.size();
-      numDrvd = (mDrvdEnd - mDrvdBeg);
-    }
+  // -------------------------------------------------------
+  // official set of derived metrics
+  // -------------------------------------------------------
+  mDrvdBeg = mMgrGbl.makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
+  if (mDrvdBeg != Prof::Metric::Mgr::npos) {
+    mDrvdEnd = mMgrGbl.size();
+    numDrvd = (mDrvdEnd - mDrvdBeg);
+  }
 
-    for (uint i = mSrcBeg; i < mSrcEnd; ++i) {
-      Prof::Metric::ADesc* m = mMgrGbl.metric(i);
-      m->isVisible(false);
-    }
+  for (uint i = mSrcBeg; i < mSrcEnd; ++i) {
+    Prof::Metric::ADesc* m = mMgrGbl.metric(i);
+    m->isVisible(false);
+  }
 
-    for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
-      Prof::Metric::ADesc* m = mMgrGbl.metric(i);
+  for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
+    Prof::Metric::ADesc* m = mMgrGbl.metric(i);
 
-      // FIXME: clutzy, but after the CCT redution, metric prefixes
-      // have been collapsed into the name.
-      string nm = m->name();
-
-      // extract group id
-      size_t endGroupId = nm.find_first_of('.');
-      DIAG_Assert(endGroupId != string::npos, DIAG_UnexpectedInput);
-
-      size_t begGroupId = endGroupId;
-      while (begGroupId > 0 && isdigit(nm[begGroupId - 1]) ) {
-	begGroupId--;
-      }
-      DIAG_Assert(begGroupId < endGroupId, DIAG_UnexpectedInput);
-
-      string grpStr = nm.substr(begGroupId, (endGroupId - begGroupId));
-      uint groupId = (uint)StrUtil::toUInt64(grpStr);
-
-      DIAG_Assert(groupId > 0, DIAG_UnexpectedInput);
-      DIAG_Assert(groupId < groupIdToGroupMetricsMap.size(), DIAG_UnexpectedInput);
-
-      VMAIntervalSet*& ivalset = groupIdToGroupMetricsMap[groupId];
-      if (!ivalset) {
-	ivalset = new VMAIntervalSet;
-      }
-      ivalset->insert(i, i + 1); // [ )
-    }
-
-    // -------------------------------------------------------
-    // temporary set of extra derived metrics (for reduction)
-    // -------------------------------------------------------
-    mXDrvdBeg = mMgrGbl.makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
-    if (mXDrvdBeg != Prof::Metric::Mgr::npos) {
-      mXDrvdEnd = mMgrGbl.size();
-    }
+    // FIXME: clutzy, but after the CCT redution, metric prefixes
+    // have been collapsed into the name.
+    string nm = m->name();
     
-    for (uint i = mXDrvdBeg; i < mXDrvdEnd; ++i) {
-      Prof::Metric::ADesc* m = mMgrGbl.metric(i);
-      m->isVisible(false);
+    // extract group id
+    size_t endGroupId = nm.find_first_of('.');
+    DIAG_Assert(endGroupId != string::npos, DIAG_UnexpectedInput);
+    
+    size_t begGroupId = endGroupId;
+    while (begGroupId > 0 && isdigit(nm[begGroupId - 1]) ) {
+      begGroupId--;
     }
+    DIAG_Assert(begGroupId < endGroupId, DIAG_UnexpectedInput);
+    
+    string grpStr = nm.substr(begGroupId, (endGroupId - begGroupId));
+    uint groupId = (uint)StrUtil::toUInt64(grpStr);
+    
+    DIAG_Assert(groupId > 0, DIAG_UnexpectedInput);
+    DIAG_Assert(groupId < groupIdToGroupMetricsMap.size(), DIAG_UnexpectedInput);
+    
+    VMAIntervalSet*& ivalset = groupIdToGroupMetricsMap[groupId];
+    if (!ivalset) {
+      ivalset = new VMAIntervalSet;
+    }
+    ivalset->insert(i, i + 1); // [ )
+  }
+  
+  // -------------------------------------------------------
+  // temporary set of extra derived metrics (for reduction)
+  // -------------------------------------------------------
+  mXDrvdBeg = mMgrGbl.makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
+  if (mXDrvdBeg != Prof::Metric::Mgr::npos) {
+    mXDrvdEnd = mMgrGbl.size();
+  }
+    
+  for (uint i = mXDrvdBeg; i < mXDrvdEnd; ++i) {
+    Prof::Metric::ADesc* m = mMgrGbl.metric(i);
+    m->isVisible(false);
   }
 
   profGbl.isMetricMgrVirtual(false);

@@ -237,7 +237,7 @@ private:
   makeSummaryMetric(const std::string& m_nm, const Metric::ADescVec& m_opands);
 
   Metric::DerivedItrvDesc*
-  makeItrvSummaryMetric(const std::string& m_nm, uint srcId);
+  makeSummaryMetricItrv(const std::string& m_nm, uint srcId);
 
   
 private:
