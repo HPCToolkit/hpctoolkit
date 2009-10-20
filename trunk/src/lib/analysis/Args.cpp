@@ -107,6 +107,7 @@ Analysis::Args::Ctor()
   txt_srcAnnotation = false;
 
   metrics_computeInteriorValues = false;
+  isHPCProfMetric = false;
 }
 
 
