@@ -107,15 +107,18 @@ public:
 
 public:
   AExprItrv(uint dstId, uint srcId)
-    : m_dstId(dstId), m_dst2Id(Metric::IData::npos), m_srcId(srcId)
+    : m_dstId(dstId), m_dst2Id(Metric::IData::npos),
+      m_srcId(srcId), m_src2Id(Metric::IData::npos)
   { }
 
   AExprItrv(uint dstId, uint dst2Id, uint srcId)
-    : m_dstId(dstId), m_dst2Id(dst2Id), m_srcId(srcId)
+    : m_dstId(dstId), m_dst2Id(dst2Id),
+      m_srcId(srcId), m_src2Id(Metric::IData::npos)
   { }
 
   virtual ~AExprItrv()
   { }
+
 
   void
   dstId(uint x)
@@ -125,30 +128,49 @@ public:
   dst2Id(uint x)
   { m_dst2Id = x; }
 
+  bool
+  hasDst2Id() const
+  { return (m_dst2Id != Metric::IData::npos); }
+
+
   void
   srcId(uint x)
   { m_srcId = x; }
+
+  void
+  src2Id(uint x)
+  { m_src2Id = x; }
+
+  bool
+  hasSrc2Id() const
+  { return (m_src2Id != Metric::IData::npos); }
 
 
   // ------------------------------------------------------------
   //
   // ------------------------------------------------------------
 
-  enum FnTy { FnInit, FnInitSrc, FnUpdate, FnFini };
+  enum FnTy { FnInit, FnInitSrc, FnUpdate, FnMerge, FnFini };
 
-  // initializes 'dstId'
+  // initialize: initializes destination metrics (dstVar() & dst2Var())
   virtual double
   initialize(Metric::IData& mdata) const = 0;
 
-  // initializes 'srcId'
+  // initializeSrc: initializes source metrics (srcVar() & srcVar2())
   virtual double
   initializeSrc(Metric::IData& mdata) const = 0;
 
-  // updates 'dstId' using 'srdId'
+  // update: updates destination metrics using an individual source, srcVar().
   virtual double
   update(Metric::IData& mdata) const = 0;
 
-  // finalizes 'dstId' give the total number of sources
+  // merge: merges destination metrics with sources that themselves
+  // represent destination metrics, i.e., they are the result of
+  // updates ((srcVar() & srcVar2()).
+  virtual double
+  merge(Metric::IData& mdata) const = 0;
+
+  // finalizes dstVar() give the total number of sources
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const = 0;
 
@@ -193,6 +215,15 @@ public:
   { return var(mdata, m_srcId); }
 
 
+  double
+  src2Var(const Metric::IData& mdata) const
+  { return var(mdata, m_src2Id); }
+
+  double&
+  src2Var(Metric::IData& mdata) const
+  { return var(mdata, m_src2Id); }
+
+
   // ------------------------------------------------------------
   //
   // ------------------------------------------------------------
@@ -207,6 +238,26 @@ public:
   // ------------------------------------------------------------
 
   double
+  initializeStdDev(Metric::IData& mdata) const
+  {
+    dstVar(mdata) = 0.0;
+    dst2Var(mdata) = 0.0;
+    return 0.0;
+  }
+
+
+  double
+  initializeSrcStdDev(Metric::IData& mdata) const
+  {
+    srcVar(mdata) = 0.0;
+    if (hasSrc2Id()) {
+      src2Var(mdata) = 0.0;
+    }
+    return 0.0;
+  }
+
+
+  double
   updateStdDev(Metric::IData& mdata) const
   {
     double d1 = dstVar(mdata), d2 = dst2Var(mdata), s = srcVar(mdata);
@@ -216,6 +267,20 @@ public:
     dst2Var(mdata) = z2;
     return z1;
   }
+
+
+  double
+  mergeStdDev(Metric::IData& mdata) const
+  {
+    double d1 = dstVar(mdata), d2 = dst2Var(mdata);
+    double s1 = srcVar(mdata), s2 = src2Var(mdata);
+    double z1 = d1 + s1; // running sum
+    double z2 = d2 + s2; // running sum of squares
+    dstVar(mdata)  = z1;
+    dst2Var(mdata) = z2;
+    return z1;
+  }
+
 
   double
   finalizeStdDev(Metric::IData& mdata, uint numSrc) const
@@ -259,6 +324,7 @@ protected:
   uint m_dstId;
   uint m_dst2Id;
   uint m_srcId;
+  uint m_src2Id;
 };
 
 
@@ -295,6 +361,10 @@ public:
     dstVar(mdata) = z;
     return z;
   }
+
+  virtual double
+  merge(Metric::IData& mdata) const
+  { return MinItrv::update(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
@@ -343,6 +413,10 @@ public:
   }
 
   virtual double
+  merge(Metric::IData& mdata) const
+  { return MaxItrv::update(mdata); }
+
+  virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
   { return dstVar(mdata); }
 
@@ -387,6 +461,10 @@ public:
     dstVar(mdata) = z;
     return z;
   }
+
+  virtual double
+  merge(Metric::IData& mdata) const
+  { return SumItrv::update(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
@@ -435,6 +513,10 @@ public:
   }
 
   virtual double
+  merge(Metric::IData& mdata) const
+  { return MeanItrv::update(mdata); }
+
+  virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
   {
     double d = dstVar(mdata);
@@ -472,18 +554,19 @@ public:
 
   virtual double
   initialize(Metric::IData& mdata) const
-  {
-    dst2Var(mdata) = 0.0;
-    return (dstVar(mdata) = 0.0);
-  }
+  { return initializeStdDev(mdata); }
 
   virtual double
   initializeSrc(Metric::IData& mdata) const
-  { return (srcVar(mdata) = 0.0); }
+  { return initializeSrcStdDev(mdata); }
 
   virtual double
   update(Metric::IData& mdata) const
   { return updateStdDev(mdata); }
+
+  virtual double
+  merge(Metric::IData& mdata) const
+  { return mergeStdDev(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
@@ -515,18 +598,19 @@ public:
 
   virtual double
   initialize(Metric::IData& mdata) const
-  {
-    dst2Var(mdata) = 0.0;
-    return (dstVar(mdata) = 0.0);
-  }
+  { return initializeStdDev(mdata); }
 
   virtual double
   initializeSrc(Metric::IData& mdata) const
-  { return (srcVar(mdata) = 0.0); }
+  { return initializeSrcStdDev(mdata); }
 
   virtual double
   update(Metric::IData& mdata) const
   { return updateStdDev(mdata); }
+
+  virtual double
+  merge(Metric::IData& mdata) const
+  { return mergeStdDev(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
@@ -567,18 +651,19 @@ public:
 
   virtual double
   initialize(Metric::IData& mdata) const
-  {
-    dst2Var(mdata) = 0.0;
-    return (dstVar(mdata) = 0.0);
-  }
+  { return initializeStdDev(mdata); }
 
   virtual double
   initializeSrc(Metric::IData& mdata) const
-  { return (srcVar(mdata) = 0.0); }
+  { return initializeSrcStdDev(mdata); }
 
   virtual double
   update(Metric::IData& mdata) const
   { return updateStdDev(mdata); }
+
+  virtual double
+  merge(Metric::IData& mdata) const
+  { return mergeStdDev(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
