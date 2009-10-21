@@ -430,6 +430,8 @@ ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 	  expr->initializeSrc(*this); break;
         case Metric::AExprItrv::FnUpdate:
 	  expr->update(*this); break;
+        case Metric::AExprItrv::FnMerge:
+	  expr->merge(*this); break;
         case Metric::AExprItrv::FnFini:
 	  expr->finalize(*this, srcArg); break;
         default:

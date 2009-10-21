@@ -444,6 +444,9 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
     Prof::Metric::AExprItrv* expr = mm->expr();
     if (expr) {
       expr->srcId(j);
+      if (expr->hasDst2Id()) {
+	expr->src2Id(j + 1); // cf. Metric::Mgr::makeSummaryMetricItrv()
+      }
     }
   }
 
