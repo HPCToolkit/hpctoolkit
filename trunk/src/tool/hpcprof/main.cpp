@@ -197,11 +197,13 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
     mDrvdEnd = mMgr.size();
     numDrvd = (mDrvdEnd - mDrvdBeg);
   }
-  
+
+#if 0
   for (uint i = mSrcBeg; i < mSrcEnd; ++i) {
     Prof::Metric::ADesc* m = mMgr.metric(i);
     m->isVisible(false);
   }
+#endif
 
   // -------------------------------------------------------
   // aggregate metrics
@@ -216,7 +218,7 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   // -------------------------------------------------------
   // compute derived metrics
   // -------------------------------------------------------
-  cctRoot->computeMetrics(mMgr, mDrvdBeg, mDrvdEnd);
+  cctRoot->computeMetricsDeep(mMgr, mDrvdBeg, mDrvdEnd);
 
   for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgr.metric(i);

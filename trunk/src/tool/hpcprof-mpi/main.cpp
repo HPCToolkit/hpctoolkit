@@ -114,8 +114,9 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 
 static void
 processProfile(Prof::CallPath::Profile& profGbl,
-	       string& profileFile, uint groupId,
-	       uint mDrvdBeg, uint mDrvdEnd);
+	       string& profileFile, uint groupId, uint groupMax,
+	       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
+	       int myRank);
 
 
 //****************************************************************************
@@ -194,7 +195,7 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   Prof::CallPath::Profile* profLcl = NULL;
 
-  vector<uint> groupIdToGroupSizeMap; // only filled for rootRank
+  vector<uint> groupIdToGroupSizeMap; // only initialized for rootRank
 
   Analysis::Util::NormalizeProfileArgs_t nArgs = 
     myNormalizeProfileArgs(args.profileFiles, groupIdToGroupSizeMap,
@@ -403,29 +404,28 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 	    Prof::CallPath::Profile& profGbl,
 	    int myRank, int numRanks, int rootRank)
 {
-  uint mDrvdBeg, mDrvdEnd;   // [ )
-  uint mXDrvdBeg, mXDrvdEnd; // [ )
+  uint mDrvdBeg = 0, mDrvdEnd = 0;   // [ )
+  uint mXDrvdBeg = 0, mXDrvdEnd = 0; // [ )
+
   vector<VMAIntervalSet*> groupIdToGroupMetricsMap(nArgs.groupMax + 1, NULL);
+
   makeDerivedMetricDescs(profGbl, mDrvdBeg, mDrvdEnd, mXDrvdBeg, mXDrvdEnd,
 			 groupIdToGroupMetricsMap);
 
-  Prof::Metric::Mgr& metricMgr = *profGbl.metricMgr();
+  Prof::Metric::Mgr& mMgrGbl = *profGbl.metricMgr();
+  Prof::CCT::ANode* cctRoot = profGbl.cct()->root();
 
   // -------------------------------------------------------
   // create local summary metrics (and thread-level metrics)
   // -------------------------------------------------------
-
-  Prof::CCT::ANode* cctRoot = profGbl.cct()->root();
-  cctRoot->computeMetricsItrv(metricMgr, mDrvdBeg, mDrvdEnd,
-			      Prof::Metric::AExprItrv::FnInit, 0);
-
-  Analysis::Util::UIntVec* groupMap =
-    (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
+  cctRoot->computeMetricsItrvDeep(mMgrGbl, mDrvdBeg, mDrvdEnd,
+				  Prof::Metric::AExprItrv::FnInit, 0);
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
-    uint groupId = (groupMap) ? (*groupMap)[i] : 0;
-    processProfile(profGbl, fnm, groupId, mDrvdBeg, mDrvdEnd);
+    uint groupId = (*nArgs.groupMap)[i];
+    processProfile(profGbl, fnm, groupId, nArgs.groupMax,
+		   groupIdToGroupMetricsMap, myRank);
   }
 
   // -------------------------------------------------------
@@ -436,7 +436,7 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   //    point to the local summary values that will be in [mXDrvdBeg,
   //    mXDrvdEnd) durring the reduction
   for (uint i = mDrvdBeg, j = mXDrvdBeg; i < mDrvdEnd; ++i, ++j) {
-    Prof::Metric::ADesc* m = metricMgr.metric(i);
+    Prof::Metric::ADesc* m = mMgrGbl.metric(i);
     Prof::Metric::DerivedItrvDesc* mm =
       dynamic_cast<Prof::Metric::DerivedItrvDesc*>(m);
     DIAG_Assert(mm, DIAG_UnexpectedInput);
@@ -450,8 +450,8 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   // 2. Initialize extra derived metric storage [mXDrvdBeg, mXDrvdEnd)
   //    since it will serve as an input during the summary metrics
   //    reduction
-  cctRoot->computeMetricsItrv(metricMgr, mXDrvdBeg, mXDrvdEnd,
-			      Prof::Metric::AExprItrv::FnInitSrc, 0);
+  cctRoot->computeMetricsItrvDeep(mMgrGbl, mXDrvdBeg, mXDrvdEnd,
+				  Prof::Metric::AExprItrv::FnInitSrc, 0);
 
   // 3. Reduction
   uint maxCCTId = profGbl.cct()->maxDenseId();
@@ -479,12 +479,13 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
       
       uint numInputs = groupIdToGroupSizeMap[grpId];
       
-      cctRoot->computeMetricsItrv(metricMgr, mBeg, mEnd,
-				  Prof::Metric::AExprItrv::FnFini, numInputs);
+      cctRoot->computeMetricsItrvDeep(mMgrGbl, mBeg, mEnd,
+				      Prof::Metric::AExprItrv::FnFini,
+				      numInputs);
     }
 
-    for (uint i = 0; i < metricMgr.size(); ++i) {
-      Prof::Metric::ADesc* m = metricMgr.metric(i);
+    for (uint i = 0; i < mMgrGbl.size(); ++i) {
+      Prof::Metric::ADesc* m = mMgrGbl.metric(i);
       m->isComputed(true);
     }
   }
@@ -529,22 +530,25 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgrGbl.metric(i);
 
-    // FIXME: clutzy, but after the CCT redution, metric prefixes
+    // FIXME: clutzy, but after the CCT reduction, metric prefixes
     // have been collapsed into the name.
     string nm = m->name();
     
+    uint groupId = 1; // default group-id
+
     // extract group id
-    size_t endGroupId = nm.find_first_of('.');
-    DIAG_Assert(endGroupId != string::npos, DIAG_UnexpectedInput);
-    
-    size_t begGroupId = endGroupId;
-    while (begGroupId > 0 && isdigit(nm[begGroupId - 1]) ) {
-      begGroupId--;
+    size_t endGroupPos = nm.find_first_of(Prof::Metric::ADesc::nameSep);
+    if (endGroupPos != string::npos) {
+      size_t begGroupPos = endGroupPos;
+      while (begGroupPos > 0 && isdigit(nm[begGroupPos - 1]) ) {
+	begGroupPos--;
+      }
+      DIAG_Assert(begGroupPos < endGroupPos, DIAG_UnexpectedInput);
+      
+      string grpStr = nm.substr(begGroupPos, (endGroupPos - begGroupPos));
+      
+      groupId = (uint)StrUtil::toUInt64(grpStr);
     }
-    DIAG_Assert(begGroupId < endGroupId, DIAG_UnexpectedInput);
-    
-    string grpStr = nm.substr(begGroupId, (endGroupId - begGroupId));
-    uint groupId = (uint)StrUtil::toUInt64(grpStr);
     
     DIAG_Assert(groupId > 0, DIAG_UnexpectedInput);
     DIAG_Assert(groupId < groupIdToGroupMetricsMap.size(), DIAG_UnexpectedInput);
@@ -563,7 +567,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   if (mXDrvdBeg != Prof::Metric::Mgr::npos) {
     mXDrvdEnd = mMgrGbl.size();
   }
-    
+  
   for (uint i = mXDrvdBeg; i < mXDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgrGbl.metric(i);
     m->isVisible(false);
@@ -577,18 +581,22 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 
 static void
 processProfile(Prof::CallPath::Profile& profGbl,
-	       string& profileFile, uint groupId,
-	       uint mDrvdBeg, uint mDrvdEnd)
+	       string& profileFile, uint groupId, uint groupMax,
+	       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
+	       int myRank)
 {
   Prof::Metric::Mgr* mMgrGbl = profGbl.metricMgr();
   Prof::CCT::Tree* cctGbl = profGbl.cct();
+  Prof::CCT::ANode* cctRoot = cctGbl->root();
 
   // -------------------------------------------------------
   // read profile file
   // -------------------------------------------------------
   uint rFlags = Prof::CallPath::Profile::RFlg_noMetricSfx;
+  uint rGroupId = (groupMax > 1) ? groupId : 0;
+
   Prof::CallPath::Profile* prof =
-    Analysis::CallPath::read(profileFile, groupId, rFlags);
+    Analysis::CallPath::read(profileFile, rGroupId, rFlags);
 
   // -------------------------------------------------------
   // merge into canonical CCT
@@ -600,8 +608,8 @@ processProfile(Prof::CallPath::Profile& profGbl,
   //
   // (Background: When CCT::Stmts are merged in
   // Analysis::CallPath::coalesceStmts(), IP/LIP information is not
-  // retained.  This means that many leaves in 'prof' will not
-  // correctly find their corresponding node in profGbl.
+  // retained.  This means that many leaves in 'prof' will correctly
+  // find their corresponding node in profGbl without intervention.)
   prof->structure(profGbl.structure());
   Analysis::CallPath::noteStaticStructureOnLeaves(*prof);
   prof->structure(NULL);
@@ -612,14 +620,23 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // compute local metrics and update local derived metrics
   // -------------------------------------------------------
-  cctGbl->root()->aggregateMetrics(mBeg, mEnd);
+  cctRoot->aggregateMetrics(mBeg, mEnd);
 
   if (0) {
     profGbl.cct()->writeXML(std::cerr, mBeg, mEnd);
   }
 
-  cctGbl->root()->computeMetricsItrv(*mMgrGbl, mDrvdBeg, mDrvdEnd,
-				     Prof::Metric::AExprItrv::FnUpdate, 0);
+  const VMAIntervalSet* ivalset = groupIdToGroupMetricsMap[groupId];
+  if (ivalset) {
+    DIAG_Assert(ivalset->size() == 1, DIAG_UnexpectedInput);
+    const VMAInterval& ival = *(ivalset->begin());
+    uint mDrvdBeg = (uint)ival.beg();
+    uint mDrvdEnd = (uint)ival.end();
+
+    DIAG_MsgIf(0, "[" << myRank << "] grp " << groupId << ": [" << mDrvdBeg << ", " << mDrvdEnd << ")");
+    cctRoot->computeMetricsItrvDeep(*mMgrGbl, mDrvdBeg, mDrvdEnd,
+				    Prof::Metric::AExprItrv::FnUpdate, 0);
+  }
 
   // -------------------------------------------------------
   // TODO: write local values to disk
@@ -628,7 +645,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // reinitialize metric values since space may be used again
   // -------------------------------------------------------
-  cctGbl->root()->zeroMetricsDeep(mBeg, mEnd);
+  cctRoot->zeroMetricsDeep(mBeg, mEnd); // TODO: not strictly necessary
   
   delete prof;
 }

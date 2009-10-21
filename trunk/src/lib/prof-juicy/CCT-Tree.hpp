@@ -461,7 +461,15 @@ public:
 
 
   void
+  computeMetricsDeep(const Metric::Mgr& mMgr, uint mBegId, uint mEndId);
+
+  void
   computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId);
+
+
+  void
+  computeMetricsItrvDeep(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+			 Metric::AExprItrv::FnTy fn, uint srcArg);
 
   void
   computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,

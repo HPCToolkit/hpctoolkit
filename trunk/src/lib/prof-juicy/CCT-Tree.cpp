@@ -362,7 +362,7 @@ ANode::aggregateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 
 
 void
-ANode::computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
+ANode::computeMetricsDeep(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
 {
   if ( !(mBegId < mEndId) ) {
     return;
@@ -371,20 +371,44 @@ ANode::computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
   // N.B. pre-order walk assumes point-wise metrics
   // Cf. Analysis::Flat::Driver::computeDerivedBatch().
 
+  for (ANodeIterator it(this); it.Current(); ++it) {
+    ANode* n = it.current();
+    n->computeMetrics(mMgr, mBegId, mEndId);
+  }
+}
+
+
+void
+ANode::computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
+{
   uint numMetrics = mMgr.size();
+
+  for (uint mId = mBegId; mId < mEndId; ++mId) {
+    const Metric::ADesc* m = mMgr.metric(mId);
+    const Metric::DerivedDesc* mm = dynamic_cast<const Metric::DerivedDesc*>(m);
+    if (mm && mm->expr()) {
+      const Metric::AExpr* expr = mm->expr();
+      double val = expr->eval(*this);
+      demandMetric(mId, numMetrics/*size*/) = val;
+    }
+  }
+}
+
+
+void
+ANode::computeMetricsItrvDeep(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+			      Metric::AExprItrv::FnTy fn, uint srcArg)
+{
+  if ( !(mBegId < mEndId) ) {
+    return;
+  }
+  
+  // N.B. pre-order walk assumes point-wise metrics
+  // Cf. Analysis::Flat::Driver::computeDerivedBatch().
 
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
-    for (uint mId = mBegId; mId < mEndId; ++mId) {
-      const Metric::ADesc* m = mMgr.metric(mId);
-      const Metric::DerivedDesc* mm =
-	dynamic_cast<const Metric::DerivedDesc*>(m);
-      if (mm && mm->expr()) {
-	const Metric::AExpr* expr = mm->expr();
-	double val = expr->eval(*n);
-	n->demandMetric(mId, numMetrics/*size*/) = val;
-      }
-    }
+    n->computeMetricsItrv(mMgr, mBegId, mEndId, fn, srcArg);
   }
 }
 
@@ -393,33 +417,23 @@ void
 ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 			  Metric::AExprItrv::FnTy fn, uint srcArg)
 {
-  if ( !(mBegId < mEndId) ) {
-    return;
-  }
-  
-  // N.B. pre-order walk assumes point-wise metrics
-  // Cf. Analysis::Flat::Driver::computeDerivedBatch().
-
-  for (ANodeIterator it(this); it.Current(); ++it) {
-    ANode* n = it.current();
-    for (uint mId = mBegId; mId < mEndId; ++mId) {
-      const Metric::ADesc* m = mMgr.metric(mId);
-      const Metric::DerivedItrvDesc* mm =
-	dynamic_cast<const Metric::DerivedItrvDesc*>(m);
-      if (mm && mm->expr()) {
-	const Metric::AExprItrv* expr = mm->expr();
-	switch (fn) {
-	  case Metric::AExprItrv::FnInit:
-	    expr->initialize(*n); break;
-	  case Metric::AExprItrv::FnInitSrc:
-	    expr->initializeSrc(*n); break;
-	  case Metric::AExprItrv::FnUpdate:
-	    expr->update(*n); break;
-	  case Metric::AExprItrv::FnFini:
-	    expr->finalize(*n, srcArg); break;
-	  default:
-	    DIAG_Die(DIAG_UnexpectedInput);
-	}
+  for (uint mId = mBegId; mId < mEndId; ++mId) {
+    const Metric::ADesc* m = mMgr.metric(mId);
+    const Metric::DerivedItrvDesc* mm =
+      dynamic_cast<const Metric::DerivedItrvDesc*>(m);
+    if (mm && mm->expr()) {
+      const Metric::AExprItrv* expr = mm->expr();
+      switch (fn) {
+        case Metric::AExprItrv::FnInit:
+	  expr->initialize(*this); break;
+        case Metric::AExprItrv::FnInitSrc:
+	  expr->initializeSrc(*this); break;
+        case Metric::AExprItrv::FnUpdate:
+	  expr->update(*this); break;
+        case Metric::AExprItrv::FnFini:
+	  expr->finalize(*this, srcArg); break;
+        default:
+	  DIAG_Die(DIAG_UnexpectedInput);
       }
     }
   }
