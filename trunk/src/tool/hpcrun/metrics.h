@@ -66,6 +66,17 @@
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+typedef hpcrun_metricVal_t cct_metric_data_t;
+
+typedef void metric_upd_proc_t(int metric_id, cct_metric_data_t* loc, cct_metric_data_t datum);
+
+typedef struct metric_proc_map_t {
+  struct metric_proc_map_t* next;
+  metric_upd_proc_t*        proc;
+  int                       id;
+} metric_proc_map_t;
+
+
 bool hpcrun_metrics_finalized(void);
 
 void hpcrun_pre_allocate_metrics(size_t num);
@@ -78,11 +89,16 @@ metric_list_t* hpcrun_get_metric_data(void);
 
 metric_desc_p_tbl_t* hpcrun_get_metric_tbl(void);
 
+metric_upd_proc_t* hpcrun_get_metric_proc(int metric_id);
+
 int hpcrun_new_metric(void);
 
-void
-hpcrun_set_metric_info_and_period(int metric_id, const char* name,
-				  hpcrun_metricFlags_t flags, size_t period);
+void hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
+				 hpcrun_metricFlags_t flags, size_t period,
+				 metric_upd_proc_t upd_fn);
+
+void hpcrun_set_metric_info_and_period(int metric_id, const char* name,
+				       hpcrun_metricFlags_t flags, size_t period);
 
 void
 hpcrun_set_metric_info(int metric_id, const char* name,

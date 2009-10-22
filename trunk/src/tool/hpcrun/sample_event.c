@@ -104,7 +104,7 @@ hpcrun_drop_sample(void)
 }
 
 
-cct_node_t *
+cct_node_t*
 hpcrun_sample_callpath(void *context, int metricId,
 		       uint64_t metricIncr,
 		       int skipInner, int isSync)
@@ -134,10 +134,10 @@ hpcrun_sample_callpath(void *context, int metricId,
   TMSG(SAMPLE, "attempting sample");
   hpcrun_stats_num_samples_attempted_inc();
 
-  thread_data_t *td = hpcrun_get_thread_data();
-  sigjmp_buf_t *it = &(td->bad_unwind);
+  thread_data_t* td = hpcrun_get_thread_data();
+  sigjmp_buf_t* it = &(td->bad_unwind);
   cct_node_t* node = NULL;
-  state_t *state = td->state;
+  state_t* state = td->state;
 
   hpcrun_set_handling_sample(td);
 

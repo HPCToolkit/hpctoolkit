@@ -95,7 +95,6 @@
 
 // tallent: was 'size_t'.  If this should change the memcpy in
 // hpcfile_cstree_write_node_hlp should be modified.
-typedef hpcrun_metricVal_t cct_metric_data_t;
 
 static inline void
 cct_metric_data_increment(int metric_id,

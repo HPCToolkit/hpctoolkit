@@ -82,6 +82,37 @@ static metric_desc_t** id2metric;
 //
 static metric_desc_p_tbl_t metric_tbl;
 
+//
+// local table of metric update functions
+// (indexed by metric id)
+//
+
+static metric_upd_proc_t** metric_proc_tbl = NULL;
+
+static metric_proc_map_t* proc_map = NULL;
+
+//***************************************************************
+//  Local functions
+//***************************************************************
+
+static void
+std_upd_fn(int metric_id, cct_metric_data_t* loc, cct_metric_data_t datum)
+{
+  TMSG(METRICS, "Std update fn called");
+  metric_desc_t* minfo = id2metric[metric_id];
+  
+  if (hpcrun_metricFlags_isFlag(minfo->flags, HPCRUN_MetricFlag_Real)) {
+    loc->r += datum.r;
+  }
+  else {
+    loc->i += datum.i;
+  }
+}
+
+//***************************************************************
+//  Interface functions
+//***************************************************************
+
 bool
 hpcrun_metrics_finalized(void)
 {
@@ -110,7 +141,7 @@ hpcrun_pre_allocate_metrics(size_t num)
 int
 hpcrun_get_num_metrics(void){
   //
-  // create id->descriptor table and metric_tbl
+  // create id->descriptor table, metric_tbl, and metric_proc tbl
   //
   if (!has_set_max_metrics) {
     id2metric = hpcrun_malloc(n_metrics * sizeof(metric_desc_t*));
@@ -119,6 +150,13 @@ hpcrun_get_num_metrics(void){
     for(metric_list_t* l = metric_data; l; l = l->next){
       TMSG(METRICS_FINALIZE,"metric_tbl[%d] = %s", l->id, l->val.name);
       id2metric[l->id] = &(l->val);
+    }
+    metric_proc_tbl = (metric_upd_proc_t**) hpcrun_malloc(n_metrics * sizeof(metric_upd_proc_t*));
+    
+    for(metric_proc_map_t* l = proc_map; l; l = l->next) {
+    //    for(metric_proc_map_t* l = proc_map; l; l = l->next) {
+      TMSG(METRICS_FINALIZE, "metric_proc[%d] = %p", l->id, l->proc);
+      metric_proc_tbl[l->id] = l->proc;
     }
   }
   has_set_max_metrics = true;
@@ -146,6 +184,12 @@ hpcrun_get_metric_data(void)
   return metric_data;
 }
 
+metric_upd_proc_t*
+hpcrun_get_metric_proc(int metric_id)
+{
+  return metric_proc_tbl[metric_id];
+}
+
 int
 hpcrun_new_metric(void)
 {
@@ -155,7 +199,7 @@ hpcrun_new_metric(void)
 
   metric_list_t* n = NULL;
 
-  // if there are pre-alllocated metrics, use them
+  // if there are pre-allocated metrics, use them
   if (pre_alloc) {
     n = pre_alloc;
     pre_alloc = pre_alloc->next;
@@ -168,12 +212,21 @@ hpcrun_new_metric(void)
   metric_data = n;
   n_metrics++;
 
+  //
+  // No preallocation for metric_proc tbl
+  //
+  metric_proc_map_t* m = (metric_proc_map_t*) hpcrun_malloc(sizeof(metric_proc_map_t));
+  m->next = proc_map;
+  m->id   = metric_data->id;
+  m->proc = (metric_upd_proc_t*) NULL;
+
   return metric_data->id;
 }
 
 void
-hpcrun_set_metric_info_and_period(int metric_id, const char* name,
-				  hpcrun_metricFlags_t flags, size_t period)
+hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
+			    hpcrun_metricFlags_t flags, size_t period,
+			    metric_upd_proc_t upd_fn)
 {
   if (has_set_max_metrics) {
     return;
@@ -199,6 +252,23 @@ hpcrun_set_metric_info_and_period(int metric_id, const char* name,
   metric->description = (char*) name; // TODO
   metric->period = period;
   metric->flags = flags;
+
+  //
+  // manage metric proc mapping
+  //
+  for (metric_proc_map_t* l = proc_map; l; l = l->next){
+    if (l->id == metric_id){
+      l->proc = upd_fn;
+      break;
+    }
+  }
+}
+
+void
+hpcrun_set_metric_info_and_period(int metric_id, const char* name,
+				  hpcrun_metricFlags_t flags, size_t period)
+{
+  hpcrun_set_metric_info_w_fn(metric_id, name, flags, period, std_upd_fn);
 }
 
 void
