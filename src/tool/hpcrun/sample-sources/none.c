@@ -119,7 +119,7 @@ METHOD_FN(shutdown)
 }
 
 
-static int
+static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
   return (strstr(ev_str,"NONE") != NULL);

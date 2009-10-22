@@ -214,7 +214,7 @@ METHOD_FN(init)
   TMSG(UPC, "BGP_UPC_Initialize");
 }
 
-static int
+static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   char buf[EVENT_NAME_SIZE];

@@ -79,11 +79,12 @@
 #include <hpcrun/metrics.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample_sources_registered.h>
-#include "sample_source_obj.h"
 #include <hpcrun/thread_data.h>
 
 #include <lush/lush-backtrace.h>
 #include <messages/messages.h>
+
+#include <utilities/tokenize.h>
 
 #include <lib/prof-lean/timer.h>
 #include <unwind/common/unwind.h>
@@ -152,6 +153,22 @@ itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
  *****************************************************************************/
 
 static struct itimerval itimer;
+
+static const struct itimerval zerotimer = {
+  .it_interval = {
+    .tv_sec  = 0L,
+    .tv_usec = 0L
+  },
+
+  .it_value    = {
+    .tv_sec  = 0L,
+    .tv_usec = 0L
+  }
+
+};
+
+static long period = 5000L;
+
 static sigset_t sigset_itimer;
 
 // ******* METHOD DEFINITIONS ***********
@@ -169,13 +186,17 @@ METHOD_FN(start)
     return; // in the unlikely event that we are trying to start, but thread data is unavailable,
             // assume that all sample source ops are suspended.
   }
-  TMSG(ITIMER_CTL,"starting itimer");
+
+  TMSG(ITIMER_CTL,"starting itimer w value = (%d,%d), interval = (%d,%d)",
+       itimer.it_interval.tv_sec,
+       itimer.it_interval.tv_usec,
+       itimer.it_value.tv_sec,
+       itimer.it_value.tv_usec);
+
   if (setitimer(HPCRUN_PROFILE_TIMER, &itimer, NULL) != 0) {
     EMSG("setitimer failed (%d): %s", errno, strerror(errno));
     hpcrun_ssfail_start("itimer");
   }
-
-  TD_GET(ss_state)[self->evset_idx] = START;
 
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
   int ret = time_getTimeCPU(&TD_GET(last_time_us));
@@ -184,17 +205,22 @@ METHOD_FN(start)
     abort();
   }
 #endif
+
+  TD_GET(ss_state)[self->evset_idx] = START;
 }
 
 static void
 METHOD_FN(stop)
 {
-  struct itimerval itimer;
   int rc;
 
+#ifdef OLD_SS
   timerclear(&itimer.it_value);
   timerclear(&itimer.it_interval);
   rc = setitimer(HPCRUN_PROFILE_TIMER, &itimer, NULL);
+#else
+  rc = setitimer(HPCRUN_PROFILE_TIMER, &zerotimer, NULL);
+#endif
   TMSG(ITIMER_CTL,"stopping itimer");
   TD_GET(ss_state)[self->evset_idx] = STOP;
 }
@@ -206,7 +232,7 @@ METHOD_FN(shutdown)
   self->state = UNINIT;
 }
 
-static int
+static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   return (strstr(ev_str,"WALLCLOCK") != NULL);
@@ -215,8 +241,8 @@ METHOD_FN(supports_event, const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-  long period = 5000L;
 
+#ifdef OLD_SS
   char *_p = strchr(METHOD_CALL(self,get_event_str),'@');
   if ( _p) {
     period = strtol(_p+1,NULL,10);
@@ -224,35 +250,61 @@ METHOD_FN(process_event_list, int lush_metrics)
   else {
     TMSG(OPTIONS,"WALLCLOCK event default period (5000) selected");
   }
+  METHOD_CALL(self, store_event, ITIMER_EVENT, period);
+  TMSG(OPTIONS,"wallclock period set to %ld",period);
+#endif
+
+  // fetch the event string for the sample source
+  char* _p = METHOD_CALL(self, get_event_str);
   
+  //
+  // EVENT: Only 1 wallclock event
+  //
+  char* event = start_tok(_p);
+  if (more_tok()) {
+    EMSG("MULTIPLE WALLCLOCK events detected! Using first event spec: %s");
+  }
+  char name[1024]; // local buffer needed for extract_ev_threshold
+
+  TMSG(ITIMER_CTL,"checking event spec = %s",event);
+
+  // extract event threshold
+  extract_ev_thresh(event, sizeof(name), name, &period);
+
+  // store event threshold
   METHOD_CALL(self, store_event, ITIMER_EVENT, period);
   TMSG(OPTIONS,"wallclock period set to %ld",period);
 
+  // set up file local variables for sample source control
   int seconds = period / 1000000;
   int microseconds = period % 1000000;
 
   TMSG(OPTIONS,"init timer w sample_period = %ld, seconds = %ld, usec = %ld",
        period, seconds, microseconds);
 
-  /* signal once after the given delay */
+  // signal once after the given delay
   itimer.it_value.tv_sec = seconds;
   itimer.it_value.tv_usec = microseconds;
 
-  /* macros define whether automatic restart or not */
+  // macros define whether automatic restart or not
   itimer.it_interval.tv_sec  =  AUTOMATIC_ITIMER_RESET_SECONDS(seconds);
   itimer.it_interval.tv_usec =  AUTOMATIC_ITIMER_RESET_MICROSECONDS(microseconds);
 
+  // handle metric allocation
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
   
-#ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
-  long sample_period = 1;
-#else
-  long sample_period = self->evl.events[0].thresh;
-#endif
-
   int metric_id = hpcrun_new_metric();
   METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
-  TMSG(ITIMER_CTL, "setting metric ITIMER,period = %ld", sample_period);
+
+  // set metric information in metric table
+
+#ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
+# define sample_period 1
+#else
+# define sample_period period;
+#endif
+
+  TMSG(ITIMER_CTL, "setting metric ITIMER, period = %ld", sample_period);
   hpcrun_set_metric_info_and_period(metric_id, "WALLCLOCK (us)",
 				    HPCRUN_MetricFlag_Async,
 				    sample_period);
@@ -265,6 +317,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 				      HPCRUN_MetricFlag_Async | HPCRUN_MetricFlag_Real,
 				      sample_period);
   }
+
+  // 
   thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD;
 }
@@ -272,6 +326,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 //
 // Event "sets" not possible for this sample source.
 // It has only 1 event.
+// Initialize the sigset and installing the signal handler are
+// the only actions
 //
 static void
 METHOD_FN(gen_event_set, int lush_metrics)

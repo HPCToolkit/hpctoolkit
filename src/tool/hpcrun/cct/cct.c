@@ -367,7 +367,7 @@ cct_node_t*
 hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
 			    int metric_id,
 			    frame_t* path_beg, frame_t* path_end,
-			    cct_metric_data_t increment)
+			    cct_metric_data_t datum)
 {
 #define MY_advancePathFrame(x) (x)--
 #define MY_isPathFrameAtEnd(x) ((x) < path_end)
@@ -436,7 +436,7 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
 
   TMSG(CCT, "Total nodes after backtrace insertion = %d", cct->num_nodes);
 
-  cct_metric_data_increment(metric_id, &tn->metrics[metric_id], increment);
+  hpcrun_get_metric_proc(metric_id)(metric_id, &tn->metrics[metric_id], datum);
   return tn;
 
 #undef MY_advancePathFrame

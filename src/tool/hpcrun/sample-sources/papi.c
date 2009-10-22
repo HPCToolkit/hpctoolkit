@@ -58,7 +58,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <ucontext.h>
-#include <pthread.h>
 #include <stdbool.h>
 
 /******************************************************************************
@@ -86,7 +85,6 @@
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-
 
 
 /******************************************************************************
@@ -185,7 +183,7 @@ METHOD_FN(shutdown)
 
 // Return true if PAPI recognizes the name, whether supported or not.
 // We'll handle unsupported events later.
-static int
+static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
   if (self->state == UNINIT){
@@ -207,7 +205,10 @@ METHOD_FN(process_event_list, int lush_metrics)
   int i, ret;
   int num_lush_metrics = 0;
 
+#ifdef OLD_SS
   char *evlist = self->evl.evl_spec;
+#endif
+  char* evlist = METHOD_CALL(self, get_event_str);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char name[1024];
     int evcode;
@@ -453,6 +454,17 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     // FIXME: SUBTLE ERROR: metric_id may not be same from hpcrun_new_metric()!
     // This means lush's 'time' metric should be *last*
     int metric_id = hpcrun_event2metric(&_papi_obj, my_events[i]);
+#if 0
+    struct event_metrics_map{
+      int num_metrics;
+      int* metric_ids;
+    }
+    event_metrics_map m = hpcrun_event2metric_map(YOUR_SAMPLE_SOURCE_OBJ, YOUR_EVENT);
+    for(int i = 0; i < m.num_metrics; i++) {
+      hpcrun_sample_callpath(context, m.metric_ids[i], (uint64_t) YOUR_DATA
+			     0/*skipInner*/, 0/*isSync*/);
+    }
+#endif
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
     hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);

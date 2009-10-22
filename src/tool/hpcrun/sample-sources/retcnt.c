@@ -128,7 +128,7 @@ METHOD_FN(shutdown)
   self->state = UNINIT;
 }
 
-static int
+static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
   return (strstr(ev_str, HPCRUN_METRIC_RetCnt) != NULL);

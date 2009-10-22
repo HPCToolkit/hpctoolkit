@@ -59,7 +59,7 @@
 #undef reg_fn_name
 
 #define obj_name() _make_id( (_,ss_name,_obj))
-#define ss_str()  _st1(ss_name) 
+#define ss_str  _st1(ss_name) 
 #define reg_fn_name _make_id((,ss_name,_obj_reg))
 
 sample_source_t obj_name() = {
@@ -88,7 +88,7 @@ sample_source_t obj_name() = {
     .nevents = 0
   },
   .evset_idx = -1,
-  .name = ss_str(),
+  .name = ss_str,
   .cls  = ss_cls,
   .state = UNINIT
 };
