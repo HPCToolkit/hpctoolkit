@@ -261,9 +261,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   // EVENT: Only 1 wallclock event
   //
   char* event = start_tok(_p);
-  if (more_tok()) {
-    EMSG("MULTIPLE WALLCLOCK events detected! Using first event spec: %s");
-  }
+
   char name[1024]; // local buffer needed for extract_ev_threshold
 
   TMSG(ITIMER_CTL,"checking event spec = %s",event);
@@ -318,6 +316,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 				      sample_period);
   }
 
+  event = next_tok();
+  if (more_tok()) {
+    EMSG("MULTIPLE WALLCLOCK events detected! Using first event spec: %s");
+  }
   // 
   thread_data_t *td = hpcrun_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD;

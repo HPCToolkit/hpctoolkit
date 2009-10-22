@@ -219,7 +219,8 @@ hpcrun_new_metric(void)
   m->next = proc_map;
   m->id   = metric_data->id;
   m->proc = (metric_upd_proc_t*) NULL;
-
+  proc_map = m;
+  
   return metric_data->id;
 }
 
