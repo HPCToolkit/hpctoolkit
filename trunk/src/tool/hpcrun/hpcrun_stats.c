@@ -119,10 +119,13 @@ hpcrun_stats_num_samples_attempted(void)
 // samples blocked async 
 //-----------------------------
 
+// The async blocks happen in the signal handlers, without getting to
+// hpcrun_sample_callpath, so also increment the total count here.
 void
 hpcrun_stats_num_samples_blocked_async_inc(void)
 {
   atomic_add_i64(&num_samples_blocked_async, 1L);
+  atomic_add_i64(&num_samples_total, 1L);
 }
 
 
@@ -271,10 +274,14 @@ hpcrun_stats_print_summary(void)
        errant, num_samples_filtered, num_samples_segv, other);
 
   AMSG("SUMMARY: samples: %ld (recorded: %ld, blocked: %ld, errant: %ld), "
-       "intervals: %ld (suspicious: %ld)%s",
+       "intervals: %ld (suspicious: %ld)",
        num_samples_total, valid, blocked, errant,
-       num_unwind_intervals_total,  num_unwind_intervals_suspicious,
-       hpcrun_is_sampling_disabled() ? " SAMPLING WAS DISABLED" : "");
+       num_unwind_intervals_total,  num_unwind_intervals_suspicious);
+
+  if (hpcrun_is_sampling_disabled()) {
+    AMSG("SAMPLING HAS BEEN DISABLED");
+  }
+
   // logs, retentions || adj.: recorded, retained, written
 
   if (ENABLED(UNW_VALID)) {
