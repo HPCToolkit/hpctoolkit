@@ -299,7 +299,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
 # define sample_period 1
 #else
-# define sample_period period;
+# define sample_period period
 #endif
 
   TMSG(ITIMER_CTL, "setting metric ITIMER, period = %ld", sample_period);
