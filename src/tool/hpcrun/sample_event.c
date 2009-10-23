@@ -170,7 +170,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     memset((void *)it->jb, '\0', sizeof(it->jb));
     dump_backtrace(state, td->unwind);
 
-    hpcrun_stats_num_samples_dropped();
+    hpcrun_stats_num_samples_dropped_inc();
 
     hpcrun_up_pmsg_count();
     if (TD_GET(splay_lock)) {
