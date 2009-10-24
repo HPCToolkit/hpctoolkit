@@ -976,7 +976,7 @@ public:
 
   virtual std::string
   codeName() const;
- 
+
 private:
   static std::string BOGUS;
 };

@@ -632,48 +632,19 @@ ProcFrm::codeName() const
 }
 
 
-static string
-makeProcNameDbg(const Prof::CCT::ANode* node);
-
 string
 ProcFrm::procNameDbg() const
 {
-  string nm = procName() + makeProcNameDbg(this);
-  return nm;
-}
+  string nm = procName();
 
-
-static string
-makeProcNameDbg(const Prof::CCT::ANode* node)
-{
-  string nm;
-  
-  if (!node) {
-    return nm;
-  }
-
-  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
-    const Prof::CCT::ANode* n = it.current();
-
-    // Build name from ADynNode
-    const Prof::CCT::ADynNode* n_dyn = 
-      dynamic_cast<const Prof::CCT::ADynNode*>(n);
-    if (n_dyn) {
-      nm += n_dyn->nameDyn();
-    }
-    
-    if (n_dyn || typeid(*n) == typeid(Prof::CCT::ProcFrm)) {
-      // Base case: do not recur through ADynNode's or ProcFrm's
-    }
-    else {
-      // General case: recur through ProcFrm's static structure
-      nm += makeProcNameDbg(n);
-    }
+  CCT::Call* caller = ancestorCall();
+  if (caller) {
+    nm += " <=" + caller->nameDyn();
   }
 
   return nm;
 }
- 
+
 
 //**********************************************************************
 // ANode, etc: Dump contents for inspection
@@ -738,7 +709,7 @@ ADynNode::lip_str() const
 string 
 ADynNode::nameDyn() const
 {
-  string nm = " [" + assocInfo_str() + ": ("
+  string nm = "[" + assocInfo_str() + ": ("
     + StrUtil::toStr(m_ip, 16) + ") (" + lip_str() + ")]";
   return nm;
 }
@@ -831,7 +802,7 @@ Stmt::toString_me(int oFlags) const
     self += " i" + xml::MakeAttrNum(cpId());
   }
   return self;
-} 
+}
 
 
 std::ostream&
