@@ -170,13 +170,13 @@ public:
   virtual double
   merge(Metric::IData& mdata) const = 0;
 
-  // finalizes dstVar() give the total number of sources
+  // finalize: finalizes destination metrics given total number of sources
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const = 0;
 
 
   // ------------------------------------------------------------
-  // correspond to AExpr::Var
+  // these correspond to AExpr::Var
   // ------------------------------------------------------------
 
   static double&
