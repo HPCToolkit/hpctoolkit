@@ -464,7 +464,6 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 }
 
 
-
 //***************************************************************************
 // Normaling the CCT
 //***************************************************************************
@@ -477,6 +476,9 @@ coalesceStmts(Prof::CallPath::Profile& prof);
 
 static void
 makeReturnCountMetric(Prof::CallPath::Profile& prof);
+
+static void
+mergeCilkMain(Prof::CallPath::Profile& prof);
 
 
 void
@@ -502,6 +504,10 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
     }
     overheadMetricFact->make(prof);
     delete overheadMetricFact;
+  }
+
+  if (lush_agent == "agent-cilk") {
+    mergeCilkMain(prof);
   }
 }
 
@@ -692,6 +698,47 @@ makeReturnCountMetric(Prof::CallPath::Profile& prof)
       }
     }
   }
+}
+
+
+//***************************************************************************
+
+// mergeCilkMain: cilk_main is called from two distinct call sites
+// within the runtime, resulting in an undesirable bifurcation within
+// the CCT.  The easiest way to fix this is to use a normalization
+// step.
+static void
+mergeCilkMain(Prof::CallPath::Profile& prof)
+{
+  using namespace Prof;
+
+  CCT::ProcFrm* mainFrm = NULL;
+
+  // 1. attempt to find 'CilkNameMgr::cilkmain'
+  for (CCT::ANodeIterator it(prof.cct()->root(),
+			     &CCT::ANodeTyFilter[CCT::ANode::TyProcFrm]);
+       it.Current(); ++it) {
+    CCT::ProcFrm* x = static_cast<CCT::ProcFrm*>(it.current());
+    if (x->procName() == CilkNameMgr::cilkmain) {
+      mainFrm = x;
+      break;
+    }
+  }
+
+  // 2. merge any sibling 'CilkNameMgr::cilkmain'
+  if (mainFrm) {
+    CCT::ANodeChildIterator it(mainFrm->parent(),
+			       &CCT::ANodeTyFilter[CCT::ANode::TyProcFrm]);
+    for ( ; it.Current(); /* */) {
+      CCT::ProcFrm* x = static_cast<CCT::ProcFrm*>(it.current());
+      it++; // advance iterator -- it is pointing at 'x'
+      
+      if (x->procName() == CilkNameMgr::cilkmain) {
+	mainFrm->merge(x); // deletes 'x'
+      }
+    }
+  }
+
 }
 
 

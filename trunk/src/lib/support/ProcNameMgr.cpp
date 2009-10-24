@@ -132,6 +132,8 @@ ProcNameMgr::canonicalizeCppTemplate(const std::string& name)
 // CilkNameMgr
 //***************************************************************************
 
+const string CilkNameMgr::cilkmain = "cilk_main";
+
 // Cilk creates four specializations of each procedure:
 //   fast:    <x>
 //   slow:   _cilk_<x>_slow
