@@ -124,6 +124,8 @@ public:
   virtual std::string 
   canonicalize(const std::string& name);
 
+  static const std::string cilkmain;
+
 private:
 
   bool 
