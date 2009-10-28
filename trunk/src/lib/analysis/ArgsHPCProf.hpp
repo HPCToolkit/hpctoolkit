@@ -77,8 +77,10 @@
 
 namespace Analysis {
 
-class ArgsHPCProf : public Analysis::Args {
-public: 
+class ArgsHPCProf
+  : public Analysis::Args
+{
+public:
   ArgsHPCProf(); 
   virtual ~ArgsHPCProf();
 
@@ -98,15 +100,17 @@ public:
 
 public:
   // Parsed Data: Command
-  virtual const std::string getCmd() const = 0;
+  virtual const std::string
+  getCmd() const = 0;
 
 private:
-  void Ctor();
+  bool
+  parseArg_norm(const std::string& value, const char* err_note);
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
-}; 
+};
 
 } // namespace Analysis
 

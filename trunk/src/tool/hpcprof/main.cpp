@@ -150,7 +150,8 @@ realmain(int argc, char* const* argv)
   }
   prof->structure(structure);
 
-  Analysis::CallPath::overlayStaticStructureMain(*prof, args.lush_agent);
+  Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
+						 args.doNormalizeTy);
   
   // -------------------------------------------------------
   // Create summary metrics

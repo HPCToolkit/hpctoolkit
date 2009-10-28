@@ -103,6 +103,13 @@ public:
   void ddump() const;
 
 public:
+
+  // -------------------------------------------------------
+  // Agent options
+  // -------------------------------------------------------
+
+  std::string agent;
+
   // -------------------------------------------------------
   // Correlation arguments
   // -------------------------------------------------------
@@ -133,8 +140,7 @@ public:
   bool metrics_computeInteriorValues;
   bool isHPCProfMetric;
 
-  // LUSH agent (prototype)
-  std::string lush_agent;
+  bool doNormalizeTy;
 
   // -------------------------------------------------------
   // Output arguments: experiment database output

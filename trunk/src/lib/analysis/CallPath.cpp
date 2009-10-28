@@ -203,7 +203,8 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 
 void
 Analysis::CallPath::
-overlayStaticStructureMain(Prof::CallPath::Profile& prof, string agent)
+overlayStaticStructureMain(Prof::CallPath::Profile& prof,
+			   string agent, bool doNormalizeTy)
 {
   const Prof::LoadMapMgr* loadmap = prof.loadMapMgr();
   Prof::Struct::Root* rootStrct = prof.structure()->root();
@@ -223,8 +224,8 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof, string agent)
 						     lmStrct);
     }
   }
-  
-  Analysis::CallPath::normalize(prof, agent);
+
+  Analysis::CallPath::normalize(prof, agent, doNormalizeTy);
   
   // Note: Use StructMetricIdFlg to flag that static structure is used
   rootStrct->aggregateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
@@ -482,31 +483,34 @@ mergeCilkMain(Prof::CallPath::Profile& prof);
 
 
 void
-Analysis::CallPath::normalize(Prof::CallPath::Profile& prof, 
-			      string lush_agent)
+Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
+			      string agent, bool doNormalizeTy)
 {
+  // N.B.: sets CallPath::Profile::StructMetricIdFlg
   pruneByMetrics(prof);
 
-  coalesceStmts(prof);
+  if (doNormalizeTy) {
+    coalesceStmts(prof);
+  }
 
   makeReturnCountMetric(prof);
 
-  if (!lush_agent.empty()) {
+  if (!agent.empty()) {
     OverheadMetricFact* overheadMetricFact = NULL;
-    if (lush_agent == "agent-cilk") {
+    if (agent == "agent-cilk") {
       overheadMetricFact = new CilkOverheadMetricFact;
     }
-    else if (lush_agent == "agent-pthread") {
+    else if (agent == "agent-pthread") {
       overheadMetricFact = new PthreadOverheadMetricFact;
     }
     else {
-      DIAG_Die("Bad value for 'lush_agent': " << lush_agent);
+      DIAG_Die("Bad value for 'agent': " << agent);
     }
     overheadMetricFact->make(prof);
     delete overheadMetricFact;
   }
 
-  if (lush_agent == "agent-cilk") {
+  if (agent == "agent-cilk") {
     mergeCilkMain(prof);
   }
 }

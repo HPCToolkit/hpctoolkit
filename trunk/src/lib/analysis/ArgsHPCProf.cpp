@@ -150,6 +150,9 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
   { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
 
+  { 'N', "normalize",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
      NULL },
@@ -264,12 +267,12 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
       Diagnostics_SetDiagnosticFilterLevel(verb);
     }
 
-    // Check for LUSH options (TODO)
+    // Check for agent options
     if (parser.isOpt("agent-pthread")) {
-      lush_agent = "agent-pthread";
+      agent = "agent-pthread";
     }
     if (parser.isOpt("agent-cilk")) {
-      lush_agent = "agent-cilk";
+      agent = "agent-cilk";
     }
 
     // Check for other options: Correlation options
@@ -293,6 +296,10 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     if (parser.isOpt("structure")) {
       string str = parser.getOptArg("structure");
       StrUtil::tokenize_str(str, CLP_SEPARATOR, structureFiles);
+    }
+    if (parser.isOpt("normalize")) { 
+      const string& arg = parser.getOptArg("normalize");
+      doNormalizeTy = parseArg_norm(arg, "--normalize option");
     }
 
     // Check for special hpcprof options:
@@ -374,5 +381,24 @@ ArgsHPCProf::dump(std::ostream& os) const
   os << "ArgsHPCProf.cmd= " << getCmd() << endl; 
   Analysis::Args::dump(os);
 }
+
+
+//***************************************************************************
+
+bool
+ArgsHPCProf::parseArg_norm(const string& value, const char* err_note)
+{
+  if (value == "all") {
+    return true;
+  }
+  else if (value == "none") {
+    return false;
+  }
+  else {
+    ARG_ERROR(err_note << ": Unexpected value received: " << value);
+  }
+}
+
+//***************************************************************************
 
 } // namespace Analysis

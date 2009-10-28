@@ -114,7 +114,8 @@ public:
   std::string in_filenm;
 
 private:
-  void Ctor();
+  void
+  Ctor();
 
   banal::bloop::NormTy
   parseArg_norm(const std::string& value, const char* err_note);
