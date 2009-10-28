@@ -92,6 +92,11 @@ Analysis::Args::Ctor()
 
   isHPCProfForce = false;
 
+  metrics_computeInteriorValues = false;
+  isHPCProfMetric = false;
+
+  doNormalizeTy = true;
+
   // -------------------------------------------------------
   // Output arguments
   // -------------------------------------------------------
@@ -105,9 +110,6 @@ Analysis::Args::Ctor()
   out_txt           = Analysis_OUT_TXT;
   txt_summary       = TxtSum_NULL;
   txt_srcAnnotation = false;
-
-  metrics_computeInteriorValues = false;
-  isHPCProfMetric = false;
 }
 
 

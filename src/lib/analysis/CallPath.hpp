@@ -111,7 +111,8 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 // ---------------------------------------------------------
 
 void
-overlayStaticStructureMain(Prof::CallPath::Profile& prof, string agent);
+overlayStaticStructureMain(Prof::CallPath::Profile& prof,
+			   string agent, bool doNormalizeTy);
 
 void
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
@@ -131,7 +132,7 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof);
 
 
 void
-normalize(Prof::CallPath::Profile& prof, string lush_agent);
+normalize(Prof::CallPath::Profile& prof, string agent, bool doNormalizeTy);
 
 
 // ---------------------------------------------------------

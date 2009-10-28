@@ -248,7 +248,8 @@ realmain(int argc, char* const* argv)
 
   // FIXME: iterator should sort by lm/ip so static structure is added
   // in same way
-  Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.lush_agent);
+  Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.agent,
+						 args.doNormalizeTy);
 
   profGbl->cct()->makeDensePreorderIds();
 
