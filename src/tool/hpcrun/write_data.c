@@ -310,7 +310,7 @@ hpcrun_flush_epochs(void)
 {
   FILE *fs = lazy_open_data_file();
   write_epochs(fs, TD_GET(state));
-  hpcrun_epoch_reset();
+  hpcrun_state_reset();
 }
 
 int

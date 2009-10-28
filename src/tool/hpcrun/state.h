@@ -95,6 +95,6 @@ extern void hpcrun_reset_state(state_t* state);
 
 state_t* hpcrun_check_for_new_epoch(state_t *);
 void hpcrun_state_init(void);
-
+void hpcrun_state_reset(void);
 
 #endif // STATE_H
