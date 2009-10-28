@@ -133,6 +133,4 @@ void hpcrun_finalize_current_epoch(void);
 void hpcrun_write_all_epochs(FILE *);
 void hpcrun_write_current_loadmap(FILE *);
 
-void hpcrun_epoch_reset(void);
-
 #endif // EPOCH_H

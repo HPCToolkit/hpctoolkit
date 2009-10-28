@@ -137,3 +137,24 @@ hpcrun_state_fini(state_t *x){
   return HPCRUN_OK;
 }
 
+void
+hpcrun_state_reset(void)
+{
+  //
+  // create a new state list:
+  //  preserve current loadmap
+  //  re-init cct
+  // reset state list for thread to point be a list consisting of only the new state
+  //
+  //  N.B. the notion of 'epoch' is called 'state' in the code
+  // FIXME: change the naming to reflect this
+  //
+  TMSG(STATE_RESET,"--started");
+  state_t *state = hpcrun_get_state();
+  state_t *newstate = hpcrun_malloc(sizeof(state_t));
+  memcpy(newstate, state, sizeof(state_t));
+  TMSG(STATE_RESET, "check new epoch = old epoch = %d", newstate->epoch == state->epoch);
+  hpcrun_cct_init(&newstate->csdata, newstate->csdata_ctxt); // reset cct
+  hpcrun_reset_state(newstate);
+  TMSG(STATE_RESET," ==> no new state for next sample = %d", newstate->epoch == hpcrun_get_epoch());
+}
