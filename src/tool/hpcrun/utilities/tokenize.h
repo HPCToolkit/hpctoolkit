@@ -44,4 +44,5 @@
 extern char *start_tok(char *l);
 extern int   more_tok(void);
 extern char *next_tok(void);
-extern void extract_ev_thresh(const char *, int, char *, long *);
+extern void extract_ev_thresh_w_default(const char*, int, char*, long*, long);
+extern void extract_ev_thresh(const char*, int, char*, long*);

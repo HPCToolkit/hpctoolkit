@@ -85,7 +85,7 @@ next_tok(void)
 }
 
 void
-extract_ev_thresh(const char *in, int evlen, char *ev, long *th)
+extract_ev_thresh_w_default(const char *in, int evlen, char *ev, long *th, long def)
 {
   unsigned int len;
 
@@ -110,5 +110,11 @@ extract_ev_thresh(const char *in, int evlen, char *ev, long *th)
     ev[len] = '\0';
   }
   
-  *th = dlm ? strtol(dlm+1,(char **)NULL,10) : DEFAULT_THRESHOLD;
+  *th = dlm ? strtol(dlm+1,(char **)NULL,10) : def;
+}
+
+void
+extract_ev_thresh(const char *in, int evlen, char *ev, long *th)
+{
+  extract_ev_thresh_w_default(in, evlen, ev, th, DEFAULT_THRESHOLD);
 }
