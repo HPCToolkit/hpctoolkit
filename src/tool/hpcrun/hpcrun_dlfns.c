@@ -176,7 +176,7 @@ hpcrun_pre_dlopen(const char *path, int flags)
 void 
 hpcrun_dlopen(const char *module_name, int flags, void *handle)
 {
-  TMSG(EPOCH, "dlopen: handle = %p, name = %s", handle, module_name);
+  TMSG(LOADMAP, "dlopen: handle = %p, name = %s", handle, module_name);
   hpcrun_dlopen_downgrade_lock();
   fnbounds_map_open_dsos();
   atomic_add_i64(&num_dlopen_pending, -1L);
@@ -198,7 +198,7 @@ hpcrun_dlclose(void *handle)
 void
 hpcrun_post_dlclose(void *handle, int ret)
 {
-  TMSG(EPOCH, "dlclose: handle = %p", handle);
+  TMSG(LOADMAP, "dlclose: handle = %p", handle);
   fnbounds_unmap_closed_dsos();
   hpcrun_dlopen_write_unlock();
 }

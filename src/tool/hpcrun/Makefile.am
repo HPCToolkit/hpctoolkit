@@ -106,7 +106,7 @@ MY_BASE_FILES =			\
 	hpcrun_stats.c			\
 	disabled.c			\
 	env.c				\
-	epoch.c				\
+	loadmap.c			\
 	files.c				\
 	handling_sample.c		\
 	metrics.c			\

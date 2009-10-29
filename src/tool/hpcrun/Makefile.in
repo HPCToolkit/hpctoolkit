@@ -166,7 +166,7 @@ libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 @OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
 libhpcrun_la_DEPENDENCIES = $(HPC_LIBPROFLEAN)
 am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
-	hpcrun_options.c hpcrun_stats.c disabled.c env.c epoch.c \
+	hpcrun_options.c hpcrun_stats.c disabled.c env.c loadmap.c \
 	files.c handling_sample.c metrics.c name.c sample_event.c \
 	sample_sources_all.c sample-sources/common.c \
 	sample-sources/itimer.c sample-sources/none.c \
@@ -202,7 +202,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 am__objects_7 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-hpcrun_options.lo libhpcrun_la-hpcrun_stats.lo \
 	libhpcrun_la-disabled.lo libhpcrun_la-env.lo \
-	libhpcrun_la-epoch.lo libhpcrun_la-files.lo \
+	libhpcrun_la-loadmap.lo libhpcrun_la-files.lo \
 	libhpcrun_la-handling_sample.lo libhpcrun_la-metrics.lo \
 	libhpcrun_la-name.lo libhpcrun_la-sample_event.lo \
 	libhpcrun_la-sample_sources_all.lo libhpcrun_la-common.lo \
@@ -260,7 +260,7 @@ libhpcrun_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 pkglibPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(pkglib_PROGRAMS)
 am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
-	hpcrun_options.c hpcrun_stats.c disabled.c env.c epoch.c \
+	hpcrun_options.c hpcrun_stats.c disabled.c env.c loadmap.c \
 	files.c handling_sample.c metrics.c name.c sample_event.c \
 	sample_sources_all.c sample-sources/common.c \
 	sample-sources/itimer.c sample-sources/none.c \
@@ -298,7 +298,7 @@ am__objects_21 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-hpcrun_options.$(OBJEXT) \
 	libhpcrun_o-hpcrun_stats.$(OBJEXT) \
 	libhpcrun_o-disabled.$(OBJEXT) libhpcrun_o-env.$(OBJEXT) \
-	libhpcrun_o-epoch.$(OBJEXT) libhpcrun_o-files.$(OBJEXT) \
+	libhpcrun_o-loadmap.$(OBJEXT) libhpcrun_o-files.$(OBJEXT) \
 	libhpcrun_o-handling_sample.$(OBJEXT) \
 	libhpcrun_o-metrics.$(OBJEXT) libhpcrun_o-name.$(OBJEXT) \
 	libhpcrun_o-sample_event.$(OBJEXT) \
@@ -621,7 +621,7 @@ MY_BASE_FILES = \
 	hpcrun_stats.c			\
 	disabled.c			\
 	env.c				\
-	epoch.c				\
+	loadmap.c			\
 	files.c				\
 	handling_sample.c		\
 	metrics.c			\
@@ -970,7 +970,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-disabled.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-dylib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-env.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-epoch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-executable-path.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-files.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-first_func.Plo@am__quote@
@@ -983,6 +982,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_stats.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-itimer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-last_func.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-loadmap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-lush-backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-lush-pthread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-lush-support-rt.Plo@am__quote@
@@ -1035,7 +1035,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-default_validation_summary.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-disabled.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-env.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-epoch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-executable-path.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-files.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-first_func.Po@am__quote@
@@ -1047,6 +1046,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_stats.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-itimer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-last_func.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-loadmap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-lush-backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-lush-pthread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-lush-support-rt.Po@am__quote@
@@ -1261,12 +1261,12 @@ libhpcrun_la-env.lo: env.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-env.lo `test -f 'env.c' || echo '$(srcdir)/'`env.c
 
-libhpcrun_la-epoch.lo: epoch.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-epoch.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-epoch.Tpo -c -o libhpcrun_la-epoch.lo `test -f 'epoch.c' || echo '$(srcdir)/'`epoch.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_la-epoch.Tpo $(DEPDIR)/libhpcrun_la-epoch.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='epoch.c' object='libhpcrun_la-epoch.lo' libtool=yes @AMDEPBACKSLASH@
+libhpcrun_la-loadmap.lo: loadmap.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-loadmap.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-loadmap.Tpo -c -o libhpcrun_la-loadmap.lo `test -f 'loadmap.c' || echo '$(srcdir)/'`loadmap.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_la-loadmap.Tpo $(DEPDIR)/libhpcrun_la-loadmap.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loadmap.c' object='libhpcrun_la-loadmap.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-epoch.lo `test -f 'epoch.c' || echo '$(srcdir)/'`epoch.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-loadmap.lo `test -f 'loadmap.c' || echo '$(srcdir)/'`loadmap.c
 
 libhpcrun_la-files.lo: files.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-files.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-files.Tpo -c -o libhpcrun_la-files.lo `test -f 'files.c' || echo '$(srcdir)/'`files.c
@@ -1751,19 +1751,19 @@ libhpcrun_o-env.obj: env.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-env.obj `if test -f 'env.c'; then $(CYGPATH_W) 'env.c'; else $(CYGPATH_W) '$(srcdir)/env.c'; fi`
 
-libhpcrun_o-epoch.o: epoch.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-epoch.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-epoch.Tpo -c -o libhpcrun_o-epoch.o `test -f 'epoch.c' || echo '$(srcdir)/'`epoch.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-epoch.Tpo $(DEPDIR)/libhpcrun_o-epoch.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='epoch.c' object='libhpcrun_o-epoch.o' libtool=no @AMDEPBACKSLASH@
+libhpcrun_o-loadmap.o: loadmap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-loadmap.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-loadmap.Tpo -c -o libhpcrun_o-loadmap.o `test -f 'loadmap.c' || echo '$(srcdir)/'`loadmap.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-loadmap.Tpo $(DEPDIR)/libhpcrun_o-loadmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loadmap.c' object='libhpcrun_o-loadmap.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-epoch.o `test -f 'epoch.c' || echo '$(srcdir)/'`epoch.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-loadmap.o `test -f 'loadmap.c' || echo '$(srcdir)/'`loadmap.c
 
-libhpcrun_o-epoch.obj: epoch.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-epoch.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-epoch.Tpo -c -o libhpcrun_o-epoch.obj `if test -f 'epoch.c'; then $(CYGPATH_W) 'epoch.c'; else $(CYGPATH_W) '$(srcdir)/epoch.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-epoch.Tpo $(DEPDIR)/libhpcrun_o-epoch.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='epoch.c' object='libhpcrun_o-epoch.obj' libtool=no @AMDEPBACKSLASH@
+libhpcrun_o-loadmap.obj: loadmap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-loadmap.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-loadmap.Tpo -c -o libhpcrun_o-loadmap.obj `if test -f 'loadmap.c'; then $(CYGPATH_W) 'loadmap.c'; else $(CYGPATH_W) '$(srcdir)/loadmap.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-loadmap.Tpo $(DEPDIR)/libhpcrun_o-loadmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='loadmap.c' object='libhpcrun_o-loadmap.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-epoch.obj `if test -f 'epoch.c'; then $(CYGPATH_W) 'epoch.c'; else $(CYGPATH_W) '$(srcdir)/epoch.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-loadmap.obj `if test -f 'loadmap.c'; then $(CYGPATH_W) 'loadmap.c'; else $(CYGPATH_W) '$(srcdir)/loadmap.c'; fi`
 
 libhpcrun_o-files.o: files.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-files.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-files.Tpo -c -o libhpcrun_o-files.o `test -f 'files.c' || echo '$(srcdir)/'`files.c

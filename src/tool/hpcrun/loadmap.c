@@ -72,65 +72,132 @@
   or otherwise) arising in any way out of the use of this software, even
   if advised of the possibility of such damage.
 */
-#ifndef EPOCH_H
-#define EPOCH_H
+#include <sys/time.h>
+#include "cct.h"
+#include "loadmap.h"
+#include "fnbounds_interface.h"
+#include "hpcrun_stats.h"
+#include "sample_event.h"
+#include "state.h"
 
-#include <stdio.h>
+#include <messages/messages.h>
 
-/* an "epoch" is an interval of time during which no two dynamic 
-   libraries are mapped to the same region of the address space. 
-   an epoch can span across dlopen and dlclose operations. an epoch
-   ends when a dlopen maps a new load module on top of a region of 
-   the address space that has previously been occupied by another
-   module earlier during the epoch.
-*/
-
-// Local includes
-
-#include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-
-// FIXME:tallent: I moved the declaration of loadmap_src_t from
-// hpcrun-fmt.h.  Most likely, the guts of loadmap_src_t should simply
-// be replaced with loadmap_entry_t.
-
-typedef struct loadmap_src_t {
-  uint id;
-  char* name;
-  void* vaddr;
-  void* mapaddr;
-  size_t size;
-
-  struct loadmap_src_t* next;
-
-} loadmap_src_t;
+#include <lib/prof-lean/spinlock.h>
 
 
-typedef struct hpcrun_epoch_t
+static hpcrun_loadmap_t static_loadmap;
+
+/* loadmaps are entirely separate from profiling state */
+static hpcrun_loadmap_t *current_loadmap = NULL;
+
+/* locking functions to ensure that loadmaps are consistent */
+static spinlock_t loadmap_lock = SPINLOCK_UNLOCKED;
+
+hpcrun_loadmap_t*
+hpcrun_static_loadmap() 
 {
-  struct hpcrun_epoch_t *next;  /* the next epoch */
-  unsigned int id;            /* an identifier for disk writeouts */
-  unsigned int num_modules;   /* how many modules are loaded? */
-  loadmap_src_t *loaded_modules;
-} hpcrun_epoch_t;
+  return &static_loadmap;
+}
 
-hpcrun_epoch_t* hpcrun_static_epoch(void);
-hpcrun_epoch_t* hpcrun_epoch_new(void);
-void            hpcrun_epoch_init(hpcrun_epoch_t* e);
-hpcrun_epoch_t* hpcrun_get_epoch(void);
+void
+hpcrun_loadmap_lock() 
+{
+  spinlock_lock(&loadmap_lock);
+}
 
-void hpcrun_loadmap_add_module(const char* module_name, void* vaddr, void* mapaddr, size_t size);
+void
+hpcrun_loadmap_unlock()
+{
+  spinlock_unlock(&loadmap_lock);
+}
 
-/* avoid weird dynamic loading conflicts */
+int
+hpcrun_loadmap_is_locked()
+{
+  return spinlock_is_locked(&loadmap_lock);
+}
 
-void hpcrun_epoch_lock();
-void hpcrun_epoch_unlock();
-int  hpcrun_epoch_is_locked();
+hpcrun_loadmap_t*
+hpcrun_get_loadmap()
+{
+  return current_loadmap;
+}
 
-void hpcrun_finalize_current_epoch(void);
 
-void hpcrun_write_all_epochs(FILE *);
-void hpcrun_write_current_loadmap(FILE *);
+void
+hpcrun_loadmap_add_module(const char *module_name,
+			  void *vaddr,                /* the preferred virtual address */
+			  void *mapaddr,              /* the actual mapped address */
+			  size_t size)                /* end addr minus start addr */
+{
+  TMSG(LOADMAP," loadmap_add_module");
 
-#endif // EPOCH_H
+  loadmap_src_t *m = (loadmap_src_t *) hpcrun_malloc(sizeof(loadmap_src_t));
+
+  // fill in the fields of the structure
+  m->id = 0; // FIXME:tallent
+  m->name = (char*) module_name;
+  m->vaddr = vaddr;
+  m->mapaddr = mapaddr;
+  m->size = size;
+
+  // link it into the list of loaded modules for the current loadmap
+  m->next = current_loadmap->loaded_modules;
+  current_loadmap->loaded_modules = m; 
+  current_loadmap->num_modules++;
+}
+
+
+
+void
+hpcrun_loadmap_init(hpcrun_loadmap_t* e)
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  TMSG(LOADMAP, "new loadmap created");
+  TMSG(LOADMAP, "new loadmap time: sec = %ld, usec = %d, samples = %ld",
+       (long)tv.tv_sec, (int)tv.tv_usec, hpcrun_stats_num_samples_total());
+
+  memset(e, 0, sizeof(*e));
+
+  e->loaded_modules = NULL;
+
+  /* make sure everything is up-to-date before setting the
+     current_loadmap */
+  e->next = current_loadmap;
+  current_loadmap = e;
+}
+
+/* loadmaps are totally distinct from profiling states */
+hpcrun_loadmap_t*
+hpcrun_loadmap_new(void)
+{
+  TMSG(LOADMAP, " --NEW");
+  hpcrun_loadmap_t* e = hpcrun_malloc(sizeof(hpcrun_loadmap_t));
+
+  if (e == NULL) {
+    EMSG("New loadmap requested, but allocation failed!!");
+    return NULL;
+  }
+  hpcrun_loadmap_init(e);
+
+#ifdef OLD_EPOCH
+  if (ENABLED(LOADMAP)) {
+    ENABLE(LOADMAP_CHK);
+  }
+#endif
+  return e;
+}
+
+void
+hpcrun_finalize_current_loadmap(void)
+{
+  TMSG(LOADMAP, " --Finalize current");
+  // lazily finalize the last loadmap
+  hpcrun_loadmap_lock();
+  if (current_loadmap->loaded_modules == NULL) {
+    fnbounds_loadmap_finalize();
+  }
+  hpcrun_loadmap_unlock();
+}

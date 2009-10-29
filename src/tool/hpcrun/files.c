@@ -177,7 +177,7 @@ files_set_executable(char *execname)
   executable_name = strdup(basename(execname));
   if (executable_name[0] != '/') {
     char path[PATH_MAX_LEN];
-    // check return code; use pathname in fnbounds_static epoch finalize
+    // check return code; use pathname in fnbounds_static loadmap finalize
     realpath(executable_name, path);
     executable_pathname = strdup(path);
   }

@@ -183,7 +183,7 @@ hpcrun_sample_callpath(void *context, int metricId,
 
   hpcrun_clear_handling_sample(td);
   if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
-    hpcrun_finalize_current_epoch();
+    hpcrun_finalize_current_loadmap();
     hpcrun_flush_epochs();
     hpcrun_reclaim_freeable_mem();
   }
@@ -206,7 +206,7 @@ _hpcrun_sample_callpath(state_t *state, void *context,
   TMSG(SAMPLE,"csprof take profile sample @ %p",pc);
 
   /* check to see if shared library state has changed out from under us */
-  state = hpcrun_check_for_new_epoch(state);
+  state = hpcrun_check_for_new_loadmap(state);
 
   cct_node_t* n =
     hpcrun_backtrace(state, context, metricId, metricIncr, skipInner, isSync);

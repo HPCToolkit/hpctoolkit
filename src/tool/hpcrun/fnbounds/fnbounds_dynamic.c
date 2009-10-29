@@ -83,7 +83,7 @@
 #include "hpcrun_stats.h"
 #include "disabled.h"
 #include "dylib.h"
-#include "epoch.h"
+#include "loadmap.h"
 #include "files.h"
 #include "fnbounds-file-header.h"
 #include "fnbounds_interface.h"
@@ -168,7 +168,7 @@ static dso_info_t *fnbounds_dso_info_query(void *pc, dso_info_t * dl_list);
 static dso_info_t *fnbounds_dso_handle_open(const char *module_name,
 					    void *start, void *end);
 static void        fnbounds_map_executable();
-static void        fnbounds_epoch_finalize_locked();
+static void        fnbounds_loadmap_finalize_locked();
 
 static dso_info_t *new_dso_info_t(const char *name, void **table,
 				  struct fnbounds_file_header *fh,
@@ -335,10 +335,10 @@ fnbounds_fini()
 
 
 void
-fnbounds_epoch_finalize()
+fnbounds_loadmap_finalize()
 {
   FNBOUNDS_LOCK;
-  fnbounds_epoch_finalize_locked();
+  fnbounds_loadmap_finalize_locked();
   FNBOUNDS_UNLOCK;
 }
 
@@ -494,7 +494,7 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
 
 
 static void
-fnbounds_epoch_finalize_locked()
+fnbounds_loadmap_finalize_locked()
 {
   dso_info_t *dso_info, *next;
 
@@ -570,9 +570,9 @@ fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
       // at present.
     } else {
       // the entry on the closed list was not the same module
-      fnbounds_epoch_finalize_locked();
-      hpcrun_epoch_new();
-      TMSG(EPOCH, "new epoch cause: start = %p, end = %p, name = %s", 
+      fnbounds_loadmap_finalize_locked();
+      hpcrun_loadmap_new();
+      TMSG(LOADMAP, "new loadmap cause: start = %p, end = %p, name = %s", 
 	   start, end, module_name);
 
 

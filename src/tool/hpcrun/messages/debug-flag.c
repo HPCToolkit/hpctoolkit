@@ -120,7 +120,7 @@ static pmsg_category all_list_entries [] = {
  E(DBG),
  E(THREAD),
  E(PROCESS),
- E(EPOCH),
+ E(LOADMAP),
  E(HANDLING_SAMPLE),
  E(MEM),
  E(MEM2),
