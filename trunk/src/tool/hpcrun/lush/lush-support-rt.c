@@ -65,7 +65,7 @@
 
 #include "lush-support-rt.h"
 
-#include <state.h>
+#include <epoch.h>
 
 //*************************** Forward Declarations **************************
 

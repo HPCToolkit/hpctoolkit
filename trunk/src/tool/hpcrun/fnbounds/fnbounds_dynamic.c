@@ -89,7 +89,7 @@
 #include "fnbounds_interface.h"
 #include "monitor.h"
 
-#include "state.h"
+#include <hpcrun/epoch.h>
 
 #include "sample_event.h"
 #include "system_server.h"

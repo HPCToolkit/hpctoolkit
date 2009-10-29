@@ -60,7 +60,7 @@
 #include "unwind.h"
 
 #include "backtrace.h"
-#include "state.h"
+#include "epoch.h"
 #include "monitor.h"
 #include "sample_event.h"
 

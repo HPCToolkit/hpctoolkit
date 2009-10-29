@@ -44,9 +44,9 @@
 #ifndef WRITE_DATA_H
 #define WRITE_DATA_H
 
-#include "state.h"
+#include "epoch.h"
 
-extern int hpcrun_write_profile_data(state_t *state);
+extern int hpcrun_write_profile_data(epoch_t *epoch);
 extern void hpcrun_flush_epochs(void);
 
 #endif // WRITE_DATA_H

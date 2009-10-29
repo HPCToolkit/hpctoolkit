@@ -41,9 +41,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-/* functions operating on thread-local state */
-#ifndef CSPROF_STATE_H
-#define CSPROF_STATE_H
+#ifndef EPOCH_H
+#define EPOCH_H
 
 //************************* System Include Files ****************************
 
@@ -58,43 +57,24 @@
 
 //*************************** Datatypes **************************
 
-//***************************************************************************
+typedef struct epoch_t {
 
-// ---------------------------------------------------------
-// profiling state of a single thread
-// ---------------------------------------------------------
 
-typedef struct state_t {
-
-  /* call stack data, stored in private memory */
-  hpcrun_cct_t csdata;
+  hpcrun_cct_t csdata;     // cct (call stack data)
   cct_ctxt_t* csdata_ctxt; // creation context
-
-  /* our notion of what the current loadmap is */
   hpcrun_loadmap_t *loadmap;
+  struct epoch_t* next;    // epochs gathererd into a (singly) linked list
 
-  /* other profiling states which we have seen */
-  struct state_t* next;
+} epoch_t;
 
+typedef epoch_t* epoch_t_f(void);
 
-} state_t;
+typedef void epoch_t_setter(epoch_t* s);
 
-//*************************** Forward Declarations **************************
+extern void hpcrun_reset_epoch(epoch_t* epoch);
 
-//***************************************************************************
+epoch_t* hpcrun_check_for_new_loadmap(epoch_t *);
+void hpcrun_epoch_init(void);
+void hpcrun_epoch_reset(void);
 
-typedef state_t* state_t_f(void);
-
-typedef void state_t_setter(state_t* s);
-
-// ---------------------------------------------------------
-// getting and setting states independent of threading support
-// ---------------------------------------------------------
-
-extern void hpcrun_reset_state(state_t* state);
-
-state_t* hpcrun_check_for_new_loadmap(state_t *);
-void hpcrun_state_init(void);
-void hpcrun_state_reset(void);
-
-#endif // STATE_H
+#endif // EPOCH_H

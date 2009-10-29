@@ -1102,7 +1102,7 @@ lushPthr_mutexTrylock_post(lushPthr_t* restrict x,
 			   int result)
 {
   if (result != 0) {
-    return; // lock was not acquired -- state remains the same
+    return; // lock was not acquired -- epoch remains the same
   }
 
   if (LUSH_PTHR_DBG) { lushPthr_dump(x, "mTrylock", NULL); }
@@ -1166,7 +1166,7 @@ lushPthr_spinTrylock_post(lushPthr_t* restrict x,
 			  int result)
 {
   if (result != 0) {
-    return; // lock was not acquired -- state remains the same
+    return; // lock was not acquired -- epoch remains the same
   }
 
   if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sTrylock]", (void*)lock); }

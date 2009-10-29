@@ -388,7 +388,7 @@ lush_step_pchord(lush_cursor_t* cursor)
     ty = lush_forcestep_pnote(cursor);
     
     if (ty == LUSH_STEP_DONE_CHORDS || ty == LUSH_STEP_ERROR) {
-      // we have reached the outermost frame of the stack (or an error state)
+      // we have reached the outermost frame of the stack (or an error epoch)
       lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_DONE_CHORD);
     }
   }

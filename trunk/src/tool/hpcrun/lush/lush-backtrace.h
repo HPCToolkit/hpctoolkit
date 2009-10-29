@@ -70,7 +70,7 @@
 
 #include "lush.h"
 
-#include <state.h>
+#include <epoch.h>
 
 //*************************** Forward Declarations **************************
 
@@ -102,7 +102,7 @@ hpcrun_isLogicalUnwind()
 //***************************************************************************
 
 cct_node_t*
-lush_backtrace(state_t* state, ucontext_t* context,
+lush_backtrace(epoch_t* epoch, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       int skipInner, int isSync);
 

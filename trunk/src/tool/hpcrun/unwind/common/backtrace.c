@@ -67,7 +67,7 @@
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/thread_data.h>
 
-#include <hpcrun/state.h>
+#include <hpcrun/epoch.h>
 #include <monitor.h>
 #include <hpcrun/sample_event.h>
 
@@ -84,7 +84,7 @@
 //***************************************************************************
 
 static cct_node_t*
-_hpcrun_backtrace(state_t* state, ucontext_t* context,
+_hpcrun_backtrace(epoch_t* epoch, ucontext_t* context,
 		  int metricId, uint64_t metricIncr,
 		  int skipInner);
 
@@ -107,18 +107,18 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
 //       PLACE_TRAMPOLINE  (standard for normal async samples).
 //             
 cct_node_t*
-hpcrun_backtrace(state_t* state, ucontext_t* context, 
+hpcrun_backtrace(epoch_t* epoch, ucontext_t* context, 
 		 int metricId,
 		 uint64_t metricIncr,
 		 int skipInner, int isSync)
 {
   cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
-    n = lush_backtrace(state, context, metricId, metricIncr, skipInner,
+    n = lush_backtrace(epoch, context, metricId, metricIncr, skipInner,
 		       isSync);
   }
   else {
-    n = _hpcrun_backtrace(state, context, metricId, metricIncr, skipInner);
+    n = _hpcrun_backtrace(epoch, context, metricId, metricIncr, skipInner);
   }
 
   // N.B.: for lush_backtrace() it may be that n = NULL
@@ -154,7 +154,7 @@ hpcrun_filter_sample(int len, frame_t *start, frame_t *last)
 
 
 static cct_node_t*
-_hpcrun_backtrace(state_t* state, ucontext_t* context,
+_hpcrun_backtrace(epoch_t* epoch, ucontext_t* context,
 		  int metricId,
 		  uint64_t metricIncr,
 		  int skipInner)
@@ -294,7 +294,7 @@ _hpcrun_backtrace(state_t* state, ucontext_t* context,
   }
 
   cct_node_t* n;
-  n = hpcrun_cct_insert_backtrace(&(state->csdata), cct_cursor, metricId,
+  n = hpcrun_cct_insert_backtrace(&(epoch->csdata), cct_cursor, metricId,
 				  bt_last, bt_beg,
 				  (cct_metric_data_t){.i = metricIncr});
 
@@ -332,7 +332,7 @@ hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
 
 
 void 
-dump_backtrace(state_t* state, frame_t* unwind)
+dump_backtrace(epoch_t* epoch, frame_t* unwind)
 {
   static const int msg_limit = 100;
   int msg_cnt = 0;

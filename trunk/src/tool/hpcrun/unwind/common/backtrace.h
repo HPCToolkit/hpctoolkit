@@ -66,7 +66,7 @@
 // local include files 
 //***************************************************************************
 
-#include "state.h"
+#include "epoch.h"
 
 
 
@@ -75,7 +75,7 @@
 //***************************************************************************
 
 cct_node_t*
-hpcrun_backtrace(state_t *state, ucontext_t* context, 
+hpcrun_backtrace(epoch_t *epoch, ucontext_t* context, 
 		 int metricId, uint64_t metricIncr,
 		 int skipInner, int isSync);
 
@@ -83,9 +83,9 @@ frame_t*
 hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
 		   int skip);
 
-// FIXME: tallent: relocate when 'csprof state' trash is untangled
+// FIXME: tallent: relocate when 'csprof epoch' trash is untangled
 void 
-dump_backtrace(state_t *state, frame_t *unwind);
+dump_backtrace(epoch_t *epoch, frame_t *unwind);
 
 //***************************************************************************
 

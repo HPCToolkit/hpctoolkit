@@ -74,7 +74,7 @@
 #include "lush.h"
 #include "lush-backtrace.h"
 
-#include <state.h>
+#include <epoch.h>
 #include <sample_event.h> // hpcrun_drop_sample()
 #include <unwind/common/backtrace.h> // dump_backtrace()
 
@@ -100,7 +100,7 @@ lush_agent_pool_t* lush_agents = NULL;
 //***************************************************************************
 
 cct_node_t*
-lush_backtrace(state_t* state, ucontext_t* context,
+lush_backtrace(epoch_t* epoch, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       int skipInner, int isSync)
 {
@@ -226,7 +226,7 @@ lush_backtrace(state_t* state, ucontext_t* context,
   // insert backtrace into calling context tree (if sensible)
   // ---------------------------------------------------------
   if (MYDBG) {
-    dump_backtrace(state, td->unwind);
+    dump_backtrace(epoch, td->unwind);
   }
 
   frame_t* bt_beg = td->btbuf;      // innermost, inclusive 
@@ -238,7 +238,7 @@ lush_backtrace(state_t* state, ucontext_t* context,
   }
 
   cct_node_t* node = NULL;
-  node = hpcrun_cct_insert_backtrace(&(state->csdata), cct_cursor, metricId,
+  node = hpcrun_cct_insert_backtrace(&(epoch->csdata), cct_cursor, metricId,
 				     bt_end, bt_beg,
 				     (cct_metric_data_t){.i = metricIncr});
 
