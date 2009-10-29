@@ -49,7 +49,7 @@
 
 #include "env.h"
 #include "state.h"
-#include "epoch.h"
+#include "loadmap.h"
 #include "name.h"
 #include "thread_data.h"
 #include "hpcrun_return_codes.h"
@@ -73,13 +73,13 @@ hpcrun_state_init(void)
   state_t*       state = td->state;
 
   hpcrun_cct_init(&(state->csdata), state->csdata_ctxt);
-  state->epoch = hpcrun_get_epoch();
+  state->loadmap = hpcrun_get_loadmap();
   state->next  = NULL;
 }
 
 
 state_t*
-hpcrun_check_for_new_epoch(state_t* state)
+hpcrun_check_for_new_loadmap(state_t* state)
 {
   /* ugh, nasty race condition here:
 
@@ -92,22 +92,22 @@ hpcrun_check_for_new_epoch(state_t* state)
 
   3. somebody else (thread in step 2 or a different thread)
   dlopen()'s a new shared object, which begins an entirely
-  new epoch--one which does not include the shared object
+  new loadmap--one which does not include the shared object
   which resides in our backtrace;
 
-  4. we create a new state which receives the epoch from step 3,
+  4. we create a new state which receives the loadmap from step 3,
   not step 1, which is wrong.
 
   attempt to take baby steps to stop this.  more drastic action
-  would involve grabbing the epoch lock, but I believe that would
+  would involve grabbing the loadmap lock, but I believe that would
   be unacceptably slow (both in the atomic instruction overhead
   and the simple fact that most programs are not frequent users
   of dl*). */
 
-  hpcrun_epoch_t* current = hpcrun_get_epoch();
+  hpcrun_loadmap_t* current = hpcrun_get_loadmap();
 
-  if(state->epoch != current) {
-    TMSG(EPOCH, "Need new epoch!");
+  if(state->loadmap != current) {
+    TMSG(LOADMAP, "Need new loadmap!");
     TMSG(MALLOC," -new_epoch-");
     state_t* newstate = hpcrun_malloc(sizeof(state_t));
 
@@ -118,7 +118,7 @@ hpcrun_check_for_new_epoch(state_t* state)
 
     hpcrun_trampoline_remove();
 
-    newstate->epoch = current;
+    newstate->loadmap = current;
     newstate->next  = state;
 
     TD_GET(state) = newstate;
@@ -146,15 +146,15 @@ hpcrun_state_reset(void)
   //  re-init cct
   // reset state list for thread to point be a list consisting of only the new state
   //
-  //  N.B. the notion of 'epoch' is called 'state' in the code
+  //  N.B. the notion of 'loadmap' is called 'state' in the code
   // FIXME: change the naming to reflect this
   //
   TMSG(STATE_RESET,"--started");
   state_t *state = hpcrun_get_state();
   state_t *newstate = hpcrun_malloc(sizeof(state_t));
   memcpy(newstate, state, sizeof(state_t));
-  TMSG(STATE_RESET, "check new epoch = old epoch = %d", newstate->epoch == state->epoch);
+  TMSG(STATE_RESET, "check new loadmap = old loadmap = %d", newstate->loadmap == state->loadmap);
   hpcrun_cct_init(&newstate->csdata, newstate->csdata_ctxt); // reset cct
   hpcrun_reset_state(newstate);
-  TMSG(STATE_RESET," ==> no new state for next sample = %d", newstate->epoch == hpcrun_get_epoch());
+  TMSG(STATE_RESET," ==> no new state for next sample = %d", newstate->loadmap == hpcrun_get_loadmap());
 }

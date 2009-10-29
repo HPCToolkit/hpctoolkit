@@ -61,7 +61,7 @@
 #include "cct.h"
 #include "hpcrun_return_codes.h"
 #include "write_data.h"
-#include "epoch.h"
+#include "loadmap.h"
 
 #include <messages/messages.h>
 
@@ -257,12 +257,12 @@ write_epochs(FILE* fs, state_t* state)
 
     TMSG(DATA_WRITE, "Preparing to write loadmap");
 
-    hpcrun_epoch_t* current_epoch = s->epoch;
+    hpcrun_loadmap_t* current_loadmap = s->loadmap;
     
-    hpcfmt_byte4_fwrite(current_epoch->num_modules, fs);
+    hpcfmt_byte4_fwrite(current_loadmap->num_modules, fs);
 
-    loadmap_src_t* lm_src = current_epoch->loaded_modules;
-    for (uint32_t i = 0; i < current_epoch->num_modules; i++) {
+    loadmap_src_t* lm_src = current_loadmap->loaded_modules;
+    for (uint32_t i = 0; i < current_loadmap->num_modules; i++) {
       loadmap_entry_t lm_entry;
       lm_entry.id = lm_src->id;
       lm_entry.name = lm_src->name;
@@ -298,7 +298,7 @@ write_epochs(FILE* fs, state_t* state)
     else {
       TMSG(DATA_WRITE, "saved profile data to hpcrun file ");
     }
-    current_epoch++;
+    current_loadmap++;
 
   } // epoch loop
 

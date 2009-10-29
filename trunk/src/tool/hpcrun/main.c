@@ -74,7 +74,7 @@
 
 #include "disabled.h"
 #include "env.h"
-#include "epoch.h"
+#include "loadmap.h"
 #include "files.h"
 #include "fnbounds_interface.h"
 #include "hpcrun_dlfns.h"
@@ -186,7 +186,7 @@ hpcrun_is_initialized(void)
 void
 hpcrun_init_internal(void)
 {
-  hpcrun_epoch_init(hpcrun_static_epoch());
+  hpcrun_loadmap_init(hpcrun_static_loadmap());
 
   hpcrun_thread_data_new();
   hpcrun_thread_memory_init();
@@ -236,7 +236,7 @@ hpcrun_init_internal(void)
 
   // set up initial 'state' [FIXME: state ==> epoch] now that metrics are finalized
   
-  TMSG(STATE,"process init setting up initial state/epoch");
+  TMSG(STATE,"process init setting up initial state/loadmap");
   hpcrun_state_init();
 
   // start the sampling process
@@ -277,7 +277,7 @@ hpcrun_fini_internal(void)
 
     fnbounds_fini();
 
-    hpcrun_finalize_current_epoch();
+    hpcrun_finalize_current_loadmap();
 
     // FIXME: Is this still necessary?
     // Currently breaks the build due to lack of state->unwind.
@@ -326,8 +326,8 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   // handle event sets for sample sources
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
 
-  // set up initial 'state' [FIXME: state ==> epoch] now that metrics are finalized
-  TMSG(STATE,"process init setting up initial state/epoch");
+  // set up initial 'state' [FIXME: state ==> loadmap] now that metrics are finalized
+  TMSG(STATE,"process init setting up initial state/loadmap");
   hpcrun_state_init();
 
   // start the sample sources
@@ -349,7 +349,7 @@ hpcrun_thread_fini(state_t *state)
     TMSG(FINI,"thread finit stops sampling");
     SAMPLE_SOURCES(stop);
     lushPthr_thread_fini(&TD_GET(pthr_metrics));
-    hpcrun_finalize_current_epoch();
+    hpcrun_finalize_current_loadmap();
 
     // FIXME: currently breaks the build.
 #if 0

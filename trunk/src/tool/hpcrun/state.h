@@ -50,7 +50,7 @@
 //*************************** User Include Files ****************************
 
 #include <cct/cct.h>
-#include "epoch.h"
+#include "loadmap.h"
 
 #include <lush/lush.h>
 
@@ -70,8 +70,8 @@ typedef struct state_t {
   hpcrun_cct_t csdata;
   cct_ctxt_t* csdata_ctxt; // creation context
 
-  /* our notion of what the current epoch is */
-  hpcrun_epoch_t *epoch;
+  /* our notion of what the current loadmap is */
+  hpcrun_loadmap_t *loadmap;
 
   /* other profiling states which we have seen */
   struct state_t* next;
@@ -93,7 +93,7 @@ typedef void state_t_setter(state_t* s);
 
 extern void hpcrun_reset_state(state_t* state);
 
-state_t* hpcrun_check_for_new_epoch(state_t *);
+state_t* hpcrun_check_for_new_loadmap(state_t *);
 void hpcrun_state_init(void);
 void hpcrun_state_reset(void);
 

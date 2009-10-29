@@ -45,7 +45,7 @@
 //
 
 #include <assert.h>
-#include "epoch.h"
+#include "loadmap.h"
 #include "files.h"
 #include "fnbounds_interface.h"
 
@@ -96,7 +96,7 @@ fnbounds_fini()
 
 
 void 
-fnbounds_epoch_finalize()
+fnbounds_loadmap_finalize()
 {
   void *start = hpcrun_nm_addrs[0];
   void *end = hpcrun_nm_addrs[hpcrun_nm_addrs_len - 1];
