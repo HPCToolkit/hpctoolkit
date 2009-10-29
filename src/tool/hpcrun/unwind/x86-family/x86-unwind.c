@@ -74,7 +74,7 @@
 #include <include/gcc-attr.h>
 #include <x86-decoder.h>
 
-#include <hpcrun/state.h>
+#include <hpcrun/epoch.h>
 #include "stack_troll.h"
 #include "thread_use.h"
 
@@ -622,7 +622,7 @@ _drop_sample(bool no_backtrace)
     return;
   }
   if (hpcrun_below_pmsg_threshold()) {
-    dump_backtrace(TD_GET(state),0);
+    dump_backtrace(TD_GET(epoch),0);
   }
 
   hpcrun_up_pmsg_count();

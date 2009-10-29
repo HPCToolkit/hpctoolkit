@@ -56,7 +56,7 @@
 #include "fname_max.h"
 #include "backtrace.h"
 #include "files.h"
-#include "state.h"
+#include "epoch.h"
 #include "thread_data.h"
 #include "cct.h"
 #include "hpcrun_return_codes.h"
@@ -195,7 +195,7 @@ lazy_open_data_file(void)
 }
 
 static int
-write_epochs(FILE* fs, state_t* state)
+write_epochs(FILE* fs, epoch_t* epoch)
 {
   uint32_t num_epochs = 0;
 
@@ -203,8 +203,8 @@ write_epochs(FILE* fs, state_t* state)
   // === # epochs === 
   //
 
-  state_t* current_state = state;
-  for(state_t* s = current_state; s; s = s->next) {
+  epoch_t* current_epoch = epoch;
+  for(epoch_t* s = current_epoch; s; s = s->next) {
     num_epochs++;
   }
 
@@ -216,7 +216,7 @@ write_epochs(FILE* fs, state_t* state)
   // for each epoch ...
   //
 
-  for(state_t* s = current_state; s; s = s->next) {
+  for(epoch_t* s = current_epoch; s; s = s->next) {
 
     if (! ENABLED(WRITE_EMPTY_EPOCH)){
       if (hpcrun_empty_cct(&(s->csdata))){
@@ -309,16 +309,16 @@ void
 hpcrun_flush_epochs(void)
 {
   FILE *fs = lazy_open_data_file();
-  write_epochs(fs, TD_GET(state));
-  hpcrun_state_reset();
+  write_epochs(fs, TD_GET(epoch));
+  hpcrun_epoch_reset();
 }
 
 int
-hpcrun_write_profile_data(state_t *state)
+hpcrun_write_profile_data(epoch_t *epoch)
 {
 
   FILE* fs = lazy_open_data_file();
-  write_epochs(fs, state);
+  write_epochs(fs, epoch);
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_fclose(fs);

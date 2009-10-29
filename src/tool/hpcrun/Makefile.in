@@ -171,7 +171,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_sources_all.c sample-sources/common.c \
 	sample-sources/itimer.c sample-sources/none.c \
 	sample-sources/retcnt.c sample_sources_registered.c \
-	segv_handler.c state.c system_server.c thread_data.c \
+	segv_handler.c epoch.c system_server.c thread_data.c \
 	thread_use.c trace.c write_data.c cct/cct.c \
 	trampoline/common/trampoline.c unwind/common/backtrace.c \
 	unwind/common/splay.c unwind/common/stack_troll.c \
@@ -209,7 +209,7 @@ am__objects_7 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-itimer.lo libhpcrun_la-none.lo \
 	libhpcrun_la-retcnt.lo \
 	libhpcrun_la-sample_sources_registered.lo \
-	libhpcrun_la-segv_handler.lo libhpcrun_la-state.lo \
+	libhpcrun_la-segv_handler.lo libhpcrun_la-epoch.lo \
 	libhpcrun_la-system_server.lo libhpcrun_la-thread_data.lo \
 	libhpcrun_la-thread_use.lo libhpcrun_la-trace.lo \
 	libhpcrun_la-write_data.lo libhpcrun_la-cct.lo \
@@ -265,7 +265,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_sources_all.c sample-sources/common.c \
 	sample-sources/itimer.c sample-sources/none.c \
 	sample-sources/retcnt.c sample_sources_registered.c \
-	segv_handler.c state.c system_server.c thread_data.c \
+	segv_handler.c epoch.c system_server.c thread_data.c \
 	thread_use.c trace.c write_data.c cct/cct.c \
 	trampoline/common/trampoline.c unwind/common/backtrace.c \
 	unwind/common/splay.c unwind/common/stack_troll.c \
@@ -306,7 +306,7 @@ am__objects_21 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-common.$(OBJEXT) libhpcrun_o-itimer.$(OBJEXT) \
 	libhpcrun_o-none.$(OBJEXT) libhpcrun_o-retcnt.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
-	libhpcrun_o-segv_handler.$(OBJEXT) libhpcrun_o-state.$(OBJEXT) \
+	libhpcrun_o-segv_handler.$(OBJEXT) libhpcrun_o-epoch.$(OBJEXT) \
 	libhpcrun_o-system_server.$(OBJEXT) \
 	libhpcrun_o-thread_data.$(OBJEXT) \
 	libhpcrun_o-thread_use.$(OBJEXT) libhpcrun_o-trace.$(OBJEXT) \
@@ -634,7 +634,7 @@ MY_BASE_FILES = \
         sample-sources/retcnt.c         \
 	sample_sources_registered.c	\
 	segv_handler.c			\
-	state.c				\
+	epoch.c				\
 	system_server.c			\
 	thread_data.c			\
 	thread_use.c			\
@@ -970,6 +970,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-disabled.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-dylib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-env.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-epoch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-executable-path.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-files.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-first_func.Plo@am__quote@
@@ -1008,7 +1009,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-segv_handler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-splay.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-stack_troll.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-state.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-system_server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_use.Plo@am__quote@
@@ -1035,6 +1035,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-default_validation_summary.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-disabled.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-env.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-epoch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-executable-path.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-files.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-first_func.Po@am__quote@
@@ -1072,7 +1073,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-segv_handler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-splay.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-stack_troll.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-state.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-system_server.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_use.Po@am__quote@
@@ -1352,12 +1352,12 @@ libhpcrun_la-segv_handler.lo: segv_handler.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-segv_handler.lo `test -f 'segv_handler.c' || echo '$(srcdir)/'`segv_handler.c
 
-libhpcrun_la-state.lo: state.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-state.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-state.Tpo -c -o libhpcrun_la-state.lo `test -f 'state.c' || echo '$(srcdir)/'`state.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_la-state.Tpo $(DEPDIR)/libhpcrun_la-state.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='state.c' object='libhpcrun_la-state.lo' libtool=yes @AMDEPBACKSLASH@
+libhpcrun_la-epoch.lo: epoch.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-epoch.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-epoch.Tpo -c -o libhpcrun_la-epoch.lo `test -f 'epoch.c' || echo '$(srcdir)/'`epoch.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_la-epoch.Tpo $(DEPDIR)/libhpcrun_la-epoch.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='epoch.c' object='libhpcrun_la-epoch.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-state.lo `test -f 'state.c' || echo '$(srcdir)/'`state.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-epoch.lo `test -f 'epoch.c' || echo '$(srcdir)/'`epoch.c
 
 libhpcrun_la-system_server.lo: system_server.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-system_server.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-system_server.Tpo -c -o libhpcrun_la-system_server.lo `test -f 'system_server.c' || echo '$(srcdir)/'`system_server.c
@@ -1933,19 +1933,19 @@ libhpcrun_o-segv_handler.obj: segv_handler.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-segv_handler.obj `if test -f 'segv_handler.c'; then $(CYGPATH_W) 'segv_handler.c'; else $(CYGPATH_W) '$(srcdir)/segv_handler.c'; fi`
 
-libhpcrun_o-state.o: state.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-state.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-state.Tpo -c -o libhpcrun_o-state.o `test -f 'state.c' || echo '$(srcdir)/'`state.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-state.Tpo $(DEPDIR)/libhpcrun_o-state.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='state.c' object='libhpcrun_o-state.o' libtool=no @AMDEPBACKSLASH@
+libhpcrun_o-epoch.o: epoch.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-epoch.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-epoch.Tpo -c -o libhpcrun_o-epoch.o `test -f 'epoch.c' || echo '$(srcdir)/'`epoch.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-epoch.Tpo $(DEPDIR)/libhpcrun_o-epoch.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='epoch.c' object='libhpcrun_o-epoch.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-state.o `test -f 'state.c' || echo '$(srcdir)/'`state.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-epoch.o `test -f 'epoch.c' || echo '$(srcdir)/'`epoch.c
 
-libhpcrun_o-state.obj: state.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-state.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-state.Tpo -c -o libhpcrun_o-state.obj `if test -f 'state.c'; then $(CYGPATH_W) 'state.c'; else $(CYGPATH_W) '$(srcdir)/state.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-state.Tpo $(DEPDIR)/libhpcrun_o-state.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='state.c' object='libhpcrun_o-state.obj' libtool=no @AMDEPBACKSLASH@
+libhpcrun_o-epoch.obj: epoch.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-epoch.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-epoch.Tpo -c -o libhpcrun_o-epoch.obj `if test -f 'epoch.c'; then $(CYGPATH_W) 'epoch.c'; else $(CYGPATH_W) '$(srcdir)/epoch.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-epoch.Tpo $(DEPDIR)/libhpcrun_o-epoch.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='epoch.c' object='libhpcrun_o-epoch.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-state.obj `if test -f 'state.c'; then $(CYGPATH_W) 'state.c'; else $(CYGPATH_W) '$(srcdir)/state.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-epoch.obj `if test -f 'epoch.c'; then $(CYGPATH_W) 'epoch.c'; else $(CYGPATH_W) '$(srcdir)/epoch.c'; fi`
 
 libhpcrun_o-system_server.o: system_server.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-system_server.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-system_server.Tpo -c -o libhpcrun_o-system_server.o `test -f 'system_server.c' || echo '$(srcdir)/'`system_server.c

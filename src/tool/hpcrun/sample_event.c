@@ -57,7 +57,7 @@
 #include "metrics_types.h"
 #include "metrics.h"
 #include "segv_handler.h"
-#include "state.h"
+#include "epoch.h"
 #include "thread_data.h"
 #include "trace.h"
 #include "handling_sample.h"
@@ -80,7 +80,7 @@
 //*************************** Forward Declarations **************************
 
 static cct_node_t*
-_hpcrun_sample_callpath(state_t *state, void *context,
+_hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			int metricId, uint64_t metricIncr,
 			int skipInner, int isSync);
 
@@ -137,20 +137,20 @@ hpcrun_sample_callpath(void *context, int metricId,
   thread_data_t* td = hpcrun_get_thread_data();
   sigjmp_buf_t* it = &(td->bad_unwind);
   cct_node_t* node = NULL;
-  state_t* state = td->state;
+  epoch_t* epoch = td->epoch;
 
   hpcrun_set_handling_sample(td);
 
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
 
-    if (state != NULL) {
-      node = _hpcrun_sample_callpath(state, context, metricId, metricIncr,
+    if (epoch != NULL) {
+      node = _hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
 				     skipInner, isSync);
 
       if (trace_isactive()) {
 	void *pc = context_pc(context);
-	hpcrun_cct_t *cct = &(td->state->csdata); 
+	hpcrun_cct_t *cct = &(td->epoch->csdata); 
 	void *func_start_pc, *func_end_pc;
 
 	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc); 
@@ -168,7 +168,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     // recover from SEGVs and dropped samples
     // ------------------------------------------------------------
     memset((void *)it->jb, '\0', sizeof(it->jb));
-    dump_backtrace(state, td->unwind);
+    dump_backtrace(epoch, td->unwind);
 
     hpcrun_stats_num_samples_dropped_inc();
 
@@ -196,7 +196,7 @@ hpcrun_sample_callpath(void *context, int metricId,
 
 
 static cct_node_t*
-_hpcrun_sample_callpath(state_t *state, void *context,
+_hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			int metricId,
 			uint64_t metricIncr, 
 			int skipInner, int isSync)
@@ -205,11 +205,11 @@ _hpcrun_sample_callpath(state_t *state, void *context,
 
   TMSG(SAMPLE,"csprof take profile sample @ %p",pc);
 
-  /* check to see if shared library state has changed out from under us */
-  state = hpcrun_check_for_new_loadmap(state);
+  /* check to see if shared library loadmap (of current epoch) has changed out from under us */
+  epoch = hpcrun_check_for_new_loadmap(epoch);
 
   cct_node_t* n =
-    hpcrun_backtrace(state, context, metricId, metricIncr, skipInner, isSync);
+    hpcrun_backtrace(epoch, context, metricId, metricIncr, skipInner, isSync);
 
   // FIXME: n == -1 if sample is filtered
 

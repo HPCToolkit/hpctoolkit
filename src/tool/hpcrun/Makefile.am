@@ -119,7 +119,7 @@ MY_BASE_FILES =			\
         sample-sources/retcnt.c         \
 	sample_sources_registered.c	\
 	segv_handler.c			\
-	state.c				\
+	epoch.c				\
 	system_server.c			\
 	thread_data.c			\
 	thread_use.c			\

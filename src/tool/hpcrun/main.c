@@ -91,7 +91,7 @@
 #include "sample_sources_all.h"
 #include "segv_handler.h"
 
-#include "state.h"
+#include "epoch.h"
 #include "thread_data.h"
 #include "thread_use.h"
 #include "trace.h"
@@ -205,12 +205,12 @@ hpcrun_init_internal(void)
 
   // Initialize LUSH agents
   if (opts.lush_agent_paths[0] != '\0') {
-    state_t* state = TD_GET(state);
+    epoch_t* epoch = TD_GET(epoch);
     TMSG(MALLOC," -init_internal-: lush allocation");
     lush_agents = (lush_agent_pool_t*)hpcrun_malloc(sizeof(lush_agent_pool_t));
     lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
     EMSG("***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
-	 state, lush_agents);
+	 epoch, lush_agents);
   }
 
   lush_metrics = (lush_agents) ? 1 : 0;
@@ -234,10 +234,10 @@ hpcrun_init_internal(void)
   SAMPLE_SOURCES(process_event_list, lush_metrics);
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
 
-  // set up initial 'state' [FIXME: state ==> epoch] now that metrics are finalized
+  // set up initial 'epoch' 
   
-  TMSG(STATE,"process init setting up initial state/loadmap");
-  hpcrun_state_init();
+  TMSG(EPOCH,"process init setting up initial epoch/loadmap");
+  hpcrun_epoch_init();
 
   // start the sampling process
 
@@ -257,7 +257,7 @@ hpcrun_fini_internal(void)
   }
 
   hpcrun_unthreaded_data();
-  state_t *state = TD_GET(state);
+  epoch_t *epoch = TD_GET(epoch);
 
   if (hpcrun_is_initialized()) {
     hpcrun_is_initialized_private = false;
@@ -280,13 +280,13 @@ hpcrun_fini_internal(void)
     hpcrun_finalize_current_loadmap();
 
     // FIXME: Is this still necessary?
-    // Currently breaks the build due to lack of state->unwind.
+    // Currently breaks the build due to lack of epoch->unwind.
 #if 0
     EMSG("Backtrace for last sample event:\n");
-    dump_backtrace(state, state->unwind);
+    dump_backtrace(epoch, epoch->unwind);
 #endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
 
-    hpcrun_write_profile_data(state);
+    hpcrun_write_profile_data(epoch);
 
     hpcrun_stats_print_summary();
     
@@ -321,14 +321,14 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   hpcrun_thread_memory_init();
   hpcrun_thread_data_init(id, thr_ctxt);
 
-  state_t* state = TD_GET(state);
+  epoch_t* epoch = TD_GET(epoch);
 
   // handle event sets for sample sources
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
 
-  // set up initial 'state' [FIXME: state ==> loadmap] now that metrics are finalized
-  TMSG(STATE,"process init setting up initial state/loadmap");
-  hpcrun_state_init();
+  // set up initial 'epoch'
+  TMSG(EPOCH,"process init setting up initial epoch/loadmap");
+  hpcrun_epoch_init();
 
   // start the sample sources
   SAMPLE_SOURCES(start);
@@ -337,12 +337,12 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   if (ret){
     EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
   }
-  return (void *)state;
+  return (void *)epoch;
 }
 
 
 void
-hpcrun_thread_fini(state_t *state)
+hpcrun_thread_fini(epoch_t *epoch)
 {
   TMSG(FINI,"thread fini");
   if (hpcrun_is_initialized()) {
@@ -354,10 +354,10 @@ hpcrun_thread_fini(state_t *state)
     // FIXME: currently breaks the build.
 #if 0
     EMSG("Backtrace for last sample event:\n");
-    dump_backtrace(state, state->unwind);
+    dump_backtrace(epoch, epoch->unwind);
 #endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
 
-    hpcrun_write_profile_data(state);
+    hpcrun_write_profile_data(epoch);
   }
 }
 
@@ -582,11 +582,11 @@ monitor_thread_pre_create(void)
 
   TMSG(THREAD,"before lush malloc");
   TMSG(MALLOC," -thread_precreate: lush malloc");
-  state_t* state = hpcrun_get_state();
+  epoch_t* epoch = hpcrun_get_epoch();
   thr_ctxt = hpcrun_malloc(sizeof(cct_ctxt_t));
   TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
   thr_ctxt->context = n;
-  thr_ctxt->parent = state->csdata_ctxt;
+  thr_ctxt->parent = epoch->csdata_ctxt;
 
  fini:
   TMSG(THREAD,"->finish pre create");
@@ -629,9 +629,9 @@ monitor_fini_thread(void* init_thread_data)
 {
   hpcrun_async_block();
 
-  state_t *state = (state_t *)init_thread_data;
+  epoch_t *epoch = (epoch_t *)init_thread_data;
 
-  hpcrun_thread_fini(state);
+  hpcrun_thread_fini(epoch);
   trace_close();
 
   hpcrun_async_unblock();

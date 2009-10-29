@@ -78,7 +78,7 @@
 #include "fnbounds_interface.h"
 #include "hpcrun_stats.h"
 #include "sample_event.h"
-#include "state.h"
+#include "epoch.h"
 
 #include <messages/messages.h>
 
@@ -87,8 +87,6 @@
 
 
 static hpcrun_loadmap_t static_loadmap;
-
-/* loadmaps are entirely separate from profiling state */
 static hpcrun_loadmap_t *current_loadmap = NULL;
 
 /* locking functions to ensure that loadmaps are consistent */
@@ -169,7 +167,6 @@ hpcrun_loadmap_init(hpcrun_loadmap_t* e)
   current_loadmap = e;
 }
 
-/* loadmaps are totally distinct from profiling states */
 hpcrun_loadmap_t*
 hpcrun_loadmap_new(void)
 {

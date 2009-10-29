@@ -57,7 +57,7 @@
 //*************************** User Include Files ****************************
 
 #include "newmem.h"
-#include "state.h"
+#include "epoch.h"
 #include "handling_sample.h"
 
 #include "thread_data.h"
@@ -130,7 +130,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt)
 
   td->id                          = id;
   td->mem_low                     = 0;
-  td->state                       = NULL;
+  td->epoch                       = NULL;
 
   // backtrace buffer
   td->btbuf = hpcrun_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
@@ -165,8 +165,8 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt)
   memset(&td->eventSet, 0, sizeof(td->eventSet));
   memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
 
-  td->state              = hpcrun_malloc(sizeof(state_t));
-  td->state->csdata_ctxt = thr_ctxt;
+  td->epoch              = hpcrun_malloc(sizeof(epoch_t));
+  td->epoch->csdata_ctxt = thr_ctxt;
 
   thr_ctxt = copy_thr_ctxt(thr_ctxt);
 }
@@ -200,7 +200,7 @@ hpcrun_expand_btbuf(void){
   /* how big is the backtrace we're recording? */
   size_t recsz = unwind - td->btbuf;
   /* get new buffer */
-  TMSG(STATE," state_expand_buffer");
+  TMSG(EPOCH," epoch_expand_buffer");
   frame_t *newbt = hpcrun_malloc(newsz*sizeof(frame_t));
 
   if(td->bufstk > td->bufend) {

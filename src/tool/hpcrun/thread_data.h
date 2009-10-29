@@ -57,7 +57,7 @@
 
 #include "sample_sources_registered.h"
 #include "newmem.h"
-#include "state.h"
+#include "epoch.h"
 
 #include <lush/lush-pthread.i>
 
@@ -73,10 +73,9 @@ typedef struct {
    Organize according to following plan:
 
    backtrace_buffer
-     factor out of the current 'state', and put it as a separate item in thread_data
+     factor out of the current epoch, and put it as a separate item in thread_data
      it will become an opaque datatype
-   state will become epoch (list)
-     each epoch has:
+   each epoch has:
        loadmap   (currently called epoch)
        cct       (the main sample data container)
        cct_ctxt  (pthread creation context)
@@ -135,7 +134,7 @@ typedef struct thread_data_t {
   frame_t*       bufstk;	   // innermost frame in cached backtrace
 
   // the loadmap + cct + cct_ctxt = epoch
-  state_t*         state;
+  epoch_t*         epoch;
 
   // exception stuff
   sigjmp_buf_t     bad_unwind;
@@ -193,6 +192,6 @@ void           hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt);
 void           hpcrun_cached_bt_adjust_size(size_t n);
 
 // utilities to match previous api
-#define hpcrun_get_state()  TD_GET(state)
+#define hpcrun_get_epoch()  TD_GET(epoch)
 
 #endif // !defined(THREAD_DATA_H)
