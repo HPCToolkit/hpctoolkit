@@ -1,0 +1,82 @@
+The Ubuntu 9.04 compiler, gcc 4.3.3-5ubuntu4, complains about these
+constructs and then dies due to -Werror.  However, plain vanilla gcc
+4.3.3 is ok with this usage.
+
+diff -Naurb version-binutils-2.17.orig/binutils-2.17/binutils/bucomm.c version-binutils-2.17/binutils-2.17/binutils/bucomm.c
+--- version-binutils-2.17.orig/binutils-2.17/binutils/bucomm.c	2009-08-20 13:52:52.000000000 -0500
++++ version-binutils-2.17/binutils-2.17/binutils/bucomm.c	2009-10-30 16:46:22.000000000 -0500
+@@ -394,6 +394,7 @@
+   static char template[] = "stXXXXXX";
+   char *tmpname;
+   char *slash = strrchr (filename, '/');
++  char *str;
+ 
+ #ifdef HAVE_DOS_BASED_FILE_SYSTEM
+   {
+@@ -423,14 +424,14 @@
+ #endif
+       strcat (tmpname, "/");
+       strcat (tmpname, template);
+-      mktemp (tmpname);
++      str = mktemp (tmpname);
+       *slash = c;
+     }
+   else
+     {
+       tmpname = xmalloc (sizeof (template));
+       strcpy (tmpname, template);
+-      mktemp (tmpname);
++      str = mktemp (tmpname);
+     }
+   return tmpname;
+ }
+diff -Naurb version-binutils-2.17.orig/binutils-2.17/binutils/cxxfilt.c version-binutils-2.17/binutils-2.17/binutils/cxxfilt.c
+--- version-binutils-2.17.orig/binutils-2.17/binutils/cxxfilt.c	2009-08-20 13:52:52.000000000 -0500
++++ version-binutils-2.17/binutils-2.17/binutils/cxxfilt.c	2009-10-30 16:54:29.000000000 -0500
+@@ -63,12 +63,12 @@
+   result = cplus_demangle (mangled_name + skip_first, flags);
+ 
+   if (result == NULL)
+-    printf (mangled_name);
++    printf ("%s", mangled_name);
+   else
+     {
+       if (mangled_name[0] == '.')
+ 	putchar ('.');
+-      printf (result);
++      printf ("%s", result);
+       free (result);
+     }
+ }
+diff -Naurb version-binutils-2.17.orig/binutils-2.17/binutils/readelf.c version-binutils-2.17/binutils-2.17/binutils/readelf.c
+--- version-binutils-2.17.orig/binutils-2.17/binutils/readelf.c	2009-08-20 13:52:52.000000000 -0500
++++ version-binutils-2.17/binutils-2.17/binutils/readelf.c	2009-10-30 16:50:25.000000000 -0500
+@@ -3263,6 +3263,7 @@
+ {
+   Elf_Internal_Phdr *segment;
+   unsigned int i;
++  int ret;
+ 
+   if (elf_header.e_phnum == 0)
+     {
+@@ -3436,7 +3437,7 @@
+ 	  else
+ 	    {
+ 	      program_interpreter[0] = 0;
+-	      fscanf (file, "%63s", program_interpreter);
++	      ret = fscanf (file, "%63s", program_interpreter);
+ 
+ 	      if (do_segments)
+ 		printf (_("\n      [Requesting program interpreter: %s]"),
+diff -Naurb version-binutils-2.17.orig/binutils-2.17/opcodes/sparc-dis.c version-binutils-2.17/binutils-2.17/opcodes/sparc-dis.c
+--- version-binutils-2.17.orig/binutils-2.17/opcodes/sparc-dis.c	2009-08-20 13:52:58.000000000 -0500
++++ version-binutils-2.17/binutils-2.17/opcodes/sparc-dis.c	2009-10-30 16:40:09.000000000 -0500
+@@ -558,7 +558,7 @@
+ 	      /* Can't do simple format if source and dest are different.  */
+ 	      continue;
+ 
+-	  (*info->fprintf_func) (stream, opcode->name);
++	  (*info->fprintf_func) (stream, "%s", opcode->name);
+ 
+ 	  {
+ 	    const char *s;
