@@ -88,6 +88,7 @@
 #include "x86-validate-retn-addr.h"
 
 #include <messages/messages.h>
+#include <messages/debug-flag.h>
 #include "main.h"
 
 
@@ -508,13 +509,19 @@ unw_step_bp(unw_cursor_t *cursor)
   TMSG(UNW,"unwind interval in below:");
   if (MYDBG) { dump_ui(uw, 0); }
 
-  if (!(sp <= (void *)bp && (void *)bp < monitor_stack_bottom())) {
+  if (!(sp <= (void*) bp)) {
     TMSG(UNW_STRATEGY_ERROR,"bp unwind attempted, but incoming bp(%p) was not"
-         " between sp (%p) and monitor stack bottom (%p)", 
-         bp, sp, monitor_stack_bottom());
+	 " >= sp(%p)", bp, sp);
     return STEP_ERROR;
   }
-
+  if (DISABLED(OMP_SKIP_MSB)) {
+    if ((void *)bp < monitor_stack_bottom()) {
+      TMSG(UNW_STRATEGY_ERROR,"bp unwind attempted, but incoming bp(%p) was not"
+	   " between sp (%p) and monitor stack bottom (%p)", 
+	   bp, sp, monitor_stack_bottom());
+      return STEP_ERROR;
+    }
+  }
   // bp relative
   next_sp  = (void **)((void *)bp + uw->bp_bp_pos);
   next_bp  = *next_sp;
@@ -534,7 +541,8 @@ unw_step_bp(unw_cursor_t *cursor)
       }
       TMSG(UNW_STRATEGY,"BP cannot build interval for next_pc(%p)", next_pc);
       return STEP_ERROR;
-    } else {
+    }
+    else {
       cursor->pc     = next_pc;
       cursor->bp     = next_bp;
       cursor->sp     = next_sp;

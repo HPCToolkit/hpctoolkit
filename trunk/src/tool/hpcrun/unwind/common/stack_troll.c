@@ -76,7 +76,7 @@ stack_troll(void **start_sp, uint *ra_pos, validate_addr_fn_t validate_addr, voi
   void **sp = start_sp;
 
   for (int i = 0; i < TROLL_LIMIT; i++) {
-    switch (validate_addr(*sp,generic_arg)){
+    switch (validate_addr(*sp, generic_arg)){
       case UNW_ADDR_CONFIRMED:
         PMSG_LIMIT(TMSG(TROLL,"found a confirmed valid return address %p at sp = %p", \
                         *sp, sp));
