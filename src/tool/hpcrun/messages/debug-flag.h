@@ -71,6 +71,7 @@
 #define DISABLE(f)        SET(f,0)
 
 #define ENABLED(f)        DBG(f)
+#define DISABLED(f)       (! DBG(f))
 
 #define IF_ENABLED(f)     if ( ENABLED(f) )
 #define IF_DISABLED(f)    if ( ! ENABLED(f) )

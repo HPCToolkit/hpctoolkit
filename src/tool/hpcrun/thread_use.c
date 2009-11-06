@@ -75,7 +75,7 @@ hpcrun_set_using_threads(bool flag)
 
 
 bool
-hpcrun_using_threads_p()
+hpcrun_using_threads_p(void)
 {
   return using_threads;
 }

@@ -483,7 +483,6 @@ hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags,
   return (ret == HPCFMT_OK) ? HPCRUN_OK : HPCRUN_ERR;
 }
 
-
 //***************************************************************************
 // hpcfile_cstree_write()
 //***************************************************************************

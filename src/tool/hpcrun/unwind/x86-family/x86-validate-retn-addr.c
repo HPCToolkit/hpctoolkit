@@ -344,10 +344,10 @@ deep_validate_return_addr(void *addr, void *generic)
 {
   unw_cursor_t *cursor = (unw_cursor_t *)generic;
 
-  TMSG(VALIDATE_UNW,"validating unwind step from %p ==> %p",cursor->pc,addr);
+  TMSG(VALIDATE_UNW,"validating unwind step from %p ==> %p",cursor->pc, addr);
   void *beg, *end;
   if (fnbounds_enclosing_addr(addr, &beg, &end)) {
-    TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid",addr);
+    TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
     return status_is_wrong();
   }
   if (fnbounds_enclosing_addr(cursor->pc, &beg, &end)) {
