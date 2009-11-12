@@ -187,7 +187,7 @@ hpcrun_cached_bt_adjust_size(size_t n)
   td->cached_bt_end     = newbuf + idx;
 }
 
-frame_t* 
+frame_t*
 hpcrun_expand_btbuf(void){
   thread_data_t* td = hpcrun_get_thread_data();
   frame_t* unwind = td->unwind;

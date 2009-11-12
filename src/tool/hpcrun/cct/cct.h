@@ -112,6 +112,21 @@ cct_metric_data_increment(int metric_id,
 }
 
 
+// FIXME: BT: frame_t really goes elsewhere, but backtrace needs cct_node_t
+//            cct ops need frame_t.
+
+// --------------------------------------------------------------------------
+// frame_t: similar to cct_node_t, but specialized for the backtrace buffer
+// --------------------------------------------------------------------------
+
+typedef struct frame_t {
+  unw_cursor_t cursor;       // hold a copy of the cursor for this frame
+  lush_assoc_info_t as_info;
+  void* ip;
+  void* ra_loc;
+  lush_lip_t* lip;
+} frame_t;
+
 // --------------------------------------------------------------------------
 // 
 // --------------------------------------------------------------------------
@@ -177,20 +192,6 @@ cct_node_firstChild(cct_node_t* x)
 {
   return x->children;
 }
-
-
-// --------------------------------------------------------------------------
-// frame_t: similar to cct_node_t, but specialized for the backtrace buffer
-// --------------------------------------------------------------------------
-
-typedef struct frame_t {
-  unw_cursor_t cursor;       // hold a copy of the cursor for this frame
-  lush_assoc_info_t as_info;
-  void* ip;
-  void* ra_loc;
-  lush_lip_t* lip;
-} frame_t;
-
 
 //***************************************************************************
 // thread creation context
@@ -268,7 +269,6 @@ copy_thr_ctxt(cct_ctxt_t* thr_ctxt);
 
 bool
 hpcrun_empty_cct(hpcrun_cct_t* cct);
-
 
 //***************************************************************************
 

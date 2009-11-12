@@ -47,8 +47,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "backtrace.h"
-#include "cct.h"
+#include <unwind/common/backtrace.h>
+#include <cct/cct.h>
 #include "hpcrun_dlfns.h"
 #include "hpcrun_stats.h"
 #include "hpcrun-malloc.h"
@@ -209,9 +209,104 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
   epoch = hpcrun_check_for_new_loadmap(epoch);
 
   cct_node_t* n =
-    hpcrun_backtrace(epoch, context, metricId, metricIncr, skipInner, isSync);
+    hpcrun_backtrace2cct(epoch, context, metricId, metricIncr, skipInner, isSync);
 
   // FIXME: n == -1 if sample is filtered
 
   return n;
+}
+
+cct_node_t*
+hpcrun_sample_callpath_w_bt(void* context, bt_fn* get_bt)
+{
+  hpcrun_stats_num_samples_total_inc();
+
+  if (hpcrun_is_sampling_disabled()) {
+    TMSG(SAMPLE,"global suspension");
+    hpcrun_all_sources_stop();
+    return NULL;
+  }
+
+#ifdef LATER
+  // Synchronous unwinds (pthread_create) must wait until they aquire
+  // the read lock, but async samples give up if not avail.
+  // This only applies in the dynamic case.
+#ifndef HPCRUN_STATIC_LINK
+  if (isSync) {
+    while (! hpcrun_dlopen_read_lock()) ;
+  }
+  else if (! hpcrun_dlopen_read_lock()) {
+    TMSG(SAMPLE, "skipping sample for dlopen lock");
+    hpcrun_stats_num_samples_blocked_dlopen_inc();
+    return NULL;
+  }
+#endif // HPCRUN_STATIC_LINK
+#endif // LATER
+
+  TMSG(SAMPLE, "attempting sample");
+  hpcrun_stats_num_samples_attempted_inc();
+
+  thread_data_t* td = hpcrun_get_thread_data();
+  sigjmp_buf_t* it = &(td->bad_unwind);
+  cct_node_t* node = NULL;
+  epoch_t* epoch = td->epoch;
+
+  hpcrun_set_handling_sample(td);
+
+  int ljmp = sigsetjmp(it->jb, 1);
+  if (ljmp == 0) {
+
+    backtrace_t* bt = get_bt(context);
+    
+    if (epoch != NULL) {
+      // enter backtrace in cct instead of this
+      // entering function must indicate whether node is new or not, as well as return ptr to node
+#ifdef LATER
+      node = _hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
+				     skipInner, isSync);
+#endif
+      if (trace_isactive()) {
+	void *pc = context_pc(context);
+	hpcrun_cct_t *cct = &(td->epoch->csdata); 
+	void *func_start_pc, *func_end_pc;
+
+	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc); 
+
+	frame_t frm = {.ip = func_start_pc};
+	cct_node_t* func_proxy = hpcrun_cct_get_child(cct, node->parent, &frm);
+	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag; 
+
+	trace_append(func_proxy->persistent_id);
+      }
+    }
+  }
+  else {
+    // ------------------------------------------------------------
+    // recover from SEGVs and dropped samples
+    // ------------------------------------------------------------
+    memset((void *)it->jb, '\0', sizeof(it->jb));
+    dump_backtrace(epoch, td->unwind);
+
+    hpcrun_stats_num_samples_dropped_inc();
+
+    hpcrun_up_pmsg_count();
+    if (TD_GET(splay_lock)) {
+      hpcrun_release_splay_lock();
+    }
+    if (TD_GET(fnbounds_lock)) {
+      fnbounds_release_lock();
+    }
+  }
+
+  hpcrun_clear_handling_sample(td);
+  if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
+    hpcrun_finalize_current_loadmap();
+    hpcrun_flush_epochs();
+    hpcrun_reclaim_freeable_mem();
+  }
+#ifndef HPCRUN_STATIC_LINK
+  hpcrun_dlopen_read_unlock();
+#endif
+  
+  return node;
 }
