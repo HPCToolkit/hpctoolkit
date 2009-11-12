@@ -66,26 +66,43 @@
 // local include files 
 //***************************************************************************
 
-#include "epoch.h"
+#include <cct/cct.h>
+#include <hpcrun/epoch.h>
+#include "unwind_cursor.h"
 
+//
+// backtrace_t type is a struct holding begin, end, current ptrs
+//  to frames
+//
 
+typedef struct backtrace_t {
+  frame_t* beg;
+  frame_t* end;
+  frame_t* cur;
+} backtrace_t;
 
 //***************************************************************************
-// forward declarations
+// interface functions
 //***************************************************************************
 
-cct_node_t*
-hpcrun_backtrace(epoch_t *epoch, ucontext_t* context, 
-		 int metricId, uint64_t metricIncr,
-		 int skipInner, int isSync);
+typedef backtrace_t* bt_fn(ucontext_t* context);
 
-frame_t*
-hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
-		   int skip);
+backtrace_t* hpcrun_backtrace_std(ucontext_t* context);
+
+//
+// utility routine that does 2 things:
+//   1) Generate a std backtrace
+//   2) enters the generated backtrace in the cct
+//
+cct_node_t* hpcrun_backtrace2cct(epoch_t *epoch, ucontext_t* context,
+				 int metricId, uint64_t metricIncr,
+				 int skipInner, int isSync);
+
+frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
+			    int skip);
 
 // FIXME: tallent: relocate when 'csprof epoch' trash is untangled
-void 
-dump_backtrace(epoch_t *epoch, frame_t *unwind);
+void dump_backtrace(epoch_t* epoch, frame_t* unwind);
 
 //***************************************************************************
 

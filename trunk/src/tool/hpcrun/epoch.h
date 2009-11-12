@@ -58,8 +58,6 @@
 //*************************** Datatypes **************************
 
 typedef struct epoch_t {
-
-
   hpcrun_cct_t csdata;     // cct (call stack data)
   cct_ctxt_t* csdata_ctxt; // creation context
   hpcrun_loadmap_t *loadmap;

@@ -6,6 +6,8 @@
  E(COALESCE),
  E(ITIMER_HANDLER),
  E(ITIMER_CTL),
+ E(_TST_CTL),
+ E(_TST_HANDLER),
  E(NONE_CTL),
  E(UNW),
  E(LUNW), // LUSH unwind

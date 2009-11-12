@@ -117,6 +117,7 @@ MY_BASE_FILES =			\
 	sample-sources/itimer.c		\
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
+        sample-sources/tst.c            \
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	epoch.c				\

@@ -84,9 +84,9 @@
 //***************************************************************************
 
 static cct_node_t*
-_hpcrun_backtrace(epoch_t* epoch, ucontext_t* context,
-		  int metricId, uint64_t metricIncr,
-		  int skipInner);
+_hpcrun_backtrace2cct(epoch_t* epoch, ucontext_t* context,
+		      int metricId, uint64_t metricIncr,
+		      int skipInner);
 
 
 //***************************************************************************
@@ -107,26 +107,24 @@ _hpcrun_backtrace(epoch_t* epoch, ucontext_t* context,
 //       PLACE_TRAMPOLINE  (standard for normal async samples).
 //             
 cct_node_t*
-hpcrun_backtrace(epoch_t* epoch, ucontext_t* context, 
-		 int metricId,
-		 uint64_t metricIncr,
-		 int skipInner, int isSync)
+hpcrun_backtrace2cct(epoch_t* epoch, ucontext_t* context, 
+		     int metricId,
+		     uint64_t metricIncr,
+		     int skipInner, int isSync)
 {
   cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
-    n = lush_backtrace(epoch, context, metricId, metricIncr, skipInner,
-		       isSync);
+    n = lush_backtrace2cct(epoch, context, metricId, metricIncr, skipInner,
+			   isSync);
   }
   else {
-    n = _hpcrun_backtrace(epoch, context, metricId, metricIncr, skipInner);
+    n = _hpcrun_backtrace2cct(epoch, context, metricId, metricIncr, skipInner);
   }
 
   // N.B.: for lush_backtrace() it may be that n = NULL
 
   return n;
 }
-
-
 
 //***************************************************************************
 // private operations 
@@ -152,12 +150,78 @@ hpcrun_filter_sample(int len, frame_t *start, frame_t *last)
   return ( !(monitor_in_start_func_narrow(last->ip) && (len > 1)) );
 }
 
+//***************************************************************************
+// 
+//***************************************************************************
+
+frame_t*
+hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
+		   int skip)
+{
+  // N.B.: INVARIANT: bt_inner < bt_outer
+  frame_t* x_inner = bt_inner;
+  for (int i = 0; (x_inner < bt_outer && i < skip); ++i) {
+    // for now, do not support M chords
+    lush_assoc_t as = lush_assoc_info__get_assoc(x_inner->as_info);
+    assert(as == LUSH_ASSOC_NULL || as == LUSH_ASSOC_1_to_1 ||
+	   as == LUSH_ASSOC_1_to_0);
+    
+    x_inner++;
+  }
+  
+  return x_inner;
+}
+
+
+void 
+dump_backtrace(epoch_t* epoch, frame_t* unwind)
+{
+  static const int msg_limit = 100;
+  int msg_cnt = 0;
+
+  char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
+  char lip_str[LUSH_LIP_STR_MIN_LEN];
+
+  PMSG_LIMIT(EMSG("-- begin new backtrace (innermost first) ------------"));
+
+  thread_data_t* td = hpcrun_get_thread_data();
+  if (unwind) {
+    for (frame_t* x = td->btbuf; x < unwind; ++x) {
+      lush_assoc_info_sprintf(as_str, x->as_info);
+      lush_lip_sprintf(lip_str, x->lip);
+      PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
+
+      msg_cnt++;
+      if (msg_cnt > msg_limit) {
+        PMSG_LIMIT(EMSG("!!! message limit !!!"));
+        break;
+      }
+    }
+  }
+
+  if (msg_cnt <= msg_limit && td->bufstk != td->bufend) {
+    PMSG_LIMIT(EMSG("-- begin cached backtrace ---------------------------"));
+    for (frame_t* x = td->bufstk; x < td->bufend; ++x) {
+      lush_assoc_info_sprintf(as_str, x->as_info);
+      lush_lip_sprintf(lip_str, x->lip);
+      PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
+
+      msg_cnt++;
+      if (msg_cnt > msg_limit) {
+        PMSG_LIMIT(EMSG("!!! message limit !!!"));
+        break;
+      }
+    }
+  }
+
+  PMSG_LIMIT(EMSG("-- end backtrace ------------------------------------\n"));
+}
 
 static cct_node_t*
-_hpcrun_backtrace(epoch_t* epoch, ucontext_t* context,
-		  int metricId,
-		  uint64_t metricIncr,
-		  int skipInner)
+_hpcrun_backtrace2cct(epoch_t* epoch, ucontext_t* context,
+		      int metricId,
+		      uint64_t metricIncr,
+		      int skipInner)
 {
   int  backtrace_trolled = 0;
   bool tramp_found       = false;
@@ -305,72 +369,4 @@ _hpcrun_backtrace(epoch_t* epoch, ucontext_t* context,
   }
 
   return n;
-}
-
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-frame_t*
-hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
-		   int skip)
-{
-  // N.B.: INVARIANT: bt_inner < bt_outer
-  frame_t* x_inner = bt_inner;
-  for (int i = 0; (x_inner < bt_outer && i < skip); ++i) {
-    // for now, do not support M chords
-    lush_assoc_t as = lush_assoc_info__get_assoc(x_inner->as_info);
-    assert(as == LUSH_ASSOC_NULL || as == LUSH_ASSOC_1_to_1 ||
-	   as == LUSH_ASSOC_1_to_0);
-    
-    x_inner++;
-  }
-  
-  return x_inner;
-}
-
-
-void 
-dump_backtrace(epoch_t* epoch, frame_t* unwind)
-{
-  static const int msg_limit = 100;
-  int msg_cnt = 0;
-
-  char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
-  char lip_str[LUSH_LIP_STR_MIN_LEN];
-
-  PMSG_LIMIT(EMSG("-- begin new backtrace (innermost first) ------------"));
-
-  thread_data_t* td = hpcrun_get_thread_data();
-  if (unwind) {
-    for (frame_t* x = td->btbuf; x < unwind; ++x) {
-      lush_assoc_info_sprintf(as_str, x->as_info);
-      lush_lip_sprintf(lip_str, x->lip);
-      PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
-
-      msg_cnt++;
-      if (msg_cnt > msg_limit) {
-        PMSG_LIMIT(EMSG("!!! message limit !!!"));
-        break;
-      }
-    }
-  }
-
-  if (msg_cnt <= msg_limit && td->bufstk != td->bufend) {
-    PMSG_LIMIT(EMSG("-- begin cached backtrace ---------------------------"));
-    for (frame_t* x = td->bufstk; x < td->bufend; ++x) {
-      lush_assoc_info_sprintf(as_str, x->as_info);
-      lush_lip_sprintf(lip_str, x->lip);
-      PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
-
-      msg_cnt++;
-      if (msg_cnt > msg_limit) {
-        PMSG_LIMIT(EMSG("!!! message limit !!!"));
-        break;
-      }
-    }
-  }
-
-  PMSG_LIMIT(EMSG("-- end backtrace ------------------------------------\n"));
 }

@@ -100,9 +100,9 @@ lush_agent_pool_t* lush_agents = NULL;
 //***************************************************************************
 
 cct_node_t*
-lush_backtrace(epoch_t* epoch, ucontext_t* context,
-	       int metricId, uint64_t metricIncr,
-	       int skipInner, int isSync)
+lush_backtrace2cct(epoch_t* epoch, ucontext_t* context,
+		   int metricId, uint64_t metricIncr,
+		   int skipInner, int isSync)
 {
   // ---------------------------------------------------------
   // Record backtrace if:
