@@ -154,7 +154,7 @@ static sigset_t prof_sigset;
 //***************************************************************************
 
 static inline bool
-hpcrun_is_initialized(void)
+hpcrun_is_initialized()
 {
   return hpcrun_is_initialized_private;
 }
@@ -184,7 +184,7 @@ hpcrun_is_initialized(void)
 //------------------------------------
 
 void
-hpcrun_init_internal(void)
+hpcrun_init_internal()
 {
   hpcrun_loadmap_init(hpcrun_static_loadmap());
 
@@ -208,6 +208,7 @@ hpcrun_init_internal(void)
     epoch_t* epoch = TD_GET(epoch);
     TMSG(MALLOC," -init_internal-: lush allocation");
     lush_agents = (lush_agent_pool_t*)hpcrun_malloc(sizeof(lush_agent_pool_t));
+    hpcrun_logicalUnwind(true);
     lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
     EMSG("Logical Unwinding Agent: %s (%p / %p)", opts.lush_agent_paths,
 	 epoch, lush_agents);
@@ -244,7 +245,7 @@ hpcrun_init_internal(void)
 
 
 void
-hpcrun_fini_internal(void)
+hpcrun_fini_internal()
 {
   NMSG(FINI,"process");
   int ret = monitor_real_sigprocmask(SIG_BLOCK,&prof_sigset,NULL);
@@ -269,7 +270,12 @@ hpcrun_fini_internal(void)
       lush_agents = NULL;
     }
 
-    if (hpcrun_get_disabled()) return;
+    // -----------------------------------------------------
+    // short-circuit
+    // -----------------------------------------------------
+    if (hpcrun_get_disabled()) {
+      return;
+    }
 
     fnbounds_fini();
 
@@ -296,7 +302,7 @@ hpcrun_fini_internal(void)
 //------------------------------------
 
 void
-hpcrun_init_thread_support(void)
+hpcrun_init_thread_support()
 {
   hpcrun_init_pthread_key();
   hpcrun_set_thread0_data();
