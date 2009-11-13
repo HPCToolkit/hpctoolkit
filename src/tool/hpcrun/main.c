@@ -270,9 +270,7 @@ hpcrun_fini_internal()
       lush_agents = NULL;
     }
 
-    // -----------------------------------------------------
-    // short-circuit
-    // -----------------------------------------------------
+    // N.B. short-circuit, if monitoring is disabled
     if (hpcrun_get_disabled()) {
       return;
     }
@@ -280,13 +278,6 @@ hpcrun_fini_internal()
     fnbounds_fini();
 
     hpcrun_finalize_current_loadmap();
-
-    // FIXME: Is this still necessary?
-    // Currently breaks the build due to lack of epoch->unwind.
-#if 0
-    EMSG("Backtrace for last sample event:\n");
-    dump_backtrace(epoch, epoch->unwind);
-#endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
 
     hpcrun_write_profile_data(epoch);
 

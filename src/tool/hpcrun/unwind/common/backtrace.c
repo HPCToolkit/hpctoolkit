@@ -217,6 +217,7 @@ dump_backtrace(epoch_t* epoch, frame_t* unwind)
   PMSG_LIMIT(EMSG("-- end backtrace ------------------------------------\n"));
 }
 
+
 static cct_node_t*
 _hpcrun_backtrace2cct(epoch_t* epoch, ucontext_t* context,
 		      int metricId,
