@@ -203,23 +203,19 @@ hpcrun_init_internal(void)
   trace_init(); // this must go after thread initialization
   trace_open();
 
-  // Initialize LUSH agents
+  // Initialize logical unwinding agents (LUSH)
   if (opts.lush_agent_paths[0] != '\0') {
     epoch_t* epoch = TD_GET(epoch);
     TMSG(MALLOC," -init_internal-: lush allocation");
     lush_agents = (lush_agent_pool_t*)hpcrun_malloc(sizeof(lush_agent_pool_t));
     lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
-    EMSG("***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
+    EMSG("Logical Unwinding Agent: %s (%p / %p)", opts.lush_agent_paths,
 	 epoch, lush_agents);
   }
 
   lush_metrics = (lush_agents) ? 1 : 0;
 
-#ifdef LUSH_PTHREADS
-  if (!lush_agents) {
-    hpcrun_abort("LUSH Pthreads monitoring requires LUSH Pthreads agent!");
-  }
-#endif
+  // tallent: this is harmless, but should really only occur for pthread agent
   lushPthr_processInit();
 
 
