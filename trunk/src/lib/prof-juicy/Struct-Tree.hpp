@@ -1079,15 +1079,7 @@ public:
 
 
   Stmt*
-  findStmt(VMA vma) const
-  {
-    if (!m_stmtMap) {
-      buildMap(m_stmtMap, ANode::TyStmt);
-    }
-    VMAInterval toFind(vma, vma+1); // [vma, vma+1)
-    VMAIntervalMap<Stmt*>::iterator it = m_stmtMap->find(toFind);
-    return (it != m_stmtMap->end()) ? it->second : NULL;
-  }
+  findStmt(VMA vma) const;
 
   bool
   insertStmtIf(Stmt* stmt) const
