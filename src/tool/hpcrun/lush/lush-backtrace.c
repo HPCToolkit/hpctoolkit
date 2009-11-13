@@ -93,6 +93,7 @@ canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
 //***************************************************************************
 
 lush_agent_pool_t* lush_agents = NULL;
+bool is_lush_agent = false;
 
 
 //***************************************************************************
