@@ -89,7 +89,7 @@ extern bool is_lush_agent;
 
 // TODO: distinguish between logical unwind agents and metric agents
 
-static inline bool 
+static inline bool
 hpcrun_isLogicalUnwind()
 {
   return (is_lush_agent);
