@@ -461,19 +461,19 @@ public:
 
 
   void
-  computeMetricsDeep(const Metric::Mgr& mMgr, uint mBegId, uint mEndId);
-
-  void
   computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId);
 
-
   void
-  computeMetricsItrvDeep(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
-			 Metric::AExprItrv::FnTy fn, uint srcArg);
+  computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId);
+
 
   void
   computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 		     Metric::AExprItrv::FnTy fn, uint srcArg);
+
+  void
+  computeMetricsItrvMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+		       Metric::AExprItrv::FnTy fn, uint srcArg);
 
 private:
   void
@@ -501,7 +501,7 @@ public:
   merge(ANode* y);
 
   virtual void
-  merge_me(const ANode& y, uint metricBegIdx = 0);
+  mergeMe(const ANode& y, uint metricBegIdx = 0);
 
   // findDynChild: Let z = 'this' be an interior ADynNode (otherwise the
   //   return value is trivially NULL).  Given an ADynNode y_dyn, finds
@@ -802,7 +802,7 @@ public:
   }
 
   virtual void
-  merge_me(const ANode& y, uint metricBegIdx = 0);
+  mergeMe(const ANode& y, uint metricBegIdx = 0);
   
 
   // -------------------------------------------------------

@@ -624,6 +624,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // compute local metrics and update local derived metrics
   // -------------------------------------------------------
+  // FIXME: raw => exclusive, raw => inclusive
   cctRoot->aggregateMetrics(mBeg, mEnd);
 
   if (0) {

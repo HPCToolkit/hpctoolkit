@@ -207,7 +207,7 @@ public:
 
   void
   clearMetrics()
-  { 
+  {
     delete m_metrics;
     m_metrics = NULL;
   }
