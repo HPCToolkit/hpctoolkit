@@ -626,7 +626,7 @@ coalesceStmts(Prof::CCT::ANode* node)
       if (it != stmtMap.end()) {
 	// found -- we have a duplicate
 	Prof::CCT::Stmt* n_stmtOrig = (*it).second;
-	n_stmtOrig->merge_me(*n_stmt);
+	n_stmtOrig->mergeMe(*n_stmt);
 	
 	// remove 'n_stmt' from tree
 	n_stmt->unlink();

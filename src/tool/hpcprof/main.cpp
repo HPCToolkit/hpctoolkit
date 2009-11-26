@@ -219,7 +219,7 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   // -------------------------------------------------------
   // compute derived metrics
   // -------------------------------------------------------
-  cctRoot->computeMetricsDeep(mMgr, mDrvdBeg, mDrvdEnd);
+  cctRoot->computeMetrics(mMgr, mDrvdBeg, mDrvdEnd);
 
   for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgr.metric(i);

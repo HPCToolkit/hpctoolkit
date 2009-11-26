@@ -362,7 +362,7 @@ ANode::aggregateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
 
 
 void
-ANode::computeMetricsDeep(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
+ANode::computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
 {
   if ( !(mBegId < mEndId) ) {
     return;
@@ -373,13 +373,13 @@ ANode::computeMetricsDeep(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
 
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
-    n->computeMetrics(mMgr, mBegId, mEndId);
+    n->computeMetricsMe(mMgr, mBegId, mEndId);
   }
 }
 
 
 void
-ANode::computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
+ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
 {
   uint numMetrics = mMgr.size();
 
@@ -396,8 +396,8 @@ ANode::computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
 
 
 void
-ANode::computeMetricsItrvDeep(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
-			      Metric::AExprItrv::FnTy fn, uint srcArg)
+ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+			  Metric::AExprItrv::FnTy fn, uint srcArg)
 {
   if ( !(mBegId < mEndId) ) {
     return;
@@ -408,14 +408,14 @@ ANode::computeMetricsItrvDeep(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
-    n->computeMetricsItrv(mMgr, mBegId, mEndId, fn, srcArg);
+    n->computeMetricsItrvMe(mMgr, mBegId, mEndId, fn, srcArg);
   }
 }
 
 
 void
-ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
-			  Metric::AExprItrv::FnTy fn, uint srcArg)
+ANode::computeMetricsItrvMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+			    Metric::AExprItrv::FnTy fn, uint srcArg)
 {
   for (uint mId = mBegId; mId < mEndId; ++mId) {
     const Metric::ADesc* m = mMgr.metric(mId);
@@ -487,7 +487,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics)
 		 << "  y: " << y_child_dyn->toString()
 		 << "  x: " << x_child_dyn->toString());
 
-      x_child_dyn->merge_me(*y_child_dyn, x_newMetricBegIdx);
+      x_child_dyn->mergeMe(*y_child_dyn, x_newMetricBegIdx);
       x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, y_newMetrics);
     }
   }
@@ -500,7 +500,7 @@ ANode::merge(ANode* y)
   ANode* x = this;
   
   // 1. copy y's metrics into x
-  x->merge_me(*y);
+  x->mergeMe(*y);
   
   // 2. copy y's children into x
   for (ANodeChildIterator it(y); it.Current(); /* */) {
@@ -516,7 +516,7 @@ ANode::merge(ANode* y)
 
 
 void 
-ANode::merge_me(const ANode& y, uint metricBegIdx)
+ANode::mergeMe(const ANode& y, uint metricBegIdx)
 {
   ANode* x = this;
   
@@ -532,20 +532,20 @@ ANode::merge_me(const ANode& y, uint metricBegIdx)
 
 
 void 
-ADynNode::merge_me(const ANode& y, uint metricBegIdx)
+ADynNode::mergeMe(const ANode& y, uint metricBegIdx)
 {
   // N.B.: Assumes ADynNode::isMergable() holds
 
   const ADynNode* y_dyn = dynamic_cast<const ADynNode*>(&y);
-  DIAG_Assert(y_dyn, "ADynNode::merge_me: " << DIAG_UnexpectedInput);
+  DIAG_Assert(y_dyn, "ADynNode::mergeMe: " << DIAG_UnexpectedInput);
 
-  ANode::merge_me(y, metricBegIdx);
+  ANode::mergeMe(y, metricBegIdx);
   
   // FIXME: Temporary 'assert' and 'if'. In reality, the assertion
   // below may not hold because we will have to support merging two
   // nodes with non-NULL cpIds.  However, if it does hold, we have
   // temporarily dodged a bullet.
-  DIAG_Assert(m_cpId == 0 || y_dyn->m_cpId == 0, "ADynNode::merge_me: conflicting cpIds!");
+  DIAG_Assert(m_cpId == 0 || y_dyn->m_cpId == 0, "ADynNode::mergeMe: conflicting cpIds!");
   if (m_cpId == 0) { m_cpId = y_dyn->m_cpId; }
 }
 
