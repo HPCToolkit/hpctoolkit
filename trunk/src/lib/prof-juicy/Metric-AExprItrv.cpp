@@ -111,7 +111,7 @@ AExprItrv::ddump() const
 // ----------------------------------------------------------------------
 
 std::ostream&
-MinItrv::dump_me(std::ostream& os) const
+MinItrv::dumpMe(std::ostream& os) const
 {
   os << "min()";
   return os;
@@ -123,7 +123,7 @@ MinItrv::dump_me(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 std::ostream&
-MaxItrv::dump_me(std::ostream& os) const
+MaxItrv::dumpMe(std::ostream& os) const
 {
   os << "max()";
   return os;
@@ -135,7 +135,7 @@ MaxItrv::dump_me(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 std::ostream&
-SumItrv::dump_me(std::ostream& os) const
+SumItrv::dumpMe(std::ostream& os) const
 {
   os << "sum()";
   return os;
@@ -147,7 +147,7 @@ SumItrv::dump_me(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 std::ostream&
-MeanItrv::dump_me(std::ostream& os) const
+MeanItrv::dumpMe(std::ostream& os) const
 {
   os << "mean()";
   return os;
@@ -159,7 +159,7 @@ MeanItrv::dump_me(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 std::ostream&
-StdDevItrv::dump_me(std::ostream& os) const
+StdDevItrv::dumpMe(std::ostream& os) const
 {
   os << "stddev()";
   return os;
@@ -171,7 +171,7 @@ StdDevItrv::dump_me(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 std::ostream&
-CoefVarItrv::dump_me(std::ostream& os) const
+CoefVarItrv::dumpMe(std::ostream& os) const
 {
   os << "coefvar()";
   return os;
@@ -183,7 +183,7 @@ CoefVarItrv::dump_me(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 std::ostream&
-RStdDevItrv::dump_me(std::ostream& os) const
+RStdDevItrv::dumpMe(std::ostream& os) const
 {
   os << "r-stddev()";
   return os;

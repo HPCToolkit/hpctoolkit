@@ -1710,7 +1710,7 @@ ANode::toString_id(int oFlags) const
 
 
 string
-ANode::toString_me(int oFlags, const char* prefix) const
+ANode::toStringMe(int oFlags, const char* prefix) const
 { 
   std::ostringstream os;
   dumpme(os, oFlags, prefix);

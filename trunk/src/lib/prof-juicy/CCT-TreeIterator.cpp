@@ -139,7 +139,7 @@ ANodeSortedIterator::dumpAndReset(ostream& os)
 {
   os << "ANodeSortedIterator: " << endl;
   while (current()) {
-    os << current()->toString_me() << endl;
+    os << current()->toStringMe() << endl;
     (*this)++;
   } 
   reset();
@@ -228,7 +228,7 @@ ANodeSortedChildIterator::dumpAndReset(ostream& os)
 {
   os << "ANodeSortedChildIterator: " << endl;
   while (current()) {
-    os << current()->toString_me() << endl;
+    os << current()->toStringMe() << endl;
     (*this)++;
   }
   reset();

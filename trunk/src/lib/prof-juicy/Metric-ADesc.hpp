@@ -310,12 +310,12 @@ public:
   std::ostream&
   dump(std::ostream& os = std::cerr) const
   {
-    dump_me(os);
+    dumpMe(os);
     return os;
   }
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cerr) const;
+  dumpMe(std::ostream& os = std::cerr) const;
 
   void
   ddump() const;
@@ -489,7 +489,7 @@ public:
   toString() const;
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cerr) const;
+  dumpMe(std::ostream& os = std::cerr) const;
 
 protected:
 private:
@@ -579,7 +579,7 @@ public:
   toString() const;
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cerr) const;
+  dumpMe(std::ostream& os = std::cerr) const;
 
 protected:
 private:
@@ -655,7 +655,7 @@ public:
   toString() const;
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cerr) const;
+  dumpMe(std::ostream& os = std::cerr) const;
 
 protected:
 private:

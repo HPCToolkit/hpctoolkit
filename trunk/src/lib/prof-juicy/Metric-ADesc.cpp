@@ -97,7 +97,7 @@ ADesc::toString() const
 
 
 std::ostream&
-ADesc::dump_me(std::ostream& os) const
+ADesc::dumpMe(std::ostream& os) const
 {
   os << toString();
   return os;
@@ -127,7 +127,7 @@ SampledDesc::toString() const
 
 
 std::ostream&
-SampledDesc::dump_me(std::ostream& os) const
+SampledDesc::dumpMe(std::ostream& os) const
 {
   os << toString();
   return os;
@@ -147,7 +147,7 @@ DerivedDesc::toString() const
 
 
 std::ostream&
-DerivedDesc::dump_me(std::ostream& os) const
+DerivedDesc::dumpMe(std::ostream& os) const
 {
   os << toString();
   return os;
@@ -167,7 +167,7 @@ DerivedItrvDesc::toString() const
 
 
 std::ostream&
-DerivedItrvDesc::dump_me(std::ostream& os) const
+DerivedItrvDesc::dumpMe(std::ostream& os) const
 {
   os << toString();
   return os;
