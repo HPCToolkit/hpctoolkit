@@ -533,7 +533,7 @@ public:
   toString(int oFlags = 0, const char* pfx = "") const;
 
   virtual std::string
-  toString_me(int oFlags = 0) const;
+  toStringMe(int oFlags = 0) const;
 
   std::ostream&
   writeXML(std::ostream& os,
@@ -548,7 +548,7 @@ public:
   ddump() const;
 
   void
-  ddump_me() const;
+  ddumpMe() const;
   
   virtual std::string
   codeName() const;
@@ -866,7 +866,7 @@ public:
   
   // Dump contents for inspection
   virtual std::string
-  toString_me(int oFlags = 0) const;
+  toStringMe(int oFlags = 0) const;
   
 protected: 
 private: 
@@ -972,7 +972,7 @@ public:
   // -------------------------------------------------------
 
   virtual std::string
-  toString_me(int oFlags = 0) const;
+  toStringMe(int oFlags = 0) const;
 
   virtual std::string
   codeName() const;
@@ -1000,7 +1000,7 @@ public:
   
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int oFlags = 0) const;
+  toStringMe(int oFlags = 0) const;
 };
 
 
@@ -1022,7 +1022,7 @@ public:
 
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int oFlags = 0) const; 
+  toStringMe(int oFlags = 0) const; 
   
 private:
 };
@@ -1067,7 +1067,7 @@ public:
     
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int oFlags = 0) const;
+  toStringMe(int oFlags = 0) const;
 
 };
 
@@ -1108,7 +1108,7 @@ class Stmt
 
   // Dump contents for inspection
   virtual std::string 
-  toString_me(int oFlags = 0) const;
+  toStringMe(int oFlags = 0) const;
 };
 
 

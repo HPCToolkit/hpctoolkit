@@ -285,7 +285,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     }
 
     m_curRoot = m_structure->root();
-    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curRoot->toString_me());
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curRoot->toStringMe());
 
     curStrct = m_curRoot;
   }
@@ -297,7 +297,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
 
     nm = m_args.replacePath(nm);
     m_curLM = Prof::Struct::LM::demand(m_curRoot, nm);
-    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curLM->toString_me());
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curLM->toStringMe());
 
     m_curFile = NULL;
     m_curProc = NULL;
@@ -312,7 +312,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     
     nm = m_args.replacePath(nm);
     m_curFile = Struct::File::demand(m_curLM, nm);
-    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curFile->toString_me());
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curFile->toStringMe());
 
     m_curProc = NULL;
     
@@ -361,7 +361,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
       }
     }
 
-    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curProc->toString_me());
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curProc->toStringMe());
     
     curStrct = m_curProc;
   }
@@ -381,7 +381,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(GetCurrentScope());
 
     Struct::ACodeNode* alien = new Struct::Alien(parent, fnm, nm, begLn, endLn);
-    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << alien->toString_me());
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << alien->toStringMe());
 
     curStrct = alien;
   }
@@ -401,7 +401,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(GetCurrentScope());
 
     Struct::ACodeNode* loopNode = new Struct::Loop(parent, begLn, endLn);
-    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << loopNode->toString_me());
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << loopNode->toStringMe());
 
     curStrct = loopNode;
   }
@@ -430,7 +430,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     if (!vma.empty()) {
       stmtNode->vmaSet().fromString(vma.c_str());
     }
-    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << stmtNode->toString_me());
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << stmtNode->toStringMe());
 
     curStrct = stmtNode;
   }
@@ -443,7 +443,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     Struct::ANode* parent = GetCurrentScope(); // enclosing scope
     Struct::Group* grpStrct
       = Prof::Struct::Group::demand(m_curRoot, grpnm, parent);
-    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << grpStrct->toString_me());
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << grpStrct->toStringMe());
 
     groupNestingLvl++;
     curStrct = grpStrct;

@@ -310,12 +310,12 @@ public:
   std::ostream&
   dump(std::ostream& os = std::cerr) const
   {
-    dump_me(os);
+    dumpMe(os);
     return os;
   }
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cout) const = 0;
+  dumpMe(std::ostream& os = std::cout) const = 0;
   
   void
   ddump() const;
@@ -372,7 +372,7 @@ public:
 
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
 };
@@ -422,7 +422,7 @@ public:
 
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
 };
@@ -472,7 +472,7 @@ public:
 
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
 };
@@ -530,7 +530,7 @@ public:
 
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
 };
@@ -574,7 +574,7 @@ public:
 
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
 };
@@ -627,7 +627,7 @@ public:
 
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
 };
@@ -680,7 +680,7 @@ public:
 
 
   virtual std::ostream&
-  dump_me(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
 };

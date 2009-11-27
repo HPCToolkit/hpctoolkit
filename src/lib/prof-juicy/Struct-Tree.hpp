@@ -542,7 +542,7 @@ public:
   toString_id(int oFlags = 0) const;
 
   std::string
-  toString_me(int oFlags = 0, const char* pre = "") const;
+  toStringMe(int oFlags = 0, const char* pre = "") const;
 
   // dump
   std::ostream&
@@ -1623,7 +1623,7 @@ public:
       lmStrct->insertStmtIf(this);
     }
     
-    //DIAG_DevMsg(3, "Stmt::Stmt: " << toString_me());
+    //DIAG_DevMsg(3, "Stmt::Stmt: " << toStringMe());
   }
 
   virtual ~Stmt()

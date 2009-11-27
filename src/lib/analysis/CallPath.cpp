@@ -351,7 +351,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
 
       if (0) {
 	//Prof::CCT::Call* p = node->ancestorCall(); // ((p) ? p->ip() : 0)
-	DIAG_MsgIf(1, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << ip_ur << ") --> struct " << strct << dec << " " << strct->toString_me());
+	DIAG_MsgIf(1, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << ip_ur << ") --> struct " << strct << dec << " " << strct->toStringMe());
       }
 
       // 2. Demand a procedure frame for 'n_dyn' and its scope within it

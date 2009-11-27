@@ -660,7 +660,7 @@ ANode::toString(int oFlags, const char* pfx) const
 
 
 string 
-ANode::toString_me(int oFlags) const
+ANode::toStringMe(int oFlags) const
 { 
   string self;
   self = ANodeTyToName(type());
@@ -735,17 +735,17 @@ ADynNode::writeDyn(std::ostream& o, int oFlags, const char* pfx) const
 
 
 string
-Root::toString_me(int oFlags) const
+Root::toStringMe(int oFlags) const
 { 
-  string self = ANode::toString_me(oFlags) + " n" + xml::MakeAttrStr(m_name);
+  string self = ANode::toStringMe(oFlags) + " n" + xml::MakeAttrStr(m_name);
   return self;
 }
 
 
 string
-ProcFrm::toString_me(int oFlags) const
+ProcFrm::toStringMe(int oFlags) const
 {
-  string self = ANode::toString_me(oFlags);
+  string self = ANode::toStringMe(oFlags);
   
   if (m_strct)  {
     string lm_nm = xml::MakeAttrNum(lmId());
@@ -771,33 +771,33 @@ ProcFrm::toString_me(int oFlags) const
 
 
 string
-Proc::toString_me(int oFlags) const
+Proc::toStringMe(int oFlags) const
 {
-  string self = ANode::toString_me(oFlags); //+ " i" + MakeAttr(id);
+  string self = ANode::toStringMe(oFlags); //+ " i" + MakeAttr(id);
   return self;
 }
 
 
 string 
-Loop::toString_me(int oFlags) const
+Loop::toStringMe(int oFlags) const
 {
-  string self = ANode::toString_me(oFlags); //+ " i" + MakeAttr(id);
+  string self = ANode::toStringMe(oFlags); //+ " i" + MakeAttr(id);
   return self;
 }
 
 
 string
-Call::toString_me(int oFlags) const
+Call::toStringMe(int oFlags) const
 {
-  string self = ANode::toString_me(oFlags); // nameDyn()
+  string self = ANode::toStringMe(oFlags); // nameDyn()
   return self;
 }
 
 
 string
-Stmt::toString_me(int oFlags) const
+Stmt::toStringMe(int oFlags) const
 {
-  string self = ANode::toString_me(oFlags); // nameDyn()
+  string self = ANode::toStringMe(oFlags); // nameDyn()
   if (hpcrun_fmt_doRetainId(cpId())) {
     self += " i" + xml::MakeAttrNum(cpId());
   }
@@ -846,9 +846,9 @@ ANode::ddump() const
 
 
 void
-ANode::ddump_me() const
+ANode::ddumpMe() const
 {
-  string str = toString_me(Tree::OFlg_DebugAll);
+  string str = toStringMe(Tree::OFlg_DebugAll);
   std::cerr << str;
 }
 
@@ -866,10 +866,10 @@ ANode::writeXML_pre(ostream& os, uint metricBeg, uint metricEnd,
   // 1. Write element name
   if (doTag) {
     if (isXMLLeaf) {
-      os << pfx << "<" << toString_me(oFlags) << "/>" << endl;
+      os << pfx << "<" << toStringMe(oFlags) << "/>" << endl;
     }
     else {
-      os << pfx << "<" << toString_me(oFlags) << ">" << endl;
+      os << pfx << "<" << toStringMe(oFlags) << ">" << endl;
     }
   }
 
