@@ -85,6 +85,74 @@ namespace Metric {
 // ADesc
 //***************************************************************************
 
+const string ADesc::s_nameNULL = "";
+const string ADesc::s_nameIncl = " (I)";
+const string ADesc::s_nameExcl = " (E)";
+
+const string ADesc::s_nameFmtTag = "{formatted}";
+
+
+const std::string&
+ADesc::ADescTyToString(ADescTy type)
+{
+  switch (type) {
+    case TyNULL: return s_nameNULL;
+    case TyIncl: return s_nameIncl;
+    case TyExcl: return s_nameExcl;
+    default: DIAG_Die(DIAG_Unimplemented);
+  }
+}
+
+
+ADesc::ADescTy
+ADesc::stringToADescTy(const std::string& x)
+{
+  if (x == s_nameNULL) {
+    return TyNULL;
+  }
+  else if (x == s_nameIncl) {
+    return TyIncl;
+  }
+  else if (x == s_nameExcl) {
+    return TyExcl;
+  }
+  else {
+    DIAG_Die(DIAG_Unimplemented);
+  }
+}
+
+
+void
+ADesc::nameFromString(const string& x)
+{
+  // {nameFmtTag}<prefix><base><suffix><type>
+  if (x.compare(0, s_nameFmtTag.length(), s_nameFmtTag) == 0) {
+    size_t fmtBeg = s_nameFmtTag.length();
+    for (uint i_seg = 1; i_seg <= 4; ++i_seg) {
+      size_t segBeg = x.find_first_of(s_nameFmtSegBeg, fmtBeg);
+      size_t segEnd = x.find_first_of(s_nameFmtSegEnd, fmtBeg);
+      DIAG_Assert(segBeg == fmtBeg && segEnd != string::npos,
+		  DIAG_UnexpectedInput << "'" << x << "'");
+      segBeg++;
+      string segStr = x.substr(segBeg, segEnd - segBeg);
+      
+      switch (i_seg) {
+        case 1: namePfx(segStr);  break;
+        case 2: nameBase(segStr); break;
+        case 3: nameSfx(segStr);  break;
+        case 4: stringToADescTy(segStr); break;
+        default: DIAG_Die(DIAG_UnexpectedInput);
+      }
+      
+      fmtBeg = segEnd + 1;
+    }
+  }
+  else {
+    nameBase(x);
+  }
+}
+
+
 std::string
 ADesc::toString() const
 {

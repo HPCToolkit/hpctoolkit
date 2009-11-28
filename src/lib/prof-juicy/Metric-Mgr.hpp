@@ -85,12 +85,12 @@ public:
   // make raw metrics (N.B.: currently only for flat profiles)
   // ------------------------------------------------------------
 
-  void 
+  void
   makeRawMetrics(const std::vector<std::string>& profileFiles,
 		 bool isUnitsEvents = true,
 		 bool doDispPercent = true);
 
-  void 
+  void
   makeRawMetrics(const std::string& profileFile,
 		 bool isUnitsEvents = true,
 		 bool doDispPercent = true)
