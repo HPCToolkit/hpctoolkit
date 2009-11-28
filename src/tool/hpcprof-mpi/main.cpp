@@ -534,24 +534,12 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgrGbl.metric(i);
 
-    // FIXME: clutzy, but after the CCT reduction, metric prefixes
-    // have been collapsed into the name.
-    string nm = m->name();
-    
     uint groupId = 1; // default group-id
 
-    // extract group id
-    size_t endGroupPos = nm.find_first_of(Prof::Metric::ADesc::nameSep);
-    if (endGroupPos != string::npos) {
-      size_t begGroupPos = endGroupPos;
-      while (begGroupPos > 0 && isdigit(nm[begGroupPos - 1]) ) {
-	begGroupPos--;
-      }
-      DIAG_Assert(begGroupPos < endGroupPos, DIAG_UnexpectedInput);
-      
-      string grpStr = nm.substr(begGroupPos, (endGroupPos - begGroupPos));
-      
-      groupId = (uint)StrUtil::toUInt64(grpStr);
+    // find groupId embedded in metric descriptor name
+    const string& nmPfx = m->namePfx();
+    if (!nmPfx.empty()) {
+      groupId = (uint)StrUtil::toUInt64(nmPfx);
     }
     
     DIAG_Assert(groupId > 0, DIAG_UnexpectedInput);

@@ -234,10 +234,10 @@ private:
   insertInMapsAndMakeUniqueName(Metric::ADesc* m);
 
   Metric::DerivedDesc*
-  makeSummaryMetric(const std::string& m_nm, const Metric::ADescVec& m_opands);
+  makeSummaryMetric(const std::string& mNm, const Metric::ADescVec& mOpands);
 
   Metric::DerivedItrvDesc*
-  makeSummaryMetricItrv(const std::string& m_nm, uint srcId);
+  makeSummaryMetricItrv(const std::string mDrvdTy, const Metric::ADesc* mSrc);
 
   
 private:

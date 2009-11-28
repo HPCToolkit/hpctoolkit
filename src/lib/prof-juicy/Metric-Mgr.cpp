@@ -204,20 +204,12 @@ Mgr::makeSummaryMetricsItrv(uint srcBegId, uint srcEndId)
   for (uint i = srcBegId; i < srcEndId; ++i) {
     Metric::ADesc* m = m_metrics[i];
 
-    Metric::ADesc* mNew = NULL;
-    string mNm = m->name();
-
-    string mean_nm = "Mean-" + mNm;
-    string cv_nm   = "CoefVar-" + mNm;
-    string min_nm  = "Min-" + mNm;
-    string max_nm  = "Max-" + mNm;
-    string sum_nm  = "Sum-" + mNm;
-    
-    mNew = makeSummaryMetricItrv(mean_nm, m->id());
-    makeSummaryMetricItrv(cv_nm, m->id());
-    makeSummaryMetricItrv(min_nm, m->id());
-    makeSummaryMetricItrv(max_nm, m->id());
-    makeSummaryMetricItrv(sum_nm, m->id());
+    Metric::ADesc* mNew =
+      makeSummaryMetricItrv("Mean-",  m);
+    makeSummaryMetricItrv("CoefVar-", m);
+    makeSummaryMetricItrv("Min-",     m);
+    makeSummaryMetricItrv("Max-",     m);
+    makeSummaryMetricItrv("Sum-",     m);
     
     if (firstId == Mgr::npos) {
       firstId = mNew->id();
@@ -286,7 +278,7 @@ Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
 
 
 Metric::DerivedItrvDesc*
-Mgr::makeSummaryMetricItrv(const string& mNm, uint srcId)
+Mgr::makeSummaryMetricItrv(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
   bool needDst2Id = false;
 
@@ -294,56 +286,62 @@ Mgr::makeSummaryMetricItrv(const string& mNm, uint srcId)
   bool doDispPercent = true;
   bool isPercent = false;
 
-  // This is a a cheesy way of creating the metrics, but 1) it is good
+  // This is a cheesy way of creating the metrics, but 1) it is good
   // enough for now and 2) we don't yet have a clearly better plan.
 
   Metric::AExprItrv* expr = NULL;
-  if (mNm.find("Mean", 0) == 0) {
-    expr = new Metric::MeanItrv(0, srcId);
+  if (mDrvdTy.find("Mean", 0) == 0) {
+    expr = new Metric::MeanItrv(0, mSrc->id());
     doDispPercent = false;
   }
-  else if (mNm.find("StdDev", 0) == 0) {
-    expr = new Metric::StdDevItrv(0, 0, srcId);
+  else if (mDrvdTy.find("StdDev", 0) == 0) {
+    expr = new Metric::StdDevItrv(0, 0, mSrc->id());
     doDispPercent = false;
     needDst2Id = true;
   }
-  else if (mNm.find("RStdDev", 0) == 0) {
-    expr = new Metric::RStdDevItrv(0, 0, srcId);
+  else if (mDrvdTy.find("RStdDev", 0) == 0) {
+    expr = new Metric::RStdDevItrv(0, 0, mSrc->id());
     isPercent = true;
     needDst2Id = true;
   }
-  else if (mNm.find("CoefVar", 0) == 0) {
-    expr = new Metric::CoefVarItrv(0, 0, srcId);
+  else if (mDrvdTy.find("CoefVar", 0) == 0) {
+    expr = new Metric::CoefVarItrv(0, 0, mSrc->id());
     doDispPercent = false;
     needDst2Id = true;
   }
-  else if (mNm.find("Min", 0) == 0) {
-    expr = new Metric::MinItrv(0, srcId);
+  else if (mDrvdTy.find("Min", 0) == 0) {
+    expr = new Metric::MinItrv(0, mSrc->id());
     doDispPercent = false;
   }
-  else if (mNm.find("Max", 0) == 0) {
-    expr = new Metric::MaxItrv(0, srcId);
+  else if (mDrvdTy.find("Max", 0) == 0) {
+    expr = new Metric::MaxItrv(0, mSrc->id());
     doDispPercent = false;
   }
-  else if (mNm.find("Sum", 0) == 0) {
-    expr = new Metric::SumItrv(0, srcId);
+  else if (mDrvdTy.find("Sum", 0) == 0) {
+    expr = new Metric::SumItrv(0, mSrc->id());
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
   
+  string mNmFmt = mSrc->nameToFmt();
+  string mNmBase = mDrvdTy + mSrc->nameBase();
+  const string& mDesc = mSrc->description();
+
   DerivedItrvDesc* m =
-    new DerivedItrvDesc(mNm, mNm, expr, isVisible, true/*isSortKey*/,
+    new DerivedItrvDesc(mNmFmt, mDesc, expr, isVisible, true/*isSortKey*/,
 			doDispPercent, isPercent);
+  m->nameBase(mNmBase);
   insert(m);
   expr->dstId(m->id());
 
   if (needDst2Id) {
-    string m2Nm = mNm + "-helper";
+    string m2NmBase = mNmBase + "-helper";
     DerivedItrvDesc* m2 =
-      new DerivedItrvDesc(m2Nm, m2Nm, NULL/*expr*/, false/*isVisible*/,
+      new DerivedItrvDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
 			  false/*isSortKey*/, false/*doDispPercent*/,
 			  false/*isPercent*/);
+    m2->nameBase(m2NmBase);
     insert(m2);
     expr->dst2Id(m2->id());
   }
