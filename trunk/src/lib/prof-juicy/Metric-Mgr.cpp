@@ -143,7 +143,7 @@ Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
   // -------------------------------------------------------
   for (uint i = srcBegId; i < srcEndId; ++i) {
     Metric::ADesc* m = m_metrics[i];
-    string nm = m->namePfxBase();
+    string nm = m->nameGeneric();
 
     StringToADescVecMap::iterator it = nmToMetricMap.find(nm);
     if (it != nmToMetricMap.end()) {

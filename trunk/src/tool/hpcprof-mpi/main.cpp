@@ -203,7 +203,8 @@ realmain(int argc, char* const* argv)
 
   int mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
   uint rFlags = (Prof::CallPath::Profile::RFlg_virtualMetrics
-		 | Prof::CallPath::Profile::RFlg_noMetricSfx);
+		 | Prof::CallPath::Profile::RFlg_noMetricSfx
+		 /*| Prof::CallPath::Profile::RFlg_makeInclExcl*/);
   Analysis::Util::UIntVec* groupMap =
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
@@ -419,8 +420,8 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   // -------------------------------------------------------
   // create local summary metrics (and thread-level metrics)
   // -------------------------------------------------------
-  cctRoot->computeMetricsItrvDeep(mMgrGbl, mDrvdBeg, mDrvdEnd,
-				  Prof::Metric::AExprItrv::FnInit, 0);
+  cctRoot->computeMetricsItrv(mMgrGbl, mDrvdBeg, mDrvdEnd,
+			      Prof::Metric::AExprItrv::FnInit, 0);
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
@@ -454,8 +455,8 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   // 2. Initialize extra derived metric storage [mXDrvdBeg, mXDrvdEnd)
   //    since it will serve as an input during the summary metrics
   //    reduction
-  cctRoot->computeMetricsItrvDeep(mMgrGbl, mXDrvdBeg, mXDrvdEnd,
-				  Prof::Metric::AExprItrv::FnInitSrc, 0);
+  cctRoot->computeMetricsItrv(mMgrGbl, mXDrvdBeg, mXDrvdEnd,
+			      Prof::Metric::AExprItrv::FnInitSrc, 0);
 
   // 3. Reduction
   uint maxCCTId = profGbl.cct()->maxDenseId();
@@ -483,9 +484,8 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
       
       uint numInputs = groupIdToGroupSizeMap[grpId];
       
-      cctRoot->computeMetricsItrvDeep(mMgrGbl, mBeg, mEnd,
-				      Prof::Metric::AExprItrv::FnFini,
-				      numInputs);
+      cctRoot->computeMetricsItrv(mMgrGbl, mBeg, mEnd,
+				  Prof::Metric::AExprItrv::FnFini, numInputs);
     }
 
     for (uint i = 0; i < mMgrGbl.size(); ++i) {
@@ -596,7 +596,8 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // read profile file
   // -------------------------------------------------------
-  uint rFlags = Prof::CallPath::Profile::RFlg_noMetricSfx;
+  uint rFlags = (Prof::CallPath::Profile::RFlg_noMetricSfx
+		 /*| Prof::CallPath::Profile::RFlg_makeInclExcl*/);
   uint rGroupId = (groupMax > 1) ? groupId : 0;
 
   Prof::CallPath::Profile* prof =
@@ -639,8 +640,8 @@ processProfile(Prof::CallPath::Profile& profGbl,
     uint mDrvdEnd = (uint)ival.end();
 
     DIAG_MsgIf(0, "[" << myRank << "] grp " << groupId << ": [" << mDrvdBeg << ", " << mDrvdEnd << ")");
-    cctRoot->computeMetricsItrvDeep(*mMgrGbl, mDrvdBeg, mDrvdEnd,
-				    Prof::Metric::AExprItrv::FnUpdate, 0);
+    cctRoot->computeMetricsItrv(*mMgrGbl, mDrvdBeg, mDrvdEnd,
+				Prof::Metric::AExprItrv::FnUpdate, 0);
   }
 
   // -------------------------------------------------------

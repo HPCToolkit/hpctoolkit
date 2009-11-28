@@ -570,7 +570,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     hpcrun_fmt_metricTbl_fprint(&metric_tbl, outfs);
   }
 
-  uint num_metrics = metric_tbl.len;
+  uint numMetrics = metric_tbl.len;
   
   // ----------------------------------------
   // loadmap
@@ -655,7 +655,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   }
 
   metric_desc_t* m_lst = metric_tbl.lst;
-  for (uint i = 0; i < num_metrics; i++) {
+  for (uint i = 0; i < numMetrics; i++) {
     string nm = m_lst[i].name;
     string desc = m_lst[i].description;
     string profFile = (filename) ? filename : "";
@@ -667,7 +667,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     Metric::SampledDesc* m = 
       new Metric::SampledDesc(nm, desc, m_lst[i].period, true/*isUnitsEvents*/,
 			      profFile, profRelId, "HPCRUN");
-    if (rFlags & RFlg_makeInclExcl && isInclExclPossible) {
+    if ((rFlags & RFlg_makeInclExcl) && isInclExclPossible) {
       m->type(Metric::ADesc::TyIncl);
     }
     if (!m_sfx.empty()) {
@@ -678,7 +678,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     prof->metricMgr()->insert(m);
 
     // 2. Make associated 'exclusive' descriptor, if applicable
-    if (rFlags & RFlg_makeInclExcl && isInclExclPossible) {
+    if ((rFlags & RFlg_makeInclExcl) && isInclExclPossible) {
       Metric::SampledDesc* m1 = 
 	new Metric::SampledDesc(nm, desc, m_lst[i].period,
 				true/*isUnitsEvents*/,
@@ -788,7 +788,9 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   
   hpcrun_fmt_cct_node_t nodeFmt;
   nodeFmt.num_metrics = numMetrics;
-  nodeFmt.metrics = (hpcrun_metricVal_t*)alloca(nodeFmt.num_metrics * sizeof(hpcrun_metricVal_t));
+  nodeFmt.metrics = (numMetrics > 0) ? 
+    (hpcrun_metricVal_t*)alloca(numMetrics * sizeof(hpcrun_metricVal_t))
+    : NULL;
 
   for (uint i = 0; i < numNodes; ++i) {
 
@@ -1120,9 +1122,14 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     || (rFlags & Prof::CallPath::Profile::RFlg_virtualMetrics);
 
   bool hasMetrics = false;
-  uint numMetrics = prof.metricMgr()->size();
 
-  Metric::IData metricData(numMetrics); // nodeFmt.num_metrics <= numMetrics
+  // nodeFmt.num_metrics <= prof.metricMgr()->size()
+  uint numMetrics = prof.metricMgr()->size();
+  if (rFlags & Prof::CallPath::Profile::RFlg_noMetricValues) {
+    numMetrics = 0;
+  }
+
+  Metric::IData metricData(numMetrics);
   for (uint i_dst = 0, i_src = 0; i_dst < numMetrics; i_dst++) {
     Metric::ADesc* adesc = prof.metricMgr()->metric(i_dst);
     Metric::SampledDesc* mdesc = dynamic_cast<Metric::SampledDesc*>(adesc);
