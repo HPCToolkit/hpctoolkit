@@ -246,7 +246,8 @@ public:
 
   static int
   fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
-		LoadMap* loadmap, std::string ctxtStr, FILE* outfs);
+		LoadMap* loadmap, uint numMetricsSrc,
+		std::string ctxtStr, FILE* outfs);
 
 
   // fmt_*_fwrite(): Write the appropriate object as hpcrun_fmt to the

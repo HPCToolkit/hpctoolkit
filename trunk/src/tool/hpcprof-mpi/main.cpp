@@ -204,7 +204,7 @@ realmain(int argc, char* const* argv)
   int mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
   uint rFlags = (Prof::CallPath::Profile::RFlg_virtualMetrics
 		 | Prof::CallPath::Profile::RFlg_noMetricSfx
-		 /*| Prof::CallPath::Profile::RFlg_makeInclExcl*/);
+		 | Prof::CallPath::Profile::RFlg_makeInclExcl);
   Analysis::Util::UIntVec* groupMap =
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
@@ -597,7 +597,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // read profile file
   // -------------------------------------------------------
   uint rFlags = (Prof::CallPath::Profile::RFlg_noMetricSfx
-		 /*| Prof::CallPath::Profile::RFlg_makeInclExcl*/);
+		 | Prof::CallPath::Profile::RFlg_makeInclExcl);
   uint rGroupId = (groupMax > 1) ? groupId : 0;
 
   Prof::CallPath::Profile* prof =

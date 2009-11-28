@@ -235,7 +235,7 @@ public:
   }
 
 
-  // nameToFmt: generated formatted string
+  // nameToFmt: generate formatted string
   const std::string
   nameToFmt() const
   {
