@@ -422,25 +422,16 @@ public:
   // inclusive interval for batch processing.  In particular, 'raw'
   // metrics are independent of all other raw metrics.
   void
-  aggregateMetrics(uint mBegId, uint mEndId)
-  {
-    // NOTE: this node may not have metric data yet!
-    Metric::IData mVec(mEndId);
-    aggregateMetrics(mBegId, mEndId, mVec);
-  }
+  aggregateMetrics(uint mBegId, uint mEndId);
 
   void
   aggregateMetrics(uint mBegId)
   { aggregateMetrics(mBegId, mBegId + 1); }
 
+
   // traverses the tree and removes all nodes for which hasMetrics() is false
   void
   pruneByMetrics();
-
-
-private:
-  void
-  aggregateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec);
 
 public:
 
