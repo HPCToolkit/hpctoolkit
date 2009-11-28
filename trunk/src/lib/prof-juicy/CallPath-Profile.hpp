@@ -206,8 +206,12 @@ public:
     // do not add suffixes to metric descriptors
     RFlg_noMetricSfx    = (1 << 1),
 
-    // CCT nodes have no metrics, even if metric table is non-empty
-    RFlg_noMetricValues = (1 << 2),
+    // make inclusive/exclusive descriptors and (if non-virtual)
+    // corresponding space within CCT nodes
+    RFlg_makeInclExcl   = (1 << 2),
+
+    // private: CCT nodes have no metrics, even if metric table is non-empty
+    RFlg_noMetricValues = (1 << 3),
 
     // only write metric descriptors, even if CCT nodes have metrics
     WFlg_virtualMetrics = (1 << 15)

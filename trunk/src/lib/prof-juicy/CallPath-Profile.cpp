@@ -661,13 +661,36 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     string profFile = (filename) ? filename : "";
     string profRelId = StrUtil::toStr(i);
 
+    bool isInclExclPossible = true; // TODO: filter return counts
+    
+    // 1. Make 'regular'/'inclusive' metric descriptor
     Metric::SampledDesc* m = 
       new Metric::SampledDesc(nm, desc, m_lst[i].period, true/*isUnitsEvents*/,
 			      profFile, profRelId, "HPCRUN");
-    m->nameSfx(m_sfx);
+    if (rFlags & RFlg_makeInclExcl && isInclExclPossible) {
+      m->type(Metric::ADesc::TyIncl);
+    }
+    if (!m_sfx.empty()) {
+      m->nameSfx(m_sfx);
+    }
     m->flags(m_lst[i].flags);
     
     prof->metricMgr()->insert(m);
+
+    // 2. Make associated 'exclusive' descriptor, if applicable
+    if (rFlags & RFlg_makeInclExcl && isInclExclPossible) {
+      Metric::SampledDesc* m1 = 
+	new Metric::SampledDesc(nm, desc, m_lst[i].period,
+				true/*isUnitsEvents*/,
+				profFile, profRelId, "HPCRUN");
+      m1->type(Metric::ADesc::TyExcl);
+      if (!m_sfx.empty()) {
+	m1->nameSfx(m_sfx);
+      }
+      m1->flags(m_lst[i].flags);
+      
+      prof->metricMgr()->insert(m1);
+    }
   }
 
   if (isVirtualMetrics || (rFlags & RFlg_virtualMetrics) ) {
@@ -879,11 +902,11 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   for (uint i = 0; i < numMetrics; i++) {
     const Metric::ADesc* m = prof.metricMgr()->metric(i);
 
-    string nm = m->name();
+    string nmFmt = m->nameToFmt();
     const string& desc = m->description();
     
     metric_desc_t mdesc;
-    mdesc.name = const_cast<char*>(nm.c_str());
+    mdesc.name = const_cast<char*>(nmFmt.c_str());
     mdesc.description = const_cast<char*>(desc.c_str());
     mdesc.flags = HPCRUN_MetricFlag_Real;
     mdesc.period = 1;
@@ -1097,13 +1120,15 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     || (rFlags & Prof::CallPath::Profile::RFlg_virtualMetrics);
 
   bool hasMetrics = false;
-  Metric::IData metricData(nodeFmt.num_metrics);
-  for (uint i = 0; i < nodeFmt.num_metrics; i++) {
-    Metric::ADesc* adesc = prof.metricMgr()->metric(i);
+  uint numMetrics = prof.metricMgr()->size();
+
+  Metric::IData metricData(numMetrics); // nodeFmt.num_metrics <= numMetrics
+  for (uint i_dst = 0, i_src = 0; i_dst < numMetrics; i_dst++) {
+    Metric::ADesc* adesc = prof.metricMgr()->metric(i_dst);
     Metric::SampledDesc* mdesc = dynamic_cast<Metric::SampledDesc*>(adesc);
     DIAG_Assert(mdesc, "inconsistency: no corresponding SampledDesc!");
 
-    hpcrun_metricVal_t m = nodeFmt.metrics[i];
+    hpcrun_metricVal_t m = nodeFmt.metrics[i_src];
 
     double mval = 0;
     if (hpcrun_metricFlags_isFlag(mdesc->flags(), HPCRUN_MetricFlag_Real)) {
@@ -1113,10 +1138,21 @@ cct_makeNode(Prof::CallPath::Profile& prof,
       mval = (double)m.i;
     }
 
-    metricData.metric(i) = mval * (double)mdesc->period();
+    metricData.metric(i_dst) = mval * (double)mdesc->period();
 
     if (!hpcrun_metricVal_isZero(m)) {
       hasMetrics = true;
+    }
+
+    if (rFlags & Prof::CallPath::Profile::RFlg_makeInclExcl) {
+      if (adesc->type() == Prof::Metric::ADesc::TyNULL ||
+	  adesc->type() == Prof::Metric::ADesc::TyExcl) {
+	i_src++;
+      }
+      // Prof::Metric::ADesc::TyIncl: reuse i_src
+    }
+    else {
+      i_src++;
     }
   }
 
@@ -1145,7 +1181,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     if (hasMetrics) {
       n_leaf = n;
 
-      uint mSz = (doZeroMetrics) ? 0 : nodeFmt.num_metrics;
+      uint mSz = (doZeroMetrics) ? 0 : numMetrics;
       Metric::IData metricData0(mSz);
       
       lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);

@@ -85,7 +85,7 @@ class ADesc
 {
 public:
   ADesc()
-    : m_id(0),
+    : m_id(0), m_type(TyNULL),
       m_isVisible(true), m_isSortKey(false),
       m_doDispPercent(true), m_isPercent(false),
       m_isComputed(false)
@@ -94,27 +94,33 @@ public:
   ADesc(const char* nameBase, const char* description,
 	bool isVisible = true, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
-    : m_id(0), m_nameBase((nameBase) ? nameBase : ""), 
+    : m_id(0), m_type(TyNULL),
       m_description((description) ? description : ""),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
       m_isComputed(false)
-  { }
+  {
+    std::string nm = (nameBase) ? nameBase : "";
+    nameFromString(nm);
+  }
 
   ADesc(const std::string& nameBase, const std::string& description,
 	bool isVisible = true, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
-    : m_id(0), m_nameBase(nameBase), m_description(description),
+    : m_id(0), m_type(TyNULL),
+      m_description(description),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
       m_isComputed(false)
-  { }
+  {
+    nameFromString(nameBase);
+  }
 
   virtual ~ADesc()
   { }
 
   ADesc(const ADesc& x)
-    : m_id(x.m_id), 
+    : m_id(x.m_id), m_type(x.m_type),
       m_nameBase(x.m_nameBase), m_namePfx(x.m_namePfx), m_nameSfx(x.m_nameSfx),
       m_description(x.m_description),
       m_isVisible(x.m_isVisible), m_isSortKey(x.m_isSortKey),
@@ -127,6 +133,7 @@ public:
   {
     if (this != &x) {
       m_id            = x.m_id;
+      m_type          = x.m_type;
       m_nameBase      = x.m_nameBase;
       m_namePfx       = x.m_namePfx;
       m_nameSfx       = x.m_nameSfx;
@@ -159,19 +166,57 @@ public:
 
 
   // -------------------------------------------------------
+  // type:
+  // -------------------------------------------------------
+
+  enum ADescTy {
+    TyNULL = 0,
+    TyIncl,
+    TyExcl
+  };
+
+  static const std::string s_nameNULL;
+  static const std::string s_nameIncl;
+  static const std::string s_nameExcl;
+
+
+  ADescTy
+  type() const
+  { return m_type; }
+
+  void
+  type(ADescTy type)
+  { m_type = type; }
+
+  static const std::string&
+  ADescTyToString(ADescTy type);
+
+  static ADescTy
+  stringToADescTy(const std::string& x);
+
+
+  // -------------------------------------------------------
   // name: <prefix> <base> <suffix>
   // -------------------------------------------------------
 
   static const char nameSep = '.';
+
+  static const std::string s_nameFmtTag;
+  static const char s_nameFmtSegBeg = '{'; // shouldn't need to escape
+  static const char s_nameFmtSegEnd = '}';
+
 
   const std::string
   name() const
   {
     // acceptable to create on demand
     std::string nm;
+
     if (!m_namePfx.empty()) { nm += m_namePfx + nameSep; }
     nm += m_nameBase;
     if (!m_nameSfx.empty()) { nm += nameSep + m_nameSfx; }
+    nm += ADescTyToString(type());
+
     return nm;
   }
 
@@ -185,6 +230,11 @@ public:
     nm += m_nameBase;
     return nm;
   }
+
+  // nameFromString: if 'x' is a formatted string, set the various name
+  // components; otherwise set base = x.
+  void
+  nameFromString(const std::string& x);
 
 
   const std::string&
@@ -224,6 +274,23 @@ public:
   void
   nameSfx(const std::string& x)
   { m_nameSfx = x; }
+
+
+  const std::string
+  nameToFmt() const
+  {
+    // acceptable to create on demand
+    std::string nm;
+
+    // {nameFmtTag}<prefix><base><suffix><type>
+    nm += s_nameFmtTag;
+    nm += s_nameFmtSegBeg + m_namePfx  + s_nameFmtSegEnd;
+    nm += s_nameFmtSegBeg + m_nameBase + s_nameFmtSegEnd;
+    nm += s_nameFmtSegBeg + m_nameSfx  + s_nameFmtSegEnd;
+    nm += s_nameFmtSegBeg + ADescTyToString(type()) + s_nameFmtSegEnd;
+
+    return nm;
+  }
 
 
   // -------------------------------------------------------
@@ -323,6 +390,7 @@ public:
 protected:
 private:
   uint m_id;
+  ADescTy m_type;
 
   std::string m_nameBase, m_namePfx, m_nameSfx;
 
