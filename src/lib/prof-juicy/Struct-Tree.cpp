@@ -618,29 +618,22 @@ ANode::ancestorProcCtxt() const
 //***************************************************************************
 
 void
-ANode::aggregateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec)
+ANode::aggregateMetrics(uint mBegId, uint mEndId)
 {
   if ( !(mBegId < mEndId) ) {
     return; // short circuit
   }
 
-  ANodeChildIterator it(this);
-  for (; it.Current(); it++) {
-    it.current()->aggregateMetrics(mBegId, mEndId, mVec);
-  }
-
-  it.Reset();
-  if (it.Current()) { // 'this' is not a leaf
-    mVec.zeroMetrics(mBegId, mEndId); // initialize helper data
-
-    for (; it.Current(); it++) {
-      for (uint i = mBegId; i < mEndId; ++i) {
-	mVec.metric(i) += it.current()->demandMetric(i, mEndId/*size*/);
+  const ANode* root = this;
+  ANodeIterator it(root, NULL/*filter*/, false/*leavesOnly*/,
+		   IteratorStack::PostOrder);
+  for (ANode* n = NULL; (n = it.current()); ++it) {
+    ANode* n_parent = n->parent();
+    if (n != root) {
+      for (uint mId = mBegId; mId < mEndId; ++mId) {
+	double mVal = n->demandMetric(mId, mEndId/*size*/);
+	n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
       }
-    }
-    
-    for (uint i = mBegId; i < mEndId; ++i) {
-      demandMetric(i, mEndId/*size*/) += mVec.metric(i);
     }
   }
 }

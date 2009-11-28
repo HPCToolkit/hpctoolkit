@@ -687,14 +687,14 @@ makeReturnCountMetric(Prof::CallPath::Profile& prof)
   // -------------------------------------------------------
   // propagate and aggregate return counts
   // -------------------------------------------------------
-  Prof::CCT::ANodeIterator it(prof.cct()->root(), NULL/*filter*/,
-			      false/*leavesOnly*/, IteratorStack::PostOrder);
+  Prof::CCT::ANode* cct_root = prof.cct()->root();
+  Prof::CCT::ANodeIterator it(cct_root, NULL/*filter*/, false/*leavesOnly*/,
+			      IteratorStack::PostOrder);
   for (Prof::CCT::ANode* n = NULL; (n = it.current()); ++it) {
-    Prof::CCT::ANode* n_parent = n->parent();
-
     bool isFrame = (typeid(*n) == typeid(Prof::CCT::ProcFrm)
 		    && !(static_cast<Prof::CCT::ProcFrm*>(n)->isAlien()));
-    if (!isFrame && n_parent) {
+    if (!isFrame && n != cct_root) {
+      Prof::CCT::ANode* n_parent = n->parent();
       for (uint i = 0; i < retCntId.size(); ++i) {
 	uint mId = retCntId[i];
 	n_parent->demandMetric(mId) += n->demandMetric(mId);

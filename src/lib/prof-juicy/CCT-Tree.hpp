@@ -445,15 +445,11 @@ public:
   void
   zeroMetricsDeep(uint mBegId, uint mEndId);
 
+
   // aggregates metrics from children. [mBegId, mEndId) forms an
   // interval for batch processing.
   void
-  aggregateMetrics(uint mBegId, uint mEndId)
-  {
-    // NOTE: this node may not have metric data yet!
-    Metric::IData mVec(mEndId);
-    aggregateMetrics(mBegId, mEndId, mVec);
-  }
+  aggregateMetrics(uint mBegId, uint mEndId);
 
   void
   aggregateMetrics(uint mBegId)
@@ -474,10 +470,6 @@ public:
   void
   computeMetricsItrvMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 		       Metric::AExprItrv::FnTy fn, uint srcArg);
-
-private:
-  void
-  aggregateMetrics(uint mBegId, uint mEndId, Metric::IData& mVec);
 
 public:
 
