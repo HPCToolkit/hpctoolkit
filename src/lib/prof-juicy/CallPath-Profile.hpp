@@ -210,7 +210,9 @@ public:
     // corresponding space within CCT nodes
     RFlg_makeInclExcl   = (1 << 2),
 
-    // private: CCT nodes have no metrics, even if metric table is non-empty
+    // private: CCT nodes have no metrics, even if metric table is
+    // non-empty.  (Ex: Reading a profile that has been written out with
+    // WFlg_virtualMetrics; there is no need to split nodes.)
     RFlg_noMetricValues = (1 << 3),
 
     // only write metric descriptors, even if CCT nodes have metrics

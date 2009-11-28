@@ -140,7 +140,7 @@ ADesc::nameFromString(const string& x)
         case 1: namePfx(segStr);  break;
         case 2: nameBase(segStr); break;
         case 3: nameSfx(segStr);  break;
-        case 4: stringToADescTy(segStr); break;
+        case 4: type(stringToADescTy(segStr)); break;
         default: DIAG_Die(DIAG_UnexpectedInput);
       }
       

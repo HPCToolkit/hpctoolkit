@@ -179,6 +179,12 @@ public:
   static const std::string s_nameIncl;
   static const std::string s_nameExcl;
 
+  static const std::string&
+  ADescTyToString(ADescTy type);
+
+  static ADescTy
+  stringToADescTy(const std::string& x);
+
 
   ADescTy
   type() const
@@ -187,12 +193,6 @@ public:
   void
   type(ADescTy type)
   { m_type = type; }
-
-  static const std::string&
-  ADescTyToString(ADescTy type);
-
-  static ADescTy
-  stringToADescTy(const std::string& x);
 
 
   // -------------------------------------------------------
@@ -221,15 +221,37 @@ public:
   }
 
 
+  // nameGeneric: a 'generic' name for the metric (i.e., without the
+  // suffix qualifier)
   const std::string
-  namePfxBase() const
+  nameGeneric() const
   {
     // acceptable to create on demand
     std::string nm;
     if (!m_namePfx.empty()) { nm += m_namePfx + nameSep; }
     nm += m_nameBase;
+    nm += ADescTyToString(type());
     return nm;
   }
+
+
+  // nameToFmt: generated formatted string
+  const std::string
+  nameToFmt() const
+  {
+    // acceptable to create on demand
+    std::string nm;
+
+    // {nameFmtTag}<prefix><base><suffix><type>
+    nm += s_nameFmtTag;
+    nm += s_nameFmtSegBeg + m_namePfx  + s_nameFmtSegEnd;
+    nm += s_nameFmtSegBeg + m_nameBase + s_nameFmtSegEnd;
+    nm += s_nameFmtSegBeg + m_nameSfx  + s_nameFmtSegEnd;
+    nm += s_nameFmtSegBeg + ADescTyToString(type()) + s_nameFmtSegEnd;
+
+    return nm;
+  }
+
 
   // nameFromString: if 'x' is a formatted string, set the various name
   // components; otherwise set base = x.
@@ -274,23 +296,6 @@ public:
   void
   nameSfx(const std::string& x)
   { m_nameSfx = x; }
-
-
-  const std::string
-  nameToFmt() const
-  {
-    // acceptable to create on demand
-    std::string nm;
-
-    // {nameFmtTag}<prefix><base><suffix><type>
-    nm += s_nameFmtTag;
-    nm += s_nameFmtSegBeg + m_namePfx  + s_nameFmtSegEnd;
-    nm += s_nameFmtSegBeg + m_nameBase + s_nameFmtSegEnd;
-    nm += s_nameFmtSegBeg + m_nameSfx  + s_nameFmtSegEnd;
-    nm += s_nameFmtSegBeg + ADescTyToString(type()) + s_nameFmtSegEnd;
-
-    return nm;
-  }
 
 
   // -------------------------------------------------------

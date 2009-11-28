@@ -229,7 +229,8 @@ unpackProfile(uint8_t* buffer, size_t bufferSz)
   Prof::CallPath::Profile* prof = NULL;
   uint rFlags = Prof::CallPath::Profile::RFlg_virtualMetrics;
   Prof::CallPath::Profile::fmt_fread(prof, fs, rFlags,
-				     "ParallelAnalysis::unpack", NULL, NULL);
+				     "ParallelAnalysis::unpackProfile",
+				     NULL, NULL);
 
   fclose(fs);
   return prof;
@@ -285,8 +286,8 @@ unpackMetrics(Prof::CallPath::Profile& profile,
   //    values in [mBegId, mEndId)
   uint mDrvdBeg = packedMetrics.mDrvdBegId();
   uint mDrvdEnd = packedMetrics.mDrvdEndId();
-  cct.root()->computeMetricsItrvDeep(*profile.metricMgr(), mDrvdBeg, mDrvdEnd,
-				     Prof::Metric::AExprItrv::FnMerge, 0);
+  cct.root()->computeMetricsItrv(*profile.metricMgr(), mDrvdBeg, mDrvdEnd,
+				 Prof::Metric::AExprItrv::FnMerge, 0);
 }
 
 
