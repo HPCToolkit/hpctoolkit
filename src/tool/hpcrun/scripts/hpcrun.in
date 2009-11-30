@@ -329,9 +329,28 @@ hpc_getoptions()
 
 
 # get the executable from the list of (remaining) args
+# Look for the executable on PATH and return full path if there.
+# The file tests don't look for programs on PATH.
+
 hpc_getexec()
 {
-  _EXEC=$1
+  _EXEC="$1"
+
+  case "$_EXEC" in
+    */* )
+      ;;
+    * )
+      OLDIFS="$IFS"
+      IFS=:
+      for dir in $PATH ; do
+	if test -x "$dir/$_EXEC" ; then
+	  _EXEC="$dir/$_EXEC"
+	  break
+	fi
+      done
+      IFS="$OLDIFS"
+      ;;
+  esac
 }
 
 
@@ -441,9 +460,9 @@ hpc_getexec $cmd_to_profile
 # Sanity checks before launching the application.
 #
 # In the dynamic case, verify that the application and libhpcrun are
-# either both 32-bit or both 64-bit.  Give a pass to scripts,
+# either both 32-bit or both 64-bit.  Give a pass to scripts and
 # statically-linked binaries (which we don't really support via
-# hpcrun) and programs on PATH (for now).
+# hpcrun).
 #
 if test -x "$_EXEC" ; then
   file_out=`file -L "$_EXEC"`
@@ -458,6 +477,14 @@ if test -x "$_EXEC" ; then
       exit 1
     fi
   fi
+fi
+
+# Look for _mp_init in the binary and set -dd OMP_SKIP_MSB if there.
+# _EXEC needs to be full path for nm to find it.
+
+nm "$_EXEC" 2>/dev/null | grep -e ' _mp_init' >/dev/null 2>&1
+if test $? -eq 0 ; then
+  dd_list="OMP_SKIP_MSB $dd_list"
 fi
 
 hpc_prepareenv
