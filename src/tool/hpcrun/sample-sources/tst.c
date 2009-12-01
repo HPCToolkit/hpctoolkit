@@ -325,6 +325,12 @@ METHOD_FN(gen_event_set, int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
+  //
+  // normally _tst does not display events
+  // DEVELOPER ONLY: modify this method in your sandbox as needed
+  //
+
+#ifdef DISPLAY_TEST_EVENTS
   printf("===========================================================================\n");
   printf("Available _tst events\n");
   printf("===========================================================================\n");
@@ -332,6 +338,7 @@ METHOD_FN(display_events)
   printf("---------------------------------------------------------------------------\n");
   printf("WALLCLOCK\tWall clock time used by the process in microseconds\n");
   printf("\n");
+#endif
 }
 
 /***************************************************************************
@@ -369,9 +376,10 @@ _tst_signal_handler(int sig, siginfo_t* siginfo, void* context)
     metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
 
+#ifdef LATER
     int metric_id = hpcrun_event2metric(&__tst_obj, _TST_EVENT);
-    hpcrun_sample_callpath(context, metric_id, metric_incr,
-			   0/*skipInner*/, 0/*isSync*/);
+    hpcrun_sample_callpath_w_bt(context, &hpcrun_backtrace_std);
+#endif
   }
   if (hpcrun_is_sampling_disabled()) {
     TMSG(SPECIAL, "No _tst restart, due to disabled sampling");

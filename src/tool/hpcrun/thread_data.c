@@ -137,6 +137,8 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt)
   td->bufend = td->btbuf + BACKTRACE_INIT_SZ;
   td->bufstk = td->bufend;  // FIXME: is this needed?
 
+  hpcrun_bt_init(&(td->bt), BACKTRACE_INIT_SZ);
+
   // hpcrun file
   td->hpcrun_file                 = NULL;
 

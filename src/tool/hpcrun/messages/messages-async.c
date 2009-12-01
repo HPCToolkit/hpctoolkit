@@ -131,7 +131,7 @@ hpcrun_emsg(const char *fmt,...)
 
 
 void
-hpcrun_pmsg(pmsg_category flag, const char *tag, const char *fmt,...)
+hpcrun_pmsg(pmsg_category flag, const char *tag, const char *fmt, ...)
 {
   if (debug_flag_get(flag) == 0){
 #if DEBUG_PMSG_ASYNC
@@ -234,7 +234,7 @@ hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id, const char *tag,
 //*****************************************************************************
 
 static void
-create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag, 
+create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag,
 	   const char *fmt, va_list_box* box)
 {
   char fstr[MSG_BUF_SIZE];

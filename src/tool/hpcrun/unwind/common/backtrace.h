@@ -59,6 +59,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <ucontext.h>
 
@@ -76,18 +77,25 @@
 //
 
 typedef struct backtrace_t {
-  frame_t* beg;
-  frame_t* end;
-  frame_t* cur;
+  size_t   size;   // size of backtrace
+  size_t   len;    // # of frames used
+  frame_t* beg;    // base memory chunk
+  frame_t* end;    // 1 past the last available slot
+  frame_t* cur;    // current insertion position
 } backtrace_t;
+
+typedef struct bt_iter_t {
+  frame_t* cur;
+  backtrace_t* bt;
+} bt_iter_t;
 
 //***************************************************************************
 // interface functions
 //***************************************************************************
 
-typedef backtrace_t* bt_fn(ucontext_t* context);
+typedef bool bt_fn(backtrace_t* bt, ucontext_t* context);
 
-backtrace_t* hpcrun_backtrace_std(ucontext_t* context);
+bool hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
 
 //
 // utility routine that does 2 things:
@@ -103,6 +111,24 @@ frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
 
 // FIXME: tallent: relocate when 'csprof epoch' trash is untangled
 void dump_backtrace(epoch_t* epoch, frame_t* unwind);
+
+frame_t* hpcrun_bt_reset(backtrace_t* bt);
+
+void hpcrun_bt_init(backtrace_t* bt, size_t size);
+
+frame_t* hpcrun_bt_push(backtrace_t* bt, frame_t* frame);
+
+frame_t* hpcrun_bt_beg(backtrace_t* bt);
+
+frame_t* hpcrun_bt_last(backtrace_t* bt);
+
+frame_t* hpcrun_bt_cur(backtrace_t* bt);
+
+size_t hpcrun_bt_len(backtrace_t* bt);
+
+bool hpcrun_bt_empty(backtrace_t* bt);
+
+bool hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
 
 //***************************************************************************
 

@@ -85,6 +85,8 @@
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/lush/lush-support.h>
+#include <unwind/common/backtrace.h>
+#include <hpcrun/thread_data.h>
 
 //***************************** Local Macros ********************************
 
@@ -309,7 +311,7 @@ cct_node_find_child(cct_node_t* x,
 
 
 //***************************************************************************
-//
+//  Interface functions
 //***************************************************************************
 
 /* building and deleting trees */
@@ -442,7 +444,6 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
 #undef MY_advancePathFrame
 #undef MY_isPathFrameAtEnd
 }
-
 
 //***************************************************************************
 //
@@ -658,6 +659,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
   tmp_node->id_parent = my_parent;
 
   if (flags.flags.isLogicalUnwind) {
+    TMSG(LUSH, "setting as_info for %d", tmp_node->id);
     tmp_node->as_info = node->as_info;
   }
   
@@ -667,6 +669,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
   tmp_node->ip = (hpcfmt_vma_t) (unsigned long) node->ip;
 
   if (flags.flags.isLogicalUnwind) {
+    TMSG(LUSH, "settiong lip for node %d", tmp_node->id);
     lush_lip_init(&tmp_node->lip);
     if (node->lip) {
       memcpy(&tmp_node->lip, node->lip, sizeof(lush_lip_t));
