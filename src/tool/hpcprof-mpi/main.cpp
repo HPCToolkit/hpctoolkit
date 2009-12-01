@@ -613,8 +613,17 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // compute local metrics and update local derived metrics
   // -------------------------------------------------------
-  // FIXME: raw => exclusive, raw => inclusive
-  cctRoot->aggregateMetrics(mBeg, mEnd);
+  for (uint mId = mBeg; mId < mEnd; ++mId) {
+    Prof::Metric::ADesc* m = mMgrGbl->metric(mId);
+
+    // FIXME: batch the inclusive and exclusive metrics
+    if (m->type() == Prof::Metric::ADesc::TyIncl) {
+      cctRoot->aggregateMetricsIncl(mId); // mBeg, mEnd
+    }
+    else if (m->type() == Prof::Metric::ADesc::TyExcl) {
+      cctRoot->aggregateMetricsExcl(mId); // mBeg, mEnd      
+    }
+  }
 
   if (0) {
     profGbl.cct()->writeXML(std::cerr, mBeg, mEnd);

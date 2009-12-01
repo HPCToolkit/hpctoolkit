@@ -446,16 +446,30 @@ public:
   zeroMetricsDeep(uint mBegId, uint mEndId);
 
 
-  // aggregates metrics from children. [mBegId, mEndId) forms an
-  // interval for batch processing.
+  // aggregateMetricsIncl: aggregates metrics for inclusive CCT
+  // metrics. [mBegId, mEndId) forms an interval for batch processing.
   void
-  aggregateMetrics(uint mBegId, uint mEndId);
+  aggregateMetricsIncl(uint mBegId, uint mEndId);
 
   void
-  aggregateMetrics(uint mBegId)
-  { aggregateMetrics(mBegId, mBegId + 1); }
+  aggregateMetricsIncl(uint mBegId)
+  { aggregateMetricsIncl(mBegId, mBegId + 1); }
 
 
+  // aggregateMetricsExcl: aggregates metrics for exclusive CCT
+  // metrics. [mBegId, mEndId) forms an interval for batch processing.
+  void
+  aggregateMetricsExcl(uint mBegId, uint mEndId);
+
+  void
+  aggregateMetricsExcl(uint mBegId)
+  { aggregateMetricsExcl(mBegId, mBegId + 1); }
+
+private:
+  void
+  aggregateMetricsExcl(ProcFrm* frame, uint mBegId, uint mEndId);
+
+public:
   void
   computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId);
 

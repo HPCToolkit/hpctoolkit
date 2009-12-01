@@ -333,7 +333,7 @@ ANode::zeroMetricsDeep(uint mBegId, uint mEndId)
 
 
 void
-ANode::aggregateMetrics(uint mBegId, uint mEndId)
+ANode::aggregateMetricsIncl(uint mBegId, uint mEndId)
 {
   if ( !(mBegId < mEndId) ) {
     return; // short circuit
@@ -348,6 +348,54 @@ ANode::aggregateMetrics(uint mBegId, uint mEndId)
       for (uint mId = mBegId; mId < mEndId; ++mId) {
 	double mVal = n->demandMetric(mId, mEndId/*size*/);
 	n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+      }
+    }
+  }
+}
+
+
+void
+ANode::aggregateMetricsExcl(uint mBegId, uint mEndId)
+{
+  if ( !(mBegId < mEndId) ) {
+    return; // short circuit
+  }
+
+  ProcFrm* frame = NULL; // will be set during tree traversal
+  aggregateMetricsExcl(frame, mBegId, mEndId);
+}
+
+
+void
+ANode::aggregateMetricsExcl(ProcFrm* frame, uint mBegId, uint mEndId)
+{
+  ANode* n = this;
+
+  // -------------------------------------------------------
+  // Pre-order visit
+  // -------------------------------------------------------
+  bool isFrame = (typeid(*n) == typeid(ProcFrm)
+		  && !(static_cast<ProcFrm*>(n)->isAlien()));
+  ProcFrm* frameNxt = (isFrame) ? static_cast<ProcFrm*>(n) : frame;
+
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
+  for (ANodeChildIterator it(n); it.Current(); ++it) {
+    ANode* x = it.current();
+    x->aggregateMetricsExcl(frameNxt, mBegId, mEndId);
+  }
+
+  // -------------------------------------------------------
+  // Post-order visit
+  // -------------------------------------------------------
+  if (typeid(*n) == typeid(CCT::Stmt)) {
+    ANode* n_parent = n->parent();
+    for (uint mId = mBegId; mId < mEndId; ++mId) {
+      double mVal = n->demandMetric(mId, mEndId/*size*/);
+      n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+      if (frame) {
+	frame->demandMetric(mId, mEndId/*size*/) += mVal;
       }
     }
   }
