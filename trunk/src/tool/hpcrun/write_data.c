@@ -234,7 +234,9 @@ write_epochs(FILE* fs, epoch_t* epoch)
     //
 
     epoch_flags.flags.isLogicalUnwind = hpcrun_isLogicalUnwind();
+    TMSG(LUSH,"epoch lush flag set to %s", epoch_flags.flags.isLogicalUnwind ? "true" : "false");
     
+    TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", epoch_flags.flags);
     hpcrun_fmt_epoch_hdr_fwrite(fs, epoch_flags,
                                 default_measurement_granularity,
                                 default_ra_to_callsite_distance,
@@ -317,6 +319,7 @@ int
 hpcrun_write_profile_data(epoch_t *epoch)
 {
 
+  TMSG(DATA_WRITE,"Writing hpcrun profile data");
   FILE* fs = lazy_open_data_file();
   write_epochs(fs, epoch);
 

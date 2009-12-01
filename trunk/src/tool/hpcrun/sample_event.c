@@ -217,7 +217,8 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 }
 
 cct_node_t*
-hpcrun_sample_callpath_w_bt(void* context, bt_fn* get_bt)
+hpcrun_sample_callpath_w_bt(void* context, int metric_id, cct_metric_data_t datum,
+			    bt_fn* get_bt)
 {
   hpcrun_stats_num_samples_total_inc();
 
@@ -256,7 +257,8 @@ hpcrun_sample_callpath_w_bt(void* context, bt_fn* get_bt)
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
 
-    backtrace_t* bt = get_bt(context);
+    // 
+    get_bt(&(td->bt), context);
     
     if (epoch != NULL) {
       // enter backtrace in cct instead of this
@@ -264,6 +266,10 @@ hpcrun_sample_callpath_w_bt(void* context, bt_fn* get_bt)
 #ifdef LATER
       node = _hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
 				     skipInner, isSync);
+
+      node = hpcrun_cct_enter_bt(&(epoch->csdata), ,
+				 &(td->bt),
+				 metric_id, datum);
 #endif
       if (trace_isactive()) {
 	void *pc = context_pc(context);

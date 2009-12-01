@@ -60,6 +60,7 @@
 #include "epoch.h"
 
 #include <lush/lush-pthread.i>
+#include <unwind/common/backtrace.h>
 
 typedef struct {
   sigjmp_buf jb;
@@ -132,6 +133,8 @@ typedef struct thread_data_t {
   frame_t*       btbuf; 	   // innermost frame in new backtrace
   frame_t*       bufend;	   // 
   frame_t*       bufstk;	   // innermost frame in cached backtrace
+
+  backtrace_t    bt;        // backtrace used for unwinding
 
   // the loadmap + cct + cct_ctxt = epoch
   epoch_t*         epoch;

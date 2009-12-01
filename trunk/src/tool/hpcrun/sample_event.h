@@ -50,6 +50,7 @@
 #include "cct.h"
 #include "thread_data.h"
 #include <trampoline/common/trampoline.h>
+#include <unwind/common/backtrace.h>
 
 
 //***************************************************************************
@@ -104,8 +105,11 @@ hpcrun_disable_sampling();
 void
 hpcrun_drop_sample();
 
-cct_node_t*
-hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
-		       int skipInner, int isSync);
+cct_node_t* hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
+				   int skipInner, int isSync);
 
+#if 0
+cct_node_t* hpcrun_sample_callpath_w_bt(void* context, int metric_id, cct_metric_data_t datum,
+					bt_fn* get_bt)
+#endif
 #endif /* sample_event_h */
