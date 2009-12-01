@@ -119,7 +119,8 @@ hpcrun_thread_memory_init(void)
 }
 
 enum _local_int_const {
-  BACKTRACE_INIT_SZ = 32
+  BACKTRACE_INIT_SZ      = 32,
+  NEW_BACKTRACTE_INIT_SZ = 32
 };
 
 void
@@ -137,7 +138,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt)
   td->bufend = td->btbuf + BACKTRACE_INIT_SZ;
   td->bufstk = td->bufend;  // FIXME: is this needed?
 
-  hpcrun_bt_init(&(td->bt), BACKTRACE_INIT_SZ);
+  hpcrun_bt_init(&(td->bt), NEW_BACKTRACE_INIT_SZ);
 
   // hpcrun file
   td->hpcrun_file                 = NULL;
