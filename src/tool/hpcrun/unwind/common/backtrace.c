@@ -195,8 +195,16 @@ hpcrun_bt_init(backtrace_t* bt, size_t size)
 frame_t*
 hpcrun_bt_push(backtrace_t* bt, frame_t* frame)
 {
-  if (! (bt->size - bt->len)) {
-    return NULL; // FIX THIS
+  if (bt->size <= bt->len) {
+    
+    // reallocate & copy
+    frame_t* new = hpcrun_malloc(sizeof(frame_t) * 2 * bt->size);
+    memcpy(new, (void*) bt->beg, bt->len * sizeof(frame_t));
+
+    bt->beg  = new;
+    bt->size = 2 * bt->size;
+    bt->cur  = new + bt->len;
+
   }
   *(bt->cur) = *frame;
   frame_t* rv = bt->cur;
