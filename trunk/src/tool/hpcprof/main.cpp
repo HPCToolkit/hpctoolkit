@@ -209,7 +209,7 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   // -------------------------------------------------------
   // aggregate metrics
   // -------------------------------------------------------
-  cctRoot->aggregateMetrics(mSrcBeg, mSrcEnd);
+  cctRoot->aggregateMetricsIncl(mSrcBeg, mSrcEnd);
 
   for (uint i = mSrcBeg; i < mSrcEnd; ++i) {
     Prof::Metric::ADesc* m = mMgr.metric(i);
