@@ -84,6 +84,7 @@ endif
 
 if OPT_ENABLE_HPCRUN_STATIC
   pkglib_PROGRAMS = libhpcrun.o
+  pkglib_LIBRARIES = libhpcrun_wrap.a
   bin_SCRIPTS += scripts/hpclink
 endif
 
@@ -102,13 +103,14 @@ MY_BASE_FILES =			\
 	utilities/first_func.c		\
 	\
 	main.h main.c			\
-	hpcrun_options.c		\
-	hpcrun_stats.c			\
 	disabled.c			\
 	env.c				\
-	loadmap.c			\
+	epoch.c				\
 	files.c				\
 	handling_sample.c		\
+	hpcrun_options.c		\
+	hpcrun_stats.c			\
+	loadmap.c			\
 	metrics.c			\
 	name.c				\
 	sample_event.c			\
@@ -120,7 +122,6 @@ MY_BASE_FILES =			\
         sample-sources/tst.c            \
 	sample_sources_registered.c	\
 	segv_handler.c			\
-	epoch.c				\
 	system_server.c			\
 	thread_data.c			\
 	thread_use.c			\
@@ -160,6 +161,7 @@ MY_BASE_FILES =			\
 
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_dynamic.c	\
+	monitor-exts/openmp.c		\
 	hpcrun_dlfns.c
 
 MY_STATIC_FILES = 			\
@@ -241,6 +243,9 @@ libhpcrun_la_SOURCES = 			\
 libhpcrun_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_STATIC_FILES)
+
+libhpcrun_wrap_a_SOURCES =		\
+	monitor-exts/openmp.c
 
 libhpcrun_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\

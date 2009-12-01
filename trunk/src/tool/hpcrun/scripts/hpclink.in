@@ -31,17 +31,15 @@ papi_dir='@OPT_PAPI_LIBPATH@'
 papi_extra_libs='@papi_extra_libs@'
 
 # FIXME: The wrap list should come from monitor.
-wrap1="main exit _exit dlopen dlclose fork vfork system"
-wrap2="execl execlp execle execv execvp execve pthread_exit"
-wrap3="pthread_create signal sigaction sigprocmask pthread_sigmask"
-wrap4="MPI_Init mpi_init mpi_init_ mpi_init__"
-wrap5="MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__"
-wrap6="MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__"
-wrap7="MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__"
-wrap8="longjmp siglongjmp"
-monitor_wrap_names="$wrap1 $wrap2 $wrap3 $wrap4 $wrap5 $wrap6 $wrap7 $wrap8"
+monitor_wrap_names='main exit _exit dlopen dlclose fork vfork system
+  execl execlp execle execv execvp execve pthread_exit
+  pthread_create signal sigaction sigprocmask pthread_sigmask
+  MPI_Init mpi_init mpi_init_ mpi_init__
+  MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__
+  MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__
+  MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__
+  longjmp siglongjmp _mp_init'
 
-add_hpcrun_wrap=no
 extra_wrap_names='@hpclink_extra_wrap_names@'
 
 # Set to -m64 on 64-bit version (for gcc).
@@ -177,8 +175,8 @@ done
 #
 # Step 2 -- Build the new compile line.
 #
-#   wrap-args, undef-args, $@, libhpcrun, nm-addrs, monitor, PAPI, Xed2,
-#   -lpthread, -ldl, repeat-application-libs.
+#   wrap-args, undef-args, $@, libhpcrun.o, nm-addrs, libhpcrun_wrap.a,
+#   libmonitor, PAPI, Xed2, -lpthread, -ldl, repeat-application-libs.
 #
 if test "$verbose" = yes ; then
     echo "original command line: $command $@"
@@ -203,16 +201,13 @@ libhpcrun="${libhpcrun_dir}/libhpcrun.o"
 test -f "$libhpcrun" || die "no such file: $libhpcrun"
 set -- "$@" "$libhpcrun" "${nm_addrs}.o"
 
+libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
+test -f "$libhpcrun_wrap" || die "no such file: $libhpcrun_wrap"
+set -- "$@" "$libhpcrun_wrap"
+
 libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
 test -f "$libmonitor" || die "no such file: $libmonitor"
 set -- "$@" "$libmonitor"
-
-# Currently not used, may be readded, may be dropped.
-if test "$add_hpcrun_wrap" = yes ; then
-    libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
-    test -f "$libhpcrun_wrap" || die "no such file: $libhpcrun_wrap"
-    set -- "$@" "$libhpcrun_wrap"
-fi
 
 if test -d "$papi_dir" ; then
     set -- "$@" "-L${papi_dir}" -lpapi $papi_extra_libs
