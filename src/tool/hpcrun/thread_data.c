@@ -120,7 +120,7 @@ hpcrun_thread_memory_init(void)
 
 enum _local_int_const {
   BACKTRACE_INIT_SZ      = 32,
-  NEW_BACKTRACTE_INIT_SZ = 32
+  NEW_BACKTRACE_INIT_SZ = 32
 };
 
 void
