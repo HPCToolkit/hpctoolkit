@@ -114,7 +114,11 @@ def do_hpcrun_file(fname):
     if not base:
         warn('bad .hpcrun file name: %s' % fname)
         return
-    n = BASE2INDEX[base]
+    try:
+        n = BASE2INDEX[base]
+    except KeyError:
+        warn('missing or corrupt .log file for: %s' % fname)
+        return
     if DATA[n][BASE] != base:
         warn('internal DATA corruption for: %s' % fname)
         return
