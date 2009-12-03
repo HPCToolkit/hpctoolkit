@@ -150,7 +150,7 @@ public:
   //
   // ------------------------------------------------------------
 
-  enum FnTy { FnInit, FnInitSrc, FnUpdate, FnMerge, FnFini };
+  enum FnTy { FnInit, FnInitSrc, FnUpdate, FnCombine, FnFini };
 
   // initialize: initializes destination metrics (dstVar() & dst2Var())
   virtual double
@@ -164,11 +164,11 @@ public:
   virtual double
   update(Metric::IData& mdata) const = 0;
 
-  // merge: merges destination metrics with sources that themselves
+  // combine: combines destination metrics with sources that themselves
   // represent destination metrics, i.e., they are the result of
   // updates ((srcVar() & srcVar2()).
   virtual double
-  merge(Metric::IData& mdata) const = 0;
+  combine(Metric::IData& mdata) const = 0;
 
   // finalize: finalizes destination metrics given total number of sources
   virtual double
@@ -270,7 +270,7 @@ public:
 
 
   double
-  mergeStdDev(Metric::IData& mdata) const
+  combineStdDev(Metric::IData& mdata) const
   {
     double d1 = dstVar(mdata), d2 = dst2Var(mdata);
     double s1 = srcVar(mdata), s2 = src2Var(mdata);
@@ -363,7 +363,7 @@ public:
   }
 
   virtual double
-  merge(Metric::IData& mdata) const
+  combine(Metric::IData& mdata) const
   { return MinItrv::update(mdata); }
 
   virtual double
@@ -413,7 +413,7 @@ public:
   }
 
   virtual double
-  merge(Metric::IData& mdata) const
+  combine(Metric::IData& mdata) const
   { return MaxItrv::update(mdata); }
 
   virtual double
@@ -463,7 +463,7 @@ public:
   }
 
   virtual double
-  merge(Metric::IData& mdata) const
+  combine(Metric::IData& mdata) const
   { return SumItrv::update(mdata); }
 
   virtual double
@@ -513,7 +513,7 @@ public:
   }
 
   virtual double
-  merge(Metric::IData& mdata) const
+  combine(Metric::IData& mdata) const
   { return MeanItrv::update(mdata); }
 
   virtual double
@@ -565,8 +565,8 @@ public:
   { return updateStdDev(mdata); }
 
   virtual double
-  merge(Metric::IData& mdata) const
-  { return mergeStdDev(mdata); }
+  combine(Metric::IData& mdata) const
+  { return combineStdDev(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
@@ -609,8 +609,8 @@ public:
   { return updateStdDev(mdata); }
 
   virtual double
-  merge(Metric::IData& mdata) const
-  { return mergeStdDev(mdata); }
+  combine(Metric::IData& mdata) const
+  { return combineStdDev(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
@@ -662,8 +662,8 @@ public:
   { return updateStdDev(mdata); }
 
   virtual double
-  merge(Metric::IData& mdata) const
-  { return mergeStdDev(mdata); }
+  combine(Metric::IData& mdata) const
+  { return combineStdDev(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
