@@ -62,7 +62,7 @@ using std::endl;
 
 #include <include/uint.h>
 
-#include "Metric-AExprItrv.hpp"
+#include "Metric-AExprIncr.hpp"
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/NaN.h>
