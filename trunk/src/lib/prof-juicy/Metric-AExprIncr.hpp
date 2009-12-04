@@ -86,6 +86,8 @@
 #include <lib/support/diagnostics.h>
 #include <lib/support/NaN.h>
 #include <lib/support/Unique.hpp>
+#include <lib/support/StrUtil.hpp>
+
 
 //************************ Forward Declarations ******************************
 
@@ -197,6 +199,10 @@ public:
   dstVar(Metric::IData& mdata) const
   { return var(mdata, m_dstId); }
 
+  std::string
+  dstStr() const
+  { return "$"+ StrUtil::toStr(m_dstId); }
+
 
   double
   dst2Var(const Metric::IData& mdata) const
@@ -205,6 +211,10 @@ public:
   double&
   dst2Var(Metric::IData& mdata) const
   { return var(mdata, m_dst2Id); }
+
+  std::string
+  dst2Str() const
+  { return "$"+ StrUtil::toStr(m_dst2Id); }
 
 
   double
@@ -215,6 +225,10 @@ public:
   srcVar(Metric::IData& mdata) const
   { return var(mdata, m_srcId); }
 
+  std::string
+  srcStr() const
+  { return "$"+ StrUtil::toStr(m_srcId); }
+
 
   double
   src2Var(const Metric::IData& mdata) const
@@ -223,6 +237,10 @@ public:
   double&
   src2Var(Metric::IData& mdata) const
   { return var(mdata, m_src2Id); }
+
+  std::string
+  src2Str() const
+  { return "$"+ StrUtil::toStr(m_src2Id); }
 
 
   // ------------------------------------------------------------
@@ -283,6 +301,17 @@ public:
   }
 
 
+  std::string
+  combineStringStdDev() const
+  {
+    std::string d1 = dstStr(), d2 = dst2Str();
+    std::string s1 = srcStr(), s2 = src2Str();
+    std::string z1 = "sum(" + d1 + ", " + s1 + ")"; // running sum
+    std::string z2 = "sum(" + d2 + ", " + s2 + ")"; // running sum of squares
+    return ""; //  z1 + "; " + z2;
+  }
+
+
   double
   finalizeStdDev(Metric::IData& mdata, uint numSrc) const
   {
@@ -301,12 +330,32 @@ public:
   }
 
 
+  std::string
+  finalizeStringStdDev(uint numSrc) const
+  {
+    std::string d1 = dstStr(), d2 = dst2Str();
+    std::string s1 = srcStr(), s2 = src2Str();
+    std::string z1 = "xxx(" + d1 + ", " + s1 + ")";
+    std::string z2 = "xxx(" + d2 + ", " + s2 + ")";
+    return ""; //z1 + "; " + z2;
+  }
+
+
   // ------------------------------------------------------------
   //
   // ------------------------------------------------------------
   
   virtual std::string
   toString() const;
+
+  virtual std::string
+  combineString() const
+  { DIAG_Die(DIAG_Unimplemented); }
+
+  virtual std::string
+  finalizeString(uint numSrc) const
+  { DIAG_Die(DIAG_Unimplemented); }
+
 
   std::ostream&
   dump(std::ostream& os = std::cerr) const
@@ -372,6 +421,18 @@ public:
   { return dstVar(mdata); }
 
 
+  virtual std::string
+  combineString() const
+  {
+    std::string d = dstStr(), s = srcStr();
+    std::string z = "min(" + d + ", " + s + ")";
+    return z;
+  }
+
+  virtual std::string
+  finalizeString(uint numSrc) const
+  { return dstStr(); }
+
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
 
@@ -422,6 +483,18 @@ public:
   { return dstVar(mdata); }
 
 
+  virtual std::string
+  combineString() const
+  {
+    std::string d = dstStr(), s = srcStr();
+    std::string z = "max(" + d + ", " + s + ")";
+    return z;
+  }
+
+  virtual std::string
+  finalizeString(uint numSrc) const
+  { return dstStr(); }
+
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
 
@@ -471,6 +544,18 @@ public:
   finalize(Metric::IData& mdata, uint numSrc) const
   { return dstVar(mdata); }
 
+
+  virtual std::string
+  combineString() const
+  {
+    std::string d = dstStr(), s = srcStr();
+    std::string z = "sum(" + d + ", " + s + ")";
+    return z;
+  }
+
+  virtual std::string
+  finalizeString(uint numSrc) const
+  { return dstStr(); }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -530,6 +615,22 @@ public:
   }
 
 
+  virtual std::string
+  combineString() const
+  {
+    std::string d = dstStr(), s = srcStr();
+    std::string z = "sum(" + d + ", " + s + ")";
+    return z;
+  }
+
+  virtual std::string
+  finalizeString(uint numSrc) const
+  {
+    std::string d = dstStr();
+    std::string z = d + " / " + StrUtil::toStr(numSrc);
+    return z;
+  }
+
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
 
@@ -573,6 +674,14 @@ public:
   finalize(Metric::IData& mdata, uint numSrc) const
   { return finalizeStdDev(mdata, numSrc); }
 
+
+  virtual std::string
+  combineString() const
+  { return combineStringStdDev(); }
+
+  virtual std::string
+  finalizeString(uint numSrc) const
+  { return finalizeStringStdDev(numSrc); }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -627,6 +736,14 @@ public:
   }
 
 
+  virtual std::string
+  combineString() const
+  { return combineStringStdDev(); }
+
+  virtual std::string
+  finalizeString(uint numSrc) const
+  { return finalizeStringStdDev(numSrc); /*FIXME*/ }
+
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
 
@@ -679,6 +796,14 @@ public:
     return z;
   }
 
+
+  virtual std::string
+  combineString() const
+  { return combineStringStdDev(); }
+
+  virtual std::string
+  finalizeString(uint numSrc) const
+  { return finalizeStringStdDev(numSrc); /*FIXME*/ }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;

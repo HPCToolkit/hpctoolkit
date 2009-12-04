@@ -34,7 +34,7 @@
     <!ELEMENT MetricTable (Metric)*>
 
     <!-- Metric: (i)d; (n)ame; (v)alue-desc; (t)ype; fmt: format; show; -->
-    <!ELEMENT Metric (MetricFormula?, Info?)>
+    <!ELEMENT Metric (MetricFormula*, Info?)>
     <!ATTLIST Metric
 	      i    CDATA #REQUIRED
 	      n    CDATA #REQUIRED
@@ -43,11 +43,11 @@
 	      fmt  CDATA #IMPLIED
 	      show (1|0) "1">
 
-    <!-- MetricFormula represents derived metrics: (frm): formula; (t)ype -->
+    <!-- MetricFormula represents derived metrics: (t)ype; (frm): formula -->
     <!ELEMENT MetricFormula (Info?)>
     <!ATTLIST MetricFormula
-	      frm CDATA #REQUIRED
-	      t   CDATA #IMPLIED>
+	      t   (combine|finalize) "finalize"
+	      frm CDATA #REQUIRED>
 
     <!-- Metric data, used in sections: (n)ame [from Metric]; (v)alue -->
     <!ELEMENT M EMPTY>
