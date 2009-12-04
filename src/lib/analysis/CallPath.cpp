@@ -676,7 +676,8 @@ makeReturnCountMetric(Prof::CallPath::Profile& prof)
     Prof::Metric::ADesc* m = metricMgr->metric(i);
     if (m->nameBase().find(HPCRUN_METRIC_RetCnt) != string::npos) {
       retCntId.push_back(m->id());
-      m->isComputed(true); // FIXME: ask hpcviewer not to make (I)/(E) versions
+      m->isComputed(true);
+      m->type(Prof::Metric::ADesc::TyExcl);
     }
   }
 
