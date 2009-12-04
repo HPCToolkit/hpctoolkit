@@ -190,7 +190,7 @@ Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
 
 
 uint
-Mgr::makeSummaryMetricsItrv(uint srcBegId, uint srcEndId)
+Mgr::makeSummaryMetricsIncr(uint srcBegId, uint srcEndId)
 {
   if (srcBegId == Mgr::npos) {
     srcBegId = 0;
@@ -205,11 +205,11 @@ Mgr::makeSummaryMetricsItrv(uint srcBegId, uint srcEndId)
     Metric::ADesc* m = m_metrics[i];
 
     Metric::ADesc* mNew =
-      makeSummaryMetricItrv("Mean-",  m);
-    makeSummaryMetricItrv("CoefVar-", m);
-    makeSummaryMetricItrv("Min-",     m);
-    makeSummaryMetricItrv("Max-",     m);
-    makeSummaryMetricItrv("Sum-",     m);
+      makeSummaryMetricIncr("Mean-",  m);
+    makeSummaryMetricIncr("CoefVar-", m);
+    makeSummaryMetricIncr("Min-",     m);
+    makeSummaryMetricIncr("Max-",     m);
+    makeSummaryMetricIncr("Sum-",     m);
     
     if (firstId == Mgr::npos) {
       firstId = mNew->id();
@@ -277,8 +277,8 @@ Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
 }
 
 
-Metric::DerivedItrvDesc*
-Mgr::makeSummaryMetricItrv(const string mDrvdTy, const Metric::ADesc* mSrc)
+Metric::DerivedIncrDesc*
+Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
   bool needDst2Id = false;
 
@@ -289,36 +289,36 @@ Mgr::makeSummaryMetricItrv(const string mDrvdTy, const Metric::ADesc* mSrc)
   // This is a cheesy way of creating the metrics, but 1) it is good
   // enough for now and 2) we don't yet have a clearly better plan.
 
-  Metric::AExprItrv* expr = NULL;
+  Metric::AExprIncr* expr = NULL;
   if (mDrvdTy.find("Mean", 0) == 0) {
-    expr = new Metric::MeanItrv(0, mSrc->id());
+    expr = new Metric::MeanIncr(0, mSrc->id());
     doDispPercent = false;
   }
   else if (mDrvdTy.find("StdDev", 0) == 0) {
-    expr = new Metric::StdDevItrv(0, 0, mSrc->id());
+    expr = new Metric::StdDevIncr(0, 0, mSrc->id());
     doDispPercent = false;
     needDst2Id = true;
   }
   else if (mDrvdTy.find("RStdDev", 0) == 0) {
-    expr = new Metric::RStdDevItrv(0, 0, mSrc->id());
+    expr = new Metric::RStdDevIncr(0, 0, mSrc->id());
     isPercent = true;
     needDst2Id = true;
   }
   else if (mDrvdTy.find("CoefVar", 0) == 0) {
-    expr = new Metric::CoefVarItrv(0, 0, mSrc->id());
+    expr = new Metric::CoefVarIncr(0, 0, mSrc->id());
     doDispPercent = false;
     needDst2Id = true;
   }
   else if (mDrvdTy.find("Min", 0) == 0) {
-    expr = new Metric::MinItrv(0, mSrc->id());
+    expr = new Metric::MinIncr(0, mSrc->id());
     doDispPercent = false;
   }
   else if (mDrvdTy.find("Max", 0) == 0) {
-    expr = new Metric::MaxItrv(0, mSrc->id());
+    expr = new Metric::MaxIncr(0, mSrc->id());
     doDispPercent = false;
   }
   else if (mDrvdTy.find("Sum", 0) == 0) {
-    expr = new Metric::SumItrv(0, mSrc->id());
+    expr = new Metric::SumIncr(0, mSrc->id());
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
@@ -328,8 +328,8 @@ Mgr::makeSummaryMetricItrv(const string mDrvdTy, const Metric::ADesc* mSrc)
   string mNmBase = mDrvdTy + mSrc->nameBase();
   const string& mDesc = mSrc->description();
 
-  DerivedItrvDesc* m =
-    new DerivedItrvDesc(mNmFmt, mDesc, expr, isVisible, true/*isSortKey*/,
+  DerivedIncrDesc* m =
+    new DerivedIncrDesc(mNmFmt, mDesc, expr, isVisible, true/*isSortKey*/,
 			doDispPercent, isPercent);
   m->nameBase(mNmBase);
   insert(m);
@@ -337,8 +337,8 @@ Mgr::makeSummaryMetricItrv(const string mDrvdTy, const Metric::ADesc* mSrc)
 
   if (needDst2Id) {
     string m2NmBase = mNmBase + "-helper";
-    DerivedItrvDesc* m2 =
-      new DerivedItrvDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
+    DerivedIncrDesc* m2 =
+      new DerivedIncrDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
 			  false/*isSortKey*/, false/*doDispPercent*/,
 			  false/*isPercent*/);
     m2->nameBase(m2NmBase);
@@ -430,7 +430,7 @@ Mgr::hasDerived() const
   for (uint i = 0; i < m_metrics.size(); ++i) {
     Metric::ADesc* m = m_metrics[i]; 
     if (typeid(*m) == typeid(Prof::Metric::DerivedDesc) ||
-	typeid(*m) == typeid(Prof::Metric::DerivedItrvDesc)) {
+	typeid(*m) == typeid(Prof::Metric::DerivedIncrDesc)) {
       return true;
     }
   }

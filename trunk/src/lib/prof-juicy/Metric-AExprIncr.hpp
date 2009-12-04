@@ -45,11 +45,12 @@
 //
 // class Prof::Metric::AExpr and derived classes
 //
-// An abstract expression that represents derived expressions that
-// are iteratively computed (as opposed to directly computed).
+// An abstract expression that represents derived expressions that are
+// incrementally computed because all inputs are not available at one
+// time.
 // 
 // Since all sources are *not* known in advance, it is necessary to
-// use an 'accumulator' that is iteratively updated and serves as both
+// use an 'accumulator' that is incrementally updated and serves as both
 // an input and output on each update.  This implies that is is
 // necessary, in general, to have an initialization routine so the
 // accumulator is correctly initialized before the first update.
@@ -57,18 +58,18 @@
 // inputs, a finalization routine is also necessary.
 //
 // Currently supported expressions are
-//   MinItrv    : min expression
-//   MaxItrv    : max expression
-//   SumItrv    : sum expression
-//   MeanItrv   : mean (arithmetic) expression
-//   StdDevItrv : standard deviation expression
-//   CoefVarItrv: coefficient of variance
-//   RStdDevItrv: relative standard deviation
+//   MinIncr    : min expression
+//   MaxIncr    : max expression
+//   SumIncr    : sum expression
+//   MeanIncr   : mean (arithmetic) expression
+//   StdDevIncr : standard deviation expression
+//   CoefVarIncr: coefficient of variance
+//   RStdDevIncr: relative standard deviation
 //
 //***************************************************************************
 
-#ifndef prof_juicy_Prof_Metric_AExprItrv_hpp
-#define prof_juicy_Prof_Metric_AExprItrv_hpp
+#ifndef prof_juicy_Prof_Metric_AExprIncr_hpp
+#define prof_juicy_Prof_Metric_AExprIncr_hpp
 
 //************************ System Include Files ******************************
 
@@ -95,28 +96,28 @@ namespace Prof {
 namespace Metric {
 
 // ----------------------------------------------------------------------
-// class AExprItrv
+// class AExprIncr
 //   The base class for all concrete evaluation classes
 // ----------------------------------------------------------------------
 
-class AExprItrv
+class AExprIncr
   : public Unique // disable copying, for now
 {
 public:
   static const double epsilon = 0.000001;
 
 public:
-  AExprItrv(uint dstId, uint srcId)
+  AExprIncr(uint dstId, uint srcId)
     : m_dstId(dstId), m_dst2Id(Metric::IData::npos),
       m_srcId(srcId), m_src2Id(Metric::IData::npos)
   { }
 
-  AExprItrv(uint dstId, uint dst2Id, uint srcId)
+  AExprIncr(uint dstId, uint dst2Id, uint srcId)
     : m_dstId(dstId), m_dst2Id(dst2Id),
       m_srcId(srcId), m_src2Id(Metric::IData::npos)
   { }
 
-  virtual ~AExprItrv()
+  virtual ~AExprIncr()
   { }
 
 
@@ -329,18 +330,18 @@ protected:
 
 
 // ----------------------------------------------------------------------
-// MinItrv
+// MinIncr
 // ----------------------------------------------------------------------
 
-class MinItrv
-  : public AExprItrv
+class MinIncr
+  : public AExprIncr
 {
 public:
-  MinItrv(uint dstId, uint srcId)
-    : AExprItrv(dstId, srcId)
+  MinIncr(uint dstId, uint srcId)
+    : AExprIncr(dstId, srcId)
   { }
 
-  virtual ~MinItrv()
+  virtual ~MinIncr()
   { }
 
 
@@ -357,14 +358,14 @@ public:
   {
     double d = dstVar(mdata), s = srcVar(mdata);
     double z = std::min(d, s);
-    DIAG_MsgIf(0, "MinItrv: min("<< d << ", " << s << ") = " << z);
+    DIAG_MsgIf(0, "MinIncr: min("<< d << ", " << s << ") = " << z);
     dstVar(mdata) = z;
     return z;
   }
 
   virtual double
   combine(Metric::IData& mdata) const
-  { return MinItrv::update(mdata); }
+  { return MinIncr::update(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
@@ -379,18 +380,18 @@ private:
 
 
 // ----------------------------------------------------------------------
-// MaxItrv
+// MaxIncr
 // ----------------------------------------------------------------------
 
-class MaxItrv
-  : public AExprItrv
+class MaxIncr
+  : public AExprIncr
 {
 public:
-  MaxItrv(uint dstId, uint srcId)
-    : AExprItrv(dstId, srcId)
+  MaxIncr(uint dstId, uint srcId)
+    : AExprIncr(dstId, srcId)
   { }
 
-  virtual ~MaxItrv()
+  virtual ~MaxIncr()
   { }
 
 
@@ -407,14 +408,14 @@ public:
   {
     double d = dstVar(mdata), s = srcVar(mdata);
     double z = std::max(d, s);
-    DIAG_MsgIf(0, "MaxItrv: max("<< d << ", " << s << ") = " << z);
+    DIAG_MsgIf(0, "MaxIncr: max("<< d << ", " << s << ") = " << z);
     dstVar(mdata) = z;
     return z;
   }
 
   virtual double
   combine(Metric::IData& mdata) const
-  { return MaxItrv::update(mdata); }
+  { return MaxIncr::update(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
@@ -429,18 +430,18 @@ private:
 
 
 // ----------------------------------------------------------------------
-// SumItrv
+// SumIncr
 // ----------------------------------------------------------------------
 
-class SumItrv
-  : public AExprItrv
+class SumIncr
+  : public AExprIncr
 {
 public:
-  SumItrv(uint dstId, uint srcId)
-    : AExprItrv(dstId, srcId)
+  SumIncr(uint dstId, uint srcId)
+    : AExprIncr(dstId, srcId)
   { }
 
-  virtual ~SumItrv()
+  virtual ~SumIncr()
   { }
 
 
@@ -457,14 +458,14 @@ public:
   {
     double d = dstVar(mdata), s = srcVar(mdata);
     double z = d + s;
-    DIAG_MsgIf(0, "SumItrv: +("<< d << ", " << s << ") = " << z);
+    DIAG_MsgIf(0, "SumIncr: +("<< d << ", " << s << ") = " << z);
     dstVar(mdata) = z;
     return z;
   }
 
   virtual double
   combine(Metric::IData& mdata) const
-  { return SumItrv::update(mdata); }
+  { return SumIncr::update(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
@@ -479,18 +480,18 @@ private:
 
 
 // ----------------------------------------------------------------------
-// MeanItrv
+// MeanIncr
 // ----------------------------------------------------------------------
 
-class MeanItrv
-  : public AExprItrv
+class MeanIncr
+  : public AExprIncr
 {
 public:
-  MeanItrv(uint dstId, uint srcId)
-    : AExprItrv(dstId, srcId)
+  MeanIncr(uint dstId, uint srcId)
+    : AExprIncr(dstId, srcId)
   { }
 
-  virtual ~MeanItrv()
+  virtual ~MeanIncr()
   { }
 
 
@@ -507,14 +508,14 @@ public:
   {
     double d = dstVar(mdata), s = srcVar(mdata);
     double z = d + s;
-    DIAG_MsgIf(0, "MeanItrv: +("<< d << ", " << s << ") = " << z);
+    DIAG_MsgIf(0, "MeanIncr: +("<< d << ", " << s << ") = " << z);
     dstVar(mdata) = z;
     return z;
   }
 
   virtual double
   combine(Metric::IData& mdata) const
-  { return MeanItrv::update(mdata); }
+  { return MeanIncr::update(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata, uint numSrc) const
@@ -537,18 +538,18 @@ private:
 
 
 // ----------------------------------------------------------------------
-// StdDevItrv: standard deviation
+// StdDevIncr: standard deviation
 // ----------------------------------------------------------------------
 
-class StdDevItrv 
-  : public AExprItrv
+class StdDevIncr 
+  : public AExprIncr
 {
 public:
-  StdDevItrv(uint dstId, uint dst2Id, uint srcId)
-    : AExprItrv(dstId, dst2Id, srcId)
+  StdDevIncr(uint dstId, uint dst2Id, uint srcId)
+    : AExprIncr(dstId, dst2Id, srcId)
   { }
 
-  virtual ~StdDevItrv()
+  virtual ~StdDevIncr()
   { }
 
 
@@ -581,18 +582,18 @@ private:
 
 
 // ----------------------------------------------------------------------
-// CoefVarItrv: relative standard deviation
+// CoefVarIncr: relative standard deviation
 // ----------------------------------------------------------------------
 
-class CoefVarItrv 
-  : public AExprItrv
+class CoefVarIncr 
+  : public AExprIncr
 {
 public:
-  CoefVarItrv(uint dstId, uint dst2Id, uint srcId)
-    : AExprItrv(dstId, dst2Id, srcId)
+  CoefVarIncr(uint dstId, uint dst2Id, uint srcId)
+    : AExprIncr(dstId, dst2Id, srcId)
   { }
 
-  virtual ~CoefVarItrv()
+  virtual ~CoefVarIncr()
   { }
 
 
@@ -634,18 +635,18 @@ private:
 
 
 // ----------------------------------------------------------------------
-// RStdDevItrv: relative standard deviation
+// RStdDevIncr: relative standard deviation
 // ----------------------------------------------------------------------
 
-class RStdDevItrv 
-  : public AExprItrv
+class RStdDevIncr 
+  : public AExprIncr
 {
 public:
-  RStdDevItrv(uint dstId, uint dst2Id, uint srcId)
-    : AExprItrv(dstId, dst2Id, srcId)
+  RStdDevIncr(uint dstId, uint dst2Id, uint srcId)
+    : AExprIncr(dstId, dst2Id, srcId)
   { }
 
-  virtual ~RStdDevItrv()
+  virtual ~RStdDevIncr()
   { }
 
 
@@ -694,4 +695,4 @@ private:
 
 //****************************************************************************
 
-#endif /* prof_juicy_Prof_Metric_AExprItrvItrv_hpp */
+#endif /* prof_juicy_Prof_Metric_AExprIncr_hpp */

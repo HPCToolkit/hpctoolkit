@@ -108,7 +108,7 @@ public:
   makeSummaryMetrics(uint srcBegId = Mgr::npos, uint srcEndId = Mgr::npos);
 
   uint
-  makeSummaryMetricsItrv(uint srcBegId = Mgr::npos, uint srcEndId = Mgr::npos);
+  makeSummaryMetricsIncr(uint srcBegId = Mgr::npos, uint srcEndId = Mgr::npos);
 
 
   // ------------------------------------------------------------
@@ -236,8 +236,8 @@ private:
   Metric::DerivedDesc*
   makeSummaryMetric(const std::string& mNm, const Metric::ADescVec& mOpands);
 
-  Metric::DerivedItrvDesc*
-  makeSummaryMetricItrv(const std::string mDrvdTy, const Metric::ADesc* mSrc);
+  Metric::DerivedIncrDesc*
+  makeSummaryMetricIncr(const std::string mDrvdTy, const Metric::ADesc* mSrc);
 
   
 private:

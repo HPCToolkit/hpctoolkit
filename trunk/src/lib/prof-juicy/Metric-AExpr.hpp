@@ -46,7 +46,8 @@
 // class Prof::Metric::AExpr and derived classes
 //
 // An abstract expression that can represents derived expressions that
-// are directly computed (as opposed to iteratively computed).
+// are directly computed in the sense that all inputs are known at the
+// same time (cf. incrementally computed metrics where this is not true).
 //
 // Assumes all sources are known when evaluation rule is invoked.
 //
