@@ -108,8 +108,8 @@ hpcrun_drop_sample();
 cct_node_t* hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
 				   int skipInner, int isSync);
 
-#if 0
-cct_node_t* hpcrun_sample_callpath_w_bt(void* context, int metric_id, cct_metric_data_t datum,
-					bt_fn* get_bt)
-#endif
-#endif /* sample_event_h */
+cct_node_t* hpcrun_sample_callpath_w_bt(void *context,
+					int metricId, uint64_t metricIncr, 
+					bt_mut_fn bt_fn, bt_fn_arg arg,
+					int isSync);
+#endif // sample_event_h

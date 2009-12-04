@@ -70,17 +70,18 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <ucontext.h>
 
 //*************************** User Include Files ****************************
 
-#include <unwind/common/unwind_cursor.h>
 #include <hpcrun/metrics.h>
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <unwind/common/backtrace.h>
 
-#include <lib/prof-lean/lush/lush-support.h>
+#include "frame.h"
 
 //*************************** Forward Declarations **************************
 
@@ -110,26 +111,6 @@ cct_metric_data_increment(int metric_id,
     x->i += incr.i;
   }
 }
-
-
-// FIXME: BT: frame_t really goes elsewhere, but backtrace needs cct_node_t
-//            cct ops need frame_t.
-
-// --------------------------------------------------------------------------
-// frame_t: similar to cct_node_t, but specialized for the backtrace buffer
-// --------------------------------------------------------------------------
-
-typedef struct frame_t {
-  unw_cursor_t cursor;       // hold a copy of the cursor for this frame
-  lush_assoc_info_t as_info;
-  void* ip;
-  void* ra_loc;
-  lush_lip_t* lip;
-} frame_t;
-
-// --------------------------------------------------------------------------
-// 
-// --------------------------------------------------------------------------
 
 typedef struct cct_node_t {
 
@@ -253,6 +234,29 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
 			    int metric_id,
 			    frame_t* path_beg, frame_t* path_end,
 			    cct_metric_data_t sample_count);
+
+//
+// utility routine that does 2 things:
+//   1) Generate a std backtrace
+//   2) enters the generated backtrace in the cct
+//
+cct_node_t* hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
+				 int metricId, uint64_t metricIncr,
+				 int skipInner, int isSync);
+
+//
+// utility routine that does 3 things:
+//   1) Generate a std backtrace
+//   2) Modifies the backtrace according to a passed in function
+//   3) enters the generated backtrace in the cct
+//
+cct_node_t* hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
+			  int metricId, uint64_t metricIncr,
+			  bt_mut_fn bt_fn, bt_fn_arg bt_arg, int isSync);
+
+cct_node_t* hpcrun_cct_insert_bt();
+
+cct_node_t* hpcrun_bt2cct();
 
 cct_node_t*
 hpcrun_cct_get_child(hpcrun_cct_t* cct, cct_node_t* parent, frame_t* frm);

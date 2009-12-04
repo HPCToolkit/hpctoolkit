@@ -109,7 +109,7 @@ hpcrun_logicalUnwind(bool x)
 //***************************************************************************
 
 cct_node_t*
-lush_backtrace2cct(epoch_t* epoch, ucontext_t* context,
+lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 		   int metricId, uint64_t metricIncr,
 		   int skipInner, int isSync);
 

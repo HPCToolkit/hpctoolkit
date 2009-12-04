@@ -84,6 +84,12 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			int metricId, uint64_t metricIncr,
 			int skipInner, int isSync);
 
+static cct_node_t*
+_hpcrun_sample_callpath_w_bt(epoch_t *epoch, void *context,
+			     int metricId, uint64_t metricIncr,
+			     bt_mut_fn bt_fn, bt_fn_arg arg,
+			     int isSync);
+
 //***************************************************************************
 
 bool _hpcrun_sampling_disabled = false;
@@ -168,7 +174,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     // recover from SEGVs and dropped samples
     // ------------------------------------------------------------
     memset((void *)it->jb, '\0', sizeof(it->jb));
-    dump_backtrace(epoch, td->unwind);
+    dump_backtrace(td->unwind);
 
     hpcrun_stats_num_samples_dropped_inc();
 
@@ -196,6 +202,27 @@ hpcrun_sample_callpath(void *context, int metricId,
 
 
 static cct_node_t*
+_hpcrun_sample_callpath_w_bt(epoch_t* epoch, void *context,
+			     int metricId, uint64_t metricIncr,
+			     bt_mut_fn bt_fn, bt_fn_arg arg,
+			     int isSync)
+{
+  void* pc = context_pc(context);
+
+  TMSG(SAMPLE,"csprof take profile sample @ %p",pc);
+
+  /* check to see if shared library loadmap (of current epoch) has changed out from under us */
+  epoch = hpcrun_check_for_new_loadmap(epoch);
+
+  cct_node_t* n =
+    hpcrun_bt2cct(&(epoch->csdata), context, metricId, metricIncr, bt_fn, arg, isSync);
+
+  // FIXME: n == -1 if sample is filtered
+
+  return n;
+}
+
+static cct_node_t*
 _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			int metricId,
 			uint64_t metricIncr, 
@@ -209,7 +236,7 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
   epoch = hpcrun_check_for_new_loadmap(epoch);
 
   cct_node_t* n =
-    hpcrun_backtrace2cct(epoch, context, metricId, metricIncr, skipInner, isSync);
+    hpcrun_backtrace2cct(&(epoch->csdata), context, metricId, metricIncr, skipInner, isSync);
 
   // FIXME: n == -1 if sample is filtered
 
@@ -217,8 +244,12 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 }
 
 cct_node_t*
-hpcrun_sample_callpath_w_bt(void* context, int metric_id, cct_metric_data_t datum,
-			    bt_fn* get_bt)
+hpcrun_sample_callpath_w_bt(void *context,
+			    int metricId,
+			    uint64_t metricIncr, 
+			    bt_mut_fn bt_fn, bt_fn_arg arg,
+			    int isSync)
+
 {
   hpcrun_stats_num_samples_total_inc();
 
@@ -228,7 +259,6 @@ hpcrun_sample_callpath_w_bt(void* context, int metric_id, cct_metric_data_t datu
     return NULL;
   }
 
-#ifdef LATER
   // Synchronous unwinds (pthread_create) must wait until they aquire
   // the read lock, but async samples give up if not avail.
   // This only applies in the dynamic case.
@@ -241,8 +271,7 @@ hpcrun_sample_callpath_w_bt(void* context, int metric_id, cct_metric_data_t datu
     hpcrun_stats_num_samples_blocked_dlopen_inc();
     return NULL;
   }
-#endif // HPCRUN_STATIC_LINK
-#endif // LATER
+#endif
 
   TMSG(SAMPLE, "attempting sample");
   hpcrun_stats_num_samples_attempted_inc();
@@ -257,20 +286,10 @@ hpcrun_sample_callpath_w_bt(void* context, int metric_id, cct_metric_data_t datu
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
 
-    // 
-    get_bt(&(td->bt), context);
-    
     if (epoch != NULL) {
-      // enter backtrace in cct instead of this
-      // entering function must indicate whether node is new or not, as well as return ptr to node
-#ifdef LATER
-      node = _hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
-				     skipInner, isSync);
+      node = _hpcrun_sample_callpath_w_bt(epoch, context, metricId, metricIncr,
+					  bt_fn, arg, isSync);
 
-      node = hpcrun_cct_enter_bt(&(epoch->csdata), ,
-				 &(td->bt),
-				 metric_id, datum);
-#endif
       if (trace_isactive()) {
 	void *pc = context_pc(context);
 	hpcrun_cct_t *cct = &(td->epoch->csdata); 
@@ -291,7 +310,7 @@ hpcrun_sample_callpath_w_bt(void* context, int metric_id, cct_metric_data_t datu
     // recover from SEGVs and dropped samples
     // ------------------------------------------------------------
     memset((void *)it->jb, '\0', sizeof(it->jb));
-    dump_backtrace(epoch, td->unwind);
+    dump_backtrace(td->unwind);
 
     hpcrun_stats_num_samples_dropped_inc();
 

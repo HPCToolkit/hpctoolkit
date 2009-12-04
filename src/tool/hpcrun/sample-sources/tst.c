@@ -376,10 +376,8 @@ _tst_signal_handler(int sig, siginfo_t* siginfo, void* context)
     metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
 
-#ifdef LATER
     int metric_id = hpcrun_event2metric(&__tst_obj, _TST_EVENT);
-    hpcrun_sample_callpath_w_bt(context, &hpcrun_backtrace_std);
-#endif
+    hpcrun_sample_callpath_w_bt(context, metric_id, metric_incr, NULL, NULL, 0);
   }
   if (hpcrun_is_sampling_disabled()) {
     TMSG(SPECIAL, "No _tst restart, due to disabled sampling");
