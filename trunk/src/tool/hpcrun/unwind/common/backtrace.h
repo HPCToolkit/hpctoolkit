@@ -60,16 +60,14 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
-
 #include <ucontext.h>
 
 //***************************************************************************
 // local include files 
 //***************************************************************************
 
-#include <cct/cct.h>
-#include <hpcrun/epoch.h>
 #include "unwind_cursor.h"
+#include <cct/frame.h>
 
 //
 // backtrace_t type is a struct holding begin, end, current ptrs
@@ -80,7 +78,7 @@ typedef struct backtrace_t {
   size_t   size;   // size of backtrace
   size_t   len;    // # of frames used
   frame_t* beg;    // base memory chunk
-  frame_t* end;    // 1 past the last available slot
+  frame_t* end;    // the last available slot
   frame_t* cur;    // current insertion position
 } backtrace_t;
 
@@ -94,27 +92,22 @@ typedef struct bt_iter_t {
 //***************************************************************************
 
 typedef bool bt_fn(backtrace_t* bt, ucontext_t* context);
+typedef void* bt_fn_arg;
+typedef void (*bt_mut_fn)(backtrace_t* bt, bt_fn_arg arg);
 
 bool hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
 
-//
-// utility routine that does 2 things:
-//   1) Generate a std backtrace
-//   2) enters the generated backtrace in the cct
-//
-cct_node_t* hpcrun_backtrace2cct(epoch_t *epoch, ucontext_t* context,
-				 int metricId, uint64_t metricIncr,
-				 int skipInner, int isSync);
+int hpcrun_filter_sample(int len, frame_t* start, frame_t* last);
 
 frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
 			    int skip);
 
 // FIXME: tallent: relocate when 'csprof epoch' trash is untangled
-void dump_backtrace(epoch_t* epoch, frame_t* unwind);
+void dump_backtrace(frame_t* unwind);
 
 frame_t* hpcrun_bt_reset(backtrace_t* bt);
 
-void hpcrun_bt_init(backtrace_t* bt, size_t size);
+void     hpcrun_bt_init(backtrace_t* bt, size_t size);
 
 frame_t* hpcrun_bt_push(backtrace_t* bt, frame_t* frame);
 
@@ -124,11 +117,11 @@ frame_t* hpcrun_bt_last(backtrace_t* bt);
 
 frame_t* hpcrun_bt_cur(backtrace_t* bt);
 
-size_t hpcrun_bt_len(backtrace_t* bt);
+size_t   hpcrun_bt_len(backtrace_t* bt);
 
-bool hpcrun_bt_empty(backtrace_t* bt);
+bool     hpcrun_bt_empty(backtrace_t* bt);
 
-bool hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
+bool     hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
 
 //***************************************************************************
 

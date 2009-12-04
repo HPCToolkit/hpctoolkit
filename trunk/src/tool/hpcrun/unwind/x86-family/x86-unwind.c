@@ -630,7 +630,7 @@ _drop_sample(bool no_backtrace)
     return;
   }
   if (hpcrun_below_pmsg_threshold()) {
-    dump_backtrace(TD_GET(epoch),0);
+    dump_backtrace(0);
   }
 
   hpcrun_up_pmsg_count();
