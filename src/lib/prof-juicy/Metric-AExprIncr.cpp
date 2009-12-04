@@ -67,6 +67,7 @@ using std::endl;
 #include <lib/support/diagnostics.h>
 #include <lib/support/NaN.h>
 
+
 //************************ Forward Declarations ******************************
 
 #define AEXPR_DO_CHECK 0

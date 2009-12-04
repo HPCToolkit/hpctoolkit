@@ -344,18 +344,31 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   os << "  <MetricTable>\n";
   for (uint i = metricBeg; i < metricEnd; i++) {
     const Metric::ADesc* m = m_mMgr->metric(i);
-    const Metric::SampledDesc* mm = dynamic_cast<const Metric::SampledDesc*>(m);
+    const Metric::SampledDesc* m1 = dynamic_cast<const Metric::SampledDesc*>(m);
+    const Metric::DerivedIncrDesc* m2 =
+      dynamic_cast<const Metric::DerivedIncrDesc*>(m);
 
+    // Metric
     os << "    <Metric i" << MakeAttrNum(i) 
        << " n" << MakeAttrStr(m->name())
        << " v=\"" << m->toValueTyStringXML() << "\""
        << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\""
        << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\">\n";
+
+    // MetricFormula
+    if (m2 && m2->expr()) {
+      os << "      <MetricFormula t=\"combine\""
+	 << " frm=\"" << m2->expr()->combineString() << "\"/>\n";
+      os << "      <MetricFormula t=\"finalize\""
+	 << " frm=\"" << m2->expr()->finalizeString(1) << "\"/>\n";
+    }
+
+    // Info
     os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()
-    if (mm) {
-      os << "<NV n=\"period\" v" << MakeAttrNum(mm->period()) << "/>"
-	 << "<NV n=\"flags\" v" << MakeAttrNum(mm->flags(), 16) << "/>";
+    if (m1) {
+      os << "<NV n=\"period\" v" << MakeAttrNum(m1->period()) << "/>"
+	 << "<NV n=\"flags\" v" << MakeAttrNum(m1->flags(), 16) << "/>";
     }
     os << "</Info>\n";
     os << "    </Metric>\n";
