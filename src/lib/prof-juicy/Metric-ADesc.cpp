@@ -235,11 +235,11 @@ DerivedDesc::dumpMe(std::ostream& os) const
 
 
 //***************************************************************************
-// DerivedItrvDesc
+// DerivedIncrDesc
 //***************************************************************************
 
 std::string
-DerivedItrvDesc::toString() const
+DerivedIncrDesc::toString() const
 {
   string str = ADesc::toString() + " {" + m_expr->toString() + "}";
   return str;
@@ -247,7 +247,7 @@ DerivedItrvDesc::toString() const
 
 
 std::ostream&
-DerivedItrvDesc::dumpMe(std::ostream& os) const
+DerivedIncrDesc::dumpMe(std::ostream& os) const
 {
   os << toString();
   return os;

@@ -86,11 +86,11 @@ namespace Metric {
 
 
 // ----------------------------------------------------------------------
-// class AExprItrv
+// class AExprIncr
 // ----------------------------------------------------------------------
 
 std::string
-AExprItrv::toString() const
+AExprIncr::toString() const
 {
   std::ostringstream os;
   dump(os);
@@ -99,7 +99,7 @@ AExprItrv::toString() const
 
 
 void
-AExprItrv::ddump() const
+AExprIncr::ddump() const
 {
   dump(std::cerr);
   std::cerr.flush();
@@ -107,11 +107,11 @@ AExprItrv::ddump() const
 
 
 // ----------------------------------------------------------------------
-// class MinItrv
+// class MinIncr
 // ----------------------------------------------------------------------
 
 std::ostream&
-MinItrv::dumpMe(std::ostream& os) const
+MinIncr::dumpMe(std::ostream& os) const
 {
   os << "min()";
   return os;
@@ -119,11 +119,11 @@ MinItrv::dumpMe(std::ostream& os) const
 
 
 // ----------------------------------------------------------------------
-// class MaxItrv
+// class MaxIncr
 // ----------------------------------------------------------------------
 
 std::ostream&
-MaxItrv::dumpMe(std::ostream& os) const
+MaxIncr::dumpMe(std::ostream& os) const
 {
   os << "max()";
   return os;
@@ -131,11 +131,11 @@ MaxItrv::dumpMe(std::ostream& os) const
 
 
 // ----------------------------------------------------------------------
-// class SumItrv
+// class SumIncr
 // ----------------------------------------------------------------------
 
 std::ostream&
-SumItrv::dumpMe(std::ostream& os) const
+SumIncr::dumpMe(std::ostream& os) const
 {
   os << "sum()";
   return os;
@@ -143,11 +143,11 @@ SumItrv::dumpMe(std::ostream& os) const
 
 
 // ----------------------------------------------------------------------
-// class MeanItrv
+// class MeanIncr
 // ----------------------------------------------------------------------
 
 std::ostream&
-MeanItrv::dumpMe(std::ostream& os) const
+MeanIncr::dumpMe(std::ostream& os) const
 {
   os << "mean()";
   return os;
@@ -155,11 +155,11 @@ MeanItrv::dumpMe(std::ostream& os) const
 
 
 // ----------------------------------------------------------------------
-// class StdDevItrv
+// class StdDevIncr
 // ----------------------------------------------------------------------
 
 std::ostream&
-StdDevItrv::dumpMe(std::ostream& os) const
+StdDevIncr::dumpMe(std::ostream& os) const
 {
   os << "stddev()";
   return os;
@@ -167,11 +167,11 @@ StdDevItrv::dumpMe(std::ostream& os) const
 
 
 // ----------------------------------------------------------------------
-// class CoefVarItrv
+// class CoefVarIncr
 // ----------------------------------------------------------------------
 
 std::ostream&
-CoefVarItrv::dumpMe(std::ostream& os) const
+CoefVarIncr::dumpMe(std::ostream& os) const
 {
   os << "coefvar()";
   return os;
@@ -179,11 +179,11 @@ CoefVarItrv::dumpMe(std::ostream& os) const
 
 
 // ----------------------------------------------------------------------
-// class RStdDevItrv
+// class RStdDevIncr
 // ----------------------------------------------------------------------
 
 std::ostream&
-RStdDevItrv::dumpMe(std::ostream& os) const
+RStdDevIncr::dumpMe(std::ostream& os) const
 {
   os << "r-stddev()";
   return os;

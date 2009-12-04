@@ -286,8 +286,8 @@ unpackMetrics(Prof::CallPath::Profile& profile,
   //    values in [mBegId, mEndId)
   uint mDrvdBeg = packedMetrics.mDrvdBegId();
   uint mDrvdEnd = packedMetrics.mDrvdEndId();
-  cct.root()->computeMetricsItrv(*profile.metricMgr(), mDrvdBeg, mDrvdEnd,
-				 Prof::Metric::AExprItrv::FnCombine, 0);
+  cct.root()->computeMetricsIncr(*profile.metricMgr(), mDrvdBeg, mDrvdEnd,
+				 Prof::Metric::AExprIncr::FnCombine, 0);
 }
 
 

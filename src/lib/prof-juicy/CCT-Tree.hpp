@@ -478,12 +478,12 @@ public:
 
 
   void
-  computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
-		     Metric::AExprItrv::FnTy fn, uint srcArg);
+  computeMetricsIncr(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+		     Metric::AExprIncr::FnTy fn, uint srcArg);
 
   void
-  computeMetricsItrvMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
-		       Metric::AExprItrv::FnTy fn, uint srcArg);
+  computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+		       Metric::AExprIncr::FnTy fn, uint srcArg);
 
 public:
 

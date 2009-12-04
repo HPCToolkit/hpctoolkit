@@ -682,15 +682,15 @@ private:
 
 
 //***************************************************************************//
-// DerivedItrvDesc
+// DerivedIncrDesc
 //***************************************************************************//
 
-class DerivedItrvDesc : public ADesc
+class DerivedIncrDesc : public ADesc
 {
 public:
   // Constructor: assumes ownership of 'expr'
-  DerivedItrvDesc(const char* nameBase, const char* description,
-		  Metric::AExprItrv* expr,
+  DerivedIncrDesc(const char* nameBase, const char* description,
+		  Metric::AExprIncr* expr,
 		  bool isVisible = true, bool isSortKey = false,
 		  bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
@@ -698,8 +698,8 @@ public:
       m_expr(expr)
   { }
 
-  DerivedItrvDesc(const std::string& nameBase, const std::string& description,
-	      Metric::AExprItrv* expr,
+  DerivedIncrDesc(const std::string& nameBase, const std::string& description,
+	      Metric::AExprIncr* expr,
 	      bool isVisible = true, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
@@ -707,16 +707,16 @@ public:
       m_expr(expr)
   { }
 
-  virtual ~DerivedItrvDesc()
+  virtual ~DerivedIncrDesc()
   { delete m_expr; }
   
-  DerivedItrvDesc(const DerivedItrvDesc& x)
+  DerivedIncrDesc(const DerivedIncrDesc& x)
     : ADesc(x),
       m_expr(x.m_expr)
   { DIAG_Die(DIAG_Unimplemented << "must copy expr!"); }
   
-  DerivedItrvDesc&
-  operator=(const DerivedItrvDesc& x) 
+  DerivedIncrDesc&
+  operator=(const DerivedIncrDesc& x) 
   {
     if (this != &x) {
       ADesc::operator=(x);
@@ -726,9 +726,9 @@ public:
     return *this;
   }
 
-  virtual DerivedItrvDesc*
+  virtual DerivedIncrDesc*
   clone() const
-  { return new DerivedItrvDesc(*this); }
+  { return new DerivedIncrDesc(*this); }
 
 
   // -------------------------------------------------------
@@ -736,7 +736,7 @@ public:
   // -------------------------------------------------------
 
   // N.B.: expr may be NULL if this metric is used as a helper
-  Metric::AExprItrv*
+  Metric::AExprIncr*
   expr() const
   { return m_expr; }
 
@@ -760,7 +760,7 @@ public:
 
 protected:
 private:
-  Prof::Metric::AExprItrv* m_expr;
+  Prof::Metric::AExprIncr* m_expr;
 };
 
 

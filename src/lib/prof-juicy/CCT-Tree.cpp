@@ -437,8 +437,8 @@ ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
 
 
 void
-ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
-			  Metric::AExprItrv::FnTy fn, uint srcArg)
+ANode::computeMetricsIncr(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+			  Metric::AExprIncr::FnTy fn, uint srcArg)
 {
   if ( !(mBegId < mEndId) ) {
     return;
@@ -449,31 +449,31 @@ ANode::computeMetricsItrv(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
-    n->computeMetricsItrvMe(mMgr, mBegId, mEndId, fn, srcArg);
+    n->computeMetricsIncrMe(mMgr, mBegId, mEndId, fn, srcArg);
   }
 }
 
 
 void
-ANode::computeMetricsItrvMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
-			    Metric::AExprItrv::FnTy fn, uint srcArg)
+ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
+			    Metric::AExprIncr::FnTy fn, uint srcArg)
 {
   for (uint mId = mBegId; mId < mEndId; ++mId) {
     const Metric::ADesc* m = mMgr.metric(mId);
-    const Metric::DerivedItrvDesc* mm =
-      dynamic_cast<const Metric::DerivedItrvDesc*>(m);
+    const Metric::DerivedIncrDesc* mm =
+      dynamic_cast<const Metric::DerivedIncrDesc*>(m);
     if (mm && mm->expr()) {
-      const Metric::AExprItrv* expr = mm->expr();
+      const Metric::AExprIncr* expr = mm->expr();
       switch (fn) {
-        case Metric::AExprItrv::FnInit:
+        case Metric::AExprIncr::FnInit:
 	  expr->initialize(*this); break;
-        case Metric::AExprItrv::FnInitSrc:
+        case Metric::AExprIncr::FnInitSrc:
 	  expr->initializeSrc(*this); break;
-        case Metric::AExprItrv::FnUpdate:
+        case Metric::AExprIncr::FnUpdate:
 	  expr->update(*this); break;
-        case Metric::AExprItrv::FnCombine:
+        case Metric::AExprIncr::FnCombine:
 	  expr->combine(*this); break;
-        case Metric::AExprItrv::FnFini:
+        case Metric::AExprIncr::FnFini:
 	  expr->finalize(*this, srcArg); break;
         default:
 	  DIAG_Die(DIAG_UnexpectedInput);

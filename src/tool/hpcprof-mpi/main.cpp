@@ -420,8 +420,8 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   // -------------------------------------------------------
   // create local summary metrics (and thread-level metrics)
   // -------------------------------------------------------
-  cctRoot->computeMetricsItrv(mMgrGbl, mDrvdBeg, mDrvdEnd,
-			      Prof::Metric::AExprItrv::FnInit, 0);
+  cctRoot->computeMetricsIncr(mMgrGbl, mDrvdBeg, mDrvdEnd,
+			      Prof::Metric::AExprIncr::FnInit, 0);
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
@@ -439,15 +439,15 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   //    mXDrvdEnd) durring the reduction
   for (uint i = mDrvdBeg, j = mXDrvdBeg; i < mDrvdEnd; ++i, ++j) {
     Prof::Metric::ADesc* m = mMgrGbl.metric(i);
-    Prof::Metric::DerivedItrvDesc* mm =
-      dynamic_cast<Prof::Metric::DerivedItrvDesc*>(m);
+    Prof::Metric::DerivedIncrDesc* mm =
+      dynamic_cast<Prof::Metric::DerivedIncrDesc*>(m);
     DIAG_Assert(mm, DIAG_UnexpectedInput);
 
-    Prof::Metric::AExprItrv* expr = mm->expr();
+    Prof::Metric::AExprIncr* expr = mm->expr();
     if (expr) {
       expr->srcId(j);
       if (expr->hasDst2Id()) {
-	expr->src2Id(j + 1); // cf. Metric::Mgr::makeSummaryMetricItrv()
+	expr->src2Id(j + 1); // cf. Metric::Mgr::makeSummaryMetricIncr()
       }
     }
   }
@@ -455,8 +455,8 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   // 2. Initialize extra derived metric storage [mXDrvdBeg, mXDrvdEnd)
   //    since it will serve as an input during the summary metrics
   //    reduction
-  cctRoot->computeMetricsItrv(mMgrGbl, mXDrvdBeg, mXDrvdEnd,
-			      Prof::Metric::AExprItrv::FnInitSrc, 0);
+  cctRoot->computeMetricsIncr(mMgrGbl, mXDrvdBeg, mXDrvdEnd,
+			      Prof::Metric::AExprIncr::FnInitSrc, 0);
 
   // 3. Reduction
   uint maxCCTId = profGbl.cct()->maxDenseId();
@@ -484,8 +484,8 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
       
       uint numInputs = groupIdToGroupSizeMap[grpId];
       
-      cctRoot->computeMetricsItrv(mMgrGbl, mBeg, mEnd,
-				  Prof::Metric::AExprItrv::FnFini, numInputs);
+      cctRoot->computeMetricsIncr(mMgrGbl, mBeg, mEnd,
+				  Prof::Metric::AExprIncr::FnFini, numInputs);
     }
 
     for (uint i = 0; i < mMgrGbl.size(); ++i) {
@@ -520,7 +520,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // official set of derived metrics
   // -------------------------------------------------------
-  mDrvdBeg = mMgrGbl.makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
+  mDrvdBeg = mMgrGbl.makeSummaryMetricsIncr(mSrcBeg, mSrcEnd);
   if (mDrvdBeg != Prof::Metric::Mgr::npos) {
     mDrvdEnd = mMgrGbl.size();
     numDrvd = (mDrvdEnd - mDrvdBeg);
@@ -555,7 +555,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // temporary set of extra derived metrics (for reduction)
   // -------------------------------------------------------
-  mXDrvdBeg = mMgrGbl.makeSummaryMetricsItrv(mSrcBeg, mSrcEnd);
+  mXDrvdBeg = mMgrGbl.makeSummaryMetricsIncr(mSrcBeg, mSrcEnd);
   if (mXDrvdBeg != Prof::Metric::Mgr::npos) {
     mXDrvdEnd = mMgrGbl.size();
   }
@@ -637,8 +637,8 @@ processProfile(Prof::CallPath::Profile& profGbl,
     uint mDrvdEnd = (uint)ival.end();
 
     DIAG_MsgIf(0, "[" << myRank << "] grp " << groupId << ": [" << mDrvdBeg << ", " << mDrvdEnd << ")");
-    cctRoot->computeMetricsItrv(*mMgrGbl, mDrvdBeg, mDrvdEnd,
-				Prof::Metric::AExprItrv::FnUpdate, 0);
+    cctRoot->computeMetricsIncr(*mMgrGbl, mDrvdBeg, mDrvdEnd,
+				Prof::Metric::AExprIncr::FnUpdate, 0);
   }
 
   // -------------------------------------------------------
