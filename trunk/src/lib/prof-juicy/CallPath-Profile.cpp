@@ -348,8 +348,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 
     os << "    <Metric i" << MakeAttrNum(i) 
        << " n" << MakeAttrStr(m->name())
-       << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\""
-       << " aggregate=\"" << ((m->isComputed()) ? "0" : "1") << "\">\n";
+       << " v=\"" << m->toValueTyStringXML() << "\""
+       << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\""
+       << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\">\n";
     os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()
     if (mm) {

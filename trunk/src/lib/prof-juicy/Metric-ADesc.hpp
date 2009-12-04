@@ -71,6 +71,8 @@
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+#include <lib/support/diagnostics.h>
+
 //*************************** Forward Declarations **************************//
 
 namespace Prof {
@@ -181,6 +183,9 @@ public:
 
   static const std::string&
   ADescTyToString(ADescTy type);
+
+  static const char*
+  ADescTyToXMLString(ADescTy type);
 
   static ADescTy
   stringToADescTy(const std::string& x);
@@ -379,6 +384,10 @@ public:
   virtual std::string
   toString() const;
 
+  virtual std::string
+  toValueTyStringXML() const
+  { DIAG_Die(DIAG_Unimplemented); return ""; }
+
   std::ostream&
   dump(std::ostream& os = std::cerr) const
   {
@@ -561,6 +570,18 @@ public:
   virtual std::string
   toString() const;
 
+  virtual std::string
+  toValueTyStringXML() const
+  { 
+    if (isComputed()) {
+      DIAG_Assert(type() != TyNULL, "");
+      return "final";
+    }
+    else {
+      return "raw";
+    }
+  }
+
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cerr) const;
 
@@ -726,6 +747,13 @@ public:
 
   virtual std::string
   toString() const;
+
+  virtual std::string
+  toValueTyStringXML() const
+  { 
+    DIAG_Assert(isComputed(), "");
+    return "derived-incr";
+  }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cerr) const;

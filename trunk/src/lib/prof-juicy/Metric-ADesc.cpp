@@ -104,6 +104,18 @@ ADesc::ADescTyToString(ADescTy type)
 }
 
 
+const char*
+ADesc::ADescTyToXMLString(ADescTy type)
+{
+  switch (type) {
+    case TyNULL: return "nil";
+    case TyIncl: return "inclusive";
+    case TyExcl: return "exclusive";
+    default: DIAG_Die(DIAG_Unimplemented);
+  }
+}
+
+
 ADesc::ADescTy
 ADesc::stringToADescTy(const std::string& x)
 {

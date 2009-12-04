@@ -30,16 +30,18 @@
   <!-- ****************************************************************** -->
   <!ELEMENT SecHeader (MetricTable?, LoadModuleTable?, FileTable?, ProcedureTable?, Info*)>
 
-    <!-- MetricTable: (i)d; (n)ame; fmt: format; show; aggregate -->
+    <!-- MetricTable: -->
     <!ELEMENT MetricTable (Metric)*>
 
+    <!-- Metric: (i)d; (n)ame; (v)alue-desc; (t)ype; fmt: format; show; -->
     <!ELEMENT Metric (MetricFormula?, Info?)>
     <!ATTLIST Metric
 	      i    CDATA #REQUIRED
 	      n    CDATA #REQUIRED
+	      v    (raw|final|derived-incr|derived) "raw"
+	      t    (inclusive|exclusive|nil) "nil"
 	      fmt  CDATA #IMPLIED
-	      show (1|0) "1"
-	      aggregate (1|0) "1">
+	      show (1|0) "1">
 
     <!-- MetricFormula represents derived metrics: (frm): formula; (t)ype -->
     <!ELEMENT MetricFormula (Info?)>
@@ -47,7 +49,7 @@
 	      frm CDATA #REQUIRED
 	      t   CDATA #IMPLIED>
 
-    <!-- Metric data, used in sections: (n)ame [from MetricTable]; (v)alue -->
+    <!-- Metric data, used in sections: (n)ame [from Metric]; (v)alue -->
     <!ELEMENT M EMPTY>
     <!ATTLIST M
 	      n CDATA #REQUIRED
