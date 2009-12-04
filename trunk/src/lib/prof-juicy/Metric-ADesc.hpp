@@ -67,7 +67,7 @@
 #include <include/uint.h>
 
 #include "Metric-AExpr.hpp"
-#include "Metric-AExprItrv.hpp"
+#include "Metric-AExprIncr.hpp"
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 
