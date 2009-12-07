@@ -1,0 +1,37 @@
+Fix some usage that breaks on gcc 4.4.x.
+
+diff -Naurb symtabAPI.orig/src/core/common/src/String.C symtabAPI/src/core/common/src/String.C
+--- symtabAPI.orig/src/core/common/src/String.C	2008-02-19 13:43:51.000000000 -0600
++++ symtabAPI/src/core/common/src/String.C	2009-12-07 00:43:22.000000000 -0600
+@@ -64,7 +64,7 @@
+       resultBegins = strrchr( demangled, ')' ) + 3;
+       
+       /* End it at the right-most space, if any. */
+-      resultEnds = strrchr( resultBegins, ' ' );
++      resultEnds = strrchr( (char *)resultBegins, ' ' );
+       if( resultEnds != NULL ) { * resultEnds = '\0'; }
+    }
+    else if ( strrchr( demangled, '(' ) != NULL ) {
+diff -Naurb symtabAPI.orig/src/core/dynutil/h/Annotatable.h symtabAPI/src/core/dynutil/h/Annotatable.h
+--- symtabAPI.orig/src/core/dynutil/h/Annotatable.h	2008-04-11 09:25:08.000000000 -0500
++++ symtabAPI/src/core/dynutil/h/Annotatable.h	2009-12-07 00:43:15.000000000 -0600
+@@ -44,6 +44,7 @@
+ #ifndef _ANNOTATABLE_
+ #define _ANNOTATABLE_
+ 
++#include <stdio.h>
+ #include <cstring>
+ #include <vector>
+ #include <string>
+diff -Naurb symtabAPI.orig/src/core/symtabAPI/src/Symtab.C symtabAPI/src/core/symtabAPI/src/Symtab.C
+--- symtabAPI.orig/src/core/symtabAPI/src/Symtab.C	2008-05-13 11:10:07.000000000 -0500
++++ symtabAPI/src/core/symtabAPI/src/Symtab.C	2009-12-07 00:43:26.000000000 -0600
+@@ -462,7 +462,7 @@
+ 
+ #if !defined(os_windows)
+    char *atat;
+-   if (NULL != (atat = strstr(mangled.c_str(), "@@"))) 
++   if (NULL != (atat = strstr((char *)mangled.c_str(), "@@"))) 
+    {
+         pretty = mangled.substr(0 /*start pos*/, 
+                         (int)(atat - mangled.c_str())/*len*/);
