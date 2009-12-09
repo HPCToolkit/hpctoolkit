@@ -254,6 +254,11 @@ public:
   { return "$"+ StrUtil::toStr(m_src2Id); }
 
 
+  std::string
+  numSrcStr() const
+  { return StrUtil::toStr(m_numSrc); }
+
+
   // ------------------------------------------------------------
   //
   // ------------------------------------------------------------
@@ -332,7 +337,7 @@ public:
       double n = numSrc();
       double mean = d1 / n;
       double z1 = (mean * mean); // (mean)^2
-      double z2 = d2 / n;        // (sum of squares)/N
+      double z2 = d2 / n;        // (sum of squares)/n
       sdev = sqrt(z2 - z1);      // stddev
 
       dstVar(mdata) = sdev;
@@ -343,13 +348,20 @@ public:
 
 
   std::string
-  finalizeStringStdDev() const
+  finalizeStringStdDev(std::string* meanRet = NULL) const
   {
+    std::string n = numSrcStr();
     std::string d1 = dstStr(), d2 = dst2Str();
-    std::string s1 = srcStr(), s2 = src2Str();
-    std::string z1 = "xxx(" + d1 + ", " + s1 + ")";
-    std::string z2 = "xxx(" + d2 + ", " + s2 + ")";
-    return ""; //z1 + "; " + z2;
+
+    std::string mean = "(" + d1 + " / " + n + ")";
+    std::string z1 = "(" + mean + " * " + mean  + ")"; // (mean)^2
+    std::string z2 = "(" + d2 + " / " + n  + ")";      // (sum of squares)/n
+    std::string sdev = "sqrt(" + z2 + " - " + z1 + ")";
+
+    if (meanRet) {
+      *meanRet = mean;
+    }
+    return sdev;
   }
 
 
@@ -640,8 +652,9 @@ public:
   virtual std::string
   finalizeString() const
   {
+    std::string n = numSrcStr();
     std::string d = dstStr();
-    std::string z = d + " / " + StrUtil::toStr(numSrc());
+    std::string z = d + " / " + n;
     return z;
   }
 
@@ -756,7 +769,13 @@ public:
 
   virtual std::string
   finalizeString() const
-  { return finalizeStringStdDev(); /*FIXME*/ }
+  {
+    std::string mean;
+    std::string sdev = finalizeStringStdDev(&mean);
+    std::string z = "(" + sdev + " / " + mean + ")"; // FIXME
+    return z;
+  }
+
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -817,7 +836,12 @@ public:
 
   virtual std::string
   finalizeString() const
-  { return finalizeStringStdDev(); /*FIXME*/ }
+  {
+    std::string mean;
+    std::string sdev = finalizeStringStdDev(&mean);
+    std::string z = "(" + sdev + " / " + mean + ") * 100"; // FIXME
+    return z;
+  }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
