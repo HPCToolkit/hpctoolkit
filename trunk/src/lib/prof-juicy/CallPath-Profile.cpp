@@ -360,7 +360,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
       os << "      <MetricFormula t=\"combine\""
 	 << " frm=\"" << m2->expr()->combineString() << "\"/>\n";
       os << "      <MetricFormula t=\"finalize\""
-	 << " frm=\"" << m2->expr()->finalizeString(1) << "\"/>\n";
+	 << " frm=\"" << m2->expr()->finalizeString() << "\"/>\n";
     }
 
     // Info

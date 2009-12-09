@@ -33,7 +33,10 @@
     <!-- MetricTable: -->
     <!ELEMENT MetricTable (Metric)*>
 
-    <!-- Metric: (i)d; (n)ame; (v)alue-desc; (t)ype; fmt: format; show; -->
+    <!-- Metric: (i)d; (n)ame -->
+    <!--   (v)alue-type: transient type of values -->
+    <!--   (t)ype: persistent type of metric -->
+    <!--   fmt: format; show; -->
     <!ELEMENT Metric (MetricFormula*, Info?)>
     <!ATTLIST Metric
 	      i    CDATA #REQUIRED
