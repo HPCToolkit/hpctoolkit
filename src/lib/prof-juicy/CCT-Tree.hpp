@@ -479,11 +479,11 @@ public:
 
   void
   computeMetricsIncr(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
-		     Metric::AExprIncr::FnTy fn, uint srcArg);
+		     Metric::AExprIncr::FnTy fn);
 
   void
   computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
-		       Metric::AExprIncr::FnTy fn, uint srcArg);
+		       Metric::AExprIncr::FnTy fn);
 
 public:
 

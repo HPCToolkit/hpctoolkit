@@ -438,7 +438,7 @@ ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
 
 void
 ANode::computeMetricsIncr(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
-			  Metric::AExprIncr::FnTy fn, uint srcArg)
+			  Metric::AExprIncr::FnTy fn)
 {
   if ( !(mBegId < mEndId) ) {
     return;
@@ -449,14 +449,14 @@ ANode::computeMetricsIncr(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
-    n->computeMetricsIncrMe(mMgr, mBegId, mEndId, fn, srcArg);
+    n->computeMetricsIncrMe(mMgr, mBegId, mEndId, fn);
   }
 }
 
 
 void
 ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
-			    Metric::AExprIncr::FnTy fn, uint srcArg)
+			    Metric::AExprIncr::FnTy fn)
 {
   for (uint mId = mBegId; mId < mEndId; ++mId) {
     const Metric::ADesc* m = mMgr.metric(mId);
@@ -474,7 +474,7 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
         case Metric::AExprIncr::FnCombine:
 	  expr->combine(*this); break;
         case Metric::AExprIncr::FnFini:
-	  expr->finalize(*this, srcArg); break;
+	  expr->finalize(*this); break;
         default:
 	  DIAG_Die(DIAG_UnexpectedInput);
       }

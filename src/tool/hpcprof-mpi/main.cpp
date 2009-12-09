@@ -110,7 +110,9 @@ static uint
 makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 		       uint& mDrvdBeg, uint& mDrvdEnd,
 		       uint& mXDrvdBeg, uint& mXDrvdEnd,
-		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap);
+		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
+		       const vector<uint>& groupIdToGroupSizeMap,
+		       int myRank, int rootRank);
 
 static void
 processProfile(Prof::CallPath::Profile& profGbl,
@@ -412,7 +414,8 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   vector<VMAIntervalSet*> groupIdToGroupMetricsMap(nArgs.groupMax + 1, NULL);
 
   makeDerivedMetricDescs(profGbl, mDrvdBeg, mDrvdEnd, mXDrvdBeg, mXDrvdEnd,
-			 groupIdToGroupMetricsMap);
+			 groupIdToGroupMetricsMap, groupIdToGroupSizeMap,
+			 myRank, rootRank);
 
   Prof::Metric::Mgr& mMgrGbl = *profGbl.metricMgr();
   Prof::CCT::ANode* cctRoot = profGbl.cct()->root();
@@ -421,7 +424,7 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   // create local summary metrics (and thread-level metrics)
   // -------------------------------------------------------
   cctRoot->computeMetricsIncr(mMgrGbl, mDrvdBeg, mDrvdEnd,
-			      Prof::Metric::AExprIncr::FnInit, 0);
+			      Prof::Metric::AExprIncr::FnInit);
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
@@ -456,7 +459,7 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   //    since it will serve as an input during the summary metrics
   //    reduction
   cctRoot->computeMetricsIncr(mMgrGbl, mXDrvdBeg, mXDrvdEnd,
-			      Prof::Metric::AExprIncr::FnInitSrc, 0);
+			      Prof::Metric::AExprIncr::FnInitSrc);
 
   // 3. Reduction
   uint maxCCTId = profGbl.cct()->maxDenseId();
@@ -482,10 +485,8 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
       const VMAInterval& ival = *(ivalset->begin());
       uint mBeg = (uint)ival.beg(), mEnd = (uint)ival.end();
       
-      uint numInputs = groupIdToGroupSizeMap[grpId];
-      
       cctRoot->computeMetricsIncr(mMgrGbl, mBeg, mEnd,
-				  Prof::Metric::AExprIncr::FnFini, numInputs);
+				  Prof::Metric::AExprIncr::FnFini);
     }
 
     for (uint i = 0; i < mMgrGbl.size(); ++i) {
@@ -506,7 +507,9 @@ static uint
 makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 		       uint& mDrvdBeg, uint& mDrvdEnd,
 		       uint& mXDrvdBeg, uint& mXDrvdEnd,
-		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap)
+		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
+		       const vector<uint>& groupIdToGroupSizeMap,
+		       int myRank, int rootRank)
 {
   Prof::Metric::Mgr& mMgrGbl = *(profGbl.metricMgr());
 
@@ -541,10 +544,23 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
     if (!nmPfx.empty()) {
       groupId = (uint)StrUtil::toUInt64(nmPfx);
     }
-    
     DIAG_Assert(groupId > 0, DIAG_UnexpectedInput);
     DIAG_Assert(groupId < groupIdToGroupMetricsMap.size(), DIAG_UnexpectedInput);
+
+    // rootRank: set the number of inputs
+    if (myRank == rootRank) {
+      Prof::Metric::DerivedIncrDesc* mm = 
+	dynamic_cast<Prof::Metric::DerivedIncrDesc*>(m);
+      DIAG_Assert(mm, DIAG_UnexpectedInput);
     
+      // N.B.: groupIdToGroupSizeMap is only initialized for rootRank  
+      uint numInputs = groupIdToGroupSizeMap[groupId];
+      if (mm->expr()) {
+        mm->expr()->numSrc(numInputs);
+      }
+    }
+   
+    // populate groupIdToGroupMetricsMap map
     VMAIntervalSet*& ivalset = groupIdToGroupMetricsMap[groupId];
     if (!ivalset) {
       ivalset = new VMAIntervalSet;
@@ -553,7 +569,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   }
   
   // -------------------------------------------------------
-  // temporary set of extra derived metrics (for reduction)
+  // make temporary set of extra derived metrics (for reduction)
   // -------------------------------------------------------
   mXDrvdBeg = mMgrGbl.makeSummaryMetricsIncr(mSrcBeg, mSrcEnd);
   if (mXDrvdBeg != Prof::Metric::Mgr::npos) {
@@ -638,7 +654,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
 
     DIAG_MsgIf(0, "[" << myRank << "] grp " << groupId << ": [" << mDrvdBeg << ", " << mDrvdEnd << ")");
     cctRoot->computeMetricsIncr(*mMgrGbl, mDrvdBeg, mDrvdEnd,
-				Prof::Metric::AExprIncr::FnUpdate, 0);
+				Prof::Metric::AExprIncr::FnUpdate);
   }
 
   // -------------------------------------------------------

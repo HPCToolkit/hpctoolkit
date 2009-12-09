@@ -111,12 +111,14 @@ public:
 public:
   AExprIncr(uint dstId, uint srcId)
     : m_dstId(dstId), m_dst2Id(Metric::IData::npos),
-      m_srcId(srcId), m_src2Id(Metric::IData::npos)
+      m_srcId(srcId), m_src2Id(Metric::IData::npos),
+      m_numSrc(0)
   { }
 
   AExprIncr(uint dstId, uint dst2Id, uint srcId)
     : m_dstId(dstId), m_dst2Id(dst2Id),
-      m_srcId(srcId), m_src2Id(Metric::IData::npos)
+      m_srcId(srcId), m_src2Id(Metric::IData::npos),
+      m_numSrc(0)
   { }
 
   virtual ~AExprIncr()
@@ -149,6 +151,15 @@ public:
   { return (m_src2Id != Metric::IData::npos); }
 
 
+  uint
+  numSrc() const
+  { return m_numSrc; }
+
+  void
+  numSrc(uint x)
+  { m_numSrc = x; }
+
+
   // ------------------------------------------------------------
   //
   // ------------------------------------------------------------
@@ -173,9 +184,9 @@ public:
   virtual double
   combine(Metric::IData& mdata) const = 0;
 
-  // finalize: finalizes destination metrics given total number of sources
+  // finalize: finalizes destination metrics using numSrc()
   virtual double
-  finalize(Metric::IData& mdata, uint numSrc) const = 0;
+  finalize(Metric::IData& mdata) const = 0;
 
 
   // ------------------------------------------------------------
@@ -313,14 +324,15 @@ public:
 
 
   double
-  finalizeStdDev(Metric::IData& mdata, uint numSrc) const
+  finalizeStdDev(Metric::IData& mdata) const
   {
     double d1 = dstVar(mdata), d2 = dst2Var(mdata);
     double sdev = d1;
-    if (numSrc > 0) {
-      double mean = d1 / numSrc;
+    if (numSrc() > 0) {
+      double n = numSrc();
+      double mean = d1 / n;
       double z1 = (mean * mean); // (mean)^2
-      double z2 = d2 / numSrc;   // (sum of squares)/N
+      double z2 = d2 / n;        // (sum of squares)/N
       sdev = sqrt(z2 - z1);      // stddev
 
       dstVar(mdata) = sdev;
@@ -331,7 +343,7 @@ public:
 
 
   std::string
-  finalizeStringStdDev(uint numSrc) const
+  finalizeStringStdDev() const
   {
     std::string d1 = dstStr(), d2 = dst2Str();
     std::string s1 = srcStr(), s2 = src2Str();
@@ -353,7 +365,7 @@ public:
   { DIAG_Die(DIAG_Unimplemented); }
 
   virtual std::string
-  finalizeString(uint numSrc) const
+  finalizeString() const
   { DIAG_Die(DIAG_Unimplemented); }
 
 
@@ -375,6 +387,7 @@ protected:
   uint m_dst2Id;
   uint m_srcId;
   uint m_src2Id;
+  uint m_numSrc;
 };
 
 
@@ -417,7 +430,7 @@ public:
   { return MinIncr::update(mdata); }
 
   virtual double
-  finalize(Metric::IData& mdata, uint numSrc) const
+  finalize(Metric::IData& mdata) const
   { return dstVar(mdata); }
 
 
@@ -430,7 +443,7 @@ public:
   }
 
   virtual std::string
-  finalizeString(uint numSrc) const
+  finalizeString() const
   { return dstStr(); }
 
   virtual std::ostream&
@@ -479,7 +492,7 @@ public:
   { return MaxIncr::update(mdata); }
 
   virtual double
-  finalize(Metric::IData& mdata, uint numSrc) const
+  finalize(Metric::IData& mdata) const
   { return dstVar(mdata); }
 
 
@@ -492,7 +505,7 @@ public:
   }
 
   virtual std::string
-  finalizeString(uint numSrc) const
+  finalizeString() const
   { return dstStr(); }
 
   virtual std::ostream&
@@ -541,7 +554,7 @@ public:
   { return SumIncr::update(mdata); }
 
   virtual double
-  finalize(Metric::IData& mdata, uint numSrc) const
+  finalize(Metric::IData& mdata) const
   { return dstVar(mdata); }
 
 
@@ -554,7 +567,7 @@ public:
   }
 
   virtual std::string
-  finalizeString(uint numSrc) const
+  finalizeString() const
   { return dstStr(); }
 
   virtual std::ostream&
@@ -603,12 +616,13 @@ public:
   { return MeanIncr::update(mdata); }
 
   virtual double
-  finalize(Metric::IData& mdata, uint numSrc) const
+  finalize(Metric::IData& mdata) const
   {
     double d = dstVar(mdata);
     double z = d;
-    if (numSrc > 0) {
-      z = d / (double)numSrc;
+    if (numSrc() > 0) {
+      double n = numSrc();
+      z = d / n;
       dstVar(mdata) = z;
     }
     return z;
@@ -624,10 +638,10 @@ public:
   }
 
   virtual std::string
-  finalizeString(uint numSrc) const
+  finalizeString() const
   {
     std::string d = dstStr();
-    std::string z = d + " / " + StrUtil::toStr(numSrc);
+    std::string z = d + " / " + StrUtil::toStr(numSrc());
     return z;
   }
 
@@ -671,8 +685,8 @@ public:
   { return combineStdDev(mdata); }
 
   virtual double
-  finalize(Metric::IData& mdata, uint numSrc) const
-  { return finalizeStdDev(mdata, numSrc); }
+  finalize(Metric::IData& mdata) const
+  { return finalizeStdDev(mdata); }
 
 
   virtual std::string
@@ -680,8 +694,8 @@ public:
   { return combineStringStdDev(); }
 
   virtual std::string
-  finalizeString(uint numSrc) const
-  { return finalizeStringStdDev(numSrc); }
+  finalizeString() const
+  { return finalizeStringStdDev(); }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -723,9 +737,9 @@ public:
   { return combineStdDev(mdata); }
 
   virtual double
-  finalize(Metric::IData& mdata, uint numSrc) const
+  finalize(Metric::IData& mdata) const
   {
-    double sdev = finalizeStdDev(mdata, numSrc);
+    double sdev = finalizeStdDev(mdata);
     double mean = dst2Var(mdata);
     double z = 0.0;
     if (mean > epsilon) {
@@ -741,8 +755,8 @@ public:
   { return combineStringStdDev(); }
 
   virtual std::string
-  finalizeString(uint numSrc) const
-  { return finalizeStringStdDev(numSrc); /*FIXME*/ }
+  finalizeString() const
+  { return finalizeStringStdDev(); /*FIXME*/ }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -784,9 +798,9 @@ public:
   { return combineStdDev(mdata); }
 
   virtual double
-  finalize(Metric::IData& mdata, uint numSrc) const
+  finalize(Metric::IData& mdata) const
   {
-    double sdev = finalizeStdDev(mdata, numSrc);
+    double sdev = finalizeStdDev(mdata);
     double mean = dst2Var(mdata);
     double z = 0.0;
     if (mean > epsilon) {
@@ -802,8 +816,8 @@ public:
   { return combineStringStdDev(); }
 
   virtual std::string
-  finalizeString(uint numSrc) const
-  { return finalizeStringStdDev(numSrc); /*FIXME*/ }
+  finalizeString() const
+  { return finalizeStringStdDev(); /*FIXME*/ }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
