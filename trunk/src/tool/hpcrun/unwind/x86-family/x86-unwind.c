@@ -515,7 +515,7 @@ unw_step_bp(unw_cursor_t *cursor)
     return STEP_ERROR;
   }
   if (DISABLED(OMP_SKIP_MSB)) {
-    if ((void *)bp < monitor_stack_bottom()) {
+    if (!((void *)bp < monitor_stack_bottom())) {
       TMSG(UNW_STRATEGY_ERROR,"bp unwind attempted, but incoming bp(%p) was not"
 	   " between sp (%p) and monitor stack bottom (%p)", 
 	   bp, sp, monitor_stack_bottom());

@@ -217,6 +217,31 @@ hpcrun_bt_modify_leaf_addr(backtrace_t* bt, void* addr)
 void
 hpcrun_bt_add_leaf_child(backtrace_t* bt, void* addr)
 {
+  if (bt->cur > bt->end) {
+    TMSG(BT, "adding a leaf child");
+  }
+  if (bt->cur > bt->end) {
+    
+    TMSG(BT, "-- bt is full, reallocate and copy current data");
+    size_t size = 2 * bt->size;
+    // reallocate & copy
+    frame_t* new = hpcrun_malloc(sizeof(frame_t) * size);
+    memcpy(new, (void*) bt->beg, bt->len * sizeof(frame_t));
+
+    bt->beg  = new;
+    bt->size = size;
+    bt->cur  = new + bt->len;
+    bt->end  = new + (size - 1);
+  }
+  memcpy((void*)(bt->beg + 1), (void*) bt->beg, bt->len * sizeof(frame_t));
+  bt->beg->ip = addr;
+}
+
+void
+hpcrun_bt_skip_inner(backtrace_t* bt, void* skip)
+{
+  size_t realskip = (size_t) skip;
+  bt->beg += realskip;
 }
 
 //***************************************************************************

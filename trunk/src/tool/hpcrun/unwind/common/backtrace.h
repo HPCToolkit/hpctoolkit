@@ -102,7 +102,6 @@ int hpcrun_filter_sample(int len, frame_t* start, frame_t* last);
 frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
 			    int skip);
 
-// FIXME: tallent: relocate when 'csprof epoch' trash is untangled
 void dump_backtrace(frame_t* unwind);
 
 frame_t* hpcrun_bt_reset(backtrace_t* bt);
@@ -123,6 +122,9 @@ bool     hpcrun_bt_empty(backtrace_t* bt);
 
 bool     hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
 
-//***************************************************************************
+void hpcrun_bt_modify_leaf_addr(backtrace_t* bt, void* addr);
+
+void hpcrun_bt_add_leaf_child(backtrace_t* bt, void* addr);
+
 
 #endif // hpcrun_backtrace_h
