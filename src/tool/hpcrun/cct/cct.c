@@ -1110,7 +1110,9 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
   //  (bt_fn == NULL means no mutation is necessary)
   //
   if (bt_fn) {
+    TMSG(BT, "Mutation function called");
     bt_fn(bt, bt_arg);
+    hpcrun_dump_bt(bt);
   }
 
   cct_node_t* n;

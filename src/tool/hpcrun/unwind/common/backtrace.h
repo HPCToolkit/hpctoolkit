@@ -126,5 +126,6 @@ void hpcrun_bt_modify_leaf_addr(backtrace_t* bt, void* addr);
 
 void hpcrun_bt_add_leaf_child(backtrace_t* bt, void* addr);
 
+void hpcrun_dump_bt(backtrace_t* bt);
 
 #endif // hpcrun_backtrace_h
