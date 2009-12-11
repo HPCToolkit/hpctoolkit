@@ -226,7 +226,7 @@ hpcrun_bt_add_leaf_child(backtrace_t* bt, void* addr)
     size_t size = 2 * bt->size;
     // reallocate & copy
     frame_t* new = hpcrun_malloc(sizeof(frame_t) * size);
-    memcpy(new, (void*) bt->beg, bt->len * sizeof(frame_t));
+    memmove(new, (void*) bt->beg, bt->len * sizeof(frame_t));
 
     bt->beg  = new;
     bt->size = size;
