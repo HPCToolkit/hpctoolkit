@@ -249,6 +249,14 @@ hpcrun_bt_skip_inner(backtrace_t* bt, void* skip)
   bt->beg += realskip;
 }
 
+void
+hpcrun_dump_bt(backtrace_t* bt)
+{
+  for(frame_t* _f = bt->beg; _f < bt->beg + bt->len; _f++) {
+    TMSG(BT, "ip = %p", _f ->ip);
+  }
+}
+
 //***************************************************************************
 // private operations 
 //***************************************************************************
