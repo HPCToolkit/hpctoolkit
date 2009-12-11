@@ -1111,8 +1111,13 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
   //
   if (bt_fn) {
     TMSG(BT, "Mutation function called");
-    bt_fn(bt, bt_arg);
+    TMSG(BT,"==== backtrace BEFORE mutation ========");
     hpcrun_dump_bt(bt);
+    TMSG(BT,"-------------------------------");
+    bt_fn(bt, bt_arg);
+    TMSG(BT,"==== backtrace AFTER  mutation ========");
+    hpcrun_dump_bt(bt);
+    TMSG(BT,"-------------------------------");
   }
 
   cct_node_t* n;
