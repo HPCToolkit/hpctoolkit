@@ -218,7 +218,7 @@ void
 hpcrun_bt_add_leaf_child(backtrace_t* bt, void* addr)
 {
   if (bt->cur > bt->end) {
-    TMSG(BT, "adding a leaf child");
+    TMSG(BT, "adding a leaf child of addr %p", addr);
   }
   if (bt->cur > bt->end) {
     
@@ -233,8 +233,13 @@ hpcrun_bt_add_leaf_child(backtrace_t* bt, void* addr)
     bt->cur  = new + bt->len;
     bt->end  = new + (size - 1);
   }
+  TMSG(BT, "BEFORE copy, innermost ip = %p", bt->beg->ip);
   memcpy((void*)(bt->beg + 1), (void*) bt->beg, bt->len * sizeof(frame_t));
+  TMSG(BT, "AFTER copy, innermost ip = %p", (bt->beg + 1)->ip);
+  bt->cur++;
+  bt->len++;
   bt->beg->ip = addr;
+  TMSG(BT, "Leaf child added, new addr = %p", bt->beg->ip);
 }
 
 void
