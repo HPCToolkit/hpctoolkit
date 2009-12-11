@@ -53,6 +53,9 @@ cmd_out="_hpc_output_$$"
 # Space-separated list of symbol names to force undefined.
 undef_names=
 
+# Space-separated list of libs (without -l) not to repeat on command line.
+no_repeat_list='hugetlbfs'
+
 ##################################################
 
 cleanup()
@@ -159,17 +162,28 @@ shift
 #
 appl_libs=
 appl_out=a.out
-now=no
+prev_arg=no
 for arg in "$@"
 do
-    if test "$now" = yes ; then
+    if test "x$prev_arg" = x-o ; then
 	appl_out="$arg"
-	now=no
+    else
+	case "$arg" in
+	    -l?* )
+		copy=yes
+		for lib in $no_repeat_list ; do
+		    if test "x$arg" = "x-l$lib" ; then
+			copy=no
+			break
+		    fi
+		done
+		if test "$copy" = yes ; then
+		    appl_libs="$appl_libs $arg"
+		fi
+		;;
+	esac
     fi
-    case "$arg" in
-	-l?* ) appl_libs="${appl_libs} ${arg}" ;;
-	-o ) now=yes ;;
-    esac
+    prev_arg="$arg"
 done
 
 #
