@@ -321,9 +321,8 @@ public:
   combineStringStdDev() const
   {
     std::string d1 = dstStr(), d2 = dst2Str();
-    std::string s1 = srcStr(), s2 = src2Str();
-    std::string z1 = "sum(" + d1 + ", " + s1 + ")"; // running sum
-    std::string z2 = "sum(" + d2 + ", " + s2 + ")"; // running sum of squares
+    std::string z1 = "sum(" + d1 + ", " + d1 + ")"; // running sum
+    std::string z2 = "sum(" + d2 + ", " + d2 + ")"; // running sum of squares
     return ""; //  z1 + "; " + z2;
   }
 
@@ -449,8 +448,8 @@ public:
   virtual std::string
   combineString() const
   {
-    std::string d = dstStr(), s = srcStr();
-    std::string z = "min(" + d + ", " + s + ")";
+    std::string d = dstStr();
+    std::string z = "min(" + d + ", " + d + ")";
     return z;
   }
 
@@ -511,8 +510,8 @@ public:
   virtual std::string
   combineString() const
   {
-    std::string d = dstStr(), s = srcStr();
-    std::string z = "max(" + d + ", " + s + ")";
+    std::string d = dstStr();
+    std::string z = "max(" + d + ", " + d + ")";
     return z;
   }
 
@@ -573,8 +572,8 @@ public:
   virtual std::string
   combineString() const
   {
-    std::string d = dstStr(), s = srcStr();
-    std::string z = "sum(" + d + ", " + s + ")";
+    std::string d = dstStr();
+    std::string z = "sum(" + d + ", " + d + ")";
     return z;
   }
 
@@ -644,8 +643,8 @@ public:
   virtual std::string
   combineString() const
   {
-    std::string d = dstStr(), s = srcStr();
-    std::string z = "sum(" + d + ", " + s + ")";
+    std::string d = dstStr();
+    std::string z = "sum(" + d + ", " + d + ")";
     return z;
   }
 
