@@ -357,12 +357,16 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 
     // MetricFormula
     if (m2 && m2->expr()) {
-      os << "      <MetricFormula t=\"combine\""
-	 << " frm=\"" << m2->expr()->combineString() << "\"/>\n";
+      os << "      <MetricFormula t=\"combine\" i=\"1\""
+	 << " frm=\"" << m2->expr()->combineString1() << "\"/>\n";
+      if (m2->expr()->hasDst2Id()) {
+	os << "      <MetricFormula t=\"combine\" i=\"2\""
+	   << " frm=\"" << m2->expr()->combineString2() << "\"/>\n";
+      }
       os << "      <MetricFormula t=\"finalize\""
 	 << " frm=\"" << m2->expr()->finalizeString() << "\"/>\n";
     }
-
+    
     // Info
     os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()

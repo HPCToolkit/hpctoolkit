@@ -318,12 +318,19 @@ public:
 
 
   std::string
-  combineStringStdDev() const
+  combineString1StdDev() const
   {
-    std::string d1 = dstStr(), d2 = dst2Str();
+    std::string d1 = dstStr();
     std::string z1 = "sum(" + d1 + ", " + d1 + ")"; // running sum
+    return z1;
+  }
+
+  std::string
+  combineString2StdDev() const
+  {
+    std::string d2 = dst2Str();
     std::string z2 = "sum(" + d2 + ", " + d2 + ")"; // running sum of squares
-    return ""; //  z1 + "; " + z2;
+    return z2;
   }
 
 
@@ -372,7 +379,11 @@ public:
   toString() const;
 
   virtual std::string
-  combineString() const
+  combineString1() const
+  { DIAG_Die(DIAG_Unimplemented); }
+
+  virtual std::string
+  combineString2() const
   { DIAG_Die(DIAG_Unimplemented); }
 
   virtual std::string
@@ -446,7 +457,7 @@ public:
 
 
   virtual std::string
-  combineString() const
+  combineString1() const
   {
     std::string d = dstStr();
     std::string z = "min(" + d + ", " + d + ")";
@@ -508,7 +519,7 @@ public:
 
 
   virtual std::string
-  combineString() const
+  combineString1() const
   {
     std::string d = dstStr();
     std::string z = "max(" + d + ", " + d + ")";
@@ -570,7 +581,7 @@ public:
 
 
   virtual std::string
-  combineString() const
+  combineString1() const
   {
     std::string d = dstStr();
     std::string z = "sum(" + d + ", " + d + ")";
@@ -641,7 +652,7 @@ public:
 
 
   virtual std::string
-  combineString() const
+  combineString1() const
   {
     std::string d = dstStr();
     std::string z = "sum(" + d + ", " + d + ")";
@@ -702,8 +713,12 @@ public:
 
 
   virtual std::string
-  combineString() const
-  { return combineStringStdDev(); }
+  combineString1() const
+  { return combineString1StdDev(); }
+
+  virtual std::string
+  combineString2() const
+  { return combineString2StdDev(); }
 
   virtual std::string
   finalizeString() const
@@ -763,15 +778,19 @@ public:
 
 
   virtual std::string
-  combineString() const
-  { return combineStringStdDev(); }
+  combineString1() const
+  { return combineString1StdDev(); }
+
+  virtual std::string
+  combineString2() const
+  { return combineString2StdDev(); }
 
   virtual std::string
   finalizeString() const
   {
     std::string mean;
     std::string sdev = finalizeStringStdDev(&mean);
-    std::string z = "(" + sdev + " / " + mean + ")"; // FIXME
+    std::string z = "(" + sdev + " / " + mean + ")";
     return z;
   }
 
@@ -830,15 +849,19 @@ public:
 
 
   virtual std::string
-  combineString() const
-  { return combineStringStdDev(); }
+  combineString1() const
+  { return combineString1StdDev(); }
+
+  virtual std::string
+  combineString2() const
+  { return combineString2StdDev(); }
 
   virtual std::string
   finalizeString() const
   {
     std::string mean;
     std::string sdev = finalizeStringStdDev(&mean);
-    std::string z = "(" + sdev + " / " + mean + ") * 100"; // FIXME
+    std::string z = "(" + sdev + " / " + mean + ") * 100";
     return z;
   }
 
