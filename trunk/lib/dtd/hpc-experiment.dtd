@@ -50,6 +50,7 @@
     <!ELEMENT MetricFormula (Info?)>
     <!ATTLIST MetricFormula
 	      t   (combine|finalize) "finalize"
+	      i   CDATA #IMPLIED
 	      frm CDATA #REQUIRED>
 
     <!-- Metric data, used in sections: (n)ame [from Metric]; (v)alue -->
