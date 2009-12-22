@@ -1332,11 +1332,13 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   rval = PAPI_event_name_to_code(eventnm, &prof->ecode);
   if (rval != PAPI_OK) {
     DIEx("error: Event '%s' is not recognized.\n"
-	 "\tCheck the list of supported events with `hpcrun -L'.", eventnm);
+	 "\tCheck the list of supported events with `"HPCRUN_NAME" -L'.",
+	 eventnm);
   }
   rval = PAPI_query_event(prof->ecode);
   if (rval != PAPI_OK) {
-    DIEx("error: PAPI_query_event for '%s' failed for unknown reason.", 
+    DIEx("error: Event '%s' is not supported on this platform.\n"
+	 "\tCheck the list of supported events with `"HPCRUN_NAME" -L'.",
 	 eventnm);
   }
   rval = PAPI_get_event_info(prof->ecode, &prof->einfo);
@@ -1349,7 +1351,7 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
       strcmp(prof->einfo.derived, "DERIVED_CMPD") != 0) {
     DIEx("error: '%s' is a PAPI derived event.\n"
 	 "\tSampling of derived events is not supported by PAPI.\n" 
-	 "\tUse `hpcrun -L' to find the component native events of '%s' that you can monitor separately.", eventnm, eventnm);
+	 "\tUse `"HPCRUN_NAME" -L' to find the component native events of '%s' that you can monitor separately.", eventnm, eventnm);
   }
   
   rval = PAPI_add_event(profdescs->eset, prof->ecode);

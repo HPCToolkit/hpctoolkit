@@ -97,6 +97,9 @@ extern dl_PAPI_get_hardware_info_t dl_PAPI_get_hardware_info;
 typedef int (*dl_PAPI_get_event_info_t)(int, PAPI_event_info_t*);
 extern dl_PAPI_get_event_info_t dl_PAPI_get_event_info;
 
+typedef int (*dl_PAPI_query_event_t)(int);
+extern dl_PAPI_query_event_t dl_PAPI_query_event;
+
 typedef int (*dl_PAPI_enum_event_t)(int*, int);
 extern dl_PAPI_enum_event_t dl_PAPI_enum_event;
 
