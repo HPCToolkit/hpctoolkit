@@ -77,6 +77,8 @@ dl_PAPI_get_opt_t dl_PAPI_get_opt = NULL;
 
 dl_PAPI_get_hardware_info_t dl_PAPI_get_hardware_info = NULL;
 
+dl_PAPI_query_event_t dl_PAPI_query_event = NULL;
+
 dl_PAPI_get_event_info_t dl_PAPI_get_event_info = NULL;
 
 dl_PAPI_enum_event_t dl_PAPI_enum_event = NULL;
@@ -114,6 +116,9 @@ dlopen_papi()
   CALL_DLSYM(PAPI_get_event_info);
   handle_any_dlerror();
 
+  CALL_DLSYM(PAPI_query_event);
+  handle_any_dlerror();
+  
   CALL_DLSYM(PAPI_enum_event);
   handle_any_dlerror();
 

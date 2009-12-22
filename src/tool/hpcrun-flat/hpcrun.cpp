@@ -449,6 +449,9 @@ list_available_events_helper(Args::EventList_t listType)
   int count = 0;
   do {
     PAPI_event_info_t info;
+    if (dl_PAPI_query_event(i) != PAPI_OK) {
+      continue;
+    }
     if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
       /* NOTE: Although clumsy, this test has official sanction. */
       const char* profilable = "Yes";
