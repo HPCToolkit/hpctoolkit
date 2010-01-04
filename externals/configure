@@ -3858,12 +3858,20 @@ esac
 #
 # Option: --with-old-monitor=PATH
 #
+# Set the default to no on Cray XT, the build fails there, and we
+# don't use it on this platform anyway.
+#
+default=build
+if test "x$XTOS_VERSION" != x ; then
+    default=no
+fi
+
 
 # Check whether --with-old-monitor was given.
 if test "${with_old_monitor+set}" = set; then
   withval=$with_old_monitor;
 else
-  with_old_monitor=build
+  with_old_monitor=$default
 fi
 
 
@@ -3875,7 +3883,7 @@ old_monitor_prefix=no
 cookie="${srcdir}/old-monitor/${nobuild_cookie}"
 rm -f "$cookie"
 case "$with_old_monitor" in
-    build )
+    build | yes )
 	old_monitor_avail=build
 	old_monitor_prefix="${prefix}/old-monitor"
 	;;
