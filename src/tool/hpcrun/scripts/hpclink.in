@@ -3,7 +3,7 @@
 #  Link application with libhpcrun, libmonitor, PAPI and Xed2
 #  statically by editing the compile line.
 #
-#  Usage: hpcrun-link [options] compiler file ...
+#  Usage: hpclink [options] compiler file ...
 #
 #     -h, --help
 #     -u, --undefined  <symbol>
@@ -17,7 +17,7 @@
 
 # If this script can't find its own install prefix, or if the script
 # is moved elsewhere, then set HPCTOOLKIT here.
-# HPCTOOLKIT=/path/to/install/prefix
+# HPCTOOLKIT='@prefix@'
 
 # Relative paths are relative to HPCTOOLKIT.
 ext_libs_dir='@hpc_ext_libs_dir@'
@@ -189,7 +189,7 @@ done
 #
 # Step 2 -- Build the new compile line.
 #
-#   wrap-args, undef-args, $@, libhpcrun.o, nm-addrs, libhpcrun_wrap.a,
+#   undef-args, wrap-args, $@, libhpcrun.o, nm-addrs, libhpcrun_wrap.a,
 #   libmonitor, PAPI, Xed2, -lpthread, -ldl, repeat-application-libs.
 #
 if test "$verbose" = yes ; then
@@ -200,16 +200,15 @@ fi
 undef_args=
 for name in $undef_names
 do
-    undef_args="${undef_args} -Wl,-u,__wrap_${name}"
+    undef_args="${undef_args} -Wl,-u,${name}"
 done
-set -- $undef_args "$@"
 
 wrap_args=
 for name in $monitor_wrap_names $extra_wrap_names
 do
     wrap_args="${wrap_args} -Wl,--wrap,${name}"
 done
-set -- $wrap_args "$@"
+set -- $undef_args $wrap_args "$@"
 
 libhpcrun="${libhpcrun_dir}/libhpcrun.o"
 test -f "$libhpcrun" || die "no such file: $libhpcrun"
@@ -255,7 +254,8 @@ $CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 # Some compiler scripts add extra function calls to the end of the
 # link line that fail to trigger --wrap.  So, if the first compile
 # fails with undefined references to __wrap_foo, then add those names
-# to the undef list and try again.
+# to the undef list and try again.  Do the same for an undefined
+# reference to 'main' (gfortran does some bad things).
 #
 $command "$@" >"$cmd_out" 2>&1
 if test $? -ne 0
@@ -263,10 +263,13 @@ then
     exec <"$cmd_out"
     while read line
     do
-        if echo "$line" | grep -E -e 'undef.*__wrap_' >/dev/null 2>&1
+        if echo "$line" | grep -E -i -e 'undef.*__wrap_' >/dev/null 2>&1
 	then
 	    name=`expr "$line" : '.*\(__wrap_[A-Za-z0-9_]*\)'`
 	    set -- "-Wl,-u,${name}" "$@"
+	elif echo "$line" | grep -E -i -e 'undef.*main' >/dev/null 2>&1
+	then
+	    set -- "-Wl,-u,main" "$@"
 	fi
     done
     $command "$@" || die "compile #1 failed: $command $@"
