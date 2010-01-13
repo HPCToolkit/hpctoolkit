@@ -70,6 +70,8 @@ typedef hpcrun_metricVal_t cct_metric_data_t;
 
 typedef void metric_upd_proc_t(int metric_id, cct_metric_data_t* loc, cct_metric_data_t datum);
 
+typedef cct_metric_data_t (*metric_bin_fn)(cct_metric_data_t v1, cct_metric_data_t v2);
+
 typedef struct metric_proc_map_t {
   struct metric_proc_map_t* next;
   metric_upd_proc_t*        proc;
@@ -100,8 +102,8 @@ void hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 void hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				       hpcrun_metricFlags_t flags, size_t period);
 
-void
-hpcrun_set_metric_info(int metric_id, const char* name,
-		       hpcrun_metricFlags_t flags);
+void hpcrun_set_metric_info(int metric_id, const char* name);
+
+void hpcrun_set_metric_name(int metric_id, char* name);
 
 #endif // METRICS_H

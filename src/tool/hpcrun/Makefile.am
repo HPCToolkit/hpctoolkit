@@ -120,6 +120,7 @@ MY_BASE_FILES =			\
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
         sample-sources/tst.c            \
+        sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	system_server.c			\
@@ -162,10 +163,12 @@ MY_BASE_FILES =			\
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
-	hpcrun_dlfns.c
+	hpcrun_dlfns.c                  \
+        custom-init-dynamic.c
 
 MY_STATIC_FILES = 			\
-	fnbounds/fnbounds_static.c
+	fnbounds/fnbounds_static.c      \
+        custom-init-static.c
 
 MY_LINUX_DYNAMIC_FILES = 		\
 	os/linux/dylib.c

@@ -272,9 +272,27 @@ hpcrun_set_metric_info_and_period(int metric_id, const char* name,
   hpcrun_set_metric_info_w_fn(metric_id, name, flags, period, std_upd_fn);
 }
 
+//
+// utility routine to make an Async metric with period 1
+//
 void
-hpcrun_set_metric_info(int metric_id, const char* name,
-		       hpcrun_metricFlags_t flags)
+hpcrun_set_metric_info(int metric_id, const char* name)
 {
-  hpcrun_set_metric_info_and_period(metric_id, name, flags, 1);
+  hpcrun_set_metric_info_and_period(metric_id, name, HPCRUN_MetricFlag_Async, 1);
+}
+
+//
+// hpcrun_set_metric_name function is primarily used by
+// synchronous sample sources that need to name the metrics
+// after they have been allocated.
+//
+// makes a call to hpcrun_get_num_metrics just to ensure that
+// metric_tbl has been finalized.
+//
+void
+hpcrun_set_metric_name(int metric_id, char* name)
+{
+  hpcrun_get_num_metrics();
+  id2metric[metric_id]->name        = name;
+  id2metric[metric_id]->description = name;
 }
