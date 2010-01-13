@@ -51,6 +51,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <dlfcn.h>
 
 #ifdef LINUX
 #include <linux/unistd.h>
@@ -82,6 +83,7 @@
 #include "hpcrun_return_codes.h"
 #include "hpcrun_stats.h"
 #include "name.h"
+#include "custom-init.h"
 
 #include "metrics.h"
 
@@ -116,7 +118,6 @@
 
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
-
 
 //***************************************************************************
 // constants
@@ -391,6 +392,8 @@ monitor_init_process(int *argc, char **argv, void* data)
   hpcrun_registered_sources_init();
 
   messages_init();
+
+  hpcrun_do_custom_init();
 
   char *s = getenv(HPCRUN_EVENT_LIST);
   if (s == NULL){

@@ -322,6 +322,31 @@ cct_node_find_child(cct_node_t* x,
   return NULL;
 }
 
+//***************************************************************************
+// Metric support functions
+//***************************************************************************
+
+int
+hpcrun_cct_node_length(cct_node_t* node)
+{
+  int len = 0;
+  for (cct_node_t* p = node; p; p = cct_node_parent(p)) {
+    len++;
+  }
+  return len;
+}
+
+void
+hpcrun_cct_node_update_metric(cct_node_t* node, int metric_id, metric_bin_fn fn, cct_metric_data_t datum)
+{
+  node->metrics[metric_id] = fn(node->metrics[metric_id], datum);
+}
+
+cct_metric_data_t
+hpcrun_cct_node_get_metric(cct_node_t* node, int metric_id)
+{
+  return node->metrics[metric_id];
+}
 
 //***************************************************************************
 //  Interface functions

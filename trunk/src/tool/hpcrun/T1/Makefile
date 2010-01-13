@@ -2,11 +2,10 @@
 # $Id$
 #
 
-CC     := gcc -std=c99
+CC     := gcc -std=gnu99
 CXX    := g++
 MPICC  := mpicc
 
-# static_lib := $(HOME)/Documents/pkgs-src/hpctoolkit/INSTALL/lib/hpctoolkit/libcsprof.a
 ifdef STATIC
    LINKPRE := hpclink
    static_lib := $(HOME)/hpctoolkit-install/lib/hpctoolkit/libcsprof.a
@@ -17,6 +16,9 @@ LINK.cc := $(LINKPRE) $(CC) $(static)
 LINK.static.cc := hpclink $(CC) -static
 
 CFLAGS := -g -I..
+
+.PHONY:custom
+custom: custom-metrics hpcrun-custom.so
 
 deepcallpath: deepcall_main.o $(wildcard DeepCallPaths/f*.c)
 	$(LINK.cc) $^ -o $@
@@ -62,6 +64,15 @@ libsum1.so: sum.c
 
 libsum2.so: sum.c
 	$(CC) -o $@ -g -O -shared -fPIC -DLIBSUM_TWO $<
+
+hpcrun-custom.so: hpcrun-custom.c
+	$(CC) -o $@ -g -O -shared -fPIC $<
+
+.PHONY: custom-metrics-ex
+
+custom-metrics-ex: custom-metrics hpcrun-custom.so
+custom-metrics: custom-metrics.c
+	$(CC) -g $^ -lm -lpthread -ldl -o $@
 
 .PHONY: early
 early: libearly.so emain
