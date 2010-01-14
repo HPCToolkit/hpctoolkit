@@ -6,14 +6,17 @@ CC     := gcc -std=gnu99
 CXX    := g++
 MPICC  := mpicc
 
+-include config.mk
+
 ifdef STATIC
-   LINKPRE := hpclink
-   static_lib := $(HOME)/hpctoolkit-install/lib/hpctoolkit/libcsprof.a
-   static := -static
+   LINKPRE = $(install-prefix)/bin/hpclink
+   static_lib = $(install-prefix)/lib/hpctoolkit/libcsprof.a
+   static = -static
 endif
 
-LINK.cc := $(LINKPRE) $(CC) $(static)
-LINK.static.cc := hpclink $(CC) -static
+LINK.cc = $(LINKPRE) $(CC) $(static)
+
+# LINK.static.cc := hpclink $(CC) -static
 
 CFLAGS := -g -I..
 
@@ -29,8 +32,10 @@ tmpi: tmpi.c
 mpi: mpi.c
 	$(MPICC) -o $@ -g -O $<
 
+t1-static: LINKPRE = $(install-prefix)/bin/hpclink
+t1-static: static  = -static
 t1-static: t1.o
-	$(LINK.static.cc) -g $< -lm -o $@
+	$(LINK.cc) -g $< -lm -o $@
 
 
 ifdef NO

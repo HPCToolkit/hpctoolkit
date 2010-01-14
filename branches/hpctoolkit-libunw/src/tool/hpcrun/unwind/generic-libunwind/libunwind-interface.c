@@ -33,21 +33,29 @@
 
 #include "libunwind-interface.h"
 
+//
+// external declarations
+//
+
+void hpcrun_drop_sample(void);
+
 //************************************************
 //  interface functions
 //************************************************
-
 
 // ----------------------------------------------------------
 // unw_init
 // ----------------------------------------------------------
 
-void unw_init()
+void
+unw_init(void)
 {
+  hpcrun_interval_tree_init();
 }
 
 
-void* hpcrun_unw_get_ra_loc(unw_cursor_t* c)
+void*
+hpcrun_unw_get_ra_loc(unw_cursor_t* c)
 {
   return NULL;
 }
@@ -56,8 +64,10 @@ void* hpcrun_unw_get_ra_loc(unw_cursor_t* c)
 // unw_init_cursor
 // ----------------------------------------------------------
 
-void unw_init_cursor(unw_cursor_t* cursor, void* context)
+void
+unw_init_cursor(unw_cursor_t* cursor, void* context)
 {
+  unw_local_init(cursor, (unw_context_t*) context);
 }
 
 //***************************************************************************
@@ -84,4 +94,5 @@ void unw_init_cursor(unw_cursor_t* cursor, void* context)
 // FIXME: tallent: the code in x86-unwind.c probably should be common
 void unw_throw(void)
 {
+  hpcrun_drop_sample();
 }

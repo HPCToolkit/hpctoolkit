@@ -99,11 +99,9 @@ hpcrun_is_sampling_disabled()
 }
 
 
-void
-hpcrun_disable_sampling();
+void hpcrun_disable_sampling();
 
-void
-hpcrun_drop_sample();
+void hpcrun_drop_sample(void);
 
 cct_node_t* hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
 				   int skipInner, int isSync);

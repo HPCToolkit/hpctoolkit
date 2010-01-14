@@ -95,9 +95,11 @@ endif
 if OPT_HAVE_LIBUNWIND
   LIBUNWIND_DIR = generic-libunwind
   LIBUNWIND_SRC = unwind/generic-libunwind/libunwind-interface.c
+  LIBUNWIND_LD_FLAGS = -lunwind
 else
   LIBUNWIND_DIR = hpcrun-libunwind
   LIBUNWIND_SRC = 
+  LIBUNWIND_LD_FLAGS =
 endif
 
 # ===========================
