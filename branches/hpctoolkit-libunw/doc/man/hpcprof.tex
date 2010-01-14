@@ -1,0 +1,159 @@
+%% $Id$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[english]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{babel}
+\usepackage{verbatim}
+
+%% do we have the `hyperref package?
+\IfFileExists{hyperref.sty}{
+   \usepackage[bookmarksopen,bookmarksnumbered]{hyperref}
+}{}
+
+%% do we have the `fancyhdr' or `fancyheadings' package?
+\IfFileExists{fancyhdr.sty}{
+\usepackage[fancyhdr]{latex2man}
+}{
+\IfFileExists{fancyheadings.sty}{
+\usepackage[fancy]{latex2man}
+}{
+\usepackage[nofancy]{latex2man}
+\message{no fancyhdr or fancyheadings package present, discard it}
+}}
+
+%% do we have the `rcsinfo' package?
+\IfFileExists{rcsinfo.sty}{
+\usepackage[nofancy]{rcsinfo}
+\rcsInfo $Id$
+\setDate{\rcsInfoLongDate}
+}{
+\setDate{ 2009/09/05}
+\message{package rcsinfo not present, discard it}
+}
+
+\setVersionWord{Version:}  %%% that's the default, no need to set it.
+\setVersion{=PACKAGE_VERSION=}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\begin{Name}{1}{hpcprof}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcprof:\\ Correlation of Call Path Profile Metrics with Static Program Structure}
+
+\Prog{hpcprof} correlates dynamic call path profile metrics with static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
+
+\end{Name}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Synopsis}
+
+\Prog{hpcprof} \oOpt{options} \Arg{profile-dir-or-file}...
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Description}
+
+\Prog{hpcprof} correlates call path profiling metrics with static source code structure and generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
+It expects a list of call path profile directories or files.
+
+For best results, two other options should be used: \textbf{-I} to provide paths for source code directories and \textbf{-S} to provide source code structure from \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Arguments}
+
+\begin{Description}
+\item[\Arg{profile-file...}] A list of flat profile files.
+\end{Description}
+
+Default values for an option's optional arguments are shown in \{\}.
+
+\subsection{Options: General}
+
+\begin{Description}
+\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}]
+Verbose: generate progress messages to stderr at verbosity level \Arg{n}.  \{1\} 
+\item[\Opt{-V}, \Opt{--version}]
+Print version information.
+
+\item[\Opt{-h}, \Opt{--help}]
+Print help.
+
+\item[\OptoArg{--debug}{n}]
+Debug: use debug level \Arg{n}. \{1\}
+\end{Description}
+
+\subsection{Options: Source Structure Correlation}
+
+\begin{Description}
+\item[\OptArg{--name}{name}, \OptArg{--title}{name}]
+Set the database's name (title) to \Arg{name}.
+
+\item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
+Use \Arg{path} when searching for source files. For a recursive search, append a '*' after the last slash, e.g., \verb+'/mypath/*'+ (quote or escape to protect from the shell). May pass multiple times.
+
+\item[\OptArg{-S}{file}, \OptArg{--structure}{file}] 
+Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
+\end{Description}
+
+\subsection{Options: Output}
+
+\begin{Description}
+  \item[\OptArg{-o}{db-path}, \OptArg{--db}{db-path}, \OptArg{--output}{db-path}] Specify Experiment database name \Arg{db-path}.  \{\File{./hpctoolkit-<app>-database}\}
+\end{Description}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Examples}
+
+%\begin{enumerate}
+%\item 
+
+
+%\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Notes}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{See Also}
+
+\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Version}
+
+Version: \Version\ of \Date.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{License and Copyright}
+
+\begin{description}
+\item[Copyright] \copyright\ 2002-2009, Rice University.
+\item[License] See \File{README.License}.
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Authors}
+
+\noindent
+Nathan Tallent \\
+John Mellor-Crummey \\
+Rob Fowler \\
+Email: \Email{hpc =at= cs.rice.edu} \\
+WWW: \URL{http://hpctoolkit.org}.
+
+\LatexManEnd
+
+\end{document}
+
+%% Local Variables:
+%% eval: (add-hook 'write-file-hooks 'time-stamp)
+%% time-stamp-start: "setDate{ "
+%% time-stamp-format: "%:y/%02m/%02d"
+%% time-stamp-end: "}\n"
+%% time-stamp-line-limit: 50
+%% End:

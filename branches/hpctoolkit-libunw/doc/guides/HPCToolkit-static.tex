@@ -1,0 +1,136 @@
+%
+% $Id$
+%
+\documentclass[12pt]{article}
+
+\usepackage{fancyvrb}
+\usepackage{fullpage}
+\usepackage{moreverb}
+\usepackage{hyperref}
+\usepackage{verbatim}
+
+\setlength{\topmargin}{0in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\textwidth}{6.5in}
+% \setlength{\parskip}{4pt}
+% \setlength{\parindent}{0pt}
+
+\newcommand{\HPCToolkit}{\textsc{HPCToolkit}}
+\newcommand{\hpcrun}{\texttt{hpcrun}}
+\newcommand{\hpclink}{\texttt{hpclink}}
+\newcommand{\hpcstruct}{\texttt{hpcstruct}}
+\newcommand{\hpcprof}{\texttt{hpcprof}}
+\newcommand{\hpcviewer}{\texttt{hpcviewer}}
+
+\newcommand{\question}[1]{\vspace{4pt}\par\noindent{\bf Q: #1}}
+\newcommand{\answer}{\par\vspace{2pt}\noindent{\bf A:}}
+
+\begin{document}
+
+\title{Using {\sc HPCToolkit} with Statically Linked Programs}
+\author{The \HPCToolkit\ Team}
+\maketitle
+
+\begin{abstract}
+\HPCToolkit{} is an integrated suite of tools that supports
+measurement, analysis, attribution and presentation of application
+performance for sequential and parallel programs.  This document
+describes how to link and run a statically linked application so that you can use
+ \HPCToolkit\'s monitoring capabilities. 
+ \end{abstract}
+
+\section{Introduction}
+On modern Linux systems, dynamically linked executables are the default. With dynamically linked executables, \HPCToolkit's \hpcrun{} script uses  library preloading
+ to inject \HPCToolkit's monitoring code into an application's address space. 
+However, in some cases, one wants or needs to build a statically linked executable. 
+\begin{itemize}
+\item One might want to build a statically linked executable because they are generally faster if the executable spends a significant amount of time calling functions in libraries. 
+\item On scalable parallel systems such as a Blue Gene/P or a Cray XT, at present the compute node kernels don't support using dynamically linked executables; for these systems, one needs to build a statically linked executable.
+\end{itemize}
+
+For statically linked executables, preloading \HPCToolkit's monitoring code into an application's address space at program launch is not an option. Instead, monitoring code must be added at link time; \HPCToolkit{}'s \hpclink{} script is used for this purpose.
+
+\section{Linking with \hpclink }
+
+Adding \HPCToolkit's monitoring
+code into a statically-linked application is easy.  This does not require any
+source-code modifications, but it does involve a small change to your
+build procedure.  You continue to compile
+all of your object ({\tt .o}) files exactly as before, but you will need to 
+modify your final link step
+to use \hpclink\ to add  \HPCToolkit's monitoring code to your executable.
+
+In your build scripts, locate the last step in the build, namely,  the
+command that produces the final statically linked binary.  Edit that command line to add the \hpclink\ command at the front.
+
+For example, suppose that the name of your executable is {\tt myprog} and the last step in
+your {\tt Makefile} links various object files and libraries as
+follows into a statically linked executable:
+%
+\begin{quote}
+\verb|mpicc -o myprog -static file.o ... -l<lib> ...|
+\end{quote}
+%
+To build a version of your executable with \HPCToolkit's monitoring code linked in, you would use the
+following command line:
+%
+\begin{quote}
+\verb|hpclink mpicc -o myprog -static file.o ... -l<lib> ...|
+\end{quote}
+
+In practice, you may want to edit your {\tt Makefile} to always build
+two versions of your program, perhaps naming them {\tt myprog} and
+{\tt myprog.hpc}.
+
+\section{Running a Statically Linked Binary}
+
+For dynamically linked executables, the \hpcrun\ script sets environment variables to
+pass information to the \HPCToolkit\ monitoring library. On standard Linux systems,  statically-linked executables can still be launched with \hpcrun. 
+
+On Cray XT and Blue Gene/P systems, the \hpcrun\ script is not
+applicable because of differences in application launch procedures.
+On these systems, you will need to use the {\tt HPCRUN\_EVENT\_LIST}
+environment variable to pass a list of events to \HPCToolkit's
+monitoring code, which was linked into your executable using \hpclink.
+Typically, you would set {\tt HPCRUN\_EVENT\_LIST} in your launch
+script.
+
+The {\tt HPCRUN\_EVENT\_LIST} environment variable should be set to a
+space-separated list of {\tt EVENT@COUNT} pairs.  For example, in a
+PBS script for a Cray XT system, you might write the following in
+Bourne shell or bash syntax:
+
+\begin{quote}
+\begin{verbatim}
+#!/bin/sh
+#PBS -l size=64
+#PBS -l walltime=01:00:00
+cd $PBS_O_WORKDIR
+export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000000 PAPI_L2_TCM@400000"
+aprun -n 64 ./myprog arg ...
+\end{verbatim}
+\end{quote}
+% $ Artificially end math mode.
+
+Using the Cobalt job launcher on Argonne National Laboratory's Blue Gene/P system, you would use  the {\tt --env} option to pass environment
+variables.  For example, you might submit a job with:
+
+\begin{quote}
+\begin{verbatim}
+qsub -t 60 -n 64 --env HPCRUN_EVENT_LIST="WALLCLOCK@1000" \
+    /path/to/myprog arg ...
+\end{verbatim}
+\end{quote}
+
+\section{Troubleshooting}
+
+With some compilers you need to disable interprocedural
+optimization to use \hpclink.  To instrument your statically linked executable at link time, \hpclink\ uses the
+ {\tt ld} option {\tt --wrap} (see the ld(1) man page) to interpose monitoring code between your application and various process, thread, and signal control operations, {\em e.g.}  {\tt fork},  {\tt pthread\_create}, and {\tt sigprocmask} to name a few. For some compilers, {\em e.g.}, IBM's XL compilers and Pathscale's compilers,
+interprocedural optimization interferes with the {\tt --wrap} option
+and prevents \hpclink\ from working properly. If this is the case, \hpclink{} will emit error messages and fail. If you want to use \hpclink\ with such compilers, sadly, you must turn off interprocedural optimization. 
+
+Note that interprocedural optimization may not be explicitly enabled during your compiles; it might be implicitly enabled when using a compiler optimization option such as {\tt -fast}. In cases such as this, you can often specify {\tt -fast} along with an option such as {\tt -no-ipa}; this option combination will provide the benefit of all of {\tt -fast}'s optimizations {\em except} interprocedural optimization.
+
+\end{document}

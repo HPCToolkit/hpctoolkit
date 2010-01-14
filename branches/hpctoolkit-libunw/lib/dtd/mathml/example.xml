@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE mathml SYSTEM "mathml.dtd">
+<mathml>
+ <apply>
+    <plus/>
+       <apply>
+        <power/>
+	       <ci>x</ci>
+                  <cn>2</cn>
+              </apply>
+              <apply>
+                  <times/>
+                  <cn>4</cn>
+                  <ci>x</ci>
+              </apply>
+             <cn>4</cn>
+          </apply>
+</mathml>

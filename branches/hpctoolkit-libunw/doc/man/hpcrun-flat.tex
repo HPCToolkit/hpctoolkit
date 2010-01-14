@@ -1,0 +1,274 @@
+%% $Id$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[english]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{babel}
+\usepackage{verbatim}
+
+%% do we have the `hyperref package?
+\IfFileExists{hyperref.sty}{
+   \usepackage[bookmarksopen,bookmarksnumbered]{hyperref}
+}{}
+
+%% do we have the `fancyhdr' or `fancyheadings' package?
+\IfFileExists{fancyhdr.sty}{
+\usepackage[fancyhdr]{latex2man}
+}{
+\IfFileExists{fancyheadings.sty}{
+\usepackage[fancy]{latex2man}
+}{
+\usepackage[nofancy]{latex2man}
+\message{no fancyhdr or fancyheadings package present, discard it}
+}}
+
+%% do we have the `rcsinfo' package?
+\IfFileExists{rcsinfo.sty}{
+\usepackage[nofancy]{rcsinfo}
+\rcsInfo $Id$
+\setDate{\rcsInfoLongDate}
+}{
+\setDate{ 2009/10/16}
+\message{package rcsinfo not present, discard it}
+}
+
+\setVersionWord{Version:}  %%% that's the default, no need to set it.
+\setVersion{=PACKAGE_VERSION=}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\begin{Name}{1}{hpcrun-flat}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcrun-flat:\\ Statistical Profiling}
+
+\Prog{hpcrun-flat} is a flat statistical sampling-based profiler.
+It supports multiple sample sources during one execution and creates an IP (instruction pointer) histogram, or flat profile, for each sample source.
+\Prog{hpcrun-flat} profiles complex applications (forks, execs, threads and dynamically loaded libraries) and may be used in conjunction with parallel process launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
+
+See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
+
+
+\end{Name}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Synopsis}
+
+\Prog{hpcrun-flat} \oOpt{profiling-options} [\texttt{--}] \Arg{command} \oOpt{command-arguments}
+
+\Prog{hpcrun-flat} \oOpt{info-options}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Description}
+
+\Prog{hpcrun-flat} profiles the execution of an arbitrary command \Arg{command} using statistical sampling (rather than instrumentation).
+It collects per-thread flat profiles, also known as IP (instruction pointer) histograms.
+Sample points may be generated from multiple simultaneous sampling sources.
+\Prog{hpcrun-flat} profiles complex applications that use forks, execs, and threads (but not dynamic linking/unlinking); it may be used in conjuction with parallel process launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
+
+To configure \Prog{hpcrun-flat}'s sampling sources, specify events and periods using the \texttt{-e/--event} option.
+For an event \emph{e} and period \emph{p}, after every \emph{p} instances of \emph{e}, a sample is generated that causes \Prog{hpcrun} to inspect the and record information about the monitored \Arg{command}.
+
+When \Arg{command} terminates, per-thread profiles are written to files with the names of the form:\\
+\SP\SP\SP \Arg{command}.hpcrun-flat.\Arg{hostname}.\Arg{pid}.\Arg{tid}
+
+\Prog{hpcrun-flat} enables a user to abort a process and write the partial profiling data to disk by sending the Interrupt signal (INT or Ctrl-C).
+This can be extremely useful on long-running or misbehaving applications.
+
+The special option \texttt{--} can be used to stop \Prog{hpcrun-flat} option parsing; this is especially useful when \Arg{command} takes arguments of its own.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Arguments}
+
+\begin{Description}
+\item[\Arg{command}] The command to profile.
+\item[\Arg{command-arguments}] Arguments to the command to profile.
+\end{Description}
+
+Default values for an option's optional arguments are shown in \{\}.
+
+\subsection{Options: Informational}
+
+\begin{Description}
+\item[\Opt{-l}, \Opt{--list-events-short}] List available events. (N.B.: some may not be profilable)
+\item[\Opt{-L}, \Opt{---list-events-long}] Similar to above but with more information.
+\item[\Opt{--paths}] Print paths for external PAPI and MONITOR.
+\item[\Opt{-V}, \Opt{--version}] Print version information.
+\item[\Opt{-h}, \Opt{--help}] Print help.
+\item[\OptoArg{--debug}{n}]   Debug: use debug level \Arg{n}. \{1\}
+\end{Description}
+
+\subsection{Options: Profiling}
+
+\begin{Description}
+  \item[\OptoArg{-r}{yes \Bar no}, \OptoArg{--recursive}{yes \Bar no}]
+  Profile processes spawned by \Arg{command}.  \{no\}.  (Each process will receive its own output file.)
+
+  \item[\OptArg{-t}{mode}, \OptArg{--threads}{mode}]
+   Select thread profiling mode \{each\}:
+  \begin{itemize}
+    \item \textbf{each} Create separate profiles for each thread.
+    \item \textbf{all} Create one combined profile of all threads.
+  \end{itemize}
+  Note that only POSIX threads are supported.
+  Also note that the WALLCLOCK event cannot be used in a multithreaded process.
+
+  \item[\OptArg{-e}{event\Lbr:period\Rbr}, \OptArg{--event}{event\Lbr:period\Rbr}] 
+   An event to profile and its corresponding sample period. \Arg{event} may be either a PAPI or native processor event. May pass multiple times.  \{\verb+PAPI_TOT_CYC:999999+\} 
+  \begin{itemize}
+    \item It is recommended to always specify the sampling period for each profiling event.
+    \item The special event WALLCLOCK may be used to profile the `wall clock.'  It may be used only \emph{once} and cannot be used with another event. It is an error to specify a period.
+    \item Hardware and drivers 1) limit the maximum number of events that can be monitored simultaneously, and 2) forbid certain combinations of events.  Check your documentation.
+    \item See the ``Sample sources'' under \textbf{NOTES} for additional details.
+  \end{itemize}
+  \item[\OptoArg{-o}{outpath}, \OptoArg{--output}{outpath}] Directory for output data.  \{\texttt{.}\}
+  \item[\OptArg{--papi-flag}{flag}] Profile style flag.  \{\verb+PAPI_POSIX_PROFIL+\}
+\end{Description}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Examples}
+
+Assume we wish to profile the application \texttt{zoo}.
+The following examples lists some useful events for different processor architectures.
+In each case, the special option \texttt{--} is used to clearly demarcate the end of \Prog{hpcrun-flat} options.
+
+\begin{enumerate}
+\item \verb+hpcrun-flat -e WALLCLOCK -- zoo+
+\item Opteron, (Rev B-F)
+  \begin{enumerate}
+    \item \verb+hpcrun-flat -e DC_L2_REFILL:1300013 -e PAPI_L2_DCM:510011 -e PAPI_STL_ICY:5300013 -e PAPI_TOT_CYC:13000019 -- zoo+ (\verb+DC_L2_REFILL+ is an approximation of L1 D-cache misses).
+    \item \verb+hpcrun-flat -e PAPI_L2_DCM:510011 -e PAPI_TLB_DM:510013 -e PAPI_STL_ICY:5300013 -e PAPI_TOT_CYC:13000019 -- zoo+
+  \end{enumerate}
+
+\item Pentium IV 
+  \begin{enumerate}
+    \item \verb+hpcrun-flat -e PAPI_TOT_CYC:30000001 -e PAPI_TOT_INS:3000001 -e PAPI_FP_INS:1000001 -e PAPI_LD_INS:1000001 -e PAPI_TLB_TL:32767  -e PAPI_L2_TCM:32767  -e PAPI_RES_STL:1000001 -e BSQ_cache_reference_RD_3rdL_MISS -- zoo+
+    \item \verb+hpcrun-flat -e PAPI_SR_INS:1000001 -e PAPI_L1_DCM:32767 -e resource_stall_SBFULL:32767 -- zoo+
+    \item \verb+hpcrun-flat -e PAPI_FP_OPS:32767 -e PAPI_BR_MSP:32767 -- zoo+
+  \end{enumerate}
+
+\item Itanium 2
+  \begin{enumerate}
+    \item \verb+hpcrun-flat -e BE_EXE_BUBBLE_ALL:344221 -e BE_L1D_FPU_BUBBLE_ALL:344221 -e FE_BUBBLE_ALL:144221 -e PAPI_TOT_CYC:344221 -- zoo+
+    \item \verb+hpcrun-flat -e PAPI_L1_DCM:144221 -e PAPI_FP_OPS:344221 -e PAPI_TOT_CYC:1044221 -- zoo+
+    \item Cycle accounting events: \verb+BACK_END_BUBBLE_ALL+, \verb+BE_EXE_BUBBLE_ALL+, \verb+BE_L1D_FPU_BUBBLE_ALL+, \verb+BE_FLUSH_BUBBLE_ALL+, \verb+BE_RSE_BUBBLE_ALL+, \verb+FE_BUBBLE_ALL+
+  \end{enumerate}
+
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Notes}
+
+\subsection{Sample sources}
+
+\Prog{hpcrun-flat} uses the PAPI library to provide access to hardware performance counter events.
+If you have not configured HPCToolkit to use the PAPI library, you will be unable to measure hardware performance counter events.
+
+The PAPI library supports a large collection of hardware counter events.
+Some events have standard names across all platforms, e.g. \verb+PAPI_TOT_CYC+, the event that measures total cycles.
+In addition to events whose names begin with the \verb+PAPI_+ prefix, platforms also provide access to a set of native events with names that are specific to the platform's processor.
+A complete list of events supported by the PAPI library for your platform may be obtained by using the \texttt{--list-events} option.
+Any event whose name begins with the \verb+PAPI_+ prefix that is listed as "Profilable" can be used as an event in a sampling source --- provided it does not conflict with another event.
+
+The precise rules for selecting good events and periods are complex.
+\begin{itemize}
+
+\item \textbf{Choosing sampling events.}
+We recommend using PAPI events in general.
+However, some PAPI events are not profilable because of PAPI implementation details.
+Also, PAPI's standard event list may not cover an architectural feature you are interested in.
+In such cases, it is necessary to resort to native events.
+In many cases, you will have to consult the architecture's manual to fully understand what the event means: there is no standard event list or naming scheme and events sometimes have unusual meanings.
+
+\item \textbf{Number of sampling events.}
+Currently, hpcrun does not multiplex hardware counters.
+This means that the number of events that you may concurrently profile against is limited by your architecture's performance monitoring unit.
+Note that some architectures hard-wire one or more counters to a specific event (such as cycles).
+
+\item \textbf{Choosing sampling periods.}
+The key requirement in choosing sampling periods is that you obtain enough samples to provide statistical significance.
+We usually recommend a sampling rate between 100s-1000s of samples per second.
+This usually only produces 1-5\% execution time overhead.
+
+Choosing sampling rates depends on the architecture and sometimes the application.
+
+Choosing periods for cycle and instruction-related events are usually easy.
+Cycles directly relates to the clock speed.
+Instruction-related events relates to the issue rate and width.
+
+Choosing periods for other events seems harder because different applications uses resources differently.
+For example, some applications are memory intensive and others are not.
+However, if the goal is to identify rate-limiting factors of the architecture, then it is not necessary to consider the application.
+For example, if the goal is to determine whether L2 D-cache latency is a limiting factor, then it is only necessary to work backward from the architecture's specifications to determine what number of L2 D-cache misses per second would be problematic.
+
+\item \textbf{Architectural event conflicts.}
+With some performance monitoring units, certain events may not be concurrently used with other events.
+
+\item \textbf{Architectural interrupt delay.}
+On most out-of-order pipelined architectures, a hardware counter interrupt is not precisely attributed to the instruction that induced the counter to overflow.
+The gap is commonly 50-70 instructions.
+This means that one should not assume that aggregation at the source line level is fully precise.
+(E.g., if a L1 D-cache miss is attributed to a statement that has been compiled to register-only operations, assume the miss is attributed to a nearby load.)
+However, aggregation at the procedure and loop level is reliable.
+
+\item \textbf{System itimer (WALLCLOCK).}
+On Linux systems, the kernel will not deliver itimer interrupts faster than the unit of a jiffy, which defaults to 4 milliseconds.
+One can configure the kernel to use a value as small as 1 millisecond, but it is unlikely the kernel will actually deliver itimer signals at that rate when a period of 1000 microseconds is requested.
+
+However, on Linux one can get quite close to the kernel Hz rate by setting the itimer interval to something less than the Hz rate.
+For example, if the Hz rate is 1000 microseconds, one can use 500 microseconds (or just 1) and obtain about 999 interrupts per second.
+\end{itemize}
+
+\subsection{Miscellaneous}
+
+\begin{itemize}
+  \item \Prog{hpcrun-flat} uses preloaded shared libraries to initiate profiling.  For this reason, it cannot be used to profile setuid programs.
+  \item For the same reason, it cannot profile statically linked applications.
+  \item Bug: \Prog{hpcrun-flat} cannot currently profile programs that themselves use preloading.
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{See Also}
+
+\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Version}
+
+Version: \Version\ of \Date.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{License and Copyright}
+
+\begin{description}
+\item[Copyright] \copyright\ 2002-2007, Rice University.
+\item[License] See \File{README.License}.
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Authors}
+
+\noindent
+Nathan Tallent \\
+John Mellor-Crummey \\
+Rob Fowler \\
+Email: \Email{hpc =at= cs.rice.edu} \\
+WWW: \URL{http://hpctoolkit.org}.
+
+\LatexManEnd
+
+\end{document}
+
+%% Local Variables:
+%% eval: (add-hook 'write-file-hooks 'time-stamp)
+%% time-stamp-start: "setDate{ "
+%% time-stamp-format: "%:y/%02m/%02d"
+%% time-stamp-end: "}\n"
+%% time-stamp-line-limit: 50
+%% End:
+
