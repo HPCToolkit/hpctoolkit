@@ -91,16 +91,16 @@ noext = $(filter-out $(wildcard *.*) makefile Makefile,$(wildcard *))
 .PHONY: clean
 clean: 
 	@for f in $(noext); do \
-            if [ -x $$f -a ! -d $$f ]; then \
+            if [ -x $$f -a ! -d $$f ] && ! file $$f | egrep 'shell *script' 2>&1 > /dev/null; then \
                rm $$f; \
             fi; \
          done
 	@rm -rf *.o *.E *~ *.so *.nm.c *.nm.so
 
-.PHONY: showclean
-showclean: 
+.PHONY: sclean
+sclean: 
 	@for f in $(noext); do \
-            if [ -x $$f -a ! -d $$f ]; then \
+            if [ -x $$f -a ! -d $$f ] && ! file $$f | egrep 'shell *script' 2>&1 > /dev/null; then \
                echo would rm $$f; \
             fi; \
          done

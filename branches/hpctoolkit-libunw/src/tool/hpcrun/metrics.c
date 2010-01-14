@@ -41,9 +41,10 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-/* metrics.c -- informing the system about what metrics to record */
+#ifdef OLD_LIBUNW
 #if defined(__ia64__) && defined(__linux__)
 #include <libunwind.h>
+#endif
 #endif
 
 #include <stdbool.h>

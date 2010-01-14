@@ -77,6 +77,7 @@
 #include <epoch.h>
 #include <sample_event.h> // hpcrun_drop_sample()
 #include <unwind/common/backtrace.h> // dump_backtrace()
+#include <hpcrun/thread_data.h>
 
 
 //*************************** Forward Declarations **************************
@@ -242,6 +243,191 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   node = hpcrun_cct_insert_backtrace(cct, cct_cursor, metricId,
 				     bt_end, bt_beg,
 				     (cct_metric_data_t){.i = metricIncr});
+
+  if (doMetricIdleness) {
+    //lush_agentid_t aid = aidMetricIdleness;
+    int mid = lush_agents->metric_idleness;
+    cct_metric_data_increment(mid, &(node->metrics[mid]),
+			      (cct_metric_data_t){.r = incrMetricIdleness});
+  }
+
+  // FIXME: register active return
+
+  return node;
+}
+
+cct_node_t*
+lush_bt2cct(hpcrun_cct_t* cct, ucontext_t* context,
+	    int metricId, uint64_t metricIncr,
+	    bt_mut_fn bt_fn, bt_fn_arg bt_arg, int isSync)
+{
+  // ---------------------------------------------------------
+  // Record backtrace if:
+  //   1) a lush agent indicates we should
+  //   2) a non-lush-relevant metric
+  //   3) a synchronous unwind (may have a lush relevant metric)
+  // ---------------------------------------------------------
+  bool     doMetric = false;
+  uint64_t incrMetric = metricIncr;
+
+  bool     doMetricIdleness = false;
+  double   incrMetricIdleness = 0.0;
+  lush_agentid_t aidMetricIdleness = lush_agentid_NULL; // list of agents
+
+  if (metricId == lush_agents->metric_time) {
+    lush_agentid_t aid = 1; // TODO: multiple agents
+    if (lush_agents->LUSHI_do_metric[aid](metricIncr, 
+					  &doMetric, &doMetricIdleness,
+					  &incrMetric, &incrMetricIdleness)) {
+      aidMetricIdleness = aid; // case 1
+    }
+  }
+
+  if (isSync || metricId != lush_agents->metric_time) {
+    doMetric = true; // case 2 and 3
+  }
+
+  if (!doMetric) {
+    return NULL;
+  }
+
+
+  // ---------------------------------------------------------
+  // Perform the backtrace
+  // ---------------------------------------------------------
+
+  lush_cursor_t cursor;
+  lush_init_unw(&cursor, lush_agents, context);
+  
+  // FIXME: unwind/common/backtrace.c
+  thread_data_t* td = hpcrun_get_thread_data();
+  td->unwind   = td->btbuf;  // innermost
+  td->bufstk   = td->bufend;
+
+  // **** fetch the backtrace ***
+  backtrace_t* bt = &(td->bt);
+
+  // ---------------------------------------------------------
+  // Step through bichords
+  // ---------------------------------------------------------
+  uint unw_len = 0;
+  lush_step_t ty = LUSH_STEP_NULL;
+
+  while ( (ty = lush_step_bichord(&cursor)) != LUSH_STEP_END_PROJ 
+	  && ty != LUSH_STEP_ERROR ) {
+    lush_agentid_t aid = lush_cursor_get_aid(&cursor);
+    lush_assoc_t as = lush_cursor_get_assoc(&cursor);
+
+    TMSG(LUNW, "Chord: aid:%d assoc:%d", aid, as);
+  
+    // FIXME: short circuit unwind if we hit the 'active return'
+
+    hpcrun_ensure_btbuf_avail();
+    frame_t* chord_beg = td->unwind; // innermost note
+    uint pchord_len = 0, lchord_len = 0;
+
+    // ---------------------------------------------------------
+    // Step through p-notes of p-chord
+    // ---------------------------------------------------------
+    while (lush_step_pnote(&cursor) != LUSH_STEP_END_CHORD) {
+      hpcrun_ensure_btbuf_avail();
+
+      unw_word_t ip = lush_cursor_get_ip(&cursor);
+      TMSG(LUNW, "IP:  %p", ip);
+      td->unwind->ip = ip;
+
+      pchord_len++;
+      td->unwind++;
+    }
+
+    td->unwind = chord_beg;
+
+    // ---------------------------------------------------------
+    // Step through l-notes of l-chord
+    // ---------------------------------------------------------
+    lush_lip_t* lip_persistent = NULL;
+    while (lush_step_lnote(&cursor) != LUSH_STEP_END_CHORD) {
+      hpcrun_ensure_btbuf_avail();
+
+      lush_lip_t* lip = lush_cursor_get_lip(&cursor); // ephemeral
+      TMSG(LUNW, "LIP: %p", *((void**)lip));
+      
+      if (lush_assoc_is_a_to_1(as)) {
+	if (!lip_persistent) {
+	  lip_persistent = lush_lip_clone(lip);
+	}
+	// else: lip_persistent is already set
+      }
+      else {
+	// INVARIANT: as must be 1-to-M
+	lip_persistent = lush_lip_clone(lip);
+      }
+      td->unwind->lip = lip_persistent;
+
+      lchord_len++;
+      td->unwind++;
+    }
+
+    // ---------------------------------------------------------
+    // canonicalize frames to form a chord
+    // ---------------------------------------------------------
+    frame_t* chord_end;
+    chord_end = canonicalize_chord(chord_beg, as, pchord_len, lchord_len);
+    unw_len++;
+
+    td->unwind = chord_end;
+  }
+
+  if (ty == LUSH_STEP_ERROR) {
+    hpcrun_drop_sample(); // NULL
+  }
+
+  // ---------------------------------------------------------
+  // insert backtrace into calling context tree (if sensible)
+  // ---------------------------------------------------------
+  if (MYDBG) {
+    dump_backtrace(td->unwind);
+  }
+
+#ifdef OLD_LUSH_BT
+  frame_t* bt_beg = td->btbuf;      // innermost, inclusive 
+  frame_t* bt_end = td->unwind - 1; // outermost, inclusive
+#endif
+  cct_node_t* cct_cursor = NULL;
+
+  //
+  // not used, but may serve as an example for lush mutation functions
+  //  backtrace.c implements helper function
+  //     hpcrun_bt_skip_inner
+  //  to accomplish the skipping function for standard unwinds
+  //  lush clients may want to implement the "skip_chords" mutator
+  //
+
+#if 0
+  if (skipInner) {
+    bt_beg = hpcrun_skip_chords(bt_end, bt_beg, skipInner);
+  }
+#endif
+
+  //
+  // mutate the backtrace according to the passed in mutator function
+  //  (bt_fn == NULL means no mutation is necessary)
+  //
+  if (bt_fn) {
+    TMSG(BT, "Mutation function called");
+    TMSG(BT,"==== backtrace BEFORE mutation ========");
+    hpcrun_dump_bt(bt);
+    TMSG(BT,"-------------------------------");
+    bt_fn(bt, bt_arg);
+    TMSG(BT,"==== backtrace AFTER  mutation ========");
+    hpcrun_dump_bt(bt);
+    TMSG(BT,"-------------------------------");
+  }
+
+  cct_node_t* node;
+  node = hpcrun_cct_insert_bt(cct, cct_cursor, metricId,
+			   bt,
+			   (cct_metric_data_t){.i = metricIncr});
 
   if (doMetricIdleness) {
     //lush_agentid_t aid = aidMetricIdleness;

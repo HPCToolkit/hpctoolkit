@@ -64,6 +64,12 @@
 #include "x86-unwind-analysis.h"
 #include "fnbounds_interface.h"
 #include "validate_return_addr.h"
+
+//
+// !! The location of this include file might be *configuration dependent* !!
+//  DO NOT PATH QUALIFY THIS INCLUDE until the configuration question is settled
+//
+
 #include "unwind_cursor.h"
 #include "ui_tree.h"
 #include "x86-unwind-interval.h"

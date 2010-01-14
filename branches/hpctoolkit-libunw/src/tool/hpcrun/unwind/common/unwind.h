@@ -53,27 +53,7 @@
 #ifndef unwind_h
 #define unwind_h
 
-//***************************************************************************
-// system include files
-//***************************************************************************
-
 #include <ucontext.h>
-
-
-//***************************************************************************
-// local include files
-//***************************************************************************
-
-#include "unwind_cursor.h"
-
-
-//***************************************************************************
-// interface to ucontext_t
-//***************************************************************************
-
-// tallent: probably should be moved
-void *context_pc(void *context);
-
 
 //***************************************************************************
 //
@@ -85,43 +65,19 @@ void *context_pc(void *context);
 //
 //***************************************************************************
 
-typedef void* unw_word_t;
+//
+// !! The location of this include file might be *configuration dependent* !!
+//  DO NOT PATH QUALIFY THIS INCLUDE until the configuration question is settled
+//
+#include "libunwind-interface.h"
 
-// ----------------------------------------------------------
-// unw_init
-// ----------------------------------------------------------
+//***************************************************************************
+// interface to ucontext_t
+//***************************************************************************
 
-void unw_init();
+// tallent: probably should be moved
+void *context_pc(void *context);
 
-
-// ----------------------------------------------------------
-// unw_get_reg
-// ----------------------------------------------------------
-
-typedef enum {
-  UNW_REG_IP
-} unw_reg_code_t;
-
-int unw_get_reg(unw_cursor_t *c, unw_reg_code_t reg_id, void **reg_value);
-
-void* hpcrun_unw_get_ra_loc(unw_cursor_t* c);
-
-// ----------------------------------------------------------
-// unw_init_cursor
-// ----------------------------------------------------------
-
-void unw_init_cursor(unw_cursor_t* cursor, void* context);
-
-
-// ----------------------------------------------------------
-// unw_step: 
-//   Given a cursor, step the cursor to the next (less deeply
-//   nested) frame.  Conforms to the semantics of libunwind's
-//   unw_step.  In particular, returns:
-//     > 0 : successfully advanced cursor to next frame
-//       0 : previous frame was the end of the unwind
-//     < 0 : error condition
-// ---------------------------------------------------------
 
 typedef enum {
   STEP_ERROR = -1,
@@ -131,34 +87,5 @@ typedef enum {
   STEP_STOP_WEAK = 3
 } step_state;
 
-step_state unw_step(unw_cursor_t *c);
-
-
-//***************************************************************************
-//
-// services provided by HPCToolkit's unwinder
-//
-//   these routines are called by the common backtrace routines and
-//   therefore must be provided by architecture-specific unwind
-//   agents.
-//
-//***************************************************************************
-
-// ----------------------------------------------------------
-// unw_troll_stack
-// ----------------------------------------------------------
-
-// FIXME: tallent: move stack trolling code here
-
-
-// ----------------------------------------------------------
-// unw_throw:
-// ----------------------------------------------------------
-
-// FIXME: tallent: the code in x86-unwind.c probably should be common
-void unw_throw(void);
-
-
-//***************************************************************************
 
 #endif // unwind_h

@@ -88,6 +88,19 @@ if OPT_ENABLE_HPCRUN_STATIC
   bin_SCRIPTS += scripts/hpclink
 endif
 
+# =================== libunwind =====================
+#
+#
+
+if OPT_HAVE_LIBUNWIND
+  LIBUNWIND_DIR = generic-libunwind
+  LIBUNWIND_SRC = generic-libunwind/libunwind-interface.c
+else
+  LIBUNWIND_DIR = hpcrun-libunwind
+  LIBUNWIND_SRC = 
+endif
+
+# ===========================
 
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
@@ -137,6 +150,8 @@ MY_BASE_FILES =			\
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
 	unwind/common/ui_tree.c		\
+        \
+        $(LIBUNWIND_SRC)                \
 	\
 	lush/lush-backtrace.h lush/lush-backtrace.c \
 	lush/lush.h lush/lush.c	\
@@ -221,12 +236,14 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/os/linux		\
 	-I$(srcdir)/cct			\
 	-I$(srcdir)/unwind/common	\
+        -I$(srcdir)/unwind/$(LIBUNWIND_DIR)    \
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
 	-I$(HPCFNBOUNDS_INC)		\
 	-I$(LIBMONITOR_INC)		\
 	-I$(SYMTABAPI_INC)
 
+# ===============================================
 
 MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips
@@ -237,7 +254,6 @@ MY_PPC_INCLUDE_DIRS = 		\
 MY_X86_INCLUDE_DIRS =		\
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
-
 
 libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\

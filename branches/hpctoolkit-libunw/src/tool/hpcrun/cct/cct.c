@@ -544,10 +544,13 @@ hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
 {
   cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
+    TMSG(LUSH,"lush bt2cct invoked");
 #ifdef LATER
-    TMSG(LUSH,"lush backtrace2cct invoked");
-    n = lush_backtrace2cct(cct, context, metricId, metricIncr, skipInner,
-			   isSync);
+    n = lush_bt2cct(cct, context, metricId, metricIncr,
+		    bt_fn, arg,
+		    isSync);
+    //    n = lush_backtrace2cct(cct, context, metricId, metricIncr, skipInner,
+    //			   isSync);
 #endif
   }
   else {
@@ -884,7 +887,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
     unw_word_t ip = 0;
     unw_get_reg(&cursor, UNW_REG_IP, &ip);
 
-    if (hpcrun_trampoline_interior(ip)) {
+    if (hpcrun_trampoline_interior((void*) ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
       // counting a return from a sampled frame using a trampoline.
       // drop the sample. 
@@ -893,7 +896,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
       unw_throw();
     }
 
-    if (hpcrun_trampoline_at_entry(ip)) {
+    if (hpcrun_trampoline_at_entry((void*) ip)) {
       if (unw_len == 0){
 	// we are about to enter the trampoline code to synchronously 
 	// record a return. for now, simply do nothing ...
@@ -1037,7 +1040,7 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
     unw_word_t ip = 0;
     unw_get_reg(&cursor, UNW_REG_IP, &ip);
 
-    if (hpcrun_trampoline_interior(ip)) {
+    if (hpcrun_trampoline_interior((void*) ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
       // counting a return from a sampled frame using a trampoline.
       // drop the sample. 
@@ -1046,7 +1049,7 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
       unw_throw();
     }
 
-    if (hpcrun_trampoline_at_entry(ip)) {
+    if (hpcrun_trampoline_at_entry((void*) ip)) {
       if (hpcrun_bt_len(bt) == 0){
 	// we are about to enter the trampoline code to synchronously 
 	// record a return. for now, simply do nothing ...

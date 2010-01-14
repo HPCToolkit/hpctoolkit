@@ -134,19 +134,19 @@ _drop_sample(bool no_backtrace);
 static int
 unw_step_prefer_sp(void);
 
-static step_state 
+static int
 unw_step_sp(unw_cursor_t *cursor);
 
-static step_state
+static int
 unw_step_bp(unw_cursor_t *cursor);
 
-static step_state
+static int
 unw_step_std(unw_cursor_t *cursor);
 
-static step_state
+static int
 t1_dbg_unw_step(unw_cursor_t *cursor);
 
-static step_state (*dbg_unw_step)(unw_cursor_t *cursor) = t1_dbg_unw_step;
+static int (*dbg_unw_step)(unw_cursor_t *cursor) = t1_dbg_unw_step;
 
 
 //***************************************************************************
@@ -201,7 +201,7 @@ unw_init(void)
 }
 
 int 
-unw_get_reg(unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
+unw_get_reg(unw_cursor_t *cursor, unw_regnum_t reg_id, unw_word_t* reg_value)
 {
   //
   // only implement 1 reg for the moment.
@@ -260,7 +260,7 @@ hpcrun_unw_get_ra_loc(unw_cursor_t* cursor)
 }
 
 
-step_state
+int
 unw_step_real(unw_cursor_t *cursor)
 {
 
@@ -355,7 +355,7 @@ vrecord(void *from, void *to, validation_status vstat)
   }
 }
 
-step_state
+int
 unw_step(unw_cursor_t *cursor)
 {
   if ( ENABLED(DBG_UNW_STEP) ){
@@ -402,7 +402,7 @@ unw_step_prefer_sp(void)
 }
 
 
-static step_state
+static int
 unw_step_sp(unw_cursor_t *cursor)
 {
   TMSG(UNW_STRATEGY,"Using SP step");
@@ -490,7 +490,7 @@ unw_step_sp(unw_cursor_t *cursor)
 }
 
 
-static step_state
+static int
 unw_step_bp(unw_cursor_t *cursor)
 {
   void *sp, **bp, *pc; 
@@ -562,7 +562,7 @@ unw_step_bp(unw_cursor_t *cursor)
 }
 
 
-static step_state
+static int
 unw_step_std(unw_cursor_t *cursor)
 {
   int unw_res;
@@ -589,7 +589,7 @@ unw_step_std(unw_cursor_t *cursor)
 
 
 // special steppers to artificially introduce error conditions
-static step_state
+static int
 t1_dbg_unw_step(unw_cursor_t *cursor)
 {
   drop_sample();
@@ -598,7 +598,7 @@ t1_dbg_unw_step(unw_cursor_t *cursor)
 }
 
 
-static step_state GCC_ATTR_UNUSED
+static int GCC_ATTR_UNUSED
 t2_dbg_unw_step(unw_cursor_t *cursor)
 {
   static int s = 0;

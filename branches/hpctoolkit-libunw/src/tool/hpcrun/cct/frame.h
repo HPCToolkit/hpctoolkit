@@ -1,7 +1,12 @@
 #ifndef FRAME_H
 #define FRAME_H
 
-#include <unwind/common/unwind_cursor.h>
+//
+// !! The location of this include file might be *configuration dependent* !!
+//  DO NOT PATH QUALIFY THIS INCLUDE until the configuration question is settled
+//
+#include "unwind_cursor.h"
+
 #include <lib/prof-lean/lush/lush-support.h>
 
 // --------------------------------------------------------------------------

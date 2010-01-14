@@ -66,7 +66,6 @@
 // local include files 
 //***************************************************************************
 
-#include "unwind_cursor.h"
 #include <cct/frame.h>
 
 //
