@@ -41,12 +41,6 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifdef OLD_LIBUNW
-#if defined(__ia64__) && defined(__linux__)
-#include <libunwind.h>
-#endif
-#endif
-
 #include <stdbool.h>
 #include <stdlib.h>
 

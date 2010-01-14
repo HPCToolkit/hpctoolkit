@@ -17,7 +17,26 @@
 // 
 //***************************************************************************
 
+//************************************************
+// system includes
+//************************************************
+
+#include <stdlib.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <stdbool.h>
+
+//************************************************
+//  local includes
+//************************************************
+
 #include "libunwind-interface.h"
+
+//************************************************
+//  interface functions
+//************************************************
+
 
 // ----------------------------------------------------------
 // unw_init
@@ -30,6 +49,7 @@ void unw_init()
 
 void* hpcrun_unw_get_ra_loc(unw_cursor_t* c)
 {
+  return NULL;
 }
 
 // ----------------------------------------------------------
@@ -65,5 +85,3 @@ void unw_init_cursor(unw_cursor_t* cursor, void* context)
 void unw_throw(void)
 {
 }
-
-#endif // LIBUNWIND_INTERFACE_H

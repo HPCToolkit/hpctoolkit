@@ -176,7 +176,7 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 
       unw_word_t ip = lush_cursor_get_ip(&cursor);
       TMSG(LUNW, "IP:  %p", ip);
-      td->unwind->ip = ip;
+      td->unwind->ip = (void*) ip;
 
       pchord_len++;
       td->unwind++;
@@ -334,7 +334,7 @@ lush_bt2cct(hpcrun_cct_t* cct, ucontext_t* context,
 
       unw_word_t ip = lush_cursor_get_ip(&cursor);
       TMSG(LUNW, "IP:  %p", ip);
-      td->unwind->ip = ip;
+      td->unwind->ip = (void*) ip;
 
       pchord_len++;
       td->unwind++;
@@ -461,7 +461,7 @@ canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
   lush_lip_t* lip = NULL;
 
   if (as == LUSH_ASSOC_1_to_M) {
-    ip = chord_beg->ip;
+    ip = (unw_word_t) chord_beg->ip;
   }
   else if (as == LUSH_ASSOC_M_to_1) {
     lip = chord_beg->lip;
@@ -475,7 +475,7 @@ canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
     
     if (x >= pchord_end) {
       // INVARIANT: as must be 1-to-M
-      x->ip = ip;
+      x->ip = (void*) ip;
     }
     if (x >= lchord_end) {
       // INVARIANT: as is one of: M-to-1, a-to-0
