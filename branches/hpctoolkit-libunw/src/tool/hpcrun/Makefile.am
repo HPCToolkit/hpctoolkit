@@ -90,16 +90,20 @@ endif
 
 # =================== libunwind =====================
 #
+# !!! This is NOT robust !!!
+# !!! specific CPPFLAGS not set because externals version is assumed
+# !!!  (the -I for externals is already part of the CPPFLAGS
 #
+# !!! also, LDFLAGS does not need a -L component for an analogous reason
 
 if OPT_HAVE_LIBUNWIND
   LIBUNWIND_DIR = generic-libunwind
   LIBUNWIND_SRC = unwind/generic-libunwind/libunwind-interface.c
-  LIBUNWIND_LD_FLAGS = -lunwind
+  LIBUNWIND_LDFLAGS = -lunwind
 else
   LIBUNWIND_DIR = hpcrun-libunwind
   LIBUNWIND_SRC = 
-  LIBUNWIND_LD_FLAGS =
+  LIBUNWIND_LDFLAGS =
 endif
 
 # ===========================
@@ -346,6 +350,11 @@ endif
 if OPT_ENABLE_LUSH_PTHREADS
     libhpcrun_la_CPPFLAGS += -DLUSH_PTHREADS
     libhpcrun_o_CPPFLAGS  += -DLUSH_PTHREADS
+endif
+
+if OPT_HAVE_LIBUNWIND
+    libhpcrun_la_LDFLAGS  += $(LIBUNWIND_LDFLAGS)
+    libhpcrun_o_LDFLAGS   += $(LIBUNWIND_LDFLAGS)
 endif
 
 libhpcrun_la_SOURCES += utilities/last_func.c

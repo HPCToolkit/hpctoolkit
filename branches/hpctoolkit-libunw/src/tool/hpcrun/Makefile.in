@@ -102,8 +102,10 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 @OPT_ENABLE_UPC_TRUE@am__append_30 = $(OPT_UPC_LDFLAGS)
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_31 = -DLUSH_PTHREADS
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_32 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_33 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_34 = libagent-pthread.la \
+@OPT_HAVE_LIBUNWIND_TRUE@am__append_33 = $(LIBUNWIND_LDFLAGS)
+@OPT_HAVE_LIBUNWIND_TRUE@am__append_34 = $(LIBUNWIND_LDFLAGS)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_35 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_36 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -634,16 +636,22 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 pkglibexecdir = $(libexecdir)/$(PACKAGE)
 bin_SCRIPTS = scripts/hpcsummary $(am__append_2) $(am__append_3)
 pkglibexec_SCRIPTS = scripts/hpclog
-pkglib_LTLIBRARIES = $(am__append_1) $(am__append_33) $(am__append_34)
+pkglib_LTLIBRARIES = $(am__append_1) $(am__append_35) $(am__append_36)
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@pkglib_LIBRARIES = libhpcrun_wrap.a
 @OPT_HAVE_LIBUNWIND_FALSE@LIBUNWIND_DIR = hpcrun-libunwind
 
 # =================== libunwind =====================
 #
+# !!! This is NOT robust !!!
+# !!! specific CPPFLAGS not set because externals version is assumed
+# !!!  (the -I for externals is already part of the CPPFLAGS
 #
+# !!! also, LDFLAGS does not need a -L component for the same reason
 @OPT_HAVE_LIBUNWIND_TRUE@LIBUNWIND_DIR = generic-libunwind
 @OPT_HAVE_LIBUNWIND_FALSE@LIBUNWIND_SRC = 
 @OPT_HAVE_LIBUNWIND_TRUE@LIBUNWIND_SRC = unwind/generic-libunwind/libunwind-interface.c
+@OPT_HAVE_LIBUNWIND_FALSE@LIBUNWIND_LDFLAGS = 
+@OPT_HAVE_LIBUNWIND_TRUE@LIBUNWIND_LDFLAGS = -lunwind
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
@@ -814,9 +822,9 @@ libhpcrun_la_LIBADD = $(HPC_LIBPROFLEAN)
 libhpcrun_o_LDADD = $(HPC_LIBPROFLEAN)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt $(am__append_17) $(am__append_21) \
-	$(am__append_29)
+	$(am__append_29) $(am__append_33)
 libhpcrun_o_LDFLAGS = $(am__append_18) $(am__append_24) \
-	$(am__append_30)
+	$(am__append_30) $(am__append_34)
 
 # FIXME: This is specific to Rice.
 MY_AGENT_RTSUPPORT = lush/lush-support-rt.h lush/lush-support-rt.c
