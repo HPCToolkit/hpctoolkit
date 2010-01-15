@@ -38,6 +38,7 @@
 //
 
 void hpcrun_drop_sample(void);
+void hpcrun_interval_tree_init(void);
 
 //************************************************
 //  interface functions
@@ -67,7 +68,7 @@ hpcrun_unw_get_ra_loc(unw_cursor_t* c)
 void
 unw_init_cursor(unw_cursor_t* cursor, void* context)
 {
-  unw_local_init(cursor, (unw_context_t*) context);
+  unw_init_local(cursor, (unw_context_t*) context);
 }
 
 //***************************************************************************
