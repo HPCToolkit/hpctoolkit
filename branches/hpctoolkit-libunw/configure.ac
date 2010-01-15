@@ -290,6 +290,7 @@ HOST_OS=
 HOST_CPU_MIPS=no
 HOST_CPU_PPC=no
 HOST_CPU_X86=no
+HOST_CPU_IA64=no
 
 case ${host} in
   # Linux
@@ -304,6 +305,7 @@ case ${host} in
   ia64*-*-linux*)
     # __ia64 && __linux
     HOST_OS="Linux"
+    HOST_CPU_IA64=yes
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
 
@@ -367,11 +369,11 @@ case ${host} in
 esac
 
 
-AM_CONDITIONAL([HOST_OS_LINUX], [test "$HOST_OS" = Linux])
-AM_CONDITIONAL([HOST_CPU_MIPS], [test "$HOST_CPU_MIPS" = yes])
-AM_CONDITIONAL([HOST_CPU_PPC],  [test "$HOST_CPU_PPC" = yes])
-AM_CONDITIONAL([HOST_CPU_X86],  [test "$HOST_CPU_X86" = yes])
-
+AM_CONDITIONAL([HOST_OS_LINUX],  [test "$HOST_OS" = Linux])
+AM_CONDITIONAL([HOST_CPU_MIPS],  [test "$HOST_CPU_MIPS" = yes])
+AM_CONDITIONAL([HOST_CPU_PPC],   [test "$HOST_CPU_PPC" = yes])
+AM_CONDITIONAL([HOST_CPU_X86],   [test "$HOST_CPU_X86" = yes])
+AM_CONDITIONAL([HOST_CPU_IA64],  [test "$HOST_CPU_IA64" = yes])
 
 #-------------------------------------------------
 # Host-specific compiler settings
@@ -826,8 +828,17 @@ AC_ARG_WITH([libunwind],
 
 # Check for LIBUNWIND > .9xxx [skip for now]
 
+#
+# NOT robust: depends on OPT_LIBUNWIND being set
+#             This only happens (currently) if 
+#
 if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then 
   AC_MSG_RESULT([yes (${OPT_LIBUNWIND_LIBSO})])
+
+  OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
+  OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
+  OPT_LIBUNWIND_LDFLAGS="-L$OPT_LIBUNWIND/lib -lunwind"
+
 else
   AC_MSG_RESULT([no])
 fi

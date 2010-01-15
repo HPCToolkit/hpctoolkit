@@ -99,11 +99,13 @@ endif
 if OPT_HAVE_LIBUNWIND
   LIBUNWIND_DIR = generic-libunwind
   LIBUNWIND_SRC = unwind/generic-libunwind/libunwind-interface.c
-  LIBUNWIND_LDFLAGS = -lunwind
+  LIBUNWIND_LDFLAGS = $(OPT_LIBUNWIND_LDFLAGS)
+  LIBUNWIND_CPPFLAGS = $(OPT_LIBUNWIND_IFLAGS)
 else
   LIBUNWIND_DIR = hpcrun-libunwind
   LIBUNWIND_SRC = 
   LIBUNWIND_LDFLAGS =
+  LIBUNWIND_CPPFLAGS =
 endif
 
 # ===========================
@@ -194,6 +196,10 @@ MY_STATIC_FILES = 			\
 MY_LINUX_DYNAMIC_FILES = 		\
 	os/linux/dylib.c
 
+
+MY_IA64_FILES = \
+	unwind/common/default_validation_summary.c \
+        trampoline/ia64/ia64-tramp.S
 
 MY_MIPS_FILES = \
 	unwind/common/default_validation_summary.c \
@@ -326,6 +332,11 @@ if HOST_CPU_X86
     libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
 endif
 
+if HOST_CPU_IA64
+    libhpcrun_la_SOURCES  += $(MY_IA64_FILES)
+    libhpcrun_o_SOURCES   += $(MY_IA64_FILES)
+endif
+
 if OPT_PAPI_DYNAMIC
     libhpcrun_la_SOURCES  += $(MY_PAPI_FILES)
     libhpcrun_la_CPPFLAGS += $(PAPI_INC_FLGS)
@@ -353,6 +364,8 @@ if OPT_ENABLE_LUSH_PTHREADS
 endif
 
 if OPT_HAVE_LIBUNWIND
+    libhpcrun_la_CPPFLAGS += $(LIBUNWIND_CPPFLAGS)
+    libhpcrun_o_CPPFLAGS  += $(LIBUNWIND_CPPFLAGS)
     libhpcrun_la_LDFLAGS  += $(LIBUNWIND_LDFLAGS)
     libhpcrun_o_LDFLAGS   += $(LIBUNWIND_LDFLAGS)
 endif

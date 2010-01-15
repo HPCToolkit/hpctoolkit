@@ -192,7 +192,21 @@ dylib_find_proc(void* pc, void* *proc_beg, void* *mod_beg)
   }
 }
 
+#if defined(__ia64__) && defined(__linux__)
+bool
+dylib_isin_start_func(void* pc)
+{
+  extern int __libc_start_main(void); // start of a process                                                                         
+  extern int __clone2(int (*fn)(void *),  void *child_stack_base,
+                      size_t stack_size, int flags, void *arg, ...
+                      /* pid_t *pid, struct user_desc *tls, pid_t *ctid */ );
+  void* proc_beg = NULL, *mod_beg = NULL;
+  dylib_find_proc(pc, &proc_beg, &mod_beg);
 
+  return (proc_beg == __libc_start_main ||
+          proc_beg == __clone2);
+}
+#else 
 bool 
 dylib_isin_start_func(void* pc)
 {
@@ -205,6 +219,7 @@ dylib_isin_start_func(void* pc)
   return (proc_beg == __libc_start_main || 
 	  proc_beg == clone || proc_beg == __clone);
 }
+#endif  // __ia64__ && __linux__
 
 
 const char* 
