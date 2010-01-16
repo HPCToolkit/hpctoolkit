@@ -44,6 +44,21 @@ void hpcrun_interval_tree_init(void);
 //  interface functions
 //************************************************
 
+//
+// FIXME: context_pc function is separate from libunwind
+//  context_pc is specific to an architecture/os pair.
+//  Should likely be in it's own file.
+//
+//  the function below is for ia64 on linux
+//
+
+void*
+context_pc(void* context)
+{
+  mcontext_t* mc = &((((ucontext_t*) context)->_u)._mc);
+  return (void*) mc->sc_ip;
+}
+
 // ----------------------------------------------------------
 // unw_init
 // ----------------------------------------------------------
