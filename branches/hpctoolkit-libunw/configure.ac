@@ -828,17 +828,26 @@ AC_ARG_WITH([libunwind],
 
 # Check for LIBUNWIND > .9xxx [skip for now]
 
-#                                                                                                                                  
-# NOT robust: depends on OPT_HAVE_LIBUNWIND being set by "use externals" feature
-# This, in turn, only happens (currently) if on IA64 arcitecture
-#
-
 if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then 
   AC_MSG_RESULT([yes (${OPT_LIBUNWIND_LIBSO})])
 
   OPT_LIBUNWIND_IFLAGS="-I$OPT_LIBUNWIND/include"
   OPT_LIBUNWIND_LIBPATH="$OPT_LIBUNWIND"
-  OPT_LIBUNWIND_LDFLAGS="-L$OPT_LIBUNWIND/lib -lunwind-ia64" # need to tack on architecture ?? 
+
+  lib_unw_arch=$host_cpu
+#
+# libunwind cpu architecure code not the same as host_cpu in x86 case
+#
+  case ${lib_unw_arch} in
+    x86*)
+      lib_unw_arch="x86"
+      ;;
+  esac
+
+#
+# Attach architecture code to -l on LIBUNWIND_LDFLAGS
+#
+  OPT_LIBUNWIND_LDFLAGS="-L$OPT_LIBUNWIND/lib -lunwind-$lib_unw_arch"
 
 else
   AC_MSG_RESULT([no])
