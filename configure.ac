@@ -1474,6 +1474,12 @@ AC_ARG_WITH([upc],
    fi
    error_if_missing=no])
 
+AC_ARG_WITH([upc-lib],
+  AS_HELP_STRING([--with-upc-lib=LIBRARY],
+      [path to UPC library(s), absolute or relative to WITH_UPC/runtime/SPI]),
+  [],
+  [with_upc_lib=libSPI.cna.a])
+
 OPT_UPC=no
 OPT_UPC_IFLAGS=
 OPT_UPC_LDFLAGS=
@@ -1481,13 +1487,26 @@ opt_upc_mesg=no
 
 case "$with_upc" in
   /* )
-    if test -f "${with_upc}/arch/include/spi/UPC.h" && \
-       test -f "${with_upc}/runtime/SPI/libbgpspi.cnk.a"
+    if test -f "${with_upc}/arch/include/spi/UPC.h"
     then
       OPT_UPC=yes
       OPT_UPC_IFLAGS="-I ${with_upc}/arch/include"
-      OPT_UPC_LDFLAGS="${with_upc}/runtime/SPI/libbgpspi.cnk.a"
       opt_upc_mesg="$with_upc"
+      for lib in $with_upc_lib ; do
+	case "$lib" in
+	  /* ) abs_lib="$lib" ;;
+	  * )  abs_lib="${with_upc}/runtime/SPI/${lib}" ;;
+	esac
+	if test -f "$abs_lib" ; then
+	  OPT_UPC_LDFLAGS="${OPT_UPC_LDFLAGS} ${abs_lib}"
+	else
+	  OPT_UPC=no
+	  opt_upc_mesg=no
+	  if test "$error_if_missing" = yes ; then
+	    AC_MSG_ERROR([invalid UPC directory: $with_upc])
+	  fi
+	fi
+      done
     else
       if test "$error_if_missing" = yes ; then
 	AC_MSG_ERROR([invalid UPC directory: $with_upc])
