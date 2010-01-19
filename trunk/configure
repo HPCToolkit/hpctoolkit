@@ -1036,6 +1036,7 @@ with_cilk
 enable_lush_pthreads
 enable_bluegene
 with_upc
+with_upc_lib
 with_objcopy
 enable_hpc_binutils
 enable_devtools
@@ -1730,6 +1731,8 @@ Optional Packages:
   --with-xerces=PATH      use given XercesC installation
   --with-cilk=PATH        use given (MIT) Cilk installation for LUSH agents
   --with-upc=PATH         path to IBM BlueGene UPC installation
+  --with-upc-lib=LIBRARY  path to UPC library(s), absolute or relative to
+                          WITH_UPC/runtime/SPI
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -4656,13 +4659,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4659: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4662: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4662: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4665: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4665: output\"" >&5)
+  (eval echo "\"\$as_me:4668: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5868,7 +5871,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5871 "configure"' > conftest.$ac_ext
+  echo '#line 5874 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7721,11 +7724,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7724: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7727: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7728: \$? = $ac_status" >&5
+   echo "$as_me:7731: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8060,11 +8063,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8063: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8066: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8067: \$? = $ac_status" >&5
+   echo "$as_me:8070: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8165,11 +8168,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8168: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8171: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8172: \$? = $ac_status" >&5
+   echo "$as_me:8175: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8220,11 +8223,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8223: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8226: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8227: \$? = $ac_status" >&5
+   echo "$as_me:8230: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11020,7 +11023,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11023 "configure"
+#line 11026 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11116,7 +11119,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11119 "configure"
+#line 11122 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14367,11 +14370,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14370: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14373: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14374: \$? = $ac_status" >&5
+   echo "$as_me:14377: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14466,11 +14469,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14469: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14472: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14473: \$? = $ac_status" >&5
+   echo "$as_me:14476: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14518,11 +14521,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14521: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14524: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14525: \$? = $ac_status" >&5
+   echo "$as_me:14528: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -19933,6 +19936,15 @@ else
 fi
 
 
+
+# Check whether --with-upc-lib was given.
+if test "${with_upc_lib+set}" = set; then
+  withval=$with_upc_lib;
+else
+  with_upc_lib=libSPI.cna.a
+fi
+
+
 OPT_UPC=no
 OPT_UPC_IFLAGS=
 OPT_UPC_LDFLAGS=
@@ -19940,13 +19952,28 @@ opt_upc_mesg=no
 
 case "$with_upc" in
   /* )
-    if test -f "${with_upc}/arch/include/spi/UPC.h" && \
-       test -f "${with_upc}/runtime/SPI/libbgpspi.cnk.a"
+    if test -f "${with_upc}/arch/include/spi/UPC.h"
     then
       OPT_UPC=yes
       OPT_UPC_IFLAGS="-I ${with_upc}/arch/include"
-      OPT_UPC_LDFLAGS="${with_upc}/runtime/SPI/libbgpspi.cnk.a"
       opt_upc_mesg="$with_upc"
+      for lib in $with_upc_lib ; do
+	case "$lib" in
+	  /* ) abs_lib="$lib" ;;
+	  * )  abs_lib="${with_upc}/runtime/SPI/${lib}" ;;
+	esac
+	if test -f "$abs_lib" ; then
+	  OPT_UPC_LDFLAGS="${OPT_UPC_LDFLAGS} ${abs_lib}"
+	else
+	  OPT_UPC=no
+	  opt_upc_mesg=no
+	  if test "$error_if_missing" = yes ; then
+	    { { $as_echo "$as_me:$LINENO: error: invalid UPC directory: $with_upc" >&5
+$as_echo "$as_me: error: invalid UPC directory: $with_upc" >&2;}
+   { (exit 1); exit 1; }; }
+	  fi
+	fi
+      done
     else
       if test "$error_if_missing" = yes ; then
 	{ { $as_echo "$as_me:$LINENO: error: invalid UPC directory: $with_upc" >&5
