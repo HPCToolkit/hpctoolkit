@@ -260,7 +260,7 @@ $CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 # reference to 'main' (gfortran does some bad things).
 #
 $command "$@" >"$cmd_out" 2>&1
-if test $? -ne 0
+if test $? -ne 0 || test ! -f "$appl_out"
 then
     exec <"$cmd_out"
     while read line
