@@ -1,4 +1,6 @@
 #!/bin/sh
+# Debug notes: [Trace execution: set -x] [Check syntax: set -n]
+# set -x
 #
 #  Link application with libhpcrun, libmonitor, PAPI and Xed2
 #  statically by editing the compile line.
@@ -276,11 +278,11 @@ then
     test -f "$appl_out" || die "compile #1 failed: $command $@"
 fi
 
-# Require the output to be statically-linked.
+# Require the output to be statically linked.
 if file "$appl_out" | grep -i static >/dev/null ; then :
 else
     mv -f "$appl_out" "${appl_out}.failed"
-    die "program not statically-linked (maybe forgot -static): $appl_out"
+    die "program not statically linked (maybe forgot -static): $appl_out"
 fi
 
 #
