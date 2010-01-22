@@ -498,7 +498,9 @@ void
 monitor_mpi_pre_init(void)
 {
   if (! ENABLED(MPI_RISKY)) {
+    TMSG(MPI,"Pre_init");
 #if defined(HOST_SYSTEM_IBM_BLUEGENE)
+    TMSG(MPI,"Stopping Sample Sources");
     // Turn sampling off.
     SAMPLE_SOURCES(stop);
 #endif
@@ -509,9 +511,11 @@ monitor_mpi_pre_init(void)
 void
 monitor_init_mpi(int *argc, char ***argv)
 {
+  TMSG(MPI,"Init MPI");
   if (! ENABLED(MPI_RISKY)) {
 #if defined(HOST_SYSTEM_IBM_BLUEGENE)
     // Turn sampling back on.
+    TMSG(MPI, "Restart Sample Sources");
     SAMPLE_SOURCES(start);
 #endif
   }
