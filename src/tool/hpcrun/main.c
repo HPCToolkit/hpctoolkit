@@ -239,8 +239,10 @@ hpcrun_init_internal()
 
   // start the sampling process
 
-  SAMPLE_SOURCES(start);
-
+  // NOTE: hack to ensure that sample source start can be delayed until mpi_init
+  if (! getenv ("HPCRUN_MPI_ONLY") {
+      SAMPLE_SOURCES(start);
+  }
   hpcrun_is_initialized_private = true;
 }
 

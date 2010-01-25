@@ -209,8 +209,6 @@ METHOD_FN(start)
   TD_GET(ss_state)[self->evset_idx] = START;
 }
 
-static int* gen_core = NULL;
-
 static void
 METHOD_FN(stop)
 {
@@ -220,7 +218,6 @@ METHOD_FN(stop)
 
   TMSG(ITIMER_CTL,"stopping itimer");
   TD_GET(ss_state)[self->evset_idx] = STOP;
-  //  *gen_core = 0; // attempt @ core dump
 }
 
 static void
