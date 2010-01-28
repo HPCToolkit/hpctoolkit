@@ -707,6 +707,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
       if (mm) {
 	ivalset.insert(VMAInterval(m->id(), m->id() + 1)); // [ )
 	mm->isComputed(true); // proleptic
+	mm->type(Prof::Metric::ADesc::TyExcl);
       }
     }
     
@@ -906,6 +907,7 @@ Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr,
       mExprVec[i] = mm->expr();
       DIAG_Assert(mExprVec[i], DIAG_UnexpectedInput);
       mm->isComputed(true); // proleptic
+      mm->type(Prof::Metric::ADesc::TyExcl);
     }
   }
   

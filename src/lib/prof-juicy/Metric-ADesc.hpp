@@ -672,6 +672,13 @@ public:
   virtual std::string
   toString() const;
 
+  virtual std::string
+  toValueTyStringXML() const
+  { 
+    DIAG_Assert(isComputed(), "");
+    return "derived";
+  }
+
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cerr) const;
 
