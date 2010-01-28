@@ -341,6 +341,9 @@ std::ostream&
 Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 		      int oFlags, const char* pfx) const
 {
+  typedef std::map<uint, string> UIntToStringMap;
+  UIntToStringMap metricIdToFormula;
+
   os << "  <MetricTable>\n";
   for (uint i = metricBeg; i < metricEnd; i++) {
     const Metric::ADesc* m = m_mMgr->metric(i);
@@ -356,15 +359,37 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
        << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\">\n";
 
     // MetricFormula
-    if (m2 && m2->expr()) {
-      os << "      <MetricFormula t=\"combine\" i=\"1\""
-	 << " frm=\"" << m2->expr()->combineString1() << "\"/>\n";
-      if (m2->expr()->hasDst2Id()) {
-	os << "      <MetricFormula t=\"combine\" i=\"2\""
-	   << " frm=\"" << m2->expr()->combineString2() << "\"/>\n";
+    if (m2) {
+
+      // 0. retrieve combine formula (each DerivedIncrDesc corresponds
+      // to an 'accumulator')
+      string combineFrm;
+      if (m2->expr()) {
+	combineFrm = m2->expr()->combineString1();
+
+	if (m2->expr()->hasDst2Id()) {
+	  uint mId = m2->expr()->dst2Id();
+	  string frm = m2->expr()->combineString2();
+	  metricIdToFormula.insert(std::make_pair(mId, frm));
+	}
       }
-      os << "      <MetricFormula t=\"finalize\""
-	 << " frm=\"" << m2->expr()->finalizeString() << "\"/>\n";
+      else {
+	// must represent accumulator 2
+	uint mId = m2->id();
+	UIntToStringMap::iterator it = metricIdToFormula.find(mId);
+	DIAG_Assert((it != metricIdToFormula.end()), DIAG_UnexpectedInput);
+	combineFrm = it->second;
+      }
+
+      // 1. MetricFormula: combine
+      os << "      <MetricFormula t=\"combine\""
+	 << " frm=\"" << combineFrm << "\"/>\n";
+
+      // 2. MetricFormula: finalize
+      if (m2->expr()) {
+	os << "      <MetricFormula t=\"finalize\""
+	   << " frm=\"" << m2->expr()->finalizeString() << "\"/>\n";
+      }
     }
     
     // Info

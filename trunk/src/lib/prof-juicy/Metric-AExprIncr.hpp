@@ -129,6 +129,11 @@ public:
   dstId(uint x)
   { m_dstId = x; }
 
+
+  uint
+  dst2Id()
+  { return m_dst2Id; }
+
   void
   dst2Id(uint x)
   { m_dst2Id = x; }
