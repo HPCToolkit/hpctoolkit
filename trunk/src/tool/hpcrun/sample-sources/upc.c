@@ -74,6 +74,7 @@
  *   4. There is no event for total cycles.
  *   5. Seems to allow a separate threshold for each event,
  *      although some reports say only one global threshold.
+ *   6. Must run BGP_UPC_Initialize() in every process.
  *
  * Note: all UPC interrupts go to core 0, so we sample core 0 and stay
  * blind to the other cores.
@@ -203,12 +204,10 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
   return 0;
 }
 
+// Note: Must run BGP_UPC_Initialize() in every process.
 static void
 METHOD_FN(init)
 {
-  if (Kernel_PhysicalProcessorID() != 0)
-    return;
-
   BGP_UPC_Initialize();
   self->state = INIT;
   TMSG(UPC, "BGP_UPC_Initialize");
