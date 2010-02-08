@@ -84,6 +84,9 @@
 // forward declarations 
 //***************************************************************************
 
+static void lush_assoc_info2str(char* buf, size_t len, lush_assoc_info_t info);
+static void lush_lip2str(char* buf, size_t len, lush_lip_t* lip);
+
 //***************************************************************************
 // interface functions
 //***************************************************************************
@@ -102,8 +105,8 @@ dump_backtrace(frame_t* unwind)
   thread_data_t* td = hpcrun_get_thread_data();
   if (unwind) {
     for (frame_t* x = td->btbuf; x < unwind; ++x) {
-      lush_assoc_info_sprintf(as_str, x->as_info);
-      lush_lip_sprintf(lip_str, x->lip);
+      lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
+      lush_lip2str(lip_str, sizeof(lip_str), x->lip);
       PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
 
       msg_cnt++;
@@ -117,8 +120,8 @@ dump_backtrace(frame_t* unwind)
   if (msg_cnt <= msg_limit && td->bufstk != td->bufend) {
     PMSG_LIMIT(EMSG("-- begin cached backtrace ---------------------------"));
     for (frame_t* x = td->bufstk; x < td->bufend; ++x) {
-      lush_assoc_info_sprintf(as_str, x->as_info);
-      lush_lip_sprintf(lip_str, x->lip);
+      lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
+      lush_lip2str(lip_str, sizeof(lip_str), x->lip);
       PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
 
       msg_cnt++;
@@ -396,3 +399,39 @@ hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
 #endif
 }
 #endif
+
+//***************************************************************************
+// local procedures
+//***************************************************************************
+
+static void
+lush_assoc_info2str(char* buf, size_t len, lush_assoc_info_t info)
+{
+  // INVARIANT: buf must have at least LUSH_ASSOC_INFO_STR_MIN_LEN slots
+
+  lush_assoc_t as = info.u.as;
+  unsigned info_len = info.u.len;
+
+  const char* as_str = lush_assoc_tostr(as);
+  hpcrun_msg_ns(buf, LUSH_ASSOC_INFO_STR_MIN_LEN, "%s (%u)", as_str, info_len);
+  buf[LUSH_ASSOC_INFO_STR_MIN_LEN - 1] = '\0';
+}
+
+static void
+lush_lip2str(char* buf, size_t len, lush_lip_t* lip)
+{
+  *buf = '\0';
+
+  if (lip) {
+    for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
+      if (i != 0) {
+	*(buf++) = ' ';
+	*(buf) = '\0';
+	len--;
+      }
+      int num = hpcrun_msg_ns(buf, len, "0x%"PRIx64, lip->data8[i]);
+      buf += num;
+      len -= num;
+    }
+  }
+}
