@@ -147,6 +147,7 @@ hpcrun_sample_callpath(void *context, int metricId,
 
   hpcrun_set_handling_sample(td);
 
+  td->unwind = NULL;
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
 
@@ -166,6 +167,9 @@ hpcrun_sample_callpath(void *context, int metricId,
 	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag; 
 
 	trace_append(func_proxy->persistent_id);
+      }
+      if (ENABLED(DUMP_BACKTRACES)) {
+	dump_backtrace(td->unwind);
       }
     }
   }
@@ -302,6 +306,9 @@ hpcrun_sample_callpath_w_bt(void *context,
 	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag; 
 
 	trace_append(func_proxy->persistent_id);
+      }
+      if (ENABLED(DUMP_BACKTRACES)) {
+	dump_backtrace(td->unwind);
       }
     }
   }
