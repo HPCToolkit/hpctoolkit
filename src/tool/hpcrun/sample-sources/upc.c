@@ -78,6 +78,11 @@
  *
  * Note: all UPC interrupts go to core 0, so we sample core 0 and stay
  * blind to the other cores.
+ *
+ * Note: not all nodes can be sampled simultaneously, so we try to
+ * monitor every node (on core 0) and run without sampling on nodes
+ * where it fails.  Commonly, 4 out of 8 nodes succeed, so 1 out of 8
+ * cores.
  */
 
 #include <sys/types.h>
@@ -264,7 +269,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 /*
  * On BG/P, all UPC interrupts go to core 0, so we sample core 0 and
- * stay blind to the other cores.
+ * stay blind to the other cores.  Also, not all nodes can be
+ * simultaneously sampled, so fail gently if setup fails.
  */
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
@@ -272,8 +278,11 @@ METHOD_FN(gen_event_set, int lush_metrics)
   char name[EVENT_NAME_SIZE];
   int k, ev, ret;
 
-  if (Kernel_PhysicalProcessorID() != 0)
+  if (Kernel_PhysicalProcessorID() != 0) {
+    EMSG("Warning: unable to sample in this process/thread "
+	 "due to BlueGene hardware limitations (not core 0).");
     return;
+  }
 
   for (k = 0; k < self->evl.nevents; k++) {
     ev = self->evl.events[k].event;
@@ -281,22 +290,21 @@ METHOD_FN(gen_event_set, int lush_metrics)
 
     ret = BGP_UPC_Monitor_Event(ev, BGP_UPC_CFG_EDGE_DEFAULT);
     if (ret < 0) {
-      EMSG("BGP_UPC_Monitor_Event failed on event %s(%d), ret = %d",
-	   name, ev, ret);
-      hpcrun_ssfail_unsupported("UPC", name);
+      EMSG("Warning: unable to sample on this node "
+	   "due to BlueGene hardware limitations.");
+      return;
     }
     ret = BGP_UPC_Set_Counter_Value(ev, 0);
     if (ret < 0) {
-      EMSG("BGP_UPC_Set_Counter_Value failed on event %s(%d), ret = %d",
-	   name, ev, ret);
-      hpcrun_ssfail_unsupported("UPC", name);
+      EMSG("Warning: unable to sample on this node "
+	   "due to BlueGene hardware limitations.");
+      return;
     }
-
     ret = BGP_UPC_Set_Counter_Threshold_Value(ev, self->evl.events[k].thresh);
     if (ret < 0) {
-      EMSG("BGP_UPC_Set_Counter_Threshold_Value failed on event %s(%d), ret = %d",
-	   name, ev, ret);
-      hpcrun_ssfail_unsupported("UPC", name);
+      EMSG("Warning: unable to sample on this node "
+	   "due to BlueGene hardware limitations.");
+      return;
     }
     TMSG(UPC, "monitor event %s(%d), threshold %ld",
 	 name, ev, self->evl.events[k].thresh);
@@ -317,11 +325,8 @@ METHOD_FN(start)
   if (Kernel_PhysicalProcessorID() != 0)
     return;
 
-  int ret = BGP_UPC_Start(0);
-  if (ret < 0) {
-    EMSG("BGP_UPC_Start failed on core 0, ret = %d", ret);
-    hpcrun_ssfail_start("UPC");
-  }
+  // Need to ignore failure here.
+  BGP_UPC_Start(0);
 
   TD_GET(ss_state)[self->evset_idx] = START;
   TMSG(UPC, "BGP_UPC_Start on core 0");
