@@ -474,19 +474,23 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 
   // 4. Finalize metrics
   if (myRank == rootRank) {
-    for (uint grpId = 1; grpId < groupIdToGroupMetricsMap.size(); ++grpId) {
-      const VMAIntervalSet* ivalset = groupIdToGroupMetricsMap[grpId];
-
-      // degenerate case: group has no metrics and therefore no derived metrics
-      if (!ivalset) { continue; }
-
-      DIAG_Assert(ivalset->size() == 1, DIAG_UnexpectedInput);
-      
-      const VMAInterval& ival = *(ivalset->begin());
-      uint mBeg = (uint)ival.beg(), mEnd = (uint)ival.end();
-      
-      cctRoot->computeMetricsIncr(mMgrGbl, mBeg, mEnd,
-				  Prof::Metric::AExprIncr::FnFini);
+    
+    // hpcprof-mpi can now generate non-finalized metrics
+    if (0) {
+      for (uint grpId = 1; grpId < groupIdToGroupMetricsMap.size(); ++grpId) {
+	const VMAIntervalSet* ivalset = groupIdToGroupMetricsMap[grpId];
+	
+	// degenerate case: group has no metrics => no derived metrics
+	if (!ivalset) { continue; }
+	
+	DIAG_Assert(ivalset->size() == 1, DIAG_UnexpectedInput);
+	
+	const VMAInterval& ival = *(ivalset->begin());
+	uint mBeg = (uint)ival.beg(), mEnd = (uint)ival.end();
+	
+	cctRoot->computeMetricsIncr(mMgrGbl, mBeg, mEnd,
+				    Prof::Metric::AExprIncr::FnFini);
+      }
     }
 
     for (uint i = 0; i < mMgrGbl.size(); ++i) {
