@@ -342,7 +342,8 @@ public:
   double
   finalizeStdDev(Metric::IData& mdata) const
   {
-    double d1 = dstVar(mdata), d2 = dst2Var(mdata);
+    double d1 = dstVar(mdata);  // running sum
+    double d2 = dst2Var(mdata); // running sum of squares
     double sdev = d1;
     if (numSrc() > 0) {
       double n = numSrc();
@@ -362,7 +363,8 @@ public:
   finalizeStringStdDev(std::string* meanRet = NULL) const
   {
     std::string n = numSrcStr();
-    std::string d1 = dstStr(), d2 = dst2Str();
+    std::string d1 = dstStr();  // running sum
+    std::string d2 = dst2Str(); // running sum of squares
 
     std::string mean = "(" + d1 + " / " + n + ")";
     std::string z1 = "(" + mean + " * " + mean  + ")"; // (mean)^2
