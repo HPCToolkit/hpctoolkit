@@ -44,14 +44,14 @@
 /*
  * BG/P's UPC interface for overflow sampling.
  *
- *   https://wiki.alcf.anl.gov/index.php/Low_Level_UPC_API
+ *   https://wiki.alcf.anl.gov/index.php/Performance_Tools
  *   intrepid: /bgsys/drivers/ppcfloor/arch/include/spi/UPC.h
  *
  * At startup:
  *
  *   BGP_UPC_Initialize();
+ *   BGP_UPC_Initialize_Counter_Config(BGP_UPC_MODE_0, BGP_UPC_CFG_EDGE_DEFAULT);
  *   for each event
- *      BGP_UPC_Monitor_Event(event, BGP_UPC_CFG_EDGE_DEFAULT);
  *      BGP_UPC_Set_Counter_Value(event, 0);
  *      BGP_UPC_Set_Counter_Threshold_Value(event, threshold);
  *   BGP_UPC_Start(0);
@@ -75,14 +75,11 @@
  *   5. Seems to allow a separate threshold for each event,
  *      although some reports say only one global threshold.
  *   6. Must run BGP_UPC_Initialize() in every process.
+ *   7. Set every node to Mode 0.
+ *   8. Don't use BGP_UPC_Monitor_Event().
  *
  * Note: all UPC interrupts go to core 0, so we sample core 0 and stay
  * blind to the other cores.
- *
- * Note: not all nodes can be sampled simultaneously, so we try to
- * monitor every node (on core 0) and run without sampling on nodes
- * where it fails.  Commonly, 4 out of 8 nodes succeed, so 1 out of 8
- * cores.
  */
 
 #include <sys/types.h>
@@ -209,11 +206,15 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
   return 0;
 }
 
-// Note: Must run BGP_UPC_Initialize() in every process.
+// Note: Must run BGP_UPC_Initialize() in every process,
+// and set every node to Mode 0 (to count on cores 0 and 1).
 static void
 METHOD_FN(init)
 {
   BGP_UPC_Initialize();
+  if (Kernel_PhysicalProcessorID() == 0) {
+    BGP_UPC_Initialize_Counter_Config(BGP_UPC_MODE_0, BGP_UPC_CFG_EDGE_DEFAULT);
+  }
   self->state = INIT;
   TMSG(UPC, "BGP_UPC_Initialize");
 }
@@ -269,8 +270,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 /*
  * On BG/P, all UPC interrupts go to core 0, so we sample core 0 and
- * stay blind to the other cores.  Also, not all nodes can be
- * simultaneously sampled, so fail gently if setup fails.
+ * stay blind to the other cores.  We can sample on core 0 of every
+ * node, but leave in the soft failure in case something unexpected
+ * happens.
  */
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
@@ -288,12 +290,6 @@ METHOD_FN(gen_event_set, int lush_metrics)
     ev = self->evl.events[k].event;
     BGP_UPC_Get_Event_Name(ev, EVENT_NAME_SIZE, name);
 
-    ret = BGP_UPC_Monitor_Event(ev, BGP_UPC_CFG_EDGE_DEFAULT);
-    if (ret < 0) {
-      EMSG("Warning: unable to sample on this node "
-	   "due to BlueGene hardware limitations.");
-      return;
-    }
     ret = BGP_UPC_Set_Counter_Value(ev, 0);
     if (ret < 0) {
       EMSG("Warning: unable to sample on this node "
