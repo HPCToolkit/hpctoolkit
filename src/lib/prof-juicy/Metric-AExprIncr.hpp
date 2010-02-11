@@ -449,9 +449,9 @@ public:
   virtual double
   accumulate(Metric::IData& mdata) const
   {
-    double d = accumVar(mdata), s = srcVar(mdata);
-    double z = std::min(d, s);
-    DIAG_MsgIf(0, "MinIncr: min("<< d << ", " << s << ") = " << z);
+    double a = accumVar(mdata), s = srcVar(mdata);
+    double z = std::min(a, s);
+    DIAG_MsgIf(0, "MinIncr: min("<< a << ", " << s << ") = " << z);
     accumVar(mdata) = z;
     return z;
   }
@@ -468,8 +468,8 @@ public:
   virtual std::string
   combineString1() const
   {
-    std::string d = accumStr();
-    std::string z = "min(" + d + ", " + d + ")";
+    std::string a = accumStr();
+    std::string z = "min(" + a + ", " + a + ")";
     return z;
   }
 
@@ -511,9 +511,9 @@ public:
   virtual double
   accumulate(Metric::IData& mdata) const
   {
-    double d = accumVar(mdata), s = srcVar(mdata);
-    double z = std::max(d, s);
-    DIAG_MsgIf(0, "MaxIncr: max("<< d << ", " << s << ") = " << z);
+    double a = accumVar(mdata), s = srcVar(mdata);
+    double z = std::max(a, s);
+    DIAG_MsgIf(0, "MaxIncr: max("<< a << ", " << s << ") = " << z);
     accumVar(mdata) = z;
     return z;
   }
@@ -530,8 +530,8 @@ public:
   virtual std::string
   combineString1() const
   {
-    std::string d = accumStr();
-    std::string z = "max(" + d + ", " + d + ")";
+    std::string a = accumStr();
+    std::string z = "max(" + a + ", " + a + ")";
     return z;
   }
 
@@ -573,9 +573,9 @@ public:
   virtual double
   accumulate(Metric::IData& mdata) const
   {
-    double d = accumVar(mdata), s = srcVar(mdata);
-    double z = d + s;
-    DIAG_MsgIf(0, "SumIncr: +("<< d << ", " << s << ") = " << z);
+    double a = accumVar(mdata), s = srcVar(mdata);
+    double z = a + s;
+    DIAG_MsgIf(0, "SumIncr: +("<< a << ", " << s << ") = " << z);
     accumVar(mdata) = z;
     return z;
   }
@@ -592,8 +592,8 @@ public:
   virtual std::string
   combineString1() const
   {
-    std::string d = accumStr();
-    std::string z = "sum(" + d + ", " + d + ")";
+    std::string a = accumStr();
+    std::string z = "sum(" + a + ", " + a + ")";
     return z;
   }
 
@@ -635,9 +635,9 @@ public:
   virtual double
   accumulate(Metric::IData& mdata) const
   {
-    double d = accumVar(mdata), s = srcVar(mdata);
-    double z = d + s;
-    DIAG_MsgIf(0, "MeanIncr: +("<< d << ", " << s << ") = " << z);
+    double a = accumVar(mdata), s = srcVar(mdata);
+    double z = a + s;
+    DIAG_MsgIf(0, "MeanIncr: +("<< a << ", " << s << ") = " << z);
     accumVar(mdata) = z;
     return z;
   }
@@ -649,11 +649,11 @@ public:
   virtual double
   finalize(Metric::IData& mdata) const
   {
-    double d = accumVar(mdata);
-    double z = d;
+    double a = accumVar(mdata);
+    double z = a;
     if (numSrc() > 0) {
       double n = numSrc();
-      z = d / n;
+      z = a / n;
       accumVar(mdata) = z;
     }
     return z;
@@ -663,8 +663,8 @@ public:
   virtual std::string
   combineString1() const
   {
-    std::string d = accumStr();
-    std::string z = "sum(" + d + ", " + d + ")";
+    std::string a = accumStr();
+    std::string z = "sum(" + a + ", " + a + ")";
     return z;
   }
 
@@ -672,8 +672,8 @@ public:
   finalizeString() const
   {
     std::string n = numSrcStr();
-    std::string d = accumStr();
-    std::string z = d + " / " + n;
+    std::string a = accumStr();
+    std::string z = a + " / " + n;
     return z;
   }
 
