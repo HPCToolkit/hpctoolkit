@@ -449,7 +449,7 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
     Prof::Metric::AExprIncr* expr = mm->expr();
     if (expr) {
       expr->srcId(j);
-      if (expr->hasDst2Id()) {
+      if (expr->hasAccum2()) {
 	expr->src2Id(j + 1); // cf. Metric::Mgr::makeSummaryMetricIncr()
       }
     }
@@ -658,7 +658,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
 
     DIAG_MsgIf(0, "[" << myRank << "] grp " << groupId << ": [" << mDrvdBeg << ", " << mDrvdEnd << ")");
     cctRoot->computeMetricsIncr(*mMgrGbl, mDrvdBeg, mDrvdEnd,
-				Prof::Metric::AExprIncr::FnUpdate);
+				Prof::Metric::AExprIncr::FnAccum);
   }
 
   // -------------------------------------------------------

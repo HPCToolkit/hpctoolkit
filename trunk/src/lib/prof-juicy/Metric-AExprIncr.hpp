@@ -109,14 +109,14 @@ public:
   static const double epsilon = 0.000001;
 
 public:
-  AExprIncr(uint dstId, uint srcId)
-    : m_dstId(dstId), m_dst2Id(Metric::IData::npos),
+  AExprIncr(uint accumId, uint srcId)
+    : m_accumId(accumId), m_accum2Id(Metric::IData::npos),
       m_srcId(srcId), m_src2Id(Metric::IData::npos),
       m_numSrc(0)
   { }
 
-  AExprIncr(uint dstId, uint dst2Id, uint srcId)
-    : m_dstId(dstId), m_dst2Id(dst2Id),
+  AExprIncr(uint accumId, uint accum2Id, uint srcId)
+    : m_accumId(accumId), m_accum2Id(accum2Id),
       m_srcId(srcId), m_src2Id(Metric::IData::npos),
       m_numSrc(0)
   { }
@@ -126,22 +126,26 @@ public:
 
 
   void
-  dstId(uint x)
-  { m_dstId = x; }
+  accumId(uint x)
+  { m_accumId = x; }
 
-
-  uint
-  dst2Id()
-  { return m_dst2Id; }
-
-  void
-  dst2Id(uint x)
-  { m_dst2Id = x; }
 
   bool
-  hasDst2Id() const
-  { return (m_dst2Id != Metric::IData::npos); }
+  hasAccum2() const
+  { return (m_accum2Id != Metric::IData::npos); }
 
+  uint
+  accum2Id()
+  { return m_accum2Id; }
+
+  void
+  accum2Id(uint x)
+  { m_accum2Id = x; }
+
+
+  bool
+  hasSrc2Id() const
+  { return (m_src2Id != Metric::IData::npos); }
 
   void
   srcId(uint x)
@@ -150,10 +154,6 @@ public:
   void
   src2Id(uint x)
   { m_src2Id = x; }
-
-  bool
-  hasSrc2Id() const
-  { return (m_src2Id != Metric::IData::npos); }
 
 
   uint
@@ -169,9 +169,9 @@ public:
   //
   // ------------------------------------------------------------
 
-  enum FnTy { FnInit, FnInitSrc, FnUpdate, FnCombine, FnFini };
+  enum FnTy { FnInit, FnInitSrc, FnAccum, FnCombine, FnFini };
 
-  // initialize: initializes destination metrics (dstVar() & dst2Var())
+  // initialize: initializes destination metrics (accumVar() & accum2Var())
   virtual double
   initialize(Metric::IData& mdata) const = 0;
 
@@ -179,13 +179,13 @@ public:
   virtual double
   initializeSrc(Metric::IData& mdata) const = 0;
 
-  // update: updates destination metrics using an individual source, srcVar().
+  // accumulate: updates accumulators using an individual source, srcVar().
   virtual double
-  update(Metric::IData& mdata) const = 0;
+  accumulate(Metric::IData& mdata) const = 0;
 
-  // combine: combines destination metrics with sources that themselves
-  // represent destination metrics, i.e., they are the result of
-  // updates ((srcVar() & srcVar2()).
+  // combine: updates accumulators with sources that themselves
+  // represent accumulators.  There is one source for each accumulator
+  // (srcVar() & srcVar2()).
   virtual double
   combine(Metric::IData& mdata) const = 0;
 
@@ -208,29 +208,29 @@ public:
 
 
   double
-  dstVar(const Metric::IData& mdata) const
-  { return var(mdata, m_dstId); }
+  accumVar(const Metric::IData& mdata) const
+  { return var(mdata, m_accumId); }
 
   double&
-  dstVar(Metric::IData& mdata) const
-  { return var(mdata, m_dstId); }
+  accumVar(Metric::IData& mdata) const
+  { return var(mdata, m_accumId); }
 
   std::string
-  dstStr() const
-  { return "$"+ StrUtil::toStr(m_dstId); }
+  accumStr() const
+  { return "$"+ StrUtil::toStr(m_accumId); }
 
 
   double
-  dst2Var(const Metric::IData& mdata) const
-  { return var(mdata, m_dst2Id); }
+  accum2Var(const Metric::IData& mdata) const
+  { return var(mdata, m_accum2Id); }
 
   double&
-  dst2Var(Metric::IData& mdata) const
-  { return var(mdata, m_dst2Id); }
+  accum2Var(Metric::IData& mdata) const
+  { return var(mdata, m_accum2Id); }
 
   std::string
-  dst2Str() const
-  { return "$"+ StrUtil::toStr(m_dst2Id); }
+  accum2Str() const
+  { return "$"+ StrUtil::toStr(m_accum2Id); }
 
 
   double
@@ -280,8 +280,8 @@ public:
   double
   initializeStdDev(Metric::IData& mdata) const
   {
-    dstVar(mdata) = 0.0;
-    dst2Var(mdata) = 0.0;
+    accumVar(mdata) = 0.0;
+    accum2Var(mdata) = 0.0;
     return 0.0;
   }
 
@@ -298,13 +298,13 @@ public:
 
 
   double
-  updateStdDev(Metric::IData& mdata) const
+  accumulateStdDev(Metric::IData& mdata) const
   {
-    double d1 = dstVar(mdata), d2 = dst2Var(mdata), s = srcVar(mdata);
-    double z1 = d1 + s;       // running sum
-    double z2 = d2 + (s * s); // running sum of squares
-    dstVar(mdata)  = z1;
-    dst2Var(mdata) = z2;
+    double a1 = accumVar(mdata), a2 = accum2Var(mdata), s = srcVar(mdata);
+    double z1 = a1 + s;       // running sum
+    double z2 = a2 + (s * s); // running sum of squares
+    accumVar(mdata)  = z1;
+    accum2Var(mdata) = z2;
     return z1;
   }
 
@@ -312,12 +312,12 @@ public:
   double
   combineStdDev(Metric::IData& mdata) const
   {
-    double d1 = dstVar(mdata), d2 = dst2Var(mdata);
+    double a1 = accumVar(mdata), a2 = accum2Var(mdata);
     double s1 = srcVar(mdata), s2 = src2Var(mdata);
-    double z1 = d1 + s1; // running sum
-    double z2 = d2 + s2; // running sum of squares
-    dstVar(mdata)  = z1;
-    dst2Var(mdata) = z2;
+    double z1 = a1 + s1; // running sum
+    double z2 = a2 + s2; // running sum of squares
+    accumVar(mdata)  = z1;
+    accum2Var(mdata) = z2;
     return z1;
   }
 
@@ -325,16 +325,16 @@ public:
   std::string
   combineString1StdDev() const
   {
-    std::string d1 = dstStr();
-    std::string z1 = "sum(" + d1 + ", " + d1 + ")"; // running sum
+    std::string a1 = accumStr();
+    std::string z1 = "sum(" + a1 + ", " + a1 + ")"; // running sum
     return z1;
   }
 
   std::string
   combineString2StdDev() const
   {
-    std::string d2 = dst2Str();
-    std::string z2 = "sum(" + d2 + ", " + d2 + ")"; // running sum of squares
+    std::string a2 = accum2Str();
+    std::string z2 = "sum(" + a2 + ", " + a2 + ")"; // running sum of squares
     return z2;
   }
 
@@ -342,18 +342,18 @@ public:
   double
   finalizeStdDev(Metric::IData& mdata) const
   {
-    double d1 = dstVar(mdata);  // running sum
-    double d2 = dst2Var(mdata); // running sum of squares
-    double sdev = d1;
+    double a1 = accumVar(mdata);  // running sum
+    double a2 = accum2Var(mdata); // running sum of squares
+    double sdev = a1;
     if (numSrc() > 0) {
       double n = numSrc();
-      double mean = d1 / n;
+      double mean = a1 / n;
       double z1 = (mean * mean); // (mean)^2
-      double z2 = d2 / n;        // (sum of squares)/n
+      double z2 = a2 / n;        // (sum of squares)/n
       sdev = sqrt(z2 - z1);      // stddev
 
-      dstVar(mdata) = sdev;
-      dst2Var(mdata) = mean;
+      accumVar(mdata) = sdev;
+      accum2Var(mdata) = mean;
     }
     return sdev;
   }
@@ -363,12 +363,12 @@ public:
   finalizeStringStdDev(std::string* meanRet = NULL) const
   {
     std::string n = numSrcStr();
-    std::string d1 = dstStr();  // running sum
-    std::string d2 = dst2Str(); // running sum of squares
+    std::string a1 = accumStr();  // running sum
+    std::string a2 = accum2Str(); // running sum of squares
 
-    std::string mean = "(" + d1 + " / " + n + ")";
-    std::string z1 = "(" + mean + " * " + mean  + ")"; // (mean)^2
-    std::string z2 = "(" + d2 + " / " + n  + ")";      // (sum of squares)/n
+    std::string mean = "(" + a1 + " / " + n + ")";
+    std::string z1 = "(pow(" + mean + ", 2)"; // (mean)^2
+    std::string z2 = "(" + a2 + " / " + n  + ")";      // (sum of squares)/n
     std::string sdev = "sqrt(" + z2 + " - " + z1 + ")";
 
     if (meanRet) {
@@ -412,11 +412,13 @@ public:
   ddump() const;
 
 protected:
-  uint m_dstId;
-  uint m_dst2Id;
-  uint m_srcId;
-  uint m_src2Id;
-  uint m_numSrc;
+  uint m_accumId;  // accumulator 1
+  uint m_accum2Id; // accumulator 2 (if needed)
+
+  uint m_srcId;  // input source for accumulate()
+  uint m_src2Id; // input source for accumulator 2's combine()
+
+  uint m_numSrc; // number of inputs
 };
 
 
@@ -428,8 +430,8 @@ class MinIncr
   : public AExprIncr
 {
 public:
-  MinIncr(uint dstId, uint srcId)
-    : AExprIncr(dstId, srcId)
+  MinIncr(uint accumId, uint srcId)
+    : AExprIncr(accumId, srcId)
   { }
 
   virtual ~MinIncr()
@@ -438,42 +440,42 @@ public:
 
   virtual double
   initialize(Metric::IData& mdata) const
-  { return (dstVar(mdata) = DBL_MAX); }
+  { return (accumVar(mdata) = DBL_MAX); }
 
   virtual double
   initializeSrc(Metric::IData& mdata) const
   { return (srcVar(mdata) = DBL_MAX); }
 
   virtual double
-  update(Metric::IData& mdata) const
+  accumulate(Metric::IData& mdata) const
   {
-    double d = dstVar(mdata), s = srcVar(mdata);
+    double d = accumVar(mdata), s = srcVar(mdata);
     double z = std::min(d, s);
     DIAG_MsgIf(0, "MinIncr: min("<< d << ", " << s << ") = " << z);
-    dstVar(mdata) = z;
+    accumVar(mdata) = z;
     return z;
   }
 
   virtual double
   combine(Metric::IData& mdata) const
-  { return MinIncr::update(mdata); }
+  { return MinIncr::accumulate(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata) const
-  { return dstVar(mdata); }
+  { return accumVar(mdata); }
 
 
   virtual std::string
   combineString1() const
   {
-    std::string d = dstStr();
+    std::string d = accumStr();
     std::string z = "min(" + d + ", " + d + ")";
     return z;
   }
 
   virtual std::string
   finalizeString() const
-  { return dstStr(); }
+  { return accumStr(); }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -490,8 +492,8 @@ class MaxIncr
   : public AExprIncr
 {
 public:
-  MaxIncr(uint dstId, uint srcId)
-    : AExprIncr(dstId, srcId)
+  MaxIncr(uint accumId, uint srcId)
+    : AExprIncr(accumId, srcId)
   { }
 
   virtual ~MaxIncr()
@@ -500,42 +502,42 @@ public:
 
   virtual double
   initialize(Metric::IData& mdata) const
-  { return (dstVar(mdata) = 0.0); }
+  { return (accumVar(mdata) = 0.0); }
 
   virtual double
   initializeSrc(Metric::IData& mdata) const
   { return (srcVar(mdata) = 0.0); }
 
   virtual double
-  update(Metric::IData& mdata) const
+  accumulate(Metric::IData& mdata) const
   {
-    double d = dstVar(mdata), s = srcVar(mdata);
+    double d = accumVar(mdata), s = srcVar(mdata);
     double z = std::max(d, s);
     DIAG_MsgIf(0, "MaxIncr: max("<< d << ", " << s << ") = " << z);
-    dstVar(mdata) = z;
+    accumVar(mdata) = z;
     return z;
   }
 
   virtual double
   combine(Metric::IData& mdata) const
-  { return MaxIncr::update(mdata); }
+  { return MaxIncr::accumulate(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata) const
-  { return dstVar(mdata); }
+  { return accumVar(mdata); }
 
 
   virtual std::string
   combineString1() const
   {
-    std::string d = dstStr();
+    std::string d = accumStr();
     std::string z = "max(" + d + ", " + d + ")";
     return z;
   }
 
   virtual std::string
   finalizeString() const
-  { return dstStr(); }
+  { return accumStr(); }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -552,8 +554,8 @@ class SumIncr
   : public AExprIncr
 {
 public:
-  SumIncr(uint dstId, uint srcId)
-    : AExprIncr(dstId, srcId)
+  SumIncr(uint accumId, uint srcId)
+    : AExprIncr(accumId, srcId)
   { }
 
   virtual ~SumIncr()
@@ -562,42 +564,42 @@ public:
 
   virtual double
   initialize(Metric::IData& mdata) const
-  { return (dstVar(mdata) = 0.0); }
+  { return (accumVar(mdata) = 0.0); }
 
   virtual double
   initializeSrc(Metric::IData& mdata) const
   { return (srcVar(mdata) = 0.0); }
 
   virtual double
-  update(Metric::IData& mdata) const
+  accumulate(Metric::IData& mdata) const
   {
-    double d = dstVar(mdata), s = srcVar(mdata);
+    double d = accumVar(mdata), s = srcVar(mdata);
     double z = d + s;
     DIAG_MsgIf(0, "SumIncr: +("<< d << ", " << s << ") = " << z);
-    dstVar(mdata) = z;
+    accumVar(mdata) = z;
     return z;
   }
 
   virtual double
   combine(Metric::IData& mdata) const
-  { return SumIncr::update(mdata); }
+  { return SumIncr::accumulate(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata) const
-  { return dstVar(mdata); }
+  { return accumVar(mdata); }
 
 
   virtual std::string
   combineString1() const
   {
-    std::string d = dstStr();
+    std::string d = accumStr();
     std::string z = "sum(" + d + ", " + d + ")";
     return z;
   }
 
   virtual std::string
   finalizeString() const
-  { return dstStr(); }
+  { return accumStr(); }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -614,8 +616,8 @@ class MeanIncr
   : public AExprIncr
 {
 public:
-  MeanIncr(uint dstId, uint srcId)
-    : AExprIncr(dstId, srcId)
+  MeanIncr(uint accumId, uint srcId)
+    : AExprIncr(accumId, srcId)
   { }
 
   virtual ~MeanIncr()
@@ -624,35 +626,35 @@ public:
 
   virtual double
   initialize(Metric::IData& mdata) const
-  { return (dstVar(mdata) = 0.0); }
+  { return (accumVar(mdata) = 0.0); }
 
   virtual double
   initializeSrc(Metric::IData& mdata) const
   { return (srcVar(mdata) = 0.0); }
 
   virtual double
-  update(Metric::IData& mdata) const
+  accumulate(Metric::IData& mdata) const
   {
-    double d = dstVar(mdata), s = srcVar(mdata);
+    double d = accumVar(mdata), s = srcVar(mdata);
     double z = d + s;
     DIAG_MsgIf(0, "MeanIncr: +("<< d << ", " << s << ") = " << z);
-    dstVar(mdata) = z;
+    accumVar(mdata) = z;
     return z;
   }
 
   virtual double
   combine(Metric::IData& mdata) const
-  { return MeanIncr::update(mdata); }
+  { return MeanIncr::accumulate(mdata); }
 
   virtual double
   finalize(Metric::IData& mdata) const
   {
-    double d = dstVar(mdata);
+    double d = accumVar(mdata);
     double z = d;
     if (numSrc() > 0) {
       double n = numSrc();
       z = d / n;
-      dstVar(mdata) = z;
+      accumVar(mdata) = z;
     }
     return z;
   }
@@ -661,7 +663,7 @@ public:
   virtual std::string
   combineString1() const
   {
-    std::string d = dstStr();
+    std::string d = accumStr();
     std::string z = "sum(" + d + ", " + d + ")";
     return z;
   }
@@ -670,7 +672,7 @@ public:
   finalizeString() const
   {
     std::string n = numSrcStr();
-    std::string d = dstStr();
+    std::string d = accumStr();
     std::string z = d + " / " + n;
     return z;
   }
@@ -690,8 +692,8 @@ class StdDevIncr
   : public AExprIncr
 {
 public:
-  StdDevIncr(uint dstId, uint dst2Id, uint srcId)
-    : AExprIncr(dstId, dst2Id, srcId)
+  StdDevIncr(uint accumId, uint accum2Id, uint srcId)
+    : AExprIncr(accumId, accum2Id, srcId)
   { }
 
   virtual ~StdDevIncr()
@@ -707,8 +709,8 @@ public:
   { return initializeSrcStdDev(mdata); }
 
   virtual double
-  update(Metric::IData& mdata) const
-  { return updateStdDev(mdata); }
+  accumulate(Metric::IData& mdata) const
+  { return accumulateStdDev(mdata); }
 
   virtual double
   combine(Metric::IData& mdata) const
@@ -746,8 +748,8 @@ class CoefVarIncr
   : public AExprIncr
 {
 public:
-  CoefVarIncr(uint dstId, uint dst2Id, uint srcId)
-    : AExprIncr(dstId, dst2Id, srcId)
+  CoefVarIncr(uint accumId, uint accum2Id, uint srcId)
+    : AExprIncr(accumId, accum2Id, srcId)
   { }
 
   virtual ~CoefVarIncr()
@@ -763,8 +765,8 @@ public:
   { return initializeSrcStdDev(mdata); }
 
   virtual double
-  update(Metric::IData& mdata) const
-  { return updateStdDev(mdata); }
+  accumulate(Metric::IData& mdata) const
+  { return accumulateStdDev(mdata); }
 
   virtual double
   combine(Metric::IData& mdata) const
@@ -774,12 +776,12 @@ public:
   finalize(Metric::IData& mdata) const
   {
     double sdev = finalizeStdDev(mdata);
-    double mean = dst2Var(mdata);
+    double mean = accum2Var(mdata);
     double z = 0.0;
     if (mean > epsilon) {
       z = sdev / mean;
     }
-    dstVar(mdata) = z;
+    accumVar(mdata) = z;
     return z;
   }
 
@@ -817,8 +819,8 @@ class RStdDevIncr
   : public AExprIncr
 {
 public:
-  RStdDevIncr(uint dstId, uint dst2Id, uint srcId)
-    : AExprIncr(dstId, dst2Id, srcId)
+  RStdDevIncr(uint accumId, uint accum2Id, uint srcId)
+    : AExprIncr(accumId, accum2Id, srcId)
   { }
 
   virtual ~RStdDevIncr()
@@ -834,8 +836,8 @@ public:
   { return initializeSrcStdDev(mdata); }
 
   virtual double
-  update(Metric::IData& mdata) const
-  { return updateStdDev(mdata); }
+  accumulate(Metric::IData& mdata) const
+  { return accumulateStdDev(mdata); }
 
   virtual double
   combine(Metric::IData& mdata) const
@@ -845,12 +847,12 @@ public:
   finalize(Metric::IData& mdata) const
   {
     double sdev = finalizeStdDev(mdata);
-    double mean = dst2Var(mdata);
+    double mean = accum2Var(mdata);
     double z = 0.0;
     if (mean > epsilon) {
       z = (sdev / mean) * 100;
     }
-    dstVar(mdata) = z;
+    accumVar(mdata) = z;
     return z;
   }
 

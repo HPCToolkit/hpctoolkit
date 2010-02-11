@@ -333,7 +333,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 			doDispPercent, isPercent);
   m->nameBase(mNmBase);
   insert(m);
-  expr->dstId(m->id());
+  expr->accumId(m->id());
 
   if (needDst2Id) {
     string m2NmBase = mNmBase + "-helper";
@@ -343,7 +343,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 			  false/*isPercent*/);
     m2->nameBase(m2NmBase);
     insert(m2);
-    expr->dst2Id(m2->id());
+    expr->accum2Id(m2->id());
   }
 
   return m;
