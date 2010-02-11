@@ -367,8 +367,8 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
       if (m2->expr()) {
 	combineFrm = m2->expr()->combineString1();
 
-	if (m2->expr()->hasDst2Id()) {
-	  uint mId = m2->expr()->dst2Id();
+	if (m2->expr()->hasAccum2()) {
+	  uint mId = m2->expr()->accum2Id();
 	  string frm = m2->expr()->combineString2();
 	  metricIdToFormula.insert(std::make_pair(mId, frm));
 	}

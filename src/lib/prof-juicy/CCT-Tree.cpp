@@ -469,8 +469,8 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 	  expr->initialize(*this); break;
         case Metric::AExprIncr::FnInitSrc:
 	  expr->initializeSrc(*this); break;
-        case Metric::AExprIncr::FnUpdate:
-	  expr->update(*this); break;
+        case Metric::AExprIncr::FnAccum:
+	  expr->accumulate(*this); break;
         case Metric::AExprIncr::FnCombine:
 	  expr->combine(*this); break;
         case Metric::AExprIncr::FnFini:
