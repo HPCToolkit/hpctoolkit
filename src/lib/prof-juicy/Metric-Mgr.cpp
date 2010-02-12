@@ -229,7 +229,6 @@ Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
     opands[i] = new Metric::Var(m->name(), m->id());
   }
 
-  bool isVisible = true;
   bool doDispPercent = true;
   bool isPercent = false;
 
@@ -245,13 +244,13 @@ Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
     expr = new Metric::StdDev(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (mNm.find("RStdDev", 0) == 0) {
-    expr = new Metric::RStdDev(opands, mOpands.size());
-    isPercent = true;
-  }
   else if (mNm.find("CoefVar", 0) == 0) {
     expr = new Metric::CoefVar(opands, mOpands.size());
     doDispPercent = false;
+  }
+  else if (mNm.find("RStdDev", 0) == 0) {
+    expr = new Metric::RStdDev(opands, mOpands.size());
+    isPercent = true;
   }
   else if (mNm.find("Min", 0) == 0) {
     expr = new Metric::Min(opands, mOpands.size());
@@ -269,7 +268,7 @@ Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
   }
  
   DerivedDesc* m =
-    new DerivedDesc(mNm, mNm, expr, isVisible, true/*isSortKey*/,
+    new DerivedDesc(mNm, mNm, expr, true/*isVisible*/, true/*isSortKey*/,
 		    doDispPercent, isPercent);
   insert(m);
 
@@ -280,9 +279,6 @@ Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
 Metric::DerivedIncrDesc*
 Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
-  bool needDst2Id = false;
-
-  bool isVisible = true;
   bool doDispPercent = true;
   bool isPercent = false;
 
@@ -297,17 +293,14 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   else if (mDrvdTy.find("StdDev", 0) == 0) {
     expr = new Metric::StdDevIncr(0, 0, mSrc->id());
     doDispPercent = false;
-    needDst2Id = true;
-  }
-  else if (mDrvdTy.find("RStdDev", 0) == 0) {
-    expr = new Metric::RStdDevIncr(0, 0, mSrc->id());
-    isPercent = true;
-    needDst2Id = true;
   }
   else if (mDrvdTy.find("CoefVar", 0) == 0) {
     expr = new Metric::CoefVarIncr(0, 0, mSrc->id());
     doDispPercent = false;
-    needDst2Id = true;
+  }
+  else if (mDrvdTy.find("RStdDev", 0) == 0) {
+    expr = new Metric::RStdDevIncr(0, 0, mSrc->id());
+    isPercent = true;
   }
   else if (mDrvdTy.find("Min", 0) == 0) {
     expr = new Metric::MinIncr(0, mSrc->id());
@@ -329,14 +322,14 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   const string& mDesc = mSrc->description();
 
   DerivedIncrDesc* m =
-    new DerivedIncrDesc(mNmFmt, mDesc, expr, isVisible, true/*isSortKey*/,
-			doDispPercent, isPercent);
+    new DerivedIncrDesc(mNmFmt, mDesc, expr, true/*isVisible*/,
+			true/*isSortKey*/, doDispPercent, isPercent);
   m->nameBase(mNmBase);
   insert(m);
   expr->accumId(m->id());
 
-  if (needDst2Id) {
-    string m2NmBase = mNmBase + "-helper";
+  if (expr->hasAccum2()) {
+    string m2NmBase = mNmBase + "-accum2";
     DerivedIncrDesc* m2 =
       new DerivedIncrDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
 			  false/*isSortKey*/, false/*doDispPercent*/,
@@ -344,6 +337,20 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
     m2->nameBase(m2NmBase);
     insert(m2);
     expr->accum2Id(m2->id());
+  }
+
+  if (expr->hasNumSrcVar()) {
+    string mSrcNmBase = mNmBase + "-num-src";
+    Metric::NumSourceIncr* mSrcExpr = new Metric::NumSourceIncr(0, mSrc->id());
+    DerivedIncrDesc* mSrc =
+      new DerivedIncrDesc(mNmFmt, mDesc, mSrcExpr, false/*isVisible*/,
+			  false/*isSortKey*/, false/*doDispPercent*/,
+			  false/*isPercent*/);
+    mSrc->nameBase(mSrcNmBase);
+    insert(mSrc);
+    mSrcExpr->accumId(mSrc->id());
+
+    expr->numSrcVarId(mSrc->id());
   }
 
   return m;

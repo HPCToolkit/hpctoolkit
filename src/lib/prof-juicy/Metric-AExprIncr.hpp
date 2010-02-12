@@ -147,8 +147,12 @@ public:
   { return "$"+ StrUtil::toStr(m_accumId); }
 
 
-  bool
+  virtual bool
   hasAccum2() const
+  { return false; }
+
+  bool
+  isSetAccum2() const
   { return (m_accum2Id != Metric::IData::npos); }
 
   uint
@@ -195,7 +199,7 @@ public:
 
   
   bool
-  hasSrc2() const
+  isSetSrc2() const
   { return (m_src2Id != Metric::IData::npos); }
 
   void
@@ -242,9 +246,12 @@ public:
   { return StrUtil::toStr(m_numSrcFxd); }
 
 
+  virtual bool
+  hasNumSrcVar() const
+  { return false; }
 
   bool
-  hasNumSrcVar() const
+  isSetNumSrcVar() const
   { return (m_numSrcVarId != Metric::IData::npos); }
 
   void
@@ -328,7 +335,7 @@ public:
   initializeSrcStdDev(Metric::IData& mdata) const
   {
     srcVar(mdata) = 0.0;
-    if (hasSrc2()) {
+    if (isSetSrc2()) {
       src2Var(mdata) = 0.0;
     }
     return 0.0;
@@ -404,8 +411,8 @@ public:
     std::string a1 = accumStr();  // running sum
     std::string a2 = accum2Str(); // running sum of squares
 
-    std::string mean = "(" + a1 + " / " + n + ")";
-    std::string z1 = "(pow(" + mean + ", 2)"; // (mean)^2
+    std::string mean = a1 + " / " + n;
+    std::string z1 = "pow(" + mean + ", 2)"; // (mean)^2
     std::string z2 = "(" + a2 + " / " + n  + ")";      // (sum of squares)/n
     std::string sdev = "sqrt(" + z2 + " - " + z1 + ")";
 
@@ -663,6 +670,11 @@ public:
   { }
 
 
+  virtual bool
+  hasNumSrcVar() const
+  { return true; }
+
+
   virtual double
   initialize(Metric::IData& mdata) const
   { return (accumVar(mdata) = 0.0); }
@@ -739,6 +751,15 @@ public:
   { }
 
 
+  virtual bool
+  hasAccum2() const
+  { return true; }
+
+  virtual bool
+  hasNumSrcVar() const
+  { return true; }
+
+
   virtual double
   initialize(Metric::IData& mdata) const
   { return initializeStdDev(mdata); }
@@ -795,6 +816,15 @@ public:
   { }
 
 
+  virtual bool
+  hasAccum2() const
+  { return true; }
+
+  virtual bool
+  hasNumSrcVar() const
+  { return true; }
+
+
   virtual double
   initialize(Metric::IData& mdata) const
   { return initializeStdDev(mdata); }
@@ -838,7 +868,7 @@ public:
   {
     std::string mean;
     std::string sdev = finalizeStringStdDev(&mean);
-    std::string z = "(" + sdev + " / " + mean + ")";
+    std::string z = sdev + " / (" + mean + ")";
     return z;
   }
 
@@ -864,6 +894,15 @@ public:
 
   virtual ~RStdDevIncr()
   { }
+
+
+  virtual bool
+  hasAccum2() const
+  { return true; }
+
+  virtual bool
+  hasNumSrcVar() const
+  { return true; }
 
 
   virtual double
@@ -909,9 +948,69 @@ public:
   {
     std::string mean;
     std::string sdev = finalizeStringStdDev(&mean);
-    std::string z = "(" + sdev + " / " + mean + ") * 100";
+    std::string z = sdev + "* 100 / (" + mean + ")";
     return z;
   }
+
+  virtual std::ostream&
+  dumpMe(std::ostream& os = std::cout) const;
+
+private:
+};
+
+
+// ----------------------------------------------------------------------
+// NumSourceIncr: A special metric for representing the number of
+// inputs for an AExprIncr.
+// ----------------------------------------------------------------------
+
+class NumSourceIncr
+  : public AExprIncr
+{
+public:
+  NumSourceIncr(uint accumId, uint srcId)
+    : AExprIncr(accumId, srcId)
+  { }
+
+  virtual ~NumSourceIncr()
+  { }
+
+
+  virtual double
+  initialize(Metric::IData& mdata) const
+  {
+    double z = accumVar(mdata) = numSrcFxd();
+    return z;
+  }
+
+  virtual double
+  initializeSrc(Metric::IData& mdata) const
+  { return 0.0; }
+
+  virtual double
+  accumulate(Metric::IData& mdata) const
+  { return accumVar(mdata); }
+
+  virtual double
+  combine(Metric::IData& mdata) const
+  { return accumVar(mdata); }
+
+  virtual double
+  finalize(Metric::IData& mdata) const
+  { return accumVar(mdata); }
+
+
+  virtual std::string
+  combineString1() const
+  {
+    std::string a = accumStr();
+    std::string z = "sum(" + a + ", " + a + ")"; // a + numSrcFix()
+    return z;
+  }
+
+  virtual std::string
+  finalizeString() const
+  { return accumStr(); }
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
