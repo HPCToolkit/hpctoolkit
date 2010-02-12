@@ -112,22 +112,39 @@ public:
   AExprIncr(uint accumId, uint srcId)
     : m_accumId(accumId), m_accum2Id(Metric::IData::npos),
       m_srcId(srcId), m_src2Id(Metric::IData::npos),
-      m_numSrc(0)
+      m_numSrcFxd(0), m_numSrcVarId(Metric::IData::npos)
   { }
 
   AExprIncr(uint accumId, uint accum2Id, uint srcId)
     : m_accumId(accumId), m_accum2Id(accum2Id),
       m_srcId(srcId), m_src2Id(Metric::IData::npos),
-      m_numSrc(0)
+      m_numSrcFxd(0), m_numSrcVarId(Metric::IData::npos)
   { }
 
   virtual ~AExprIncr()
   { }
 
 
+  // ------------------------------------------------------------
+  // accum:  accumulator
+  // accum2: accumulator2 (if needed)
+  // ------------------------------------------------------------
+
   void
   accumId(uint x)
   { m_accumId = x; }
+
+  double
+  accumVar(const Metric::IData& mdata) const
+  { return var(mdata, m_accumId); }
+
+  double&
+  accumVar(Metric::IData& mdata) const
+  { return var(mdata, m_accumId); }
+
+  std::string
+  accumStr() const
+  { return "$"+ StrUtil::toStr(m_accumId); }
 
 
   bool
@@ -142,31 +159,109 @@ public:
   accum2Id(uint x)
   { m_accum2Id = x; }
 
+  double
+  accum2Var(const Metric::IData& mdata) const
+  { return var(mdata, m_accum2Id); }
 
-  bool
-  hasSrc2Id() const
-  { return (m_src2Id != Metric::IData::npos); }
+  double&
+  accum2Var(Metric::IData& mdata) const
+  { return var(mdata, m_accum2Id); }
+
+  std::string
+  accum2Str() const
+  { return "$"+ StrUtil::toStr(m_accum2Id); }
+
+
+  // ------------------------------------------------------------
+  // srcId: input source for accumulate()
+  // src2Id: input source for accumulator 2's combine()
+  // ------------------------------------------------------------
 
   void
   srcId(uint x)
   { m_srcId = x; }
 
+  double
+  srcVar(const Metric::IData& mdata) const
+  { return var(mdata, m_srcId); }
+
+  double&
+  srcVar(Metric::IData& mdata) const
+  { return var(mdata, m_srcId); }
+
+  std::string
+  srcStr() const
+  { return "$"+ StrUtil::toStr(m_srcId); }
+
+  
+  bool
+  hasSrc2() const
+  { return (m_src2Id != Metric::IData::npos); }
+
   void
   src2Id(uint x)
   { m_src2Id = x; }
 
+  double
+  src2Var(const Metric::IData& mdata) const
+  { return var(mdata, m_src2Id); }
 
-  uint
-  numSrc() const
-  { return m_numSrc; }
+  double&
+  src2Var(Metric::IData& mdata) const
+  { return var(mdata, m_src2Id); }
 
-  void
-  numSrc(uint x)
-  { m_numSrc = x; }
+  std::string
+  src2Str() const
+  { return "$" + StrUtil::toStr(m_src2Id); }
 
 
   // ------------------------------------------------------------
-  //
+  // numSrcFix: number of inputs for CCT (fixed)
+  // numSrcVar: number of inputs, which can be variable
+  // ------------------------------------------------------------
+
+  uint
+  numSrc(const Metric::IData& mdata) const
+  { return (hasNumSrcVar()) ? numSrcVarVar(mdata) : m_numSrcFxd; }
+
+  std::string
+  numSrcStr() const
+  { return (hasNumSrcVar()) ? numSrcVarStr() : numSrcFxdStr(); }
+
+
+  uint
+  numSrcFxd() const
+  { return m_numSrcFxd; }
+
+  void
+  numSrcFxd(uint x)
+  { m_numSrcFxd = x; }
+
+  std::string
+  numSrcFxdStr() const
+  { return StrUtil::toStr(m_numSrcFxd); }
+
+
+
+  bool
+  hasNumSrcVar() const
+  { return (m_numSrcVarId != Metric::IData::npos); }
+
+  void
+  numSrcVarId(uint x)
+  { m_numSrcVarId = x; }
+
+  uint
+  numSrcVarVar(const Metric::IData& mdata) const
+  { return (uint)var(mdata, m_numSrcVarId); }
+
+  std::string
+  numSrcVarStr() const
+  { return "$" + StrUtil::toStr(m_numSrcVarId); }
+
+
+  // ------------------------------------------------------------
+  // functions for computing a metric incrementally
   // ------------------------------------------------------------
 
   enum FnTy { FnInit, FnInitSrc, FnAccum, FnCombine, FnFini };
@@ -195,7 +290,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // these correspond to AExpr::Var
+  // R- or L-Value of variable reference (cf. AExpr::Var)
   // ------------------------------------------------------------
 
   static double&
@@ -205,63 +300,6 @@ public:
   static double
   var(const Metric::IData& mdata, uint mId)
   { return mdata.demandMetric(mId); }
-
-
-  double
-  accumVar(const Metric::IData& mdata) const
-  { return var(mdata, m_accumId); }
-
-  double&
-  accumVar(Metric::IData& mdata) const
-  { return var(mdata, m_accumId); }
-
-  std::string
-  accumStr() const
-  { return "$"+ StrUtil::toStr(m_accumId); }
-
-
-  double
-  accum2Var(const Metric::IData& mdata) const
-  { return var(mdata, m_accum2Id); }
-
-  double&
-  accum2Var(Metric::IData& mdata) const
-  { return var(mdata, m_accum2Id); }
-
-  std::string
-  accum2Str() const
-  { return "$"+ StrUtil::toStr(m_accum2Id); }
-
-
-  double
-  srcVar(const Metric::IData& mdata) const
-  { return var(mdata, m_srcId); }
-
-  double&
-  srcVar(Metric::IData& mdata) const
-  { return var(mdata, m_srcId); }
-
-  std::string
-  srcStr() const
-  { return "$"+ StrUtil::toStr(m_srcId); }
-
-
-  double
-  src2Var(const Metric::IData& mdata) const
-  { return var(mdata, m_src2Id); }
-
-  double&
-  src2Var(Metric::IData& mdata) const
-  { return var(mdata, m_src2Id); }
-
-  std::string
-  src2Str() const
-  { return "$"+ StrUtil::toStr(m_src2Id); }
-
-
-  std::string
-  numSrcStr() const
-  { return StrUtil::toStr(m_numSrc); }
 
 
   // ------------------------------------------------------------
@@ -290,7 +328,7 @@ public:
   initializeSrcStdDev(Metric::IData& mdata) const
   {
     srcVar(mdata) = 0.0;
-    if (hasSrc2Id()) {
+    if (hasSrc2()) {
       src2Var(mdata) = 0.0;
     }
     return 0.0;
@@ -345,8 +383,8 @@ public:
     double a1 = accumVar(mdata);  // running sum
     double a2 = accum2Var(mdata); // running sum of squares
     double sdev = a1;
-    if (numSrc() > 0) {
-      double n = numSrc();
+    if (numSrc(mdata) > 0) {
+      double n = numSrc(mdata);
       double mean = a1 / n;
       double z1 = (mean * mean); // (mean)^2
       double z2 = a2 / n;        // (sum of squares)/n
@@ -418,7 +456,8 @@ protected:
   uint m_srcId;  // input source for accumulate()
   uint m_src2Id; // input source for accumulator 2's combine()
 
-  uint m_numSrc; // number of inputs
+  uint m_numSrcFxd;   // number of inputs (fixed)
+  uint m_numSrcVarId; // number of inputs, which can be variable
 };
 
 
@@ -651,8 +690,8 @@ public:
   {
     double a = accumVar(mdata);
     double z = a;
-    if (numSrc() > 0) {
-      double n = numSrc();
+    if (numSrc(mdata) > 0) {
+      double n = numSrc(mdata);
       z = a / n;
       accumVar(mdata) = z;
     }
@@ -879,7 +918,6 @@ public:
 
 private:
 };
-
 
 //****************************************************************************
 
