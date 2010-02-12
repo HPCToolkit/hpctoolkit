@@ -560,7 +560,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
       // N.B.: groupIdToGroupSizeMap is only initialized for rootRank  
       uint numInputs = groupIdToGroupSizeMap[groupId];
       if (mm->expr()) {
-        mm->expr()->numSrc(numInputs);
+        mm->expr()->numSrcFxd(numInputs);
       }
     }
    
