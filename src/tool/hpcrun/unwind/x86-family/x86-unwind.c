@@ -630,7 +630,7 @@ _drop_sample(bool no_backtrace)
     return;
   }
   if (hpcrun_below_pmsg_threshold()) {
-    dump_backtrace(0);
+    dump_backtrace(TD_GET(unwind));
   }
 
   hpcrun_up_pmsg_count();
@@ -665,7 +665,7 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
     if ( next_sp <= cursor->sp){
       PMSG_LIMIT(PMSG(TROLL,"Something weird happened! trolling from %p"
 		      " resulted in sp not advancing", cursor->pc));
-      drop_sample();
+      unw_throw();
     }
 
     cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) + offset);
@@ -692,7 +692,7 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
     // fall through for error handling
   }
   // assert(0);
-  drop_sample();
+  unw_throw();
 }
 
 
