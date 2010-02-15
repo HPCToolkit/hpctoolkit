@@ -102,7 +102,7 @@ int hpcrun_filter_sample(int len, frame_t* start, frame_t* last);
 frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
 			    int skip);
 
-void dump_backtrace(frame_t* unwind);
+void hpcrun_bt_dump(frame_t* unwind, const char* tag);
 
 frame_t* hpcrun_bt_reset(backtrace_t* bt);
 

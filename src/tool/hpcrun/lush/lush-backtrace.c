@@ -227,7 +227,7 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   // insert backtrace into calling context tree (if sensible)
   // ---------------------------------------------------------
   if (MYDBG) {
-    dump_backtrace(td->unwind);
+    hpcrun_bt_dump(td->unwind, "LUSH");
   }
 
   frame_t* bt_beg = td->btbuf;      // innermost, inclusive 
