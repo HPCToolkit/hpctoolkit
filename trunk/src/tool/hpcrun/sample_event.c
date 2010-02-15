@@ -169,7 +169,7 @@ hpcrun_sample_callpath(void *context, int metricId,
 	trace_append(func_proxy->persistent_id);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
-	dump_backtrace(td->unwind);
+	hpcrun_bt_dump(td->unwind, "UNWIND");
       }
     }
   }
@@ -178,7 +178,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     // recover from SEGVs and dropped samples
     // ------------------------------------------------------------
     memset((void *)it->jb, '\0', sizeof(it->jb));
-    dump_backtrace(td->unwind);
+    hpcrun_bt_dump(td->unwind, "SEGV");
 
     hpcrun_stats_num_samples_dropped_inc();
 
@@ -308,7 +308,7 @@ hpcrun_sample_callpath_w_bt(void *context,
 	trace_append(func_proxy->persistent_id);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
-	dump_backtrace(td->unwind);
+	hpcrun_bt_dump(td->unwind, "UNWIND");
       }
     }
   }
@@ -317,7 +317,7 @@ hpcrun_sample_callpath_w_bt(void *context,
     // recover from SEGVs and dropped samples
     // ------------------------------------------------------------
     memset((void *)it->jb, '\0', sizeof(it->jb));
-    dump_backtrace(td->unwind);
+    hpcrun_bt_dump(td->unwind, "SEGV");
 
     hpcrun_stats_num_samples_dropped_inc();
 

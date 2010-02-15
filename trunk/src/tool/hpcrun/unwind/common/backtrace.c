@@ -92,7 +92,7 @@ static void lush_lip2str(char* buf, size_t len, lush_lip_t* lip);
 //***************************************************************************
 
 void 
-dump_backtrace(frame_t* unwind)
+hpcrun_bt_dump(frame_t* unwind, const char* tag)
 {
   static const int msg_limit = 100;
   int msg_cnt = 0;
@@ -100,7 +100,8 @@ dump_backtrace(frame_t* unwind)
   char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
   char lip_str[LUSH_LIP_STR_MIN_LEN];
 
-  PMSG_LIMIT(EMSG("-- begin new backtrace (innermost first) ------------"));
+  const char* mytag = (tag) ? tag : "";
+  PMSG_LIMIT(EMSG("-- begin new backtrace (innermost first) [%s] ----------", mytag));
 
   thread_data_t* td = hpcrun_get_thread_data();
   if (unwind) {
