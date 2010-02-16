@@ -225,7 +225,7 @@ hpcrun_init_internal()
   sigaddset(&prof_sigset,SIGPROF);
 
   setup_segv();
-  unw_init();
+  hpcrun_unw_init();
 
   // sample source setup
   SAMPLE_SOURCES(init);

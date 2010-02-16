@@ -90,6 +90,30 @@ _hpcrun_sample_callpath_w_bt(epoch_t *epoch, void *context,
 			     bt_mut_fn bt_fn, bt_fn_arg arg,
 			     int isSync);
 
+// ------------------------------------------------------------
+// recover from SEGVs and dropped samples
+// ------------------------------------------------------------
+
+static void
+_drop_sample(void)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  sigjmp_buf_t* it = &(td->bad_unwind);
+
+  memset((void *)it->jb, '\0', sizeof(it->jb));
+  hpcrun_bt_dump(td->unwind, "SEGV");
+
+  hpcrun_stats_num_samples_dropped_inc();
+
+  hpcrun_up_pmsg_count();
+  if (TD_GET(splay_lock)) {
+    hpcrun_release_splay_lock();
+  }
+  if (TD_GET(fnbounds_lock)) {
+    fnbounds_release_lock();
+  }
+}
+
 //***************************************************************************
 
 bool _hpcrun_sampling_disabled = false;
@@ -174,21 +198,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     }
   }
   else {
-    // ------------------------------------------------------------
-    // recover from SEGVs and dropped samples
-    // ------------------------------------------------------------
-    memset((void *)it->jb, '\0', sizeof(it->jb));
-    hpcrun_bt_dump(td->unwind, "SEGV");
-
-    hpcrun_stats_num_samples_dropped_inc();
-
-    hpcrun_up_pmsg_count();
-    if (TD_GET(splay_lock)) {
-      hpcrun_release_splay_lock();
-    }
-    if (TD_GET(fnbounds_lock)) {
-      fnbounds_release_lock();
-    }
+    _drop_sample();
   }
 
   hpcrun_clear_handling_sample(td);

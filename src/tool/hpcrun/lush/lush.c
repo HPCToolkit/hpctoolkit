@@ -76,7 +76,7 @@
 
 #include <lib/prof-lean/lush/lush-support.h>
 
-#include <unwind/common/unwind.h> // unw_step()
+#include <unwind/common/unwind.h> // hpcrun_unw_step()
 
 #include <memory/hpcrun-malloc.h>
 
@@ -122,7 +122,7 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
   pool->LUSHI_init[x->id](0, NULL, id,
 			  (LUSHCB_malloc_fn_t)NULL, 
 			  (LUSHCB_free_fn_t)NULL,
-			  (LUSHCB_step_fn_t)unw_step,
+			  (LUSHCB_step_fn_t)hpcrun_unw_step,
 			  LUSHCB_loadmap_find);
   return 0;
 }
@@ -233,7 +233,7 @@ lush_init_unw(lush_cursor_t* cursor,
   cursor->apool = apool;
   lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ);
   lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD);
-  unw_init_cursor(lush_cursor_get_pcursor(cursor), context);
+  hpcrun_unw_init_cursor(lush_cursor_get_pcursor(cursor), context);
 }
 
 
@@ -420,7 +420,7 @@ lush_forcestep_pnote(lush_cursor_t* cursor)
   }
   else {
     // Identity agent: Association is 1-to-1, so p-chord is unit length
-    int t = unw_step(lush_cursor_get_pcursor(cursor));
+    int t = hpcrun_unw_step(lush_cursor_get_pcursor(cursor));
     if (t > 0) {
       ty = LUSH_STEP_END_CHORD;
     }
