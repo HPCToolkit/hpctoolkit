@@ -41,6 +41,10 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
+//***************************************************************************
+// system include files 
+//***************************************************************************
+
 #include <sys/types.h>
 #include <stddef.h>
 #include <ucontext.h>
@@ -49,22 +53,33 @@
 #include <setjmp.h>
 #include <signal.h>
 
-#include "hpcrun_stats.h"
-#include "monitor.h"
+
+//***************************************************************************
+// libmonitor include files
+//***************************************************************************
+
+#include <monitor.h>
+
+
+//***************************************************************************
+// user include files 
+//***************************************************************************
 
 #include "main.h"
 #include "thread_data.h"
 #include "handling_sample.h"
+#include "hpcrun_stats.h"
 
 #include "memchk.h"
 
 #include <messages/messages.h>
 
+
+//***************************************************************************
+// catch SIGSEGVs
+//***************************************************************************
+
 // FIXME: tallent: should this be together with hpcrun_drop_sample?
-
-/* catch SIGSEGVs */
-
-extern int hpcrun_sample;
 
 int
 hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
@@ -104,11 +119,11 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
 
 
 int
-setup_segv(void)
+hpcrun_setup_segv()
 {
   int ret = monitor_sigaction(SIGSEGV, &hpcrun_sigsegv_handler, 0, NULL);
 
-  if(ret != 0) {
+  if (ret != 0) {
     EMSG("Unable to install SIGSEGV handler", __FILE__, __LINE__);
   }
   return ret;
