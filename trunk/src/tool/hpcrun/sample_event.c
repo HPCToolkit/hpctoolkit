@@ -180,7 +180,7 @@ hpcrun_sample_callpath(void *context, int metricId,
 				     skipInner, isSync);
 
       if (trace_isactive()) {
-	void *pc = context_pc(context);
+	void *pc = hpcrun_context_pc(context);
 	hpcrun_cct_t *cct = &(td->epoch->csdata); 
 	void *func_start_pc, *func_end_pc;
 
@@ -221,7 +221,7 @@ _hpcrun_sample_callpath_w_bt(epoch_t* epoch, void *context,
 			     bt_mut_fn bt_fn, bt_fn_arg arg,
 			     int isSync)
 {
-  void* pc = context_pc(context);
+  void* pc = hpcrun_context_pc(context);
 
   TMSG(SAMPLE,"csprof take profile sample @ %p",pc);
 
@@ -242,7 +242,7 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			uint64_t metricIncr, 
 			int skipInner, int isSync)
 {
-  void* pc = context_pc(context);
+  void* pc = hpcrun_context_pc(context);
 
   TMSG(SAMPLE,"csprof take profile sample @ %p",pc);
 
@@ -305,7 +305,7 @@ hpcrun_sample_callpath_w_bt(void *context,
 					  bt_fn, arg, isSync);
 
       if (trace_isactive()) {
-	void *pc = context_pc(context);
+	void *pc = hpcrun_context_pc(context);
 	hpcrun_cct_t *cct = &(td->epoch->csdata); 
 	void *func_start_pc, *func_end_pc;
 

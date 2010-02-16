@@ -72,7 +72,8 @@
 //***************************************************************************
 
 // tallent: probably should be moved
-void *context_pc(void *context);
+void*
+hpcrun_context_pc(void *context);
 
 
 //***************************************************************************
@@ -91,7 +92,8 @@ typedef void* unw_word_t;
 // hpcrun_unw_init
 // ----------------------------------------------------------
 
-void hpcrun_unw_init();
+void
+hpcrun_unw_init();
 
 
 // ----------------------------------------------------------
@@ -102,15 +104,19 @@ typedef enum {
   UNW_REG_IP
 } unw_reg_code_t;
 
-int hpcrun_unw_get_reg(unw_cursor_t *c, unw_reg_code_t reg_id, void **reg_value);
+int
+hpcrun_unw_get_reg(unw_cursor_t *c, unw_reg_code_t reg_id, void **reg_value);
 
-void* hpcrun_unw_get_ra_loc(unw_cursor_t* c);
+
+void*
+hpcrun_unw_get_ra_loc(unw_cursor_t* c);
 
 // ----------------------------------------------------------
 // hpcrun_unw_init_cursor
 // ----------------------------------------------------------
 
-void hpcrun_unw_init_cursor(unw_cursor_t* cursor, void* context);
+void
+hpcrun_unw_init_cursor(unw_cursor_t* cursor, void* context);
 
 
 // ----------------------------------------------------------
@@ -131,7 +137,9 @@ typedef enum {
   STEP_STOP_WEAK = 3
 } step_state;
 
-step_state hpcrun_unw_step(unw_cursor_t *c);
+
+step_state
+hpcrun_unw_step(unw_cursor_t *c);
 
 
 //***************************************************************************
@@ -156,7 +164,8 @@ step_state hpcrun_unw_step(unw_cursor_t *c);
 // ----------------------------------------------------------
 
 // FIXME: tallent: the code in x86-unwind.c probably should be common
-void hpcrun_unw_throw(void);
+void
+hpcrun_unw_throw(void);
 
 
 //***************************************************************************

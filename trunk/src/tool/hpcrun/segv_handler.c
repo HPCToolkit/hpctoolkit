@@ -77,18 +77,20 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
     // -----------------------------------------------------
     // print context
     // -----------------------------------------------------
-    void* ctxt_pc = context_pc(context);
+    void* ctxt_pc = hpcrun_context_pc(context);
 
     PMSG_LIMIT(EMSG("error: segv: context-pc=%p", ctxt_pc));
     // TODO: print more context details
 
     // -----------------------------------------------------
-    // longjump
+    // longjump, if possible
     // -----------------------------------------------------
     sigjmp_buf_t *it = &(td->bad_unwind);
     if (memchk((void *)it, '\0', sizeof(*it))) {
       EMSG("error: segv handler: invalid jmpbuf");
-      return 0; // monitor_real_abort();
+      // N.B. to handle this we need an 'outer' jump buffer that captures
+      // the context right as we enter the sampling-trigger signal handler.
+      monitor_real_abort();
     }
 
     (*hpcrun_get_real_siglongjmp())(it->jb, 9);
@@ -96,7 +98,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
   }
   else {
     // pass segv to another handler
-    return 1;
+    return 1; // monitor_real_abort(); // TEST
   }
 }
 
