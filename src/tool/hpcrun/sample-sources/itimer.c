@@ -363,7 +363,7 @@ static int
 itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
   // Must check for async block first and avoid any MSG if true.
-  void* pc = context_pc(context);
+  void* pc = hpcrun_context_pc(context);
   if (hpcrun_async_is_blocked(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
   }

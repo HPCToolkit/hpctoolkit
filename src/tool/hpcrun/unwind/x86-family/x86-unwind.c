@@ -185,8 +185,8 @@ static step_state (*dbg_unw_step)(unw_cursor_t *cursor) = t1_dbg_unw_step;
 // interface functions
 //****************************************************************************
 
-void *
-context_pc(void* context)
+void*
+hpcrun_context_pc(void* context)
 {
   mcontext_t *mc = GET_MCONTEXT(context);
   return MCONTEXT_PC(mc);
@@ -199,6 +199,7 @@ hpcrun_unw_init(void)
   x86_family_decoder_init();
   hpcrun_interval_tree_init();
 }
+
 
 int 
 hpcrun_unw_get_reg(unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
@@ -260,7 +261,7 @@ hpcrun_unw_get_ra_loc(unw_cursor_t* cursor)
 }
 
 
-step_state
+static step_state
 hpcrun_unw_step_real(unw_cursor_t *cursor)
 {
 
@@ -331,6 +332,7 @@ size_t hpcrun_validation_counts[] = {
 #include "validate_return_addr.src"
 };
 
+
 void
 hpcrun_validation_summary(void)
 {
@@ -345,7 +347,8 @@ hpcrun_validation_summary(void)
        hpcrun_validation_counts[UNW_ADDR_WRONG]);
 }
 
-/* static */ void
+
+static void
 vrecord(void *from, void *to, validation_status vstat)
 {
   hpcrun_validation_counts[vstat]++;
@@ -354,6 +357,7 @@ vrecord(void *from, void *to, validation_status vstat)
     TMSG(UNW_VALID,"%p->%p (%s)", from, to, vstat2s(vstat));
   }
 }
+
 
 step_state
 hpcrun_unw_step(unw_cursor_t *cursor)
@@ -376,6 +380,7 @@ hpcrun_unw_step(unw_cursor_t *cursor)
   }
   return rv;
 }
+
 
 void
 hpcrun_unw_throw(void)
@@ -639,11 +644,13 @@ _drop_sample(bool no_backtrace)
   (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }
 
+
 static void
 drop_sample(void)
 {
   _drop_sample(false);
 }
+
 
 static void
 update_cursor_with_troll(unw_cursor_t *cursor, int offset)
@@ -707,15 +714,16 @@ hpcrun_check_fence(void *ip)
 // debug operations
 //****************************************************************************
 
-unw_cursor_t _dbg_cursor;
+static unw_cursor_t _dbg_cursor;
 
-void dbg_init_cursor(void *context)
+static void GCC_ATTR_UNUSED
+dbg_init_cursor(void *context)
 {
   DEBUG_NO_LONGJMP = 1;
 
   mcontext_t *mc = GET_MCONTEXT(context);
 
-  _dbg_cursor.pc = MCONTEXT_PC(mc); 
+  _dbg_cursor.pc = MCONTEXT_PC(mc);
   _dbg_cursor.bp = MCONTEXT_BP(mc);
   _dbg_cursor.sp = MCONTEXT_SP(mc);
 
