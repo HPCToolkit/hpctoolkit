@@ -194,14 +194,14 @@ context_pc(void* context)
 
 
 void
-unw_init(void)
+hpcrun_unw_init(void)
 {
   x86_family_decoder_init();
   hpcrun_interval_tree_init();
 }
 
 int 
-unw_get_reg(unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
+hpcrun_unw_get_reg(unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
 {
   //
   // only implement 1 reg for the moment.
@@ -219,7 +219,7 @@ unw_get_reg(unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
 
 
 void 
-unw_init_cursor(unw_cursor_t* cursor, void* context)
+hpcrun_unw_init_cursor(unw_cursor_t* cursor, void* context)
 {
   mcontext_t *mc = GET_MCONTEXT(context);
 
@@ -261,7 +261,7 @@ hpcrun_unw_get_ra_loc(unw_cursor_t* cursor)
 
 
 step_state
-unw_step_real(unw_cursor_t *cursor)
+hpcrun_unw_step_real(unw_cursor_t *cursor)
 {
 
   //-----------------------------------------------------------
@@ -356,14 +356,14 @@ vrecord(void *from, void *to, validation_status vstat)
 }
 
 step_state
-unw_step(unw_cursor_t *cursor)
+hpcrun_unw_step(unw_cursor_t *cursor)
 {
   if ( ENABLED(DBG_UNW_STEP) ){
     return dbg_unw_step(cursor);
   }
   
   unw_cursor_t saved = *cursor;
-  step_state rv = unw_step_real(cursor);
+  step_state rv = hpcrun_unw_step_real(cursor);
   if ( ENABLED(UNW_VALID) ) {
     if (rv == STEP_OK) {
       // try to validate all calls, except the one at the base of the call stack from libmonitor.
@@ -378,14 +378,14 @@ unw_step(unw_cursor_t *cursor)
 }
 
 void
-unw_throw(void)
+hpcrun_unw_throw(void)
 {
   _drop_sample(true);
 }
 
 
 //****************************************************************************
-// unw_step helpers
+// hpcrun_unw_step helpers
 //****************************************************************************
 
 // FIXME: make this a selectable paramter, so that all manner of strategies 
@@ -665,7 +665,7 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
     if ( next_sp <= cursor->sp){
       PMSG_LIMIT(PMSG(TROLL,"Something weird happened! trolling from %p"
 		      " resulted in sp not advancing", cursor->pc));
-      unw_throw();
+      hpcrun_unw_throw();
     }
 
     cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) + offset);
@@ -692,7 +692,7 @@ update_cursor_with_troll(unw_cursor_t *cursor, int offset)
     // fall through for error handling
   }
   // assert(0);
-  unw_throw();
+  hpcrun_unw_throw();
 }
 
 

@@ -864,7 +864,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   bool tramp_found       = false;
 
   unw_cursor_t cursor;
-  unw_init_cursor(&cursor, context);
+  hpcrun_unw_init_cursor(&cursor, context);
 
   //--------------------------------------------------------------------
   // note: these variables are not local variables so that if a SIGSEGV 
@@ -882,7 +882,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
     int ret;
 
     unw_word_t ip = 0;
-    unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    hpcrun_unw_get_reg(&cursor, UNW_REG_IP, &ip);
 
     if (hpcrun_trampoline_interior(ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
@@ -890,7 +890,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
       // drop the sample. 
       // FIXME: sharpen the information to indicate why the sample is 
       //        being dropped.
-      unw_throw();
+      hpcrun_unw_throw();
     }
 
     if (hpcrun_trampoline_at_entry(ip)) {
@@ -899,7 +899,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 	// record a return. for now, simply do nothing ...
 	// FIXME: with a bit more effort, we could charge 
 	//        the sample to the return address in the caller. 
-	unw_throw();
+	hpcrun_unw_throw();
       } else {
 	// we have encountered a trampoline in the middle of an unwind.
 	tramp_found = true;
@@ -918,7 +918,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
     td->unwind++;
     unw_len++;
 
-    ret = unw_step(&cursor);
+    ret = hpcrun_unw_step(&cursor);
     backtrace_trolled = (ret == STEP_TROLL);
     if (ret <= 0) {
       break;
@@ -1017,7 +1017,7 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
   bool tramp_found       = false;
 
   unw_cursor_t cursor;
-  unw_init_cursor(&cursor, context);
+  hpcrun_unw_init_cursor(&cursor, context);
 
   //--------------------------------------------------------------------
   // note: these variables are not local variables so that if a SIGSEGV 
@@ -1035,7 +1035,7 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
     int ret;
 
     unw_word_t ip = 0;
-    unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    hpcrun_unw_get_reg(&cursor, UNW_REG_IP, &ip);
 
     if (hpcrun_trampoline_interior(ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
@@ -1043,7 +1043,7 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
       // drop the sample. 
       // FIXME: sharpen the information to indicate why the sample is 
       //        being dropped.
-      unw_throw();
+      hpcrun_unw_throw();
     }
 
     if (hpcrun_trampoline_at_entry(ip)) {
@@ -1052,7 +1052,7 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
 	// record a return. for now, simply do nothing ...
 	// FIXME: with a bit more effort, we could charge 
 	//        the sample to the return address in the caller. 
-	unw_throw();
+	hpcrun_unw_throw();
       } else {
 	// we have encountered a trampoline in the middle of an unwind.
 	tramp_found = true;
@@ -1065,7 +1065,7 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
     frame_t* prev = hpcrun_bt_push(bt,
 				   &((frame_t){.cursor = cursor, .ip = (void*)ip, .ra_loc = NULL}));
 
-    ret = unw_step(&cursor);
+    ret = hpcrun_unw_step(&cursor);
     backtrace_trolled = backtrace_trolled || (ret == STEP_TROLL);
     if (ret <= 0) {
       break;

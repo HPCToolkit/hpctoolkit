@@ -88,36 +88,36 @@ void *context_pc(void *context);
 typedef void* unw_word_t;
 
 // ----------------------------------------------------------
-// unw_init
+// hpcrun_unw_init
 // ----------------------------------------------------------
 
-void unw_init();
+void hpcrun_unw_init();
 
 
 // ----------------------------------------------------------
-// unw_get_reg
+// hpcrun_unw_get_reg
 // ----------------------------------------------------------
 
 typedef enum {
   UNW_REG_IP
 } unw_reg_code_t;
 
-int unw_get_reg(unw_cursor_t *c, unw_reg_code_t reg_id, void **reg_value);
+int hpcrun_unw_get_reg(unw_cursor_t *c, unw_reg_code_t reg_id, void **reg_value);
 
 void* hpcrun_unw_get_ra_loc(unw_cursor_t* c);
 
 // ----------------------------------------------------------
-// unw_init_cursor
+// hpcrun_unw_init_cursor
 // ----------------------------------------------------------
 
-void unw_init_cursor(unw_cursor_t* cursor, void* context);
+void hpcrun_unw_init_cursor(unw_cursor_t* cursor, void* context);
 
 
 // ----------------------------------------------------------
-// unw_step: 
+// hpcrun_unw_step: 
 //   Given a cursor, step the cursor to the next (less deeply
 //   nested) frame.  Conforms to the semantics of libunwind's
-//   unw_step.  In particular, returns:
+//   hpcrun_unw_step.  In particular, returns:
 //     > 0 : successfully advanced cursor to next frame
 //       0 : previous frame was the end of the unwind
 //     < 0 : error condition
@@ -131,7 +131,7 @@ typedef enum {
   STEP_STOP_WEAK = 3
 } step_state;
 
-step_state unw_step(unw_cursor_t *c);
+step_state hpcrun_unw_step(unw_cursor_t *c);
 
 
 //***************************************************************************
@@ -145,18 +145,18 @@ step_state unw_step(unw_cursor_t *c);
 //***************************************************************************
 
 // ----------------------------------------------------------
-// unw_troll_stack
+// hpcrun_unw_troll_stack
 // ----------------------------------------------------------
 
 // FIXME: tallent: move stack trolling code here
 
 
 // ----------------------------------------------------------
-// unw_throw:
+// hpcrun_unw_throw:
 // ----------------------------------------------------------
 
 // FIXME: tallent: the code in x86-unwind.c probably should be common
-void unw_throw(void);
+void hpcrun_unw_throw(void);
 
 
 //***************************************************************************

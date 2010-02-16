@@ -42,7 +42,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //
-// Validate a return address obtained from an unw_step:
+// Validate a return address obtained from an hpcrun_unw_step:
 //   Most useful after a troll operation, but may still be used for 
 //   QC on all unwinds
 //

@@ -304,7 +304,7 @@ hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
 }
 
 #if 0
-    ret = unw_step(&cursor);
+    ret = hpcrun_unw_step(&cursor);
     backtrace_trolled = (ret == STEP_TROLL);
     if (ret <= 0) {
       break;

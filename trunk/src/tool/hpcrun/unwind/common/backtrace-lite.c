@@ -85,23 +85,23 @@ hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
     return -1; // error
   }
 
-  unw_init();
+  hpcrun_unw_init();
 
   unw_cursor_t cursor;
-  unw_init_cursor(&cursor, context);
+  hpcrun_unw_init_cursor(&cursor, context);
 
   int my_size = 0;
   while (my_size < size) {
     int ret;
 
     unw_word_t ip = 0;
-    ret = unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    ret = hpcrun_unw_get_reg(&cursor, UNW_REG_IP, &ip);
     if (ret < 0) { /* ignore error */ }
 
     buffer[my_size] = ip; // my_size < size
     my_size++;
 
-    ret = unw_step(&cursor);
+    ret = hpcrun_unw_step(&cursor);
     if (ret <= 0) {
       // N.B. (ret < 0) indicates an unwind error, which we ignore
       break;
