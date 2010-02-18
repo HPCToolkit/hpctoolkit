@@ -327,8 +327,14 @@ overlayStaticStructure(Prof::CCT::ANode* node,
 
   StructToCCTMap strctToCCTMap;
 
+  // ---------------------------------------------------
   // For each immediate child of this node...
-  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
+  //
+  // Use cmpByDynInfo()-ordering so that hpcprof-mpi ranks always
+  // create structure in exactly the same order.
+  // ---------------------------------------------------
+  for (Prof::CCT::ANodeSortedChildIterator it(node, Prof::CCT::ANodeSortedIterator::cmpByDynInfo);
+       it.current(); /* */) {
     Prof::CCT::ANode* n = it.current();
     it++; // advance iterator -- it is pointing at 'n' 
     
