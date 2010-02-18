@@ -84,24 +84,26 @@ int
 hpcfmt_str_fread(char** str, FILE* infs, hpcfmt_alloc_fn alloc)
 {
   uint32_t len;
-  char* buf = *str;
+  char* buf = NULL;
 
   HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&len, infs));
   if (alloc) {
-    buf = (char *) alloc(len+1);
-    *str = buf;
+    buf = (char*) alloc(len+1);
   }
-  if (! buf) {
+  if (!buf) {
     return HPCFMT_ERR;
   }
-  for(int i=0; i < len; i++){
+  
+  for (int i = 0; i < len; i++) {
     int c = fgetc(infs);
-    if (c == EOF){
+    if (c == EOF) {
       return HPCFMT_ERR;
     }
-    *(buf++) = (char) c;
+    buf[i] = (char) c;
   }
-  *buf = '\0';
+  buf[len] = '\0';
+
+  *str = buf;
   return HPCFMT_OK;
 }
 
@@ -114,7 +116,7 @@ hpcfmt_str_fwrite(const char* str, FILE* outfs)
   hpcfmt_byte4_fwrite(len, outfs);
   
   for(int i = 0; i < len; i++){
-    int c = fputc(*(str++), outfs);
+    int c = fputc(str[i], outfs);
     if (c == EOF){
       return HPCFMT_ERR;
     }
