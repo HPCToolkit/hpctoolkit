@@ -344,6 +344,7 @@ void
 hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc)
 {
   hpcfmt_str_free(x->name, dealloc);
+  hpcfmt_str_free(x->description, dealloc);
   x->name = NULL;
   x->description = NULL;
 }
