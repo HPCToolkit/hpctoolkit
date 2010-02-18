@@ -249,11 +249,12 @@ realmain(int argc, char* const* argv)
   }
   profGbl->structure(structure);
 
-  // FIXME: iterator should sort by lm/ip so static structure is added
-  // in same way
+  // N.B.: Ensures that each rank adds static structure in the same
+  // order so that new corresponding nodes have identical node ids.
   Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.agent,
 						 args.doNormalizeTy);
 
+  // N.B.: Dense ids are assigned w.r.t. relative magnitude of structure ids
   profGbl->cct()->makeDensePreorderIds();
 
   // -------------------------------------------------------
