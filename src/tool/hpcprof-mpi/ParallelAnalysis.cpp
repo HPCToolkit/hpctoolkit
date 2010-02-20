@@ -131,6 +131,8 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
 {
   MPI_Status mpistat;
 
+  int tag = rank_y; // sender
+
   uint8_t* profileBuf = NULL;
   size_t profileBufSz = 0;
 
@@ -141,12 +143,12 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
     profile_x = profile;
 
     // rank_x receives profile buffer size from rank_y
-    MPI_Recv(&profileBufSz, 1, MPI_UNSIGNED_LONG, rank_y, 0, comm, &mpistat);
+    MPI_Recv(&profileBufSz, 1, MPI_UNSIGNED_LONG, rank_y, tag, comm, &mpistat);
 
     profileBuf = new uint8_t[profileBufSz];
 
     // rank_x receives profile from rank_y
-    MPI_Recv(profileBuf, profileBufSz, MPI_BYTE, rank_y, 0, comm, &mpistat);
+    MPI_Recv(profileBuf, profileBufSz, MPI_BYTE, rank_y, tag, comm, &mpistat);
 
     profile_y = unpackProfile(profileBuf, profileBufSz);
     delete[] profileBuf;
@@ -163,10 +165,10 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
     packProfile(*profile_y, &profileBuf, &profileBufSz);
 
     // rank_y sends profile buffer size to rank_x
-    MPI_Send(&profileBufSz, 1, MPI_UNSIGNED_LONG, rank_x, 0, comm);
+    MPI_Send(&profileBufSz, 1, MPI_UNSIGNED_LONG, rank_x, tag, comm);
 
     // rank_y sends profile to rank_x
-    MPI_Send(profileBuf, profileBufSz, MPI_BYTE, rank_x, 0, comm);
+    MPI_Send(profileBuf, profileBufSz, MPI_BYTE, rank_x, tag, comm);
 
     free(profileBuf);
   }
@@ -180,13 +182,15 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*,
 {
   MPI_Status mpistat;
 
+  int tag = rank_y; // sender
+
   if (myRank == rank_x) {
     Prof::CallPath::Profile* profile_x = data.first;
     ParallelAnalysis::PackedMetrics* packedMetrics_x = data.second;
 
     // rank_x receives metric data from rank_y
     MPI_Recv(packedMetrics_x->data(), packedMetrics_x->dataSize(),
-	     MPI_DOUBLE, rank_y, 0, comm, &mpistat);
+	     MPI_DOUBLE, rank_y, tag, comm, &mpistat);
     DIAG_Assert(packedMetrics_x->verify(), DIAG_UnexpectedInput);
     
     unpackMetrics(*profile_x, *packedMetrics_x);
@@ -200,7 +204,7 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*,
     
     // rank_y sends metric data to rank_x
     MPI_Send(packedMetrics_y->data(), packedMetrics_y->dataSize(),
-	     MPI_DOUBLE, rank_x, 0, comm);
+	     MPI_DOUBLE, rank_x, tag, comm);
   }
 }
 

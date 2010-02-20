@@ -91,13 +91,13 @@ namespace RankTree {
 
 // Representing a 1-based list of ranks (from 1 to n) as a binary tree:
 //
-//             1               |
+//             1               |  level 0
 //          __/ \__            |
-//        2         3          |
+//        2         3          |  level 1
 //       / \       / \         |
-//      4   5     6   7        |
+//      4   5     6   7        |  level 2
 //    / |  / \   / \  | \      |
-//   8  9 10 11 12 13 14 15    |
+//   8  9 10 11 12 13 14 15    |  level 3
 //
 // For rank i:
 //   parent(i):      floor(i/2), if i > 1
