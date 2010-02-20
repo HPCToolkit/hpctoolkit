@@ -98,7 +98,7 @@ using namespace Prof;
 
 // makeStructureSimple: Uses the line map to make structure
 Struct::Stmt*
-banal::bloop::makeStructureSimple(Struct::LM* lmStrct, 
+banal::bloop::makeStructureSimple(Struct::LM* lmStrct,
 				  BinUtil::LM* lm, VMA vma)
 {
   string procnm, filenm;
