@@ -113,7 +113,8 @@ Tree::~Tree()
 
 
 void
-Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics)
+Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics,
+	    int dbgFlg)
 {
   CCT::ANode* x_root = root();
   CCT::ANode* y_root = y->root();
@@ -134,7 +135,7 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics)
   }
   DIAG_Assert(isPrecondition, "Prof::CCT::Tree::merge: Merge precondition fails!");
 
-  x_root->mergeDeep(y_root, x_newMetricBegIdx, y_newMetrics);
+  x_root->mergeDeep(y_root, x_newMetricBegIdx, y_newMetrics, dbgFlg);
 }
 
 
@@ -489,7 +490,8 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 
 
 void
-ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics)
+ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics,
+		 int dbgFlg)
 {
   ANode* x = this;
   
@@ -518,18 +520,23 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics)
 
     if (!x_child_dyn) {
       // case 1
+      DIAG_Assert( !(dbgFlg & Tree::OFlg_MergeOnly),
+		   "CCT::ANode::mergeDeep: adding not permitted");
+      DIAG_MsgIf(0 /*(dbgFlg & Tree::OFlg_Debug)*/,
+		 "CCT::ANode::mergeDeep: Adding:\n     "
+		 << y_child->toStringMe(Tree::OFlg_Debug));
       y_child->unlink();
       y_child->mergeDeep_fixup(x_newMetricBegIdx);
       y_child->link(x);
     }
     else {
       // case 2
-      DIAG_MsgIf(0, "ANode::merge: Merging y into x:\n"
-		 << "  y: " << y_child_dyn->toString()
-		 << "  x: " << x_child_dyn->toString());
-
+      DIAG_MsgIf(0 /*(dbgFlg & Tree::OFlg_Debug)*/,
+		 "CCT::ANode::mergeDeep: Merging x <= y:\n"
+		 << "  x: " << x_child_dyn->toStringMe(Tree::OFlg_Debug)
+		 << "\n  y: " << y_child_dyn->toStringMe(Tree::OFlg_Debug));
       x_child_dyn->mergeMe(*y_child_dyn, x_newMetricBegIdx);
-      x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, y_newMetrics);
+      x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, y_newMetrics, dbgFlg);
     }
   }
 }
@@ -599,11 +606,13 @@ ANode::findDynChild(const ADynNode& y_dyn)
 
     ADynNode* x_dyn = dynamic_cast<ADynNode*>(x);
     if (x_dyn) {
+      // Base case: an ADynNode descendent
       if (ADynNode::isMergable(*x_dyn, y_dyn)) {
 	return x_dyn;
       }
     }
     else {
+      // Inductive case: some other type; find the first ADynNode descendents.
       ADynNode* x_dyn_descendent = x->findDynChild(y_dyn);
       if (x_dyn_descendent) {
 	return x_dyn_descendent;
@@ -714,17 +723,20 @@ ANode::toStringMe(int oFlags) const
 
   SrcFile::ln lnBeg = begLine();
   string line = StrUtil::toStr(lnBeg);
-#if 0
-  SrcFile::ln lnEnd = endLine();
-  if (lnBeg != lnEnd) {
-    line += "-" + StrUtil::toStr(lnEnd);
-  }
-#endif
+  //SrcFile::ln lnEnd = endLine();
+  //if (lnBeg != lnEnd) {
+  //  line += "-" + StrUtil::toStr(lnEnd);
+  //}
 
   uint sId = (m_strct) ? m_strct->id() : 0;
+
+  if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
+    self += " uid" + xml::MakeAttrNum(m_id);
+    self += " strct" + xml::MakeAttrNum((uintptr_t)m_strct, 16);
+  }
+
   self += " s" + xml::MakeAttrNum(sId) + " l" + xml::MakeAttrStr(line);
-  //self = self + " uid" + xml::MakeAttrNum(id());
-  
+
   return self;
 }
 
@@ -751,7 +763,8 @@ string
 ADynNode::nameDyn() const
 {
   string nm = "[" + assocInfo_str() + ": ("
-    + StrUtil::toStr(m_ip, 16) + ") (" + lip_str() + ")]";
+    + StrUtil::toStr(m_lmId) + ", " + StrUtil::toStr(m_ip, 16) + ") ("
+    + lip_str() + ")]";
   return nm;
 }
 
@@ -830,7 +843,10 @@ Loop::toStringMe(int oFlags) const
 string
 Call::toStringMe(int oFlags) const
 {
-  string self = ANode::toStringMe(oFlags); // nameDyn()
+  string self = ANode::toStringMe(oFlags);
+  if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
+    self += " " + nameDyn();
+  }
   return self;
 }
 
@@ -838,7 +854,10 @@ Call::toStringMe(int oFlags) const
 string
 Stmt::toStringMe(int oFlags) const
 {
-  string self = ANode::toStringMe(oFlags); // nameDyn()
+  string self = ANode::toStringMe(oFlags);
+  if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
+    self += " " + nameDyn();
+  }
   if (hpcrun_fmt_doRetainId(cpId())) {
     self += " i" + xml::MakeAttrNum(cpId());
   }
@@ -852,13 +871,13 @@ ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
 {
   string indent = "  ";
   if (oFlags & CCT::Tree::OFlg_Compressed) {
-    pfx = ""; 
-    indent = ""; 
+    pfx = "";
+    indent = "";
   }
   
   bool doPost = writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
   string prefix = pfx + indent;
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureId);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByDynInfo);
        it.current(); it++) {
     ANode* n = it.current();
     n->writeXML(os, metricBeg, metricEnd, oFlags, prefix.c_str());

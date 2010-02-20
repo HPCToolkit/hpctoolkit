@@ -129,6 +129,8 @@ public:
     OFlg_LeafMetricsOnly = (1 << 1), // Write metrics only at leaves (outdated)
     OFlg_Debug           = (1 << 2), // Debug: show xtra source line info
     OFlg_DebugAll        = (1 << 3), // Debug: (may be invalid format)
+
+    OFlg_MergeOnly       = (1 << 4), // mergeDeep: nodes may only be merged
   };
 
   // N.B.: An easy implementation for now (but not thread-safe!)
@@ -166,7 +168,8 @@ public:
   // Given a Tree, merge into 'this'
   // -------------------------------------------------------
   void
-  merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics);
+  merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics,
+	int dbgFlg = 0);
 
 
   // -------------------------------------------------------
@@ -199,7 +202,7 @@ public:
 	   uint metricEnd = Metric::IData::npos,
 	   int oFlags = 0) const;
 
-  std::ostream& 
+  std::ostream&
   dump(std::ostream& os = std::cerr, int oFlags = 0) const;
   
   void
@@ -498,7 +501,7 @@ public:
   // N.B.: assume we can destroy y.
   // N.B.: assume x already has space to store merged metrics
   void
-  mergeDeep(ANode* y, uint x_numMetrics, uint y_numMetrics);
+  mergeDeep(ANode* y, uint x_numMetrics, uint y_numMetrics, int dbgFlg = 0);
 
   // merge: Let 'this' = x and let y be a node corresponding to x.
   //   Merge y into x.  
@@ -791,15 +794,17 @@ public:
       }
       
       // 2. special merge condition for hpcprof-mpi when IPs have been
-      //    lost after Analysis::CallPath::coalesceStmts().
+      //    lost after Analysis::CallPath::coalesceStmts(CallPath::Profile).
       //    (Typically, merges occur before structure information is
       //    added, so this will turn into a nop in the common case.)
       Struct::ACodeNode* x_strct = x.structure();
       Struct::ACodeNode* y_strct = y.structure();
-      if (x.isLeaf() /* both are leaves */
-	  && x_strct && y_strct
-	  && x_strct->parent() == y_strct->parent()
-	  && x_strct->begLine() == y_strct->begLine()) {
+      if (x.isLeaf() && (x_strct && y_strct) // x & y are structured leaves
+	  // fast and slow cases when (a) CCT scopes obey
+	  // Non-Overlapping Principle and (b) when they don't.
+	  && ((x_strct == y_strct) ||
+	      (x_strct->parent() == y_strct->parent()
+	       && x_strct->begLine() == y_strct->begLine()) )) {
 	return true;
       }
     }
@@ -1063,8 +1068,11 @@ public:
   virtual VMA 
   ip() const 
   {
-    if (isValid_lip()) { return (lush_lip_getIP(lip()) - Tree::raToCallsiteOfst); }
-    return (ADynNode::ip_real() - Tree::raToCallsiteOfst);
+    VMA ip = ADynNode::ip_real();
+    if (isValid_lip()) {
+      ip = lush_lip_getIP(lip());
+    }
+    return (ip != 0) ? (ip - Tree::raToCallsiteOfst) : 0;
   }
   
   VMA 
