@@ -103,6 +103,10 @@ using namespace xml;
 // 
 //****************************************************************************
 
+static void
+coalesceStmts(Prof::Struct::Tree& structure);
+
+
 namespace Analysis {
 
 namespace CallPath {
@@ -166,12 +170,83 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args)
 
   Prof::Struct::readStructure(*structure, args.structureFiles,
 			      PGMDocHandler::Doc_STRUCT, docargs);
+
+  // TODO:tallent: An elegant idea but somewhat pointless unless
+  // Analysis::Util::demandStructure() enforces Non-Overlapping
+  // Principle and overlayStaticStructure() both creates frames and
+  // merges nodes that map to the same structure.
+  coalesceStmts(*structure);
 }
 
 
 } // namespace CallPath
 
 } // namespace Analysis
+
+
+//****************************************************************************
+
+
+static void
+coalesceStmts(Prof::Struct::ANode* node);
+
+
+static void
+coalesceStmts(Prof::Struct::Tree& structure)
+{
+  coalesceStmts(structure.root());
+}
+
+
+// coalesceStmts: Maintain Non-Overlapping Principle of source code
+// for static struture.  Structure information currently distinguishes
+// callsites from statements, even if they are within the same scope
+// and on the same source line.
+void
+coalesceStmts(Prof::Struct::ANode* node)
+{
+  typedef std::map<SrcFile::ln, Prof::Struct::Stmt*> LineToStmtMap;
+
+  if (!node) {
+    return;
+  }
+
+  // A <line> -> <stmt> is sufficient for statements within the same scope
+  LineToStmtMap stmtMap;
+  
+  // ---------------------------------------------------
+  // For each immediate child of this node...
+  //
+  // Use cmpById()-ordering so that results are deterministic
+  // (cf. hpcprof-mpi)
+  // ---------------------------------------------------
+  for (Prof::Struct::ANodeSortedChildIterator it(node, Prof::Struct::ANodeSortedIterator::cmpById);
+       it.current(); /* */) {
+    Prof::Struct::ANode* n = it.current();
+    it++; // advance iterator -- it is pointing at 'n'
+    
+    if ( n->isLeaf() && (typeid(*n) == typeid(Prof::Struct::Stmt)) ) {
+      // Test for duplicate source line info.
+      Prof::Struct::Stmt* n_stmt = static_cast<Prof::Struct::Stmt*>(n);
+      SrcFile::ln line = n_stmt->begLine();
+      LineToStmtMap::iterator it = stmtMap.find(line);
+      if (it != stmtMap.end()) {
+	// found -- we have a duplicate
+	Prof::Struct::Stmt* n_stmtOrig = (*it).second;
+	DIAG_MsgIf(0, "coalesceStmts: deleting " << n_stmt->toStringMe());
+	Prof::Struct::ANode::merge(n_stmtOrig, n_stmt); // deletes n_stmt
+      }
+      else {
+	// no entry found -- add
+	stmtMap.insert(std::make_pair(line, n_stmt));
+      }
+    }
+    else if (!n->isLeaf()) {
+      // Recur
+      coalesceStmts(n);
+    }
+  }
+}
 
 
 //****************************************************************************
@@ -271,7 +346,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
 
 // overlayStaticStructure: Create frames for CCT::Call and CCT::Stmt
-// using a preorder walk over the CCT.
+// nodes using a preorder walk over the CCT.
 void
 Analysis::CallPath::
 overlayStaticStructure(Prof::CallPath::Profile& prof,
@@ -330,8 +405,8 @@ overlayStaticStructure(Prof::CCT::ANode* node,
   // ---------------------------------------------------
   // For each immediate child of this node...
   //
-  // Use cmpByDynInfo()-ordering so that hpcprof-mpi ranks always
-  // create structure in exactly the same order.
+  // Use cmpByDynInfo()-ordering so that results are deterministic
+  // (cf. hpcprof-mpi)
   // ---------------------------------------------------
   for (Prof::CCT::ANodeSortedChildIterator it(node, Prof::CCT::ANodeSortedIterator::cmpByDynInfo);
        it.current(); /* */) {
@@ -355,10 +430,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       n->structure(strct);
       strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
-      if (0) {
-	//Prof::CCT::Call* p = node->ancestorCall(); // ((p) ? p->ip() : 0)
-	DIAG_MsgIf(1, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << ip_ur << ") --> struct " << strct << dec << " " << strct->toStringMe());
-      }
+      DIAG_MsgIf(0, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << ip_ur << ") --> struct " << strct << dec << " " << strct->toStringMe());
 
       // 2. Demand a procedure frame for 'n_dyn' and its scope within it
       Struct::ANode* scope_strct = strct->ancestor(Struct::ANode::TyLoop,
@@ -586,7 +658,6 @@ pruneByMetrics(Prof::CCT::ANode* node)
 static void
 coalesceStmts(Prof::CCT::ANode* node);
 
-
 static void
 coalesceStmts(Prof::CallPath::Profile& prof)
 {
@@ -594,19 +665,12 @@ coalesceStmts(Prof::CallPath::Profile& prof)
 }
 
 
-// coalesceStmts: In the CCT collected by hpcrun, leaf nodes
-// (CCT::Stmt) are distinct according to instruction pointer.  After
-// static structure has been overlayed, CCT::Stmt's live within a
-// procedure frame (alien or native) and have been coalesced by
-// Struct::Stmt.  However, because structure information distinguishes
-// callsites from statements, a callsite and statement may map to the
-// same source file line.  Therefore, it is necessary to coalesce
-// CCT::Stmts by line.
-//
-// NOTE: After static structure has been overlayed on the CCT, a
-// node's child statement nodes obey the non-overlapping principle of
-// a source code.
-static void
+// coalesceStmts: After static structure has been overlayed,
+// CCT::Stmt's live within a procedure frame (alien or native).
+// However, leaf nodes (CCT::Stmt) are still distinct according to
+// instruction pointer.  Group CCT::Stmts within the same scope by
+// line (or structure).
+void
 coalesceStmts(Prof::CCT::ANode* node)
 {
   typedef std::map<SrcFile::ln, Prof::CCT::Stmt*> LineToStmtMap;
@@ -619,8 +683,14 @@ coalesceStmts(Prof::CCT::ANode* node)
   // identify a unique load module and source file.
   LineToStmtMap stmtMap;
   
+  // ---------------------------------------------------
   // For each immediate child of this node...
-  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
+  //
+  // Use cmpByDynInfo()-ordering so that results are deterministic
+  // (cf. hpcprof-mpi)
+  // ---------------------------------------------------
+  for (Prof::CCT::ANodeSortedChildIterator it(node, Prof::CCT::ANodeSortedIterator::cmpByDynInfo);
+       it.current(); /* */) {
     Prof::CCT::ANode* n = it.current();
     it++; // advance iterator -- it is pointing at 'n'
     
