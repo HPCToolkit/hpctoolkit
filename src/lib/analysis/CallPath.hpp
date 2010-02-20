@@ -110,6 +110,23 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 // 
 // ---------------------------------------------------------
 
+// overlayStaticStructure: In the CCT collected by hpcrun, call sites
+// (CCT::Call) and statements (CCT::Stmt) have no procedure frames.
+// Overlaying static structure creates frames for CCT::Call and
+// CCT::Stmt nodes.
+// 
+// After static structure has been overlayed on the CCT, CCT::Stmt's
+// are still distinct by instruction pointer even if they map to the
+// same Struct::Stmt.  Currently,
+// coalesceStmts(Prof::CallPath::Profile) applies the Non-Overlapping
+// Principle to scope within the CCT.
+//
+// The resulting CCT obeys the following invariants:
+// - Every CCT:Call node has one or more CCT::ProcFrm nodes as
+//   children.  Conversely, except for the root, every CCT::ProcFrm
+//   has a CCT::Call node for a parent.
+// - Every CCT::Call and CCT::Stmt is a descendant of a CCT::ProcFrm
+// - A CCT::Stmt node is always a leaf.
 void
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 			   string agent, bool doNormalizeTy);
