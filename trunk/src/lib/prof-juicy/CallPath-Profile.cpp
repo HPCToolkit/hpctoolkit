@@ -139,7 +139,7 @@ Profile::~Profile()
 
 
 uint 
-Profile::merge(Profile& y, int mergeTy)
+Profile::merge(Profile& y, int mergeTy, int dbgFlg)
 {
   DIAG_Assert(!y.m_structure, "Profile::merge: source profile should not have structure yet!");
 
@@ -195,7 +195,7 @@ Profile::merge(Profile& y, int mergeTy)
   // -------------------------------------------------------
   // merge CCTs
   // -------------------------------------------------------
-  m_cct->merge(y.cct(), x_newMetricBegIdx, y_newMetrics);
+  m_cct->merge(y.cct(), x_newMetricBegIdx, y_newMetrics, dbgFlg);
 
   return firstMergedMetric;
 }
@@ -256,6 +256,11 @@ Profile::mergeMetrics(Profile& y, int mergeTy,
 void 
 Profile::merge_fixCCT(std::vector<LoadMap::MergeChange>& mergeChg)
 {
+  // early exit for trivial case
+  if (mergeChg.empty()) {
+    return;
+  }
+
   CCT::ANode* root = cct()->root();
   
   for (CCT::ANodeIterator it(root); it.Current(); ++it) {
@@ -434,7 +439,7 @@ Profile::dump(std::ostream& os) const
   m_loadmapMgr->dump(os);
 
   if (m_cct) {
-    m_cct->dump(os);
+    m_cct->dump(os, CCT::Tree::OFlg_DebugAll);
   }
   return os;
 }
@@ -1056,24 +1061,37 @@ Profile::canonicalize()
     return;
   }
 
+  // 1. Create root
   CCT::ANode* newRoot = new CCT::Root(m_name);
 
-  // 1. find the splice point
-  CCT::ANode* spliceRoot = root;
-  if (root && root->childCount() == 1) {
-    spliceRoot = root->firstChild();
+  // 2. Find potential splice point
+  CCT::ANode* splicePoint = NULL;
+
+  CCT::ADynNode* root_dyn = dynamic_cast<CCT::ADynNode*>(root);
+  if (root_dyn && root_dyn->ip() == 0 
+      /*TODO: root_dyn->lmId() == LoadMap::LM_id_NULL &&*/) {
+    splicePoint = root;
   }
+
+  // N.B.: This must handle profiles generated both by hpcrun *and*
+  // CallPath::Profile::fmt_fwrite()
+  //if (root && root->childCount() == 1) {
+  //  splicePoint = root->firstChild();
+  //}
   
-  // 2. splice: move all children of 'spliceRoot' to 'newRoot'
-  if (spliceRoot) {
-    for (CCT::ANodeChildIterator it(spliceRoot); it.Current(); /* */) {
+  // 3. link or splice current tree to newRoot
+  if (splicePoint) {
+    for (CCT::ANodeChildIterator it(splicePoint); it.Current(); /* */) {
       CCT::ANode* n = it.current();
       it++; // advance iterator -- it is pointing at 'n'
       n->unlink();
       n->link(newRoot);
     }
 
-    delete root; // N.B.: also deletes 'spliceRoot'
+    delete root; // N.B.: also deletes 'splicePoint'
+  }
+  else if (root) {
+    root->link(newRoot);
   }
   
   m_cct->root(newRoot);

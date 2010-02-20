@@ -62,6 +62,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <typeinfo>
 
 #include <string>
 using std::string;
@@ -87,6 +88,7 @@ using std::vector;
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/Logic.hpp>
 #include <lib/support/RealPathMgr.hpp>
 
 
@@ -99,6 +101,9 @@ static Analysis::Util::NormalizeProfileArgs_t
 myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 		       vector<uint>& groupIdToGroupSizeMap,
 		       int myRank, int numRanks, int rootRank = 0);
+
+static void
+writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank);
 
 static void
 makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
@@ -230,11 +235,7 @@ realmain(int argc, char* const* argv)
   // Post-INVARIANT: 'profGbl' is the canonical CCT
   ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1);
   
-  if (0 && myRank == rootRank) {
-    FILE* fs = hpcio_fopen_w("canonical-cct.hpcrun", 1);
-    Prof::CallPath::Profile::fmt_fwrite(*profGbl, fs, 0);
-    hpcio_fclose(fs);
-  }
+  if (0) { writeProfile(*profGbl, "canonical-cct", myRank); }
 
   // -------------------------------------------------------
   // Add static structure to canonical CCT; form dense node ids
@@ -398,6 +399,23 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   }
 
   return out;
+}
+
+
+static void
+writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank)
+{
+  string fnm_base = string(baseNm) + "-" + StrUtil::toStr(myRank);
+  string fnm_hpcrun = fnm_base + ".txt";
+  string fnm_xml    = fnm_base + ".xml";
+
+  FILE* fs = hpcio_fopen_w(fnm_hpcrun.c_str(), 1);
+  Prof::CallPath::Profile::fmt_fwrite(prof, fs, 0);
+  hpcio_fclose(fs);
+
+  std::ostream* os = IOUtil::OpenOStream(fnm_xml.c_str());
+  prof.cct()->writeXML(*os, 0, 0, Prof::CCT::Tree::OFlg_Debug);
+  IOUtil::CloseStream(os);
 }
 
 
@@ -615,21 +633,25 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // merge into canonical CCT
   // -------------------------------------------------------
-  uint mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
+  int mergeTy  = Prof::CallPath::Profile::Merge_mergeMetricByName;
+  int mergeFlg = Prof::CCT::Tree::OFlg_MergeOnly; // nodes may only be merged
 
-  // Add some structure information to leaves so that 'prof' can be
-  // merged with the structured canonical CCT.
+  // Add *some* structure information to the leaves of 'prof' so that
+  // it will be merged successfully with the structured canonical CCT
+  // 'profGbl'.
   //
-  // (Background: When CCT::Stmts are merged in
-  // Analysis::CallPath::coalesceStmts(), IP/LIP information is not
-  // retained.  This means that many leaves in 'prof' will correctly
-  // find their corresponding node in profGbl without intervention.)
+  // Background: When CCT::Stmts are merged in
+  // Analysis::CallPath::coalesceStmts(CallPath::Profile), IP/LIP
+  // information is not retained.  This means that when merging 'prof'
+  // into 'profGbl' (using CallPath::Profile::merge()), many leaves in
+  // 'prof' will not find their corresponding node in 'profGbl' unless
+  // corrective measures are taken.
   prof->structure(profGbl.structure());
   Analysis::CallPath::noteStaticStructureOnLeaves(*prof);
   prof->structure(NULL);
 
-  uint mBeg = profGbl.merge(*prof, mergeTy);    // [closed begin
-  uint mEnd = mBeg + prof->metricMgr()->size(); //  open end)
+  uint mBeg = profGbl.merge(*prof, mergeTy, mergeFlg); // [closed begin
+  uint mEnd = mBeg + prof->metricMgr()->size();        //  open end)
 
   // -------------------------------------------------------
   // compute local metrics and update local derived metrics
@@ -644,10 +666,6 @@ processProfile(Prof::CallPath::Profile& profGbl,
     else if (m->type() == Prof::Metric::ADesc::TyExcl) {
       cctRoot->aggregateMetricsExcl(mId); // mBeg, mEnd      
     }
-  }
-
-  if (0) {
-    profGbl.cct()->writeXML(std::cerr, mBeg, mEnd);
   }
 
   const VMAIntervalSet* ivalset = groupIdToGroupMetricsMap[groupId];

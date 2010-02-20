@@ -194,7 +194,7 @@ public:
   // ASSUMES: both x and y are in canonical form (canonicalize())
   // WARNING: the merge may change/destroy y
   uint
-  merge(Profile& y, int mergeTy);
+  merge(Profile& y, int mergeTy, int dbgFlg = 0);
 
   // -------------------------------------------------------
   // 
