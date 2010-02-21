@@ -224,8 +224,11 @@ public:
   static const char* FmtEpoch_NV_virtualMetrics;
 
 
-  // make: build a Profile from profile file 'fnm'
-  static Profile* 
+  // make: build an empty Profile or build one from profile file 'fnm'
+  static Profile*
+  make(uint rFlags);
+
+  static Profile*
   make(const char* fnm, uint rFlags, FILE* outfs);
 
   

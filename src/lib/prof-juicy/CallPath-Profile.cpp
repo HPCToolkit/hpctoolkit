@@ -481,6 +481,20 @@ const char* Profile::FmtEpoch_NV_virtualMetrics = "is-virtual-metrics";
 
 
 Profile* 
+Profile::make(uint rFlags)
+{
+  Profile* prof = new Profile("[program-name]");
+
+  if (rFlags & RFlg_virtualMetrics) {
+    prof->isMetricMgrVirtual(true);
+  }
+  prof->canonicalize();
+
+  return prof;
+}
+
+
+Profile* 
 Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 {
   int ret;
@@ -553,12 +567,8 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
     num_epochs++;
   }
 
-  if (! prof) {
-    prof = new Profile("[program-name]");
-
-    if (rFlags & RFlg_virtualMetrics) {
-      prof->isMetricMgrVirtual(true);
-    }
+  if (!prof) {
+    prof = make(rFlags); // make an empty profile
   }
 
   prof->canonicalize();

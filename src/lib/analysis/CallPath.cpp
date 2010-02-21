@@ -116,6 +116,13 @@ Prof::CallPath::Profile*
 read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
      int mergeTy, uint rFlags)
 {
+  // Special case
+  if (profileFiles.empty()) {
+    Prof::CallPath::Profile* prof = Prof::CallPath::Profile::make(rFlags);
+    return prof;
+  }
+  
+  // General case
   uint groupId = (groupMap) ? (*groupMap)[0] : 0;
   Prof::CallPath::Profile* prof = read(profileFiles[0], groupId, rFlags);
 
