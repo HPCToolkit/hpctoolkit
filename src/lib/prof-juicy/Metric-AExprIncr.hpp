@@ -297,6 +297,26 @@ public:
 
 
   // ------------------------------------------------------------
+  // exported functions for computing a metric incrementally
+  // ------------------------------------------------------------
+
+  // initialize: [flat|callers]-accum is initialized from CCT-accum
+
+  // combineString1: [flat|callers]-accum x cct-accum -> [flat|callers]-accum
+  virtual std::string
+  combineString1() const = 0;
+
+  // combineString2: [flat|callers]-accum x cct-accum -> [flat|callers]-accum
+  virtual std::string
+  combineString2() const
+  { DIAG_Die(DIAG_Unimplemented); }
+
+  // finalizeString: accumulator-list -> output
+  virtual std::string
+  finalizeString() const = 0;
+
+
+  // ------------------------------------------------------------
   // R- or L-Value of variable reference (cf. AExpr::Var)
   // ------------------------------------------------------------
 
@@ -318,8 +338,9 @@ public:
   { return !(c_isnan_d(x) || c_isinf_d(x)); }
 
 
+public:
   // ------------------------------------------------------------
-  // 
+  // common functions for standard deviation
   // ------------------------------------------------------------
 
   double
@@ -367,23 +388,6 @@ public:
   }
 
 
-  std::string
-  combineString1StdDev() const
-  {
-    std::string a1 = accumStr();
-    std::string z1 = "sum(" + a1 + ", " + a1 + ")"; // running sum
-    return z1;
-  }
-
-  std::string
-  combineString2StdDev() const
-  {
-    std::string a2 = accum2Str();
-    std::string z2 = "sum(" + a2 + ", " + a2 + ")"; // running sum of squares
-    return z2;
-  }
-
-
   double
   finalizeStdDev(Metric::IData& mdata) const
   {
@@ -401,6 +405,27 @@ public:
       accum2Var(mdata) = mean;
     }
     return sdev;
+  }
+
+
+  // ------------------------------------------------------------
+  // common exported functions for standard deviation
+  // ------------------------------------------------------------
+
+  std::string
+  combineString1StdDev() const
+  {
+    std::string a1 = accumStr();
+    std::string z1 = "sum(" + a1 + ", " + a1 + ")"; // running sum
+    return z1;
+  }
+
+  std::string
+  combineString2StdDev() const
+  {
+    std::string a2 = accum2Str();
+    std::string z2 = "sum(" + a2 + ", " + a2 + ")"; // running sum of squares
+    return z2;
   }
 
 
@@ -429,18 +454,6 @@ public:
   
   virtual std::string
   toString() const;
-
-  virtual std::string
-  combineString1() const
-  { DIAG_Die(DIAG_Unimplemented); }
-
-  virtual std::string
-  combineString2() const
-  { DIAG_Die(DIAG_Unimplemented); }
-
-  virtual std::string
-  finalizeString() const
-  { DIAG_Die(DIAG_Unimplemented); }
 
 
   std::ostream&
