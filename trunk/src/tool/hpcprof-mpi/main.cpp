@@ -654,24 +654,32 @@ processProfile(Prof::CallPath::Profile& profGbl,
   uint mEnd = mBeg + prof->metricMgr()->size();        //  open end)
 
   // -------------------------------------------------------
-  // compute local metrics and update local derived metrics
+  // compute local incl/excl sampled metrics and update local derived metrics
   // -------------------------------------------------------
+
+  // 1. Batch compute local sampled metrics
+  VMAIntervalSet ivalsetIncl;
+  VMAIntervalSet ivalsetExcl;
+
   for (uint mId = mBeg; mId < mEnd; ++mId) {
     Prof::Metric::ADesc* m = mMgrGbl->metric(mId);
-
-    // FIXME: batch the inclusive and exclusive metrics
     if (m->type() == Prof::Metric::ADesc::TyIncl) {
-      cctRoot->aggregateMetricsIncl(mId); // mBeg, mEnd
+      ivalsetIncl.insert(VMAInterval(mId, mId + 1)); // [ )
     }
     else if (m->type() == Prof::Metric::ADesc::TyExcl) {
-      cctRoot->aggregateMetricsExcl(mId); // mBeg, mEnd      
+      ivalsetExcl.insert(VMAInterval(mId, mId + 1)); // [ )
     }
   }
 
-  const VMAIntervalSet* ivalset = groupIdToGroupMetricsMap[groupId];
-  if (ivalset) {
-    DIAG_Assert(ivalset->size() == 1, DIAG_UnexpectedInput);
-    const VMAInterval& ival = *(ivalset->begin());
+  cctRoot->aggregateMetricsIncl(ivalsetIncl);
+  cctRoot->aggregateMetricsExcl(ivalsetExcl);
+
+
+  // 2. Batch compute local derived metrics
+  const VMAIntervalSet* ivalsetDrvd = groupIdToGroupMetricsMap[groupId];
+  if (ivalsetDrvd) {
+    DIAG_Assert(ivalsetDrvd->size() == 1, DIAG_UnexpectedInput);
+    const VMAInterval& ival = *(ivalsetDrvd->begin());
     uint mDrvdBeg = (uint)ival.beg();
     uint mDrvdEnd = (uint)ival.end();
 

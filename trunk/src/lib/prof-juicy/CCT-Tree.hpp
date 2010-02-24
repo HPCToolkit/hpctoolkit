@@ -85,12 +85,15 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/lush/lush-support.h>
 
+#include <lib/binutils/VMAInterval.hpp> // TODO
+
 #include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/SrcFile.hpp>
 #include <lib/support/Unique.hpp>
+
 
 //*************************** Forward Declarations ***************************
 
@@ -455,6 +458,9 @@ public:
   aggregateMetricsIncl(uint mBegId, uint mEndId);
 
   void
+  aggregateMetricsIncl(const VMAIntervalSet& ivalset);
+
+  void
   aggregateMetricsIncl(uint mBegId)
   { aggregateMetricsIncl(mBegId, mBegId + 1); }
 
@@ -465,12 +471,15 @@ public:
   aggregateMetricsExcl(uint mBegId, uint mEndId);
 
   void
+  aggregateMetricsExcl(const VMAIntervalSet& ivalset);
+
+  void
   aggregateMetricsExcl(uint mBegId)
   { aggregateMetricsExcl(mBegId, mBegId + 1); }
 
 private:
   void
-  aggregateMetricsExcl(ProcFrm* frame, uint mBegId, uint mEndId);
+  aggregateMetricsExcl(ProcFrm* frame, const VMAIntervalSet& ivalset);
 
 public:
   void
