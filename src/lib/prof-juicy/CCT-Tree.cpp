@@ -336,7 +336,18 @@ ANode::zeroMetricsDeep(uint mBegId, uint mEndId)
 void
 ANode::aggregateMetricsIncl(uint mBegId, uint mEndId)
 {
-  if ( !(mBegId < mEndId) ) {
+  VMAIntervalSet ivalset; // TODO: cheat using a VMAInterval set
+  for (uint mId = mBegId; mId < mEndId; ++mId) {
+    ivalset.insert(VMAInterval(mId, mId + 1)); // [ )
+  }
+  aggregateMetricsIncl(ivalset);
+}
+
+
+void
+ANode::aggregateMetricsIncl(const VMAIntervalSet& ivalset)
+{
+  if (ivalset.empty()) {
     return; // short circuit
   }
 
@@ -346,9 +357,16 @@ ANode::aggregateMetricsIncl(uint mBegId, uint mEndId)
   for (ANode* n = NULL; (n = it.current()); ++it) {
     if (n != root) {
       ANode* n_parent = n->parent();
-      for (uint mId = mBegId; mId < mEndId; ++mId) {
-	double mVal = n->demandMetric(mId, mEndId/*size*/);
-	n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+      
+      for (VMAIntervalSet::const_iterator it = ivalset.begin();
+	   it != ivalset.end(); ++it) {
+	const VMAInterval& ival = *it;
+	uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
+
+	for (uint mId = mBegId; mId < mEndId; ++mId) {
+	  double mVal = n->demandMetric(mId, mEndId/*size*/);
+	  n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+	}
       }
     }
   }
@@ -358,17 +376,28 @@ ANode::aggregateMetricsIncl(uint mBegId, uint mEndId)
 void
 ANode::aggregateMetricsExcl(uint mBegId, uint mEndId)
 {
-  if ( !(mBegId < mEndId) ) {
-    return; // short circuit
+  VMAIntervalSet ivalset; // TODO: cheat using a VMAInterval set
+  for (uint mId = mBegId; mId < mEndId; ++mId) {
+    ivalset.insert(VMAInterval(mId, mId + 1)); // [ )
   }
-
-  ProcFrm* frame = NULL; // will be set during tree traversal
-  aggregateMetricsExcl(frame, mBegId, mEndId);
+  aggregateMetricsExcl(ivalset);
 }
 
 
 void
-ANode::aggregateMetricsExcl(ProcFrm* frame, uint mBegId, uint mEndId)
+ANode::aggregateMetricsExcl(const VMAIntervalSet& ivalset)
+{
+  if (ivalset.empty()) {
+    return; // short circuit
+  }
+
+  ProcFrm* frame = NULL; // will be set during tree traversal
+  aggregateMetricsExcl(frame, ivalset);
+}
+
+
+void
+ANode::aggregateMetricsExcl(ProcFrm* frame, const VMAIntervalSet& ivalset)
 {
   ANode* n = this;
 
@@ -384,7 +413,7 @@ ANode::aggregateMetricsExcl(ProcFrm* frame, uint mBegId, uint mEndId)
   // -------------------------------------------------------
   for (ANodeChildIterator it(n); it.Current(); ++it) {
     ANode* x = it.current();
-    x->aggregateMetricsExcl(frameNxt, mBegId, mEndId);
+    x->aggregateMetricsExcl(frameNxt, ivalset);
   }
 
   // -------------------------------------------------------
@@ -392,11 +421,18 @@ ANode::aggregateMetricsExcl(ProcFrm* frame, uint mBegId, uint mEndId)
   // -------------------------------------------------------
   if (typeid(*n) == typeid(CCT::Stmt)) {
     ANode* n_parent = n->parent();
-    for (uint mId = mBegId; mId < mEndId; ++mId) {
-      double mVal = n->demandMetric(mId, mEndId/*size*/);
-      n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
-      if (frame) {
-	frame->demandMetric(mId, mEndId/*size*/) += mVal;
+
+    for (VMAIntervalSet::const_iterator it = ivalset.begin();
+	 it != ivalset.end(); ++it) {
+      const VMAInterval& ival = *it;
+      uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
+
+      for (uint mId = mBegId; mId < mEndId; ++mId) {
+	double mVal = n->demandMetric(mId, mEndId/*size*/);
+	n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+	if (frame) {
+	  frame->demandMetric(mId, mEndId/*size*/) += mVal;
+	}
       }
     }
   }
