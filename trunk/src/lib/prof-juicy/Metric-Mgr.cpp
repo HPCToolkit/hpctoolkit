@@ -168,7 +168,7 @@ Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
       Metric::ADesc* mNew = NULL;
 
       string mean_nm = "Mean-" + mNm;
-      string cv_nm   = "CoefVar-" + mNm;
+      string cv_nm   = "CfVar-" + mNm;
       string min_nm  = "Min-" + mNm;
       string max_nm  = "Max-" + mNm;
       string sum_nm  = "Sum-" + mNm;
@@ -205,11 +205,11 @@ Mgr::makeSummaryMetricsIncr(uint srcBegId, uint srcEndId)
     Metric::ADesc* m = m_metrics[i];
 
     Metric::ADesc* mNew =
-      makeSummaryMetricIncr("Mean-",  m);
-    makeSummaryMetricIncr("CoefVar-", m);
-    makeSummaryMetricIncr("Min-",     m);
-    makeSummaryMetricIncr("Max-",     m);
-    makeSummaryMetricIncr("Sum-",     m);
+      makeSummaryMetricIncr("Mean", m);
+    makeSummaryMetricIncr("CfVar",  m);
+    makeSummaryMetricIncr("Min",    m);
+    makeSummaryMetricIncr("Max",    m);
+    makeSummaryMetricIncr("Sum",    m);
     
     if (firstId == Mgr::npos) {
       firstId = mNew->id();
@@ -240,15 +240,15 @@ Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
     expr = new Metric::Mean(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (mNm.find("StdDev", 0) == 0) {
+  else if (mNm.find("SDev", 0) == 0) {
     expr = new Metric::StdDev(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (mNm.find("CoefVar", 0) == 0) {
+  else if (mNm.find("CfVar", 0) == 0) {
     expr = new Metric::CoefVar(opands, mOpands.size());
     doDispPercent = false;
   }
-  else if (mNm.find("RStdDev", 0) == 0) {
+  else if (mNm.find("%CfVar", 0) == 0) {
     expr = new Metric::RStdDev(opands, mOpands.size());
     isPercent = true;
   }
@@ -290,15 +290,15 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
     expr = new Metric::MeanIncr(0, mSrc->id());
     doDispPercent = false;
   }
-  else if (mDrvdTy.find("StdDev", 0) == 0) {
+  else if (mDrvdTy.find("SDev", 0) == 0) {
     expr = new Metric::StdDevIncr(0, 0, mSrc->id());
     doDispPercent = false;
   }
-  else if (mDrvdTy.find("CoefVar", 0) == 0) {
+  else if (mDrvdTy.find("CfVar", 0) == 0) {
     expr = new Metric::CoefVarIncr(0, 0, mSrc->id());
     doDispPercent = false;
   }
-  else if (mDrvdTy.find("RStdDev", 0) == 0) {
+  else if (mDrvdTy.find("%CfVar", 0) == 0) {
     expr = new Metric::RStdDevIncr(0, 0, mSrc->id());
     isPercent = true;
   }
@@ -318,7 +318,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   }
   
   string mNmFmt = mSrc->nameToFmt();
-  string mNmBase = mDrvdTy + mSrc->nameBase();
+  string mNmBase = mSrc->nameBase() + "-" + mDrvdTy;
   const string& mDesc = mSrc->description();
 
   DerivedIncrDesc* m =
