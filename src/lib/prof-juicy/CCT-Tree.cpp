@@ -430,7 +430,7 @@ ANode::aggregateMetricsExcl(ProcFrm* frame, const VMAIntervalSet& ivalset)
       for (uint mId = mBegId; mId < mEndId; ++mId) {
 	double mVal = n->demandMetric(mId, mEndId/*size*/);
 	n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
-	if (frame) {
+	if (frame && frame != n_parent) {
 	  frame->demandMetric(mId, mEndId/*size*/) += mVal;
 	}
       }
