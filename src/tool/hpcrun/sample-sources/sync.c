@@ -182,13 +182,11 @@ METHOD_FN(display_events)
  * object
  ***************************************************************************/
 
+//
+// sync class is "SS_SOFTWARE" so that both synchronous and asynchronous sampling is possible
+// 
+
 #define ss_name sync
-
-//
-// Treat the sync event like a hardware event (e.g. only 1 of this class of event
-//  per profiling run)
-//
-
-#define ss_cls SS_HARDWARE
+#define ss_cls SS_SOFTWARE
 
 #include "ss_obj.h"
