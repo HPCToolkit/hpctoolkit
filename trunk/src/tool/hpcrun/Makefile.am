@@ -196,6 +196,7 @@ MY_X86_FILES = \
 	unwind/x86-family/x86-unwind.c		        \
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
+	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
         \
         trampoline/x86-family/x86-tramp.S
 
