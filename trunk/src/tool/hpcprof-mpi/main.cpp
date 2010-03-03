@@ -87,6 +87,8 @@ using std::vector;
 
 #include <lib/binutils/VMAInterval.hpp>
 
+#include <lib/prof-lean/hpcrun-fmt.h>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
 #include <lib/support/RealPathMgr.hpp>
@@ -125,6 +127,9 @@ processProfile(Prof::CallPath::Profile& profGbl,
 	       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
 	       int myRank);
 
+static void
+writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
+	     string& profileFile, int myRank);
 
 //****************************************************************************
 
@@ -421,6 +426,8 @@ writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank)
 
 //***************************************************************************
 
+// makeMetrics: Assumes 'profGbl' is the canonical CCT (with
+// structure and with canonical ids).
 static void
 makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 	    const vector<uint>& groupIdToGroupSizeMap,
@@ -610,6 +617,8 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 }
 
 
+// processProfile: Assumes 'profGbl' is the canonical CCT (with
+// structure and with canonical ids).
 static void
 processProfile(Prof::CallPath::Profile& profGbl,
 	       string& profileFile, uint groupId, uint groupMax,
@@ -689,8 +698,9 @@ processProfile(Prof::CallPath::Profile& profGbl,
   }
 
   // -------------------------------------------------------
-  // TODO: write local values to disk
+  // write local sampled metric values to disk
   // -------------------------------------------------------
+  if (0) { writeMetrics(profGbl, mBeg, mEnd, profileFile, myRank); }
 
   // -------------------------------------------------------
   // reinitialize metric values since space may be used again
@@ -699,6 +709,38 @@ processProfile(Prof::CallPath::Profile& profGbl,
   
   delete prof;
 }
+
+
+static void
+writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
+	     string& profileFile, int myRank)
+
+{
+  // TODO: we do not yet know the database name...
+
+  // header: Tag: HPCPROF_____ {16b}, num nodes {4b}
+
+  string fnm = profileFile + ".hpcprof-thread";
+
+  FILE* fs = hpcio_fopen_w(fnm.c_str(), 1);
+  if (!fs) {
+    DIAG_Throw("error opening file");
+  }
+
+  Prof::CCT::ANode* cctRoot = profGbl.cct()->root();
+  for (Prof::CCT::ANodeIterator it(cctRoot); it.Current(); ++it) {
+    Prof::CCT::ANode* n = it.current();
+    for (uint mId = mBegId; mId < mEndId; ++mId) {
+      double mval = n->metric(mId);
+      hpcfmt_byte8_fwrite(mval, fs); // TODO: HPCFMT_ThrowIfError()
+    }
+  }
+
+  hpcio_fclose(fs);
+}
+
+
+
 
 //***************************************************************************
 
