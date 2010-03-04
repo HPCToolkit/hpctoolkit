@@ -14,5 +14,5 @@ Uses Autoconf and Automake.
 make
 make install
 
-Used on ia64 platform.
+Now used on all or most platforms.
 

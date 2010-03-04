@@ -63,7 +63,6 @@ AC_SUBST([binutils_prefix])
 AC_SUBST([libdwarf_prefix])
 AC_SUBST([libelf_prefix])
 AC_SUBST([libmonitor_prefix])
-AC_SUBST([libunwind_prefix])
 AC_SUBST([libxml2_prefix])
 AC_SUBST([old_monitor_prefix])
 AC_SUBST([open_analysis_prefix])
@@ -75,8 +74,6 @@ AC_SUBST([libdwarf_inc])
 AC_SUBST([libdwarf_lib])
 AC_SUBST([libelf_inc])
 AC_SUBST([libelf_lib])
-AC_SUBST([libunwind_inc])
-AC_SUBST([libunwind_lib])
 AC_SUBST([libxml2_inc])
 AC_SUBST([libxml2_lib])
 
@@ -438,11 +435,12 @@ esac
 
 AC_MSG_RESULT([$libmonitor_avail])
 
-#
-# Option: --with-libunwind=PATH
-#
-# Used on ia64.
-#
+#------------------------------------------------------------
+# Libunwind: --with-libunwind=PATH
+#------------------------------------------------------------
+
+# Now used all platforms.
+
 AC_ARG_WITH([libunwind],
     [AS_HELP_STRING([--with-libunwind=PATH],
 	[path to libunwind install directory (default build)])],
@@ -462,18 +460,11 @@ libunwind_lib=no
 cookie="${srcdir}/libunwind/${nobuild_cookie}"
 rm -f "$cookie"
 case "$with_libunwind" in
-    build )
-	case "$host_cpu" in
-	    *ia64* | *IA64* )
-		libunwind_avail=build
-		libunwind_prefix="$prefix"
-		libunwind_inc="${libunwind_prefix}/include"
-		libunwind_lib="${libunwind_prefix}/lib"
-		;;
-	    * )
-		echo "not used on this platform" > "$cookie"
-		;;
-	esac
+    build | yes )
+	libunwind_avail=build
+	libunwind_prefix="$prefix"
+	libunwind_inc="${libunwind_prefix}/include"
+	libunwind_lib="${libunwind_prefix}/lib"
 	;;
     /* )
 	libunwind_avail="$with_libunwind"
@@ -502,9 +493,14 @@ esac
 
 AC_MSG_RESULT([$libunwind_avail])
 
-#
-# Option: --with-libxml2=PATH
-#
+AC_SUBST([libunwind_prefix])
+AC_SUBST([libunwind_inc])
+AC_SUBST([libunwind_lib])
+
+#------------------------------------------------------------
+# Libxml2: --with-libxml2=PATH
+#------------------------------------------------------------
+
 AC_ARG_WITH([libxml2],
     [AS_HELP_STRING([--with-libxml2=PATH],
 	[path to libxml2 install directory (default build)])],

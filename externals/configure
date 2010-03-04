@@ -603,6 +603,9 @@ PACKAGE_BUGREPORT='hpc@cs.rice.edu'
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 with_mpi
+libunwind_lib
+libunwind_inc
+libunwind_prefix
 gnu_make
 svn_revision
 host_vendor
@@ -617,8 +620,6 @@ xerces_platform
 symtabAPI_platform
 libxml2_lib
 libxml2_inc
-libunwind_lib
-libunwind_inc
 libelf_lib
 libelf_inc
 libdwarf_lib
@@ -629,7 +630,6 @@ symtabAPI_prefix
 open_analysis_prefix
 old_monitor_prefix
 libxml2_prefix
-libunwind_prefix
 libmonitor_prefix
 libelf_prefix
 libdwarf_prefix
@@ -1852,9 +1852,6 @@ ac_config_files="$ac_config_files Makefile.conf"
 ac_config_files="$ac_config_files externs.conf"
 
 ac_config_files="$ac_config_files options.conf"
-
-
-
 
 
 
@@ -3688,11 +3685,13 @@ esac
 { $as_echo "$as_me:$LINENO: result: $libmonitor_avail" >&5
 $as_echo "$libmonitor_avail" >&6; }
 
-#
-# Option: --with-libunwind=PATH
-#
-# Used on ia64.
-#
+
+#------------------------------------------------------------
+# Libunwind: --with-libunwind=PATH
+#------------------------------------------------------------
+
+# Now used all platforms.
+
 
 # Check whether --with-libunwind was given.
 if test "${with_libunwind+set}" = set; then
@@ -3716,18 +3715,11 @@ libunwind_lib=no
 cookie="${srcdir}/libunwind/${nobuild_cookie}"
 rm -f "$cookie"
 case "$with_libunwind" in
-    build )
-	case "$host_cpu" in
-	    *ia64* | *IA64* )
-		libunwind_avail=build
-		libunwind_prefix="$prefix"
-		libunwind_inc="${libunwind_prefix}/include"
-		libunwind_lib="${libunwind_prefix}/lib"
-		;;
-	    * )
-		echo "not used on this platform" > "$cookie"
-		;;
-	esac
+    build | yes )
+	libunwind_avail=build
+	libunwind_prefix="$prefix"
+	libunwind_inc="${libunwind_prefix}/include"
+	libunwind_lib="${libunwind_prefix}/lib"
 	;;
     /* )
 	libunwind_avail="$with_libunwind"
@@ -3763,9 +3755,14 @@ esac
 { $as_echo "$as_me:$LINENO: result: $libunwind_avail" >&5
 $as_echo "$libunwind_avail" >&6; }
 
-#
-# Option: --with-libxml2=PATH
-#
+
+
+
+
+#------------------------------------------------------------
+# Libxml2: --with-libxml2=PATH
+#------------------------------------------------------------
+
 
 # Check whether --with-libxml2 was given.
 if test "${with_libxml2+set}" = set; then
