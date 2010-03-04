@@ -26,18 +26,22 @@
 
 <div id="main">
 
-<h2>Downloads</h2>
+<h2><a href="software-build.html">Prerequisites &amp; Instructions</a></h2>
+
+<h2>Releases &amp; Snapshots </h2>
 
 <ul>
 
-<li><p>Tarballs (you need all three):
-<table cellpadding="2" cellspacing="2" border="1" width="100%">
+<li><p>Snapshots (for a complete installation, all three tarballs are necessary):
 
+<table cellpadding="2" cellspacing="2" border="1" width="100%">
 <tr>
 <td width="50%">
-  <p><a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-4.9.9-r2722.tar.gz</a>
+  <p><a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-4.9.9-r2722.tar.gz</a> (source)
   <br>
-  <p><a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-4.9.9-r2722.tar.gz</a>
+  <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-4.9.9-r2722.tar.gz</a> (source)
+  <br>
+  <a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer</a> (platform-specific build)
 <td><p>nu (after, of course, mu, lambda, kappa, iota, theta, eta, etc.!) Not an official release but the recommended snapshot.
 </tr>
 
@@ -48,43 +52,25 @@
 </tr>
 -->
 
-<tr>
-<td><p><a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer</a> builds 
-<td><p><i>temporarily separate from the main tarball</i>
-</tr>
-
 </table>
-
-<li><p><a href="software-build.html">Installation instructions</a>
 
 </ul>
 
 
-
-<h2>Development</h2>
+<h2>Subversion repository</h2>
 
 <ul>
-<li><p>Subversion repository:
+<li><p>Moral equivalent of a release/snapshot tarball:
 
 <table cellpadding="2" cellspacing="2" border="1" width="100%">
 <tr>
-<td><p>Web interface
-<td><p>SVN client
+<td><p><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/trunk/?root=hpctoolkit">hpctoolkit</a> (trunk)
+<td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit/trunk hpctoolkit</code>
 </tr>
 
 <tr>
-<td><p><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/trunk/?root=hpctoolkit">hpctoolkit trunk</a>
-<td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit/trunk hpctoolkit-trunk</code>
-</tr>
-
-<tr>
-<td><p><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/externals/?root=hpctoolkit">hpctoolkit externals</a>
+<td><p><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/externals/?root=hpctoolkit">hpctoolkit-externals</a>
 <td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit/externals hpctoolkit-externals</code>
-</tr>
-
-<tr>
-<td><p><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpctoolkit">hpctoolkit</a> <i>(everything)</i>
-<td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit hpctoolkit</code>
 </tr>
 
 <tr>
@@ -92,25 +78,42 @@
 <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk hpcviewer</code>
 </tr>
 
-<tr>
-<td><p><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=libmonitor">libmonitor</a> (trunk)
-<td><code>svn co https://outreach.scidac.gov/svn/libmonitor/trunk libmonitor</code>
 </tr>
 </table>
 
-<li><p><a href="https://outreach.scidac.gov/tracker/?group_id=87">Bug reports</a>
 
-<li><p>Related projects:
-       <a href="https://outreach.scidac.gov/projects/hpcviewer/">hpcviewer</a>,
-       <a href="https://outreach.scidac.gov/projects/libmonitor/">libmonitor</a>
+<li><p><a href="https://outreach.scidac.gov/projects/libmonitor/">libmonitor</a> (included within HPCToolkit's externals)
+
+<table cellpadding="2" cellspacing="2" border="1" width="100%">
+<tr>
+<td><p><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=libmonitor">libmonitor</a> (trunk)
+<td><code>svn co https://outreach.scidac.gov/svn/libmonitor/trunk libmonitor</code>
+
+</tr>
+</table>
+
+
+<li><p><a href="https://outreach.scidac.gov/projects/hpcviewer/">hpcviewer</a>
+
+<table cellpadding="2" cellspacing="2" border="1" width="100%">
+<tr>
+<td><p><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a> (trunk)
+<td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk hpcviewer</code>
+</tr>
+</table>
+
+</ul>
+
+<h2><a href="https://outreach.scidac.gov/tracker/?group_id=87">Bug reports</a></h2>
+
 
 <!--
 <li>HPCToolkit mailing list: <a href="mailto:hpctoolkit@rice.edu">hpctoolkit@rice.edu</a>. You must be subscribed to post to the list. <a href="https://mailman.rice.edu/mailman/listinfo/hpctoolkit/"> Subscribe, unsubscribe, or manage your subscription to the HPCToolkit mailing list</a>.				
 -->
 
-</ul>
 
-<p class="lastupdated">Page last updated: 2010/01/20</p>
+
+<p class="lastupdated">Page last updated: 2010/03/04</p>
 
 <!-- ********************************************************************** -->
 

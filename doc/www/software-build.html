@@ -10,7 +10,7 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 
-  <title>HPCToolkit: Downloading, Building and Installing</title>
+  <title>HPCToolkit: Building and Installing</title>
 
   <link rel='stylesheet' type='text/css' href='style/styles.css'>
 </head>
@@ -26,13 +26,13 @@
 <div id="main">
 
 <a name="toc"></a>
-<h1>Downloading, Building and Installing HPCToolkit</h1>
+<h1>Building and Installing HPCToolkit</h1>
 
 <h2>Contents</h2>
 <ul>
-  <li><a href="#prerequisites">System Prerequisites</a>
+  <li><a href="#prerequisites">Prerequisites</a>
 
-  <li><a href="#sources">Downloading the Sources</a>
+  <li><a href="#downloading">Downloading source code</a>
 
   <li><a href="#building_installing">Building and Installing</a>
 </ul>
@@ -43,25 +43,46 @@
 
 <a name="prerequisites"></a>
 
-<h2>System Prerequisites</h2>
+<h2>Prerequisites</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>To reduce our maintenance efforts, we have opted to distribute HPCToolkit primarily in source form.
+However, we have developed a "package manager" (HPCToolkit's "externals") that automatically handles most dependences.
 
 <ol class="noindent">
 
-<li>
-
-<p>To reduce the effort needed to distribute HPCToolkit, we have opted
-to distribute it in source form only.
-
-<li>
-<p>HPCToolkit requires an ANSI/ISO C/C++ compliant compiler.
-Generally speaking any recent GCC (4.x, 3.3+) should be fine.
-Some vendor compilers that support GNU extensions also work.
-(GNU binutils employs GNU extensions.)
-    
+<li>Platforms:
   <ul class="noindent">
+    <li>Linux-x86_64
+    <li>Linux-POWER (in testing)
+    <li>Linux-ia64 (in testing, using libunwind)
+    <li>Cray XT: Compute Node Linux (&ge; 2.1) + x86_64
+    <li>IBM Blue Gene/P: BG/P kernel (&ge; V1R3M0) + POWER
+    <li>SiCortex: Linux + MIPS (little endian)
+  </ul>
 
-    <li>Linux-x86_64 (x86):
+<li>
+<p><a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> &ge; 3.5 is required for (<span class="hpctool">hpcrun</span>) measurements based on hardware performance monitoring unit (PMU) information.
+(This requirement does not apply for IBM Blue Gene/P.)
+
+<p>There are currently three ways to support PAPI on Linux-based OSs:
+  <ul>
+    <li><a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch: Recommended; supports kernels through 2.6.29.  (Unfortunately, development has stopped.)
+    <li><a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch: Recommended; supports kernels through 2.6.32.  (Compared to perfmon, perfctr has better support for the Red Hat kernels.)
+    <li>perf events (n&eacute;e PCL): Now part of Linux with kernel 2.6.32 (n&eacute;e 2.6.31).  Tested but still on the cutting edge.
+  </ul>
+
+<p>Note: Beware of kernels 2.6.28 through 2.6.29.2
+
+
+<li>
+<p>Compiler: HPCToolkit requires an ANSI/ISO C/C++ compliant compiler that supports a few GNU extensions.
+Generally speaking, any recent GCC (4.x, 3.3+) should be fine.
+Some vendor compilers that support GNU extensions also work.
+
+<!--    
+  <ul class="noindent">
+    <li>Linux-x86_64, Cray XT:
       <ul class="noindent">
         <li>GCC C++/C 4.x, 3.4
         <li>Intel C++/C 10.x, 9.x
@@ -78,7 +99,7 @@ Some vendor compilers that support GNU extensions also work.
         <li>GCC C++/C 4.x
       </ul>
 
-    <li>Linux-POWER:
+    <li>Linux-POWER, Blue Gene/P:
       <ul class="noindent">
         <li>GCC C++/C 4.x
       </ul>
@@ -91,19 +112,17 @@ Some vendor compilers that support GNU extensions also work.
         <li>Sun Forte C++/C 5.1 (WorkShop 6)
         <li>GCC C++/C 3.x
       </ul>
-     -->
-
+     --
   </ul>
+-->
+
+<p>Additionally, HPCToolkit requires a basic version of GNU make, not a vendor supplied make.  We have successfully used versions 3.70, 3.76, 3.77, 3.78, 3.79 3.80.
 
 
 <li>
-<p><span class="hpctool">hpcrun</span>, a tool for collecting performance data on Linux, requires an installation of <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> 3.0 or greater.
-
-<li>
-<p><span class="hpctool">hpcviewer</span> is a Rich Client application that can be used on a variety of platforms.  It needs a Java 1.5 runtime environment (JRE) and gtk (on Linux).
-
-<li>
-<p>HPCToolkit requires a basic version of GNU make, not a vendor supplied make.  We have successfully used versions 3.70, 3.76, 3.77, 3.78, 3.79 3.80.
+<p>Java runtime environment (JRE) &ge; 1.5 is required to use the <span class="hpctool">hpcviewer</span> presentation tool.
+To use <span class="hpctool">hpcviewer</span> on Linux, gtk is required.
+We also support MacOS and Windows.
 
 <!--
 <li>
@@ -118,9 +137,9 @@ succssfully used versions 5.6.x, 5.8.x.
 <!-- ********************************************************************** -->
 <!-- ********************************************************************** -->
 
-<a name="sources"></a>
+<a name="downloading"></a>
 
-<h2>Downloading the Sources</h2>
+<h2>Downloading source code</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
 <p>
@@ -167,13 +186,13 @@ See the README file for more details.
 <p>Build and install HPCToolkit:
 <div class="indent">
   <code>cd hpctoolkit</code><br>
-  <code>./configure --prefix=PATH --with-externals=PATH --with-papi=PATH</code><br>
+  <code>./configure --prefix=&lt;install-path&gt; --with-externals=&lt;externals-path&gt; --with-papi=&lt;papi-installation-path&gt;</code><br>
   <code>make install</code><br>
 </div>
 
-<p>This will build and install HPCToolkit in the paths given above.
-Because the installation is compact and self-contained, you may rename
-or move it to another location.  All source code may be removed.
+<p>The above command will build HPCToolkit using PAPI and install it into &lt;install-path&gt.
+Because the installation is compact and self-contained, you may rename or move it to another location.
+All source code may be removed.
 
    <!-- &nbsp; -->
 
@@ -203,7 +222,7 @@ or move it to another location.  All source code may be removed.
 </ol>
 
 
-<p class="lastupdated">Page last updated: 2008/10/22</p>
+<p class="lastupdated">Page last updated: 2010/03/04</p>
 
 <!-- ********************************************************************** -->
 
