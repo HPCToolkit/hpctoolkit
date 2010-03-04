@@ -26,20 +26,37 @@
 
 <div id="main">
 
-<p>HPCToolkit is an open-source suite of multi-platform tools for profile-based performance analysis of applications.   The figure below provides an overview of the toolkit components and their relationships.
+<p>HPCToolkit is an integrated suite of tools for measurement and analysis of program performance on computers ranging from multicore desktop systems to the nation's largest supercomputers.
+HPCToolkit provides accurate measurements of a program's work, resource consumption, and inefficiency, correlates these metrics with the program's source code, works with multilingual, fully optimized binaries, has very low measurement overhead, and scales to large parallel systems.
+HPCToolkit's measurements provide support for analyzing a program execution cost, inefficiency, and scaling characteristics both within and across nodes of a parallel system.
+
+<p>The figure below provides an overview of HPCToolkit's primary components and their relationships.
 
 <table>
 <tr>
 
 <td>
 <ul>
-<li> <span class="hpctool">hpcrun / hpcrun-flat</span>: Measurement tools for profiling executions of unmodified fully-optimized application using statistical sampling of the system timer or hardware performance counters.  The former collects call path profiles, while the latter collects flat profiles.
+<li> <span class="hpctool">hpcrun</span>: HPCToolkit is based on collecting both highly accurate and highly precise calling-context-sensitive performance measurements for unmodified fully optimized applications.
+To collect call path profiles for very low overhead (1-3%), hpcrun uses asynchronous sampling of system timers and performance monitoring unit events.
+</li>
+<br>
 
-<li> <span class="hpctool">hpcstruct</span>: A binary analysis tool for recovering the static program structure of <i>fully optimized</i> object code.  In particular, hpcstruct recovers source code procedures and loop nests, detects inlining, and associates procedures and loops with object code.</li>
 
-<li> <span class="hpctool">hpcprof / hpcprof-flat / hpcproftt</span>: Profile interpretation and correlation tools.  Specifically, these tools correlate call path and flat profile metrics with program structure to produce a performance database.</li>
+<li> <span class="hpctool">hpcstruct</span>: To associate calling-context-sensitive measurements with source code structure, hpcstruct recovers the static program structure of a <i>fully optimized</i> application binary.
+In particular, hpcstruct recovers source code procedures and loop nests, detects inlining, and associates procedures and loops with object code.
+</li>
+<br>
 
-<li> <span class="hpctool">hpcviewer</span>: Sophisticated GUI for exploring databases consisting of performance information correlated with program source.</li>
+<li> <span class="hpctool">hpcprof</span>: To show static program structure -- especially a loop nest -- in its full calling context, hpcprof overlays call path profiles with program structure and correlates the result with source code.
+It generates a performance database.
+</li>
+<br>
+
+<li> <span class="hpctool">hpcviewer</span>: hpcviewer interactively presents a performance database in three complementary views.
+It is specifically designed to facilitate rapid top-down analysis using metrics that highlight program inefficiency rather than program hot spots.
+</li>
+
 </ul>
 </td>
 
@@ -51,10 +68,11 @@
 </table>
 
 <p>
-Supported platforms: x86-64/x86-Linux, IA64-Linux, POWER-Linux.  (MIPS-Linux)
-
-<p>
-Including: Cray XT (Opteron + Compute Node Linux), IBM Blue Gene/P.  (SiCortex)
+Supported platforms:
+<ul>
+  <li>Linux-x86-64/x86, Linux-IA64 (testing), Linux-POWER (testing).
+  <li>Including: Cray XT, IBM Blue Gene/P.
+</ul>
 
 <p>HPCToolkit is open-source software released with a BSD-like <a href="README.License">license</a>.
 
