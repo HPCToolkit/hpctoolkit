@@ -167,6 +167,7 @@ realmain(int argc, char* const* argv)
   // Generate Experiment database
   // ------------------------------------------------------------
 
+  args.makeDatabaseDir();
   Analysis::CallPath::makeDatabase(*prof, args);
 
   delete prof;

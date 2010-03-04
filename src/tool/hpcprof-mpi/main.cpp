@@ -90,6 +90,7 @@ using std::vector;
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/FileUtil.hpp>
 #include <lib/support/Logic.hpp>
 #include <lib/support/RealPathMgr.hpp>
 
@@ -108,7 +109,8 @@ static void
 writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank);
 
 static void
-makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
+makeMetrics(const Analysis::Args& args,
+	    const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 	    const vector<uint>& groupIdToGroupSizeMap,
 	    Prof::CallPath::Profile& profGbl,
 	    int myRank, int numRanks, int rootRank);
@@ -123,13 +125,14 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 
 static void
 processProfile(Prof::CallPath::Profile& profGbl,
+	       const Analysis::Args& args,
 	       string& profileFile, uint groupId, uint groupMax,
 	       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
 	       int myRank);
 
 static void
 writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
-	     string& profileFile, int myRank);
+	     const Analysis::Args& args, uint groupId, string& profileFile);
 
 //****************************************************************************
 
@@ -266,8 +269,12 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   // Create summary metrics and thread-level metrics
   // -------------------------------------------------------
+  if (myRank == rootRank) {
+    args.makeDatabaseDir();
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
 
-  makeMetrics(nArgs, groupIdToGroupSizeMap, *profGbl,
+  makeMetrics(args, nArgs, groupIdToGroupSizeMap, *profGbl,
 	      myRank, numRanks, rootRank);
 
   nArgs.destroy();
@@ -275,7 +282,6 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Generate Experiment database
   // ------------------------------------------------------------
-
   if (myRank == rootRank) {
     Analysis::CallPath::makeDatabase(*profGbl, args);
   }
@@ -429,7 +435,8 @@ writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank)
 // makeMetrics: Assumes 'profGbl' is the canonical CCT (with
 // structure and with canonical ids).
 static void
-makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
+makeMetrics(const Analysis::Args& args,
+	    const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 	    const vector<uint>& groupIdToGroupSizeMap,
 	    Prof::CallPath::Profile& profGbl,
 	    int myRank, int numRanks, int rootRank)
@@ -455,7 +462,7 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
     string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
-    processProfile(profGbl, fnm, groupId, nArgs.groupMax,
+    processProfile(profGbl, args, fnm, groupId, nArgs.groupMax,
 		   groupIdToGroupMetricsMap, myRank);
   }
 
@@ -621,6 +628,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 // structure and with canonical ids).
 static void
 processProfile(Prof::CallPath::Profile& profGbl,
+	       const Analysis::Args& args,
 	       string& profileFile, uint groupId, uint groupMax,
 	       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
 	       int myRank)
@@ -700,7 +708,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // write local sampled metric values to disk
   // -------------------------------------------------------
-  if (0) { writeMetrics(profGbl, mBeg, mEnd, profileFile, myRank); }
+  if (0) { writeMetrics(profGbl, mBeg, mEnd, args, groupId, profileFile); }
 
   // -------------------------------------------------------
   // reinitialize metric values since space may be used again
@@ -713,19 +721,18 @@ processProfile(Prof::CallPath::Profile& profGbl,
 
 static void
 writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
-	     string& profileFile, int myRank)
-
+	     const Analysis::Args& args, uint groupId, string& profileFile)
 {
-  // TODO: we do not yet know the database name...
+  string fnm_base = FileUtil::basename(profileFile.c_str());
+  string fnm = StrUtil::toStr(groupId) + "." + fnm_base + ".hpcprof-metrics";
+  string pathNm = args.db_dir + "/" + fnm;
 
-  // header: Tag: HPCPROF_____ {16b}, num nodes {4b}
-
-  string fnm = profileFile + ".hpcprof-thread";
-
-  FILE* fs = hpcio_fopen_w(fnm.c_str(), 1);
+  FILE* fs = hpcio_fopen_w(pathNm.c_str(), 1);
   if (!fs) {
     DIAG_Throw("error opening file");
   }
+
+  // TODO: header: Tag: HPCPROF_____ {16b}, num nodes {4b}
 
   Prof::CCT::ANode* cctRoot = profGbl.cct()->root();
   for (Prof::CCT::ANodeIterator it(cctRoot); it.Current(); ++it) {
@@ -740,7 +747,4 @@ writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 }
 
 
-
-
 //***************************************************************************
-
