@@ -70,6 +70,9 @@ using std::string;
 #include "Args.hpp"
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/FileUtil.hpp>
+#include <lib/support/realpath.h>
+
 
 //*************************** Forward Declarations **************************
 
@@ -77,14 +80,17 @@ using std::string;
 // Args
 //***************************************************************************
 
-Analysis::Args::Args()
+namespace Analysis {
+
+
+Args::Args()
 {
   Ctor();
 }
 
 
 void
-Analysis::Args::Ctor()
+Args::Ctor()
 {
   // -------------------------------------------------------
   // Correlation arguments
@@ -113,13 +119,13 @@ Analysis::Args::Ctor()
 }
 
 
-Analysis::Args::~Args()
+Args::~Args()
 {
 }
 
 
 string
-Analysis::Args::toString() const
+Args::toString() const
 {
   std::ostringstream os;
   dump(os);
@@ -128,7 +134,7 @@ Analysis::Args::toString() const
 
 
 void 
-Analysis::Args::dump(std::ostream& os) const
+Args::dump(std::ostream& os) const
 {
   os << "db_dir= " << db_dir << std::endl;
   os << "out_db_experiment= " << out_db_experiment << std::endl;
@@ -138,16 +144,22 @@ Analysis::Args::dump(std::ostream& os) const
 
 
 void 
-Analysis::Args::ddump() const
+Args::ddump() const
 {
   dump(std::cerr);
 }
 
 
+} // namespace Analysis
+
+
 //***************************************************************************
 
+namespace Analysis {
+
+
 void
-Analysis::Args::normalizeSearchPaths()
+Args::normalizeSearchPaths()
 {
   char cwd[PATH_MAX+1];
   getcwd(cwd, PATH_MAX);
@@ -180,8 +192,19 @@ Analysis::Args::normalizeSearchPaths()
 }
 
 
+void
+Args::makeDatabaseDir()
+{
+  // prepare output directory (N.B.: chooses a unique name!)
+  string dir = db_dir; // make copy
+  std::pair<string, bool> ret = 
+    FileUtil::mkdirUnique(dir); // N.B.: exits on failure...
+  db_dir = RealPath(ret.first.c_str());
+}
+
+
 std::string 
-Analysis::Args::searchPathStr() const
+Args::searchPathStr() const
 {
   string path = ".";
   for (uint i = 0; i < searchPathTpls.size(); ++i) { 
@@ -189,6 +212,9 @@ Analysis::Args::searchPathStr() const
   }
   return path;
 }
+
+
+} // namespace Analysis
 
 
 //***************************************************************************

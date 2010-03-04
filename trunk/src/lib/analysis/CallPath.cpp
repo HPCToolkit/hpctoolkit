@@ -93,7 +93,6 @@ using namespace xml;
 #include <lib/support/Logic.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
-#include <lib/support/realpath.h>
 
 
 //*************************** Forward Declarations ***************************
@@ -838,14 +837,12 @@ namespace Analysis {
 
 namespace CallPath {
 
+
+// makeDatabase: assumes Analysis::Args::makeDatabaseDir() has been called
 void
 makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 {
-  // prepare output directory (N.B.: chooses a unique name!)
-  string db_dir = args.db_dir; // make copy
-  std::pair<string, bool> ret = FileUtil::mkdirUnique(db_dir);
-  db_dir = RealPath(ret.first.c_str());  // exits on failure...
-    
+  const string& db_dir = args.db_dir;
   DIAG_Msg(1, "Copying source files reached by PATH option to " << db_dir);
   // NOTE: makes file names in structure relative to database
   Analysis::Util::copySourceFiles(prof.structure()->root(), 

@@ -197,9 +197,15 @@ public:
   // 
   // -------------------------------------------------------
 
-  void normalizeSearchPaths();
+  void
+  normalizeSearchPaths();
 
-  std::string searchPathStr() const;
+  // makes a unique database dir
+  void
+  makeDatabaseDir();
+
+  std::string
+  searchPathStr() const;
   
 
 private:
