@@ -69,7 +69,7 @@ MYSOURCES = \
 	overview.html \
 	papers.html \
 	software.html \
-	software-build.html \
+	software-instructions.html \
 	\
 	info-acks.html \
 	info-contact.html \
