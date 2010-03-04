@@ -11,7 +11,7 @@ document.write('<img style="position:absolute; top:0px; left:0px" src="style/hea
 document.write('<div style="position:absolute; top:60px; right:15px;">');
 document.write('[ <a href="index.html">HPCToolkit Home</a> |');
 document.write('  <a href="overview.html">Overview</a> |');
-document.write('  <a href="examples.html">Examples</a> |');
+//document.write('  <a href="examples.html">Examples</a> |');
 document.write('  <a href="papers.html">Papers</a> |');
 document.write('  <a href="software.html">Software</a> |');
 document.write('  <a href="documentation.html">Documentation</a> ]');
