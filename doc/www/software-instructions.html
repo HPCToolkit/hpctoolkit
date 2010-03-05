@@ -52,14 +52,15 @@ However, we have developed a "package manager" (HPCToolkit's "externals") that a
 <ol class="noindent">
 
 <li>Platforms:
-  <ul class="noindent">
+  <ul>
     <li>Linux-x86_64
-    <li>Linux-POWER (in testing)
+    <li>Linux-Power (in testing)
     <li>Linux-ia64 (in testing, using libunwind)
     <li>Cray XT: Compute Node Linux (&ge; 2.1) + x86_64
-    <li>IBM Blue Gene/P: BG/P kernel (&ge; V1R3M0) + POWER
+    <li>IBM Blue Gene/P: BG/P kernel (&ge; V1R3M0) + Power
     <li>SiCortex: Linux + MIPS (little endian)
   </ul>
+</li>
 
 <li>
 <p><a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> &ge; 3.5 is required for (<span class="hpctool">hpcrun</span>) measurements based on hardware performance monitoring unit (PMU) information.
@@ -67,13 +68,13 @@ However, we have developed a "package manager" (HPCToolkit's "externals") that a
 
 <p>There are currently three ways to support PAPI on Linux-based OSs:
   <ul>
-    <li><a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch: Recommended; supports kernels through 2.6.29.  (Unfortunately, development has stopped.)
-    <li><a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch: Recommended; supports kernels through 2.6.32.  (Compared to perfmon, perfctr has better support for the Red Hat kernels.)
-    <li>perf events (n&eacute;e PCL): Now part of Linux with kernel 2.6.32 (n&eacute;e 2.6.31).  Tested but still on the cutting edge.
+    <li>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch. As of this writing, supports kernels through 2.6.29. (Unfortunately, development has stopped because of perf events.)
+    <li>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch.  As of this writing, supports kernels through 2.6.32.  (One benefit of perfctr is out-of-the-box support for Red Hat kernels.)
+    <li>Use a kernel with perf events (n&eacute;e PCL).  As of kernel 2.6.32 (2.6.31), perf events is part of kernel distributions -- and even enabled by default.  Tested but still on the cutting edge.
   </ul>
 
 <p>Note: Beware of kernels 2.6.28 through 2.6.29.2
-
+</li>
 
 <li>
 <p>Compiler: HPCToolkit requires an ANSI/ISO C/C++ compliant compiler that supports a few GNU extensions.
@@ -117,12 +118,13 @@ Some vendor compilers that support GNU extensions also work.
 -->
 
 <p>Additionally, HPCToolkit requires a basic version of GNU make, not a vendor supplied make.  We have successfully used versions 3.70, 3.76, 3.77, 3.78, 3.79 3.80.
-
+</li>
 
 <li>
 <p>Java runtime environment (JRE) &ge; 1.5 is required to use the <span class="hpctool">hpcviewer</span> presentation tool.
 To use <span class="hpctool">hpcviewer</span> on Linux, gtk is required.
 We also support MacOS and Windows.
+</li>
 
 <!--
 <li>
@@ -150,6 +152,8 @@ succssfully used versions 5.6.x, 5.8.x.
   <li><p>An HPCToolkit externals tarball.  This contains several external libraries, e.g., OpenAnalysis, Xerces-C++ and GNU binutils.  In some cases it may be possible to use versions of these libraries that are already installed on your system. However, we do not support such configurations.
 
   <li><p>An <span class="hpctool">hpcviewer</span> build.
+
+  <p>Note: It is perfectly reasonable to install <span class="hpctool">hpcviewer</span> in multiple locations.  Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.
 </ol>
 
 <p>To extract the tarball <i>zoo.tar.gz</i>, execute:
@@ -191,8 +195,8 @@ See the README file for more details.
 </div>
 
 <p>The above command will build HPCToolkit using PAPI and install it into &lt;install-path&gt.
-Because the installation is compact and self-contained, you may rename or move it to another location.
-All source code may be removed.
+Because the installation is self-contained, you may rename or move it to another location.
+All source code and build files may be removed.
 
    <!-- &nbsp; -->
 
@@ -218,6 +222,9 @@ All source code may be removed.
        </ul>
    </ul>
    -->
+
+<li>
+<p>Install <span class="hpctool">hpcviewer</span>.  Simply move the directory tree to the desired location.
 
 </ol>
 
