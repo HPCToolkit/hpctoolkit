@@ -703,7 +703,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // write local sampled metric values to disk
   // -------------------------------------------------------
-  if (0) { writeMetrics(profGbl, mBeg, mEnd, args, groupId, profileFile); }
+  //writeMetrics(profGbl, mBeg, mEnd, args, groupId, profileFile);
 
   // -------------------------------------------------------
   // reinitialize metric values since space may be used again
@@ -718,18 +718,17 @@ static void
 writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 	     const Analysis::Args& args, uint groupId, string& profileFile)
 {
-  // -------------------------------------------------------
-  // 
-  // -------------------------------------------------------
-#if 0
-  uint maxCCTId = profGbl.cct()->maxDenseId();
+  const Prof::CCT::Tree& cct = *(profGbl.cct());
 
-  ParallelAnalysis::PackedMetrics* packedMetrics =
-    new ParallelAnalysis::PackedMetrics(maxCCTId + 1, mXDrvdBeg, mXDrvdEnd,
-					mDrvdBeg, mDrvdEnd);
+  // -------------------------------------------------------
+  // pack metrics into dense matrix
+  // -------------------------------------------------------
+  uint maxCCTId = cct.maxDenseId();
 
-  ParallelAnalysis::packMetrics(*profile_y, *packedMetrics_y);
-#endif
+  ParallelAnalysis::PackedMetrics packedMetrics(maxCCTId + 1, mBegId, mEndId,
+						mBegId, mEndId);
+
+  ParallelAnalysis::packMetrics(profGbl, packedMetrics);
 
   // -------------------------------------------------------
   // generate file name and open file
@@ -749,11 +748,13 @@ writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 
   // TODO: header: Tag: HPCPROF_____ {16b}, num nodes {4b}
 
-  Prof::CCT::ANode* cctRoot = profGbl.cct()->root();
-  for (Prof::CCT::ANodeIterator it(cctRoot); it.Current(); ++it) {
-    Prof::CCT::ANode* n = it.current();
-    for (uint mId = mBegId; mId < mEndId; ++mId) {
-      double mval = n->metric(mId);
+  // N.B.: first row corresponds to node 1.
+  //       first column corresponds to first sampled metric.
+
+  // cf. ParallelAnalysis::unpackMetrics
+  for (uint nodeId = 1; nodeId < packedMetrics.numNodes(); ++nodeId) {
+    for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
+      double mval = packedMetrics.idx(nodeId, mId1);
       hpcfmt_byte8_fwrite(mval, fs); // TODO: HPCFMT_ThrowIfError()
     }
   }

@@ -184,7 +184,7 @@ public:
   makeDensePreorderIds();
 
   uint
-  maxDenseId()
+  maxDenseId() const
   { return m_maxDenseId; }
 
 
