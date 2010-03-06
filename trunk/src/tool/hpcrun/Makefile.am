@@ -9,7 +9,7 @@
 ## Part of HPCToolkit (hpctoolkit.org)
 ## -----------------------------------
 ## 
-## Copyright ((c)) 2002-2009, Rice University 
+## Copyright ((c)) 2002-2010, Rice University 
 ## All rights reserved.
 ## 
 ## Redistribution and use in source and binary forms, with or without
