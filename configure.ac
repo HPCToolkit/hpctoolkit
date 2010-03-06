@@ -9,7 +9,7 @@ dnl -----------------------------------
 dnl Part of HPCToolkit (hpctoolkit.org)
 dnl -----------------------------------
 dnl 
-dnl Copyright ((c)) 2002-2009, Rice University 
+dnl Copyright ((c)) 2002-2010, Rice University 
 dnl All rights reserved.
 dnl 
 dnl Redistribution and use in source and binary forms, with or without
