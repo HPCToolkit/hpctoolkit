@@ -146,27 +146,21 @@ main(int argc, char* const* argv)
   }
   catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(x.message());
-    ret = 1;
-    goto exit;
+    exit(1);
   }
   catch (const std::bad_alloc& x) {
     DIAG_EMsg("[std::bad_alloc] " << x.what());
-    ret = 1;
-    goto exit;
+    exit(1);
   }
   catch (const std::exception& x) {
     DIAG_EMsg("[std::exception] " << x.what());
-    ret = 1;
-    goto exit;
+    exit(1);
   }
   catch (...) {
     DIAG_EMsg("Unknown exception encountered!");
-    ret = 2;
-    goto exit;
+    exit(2);
   }
 
- exit:
-  MPI_Finalize();
   return ret;
 }
 
@@ -287,10 +281,11 @@ realmain(int argc, char* const* argv)
   }
 
   // -------------------------------------------------------
-  // Cleanup: MPI_Finalize() called in parent
+  // Cleanup/MPI finalize
   // -------------------------------------------------------
-
   delete profGbl;
+
+  MPI_Finalize();
 
   return 0;
 }
@@ -723,6 +718,22 @@ static void
 writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 	     const Analysis::Args& args, uint groupId, string& profileFile)
 {
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+#if 0
+  uint maxCCTId = profGbl.cct()->maxDenseId();
+
+  ParallelAnalysis::PackedMetrics* packedMetrics =
+    new ParallelAnalysis::PackedMetrics(maxCCTId + 1, mXDrvdBeg, mXDrvdEnd,
+					mDrvdBeg, mDrvdEnd);
+
+  ParallelAnalysis::packMetrics(*profile_y, *packedMetrics_y);
+#endif
+
+  // -------------------------------------------------------
+  // generate file name and open file
+  // -------------------------------------------------------
   string fnm_base = FileUtil::basename(profileFile.c_str());
   string fnm = StrUtil::toStr(groupId) + "." + fnm_base + ".hpcprof-metrics";
   string pathNm = args.db_dir + "/" + fnm;
@@ -731,6 +742,10 @@ writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
   if (!fs) {
     DIAG_Throw("error opening file");
   }
+
+  // -------------------------------------------------------
+  // write data
+  // -------------------------------------------------------
 
   // TODO: header: Tag: HPCPROF_____ {16b}, num nodes {4b}
 
