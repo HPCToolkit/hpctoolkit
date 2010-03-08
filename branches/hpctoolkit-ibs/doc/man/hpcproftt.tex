@@ -1,0 +1,254 @@
+%% $Id$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[english]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{babel}
+\usepackage{verbatim}
+
+%% do we have the `hyperref package?
+\IfFileExists{hyperref.sty}{
+   \usepackage[bookmarksopen,bookmarksnumbered]{hyperref}
+}{}
+
+%% do we have the `fancyhdr' or `fancyheadings' package?
+\IfFileExists{fancyhdr.sty}{
+\usepackage[fancyhdr]{latex2man}
+}{
+\IfFileExists{fancyheadings.sty}{
+\usepackage[fancy]{latex2man}
+}{
+\usepackage[nofancy]{latex2man}
+\message{no fancyhdr or fancyheadings package present, discard it}
+}}
+
+%% do we have the `rcsinfo' package?
+\IfFileExists{rcsinfo.sty}{
+\usepackage[nofancy]{rcsinfo}
+\rcsInfo $Id$
+\setDate{\rcsInfoLongDate}
+}{
+\setDate{ 2009/02/09}
+\message{package rcsinfo not present, discard it}
+}
+
+\setVersionWord{Version:}  %%% that's the default, no need to set it.
+\setVersion{=PACKAGE_VERSION=}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\begin{Name}{1}{hpcproftt}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcproftt:\\ Correlation of Flat Profile Metrics for Teletype Output}
+
+\Prog{hpcproftt} correlates `flat' profile metrics with either source code structure or object code and generates textual output suitable for a terminal.
+Alternatively, it also generates textual dumps of profile files.
+
+\end{Name}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Synopsis}
+
+\Prog{hpcproftt} [--source] \oOpt{options} \Arg{profile-file}...
+
+\Prog{hpcproftt} --object \oOpt{options} \Arg{profile-file}...
+
+\Prog{hpcproftt} --dump \Arg{profile-file}...
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Description}
+
+\Prog{hpcproftt} correlates `flat' profile metrics with either source code structure (the first and default mode) or object code (second mode) and generates textual output suitable for a terminal (hence the tt, for teletype, in its name).
+In both of these modes, \Prog{hpcproftt} expects a list of flat profile files.
+\Prog{hpcproftt} also supports a third mode in which it generates textual dumps of profile files.
+In this mode, the profile list may contain either flat or call path profile files.
+
+\Prog{hpcproftt} defaults to source code correlation mode.
+Without any mode switch, it behaves as if passed \Opt{--source=pgm,lm}.
+
+\textbf{Source Source Structure Correlation}.
+First, \Prog{hpcproftt} creates raw metrics for every native event with in each profile file.
+Derived summary metrics can be optionally created with the \Opt{--metric} option.
+All metrics are normalized to use the unit 'events' rather than 'samples' since this enables meaningful comparisons and derived metrics.
+Since percents facilitate rapid comprehension (compared to values), all raw metrics display as percents; derived metrics likewise default to percent, if sensible.
+
+Then, \Prog{hpcproftt} correlates metrics to program structure.
+If \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure information is available, this is used for correlation; if not, a simple 'File | Procedure | Statement' structure is computed using the load module's line map.
+
+Finally, \Prog{hpcproftt} generates metric summaries and annotated source files to standard out.
+Each metric summary compares a certain source structure element (such as a procedure) with all other elements of that type across the whole program.
+Structure elements include: Program, Load Module, File, Procedure, Loop (requires \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}), and Statement.
+For example, the procedure summary shows (exclusive) metric values for each procedure in the program.
+(Structure elements are pruned if all corresponding metrics are 0.)
+Summaries are rank ordered by the first metric.
+\Prog{hpcproftt} optionally annotates source files with Statement (line) level metrics.
+Note that it can only annotate files found by combining debug information with \Opt{--include} search paths.
+
+%%% If the same native event name appears more than once, min/max/sum \emph{derived} events are computed.
+
+\textbf{Object Correlation}.
+
+\Prog{hpcproftt}'s object correlation mode is intended for inspection of fine-grained correlation.
+In contrast to the source structure correlation mode, true summaries are not computed; rather (like an annotated source file) \Prog{hpcproftt} generates annotated object code, i.e., procedures and instructions.
+Moreover, only raw metrics corresponding to the native events in \textbf{one} profile file may be correlated to the object code touched by those metrics.
+Accordingly, \Prog{hpcproftt} creates raw metrics for every native event in one profile file.
+Metrics use the unit 'samples' rather than 'events' and default to percents, though absolute values may optionally be displayed.
+Procedures are pruned from the output if no associated metric totals to the provided threshold.
+
+Warnings:
+\begin{itemize}
+\item On ISA's with variable sized instructions, histogram buckets (4 bytes in size) may contain information for more than one instruction.
+In this case, multiple instructions will report counts for the \emph{same} bucket.
+
+\item On some architectures, delays between event triggers, interrupt generation and sampling of the IP means that an event may be associated with a different instruction than one that caused the event.  It is not abnormal for this gap to be 50-70 instructions wide.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Arguments}
+
+\begin{Description}
+\item[\Arg{profile-file}...] A list of flat profile files.
+\end{Description}
+
+Default values for an option's optional arguments are shown in \{\}.
+
+\subsection{Options: General}
+
+\begin{Description}
+\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}] Verbose: generate progress messages to stderr at verbosity level \Arg{n}.  \{1\} 
+\item[\Opt{-V}, \Opt{--version}] Print version information.
+\item[\Opt{-h}, \Opt{--help}] Print help.
+\item[\OptoArg{--debug}{n}]   Debug: use debug level \Arg{n}. \{1\}
+\end{Description}
+
+\subsection{Options: Source Structure Correlation}
+
+\begin{Description}
+\item[\OptoArg{--source}{=all,sum,pgm,lm,f,p,l,s,src}]
+\item[\OptoArg{--src}{=all,sum,pgm,lm,f,p,l,s,src}] 
+Correlate metrics to source code structure. Without \Opt{--source}, default is \{pgm,lm\}; with, it is \{sum\}.
+  \begin{itemize}
+  \item all: all summaries plus annotated source files
+  \item sum: all summaries
+  \item pgm: program summary
+  \item lm:  load module summary
+  \item f:   files summary
+  \item p:   procedure summary
+  \item l:   loop summary
+  \item s:   statement summary
+  \item src: annotate source files with metrics; equivalent to \Opt{--srcannot '*'}
+  \end{itemize}
+
+\item[\OptArg{--srcannot}{glob}] 
+Annotate source files with path names that match file glob \Arg{glob}. (Protect glob characters from shell with single quotes or backslash.) May pass multiple times to logically OR additional globs.
+
+\item[\OptoArg{-M}{metric}, \OptoArg{--metric}{metric}] 
+Show a supplemental or different metric set. \Arg{metric} is one of the following:
+  \begin{itemize}
+  \item sum:      Show also Mean, CoefVar (coefficient of variation), Min, Max, Sum
+  \item sum-only: Show only Mean, CoefVar (coefficient of variation), Min, Max, Sum
+  \end{itemize}
+
+\item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
+Use \Arg{path} when searching for source files. For a recursive search, append a '*' after the last slash, e.g., \verb+'/mypath/*'+ (quote or escape to protect from the shell). May pass multiple times.
+
+\item[\OptArg{-S}{file}, \OptArg{--structure}{file}] 
+Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
+\end{Description}
+
+\subsection{Options: Object Correlation}
+
+\begin{Description}
+
+\item[\OptoArg{--object}{=s}] 
+\item[\OptoArg{--obj}{=s}] 
+Correlate metrics with object code by annotating object code procedures and instructions. \{\}
+  \begin{itemize}
+  \item s: intermingle source line info with object code
+  \end{itemize}
+
+\item[\OptArg{--objannot}{glob}] 
+Annotate object procedures with (unmangled) names that match glob \Arg{glob}. (Protect glob characters from shell with single quotes or backslash.) May pass multiple times to logically OR additional globs.
+
+\item[\OptArg{--obj-threshold}{n}] 
+Prune procedures with an event count < \Arg{n} \{1\}
+
+\item[\Opt{--obj-values}] 
+Show raw metrics as values instead of percents
+
+\end{Description}
+
+\subsection{Options: Dump Raw Profile Data}
+
+\begin{Description}
+\item[\Opt{--dump}] Generate textual representation of raw profile data.
+\end{Description}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Examples}
+
+\begin{itemize}
+
+\item Assume we have collected flat profiling information using \HTMLhref{hpcrun-flat.html}{\Cmd{hpcrun-flat}{1}}).
+Let the executable and profile be named \File{poissonSolve} and \File{poissonSolve.PAPI_L2_DCM-etc...}, respectively.
+Assume further that we wish to correlate derived summary metrics (Mean, RStdDev, Min, Max) with source code and generate summary tables.
+To do this, execute:
+\begin{verbatim}
+    hpcproftt --src --metric=sum-only poissonSolve.hpcrun*
+\end{verbatim}
+
+\item Using the same example as above, assume we wish to correlate the profile with object code.  Execute the following command:
+\begin{verbatim}
+    hpcproftt --obj poissonSolve.hpcrun*
+\end{verbatim}
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Notes}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{See Also}
+
+\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Version}
+
+Version: \Version\ of \Date.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{License and Copyright}
+
+\begin{description}
+\item[Copyright] \copyright\ 2002-2009, Rice University.
+\item[License] See \File{README.License}.
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Authors}
+
+\noindent
+Nathan Tallent \\
+John Mellor-Crummey \\
+Rob Fowler \\
+Email: \Email{hpc =at= cs.rice.edu} \\
+WWW: \URL{http://hpctoolkit.org}.
+
+\LatexManEnd
+
+\end{document}
+
+%% Local Variables:
+%% eval: (add-hook 'write-file-hooks 'time-stamp)
+%% time-stamp-start: "setDate{ "
+%% time-stamp-format: "%:y/%02m/%02d"
+%% time-stamp-end: "}\n"
+%% time-stamp-line-limit: 50
+%% End:
+

@@ -1,0 +1,164 @@
+% $Id: paper.tex 253 2008-08-23 05:23:14Z johnmc $
+
+\documentclass[10pt]{article}
+
+% ***************************************************************************
+% Standard packages
+% ***************************************************************************
+
+\usepackage{cite}
+\usepackage{fullpage}
+
+
+% NOTE: With approval from Wiley, I changed cpeauth to use [pdftex]{graphicx}
+\usepackage{ifpdf}
+\ifpdf
+  \usepackage[pdftex]{graphicx}
+  \usepackage{epstopdf}
+\else
+  \usepackage[dvips]{graphicx}
+\fi
+
+% Not necessary now
+%\usepackage{floatflt} % wrapfig seems to be inferior
+
+%\usepackage{hyperref} % bookmarksopen,bookmarksnumbered
+%\usepackage{url}
+
+\usepackage{verbatim} % for comment environment
+
+% ***************************************************************************
+% Customizations
+% ***************************************************************************
+% A sane version of verb/texttt (requires url package)
+\newcommand{\mytt}{\begingroup \urlstyle{tt}\Url}
+
+% Because the retarded tabbing environment limits you to about 12 tabs
+\newcommand{\TB}{\hspace{.20in}}
+
+\newcommand{\figuretextsize}{scriptsize}
+
+% ----------------------------------------------------------
+% my common text commands
+% ----------------------------------------------------------
+
+\newcommand{\ie}{\emph{i.e.}}  % followed by a comma
+\newcommand{\eg}{\emph{e.g.}}  % followed by a comma
+\newcommand{\cf}{\emph{cf.}}   % always followed by a space
+\newcommand{\Cf}{\emph{Cf.}}   % always followed by a space
+\newcommand{\etc}{\emph{etc.}}  % 
+\newcommand{\etal}{\emph{et al.}}
+\newcommand{\viceversa}{\emph{vice versa}}
+\newcommand{\naive}{na\"{i}ve}
+\newcommand{\nee}{ne\'{e}} 
+
+
+% ----------------------------------------------------------
+% tools
+% ----------------------------------------------------------
+
+\newcommand{\HPCToolkit}{\textsc{HPCToolkit}}
+\newcommand{\hpcrun}{\texttt{hpcrun}}
+\newcommand{\hpclink}{\texttt{hpclink}}
+\newcommand{\hpcstruct}{\texttt{hpcstruct}}
+\newcommand{\hpcprof}{\texttt{hpcprof}}
+\newcommand{\hpcviewer}{\texttt{hpcviewer}}
+\newcommand{\hpctraceview}{\texttt{hpctraceview}}
+
+\newcommand{\gprof}{\texttt{gprof}}
+
+\newcommand{\binutils}{\texttt{binutils}}
+
+\newcommand{\Unix}{\textsc{Unix}}
+
+% ----------------------------------------------------------
+% codes
+% ----------------------------------------------------------
+
+\newcommand{\hmc}{\texttt{hmc}}
+\setlength{\textwidth}{7in}
+\setlength{\oddsidemargin}{-.25in}
+\setlength{\evensidemargin}{-.25in}
+
+% ***************************************************************************
+% Document
+% ***************************************************************************
+
+\begin{document}
+
+% ---------------------------------------------------------------------------
+% ---------------------------------------------------------------------------
+
+% Page limit: 15 pages
+% Due date: Aug 15 (was July 31st)
+
+\newcommand\lindent{\hbox to 3ex{\hfil}}
+
+
+\begin{center}
+{\Large \HPCToolkit{} Quickstart Guide}\\[1ex]
+{\HPCToolkit{} Project Team}\\
+March 31, 2009
+\end{center}
+
+
+
+\begin{itemize}
+\item{\em Documentation.} Man pages and user guides are available from the {\tt share/doc/guides} directory of the release or at {\tt http://hpctoolkit.org/documentation.html}.  
+\item {\em Command-line help.} Help with the \HPCToolkit{} performance tools {\tt hpcrun}, {\tt hpcstruct}, or {\tt hpcprof} can be found by executing the command with the argument {\tt --help}.
+\item{ \em Measuring application performance.}
+
+For a sequential or multithreaded code:\\
+\lindent {\tt hpcrun [hpcrun options] myprogram [program arguments] }\\[1ex]
+For an MPI code:\\
+\lindent {\tt mpiexec -n 32 hpcrun [hpcrun options] myprogram [program arguments]}\footnote{Here, we assume that your MPI launcher is named {\tt mpiexec}. It may be {\tt mpirun} or something else depending on the MPI implementation you are using.}\\[1ex]
+\sloppy This command will produce a directory with the name {\tt hpctoolkit-myprogram-measurements}. If an {\tt hpcrun} command is run under control of PBS or GridEngine batch job schedulers, the name of the measurements directory will have its batch job id appended. For single-threaded programs, this directory will contain a single file with the suffix {\tt myprogram-{\em nodeid}.hpcrun}. {\em Nodeid} is a hex value representing the host name for the node on which the measurements were collected. For parallel codes, performance measurements will be saved in files within the measurements directory with names that have the MPI rank (0 if none) and the thread id embedded.
+
+\item{ \em Running statically-linked binaries.} \\
+On systems such as Compute-Node Linux and BG/P that run only
+statically-linked binaries on the compute nodes, use \hpclink\ to
+build a statically-linked version of your application with the
+\HPCToolkit\ library linked in.  For example, \\
+\lindent
+\verb|hpclink mpicc -o myprog file.o ... -l<lib> ...| \\[1ex]
+Then, set the {\tt HPCRUN\_EVENT\_LIST} environment variable in the
+launch script before running the application. \\
+\lindent
+\verb|export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000000"| \\
+\lindent
+\verb|aprun -n 64 myprog arg ...| \\[1ex]
+See the {\it Using {\sc HPCToolkit} with Statically-Linked Programs} guide
+for more information.
+
+\item{ \em Recovering program structure information.}\\
+\lindent {\tt hpcstruct myprogram}\\[1ex]
+This command will produce a file {\tt myprogram.hpcstruct} that should be passed to {\tt hpcprof} with the {\tt -S} argument.
+\item{ \em Correlating measurements to source code.}\\
+\lindent {\tt hpcprof -S myprogram.hpcstruct -I path-to-myprogram-src \verb+\+ \\ 
+\lindent \lindent hpctoolkit-myprogram-measurements}\\[1ex]
+This command will produce a directory with the name {\tt hpctoolkit-myprogram-database}. If this database directory already exists, {\tt hpcprof} will append its process id at the end of the aforementioned directory name to yield a unique name.
+\item{ \em Viewing application performance measurements.}\\
+\lindent {\tt hpcviewer {\tt hpctoolkit-myprogram-database}}\\[1ex]
+Help for using {\tt hpcviewer} can be found at  {\tt http://hpctoolkit.org/documentation.html}  or in a help pane available within the viewer. The help pan can be brought up from {\tt hpcviewer}'s {\tt Help} menu.
+\item{ \em Performance analysis techniques.}
+These strategies are described in the user guide {\em Effective Strategies for Analyzing Program Performance with \HPCToolkit{}}, which is available as mentioned above in the documentation bullet.
+\begin{itemize}
+\item
+A waste metric, which represents the difference between achieved performance and potential peak performance is a good way of understanding the potential for tuning the node performance of codes. {\tt hpcviewer} supports synthesis of derived metrics to aid analysis. Derived metrics are specified within {\tt hpcviewer} using spreadsheet-like formula. See the {\tt hpcviewer} help pane for details about how to specify derived metrics.
+\item
+Scalability bottlenecks in parallel codes can be pinpointed by differential analysis of two profiles with different degrees of parallelism. 
+\end{itemize}
+\end{itemize}
+
+
+
+% ---------------------------------------------------------------------------
+% ---------------------------------------------------------------------------
+% \clearpage
+% \bibliographystyle{abbrv}
+% 
+% \vspace{-18pt}
+% \bibliography{refs}
+
+\end{document}
+

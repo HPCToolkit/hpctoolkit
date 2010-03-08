@@ -1,0 +1,296 @@
+%\documentclass[12pt]{article}
+\documentclass{article}
+\usepackage{hyperref}
+\usepackage{verbatim,moreverb,fancyvrb}
+\setlength{\topmargin}{0in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\parindent}{0in}
+
+% ----------------------------------------------------------
+% tools
+% ----------------------------------------------------------
+
+\newcommand{\hpctoolkit}{\textsc{HPCToolkit}}
+\newcommand{\hpcrun}{\texttt{hpcrun}}
+\newcommand{\hpcstruct}{\texttt{hpcstruct}}
+\newcommand{\hpcprof}{\texttt{hpcprof}}
+\newcommand{\hpcviewer}{\texttt{hpcviewer}}
+
+% ----------------------------------------------------------
+% convenient abbreviations
+% ----------------------------------------------------------
+
+\newcommand{\eg}{{\em e.g.}}
+
+
+\begin{document}
+\title{Understanding and Troubleshooting \\
+         \hpctoolkit\ Problems}
+\author{The \hpctoolkit\ Team}
+\date{14 April 2009}
+\maketitle
+
+
+\textbf{When I run \hpcviewer, I only see results per function call,
+not per line of code.}
+\begin{quote}
+Your program probably lacks debugging information or else you have
+stripped the binary.  The debugging information includes a line map
+which is used by profilers and debuggers to match up machine addresses
+with source code lines.  \hpctoolkit\ can profile binaries without
+debugging information, but in that case, it can only display the
+results per function call, not per source line.
+
+The solution is to always compile your programs with debugging
+information.  The option for this varies by compiler.  We suggest the
+following options: for the GNU compilers (gcc, gfortran) use {\tt -g},
+for the Intel compilers (icc, ifort) use ``{\tt -g -debug
+inline\_debug\_info}'', for the Pathscale compilers (pathcc, pathf95)
+use {\tt -g1}, and for the PGI compilers (pgcc, pgf95) use {\tt
+-gopt}.  Also, be careful not to strip the binary as that would remove
+the debugging information.
+
+{\it Note:} Adding debugging information does not make a program run
+slower, and stripping the binary does not make it run faster.  In
+general, debugging information is compatible with compiler
+optimization.  Just understand that at high optimization levels, the
+compiler may make significant program transformations which do not
+cleanly map to line numbers in the original source code.  Also, be
+sure to explicitly add any optimization options to the compile line,
+preferably after the debugging options, for example, ``{\tt -g -O2}''.
+Many compilers will lower the optimization level if the compile line
+includes debugging options but no optimization option.
+\end{quote}
+
+
+\textbf{\hpcviewer\ runs glacially slow, what is the workaround?}
+\begin{quote}
+There are three likely reasons why \hpcviewer{} might run terribly
+slow.  You may be running \hpcviewer{} on a remote system with low
+bandwidth, high latency or an otherwise unsatisfactory network
+connection to your desktop. If any of these conditions are true,
+\hpcviewer{}'s otherwise snappy GUI can become sluggish if not
+downright unresponsive.  The solution is to install \hpcviewer{} on
+your local system, copy the database onto your local system, and run
+\hpcviewer{} locally. We almost always run \hpcviewer{} on our local
+workstations or laptops for this reason.
+
+Another reason could be that the {\tt experiment.xml} file in your
+database is very large.  If this is tens of megabytes or more, the
+total database size might be the problem.
+
+This problem can also occur if the database contains too many columns
+of metrics.  This can happen if you use \hpcprof{} to build a database
+for several threads with several metrics each, resulting in too many
+metrics total. You can check the number of columns in your database by
+running
+\begin{quote}
+\verb,grep -e "<Metric" experiment.xml | wc -l,
+\end{quote}
+If that command yields a number greater than 30 or so, \hpcviewer{} is
+likely slow because you are working with too many columns of metrics.
+In this case, run \hpcprof\ to build a database with fewer threads.
+\end{quote}
+
+
+\textbf{Why isn't my source code found by \hpcviewer ?}
+\begin{comment}
+(circular links in recursive search may lead to  inf loop)
+\end{comment}
+\begin{quote}
+When using \hpcprof\ to create performance databases, one must specify the path 
+to the source directories using the \verb|-I dir| flag. If there are multiple
+source directories, then multiple \verb|-I| flags are required:
+\begin{quote}
+ \verb|-I dir1 -I dir2 ... -I dirN|
+\end{quote}
+The specified list of directory paths, \verb|dir1| through
+\verb|dirN|, can be either relative or absolute.
+
+In addition, \hpcprof\ has a recursive directory search feature that
+can greatly reduce the number of \verb|-I| flag instances. To conduct
+a source-file search of a directory \emph{and all of it's descendants},
+simply append an escaped '*' after the last slash, e.g.,
+\verb|/mypath/\*| ( or \verb|/mypath/'*'| ). This greatly simplifies
+the \hpcprof\ command line for a typical project. For example, suppose
+a project has all of it's source in a top-level directory called
+\verb|src|. Inside \verb|src| are several libraries ( like
+\verb|src/lib1|,\verb|src/lib2|, \verb|src/lib-math|, etc). Then, all
+of the source is visible to \hpcprof\ by using the single flag
+\begin{quote}
+\verb|-I src/'*'|
+\end{quote}
+
+\textbf{NOTE:} The \verb|'*'| can be used \emph{only} at the end of
+a directory path.
+
+For any functions whose source code is not found in the specified directories
+(e.g., system libraries), \hpcviewer\ will generate a synopsis that shows
+the presence of the function and its line extents (if known), but no
+source code.
+\end{quote}
+
+\vbox{%
+\textbf{I tried the approach above, but I am still missing source files.}
+\begin{quote}
+This is a common problem. The cause for this difficulty is that the
+pathnames associated with performance metrics are extracted from an
+application binary. The path names encoded in the binary can be
+
+\begin{itemize}
+   \item relative to the directory where the source was compiled, not
+         where you are now as you measure and analyze the code, or
+
+   \item absolute paths that have encodings for the mount point the
+         directory that existed when the file was compiled, but might be
+         different now (e.g., they were compiled on a different node of a
+         cluster that had a different mount point for the shared file
+         system).
+\end{itemize}
+\end{quote}
+} 
+\begin{quote}
+Diagnosing and fixing this problem requires knowing exactly what path
+names are referenced in the binary and/or perhaps the performance
+data. Fortunately, this is information is supplied by \hpcprof .
+If a source file is successfully located, then a 
+\begin{quote}
+\verb|msg:   cp:...|
+\end{quote}
+line appears in the output of \hpcprof . Unlocated files are deemed 'lost'
+and there is an output line of the form 
+\begin{quote}
+\verb|WARNING:  lost:|
+\end{quote}
+in the output.
+
+For example, suppose we have an application \verb|app1| whose main source 
+is in in a directory \verb|/projs/Apps/app1-src|. The \verb|app1|
+application is built inside the \verb|app1-src| subdirectory, and it uses
+source files from a subdirectory \verb|app1-src/special| as well as some
+source common to all applications, located in
+\verb|/projs/Apps/common|. When \verb|app1| is built, the
+\verb|common| source is accessed by relative path \verb|../common|.
+The \verb|app1| executable is installed on our path.
+
+Now, we switch to our home directory \verb|/h/user/T1| to collect
+some profile data for \verb|app1|.
+When we run \hpcprof\ (without the \verb|-I| flag) as follows:
+\begin{quote}
+  \verb|hpcprof -S app1.hpcstruct hpctoolkit-app1-measurements/|
+\end{quote}
+This results in the output
+\begin{quote}
+\begin{Verbatim}[fontsize=\small]
+msg: Line map : /opt/apps/intel/compilers/10.1/lib/libimf.so
+msg: STRUCTURE: /usr/local/bin/app1
+msg: Copying source files reached by PATH option to /h/user/T1/hpctoolkit-app1-database
+WARNING: lost: app1.c
+WARNING: lost: special/xfn1.c
+WARNING: lost: ../common/mathx.c
+WARNING: lost: ~unknown-file~
+WARNING: lost: irc_msg_support.c
+\end{Verbatim}
+\end{quote}
+The \verb|WARNING: lost:| obtains for \verb|~unknown-file~| and
+\verb|irc_msg_support.c| because these are compiler system files --- source
+is unavailable. The other lost files, however, can be found by using
+the proper \verb|-I| flag:
+\begin{quote}
+\begin{verbatim}
+hpcprof -I /projs/Apps/'*' -S app1.hpcstruct hpctoolkit-app1-measurements/
+\end{verbatim}
+\end{quote}
+
+The resulting output:
+\begin{quote}
+\begin{Verbatim}[fontsize=\small]
+msg: Line map : /opt/apps/intel/compilers/10.1/lib/libimf.so
+msg: STRUCTURE: /usr/local/bin/app1
+msg: Copying source files reached by PATH option to /h/user/T1/hpctoolkit-app1-database
+msg:   cp:/projs/Apps/app1-src/app1.c -> ./projs/Apps/app1-src/app1.c
+msg:   cp:/projs/Apps/app1-src/special/xfn1.c -> ./projs/Apps/app1-src/special/xfn1.c
+msg:   cp:/projs/Apps/common/mathx.c -> ./projs/Apps/common/mathx.c
+WARNING: lost: ~unknown-file~
+WARNING: lost: irc_msg_support.c
+\end{Verbatim}
+\end{quote}
+\nobreak Much better!
+
+
+\textbf{Best Practice:} First, carefully inspect the output of \hpcprof\ to
+determine which files are lost. Next, determine the absolute path for
+each distinct top-level source directory (or build directory, if it 
+is separate from the source directory). Finally, for each of these (absolute) directory paths,
+specify a \verb|-I| option with the recursive search option ( \verb|'*'| at the end
+of the path).
+
+\end{quote}
+
+\begin{comment}
+   possible question: What happens if I forget to run hpcstruct?  
+No hpcstruct = 
+   really crazy procedure & loop bounds
+   no inlining detection!
+\end{comment}
+
+%\vbox{%
+\textbf{Why don't the line numbers for loops and/or procedures exactly
+correspond to what I see in my source code?}
+
+\begin{quote}
+To use a clich\'{e}, ``garbage in, garbage out''. \hpctoolkit\ 
+depends on information recorded in the symbol table by the
+compiler. Line numbers for procedures and loops are inferred by
+looking at the symbol table information recorded for machine
+instructions identified as being inside the procedure or loop.
+
+%}
+
+For procedures, often no machine instructions are associated with a
+procedure's declarations. Thus, the first line in the procedure that
+has an associated machine instruction is the first line of executable
+code.
+
+Inlined functions may occasionally lead to confusing data for a
+procedure. Machine instructions mapped to source lines from the inline
+function appear in the context of other functions. While \hpcprof 's
+methods for handling inline functions are good, some codes can confuse
+the system.
+
+For loops, the process of identifying what source lines are in a loop
+is similar to the procedure process: what source lines map to machine
+instructions inside a loop defined by a backward branch to a loop
+head. Sometimes compilers don't properly record the line number
+mapping.
+
+When the compiler line mapping information is wrong, there is little
+you can do about it other than to ignore its imperfections, or
+hand-edit the XML program structure file produced by \hpcstruct . This
+technique is used only when truly desperate.
+\end{quote}
+
+\textbf{A particular scope in my code (\eg, a loop) contains one call to a 
+function, yet \hpcviewer{} shows several. Is something wrong with \hpctoolkit{}?}
+\begin{quote}
+In a word: no. In the course of code optimization, compilers often replicate code blocks. 
+For instance, as it generates code, a compiler may peel iterations from a loop or split the iteration 
+space of a loop into two or more loops. 
+In such cases, one call in the source code may be transformed into multiple 
+distinct calls that reside at different code addresses in the executable. 
+
+When analyzing applications at the binary level, it is difficult to 
+determine whether two distinct calls to the same function that appear in the machine 
+code were derived from the same call in the source code. 
+Even if both calls map to the same source line, it may be wrong to coalesce them; 
+the source code might contain multiple calls to the same function on the same line. 
+By design, \hpctoolkit{} does not attempt to coalesce distinct calls to the same function
+because it might be incorrect to do so; instead, it independently reports each call site 
+that appears in the machine code. 
+If the compiler duplicated calls as it replicated code during optimization,  
+multiple call sites may be reported by \hpcviewer{} when only one appeared in the source code. 
+\end{quote}
+
+\end{document}

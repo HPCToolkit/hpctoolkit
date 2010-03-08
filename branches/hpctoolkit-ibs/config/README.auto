@@ -1,0 +1,80 @@
+$Id: README.auto 44 2005-07-31 04:06:44Z eraxxon $
+
+=============================================================================
+==
+== $Source$
+==
+== OpenAnalysis
+==
+=============================================================================
+
+This is a primer for Autoconf/make.
+
+Contents:
+  0. Overview
+  1. Updating
+
+=============================================================================
+
+0. Overview
+--------------------
+
+Quick Overview for Autoconf/make newbies:
+
+Two levels: Developer and User.
+
+      Important Inputs:   | Program:      Output:
+    |-----------------------------------------------------
+Dev | acinclude.m4 (1)    | aclocal       aclocal.m4
+    | configure.ac (2)    | autoconf      configure
+    | Makefile.am  (3)    | automake      Makefile.in
+    |----------------------------------------------------- 
+Usr | config/* (4)        | configure     Makefile
+    |                     | make          (lib/exe)
+    |                     | make install  (lib/exe)
+
+aclocal uses inputs {1,2}; autoconf and automake use inputs {1,2,3}
+The 'acinclude.m4' input is optional.
+
+configure and make both use {4}.
+
+
+1. Updating
+--------------------
+
+After making changes to an Autoconf/make input file run:
+  aclocal
+  autoconf
+  automake
+or 
+  aclocal && autoconf && automake
+
+N.B. for Autoconf/make and CVS: cf. hpcautotouch.  The timestamps of
+Autoconf/make output files *must* be later than the input file
+timestamps.  Otherwise, the (automake'd) Makefiles will try to
+regenerate the outputs -- forcing all users of the code to have
+autoconf/make.  This means that if the developer makes a small change
+to an Autoconf/make input such that not every output file is changed
+-- as defined by cvs diff, *not* local timestamps -- the developer
+will need to create/force a bogus diff (e.g. by adding a comment) to
+ensure the cvs file -- and consequently the cvs timestamp -- is
+updated after a cvs commit.
+
+To create or update the files in config/*, run:
+  automake -a -f -c
+This is necessary, e.g., after upgrading to a new version of automake.
+
+To add libtool support, run:
+  libtoolize -f -c 
+
+To update both libtool and automake:
+  aclocal
+  libtoolize -f -c
+  automake -a -f -c
+  aclocal && autoconf && automake
+
+
+
+* N.B.: automake and libtool must be configured with the same --prefix
+so aclocal can see libtool.m4!
+

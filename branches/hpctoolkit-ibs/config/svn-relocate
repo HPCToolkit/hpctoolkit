@@ -1,0 +1,155 @@
+#!/bin/sh
+#
+# Script to relocate an SVN sandbox from http: to https: via
+# svn switch --relocate.
+#
+# Usage:  svn-relocate [options] dir ...
+#
+#   -h, --help
+#   -i, --interactive
+#   -m, --method  <new-method>
+#   -t, --test
+#
+# where <new-method> is: http, https, svn, or svn+ssh,
+# and the default is https.
+#
+# Author: Mark W. Krentel, HPC group, Rice University.
+# October 2007.
+#
+# $Id$
+#
+
+interactive=no
+new_method=https
+test_only=no
+valid_methods=":http:https:svn:svn+ssh:"
+orig_dir=`pwd`
+
+die()
+{
+    echo "$0: error: $*" 1>&2
+    exit 1
+}
+
+warn()
+{
+    echo "$0: warning: $*" 1>&2
+}
+
+usage()
+{
+    cat <<EOF
+Usage: $0 [options] directory ...
+
+   -h, --help
+   -i, --interactive
+   -m, --method  <new-method>
+   -t, --test
+
+where <new-method> is: http, https, svn, or svn+ssh,
+and the default is https.
+
+EOF
+    exit 0
+}
+
+while test "x$1" != x
+do
+    case "$1" in
+	-h | --help )
+	    usage
+	    ;;
+
+	-i | --interactive )
+	    interactive=yes
+	    shift
+	    ;;
+
+	-m | -s | --method | --schema | --scheme )
+	    test "x$2" != x || die "missing argument: $@"
+	    echo "$valid_methods" | grep -e ":${2}:" >/dev/null
+	    test $? -eq 0 || die "invalid method: $2"
+	    new_method="$2"
+	    shift ; shift
+	    ;;
+
+	-t | --test )
+	    test_only=yes
+	    shift
+	    ;;
+
+	-- )
+	    shift
+	    break
+	    ;;
+
+	-* )
+	    die "unknown option: $1"
+	    ;;
+
+	* )
+	    break
+	    ;;
+    esac
+done
+
+test "x$1" != x || usage
+
+upgrade_dir()
+{
+    dir="$1"
+    cd "$orig_dir" || return
+    test -d "$dir" || return
+    cd "$dir" || return
+    test -d .svn || return
+
+    url_line=`svn info . | grep -i url:`
+    if test $? -ne 0 ; then
+	warn "unknown svn info:"
+	svn info .
+	return
+    fi
+    old_method=`expr "$url_line" : '.* \(.*\)://'`
+    if test $? -ne 0 ; then
+	warn "unknown svn method: $url_line"
+	return
+    fi
+    path=`expr "$url_line" : '.*://\(.*\)'`
+    if test $? -ne 0 ; then
+	warn "unknown svn url: $url_line"
+	return
+    fi
+    if test "x$old_method" != "x$new_method" ; then
+	echo
+	echo "Directory: $dir"
+	echo "Old $url_line"
+	if test "$test_only" = yes ; then
+	    return
+	fi
+	run=yes
+	if test "$interactive" = yes ; then
+	    echo -n "relocate to ${new_method} [no|yes]? "
+	    read run
+	fi
+	case "x$run" in
+	    x[yY]* )
+		svn switch --relocate "${old_method}://${path}" "${new_method}://${path}" .
+		test $? -eq 0 || echo FAILED
+		echo "New `svn info . | grep -i url:`"
+		;;
+	esac
+    fi
+}
+
+for arg in "$@"
+do
+    cd "$orig_dir" || die "unable to cd: $orig_dir"
+    if test -d "$arg" ; then
+	for dir in `find "$arg" -type d -print`
+	do
+	    upgrade_dir "$dir"
+	done
+    else
+	warn "not a directory: $arg"
+    fi
+done

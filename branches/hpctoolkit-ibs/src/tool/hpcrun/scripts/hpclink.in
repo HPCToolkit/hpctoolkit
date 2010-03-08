@@ -1,0 +1,303 @@
+#!/bin/sh
+# Debug notes: [Trace execution: set -x] [Check syntax: set -n]
+# set -x
+#
+#  Link application with libhpcrun, libmonitor, PAPI and Xed2
+#  statically by editing the compile line.
+#
+#  Usage: hpclink [options] compiler file ...
+#
+#     -h, --help
+#     -u, --undefined  <symbol>
+#     -v, --verbose
+#
+#  where <symbol> is a symbol name passed to the linker (may be used
+#  multiple times).
+#
+#  $Id$
+#
+
+# If this script can't find its own install prefix, or if the script
+# is moved elsewhere, then set HPCTOOLKIT here.
+# HPCTOOLKIT='@prefix@'
+
+# Relative paths are relative to HPCTOOLKIT.
+ext_libs_dir='@hpc_ext_libs_dir@'
+hpcfnbounds_dir='libexec/hpctoolkit'
+libhpcrun_dir='lib/hpctoolkit'
+libmonitor_dir='@LIBMONITOR_RUN_DIR@'
+xed2_dir='@XED2_RUN_DIR@'
+
+# Absolute path or empty.
+papi_dir='@OPT_PAPI_LIBPATH@'
+papi_extra_libs='@papi_extra_libs@'
+
+# FIXME: The wrap list should come from monitor.
+monitor_wrap_names='main exit _exit dlopen dlclose fork vfork system
+  execl execlp execle execv execvp execve pthread_exit
+  pthread_create signal sigaction sigprocmask pthread_sigmask
+  MPI_Init mpi_init mpi_init_ mpi_init__
+  MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__
+  MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__
+  MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__
+  longjmp siglongjmp _mp_init'
+
+extra_wrap_names='@hpclink_extra_wrap_names@'
+
+# Set to -m64 on 64-bit version (for gcc).
+# NM_FLAGS='-m64'
+
+CC=gcc
+hello="_hpc_hello_$$"
+nm_addrs="_hpc_nm_addrs_$$"
+cmd_out="_hpc_output_$$"
+
+# Space-separated list of symbol names to force undefined.
+undef_names=
+
+# Space-separated list of libs (without -l) not to repeat on command line.
+no_repeat_list='hugetlbfs'
+
+##################################################
+
+cleanup()
+{
+    rm -f _hpc_*$$*
+}
+
+die()
+{
+    echo "$0: error: $*" 1>&2
+    cleanup
+    exit 1
+}
+
+usage()
+{
+    cat <<EOF
+Usage: $0 [options] compiler file ...
+
+   -h, --help
+   -u, --undefined  <symbol>
+   -v, --verbose
+
+where <symbol> is a symbol name passed to the linker (may be used
+multiple times).
+
+EOF
+    exit 0
+}
+
+hpc_path_to_root=..
+@export_hpctoolkit@
+
+# Relative paths are relative to HPCTOOLKIT.
+case "$ext_libs_dir" in
+    /* ) ;;
+    * )  ext_libs_dir="${HPCTOOLKIT}/${ext_libs_dir}" ;;
+esac
+case "$hpcfnbounds_dir" in
+    /* ) ;;
+    * )  hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
+esac
+case "$libhpcrun_dir" in
+    /* ) ;;
+    * )  libhpcrun_dir="${HPCTOOLKIT}/${libhpcrun_dir}" ;;
+esac
+case "$libmonitor_dir" in
+    /* ) ;;
+    * )  libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
+esac
+case "$xed2_dir" in
+    /* ) ;;
+    * )  xed2_dir="${HPCTOOLKIT}/${xed2_dir}" ;;
+esac
+
+hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds-bin"
+test -x "$hpcfnbounds" || die "missing hpcfnbounds: $hpcfnbounds"
+
+LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH
+
+#
+# Step 1 -- Parse linker options, our options first.
+#
+verbose=no
+while test "x$1" != x
+do
+    case "$1" in
+	-h | --help )
+	    usage
+	    ;;
+	-u | --undefined )
+	    test "x$2" != x || die "missing argument: $*"
+	    undef_names="${undef_names} $2"
+	    shift ; shift
+	    ;;
+	-v | --verbose )
+	    verbose=yes
+	    shift
+	    ;;
+	-- )
+	    shift
+	    break
+	    ;;
+	-* )
+	    die "unknown option: $1"
+	    ;;
+	* )
+	    break
+	    ;;
+    esac
+done
+
+#
+# Must have a compiler command and at least one argument.
+#
+test "x$2" != x || usage
+command="$1"
+shift
+
+#
+# Read the command line for: -l<lib> and -o <file> arguments.
+# It's important not to change the command line here.
+#
+appl_libs=
+appl_out=a.out
+prev_arg=no
+for arg in "$@"
+do
+    if test "x$prev_arg" = x-o ; then
+	appl_out="$arg"
+    else
+	case "$arg" in
+	    -l?* )
+		copy=yes
+		for lib in $no_repeat_list ; do
+		    if test "x$arg" = "x-l$lib" ; then
+			copy=no
+			break
+		    fi
+		done
+		if test "$copy" = yes ; then
+		    appl_libs="$appl_libs $arg"
+		fi
+		;;
+	esac
+    fi
+    prev_arg="$arg"
+done
+
+#
+# Step 2 -- Build the new compile line.
+#
+#   undef-args, wrap-args, $@, libhpcrun.o, nm-addrs, libhpcrun_wrap.a,
+#   libmonitor, PAPI, Xed2, -lpthread, -ldl, repeat-application-libs.
+#
+if test "$verbose" = yes ; then
+    echo "original command line: $command $@"
+    echo
+fi
+
+undef_args=
+for name in $undef_names
+do
+    undef_args="${undef_args} -Wl,-u,${name}"
+done
+
+wrap_args=
+for name in $monitor_wrap_names $extra_wrap_names
+do
+    wrap_args="${wrap_args} -Wl,--wrap,${name}"
+done
+set -- $undef_args $wrap_args "$@"
+
+libhpcrun="${libhpcrun_dir}/libhpcrun.o"
+test -f "$libhpcrun" || die "no such file: $libhpcrun"
+set -- "$@" "$libhpcrun" "${nm_addrs}.o"
+
+libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
+test -f "$libhpcrun_wrap" || die "no such file: $libhpcrun_wrap"
+set -- "$@" "$libhpcrun_wrap"
+
+libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
+test -f "$libmonitor" || die "no such file: $libmonitor"
+set -- "$@" "$libmonitor"
+
+if test -d "$papi_dir" ; then
+    set -- "$@" "-L${papi_dir}" -lpapi $papi_extra_libs
+fi
+
+if test -d "$xed2_dir" ; then
+    set -- "$@" "-L${xed2_dir}" -lxed
+fi
+
+# FIXME: shouldn't always need pthread, and shoudn't ever need dl.
+set -- "$@" -lpthread -ldl -lrt
+set -- "$@" $appl_libs
+
+#
+# Step 3 -- Link with dummy nm file.
+#
+rm -f "${hello}.c" "$hello"
+cat <<EOF > "${hello}.c"
+int main(int argc, char **argv)
+{
+    return (0);
+}
+EOF
+$CC -o "$hello" "${hello}.c"
+
+rm -f "${nm_addrs}.c" "${nm_addrs}.o"
+$hpcfnbounds -c "$hello" > "${nm_addrs}.c" || die "hpcfnbounds failed on $hello"
+$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+
+#
+# Some compiler scripts add extra function calls to the end of the
+# link line that fail to trigger --wrap.  So, if the first compile
+# fails with undefined references to __wrap_foo, then add those names
+# to the undef list and try again.  Do the same for an undefined
+# reference to 'main' (gfortran does some bad things).
+#
+$command "$@" >"$cmd_out" 2>&1
+if test $? -ne 0 || test ! -f "$appl_out"
+then
+    exec <"$cmd_out"
+    while read line
+    do
+        if echo "$line" | grep -E -i -e 'undef.*__wrap_' >/dev/null 2>&1
+	then
+	    name=`expr "$line" : '.*\(__wrap_[A-Za-z0-9_]*\)'`
+	    set -- "-Wl,-u,${name}" "$@"
+	elif echo "$line" | grep -E -i -e 'undef.*main' >/dev/null 2>&1
+	then
+	    set -- "-Wl,-u,main" "$@"
+	fi
+    done
+    $command "$@" || die "compile #1 failed: $command $@"
+    test -f "$appl_out" || die "compile #1 failed: $command $@"
+fi
+
+# Require the output to be statically linked.
+if file "$appl_out" | grep -i static >/dev/null ; then :
+else
+    mv -f "$appl_out" "${appl_out}.failed"
+    die "program not statically linked (maybe forgot -static): $appl_out"
+fi
+
+#
+# Step 4 -- Link with real nm file.
+#
+if test "$verbose" = yes ; then
+    echo "new command line: $command $@"
+    echo
+fi
+
+rm -f "${nm_addrs}.c" "${nm_addrs}.o"
+$hpcfnbounds -c "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
+$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+$command "$@" || die "compile #2 failed: $command $@"
+test -f "$appl_out" || die "compile #2 failed: $command $@"
+
+cleanup
+exit 0

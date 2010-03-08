@@ -1,0 +1,52 @@
+File
+  header	FileHeader
+  data		CsProfData
+  epochs	EpochsTable
+  num_trees	uint32; the number of trees to be read
+  tramp_samples	uint64; the total number of samples taken in the trampoline
+  trees		Tree[num_trees]; the trees collected
+
+FileHeader
+  magic		10 bytes; "HPC_CSPROF" (no trailing null)
+  version	5 bytes; "01.00" (no trailing null)
+  endianness    1 byte; 'l' or 'b'
+  num_chunks    8 bytes; not used
+
+CsProfData
+  target	hpcfile_string; name of executable, not used
+  num_metrics	uint32; number of metrics to be read
+  Metric
+    event_name		hpcfile_string; description of the metric
+    flags		hpcfile_number; descriptive flags (async, etc.)
+    sample_period	hpcfile_number; metric sample period
+
+EpochsTable
+  num_epochs	uint32; number of epochs to be read
+  Epoch
+    num_modules		uint32; number of load modules in the epoch
+    Module
+      name_length	uint32; number of characters in module name
+      module_name	byte[name_length];
+      virtual_address	uint64; where the module prefers to be mapped
+      mapped_address	uint64; actual address at which the module was mapped
+
+TreeId
+  magic		10 bytes; "HPC_CSTREE" (no trailing null)
+  version	5 bytes; "01.0T"
+  endianess	1 byte; 'l' or 'b'
+
+Tree
+  id		TreeId
+  vma_size	uint32; probably '8'
+  uint_size	uint32; probably '8'
+  num_nodes	uint64;
+  epoch_number	uint32; epoch index in the epoch table
+  # node 0 is the root of the tree
+  nodes		TreeNode[num_nodes]; the actual nodes of the tree
+
+TreeNode
+  id		uint64; used to index into the node array
+  parent	uint64; id of this node's parent
+  ip		uint64; ip of this node
+  sp		uint64; sp of this node
+  metrics	uint64[CsProfData.num_metrics]; metrics taken at this node

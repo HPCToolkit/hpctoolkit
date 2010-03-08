@@ -1,0 +1,252 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit: Building and Installing</title>
+
+  <link rel='stylesheet' type='text/css' href='style/styles.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="style/header-hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<a name="toc"></a>
+<h1>Building and Installing HPCToolkit</h1>
+
+<h2>Contents</h2>
+<ul>
+  <li><a href="#prerequisites">Prerequisites</a>
+
+  <li><a href="#downloading">Downloading Source Code</a>
+
+  <li><a href="#building_installing">Building and Installing</a>
+</ul>
+
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="prerequisites"></a>
+
+<h2>Prerequisites</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>To reduce our maintenance efforts, we have opted to distribute HPCToolkit primarily in source form.
+However, we have developed a "package manager" (HPCToolkit's "externals") that automatically handles most dependences.
+
+<ol class="noindent">
+
+<li>Platforms:
+  <ul>
+    <li>Linux-x86_64
+    <li>Linux-Power (in testing)
+    <li>Linux-ia64 (in testing, using libunwind)
+    <li>Cray XT: Compute Node Linux (&ge; 2.1) + x86_64
+    <li>IBM Blue Gene/P: BG/P kernel (&ge; V1R3M0) + Power
+    <li>SiCortex: Linux + MIPS (little endian)
+  </ul>
+</li>
+
+<li>
+<p><a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> &ge; 3.5 is required for (<span class="hpctool">hpcrun</span>) measurements based on hardware performance monitoring unit (PMU) information.
+(This requirement does not apply for IBM Blue Gene/P.)
+
+<p>There are currently three ways to support PAPI on Linux-based OSs:
+  <ul>
+    <li>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch. As of this writing, supports kernels through 2.6.29. (Unfortunately, development has stopped because of perf events.)
+    <li>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch.  As of this writing, supports kernels through 2.6.32.  (One benefit of perfctr is out-of-the-box support for Red Hat kernels.)
+    <li>Use a kernel with perf events (n&eacute;e PCL).  As of kernel 2.6.32 (2.6.31), perf events is part of kernel distributions -- and even enabled by default.  Tested but still on the cutting edge.
+  </ul>
+
+<p>Note: Beware of kernels 2.6.28 through 2.6.29.2
+</li>
+
+<li>
+<p>Compiler: HPCToolkit requires an ANSI/ISO C/C++ compliant compiler that supports a few GNU extensions.
+Generally speaking, any recent GCC (4.x, 3.3+) should be fine.
+Some vendor compilers that support GNU extensions also work.
+
+<!--    
+  <ul class="noindent">
+    <li>Linux-x86_64, Cray XT:
+      <ul class="noindent">
+        <li>GCC C++/C 4.x, 3.4
+        <li>Intel C++/C 10.x, 9.x
+      </ul>
+
+    <li>Linux-ia64:
+      <ul class="noindent">
+        <li>GCC C++/C 4.x, 3.4
+        <li>Intel C++/C 9.x
+      </ul>
+
+    <li>Linux-MIPS:
+      <ul class="noindent">
+        <li>GCC C++/C 4.x
+      </ul>
+
+    <li>Linux-POWER, Blue Gene/P:
+      <ul class="noindent">
+        <li>GCC C++/C 4.x
+      </ul>
+    
+    <!--
+    <li>SunOS-sparc:
+      <ul class="noindent">
+        <li>Sun Forte C++/C 5.3 (WorkShop 6 update 2 with patch 111685-01
+            or greater (bug id 4466915))
+        <li>Sun Forte C++/C 5.1 (WorkShop 6)
+        <li>GCC C++/C 3.x
+      </ul>
+     --
+  </ul>
+-->
+
+<p>Additionally, HPCToolkit requires a basic version of GNU make, not a vendor supplied make.  We have successfully used versions 3.70, 3.76, 3.77, 3.78, 3.79 3.80.
+</li>
+
+<li>
+<p>Java runtime environment (JRE) &ge; 1.5 is required to use the <span class="hpctool">hpcviewer</span> presentation tool.
+To use <span class="hpctool">hpcviewer</span> on Linux, gtk is required.
+We also support MacOS and Windows.
+</li>
+
+<!--
+<li>
+<p>HPCToolkit contains some Perl-based tools which require that some
+variant of Perl 5 installed and that it is in your path.  We have
+succssfully used versions 5.6.x, 5.8.x.
+-->
+
+</ol>
+
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="downloading"></a>
+
+<h2>Downloading Source Code</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>
+<a href="software.html">Download</a> and extract the following:
+<ol>
+  <li><p>An HPCToolkit tarball
+
+  <li><p>An HPCToolkit externals tarball.  This contains several external libraries, e.g., OpenAnalysis, Xerces-C++ and GNU binutils.  In some cases it may be possible to use versions of these libraries that are already installed on your system. However, we do not support such configurations.
+
+  <li><p>An <span class="hpctool">hpcviewer</span> build.
+
+  <p>Note: It is perfectly reasonable to install <span class="hpctool">hpcviewer</span> in multiple locations.  Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.
+</ol>
+
+<p>To extract the tarball <i>zoo.tar.gz</i>, execute:
+<div class="indent">
+  <code>tar zxvf <i>zoo.tar.gz</i></code>
+</div>
+
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="building_installing"></a>
+
+<h2>Building and Installing</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>The build and install follows autotools conventions (<code>./configure && make && make install</code>).
+In each case, more options are available by executing <code>./configure --help</code>.
+See the README file for more details.
+
+<p>The typical build is as follows:
+<ol class="noindent">
+
+<li>
+<p>Build and install HPCToolkit's externals, which typically does not require any special options:
+<div class="indent">
+  <code>cd hpctoolkit-externals</code><br>
+  <code>./configure</code><br>
+  <code>make all</code><br>
+  <code>make distclean</code><br>
+</div>
+
+<li>
+<p>Build and install HPCToolkit:
+<div class="indent">
+  <code>cd hpctoolkit</code><br>
+  <code>./configure --prefix=&lt;install-path&gt; --with-externals=&lt;externals-path&gt; --with-papi=&lt;papi-installation-path&gt;</code><br>
+  <code>make install</code><br>
+</div>
+
+<p>The above command will build HPCToolkit using PAPI and install it into &lt;install-path&gt.
+Because the installation is self-contained, you may rename or move it to another location.
+All source code and build files may be removed.
+
+   <!-- &nbsp; -->
+
+   <!--
+   <ul class="noindent">
+     <li>Linux-*: <i>(using the GNU compiler and Intel compiler,
+                  respectively)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;PAPI=&lt;papi&gt;&nbsp;CXX=g++&nbsp;CC=gcc&nbsp;all</code>
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;PAPI=&lt;papi&gt;&nbsp;CXX=icc&nbsp;CC=icc&nbsp;all</code>
+       </ul>
+     <li>IRIX64-mips: <i>(using the SGI MIPSpro compiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=CC&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+    <li>SunOS-sparc: <i>(using the Sun compiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=CC&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+     <li>Tru64-alpha: <i>(using the Compaq comiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=cxx&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+   </ul>
+   -->
+
+<li>
+<p>Install <span class="hpctool">hpcviewer</span>.  Simply move the directory tree to the desired location.
+
+</ol>
+
+
+<p class="lastupdated">Page last updated: 2010/03/04</p>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="style/footer-hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: "<p class=\"lastupdated\">Page last updated: " -->
+<!-- time-stamp-format: "%:y/%02m/%02d" -->
+<!-- time-stamp-end: "</p>" -->
+<!-- time-stamp-line-limit: 10000 -->
+<!-- End: -->

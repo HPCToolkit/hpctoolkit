@@ -1,0 +1,54 @@
+#!/bin/sh
+# Testing: set -x: line by line (set -n: syntax)
+# set -x
+
+# $Id$
+
+## **************************************************************************
+##
+## Launching script
+##
+## John Mellor-Crummey and Nathan Tallent
+##
+## **************************************************************************
+
+#############################################################################
+# Find where we were called from
+#############################################################################
+
+@export_hpctoolkit@
+
+BINARY="${HPCTOOLKIT}/libexec/hpctoolkit/hpcprof-bin"
+
+#############################################################################
+# Set environment for process
+#############################################################################
+
+#HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/libexec/hpctoolkit && ./hpcplatform`
+#export HPCTOOLKIT_PLATFORM
+
+XERCESC_PATH="${HPCTOOLKIT}/lib/hpctoolkit/ext-libs"
+
+if test -z "${LD_LIBRARY_PATH}" ; then
+  LD_LIBRARY_PATH=${XERCESC_PATH}
+else
+  LD_LIBRARY_PATH=${XERCESC_PATH}:${LD_LIBRARY_PATH}
+fi
+export LD_LIBRARY_PATH
+
+unset XERCESC_PATH
+
+#############################################################################
+# exec binary image
+#############################################################################
+
+if [ -r "${BINARY}" -a -x "${BINARY}" ]; then
+    if [ $# -eq 0 ]; then
+	exec ${BINARY}
+    else
+	exec ${BINARY} "$@"
+    fi
+else
+    echo "$0 fatal error: cannot exec '${BINARY}'"
+    exit 1;
+fi
