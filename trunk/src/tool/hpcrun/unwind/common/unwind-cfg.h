@@ -63,7 +63,7 @@
 // - We must avoid dynamic allocation which rules out the use of
 //   hpcrun_malloc.  This implies we cannot use 'build_intervals()' to
 //   build all the intervals for a routine.  Nor can we use the interval
-//   splay tree to store the intervals across invocations of unw_step().
+//   splay tree to store the intervals across invocations of hpcrun_unw_step().
 //   Therefore we must use intervals in a special way and pass them
 //   around as objects rather than pointers.  This last requirement
 //   means that the platform-independent unwind cursor needs to store

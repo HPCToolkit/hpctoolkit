@@ -89,7 +89,7 @@ LUSHI_DECL(void,  LUSHCB_free, ());
 // Facility for unwinding physical stack
 // ---------------------------------------------------------
 
-typedef unw_cursor_t LUSHCB_cursor_t;
+typedef hpcrun_unw_cursor_t LUSHCB_cursor_t;
 
 // LUSHCB_step: Given a cursor, step the cursor to the next (less
 // deeply nested) frame.  Conforms to the semantics of libunwind's

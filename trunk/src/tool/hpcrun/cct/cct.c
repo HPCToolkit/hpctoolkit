@@ -863,7 +863,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   int  backtrace_trolled = 0;
   bool tramp_found       = false;
 
-  unw_cursor_t cursor;
+  hpcrun_unw_cursor_t cursor;
   hpcrun_unw_init_cursor(&cursor, context);
 
   //--------------------------------------------------------------------
@@ -1016,7 +1016,7 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
   int  backtrace_trolled = 0;
   bool tramp_found       = false;
 
-  unw_cursor_t cursor;
+  hpcrun_unw_cursor_t cursor;
   hpcrun_unw_init_cursor(&cursor, context);
 
   //--------------------------------------------------------------------

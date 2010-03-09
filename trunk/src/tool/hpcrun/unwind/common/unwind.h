@@ -105,18 +105,18 @@ typedef enum {
 } unw_reg_code_t;
 
 int
-hpcrun_unw_get_reg(unw_cursor_t *c, unw_reg_code_t reg_id, void **reg_value);
+hpcrun_unw_get_reg(hpcrun_unw_cursor_t *c, unw_reg_code_t reg_id, void **reg_value);
 
 
 void*
-hpcrun_unw_get_ra_loc(unw_cursor_t* c);
+hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* c);
 
 // ----------------------------------------------------------
 // hpcrun_unw_init_cursor
 // ----------------------------------------------------------
 
 void
-hpcrun_unw_init_cursor(unw_cursor_t* cursor, void* context);
+hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context);
 
 
 // ----------------------------------------------------------
@@ -139,7 +139,7 @@ typedef enum {
 
 
 step_state
-hpcrun_unw_step(unw_cursor_t *c);
+hpcrun_unw_step(hpcrun_unw_cursor_t *c);
 
 
 //***************************************************************************

@@ -120,7 +120,7 @@ static int DEBUG_NO_LONGJMP = 0;
 
 
 static void 
-update_cursor_with_troll(unw_cursor_t *cursor, int offset);
+update_cursor_with_troll(hpcrun_unw_cursor_t *cursor, int offset);
 
 static int 
 hpcrun_check_fence(void *ip);
@@ -135,18 +135,18 @@ static int
 unw_step_prefer_sp(void);
 
 static step_state 
-unw_step_sp(unw_cursor_t *cursor);
+unw_step_sp(hpcrun_unw_cursor_t *cursor);
 
 static step_state
-unw_step_bp(unw_cursor_t *cursor);
+unw_step_bp(hpcrun_unw_cursor_t *cursor);
 
 static step_state
-unw_step_std(unw_cursor_t *cursor);
+unw_step_std(hpcrun_unw_cursor_t *cursor);
 
 static step_state
-t1_dbg_unw_step(unw_cursor_t *cursor);
+t1_dbg_unw_step(hpcrun_unw_cursor_t *cursor);
 
-static step_state (*dbg_unw_step)(unw_cursor_t *cursor) = t1_dbg_unw_step;
+static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t *cursor) = t1_dbg_unw_step;
 
 
 //***************************************************************************
@@ -202,7 +202,7 @@ hpcrun_unw_init(void)
 
 
 int 
-hpcrun_unw_get_reg(unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
+hpcrun_unw_get_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
 {
   //
   // only implement 1 reg for the moment.
@@ -220,7 +220,7 @@ hpcrun_unw_get_reg(unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value
 
 
 void 
-hpcrun_unw_init_cursor(unw_cursor_t* cursor, void* context)
+hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   mcontext_t *mc = GET_MCONTEXT(context);
 
@@ -255,14 +255,14 @@ hpcrun_unw_init_cursor(unw_cursor_t* cursor, void* context)
 //
 
 void*
-hpcrun_unw_get_ra_loc(unw_cursor_t* cursor)
+hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
 {
   return cursor->ra_loc;
 }
 
 
 static step_state
-hpcrun_unw_step_real(unw_cursor_t *cursor)
+hpcrun_unw_step_real(hpcrun_unw_cursor_t *cursor)
 {
 
   //-----------------------------------------------------------
@@ -360,13 +360,13 @@ vrecord(void *from, void *to, validation_status vstat)
 
 
 step_state
-hpcrun_unw_step(unw_cursor_t *cursor)
+hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 {
   if ( ENABLED(DBG_UNW_STEP) ){
     return dbg_unw_step(cursor);
   }
   
-  unw_cursor_t saved = *cursor;
+  hpcrun_unw_cursor_t saved = *cursor;
   step_state rv = hpcrun_unw_step_real(cursor);
   if ( ENABLED(UNW_VALID) ) {
     if (rv == STEP_OK) {
@@ -408,7 +408,7 @@ unw_step_prefer_sp(void)
 
 
 static step_state
-unw_step_sp(unw_cursor_t *cursor)
+unw_step_sp(hpcrun_unw_cursor_t *cursor)
 {
   TMSG(UNW_STRATEGY,"Using SP step");
 
@@ -496,7 +496,7 @@ unw_step_sp(unw_cursor_t *cursor)
 
 
 static step_state
-unw_step_bp(unw_cursor_t *cursor)
+unw_step_bp(hpcrun_unw_cursor_t *cursor)
 {
   void *sp, **bp, *pc; 
   void **next_sp, **next_bp, *next_pc;
@@ -568,7 +568,7 @@ unw_step_bp(unw_cursor_t *cursor)
 
 
 static step_state
-unw_step_std(unw_cursor_t *cursor)
+unw_step_std(hpcrun_unw_cursor_t *cursor)
 {
   int unw_res;
 
@@ -595,7 +595,7 @@ unw_step_std(unw_cursor_t *cursor)
 
 // special steppers to artificially introduce error conditions
 static step_state
-t1_dbg_unw_step(unw_cursor_t *cursor)
+t1_dbg_unw_step(hpcrun_unw_cursor_t *cursor)
 {
   drop_sample();
 
@@ -604,7 +604,7 @@ t1_dbg_unw_step(unw_cursor_t *cursor)
 
 
 static step_state GCC_ATTR_UNUSED
-t2_dbg_unw_step(unw_cursor_t *cursor)
+t2_dbg_unw_step(hpcrun_unw_cursor_t *cursor)
 {
   static int s = 0;
   step_state rv;
@@ -653,7 +653,7 @@ drop_sample(void)
 
 
 static void
-update_cursor_with_troll(unw_cursor_t *cursor, int offset)
+update_cursor_with_troll(hpcrun_unw_cursor_t *cursor, int offset)
 {
   unsigned int tmp_ra_offset;
 
@@ -714,7 +714,7 @@ hpcrun_check_fence(void *ip)
 // debug operations
 //****************************************************************************
 
-static unw_cursor_t _dbg_cursor;
+static hpcrun_unw_cursor_t _dbg_cursor;
 
 static void GCC_ATTR_UNUSED
 dbg_init_cursor(void *context)
