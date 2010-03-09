@@ -42,17 +42,13 @@
 // ******************************************************* EndRiceCopyright *
 
 /* metrics.c -- informing the system about what metrics to record */
-#if defined(__ia64__) && defined(__linux__)
-#include <libunwind.h>
-#endif
 
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "loadmap.h"
-#include "metrics.h"
-#include "epoch.h"
 #include "monitor.h"
+#include "metrics.h"
+#include <memory/hpcrun-malloc.h>
 
 #include <messages/messages.h>
 
