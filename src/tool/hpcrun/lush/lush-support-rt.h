@@ -168,7 +168,7 @@ struct lush_cursor {
   lush_agent_pool_t* apool;  // agent pool
 
   // physical cursor
-  unw_cursor_t pcursor;
+  hpcrun_unw_cursor_t pcursor;
 
   // logical cursor
   lush_lcursor_t lcursor;
@@ -258,7 +258,7 @@ lush_cursor_get_lip(lush_cursor_t* cursor)
 }
 
 
-static inline unw_cursor_t*
+static inline hpcrun_unw_cursor_t*
 lush_cursor_get_pcursor(lush_cursor_t* cursor)
 {
   return &cursor->pcursor;

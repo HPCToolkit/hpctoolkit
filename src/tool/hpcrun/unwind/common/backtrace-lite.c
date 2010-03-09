@@ -87,7 +87,7 @@ hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
 
   hpcrun_unw_init();
 
-  unw_cursor_t cursor;
+  hpcrun_unw_cursor_t cursor;
   hpcrun_unw_init_cursor(&cursor, context);
 
   int my_size = 0;

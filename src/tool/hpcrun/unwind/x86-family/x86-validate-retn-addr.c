@@ -342,7 +342,7 @@ confirm_plt_call(void *addr, void *callee)
 validation_status
 deep_validate_return_addr(void *addr, void *generic)
 {
-  unw_cursor_t *cursor = (unw_cursor_t *)generic;
+  hpcrun_unw_cursor_t *cursor = (hpcrun_unw_cursor_t *)generic;
 
   TMSG(VALIDATE_UNW,"validating unwind step from %p ==> %p",cursor->pc, addr);
   void *beg, *end;
@@ -387,7 +387,7 @@ deep_validate_return_addr(void *addr, void *generic)
 validation_status
 dbg_val(void *addr, void *pc)
 {
-  unw_cursor_t cursor;
+  hpcrun_unw_cursor_t cursor;
 
   cursor.pc = pc;
   return deep_validate_return_addr(addr, &cursor);

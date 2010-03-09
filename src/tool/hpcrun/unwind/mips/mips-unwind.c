@@ -332,7 +332,7 @@ hpcrun_unw_init(void)
 
 
 int 
-hpcrun_unw_get_reg(unw_cursor_t* cursor,
+hpcrun_unw_get_reg(hpcrun_unw_cursor_t* cursor,
 		   unw_reg_code_t reg_id, void **reg_value)
 {
   assert(reg_id == UNW_REG_IP);
@@ -344,14 +344,14 @@ hpcrun_unw_get_reg(unw_cursor_t* cursor,
 // unimplemented for now
 //  fix when trampoline support is added
 void*
-hpcrun_unw_get_ra_loc(unw_cursor_t* cursor)
+hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
 {
   return NULL;
 }
 
 
 void 
-hpcrun_unw_init_cursor(unw_cursor_t* cursor, void* context)
+hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   ucontext_t* ctxt = (ucontext_t*)context;
 
@@ -380,7 +380,7 @@ hpcrun_unw_init_cursor(unw_cursor_t* cursor, void* context)
 
 
 int 
-hpcrun_unw_step(unw_cursor_t* cursor)
+hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   // current frame:
   void*  pc = cursor->pc;

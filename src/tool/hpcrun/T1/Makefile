@@ -17,6 +17,14 @@ LINK.static.cc := hpclink $(CC) -static
 
 CFLAGS := -g -I..
 
+.PHONY: sync-ex
+sync-ex: sync Sync-norm/sync-fn.so Sync-override/sync-fn.so
+
+sync: sync-main.c Sync-norm/sync-fn.so
+	cp Sync-norm/sync-fn.so .
+	$(LINK.cc) -o $@ -lm $(^F)
+	rm -rf sync-fn.so
+
 .PHONY:custom
 custom: custom-metrics hpcrun-custom.so
 
@@ -70,6 +78,12 @@ hpcrun-custom.so: hpcrun-custom.c
 
 .PHONY: custom-metrics-ex
 
+Sync-norm/sync-fn.so: sync-fn.c
+	$(subd-so)
+
+Sync-override/sync-fn.so: sync-fn-override.c
+	$(subd-so)
+
 custom-metrics-ex: custom-metrics hpcrun-custom.so
 custom-metrics: custom-metrics.c
 	$(CC) -g $^ -lm -lpthread -ldl -o $@
@@ -105,7 +119,6 @@ showclean:
             fi; \
          done
 	@echo would rm -rf *.o *.E *~ *.so *.nm.c *.nm.so
-
 %   :  %.c
 	$(CC) -g $< -lm -lpthread -o $@
 
@@ -123,5 +136,13 @@ vpath %.c ..
 %.E : %.c
 	$(CC) -I.. -E $< > $@
 
+%.so: %.c
+	$(CC) -o $@ -g -O -shared -fPIC $^
+
 T:
 	# f files $(wildcard DeepCallPaths/f*.c)
+
+define subd-so
+if [[ ! -d $(@D) ]]; then mkdir $(@D); fi
+$(CC) -o $@ -g -O -shared -fPIC $^
+endef

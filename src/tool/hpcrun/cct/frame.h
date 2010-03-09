@@ -52,7 +52,7 @@
 // --------------------------------------------------------------------------
 
 typedef struct frame_t {
-  unw_cursor_t cursor;       // hold a copy of the cursor for this frame
+  hpcrun_unw_cursor_t cursor;       // hold a copy of the cursor for this frame
   lush_assoc_info_t as_info;
   void* ip;
   void* ra_loc;
