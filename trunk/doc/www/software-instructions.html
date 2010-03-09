@@ -47,33 +47,42 @@
 <p><i>[<a href="#toc">Contents</a>]</i>
 
 <p>To reduce our maintenance efforts, we have opted to distribute HPCToolkit primarily in source form.
-However, we have developed a "package manager" (HPCToolkit's "externals") that automatically handles most dependences.
+The following prerequisites apply to our default source code distribution.
 
 <ol class="noindent">
 
-<li>Platforms:
-  <ul>
-    <li>Linux-x86_64
-    <li>Linux-Power (in testing)
-    <li>Linux-ia64 (in testing, using libunwind)
-    <li>Cray XT: Compute Node Linux (&ge; 2.1) + x86_64
-    <li>IBM Blue Gene/P: BG/P kernel (&ge; V1R3M0) + Power
-    <li>SiCortex: Linux + MIPS (little endian)
-  </ul>
-</li>
+<li>HPCToolkit can be installed on the following platforms:
 
-<li>
-<p><a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> &ge; 3.5 is required for (<span class="hpctool">hpcrun</span>) measurements based on hardware performance monitoring unit (PMU) information.
-(This requirement does not apply for IBM Blue Gene/P.)
-
-<p>There are currently three ways to support PAPI on Linux-based OSs:
-  <ul>
-    <li>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch. As of this writing, supports kernels through 2.6.29. (Unfortunately, development has stopped because of perf events.)
-    <li>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch.  As of this writing, supports kernels through 2.6.32.  (One benefit of perfctr is out-of-the-box support for Red Hat kernels.)
-    <li>Use a kernel with perf events (n&eacute;e PCL).  As of kernel 2.6.32 (2.6.31), perf events is part of kernel distributions -- and even enabled by default.  Tested but still on the cutting edge.
-  </ul>
-
-<p>Note: Beware of kernels 2.6.28 through 2.6.29.2
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+    <tr>
+      <td><p><b>Platform</b>
+      <td><p><b>Notes</b>
+    </tr>
+    <tr>
+      <td><p>Linux + x86_64
+      <td><p>
+    </tr>
+    <tr>
+      <td><p>Linux + Power64
+      <td><p>testing
+    </tr>
+    <tr>
+      <td><p>Linux + IA64 
+      <td><p>testing (uses <a href="http://www.nongnu.org/libunwind/">libunwind</a>)
+    </tr>
+    <tr>
+      <td><p>Linux + MIPS-le (64 and n32)
+      <td><p>for SiCortex clusters (little endian MIPS)
+    </tr>
+    <tr>
+      <td><p>Cray XT (CNL + x86_64)
+      <td><p>Compute Node Linux &ge; 2.1
+    </tr>
+    <tr>
+      <td><p>IBM Blue Gene/P (BG/P kernel + Power32)
+      <td><p>BG/P kernel &ge; V1R3M0
+    </tr>
+  </table>
 </li>
 
 <li>
@@ -121,9 +130,23 @@ Some vendor compilers that support GNU extensions also work.
 </li>
 
 <li>
-<p>Java runtime environment (JRE) &ge; 1.5 is required to use the <span class="hpctool">hpcviewer</span> presentation tool.
-To use <span class="hpctool">hpcviewer</span> on Linux, gtk is required.
-We also support MacOS and Windows.
+<p>Highly recommended: To collect measurements based on hardware performance monitoring unit (PMU) information, <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> &ge; 3.5 is required.
+Without PAPI, HPCToolkit can only collect measurements based on an operating system timer.
+(Exception: On IBM Blue Gene/P, PAPI is not required.)
+
+<p>There are currently three ways to support PAPI on Linux-based OSs:
+  <ul>
+    <li>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch. As of this writing, supports kernels through 2.6.29. (Unfortunately, development has stopped because of perf events.)
+    <li>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch.  As of this writing, supports kernels through 2.6.32.  (One benefit of perfctr is out-of-the-box support for Red Hat kernels.)
+    <li>Use a kernel with perf events (n&eacute;e PCL).  As of kernel 2.6.32 (2.6.31), perf events is part of kernel distributions -- and even enabled by default.  Tested but still on the cutting edge.
+  </ul>
+
+<p>Note: Beware of kernels 2.6.28 through 2.6.29.2
+</li>
+
+<li>
+<p>Highly recommended: To use HPCToolkit's interactive presentation tool, <span class="hpctool">hpcviewer</span>, a Java runtime environment (JRE) &ge; 1.5 is required.
+To use <span class="hpctool">hpcviewer</span> on MacOS and Windows, nothing additional is required; to use <span class="hpctool">hpcviewer</span> on Linux, <a href="http://www.gtk.org">GTK+</a> is required.
 </li>
 
 <!--
@@ -149,7 +172,7 @@ succssfully used versions 5.6.x, 5.8.x.
 <ol>
   <li><p>An HPCToolkit tarball
 
-  <li><p>An HPCToolkit externals tarball.  This contains several external libraries, e.g., OpenAnalysis, Xerces-C++ and GNU binutils.  In some cases it may be possible to use versions of these libraries that are already installed on your system. However, we do not support such configurations.
+  <li><p>An HPCToolkit externals tarball.  Think of this as a "package manager" that automatically configures and builds dependences not mentioned above.  It contains several external libraries, e.g., OpenAnalysis, Xerces-C++ and GNU binutils.  In some cases it may be possible to use versions of these libraries that are already installed on your system. However, we do not support such configurations.
 
   <li><p>An <span class="hpctool">hpcviewer</span> build.
 
@@ -229,7 +252,7 @@ All source code and build files may be removed.
 </ol>
 
 
-<p class="lastupdated">Page last updated: 2010/03/04</p>
+<p class="lastupdated">Page last updated: 2010/03/08</p>
 
 <!-- ********************************************************************** -->
 
