@@ -516,6 +516,14 @@ public:
   flags(hpcrun_metricFlags_t x) 
   { m_flags = x; }
 
+  int
+  fmt_flag() const
+  { return m_fmt_flag; }
+
+  void
+  fmt_flag(int x)
+  { m_fmt_flag = x; }
+
 
   // A chinsy way of indicating the metric units of events rather than
   // samples or something else: FIXME: move to base class
@@ -590,6 +598,8 @@ private:
   uint64_t m_period;             // sampling period
   hpcrun_metricFlags_t m_flags;  // flags of the metric
   bool m_isUnitsEvents;
+
+  int m_fmt_flag;                // output fmt
 
   std::string m_profName;
   std::string m_profileRelId;

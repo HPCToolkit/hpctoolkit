@@ -679,7 +679,10 @@ coalesceStmts(Prof::CallPath::Profile& prof)
 void
 coalesceStmts(Prof::CCT::ANode* node)
 {
-  typedef std::map<SrcFile::ln, Prof::CCT::Stmt*> LineToStmtMap;
+  typedef std::multimap<SrcFile::ln, Prof::CCT::Stmt*> LineToStmtMap;//changed by Xu Liu using multimap instead of map
+  typedef std::multimap<string, string>::size_type sz_type; //add by Xu Liu
+
+  int ret;
 
   if (!node) {
     return;
@@ -703,16 +706,61 @@ coalesceStmts(Prof::CCT::ANode* node)
     if ( n->isLeaf() && (typeid(*n) == typeid(Prof::CCT::Stmt)) ) {
       // Test for duplicate source line info.
       Prof::CCT::Stmt* n_stmt = static_cast<Prof::CCT::Stmt*>(n);
-      SrcFile::ln line = n_stmt->begLine();
-      LineToStmtMap::iterator it = stmtMap.find(line);
-      if (it != stmtMap.end()) {
+      SrcFile::ln line = n_stmt->begLine();//find the key
+      sz_type entries = stmtMap.count(line);
+      LineToStmtMap::iterator it1 = stmtMap.find(line);
+      if (entries != 0) {
+      int indicator = 0; //indicate whether the incoming node is merged
+      Prof::CCT::Stmt* stmtHost = NULL; //the incoming node is merged into stmtHost
+      for(sz_type cnt=0; cnt<entries; ++cnt, ++it1){
+      if(stmtHost == NULL){//no node is coalesced
 	// found -- we have a duplicate
-	Prof::CCT::Stmt* n_stmtOrig = (*it).second;
-	n_stmtOrig->mergeMe(*n_stmt);
+	Prof::CCT::Stmt* n_stmtOrig = (*it1).second;
+        //add by Xu Liu begin
+        uint i;
+        for(i=0; i<n_stmtOrig->numMetrics(); i++)
+          if(n_stmtOrig->fmt(i)==1)
+            break;
+        if(i<n_stmtOrig->numMetrics())//we have address metrics
+        {
+          ret = n_stmtOrig->mergeMe_IBS(*n_stmt);
+          if(ret > 0)//merged
+          {
+            n_stmt->unlink();
+            delete n_stmt;
+            indicator = 1;//this node is merged
+            stmtHost = n_stmtOrig; //record the host node and check whether other nodes can be merged	
+            continue;
+//            break;
+          }
+        }
+        else//no address metrics
+        // add by Xu Liu end
+        {
+	  n_stmtOrig->mergeMe(*n_stmt);
 	
-	// remove 'n_stmt' from tree
-	n_stmt->unlink();
-	delete n_stmt; // NOTE: could clear corresponding StructMetricIdFlg
+	  // remove 'n_stmt' from tree
+	  n_stmt->unlink();
+	  delete n_stmt; // NOTE: could clear corresponding StructMetricIdFlg
+          indicator = 1;
+        }
+      }
+      else //the node is merged and check whether other nodes in stmtMap can be merged
+      {
+         Prof::CCT::Stmt* stmtGuest = (*it1).second;
+         ret = stmtHost->mergeMe_IBS(*stmtGuest);
+         if(ret > 0) //merged
+         {
+           stmtGuest->unlink();
+           //fix the problem that it1 cannot be erased
+//           stmtGuest = NULL;
+//           delete stmtGuest;
+//           stmtMap.erase(it1);
+         }
+      }
+      }
+        if(indicator == 0)//no merge
+          stmtMap.insert(std::make_pair(line, n_stmt));
       }
       else {
 	// no entry found -- add

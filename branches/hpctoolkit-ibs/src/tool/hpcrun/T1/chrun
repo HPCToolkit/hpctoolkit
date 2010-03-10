@@ -9,4 +9,4 @@
 
 pth=$(dirname $(dirname $(which hpcrun)))/lib/hpctoolkit
 
-LD_LIBRARY_PATH=$pth${LD_LIBRARY_PATH:+:}$LD_LIBRARY_PATH exec hpcrun -e SYNC@2 "$@"
+LD_LIBRARY_PATH=$pth${LD_LIBRARY_PATH:+:}$LD_LIBRARY_PATH exec hpcrun -e SYNC@3 "$@"

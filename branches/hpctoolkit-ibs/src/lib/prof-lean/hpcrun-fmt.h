@@ -250,6 +250,8 @@ typedef struct metric_desc_t {
   hpcrun_metricFlags_t flags;
   uint64_t period;
 
+  long fmt_flag;
+
 } metric_desc_t;
 
 

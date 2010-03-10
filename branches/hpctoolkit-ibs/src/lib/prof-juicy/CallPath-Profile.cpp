@@ -358,10 +358,16 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 
     // Metric
     os << "    <Metric i" << MakeAttrNum(i) 
-       << " n" << MakeAttrStr(m->name())
-       << " v=\"" << m->toValueTyStringXML() << "\""
-       << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\""
-       << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\">\n";
+       << " n" << MakeAttrStr(m->name());
+    if (m1->fmt_flag() == 1) //add by Xu Liu
+       os << " v=\"" << "final" << "\"" << " k=\"" << "long" << "\"";
+    else
+       os << " v=\"" << m->toValueTyStringXML() << "\"";
+    os << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\""
+       << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\"";
+    if (m1->fmt_flag() == 1) //add by Xu Liu
+       os << " fmt=\""<< "%x" << "\"";
+    os << ">\n";
 
     // MetricFormula
     if (m2) {
@@ -734,6 +740,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       m->nameSfx(m_sfx);
     }
     m->flags(m_lst[i].flags);
+
+    m->fmt_flag(m_lst[i].fmt_flag);
     
     prof->metricMgr()->insert(m);
 
@@ -748,6 +756,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 	m1->nameSfx(m_sfx);
       }
       m1->flags(m_lst[i].flags);
+
+      m1->fmt_flag(m_lst[i].fmt_flag);
       
       prof->metricMgr()->insert(m1);
     }
@@ -1221,6 +1231,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     }
 
     metricData.metric(i_dst) = mval * (double)mdesc->period();
+    metricData.fmt(i_dst) = mdesc->fmt_flag();// add by Xu Liu
 
     if (!hpcrun_metricVal_isZero(m)) {
       hasMetrics = true;

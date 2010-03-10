@@ -99,12 +99,14 @@ public:
   
   typedef std::vector<double> MetricVec;
 
+  typedef std::vector<int> FmtVec; //add by Xu Liu, flag for each metric
+
 public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
   IData(size_t size = 0)
-    : m_metrics(NULL)
+    : m_metrics(NULL), m_fmt(NULL)//add by Xu Liu
   {
     if (size != 0) {
       ensureMetricsSize(size);
@@ -114,13 +116,15 @@ public:
   virtual ~IData()
   {
     delete m_metrics;
+    delete m_fmt; // add by Xu Liu
   }
   
   IData(const IData& x)
-    : m_metrics(NULL)
+    : m_metrics(NULL), m_fmt(NULL)//add by Xu Liu
   {
     if (x.m_metrics) {
       m_metrics = new MetricVec(*(x.m_metrics));
+      m_fmt = new FmtVec(*(x.m_fmt));//add by Xu Liu
     }
   }
   
@@ -131,6 +135,7 @@ public:
       clearMetrics();
       if (x.m_metrics) {
 	m_metrics = new MetricVec(*(x.m_metrics));
+        m_fmt = new FmtVec(*(x.m_fmt));//add by Xu Liu
       }
     }
     return *this;
@@ -176,6 +181,15 @@ public:
   metric(size_t mId)
   { return (*m_metrics)[mId]; }
 
+  // add by Xu Liu
+  const int
+  fmt(size_t mId) const
+  { return (*m_fmt)[mId]; }
+
+  int&
+  fmt(size_t mId)
+  { return (*m_fmt)[mId]; }
+
 
   const double
   demandMetric(size_t mId, size_t size = 0) const
@@ -210,6 +224,9 @@ public:
   {
     delete m_metrics;
     m_metrics = NULL;
+    //add by Xu Liu
+    delete m_fmt;
+    m_fmt = NULL;
   }
 
 
@@ -223,9 +240,11 @@ public:
   {
     if (!m_metrics) {
       m_metrics = new MetricVec(size, 0.0 /*value*/);
+      m_fmt = new FmtVec(size, 0 /*value*/);// add by Xu Liu
     }
     else if (size > m_metrics->size()) {
       m_metrics->resize(size, 0.0 /*value*/); // inserts at end
+      m_fmt->resize(size, 0 /*value*/); // add by Xu Liu
     }
   }
 
@@ -234,9 +253,11 @@ public:
   {
     if (numMetrics > 0 && !m_metrics) {
       m_metrics = new MetricVec();
+      m_fmt = new FmtVec();//add by Xu Liu
     }
     for (uint i = 0; i < numMetrics; ++i) {
       m_metrics->insert(m_metrics->begin(), 0.0);
+      m_fmt->insert(m_fmt->begin(), 0);//add by Xu Liu
     }
   }
   
@@ -271,6 +292,7 @@ public:
   
 private:
   mutable MetricVec* m_metrics; // 'mutable' for ensureMetricsSize()
+  mutable FmtVec* m_fmt; // add by Xu Liu
 };
 
 //***************************************************************************

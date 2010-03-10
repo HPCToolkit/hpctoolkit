@@ -238,7 +238,7 @@ hpcrun_bt_add_leaf_child(backtrace_t* bt, void* addr)
     bt->end  = new + (size - 1);
   }
   TMSG(BT, "BEFORE copy, innermost ip = %p", bt->beg->ip);
-  memcpy((void*)(bt->beg + 1), (void*) bt->beg, bt->len * sizeof(frame_t));
+  memmove((void*)(bt->beg + 1), (void*) bt->beg, bt->len * sizeof(frame_t));
   TMSG(BT, "AFTER copy, innermost ip = %p", (bt->beg + 1)->ip);
   bt->cur++;
   bt->len++;

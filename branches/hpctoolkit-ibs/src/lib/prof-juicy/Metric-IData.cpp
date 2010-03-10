@@ -108,10 +108,21 @@ IData::writeMetricsXML(std::ostream& os, uint mBegId, uint mEndId,
 
   for (uint i = mBegId; i < mEndId; i++) {
     if (hasMetric(i)) {
-      double m = metric(i);
-      os << ((!wasMetricWritten) ? pfx : "");
-      os << "<M " << "n" << xml::MakeAttrNum(i) 
-	 << " v" << xml::MakeAttrNum(m) << "/>";
+
+      if(fmt(i) == 0)//add by Xu Liu
+      {
+        double m = metric(i);
+        os << ((!wasMetricWritten) ? pfx : "");
+        os << "<M " << "n" << xml::MakeAttrNum(i) 
+	   << " v" << xml::MakeAttrNum(m) << "/>";
+      }
+      if(fmt(i) == 1)
+      {
+        uint64_t t = metric(i);
+        os << ((!wasMetricWritten) ? pfx : "");
+        os << "<M " << "n" << xml::MakeAttrNum(i)
+           << " v" << xml::MakeAttrNum(t) << "/>";
+      }
       wasMetricWritten = true;
     }
   }

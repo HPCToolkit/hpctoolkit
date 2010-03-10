@@ -332,7 +332,6 @@ ANode::zeroMetricsDeep(uint mBegId, uint mEndId)
   }
 }
 
-
 void
 ANode::aggregateMetricsIncl(uint mBegId, uint mEndId)
 {
@@ -350,10 +349,10 @@ ANode::aggregateMetricsIncl(const VMAIntervalSet& ivalset)
   if (ivalset.empty()) {
     return; // short circuit
   }
-
+ 
   const ANode* root = this;
   ANodeIterator it(root, NULL/*filter*/, false/*leavesOnly*/,
-		   IteratorStack::PostOrder);
+                   IteratorStack::PostOrder);
   for (ANode* n = NULL; (n = it.current()); ++it) {
     if (n != root) {
       ANode* n_parent = n->parent();
@@ -614,6 +613,62 @@ ANode::mergeMe(const ANode& y, uint metricBegIdx)
   }
 }
 
+//add by Xu Liu
+int
+ANode::mergeMe_IBS(const ANode& y, uint metricBegIdx)
+{
+  int min, max;
+  ANode* x = this;
+
+  uint x_end = metricBegIdx + y.numMetrics();
+  if ( !(x_end <= x->numMetrics()) ) {
+    ensureMetricsSize(x_end);
+  }
+  
+  min = -1;
+  for (uint i=metricBegIdx; i<x_end; i++)
+  {
+    if(x -> fmt(i) == 1){
+      if(min < 0)
+        min = i;
+      else
+        max = i;
+    }
+  }
+  uint umin = (uint)min;
+  uint umax = (uint)max;
+  if((min < 0) || (max < 0))//no merge
+    return 0;
+
+  if(!((x->metric(umin) > y.metric(umax)) || (x->metric(umax) < y.metric(umin)))) //have overlap
+  {
+    for (uint x_i = metricBegIdx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
+      if(x_i == umin)
+      {
+        if(x->metric(umin) < y.metric(umin))
+          continue;
+        else{
+          x->metric(umin) = y.metric(umin);
+          continue;
+        }
+      }
+      if(x_i == umax)
+      {
+        if(x->metric(umax) > y.metric(umax))
+          continue;
+        else
+        {
+          x->metric(umax) = y.metric(umax);
+          continue;
+        }
+      }
+      x->metric(x_i) += y.metric(y_i);
+    }
+    return 1;
+  }
+  else //no merge
+    return 0;
+}
 
 void 
 ADynNode::mergeMe(const ANode& y, uint metricBegIdx)

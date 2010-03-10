@@ -456,7 +456,7 @@ public:
   // metrics. [mBegId, mEndId) forms an interval for batch processing.
   void
   aggregateMetricsIncl(uint mBegId, uint mEndId);
-
+  
   void
   aggregateMetricsIncl(const VMAIntervalSet& ivalset);
 
@@ -520,6 +520,10 @@ public:
 
   virtual void
   mergeMe(const ANode& y, uint metricBegIdx = 0);
+
+  //add by Xu Liu
+  virtual int
+  mergeMe_IBS(const ANode& y, uint metricsBegIdx = 0);
 
   // findDynChild: Let z = 'this' be an interior ADynNode (otherwise the
   //   return value is trivially NULL).  Given an ADynNode y_dyn, finds

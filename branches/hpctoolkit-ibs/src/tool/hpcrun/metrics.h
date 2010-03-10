@@ -97,7 +97,7 @@ int hpcrun_new_metric(void);
 
 void hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 				 hpcrun_metricFlags_t flags, size_t period,
-				 metric_upd_proc_t upd_fn);
+				 metric_upd_proc_t upd_fn, long fmt_flag);
 
 void hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				       hpcrun_metricFlags_t flags, size_t period);

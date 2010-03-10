@@ -149,6 +149,8 @@ typedef struct thread_data_t {
   // sample sources
   int              eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
   source_state_t   ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
+  // IBS
+  void*            ibs_ptr;
 
   // stand-alone flag to suspend sampling during some synchronous calls to an hpcrun
   // mechanism

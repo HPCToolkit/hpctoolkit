@@ -317,6 +317,8 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs, hpcfmt_alloc_fn alloc)
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->description), fs, alloc));
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->flags), fs));
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->period), fs));
+
+  HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&(x->fmt_flag), fs));
   return HPCFMT_OK;
 }
 
@@ -328,6 +330,9 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* fs)
   hpcfmt_str_fwrite(x->description, fs);
   hpcfmt_byte8_fwrite(x->flags, fs);
   hpcfmt_byte8_fwrite(x->period, fs);
+  
+  hpcfmt_byte4_fwrite(x->fmt_flag, fs);
+
   return HPCFMT_OK;
 }
 
