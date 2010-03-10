@@ -244,7 +244,7 @@ static inline unw_word_t
 lush_cursor_get_ip(lush_cursor_t* cursor)
 {
   unw_word_t ip = 0;
-  if (hpcrun_unw_get_reg(&cursor->pcursor, UNW_REG_IP, &ip) < 0) {
+  if (hpcrun_unw_get_ip_reg(&cursor->pcursor, &ip) < 0) {
     // FIXME
   }
   return ip;

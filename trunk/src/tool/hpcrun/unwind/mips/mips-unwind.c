@@ -331,7 +331,11 @@ hpcrun_unw_init(void)
 }
 
 
-int 
+typedef enum {
+  UNW_REG_IP
+} unw_reg_code_t;
+
+static int 
 hpcrun_unw_get_reg(hpcrun_unw_cursor_t* cursor,
 		   unw_reg_code_t reg_id, void **reg_value)
 {
@@ -340,7 +344,11 @@ hpcrun_unw_get_reg(hpcrun_unw_cursor_t* cursor,
   return 0;
 }
 
-
+int
+hpcrun_unw_get_ip_reg(hpcrun_unw_cursor_t* c, void** v)
+{
+  return hpcrun_unw_get_reg(c, UNW_REG_IP, v);
+}
 // unimplemented for now
 //  fix when trampoline support is added
 void*

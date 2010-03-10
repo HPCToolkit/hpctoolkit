@@ -882,7 +882,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
     int ret;
 
     unw_word_t ip = 0;
-    hpcrun_unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    hpcrun_unw_get_ip_reg(&cursor, &ip);
 
     if (hpcrun_trampoline_interior(ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
@@ -1035,7 +1035,7 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
     int ret;
 
     unw_word_t ip = 0;
-    hpcrun_unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    hpcrun_unw_get_ip_reg(&cursor, &ip);
 
     if (hpcrun_trampoline_interior(ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
