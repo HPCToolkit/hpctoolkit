@@ -453,7 +453,7 @@ cycle_signal_handler(int sig, siginfo_t* siginfo, void* context)
   pfarg_msg_t msg;
   int ret, fd;
   struct over_args* ov;
-  void* pc = context_pc(context);
+  void* pc = hpcrun_context_pc(context);
 
   TMSG(IBS_SAMPLE, "in the handler function");
  
