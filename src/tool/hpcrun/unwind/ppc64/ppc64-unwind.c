@@ -162,8 +162,14 @@ hpcrun_unw_init(void)
   hpcrun_interval_tree_init();
 }
 
+//
+// register codes (only 1 at the moment)
+//
+typedef enum {
+  UNW_REG_IP
+} unw_reg_code_t;
 
-int 
+static int 
 hpcrun_unw_get_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
 {
   assert(reg_id == UNW_REG_IP);
@@ -171,6 +177,11 @@ hpcrun_unw_get_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id, void **re
   return 0;
 }
 
+int
+hpcrun_unw_get_ip_reg(hpcrun_unw_cursor_t *cursor, void **reg_value)
+{
+  return hpcrun_unw_get_reg(cursor, UNW_REG_IP, reg_value);
+}
 
 //
 // unimplemented for now
