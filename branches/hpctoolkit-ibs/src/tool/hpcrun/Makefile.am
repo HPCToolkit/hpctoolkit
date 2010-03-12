@@ -241,8 +241,7 @@ MY_PPC_INCLUDE_DIRS = 		\
 
 MY_X86_INCLUDE_DIRS =		\
 	-I$(srcdir)/unwind/x86-family	\
-	-I$(XED2_INC)                   \
-	-I/home/xl10/software/libpfm-3.9/include  
+	-I$(XED2_INC)                   
 
 
 libhpcrun_la_SOURCES = 			\
@@ -308,8 +307,6 @@ if HOST_CPU_X86
     libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
     libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
     libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
-    libhpcrun_la_LDFLAGS  += /home/xl10/software/libpfm-3.9/lib/libpfm.a
-    libhpcrun_o_LDFLAGS   += /home/xl10/software/libpfm-3.9/lib/libpfm.a
 endif
 
 if OPT_PAPI_DYNAMIC

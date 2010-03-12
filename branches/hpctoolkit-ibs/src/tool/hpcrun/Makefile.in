@@ -86,10 +86,8 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 @HOST_CPU_X86_TRUE@am__append_14 = $(MY_X86_FILES)
 @HOST_CPU_X86_TRUE@am__append_15 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_TRUE@am__append_16 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_TRUE@am__append_17 = $(XED2_LIB)/libxed.a \
-@HOST_CPU_X86_TRUE@	/home/xl10/software/libpfm-3.9/lib/libpfm.a
-@HOST_CPU_X86_TRUE@am__append_18 = $(XED2_LIB)/libxed.a \
-@HOST_CPU_X86_TRUE@	/home/xl10/software/libpfm-3.9/lib/libpfm.a
+@HOST_CPU_X86_TRUE@am__append_17 = $(XED2_LIB)/libxed.a
+@HOST_CPU_X86_TRUE@am__append_18 = $(XED2_LIB)/libxed.a
 @OPT_PAPI_DYNAMIC_TRUE@am__append_19 = $(MY_PAPI_FILES)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_20 = $(PAPI_INC_FLGS)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_21 = $(PAPI_LD_FLGS)
@@ -777,8 +775,7 @@ MY_PPC_INCLUDE_DIRS = \
 
 MY_X86_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/x86-family	\
-	-I$(XED2_INC)                   \
-	-I/home/xl10/software/libpfm-3.9/include  
+	-I$(XED2_INC)                   
 
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
 	$(am__append_4) $(am__append_5) $(am__append_9) \
