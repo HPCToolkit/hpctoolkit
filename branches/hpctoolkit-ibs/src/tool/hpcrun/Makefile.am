@@ -102,7 +102,7 @@ HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 MY_BASE_FILES =			\
 	utilities/first_func.c		\
 	\
-	main.h main.c			\
+	main.h main.c ibs_init.h        \
 	disabled.c			\
 	env.c				\
 	epoch.c				\
@@ -200,6 +200,8 @@ MY_X86_FILES = \
         \
         sample-sources/ibs.c                            \
         \
+        sample-sources/ibs_sync.c                       \
+        \
         sample-sources/cycle.c                          \
         \
         trampoline/x86-family/x86-tramp.S
@@ -243,7 +245,6 @@ MY_X86_INCLUDE_DIRS =		\
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)                   
 
-
 libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_DYNAMIC_FILES)
@@ -257,17 +258,17 @@ libhpcrun_wrap_a_SOURCES =		\
 
 libhpcrun_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS)              
 
 libhpcrun_o_CPPFLAGS =			\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS)              
 
 libhpcrun_wrap_a_CPPFLAGS =		\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS)              
 
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
@@ -275,11 +276,10 @@ libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 libhpcrun_la_LIBADD = $(HPC_LIBPROFLEAN)
 libhpcrun_o_LDADD   = $(HPC_LIBPROFLEAN)
-
-libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
+libhpcrun_la_LDFLAGS = -Wl,--wrap,malloc -Wl,--wrap,calloc -Wl,--wrap,realloc -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt
 
-libhpcrun_o_LDFLAGS =
+libhpcrun_o_LDFLAGS = 
 
 if HOST_OS_LINUX
     libhpcrun_la_SOURCES += $(MY_LINUX_DYNAMIC_FILES)

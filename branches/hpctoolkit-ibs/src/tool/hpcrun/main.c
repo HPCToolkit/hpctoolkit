@@ -119,6 +119,7 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
+#include "ibs_init.h"
 //***************************************************************************
 // constants
 //***************************************************************************
@@ -154,13 +155,11 @@ static sigset_t prof_sigset;
 // inline functions
 //***************************************************************************
 
-static inline bool
-hpcrun_is_initialized()
+inline bool
+hpcrun_is_initialized() //Xu Liu: I remove static because I want to build it into shared lib
 {
   return hpcrun_is_initialized_private;
 }
-
-
 
 //***************************************************************************
 // *** Important note about libmonitor callbacks ***

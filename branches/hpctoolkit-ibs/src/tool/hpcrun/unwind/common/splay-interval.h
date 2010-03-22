@@ -44,12 +44,18 @@
 #ifndef SPLAY_INTERVAL_H
 #define SPLAY_INTERVAL_H
 
+//************************* System Include Files ****************************
+
+#include <stdint.h>
+
 struct splay_interval_s {
   struct splay_interval_s *next;
   struct splay_interval_s *prev;
 
   void *start;
   void *end;
+
+  int32_t cct_id;//for IBS_SYNC Xu Liu
 };
 typedef struct splay_interval_s splay_interval_t;
 

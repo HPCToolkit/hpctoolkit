@@ -88,6 +88,8 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 @HOST_CPU_X86_TRUE@am__append_16 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_TRUE@am__append_17 = $(XED2_LIB)/libxed.a
 @HOST_CPU_X86_TRUE@am__append_18 = $(XED2_LIB)/libxed.a
+#    libhpcrun_la_LDFLAGS  += /home/xl10/software/libpfm-3.9/lib/libpfm.a
+#    libhpcrun_o_LDFLAGS   += /home/xl10/software/libpfm-3.9/lib/libpfm.a
 @OPT_PAPI_DYNAMIC_TRUE@am__append_19 = $(MY_PAPI_FILES)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_20 = $(PAPI_INC_FLGS)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_21 = $(PAPI_LD_FLGS)
@@ -175,7 +177,7 @@ libagent_tbb_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 @OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
 libhpcrun_la_DEPENDENCIES = $(HPC_LIBPROFLEAN)
 am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
-	disabled.c env.c epoch.c files.c handling_sample.c \
+	ibs_init.h disabled.c env.c epoch.c files.c handling_sample.c \
 	hpcrun_options.c hpcrun_stats.c loadmap.c metrics.c name.c \
 	sample_event.c sample_sources_all.c sample-sources/common.c \
 	sample-sources/itimer.c sample-sources/none.c \
@@ -209,9 +211,10 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
-	sample-sources/ibs.c sample-sources/cycle.c \
-	trampoline/x86-family/x86-tramp.S sample-sources/papi.c \
-	sample-sources/upc.c utilities/last_func.c
+	sample-sources/ibs.c sample-sources/ibs_sync.c \
+	sample-sources/cycle.c trampoline/x86-family/x86-tramp.S \
+	sample-sources/papi.c sample-sources/upc.c \
+	utilities/last_func.c
 am__objects_7 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-disabled.lo libhpcrun_la-env.lo \
 	libhpcrun_la-epoch.lo libhpcrun_la-files.lo \
@@ -257,7 +260,8 @@ am__objects_15 = libhpcrun_la-x86-all.lo libhpcrun_la-x86-cold-path.lo \
 	libhpcrun_la-x86-unwind.lo libhpcrun_la-x86-unwind-support.lo \
 	libhpcrun_la-x86-linux-dlresolver.lo \
 	libhpcrun_la-x86-intel11-f90main.lo libhpcrun_la-ibs.lo \
-	libhpcrun_la-cycle.lo libhpcrun_la-x86-tramp.lo
+	libhpcrun_la-ibs_sync.lo libhpcrun_la-cycle.lo \
+	libhpcrun_la-x86-tramp.lo
 @HOST_CPU_X86_TRUE@am__objects_16 = $(am__objects_15)
 am__objects_17 = libhpcrun_la-papi.lo
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_18 = $(am__objects_17)
@@ -276,7 +280,7 @@ libhpcrun_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 pkglibPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(pkglib_PROGRAMS)
 am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
-	disabled.c env.c epoch.c files.c handling_sample.c \
+	ibs_init.h disabled.c env.c epoch.c files.c handling_sample.c \
 	hpcrun_options.c hpcrun_stats.c loadmap.c metrics.c name.c \
 	sample_event.c sample_sources_all.c sample-sources/common.c \
 	sample-sources/itimer.c sample-sources/none.c \
@@ -310,9 +314,10 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
-	sample-sources/ibs.c sample-sources/cycle.c \
-	trampoline/x86-family/x86-tramp.S sample-sources/papi.c \
-	sample-sources/upc.c utilities/last_func.c
+	sample-sources/ibs.c sample-sources/ibs_sync.c \
+	sample-sources/cycle.c trampoline/x86-family/x86-tramp.S \
+	sample-sources/papi.c sample-sources/upc.c \
+	utilities/last_func.c
 am__objects_21 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-main.$(OBJEXT) libhpcrun_o-disabled.$(OBJEXT) \
 	libhpcrun_o-env.$(OBJEXT) libhpcrun_o-epoch.$(OBJEXT) \
@@ -366,8 +371,8 @@ am__objects_27 = libhpcrun_o-x86-all.$(OBJEXT) \
 	libhpcrun_o-x86-unwind-support.$(OBJEXT) \
 	libhpcrun_o-x86-linux-dlresolver.$(OBJEXT) \
 	libhpcrun_o-x86-intel11-f90main.$(OBJEXT) \
-	libhpcrun_o-ibs.$(OBJEXT) libhpcrun_o-cycle.$(OBJEXT) \
-	libhpcrun_o-x86-tramp.$(OBJEXT)
+	libhpcrun_o-ibs.$(OBJEXT) libhpcrun_o-ibs_sync.$(OBJEXT) \
+	libhpcrun_o-cycle.$(OBJEXT) libhpcrun_o-x86-tramp.$(OBJEXT)
 @HOST_CPU_X86_TRUE@am__objects_28 = $(am__objects_27)
 am__objects_29 = libhpcrun_o-papi.$(OBJEXT)
 @OPT_PAPI_STATIC_TRUE@am__objects_30 = $(am__objects_29)
@@ -642,7 +647,7 @@ HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 MY_BASE_FILES = \
 	utilities/first_func.c		\
 	\
-	main.h main.c			\
+	main.h main.c ibs_init.h        \
 	disabled.c			\
 	env.c				\
 	epoch.c				\
@@ -737,6 +742,8 @@ MY_X86_FILES = \
         \
         sample-sources/ibs.c                            \
         \
+        sample-sources/ibs_sync.c                       \
+        \
         sample-sources/cycle.c                          \
         \
         trampoline/x86-family/x86-tramp.S
@@ -777,6 +784,7 @@ MY_X86_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)                   
 
+#	-I/home/xl10/software/libpfm-3.9/include  
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
 	$(am__append_4) $(am__append_5) $(am__append_9) \
 	$(am__append_13) $(am__append_19) $(am__append_25) \
@@ -797,15 +805,16 @@ libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS)              
 
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_la_LIBADD = $(HPC_LIBPROFLEAN)
 libhpcrun_o_LDADD = $(HPC_LIBPROFLEAN)
-libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(am__append_17) $(am__append_21) \
+libhpcrun_la_LDFLAGS = -Wl,--wrap,malloc -Wl,--wrap,calloc \
+	-Wl,--wrap,realloc -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) \
+	-lmonitor -lpthread -lrt $(am__append_17) $(am__append_21) \
 	$(am__append_29)
 libhpcrun_o_LDFLAGS = $(am__append_18) $(am__append_24) \
 	$(am__append_30)
@@ -1056,6 +1065,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_stats.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ibs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ibs_sync.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-itimer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-last_func.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-loadmap.Plo@am__quote@
@@ -1127,6 +1137,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_stats.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ibs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ibs_sync.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-itimer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-last_func.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-loadmap.Po@am__quote@
@@ -1787,6 +1798,13 @@ libhpcrun_la-ibs.lo: sample-sources/ibs.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/ibs.c' object='libhpcrun_la-ibs.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ibs.lo `test -f 'sample-sources/ibs.c' || echo '$(srcdir)/'`sample-sources/ibs.c
+
+libhpcrun_la-ibs_sync.lo: sample-sources/ibs_sync.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ibs_sync.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ibs_sync.Tpo -c -o libhpcrun_la-ibs_sync.lo `test -f 'sample-sources/ibs_sync.c' || echo '$(srcdir)/'`sample-sources/ibs_sync.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_la-ibs_sync.Tpo $(DEPDIR)/libhpcrun_la-ibs_sync.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/ibs_sync.c' object='libhpcrun_la-ibs_sync.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ibs_sync.lo `test -f 'sample-sources/ibs_sync.c' || echo '$(srcdir)/'`sample-sources/ibs_sync.c
 
 libhpcrun_la-cycle.lo: sample-sources/cycle.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-cycle.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-cycle.Tpo -c -o libhpcrun_la-cycle.lo `test -f 'sample-sources/cycle.c' || echo '$(srcdir)/'`sample-sources/cycle.c
@@ -2711,6 +2729,20 @@ libhpcrun_o-ibs.obj: sample-sources/ibs.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/ibs.c' object='libhpcrun_o-ibs.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ibs.obj `if test -f 'sample-sources/ibs.c'; then $(CYGPATH_W) 'sample-sources/ibs.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/ibs.c'; fi`
+
+libhpcrun_o-ibs_sync.o: sample-sources/ibs_sync.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ibs_sync.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ibs_sync.Tpo -c -o libhpcrun_o-ibs_sync.o `test -f 'sample-sources/ibs_sync.c' || echo '$(srcdir)/'`sample-sources/ibs_sync.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-ibs_sync.Tpo $(DEPDIR)/libhpcrun_o-ibs_sync.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/ibs_sync.c' object='libhpcrun_o-ibs_sync.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ibs_sync.o `test -f 'sample-sources/ibs_sync.c' || echo '$(srcdir)/'`sample-sources/ibs_sync.c
+
+libhpcrun_o-ibs_sync.obj: sample-sources/ibs_sync.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ibs_sync.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ibs_sync.Tpo -c -o libhpcrun_o-ibs_sync.obj `if test -f 'sample-sources/ibs_sync.c'; then $(CYGPATH_W) 'sample-sources/ibs_sync.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/ibs_sync.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-ibs_sync.Tpo $(DEPDIR)/libhpcrun_o-ibs_sync.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/ibs_sync.c' object='libhpcrun_o-ibs_sync.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ibs_sync.obj `if test -f 'sample-sources/ibs_sync.c'; then $(CYGPATH_W) 'sample-sources/ibs_sync.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/ibs_sync.c'; fi`
 
 libhpcrun_o-cycle.o: sample-sources/cycle.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-cycle.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-cycle.Tpo -c -o libhpcrun_o-cycle.o `test -f 'sample-sources/cycle.c' || echo '$(srcdir)/'`sample-sources/cycle.c

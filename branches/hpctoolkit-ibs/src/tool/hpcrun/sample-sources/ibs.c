@@ -101,6 +101,10 @@
 #include <fcntl.h>
 
 #include "x86-decoder.h" //use xed to find prefetching op
+
+#include "ibs_init.h" //find the splay tree
+#include "splay.h"
+#include "splay-interval.h"
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -518,6 +522,7 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
   void* pc = hpcrun_context_pc(context);
   if (hpcrun_async_is_blocked(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
+    ret=read(fd, &msg, sizeof(msg)); //this is needed to restart IBS
   }
   else {
     data3=0;
@@ -592,6 +597,11 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
           else
             lat=-1;//latency is not valid for store
           if(!is_kernel(linear_addr)){ //the address touched should not be kernel address
+            interval_tree_node* result_node = splaytree_lookup((void*)linear_addr);//find the address in splay tree
+            if(result_node != NULL)
+            {
+              TMSG(IBS_SAMPLE,"find %p in splay tree with interval %d [%p, %p)", (void*)linear_addr, result_node->cct_id, result_node->start, result_node->end);
+            }
             hpcrun_sample_callpath_w_bt(context, metrics[0], linear_addr,
                            update_bt, (void*)ip, 0/*isSync*/);
             hpcrun_sample_callpath_w_bt(context, metrics[1], linear_addr,
