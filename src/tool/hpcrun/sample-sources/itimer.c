@@ -199,9 +199,9 @@ METHOD_FN(start)
   }
 
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
-  int ret = time_getTimeCPU(&TD_GET(last_time_us));
+  int ret = time_getTimeReal(&TD_GET(last_time_us));
   if (ret != 0) {
-    EMSG("time_getTimeCPU (clock_gettime) failed!");
+    EMSG("time_getTimeReal (clock_gettime) failed!");
     abort();
   }
 #endif
@@ -373,9 +373,9 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     uint64_t metric_incr = 1; // default: one time unit
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
     uint64_t cur_time_us;
-    int ret = time_getTimeCPU(&cur_time_us);
+    int ret = time_getTimeReal(&cur_time_us);
     if (ret != 0) {
-      EMSG("time_getTimeCPU (clock_gettime) failed!");
+      EMSG("time_getTimeReal (clock_gettime) failed!");
       abort();
     }
     metric_incr = cur_time_us - TD_GET(last_time_us);
