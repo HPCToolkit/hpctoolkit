@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_CallPath_OverheadMetricFact_hpp 
-#define Analysis_CallPath_OverheadMetricFact_hpp
+#ifndef Analysis_CallPath_MetricComponentsFact_hpp
+#define Analysis_CallPath_MetricComponentsFact_hpp
 
 //************************* System Include Files ****************************
 
@@ -79,28 +79,27 @@ namespace Analysis {
 namespace CallPath {
 
 
-class OverheadMetricFact
+class MetricComponentsFact
 {
 public:
-  OverheadMetricFact() { }
+  MetricComponentsFact() { }
   
-  virtual ~OverheadMetricFact() { }
+  virtual ~MetricComponentsFact() { }
   
-  // make 'overhead' and 'work' metrics
-  void 
+  void
   make(Prof::CallPath::Profile& prof);
   
-  virtual bool 
-  isOverhead(const Prof::CCT::ProcFrm* x) = 0;
+  virtual bool
+  isSeparable(const Prof::CCT::ProcFrm* x) = 0;
 
 private:
 
-  void 
-  make(Prof::CCT::ANode* node, 
-       const std::vector<uint>& m_src, const std::vector<uint>& m_dst, 
-       bool isOverheadCtxt);
+  void
+  make(Prof::CCT::ANode* node,
+       const std::vector<uint>& m_src, const std::vector<uint>& m_dst,
+       bool isSeparableCtxt);
 
-  static inline bool 
+  static inline bool
   isMetricSrc(const Prof::Metric::ADesc* mdesc)
   {
     const string& nm = mdesc->name();
@@ -116,14 +115,14 @@ private:
 //***************************************************************************
 
 
-class PthreadOverheadMetricFact : public OverheadMetricFact
+class PthreadOverheadMetricFact : public MetricComponentsFact
 {
 public:
   PthreadOverheadMetricFact() { }
   virtual ~PthreadOverheadMetricFact() { }
     
-  virtual bool 
-  isOverhead(const Prof::CCT::ProcFrm* x);
+  virtual bool
+  isSeparable(const Prof::CCT::ProcFrm* x);
 
 private:
 
@@ -134,20 +133,21 @@ private:
 
 //***************************************************************************
 
-class CilkOverheadMetricFact : public OverheadMetricFact
+class CilkOverheadMetricFact : public MetricComponentsFact
 {
 public:
   CilkOverheadMetricFact() { }
   virtual ~CilkOverheadMetricFact() { }
-    
-  virtual bool 
-  isOverhead(const Prof::CCT::ProcFrm* x);
+  
+  virtual bool
+  isSeparable(const Prof::CCT::ProcFrm* x);
 
 private:
 
   static const string s_tag;
 
 };
+
 
 //***************************************************************************
 
@@ -157,4 +157,4 @@ private:
 
 //****************************************************************************
 
-#endif // Analysis_CallPath_OverheadMetricFact_hpp
+#endif // Analysis_CallPath_MetricComponentsFact_hpp

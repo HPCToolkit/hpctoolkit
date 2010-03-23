@@ -66,7 +66,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "CallPath-OverheadMetricFact.hpp"
+#include "CallPath-MetricComponentsFact.hpp"
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
@@ -87,8 +87,8 @@ namespace CallPath {
 
 // Assumes: metrics are of type Metric::SampledDesc and values are
 // only at leaves (CCT::Stmt)
-void 
-OverheadMetricFact::make(Prof::CallPath::Profile& prof)
+void
+MetricComponentsFact::make(Prof::CallPath::Profile& prof)
 {
   using namespace Prof;
   
@@ -99,20 +99,22 @@ OverheadMetricFact::make(Prof::CallPath::Profile& prof)
   std::vector<uint> metric_src;
   std::vector<uint> metric_dst;
   
-  uint numMetrics_orig = prof.metricMgr()->size();
-  for (uint mId = 0; mId < numMetrics_orig; ++mId) {
-    Metric::ADesc* mDesc = prof.metricMgr()->metric(mId);
-    if (OverheadMetricFact::isMetricSrc(mDesc)) {
-      DIAG_Assert(typeid(*mDesc) == typeid(Metric::SampledDesc), DIAG_UnexpectedInput << "temporary sanity check");
+  Prof::Metric::Mgr* metricMgr = prof.metricMgr();
 
-      OverheadMetricFact::convertToWorkMetric(mDesc);
+  uint numMetrics_orig = metricMgr->size();
+  for (uint mId = 0; mId < numMetrics_orig; ++mId) {
+    Metric::ADesc* mDesc = metricMgr->metric(mId);
+    if (MetricComponentsFact::isMetricSrc(mDesc)) {
+      DIAG_Assert(typeid(*mDesc) == typeid(Metric::SampledDesc), DIAG_UnexpectedInput << "temporary sanity check");
+      
+      MetricComponentsFact::convertToWorkMetric(mDesc);
       metric_src.push_back(mId);
 
       Metric::ADesc* mDesc_new = mDesc->clone();
       mDesc_new->nameBase("overhead");
       mDesc_new->description("parallel overhead");
 
-      prof.metricMgr()->insert(mDesc_new);
+      metricMgr->insert(mDesc_new);
       DIAG_Assert(mDesc_new->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
       
       metric_dst.push_back(mDesc_new->id());
@@ -126,18 +128,24 @@ OverheadMetricFact::make(Prof::CallPath::Profile& prof)
 }
 
 
-void 
-OverheadMetricFact::make(Prof::CCT::ANode* node, 
-			 const std::vector<uint>& m_src, 
-			 const std::vector<uint>& m_dst, 
-			 bool isOverheadCtxt)
+// make: Assumes source metrics are of type "raw" Metric::SampledDesc,
+// which means that metric values are exclusive and are only at leaves
+// (CCT::Stmt).
+//
+// Since metric values are exclusive we effectively move metric values
+// for whole subtrees.
+void
+MetricComponentsFact::make(Prof::CCT::ANode* node, 
+			   const std::vector<uint>& m_src, 
+			   const std::vector<uint>& m_dst, 
+			   bool isSeparableCtxt)
 {
   if (!node) { return; }
 
   // ------------------------------------------------------------
-  // Visit CCT::Stmt nodes (Assumes metrics are only at leaves)
+  // Visit CCT::Stmt nodes:
   // ------------------------------------------------------------
-  if (isOverheadCtxt && (typeid(*node) == typeid(Prof::CCT::Stmt))) {
+  if (isSeparableCtxt && (typeid(*node) == typeid(Prof::CCT::Stmt))) {
     Prof::CCT::Stmt* stmt = static_cast<Prof::CCT::Stmt*>(node);
     for (uint i = 0; i < m_src.size(); ++i) {
       uint src_idx = m_src[i];
@@ -155,23 +163,23 @@ OverheadMetricFact::make(Prof::CCT::ANode* node,
   // Recur
   // ------------------------------------------------------------
   
-  // Note: once set, isOverheadCtxt should remain true for all descendents
-  bool isOverheadCtxt_nxt = isOverheadCtxt;
-  if (!isOverheadCtxt && typeid(*node) == typeid(Prof::CCT::ProcFrm)
-      /* TODO: or Prof::CCT::Proc */) {
+  // Note: once set, isSeparableCtxt should remain true for all descendents
+  bool isSeparableCtxt_nxt = isSeparableCtxt;
+  if (!isSeparableCtxt && typeid(*node) == typeid(Prof::CCT::ProcFrm)
+      /* TODO: || typeid(Prof::CCT::Proc) */) {
     Prof::CCT::ProcFrm* x = static_cast<Prof::CCT::ProcFrm*>(node);
-    isOverheadCtxt_nxt = isOverhead(x);
+    isSeparableCtxt_nxt = isSeparable(x);
   }
 
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
     Prof::CCT::ANode* x = it.current();
-    make(x, m_src, m_dst, isOverheadCtxt_nxt);
+    make(x, m_src, m_dst, isSeparableCtxt_nxt);
   }
 }
 
 
 void
-OverheadMetricFact::convertToWorkMetric(Prof::Metric::ADesc* mdesc)
+MetricComponentsFact::convertToWorkMetric(Prof::Metric::ADesc* mdesc)
 {
   const string& nm = mdesc->name();
   if (nm.find("PAPI_TOT_CYC") == 0) {
@@ -193,8 +201,8 @@ OverheadMetricFact::convertToWorkMetric(Prof::Metric::ADesc* mdesc)
 const string PthreadOverheadMetricFact::s_tag = "/libpthread";
 
 
-bool 
-PthreadOverheadMetricFact::isOverhead(const Prof::CCT::ProcFrm* x)
+bool
+PthreadOverheadMetricFact::isSeparable(const Prof::CCT::ProcFrm* x)
 {
   const string& x_lm_nm = x->lmName();
   if (x_lm_nm.length() >= s_tag.length()) {
@@ -211,8 +219,8 @@ PthreadOverheadMetricFact::isOverhead(const Prof::CCT::ProcFrm* x)
 const string CilkOverheadMetricFact::s_tag = "lush:parallel-overhead";
 
 
-bool 
-CilkOverheadMetricFact::isOverhead(const Prof::CCT::ProcFrm* x)
+bool
+CilkOverheadMetricFact::isSeparable(const Prof::CCT::ProcFrm* x)
 {
   const string& x_fnm = x->fileName();
   if (x_fnm.length() >= s_tag.length()) {
@@ -222,6 +230,39 @@ CilkOverheadMetricFact::isOverhead(const Prof::CCT::ProcFrm* x)
   return false;
 }
 
+
+//***************************************************************************
+//
+//***************************************************************************
+
+#if 0
+// makeMPIWasteMetric: ...temporary holding pattern...
+static void
+makeMPIWasteMetric(Prof::CallPath::Profile& prof)
+{
+  std::vector<uint> metric_src;
+
+  // -------------------------------------------------------
+  // find return count metrics, if any
+  // -------------------------------------------------------
+  Prof::Metric::Mgr* metricMgr = prof.metricMgr();
+
+  uint numMetrics_orig = metricMgr->size();
+  for (uint mId = 0; mId < numMetrics_orig; ++mId) {
+    Prof::Metric::ADesc* mDesc = metricMgr->metric(mId);
+    if (Analysis::CallPath::MetricComponentsFact::isMetricSrc(mDesc)) {
+      DIAG_Assert(mDesc->isComputed(), DIAG_UnexpectedInput);
+      //...
+    }
+  }
+
+  if (metric_src.empty()) {
+    return;
+  }
+  
+  // prof.cct()->root()->aggregateMetricsIncl(...);
+}
+#endif
 
 
 } // namespace CallPath

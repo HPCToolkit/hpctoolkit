@@ -76,7 +76,7 @@ using std::string;
 #include <include/uint.h>
 
 #include "CallPath.hpp"
-#include "CallPath-OverheadMetricFact.hpp"
+#include "CallPath-MetricComponentsFact.hpp"
 #include "Util.hpp"
 
 #include <lib/prof-juicy-x/XercesUtil.hpp>
@@ -580,16 +580,20 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
   makeReturnCountMetric(prof);
 
   if (!agent.empty()) {
-    OverheadMetricFact* overheadMetricFact = NULL;
+    MetricComponentsFact* overheadMetricFact = NULL;
     if (agent == "agent-cilk") {
       overheadMetricFact = new CilkOverheadMetricFact;
     }
     else if (agent == "agent-pthread") {
       overheadMetricFact = new PthreadOverheadMetricFact;
     }
+    else if (agent == "agent-mpi") {
+      //overheadMetricFact = 
+    }
     else {
       DIAG_Die("Bad value for 'agent': " << agent);
     }
+
     overheadMetricFact->make(prof);
     delete overheadMetricFact;
   }
