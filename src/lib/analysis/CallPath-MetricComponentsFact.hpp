@@ -86,13 +86,13 @@ public:
   
   virtual ~MetricComponentsFact() { }
   
-  void
+  virtual void
   make(Prof::CallPath::Profile& prof);
   
   virtual bool
   isSeparable(const Prof::CCT::ProcFrm* x) = 0;
 
-private:
+protected:
 
   void
   make(Prof::CCT::ANode* node,
@@ -114,18 +114,36 @@ private:
 
 //***************************************************************************
 
+class MPIImbalanceMetricFact : public MetricComponentsFact
+{
+public:
+  MPIImbalanceMetricFact() { }
+  virtual ~MPIImbalanceMetricFact() { }
+
+  virtual void
+  make(Prof::CallPath::Profile& prof);
+  
+  virtual bool
+  isSeparable(const Prof::CCT::ProcFrm* x);
+
+private:
+  static const string s_tag;
+
+};
+
+
+//***************************************************************************
 
 class PthreadOverheadMetricFact : public MetricComponentsFact
 {
 public:
   PthreadOverheadMetricFact() { }
   virtual ~PthreadOverheadMetricFact() { }
-    
+  
   virtual bool
   isSeparable(const Prof::CCT::ProcFrm* x);
 
 private:
-
   static const string s_tag;
 
 };
@@ -143,7 +161,6 @@ public:
   isSeparable(const Prof::CCT::ProcFrm* x);
 
 private:
-
   static const string s_tag;
 
 };

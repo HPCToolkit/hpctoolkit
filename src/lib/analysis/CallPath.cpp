@@ -580,22 +580,22 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
   makeReturnCountMetric(prof);
 
   if (!agent.empty()) {
-    MetricComponentsFact* overheadMetricFact = NULL;
+    MetricComponentsFact* metricComponentsFact = NULL;
     if (agent == "agent-cilk") {
-      overheadMetricFact = new CilkOverheadMetricFact;
-    }
-    else if (agent == "agent-pthread") {
-      overheadMetricFact = new PthreadOverheadMetricFact;
+      metricComponentsFact = new CilkOverheadMetricFact;
     }
     else if (agent == "agent-mpi") {
-      //overheadMetricFact = 
+      metricComponentsFact = new MPIImbalanceMetricFact;
+    }
+    else if (agent == "agent-pthread") {
+      metricComponentsFact = new PthreadOverheadMetricFact;
     }
     else {
       DIAG_Die("Bad value for 'agent': " << agent);
     }
 
-    overheadMetricFact->make(prof);
-    delete overheadMetricFact;
+    metricComponentsFact->make(prof);
+    delete metricComponentsFact;
   }
 
   if (agent == "agent-cilk") {
