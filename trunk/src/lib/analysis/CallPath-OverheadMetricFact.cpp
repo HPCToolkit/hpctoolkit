@@ -85,7 +85,8 @@ namespace CallPath {
 //***************************************************************************
 
 
-// Assumes: metrics are still only at leaves (CCT::Stmt)
+// Assumes: metrics are of type Metric::SampledDesc and values are
+// only at leaves (CCT::Stmt)
 void 
 OverheadMetricFact::make(Prof::CallPath::Profile& prof)
 {
@@ -102,16 +103,14 @@ OverheadMetricFact::make(Prof::CallPath::Profile& prof)
   for (uint mId = 0; mId < numMetrics_orig; ++mId) {
     Metric::ADesc* mDesc = prof.metricMgr()->metric(mId);
     if (OverheadMetricFact::isMetricSrc(mDesc)) {
+      DIAG_Assert(typeid(*mDesc) == typeid(Metric::SampledDesc), DIAG_UnexpectedInput << "temporary sanity check");
+
       OverheadMetricFact::convertToWorkMetric(mDesc);
       metric_src.push_back(mId);
 
-      string nm = "overhead";
-      string desc = "parallel overhead";
-      Metric::DerivedDesc* mDesc_new =
-	new Metric::DerivedDesc(nm, desc, NULL/*expr*/);
-
-      mDesc_new->namePfx(mDesc->namePfx());
-      mDesc_new->nameSfx(mDesc->nameSfx());
+      Metric::ADesc* mDesc_new = mDesc->clone();
+      mDesc_new->nameBase("overhead");
+      mDesc_new->description("parallel overhead");
 
       prof.metricMgr()->insert(mDesc_new);
       DIAG_Assert(mDesc_new->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");

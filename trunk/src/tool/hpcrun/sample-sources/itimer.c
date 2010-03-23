@@ -306,7 +306,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     lush_agents->metric_time = metric_id;
     lush_agents->metric_idleness = mid_idleness;
 
-    hpcrun_set_metric_info_and_period(mid_idleness, "idleness (ms)",
+    hpcrun_set_metric_info_and_period(mid_idleness, "idleness (us)",
 				      HPCRUN_MetricFlag_Async | HPCRUN_MetricFlag_Real,
 				      sample_period);
   }
