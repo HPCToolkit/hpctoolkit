@@ -134,9 +134,11 @@ Options: Output:\n\
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
-  {  0 , "agent-pthread",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
   {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "agent-mpi",       CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "agent-pthread",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // Source structure correlation options
@@ -268,11 +270,17 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     }
 
     // Check for agent options
-    if (parser.isOpt("agent-pthread")) {
-      agent = "agent-pthread";
-    }
     if (parser.isOpt("agent-cilk")) {
+      if (!agent.empty()) { ARG_ERROR("Only one agent is supported!"); }
       agent = "agent-cilk";
+    }
+    if (parser.isOpt("agent-mpi")) {
+      if (!agent.empty()) { ARG_ERROR("Only one agent is supported!"); }
+      agent = "agent-mpi";
+    }
+    if (parser.isOpt("agent-pthread")) {
+      if (!agent.empty()) { ARG_ERROR("Only one agent is supported!"); }
+      agent = "agent-pthread";
     }
 
     // Check for other options: Correlation options

@@ -93,13 +93,13 @@ MetricComponentsFact::make(Prof::CallPath::Profile& prof)
   using namespace Prof;
   
   // ------------------------------------------------------------
-  // Create overhead metric descriptors and mapping from source
-  //   metrics to overhead metrics
+  // Create destination metric descriptors and mapping from source
+  //   metrics to destination metrics
   // ------------------------------------------------------------
   std::vector<uint> metric_src;
   std::vector<uint> metric_dst;
   
-  Prof::Metric::Mgr* metricMgr = prof.metricMgr();
+  Metric::Mgr* metricMgr = prof.metricMgr();
 
   uint numMetrics_orig = metricMgr->size();
   for (uint mId = 0; mId < numMetrics_orig; ++mId) {
@@ -121,8 +121,12 @@ MetricComponentsFact::make(Prof::CallPath::Profile& prof)
     }
   }
 
+  if (metric_src.empty()) {
+    return;
+  }
+
   // ------------------------------------------------------------
-  // Create overhead metric values
+  // Create values for metric components
   // ------------------------------------------------------------
   make(prof.cct()->root(), metric_src, metric_dst, false);
 }
@@ -198,6 +202,60 @@ MetricComponentsFact::convertToWorkMetric(Prof::Metric::ADesc* mdesc)
 //
 //***************************************************************************
 
+const string MPIImbalanceMetricFact::s_tag = "MPIDI_CRAY_Progress_wait";
+
+
+bool
+MPIImbalanceMetricFact::isSeparable(const Prof::CCT::ProcFrm* x)
+{
+  const string& x_nm = x->name();
+  if (x_nm.length() >= s_tag.length()) {
+    return (x_nm.find(s_tag) != string::npos);
+  }
+  return false;
+}
+
+
+// make: ...temporary holding pattern...
+void
+MPIImbalanceMetricFact::make(Prof::CallPath::Profile& prof)
+{
+  using namespace Prof;
+
+  // ------------------------------------------------------------
+  // Create destination metric descriptors and mapping from source
+  //   metrics to destination metrics
+  // ------------------------------------------------------------
+  std::vector<uint> metric_src;
+  std::vector<uint> metric_dst;
+
+  Metric::Mgr* metricMgr = prof.metricMgr();
+
+  uint numMetrics_orig = metricMgr->size();
+  for (uint mId = 0; mId < numMetrics_orig; ++mId) {
+    Metric::ADesc* mDesc = metricMgr->metric(mId);
+    if (MetricComponentsFact::isMetricSrc(mDesc)) {
+      DIAG_Assert(mDesc->isComputed(), DIAG_UnexpectedInput);
+      //...
+    }
+  }
+
+  if (metric_src.empty()) {
+    return;
+  }
+  
+  // ------------------------------------------------------------
+  // Create values for metric components
+  // ------------------------------------------------------------
+
+  // prof.cct()->root()->aggregateMetricsIncl(...);
+}
+
+
+//***************************************************************************
+//
+//***************************************************************************
+
 const string PthreadOverheadMetricFact::s_tag = "/libpthread";
 
 
@@ -232,38 +290,6 @@ CilkOverheadMetricFact::isSeparable(const Prof::CCT::ProcFrm* x)
 
 
 //***************************************************************************
-//
-//***************************************************************************
-
-#if 0
-// makeMPIWasteMetric: ...temporary holding pattern...
-static void
-makeMPIWasteMetric(Prof::CallPath::Profile& prof)
-{
-  std::vector<uint> metric_src;
-
-  // -------------------------------------------------------
-  // find return count metrics, if any
-  // -------------------------------------------------------
-  Prof::Metric::Mgr* metricMgr = prof.metricMgr();
-
-  uint numMetrics_orig = metricMgr->size();
-  for (uint mId = 0; mId < numMetrics_orig; ++mId) {
-    Prof::Metric::ADesc* mDesc = metricMgr->metric(mId);
-    if (Analysis::CallPath::MetricComponentsFact::isMetricSrc(mDesc)) {
-      DIAG_Assert(mDesc->isComputed(), DIAG_UnexpectedInput);
-      //...
-    }
-  }
-
-  if (metric_src.empty()) {
-    return;
-  }
-  
-  // prof.cct()->root()->aggregateMetricsIncl(...);
-}
-#endif
-
 
 } // namespace CallPath
 
