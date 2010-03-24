@@ -161,6 +161,8 @@ realmain(int argc, char* const* argv)
     makeMetrics(nArgs, *prof);
   }
 
+  Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
+
   nArgs.destroy();
 
   // ------------------------------------------------------------

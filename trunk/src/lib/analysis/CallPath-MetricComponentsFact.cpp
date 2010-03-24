@@ -104,7 +104,7 @@ MetricComponentsFact::make(Prof::CallPath::Profile& prof)
   uint numMetrics_orig = metricMgr->size();
   for (uint mId = 0; mId < numMetrics_orig; ++mId) {
     Metric::ADesc* mDesc = metricMgr->metric(mId);
-    if (MetricComponentsFact::isMetricSrc(mDesc)) {
+    if (MetricComponentsFact::isTimeMetric(mDesc)) {
       DIAG_Assert(typeid(*mDesc) == typeid(Metric::SampledDesc), DIAG_UnexpectedInput << "temporary sanity check");
       
       MetricComponentsFact::convertToWorkMetric(mDesc);
@@ -202,11 +202,11 @@ MetricComponentsFact::convertToWorkMetric(Prof::Metric::ADesc* mdesc)
 //
 //***************************************************************************
 
-const string MPIImbalanceMetricFact::s_tag = "MPIDI_CRAY_Progress_wait";
+const string MPIBlameShiftIdlenessFact::s_tag = "MPIDI_CRAY_Progress_wait";
 
 
 bool
-MPIImbalanceMetricFact::isSeparable(const Prof::CCT::ProcFrm* x)
+MPIBlameShiftIdlenessFact::isSeparable(const Prof::CCT::ProcFrm* x)
 {
   const string& x_nm = x->name();
   if (x_nm.length() >= s_tag.length()) {
@@ -218,7 +218,7 @@ MPIImbalanceMetricFact::isSeparable(const Prof::CCT::ProcFrm* x)
 
 // make: ...temporary holding pattern...
 void
-MPIImbalanceMetricFact::make(Prof::CallPath::Profile& prof)
+MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
 {
   using namespace Prof;
 
@@ -228,15 +228,36 @@ MPIImbalanceMetricFact::make(Prof::CallPath::Profile& prof)
   // ------------------------------------------------------------
   std::vector<uint> metric_src;
   std::vector<uint> metric_dst;
+  uint metric_balance = Metric::Mgr::npos;
 
   Metric::Mgr* metricMgr = prof.metricMgr();
 
   uint numMetrics_orig = metricMgr->size();
   for (uint mId = 0; mId < numMetrics_orig; ++mId) {
     Metric::ADesc* mDesc = metricMgr->metric(mId);
-    if (MetricComponentsFact::isMetricSrc(mDesc)) {
+
+    // find main source metric
+    if (MetricComponentsFact::isTimeMetric(mDesc)
+	&& MetricComponentsFact::isSumMetric(mDesc)
+	&& mDesc->type() == Metric::ADesc::TyIncl) {
       DIAG_Assert(mDesc->isComputed(), DIAG_UnexpectedInput);
-      //...
+      
+      Metric::ADesc* mDesc_new = mDesc->clone();
+      mDesc_new->nameBase("idleness");
+      mDesc_new->description("MPI idleness");
+
+      metricMgr->insert(mDesc_new);
+      DIAG_Assert(mDesc_new->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
+      
+      metric_dst.push_back(mDesc_new->id());
+    }
+
+    // find secondary source metric
+    if (MetricComponentsFact::isTimeMetric(mDesc)
+	&& MetricComponentsFact::isCoefVarMetric(mDesc)
+	&& mDesc->type() == Metric::ADesc::TyIncl) {
+      DIAG_Assert(mDesc->isComputed(), DIAG_UnexpectedInput);
+      metric_balance = mDesc->id();
     }
   }
 
