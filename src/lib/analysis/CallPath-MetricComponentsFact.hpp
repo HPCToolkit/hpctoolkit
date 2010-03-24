@@ -99,12 +99,30 @@ protected:
        const std::vector<uint>& m_src, const std::vector<uint>& m_dst,
        bool isSeparableCtxt);
 
+
   static inline bool
-  isMetricSrc(const Prof::Metric::ADesc* mdesc)
+  isTimeMetric(const Prof::Metric::ADesc* mdesc)
   {
-    const string& nm = mdesc->name();
+    const string& nm = mdesc->nameBase();
     return ((nm.find("PAPI_TOT_CYC") == 0) || (nm.find("WALLCLOCK") == 0));
   }
+
+
+  static inline bool
+  isSumMetric(const Prof::Metric::ADesc* mdesc)
+  {
+    const string& nm = mdesc->nameBase();
+    return (nm.find("-Sum ") == 0); // FIXME: abstract into a constant
+  }
+
+
+  static inline bool
+  isCoefVarMetric(const Prof::Metric::ADesc* mdesc)
+  {
+    const string& nm = mdesc->nameBase();
+    return (nm.find("-CfVar ") == 0); // FIXME: abstract into a constant
+  }
+
 
   static void
   convertToWorkMetric(Prof::Metric::ADesc* mdesc);
@@ -114,11 +132,11 @@ protected:
 
 //***************************************************************************
 
-class MPIImbalanceMetricFact : public MetricComponentsFact
+class MPIBlameShiftIdlenessFact : public MetricComponentsFact
 {
 public:
-  MPIImbalanceMetricFact() { }
-  virtual ~MPIImbalanceMetricFact() { }
+  MPIBlameShiftIdlenessFact() { }
+  virtual ~MPIBlameShiftIdlenessFact() { }
 
   virtual void
   make(Prof::CallPath::Profile& prof);

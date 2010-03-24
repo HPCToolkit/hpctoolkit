@@ -271,6 +271,8 @@ realmain(int argc, char* const* argv)
   makeMetrics(args, nArgs, groupIdToGroupSizeMap, *profGbl,
 	      myRank, numRanks, rootRank);
 
+  Analysis::CallPath::applySummaryMetricAgents(*profGbl, args.agent);
+
   nArgs.destroy();
 
   // ------------------------------------------------------------

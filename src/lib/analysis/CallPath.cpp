@@ -585,7 +585,7 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
       metricComponentsFact = new CilkOverheadMetricFact;
     }
     else if (agent == "agent-mpi") {
-      metricComponentsFact = new MPIImbalanceMetricFact;
+      // nothing: cannot assume summary metrics have been computed
     }
     else if (agent == "agent-pthread") {
       metricComponentsFact = new PthreadOverheadMetricFact;
@@ -594,8 +594,10 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
       DIAG_Die("Bad value for 'agent': " << agent);
     }
 
-    metricComponentsFact->make(prof);
-    delete metricComponentsFact;
+    if (metricComponentsFact) {
+      metricComponentsFact->make(prof);
+      delete metricComponentsFact;
+    }
   }
 
   if (agent == "agent-cilk") {
@@ -603,6 +605,23 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
   }
 }
 
+
+void
+Analysis::CallPath::applySummaryMetricAgents(Prof::CallPath::Profile& prof,
+					     string agent)
+{
+  if (!agent.empty()) {
+    MetricComponentsFact* metricComponentsFact = NULL;
+    if (agent == "agent-mpi") {
+      metricComponentsFact = new MPIBlameShiftIdlenessFact;
+    }
+
+    if (metricComponentsFact) {
+      metricComponentsFact->make(prof);
+      delete metricComponentsFact;
+    }
+  }
+}
 
 //***************************************************************************
 
