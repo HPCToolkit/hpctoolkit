@@ -766,11 +766,10 @@ ANode::toStringMe(int oFlags) const
 
   uint sId = (m_strct) ? m_strct->id() : 0;
 
+  self += " i" + xml::MakeAttrNum(m_id);
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
-    self += " uid" + xml::MakeAttrNum(m_id);
     self += " strct" + xml::MakeAttrNum((uintptr_t)m_strct, 16);
   }
-
   self += " s" + xml::MakeAttrNum(sId) + " l" + xml::MakeAttrStr(line);
 
   return self;

@@ -153,6 +153,8 @@ realmain(int argc, char* const* argv)
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
 						 args.doNormalizeTy);
   
+  prof->cct()->makeDensePreorderIds();
+
   // -------------------------------------------------------
   // Create summary metrics
   // -------------------------------------------------------
