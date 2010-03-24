@@ -71,7 +71,7 @@
 
 // ************************* System Include Files ***************************
 
-#include <set> // STL
+#include <set>
 #include <string>
 
 // ************************** User Include Files ****************************
@@ -88,7 +88,7 @@
 //     Unique
 //
 //  Class Data Members:
-//     String* className private -- the name of the class, if singleton.
+//     std::string className private -- the name of the class, if singleton.
 //
 //  Purpose:
 //     1) Mixin for a class with objects that shouldn't be copied.
