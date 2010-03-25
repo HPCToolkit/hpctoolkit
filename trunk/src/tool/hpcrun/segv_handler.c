@@ -73,6 +73,7 @@
 #include "memchk.h"
 
 #include <messages/messages.h>
+#include <utilities/arch/context-pc.h>
 
 
 //***************************************************************************

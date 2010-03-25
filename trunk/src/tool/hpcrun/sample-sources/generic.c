@@ -83,6 +83,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 #include <utilities/tokenize.h>
+#include <utilities/arch/context-pc.h>
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -444,7 +445,7 @@ static int
 generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
   // Must check for async block first and avoid any MSG if true.
-  void* pc = context_pc(context);
+  void* pc = hpcrun_context_pc(context);
   if (hpcrun_async_is_blocked(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
   }

@@ -63,6 +63,7 @@
 #include "handling_sample.h"
 #include "interval-interface.h"
 #include "unwind.h"
+#include <utilities/arch/context-pc.h>
 #include "hpcrun-malloc.h"
 #include "splay-interval.h"
 #include "sample_event.h"
