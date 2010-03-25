@@ -664,6 +664,10 @@ public:
   expr() const
   { return m_expr; }
 
+  void
+  expr(Metric::AExpr* x)
+  { m_expr = x; /* assumes ownership of x */ }
+
 
   // -------------------------------------------------------
   // 
@@ -720,7 +724,7 @@ public:
   DerivedIncrDesc(const DerivedIncrDesc& x)
     : ADesc(x),
       m_expr(x.m_expr)
-  { DIAG_Die(DIAG_Unimplemented << "must copy expr!"); }
+  { /* DIAG_Die(DIAG_Unimplemented << "must copy expr!"); */ m_expr = NULL; }
   
   DerivedIncrDesc&
   operator=(const DerivedIncrDesc& x) 
@@ -746,6 +750,10 @@ public:
   Metric::AExprIncr*
   expr() const
   { return m_expr; }
+
+  void
+  expr(Metric::AExprIncr* x)
+  { m_expr = x; /* assumes ownership of x */ }
 
 
   // -------------------------------------------------------

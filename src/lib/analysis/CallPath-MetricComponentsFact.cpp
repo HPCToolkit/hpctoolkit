@@ -68,6 +68,8 @@ using std::string;
 
 #include "CallPath-MetricComponentsFact.hpp"
 
+#include <lib/binutils/VMAInterval.hpp>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
 
@@ -84,6 +86,9 @@ namespace CallPath {
 
 //***************************************************************************
 
+const std::string MetricComponentsFact::s_sum   = "-Sum";
+const std::string MetricComponentsFact::s_cfvar = "-CfVar";
+
 
 // Assumes: metrics are of type Metric::SampledDesc and values are
 // only at leaves (CCT::Stmt)
@@ -96,39 +101,39 @@ MetricComponentsFact::make(Prof::CallPath::Profile& prof)
   // Create destination metric descriptors and mapping from source
   //   metrics to destination metrics
   // ------------------------------------------------------------
-  std::vector<uint> metric_src;
-  std::vector<uint> metric_dst;
+  std::vector<uint> metricSrcIds;
+  std::vector<uint> metricDstIds;
   
   Metric::Mgr* metricMgr = prof.metricMgr();
 
   uint numMetrics_orig = metricMgr->size();
   for (uint mId = 0; mId < numMetrics_orig; ++mId) {
-    Metric::ADesc* mDesc = metricMgr->metric(mId);
-    if (MetricComponentsFact::isTimeMetric(mDesc)) {
-      DIAG_Assert(typeid(*mDesc) == typeid(Metric::SampledDesc), DIAG_UnexpectedInput << "temporary sanity check");
+    Metric::ADesc* m = metricMgr->metric(mId);
+    if (MetricComponentsFact::isTimeMetric(m)) {
+      DIAG_Assert(typeid(*m) == typeid(Metric::SampledDesc), DIAG_UnexpectedInput << "temporary sanity check");
       
-      MetricComponentsFact::convertToWorkMetric(mDesc);
-      metric_src.push_back(mId);
+      MetricComponentsFact::convertToWorkMetric(m);
+      metricSrcIds.push_back(m->id());
 
-      Metric::ADesc* mDesc_new = mDesc->clone();
-      mDesc_new->nameBase("overhead");
-      mDesc_new->description("parallel overhead");
+      Metric::ADesc* m_new = m->clone();
+      m_new->nameBase("overhead");
+      m_new->description("parallel overhead");
 
-      metricMgr->insert(mDesc_new);
-      DIAG_Assert(mDesc_new->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
+      metricMgr->insert(m_new);
+      DIAG_Assert(m_new->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
       
-      metric_dst.push_back(mDesc_new->id());
+      metricDstIds.push_back(m_new->id());
     }
   }
 
-  if (metric_src.empty()) {
+  if (metricSrcIds.empty()) {
     return;
   }
 
   // ------------------------------------------------------------
   // Create values for metric components
   // ------------------------------------------------------------
-  make(prof.cct()->root(), metric_src, metric_dst, false);
+  make(prof.cct()->root(), metricSrcIds, metricDstIds, false);
 }
 
 
@@ -152,13 +157,13 @@ MetricComponentsFact::make(Prof::CCT::ANode* node,
   if (isSeparableCtxt && (typeid(*node) == typeid(Prof::CCT::Stmt))) {
     Prof::CCT::Stmt* stmt = static_cast<Prof::CCT::Stmt*>(node);
     for (uint i = 0; i < m_src.size(); ++i) {
-      uint src_idx = m_src[i];
-      uint dst_idx = m_dst[i];
+      uint mId_src = m_src[i];
+      uint mId_dst = m_dst[i];
 
-      if (stmt->hasMetric(src_idx)) {
-	double mval = stmt->metric(src_idx);
-	stmt->demandMetric(dst_idx) += mval;
-	stmt->metric(src_idx) = 0.0;
+      if (stmt->hasMetric(mId_src)) {
+	double mval = stmt->metric(mId_src);
+	stmt->demandMetric(mId_dst) += mval;
+	stmt->metric(mId_src) = 0.0;
       }
     }
   }
@@ -208,7 +213,7 @@ const string MPIBlameShiftIdlenessFact::s_tag = "MPIDI_CRAY_Progress_wait";
 bool
 MPIBlameShiftIdlenessFact::isSeparable(const Prof::CCT::ProcFrm* x)
 {
-  const string& x_nm = x->name();
+  const string& x_nm = x->procName();
   if (x_nm.length() >= s_tag.length()) {
     return (x_nm.find(s_tag) != string::npos);
   }
@@ -226,42 +231,65 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
   // Create destination metric descriptors and mapping from source
   //   metrics to destination metrics
   // ------------------------------------------------------------
-  std::vector<uint> metric_src;
-  std::vector<uint> metric_dst;
-  uint metric_balance = Metric::Mgr::npos;
+  std::vector<uint> metricSrcIds;
+  std::vector<uint> metricBalanceIds;
+  std::vector<uint> metricDstInclIds, metricDstExclIds;
 
   Metric::Mgr* metricMgr = prof.metricMgr();
 
   uint numMetrics_orig = metricMgr->size();
   for (uint mId = 0; mId < numMetrics_orig; ++mId) {
-    Metric::ADesc* mDesc = metricMgr->metric(mId);
+    Metric::ADesc* m = metricMgr->metric(mId);
 
     // find main source metric
-    if (MetricComponentsFact::isTimeMetric(mDesc)
-	&& MetricComponentsFact::isSumMetric(mDesc)
-	&& mDesc->type() == Metric::ADesc::TyIncl) {
-      DIAG_Assert(mDesc->isComputed(), DIAG_UnexpectedInput);
-      
-      Metric::ADesc* mDesc_new = mDesc->clone();
-      mDesc_new->nameBase("idleness");
-      mDesc_new->description("MPI idleness");
+    if (MetricComponentsFact::isTimeMetric(m)
+	&& MetricComponentsFact::isDerivedMetric(m, s_sum)
+	&& m->type() == Metric::ADesc::TyIncl
+	&& m->isVisible() /* not a temporary */) {
 
-      metricMgr->insert(mDesc_new);
-      DIAG_Assert(mDesc_new->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
+      DIAG_Assert(m->isComputed(), DIAG_UnexpectedInput);
+      metricSrcIds.push_back(m->id());
+
+      // FIXME: For now we use Metric::ADesc::DerivedIncrDesc()
+      //   We should use Metric::ADesc::DerivedDesc()
+      DIAG_Assert(typeid(*m) == typeid(Metric::DerivedIncrDesc), DIAG_UnexpectedInput);
+
+      Metric::DerivedIncrDesc* m_newIncl = static_cast<Metric::DerivedIncrDesc*>(m->clone());
+      m_newIncl->nameBase("idleness");
+      m_newIncl->description("MPI idleness");
+      m_newIncl->expr(new Metric::SumIncr(Metric::IData::npos, // FIXME:Sum
+					  Metric::IData::npos));
+
+      Metric::DerivedIncrDesc* m_newExcl = static_cast<Metric::DerivedIncrDesc*>(m_newIncl->clone());
+      m_newExcl->type(Metric::ADesc::TyExcl);
+      m_newExcl->expr(new Metric::SumIncr(Metric::IData::npos,
+					  Metric::IData::npos));
+
+      metricMgr->insert(m_newIncl);
+      metricMgr->insert(m_newExcl);
+
+      m_newIncl->expr()->accumId(m_newIncl->id());
+      m_newExcl->expr()->accumId(m_newExcl->id());
+
+      DIAG_Assert(m_newIncl->id() >= numMetrics_orig && m_newExcl->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
       
-      metric_dst.push_back(mDesc_new->id());
+      metricDstInclIds.push_back(m_newIncl->id());
+      metricDstExclIds.push_back(m_newExcl->id());
     }
 
     // find secondary source metric
-    if (MetricComponentsFact::isTimeMetric(mDesc)
-	&& MetricComponentsFact::isCoefVarMetric(mDesc)
-	&& mDesc->type() == Metric::ADesc::TyIncl) {
-      DIAG_Assert(mDesc->isComputed(), DIAG_UnexpectedInput);
-      metric_balance = mDesc->id();
+    if (MetricComponentsFact::isTimeMetric(m)
+	&& MetricComponentsFact::isDerivedMetric(m, s_cfvar)
+	&& m->type() == Metric::ADesc::TyIncl
+	&& m->isVisible() /* not a temporary */) {
+      DIAG_Assert(m->isComputed(), DIAG_UnexpectedInput);
+      metricBalanceIds.push_back(m->id());
     }
   }
 
-  if (metric_src.empty()) {
+  DIAG_Assert(metricSrcIds.size() == metricBalanceIds.size(), DIAG_UnexpectedInput);
+
+  if (metricSrcIds.empty()) {
     return;
   }
   
@@ -269,7 +297,86 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
   // Create values for metric components
   // ------------------------------------------------------------
 
-  // prof.cct()->root()->aggregateMetricsIncl(...);
+  DIAG_Assert(metricSrcIds.size() == 1, DIAG_UnexpectedInput); // FIXME
+  
+  // metrics are non-finalized!
+  CCT::ANode* cctRoot = prof.cct()->root();
+
+  uint metricBalancedId = metricBalanceIds[0];
+  Metric::AExprIncr* metricBalancedExpr = dynamic_cast<Metric::DerivedIncrDesc*>(metricMgr->metric(metricBalancedId))->expr();
+
+  Metric::IData cctRoot_mdata(*cctRoot);
+  metricBalancedExpr->finalize(cctRoot_mdata);
+  
+  double balancedThreshold = 2 * cctRoot_mdata.demandMetric(metricBalancedId);
+
+  makeIdleness(cctRoot, metricSrcIds, metricDstInclIds, metricDstExclIds,
+	       metricBalancedId, metricBalancedExpr, balancedThreshold,
+	       NULL);
+
+
+  VMAIntervalSet metricDstInclIdSet;
+  for (uint i = 0; i < metricDstInclIds.size(); ++i) {
+    uint mId = metricDstInclIds[i];
+    metricDstInclIdSet.insert(VMAInterval(mId, mId + 1)); // [ )
+  }
+
+  cctRoot->aggregateMetricsIncl(metricDstInclIdSet);
+}
+
+
+void
+MPIBlameShiftIdlenessFact::makeIdleness(Prof::CCT::ANode* node,
+					const std::vector<uint>& m_src,
+					const std::vector<uint>& m_dst1,
+					const std::vector<uint>& m_dst2,
+					uint mId_bal,
+					Prof::Metric::AExprIncr* balancedExpr,
+					double balancedThreshold,
+					Prof::CCT::ANode* nodeBalanced)
+{
+  using namespace Prof;
+
+  if (!node) { return; }
+
+  // -------------------------------------------------------
+  // Shift blame for waiting at 'node' (use non-finalized metric values)
+  // -------------------------------------------------------
+  bool isFrame = (typeid(*node) == typeid(Prof::CCT::ProcFrm)
+		  && !(static_cast<Prof::CCT::ProcFrm*>(node)->isAlien()));
+
+  if (isFrame && isSeparable(static_cast<Prof::CCT::ProcFrm*>(node))) {
+    DIAG_Assert(nodeBalanced, DIAG_UnexpectedInput);
+
+    for (uint i = 0; i < m_src.size(); ++i) {
+      uint mId_src = m_src[i];
+      uint mId_dst1 = m_dst1[i];
+      uint mId_dst2 = m_dst2[i];
+      double mval = node->demandMetric(mId_src);
+      nodeBalanced->demandMetric(mId_dst1) += mval;
+      nodeBalanced->demandMetric(mId_dst2) += mval;
+    }
+    
+    return; // do not recur down this subtree
+  }
+
+  // -------------------------------------------------------
+  // Find balanced nodes (use finalized metric values)
+  // -------------------------------------------------------
+  Metric::IData node_mdata(*node);
+  balancedExpr->finalize(node_mdata);
+
+  bool isBalanced = (node_mdata.demandMetric(mId_bal) <= balancedThreshold);
+  CCT::ANode* nodeBalancedNxt = (isBalanced) ? node : nodeBalanced;
+
+  // ------------------------------------------------------------
+  // Recur
+  // ------------------------------------------------------------
+  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
+    Prof::CCT::ANode* x = it.current();
+    makeIdleness(x, m_src, m_dst1, m_dst2,
+		 mId_bal, balancedExpr, balancedThreshold, nodeBalancedNxt);
+  }
 }
 
 
