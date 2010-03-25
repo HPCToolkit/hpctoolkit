@@ -200,8 +200,9 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
-	trampoline/ppc64/ppc64-tramp.S unwind/x86-family/x86-all.c \
-	unwind/x86-family/x86-cold-path.c \
+	trampoline/ppc64/ppc64-tramp.S \
+	utilities/arch/ppc64/ppc64-context-pc.c \
+	unwind/x86-family/x86-all.c unwind/x86-family/x86-cold-path.c \
 	unwind/x86-family/x86-validate-retn-addr.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
@@ -209,8 +210,10 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
-	trampoline/x86-family/x86-tramp.S sample-sources/papi.c \
-	sample-sources/upc.c utilities/last_func.c
+	trampoline/x86-family/x86-tramp.S \
+	utilities/arch/x86-family/x86-context-pc.c \
+	sample-sources/papi.c sample-sources/upc.c \
+	utilities/last_func.c
 am__objects_7 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-disabled.lo libhpcrun_la-env.lo \
 	libhpcrun_la-epoch.lo libhpcrun_la-files.lo \
@@ -247,7 +250,7 @@ am__objects_11 = libhpcrun_la-default_validation_summary.lo \
 am__objects_13 = libhpcrun_la-default_validation_summary.lo \
 	libhpcrun_la-ppc64-unwind.lo \
 	libhpcrun_la-ppc64-unwind-interval.lo \
-	libhpcrun_la-ppc64-tramp.lo
+	libhpcrun_la-ppc64-tramp.lo libhpcrun_la-ppc64-context-pc.lo
 @HOST_CPU_PPC_TRUE@am__objects_14 = $(am__objects_13)
 am__objects_15 = libhpcrun_la-x86-all.lo libhpcrun_la-x86-cold-path.lo \
 	libhpcrun_la-x86-validate-retn-addr.lo \
@@ -255,7 +258,8 @@ am__objects_15 = libhpcrun_la-x86-all.lo libhpcrun_la-x86-cold-path.lo \
 	libhpcrun_la-x86-unwind-interval-fixup.lo \
 	libhpcrun_la-x86-unwind.lo libhpcrun_la-x86-unwind-support.lo \
 	libhpcrun_la-x86-linux-dlresolver.lo \
-	libhpcrun_la-x86-intel11-f90main.lo libhpcrun_la-x86-tramp.lo
+	libhpcrun_la-x86-intel11-f90main.lo libhpcrun_la-x86-tramp.lo \
+	libhpcrun_la-x86-context-pc.lo
 @HOST_CPU_X86_TRUE@am__objects_16 = $(am__objects_15)
 am__objects_17 = libhpcrun_la-papi.lo
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_18 = $(am__objects_17)
@@ -299,8 +303,9 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/mips/mips-unwind.c unwind/mips/mips-unwind-interval.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
-	trampoline/ppc64/ppc64-tramp.S unwind/x86-family/x86-all.c \
-	unwind/x86-family/x86-cold-path.c \
+	trampoline/ppc64/ppc64-tramp.S \
+	utilities/arch/ppc64/ppc64-context-pc.c \
+	unwind/x86-family/x86-all.c unwind/x86-family/x86-cold-path.c \
 	unwind/x86-family/x86-validate-retn-addr.c \
 	unwind/x86-family/x86-unwind-interval.c \
 	unwind/x86-family/x86-unwind-interval-fixup.c \
@@ -308,8 +313,10 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/x86-unwind-support.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
-	trampoline/x86-family/x86-tramp.S sample-sources/papi.c \
-	sample-sources/upc.c utilities/last_func.c
+	trampoline/x86-family/x86-tramp.S \
+	utilities/arch/x86-family/x86-context-pc.c \
+	sample-sources/papi.c sample-sources/upc.c \
+	utilities/last_func.c
 am__objects_21 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-main.$(OBJEXT) libhpcrun_o-disabled.$(OBJEXT) \
 	libhpcrun_o-env.$(OBJEXT) libhpcrun_o-epoch.$(OBJEXT) \
@@ -352,7 +359,8 @@ am__objects_23 = libhpcrun_o-default_validation_summary.$(OBJEXT) \
 am__objects_25 = libhpcrun_o-default_validation_summary.$(OBJEXT) \
 	libhpcrun_o-ppc64-unwind.$(OBJEXT) \
 	libhpcrun_o-ppc64-unwind-interval.$(OBJEXT) \
-	libhpcrun_o-ppc64-tramp.$(OBJEXT)
+	libhpcrun_o-ppc64-tramp.$(OBJEXT) \
+	libhpcrun_o-ppc64-context-pc.$(OBJEXT)
 @HOST_CPU_PPC_TRUE@am__objects_26 = $(am__objects_25)
 am__objects_27 = libhpcrun_o-x86-all.$(OBJEXT) \
 	libhpcrun_o-x86-cold-path.$(OBJEXT) \
@@ -363,7 +371,8 @@ am__objects_27 = libhpcrun_o-x86-all.$(OBJEXT) \
 	libhpcrun_o-x86-unwind-support.$(OBJEXT) \
 	libhpcrun_o-x86-linux-dlresolver.$(OBJEXT) \
 	libhpcrun_o-x86-intel11-f90main.$(OBJEXT) \
-	libhpcrun_o-x86-tramp.$(OBJEXT)
+	libhpcrun_o-x86-tramp.$(OBJEXT) \
+	libhpcrun_o-x86-context-pc.$(OBJEXT)
 @HOST_CPU_X86_TRUE@am__objects_28 = $(am__objects_27)
 am__objects_29 = libhpcrun_o-papi.$(OBJEXT)
 @OPT_PAPI_STATIC_TRUE@am__objects_30 = $(am__objects_29)
@@ -718,7 +727,9 @@ MY_PPC_FILES = \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
         \
-        trampoline/ppc64/ppc64-tramp.S
+        trampoline/ppc64/ppc64-tramp.S \
+        \
+        utilities/arch/ppc64/ppc64-context-pc.c
 
 MY_X86_FILES = \
 	unwind/x86-family/x86-all.c			\
@@ -731,7 +742,9 @@ MY_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
         \
-        trampoline/x86-family/x86-tramp.S
+        trampoline/x86-family/x86-tramp.S \
+        \
+        utilities/arch/x86-family/x86-context-pc.c
 
 MY_PAPI_FILES = \
 	sample-sources/papi.c
@@ -763,9 +776,11 @@ MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips
 
 MY_PPC_INCLUDE_DIRS = \
+        -I$(srcdir)/utilities/arch/ppc64 \
 	-I$(srcdir)/unwind/ppc64
 
 MY_X86_INCLUDE_DIRS = \
+        -I$(srcdir)/utilities/arch/x86-family \
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
 
@@ -1065,6 +1080,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-none.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-openmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-papi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-tramp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-unwind.Plo@am__quote@
@@ -1089,6 +1105,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-write_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-cold-path.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel11-f90main.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-linux-dlresolver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-tramp.Plo@am__quote@
@@ -1133,6 +1150,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-name.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-none.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-papi.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-tramp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-unwind.Po@am__quote@
@@ -1157,6 +1175,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-write_data.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-cold-path.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel11-f90main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-linux-dlresolver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-tramp.Po@am__quote@
@@ -1706,6 +1725,13 @@ libhpcrun_la-ppc64-unwind-interval.lo: unwind/ppc64/ppc64-unwind-interval.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ppc64-unwind-interval.lo `test -f 'unwind/ppc64/ppc64-unwind-interval.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind-interval.c
 
+libhpcrun_la-ppc64-context-pc.lo: utilities/arch/ppc64/ppc64-context-pc.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ppc64-context-pc.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ppc64-context-pc.Tpo -c -o libhpcrun_la-ppc64-context-pc.lo `test -f 'utilities/arch/ppc64/ppc64-context-pc.c' || echo '$(srcdir)/'`utilities/arch/ppc64/ppc64-context-pc.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_la-ppc64-context-pc.Tpo $(DEPDIR)/libhpcrun_la-ppc64-context-pc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/ppc64/ppc64-context-pc.c' object='libhpcrun_la-ppc64-context-pc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ppc64-context-pc.lo `test -f 'utilities/arch/ppc64/ppc64-context-pc.c' || echo '$(srcdir)/'`utilities/arch/ppc64/ppc64-context-pc.c
+
 libhpcrun_la-x86-all.lo: unwind/x86-family/x86-all.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-all.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-all.Tpo -c -o libhpcrun_la-x86-all.lo `test -f 'unwind/x86-family/x86-all.c' || echo '$(srcdir)/'`unwind/x86-family/x86-all.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_la-x86-all.Tpo $(DEPDIR)/libhpcrun_la-x86-all.Plo
@@ -1768,6 +1794,13 @@ libhpcrun_la-x86-intel11-f90main.lo: unwind/x86-family/manual-intervals/x86-inte
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-intel11-f90main.c' object='libhpcrun_la-x86-intel11-f90main.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-intel11-f90main.lo `test -f 'unwind/x86-family/manual-intervals/x86-intel11-f90main.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intel11-f90main.c
+
+libhpcrun_la-x86-context-pc.lo: utilities/arch/x86-family/x86-context-pc.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-context-pc.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-context-pc.Tpo -c -o libhpcrun_la-x86-context-pc.lo `test -f 'utilities/arch/x86-family/x86-context-pc.c' || echo '$(srcdir)/'`utilities/arch/x86-family/x86-context-pc.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_la-x86-context-pc.Tpo $(DEPDIR)/libhpcrun_la-x86-context-pc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/x86-family/x86-context-pc.c' object='libhpcrun_la-x86-context-pc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-context-pc.lo `test -f 'utilities/arch/x86-family/x86-context-pc.c' || echo '$(srcdir)/'`utilities/arch/x86-family/x86-context-pc.c
 
 libhpcrun_la-papi.lo: sample-sources/papi.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-papi.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-papi.Tpo -c -o libhpcrun_la-papi.lo `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c
@@ -2546,6 +2579,20 @@ libhpcrun_o-ppc64-unwind-interval.obj: unwind/ppc64/ppc64-unwind-interval.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ppc64-unwind-interval.obj `if test -f 'unwind/ppc64/ppc64-unwind-interval.c'; then $(CYGPATH_W) 'unwind/ppc64/ppc64-unwind-interval.c'; else $(CYGPATH_W) '$(srcdir)/unwind/ppc64/ppc64-unwind-interval.c'; fi`
 
+libhpcrun_o-ppc64-context-pc.o: utilities/arch/ppc64/ppc64-context-pc.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ppc64-context-pc.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ppc64-context-pc.Tpo -c -o libhpcrun_o-ppc64-context-pc.o `test -f 'utilities/arch/ppc64/ppc64-context-pc.c' || echo '$(srcdir)/'`utilities/arch/ppc64/ppc64-context-pc.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-ppc64-context-pc.Tpo $(DEPDIR)/libhpcrun_o-ppc64-context-pc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/ppc64/ppc64-context-pc.c' object='libhpcrun_o-ppc64-context-pc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ppc64-context-pc.o `test -f 'utilities/arch/ppc64/ppc64-context-pc.c' || echo '$(srcdir)/'`utilities/arch/ppc64/ppc64-context-pc.c
+
+libhpcrun_o-ppc64-context-pc.obj: utilities/arch/ppc64/ppc64-context-pc.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ppc64-context-pc.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ppc64-context-pc.Tpo -c -o libhpcrun_o-ppc64-context-pc.obj `if test -f 'utilities/arch/ppc64/ppc64-context-pc.c'; then $(CYGPATH_W) 'utilities/arch/ppc64/ppc64-context-pc.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/ppc64/ppc64-context-pc.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-ppc64-context-pc.Tpo $(DEPDIR)/libhpcrun_o-ppc64-context-pc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/ppc64/ppc64-context-pc.c' object='libhpcrun_o-ppc64-context-pc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ppc64-context-pc.obj `if test -f 'utilities/arch/ppc64/ppc64-context-pc.c'; then $(CYGPATH_W) 'utilities/arch/ppc64/ppc64-context-pc.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/ppc64/ppc64-context-pc.c'; fi`
+
 libhpcrun_o-x86-all.o: unwind/x86-family/x86-all.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-all.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-all.Tpo -c -o libhpcrun_o-x86-all.o `test -f 'unwind/x86-family/x86-all.c' || echo '$(srcdir)/'`unwind/x86-family/x86-all.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-x86-all.Tpo $(DEPDIR)/libhpcrun_o-x86-all.Po
@@ -2671,6 +2718,20 @@ libhpcrun_o-x86-intel11-f90main.obj: unwind/x86-family/manual-intervals/x86-inte
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-intel11-f90main.c' object='libhpcrun_o-x86-intel11-f90main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-intel11-f90main.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intel11-f90main.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intel11-f90main.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intel11-f90main.c'; fi`
+
+libhpcrun_o-x86-context-pc.o: utilities/arch/x86-family/x86-context-pc.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-context-pc.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-context-pc.Tpo -c -o libhpcrun_o-x86-context-pc.o `test -f 'utilities/arch/x86-family/x86-context-pc.c' || echo '$(srcdir)/'`utilities/arch/x86-family/x86-context-pc.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-x86-context-pc.Tpo $(DEPDIR)/libhpcrun_o-x86-context-pc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/x86-family/x86-context-pc.c' object='libhpcrun_o-x86-context-pc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-context-pc.o `test -f 'utilities/arch/x86-family/x86-context-pc.c' || echo '$(srcdir)/'`utilities/arch/x86-family/x86-context-pc.c
+
+libhpcrun_o-x86-context-pc.obj: utilities/arch/x86-family/x86-context-pc.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-context-pc.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-context-pc.Tpo -c -o libhpcrun_o-x86-context-pc.obj `if test -f 'utilities/arch/x86-family/x86-context-pc.c'; then $(CYGPATH_W) 'utilities/arch/x86-family/x86-context-pc.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/x86-family/x86-context-pc.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-x86-context-pc.Tpo $(DEPDIR)/libhpcrun_o-x86-context-pc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/arch/x86-family/x86-context-pc.c' object='libhpcrun_o-x86-context-pc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-context-pc.obj `if test -f 'utilities/arch/x86-family/x86-context-pc.c'; then $(CYGPATH_W) 'utilities/arch/x86-family/x86-context-pc.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/x86-family/x86-context-pc.c'; fi`
 
 libhpcrun_o-papi.o: sample-sources/papi.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-papi.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-papi.Tpo -c -o libhpcrun_o-papi.o `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c

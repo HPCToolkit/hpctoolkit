@@ -82,6 +82,8 @@
 #include <unwind/common/backtrace.h>
 #include "splay.h"
 #include "ui_tree.h"
+#include <utilities/arch/mcontext.h>
+
 
 #include <hpcrun/thread_data.h>
 #include "x86-unwind-interval.h"
@@ -147,51 +149,6 @@ static step_state
 t1_dbg_unw_step(hpcrun_unw_cursor_t *cursor);
 
 static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t *cursor) = t1_dbg_unw_step;
-
-
-//***************************************************************************
-// macros
-//***************************************************************************
-
-#if defined(__LIBCATAMOUNT__)
-#undef __CRAYXT_CATAMOUNT_TARGET
-#define __CRAYXT_CATAMOUNT_TARGET
-#endif
-
-#define GET_MCONTEXT(context) (&((ucontext_t *)context)->uc_mcontext)
-
-//-------------------------------------------------------------------------
-// define macros for extracting pc, bp, and sp from machine contexts. these
-// macros bridge differences between machine context representations for
-// Linux and Catamount
-//-------------------------------------------------------------------------
-#ifdef __CRAYXT_CATAMOUNT_TARGET
-
-#define MCONTEXT_PC(mctxt) ((void *)   mctxt->sc_rip)
-#define MCONTEXT_BP(mctxt) ((void **)  mctxt->sc_rbp)
-#define MCONTEXT_SP(mctxt) ((void **)  mctxt->sc_rsp)
-
-#else
-
-#define MCONTEXT_REG(mctxt, reg) (mctxt->gregs[reg])
-#define MCONTEXT_PC(mctxt) ((void *)  MCONTEXT_REG(mctxt, REG_RIP))
-#define MCONTEXT_BP(mctxt) ((void **) MCONTEXT_REG(mctxt, REG_RBP))
-#define MCONTEXT_SP(mctxt) ((void **) MCONTEXT_REG(mctxt, REG_RSP))
-
-#endif
-
-
-//****************************************************************************
-// interface functions
-//****************************************************************************
-
-void*
-hpcrun_context_pc(void* context)
-{
-  mcontext_t *mc = GET_MCONTEXT(context);
-  return MCONTEXT_PC(mc);
-}
-
 
 void
 hpcrun_unw_init(void)

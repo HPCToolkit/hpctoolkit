@@ -184,7 +184,9 @@ MY_PPC_FILES = \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
         \
-        trampoline/ppc64/ppc64-tramp.S
+        trampoline/ppc64/ppc64-tramp.S \
+        \
+        utilities/arch/ppc64/ppc64-context-pc.c
 
 
 MY_X86_FILES = \
@@ -198,7 +200,9 @@ MY_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
         \
-        trampoline/x86-family/x86-tramp.S
+        trampoline/x86-family/x86-tramp.S \
+        \
+        utilities/arch/x86-family/x86-context-pc.c
 
 
 MY_PAPI_FILES = 			\
@@ -233,9 +237,11 @@ MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips
 
 MY_PPC_INCLUDE_DIRS = 		\
+        -I$(srcdir)/utilities/arch/ppc64 \
 	-I$(srcdir)/unwind/ppc64
 
 MY_X86_INCLUDE_DIRS =		\
+        -I$(srcdir)/utilities/arch/x86-family \
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
 

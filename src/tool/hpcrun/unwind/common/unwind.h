@@ -64,16 +64,8 @@
 // local include files
 //***************************************************************************
 
-#include "unwind_cursor.h"
+#include "unwind_cursor.h"  // leave "unwind_cursor.h" unqualified
 
-
-//***************************************************************************
-// interface to ucontext_t
-//***************************************************************************
-
-// tallent: probably should be moved
-void*
-hpcrun_context_pc(void *context);
 
 
 //***************************************************************************
