@@ -160,11 +160,13 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
 
   if (args.isHPCProfMetric) {
+    // TODO: generate non-finalized metrics & formulas for flat & callers view
     makeMetrics(nArgs, *prof);
+
+    // TODO:
+    //Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
   }
-
-  Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
-
+  
   nArgs.destroy();
 
   // ------------------------------------------------------------

@@ -103,24 +103,20 @@ protected:
   static inline bool
   isTimeMetric(const Prof::Metric::ADesc* mdesc)
   {
-    const string& nm = mdesc->nameBase();
+    const std::string& nm = mdesc->nameBase();
     return ((nm.find("PAPI_TOT_CYC") == 0) || (nm.find("WALLCLOCK") == 0));
   }
 
 
-  static inline bool
-  isSumMetric(const Prof::Metric::ADesc* mdesc)
-  {
-    const string& nm = mdesc->nameBase();
-    return (nm.find("-Sum ") == 0); // FIXME: abstract into a constant
-  }
-
+  static const std::string s_sum;   // FIXME: share w/ MetricMgr
+  static const std::string s_cfvar; // FIXME: share w/ MetricMgr
 
   static inline bool
-  isCoefVarMetric(const Prof::Metric::ADesc* mdesc)
+  isDerivedMetric(const Prof::Metric::ADesc* mdesc, const std::string& type)
   {
-    const string& nm = mdesc->nameBase();
-    return (nm.find("-CfVar ") == 0); // FIXME: abstract into a constant
+    const std::string& nm = mdesc->nameBase();
+    size_t pos = nm.find(type);
+    return ((pos != std::string::npos) && (pos + type.length() == nm.length()));
   }
 
 
@@ -145,7 +141,18 @@ public:
   isSeparable(const Prof::CCT::ProcFrm* x);
 
 private:
-  static const string s_tag;
+  void
+  makeIdleness(Prof::CCT::ANode* node,
+	       const std::vector<uint>& m_src,
+	       const std::vector<uint>& m_dst1,
+	       const std::vector<uint>& m_dst2,
+	       uint mId_bal,
+	       Prof::Metric::AExprIncr* balancedExpr,
+	       double balancedThreshold,
+	       Prof::CCT::ANode* nodeBalanced);
+  
+private:
+  static const std::string s_tag;
 
 };
 
@@ -162,7 +169,7 @@ public:
   isSeparable(const Prof::CCT::ProcFrm* x);
 
 private:
-  static const string s_tag;
+  static const std::string s_tag;
 
 };
 
@@ -179,7 +186,7 @@ public:
   isSeparable(const Prof::CCT::ProcFrm* x);
 
 private:
-  static const string s_tag;
+  static const std::string s_tag;
 
 };
 
