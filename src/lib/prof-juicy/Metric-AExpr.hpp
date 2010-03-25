@@ -127,6 +127,17 @@ public:
   toString() const;
 
 protected:
+
+  // ------------------------------------------------------------
+  // exported functions for computing flat and callers views
+  // ------------------------------------------------------------
+
+  // TODO:
+
+  // ------------------------------------------------------------
+  //
+  // ------------------------------------------------------------
+
   static double
   evalSum(const Metric::IData& mdata, AExpr** opands, int sz) 
   {

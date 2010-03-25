@@ -287,31 +287,31 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 
   Metric::AExprIncr* expr = NULL;
   if (mDrvdTy.find("Mean", 0) == 0) {
-    expr = new Metric::MeanIncr(0, mSrc->id());
+    expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
   }
   else if (mDrvdTy.find("SDev", 0) == 0) {
-    expr = new Metric::StdDevIncr(0, 0, mSrc->id());
+    expr = new Metric::StdDevIncr(Metric::IData::npos, 0, mSrc->id());
     doDispPercent = false;
   }
   else if (mDrvdTy.find("CfVar", 0) == 0) {
-    expr = new Metric::CoefVarIncr(0, 0, mSrc->id());
+    expr = new Metric::CoefVarIncr(Metric::IData::npos, 0, mSrc->id());
     doDispPercent = false;
   }
   else if (mDrvdTy.find("%CfVar", 0) == 0) {
-    expr = new Metric::RStdDevIncr(0, 0, mSrc->id());
+    expr = new Metric::RStdDevIncr(Metric::IData::npos, 0, mSrc->id());
     isPercent = true;
   }
   else if (mDrvdTy.find("Min", 0) == 0) {
-    expr = new Metric::MinIncr(0, mSrc->id());
+    expr = new Metric::MinIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
   }
   else if (mDrvdTy.find("Max", 0) == 0) {
-    expr = new Metric::MaxIncr(0, mSrc->id());
+    expr = new Metric::MaxIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
   }
   else if (mDrvdTy.find("Sum", 0) == 0) {
-    expr = new Metric::SumIncr(0, mSrc->id());
+    expr = new Metric::SumIncr(Metric::IData::npos, mSrc->id());
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);

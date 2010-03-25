@@ -297,7 +297,7 @@ public:
 
 
   // ------------------------------------------------------------
-  // exported functions for computing a metric incrementally
+  // exported functions for computing flat and callers view
   // ------------------------------------------------------------
 
   // initialize: [flat|callers]-accum is initialized from CCT-accum

@@ -352,8 +352,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   os << "  <MetricTable>\n";
   for (uint i = metricBeg; i < metricEnd; i++) {
     const Metric::ADesc* m = m_mMgr->metric(i);
-    const Metric::SampledDesc* m1 = dynamic_cast<const Metric::SampledDesc*>(m);
-    const Metric::DerivedIncrDesc* m2 =
+    const Metric::SampledDesc* mSmpl =
+      dynamic_cast<const Metric::SampledDesc*>(m);
+    const Metric::DerivedIncrDesc* mDrvd1 =
       dynamic_cast<const Metric::DerivedIncrDesc*>(m);
 
     // Metric
@@ -364,23 +365,23 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
        << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\">\n";
 
     // MetricFormula
-    if (m2) {
+    if (mDrvd1) {
 
       // 0. retrieve combine formula (each DerivedIncrDesc corresponds
       // to an 'accumulator')
       string combineFrm;
-      if (m2->expr()) {
-	combineFrm = m2->expr()->combineString1();
+      if (mDrvd1->expr()) {
+	combineFrm = mDrvd1->expr()->combineString1();
 
-	if (m2->expr()->hasAccum2()) {
-	  uint mId = m2->expr()->accum2Id();
-	  string frm = m2->expr()->combineString2();
+	if (mDrvd1->expr()->hasAccum2()) {
+	  uint mId = mDrvd1->expr()->accum2Id();
+	  string frm = mDrvd1->expr()->combineString2();
 	  metricIdToFormula.insert(std::make_pair(mId, frm));
 	}
       }
       else {
 	// must represent accumulator 2
-	uint mId = m2->id();
+	uint mId = mDrvd1->id();
 	UIntToStringMap::iterator it = metricIdToFormula.find(mId);
 	DIAG_Assert((it != metricIdToFormula.end()), DIAG_UnexpectedInput);
 	combineFrm = it->second;
@@ -391,18 +392,18 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 	 << " frm=\"" << combineFrm << "\"/>\n";
 
       // 2. MetricFormula: finalize
-      if (m2->expr()) {
+      if (mDrvd1->expr()) {
 	os << "      <MetricFormula t=\"finalize\""
-	   << " frm=\"" << m2->expr()->finalizeString() << "\"/>\n";
+	   << " frm=\"" << mDrvd1->expr()->finalizeString() << "\"/>\n";
       }
     }
     
     // Info
     os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()
-    if (m1) {
-      os << "<NV n=\"period\" v" << MakeAttrNum(m1->period()) << "/>"
-	 << "<NV n=\"flags\" v" << MakeAttrNum(m1->flags(), 16) << "/>";
+    if (mSmpl) {
+      os << "<NV n=\"period\" v" << MakeAttrNum(mSmpl->period()) << "/>"
+	 << "<NV n=\"flags\" v" << MakeAttrNum(mSmpl->flags(), 16) << "/>";
     }
     os << "</Info>\n";
     os << "    </Metric>\n";
@@ -739,17 +740,17 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
     // 2. Make associated 'exclusive' descriptor, if applicable
     if ((rFlags & RFlg_makeInclExcl) && isInclExclPossible) {
-      Metric::SampledDesc* m1 = 
+      Metric::SampledDesc* mSmpl = 
 	new Metric::SampledDesc(nm, desc, m_lst[i].period,
 				true/*isUnitsEvents*/,
 				profFile, profRelId, "HPCRUN");
-      m1->type(Metric::ADesc::TyExcl);
+      mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
-	m1->nameSfx(m_sfx);
+	mSmpl->nameSfx(m_sfx);
       }
-      m1->flags(m_lst[i].flags);
+      mSmpl->flags(m_lst[i].flags);
       
-      prof->metricMgr()->insert(m1);
+      prof->metricMgr()->insert(mSmpl);
     }
   }
 
@@ -766,7 +767,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   LoadMap loadmap(num_lm);
 
-  for (uint i = 0; i < num_lm; ++i) { 
+  for (uint i = 0; i < num_lm; ++i) {
     string nm = loadmap_tbl.lst[i].name;
     RealPathMgr::singleton().realpath(nm);
     VMA loadAddr = loadmap_tbl.lst[i].mapaddr;
