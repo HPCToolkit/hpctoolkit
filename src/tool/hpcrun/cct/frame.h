@@ -44,7 +44,7 @@
 #ifndef FRAME_H
 #define FRAME_H
 
-#include <unwind/common/unwind_cursor.h>
+#include <unwind/common/unw-datatypes.h>
 #include <lib/prof-lean/lush/lush-support.h>
 
 // --------------------------------------------------------------------------

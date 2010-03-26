@@ -64,10 +64,10 @@
 #include "x86-unwind-analysis.h"
 #include "fnbounds_interface.h"
 #include "validate_return_addr.h"
-#include "unwind_cursor.h"
 #include "ui_tree.h"
 #include "x86-unwind-interval.h"
 
+#include <unwind/common/unw-datatypes.h>
 #include <messages/messages.h>
 
 

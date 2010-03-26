@@ -64,7 +64,7 @@
 // local include files
 //***************************************************************************
 
-#include "unwind_cursor.h"  // leave "unwind_cursor.h" unqualified
+#include <unwind/common/unw-datatypes.h> 
 
 
 
@@ -77,8 +77,6 @@
 //   agents.
 //
 //***************************************************************************
-
-typedef void* unw_word_t;
 
 // ----------------------------------------------------------
 // hpcrun_unw_init
@@ -127,7 +125,7 @@ typedef enum {
 
 
 step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t *c);
+hpcrun_unw_step(hpcrun_unw_cursor_t* c);
 
 
 //***************************************************************************

@@ -86,6 +86,7 @@
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <unwind/common/backtrace.h>
+#include <unwind/common/unw-datatypes.h>
 #include <trampoline/common/trampoline.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/hpcrun_stats.h>

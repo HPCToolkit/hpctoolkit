@@ -63,8 +63,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "unwind.h"
-#include "unwind_cursor.h"
+#include <unwind/common/unwind.h>
+#include <unwind/common/unw-datatypes.h>
 
 #include "ppc64-unwind-interval.h"
 

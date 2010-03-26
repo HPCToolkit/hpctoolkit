@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/unwind/common/std_unw_cursor.h $
+// $Id: std_unw_cursor.h 2775 2010-03-09 03:24:31Z mfagan $
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)

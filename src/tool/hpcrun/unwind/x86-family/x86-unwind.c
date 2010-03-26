@@ -84,7 +84,6 @@
 #include "ui_tree.h"
 #include <utilities/arch/mcontext.h>
 
-
 #include <hpcrun/thread_data.h>
 #include "x86-unwind-interval.h"
 #include "x86-validate-retn-addr.h"
@@ -122,10 +121,10 @@ static int DEBUG_NO_LONGJMP = 0;
 
 
 static void 
-update_cursor_with_troll(hpcrun_unw_cursor_t *cursor, int offset);
+update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset);
 
 static int 
-hpcrun_check_fence(void *ip);
+hpcrun_check_fence(void* ip);
 
 static void 
 drop_sample(void);
@@ -137,18 +136,18 @@ static int
 unw_step_prefer_sp(void);
 
 static step_state 
-unw_step_sp(hpcrun_unw_cursor_t *cursor);
+unw_step_sp(hpcrun_unw_cursor_t* cursor);
 
 static step_state
-unw_step_bp(hpcrun_unw_cursor_t *cursor);
+unw_step_bp(hpcrun_unw_cursor_t* cursor);
 
 static step_state
-unw_step_std(hpcrun_unw_cursor_t *cursor);
+unw_step_std(hpcrun_unw_cursor_t* cursor);
 
 static step_state
-t1_dbg_unw_step(hpcrun_unw_cursor_t *cursor);
+t1_dbg_unw_step(hpcrun_unw_cursor_t* cursor);
 
-static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t *cursor) = t1_dbg_unw_step;
+static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t* cursor) = t1_dbg_unw_step;
 
 void
 hpcrun_unw_init(void)
@@ -165,7 +164,7 @@ typedef enum {
 } unw_reg_code_t;
 
 static int
-hpcrun_unw_get_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
+hpcrun_unw_get_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, void** reg_value)
 {
   //
   // only implement 1 reg for the moment.
@@ -376,7 +375,7 @@ unw_step_prefer_sp(void)
 
 
 static step_state
-unw_step_sp(hpcrun_unw_cursor_t *cursor)
+unw_step_sp(hpcrun_unw_cursor_t* cursor)
 {
   TMSG(UNW_STRATEGY,"Using SP step");
 
@@ -464,7 +463,7 @@ unw_step_sp(hpcrun_unw_cursor_t *cursor)
 
 
 static step_state
-unw_step_bp(hpcrun_unw_cursor_t *cursor)
+unw_step_bp(hpcrun_unw_cursor_t* cursor)
 {
   void *sp, **bp, *pc; 
   void **next_sp, **next_bp, *next_pc;
@@ -536,7 +535,7 @@ unw_step_bp(hpcrun_unw_cursor_t *cursor)
 
 
 static step_state
-unw_step_std(hpcrun_unw_cursor_t *cursor)
+unw_step_std(hpcrun_unw_cursor_t* cursor)
 {
   int unw_res;
 
@@ -563,7 +562,7 @@ unw_step_std(hpcrun_unw_cursor_t *cursor)
 
 // special steppers to artificially introduce error conditions
 static step_state
-t1_dbg_unw_step(hpcrun_unw_cursor_t *cursor)
+t1_dbg_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   drop_sample();
 
@@ -572,7 +571,7 @@ t1_dbg_unw_step(hpcrun_unw_cursor_t *cursor)
 
 
 static step_state GCC_ATTR_UNUSED
-t2_dbg_unw_step(hpcrun_unw_cursor_t *cursor)
+t2_dbg_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   static int s = 0;
   step_state rv;
@@ -621,7 +620,7 @@ drop_sample(void)
 
 
 static void
-update_cursor_with_troll(hpcrun_unw_cursor_t *cursor, int offset)
+update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
 {
   unsigned int tmp_ra_offset;
 
@@ -672,7 +671,7 @@ update_cursor_with_troll(hpcrun_unw_cursor_t *cursor, int offset)
 
 
 static int 
-hpcrun_check_fence(void *ip)
+hpcrun_check_fence(void* ip)
 {
   return monitor_in_start_func_wide(ip);
 }
@@ -685,7 +684,7 @@ hpcrun_check_fence(void *ip)
 static hpcrun_unw_cursor_t _dbg_cursor;
 
 static void GCC_ATTR_UNUSED
-dbg_init_cursor(void *context)
+dbg_init_cursor(void* context)
 {
   DEBUG_NO_LONGJMP = 1;
 
