@@ -66,7 +66,7 @@
 // local include files 
 //***************************************************************************
 
-#include "unwind_cursor.h"
+#include <unwind/common/unw-datatypes.h>
 #include <cct/frame.h>
 
 //
