@@ -612,7 +612,7 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 static int
 hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags, cct_node_t* node,
 			      hpcrun_fmt_cct_node_t* tmp_node, 
-			      int32_t parent_id);
+			      int32_t parent_id, int32_t my_id);
 
 static int
 hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, cct_node_t* node, 
@@ -713,6 +713,7 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   // ---------------------------------------------------------
   int my_lvl_to_skip = lvl_to_skip;
   int32_t my_parent;
+  int32_t my_id;
 
   if (lvl_to_skip >= 0) {
     my_parent = parent_id;
@@ -723,15 +724,18 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   cct_node_t* first, *c;
   first = c = cct_node_firstChild(node);
 
-  // no children ==> node is a leaf ==> persistent_id should be negative
+  my_id = node->persistent_id;
+
+  // no children ==> node is a leaf ==> report negative persistent_id 
   //
   if (! first) {
-    node->persistent_id = -(node->persistent_id);
-    TMSG(LEAF_NODE_WRITE, "changing sign of leaf node id %d", node->persistent_id);
+    my_id = -my_id;
+    TMSG(LEAF_NODE_WRITE, "changing sign of leaf node id %d", my_id);
   }
 
   if (lvl_to_skip <= 0) {
-    ret = hpcfile_cstree_write_node_hlp(fs, flags, node, tmp_node, my_parent);
+    ret = hpcfile_cstree_write_node_hlp(fs, flags, node, tmp_node, my_parent, 
+					my_id);
     if (ret != HPCRUN_OK) { 
       return HPCRUN_ERR; 
     }
@@ -761,7 +765,8 @@ static int
 hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
 			      cct_node_t* node,
 			      hpcrun_fmt_cct_node_t* tmp_node,
-                              int32_t my_parent)
+                              int32_t my_parent,
+                              int32_t my_id)
 {
   int ret = HPCRUN_OK;
 
@@ -770,7 +775,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
   // Write the node
   // ---------------------------------------------------------
 
-  tmp_node->id = node->persistent_id;
+  tmp_node->id = my_id;
   tmp_node->id_parent = my_parent;
 
   if (flags.flags.isLogicalUnwind) {
@@ -1253,7 +1258,8 @@ cct_ctxt_writeLcl(FILE* fs, epoch_flags_t flags, cct_node_t* node,
   if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   
   // write this node
-  ret = hpcfile_cstree_write_node_hlp(fs, flags, node, tmp_node, parent_id);
+  ret = hpcfile_cstree_write_node_hlp(fs, flags, node, tmp_node, parent_id,
+				      node->persistent_id);
 
   if (ret != HPCRUN_OK) {
     return HPCRUN_ERR; 
