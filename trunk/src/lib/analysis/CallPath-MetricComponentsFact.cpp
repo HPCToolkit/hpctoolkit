@@ -86,8 +86,8 @@ namespace CallPath {
 
 //***************************************************************************
 
-const std::string MetricComponentsFact::s_sum   = "-Sum";
-const std::string MetricComponentsFact::s_cfvar = "-CfVar";
+const std::string MetricComponentsFact::s_sum   = ":Sum";
+const std::string MetricComponentsFact::s_cfvar = ":CfVar";
 
 
 // Assumes: metrics are of type Metric::SampledDesc and values are
@@ -255,7 +255,7 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
       DIAG_Assert(typeid(*m) == typeid(Metric::DerivedIncrDesc), DIAG_UnexpectedInput);
 
       Metric::DerivedIncrDesc* m_newIncl = static_cast<Metric::DerivedIncrDesc*>(m->clone());
-      m_newIncl->nameBase("idleness");
+      m_newIncl->nameBase("idleness" + s_sum);
       m_newIncl->description("MPI idleness");
       m_newIncl->expr(new Metric::SumIncr(Metric::IData::npos, // FIXME:Sum
 					  Metric::IData::npos));
@@ -308,7 +308,7 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
   Metric::IData cctRoot_mdata(*cctRoot);
   metricBalancedExpr->finalize(cctRoot_mdata);
   
-  double balancedThreshold = 2 * cctRoot_mdata.demandMetric(metricBalancedId);
+  double balancedThreshold = 1.2 * cctRoot_mdata.demandMetric(metricBalancedId);
 
   makeIdleness(cctRoot, metricSrcIds, metricDstInclIds, metricDstExclIds,
 	       metricBalancedId, metricBalancedExpr, balancedThreshold,
@@ -353,7 +353,7 @@ MPIBlameShiftIdlenessFact::makeIdleness(Prof::CCT::ANode* node,
       uint mId_dst1 = m_dst1[i];
       uint mId_dst2 = m_dst2[i];
       double mval = node->demandMetric(mId_src);
-      nodeBalanced->demandMetric(mId_dst1) += mval;
+      nodeBalanced->demandMetric(mId_dst1) += mval; // FIXME: combine!!!
       nodeBalanced->demandMetric(mId_dst2) += mval;
     }
     

@@ -318,7 +318,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   }
   
   string mNmFmt = mSrc->nameToFmt();
-  string mNmBase = mSrc->nameBase() + "-" + mDrvdTy;
+  string mNmBase = mSrc->nameBase() + ":" + mDrvdTy;
   const string& mDesc = mSrc->description();
 
   DerivedIncrDesc* m =
@@ -329,7 +329,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   expr->accumId(m->id());
 
   if (expr->hasAccum2()) {
-    string m2NmBase = mNmBase + "-accum2";
+    string m2NmBase = mNmBase + ":accum2";
     DerivedIncrDesc* m2 =
       new DerivedIncrDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
 			  false/*isSortKey*/, false/*doDispPercent*/,
@@ -340,7 +340,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   }
 
   if (expr->hasNumSrcVar()) {
-    string mSrcNmBase = mNmBase + "-num-src";
+    string mSrcNmBase = mNmBase + ":num-src";
     Metric::NumSourceIncr* mSrcExpr = new Metric::NumSourceIncr(0, mSrc->id());
     DerivedIncrDesc* mSrc =
       new DerivedIncrDesc(mNmFmt, mDesc, mSrcExpr, false/*isVisible*/,

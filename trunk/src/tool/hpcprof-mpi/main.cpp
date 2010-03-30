@@ -707,7 +707,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // write local sampled metric values to disk
   // -------------------------------------------------------
-  //writeMetrics(profGbl, mBeg, mEnd, args, groupId, profileFile);
+  writeMetrics(profGbl, mBeg, mEnd, args, groupId, profileFile);
 
   // -------------------------------------------------------
   // reinitialize metric values since space may be used again
@@ -718,6 +718,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
 }
 
 
+// [mBegId, mEndId)
 static void
 writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 	     const Analysis::Args& args, uint groupId, string& profileFile)
@@ -755,10 +756,10 @@ writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
   // N.B.: first row corresponds to node 1.
   //       first column corresponds to first sampled metric.
 
-  // cf. ParallelAnalysis::unpackMetrics
+  // cf. ParallelAnalysis::unpackMetrics: 
   for (uint nodeId = 1; nodeId < packedMetrics.numNodes(); ++nodeId) {
     for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
-      double mval = packedMetrics.idx(nodeId, mId1);
+      double mval = packedMetrics.idx(nodeId, mId2);
       hpcfmt_byte8_fwrite(mval, fs); // TODO: HPCFMT_ThrowIfError()
     }
   }
