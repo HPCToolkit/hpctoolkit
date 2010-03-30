@@ -277,6 +277,12 @@ AC_MSG_RESULT([${HAVE_OS_MULTILIB} (searching: ${LIB_SEARCH_PATH})])
 HPC_DEF_CXXCMP()
 
 #-------------------------------------------------
+# set unwinder variable
+#-------------------------------------------------
+
+UNWINDER=no
+
+#-------------------------------------------------
 # Host-specific defines
 #-------------------------------------------------
 
@@ -297,6 +303,7 @@ case ${host} in
     # __i386 / __x86_64 && __linux
     HOST_OS="Linux"
     HOST_CPU_X86=yes
+    UNWINDER=x86-family
     AC_DEFINE([HOST_CPU_x86_64], [], []) # bogus to include 386
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
@@ -311,6 +318,7 @@ case ${host} in
     # __mips64 && __linux / _MIPS_SIM == _ABIN32 / _MIPS_SIM == _ABI64
     HOST_OS="Linux"
     HOST_CPU_MIPS=yes
+    UNWINDER=mips
     AC_DEFINE([HOST_PLATFORM_MIPS64LE_LINUX], [], [])
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
@@ -319,6 +327,7 @@ case ${host} in
     # []
     HOST_OS="Linux"
     HOST_CPU_PPC=yes
+    UNWINDER=ppc64
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
 
@@ -327,12 +336,14 @@ case ${host} in
     # __ppc__ / __MACH__
     HOST_OS="MacOS"
     HOST_CPU_PPC=yes
+    UNWINDER=ppc64
     AC_DEFINE([HOST_OS_MACOS], [], [])
     ;;
 
   i386*-*-darwin* | i686*-*-darwin*)
     HOST_OS="MacOS"
     HOST_CPU_X86=yes
+    UNWINDER=x86-family
     AC_DEFINE([HOST_CPU_x86_64], [], []) # bogus to include 386
     AC_DEFINE([HOST_OS_MACOS], [], [])
     ;;
@@ -344,6 +355,7 @@ case ${host} in
     # _MIPS_ISA == _MIPS_ISA_MIPS3 | _MIPS_ISA == _MIPS_ISA_MIPS4
     HOST_OS="IRIX"
     HOST_CPU_MIPS=yes
+    UNWINDER=mips
     AC_DEFINE([HOST_OS_IRIX], [], [])
     ;;
 
@@ -372,6 +384,13 @@ AM_CONDITIONAL([HOST_CPU_MIPS], [test "$HOST_CPU_MIPS" = yes])
 AM_CONDITIONAL([HOST_CPU_PPC],  [test "$HOST_CPU_PPC" = yes])
 AM_CONDITIONAL([HOST_CPU_X86],  [test "$HOST_CPU_X86" = yes])
 
+#
+# set up automake choice of unwinder
+#
+
+AM_CONDITIONAL([UNW_X86], [test "$UNWINDER" = x86-family])
+AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
+AM_CONDITIONAL([UNW_MIPS], [test "$UNWINDER" = mips])
 
 #-------------------------------------------------
 # Host-specific compiler settings

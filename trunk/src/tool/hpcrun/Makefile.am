@@ -99,6 +99,51 @@ XED2_LIB = @XED2_LIB@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
+UNW_COMMON_FILES = \
+	unwind/common/backtrace.c	\
+	unwind/common/splay.c		\
+	unwind/common/stack_troll.c	\
+	unwind/common/ui_tree.c
+
+UNW_X86_FILES = \
+       $(UNW_COMMON_FILES) \
+	unwind/x86-family/x86-all.c			\
+	unwind/x86-family/x86-cold-path.c		\
+	unwind/x86-family/x86-validate-retn-addr.c	\
+	unwind/x86-family/x86-unwind-interval.c		\
+	unwind/x86-family/x86-unwind-interval-fixup.c	\
+	unwind/x86-family/x86-unwind.c		        \
+	unwind/x86-family/x86-unwind-support.c		\
+	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
+	unwind/x86-family/manual-intervals/x86-intel11-f90main.c
+
+UNW_X86_INCLUDE_DIRS = \
+	-I$(srcdir)/unwind/x86-family	\
+	-I$(XED2_INC)
+
+UNW_X86_LD_FLAGS = \
+        $(XED2_LIB)/libxed.a
+
+UNW_PPC64_FILES = \
+        $(UNW_COMMON_FILES) \
+	unwind/ppc64/ppc64-unwind.c \
+	unwind/ppc64/ppc64-unwind-interval.c
+
+UNW_PPC64_INCLUDE_DIRS = \
+        -I$(srcdir)/unwind/ppc64
+
+UNW_PPC64_LD_FLAGS =
+
+UNW_MIPS_FILES = \
+        $(UNW_COMMON_FILES) \
+	unwind/mips/mips-unwind.c \
+	unwind/mips/mips-unwind-interval.c
+
+UNW_MIPS_INCLUDE_DIRS = \
+        -I$(srcdir)/unwind/mips
+
+UNW_MIPS_LD_FLAGS =
+
 MY_BASE_FILES =			\
 	utilities/first_func.c		\
 	\
@@ -133,11 +178,6 @@ MY_BASE_FILES =			\
 	\
         trampoline/common/trampoline.c \
         \
-	unwind/common/backtrace.c	\
-	unwind/common/splay.c		\
-	unwind/common/stack_troll.c	\
-	unwind/common/ui_tree.c		\
-	\
 	lush/lush-backtrace.h lush/lush-backtrace.c \
 	lush/lush.h lush/lush.c	\
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
@@ -175,31 +215,16 @@ MY_LINUX_DYNAMIC_FILES = 		\
 
 
 MY_MIPS_FILES = \
-	unwind/common/default_validation_summary.c \
-	unwind/mips/mips-unwind.c \
-	unwind/mips/mips-unwind-interval.c
+	unwind/common/default_validation_summary.c
 
 MY_PPC_FILES = \
 	unwind/common/default_validation_summary.c \
-	unwind/ppc64/ppc64-unwind.c \
-	unwind/ppc64/ppc64-unwind-interval.c \
-        \
         trampoline/ppc64/ppc64-tramp.S \
         \
         utilities/arch/ppc64/ppc64-context-pc.c
 
 
 MY_X86_FILES = \
-	unwind/x86-family/x86-all.c			\
-	unwind/x86-family/x86-cold-path.c		\
-	unwind/x86-family/x86-validate-retn-addr.c	\
-	unwind/x86-family/x86-unwind-interval.c		\
-	unwind/x86-family/x86-unwind-interval-fixup.c	\
-	unwind/x86-family/x86-unwind.c		        \
-	unwind/x86-family/x86-unwind-support.c		\
-	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
-	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
-        \
         trampoline/x86-family/x86-tramp.S \
         \
         utilities/arch/x86-family/x86-context-pc.c
@@ -241,9 +266,7 @@ MY_PPC_INCLUDE_DIRS = 		\
 	-I$(srcdir)/unwind/ppc64
 
 MY_X86_INCLUDE_DIRS =		\
-        -I$(srcdir)/utilities/arch/x86-family \
-	-I$(srcdir)/unwind/x86-family	\
-	-I$(XED2_INC)
+        -I$(srcdir)/utilities/arch/x86-family
 
 
 libhpcrun_la_SOURCES = 			\
@@ -338,6 +361,31 @@ if OPT_ENABLE_LUSH_PTHREADS
     libhpcrun_la_CPPFLAGS += -DLUSH_PTHREADS
     libhpcrun_o_CPPFLAGS  += -DLUSH_PTHREADS
 endif
+
+if UNW_X86
+    UNW_SOURCE_FILES = $(UNW_X86_FILES)
+    UNW_INCLUDE_DIRS = $(UNW_X86_INCLUDE_DIRS)
+    UNW_LD_FLAGS     = $(UNW_X86_LD_FLAGS)
+endif
+
+if UNW_PPC64
+    UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
+    UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
+    UNW_LD_FLAGS     = $(UNW_PPC64_LD_FLAGS)
+endif
+
+#
+#   Update various components with unwind stuff
+#
+
+libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
+libhpcrun_o_SOURCES   +=  $(UNW_SOURCE_FILES)
+libhpcrun_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_o_CPPFLAGS  += $(UNW_INCLUDE_DIRS)
+libhpcrun_la_LDFLAGS  += $(UNW_LD_FLAGS)
+libhpcrun_o_LDFLAGS   += $(UNW_LD_FLAGS)
+MY_AGENT_INCLUDE_DIRS += $(UNW_INCLUDE_DIRS)
+
 
 libhpcrun_la_SOURCES += utilities/last_func.c
 libhpcrun_o_SOURCES  += utilities/last_func.c
