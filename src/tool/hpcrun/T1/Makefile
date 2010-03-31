@@ -55,6 +55,10 @@ t1: t1.o
 fib: fib.o
 	$(CC) -g $< -o $@
 
+tpchain: tpchain.o
+	$(CC) -g $< -o $@ -lpthread
+
+
 dlopen: dlopen.c
 	$(CC) -o $@ -g -O $< -ldl
 
