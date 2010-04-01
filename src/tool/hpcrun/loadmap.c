@@ -179,11 +179,6 @@ hpcrun_loadmap_new(void)
   }
   hpcrun_loadmap_init(e);
 
-#ifdef OLD_EPOCH
-  if (ENABLED(LOADMAP)) {
-    ENABLE(LOADMAP_CHK);
-  }
-#endif
   return e;
 }
 

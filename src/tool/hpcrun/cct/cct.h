@@ -271,8 +271,11 @@ hpcrun_copy_btrace(cct_node_t* n);
 cct_ctxt_t*
 copy_thr_ctxt(cct_ctxt_t* thr_ctxt);
 
-bool
-hpcrun_empty_cct(hpcrun_cct_t* cct);
+bool hpcrun_empty_cct(hpcrun_cct_t* cct);
+
+int32_t hpcrun_get_persistent_id(cct_node_t* n);
+
+void cct_dump_path(cct_node_t* node);
 
 //***************************************************************************
 
