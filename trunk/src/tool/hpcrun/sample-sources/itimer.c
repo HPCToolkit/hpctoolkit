@@ -248,7 +248,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
   METHOD_CALL(self, store_event, ITIMER_EVENT, period);
   TMSG(OPTIONS,"wallclock period set to %ld",period);
-#endif
+#endif // OLD_SS
 
   // fetch the event string for the sample source
   char* _p = METHOD_CALL(self, get_event_str);

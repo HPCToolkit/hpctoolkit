@@ -286,7 +286,7 @@ write_epochs(FILE* fs, epoch_t* epoch)
     hpcrun_cct_t* cct      = &(s->csdata);
     cct_ctxt_t*   cct_ctxt = s->csdata_ctxt;
 
-    TMSG(DATA_WRITE, "Writing %ld nodes", cct->num_nodes);
+    TMSG(DATA_WRITE, "Writing %ld nodes", cct->num_nodes + cct_ctxt_length(cct_ctxt));
 
     int ret = hpcrun_cct_fwrite(fs, epoch_flags, cct, cct_ctxt);
           

@@ -207,7 +207,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #ifdef OLD_SS
   char *evlist = self->evl.evl_spec;
-#endif
+#endif // OLD_SS
   char* evlist = METHOD_CALL(self, get_event_str);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char name[1024];

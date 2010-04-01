@@ -575,9 +575,9 @@ monitor_thread_pre_create(void)
   //       being left as 0 because hpcprof (in some cases) yields
   //       the name monitor_adjust_stack rather than 
   //       pthread_create for the resulting innermost frame.
-  cct_node_t* n =
-    hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/,
-			   0/*skipInner*/, 1/*isSync*/);
+  ENABLE(IN_THREAD_CTXT);
+  cct_node_t* n = hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/,
+					 0/*skipInner*/, 1/*isSync*/);
 
   // MFAGAN: NEED TO COPY CONTEXT BTRACE TO NON-FREEABLE MEM
   n = hpcrun_copy_btrace(n);
@@ -589,6 +589,13 @@ monitor_thread_pre_create(void)
   TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
   thr_ctxt->context = n;
   thr_ctxt->parent = epoch->csdata_ctxt;
+  TMSG(THREAD_CTXT, "context = %d, parent = %d", hpcrun_get_persistent_id(thr_ctxt->context),
+       thr_ctxt->parent ? hpcrun_get_persistent_id(thr_ctxt->parent->context) : -1);
+  if (ENABLED(THREAD_CTXT)) {
+    TMSG(THREAD_CTXT,"Dumping context node %d", hpcrun_get_persistent_id(thr_ctxt->context));
+    cct_dump_path(thr_ctxt->context);
+  DISABLE(IN_THREAD_CTXT);
+  }
 
  fini:
   TMSG(THREAD,"->finish pre create");

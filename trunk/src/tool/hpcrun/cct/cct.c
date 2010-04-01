@@ -424,6 +424,11 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
     return NULL;
   }
 
+  if (ENABLED(THREAD_CTXT) && ENABLED(IN_THREAD_CTXT)) {
+    TMSG(THREAD_CTXT, "Inserting context backtrace, cct root = %d, cct root parent = %d",
+	 hpcrun_get_persistent_id(cct->tree_root),
+	 hpcrun_get_persistent_id(cct->tree_root->parent));
+  }
   if (tn == NULL) {
     tn = cct->tree_root;
 
@@ -610,7 +615,7 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 			  int lvl_to_skip, int32_t parent_id);
 
 static int
-hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags, cct_node_t* node,
+hpcfile_cstree_write_node_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags, cct_node_t* node,
 			      hpcrun_fmt_cct_node_t* tmp_node, 
 			      int32_t parent_id, int32_t my_id);
 
@@ -734,7 +739,7 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   }
 
   if (lvl_to_skip <= 0) {
-    ret = hpcfile_cstree_write_node_hlp(fs, flags, node, tmp_node, my_parent, 
+    ret = hpcfile_cstree_write_node_hlp(false, fs, flags, node, tmp_node, my_parent, 
 					my_id);
     if (ret != HPCRUN_OK) { 
       return HPCRUN_ERR; 
@@ -762,12 +767,15 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 
 
 static int
-hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
+hpcfile_cstree_write_node_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags,
 			      cct_node_t* node,
 			      hpcrun_fmt_cct_node_t* tmp_node,
                               int32_t my_parent,
                               int32_t my_id)
 {
+  if (is_ctxt_node) {
+    TMSG(THREAD_CTXT, "%d", my_id);
+  }
   int ret = HPCRUN_OK;
 
 
@@ -775,6 +783,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
   // Write the node
   // ---------------------------------------------------------
 
+  
   tmp_node->id = my_id;
   tmp_node->id_parent = my_parent;
 
@@ -918,7 +927,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
     hpcrun_ensure_btbuf_avail();
 
     td->unwind->cursor = cursor;
-    td->unwind->ip     = (void *) ip;
+    td->unwind->ip     = (void*) ip;
     td->unwind->ra_loc = NULL;
     frame_t* prev = td->unwind;
     td->unwind++;
@@ -1165,6 +1174,12 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
   return n;
 }
 
+int32_t
+hpcrun_get_persistent_id(cct_node_t* node)
+{
+  return node ? node->persistent_id : -1;
+}
+
 //***************************************************************************
 //
 //***************************************************************************
@@ -1182,10 +1197,13 @@ unsigned int
 cct_ctxt_length(cct_ctxt_t* cct_ctxt)
 {
   unsigned int len = 0;
-  for (cct_ctxt_t* ctxt = cct_ctxt; (ctxt); ctxt = ctxt->parent) {
-    for (cct_node_t* x = ctxt->context; (x); x = x->parent) {
-      len++;
-    }
+
+  if (! cct_ctxt) {
+    return 0;
+  }
+
+  for (cct_node_t* x = cct_ctxt->context; (x); x = x->parent) {
+    len++;
   }
   return len;
 }
@@ -1215,6 +1233,11 @@ static int
 cct_ctxt_writeGbl(FILE* fs, epoch_flags_t flags, cct_ctxt_t* cct_ctxt,
 			 hpcrun_fmt_cct_node_t* tmp_node)
 {
+  if (cct_ctxt) {
+    TMSG(THREAD_CTXT, "Tracking down context for %d",
+	 hpcrun_get_persistent_id(cct_ctxt->context));
+  }
+
   int ret = HPCRUN_OK;
   
   // Base case
@@ -1225,14 +1248,22 @@ cct_ctxt_writeGbl(FILE* fs, epoch_flags_t flags, cct_ctxt_t* cct_ctxt,
   // -------------------------------------------------------
   // General case (post order)
   // -------------------------------------------------------
-  ret = cct_ctxt_writeGbl(fs, flags, cct_ctxt->parent, tmp_node);
-  if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   
+  TMSG(THREAD_CTXT, "Context for node %d", hpcrun_get_persistent_id(cct_ctxt->context));
   // write this context
   ret = cct_ctxt_writeLcl(fs, flags, cct_ctxt->context, tmp_node);
   if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   
   return ret;
+}
+
+void
+cct_dump_path(cct_node_t* node)
+{
+  if (node) {
+    cct_dump_path(node->parent);
+    TMSG(THREAD_CTXT, "%d", node->persistent_id);
+  }
 }
 
 
@@ -1258,7 +1289,7 @@ cct_ctxt_writeLcl(FILE* fs, epoch_flags_t flags, cct_node_t* node,
   if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   
   // write this node
-  ret = hpcfile_cstree_write_node_hlp(fs, flags, node, tmp_node, parent_id,
+  ret = hpcfile_cstree_write_node_hlp(true, fs, flags, node, tmp_node, parent_id,
 				      node->persistent_id);
 
   if (ret != HPCRUN_OK) {

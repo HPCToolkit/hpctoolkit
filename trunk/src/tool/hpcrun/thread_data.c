@@ -169,9 +169,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt)
   memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
 
   td->epoch              = hpcrun_malloc(sizeof(epoch_t));
-  td->epoch->csdata_ctxt = thr_ctxt;
-
-  thr_ctxt = copy_thr_ctxt(thr_ctxt);
+  td->epoch->csdata_ctxt = copy_thr_ctxt(thr_ctxt);
 }
 
 void
