@@ -62,6 +62,7 @@
 #include "hpcrun_return_codes.h"
 #include "write_data.h"
 #include "loadmap.h"
+#include "ibs_init.h"
 
 #include <messages/messages.h>
 
@@ -235,6 +236,10 @@ write_epochs(FILE* fs, epoch_t* epoch)
 
     epoch_flags.flags.isLogicalUnwind = hpcrun_isLogicalUnwind();
     TMSG(LUSH,"epoch lush flag set to %s", epoch_flags.flags.isLogicalUnwind ? "true" : "false");
+    
+    //add by Xu Liu
+    epoch_flags.flags.isUseReuse = is_use_reuse;
+    TMSG(IBS_SAMPLE,"epoch use-reuse flag set to %s", epoch_flags.flags.isUseReuse ? "true" : "false");
     
     TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", epoch_flags.flags);
     hpcrun_fmt_epoch_hdr_fwrite(fs, epoch_flags,

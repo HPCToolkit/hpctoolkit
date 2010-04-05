@@ -166,6 +166,7 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Generate Experiment database
   // ------------------------------------------------------------
+  Analysis::CallPath::useReuseData(*prof); //(Xu)
 
   args.makeDatabaseDir();
   Analysis::CallPath::makeDatabase(*prof, args);

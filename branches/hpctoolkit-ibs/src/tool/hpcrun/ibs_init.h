@@ -10,4 +10,7 @@ struct splay_interval_s* splaytree_lookup(void*); //cannot use interval_tree_nod
 /*global variable*/
 static struct splay_interval_s *root;
 
+/*epoch bit for use-reuse*/
+bool is_use_reuse;
+
 #endif

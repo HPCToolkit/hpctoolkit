@@ -318,7 +318,7 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs, hpcfmt_alloc_fn alloc)
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->flags), fs));
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->period), fs));
 
-  HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&(x->fmt_flag), fs));
+  HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&(x->fmt_flag), fs)); //add by Xu Liu
   return HPCFMT_OK;
 }
 
@@ -331,7 +331,7 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* fs)
   hpcfmt_byte8_fwrite(x->flags, fs);
   hpcfmt_byte8_fwrite(x->period, fs);
   
-  hpcfmt_byte4_fwrite(x->fmt_flag, fs);
+  hpcfmt_byte4_fwrite(x->fmt_flag, fs);//add by Xu Liu
 
   return HPCFMT_OK;
 }
@@ -468,6 +468,7 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
 			  epoch_flags_t flags, FILE* fs)
 {
   HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&x->id, fs));
+//  HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&x->malloc_id, fs));//Add by Xu Liu
   HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&x->id_parent, fs));
 
   x->as_info = lush_assoc_info_NULL;
@@ -484,6 +485,17 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
     hpcrun_fmt_lip_fread(&x->lip, fs);
   }
 
+  //add by Xu Liu
+  if (flags.flags.isUseReuse){
+    HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&x->num_malloc_id, fs));
+    if(&x->num_malloc_id > 0){
+      x->malloc_id_list = (hpcfmt_uint_t *)malloc(x->num_malloc_id*sizeof(hpcfmt_uint_t));
+      for (int i = 0; i < x->num_malloc_id; i++){
+        HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&x->malloc_id_list[i], fs));
+      }
+    }
+  }
+
   for (int i = 0; i < x->num_metrics; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&x->metrics[i].bits, fs));
   }
@@ -497,6 +509,7 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 			   epoch_flags_t flags, FILE* fs)
 {
   HPCFMT_ThrowIfError(hpcfmt_byte4_fwrite(x->id, fs));
+//  HPCFMT_ThrowIfError(hpcfmt_byte4_fwrite(x->malloc_id, fs));//Add by Xu Liu
   HPCFMT_ThrowIfError(hpcfmt_byte4_fwrite(x->id_parent, fs));
 
   if (flags.flags.isLogicalUnwind) {
@@ -509,6 +522,14 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 
   if (flags.flags.isLogicalUnwind) {
     hpcrun_fmt_lip_fwrite(&x->lip, fs);
+  }
+
+  //add by Xu Liu
+  if (flags.flags.isUseReuse) {
+    hpcfmt_byte8_fwrite(x->num_malloc_id, fs);
+    for (int i = 0; i< x->num_malloc_id; i++){
+      hpcfmt_byte8_fwrite(x->malloc_id_list[i], fs);
+    }
   }
 
   for (int i = 0; i < x->num_metrics; ++i) {
@@ -540,6 +561,15 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
   }
 
   fprintf(fs, "\n");
+
+  // add by Xu Liu
+  if (flags.flags.isUseReuse) {
+    fprintf(fs, "malloc id %"PRIu64" (",x->num_malloc_id);
+    for (int i = 0; i < x->num_malloc_id; i++){
+      fprintf(fs, " %"PRIu64" ", x->malloc_id_list[i]);
+    }
+    fprintf(fs, ")\n");
+  }
 
   fprintf(fs, "%s(metrics:", pre);
   for (int i = 0; i < x->num_metrics; ++i) {

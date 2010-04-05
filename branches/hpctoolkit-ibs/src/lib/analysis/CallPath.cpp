@@ -876,7 +876,23 @@ mergeCilkMain(Prof::CallPath::Profile& prof)
 
 }
 
-
+/* recursively traverse all node after coelescing statments (Xu) */
+static void
+useReuseData(Prof::CCT::ANode* node)
+{
+  if(!node) {
+    return;
+  }
+  for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
+    Prof::CCT::ANode* n = it.current();
+    it++;
+    if(n->getMallocNodeNum() > 0) {
+      for(uint i=0; i<n->getMallocNodeNum(); i++)
+        printf("after coelesce: %d=>%d \n", n->id(), (static_cast<Prof::CCT::ANode*>(n->getMallocId(i)))->id());
+    }
+    useReuseData(n);
+  }
+}
 //****************************************************************************
 // 
 //****************************************************************************
@@ -885,6 +901,12 @@ namespace Analysis {
 
 namespace CallPath {
 
+//(Xu)
+void
+useReuseData(Prof::CallPath::Profile& prof)
+{
+  useReuseData(prof.cct()->root());
+}
 
 // makeDatabase: assumes Analysis::Args::makeDatabaseDir() has been called
 void

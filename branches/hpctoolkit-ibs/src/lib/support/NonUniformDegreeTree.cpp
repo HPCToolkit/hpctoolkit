@@ -107,6 +107,25 @@ void NonUniformDegreeTreeNode::link(NonUniformDegreeTreeNode *newParent)
   }
 }
 
+// (Xu)
+void NonUniformDegreeTreeNode::mallocLinks(uint x)
+{
+  m_malloc_ids = (NonUniformDegreeTreeNode**)malloc(x*sizeof(NonUniformDegreeTreeNode*));
+  for (uint i=0; i<x; i++)
+    m_malloc_ids[i] = NULL;
+}
+
+//link to malloc node (Xu)
+void NonUniformDegreeTreeNode::linkMalloc(NonUniformDegreeTreeNode *mallocNode)
+{
+  for (uint i=0; i< m_num_malloc_ids; i++) {
+    if(m_malloc_ids[i]==NULL) {
+      m_malloc_ids[i] = mallocNode;
+      return;
+    }
+  }
+}
+
 
 //-----------------------------------------------
 void NonUniformDegreeTreeNode::linkAfter(NonUniformDegreeTreeNode *sibling)

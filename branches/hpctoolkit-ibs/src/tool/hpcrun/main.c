@@ -186,6 +186,7 @@ hpcrun_is_initialized() //Xu Liu: I remove static because I want to build it int
 void
 hpcrun_init_internal()
 {
+  is_use_reuse = false;
   hpcrun_loadmap_init(hpcrun_static_loadmap());
 
   hpcrun_thread_data_new();

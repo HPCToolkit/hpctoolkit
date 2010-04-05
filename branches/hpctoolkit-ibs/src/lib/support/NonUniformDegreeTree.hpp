@@ -116,6 +116,10 @@ public:
       m_next_sibling = other.m_next_sibling;
       m_prev_sibling = other.m_prev_sibling;
       m_child_count  = other.m_child_count;
+      if(m_num_malloc_ids > other.m_num_malloc_ids) { //(Xu) 
+        m_malloc_ids = other.m_malloc_ids;//point to malloc ids (Xu)
+        m_num_malloc_ids = other.m_num_malloc_ids;//how many malloc nodes related to one (Xu)
+      }
     }
     return *this;
   }
@@ -138,10 +142,11 @@ public:
   
   // link/unlink a node to a parent and siblings 
   void link(NonUniformDegreeTreeNode *parent);
+  void linkMalloc(NonUniformDegreeTreeNode *mallocNode);//link to one malloc node (Xu)
   void linkBefore(NonUniformDegreeTreeNode *sibling);
   void linkAfter(NonUniformDegreeTreeNode *sibling);
   void unlink();
-
+  void mallocLinks(uint x); //malloc m_malloc_ids (Xu) 
   // returns the number of ancestors walking up the tree
   uint ancestorCount() const;
   
@@ -161,6 +166,10 @@ public:
   NonUniformDegreeTreeNode *LastChild() const
     { return m_children ? m_children->m_prev_sibling : 0; };
 
+  //(Xu)
+  uint getMallocNodeNum() const { return m_num_malloc_ids; };
+  void setMallocNodeNum(uint x) { m_num_malloc_ids = x; ;}
+  NonUniformDegreeTreeNode *getMallocId(uint i) const { return m_malloc_ids[i]; }
 protected:
   // useful for resetting parent/child/etc links after cloning
   void zeroLinks() {
@@ -173,6 +182,11 @@ protected:
 
     // initial circular list of siblings includes only self
     m_next_sibling = m_prev_sibling = this;
+
+    //(Xu)
+    m_malloc_ids = NULL;
+    SameAddNext = NULL;
+    m_num_malloc_ids = 0;
   }
 
 protected:
@@ -180,6 +194,11 @@ protected:
   NonUniformDegreeTreeNode* m_children;
   NonUniformDegreeTreeNode* m_next_sibling;
   NonUniformDegreeTreeNode* m_prev_sibling;
+
+  NonUniformDegreeTreeNode** m_malloc_ids;//point to malloc ids (Xu)
+  NonUniformDegreeTreeNode* SameAddNext;//for malloc id recognizes all nodes with the same add (Xu)
+  uint m_num_malloc_ids;//how many malloc nodes related to one (Xu)
+
   uint m_child_count;
 
   friend class NonUniformDegreeTreeNodeChildIterator;

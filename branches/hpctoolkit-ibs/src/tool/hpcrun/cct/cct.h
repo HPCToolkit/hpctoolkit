@@ -112,6 +112,12 @@ cct_metric_data_increment(int metric_id,
   }
 }
 
+// add by Xu Liu
+typedef struct malloc_list_s{
+  struct malloc_list_s* next;
+  uint32_t malloc_id;
+}malloc_list_s;
+
 typedef struct cct_node_t {
 
   // ---------------------------------------------------------
@@ -145,6 +151,9 @@ typedef struct cct_node_t {
   // singly linked list of siblings
   struct cct_node_t* next_sibling;
 
+  //use-reuse info
+  hpcfmt_uint_t num_malloc_id; //add by Xu Liu
+  malloc_list_s *malloc_list; //correlate node to malloc node. Add by Xu Liu
   // ---------------------------------------------------------
   // metrics (variable-sized array N.B.: MUST APPEAR AT END OF STRUCTURE!)
   // ---------------------------------------------------------

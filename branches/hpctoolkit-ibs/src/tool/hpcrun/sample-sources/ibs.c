@@ -143,6 +143,7 @@ gettid(void)
 static int
 ibs_signal_handler(int sig, siginfo_t *siginfo, void *context);
 
+malloc_list_s* new_malloc_node(malloc_list_s** list, uint32_t id);
 void addr_min(int metric_id, cct_metric_data_t* loc, cct_metric_data_t datum);
 void addr_max(int metric_id, cct_metric_data_t* loc, cct_metric_data_t datum);
 void metric_add(int metric_id, cct_metric_data_t* loc, cct_metric_data_t datum);
@@ -314,6 +315,9 @@ METHOD_FN(stop)
   TMSG(IBS_SAMPLE,"i=%d, count=%d",i,fd2ov[i].count);
   
   TMSG(IBS_SAMPLE,"stopping IBS");
+
+  is_use_reuse = true; //set epoch bit for use and reuse analysis
+
   TD_GET(ss_state)[self->evset_idx] = STOP;
   // return rc;
 }
@@ -604,8 +608,18 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
             }
             hpcrun_sample_callpath_w_bt(context, metrics[0], linear_addr,
                            update_bt, (void*)ip, 0/*isSync*/);
-            hpcrun_sample_callpath_w_bt(context, metrics[1], linear_addr,
+            cct_node_t* cct_node = hpcrun_sample_callpath_w_bt(context, metrics[1], linear_addr,
                            update_bt, (void*)ip, 0/*isSync*/);
+            if(result_node != NULL)//memory shouldn't be on stack or data section
+            {
+            TMSG(IBS_SAMPLE, "node %d => %d", cct_node->persistent_id, result_node->cct_id);
+              malloc_list_s* new_node = new_malloc_node(&cct_node->malloc_list, result_node->cct_id);
+              if(new_node != NULL) //not in the list
+              {
+                cct_node->num_malloc_id++;
+              }
+            }
+            TMSG(IBS_SAMPLE,"relate to %d malloc nodes\n", cct_node->num_malloc_id);//cct_node->current->malloc_id);
           }
           else
             TMSG(IBS_SAMPLE,"this is kernel address");
@@ -644,6 +658,31 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
 
   return 0; /* tell monitor that the signal has been handled */
+}
+
+malloc_list_s* new_malloc_node(malloc_list_s** list, uint32_t id)
+{
+  int i=0;
+  malloc_list_s* tmp=NULL;
+  malloc_list_s* current = *list;
+  while(current != NULL)
+  {
+    i++;
+    TMSG(IBS_SAMPLE, "i = %d", i);
+    if(current->malloc_id == id)
+      return NULL;
+    tmp = current;
+    current = current->next;
+  }
+  /*need to create a new node*/
+  current = hpcrun_malloc(sizeof(malloc_list_s));
+  current->malloc_id = id;
+  current->next = NULL;
+  if(*list!=NULL)//if list is null, no need to insert node
+    tmp->next = current; // make the link in the list
+  else if(*list==NULL)
+    *list = current;//First init malloc list
+  return current;
 }
 
 void addr_min(int metric_id, cct_metric_data_t* loc, cct_metric_data_t datum)

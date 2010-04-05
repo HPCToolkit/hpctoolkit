@@ -142,7 +142,8 @@ static const int  HPCRUN_FMT_EpochTagLen = (sizeof(HPCRUN_FMT_EpochTag) - 1);
 
 typedef struct epoch_flags_bitfield {
   bool isLogicalUnwind : 1;
-  uint64_t unused      : 63;
+  bool isUseReuse      : 1; //add by Xu Liu 63->62
+  uint64_t unused      : 62;
 } epoch_flags_bitfield;
 
 typedef union epoch_flags_t {
@@ -250,7 +251,7 @@ typedef struct metric_desc_t {
   hpcrun_metricFlags_t flags;
   uint64_t period;
 
-  long fmt_flag;
+  uint32_t fmt_flag; //add by Xu Liu
 
 } metric_desc_t;
 
@@ -383,6 +384,10 @@ typedef struct hpcrun_fmt_cct_node_t {
 
   // logical instruction pointer
   lush_lip_t lip;
+
+  //use-reuse list
+  hpcfmt_uint_t num_malloc_id; //add by Xu Liu
+  hpcfmt_uint_t* malloc_id_list; //correlate node to malloc node. Add by Xu Liu
 
   hpcfmt_uint_t num_metrics;
   hpcrun_metricVal_t* metrics;

@@ -151,6 +151,8 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof);
 void
 normalize(Prof::CallPath::Profile& prof, string agent, bool doNormalizeTy);
 
+void
+useReuseData(Prof::CallPath::Profile& prof);//(Xu)
 
 // ---------------------------------------------------------
 //

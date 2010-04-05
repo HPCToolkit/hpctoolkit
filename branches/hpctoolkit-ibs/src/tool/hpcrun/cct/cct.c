@@ -169,6 +169,8 @@ cct_node_create(lush_assoc_info_t as_info,
   node->persistent_id = new_persistent_id();
 
   node->next_sibling = NULL;
+  //init add by Xu Liu
+  node->malloc_list = NULL;
 
   return node;
 }
@@ -770,6 +772,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
   // ---------------------------------------------------------
 
   tmp_node->id = node->persistent_id;
+//  tmp_node->malloc_id = node->malloc_id; //add by Xu Liu
   tmp_node->id_parent = my_parent;
 
   if (flags.flags.isLogicalUnwind) {
@@ -787,6 +790,22 @@ hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
     lush_lip_init(&tmp_node->lip);
     if (node->lip) {
       memcpy(&tmp_node->lip, node->lip, sizeof(lush_lip_t));
+    }
+  }
+
+  //add by Xu Liu
+  if (flags.flags.isUseReuse) {
+    TMSG(IBS_SAMPLE, "setting use-reuse bit");
+    tmp_node->num_malloc_id = node->num_malloc_id;
+    if(tmp_node->num_malloc_id > 0) {
+      tmp_node->malloc_id_list = hpcrun_malloc(tmp_node->num_malloc_id*sizeof(hpcfmt_uint_t));
+      int i;
+      malloc_list_s *tmp = node->malloc_list;
+      for(i=0; i<tmp_node->num_malloc_id; i++)
+      {
+        tmp_node->malloc_id_list[i] = tmp->malloc_id;
+        tmp = tmp->next;
+      }
     }
   }
 

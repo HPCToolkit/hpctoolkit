@@ -824,11 +824,22 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 		       LoadMap* loadmap, uint numMetricsSrc,
 		       std::string ctxtStr, FILE* outfs)
 {
+  /*For multi-thread, we need to make sure malloc node in main thread (thread 0) 
+ *  * can be reached by all other threads. So we use static structure to maintain
+ *  maps in main thread*/
+  static int mainThread=0;
+
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
+
+  typedef std::multimap<CCT::ANode*, int> CCTIdToMallocIdMap; //(Xu)
 
   DIAG_Assert(infs, "Bad file descriptor!");
   
   CCTIdToCCTNodeMap cctNodeMap;
+
+  CCTIdToMallocIdMap mallocNodeMap;//(Xu)
+  static CCTIdToMallocIdMap mainMallocNodeMap;
+  static CCTIdToCCTNodeMap mainCctNodeMap;
 
   int ret = HPCFMT_ERR;
 
@@ -863,7 +874,6 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   nodeFmt.metrics = (numMetricsSrc > 0) ? 
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
     : NULL;
-
   for (uint i = 0; i < numNodes; ++i) {
 
     // ----------------------------------------------------------
@@ -893,6 +903,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       DIAG_Throw("Invalid parent " << nodeFmt.id_parent << " for node " << nodeFmt.id);
     }
 
+
     // ----------------------------------------------------------
     // Create node and link to parent
     // ----------------------------------------------------------
@@ -908,6 +919,28 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       node->link(node_parent);
       if (node_sib) {
 	node_sib->link(node_parent);
+        if(nodeFmt.num_malloc_id>0) {
+          node_sib->setMallocNodeNum(nodeFmt.num_malloc_id);
+          node_sib->mallocLinks(nodeFmt.num_malloc_id);
+          for (uint i=0; i<nodeFmt.num_malloc_id; i++) {
+            mallocNodeMap.insert(std::make_pair(node_sib, nodeFmt.malloc_id_list[i]));
+            if(mainThread == 0)//main thread
+              mainMallocNodeMap.insert(std::make_pair(node_sib, nodeFmt.malloc_id_list[i]));
+            printf("test %d => %d\n", nodeFmt.id, nodeFmt.malloc_id_list[i]);
+          }
+        }
+      }
+      else {
+        if(nodeFmt.num_malloc_id>0) {
+          node->setMallocNodeNum(nodeFmt.num_malloc_id);
+          node->mallocLinks(nodeFmt.num_malloc_id);
+          for (uint i=0; i<nodeFmt.num_malloc_id; i++) {
+            mallocNodeMap.insert(std::make_pair(node, nodeFmt.malloc_id_list[i]));
+            if(mainThread == 0)//main thread
+              mainMallocNodeMap.insert(std::make_pair(node_sib, nodeFmt.malloc_id_list[i]));
+            printf("test %d => %d\n", nodeFmt.id, nodeFmt.malloc_id_list[i]);
+          }
+        }
       }
     }
     else {
@@ -915,8 +948,40 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       DIAG_AssertWarn(!node_sib, ctxtStr << ": root node cannot be split into interior and leaf!");
       cct->root(node);
     }
-
     cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
+    if(mainThread == 0)
+      mainCctNodeMap.insert(std::make_pair(nodeFmt.id, node));
+  }
+
+    // ----------------------------------------------------------
+    // Create links to malloc nodes
+    // ----------------------------------------------------------
+
+  // Traverse all nodes with malloc info on tree
+  CCTIdToMallocIdMap::iterator itMalloc;
+  for (itMalloc = mallocNodeMap.begin(); itMalloc != mallocNodeMap.end(); itMalloc++) {
+    if ((*itMalloc).first->getMallocNodeNum() > 0) {
+      printf("malloc node num is %d\n", (*itMalloc).first->getMallocNodeNum());
+      CCT::ANode* node_malloc = NULL;
+      if ((*itMalloc).second != HPCRUN_FMT_CCTNodeId_NULL) {
+        printf("node %d => %d\n", (*itMalloc).first->id(), -(*itMalloc).second);
+        CCTIdToCCTNodeMap::iterator it1 = cctNodeMap.find(-(*itMalloc).second);
+        if (it1 != cctNodeMap.end()) {
+          node_malloc = it1->second;
+        }
+        else { //find in main thread
+          it1 = mainCctNodeMap.find(-(*itMalloc).second);
+          if (it1 != mainCctNodeMap.end()) {
+            node_malloc = it1->second;
+          }
+          else {
+            DIAG_Throw("Cannot find malloc node for node " << nodeFmt.id);
+          }
+        }
+      }
+      
+      (*itMalloc).first->linkMalloc(node_malloc);
+    }
   }
 
   if (outfs) {
