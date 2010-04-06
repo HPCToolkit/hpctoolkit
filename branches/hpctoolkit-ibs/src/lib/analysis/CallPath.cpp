@@ -878,7 +878,7 @@ mergeCilkMain(Prof::CallPath::Profile& prof)
 
 /* recursively traverse all node after coelescing statments (Xu) */
 static void
-useReuseData(Prof::CCT::ANode* node)
+useReuseData(Prof::CCT::ANode* node, std::multimap<Prof::CCT::ANode*, Prof::CCT::ANode*> *mallocToNode)
 {
   if(!node) {
     return;
@@ -887,10 +887,12 @@ useReuseData(Prof::CCT::ANode* node)
     Prof::CCT::ANode* n = it.current();
     it++;
     if(n->getMallocNodeNum() > 0) {
-      for(uint i=0; i<n->getMallocNodeNum(); i++)
+      for(uint i=0; i<n->getMallocNodeNum(); i++) {
         printf("after coelesce: %d=>%d \n", n->id(), (static_cast<Prof::CCT::ANode*>(n->getMallocId(i)))->id());
+        mallocToNode->insert(std::make_pair(static_cast<Prof::CCT::ANode*>(n->getMallocId(i)), n));
+      }
     }
-    useReuseData(n);
+    useReuseData(n, mallocToNode);
   }
 }
 //****************************************************************************
@@ -905,7 +907,28 @@ namespace CallPath {
 void
 useReuseData(Prof::CallPath::Profile& prof)
 {
-  useReuseData(prof.cct()->root());
+  std::multimap<Prof::CCT::ANode*, Prof::CCT::ANode*> mallocToNode; //multiple map from malloc nodes to uses nodes
+  useReuseData(prof.cct()->root(), &mallocToNode);
+  printf("finally: size = %d\n", mallocToNode.size());
+  std::multimap<Prof::CCT::ANode*, Prof::CCT::ANode*>::iterator it,it1;
+  std::pair<std::multimap<Prof::CCT::ANode*,Prof::CCT::ANode*>::iterator,std::multimap<Prof::CCT::ANode*,Prof::CCT::ANode*>::iterator> sameKey;
+  it = mallocToNode.begin(); 
+  /*one malloc node => multiple CCT nodes*/
+  while(it != mallocToNode.end()) {
+    sameKey = mallocToNode.equal_range(it->first);
+    if(sameKey.first == sameKey.second) { //this is already erased
+      it++;
+      continue;
+    }
+    printf("finally: %d=>", it->first->id());
+    for(it1 = sameKey.first; it1 != sameKey.second; it1++) {//all the uses of malloc node (it->first)
+      printf(" %d", it1->second->id());
+      
+    }
+    mallocToNode.erase(it->first);
+    printf("\n");
+    it++;
+  }
 }
 
 // makeDatabase: assumes Analysis::Args::makeDatabaseDir() has been called

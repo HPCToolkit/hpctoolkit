@@ -827,7 +827,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   /*For multi-thread, we need to make sure malloc node in main thread (thread 0) 
  *  * can be reached by all other threads. So we use static structure to maintain
  *  maps in main thread*/
-  static int mainThread=0;
+  static uint mainThread=0;
 
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
 
@@ -988,6 +988,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     fprintf(outfs, "]\n");
   }
 
+  mainThread++; //indicate out of main thread
   return HPCFMT_OK;
 }
 
