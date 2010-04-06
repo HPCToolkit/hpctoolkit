@@ -870,6 +870,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   }
 
   hpcrun_fmt_cct_node_t nodeFmt;
+  nodeFmt.num_malloc_id = 0; // init number of malloc nodes
   nodeFmt.num_metrics = numMetricsSrc;
   nodeFmt.metrics = (numMetricsSrc > 0) ? 
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
