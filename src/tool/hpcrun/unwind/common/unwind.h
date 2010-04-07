@@ -66,8 +66,6 @@
 
 #include <unwind/common/unw-datatypes.h> 
 
-
-
 //***************************************************************************
 //
 // interface to HPCToolkit's unwinder (cf. libunwind)
@@ -91,7 +89,7 @@ hpcrun_unw_init();
 // ----------------------------------------------------------
 
 int
-hpcrun_unw_get_ip_reg(hpcrun_unw_cursor_t* c, void** reg_value);
+hpcrun_unw_get_ip_reg(hpcrun_unw_cursor_t* c, unw_word_t* reg_value);
 
 
 void*
@@ -143,15 +141,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* c);
 // ----------------------------------------------------------
 
 // FIXME: tallent: move stack trolling code here
-
-
-// ----------------------------------------------------------
-// hpcrun_unw_throw:
-// ----------------------------------------------------------
-
-// FIXME: tallent: the code in x86-unwind.c probably should be common
-void
-hpcrun_unw_throw(void);
 
 
 //***************************************************************************

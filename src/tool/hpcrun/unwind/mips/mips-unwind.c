@@ -559,10 +559,3 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 
   return (didTroll) ? STEP_TROLL : STEP_OK;
 }
-
-
-void
-hpcrun_unw_throw()
-{
-  hpcrun_drop_sample();
-}

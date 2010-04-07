@@ -128,4 +128,8 @@ void hpcrun_bt_add_leaf_child(backtrace_t* bt, void* addr);
 
 void hpcrun_dump_bt(backtrace_t* bt);
 
+bool hpcrun_generate_backtrace(ucontext_t* context, bool* has_tramp, int skipInner);
+
+bool hpcrun_gen_bt(ucontext_t* context, bool* has_tramp, bt_mut_fn bt_fn, bt_fn_arg bt_arg);
+
 #endif // hpcrun_backtrace_h

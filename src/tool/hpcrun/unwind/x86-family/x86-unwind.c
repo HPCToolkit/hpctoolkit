@@ -80,6 +80,7 @@
 
 #include <unwind/common/unwind.h>
 #include <unwind/common/backtrace.h>
+#include <unwind/common/unw-throw.h>
 #include "splay.h"
 #include "ui_tree.h"
 #include <utilities/arch/mcontext.h>
@@ -348,14 +349,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   return rv;
 }
 
-
-void
-hpcrun_unw_throw(void)
-{
-  _drop_sample(true);
-}
-
-
 //****************************************************************************
 // hpcrun_unw_step helpers
 //****************************************************************************
@@ -585,8 +578,6 @@ t2_dbg_unw_step(hpcrun_unw_cursor_t* cursor)
   s =(s+1) %2;
   return rv;
 }
-
-
 
 
 //****************************************************************************
