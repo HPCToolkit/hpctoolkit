@@ -875,141 +875,24 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 		      uint64_t metricIncr,
 		      int skipInner)
 {
-  int  backtrace_trolled = 0;
-  bool tramp_found       = false;
+  bool tramp_found;
 
-  hpcrun_unw_cursor_t cursor;
-  hpcrun_unw_init_cursor(&cursor, context);
-
-  //--------------------------------------------------------------------
-  // note: these variables are not local variables so that if a SIGSEGV 
-  // occurs and control returns up several procedure frames, the values 
-  // are accessible to a dumping routine that will tell us where we ran 
-  // into a problem.
-  //--------------------------------------------------------------------
+  if (! hpcrun_generate_backtrace(context, &tramp_found, skipInner)) {
+    return NULL;
+  }
 
   thread_data_t* td = hpcrun_get_thread_data();
-  td->unwind   = td->btbuf; // innermost
-  td->bufstk   = td->bufend;
-
-  int unw_len = 0;
-  while (true) {
-    int ret;
-
-    unw_word_t ip = 0;
-    hpcrun_unw_get_ip_reg(&cursor, &ip);
-
-    if (hpcrun_trampoline_interior(ip)) {
-      // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
-      // counting a return from a sampled frame using a trampoline.
-      // drop the sample. 
-      // FIXME: sharpen the information to indicate why the sample is 
-      //        being dropped.
-      hpcrun_unw_throw();
-    }
-
-    if (hpcrun_trampoline_at_entry(ip)) {
-      if (unw_len == 0){
-	// we are about to enter the trampoline code to synchronously 
-	// record a return. for now, simply do nothing ...
-	// FIXME: with a bit more effort, we could charge 
-	//        the sample to the return address in the caller. 
-	hpcrun_unw_throw();
-      } else {
-	// we have encountered a trampoline in the middle of an unwind.
-	tramp_found = true;
-
-	// no need to unwind further. the outer frames are already known.
-	break;
-      }
-    }
-    
-    hpcrun_ensure_btbuf_avail();
-
-    td->unwind->cursor = cursor;
-    td->unwind->ip     = (void*) ip;
-    td->unwind->ra_loc = NULL;
-    frame_t* prev = td->unwind;
-    td->unwind++;
-    unw_len++;
-
-    ret = hpcrun_unw_step(&cursor);
-    backtrace_trolled = (ret == STEP_TROLL);
-    if (ret <= 0) {
-      break;
-    }
-    prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
-  }
-
-  if (backtrace_trolled){
-    hpcrun_up_pmsg_count();
-  }
-  
-  frame_t* bt_beg  = td->btbuf;      // innermost, inclusive
-  frame_t* bt_last = td->unwind - 1; // outermost, inclusive
-  frame_t* bt_end  = bt_last + 1;    // outermost, exclusive
-  size_t new_frame_count = bt_end - bt_beg;
 
   cct_node_t* cct_cursor = NULL;
-
   if (tramp_found) {
-    TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
-    //
-    // join current backtrace fragment to previous trampoline-marked prefix
-    // and make this new conjoined backtrace the cached-backtrace
-    //
-    frame_t* prefix = td->tramp_frame + 1; // skip top frame
-    size_t old_frame_count = td->cached_bt_end - prefix;
-
-    hpcrun_cached_bt_adjust_size(new_frame_count + old_frame_count);
-
-    // put the old prefix in place
-    memmove(td->cached_bt + new_frame_count, prefix, 
-	   sizeof(frame_t) * old_frame_count);
-
-    // put the new suffix in place
-    memcpy(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
-
-    // update the length of the conjoined backtrace
-    td->cached_bt_end = td->cached_bt + new_frame_count + old_frame_count;
-
     // start insertion below caller's frame, which is marked with the trampoline
     cct_cursor   = td->tramp_cct_node->parent;
   }
-  else {
-    hpcrun_cached_bt_adjust_size(new_frame_count);
-    memmove(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
 
-    td->cached_bt_end = td->cached_bt + new_frame_count;
-  }
-
-  if (! ENABLED(NO_SAMPLE_FILTERING)) {
-    frame_t* beg_frame  = td->cached_bt;
-    frame_t* last_frame = td->cached_bt_end - 1;
-    int num_frames      = last_frame - beg_frame + 1;
-	
-    if (hpcrun_filter_sample(num_frames, beg_frame, last_frame)){
-      TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
-      frame_t *fr = beg_frame;
-      for (int i = 0; i < num_frames; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p", i, fr->ip);
-      }
-      hpcrun_stats_num_samples_filtered_inc();
-      return 0;
-    }
-  }
-
-  //
-  // FIXME: For the moment, ignore skipInner issues with trampolines.
-  //        Eventually, this will need to be addressed
-  //
-  if (skipInner) {
-    EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
-	 skipInner);
-    bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
-  }
-
+  frame_t* bt_beg  = td->btbuf;      // innermost, inclusive
+  frame_t *bt_last = td->unwind - 1; // outermost, inclusive
   cct_node_t* n;
+
   n = hpcrun_cct_insert_backtrace(cct, cct_cursor, metricId,
 				  bt_last, bt_beg,
 				  (cct_metric_data_t){.i = metricIncr});
@@ -1028,141 +911,22 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       bt_mut_fn bt_fn, bt_fn_arg bt_arg)
 {
-  int  backtrace_trolled = 0;
-  bool tramp_found       = false;
-
-  hpcrun_unw_cursor_t cursor;
-  hpcrun_unw_init_cursor(&cursor, context);
-
-  //--------------------------------------------------------------------
-  // note: these variables are not local variables so that if a SIGSEGV 
-  // occurs and control returns up several procedure frames, the values 
-  // are accessible to a dumping routine that will tell us where we ran 
-  // into a problem.
-  //--------------------------------------------------------------------
+  bool tramp_found;
+  if (! hpcrun_gen_bt(context, &tramp_found, bt_fn, bt_arg)) {
+    return NULL;
+  }
 
   thread_data_t* td = hpcrun_get_thread_data();
 
-  backtrace_t* bt = &(td->bt);
-  hpcrun_bt_reset(bt);
-
-  while (true) {
-    int ret;
-
-    unw_word_t ip = 0;
-    hpcrun_unw_get_ip_reg(&cursor, &ip);
-
-    if (hpcrun_trampoline_interior(ip)) {
-      // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
-      // counting a return from a sampled frame using a trampoline.
-      // drop the sample. 
-      // FIXME: sharpen the information to indicate why the sample is 
-      //        being dropped.
-      hpcrun_unw_throw();
-    }
-
-    if (hpcrun_trampoline_at_entry(ip)) {
-      if (hpcrun_bt_len(bt) == 0){
-	// we are about to enter the trampoline code to synchronously 
-	// record a return. for now, simply do nothing ...
-	// FIXME: with a bit more effort, we could charge 
-	//        the sample to the return address in the caller. 
-	hpcrun_unw_throw();
-      } else {
-	// we have encountered a trampoline in the middle of an unwind.
-	tramp_found = true;
-
-	// no need to unwind further. the outer frames are already known.
-	break;
-      }
-    }
-    
-    frame_t* prev = hpcrun_bt_push(bt,
-				   &((frame_t){.cursor = cursor, .ip = (void*)ip, .ra_loc = NULL}));
-
-    ret = hpcrun_unw_step(&cursor);
-    backtrace_trolled = backtrace_trolled || (ret == STEP_TROLL);
-    if (ret <= 0) {
-      break;
-    }
-    prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
-  }
-
-  if (backtrace_trolled){
-    hpcrun_up_pmsg_count();
-  }
-				    
-  frame_t* bt_beg  = hpcrun_bt_beg(bt);
-
-  size_t new_frame_count = hpcrun_bt_len(bt);
-
   cct_node_t* cct_cursor = NULL;
-
   if (tramp_found) {
-    TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
-    //
-    // join current backtrace fragment to previous trampoline-marked prefix
-    // and make this new conjoined backtrace the cached-backtrace
-    //
-    frame_t* prefix = td->tramp_frame + 1; // skip top frame
-    size_t old_frame_count = td->cached_bt_end - prefix;
-
-    hpcrun_cached_bt_adjust_size(new_frame_count + old_frame_count);
-
-    // put the old prefix in place
-    memmove(td->cached_bt + new_frame_count, prefix, 
-	   sizeof(frame_t) * old_frame_count);
-
-    // put the new suffix in place
-    memcpy(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
-
-    // update the length of the conjoined backtrace
-    td->cached_bt_end = td->cached_bt + new_frame_count + old_frame_count;
-
     // start insertion below caller's frame, which is marked with the trampoline
     cct_cursor   = td->tramp_cct_node->parent;
-  }
-  else {
-    hpcrun_cached_bt_adjust_size(new_frame_count);
-    memmove(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
-
-    td->cached_bt_end = td->cached_bt + new_frame_count;
-  }
-
-  if (! ENABLED(NO_SAMPLE_FILTERING)) {
-    frame_t* beg_frame  = td->cached_bt;
-    frame_t* last_frame = td->cached_bt_end - 1;
-    int num_frames      = last_frame - beg_frame + 1;
-	
-    if (hpcrun_filter_sample(num_frames, beg_frame, last_frame)){
-      TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
-      frame_t *fr = beg_frame;
-      for (int i = 0; i < num_frames; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p", i, fr->ip);
-      }
-      hpcrun_stats_num_samples_filtered_inc();
-      return 0;
-    }
-  }
-
-  //
-  // mutate the backtrace according to the passed in mutator function
-  //  (bt_fn == NULL means no mutation is necessary)
-  //
-  if (bt_fn) {
-    TMSG(BT, "Mutation function called");
-    TMSG(BT,"==== backtrace BEFORE mutation ========");
-    hpcrun_dump_bt(bt);
-    TMSG(BT,"-------------------------------");
-    bt_fn(bt, bt_arg);
-    TMSG(BT,"==== backtrace AFTER  mutation ========");
-    hpcrun_dump_bt(bt);
-    TMSG(BT,"-------------------------------");
   }
 
   cct_node_t* n;
   n = hpcrun_cct_insert_bt(cct, cct_cursor, metricId,
-			   bt,
+			   &(td->bt),
 			   (cct_metric_data_t){.i = metricIncr});
 
   if (ENABLED(USE_TRAMP)){

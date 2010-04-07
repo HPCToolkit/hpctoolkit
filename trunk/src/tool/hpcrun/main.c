@@ -676,7 +676,7 @@ static longjmp_fcn    *real_longjmp = NULL;
 static siglongjmp_fcn *real_siglongjmp = NULL;
 
 
-siglongjmp_fcn *
+siglongjmp_fcn*
 hpcrun_get_real_siglongjmp(void)
 {
   MONITOR_EXT_GET_NAME_WRAP(real_siglongjmp, siglongjmp);
