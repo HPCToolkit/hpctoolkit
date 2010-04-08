@@ -113,7 +113,8 @@ BinUtil::LM::LM()
   : m_type(TypeNULL), m_readFlags(ReadFlg_NULL),
     m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
     m_textBegReloc(0), m_unrelocDelta(0),
-    m_bfd(NULL), m_bfdSymTab(NULL), m_bfdSymTabSort(NULL), m_bfdSymTabSz(0),
+    m_bfd(NULL), m_bfdSymTab(NULL), m_bfdSynthTab(NULL),
+    m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdSynthTabSz(0),
     m_realpathMgr(RealPathMgr::singleton())
 {
 }
@@ -140,8 +141,14 @@ BinUtil::LM::~LM()
   delete[] m_bfdSymTab;
   m_bfdSymTab = NULL;
 
+  free(m_bfdSynthTab);
+  m_bfdSynthTab = NULL;
+
   delete[] m_bfdSymTabSort;
   m_bfdSymTabSort = NULL; 
+
+  m_bfdSymTabSz = 0;
+  m_bfdSynthTabSz = 0;
   
   // reset isa
   delete isa;
@@ -589,7 +596,7 @@ BinUtil::LM::readSymbolTables()
   
   // If we found a populated symbol table...
   if (bytesNeeded > 0) {
-    m_bfdSymTab = new asymbol*[bytesNeeded];
+    m_bfdSymTab = new asymbol*[bytesNeeded/sizeof(asymbol *)];
     m_bfdSymTabSz = bfd_canonicalize_symtab(m_bfd, m_bfdSymTab);
     if (m_bfdSymTabSz == 0) {
       delete[] m_bfdSymTab;
@@ -617,14 +624,31 @@ BinUtil::LM::readSymbolTables()
       return;
     }
     
-    m_bfdSymTab = new asymbol*[bytesNeeded];
+    m_bfdSymTab = new asymbol*[bytesNeeded/sizeof(asymbol *)];
     m_bfdSymTabSz = bfd_canonicalize_dynamic_symtab(m_bfd, m_bfdSymTab);
   }
   DIAG_Assert(m_bfdSymTab && m_bfdSymTabSz >= 1, "");
 
-  // Make a scratch copy of the symbol table.
-  m_bfdSymTabSort = new asymbol*[bytesNeeded];
-  memcpy(m_bfdSymTabSort, m_bfdSymTab, bytesNeeded);
+  // Append the synthetic symbol table to our copy for sorting.
+  // On many platforms this is empty, but it helps on powerpc.
+  //
+  // Note: the synthetic table is an array of asymbol structs,
+  // not an array of pointers, and not null-terminated.
+  // Note: the sorted table may be larger than the original table,
+  // and size is the size of the sorted table (regular + synthetic).
+
+  m_bfdSynthTabSz = bfd_get_synthetic_symtab(m_bfd, m_bfdSymTabSz, m_bfdSymTab,
+					     0, NULL, &m_bfdSynthTab);
+  if (m_bfdSynthTabSz < 0)
+    m_bfdSynthTabSz = 0;
+
+  m_bfdSymTabSort = new asymbol* [m_bfdSymTabSz + m_bfdSynthTabSz + 1];
+  memcpy(m_bfdSymTabSort, m_bfdSymTab, m_bfdSymTabSz * sizeof(asymbol *));
+  for (int i = 0; i < m_bfdSynthTabSz; i++) {
+    m_bfdSymTabSort[m_bfdSymTabSz + i] = &m_bfdSynthTab[i];
+  }
+  m_bfdSymTabSz += m_bfdSynthTabSz;
+  m_bfdSymTabSort[m_bfdSymTabSz] = NULL;
 
   // Sort scratch symbol table by VMA.
   QuickSort QSort;
@@ -779,6 +803,37 @@ BinUtil::LM::dumpModuleInfo(std::ostream& o, const char* pre) const
 }
 
 
+static void
+dumpASymbol(std::ostream& o, asymbol* sym, string p1)
+{
+  // value, name, section name
+  o << p1 << std::hex << std::setw(16)
+    << (bfd_vma)bfd_asymbol_value(sym) << ": " << std::setw(0) << std::dec
+    << bfd_asymbol_name(sym)
+    << " [sec: " << sym->section->name << "] ";
+
+  // flags
+  o << "[flg: " << std::hex << sym->flags << std::dec << " ";
+  bool hasPrintedFlag = false;
+  dumpSymFlag(o, sym, BSF_LOCAL,        "LCL",     hasPrintedFlag);
+  dumpSymFlag(o, sym, BSF_GLOBAL,       "GBL",     hasPrintedFlag);
+  dumpSymFlag(o, sym, BSF_FUNCTION,     "FUNC",    hasPrintedFlag);
+  dumpSymFlag(o, sym, BSF_WEAK,         "WEAK",    hasPrintedFlag);
+  dumpSymFlag(o, sym, BSF_SECTION_SYM,  "SEC",     hasPrintedFlag);
+  dumpSymFlag(o, sym, BSF_FILE,         "FILE",    hasPrintedFlag);
+  dumpSymFlag(o, sym, BSF_DYNAMIC,      "DYN",     hasPrintedFlag);
+  dumpSymFlag(o, sym, BSF_OBJECT,       "OBJ",     hasPrintedFlag);
+  dumpSymFlag(o, sym, BSF_THREAD_LOCAL, "THR_LCL", hasPrintedFlag);
+  o << "]";
+
+  if (BinUtil::Proc::isProcBFDSym(sym)) {
+    o << " *proc*";
+  }
+
+  o << endl;
+}
+
+
 void
 BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
 {
@@ -787,34 +842,14 @@ BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
 
   o << p << "--------------- Symbol Table Dump (Unsorted) --------------\n";
 
-  for (uint i = 0; i < m_bfdSymTabSz; i++) {
-    asymbol* sym = m_bfdSymTab[i];
+  for (uint i = 0; m_bfdSymTab[i] != NULL; i++) {
+    dumpASymbol(o, m_bfdSymTab[i], p1);
+  }
 
-    // value, name, section name
-    o << p1 << std::hex << std::setw(16) 
-      << (bfd_vma)bfd_asymbol_value(sym) << ": " << std::setw(0) << std::dec
-      << bfd_asymbol_name(sym)
-      << " [sec: " << sym->section->name << "] ";
-    
-    // flags
-    o << "[flg: " << std::hex << sym->flags << std::dec << " ";
-    bool hasPrintedFlag = false;
-    dumpSymFlag(o, sym, BSF_LOCAL,        "LCL",     hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_GLOBAL,       "GBL",     hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_FUNCTION,     "FUNC",    hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_WEAK,         "WEAK",    hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_SECTION_SYM,  "SEC",     hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_FILE,         "FILE",    hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_DYNAMIC,      "DYN",     hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_OBJECT,       "OBJ",     hasPrintedFlag);
-    dumpSymFlag(o, sym, BSF_THREAD_LOCAL, "THR_LCL", hasPrintedFlag);
-    o << "]";
+  o << p << "--------------- Symbol Table Dump (Synthetic) -------------\n";
 
-    if (BinUtil::Proc::isProcBFDSym(sym)) {
-      o << " *proc*";
-    }
-
-    o << endl;
+  for (int i = 0; i < m_bfdSynthTabSz; i++) {
+    dumpASymbol(o, &m_bfdSynthTab[i], p1);
   }
 
   o << p << "-----------------------------------------------------------\n";

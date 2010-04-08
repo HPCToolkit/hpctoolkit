@@ -475,10 +475,17 @@ private:
   // symbolic info used in building procedures
   BinUtil::dbg::LM m_dbgInfo;
 
+  // Note: the sorted table includes both regular and synthetic
+  // symbols and thus may be larger than m_bfdSymTab.  Size is the
+  // size of the sorted table.  Also, the synthetic table is an array
+  // of asymbol structs, not pointers.
+
   bfd*      m_bfd;           // BFD of this module.
   asymbol** m_bfdSymTab;     // Unmodified BFD symbol table
+  asymbol*  m_bfdSynthTab;   // Synthetic BFD symbol table.
   asymbol** m_bfdSymTabSort; // Sorted BFD symbol table
-  uint      m_bfdSymTabSz;   // Number of syms in table.
+  uint      m_bfdSymTabSz;   // Number of syms in sorted table.
+  long      m_bfdSynthTabSz; // Number of synthetic syms.
 
   RealPathMgr& m_realpathMgr;
 };
