@@ -241,7 +241,8 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
   // ------------------------------------------------------------
   std::vector<uint> metricSrcIds;
   std::vector<uint> metricBalanceIds;
-  std::vector<uint> metricDstInclIds, metricDstExclIds;
+  std::vector<uint> metricImbalInclIds, metricImbalExclIds;
+  std::vector<uint> metricIdleInclIds;
 
   Metric::Mgr* metricMgr = prof.metricMgr();
 
@@ -262,27 +263,39 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
       //   We should use Metric::ADesc::DerivedDesc()
       DIAG_Assert(typeid(*m) == typeid(Metric::DerivedIncrDesc), DIAG_UnexpectedInput);
 
-      Metric::DerivedIncrDesc* m_newIncl = static_cast<Metric::DerivedIncrDesc*>(m->clone());
-      m_newIncl->nameBase("idleness" + s_sum);
-      m_newIncl->description("MPI idleness");
-      m_newIncl->expr(new Metric::SumIncr(Metric::IData::npos, // FIXME:Sum
-					  Metric::IData::npos));
+      Metric::DerivedIncrDesc* m_imbalIncl =
+	static_cast<Metric::DerivedIncrDesc*>(m->clone());
+      m_imbalIncl->nameBase("imbalance" + s_sum);
+      m_imbalIncl->description("imbalance for MPI SPMD executions");
+      m_imbalIncl->expr(new Metric::SumIncr(Metric::IData::npos, // FIXME:Sum
+					    Metric::IData::npos));
 
-      Metric::DerivedIncrDesc* m_newExcl = static_cast<Metric::DerivedIncrDesc*>(m_newIncl->clone());
-      m_newExcl->type(Metric::ADesc::TyExcl);
-      m_newExcl->expr(new Metric::SumIncr(Metric::IData::npos,
-					  Metric::IData::npos));
-
-      metricMgr->insert(m_newIncl);
-      metricMgr->insert(m_newExcl);
-
-      m_newIncl->expr()->accumId(m_newIncl->id());
-      m_newExcl->expr()->accumId(m_newExcl->id());
-
-      DIAG_Assert(m_newIncl->id() >= numMetrics_orig && m_newExcl->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
+      Metric::DerivedIncrDesc* m_imbalExcl =
+	static_cast<Metric::DerivedIncrDesc*>(m_imbalIncl->clone());
+      m_imbalExcl->type(Metric::ADesc::TyExcl);
+      m_imbalExcl->expr(new Metric::SumIncr(Metric::IData::npos,
+					    Metric::IData::npos));
       
-      metricDstInclIds.push_back(m_newIncl->id());
-      metricDstExclIds.push_back(m_newExcl->id());
+      Metric::DerivedIncrDesc* m_idleIncl =
+	static_cast<Metric::DerivedIncrDesc*>(m->clone());
+      m_idleIncl->nameBase("idleness" + s_sum);
+      m_idleIncl->description("idleness for MPI executions");
+      m_idleIncl->expr(new Metric::SumIncr(Metric::IData::npos, // FIXME:Sum
+					   Metric::IData::npos));
+
+      metricMgr->insert(m_imbalIncl);
+      metricMgr->insert(m_imbalExcl);
+      metricMgr->insert(m_idleIncl);
+
+      m_imbalIncl->expr()->accumId(m_imbalIncl->id());
+      m_imbalExcl->expr()->accumId(m_imbalExcl->id());
+      m_idleIncl->expr()->accumId(m_idleIncl->id());
+
+      DIAG_Assert(m_imbalIncl->id() >= numMetrics_orig && m_imbalExcl->id() >= numMetrics_orig, "Currently, we assume new metrics are added at the end of the metric vector.");
+      
+      metricImbalInclIds.push_back(m_imbalIncl->id());
+      metricImbalExclIds.push_back(m_imbalExcl->id());
+      metricIdleInclIds.push_back(m_idleIncl->id());
     }
 
     // find secondary source metric
@@ -318,14 +331,18 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
   
   double balancedThreshold = 1.2 * cctRoot_mdata.demandMetric(metricBalancedId);
 
-  makeIdleness(cctRoot, metricSrcIds, metricDstInclIds, metricDstExclIds,
+  makeIdleness(cctRoot, metricSrcIds,
+	       metricImbalInclIds, metricImbalExclIds, metricIdleInclIds,
 	       metricBalancedId, metricBalancedExpr, balancedThreshold,
 	       NULL, NULL);
 
 
   VMAIntervalSet metricDstInclIdSet;
-  for (uint i = 0; i < metricDstInclIds.size(); ++i) {
-    uint mId = metricDstInclIds[i];
+  for (uint i = 0; i < metricImbalInclIds.size(); ++i) {
+    uint mId = metricImbalInclIds[i];
+    metricDstInclIdSet.insert(VMAInterval(mId, mId + 1)); // [ )
+
+    mId = metricIdleInclIds[i];
     metricDstInclIdSet.insert(VMAInterval(mId, mId + 1)); // [ )
   }
 
@@ -336,8 +353,9 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
 void
 MPIBlameShiftIdlenessFact::makeIdleness(Prof::CCT::ANode* node,
 					const std::vector<uint>& m_src,
-					const std::vector<uint>& m_dstIncl,
-					const std::vector<uint>& m_dstExcl,
+					const std::vector<uint>& m_imbalIncl,
+					const std::vector<uint>& m_imbalExcl,
+					const std::vector<uint>& m_idleIncl,
 					uint mId_bal,
 					Prof::Metric::AExprIncr* balancedExpr,
 					double balancedThreshold,
@@ -364,16 +382,21 @@ MPIBlameShiftIdlenessFact::makeIdleness(Prof::CCT::ANode* node,
 
     for (uint i = 0; i < m_src.size(); ++i) {
       uint mId_src = m_src[i];
-      uint mId_dstIncl = m_dstIncl[i];
-      uint mId_dstExcl = m_dstExcl[i];
+
+      uint mId_imbalIncl = m_imbalIncl[i];
+      uint mId_imbalExcl = m_imbalExcl[i];
+      uint mId_idleIncl  = m_idleIncl[i];
+
       double mval = node->demandMetric(mId_src);
 
       // FIXME: use combine function
-      balancedNode->demandMetric(mId_dstIncl) += mval;
-      balancedNode->demandMetric(mId_dstExcl) += mval;
+      balancedNode->demandMetric(mId_imbalIncl) += mval;
+      balancedNode->demandMetric(mId_imbalExcl) += mval;
       if (balancedNode != balancedFrm && balancedNodeFrm == balancedFrm) {
-	balancedFrm->demandMetric(mId_dstExcl) += mval;
+	balancedFrm->demandMetric(mId_imbalExcl) += mval;
       }
+
+      node->demandMetric(mId_idleIncl) += mval;
     }
     
     return; // do not recur down this subtree
@@ -398,7 +421,7 @@ MPIBlameShiftIdlenessFact::makeIdleness(Prof::CCT::ANode* node,
   // ------------------------------------------------------------
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
     Prof::CCT::ANode* x = it.current();
-    makeIdleness(x, m_src, m_dstIncl, m_dstExcl,
+    makeIdleness(x, m_src, m_imbalIncl, m_imbalExcl, m_idleIncl,
 		 mId_bal, balancedExpr, balancedThreshold,
 		 balancedFrmNxt, balancedNodeNxt);
   }
