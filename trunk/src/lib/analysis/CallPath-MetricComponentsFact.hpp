@@ -144,13 +144,14 @@ private:
   void
   makeIdleness(Prof::CCT::ANode* node,
 	       const std::vector<uint>& m_src,
-	       const std::vector<uint>& m_dst1,
-	       const std::vector<uint>& m_dst2,
+	       const std::vector<uint>& m_imbalIncl,
+	       const std::vector<uint>& m_imbalExcl,
+	       const std::vector<uint>& m_idleIncl,
 	       uint mId_bal,
 	       Prof::Metric::AExprIncr* balancedExpr,
 	       double balancedThreshold,
-	       Prof::CCT::ANode* nodeBalancedFrm,
-	       Prof::CCT::ANode* nodeBalanced);
+	       Prof::CCT::ANode* balancedFrm,
+	       Prof::CCT::ANode* balancedNode);
   
 private:
   static const std::string s_tag;
