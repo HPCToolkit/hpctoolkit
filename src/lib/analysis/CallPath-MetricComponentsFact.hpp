@@ -149,6 +149,7 @@ private:
 	       uint mId_bal,
 	       Prof::Metric::AExprIncr* balancedExpr,
 	       double balancedThreshold,
+	       Prof::CCT::ANode* nodeBalancedFrm,
 	       Prof::CCT::ANode* nodeBalanced);
   
 private:
