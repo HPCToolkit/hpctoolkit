@@ -895,6 +895,33 @@ useReuseData(Prof::CCT::ANode* node, std::multimap<Prof::CCT::ANode*, Prof::CCT:
     useReuseData(n, mallocToNode);
   }
 }
+
+/*find the least commom ancestor for two nodes*/
+static Prof::CCT::ANode*
+is_ancestor(Prof::CCT::ANode* node, Prof::CCT::ANode* parent)
+{
+  Prof::CCT::ANode* parentNode;
+  for(parentNode=node; parentNode!=NULL; parentNode=parentNode->parent())
+  {
+    if(parentNode == parent)
+      return parentNode;
+  }
+  return NULL;
+}
+
+static Prof::CCT::ANode*
+LCA(Prof::CCT::ANode* node1, Prof::CCT::ANode* node2)
+{
+  Prof::CCT::ANode* parentNode1;
+  for(parentNode1=node1; parentNode1!=NULL; parentNode1=parentNode1->parent())
+  {
+    if(is_ancestor(node2, parentNode1))
+    {
+      return parentNode1;
+    }
+  }
+  return NULL;
+}
 //****************************************************************************
 // 
 //****************************************************************************
@@ -905,13 +932,20 @@ namespace CallPath {
 
 //(Xu)
 void
-useReuseData(Prof::CallPath::Profile& prof)
+useReuseData(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 {
+  std::deque<Prof::CCT::ANode*> LCAdeq;
   std::multimap<Prof::CCT::ANode*, Prof::CCT::ANode*> mallocToNode; //multiple map from malloc nodes to uses nodes
   useReuseData(prof.cct()->root(), &mallocToNode);
-  printf("finally: size = %d\n", mallocToNode.size());
+  printf("finally: size = %d with root=%d\n", mallocToNode.size(),prof.cct()->root()->id());
   std::multimap<Prof::CCT::ANode*, Prof::CCT::ANode*>::iterator it,it1;
   std::pair<std::multimap<Prof::CCT::ANode*,Prof::CCT::ANode*>::iterator,std::multimap<Prof::CCT::ANode*,Prof::CCT::ANode*>::iterator> sameKey;
+
+  /*Create the file to store use-reuse info*/
+  const string& db_dir = args.db_dir;
+  string useReuse_fnm = db_dir + "/" + "use-reuse.xml";
+  std::ostream* useReuseOs = IOUtil::OpenOStream(useReuse_fnm.c_str());
+
   it = mallocToNode.begin(); 
   /*one malloc node => multiple CCT nodes*/
   while(it != mallocToNode.end()) {
@@ -923,12 +957,28 @@ useReuseData(Prof::CallPath::Profile& prof)
     printf("finally: %d=>", it->first->id());
     for(it1 = sameKey.first; it1 != sameKey.second; it1++) {//all the uses of malloc node (it->first)
       printf(" %d", it1->second->id());
-      
+      LCAdeq.push_back(it1->second);
     }
+    while(LCAdeq.size()>1)//only when the size>1 we can find the LCA
+    {
+      Prof::CCT::ANode *node1, *node2, *parnode;
+      node1 = LCAdeq.front();
+      LCAdeq.pop_front();
+      node2 = LCAdeq.front();
+      LCAdeq.pop_front();
+      parnode = LCA(node1, node2);
+      if(parnode != NULL)
+      {
+        printf("  %d(%d, %d)\n", parnode->id(), node1->id(), node2->id());
+      }
+      LCAdeq.push_back(parnode);
+    }
+    LCAdeq.clear();//clear the deque
     mallocToNode.erase(it->first);
     printf("\n");
     it++;
   }
+  IOUtil::CloseStream(useReuseOs);
 }
 
 // makeDatabase: assumes Analysis::Args::makeDatabaseDir() has been called

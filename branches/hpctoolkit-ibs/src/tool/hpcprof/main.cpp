@@ -170,7 +170,7 @@ realmain(int argc, char* const* argv)
   args.makeDatabaseDir();
   Analysis::CallPath::makeDatabase(*prof, args);
 
-  Analysis::CallPath::useReuseData(*prof); //(Xu)
+  Analysis::CallPath::useReuseData(*prof, args); //(Xu)
 
   delete prof;
   return 0;
