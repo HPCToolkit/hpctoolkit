@@ -509,7 +509,10 @@ public:
   accumulate(Metric::IData& mdata) const
   {
     double a = accumVar(mdata), s = srcVar(mdata);
-    double z = std::min(a, s);
+    double z = a;
+    if (s != 0.0) {
+      z = std::min(a, s);
+    }
     DIAG_MsgIf(0, "MinIncr: min("<< a << ", " << s << ") = " << z);
     accumVar(mdata) = z;
     return z;
