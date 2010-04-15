@@ -535,7 +535,7 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
       n_frame = new Prof::CCT::Loop(node_frame, n_strct);
     }
     else if (typeid(*n_strct) == typeid(Prof::Struct::Alien)) {
-      n_frame = new Prof::CCT::ProcFrm(node_frame, n_strct);
+      n_frame = new Prof::CCT::Proc(node_frame, n_strct);
     }
     
     if (n_frame) {
@@ -628,7 +628,7 @@ Analysis::CallPath::applySummaryMetricAgents(Prof::CallPath::Profile& prof,
 // pruneByMetrics: 
 // 
 // Background: This function name should be surprising since we have
-// not computed metrics for interior nodes yet.  
+// not computed metrics for interior nodes yet.
 //
 // Observe that the fully dynamic CCT is sparse in the sense that *every*
 // node must have some non-zero inclusive metric value.  This is true
@@ -664,7 +664,8 @@ pruneByMetrics(Prof::CCT::ANode* node)
     pruneByMetrics(x);
 
     // 2. Trim this node if necessary
-    bool isTy = (typeid(*x) == typeid(CCT::ProcFrm) || 
+    bool isTy = (typeid(*x) == typeid(CCT::ProcFrm) ||
+		 typeid(*x) == typeid(CCT::Proc) ||
 		 typeid(*x) == typeid(CCT::Loop));
     if (x->isLeaf() && isTy) {
       x->unlink(); // unlink 'x' from tree
@@ -797,9 +798,7 @@ makeReturnCountMetric(Prof::CallPath::Profile& prof)
   Prof::CCT::ANodeIterator it(cct_root, NULL/*filter*/, false/*leavesOnly*/,
 			      IteratorStack::PostOrder);
   for (Prof::CCT::ANode* n = NULL; (n = it.current()); ++it) {
-    bool isFrame = (typeid(*n) == typeid(Prof::CCT::ProcFrm)
-		    && !(static_cast<Prof::CCT::ProcFrm*>(n)->isAlien()));
-    if (!isFrame && n != cct_root) {
+    if (typeid(*n) != typeid(Prof::CCT::ProcFrm) && n != cct_root) {
       Prof::CCT::ANode* n_parent = n->parent();
       for (uint i = 0; i < retCntId.size(); ++i) {
 	uint mId = retCntId[i];

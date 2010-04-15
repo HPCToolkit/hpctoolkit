@@ -206,7 +206,7 @@ namespace CCT {
 //***************************************************************************
 
 const string ANode::NodeNames[ANode::TyNUMBER] = {
-  "Root", "P", "Pr", "L", "C", "S", "Any"
+  "Root", "PF", "Pr", "L", "C", "S", "Any"
 };
 
 
@@ -230,7 +230,7 @@ uint ANode::s_nextUniqueId = 2;
 // ANode, etc: constructors/destructors
 //***************************************************************************
 
-string ProcFrm::BOGUS;
+string AProcNode::BOGUS;
 
 
 //***************************************************************************
@@ -291,6 +291,13 @@ ProcFrm*
 ANode::ancestorProcFrm() const
 {
   dyn_cast_return(ANode, ProcFrm, ancestor(TyProcFrm)); 
+}
+
+
+Proc*
+ANode::ancestorProc() const
+{
+  dyn_cast_return(ANode, Proc, ancestor(TyProc)); 
 }
 
 
@@ -404,8 +411,7 @@ ANode::aggregateMetricsExcl(ProcFrm* frame, const VMAIntervalSet& ivalset)
   // -------------------------------------------------------
   // Pre-order visit
   // -------------------------------------------------------
-  bool isFrame = (typeid(*n) == typeid(ProcFrm)
-		  && !(static_cast<ProcFrm*>(n)->isAlien()));
+  bool isFrame = (typeid(*n) == typeid(ProcFrm));
   ProcFrm* frameNxt = (isFrame) ? static_cast<ProcFrm*>(n) : frame;
 
   // -------------------------------------------------------
@@ -751,12 +757,6 @@ ANode::toStringMe(int oFlags) const
   string self;
   self = ANodeTyToName(type());
 
-  // FIXME: tallent: temporary override
-  if (type() == ANode::TyProcFrm) {
-    const ProcFrm* fr = dynamic_cast<const ProcFrm*>(this);
-    self = fr->isAlien() ? "Pr" : "PF";
-  }
-
   SrcFile::ln lnBeg = begLine();
   string line = StrUtil::toStr(lnBeg);
   //SrcFile::ln lnEnd = endLine();
@@ -836,7 +836,7 @@ ProcFrm::toStringMe(int oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
   
-  if (m_strct)  {
+  if (m_strct) {
     string lm_nm = xml::MakeAttrNum(lmId());
     string fnm = xml::MakeAttrNum(fileId());
     string pnm = xml::MakeAttrNum(procId());
@@ -850,9 +850,6 @@ ProcFrm::toStringMe(int oFlags) const
     }
 
     self += " lm" + lm_nm + " f" + fnm + " n" + pnm;
-    if (isAlien()) {
-      self = self + " a=\"1\"";
-    }
   }
 
   return self; 
@@ -862,15 +859,33 @@ ProcFrm::toStringMe(int oFlags) const
 string
 Proc::toStringMe(int oFlags) const
 {
-  string self = ANode::toStringMe(oFlags); //+ " i" + MakeAttr(id);
-  return self;
+  string self = ANode::toStringMe(oFlags);
+  
+  if (m_strct) {
+    string lm_nm = xml::MakeAttrNum(lmId());
+    string fnm = xml::MakeAttrNum(fileId());
+    string pnm = xml::MakeAttrNum(procId());
+
+    if (oFlags & Tree::OFlg_DebugAll) {
+      lm_nm = xml::MakeAttrStr(lmName());
+      fnm = xml::MakeAttrStr(fileName());
+      pnm = xml::MakeAttrStr(procName());
+    }
+
+    self += " lm" + lm_nm + " f" + fnm + " n" + pnm;
+    if (isAlien()) {
+      self = self + " a=\"1\"";
+    }
+  }
+
+  return self; 
 }
 
 
 string 
 Loop::toStringMe(int oFlags) const
 {
-  string self = ANode::toStringMe(oFlags); //+ " i" + MakeAttr(id);
+  string self = ANode::toStringMe(oFlags);
   return self;
 }
 
@@ -986,15 +1001,7 @@ ANode::writeXML_post(ostream &os, int oFlags, const char* pfx) const
     return;
   }
   
-  if (type() == ANode::TyProcFrm) {
-    // FIXME: tallent: temporary override
-    const ProcFrm* fr = dynamic_cast<const ProcFrm*>(this);
-    string tag = fr->isAlien() ? "Pr" : "PF";
-    os << pfx << "</" << tag << ">" << endl;
-  }
-  else {
-    os << pfx << "</" << ANodeTyToName(type()) << ">" << endl;
-  }
+  os << pfx << "</" << ANodeTyToName(type()) << ">" << endl;
 }
 
 
