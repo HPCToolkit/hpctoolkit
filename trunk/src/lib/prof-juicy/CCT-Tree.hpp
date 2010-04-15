@@ -120,6 +120,7 @@ namespace CCT {
 
 class ANode;
 class ADynNode;
+class AProcNode;
 
 class Tree
   : public Unique
@@ -574,7 +575,7 @@ public:
 protected:
 
   bool
-  writeXML_pre(std::ostream& os, 
+  writeXML_pre(std::ostream& os,
 	       uint metricBeg = Metric::IData::npos,
 	       uint metricEnd = Metric::IData::npos,
 	       int oFlags = 0,
@@ -588,6 +589,7 @@ protected:
 
   void
   mergeDeep_fixup(int newMetrics);
+
 
 private:
   static uint s_nextUniqueId;
@@ -608,7 +610,7 @@ int ANodeLineComp(ANode* x, ANode* y);
 //***************************************************************************
 
 // ---------------------------------------------------------
-// ANode: represents dynamic nodes
+// ADynNode: represents dynamic nodes
 // ---------------------------------------------------------
 class ADynNode
   : public ANode
@@ -624,7 +626,7 @@ public:
       m_cpId(cpId),
       m_as_info(lush_assoc_info_NULL),
       m_lmId(LoadMap::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL)
-    { }
+  { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
 	   uint cpId, lush_assoc_info_t as_info, 
@@ -656,7 +658,7 @@ public:
       m_lmId(x.m_lmId),
       m_ip(x.m_ip), m_opIdx(x.m_opIdx), 
       m_lip(clone_lip(x.m_lip))
-    { }
+  { }
 
   // deep copy of internals (but without children)
   ADynNode&
@@ -856,6 +858,102 @@ private:
 
 
 //***************************************************************************
+// AProcNode
+//***************************************************************************
+
+// ---------------------------------------------------------
+// AProcNode: represents procedure nodes
+// ---------------------------------------------------------
+class AProcNode
+  : public ANode
+{
+public:
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+  
+  AProcNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct)
+    : ANode(type, parent, strct)
+  { }
+
+  virtual ~AProcNode()
+  { }
+   
+  // deep copy of internals (but without children)
+  AProcNode(const AProcNode& x)
+    : ANode(x)
+  { }
+
+  // deep copy of internals (but without children)
+  AProcNode&
+  operator=(const AProcNode& x)
+  {
+    if (this != &x) {
+      ANode::operator=(x);
+    }
+    return *this;
+  }
+
+
+  // --------------------------------------------------------
+  // Static structure for ProcFrm/Proc
+  // --------------------------------------------------------
+
+  virtual const std::string&
+  lmName() const
+  { return (m_strct) ? m_strct->ancestorLM()->name() : BOGUS; }
+
+  virtual uint
+  lmId() const
+  { return (m_strct) ? m_strct->ancestorLM()->id() : 0; }
+
+
+  virtual const std::string&
+  fileName() const
+  {
+    if (m_strct) {
+      return (isAlien()) ? 
+	static_cast<Struct::Alien*>(m_strct)->fileName() :
+	m_strct->ancestorFile()->name();
+    }
+    else {
+      return BOGUS;
+    }
+  }
+
+  virtual uint
+  fileId() const
+  {
+    uint id = 0;
+    if (m_strct) {
+      id = (isAlien()) ? m_strct->id() : m_strct->ancestorFile()->id();
+    }
+    return id;
+  }
+
+
+  virtual const std::string&
+  procName() const
+  { return (m_strct) ? m_strct->name() : BOGUS; }
+
+  virtual uint
+  procId() const
+  { return (m_strct) ? m_strct->id() : 0; }
+
+
+  virtual bool
+  isAlien() const = 0;
+
+
+protected:
+  static std::string BOGUS;
+
+private:
+};
+
+
+//***************************************************************************
 // 
 //***************************************************************************
 
@@ -899,12 +997,12 @@ private:
 // --------------------------------------------------------------------------
 
 class ProcFrm
-  : public ANode
+  : public AProcNode
 {
 public:
   // Constructor/Destructor
   ProcFrm(ANode* parent, Struct::ACodeNode* strct = NULL)
-    : ANode(TyProcFrm, parent, strct)
+    : AProcNode(TyProcFrm, parent, strct)
   { }
 
   virtual ~ProcFrm()
@@ -912,80 +1010,29 @@ public:
 
   // shallow copy (in the sense the children are not copied)
   ProcFrm(const ProcFrm& x)
-    : ANode(x)
+    : AProcNode(x)
   { }
 
+
   // -------------------------------------------------------
-  // Static structure
+  // Static structure (NOTE: m_strct is always Struct::Proc)
   // -------------------------------------------------------
-  // NOTE: m_strct is either Struct::Proc or Struct::Alien
 
-  const std::string& 
-  lmName() const
-  { 
-    if (m_strct) { 
-      return m_strct->ancestorLM()->name();
-    }
-    else {
-      return BOGUS; 
-    }
-  }
-
-  uint 
-  lmId() const
-  { return (m_strct) ? m_strct->ancestorLM()->id() : 0; }
-
-
-  const std::string& 
+  virtual const std::string&
   fileName() const
-  {
-    if (m_strct) {
-      return (isAlien()) ? 
-	dynamic_cast<Struct::Alien*>(m_strct)->fileName() :
-	m_strct->ancestorFile()->name();
-    }
-    else {
-      return BOGUS;
-    }
-  }
+  { return (m_strct) ? m_strct->ancestorFile()->name() : BOGUS; }
 
-  uint 
+  virtual uint
   fileId() const
-  {
-    uint id = 0;
-    if (m_strct) {
-      id = (isAlien()) ? m_strct->id() : m_strct->ancestorFile()->id();
-    }
-    return id;
-  }
+  { return (m_strct) ? m_strct->ancestorFile()->id() : 0; }
 
-
-  const std::string& 
-  procName() const
-  {
-    // Struct::Proc or Struct::Alien
-    if (m_strct) { 
-      return m_strct->name();
-    }
-    else {
-      return BOGUS; 
-    }
-  }
-
+  virtual bool
+  isAlien() const
+  { return false; }
 
   std::string
   procNameDbg() const;
 
-
-  uint 
-  procId() const
-  { return (m_strct) ? m_strct->id() : 0; }
-
-
-  // Alien
-  bool
-  isAlien() const
-  { return (m_strct && typeid(*m_strct) == typeid(Struct::Alien)); }
 
   // -------------------------------------------------------
   //
@@ -998,29 +1045,43 @@ public:
   codeName() const;
 
 private:
-  static std::string BOGUS;
 };
 
 
 // --------------------------------------------------------------------------
-// Proc: FIXME: Not used!
+// Proc:
 // --------------------------------------------------------------------------
 
 class Proc
-  : public ANode
+  : public AProcNode
 {
 public: 
   // Constructor/Destructor
   Proc(ANode* parent, Struct::ACodeNode* strct = NULL)
-    : ANode(TyProc, parent, strct)
+    : AProcNode(TyProc, parent, strct)
   { }
   
   virtual ~Proc()
   { }
   
-  // Dump contents for inspection
-  virtual std::string 
+
+  // -------------------------------------------------------
+  // Static structure (NOTE: m_strct is either Struct::Proc or Struct::Alien)
+  // -------------------------------------------------------
+
+  virtual bool
+  isAlien() const
+  { return (m_strct && typeid(*m_strct) == typeid(Struct::Alien)); }
+
+  
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
+
+  virtual std::string
   toStringMe(int oFlags = 0) const;
+
+private:
 };
 
 

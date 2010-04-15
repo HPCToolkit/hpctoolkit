@@ -90,7 +90,7 @@ public:
   make(Prof::CallPath::Profile& prof);
   
   virtual bool
-  isSeparable(const Prof::CCT::ProcFrm* x) = 0;
+  isSeparable(const Prof::CCT::AProcNode* x) = 0;
 
 protected:
 
@@ -138,7 +138,7 @@ public:
   make(Prof::CallPath::Profile& prof);
   
   virtual bool
-  isSeparable(const Prof::CCT::ProcFrm* x);
+  isSeparable(const Prof::CCT::AProcNode* x);
 
 private:
   void
@@ -168,7 +168,7 @@ public:
   virtual ~PthreadOverheadMetricFact() { }
   
   virtual bool
-  isSeparable(const Prof::CCT::ProcFrm* x);
+  isSeparable(const Prof::CCT::AProcNode* x);
 
 private:
   static const std::string s_tag;
@@ -185,7 +185,7 @@ public:
   virtual ~CilkOverheadMetricFact() { }
   
   virtual bool
-  isSeparable(const Prof::CCT::ProcFrm* x);
+  isSeparable(const Prof::CCT::AProcNode* x);
 
 private:
   static const std::string s_tag;

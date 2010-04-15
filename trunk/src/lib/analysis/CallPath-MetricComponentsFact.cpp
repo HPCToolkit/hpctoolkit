@@ -174,9 +174,8 @@ MetricComponentsFact::make(Prof::CCT::ANode* node,
   
   // Note: once set, isSeparableCtxt should remain true for all descendents
   bool isSeparableCtxt_nxt = isSeparableCtxt;
-  if (!isSeparableCtxt && typeid(*node) == typeid(Prof::CCT::ProcFrm)
-      /* TODO: || typeid(Prof::CCT::Proc) */) {
-    Prof::CCT::ProcFrm* x = static_cast<Prof::CCT::ProcFrm*>(node);
+  if (!isSeparableCtxt && dynamic_cast<Prof::CCT::AProcNode*>(node)) {
+    Prof::CCT::AProcNode* x = static_cast<Prof::CCT::AProcNode*>(node);
     isSeparableCtxt_nxt = isSeparable(x);
   }
 
@@ -219,7 +218,7 @@ isMPIFrame(const Prof::CCT::ProcFrm* x)
 
 
 bool
-MPIBlameShiftIdlenessFact::isSeparable(const Prof::CCT::ProcFrm* x)
+MPIBlameShiftIdlenessFact::isSeparable(const Prof::CCT::AProcNode* x)
 {
   const string& x_nm = x->procName();
   if (x_nm.length() >= s_tag.length()) {
@@ -369,16 +368,12 @@ MPIBlameShiftIdlenessFact::makeIdleness(Prof::CCT::ANode* node,
   // -------------------------------------------------------
   // Shift blame for waiting at 'node' (use non-finalized metric values)
   // -------------------------------------------------------
-  bool isFrame = (typeid(*node) == typeid(Prof::CCT::ProcFrm)
-		  && !(static_cast<Prof::CCT::ProcFrm*>(node)->isAlien()));
+  bool isFrame = (typeid(*node) == typeid(Prof::CCT::ProcFrm));
 
   if (isFrame && isSeparable(static_cast<Prof::CCT::ProcFrm*>(node))) {
     DIAG_Assert(balancedNode, DIAG_UnexpectedInput);
 
     CCT::ProcFrm* balancedNodeFrm = balancedNode->ancestorProcFrm();
-    while (balancedNodeFrm->isAlien()) {
-      balancedNodeFrm = balancedNodeFrm->ancestorProcFrm(); // TODO:
-    }
 
     for (uint i = 0; i < m_src.size(); ++i) {
       uint mId_src = m_src[i];
@@ -436,7 +431,7 @@ const string PthreadOverheadMetricFact::s_tag = "/libpthread";
 
 
 bool
-PthreadOverheadMetricFact::isSeparable(const Prof::CCT::ProcFrm* x)
+PthreadOverheadMetricFact::isSeparable(const Prof::CCT::AProcNode* x)
 {
   const string& x_lm_nm = x->lmName();
   if (x_lm_nm.length() >= s_tag.length()) {
@@ -454,7 +449,7 @@ const string CilkOverheadMetricFact::s_tag = "lush:parallel-overhead";
 
 
 bool
-CilkOverheadMetricFact::isSeparable(const Prof::CCT::ProcFrm* x)
+CilkOverheadMetricFact::isSeparable(const Prof::CCT::AProcNode* x)
 {
   const string& x_fnm = x->fileName();
   if (x_fnm.length() >= s_tag.length()) {
