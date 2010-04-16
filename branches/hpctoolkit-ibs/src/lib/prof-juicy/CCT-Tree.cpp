@@ -640,7 +640,21 @@ ANode::mergeMe_IBS(const ANode& y, uint metricBegIdx)
   if((min < 0) || (max < 0))//no merge
     return 0;
 
-  if(!((x->metric(umin) > y.metric(umax)) || (x->metric(umax) < y.metric(umin)))) //have overlap
+  int merge_flag; //0 means not merge, else merge
+  merge_flag = 0;
+  for(uint i = 0; i<x->getMallocNodeNum(); i++)
+  {
+    for(uint j = 0; j<y.getMallocNodeNum(); j++)
+    {
+      if(static_cast<ANode*>(x->getMallocId(i))->id() == static_cast<ANode*>(y.getMallocId(j))->id())
+      {
+        merge_flag = 1;
+        break;
+      }
+    }
+  }
+  /*we merge the two nodes which are related to the same malloc node or have overlapping address ranges.*/
+  if(merge_flag || (!((x->metric(umin) > y.metric(umax)) || (x->metric(umax) < y.metric(umin))))) //have overlap
   {
     for (uint x_i = metricBegIdx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
       if(x_i == umin)
@@ -975,6 +989,106 @@ ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
   }
   if (doPost) {
     writeXML_post(os, oFlags, pfx);
+  }
+  return os;
+}
+
+//(Xu)
+bool
+ANode::Predecessor(std::deque<Prof::CCT::ANode*> XMLdeq)
+{
+  bool ret = false;
+  std::deque<Prof::CCT::ANode*>::iterator itt;
+  itt = XMLdeq.begin();
+  while(itt!=XMLdeq.end())
+  {
+    if (*itt == this)
+      return true;
+    itt++;
+  }
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByDynInfo);
+       it.current(); it++)
+  {
+    ANode* n = it.current();
+    ret = n->Predecessor(XMLdeq);
+    if(ret == true)
+      return true;
+  }
+  return ret;
+}
+
+std::ostream&
+ANode::useReuseWriteXML(ostream& os, std::deque<Prof::CCT::ANode*> XMLdeq, uint metricBeg, uint metricEnd,
+                int oFlags, Prof::CCT::ANode* mallocnode, const char* pfx) const
+{
+  ANode *parMalloc = NULL;
+  std::deque<Prof::CCT::ANode*> tmpdeq;
+  string indent = "  ";
+  if (oFlags & CCT::Tree::OFlg_Compressed) {
+    pfx = "";
+    indent = "";
+  }
+
+  if(mallocnode != NULL)
+  {
+    tmpdeq.push_back(mallocnode);
+//    mallocnode->parent()->writeXML_pre(os, 0, 0, oFlags, pfx);
+    parMalloc = mallocnode->parent();
+    bool level = false;//The first PF is malloc in IBS SYNC. We want the second PF
+    while (parMalloc->parent()->parent() != NULL)//we do not want to write malloc node from main()
+    {
+      if (parMalloc->type() == Prof::CCT::ANode::TyProcFrm)
+      {
+        const Prof::CCT::ProcFrm* fr = dynamic_cast<const Prof::CCT::ProcFrm*>(parMalloc);
+        if(!fr->isAlien())
+        {
+          if(level)
+            break;
+          else
+          {
+            level = true;
+            parMalloc=parMalloc->parent();
+          }
+        }
+        else
+          parMalloc=parMalloc->parent();
+      }
+      else
+        parMalloc=parMalloc->parent();
+    }
+
+    parMalloc->writeXML_pre(os, 0, 0, oFlags, pfx);
+    for (ANodeSortedChildIterator it(parMalloc, ANodeSortedIterator::cmpByDynInfo);
+       it.current(); it++) 
+    {
+      ANode* n = it.current();
+      if(n->Predecessor(tmpdeq))
+      {
+        n->useReuseWriteXML(os, tmpdeq, 0, 0, oFlags, NULL);
+        break;
+      }
+    }
+  }
+
+  bool doPost = false;
+  if(this != parMalloc)//only write when it is not the same as parMollco
+    doPost = writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
+  string prefix = pfx + indent;
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByDynInfo);
+       it.current(); it++) {
+    ANode* n = it.current();
+    if(!n->Predecessor(XMLdeq))
+      continue;
+    n->useReuseWriteXML(os, XMLdeq, metricBeg, metricEnd, oFlags, NULL, prefix.c_str());
+  }
+  if (doPost) {
+    writeXML_post(os, oFlags, pfx);
+  }
+
+  if(mallocnode != NULL)
+  {
+//   mallocnode->parent()->writeXML_post(os, oFlags, pfx);
+     parMalloc->writeXML_post(os, oFlags, pfx);
   }
   return os;
 }

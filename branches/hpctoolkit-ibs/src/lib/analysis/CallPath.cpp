@@ -934,17 +934,37 @@ namespace CallPath {
 void
 useReuseData(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 {
-  std::deque<Prof::CCT::ANode*> LCAdeq;
+  std::deque<Prof::CCT::ANode*> LCAdeq, XMLdeq;
   std::multimap<Prof::CCT::ANode*, Prof::CCT::ANode*> mallocToNode; //multiple map from malloc nodes to uses nodes
   useReuseData(prof.cct()->root(), &mallocToNode);
   printf("finally: size = %d with root=%d\n", mallocToNode.size(),prof.cct()->root()->id());
   std::multimap<Prof::CCT::ANode*, Prof::CCT::ANode*>::iterator it,it1;
   std::pair<std::multimap<Prof::CCT::ANode*,Prof::CCT::ANode*>::iterator,std::multimap<Prof::CCT::ANode*,Prof::CCT::ANode*>::iterator> sameKey;
 
+  Prof::CCT::ANode *node1, *node2, *parnode, *mallocnode;
   /*Create the file to store use-reuse info*/
+  uint metricBegId = 0;
+  uint metricEndId = prof.metricMgr()->size();
+  if (true /* CCT::Tree::OFlg_VisibleMetricsOnly*/) {
+    Prof::Metric::ADesc* mBeg = prof.metricMgr()->findFirstVisible();
+    Prof::Metric::ADesc* mEnd = prof.metricMgr()->findLastVisible();
+    metricBegId = (mBeg) ? mBeg->id()     : Prof::Metric::Mgr::npos;
+    metricEndId = (mEnd) ? mEnd->id() + 1 : Prof::Metric::Mgr::npos;
+  }
+  bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);
+  int oFlags = 0; // CCT::Tree::OFlg_LeafMetricsOnly;
+  if (!prettyPrint) {
+    oFlags |= Prof::CCT::Tree::OFlg_Compressed;
+  }
+  DIAG_If(5) {
+    oFlags |= Prof::CCT::Tree::OFlg_Debug;
+  }
   const string& db_dir = args.db_dir;
   string useReuse_fnm = db_dir + "/" + "use-reuse.xml";
   std::ostream* useReuseOs = IOUtil::OpenOStream(useReuse_fnm.c_str());
+  /*write to xml file*/
+  Analysis::CallPath::useReuseWriteHdr(prof, *useReuseOs, args.title, prettyPrint);
+  *useReuseOs << "<SecCallPathProfileData>\n";
 
   it = mallocToNode.begin(); 
   /*one malloc node => multiple CCT nodes*/
@@ -954,14 +974,15 @@ useReuseData(Prof::CallPath::Profile& prof, const Analysis::Args& args)
       it++;
       continue;
     }
-    printf("finally: %d=>", it->first->id());
+    mallocnode = it->first;
+    printf("finally: %d=>", it->first->id());fflush(stdout);
     for(it1 = sameKey.first; it1 != sameKey.second; it1++) {//all the uses of malloc node (it->first)
-      printf(" %d", it1->second->id());
+      printf(" %d", it1->second->id());fflush(stdout);
       LCAdeq.push_back(it1->second);
     }
+    XMLdeq = LCAdeq;//maintain all the uses in MXLdeq
     while(LCAdeq.size()>1)//only when the size>1 we can find the LCA
     {
-      Prof::CCT::ANode *node1, *node2, *parnode;
       node1 = LCAdeq.front();
       LCAdeq.pop_front();
       node2 = LCAdeq.front();
@@ -970,14 +991,62 @@ useReuseData(Prof::CallPath::Profile& prof, const Analysis::Args& args)
       if(parnode != NULL)
       {
         printf("  %d(%d, %d)\n", parnode->id(), node1->id(), node2->id());
+//        parnode->useReuseWriteXML(*useReuseOs, metricBegId, metricEndId, oFlags, node1, node2, true);
       }
+
       LCAdeq.push_back(parnode);
     }
+    parnode = LCAdeq.front(); //this is the toppest level of use-reuse
+    /*LCA should be a PF*/
+    while (parnode->parent() != NULL)//the highest level is main
+    {
+      if (parnode->type() == Prof::CCT::ANode::TyProcFrm)
+      {
+        const Prof::CCT::ProcFrm* fr = dynamic_cast<const Prof::CCT::ProcFrm*>(parnode);
+        if(!fr->isAlien())
+          break;
+        else
+          parnode=parnode->parent();
+      }
+      else
+        parnode=parnode->parent();
+    }
+    /*find PF for mallocnode*/
+    bool level = true;//find the PF containing malloc
+    while (mallocnode->parent() != NULL)//the highest level is main
+    {
+      if (mallocnode->type() == Prof::CCT::ANode::TyProcFrm)
+      {
+        const Prof::CCT::ProcFrm* fr = dynamic_cast<const Prof::CCT::ProcFrm*>(mallocnode);
+        if(!fr->isAlien())
+        {
+          if(level)
+            break;
+          else
+          {
+            level = true;
+            mallocnode=mallocnode->parent();
+          }
+        }
+        else
+          mallocnode=mallocnode->parent();
+      }
+      else
+        mallocnode=mallocnode->parent();
+    }
+
+    parnode->useReuseWriteXML(*useReuseOs, XMLdeq, metricBegId, metricEndId, oFlags, mallocnode);
     LCAdeq.clear();//clear the deque
     mallocToNode.erase(it->first);
     printf("\n");
     it++;
   }
+  /*write the end of the xml file*/
+  *useReuseOs << "</SecCallPathProfileData>\n";
+
+  *useReuseOs << "</SecCallPathProfile>\n";
+  *useReuseOs << "</HPCToolkitExperiment>\n";
+
   IOUtil::CloseStream(useReuseOs);
 }
 
@@ -1057,6 +1126,54 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   os << "</HPCToolkitExperiment>\n";
   os.flush();
 
+}
+
+void
+useReuseWriteHdr(Prof::CallPath::Profile& prof, std::ostream& os, 
+      const string& title, bool prettyPrint)
+{
+  static const char* experimentDTD =
+#include <lib/xml/hpc-experiment.dtd.h>
+
+  using namespace Prof;
+
+  int oFlags = 0; // CCT::Tree::OFlg_LeafMetricsOnly;
+  if (!prettyPrint) {
+    oFlags |= CCT::Tree::OFlg_Compressed;
+  }
+  DIAG_If(5) {
+    oFlags |= CCT::Tree::OFlg_Debug;
+  }
+
+  uint metricBegId = 0;
+  uint metricEndId = prof.metricMgr()->size();
+
+  if (true /* CCT::Tree::OFlg_VisibleMetricsOnly*/) {
+    Metric::ADesc* mBeg = prof.metricMgr()->findFirstVisible();
+    Metric::ADesc* mEnd = prof.metricMgr()->findLastVisible();
+    metricBegId = (mBeg) ? mBeg->id()     : Metric::Mgr::npos;
+    metricEndId = (mEnd) ? mEnd->id() + 1 : Metric::Mgr::npos;
+  }
+
+  string name = (title.empty()) ? prof.name() : title;
+
+  os << "<?xml version=\"1.0\"?>" << std::endl;
+  os << "<!DOCTYPE hpc-experiment [\n" << experimentDTD << "]>" << std::endl;
+  os << "<HPCToolkitExperiment version=\"2.0\">\n";
+  os << "<Header n" << MakeAttrStr(name) << ">\n";
+  os << "  <Info/>\n";
+  os << "</Header>\n";
+
+  os << "<SecCallPathProfile i=\"0\" n" << MakeAttrStr(name) << ">\n";
+
+  // ------------------------------------------------------------
+  //    
+  // ------------------------------------------------------------
+  os << "<SecHeader>\n";
+  prof.writeXML_hdr(os, metricBegId, metricEndId, oFlags);
+  os << "  <Info/>\n";
+  os << "</SecHeader>\n";
+  os.flush();
 }
 
 } // namespace CallPath

@@ -165,6 +165,10 @@ void
 write(Prof::CallPath::Profile& prof, std::ostream& os, 
       const std::string& title, bool prettyPrint = true);
 
+void
+useReuseWriteHdr(Prof::CallPath::Profile& prof, std::ostream& os,
+      const std::string& title, bool prettyPrint = true);
+
 } // namespace CallPath
 
 } // namespace Analysis

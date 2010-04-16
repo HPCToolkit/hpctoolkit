@@ -563,6 +563,16 @@ public:
 	   uint metricEnd = Metric::IData::npos,
 	   int oFlags = 0, const char* pfx = "") const;
 
+  //(Xu)
+  bool
+  Predecessor(std::deque<Prof::CCT::ANode*> XMLdeq);
+
+  std::ostream&
+  useReuseWriteXML(std::ostream& os, std::deque<Prof::CCT::ANode*> XMLdeq,
+           uint metricBeg = Metric::IData::npos,
+           uint metricEnd = Metric::IData::npos,
+           int oFlags = 0, Prof::CCT::ANode* mallocnode = NULL, const char* pfx = "") const;
+
   std::ostream&
   dump(std::ostream& os = std::cerr, int oFlags = 0, const char* pfx = "") const;
 
