@@ -75,13 +75,9 @@
 #ifndef hpcrun_env_h
 #define hpcrun_env_h
 
-extern const char* HPCRUN_PROFILE_FNM_SFX;
-extern const char* HPCRUN_TRACE_FNM_SFX;
-extern const char* HPCRUN_LOG_FNM_SFX;
-
+// Names for option environment variables
 extern const char* HPCRUN_OPT_LUSH_AGENTS;
 
-/* Names for option environment variables */
 extern const char* HPCRUN_OPT_OUT_PATH;
 
 extern const char* HPCRUN_OPT_TRACE;

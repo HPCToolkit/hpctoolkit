@@ -399,14 +399,14 @@ copySourceFile(const string& filenm, const string& dstDir,
 static int 
 hpcrunFileFilter(const struct dirent* entry)
 {
-  static const char* ext = ".hpcrun";
-  static const uint extLen = strlen(ext);
+  static const string ext = string(".") + HPCRUN_PROFILE_FNM_SFX;
+  static const uint extLen = ext.length();
 
   // FileUtil::fnmatch("*.hpcrun", entry->d_name);
   uint nmLen = strlen(entry->d_name);
   if (nmLen > extLen) {
     int cmpbeg = (nmLen - extLen);
-    return (strncmp(&entry->d_name[cmpbeg], ext, extLen) == 0);
+    return (strncmp(&entry->d_name[cmpbeg], ext.c_str(), extLen) == 0);
   }
   return false;
 }

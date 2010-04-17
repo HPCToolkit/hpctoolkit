@@ -41,13 +41,9 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-const char* HPCRUN_PROFILE_FNM_SFX  = "hpcrun";    /* profile filename suffix */
-const char* HPCRUN_TRACE_FNM_SFX    = "hpctrace";  /* trace filename suffix */
-const char* HPCRUN_LOG_FNM_SFX      = "log";       /* debug log filename suffix */
-
+// Names for option environment variables
 const char* HPCRUN_OPT_LUSH_AGENTS   = "HPCRUN_OPT_LUSH_AGENTS";
 
-/* Names for option environment variables */
 const char* HPCRUN_OPT_OUT_PATH      = "HPCRUN_OPT_OUT_PATH";
 const char* HPCRUN_OPT_TRACE         = "HPCRUN_OPT_TRACE";
 
