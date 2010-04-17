@@ -108,7 +108,7 @@ static char *executable_pathname = 0;
 void 
 files_trace_name(char *filename, unsigned int mpi, int len)
 {
-  files_name(filename, mpi, CSPROF_TRACE_FNM_SFX);
+  files_name(filename, mpi, HPCRUN_TRACE_FNM_SFX);
 }
 
 
@@ -129,21 +129,21 @@ files_executable_name()
 void
 files_profile_name(char *filename, unsigned int mpi, int len)
 {
-  files_name(filename, mpi, CSPROF_PROFILE_FNM_SFX);
+  files_name(filename, mpi, HPCRUN_PROFILE_FNM_SFX);
 }
 
 
 void
 files_log_name(char *filename, unsigned int mpi, int len)
 {
-  files_name(filename, mpi, CSPROF_LOG_FNM_SFX);
+  files_name(filename, mpi, HPCRUN_LOG_FNM_SFX);
 }
 
 
 void 
 files_set_directory()
 {  
-  char *path = getenv(CSPROF_OPT_OUT_PATH);
+  char *path = getenv(HPCRUN_OPT_OUT_PATH);
 
   // compute path for default measurement directory
   if (path == NULL || strlen(path) == 0) {

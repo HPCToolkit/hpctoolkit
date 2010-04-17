@@ -80,8 +80,8 @@ hpcrun_options__fini(hpcrun_options_t* x)
 int
 hpcrun_options__getopts(hpcrun_options_t* x)
 {
-  /* Option: CSPROF_OPT_LUSH_AGENTS */
-  char *s = getenv(CSPROF_OPT_LUSH_AGENTS);
+  /* Option: HPCRUN_OPT_LUSH_AGENTS */
+  char *s = getenv(HPCRUN_OPT_LUSH_AGENTS);
   if (s) {
     strcpy(x->lush_agent_paths, s);
   }

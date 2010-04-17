@@ -302,7 +302,7 @@ hpc_getoptions()
         hpc_opt_check "-o" "${opt_out_path}";
         ;;
 
-      -t) 
+      -t | --trace)
         opt_trace=1
         ;;
 
@@ -363,12 +363,12 @@ hpc_prepareenv()
   export CSPROF_NM_COMMAND="${hpcfnbounds_dir}/hpcfnbounds"
 
   if [ -n "${opt_lush_agents}" ]; then
-    CSPROF_OPT_LUSH_AGENTS="${opt_lush_agents}"
-    export CSPROF_OPT_LUSH_AGENTS
+    HPCRUN_OPT_LUSH_AGENTS="${opt_lush_agents}"
+    export HPCRUN_OPT_LUSH_AGENTS
   fi
   if [ -n "${opt_out_path}" ]; then
-    CSPROF_OPT_OUT_PATH="${opt_out_path}"
-    export CSPROF_OPT_OUT_PATH
+    HPCRUN_OPT_OUT_PATH="${opt_out_path}"
+    export HPCRUN_OPT_OUT_PATH
   fi
   if [ -n "${opt_ev_list}" ]; then
     if [ "${opt_ev_list}" = "RETCNT" ]; then
@@ -394,7 +394,7 @@ hpc_prepareenv()
     export MONITOR_DEBUG=1
   fi
   if [ -n "${opt_trace}" ]; then
-    export CSPROF_OPT_TRACE=1
+    export HPCRUN_OPT_TRACE=1
   fi
   if [ -n "${opt_quiet}" ]; then
     export HPCRUN_QUIET=1
