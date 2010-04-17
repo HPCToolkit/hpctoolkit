@@ -41,18 +41,15 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-const char* CSPROF_FNM_PFX          = "csprof.";   /* general filename prefix */
-const char* CSPROF_PSTATE_FNM_SFX   = ".cspstate"; /* pstate filename suffix */
-const char* CSPROF_PROFILE_FNM_SFX  = "hpcrun";    /* profile filename suffix */
-const char* CSPROF_TRACE_FNM_SFX    = "cst";       /* trace filename suffix */
-const char* CSPROF_LOG_FNM_SFX      = "log";       /* debug log filename suffix */
+const char* HPCRUN_PROFILE_FNM_SFX  = "hpcrun";    /* profile filename suffix */
+const char* HPCRUN_TRACE_FNM_SFX    = "hpctrace";  /* trace filename suffix */
+const char* HPCRUN_LOG_FNM_SFX      = "log";       /* debug log filename suffix */
 
-const char* CSPROF_OPT_LUSH_AGENTS   = "CSPROF_OPT_LUSH_AGENTS";
+const char* HPCRUN_OPT_LUSH_AGENTS   = "HPCRUN_OPT_LUSH_AGENTS";
 
 /* Names for option environment variables */
-const char* CSPROF_OPT_OUT_PATH      = "CSPROF_OPT_OUT_PATH";
-const char* CSPROF_OPT_SAMPLE_PERIOD = "CSPROF_OPT_SAMPLE_PERIOD";
-const char* CSPROF_OPT_TRACE         = "CSPROF_OPT_TRACE";
+const char* HPCRUN_OPT_OUT_PATH      = "HPCRUN_OPT_OUT_PATH";
+const char* HPCRUN_OPT_TRACE         = "HPCRUN_OPT_TRACE";
 
 const char* PAPI_EVENT_LIST          = "PAPI_EVENT_LIST";
 

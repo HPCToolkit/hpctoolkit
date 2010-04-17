@@ -72,26 +72,22 @@
   or otherwise) arising in any way out of the use of this software, even
   if advised of the possibility of such damage.
 */
-#ifndef CSPROF_ENV_H
-#define CSPROF_ENV_H
+#ifndef hpcrun_env_h
+#define hpcrun_env_h
 
-extern const char* CSPROF_FNM_PFX;
-extern const char* CSPROF_PSTATE_FNM_SFX;
+extern const char* HPCRUN_PROFILE_FNM_SFX;
+extern const char* HPCRUN_TRACE_FNM_SFX;
+extern const char* HPCRUN_LOG_FNM_SFX;
 
-extern const char* CSPROF_PROFILE_FNM_SFX;
-extern const char* CSPROF_TRACE_FNM_SFX;
-extern const char* CSPROF_LOG_FNM_SFX;
-
-extern const char* CSPROF_OPT_LUSH_AGENTS;
+extern const char* HPCRUN_OPT_LUSH_AGENTS;
 
 /* Names for option environment variables */
-extern const char* CSPROF_OPT_OUT_PATH;
-extern const char* CSPROF_OPT_SAMPLE_PERIOD;
+extern const char* HPCRUN_OPT_OUT_PATH;
 
-extern const char* CSPROF_OPT_TRACE;
+extern const char* HPCRUN_OPT_TRACE;
 
 extern const char* HPCRUN_EVENT_LIST;
 extern const char* HPCRUN_MEMSIZE;
 extern const char* HPCRUN_LOW_MEMSIZE;
 
-#endif /* CSPROF_ENV_H */
+#endif /* hpcrun_env_h */
