@@ -80,8 +80,17 @@
 extern "C" {
 #endif
 
+//***************************************************************************
 
-//*************************** Macros **************************
+// hpcrun profile filename suffix
+static const char HPCRUN_PROFILE_FNM_SFX[] = "hpcrun";
+
+// hpcrun trace filename suffix
+static const char HPCRUN_TRACE_FNM_SFX[] = "hpctrace";
+
+// hpcrun log filename suffix
+static const char HPCRUN_LOG_FNM_SFX[] = "log";
+
 
 //***************************************************************************
 // hdr
