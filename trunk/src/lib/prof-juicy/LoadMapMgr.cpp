@@ -105,10 +105,11 @@ LoadMapMgr::lm_find(const std::string& nm) const
 }
 
 
-std::vector<LoadMap::MergeEffect> 
+std::vector<LoadMap::MergeEffect>*
 LoadMapMgr::merge(const ALoadMap& y)
 {
-  std::vector<LoadMap::MergeEffect> mrgEffect;
+  std::vector<LoadMap::MergeEffect>* mrgEffect =
+    new std::vector<LoadMap::MergeEffect>;
   
   LoadMapMgr& x = *this;
 
@@ -128,7 +129,7 @@ LoadMapMgr::merge(const ALoadMap& y)
 
     if (x_lm->id() != y_lm->id()) {
       // y_lm->id() is replaced by x_lm->id()
-      mrgEffect.push_back(LoadMap::MergeEffect(y_lm->id(), x_lm->id()));
+      mrgEffect->push_back(LoadMap::MergeEffect(y_lm->id(), x_lm->id()));
     }
     
     DIAG_Assert(x_lm->isAvail() == y_lm->isAvail(), "LoadMapMgr::merge: two LoadMapMgr::LM of the same name must both be (un)available: " << x_lm->name());

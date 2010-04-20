@@ -95,9 +95,6 @@ namespace Prof {
 
 namespace CCT {
 
-uint Tree::raToCallsiteOfst = 1;
-
-
 Tree::Tree(const CallPath::Profile* metadata)
   : m_root(NULL), m_metadata(metadata), m_maxDenseId(0), m_nodeidMap(NULL)
 {
@@ -112,7 +109,7 @@ Tree::~Tree()
 }
 
 
-void
+std::list<ANode::MergeEffect>*
 Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics,
 	    int dbgFlg)
 {
@@ -135,7 +132,10 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics,
   }
   DIAG_Assert(isPrecondition, "Prof::CCT::Tree::merge: Merge precondition fails!");
 
-  x_root->mergeDeep(y_root, x_newMetricBegIdx, y_newMetrics, dbgFlg);
+  std::list<ANode::MergeEffect>* mrgEffects =
+    x_root->mergeDeep(y_root, x_newMetricBegIdx, y_newMetrics, dbgFlg);
+
+  return mrgEffects;
 }
 
 
@@ -229,6 +229,8 @@ uint ANode::s_nextUniqueId = 2;
 //***************************************************************************
 // ANode, etc: constructors/destructors
 //***************************************************************************
+
+uint ANode::s_raToCallsiteOfst = 1;
 
 string AProcNode::BOGUS;
 
@@ -531,7 +533,7 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 //**********************************************************************
 
 
-void
+std::list<ANode::MergeEffect>*
 ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics,
 		 int dbgFlg)
 {
@@ -541,7 +543,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics,
   // 0. If y is childless, return.
   // ------------------------------------------------------------
   if (y->isLeaf()) {
-    return;
+    return NULL;
   }
 
   // ------------------------------------------------------------  
@@ -581,16 +583,18 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics,
       x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, y_newMetrics, dbgFlg);
     }
   }
+
+  return NULL;
 }
 
 
-void
+ANode::MergeEffect
 ANode::merge(ANode* y)
 {
   ANode* x = this;
   
   // 1. copy y's metrics into x
-  x->mergeMe(*y);
+  MergeEffect effct = x->mergeMe(*y);
   
   // 2. copy y's children into x
   for (ANodeChildIterator it(y); it.Current(); /* */) {
@@ -602,6 +606,8 @@ ANode::merge(ANode* y)
   
   y->unlink();
   delete y;
+
+  return effct;
 }
 
 
