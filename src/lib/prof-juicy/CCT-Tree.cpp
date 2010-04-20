@@ -213,12 +213,12 @@ const string ANode::NodeNames[ANode::TyNUMBER] = {
 const string&
 ANode::ANodeTyToName(ANodeTy tp)
 {
-  return NodeNames[tp]; 
+  return NodeNames[tp];
 }
 
 
 ANode::ANodeTy
-ANode::IntToANodeType(long i) 
+ANode::IntToANodeType(long i)
 {
   DIAG_Assert((i >= 0) && (i < TyNUMBER), "");
   return (ANodeTy)i;
@@ -605,7 +605,7 @@ ANode::merge(ANode* y)
 }
 
 
-void 
+ANode::MergeEffect
 ANode::mergeMe(const ANode& y, uint metricBegIdx)
 {
   ANode* x = this;
@@ -618,10 +618,13 @@ ANode::mergeMe(const ANode& y, uint metricBegIdx)
   for (uint x_i = metricBegIdx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
     x->metric(x_i) += y.metric(y_i);
   }
+  
+  MergeEffect emptyEffect;
+  return emptyEffect;
 }
 
 
-void 
+ANode::MergeEffect
 ADynNode::mergeMe(const ANode& y, uint metricBegIdx)
 {
   // N.B.: Assumes ADynNode::isMergable() holds
@@ -629,14 +632,24 @@ ADynNode::mergeMe(const ANode& y, uint metricBegIdx)
   const ADynNode* y_dyn = dynamic_cast<const ADynNode*>(&y);
   DIAG_Assert(y_dyn, "ADynNode::mergeMe: " << DIAG_UnexpectedInput);
 
-  ANode::mergeMe(y, metricBegIdx);
+  MergeEffect effct = ANode::mergeMe(y, metricBegIdx);
+
+  // merge cpIds:
+  // 1. At most one of x and y have a cpId: adopt the non-NULL id
+  // 2. Otherwise, merge conflicting ids
+  if (m_cpId == HPCRUN_FMT_CCTNodeId_NULL
+      || y_dyn->m_cpId == HPCRUN_FMT_CCTNodeId_NULL) {
+    if (m_cpId == HPCRUN_FMT_CCTNodeId_NULL) {
+      m_cpId = y_dyn->m_cpId;
+    }
+  }
+  else if (m_cpId != y_dyn->m_cpId) {
+    // within y, translate [y_dyn->m_cpId ==> m_cpId]
+    effct.old_cpId = y_dyn->m_cpId;
+    effct.new_cpId = m_cpId;
+  }
   
-  // FIXME: Temporary 'assert' and 'if'. In reality, the assertion
-  // below may not hold because we will have to support merging two
-  // nodes with non-NULL cpIds.  However, if it does hold, we have
-  // temporarily dodged a bullet.
-  DIAG_Assert(m_cpId == 0 || y_dyn->m_cpId == 0, "ADynNode::mergeMe: conflicting cpIds!");
-  if (m_cpId == 0) { m_cpId = y_dyn->m_cpId; }
+  return effct;
 }
 
 
@@ -673,6 +686,7 @@ ANode::mergeDeep_fixup(int newMetrics)
     n->insertMetricsBefore(newMetrics);
   }
 }
+
 
 //**********************************************************************
 // 
