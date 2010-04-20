@@ -385,6 +385,13 @@ public:
     MergeEffect(uint old_, uint new_) : old_cpId(old_), new_cpId(new_)
     { }
     
+    bool
+    isNoop()
+    {
+      return (old_cpId == HPCRUN_FMT_CCTNodeId_NULL &&
+	      new_cpId == HPCRUN_FMT_CCTNodeId_NULL);
+    }
+
     uint old_cpId /*within y*/, new_cpId /*within y*/;
   };
 
@@ -396,7 +403,8 @@ public:
   // N.B.: assume we can destroy y.
   // N.B.: assume x already has space to store merged metrics
   std::list<MergeEffect>*
-  mergeDeep(ANode* y, uint x_numMetrics, uint y_numMetrics, int dbgFlg = 0);
+  mergeDeep(ANode* y, uint x_numMetrics, uint y_numMetrics, 
+	    uint mrgFlag = 0, uint oFlag = 0);
 
   // merge: Let 'this' = x and let y be a node corresponding to x.
   //   Merge y into x.  
@@ -434,19 +442,19 @@ public:
   // --------------------------------------------------------
 
   std::string
-  toString(int oFlags = 0, const char* pfx = "") const;
+  toString(uint oFlags = 0, const char* pfx = "") const;
 
   virtual std::string
-  toStringMe(int oFlags = 0) const;
+  toStringMe(uint oFlags = 0) const;
 
   std::ostream&
   writeXML(std::ostream& os,
 	   uint metricBeg = Metric::IData::npos,
 	   uint metricEnd = Metric::IData::npos,
-	   int oFlags = 0, const char* pfx = "") const;
+	   uint oFlags = 0, const char* pfx = "") const;
 
   std::ostream&
-  dump(std::ostream& os = std::cerr, int oFlags = 0, const char* pfx = "") const;
+  dump(std::ostream& os = std::cerr, uint oFlags = 0, const char* pfx = "") const;
 
   void
   ddump() const;
@@ -463,10 +471,10 @@ protected:
   writeXML_pre(std::ostream& os,
 	       uint metricBeg = Metric::IData::npos,
 	       uint metricEnd = Metric::IData::npos,
-	       int oFlags = 0,
+	       uint oFlags = 0,
 	       const char* pfx = "") const;
   void
-  writeXML_post(std::ostream& os, int oFlags = 0, const char* pfx = "") const;
+  writeXML_post(std::ostream& os, uint oFlags = 0, const char* pfx = "") const;
 
   // --------------------------------------------------------
   // 
@@ -726,7 +734,7 @@ public:
   nameDyn() const;
 
   void 
-  writeDyn(std::ostream& os, int oFlags = 0, const char* prefix = "") const;
+  writeDyn(std::ostream& os, uint oFlags = 0, const char* prefix = "") const;
 
 
 private:
@@ -869,7 +877,7 @@ public:
   
   // Dump contents for inspection
   virtual std::string
-  toStringMe(int oFlags = 0) const;
+  toStringMe(uint oFlags = 0) const;
   
 protected: 
 private: 
@@ -924,7 +932,7 @@ public:
   // -------------------------------------------------------
 
   virtual std::string
-  toStringMe(int oFlags = 0) const;
+  toStringMe(uint oFlags = 0) const;
 
   virtual std::string
   codeName() const;
@@ -964,7 +972,7 @@ public:
   // -------------------------------------------------------
 
   virtual std::string
-  toStringMe(int oFlags = 0) const;
+  toStringMe(uint oFlags = 0) const;
 
 private:
 };
@@ -988,7 +996,7 @@ public:
 
   // Dump contents for inspection
   virtual std::string 
-  toStringMe(int oFlags = 0) const; 
+  toStringMe(uint oFlags = 0) const; 
   
 private:
 };
@@ -1036,7 +1044,7 @@ public:
     
   // Dump contents for inspection
   virtual std::string
-  toStringMe(int oFlags = 0) const;
+  toStringMe(uint oFlags = 0) const;
 
 };
 
@@ -1077,7 +1085,7 @@ class Stmt
 
   // Dump contents for inspection
   virtual std::string
-  toStringMe(int oFlags = 0) const;
+  toStringMe(uint oFlags = 0) const;
 };
 
 
@@ -1110,8 +1118,15 @@ public:
     OFlg_LeafMetricsOnly = (1 << 1), // Write metrics only at leaves (outdated)
     OFlg_Debug           = (1 << 2), // Debug: show xtra source line info
     OFlg_DebugAll        = (1 << 3), // Debug: (may be invalid format)
+  };
 
-    OFlg_MergeOnly       = (1 << 4), // mergeDeep: nodes may only be merged
+  enum {
+    // Merge flags
+    MrgFlg_NormalizeTraceFileY = (1 << 0),
+    MrgFlg_CCTMergeOnly        = (1 << 1), // CCT nodes may only be merged
+
+    // *private*
+    MrgFlg_PropagateEffects    = (1 << 2),
   };
 
 
@@ -1148,7 +1163,7 @@ public:
   // -------------------------------------------------------
   std::list<ANode::MergeEffect>*
   merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics,
-	int dbgFlg = 0);
+	uint mrgFlag = 0, uint oFlag = 0);
 
 
   // -------------------------------------------------------
@@ -1179,10 +1194,10 @@ public:
   writeXML(std::ostream& os,
 	   uint metricBeg = Metric::IData::npos,
 	   uint metricEnd = Metric::IData::npos,
-	   int oFlags = 0) const;
+	   uint oFlags = 0) const;
 
   std::ostream&
-  dump(std::ostream& os = std::cerr, int oFlags = 0) const;
+  dump(std::ostream& os = std::cerr, uint oFlags = 0) const;
   
   void
   ddump() const;
@@ -1192,7 +1207,7 @@ public:
   // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
   // or xml::ESC_FALSE. 
   static int
-  doXMLEscape(int oFlags);
+  doXMLEscape(uint oFlags);
 
 public:
   typedef std::map<uint, ANode*> NodeIdToANodeMap;

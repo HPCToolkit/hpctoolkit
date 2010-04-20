@@ -113,7 +113,7 @@ namespace CallPath {
 
 Prof::CallPath::Profile*
 read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
-     int mergeTy, uint rFlags)
+     int mergeTy, uint rFlags, uint mrgFlags)
 {
   // Special case
   if (profileFiles.empty()) {
@@ -128,7 +128,7 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
   for (uint i = 1; i < profileFiles.size(); ++i) {
     groupId = (groupMap) ? (*groupMap)[i] : 0;
     Prof::CallPath::Profile* p = read(profileFiles[i], groupId, rFlags);
-    prof->merge(*p, mergeTy);
+    prof->merge(*p, mergeTy, mrgFlags);
     delete p;
   }
   

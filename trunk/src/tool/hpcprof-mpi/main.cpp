@@ -210,10 +210,10 @@ realmain(int argc, char* const* argv)
     myNormalizeProfileArgs(args.profileFiles, groupIdToGroupSizeMap,
 			   myRank, numRanks, rootRank);
 
-  int mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
-  uint rFlags = (Prof::CallPath::Profile::RFlg_virtualMetrics
-		 | Prof::CallPath::Profile::RFlg_noMetricSfx
-		 | Prof::CallPath::Profile::RFlg_makeInclExcl);
+  int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
+  uint rFlags = (Prof::CallPath::Profile::RFlg_VirtualMetrics
+		 | Prof::CallPath::Profile::RFlg_NoMetricSfx
+		 | Prof::CallPath::Profile::RFlg_MakeInclExcl);
   Analysis::Util::UIntVec* groupMap =
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
@@ -639,8 +639,8 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // read profile file
   // -------------------------------------------------------
-  uint rFlags = (Prof::CallPath::Profile::RFlg_noMetricSfx
-		 | Prof::CallPath::Profile::RFlg_makeInclExcl);
+  uint rFlags = (Prof::CallPath::Profile::RFlg_NoMetricSfx
+		 | Prof::CallPath::Profile::RFlg_MakeInclExcl);
   uint rGroupId = (groupMax > 1) ? groupId : 0;
 
   Prof::CallPath::Profile* prof =
@@ -649,8 +649,9 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // merge into canonical CCT
   // -------------------------------------------------------
-  int mergeTy  = Prof::CallPath::Profile::Merge_mergeMetricByName;
-  int mergeFlg = Prof::CCT::Tree::OFlg_MergeOnly; // nodes may only be merged
+  int mergeTy  = Prof::CallPath::Profile::Merge_MergeMetricByName;
+  int mergeFlg = (Prof::CCT::Tree::MrgFlg_NormalizeTraceFileY
+		  | Prof::CCT::Tree::MrgFlg_CCTMergeOnly);
 
   // Add *some* structure information to the leaves of 'prof' so that
   // it will be merged successfully with the structured canonical CCT

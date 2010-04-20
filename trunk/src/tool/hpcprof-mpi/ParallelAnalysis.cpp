@@ -153,7 +153,7 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
     profile_y = unpackProfile(profileBuf, profileBufSz);
     delete[] profileBuf;
     
-    int mergeTy = Prof::CallPath::Profile::Merge_mergeMetricByName;
+    int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
     profile_x->merge(*profile_y, mergeTy);
 
     delete profile_y;
@@ -218,7 +218,7 @@ packProfile(const Prof::CallPath::Profile& profile,
   // open_memstream: mallocs buffer and sets bufferSz
   FILE* fs = open_memstream((char**)buffer, bufferSz);
 
-  uint wFlags = Prof::CallPath::Profile::WFlg_virtualMetrics;
+  uint wFlags = Prof::CallPath::Profile::WFlg_VirtualMetrics;
   Prof::CallPath::Profile::fmt_fwrite(profile, fs, wFlags);
 
   fclose(fs);
@@ -231,7 +231,7 @@ unpackProfile(uint8_t* buffer, size_t bufferSz)
   FILE* fs = fmemopen(buffer, bufferSz, "r");
 
   Prof::CallPath::Profile* prof = NULL;
-  uint rFlags = Prof::CallPath::Profile::RFlg_virtualMetrics;
+  uint rFlags = Prof::CallPath::Profile::RFlg_VirtualMetrics;
   Prof::CallPath::Profile::fmt_fread(prof, fs, rFlags,
 				     "ParallelAnalysis::unpackProfile",
 				     NULL, NULL);
