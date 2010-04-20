@@ -176,8 +176,8 @@ public:
   typedef std::vector<LM*> LMVec;
 
 
-  struct MergeChange {
-    MergeChange(LM_id_t old_, LM_id_t new_) : old_id(old_), new_id(new_) { }
+  struct MergeEffect {
+    MergeEffect(LM_id_t old_, LM_id_t new_) : old_id(old_), new_id(new_) { }
     LM_id_t old_id /*in y*/, new_id /*in x */;
   };
 
@@ -324,12 +324,12 @@ public:
 
 
   // merge: Given an LoadMap y, merge y into x = 'this'.  Returns a
-  // vector of MergeChange describing changes that were made.  The
-  // vector contains at most one MergeChange for each LM_id_t (old_id)
+  // vector of MergeEffect describing changes that were made.  The
+  // vector contains at most one MergeEffect for each LM_id_t (old_id)
   // in y.
   //
   // NOTE: x and y must not conflict! (See lm_insert().)
-  std::vector<MergeChange> 
+  std::vector<MergeEffect> 
   merge(const LoadMap& y);
 
 

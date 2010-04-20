@@ -504,6 +504,18 @@ public:
   // merging
   // --------------------------------------------------------
 
+  struct MergeEffect {
+    MergeEffect() 
+      : old_cpId(HPCRUN_FMT_CCTNodeId_NULL), new_cpId(HPCRUN_FMT_CCTNodeId_NULL)
+    { }
+    
+    MergeEffect(uint old_, uint new_) : old_cpId(old_), new_cpId(new_)
+    { }
+    
+    uint old_cpId /*within y*/, new_cpId /*within y*/;
+  };
+
+
   // mergeDeep: Let 'this' = x and let y be a node corresponding to x
   //   in the sense that we may think of y as being locally merged
   //   with x (according to ADynNode::isMergable()).  Given y,
@@ -519,7 +531,7 @@ public:
   void
   merge(ANode* y);
 
-  virtual void
+  virtual MergeEffect
   mergeMe(const ANode& y, uint metricBegIdx = 0);
 
   // findDynChild: Let z = 'this' be an interior ADynNode (otherwise the
@@ -823,7 +835,7 @@ public:
     return false;
   }
 
-  virtual void
+  virtual ANode::MergeEffect
   mergeMe(const ANode& y, uint metricBegIdx = 0);
   
 

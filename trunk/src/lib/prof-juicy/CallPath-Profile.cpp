@@ -188,14 +188,16 @@ Profile::merge(Profile& y, int mergeTy, int dbgFlg)
   //
   // Post-INVARIANT: y's cct refers to x's LoadMapMgr
   // -------------------------------------------------------
-  std::vector<LoadMap::MergeChange> mergeChg = 
+  std::vector<LoadMap::MergeEffect> mrgEffect =
     m_loadmapMgr->merge(*y.loadMapMgr());
-  y.merge_fixCCT(mergeChg);
+  y.merge_fixCCT(mrgEffect);
 
   // -------------------------------------------------------
   // merge CCTs
   // -------------------------------------------------------
   m_cct->merge(y.cct(), x_newMetricBegIdx, y_newMetrics, dbgFlg);
+  // if 
+  // fix y's trace file
 
   return firstMergedMetric;
 }
@@ -254,10 +256,10 @@ Profile::mergeMetrics(Profile& y, int mergeTy,
 
 
 void 
-Profile::merge_fixCCT(std::vector<LoadMap::MergeChange>& mergeChg)
+Profile::merge_fixCCT(std::vector<LoadMap::MergeEffect>& mrgEffect)
 {
   // early exit for trivial case
-  if (mergeChg.empty()) {
+  if (mrgEffect.empty()) {
     return;
   }
 
@@ -274,8 +276,8 @@ Profile::merge_fixCCT(std::vector<LoadMap::MergeChange>& mergeChg)
       lmId1 = n_dyn->lmId_real();
       lmId2 = (lip) ? lush_lip_getLMId(lip) : LoadMap::LM_id_NULL;
       
-      for (uint i = 0; i < mergeChg.size(); ++i) {
-	const LoadMap::MergeChange& chg = mergeChg[i];
+      for (uint i = 0; i < mrgEffect.size(); ++i) {
+	const LoadMap::MergeEffect& chg = mrgEffect[i];
 	if (chg.old_id == lmId1) {
 	  n_dyn->lmId_real(chg.new_id);
 	  if (lmId2 == LoadMap::LM_id_NULL) {
@@ -788,9 +790,9 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_EMsg(ctxtStr << ": Cannot fully process samples from unavailable load modules:\n" << x.what());
   }
 
-  std::vector<ALoadMap::MergeChange> mergeChg = 
+  std::vector<ALoadMap::MergeEffect> mrgEffect = 
     prof->loadMapMgr()->merge(loadmap);
-  DIAG_Assert(mergeChg.empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);
+  DIAG_Assert(mrgEffect.empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);
 
 
   hpcrun_fmt_loadmap_free(&loadmap_tbl, free);
@@ -1134,7 +1136,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------
   // cpId
   // ----------------------------------------
-  uint cpId = 0;
+  uint cpId = HPCRUN_FMT_CCTNodeId_NULL;
   int id_tmp = (int)nodeFmt.id;
   if (id_tmp < 0) {
     isLeaf = true;
@@ -1249,7 +1251,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // Note that it is possible for an interior node to have
   // a non-zero metric count.  If this is the case, the node should be
   // split into two sibling nodes: 1) an interior node with metrics
-  // == 0 (that has cpId == 0 *and* that is the primary return node);
+  // == 0 (that has cpId == NULL *and* that is the primary return node);
   // and 2) a leaf node with the metrics and the cpId.
   // ----------------------------------------------------------
   Prof::CCT::ANode* n = NULL;
@@ -1264,12 +1266,14 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     if (hasMetrics) {
       n_leaf = n;
 
+      const uint cpId0 = HPCRUN_FMT_CCTNodeId_NULL;
+
       uint mSz = (doZeroMetrics) ? 0 : numMetricsDst;
       Metric::IData metricData0(mSz);
       
       lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
 
-      n = new CCT::Call(NULL, 0, nodeFmt.as_info, lmId, ip, opIdx, lipCopy,
+      n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, ip, opIdx, lipCopy,
 			metricData0);
     }
     else {

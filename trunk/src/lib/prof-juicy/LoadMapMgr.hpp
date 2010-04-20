@@ -123,10 +123,10 @@ public:
   // ------------------------------------------------------------
 
   // merge: Given a LoadMap y, merge y into x = 'this'.  Returns a
-  // vector of MergeChange describing changes that were made.  The
-  // vector contains at most one MergeChange for each LM_id_t (old_id)
+  // vector of MergeEffect describing changes that were made.  The
+  // vector contains at most one MergeEffect for each LM_id_t (old_id)
   // in y.
-  std::vector<ALoadMap::MergeChange> 
+  std::vector<ALoadMap::MergeEffect> 
   merge(const ALoadMap& y);
 
   // ------------------------------------------------------------
