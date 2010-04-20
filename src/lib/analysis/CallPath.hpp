@@ -90,7 +90,7 @@ namespace CallPath {
 
 Prof::CallPath::Profile*
 read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
-     int mergeTy, uint rFlags = 0);
+     int mergeTy, uint rFlags = 0, uint mrgFlags = 0);
 
 Prof::CallPath::Profile*
 read(const char* prof_fnm, uint groupId, uint rFlags = 0);

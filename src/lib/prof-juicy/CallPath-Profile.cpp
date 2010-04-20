@@ -90,8 +90,10 @@ using namespace xml;
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/Logic.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StrUtil.hpp>
+
 
 //*************************** Forward Declarations **************************
 
@@ -139,7 +141,7 @@ Profile::~Profile()
 
 
 uint 
-Profile::merge(Profile& y, int mergeTy, int dbgFlg)
+Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
 {
   DIAG_Assert(!y.m_structure, "Profile::merge: source profile should not have structure yet!");
 
@@ -177,7 +179,7 @@ Profile::merge(Profile& y, int mergeTy, int dbgFlg)
 	      "CallPath::Profile::merge(): ignoring incompatible RA-to-callsite-offset" << m_raToCallsiteOfst << " vs. " << y.m_raToCallsiteOfst);
 
   // -------------------------------------------------------
-  // merge metrics 
+  // merge metrics
   // -------------------------------------------------------
   uint x_newMetricBegIdx = 0, y_newMetrics = 0;
   uint firstMergedMetric =
@@ -188,17 +190,29 @@ Profile::merge(Profile& y, int mergeTy, int dbgFlg)
   //
   // Post-INVARIANT: y's cct refers to x's LoadMapMgr
   // -------------------------------------------------------
-  std::vector<LoadMap::MergeEffect>* mrgEffect =
+  std::vector<LoadMap::MergeEffect>* mrgEffects1 =
     m_loadmapMgr->merge(*y.loadMapMgr());
-  y.merge_fixCCT(*mrgEffect);
-  delete mrgEffect;
+  y.merge_fixCCT(mrgEffects1);
+  delete mrgEffects1;
 
   // -------------------------------------------------------
   // merge CCTs
   // -------------------------------------------------------
-  m_cct->merge(y.cct(), x_newMetricBegIdx, y_newMetrics, dbgFlg);
-  // if 
-  // fix y's trace file
+
+  if (mrgFlag & CCT::Tree::MrgFlg_NormalizeTraceFileY) {
+    mrgFlag |= CCT::Tree::MrgFlg_PropagateEffects;
+  }
+
+  std::list<CCT::ANode::MergeEffect>* mrgEffects2 =
+    m_cct->merge(y.cct(), x_newMetricBegIdx, y_newMetrics, mrgFlag);
+
+  DIAG_Assert(mrgEffects2->empty(), "FIXME: need the file name");
+  if (!mrgEffects2->empty()) {
+    DIAG_Assert((mrgFlag & CCT::Tree::MrgFlg_NormalizeTraceFileY),
+		"CallPath::Profile::merge: there should only be CCT::ANode::MergeEffects when MrgFlg_NormalizeTraceFileY is passed");
+    // fix y's trace file
+  }
+  delete mrgEffects2;
 
   return firstMergedMetric;
 }
@@ -219,15 +233,15 @@ Profile::mergeMetrics(Profile& y, int mergeTy,
   // -------------------------------------------------------
   // Translate Merge_mergeMetricByName to a primitive merge type
   // -------------------------------------------------------
-  if (mergeTy == Merge_mergeMetricByName) {
+  if (mergeTy == Merge_MergeMetricByName) {
     uint mapsTo = m_mMgr->findGroup(*y.metricMgr());
-    mergeTy = (mapsTo == Metric::Mgr::npos) ? Merge_createMetric : (int)mapsTo;
+    mergeTy = (mapsTo == Metric::Mgr::npos) ? Merge_CreateMetric : (int)mapsTo;
   }
 
   // -------------------------------------------------------
   // process primitive merge types
   // -------------------------------------------------------
-  if (mergeTy == Merge_createMetric) {
+  if (mergeTy == Merge_CreateMetric) {
     begMergeIdx = m_mMgr->size();
 
     for (uint i = 0; i < y.metricMgr()->size(); ++i) {
@@ -240,7 +254,7 @@ Profile::mergeMetrics(Profile& y, int mergeTy,
       y_newMetrics      = y.metricMgr()->size();
     }
   }
-  else if (mergeTy >= Merge_mergeMetricById) {
+  else if (mergeTy >= Merge_MergeMetricById) {
     begMergeIdx = (uint)mergeTy;
 
     if (!isMetricMgrVirtual()) {
@@ -257,10 +271,10 @@ Profile::mergeMetrics(Profile& y, int mergeTy,
 
 
 void 
-Profile::merge_fixCCT(std::vector<LoadMap::MergeEffect>& mrgEffect)
+Profile::merge_fixCCT(std::vector<LoadMap::MergeEffect>* mrgEffect)
 {
   // early exit for trivial case
-  if (mrgEffect.empty()) {
+  if (!mrgEffect || mrgEffect->empty()) {
     return;
   }
 
@@ -277,8 +291,8 @@ Profile::merge_fixCCT(std::vector<LoadMap::MergeEffect>& mrgEffect)
       lmId1 = n_dyn->lmId_real();
       lmId2 = (lip) ? lush_lip_getLMId(lip) : LoadMap::LM_id_NULL;
       
-      for (uint i = 0; i < mrgEffect.size(); ++i) {
-	const LoadMap::MergeEffect& chg = mrgEffect[i];
+      for (uint i = 0; i < mrgEffect->size(); ++i) {
+	const LoadMap::MergeEffect& chg = (*mrgEffect)[i];
 	if (chg.old_id == lmId1) {
 	  n_dyn->lmId_real(chg.new_id);
 	  if (lmId2 == LoadMap::LM_id_NULL) {
@@ -347,7 +361,7 @@ writeXML_ProcFilter(const Struct::ANode& x, long type)
 
 std::ostream& 
 Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
-		      int oFlags, const char* pfx) const
+		      uint oFlags, const char* pfx) const
 {
   typedef std::map<uint, string> UIntToStringMap;
   UIntToStringMap metricIdToFormula;
@@ -489,7 +503,7 @@ Profile::make(uint rFlags)
 {
   Profile* prof = new Profile("[program-name]");
 
-  if (rFlags & RFlg_virtualMetrics) {
+  if (rFlags & RFlg_VirtualMetrics) {
     prof->isMetricMgrVirtual(true);
   }
   prof->canonicalize();
@@ -508,7 +522,7 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
     DIAG_Throw("error opening file");
   }
 
-  rFlags |= RFlg_hpcrunData; // TODO: for now assume an hpcrun file (verify!)
+  rFlags |= RFlg_HpcrunData; // TODO: for now assume an hpcrun file (verify!)
 
   Profile* prof = NULL;
   ret = fmt_fread(prof, fs, rFlags, fnm, fnm, outfs);
@@ -567,7 +581,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
       prof = myprof;
     }
     else {
-      prof->merge(*myprof, Profile::Merge_mergeMetricById);
+      prof->merge(*myprof, Profile::Merge_MergeMetricById);
     }
 
     num_epochs++;
@@ -682,7 +696,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   val = hpcfmt_nvpair_search(&(ehdr.nvps), FmtEpoch_NV_virtualMetrics);
   if (val && strcmp(val, "0") != 0) {
     isVirtualMetrics = true;
-    rFlags |= RFlg_noMetricValues;
+    rFlags |= RFlg_NoMetricValues;
   }
 
 
@@ -714,7 +728,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m_sfx = "[" + tid + "]";
   }
 
-  if (rFlags & RFlg_noMetricSfx) {
+  if (rFlags & RFlg_NoMetricSfx) {
     m_sfx = "";
   }
 
@@ -731,7 +745,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     Metric::SampledDesc* m = 
       new Metric::SampledDesc(nm, desc, m_lst[i].period, true/*isUnitsEvents*/,
 			      profFile, profRelId, "HPCRUN");
-    if ((rFlags & RFlg_makeInclExcl) && isInclExclPossible) {
+    if ((rFlags & RFlg_MakeInclExcl) && isInclExclPossible) {
       m->type(Metric::ADesc::TyIncl);
     }
     if (!m_sfx.empty()) {
@@ -742,7 +756,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     prof->metricMgr()->insert(m);
 
     // 2. Make associated 'exclusive' descriptor, if applicable
-    if ((rFlags & RFlg_makeInclExcl) && isInclExclPossible) {
+    if ((rFlags & RFlg_MakeInclExcl) && isInclExclPossible) {
       Metric::SampledDesc* mSmpl = 
 	new Metric::SampledDesc(nm, desc, m_lst[i].period,
 				true/*isUnitsEvents*/,
@@ -757,7 +771,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     }
   }
 
-  if (isVirtualMetrics || (rFlags & RFlg_virtualMetrics) ) {
+  if (isVirtualMetrics || (rFlags & RFlg_VirtualMetrics) ) {
     prof->isMetricMgrVirtual(true);
   }
 
@@ -848,7 +862,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   }
 
   // N.B.: numMetricsSrc <= [numMetricsDst = prof.metricMgr()->size()]
-  if (rFlags & RFlg_noMetricValues) {
+  if (rFlags & RFlg_NoMetricValues) {
     numMetricsSrc = 0;
   }
 
@@ -949,7 +963,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   // epoch-hdr
   // ------------------------------------------------------------
   const char* virtualMetrics = "0";
-  if (prof.isMetricMgrVirtual() || (wFlags & WFlg_virtualMetrics) ) {
+  if (prof.isMetricMgrVirtual() || (wFlags & WFlg_VirtualMetrics) ) {
     virtualMetrics = "1";
   }
  
@@ -1036,7 +1050,7 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   // ------------------------------------------------------------
 
   uint numMetrics = prof.metricMgr()->size();
-  if (prof.isMetricMgrVirtual() || (wFlags & WFlg_virtualMetrics) ) {
+  if (prof.isMetricMgrVirtual() || (wFlags & WFlg_VirtualMetrics) ) {
     numMetrics = 0;
   }
 
@@ -1090,7 +1104,7 @@ Profile::canonicalize(uint rFlags)
 
     // CCTs generated by hpcrun have "monitor-main" as the first
     // non-NULL root [cf. CallPath::Profile::fmt_fwrite()]
-    if ((rFlags & RFlg_hpcrunData) && splicePoint->childCount() == 1) {
+    if ((rFlags & RFlg_HpcrunData) && splicePoint->childCount() == 1) {
       splicePoint = splicePoint->firstChild();
     }
   }
@@ -1198,13 +1212,13 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------  
 
   bool doZeroMetrics = prof.isMetricMgrVirtual() 
-    || (rFlags & Prof::CallPath::Profile::RFlg_virtualMetrics);
+    || (rFlags & Prof::CallPath::Profile::RFlg_VirtualMetrics);
 
   bool hasMetrics = false;
 
   // [numMetricsSrc = nodeFmt.num_metrics] <= numMetricsDst
   uint numMetricsDst = prof.metricMgr()->size();
-  if (rFlags & Prof::CallPath::Profile::RFlg_noMetricValues) {
+  if (rFlags & Prof::CallPath::Profile::RFlg_NoMetricValues) {
     numMetricsDst = 0;
   }
 
@@ -1230,7 +1244,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
       hasMetrics = true;
     }
 
-    if (rFlags & Prof::CallPath::Profile::RFlg_makeInclExcl) {
+    if (rFlags & Prof::CallPath::Profile::RFlg_MakeInclExcl) {
       if (adesc->type() == Prof::Metric::ADesc::TyNULL ||
 	  adesc->type() == Prof::Metric::ADesc::TyExcl) {
 	i_src++;

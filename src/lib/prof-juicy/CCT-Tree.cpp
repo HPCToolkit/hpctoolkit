@@ -111,7 +111,7 @@ Tree::~Tree()
 
 std::list<ANode::MergeEffect>*
 Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics,
-	    int dbgFlg)
+	    uint mrgFlag, uint oFlag)
 {
   CCT::ANode* x_root = root();
   CCT::ANode* y_root = y->root();
@@ -133,7 +133,7 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics,
   DIAG_Assert(isPrecondition, "Prof::CCT::Tree::merge: Merge precondition fails!");
 
   std::list<ANode::MergeEffect>* mrgEffects =
-    x_root->mergeDeep(y_root, x_newMetricBegIdx, y_newMetrics, dbgFlg);
+    x_root->mergeDeep(y_root, x_newMetricBegIdx, y_newMetrics, mrgFlag, oFlag);
 
   return mrgEffects;
 }
@@ -167,7 +167,7 @@ Tree::findNode(uint nodeId) const
 
 std::ostream&
 Tree::writeXML(std::ostream& os, uint metricBeg, uint metricEnd,
-	       int oFlags) const
+	       uint oFlags) const
 {
   if (m_root) {
     m_root->writeXML(os, metricBeg, metricEnd, oFlags);
@@ -177,7 +177,7 @@ Tree::writeXML(std::ostream& os, uint metricBeg, uint metricEnd,
 
 
 std::ostream& 
-Tree::dump(std::ostream& os, int oFlags) const
+Tree::dump(std::ostream& os, uint oFlags) const
 {
   writeXML(os, Metric::IData::npos, Metric::IData::npos, oFlags);
   return os;
@@ -535,10 +535,10 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 
 std::list<ANode::MergeEffect>*
 ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics,
-		 int dbgFlg)
+		 uint mrgFlag, uint oFlag)
 {
   ANode* x = this;
-  
+
   // ------------------------------------------------------------
   // 0. If y is childless, return.
   // ------------------------------------------------------------
@@ -546,14 +546,16 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics,
     return NULL;
   }
 
-  // ------------------------------------------------------------  
+  // ------------------------------------------------------------
   // 1. If a child y_child of y _does not_ appear as a child of x,
   //    then copy (subtree) y_child [fixing its metrics], make it a
   //    child of x and return.
   // 2. If a child y_child of y _does_ have a corresponding child
   //    x_child of x, merge [the metrics of] y_child into x_child and
   //    recur.
-  // ------------------------------------------------------------  
+  // ------------------------------------------------------------
+  std::list<ANode::MergeEffect>* effctLst = new std::list<ANode::MergeEffect>;
+  
   for (ANodeChildIterator it(y); it.Current(); /* */) {
     ANode* y_child = it.current();
     ADynNode* y_child_dyn = dynamic_cast<ADynNode*>(y_child);
@@ -564,9 +566,9 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics,
 
     if (!x_child_dyn) {
       // case 1
-      DIAG_Assert( !(dbgFlg & Tree::OFlg_MergeOnly),
+      DIAG_Assert( !(mrgFlag & Tree::MrgFlg_CCTMergeOnly),
 		   "CCT::ANode::mergeDeep: adding not permitted");
-      DIAG_MsgIf(0 /*(dbgFlg & Tree::OFlg_Debug)*/,
+      DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
 		 "CCT::ANode::mergeDeep: Adding:\n     "
 		 << y_child->toStringMe(Tree::OFlg_Debug));
       y_child->unlink();
@@ -575,16 +577,27 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics,
     }
     else {
       // case 2
-      DIAG_MsgIf(0 /*(dbgFlg & Tree::OFlg_Debug)*/,
+      DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
 		 "CCT::ANode::mergeDeep: Merging x <= y:\n"
 		 << "  x: " << x_child_dyn->toStringMe(Tree::OFlg_Debug)
 		 << "\n  y: " << y_child_dyn->toStringMe(Tree::OFlg_Debug));
-      x_child_dyn->mergeMe(*y_child_dyn, x_newMetricBegIdx);
-      x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, y_newMetrics, dbgFlg);
+      MergeEffect effct =
+	x_child_dyn->mergeMe(*y_child_dyn, x_newMetricBegIdx);
+      if ((mrgFlag & Tree::MrgFlg_PropagateEffects) && !effct.isNoop()) {
+	effctLst->push_back(effct);
+      }
+
+      std::list<ANode::MergeEffect>* effctLst1 =
+	x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, y_newMetrics,
+			       oFlag);
+      if (effctLst1 && !effctLst1->empty()) {
+	effctLst->splice(effctLst->end(), *effctLst1);
+	delete effctLst1;
+      }
     }
   }
 
-  return NULL;
+  return effctLst;
 }
 
 
@@ -625,8 +638,8 @@ ANode::mergeMe(const ANode& y, uint metricBegIdx)
     x->metric(x_i) += y.metric(y_i);
   }
   
-  MergeEffect emptyEffect;
-  return emptyEffect;
+  MergeEffect noopEffect;
+  return noopEffect;
 }
 
 
@@ -763,7 +776,7 @@ ProcFrm::procNameDbg() const
 //**********************************************************************
 
 string 
-ANode::toString(int oFlags, const char* pfx) const
+ANode::toString(uint oFlags, const char* pfx) const
 {
   std::ostringstream os;
   writeXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
@@ -772,7 +785,7 @@ ANode::toString(int oFlags, const char* pfx) const
 
 
 string 
-ANode::toStringMe(int oFlags) const
+ANode::toStringMe(uint oFlags) const
 { 
   string self;
   self = ANodeTyToName(type());
@@ -825,7 +838,7 @@ ADynNode::nameDyn() const
 
 
 void
-ADynNode::writeDyn(std::ostream& o, int oFlags, const char* pfx) const
+ADynNode::writeDyn(std::ostream& o, uint oFlags, const char* pfx) const
 {
   string p(pfx);
 
@@ -844,7 +857,7 @@ ADynNode::writeDyn(std::ostream& o, int oFlags, const char* pfx) const
 
 
 string
-Root::toStringMe(int oFlags) const
+Root::toStringMe(uint oFlags) const
 { 
   string self = ANode::toStringMe(oFlags) + " n" + xml::MakeAttrStr(m_name);
   return self;
@@ -852,7 +865,7 @@ Root::toStringMe(int oFlags) const
 
 
 string
-ProcFrm::toStringMe(int oFlags) const
+ProcFrm::toStringMe(uint oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
   
@@ -877,7 +890,7 @@ ProcFrm::toStringMe(int oFlags) const
 
 
 string
-Proc::toStringMe(int oFlags) const
+Proc::toStringMe(uint oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
   
@@ -903,7 +916,7 @@ Proc::toStringMe(int oFlags) const
 
 
 string 
-Loop::toStringMe(int oFlags) const
+Loop::toStringMe(uint oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
   return self;
@@ -911,7 +924,7 @@ Loop::toStringMe(int oFlags) const
 
 
 string
-Call::toStringMe(int oFlags) const
+Call::toStringMe(uint oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
@@ -922,7 +935,7 @@ Call::toStringMe(int oFlags) const
 
 
 string
-Stmt::toStringMe(int oFlags) const
+Stmt::toStringMe(uint oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
@@ -937,7 +950,7 @@ Stmt::toStringMe(int oFlags) const
 
 std::ostream&
 ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
-		int oFlags, const char* pfx) const
+		uint oFlags, const char* pfx) const
 {
   string indent = "  ";
   if (oFlags & CCT::Tree::OFlg_Compressed) {
@@ -960,7 +973,7 @@ ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
 
 
 std::ostream&
-ANode::dump(ostream& os, int oFlags, const char* pfx) const 
+ANode::dump(ostream& os, uint oFlags, const char* pfx) const 
 {
   writeXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx); 
   return os;
@@ -985,7 +998,7 @@ ANode::ddumpMe() const
 
 bool
 ANode::writeXML_pre(ostream& os, uint metricBeg, uint metricEnd,
-		    int oFlags, const char* pfx) const
+		    uint oFlags, const char* pfx) const
 {
   bool doTag = (type() != TyRoot);
   bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly)
@@ -1014,7 +1027,7 @@ ANode::writeXML_pre(ostream& os, uint metricBeg, uint metricEnd,
 
 
 void
-ANode::writeXML_post(ostream &os, int oFlags, const char* pfx) const
+ANode::writeXML_post(ostream& os, uint oFlags, const char* pfx) const
 {
   bool doTag = (type() != ANode::TyRoot);
   if (!doTag) {

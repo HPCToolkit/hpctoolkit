@@ -134,12 +134,14 @@ realmain(int argc, char* const* argv)
     DIAG_Throw("There are " << nArgs.paths->size() << " profile files to process. " << args.getCmd() << " currently limits the number of profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.");
   }
 
-  int mergeTy = Prof::CallPath::Profile::Merge_createMetric;
+  int mergeTy = Prof::CallPath::Profile::Merge_CreateMetric;
   Analysis::Util::UIntVec* groupMap =
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
+  uint mrgFlags = (Prof::CCT::Tree::MrgFlg_NormalizeTraceFileY);
+
   Prof::CallPath::Profile* prof =
-    Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy);
+    Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, 0, mrgFlags);
 
   // ------------------------------------------------------------
   // Overlay static structure with CCT's dynamic call paths
