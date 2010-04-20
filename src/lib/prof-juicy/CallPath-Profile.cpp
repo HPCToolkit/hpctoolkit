@@ -188,9 +188,10 @@ Profile::merge(Profile& y, int mergeTy, int dbgFlg)
   //
   // Post-INVARIANT: y's cct refers to x's LoadMapMgr
   // -------------------------------------------------------
-  std::vector<LoadMap::MergeEffect> mrgEffect =
+  std::vector<LoadMap::MergeEffect>* mrgEffect =
     m_loadmapMgr->merge(*y.loadMapMgr());
-  y.merge_fixCCT(mrgEffect);
+  y.merge_fixCCT(*mrgEffect);
+  delete mrgEffect;
 
   // -------------------------------------------------------
   // merge CCTs
@@ -695,7 +696,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   prof->m_measurementGranularity = ehdr.measurementGranularity;
   prof->m_raToCallsiteOfst = ehdr.raToCallsiteOfst;
   
-  CCT::Tree::raToCallsiteOfst = prof->m_raToCallsiteOfst;
+  CCT::ANode::s_raToCallsiteOfst = prof->m_raToCallsiteOfst;
 
   
   // ----------------------------------------
@@ -790,12 +791,12 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_EMsg(ctxtStr << ": Cannot fully process samples from unavailable load modules:\n" << x.what());
   }
 
-  std::vector<ALoadMap::MergeEffect> mrgEffect = 
+  std::vector<ALoadMap::MergeEffect>* mrgEffect = 
     prof->loadMapMgr()->merge(loadmap);
-  DIAG_Assert(mrgEffect.empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);
-
+  DIAG_Assert(mrgEffect->empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);
 
   hpcrun_fmt_loadmap_free(&loadmap_tbl, free);
+  delete mrgEffect;
 
 
   // ------------------------------------------------------------

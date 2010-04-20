@@ -126,7 +126,7 @@ public:
   // vector of MergeEffect describing changes that were made.  The
   // vector contains at most one MergeEffect for each LM_id_t (old_id)
   // in y.
-  std::vector<ALoadMap::MergeEffect> 
+  std::vector<ALoadMap::MergeEffect>*
   merge(const ALoadMap& y);
 
   // ------------------------------------------------------------

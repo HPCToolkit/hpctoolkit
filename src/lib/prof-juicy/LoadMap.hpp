@@ -329,7 +329,7 @@ public:
   // in y.
   //
   // NOTE: x and y must not conflict! (See lm_insert().)
-  std::vector<MergeEffect> 
+  std::vector<MergeEffect>*
   merge(const LoadMap& y);
 
 

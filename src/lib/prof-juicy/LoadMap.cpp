@@ -271,10 +271,10 @@ LoadMap::compute_relocAmt()
 }
 
 
-std::vector<LoadMap::MergeEffect> 
+std::vector<LoadMap::MergeEffect>*
 LoadMap::merge(const LoadMap& y)
 {
-  std::vector<MergeEffect> mrgEffect;
+  std::vector<MergeEffect>* mrgEffect = new std::vector<MergeEffect>;
   
   LoadMap& x = *this;
 
@@ -293,7 +293,7 @@ LoadMap::merge(const LoadMap& y)
       }
       else { // (x_lm->id() != y_lm->id()) 
 	// y_lm->id() is replaced by x_lm->id()
-	mrgEffect.push_back(MergeEffect(y_lm->id(), x_lm->id()));
+	mrgEffect->push_back(MergeEffect(y_lm->id(), x_lm->id()));
       }
     }
     else {
@@ -302,7 +302,7 @@ LoadMap::merge(const LoadMap& y)
       // Create x_lm for y_lm.  y_lm->id() is replaced by x_lm->id().
       x_lm = new LoadMap::LM(y_lm->name(), y_lm->loadAddr(), y_lm->size());
       lm_insert(x_lm);
-      mrgEffect.push_back(MergeEffect(y_lm->id(), x_lm->id()));
+      mrgEffect->push_back(MergeEffect(y_lm->id(), x_lm->id()));
     }
 
     DIAG_Assert(x_lm->isAvail() == y_lm->isAvail(), "LoadMap::merge: two LoadMap::LM of the same name must both be (un)available: " << x_lm->name());
