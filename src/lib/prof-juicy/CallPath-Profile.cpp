@@ -178,6 +178,9 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   DIAG_WMsgIf(m_raToCallsiteOfst != y.m_raToCallsiteOfst,
 	      "CallPath::Profile::merge(): ignoring incompatible RA-to-callsite-offset" << m_raToCallsiteOfst << " vs. " << y.m_raToCallsiteOfst);
 
+  m_profileFileName = "";
+  m_traceFileName = "";
+
   // -------------------------------------------------------
   // merge metrics
   // -------------------------------------------------------
@@ -206,11 +209,10 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   std::list<CCT::ANode::MergeEffect>* mrgEffects2 =
     m_cct->merge(y.cct(), x_newMetricBegIdx, y_newMetrics, mrgFlag);
 
-  DIAG_Assert(mrgEffects2->empty(), "FIXME: need the file name");
-  if (!mrgEffects2->empty()) {
+  if (!mrgEffects2->empty() && !y.m_traceFileName.empty()) {
     DIAG_Assert((mrgFlag & CCT::Tree::MrgFlg_NormalizeTraceFileY),
 		"CallPath::Profile::merge: there should only be CCT::ANode::MergeEffects when MrgFlg_NormalizeTraceFileY is passed");
-    // fix y's trace file
+    // fix y's trace file: y.m_traceFileName
   }
   delete mrgEffects2;
 
@@ -615,6 +617,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 {
   using namespace Prof;
 
+  string profFileName = (filename) ? filename : "";
+
   int ret;
 
   // ------------------------------------------------------------
@@ -709,10 +713,24 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   prof->m_flags = ehdr.flags;
   prof->m_measurementGranularity = ehdr.measurementGranularity;
   prof->m_raToCallsiteOfst = ehdr.raToCallsiteOfst;
-  
+
   CCT::ANode::s_raToCallsiteOfst = prof->m_raToCallsiteOfst;
 
+  prof->m_profileFileName = profFileName;
+
+  // TODO: extract trace file name from profile
+  string t_fnm = profFileName;
+  static const string ext_prof = string(".") + HPCRUN_PROFILE_FNM_SFX;
+  static const string ext_trace = string(".") + HPCRUN_TRACE_FNM_SFX;
   
+  size_t ext_pos = t_fnm.find(ext_prof);
+
+  if (ext_pos != string::npos) {
+    t_fnm.replace(t_fnm.begin() + ext_pos, t_fnm.end(), ext_trace);
+    prof->m_traceFileName = t_fnm;
+  }
+
+
   // ----------------------------------------
   // add metrics
   // ----------------------------------------
@@ -736,7 +754,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   for (uint i = 0; i < numMetricsSrc; i++) {
     string nm = m_lst[i].name;
     string desc = m_lst[i].description;
-    string profFile = (filename) ? filename : "";
     string profRelId = StrUtil::toStr(i);
 
     bool isInclExclPossible = true; // TODO: filter return counts
@@ -744,7 +761,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     // 1. Make 'regular'/'inclusive' metric descriptor
     Metric::SampledDesc* m = 
       new Metric::SampledDesc(nm, desc, m_lst[i].period, true/*isUnitsEvents*/,
-			      profFile, profRelId, "HPCRUN");
+			      profFileName, profRelId, "HPCRUN");
     if ((rFlags & RFlg_MakeInclExcl) && isInclExclPossible) {
       m->type(Metric::ADesc::TyIncl);
     }
@@ -760,7 +777,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       Metric::SampledDesc* mSmpl = 
 	new Metric::SampledDesc(nm, desc, m_lst[i].period,
 				true/*isUnitsEvents*/,
-				profFile, profRelId, "HPCRUN");
+				profFileName, profRelId, "HPCRUN");
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
 	mSmpl->nameSfx(m_sfx);
