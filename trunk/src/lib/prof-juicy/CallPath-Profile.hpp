@@ -317,6 +317,9 @@ private:
   uint64_t m_measurementGranularity;
   uint32_t m_raToCallsiteOfst;
 
+  std::string m_profileFileName; // non-empty, if relevant
+  std::string m_traceFileName;   // non-empty, if relevant
+
   //typedef std::map<std::string, std::string> StrToStrMap;
   //StrToStrMap m_nvPairMap;
 
