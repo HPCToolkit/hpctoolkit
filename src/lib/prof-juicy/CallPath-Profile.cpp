@@ -209,11 +209,11 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   std::list<CCT::ANode::MergeEffect>* mrgEffects2 =
     m_cct->merge(y.cct(), x_newMetricBegIdx, y_newMetrics, mrgFlag);
 
-  if (!mrgEffects2->empty() && !y.m_traceFileName.empty()) {
-    DIAG_Assert((mrgFlag & CCT::Tree::MrgFlg_NormalizeTraceFileY),
-		"CallPath::Profile::merge: there should only be CCT::ANode::MergeEffects when MrgFlg_NormalizeTraceFileY is passed");
-    // fix y's trace file: y.m_traceFileName
-  }
+  DIAG_Assert(Logic::implies(mrgEffects2 && !mrgEffects2->empty(),
+			     mrgFlag & CCT::Tree::MrgFlg_NormalizeTraceFileY),
+	      "CallPath::Profile::merge: there should only be CCT::ANode::MergeEffects when MrgFlg_NormalizeTraceFileY is passed");
+
+  y.merge_fixTrace(mrgEffects2);
   delete mrgEffects2;
 
   return firstMergedMetric;
@@ -273,10 +273,10 @@ Profile::mergeMetrics(Profile& y, int mergeTy,
 
 
 void 
-Profile::merge_fixCCT(std::vector<LoadMap::MergeEffect>* mrgEffect)
+Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
 {
   // early exit for trivial case
-  if (!mrgEffect || mrgEffect->empty()) {
+  if (!mrgEffects || mrgEffects->empty()) {
     return;
   }
 
@@ -293,8 +293,8 @@ Profile::merge_fixCCT(std::vector<LoadMap::MergeEffect>* mrgEffect)
       lmId1 = n_dyn->lmId_real();
       lmId2 = (lip) ? lush_lip_getLMId(lip) : LoadMap::LM_id_NULL;
       
-      for (uint i = 0; i < mrgEffect->size(); ++i) {
-	const LoadMap::MergeEffect& chg = (*mrgEffect)[i];
+      for (uint i = 0; i < mrgEffects->size(); ++i) {
+	const LoadMap::MergeEffect& chg = (*mrgEffects)[i];
 	if (chg.old_id == lmId1) {
 	  n_dyn->lmId_real(chg.new_id);
 	  if (lmId2 == LoadMap::LM_id_NULL) {
@@ -307,6 +307,65 @@ Profile::merge_fixCCT(std::vector<LoadMap::MergeEffect>* mrgEffect)
       }
     }
   }
+}
+
+
+void 
+Profile::merge_fixTrace(const std::list<CCT::ANode::MergeEffect>* mrgEffects)
+{
+  typedef std::list<CCT::ANode::MergeEffect> MergeEffectList;
+  typedef std::map<uint, uint> UIntToUIntMap;
+
+  // early exit for trivial case
+  if (!mrgEffects || mrgEffects->empty() || m_traceFileName.empty()) {
+    return;
+  }
+
+  // N.B.: We could build a map of old->new cpIds within
+  // Profile::merge(), but the list of effects is more general and
+  // extensible.  There are no asymptotic problems with building the
+  // following map for local use.
+  UIntToUIntMap cpIdMap;
+  for (MergeEffectList::const_iterator it = mrgEffects->begin();
+       it != mrgEffects->end(); ++it) {
+    const CCT::ANode::MergeEffect& effct = *it;
+    cpIdMap.insert(std::make_pair(effct.old_cpId, effct.new_cpId));
+  }
+
+  // ------------------------------------------------------------
+  // Rewrite trace file
+  // ------------------------------------------------------------
+  FILE* fs = hpcio_fopen_rw(m_traceFileName.c_str());
+  if (!fs) {
+    DIAG_Throw("error opening trace file '" << m_traceFileName << "'");
+  }
+
+  while ( !feof(fs) ) {
+    int ret;
+    uint64_t timestamp;
+    uint cctId;
+
+    ret = hpcfmt_byte8_fread(&timestamp, fs);
+    if (ret == HPCFMT_ERR) {
+      DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
+    }
+    
+    ret = hpcfmt_byte4_fread(&cctId, fs);
+    if (ret == HPCFMT_ERR) {
+      DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
+    }
+    
+    UIntToUIntMap::iterator it = cpIdMap.find(cctId);
+    if (it != cpIdMap.end()) {
+      uint cctId_new = it->second;
+      DIAG_MsgIf(1, "Profile::merge_fixTrace: translating "
+		 << cctId << " -> " << cctId_new);
+      fseek(fs, -sizeof(cctId), SEEK_CUR); // rewind
+      hpcfmt_byte4_fwrite(cctId_new, fs);  // write new cpId
+    }
+  }
+
+  hpcio_fclose(fs);
 }
 
 

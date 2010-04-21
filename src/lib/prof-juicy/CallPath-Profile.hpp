@@ -307,10 +307,14 @@ private:
   mergeMetrics(Profile& y, int mergeTy,
 	       uint& x_newMetricBegIdx, uint& y_newMetrics);
 
-  // apply CCT MergeEffect after merging two profiles
+  // apply MergeEffects after merging two profiles
   void
-  merge_fixCCT(std::vector<LoadMap::MergeEffect>* mrgEffect);
+  merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects);
  
+  void
+  merge_fixTrace(const std::list<CCT::ANode::MergeEffect>* mrgEffects);
+
+
 private:
   std::string m_name;
   epoch_flags_t m_flags;
