@@ -91,6 +91,7 @@ extern "C" {
 // non-zero on error.
 FILE* hpcio_fopen_w(const char* fnm, int overwrite);
 FILE* hpcio_fopen_r(const char* fnm);
+FILE* hpcio_fopen_rw(const char* fnm);
 int   hpcio_fclose(FILE* fs);
 
 

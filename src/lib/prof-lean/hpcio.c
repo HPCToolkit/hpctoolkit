@@ -119,6 +119,15 @@ hpcio_fopen_r(const char* fnm)
 
 
 // See header for interface information.
+FILE* 
+hpcio_fopen_rw(const char* fnm)
+{
+  FILE* fs = fopen(fnm, "r+");
+  return fs;
+}
+
+
+// See header for interface information.
 int   
 hpcio_fclose(FILE* fs)
 {
