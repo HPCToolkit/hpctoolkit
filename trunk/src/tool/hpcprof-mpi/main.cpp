@@ -745,7 +745,7 @@ writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 
   FILE* fs = hpcio_fopen_w(pathNm.c_str(), 1);
   if (!fs) {
-    DIAG_Throw("error opening file");
+    DIAG_Throw("error opening file '" << pathNm << "'");
   }
 
   // -------------------------------------------------------
