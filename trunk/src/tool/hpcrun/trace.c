@@ -64,6 +64,7 @@
 
 #include <messages/messages.h>
 
+#include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcio.h>
 
 
@@ -145,9 +146,9 @@ trace_append(unsigned int call_path_id)
 
     thread_data_t *td = hpcrun_get_thread_data();
 
-    int written = hpcio_fwrite_be8(&microtime.data.ui64, td->trace_file);
-    written += hpcio_fwrite_be4((uint32_t*)&call_path_id, td->trace_file);
-    trace_file_validate(written == (sizeof(double) + sizeof(int)), "append");
+    int ret1 = hpcfmt_byte8_fwrite(microtime.data.ui64, td->trace_file);
+    int ret2 = hpcfmt_byte4_fwrite((uint32_t)call_path_id, td->trace_file);
+    trace_file_validate(ret1 == HPCFMT_OK && ret2 == HPCFMT_OK, "append");
   }
 }
 
