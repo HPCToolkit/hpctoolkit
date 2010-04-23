@@ -218,7 +218,7 @@ write_epochs(FILE* fs, epoch_t* epoch)
 
   for(epoch_t* s = current_epoch; s; s = s->next) {
 
-    if (! ENABLED(WRITE_EMPTY_EPOCH)){
+    if (ENABLED(SKIP_WRITE_EMPTY_EPOCH)){
       if (hpcrun_empty_cct(&(s->csdata))){
 	EMSG("Empty cct encountered: it is not written out");
 	continue;
