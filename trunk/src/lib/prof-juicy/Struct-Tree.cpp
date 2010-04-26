@@ -1453,7 +1453,7 @@ Ref::toXML(int oFlags) const
 }
 
 
-bool 
+bool
 ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
 {
   bool doTag = (type() != TyRoot);

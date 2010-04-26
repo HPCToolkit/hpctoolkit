@@ -84,7 +84,7 @@
 static interval_status 
 ppc64_build_intervals(char *ins, unsigned int len);
 
-static void 
+static void
 ppc64_print_interval_set(unw_interval_t *first);
 
 static const char *
