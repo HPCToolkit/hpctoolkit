@@ -358,7 +358,7 @@ Profile::merge_fixTrace(const std::list<CCT::ANode::MergeEffect>* mrgEffects)
     UIntToUIntMap::iterator it = cpIdMap.find(cctId);
     if (it != cpIdMap.end()) {
       uint cctId_new = it->second;
-      DIAG_MsgIf(1, "Profile::merge_fixTrace: translating "
+      DIAG_MsgIf(0, "Profile::merge_fixTrace: translating "
 		 << cctId << " -> " << cctId_new);
       fseek(fs, -sizeof(cctId), SEEK_CUR); // rewind
       hpcfmt_byte4_fwrite(cctId_new, fs);  // write new cpId
