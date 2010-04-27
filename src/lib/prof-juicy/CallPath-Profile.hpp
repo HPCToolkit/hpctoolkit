@@ -304,8 +304,7 @@ private:
   canonicalize(uint rFlags = 0);
 
   uint
-  mergeMetrics(Profile& y, int mergeTy,
-	       uint& x_newMetricBegIdx, uint& y_newMetrics);
+  mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx);
 
   // apply MergeEffects after merging two profiles
   void

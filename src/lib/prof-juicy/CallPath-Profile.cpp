@@ -184,9 +184,9 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   // -------------------------------------------------------
   // merge metrics
   // -------------------------------------------------------
-  uint x_newMetricBegIdx = 0, y_newMetrics = 0;
+  uint x_newMetricBegIdx = 0;
   uint firstMergedMetric =
-    mergeMetrics(y, mergeTy, x_newMetricBegIdx, y_newMetrics);
+    mergeMetrics(y, mergeTy, x_newMetricBegIdx);
   
   // -------------------------------------------------------
   // merge LoadMaps
@@ -207,7 +207,7 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   }
 
   std::list<CCT::ANode::MergeEffect>* mrgEffects2 =
-    m_cct->merge(y.cct(), x_newMetricBegIdx, y_newMetrics, mrgFlag);
+    m_cct->merge(y.cct(), x_newMetricBegIdx, mrgFlag);
 
   DIAG_Assert(Logic::implies(mrgEffects2 && !mrgEffects2->empty(),
 			     mrgFlag & CCT::Tree::MrgFlg_NormalizeTraceFileY),
@@ -221,13 +221,11 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
 
 
 uint
-Profile::mergeMetrics(Profile& y, int mergeTy, 
-		      uint& x_newMetricBegIdx, uint& y_newMetrics)
+Profile::mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx)
 {
   uint begMergeIdx = 0;
 
   x_newMetricBegIdx = 0; // first metric in y maps to (metricsMapTo)
-  y_newMetrics      = 0; // number of new metrics y introduces
 
   DIAG_Assert(m_isMetricMgrVirtual == y.m_isMetricMgrVirtual,
 	      "CallPath::Profile::merge(): incompatible metrics");
@@ -253,7 +251,6 @@ Profile::mergeMetrics(Profile& y, int mergeTy,
 
     if (!isMetricMgrVirtual()) {
       x_newMetricBegIdx = begMergeIdx;
-      y_newMetrics      = y.metricMgr()->size();
     }
   }
   else if (mergeTy >= Merge_MergeMetricById) {
@@ -261,7 +258,6 @@ Profile::mergeMetrics(Profile& y, int mergeTy,
 
     if (!isMetricMgrVirtual()) {
       x_newMetricBegIdx = begMergeIdx;
-      y_newMetrics      = 0; // no metric descriptors to insert
     }
   }
   else {

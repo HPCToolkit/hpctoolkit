@@ -403,8 +403,7 @@ public:
   // N.B.: assume we can destroy y.
   // N.B.: assume x already has space to store merged metrics
   std::list<MergeEffect>*
-  mergeDeep(ANode* y, uint x_numMetrics, uint y_numMetrics, 
-	    uint mrgFlag = 0, uint oFlag = 0);
+  mergeDeep(ANode* y, uint x_numMetrics, uint mrgFlag = 0, uint oFlag = 0);
 
   // merge: Let 'this' = x and let y be a node corresponding to x.
   //   Merge y into x.  
@@ -1162,7 +1161,7 @@ public:
   // Given a Tree, merge into 'this'
   // -------------------------------------------------------
   std::list<ANode::MergeEffect>*
-  merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics,
+  merge(const Tree* y, uint x_newMetricBegIdx,
 	uint mrgFlag = 0, uint oFlag = 0);
 
 

@@ -110,8 +110,7 @@ Tree::~Tree()
 
 
 std::list<ANode::MergeEffect>*
-Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics,
-	    uint mrgFlag, uint oFlag)
+Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 {
   CCT::ANode* x_root = root();
   CCT::ANode* y_root = y->root();
@@ -133,7 +132,7 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint y_newMetrics,
   DIAG_Assert(isPrecondition, "Prof::CCT::Tree::merge: Merge precondition fails!");
 
   std::list<ANode::MergeEffect>* mrgEffects =
-    x_root->mergeDeep(y_root, x_newMetricBegIdx, y_newMetrics, mrgFlag, oFlag);
+    x_root->mergeDeep(y_root, x_newMetricBegIdx, mrgFlag, oFlag);
 
   return mrgEffects;
 }
@@ -534,8 +533,7 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 
 
 std::list<ANode::MergeEffect>*
-ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics,
-		 uint mrgFlag, uint oFlag)
+ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 {
   ANode* x = this;
 
@@ -588,8 +586,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint y_newMetrics,
       }
 
       std::list<ANode::MergeEffect>* effctLst1 =
-	x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, y_newMetrics,
-			       oFlag);
+	x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, mrgFlag, oFlag);
       if (effctLst1 && !effctLst1->empty()) {
 	effctLst->splice(effctLst->end(), *effctLst1);
 	delete effctLst1;
