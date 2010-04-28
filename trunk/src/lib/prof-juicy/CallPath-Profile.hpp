@@ -94,15 +94,15 @@ public:
   // meta data
   // -------------------------------------------------------
   const std::string&
-  name() const 
+  name() const
   { return m_name; }
   
   void
-  name(const std::string& x) 
+  name(const std::string& x)
   { m_name = x; }
 
   void
-  name(const char* x) 
+  name(const char* x)
   { m_name = (x) ? x : ""; }
 
 
@@ -156,7 +156,7 @@ public:
   // CCT
   // -------------------------------------------------------
   CCT::Tree*
-  cct() const 
+  cct() const
   { return m_cct; }
 
 

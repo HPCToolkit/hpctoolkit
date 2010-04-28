@@ -143,6 +143,8 @@ Profile::~Profile()
 uint 
 Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
 {
+  Profile& x = (*this);
+
   DIAG_Assert(!y.m_structure, "Profile::merge: source profile should not have structure yet!");
 
   // -------------------------------------------------------
@@ -150,36 +152,36 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   // -------------------------------------------------------
 
   // Note: these values can be 'null' if the hpcrun-fmt data had no epochs
-  if (m_flags.bits == 0) {
-    m_flags.bits = y.m_flags.bits;
+  if (x.m_flags.bits == 0) {
+    x.m_flags.bits = y.m_flags.bits;
   }
   else if (y.m_flags.bits == 0) {
-    y.m_flags.bits = m_flags.bits;
+    y.m_flags.bits = x.m_flags.bits;
   }
 
-  if (m_measurementGranularity == 0) {
-    m_measurementGranularity = y.m_measurementGranularity;
+  if (x.m_measurementGranularity == 0) {
+    x.m_measurementGranularity = y.m_measurementGranularity;
   }
   else if (y.m_measurementGranularity == 0) {
-    y.m_measurementGranularity = m_measurementGranularity;
+    y.m_measurementGranularity = x.m_measurementGranularity;
   }
 
-  if (m_raToCallsiteOfst == 0) {
-    m_raToCallsiteOfst = y.m_raToCallsiteOfst;
+  if (x.m_raToCallsiteOfst == 0) {
+    x.m_raToCallsiteOfst = y.m_raToCallsiteOfst;
   }
   else if (y.m_raToCallsiteOfst == 0) {
     y.m_raToCallsiteOfst = m_raToCallsiteOfst;
   }
 
-  DIAG_WMsgIf(m_flags.bits != y.m_flags.bits,
+  DIAG_WMsgIf(x.m_flags.bits != y.m_flags.bits,
 	      "CallPath::Profile::merge(): ignoring incompatible flags");
-  DIAG_WMsgIf(m_measurementGranularity != y.m_measurementGranularity,
-	      "CallPath::Profile::merge(): ignoring incompatible measurement-granularity: " << m_measurementGranularity << " vs. " << y.m_measurementGranularity);
-  DIAG_WMsgIf(m_raToCallsiteOfst != y.m_raToCallsiteOfst,
-	      "CallPath::Profile::merge(): ignoring incompatible RA-to-callsite-offset" << m_raToCallsiteOfst << " vs. " << y.m_raToCallsiteOfst);
+  DIAG_WMsgIf(x.m_measurementGranularity != y.m_measurementGranularity,
+	      "CallPath::Profile::merge(): ignoring incompatible measurement-granularity: " << x.m_measurementGranularity << " vs. " << y.m_measurementGranularity);
+  DIAG_WMsgIf(x.m_raToCallsiteOfst != y.m_raToCallsiteOfst,
+	      "CallPath::Profile::merge(): ignoring incompatible RA-to-callsite-offset" << x.m_raToCallsiteOfst << " vs. " << y.m_raToCallsiteOfst);
 
-  m_profileFileName = "";
-  m_traceFileName = "";
+  x.m_profileFileName = "";
+  x.m_traceFileName = "";
 
   // -------------------------------------------------------
   // merge metrics
@@ -194,7 +196,7 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   // Post-INVARIANT: y's cct refers to x's LoadMapMgr
   // -------------------------------------------------------
   std::vector<LoadMap::MergeEffect>* mrgEffects1 =
-    m_loadmapMgr->merge(*y.loadMapMgr());
+    x.m_loadmapMgr->merge(*y.loadMapMgr());
   y.merge_fixCCT(mrgEffects1);
   delete mrgEffects1;
 
@@ -207,7 +209,7 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   }
 
   std::list<CCT::ANode::MergeEffect>* mrgEffects2 =
-    m_cct->merge(y.cct(), x_newMetricBegIdx, mrgFlag);
+    x.cct()->merge(y.cct(), x_newMetricBegIdx, mrgFlag);
 
   DIAG_Assert(Logic::implies(mrgEffects2 && !mrgEffects2->empty(),
 			     mrgFlag & CCT::Tree::MrgFlg_NormalizeTraceFileY),
@@ -223,48 +225,61 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
 uint
 Profile::mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx)
 {
-  uint begMergeIdx = 0;
+  Profile& x = (*this);
+
+  DIAG_Assert(x.m_isMetricMgrVirtual == y.m_isMetricMgrVirtual,
+	      "CallPath::Profile::merge(): incompatible metrics");
+
+  DIAG_MsgIf(0, "Profile::mergeMetrics: init\n"
+	     << "x: " << x.metricMgr()->toString("  ")
+	     << "y: " << y.metricMgr()->toString("  "));
+
+  uint yBeg_mapsTo_xIdx = 0;
 
   x_newMetricBegIdx = 0; // first metric in y maps to (metricsMapTo)
-
-  DIAG_Assert(m_isMetricMgrVirtual == y.m_isMetricMgrVirtual,
-	      "CallPath::Profile::merge(): incompatible metrics");
 
   // -------------------------------------------------------
   // Translate Merge_mergeMetricByName to a primitive merge type
   // -------------------------------------------------------
   if (mergeTy == Merge_MergeMetricByName) {
-    uint mapsTo = m_mMgr->findGroup(*y.metricMgr());
+    uint mapsTo = x.metricMgr()->findGroup(*y.metricMgr());
     mergeTy = (mapsTo == Metric::Mgr::npos) ? Merge_CreateMetric : (int)mapsTo;
   }
 
   // -------------------------------------------------------
   // process primitive merge types
   // -------------------------------------------------------
+  uint y_newMetricIdx = Metric::Mgr::npos;
+
   if (mergeTy == Merge_CreateMetric) {
-    begMergeIdx = m_mMgr->size();
+    yBeg_mapsTo_xIdx = x.metricMgr()->size();
 
-    for (uint i = 0; i < y.metricMgr()->size(); ++i) {
-      const Metric::ADesc* m = y.metricMgr()->metric(i);
-      m_mMgr->insert(m->clone());
-    }
-
-    if (!isMetricMgrVirtual()) {
-      x_newMetricBegIdx = begMergeIdx;
-    }
+    y_newMetricIdx = 0;
   }
   else if (mergeTy >= Merge_MergeMetricById) {
-    begMergeIdx = (uint)mergeTy;
-
-    if (!isMetricMgrVirtual()) {
-      x_newMetricBegIdx = begMergeIdx;
+    yBeg_mapsTo_xIdx = (uint)mergeTy; // [
+    
+    uint yEnd_mapsTo_xIdx = yBeg_mapsTo_xIdx + y.metricMgr()->size(); // )
+    if (x.metricMgr()->size() < yEnd_mapsTo_xIdx) {
+      y_newMetricIdx = yEnd_mapsTo_xIdx - x.metricMgr()->size();
     }
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
 
-  return begMergeIdx;
+  for (uint i = y_newMetricIdx; i < y.metricMgr()->size(); ++i) {
+    const Metric::ADesc* m = y.metricMgr()->metric(i);
+    x.metricMgr()->insert(m->clone());
+  }
+
+  if (!isMetricMgrVirtual()) {
+    x_newMetricBegIdx = yBeg_mapsTo_xIdx;
+  }
+
+  DIAG_MsgIf(0, "Profile::mergeMetrics: fini:\n" << m_mMgr->toString("  "));
+
+  return yBeg_mapsTo_xIdx;
 }
 
 

@@ -447,20 +447,71 @@ Mgr::hasDerived() const
 
 //****************************************************************************
 
+// findGroup: see general comments in header.
+//
+// Currently assumes:
+// 1. Metric groups in both x and y appear in sorted order and without
+//    gaps.  This assumption is upheld because (a) groups are
+//    distributed across processes in sorted order and (b) the
+//    reduction tree always merges left before right children.
+//
+//    This means we should *never* see:
+//      x: [2.a 2.b]  y: [1.a 1.b | 2.a 2.b]
+//      x: [2.a 2.b]  y: [1.a 1.b | 3.a 3.b]
+//
+// 2. All profile files in a group have the same set of metrics.
+// 
+// While this simplifies things, because of groups, we still have to
+// merge profiles where only a subgroup of y matches a group in x.
+//   x: [1.a 1.b]  y: [1.a 1.b | 2.a 2.b]
+// 
+// 
+// *** N.B.: *** Assumptions (1) and (2) imply that either (a) y's
+// metrics fully match x's or (b) y's *first* metric subgroup fully
+// matches x's metrics.  It also enables us to use a metric's unique
+// name for a search.
+// 
+//
+// TODO: Eventually, we cannot assume (2).  It will be possible for
+// a group to have different sets of metrics, which could lead to
+// merges like the following:
+//
+//    x: [1.a 1.b]            y: [1.a 1.b | 1.a 1.c]
+//    x: [1.a 1.c]            y: [1.a 1.b | 1.a 1.c]
+//    x: [1.a 1.c] [1.d 1.e]  y: [1.a 1.b | 1.a 1.c]
+//
+// This implies that *any* subgroup of y could match *any* subgroup of
+// x.  It also implies that we cannot search by a metric's unique name
+// because the unique name in y may be different than the unique name
+// in x.
+//
 uint
 Mgr::findGroup(const Mgr& y) const
 {
   const Mgr* x = this;
 
-  // N.B.: Cases like the following are handled by the fact that
-  // lookups in x are by unique name.
-  //   x: [a b c d] [a b e f]
-  //   y: [a b e f]
+  // -------------------------------------------------------
+  // Based on observation above, we first try to match y's first
+  // subgroup.
+  // -------------------------------------------------------
+
+  uint y_grp_sz = 0; // open end boundary
+  if (y.size() > 0) {
+    const string& y_grp_pfx = y.metric(0)->namePfx();
+    for (uint y_i = 1; y_i < y.size(); ++y_i) {
+      const string& mPfx = y.metric(y_i)->namePfx();
+      if (mPfx != y_grp_pfx) {
+	break;
+      }
+      y_grp_sz++;
+    }
+  }
 
   bool found = true; // optimistic
-  std::vector<uint> metricMap(y.size());
+
+  std::vector<uint> metricMap(y_grp_sz);
   
-  for (uint y_i = 0; y_i < y.size(); ++y_i) {
+  for (uint y_i = 0; y_i < y_grp_sz; ++y_i) {
     const Metric::ADesc* y_m = y.metric(y_i);
     string mNm = y_m->name();
     const Metric::ADesc* x_m = x->metric(mNm);
@@ -472,8 +523,23 @@ Mgr::findGroup(const Mgr& y) const
     
     metricMap[y_i] = x_m->id();
   }
+  
+  bool foundGrp = (found && !metricMap.empty());
 
-  return (found && !metricMap.empty()) ? metricMap[0] : Mgr::npos;
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  if (foundGrp) {
+    // sanity check: either (x.size() == y_grp_sz) or the rest of x
+    // matches the rest of y.
+    for (uint x_i = metricMap[y_grp_sz - 1] + 1, y_i = y_grp_sz;
+	 x_i < x->size() && y_i < y.size(); ++x_i, ++y_i) {
+      DIAG_Assert(x->metric(x_i)->name() == y.metric(y_i)->name(), "");
+    }
+  }
+
+  return (foundGrp) ? metricMap[0] : Mgr::npos;
 }
 
 
