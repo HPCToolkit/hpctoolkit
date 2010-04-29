@@ -172,15 +172,11 @@ hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
   int nr = fread(tag, 1, HPCRUN_FMT_EpochTagLen, fs);
   tag[HPCRUN_FMT_EpochTagLen] = '\0';
   
-  if (nr == 0) {
-    return HPCFMT_EOF;
-  }
-  else if (nr != HPCRUN_FMT_EpochTagLen) {
-    return HPCFMT_ERR;
+  if (nr != HPCRUN_FMT_EpochTagLen) {
+    return (nr == 0 && feof(fs)) ? HPCFMT_EOF : HPCFMT_ERR;
   }
 
   if (strcmp(tag, HPCRUN_FMT_EpochTag) != 0) {
-    //fprintf(stderr,"invalid epoch header tag: %s\n", tag);
     return HPCFMT_ERR;
   }
 

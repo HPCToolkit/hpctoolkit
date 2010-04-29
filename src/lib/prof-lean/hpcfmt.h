@@ -146,8 +146,9 @@ hpcfmt_byte2_fwrite(uint16_t val, FILE* outfs)
 static inline int
 hpcfmt_byte2_fread(uint16_t* val, FILE* infs)
 {
-  if ( sizeof(uint16_t) != hpcio_fread_be2(val, infs) ) {
-    return HPCFMT_ERR;
+  size_t sz = hpcio_fread_be2(val, infs);
+  if ( sz != sizeof(uint16_t) ) {
+    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
   }
   return HPCFMT_OK;
 }
@@ -166,8 +167,9 @@ hpcfmt_byte4_fwrite(uint32_t val, FILE* outfs)
 static inline int
 hpcfmt_byte4_fread(uint32_t* val, FILE* infs)
 {
-  if ( sizeof(uint32_t) != hpcio_fread_be4(val, infs) ) {
-    return HPCFMT_ERR;
+  size_t sz = hpcio_fread_be4(val, infs);
+  if ( sz != sizeof(uint32_t) ) {
+    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
   }
   return HPCFMT_OK;
 }
@@ -184,10 +186,11 @@ hpcfmt_byte8_fwrite(uint64_t val, FILE* outfs)
 
 
 static inline int
-hpcfmt_byte8_fread(uint64_t* val, FILE *infs)
+hpcfmt_byte8_fread(uint64_t* val, FILE* infs)
 {
-  if ( sizeof(uint64_t) != hpcio_fread_be8(val, infs) ) {
-    return HPCFMT_ERR;
+  size_t sz = hpcio_fread_be8(val, infs);
+  if ( sz != sizeof(uint64_t) ) {
+    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
   }
   return HPCFMT_OK;
 }
