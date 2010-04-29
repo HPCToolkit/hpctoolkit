@@ -356,13 +356,18 @@ Profile::merge_fixTrace(const std::list<CCT::ANode::MergeEffect>* mrgEffects)
     uint64_t timestamp;
     uint cctId;
 
+    // 1. Read timestamp (exit on EOF)
     ret = hpcfmt_byte8_fread(&timestamp, fs);
-    if (ret == HPCFMT_ERR) {
+    if (ret == HPCFMT_EOF) {
+      break;
+    }
+    else if (ret == HPCFMT_ERR) {
       DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
     }
     
+    // 2. Read and translate cct id
     ret = hpcfmt_byte4_fread(&cctId, fs);
-    if (ret == HPCFMT_ERR) {
+    if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
     }
     
