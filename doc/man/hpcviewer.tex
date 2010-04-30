@@ -51,10 +51,13 @@ The Java-based \Prog{hpcviewer} enables top-down visualizion of Experiment datab
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcviewer} \oOpt{hpctoolkit-database}
+\Prog{hpcviewer} \oOpt{-n} \oOpt{hpctoolkit-database}
 
 Command-line usage:\\
 \Prog{hpcviewer} \File{hpctoolkit-database}
+
+\Prog{hpcviewer} -n \File{hpctoolkit-database}\\
+Opening \File{hpctoolkit-database} with no callers view. 
 
 GUI usage:\\
 Launch \File{hpcviewer} and open \File{hpctoolkit-database}.
@@ -111,8 +114,14 @@ The header above the navigation pane contains flatten and zoom control.
 \begin{itemize}
 \item \textbf{Up arrow.} Zooms to show only information for the selected line and its descendants.
 \item \textbf{Down arrow.} Zooms out (reversing a prior zoom operation).
-\item \textbf{Flatten.} Flattinging (the icon that shows a tree node with a slash through it) replaces each top-level scope shown with its children. If a scope has no children (i.e., it is a leaf), the node will remain in the view. This flattening operation is useful for relaxing the strict hierarchical view so that peers at the same level in the tree can be viewed and ranked together. For instance, this can be used to hide procedures in the flat view so that outermost loops can be ranked and compared to one another.
-\item \textbf{Unflatten.} The inverse of the flatten operation, making an elided node visible again.
+\item \textbf{Hot path}. The button activates "\emph{hot path analysis}", which automatically expands the scopes along the hot path for the selected metric in the subtree rooted at the selected scope. It is a convenient way to find a performance bottleneck of a given metric.
+\item \textbf{Derived metric}. Creation of a new metric based on spreadsheet-like mathematical formulae.
+\item \textbf{Filter metrics}. Show or hide metrics.
+\item \textbf{CSV export}. Export information from the current view to a comma separated values (CSV) file.
+\item \textbf{Bigger font}. Change the current font with a bigger size font.
+\item \textbf{Smaller font}. Change the current font with a smaller size font.
+\item \textbf{Flatten.} (flat view only) Flattening (the icon that shows a tree node with a slash through it) replaces each top-level scope shown with its children. If a scope has no children (i.e., it is a leaf), the node will remain in the view. This flattening operation is useful for relaxing the strict hierarchical view so that peers at the same level in the tree can be viewed and ranked together. For instance, this can be used to hide procedures in the flat view so that outermost loops can be ranked and compared to one another.
+\item \textbf{Unflatten.} (flat view only) The inverse of the flatten operation, making an elided node visible again.
 
 \end{itemize}
 
