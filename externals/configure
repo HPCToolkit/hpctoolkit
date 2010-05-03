@@ -603,9 +603,27 @@ PACKAGE_BUGREPORT='hpc@cs.rice.edu'
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 with_mpi
+xerces_platform
+xerces_prefix
+xed2_prefix
+symtabAPI_platform
+symtabAPI_prefix
+open_analysis_prefix
+old_monitor_prefix
+libxml2_lib
+libxml2_inc
+libxml2_prefix
 libunwind_lib
 libunwind_inc
 libunwind_prefix
+libmonitor_prefix
+libelf_lib
+libelf_inc
+libelf_prefix
+libdwarf_lib
+libdwarf_inc
+libdwarf_prefix
+binutils_prefix
 gnu_make
 svn_revision
 host_vendor
@@ -616,24 +634,6 @@ EXEEXT
 ac_ct_CC
 CPPFLAGS
 LDFLAGS
-xerces_platform
-symtabAPI_platform
-libxml2_lib
-libxml2_inc
-libelf_lib
-libelf_inc
-libdwarf_lib
-libdwarf_inc
-xerces_prefix
-xed2_prefix
-symtabAPI_prefix
-open_analysis_prefix
-old_monitor_prefix
-libxml2_prefix
-libmonitor_prefix
-libelf_prefix
-libdwarf_prefix
-binutils_prefix
 is_cross_compile
 host_os
 host_cpu
@@ -1852,28 +1852,6 @@ ac_config_files="$ac_config_files Makefile.conf"
 ac_config_files="$ac_config_files externs.conf"
 
 ac_config_files="$ac_config_files options.conf"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3313,14 +3291,15 @@ if test "x$prefix" != xNONE ; then
 fi
 prefix="`pwd`/${host_cpu}-${host_os}"
 
-#
-# Append svn revision to PACKAGE_VERSION.
-#
+#------------------------------------------------------------
+# SVN revision
+#------------------------------------------------------------
+
 # If this directory is an svn sandbox, then use svn info (and store
 # the result in a file), else expect the answer to be in the file.
 # Note: svn update changes the revision number, so svn info must take
 # precedence over the file.
-#
+
 { $as_echo "$as_me:$LINENO: checking for svn revision" >&5
 $as_echo_n "checking for svn revision... " >&6; }
 
@@ -3346,13 +3325,16 @@ fi
 
 
 
-#
+#------------------------------------------------------------
+# GNU make
+#------------------------------------------------------------
+
 # Try to find GNU make.  Amazingly, AC doesn't have a macro for this.
 # We only use this value when running configure scripts directly.
 # When starting from a make target, MAKE is exported to the scripts.
 # Thus, it's not fatal if we can't find gnu make here, as long as you
 # later run a gnu-compatible make.
-#
+
 { $as_echo "$as_me:$LINENO: checking for gnu make" >&5
 $as_echo_n "checking for gnu make... " >&6; }
 
@@ -3375,20 +3357,10 @@ fi
 
 
 
-#
-# Specify packages as:  --with-pkg=PATH
-#
-# Choices are:  build, search, PATH, or no.
-#
-# Internal configure variables:
-#
-#   pkg_avail:   build, PATH, or no, for display in summary.
-#   pkg_prefix:  absolute path of final location, built or not.
-#
+#------------------------------------------------------------
+# Binutils: --with-binutils=PATH
+#------------------------------------------------------------
 
-#
-# Option: --with-binutils=PATH
-#
 
 # Check whether --with-dummy-blank-line was given.
 if test "${with_dummy_blank_line+set}" = set; then
@@ -3411,8 +3383,9 @@ binutils_avail=no
 binutils_prefix=no
 cookie="${srcdir}/binutils/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_binutils" in
-    build )
+    build | yes )
 	binutils_avail=build
 	binutils_prefix="$prefix"
 	;;
@@ -3444,9 +3417,12 @@ if test "x$binutils_avail" != xbuild ; then
 $as_echo "$as_me: WARNING: using non-patched binutils version" >&2;}
 fi
 
-#
-# Option: --with-libdwarf=PATH
-#
+
+
+#------------------------------------------------------------
+# Libdwarf: --with-libdwarf=PATH
+#------------------------------------------------------------
+
 
 # Check whether --with-libdwarf was given.
 if test "${with_libdwarf+set}" = set; then
@@ -3460,32 +3436,44 @@ fi
 $as_echo_n "checking libdwarf... " >&6; }
 
 libdwarf_avail=no
+libdwarf_prefix=no
+libdwarf_inc=no
+libdwarf_lib=no
+cookie="${srcdir}/libdwarf/${nobuild_cookie}"
+rm -f "$cookie"
+
 case "$with_libdwarf" in
-    build )
+    build | yes )
 	libdwarf_avail=build
-	;;
-    search )
-	for dir in /usr/local /usr
-	do
-	    if test -f "${dir}/include/libdwarf.h" ; then
-		libdwarf_avail="$dir"
-		break
-	    fi
-	done
-	if test "$libdwarf_avail" = no ; then
-	    libdwarf_avail=build
-	fi
+	libdwarf_prefix="$prefix"
+	libdwarf_inc="${libdwarf_prefix}/include"
+	libdwarf_lib="${libdwarf_prefix}/lib"
 	;;
     /* )
-	if test -f "${with_libdwarf}/include/libdwarf.h" ; then
-	    libdwarf_avail="$with_libdwarf"
+	libdwarf_avail="$with_libdwarf"
+	libdwarf_prefix="$with_libdwarf"
+	if test -f "${libdwarf_prefix}/include/libdwarf.h" ; then
+	    libdwarf_inc="${libdwarf_prefix}/include"
 	else
 	    { { $as_echo "$as_me:$LINENO: error: invalid libdwarf directory: $with_libdwarf" >&5
 $as_echo "$as_me: error: invalid libdwarf directory: $with_libdwarf" >&2;}
    { (exit 1); exit 1; }; }
 	fi
+	for lib in lib64 lib32 lib fail ; do
+	    if test -f "${libdwarf_prefix}/${lib}/libdwarf.so" ; then
+		libdwarf_lib="${libdwarf_prefix}/${lib}"
+		break
+	    fi
+	    if test "$lib" = fail ; then
+		{ { $as_echo "$as_me:$LINENO: error: invalid libdwarf directory: $with_libdwarf" >&5
+$as_echo "$as_me: error: invalid libdwarf directory: $with_libdwarf" >&2;}
+   { (exit 1); exit 1; }; }
+	    fi
+	done
+	echo "installed in: $libdwarf_avail" > "$cookie"
 	;;
     no )
+	echo "not available" > "$cookie"
 	;;
     * )
 	{ { $as_echo "$as_me:$LINENO: error: libdwarf directory must be absolute path: $with_libdwarf" >&5
@@ -3497,49 +3485,14 @@ esac
 { $as_echo "$as_me:$LINENO: result: $libdwarf_avail" >&5
 $as_echo "$libdwarf_avail" >&6; }
 
-#
-# Most of this could be moved into symtabAPI's configure, especially
-# if symtabAPI had a native configure script.
-#
-cookie="${srcdir}/libdwarf/${nobuild_cookie}"
-rm -f "$cookie"
-case "$libdwarf_avail" in
-    build )
-	libdwarf_prefix="$prefix"
-	libdwarf_inc="${libdwarf_prefix}/include"
-	libdwarf_lib="${libdwarf_prefix}/lib"
-	;;
-    /* )
-	libdwarf_prefix="$libdwarf_avail"
-	if test -f "${libdwarf_prefix}/include/libdwarf.h" ; then
-	    libdwarf_inc="${libdwarf_prefix}/include"
-	else
-	    { { $as_echo "$as_me:$LINENO: error: libdwarf search failed: $libdwarf_prefix" >&5
-$as_echo "$as_me: error: libdwarf search failed: $libdwarf_prefix" >&2;}
-   { (exit 1); exit 1; }; }
-	fi
-	if test -f "${libdwarf_prefix}/lib64/libdwarf.so" ; then
-	    libdwarf_lib="${libdwarf_prefix}/lib64"
-	elif test -f "${libdwarf_prefix}/lib/libdwarf.so" ; then
-	    libdwarf_lib="${libdwarf_prefix}/lib"
-	else
-	    { { $as_echo "$as_me:$LINENO: error: libdwarf search failed: $libdwarf_prefix" >&5
-$as_echo "$as_me: error: libdwarf search failed: $libdwarf_prefix" >&2;}
-   { (exit 1); exit 1; }; }
-	fi
-	echo "installed in: $libdwarf_avail" > "$cookie"
-	;;
-    * )
-	libdwarf_prefix=no
-	libdwarf_inc=no
-	libdwarf_lib=no
-	echo "not available" > "$cookie"
-	;;
-esac
 
-#
-# Option: --with-libelf=PATH
-#
+
+
+
+#------------------------------------------------------------
+# Libelf: --with-libelf=PATH
+#------------------------------------------------------------
+
 
 # Check whether --with-libelf was given.
 if test "${with_libelf+set}" = set; then
@@ -3549,39 +3502,47 @@ else
 fi
 
 
-valid_libelf_dir()
-{
-    test -f "$1/include/libelf.h" || test -f "$1/include/libelf/libelf.h"
-}
-
 { $as_echo "$as_me:$LINENO: checking libelf" >&5
 $as_echo_n "checking libelf... " >&6; }
 
 libelf_avail=no
+libelf_prefix=no
+libelf_inc=no
+libelf_lib=no
+cookie="${srcdir}/libelf/${nobuild_cookie}"
+rm -f "$cookie"
+
 case "$with_libelf" in
-    build )
+    build | yes )
 	libelf_avail=build
-	;;
-    search )
-	for dir in /usr/local /usr
-	do
-	    if valid_libelf_dir "$dir" ; then
-		libelf_avail="$dir"
-		break
-	    fi
-	done
-	if test "$libelf_avail" = no ; then
-	    libelf_avail=build
-	fi
+	libelf_prefix="$prefix"
+	libelf_inc="${libelf_prefix}/include/libelf"
+	libelf_lib="${libelf_prefix}/lib"
 	;;
     /* )
-	if valid_libelf_dir "$with_libelf" ; then
-	    libelf_avail="$with_libelf"
+	libelf_avail="$with_libelf"
+	libelf_prefix="$with_libelf"
+	if test -f "${libelf_prefix}/include/libelf.h" ; then
+	    libelf_inc="${libelf_prefix}/include"
+	elif test -f "${libelf_prefix}/include/libelf/libelf.h" ; then
+	    libelf_inc="${libelf_prefix}/include/libelf"
 	else
-	    { { $as_echo "$as_me:$LINENO: error: invalid libelf directory: $with_libelf" >&5
-$as_echo "$as_me: error: invalid libelf directory: $with_libelf" >&2;}
+	    { { $as_echo "$as_me:$LINENO: error: invalid libelf directory: $libelf_prefix" >&5
+$as_echo "$as_me: error: invalid libelf directory: $libelf_prefix" >&2;}
    { (exit 1); exit 1; }; }
 	fi
+	for lib in lib64 lib32 lib fail ; do
+	    if test -f "${libelf_prefix}/${lib}/libelf.so" ; then
+		libelf_lib="${libelf_prefix}/${lib}"
+		break
+	    fi
+	    if test "$lib" = fail ; then
+		{ { $as_echo "$as_me:$LINENO: error: invalid libelf directory: $libelf_prefix" >&5
+$as_echo "$as_me: error: invalid libelf directory: $libelf_prefix" >&2;}
+   { (exit 1); exit 1; }; }
+	    fi
+	done
+	echo "installed in: $libelf_avail" > "$cookie"
 	;;
     no )
 	;;
@@ -3595,51 +3556,14 @@ esac
 { $as_echo "$as_me:$LINENO: result: $libelf_avail" >&5
 $as_echo "$libelf_avail" >&6; }
 
-#
-# Most of this could be moved into symtabAPI's configure, especially
-# if symtabAPI had a native configure script.
-#
-cookie="${srcdir}/libelf/${nobuild_cookie}"
-rm -f "$cookie"
-case "$libelf_avail" in
-    build )
-	libelf_prefix="$prefix"
-	libelf_inc="${libelf_prefix}/include/libelf"
-	libelf_lib="${libelf_prefix}/lib"
-	;;
-    /* )
-	libelf_prefix="$libelf_avail"
-	if test -f "${libelf_prefix}/include/libelf.h" ; then
-	    libelf_inc="${libelf_prefix}/include"
-	elif test -f "${libelf_prefix}/include/libelf/libelf.h" ; then
-	    libelf_inc="${libelf_prefix}/include/libelf"
-	else
-	    { { $as_echo "$as_me:$LINENO: error: libelf search failed: $libelf_prefix" >&5
-$as_echo "$as_me: error: libelf search failed: $libelf_prefix" >&2;}
-   { (exit 1); exit 1; }; }
-	fi
-	if test -f "${libelf_prefix}/lib64/libelf.so" ; then
-	    libelf_lib="${libelf_prefix}/lib64"
-	elif test -f "${libelf_prefix}/lib/libelf.so" ; then
-	    libelf_lib="${libelf_prefix}/lib"
-	else
-	    { { $as_echo "$as_me:$LINENO: error: libelf search failed: $libelf_prefix" >&5
-$as_echo "$as_me: error: libelf search failed: $libelf_prefix" >&2;}
-   { (exit 1); exit 1; }; }
-	fi
-	echo "installed in: $libelf_avail" > "$cookie"
-	;;
-    * )
-	libelf_prefix=no
-	libelf_inc=no
-	libelf_lib=no
-	echo "not available" > "$cookie"
-	;;
-esac
 
-#
-# Option: --with-libmonitor=PATH
-#
+
+
+
+#------------------------------------------------------------
+# Libmonitor: --with-libmonitor=PATH
+#------------------------------------------------------------
+
 
 # Check whether --with-libmonitor was given.
 if test "${with_libmonitor+set}" = set; then
@@ -3656,8 +3580,9 @@ libmonitor_avail=no
 libmonitor_prefix=no
 cookie="${srcdir}/libmonitor/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_libmonitor" in
-    build )
+    build | yes )
 	libmonitor_avail=build
 	libmonitor_prefix="$prefix"
 	;;
@@ -3686,6 +3611,7 @@ esac
 $as_echo "$libmonitor_avail" >&6; }
 
 
+
 #------------------------------------------------------------
 # Libunwind: --with-libunwind=PATH
 #------------------------------------------------------------
@@ -3704,16 +3630,13 @@ fi
 { $as_echo "$as_me:$LINENO: checking libunwind" >&5
 $as_echo_n "checking libunwind... " >&6; }
 
-#
-# Much of this could be done in symtabAPI's configure, if symtabAPI
-# had a native configure script.
-#
 libunwind_avail=no
 libunwind_prefix=no
 libunwind_inc=no
 libunwind_lib=no
 cookie="${srcdir}/libunwind/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_libunwind" in
     build | yes )
 	libunwind_avail=build
@@ -3727,8 +3650,8 @@ case "$with_libunwind" in
 	if test -f "${libunwind_prefix}/include/libunwind.h" ; then
 	    libunwind_inc="${libunwind_prefix}/include"
 	else
-	    { { $as_echo "$as_me:$LINENO: error: libunwind search failed: $libunwind_prefix" >&5
-$as_echo "$as_me: error: libunwind search failed: $libunwind_prefix" >&2;}
+	    { { $as_echo "$as_me:$LINENO: error: invalid libunwind: $libunwind_prefix" >&5
+$as_echo "$as_me: error: invalid libunwind: $libunwind_prefix" >&2;}
    { (exit 1); exit 1; }; }
 	fi
 	if test -f "${libunwind_prefix}/lib64/libunwind.so" ; then
@@ -3736,8 +3659,8 @@ $as_echo "$as_me: error: libunwind search failed: $libunwind_prefix" >&2;}
 	elif test -f "${libunwind_prefix}/lib/libunwind.so" ; then
 	    libunwind_lib="${libunwind_prefix}/lib"
 	else
-	    { { $as_echo "$as_me:$LINENO: error: libunwind search failed: $libunwind_prefix" >&5
-$as_echo "$as_me: error: libunwind search failed: $libunwind_prefix" >&2;}
+	    { { $as_echo "$as_me:$LINENO: error: invalid libunwind: $libunwind_prefix" >&5
+$as_echo "$as_me: error: invalid libunwind: $libunwind_prefix" >&2;}
    { (exit 1); exit 1; }; }
 	fi
 	echo "installed in: $libunwind_avail" > "$cookie"
@@ -3772,39 +3695,43 @@ else
 fi
 
 
-valid_libxml2_dir()
-{
-    test -d "$1/include/libxml2"
-}
-
 { $as_echo "$as_me:$LINENO: checking libxml2" >&5
 $as_echo_n "checking libxml2... " >&6; }
 
 libxml2_avail=no
+libxml2_prefix=no
+libxml2_inc=no
+libxml2_lib=no
+cookie="${srcdir}/libxml2/${nobuild_cookie}"
+rm -f "$cookie"
+
 case "$with_libxml2" in
-    build )
+    build | yes )
 	libxml2_avail=build
-	;;
-    search )
-	for dir in /usr/local /usr
-	do
-	    if valid_libxml2_dir "$dir" ; then
-		libxml2_avail="$dir"
-		break
-	    fi
-	done
-	if test "$libxml2_avail" = no ; then
-	    libxml2_avail=build
-	fi
+	libxml2_prefix="$prefix"
+	libxml2_inc="${libxml2_prefix}/include/libxml2"
+	libxml2_lib="${libxml2_prefix}/lib"
 	;;
     /* )
-	if valid_libxml2_dir "$with_libxml2" ; then
+	if test -d "${with_libxml2}/include/libxml2" ; then
 	    libxml2_avail="$with_libxml2"
 	else
 	    { { $as_echo "$as_me:$LINENO: error: invalid libxml2 directory: $with_libxml2" >&5
 $as_echo "$as_me: error: invalid libxml2 directory: $with_libxml2" >&2;}
    { (exit 1); exit 1; }; }
 	fi
+	for lib in lib64 lib32 lib fail ; do
+	    if test -f "${libxml2_prefix}/${lib}/libxml2.so" ; then
+		libxml2_lib="${libxml2_prefix}/${lib}"
+		break
+	    fi
+	    if test "$lib" = fail ; then
+		{ { $as_echo "$as_me:$LINENO: error: invalid libxml2 directory: $with_libxml2" >&5
+$as_echo "$as_me: error: invalid libxml2 directory: $with_libxml2" >&2;}
+   { (exit 1); exit 1; }; }
+	    fi
+	done
+	echo "installed in: $libxml2_avail" > "$cookie"
 	;;
     no )
 	;;
@@ -3818,46 +3745,17 @@ esac
 { $as_echo "$as_me:$LINENO: result: $libxml2_avail" >&5
 $as_echo "$libxml2_avail" >&6; }
 
-#
-# Most of this could be moved into symtabAPI's configure, especially
-# if symtabAPI had a native configure script.
-#
-cookie="${srcdir}/libxml2/${nobuild_cookie}"
-rm -f "$cookie"
-case "$libxml2_avail" in
-    build )
-	libxml2_prefix="$prefix"
-	libxml2_inc="${libxml2_prefix}/include/libxml2"
-	libxml2_lib="${libxml2_prefix}/lib"
-	;;
-    /* )
-	libxml2_prefix="$libxml2_avail"
-	libxml2_inc="${libxml2_prefix}/include/libxml2"
-	if test -f "${libxml2_prefix}/lib64/libxml2.so" ; then
-	    libxml2_lib="${libxml2_prefix}/lib64"
-	elif test -f "${libxml2_prefix}/lib/libxml2.so" ; then
-	    libxml2_lib="${libxml2_prefix}/lib"
-	else
-	    { { $as_echo "$as_me:$LINENO: error: libxml2 search failed: $libxml2_prefix" >&5
-$as_echo "$as_me: error: libxml2 search failed: $libxml2_prefix" >&2;}
-   { (exit 1); exit 1; }; }
-	fi
-	echo "installed in: $libxml2_avail" > "$cookie"
-	;;
-    * )
-	libxml2_prefix=no
-	libxml2_inc=no
-	libxml2_lib=no
-	echo "not available" > "$cookie"
-	;;
-esac
 
-#
-# Option: --with-old-monitor=PATH
-#
+
+
+
+#------------------------------------------------------------
+# Old Monitor: --with-old-monitor=PATH
+#------------------------------------------------------------
+
 # Set the default to no on Cray XT, the build fails there, and we
 # don't use it on this platform anyway.
-#
+
 default=build
 if test "x$XTOS_VERSION" != x ; then
     default=no
@@ -3879,6 +3777,7 @@ old_monitor_avail=no
 old_monitor_prefix=no
 cookie="${srcdir}/old-monitor/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_old_monitor" in
     build | yes )
 	old_monitor_avail=build
@@ -3908,9 +3807,12 @@ esac
 { $as_echo "$as_me:$LINENO: result: $old_monitor_avail" >&5
 $as_echo "$old_monitor_avail" >&6; }
 
-#
-# Option: --with-open-analysis=PATH
-#
+
+
+#------------------------------------------------------------
+# Open Analysis: --with-open-analysis=PATH
+#------------------------------------------------------------
+
 
 # Check whether --with-open-analysis was given.
 if test "${with_open_analysis+set}" = set; then
@@ -3927,6 +3829,7 @@ open_analysis_avail=no
 open_analysis_prefix=no
 cookie="${srcdir}/open-analysis/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_open_analysis" in
     build )
 	open_analysis_avail=build
@@ -3956,9 +3859,12 @@ esac
 { $as_echo "$as_me:$LINENO: result: $open_analysis_avail" >&5
 $as_echo "$open_analysis_avail" >&6; }
 
-#
-# Option: --with-symtabAPI=PATH
-#
+
+
+#------------------------------------------------------------
+# SymtabAPI: --with-symtabAPI=PATH
+#------------------------------------------------------------
+
 
 # Check whether --with-symtabAPI was given.
 if test "${with_symtabAPI+set}" = set; then
@@ -3976,8 +3882,9 @@ symtabAPI_prefix=no
 symtabAPI_platform=no
 cookie="${srcdir}/symtabAPI/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_symtabAPI" in
-    build )
+    build | yes )
 	#
 	# SymtabAPI understands a fixed set of platforms, and we only
 	# handle a subset of those.  This is also why you should not
@@ -4033,17 +3940,28 @@ esac
 { $as_echo "$as_me:$LINENO: result: $symtabAPI_avail" >&5
 $as_echo "$symtabAPI_avail" >&6; }
 
-#
-# Option: --with-xed2=PATH
-#
+
+
+
+#------------------------------------------------------------
+# XED: --with-xed2=PATH
+#------------------------------------------------------------
+
 # Used on x86 and x86_64.
-#
+
+default=no
+case "$host_cpu" in
+    *x86* | *i*86* )
+	default=build
+	;;
+esac
+
 
 # Check whether --with-xed2 was given.
 if test "${with_xed2+set}" = set; then
   withval=$with_xed2;
 else
-  with_xed2=build
+  with_xed2="$default"
 fi
 
 
@@ -4054,17 +3972,11 @@ xed2_avail=no
 xed2_prefix=no
 cookie="${srcdir}/xed2/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_xed2" in
-    build )
-	case "$host_cpu" in
-	    *x86* | *i*86* )
-		xed2_avail=build
-		xed2_prefix="$prefix"
-		;;
-	    * )
-		echo "not used on this platform" > "$cookie"
-		;;
-	esac
+    build | yes )
+	xed2_avail=build
+	xed2_prefix="$prefix"
 	;;
     /* )
 	if test -f "${with_xed2}/include/xed-interface.h" ; then
@@ -4090,9 +4002,12 @@ esac
 { $as_echo "$as_me:$LINENO: result: $xed2_avail" >&5
 $as_echo "$xed2_avail" >&6; }
 
-#
-# Option: --with-xerces=PATH
-#
+
+
+#------------------------------------------------------------
+# Xerces: --with-xerces=PATH
+#------------------------------------------------------------
+
 
 # Check whether --with-xerces was given.
 if test "${with_xerces+set}" = set; then
@@ -4109,8 +4024,9 @@ xerces_avail=no
 xerces_prefix=no
 cookie="${srcdir}/xerces/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_xerces" in
-    build )
+    build | yes )
 	xerces_avail=build
 	xerces_prefix="$prefix"
 	;;
@@ -4140,11 +4056,15 @@ $as_echo "$xerces_avail" >&6; }
 
 xerces_platform=linux
 
-#
-# Option: --with-mpi=PATH
-#
+
+
+
+#------------------------------------------------------------
+# MPI: --with-mpi=PATH
+#------------------------------------------------------------
+
 # Pass the MPI path to old monitor.
-#
+
 
 # Check whether --with-mpi was given.
 if test "${with_mpi+set}" = set; then
@@ -4172,6 +4092,10 @@ $as_echo "$as_me: error: mpi directory must be absolute path: $with_mpi" >&2;}
 esac
 
 
+
+#------------------------------------------------------------
+# Summary
+#------------------------------------------------------------
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -5289,9 +5213,6 @@ fi
 
 rm -f "$failure_file"
 
-#
-# Display a summary of the config options.
-#
 { $as_echo "$as_me:$LINENO: ------------------" >&5
 $as_echo "$as_me: ------------------" >&6;}
 { $as_echo "$as_me:$LINENO: Externals summary" >&5

@@ -1,7 +1,7 @@
 dnl
 dnl  Externals configure.
 dnl
-dnl  Copyright (c) 2008-2009, Rice University.
+dnl  Copyright (c) 2008-2010, Rice University.
 dnl  All rights reserved.
 dnl
 dnl  Redistribution and use in source and binary forms, with or without
@@ -56,29 +56,7 @@ AC_SUBST([host])
 AC_SUBST([host_cpu])
 AC_SUBST([host_os])
 AC_SUBST([is_cross_compile])
-
 AC_SUBST([prefix])
-
-AC_SUBST([binutils_prefix])
-AC_SUBST([libdwarf_prefix])
-AC_SUBST([libelf_prefix])
-AC_SUBST([libmonitor_prefix])
-AC_SUBST([libxml2_prefix])
-AC_SUBST([old_monitor_prefix])
-AC_SUBST([open_analysis_prefix])
-AC_SUBST([symtabAPI_prefix])
-AC_SUBST([xed2_prefix])
-AC_SUBST([xerces_prefix])
-
-AC_SUBST([libdwarf_inc])
-AC_SUBST([libdwarf_lib])
-AC_SUBST([libelf_inc])
-AC_SUBST([libelf_lib])
-AC_SUBST([libxml2_inc])
-AC_SUBST([libxml2_lib])
-
-AC_SUBST([symtabAPI_platform])
-AC_SUBST([xerces_platform])
 
 AC_PROG_CC
 AC_PROG_CXX
@@ -119,14 +97,15 @@ if test "x$prefix" != xNONE ; then
 fi
 prefix="`pwd`/${host_cpu}-${host_os}"
 
-#
-# Append svn revision to PACKAGE_VERSION.
-#
+#------------------------------------------------------------
+# SVN revision
+#------------------------------------------------------------
+
 # If this directory is an svn sandbox, then use svn info (and store
 # the result in a file), else expect the answer to be in the file.
 # Note: svn update changes the revision number, so svn info must take
 # precedence over the file.
-#
+
 AC_MSG_CHECKING([for svn revision])
 
 svn_revision=`svn info $srcdir 2>/dev/null | grep -e '^Revision' | awk '{ print $2 }'`
@@ -149,13 +128,16 @@ fi
 
 AC_SUBST([svn_revision])
 
-#
+#------------------------------------------------------------
+# GNU make
+#------------------------------------------------------------
+
 # Try to find GNU make.  Amazingly, AC doesn't have a macro for this.
 # We only use this value when running configure scripts directly.
 # When starting from a make target, MAKE is exported to the scripts.
 # Thus, it's not fatal if we can't find gnu make here, as long as you
 # later run a gnu-compatible make.
-#
+
 AC_MSG_CHECKING([for gnu make])
 
 if gmake --version 2>&1 | grep -i gnu >/dev/null 2>&1 ; then
@@ -175,20 +157,10 @@ fi
 
 AC_SUBST([gnu_make])
 
-#
-# Specify packages as:  --with-pkg=PATH
-#
-# Choices are:  build, search, PATH, or no.
-#
-# Internal configure variables:
-#
-#   pkg_avail:   build, PATH, or no, for display in summary.
-#   pkg_prefix:  absolute path of final location, built or not.
-#
+#------------------------------------------------------------
+# Binutils: --with-binutils=PATH
+#------------------------------------------------------------
 
-#
-# Option: --with-binutils=PATH
-#
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([ ], [ ])])
 AC_ARG_WITH([binutils],
     [AS_HELP_STRING([--with-binutils=PATH],
@@ -202,8 +174,9 @@ binutils_avail=no
 binutils_prefix=no
 cookie="${srcdir}/binutils/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_binutils" in
-    build )
+    build | yes )
 	binutils_avail=build
 	binutils_prefix="$prefix"
 	;;
@@ -229,9 +202,12 @@ if test "x$binutils_avail" != xbuild ; then
     AC_MSG_WARN([using non-patched binutils version])
 fi
 
-#
-# Option: --with-libdwarf=PATH
-#
+AC_SUBST([binutils_prefix])
+
+#------------------------------------------------------------
+# Libdwarf: --with-libdwarf=PATH
+#------------------------------------------------------------
+
 AC_ARG_WITH([libdwarf],
     [AS_HELP_STRING([--with-libdwarf=PATH],
 	[path to libdwarf install directory (default build)])],
@@ -241,30 +217,40 @@ AC_ARG_WITH([libdwarf],
 AC_MSG_CHECKING([libdwarf])
 
 libdwarf_avail=no
+libdwarf_prefix=no
+libdwarf_inc=no
+libdwarf_lib=no
+cookie="${srcdir}/libdwarf/${nobuild_cookie}"
+rm -f "$cookie"
+
 case "$with_libdwarf" in
-    build )
+    build | yes )
 	libdwarf_avail=build
-	;;
-    search )
-	for dir in /usr/local /usr
-	do
-	    if test -f "${dir}/include/libdwarf.h" ; then
-		libdwarf_avail="$dir"
-		break
-	    fi
-	done
-	if test "$libdwarf_avail" = no ; then
-	    libdwarf_avail=build
-	fi
+	libdwarf_prefix="$prefix"
+	libdwarf_inc="${libdwarf_prefix}/include"
+	libdwarf_lib="${libdwarf_prefix}/lib"
 	;;
     /* )
-	if test -f "${with_libdwarf}/include/libdwarf.h" ; then
-	    libdwarf_avail="$with_libdwarf"
+	libdwarf_avail="$with_libdwarf"
+	libdwarf_prefix="$with_libdwarf"
+	if test -f "${libdwarf_prefix}/include/libdwarf.h" ; then
+	    libdwarf_inc="${libdwarf_prefix}/include"
 	else
 	    AC_MSG_ERROR([invalid libdwarf directory: $with_libdwarf])
 	fi
+	for lib in lib64 lib32 lib fail ; do
+	    if test -f "${libdwarf_prefix}/${lib}/libdwarf.so" ; then
+		libdwarf_lib="${libdwarf_prefix}/${lib}"
+		break
+	    fi
+	    if test "$lib" = fail ; then
+		AC_MSG_ERROR([invalid libdwarf directory: $with_libdwarf])
+	    fi
+	done
+	echo "installed in: $libdwarf_avail" > "$cookie"
 	;;
     no )
+	echo "not available" > "$cookie"
 	;;
     * )
 	AC_MSG_ERROR([libdwarf directory must be absolute path: $with_libdwarf])
@@ -273,81 +259,56 @@ esac
 
 AC_MSG_RESULT([$libdwarf_avail])
 
-#
-# Most of this could be moved into symtabAPI's configure, especially
-# if symtabAPI had a native configure script.
-#
-cookie="${srcdir}/libdwarf/${nobuild_cookie}"
-rm -f "$cookie"
-case "$libdwarf_avail" in
-    build )
-	libdwarf_prefix="$prefix"
-	libdwarf_inc="${libdwarf_prefix}/include"
-	libdwarf_lib="${libdwarf_prefix}/lib"
-	;;
-    /* )
-	libdwarf_prefix="$libdwarf_avail"
-	if test -f "${libdwarf_prefix}/include/libdwarf.h" ; then
-	    libdwarf_inc="${libdwarf_prefix}/include"
-	else
-	    AC_MSG_ERROR([libdwarf search failed: $libdwarf_prefix])
-	fi
-	if test -f "${libdwarf_prefix}/lib64/libdwarf.so" ; then
-	    libdwarf_lib="${libdwarf_prefix}/lib64"
-	elif test -f "${libdwarf_prefix}/lib/libdwarf.so" ; then
-	    libdwarf_lib="${libdwarf_prefix}/lib"
-	else
-	    AC_MSG_ERROR([libdwarf search failed: $libdwarf_prefix])
-	fi
-	echo "installed in: $libdwarf_avail" > "$cookie"
-	;;
-    * )
-	libdwarf_prefix=no
-	libdwarf_inc=no
-	libdwarf_lib=no
-	echo "not available" > "$cookie"
-	;;
-esac
+AC_SUBST([libdwarf_prefix])
+AC_SUBST([libdwarf_inc])
+AC_SUBST([libdwarf_lib])
 
-#
-# Option: --with-libelf=PATH
-#
+#------------------------------------------------------------
+# Libelf: --with-libelf=PATH
+#------------------------------------------------------------
+
 AC_ARG_WITH([libelf],
     [AS_HELP_STRING([--with-libelf=PATH],
 	[path to libelf install directory (default build)])],
     [],
     [with_libelf=build])
 
-valid_libelf_dir()
-{
-    test -f "$1/include/libelf.h" || test -f "$1/include/libelf/libelf.h"
-}
-
 AC_MSG_CHECKING([libelf])
 
 libelf_avail=no
+libelf_prefix=no
+libelf_inc=no
+libelf_lib=no
+cookie="${srcdir}/libelf/${nobuild_cookie}"
+rm -f "$cookie"
+
 case "$with_libelf" in
-    build )
+    build | yes )
 	libelf_avail=build
-	;;
-    search )
-	for dir in /usr/local /usr
-	do
-	    if valid_libelf_dir "$dir" ; then
-		libelf_avail="$dir"
-		break
-	    fi
-	done
-	if test "$libelf_avail" = no ; then
-	    libelf_avail=build
-	fi
+	libelf_prefix="$prefix"
+	libelf_inc="${libelf_prefix}/include/libelf"
+	libelf_lib="${libelf_prefix}/lib"
 	;;
     /* )
-	if valid_libelf_dir "$with_libelf" ; then
-	    libelf_avail="$with_libelf"
+	libelf_avail="$with_libelf"
+	libelf_prefix="$with_libelf"
+	if test -f "${libelf_prefix}/include/libelf.h" ; then
+	    libelf_inc="${libelf_prefix}/include"
+	elif test -f "${libelf_prefix}/include/libelf/libelf.h" ; then
+	    libelf_inc="${libelf_prefix}/include/libelf"
 	else
-	    AC_MSG_ERROR([invalid libelf directory: $with_libelf])
+	    AC_MSG_ERROR([invalid libelf directory: $libelf_prefix])
 	fi
+	for lib in lib64 lib32 lib fail ; do
+	    if test -f "${libelf_prefix}/${lib}/libelf.so" ; then
+		libelf_lib="${libelf_prefix}/${lib}"
+		break
+	    fi
+	    if test "$lib" = fail ; then
+		AC_MSG_ERROR([invalid libelf directory: $libelf_prefix])
+	    fi
+	done
+	echo "installed in: $libelf_avail" > "$cookie"
 	;;
     no )
 	;;
@@ -358,47 +319,14 @@ esac
 
 AC_MSG_RESULT([$libelf_avail])
 
-#
-# Most of this could be moved into symtabAPI's configure, especially
-# if symtabAPI had a native configure script.
-#
-cookie="${srcdir}/libelf/${nobuild_cookie}"
-rm -f "$cookie"
-case "$libelf_avail" in
-    build )
-	libelf_prefix="$prefix"
-	libelf_inc="${libelf_prefix}/include/libelf"
-	libelf_lib="${libelf_prefix}/lib"
-	;;
-    /* )
-	libelf_prefix="$libelf_avail"
-	if test -f "${libelf_prefix}/include/libelf.h" ; then
-	    libelf_inc="${libelf_prefix}/include"
-	elif test -f "${libelf_prefix}/include/libelf/libelf.h" ; then
-	    libelf_inc="${libelf_prefix}/include/libelf"
-	else
-	    AC_MSG_ERROR([libelf search failed: $libelf_prefix])
-	fi
-	if test -f "${libelf_prefix}/lib64/libelf.so" ; then
-	    libelf_lib="${libelf_prefix}/lib64"
-	elif test -f "${libelf_prefix}/lib/libelf.so" ; then
-	    libelf_lib="${libelf_prefix}/lib"
-	else
-	    AC_MSG_ERROR([libelf search failed: $libelf_prefix])
-	fi
-	echo "installed in: $libelf_avail" > "$cookie"
-	;;
-    * )
-	libelf_prefix=no
-	libelf_inc=no
-	libelf_lib=no
-	echo "not available" > "$cookie"
-	;;
-esac
+AC_SUBST([libelf_prefix])
+AC_SUBST([libelf_inc])
+AC_SUBST([libelf_lib])
 
-#
-# Option: --with-libmonitor=PATH
-#
+#------------------------------------------------------------
+# Libmonitor: --with-libmonitor=PATH
+#------------------------------------------------------------
+
 AC_ARG_WITH([libmonitor],
     [AS_HELP_STRING([--with-libmonitor=PATH],
 	[path to libmonitor install directory (default build)])],
@@ -411,8 +339,9 @@ libmonitor_avail=no
 libmonitor_prefix=no
 cookie="${srcdir}/libmonitor/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_libmonitor" in
-    build )
+    build | yes )
 	libmonitor_avail=build
 	libmonitor_prefix="$prefix"
 	;;
@@ -435,6 +364,8 @@ esac
 
 AC_MSG_RESULT([$libmonitor_avail])
 
+AC_SUBST([libmonitor_prefix])
+
 #------------------------------------------------------------
 # Libunwind: --with-libunwind=PATH
 #------------------------------------------------------------
@@ -449,16 +380,13 @@ AC_ARG_WITH([libunwind],
 
 AC_MSG_CHECKING([libunwind])
 
-#
-# Much of this could be done in symtabAPI's configure, if symtabAPI
-# had a native configure script.
-#
 libunwind_avail=no
 libunwind_prefix=no
 libunwind_inc=no
 libunwind_lib=no
 cookie="${srcdir}/libunwind/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_libunwind" in
     build | yes )
 	libunwind_avail=build
@@ -472,14 +400,14 @@ case "$with_libunwind" in
 	if test -f "${libunwind_prefix}/include/libunwind.h" ; then
 	    libunwind_inc="${libunwind_prefix}/include"
 	else
-	    AC_MSG_ERROR([libunwind search failed: $libunwind_prefix])
+	    AC_MSG_ERROR([invalid libunwind: $libunwind_prefix])
 	fi
 	if test -f "${libunwind_prefix}/lib64/libunwind.so" ; then
 	    libunwind_lib="${libunwind_prefix}/lib64"
 	elif test -f "${libunwind_prefix}/lib/libunwind.so" ; then
 	    libunwind_lib="${libunwind_prefix}/lib"
 	else
-	    AC_MSG_ERROR([libunwind search failed: $libunwind_prefix])
+	    AC_MSG_ERROR([invalid libunwind: $libunwind_prefix])
 	fi
 	echo "installed in: $libunwind_avail" > "$cookie"
 	;;
@@ -507,36 +435,38 @@ AC_ARG_WITH([libxml2],
     [],
     [with_libxml2=build])
 
-valid_libxml2_dir()
-{
-    test -d "$1/include/libxml2"
-}
-
 AC_MSG_CHECKING([libxml2])
 
 libxml2_avail=no
+libxml2_prefix=no
+libxml2_inc=no
+libxml2_lib=no
+cookie="${srcdir}/libxml2/${nobuild_cookie}"
+rm -f "$cookie"
+
 case "$with_libxml2" in
-    build )
+    build | yes )
 	libxml2_avail=build
-	;;
-    search )
-	for dir in /usr/local /usr
-	do
-	    if valid_libxml2_dir "$dir" ; then
-		libxml2_avail="$dir"
-		break
-	    fi
-	done
-	if test "$libxml2_avail" = no ; then
-	    libxml2_avail=build
-	fi
+	libxml2_prefix="$prefix"
+	libxml2_inc="${libxml2_prefix}/include/libxml2"
+	libxml2_lib="${libxml2_prefix}/lib"
 	;;
     /* )
-	if valid_libxml2_dir "$with_libxml2" ; then
+	if test -d "${with_libxml2}/include/libxml2" ; then
 	    libxml2_avail="$with_libxml2"
 	else
 	    AC_MSG_ERROR([invalid libxml2 directory: $with_libxml2])
 	fi
+	for lib in lib64 lib32 lib fail ; do
+	    if test -f "${libxml2_prefix}/${lib}/libxml2.so" ; then
+		libxml2_lib="${libxml2_prefix}/${lib}"
+		break
+	    fi
+	    if test "$lib" = fail ; then
+		AC_MSG_ERROR([invalid libxml2 directory: $with_libxml2])
+	    fi
+	done
+	echo "installed in: $libxml2_avail" > "$cookie"
 	;;
     no )
 	;;
@@ -547,44 +477,17 @@ esac
 
 AC_MSG_RESULT([$libxml2_avail])
 
-#
-# Most of this could be moved into symtabAPI's configure, especially
-# if symtabAPI had a native configure script.
-#
-cookie="${srcdir}/libxml2/${nobuild_cookie}"
-rm -f "$cookie"
-case "$libxml2_avail" in
-    build )
-	libxml2_prefix="$prefix"
-	libxml2_inc="${libxml2_prefix}/include/libxml2"
-	libxml2_lib="${libxml2_prefix}/lib"
-	;;
-    /* )
-	libxml2_prefix="$libxml2_avail"
-	libxml2_inc="${libxml2_prefix}/include/libxml2"
-	if test -f "${libxml2_prefix}/lib64/libxml2.so" ; then
-	    libxml2_lib="${libxml2_prefix}/lib64"
-	elif test -f "${libxml2_prefix}/lib/libxml2.so" ; then
-	    libxml2_lib="${libxml2_prefix}/lib"
-	else
-	    AC_MSG_ERROR([libxml2 search failed: $libxml2_prefix])
-	fi
-	echo "installed in: $libxml2_avail" > "$cookie"
-	;;
-    * )
-	libxml2_prefix=no
-	libxml2_inc=no
-	libxml2_lib=no
-	echo "not available" > "$cookie"
-	;;
-esac
+AC_SUBST([libxml2_prefix])
+AC_SUBST([libxml2_inc])
+AC_SUBST([libxml2_lib])
 
-#
-# Option: --with-old-monitor=PATH
-#
+#------------------------------------------------------------
+# Old Monitor: --with-old-monitor=PATH
+#------------------------------------------------------------
+
 # Set the default to no on Cray XT, the build fails there, and we
 # don't use it on this platform anyway.
-#
+
 default=build
 if test "x$XTOS_VERSION" != x ; then
     default=no
@@ -602,6 +505,7 @@ old_monitor_avail=no
 old_monitor_prefix=no
 cookie="${srcdir}/old-monitor/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_old_monitor" in
     build | yes )
 	old_monitor_avail=build
@@ -626,9 +530,12 @@ esac
 
 AC_MSG_RESULT([$old_monitor_avail])
 
-#
-# Option: --with-open-analysis=PATH
-#
+AC_SUBST([old_monitor_prefix])
+
+#------------------------------------------------------------
+# Open Analysis: --with-open-analysis=PATH
+#------------------------------------------------------------
+
 AC_ARG_WITH([open-analysis],
     [AS_HELP_STRING([--with-open-analysis=PATH],
 	[path to open analysis install directory (default build)])],
@@ -641,6 +548,7 @@ open_analysis_avail=no
 open_analysis_prefix=no
 cookie="${srcdir}/open-analysis/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_open_analysis" in
     build )
 	open_analysis_avail=build
@@ -665,9 +573,12 @@ esac
 
 AC_MSG_RESULT([$open_analysis_avail])
 
-#
-# Option: --with-symtabAPI=PATH
-#
+AC_SUBST([open_analysis_prefix])
+
+#------------------------------------------------------------
+# SymtabAPI: --with-symtabAPI=PATH
+#------------------------------------------------------------
+
 AC_ARG_WITH([symtabAPI],
     [AS_HELP_STRING([--with-symtabAPI=PATH],
 	[path to symtabAPI install directory (default build)])],
@@ -681,8 +592,9 @@ symtabAPI_prefix=no
 symtabAPI_platform=no
 cookie="${srcdir}/symtabAPI/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_symtabAPI" in
-    build )
+    build | yes )
 	#
 	# SymtabAPI understands a fixed set of platforms, and we only
 	# handle a subset of those.  This is also why you should not
@@ -733,16 +645,27 @@ esac
 
 AC_MSG_RESULT([$symtabAPI_avail])
 
-#
-# Option: --with-xed2=PATH
-#
+AC_SUBST([symtabAPI_prefix])
+AC_SUBST([symtabAPI_platform])
+
+#------------------------------------------------------------
+# XED: --with-xed2=PATH
+#------------------------------------------------------------
+
 # Used on x86 and x86_64.
-#
+
+default=no
+case "$host_cpu" in
+    *x86* | *i*86* )
+	default=build
+	;;
+esac
+
 AC_ARG_WITH([xed2],
     [AS_HELP_STRING([--with-xed2=PATH],
 	[path to xed2 install directory (default build)])],
     [],
-    [with_xed2=build])
+    [with_xed2="$default"])
 
 AC_MSG_CHECKING([xed2])
 
@@ -750,17 +673,11 @@ xed2_avail=no
 xed2_prefix=no
 cookie="${srcdir}/xed2/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_xed2" in
-    build )
-	case "$host_cpu" in
-	    *x86* | *i*86* )
-		xed2_avail=build
-		xed2_prefix="$prefix"
-		;;
-	    * )
-		echo "not used on this platform" > "$cookie"
-		;;
-	esac
+    build | yes )
+	xed2_avail=build
+	xed2_prefix="$prefix"
 	;;
     /* )
 	if test -f "${with_xed2}/include/xed-interface.h" ; then
@@ -781,9 +698,12 @@ esac
 
 AC_MSG_RESULT([$xed2_avail])
 
-#
-# Option: --with-xerces=PATH
-#
+AC_SUBST([xed2_prefix])
+
+#------------------------------------------------------------
+# Xerces: --with-xerces=PATH
+#------------------------------------------------------------
+
 AC_ARG_WITH([xerces],
     [AS_HELP_STRING([--with-xerces=PATH],
 	[path to xerces/c install directory (default build)])],
@@ -796,8 +716,9 @@ xerces_avail=no
 xerces_prefix=no
 cookie="${srcdir}/xerces/${nobuild_cookie}"
 rm -f "$cookie"
+
 case "$with_xerces" in
-    build )
+    build | yes )
 	xerces_avail=build
 	xerces_prefix="$prefix"
 	;;
@@ -822,11 +743,15 @@ AC_MSG_RESULT([$xerces_avail])
 
 xerces_platform=linux
 
-#
-# Option: --with-mpi=PATH
-#
+AC_SUBST([xerces_prefix])
+AC_SUBST([xerces_platform])
+
+#------------------------------------------------------------
+# MPI: --with-mpi=PATH
+#------------------------------------------------------------
+
 # Pass the MPI path to old monitor.
-#
+
 AC_ARG_WITH([mpi],
     [AS_HELP_STRING([--with-mpi=PATH],
 	[pass the MPI path to old monitor,
@@ -849,13 +774,14 @@ esac
 
 AC_SUBST([with_mpi])
 
+#------------------------------------------------------------
+# Summary
+#------------------------------------------------------------
+
 AC_OUTPUT
 
 rm -f "$failure_file"
 
-#
-# Display a summary of the config options.
-#
 AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([Externals summary])
 AC_MSG_NOTICE([------------------])
