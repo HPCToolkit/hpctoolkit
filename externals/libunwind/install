@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+#  Libunwind install.
+#
+#  Use objcopy to rename some internal libunwind function names.
+#  On ia64, these names conflict with symbols in libgcc_eh.
+#
+#  $Id$
+#
+
+PKG_NAME=libunwind
+
+. ../build-utils/configure.inc
+pre_install
+
+cd work || die "unable to cd: work"
+$MAKE install
+
+set --
+for sym in  \
+    _Unwind_Backtrace			\
+    _Unwind_DeleteException		\
+    _Unwind_FindEnclosingFunction	\
+    _Unwind_ForcedUnwind		\
+    _Unwind_GetBSP			\
+    _Unwind_GetCFA			\
+    _Unwind_GetDataRelBase		\
+    _Unwind_GetGR			\
+    _Unwind_GetIP			\
+    _Unwind_GetIPInfo			\
+    _Unwind_GetLanguageSpecificData	\
+    _Unwind_GetRegionStart		\
+    _Unwind_GetTextRelBase		\
+    _Unwind_RaiseException		\
+    _Unwind_Resume			\
+    _Unwind_Resume_or_Rethrow		\
+    _Unwind_SetGR			\
+    _Unwind_SetIP
+do
+    set -- "$@" --redefine-sym "${sym}=_hpc${sym}"
+done
+
+cd "${prefix}/lib" || die "unable to cd: ${prefix}/lib"
+for file in libunwind.a libunwind.so.7.0.0
+do
+    echo objcopy "$@" "$file"
+    objcopy "$@" "$file"
+    test $? -eq 0 || die "objcopy failed: $file"
+done
+
+post_install
