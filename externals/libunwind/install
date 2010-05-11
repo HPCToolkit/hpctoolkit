@@ -41,11 +41,13 @@ do
 done
 
 cd "${prefix}/lib" || die "unable to cd: ${prefix}/lib"
-for file in libunwind.a libunwind.so.7.0.0
+for file in libunwind.a libunwind.so*
 do
-    echo objcopy "$@" "$file"
-    objcopy "$@" "$file"
-    test $? -eq 0 || die "objcopy failed: $file"
+    if test -f "$file" && test ! -L "$file" ; then
+	echo objcopy "$@" "$file"
+	objcopy "$@" "$file"
+	test $? -eq 0 || die "objcopy failed: $file"
+    fi
 done
 
 post_install
