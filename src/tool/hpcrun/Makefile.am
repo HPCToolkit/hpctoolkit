@@ -220,13 +220,13 @@ MY_MIPS_FILES = \
 
 MY_PPC_FILES = \
 	unwind/common/default_validation_summary.c \
-        trampoline/ppc64/ppc64-tramp.S \
+        trampoline/ppc64/ppc64-tramp.s \
         \
         utilities/arch/ppc64/ppc64-context-pc.c
 
 
 MY_X86_FILES = \
-        trampoline/x86-family/x86-tramp.S \
+        trampoline/x86-family/x86-tramp.s \
         \
         utilities/arch/x86-family/x86-context-pc.c
 
@@ -320,11 +320,19 @@ if HOST_CPU_MIPS
     libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
 endif
 
+# Note: setting CCASFLAGS here is a no-op hack with the side effect of
+# prefixing the tramp.s file names so they will be compiled separately
+# for .o and .so targets.  CFLAGS does this for the .c files, but
+# CFLAGS doesn't apply to .s files.  See the automake docs section
+# 8.3.9.2, Objects created with both libtool and without.
+
 if HOST_CPU_PPC
     libhpcrun_la_SOURCES  += $(MY_PPC_FILES)
     libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
     libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
     libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
+    libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
+    libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
 endif
 
 if HOST_CPU_X86
@@ -332,6 +340,8 @@ if HOST_CPU_X86
     libhpcrun_o_SOURCES   += $(MY_X86_FILES)
     libhpcrun_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
     libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
+    libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
+    libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
     libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
     libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
     MY_AGENT_INCLUDE_DIRS += $(MY_X86_INCLUDE_DIRS)
