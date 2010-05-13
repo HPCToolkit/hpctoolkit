@@ -74,6 +74,17 @@ basename(const std::string& fname)
 }
 
 
+// 'rmSuffix': returns the 'fname' component of 'fname.ext'
+extern std::string
+rmSuffix(const char* fname);
+
+inline std::string 
+rmSuffix(const std::string& fname)
+{
+  return rmSuffix(fname.c_str());
+}
+
+
 // 'dirname': returns the '/path' component of "/path/fname.ext"
 extern std::string 
 dirname(const char* fname); 
