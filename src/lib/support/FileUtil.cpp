@@ -81,41 +81,53 @@ using std::endl;
 
 namespace FileUtil {
 
-string 
+string
 basename(const char* fName) 
 {
-  const char* lastSlash = strrchr(fName, '/'); 
   string baseFileName;
-  
-  if (lastSlash) {
-    // valid: "/foo" || ".../foo" AND invalid: "/" || ".../" 
-    baseFileName = lastSlash + 1; 
-  } 
-  else {
-    // filename contains no slashes, already in short form 
-    baseFileName = fName; 
-  } 
-  return baseFileName; 
-} 
 
-
-string 
-dirname(const char* fName) 
-{
-  const char* lastSlash = strrchr(fName, '/'); 
-  string pathComponent = "."; 
+  const char* lastSlash = strrchr(fName, '/');
   if (lastSlash) {
-    pathComponent = fName; 
-    pathComponent.resize(lastSlash - fName);
+    // valid: "/foo" || ".../foo" AND invalid: "/" || ".../"
+    baseFileName = lastSlash + 1;
   }
-  return pathComponent; 
+  else {
+    // filename contains no slashes, already in short form
+    baseFileName = fName;
+  }
+  return baseFileName;
 }
 
 
-bool 
+string
+rmSuffix(const char* fName) 
+{
+  string baseFileName = fName;
+
+  size_t pos = baseFileName.find_last_of('.');
+  if (pos != string::npos) {
+    baseFileName = baseFileName.substr(0, pos);
+  }
+  return baseFileName;
+}
+
+
+string
+dirname(const char* fName) 
+{
+  const char* lastSlash = strrchr(fName, '/');
+  string pathComponent = ".";
+  if (lastSlash) {
+    pathComponent = fName;
+    pathComponent.resize(lastSlash - fName);
+  }
+  return pathComponent;
+}
+
+
+bool
 fnmatch(const std::vector<std::string>& patternVec, 
-	const char* string, 
-	int flags)
+	const char* string, int flags)
 {
   for (uint i = 0; i < patternVec.size(); ++i) {
     const std::string& pat = patternVec[i];
@@ -160,7 +172,7 @@ isDir(const char* path)
 }
 
 
-int 
+int
 countChar(const char* path, char c) 
 {
   int srcFd = open(path, O_RDONLY); 
@@ -198,7 +210,7 @@ cpy(int srcFd, int dstFd)
 
 namespace FileUtil {
 
-const char* 
+const char*
 copy(const char* destFile, ...) 
 {
   static string error; 
@@ -245,7 +257,7 @@ remove(const char* file)
 }
 
 
-int 
+int
 mkdir(const char* dir)
 {
   int ret = ::mkdir(dir, 00755); 
@@ -287,7 +299,7 @@ mkdirUnique(const char* dirnm)
 }
 
 
-const char* 
+const char*
 tmpname()   
 {
   // below is a hack to replace the deprecated tmpnam which g++ 3.2.2 will
