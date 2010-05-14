@@ -65,6 +65,7 @@ using std::vector;
 #include <lib/support/diagnostics.h>
 #include <lib/support/StrUtil.hpp>
 
+
 //************************ Forward Declarations ******************************
 
 
@@ -119,6 +120,7 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
       m->isSortKey(isSortKey);
       m->doDispPercent(doDispPercent);
       m->isUnitsEvents(isUnitsEvents);
+      m->zeroDBInfo();
 
       insert(m);
     }
@@ -656,6 +658,7 @@ Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
 
   return isChanged;
 }
+
 
 //****************************************************************************
 

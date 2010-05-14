@@ -130,9 +130,13 @@ processProfile(Prof::CallPath::Profile& profGbl,
 	       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
 	       int myRank);
 
+static string
+makeDBFileName(const string& dbDir, uint groupId, const string& profileFile);
+
 static void
-writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
-	     const Analysis::Args& args, uint groupId, string& profileFile);
+writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
+	       const string& metricDBFnm);
+
 
 //****************************************************************************
 
@@ -507,7 +511,7 @@ makeMetrics(const Analysis::Args& args,
   // 4. Finalize metrics
   if (myRank == rootRank) {
     
-    // hpcprof-mpi can now generate non-finalized metrics
+    // We now generate non-finalized metrics, so no need to do this
     if (0) {
       for (uint grpId = 1; grpId < groupIdToGroupMetricsMap.size(); ++grpId) {
 	const VMAIntervalSet* ivalset = groupIdToGroupMetricsMap[grpId];
@@ -706,9 +710,10 @@ processProfile(Prof::CallPath::Profile& profGbl,
   }
 
   // -------------------------------------------------------
-  // write local sampled metric values to disk
+  // write local sampled metric values into database
   // -------------------------------------------------------
-  writeMetrics(profGbl, mBeg, mEnd, args, groupId, profileFile);
+  string dbFnm = makeDBFileName(args.db_dir, groupId, profileFile);
+  writeMetricsDB(profGbl, mBeg, mEnd, dbFnm);
 
   // -------------------------------------------------------
   // reinitialize metric values since space may be used again
@@ -719,10 +724,24 @@ processProfile(Prof::CallPath::Profile& profGbl,
 }
 
 
+static string
+makeDBFileName(const string& dbDir, uint groupId, const string& profileFile)
+{
+  string grpStr = StrUtil::toStr(groupId);
+ 
+  string fnm_base = FileUtil::rmSuffix(FileUtil::basename(profileFile.c_str()));
+
+  string fnm = grpStr + "." + fnm_base + "." + HPCPROF_METRIC_DB_SFX;
+
+  string metricDBFnm = dbDir + "/" + fnm;
+  return metricDBFnm;
+}
+
+
 // [mBegId, mEndId)
 static void
-writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
-	     const Analysis::Args& args, uint groupId, string& profileFile)
+writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
+	       const string& metricDBFnm)
 {
   const Prof::CCT::Tree& cct = *(profGbl.cct());
 
@@ -737,20 +756,13 @@ writeMetrics(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
   ParallelAnalysis::packMetrics(profGbl, packedMetrics);
 
   // -------------------------------------------------------
-  // generate file name and open file
-  // -------------------------------------------------------
-  string fnm_base = FileUtil::basename(profileFile.c_str());
-  string fnm = StrUtil::toStr(groupId) + "." + fnm_base + ".hpcprof-metrics";
-  string pathNm = args.db_dir + "/" + fnm;
-
-  FILE* fs = hpcio_fopen_w(pathNm.c_str(), 1);
-  if (!fs) {
-    DIAG_Throw("error opening file '" << pathNm << "'");
-  }
-
-  // -------------------------------------------------------
   // write data
   // -------------------------------------------------------
+
+  FILE* fs = hpcio_fopen_w(metricDBFnm.c_str(), 1);
+  if (!fs) {
+    DIAG_Throw("error opening file '" << metricDBFnm << "'");
+  }
 
   // TODO: header: Tag: HPCPROF_____ {16b}, num nodes {4b}
 

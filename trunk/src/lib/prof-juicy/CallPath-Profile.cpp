@@ -443,6 +443,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   typedef std::map<uint, string> UIntToStringMap;
   UIntToStringMap metricIdToFormula;
 
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
   os << "  <MetricTable>\n";
   for (uint i = metricBeg; i < metricEnd; i++) {
     const Metric::ADesc* m = m_mMgr->metric(i);
@@ -504,15 +507,41 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   }
   os << "  </MetricTable>\n";
 
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
+  os << "  <MetricDBTable>\n";
+  for (uint i = 0; i < m_mMgr->size(); i++) {
+    const Metric::ADesc* m = m_mMgr->metric(i);
+    if (m->hasDBInfo()) {
+      os << "    <MetricDB i" << MakeAttrNum(i) 
+	 << " n" << MakeAttrStr(m->name())
+	 << " db-glob=\"" << m->dbFileGlob() << "\""
+	 << " db-id=\"" << m->dbId() << "\""
+	 << " db-num-metrics=\"" << m->dbNumMetrics() << "\">\n";
+    }
+  }
+  os << "  </MetricDBTable>\n";
+
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
   os << "  <LoadModuleTable>\n";
-  writeXML_help(os, "LoadModule", m_structure, &Struct::ANodeTyFilter[Struct::ANode::TyLM], 1);
+  writeXML_help(os, "LoadModule", m_structure, 
+		&Struct::ANodeTyFilter[Struct::ANode::TyLM], 1);
   os << "  </LoadModuleTable>\n";
 
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
   os << "  <FileTable>\n";
   Struct::ANodeFilter filt1(writeXML_FileFilter, "FileTable", 0);
   writeXML_help(os, "File", m_structure, &filt1, 2);
   os << "  </FileTable>\n";
 
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
   if ( !(oFlags & CCT::Tree::OFlg_Debug) ) {
     os << "  <ProcedureTable>\n";
     Struct::ANodeFilter filt2(writeXML_ProcFilter, "ProcTable", 0);
@@ -807,7 +836,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
 
   // ----------------------------------------
-  // add metrics
+  // make metric table
   // ----------------------------------------
 
   string m_sfx;
@@ -870,8 +899,20 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   hpcrun_fmt_metricTbl_free(&metric_tbl, free);
 
   // ----------------------------------------
-  // add loadmap
+  // make metric DB info
   // ----------------------------------------
+
+  Prof::Metric::Mgr* mMgr = prof->metricMgr();
+  for (uint mId = 0; mId < mMgr->size(); ++mId) {
+    Prof::Metric::ADesc* m = mMgr->metric(mId);
+    m->dbId(mId);
+    m->dbNumMetrics(mMgr->size());
+  }
+
+  // ----------------------------------------
+  // make loadmap
+  // ----------------------------------------
+
   uint num_lm = loadmap_tbl.len;
 
   LoadMap loadmap(num_lm);

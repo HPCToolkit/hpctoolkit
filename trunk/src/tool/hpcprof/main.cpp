@@ -175,6 +175,15 @@ realmain(int argc, char* const* argv)
   // Generate Experiment database
   // ------------------------------------------------------------
 
+  // Currently we do not generate thread-level metric db
+  Prof::Metric::Mgr* mMgr = prof->metricMgr();
+  for (uint i = 0; i < mMgr->size(); i++) {
+    Prof::Metric::ADesc* m = mMgr->metric(i);
+    if (m->hasDBInfo()) {
+      m->zeroDBInfo();
+    }
+  }
+
   args.makeDatabaseDir();
   Analysis::CallPath::makeDatabase(*prof, args);
 
