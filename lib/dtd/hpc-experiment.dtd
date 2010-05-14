@@ -28,7 +28,7 @@
   <!-- ****************************************************************** -->
   <!-- Section Header							  -->
   <!-- ****************************************************************** -->
-  <!ELEMENT SecHeader (MetricTable?, LoadModuleTable?, FileTable?, ProcedureTable?, Info*)>
+  <!ELEMENT SecHeader (MetricTable?, MetricDBTable?, LoadModuleTable?, FileTable?, ProcedureTable?, Info*)>
 
     <!-- MetricTable: -->
     <!ELEMENT MetricTable (Metric)*>
@@ -58,6 +58,21 @@
     <!ATTLIST M
 	      n CDATA #REQUIRED
 	      v CDATA #REQUIRED>
+
+    <!-- MetricDBTable: -->
+    <!ELEMENT MetricDBTable (MetricDB)*>
+
+    <!-- MetricDB: (i)d; (n)ame -->
+    <!--   db-glob:        file glob describing files in metric db -->
+    <!--   db-id:          id within metric db -->
+    <!--   db-num-metrics: number of metrics in db -->
+    <!ELEMENT MetricDB EMPTY>
+    <!ATTLIST MetricDB
+	      i              CDATA #REQUIRED
+	      n              CDATA #REQUIRED
+	      db-glob        CDATA #IMPLIED
+	      db-id          CDATA #IMPLIED
+	      db-num-metrics CDATA #IMPLIED>
 
     <!-- LoadModuleTable assigns a short name to a load module -->
     <!ELEMENT LoadModuleTable (LoadModule)*>

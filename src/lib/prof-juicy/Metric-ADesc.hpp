@@ -86,21 +86,26 @@ namespace Metric {
 class ADesc
 {
 public:
+  static const uint id_NULL = UINT_MAX;
+
+public:
   ADesc()
-    : m_id(0), m_type(TyNULL),
+    : m_id(id_NULL), m_type(TyNULL),
       m_isVisible(true), m_isSortKey(false),
       m_doDispPercent(true), m_isPercent(false),
-      m_isComputed(false)
+      m_isComputed(false),
+      m_dbId(id_NULL), m_dbNumMetrics(0)
   { }
 
   ADesc(const char* nameBase, const char* description,
 	bool isVisible = true, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
-    : m_id(0), m_type(TyNULL),
+    : m_id(id_NULL), m_type(TyNULL),
       m_description((description) ? description : ""),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
-      m_isComputed(false)
+      m_isComputed(false),
+      m_dbId(id_NULL), m_dbNumMetrics(0)
   {
     std::string nm = (nameBase) ? nameBase : "";
     nameFromString(nm);
@@ -109,11 +114,12 @@ public:
   ADesc(const std::string& nameBase, const std::string& description,
 	bool isVisible = true, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
-    : m_id(0), m_type(TyNULL),
+    : m_id(id_NULL), m_type(TyNULL),
       m_description(description),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
-      m_isComputed(false)
+      m_isComputed(false),
+      m_dbId(id_NULL), m_dbNumMetrics(0)
   {
     nameFromString(nameBase);
   }
@@ -127,7 +133,8 @@ public:
       m_description(x.m_description),
       m_isVisible(x.m_isVisible), m_isSortKey(x.m_isSortKey),
       m_doDispPercent(x.m_doDispPercent), m_isPercent(x.m_isPercent),
-      m_isComputed(x.m_isComputed)
+      m_isComputed(x.m_isComputed),
+      m_dbId(x.m_dbId), m_dbNumMetrics(x.m_dbNumMetrics)
   { }
 
   ADesc&
@@ -145,6 +152,8 @@ public:
       m_doDispPercent = x.m_doDispPercent;
       m_isPercent     = x.m_isPercent;
       m_isComputed    = x.m_isComputed;
+      m_dbId          = x.m_dbId;
+      m_dbNumMetrics  = x.m_dbNumMetrics;
     }
     return *this;
   }
@@ -378,6 +387,50 @@ public:
 
 
   // -------------------------------------------------------
+  // metric DB info
+  // -------------------------------------------------------
+
+  bool
+  hasDBInfo() const
+  { return (m_dbId != id_NULL && m_dbNumMetrics > 0); }
+
+  void
+  zeroDBInfo()
+  {
+    dbId(id_NULL);
+    dbNumMetrics(0);
+  }
+
+
+  const std::string
+  dbFileGlob() const
+  {
+    std::string dbFileGlob;
+    if (!m_namePfx.empty()) { dbFileGlob += m_namePfx + nameSep; }
+    dbFileGlob += std::string("*.") + HPCPROF_METRIC_DB_SFX;
+    return dbFileGlob;
+  }
+
+
+  uint
+  dbId() const
+  { return m_dbId; }
+
+  void
+  dbId(uint x)
+  { m_dbId = x; }
+
+
+  uint
+  dbNumMetrics() const
+  { return m_dbNumMetrics; }
+
+  void
+  dbNumMetrics(uint x)
+  { m_dbNumMetrics = x; }
+
+
+  // -------------------------------------------------------
   // 
   // -------------------------------------------------------
 
@@ -415,6 +468,9 @@ private:
   bool m_doDispPercent;
   bool m_isPercent;
   bool m_isComputed;
+
+  uint m_dbId;
+  uint m_dbNumMetrics;
 };
 
 
