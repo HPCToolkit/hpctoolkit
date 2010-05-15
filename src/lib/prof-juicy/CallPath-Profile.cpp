@@ -518,7 +518,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 	 << " n" << MakeAttrStr(m->name())
 	 << " db-glob=\"" << m->dbFileGlob() << "\""
 	 << " db-id=\"" << m->dbId() << "\""
-	 << " db-num-metrics=\"" << m->dbNumMetrics() << "\">\n";
+	 << " db-num-metrics=\"" << m->dbNumMetrics() << "\"/>\n";
     }
   }
   os << "  </MetricDBTable>\n";
