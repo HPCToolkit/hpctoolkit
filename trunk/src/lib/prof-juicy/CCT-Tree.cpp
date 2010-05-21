@@ -120,12 +120,24 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
   bool isPrecondition = false;
   if (typeid(*x_root) == typeid(CCT::Root)
       && typeid(*y_root) == typeid(CCT::Root)) {
+    // Case 1
     isPrecondition = true;
   }
   else {
     ADynNode* x_dyn = dynamic_cast<ADynNode*>(x_root);
     ADynNode* y_dyn = dynamic_cast<ADynNode*>(y_root);
     if (x_dyn && y_dyn && ADynNode::isMergable(*x_dyn, *y_dyn)) {
+      // Case 2a
+      isPrecondition = true;
+    }
+    else if ((x_dyn->childCount() == 0 || y_dyn->childCount() == 0)
+	     && (x_dyn->lmId_real() == Prof::ALoadMap::LM_id_NULL &&
+		 y_dyn->lmId_real() == Prof::ALoadMap::LM_id_NULL)
+	     && (x_dyn->ip_real() == 0 &&
+		 y_dyn->ip_real() == 0)) {
+      // Case 2b (A special condition of Case 1): Neither tree x nor y
+      // have been canonicalized (and therefore do not have a
+      // CCT::Root node), but either x or y has only one node.
       isPrecondition = true;
     }
   }
