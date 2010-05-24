@@ -44,7 +44,8 @@
 	      v    (raw|final|derived-incr|derived) "raw"
 	      t    (inclusive|exclusive|nil) "nil"
 	      fmt  CDATA #IMPLIED
-	      show (1|0) "1">
+	      show         (1|0) "1"
+	      show-percent (1|0) "1">
 
     <!-- MetricFormula represents derived metrics: (t)ype; (frm): formula -->
     <!ELEMENT MetricFormula (Info?)>
