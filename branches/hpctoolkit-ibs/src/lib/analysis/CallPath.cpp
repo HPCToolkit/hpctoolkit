@@ -878,7 +878,8 @@ mergeCilkMain(Prof::CallPath::Profile& prof)
 
 /* recursively traverse all node after coelescing statments (Xu) */
 static void
-useReuseData(Prof::CCT::ANode* node, std::multimap<Prof::CCT::ANode*, Prof::CCT::ANode*> *mallocToNode)
+useReuseData(Prof::CCT::ANode* node, std::multimap<Prof::CCT::ANode*, Prof::CCT::ANode*> *mallocToNode,
+              std::multimap<int, Prof::CCT::ANode*> *staticToNode)
 {
   if(!node) {
     return;
@@ -886,13 +887,18 @@ useReuseData(Prof::CCT::ANode* node, std::multimap<Prof::CCT::ANode*, Prof::CCT:
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); /* */) {
     Prof::CCT::ANode* n = it.current();
     it++;
+    if(n->getStaticId() != 0)
+    {
+      staticToNode->insert(std::make_pair(n->getStaticId(), n));
+      continue;
+    }
     if(n->getMallocNodeNum() > 0) {
       for(uint i=0; i<n->getMallocNodeNum(); i++) {
         printf("after coelesce: %d=>%d \n", n->id(), (static_cast<Prof::CCT::ANode*>(n->getMallocId(i)))->id());
         mallocToNode->insert(std::make_pair(static_cast<Prof::CCT::ANode*>(n->getMallocId(i)), n));
       }
     }
-    useReuseData(n, mallocToNode);
+    useReuseData(n, mallocToNode, staticToNode);
   }
 }
 
@@ -936,10 +942,14 @@ useReuseData(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 {
   std::deque<Prof::CCT::ANode*> LCAdeq, XMLdeq;
   std::multimap<Prof::CCT::ANode*, Prof::CCT::ANode*> mallocToNode; //multiple map from malloc nodes to uses nodes
-  useReuseData(prof.cct()->root(), &mallocToNode);
-  printf("finally: size = %d with root=%d\n", mallocToNode.size(),prof.cct()->root()->id());
+  std::multimap<int, Prof::CCT::ANode*> staticToNode; //multiple map from static data to uses nodes
+  useReuseData(prof.cct()->root(), &mallocToNode, &staticToNode);
+  printf("finally malloc: size = %d with root=%d\n", mallocToNode.size(),prof.cct()->root()->id());
+  printf("finally static: size = %d with root=%d\n", staticToNode.size(),prof.cct()->root()->id());
   std::multimap<Prof::CCT::ANode*, Prof::CCT::ANode*>::iterator it,it1;
+  std::multimap<int, Prof::CCT::ANode*>::iterator itt,itt1;
   std::pair<std::multimap<Prof::CCT::ANode*,Prof::CCT::ANode*>::iterator,std::multimap<Prof::CCT::ANode*,Prof::CCT::ANode*>::iterator> sameKey;
+  std::pair<std::multimap<int,Prof::CCT::ANode*>::iterator,std::multimap<int,Prof::CCT::ANode*>::iterator> sameKey_static;
 
   Prof::CCT::ANode *node1, *node2, *parnode, *mallocnode;
   /*Create the file to store use-reuse info*/
@@ -966,6 +976,7 @@ useReuseData(Prof::CallPath::Profile& prof, const Analysis::Args& args)
   Analysis::CallPath::useReuseWriteHdr(prof, *useReuseOs, args.title, prettyPrint);
   *useReuseOs << "<SecCallPathProfileData>\n";
 
+  /*cope with heap data*/
   it = mallocToNode.begin(); 
   /*one malloc node => multiple CCT nodes*/
   while(it != mallocToNode.end()) {
@@ -1041,6 +1052,61 @@ useReuseData(Prof::CallPath::Profile& prof, const Analysis::Args& args)
     printf("\n");
     it++;
   }
+
+  /*cope with static data*/
+  int staticId;
+  itt = staticToNode.begin(); 
+  /*one malloc node => multiple CCT nodes*/
+  while(itt != staticToNode.end()) {
+    sameKey_static = staticToNode.equal_range(itt->first);
+    if(sameKey_static.first == sameKey_static.second) { //this is already erased
+      itt++;
+      continue;
+    }
+    staticId = itt->first;
+    printf("finally: %d=>", staticId);fflush(stdout);
+    for(itt1 = sameKey_static.first; itt1 != sameKey_static.second; itt1++) {//all the uses of malloc node (it->first)
+      printf(" %d", itt1->second->id());fflush(stdout);
+      LCAdeq.push_back(itt1->second);
+    }
+    XMLdeq = LCAdeq;//maintain all the uses in MXLdeq
+    while(LCAdeq.size()>1)//only when the size>1 we can find the LCA
+    {
+      node1 = LCAdeq.front();
+      LCAdeq.pop_front();
+      node2 = LCAdeq.front();
+      LCAdeq.pop_front();
+      parnode = LCA(node1, node2);
+      if(parnode != NULL)
+      {
+        printf("  %d(%d, %d)\n", parnode->id(), node1->id(), node2->id());
+      }
+ 
+      LCAdeq.push_back(parnode);
+    }
+    parnode = LCAdeq.front(); //this is the toppest level of use-reuse
+    /*LCA should be a PF*/
+    while (parnode->parent() != NULL)//the highest level is main
+    {
+      if (parnode->type() == Prof::CCT::ANode::TyProcFrm)
+      {
+        const Prof::CCT::ProcFrm* fr = dynamic_cast<const Prof::CCT::ProcFrm*>(parnode);
+        if(!fr->isAlien())
+          break;
+        else
+          parnode=parnode->parent();
+      }
+      else
+        parnode=parnode->parent();
+    }
+    /*need not print the location of the static allocation*/
+    parnode->useReuseWriteXML(*useReuseOs, XMLdeq, metricBegId, metricEndId, oFlags, NULL);
+    LCAdeq.clear();//clear the deque
+    staticToNode.erase(itt->first);
+    printf("\n");
+    itt++;
+  }
+
   /*write the end of the xml file*/
   *useReuseOs << "</SecCallPathProfileData>\n";
 

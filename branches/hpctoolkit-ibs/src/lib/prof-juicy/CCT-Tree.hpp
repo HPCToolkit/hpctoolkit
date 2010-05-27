@@ -523,7 +523,7 @@ public:
 
   //add by Xu Liu
   virtual int
-  mergeMe_IBS(const ANode& y, uint metricsBegIdx = 0);
+  mergeMe_IBS(ANode& y, uint metricsBegIdx = 0);
 
   // findDynChild: Let z = 'this' be an interior ADynNode (otherwise the
   //   return value is trivially NULL).  Given an ADynNode y_dyn, finds

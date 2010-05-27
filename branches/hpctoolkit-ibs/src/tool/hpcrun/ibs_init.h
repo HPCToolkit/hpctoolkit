@@ -4,6 +4,9 @@
 /*this is used to check whether hpcrun is init*/
 inline bool hpcrun_is_initialized();
 
+/*create static data table*/
+void bss_partition(int);
+
 /*this is used to lookup addr in addr splay tree*/
 struct splay_interval_s* splaytree_lookup(void*); //cannot use interval_tree_node* type (error generated)
 

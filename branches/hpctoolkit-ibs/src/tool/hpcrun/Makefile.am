@@ -306,7 +306,7 @@ if HOST_CPU_X86
     libhpcrun_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
     libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
     libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
-    libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
+    libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a   
 endif
 
 if OPT_PAPI_DYNAMIC

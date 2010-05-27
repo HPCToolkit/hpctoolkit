@@ -812,7 +812,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   LoadMap* loadmap_p = (isNewFormat) ? NULL : &loadmap; // FIXME:temporary
   fmt_cct_fread(*prof, infs, rFlags, loadmap_p, numMetricsSrc, ctxtStr, outfs);
 
-
   hpcrun_fmt_epoch_hdr_free(&ehdr, free);
   
   return HPCFMT_OK;
@@ -966,6 +965,11 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       CCT::ANode* node_malloc = NULL;
       if ((*itMalloc).second != HPCRUN_FMT_CCTNodeId_NULL) {
         printf("node %d => %d\n", (*itMalloc).first->id(), -(*itMalloc).second);
+        if((*itMalloc).second < 0)//in bss section not heap
+        {
+          (*itMalloc).first->linkMalloc((*itMalloc).second);
+          continue;
+        }
         CCTIdToCCTNodeMap::iterator it1 = cctNodeMap.find(-(*itMalloc).second);
         if (it1 != cctNodeMap.end()) {
           node_malloc = it1->second;

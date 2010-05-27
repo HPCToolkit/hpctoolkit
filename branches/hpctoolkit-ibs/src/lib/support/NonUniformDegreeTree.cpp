@@ -126,6 +126,11 @@ void NonUniformDegreeTreeNode::linkMalloc(NonUniformDegreeTreeNode *mallocNode)
   }
 }
 
+void NonUniformDegreeTreeNode::linkMalloc(int static_id)
+{
+  static_data_id = static_id;
+}
+
 
 //-----------------------------------------------
 void NonUniformDegreeTreeNode::linkAfter(NonUniformDegreeTreeNode *sibling)

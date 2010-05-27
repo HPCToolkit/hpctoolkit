@@ -54,6 +54,7 @@
 #include <sys/types.h>  // struct stat
 #include <sys/stat.h>   // stat 
 #include <stdbool.h>
+#include <fcntl.h>     /* For open() */
 
 //***************************************************************
 // local includes 
@@ -65,7 +66,7 @@
 #include "messages.h"
 #include "thread_data.h"
 
-
+#include "ibs_init.h"
 
 //***************************************************************
 // macros
@@ -186,6 +187,15 @@ files_set_executable(char *execname)
   }
 }
 
+//Xu create static data table
+void
+create_static_data_table()
+{
+  int fd = -1;
+  fd = open(executable_pathname, O_RDONLY);
+  bss_partition(fd);
+  close(fd);
+}
 
 //*****************************************************************************
 

@@ -615,10 +615,14 @@ ANode::mergeMe(const ANode& y, uint metricBegIdx)
 
 //add by Xu Liu
 int
-ANode::mergeMe_IBS(const ANode& y, uint metricBegIdx)
+ANode::mergeMe_IBS(ANode& y, uint metricBegIdx)
 {
   int min, max;
   ANode* x = this;
+
+  /*if we find y touches static data, we set malloc num to 0*/  
+  if(y.getStaticId()!=0)
+    y.setMallocNodeNum(0);
 
   uint x_end = metricBegIdx + y.numMetrics();
   if ( !(x_end <= x->numMetrics()) ) {
@@ -639,9 +643,22 @@ ANode::mergeMe_IBS(const ANode& y, uint metricBegIdx)
   uint umax = (uint)max;
   if((min < 0) || (max < 0))//no merge
     return 0;
-
+ 
   int merge_flag; //0 means not merge, else merge
   merge_flag = 0;
+
+  /*if node x touches static data (not heap data),
+ *  * set mallocnodenum of this node to 0. If two nodes
+ *  have the same static data id, merge them*/
+  if(x->getStaticId() != 0)
+  {
+    if(x->getStaticId() == y.getStaticId())
+    {
+      merge_flag = 1;
+    }
+    x->setMallocNodeNum(0);//this may be useless
+  }
+
   for(uint i = 0; i<x->getMallocNodeNum(); i++)
   {
     for(uint j = 0; j<y.getMallocNodeNum(); j++)

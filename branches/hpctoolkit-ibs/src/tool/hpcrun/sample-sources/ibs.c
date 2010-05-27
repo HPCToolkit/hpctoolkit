@@ -616,7 +616,7 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
               malloc_list_s* new_node = new_malloc_node(&cct_node->malloc_list, result_node->cct_id);
               if(new_node != NULL) //not in the list
               {
-                cct_node->num_malloc_id++;
+                  cct_node->num_malloc_id++;
               }
             }
             TMSG(IBS_SAMPLE,"relate to %d malloc nodes\n", cct_node->num_malloc_id);//cct_node->current->malloc_id);

@@ -120,6 +120,7 @@ public:
         m_malloc_ids = other.m_malloc_ids;//point to malloc ids (Xu)
         m_num_malloc_ids = other.m_num_malloc_ids;//how many malloc nodes related to one (Xu)
       }
+      static_data_id = other.static_data_id;
     }
     return *this;
   }
@@ -143,6 +144,7 @@ public:
   // link/unlink a node to a parent and siblings 
   void link(NonUniformDegreeTreeNode *parent);
   void linkMalloc(NonUniformDegreeTreeNode *mallocNode);//link to one malloc node (Xu)
+  void linkMalloc(int static_id);//link to one malloc node (Xu)
   void linkBefore(NonUniformDegreeTreeNode *sibling);
   void linkAfter(NonUniformDegreeTreeNode *sibling);
   void unlink();
@@ -170,6 +172,7 @@ public:
   uint getMallocNodeNum() const { return m_num_malloc_ids; };
   void setMallocNodeNum(uint x) { m_num_malloc_ids = x; ;}
   NonUniformDegreeTreeNode *getMallocId(uint i) const { return m_malloc_ids[i]; }
+  int getStaticId() const { return static_data_id; }
 protected:
   // useful for resetting parent/child/etc links after cloning
   void zeroLinks() {
@@ -187,6 +190,7 @@ protected:
     m_malloc_ids = NULL;
     SameAddNext = NULL;
     m_num_malloc_ids = 0;
+    static_data_id = 0;
   }
 
 protected:
@@ -198,6 +202,7 @@ protected:
   NonUniformDegreeTreeNode** m_malloc_ids;//point to malloc ids (Xu)
   NonUniformDegreeTreeNode* SameAddNext;//for malloc id recognizes all nodes with the same add (Xu)
   uint m_num_malloc_ids;//how many malloc nodes related to one (Xu)
+  int static_data_id;
 
   uint m_child_count;
 

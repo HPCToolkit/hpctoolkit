@@ -20,6 +20,8 @@
 #include <unistd.h>
 #include <dlfcn.h>
 #include <pthread.h> 
+#include <sys/types.h>//for fstat
+#include <sys/stat.h>//for fstat
  
 /******************************************************************************
  *  * libmonitor
@@ -49,6 +51,8 @@
 
 #include <messages/messages.h>
 
+#include "libelf/libelf.h"
+#include "libelf/gelf.h"
 /******************************************************************************
  *  *  * forward functions declaration
  *   *   *****************************************************************************/
@@ -161,7 +165,7 @@ void* malloc(size_t size)
     return NULL;
   }
   void* ret  = fptr_malloc(size);
-  printf("malloc ptr %p %d\n", ret, size);
+  printf("malloc %d ptr %p %d\n", cct_node->persistent_id, ret, size);
   /*block the async sampling*/
   hpcrun_async_block();
   /*lock splay tree, insert splay tree and unlock it*/
@@ -330,4 +334,180 @@ interval_tree_node* splaytree_lookup(void* p)
   interval_tree_node* result_node = hpcrun_malloc(sizeof(interval_tree_node));
   result_node = interval_tree_lookup(&root, p);
   return result_node;
+}
+
+/*glabol data*/
+unsigned long long bss_start;
+unsigned long long bss_end;
+static int count = -2;//static data ids are even and less than 0
+
+/*forward declaration*/
+void bss_find(int fd);
+void compute_var(int fd);
+
+void bss_partition(int fd)
+{
+  bss_find(fd);
+  lseek(fd, 0, SEEK_SET);//move to the starting point of the file
+  compute_var(fd);
+}
+
+void bss_find(int fd)
+{
+  Elf32_Ehdr *elf_header;         /* ELF header */
+  Elf *elf;                       /* Our Elf pointer for libelf */
+  Elf_Scn *scn = NULL;                   /* Section Descriptor */
+  Elf_Data *edata = NULL;                /* Data Descriptor */
+  GElf_Sym sym;                   /* Symbol */
+  GElf_Shdr shdr;                 /* Section Header */
+ 
+  char *base_ptr;         // ptr to our object in memory
+  const char *bss = "__bss_start";
+  const char *bss1 = "_end";
+  struct stat elf_stats;  // fstat struct
+  int i, symbol_count;
+
+  if((fstat(fd, &elf_stats)))
+  {
+    printf("bss: could not fstat\n");
+    close(fd);
+    exit(1);
+  }
+  if((base_ptr = (char *) malloc(elf_stats.st_size)) == NULL)
+  {
+    printf("could not malloc\n");
+    close(fd);
+    exit(1);
+  }
+  if((read(fd, base_ptr, elf_stats.st_size)) < elf_stats.st_size)
+  {
+    printf("could not read\n");
+    free(base_ptr);
+    close(fd);
+    exit(1);
+  }
+  
+  if(elf_version(EV_CURRENT) == EV_NONE)
+  {
+    printf("WARNING Elf Library is out of date!\n");
+  }
+  elf_header = (Elf32_Ehdr *) base_ptr;   // point elf_header at our object in memory
+  elf = elf_begin(fd, ELF_C_READ, NULL);  // Initialize 'elf' pointer to our file descriptor
+
+  /* find the beginning and ending point of bss section */
+  while((scn = elf_nextscn(elf, scn)) != NULL)
+  {
+    gelf_getshdr(scn, &shdr);
+    // When we find a section header marked SHT_SYMTAB stop and get symbols
+    if(shdr.sh_type == SHT_SYMTAB)
+    {
+       // edata points to our symbol table
+       edata = elf_getdata(scn, edata);
+       symbol_count = shdr.sh_size/shdr.sh_entsize;
+       // loop through to grab all symbols
+       for(i = 0; i < symbol_count; i++)
+       {
+         // libelf grabs the symbol data using gelf_getsym()
+         gelf_getsym(edata, i, &sym);
+         char *symname = elf_strptr(elf, shdr.sh_link, sym.st_name);
+         if(strcmp(bss, symname)==0)
+         {
+           bss_start = sym.st_value;
+           int j = i+1;
+           while(1)
+           {
+             gelf_getsym(edata, j, &sym);
+             char *symname1 = elf_strptr(elf, shdr.sh_link, sym.st_name);
+             if(strcmp(bss1, symname1)!=0)
+             {
+               j++;
+               continue;
+             }
+             bss_end = sym.st_value;
+             return;
+           }
+         }
+       }
+    }
+  }
+}
+
+void compute_var(int fd)
+{
+  Elf32_Ehdr *elf_header;         /* ELF header */
+  Elf *elf;                       /* Our Elf pointer for libelf */
+  Elf_Scn *scn = NULL;                   /* Section Descriptor */
+  Elf_Data *edata = NULL;                /* Data Descriptor */
+  GElf_Sym sym;                   /* Symbol */
+  GElf_Shdr shdr;                 /* Section Header */
+ 
+  char *base_ptr;         // ptr to our object in memory
+  const char *bss = "__bss_start";
+  const char *bss1 = "_end";
+  struct stat elf_stats;  // fstat struct
+  int i, symbol_count;
+ 
+  if((fstat(fd, &elf_stats)))
+  {
+    printf("bss: could not fstat\n");
+    close(fd);
+    exit(1);
+  }
+  if((base_ptr = (char *) malloc(elf_stats.st_size)) == NULL)
+  {
+    printf("could not malloc\n");
+    close(fd);
+    exit(1);
+  }
+  if((read(fd, base_ptr, elf_stats.st_size)) < elf_stats.st_size)
+  {
+    printf("could not read\n");
+    free(base_ptr);
+    close(fd);
+    exit(1);
+  } 
+  if(elf_version(EV_CURRENT) == EV_NONE)
+  {
+    printf("WARNING Elf Library is out of date!\n");
+  }
+  elf_header = (Elf32_Ehdr *) base_ptr;   // point elf_header at our object in memory
+  elf = elf_begin(fd, ELF_C_READ, NULL);  // Initialize 'elf' pointer to our file descriptor
+ 
+  /* find the beginning and ending point of bss section */
+  while((scn = elf_nextscn(elf, scn)) != NULL)
+  {
+    gelf_getshdr(scn, &shdr);
+    if(shdr.sh_type == SHT_SYMTAB)
+    {
+      edata = elf_getdata(scn, edata);
+      symbol_count = shdr.sh_size / shdr.sh_entsize;
+      for (i = 0; i < symbol_count; i++)
+      {
+        if(gelf_getsym(edata, i, &sym) == NULL)
+        {
+          printf("gelf_getsym return NULL\n");
+          printf("%s\n", elf_errmsg(elf_errno()));
+          exit(1);
+        }
+        /*dummey is of no use. But without it the code cannot run correctly*/
+        unsigned long long dummey = sym.st_value;
+        dummey = 0;
+
+        if((sym.st_value < bss_start)||(sym.st_value > bss_end))//not in bss section
+        {
+          continue;
+        }
+        if(sym.st_size == 0)//not a variable
+        {
+          continue;
+        }
+        char *symname2 = elf_strptr(elf, shdr.sh_link, sym.st_name);
+        interval_tree_node* node = hpcrun_malloc(sizeof(interval_tree_node));
+        printf("static data %d\n", count);
+        if(insert_splay_tree(node, (void*)sym.st_value, (size_t)sym.st_size, count)<0)
+          printf("insert_splay_tree error\n");
+        count-=2;
+      }
+    } 
+  }
 }

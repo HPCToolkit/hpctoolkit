@@ -391,6 +391,9 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   files_set_executable(process_name);
 
+  //Xu: create static data table
+  create_static_data_table();
+
   hpcrun_registered_sources_init();
 
   messages_init();
