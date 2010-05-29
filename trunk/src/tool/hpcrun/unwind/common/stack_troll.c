@@ -83,19 +83,34 @@ stack_troll(void **start_sp, uint *ra_pos, validate_addr_fn_t validate_addr, voi
         *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
         return TROLL_VALID; // success
 
+      case UNW_ADDR_PROBABLE_INDIRECT:
+        PMSG_LIMIT(TMSG(TROLL,"found a likely (from indirect call) valid return address %p at sp = %p", \
+                        *sp, sp));
+        *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
+        return TROLL_LIKELY; // success
+
+      case UNW_ADDR_PROBABLE_TAIL:
+        PMSG_LIMIT(TMSG(TROLL,"found a likely (from tail call) valid return address %p at sp = %p", \
+                        *sp, sp));
+        *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
+        return TROLL_LIKELY; // success
+
       case UNW_ADDR_PROBABLE:
         PMSG_LIMIT(TMSG(TROLL,"found a likely valid return address %p at sp = %p", \
                         *sp, sp));
         *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
         return TROLL_LIKELY; // success
+
       case UNW_ADDR_CYCLE:
         PMSG_LIMIT(TMSG(TROLL_CHK,"infinite loop detected with return address %p at sp = %p", \
                         *sp, sp));
         break;
+
       case UNW_ADDR_WRONG:
         PMSG_LIMIT(TMSG(TROLL_CHK,"provably invalid return address %p at sp = %p", \
                         *sp, sp));
         break;
+
       default:
         EMSG("UNKNOWN return code from validate_addr in Trolling code %p at sp = %p",
              *sp, sp);

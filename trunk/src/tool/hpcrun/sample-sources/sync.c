@@ -42,7 +42,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //
-// NONE sample source simple oo interface
+// SYNC sample source simple oo interface
 //
 
 /******************************************************************************
@@ -90,14 +90,14 @@
 static void
 METHOD_FN(init)
 {
-  self->state = INIT; // no actual init actions necessary for NONE
+  self->state = INIT; // no actual init actions necessary for sync events
 }
 
 
 static void
 METHOD_FN(start)
 {
-  TMSG(NONE_CTL,"starting SYNC");
+  TMSG(SYNC_CTL,"starting SYNC");
 
   TD_GET(ss_state)[self->evset_idx] = START;
 }
@@ -106,7 +106,7 @@ METHOD_FN(start)
 static void
 METHOD_FN(stop)
 {
-  TMSG(NONE_CTL,"stopping SYNC");
+  TMSG(SYNC_CTL,"stopping SYNC");
   TD_GET(ss_state)[self->evset_idx] = STOP;
 }
 
