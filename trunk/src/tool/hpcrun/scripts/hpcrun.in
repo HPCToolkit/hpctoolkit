@@ -277,6 +277,9 @@ hpc_getoptions()
         # BUG!: replace : separator with @ to retain support for old syntax
 	#LLL=`echo $1 | tr ':' '@'`
 	LLL="$1"
+        if test $LLL = "MEMLEAK" ; then
+          memleak_preload=${hpcrun_dir}/libhpcrun_memleak.so 
+        fi
         opt_ev_list="$LL$LLL";
 	LL="$opt_ev_list "
         ;;
@@ -411,7 +414,7 @@ hpc_prepareenv()
   # --------------------------------------------------------
   # LD_PRELOAD (N.B.: whitespace-separated)
   # --------------------------------------------------------
-  my_preload="${hpcrun_dir}/libhpcrun.so ${libmonitor_dir}/libmonitor.so"
+  my_preload="${memleak_preload} ${hpcrun_dir}/libhpcrun.so ${libmonitor_dir}/libmonitor.so"
 
   if [ -z "${LD_PRELOAD}" ]; then
     LD_PRELOAD="${my_preload}"

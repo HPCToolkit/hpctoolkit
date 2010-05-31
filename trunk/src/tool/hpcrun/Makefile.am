@@ -79,6 +79,7 @@ pkglibexec_SCRIPTS = scripts/hpclog
 pkglib_LTLIBRARIES =
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
+  pkglib_LTLIBRARIES += libhpcrun_memleak.la
   bin_SCRIPTS += scripts/hpcrun
 endif
 
@@ -163,6 +164,8 @@ MY_BASE_FILES =			\
 	sample_sources_all.c		\
         sample-sources/common.c         \
 	sample-sources/itimer.c		\
+	sample-sources/memleak.c	\
+	sample-sources/memleak-overrides.c	\
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
         sample-sources/tst.c            \
@@ -238,9 +241,6 @@ MY_UPC_FILES = sample-sources/upc.c
 
 MY_CPP_DEFINES =			\
 	-D_GNU_SOURCE			\
-	-DCSPROF_LAST_EDGE_ONLY=1	\
-	-DCSPROF_PERF=1			\
-	-DCSPROF_THREADS=1		\
 	-DINLINE_FN=1
 
 MY_INCLUDE_DIRS =			\
@@ -274,6 +274,9 @@ libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_DYNAMIC_FILES)
 
+libhpcrun_memleak_la_SOURCES = 		\
+	sample-sources/memleak-overrides.c
+
 libhpcrun_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_STATIC_FILES)
@@ -282,6 +285,10 @@ libhpcrun_wrap_a_SOURCES =		\
 	monitor-exts/openmp.c
 
 libhpcrun_la_CPPFLAGS =			\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_memleak_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
@@ -305,6 +312,9 @@ libhpcrun_o_LDADD   = $(HPC_LIBPROFLEAN)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt
 
+libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
+	--strip-all
+
 libhpcrun_o_LDFLAGS =
 
 if HOST_OS_LINUX
@@ -318,6 +328,7 @@ if HOST_CPU_MIPS
     libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
     libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
     libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
+    libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 endif
 
 # Note: setting CCASFLAGS here is a no-op hack with the side effect of
@@ -331,6 +342,7 @@ if HOST_CPU_PPC
     libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
     libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
     libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
+    libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
     libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
     libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
 endif
@@ -344,6 +356,7 @@ if HOST_CPU_X86
     libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
     libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
     libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
+    libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
     MY_AGENT_INCLUDE_DIRS += $(MY_X86_INCLUDE_DIRS)
 endif
 
@@ -393,6 +406,7 @@ libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
 libhpcrun_o_SOURCES   +=  $(UNW_SOURCE_FILES)
 libhpcrun_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(UNW_INCLUDE_DIRS)
+libhpcrun_memleak_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_la_LDFLAGS  += $(UNW_LD_FLAGS)
 libhpcrun_o_LDFLAGS   += $(UNW_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS += $(UNW_INCLUDE_DIRS)
