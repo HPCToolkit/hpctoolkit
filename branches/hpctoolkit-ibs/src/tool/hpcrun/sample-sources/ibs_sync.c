@@ -165,11 +165,22 @@ void* malloc(size_t size)
     return NULL;
   }
   void* ret  = fptr_malloc(size);
+  if(cct_node == NULL)
+  {
+    printf("unbelievable, cct_node is NULL\n");
+    while(1);
+    return ret;
+  }
   printf("malloc %d ptr %p %d\n", cct_node->persistent_id, ret, size);
   /*block the async sampling*/
   hpcrun_async_block();
   /*lock splay tree, insert splay tree and unlock it*/
   interval_tree_node* node = hpcrun_malloc(sizeof(interval_tree_node));
+  if(node == NULL)
+  {
+    printf("unbelievable, node is NULL\n");
+    exit(0);
+  }
   pthread_mutex_lock(&mutex_splay);
   if(insert_splay_tree(node, ret, size, cct_node->persistent_id)<0)
     printf("insert_splay_tree error\n");
@@ -342,17 +353,18 @@ unsigned long long bss_end;
 static int count = -2;//static data ids are even and less than 0
 
 /*forward declaration*/
-void bss_find(int fd);
+int bss_find(int fd);//return 0 means wrong, return 1 means true
 void compute_var(int fd);
 
 void bss_partition(int fd)
 {
-  bss_find(fd);
+  if(bss_find(fd)==0)
+    return;
   lseek(fd, 0, SEEK_SET);//move to the starting point of the file
   compute_var(fd);
 }
 
-void bss_find(int fd)
+int bss_find(int fd)
 {
   Elf32_Ehdr *elf_header;         /* ELF header */
   Elf *elf;                       /* Our Elf pointer for libelf */
@@ -371,20 +383,20 @@ void bss_find(int fd)
   {
     printf("bss: could not fstat\n");
     close(fd);
-    exit(1);
+    return 0;
   }
   if((base_ptr = (char *) malloc(elf_stats.st_size)) == NULL)
   {
     printf("could not malloc\n");
     close(fd);
-    exit(1);
+    return 0;
   }
   if((read(fd, base_ptr, elf_stats.st_size)) < elf_stats.st_size)
   {
     printf("could not read\n");
     free(base_ptr);
     close(fd);
-    exit(1);
+    return 0;
   }
   
   if(elf_version(EV_CURRENT) == EV_NONE)
@@ -424,12 +436,13 @@ void bss_find(int fd)
                continue;
              }
              bss_end = sym.st_value;
-             return;
+             return 1;
            }
          }
        }
     }
   }
+  return 1;
 }
 
 void compute_var(int fd)
@@ -446,7 +459,7 @@ void compute_var(int fd)
   const char *bss1 = "_end";
   struct stat elf_stats;  // fstat struct
   int i, symbol_count;
- 
+
   if((fstat(fd, &elf_stats)))
   {
     printf("bss: could not fstat\n");

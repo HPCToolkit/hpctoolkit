@@ -190,7 +190,7 @@ METHOD_FN(init)
   if (ret != PFMLIB_SUCCESS){
     STDERR_MSG("Fatal error: initialization with perfmon2 error.");
     exit(1);
-}
+  }
   pfm_get_pmu_type(&type);
   if(type != PFMLIB_AMD64_PMU){
     STDERR_MSG("Fatal error: CPU type is not AMD64.");
@@ -549,7 +549,7 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
         if(!is_kernel(ip))//xed cannot process the kernel instruction
         {
           xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
-          xed_error = xed_decode(xptr, (uint8_t*) ip, 15);
+          xed_error = xed_decode(xptr, ip, 15);
           xed_format_xed(xptr, inst_buf, sizeof(inst_buf), (uint64_t) ip);
           TMSG(IBS_SAMPLE,"%p: %s", ip, xed_iclass_enum_t2str(iclass(xptr)));
         }
