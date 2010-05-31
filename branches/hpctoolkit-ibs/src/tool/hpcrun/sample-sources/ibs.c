@@ -500,9 +500,9 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
   int fd;
   int lat = 0;//-1 means latency is invalid
   struct over_args* ov;
-  xed_decoded_inst_t xedd;
-  xed_decoded_inst_t *xptr = &xedd;
-  xed_error_enum_t xed_error;
+//  xed_decoded_inst_t xedd;
+//  xed_decoded_inst_t *xptr = &xedd;
+//  xed_error_enum_t xed_error;
   char inst_buf[1024];
 
   thread_data_t *td = hpcrun_get_thread_data();
@@ -548,10 +548,10 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
           TMSG(IBS_SAMPLE, "this is store op");
         if(!is_kernel(ip))//xed cannot process the kernel instruction
         {
-          xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
-          xed_error = xed_decode(xptr, ip, 15);
-          xed_format_xed(xptr, inst_buf, sizeof(inst_buf), (uint64_t) ip);
-          TMSG(IBS_SAMPLE,"%p: %s", ip, xed_iclass_enum_t2str(iclass(xptr)));
+//          xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
+//          xed_error = xed_decode(xptr, ip, 15);
+//          xed_format_xed(xptr, inst_buf, sizeof(inst_buf), (uint64_t) ip);
+//          TMSG(IBS_SAMPLE,"%p: %s", ip, xed_iclass_enum_t2str(iclass(xptr)));
         }
 
         hpcrun_sample_callpath_w_bt(context, metrics[2], 1,
@@ -596,7 +596,7 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
           pfm_read_pmds(fd,ov->pd,1);
           linear_addr=ov->pd[0].reg_value;
           //latency is invalid for prefetch
-          if((opdata3->reg.ibsldop == 1)&&(opdata3->reg.ibsdcmiss == 1)&&(!is_kernel(ip))&&(strstr(xed_iclass_enum_t2str(iclass(xptr)),"PREFETCH")==NULL))
+          if((opdata3->reg.ibsldop == 1)&&(opdata3->reg.ibsdcmiss == 1)&&(!is_kernel(ip)))//&&(strstr(xed_iclass_enum_t2str(iclass(xptr)),"PREFETCH")==NULL))
             lat=opdata3->reg.ibsdcmisslat;
           else
             lat=-1;//latency is not valid for store
@@ -626,7 +626,7 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
         }
         else//no read memory then find out the latency
         {
-          if((opdata3->reg.ibsldop == 1)&&(opdata3->reg.ibsdcmiss == 1)&&(!is_kernel(ip))&&(strstr(xed_iclass_enum_t2str(iclass(xptr)),"PREFETCH")==NULL))
+          if((opdata3->reg.ibsldop == 1)&&(opdata3->reg.ibsdcmiss == 1)&&(!is_kernel(ip)))//&&(strstr(xed_iclass_enum_t2str(iclass(xptr)),"PREFETCH")==NULL))
             lat=opdata3->reg.ibsdcmisslat;
           else
             lat=-1;//latency is not valid for store
