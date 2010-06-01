@@ -165,7 +165,6 @@ MY_BASE_FILES =			\
         sample-sources/common.c         \
 	sample-sources/itimer.c		\
 	sample-sources/memleak.c	\
-	sample-sources/memleak-overrides.c	\
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
         sample-sources/tst.c            \
