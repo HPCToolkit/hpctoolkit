@@ -190,17 +190,16 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	hpcrun_options.c hpcrun_stats.c loadmap.c metrics.c name.c \
 	sample_event.c sample_sources_all.c sample-sources/common.c \
 	sample-sources/itimer.c sample-sources/memleak.c \
-	sample-sources/memleak-overrides.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/tst.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c system_server.c thread_data.c thread_use.c \
-	trace.c write_data.c cct/cct.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	messages/debug-flag.c messages/messages-sync.c \
+	sample-sources/none.c sample-sources/retcnt.c \
+	sample-sources/tst.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c system_server.c \
+	thread_data.c thread_use.c trace.c write_data.c cct/cct.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c messages/debug-flag.c messages/messages-sync.c \
 	messages/messages-async.c messages/fmt.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -234,9 +233,9 @@ am__objects_7 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-sample_event.lo \
 	libhpcrun_la-sample_sources_all.lo libhpcrun_la-common.lo \
 	libhpcrun_la-itimer.lo libhpcrun_la-memleak.lo \
-	libhpcrun_la-memleak-overrides.lo libhpcrun_la-none.lo \
-	libhpcrun_la-retcnt.lo libhpcrun_la-tst.lo \
-	libhpcrun_la-sync.lo libhpcrun_la-sample_sources_registered.lo \
+	libhpcrun_la-none.lo libhpcrun_la-retcnt.lo \
+	libhpcrun_la-tst.lo libhpcrun_la-sync.lo \
+	libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-system_server.lo \
 	libhpcrun_la-thread_data.lo libhpcrun_la-thread_use.lo \
 	libhpcrun_la-trace.lo libhpcrun_la-write_data.lo \
@@ -306,17 +305,16 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	hpcrun_options.c hpcrun_stats.c loadmap.c metrics.c name.c \
 	sample_event.c sample_sources_all.c sample-sources/common.c \
 	sample-sources/itimer.c sample-sources/memleak.c \
-	sample-sources/memleak-overrides.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/tst.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c system_server.c thread_data.c thread_use.c \
-	trace.c write_data.c cct/cct.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	messages/debug-flag.c messages/messages-sync.c \
+	sample-sources/none.c sample-sources/retcnt.c \
+	sample-sources/tst.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c system_server.c \
+	thread_data.c thread_use.c trace.c write_data.c cct/cct.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c messages/debug-flag.c messages/messages-sync.c \
 	messages/messages-async.c messages/fmt.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -352,10 +350,9 @@ am__objects_25 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-name.$(OBJEXT) libhpcrun_o-sample_event.$(OBJEXT) \
 	libhpcrun_o-sample_sources_all.$(OBJEXT) \
 	libhpcrun_o-common.$(OBJEXT) libhpcrun_o-itimer.$(OBJEXT) \
-	libhpcrun_o-memleak.$(OBJEXT) \
-	libhpcrun_o-memleak-overrides.$(OBJEXT) \
-	libhpcrun_o-none.$(OBJEXT) libhpcrun_o-retcnt.$(OBJEXT) \
-	libhpcrun_o-tst.$(OBJEXT) libhpcrun_o-sync.$(OBJEXT) \
+	libhpcrun_o-memleak.$(OBJEXT) libhpcrun_o-none.$(OBJEXT) \
+	libhpcrun_o-retcnt.$(OBJEXT) libhpcrun_o-tst.$(OBJEXT) \
+	libhpcrun_o-sync.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
 	libhpcrun_o-segv_handler.$(OBJEXT) \
 	libhpcrun_o-system_server.$(OBJEXT) \
@@ -734,7 +731,6 @@ MY_BASE_FILES = \
         sample-sources/common.c         \
 	sample-sources/itimer.c		\
 	sample-sources/memleak.c	\
-	sample-sources/memleak-overrides.c	\
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
         sample-sources/tst.c            \
@@ -1148,7 +1144,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-lushi-cb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-main.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-mem.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-memleak-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-memleak.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-messages-async.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-messages-sync.Plo@am__quote@
@@ -1219,7 +1214,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-lushi-cb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-mem.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-memleak-overrides.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-memleak.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-messages-async.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-messages-sync.Po@am__quote@
@@ -1457,13 +1451,6 @@ libhpcrun_la-memleak.lo: sample-sources/memleak.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/memleak.c' object='libhpcrun_la-memleak.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-memleak.lo `test -f 'sample-sources/memleak.c' || echo '$(srcdir)/'`sample-sources/memleak.c
-
-libhpcrun_la-memleak-overrides.lo: sample-sources/memleak-overrides.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-memleak-overrides.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-memleak-overrides.Tpo -c -o libhpcrun_la-memleak-overrides.lo `test -f 'sample-sources/memleak-overrides.c' || echo '$(srcdir)/'`sample-sources/memleak-overrides.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_la-memleak-overrides.Tpo $(DEPDIR)/libhpcrun_la-memleak-overrides.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/memleak-overrides.c' object='libhpcrun_la-memleak-overrides.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-memleak-overrides.lo `test -f 'sample-sources/memleak-overrides.c' || echo '$(srcdir)/'`sample-sources/memleak-overrides.c
 
 libhpcrun_la-none.lo: sample-sources/none.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-none.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-none.Tpo -c -o libhpcrun_la-none.lo `test -f 'sample-sources/none.c' || echo '$(srcdir)/'`sample-sources/none.c
@@ -2087,20 +2074,6 @@ libhpcrun_o-memleak.obj: sample-sources/memleak.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/memleak.c' object='libhpcrun_o-memleak.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-memleak.obj `if test -f 'sample-sources/memleak.c'; then $(CYGPATH_W) 'sample-sources/memleak.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/memleak.c'; fi`
-
-libhpcrun_o-memleak-overrides.o: sample-sources/memleak-overrides.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-memleak-overrides.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-memleak-overrides.Tpo -c -o libhpcrun_o-memleak-overrides.o `test -f 'sample-sources/memleak-overrides.c' || echo '$(srcdir)/'`sample-sources/memleak-overrides.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-memleak-overrides.Tpo $(DEPDIR)/libhpcrun_o-memleak-overrides.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/memleak-overrides.c' object='libhpcrun_o-memleak-overrides.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-memleak-overrides.o `test -f 'sample-sources/memleak-overrides.c' || echo '$(srcdir)/'`sample-sources/memleak-overrides.c
-
-libhpcrun_o-memleak-overrides.obj: sample-sources/memleak-overrides.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-memleak-overrides.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-memleak-overrides.Tpo -c -o libhpcrun_o-memleak-overrides.obj `if test -f 'sample-sources/memleak-overrides.c'; then $(CYGPATH_W) 'sample-sources/memleak-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/memleak-overrides.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-memleak-overrides.Tpo $(DEPDIR)/libhpcrun_o-memleak-overrides.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample-sources/memleak-overrides.c' object='libhpcrun_o-memleak-overrides.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-memleak-overrides.obj `if test -f 'sample-sources/memleak-overrides.c'; then $(CYGPATH_W) 'sample-sources/memleak-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/memleak-overrides.c'; fi`
 
 libhpcrun_o-none.o: sample-sources/none.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-none.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-none.Tpo -c -o libhpcrun_o-none.o `test -f 'sample-sources/none.c' || echo '$(srcdir)/'`sample-sources/none.c
