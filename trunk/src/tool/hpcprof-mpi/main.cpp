@@ -773,7 +773,7 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
   for (uint nodeId = 1; nodeId < packedMetrics.numNodes(); ++nodeId) {
     for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
       double mval = packedMetrics.idx(nodeId, mId2);
-      hpcfmt_byte8_fwrite(mval, fs); // TODO: HPCFMT_ThrowIfError()
+      hpcfmt_byte8_fwrite((uint64_t)mval, fs); // TODO: HPCFMT_ThrowIfError()
     }
   }
 
