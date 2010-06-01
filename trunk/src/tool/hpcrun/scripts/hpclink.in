@@ -8,6 +8,7 @@
 #  Usage: hpclink [options] compiler file ...
 #
 #     -h, --help
+#     -memleak
 #     -u, --undefined  <symbol>
 #     -v, --verbose
 #
@@ -43,6 +44,7 @@ monitor_wrap_names='main exit _exit dlopen dlclose fork vfork system
   longjmp siglongjmp _mp_init'
 
 extra_wrap_names='@hpclink_extra_wrap_names@'
+extra_hpc_files=
 
 # Set to -m64 on 64-bit version (for gcc).
 # NM_FLAGS='-m64'
@@ -78,11 +80,19 @@ usage()
 Usage: $0 [options] compiler file ...
 
    -h, --help
-   -u, --undefined  <symbol>
-   -v, --verbose
+       Displays this usage message.
 
-where <symbol> is a symbol name passed to the linker (may be used
-multiple times).
+   -memleak
+       Add the HPC libraries needed for memory leak detection.
+
+   -u  <symbol>
+   --undefined  <symbol>
+       Pass <symbol> to the linker as an undefined symbol.  This is to
+       force the linker to pull in a reference for that symbol.  May
+       be used multiple times.
+
+   -v, --verbose
+       Displays the original and modified command lines.
 
 EOF
     exit 0
@@ -129,8 +139,16 @@ do
 	-h | --help )
 	    usage
 	    ;;
+	-memleak | --memleak )
+	    memleak_wrap="${libhpcrun_dir}/libhpcrun_memleak_wrap.a"
+	    test -f "$memleak_wrap" || die "unable to find: $memleak_wrap"
+	    extra_hpc_files="$extra_hpc_files $memleak_wrap"
+	    extra_wrap_names="$extra_wrap_names calloc free malloc realloc"
+	    undef_names="$undef_names malloc"
+	    shift
+	    ;;
 	-u | --undefined )
-	    test "x$2" != x || die "missing argument: $*"
+	    test "x$2" != x || die "missing argument for -u"
 	    undef_names="${undef_names} $2"
 	    shift ; shift
 	    ;;
@@ -218,7 +236,7 @@ set -- "$@" "$libhpcrun" "${nm_addrs}.o"
 
 libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
 test -f "$libhpcrun_wrap" || die "no such file: $libhpcrun_wrap"
-set -- "$@" "$libhpcrun_wrap"
+set -- "$@" "$libhpcrun_wrap" $extra_hpc_files
 
 libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
 test -f "$libmonitor" || die "no such file: $libmonitor"
