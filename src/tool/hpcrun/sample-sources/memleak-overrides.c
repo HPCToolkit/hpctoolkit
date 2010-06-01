@@ -60,6 +60,7 @@
 #include <sample-sources/memleak.h>
 #include <messages/messages.h>
 #include <sample_event.h>
+#include <monitor-exts/monitor_ext.h>
 
 
 
@@ -72,12 +73,34 @@ typedef struct {
   size_t bytes;
 } leakhdr_t;
 
+typedef void *calloc_fcn(size_t, size_t);
+typedef void  free_fcn(void *);
+typedef void *malloc_fcn(size_t);
+typedef void *realloc_fcn(void *, size_t);
+
 
 
 /******************************************************************************
  * macros
  *****************************************************************************/
 #define SKIP_MEM_FRAME 0
+
+#ifdef HPCRUN_STATIC_LINK
+#define real_calloc   __real_calloc
+#define real_free     __real_free
+#define real_malloc   __real_malloc
+#define real_realloc  __real_realloc
+#else
+#define real_calloc   __libc_calloc
+#define real_free     __libc_free
+#define real_malloc   __libc_malloc
+#define real_realloc  __libc_realloc
+#endif
+
+extern calloc_fcn  real_calloc;
+extern free_fcn    real_free;
+extern malloc_fcn  real_malloc;
+extern realloc_fcn real_realloc;
 
 
 
@@ -87,10 +110,9 @@ typedef struct {
 
 
 void *
-malloc(size_t bytes)
+MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 {
-  extern void *__libc_malloc(size_t bytes);
-  leakhdr_t *h = (leakhdr_t *)__libc_malloc(bytes + sizeof(leakhdr_t));
+  leakhdr_t *h = (leakhdr_t *)real_malloc(bytes + sizeof(leakhdr_t));
   h->bytes = bytes;
 
   if (hpcrun_memleak_alloc_id() >= 0) {
@@ -110,10 +132,9 @@ malloc(size_t bytes)
 
 
 void *
-calloc(size_t nmemb, size_t bytes)
+MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 {
-  extern void *__libc_calloc(size_t bytes);
-  leakhdr_t *h = (leakhdr_t *)__libc_calloc(nmemb * bytes + sizeof(leakhdr_t));
+  leakhdr_t *h = (leakhdr_t *)real_calloc(1, nmemb * bytes + sizeof(leakhdr_t));
   h->bytes = nmemb * bytes;
 
   if (hpcrun_memleak_alloc_id() >= 0) {
@@ -134,13 +155,12 @@ calloc(size_t nmemb, size_t bytes)
 
 
 void *
-realloc(void *ptr, size_t bytes)
+MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 {
-  extern void *__libc_realloc(void *ptr, size_t bytes);
   int notnull = (ptr != 0);
   leakhdr_t *h = notnull ? ((leakhdr_t *) ptr) - 1: 0;
 
-  h = (leakhdr_t *)__libc_realloc(h, bytes + sizeof(leakhdr_t));
+  h = (leakhdr_t *)real_realloc(h, bytes + sizeof(leakhdr_t));
 
   if (hpcrun_memleak_alloc_id() >= 0) {
     ucontext_t uc;
@@ -164,10 +184,8 @@ realloc(void *ptr, size_t bytes)
 
 
 void
-free(void *ptr)
+MONITOR_EXT_WRAP_NAME(free)(void *ptr)
 {
-  extern void __libc_free(void * ptr);
-
   if (ptr == 0) return;
 
   leakhdr_t *h = ((leakhdr_t *) ptr) - 1;
@@ -179,5 +197,5 @@ free(void *ptr)
   } else {
     TMSG(MEMLEAK, "free %d bytes (call path not logged)", h->bytes); 
   }
-  __libc_free(h);
+  real_free(h);
 }
