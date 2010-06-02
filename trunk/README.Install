@@ -167,9 +167,6 @@ These same options, with the same names, may be used with either
 externals's or HPCToolkit's configure, except that old-monitor in
 externals is just called monitor in HPCToolkit.
 
-Note: libunwind is only used on ia64 and xed2 is only used on x86 and
-x86-64.
-
 =============================================================================
 
 ----------------------------------------
