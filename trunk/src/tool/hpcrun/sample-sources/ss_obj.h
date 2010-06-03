@@ -106,12 +106,8 @@ reg_fn_name(void)
   hpcrun_ss_register(&obj_name());
 }
 
-#undef obj_name
 #undef ss_str
 #undef reg_fn_name
 
-#undef _TPx
-#undef _T3
-#undef _make_id
 #undef _st
 #undef _st1

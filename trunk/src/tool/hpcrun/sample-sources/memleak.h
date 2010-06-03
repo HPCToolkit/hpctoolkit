@@ -67,6 +67,7 @@
  *****************************************************************************/
 
 int hpcrun_memleak_alloc_id();
+int hpcrun_memleak_active();
 void hpcrun_alloc_inc(cct_node_t* node, int incr);
 void hpcrun_free_inc(cct_node_t* node, int incr);
 
