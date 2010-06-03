@@ -177,8 +177,9 @@ typedef struct thread_data_t {
 
 #define TD_GET(field) hpcrun_get_thread_data()->field
 
-thread_data_t *(*hpcrun_get_thread_data)(void);
-bool          (*hpcrun_td_avail)(void);
+extern thread_data_t *(*hpcrun_get_thread_data)(void);
+extern bool          (*hpcrun_td_avail)(void);
+
 thread_data_t *hpcrun_allocate_thread_data(void);
 void           hpcrun_init_pthread_key(void);
 

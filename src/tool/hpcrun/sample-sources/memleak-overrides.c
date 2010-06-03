@@ -106,8 +106,6 @@ extern realloc_fcn real_realloc;
 static int leak_detection_enabled = 0; // default is off
 static int leak_detection_uninit = 1;  // default is uninitialized
 
-#define hpcrun_async_block()
-#define hpcrun_async_unblock()
 
 /******************************************************************************
  * private operations
@@ -211,9 +209,6 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
     int notnull = (ptr != 0);
     leakhdr_t *h = NULL;
     leakhdr_t old_h;
-
-    int prev_bytes = 0;
-    cct_node_t *context = NULL;
 
     if (notnull) {
       h = ((leakhdr_t *) ptr) - 1;
