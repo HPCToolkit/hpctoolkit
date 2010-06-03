@@ -45,6 +45,9 @@
 #define main_h
 
 #include <setjmp.h>
+#include <stdbool.h>
+
+bool hpcrun_is_initialized();
 
 typedef void siglongjmp_fcn(sigjmp_buf, int);
 

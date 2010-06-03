@@ -72,6 +72,7 @@
 #include <sample_event.h>
 #include "sample_source_obj.h"
 #include "common.h"
+#include <main.h>
 #include <hpcrun/sample_sources_registered.h>
 #include "simple_oo.h"
 #include <hpcrun/thread_data.h>
@@ -208,10 +209,21 @@ hpcrun_memleak_alloc_id()
 }
 
 
+int
+hpcrun_memleak_active() 
+{
+  if (hpcrun_is_initialized()) {
+    return (TD_GET(ss_state)[obj_name().evset_idx] == START);
+  } else {
+    return 0;
+  }
+}
+
+
 void
 hpcrun_alloc_inc(cct_node_t* node, int incr)
 {
-  if (node) {
+  if (node != NULL) {
     TMSG(MEMLEAK, "Increment alloc at cct node %p (metric id = %d), by %d", 
 	 node, alloc_metric_id, incr);
     cct_metric_data_increment(alloc_metric_id,
@@ -224,7 +236,7 @@ hpcrun_alloc_inc(cct_node_t* node, int incr)
 void
 hpcrun_free_inc(cct_node_t* node, int incr)
 {
-  if (node) {
+  if (node != NULL) {
     TMSG(MEMLEAK, "Increment free at cct node %p (metric id = %d), by %d", 
 	 node, free_metric_id, incr);
     

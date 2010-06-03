@@ -892,7 +892,7 @@ libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt $(am__append_21) $(am__append_28) \
 	$(am__append_36) $(UNW_LD_FLAGS)
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	--strip-all
+	-Wl,--strip-all
 
 libhpcrun_o_LDFLAGS = $(am__append_22) $(am__append_31) \
 	$(am__append_37) $(UNW_LD_FLAGS)

@@ -154,7 +154,7 @@ static sigset_t prof_sigset;
 // inline functions
 //***************************************************************************
 
-static inline bool
+bool
 hpcrun_is_initialized()
 {
   return hpcrun_is_initialized_private;
