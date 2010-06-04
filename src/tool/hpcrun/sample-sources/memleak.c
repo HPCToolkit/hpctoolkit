@@ -224,7 +224,7 @@ void
 hpcrun_alloc_inc(cct_node_t* node, int incr)
 {
   if (node != NULL) {
-    TMSG(MEMLEAK, "Increment alloc at cct node %p (metric id = %d), by %d", 
+    TMSG(MEMLEAK, "\talloc (cct node %p): metric[%d] += %d", 
 	 node, alloc_metric_id, incr);
     cct_metric_data_increment(alloc_metric_id,
 			      &node->metrics[alloc_metric_id],
@@ -237,7 +237,7 @@ void
 hpcrun_free_inc(cct_node_t* node, int incr)
 {
   if (node != NULL) {
-    TMSG(MEMLEAK, "Increment free at cct node %p (metric id = %d), by %d", 
+    TMSG(MEMLEAK, "\tfree (cct node %p): metric[%d] += %d", 
 	 node, free_metric_id, incr);
     
     cct_metric_data_increment(free_metric_id,

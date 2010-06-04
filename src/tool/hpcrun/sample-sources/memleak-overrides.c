@@ -149,10 +149,10 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 	hpcrun_sample_callpath(&uc, hpcrun_memleak_alloc_id(), bytes, SKIP_MEM_FRAME, 1);
       hpcrun_async_unblock();
 
-      TMSG(MEMLEAK, "malloc %d bytes (cct node %p)", h->bytes, h->context); 
+      TMSG(MEMLEAK, "malloc %d bytes (cct node %p) -> %p", h->bytes, h->context, h+1); 
     } else {
       h->context = 0;
-      TMSG(MEMLEAK, "malloc %d bytes (call path not logged)", h->bytes); 
+      TMSG(MEMLEAK, "malloc %d bytes (call path not logged) -> %p", h->bytes, h+1); 
     }
     return h+1;
   } else {
@@ -186,10 +186,10 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 	hpcrun_sample_callpath(&uc, hpcrun_memleak_alloc_id(), 
 			       nmemb * bytes, SKIP_MEM_FRAME, 1);
       hpcrun_async_unblock();
-      TMSG(MEMLEAK, "calloc %d bytes (cct node %p)", h->bytes, h->context); 
+      TMSG(MEMLEAK, "calloc %d bytes (cct node %p) -> %p", h->bytes, h->context, h+1); 
     } else {
       h->context = 0;
-      TMSG(MEMLEAK, "calloc %d bytes (call path not logged)", h->bytes); 
+      TMSG(MEMLEAK, "calloc %d bytes (call path not logged) -> %p", h->bytes, h+1); 
     }
     return h+1;
   } else {
@@ -226,7 +226,10 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
       ucontext_t uc;
 
       // attribute free of old data (if any) to call path
-      if (notnull) hpcrun_free_inc(old_h.context, old_h.bytes); 
+      if (notnull) {
+        TMSG(MEMLEAK, "free(%p) %d bytes (cct node %p) [realloc]", ptr, old_h.bytes, old_h.context); 
+	hpcrun_free_inc(old_h.context, old_h.bytes); 
+      }
 
       if (bytes == 0) return h; // handle realloc to 0 size case
 
@@ -238,11 +241,11 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 	hpcrun_sample_callpath(&uc, hpcrun_memleak_alloc_id(), bytes, SKIP_MEM_FRAME, 1);
       hpcrun_async_unblock();
       h->bytes = bytes;
-      TMSG(MEMLEAK, "realloc %d bytes (cct node %p)", h->bytes, h->context); 
+      TMSG(MEMLEAK, "realloc(%p) %d bytes (cct node %p) -> %p", ptr, h->bytes, h->context, h+1); 
     } else {
       h->context = 0;
       h->bytes = bytes;
-      TMSG(MEMLEAK, "realloc %d bytes (call path not logged)", h->bytes); 
+      TMSG(MEMLEAK, "realloc(%p) %d bytes (call path not logged) -> %p", ptr, h->bytes, h+1); 
     }
     return h+1;
   } else {
@@ -266,10 +269,10 @@ MONITOR_EXT_WRAP_NAME(free)(void *ptr)
 
     if (hpcrun_memleak_active()) {
       // attribute free to call path 
+      TMSG(MEMLEAK, "free(%p) %d bytes (cct node %p)", ptr, h->bytes, h->context); 
       hpcrun_free_inc(h->context, h->bytes);
-      TMSG(MEMLEAK, "free %d bytes (cct node %p)", h->bytes, h->context); 
     } else {
-      TMSG(MEMLEAK, "free %d bytes (call path not logged)", h->bytes); 
+      TMSG(MEMLEAK, "free(%p) %d bytes (call path not logged)", ptr, h->bytes); 
     }
     real_free(h);
   } else {
