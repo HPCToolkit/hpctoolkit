@@ -84,7 +84,7 @@ typedef void *realloc_fcn(void *, size_t);
 /******************************************************************************
  * macros
  *****************************************************************************/
-#define MEMLEAK_MAGIC 0xdeadbeef
+#define MEMLEAK_MAGIC 0x68706374
 
 #define SKIP_MEM_FRAME 0
 
@@ -156,7 +156,7 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 
       TMSG(MEMLEAK, "malloc %d bytes (cct node %p) -> %p", h->bytes, h->context, h+1); 
     } else {
-      h->magic = 0;
+      h->magic = MEMLEAK_MAGIC;
       h->context = 0;
       TMSG(MEMLEAK, "malloc %d bytes (call path not logged) -> %p", h->bytes, h+1); 
     }
@@ -181,12 +181,11 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
     if (h == NULL) return h; // handle out of memory case
 
     h->bytes = nmemb * bytes;
+    h->magic = MEMLEAK_MAGIC;
 
     if (hpcrun_memleak_active()) {
       ucontext_t uc;
       getcontext(&uc);
-
-      h->magic = MEMLEAK_MAGIC;
 
       // attribute calloc to call path 
       hpcrun_async_block();
@@ -196,7 +195,6 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
       hpcrun_async_unblock();
       TMSG(MEMLEAK, "calloc %d bytes (cct node %p) -> %p", h->bytes, h->context, h+1); 
     } else {
-      h->magic = 0;
       h->context = 0;
       TMSG(MEMLEAK, "calloc %d bytes (call path not logged) -> %p", h->bytes, h+1); 
     }
@@ -257,7 +255,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
     } else {
       if (bytes == 0) return h; // handle realloc to 0 size case
 
-      h->magic = 0;
+      h->magic = MEMLEAK_MAGIC;
       h->context = 0;
       h->bytes = bytes;
       TMSG(MEMLEAK, "realloc(%p) %d bytes (call path not logged) -> %p", ptr, h->bytes, h+1); 
@@ -285,11 +283,22 @@ MONITOR_EXT_WRAP_NAME(free)(void *ptr)
     if (hpcrun_memleak_active()) {
       // attribute free to call path 
       TMSG(MEMLEAK, "free(%p) %d bytes (cct node %p)", ptr, h->bytes, h->context); 
-      if (h->magic == MEMLEAK_MAGIC) hpcrun_free_inc(h->context, h->bytes);
+      if (h->magic == MEMLEAK_MAGIC) {
+         hpcrun_free_inc(h->context, h->bytes);
+         h->magic = 0;
+      } else {
+        // apparently no header; let's free the original pointer instead
+        // and take no destructive actions
+        TMSG(MEMLEAK, "free(%p) without matching allocate!", ptr); 
+        h = ptr;
+      }
     } else {
-      TMSG(MEMLEAK, "free(%p) %d bytes (call path not logged)", ptr, h->bytes); 
+      if (h->magic == MEMLEAK_MAGIC) {
+        TMSG(MEMLEAK, "free(%p) %d bytes (call path not logged)", ptr, h->bytes); 
+      } else {
+        TMSG(MEMLEAK, "free(%p) without matching allocate!", ptr); 
+      }
     }
-    h->magic = 0;
     real_free(h);
   } else {
     real_free(ptr);
