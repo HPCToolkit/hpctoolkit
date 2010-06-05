@@ -34,7 +34,9 @@
 
   <li><a href="#downloading">Downloading Source Code</a>
 
-  <li><a href="#building_installing">Building and Installing</a>
+  <li><a href="#building-installing">Building and Installing</a>
+
+  <li><a href="#infrequent-options">Infrequently Used Build Options</a>
 </ul>
 
 
@@ -172,7 +174,7 @@ succssfully used versions 5.6.x, 5.8.x.
 <ol>
   <li><p>An HPCToolkit tarball
 
-  <li><p>An HPCToolkit externals tarball.  Think of this as a "package manager" that automatically configures and builds dependences not mentioned above.  It contains several external libraries, e.g., OpenAnalysis, Xerces-C++ and GNU binutils.  In some cases it may be possible to use versions of these libraries that are already installed on your system. However, we do not support such configurations.
+  <li><p>An HPCToolkit externals tarball.  Think of this as a "package manager" that automatically configures and builds dependences not mentioned above.  It contains several external libraries.  (Some of these libraries, like libelf and libxml2 are commonly found on Linux systems, but not always.  Others, like OpenAnalysis and SymtabAPI are almost never available.  Finally, a few packages, like GNU binutils have been heavily patched.)  In some cases it may be possible to use versions of these packages that are already installed on your system.  However, we do not support such configurations.
 
   <li><p>An <span class="hpctool">hpcviewer</span> build.
 
@@ -188,7 +190,7 @@ succssfully used versions 5.6.x, 5.8.x.
 <!-- ********************************************************************** -->
 <!-- ********************************************************************** -->
 
-<a name="building_installing"></a>
+<a name="building-installing"></a>
 
 <h2>Building and Installing</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
@@ -209,17 +211,33 @@ See the README file for more details.
   <code>make distclean</code><br>
 </div>
 
+<p>The build creates a staging area in a subdirectory named after the target (Autoconf: host) platform.
+  The staging area is a development directory, that is, it contains the full installation of each package, including the header files needed to compile other programs.
+  This is the directory HPCToolkit uses to build itself, so it is important to finish the externals build before configuring HPCToolkit.
+
+<p><ul>
+  <li>Note: it is possible, but unnecessary, to use the <code>--prefix=<i>&lt;externals-installation-path</i>&gt;</code> option for configure.
+    The externals's install directory (prefix) is only a staging area, used as a build dependency for HPCToolkit and is not the same as HPCToolkit's prefix.
+
+  <li>Note: the externals tree is designed to be a one-time build step.
+    After building the external packages, then its tree can be cleaned (with make distclean) and HPCToolkit can be configured and built several times with the same externals tree.
+    That is, reconfiguring or rebuilding HPCToolkit does not require rebuilding the externals tree.
+</ul>
+
+
 <li>
 <p>Build and install HPCToolkit:
 <div class="indent">
   <code>cd hpctoolkit</code><br>
-  <code>./configure --prefix=&lt;install-path&gt; --with-externals=&lt;externals-path&gt; --with-papi=&lt;papi-installation-path&gt;</code><br>
+  <code>./configure --prefix=<i>&lt;install-path</i>&gt; --with-externals=<i>&lt;externals-path</i>&gt; --with-papi=<i>&lt;papi-installation-path</i>&gt;</code><br>
   <code>make install</code><br>
 </div>
 
-<p>The above command will build HPCToolkit using PAPI and install it into &lt;install-path&gt.
-Because the installation is self-contained, you may rename or move it to another location.
-All source code and build files may be removed.
+<p>The above command will build HPCToolkit using HPCToolkit's externals and PAPI and install it into <code><i>&lt;install-path</i>&gt;</code>.
+  Here, <code><i>&lt;externals-path</i>&gt;</code> is the path to the <code>hpctoolkit-externals</code> source tree (even if built with <code>--prefix=<i>&lt;externals-installation-path</i>&gt;</code>); and <code><i>&lt;papi-installation-path</i>&gt;</code> is the path to a PAPI installation.
+
+<p>Because the HPCToolkit installation is self-contained, it may be renamed or moved to another location.
+  All HPCToolkit externals and HPCToolkit source code and build files may be removed.
 
    <!-- &nbsp; -->
 
@@ -252,7 +270,80 @@ All source code and build files may be removed.
 </ol>
 
 
-<p class="lastupdated">Page last updated: 2010/03/08</p>
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="infrequent-options"></a>
+
+<h2>Infrequently Used Build Options</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>The following options may be useful in exceptional circumstances.
+
+<ul>
+
+<li>To request that HPCToolkit externals use an alternate user-supplied installation for a given package, the following options may be used.
+
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+    <tr>
+      <td><p><b>Option</b>
+      <td><p><b>Meaning</b>
+    </tr>
+    <tr>
+      <td><p><code>--with-binutils=PATH</code>
+      <td><p>path to binutils install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-libdwarf=PATH</code>
+      <td><p>path to libdwarf install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-libelf=PATH</code>
+      <td><p>path to libelf install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-libmonitor=PATH</code>
+      <td><p>path to libmonitor install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-libunwind=PATH</code>
+      <td><p>path to libunwind install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-libxml2=PATH</code>
+      <td><p>path to libxml2 install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-old-monitor=PATH</code>
+      <td><p>path to old monitor install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-open-analysis=PATH</code>
+      <td><p>path to open analysis install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-symtabAPI=PATH</code>
+      <td><p>path to symtabAPI install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-xed2=PATH</code>
+      <td><p>path to xed2 install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-xerces=PATH</code>
+      <td><p>path to xerces/c install directory
+    </tr>
+  </table>
+
+<p>In all cases, the default is for HPCToolkit externals build the package itself, depending on platform.
+
+<li><p>To explicitly request that a package <code>x</code> <i>not</i> be built, use <code>--without-x</code>.
+
+<!-- <li><p>These same options, with the same names, may be used with either externals's or HPCToolkit's configure, except that old-monitor in externals is just called monitor in HPCToolkit.-->
+
+</ul>
+
+<p class="lastupdated">Page last updated: 2010/06/05</p>
 
 <!-- ********************************************************************** -->
 
