@@ -8,7 +8,7 @@
 #  Usage: hpclink [options] compiler file ...
 #
 #     -h, --help
-#     -memleak
+#     --memleak
 #     -u, --undefined  <symbol>
 #     -v, --verbose
 #
@@ -82,7 +82,7 @@ Usage: $0 [options] compiler file ...
    -h, --help
        Displays this usage message.
 
-   -memleak
+   --memleak
        Add the HPC libraries needed for memory leak detection.
 
    -u  <symbol>
