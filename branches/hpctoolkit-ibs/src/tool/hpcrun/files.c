@@ -188,7 +188,7 @@ files_set_executable(char *execname)
 }
 
 //Xu create static data table
-void
+/*void
 create_static_data_table()
 {
   int fd = -1;
@@ -196,7 +196,7 @@ create_static_data_table()
   bss_partition(fd);
   close(fd);
 }
-
+*/
 //*****************************************************************************
 
 long

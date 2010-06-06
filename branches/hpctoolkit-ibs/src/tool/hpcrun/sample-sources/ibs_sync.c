@@ -168,7 +168,6 @@ void* malloc(size_t size)
   if(cct_node == NULL)
   {
     printf("unbelievable, cct_node is NULL\n");
-    while(1);
     return ret;
   }
   printf("malloc %d ptr %p %d\n", cct_node->persistent_id, ret, size);

@@ -49,7 +49,7 @@
 void files_set_directory();                   // location from environment variable
 void files_set_executable(char *execname);   
 //Xu
-void create_static_data_table();
+//void create_static_data_table();
 
 void files_trace_name(char *filename, unsigned int mpi_rank, int len);
 void files_profile_name(char *filename, unsigned int mpi_rank, int len);

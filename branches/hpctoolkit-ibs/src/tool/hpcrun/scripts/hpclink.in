@@ -8,6 +8,7 @@
 #  Usage: hpclink [options] compiler file ...
 #
 #     -h, --help
+#     -datacentric
 #     -u, --undefined  <symbol>
 #     -v, --verbose
 #
@@ -27,6 +28,7 @@ hpcfnbounds_dir='libexec/hpctoolkit'
 libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 xed2_dir='@XED2_RUN_DIR@'
+elf_dir='@XED2_RUN_DIR@'
 
 # Absolute path or empty.
 papi_dir='@OPT_PAPI_LIBPATH@'
@@ -43,6 +45,7 @@ monitor_wrap_names='main exit _exit dlopen dlclose fork vfork system
   longjmp siglongjmp _mp_init'
 
 extra_wrap_names='@hpclink_extra_wrap_names@'
+extra_hpc_files=
 
 # Set to -m64 on 64-bit version (for gcc).
 # NM_FLAGS='-m64'
@@ -78,11 +81,19 @@ usage()
 Usage: $0 [options] compiler file ...
 
    -h, --help
-   -u, --undefined  <symbol>
-   -v, --verbose
+       Displays this usage message.
 
-where <symbol> is a symbol name passed to the linker (may be used
-multiple times).
+   -datacentric
+       Add the HPC libraries needed for datacentric analysis.
+
+   -u  <symbol>
+   --undefined  <symbol>
+       Pass <symbol> to the linker as an undefined symbol.  This is to
+       force the linker to pull in a reference for that symbol.  May
+       be used multiple times.
+
+   -v, --verbose
+       Displays the original and modified command lines.
 
 EOF
     exit 0
@@ -112,6 +123,10 @@ case "$xed2_dir" in
     /* ) ;;
     * )  xed2_dir="${HPCTOOLKIT}/${xed2_dir}" ;;
 esac
+case "$elf_dir" in
+    /* ) ;;
+    * )  elf_dir="${HPCTOOLKIT}/${elf_dir}" ;;
+esac
 
 hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds-bin"
 test -x "$hpcfnbounds" || die "missing hpcfnbounds: $hpcfnbounds"
@@ -129,8 +144,16 @@ do
 	-h | --help )
 	    usage
 	    ;;
+	-datacentric | --datacentric )
+	    datacentric_wrap="${libhpcrun_dir}/libhpcrun_datacentric_wrap.a"
+	    test -f "$datacentric_wrap" || die "unable to find: $datacentric_wrap"
+	    extra_hpc_files="$extra_hpc_files $datacentric_wrap"
+	    extra_wrap_names="$extra_wrap_names calloc malloc realloc"
+	    undef_names="$undef_names malloc"
+	    shift
+	    ;;
 	-u | --undefined )
-	    test "x$2" != x || die "missing argument: $*"
+	    test "x$2" != x || die "missing argument for -u"
 	    undef_names="${undef_names} $2"
 	    shift ; shift
 	    ;;
@@ -218,7 +241,7 @@ set -- "$@" "$libhpcrun" "${nm_addrs}.o"
 
 libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
 test -f "$libhpcrun_wrap" || die "no such file: $libhpcrun_wrap"
-set -- "$@" "$libhpcrun_wrap"
+set -- "$@" "$libhpcrun_wrap" $extra_hpc_files
 
 libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
 test -f "$libmonitor" || die "no such file: $libmonitor"
@@ -230,6 +253,10 @@ fi
 
 if test -d "$xed2_dir" ; then
     set -- "$@" "-L${xed2_dir}" -lxed
+fi
+
+if test -d "$elf_dir" ; then
+    set -- "$@" "-L${elf_dir}" -lelf
 fi
 
 # FIXME: shouldn't always need pthread, and shoudn't ever need dl.

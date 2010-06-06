@@ -79,12 +79,14 @@ pkglibexec_SCRIPTS = scripts/hpclog
 pkglib_LTLIBRARIES =
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
+  pkglib_LTLIBRARIES += libhpcrun_datacentric.la
   bin_SCRIPTS += scripts/hpcrun
 endif
 
 if OPT_ENABLE_HPCRUN_STATIC
   pkglib_PROGRAMS = libhpcrun.o
   pkglib_LIBRARIES = libhpcrun_wrap.a
+  pkglib_LIBRARIES += libhpcrun_datacentric_wrap.a
   bin_SCRIPTS += scripts/hpclink
 endif
 
@@ -117,6 +119,8 @@ MY_BASE_FILES =			\
 	sample_sources_all.c		\
         sample-sources/common.c         \
 	sample-sources/itimer.c		\
+        sample-sources/datacentric.c    \
+        sample-sources/ibs_support.c    \
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
         sample-sources/tst.c            \
@@ -198,17 +202,13 @@ MY_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
         \
-        sample-sources/ibs.c                            \
-        \
-        sample-sources/ibs_sync.c                       \
-        \
-        sample-sources/cycle.c                          \
-        \
-        trampoline/x86-family/x86-tramp.S
-
+        trampoline/x86-family/x86-tramp.S              
+        
 
 MY_PAPI_FILES = 			\
-	sample-sources/papi.c
+	sample-sources/papi.c           \
+        sample-sources/ibs.c            \
+        sample-sources/cycle.c
 
 MY_UPC_FILES = sample-sources/upc.c
 
@@ -249,6 +249,12 @@ libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_DYNAMIC_FILES)
 
+libhpcrun_datacentric_la_SOURCES =          \
+        sample-sources/datacentric-overrides.c
+ 
+libhpcrun_datacentric_wrap_a_SOURCES =      \
+        sample-sources/datacentric-overrides.c
+
 libhpcrun_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_STATIC_FILES)
@@ -259,6 +265,15 @@ libhpcrun_wrap_a_SOURCES =		\
 libhpcrun_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)              
+
+libhpcrun_datacentric_la_CPPFLAGS =         \
+        $(MY_CPP_DEFINES)               \
+        $(MY_INCLUDE_DIRS)
+ 
+libhpcrun_datacentric_wrap_a_CPPFLAGS =     \
+        -DHPCRUN_STATIC_LINK            \
+        $(MY_CPP_DEFINES)               \
+        $(MY_INCLUDE_DIRS)
 
 libhpcrun_o_CPPFLAGS =			\
 	-DHPCRUN_STATIC_LINK		\
@@ -273,13 +288,19 @@ libhpcrun_wrap_a_CPPFLAGS =		\
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_datacentric_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_datacentric_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 libhpcrun_la_LIBADD = $(HPC_LIBPROFLEAN)
 libhpcrun_o_LDADD   = $(HPC_LIBPROFLEAN)
-libhpcrun_la_LDFLAGS = -Wl,--wrap,malloc -Wl,--wrap,calloc -Wl,--wrap,realloc -Wl,-Bsymbolic 	\
-	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt
+libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
+	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
+        -L$(XED2_LIB) -lelf
 
-libhpcrun_o_LDFLAGS = 
+libhpcrun_datacentric_la_LDFLAGS = -Wl,-Bsymbolic   \
+        --strip-all
+
+libhpcrun_o_LDFLAGS = -L$(XED2_LIB) -lelf
 
 if HOST_OS_LINUX
     libhpcrun_la_SOURCES += $(MY_LINUX_DYNAMIC_FILES)
@@ -291,6 +312,8 @@ if HOST_CPU_MIPS
     libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
     libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
     libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
+    libhpcrun_datacentric_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+    libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 endif
 
 if HOST_CPU_PPC
@@ -298,6 +321,8 @@ if HOST_CPU_PPC
     libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
     libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
     libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
+    libhpcrun_datacentric_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+    libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
 endif
 
 if HOST_CPU_X86
@@ -307,6 +332,8 @@ if HOST_CPU_X86
     libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
     libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
     libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a   
+    libhpcrun_datacentric_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+    libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 endif
 
 if OPT_PAPI_DYNAMIC
