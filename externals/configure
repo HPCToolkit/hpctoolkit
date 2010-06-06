@@ -3412,7 +3412,7 @@ esac
 
 { $as_echo "$as_me:$LINENO: result: $binutils_avail" >&5
 $as_echo "$binutils_avail" >&6; }
-if test "x$binutils_avail" != xbuild ; then
+if test "x$binutils_avail" != xbuild && test "x$binutils_avail" != xno ; then
     { $as_echo "$as_me:$LINENO: WARNING: using non-patched binutils version" >&5
 $as_echo "$as_me: WARNING: using non-patched binutils version" >&2;}
 fi
@@ -3545,6 +3545,7 @@ $as_echo "$as_me: error: invalid libelf directory: $libelf_prefix" >&2;}
 	echo "installed in: $libelf_avail" > "$cookie"
 	;;
     no )
+	echo "not available" > "$cookie"
 	;;
     * )
 	{ { $as_echo "$as_me:$LINENO: error: libelf directory must be absolute path: $with_libelf" >&5
@@ -3734,6 +3735,7 @@ $as_echo "$as_me: error: invalid libxml2 directory: $with_libxml2" >&2;}
 	echo "installed in: $libxml2_avail" > "$cookie"
 	;;
     no )
+	echo "not available" > "$cookie"
 	;;
     * )
 	{ { $as_echo "$as_me:$LINENO: error: libxml2 directory must be absolute path: $with_libxml2" >&5
@@ -3926,6 +3928,7 @@ case "$with_symtabAPI" in
 $as_echo "$as_me: error: invalid symtabAPI directory: $with_symtabAPI" >&2;}
    { (exit 1); exit 1; }; }
 	fi
+	echo "installed in: $symtabAPI_avail" > "$cookie"
 	;;
     no )
 	echo "not available" > "$cookie"

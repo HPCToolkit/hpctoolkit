@@ -198,7 +198,7 @@ case "$with_binutils" in
 esac
 
 AC_MSG_RESULT([$binutils_avail])
-if test "x$binutils_avail" != xbuild ; then
+if test "x$binutils_avail" != xbuild && test "x$binutils_avail" != xno ; then
     AC_MSG_WARN([using non-patched binutils version])
 fi
 
@@ -311,6 +311,7 @@ case "$with_libelf" in
 	echo "installed in: $libelf_avail" > "$cookie"
 	;;
     no )
+	echo "not available" > "$cookie"
 	;;
     * )
 	AC_MSG_ERROR([libelf directory must be absolute path: $with_libelf])
@@ -469,6 +470,7 @@ case "$with_libxml2" in
 	echo "installed in: $libxml2_avail" > "$cookie"
 	;;
     no )
+	echo "not available" > "$cookie"
 	;;
     * )
 	AC_MSG_ERROR([libxml2 directory must be absolute path: $with_libxml2])
@@ -634,6 +636,7 @@ case "$with_symtabAPI" in
 	else
 	    AC_MSG_ERROR([invalid symtabAPI directory: $with_symtabAPI])
 	fi
+	echo "installed in: $symtabAPI_avail" > "$cookie"
 	;;
     no )
 	echo "not available" > "$cookie"
