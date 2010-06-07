@@ -442,8 +442,6 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     return;
   }
 
-  TMSG(IBS_SAMPLE,"CYCLE event happened, ovec = %ld",ovec);
-
   int ret = PAPI_get_overflow_event_index(event_set, ovec, my_events,
 					  &my_event_count);
   if (ret != PAPI_OK) {

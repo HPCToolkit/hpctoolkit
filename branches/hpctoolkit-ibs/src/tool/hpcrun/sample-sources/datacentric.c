@@ -75,6 +75,7 @@
 #include <sample_event.h>
 #include "sample_source_obj.h"
 #include "common.h"
+#include <main.h>
 #include <hpcrun/sample_sources_registered.h>
 #include "simple_oo.h"
 #include <hpcrun/thread_data.h>
@@ -229,6 +230,17 @@ METHOD_FN(display_events)
 //        For the case of the retcnt sample source, the handler (the trampoline)
 //        is separate from the sample source code.
 //        Consequently, the interaction with metrics must be done procedurally
+
+
+int
+hpcrun_datacentric_active()
+{
+  if (hpcrun_is_initialized()) {
+    return (TD_GET(ss_state)[obj_name().evset_idx] == START);
+  } else {
+    return 0;
+  }
+}
 
 int
 hpcrun_dc_malloc_id() 

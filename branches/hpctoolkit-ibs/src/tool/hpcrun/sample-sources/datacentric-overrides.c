@@ -95,6 +95,8 @@ extern free_fcn    real_free;
 extern malloc_fcn  real_malloc;
 extern realloc_fcn real_realloc;
 
+static int datacentric_enabled = 0; // default is off
+static int datacentric_uninit = 1;  // default is uninitialized
 pthread_mutex_t mutex_splay = PTHREAD_MUTEX_INITIALIZER;//lock for splay tree
 //static struct splay_interval_s *root;
 
@@ -104,17 +106,24 @@ interval_tree_node* splaytree_lookup(void*);
  * interface operations
  *****************************************************************************/
 
+static void
+datacentric_initialize(void)
+{
+  datacentric_uninit = 0;
+  datacentric_enabled = 1; // unconditionally enable leak detection for now
+}
 
 void *
 MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 {
   void *h = real_malloc(bytes);
 
-  if (hpcrun_dc_malloc_id() >= 0) {
+  if (hpcrun_datacentric_active()) {
     ucontext_t uc;
     getcontext(&uc);
 
     // attribute malloc to call path 
+    hpcrun_async_block();
     cct_node_t* cct_node = 
       hpcrun_sample_callpath(&uc, hpcrun_dc_malloc_id(), 0, 0, 1);
     TMSG(IBS_SAMPLE, "malloc %d bytes (ptr %p)", bytes, h); 
@@ -129,6 +138,7 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
       EMSG("insert_splay_tree error");
     /*unblock async sampling*/
     pthread_mutex_unlock(&mutex_splay);
+    hpcrun_async_unblock();
   } else {
     TMSG(IBS_SAMPLE, "malloc %d bytes (call path not logged)", bytes); 
   }
@@ -141,11 +151,12 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 {
   void *h = real_calloc(1, nmemb * bytes);
 
-  if (hpcrun_dc_calloc_id() >= 0) {
+  if (hpcrun_datacentric_active()) {
     ucontext_t uc;
     getcontext(&uc);
 
     // attribute calloc to call path 
+    hpcrun_async_block();
     cct_node_t* cct_node = 
       hpcrun_sample_callpath(&uc, hpcrun_dc_calloc_id(), 
 			     0, 0, 1);
@@ -161,6 +172,7 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
       TMSG(IBS_SAMPLE, "insert_splay_tree error");
     /*unblock async sampling*/
     pthread_mutex_unlock(&mutex_splay);
+    hpcrun_async_unblock();
   } else {
     TMSG(IBS_SAMPLE, "calloc %d bytes (call path not logged)", nmemb*bytes); 
   }
@@ -173,11 +185,12 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 {
   void *h = real_realloc(ptr, bytes);
 
-  if (hpcrun_dc_realloc_id() >= 0) {
+  if (hpcrun_datacentric_active()) {
     ucontext_t uc;
     getcontext(&uc);
 
     // attribute realloc to call path 
+    hpcrun_async_block();
     cct_node_t* cct_node = 
       hpcrun_sample_callpath(&uc, hpcrun_dc_realloc_id(), 0, 0, 1);
     TMSG(IBS_SAMPLE, "realloc %d bytes (ptr %p)", bytes, h); 
@@ -192,6 +205,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
       TMSG(IBS_SAMPLE, "insert_splay_tree error");
     /*unblock async sampling*/
     pthread_mutex_unlock(&mutex_splay);
+    hpcrun_async_unblock();
   } else {
     TMSG(IBS_SAMPLE, "realloc %d bytes (call path not logged)", bytes); 
   }

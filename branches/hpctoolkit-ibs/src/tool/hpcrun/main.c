@@ -155,7 +155,7 @@ static sigset_t prof_sigset;
 // inline functions
 //***************************************************************************
 
-inline bool
+bool
 hpcrun_is_initialized() //Xu Liu: I remove static because I want to build it into shared lib
 {
   return hpcrun_is_initialized_private;
