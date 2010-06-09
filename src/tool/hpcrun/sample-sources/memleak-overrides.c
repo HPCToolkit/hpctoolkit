@@ -74,6 +74,8 @@ typedef struct {
   size_t bytes;
 } leakhdr_t;
 
+leakhdr_t leakhdr_NULL = { .magic = 0, .context = NULL, .bytes = 0 };
+
 typedef void *calloc_fcn(size_t, size_t);
 typedef void  free_fcn(void *);
 typedef void *malloc_fcn(size_t);
@@ -215,7 +217,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   if (leak_detection_enabled) {
     int notnull = (ptr != 0);
     leakhdr_t *h = NULL;
-    leakhdr_t old_h;
+    leakhdr_t old_h = leakhdr_NULL;
 
     if (notnull) {
       h = ((leakhdr_t *) ptr) - 1;
