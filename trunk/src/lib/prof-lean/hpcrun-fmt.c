@@ -111,7 +111,7 @@ hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc)
     return HPCFMT_ERR;
   }
 
-  hpcfmt_nvpair_list_fread(&(hdr->nvps), infs, alloc);
+  hpcfmt_nvpairList_fread(&(hdr->nvps), infs, alloc);
 
   return HPCFMT_OK;
 }
@@ -143,7 +143,7 @@ hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* fs)
   fprintf(fs, "[hdr:\n");
   fprintf(fs, "  (version: %s)\n", hdr->version);
   fprintf(fs, "  (endian: %c)\n", hdr->endian);
-  hpcfmt_nvpair_list_fprint(&hdr->nvps, fs, "  ");
+  hpcfmt_nvpairList_fprint(&hdr->nvps, fs, "  ");
   fprintf(fs, "]\n");
 
   return HPCFMT_OK;
@@ -154,7 +154,7 @@ void
 hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc)
 {
   if (dealloc) {
-    hpcfmt_nvpair_free(&(hdr->nvps), dealloc);
+    hpcfmt_nvpairList_free(&(hdr->nvps), dealloc);
   }
 }
 
@@ -164,8 +164,8 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc)
 //***************************************************************************
 
 int
-hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs, 
-			   hpcfmt_alloc_fn alloc)
+hpcrun_fmt_epochHdr_fread(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs, 
+			  hpcfmt_alloc_fn alloc)
 {
   char tag[HPCRUN_FMT_EpochTagLen + 1];
 
@@ -183,16 +183,16 @@ hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(ehdr->flags.bits), fs));
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(ehdr->measurementGranularity), fs));
   HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&(ehdr->raToCallsiteOfst), fs));
-  HPCFMT_ThrowIfError(hpcfmt_nvpair_list_fread(&(ehdr->nvps), fs, alloc));
+  HPCFMT_ThrowIfError(hpcfmt_nvpairList_fread(&(ehdr->nvps), fs, alloc));
 
   return HPCFMT_OK;
 }
 
 
 int
-hpcrun_fmt_epoch_hdr_fwrite(FILE* fs, epoch_flags_t flags,
-			    uint64_t measurementGranularity, 
-			    uint32_t raToCallsiteOfst, ...)
+hpcrun_fmt_epochHdr_fwrite(FILE* fs, epoch_flags_t flags,
+			   uint64_t measurementGranularity, 
+			   uint32_t raToCallsiteOfst, ...)
 {
   va_list args;
   va_start(args, raToCallsiteOfst);
@@ -212,7 +212,7 @@ hpcrun_fmt_epoch_hdr_fwrite(FILE* fs, epoch_flags_t flags,
 
 
 int
-hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs)
+hpcrun_fmt_epochHdr_fprint(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs)
 {
   fprintf(fs, "%s\n", HPCRUN_FMT_EpochTag);
   fprintf(fs, "[epoch-hdr:\n");
@@ -220,7 +220,7 @@ hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs)
   fprintf(fs, "  (measurement-granularity: %"PRIu64")\n", 
 	  ehdr->measurementGranularity);
   fprintf(fs, "  (RA-to-callsite-offset: %"PRIu32")\n", ehdr->raToCallsiteOfst);
-  hpcfmt_nvpair_list_fprint(&(ehdr->nvps), fs, "  ");
+  hpcfmt_nvpairList_fprint(&(ehdr->nvps), fs, "  ");
   fprintf(fs, "]\n");
 
   return HPCFMT_OK;
@@ -228,10 +228,10 @@ hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs)
 
 
 void
-hpcrun_fmt_epoch_hdr_free(hpcrun_fmt_epoch_hdr_t* ehdr, hpcfmt_free_fn dealloc)
+hpcrun_fmt_epochHdr_free(hpcrun_fmt_epochHdr_t* ehdr, hpcfmt_free_fn dealloc)
 {
   if (dealloc) {
-    hpcfmt_nvpair_free(&(ehdr->nvps), dealloc);
+    hpcfmt_nvpairList_free(&(ehdr->nvps), dealloc);
   }
 }
 
@@ -246,7 +246,7 @@ hpcrun_metricVal_t hpcrun_metricVal_ZERO = { .bits = 0 };
 
 int
 hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* fs, 
-			    hpcfmt_alloc_fn alloc)
+			   hpcfmt_alloc_fn alloc)
 {
   HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&(metric_tbl->len), fs));
   if (alloc) {

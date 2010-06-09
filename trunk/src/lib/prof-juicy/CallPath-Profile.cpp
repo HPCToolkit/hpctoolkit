@@ -675,7 +675,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
     string myCtxtStr = "epoch " + StrUtil::toStr(num_epochs + 1);
     try {
       ctxtStr += ": " + myCtxtStr;
-      ret = fmt_epoch_fread(myprof, infs, rFlags, &hdr.nvps, 
+      ret = fmt_epoch_fread(myprof, infs, rFlags, &hdr,
 			    ctxtStr, filename, outfs);
       if (ret == HPCFMT_EOF) {
 	break;
@@ -718,7 +718,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
 
 int
 Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
-			 HPCFMT_List(hpcfmt_nvpair_t)* hdrNVPairs,
+			 const hpcrun_fmt_hdr_t* hdr,
 			 std::string ctxtStr, const char* filename,
 			 FILE* outfs)
 {
@@ -735,8 +735,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ----------------------------------------
   // epoch-hdr
   // ----------------------------------------
-  hpcrun_fmt_epoch_hdr_t ehdr;
-  ret = hpcrun_fmt_epoch_hdr_fread(&ehdr, infs, malloc);
+  hpcrun_fmt_epochHdr_t ehdr;
+  ret = hpcrun_fmt_epochHdr_fread(&ehdr, infs, malloc);
   if (ret == HPCFMT_EOF) {
     return HPCFMT_EOF;
   }
@@ -744,7 +744,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Throw("error reading 'epoch-hdr'");
   }
   if (outfs) {
-    hpcrun_fmt_epoch_hdr_fprint(&ehdr, outfs);
+    hpcrun_fmt_epochHdr_fprint(&ehdr, outfs);
   }
 
   // ----------------------------------------
@@ -784,27 +784,27 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   const char* val;
 
   string progNm;
-  val = hpcfmt_nvpair_search(hdrNVPairs, HPCRUN_FMT_NV_prog);
+  val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_prog);
   if (val && strlen(val) > 0) {
     progNm = val;
   }
 
   string mpiRank, tid;
-  //const char* jobid = hpcfmt_nvpair_search(hdrNVPairs, HPCRUN_FMT_NV_jobId);
-  val = hpcfmt_nvpair_search(hdrNVPairs, HPCRUN_FMT_NV_mpiRank);
+  //const char* jobid = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_jobId);
+  val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_mpiRank);
   if (val) { mpiRank = val; }
-  val = hpcfmt_nvpair_search(hdrNVPairs, HPCRUN_FMT_NV_tid);
+  val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_tid);
   if (val) { tid = val; }
 
   // FIXME: temporary for dual-interpretations
   bool isNewFormat = true; 
-  val = hpcfmt_nvpair_search(hdrNVPairs, "nasty-message");
+  val = hpcfmt_nvpairList_search(&hdr->nvps, "nasty-message");
   if (val) { isNewFormat = false; }
 
-  //val = hpcfmt_nvpair_search(ehdr.&nvps, "to-find");
+  //val = hpcfmt_nvpairList_search(ehdr.&nvps, "to-find");
 
   bool isVirtualMetrics = false;
-  val = hpcfmt_nvpair_search(&(ehdr.nvps), FmtEpoch_NV_virtualMetrics);
+  val = hpcfmt_nvpairList_search(&(ehdr.nvps), FmtEpoch_NV_virtualMetrics);
   if (val && strcmp(val, "0") != 0) {
     isVirtualMetrics = true;
     rFlags |= RFlg_NoMetricValues;
@@ -957,7 +957,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   fmt_cct_fread(*prof, infs, rFlags, loadmap_p, numMetricsSrc, ctxtStr, outfs);
 
 
-  hpcrun_fmt_epoch_hdr_free(&ehdr, free);
+  hpcrun_fmt_epochHdr_free(&ehdr, free);
   
   return HPCFMT_OK;
 }
@@ -1103,12 +1103,12 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     virtualMetrics = "1";
   }
  
-  hpcrun_fmt_epoch_hdr_fwrite(fs, prof.m_flags,
-			      prof.m_measurementGranularity,
-			      prof.m_raToCallsiteOfst,
-			      "TODO:epoch-name", "TODO:epoch-value",
-			      FmtEpoch_NV_virtualMetrics, virtualMetrics,
-			      NULL);
+  hpcrun_fmt_epochHdr_fwrite(fs, prof.m_flags,
+			     prof.m_measurementGranularity,
+			     prof.m_raToCallsiteOfst,
+			     "TODO:epoch-name", "TODO:epoch-value",
+			     FmtEpoch_NV_virtualMetrics, virtualMetrics,
+			     NULL);
 
   // ------------------------------------------------------------
   // metric-tbl

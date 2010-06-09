@@ -249,18 +249,20 @@ hpcfmt_nvpair_fprint(hpcfmt_nvpair_t* nvp, FILE* fs, const char* pre);
 HPCFMT_List_declare(hpcfmt_nvpair_t);
 
 int
-hpcfmt_nvpair_list_fread(HPCFMT_List(hpcfmt_nvpair_t)* nvps, 
-			 FILE* infs, hpcfmt_alloc_fn alloc);
+hpcfmt_nvpairList_fread(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
+			FILE* infs, hpcfmt_alloc_fn alloc);
 
 int
-hpcfmt_nvpair_list_fprint(HPCFMT_List(hpcfmt_nvpair_t)* nvps, 
-			  FILE* fs, const char* pre);
+hpcfmt_nvpairList_fprint(const HPCFMT_List(hpcfmt_nvpair_t)* nvps,
+			 FILE* fs, const char* pre);
 
 const char*
-hpcfmt_nvpair_search(HPCFMT_List(hpcfmt_nvpair_t)* lst, const char* name);
+hpcfmt_nvpairList_search(const HPCFMT_List(hpcfmt_nvpair_t)* lst,
+			 const char* name);
 
 void
-hpcfmt_nvpair_free(HPCFMT_List(hpcfmt_nvpair_t)* nvps, hpcfmt_free_fn dealloc);
+hpcfmt_nvpairList_free(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
+		       hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************

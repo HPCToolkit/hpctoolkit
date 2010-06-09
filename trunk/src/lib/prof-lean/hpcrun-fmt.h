@@ -163,30 +163,30 @@ typedef union epoch_flags_t {
 } epoch_flags_t;
 
 
-typedef struct hpcrun_fmt_epoch_hdr_t {
+typedef struct hpcrun_fmt_epochHdr_t {
 
   epoch_flags_t flags;
   uint64_t measurementGranularity;
   uint32_t raToCallsiteOfst;
   HPCFMT_List(hpcfmt_nvpair_t) nvps;
 
-} hpcrun_fmt_epoch_hdr_t;
+} hpcrun_fmt_epochHdr_t;
 
 
 extern int 
-hpcrun_fmt_epoch_hdr_fread(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* fs,
-			   hpcfmt_alloc_fn alloc);
+hpcrun_fmt_epochHdr_fread(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs,
+			  hpcfmt_alloc_fn alloc);
 
 extern int 
-hpcrun_fmt_epoch_hdr_fwrite(FILE* out, epoch_flags_t flags, 
-			    uint64_t measurementGranularity, 
-			    uint32_t raToCallsiteOfst, ...);
+hpcrun_fmt_epochHdr_fwrite(FILE* out, epoch_flags_t flags, 
+			   uint64_t measurementGranularity, 
+			   uint32_t raToCallsiteOfst, ...);
 
 extern int 
-hpcrun_fmt_epoch_hdr_fprint(hpcrun_fmt_epoch_hdr_t* ehdr, FILE* out);
-  
+hpcrun_fmt_epochHdr_fprint(hpcrun_fmt_epochHdr_t* ehdr, FILE* out);
+
 extern void 
-hpcrun_fmt_epoch_hdr_free(hpcrun_fmt_epoch_hdr_t* ehdr, hpcfmt_free_fn dealloc);
+hpcrun_fmt_epochHdr_free(hpcrun_fmt_epochHdr_t* ehdr, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************

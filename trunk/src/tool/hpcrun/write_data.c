@@ -237,11 +237,11 @@ write_epochs(FILE* fs, epoch_t* epoch)
     TMSG(LUSH,"epoch lush flag set to %s", epoch_flags.flags.isLogicalUnwind ? "true" : "false");
     
     TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", epoch_flags.flags);
-    hpcrun_fmt_epoch_hdr_fwrite(fs, epoch_flags,
-                                default_measurement_granularity,
-                                default_ra_to_callsite_distance,
-                                "TODO:epoch-name","TODO:epoch-value",
-                                NULL);
+    hpcrun_fmt_epochHdr_fwrite(fs, epoch_flags,
+			       default_measurement_granularity,
+			       default_ra_to_callsite_distance,
+			       "TODO:epoch-name","TODO:epoch-value",
+			       NULL);
 
     //
     // == metrics ==

@@ -250,7 +250,7 @@ public:
 
   static int
   fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
-		  HPCFMT_List(hpcfmt_nvpair_t)* hdrNVPairs,
+		  const hpcrun_fmt_hdr_t* hdr,
 		  std::string ctxtStr, const char* filename, FILE* outfs);
 
   static int

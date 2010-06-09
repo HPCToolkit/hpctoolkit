@@ -205,8 +205,8 @@ hpcfmt_nvpair_fprint(hpcfmt_nvpair_t* nvp, FILE* fs, const char* pre)
 //***************************************************************************
 
 int
-hpcfmt_nvpair_list_fread(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
-			 FILE* infs, hpcfmt_alloc_fn alloc)
+hpcfmt_nvpairList_fread(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
+			FILE* infs, hpcfmt_alloc_fn alloc)
 {
   HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&(nvps->len), infs));
   if (alloc != NULL) {
@@ -220,8 +220,8 @@ hpcfmt_nvpair_list_fread(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
 
 
 int
-hpcfmt_nvpair_list_fprint(HPCFMT_List(hpcfmt_nvpair_t)* nvps, 
-			  FILE* fs, const char* pre)
+hpcfmt_nvpairList_fprint(const HPCFMT_List(hpcfmt_nvpair_t)* nvps, 
+			 FILE* fs, const char* pre)
 {
   for (uint32_t i = 0; i < nvps->len; ++i) {
     hpcfmt_nvpair_fprint(&nvps->lst[i], fs, pre);
@@ -231,7 +231,8 @@ hpcfmt_nvpair_list_fprint(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
 
 
 const char*
-hpcfmt_nvpair_search(HPCFMT_List(hpcfmt_nvpair_t)* nvps, const char* name)
+hpcfmt_nvpairList_search(const HPCFMT_List(hpcfmt_nvpair_t)* nvps,
+			 const char* name)
 {
   for (uint32_t i = 0; i < nvps->len; ++i) {
     if (strcmp(nvps->lst[i].name, name) == 0) {
@@ -243,7 +244,8 @@ hpcfmt_nvpair_search(HPCFMT_List(hpcfmt_nvpair_t)* nvps, const char* name)
 
 
 void
-hpcfmt_nvpair_free(HPCFMT_List(hpcfmt_nvpair_t)* nvps, hpcfmt_free_fn dealloc)
+hpcfmt_nvpairList_free(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
+		       hpcfmt_free_fn dealloc)
 {
   for (uint32_t i = 0; i < nvps->len; ++i) {
     dealloc(nvps->lst[i].name);
