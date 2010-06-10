@@ -257,6 +257,7 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
   mdesc->name = (char*) name;
   mdesc->description = (char*) name; // TODO
   mdesc->period = period;
+  mdesc->flags.fields.ty     = MetricFlags_Ty_Raw; // FIXME
   mdesc->flags.fields.valFmt = valFmt;
   mdesc->formula = NULL;
   mdesc->format = NULL;

@@ -876,37 +876,45 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   metric_desc_t* m_lst = metricTbl.lst;
   for (uint i = 0; i < numMetricsSrc; i++) {
-    string nm = m_lst[i].name;
-    string desc = m_lst[i].description;
+    const metric_desc_t& mdesc = m_lst[i];
+    
+    string nm = mdesc.name;
+    string desc = mdesc.description;
     string profRelId = StrUtil::toStr(i);
 
-    bool isInclExclPossible = true; // TODO: filter return counts
-    
+    DIAG_Assert(mdesc.flags.fields.ty == MetricFlags_Ty_Raw
+		|| mdesc.flags.fields.ty == MetricFlags_Ty_Final,
+		DIAG_UnexpectedInput);
+
+    DIAG_Assert(Logic::implies(mdesc.flags.fields.ty == MetricFlags_Ty_Final,
+			       !(rFlags & RFlg_MakeInclExcl)),
+		DIAG_UnexpectedInput);
+
     // 1. Make 'regular'/'inclusive' metric descriptor
     Metric::SampledDesc* m = 
-      new Metric::SampledDesc(nm, desc, m_lst[i].period, true/*isUnitsEvents*/,
+      new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
 			      profFileName, profRelId, "HPCRUN");
-    if ((rFlags & RFlg_MakeInclExcl) && isInclExclPossible) {
+    if ((rFlags & RFlg_MakeInclExcl)) {
       m->type(Metric::ADesc::TyIncl);
     }
     if (!m_sfx.empty()) {
       m->nameSfx(m_sfx);
     }
-    m->flags(m_lst[i].flags);
+    m->flags(mdesc.flags);
     
     prof->metricMgr()->insert(m);
 
     // 2. Make associated 'exclusive' descriptor, if applicable
-    if ((rFlags & RFlg_MakeInclExcl) && isInclExclPossible) {
+    if ((rFlags & RFlg_MakeInclExcl)) {
       Metric::SampledDesc* mSmpl = 
-	new Metric::SampledDesc(nm, desc, m_lst[i].period,
+	new Metric::SampledDesc(nm, desc, mdesc.period,
 				true/*isUnitsEvents*/,
 				profFileName, profRelId, "HPCRUN");
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
 	mSmpl->nameSfx(m_sfx);
       }
-      mSmpl->flags(m_lst[i].flags);
+      mSmpl->flags(mdesc.flags);
       
       prof->metricMgr()->insert(mSmpl);
     }
@@ -1145,6 +1153,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 
     mdesc.name = const_cast<char*>(nmFmt.c_str());
     mdesc.description = const_cast<char*>(desc.c_str());
+    mdesc.flags.fields.ty = MetricFlags_Ty_Final;
     mdesc.flags.fields.valFmt = MetricFlags_ValFmt_Real;
     mdesc.period = 1;
     mdesc.formula = NULL;
