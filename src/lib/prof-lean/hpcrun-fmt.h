@@ -231,7 +231,7 @@ typedef enum {
   MetricFlags_ValFmt_Int,
   MetricFlags_ValFmt_Real,
 
-  MetricFlags_ValFmt_Real_19A = (1 << 2)
+  MetricFlags_ValFmt_Real_19A = (1 << 2) // TODO: deprecate old file version
 
 } MetricFlags_ValFmt_t;
 
@@ -317,8 +317,13 @@ typedef struct metric_desc_t {
 
   char* name;
   char* description;
+
   hpcrun_metricFlags_t flags;
+
   uint64_t period;
+
+  char* formula;
+  char* format;
 
 } metric_desc_t;
 
