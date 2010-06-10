@@ -492,7 +492,7 @@ class SampledDesc : public ADesc
 public:
   SampledDesc()
     : ADesc(),
-      m_period(0), m_flags(HPCRUN_MetricFlag_NULL), m_isUnitsEvents(false)
+      m_period(0), m_flags(hpcrun_metricFlags_NULL), m_isUnitsEvents(false)
   { }
 
   SampledDesc(const char* nameBase, const char* description,
@@ -503,7 +503,7 @@ public:
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
 	    isVisible, isSortKey, doDispPercent, isPercent),
-      m_period(period), m_flags(HPCRUN_MetricFlag_NULL),
+      m_period(period), m_flags(hpcrun_metricFlags_NULL),
       m_isUnitsEvents(isUnitsEvents),
       m_profName(profName), m_profileRelId(profRelId), m_profileType(profType)
   { }
@@ -516,7 +516,7 @@ public:
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
 	    isVisible, isSortKey, doDispPercent, isPercent),
-      m_period(period), m_flags(HPCRUN_MetricFlag_NULL),
+      m_period(period), m_flags(hpcrun_metricFlags_NULL),
       m_isUnitsEvents(isUnitsEvents),
       m_profName(profName), m_profileRelId(profRelId), m_profileType(profType)
   { }

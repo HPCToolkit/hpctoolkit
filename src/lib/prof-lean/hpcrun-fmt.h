@@ -102,7 +102,7 @@ static const char HPCPROF_METRIC_DB_SFX[] = "metric-db";
 // N.B.: The header string is 24 bytes of character data
 
 static const char HPCRUN_FMT_Magic[]   = "HPCRUN-profile____"; // 18 bytes
-static const char HPCRUN_FMT_Version[] = "01.9A";              // 5 bytes
+static const char HPCRUN_FMT_Version[] = "02.00";              // 5 bytes
 static const char HPCRUN_FMT_Endian[]  = "b";                  // 1 byte
 
 static const int HPCRUN_FMT_MagicLen   = (sizeof(HPCRUN_FMT_Magic) - 1);
@@ -110,9 +110,16 @@ static const int HPCRUN_FMT_VersionLen = (sizeof(HPCRUN_FMT_Version) - 1);
 static const int HPCRUN_FMT_EndianLen  = (sizeof(HPCRUN_FMT_Endian) - 1);
 
 
+// currently supported versions
+static const double HPCRUN_FMT_Version_20  = 2.0;
+static const double HPCRUN_FMT_Version_19A = 1.9;
+
+
 typedef struct hpcrun_fmt_hdr_t {
 
-  char version[sizeof(HPCRUN_FMT_Version)];
+  char versionStr[sizeof(HPCRUN_FMT_Version)];
+  double version;
+
   char endian;
 
   HPCFMT_List(hpcfmt_nvpair_t) nvps;
@@ -157,9 +164,10 @@ typedef struct epoch_flags_bitfield {
   uint64_t unused      : 63;
 } epoch_flags_bitfield;
 
+
 typedef union epoch_flags_t {
-  epoch_flags_bitfield flags;
-  uint64_t             bits;
+  epoch_flags_bitfield fields;
+  uint64_t             bits; // for reading/writing
 } epoch_flags_t;
 
 
@@ -197,13 +205,62 @@ hpcrun_fmt_epochHdr_free(hpcrun_fmt_epochHdr_t* ehdr, hpcfmt_free_fn dealloc);
 // hpcrun_metricFlags_t
 // --------------------------------------------------------------------------
 
-typedef uint64_t hpcrun_metricFlags_t;
 
-#define HPCRUN_MetricFlag_NULL  0x0
-#define HPCRUN_MetricFlag_Async (1 << 1)
-#define HPCRUN_MetricFlag_Real  (1 << 2)
+typedef enum {
+
+  MetricFlags_Ty_NULL = 0,
+  MetricFlags_Ty_Raw,
+  MetricFlags_Ty_Final,
+  MetricFlags_Ty_Derived
+
+} MetricFlags_Ty_t;
 
 
+typedef enum {
+
+  MetricFlags_ValTy_NULL = 0,
+  MetricFlags_ValTy_Incl,
+  MetricFlags_ValTy_Excl
+
+} MetricFlags_ValTy_t;
+
+
+typedef enum {
+
+  MetricFlags_ValFmt_NULL = 0,
+  MetricFlags_ValFmt_Int,
+  MetricFlags_ValFmt_Real,
+
+  MetricFlags_ValFmt_Real_19A = (1 << 2)
+
+} MetricFlags_ValFmt_t;
+
+
+typedef struct hpcrun_metricFlags_bitfield {
+  //MetricFlags_Ty_t     ty     : 4;
+  //MetricFlags_ValTy_t  valTy  : 4;
+  MetricFlags_ValFmt_t valFmt : 4;
+  //uint partner      : 16;
+  //bool show         : 1;
+  //bool showPercent  : 1;
+
+  uint64_t unused      : 60;
+} hpcrun_metricFlags_bitfield;
+
+
+typedef union hpcrun_metricFlags_t {
+
+  hpcrun_metricFlags_bitfield fields;
+
+  uint64_t bits; // for reading/writing
+
+} hpcrun_metricFlags_t;
+
+
+extern hpcrun_metricFlags_t hpcrun_metricFlags_NULL;
+
+
+#if 0
 static inline bool
 hpcrun_metricFlags_isFlag(hpcrun_metricFlags_t flagbits, 
 			  hpcrun_metricFlags_t f)
@@ -226,6 +283,7 @@ hpcrun_metricFlags_unsetFlag(hpcrun_metricFlags_t* flagbits,
 {
   *flagbits = (*flagbits & ~f);
 }
+#endif
 
 
 // --------------------------------------------------------------------------
@@ -234,18 +292,18 @@ hpcrun_metricFlags_unsetFlag(hpcrun_metricFlags_t* flagbits,
 
 typedef union hpcrun_metricVal_u {
 
-  uint64_t bits; // for reading/writing
-
   uint64_t i; // integral data
   double   r; // real
   void*    p; // address data
+
+  uint64_t bits; // for reading/writing
   
 } hpcrun_metricVal_t;
 
 extern hpcrun_metricVal_t hpcrun_metricVal_ZERO;
 
-static inline bool 
-hpcrun_metricVal_isZero(hpcrun_metricVal_t x) 
+static inline bool
+hpcrun_metricVal_isZero(hpcrun_metricVal_t x)
 {
   return (x.bits == hpcrun_metricVal_ZERO.bits);
 }
@@ -282,7 +340,7 @@ typedef HPCFMT_List(metric_desc_p_t) metric_desc_p_tbl_t; // HPCFMT_List of metr
 
 extern int
 hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* in, 
-			   hpcfmt_alloc_fn alloc);
+			   double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
 hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* out);
@@ -296,7 +354,7 @@ hpcrun_fmt_metricTbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 extern int
 hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* infs, 
-			    hpcfmt_alloc_fn alloc);
+			    double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
 hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* outfs);

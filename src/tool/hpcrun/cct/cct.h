@@ -72,6 +72,8 @@
 #include <stdbool.h>
 #include <ucontext.h>
 
+#include <assert.h>
+
 //*************************** User Include Files ****************************
 
 #include <hpcrun/metrics.h>
@@ -104,11 +106,13 @@ cct_metric_data_increment(int metric_id,
 {
   metric_desc_t* minfo = hpcrun_id2metric(metric_id);
   
-  if (hpcrun_metricFlags_isFlag(minfo->flags, HPCRUN_MetricFlag_Real)) {
-    x->r += incr.r;
-  }
-  else {
-    x->i += incr.i;
+  switch (minfo->flags.fields.valFmt) {
+    case MetricFlags_ValFmt_Int:
+      x->i += incr.i; break;
+    case MetricFlags_ValFmt_Real:
+      x->r += incr.r; break;
+    default:
+      assert(false);
   }
 }
 

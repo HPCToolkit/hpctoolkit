@@ -46,6 +46,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include <assert.h>
+
 #include "monitor.h"
 #include "metrics.h"
 #include <memory/hpcrun-malloc.h>
@@ -91,17 +93,20 @@ static metric_proc_map_t* proc_map = NULL;
 //  Local functions
 //***************************************************************
 
+// FIXME: why not use cct_metric_data_increment?
 static void
-std_upd_fn(int metric_id, cct_metric_data_t* loc, cct_metric_data_t datum)
+std_upd_fn(int metric_id, cct_metric_data_t* x, cct_metric_data_t datum)
 {
   TMSG(METRICS, "Std update fn called");
   metric_desc_t* minfo = id2metric[metric_id];
   
-  if (hpcrun_metricFlags_isFlag(minfo->flags, HPCRUN_MetricFlag_Real)) {
-    loc->r += datum.r;
-  }
-  else {
-    loc->i += datum.i;
+  switch (minfo->flags.fields.valFmt) {
+    case MetricFlags_ValFmt_Int:
+      x->i += datum.i; break;
+    case MetricFlags_ValFmt_Real:
+      x->r += datum.r; break;
+    default:
+      assert(false);
   }
 }
 
@@ -222,7 +227,7 @@ hpcrun_new_metric(void)
 
 void
 hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
-			    hpcrun_metricFlags_t flags, size_t period,
+			    MetricFlags_ValFmt_t valFmt, size_t period,
 			    metric_upd_proc_t upd_fn)
 {
   if (has_set_max_metrics) {
@@ -236,7 +241,7 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
       break;
     }
   }
-  TMSG(METRICS,"id = %d, name = %s, flags = %lx, period = %d", metric_id, name, flags, period);
+  TMSG(METRICS,"id = %d, name = %s, flags = %d, period = %d", metric_id, name, valFmt, period);
   if (! metric) {
     EMSG("Metric id is NULL (likely unallocated)");
     monitor_real_abort();
@@ -248,7 +253,7 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
   metric->name = (char*) name;
   metric->description = (char*) name; // TODO
   metric->period = period;
-  metric->flags = flags;
+  metric->flags.fields.valFmt = valFmt;
 
   //
   // manage metric proc mapping
@@ -263,9 +268,9 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 
 void
 hpcrun_set_metric_info_and_period(int metric_id, const char* name,
-				  hpcrun_metricFlags_t flags, size_t period)
+				  MetricFlags_ValFmt_t valFmt, size_t period)
 {
-  hpcrun_set_metric_info_w_fn(metric_id, name, flags, period, std_upd_fn);
+  hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period, std_upd_fn);
 }
 
 //
@@ -274,7 +279,7 @@ hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 void
 hpcrun_set_metric_info(int metric_id, const char* name)
 {
-  hpcrun_set_metric_info_and_period(metric_id, name, HPCRUN_MetricFlag_Async, 1);
+  hpcrun_set_metric_info_and_period(metric_id, name, MetricFlags_ValFmt_Int, 1);
 }
 
 //
