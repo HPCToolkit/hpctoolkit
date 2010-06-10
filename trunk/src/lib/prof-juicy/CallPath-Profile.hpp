@@ -106,6 +106,11 @@ public:
   { m_name = (x) ? x : ""; }
 
 
+  double
+  fmtVersion() const
+  { return m_fmtVersion; }
+  
+
   // -------------------------------------------------------
   // MetricMgr
   // -------------------------------------------------------
@@ -316,6 +321,7 @@ private:
 
 private:
   std::string m_name;
+  double m_fmtVersion;
   epoch_flags_t m_flags;
   uint64_t m_measurementGranularity;
   uint32_t m_raToCallsiteOfst;

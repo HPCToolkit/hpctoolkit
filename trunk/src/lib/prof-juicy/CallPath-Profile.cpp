@@ -114,6 +114,7 @@ namespace CallPath {
 Profile::Profile(const std::string name)
 {
   m_name = name;
+  m_fmtVersion = 0.0;
   m_flags.bits = 0;
   m_measurementGranularity = 0;
   m_raToCallsiteOfst = 0;
@@ -152,6 +153,13 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   // -------------------------------------------------------
 
   // Note: these values can be 'null' if the hpcrun-fmt data had no epochs
+  if (x.m_fmtVersion == 0.0) {
+    x.m_fmtVersion = y.m_fmtVersion;
+  }
+  else if (y.m_fmtVersion == 0.0) {
+    y.m_fmtVersion = x.m_fmtVersion;
+  }
+
   if (x.m_flags.bits == 0) {
     x.m_flags.bits = y.m_flags.bits;
   }
@@ -173,8 +181,12 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
     y.m_raToCallsiteOfst = m_raToCallsiteOfst;
   }
 
+  DIAG_WMsgIf(x.m_fmtVersion != y.m_fmtVersion,
+	      "CallPath::Profile::merge(): ignoring incompatible versions: "
+	      << x.m_fmtVersion << " vs. " << y.m_fmtVersion);
   DIAG_WMsgIf(x.m_flags.bits != y.m_flags.bits,
-	      "CallPath::Profile::merge(): ignoring incompatible flags");
+	      "CallPath::Profile::merge(): ignoring incompatible flags: "
+	      << x.m_flags.bits << " vs. " << y.m_flags.bits);
   DIAG_WMsgIf(x.m_measurementGranularity != y.m_measurementGranularity,
 	      "CallPath::Profile::merge(): ignoring incompatible measurement-granularity: " << x.m_measurementGranularity << " vs. " << y.m_measurementGranularity);
   DIAG_WMsgIf(x.m_raToCallsiteOfst != y.m_raToCallsiteOfst,
@@ -502,8 +514,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()
     if (mSmpl) {
-      os << "<NV n=\"period\" v" << MakeAttrNum(mSmpl->period()) << "/>"
-	 << "<NV n=\"flags\" v" << MakeAttrNum(mSmpl->flags(), 16) << "/>";
+      os << "<NV n=\"period\" v" << MakeAttrNum(mSmpl->period()) << "/>";
     }
     os << "</Info>\n";
     os << "    </Metric>\n";
@@ -656,6 +667,11 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'fmt-hdr'");
   }
+  if ( !(hdr.version >= HPCRUN_FMT_Version_19A) ) {
+    // TODO: deprecate old file version: ratchet this to 2.0x
+    DIAG_Throw("unsupported file version '" << hdr.versionStr << "'");
+  }
+
   if (outfs) {
     hpcrun_fmt_hdr_fprint(&hdr, outfs);
   }
@@ -750,16 +766,16 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ----------------------------------------
   // metric-tbl
   // ----------------------------------------
-  metric_tbl_t metric_tbl;
-  ret = hpcrun_fmt_metricTbl_fread(&metric_tbl, infs, malloc);
+  metric_tbl_t metricTbl;
+  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, infs, hdr->version, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
   }
   if (outfs) {
-    hpcrun_fmt_metricTbl_fprint(&metric_tbl, outfs);
+    hpcrun_fmt_metricTbl_fprint(&metricTbl, outfs);
   }
 
-  uint numMetricsSrc = metric_tbl.len;
+  uint numMetricsSrc = metricTbl.len;
   
   // ----------------------------------------
   // loadmap
@@ -817,6 +833,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   
   prof = new Profile(progNm);
 
+  prof->m_fmtVersion = hdr->version;
   prof->m_flags = ehdr.flags;
   prof->m_measurementGranularity = ehdr.measurementGranularity;
   prof->m_raToCallsiteOfst = ehdr.raToCallsiteOfst;
@@ -857,7 +874,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m_sfx = "";
   }
 
-  metric_desc_t* m_lst = metric_tbl.lst;
+  metric_desc_t* m_lst = metricTbl.lst;
   for (uint i = 0; i < numMetricsSrc; i++) {
     string nm = m_lst[i].name;
     string desc = m_lst[i].description;
@@ -899,7 +916,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     prof->isMetricMgrVirtual(true);
   }
 
-  hpcrun_fmt_metricTbl_free(&metric_tbl, free);
+  hpcrun_fmt_metricTbl_free(&metricTbl, free);
 
   // ----------------------------------------
   // make metric DB info
@@ -1126,7 +1143,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     metric_desc_t mdesc;
     mdesc.name = const_cast<char*>(nmFmt.c_str());
     mdesc.description = const_cast<char*>(desc.c_str());
-    mdesc.flags = HPCRUN_MetricFlag_Real;
+    mdesc.flags.fields.valFmt = MetricFlags_ValFmt_Real;
     mdesc.period = 1;
 
     hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
@@ -1366,11 +1383,20 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     hpcrun_metricVal_t m = nodeFmt.metrics[i_src];
 
     double mval = 0;
-    if (hpcrun_metricFlags_isFlag(mdesc->flags(), HPCRUN_MetricFlag_Real)) {
-      mval = m.r;
+    if (prof.fmtVersion() >= HPCRUN_FMT_Version_20) {
+      switch (mdesc->flags().fields.valFmt) {
+        case MetricFlags_ValFmt_Int:
+	  mval = (double)m.i; break;
+        case MetricFlags_ValFmt_Real:
+	  mval = m.r; break;
+        default:
+	  DIAG_Die(DIAG_UnexpectedInput);
+      }
     }
     else {
-      mval = (double)m.i;
+      // TODO: deprecate old file version
+      mval = ((mdesc->flags().fields.valFmt & MetricFlags_ValFmt_Real_19A)
+	      ? m.r : (double)m.i);
     }
 
     metricData.metric(i_dst) = mval * (double)mdesc->period();
@@ -1456,7 +1482,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
   else if (n_dyn_p) {
     const Prof::CCT::ADynNode& n_dyn = *n_dyn_p;
 
-    if (flags.flags.isLogicalUnwind) {
+    if (flags.fields.isLogicalUnwind) {
       n_fmt.as_info = n_dyn.assocInfo();
     }
     
@@ -1464,7 +1490,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
     
     n_fmt.ip = n_dyn.Prof::CCT::ADynNode::ip();
 
-    if (flags.flags.isLogicalUnwind) {
+    if (flags.fields.isLogicalUnwind) {
       lush_lip_init(&(n_fmt.lip));
       if (n_dyn.lip()) {
 	memcpy(&n_fmt.lip, n_dyn.lip(), sizeof(lush_lip_t));

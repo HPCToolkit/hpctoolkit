@@ -288,7 +288,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(_TST_CTL, "setting metric _TST, period = %ld", sample_period);
   hpcrun_set_metric_info_and_period(metric_id, "_TST",
-				    HPCRUN_MetricFlag_Async,
+				    MetricFlags_ValFmt_Int,
 				    sample_period);
   if (lush_metrics == 1) {
     int mid_idleness = hpcrun_new_metric();
@@ -296,7 +296,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     lush_agents->metric_idleness = mid_idleness;
 
     hpcrun_set_metric_info_and_period(mid_idleness, "idleness (ms)",
-				      HPCRUN_MetricFlag_Async | HPCRUN_MetricFlag_Real,
+				      MetricFlags_ValFmt_Real,
 				      sample_period);
   }
 

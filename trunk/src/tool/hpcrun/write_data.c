@@ -233,10 +233,10 @@ write_epochs(FILE* fs, epoch_t* epoch)
     // set epoch flags before writing
     //
 
-    epoch_flags.flags.isLogicalUnwind = hpcrun_isLogicalUnwind();
-    TMSG(LUSH,"epoch lush flag set to %s", epoch_flags.flags.isLogicalUnwind ? "true" : "false");
+    epoch_flags.fields.isLogicalUnwind = hpcrun_isLogicalUnwind();
+    TMSG(LUSH,"epoch lush flag set to %s", epoch_flags.fields.isLogicalUnwind ? "true" : "false");
     
-    TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", epoch_flags.flags);
+    TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", epoch_flags.bits);
     hpcrun_fmt_epochHdr_fwrite(fs, epoch_flags,
 			       default_measurement_granularity,
 			       default_ra_to_callsite_distance,

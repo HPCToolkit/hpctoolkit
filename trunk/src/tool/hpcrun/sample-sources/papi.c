@@ -247,7 +247,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
     TMSG(PAPI, "metric for event %d = %s", i, buffer);
     hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
-				      HPCRUN_MetricFlag_Async,
+				      MetricFlags_ValFmt_Int,
 				      self->evl.events[i].thresh);
 
     // FIXME:LUSH: need a more flexible metric interface
@@ -259,7 +259,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       lush_agents->metric_idleness = mid_idleness;
 
       hpcrun_set_metric_info_and_period(mid_idleness, "idleness",
-					HPCRUN_MetricFlag_Async | HPCRUN_MetricFlag_Real,
+					MetricFlags_ValFmt_Real,
 					self->evl.events[i].thresh);
     }
   }

@@ -787,7 +787,7 @@ hpcfile_cstree_write_node_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags,
   tmp_node->id = my_id;
   tmp_node->id_parent = my_parent;
 
-  if (flags.flags.isLogicalUnwind) {
+  if (flags.fields.isLogicalUnwind) {
     TMSG(LUSH, "setting as_info for %d", tmp_node->id);
     tmp_node->as_info = node->as_info;
   }
@@ -797,7 +797,7 @@ hpcfile_cstree_write_node_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags,
   // double casts to avoid warnings when pointer is < 64 bits 
   tmp_node->ip = (hpcfmt_vma_t) (unsigned long) node->ip;
 
-  if (flags.flags.isLogicalUnwind) {
+  if (flags.fields.isLogicalUnwind) {
     TMSG(LUSH, "settiong lip for node %d", tmp_node->id);
     lush_lip_init(&tmp_node->lip);
     if (node->lip) {

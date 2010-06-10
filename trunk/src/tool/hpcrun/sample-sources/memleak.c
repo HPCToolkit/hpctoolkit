@@ -141,12 +141,9 @@ METHOD_FN(process_event_list,int lush_metrics)
 
   TMSG(MEMLEAK, "Setting up metrics for memory leak detection");
 
-  hpcrun_set_metric_info_and_period(alloc_metric_id, "Bytes Allocated",
-				    HPCRUN_MetricFlag_Async, 1);
+  hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
 
-  hpcrun_set_metric_info_and_period(free_metric_id, "Bytes Freed",
-				    HPCRUN_MetricFlag_Async, 1);
-
+  hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
 }
 
 
