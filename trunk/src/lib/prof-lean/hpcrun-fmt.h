@@ -237,14 +237,15 @@ typedef enum {
 
 
 typedef struct hpcrun_metricFlags_bitfield {
-  //MetricFlags_Ty_t     ty     : 4;
-  //MetricFlags_ValTy_t  valTy  : 4;
+  MetricFlags_Ty_t     ty     : 4;
+  MetricFlags_ValTy_t  valTy  : 4;
   MetricFlags_ValFmt_t valFmt : 4;
-  //uint partner      : 16;
-  //bool show         : 1;
-  //bool showPercent  : 1;
+  uint partner      : 16;
+  bool show         : 1;
+  bool showPercent  : 1;
 
-  uint64_t unused      : 60;
+  uint64_t unused0 : 34;
+  uint64_t unused1;
 } hpcrun_metricFlags_bitfield;
 
 
@@ -252,7 +253,7 @@ typedef union hpcrun_metricFlags_t {
 
   hpcrun_metricFlags_bitfield fields;
 
-  uint64_t bits; // for reading/writing
+  uint64_t bits[2]; // for reading/writing
 
 } hpcrun_metricFlags_t;
 
@@ -326,6 +327,8 @@ typedef struct metric_desc_t {
   char* format;
 
 } metric_desc_t;
+
+extern metric_desc_t metricDesc_NULL;
 
 
 typedef struct metric_list_t {

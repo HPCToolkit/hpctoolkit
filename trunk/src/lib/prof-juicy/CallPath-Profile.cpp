@@ -1140,11 +1140,15 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     string nmFmt = m->nameToFmt();
     const string& desc = m->description();
     
-    metric_desc_t mdesc;
+    metric_desc_t mdesc = metricDesc_NULL;
+    mdesc.flags = hpcrun_metricFlags_NULL;
+
     mdesc.name = const_cast<char*>(nmFmt.c_str());
     mdesc.description = const_cast<char*>(desc.c_str());
     mdesc.flags.fields.valFmt = MetricFlags_ValFmt_Real;
     mdesc.period = 1;
+    mdesc.formula = NULL;
+    mdesc.format = NULL;
 
     hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
   }
@@ -1383,20 +1387,13 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     hpcrun_metricVal_t m = nodeFmt.metrics[i_src];
 
     double mval = 0;
-    if (prof.fmtVersion() >= HPCRUN_FMT_Version_20) {
-      switch (mdesc->flags().fields.valFmt) {
-        case MetricFlags_ValFmt_Int:
-	  mval = (double)m.i; break;
-        case MetricFlags_ValFmt_Real:
-	  mval = m.r; break;
-        default:
-	  DIAG_Die(DIAG_UnexpectedInput);
-      }
-    }
-    else {
-      // TODO: deprecate old file version
-      mval = ((mdesc->flags().fields.valFmt & MetricFlags_ValFmt_Real_19A)
-	      ? m.r : (double)m.i);
+    switch (mdesc->flags().fields.valFmt) {
+      case MetricFlags_ValFmt_Int:
+	mval = (double)m.i; break;
+      case MetricFlags_ValFmt_Real:
+	mval = m.r; break;
+      default:
+	DIAG_Die(DIAG_UnexpectedInput);
     }
 
     metricData.metric(i_dst) = mval * (double)mdesc->period();
