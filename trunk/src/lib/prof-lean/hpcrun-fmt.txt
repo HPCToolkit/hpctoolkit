@@ -41,6 +41,10 @@ epoch-tag = "EPOCH___"
 
 metric-tbl = [metric-desc]*
 metric-desc = name-str description-str metric-flags{8b} period{8b}
+              formula-str format-str
+
+metric-flags = type{raw,final,derived} val-type{I,E} val-fmt{real,int}
+               partner show show-percent
 
 ----------------------------------------
 

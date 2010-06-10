@@ -111,13 +111,13 @@ hpcfmt_str_fread(char** str, FILE* infs, hpcfmt_alloc_fn alloc)
 int
 hpcfmt_str_fwrite(const char* str, FILE* outfs)
 {
-  uint32_t len = strlen(str);
+  uint32_t len = (str) ? strlen(str) : 0;
 
   hpcfmt_byte4_fwrite(len, outfs);
   
-  for(int i = 0; i < len; i++){
+  for (int i = 0; i < len; i++) {
     int c = fputc(str[i], outfs);
-    if (c == EOF){
+    if (c == EOF) {
       return HPCFMT_ERR;
     }
   }

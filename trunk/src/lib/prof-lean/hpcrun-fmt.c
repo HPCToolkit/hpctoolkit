@@ -77,6 +77,7 @@
 #include "hpcfmt.h"
 #include "hpcrun-fmt.h"
 
+//***************************************************************************
 
 //***************************************************************************
 // hdr
@@ -263,9 +264,6 @@ hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* fs,
 }
 
 
-//
-// metric list ==> written out as metric tbl
-//
 int
 hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* fs)
 {
@@ -312,14 +310,27 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
 {
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->name), fs, alloc));
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->description), fs, alloc));
-  if (fmtVersion < 2.0) {
-    // TODO: deprecate old file version
+
+  if (fmtVersion >= HPCRUN_FMT_Version_20) {
     HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->flags.bits), fs));
   }
   else {
+    // TODO: deprecate old file version
     HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->flags.bits), fs));
   }
+
   HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&(x->period), fs));
+
+  if (fmtVersion >= HPCRUN_FMT_Version_20) {
+    HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->formula), fs, alloc));
+    HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->format), fs, alloc));
+  }
+  else {
+    // TODO: deprecate old file version
+    x->formula = NULL;
+    x->format = NULL;
+  }
+
   return HPCFMT_OK;
 }
 
@@ -331,6 +342,8 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* fs)
   hpcfmt_str_fwrite(x->description, fs);
   hpcfmt_byte8_fwrite(x->flags.bits, fs);
   hpcfmt_byte8_fwrite(x->period, fs);
+  hpcfmt_str_fwrite(x->formula, fs);
+  hpcfmt_str_fwrite(x->format, fs);
   return HPCFMT_OK;
 }
 
@@ -338,7 +351,13 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* fs)
 int
 hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* fs, const char* pre)
 {
-  fprintf(fs, "%s[(nm: %s) (desc: %s) (flg: 0x%"PRIx64") (period: %"PRIu64")]\n", pre, x->name, x->description, x->flags.bits, x->period);
+  fprintf(fs, "%s[(nm: %s) (desc: %s) "
+	  "((val-fmt: %d)) "
+	  "(period: %"PRIu64") (formula: %s) (format: %s)]\n",
+	  pre, hpcfmt_str_ensure(x->name), hpcfmt_str_ensure(x->description),
+	  x->flags.fields.valFmt,
+	  x->period,
+	  hpcfmt_str_ensure(x->formula), hpcfmt_str_ensure(x->format));
   return HPCFMT_OK;
 }
 
@@ -347,9 +366,13 @@ void
 hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc)
 {
   hpcfmt_str_free(x->name, dealloc);
-  hpcfmt_str_free(x->description, dealloc);
   x->name = NULL;
+  hpcfmt_str_free(x->description, dealloc);
   x->description = NULL;
+  hpcfmt_str_free(x->formula, dealloc);
+  x->formula = NULL;
+  hpcfmt_str_free(x->format, dealloc);
+  x->format = NULL;
 }
 
 

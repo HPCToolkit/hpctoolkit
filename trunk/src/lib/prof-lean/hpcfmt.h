@@ -218,6 +218,13 @@ void
 hpcfmt_str_free(const char* str, hpcfmt_free_fn dealloc);
 
 
+static inline const char*
+hpcfmt_str_ensure(const char* x)
+{
+  return (x) ? x : "";
+}
+
+
 //***************************************************************************
 // hpcfmt_nvpair_t
 //***************************************************************************
