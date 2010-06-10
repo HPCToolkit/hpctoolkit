@@ -234,15 +234,15 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
     return;
   }
 
-  metric_desc_t* metric = NULL;
+  metric_desc_t* mdesc = NULL;
   for (metric_list_t* l = metric_data; l; l = l->next) {
     if (l->id == metric_id) {
-      metric = &(l->val);
+      mdesc = &(l->val);
       break;
     }
   }
   TMSG(METRICS,"id = %d, name = %s, flags = %d, period = %d", metric_id, name, valFmt, period);
-  if (! metric) {
+  if (! mdesc) {
     EMSG("Metric id is NULL (likely unallocated)");
     monitor_real_abort();
   }
@@ -250,12 +250,16 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
     EMSG("Must supply a name for metric");
     monitor_real_abort();
   }
-  metric->name = (char*) name;
-  metric->description = (char*) name; // TODO
-  metric->period = period;
-  metric->flags.fields.valFmt = valFmt;
-  metric->formula = NULL;
-  metric->format = NULL;
+
+  *mdesc = metricDesc_NULL;
+  mdesc->flags = hpcrun_metricFlags_NULL;
+
+  mdesc->name = (char*) name;
+  mdesc->description = (char*) name; // TODO
+  mdesc->period = period;
+  mdesc->flags.fields.valFmt = valFmt;
+  mdesc->formula = NULL;
+  mdesc->format = NULL;
 
   //
   // manage metric proc mapping
