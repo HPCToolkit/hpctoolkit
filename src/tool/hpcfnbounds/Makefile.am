@@ -67,6 +67,34 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+LIBDWARF_LIB = @LIBDWARF_LIB@
+
+LIBELF_LIB   = @LIBELF_LIB@
+
+SYMTABAPI_INC = @SYMTABAPI_INC@
+SYMTABAPI_LIB = @SYMTABAPI_LIB@
+
+XED2_INC = @XED2_INC@
+XED2_LIB = @XED2_LIB@
+
+MYSOURCES = \
+	main.cpp \
+	\
+	code-ranges.cpp \
+	function-entries.cpp \
+	intervals.cpp
+
+MYCPPFLAGS = $(HPC_IFLAGS) -I$(SYMTABAPI_INC)
+
+MYCXXFLAGS = @HOST_CXXFLAGS@
+
+MYLDFLAGS = \
+	-L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon	\
+	-L$(LIBDWARF_LIB) -ldwarf		\
+	-L$(LIBELF_LIB) -lelf
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
+
 #############################################################################
 # Automake rules
 #############################################################################
@@ -76,38 +104,20 @@ pkglibexecdir = $(libexecdir)/$(PACKAGE)
 pkglibexec_PROGRAMS = hpcfnbounds-bin
 pkglibexec_SCRIPTS =  hpcfnbounds
 
-LIBDWARF_LIB = @LIBDWARF_LIB@
-LIBELF_LIB = @LIBELF_LIB@
-SYMTABAPI_INC = @SYMTABAPI_INC@
-SYMTABAPI_LIB = @SYMTABAPI_LIB@
-XED2_INC = @XED2_INC@
-XED2_LIB = @XED2_LIB@
-
-SYMBOLS_BASE_FILES = \
-	main.cpp \
-	\
-	code-ranges.cpp \
-	function-entries.cpp \
-	intervals.cpp
-
-hpcfnbounds_bin_SOURCES = $(SYMBOLS_BASE_FILES)
-
-hpcfnbounds_bin_CPPFLAGS = -I$(SYMTABAPI_INC)
-
-hpcfnbounds_bin_CXXFLAGS = $(CXXFLAGS) $(HOST_CXXFLAGS)
-
-hpcfnbounds_bin_LDFLAGS = 			\
-    -L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon	\
-    -L$(LIBDWARF_LIB) -ldwarf			\
-    -L$(LIBELF_LIB) -lelf
+hpcfnbounds_bin_SOURCES  = $(MYSOURCES)
+hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS)
+hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
+hpcfnbounds_bin_LDFLAGS  = $(MYLDFLAGS)
 
 if HOST_CPU_X86
-    hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp
-    hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
-    hpcfnbounds_bin_LDFLAGS  += $(XED2_LIB)/libxed.a
+  hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp
+  hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
+  hpcfnbounds_bin_LDFLAGS  += $(XED2_LIB)/libxed.a
 else
-    hpcfnbounds_bin_SOURCES += generic-process-ranges.cpp
+  hpcfnbounds_bin_SOURCES += generic-process-ranges.cpp
 endif
+
+MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
 # Common rules
