@@ -340,6 +340,7 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
     HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&flags_19A, fs));
 
     x->flags = hpcrun_metricFlags_NULL;
+    x->flags.fields.ty = MetricFlags_Ty_Raw;
     x->flags.fields.valFmt = ((flags_19A & MetricFlags_ValFmt_Real_19A)
 			      ? MetricFlags_ValFmt_Real 
 			      : MetricFlags_ValFmt_Int);
