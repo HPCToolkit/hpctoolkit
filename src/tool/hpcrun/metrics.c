@@ -41,22 +41,30 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-/* metrics.c -- informing the system about what metrics to record */
+//************************* System Include Files ****************************
 
 #include <stdbool.h>
 #include <stdlib.h>
 
 #include <assert.h>
 
+//*************************** User Include Files ****************************
+
 #include "monitor.h"
 #include "metrics.h"
+
 #include <memory/hpcrun-malloc.h>
 
 #include <messages/messages.h>
 
+#include <cct/cct.h>
+
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+
+
+//*************************** Forward Declarations **************************
 
 // number of metrics requested
 static int n_metrics = 0;
@@ -89,33 +97,18 @@ static metric_upd_proc_t** metric_proc_tbl = NULL;
 
 static metric_proc_map_t* proc_map = NULL;
 
-//***************************************************************
+
+//***************************************************************************
 //  Local functions
-//***************************************************************
+//***************************************************************************
 
-// FIXME: why not use cct_metric_data_increment?
-static void
-std_upd_fn(int metric_id, cct_metric_data_t* x, cct_metric_data_t datum)
-{
-  TMSG(METRICS, "Std update fn called");
-  metric_desc_t* minfo = id2metric[metric_id];
-  
-  switch (minfo->flags.fields.valFmt) {
-    case MetricFlags_ValFmt_Int:
-      x->i += datum.i; break;
-    case MetricFlags_ValFmt_Real:
-      x->r += datum.r; break;
-    default:
-      assert(false);
-  }
-}
 
-//***************************************************************
+//***************************************************************************
 //  Interface functions
-//***************************************************************
+//***************************************************************************
 
 bool
-hpcrun_metrics_finalized(void)
+hpcrun_metrics_finalized()
 {
   return has_set_max_metrics;
 }
@@ -135,12 +128,14 @@ hpcrun_pre_allocate_metrics(size_t num)
   // NOTE: actual metric count not incremented until a new metric is requested
 }
 
+
 //
 // first call to get_num_metrics will finalize
 // the metric info table
 //
 int
-hpcrun_get_num_metrics(void){
+hpcrun_get_num_metrics()
+{
   //
   // create id->descriptor table, metric_tbl, and metric_proc tbl
   //
@@ -164,6 +159,7 @@ hpcrun_get_num_metrics(void){
   return n_metrics;
 }
 
+
 metric_desc_t*
 hpcrun_id2metric(int id)
 {
@@ -173,17 +169,20 @@ hpcrun_id2metric(int id)
   return NULL;
 }
 
+
 metric_desc_p_tbl_t*
-hpcrun_get_metric_tbl(void)
+hpcrun_get_metric_tbl()
 {
   return &metric_tbl;
 }
 
+
 metric_list_t*
-hpcrun_get_metric_data(void)
+hpcrun_get_metric_data()
 {
   return metric_data;
 }
+
 
 metric_upd_proc_t*
 hpcrun_get_metric_proc(int metric_id)
@@ -191,8 +190,9 @@ hpcrun_get_metric_proc(int metric_id)
   return metric_proc_tbl[metric_id];
 }
 
+
 int
-hpcrun_new_metric(void)
+hpcrun_new_metric()
 {
   if (has_set_max_metrics) {
     return 0;
@@ -224,6 +224,7 @@ hpcrun_new_metric(void)
   
   return metric_data->id;
 }
+
 
 void
 hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
@@ -273,12 +274,15 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
   }
 }
 
+
 void
 hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				  MetricFlags_ValFmt_t valFmt, size_t period)
 {
-  hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period, std_upd_fn);
+  hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period,
+			      cct_metric_data_increment);
 }
+
 
 //
 // utility routine to make an Async metric with period 1
@@ -288,6 +292,7 @@ hpcrun_set_metric_info(int metric_id, const char* name)
 {
   hpcrun_set_metric_info_and_period(metric_id, name, MetricFlags_ValFmt_Int, 1);
 }
+
 
 //
 // hpcrun_set_metric_name function is primarily used by
