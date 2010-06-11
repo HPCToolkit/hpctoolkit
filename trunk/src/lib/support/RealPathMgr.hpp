@@ -85,7 +85,8 @@ public:
   RealPathMgr();
   ~RealPathMgr();
 
-  static RealPathMgr& singleton();
+  static RealPathMgr&
+  singleton();
 
   // -------------------------------------------------------
   // 
@@ -95,23 +96,31 @@ public:
   // and return true.  Return true if 'fnm' is as fully resolved as it
   // can be (which does not necessarily mean it exists); otherwise
   // return false.
-  bool realpath(std::string& fnm);
+  bool
+  realpath(std::string& fnm);
   
-  const std::string& searchPaths()
-    { return m_searchPaths; }
+  const std::string&
+  searchPaths()
+  { return m_searchPaths; }
 
-  void searchPaths(const std::string& x)
-    { m_searchPaths = x; }
+  void
+  searchPaths(const std::string& x)
+  { m_searchPaths = x; }
+
 
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  std::string toString(int flags = 0) const;
+  std::string
+  toString(int flags = 0) const;
 
   // flags = -1: compressed dump / 0: normal dump / 1: extra info
-  std::ostream& dump(std::ostream& os, int flags = 0) const;
+  std::ostream&
+  dump(std::ostream& os, int flags = 0) const;
 
-  void ddump(int flags = 0) const;
+  void
+  ddump(int flags = 0) const;
+
 
 private:
   typedef std::map<std::string, std::string> MyMap;
@@ -119,7 +128,6 @@ private:
   std::string m_searchPaths;
   MyMap m_realpath_map;
 };
-
 
 
 //***************************************************************************
