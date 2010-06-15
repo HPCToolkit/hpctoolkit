@@ -1,0 +1,47 @@
+Newer versions of gnu libc redefine longjmp and siglongjmp in a way
+that breaks libunwind's attempt to define these functions.  This patch
+tries to undo that.  See <bits/setjmp2.h>.  We may need to revisit
+this patch when libc becomes more clever.
+
+diff -Naurb libunwind-0.99.orig/src/setjmp/longjmp.c libunwind-0.99/src/setjmp/longjmp.c
+--- libunwind-0.99.orig/src/setjmp/longjmp.c	2009-05-08 11:34:10.000000000 -0500
++++ libunwind-0.99/src/setjmp/longjmp.c	2010-06-15 14:09:22.008459477 -0500
+@@ -25,6 +25,8 @@
+ 
+ #define UNW_LOCAL_ONLY
+ 
++#undef _FORTIFY_SOURCE
++
+ #include <assert.h>
+ #include <libunwind.h>
+ #include <setjmp.h>
+@@ -34,6 +36,9 @@
+ #include "jmpbuf.h"
+ #include "setjmp_i.h"
+ 
++#undef _longjmp
++#undef longjmp
++
+ void
+ _longjmp (jmp_buf env, int val)
+ {
+diff -Naurb libunwind-0.99.orig/src/setjmp/siglongjmp.c libunwind-0.99/src/setjmp/siglongjmp.c
+--- libunwind-0.99.orig/src/setjmp/siglongjmp.c	2009-05-08 11:34:10.000000000 -0500
++++ libunwind-0.99/src/setjmp/siglongjmp.c	2010-06-15 14:10:40.614534997 -0500
+@@ -25,12 +25,16 @@
+ 
+ #define UNW_LOCAL_ONLY
+ 
++#undef _FORTIFY_SOURCE
++
+ #include <setjmp.h>
+ 
+ #include "libunwind_i.h"
+ #include "jmpbuf.h"
+ #include "setjmp_i.h"
+ 
++#undef siglongjmp
++
+ void
+ siglongjmp (sigjmp_buf env, int val)
+ {
