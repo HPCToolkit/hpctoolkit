@@ -83,6 +83,7 @@ MYSOURCES = \
 	FileUtil.hpp FileUtil.cpp \
 	SrcFile.hpp SrcFile.cpp \
 	RealPathMgr.hpp RealPathMgr.cpp \
+	PathReplacementMgr.hpp PathReplacementMgr.cpp \
 	findinstall.h findinstall.c \
 	pathfind.h pathfind.cpp \
 	realpath.h realpath.c \

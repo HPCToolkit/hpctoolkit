@@ -54,82 +54,84 @@
 //
 //***************************************************************************
 
-#ifndef RealPathMgr_hpp 
-#define RealPathMgr_hpp
-
 //************************* System Include Files ****************************
 
-#include <string>
-#include <map>
-#include <iostream>
-
-#include <cctype>
+#include <algorithm>
+#include <cstring>
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
+#include "PathReplacementMgr.hpp"
 
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
-// RealPathMgr
-//***************************************************************************
-
-
-// --------------------------------------------------------------------------
-// 'RealPathMgr' 
-// --------------------------------------------------------------------------
-
-class RealPathMgr {
-public:
-  RealPathMgr();
-  ~RealPathMgr();
-
-  static RealPathMgr&
-  singleton();
-
-  // -------------------------------------------------------
-  // 
-  // -------------------------------------------------------
-
-  // realpath: Given 'fnm', convert it to its 'realpath' (if possible)
-  // and return true.  Return true if 'fnm' is as fully resolved as it
-  // can be (which does not necessarily mean it exists); otherwise
-  // return false.
-  bool
-  realpath(std::string& fnm);
-  
-  const std::string&
-  searchPaths()
-  { return m_searchPaths; }
-
-  void
-  searchPaths(const std::string& x)
-  { m_searchPaths = x; }
-
-
-  // -------------------------------------------------------
-  // debugging
-  // -------------------------------------------------------
-  std::string
-  toString(int flags = 0) const;
-
-  // flags = -1: compressed dump / 0: normal dump / 1: extra info
-  std::ostream&
-  dump(std::ostream& os, int flags = 0) const;
-
-  void
-  ddump(int flags = 0) const;
-
-
-private:
-  typedef std::map<std::string, std::string> MyMap;
-
-  std::string m_searchPaths;
-  MyMap m_realpath_map;
-};
-
 
 //***************************************************************************
+// PathReplacementMgr
+//***************************************************************************
 
-#endif // RealPathMgr_hpp
+static PathReplacementMgr s_singleton;
+
+PathReplacementMgr::PathReplacementMgr()
+{
+}
+
+
+PathReplacementMgr::~PathReplacementMgr()
+{
+}
+
+PathReplacementMgr&
+PathReplacementMgr::singleton()
+{
+  return s_singleton;
+}
+
+
+std::string
+PathReplacementMgr::getReplacedPath(const std::string& original)
+{
+  for (size_t i = 0; i<m_pathReplacement.size(); i++) {
+    StringPair temp =m_pathReplacement[i];
+    size_t found = strncmp(original.c_str(),temp.first.c_str(),
+			   temp.first.length());
+    
+    if (found == 0) {
+      std::string newPath = original;
+      newPath.replace(0,temp.first.size(),temp.second);
+      return newPath;
+    }
+  }
+  return original;
+}
+
+
+/*
+ * Comparison function we use to sort 'pathReplacment' according to the first 
+ * values of the pair, which is the old partial path.
+ *
+ * @param a: The first pair object to compare.
+ * @param b: The second pair object to compare.
+ * return:   A bool indicatin if a.first.size() < b.first.size().
+ */
+static bool
+compare_as_strings(const PathReplacementMgr::StringPair& a,
+		   const PathReplacementMgr::StringPair& b)
+{
+  return a.first.size() > b.first.size();
+}
+
+
+void
+PathReplacementMgr::addPath(const std::string& originalPath,
+			    const std::string& newPath)
+{
+  StringPair temp(originalPath, newPath);
+  m_pathReplacement.push_back(temp);
+  stable_sort(m_pathReplacement.begin(),m_pathReplacement.end(),
+	      compare_as_strings);
+}
+
+
+
