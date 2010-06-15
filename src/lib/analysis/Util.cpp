@@ -84,6 +84,7 @@ using std::string;
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcrunflat-fmt.h>
 
+#include <lib/support/PathReplacementMgr.hpp>
 #include <lib/support/diagnostics.h>
 #include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
@@ -459,6 +460,41 @@ normalizeProfileArgs(const StringVec& inPaths)
   }
   
   return out;
+}
+
+} // end of Util namespace
+} // end of Analysis namespace
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+namespace Analysis {
+namespace Util {
+
+int
+parseReplacePath(const std::string& arg)
+{
+  size_t in = arg.find_first_of('=');
+  int occurancesOfEquals = 0;
+  size_t indexOfEquals = 0;
+  while (in != arg.npos) {
+    if (arg[in-1] != '\\') {
+      occurancesOfEquals++;
+      indexOfEquals = in;
+    }
+    
+    in = arg.find_first_of('=',(in+1));
+  }
+  
+  if (occurancesOfEquals == 1) {
+    string oldVal = arg.substr(0, indexOfEquals);
+    string newVal = arg.substr(indexOfEquals+1);
+    PathReplacementMgr::singleton().addPath(oldVal, newVal);
+  }
+
+  return occurancesOfEquals;
 }
 
 

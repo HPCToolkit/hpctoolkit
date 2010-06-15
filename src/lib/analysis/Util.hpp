@@ -153,6 +153,14 @@ NormalizeProfileArgs_t
 normalizeProfileArgs(const StringVec& inPaths);
 
 
+// --------------------------------------------------------------------------
+//
+// --------------------------------------------------------------------------
+
+int
+parseReplacePath(const std::string& arg);
+
+
 } // namespace Util
 
 } // namespace Analysis

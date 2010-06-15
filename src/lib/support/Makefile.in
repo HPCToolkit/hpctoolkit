@@ -85,6 +85,7 @@ am__objects_1 = libHPCsupport_la-CmdLineParser.lo \
 	libHPCsupport_la-StrUtil.lo libHPCsupport_la-IOUtil.lo \
 	libHPCsupport_la-FileUtil.lo libHPCsupport_la-SrcFile.lo \
 	libHPCsupport_la-RealPathMgr.lo \
+	libHPCsupport_la-PathReplacementMgr.lo \
 	libHPCsupport_la-findinstall.lo libHPCsupport_la-pathfind.lo \
 	libHPCsupport_la-realpath.lo libHPCsupport_la-ProcNameMgr.lo \
 	libHPCsupport_la-NonUniformDegreeTree.lo \
@@ -355,6 +356,7 @@ MYSOURCES = \
 	FileUtil.hpp FileUtil.cpp \
 	SrcFile.hpp SrcFile.cpp \
 	RealPathMgr.hpp RealPathMgr.cpp \
+	PathReplacementMgr.hpp PathReplacementMgr.cpp \
 	findinstall.h findinstall.c \
 	pathfind.h pathfind.cpp \
 	realpath.h realpath.c \
@@ -460,6 +462,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Logic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-NaN.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-NonUniformDegreeTree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-PathReplacementMgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-PointerStack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-ProcNameMgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-QuickSort.Plo@am__quote@
@@ -614,6 +617,13 @@ libHPCsupport_la-RealPathMgr.lo: RealPathMgr.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='RealPathMgr.cpp' object='libHPCsupport_la-RealPathMgr.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-RealPathMgr.lo `test -f 'RealPathMgr.cpp' || echo '$(srcdir)/'`RealPathMgr.cpp
+
+libHPCsupport_la-PathReplacementMgr.lo: PathReplacementMgr.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-PathReplacementMgr.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-PathReplacementMgr.Tpo -c -o libHPCsupport_la-PathReplacementMgr.lo `test -f 'PathReplacementMgr.cpp' || echo '$(srcdir)/'`PathReplacementMgr.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-PathReplacementMgr.Tpo $(DEPDIR)/libHPCsupport_la-PathReplacementMgr.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PathReplacementMgr.cpp' object='libHPCsupport_la-PathReplacementMgr.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-PathReplacementMgr.lo `test -f 'PathReplacementMgr.cpp' || echo '$(srcdir)/'`PathReplacementMgr.cpp
 
 libHPCsupport_la-pathfind.lo: pathfind.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-pathfind.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-pathfind.Tpo -c -o libHPCsupport_la-pathfind.lo `test -f 'pathfind.cpp' || echo '$(srcdir)/'`pathfind.cpp

@@ -67,8 +67,11 @@ using std::string;
 
 #include "Args.hpp"
 
+#include <lib/analysis/Util.hpp>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileUtil.hpp>
+#include <lib/support/StrUtil.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -127,6 +130,12 @@ Options: Structure recovery\n\
                          all : apply all normalizations\n\
                          safe: apply only safe normalizations\n\
                          none: apply no normalizations\n\
+  -R '<old-path>=<new-path>', --replace-path '<old-path>=<new-path>'\n\
+                       Substitute instances of <old-path> with <new-path>;\n\
+                       apply to all paths (profile's load map, source code)\n\
+                       for which <old-path> is a prefix.  Use '\\' to escape\n\
+                       instances of '=' within a path. May pass multiple\n\
+                       times.\n\
 \n\
 Options: Output:\n\
   -o <file>, --output <file>\n\
@@ -140,6 +149,7 @@ Options: Output:\n\
 
 
 #define CLP CmdLineParser
+#define CLP_SEPARATOR "!!!"
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
@@ -159,6 +169,9 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   { 'N', "normalize",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
+
+  { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+     NULL},
     
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
@@ -321,6 +334,25 @@ Args::parse(int argc, const char* const argv[])
       doNormalizeTy = parseArg_norm(arg, "--normalize option");
     }
 
+    if (parser.isOpt("replace-path")) {
+      string arg = parser.getOptArg("replace-path");
+      
+      std::vector<std::string> replacePaths;
+      StrUtil::tokenize_str(arg,CLP_SEPARATOR, replacePaths);
+      
+      for (uint i = 0; i < replacePaths.size(); ++i) {
+	int occurancesOfEquals = 
+	  Analysis::Util::parseReplacePath(replacePaths[i]);
+	
+	if (occurancesOfEquals > 1) {
+	  ARG_ERROR("Too many occurances of \'=\'; make sure to escape any \'=\' in your paths");
+	}
+	else if(occurancesOfEquals == 0) {
+	  ARG_ERROR("The \'=\' between the old path and new path is missing");
+	}
+      }
+    }
+
     // Check for other options: Output options
     if (parser.isOpt("output")) {
       out_filenm = parser.getOptArg("output");
@@ -383,7 +415,6 @@ Args::parseArg_norm(const string& value, const char* err_note)
     ARG_ERROR(err_note << ": Unexpected value received: " << value);
   }
 }
-
 
 //***************************************************************************
 

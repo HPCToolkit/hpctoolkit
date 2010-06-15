@@ -69,6 +69,8 @@ using std::string;
 
 #include "CallPath.hpp" /* for normalizeFilePath */
 
+#include <lib/analysis/Util.hpp>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
 #include <lib/support/StrUtil.hpp>
@@ -114,7 +116,12 @@ Options: Source Structure Correlation:\n\
   -S <file>, --structure <file>\n\
                        Use hpcstruct structure file <file> for correlation.\n\
                        May pass multiple times (e.g., for shared libraries).\n\
-\n\
+  -R '<old-path>=<new-path>', --replace-path '<old-path>=<new-path>'\n\
+                       Substitute instances of <old-path> with <new-path>;\n\
+                       apply to all paths (profile's load map, source code)\n\
+                       for which <old-path> is a prefix.  Use '\\' to escape\n\
+                       instances of '=' within a path. May pass multiple\n\
+                       times.\n\
 Options: Special:\n\
   --force              Currently, hpcprof permits at most 32 profile-files\n\
                        to prevent unmanageably large Experiment databases.\n\
@@ -151,6 +158,8 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
      NULL },
   { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
+  { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+     NULL},
 
   { 'N', "normalize",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
@@ -310,6 +319,25 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
       doNormalizeTy = parseArg_norm(arg, "--normalize option");
     }
 
+    if (parser.isOpt("replace-path")) {
+      string arg = parser.getOptArg("replace-path");
+      
+      std::vector<std::string> replacePaths;
+      StrUtil::tokenize_str(arg,CLP_SEPARATOR, replacePaths);
+      
+      for (uint i = 0; i < replacePaths.size(); ++i) {
+	int occurancesOfEquals =
+	  Analysis::Util::parseReplacePath(replacePaths[i]);
+	
+	if (occurancesOfEquals > 1) {
+	  ARG_ERROR("Too many occurances of \'=\'; make sure to escape any \'=\' in your paths");
+	}
+	else if(occurancesOfEquals == 0) {
+	  ARG_ERROR("The \'=\' between the old path and new path is missing");
+	}
+      }
+    }
+
     // Check for special hpcprof options:
     if (parser.isOpt("force")) {
       isHPCProfForce = true;
@@ -406,6 +434,7 @@ ArgsHPCProf::parseArg_norm(const string& value, const char* err_note)
     ARG_ERROR(err_note << ": Unexpected value received: " << value);
   }
 }
+
 
 //***************************************************************************
 

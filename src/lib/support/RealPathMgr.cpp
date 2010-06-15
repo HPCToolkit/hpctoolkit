@@ -63,6 +63,7 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include "RealPathMgr.hpp"
+#include "PathReplacementMgr.hpp"
 
 #include "diagnostics.h"
 #include "Logic.hpp"
@@ -106,7 +107,7 @@ RealPathMgr::realpath(string& fnm)
 
   // INVARIANT: all entries in the map are non-empty
   MyMap::iterator it = m_realpath_map.find(fnm);
- 
+
   if (it != m_realpath_map.end()) {
     // use cached value
     const string& fnm_real = it->second;
@@ -115,24 +116,33 @@ RealPathMgr::realpath(string& fnm)
     }
   }
   else {
-    string fnm_real;
-
-    const char* pf = fnm.c_str();
-    if (!m_searchPaths.empty()) {
-      pf = pathfind_r(m_searchPaths.c_str(), fnm.c_str(), "r");
-    }
-    if (pf) { 
-      fnm_real = RealPath(pf);
-      fnm = fnm_real;
+    fnm = PathReplacementMgr::singleton().getReplacedPath(fnm);
+    it = m_realpath_map.find(fnm);
+    if (it != m_realpath_map.end()) { //check if modified fnm is cached 
+      const string& fnm_real = it->second;
+      if (fnm_real[0] == '/') {
+	fnm = fnm_real;
+      }
     }
     else {
-      // 'pf' is NULL iff pathfind_r failed -- RealPath won't do any better
-      fnm_real = fnm;
+      string fnm_real;
+      
+      const char* pf = fnm.c_str();
+      if (!m_searchPaths.empty()) {
+	pf = pathfind_r(m_searchPaths.c_str(), fnm.c_str(), "r");
+      }
+      if (pf) { 
+	fnm_real = RealPath(pf);
+	fnm = fnm_real;
+      }
+      else {
+	// 'pf' is NULL iff pathfind_r failed -- RealPath won't do any better
+	fnm_real = fnm;
+      }
+      
+      m_realpath_map.insert(make_pair(fnm, fnm_real));
     }
-
-    m_realpath_map.insert(make_pair(fnm, fnm_real));
-  }
-
+  }  
   return (fnm[0] == '/'); // fully resolved
 }
 

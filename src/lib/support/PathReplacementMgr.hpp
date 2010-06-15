@@ -54,82 +54,67 @@
 //
 //***************************************************************************
 
-#ifndef RealPathMgr_hpp 
-#define RealPathMgr_hpp
+#ifndef PathReplacementMgr_hpp
+#define PathReplacementMgr_hpp
 
 //************************* System Include Files ****************************
 
 #include <string>
-#include <map>
-#include <iostream>
-
-#include <cctype>
+#include <vector>
 
 //*************************** User Include Files ****************************
-
-#include <include/uint.h>
 
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
-// RealPathMgr
+// PathReplacementMgr
 //***************************************************************************
 
+class PathReplacementMgr {
 
-// --------------------------------------------------------------------------
-// 'RealPathMgr' 
-// --------------------------------------------------------------------------
-
-class RealPathMgr {
 public:
-  RealPathMgr();
-  ~RealPathMgr();
-
-  static RealPathMgr&
+  PathReplacementMgr();
+  ~PathReplacementMgr();
+  
+  static PathReplacementMgr&
   singleton();
 
-  // -------------------------------------------------------
-  // 
-  // -------------------------------------------------------
-
-  // realpath: Given 'fnm', convert it to its 'realpath' (if possible)
-  // and return true.  Return true if 'fnm' is as fully resolved as it
-  // can be (which does not necessarily mean it exists); otherwise
-  // return false.
-  bool
-  realpath(std::string& fnm);
-  
-  const std::string&
-  searchPaths()
-  { return m_searchPaths; }
-
-  void
-  searchPaths(const std::string& x)
-  { m_searchPaths = x; }
-
-
-  // -------------------------------------------------------
-  // debugging
-  // -------------------------------------------------------
+  /*
+   * Searches through the list of paths to see if any portion of
+   * 'original' needs to be replaced. If a substring of 'original' is
+   * found to be in 'pathReplacement', we update that portion of the
+   * string with the associated new path.
+   *
+   * @param original: The file path we want to update
+   * @return: A new path that is the updated equivalent of 'original'
+   *   if any portion of it needed updating, otherwise we return
+   *   'original'.
+   */
   std::string
-  toString(int flags = 0) const;
+  getReplacedPath(const std::string& original);
 
-  // flags = -1: compressed dump / 0: normal dump / 1: extra info
-  std::ostream&
-  dump(std::ostream& os, int flags = 0) const;
-
+  /*
+   * Adds an old path and its associated new path as a pair to the
+   * pathReplacement vector and then sorts the list in descending
+   * order of size
+   * 
+   * @param originalPath: The original partial path
+   * @param newPath: The new partial path to replace originalPath.
+   *
+   *  **note** - "partial path" can mean any substring of a path, from
+   *    a single file name to a full path.
+   */
   void
-  ddump(int flags = 0) const;
+  addPath(const std::string& originalPath, const std::string& newPath);
 
+public:
+  typedef std::pair<std:: string, std::string> StringPair;
 
 private:
-  typedef std::map<std::string, std::string> MyMap;
-
-  std::string m_searchPaths;
-  MyMap m_realpath_map;
+  std::vector<StringPair> m_pathReplacement;
 };
 
 
 //***************************************************************************
 
-#endif // RealPathMgr_hpp
+#endif

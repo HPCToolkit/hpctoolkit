@@ -67,6 +67,8 @@ using std::string;
 
 #include "Args.hpp"
 
+#include <lib/analysis/Util.hpp>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
 #include <lib/support/StrUtil.hpp>
@@ -147,6 +149,12 @@ Options: Source Structure Correlation:\n\
   -S <file>, --structure <file>\n\
                        Use hpcstruct structure file <file> for correlation.\n\
                        May pass multiple times (e.g., for shared libraries).\n\
+  -R '<old-path>=<new-path>', --replace-path '<old-path>=<new-path>'\n\
+                       Substitute instances of <old-path> with <new-path>;\n\
+                       apply to all paths (profile's load map, source code)\n\
+                       for which <old-path> is a prefix.  Use '\\' to escape\n\
+                       instances of '=' within a path. May pass multiple\n\
+                       times.\n\
 \n\
 Options: Object Correlation:\n\
   --object[=s]         Correlate metrics with object code by annotating\n\
@@ -184,6 +192,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      NULL },
   { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
+  { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+     NULL},
   { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
@@ -429,6 +439,26 @@ Args::parse(int argc, const char* const argv[])
       string str = parser.getOptArg("structure");
       StrUtil::tokenize_str(str, CLP_SEPARATOR, structureFiles);
     }
+   
+    if (parser.isOpt("replace-path")) {
+      string arg = parser.getOptArg("replace-path");
+      
+      std::vector<std::string> replacePaths;
+      StrUtil::tokenize_str(arg,CLP_SEPARATOR, replacePaths);
+      
+      for (uint i = 0; i < replacePaths.size(); ++i) {
+	int occurancesOfEquals = 
+	  Analysis::Util::parseReplacePath(replacePaths[i]);
+	
+	if (occurancesOfEquals > 1) {
+	  ARG_ERROR("Too many occurances of \'=\'; make sure to escape any \'=\' in your paths");
+	}
+	else if(occurancesOfEquals == 0) {
+	  ARG_ERROR("The \'=\' between the old path and new path is missing");
+	}
+      }
+    }
+
     if (parser.isOpt("metric")) {
       string opt = parser.getOptArg("metric");
       parse_metricOpts(this, opt);
@@ -585,5 +615,4 @@ Args::dump(std::ostream& os) const
   os << "Args.cmd= " << getCmd() << endl; 
   Analysis::Args::dump(os);
 }
-
 
