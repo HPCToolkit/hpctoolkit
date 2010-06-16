@@ -970,7 +970,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
           (*itMalloc).first->linkMalloc((*itMalloc).second);
           continue;
         }
-        CCTIdToCCTNodeMap::iterator it1 = cctNodeMap.find(-(*itMalloc).second);
+        CCTIdToCCTNodeMap::iterator it1 = cctNodeMap.find((*itMalloc).second);
         if (it1 != cctNodeMap.end()) {
           node_malloc = it1->second;
         }

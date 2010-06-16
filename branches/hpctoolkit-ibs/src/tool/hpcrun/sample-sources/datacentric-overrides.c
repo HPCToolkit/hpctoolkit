@@ -116,6 +116,7 @@ datacentric_initialize(void)
 void *
 MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 {
+TMSG(IBS_SAMPLE,"in malloc");
   void *h = real_malloc(bytes);
 
   if (hpcrun_datacentric_active()) {
@@ -149,7 +150,7 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 void *
 MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 {
-  void *h = real_calloc(1, nmemb * bytes);
+  void *h = real_calloc(nmemb, bytes);
 
   if (hpcrun_datacentric_active()) {
     ucontext_t uc;

@@ -610,9 +610,19 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
                            update_bt, (void*)ip, 0/*isSync*/);
             cct_node_t* cct_node = hpcrun_sample_callpath_w_bt(context, metrics[1], linear_addr,
                            update_bt, (void*)ip, 0/*isSync*/);
-            if(result_node != NULL)//memory shouldn't be on stack or data section
+            if(cct_node==NULL)
             {
-            TMSG(IBS_SAMPLE, "node %d => %d", cct_node->persistent_id, result_node->cct_id);
+              /*when here, hpcrun_sample_callpath_w_bt return null. we drop this sample and restart IBS*/
+              printf("%x NULLLLLL\n",linear_addr);fflush(stdout);
+              if(pfm_restart(fd)){
+                EMSG("Fail to restart IBS");
+                exit(1);
+              }
+              return 0;
+            }
+            if(result_node != NULL)//memory shouldn't be on stack 
+            {
+              TMSG(IBS_SAMPLE, "node %d => %d", cct_node->persistent_id, result_node->cct_id);
               malloc_list_s* new_node = new_malloc_node(&cct_node->malloc_list, result_node->cct_id);
               if(new_node != NULL) //not in the list
               {
