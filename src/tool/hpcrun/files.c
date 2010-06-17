@@ -169,14 +169,12 @@ files_set_directory()
 }
 
 
-static const size_t PATH_MAX_LEN = 2048;
-
 void 
 files_set_executable(char *execname)
 {
   executable_name = strdup(basename(execname));
   if (executable_name[0] != '/') {
-    char path[PATH_MAX_LEN];
+    char path[PATH_MAX];
     // check return code; use pathname in fnbounds_static loadmap finalize
     realpath(executable_name, path);
     executable_pathname = strdup(path);

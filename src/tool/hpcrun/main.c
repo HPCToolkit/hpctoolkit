@@ -665,6 +665,30 @@ monitor_reset_stacksize(size_t old_size)
 // (sig)longjmp for trampoline (via monitor extensions)
 //***************************************************************************
 
+// FIXME: Comment-out the overrides of longjmp() and siglongjmp() for
+// now.  We currently don't use them and _FORTIFY_SOURCE in newer gnu
+// libc breaks this code.
+//
+// Before re-enabling, we need to better understand how gnu libc and
+// <bits/setjmp2.h> map longjmp() and siglongjmp() to __longjmp_chk()
+// and what is the right way to intercept them.  Also, find a way
+// around the 3-1 name mapping.
+//
+// Note: be sure to reset 'monitor_wrap_names' in hpclink.
+
+#if 1
+
+static siglongjmp_fcn *real_siglongjmp = NULL;
+
+siglongjmp_fcn *
+hpcrun_get_real_siglongjmp(void)
+{
+  MONITOR_EXT_GET_NAME(real_siglongjmp, siglongjmp);
+  return real_siglongjmp;
+}
+
+#else
+
 typedef void longjmp_fcn(jmp_buf, int);
 
 #ifdef HPCRUN_STATIC_LINK
@@ -712,6 +736,7 @@ MONITOR_EXT_WRAP_NAME(siglongjmp)(sigjmp_buf buf, int val)
   EEMSG("return from real siglongjmp(), should never get here");
   _exit(1);
 }
+#endif
 
 
 //***************************************************************************

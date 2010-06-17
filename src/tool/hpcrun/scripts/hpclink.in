@@ -41,7 +41,7 @@ monitor_wrap_names='main exit _exit dlopen dlclose fork vfork system
   MPI_Init_thread mpi_init_thread mpi_init_thread_ mpi_init_thread__
   MPI_Finalize mpi_finalize mpi_finalize_ mpi_finalize__
   MPI_Comm_rank mpi_comm_rank mpi_comm_rank_ mpi_comm_rank__
-  longjmp siglongjmp _mp_init'
+  _mp_init'
 
 extra_wrap_names='@hpclink_extra_wrap_names@'
 extra_hpc_files=
