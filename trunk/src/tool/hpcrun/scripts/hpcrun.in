@@ -90,10 +90,6 @@ opt_quiet=''
 
 # ***************************************************************************
 
-cmd_to_profile=""
-
-cmd="$0"
-
 hpc_path_to_root=..
 @export_hpctoolkit@
 
@@ -234,9 +230,9 @@ hpc_opt_check()
 }
 
 
-# args: ($1..$n): all arguments given to this script
-hpc_getoptions()
-{
+# Parse the command-line arguments outside a function.
+# This is necessary to handle args with special chars in them.
+
   # We can't easily use 'getopt' or 'getopts' because we have to
   # protect options given to the command to profile.
 
@@ -322,22 +318,15 @@ hpc_getoptions()
     shift
   done
 
-  # FIXME: this is fundamentally broken if args contain spaces.
-  cmd_to_profile="$*"
-  if test -z "$cmd_to_profile" && test "x$add_cmd_if_empty" = xyes ; then
-    cmd_to_profile=/bin/ls
-  fi
-  hpc_error_on_nil "${cmd_to_profile}" "** no command to profile\n";
-}
-
-
 # get the executable from the list of (remaining) args
 # Look for the executable on PATH and return full path if there.
 # The file tests don't look for programs on PATH.
 
-hpc_getexec()
-{
+  if test -z "$1" && test "x$add_cmd_if_empty" = xyes ; then
+    set -- /bin/ls
+  fi
   _EXEC="$1"
+  hpc_error_on_nil "$_EXEC" "** no command to profile\n";
 
   case "$_EXEC" in
     */* )
@@ -354,7 +343,6 @@ hpc_getexec()
       IFS="$OLDIFS"
       ;;
   esac
-}
 
 
 hpc_prepareenv()
@@ -452,13 +440,6 @@ hpc_prepareenv()
 # Main
 # ***************************************************************************
 
-# $n: argument n, with $0 being the command name
-# $*: all arguments from $1 to $n
-
-hpc_getoptions "$@"
-
-hpc_getexec $cmd_to_profile
-
 #
 # Sanity checks before launching the application.
 #
@@ -496,4 +477,4 @@ if [ ${ulimit_works}x != x ]; then
    ulimit -c unlimited
 fi
 
-exec ${cmd_to_profile}
+exec "$@"
