@@ -146,12 +146,22 @@ extern const char*
 copy(const char* destFile, ...);
 
 
+extern void
+copySimple(const char* dst, const char* src);
+
+inline void
+copySimple(const std::string& dst, const std::string& src)
+{
+  copySimple(dst.c_str(), src.c_str());
+}
+
+
 // deletes fname (unlink) 
 extern int
 remove(const char* fname);
 
 
-extern int 
+extern int
 mkdir(const char* dir);
 
 
