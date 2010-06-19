@@ -247,13 +247,24 @@ copy(const char* destFile, ...)
   else {
     return NULL; 
   } 
-} 
+}
+
+
+void
+copySimple(const char* dst, const char* src)
+{
+  string cmdCp = "cp -f " + string(src) + " " + string(dst);
+  int ret = system(cmdCp.c_str());
+  if (ret != 0) {
+    DIAG_Throw("copying '" << src << "' -> '" << dst << "'");
+  }
+}
 
 
 int
 remove(const char* file) 
 { 
-  return unlink(file); 
+  return unlink(file);
 }
 
 
