@@ -865,11 +865,17 @@ void
 makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 {
   const string& db_dir = args.db_dir;
-  DIAG_Msg(1, "Copying source files reached by PATH option to " << db_dir);
-  // NOTE: makes file names in structure relative to database
-  Analysis::Util::copySourceFiles(prof.structure()->root(), 
-				  args.searchPathTpls, db_dir);
   
+  // 1. Copy source files.  
+  //    NOTE: makes file names in 'prof.structure' relative to database
+  DIAG_Msg(1, "Copying source files reached by PATH option to " << db_dir);
+  Analysis::Util::copySourceFiles(prof.structure()->root(),
+				  args.searchPathTpls, db_dir);
+
+  // 2. Copy trace files (if necessary)
+  Analysis::Util::copyFiles(db_dir, prof.traceFileNameSet());
+
+  // 3. Create 'experiment.xml'
   string experiment_fnm = db_dir + "/" + args.out_db_experiment;
   std::ostream* os = IOUtil::OpenOStream(experiment_fnm.c_str());
   bool prettyPrint = (Diagnostics_GetDiagnosticFilterLevel() >= 5);

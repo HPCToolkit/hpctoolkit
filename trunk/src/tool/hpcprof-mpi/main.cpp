@@ -72,8 +72,9 @@ using std::vector;
 
 #include <cstdlib> // getenv()
 #include <cmath>   // ceil()
-#include <climits> // UCHAR_MAX
+#include <climits> // UCHAR_MAX, PATH_MAX
 #include <cctype>  // isdigit()
+#include <cstring> // strcpy()
 
 //*************************** User Include Files ****************************
 
@@ -222,6 +223,7 @@ realmain(int argc, char* const* argv)
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
   profLcl = Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags);
+  profLcl->traceFileNameSet().clear();
 
   // -------------------------------------------------------
   // Create canonical CCT (metrics merged by <group>.<name>.*)
@@ -267,10 +269,16 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   // Create summary metrics and thread-level metrics
   // -------------------------------------------------------
+  char dbDirBuf[PATH_MAX];
   if (myRank == rootRank) {
     args.makeDatabaseDir();
+
+    strncpy(dbDirBuf, args.db_dir.c_str(), PATH_MAX);
+    dbDirBuf[PATH_MAX - 1] = '\0';
   }
-  MPI_Barrier(MPI_COMM_WORLD);
+
+  MPI_Bcast((void*)dbDirBuf, PATH_MAX, MPI_CHAR, rootRank, MPI_COMM_WORLD);
+  args.db_dir = dbDirBuf;
 
   makeMetrics(args, nArgs, groupIdToGroupSizeMap, *profGbl,
 	      myRank, numRanks, rootRank);
@@ -283,9 +291,13 @@ realmain(int argc, char* const* argv)
 
   // ------------------------------------------------------------
   // Generate Experiment database
+  //   INVARIANT: database dir already exists
   // ------------------------------------------------------------
   if (myRank == rootRank) {
     Analysis::CallPath::makeDatabase(*profGbl, args);
+  }
+  else {
+    Analysis::Util::copyFiles(args.db_dir, profGbl->traceFileNameSet());
   }
 
   // -------------------------------------------------------

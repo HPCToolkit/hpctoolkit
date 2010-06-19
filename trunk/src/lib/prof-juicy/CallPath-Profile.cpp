@@ -90,6 +90,7 @@ using namespace xml;
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/FileUtil.hpp>
 #include <lib/support/Logic.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StrUtil.hpp>
@@ -194,13 +195,14 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
 
   x.m_profileFileName = "";
   x.m_traceFileName = "";
+  x.m_traceFileNameSet.insert(y.m_traceFileNameSet.begin(),
+			      y.m_traceFileNameSet.end());
 
   // -------------------------------------------------------
   // merge metrics
   // -------------------------------------------------------
   uint x_newMetricBegIdx = 0;
-  uint firstMergedMetric =
-    mergeMetrics(y, mergeTy, x_newMetricBegIdx);
+  uint firstMergedMetric = mergeMetrics(y, mergeTy, x_newMetricBegIdx);
   
   // -------------------------------------------------------
   // merge LoadMaps
@@ -851,7 +853,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   if (ext_pos != string::npos) {
     t_fnm.replace(t_fnm.begin() + ext_pos, t_fnm.end(), ext_trace);
-    prof->m_traceFileName = t_fnm;
+    if (FileUtil::isReadable(t_fnm.c_str())) {
+      prof->m_traceFileName = t_fnm;
+      prof->m_traceFileNameSet.insert(t_fnm);
+    }
   }
 
 

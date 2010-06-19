@@ -60,9 +60,12 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
-#include <vector>
-
 #include <cstdio>
+
+#include <vector>
+#include <set>
+#include <string>
+
 
 //*************************** User Include Files ****************************
 
@@ -109,6 +112,15 @@ public:
   double
   fmtVersion() const
   { return m_fmtVersion; }
+
+
+  const std::set<std::string>&
+  traceFileNameSet() const
+  { return m_traceFileNameSet; }
+
+  std::set<std::string>&
+  traceFileNameSet()
+  { return m_traceFileNameSet; }
   
 
   // -------------------------------------------------------
@@ -328,6 +340,7 @@ private:
 
   std::string m_profileFileName; // non-empty, if relevant
   std::string m_traceFileName;   // non-empty, if relevant
+  std::set<std::string> m_traceFileNameSet;
 
   //typedef std::map<std::string, std::string> StrToStrMap;
   //StrToStrMap m_nvPairMap;
