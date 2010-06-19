@@ -948,7 +948,7 @@ Stmt::toStringMe(uint oFlags) const
     self += " " + nameDyn();
   }
   if (hpcrun_fmt_doRetainId(cpId())) {
-    self += " i" + xml::MakeAttrNum(cpId());
+    self += " it" + xml::MakeAttrNum(cpId());
   }
   return self;
 }
