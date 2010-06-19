@@ -60,7 +60,9 @@
 //************************* System Include Files ****************************
 
 #include <string>
+
 #include <vector>
+#include <set>
 
 //*************************** User Include Files ****************************
 
@@ -93,23 +95,6 @@ enum ProfType_t {
 ProfType_t
 getProfileType(const std::string& filenm);
 
-// --------------------------------------------------------------------------
-//
-// --------------------------------------------------------------------------
-
-Prof::Struct::ACodeNode*
-demandStructure(VMA vma, Prof::Struct::LM* lmStrct, BinUtil::LM* lm, 
-		bool useStruct);
-
-
-// --------------------------------------------------------------------------
-//
-// --------------------------------------------------------------------------
-
-void 
-copySourceFiles(Prof::Struct::Root* structure, 
-		const Analysis::PathTupleVec& pathVec, 
-		const string& dstDir);
 
 // --------------------------------------------------------------------------
 //
@@ -159,6 +144,28 @@ normalizeProfileArgs(const StringVec& inPaths);
 
 int
 parseReplacePath(const std::string& arg);
+
+
+// --------------------------------------------------------------------------
+//
+// --------------------------------------------------------------------------
+
+Prof::Struct::ACodeNode*
+demandStructure(VMA vma, Prof::Struct::LM* lmStrct, BinUtil::LM* lm, 
+		bool useStruct);
+
+
+// --------------------------------------------------------------------------
+//
+// --------------------------------------------------------------------------
+
+void 
+copySourceFiles(Prof::Struct::Root* structure,
+		const Analysis::PathTupleVec& pathVec,
+		const std::string& dstDir);
+
+void
+copyFiles(const std::string& dstDir, const std::set<std::string>& srcFiles);
 
 
 } // namespace Util

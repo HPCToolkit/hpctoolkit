@@ -57,9 +57,6 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
-using std::cerr;
-using std::hex;
-using std::dec;
 
 #include <string>
 using std::string;
@@ -93,6 +90,42 @@ using std::string;
 
 //***************************************************************************
 
+static inline int
+fileExtensionFilter(const struct dirent* entry,
+		    const string& ext, uint extLen)
+{
+  // FileUtil::fnmatch("*.hpcrun", entry->d_name);
+  uint nmLen = strlen(entry->d_name);
+  if (nmLen > extLen) {
+    int cmpbeg = (nmLen - extLen);
+    return (strncmp(&entry->d_name[cmpbeg], ext.c_str(), extLen) == 0);
+  }
+  return 0;
+}
+
+
+static int 
+hpcrunFileFilter(const struct dirent* entry)
+{
+  static const string ext = string(".") + HPCRUN_PROFILE_FNM_SFX;
+  static const uint extLen = ext.length();
+
+  return fileExtensionFilter(entry, ext, extLen);
+}
+
+
+#if 0
+static int 
+hpctraceFileFilter(const struct dirent* entry)
+{
+  static const string ext = string(".") + HPCRUN_TRACE_FNM_SFX;
+  static const uint extLen = ext.length();
+
+  return fileExtensionFilter(entry, ext, extLen);
+}
+#endif
+
+
 //***************************************************************************
 // 
 //***************************************************************************
@@ -120,6 +153,99 @@ getProfileType(const std::string& filenm)
 
   return ty;
 }
+
+} // end of Util namespace
+} // end of Analysis namespace
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+namespace Analysis {
+namespace Util {
+
+NormalizeProfileArgs_t
+normalizeProfileArgs(const StringVec& inPaths)
+{
+  NormalizeProfileArgs_t out;
+
+  for (StringVec::const_iterator it = inPaths.begin(); 
+       it != inPaths.end(); ++it) {
+    std::string path = *it; // copy
+    if (FileUtil::isDir(path.c_str())) {
+      // ensure 'path' ends in '/'
+      if (path[path.length() - 1] != '/') {
+	path += "/";
+      }
+
+      struct dirent** dirEntries = NULL;
+      int dirEntriesSz = scandir(path.c_str(), &dirEntries,
+				 hpcrunFileFilter, alphasort);
+      if (dirEntriesSz < 0) {
+	DIAG_Throw("could not read directory: " << path);
+      }
+      else {
+	out.groupMax++; // obtain next group;
+	for (int i = 0; i < dirEntriesSz; ++i) {
+	  string nm = path + dirEntries[i]->d_name;
+	  free(dirEntries[i]);
+	  out.paths->push_back(nm);
+	  out.pathLenMax = std::max(out.pathLenMax, (uint)nm.length());
+	  out.groupMap->push_back(out.groupMax);
+	}
+	free(dirEntries);
+      }
+      
+      // TODO: collect group
+
+    }
+    else {
+      out.groupMax++; // obtain next group;
+      out.paths->push_back(path);
+      out.pathLenMax = std::max(out.pathLenMax, (uint)path.length());
+      out.groupMap->push_back(out.groupMax);
+    }
+  }
+  
+  return out;
+}
+
+} // end of Util namespace
+} // end of Analysis namespace
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+namespace Analysis {
+namespace Util {
+
+int
+parseReplacePath(const std::string& arg)
+{
+  size_t in = arg.find_first_of('=');
+  int occurancesOfEquals = 0;
+  size_t indexOfEquals = 0;
+  while (in != arg.npos) {
+    if (arg[in-1] != '\\') {
+      occurancesOfEquals++;
+      indexOfEquals = in;
+    }
+    
+    in = arg.find_first_of('=',(in+1));
+  }
+  
+  if (occurancesOfEquals == 1) {
+    string oldVal = arg.substr(0, indexOfEquals);
+    string newVal = arg.substr(indexOfEquals+1);
+    PathReplacementMgr::singleton().addPath(oldVal, newVal);
+  }
+
+  return occurancesOfEquals;
+}
+
 
 } // end of Util namespace
 } // end of Analysis namespace
@@ -375,133 +501,49 @@ copySourceFile(const string& filenm, const string& dstDir,
   for (end = dir_to.length() - 1; dir_to[end] != '/'; end--) { }
   dir_to[end] = '\0';    // should not end with '/'
 	
-  string cmdMkdir = "mkdir -p " + dir_to;
-  string cmdCp    = "cp -f " + fnm_fnd + " " + fnm_to;
-  //cerr << cmdCp << std::endl;
-  // mkdir(x, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
+  try {
+    string cmdMkdir = "mkdir -p " + dir_to;
+    system(cmdMkdir.c_str());
+    // mkdir(x, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
-	
-  // could use FileUtil::copyFile; see StaticFiles::Copy
-  if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
+    FileUtil::copySimple(fnm_to, fnm_fnd);
     DIAG_DevMsgIf(0, "cp " << fnm_to);
-  } 
-  else {
-    DIAG_EMsg("copying: '" << fnm_to);
   }
-
+  catch (const Diagnostics::Exception& x) {
+    DIAG_EMsg(x.message());
+  }
+  
   return fnm_new;
 }
 
 
 //***************************************************************************
-// 
-//***************************************************************************
-
-static int 
-hpcrunFileFilter(const struct dirent* entry)
-{
-  static const string ext = string(".") + HPCRUN_PROFILE_FNM_SFX;
-  static const uint extLen = ext.length();
-
-  // FileUtil::fnmatch("*.hpcrun", entry->d_name);
-  uint nmLen = strlen(entry->d_name);
-  if (nmLen > extLen) {
-    int cmpbeg = (nmLen - extLen);
-    return (strncmp(&entry->d_name[cmpbeg], ext.c_str(), extLen) == 0);
-  }
-  return false;
-}
-
-
-namespace Analysis {
-namespace Util {
-
-NormalizeProfileArgs_t
-normalizeProfileArgs(const StringVec& inPaths)
-{
-  NormalizeProfileArgs_t out;
-
-  for (StringVec::const_iterator it = inPaths.begin(); 
-       it != inPaths.end(); ++it) {
-    std::string path = *it; // copy
-    if (FileUtil::isDir(path.c_str())) {
-      // ensure 'path' ends in '/'
-      if (path[path.length() - 1] != '/') {
-	path += "/";
-      }
-
-      struct dirent** dirEntries = NULL;
-      int dirEntriesSz = scandir(path.c_str(), &dirEntries,
-				 hpcrunFileFilter, alphasort);
-      if (dirEntriesSz < 0) {
-	DIAG_Throw("could not read directory: " << path);
-      }
-      else {
-	out.groupMax++; // obtain next group;
-	for (int i = 0; i < dirEntriesSz; ++i) {
-	  string nm = path + dirEntries[i]->d_name;
-	  free(dirEntries[i]);
-	  out.paths->push_back(nm);
-	  out.pathLenMax = std::max(out.pathLenMax, (uint)nm.length());
-	  out.groupMap->push_back(out.groupMax);
-	}
-	free(dirEntries);
-      }
-      
-      // TODO: collect group
-
-    }
-    else {
-      out.groupMax++; // obtain next group;
-      out.paths->push_back(path);
-      out.pathLenMax = std::max(out.pathLenMax, (uint)path.length());
-      out.groupMap->push_back(out.groupMax);
-    }
-  }
-  
-  return out;
-}
-
-} // end of Util namespace
-} // end of Analysis namespace
-
-
-//***************************************************************************
-// 
+//
 //***************************************************************************
 
 namespace Analysis {
 namespace Util {
 
-int
-parseReplacePath(const std::string& arg)
+// copyFiles:
+void
+copyFiles(const std::string& dstDir, const std::set<string>& srcFiles)
 {
-  size_t in = arg.find_first_of('=');
-  int occurancesOfEquals = 0;
-  size_t indexOfEquals = 0;
-  while (in != arg.npos) {
-    if (arg[in-1] != '\\') {
-      occurancesOfEquals++;
-      indexOfEquals = in;
-    }
-    
-    in = arg.find_first_of('=',(in+1));
-  }
-  
-  if (occurancesOfEquals == 1) {
-    string oldVal = arg.substr(0, indexOfEquals);
-    string newVal = arg.substr(indexOfEquals+1);
-    PathReplacementMgr::singleton().addPath(oldVal, newVal);
-  }
+  for (std::set<string>::iterator it = srcFiles.begin();
+       it != srcFiles.end(); ++it) {
 
-  return occurancesOfEquals;
+    const string& srcFnm = *it;
+    try {
+      FileUtil::copySimple(dstDir, srcFnm);
+    }
+    catch (const Diagnostics::Exception& x) {
+      DIAG_EMsg(x.message());
+    }
+  }
 }
 
 
 } // end of Util namespace
 } // end of Analysis namespace
-
-
 
 
 //****************************************************************************
