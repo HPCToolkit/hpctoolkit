@@ -601,7 +601,7 @@ AC_SUBST([hpc_ext_libs_dir])
 #-------------------------------------------------
 
 # External's minimum svn rev number, or else a fatal error.
-EXTERNALS_MIN_REV=2469
+EXTERNALS_MIN_REV=2880
 
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
