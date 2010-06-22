@@ -101,7 +101,6 @@ static bool lea_has_zero_offset(xed_decoded_inst_t *xptr);
  *****************************************************************************/
 
 static xed_state_t xed_machine_state_x86_64 = { XED_MACHINE_MODE_LONG_64, 
-						XED_ADDRESS_WIDTH_64b,
 						XED_ADDRESS_WIDTH_64b };
 
 static char *prologue_start = NULL;
