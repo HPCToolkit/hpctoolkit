@@ -392,8 +392,25 @@ public:
 	      new_cpId == HPCRUN_FMT_CCTNodeId_NULL);
     }
 
+    std::string
+    toString(const char* pfx = "") const;
+
+    std::ostream&
+    dump(std::ostream& os = std::cerr, const char* pfx = "") const;
+
+
+    static std::string
+    toString(const std::list<CCT::ANode::MergeEffect>& effctLst,
+	     const char* pfx = "");
+
+    static std::ostream&
+    dump(const std::list<CCT::ANode::MergeEffect>& effctLst,
+	 std::ostream& os, const char* pfx = "");
+
     uint old_cpId /*within y*/, new_cpId /*within y*/;
   };
+
+  typedef std::list<CCT::ANode::MergeEffect> MergeEffectList;
 
 
   // mergeDeep: Let 'this' = x and let y be a node corresponding to x
@@ -1169,7 +1186,7 @@ public:
   // -------------------------------------------------------
   // Given a Tree, merge into 'this'
   // -------------------------------------------------------
-  std::list<ANode::MergeEffect>*
+  ANode::MergeEffectList*
   merge(const Tree* y, uint x_newMetricBegIdx,
 	uint mrgFlag = 0, uint oFlag = 0);
 
