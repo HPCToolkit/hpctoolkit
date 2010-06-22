@@ -65,7 +65,7 @@ symtabAPI: libdwarf libelf libunwind libxml2
 # parallel build often hides the error from another package.
 #
 begin-build:
-	rm -f $(FAILURE_FILE)
+	@rm -f $(FAILURE_FILE)
 
 $(PACKAGES): begin-build
 	@if $(MAKE) -C $@ install ; then \

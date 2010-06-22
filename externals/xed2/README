@@ -2,15 +2,15 @@
 Xed2 Build Notes
 =================
 
-Home: http://rogue.colorado.edu/pin/
+Home: http://www.pintool.org/
 
-Download: http://rogue.colorado.edu/cgi-bin/Pin/download.pl?
-	  file=pin-2.4-19012-gcc.4.0.0-ia32e-linux.tar.gz
+Download: pin-2.8-33586-gcc.3.4.6-ia32_intel64-linux.tar.gz
 
-Intel 64-bit x86, Linux, rev 19012, gcc 4.0.
-
-License: Intel Open Source License (BSD-like)
+License: BSD (Xed only, not Pin)
 
 Binary sub-package as part of Pin.
-Tar-copy bin, include and lib to the install directory.
+Tar-copy include and lib subdirs to the install directory.
 
+Note: the Pin license restricts redistribution.  But Xed has a
+separate license (BSD), so we include only the 'extras' subdirectory
+containing Xed.

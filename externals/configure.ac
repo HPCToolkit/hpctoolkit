@@ -68,29 +68,13 @@ failure_file=BUILD-FAILURE
 nobuild_cookie=.dont-build
 version_file="${srcdir}/.svn-revision"
 
-#
-# is_cross_compile: non-empty string if cross-compiling
-#
-is_cross_compile=""
-if test "x$build" != "x$host" ; then
-   is_cross_compile=${host}
-fi
+#------------------------------------------------------------
+# Prefix
+#------------------------------------------------------------
 
-#
-# Warn if not using gcc, but give a pass if you're trying to cross
-# compile.  Some packages don't build well without gcc.  This is not a
-# great test, since autoconf identifies Intel icc as gcc, and binutils
-# barfs on icc. (grrr)
-#
-ext_warn_non_gcc=no
-if test "x$GCC" != xyes && test "x$is_cross_compile" = x ; then
-    ext_warn_non_gcc=yes
-fi
-
-#
 # Ignore the user's prefix and always use our own.  It wouldn't work
 # as you might think and it just causes confusion.
-#
+
 ext_warn_user_prefix=no
 if test "x$prefix" != xNONE ; then
     ext_warn_user_prefix=yes
@@ -129,6 +113,27 @@ fi
 AC_SUBST([svn_revision])
 
 #------------------------------------------------------------
+# Compiler issues
+#------------------------------------------------------------
+
+# is_cross_compile: non-empty string if cross-compiling
+
+is_cross_compile=""
+if test "x$build" != "x$host" ; then
+   is_cross_compile=${host}
+fi
+
+# Warn if not using gcc, but give a pass if you're trying to cross
+# compile.  Some packages don't build well without gcc.  This is not a
+# great test, since autoconf identifies Intel icc as gcc, and binutils
+# barfs on icc. (grrr)
+
+ext_warn_non_gcc=no
+if test "x$GCC" != xyes && test "x$is_cross_compile" = x ; then
+    ext_warn_non_gcc=yes
+fi
+
+#------------------------------------------------------------
 # GNU make
 #------------------------------------------------------------
 
@@ -156,6 +161,35 @@ if test "$gnu_make" = no ; then
 fi
 
 AC_SUBST([gnu_make])
+
+#------------------------------------------------------------
+# Wordsize: --enable-bits=NUM
+#------------------------------------------------------------
+
+# Use sizeof(void *) to determine if CC produces 32- or 64-bit code.
+# This option is rarely needed, it exists just in case AC computes the
+# wrong value.
+
+AC_CHECK_SIZEOF([void *])
+
+default=`expr $ac_cv_sizeof_void_p '*' 8`
+
+AC_ARG_ENABLE([bits],
+    [AS_HELP_STRING([--enable-bits=NUM],
+	[wordsize in bits: 32 or 64, (default is computed from CC),
+	 rarely needed])],
+    [wordsize="$enable_bits"],
+    [wordsize="$default"])
+
+AC_MSG_CHECKING([wordsize])
+AC_MSG_RESULT([$wordsize bits])
+
+case "$wordsize" in
+    32 | 64 ) ;;
+    * ) AC_MSG_ERROR([wordsize must be 32 or 64: $wordsize bits]) ;;
+esac
+
+AC_SUBST([wordsize])
 
 #------------------------------------------------------------
 # Binutils: --with-binutils=PATH
@@ -788,12 +822,13 @@ rm -f "$failure_file"
 AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([Externals summary])
 AC_MSG_NOTICE([------------------])
-AC_MSG_NOTICE([prefix: $prefix])
 AC_MSG_NOTICE([svn revision: $svn_revision])
+AC_MSG_NOTICE([prefix: $prefix])
 AC_MSG_NOTICE([build: $build])
-AC_MSG_NOTICE([host: $host])
-AC_MSG_NOTICE([CC, CFLAGS: $CC $CFLAGS])
-AC_MSG_NOTICE([CXX, CXXFLAGS: $CXX $CXXFLAGS])
+AC_MSG_NOTICE([host:  $host])
+AC_MSG_NOTICE([CC:  '$CC',  CFLAGS: '$CFLAGS'])
+AC_MSG_NOTICE([CXX: '$CXX',  CXXFLAGS: '$CXXFLAGS'])
+AC_MSG_NOTICE([wordsize: $wordsize bits])
 AC_MSG_NOTICE([binutils: $binutils_avail])
 AC_MSG_NOTICE([libdwarf: $libdwarf_avail])
 AC_MSG_NOTICE([libelf: $libelf_avail])

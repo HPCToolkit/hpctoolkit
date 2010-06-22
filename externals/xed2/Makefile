@@ -5,9 +5,9 @@
 #
 
 PKG_NAME = xed2
-SRC_DIR = pin-2.4-19012-gcc.4.0.0-ia32e-linux
+SRC_DIR = extras
 
-FETCH_TARFILE = pin-2.4-19012-gcc.4.0.0-ia32e-linux.tar.gz
+FETCH_TARFILE = pin-extras-2.8-33586-x86-linux.tar.gz
 
 CONFIG_CMD = true
 BUILD_CMD = true
