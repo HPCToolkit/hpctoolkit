@@ -109,7 +109,7 @@ Tree::~Tree()
 }
 
 
-std::list<ANode::MergeEffect>*
+ANode::MergeEffectList*
 Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 {
   CCT::ANode* x_root = root();
@@ -140,7 +140,7 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
   }
   DIAG_Assert(isPrecondition, "Prof::CCT::Tree::merge: Merge precondition fails!");
 
-  std::list<ANode::MergeEffect>* mrgEffects =
+  ANode::MergeEffectList* mrgEffects =
     x_root->mergeDeep(y_root, x_newMetricBegIdx, mrgFlag, oFlag);
 
   return mrgEffects;
@@ -233,6 +233,55 @@ ANode::IntToANodeType(long i)
 }
 
 uint ANode::s_nextUniqueId = 2;
+
+
+//***************************************************************************
+// ANode::MergeEffect
+//***************************************************************************
+
+string
+ANode::MergeEffect::toString(const char* pfx) const
+{
+  std::ostringstream os;
+  dump(os, pfx);
+  return os.str();
+}
+
+
+std::ostream&
+ANode::MergeEffect::dump(std::ostream& os, const char* pfx) const
+{
+  os << old_cpId << " => " << new_cpId;
+  return os;
+}
+
+
+string
+ANode::MergeEffect::toString(const ANode::MergeEffectList& effctLst,
+			     const char* pfx)
+{
+  std::ostringstream os;
+  dump(effctLst, os, pfx);
+  return os.str();
+}
+
+
+std::ostream&
+ANode::MergeEffect::dump(const ANode::MergeEffectList& effctLst,
+			 std::ostream& os, const char* pfx)
+{
+  os << "{ ";
+  for (MergeEffectList::const_iterator it = effctLst.begin();
+       it != effctLst.end(); ++it) {
+    const CCT::ANode::MergeEffect& effct = *it;
+    os << "[ ";
+    effct.dump(os, pfx);
+    os << "] ";
+  }
+  os << "}";
+  return os;
+}
+
 
 //***************************************************************************
 // ANode, etc: constructors/destructors
@@ -541,7 +590,7 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 //**********************************************************************
 
 
-std::list<ANode::MergeEffect>*
+ANode::MergeEffectList*
 ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 {
   ANode* x = this;
@@ -561,7 +610,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
   //    x_child of x, merge [the metrics of] y_child into x_child and
   //    recur.
   // ------------------------------------------------------------
-  std::list<ANode::MergeEffect>* effctLst = new std::list<ANode::MergeEffect>;
+  ANode::MergeEffectList* effctLst = new ANode::MergeEffectList;
   
   for (ANodeChildIterator it(y); it.Current(); /* */) {
     ANode* y_child = it.current();
@@ -580,6 +629,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 		 << y_child->toStringMe(Tree::OFlg_Debug));
       y_child->unlink();
       y_child->mergeDeep_fixup(x_newMetricBegIdx);
+      // FIXME: ensure that no cpid's in y_child conflict with Tree x
       y_child->link(x);
     }
     else {
@@ -594,7 +644,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 	effctLst->push_back(effct);
       }
 
-      std::list<ANode::MergeEffect>* effctLst1 =
+      ANode::MergeEffectList* effctLst1 =
 	x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, mrgFlag, oFlag);
       if (effctLst1 && !effctLst1->empty()) {
 	effctLst->splice(effctLst->end(), *effctLst1);
