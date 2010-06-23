@@ -862,8 +862,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   // TODO: extract trace file name from profile
   string t_fnm = profFileName;
-  static const string ext_prof = string(".") + HPCRUN_PROFILE_FNM_SFX;
-  static const string ext_trace = string(".") + HPCRUN_TRACE_FNM_SFX;
+  static const string ext_prof = string(".") + HPCRUN_ProfileFnmSfx;
+  static const string ext_trace = string(".") + HPCRUN_TraceFnmSfx;
   
   size_t ext_pos = t_fnm.find(ext_prof);
 

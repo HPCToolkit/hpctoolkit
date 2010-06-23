@@ -83,16 +83,16 @@ extern "C" {
 //***************************************************************************
 
 // hpcrun profile filename suffix
-static const char HPCRUN_PROFILE_FNM_SFX[] = "hpcrun";
+static const char HPCRUN_ProfileFnmSfx[] = "hpcrun";
 
 // hpcrun trace filename suffix
-static const char HPCRUN_TRACE_FNM_SFX[] = "hpctrace";
+static const char HPCRUN_TraceFnmSfx[] = "hpctrace";
 
 // hpcrun log filename suffix
-static const char HPCRUN_LOG_FNM_SFX[] = "log";
+static const char HPCRUN_LogFnmSfx[] = "log";
 
 // hpcprof metric db filename suffix
-static const char HPCPROF_METRIC_DB_SFX[] = "metric-db";
+static const char HPCPROF_MetricDBSfx[] = "metric-db";
 
 static const char HPCPROF_TmpFnmSfx[] = "tmp";
 

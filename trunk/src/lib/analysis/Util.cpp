@@ -107,7 +107,7 @@ fileExtensionFilter(const struct dirent* entry,
 static int 
 hpcrunFileFilter(const struct dirent* entry)
 {
-  static const string ext = string(".") + HPCRUN_PROFILE_FNM_SFX;
+  static const string ext = string(".") + HPCRUN_ProfileFnmSfx;
   static const uint extLen = ext.length();
 
   return fileExtensionFilter(entry, ext, extLen);
@@ -118,7 +118,7 @@ hpcrunFileFilter(const struct dirent* entry)
 static int 
 hpctraceFileFilter(const struct dirent* entry)
 {
-  static const string ext = string(".") + HPCRUN_TRACE_FNM_SFX;
+  static const string ext = string(".") + HPCRUN_TraceFnmSfx;
   static const uint extLen = ext.length();
 
   return fileExtensionFilter(entry, ext, extLen);
