@@ -873,7 +873,7 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 				  args.searchPathTpls, db_dir);
 
   // 2. Copy trace files (if necessary)
-  Analysis::Util::copyFiles(db_dir, prof.traceFileNameSet());
+  Analysis::Util::copyTraceFiles(db_dir, prof.traceFileNameSet());
 
   // 3. Create 'experiment.xml'
   string experiment_fnm = db_dir + "/" + args.out_db_experiment;

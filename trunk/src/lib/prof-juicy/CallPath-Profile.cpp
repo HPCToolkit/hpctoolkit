@@ -142,7 +142,7 @@ Profile::~Profile()
 }
 
 
-uint 
+uint
 Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
 {
   Profile& x = (*this);
@@ -297,7 +297,7 @@ Profile::mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx)
 }
 
 
-void 
+void
 Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
 {
   // early exit for trivial case
@@ -335,14 +335,17 @@ Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
 }
 
 
-void 
+void
 Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
 {
   typedef std::map<uint, uint> UIntToUIntMap;
 
   // early exit for trivial case
-  if (!mrgEffects || mrgEffects->empty() || m_traceFileName.empty()) {
+  if (m_traceFileName.empty()) {
     return;
+  }
+  else if (!mrgEffects || mrgEffects->empty()) {
+    return; // rely on Analysis::Util::copyTraceFiles() to copy orig file
   }
 
   // N.B.: We could build a map of old->new cpIds within
@@ -359,18 +362,25 @@ Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
   // ------------------------------------------------------------
   // Rewrite trace file
   // ------------------------------------------------------------
-  FILE* fs = hpcio_fopen_rw(m_traceFileName.c_str());
-  if (!fs) {
+  FILE* infs = hpcio_fopen_r(m_traceFileName.c_str());
+  if (!infs) {
     DIAG_Throw("error opening trace file '" << m_traceFileName << "'");
   }
 
-  while ( !feof(fs) ) {
-    int ret;
-    uint64_t timestamp;
-    uint cctId;
+  string traceFileNameTmp = m_traceFileName + "." + HPCPROF_TmpFnmSfx;
+  FILE* outfs = hpcio_fopen_w(traceFileNameTmp.c_str(), 1/*overwrite*/);
+  if (!outfs) {
+    DIAG_Throw("error opening trace file '" << traceFileNameTmp << "'");
+  }
 
-    // 1. Read timestamp (exit on EOF)
-    ret = hpcfmt_byte8_fread(&timestamp, fs);
+  DIAG_MsgIf(0, "Profile::merge_fixTrace: " << m_traceFileName);
+
+  while ( !feof(infs) ) {
+    int ret;
+
+    // 1a. Read timestamp (exit on EOF)
+    uint64_t timestamp;
+    ret = hpcfmt_byte8_fread(&timestamp, infs);
     if (ret == HPCFMT_EOF) {
       break;
     }
@@ -378,27 +388,34 @@ Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
       DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
     }
     
-    // 2. Read and translate cct id
-    ret = hpcfmt_byte4_fread(&cctId, fs);
+    // 1b. Write timestamp
+    hpcfmt_byte8_fwrite(timestamp, outfs);
+
+
+    // 2a. Read and translate cct id
+    uint cctId_old;
+    ret = hpcfmt_byte4_fread(&cctId_old, infs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
     }
-    
-    UIntToUIntMap::iterator it = cpIdMap.find(cctId);
+
+    uint cctId_new = cctId_old;
+    UIntToUIntMap::iterator it = cpIdMap.find(cctId_old);
     if (it != cpIdMap.end()) {
-      uint cctId_new = it->second;
-      DIAG_MsgIf(0, "Profile::merge_fixTrace: translating "
-		 << cctId << " -> " << cctId_new);
-      fseek(fs, -sizeof(cctId), SEEK_CUR); // rewind
-      hpcfmt_byte4_fwrite(cctId_new, fs);  // write new cpId
+      cctId_new = it->second;
+      DIAG_MsgIf(0, "  " << cctId_old << " -> " << cctId_new);
     }
+
+    // 2b. Write cct id
+    hpcfmt_byte4_fwrite(cctId_new, outfs);
   }
 
-  hpcio_fclose(fs);
+  hpcio_fclose(infs);
+  hpcio_fclose(outfs);
 }
 
 
-void 
+void
 writeXML_help(std::ostream& os, const char* entry_nm, 
 	      Struct::Tree* structure, const Struct::ANodeFilter* filter,
 	      int type)
@@ -435,21 +452,21 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 }
 
 
-static bool 
+static bool
 writeXML_FileFilter(const Struct::ANode& x, long type)
 {
   return (typeid(x) == typeid(Struct::File) || typeid(x) == typeid(Struct::Alien));
 }
 
 
-static bool 
+static bool
 writeXML_ProcFilter(const Struct::ANode& x, long type)
 {
   return (typeid(x) == typeid(Struct::Proc) || typeid(x) == typeid(Struct::Alien));
 }
 
 
-std::ostream& 
+std::ostream&
 Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 		      uint oFlags, const char* pfx) const
 {
@@ -584,7 +601,7 @@ Profile::dump(std::ostream& os) const
 }
 
 
-void 
+void
 Profile::ddump() const
 {
   dump();
@@ -852,7 +869,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   if (ext_pos != string::npos) {
     t_fnm.replace(t_fnm.begin() + ext_pos, t_fnm.end(), ext_trace);
-    if (FileUtil::isReadable(t_fnm.c_str())) {
+    if (FileUtil::isReadable(t_fnm)) {
       prof->m_traceFileName = t_fnm;
       prof->m_traceFileNameSet.insert(t_fnm);
     }

@@ -648,6 +648,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 	x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, mrgFlag, oFlag);
       if (effctLst1 && !effctLst1->empty()) {
 	effctLst->splice(effctLst->end(), *effctLst1);
+	DIAG_MsgIf(0, ANode::MergeEffect::toString(*effctLst));
 	delete effctLst1;
       }
     }
