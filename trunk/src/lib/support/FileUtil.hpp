@@ -125,6 +125,13 @@ fnmatch(const std::vector<std::string>& patternVec,
 extern bool
 isReadable(const char* path);
 
+inline bool
+isReadable(const std::string& path)
+{
+  return isReadable(path.c_str());
+}
+
+
 bool
 isDir(const char* path);
 
@@ -154,6 +161,17 @@ copySimple(const std::string& dst, const std::string& src)
 {
   copySimple(dst.c_str(), src.c_str());
 }
+
+
+void
+move(const char* dst, const char* src);
+
+inline void
+move(const std::string& dst, const std::string& src)
+{
+  move(dst.c_str(), src.c_str());
+}
+
 
 
 // deletes fname (unlink) 
