@@ -48,7 +48,7 @@
 #include <sys/param.h>
 
 #include <cstdlib> // for 'mkstemp' (not technically visible in C++)
-#include <cstdio>  // for 'tmpnam'
+#include <cstdio>  // for 'tmpnam', 'rename'
 #include <cerrno>
 #include <cstdarg>
 #include <cstring>
@@ -82,7 +82,7 @@ using std::endl;
 namespace FileUtil {
 
 string
-basename(const char* fName) 
+basename(const char* fName)
 {
   string baseFileName;
 
@@ -100,7 +100,7 @@ basename(const char* fName)
 
 
 string
-rmSuffix(const char* fName) 
+rmSuffix(const char* fName)
 {
   string baseFileName = fName;
 
@@ -113,7 +113,7 @@ rmSuffix(const char* fName)
 
 
 string
-dirname(const char* fName) 
+dirname(const char* fName)
 {
   const char* lastSlash = strrchr(fName, '/');
   string pathComponent = ".";
@@ -126,7 +126,7 @@ dirname(const char* fName)
 
 
 bool
-fnmatch(const std::vector<std::string>& patternVec, 
+fnmatch(const std::vector<std::string>& patternVec,
 	const char* string, int flags)
 {
   for (uint i = 0; i < patternVec.size(); ++i) {
@@ -173,7 +173,7 @@ isDir(const char* path)
 
 
 int
-countChar(const char* path, char c) 
+countChar(const char* path, char c)
 {
   int srcFd = open(path, O_RDONLY); 
   if (srcFd < 0) {
@@ -198,7 +198,7 @@ countChar(const char* path, char c)
 //***************************************************************************
 
 static void
-cpy(int srcFd, int dstFd) 
+cpy(int srcFd, int dstFd)
 {
   char buf[256]; 
   ssize_t nRead; 
@@ -211,7 +211,7 @@ cpy(int srcFd, int dstFd)
 namespace FileUtil {
 
 const char*
-copy(const char* destFile, ...) 
+copy(const char* destFile, ...)
 {
   static string error; 
   error = ""; 
@@ -261,8 +261,18 @@ copySimple(const char* dst, const char* src)
 }
 
 
+void
+move(const char* dst, const char* src)
+{
+  int ret = rename(src, dst);
+  if (ret != 0) {
+    DIAG_Throw("moving '" << src << "' -> '" << dst << "'");
+  }
+}
+
+
 int
-remove(const char* file) 
+remove(const char* file)
 { 
   return unlink(file);
 }
@@ -311,7 +321,7 @@ mkdirUnique(const char* dirnm)
 
 
 const char*
-tmpname()   
+tmpname()
 {
   // below is a hack to replace the deprecated tmpnam which g++ 3.2.2 will
   // no longer allow. the mkstemp routine, which is touted as the replacement
