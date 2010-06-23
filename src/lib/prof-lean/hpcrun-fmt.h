@@ -94,6 +94,8 @@ static const char HPCRUN_LOG_FNM_SFX[] = "log";
 // hpcprof metric db filename suffix
 static const char HPCPROF_METRIC_DB_SFX[] = "metric-db";
 
+static const char HPCPROF_TmpFnmSfx[] = "tmp";
+
 
 //***************************************************************************
 // hdr

@@ -267,7 +267,7 @@ realmain(int argc, char* const* argv)
   profGbl->cct()->makeDensePreorderIds();
 
   // -------------------------------------------------------
-  // Create summary metrics and thread-level metrics
+  // Claim namespace for Experiment database
   // -------------------------------------------------------
   char dbDirBuf[PATH_MAX];
   if (myRank == rootRank) {
@@ -280,6 +280,9 @@ realmain(int argc, char* const* argv)
   MPI_Bcast((void*)dbDirBuf, PATH_MAX, MPI_CHAR, rootRank, MPI_COMM_WORLD);
   args.db_dir = dbDirBuf;
 
+  // -------------------------------------------------------
+  // Create summary metrics and thread-level metrics
+  // -------------------------------------------------------
   makeMetrics(args, nArgs, groupIdToGroupSizeMap, *profGbl,
 	      myRank, numRanks, rootRank);
 
@@ -297,7 +300,7 @@ realmain(int argc, char* const* argv)
     Analysis::CallPath::makeDatabase(*profGbl, args);
   }
   else {
-    Analysis::Util::copyFiles(args.db_dir, profGbl->traceFileNameSet());
+    Analysis::Util::copyTraceFiles(args.db_dir, profGbl->traceFileNameSet());
   }
 
   // -------------------------------------------------------
@@ -640,7 +643,8 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 
 
 // processProfile: Assumes 'profGbl' is the canonical CCT (with
-// structure and with canonical ids).
+// structure and with canonical ids).  Assumes the 'args' contains the
+// correct final experiment database.
 static void
 processProfile(Prof::CallPath::Profile& profGbl,
 	       const Analysis::Args& args,

@@ -524,16 +524,25 @@ copySourceFile(const string& filenm, const string& dstDir,
 namespace Analysis {
 namespace Util {
 
-// copyFiles:
+// copyTraceFiles:
 void
-copyFiles(const std::string& dstDir, const std::set<string>& srcFiles)
+copyTraceFiles(const std::string& dstDir, const std::set<string>& srcFiles)
 {
   for (std::set<string>::iterator it = srcFiles.begin();
        it != srcFiles.end(); ++it) {
 
-    const string& srcFnm = *it;
+    const string& x = *it;
+
+    const string  srcFnm1 = x + "." + HPCPROF_TmpFnmSfx;
+    const string& srcFnm2 = x;
+    const string  dstFnm = dstDir + "/" + FileUtil::basename(x);
     try {
-      FileUtil::copySimple(dstDir, srcFnm);
+      if (FileUtil::isReadable(srcFnm1)) {
+	FileUtil::move(dstFnm, srcFnm1);
+      }
+      else {
+	FileUtil::copySimple(dstFnm, srcFnm2);
+      }
     }
     catch (const Diagnostics::Exception& x) {
       DIAG_EMsg(x.message());

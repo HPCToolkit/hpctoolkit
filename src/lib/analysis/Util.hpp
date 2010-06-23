@@ -165,7 +165,8 @@ copySourceFiles(Prof::Struct::Root* structure,
 		const std::string& dstDir);
 
 void
-copyFiles(const std::string& dstDir, const std::set<std::string>& srcFiles);
+copyTraceFiles(const std::string& dstDir,
+	       const std::set<std::string>& srcFiles);
 
 
 } // namespace Util
