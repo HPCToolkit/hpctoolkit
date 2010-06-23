@@ -407,7 +407,7 @@ public:
   {
     std::string dbFileGlob;
     if (!m_namePfx.empty()) { dbFileGlob += m_namePfx + nameSep; }
-    dbFileGlob += std::string("*.") + HPCPROF_METRIC_DB_SFX;
+    dbFileGlob += std::string("*.") + HPCPROF_MetricDBSfx;
     return dbFileGlob;
   }
 

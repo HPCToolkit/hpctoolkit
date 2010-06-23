@@ -747,7 +747,7 @@ makeDBFileName(const string& dbDir, uint groupId, const string& profileFile)
  
   string fnm_base = FileUtil::rmSuffix(FileUtil::basename(profileFile.c_str()));
 
-  string fnm = grpStr + "." + fnm_base + "." + HPCPROF_METRIC_DB_SFX;
+  string fnm = grpStr + "." + fnm_base + "." + HPCPROF_MetricDBSfx;
 
   string metricDBFnm = dbDir + "/" + fnm;
   return metricDBFnm;
