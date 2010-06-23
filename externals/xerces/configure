@@ -11,7 +11,7 @@ build_dir=xerces-c-src_2_8_0/src/xercesc
 . ../build-utils/configure.inc
 pre_configure
 
-set -- -m inmem -n socket -r pthread -t native "$@"
+set -- -m inmem -n socket -r pthread -t native "$@" # add -s for static
 set -- -c "$CC" -x "$CXX" "$@"
 set -- -P "$prefix" -p "$xerces_platform" "$@"
 if test -n "${is_cross_compile}" ; then
