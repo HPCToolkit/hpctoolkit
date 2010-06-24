@@ -88,8 +88,9 @@ namespace Util {
 
 enum ProfType_t {
   ProfType_NULL,
-  ProfType_CALLPATH,
-  ProfType_FLAT
+  ProfType_Callpath,
+  ProfType_CallpathTrace,
+  ProfType_Flat
 };
 
 ProfType_t

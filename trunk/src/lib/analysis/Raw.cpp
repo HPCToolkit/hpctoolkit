@@ -83,10 +83,13 @@ Analysis::Raw::writeAsText(/*destination,*/ const char* filenm)
   using namespace Analysis::Util;
 
   ProfType_t ty = getProfileType(filenm);
-  if (ty == ProfType_CALLPATH) {
+  if (ty == ProfType_Callpath) {
     writeAsText_callpath(filenm);
   }
-  else if (ty == ProfType_FLAT) {
+  if (ty == ProfType_CallpathTrace) {
+    writeAsText_callpathTrace(filenm);
+  }
+  else if (ty == ProfType_Flat) {
     writeAsText_flat(filenm);
   }
   else {
@@ -113,6 +116,54 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
 
 
 void
+Analysis::Raw::writeAsText_callpathTrace(const char* filenm) 
+{
+  if (!filenm) { return; }
+
+  try {
+    FILE* fs = hpcio_fopen_r(filenm);
+    if (!fs) {
+      DIAG_Throw("error opening trace file '" << filenm << "'");
+    }
+
+    int ret = hpctrace_fmt_hdr_fread(fs);
+    if (ret == HPCFMT_EOF) {
+      DIAG_Throw("error reading trace file '" << filenm << "'");
+    }
+
+    hpctrace_fmt_hdr_fprint(stdout);
+
+    while ( !feof(fs) ) {
+      // 1a. Read timestamp (exit on EOF)
+      uint64_t timestamp;
+      ret = hpcfmt_byte8_fread(&timestamp, fs);
+      if (ret == HPCFMT_EOF) {
+	break;
+      }
+      else if (ret == HPCFMT_ERR) {
+	DIAG_Throw("error reading trace file '" << filenm << "'");
+      }
+
+      // 2a. Read and translate cct id
+      uint cctId;
+      ret = hpcfmt_byte4_fread(&cctId, fs);
+      if (ret != HPCFMT_OK) {
+	DIAG_Throw("error reading trace file '" << filenm << "'");
+      }
+
+      fprintf(stdout, "(%f, %u)\n", (double)timestamp, cctId);
+    }
+
+    hpcio_fclose(fs);
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << filenm << "'...");
+    throw;
+  }
+}
+
+
+void
 Analysis::Raw::writeAsText_flat(const char* filenm) 
 {
   if (!filenm) { return; }
@@ -128,5 +179,4 @@ Analysis::Raw::writeAsText_flat(const char* filenm)
 
   prof.dump(std::cout);
 }
-
 

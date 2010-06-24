@@ -362,22 +362,24 @@ Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
   // ------------------------------------------------------------
   // Rewrite trace file
   // ------------------------------------------------------------
+  int ret;
+
+  DIAG_MsgIf(0, "Profile::merge_fixTrace: " << m_traceFileName);
+
   FILE* infs = hpcio_fopen_r(m_traceFileName.c_str());
   if (!infs) {
     DIAG_Throw("error opening trace file '" << m_traceFileName << "'");
   }
+  ret = hpctrace_fmt_hdr_fread(infs);
 
   string traceFileNameTmp = m_traceFileName + "." + HPCPROF_TmpFnmSfx;
   FILE* outfs = hpcio_fopen_w(traceFileNameTmp.c_str(), 1/*overwrite*/);
   if (!outfs) {
     DIAG_Throw("error opening trace file '" << traceFileNameTmp << "'");
   }
-
-  DIAG_MsgIf(0, "Profile::merge_fixTrace: " << m_traceFileName);
+  ret = hpctrace_fmt_hdr_fwrite(outfs);
 
   while ( !feof(infs) ) {
-    int ret;
-
     // 1a. Read timestamp (exit on EOF)
     uint64_t timestamp;
     ret = hpcfmt_byte8_fread(&timestamp, infs);
