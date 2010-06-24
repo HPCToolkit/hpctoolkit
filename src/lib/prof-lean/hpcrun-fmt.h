@@ -161,9 +161,9 @@ static const char HPCTRACE_FMT_Magic[]   = "HPCRUN-trace______"; // 18 bytes
 static const char HPCTRACE_FMT_Version[] = "01.00";              // 5 bytes
 static const char HPCTRACE_FMT_Endian[]  = "b";                  // 1 byte
 
-static const int HPCTRACE_FMT_MagicLen   = (sizeof(HPCRUN_FMT_Magic) - 1);
-static const int HPCTRACE_FMT_VersionLen = (sizeof(HPCRUN_FMT_Version) - 1);
-static const int HPCTRACE_FMT_EndianLen  = (sizeof(HPCRUN_FMT_Endian) - 1);
+static const int HPCTRACE_FMT_MagicLen   = (sizeof(HPCTRACE_FMT_Magic) - 1);
+static const int HPCTRACE_FMT_VersionLen = (sizeof(HPCTRACE_FMT_Version) - 1);
+static const int HPCTRACE_FMT_EndianLen  = (sizeof(HPCTRACE_FMT_Endian) - 1);
 
 
 int

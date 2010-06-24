@@ -380,7 +380,7 @@ Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
   ret = hpctrace_fmt_hdr_fwrite(outfs);
 
   while ( !feof(infs) ) {
-    // 1a. Read timestamp (exit on EOF)
+    // 1. Read trace record (exit on EOF)
     uint64_t timestamp;
     ret = hpcfmt_byte8_fread(&timestamp, infs);
     if (ret == HPCFMT_EOF) {
@@ -390,17 +390,13 @@ Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
       DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
     }
     
-    // 1b. Write timestamp
-    hpcfmt_byte8_fwrite(timestamp, outfs);
-
-
-    // 2a. Read and translate cct id
     uint cctId_old;
     ret = hpcfmt_byte4_fread(&cctId_old, infs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
     }
 
+    // 2. Translate cct id
     uint cctId_new = cctId_old;
     UIntToUIntMap::iterator it = cpIdMap.find(cctId_old);
     if (it != cpIdMap.end()) {
@@ -408,7 +404,8 @@ Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
       DIAG_MsgIf(0, "  " << cctId_old << " -> " << cctId_new);
     }
 
-    // 2b. Write cct id
+    // 3. Write new trace record
+    hpcfmt_byte8_fwrite(timestamp, outfs);
     hpcfmt_byte4_fwrite(cctId_new, outfs);
   }
 

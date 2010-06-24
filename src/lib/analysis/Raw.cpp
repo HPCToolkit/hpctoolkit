@@ -134,7 +134,7 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
     hpctrace_fmt_hdr_fprint(stdout);
 
     while ( !feof(fs) ) {
-      // 1a. Read timestamp (exit on EOF)
+      // Read trace record (exit on EOF)
       uint64_t timestamp;
       ret = hpcfmt_byte8_fread(&timestamp, fs);
       if (ret == HPCFMT_EOF) {
@@ -144,7 +144,6 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
 	DIAG_Throw("error reading trace file '" << filenm << "'");
       }
 
-      // 2a. Read and translate cct id
       uint cctId;
       ret = hpcfmt_byte4_fread(&cctId, fs);
       if (ret != HPCFMT_OK) {
