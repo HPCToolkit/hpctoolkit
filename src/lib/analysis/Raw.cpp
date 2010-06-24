@@ -86,7 +86,7 @@ Analysis::Raw::writeAsText(/*destination,*/ const char* filenm)
   if (ty == ProfType_Callpath) {
     writeAsText_callpath(filenm);
   }
-  if (ty == ProfType_CallpathTrace) {
+  else if (ty == ProfType_CallpathTrace) {
     writeAsText_callpathTrace(filenm);
   }
   else if (ty == ProfType_Flat) {
