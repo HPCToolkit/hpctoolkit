@@ -145,10 +145,13 @@ getProfileType(const std::string& filenm)
   
   ProfType_t ty = ProfType_NULL;
   if (strncmp(buf, HPCRUN_FMT_Magic, HPCRUN_FMT_MagicLen) == 0) {
-    ty = ProfType_CALLPATH;
+    ty = ProfType_Callpath;
+  }
+  else if (strncmp(buf, HPCTRACE_FMT_Magic, HPCTRACE_FMT_MagicLen) == 0) {
+    ty = ProfType_CallpathTrace;
   }
   else if (strncmp(buf, HPCRUNFLAT_FMT_Magic, HPCRUNFLAT_FMT_MagicLen) == 0) {
-    ty = ProfType_FLAT;
+    ty = ProfType_Flat;
   }
 
   return ty;
@@ -539,9 +542,11 @@ copyTraceFiles(const std::string& dstDir, const std::set<string>& srcFiles)
     try {
       if (FileUtil::isReadable(srcFnm1)) {
 	FileUtil::move(dstFnm, srcFnm1);
+	DIAG_Msg(2, "trace: " << srcFnm1 << " -> " << dstFnm);
       }
       else {
 	FileUtil::copySimple(dstFnm, srcFnm2);
+	DIAG_Msg(2, "trace: " << srcFnm2 << " -> " << dstFnm);
       }
     }
     catch (const Diagnostics::Exception& x) {

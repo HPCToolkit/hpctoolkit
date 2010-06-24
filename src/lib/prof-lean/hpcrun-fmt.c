@@ -200,7 +200,6 @@ hpctrace_fmt_hdr_fwrite(FILE* fs)
   fwrite(HPCTRACE_FMT_Magic,   1, HPCTRACE_FMT_MagicLen, fs);
   fwrite(HPCTRACE_FMT_Version, 1, HPCTRACE_FMT_VersionLen, fs);
   fwrite(HPCTRACE_FMT_Endian,  1, HPCTRACE_FMT_EndianLen, fs);
-  fprintf(fs, "\n");
 
   return HPCFMT_OK;
 }
