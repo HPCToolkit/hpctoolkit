@@ -124,6 +124,7 @@ trace_open()
     thread_data_t *td = hpcrun_get_thread_data();
     td->trace_file = hpcio_fopen_w(trace_file, 0);
     trace_file_validate(td->trace_file != 0, "open");
+    hpctrace_fmt_hdr_fwrite(td->trace_file);
   }
 }
 
@@ -141,7 +142,7 @@ trace_append(unsigned int call_path_id)
   if (tracing) {
     struct timeval tv;
     int notime = gettimeofday(&tv, NULL);
-    assert(notime == 0 && "in trace_append: gettimeofday failed!"); 
+    assert(notime == 0 && "in trace_append: gettimeofday failed!");
     microtime.data.dbl = tv.tv_usec + tv.tv_sec * 1000000;
 
     thread_data_t *td = hpcrun_get_thread_data();
