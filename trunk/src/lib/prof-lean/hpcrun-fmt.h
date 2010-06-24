@@ -154,6 +154,29 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************
+// hdr (trace, located here for now)
+//***************************************************************************
+
+static const char HPCTRACE_FMT_Magic[]   = "HPCRUN-trace______"; // 18 bytes
+static const char HPCTRACE_FMT_Version[] = "01.00";              // 5 bytes
+static const char HPCTRACE_FMT_Endian[]  = "b";                  // 1 byte
+
+static const int HPCTRACE_FMT_MagicLen   = (sizeof(HPCRUN_FMT_Magic) - 1);
+static const int HPCTRACE_FMT_VersionLen = (sizeof(HPCRUN_FMT_Version) - 1);
+static const int HPCTRACE_FMT_EndianLen  = (sizeof(HPCRUN_FMT_Endian) - 1);
+
+
+int
+hpctrace_fmt_hdr_fread(FILE* infs);
+
+int
+hpctrace_fmt_hdr_fwrite(FILE* fs);
+
+int
+hpctrace_fmt_hdr_fprint(FILE* fs);
+
+
+//***************************************************************************
 // epoch-hdr
 //***************************************************************************
 

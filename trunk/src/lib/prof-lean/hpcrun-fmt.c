@@ -159,6 +159,64 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc)
 
 
 //***************************************************************************
+// hdr (trace, located here for now)
+//***************************************************************************
+
+int
+hpctrace_fmt_hdr_fread(FILE* infs)
+{
+  char tag[HPCTRACE_FMT_MagicLen + 1];
+  char version[HPCTRACE_FMT_VersionLen + 1];
+  char endian[HPCTRACE_FMT_EndianLen + 1];
+
+  int nr = fread(tag, 1, HPCTRACE_FMT_MagicLen, infs);
+  tag[HPCTRACE_FMT_MagicLen] = '\0';
+
+  if (nr != HPCTRACE_FMT_MagicLen) {
+    return HPCFMT_ERR;
+  }
+  if (strcmp(tag, HPCTRACE_FMT_Magic) != 0) {
+    return HPCFMT_ERR;
+  }
+
+  nr = fread(&version, 1, HPCTRACE_FMT_VersionLen, infs);
+  version[HPCTRACE_FMT_VersionLen] = '\0';
+  if (nr != HPCTRACE_FMT_VersionLen) {
+    return HPCFMT_ERR;
+  }
+
+  nr = fread(&endian, 1, HPCTRACE_FMT_EndianLen, infs);
+  if (nr != HPCTRACE_FMT_EndianLen) {
+    return HPCFMT_ERR;
+  }
+
+  return HPCFMT_OK;
+}
+
+
+int
+hpctrace_fmt_hdr_fwrite(FILE* fs)
+{
+  fwrite(HPCTRACE_FMT_Magic,   1, HPCTRACE_FMT_MagicLen, fs);
+  fwrite(HPCTRACE_FMT_Version, 1, HPCTRACE_FMT_VersionLen, fs);
+  fwrite(HPCTRACE_FMT_Endian,  1, HPCTRACE_FMT_EndianLen, fs);
+  fprintf(fs, "\n");
+
+  return HPCFMT_OK;
+}
+
+
+int
+hpctrace_fmt_hdr_fprint(FILE* fs)
+{
+  fprintf(fs, "%s\n", HPCTRACE_FMT_Magic);
+  fprintf(fs, "[hdr:...]\n");
+
+  return HPCFMT_OK;
+}
+
+
+//***************************************************************************
 // epoch-hdr
 //***************************************************************************
 
