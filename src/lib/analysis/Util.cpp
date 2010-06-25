@@ -509,7 +509,7 @@ copySourceFile(const string& filenm, const string& dstDir,
     system(cmdMkdir.c_str());
     // mkdir(x, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
-    FileUtil::copySimple(fnm_to, fnm_fnd);
+    FileUtil::copySystem(fnm_to, fnm_fnd);
     DIAG_DevMsgIf(0, "cp " << fnm_to);
   }
   catch (const Diagnostics::Exception& x) {
@@ -545,7 +545,7 @@ copyTraceFiles(const std::string& dstDir, const std::set<string>& srcFiles)
 	DIAG_Msg(2, "trace: " << srcFnm1 << " -> " << dstFnm);
       }
       else {
-	FileUtil::copySimple(dstFnm, srcFnm2);
+	FileUtil::copySystem(dstFnm, srcFnm2);
 	DIAG_Msg(2, "trace: " << srcFnm2 << " -> " << dstFnm);
       }
     }

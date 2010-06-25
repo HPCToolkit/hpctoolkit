@@ -200,58 +200,58 @@ countChar(const char* path, char c)
 static void
 cpy(int srcFd, int dstFd)
 {
-  char buf[256]; 
-  ssize_t nRead; 
-  while ((nRead = read(srcFd, buf, 256)) > 0) {
-    write(dstFd, buf, nRead); 
-  } 
-} 
+  static const int bufSz = 4096;
+  char buf[bufSz];
+  ssize_t nRead;
+  while ((nRead = read(srcFd, buf, bufSz)) > 0) {
+    write(dstFd, buf, nRead);
+  }
+}
 
 
 namespace FileUtil {
 
-const char*
-copy(const char* destFile, ...)
+void
+copy(const char* dst, ...)
 {
-  static string error; 
-  error = ""; 
-  va_list srcFiles;
-  va_start(srcFiles, destFile);
-
-  IFTRACE << "copyFile: destFile = " << destFile ; 
-  int dstFd = open(destFile, O_WRONLY | O_CREAT | O_TRUNC, 
-		    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); 
-  if (dstFd < 0) {
-    error = string("Could not open ") + destFile + ": " + strerror(errno); 
-    IFTRACE << " Error: " << error << endl; 
-    return error.c_str(); 
-  } 
+  va_list srcFnmList;
+  va_start(srcFnmList, dst);
   
-  char* srcFile; 
-  while ( (srcFile = va_arg(srcFiles, char*)) ) {
-    int srcFd = open(srcFile, O_RDONLY); 
+  DIAG_MsgIf(0, "FileUtil::copy: ... -> " << dst);
+
+  int dstFd = open(dst, O_WRONLY | O_CREAT | O_TRUNC,
+		   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if (dstFd < 0) {
+    DIAG_Throw("could not open destination '" << dst << "' ("
+	       << strerror(errno) << ")");
+  }
+
+  string errorMsg;
+
+  char* srcFnm;
+  while ( (srcFnm = va_arg(srcFnmList, char*)) ) {
+    int srcFd = open(srcFnm, O_RDONLY);
     if ((srcFd < 0) || (dstFd < 0)) {
-      error = string("Could not open ") + srcFile + ": " + strerror(errno); 
-    } 
-    else { 
-      IFTRACE << " " << srcFile; 
-      cpy(srcFd, dstFd); 
-      close(srcFd); 
+      errorMsg += (string("could not open '") + srcFnm + "' (" 
+		   + strerror(errno) + ")");
     }
-  } 
-  IFTRACE << endl;
-  close(dstFd); 
-  if (error.length() > 0) {
-    return error.c_str(); 
-  } 
-  else {
-    return NULL; 
-  } 
+    else {
+      cpy(srcFd, dstFd);
+      close(srcFd);
+    }
+  }
+
+  va_end(srcFnmList);
+  close(dstFd);
+
+  if (!errorMsg.empty()) {
+    DIAG_Throw("could not open source files: " << errorMsg);
+  }
 }
 
 
 void
-copySimple(const char* dst, const char* src)
+copySystem(const char* dst, const char* src)
 {
   string cmdCp = "cp -f " + string(src) + " " + string(dst);
   int ret = system(cmdCp.c_str());
