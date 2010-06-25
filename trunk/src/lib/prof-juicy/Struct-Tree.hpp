@@ -429,7 +429,8 @@ public:
   { aggregateMetrics(mBegId, mBegId + 1); }
 
 
-  // traverses the tree and removes all nodes for which hasMetrics() is false
+  // pruneByMetrics: recursively prunes all (children) of the current
+  // node for which hasMetrics() is false.
   void
   pruneByMetrics();
 

@@ -472,9 +472,9 @@ ANode::ancestor(ANodeTy ty) const
   const ANode* x = this;
   while (x && x->type() != ty) {
     x = x->parent();
-  } 
+  }
   return const_cast<ANode*>(x);
-} 
+}
 
 
 ANode*
@@ -485,7 +485,7 @@ ANode::ancestor(ANodeTy ty1, ANodeTy ty2) const
     x = x->parent();
   }
   return const_cast<ANode*>(x);
-} 
+}
 
 
 ANode*
@@ -496,7 +496,7 @@ ANode::ancestor(ANodeTy ty1, ANodeTy ty2, ANodeTy ty3) const
     x = x->parent();
   }
   return const_cast<ANode*>(x);
-} 
+}
 
 
 #if 0
@@ -550,7 +550,7 @@ ANode::ancestorRoot() const
     //   (the LoopInfo itself) was queried for Root member data.  Ouch!
     // eraxxon: return (Root*) this;
     return NULL;
-  } 
+  }
   else { 
     dyn_cast_return(ANode, Root, ancestor(TyRoot));
   }
@@ -639,26 +639,21 @@ ANode::aggregateMetrics(uint mBegId, uint mEndId)
 }
 
 
-void 
+void
 ANode::pruneByMetrics()
 {
-  std::vector<ANode*> toBeRemoved;
-  
-  for (ANodeChildIterator it(this, NULL); it.Current(); ++it) {
+  for (ANodeChildIterator it(this); it.Current(); /* */) {
     ANode* x = it.current();
+    it++; // advance iterator -- it is pointing at 'x'
+
     if (x->hasMetrics()) {
       x->pruneByMetrics();
     }
     else {
-      toBeRemoved.push_back(x);
+      x->unlink(); // unlink 'x' from tree
+      delete x;
     }
-  }
-  
-  for (uint i = 0; i < toBeRemoved.size(); i++) {
-    ANode* x = toBeRemoved[i];
-    x->unlink();
-    delete x;
-  }
+  }  
 }
 
 
@@ -666,7 +661,7 @@ ANode::pruneByMetrics()
 // ANode: Paths and Merging
 //***************************************************************************
 
-int 
+int
 ANode::distance(ANode* anc, ANode* desc)
 {
   int distance = 0;
@@ -682,7 +677,7 @@ ANode::distance(ANode* anc, ANode* desc)
 }
 
 
-bool 
+bool
 ANode::arePathsOverlapping(ANode* lca, ANode* desc1, ANode* desc2)
 {
   // Ensure that d1 is on the longest path
@@ -693,7 +688,7 @@ ANode::arePathsOverlapping(ANode* lca, ANode* desc1, ANode* desc2)
     ANode* t = d1;
     d1 = d2;
     d2 = t;
-  } 
+  }
   
   // Iterate over the longest path (d1 -> lca) searching for d2.  Stop
   // when x is NULL or lca.
@@ -755,7 +750,7 @@ ANode::mergePaths(ANode* lca, ANode* toDesc, ANode* fromDesc)
 }
 
 
-bool 
+bool
 ANode::merge(ANode* toNode, ANode* fromNode)
 {
   // Do we really want this?
@@ -792,7 +787,7 @@ ANode::merge(ANode* toNode, ANode* fromNode)
 }
 
 
-bool 
+bool
 ANode::isMergable(ANode* toNode, ANode* fromNode)
 {
   ANode::ANodeTy toTy = toNode->type(), fromTy = fromNode->type();
@@ -818,7 +813,7 @@ ANode::isMergable(ANode* toNode, ANode* fromNode)
 // ANode, etc: Names, Name Maps, and Retrieval by Name
 //***************************************************************************
 
-void 
+void
 Root::AddToGroupMap(Group* grp) 
 {
   std::pair<GroupMap::iterator, bool> ret = 
@@ -827,7 +822,7 @@ Root::AddToGroupMap(Group* grp)
 }
 
 
-void 
+void
 Root::AddToLoadModMap(LM* lm)
 {
   string nm_real = lm->name();
@@ -838,7 +833,7 @@ Root::AddToLoadModMap(LM* lm)
 }
 
 
-void 
+void
 LM::AddToFileMap(File* f)
 {
   string nm_real = f->name();
@@ -850,16 +845,16 @@ LM::AddToFileMap(File* f)
 }
 
 
-void 
+void
 File::AddToProcMap(Proc* p) 
 {
   DIAG_DevMsg(2, "File (" << this << "): mapping proc name '" << p->name()
 	      << "' to Proc* " << p);
   m_procMap->insert(make_pair(p->name(), p)); // multimap
-} 
+}
 
 
-void 
+void
 Proc::AddToStmtMap(Stmt* stmt)
 {
   // FIXME: confusion between native and alien statements
@@ -1025,14 +1020,14 @@ ACodeNode::expandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
     DIAG_Assert(m_begLn == ln_NULL, "");
     // simply relocate at beginning of sibling list 
     relocateIf();
-  } 
+  }
   else {
     bool changed = false;
     if (m_begLn == ln_NULL) {
       m_begLn = begLn;
       m_endLn = endLn;
       changed = true;
-    } 
+    }
     else {
       if (begLn < m_begLn) { m_begLn = begLn; changed = true; }
       if (endLn > m_endLn) { m_endLn = endLn; changed = true; }
@@ -1059,7 +1054,7 @@ ACodeNode::relocate()
   if ((!prev || (prev->begLine() <= m_begLn)) 
       && (!next || (m_begLn <= next->begLine()))) {
     return;
-  } 
+  }
   
   // INVARIANT: The parent scope contains at least two children
   DIAG_Assert(parent()->childCount() >= 2, "");
@@ -1073,7 +1068,7 @@ ACodeNode::relocate()
   if (m_begLn == ln_NULL) {
     // insert as first child
     linkBefore(prnt->firstChild());
-  } 
+  }
   else {
     // insert after sibling with sibling->begLine() <= begLine() 
     // or iff that does not exist insert as first in sibling list
@@ -1083,13 +1078,13 @@ ACodeNode::relocate()
       if (sibling->begLine() <= m_begLn) {
 	break;
       }
-    } 
+    }
     if (sibling != NULL) {
       linkAfter(sibling);
-    } 
+    }
     else {
       linkBefore(prnt->FirstChild());
-    } 
+    }
   }
 }
 
@@ -1127,14 +1122,14 @@ ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
       if  (fnd->containsLine(ln)) {
 	if (fnd->type() == TyStmt) {  
 	  return fnd; // never look inside LINE_SCOPEs 
-	} 
+	}
 	
 	// desired line might be in inner scope; however, it might be
 	// elsewhere because optimization left procedure with 
 	// non-contiguous line ranges in scopes at various levels.
 	ACodeNode* inner = fnd->ACodeNodeWithLine(ln);
 	if (inner) return inner;
-      } 
+      }
     }
   }
   if (fnd && fnd->type() == TyProc) {
@@ -1231,7 +1226,7 @@ ACodeNode::codeName() const
     nm += "-" + StrUtil::toStr(m_endLn);
   }
   return nm;
-} 
+}
 
 
 string
@@ -1283,7 +1278,7 @@ Alien::codeName() const
   string nm = "<" + m_filenm + ">[" + m_name + "]:";
   nm += StrUtil::toStr(m_begLn);
   return nm;
-} 
+}
 
 
 string
@@ -1292,7 +1287,7 @@ Loop::codeName() const
   string nm = codeName_LM_F();
   nm += ACodeNode::codeName();
   return nm;
-} 
+}
 
 
 string
@@ -1637,7 +1632,7 @@ Proc::CSV_dump(const Root& root, ostream& os,
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
        it.current(); it++) {
     it.current()->CSV_dump(root, os, file_name, name().c_str(), 1);
-  } 
+  }
 }
 
 
@@ -1669,7 +1664,7 @@ ACodeNode::CSV_dump(const Root& root, ostream& os,
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
        it.current(); it++) {
     it.current()->CSV_dump(root, os, file_name, proc_name, lLevel+1);
-  } 
+  }
 }
 
 
@@ -1722,7 +1717,7 @@ ANode::dump(ostream& os, int oFlags, const char* pre) const
     os << i << " = " ;
     if (hasMetric(i)) {
       os << metric(i);
-    } 
+    }
     else {
       os << "UNDEF";
     }
@@ -1731,7 +1726,7 @@ ANode::dump(ostream& os, int oFlags, const char* pre) const
   
   for (ANodeChildIterator it(this); it.Current(); it++) {
     it.current()->dump(os, oFlags, prefix.c_str());
-  } 
+  }
   return os;
 }
 
@@ -1870,12 +1865,12 @@ Ref::RelocateRef()
   if (((!prev) || (prev->endPos <= begPos)) && 
       ((!next) || (next->begPos >= endPos))) {
     return;
-  } 
+  }
   ANode* prnt = parent();
   unlink();
   if (prnt->firstChild() == NULL) {
     link(prnt);
-  } 
+  }
   else {
     // insert after sibling with sibling->endPos < begPos 
     // or iff that does not exist insert as first in sibling list
@@ -1886,15 +1881,15 @@ Ref::RelocateRef()
       DIAG_Assert(ref == sibling, "");
       if (ref->endPos < begPos)  
 	break;
-      } 
+      }
     if (sibling != NULL) {
       Ref *nxt = dynamic_cast<Ref*>(sibling->nextSibling());
       DIAG_Assert((nxt == NULL) || (nxt->begPos > endPos), "");
       linkAfter(sibling);
-    } 
+    }
     else {
       linkBefore(prnt->FirstChild());
-    } 
+    }
   }
 }
 
