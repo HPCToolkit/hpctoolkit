@@ -146,20 +146,19 @@ countChar(const char* file, char c);
 // ---------------------------------------------------------
 
 // copy: takes a NULL terminated list of file name and appends these
-// files into destFile.  It returns NULL upon success; otherwise
-// returns an error message in a static variable which is overwritten
-// with each call.
-extern const char* 
+// files into destFile.
+extern void
 copy(const char* destFile, ...);
 
 
+// copySystem: uses system("cp...")
 extern void
-copySimple(const char* dst, const char* src);
+copySystem(const char* dst, const char* src);
 
 inline void
-copySimple(const std::string& dst, const std::string& src)
+copySystem(const std::string& dst, const std::string& src)
 {
-  copySimple(dst.c_str(), src.c_str());
+  copySystem(dst.c_str(), src.c_str());
 }
 
 
