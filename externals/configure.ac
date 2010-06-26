@@ -301,6 +301,11 @@ AC_SUBST([libdwarf_lib])
 # Libelf: --with-libelf=PATH
 #------------------------------------------------------------
 
+# FIXME: libelf installs and includes its header files as
+# <libelf/libelf.h> and not <libelf.h>.  It's a mess to support both
+# (libdwarf handles this, but symtabAPI does not), so we follow
+# libelf's usage.
+
 AC_ARG_WITH([libelf],
     [AS_HELP_STRING([--with-libelf=PATH],
 	[path to libelf install directory (default build)])],
@@ -320,18 +325,16 @@ case "$with_libelf" in
     build | yes )
 	libelf_avail=build
 	libelf_prefix="$prefix"
-	libelf_inc="${libelf_prefix}/include/libelf"
+	libelf_inc="${libelf_prefix}/include"
 	libelf_lib="${libelf_prefix}/lib"
 	;;
     /* )
 	libelf_avail="$with_libelf"
 	libelf_prefix="$with_libelf"
-	if test -f "${libelf_prefix}/include/libelf.h" ; then
+	if test -f "${libelf_prefix}/include/libelf/libelf.h" ; then
 	    libelf_inc="${libelf_prefix}/include"
-	elif test -f "${libelf_prefix}/include/libelf/libelf.h" ; then
-	    libelf_inc="${libelf_prefix}/include/libelf"
 	else
-	    AC_MSG_ERROR([invalid libelf directory: $libelf_prefix])
+	    AC_MSG_ERROR([unable to find <libelf/libelf.h> in: $libelf_prefix])
 	fi
 	for lib in lib64 lib32 lib fail ; do
 	    if test -f "${libelf_prefix}/${lib}/libelf.so" ; then

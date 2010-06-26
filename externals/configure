@@ -4563,6 +4563,11 @@ $as_echo "$libdwarf_avail" >&6; }
 # Libelf: --with-libelf=PATH
 #------------------------------------------------------------
 
+# FIXME: libelf installs and includes its header files as
+# <libelf/libelf.h> and not <libelf.h>.  It's a mess to support both
+# (libdwarf handles this, but symtabAPI does not), so we follow
+# libelf's usage.
+
 
 # Check whether --with-libelf was given.
 if test "${with_libelf+set}" = set; then
@@ -4586,19 +4591,17 @@ case "$with_libelf" in
     build | yes )
 	libelf_avail=build
 	libelf_prefix="$prefix"
-	libelf_inc="${libelf_prefix}/include/libelf"
+	libelf_inc="${libelf_prefix}/include"
 	libelf_lib="${libelf_prefix}/lib"
 	;;
     /* )
 	libelf_avail="$with_libelf"
 	libelf_prefix="$with_libelf"
-	if test -f "${libelf_prefix}/include/libelf.h" ; then
+	if test -f "${libelf_prefix}/include/libelf/libelf.h" ; then
 	    libelf_inc="${libelf_prefix}/include"
-	elif test -f "${libelf_prefix}/include/libelf/libelf.h" ; then
-	    libelf_inc="${libelf_prefix}/include/libelf"
 	else
-	    { { $as_echo "$as_me:$LINENO: error: invalid libelf directory: $libelf_prefix" >&5
-$as_echo "$as_me: error: invalid libelf directory: $libelf_prefix" >&2;}
+	    { { $as_echo "$as_me:$LINENO: error: unable to find <libelf/libelf.h> in: $libelf_prefix" >&5
+$as_echo "$as_me: error: unable to find <libelf/libelf.h> in: $libelf_prefix" >&2;}
    { (exit 1); exit 1; }; }
 	fi
 	for lib in lib64 lib32 lib fail ; do
