@@ -71,8 +71,7 @@
 #include <hpcrun/hpcrun_stats.h>
 #include <messages/messages.h>
 
-// FIXME: see note in mips-unwind.c
-#include <lib/isa/instructionSets/ppc.h>
+#include <lib/isa-lean/power/instruction-set.h>
 
 #include <lib/prof-lean/atomic-op.h>
 

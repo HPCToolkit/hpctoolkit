@@ -78,10 +78,7 @@
 #include "stack_troll.h"
 #include "sample_event.h"
 
-// FIXME: Abuse the isa library by cherry-picking this special header.
-// One possibility is to simply use the ISA lib -- doesn't xed
-// internally use C++ stuff?
-#include <lib/isa/instructionSets/mips.h>
+#include <lib/isa-lean/mips/instruction-set.h>
 
 
 //*************************** Forward Declarations **************************

@@ -64,7 +64,8 @@ using std::ostream;
 #include <include/gnu_bfd.h>  // for bfd_getl32
 
 #include "AlphaISA.hpp"
-#include "instructionSets/alpha.h"
+
+#include <lib/isa-lean/alpha/instruction-set.h>
 
 #include <lib/support/diagnostics.h>
 
