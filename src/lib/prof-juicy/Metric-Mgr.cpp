@@ -587,7 +587,7 @@ Mgr::computePartners()
     }
     
     if (metricsMap) {
-      DIAG_MsgIf(1, "Metric::Mgr::computePartners: insert: " << nm 
+      DIAG_MsgIf(0, "Metric::Mgr::computePartners: insert: " << nm 
 		 << " [" << m->name() << "]");
       std::pair<StringToADescMap::iterator, bool> ret = 
 	metricsMap->insert(make_pair(nm, m));
@@ -614,7 +614,7 @@ Mgr::computePartners()
       if (it != metricsMap->end()) {
 	Metric::ADesc* partner = it->second;
 	m->partner(partner);
-	DIAG_MsgIf(1, "Metric::Mgr::computePartners: found: "
+	DIAG_MsgIf(0, "Metric::Mgr::computePartners: found: "
 		   << m->name() << " -> " << partner->name());
       }
     }

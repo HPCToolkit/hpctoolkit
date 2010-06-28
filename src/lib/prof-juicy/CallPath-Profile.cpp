@@ -489,7 +489,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
        << " v=\"" << m->toValueTyStringXML() << "\""
        << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\"";
     if (m->partner()) {
-      os << " partner=\"" << MakeAttrNum(m->partner()->id()) << "\"";
+      os << " partner" << MakeAttrNum(m->partner()->id());
     }
     os << " show=\"" << ((m->isVisible()) ? "1" : "0")  << "\""
        << " show-percent=\"" << ((m->doDispPercent()) ? "1" : "0") << "\""
