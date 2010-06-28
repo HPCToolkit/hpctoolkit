@@ -653,7 +653,7 @@ ANode::pruneByMetrics()
       x->unlink(); // unlink 'x' from tree
       delete x;
     }
-  }  
+  }
 }
 
 
