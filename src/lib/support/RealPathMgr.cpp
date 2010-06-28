@@ -133,16 +133,16 @@ RealPathMgr::realpath(string& fnm)
       }
       if (pf) { 
 	fnm_real = RealPath(pf);
+	m_realpath_map.insert(make_pair(fnm, fnm_real));
 	fnm = fnm_real;
       }
       else {
 	// 'pf' is NULL iff pathfind_r failed -- RealPath won't do any better
 	fnm_real = fnm;
+	m_realpath_map.insert(make_pair(fnm, fnm_real));
       }
-      
-      m_realpath_map.insert(make_pair(fnm, fnm_real));
     }
-  }  
+  }
   return (fnm[0] == '/'); // fully resolved
 }
 
