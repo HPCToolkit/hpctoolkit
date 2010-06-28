@@ -66,7 +66,8 @@ using std::ostream;
 #include <include/gnu_dis-asm.h>
 
 #include "MipsISA.hpp"
-#include "instructionSets/mips.h"
+
+#include <lib/isa-lean/mips/instruction-set.h>
 
 #include <lib/support/diagnostics.h>
 

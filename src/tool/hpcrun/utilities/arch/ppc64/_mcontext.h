@@ -7,8 +7,8 @@
 #include <stdint.h>
 #include <ucontext.h>
 
-// FIXME: see note in mips-unwind.c
-#include <lib/isa/instructionSets/ppc.h>
+#include <lib/isa-lean/power/instruction-set.h>
+
 
 #if __WORDSIZE == 32
 #  define UCONTEXT_REG(uc, reg) ((uc)->uc_mcontext.uc_regs->gregs[reg])
