@@ -513,7 +513,7 @@ makeFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
 // and alien structure within 'frame'.  Populate 'strctToCCTMap'.
 // 
 // NOTE: this *eagerly* adds structure to a frame that may later be
-// pruned by pruneByMetrics().  We could be a little smarter, but on
+// pruned by pruneTrivialNodes().  We could be a little smarter, but on
 // another day.
 static void
 makeFrameStructure(Prof::CCT::ANode* node_frame,
@@ -554,7 +554,7 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 //***************************************************************************
 
 static void
-pruneByMetrics(Prof::CallPath::Profile& prof);
+pruneTrivialNodes(Prof::CallPath::Profile& prof);
 
 static void
 coalesceStmts(Prof::CallPath::Profile& prof);
@@ -570,8 +570,10 @@ void
 Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
 			      string agent, bool doNormalizeTy)
 {
+  // N.B.: cannot assume summary metrics have been computed
+  
   // N.B.: sets CallPath::Profile::StructMetricIdFlg
-  pruneByMetrics(prof);
+  pruneTrivialNodes(prof);
 
   if (doNormalizeTy) {
     coalesceStmts(prof);
@@ -585,7 +587,7 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
       metricComponentsFact = new CilkOverheadMetricFact;
     }
     else if (agent == "agent-mpi") {
-      // nothing: cannot assume summary metrics have been computed
+      // nothing: (cannot assume summary metrics have been computed)
     }
     else if (agent == "agent-pthread") {
       metricComponentsFact = new PthreadOverheadMetricFact;
@@ -623,34 +625,35 @@ Analysis::CallPath::applySummaryMetricAgents(Prof::CallPath::Profile& prof,
   }
 }
 
+
 //***************************************************************************
 
-// pruneByMetrics: 
+// pruneTrivialNodes: 
 // 
-// Background: This function name should be surprising since we have
-// not computed metrics for interior nodes yet.
+// Without static structure, the CCT is sparse in the sense that
+// *every* node must have some non-zero inclusive metric value.  To
+// see this, note that every leaf node represents a sample point;
+// therefore all interior metric values must be greater than zero.
 //
-// Observe that the fully dynamic CCT is sparse in the sense that *every*
-// node must have some non-zero inclusive metric value.  This is true
-// because every leaf node represents a sample point.  However, when
-// static structure is added, the CCT may contain 'spurious' static
-// scopes.  Since such scopes will not have STATEMENT nodes as
-// children, we can prune them by removing empty scopes rather than
-// computing inclusive values and pruning nodes whose metric values
-// are all zero.
+//  However, when static structure is added, the CCT may contain
+// 'spurious' static scopes in the sense that their metric values are
+// zero.  Since such scopes will not have CCT::Stmt nodes as children,
+// we can prune them by removing empty scopes rather than computing
+// inclusive values and pruning nodes whose metric values are all
+// zero.
 
 static void
-pruneByMetrics(Prof::CCT::ANode* node);
+pruneTrivialNodes(Prof::CCT::ANode* node);
 
 static void
-pruneByMetrics(Prof::CallPath::Profile& prof)
+pruneTrivialNodes(Prof::CallPath::Profile& prof)
 {
-  pruneByMetrics(prof.cct()->root());
+  pruneTrivialNodes(prof.cct()->root());
 }
 
 
 static void
-pruneByMetrics(Prof::CCT::ANode* node)
+pruneTrivialNodes(Prof::CCT::ANode* node)
 {
   using namespace Prof;
 
@@ -661,7 +664,7 @@ pruneByMetrics(Prof::CCT::ANode* node)
     it++; // advance iterator -- it is pointing at 'x'
 
     // 1. Recursively do any trimming for this tree's children
-    pruneByMetrics(x);
+    pruneTrivialNodes(x);
 
     // 2. Trim this node if necessary
     bool isTy = (typeid(*x) == typeid(CCT::ProcFrm) ||
@@ -669,7 +672,7 @@ pruneByMetrics(Prof::CCT::ANode* node)
 		 typeid(*x) == typeid(CCT::Loop));
     if (x->isLeaf() && isTy) {
       x->unlink(); // unlink 'x' from tree
-      DIAG_DevMsgIf(0, "pruneByMetrics: " << hex << x << dec << " (sid: " << x->structureId() << ")");
+      DIAG_DevMsgIf(0, "pruneTrivialNodes: " << hex << x << dec << " (sid: " << x->structureId() << ")");
       delete x;
     }
     else {
@@ -847,7 +850,6 @@ mergeCilkMain(Prof::CallPath::Profile& prof)
       }
     }
   }
-
 }
 
 
@@ -941,7 +943,6 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   os << "</SecCallPathProfile>\n";
   os << "</HPCToolkitExperiment>\n";
   os.flush();
-
 }
 
 } // namespace CallPath
