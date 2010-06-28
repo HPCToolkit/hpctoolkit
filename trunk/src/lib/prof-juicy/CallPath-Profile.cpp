@@ -487,11 +487,13 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
        << " v=\"" << m->toValueTyStringXML() << "\""
-       << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\""
-       << " show=\"" << ((m->isVisible()) ? "1" : "0")  << "\""
+       << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\"";
+    if (m->partner()) {
+      os << " partner=\"" << MakeAttrNum(m->partner()->id()) << "\"";
+    }
+    os << " show=\"" << ((m->isVisible()) ? "1" : "0")  << "\""
        << " show-percent=\"" << ((m->doDispPercent()) ? "1" : "0") << "\""
        << ">\n";
-       // "partner"
 
     // MetricFormula
     if (mDrvd1) {
@@ -734,6 +736,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   }
 
   prof->canonicalize(rFlags);
+  prof->metricMgr()->computePartners();
 
   // ------------------------------------------------------------
   // 
@@ -911,11 +914,14 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 		DIAG_UnexpectedInput);
 
     // 1. Make 'regular'/'inclusive' metric descriptor
-    Metric::SampledDesc* m = 
+    Metric::SampledDesc* m =
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
 			      profFileName, profRelId, "HPCRUN");
     if ((rFlags & RFlg_MakeInclExcl)) {
       m->type(Metric::ADesc::TyIncl);
+    }
+    else {
+      m->type(Metric::ADesc::fromHPCRunMetricValTy(mdesc.flags.fields.valTy));
     }
     if (!m_sfx.empty()) {
       m->nameSfx(m_sfx);
@@ -1174,6 +1180,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     mdesc.name = const_cast<char*>(nmFmt.c_str());
     mdesc.description = const_cast<char*>(desc.c_str());
     mdesc.flags.fields.ty = MetricFlags_Ty_Final;
+    mdesc.flags.fields.valTy = Metric::ADesc::toHPCRunMetricValTy(m->type());
     mdesc.flags.fields.valFmt = MetricFlags_ValFmt_Real;
     mdesc.period = 1;
     mdesc.formula = NULL;

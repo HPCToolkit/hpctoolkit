@@ -214,6 +214,8 @@ public:
   void
   recomputeMaps();
 
+  void
+  computePartners();
   
   // ------------------------------------------------------------
   // 

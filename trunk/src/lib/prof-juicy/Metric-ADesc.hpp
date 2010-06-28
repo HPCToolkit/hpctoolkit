@@ -90,7 +90,7 @@ public:
 
 public:
   ADesc()
-    : m_id(id_NULL), m_type(TyNULL),
+    : m_id(id_NULL), m_type(TyNULL), m_partner(NULL),
       m_isVisible(true), m_isSortKey(false),
       m_doDispPercent(true), m_isPercent(false),
       m_isComputed(false),
@@ -100,7 +100,7 @@ public:
   ADesc(const char* nameBase, const char* description,
 	bool isVisible = true, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
-    : m_id(id_NULL), m_type(TyNULL),
+    : m_id(id_NULL), m_type(TyNULL), m_partner(NULL),
       m_description((description) ? description : ""),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
@@ -114,7 +114,7 @@ public:
   ADesc(const std::string& nameBase, const std::string& description,
 	bool isVisible = true, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
-    : m_id(id_NULL), m_type(TyNULL),
+    : m_id(id_NULL), m_type(TyNULL), m_partner(NULL),
       m_description(description),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
@@ -128,7 +128,7 @@ public:
   { }
 
   ADesc(const ADesc& x)
-    : m_id(x.m_id), m_type(x.m_type),
+    : m_id(x.m_id), m_type(x.m_type), m_partner(x.m_partner),
       m_nameBase(x.m_nameBase), m_namePfx(x.m_namePfx), m_nameSfx(x.m_nameSfx),
       m_description(x.m_description),
       m_isVisible(x.m_isVisible), m_isSortKey(x.m_isSortKey),
@@ -143,6 +143,7 @@ public:
     if (this != &x) {
       m_id            = x.m_id;
       m_type          = x.m_type;
+      m_partner       = x.m_partner;
       m_nameBase      = x.m_nameBase;
       m_namePfx       = x.m_namePfx;
       m_nameSfx       = x.m_nameSfx;
@@ -210,6 +211,19 @@ public:
 
 
   // -------------------------------------------------------
+  // partner: inclusive/exclusive metrics come in pairs
+  // -------------------------------------------------------
+
+  ADesc*
+  partner() const
+  { return m_partner; }
+
+  void
+  partner(ADesc* partner)
+  { m_partner = partner; }
+
+
+  // -------------------------------------------------------
   // name: <prefix> <base> <suffix>
   // -------------------------------------------------------
 
@@ -220,37 +234,50 @@ public:
   static const char s_nameFmtSegEnd = '}';
 
 
-  const std::string
+  std::string
   name() const
   {
     // acceptable to create on demand
-    std::string nm;
-
-    if (!m_namePfx.empty()) { nm += m_namePfx + nameSep; }
-    nm += m_nameBase;
-    if (!m_nameSfx.empty()) { nm += nameSep + m_nameSfx; }
+    std::string nm = namePfxBaseSfx();
     nm += ADescTyToString(type());
-
     return nm;
   }
 
 
   // nameGeneric: a 'generic' name for the metric (i.e., without the
   // suffix qualifier)
-  const std::string
+  std::string
   nameGeneric() const
+  {
+    std::string nm = namePfxBase();
+    nm += ADescTyToString(type());
+    return nm;
+  }
+
+  std::string
+  namePfxBase() const
   {
     // acceptable to create on demand
     std::string nm;
     if (!m_namePfx.empty()) { nm += m_namePfx + nameSep; }
     nm += m_nameBase;
-    nm += ADescTyToString(type());
+    return nm;
+  }
+
+  std::string
+  namePfxBaseSfx() const
+  {
+    // acceptable to create on demand
+    std::string nm = namePfxBase();
+    if (!m_nameSfx.empty()) { nm += nameSep + m_nameSfx; }
     return nm;
   }
 
 
+
+
   // nameToFmt: generate formatted string
-  const std::string
+  std::string
   nameToFmt() const
   {
     // acceptable to create on demand
@@ -454,10 +481,22 @@ public:
   void
   ddump() const;
 
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  static MetricFlags_ValTy_t
+  toHPCRunMetricValTy(ADescTy ty);
+
+  static ADescTy
+  fromHPCRunMetricValTy(MetricFlags_ValTy_t ty);
+
 protected:
 private:
   uint m_id;
   ADescTy m_type;
+  ADesc* m_partner;
 
   std::string m_nameBase, m_namePfx, m_nameSfx;
 

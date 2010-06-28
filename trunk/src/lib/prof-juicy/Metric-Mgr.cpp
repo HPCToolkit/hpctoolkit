@@ -187,6 +187,8 @@ Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
     }
   }
 
+  computePartners();
+
   return firstId;
 }
 
@@ -217,7 +219,9 @@ Mgr::makeSummaryMetricsIncr(uint srcBegId, uint srcEndId)
       firstId = mNew->id();
     }
   }
-  
+
+  computePartners();
+ 
   return firstId;
 }
 
@@ -437,7 +441,7 @@ bool
 Mgr::hasDerived() const
 {
   for (uint i = 0; i < m_metrics.size(); ++i) {
-    Metric::ADesc* m = m_metrics[i]; 
+    Metric::ADesc* m = m_metrics[i];
     if (typeid(*m) == typeid(Prof::Metric::DerivedDesc) ||
 	typeid(*m) == typeid(Prof::Metric::DerivedIncrDesc)) {
       return true;
@@ -556,8 +560,64 @@ Mgr::recomputeMaps()
   m_fnameToFMetricMap.clear();
 
   for (uint i = 0; i < m_metrics.size(); ++i) {
-    Metric::ADesc* m = m_metrics[i]; 
+    Metric::ADesc* m = m_metrics[i];
     insertInMapsAndMakeUniqueName(m);
+  }
+}
+
+
+void
+Mgr::computePartners()
+{
+  StringToADescMap metricsIncl;
+  StringToADescMap metricsExcl;
+
+  // -------------------------------------------------------
+  // populate maps
+  // -------------------------------------------------------
+  for (uint i = 0; i < m_metrics.size(); ++i) {
+    Metric::ADesc* m = m_metrics[i];
+    string nm = m->namePfxBaseSfx();
+
+    StringToADescMap* metricsMap = NULL;
+    switch (m->type()) {
+      case ADesc::TyIncl: metricsMap = &metricsIncl; break;
+      case ADesc::TyExcl: metricsMap = &metricsExcl; break;
+      default: break;
+    }
+    
+    if (metricsMap) {
+      DIAG_MsgIf(1, "Metric::Mgr::computePartners: insert: " << nm 
+		 << " [" << m->name() << "]");
+      std::pair<StringToADescMap::iterator, bool> ret = 
+	metricsMap->insert(make_pair(nm, m));
+      DIAG_Assert(ret.second, "Found duplicate entry!");
+    }
+  }
+
+  // -------------------------------------------------------
+  // find partners
+  // -------------------------------------------------------
+  for (uint i = 0; i < m_metrics.size(); ++i) {
+    Metric::ADesc* m = m_metrics[i];
+    string nm = m->namePfxBaseSfx();
+
+    StringToADescMap* metricsMap = NULL;
+    switch (m->type()) {
+      case ADesc::TyIncl: metricsMap = &metricsExcl; break;
+      case ADesc::TyExcl: metricsMap = &metricsIncl; break;
+      default: break;
+    }
+    
+    if (metricsMap) {
+      StringToADescMap::iterator it = metricsMap->find(nm);
+      if (it != metricsMap->end()) {
+	Metric::ADesc* partner = it->second;
+	m->partner(partner);
+	DIAG_MsgIf(1, "Metric::Mgr::computePartners: found: "
+		   << m->name() << " -> " << partner->name());
+      }
+    }
   }
 }
 

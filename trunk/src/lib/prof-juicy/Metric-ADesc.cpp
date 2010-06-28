@@ -191,6 +191,35 @@ ADesc::ddump() const
   std::cerr.flush();
 }
 
+//***************************************************************************
+
+
+MetricFlags_ValTy_t
+ADesc::toHPCRunMetricValTy(ADesc::ADescTy ty)
+{
+  switch (ty) {
+    case ADesc::TyNULL: return MetricFlags_ValTy_NULL;
+    case ADesc::TyIncl: return MetricFlags_ValTy_Incl;
+    case ADesc::TyExcl: return MetricFlags_ValTy_Excl;
+    default:
+      DIAG_Die(DIAG_UnexpectedInput);
+  }
+}
+
+
+ADesc::ADescTy
+ADesc::fromHPCRunMetricValTy(MetricFlags_ValTy_t ty)
+{
+  switch (ty) {
+    case MetricFlags_ValTy_NULL: return ADesc::TyNULL;
+    case MetricFlags_ValTy_Incl: return ADesc::TyIncl;
+    case MetricFlags_ValTy_Excl: return ADesc::TyExcl;
+    default:
+      DIAG_Die(DIAG_UnexpectedInput);
+  }
+}
+
+
 
 //***************************************************************************
 // SampledDesc
