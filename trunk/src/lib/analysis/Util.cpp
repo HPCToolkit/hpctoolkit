@@ -225,28 +225,60 @@ normalizeProfileArgs(const StringVec& inPaths)
 namespace Analysis {
 namespace Util {
 
+//
+// Parses a string to get 2 values, 'oldVal' and 'newVal', which are 
+// syntatically separated by a '=' character. To avoid confusions with '=' 
+// characters in the path name, convention is for the user to escape all '=',
+// and only '=' characters,in their path.
+//
+// @param arg: A string with only '=' characters escaped
+// @return: How many occurances of unescaped '=' characters there are.
+//          A value other than 1 indicates an error
+//
 int
 parseReplacePath(const std::string& arg)
 {
   size_t in = arg.find_first_of('=');
-  int occurancesOfEquals = 0;
-  size_t indexOfEquals = 0;
+  size_t indexOfEqual = 0;
+  int numEquals = 0;
+  int numBackslashesBeforeTrueEqual = 0;
+  
+  size_t trailingIn = 0;
+  string trueArg; // arg with the '\' stripped out
   while (in != arg.npos) {
-    if (arg[in-1] != '\\') {
-      occurancesOfEquals++;
-      indexOfEquals = in;
+    if (arg[in-1] != '\\') { // indicates the true equals character
+      numEquals++;
+      trueArg += arg.substr(trailingIn, in - trailingIn + 1);
+      indexOfEqual = in;
+    }
+    else {
+      if (indexOfEqual == 0) {
+	numBackslashesBeforeTrueEqual++;
+      }
+      
+      // to copy everything up till the '\', and then add on a '='
+      // that is known
+      trueArg += arg.substr(trailingIn, in - trailingIn - 1);
+      trueArg += '=';
     }
     
-    in = arg.find_first_of('=',(in+1));
+    trailingIn = in+1;
+    in = arg.find_first_of('=', (in + 1));
   }
   
-  if (occurancesOfEquals == 1) {
-    string oldVal = arg.substr(0, indexOfEquals);
-    string newVal = arg.substr(indexOfEquals+1);
+  
+  if (numEquals == 1) {
+    trueArg += arg.substr(arg.find_last_of('=') + 1);
+    indexOfEqual -= numBackslashesBeforeTrueEqual; // b/c '/' were removed
+    
+    string oldVal = trueArg.substr(0, indexOfEqual);
+    string newVal = trueArg.substr(indexOfEqual + 1);
+    
     PathReplacementMgr::singleton().addPath(oldVal, newVal);
   }
-
-  return occurancesOfEquals;
+  
+  return numEquals;
+  
 }
 
 
