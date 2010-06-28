@@ -10,6 +10,7 @@ src=libmonitor-0.x-r114
 
 . ../build-utils/configure.inc
 pre_configure
+prefix="$libmonitor_prefix"
 
 set -- CC="$CC"  \
     CFLAGS="$CFLAGS"  \

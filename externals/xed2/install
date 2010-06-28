@@ -9,6 +9,7 @@ PKG_NAME=xed2
 
 . ../build-utils/configure.inc
 pre_install
+prefix="$xed2_prefix"
 
 case "$wordsize" in
     32 ) XED2=extras/xed2-ia32 ;;

@@ -10,6 +10,7 @@ src=symtabAPI/src
 
 . ../build-utils/configure.inc
 pre_install
+prefix="$symtabAPI_prefix"
 
 mkdir -p "${prefix}/include" || die "unable to mkdir: ${prefix}/include"
 mkdir -p "${prefix}/lib" || die "unable to mkdir: ${prefix}/lib"

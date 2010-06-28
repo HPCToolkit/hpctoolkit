@@ -10,6 +10,7 @@ src=version-binutils-2.17/binutils-2.17
 
 . ../build-utils/configure.inc
 pre_install
+prefix="$binutils_prefix"
 
 cd work || die "unable to cd: work"
 work_dir=`pwd`

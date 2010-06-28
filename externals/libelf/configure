@@ -14,6 +14,7 @@ SRC=libelf-0.8.10
 
 . ../build-utils/configure.inc
 pre_configure
+prefix="$libelf_prefix"
 
 export CC="$CC"
 export CFLAGS="$CFLAGS"

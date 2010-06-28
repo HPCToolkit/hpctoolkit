@@ -10,6 +10,7 @@ build_dir=xerces-c-src_2_8_0/src/xercesc
 
 . ../build-utils/configure.inc
 pre_configure
+prefix="$xerces_prefix"
 
 set -- -m inmem -n socket -r pthread -t native "$@" # add -s for static
 set -- -c "$CC" -x "$CXX" "$@"

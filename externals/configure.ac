@@ -192,6 +192,53 @@ esac
 AC_SUBST([wordsize])
 
 #------------------------------------------------------------
+# Install directory: --enable-subdirs
+#------------------------------------------------------------
+
+# Install packages into: (1) a single, unified directory with shared
+# bin, include, lib dirs, or (2) separate subidrs, one for each
+# package.  Old monitor always uses a separate subdir due to name
+# conflicts.
+
+AC_ARG_ENABLE([subdirs],
+    [AS_HELP_STRING([--enable-subdirs].
+	[install packages into separate subdirs (default no)])],
+    [],
+    [enable_subdirs=no])
+
+AC_MSG_CHECKING([install directory])
+
+if test "x$enable_subdirs" = xyes ; then
+    binutils_local_prefix="${prefix}/binutils"
+    libdwarf_local_prefix="${prefix}/libdwarf"
+    libelf_local_prefix="${prefix}/libelf"
+    libmonitor_local_prefix="${prefix}/libmonitor"
+    libunwind_local_prefix="${prefix}/libunwind"
+    libxml2_local_prefix="${prefix}/libxml2"
+    old_monitor_local_prefix="${prefix}/old-monitor"
+    open_analysis_local_prefix="${prefix}/open-analysis"
+    symtabAPI_local_prefix="${prefix}/symtabAPI"
+    xed2_local_prefix="${prefix}/xed2"
+    xerces_local_prefix="${prefix}/xerces"
+    enable_subdirs_mesg=separate
+else
+    binutils_local_prefix="$prefix"
+    libdwarf_local_prefix="$prefix"
+    libelf_local_prefix="$prefix"
+    libmonitor_local_prefix="$prefix"
+    libunwind_local_prefix="$prefix"
+    libxml2_local_prefix="$prefix"
+    old_monitor_local_prefix="${prefix}/old-monitor"
+    open_analysis_local_prefix="$prefix"
+    symtabAPI_local_prefix="$prefix"
+    xed2_local_prefix="$prefix"
+    xerces_local_prefix="$prefix"
+    enable_subdirs_mesg=shared
+fi
+
+AC_MSG_RESULT([$enable_subdirs_mesg])
+
+#------------------------------------------------------------
 # Binutils: --with-binutils=PATH
 #------------------------------------------------------------
 
@@ -212,7 +259,7 @@ rm -f "$cookie"
 case "$with_binutils" in
     build | yes )
 	binutils_avail=build
-	binutils_prefix="$prefix"
+	binutils_prefix="$binutils_local_prefix"
 	;;
     /* )
 	if test -f "${with_binutils}/include/bfd.h" ; then
@@ -260,7 +307,7 @@ rm -f "$cookie"
 case "$with_libdwarf" in
     build | yes )
 	libdwarf_avail=build
-	libdwarf_prefix="$prefix"
+	libdwarf_prefix="$libdwarf_local_prefix"
 	libdwarf_inc="${libdwarf_prefix}/include"
 	libdwarf_lib="${libdwarf_prefix}/lib"
 	;;
@@ -324,7 +371,7 @@ rm -f "$cookie"
 case "$with_libelf" in
     build | yes )
 	libelf_avail=build
-	libelf_prefix="$prefix"
+	libelf_prefix="$libelf_local_prefix"
 	libelf_inc="${libelf_prefix}/include"
 	libelf_lib="${libelf_prefix}/lib"
 	;;
@@ -381,7 +428,7 @@ rm -f "$cookie"
 case "$with_libmonitor" in
     build | yes )
 	libmonitor_avail=build
-	libmonitor_prefix="$prefix"
+	libmonitor_prefix="$libmonitor_local_prefix"
 	;;
     /* )
 	if test -f "${with_libmonitor}/include/monitor.h" ; then
@@ -428,7 +475,7 @@ rm -f "$cookie"
 case "$with_libunwind" in
     build | yes )
 	libunwind_avail=build
-	libunwind_prefix="$prefix"
+	libunwind_prefix="$libunwind_local_prefix"
 	libunwind_inc="${libunwind_prefix}/include"
 	libunwind_lib="${libunwind_prefix}/lib"
 	;;
@@ -485,7 +532,7 @@ rm -f "$cookie"
 case "$with_libxml2" in
     build | yes )
 	libxml2_avail=build
-	libxml2_prefix="$prefix"
+	libxml2_prefix="$libxml2_local_prefix"
 	libxml2_inc="${libxml2_prefix}/include/libxml2"
 	libxml2_lib="${libxml2_prefix}/lib"
 	;;
@@ -548,7 +595,7 @@ rm -f "$cookie"
 case "$with_old_monitor" in
     build | yes )
 	old_monitor_avail=build
-	old_monitor_prefix="${prefix}/old-monitor"
+	old_monitor_prefix="$old_monitor_local_prefix"
 	;;
     /* )
 	if test -f "${with_old_monitor}/include/monitor.h" ; then
@@ -591,7 +638,7 @@ rm -f "$cookie"
 case "$with_open_analysis" in
     build )
 	open_analysis_avail=build
-	open_analysis_prefix="$prefix"
+	open_analysis_prefix="$open_analysis_local_prefix"
 	;;
     /* )
 	if test -d "${with_open_analysis}/include/OpenAnalysis" ; then
@@ -661,7 +708,7 @@ case "$with_symtabAPI" in
 	esac
 	if test "$symtabAPI_platform" != no ; then
 	    symtabAPI_avail=build
-	    symtabAPI_prefix="$prefix"
+	    symtabAPI_prefix="$symtabAPI_local_prefix"
 	else
 	    echo "not available on this platform" > "$cookie"
 	fi
@@ -717,7 +764,7 @@ rm -f "$cookie"
 case "$with_xed2" in
     build | yes )
 	xed2_avail=build
-	xed2_prefix="$prefix"
+	xed2_prefix="$xed2_local_prefix"
 	;;
     /* )
 	if test -f "${with_xed2}/include/xed-interface.h" ; then
@@ -760,7 +807,7 @@ rm -f "$cookie"
 case "$with_xerces" in
     build | yes )
 	xerces_avail=build
-	xerces_prefix="$prefix"
+	xerces_prefix="$xerces_local_prefix"
 	;;
     /* )
 	if test -f "${with_xerces}/include/xercesc/dom/DOM.hpp" ; then
@@ -826,7 +873,7 @@ AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([Externals summary])
 AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([svn revision: $svn_revision])
-AC_MSG_NOTICE([prefix: $prefix])
+AC_MSG_NOTICE([prefix: $prefix ($enable_subdirs_mesg)])
 AC_MSG_NOTICE([build: $build])
 AC_MSG_NOTICE([host:  $host])
 AC_MSG_NOTICE([CC:  '$CC',  CFLAGS: '$CFLAGS'])

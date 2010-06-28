@@ -13,13 +13,13 @@ temp=monitor-080825/temp-install
 
 . ../build-utils/configure.inc
 pre_install
+prefix="$old_monitor_prefix"
 
-install="${prefix}/old-monitor"
-mkdir -p "$install" || die "unable to mkdir: $install"
+mkdir -p "$prefix" || die "unable to mkdir: $prefix"
 
 cd "$temp" || die "unable to cd: $temp"
 
-tar cf - include lib* | ( cd "$install" && tar xvf - )
+tar cf - include lib* | ( cd "$prefix" && tar xvf - )
 test $? -eq 0 || die "install failed"
 
 post_install

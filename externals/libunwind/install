@@ -12,6 +12,7 @@ PKG_NAME=libunwind
 
 . ../build-utils/configure.inc
 pre_install
+prefix="$libunwind_prefix"
 
 cd work || die "unable to cd: work"
 $MAKE install

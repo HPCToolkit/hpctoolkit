@@ -10,6 +10,7 @@ SRC=version-0.4pre
 
 . ../build-utils/configure.inc
 pre_configure
+prefix="$open_analysis_prefix"
 
 set -- CXX="$CXX"  \
     CXXFLAGS="$CXXFLAGS"  \

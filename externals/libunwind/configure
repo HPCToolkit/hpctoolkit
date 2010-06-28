@@ -10,6 +10,7 @@ src=libunwind-0.99
 
 . ../build-utils/configure.inc
 pre_configure
+prefix="$libunwind_prefix"
 
 set -- CC="$CC"  \
     CFLAGS="$CFLAGS"  \

@@ -11,6 +11,7 @@ WORK=work
 
 . ../build-utils/configure.inc
 pre_install
+prefix="$libdwarf_prefix"
 
 mkdir -p "$prefix/lib" || die "unable to mkdir: $prefix/lib"
 mkdir -p "$prefix/include" || die "unable to mkdir: $prefix/include"
