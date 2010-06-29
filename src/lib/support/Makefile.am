@@ -86,6 +86,7 @@ MYSOURCES = \
 	PathReplacementMgr.hpp PathReplacementMgr.cpp \
 	findinstall.h findinstall.c \
 	pathfind.h pathfind.cpp \
+	PathFindMgr.hpp PathFindMgr.cpp \
 	realpath.h realpath.c \
 	\
 	ProcNameMgr.hpp ProcNameMgr.cpp \

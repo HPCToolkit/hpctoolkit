@@ -56,15 +56,19 @@ using namespace std; // For compatibility with non-std C headers
 #include <dirent.h>
 
 #include <string> // for 'subdirs_to_pathlist'
-
+#include <set>    // for 'directoriesSearched'
 //*************************** User Include Files ****************************
 
 #include "pathfind.h"
 #include "CStrUtil.h" // for 'ssave' and 'sfree'
 
+#include "PathFindMgr.hpp"
+
 //*************************** Forward Declarations ***************************
 
 //***************************************************************************
+
+static std::set<std::string> directoriesSearched;
 
 std::string
 subdirs_to_pathlist(const char* path, int recursive);
@@ -114,6 +118,12 @@ pathfind(const char* pathList,
     return result;
   }
 
+  string check = name;
+  if (PathFindMgr::singleton().getRealPath(check)) {
+    char* temp = const_cast<char*>(check.c_str());
+    return temp;
+  }
+  
   path = pathList;
   while (path) {
     
@@ -234,6 +244,10 @@ std::string
 subdirs_to_pathlist(const char* path, int recursive)
 {
   std::string resultPath;
+
+  //this path has already been searched, so no point going over it again
+  if(directoriesSearched.find(path) != directoriesSearched.end())
+    return resultPath;
  
   DIR* dir = opendir(path);
   if (!dir) {
@@ -241,17 +255,21 @@ subdirs_to_pathlist(const char* path, int recursive)
   }
   
   bool isFirst = true;
-
+  
   struct dirent* dire;
   while( (dire = readdir(dir)) ) {
     // skip ".", ".."
     if (strcmp(dire->d_name, ".") == 0) { continue; }
     if (strcmp(dire->d_name, "..") == 0) { continue; }	
     /* if (dire->d_name[0] == '.') { continue; } hidden files/directories */
-   
+    
     // add directories
     std::string file = std::string(path) + "/" + dire->d_name;
-    if (dire->d_type == DT_DIR) {
+    bool searched = directoriesSearched.find(file) != 
+      directoriesSearched.end();
+    
+    //only search/add to PathFindMgr if the subdir hasn't already been searched
+    if (!searched && dire->d_type == DT_DIR) {
       if (!isFirst) {
 	resultPath += ":";
       }
@@ -260,10 +278,18 @@ subdirs_to_pathlist(const char* path, int recursive)
       }
       resultPath += file;
       isFirst = false;
+    } 
+    else if(!searched && dire->d_type == DT_REG) { //cache files
+      PathFindMgr::singleton().addPath(file);
     }
   }
   closedir(dir);
-
+  
+  //if resultPath is empty, means that all subdirectories of path have been
+  //searched, so we can add it into the list of directories fully searched.
+  if(resultPath.empty())
+    directoriesSearched.insert(path);
+  
   return resultPath;
 }
 
