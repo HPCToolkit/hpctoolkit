@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/lib/support/PathFindMgr.hpp $
-// $Id: PathFindMgr.cpp 2770 2010-06-28 02:54:44Z tallent $
+// $HeadURL$
+// $Id$
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,7 +44,7 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/lib/support/PathFindMgr.hpp $
+//   $HeadURL$
 //
 // Purpose:
 //   [The purpose of this file]
