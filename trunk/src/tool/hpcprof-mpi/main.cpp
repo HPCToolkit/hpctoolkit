@@ -107,6 +107,9 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 		       int myRank, int numRanks, int rootRank = 0);
 
 static void
+pruneCanonicalProfile(Prof::CallPath::Profile& profGbl);
+
+static void
 writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank);
 
 static void
@@ -282,11 +285,15 @@ realmain(int argc, char* const* argv)
 
   // -------------------------------------------------------
   // Create summary metrics and thread-level metrics
+  //
+  // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
   // -------------------------------------------------------
   makeMetrics(args, nArgs, groupIdToGroupSizeMap, *profGbl,
 	      myRank, numRanks, rootRank);
 
   if (myRank == rootRank) {
+    if (0) { pruneCanonicalProfile(*profGbl); }
+
     Analysis::CallPath::applySummaryMetricAgents(*profGbl, args.agent);
   }
 
@@ -428,6 +435,26 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   }
 
   return out;
+}
+
+
+static void
+pruneCanonicalProfile(Prof::CallPath::Profile& profGbl)
+{
+  VMAIntervalSet ivalset;
+  
+  const Prof::Metric::Mgr& mMgrGbl = *(profGbl.metricMgr());
+  for (uint mId = 0; mId < mMgrGbl.size(); ++mId) {
+    const Prof::Metric::ADesc* m = mMgrGbl.metric(mId);
+    if (m->isVisible()
+	&& m->type() == Prof::Metric::ADesc::TyIncl
+	&& (m->nameBase().find("Sum") != string::npos)) {
+      ivalset.insert(VMAInterval(mId, mId + 1)); // [ )
+    }
+  }
+  
+  profGbl.cct()->root()->pruneByMetrics(*profGbl.metricMgr(), ivalset,
+					profGbl.cct()->root(), 0.001);
 }
 
 
