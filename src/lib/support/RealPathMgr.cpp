@@ -64,10 +64,10 @@ using std::string;
 
 #include "RealPathMgr.hpp"
 #include "PathReplacementMgr.hpp"
+#include "PathFindMgr.hpp"
 
 #include "diagnostics.h"
 #include "Logic.hpp"
-#include "pathfind.h"
 #include "realpath.h"
 
 //*************************** Forward Declarations **************************
@@ -129,7 +129,8 @@ RealPathMgr::realpath(string& fnm)
       
       const char* pf = fnm.c_str();
       if (!m_searchPaths.empty()) {
-	pf = pathfind_r(m_searchPaths.c_str(), fnm.c_str(), "r");
+	pf = PathFindMgr::singleton().pathfind_r(m_searchPaths.c_str(), 
+						 fnm.c_str(), "r");
       }
       if (pf) { 
 	fnm_real = RealPath(pf);
