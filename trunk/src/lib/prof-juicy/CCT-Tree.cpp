@@ -585,6 +585,52 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 }
 
 
+void
+ANode::pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
+		      const ANode* root, double thresholdPct)
+{
+  for (ANodeChildIterator it(this); it.Current(); /* */) {
+    ANode* x = it.current();
+    it++; // advance iterator -- it is pointing at 'x'
+
+    uint numIncl = 0;
+    bool isImportant = false;
+
+    // If any inclusive metric is >= threshold => important
+    for (VMAIntervalSet::const_iterator it = ivalset.begin();
+	 it != ivalset.end(); ++it) {
+      const VMAInterval& ival = *it;
+      uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
+
+      for (uint mId = mBegId; mId < mEndId; ++mId) {
+	const Prof::Metric::ADesc* m = mMgr.metric(mId);
+	if (m->type() != Metric::ADesc::TyIncl) {
+	  continue;
+	}
+	numIncl++;
+	
+	double total = root->metric(mId); // root->metric(m->partner()->id());
+	
+	double pct = x->metric(mId) * 100 / total;
+	if (pct >= thresholdPct) {
+	  isImportant = true;
+	  break;
+	}
+      }
+      if (isImportant) { break; }
+    }
+
+    if (isImportant || numIncl == 0) {
+      x->pruneByMetrics(mMgr, ivalset, root, thresholdPct);
+    }
+    else {
+      x->unlink(); // unlink 'x' from tree
+      delete x;
+    }
+  }
+}
+
+
 //**********************************************************************
 // Merging
 //**********************************************************************

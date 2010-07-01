@@ -73,11 +73,11 @@
 
 #include <include/uint.h>
 
-#include "Struct-Tree.hpp"
-
 #include "Metric-Mgr.hpp"
 #include "Metric-ADesc.hpp"
 #include "Metric-IData.hpp"
+
+#include "Struct-Tree.hpp"
 
 #include "LoadMap.hpp"
 
@@ -370,6 +370,10 @@ public:
   void
   computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 		       Metric::AExprIncr::FnTy fn);
+
+  void
+  pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
+		 const ANode* root, double thresholdPct);
 
 public:
 
