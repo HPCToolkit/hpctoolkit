@@ -59,9 +59,10 @@
 
 //************************* System Include Files ****************************
 
-#include<string>
-#include<vector>
-#include<tr1/unordered_map>
+#include <set>
+#include <string>
+#include <vector>
+#include <tr1/unordered_map>
 
 //*************************** User Include Files ****************************
 
@@ -88,12 +89,22 @@ private:
   std::string 
   getFileName(const std::string& path)const;
 
+
+  /*  converts all subdirectories of 'path' to a valid pathlist.  If
+   *  'recursive' is 1, then all paths are made recursive
+   */
+  std::string
+  subdirs_to_pathlist(const char* path, int recursive);
+  
+
 public:
   PathFindMgr();
   ~PathFindMgr();
 
+
   static PathFindMgr&
   singleton();
+
 
   /*
    * This method adds a file name and its associated real path to 'hashlist'.
@@ -104,6 +115,7 @@ public:
    */
   void 
   addPath(const std::string& path);
+
   
   /*
    * Retreives the highest priority and closest matching real path to
@@ -119,11 +131,52 @@ public:
   bool
   getRealPath(std::string& filePath);
 
+
+  /*pathfind_r - (recursively) search for named file in given
+   * ---------- colon-separated (recursive) pathlist 
+
+   *Searches for a file named "name" in each directory in the
+   *colon-separated pathlist given as the first argument, and returns
+   *the full pathname to the first occurence that has at least the
+   *mode bits specified by mode. For any 'recursive-path', it
+   *recursively searches all of that paths descendents as well. An
+   *empty path in the pathlist is interpreted as the current
+   *directory.  Returns NULL if 'name' is not found.
+   *
+   * A 'recursive-path' is specified by appending a single '*' at the
+   * end of the directory .
+   * /home/.../dir/\*
+   *  ** Note: the '*' is escaped with '\' so it does not look like a
+   * C-style comment; in reality it should not be escaped! **
+   *
+   * The following mode bits are understood: 
+   *    "r" - read access
+   *    "w" - write access
+   *    "x" - execute access
+   *
+   * The returned pointer points to an area that will be reused on subsequent
+   * calls to this function, and must not be freed by the caller.
+   */
+  char*
+  pathfind_r(const char* pathList,
+	   const char* name,
+	   const char* mode);
+
+
+  /* Is this a valid recursive path of the form '.../path/\*' ? */
+  static int 
+  is_recursive_path(const char* path);
+  
+
 private:
   typedef
   std::tr1::unordered_map<std::string, std::vector<std::string> > HashMap; 
   
   HashMap m_cache;
+  std::set<std::string> directoriesSearched;
+
+public:
+  static const int RECURSIVE_PATH_SUFFIX_LN  = 2;
 };
 
 #endif

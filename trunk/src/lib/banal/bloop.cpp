@@ -104,7 +104,6 @@ using namespace Prof;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
-#include <lib/support/pathfind.h>
 
 //*************************** Forward Declarations ***************************
 

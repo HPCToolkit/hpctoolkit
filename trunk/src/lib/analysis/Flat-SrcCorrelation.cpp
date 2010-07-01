@@ -80,8 +80,6 @@ using namespace xml;
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
-#include <lib/support/pathfind.h>
-#include <lib/support/realpath.h>
 
 //************************ Forward Declarations ******************************
 

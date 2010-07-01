@@ -81,9 +81,9 @@ using std::string;
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcrunflat-fmt.h>
 
+#include <lib/support/PathFindMgr.hpp>
 #include <lib/support/PathReplacementMgr.hpp>
 #include <lib/support/diagnostics.h>
-#include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
 
 //*************************** Forward Declarations **************************
@@ -471,8 +471,8 @@ matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec)
     // find the absolute form of 'curPath'
     const string& curPath = pathVec[i].first;
     string realPath(curPath);
-    if (is_recursive_path(curPath.c_str())) {
-      realPath[realPath.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
+    if (PathFindMgr::is_recursive_path(curPath.c_str())) {
+      realPath[realPath.length()-PathFindMgr::RECURSIVE_PATH_SUFFIX_LN] = '\0';
     }
     realPath = RealPath(realPath.c_str());
     int realPathLn = realPath.length();
@@ -491,7 +491,9 @@ matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec)
       }
     }
     
-    const char* fnd_fnm = pathfind_r(curPath.c_str(), curFile, "r");
+    const char* fnd_fnm = PathFindMgr::singleton().pathfind_r(curPath.c_str(),
+							      curFile, "r");
+
     if (fnd_fnm) {
       bool update = false;
       if (foundIndex < 0) {
