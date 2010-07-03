@@ -188,7 +188,8 @@ hpcrun_copy_btrace(cct_node_t* n)
   }
 
   //
-  // NOTE: cct nodes here are in NON-freeable memory (to be passed to other threads)
+  // NOTE: cct nodes here are in NON-freeable memory (to be passed to
+  // other threads)
   //
   cct_node_t* rv = (cct_node_t*) hpcrun_malloc(sizeof(cct_node_t));
 
@@ -211,6 +212,7 @@ hpcrun_copy_btrace(cct_node_t* n)
 }
 
 
+#if 0
 static bool
 all_metrics_0(cct_node_t* node)
 {
@@ -225,6 +227,7 @@ all_metrics_0(cct_node_t* node)
   }
   return rv;
 }
+#endif
 
 
 bool
@@ -238,12 +241,14 @@ hpcrun_empty_cct(hpcrun_cct_t* cct)
 }
 
 
-bool
+#if 0
+static bool
 no_metric_samples(hpcrun_cct_t* cct)
 {
   return (cct->num_nodes == 1) &&
     ((cct->tree_root->persistent_id == 0) || (all_metrics_0(cct->tree_root)));
 }
+#endif
 
 
 cct_ctxt_t* 
@@ -307,7 +312,7 @@ cct_node_find_child(cct_node_t* x,
   if (c) {
     do {
       // LUSH
-      // FIXME: abstract this and the test in CSProfNode::findDynChild
+      // FIXME: abstract this and the test in Prof::CCT::ANode::findDynChild
       lush_assoc_t c_as = lush_assoc_info__get_assoc(c->as_info);
       if (c->ip == ip 
 	  && lush_lip_eq(c->lip, lip)
@@ -322,6 +327,7 @@ cct_node_find_child(cct_node_t* x,
 
   return NULL;
 }
+
 
 //***************************************************************************
 // Metric support functions
@@ -398,9 +404,8 @@ hpcrun_cct_get_child(hpcrun_cct_t *cct, cct_node_t* parent, frame_t *frm)
     cct->num_nodes++;
   }
 
-
   return c;
-} 
+}
 
 
 // See usage in header.
@@ -502,6 +507,7 @@ hpcrun_cct_insert_bt(hpcrun_cct_t* cct, cct_node_t* node,
   return hpcrun_cct_insert_backtrace(cct, node, metricId, hpcrun_bt_last(bt), hpcrun_bt_beg(bt), datum);
 }
 
+
 //-----------------------------------------------------------------------------
 // function: hpcrun_backtrace2cct
 // purpose:
@@ -537,6 +543,7 @@ hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   return n;
 }
 
+
 //
 // utility routine that does 3 things:
 //   1) Generate a std backtrace
@@ -566,23 +573,19 @@ hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
   return n;
 }
 
+
 //***************************************************************************
 // Private Operations
 //***************************************************************************
 
-/* writing trees to streams of various kinds */
-
 static int
-hpcfile_cstree_write(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree, 
-		     cct_node_t* root, 
-		     cct_ctxt_t* tree_ctxt,
-		     hpcfmt_uint_t num_metrics,
-		     hpcfmt_uint_t num_nodes);
+hpcrun_cct_fwrite_hlp(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree, 
+		      cct_node_t* root, cct_ctxt_t* tree_ctxt,
+		      hpcfmt_uint_t num_metrics, hpcfmt_uint_t num_nodes);
 
-/* hpcrun_cct_fwrite: Write the tree 'x' to the file
-   stream 'fs'.  The tree is written in HPC_CSTREE format.  Returns
-   HPCRUN_OK upon success; HPCRUN_ERR on error. */
 
+// hpcrun_cct_fwrite: Write the tree 'x' to the file stream
+//   'fs'. Returns HPCRUN_OK upon success; HPCRUN_ERR on error
 int 
 hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags,
 		  hpcrun_cct_t* x, cct_ctxt_t* x_ctxt)
@@ -594,9 +597,8 @@ hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags,
   unsigned int x_ctxt_len = cct_ctxt_length(x_ctxt);
   hpcfmt_uint_t num_nodes = x_ctxt_len + x->num_nodes;
 
-  ret = hpcfile_cstree_write(fs, flags, x, x->tree_root, x_ctxt,
-			     hpcrun_get_num_metrics(),
-			     num_nodes);
+  ret = hpcrun_cct_fwrite_hlp(fs, flags, x, x->tree_root, x_ctxt,
+			      hpcrun_get_num_metrics(), num_nodes);
 
 
   // splice creation context out of tree
@@ -604,56 +606,45 @@ hpcrun_cct_fwrite(FILE* fs, epoch_flags_t flags,
   return (ret == HPCFMT_OK) ? HPCRUN_OK : HPCRUN_ERR;
 }
 
+
 //***************************************************************************
-// hpcfile_cstree_write()
+// hpcrun_cct_fwrite_hlp()
 //***************************************************************************
 
 static int
-hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
-			  cct_node_t* node, 
-			  hpcrun_fmt_cct_node_t* tmp_node,
-			  int lvl_to_skip, int32_t parent_id);
+hpcrun_cctNode_fwrite(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
+		      cct_node_t* node, hpcrun_fmt_cct_node_t* tmp_node,
+		      int lvl_to_skip, int32_t parent_id);
 
 static int
-hpcfile_cstree_write_node_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags, cct_node_t* node,
-			      hpcrun_fmt_cct_node_t* tmp_node, 
-			      int32_t parent_id, int32_t my_id);
+hpcrun_cctNode_fwrite_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags,
+			  cct_node_t* node, hpcrun_fmt_cct_node_t* tmp_node, 
+			  int32_t parent_id, int32_t my_id);
 
 static int
-hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, cct_node_t* node, 
-			   int lvl_to_skip);
-
-#undef NODE_CHILD_COUNT // FIXME: this is now dead code. can it be expunged?
-
-#ifdef NODE_CHILD_COUNT 
-static int
-node_child_count(hpcrun_cct_t* tree, cct_node_t* node);
-#endif
+hpcrun_cct_countSkippedNodes(hpcrun_cct_t* tree, cct_node_t* node, 
+			     int lvl_to_skip);
 
 
 
-// See HPC_CSTREE format details
 
-// hpcfile_cstree_write: Writes all nodes of the tree 'tree' and its
+// hpcrun_cct_fwrite_hlp: Writes all nodes of the tree 'tree' and its
 // context 'tree_ctxt' to file stream 'fs'; writing of 'tree' begins
 // at 'root'.  The tree and its context should have 'num_nodes' nodes.
 // Returns HPCFMT_OK upon success; HPCFMT_ERR on error.
 static int
-hpcfile_cstree_write(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree, 
-		     cct_node_t* root,
-		     cct_ctxt_t* tree_ctxt,
-		     hpcfmt_uint_t num_metrics,
-		     hpcfmt_uint_t num_nodes)
+hpcrun_cct_fwrite_hlp(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree, 
+		      cct_node_t* root, cct_ctxt_t* tree_ctxt,
+		      hpcfmt_uint_t num_metrics, hpcfmt_uint_t num_nodes)
 {
   int ret;
   int lvl_to_skip = 0;
   int32_t tree_parent_id = 0;
 
-  // -------------------------------------------------------
-  // the node has a creation context. in this case, we need 
-  // to suppress the top two levels of the tree and splice 
-  // the grandchildren of the tree root as kids of 
-  // the node at the base of the context. 
+  // ------------------------------------------------------- 
+  // If the CCT has a creation context, we suppress its outermost two
+  // levels.  That is, we make the grandchildren of the CCT root kids
+  // of the creation context.
   // -------------------------------------------------------
   if (tree_ctxt && tree_ctxt->context) {
     lvl_to_skip = 2;
@@ -677,7 +668,7 @@ hpcfile_cstree_write(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   // -------------------------------------------------------
 
   if (num_nodes > 0 && lvl_to_skip > 0) { // FIXME: better way...
-    int skipped = hpcfile_cstree_count_nodes(tree, root, lvl_to_skip);
+    int skipped = hpcrun_cct_countSkippedNodes(tree, root, lvl_to_skip);
     num_nodes -= skipped;
   }
   hpcfmt_byte8_fwrite(num_nodes, fs);
@@ -697,17 +688,16 @@ hpcfile_cstree_write(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   tmp_node.num_metrics = num_metrics;
   tmp_node.metrics = alloca(num_metrics * sizeof(hpcrun_metricVal_t));
 
-  ret = hpcfile_cstree_write_node(fs, flags, tree, root, &tmp_node,
-				  lvl_to_skip, tree_parent_id);
+  ret = hpcrun_cctNode_fwrite(fs, flags, tree, root, &tmp_node,
+			      lvl_to_skip, tree_parent_id);
   return ret;
 }
 
 
 static int
-hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
-			  cct_node_t* node,
-			  hpcrun_fmt_cct_node_t* tmp_node,
-			  int lvl_to_skip, int32_t parent_id)
+hpcrun_cctNode_fwrite(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
+		      cct_node_t* node, hpcrun_fmt_cct_node_t* tmp_node,
+		      int lvl_to_skip, int32_t parent_id)
 {
   int ret;
 
@@ -722,7 +712,8 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 
   if (lvl_to_skip >= 0) {
     my_parent = parent_id;
-  } else {
+  }
+  else {
     my_parent = node->parent->persistent_id;
   }
 
@@ -739,10 +730,10 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   }
 
   if (lvl_to_skip <= 0) {
-    ret = hpcfile_cstree_write_node_hlp(false, fs, flags, node, tmp_node, my_parent, 
-					my_id);
-    if (ret != HPCRUN_OK) { 
-      return HPCRUN_ERR; 
+    ret = hpcrun_cctNode_fwrite_hlp(false, fs, flags, node, tmp_node,
+				    my_parent, my_id);
+    if (ret != HPCRUN_OK) {
+      return HPCRUN_ERR;
     }
   }
 
@@ -752,8 +743,8 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   // Write children (handles either a circular or non-circular structure)
   // ---------------------------------------------------------
   while (c) {
-    ret = hpcfile_cstree_write_node(fs, flags, tree, c, tmp_node, 
-				    my_lvl_to_skip, my_parent);
+    ret = hpcrun_cctNode_fwrite(fs, flags, tree, c, tmp_node,
+				my_lvl_to_skip, my_parent);
     if (ret != HPCFMT_OK) {
       return HPCFMT_ERR;
     }
@@ -767,23 +758,20 @@ hpcfile_cstree_write_node(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
 
 
 static int
-hpcfile_cstree_write_node_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags,
-			      cct_node_t* node,
-			      hpcrun_fmt_cct_node_t* tmp_node,
-                              int32_t my_parent,
-                              int32_t my_id)
+hpcrun_cctNode_fwrite_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags,
+			  cct_node_t* node, hpcrun_fmt_cct_node_t* tmp_node,
+			  int32_t my_parent, int32_t my_id)
 {
   if (is_ctxt_node) {
     TMSG(THREAD_CTXT, "%d", my_id);
   }
   int ret = HPCRUN_OK;
-
+  
 
   // ---------------------------------------------------------
   // Write the node
   // ---------------------------------------------------------
 
-  
   tmp_node->id = my_id;
   tmp_node->id_parent = my_parent;
 
@@ -795,7 +783,7 @@ hpcfile_cstree_write_node_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags,
   tmp_node->lm_id = 0; // FIXME:tallent
 
   // double casts to avoid warnings when pointer is < 64 bits 
-  tmp_node->ip = (hpcfmt_vma_t) (unsigned long) node->ip;
+  tmp_node->ip = (hpcfmt_vma_t) (uintptr_t) node->ip;
 
   if (flags.fields.isLogicalUnwind) {
     TMSG(LUSH, "settiong lip for node %d", tmp_node->id);
@@ -818,55 +806,37 @@ hpcfile_cstree_write_node_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags,
 
 
 static int
-hpcfile_cstree_count_nodes(hpcrun_cct_t* tree, cct_node_t* node, 
-			   int lvl_to_skip)
+hpcrun_cct_countSkippedNodes(hpcrun_cct_t* tree, cct_node_t* node, 
+			     int lvl_to_skip)
 {
-  int skipped_subtree_count = 0;
+  int numSkippedNodes = 0;
 
-  if (node) { 
-    if (lvl_to_skip-- > 0) {
-      skipped_subtree_count++; // count self
-
-      // ---------------------------------------------------------
-      // count skipped children 
-      // (handles either a circular or non-circular structure)
-      // ---------------------------------------------------------
-      int kids = 0;
-      cct_node_t* first = cct_node_firstChild(node);
-      cct_node_t* c = first; 
-      while (c) {
-	kids += hpcfile_cstree_count_nodes(tree, c, lvl_to_skip);
-	c = cct_node_nextSibling(c);
-	if (c == first) { break; }
-      }
-      skipped_subtree_count += kids; 
-    }
+  if (!node) {
+    return numSkippedNodes;
   }
-  return skipped_subtree_count; 
-}
 
-
-#ifdef NODE_CHILD_COUNT 
-static int
-node_child_count(hpcrun_cct_t* tree, cct_node_t* node)
-{
-  int children = 0;
-  if (node) { 
+  if (lvl_to_skip > 0) {
+    numSkippedNodes++; // count self
+    
+    lvl_to_skip--;
+    
     // ---------------------------------------------------------
-    // count children 
+    // count skipped children 
     // (handles either a circular or non-circular structure)
     // ---------------------------------------------------------
-    cct_node_t* first = node_first_child(node);
-    cct_node_t* c = first; 
+    int numSkippedKids = 0;
+    cct_node_t* first = cct_node_firstChild(node);
+    cct_node_t* c = first;
     while (c) {
-      children++;
+      numSkippedKids += hpcrun_cct_countSkippedNodes(tree, c, lvl_to_skip);
       c = cct_node_nextSibling(c);
       if (c == first) { break; }
     }
+    numSkippedNodes += numSkippedKids;
   }
-  return children; 
+  
+  return numSkippedNodes;
 }
-#endif
 
 
 static cct_node_t*
@@ -906,6 +876,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   return n;
 }
 
+
 static cct_node_t*
 _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
@@ -938,11 +909,13 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
   return n;
 }
 
+
 int32_t
 hpcrun_get_persistent_id(cct_node_t* node)
 {
   return node ? node->persistent_id : -1;
 }
+
 
 //***************************************************************************
 //
@@ -1021,6 +994,7 @@ cct_ctxt_writeGbl(FILE* fs, epoch_flags_t flags, cct_ctxt_t* cct_ctxt,
   return ret;
 }
 
+
 void
 cct_dump_path(cct_node_t* node)
 {
@@ -1053,11 +1027,11 @@ cct_ctxt_writeLcl(FILE* fs, epoch_flags_t flags, cct_node_t* node,
   if (ret != HPCRUN_OK) { return HPCRUN_ERR; }
   
   // write this node
-  ret = hpcfile_cstree_write_node_hlp(true, fs, flags, node, tmp_node, parent_id,
-				      node->persistent_id);
+  ret = hpcrun_cctNode_fwrite_hlp(true, fs, flags, node, tmp_node, parent_id,
+				  node->persistent_id);
 
   if (ret != HPCRUN_OK) {
-    return HPCRUN_ERR; 
+    return HPCRUN_ERR;
   }
   
   return ret;
