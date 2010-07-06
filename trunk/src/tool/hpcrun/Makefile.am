@@ -168,7 +168,6 @@ MY_BASE_FILES =			\
 	sample-sources/memleak.c	\
 	sample-sources/none.c           \
         sample-sources/retcnt.c         \
-        sample-sources/tst.c            \
         sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	segv_handler.c			\
