@@ -1381,9 +1381,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-bits=NUM       wordsize in bits: 32 or 64, (default is computed
                           from CC), rarely needed
-  --enable-subdirs.
-	install packages into separate subdirs (default no)
-
+  --enable-subdirs        install packages into separate subdirs (default yes)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4444,7 +4442,7 @@ esac
 if test "${enable_subdirs+set}" = set; then
   enableval=$enable_subdirs;
 else
-  enable_subdirs=no
+  enable_subdirs=yes
 fi
 
 

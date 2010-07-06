@@ -201,10 +201,10 @@ AC_SUBST([wordsize])
 # conflicts.
 
 AC_ARG_ENABLE([subdirs],
-    [AS_HELP_STRING([--enable-subdirs].
-	[install packages into separate subdirs (default no)])],
+    [AS_HELP_STRING([--enable-subdirs],
+	[install packages into separate subdirs (default yes)])],
     [],
-    [enable_subdirs=no])
+    [enable_subdirs=yes])
 
 AC_MSG_CHECKING([install directory])
 
