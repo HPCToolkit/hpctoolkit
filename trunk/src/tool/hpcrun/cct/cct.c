@@ -268,29 +268,20 @@ cct_node_parent_insert(cct_node_t *x, cct_node_t *parent)
 }
 
 
-// cct_node_link: links a node to a parent and at
-// the end of the circular doubly-linked list of its siblings (if any)
+// cct_node_link: adds a node to the head of the list of parent's children
+// 
 static int
 cct_node_link(cct_node_t* x, cct_node_t* parent)
 {
   /* Sanity check */
   if (x->parent != NULL) { return HPCRUN_ERR; } /* can only have one parent */
-  
-  if (parent != NULL) {
-    /* Children are maintained as a doubly linked ring.  A new node
-       is linked at the end of the ring (as a predecessor of
-       "parent->children") which points to first child in the ring */
-    cct_node_t *first_sibling = parent->children;
-    if (first_sibling) {
-      x->next_sibling = parent->children;
-      parent->children = x;
-    } else {
-      /* create a single element ring. */
-      parent->children = x;
-    }
 
-    x->parent = parent;
-  }
+  assert(parent); // no adding children to NULL parents !
+
+  x->next_sibling = parent->children;
+  parent->children = x;
+  x->parent = parent;
+
   return HPCRUN_OK;
 }
 
