@@ -85,12 +85,6 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			int metricId, uint64_t metricIncr,
 			int skipInner, int isSync);
 
-static cct_node_t*
-_hpcrun_sample_callpath_w_bt(epoch_t *epoch, void *context,
-			     int metricId, uint64_t metricIncr,
-			     bt_mut_fn bt_fn, bt_fn_arg arg,
-			     int isSync);
-
 // ------------------------------------------------------------
 // recover from SEGVs and dropped samples
 // ------------------------------------------------------------
@@ -126,6 +120,7 @@ hpcrun_disable_sampling(void)
   TMSG(SPECIAL,"Sampling disabled");
   _hpcrun_sampling_disabled = true;
 }
+
 
 void
 hpcrun_drop_sample(void)
@@ -183,14 +178,14 @@ hpcrun_sample_callpath(void *context, int metricId,
 
       if (trace_isactive()) {
 	void *pc = hpcrun_context_pc(context);
-	hpcrun_cct_t *cct = &(td->epoch->csdata); 
+	hpcrun_cct_t *cct = &(td->epoch->csdata);
 	void *func_start_pc, *func_end_pc;
 
-	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc); 
+	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc);
 
 	frame_t frm = {.ip = func_start_pc};
 	cct_node_t* func_proxy = hpcrun_cct_get_child(cct, node->parent, &frm);
-	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag; 
+	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag;
 
 	trace_append(func_proxy->persistent_id);
       }
@@ -218,27 +213,6 @@ hpcrun_sample_callpath(void *context, int metricId,
 
 
 static cct_node_t*
-_hpcrun_sample_callpath_w_bt(epoch_t* epoch, void *context,
-			     int metricId, uint64_t metricIncr,
-			     bt_mut_fn bt_fn, bt_fn_arg arg,
-			     int isSync)
-{
-  void* pc = hpcrun_context_pc(context);
-
-  TMSG(SAMPLE,"csprof take profile sample @ %p",pc);
-
-  /* check to see if shared library loadmap (of current epoch) has changed out from under us */
-  epoch = hpcrun_check_for_new_loadmap(epoch);
-
-  cct_node_t* n =
-    hpcrun_bt2cct(&(epoch->csdata), context, metricId, metricIncr, bt_fn, arg, isSync);
-
-  // FIXME: n == -1 if sample is filtered
-
-  return n;
-}
-
-static cct_node_t*
 _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			int metricId,
 			uint64_t metricIncr, 
@@ -258,6 +232,14 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 
   return n;
 }
+
+
+#if 0 // TODO: tallent: make these obsolete; is there a reason to keep them?
+static cct_node_t*
+_hpcrun_sample_callpath_w_bt(epoch_t *epoch, void *context,
+			     int metricId, uint64_t metricIncr,
+			     bt_mut_fn bt_fn, bt_fn_arg arg,
+			     int isSync);
 
 cct_node_t*
 hpcrun_sample_callpath_w_bt(void *context,
@@ -354,3 +336,27 @@ hpcrun_sample_callpath_w_bt(void *context,
   
   return node;
 }
+
+
+static cct_node_t*
+_hpcrun_sample_callpath_w_bt(epoch_t* epoch, void *context,
+			     int metricId, uint64_t metricIncr,
+			     bt_mut_fn bt_fn, bt_fn_arg arg,
+			     int isSync)
+{
+  void* pc = hpcrun_context_pc(context);
+
+  TMSG(SAMPLE,"csprof take profile sample @ %p",pc);
+
+  /* check to see if shared library loadmap (of current epoch) has changed out from under us */
+  epoch = hpcrun_check_for_new_loadmap(epoch);
+
+  cct_node_t* n =
+    hpcrun_bt2cct(&(epoch->csdata), context, metricId, metricIncr, bt_fn, arg, isSync);
+
+  // FIXME: n == -1 if sample is filtered
+
+  return n;
+}
+
+#endif
