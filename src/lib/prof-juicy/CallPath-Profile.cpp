@@ -831,13 +831,13 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_mpiRank);
   if (val) {
     mpiRankStr = val;
-    mpiRank = StrUtil::toLong(mpiRankStr);
+    if (val[0] != '\0') { mpiRank = StrUtil::toLong(mpiRankStr); }
   }
 
   val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_tid);
   if (val) {
     tidStr = val;
-    tid = StrUtil::toLong(tidStr);
+    if (val[0] != '\0') { tid = StrUtil::toLong(tidStr); }
   }
 
   // FIXME: temporary for dual-interpretations
