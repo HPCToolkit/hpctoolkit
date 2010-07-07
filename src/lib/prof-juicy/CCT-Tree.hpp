@@ -745,6 +745,14 @@ public:
     return false;
   }
 
+
+  static bool
+  hasMergeEffects(const ADynNode& x, const ADynNode& y)
+  {
+    return (x.cpId() != HPCRUN_FMT_CCTNodeId_NULL
+	    && y.cpId() != HPCRUN_FMT_CCTNodeId_NULL);
+  }
+
   virtual ANode::MergeEffect
   mergeMe(const ANode& y, uint metricBegIdx = 0);
   
