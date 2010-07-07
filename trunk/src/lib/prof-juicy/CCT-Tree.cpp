@@ -750,6 +750,7 @@ ANode::MergeEffect
 ADynNode::mergeMe(const ANode& y, uint metricBegIdx)
 {
   // N.B.: Assumes ADynNode::isMergable() holds
+  ADynNode* x = this;
 
   const ADynNode* y_dyn = dynamic_cast<const ADynNode*>(&y);
   DIAG_Assert(y_dyn, "ADynNode::mergeMe: " << DIAG_UnexpectedInput);
@@ -759,8 +760,7 @@ ADynNode::mergeMe(const ANode& y, uint metricBegIdx)
   // merge cpIds:
   // 1. At most one of x and y have a cpId: adopt the non-NULL id
   // 2. Otherwise, merge conflicting ids
-  if (m_cpId == HPCRUN_FMT_CCTNodeId_NULL
-      || y_dyn->m_cpId == HPCRUN_FMT_CCTNodeId_NULL) {
+  if ( !hasMergeEffects(*x, *y_dyn) ) {
     if (m_cpId == HPCRUN_FMT_CCTNodeId_NULL) {
       m_cpId = y_dyn->m_cpId;
     }

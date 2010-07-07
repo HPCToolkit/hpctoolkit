@@ -145,6 +145,7 @@ read(const char* prof_fnm, uint groupId, uint rFlags)
 
   Prof::CallPath::Profile* prof = NULL;
   try {
+    DIAG_MsgIf(0, "Reading: '" << prof_fnm << "'");
     prof = Prof::CallPath::Profile::make(prof_fnm, rFlags, /*outfs*/ NULL);
   }
   catch (...) {
@@ -735,7 +736,10 @@ coalesceStmts(Prof::CCT::ANode* node)
       if (it != stmtMap.end()) {
 	// found -- we have a duplicate
 	Prof::CCT::Stmt* n_stmtOrig = (*it).second;
-	n_stmtOrig->mergeMe(*n_stmt);
+
+	//if ( !Prof::CCT::ADynNode::hasMergeEffects(*n_stmtOrig, *n_stmt) ) {}
+	Prof::CCT::ANode::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt);
+	DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost: " << effct.toString());
 	
 	// remove 'n_stmt' from tree
 	n_stmt->unlink();
