@@ -825,12 +825,20 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     progNm = val;
   }
 
-  string mpiRank, tid;
+  string mpiRankStr, tidStr;
+  long   mpiRank = -1, tid = -1;
   //const char* jobid = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_jobId);
   val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_mpiRank);
-  if (val) { mpiRank = val; }
+  if (val) {
+    mpiRankStr = val;
+    mpiRank = StrUtil::toLong(mpiRankStr);
+  }
+
   val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_tid);
-  if (val) { tid = val; }
+  if (val) {
+    tidStr = val;
+    tid = StrUtil::toLong(tidStr);
+  }
 
   // FIXME: temporary for dual-interpretations
   bool isNewFormat = true; 
@@ -883,14 +891,14 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ----------------------------------------
 
   string m_sfx;
-  if (!mpiRank.empty() && !tid.empty()) {
-    m_sfx = "[" + mpiRank + "," + tid + "]";
+  if (!mpiRankStr.empty() && !tidStr.empty()) {
+    m_sfx = "[" + mpiRankStr + "," + tidStr + "]";
   }
-  else if (!mpiRank.empty()) {
-    m_sfx = "[" + mpiRank + "]";
+  else if (!mpiRankStr.empty()) {
+    m_sfx = "[" + mpiRankStr + "]";
   }
-  else if (!tid.empty()) {
-    m_sfx = "[" + tid + "]";
+  else if (!tidStr.empty()) {
+    m_sfx = "[" + tidStr + "]";
   }
 
   if (rFlags & RFlg_NoMetricSfx) {
@@ -1223,19 +1231,31 @@ int
 Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 {
   int ret;
+
+  // ------------------------------------------------------------
+  // Ensure CCT node ids follow conventions
+  // ------------------------------------------------------------
+
+  uint64_t numNodes = 0;
+  uint nodeId_next = 2; // cf. s_nextUniqueId
+  for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
+    CCT::ANode* n = it.current();
+    Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
+
+    if (n_dyn && hpcrun_fmt_doRetainId(n_dyn->cpId())) {
+      n->id(n_dyn->cpId());
+    }
+    else {
+      n->id(nodeId_next);
+      nodeId_next += 2;
+    }
+    numNodes++;
+  }
   
   // ------------------------------------------------------------
   // Write number of cct nodes
   // ------------------------------------------------------------
 
-  uint64_t numNodes = 0;
-  uint nodeId = 2; // cf. s_nextUniqueId
-  for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
-    CCT::ANode* n = it.current();
-    n->id(nodeId);
-    nodeId += 2;
-    numNodes++;
-  }
   hpcfmt_byte8_fwrite(numNodes, fs);
 
   // ------------------------------------------------------------
@@ -1343,12 +1363,14 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------
   // cpId
   // ----------------------------------------
-  uint cpId = HPCRUN_FMT_CCTNodeId_NULL;
   int nodeId = (int)nodeFmt.id;
   if (nodeId < 0) {
     isLeaf = true;
     nodeId = -nodeId;
   }
+  // INVARIANT: nodeId > HPCRUN_FMT_CCTNodeId_NULL
+
+  uint cpId = HPCRUN_FMT_CCTNodeId_NULL;
   if (hpcrun_fmt_doRetainId(nodeFmt.id)) {
     cpId = nodeId;
   }
@@ -1501,7 +1523,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
 {
   n_fmt.id = (n.isLeaf()) ? -(n.id()) : n.id();
 
-  n_fmt.id_parent = (n.parent()) ? n.parent()->id() : 0;
+  n_fmt.id_parent = (n.parent()) ? n.parent()->id() : HPCRUN_FMT_CCTNodeId_NULL;
 
   const Prof::CCT::ADynNode* n_dyn_p = 
     dynamic_cast<const Prof::CCT::ADynNode*>(&n);
