@@ -234,7 +234,7 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 }
 
 
-#if 0 // TODO: tallent: make these obsolete; is there a reason to keep them?
+#if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
 static cct_node_t*
 _hpcrun_sample_callpath_w_bt(epoch_t *epoch, void *context,
 			     int metricId, uint64_t metricIncr,
