@@ -407,13 +407,13 @@ dump_header_info(int relocatable, long image_offset)
   if (c_fmt_fp() != NULL) {
     fprintf(c_fmt_fp(), "unsigned int hpcrun_relocatable = %d;\n", relocatable);
     fprintf(c_fmt_fp(), "unsigned int hpcrun_stripped = %d;\n", 0);
-    fprintf(c_fmt_fp(), "unsigned long hpcrun_image_offset = %d;\n", 
+    fprintf(c_fmt_fp(), "unsigned long hpcrun_image_offset = %ld;\n", 
             image_offset);
   }
 
   if (text_fmt_fp() != NULL) {
     fprintf(text_fmt_fp(), "num symbols = %ld, relocatable = %d," 
-           " image_offset = 0x%x\n",
+           " image_offset = 0x%lx\n",
 	    num_function_entries(), relocatable, image_offset);
   }
 }
