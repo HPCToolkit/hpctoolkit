@@ -118,10 +118,6 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 		      int metricId, uint64_t metricIncr,
 		      int skipInner);
 
-static cct_node_t*
-_hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
-	       int metricId, uint64_t metricIncr,
-	       bt_mut_fn bt_fn, bt_fn_arg bt_arg);
 
 //***************************************************************************
 //
@@ -293,8 +289,8 @@ cct_node_link(cct_node_t* x, cct_node_t* parent)
 //
 static cct_node_t*
 cct_node_find_child(cct_node_t* x,
-			    lush_assoc_info_t as_info, void* ip,
-			    lush_lip_t* lip)
+		    lush_assoc_info_t as_info, void* ip,
+		    lush_lip_t* lip)
 {
   cct_node_t* c, *first;
   lush_assoc_t as = lush_assoc_info__get_assoc(as_info);
@@ -535,6 +531,13 @@ hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 }
 
 
+#if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
+
+static cct_node_t*
+_hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
+	       int metricId, uint64_t metricIncr,
+	       bt_mut_fn bt_fn, bt_fn_arg bt_arg);
+
 //
 // utility routine that does 3 things:
 //   1) Generate a std backtrace
@@ -564,6 +567,7 @@ hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
   return n;
 }
 
+#endif
 
 //***************************************************************************
 // Private Operations
@@ -868,6 +872,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 }
 
 
+#if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
 static cct_node_t*
 _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
@@ -899,6 +904,7 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
 
   return n;
 }
+#endif
 
 
 int32_t
