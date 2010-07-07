@@ -59,10 +59,9 @@
 
 //************************* System Include Files ****************************
 
-#include <set>
+#include <map>
 #include <string>
 #include <vector>
-#include <tr1/unordered_map>
 
 //*************************** User Include Files ****************************
 
@@ -90,12 +89,19 @@ private:
   getFileName(const std::string& path)const;
 
 
-  /*  converts all subdirectories of 'path' to a valid pathlist.  If
-   *  'recursive' is 1, then all paths are made recursive
+  /*
+   * Private helper method that recursively searches through all the 
+   * directories in 'pathList' and caches all the files in those directories.
+   *
+   * @param pathList: List of directories that contain files to be cached.
+   *                  Each path is separated by a ":" and recursive paths have
+   *                  a "*" at the end of the path.
+   * @param recursive: Indicates whether a directory should be recursively
+   *                   searched. 
    */
-  std::string
-  subdirs_to_pathlist(const char* path, int recursive);
-  
+  void
+  fill(const std::string& pathList, bool recursive);
+
 
 public:
   PathFindMgr();
@@ -131,7 +137,7 @@ public:
   bool
   getRealPath(std::string& filePath);
 
-
+  
   /*pathfind_r - (recursively) search for named file in given
    * ---------- colon-separated (recursive) pathlist 
 
@@ -170,10 +176,10 @@ public:
 
 private:
   typedef
-  std::tr1::unordered_map<std::string, std::vector<std::string> > HashMap; 
+  std::map<std::string, std::vector<std::string> > TreeMap; 
   
-  HashMap m_cache;
-  std::set<std::string> directoriesSearched;
+  TreeMap m_cache;
+  bool m_filled;
 
 public:
   static const int RECURSIVE_PATH_SUFFIX_LN  = 2;

@@ -78,6 +78,7 @@ static PathFindMgr s_singleton;
 
 PathFindMgr::PathFindMgr()
 {
+  m_filled = false;
 }
 
 
@@ -97,8 +98,7 @@ void
 PathFindMgr::addPath(const std::string& path)
 {
   std::string fnm = getFileName(path);
-
-  HashMap::iterator it = m_cache.find(fnm);
+  TreeMap::iterator it = m_cache.find(fnm);
   if (it == m_cache.end()) {
     std::vector<std::string> pathList;
     pathList.push_back(path);
@@ -121,13 +121,13 @@ bool
 PathFindMgr::getRealPath(std::string& filePath) 
 {
   std::string fileName = getFileName(filePath);
-  HashMap::iterator it = m_cache.find(fileName);
+  TreeMap::iterator it = m_cache.find(fileName);
   
   if (it !=  m_cache.end()) {
     std::vector<std::string> paths = it->second;
     
-    if ((filePath[0] == '.' && filePath[1] == '/') || //ambiguous './' path case
-	(filePath.find_first_of('/') == filePath.npos)) { //only filename given
+    if((filePath[0] == '.' && filePath[1] == '/') || //ambiguous './' path case
+       (filePath.find_first_of('/') == filePath.npos)) { //only filename given
       
       filePath = paths[0];
       return true;
@@ -203,9 +203,14 @@ PathFindMgr::getRealPath(std::string& filePath)
 
 char*
 PathFindMgr::pathfind_r(const char* pathList,
-	   const char* name,
-	   const char* mode)
+			const char* name,
+			const char* mode)
 {
+  std::string check = name;
+  if (PathFindMgr::singleton().getRealPath(check)) {
+    return const_cast<char*>(check.c_str());
+  }
+
   char* result = NULL; /* 'result' will point to storage in 'pathfind' */
 
   /* 0. Collect all recursive and non-recursive paths in separate lists */
@@ -255,12 +260,26 @@ PathFindMgr::pathfind_r(const char* pathList,
     
     /* 2b. If no match, open the directory and do a pathfind_r */
     /*     on every sub-directory */
-    std::string dirPathList = subdirs_to_pathlist(aPath, 1 /*recursive*/);
+    std::string dirPathList;
+    if (!m_filled) {
+      m_filled = true;
+      std::string myPathList = pathList;
+      if (myPathList.find_first_of(":") == myPathList.npos  &&
+	  is_recursive_path(myPathList.c_str())) {
+	PathFindMgr::singleton().fill(myPathList, true);
+      }
+      else {
+	PathFindMgr::singleton().fill(myPathList,false);
+      }
+
+      dirPathList = pathList;
+    }
+
     if (!dirPathList.empty()) {
       result = pathfind_r(dirPathList.c_str(), name, mode);
       if (result) { goto pathfind_r_fini; }
     }
-
+     
     *sep = ':';               // restore full token string
     aPath = sep + 1;          // points to beginning of next token or '\0'
     sep = strchr(aPath, ':'); // points to end of next token or NULL
@@ -273,57 +292,84 @@ PathFindMgr::pathfind_r(const char* pathList,
 }
 
 
-std::string
-PathFindMgr::subdirs_to_pathlist(const char* path, int recursive)
+void
+PathFindMgr::fill(const std::string& myPathList, bool isRecursive)
 {
-  std::string resultPath;
+  size_t trailingIn = -1;
+  size_t in = myPathList.find_first_of(":");
+  
+  if (in == myPathList.npos) { //pathList is a single path.
+    std::string path;
+    if (is_recursive_path(myPathList.c_str())) {
+      path = myPathList.substr(0, myPathList.length() - 
+			       RECURSIVE_PATH_SUFFIX_LN);
+    }
+    else {
+      path = myPathList;
+    }
+     	  
+    std::string resultPath;
 
-  //this path has already been searched, so no point going over it again
-  if(directoriesSearched.find(path) != directoriesSearched.end())
-    return resultPath;
- 
-  DIR* dir = opendir(path);
-  if (!dir) {
-    return resultPath; // empty string
-  }
-  
-  bool isFirst = true;
-  
-  struct dirent* dire;
-  while( (dire = readdir(dir)) ) {
-    // skip ".", ".."
-    if (strcmp(dire->d_name, ".") == 0) { continue; }
-    if (strcmp(dire->d_name, "..") == 0) { continue; }	
-    /* if (dire->d_name[0] == '.') { continue; } hidden files/directories */
+    DIR* dir = opendir(path.c_str());
+    if (!dir) {
+      return;
+    }
     
-    // add directories
-    std::string file = std::string(path) + "/" + dire->d_name;
-    bool searched = directoriesSearched.find(file) != 
-      directoriesSearched.end();
+    bool isFirst = true;
     
-    //only search/add to PathFindMgr if the subdir hasn't already been searched
-    if (!searched && dire->d_type == DT_DIR) {
-      if (!isFirst) {
-	resultPath += ":";
-      }
-      if (recursive > 0) {
+    struct dirent* dire;
+    while ( (dire = readdir(dir)) ) {
+      //skip ".", ".."
+      if (strcmp(dire->d_name, ".") == 0) { continue; }
+      if (strcmp(dire->d_name, "..") == 0) { continue; }
+
+      //is either a subdir to be recursed on or a file to cache
+      std::string file = path + "/" + dire->d_name;
+      
+      if (isRecursive && dire->d_type == DT_DIR) {
+	if (!isFirst) {
+	  resultPath += ":";
+	}
+	
+
 	file += "/*";
+	resultPath += file;
+	isFirst = false;
       }
-      resultPath += file;
-      isFirst = false;
-    } 
-    else if(!searched && dire->d_type == DT_REG) { //cache files
-      PathFindMgr::singleton().addPath(file);
+      else if (dire->d_type == DT_REG) {
+	PathFindMgr::singleton().addPath(file);
+      }
+    }
+    closedir(dir);
+    
+    if (isRecursive && !resultPath.empty()) { 
+      fill(resultPath, isRecursive);
+    }
+    return;
+  }
+  else {
+    while (trailingIn != myPathList.length()) {
+      //since trailingIn points to a ":", must add 1 to point to the path
+      std::string currentPath = myPathList.substr(trailingIn + 1,
+						  in - trailingIn - 1);
+         
+      if (is_recursive_path(currentPath.c_str())) {
+	std::string actualPath = myPathList.substr(trailingIn + 1, 
+			       in - trailingIn - 1 - RECURSIVE_PATH_SUFFIX_LN);
+       
+	(*this).fill(actualPath, true);
+      } else { //non-recursive path
+	(*this).fill(currentPath, false);
+      }
+     
+      trailingIn = in;
+      in = myPathList.find_first_of(":",trailingIn + 1);
+      
+      if (in == myPathList.npos) {
+	in = myPathList.length();
+      }
     }
   }
-  closedir(dir);
-  
-  //if resultPath is empty, means that all subdirectories of path have been
-  //searched, so we can add it into the list of directories fully searched.
-  if(resultPath.empty())
-    directoriesSearched.insert(path);
-  
-  return resultPath;
 }
 
 

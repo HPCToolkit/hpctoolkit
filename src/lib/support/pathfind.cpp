@@ -61,6 +61,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //***************************************************************************
 
+
 char*
 pathfind(const char* pathList,
 	 const char* name,
@@ -138,8 +139,6 @@ pathfind(const char* pathList,
   return NULL;
 }
 
-
-/****************************************************************************/
 
 #ifdef SELFTEST
 int
