@@ -390,12 +390,14 @@ dump_file_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
 // We call it "header", even though it comes at end of file.
 //
 static void
-dump_header_info(int relocatable)
+dump_header_info(int relocatable, long image_offset)
 {
   struct fnbounds_file_header fh;
 
   if (binary_fmt_fd() >= 0) {
     memset(&fh, 0, sizeof(fh));
+    fh.zero_pad = 0;
+    fh.image_offset = image_offset;
     fh.magic = FNBOUNDS_MAGIC;
     fh.num_entries = num_function_entries();
     fh.relocatable = relocatable;
@@ -405,11 +407,14 @@ dump_header_info(int relocatable)
   if (c_fmt_fp() != NULL) {
     fprintf(c_fmt_fp(), "unsigned int hpcrun_relocatable = %d;\n", relocatable);
     fprintf(c_fmt_fp(), "unsigned int hpcrun_stripped = %d;\n", 0);
+    fprintf(c_fmt_fp(), "unsigned long hpcrun_image_offset = %d;\n", 
+            image_offset);
   }
 
   if (text_fmt_fp() != NULL) {
-    fprintf(text_fmt_fp(), "num symbols = %ld, relocatable = %d\n",
-	    num_function_entries(), relocatable);
+    fprintf(text_fmt_fp(), "num symbols = %ld, relocatable = %d," 
+           " image_offset = 0x%x\n",
+	    num_function_entries(), relocatable, image_offset);
   }
 }
 
@@ -431,6 +436,7 @@ dump_file_info(const char *filename, bool fn_discovery)
   Symtab *syms;
   string sfile(filename);
   vector<Symbol *> symvec;
+  long image_offset = 0;
 
   assert_file_is_readable(filename);
 
@@ -470,8 +476,9 @@ dump_file_info(const char *filename, bool fn_discovery)
   if (syms->getObjectType() != obj_Unknown) {
     dump_file_symbols(syms, symvec, fn_discovery);
     relocatable = syms->isExec() ? 0 : 1;
+    image_offset = syms->imageOffset();
   }
-  dump_header_info(relocatable);
+  dump_header_info(relocatable, image_offset);
 }
 
 

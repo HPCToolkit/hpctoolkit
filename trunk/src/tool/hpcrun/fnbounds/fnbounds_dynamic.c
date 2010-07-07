@@ -110,6 +110,7 @@ typedef struct dso_info_s {
   char *name;
   void *start_addr;
   void *end_addr;
+  long offset;
   void **table;
   long map_size;
   int  nsymbols;
@@ -117,8 +118,8 @@ typedef struct dso_info_s {
   struct dso_info_s *next, *prev;
 } dso_info_t;
 
-#define PERFORM_RELOCATION(addr, base) \
-	((void *) (((unsigned long) addr) + ((unsigned long) base)))
+#define PERFORM_RELOCATION(addr, offset) \
+	((void *) (((unsigned long) addr) + ((long) offset)))
 
 #define MAPPING_END(addr, length) \
 	((void *) (((unsigned long) addr) + ((unsigned long) length)))
@@ -238,16 +239,15 @@ fnbounds_enclosing_addr(void *pc, void **start, void **end)
     void * relative_pc = pc;
 
     if (r->relocate) {
-      relative_pc =  (void *) ((unsigned long) relative_pc) - 
-	((unsigned long) r->start_addr); 
+      relative_pc =  (void *) (((unsigned long) relative_pc) - r->offset); 
     }
 
     ret =  fnbounds_table_lookup(r->table, r->nsymbols, relative_pc, 
 				 (void **) start, (void **) end);
 
     if (ret == 0 && r->relocate) {
-      *start = PERFORM_RELOCATION(*start, r->start_addr);
-      *end   = PERFORM_RELOCATION(*end  , r->start_addr);
+      *start = PERFORM_RELOCATION(*start, r->offset);
+      *end   = PERFORM_RELOCATION(*end  , r->offset);
     }
   }
 
@@ -660,6 +660,7 @@ new_dso_info_t(const char *name, void **table, struct fnbounds_file_header *fh,
   r->relocate = fh->relocatable;
   r->start_addr = startaddr;
   r->end_addr = endaddr;
+  r->offset = (unsigned long) startaddr - fh->image_offset;
 
   dso_list_add(&dso_open_list, r);
   TMSG(DSO, "new dso: start = %p, end = %p, name = %s",
