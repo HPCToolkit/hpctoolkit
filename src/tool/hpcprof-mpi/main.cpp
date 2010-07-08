@@ -292,7 +292,7 @@ realmain(int argc, char* const* argv)
 	      myRank, numRanks, rootRank);
 
   if (myRank == rootRank) {
-    if (0) { pruneCanonicalProfile(*profGbl); }
+    pruneCanonicalProfile(*profGbl);
 
     Analysis::CallPath::applySummaryMetricAgents(*profGbl, args.agent);
   }

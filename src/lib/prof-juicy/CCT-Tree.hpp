@@ -375,6 +375,13 @@ public:
   pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
 		 const ANode* root, double thresholdPct);
 
+  // deleteChaff: deletes all subtrees y in x for which y has no
+  // persistant 'cpId'.  Returns true if subtree x was deleted; false
+  // otherwise.
+  static bool
+  deleteChaff(ANode* x);
+
+
 public:
 
   // --------------------------------------------------------
