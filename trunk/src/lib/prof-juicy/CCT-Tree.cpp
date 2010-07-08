@@ -593,10 +593,13 @@ ANode::pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
     ANode* x = it.current();
     it++; // advance iterator -- it is pointing at 'x'
 
+
+    // ----------------------------------------------------------
+    // Determine whether 'x' is important: any inclusive metric >= threshold
+    // ----------------------------------------------------------
     uint numIncl = 0;
     bool isImportant = false;
 
-    // If any inclusive metric is >= threshold => important
     for (VMAIntervalSet::const_iterator it = ivalset.begin();
 	 it != ivalset.end(); ++it) {
       const VMAInterval& ival = *it;
@@ -620,21 +623,47 @@ ANode::pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
       if (isImportant) { break; }
     }
 
+    // ----------------------------------------------------------
+    // 
+    // ----------------------------------------------------------
     if (isImportant || numIncl == 0) {
       x->pruneByMetrics(mMgr, ivalset, root, thresholdPct);
     }
     else {
-      x->unlink(); // unlink 'x' from tree
-      delete x;
+      deleteChaff(x);
     }
   }
+}
+
+
+bool
+ANode::deleteChaff(ANode* x)
+{
+  bool wereChildrenDeleted = true;
+  for (ANodeChildIterator it(x); it.Current(); /* */) {
+    ANode* x_child = it.current();
+    it++; // advance iterator -- it is pointing at 'x_child'
+    
+    wereChildrenDeleted = wereChildrenDeleted && deleteChaff(x_child);
+  }
+
+  bool wasDeleted = false;
+  if (wereChildrenDeleted) {
+    Prof::CCT::ADynNode* x_dyn = dynamic_cast<Prof::CCT::ADynNode*>(x);
+    if ( !(x_dyn && hpcrun_fmt_doRetainId(x_dyn->cpId())) ) {
+      x->unlink(); // unlink 'x' from tree
+      delete x;
+      wasDeleted = true;
+    }
+  }
+
+  return wasDeleted;
 }
 
 
 //**********************************************************************
 // Merging
 //**********************************************************************
-
 
 ANode::MergeEffectList*
 ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
