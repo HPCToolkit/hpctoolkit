@@ -76,6 +76,17 @@ class PathFindMgr
 private:
 
   /*
+   * This method adds a file name and its associated real path to 'hashlist'.
+   * Paths are store according to the file it is associated with. Path is not
+   * added if it is already in the vector associated with the file name.
+   *
+   * @param realPath: The path a file is located at.
+   */
+  void 
+  addPath(const std::string& path);
+  
+
+  /*
    * Private helper method that returns the file name associated with 'path', 
    * which is assumed to be the part of 'path' after the last "/".
    *
@@ -102,6 +113,19 @@ private:
   void
   fill(const std::string& pathList, bool recursive);
 
+  /*
+   * Resolves all '..' and '.' in 'path' in reference to itself. Does NOT 
+   * RealPath 'path'. Returns how many '..' are left in 'path'.
+   * 
+   * Ex: if path = 'src/../../lib/src/./../ex.c' then resolve(path) would turn
+   *     path into '../lib/ex.c'.
+   *
+   * @param path: The file path to resolve.
+   * @return:     The number of '..' in 'path' after it has been resolved.
+   */
+  int 
+  resolve(std::string& path);
+
 
 public:
   PathFindMgr();
@@ -112,17 +136,6 @@ public:
   singleton();
 
 
-  /*
-   * This method adds a file name and its associated real path to 'hashlist'.
-   * Paths are store according to the file it is associated with. Path is not
-   * added if it is already in the vector associated with the file name.
-   *
-   * @param realPath: The path a file is located at.
-   */
-  void 
-  addPath(const std::string& path);
-
-  
   /*
    * Retreives the highest priority and closest matching real path to
    * "filePath" from 'hashList', where priority is defined by how
@@ -174,11 +187,11 @@ public:
   is_recursive_path(const char* path);
   
 
-private:
+private: 
   typedef
-  std::map<std::string, std::vector<std::string> > TreeMap; 
+  std::map<std::string, std::vector<std::string> > PathMap; 
   
-  TreeMap m_cache;
+  PathMap m_cache;
   bool m_filled;
 
 public:
