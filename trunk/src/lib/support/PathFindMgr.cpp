@@ -190,7 +190,7 @@ PathFindMgr::getRealPath(std::string& filePath)
     }
     
     if (comparisonDepth == -1) { // if nothing matches beyond the file name
-      return false; 
+      toReturn = paths[0]; 
     }
     
     filePath = toReturn;
