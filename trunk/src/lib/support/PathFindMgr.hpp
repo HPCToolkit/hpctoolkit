@@ -60,6 +60,7 @@
 //************************* System Include Files ****************************
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -127,6 +128,13 @@ private:
   resolve(std::string& path);
 
 
+  /*  converts all subdirectories of 'path' to a valid pathlist.  If
+   *  'recursive' is true, then all paths are made recursive
+   */
+  std::string
+  subdirs_to_pathlist(const std::string& path, bool isRecursive);
+
+
 public:
   PathFindMgr();
   ~PathFindMgr();
@@ -189,10 +197,15 @@ public:
 
 private: 
   typedef
-  std::map<std::string, std::vector<std::string> > PathMap; 
-  
+  std::map<std::string, std::vector<std::string> > PathMap;
+
   PathMap m_cache;
+  std::set<std::string> directoriesSearched;
+  bool m_cacheNotFull;
   bool m_filled;
+
+  static const uint64_t s_sizeLimit = 20 * 1024 * 1024; //default is 20 MB
+  uint64_t m_size;
 
 public:
   static const int RECURSIVE_PATH_SUFFIX_LN  = 2;
