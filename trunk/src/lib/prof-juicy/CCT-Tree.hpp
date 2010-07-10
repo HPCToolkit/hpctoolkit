@@ -1167,10 +1167,11 @@ public:
   enum {
     // Merge flags
     MrgFlg_NormalizeTraceFileY = (1 << 0),
-    MrgFlg_CCTMergeOnly        = (1 << 1), // CCT nodes may only be merged
+    MrgFlg_CCTMergeOnly        = (1 << 1), // Only perform merges (skip adds)
+    MrgFlg_AssertCCTMergeOnly  = (1 << 2), // Assert: only perform merges
 
     // *private*
-    MrgFlg_PropagateEffects    = (1 << 2),
+    MrgFlg_PropagateEffects    = (1 << 3),
   };
 
 
