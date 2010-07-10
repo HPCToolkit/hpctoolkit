@@ -696,19 +696,21 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
     ADynNode* x_child_dyn = x->findDynChild(*y_child_dyn);
 
     if (!x_child_dyn) {
-      // case 1
-      DIAG_Assert( !(mrgFlag & Tree::MrgFlg_CCTMergeOnly),
+      // case 1: add/insert
+      DIAG_Assert( !(mrgFlag & Tree::MrgFlg_AssertCCTMergeOnly),
 		   "CCT::ANode::mergeDeep: adding not permitted");
-      DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
-		 "CCT::ANode::mergeDeep: Adding:\n     "
-		 << y_child->toStringMe(Tree::OFlg_Debug));
-      y_child->unlink();
-      y_child->mergeDeep_fixup(x_newMetricBegIdx);
-      // FIXME: ensure that no cpid's in y_child conflict with Tree x
-      y_child->link(x);
+      if ( !(mrgFlag & Tree::MrgFlg_CCTMergeOnly) ) {
+	DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
+		   "CCT::ANode::mergeDeep: Adding:\n     "
+		   << y_child->toStringMe(Tree::OFlg_Debug));
+	y_child->unlink();
+	y_child->mergeDeep_fixup(x_newMetricBegIdx);
+	// FIXME: ensure that no cpid's in y_child conflict with Tree x
+	y_child->link(x);
+      }
     }
     else {
-      // case 2
+      // case 2: merge
       DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
 		 "CCT::ANode::mergeDeep: Merging x <= y:\n"
 		 << "  x: " << x_child_dyn->toStringMe(Tree::OFlg_Debug)

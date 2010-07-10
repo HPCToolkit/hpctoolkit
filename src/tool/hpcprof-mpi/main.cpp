@@ -112,12 +112,20 @@ pruneCanonicalProfile(Prof::CallPath::Profile& profGbl);
 static void
 writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank);
 
+
 static void
-makeMetrics(const Analysis::Args& args,
-	    const Analysis::Util::NormalizeProfileArgs_t& nArgs,
-	    const vector<uint>& groupIdToGroupSizeMap,
-	    Prof::CallPath::Profile& profGbl,
-	    int myRank, int numRanks, int rootRank);
+makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
+		   const Analysis::Args& args,
+		   const Analysis::Util::NormalizeProfileArgs_t& nArgs,
+		   const vector<uint>& groupIdToGroupSizeMap,
+		   int myRank, int numRanks, int rootRank);
+
+static void
+makeThreadMetrics(Prof::CallPath::Profile& profGbl,
+		  const Analysis::Args& args,
+		  const Analysis::Util::NormalizeProfileArgs_t& nArgs,
+		  const vector<uint>& groupIdToGroupSizeMap,
+		  int myRank, int numRanks, int rootRank);
 
 static uint
 makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
@@ -128,11 +136,17 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 		       int myRank, int rootRank);
 
 static void
-processProfile(Prof::CallPath::Profile& profGbl,
-	       const Analysis::Args& args,
-	       string& profileFile, uint groupId, uint groupMax,
-	       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
-	       int myRank);
+makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
+		       const string& profileFile,
+		       const Analysis::Args& args, uint groupId, uint groupMax,
+		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
+		       int myRank);
+
+static void
+makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
+		      const string& profileFile,
+		      const Analysis::Args& args, uint groupId, uint groupMax,
+		      int myRank);
 
 static string
 makeDBFileName(const string& dbDir, uint groupId, const string& profileFile);
@@ -208,7 +222,7 @@ realmain(int argc, char* const* argv)
   }
 
   // -------------------------------------------------------
-  // Form local CCT from my set of profile files
+  // 1a. Form local CCT from my set of profile files
   // -------------------------------------------------------
   Prof::CallPath::Profile* profLcl = NULL;
 
@@ -229,7 +243,7 @@ realmain(int argc, char* const* argv)
   profLcl->traceFileNameSet().clear();
 
   // -------------------------------------------------------
-  // Create canonical CCT (metrics merged by <group>.<name>.*)
+  // 1b. Create canonical CCT (metrics merged by <group>.<name>.*)
   // -------------------------------------------------------
   Prof::CallPath::Profile* profGbl = NULL;
 
@@ -249,7 +263,7 @@ realmain(int argc, char* const* argv)
   if (0) { writeProfile(*profGbl, "canonical-cct", myRank); }
 
   // -------------------------------------------------------
-  // Add static structure to canonical CCT; form dense node ids
+  // 1c. Add static structure to canonical CCT; form dense node ids
   //
   // Post-INVARIANT: each process has canonical CCT with dense node
   // ids; corresponding nodes have idential ids.
@@ -284,20 +298,38 @@ realmain(int argc, char* const* argv)
   args.db_dir = dbDirBuf;
 
   // -------------------------------------------------------
-  // Create summary metrics and thread-level metrics
+  // 2. Create *pruned* canonical CCT with summary metrics
   //
   // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
   // -------------------------------------------------------
-  makeMetrics(args, nArgs, groupIdToGroupSizeMap, *profGbl,
-	      myRank, numRanks, rootRank);
+  makeSummaryMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
+		     myRank, numRanks, rootRank);
 
   if (myRank == rootRank) {
-    pruneCanonicalProfile(*profGbl);
-
-    Analysis::CallPath::applySummaryMetricAgents(*profGbl, args.agent);
+    //pruneCanonicalProfile(*profGbl);
   }
 
-  nArgs.destroy();
+#if 0
+  BitVector prunedNodes = NULL;
+  ParallelAnalysis::broadcast(prunedNodes, myRank, numRanks - 1);
+
+  if (myRank != rootRank) {
+    pruneCanonicalProfile(prunedNodes);
+  }
+#endif
+
+  // N.B.: Dense ids are assigned w.r.t. relative magnitude of structure ids
+  profGbl->cct()->makeDensePreorderIds();
+
+  // -------------------------------------------------------
+  // 3. Create thread-level metrics (normalize trace files)
+  // -------------------------------------------------------
+  makeThreadMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
+		    myRank, numRanks, rootRank);
+  
+  if (myRank == rootRank) {
+    Analysis::CallPath::applySummaryMetricAgents(*profGbl, args.agent);
+  }
 
   // ------------------------------------------------------------
   // Generate Experiment database
@@ -313,6 +345,8 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   // Cleanup/MPI finalize
   // -------------------------------------------------------
+  nArgs.destroy();
+
   delete profGbl;
 
   MPI_Finalize();
@@ -477,14 +511,14 @@ writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank)
 
 //***************************************************************************
 
-// makeMetrics: Assumes 'profGbl' is the canonical CCT (with
+// makeSummaryMetrics: Assumes 'profGbl' is the canonical CCT (with
 // structure and with canonical ids).
 static void
-makeMetrics(const Analysis::Args& args,
-	    const Analysis::Util::NormalizeProfileArgs_t& nArgs,
-	    const vector<uint>& groupIdToGroupSizeMap,
-	    Prof::CallPath::Profile& profGbl,
-	    int myRank, int numRanks, int rootRank)
+makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
+		   const Analysis::Args& args,
+		   const Analysis::Util::NormalizeProfileArgs_t& nArgs,
+		   const vector<uint>& groupIdToGroupSizeMap,
+		   int myRank, int numRanks, int rootRank)
 {
   uint mDrvdBeg = 0, mDrvdEnd = 0;   // [ )
   uint mXDrvdBeg = 0, mXDrvdEnd = 0; // [ )
@@ -499,25 +533,26 @@ makeMetrics(const Analysis::Args& args,
   Prof::CCT::ANode* cctRoot = profGbl.cct()->root();
 
   // -------------------------------------------------------
-  // create local summary metrics (and thread-level metrics)
+  // compute local contribution summary metrics (accumulate function)
   // -------------------------------------------------------
   cctRoot->computeMetricsIncr(mMgrGbl, mDrvdBeg, mDrvdEnd,
 			      Prof::Metric::AExprIncr::FnInit);
 
   for (uint i = 0; i < nArgs.paths->size(); ++i) {
-    string& fnm = (*nArgs.paths)[i];
+    const string& fnm = (*nArgs.paths)[i];
     uint groupId = (*nArgs.groupMap)[i];
-    processProfile(profGbl, args, fnm, groupId, nArgs.groupMax,
-		   groupIdToGroupMetricsMap, myRank);
+    makeSummaryMetrics_Lcl(profGbl, fnm, args, groupId, nArgs.groupMax,
+			   groupIdToGroupMetricsMap, myRank);
   }
 
   // -------------------------------------------------------
-  // create global summary metrics
+  // create summary metrics via reduction (combine function)
   // -------------------------------------------------------
 
-  // 1. Change definitions of derived metrics [mDrvdBeg, mDrvdEnd) to
-  //    point to the local summary values that will be in [mXDrvdBeg,
-  //    mXDrvdEnd) durring the reduction
+  // 1. Change definitions of derived metrics [mDrvdBeg, mDrvdEnd)
+  //    since the 'combine' function will be used during the metric
+  //    reduction.  Metric inputs point to accumulators [mXDrvdBeg,
+  //    mXDrvdEnd) rather input values.
   for (uint i = mDrvdBeg, j = mXDrvdBeg; i < mDrvdEnd; ++i, ++j) {
     Prof::Metric::ADesc* m = mMgrGbl.metric(i);
     Prof::Metric::DerivedIncrDesc* mm =
@@ -533,9 +568,8 @@ makeMetrics(const Analysis::Args& args,
     }
   }
 
-  // 2. Initialize extra derived metric storage [mXDrvdBeg, mXDrvdEnd)
-  //    since it will serve as an input during the summary metrics
-  //    reduction
+  // 2. Initialize temporary accumulators [mXDrvdBeg, mXDrvdEnd) used
+  //    during the summary metrics reduction
   cctRoot->computeMetricsIncr(mMgrGbl, mXDrvdBeg, mXDrvdEnd,
 			      Prof::Metric::AExprIncr::FnInitSrc);
 
@@ -550,7 +584,10 @@ makeMetrics(const Analysis::Args& args,
   ParallelAnalysis::reduce(std::make_pair(&profGbl, packedMetrics),
 			   myRank, numRanks - 1);
 
-  // 4. Finalize metrics
+  // -------------------------------------------------------
+  // finalize metrics
+  // -------------------------------------------------------
+
   if (myRank == rootRank) {
     
     // We now generate non-finalized metrics, so no need to do this
@@ -582,6 +619,21 @@ makeMetrics(const Analysis::Args& args,
   }
 
   delete packedMetrics;
+}
+
+
+static void
+makeThreadMetrics(Prof::CallPath::Profile& profGbl,
+		  const Analysis::Args& args,
+		  const Analysis::Util::NormalizeProfileArgs_t& nArgs,
+		  const vector<uint>& groupIdToGroupSizeMap,
+		  int myRank, int numRanks, int rootRank)
+{
+  for (uint i = 0; i < nArgs.paths->size(); ++i) {
+    string& fnm = (*nArgs.paths)[i];
+    uint groupId = (*nArgs.groupMap)[i];
+    makeThreadMetrics_Lcl(profGbl, fnm, args, groupId, nArgs.groupMax, myRank);
+  }
 }
 
 
@@ -669,15 +721,15 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
 }
 
 
-// processProfile: Assumes 'profGbl' is the canonical CCT (with
+// makeSummaryMetrics_Lcl: Assumes 'profGbl' is the canonical CCT (with
 // structure and with canonical ids).  Assumes the 'args' contains the
 // correct final experiment database.
 static void
-processProfile(Prof::CallPath::Profile& profGbl,
-	       const Analysis::Args& args,
-	       string& profileFile, uint groupId, uint groupMax,
-	       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
-	       int myRank)
+makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
+		       const string& profileFile,
+		       const Analysis::Args& args, uint groupId, uint groupMax,
+		       vector<VMAIntervalSet*>& groupIdToGroupMetricsMap,
+		       int myRank)
 {
   Prof::Metric::Mgr* mMgrGbl = profGbl.metricMgr();
   Prof::CCT::Tree* cctGbl = profGbl.cct();
@@ -697,8 +749,7 @@ processProfile(Prof::CallPath::Profile& profGbl,
   // merge into canonical CCT
   // -------------------------------------------------------
   int mergeTy  = Prof::CallPath::Profile::Merge_MergeMetricByName;
-  int mergeFlg = (Prof::CCT::Tree::MrgFlg_NormalizeTraceFileY
-		  | Prof::CCT::Tree::MrgFlg_CCTMergeOnly);
+  int mergeFlg = (Prof::CCT::Tree::MrgFlg_AssertCCTMergeOnly);
 
   // Add *some* structure information to the leaves of 'prof' so that
   // it will be merged successfully with the structured canonical CCT
@@ -753,16 +804,60 @@ processProfile(Prof::CallPath::Profile& profGbl,
   }
 
   // -------------------------------------------------------
+  // reinitialize metric values since space may be used again
+  // -------------------------------------------------------
+  cctRoot->zeroMetricsDeep(mBeg, mEnd); // TODO: not strictly necessary
+  
+  delete prof;
+}
+
+
+static void
+makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
+		      const string& profileFile,
+		      const Analysis::Args& args, uint groupId, uint groupMax,
+		      int myRank)
+{
+  // -------------------------------------------------------
+  // read profile file
+  // -------------------------------------------------------
+  uint rFlags = (Prof::CallPath::Profile::RFlg_NoMetricSfx
+		 | Prof::CallPath::Profile::RFlg_MakeInclExcl);
+  uint rGroupId = (groupMax > 1) ? groupId : 0;
+
+  Prof::CallPath::Profile* prof =
+    Analysis::CallPath::read(profileFile, rGroupId, rFlags);
+
+  // -------------------------------------------------------
+  // merge into canonical CCT
+  // -------------------------------------------------------
+  int mergeTy  = Prof::CallPath::Profile::Merge_MergeMetricByName;
+  int mergeFlg = (Prof::CCT::Tree::MrgFlg_NormalizeTraceFileY
+		  | Prof::CCT::Tree::MrgFlg_CCTMergeOnly);
+
+  // Add *some* structure information to the leaves of 'prof' so that
+  // it will be merged successfully with the structured canonical CCT
+  // 'profGbl'.
+  //
+  // Background: When CCT::Stmts are merged in
+  // Analysis::CallPath::coalesceStmts(CallPath::Profile), IP/LIP
+  // information is not retained.  This means that when merging 'prof'
+  // into 'profGbl' (using CallPath::Profile::merge()), many leaves in
+  // 'prof' will not find their corresponding node in 'profGbl' unless
+  // corrective measures are taken.
+  prof->structure(profGbl.structure());
+  Analysis::CallPath::noteStaticStructureOnLeaves(*prof);
+  prof->structure(NULL);
+
+  uint mBeg = profGbl.merge(*prof, mergeTy, mergeFlg); // [closed begin
+  uint mEnd = mBeg + prof->metricMgr()->size();        //  open end)
+
+  // -------------------------------------------------------
   // write local sampled metric values into database
   // -------------------------------------------------------
   string dbFnm = makeDBFileName(args.db_dir, groupId, profileFile);
   writeMetricsDB(profGbl, mBeg, mEnd, dbFnm);
 
-  // -------------------------------------------------------
-  // reinitialize metric values since space may be used again
-  // -------------------------------------------------------
-  cctRoot->zeroMetricsDeep(mBeg, mEnd); // TODO: not strictly necessary
-  
   delete prof;
 }
 
