@@ -59,6 +59,8 @@
 
 //************************* System Include Files ****************************
 
+#include <stdint.h>
+
 #include <map>
 #include <set>
 #include <string>
