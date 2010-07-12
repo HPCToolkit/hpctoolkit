@@ -65,6 +65,9 @@ using std::dec;
 #include <string>
 using std::string;
 
+#include <vector>
+using std::vector;
+
 #include <typeinfo>
 
 //*************************** User Include Files ****************************
@@ -144,6 +147,14 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
     x_root->mergeDeep(y_root, x_newMetricBegIdx, mrgFlag, oFlag);
 
   return mrgEffects;
+}
+
+
+void
+Tree::pruneCCTByNodeId(const uint8_t* prunedNodes)
+{
+  Prof::CCT::ANode::pruneByNodeId(m_root, prunedNodes);
+  DIAG_Assert(m_root, DIAG_UnexpectedInput);
 }
 
 
@@ -587,7 +598,8 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 
 void
 ANode::pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
-		      const ANode* root, double thresholdPct)
+		      const ANode* root, double thresholdPct,
+		      uint8_t* prunedNodes)
 {
   for (ANodeChildIterator it(this); it.Current(); /* */) {
     ANode* x = it.current();
@@ -627,18 +639,41 @@ ANode::pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
     // 
     // ----------------------------------------------------------
     if (isImportant || numIncl == 0) {
-      x->pruneByMetrics(mMgr, ivalset, root, thresholdPct);
+      x->pruneByMetrics(mMgr, ivalset, root, thresholdPct, prunedNodes);
     }
     else {
-      deleteChaff(x);
+      deleteChaff(x, prunedNodes);
+    }
+  }
+}
+
+
+void
+ANode::pruneByNodeId(ANode*& x, const uint8_t* prunedNodes)
+{
+  // Visiting in preorder can save a little work since a whole subtree
+  // can be deleted (factoring out the destructor's traversing a
+  // subtree)
+  if (prunedNodes[x->id()]) {
+    x->unlink(); // unlink 'x' from tree
+    delete x;
+    x = NULL;
+  }
+  else {
+    for (ANodeChildIterator it(x); it.Current(); /* */) {
+      ANode* x_child = it.current();
+      it++; // advance iterator -- it is pointing at 'x_child'
+      pruneByNodeId(x_child, prunedNodes);
     }
   }
 }
 
 
 bool
-ANode::deleteChaff(ANode* x)
+ANode::deleteChaff(ANode* x, uint8_t* deletedNodes)
 {
+  bool x_isLeaf = x->isLeaf(); // N.B. must perform before below
+
   bool wereChildrenDeleted = true;
   for (ANodeChildIterator it(x); it.Current(); /* */) {
     ANode* x_child = it.current();
@@ -650,9 +685,13 @@ ANode::deleteChaff(ANode* x)
   bool wasDeleted = false;
   if (wereChildrenDeleted) {
     Prof::CCT::ADynNode* x_dyn = dynamic_cast<Prof::CCT::ADynNode*>(x);
-    if ( !(x_dyn && hpcrun_fmt_doRetainId(x_dyn->cpId())) ) {
+    if ( (x_isLeaf && !hpcrun_fmt_doRetainId(x_dyn->cpId()))
+	 || !x_isLeaf) {
       x->unlink(); // unlink 'x' from tree
       delete x;
+      if (deletedNodes) {
+	deletedNodes[x->id()] = 1;
+      }
       wasDeleted = true;
     }
   }

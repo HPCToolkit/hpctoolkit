@@ -371,16 +371,22 @@ public:
   computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 		       Metric::AExprIncr::FnTy fn);
 
+  // pruneByMetrics: TODO: make this static for consistency
   void
   pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
-		 const ANode* root, double thresholdPct);
+		 const ANode* root, double thresholdPct,
+		 uint8_t* prunedNodes = NULL);
+
+  // pruneByNodeId: Note that 'x' may be deleted
+  static void
+  pruneByNodeId(ANode*& x, const uint8_t* prunedNodes);
 
   // deleteChaff: deletes all subtrees y in x for which y has no
   // persistant 'cpId'.  Returns true if subtree x was deleted; false
-  // otherwise.
+  // otherwise.  If 'deletedNodes' is non-NULL, records all deleted
+  // nodes (assuming dense node ids).
   static bool
-  deleteChaff(ANode* x);
-
+  deleteChaff(ANode* x, uint8_t* deletedNodes = NULL);
 
 public:
 
@@ -1212,13 +1218,23 @@ public:
 
 
   // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  // pruneCCTByNodeId
+  void
+  pruneCCTByNodeId(const uint8_t* prunedNodes);
+
+  // -------------------------------------------------------
   // dense ids (only used when explicitly requested)
   // -------------------------------------------------------
 
-  // makeDensePreorderIds: returns the maximum id
+  // makeDensePreorderIds: creates dense ids, reserving 0 as a NULL
+  // (unused) id; returns maxDenseId()
   uint
   makeDensePreorderIds();
-
+  
+  // maxDenseId(): returns the maximum id actually used
   uint
   maxDenseId() const
   { return m_maxDenseId; }

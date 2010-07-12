@@ -107,7 +107,8 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 		       int myRank, int numRanks, int rootRank = 0);
 
 static void
-pruneCanonicalProfile(Prof::CallPath::Profile& profGbl);
+pruneCanonicalProfile(Prof::CallPath::Profile& profGbl,
+		      uint8_t* prunedNodes);
 
 static void
 writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank);
@@ -305,18 +306,20 @@ realmain(int argc, char* const* argv)
   makeSummaryMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
 		     myRank, numRanks, rootRank);
 
-  if (myRank == rootRank) {
-    //pruneCanonicalProfile(*profGbl);
-  }
+  uint prunedNodesSz = profGbl->cct()->maxDenseId() + 1;
+  uint8_t* prunedNodes = new uint8_t[prunedNodesSz];
+  memset(prunedNodes, 0, prunedNodesSz * sizeof(uint8_t));
 
-#if 0
-  BitVector prunedNodes = NULL;
-  ParallelAnalysis::broadcast(prunedNodes, myRank, numRanks - 1);
+  if (myRank == rootRank) {
+    pruneCanonicalProfile(*profGbl, prunedNodes);
+  }
+  
+  MPI_Bcast(prunedNodes, prunedNodesSz, MPI_BYTE, rootRank, MPI_COMM_WORLD);
 
   if (myRank != rootRank) {
-    pruneCanonicalProfile(prunedNodes);
+    profGbl->cct()->pruneCCTByNodeId(prunedNodes);
   }
-#endif
+  delete[] prunedNodes;
 
   // N.B.: Dense ids are assigned w.r.t. relative magnitude of structure ids
   profGbl->cct()->makeDensePreorderIds();
@@ -473,7 +476,8 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 
 
 static void
-pruneCanonicalProfile(Prof::CallPath::Profile& profGbl)
+pruneCanonicalProfile(Prof::CallPath::Profile& profGbl,
+		      uint8_t* prunedNodes)
 {
   VMAIntervalSet ivalset;
   
@@ -488,7 +492,8 @@ pruneCanonicalProfile(Prof::CallPath::Profile& profGbl)
   }
   
   profGbl.cct()->root()->pruneByMetrics(*profGbl.metricMgr(), ivalset,
-					profGbl.cct()->root(), 0.001);
+					profGbl.cct()->root(), 0.001,
+					prunedNodes);
 }
 
 
