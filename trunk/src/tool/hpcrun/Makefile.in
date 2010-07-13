@@ -93,15 +93,15 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 @HOST_CPU_PPC_TRUE@am__append_14 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_15 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_16 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_X86_TRUE@am__append_17 = $(MY_X86_FILES)
-@HOST_CPU_X86_TRUE@am__append_18 = $(MY_X86_FILES)
-@HOST_CPU_X86_TRUE@am__append_19 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_TRUE@am__append_20 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_TRUE@am__append_21 = $(XED2_LIB)/libxed.a
-@HOST_CPU_X86_TRUE@am__append_22 = $(XED2_LIB)/libxed.a
-@HOST_CPU_X86_TRUE@am__append_23 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_TRUE@am__append_24 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_TRUE@am__append_25 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_17 = $(MY_X86_FILES)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_18 = $(MY_X86_FILES)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_19 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_20 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_21 = $(XED2_LIB)/libxed.a
+@HOST_CPU_X86_FAMILY_TRUE@am__append_22 = $(XED2_LIB)/libxed.a
+@HOST_CPU_X86_FAMILY_TRUE@am__append_23 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_24 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_25 = $(MY_X86_INCLUDE_DIRS)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_26 = $(MY_PAPI_FILES)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_27 = $(PAPI_INC_FLGS)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_28 = $(PAPI_LD_FLGS)
@@ -268,7 +268,7 @@ am__objects_13 = libhpcrun_la-default_validation_summary.lo \
 @HOST_CPU_PPC_TRUE@am__objects_14 = $(am__objects_13)
 am__objects_15 = libhpcrun_la-x86-tramp.lo \
 	libhpcrun_la-x86-context-pc.lo
-@HOST_CPU_X86_TRUE@am__objects_16 = $(am__objects_15)
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_16 = $(am__objects_15)
 am__objects_17 = libhpcrun_la-papi.lo
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_18 = $(am__objects_17)
 am__objects_19 = libhpcrun_la-upc.lo
@@ -391,7 +391,7 @@ am__objects_29 = libhpcrun_o-default_validation_summary.$(OBJEXT) \
 @HOST_CPU_PPC_TRUE@am__objects_30 = $(am__objects_29)
 am__objects_31 = libhpcrun_o-x86-tramp.$(OBJEXT) \
 	libhpcrun_o-x86-context-pc.$(OBJEXT)
-@HOST_CPU_X86_TRUE@am__objects_32 = $(am__objects_31)
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_32 = $(am__objects_31)
 am__objects_33 = libhpcrun_o-papi.$(OBJEXT)
 @OPT_PAPI_STATIC_TRUE@am__objects_34 = $(am__objects_33)
 am__objects_35 = libhpcrun_o-upc.$(OBJEXT)
@@ -845,7 +845,7 @@ MY_X86_INCLUDE_DIRS = \
 
 
 #
-#   Update various components with unwind stuff
+# Update various components with unwind stuff
 #
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
 	$(am__append_4) $(am__append_5) $(am__append_11) \
@@ -901,9 +901,9 @@ libhpcrun_o_LDFLAGS = $(am__append_22) $(am__append_31) \
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_25) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
-@HOST_CPU_X86_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
+@HOST_CPU_X86_FAMILY_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_PPC_TRUE@libhpcrun_o_CCASFLAGS = $(AM_CCASFLAGS)
-@HOST_CPU_X86_TRUE@libhpcrun_o_CCASFLAGS = $(AM_CCASFLAGS)
+@HOST_CPU_X86_FAMILY_TRUE@libhpcrun_o_CCASFLAGS = $(AM_CCASFLAGS)
 @UNW_PPC64_TRUE@UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
 @UNW_X86_TRUE@UNW_SOURCE_FILES = $(UNW_X86_FILES)
 @UNW_PPC64_TRUE@UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)

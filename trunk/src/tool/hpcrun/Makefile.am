@@ -328,18 +328,18 @@ libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic 	\
 libhpcrun_o_LDFLAGS =
 
 if HOST_OS_LINUX
-    libhpcrun_la_SOURCES += $(MY_LINUX_DYNAMIC_FILES)
+  libhpcrun_la_SOURCES += $(MY_LINUX_DYNAMIC_FILES)
 endif
 
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS)
 
 if HOST_CPU_MIPS
-    libhpcrun_la_SOURCES  += $(MY_MIPS_FILES)
-    libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
-    libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-    libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
-    libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-    libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_la_SOURCES  += $(MY_MIPS_FILES)
+  libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
+  libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 endif
 
 # Note: setting CCASFLAGS here is a no-op hack with the side effect of
@@ -349,70 +349,70 @@ endif
 # 8.3.9.2, Objects created with both libtool and without.
 
 if HOST_CPU_PPC
-    libhpcrun_la_SOURCES  += $(MY_PPC_FILES)
-    libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
-    libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-    libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
-    libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-    libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-    libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
-    libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
+  libhpcrun_la_SOURCES  += $(MY_PPC_FILES)
+  libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
+  libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
+  libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
 endif
 
-if HOST_CPU_X86
-    libhpcrun_la_SOURCES  += $(MY_X86_FILES)
-    libhpcrun_o_SOURCES   += $(MY_X86_FILES)
-    libhpcrun_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-    libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
-    libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
-    libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
-    libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
-    libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
-    libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-    libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-    MY_AGENT_INCLUDE_DIRS += $(MY_X86_INCLUDE_DIRS)
+if HOST_CPU_X86_FAMILY
+  libhpcrun_la_SOURCES  += $(MY_X86_FILES)
+  libhpcrun_o_SOURCES   += $(MY_X86_FILES)
+  libhpcrun_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
+  libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
+  libhpcrun_la_LDFLAGS  += $(XED2_LIB)/libxed.a
+  libhpcrun_o_LDFLAGS   += $(XED2_LIB)/libxed.a
+  libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  MY_AGENT_INCLUDE_DIRS += $(MY_X86_INCLUDE_DIRS)
 endif
 
 if OPT_PAPI_DYNAMIC
-    libhpcrun_la_SOURCES  += $(MY_PAPI_FILES)
-    libhpcrun_la_CPPFLAGS += $(PAPI_INC_FLGS)
-    libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
+  libhpcrun_la_SOURCES  += $(MY_PAPI_FILES)
+  libhpcrun_la_CPPFLAGS += $(PAPI_INC_FLGS)
+  libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
 endif
 
 if OPT_PAPI_STATIC
-    libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
-    libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
-    libhpcrun_o_LDFLAGS   += $(PAPI_LD_FLGS)
+  libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
+  libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
+  libhpcrun_o_LDFLAGS   += $(PAPI_LD_FLGS)
 endif
 
 if OPT_ENABLE_UPC
-    libhpcrun_la_SOURCES  += $(MY_UPC_FILES)
-    libhpcrun_o_SOURCES   += $(MY_UPC_FILES)
-    libhpcrun_la_CPPFLAGS += $(OPT_UPC_IFLAGS)
-    libhpcrun_o_CPPFLAGS  += $(OPT_UPC_IFLAGS)
-    libhpcrun_la_LDFLAGS  += $(OPT_UPC_LDFLAGS)
-    libhpcrun_o_LDFLAGS   += $(OPT_UPC_LDFLAGS)
+  libhpcrun_la_SOURCES  += $(MY_UPC_FILES)
+  libhpcrun_o_SOURCES   += $(MY_UPC_FILES)
+  libhpcrun_la_CPPFLAGS += $(OPT_UPC_IFLAGS)
+  libhpcrun_o_CPPFLAGS  += $(OPT_UPC_IFLAGS)
+  libhpcrun_la_LDFLAGS  += $(OPT_UPC_LDFLAGS)
+  libhpcrun_o_LDFLAGS   += $(OPT_UPC_LDFLAGS)
 endif
 
 if OPT_ENABLE_LUSH_PTHREADS
-    libhpcrun_la_CPPFLAGS += -DLUSH_PTHREADS
-    libhpcrun_o_CPPFLAGS  += -DLUSH_PTHREADS
+  libhpcrun_la_CPPFLAGS += -DLUSH_PTHREADS
+  libhpcrun_o_CPPFLAGS  += -DLUSH_PTHREADS
 endif
 
 if UNW_X86
-    UNW_SOURCE_FILES = $(UNW_X86_FILES)
-    UNW_INCLUDE_DIRS = $(UNW_X86_INCLUDE_DIRS)
-    UNW_LD_FLAGS     = $(UNW_X86_LD_FLAGS)
+  UNW_SOURCE_FILES = $(UNW_X86_FILES)
+  UNW_INCLUDE_DIRS = $(UNW_X86_INCLUDE_DIRS)
+  UNW_LD_FLAGS     = $(UNW_X86_LD_FLAGS)
 endif
 
 if UNW_PPC64
-    UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
-    UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
-    UNW_LD_FLAGS     = $(UNW_PPC64_LD_FLAGS)
+  UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
+  UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
+  UNW_LD_FLAGS     = $(UNW_PPC64_LD_FLAGS)
 endif
 
 #
-#   Update various components with unwind stuff
+# Update various components with unwind stuff
 #
 
 libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
