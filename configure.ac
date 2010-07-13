@@ -251,7 +251,7 @@ HPC_CHECK_COMPILE_PTHREAD_H()
 HAVE_OS_MULTILIB="no"
 LIB_SEARCH_PATH="lib"
 AC_MSG_CHECKING([for multilib platform])
-case ${host} in
+case "${host}" in
   x86_64*-*-linux* | mips64*-*-linux* | powerpc64*-*-linux*)
     HAVE_OS_MULTILIB="yes"
     LIB_SEARCH_PATH="lib lib64 lib32"
@@ -296,15 +296,28 @@ HOST_OS=
 HOST_CPU_MIPS=no
 HOST_CPU_PPC=no
 HOST_CPU_X86=no
+HOST_CPU_X86_64=no
+HOST_CPU_X86_FAMILY=no
 
-case ${host} in
+case "${host}" in
   # Linux
-  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux*)
-    # __i386 / __x86_64 && __linux
+  i386*-*-linux* | i686*-*-linux*)
+    # __i386 && __linux
     HOST_OS="Linux"
     HOST_CPU_X86=yes
+    HOST_CPU_X86_FAMILY=yes
     UNWINDER=x86-family
-    AC_DEFINE([HOST_CPU_x86_64], [], []) # bogus to include 386
+    AC_DEFINE([HOST_CPU_x86], [], [])
+    AC_DEFINE([HOST_OS_LINUX], [], [])
+    ;;
+
+  x86_64*-*-linux*)
+    # __x86_64 && __linux
+    HOST_OS="Linux"
+    HOST_CPU_X86_64=yes
+    HOST_CPU_X86_FAMILY=yes
+    UNWINDER=x86-family
+    AC_DEFINE([HOST_CPU_x86_64], [], [])
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
 
@@ -379,10 +392,12 @@ case ${host} in
 esac
 
 
-AM_CONDITIONAL([HOST_OS_LINUX], [test "$HOST_OS" = Linux])
-AM_CONDITIONAL([HOST_CPU_MIPS], [test "$HOST_CPU_MIPS" = yes])
-AM_CONDITIONAL([HOST_CPU_PPC],  [test "$HOST_CPU_PPC" = yes])
-AM_CONDITIONAL([HOST_CPU_X86],  [test "$HOST_CPU_X86" = yes])
+AM_CONDITIONAL([HOST_OS_LINUX],   [test "${HOST_OS}" = Linux])
+AM_CONDITIONAL([HOST_CPU_MIPS],   [test "${HOST_CPU_MIPS}" = yes])
+AM_CONDITIONAL([HOST_CPU_PPC],    [test "${HOST_CPU_PPC}" = yes])
+AM_CONDITIONAL([HOST_CPU_X86],    [test "${HOST_CPU_X86}" = yes])
+AM_CONDITIONAL([HOST_CPU_X86_64], [test "${HOST_CPU_X86_64}" = yes])
+AM_CONDITIONAL([HOST_CPU_X86_FAMILY], [test "${HOST_CPU_X86_FAMILY}" = yes])
 
 #
 # set up automake choice of unwinder
@@ -426,10 +441,18 @@ else
 fi
 
 
-case ${host} in
+case "${host}" in
 
   # Linux
   i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux* | mips64*-*-linux*)
+    # GCC (FIXME: for now assume)
+    case "${host}" in
+      i386* | i686*)
+        HOST_CXXFLAGS="-march=i486"
+        HOST_CFLAGS="-march=i486"
+	;;
+    esac
+
     # Intel compiler
     if HPCcxxcmp([icpc ecpc]) ; then
       :
@@ -680,27 +703,27 @@ if test "$use_externals" = yes ; then
 fi
 
 AC_ARG_WITH([libdwarf],
-    [AS_HELP_STRING([--with-libdwarf=PATH],
-	    [path to libdwarf install directory])],
-    [LIBDWARF="$withval"],
-    [])
+  [AS_HELP_STRING([--with-libdwarf=PATH],
+  	    [path to libdwarf install directory])],
+  [LIBDWARF="$withval"],
+  [])
 
 AC_MSG_CHECKING([for libdwarf])
 
-case "$LIBDWARF" in
-    /* )
-	if test -f "${LIBDWARF}/include/libdwarf.h" ; then :
-	else
-	    AC_MSG_ERROR([invalid libdwarf directory: $LIBDWARF])
-	fi
-	LIBDWARF_COPY=yes
-	;;
-    no )
-	LIBDWARF_COPY=no
-	;;
-    * )
-	AC_MSG_ERROR([libdwarf directory must be absolute path: $LIBDWARF])
-	;;
+case "${LIBDWARF}" in
+  /* )
+    if test -f "${LIBDWARF}/include/libdwarf.h" ; then :
+    else
+        AC_MSG_ERROR([invalid libdwarf directory: $LIBDWARF])
+    fi
+    LIBDWARF_COPY=yes
+    ;;
+  no )
+    LIBDWARF_COPY=no
+    ;;
+  * )
+    AC_MSG_ERROR([libdwarf directory must be absolute path: $LIBDWARF])
+    ;;
 esac
 
 LIBDWARF_LIB="${LIBDWARF}/lib"
@@ -717,14 +740,14 @@ AC_SUBST([LIBDWARF_COPY])
 
 LIBELF=no
 if test "$use_externals" = yes ; then
-    LIBELF="$ext_libelf_prefix"
+  LIBELF="$ext_libelf_prefix"
 fi
 
 AC_ARG_WITH([libelf],
-    [AS_HELP_STRING([--with-libelf=PATH],
-	    [path to libelf install directory])],
-    [LIBELF="$withval"],
-    [])
+  [AS_HELP_STRING([--with-libelf=PATH],
+  	    [path to libelf install directory])],
+  [LIBELF="$withval"],
+  [])
 
 AC_MSG_CHECKING([for libelf])
 
@@ -733,7 +756,7 @@ valid_libelf_dir()
     test -f "$1/include/libelf.h" || test -f "$1/include/libelf/libelf.h"
 }
 
-case "$LIBELF" in
+case "${LIBELF}" in
     /* )
 	if valid_libelf_dir "$LIBELF" ; then :
 	else
@@ -765,41 +788,41 @@ LIBMONITOR=no
 OPT_LIBMONITOR_DYNAMIC=no
 OPT_LIBMONITOR_STATIC=no
 if test "$use_externals" = yes ; then
-    LIBMONITOR="$ext_libmonitor_prefix"
+  LIBMONITOR="$ext_libmonitor_prefix"
 fi
 
 AC_ARG_WITH([libmonitor],
-    [AS_HELP_STRING([--with-libmonitor=PATH],
-	    [path to libmonitor install directory])],
-    [LIBMONITOR="$withval"],
-    [])
+  [AS_HELP_STRING([--with-libmonitor=PATH],
+  	    [path to libmonitor install directory])],
+  [LIBMONITOR="$withval"],
+  [])
 
 AC_MSG_CHECKING([for libmonitor])
 
-case "$LIBMONITOR" in
-    /* )
-	LIBMONITOR_INC="${LIBMONITOR}/include"
-	if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
-	else
-	    AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
-	fi
-	LIBMONITOR_LIB="${LIBMONITOR}/lib"
-	if test -f "${LIBMONITOR_LIB}/libmonitor.so" ; then
-	    OPT_LIBMONITOR_DYNAMIC=yes
-	fi
-	if test -f "${LIBMONITOR_LIB}/libmonitor_wrap.a" ; then
-	    OPT_LIBMONITOR_STATIC=yes
-	fi
-	LIBMONITOR_COPY=yes
-	LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
-	;;
-    no )
-	LIBMONITOR_COPY=no
-	LIBMONITOR_RUN_DIR=no
-	;;
-    * )
-	AC_MSG_ERROR([libmonitor directory must be absolute path: $LIBMONITOR])
-	;;
+case "${LIBMONITOR}" in
+  /* )
+    LIBMONITOR_INC="${LIBMONITOR}/include"
+    if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
+    else
+        AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
+    fi
+    LIBMONITOR_LIB="${LIBMONITOR}/lib"
+    if test -f "${LIBMONITOR_LIB}/libmonitor.so" ; then
+        OPT_LIBMONITOR_DYNAMIC=yes
+    fi
+    if test -f "${LIBMONITOR_LIB}/libmonitor_wrap.a" ; then
+        OPT_LIBMONITOR_STATIC=yes
+    fi
+    LIBMONITOR_COPY=yes
+    LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
+    ;;
+  no )
+    LIBMONITOR_COPY=no
+    LIBMONITOR_RUN_DIR=no
+    ;;
+  * )
+    AC_MSG_ERROR([libmonitor directory must be absolute path: $LIBMONITOR])
+    ;;
 esac
 
 AC_MSG_RESULT([$LIBMONITOR])
@@ -1062,33 +1085,33 @@ AC_SUBST([papi_extra_libs])
 
 SYMTABAPI=no
 if test "$use_externals" = yes ; then
-    SYMTABAPI="$ext_symtabAPI_prefix"
+  SYMTABAPI="$ext_symtabAPI_prefix"
 fi
 
 AC_ARG_WITH([symtabAPI],
-    [AS_HELP_STRING([--with-symtabAPI=PATH],
-	    [path to symtabAPI install directory])],
-    [SYMTABAPI="$withval"],
-    [])
+  [AS_HELP_STRING([--with-symtabAPI=PATH],
+  	    [path to symtabAPI install directory])],
+  [SYMTABAPI="$withval"],
+  [])
 
 AC_MSG_CHECKING([for symtabAPI])
 
-case "$SYMTABAPI" in
-    /* )
-	if test -f "${SYMTABAPI}/include/Symtab.h" ; then :
-	else
-	    AC_MSG_ERROR([invalid symtabAPI directory: $SYMTABAPI])
-	fi
-	SYMTABAPI_COPY=yes
-	SYMTABAPI_RUN_DIR="$hpc_ext_libs_dir"
-	;;
-    no )
-	SYMTABAPI_COPY=no
-	SYMTABAPI_RUN_DIR=no
-	;;
-    * )
-	AC_MSG_ERROR([symtabAPI directory must be absolute path: $SYMTABAPI])
-	;;
+case "${SYMTABAPI}" in
+  /* )
+    if test -f "${SYMTABAPI}/include/Symtab.h" ; then :
+    else
+        AC_MSG_ERROR([invalid symtabAPI directory: $SYMTABAPI])
+    fi
+    SYMTABAPI_COPY=yes
+    SYMTABAPI_RUN_DIR="$hpc_ext_libs_dir"
+    ;;
+  no )
+    SYMTABAPI_COPY=no
+    SYMTABAPI_RUN_DIR=no
+    ;;
+  * )
+    AC_MSG_ERROR([symtabAPI directory must be absolute path: $SYMTABAPI])
+    ;;
 esac
 
 SYMTABAPI_INC="${SYMTABAPI}/include"
@@ -1108,33 +1131,33 @@ AC_SUBST([SYMTABAPI_RUN_DIR])
 
 XED2=no
 if test "$use_externals" = yes ; then
-    XED2="$ext_xed2_prefix"
+  XED2="$ext_xed2_prefix"
 fi
 
 AC_ARG_WITH([xed2],
-    [AS_HELP_STRING([--with-xed2=PATH],
-	    [path to xed2 install directory])],
-    [XED2="$withval"],
-    [])
+  [AS_HELP_STRING([--with-xed2=PATH],
+  	    [path to xed2 install directory])],
+  [XED2="$withval"],
+  [])
 
 AC_MSG_CHECKING([for xed2])
 
-case "$XED2" in
-    /* )
-	if test -f "${XED2}/include/xed-interface.h" ; then :
-	else
-	    AC_MSG_ERROR([invalid xed2 directory: $XED2])
-	fi
-	XED2_COPY=yes
-	XED2_RUN_DIR="$hpc_ext_libs_dir"
-	;;
-    no )
-	XED2_COPY=no
-	XED2_RUN_DIR=no
-	;;
-    * )
-	AC_MSG_ERROR([xed2 directory must be absolute path: $XED2])
-	;;
+case "${XED2}" in
+  /* )
+    if test -f "${XED2}/include/xed-interface.h" ; then :
+    else
+        AC_MSG_ERROR([invalid xed2 directory: $XED2])
+    fi
+    XED2_COPY=yes
+    XED2_RUN_DIR="$hpc_ext_libs_dir"
+    ;;
+  no )
+    XED2_COPY=no
+    XED2_RUN_DIR=no
+    ;;
+  * )
+    AC_MSG_ERROR([xed2 directory must be absolute path: $XED2])
+    ;;
 esac
 
 XED2_INC="${XED2}/include"
@@ -1504,7 +1527,7 @@ OPT_UPC_IFLAGS=
 OPT_UPC_LDFLAGS=
 opt_upc_mesg=no
 
-case "$with_upc" in
+case "${with_upc}" in
   /* )
     if test -f "${with_upc}/arch/include/spi/UPC.h"
     then

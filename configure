@@ -878,6 +878,10 @@ UNW_PPC64_FALSE
 UNW_PPC64_TRUE
 UNW_X86_FALSE
 UNW_X86_TRUE
+HOST_CPU_X86_FAMILY_FALSE
+HOST_CPU_X86_FAMILY_TRUE
+HOST_CPU_X86_64_FALSE
+HOST_CPU_X86_64_TRUE
 HOST_CPU_X86_FALSE
 HOST_CPU_X86_TRUE
 HOST_CPU_PPC_FALSE
@@ -4665,13 +4669,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4668: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4672: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4671: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4675: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4674: output\"" >&5)
+  (eval echo "\"\$as_me:4678: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5877,7 +5881,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5880 "configure"' > conftest.$ac_ext
+  echo '#line 5884 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7730,11 +7734,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7733: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7737: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7737: \$? = $ac_status" >&5
+   echo "$as_me:7741: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8069,11 +8073,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8072: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8076: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8076: \$? = $ac_status" >&5
+   echo "$as_me:8080: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8174,11 +8178,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8177: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8181: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8181: \$? = $ac_status" >&5
+   echo "$as_me:8185: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8229,11 +8233,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8232: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8236: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8236: \$? = $ac_status" >&5
+   echo "$as_me:8240: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11029,7 +11033,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11032 "configure"
+#line 11036 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11125,7 +11129,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11128 "configure"
+#line 11132 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14376,11 +14380,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14379: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14383: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14383: \$? = $ac_status" >&5
+   echo "$as_me:14387: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14475,11 +14479,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14478: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14482: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14482: \$? = $ac_status" >&5
+   echo "$as_me:14486: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14527,11 +14531,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14530: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14534: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14534: \$? = $ac_status" >&5
+   echo "$as_me:14538: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -18342,7 +18346,7 @@ HAVE_OS_MULTILIB="no"
 LIB_SEARCH_PATH="lib"
 { $as_echo "$as_me:$LINENO: checking for multilib platform" >&5
 $as_echo_n "checking for multilib platform... " >&6; }
-case ${host} in
+case "${host}" in
   x86_64*-*-linux* | mips64*-*-linux* | powerpc64*-*-linux*)
     HAVE_OS_MULTILIB="yes"
     LIB_SEARCH_PATH="lib lib64 lib32"
@@ -18403,18 +18407,37 @@ HOST_OS=
 HOST_CPU_MIPS=no
 HOST_CPU_PPC=no
 HOST_CPU_X86=no
+HOST_CPU_X86_64=no
+HOST_CPU_X86_FAMILY=no
 
-case ${host} in
+case "${host}" in
   # Linux
-  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux*)
-    # __i386 / __x86_64 && __linux
+  i386*-*-linux* | i686*-*-linux*)
+    # __i386 && __linux
     HOST_OS="Linux"
     HOST_CPU_X86=yes
+    HOST_CPU_X86_FAMILY=yes
+    UNWINDER=x86-family
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_CPU_x86 /**/
+_ACEOF
+
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_LINUX /**/
+_ACEOF
+
+    ;;
+
+  x86_64*-*-linux*)
+    # __x86_64 && __linux
+    HOST_OS="Linux"
+    HOST_CPU_X86_64=yes
+    HOST_CPU_X86_FAMILY=yes
     UNWINDER=x86-family
     cat >>confdefs.h <<\_ACEOF
 #define HOST_CPU_x86_64 /**/
 _ACEOF
- # bogus to include 386
+
     cat >>confdefs.h <<\_ACEOF
 #define HOST_OS_LINUX /**/
 _ACEOF
@@ -18524,7 +18547,7 @@ $as_echo "$as_me: error: HPCToolkit is not configured for HOST=${host}!" >&2;}
 esac
 
 
- if test "$HOST_OS" = Linux; then
+ if test "${HOST_OS}" = Linux; then
   HOST_OS_LINUX_TRUE=
   HOST_OS_LINUX_FALSE='#'
 else
@@ -18532,7 +18555,7 @@ else
   HOST_OS_LINUX_FALSE=
 fi
 
- if test "$HOST_CPU_MIPS" = yes; then
+ if test "${HOST_CPU_MIPS}" = yes; then
   HOST_CPU_MIPS_TRUE=
   HOST_CPU_MIPS_FALSE='#'
 else
@@ -18540,7 +18563,7 @@ else
   HOST_CPU_MIPS_FALSE=
 fi
 
- if test "$HOST_CPU_PPC" = yes; then
+ if test "${HOST_CPU_PPC}" = yes; then
   HOST_CPU_PPC_TRUE=
   HOST_CPU_PPC_FALSE='#'
 else
@@ -18548,12 +18571,28 @@ else
   HOST_CPU_PPC_FALSE=
 fi
 
- if test "$HOST_CPU_X86" = yes; then
+ if test "${HOST_CPU_X86}" = yes; then
   HOST_CPU_X86_TRUE=
   HOST_CPU_X86_FALSE='#'
 else
   HOST_CPU_X86_TRUE='#'
   HOST_CPU_X86_FALSE=
+fi
+
+ if test "${HOST_CPU_X86_64}" = yes; then
+  HOST_CPU_X86_64_TRUE=
+  HOST_CPU_X86_64_FALSE='#'
+else
+  HOST_CPU_X86_64_TRUE='#'
+  HOST_CPU_X86_64_FALSE=
+fi
+
+ if test "${HOST_CPU_X86_FAMILY}" = yes; then
+  HOST_CPU_X86_FAMILY_TRUE=
+  HOST_CPU_X86_FAMILY_FALSE='#'
+else
+  HOST_CPU_X86_FAMILY_TRUE='#'
+  HOST_CPU_X86_FAMILY_FALSE=
 fi
 
 
@@ -18620,10 +18659,18 @@ else
 fi
 
 
-case ${host} in
+case "${host}" in
 
   # Linux
   i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux* | mips64*-*-linux*)
+    # GCC (FIXME: for now assume)
+    case "${host}" in
+      i386* | i686*)
+        HOST_CXXFLAGS="-march=i486"
+        HOST_CFLAGS="-march=i486"
+	;;
+    esac
+
     # Intel compiler
     if MYcxxcmp $CXX icpc ecpc ; then
       :
@@ -18909,24 +18956,24 @@ fi
 { $as_echo "$as_me:$LINENO: checking for libdwarf" >&5
 $as_echo_n "checking for libdwarf... " >&6; }
 
-case "$LIBDWARF" in
-    /* )
-	if test -f "${LIBDWARF}/include/libdwarf.h" ; then :
-	else
-	    { { $as_echo "$as_me:$LINENO: error: invalid libdwarf directory: $LIBDWARF" >&5
+case "${LIBDWARF}" in
+  /* )
+    if test -f "${LIBDWARF}/include/libdwarf.h" ; then :
+    else
+        { { $as_echo "$as_me:$LINENO: error: invalid libdwarf directory: $LIBDWARF" >&5
 $as_echo "$as_me: error: invalid libdwarf directory: $LIBDWARF" >&2;}
    { (exit 1); exit 1; }; }
-	fi
-	LIBDWARF_COPY=yes
-	;;
-    no )
-	LIBDWARF_COPY=no
-	;;
-    * )
-	{ { $as_echo "$as_me:$LINENO: error: libdwarf directory must be absolute path: $LIBDWARF" >&5
+    fi
+    LIBDWARF_COPY=yes
+    ;;
+  no )
+    LIBDWARF_COPY=no
+    ;;
+  * )
+    { { $as_echo "$as_me:$LINENO: error: libdwarf directory must be absolute path: $LIBDWARF" >&5
 $as_echo "$as_me: error: libdwarf directory must be absolute path: $LIBDWARF" >&2;}
    { (exit 1); exit 1; }; }
-	;;
+    ;;
 esac
 
 LIBDWARF_LIB="${LIBDWARF}/lib"
@@ -18944,7 +18991,7 @@ $as_echo "$LIBDWARF" >&6; }
 
 LIBELF=no
 if test "$use_externals" = yes ; then
-    LIBELF="$ext_libelf_prefix"
+  LIBELF="$ext_libelf_prefix"
 fi
 
 
@@ -18962,7 +19009,7 @@ valid_libelf_dir()
     test -f "$1/include/libelf.h" || test -f "$1/include/libelf/libelf.h"
 }
 
-case "$LIBELF" in
+case "${LIBELF}" in
     /* )
 	if valid_libelf_dir "$LIBELF" ; then :
 	else
@@ -18999,7 +19046,7 @@ LIBMONITOR=no
 OPT_LIBMONITOR_DYNAMIC=no
 OPT_LIBMONITOR_STATIC=no
 if test "$use_externals" = yes ; then
-    LIBMONITOR="$ext_libmonitor_prefix"
+  LIBMONITOR="$ext_libmonitor_prefix"
 fi
 
 
@@ -19012,34 +19059,34 @@ fi
 { $as_echo "$as_me:$LINENO: checking for libmonitor" >&5
 $as_echo_n "checking for libmonitor... " >&6; }
 
-case "$LIBMONITOR" in
-    /* )
-	LIBMONITOR_INC="${LIBMONITOR}/include"
-	if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
-	else
-	    { { $as_echo "$as_me:$LINENO: error: invalid libmonitor directory: $LIBMONITOR" >&5
+case "${LIBMONITOR}" in
+  /* )
+    LIBMONITOR_INC="${LIBMONITOR}/include"
+    if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
+    else
+        { { $as_echo "$as_me:$LINENO: error: invalid libmonitor directory: $LIBMONITOR" >&5
 $as_echo "$as_me: error: invalid libmonitor directory: $LIBMONITOR" >&2;}
    { (exit 1); exit 1; }; }
-	fi
-	LIBMONITOR_LIB="${LIBMONITOR}/lib"
-	if test -f "${LIBMONITOR_LIB}/libmonitor.so" ; then
-	    OPT_LIBMONITOR_DYNAMIC=yes
-	fi
-	if test -f "${LIBMONITOR_LIB}/libmonitor_wrap.a" ; then
-	    OPT_LIBMONITOR_STATIC=yes
-	fi
-	LIBMONITOR_COPY=yes
-	LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
-	;;
-    no )
-	LIBMONITOR_COPY=no
-	LIBMONITOR_RUN_DIR=no
-	;;
-    * )
-	{ { $as_echo "$as_me:$LINENO: error: libmonitor directory must be absolute path: $LIBMONITOR" >&5
+    fi
+    LIBMONITOR_LIB="${LIBMONITOR}/lib"
+    if test -f "${LIBMONITOR_LIB}/libmonitor.so" ; then
+        OPT_LIBMONITOR_DYNAMIC=yes
+    fi
+    if test -f "${LIBMONITOR_LIB}/libmonitor_wrap.a" ; then
+        OPT_LIBMONITOR_STATIC=yes
+    fi
+    LIBMONITOR_COPY=yes
+    LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
+    ;;
+  no )
+    LIBMONITOR_COPY=no
+    LIBMONITOR_RUN_DIR=no
+    ;;
+  * )
+    { { $as_echo "$as_me:$LINENO: error: libmonitor directory must be absolute path: $LIBMONITOR" >&5
 $as_echo "$as_me: error: libmonitor directory must be absolute path: $LIBMONITOR" >&2;}
    { (exit 1); exit 1; }; }
-	;;
+    ;;
 esac
 
 { $as_echo "$as_me:$LINENO: result: $LIBMONITOR" >&5
@@ -19433,7 +19480,7 @@ fi
 
 SYMTABAPI=no
 if test "$use_externals" = yes ; then
-    SYMTABAPI="$ext_symtabAPI_prefix"
+  SYMTABAPI="$ext_symtabAPI_prefix"
 fi
 
 
@@ -19446,26 +19493,26 @@ fi
 { $as_echo "$as_me:$LINENO: checking for symtabAPI" >&5
 $as_echo_n "checking for symtabAPI... " >&6; }
 
-case "$SYMTABAPI" in
-    /* )
-	if test -f "${SYMTABAPI}/include/Symtab.h" ; then :
-	else
-	    { { $as_echo "$as_me:$LINENO: error: invalid symtabAPI directory: $SYMTABAPI" >&5
+case "${SYMTABAPI}" in
+  /* )
+    if test -f "${SYMTABAPI}/include/Symtab.h" ; then :
+    else
+        { { $as_echo "$as_me:$LINENO: error: invalid symtabAPI directory: $SYMTABAPI" >&5
 $as_echo "$as_me: error: invalid symtabAPI directory: $SYMTABAPI" >&2;}
    { (exit 1); exit 1; }; }
-	fi
-	SYMTABAPI_COPY=yes
-	SYMTABAPI_RUN_DIR="$hpc_ext_libs_dir"
-	;;
-    no )
-	SYMTABAPI_COPY=no
-	SYMTABAPI_RUN_DIR=no
-	;;
-    * )
-	{ { $as_echo "$as_me:$LINENO: error: symtabAPI directory must be absolute path: $SYMTABAPI" >&5
+    fi
+    SYMTABAPI_COPY=yes
+    SYMTABAPI_RUN_DIR="$hpc_ext_libs_dir"
+    ;;
+  no )
+    SYMTABAPI_COPY=no
+    SYMTABAPI_RUN_DIR=no
+    ;;
+  * )
+    { { $as_echo "$as_me:$LINENO: error: symtabAPI directory must be absolute path: $SYMTABAPI" >&5
 $as_echo "$as_me: error: symtabAPI directory must be absolute path: $SYMTABAPI" >&2;}
    { (exit 1); exit 1; }; }
-	;;
+    ;;
 esac
 
 SYMTABAPI_INC="${SYMTABAPI}/include"
@@ -19486,7 +19533,7 @@ $as_echo "$SYMTABAPI" >&6; }
 
 XED2=no
 if test "$use_externals" = yes ; then
-    XED2="$ext_xed2_prefix"
+  XED2="$ext_xed2_prefix"
 fi
 
 
@@ -19499,26 +19546,26 @@ fi
 { $as_echo "$as_me:$LINENO: checking for xed2" >&5
 $as_echo_n "checking for xed2... " >&6; }
 
-case "$XED2" in
-    /* )
-	if test -f "${XED2}/include/xed-interface.h" ; then :
-	else
-	    { { $as_echo "$as_me:$LINENO: error: invalid xed2 directory: $XED2" >&5
+case "${XED2}" in
+  /* )
+    if test -f "${XED2}/include/xed-interface.h" ; then :
+    else
+        { { $as_echo "$as_me:$LINENO: error: invalid xed2 directory: $XED2" >&5
 $as_echo "$as_me: error: invalid xed2 directory: $XED2" >&2;}
    { (exit 1); exit 1; }; }
-	fi
-	XED2_COPY=yes
-	XED2_RUN_DIR="$hpc_ext_libs_dir"
-	;;
-    no )
-	XED2_COPY=no
-	XED2_RUN_DIR=no
-	;;
-    * )
-	{ { $as_echo "$as_me:$LINENO: error: xed2 directory must be absolute path: $XED2" >&5
+    fi
+    XED2_COPY=yes
+    XED2_RUN_DIR="$hpc_ext_libs_dir"
+    ;;
+  no )
+    XED2_COPY=no
+    XED2_RUN_DIR=no
+    ;;
+  * )
+    { { $as_echo "$as_me:$LINENO: error: xed2 directory must be absolute path: $XED2" >&5
 $as_echo "$as_me: error: xed2 directory must be absolute path: $XED2" >&2;}
    { (exit 1); exit 1; }; }
-	;;
+    ;;
 esac
 
 XED2_INC="${XED2}/include"
@@ -19996,7 +20043,7 @@ OPT_UPC_IFLAGS=
 OPT_UPC_LDFLAGS=
 opt_upc_mesg=no
 
-case "$with_upc" in
+case "${with_upc}" in
   /* )
     if test -f "${with_upc}/arch/include/spi/UPC.h"
     then
@@ -20386,6 +20433,20 @@ if test -z "${HOST_CPU_X86_TRUE}" && test -z "${HOST_CPU_X86_FALSE}"; then
   { { $as_echo "$as_me:$LINENO: error: conditional \"HOST_CPU_X86\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 $as_echo "$as_me: error: conditional \"HOST_CPU_X86\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${HOST_CPU_X86_64_TRUE}" && test -z "${HOST_CPU_X86_64_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"HOST_CPU_X86_64\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"HOST_CPU_X86_64\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${HOST_CPU_X86_FAMILY_TRUE}" && test -z "${HOST_CPU_X86_FAMILY_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"HOST_CPU_X86_FAMILY\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"HOST_CPU_X86_FAMILY\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
