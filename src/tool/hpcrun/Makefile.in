@@ -217,7 +217,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	os/linux/dylib.c unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
-	trampoline/x86-family/x86-tramp.s \
+	trampoline/x86-family/x86-tramp.S \
 	utilities/arch/x86-family/x86-context-pc.c \
 	sample-sources/papi.c sample-sources/upc.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
@@ -334,7 +334,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
-	trampoline/x86-family/x86-tramp.s \
+	trampoline/x86-family/x86-tramp.S \
 	utilities/arch/x86-family/x86-context-pc.c \
 	sample-sources/papi.c sample-sources/upc.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
@@ -429,6 +429,11 @@ SCRIPTS = $(bin_SCRIPTS) $(pkglibexec_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
+CPPASCOMPILE = $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
+LTCPPASCOMPILE = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
@@ -806,7 +811,7 @@ MY_PPC_FILES = \
         utilities/arch/ppc64/ppc64-context-pc.c
 
 MY_X86_FILES = \
-        trampoline/x86-family/x86-tramp.s \
+        trampoline/x86-family/x86-tramp.S \
         \
         utilities/arch/x86-family/x86-context-pc.c
 
@@ -955,7 +960,7 @@ MYCPPFLAGS_0_CC = $(MYCPPFLAGS_0) $(AM_CFLAGS)   $(CFLAGS)   $(MYCFLAGS)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj .s
+.SUFFIXES: .S .c .lo .o .obj .s
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -1207,6 +1212,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-intel11-f90main.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-linux-dlresolver.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-tramp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-unwind-interval-fixup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-unwind-support.Plo@am__quote@
@@ -1277,12 +1283,55 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-intel11-f90main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-linux-dlresolver.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-tramp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-unwind-interval-fixup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-unwind-interval.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-unwind-support.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-validate-retn-addr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_wrap_a-openmp.Po@am__quote@
+
+.S.o:
+@am__fastdepCCAS_TRUE@	$(CPPASCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(CPPASCOMPILE) -c -o $@ $<
+
+.S.obj:
+@am__fastdepCCAS_TRUE@	$(CPPASCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(CPPASCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.S.lo:
+@am__fastdepCCAS_TRUE@	$(LTCPPASCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(LTCPPASCOMPILE) -c -o $@ $<
+
+libhpcrun_la-x86-tramp.lo: trampoline/x86-family/x86-tramp.S
+@am__fastdepCCAS_TRUE@	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CCASFLAGS) $(CCASFLAGS) -MT libhpcrun_la-x86-tramp.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-tramp.Tpo -c -o libhpcrun_la-x86-tramp.lo `test -f 'trampoline/x86-family/x86-tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/x86-tramp.S
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libhpcrun_la-x86-tramp.Tpo $(DEPDIR)/libhpcrun_la-x86-tramp.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/x86-tramp.S' object='libhpcrun_la-x86-tramp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CCASFLAGS) $(CCASFLAGS) -c -o libhpcrun_la-x86-tramp.lo `test -f 'trampoline/x86-family/x86-tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/x86-tramp.S
+
+libhpcrun_o-x86-tramp.o: trampoline/x86-family/x86-tramp.S
+@am__fastdepCCAS_TRUE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CCASFLAGS) $(CCASFLAGS) -MT libhpcrun_o-x86-tramp.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-tramp.Tpo -c -o libhpcrun_o-x86-tramp.o `test -f 'trampoline/x86-family/x86-tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/x86-tramp.S
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-x86-tramp.Tpo $(DEPDIR)/libhpcrun_o-x86-tramp.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/x86-tramp.S' object='libhpcrun_o-x86-tramp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CCASFLAGS) $(CCASFLAGS) -c -o libhpcrun_o-x86-tramp.o `test -f 'trampoline/x86-family/x86-tramp.S' || echo '$(srcdir)/'`trampoline/x86-family/x86-tramp.S
+
+libhpcrun_o-x86-tramp.obj: trampoline/x86-family/x86-tramp.S
+@am__fastdepCCAS_TRUE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CCASFLAGS) $(CCASFLAGS) -MT libhpcrun_o-x86-tramp.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-tramp.Tpo -c -o libhpcrun_o-x86-tramp.obj `if test -f 'trampoline/x86-family/x86-tramp.S'; then $(CYGPATH_W) 'trampoline/x86-family/x86-tramp.S'; else $(CYGPATH_W) '$(srcdir)/trampoline/x86-family/x86-tramp.S'; fi`
+@am__fastdepCCAS_TRUE@	mv -f $(DEPDIR)/libhpcrun_o-x86-tramp.Tpo $(DEPDIR)/libhpcrun_o-x86-tramp.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	source='trampoline/x86-family/x86-tramp.S' object='libhpcrun_o-x86-tramp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CCASFLAGS) $(CCASFLAGS) -c -o libhpcrun_o-x86-tramp.obj `if test -f 'trampoline/x86-family/x86-tramp.S'; then $(CYGPATH_W) 'trampoline/x86-family/x86-tramp.S'; else $(CYGPATH_W) '$(srcdir)/trampoline/x86-family/x86-tramp.S'; fi`
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -2843,20 +2892,11 @@ libhpcrun_o-last_func.obj: utilities/last_func.c
 libhpcrun_la-ppc64-tramp.lo: trampoline/ppc64/ppc64-tramp.s
 	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(libhpcrun_la_CCASFLAGS) $(CCASFLAGS) -c -o libhpcrun_la-ppc64-tramp.lo `test -f 'trampoline/ppc64/ppc64-tramp.s' || echo '$(srcdir)/'`trampoline/ppc64/ppc64-tramp.s
 
-libhpcrun_la-x86-tramp.lo: trampoline/x86-family/x86-tramp.s
-	$(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(libhpcrun_la_CCASFLAGS) $(CCASFLAGS) -c -o libhpcrun_la-x86-tramp.lo `test -f 'trampoline/x86-family/x86-tramp.s' || echo '$(srcdir)/'`trampoline/x86-family/x86-tramp.s
-
 libhpcrun_o-ppc64-tramp.o: trampoline/ppc64/ppc64-tramp.s
 	$(CCAS) $(libhpcrun_o_CCASFLAGS) $(CCASFLAGS) -c -o libhpcrun_o-ppc64-tramp.o `test -f 'trampoline/ppc64/ppc64-tramp.s' || echo '$(srcdir)/'`trampoline/ppc64/ppc64-tramp.s
 
 libhpcrun_o-ppc64-tramp.obj: trampoline/ppc64/ppc64-tramp.s
 	$(CCAS) $(libhpcrun_o_CCASFLAGS) $(CCASFLAGS) -c -o libhpcrun_o-ppc64-tramp.obj `if test -f 'trampoline/ppc64/ppc64-tramp.s'; then $(CYGPATH_W) 'trampoline/ppc64/ppc64-tramp.s'; else $(CYGPATH_W) '$(srcdir)/trampoline/ppc64/ppc64-tramp.s'; fi`
-
-libhpcrun_o-x86-tramp.o: trampoline/x86-family/x86-tramp.s
-	$(CCAS) $(libhpcrun_o_CCASFLAGS) $(CCASFLAGS) -c -o libhpcrun_o-x86-tramp.o `test -f 'trampoline/x86-family/x86-tramp.s' || echo '$(srcdir)/'`trampoline/x86-family/x86-tramp.s
-
-libhpcrun_o-x86-tramp.obj: trampoline/x86-family/x86-tramp.s
-	$(CCAS) $(libhpcrun_o_CCASFLAGS) $(CCASFLAGS) -c -o libhpcrun_o-x86-tramp.obj `if test -f 'trampoline/x86-family/x86-tramp.s'; then $(CYGPATH_W) 'trampoline/x86-family/x86-tramp.s'; else $(CYGPATH_W) '$(srcdir)/trampoline/x86-family/x86-tramp.s'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
