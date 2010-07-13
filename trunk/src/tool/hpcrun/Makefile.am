@@ -229,7 +229,7 @@ MY_PPC_FILES = \
 
 
 MY_X86_FILES = \
-        trampoline/x86-family/x86-tramp.s \
+        trampoline/x86-family/x86-tramp.S \
         \
         utilities/arch/x86-family/x86-context-pc.c
 
