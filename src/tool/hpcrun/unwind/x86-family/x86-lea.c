@@ -46,6 +46,8 @@
 #include "x86-lea.h"
 #include "x86-interval-arg.h"
 
+#include <lib/isa-lean/x86/instruction-set.h>
+
 unwind_interval *
 process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
@@ -56,7 +58,7 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 
   if ((op0_name == XED_OPERAND_REG0)) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (is_reg_bp(regname)) {
+    if (x86_isReg_BP(regname)) {
       //=======================================================================
       // action: clobbering the base pointer; begin a new SP_RELATIVE interval 
       // note: we don't check that BP is BP_SAVED; we might have to

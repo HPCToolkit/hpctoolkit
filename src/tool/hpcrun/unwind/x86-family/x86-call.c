@@ -45,6 +45,8 @@
 #include "x86-decoder.h"
 #include "x86-interval-arg.h"
 
+#include <lib/isa-lean/x86/instruction-set.h>
+
 /******************************************************************************
  * interface operations
  *****************************************************************************/
@@ -131,7 +133,8 @@ call_lookahead(xed_decoded_inst_t *call_xedd, unwind_interval *current, char *in
   
   if (iclass_eq(xptr, XED_ICLASS_SUB) || iclass_eq(xptr, XED_ICLASS_ADD)) {
     const xed_operand_t* op0 = xed_inst_operand(xi,0);
-    if ((xed_operand_name(op0) == XED_OPERAND_REG) && (xed_operand_reg(op0) == XED_REG_RSP)) {
+    if ((xed_operand_name(op0) == XED_OPERAND_REG)
+	&& isReg_x86_SP(xed_operand_reg(op0))) {
       const xed_immdis_t& immed = xptr->get_immed();
       if (immed.is_present()) {
 	int sign = (iclass_eq(xptr, XED_ICLASS_ADD)) ? -1 : 1;

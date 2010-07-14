@@ -45,6 +45,9 @@
 #include "x86-decoder.h"
 #include "x86-interval-arg.h"
 
+#include <lib/isa-lean/x86/instruction-set.h>
+
+
 unwind_interval *
 process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
@@ -62,13 +65,13 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
     // storing a register to memory 
     //------------------------------------------------------------------------
     xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, 0);
-    if (is_reg_sp(basereg)) {
+    if (x86_isReg_SP(basereg)) {
       //----------------------------------------------------------------------
       // a memory move with SP as a base register
       //----------------------------------------------------------------------
       xed_reg_enum_t reg1 = xed_decoded_inst_get_reg(xptr, op1_name);
-      if (is_reg_bp(reg1) ||  
-	(is_reg_ax(reg1) && (iarg->rax_rbp_equivalent_at == iarg->ins))){
+      if (x86_isReg_BP(reg1) ||  
+	(x86_isReg_AX(reg1) && (iarg->rax_rbp_equivalent_at == iarg->ins))){
 	//--------------------------------------------------------------------
 	// register being stored is BP (or a copy in RAX)
 	//--------------------------------------------------------------------
@@ -98,14 +101,14 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
     // loading a register from memory 
     //----------------------------------------------------------------------
     xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (is_reg_bp(reg0)) {
+    if (x86_isReg_BP(reg0)) {
       //--------------------------------------------------------------------
       // register being loaded is BP
       //--------------------------------------------------------------------
       if (iarg->current->bp_status != BP_UNCHANGED) {
 	int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
 	xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, 0); 
-	if (is_reg_sp(basereg) && (offset == iarg->current->sp_bp_pos)) { 
+	if (x86_isReg_SP(basereg) && (offset == iarg->current->sp_bp_pos)) { 
 	  //================================================================
 	  // instruction: restore BP from its saved location in the stack  
 	  // action:      create a new interval with BP status reset to 
@@ -137,12 +140,12 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	  }
 	}
       }
-    } else if (is_reg_sp(reg0)) {
+    } else if (x86_isReg_SP(reg0)) {
       //--------------------------------------------------------------------
       // register being loaded is SP
       //--------------------------------------------------------------------
       xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, 0); 
-      if (is_reg_sp(basereg)) { 
+      if (x86_isReg_SP(basereg)) { 
 	//================================================================
 	// instruction: restore SP from a saved location in the stack  
 	// action:      create a new interval with SP status reset to 
@@ -160,7 +163,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
     //----------------------------------------------------------------------
     xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
     xed_reg_enum_t reg1 = xed_decoded_inst_get_reg(xptr, op1_name);
-    if (is_reg_bp(reg1) && is_reg_sp(reg0)) {
+    if (x86_isReg_BP(reg1) && x86_isReg_SP(reg0)) {
       //====================================================================
       // instruction: restore SP from BP
       // action:      begin a new SP_RELATIVE interval 
@@ -169,7 +172,7 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 		    RA_SP_RELATIVE, iarg->current->bp_ra_pos, iarg->current->bp_ra_pos,
 		    iarg->current->bp_status, iarg->current->bp_bp_pos, iarg->current->bp_bp_pos,
 		    iarg->current);
-    } else if (is_reg_bp(reg0) && is_reg_sp(reg1)) {
+    } else if (x86_isReg_BP(reg0) && x86_isReg_SP(reg1)) {
       //====================================================================
       // instruction: initialize BP with value of SP to set up a frame ptr
       // action:      begin a new SP_RELATIVE interval 
@@ -184,12 +187,12 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 	hw_tmp->state = 
 	  HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
       }
-    } else if (is_reg_bp(reg1) && is_reg_ax(reg0)) {
+    } else if (x86_isReg_BP(reg1) && x86_isReg_AX(reg0)) {
       //====================================================================
       // instruction: copy BP to RAX
       //====================================================================
       iarg->rax_rbp_equivalent_at = iarg->ins + xed_decoded_inst_get_length(xptr);
-    } else if (is_reg_bp(reg0)) {
+    } else if (x86_isReg_BP(reg0)) {
       if (iarg->current->bp_status != BP_HOSED){
 	//==================================================================
 	// instruction: move some NON-special register to BP

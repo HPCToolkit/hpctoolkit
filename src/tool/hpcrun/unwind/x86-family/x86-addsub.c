@@ -41,9 +41,17 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
+//************************* System Include Files ****************************
+
+//*************************** User Include Files ****************************
+
 #include "x86-interval-highwatermark.h"
 #include "x86-decoder.h"
 #include "x86-interval-arg.h"
+
+#include <lib/isa-lean/x86/instruction-set.h>
+
+//***************************************************************************
 
 unwind_interval *
 process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
@@ -57,7 +65,7 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 
   if (op0_name == XED_OPERAND_REG0) {
     xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (is_reg_sp(reg0)) {
+    if (x86_isReg_SP(reg0)) {
       //-----------------------------------------------------------------------
       // we are adjusting the stack pointer
       //-----------------------------------------------------------------------

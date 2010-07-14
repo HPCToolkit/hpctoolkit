@@ -96,7 +96,6 @@ _drop_sample(void)
   sigjmp_buf_t* it = &(td->bad_unwind);
 
   memset((void *)it->jb, '\0', sizeof(it->jb));
-  hpcrun_bt_dump(td->unwind, "SEGV");
 
   hpcrun_stats_num_samples_dropped_inc();
 

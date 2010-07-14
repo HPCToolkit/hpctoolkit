@@ -45,10 +45,9 @@
 #include "x86-unwind-interval-fixup.h"
 #include "x86-unwind-interval.h"
 
-static unsigned char main32_signature[] = { 
-  0x04, 0x24, 0x4c, 0x8d,
-  0xff, 0xf0, 0xe4, 0x83,
-  0x89, 0x55  
+
+static char main32_signature[] = { 
+  0x8d, 0x4c, 0x24, 0x04, 0x83, 0xe4, 0xf0, 0xff, 0x71, 0xfc
 };
 
 
@@ -67,6 +66,8 @@ adjust_32bit_main_intervals(char *ins, int len, interval_status *stat)
       if (ui->ra_status == RA_STD_FRAME){
 	ui->bp_ra_pos = 4;
 	ui->bp_bp_pos = 0;
+	ui->sp_ra_pos = 4;
+	ui->sp_bp_pos = 0;
       }
       ui = (unwind_interval *)(ui->common).next;
     }
