@@ -62,12 +62,12 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include "Logic.hpp"
 #include "RealPathMgr.hpp"
 #include "PathReplacementMgr.hpp"
 #include "PathFindMgr.hpp"
 
 #include "diagnostics.h"
-#include "Logic.hpp"
 #include "realpath.h"
 
 //*************************** Forward Declarations **************************
@@ -133,7 +133,7 @@ RealPathMgr::realpath(string& fnm)
 						 fnm.c_str(), "r");
       }
       if (pf) { 
-	fnm_real = RealPath(pf);
+	fnm_real = pf;
 	m_realpath_map.insert(make_pair(fnm, fnm_real));
 	fnm = fnm_real;
       }
@@ -145,6 +145,40 @@ RealPathMgr::realpath(string& fnm)
     }
   }
   return (fnm[0] == '/'); // fully resolved
+}
+
+
+void
+RealPathMgr::searchPaths(const string& sPaths)
+{
+  size_t trailingIn = -1;
+  size_t in = sPaths.find_first_of(":");
+  
+  while (trailingIn != sPaths.length()) {
+    //since trailingIn points to a ":", must add 1 to point to the path
+    trailingIn++;
+    std::string currentPath = sPaths.substr(trailingIn, in - trailingIn);
+
+    if (PathFindMgr::is_recursive_path(currentPath.c_str())) {
+      //if its recursive, need to strip off and add back on '/*'
+      currentPath = currentPath.substr(0,currentPath.length() - 2);
+      currentPath = RealPath(currentPath.c_str());
+      m_searchPaths+= (currentPath + "/*:");
+    }
+    else {
+      currentPath = RealPath(currentPath.c_str());
+      m_searchPaths+= (currentPath + ":");
+    }
+    
+    trailingIn = in;
+    in = sPaths.find_first_of(":",trailingIn + 1);
+    
+    if (in == sPaths.npos) { //deals with corner case of last element
+      in = sPaths.length();
+    }
+  }
+  //to strip off the trailing ":"
+  m_searchPaths = m_searchPaths.substr(0, m_searchPaths.length() - 1);
 }
 
 

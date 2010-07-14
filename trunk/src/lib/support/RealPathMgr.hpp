@@ -99,14 +99,23 @@ public:
   bool
   realpath(std::string& fnm);
   
+  
   const std::string&
   searchPaths()
   { return m_searchPaths; }
 
+  /* Given 'sPaths', each individual search path is ripped from the
+   * string and has RealPath() applied to it before it is added to
+   * 'm_searchPaths'. Recursive and non-recursive properties of each
+   * search path is preserved.
+   *
+   * @param sPaths: A string of search paths with each path having recursive 
+   *                (meaning a '/*' is tacked on the end) or non-recursive
+   *                properties and paths are separated by a ":"
+   */
   void
-  searchPaths(const std::string& x)
-  { m_searchPaths = x; }
-
+  searchPaths(const std::string& sPaths);
+  
 
   // -------------------------------------------------------
   // debugging
