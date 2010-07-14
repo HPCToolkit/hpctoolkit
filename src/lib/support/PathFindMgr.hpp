@@ -59,8 +59,6 @@
 
 //************************* System Include Files ****************************
 
-#include <stdint.h>
-
 #include <map>
 #include <set>
 #include <string>
@@ -79,7 +77,7 @@ class PathFindMgr
 private:
 
   /*
-   * This method adds a file name and its associated real path to 'hashlist'.
+   * This method adds a file name and its associated real path to 'm_cache'.
    * Paths are store according to the file it is associated with. Path is not
    * added if it is already in the vector associated with the file name.
    *
@@ -106,10 +104,11 @@ private:
   /*
    * Private helper method that recursively searches through all the 
    * directories in 'pathList' and caches all the files in those directories.
+   * Should be used only once.
    *
    * @param pathList: List of directories that contain files to be cached.
    *                  Each path is separated by a ":" and recursive paths have
-   *                  a "*" at the end of the path.
+   *                  a '/*' at the end of the path.
    * @param recursive: Indicates whether a directory should be recursively
    *                   searched. 
    */
@@ -117,8 +116,10 @@ private:
   fill(const std::string& pathList, bool recursive);
 
   /*
-   * Resolves all '..' and '.' in 'path' in reference to itself. Does NOT 
-   * RealPath 'path'. Returns how many '..' are left in 'path'.
+   * Resolves all '..' and '.' in 'path' in reference to itself. Does
+   * NOT find the unique real path of 'path'. Returns how many '..'
+   * are left in 'path'. Helps make sure more accurate results are
+   * returned from getRealPath().
    * 
    * Ex: if path = 'src/../../lib/src/./../ex.c' then resolve(path) would turn
    *     path into '../lib/ex.c'.
@@ -148,8 +149,11 @@ public:
 
   /*
    * Retreives the highest priority and closest matching real path to
-   * "filePath" from 'hashList', where priority is defined by how
-   * close the real path is to the front of the vector of real paths.
+   * "filePath" from 'm_cache', where priority is defined by how close
+   * the real path is to the front of the vector of real paths.  If
+   * the file name exists in 'm_cache', but none of the real paths
+   * match it beyond the file name, the first path in the vector will
+   * be returned.
    *
    * @param filePath: A partial path to the file we are searching for. Will be
    *                  altered to be its associated path.
@@ -164,7 +168,9 @@ public:
   /*pathfind_r - (recursively) search for named file in given
    * ---------- colon-separated (recursive) pathlist 
 
-   *Searches for a file named "name" in each directory in the
+   *First searches for 'name' in the PathFindMgr::singleton member
+   *'m_cache'.  If that search is unsuccessful and the cache is full,
+   *it then searches for a file named "name" in each directory in the
    *colon-separated pathlist given as the first argument, and returns
    *the full pathname to the first occurence that has at least the
    *mode bits specified by mode. For any 'recursive-path', it
@@ -202,7 +208,7 @@ private:
   std::map<std::string, std::vector<std::string> > PathMap;
 
   PathMap m_cache;
-  std::set<std::string> directoriesSearched;
+  std::map<std::string, bool> directories;
   bool m_cacheNotFull;
   bool m_filled;
 
