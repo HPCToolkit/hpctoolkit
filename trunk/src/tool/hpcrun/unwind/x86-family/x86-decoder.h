@@ -67,15 +67,6 @@ typedef struct {
 
 #define iclass_eq(xptr, class) (iclass(xptr) == (class))
 
-#define is_reg_bp(reg) \
-  (((reg) == XED_REG_RBP) | ((reg) == XED_REG_EBP) | ((reg) == XED_REG_BP))
-
-#define is_reg_sp(reg) \
-  (((reg) == XED_REG_RSP) | ((reg) == XED_REG_ESP) | ((reg) == XED_REG_SP))
-
-#define is_reg_ax(reg) \
-  (((reg) == XED_REG_RAX) | ((reg) == XED_REG_EAX) | ((reg) == XED_REG_AX))
-
 
 
 /******************************************************************************

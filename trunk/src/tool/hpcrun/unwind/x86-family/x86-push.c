@@ -51,6 +51,8 @@
 
 #include <assert.h>
 
+#include <lib/isa-lean/x86/instruction-set.h>
+
 /******************************************************************************
  * interface operations 
  *****************************************************************************/
@@ -66,7 +68,7 @@ process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
   int sp_bp_pos, size;
 
   switch(iclass(xptr)) {
-  case XED_ICLASS_PUSH:   size = 8; break; // FIXME: assume 64-bit mode
+  case XED_ICLASS_PUSH:   size = sizeof(void*); break;
   case XED_ICLASS_PUSHFQ: size = 8; break;
   case XED_ICLASS_PUSHFD: size = 4; break;
   case XED_ICLASS_PUSHF:  size = 2; break;
@@ -76,7 +78,7 @@ process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
   sp_bp_pos = iarg->current->sp_bp_pos + size; 
   if (op0_name == XED_OPERAND_REG0) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (is_reg_bp(regname) && bp_status == BP_UNCHANGED) {
+    if (x86_isReg_BP(regname) && bp_status == BP_UNCHANGED) {
       bp_status = BP_SAVED;
       sp_bp_pos = 0;
     }
@@ -101,7 +103,7 @@ process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
   int size;
 
   switch(iclass(xptr)) {
-  case XED_ICLASS_POP:   size = -8;  break; // FIXME: assume 64-bit mode
+  case XED_ICLASS_POP:   size = -sizeof(void*);  break;  
   case XED_ICLASS_POPFQ: size = -8;  break;
   case XED_ICLASS_POPFD: size = -4;  break;
   case XED_ICLASS_POPF:  size = -2;  break;
@@ -110,7 +112,7 @@ process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 
   if (op0_name == XED_OPERAND_REG0) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (is_reg_bp(regname)) bp_status = BP_UNCHANGED;
+    if (x86_isReg_BP(regname)) bp_status = BP_UNCHANGED;
   }
 
   next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), iarg->current->ra_status, 

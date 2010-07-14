@@ -1,3 +1,24 @@
+#if defined(HOST_CPU_x86_64)
+#  define x86_Reg_BP rbp
+#  define x86_Reg_DX rdx
+#  define x86_Reg_CX rcx
+#  define x86_Reg_BX rbx
+#  define x86_Reg_AX rax
+#  define x86_Reg_SP rsp
+#  define x86_Reg_SI rsi
+#  define x86_Reg_DI rdi
+
+#elif defined (HOST_CPU_x86)
+#  define x86_Reg_BP ebp
+#  define x86_Reg_DX edx	
+#  define x86_Reg_CX ecx
+#  define x86_Reg_BX ebx
+#  define x86_Reg_AX eax
+#  define x86_Reg_SP esp
+#  define x86_Reg_SI esi
+#  define x86_Reg_DI edi
+	
+#endif
 	.text
 	.global hpcrun_trampoline_handler
 	.type hpcrun_trampoline_handler,@function
@@ -6,12 +27,12 @@
 	.global hpcrun_trampoline
 	.type hpcrun_trampoline,@function	
 hpcrun_trampoline:
-	push	%rbp	/* need to save a slot for the "real" return address */
+	push	%x86_Reg_BP /* need to save a slot for the "real" return address */
 
 	/* regular standard frame here */
 
-	push	%rbp
-	mov	%rsp, %rbp
+	push	%x86_Reg_BP
+	mov	%x86_Reg_SP, %x86_Reg_BP
 
 	/* save return value and callee-save registers in approximately
 	   the same order which <bits/sigcontext.h> defines them in.
@@ -20,12 +41,13 @@ hpcrun_trampoline:
 	   save return value registers */
 	
 
-	push	%rcx
-	push	%rbx
-	push	%rax
-	push	%rdx
-	push	%rsi
-	push	%rdi
+	push	%x86_Reg_CX
+	push	%x86_Reg_BX
+	push	%x86_Reg_AX
+	push	%x86_Reg_DX
+	push	%x86_Reg_SI
+	push	%x86_Reg_DI
+#if defined(HOST_CPU_x86_64)	
 	push	%r15
 	push	%r14
 	push	%r13
@@ -34,9 +56,10 @@ hpcrun_trampoline:
 	push	%r10
 	push	%r9
 	push	%r8
+#endif
 
 	/* move stack pointer into first argument register */
-	mov	%rsp, %rdi
+	mov	%x86_Reg_SP, %x86_Reg_DI
 
 	/* away we go into C-land */
 	call hpcrun_trampoline_handler
@@ -45,9 +68,10 @@ hpcrun_trampoline:
 	   shove it onto the stack so that 'ret' will go to the proper
 	   location upon returning from this function. */
 
-	mov	%rax, 8(%rbp)
+	mov	%x86_Reg_AX, 8(%x86_Reg_BP)
 
 	/* pop all the registers back into place */
+#if defined(HOST_CPU_x86_64)
 	pop	%r8
 	pop	%r9
 	pop	%r10
@@ -56,12 +80,13 @@ hpcrun_trampoline:
 	pop	%r13
 	pop	%r14
 	pop	%r15
-	pop	%rdi
-	pop	%rsi
-	pop	%rdx
-	pop	%rax
-	pop	%rbx
-	pop	%rcx
+#endif
+	pop	%x86_Reg_DI
+	pop	%x86_Reg_SI
+	pop	%x86_Reg_DX
+	pop	%x86_Reg_AX
+	pop	%x86_Reg_BX
+	pop	%x86_Reg_CX
 
 	/* Head back into the normal program */
 	leave

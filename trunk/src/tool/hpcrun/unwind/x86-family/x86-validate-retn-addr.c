@@ -70,6 +70,8 @@
 #include <unwind/common/unw-datatypes.h>
 #include <messages/messages.h>
 
+#include <lib/isa-lean/x86/instruction-set.h>
+
 
 //****************************************************************************
 // forward declarations 
@@ -294,7 +296,7 @@ x86_plt_branch_target(void *ins, xed_decoded_inst_t *xptr)
       op0_type == XED_OPERAND_TYPE_IMM_CONST) {
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
     xed_reg_enum_t reg = xed_operand_values_get_base_reg(vals,0);
-    if (reg == XED_REG_RIP) {
+    if (x86_isReg_IP(reg)) {
       int ins_len = xed_decoded_inst_get_length(xptr);
       xed_int64_t disp =  xed_operand_values_get_memory_displacement_int64(vals);
       xed_int64_t **memloc = ins + disp + ins_len;
@@ -350,11 +352,17 @@ deep_validate_return_addr(void *addr, void *generic)
     TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
     return status_is_wrong();
   }
+#if 0
+  //----------------------------------------------------------------------
+  // this case causes unwinds from vdso to fail unnecessarily, so skip
+  // it - bowden and johnmc
+  // ----------------------------------------------------------------------
   if (fnbounds_enclosing_addr(cursor->pc, &beg, &end)) {
     TMSG(VALIDATE_UNW,"***The pc in the unwind cursor (= %p) does not have function bounds\n"
          "***INTERNAL ERROR: please check arguments",cursor->pc);
     return status_is_wrong();
   }
+#endif
   void *callee = beg;
   TMSG(VALIDATE_UNW,"beginning of my routine = %p", callee);
   if (confirm_call(addr, callee)) {

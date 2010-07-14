@@ -57,6 +57,7 @@ extern "C" {
 #include "function-entries.h"
 #include "process-ranges.h"
 
+#include <lib/isa-lean/x86/instruction-set.h>
 
 
 /******************************************************************************
@@ -96,12 +97,21 @@ static bool nextins_looks_like_fn_start(char *ins, long offset,
 
 static bool lea_has_zero_offset(xed_decoded_inst_t *xptr);
 
+#define RELOCATE(u, offset) (((char *) (u)) - (offset)) 
+
+
 /******************************************************************************
  * local variables 
  *****************************************************************************/
 
-static xed_state_t xed_machine_state_x86_64 = { XED_MACHINE_MODE_LONG_64, 
-						XED_ADDRESS_WIDTH_64b };
+static xed_state_t xed_machine_state =
+#if defined (HOST_CPU_x86_64)
+  { XED_MACHINE_MODE_LONG_64, 
+    XED_ADDRESS_WIDTH_64b };
+#else
+  { XED_MACHINE_MODE_LONG_COMPAT_32,
+    XED_ADDRESS_WIDTH_32b };
+#endif
 
 static char *prologue_start = NULL;
 static char *set_rbp = NULL;
@@ -121,7 +131,6 @@ process_range_init()
   xed_tables_init();
 }
 
-#define RELOCATE(u, offset) (((char *) (u)) - (offset)) 
 
 void 
 process_range(long offset, void *vstart, void *vend, bool fn_discovery)
@@ -136,16 +145,14 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
   vector<void *> fstarts;
   entries_in_range(ins + offset, end + offset, fstarts);
   
-
-  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
-  xed_iclass_enum_t prev_xiclass = XED_ICLASS_INVALID;
-
   void **fstart = &fstarts[0];
   char *guidepost = RELOCATE(*fstart, offset);
 
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+  xed_iclass_enum_t prev_xiclass = XED_ICLASS_INVALID;
+
   while (ins < end) {
 
-//#define DEBUG
 #ifdef DEBUG
     // vins = virtual address of instruction as we expect it in the object file
     // (this is useful because we can set a breakpoint to watch a vins)
@@ -206,14 +213,14 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
 	//xed_operand_type_enum_t op1_type = xed_operand_type(op1); // unused
 	if ((xed_operand_name(op0) == XED_OPERAND_MEM0) && 
 	    (xed_operand_name(op1) == XED_OPERAND_REG0) && 
-	    (xed_operand_nonterminal_name(op1) == XED_NONTERMINAL_RIP)) {
+	    x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 1))) {
 	  // idiom for GOT indexing in PLT 
 	  // don't consider the instruction afterward a potential function start
 	  break;
 	}
 	if ((xed_operand_name(op0) == XED_OPERAND_REG0) && 
 	    (xed_operand_name(op1) == XED_OPERAND_REG1) && 
-	    (xed_operand_nonterminal_name(op1) == XED_NONTERMINAL_RIP)) {
+	    x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 1))) {
 	  // idiom for a switch using a jump table: 
 	  // don't consider the instruction afterward a potential function start
 	  break;
@@ -312,7 +319,7 @@ skip_padding(unsigned char **ins)
   xed_decoded_inst_t *xptr = &xedd_tmp;
   xed_error_enum_t xed_error;
 
-  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
 
   while(notdone) {
     xed_decoded_inst_zero_keep_mode(xptr);
@@ -464,13 +471,12 @@ range_contains_control_flow(void *vstart, void *vend)
 {
   xed_decoded_inst_t xedd_tmp;
   xed_decoded_inst_t *xptr = &xedd_tmp;
-  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
 
   char *ins = (char *) vstart;
   char *end = (char *) vend;
   while (ins < end) {
 
-    xed_decoded_inst_zero_keep_mode(xptr);
     xed_error_enum_t xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 
     if (xed_error != XED_ERROR_NONE) {
@@ -534,7 +540,7 @@ validate_tail_call_from_jump(char *ins, long offset, xed_decoded_inst_t *xptr)
 
 	xed_decoded_inst_t xtmp;
 	xed_decoded_inst_t *xptr = &xtmp;
-	xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
+	xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
 	
 	xed_error_enum_t xed_error = 
 	  xed_decode(xptr, (uint8_t*) target_addr_in_memory, 15);
@@ -555,7 +561,7 @@ validate_tail_call_from_jump(char *ins, long offset, xed_decoded_inst_t *xptr)
 	    if (op0_name == XED_OPERAND_REG0) { 
 	      xed_reg_enum_t regname = 
 		xed_decoded_inst_get_reg(xptr, op0_name);
-	      if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
+	      if (x86_isReg_BP(regname)) {
 		add_stripped_function_entry(target, 1 /* support */); 
 		return true;
 	      }
@@ -569,8 +575,8 @@ validate_tail_call_from_jump(char *ins, long offset, xed_decoded_inst_t *xptr)
 	    const xed_operand_t* op1 = xed_inst_operand(xi,1);
 	    xed_operand_enum_t   op0_name = xed_operand_name(op0);
 	    
-	    if ((op0_name == XED_OPERAND_REG0) &&
-		(xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RSP)) {
+	    if ((op0_name == XED_OPERAND_REG0) 
+		&& x86_isReg_SP(xed_decoded_inst_get_reg(xptr, op0_name))) {
 	      
 	      if (xed_operand_name(op1) == XED_OPERAND_IMM0) {
 		//-------------------------------------------------
@@ -624,7 +630,7 @@ nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
 
   if (inside_protected_range(ins + offset)) return false;
 
-  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
 
   for(;;) {
     xed_decoded_inst_zero_keep_mode(xptr);
@@ -669,7 +675,7 @@ nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
 	xed_operand_enum_t   op0_name = xed_operand_name(op0);
 
 	if ((op0_name == XED_OPERAND_REG0) &&
-	    (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RSP)) {
+	    (x86_isReg_SP(xed_decoded_inst_get_reg(xptr, op0_name)))) {
 
 	  if (xed_operand_name(op1) == XED_OPERAND_IMM0) {
 	    //------------------------------------------------------------------
@@ -740,15 +746,15 @@ static int
 mem_below_rsp_or_rbp(xed_decoded_inst_t *xptr, int oindex)
 {
       xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, oindex);
-      if (basereg == XED_REG_RBP)  {
+      if (x86_isReg_BP(basereg))  {
 	return 1;
-      } else if (basereg == XED_REG_RSP) {
+      } else if (x86_isReg_SP(basereg)) {
          int64_t offset = 
 	   xed_decoded_inst_get_memory_displacement(xptr, oindex);
          if (offset > 0) {
 	   return 1;
 	 }
-     } else if (basereg == XED_REG_RAX) {
+      } else if (x86_isReg_AX(basereg)) {
 	return 1;
      }
      return 0;
@@ -839,7 +845,7 @@ invalid_routine_start(unsigned char *ins)
   xed_decoded_inst_t xdi;
   xed_decoded_inst_t *xptr = &xdi;
 
-  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
   xed_error_enum_t xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
   
   if (xed_error != XED_ERROR_NONE) return true; 
@@ -861,7 +867,7 @@ void x86_dump_ins(void *ins)
   xed_error_enum_t xed_error;
   char inst_buf[1024];
 
-  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 
   xed_format_xed(xptr, inst_buf, sizeof(inst_buf), (uint64_t) ins);
@@ -881,9 +887,7 @@ addsub(char *ins, xed_decoded_inst_t *xptr, xed_iclass_enum_t iclass, long ins_o
   static long prologue_offset = 0;
 
   if ((op0_name == XED_OPERAND_REG0) &&
-      ((xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_RSP) ||
-       (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_ESP) ||
-       (xed_decoded_inst_get_reg(xptr, op0_name) == XED_REG_SP))) {
+      x86_isReg_SP(xed_decoded_inst_get_reg(xptr, op0_name))) {
 
     if (xed_operand_name(op1) == XED_OPERAND_IMM0) {
       //---------------------------------------------------------------------------
@@ -938,8 +942,7 @@ process_move(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
     //-------------------------------------------------------------------------
     xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
     xed_reg_enum_t reg1 = xed_decoded_inst_get_reg(xptr, op1_name);
-    if (((reg0 == XED_REG_RBP) || (reg0 == XED_REG_EBP)) &&
-	((reg1 == XED_REG_RSP) || (reg1 == XED_REG_ESP))) {
+    if ((x86_isReg_BP(reg0)) &&	(x86_isReg_SP(reg1))) {
       //=========================================================================
       // instruction: initialize BP with value of SP to set up a frame pointer
       //=========================================================================
@@ -958,7 +961,7 @@ process_push(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
 
   if (op0_name == XED_OPERAND_REG0) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
+    if (x86_isReg_BP(regname)) {
       push_rbp = ins;
       // JMC + MIKE: assume that a push when there is only weak evidence of a fn start
       //     might be a potential function entry
@@ -985,27 +988,27 @@ process_pop(char *ins, xed_decoded_inst_t *xptr, long ins_offset)
 
   if (op0_name == XED_OPERAND_REG0) { 
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (regname == XED_REG_RBP || regname == XED_REG_EBP) {
+    if (x86_isReg_BP(regname)) {
       if (push_rbp) {
         add_protected_range(push_rbp + ins_offset + 1, ins + ins_offset + 1);
-      }
-    } else {
-      if (push_other) {
-	if (push_other_reg == regname) {
-          if (push_other) {
-	    add_protected_range(push_other + ins_offset + 1, 
-				ins + ins_offset + 1);
-	  }
-	} else {
-	  // it must match some push. assume the latest.
-	  char *push_latest = (push_other > push_rbp) ? push_other : push_rbp;
-	  // ... unless we've started to see bad instructions, which makes
-	  //     it likely that we're walking through data
-	  if (push_latest > last_bad)
-	    if (push_latest) {
-	      add_protected_range(push_latest + ins_offset + 1, 
+      } else {
+	if (push_other) {
+	  if (push_other_reg == regname) {
+	    if (push_other) {
+	      add_protected_range(push_other + ins_offset + 1, 
 				  ins + ins_offset + 1);
 	    }
+	  } else {
+	    // it must match some push. assume the latest.
+	    char *push_latest = (push_other > push_rbp) ? push_other : push_rbp;
+	    // ... unless we've started to see bad instructions, which makes
+	    //     it likely that we're walking through data
+	    if (push_latest > last_bad)
+	      if (push_latest) {
+		add_protected_range(push_latest + ins_offset + 1, 
+				    ins + ins_offset + 1);
+	      }
+	  }
 	}
       }
     }
@@ -1018,6 +1021,7 @@ process_enter(char *ins, long ins_offset)
 {
   set_rbp = ins;
 }
+
 
 static void 
 process_leave(char *ins, long ins_offset)

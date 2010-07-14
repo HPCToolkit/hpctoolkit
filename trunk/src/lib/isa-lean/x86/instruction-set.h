@@ -41,53 +41,81 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-//************************* System Include Files ****************************
+#ifndef isa_lean_x86_instruction_set_h
+#define isa_lean_x86_instruction_set_h
 
-#include <stdint.h>
+#include <stdbool.h>
 
-//*************************** User Include Files ****************************
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include "x86-unwind-analysis.h"
-#include "x86-build-intervals.h"
-#include "x86-decoder.h"
-#include "fnbounds_interface.h"
+# include "xed-interface.h"
 
+#ifdef __cplusplus
+};
+#endif
 
-void x86_dump_intervals(char  *addr) 
+//***************************************************************************
+// 
+//***************************************************************************
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+static inline bool
+x86_isReg_BP(xed_reg_enum_t reg)
 {
-  void *s, *e;
-  unwind_interval *u;
-  interval_status intervals;
-
-  fnbounds_enclosing_addr(addr, &s, &e);
-
-  intervals = x86_build_intervals(s, e - s, 0);
-
-  for(u = (unwind_interval *)intervals.first; u; u = (unwind_interval *)(u->common).next) {
-    dump_ui_dbg(u);
-  }
+  return (
+#if defined (HOST_CPU_x86_64)
+	  reg == XED_REG_RBP ||
+#endif
+	  reg == XED_REG_EBP ||
+	  reg == XED_REG_BP);
 }
 
 
-void
-x86_dump_ins(void *ins)
+static inline bool
+x86_isReg_SP(xed_reg_enum_t reg)
 {
-  xed_decoded_inst_t xedd;
-  xed_decoded_inst_t *xptr = &xedd;
-  xed_error_enum_t xed_error;
-  char inst_buf[1024];
-  char errbuf[2048];
-
-  xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
-  xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
-
-  xed_format_xed(xptr, inst_buf, sizeof(inst_buf), 
-		 (xed_uint64_t)(uintptr_t)ins);
-  sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins, xed_decoded_inst_get_length(xptr), 
-	 xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
-
-  EMSG(errbuf);
-  fprintf(stderr, errbuf);
-  fflush(stderr);
+  return (
+#if defined (HOST_CPU_x86_64)
+	  reg == XED_REG_RSP ||
+#endif
+	  reg == XED_REG_ESP ||
+	  reg == XED_REG_SP);
 }
 
+static inline bool
+x86_isReg_IP(xed_reg_enum_t reg)
+{
+  return (
+#if defined (HOST_CPU_x86_64)
+	  reg == XED_REG_RIP ||
+#endif
+	  reg == XED_REG_EIP ||
+	  reg == XED_REG_IP);
+}
+
+
+static inline bool
+x86_isReg_AX(xed_reg_enum_t reg)
+{
+  return (
+#if defined (HOST_CPU_x86_64)
+	  reg == XED_REG_RAX ||
+#endif
+	  reg == XED_REG_EAX ||
+	  reg == XED_REG_AX);
+}
+
+
+
+#ifdef __cplusplus
+};
+#endif
+
+
+
+#endif // isa_lean_x86_instruction_set_h

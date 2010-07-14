@@ -46,6 +46,8 @@
 #include "x86-interval-highwatermark.h"
 #include "x86-interval-arg.h"
 
+#include <lib/isa-lean/x86/instruction-set.h>
+
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
@@ -181,7 +183,7 @@ static bool plt_is_next(char *ins)
       const xed_inst_t* xi = xed_decoded_inst_inst(xptr);
       const xed_operand_t* op0 = xed_inst_operand(xi, 0);
       if ((xed_operand_name(op0) == XED_OPERAND_MEM0) && 
-	    (xed_decoded_inst_get_base_reg(xptr, 0) == XED_REG_RIP)) {
+	    x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
 	int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
 	push_succ_addr = ins + xed_decoded_inst_get_length(xptr);
 	val_pushed = push_succ_addr + offset;
@@ -210,7 +212,7 @@ static bool plt_is_next(char *ins)
       const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
       const xed_operand_t *op0 =  xed_inst_operand(xi,0);
       if ((xed_operand_name(op0) == XED_OPERAND_MEM0) && 
-	    (xed_decoded_inst_get_base_reg(xptr, 0) == XED_REG_RIP)) {
+	  x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
 	long long offset = xed_decoded_inst_get_memory_displacement(xptr,0);
 	jmp_target = push_succ_addr + xed_decoded_inst_get_length(xptr) + offset;
       }
