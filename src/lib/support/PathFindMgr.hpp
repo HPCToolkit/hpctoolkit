@@ -87,18 +87,49 @@ public:
   singleton();
   
   
-  //Retreives the highest priority and closest matching real path to
-  //"filePath" from 'm_cache', where priority is defined by how close
-  //the real path is to the front of the vector of real paths.  If
-  //the file name exists in 'm_cache', but none of the real paths
-  //match it beyond the file name, the first path in the vector will
-  //be returned.
+  // Retreives the highest priority and closest matching real path to
+  // "filePath" from 'm_cache', where priority is defined by how close
+  // the real path is to the front of the vector of real paths.  If
+  // the file name exists in 'm_cache', but none of the real paths
+  // match it beyond the file name, the first path in the vector will
+  // be returned.
+  // 
+  // Notes:
+  // * We cache all files in a recursive seach path such that:
+  //   - the path portion of the file is fully resolved
+  //   - the filename portion may or may not be a symlink
+  //   - with forward-sym links, there can be multiple paths that lead to
+  //     the same file.  We only cache the real-pathed path + the file
   //
-  //@param filePath: A partial path to the file we are searching for. Will be
-  //                 altered to be its associated path.
-  //      *note* - 'filePath' can range from a file name to a full path
-  //                           
-  //@return:  A bool indicating whether 'filePath' was found in the list.
+  // * Will not go into an infinite loop when symlinks form a loop.
+  //
+  // * Ambiguous case 1:
+  //     input: ../../zoo.c
+  //     cache for entry 'zoo.c'
+  //       0. p0/p1/zoo.c
+  //       1. p0/p2/zoo.c
+  //       2. p3/p4/zoo.c
+  //
+  //   In this case the input matches all three entries.  We return
+  //   entry 0.
+  //
+  // * Ambiguous case 2:
+  //     input: ../p5/zoo.c
+  //     cache: 
+  //       0. p0/p1/zoo.c
+  //       1. p0/p2/zoo.c
+  //       2. p3/p4/zoo.c
+  //
+  //   In this case, the input matches no entry.  However, because p5
+  //   could be a symlink, it could potentially match one or *or* no
+  //   entry.  In this case we still return entry 0.
+  //
+  // @param filePath: A partial path to the file we are searching for. Will be
+  //                  altered to be its associated path.
+  //       *note* - 'filePath' can range from a file name to a full path
+  //                            
+  // @return:  A bool indicating whether 'filePath' was found in the list.
+  //
   bool
   getRealPath(std::string& filePath);
   
@@ -160,7 +191,7 @@ private:
   //@return: If a "/" is in 'path', the portion of 'path' after the
   //         last "/", otherwise 'path' is returned.
   std::string 
-  getFileName(const std::string& path)const;
+  getFileName(const std::string& path) const;
 
 
   //Private helper method that recursively searches through all the 
