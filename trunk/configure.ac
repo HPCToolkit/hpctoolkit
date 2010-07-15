@@ -457,15 +457,19 @@ fi
 
 case "${host}" in
 
-  # Linux
-  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux* | mips64*-*-linux*)
-    # GCC (FIXME: for now assume)
-    case "${host}" in
-      i386* | i686*)
+  # Linux x86
+  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux*)
+    # GCC
+    if HPCcxxcmp([g++ c++]) ; then
+      if test "${ac_cv_sizeof_voidp}" = "4"; then
         HOST_CXXFLAGS="-march=i486"
+      fi
+    fi
+    if HPCcccmp([gcc cc]) ; then
+      if test "${ac_cv_sizeof_voidp}" = "4"; then
         HOST_CFLAGS="-march=i486"
-	;;
-    esac
+      fi
+    fi
 
     # Intel compiler
     if HPCcxxcmp([icpc ecpc]) ; then
@@ -500,6 +504,15 @@ case "${host}" in
     fi
     ;;
 
+  # Linux ia64
+  ia64*-*-linux*)
+    ;;
+
+  # Linux mips
+  mips64*-*-linux*)
+    ;;
+
+  # Linux power
   powerpc64*-*-linux*)
     # IBM compiler
     ;;
@@ -1412,17 +1425,17 @@ AC_ARG_ENABLE([lush],
   [AS_HELP_STRING([--enable-lush],
                   [use lush backtrace in hpcrun])],
   [],
-  [enable_lush=no])
+  [opt_enable_lush=no])
 
 AC_MSG_CHECKING([whether to use lush])
 
-if test "$enable_lush" != yes ; then
-  enable_lush=no
+if test "$opt_enable_lush" != yes ; then
+  opt_enable_lush=no
 fi
 
-AC_MSG_RESULT([$enable_lush])
+AC_MSG_RESULT([$opt_enable_lush])
 
-AM_CONDITIONAL([OPT_ENABLE_LUSH], [test "$enable_lush" = yes])
+AM_CONDITIONAL([OPT_ENABLE_LUSH], [test "$opt_enable_lush" = yes])
 
 
 
@@ -1456,7 +1469,7 @@ AC_ARG_ENABLE([lush-pthreads],
   [],
   [enable_lush_pthreads=no])
 
-if test "$enable_lush_pthreads" = yes && test "$enable_lush" = no ; then
+if test "$enable_lush_pthreads" = yes && test "$opt_enable_lush" = no ; then
   AC_MSG_ERROR([enable-lush-pthreads requires enable-lush])
 fi
 
@@ -1726,19 +1739,19 @@ AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  build:  $build])
 AC_MSG_NOTICE([  host:   $host])
 AC_MSG_NOTICE([])
-AC_MSG_NOTICE([  build hpcrun:      ${enable_hpcrun_mesg}])
-AC_MSG_NOTICE([  build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}])
-AC_MSG_NOTICE([  mpi support:       ${OPT_ENABLE_MPI}])
-AC_MSG_NOTICE([  hpcrun/lush:       ${enable_lush}])
+AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
+AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
+AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
+AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([])
-AC_MSG_NOTICE([  CC:       ${CC}])
-AC_MSG_NOTICE([  CFLAGS:   ${CFLAGS} ${HOST_CFLAGS}])
-AC_MSG_NOTICE([  CXX:      ${CXX}])
-AC_MSG_NOTICE([  CXXFLAGS: ${CXXFLAGS} ${HOST_CXXFLAGS}])
-AC_MSG_NOTICE([  CCAS:     ${CCAS}])
+AC_MSG_NOTICE([  CC:        ${CC}])
+AC_MSG_NOTICE([  CFLAGS:    ${CFLAGS} ${HOST_CFLAGS}])
+AC_MSG_NOTICE([  CXX:       ${CXX}])
+AC_MSG_NOTICE([  CXXFLAGS:  ${CXXFLAGS} ${HOST_CXXFLAGS}])
+AC_MSG_NOTICE([  CCAS:      ${CCAS}])
 AC_MSG_NOTICE([  CCASFLAGS: ${CCASFLAGS}])
-AC_MSG_NOTICE([  LDFLAGS:  ${LDFLAGS}])
-AC_MSG_NOTICE([  MPICXX:   ${MPICXX}])
+AC_MSG_NOTICE([  LDFLAGS:   ${LDFLAGS}])
+AC_MSG_NOTICE([  MPICXX:    ${MPICXX}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  binutils:     ${GNUBINUTILS}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
