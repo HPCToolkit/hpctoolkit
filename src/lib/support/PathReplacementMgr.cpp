@@ -92,14 +92,14 @@ PathReplacementMgr::singleton()
 std::string
 PathReplacementMgr::getReplacedPath(const std::string& original)
 {
-  for (size_t i = 0; i<m_pathReplacement.size(); i++) {
-    StringPair temp =m_pathReplacement[i];
-    size_t found = strncmp(original.c_str(),temp.first.c_str(),
+  for (size_t i = 0; i < m_pathReplacement.size(); i++) {
+    StringPair temp = m_pathReplacement[i];
+    size_t found = strncmp(original.c_str(), temp.first.c_str(),
 			   temp.first.length());
     
     if (found == 0) {
       std::string newPath = original;
-      newPath.replace(0,temp.first.size(),temp.second);
+      newPath.replace(0, temp.first.size(), temp.second);
       return newPath;
     }
   }
@@ -107,14 +107,12 @@ PathReplacementMgr::getReplacedPath(const std::string& original)
 }
 
 
-/*
- * Comparison function we use to sort 'pathReplacment' according to the first 
- * values of the pair, which is the old partial path.
- *
- * @param a: The first pair object to compare.
- * @param b: The second pair object to compare.
- * return:   A bool indicatin if a.first.size() < b.first.size().
- */
+//Comparison function we use to sort 'pathReplacment' according to the first 
+//values of the pair, which is the old partial path.
+//
+//@param a: The first pair object to compare.
+//@param b: The second pair object to compare.
+//return:   A bool indicatin if a.first.size() < b.first.size().
 static bool
 compare_as_strings(const PathReplacementMgr::StringPair& a,
 		   const PathReplacementMgr::StringPair& b)
@@ -129,7 +127,7 @@ PathReplacementMgr::addPath(const std::string& originalPath,
 {
   StringPair temp(originalPath, newPath);
   m_pathReplacement.push_back(temp);
-  stable_sort(m_pathReplacement.begin(),m_pathReplacement.end(),
+  stable_sort(m_pathReplacement.begin(), m_pathReplacement.end(),
 	      compare_as_strings);
 }
 
