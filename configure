@@ -16468,15 +16468,19 @@ fi
 
 case "${host}" in
 
-  # Linux
-  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux* | mips64*-*-linux*)
-    # GCC (FIXME: for now assume)
-    case "${host}" in
-      i386* | i686*)
+  # Linux x86
+  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux*)
+    # GCC
+    if MYcxxcmp $CXX g++ c++ ; then
+      if test "${ac_cv_sizeof_voidp}" = "4"; then
         HOST_CXXFLAGS="-march=i486"
+      fi
+    fi
+    if MYcxxcmp $CC gcc cc ; then
+      if test "${ac_cv_sizeof_voidp}" = "4"; then
         HOST_CFLAGS="-march=i486"
-	;;
-    esac
+      fi
+    fi
 
     # Intel compiler
     if MYcxxcmp $CXX icpc ecpc ; then
@@ -16511,6 +16515,15 @@ case "${host}" in
     fi
     ;;
 
+  # Linux ia64
+  ia64*-*-linux*)
+    ;;
+
+  # Linux mips
+  mips64*-*-linux*)
+    ;;
+
+  # Linux power
   powerpc64*-*-linux*)
     # IBM compiler
     ;;
@@ -17604,21 +17617,21 @@ fi
 if test "${enable_lush+set}" = set; then :
   enableval=$enable_lush;
 else
-  enable_lush=no
+  opt_enable_lush=no
 fi
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use lush" >&5
 $as_echo_n "checking whether to use lush... " >&6; }
 
-if test "$enable_lush" != yes ; then
-  enable_lush=no
+if test "$opt_enable_lush" != yes ; then
+  opt_enable_lush=no
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_lush" >&5
-$as_echo "$enable_lush" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $opt_enable_lush" >&5
+$as_echo "$opt_enable_lush" >&6; }
 
- if test "$enable_lush" = yes; then
+ if test "$opt_enable_lush" = yes; then
   OPT_ENABLE_LUSH_TRUE=
   OPT_ENABLE_LUSH_FALSE='#'
 else
@@ -17669,7 +17682,7 @@ else
 fi
 
 
-if test "$enable_lush_pthreads" = yes && test "$enable_lush" = no ; then
+if test "$enable_lush_pthreads" = yes && test "$opt_enable_lush" = no ; then
   as_fn_error "enable-lush-pthreads requires enable-lush" "$LINENO" 5
 fi
 
@@ -20608,32 +20621,32 @@ $as_echo "$as_me:   build:  $build" >&6;}
 $as_echo "$as_me:   host:   $host" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   build hpcrun:      ${enable_hpcrun_mesg}" >&5
-$as_echo "$as_me:   build hpcrun:      ${enable_hpcrun_mesg}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}" >&5
-$as_echo "$as_me:   build hpcrun-flat: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support:       ${OPT_ENABLE_MPI}" >&5
-$as_echo "$as_me:   mpi support:       ${OPT_ENABLE_MPI}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun/lush:       ${enable_lush}" >&5
-$as_echo "$as_me:   hpcrun/lush:       ${enable_lush}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun?:      ${enable_hpcrun_mesg}" >&5
+$as_echo "$as_me:   hpcrun?:      ${enable_hpcrun_mesg}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&5
+$as_echo "$as_me:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support?: ${OPT_ENABLE_MPI}" >&5
+$as_echo "$as_me:   mpi support?: ${OPT_ENABLE_MPI}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun/lush?: ${opt_enable_lush}" >&5
+$as_echo "$as_me:   hpcrun/lush?: ${opt_enable_lush}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   CC:       ${CC}" >&5
-$as_echo "$as_me:   CC:       ${CC}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   CFLAGS:   ${CFLAGS} ${HOST_CFLAGS}" >&5
-$as_echo "$as_me:   CFLAGS:   ${CFLAGS} ${HOST_CFLAGS}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   CXX:      ${CXX}" >&5
-$as_echo "$as_me:   CXX:      ${CXX}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   CXXFLAGS: ${CXXFLAGS} ${HOST_CXXFLAGS}" >&5
-$as_echo "$as_me:   CXXFLAGS: ${CXXFLAGS} ${HOST_CXXFLAGS}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   CCAS:     ${CCAS}" >&5
-$as_echo "$as_me:   CCAS:     ${CCAS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   CC:        ${CC}" >&5
+$as_echo "$as_me:   CC:        ${CC}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   CFLAGS:    ${CFLAGS} ${HOST_CFLAGS}" >&5
+$as_echo "$as_me:   CFLAGS:    ${CFLAGS} ${HOST_CFLAGS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   CXX:       ${CXX}" >&5
+$as_echo "$as_me:   CXX:       ${CXX}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   CXXFLAGS:  ${CXXFLAGS} ${HOST_CXXFLAGS}" >&5
+$as_echo "$as_me:   CXXFLAGS:  ${CXXFLAGS} ${HOST_CXXFLAGS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   CCAS:      ${CCAS}" >&5
+$as_echo "$as_me:   CCAS:      ${CCAS}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   CCASFLAGS: ${CCASFLAGS}" >&5
 $as_echo "$as_me:   CCASFLAGS: ${CCASFLAGS}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   LDFLAGS:  ${LDFLAGS}" >&5
-$as_echo "$as_me:   LDFLAGS:  ${LDFLAGS}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   MPICXX:   ${MPICXX}" >&5
-$as_echo "$as_me:   MPICXX:   ${MPICXX}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   LDFLAGS:   ${LDFLAGS}" >&5
+$as_echo "$as_me:   LDFLAGS:   ${LDFLAGS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   MPICXX:    ${MPICXX}" >&5
+$as_echo "$as_me:   MPICXX:    ${MPICXX}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   binutils:     ${GNUBINUTILS}" >&5
