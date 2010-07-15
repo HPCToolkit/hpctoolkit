@@ -7,7 +7,6 @@
 #  define x86_Reg_SP rsp
 #  define x86_Reg_SI rsi
 #  define x86_Reg_DI rdi
-
 #elif defined (HOST_CPU_x86)
 #  define x86_Reg_BP ebp
 #  define x86_Reg_DX edx	
@@ -17,7 +16,8 @@
 #  define x86_Reg_SP esp
 #  define x86_Reg_SI esi
 #  define x86_Reg_DI edi
-	
+#else
+#  error "Unknown architecture (HOST_CPU)!"
 #endif
 	.text
 	.global hpcrun_trampoline_handler
