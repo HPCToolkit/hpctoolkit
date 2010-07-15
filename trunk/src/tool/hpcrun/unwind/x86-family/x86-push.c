@@ -103,7 +103,7 @@ process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
   int size;
 
   switch(iclass(xptr)) {
-  case XED_ICLASS_POP:   size = -sizeof(void*);  break;  
+  case XED_ICLASS_POP:   size = -((int)sizeof(void*));  break;  
   case XED_ICLASS_POPFQ: size = -8;  break;
   case XED_ICLASS_POPFD: size = -4;  break;
   case XED_ICLASS_POPF:  size = -2;  break;
