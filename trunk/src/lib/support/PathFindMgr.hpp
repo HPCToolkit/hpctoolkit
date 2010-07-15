@@ -101,17 +101,15 @@ private:
   getFileName(const std::string& path)const;
 
 
-  /*
-   * Private helper method that recursively searches through all the 
-   * directories in 'pathList' and caches all the files in those directories.
-   * Should be used only once.
-   *
-   * @param pathList: List of directories that contain files to be cached.
-   *                  Each path is separated by a ":" and recursive paths have
-   *                  a '/*' at the end of the path.
-   * @param recursive: Indicates whether a directory should be recursively
-   *                   searched. 
-   */
+  // Private helper method that recursively searches through all the 
+  // directories in 'pathList' and caches all the files in those directories.
+  // Should be used only once.
+  //
+  // @param pathList: List of directories that contain files to be cached.
+  //                  Each path is separated by a ":" and recursive paths have
+  //                  a '/*' at the end of the path.
+  // @param recursive: Indicates whether a directory should be recursively
+  //                   searched. 
   void
   fill(const std::string& pathList, bool recursive);
 
