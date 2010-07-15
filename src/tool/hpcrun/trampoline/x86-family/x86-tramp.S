@@ -64,11 +64,11 @@ hpcrun_trampoline:
 	/* away we go into C-land */
 	call hpcrun_trampoline_handler
 
-	/* the trampoline returns us our proper return address in %rax.
+	/* the trampoline returns us our proper return address in %?ax.
 	   shove it onto the stack so that 'ret' will go to the proper
 	   location upon returning from this function. */
 
-	mov	%x86_Reg_AX, 8(%x86_Reg_BP)
+	mov	%x86_Reg_AX, SIZEOF_VOIDP(%x86_Reg_BP)
 
 	/* pop all the registers back into place */
 #if defined(HOST_CPU_x86_64)
