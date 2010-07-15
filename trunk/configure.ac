@@ -64,23 +64,32 @@ dnl  6. Generate output
 dnl
 dnl ##########################################################################
 
+dnl--------------------------------------------------------------------------
+dnl Autoconf dictionary:
+dnl   build : platform on which the package is configured and
+dnl           compiled. Defaults to the result of running config.guess.
+dnl   host  : platform on which the package runs. Defaults to build.
+dnl   target: platform for which any compiler tools in the package
+dnl           produce code (rarely needed). Defaults to host.
+dnl--------------------------------------------------------------------------
+
 m4_include(config/hpc-cxxutils.m4)
 m4_include(config/hpc-mpiutils.m4)
 
-#----------------------------------------------------------------------------
-# Initialization: 
-# Careful: 
-#   - Libtool 1.5.18 has a bug interacting with Tru64's ksh.
-# Require libtool 1.5.10 and automake 1.9.3 to 1) correctly link
-#   templates with MIPSPro compiler on IRIX64, 2) link on alpha-Tru64
-#   and 3) fix missing .so problem on Linux.
-# Update to autoconf 2.59 and automake 1.8.3
-# Require autoconf 2.54 because automake 1.7.6 needs it.  
-#  - automake 1.7.6 is needed to generate Intel 7.1 dependencies correctly.
-#  - automake 1.6.1 failed to generate separate lists of object files for
-#    the two library versions. automake 1.7.5 handles the specification
-#    correctly
-#----------------------------------------------------------------------------
+dnl--------------------------------------------------------------------------
+dnl Initialization: 
+dnl Careful: 
+dnl   - Libtool 1.5.18 has a bug interacting with Tru64's ksh.
+dnl Require libtool 1.5.10 and automake 1.9.3 to 1) correctly link
+dnl   templates with MIPSPro compiler on IRIX64, 2) link on alpha-Tru64
+dnl   and 3) fix missing .so problem on Linux.
+dnl Update to autoconf 2.59 and automake 1.8.3
+dnl Require autoconf 2.54 because automake 1.7.6 needs it.  
+dnl  - automake 1.7.6 is needed to generate Intel 7.1 dependencies correctly.
+dnl  - automake 1.6.1 failed to generate separate lists of object files for
+dnl    the two library versions. automake 1.7.5 handles the specification
+dnl    correctly
+dnl--------------------------------------------------------------------------
 
 AC_INIT([hpctoolkit], [4.9.9], 
         [hpc@cs.rice.edu], [hpctoolkit])
@@ -89,9 +98,9 @@ AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
 
 # NOTE: please update config/README.version
-AC_PREREQ(2.63)
-AM_INIT_AUTOMAKE(1.10.2)
-LT_PREREQ([2.2.6])
+AC_PREREQ(2.65)
+AM_INIT_AUTOMAKE(1.11.1)
+LT_PREREQ([2.2.10])
 AM_MAINTAINER_MODE()
 
 AC_CANONICAL_BUILD()
@@ -133,21 +142,21 @@ version_file="${srcdir}/.svn-revision"
 AC_MSG_CHECKING([for svn revision])
 
 svn_revision=`svn info $srcdir 2>/dev/null | grep -e '^Revision' | awk '{ print $2 }'`
-if test "x$svn_revision" != x ; then
-    PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
-    rm -f "$version_file"
-    echo "$svn_revision" > "$version_file"
+if test -n "${svn_revision}" ; then
+  PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
+  rm -f "$version_file"
+  echo "$svn_revision" > "$version_file"
 elif test -f "$version_file" ; then
-    svn_revision=`cat $version_file`
-    PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
+  svn_revision=`cat $version_file`
+  PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
 else
-    svn_revision=0
+  svn_revision=0
 fi
 
 AC_MSG_RESULT([$svn_revision])
 
 if test "$svn_revision" = 0 ; then
-    AC_MSG_WARN([unable to find svn revision])
+  AC_MSG_WARN([unable to find svn revision])
 fi
 
 # NOTE (tallent): Setting PACKAGE_VERSION in this way does not affect
@@ -162,8 +171,8 @@ dnl AC_SUBST([HPCTOOLKIT_VERSION])
 #-------------------------------------------------
 
 is_cross_compile=""
-if test "x$build" != "x$host" ; then
-   is_cross_compile=${host}
+if test "${build}" != "${host}" ; then
+  is_cross_compile=${host}
 fi
 
 
@@ -258,7 +267,7 @@ case "${host}" in
     ;;
 esac
 if test "${HAVE_OS_MULTILIB}" = "yes" ; then
-  AC_DEFINE([HAVE_OS_MULTILIB], [], [])
+  AC_DEFINE([HAVE_OS_MULTILIB], [1], [])
 fi
 AC_MSG_RESULT([${HAVE_OS_MULTILIB} (searching: ${LIB_SEARCH_PATH})])
 
@@ -307,24 +316,29 @@ case "${host}" in
     HOST_CPU_X86=yes
     HOST_CPU_X86_FAMILY=yes
     UNWINDER=x86-family
-    AC_DEFINE([HOST_CPU_x86], [], [])
-    AC_DEFINE([HOST_OS_LINUX], [], [])
+    AC_DEFINE([HOST_CPU_x86], [1], [])
+    AC_DEFINE([HOST_OS_LINUX], [1], [])
     ;;
 
   x86_64*-*-linux*)
     # __x86_64 && __linux
     HOST_OS="Linux"
-    HOST_CPU_X86_64=yes
+    if test "${ac_cv_sizeof_voidp}" = "4"; then
+      HOST_CPU_X86=yes
+      AC_DEFINE([HOST_CPU_x86], [1], [])
+    else
+      HOST_CPU_X86_64=yes
+      AC_DEFINE([HOST_CPU_x86_64], [1], [])
+    fi
     HOST_CPU_X86_FAMILY=yes
     UNWINDER=x86-family
-    AC_DEFINE([HOST_CPU_x86_64], [], [])
-    AC_DEFINE([HOST_OS_LINUX], [], [])
+    AC_DEFINE([HOST_OS_LINUX], [1], [])
     ;;
 
   ia64*-*-linux*)
     # __ia64 && __linux
     HOST_OS="Linux"
-    AC_DEFINE([HOST_OS_LINUX], [], [])
+    AC_DEFINE([HOST_OS_LINUX], [1], [])
     ;;
 
   mips64*-*-linux*)
@@ -332,8 +346,8 @@ case "${host}" in
     HOST_OS="Linux"
     HOST_CPU_MIPS=yes
     UNWINDER=mips
-    AC_DEFINE([HOST_PLATFORM_MIPS64LE_LINUX], [], [])
-    AC_DEFINE([HOST_OS_LINUX], [], [])
+    AC_DEFINE([HOST_PLATFORM_MIPS64LE_LINUX], [1], [])
+    AC_DEFINE([HOST_OS_LINUX], [1], [])
     ;;
 
   powerpc64*-*-linux*)
@@ -341,7 +355,7 @@ case "${host}" in
     HOST_OS="Linux"
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
-    AC_DEFINE([HOST_OS_LINUX], [], [])
+    AC_DEFINE([HOST_OS_LINUX], [1], [])
     ;;
 
   # MacOS
@@ -350,15 +364,15 @@ case "${host}" in
     HOST_OS="MacOS"
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
-    AC_DEFINE([HOST_OS_MACOS], [], [])
+    AC_DEFINE([HOST_OS_MACOS], [1], [])
     ;;
 
   i386*-*-darwin* | i686*-*-darwin*)
     HOST_OS="MacOS"
     HOST_CPU_X86=yes
     UNWINDER=x86-family
-    AC_DEFINE([HOST_CPU_x86_64], [], []) # bogus to include 386
-    AC_DEFINE([HOST_OS_MACOS], [], [])
+    AC_DEFINE([HOST_CPU_x86], [1], [])
+    AC_DEFINE([HOST_OS_MACOS], [1], [])
     ;;
 
   # IRIX
@@ -369,21 +383,21 @@ case "${host}" in
     HOST_OS="IRIX"
     HOST_CPU_MIPS=yes
     UNWINDER=mips
-    AC_DEFINE([HOST_OS_IRIX], [], [])
+    AC_DEFINE([HOST_OS_IRIX], [1], [])
     ;;
 
   # Solaris
   sparc*-*-solaris*)
     # __sparc && __sun && __unix
     HOST_OS="Solaris"
-    AC_DEFINE([HOST_OS_SOLARIS], [], [])
+    AC_DEFINE([HOST_OS_SOLARIS], [1], [])
     ;;
 
   # Tru64/OSF
   alpha*-*-osf*)
     # __alpha / __digital__ && __unix__
     HOST_OS="Tru64"
-    AC_DEFINE([HOST_OS_TRU64], [], [])
+    AC_DEFINE([HOST_OS_TRU64], [1], [])
     ;;
 
   *)
@@ -633,8 +647,7 @@ AC_ARG_WITH([externals],
   [],
   [with_externals=no])
 
-if test "x$with_externals" != xno
-then
+if test "${with_externals}" != "no"; then
   ext_file="${with_externals}/externs.conf"
   if test ! -f "$ext_file" ; then
     AC_MSG_ERROR([missing externals file: $ext_file])
@@ -757,19 +770,19 @@ valid_libelf_dir()
 }
 
 case "${LIBELF}" in
-    /* )
-	if valid_libelf_dir "$LIBELF" ; then :
-	else
-	    AC_MSG_ERROR([invalid libelf directory: $LIBELF])
-	fi
-	LIBELF_COPY=yes
-	;;
-    no )
-	LIBELF_COPY=no
-	;;
-    * )
-	AC_MSG_ERROR([libelf directory must be absolute path: $LIBELF])
-	;;
+  /* )
+    if valid_libelf_dir "$LIBELF" ; then :
+    else
+        AC_MSG_ERROR([invalid libelf directory: $LIBELF])
+    fi
+    LIBELF_COPY=yes
+    ;;
+  no )
+    LIBELF_COPY=no
+    ;;
+  * )
+    AC_MSG_ERROR([libelf directory must be absolute path: $LIBELF])
+    ;;
 esac
 
 LIBELF_LIB="${LIBELF}/lib"
@@ -930,7 +943,7 @@ else
 fi
 
 if test "${OPT_WITH_MONITOR}" = "yes" ; then
-  AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
+  AC_DEFINE([HAVE_MONITOR], [1], [Monitor library])
   AC_MSG_RESULT([yes (${MONITOR_LIBS})])
 else
   AC_MSG_RESULT([no (not needed)])
@@ -1037,7 +1050,7 @@ if test "$OPT_HAVE_PAPI" = "yes" ; then
       break
     fi
   done
-  if test "x$OPT_PAPI_LIBPATH" = x ; then
+  if test -z "${OPT_PAPI_LIBPATH}" ; then
     AC_MSG_ERROR([no libpapi.so or libpapi.a in $LIB_SEARCH_PATH])
   fi
 fi
@@ -1486,7 +1499,7 @@ AC_ARG_ENABLE([bluegene],
 AC_MSG_RESULT([${OPT_ENABLE_IBM_BLUEGENE}])
 
 if test "${OPT_ENABLE_IBM_BLUEGENE}" = "yes" ; then
-  AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [], [IBM BlueGene/* support])
+  AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [1], [IBM BlueGene/* support])
 fi
 
 
@@ -1611,7 +1624,7 @@ AC_ARG_ENABLE([hpc-binutils],
 AC_MSG_RESULT([${OPT_ENABLE_HPC_GNUBINUTILS}])
 
 if test "${OPT_ENABLE_HPC_GNUBINUTILS}" = "yes" ; then
-  AC_DEFINE([HAVE_HPC_GNUBINUTILS], [], [HPCToolkit binutils])
+  AC_DEFINE([HAVE_HPC_GNUBINUTILS], [1], [HPCToolkit binutils])
 fi
 
 
