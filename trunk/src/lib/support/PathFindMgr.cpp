@@ -532,7 +532,6 @@ PathFindMgr::is_recursive_path(const char* path)
 }
 
 
-#if 0
 std::ostream& 
 PathFindMgr::dump(std::ostream& os, uint oFlags)
 {
@@ -555,5 +554,4 @@ PathFindMgr::ddump()
 {
   dump(std::cerr);
 }
-#endif
 
