@@ -530,3 +530,30 @@ PathFindMgr::is_recursive_path(const char* path)
   }
   return 0;
 }
+
+
+#if 0
+std::ostream& 
+PathFindMgr::dump(std::ostream& os, uint oFlags)
+{
+  std::map<std::string, std::vector<std::string> >::iterator it;
+  for (it = m_cache.begin(); it != m_cache.end(); it++) {
+    os<<"File name ==> "<<it->first<<"\nAssociated paths:"<<std::endl;
+    std::vector<std::string> paths = it->second;
+    
+    for (size_t in = 0; in < paths.size(); in++) {
+      os<<in<<") "<<paths[in]<<std::endl;
+    }
+    os<<std::endl;
+  }
+  return os;
+}
+
+
+void 
+PathFindMgr::ddump()
+{
+  dump(std::cerr);
+}
+#endif
+
