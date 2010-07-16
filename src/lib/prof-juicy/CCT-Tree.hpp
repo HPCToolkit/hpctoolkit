@@ -1229,8 +1229,8 @@ public:
   // dense ids (only used when explicitly requested)
   // -------------------------------------------------------
 
-  // makeDensePreorderIds: creates dense ids, reserving 0 as a NULL
-  // (unused) id; returns maxDenseId()
+  // makeDensePreorderIds: deterministically creates dense ids,
+  // reserving 0 as a NULL (unused) id; returns maxDenseId()
   uint
   makeDensePreorderIds();
   

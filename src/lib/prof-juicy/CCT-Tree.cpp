@@ -884,7 +884,7 @@ ANode::mergeDeep_fixup(int newMetrics)
 // 
 //**********************************************************************
 
-uint 
+uint
 ANode::makeDensePreorderIds(uint nextId)
 {
   // N.B.: use a sorted iterator to support hpcprof-mpi where we need

@@ -229,7 +229,7 @@ realmain(int argc, char* const* argv)
 
   vector<uint> groupIdToGroupSizeMap; // only initialized for rootRank
 
-  Analysis::Util::NormalizeProfileArgs_t nArgs = 
+  Analysis::Util::NormalizeProfileArgs_t nArgs =
     myNormalizeProfileArgs(args.profileFiles, groupIdToGroupSizeMap,
 			   myRank, numRanks, rootRank);
 
@@ -823,6 +823,10 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 		      const Analysis::Args& args, uint groupId, uint groupMax,
 		      int myRank)
 {
+  Prof::Metric::Mgr* mMgrGbl = profGbl.metricMgr();
+  Prof::CCT::Tree* cctGbl = profGbl.cct();
+  Prof::CCT::ANode* cctRoot = cctGbl->root();
+
   // -------------------------------------------------------
   // read profile file
   // -------------------------------------------------------
@@ -856,6 +860,27 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 
   uint mBeg = profGbl.merge(*prof, mergeTy, mergeFlg); // [closed begin
   uint mEnd = mBeg + prof->metricMgr()->size();        //  open end)
+
+  // -------------------------------------------------------
+  // compute local incl/excl sampled metrics
+  // -------------------------------------------------------
+
+  VMAIntervalSet ivalsetIncl;
+  VMAIntervalSet ivalsetExcl;
+
+  for (uint mId = mBeg; mId < mEnd; ++mId) {
+    Prof::Metric::ADesc* m = mMgrGbl->metric(mId);
+    if (m->type() == Prof::Metric::ADesc::TyIncl) {
+      ivalsetIncl.insert(VMAInterval(mId, mId + 1)); // [ )
+    }
+    else if (m->type() == Prof::Metric::ADesc::TyExcl) {
+      ivalsetExcl.insert(VMAInterval(mId, mId + 1)); // [ )
+    }
+  }
+
+  cctRoot->aggregateMetricsIncl(ivalsetIncl);
+  cctRoot->aggregateMetricsExcl(ivalsetExcl);
+
 
   // -------------------------------------------------------
   // write local sampled metric values into database
@@ -906,8 +931,9 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
   if (!fs) {
     DIAG_Throw("error opening file '" << metricDBFnm << "'");
   }
+  DIAG_MsgIf(0, "writeMetricsDB: " << metricDBFnm);
 
-  // TODO: header: Tag: HPCPROF_____ {16b}, num nodes {4b}
+  // TODO: header: Tag: HPCPROF_____ {16b}, num-metrics {4b}, num nodes {4b}
 
   // N.B.: first row corresponds to node 1.
   //       first column corresponds to first sampled metric.
@@ -916,6 +942,7 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
   for (uint nodeId = 1; nodeId < packedMetrics.numNodes(); ++nodeId) {
     for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
       double mval = packedMetrics.idx(nodeId, mId2);
+      DIAG_MsgIf(0 && mval < 0,  "  " << nodeId << " -> " << mval);
       hpcfmt_byte8_fwrite((uint64_t)mval, fs); // TODO: HPCFMT_ThrowIfError()
     }
   }

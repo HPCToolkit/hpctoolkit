@@ -161,7 +161,6 @@ lushPthr_attribToCallPath(uint64_t idlenessIncr)
   hpcrun_async_unblock();
 
   return n;
-
 }
 
 
