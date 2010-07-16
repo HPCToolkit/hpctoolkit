@@ -59,6 +59,7 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
 #include <map>
 #include <set>
 #include <string>
@@ -169,6 +170,19 @@ public:
   //Is this a valid recursive path of the form '.../path/\*' ? 
   static int 
   is_recursive_path(const char* path);
+ 
+
+  // -------------------------------------------------------
+  // Dump contents
+  // -------------------------------------------------------
+  
+#if 0
+  std::ostream&
+  dump(std::ostream& os = std::cerr, uint oFlags = 0);
+  
+  void
+  ddump();
+#endif
   
 
 private:
