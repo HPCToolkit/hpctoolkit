@@ -176,13 +176,11 @@ public:
   // Dump contents
   // -------------------------------------------------------
   
-#if 0
   std::ostream&
   dump(std::ostream& os = std::cerr, uint oFlags = 0);
   
   void
   ddump();
-#endif
   
 
 private:
