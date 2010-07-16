@@ -84,6 +84,9 @@ void
 writeAsText_callpath(/*destination,*/ const char* filenm);
 
 void
+writeAsText_callpathMetricDB(/*destination,*/ const char* filenm);
+
+void
 writeAsText_callpathTrace(/*destination,*/ const char* filenm);
 
 void
