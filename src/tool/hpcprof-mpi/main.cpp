@@ -811,7 +811,7 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // reinitialize metric values since space may be used again
   // -------------------------------------------------------
-  cctRoot->zeroMetricsDeep(mBeg, mEnd); // TODO: not strictly necessary
+  cctRoot->zeroMetricsDeep(mBeg, mEnd); // FIXME: hackish
   
   delete prof;
 }
@@ -881,12 +881,16 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
   cctRoot->aggregateMetricsIncl(ivalsetIncl);
   cctRoot->aggregateMetricsExcl(ivalsetExcl);
 
-
   // -------------------------------------------------------
   // write local sampled metric values into database
   // -------------------------------------------------------
   string dbFnm = makeDBFileName(args.db_dir, groupId, profileFile);
   writeMetricsDB(profGbl, mBeg, mEnd, dbFnm);
+
+  // -------------------------------------------------------
+  // reinitialize metric values since space may be used again
+  // -------------------------------------------------------
+  cctRoot->zeroMetricsDeep(mBeg, mEnd); // FIXME: hackish
 
   delete prof;
 }
