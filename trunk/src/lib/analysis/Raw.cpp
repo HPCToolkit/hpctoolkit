@@ -86,6 +86,9 @@ Analysis::Raw::writeAsText(/*destination,*/ const char* filenm)
   if (ty == ProfType_Callpath) {
     writeAsText_callpath(filenm);
   }
+  else if (ty == ProfType_CallpathMetricDB) {
+    writeAsText_callpathMetricDB(filenm);
+  }
   else if (ty == ProfType_CallpathTrace) {
     writeAsText_callpathTrace(filenm);
   }
@@ -99,7 +102,7 @@ Analysis::Raw::writeAsText(/*destination,*/ const char* filenm)
 
 
 void
-Analysis::Raw::writeAsText_callpath(const char* filenm) 
+Analysis::Raw::writeAsText_callpath(const char* filenm)
 {
   if (!filenm) { return; }
 
@@ -116,7 +119,62 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
 
 
 void
-Analysis::Raw::writeAsText_callpathTrace(const char* filenm) 
+Analysis::Raw::writeAsText_callpathMetricDB(const char* filenm)
+{
+  if (!filenm) { return; }
+
+  try {
+    FILE* fs = hpcio_fopen_r(filenm);
+    if (!fs) {
+      DIAG_Throw("error opening metric-db file '" << filenm << "'");
+    }
+
+    //int ret = hpcmetricdb_fmt_hdr_fread(fs);
+    //if (ret == HPCFMT_EOF) {
+    //  DIAG_Throw("error reading metric-db file '" << filenm << "'");
+    //}
+
+    //hpcmetricDb_fmt_hdr_fprint(stdout);
+
+    uint nodeId = 1;
+    uint numMetrics = 4; // FIXME (from header)
+    
+    while ( !feof(fs) ) {
+      fprintf(stdout, "(%6u: ", nodeId);
+      for (uint mId = 0; mId < numMetrics; ++mId) {
+	uint64_t mval_bits = 0;
+	int ret = hpcfmt_byte8_fread(&mval_bits, fs);
+	if (ret == HPCFMT_EOF) {
+	  if (mId == 0) {
+	    goto fini;
+	  }
+	  else {
+	    DIAG_Throw("error reading trace file '" << filenm << "'");
+	  }
+	}
+	else if (ret == HPCFMT_ERR) {
+	  DIAG_Throw("error reading trace file '" << filenm << "'");
+	}
+
+	double mval = (double)mval_bits;
+	fprintf(stdout, "%14g ", mval);
+      }
+      fprintf(stdout, ")\n");
+      nodeId++;
+    }
+
+  fini:
+    hpcio_fclose(fs);
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << filenm << "'...");
+    throw;
+  }
+}
+
+
+void
+Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
 {
   if (!filenm) { return; }
 
@@ -135,8 +193,10 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
 
     while ( !feof(fs) ) {
       // Read trace record (exit on EOF)
-      uint64_t timestamp;
-      ret = hpcfmt_byte8_fread(&timestamp, fs);
+      uint64_t timestamp_bits = 0;
+      double   timestamp = 0;
+      ret = hpcfmt_byte8_fread(&timestamp_bits, fs);
+      timestamp = (double)timestamp_bits;
       if (ret == HPCFMT_EOF) {
 	break;
       }
@@ -150,7 +210,7 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
 	DIAG_Throw("error reading trace file '" << filenm << "'");
       }
 
-      fprintf(stdout, "(%f, %u)\n", (double)timestamp, cctId);
+      fprintf(stdout, "(%f, %u)\n", timestamp, cctId);
     }
 
     hpcio_fclose(fs);
@@ -163,7 +223,7 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
 
 
 void
-Analysis::Raw::writeAsText_flat(const char* filenm) 
+Analysis::Raw::writeAsText_flat(const char* filenm)
 {
   if (!filenm) { return; }
   
