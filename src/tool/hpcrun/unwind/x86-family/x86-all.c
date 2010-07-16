@@ -49,7 +49,11 @@
 
 #include <stdbool.h>
 
+
 #include "x86-addsub.c"
+#if 1
+#include "x86-and.c"
+#endif
 #include "x86-build-intervals.c"
 #include "x86-call.c"
 #include "x86-canonical.c"
@@ -63,3 +67,4 @@
 #include "x86-process-inst.c"
 #include "x86-push.c"
 #include "x86-return.c"
+

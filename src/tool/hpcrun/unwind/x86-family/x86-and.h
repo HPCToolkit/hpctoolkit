@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/unwind/x86-family/x86-addsub.h $
+// $Id: x86-addsub.h 2770 2010-03-06 02:54:44Z tallent $
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -41,22 +41,14 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef x86_call_h
-#define x86_call_h
+#ifndef x86_and_h
+#define x86_and_h
 
-#include "x86-unwind-interval.h"
 #include "x86-unwind-analysis.h"
 #include "x86-interval-arg.h"
 
-/******************************************************************************
- * interface operations
- *****************************************************************************/
+unwind_interval *
+process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg);
 
-unwind_interval*
-process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg);
-
-#endif
-
-
-
+#endif // x86_and_h
 

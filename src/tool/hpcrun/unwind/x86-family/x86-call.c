@@ -41,6 +41,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
+#include <stdbool.h>
+
 #include "x86-interval-highwatermark.h"
 #include "x86-decoder.h"
 #include "x86-interval-arg.h"
@@ -48,11 +50,31 @@
 #include <lib/isa-lean/x86/instruction-set.h>
 
 /******************************************************************************
+ * local operations
+ *****************************************************************************/
+
+//
+// detect call instruction of the form:
+//           call NEXT
+//     NEXT: ....
+//
+// NOTE: ASSUME the incoming instruction is a 'call' instruction
+//
+static bool
+call_is_push_next_addr_idiom(xed_decoded_inst_t* xptr, interval_arg_t* iarg)
+{
+  void* ins = iarg->ins;
+  void* call_addr = x86_get_branch_target(ins, xptr);
+  
+  return ( call_addr == ( ins + xed_decoded_inst_get_length(xptr) ) );
+}
+
+/******************************************************************************
  * interface operations
  *****************************************************************************/
 
 unwind_interval*
-process_call(interval_arg_t *iarg)
+process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
   unwind_interval *next = iarg->current;
   highwatermark_t *hw_tmp = &(iarg->highwatermark);
@@ -62,6 +84,19 @@ process_call(interval_arg_t *iarg)
     hw_tmp->state = HW_INITIALIZED;
   }
   
+  //
+  // Treat call instruction that looks like:
+  //           call NEXT
+  //     NEXT: ....
+  //
+  // As if it were a push
+  //
+  if (call_is_push_next_addr_idiom(xptr, iarg)) {
+    next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), iarg->current->ra_status,
+		  iarg->current->sp_ra_pos + sizeof(void*), iarg->current->bp_ra_pos, iarg->current->bp_status,
+		  iarg->current->sp_bp_pos, iarg->current->bp_bp_pos, iarg->current);
+
+  }
 #ifdef USE_CALL_LOOKAHEAD
   next = call_lookahead(xptr, iarg->current, iarg->ins);
 #endif
