@@ -64,7 +64,6 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
 {
   unwind_interval *next = iarg->current;
 
-#ifdef FIX_INTERVALS_AT_RETURN
   if (iarg->current->ra_status == RA_SP_RELATIVE) {
     int offset = iarg->current->sp_ra_pos;
     if (offset != 0) {
@@ -74,53 +73,18 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
 	u->sp_ra_pos -= offset;
 	u->sp_bp_pos -= offset;
 
-	if (u->restored_canonical == 1) break;
+	if (u->restored_canonical == 1) {
+	  break;
+	}
 	u = (unwind_interval *) u->common.prev;
-	if (u == 0) break;
+	if (! u) {
+	  break;
+	}
       }
     }
   }
-#endif
   if (iarg->current->bp_status == BP_SAVED) {
      suspicious_interval(iarg->ins);
-#if 0
-     highwatermark_t *hw_tmp              = &(iarg->highwatermark);
-  
-     unwind_interval *c = NULL;
-     unwind_interval *ui = iarg->current;
-     while (ui && ui->restored_canonical == 0) ui = ui->prev;
-     if (ui && ui->restored_canonical) {
-        ui->next = NULL;
-	iarg->bp_frames_found = 0;
-        hw_tmp->uwi = NULL;
-	iarg->current = ui->prev;
-
-        iarg->canonical_interval = ui->prev_canonical;
-
-        if (iarg->canonical_interval){
-          c = iarg->canonical_interval;
-        }
-        else  { 
-          c = iarg->first; /* this may help. */
-          ui->restored_canonical = 0; /* don't back up again */
-        }
-        ui->prev_canonical = c->prev_canonical; 
-
-        ui->ra_status = c->ra_status;
-        ui->bp_status = c->bp_status;
-
-        ui->sp_ra_pos = c->sp_ra_pos;
-        ui->sp_bp_pos = c->sp_bp_pos;
-
-        ui->bp_ra_pos = c->bp_ra_pos;
-        ui->bp_bp_pos = c->bp_bp_pos;
-
-        // restart at the end of the first interval that we just patched
-        iarg->ins = ((char *) ui->prev->endaddr) - xed_decoded_inst_get_length(xptr); 
-        return ui;
-        // FIXME
-     }
-#endif
   }
   if (iarg->ins + xed_decoded_inst_get_length(xptr) < iarg->end) {
     //-------------------------------------------------------------------------
@@ -150,7 +114,8 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
  * private operations
  *****************************************************************************/
 
-static bool plt_is_next(char *ins)
+static bool
+plt_is_next(char *ins)
 {
   
   // Assumes: 'ins' is pointing at the instruction from which
@@ -224,7 +189,12 @@ static bool plt_is_next(char *ins)
     return false;
   }
 
-  if ((jmp_target - val_pushed) == 8) return true;
+  //
+  // FIXME: Does the 8 need to be sizeof(void*) ?????
+  //
+  if ((jmp_target - val_pushed) == 8){
+    return true;
+  }
 
   return false;
 }

@@ -44,6 +44,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "x86-addsub.h"
+#include "x86-and.h"
 #include "x86-call.h"
 #include "x86-decoder.h"
 #include "x86-enter.h"
@@ -136,7 +137,7 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 
   case XED_ICLASS_CALL_FAR:
   case XED_ICLASS_CALL_NEAR:
-    next = process_call(iarg);
+    next = process_call(xptr, xi, iarg);
     break;
 
   case XED_ICLASS_RET_FAR:
@@ -161,6 +162,10 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
   case XED_ICLASS_POPFD: 
   case XED_ICLASS_POPFQ: 
     next = process_pop(xptr, xi, iarg);
+    break;
+
+  case XED_ICLASS_AND:
+    next = process_and(xptr, xi, iarg);
     break;
 
   default:

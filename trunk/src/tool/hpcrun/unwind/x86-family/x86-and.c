@@ -2,8 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -41,22 +39,36 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef x86_call_h
-#define x86_call_h
+//************************* System Include Files ****************************
 
-#include "x86-unwind-interval.h"
-#include "x86-unwind-analysis.h"
+//*************************** User Include Files ****************************
+
+#include "x86-decoder.h"
 #include "x86-interval-arg.h"
 
-/******************************************************************************
- * interface operations
- *****************************************************************************/
+#include <lib/isa-lean/x86/instruction-set.h>
 
-unwind_interval*
-process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg);
+//***************************************************************************
 
-#endif
+unwind_interval *
+process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
+{
+  unwind_interval *next = iarg->current;
+  const xed_operand_t* op0 = xed_inst_operand(xi,0);
+  xed_operand_enum_t   op0_name = xed_operand_name(op0);
 
+  if (op0_name == XED_OPERAND_REG0) {
+    xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
+    if (x86_isReg_SP(reg0)) {
+      //-----------------------------------------------------------------------
+      // we are adjusting the stack pointer via 'and' instruction
+      //-----------------------------------------------------------------------
+	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
+		      RA_BP_FRAME, iarg->current->sp_ra_pos, iarg->current->bp_ra_pos,
+		      iarg->current->bp_status, iarg->current->sp_bp_pos, 
+		      iarg->current->bp_bp_pos, iarg->current);
 
-
-
+    }
+  }
+  return next;
+}
