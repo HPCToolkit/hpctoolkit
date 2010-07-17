@@ -937,16 +937,24 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
   }
   DIAG_MsgIf(0, "writeMetricsDB: " << metricDBFnm);
 
-  // TODO: header: Tag: HPCPROF_____ {16b}, num-metrics {4b}, num nodes {4b}
+  uint numNodes = packedMetrics.numNodes() - 1;
 
-  // N.B.: first row corresponds to node 1.
-  //       first column corresponds to first sampled metric.
+  // 1. header
+  hpcmetricDB_fmt_hdr_t hdr;
+  hdr.numNodes = numNodes;
+  hdr.numMetrics = mEndId - mBegId; // [mBegId mEndId)
 
+  hpcmetricDB_fmt_hdr_fwrite(&hdr, fs);
+
+  // 2. metric values
+  //    - first row corresponds to node 1.
+  //    - first column corresponds to first sampled metric.
   // cf. ParallelAnalysis::unpackMetrics: 
-  for (uint nodeId = 1; nodeId < packedMetrics.numNodes(); ++nodeId) {
+
+  for (uint nodeId = 1; nodeId < numNodes + 1; ++nodeId) {
     for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
       double mval = packedMetrics.idx(nodeId, mId2);
-      DIAG_MsgIf(0 && mval < 0,  "  " << nodeId << " -> " << mval);
+      DIAG_MsgIf(0,  "  " << nodeId << " -> " << mval);
       hpcfmt_byte8_fwrite((uint64_t)mval, fs); // TODO: HPCFMT_ThrowIfError()
     }
   }

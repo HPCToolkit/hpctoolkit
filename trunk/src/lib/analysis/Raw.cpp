@@ -129,30 +129,20 @@ Analysis::Raw::writeAsText_callpathMetricDB(const char* filenm)
       DIAG_Throw("error opening metric-db file '" << filenm << "'");
     }
 
-    //int ret = hpcmetricdb_fmt_hdr_fread(fs);
-    //if (ret == HPCFMT_EOF) {
-    //  DIAG_Throw("error reading metric-db file '" << filenm << "'");
-    //}
+    hpcmetricDB_fmt_hdr_t hdr;
+    int ret = hpcmetricDB_fmt_hdr_fread(&hdr, fs);
+    if (ret == HPCFMT_EOF) {
+      DIAG_Throw("error reading metric-db file '" << filenm << "'");
+    }
 
-    //hpcmetricDb_fmt_hdr_fprint(stdout);
+    hpcmetricDB_fmt_hdr_fprint(&hdr, stdout);
 
-    uint nodeId = 1;
-    uint numMetrics = 4; // FIXME (from header)
-    
-    while ( !feof(fs) ) {
+    for (uint nodeId = 1; nodeId < hdr.numNodes + 1; ++nodeId) {
       fprintf(stdout, "(%6u: ", nodeId);
-      for (uint mId = 0; mId < numMetrics; ++mId) {
+      for (uint mId = 0; mId < hdr.numMetrics; ++mId) {
 	uint64_t mval_bits = 0;
 	int ret = hpcfmt_byte8_fread(&mval_bits, fs);
-	if (ret == HPCFMT_EOF) {
-	  if (mId == 0) {
-	    goto fini;
-	  }
-	  else {
-	    DIAG_Throw("error reading trace file '" << filenm << "'");
-	  }
-	}
-	else if (ret == HPCFMT_ERR) {
+	if (ret != HPCFMT_OK) {
 	  DIAG_Throw("error reading trace file '" << filenm << "'");
 	}
 
@@ -160,10 +150,8 @@ Analysis::Raw::writeAsText_callpathMetricDB(const char* filenm)
 	fprintf(stdout, "%14g ", mval);
       }
       fprintf(stdout, ")\n");
-      nodeId++;
     }
 
-  fini:
     hpcio_fclose(fs);
   }
   catch (...) {

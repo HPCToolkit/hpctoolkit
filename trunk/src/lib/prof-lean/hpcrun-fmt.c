@@ -216,6 +216,73 @@ hpctrace_fmt_hdr_fprint(FILE* fs)
 
 
 //***************************************************************************
+// hdr (hpcprof-metricdb, located here for now)
+//***************************************************************************
+
+int
+hpcmetricDB_fmt_hdr_fread(hpcmetricDB_fmt_hdr_t* hdr, FILE* infs)
+{
+  char tag[HPCMETRICDB_FMT_MagicLen + 1];
+  char version[HPCMETRICDB_FMT_VersionLen + 1];
+  char endian[HPCMETRICDB_FMT_EndianLen + 1];
+
+  int nr = fread(tag, 1, HPCMETRICDB_FMT_MagicLen, infs);
+  tag[HPCMETRICDB_FMT_MagicLen] = '\0';
+
+  if (nr != HPCMETRICDB_FMT_MagicLen) {
+    return HPCFMT_ERR;
+  }
+  if (strcmp(tag, HPCMETRICDB_FMT_Magic) != 0) {
+    return HPCFMT_ERR;
+  }
+
+  nr = fread(&version, 1, HPCMETRICDB_FMT_VersionLen, infs);
+  version[HPCMETRICDB_FMT_VersionLen] = '\0';
+  if (nr != HPCMETRICDB_FMT_VersionLen) {
+    return HPCFMT_ERR;
+  }
+  hdr->version = atof(hdr->versionStr);
+
+  nr = fread(&endian, 1, HPCMETRICDB_FMT_EndianLen, infs);
+  if (nr != HPCMETRICDB_FMT_EndianLen) {
+    return HPCFMT_ERR;
+  }
+
+  HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&(hdr->numNodes), infs));
+  HPCFMT_ThrowIfError(hpcfmt_byte4_fread(&(hdr->numMetrics), infs));
+
+  return HPCFMT_OK;
+}
+
+
+int
+hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs)
+{
+  fwrite(HPCMETRICDB_FMT_Magic,   1, HPCMETRICDB_FMT_MagicLen, outfs);
+  fwrite(HPCMETRICDB_FMT_Version, 1, HPCMETRICDB_FMT_VersionLen, outfs);
+  fwrite(HPCMETRICDB_FMT_Endian,  1, HPCMETRICDB_FMT_EndianLen, outfs);
+
+  hpcfmt_byte4_fwrite(hdr->numNodes, outfs);
+  hpcfmt_byte4_fwrite(hdr->numMetrics, outfs);
+
+  return HPCFMT_OK;
+}
+
+
+int
+hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs)
+{
+  fprintf(outfs, "%s\n", HPCMETRICDB_FMT_Magic);
+  fprintf(outfs, "[hdr:...]\n");
+
+  fprintf(outfs, "(num-nodes:   %u)\n", hdr->numNodes);
+  fprintf(outfs, "(num-metrics: %u)\n", hdr->numMetrics);
+
+  return HPCFMT_OK;
+}
+
+
+//***************************************************************************
 // epoch-hdr
 //***************************************************************************
 
