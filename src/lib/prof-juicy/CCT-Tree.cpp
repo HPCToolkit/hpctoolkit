@@ -893,7 +893,7 @@ ANode::makeDensePreorderIds(uint nextId)
   id(nextId);
   nextId++;
   
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureId);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureInfo);
        it.current(); it++) {
     CCT::ANode* n = it.current();
     nextId = n->makeDensePreorderIds(nextId);
@@ -1133,7 +1133,7 @@ ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
   
   bool doPost = writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
   string prefix = pfx + indent;
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByDynInfo);
+  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureInfo);
        it.current(); it++) {
     ANode* n = it.current();
     n->writeXML(os, metricBeg, metricEnd, oFlags, prefix.c_str());
