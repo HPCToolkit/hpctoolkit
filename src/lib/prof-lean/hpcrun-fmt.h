@@ -177,6 +177,44 @@ hpctrace_fmt_hdr_fprint(FILE* fs);
 
 
 //***************************************************************************
+// hdr (hpcprof-metricdb, located here for now)
+//***************************************************************************
+
+static const char HPCMETRICDB_FMT_Magic[]   = "HPCPROF-metricdb__"; // 18 bytes
+static const char HPCMETRICDB_FMT_Version[] = "00.10";              // 5 bytes
+static const char HPCMETRICDB_FMT_Endian[]  = "b";                  // 1 byte
+
+static const int HPCMETRICDB_FMT_MagicLen = 
+  (sizeof(HPCMETRICDB_FMT_Magic) - 1);
+static const int HPCMETRICDB_FMT_VersionLen =
+  (sizeof(HPCMETRICDB_FMT_Version) - 1);
+static const int HPCMETRICDB_FMT_EndianLen =
+  (sizeof(HPCMETRICDB_FMT_Endian) - 1);
+
+
+typedef struct hpcmetricDB_fmt_hdr_t {
+
+  char versionStr[sizeof(HPCMETRICDB_FMT_Version)];
+  double version;
+  char endian;
+
+  uint32_t numNodes;
+  uint32_t numMetrics;
+
+} hpcmetricDB_fmt_hdr_t;
+
+
+int
+hpcmetricDB_fmt_hdr_fread(hpcmetricDB_fmt_hdr_t* hdr, FILE* infs);
+
+int
+hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
+
+int
+hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
+
+
+//***************************************************************************
 // epoch-hdr
 //***************************************************************************
 

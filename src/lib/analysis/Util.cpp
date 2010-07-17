@@ -147,15 +147,14 @@ getProfileType(const std::string& filenm)
   if (strncmp(buf, HPCRUN_FMT_Magic, HPCRUN_FMT_MagicLen) == 0) {
     ty = ProfType_Callpath;
   }
+  else if (strncmp(buf, HPCMETRICDB_FMT_Magic, HPCMETRICDB_FMT_MagicLen) == 0) {
+    ty = ProfType_CallpathMetricDB;
+  }
   else if (strncmp(buf, HPCTRACE_FMT_Magic, HPCTRACE_FMT_MagicLen) == 0) {
     ty = ProfType_CallpathTrace;
   }
   else if (strncmp(buf, HPCRUNFLAT_FMT_Magic, HPCRUNFLAT_FMT_MagicLen) == 0) {
     ty = ProfType_Flat;
-  }
-  else if (filenm.find(HPCPROF_MetricDBSfx) != string::npos) {
-    // FIXME: use magic string
-    ty = ProfType_CallpathMetricDB;
   }
 
   return ty;
