@@ -131,7 +131,7 @@ Analysis::Raw::writeAsText_callpathMetricDB(const char* filenm)
 
     hpcmetricDB_fmt_hdr_t hdr;
     int ret = hpcmetricDB_fmt_hdr_fread(&hdr, fs);
-    if (ret == HPCFMT_EOF) {
+    if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading metric-db file '" << filenm << "'");
     }
 
@@ -173,7 +173,7 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
     }
 
     int ret = hpctrace_fmt_hdr_fread(fs);
-    if (ret == HPCFMT_EOF) {
+    if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading trace file '" << filenm << "'");
     }
 
