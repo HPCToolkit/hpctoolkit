@@ -67,7 +67,7 @@ namespace FileUtil {
 extern std::string
 basename(const char* fname);
 
-inline std::string 
+inline std::string
 basename(const std::string& fname)
 {
   return basename(fname.c_str());
@@ -78,7 +78,7 @@ basename(const std::string& fname)
 extern std::string
 rmSuffix(const char* fname);
 
-inline std::string 
+inline std::string
 rmSuffix(const std::string& fname)
 {
   return rmSuffix(fname.c_str());
@@ -86,7 +86,7 @@ rmSuffix(const std::string& fname)
 
 
 // 'dirname': returns the '/path' component of "/path/fname.ext"
-extern std::string 
+extern std::string
 dirname(const char* fname); 
 
 inline std::string

@@ -474,7 +474,7 @@ matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec)
     // find the absolute form of 'curPath'
     const string& curPath = pathVec[i].first;
     string realPath(curPath);
-    if (PathFindMgr::is_recursive_path(curPath.c_str())) {
+    if (PathFindMgr::isRecursivePath(curPath.c_str())) {
       realPath[realPath.length()-PathFindMgr::RECURSIVE_PATH_SUFFIX_LN] = '\0';
     }
     realPath = RealPath(realPath.c_str());
@@ -494,8 +494,8 @@ matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec)
       }
     }
     
-    const char* fnd_fnm = PathFindMgr::singleton().pathfind_r(curPath.c_str(),
-							      curFile, "r");
+    const char* fnd_fnm = PathFindMgr::singleton().pathfind(curPath.c_str(),
+							    curFile, "r");
 
     if (fnd_fnm) {
       bool update = false;

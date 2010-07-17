@@ -97,54 +97,64 @@ RealPathMgr& RealPathMgr::singleton()
 
 
 bool
-RealPathMgr::realpath(string& fnm)
+RealPathMgr::realpath(string& pathNm)
 {
-  if (fnm.empty()) {
+  if (pathNm.empty()) {
     return false;
   }
   
-  // INVARIANT: 'fnm' is not empty
+  // INVARIANT: 'pathNm' is not empty
 
   // INVARIANT: all entries in the map are non-empty
-  MyMap::iterator it = m_realpath_map.find(fnm);
+  MyMap::iterator it = m_realpath_map.find(pathNm);
 
+  // -------------------------------------------------------
+  // 1. Check cache for 'pathNm'
+  // -------------------------------------------------------
   if (it != m_realpath_map.end()) {
     // use cached value
-    const string& fnm_real = it->second;
-    if (fnm_real[0] == '/') { // only copy if realpath was found
-      fnm = fnm_real;
+    const string& pathNm_real = it->second;
+    if (pathNm_real[0] == '/') { // optimization to avoid copy
+      pathNm = pathNm_real;
     }
   }
   else {
-    fnm = PathReplacementMgr::singleton().getReplacedPath(fnm);
-    it = m_realpath_map.find(fnm);
-    if (it != m_realpath_map.end()) { //check if modified fnm is cached 
-      const string& fnm_real = it->second;
-      if (fnm_real[0] == '/') {
-	fnm = fnm_real;
+    // -------------------------------------------------------
+    // 2. Consult cache with path-replaced 'pathNm'
+    // -------------------------------------------------------
+    pathNm = PathReplacementMgr::singleton().getReplacedPath(pathNm);
+    it = m_realpath_map.find(pathNm);
+    if (it != m_realpath_map.end()) {
+      // use cached value
+      const string& pathNm_real = it->second;
+      if (pathNm_real[0] == '/') { // optimization to avoid copy
+	pathNm = pathNm_real;
       }
     }
     else {
-      string fnm_real;
+      // -------------------------------------------------------
+      // 3. Resolve 'pathNm' using PathFindMgr or realpath
+      // -------------------------------------------------------
+      string pathNm_orig = pathNm;
+      string pathNm_real = pathNm;
       
-      const char* pf = fnm.c_str();
-      if (!m_searchPaths.empty()) {
-	pf = PathFindMgr::singleton().pathfind_r(m_searchPaths.c_str(), 
-						 fnm.c_str(), "r");
-      }
-      if (pf) { 
-	fnm_real = pf;
-	m_realpath_map.insert(make_pair(fnm, fnm_real));
-	fnm = fnm_real;
+      if (m_searchPaths.empty()) {
+	pathNm_real = RealPath(pathNm.c_str());
       }
       else {
-	// 'pf' is NULL iff pathfind_r failed -- RealPath won't do any better
-	fnm_real = fnm;
-	m_realpath_map.insert(make_pair(fnm, fnm_real));
+	const char* pathNm_pf =
+	  PathFindMgr::singleton().pathfind(m_searchPaths.c_str(),
+					    pathNm.c_str(), "r");
+	if (pathNm_pf) {
+	  pathNm_real = pathNm_pf;
+	}
       }
+
+      pathNm = pathNm_real;
+      m_realpath_map.insert(make_pair(pathNm_orig, pathNm_real));
     }
   }
-  return (fnm[0] == '/'); // fully resolved
+  return (pathNm[0] == '/'); // fully resolved
 }
 
 
@@ -159,7 +169,7 @@ RealPathMgr::searchPaths(const string& sPaths)
     trailingIn++;
     std::string currentPath = sPaths.substr(trailingIn, in - trailingIn);
 
-    if (PathFindMgr::is_recursive_path(currentPath.c_str())) {
+    if (PathFindMgr::isRecursivePath(currentPath.c_str())) {
       //if its recursive, need to strip off and add back on '/*'
       currentPath = currentPath.substr(0,currentPath.length() - 2);
       currentPath = RealPath(currentPath.c_str());

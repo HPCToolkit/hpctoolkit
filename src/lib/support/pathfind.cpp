@@ -93,12 +93,6 @@ pathfind(const char* pathList,
     }
     return result;
   }
-
-  string check = name;
-  if (PathFindMgr::singleton().getRealPath(check)) {
-    char* temp = const_cast<char*>(check.c_str());
-    return temp;
-  }
   
   path = pathList;
   while (path) {
@@ -112,7 +106,7 @@ pathfind(const char* pathList,
     if (pathLen) len += pathLen + 1;
     tmp = new char[len];
     if (pathLen) {
-      strncpy (tmp, path, pathLen);
+      strncpy(tmp, path, pathLen);
       tmp[pathLen] = '/';    // Can't use strcat, since tmp may not
       tmp[pathLen+1] = '\0'; // be NULL-terminated following strncpy.
       strcat (tmp, name);

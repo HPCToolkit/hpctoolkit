@@ -86,6 +86,36 @@ public:
   
   static PathFindMgr&
   singleton();
+
+
+  // pathfind - (recursively) search for named file in given
+  // --------    colon-separated (recursive) pathlist
+  // 
+  // First searches for 'name' in the PathFindMgr::singleton member
+  // 'm_cache'.  If that search is unsuccessful and the cache is full,
+  // it then searches for a file named "name" in each directory in the
+  // colon-separated pathlist given as the first argument, and returns
+  // the full pathname to the first occurence that has at least the
+  // mode bits specified by mode. For any 'recursive-path', it
+  // recursively searches all of that paths descendents as well. An
+  // empty path in the pathlist is interpreted as the current
+  // directory.  Returns NULL if 'name' is not found.
+  // 
+  // A 'recursive-path' is specified by appending a single '*' at the
+  // end of the directory. /home/.../dir/\*
+  // 
+  //  ** Note: the '*' is escaped with '\' so it does not look like a
+  // C-style comment; in reality it should not be escaped! **
+  //    
+  // The following mode bits are understood: 
+  //     "r" - read access
+  //     "w" - write access
+  //     "x" - execute access
+  // 
+  // The returned pointer points to an area that will be reused on subsequent
+  // calls to this function, and must not be freed by the caller.
+  const char*
+  pathfind(const char* pathList, const char* name, const char* mode);
   
   
   // Retreives the highest priority and closest matching real path to
@@ -132,44 +162,12 @@ public:
   // @return:  A bool indicating whether 'filePath' was found in the list.
   //
   bool
-  getRealPath(std::string& filePath);
+  find(std::string& filePath);
   
-  
-  //pathfind_r - (recursively) search for named file in given
-  //---------- colon-separated (recursive) pathlist 
-  //
-  //First searches for 'name' in the PathFindMgr::singleton member
-  //'m_cache'.  If that search is unsuccessful and the cache is full,
-  //it then searches for a file named "name" in each directory in the
-  //colon-separated pathlist given as the first argument, and returns
-  //the full pathname to the first occurence that has at least the
-  //mode bits specified by mode. For any 'recursive-path', it
-  //recursively searches all of that paths descendents as well. An
-  //empty path in the pathlist is interpreted as the current
-  //directory.  Returns NULL if 'name' is not found.
-  //
-  //A 'recursive-path' is specified by appending a single '*' at the
-  //end of the directory. /home/.../dir/\*
-  //
-  // ** Note: the '*' is escaped with '\' so it does not look like a
-  //C-style comment; in reality it should not be escaped! **
-  //   
-  //The following mode bits are understood: 
-  //    "r" - read access
-  //    "w" - write access
-  //    "x" - execute access
-  //
-  //The returned pointer points to an area that will be reused on subsequent
-  //calls to this function, and must not be freed by the caller.
-  char*
-  pathfind_r(const char* pathList,
-	     const char* name,
-	     const char* mode);
-  
-  
-  //Is this a valid recursive path of the form '.../path/\*' ? 
+    
+  // Is this a valid recursive path of the form '.../path/\*' ? 
   static int 
-  is_recursive_path(const char* path);
+  isRecursivePath(const char* path);
  
 
   // -------------------------------------------------------
@@ -185,55 +183,43 @@ public:
 
 private:
 
-  //This method adds a file name and its associated real path to 'm_cache'.
-  //Paths are store according to the file it is associated with. Path is not
-  //added if it is already in the vector associated with the file name.
-  //
-  //@param realPath: The path a file is located at.
+  // This method adds a file name and its associated real path to 'm_cache'.
+  // Paths are store according to the file it is associated with. Path is not
+  // added if it is already in the vector associated with the file name.
+  // 
+  // @param realPath: The path a file is located at.
   void 
-  addPath(const std::string& path);
+  insert(const std::string& path);
   
-
-  //Private helper method that returns the file name associated with 'path', 
-  //which is assumed to be the part of 'path' after the last "/".
-  //
-  //@param path: The full or partial path whose associated file name
-  //             is wanted.  
-  //
-  //@return: If a "/" is in 'path', the portion of 'path' after the
-  //         last "/", otherwise 'path' is returned.
-  std::string 
-  getFileName(const std::string& path) const;
-
-
-  //Private helper method that recursively searches through all the 
-  //directories in 'pathList' and caches all the files in those directories.
-  //Should be used only once.
-  //
-  //@param pathList: List of directories that contain files to be cached.
-  //                 Each path is separated by a ":" and recursive paths have
-  //                 a '/*' at the end of the path.
-  //@param recursive: Indicates whether a directory should be recursively
-  //                  searched. 
+  // Private helper method that recursively searches through all the 
+  // directories in 'pathList' and caches all the files in those directories.
+  // Should be used only once.
+  // 
+  // @param pathList: List of directories that contain files to be cached.
+  //                  Each path is separated by a ":" and recursive paths have
+  //                  a '/*' at the end of the path.
+  // @param recursive: Indicates whether a directory should be recursively
+  //                   searched. 
   void
   fill(const std::string& pathList, bool recursive);
+
   
-  //Resolves all '..' and '.' in 'path' in reference to itself. Does
-  //NOT find the unique real path of 'path'. Returns how many '..'
-  //are left in 'path'. Helps make sure more accurate results are
-  //returned from getRealPath().
+  // Resolves all '..' and '.' in 'path' in reference to itself. Does
+  // NOT find the unique real path of 'path'. Returns how many '..'
+  // are left in 'path'. Helps make sure more accurate results are
+  // returned from find().
+  //  
+  // Ex: if path = 'src/../../lib/src/./../ex.c' then resolve(path) would turn
+  //     path into '../lib/ex.c'.
   // 
-  //Ex: if path = 'src/../../lib/src/./../ex.c' then resolve(path) would turn
-  //    path into '../lib/ex.c'.
-  //
-  //@param path: The file path to resolve.
-  //@return:     The number of '..' in 'path' after it has been resolved.
+  // @param path: The file path to resolve.
+  // @return:     The number of '..' in 'path' after it has been resolved.
   int 
   resolve(std::string& path);
   
   
-  //Converts all subdirectories of 'path' to a valid pathlist. If
-  //'recursive' is true, then all paths are made recursive
+  // Converts all subdirectories of 'path' to a valid pathlist. If
+  // 'recursive' is true, then all paths are made recursive
   std::string
   subdirs_to_pathlist(const std::string& path, bool isRecursive);
 
@@ -247,7 +233,7 @@ private:
   bool m_cacheNotFull;
   bool m_filled;
 
-  static const uint64_t s_sizeLimit = 20 * 1024 * 1024; //default is 20 MB
+  static const uint64_t s_sizeLimit = 20 * 1024 * 1024; // default is 20 MB
   uint64_t m_size;
 };
 
