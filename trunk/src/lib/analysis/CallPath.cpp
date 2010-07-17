@@ -720,8 +720,7 @@ coalesceStmts(Prof::CCT::ANode* node)
   // ---------------------------------------------------
   // For each immediate child of this node...
   //
-  // Use cmpByDynInfo()-ordering so that results are deterministic
-  // (cf. hpcprof-mpi)
+  // cmpByDynInfo()-ordering should be good enough
   // ---------------------------------------------------
   for (Prof::CCT::ANodeSortedChildIterator it(node, Prof::CCT::ANodeSortedIterator::cmpByDynInfo);
        it.current(); /* */) {

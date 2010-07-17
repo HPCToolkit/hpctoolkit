@@ -639,7 +639,7 @@ public:
   // -------------------------------------------------------
 
   LoadMap::LM_id_t
-  lmId() const 
+  lmId() const
   {
     if (isValid_lip()) { return lush_lip_getLMId(m_lip); }
     return m_lmId; 
@@ -660,26 +660,26 @@ public:
   lmId_real(LoadMap::LM_id_t x)
   { m_lmId = x; }
 
-  virtual VMA 
-  ip() const 
+  virtual VMA
+  ip() const
   {
     if (isValid_lip()) { return lush_lip_getIP(m_lip); }
     return m_ip; 
   }
 
-  VMA 
-  ip_real() const 
+  VMA
+  ip_real() const
   { return m_ip; }
 
-  void 
-  ip(VMA ip, ushort opIdx) 
-  { 
+  void
+  ip(VMA ip, ushort opIdx)
+  {
     if (isValid_lip()) { lush_lip_setIP(m_lip, ip); m_opIdx = 0; return; }
     m_ip = ip; m_opIdx = opIdx;
   }
 
   ushort
-  opIndex() const 
+  opIndex() const
   { return m_opIdx; }
 
 

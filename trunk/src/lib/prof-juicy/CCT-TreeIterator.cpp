@@ -120,6 +120,22 @@ const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
 // ANodeSortedIterator
 //***************************************************************************
 
+static int
+cmp(uint64_t x, uint64_t y)
+{
+  // compare without the possible overflow caused by (x - y)
+  if (x == y) {
+    return 0;
+  }
+  else if (x < y) {
+    return -1;
+  }
+  else {
+    return 1;
+  }
+}
+
+
 ANodeSortedIterator::
 ANodeSortedIterator(const ANode* node,
 		    ANodeSortedIterator::cmp_fptr_t compare_fn,
@@ -165,13 +181,49 @@ ANodeSortedIterator::cmpByLine(const void* a, const void* b)
 
 
 int
-ANodeSortedIterator::cmpByStructureId(const void* a, const void* b)
+ANodeSortedIterator::cmpByStructureInfo(const void* a, const void* b)
 {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
-  uint x_id = x->structureId();
-  uint y_id = y->structureId();
-  return (x_id - y_id);
+
+  if (x && y) {
+    uint x_id = x->structureId();
+    uint y_id = y->structureId();
+    
+    int cmp_id = cmp(x_id, y_id);
+    int cmp_ty = (int)x->type() - (int)y->type();
+    if (cmp_id == 0 && cmp_ty == 0 && x != y) {
+      // hard case: cannot return 0!
+      ANode* x_parent = x->parent();
+      ANode* y_parent = y->parent();
+      if (x_parent == y_parent) {
+	// This should be sufficient for the CCTs that we see.
+	// Could compare childCount() and other aspects of children.
+	return cmpByDynInfo(a, b);
+      }
+      else {
+	// if parents are different, compare by context
+	ANode* x_parent = x->parent();
+	ANode* y_parent = y->parent();
+	return cmpByStructureInfo(&x_parent, &y_parent);
+      }
+    }
+    else if (cmp_id == 0) {
+      return cmp_ty;
+    }
+    else {
+      return cmp_id;
+    }
+  }
+  else if (x) {
+    return 1; // x > y=NULL (only used for recursive case)
+  }
+  else if (y) {
+    return -1; // x=NULL < y (only used for recursive case)
+  }
+  else {
+    DIAG_Die(DIAG_UnexpectedInput);
+  }
 }
 
 
@@ -189,19 +241,16 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
     if (diff_lmId != 0) {
       return diff_lmId;
     }
-    intptr_t diff_ip = (intptr_t)(x_dyn->ip() - y_dyn->ip());
-    if (diff_ip == 0)     { return 0; }
-    else if (diff_ip < 0) { return -1; }
-    else                  { return 1; }
+    return cmp(x_dyn->ip(), y_dyn->ip());
   }
   else if (x_dyn) {
-    return -1;
+    return 1; // x_dyn > y_dyn=NULL
   }
   else if (y_dyn) {
-    return 1;
+    return -1; // x_dyn=NULL < y_dyn
   }
   else {
-    return cmpByStructureId(a, b);
+    return cmp((int64_t)x, (int64_t)y);
   }
 }
 

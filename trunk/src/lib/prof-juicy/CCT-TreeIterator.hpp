@@ -226,9 +226,15 @@ public:
 
   static int cmpByName(const void* x, const void* y);
   static int cmpByLine(const void* x, const void* y);
-  static int cmpByStructureId(const void* x, const void* y);
 
-  // any ADynNode is less than a non-ADynNode
+  // cmpByStructureInfo: Designed to produce deterministic sorts for a
+  // "structured CCT" across multiple runs and multiple processes.  If
+  // structure is not available, degenerates to cmpByDynInfo.
+  static int cmpByStructureInfo(const void* x, const void* y);
+
+  // cmpByDynInfo: Designed to produce deterministic sorts for a
+  // "non-structured CCT" across multiple runs and multiple processes.
+  // Note that any ADynNode is less than a non-ADynNode
   static int cmpByDynInfo(const void* x, const void* y);
 
 public: 
