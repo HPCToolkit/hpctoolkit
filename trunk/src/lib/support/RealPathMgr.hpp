@@ -97,7 +97,7 @@ public:
   // can be (which does not necessarily mean it exists); otherwise
   // return false.
   bool
-  realpath(std::string& fnm);
+  realpath(std::string& pathNm);
   
   
   const std::string&

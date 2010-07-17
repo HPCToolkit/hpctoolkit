@@ -96,6 +96,19 @@ basename(const char* fName)
     baseFileName = fName;
   }
   return baseFileName;
+
+#if 0
+  // A "more C++" implementation (Gaurav)
+  std::string
+  PathFindMgr::getFileName(const std::string& path) const
+  {
+    size_t in = path.find_last_of("/");
+    if (in != path.npos && path.length() > 1)
+      return path.substr(in + 1);
+    
+    return path;
+  }
+#endif
 }
 
 
