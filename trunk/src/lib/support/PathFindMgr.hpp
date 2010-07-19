@@ -65,7 +65,11 @@
 #include <string>
 #include <vector>
 
+#include <stdint.h>
+
 //*************************** User Include Files ****************************
+
+#include <include/uint.h>
 
 //*************************** Forward Declarations **************************
 
