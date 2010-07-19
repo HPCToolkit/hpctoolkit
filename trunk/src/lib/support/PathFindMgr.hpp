@@ -92,8 +92,9 @@ public:
   singleton();
 
 
-  // pathfind - (recursively) search for named file in given
-  // --------    colon-separated (recursive) pathlist
+  // pathfind - (recursively) search for file 'name' in given
+  //   colon-separated (possibly recursive) pathlist.  If found,
+  //   returns the fully resolved 'real path'.
   // 
   // First searches for 'name' in the PathFindMgr::singleton member
   // 'm_cache'.  If that search is unsuccessful and the cache is full,
