@@ -61,7 +61,7 @@
  *
  */
 const char*
-RealPath(const char* nm) 
+RealPath(const char* nm)
 {
   static char _RealPathBuf[PATH_MAX];
   if (realpath(nm, _RealPathBuf) == NULL) {
