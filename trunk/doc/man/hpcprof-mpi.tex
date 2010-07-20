@@ -42,24 +42,24 @@
 
 \begin{document}
 
-\begin{Name}{1}{hpcprof}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcprof:\\ Analysis and Attribution of Call Path Performance Measurements}
+\begin{Name}{1}{hpcprof-mpi}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcprof-mpi:\\ Analysis and Attribution of Call Path Performance Measurements}
 
-\Prog{hpcprof} analyzes call path profile performance measurements and attributes them to static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
+\Prog{hpcprof-mpi} \emph{scalably} analyzes call path profile performance measurements and attributes them to static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
 \end{Name}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcprof} \oOpt{options} \Arg{measurement-group}...
+\Prog{hpcprof-mpi} \oOpt{options} \Arg{measurement-group}...
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcprof} analyzes call path profile performance measurements, attributes them to static source code structure, and generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
-For analyzing and attributing the performance of large-scale executions, use \HTMLhref{hpcprof-mpi.html}{\Cmd{hpcprof-mpi}{1}}, a parallel version of \Prog{hpcprof}.
+\Prog{hpcprof-mpi} analyzes call path profile performance measurements, attributes them to static source code structure, and generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
+\Prog{hpcprof-mpi} is especially designed for analyzing and attributing measurements from large-scale executions.
 
-\Prog{hpcprof} expects a list of measurement-groups, where a group is a call path profile directory or an individual profile file.
+\Prog{hpcprof-mpi} expects a list of measurement-groups, where a group is a call path profile directory or an individual profile file.
 For best results, two other options should be used: \textbf{-I} to provide paths for source code directories and \textbf{-S} to provide source code structure from \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

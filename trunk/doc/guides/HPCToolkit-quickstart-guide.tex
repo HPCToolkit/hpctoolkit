@@ -98,14 +98,16 @@
 \begin{center}
 {\Large \HPCToolkit{} Quickstart Guide}\\[1ex]
 {\HPCToolkit{} Project Team}\\
-March 31, 2009
+July 19, 2010
 \end{center}
 
 
 
 \begin{itemize}
 \item{\em Documentation.} Man pages and user guides are available from the {\tt share/doc/guides} directory of the release or at {\tt http://hpctoolkit.org/documentation.html}.  
+
 \item {\em Command-line help.} Help with the \HPCToolkit{} performance tools {\tt hpcrun}, {\tt hpcstruct}, or {\tt hpcprof} can be found by executing the command with the argument {\tt --help}.
+
 \item{ \em Measuring application performance.}
 
 For a sequential or multithreaded code:\\
@@ -133,15 +135,26 @@ for more information.
 \item{ \em Recovering program structure information.}\\
 \lindent {\tt hpcstruct myprogram}\\[1ex]
 This command will produce a file {\tt myprogram.hpcstruct} that should be passed to {\tt hpcprof} with the {\tt -S} argument.
-\item{ \em Correlating measurements to source code.}\\
-\lindent {\tt hpcprof -S myprogram.hpcstruct -I path-to-myprogram-src \verb+\+ \\ 
-\lindent \lindent hpctoolkit-myprogram-measurements}\\[1ex]
-This command will produce a directory with the name {\tt hpctoolkit-myprogram-database}. If this database directory already exists, {\tt hpcprof} will append its process id at the end of the aforementioned directory name to yield a unique name.
+
+\item{ \em Analyzing measurements and correlating them to source code.}\\
+\lindent {\tt hpcprof \ \ \ \  -S myprogram.hpcstruct -I path-to-myprogram-src/'*' \verb+\+ \\
+\lindent \lindent hpctoolkit-myprogram-measurements}\\
+{\em or}\\
+\lindent {\tt mpi-launcher... \verb+\+\\
+\lindent hpcprof-mpi -S myprogram.hpcstruct -I path-to-myprogram-src/'*' \verb+\+ \\
+\lindent \lindent hpctoolkit-myprogram-measurements}
+
+The difference between {\tt hpcprof} and {\tt hpcprof-mpi} is that the latter is designed to process (in parallel) measurements from large-scale executions.  Either command will produce a directory with the name {\tt hpctoolkit-myprogram-database}.  If this database directory already exists, {\tt hpcprof/hpcprof-mpi} will append its process id at the end of the aforementioned directory name to yield a unique name.
+
+Another potentially important option, especially for machines that require executing from special file systems, is the {\tt -R/--replace-path} option for substituting instances of {\em old-path} with {\em new-path}: {\tt -R 'old-path=new-path'}.
+
 \item{ \em Viewing application performance measurements.}\\
 \lindent {\tt hpcviewer {\tt hpctoolkit-myprogram-database}}\\[1ex]
 Help for using {\tt hpcviewer} can be found at  {\tt http://hpctoolkit.org/documentation.html}  or in a help pane available within the viewer. The help pan can be brought up from {\tt hpcviewer}'s {\tt Help} menu.
+
 \item{ \em Performance analysis techniques.}
 These strategies are described in the user guide {\em Effective Strategies for Analyzing Program Performance with \HPCToolkit{}}, which is available as mentioned above in the documentation bullet.
+
 \begin{itemize}
 \item
 A waste metric, which represents the difference between achieved performance and potential peak performance is a good way of understanding the potential for tuning the node performance of codes. {\tt hpcviewer} supports synthesis of derived metrics to aid analysis. Derived metrics are specified within {\tt hpcviewer} using spreadsheet-like formula. See the {\tt hpcviewer} help pane for details about how to specify derived metrics.
