@@ -65,14 +65,15 @@ MYSOURCES = \
 	hpctoolkit.tex \
 	\
 	hpcrun.tex \
-	hpcrun-flat.tex \
 	hpclink.tex \
+	hpcrun-flat.tex \
 	\
 	hpcstruct.tex \
 	\
 	hpcprof.tex \
-	hpcprof-flat.tex \
+	hpcprof-mpi.tex \
 	hpcproftt.tex \
+	hpcprof-flat.tex \
 	\
 	hpcviewer.tex
 
