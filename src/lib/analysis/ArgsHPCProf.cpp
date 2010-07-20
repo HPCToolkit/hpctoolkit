@@ -90,12 +90,18 @@ static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_summary =
-"[options] <profile-dir-or-file>...\n";
+"[options] <measurement-group>...\n";
 
 static const char* usage_details = "\
-hpcprof correlates call path profiling metrics with static source code\n\
-structure and generates an Experiment database for use with hpcviewer. It\n\
-expects a list of call path profile directories or files.\n\
+hpcprof and hpcprof-mpi analyze call path profile performance measurements,\n\
+attribute them to static source code structure, and generate an Experiment\n\
+database for use with hpcviewer. hpcprof-mpi is a scalable (parallel)\n\
+version of hpcprof.\n\
+\n\
+Each tool expects a list of measurement-groups, where a group is a call path\n\
+profile directory or an individual profile file.  For best results, (a) pass\n\
+recursive search paths with the -I option; and (b) pass structure information\n\
+with the -S option.\n\
 \n\
 Options: General:\n\
   -v [<n>], --verbose [<n>]\n\
