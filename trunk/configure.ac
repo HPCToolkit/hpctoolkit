@@ -375,6 +375,20 @@ case "${host}" in
     AC_DEFINE([HOST_OS_MACOS], [1], [])
     ;;
 
+  x86_64*-*-darwin*)
+    HOST_OS="MacOS"
+    if test "${ac_cv_sizeof_voidp}" = "4"; then
+      HOST_CPU_X86=yes
+      AC_DEFINE([HOST_CPU_x86], [1], [])
+    else
+      HOST_CPU_X86_64=yes
+      AC_DEFINE([HOST_CPU_x86_64], [1], [])
+    fi
+    HOST_CPU_X86_FAMILY=yes
+    UNWINDER=x86-family
+    AC_DEFINE([HOST_OS_MACOS], [1], [])
+    ;;
+
   # IRIX
   mips*-*-irix*)
     # __mips && __sgi && __unix
