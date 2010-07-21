@@ -175,7 +175,7 @@ RealPathMgr::searchPaths(const string& sPaths)
       currentPath = RealPath(currentPath.c_str());
       m_searchPaths+= (currentPath + "/*:");
     }
-    else {
+    else if(currentPath != ".") { //so we can exclude this from cache
       currentPath = RealPath(currentPath.c_str());
       m_searchPaths+= (currentPath + ":");
     }
@@ -187,8 +187,7 @@ RealPathMgr::searchPaths(const string& sPaths)
       in = sPaths.length();
     }
   }
-  //to strip off the trailing ":"
-  m_searchPaths = m_searchPaths.substr(0, m_searchPaths.length() - 1);
+  m_searchPaths += "."; //add CWD back in
 }
 
 
