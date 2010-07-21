@@ -178,7 +178,7 @@ isDir(const char* path)
 {
   struct stat sbuf;
   if (stat(path, &sbuf) == 0) {
-    return (S_ISDIR(sbuf.st_mode) 
+    return (S_ISDIR(sbuf.st_mode)
 	    /*|| S_ISLNK(sbuf.st_mode) && isDir(readlink(path))*/);
   }
   return false; // unknown
@@ -264,17 +264,6 @@ copy(const char* dst, ...)
 
 
 void
-copySystem(const char* dst, const char* src)
-{
-  string cmdCp = "cp -f " + string(src) + " " + string(dst);
-  int ret = system(cmdCp.c_str());
-  if (ret != 0) {
-    DIAG_Throw("copying '" << src << "' -> '" << dst << "'");
-  }
-}
-
-
-void
 move(const char* dst, const char* src)
 {
   int ret = rename(src, dst);
@@ -294,7 +283,7 @@ remove(const char* file)
 int
 mkdir(const char* dir)
 {
-  int ret = ::mkdir(dir, 00755); 
+  int ret = ::mkdir(dir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH); 
   return ret;
 } 
 

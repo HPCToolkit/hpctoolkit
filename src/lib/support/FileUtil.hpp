@@ -150,15 +150,10 @@ countChar(const char* file, char c);
 extern void
 copy(const char* destFile, ...);
 
-
-// copySystem: uses system("cp...")
-extern void
-copySystem(const char* dst, const char* src);
-
 inline void
-copySystem(const std::string& dst, const std::string& src)
+copy(const std::string& dst, const std::string& src)
 {
-  copySystem(dst.c_str(), src.c_str());
+  copy(dst.c_str(), src.c_str(), NULL);
 }
 
 
