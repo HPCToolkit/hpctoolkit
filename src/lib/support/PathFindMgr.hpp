@@ -94,7 +94,7 @@ public:
 
   // pathfind - (recursively) search for file 'name' in given
   //   colon-separated (possibly recursive) pathlist.  If found,
-  //   returns the fully resolved 'real path'.
+  //   returns the fully resolved 'real path', otherwise NULL.
   // 
   // First searches for 'name' in the PathFindMgr::singleton member
   // 'm_cache'.  If that search is unsuccessful and the cache is full,
@@ -122,13 +122,32 @@ public:
   const char*
   pathfind(const char* pathList, const char* name, const char* mode);
   
+    
+  // Is this a valid recursive path of the form '.../path/\*' ? 
+  static int 
+  isRecursivePath(const char* path);
+ 
+
+  // -------------------------------------------------------
+  // Dump contents
+  // -------------------------------------------------------
   
+  std::ostream&
+  dump(std::ostream& os = std::cerr, uint oFlags = 0);
+  
+  void
+  ddump();
+  
+
+private:
+
+
   // Retreives the highest priority and closest matching real path to
   // "filePath" from 'm_cache', where priority is defined by how close
   // the real path is to the front of the vector of real paths.  If
   // the file name exists in 'm_cache', but none of the real paths
   // match it beyond the file name, the first path in the vector will
-  // be returned.
+  // be returned. 
   // 
   // Notes:
   // * We cache all files in a recursive seach path such that:
@@ -168,46 +187,79 @@ public:
   //
   bool
   find(std::string& filePath);
-  
-    
-  // Is this a valid recursive path of the form '.../path/\*' ? 
-  static int 
-  isRecursivePath(const char* path);
- 
 
-  // -------------------------------------------------------
-  // Dump contents
-  // -------------------------------------------------------
-  
-  std::ostream&
-  dump(std::ostream& os = std::cerr, uint oFlags = 0);
-  
-  void
-  ddump();
-  
 
-private:
-
-  // This method adds a file name and its associated real path to 'm_cache'.
-  // Paths are store according to the file it is associated with. Path is not
-  // added if it is already in the vector associated with the file name.
+  // This method adds a file name and its associated real path to
+  // 'm_cache'.  Paths are store according to the file it is
+  // associated with. 'path' is not added if it is already in the
+  // vector associated with the file name.
   // 
-  // @param realPath: The path a file is located at.
+  // @param path: The path a file is located at.
   void 
   insert(const std::string& path);
-  
-  // Private helper method that recursively searches through all the 
-  // directories in 'pathList' and caches all the files in those directories.
-  // Should be used only once.
-  // 
-  // @param pathList: List of directories that contain files to be cached.
-  //                  Each path is separated by a ":" and recursive paths have
-  //                  a '/*' at the end of the path.
-  // @param recursive: Indicates whether a directory should be recursively
-  //                   searched. 
-  void
-  fill(const std::string& pathList, bool recursive);
 
+  
+  // Private helper method that caches all the files located in the
+  // 'path' directory. If 'path' is recursive, all sub-directories are
+  // added to 'resultPathVec' so files in those directories can be
+  // added to the cache. Files are cached as long as the cache is not
+  // full.
+  // 
+  // @param path:          The path to the directory whose contents are to
+  //                       be cached. If it is recursive, a '*' will be
+  //                       appended at the end.
+  //
+  // @param seenPaths:     Map of the RealPath of symlinks to directories to 
+  //                       whether they have been searched already or not.
+  //                       Safeguard against infinite cycles caused by 
+  //                       symlinks Any symlinks to directories while in
+  //                       fill() must be added to this map.
+  //
+  // @param resultpathVec: If 'path' is recursive, its sub-directories will
+  //                       be added to this vector and searched in a LIFO
+  //                       manner.
+  void
+  fill(std::string& path, std::map<std::string, bool>& seenPaths, 
+       std::vector<std::string>& resultPathVec);
+
+  
+  // Private helper method that drives the fill() method. Iterates through
+  // 'pathVec' and provides the proper parameters for fill().
+  //
+  // @param seenPaths: Map of symlinks to directories that indicates
+  //                   which have been searched already, to avoid infinite
+  //                   cycles. Provided here to be common to all calls to
+  //                   fill().
+  //
+  // @param pathVec:   All the paths to directories left to be searched.
+  void
+  fillDriver( std::map<std::string, bool>& seenPaths,
+	std::vector<std::string>& pathVec);
+  
+
+  // If the cache is full and a path cannot be found from the cache,
+  // pathfind_slow is called to try to resolve the path. Searches
+  // through all the directories in 'pathList', attempting to find
+  // 'name'.  Touches the disk alot, making this a very slow, and last
+  // resort, method. Returns NULL if the file cannot be found.
+  //
+  // @param pathList: List of all the paths to search through. Each
+  //                  path is separated by a ":".
+  //
+  // @param name:     File to be found.
+  //
+  // @param mode:     "r" - read access
+  //                  "w" - write access
+  //                  "x" - execute access
+  //
+  // @param seenPaths: Map of symlinks to directories that indicates
+  //                   which have been searched already, to avoid infinite
+  //                   cycles. Provided here to be common to all calls to
+  //                   fill().
+  const char*
+  pathfind_slow(const char* pathList, const char* name, const char* mode,
+		std::map<std::string, bool>& seenPaths);
+  
   
   // Resolves all '..' and '.' in 'path' in reference to itself. Does
   // NOT find the unique real path of 'path'. Returns how many '..'
@@ -226,7 +278,17 @@ private:
   // Converts all subdirectories of 'path' to a valid pathlist. If
   // 'recursive' is true, then all paths are made recursive
   std::string
-  subdirs_to_pathlist(const std::string& path, bool isRecursive);
+  subdirs_to_pathlist(const std::string& path,
+		      std::map<std::string, bool>& seenPaths);
+
+  // Helper method that takes in a list of paths and convert it into
+  // a vector of paths, where each index in the vector contains 1 path.
+  //
+  // @param pathList: List of paths to be split up. Paths are separated by ":"
+  //
+  // @return:  A vector of the paths in 'pathList'
+  std::vector<std::string>
+  splitPaths(const char* pathList);
 
 
 private: 
