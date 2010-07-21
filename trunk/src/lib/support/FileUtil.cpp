@@ -307,11 +307,14 @@ mkdir(const char* dir)
   DIAG_Assert(!pathVec.empty(), DIAG_UnexpectedInput);
 
   // -------------------------------------------------------
-  // 2. Find curIdx such that all paths before pathVec[curIdx] have
+  // 2. Find 'curIdx' such that all paths before pathVec[curIdx] have
   // been created.
   //
   // Note: Start search from the last path component, assuming that in
   // the common case, intermediate directories are already created.
+  //
+  // Note: Could make this a binary search, but it would likely have
+  // insignificant effects.
   // -------------------------------------------------------
   size_t begIdx = 0;
   size_t endIdx = pathVec.size() - 1;
