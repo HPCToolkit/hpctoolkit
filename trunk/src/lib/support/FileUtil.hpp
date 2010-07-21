@@ -135,6 +135,13 @@ isReadable(const std::string& path)
 bool
 isDir(const char* path);
 
+inline bool
+isDir(const std::string& path)
+{
+  return isDir(path.c_str());
+}
+
+
 // count how often char appears in file
 // return that number or -1 upon failure to open file for reading
 extern int
@@ -173,8 +180,15 @@ extern int
 remove(const char* fname);
 
 
+// mkdir: makes 'dir' (including all intermediate directories)
 extern int
 mkdir(const char* dir);
+
+inline void
+mkdir(const std::string& dir)
+{
+  FileUtil::mkdir(dir.c_str());
+}
 
 
 // mkdirUnique: 

@@ -92,7 +92,7 @@ namespace StrUtil {
 //
 // --------------------------------------------------------------------------
 
-void 
+void
 tokenize_char(const std::string& tokenstr, const char* delim,
 	      std::vector<std::string>& tokenvec)
 {
@@ -113,7 +113,7 @@ tokenize_char(const std::string& tokenstr, const char* delim,
 }
 
 
-void 
+void
 tokenize_str(const std::string& tokenstr, const char* delim,
 	     std::vector<std::string>& tokenvec)
 {
@@ -130,6 +130,27 @@ tokenize_str(const std::string& tokenstr, const char* delim,
   }
 }
 
+
+// --------------------------------------------------------------------------
+//
+// --------------------------------------------------------------------------
+
+string
+join(const std::vector<string>& tokenvec, const char* delim,
+     size_t begIdx, size_t endIdx)
+{
+  string result;
+
+  // N.B.: [begIdx, endIdx)
+  for (size_t i = begIdx; i < endIdx; ++i) {
+    result += tokenvec[i];
+    if (i + 1 < endIdx) { 
+      result += delim;
+    }
+  }
+
+  return result;
+}
 
 // --------------------------------------------------------------------------
 //
