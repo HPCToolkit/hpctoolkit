@@ -62,12 +62,13 @@
 
 //*************************** User Include Files ****************************
 
+#include "FileUtil.hpp"
 #include "PathFindMgr.hpp"
+#include "StrUtil.hpp"
 
 #include "diagnostics.h"
 #include "pathfind.h"
 #include "realpath.h"
-#include "FileUtil.hpp"
 
 //***************************************************************************
 
@@ -105,16 +106,19 @@ PathFindMgr::pathfind(const char* pathList, const char* name, const char* mode)
   // -------------------------------------------------------
   if (!m_filled) {
     m_filled = true;
-    std::vector<std::string> pathVec = splitPaths(pathList);
+    std::vector<std::string> pathVec;
+    StrUtil::tokenize_str(std::string(pathList), ":", pathVec);
     
     std::map<std::string, bool> seenPaths;
     std::vector<std::string> resultPathVec;
     while (!pathVec.empty()) {
-      fill(pathVec.back(), seenPaths, resultPathVec);
-      fillDriver(seenPaths, resultPathVec);
+      if (pathVec.back() != ".") { //don't cache CWD
+	fill(pathVec.back(), seenPaths, resultPathVec);
+	fillDriver(seenPaths, resultPathVec);
+	seenPaths.clear();
+	resultPathVec.clear();
+      }
       pathVec.pop_back();
-      seenPaths.clear();
-      resultPathVec.clear();
     }
   }
 
@@ -584,35 +588,3 @@ PathFindMgr::ddump()
 {
   dump(std::cerr);
 }
-
-
-std::vector<std::string>
-PathFindMgr::splitPaths(const char* pathList)
-{
-  std::vector<std::string> pathVec;
-  std::string myPathList = pathList;
-  
-  size_t trailingIn = -1;
-  size_t in = myPathList.find_first_of(":");
-
-  while (in != myPathList.length()) {
-    //since trailingIn will point at ":", must add 1 so it points to path
-    trailingIn++;
-    std::string currentPath = myPathList.substr(trailingIn, in - trailingIn);
-    
-    if (currentPath != ".") { //so that CWD is not cached.
-      pathVec.push_back(currentPath);
-      
-      trailingIn = in;
-      in = myPathList.find_first_of(":", trailingIn + 1);
-
-      if (in == myPathList.npos) { //deals with corner case of last element
-	in = myPathList.length();
-      }
-    }
-  }
-
-  return pathVec;
-
-}
-  

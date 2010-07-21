@@ -281,16 +281,6 @@ private:
   subdirs_to_pathlist(const std::string& path,
 		      std::map<std::string, bool>& seenPaths);
 
-  // Helper method that takes in a list of paths and convert it into
-  // a vector of paths, where each index in the vector contains 1 path.
-  //
-  // @param pathList: List of paths to be split up. Paths are separated by ":"
-  //
-  // @return:  A vector of the paths in 'pathList'
-  std::vector<std::string>
-  splitPaths(const char* pathList);
-
-
 private: 
   typedef
   std::map<std::string, std::vector<std::string> > PathMap;
