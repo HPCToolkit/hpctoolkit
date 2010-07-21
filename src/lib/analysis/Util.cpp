@@ -542,9 +542,7 @@ copySourceFile(const string& filenm, const string& dstDir,
   dir_to[end] = '\0';    // should not end with '/'
 	
   try {
-    string cmdMkdir = "mkdir -p " + dir_to;
-    system(cmdMkdir.c_str());
-
+    FileUtil::mkdir(dir_to);
     FileUtil::copy(fnm_to, fnm_fnd);
     DIAG_DevMsgIf(0, "cp " << fnm_to);
   }

@@ -420,7 +420,7 @@ PathFindMgr::fill(const std::string& myPathList, bool isRecursive)
       
       if (dire->d_type == DT_LNK) { //if its a file symlink, add to singleton
 	struct stat buf;
-	if ( stat(file.c_str(), &buf) + 1) {
+	if (stat(file.c_str(), &buf) == 0) {
 	  if (S_ISREG(buf.st_mode)) {
 	    PathFindMgr::insert(file);
 	    continue;

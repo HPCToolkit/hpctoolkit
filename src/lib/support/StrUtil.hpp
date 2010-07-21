@@ -99,6 +99,17 @@ tokenize_str(const std::string& tokenstr, const char* delim,
 
 
 // --------------------------------------------------------------------------
+// join: Given a vector of tokens 'tokenvec' and a delimiter 'delim',
+// form a string by placing delim in between every element of
+// tokenvec[begIdx ... endIdx).
+// --------------------------------------------------------------------------
+
+std::string
+join(const std::vector<std::string>& tokenvec, const char* delim,
+     size_t begIdx, size_t endIdx);
+
+
+// --------------------------------------------------------------------------
 // string -> numerical types
 //
 // Comments [FIXME]: see strtol.  If 'endidx' is non-NULL, it is set

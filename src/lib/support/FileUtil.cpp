@@ -283,9 +283,73 @@ remove(const char* file)
 int
 mkdir(const char* dir)
 {
-  int ret = ::mkdir(dir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH); 
-  return ret;
-} 
+  if (!dir) {
+    DIAG_Throw("Invalid mkdir argument: (NULL)");
+  }
+
+  string pathStr = dir;
+  bool isAbsPath = (dir[0] == '/');
+
+  // -------------------------------------------------------
+  // 1. Convert path string to vector of path components
+  //    "/p0/p1/p2/.../pn/px" ==> [p0 p1 p2 ... pn px]
+  //    "/p0"                 ==> [p0]
+  //    "p0"                  ==> [p0]
+  //    "./p0"                ==> [. p0]
+  //
+  // Note: we could do tokenization in place (string::find_last_of()),
+  // but (1) this is more elegant and (2) sytem calls and disk
+  // accesses will overwhelm any possible difference in performance.
+  // -------------------------------------------------------
+  std::vector<string> pathVec;
+  StrUtil::tokenize_char(pathStr, "/", pathVec);
+
+  DIAG_Assert(!pathVec.empty(), DIAG_UnexpectedInput);
+
+  // -------------------------------------------------------
+  // 2. Find curIdx such that all paths before pathVec[curIdx] have
+  // been created.
+  //
+  // Note: Start search from the last path component, assuming that in
+  // the common case, intermediate directories are already created.
+  // -------------------------------------------------------
+  size_t begIdx = 0;
+  size_t endIdx = pathVec.size() - 1;
+
+  size_t curIdx = endIdx;
+  for ( ; curIdx >= begIdx; --curIdx) {
+    string x = StrUtil::join(pathVec, "/", 0, curIdx + 1);
+    if (isAbsPath) {
+      x = "/" + x;
+    }
+    
+    if (isDir(x)) {
+      break; // FIXME: double check: what if this is a symlink?
+    }
+  }
+
+  curIdx++;
+
+  // -------------------------------------------------------
+  // 3. Build directories from pathVec[curIdx ... endIdx]
+  // -------------------------------------------------------
+  mode_t mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+
+  for ( ; curIdx <= endIdx; ++curIdx) {
+    string x = StrUtil::join(pathVec, "/", 0, curIdx + 1);
+    if (isAbsPath) {
+      x = "/" + x;
+    }
+
+    int ret = ::mkdir(x.c_str(), mode);
+    if (ret != 0) {
+      DIAG_Throw("While mkdir-ing '" << pathStr << "': Could not mkdir '"
+		 << x << "' (" << strerror(errno) << ")");
+    }
+  }
+
+  return 0;
+}
 
 
 std::pair<string, bool>
@@ -352,6 +416,7 @@ tmpname()
   return tmpnam(NULL); 
 #endif
 }
+
 
 } // end of FileUtil namespace
 
