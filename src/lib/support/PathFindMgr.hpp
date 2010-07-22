@@ -198,12 +198,15 @@ private:
   void 
   insert(const std::string& path);
 
-  
-  // Private helper method that caches all the files located in the
-  // 'path' directory. If 'path' is recursive, all sub-directories are
-  // added to 'resultPathVec' so files in those directories can be
-  // added to the cache. Files are cached as long as the cache is not
-  // full.
+  // Private helper method that scans through 'path' and does one of
+  // two things, depending on the value of 'resultPathVec'.  If
+  // 'resultPathVec' is valid it will cache all the files in the
+  // directory reached by 'path' while the cache is not full. Also, if
+  // 'path' is recursive, all sub-directories are added to
+  // 'resultPathVec' so they can be scanned also.
+  //
+  // Otherwise, if 'resultPathVec' is NULL it will return a list of all
+  // subdirectories of 'path', with paths separated by a ":".
   // 
   // @param path:          The path to the directory whose contents are to
   //                       be cached. If it is recursive, a '*' will be
@@ -215,28 +218,14 @@ private:
   //                       symlinks Any symlinks to directories while in
   //                       fill() must be added to this map.
   //
-  // @param resultpathVec: If 'path' is recursive, its sub-directories will
-  //                       be added to this vector and searched in a LIFO
-  //                       manner.
-  void
-  fill(std::string& path, std::map<std::string, bool>& seenPaths, 
-       std::vector<std::string>& resultPathVec);
+  // @param resultpathVec: If not NULL and 'path' is recursive, all
+  //                       sub-directories of 'path' will be added 
+  //                       to this vector, which is used in a LIFO manner.
+  std::string
+  scan(std::string& path, std::map<std::string, bool>& seenPaths, 
+       std::vector<std::string>* resultPathVec = NULL);
 
-  
-  // Private helper method that drives the fill() method. Iterates through
-  // 'pathVec' and provides the proper parameters for fill().
-  //
-  // @param seenPaths: Map of symlinks to directories that indicates
-  //                   which have been searched already, to avoid infinite
-  //                   cycles. Provided here to be common to all calls to
-  //                   fill().
-  //
-  // @param pathVec:   All the paths to directories left to be searched.
-  void
-  fillDriver( std::map<std::string, bool>& seenPaths,
-	std::vector<std::string>& pathVec);
-  
-
+ 
   // If the cache is full and a path cannot be found from the cache,
   // pathfind_slow is called to try to resolve the path. Searches
   // through all the directories in 'pathList', attempting to find
@@ -274,12 +263,6 @@ private:
   int 
   resolve(std::string& path);
   
-  
-  // Converts all subdirectories of 'path' to a valid pathlist. If
-  // 'recursive' is true, then all paths are made recursive
-  std::string
-  subdirs_to_pathlist(const std::string& path,
-		      std::map<std::string, bool>& seenPaths);
 
 private: 
   typedef

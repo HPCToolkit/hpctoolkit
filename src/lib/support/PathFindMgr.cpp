@@ -106,15 +106,14 @@ PathFindMgr::pathfind(const char* pathList, const char* name, const char* mode)
   // -------------------------------------------------------
   if (!m_filled) {
     m_filled = true;
-    std::vector<std::string> pathVec;
+    std::vector<std::string> pathVec; //will contain all -I paths
     StrUtil::tokenize_str(std::string(pathList), ":", pathVec);
     
     std::map<std::string, bool> seenPaths;
     std::vector<std::string> resultPathVec;
-    while (!pathVec.empty()) {
+    while (m_cacheNotFull && !pathVec.empty()) { //Driver for scan()
       if (pathVec.back() != ".") { //don't cache CWD
-	fill(pathVec.back(), seenPaths, resultPathVec);
-	fillDriver(seenPaths, resultPathVec);
+	scan(pathVec.back(), seenPaths, &resultPathVec);
 	seenPaths.clear();
 	resultPathVec.clear();
       }
@@ -128,11 +127,8 @@ PathFindMgr::pathfind(const char* pathList, const char* name, const char* mode)
   static std::string name_real;
   name_real = name;
 
-  bool found = false;
-  if (PathFindMgr::find(name_real)) {
-    found = true;
-  }
-
+  bool found = find(name_real);
+ 
   if (!found && !m_cacheNotFull) {
     std::map<std::string, bool> seenPaths;
     const char* temp = pathfind_slow(pathList, name, mode, seenPaths);
@@ -182,9 +178,9 @@ PathFindMgr::pathfind_slow(const char* pathList, const char* name,
   int first_nr = 1;
   while (aPath != NULL) {
     if (PathFindMgr::isRecursivePath(aPath)) {
-      // copy to recursive path list (do not copy trailing '/*')
+      // copy to recursive path list (Do not copy trailing '/*' )
       int l = strlen(aPath);
-      strncat(pathList_r, aPath, l - PathFindMgr::RECURSIVE_PATH_SUFFIX_LN);
+      strncat(pathList_r, aPath, l - RECURSIVE_PATH_SUFFIX_LN);
       strcat(pathList_r, ":"); // will have a trailing ':' for 'strchr'
     } else {
       // copy to non-recurisve path list
@@ -223,7 +219,8 @@ PathFindMgr::pathfind_slow(const char* pathList, const char* name,
     
     // 2b. If no match, open the directory and do a pathfind
     //     on every sub-directory
-    std::string dirPathList = subdirs_to_pathlist(aPath, seenPaths);
+    std::string myPath = aPath;
+    std::string dirPathList = scan(myPath, seenPaths);
     
     if (!dirPathList.empty()) {
       result = pathfind_slow(dirPathList.c_str(), name, mode, seenPaths);
@@ -376,20 +373,26 @@ PathFindMgr::insert(const std::string& path)
   }
 }
 
-void
-PathFindMgr::fill(std::string& path, std::map<std::string, bool>& seenPaths,  
-		  std::vector<std::string>& resultPathVec)
+std::string
+PathFindMgr::scan(std::string& path, std::map<std::string, bool>& seenPaths,
+		  std::vector<std::string>* resultPathVec)
 {
+  if (path.empty()) {
+    return path; //will be empty
+  }
+
+  std::string resultPath; 
+
   bool isRecursive = isRecursivePath(path.c_str());
   if (isRecursive) {
     path = path.substr(0, path.length() - RECURSIVE_PATH_SUFFIX_LN);
   }
 
-  std::map<std::string, bool>::iterator it = seenPaths.find(path);
-  // if cache is full or if this directory is referenced by a symlink and we
+  // if this directory is referenced by a symlink and we
   // have already looked at it, don't bother continuing 
-  if (!m_cacheNotFull || (it != seenPaths.end() && (it->second))) {
-    return;
+  std::map<std::string, bool>::iterator it = seenPaths.find(path);
+  if (it != seenPaths.end() && (it->second)) {
+    return resultPath; //will be empty
   }
   
   if (it != seenPaths.end()) { //if this dire was reference by a symlink
@@ -398,9 +401,10 @@ PathFindMgr::fill(std::string& path, std::map<std::string, bool>& seenPaths,
 
   DIR* dir = opendir(path.c_str());
   if (!dir) {
-    return;
+    return resultPath; //will be empty
   }
-  
+
+  bool isFirst = true;
   struct dirent* dire;
   while ( (dire = readdir(dir)) ) {
     //skip ".", ".."
@@ -412,14 +416,23 @@ PathFindMgr::fill(std::string& path, std::map<std::string, bool>& seenPaths,
     
     if (dire->d_type == DT_LNK) { //if its a file symlink,add to singleton
       struct stat buf;
-      if ( (stat(file.c_str(), &buf) == 0) && S_ISREG(buf.st_mode)) {
-	insert(file);
+      if ( (stat(file.c_str(), &buf) == 0) ) { //if valid
+	if (S_ISREG(buf.st_mode)) { //if file
+	  if (m_cacheNotFull && resultPathVec) { //if we want to cache it
+	    insert(file);
+	  }
+	  continue; //will continue when only searching for subdirs 
+	            //or after we have inserted the file.
+	}
+      }
+      else { //ONLY if the symlink isn't valid 
 	continue;
       }
     }
     
-    if (isRecursive && (dire->d_type == DT_DIR || dire->d_type == DT_LNK) ) {
-      if (dire->d_type == DT_LNK) {
+    if ((isRecursive || !resultPathVec) //b/c always recursive in pathfind_slow
+	&& (dire->d_type == DT_DIR || dire->d_type == DT_LNK) ) {
+      if (dire->d_type == DT_LNK) { //check to avoid infinite loops
 	file = RealPath(file.c_str()); //search resolved dir only
 	if (seenPaths.find(file) != seenPaths.end()) {
 	  continue; //this subdir has already been added to be searched
@@ -428,92 +441,31 @@ PathFindMgr::fill(std::string& path, std::map<std::string, bool>& seenPaths,
       }
       
       file += "/*";
-      resultPathVec.push_back(file);
+
+      if (resultPathVec) {
+	resultPathVec->push_back(file);
+      }
+      else {
+	if (!isFirst) {
+	  resultPath += ":";
+	}
+	resultPath += file;
+	isFirst = false;
+      }
     }
-    else if (dire->d_type == DT_REG) {
+    else if (m_cacheNotFull && resultPathVec && dire->d_type == DT_REG) {
       insert(file);
     }
   }
   closedir(dir);
-  //resultPathVec  now contains all the subdirs to search through
-}
-
-
-void
-PathFindMgr::fillDriver(std::map<std::string, bool>& seenPaths, 
-		  std::vector<std::string>& pathVec)
-{
-  while (m_cacheNotFull && !pathVec.empty()) {
-    std::string path = pathVec.back();
-    pathVec.pop_back();
-    fill(path, seenPaths, pathVec);
-  }
-}
-
-
-std::string
-PathFindMgr::subdirs_to_pathlist(const std::string& path,
-				 std::map<std::string, bool>& seenPaths)
-{
-  std::string resultPath;
-
-  std::map<std::string, bool>::iterator it = seenPaths.find(path);
-  // if this directory is referenced by a symlink and we
-  // have already looked at it, don't bother continuing 
-  if (it != seenPaths.end() && (it->second)) {
-    return resultPath;
-  }
   
-  if (it != seenPaths.end()) { //if this dire was reference by a symlink
-      it->second = true;        //set it to true in the map
+  if (resultPathVec && !resultPathVec->empty()) {
+    std::string nextPath = resultPathVec->back();
+    resultPathVec->pop_back();
+    scan(nextPath, seenPaths, resultPathVec); 
   }
-   
-  DIR* dir = opendir(path.c_str());
-  if (!dir) {
-    return resultPath; // empty string
-  }
-  
-  bool isFirst = true;
-  
-  struct dirent* dire;
-  while ( (dire = readdir(dir)) ) {
-    //skip ".", ".."
-    if (strcmp(dire->d_name, ".") == 0) { continue; }
-    if (strcmp(dire->d_name, "..") == 0) { continue; }
-    
-    //is either a subdir to be recursed on or a file to cache
-    std::string file = path + "/" + dire->d_name;
-
-    if (dire->d_type == DT_LNK) { //if its a symlink file, skip it
-      struct stat buf;
-      if ( (stat(file.c_str(), &buf) == -1) || !S_ISDIR(buf.st_mode) ) {
-	continue;
-      }
-    }
-    
-    if (dire->d_type == DT_DIR || dire->d_type == DT_LNK) {
-      if (dire->d_type == DT_LNK) {
-	file = RealPath(file.c_str()); //search resolved dir only
-	if (seenPaths.find(file) != seenPaths.end()) {
-	  continue; //this subdir has already been added to be searched
-	}
-	seenPaths.insert(make_pair(file, false));
-      }
-      
-      if (!isFirst) {
-	resultPath += ":";
-      }
-      
-      
-      file += "/*";
-      resultPath += file;
-      isFirst = false;
-    }
-  }
-  closedir(dir);
-  
   return resultPath;
-} 
+}
 
 
 int
