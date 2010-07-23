@@ -152,7 +152,7 @@ hpcio_fclose(FILE* fs)
 //***************************************************************************
 
 size_t
-hpcio_fread_le2(uint16_t* val, FILE* fs)
+hpcio_le2_fread(uint16_t* val, FILE* fs)
 {
   uint16_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
@@ -169,7 +169,7 @@ hpcio_fread_le2(uint16_t* val, FILE* fs)
 
 
 size_t
-hpcio_fread_le4(uint32_t* val, FILE* fs)
+hpcio_le4_fread(uint32_t* val, FILE* fs)
 {
   uint32_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
@@ -186,7 +186,7 @@ hpcio_fread_le4(uint32_t* val, FILE* fs)
 
 
 size_t
-hpcio_fread_le8(uint64_t* val, FILE* fs)
+hpcio_le8_fread(uint64_t* val, FILE* fs)
 {
   uint64_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
@@ -205,7 +205,7 @@ hpcio_fread_le8(uint64_t* val, FILE* fs)
 //***************************************************************************
 
 size_t
-hpcio_fwrite_le2(uint16_t* val, FILE* fs)
+hpcio_le2_fwrite(uint16_t* val, FILE* fs)
 {
   uint16_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;
@@ -220,7 +220,7 @@ hpcio_fwrite_le2(uint16_t* val, FILE* fs)
 
 
 size_t
-hpcio_fwrite_le4(uint32_t* val, FILE* fs)
+hpcio_le4_fwrite(uint32_t* val, FILE* fs)
 {
   uint32_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;
@@ -235,7 +235,7 @@ hpcio_fwrite_le4(uint32_t* val, FILE* fs)
 
 
 size_t
-hpcio_fwrite_le8(uint64_t* val, FILE* fs)
+hpcio_le8_fwrite(uint64_t* val, FILE* fs)
 {
   uint64_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;
@@ -254,7 +254,7 @@ hpcio_fwrite_le8(uint64_t* val, FILE* fs)
 //***************************************************************************
 
 size_t
-hpcio_fread_be2(uint16_t* val, FILE* fs)
+hpcio_be2_fread(uint16_t* val, FILE* fs)
 {
   uint16_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
@@ -271,7 +271,7 @@ hpcio_fread_be2(uint16_t* val, FILE* fs)
 
 
 size_t
-hpcio_fread_be4(uint32_t* val, FILE* fs)
+hpcio_be4_fread(uint32_t* val, FILE* fs)
 {
   uint32_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
@@ -288,7 +288,7 @@ hpcio_fread_be4(uint32_t* val, FILE* fs)
 
 
 size_t
-hpcio_fread_be8(uint64_t* val, FILE* fs)
+hpcio_be8_fread(uint64_t* val, FILE* fs)
 {
   uint64_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
@@ -307,7 +307,7 @@ hpcio_fread_be8(uint64_t* val, FILE* fs)
 //***************************************************************************
 
 size_t
-hpcio_fwrite_be2(uint16_t* val, FILE* fs)
+hpcio_be2_fwrite(uint16_t* val, FILE* fs)
 {
   uint16_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;
@@ -322,7 +322,7 @@ hpcio_fwrite_be2(uint16_t* val, FILE* fs)
 
 
 size_t
-hpcio_fwrite_be4(uint32_t* val, FILE* fs)
+hpcio_be4_fwrite(uint32_t* val, FILE* fs)
 {
   uint32_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;
@@ -337,7 +337,7 @@ hpcio_fwrite_be4(uint32_t* val, FILE* fs)
 
 
 size_t
-hpcio_fwrite_be8(uint64_t* val, FILE* fs)
+hpcio_be8_fwrite(uint64_t* val, FILE* fs)
 {
   uint64_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;

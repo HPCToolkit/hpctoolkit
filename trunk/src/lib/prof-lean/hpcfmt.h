@@ -141,7 +141,7 @@ typedef void  hpcfmt_free_fn(void* mem);
 static inline int
 hpcfmt_int2_fread(uint16_t* val, FILE* infs)
 {
-  size_t sz = hpcio_fread_be2(val, infs);
+  size_t sz = hpcio_be2_fread(val, infs);
   if ( sz != sizeof(uint16_t) ) {
     return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
   }
@@ -152,7 +152,7 @@ hpcfmt_int2_fread(uint16_t* val, FILE* infs)
 static inline int
 hpcfmt_int4_fread(uint32_t* val, FILE* infs)
 {
-  size_t sz = hpcio_fread_be4(val, infs);
+  size_t sz = hpcio_be4_fread(val, infs);
   if ( sz != sizeof(uint32_t) ) {
     return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
   }
@@ -163,7 +163,7 @@ hpcfmt_int4_fread(uint32_t* val, FILE* infs)
 static inline int
 hpcfmt_int8_fread(uint64_t* val, FILE* infs)
 {
-  size_t sz = hpcio_fread_be8(val, infs);
+  size_t sz = hpcio_be8_fread(val, infs);
   if ( sz != sizeof(uint64_t) ) {
     return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
   }
@@ -174,7 +174,7 @@ hpcfmt_int8_fread(uint64_t* val, FILE* infs)
 static inline int
 hpcfmt_real8_fread(double* val, FILE* infs)
 {
-  size_t sz = hpcio_fread_be8((uint64_t*)val, infs);
+  size_t sz = hpcio_be8_fread((uint64_t*)val, infs);
   if ( sz != sizeof(double) ) {
     return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
   }
@@ -187,7 +187,7 @@ hpcfmt_real8_fread(double* val, FILE* infs)
 static inline int
 hpcfmt_int2_fwrite(uint16_t val, FILE* outfs)
 {
-  if ( sizeof(uint16_t) != hpcio_fwrite_be2(&val, outfs) ) {
+  if ( sizeof(uint16_t) != hpcio_be2_fwrite(&val, outfs) ) {
     return HPCFMT_ERR;
   }
   return HPCFMT_OK;
@@ -197,7 +197,7 @@ hpcfmt_int2_fwrite(uint16_t val, FILE* outfs)
 static inline int
 hpcfmt_int4_fwrite(uint32_t val, FILE* outfs)
 {
-  if ( sizeof(uint32_t) != hpcio_fwrite_be4(&val, outfs) ) {
+  if ( sizeof(uint32_t) != hpcio_be4_fwrite(&val, outfs) ) {
     return HPCFMT_ERR;
   }
   return HPCFMT_OK;
@@ -207,7 +207,7 @@ hpcfmt_int4_fwrite(uint32_t val, FILE* outfs)
 static inline int
 hpcfmt_int8_fwrite(uint64_t val, FILE* outfs)
 {
-  if ( sizeof(uint64_t) != hpcio_fwrite_be8(&val, outfs) ) {
+  if ( sizeof(uint64_t) != hpcio_be8_fwrite(&val, outfs) ) {
     return HPCFMT_ERR;
   }
   return HPCFMT_OK;
@@ -221,7 +221,7 @@ hpcfmt_real8_fwrite(double val, FILE* outfs)
   //uint64_t* v = (uint64_t*)(&val);
   
   hpcfmt_byte8_union_t* v = (hpcfmt_byte8_union_t*)(&val);
-  if ( sizeof(double) != hpcio_fwrite_be8(&(v->i8), outfs) ) {
+  if ( sizeof(double) != hpcio_be8_fwrite(&(v->i8), outfs) ) {
     return HPCFMT_ERR;
   }
   return HPCFMT_OK;
