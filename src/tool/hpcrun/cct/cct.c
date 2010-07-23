@@ -666,7 +666,7 @@ hpcrun_cct_fwrite_hlp(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
     int skipped = hpcrun_cct_countSkippedNodes(tree, root, lvl_to_skip);
     num_nodes -= skipped;
   }
-  hpcfmt_byte8_fwrite(num_nodes, fs);
+  hpcfmt_int8_fwrite(num_nodes, fs);
 
   // -------------------------------------------------------
   // Write context

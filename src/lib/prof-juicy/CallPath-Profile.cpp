@@ -382,7 +382,7 @@ Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
   while ( !feof(infs) ) {
     // 1. Read trace record (exit on EOF)
     uint64_t timestamp;
-    ret = hpcfmt_byte8_fread(&timestamp, infs);
+    ret = hpcfmt_int8_fread(&timestamp, infs);
     if (ret == HPCFMT_EOF) {
       break;
     }
@@ -391,7 +391,7 @@ Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
     }
     
     uint cctId_old;
-    ret = hpcfmt_byte4_fread(&cctId_old, infs);
+    ret = hpcfmt_int4_fread(&cctId_old, infs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
     }
@@ -405,8 +405,8 @@ Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
     }
 
     // 3. Write new trace record
-    hpcfmt_byte8_fwrite(timestamp, outfs);
-    hpcfmt_byte4_fwrite(cctId_new, outfs);
+    hpcfmt_int8_fwrite(timestamp, outfs);
+    hpcfmt_int4_fwrite(cctId_new, outfs);
   }
 
   hpcio_fclose(infs);
@@ -1039,7 +1039,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   // Read number of cct nodes
   // ------------------------------------------------------------
   uint64_t numNodes = 0;
-  hpcfmt_byte8_fread(&numNodes, infs);
+  hpcfmt_int8_fread(&numNodes, infs);
 
   // ------------------------------------------------------------
   // Read each CCT node
@@ -1175,7 +1175,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 
   uint numMetrics = prof.metricMgr()->size();
 
-  hpcfmt_byte4_fwrite(numMetrics, fs);
+  hpcfmt_int4_fwrite(numMetrics, fs);
   for (uint i = 0; i < numMetrics; i++) {
     const Metric::ADesc* m = prof.metricMgr()->metric(i);
 
@@ -1204,7 +1204,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 
   const LoadMapMgr& loadMapMgr = *(prof.loadMapMgr());
 
-  hpcfmt_byte4_fwrite(loadMapMgr.size(), fs);
+  hpcfmt_int4_fwrite(loadMapMgr.size(), fs);
   for (ALoadMap::LM_id_t i = 1; i <= loadMapMgr.size(); i++) {
     const ALoadMap::LM* lm = loadMapMgr.lm(i);
 
@@ -1256,7 +1256,7 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   // Write number of cct nodes
   // ------------------------------------------------------------
 
-  hpcfmt_byte8_fwrite(numNodes, fs);
+  hpcfmt_int8_fwrite(numNodes, fs);
 
   // ------------------------------------------------------------
   // Write each CCT node

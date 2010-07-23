@@ -141,7 +141,7 @@ Analysis::Raw::writeAsText_callpathMetricDB(const char* filenm)
       fprintf(stdout, "(%6u: ", nodeId);
       for (uint mId = 0; mId < hdr.numMetrics; ++mId) {
 	uint64_t mval_bits = 0;
-	int ret = hpcfmt_byte8_fread(&mval_bits, fs);
+	int ret = hpcfmt_int8_fread(&mval_bits, fs);
 	if (ret != HPCFMT_OK) {
 	  DIAG_Throw("error reading trace file '" << filenm << "'");
 	}
@@ -183,7 +183,7 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
       // Read trace record (exit on EOF)
       uint64_t timestamp_bits = 0;
       double   timestamp = 0;
-      ret = hpcfmt_byte8_fread(&timestamp_bits, fs);
+      ret = hpcfmt_int8_fread(&timestamp_bits, fs);
       timestamp = (double)timestamp_bits;
       if (ret == HPCFMT_EOF) {
 	break;
@@ -193,7 +193,7 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
       }
 
       uint cctId;
-      ret = hpcfmt_byte4_fread(&cctId, fs);
+      ret = hpcfmt_int4_fread(&cctId, fs);
       if (ret != HPCFMT_OK) {
 	DIAG_Throw("error reading trace file '" << filenm << "'");
       }
