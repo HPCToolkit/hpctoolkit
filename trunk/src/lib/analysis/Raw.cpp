@@ -140,14 +140,12 @@ Analysis::Raw::writeAsText_callpathMetricDB(const char* filenm)
     for (uint nodeId = 1; nodeId < hdr.numNodes + 1; ++nodeId) {
       fprintf(stdout, "(%6u: ", nodeId);
       for (uint mId = 0; mId < hdr.numMetrics; ++mId) {
-	uint64_t mval_bits = 0;
-	int ret = hpcfmt_int8_fread(&mval_bits, fs);
+	double mval = 0;
+	int ret = hpcfmt_real8_fread(&mval, fs);
 	if (ret != HPCFMT_OK) {
 	  DIAG_Throw("error reading trace file '" << filenm << "'");
 	}
-
-	double mval = (double)mval_bits;
-	fprintf(stdout, "%14g ", mval);
+	fprintf(stdout, "%12g ", mval);
       }
       fprintf(stdout, ")\n");
     }
