@@ -147,8 +147,8 @@ trace_append(unsigned int call_path_id)
 
     thread_data_t *td = hpcrun_get_thread_data();
 
-    int ret1 = hpcfmt_byte8_fwrite(microtime.data.ui64, td->trace_file);
-    int ret2 = hpcfmt_byte4_fwrite((uint32_t)call_path_id, td->trace_file);
+    int ret1 = hpcfmt_int8_fwrite(microtime.data.ui64, td->trace_file);
+    int ret2 = hpcfmt_int4_fwrite((uint32_t)call_path_id, td->trace_file);
     trace_file_validate(ret1 == HPCFMT_OK && ret2 == HPCFMT_OK, "append");
   }
 }

@@ -99,6 +99,11 @@ enum {
 typedef uint64_t hpcfmt_vma_t;
 typedef uint64_t hpcfmt_uint_t;
 
+typedef union {
+  double   r8;
+  uint64_t i8;
+} hpcfmt_byte8_union_t;
+
 
 //***************************************************************************
 // Macros for defining "list of" things
@@ -134,17 +139,7 @@ typedef void  hpcfmt_free_fn(void* mem);
 //***************************************************************************
 
 static inline int
-hpcfmt_byte2_fwrite(uint16_t val, FILE* outfs)
-{
-  if ( sizeof(uint16_t) != hpcio_fwrite_be2(&val, outfs) ) {
-    return HPCFMT_ERR;
-  }
-  return HPCFMT_OK;
-}
-
-
-static inline int
-hpcfmt_byte2_fread(uint16_t* val, FILE* infs)
+hpcfmt_int2_fread(uint16_t* val, FILE* infs)
 {
   size_t sz = hpcio_fread_be2(val, infs);
   if ( sz != sizeof(uint16_t) ) {
@@ -155,17 +150,7 @@ hpcfmt_byte2_fread(uint16_t* val, FILE* infs)
 
 
 static inline int
-hpcfmt_byte4_fwrite(uint32_t val, FILE* outfs)
-{
-  if ( sizeof(uint32_t) != hpcio_fwrite_be4(&val, outfs) ) {
-    return HPCFMT_ERR;
-  }
-  return HPCFMT_OK;
-}
-
-
-static inline int
-hpcfmt_byte4_fread(uint32_t* val, FILE* infs)
+hpcfmt_int4_fread(uint32_t* val, FILE* infs)
 {
   size_t sz = hpcio_fread_be4(val, infs);
   if ( sz != sizeof(uint32_t) ) {
@@ -176,7 +161,51 @@ hpcfmt_byte4_fread(uint32_t* val, FILE* infs)
 
 
 static inline int
-hpcfmt_byte8_fwrite(uint64_t val, FILE* outfs)
+hpcfmt_int8_fread(uint64_t* val, FILE* infs)
+{
+  size_t sz = hpcio_fread_be8(val, infs);
+  if ( sz != sizeof(uint64_t) ) {
+    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
+  }
+  return HPCFMT_OK;
+}
+
+
+static inline int
+hpcfmt_real8_fread(double* val, FILE* infs)
+{
+  size_t sz = hpcio_fread_be8((uint64_t*)val, infs);
+  if ( sz != sizeof(double) ) {
+    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
+  }
+  return HPCFMT_OK;
+}
+
+
+//***************************************************************************
+
+static inline int
+hpcfmt_int2_fwrite(uint16_t val, FILE* outfs)
+{
+  if ( sizeof(uint16_t) != hpcio_fwrite_be2(&val, outfs) ) {
+    return HPCFMT_ERR;
+  }
+  return HPCFMT_OK;
+}
+
+
+static inline int
+hpcfmt_int4_fwrite(uint32_t val, FILE* outfs)
+{
+  if ( sizeof(uint32_t) != hpcio_fwrite_be4(&val, outfs) ) {
+    return HPCFMT_ERR;
+  }
+  return HPCFMT_OK;
+}
+
+
+static inline int
+hpcfmt_int8_fwrite(uint64_t val, FILE* outfs)
 {
   if ( sizeof(uint64_t) != hpcio_fwrite_be8(&val, outfs) ) {
     return HPCFMT_ERR;
@@ -186,11 +215,14 @@ hpcfmt_byte8_fwrite(uint64_t val, FILE* outfs)
 
 
 static inline int
-hpcfmt_byte8_fread(uint64_t* val, FILE* infs)
+hpcfmt_real8_fwrite(double val, FILE* outfs)
 {
-  size_t sz = hpcio_fread_be8(val, infs);
-  if ( sz != sizeof(uint64_t) ) {
-    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
+  // N.B.: This apparently breaks C99's "strict" anti-aliasing rules
+  //uint64_t* v = (uint64_t*)(&val);
+  
+  hpcfmt_byte8_union_t* v = (hpcfmt_byte8_union_t*)(&val);
+  if ( sizeof(double) != hpcio_fwrite_be8(&(v->i8), outfs) ) {
+    return HPCFMT_ERR;
   }
   return HPCFMT_OK;
 }

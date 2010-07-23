@@ -261,7 +261,7 @@ write_epochs(FILE* fs, epoch_t* epoch)
 
     hpcrun_loadmap_t* current_loadmap = s->loadmap;
     
-    hpcfmt_byte4_fwrite(current_loadmap->num_modules, fs);
+    hpcfmt_int4_fwrite(current_loadmap->num_modules, fs);
 
     loadmap_src_t* lm_src = current_loadmap->loaded_modules;
     for (uint32_t i = 0; i < current_loadmap->num_modules; i++) {

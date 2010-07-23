@@ -83,7 +83,7 @@
 //***************************************************************************
 
 // See header for interface information.
-FILE* 
+FILE*
 hpcio_fopen_w(const char* fnm, int overwrite)
 {
   mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
@@ -110,7 +110,7 @@ hpcio_fopen_w(const char* fnm, int overwrite)
 
 
 // See header for interface information.
-FILE* 
+FILE*
 hpcio_fopen_r(const char* fnm)
 {
   FILE* fs = fopen(fnm, "r");
@@ -119,7 +119,7 @@ hpcio_fopen_r(const char* fnm)
 
 
 // See header for interface information.
-FILE* 
+FILE*
 hpcio_fopen_rw(const char* fnm)
 {
   FILE* fs = fopen(fnm, "r+");
@@ -128,7 +128,7 @@ hpcio_fopen_rw(const char* fnm)
 
 
 // See header for interface information.
-int   
+int
 hpcio_fclose(FILE* fs)
 {
   if (fs) {
@@ -185,7 +185,7 @@ hpcio_fread_le4(uint32_t* val, FILE* fs)
 }
 
 
-size_t 
+size_t
 hpcio_fread_le8(uint64_t* val, FILE* fs)
 {
   uint64_t v = 0; // local copy of val
@@ -202,7 +202,9 @@ hpcio_fread_le8(uint64_t* val, FILE* fs)
 }
 
 
-size_t 
+//***************************************************************************
+
+size_t
 hpcio_fwrite_le2(uint16_t* val, FILE* fs)
 {
   uint16_t v = *val; // local copy of val
@@ -217,7 +219,7 @@ hpcio_fwrite_le2(uint16_t* val, FILE* fs)
 }
 
 
-size_t 
+size_t
 hpcio_fwrite_le4(uint32_t* val, FILE* fs)
 {
   uint32_t v = *val; // local copy of val
@@ -232,7 +234,7 @@ hpcio_fwrite_le4(uint32_t* val, FILE* fs)
 }
 
 
-size_t 
+size_t
 hpcio_fwrite_le8(uint64_t* val, FILE* fs)
 {
   uint64_t v = *val; // local copy of val
@@ -246,6 +248,10 @@ hpcio_fwrite_le8(uint64_t* val, FILE* fs)
   return num_write;
 }
 
+
+//***************************************************************************
+// Big endian
+//***************************************************************************
 
 size_t
 hpcio_fread_be2(uint16_t* val, FILE* fs)
@@ -281,7 +287,7 @@ hpcio_fread_be4(uint32_t* val, FILE* fs)
 }
 
 
-size_t 
+size_t
 hpcio_fread_be8(uint64_t* val, FILE* fs)
 {
   uint64_t v = 0; // local copy of val
@@ -298,7 +304,9 @@ hpcio_fread_be8(uint64_t* val, FILE* fs)
 }
 
 
-size_t 
+//***************************************************************************
+
+size_t
 hpcio_fwrite_be2(uint16_t* val, FILE* fs)
 {
   uint16_t v = *val; // local copy of val
@@ -313,7 +321,7 @@ hpcio_fwrite_be2(uint16_t* val, FILE* fs)
 }
 
 
-size_t 
+size_t
 hpcio_fwrite_be4(uint32_t* val, FILE* fs)
 {
   uint32_t v = *val; // local copy of val
@@ -328,7 +336,7 @@ hpcio_fwrite_be4(uint32_t* val, FILE* fs)
 }
 
 
-size_t 
+size_t
 hpcio_fwrite_be8(uint64_t* val, FILE* fs)
 {
   uint64_t v = *val; // local copy of val
@@ -343,24 +351,11 @@ hpcio_fwrite_be8(uint64_t* val, FILE* fs)
 }
 
 
+//***************************************************************************
+//
+//***************************************************************************
+
 #if 0
-size_t 
-hpcio_fread_be4(uint32_t* val, FILE* fs)
-{
-  uint32_t v = 0; // local copy of val
-  int shift = 0, num_read = 0, c;
-
-  for (shift = 24; shift >= 0; shift -= 8) {
-    if ( (c = fgetc(fs)) == EOF ) { break; }
-    num_read++;
-    v |= ((uint32_t)(c & 0xff) << shift); // 24, 16, 8, 0
-  }
- 
-  *val = v;
-  return num_read;
-}
-
-
 #define BIG_ENDIAN      0
 #define LITTLE_ENDIAN   1
 
@@ -377,5 +372,4 @@ hpcio_get_endianness()
     return LITTLE_ENDIAN; // 'bite' points to least significant byte
   }   
 }
-
 #endif
