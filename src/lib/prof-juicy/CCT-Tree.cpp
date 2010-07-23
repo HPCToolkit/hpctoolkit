@@ -68,6 +68,9 @@ using std::string;
 #include <vector>
 using std::vector;
 
+#include <set>
+using std::set;
+
 #include <typeinfo>
 
 //*************************** User Include Files ****************************
@@ -75,6 +78,7 @@ using std::vector;
 #include <include/uint.h>
 
 #include "CCT-Tree.hpp"
+#include "CallPath-Profile.hpp" // for CCT::Tree::metadata()
 
 #include <lib/xml/xml.hpp> 
 
@@ -97,7 +101,7 @@ using SrcFile::ln_NULL;
 namespace Prof {
 
 namespace CCT {
-
+  
 Tree::Tree(const CallPath::Profile* metadata)
   : m_root(NULL), m_metadata(metadata), m_maxDenseId(0), m_nodeidMap(NULL)
 {
@@ -117,7 +121,7 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 {
   CCT::ANode* x_root = root();
   CCT::ANode* y_root = y->root();
-
+  
   // Merge pre-condition: both x and y should be "locally merged",
   // i.e. they should be equal except for metrics and children.
   bool isPrecondition = false;
@@ -143,8 +147,18 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
   }
   DIAG_Assert(isPrecondition, "Prof::CCT::Tree::merge: Merge precondition fails!");
 
+  // Fill cpIdSet if needed
+  bool doTrackCPIds = !metadata()->traceFileNameSet().empty();
+  if (doTrackCPIds && m_cpIdSet.empty()) {
+    fillCpIdSet();
+  }
+  
   ANode::MergeEffectList* mrgEffects =
-    x_root->mergeDeep(y_root, x_newMetricBegIdx, mrgFlag, oFlag);
+    x_root->mergeDeep(y_root, x_newMetricBegIdx, m_cpIdSet, mrgFlag, oFlag);
+
+  DIAG_If(0) {
+    verifyUniqueCPIds();
+  }
 
   return mrgEffects;
 }
@@ -181,6 +195,40 @@ Tree::findNode(uint nodeId) const
   }
   NodeIdToANodeMap::iterator it = m_nodeidMap->find(nodeId);
   return (it != m_nodeidMap->end()) ? it->second : NULL;
+}
+
+
+void
+Tree::fillCpIdSet()
+{
+  for (ANodeIterator it(root()); it.Current(); ++it) {
+    ANode* n = it.current();
+    ADynNode* n_dyn = dynamic_cast<ADynNode*>(n);
+
+    if (n_dyn && n_dyn->cpId() != 0) {
+      m_cpIdSet.insert(n_dyn->cpId());
+    }
+  }
+}
+
+
+bool
+Tree::verifyUniqueCPIds()
+{
+  bool allUnique = true;
+  set<uint> cpId;
+  for (ANodeIterator it(root()); it.Current(); ++it) {
+    ANode* n = it.current();
+    ADynNode* n_dyn = dynamic_cast<ADynNode*>(n);
+    
+    if (n_dyn && n_dyn->cpId() != 0) {
+      std::pair<set<uint>::iterator, bool> ret = cpId.insert(n_dyn->cpId());
+      bool isInserted = ret.second;
+      allUnique = allUnique && isInserted;
+      DIAG_MsgIf(!isInserted,  "CCT::Tree::verifyUniqueCPIds: Duplicate CPId: " << n_dyn->cpId());
+    }
+  }
+  return allUnique;
 }
 
 
@@ -705,7 +753,8 @@ ANode::deleteChaff(ANode* x, uint8_t* deletedNodes)
 //**********************************************************************
 
 ANode::MergeEffectList*
-ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
+ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, set<uint>& cpIdSet,
+		 uint mrgFlag, uint oFlag)
 {
   ANode* x = this;
 
@@ -724,13 +773,15 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
   //    x_child of x, merge [the metrics of] y_child into x_child and
   //    recur.
   // ------------------------------------------------------------
-  ANode::MergeEffectList* effctLst = new ANode::MergeEffectList;
+  MergeEffectList* effctLst = new MergeEffectList;
   
   for (ANodeChildIterator it(y); it.Current(); /* */) {
     ANode* y_child = it.current();
     ADynNode* y_child_dyn = dynamic_cast<ADynNode*>(y_child);
     DIAG_Assert(y_child_dyn, "ANode::mergeDeep");
     it++; // advance iterator -- it is pointing at 'child'
+
+    MergeEffectList* effctLst1 = NULL;
 
     ADynNode* x_child_dyn = x->findDynChild(*y_child_dyn);
 
@@ -743,8 +794,10 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 		   "CCT::ANode::mergeDeep: Adding:\n     "
 		   << y_child->toStringMe(Tree::OFlg_Debug));
 	y_child->unlink();
-	y_child->mergeDeep_fixup(x_newMetricBegIdx);
-	// FIXME: ensure that no cpid's in y_child conflict with Tree x
+  
+	//cpId conflicts
+	effctLst1 = y_child->mergeDeep_fixup(x_newMetricBegIdx, cpIdSet);
+
 	y_child->link(x);
       }
     }
@@ -759,14 +812,15 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
       if ((mrgFlag & Tree::MrgFlg_PropagateEffects) && !effct.isNoop()) {
 	effctLst->push_back(effct);
       }
+      
+      effctLst1 = x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, cpIdSet,
+					 mrgFlag, oFlag);
+    }
 
-      ANode::MergeEffectList* effctLst1 =
-	x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, mrgFlag, oFlag);
-      if (effctLst1 && !effctLst1->empty()) {
-	effctLst->splice(effctLst->end(), *effctLst1);
-	DIAG_MsgIf(0, ANode::MergeEffect::toString(*effctLst));
-	delete effctLst1;
-      }
+    if (effctLst1 && !effctLst1->empty()) {
+      effctLst->splice(effctLst->end(), *effctLst1);
+      DIAG_MsgIf(0, MergeEffect::toString(*effctLst));
+      delete effctLst1;
     }
   }
 
@@ -870,15 +924,40 @@ ANode::findDynChild(const ADynNode& y_dyn)
 }
 
 
-void
-ANode::mergeDeep_fixup(int newMetrics)
+ANode::MergeEffectList*
+ANode::mergeDeep_fixup(int newMetrics, set<uint>& cpIdSet)
 {
+  MergeEffectList* effctLst = new MergeEffectList();
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
+          
+    if (!cpIdSet.empty()) {
+      //check if there are any cpId conflicts in Tree y (*this)
+      //with respect to Tree x (using cpIdSet from x).
+      ADynNode* n_dyn = dynamic_cast<ADynNode*>(n);
+      
+      if (n_dyn) {
+	uint old = n_dyn->cpId();  
+	if (old != HPCRUN_FMT_CCTNodeId_NULL 
+	    && cpIdSet.find(old) != cpIdSet.end()) {
+	  uint largestCpId = *(cpIdSet.rbegin()) + 2;
+	  n_dyn->cpId(largestCpId);
+	  
+	  MergeEffect effct(old, largestCpId);
+	  effctLst->push_back(effct);
+	}
+	//inset cpId if a new cpId is given or it is not already in cpIdSet
+	//but only if it's not null
+	if (n_dyn->cpId() != HPCRUN_FMT_CCTNodeId_NULL) {
+	  cpIdSet.insert(n_dyn->cpId()); 
+	}
+      }
+    }
+    
     n->insertMetricsBefore(newMetrics);
   }
+  return effctLst;
 }
-
 
 //**********************************************************************
 // 

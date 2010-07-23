@@ -64,6 +64,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <set>
 
 #include <typeinfo>
 
@@ -155,10 +156,11 @@ public:
   // N.B.: An easy implementation for now (but not thread-safe!)
   static uint s_raToCallsiteOfst;
 
-
+ 
 private:
   static const std::string NodeNames[TyNUMBER];
-  
+
+
 public:
   ANode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct = NULL)
     : NonUniformDegreeTreeNode(parent), 
@@ -174,7 +176,7 @@ public:
       Metric::IData(metrics),
       m_type(type), m_id(s_nextUniqueId), m_strct(strct)
   { 
-    s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
+    s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag 
   }
 
   virtual ~ANode()
@@ -220,12 +222,13 @@ public:
   uint
   id() const
   { return m_id; }
-
+  
+  
   void
   id(uint id)
   { m_id = id; }
 
-
+  
   // 'name()' is overridden by some derived classes
   virtual const std::string&
   name() const
@@ -437,16 +440,20 @@ public:
   // N.B.: assume we can destroy y.
   // N.B.: assume x already has space to store merged metrics
   std::list<MergeEffect>*
-  mergeDeep(ANode* y, uint x_numMetrics, uint mrgFlag = 0, uint oFlag = 0);
+  mergeDeep(ANode* y, uint x_numMetrics, std::set<uint>& cpIdSet, 
+	    uint mrgFlag = 0, uint oFlag = 0);
 
+  
   // merge: Let 'this' = x and let y be a node corresponding to x.
   //   Merge y into x.  
   // N.B.: assume we can destroy y.
   MergeEffect
   merge(ANode* y);
 
+  
   virtual MergeEffect
   mergeMe(const ANode& y, uint metricBegIdx = 0);
+
 
   // findDynChild: Let z = 'this' be an interior ADynNode (otherwise the
   //   return value is trivially NULL).  Given an ADynNode y_dyn, finds
@@ -510,11 +517,12 @@ protected:
   writeXML_post(std::ostream& os, uint oFlags = 0, const char* pfx = "") const;
 
   // --------------------------------------------------------
-  // 
+  // Makes room for new metrics. Also checks and resolves
+  // any cpId conflicts between 2 trees.
   // --------------------------------------------------------
 
-  void
-  mergeDeep_fixup(int newMetrics);
+  ANode::MergeEffectList*
+  mergeDeep_fixup(int newMetrics, std::set<uint>& cpIdSet);
 
 
 private:
@@ -615,6 +623,11 @@ public:
   uint 
   cpId() const
   { return m_cpId; }
+
+
+  void
+  cpId(uint id)
+  { m_cpId = id; }
   
 
   // -------------------------------------------------------
@@ -1247,6 +1260,15 @@ public:
   ANode*
   findNode(uint nodeId) const;
 
+  // Fills 'm_cpIdSet' with all the cpIds in this Tree.
+  // Should be called to fill up 'm_cpIdSet' only once
+  void
+  fillCpIdSet();
+  
+  // Sanity check to make sure all the cpIds in the Tree are unique.
+  bool
+  verifyUniqueCPIds();
+
 
   // -------------------------------------------------------
   // Write contents
@@ -1273,6 +1295,7 @@ public:
 public:
   typedef std::map<uint, ANode*> NodeIdToANodeMap;
 
+  
 private:
   ANode* m_root;
 
@@ -1281,6 +1304,8 @@ private:
   uint m_maxDenseId;
   
   mutable NodeIdToANodeMap* m_nodeidMap;
+
+  std::set<uint> m_cpIdSet;
 };
 
 
