@@ -181,10 +181,8 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
 
     while ( !feof(fs) ) {
       // Read trace record (exit on EOF)
-      uint64_t timestamp_bits = 0;
-      double   timestamp = 0;
-      ret = hpcfmt_int8_fread(&timestamp_bits, fs);
-      timestamp = (double)timestamp_bits;
+      uint64_t timestamp;
+      ret = hpcfmt_int8_fread(&timestamp, fs);
       if (ret == HPCFMT_EOF) {
 	break;
       }
@@ -198,7 +196,7 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
 	DIAG_Throw("error reading trace file '" << filenm << "'");
       }
 
-      fprintf(stdout, "(%f, %u)\n", timestamp, cctId);
+      fprintf(stdout, "(%lu, %u)\n", timestamp, cctId);
     }
 
     hpcio_fclose(fs);

@@ -132,22 +132,16 @@ trace_open()
 void
 trace_append(unsigned int call_path_id)
 {
-  struct {
-    union {
-      double dbl;
-      uint64_t ui64;
-    } data;
-  } microtime;
-
   if (tracing) {
     struct timeval tv;
-    int notime = gettimeofday(&tv, NULL);
-    assert(notime == 0 && "in trace_append: gettimeofday failed!");
-    microtime.data.dbl = tv.tv_usec + tv.tv_sec * 1000000;
+    int ret = gettimeofday(&tv, NULL);
+    assert(ret == 0 && "in trace_append: gettimeofday failed!");
+    uint64_t microtime = ((uint64_t)tv.tv_usec 
+			  + (((uint64_t)tv.tv_sec) * 1000000));
 
     thread_data_t *td = hpcrun_get_thread_data();
 
-    int ret1 = hpcfmt_int8_fwrite(microtime.data.ui64, td->trace_file);
+    int ret1 = hpcfmt_int8_fwrite(microtime, td->trace_file);
     int ret2 = hpcfmt_int4_fwrite((uint32_t)call_path_id, td->trace_file);
     trace_file_validate(ret1 == HPCFMT_OK && ret2 == HPCFMT_OK, "append");
   }
