@@ -114,30 +114,31 @@ ul.noindent > li:before {
 body {
   color: black;
   background-color: white;
+  font-size:90%;
 }
 
 head {
-
+  font-size:100%;
 }
 
 h1 {
-  font-size: 24px;
-  font-family: serif;
+  font-family: sans-serif;
+  font-size: 1.8em;
   color: black;
   background-color: transparent;
   line-height: 1;
 }
 
 h2 {
-  font-size: 19px;
-  font-family: serif;
+  font-family: sans-serif;
+  font-size: 1.4em;
   color: black;
   background-color: transparent;
 }
 
 h3 {
-  font-size: 14px;
-  font-family: serif;
+  font-family: sans-serif;
+  font-size: 1.25em;
   color: black;
   background-color: transparent;
   list-style-type: disc;
@@ -145,12 +146,19 @@ h3 {
 }
 
 h4 {
-  font-size: 14px;
-  font-family: serif;
+  font-family: sans-serif;
+  font-size: 1.1em;
   color: black;
   background-color: transparent;
   list-style-type: disc;
   list-style-position: outside;
+}
+
+p {
+  font-family: sans-serif;
+  font-size: 1em;
+  color: black;
+  background-color: transparent;
 }
 
 a {
@@ -160,40 +168,41 @@ a {
 }
 
 pre, code { 
-  font-size: 13px;
+  font-family: monospace;
+  font-size: 1em;
 /*  color: black; */
   background-color: transparent; 
-  font-family: monospace;
 }
 
-p {
-  font-size: 14px;
-  font-family: serif;
+blockquote {
+  font-family: sans-serif;
+  font-size: 1em;
   color: black;
   background-color: transparent;
 }
 
 dl {
-  font-size: 14px;
-  font-family: serif;
+  font-family: sans-serif;
+  font-size: 1em;
   color: black;
   background-color: transparent;
 }
 
 ul {
-  font-size: 14px;
-  font-family: serif;
+  font-family: sans-serif;
+  font-size: 1em;
   color: black;
   background-color: transparent;
 }
 
-ol { 
-   font-size: 14px; 
-   font-family: serif 
+ol {
+  font-family: sans-serif;
+  font-size: 1em; 
 }
 
-blockquote {
-  background-color: transparent;
+table {
+  font-family: sans-serif;
+  font-size: 1em;
 }
 
 img {

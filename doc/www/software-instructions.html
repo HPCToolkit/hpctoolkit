@@ -29,6 +29,7 @@
 <h1>Building and Installing HPCToolkit</h1>
 
 <h2>Contents</h2>
+<p>
 <ul>
   <li><a href="#prerequisites">Prerequisites</a>
 
@@ -144,9 +145,9 @@ Without PAPI, HPCToolkit can only collect measurements based on an operating sys
 
 <p>There are currently three ways to support PAPI on Linux-based OSs:
   <ul>
-    <li>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch. As of this writing, supports kernels through 2.6.29. (Unfortunately, development has stopped because of perf events.)
-    <li>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch.  As of this writing, supports kernels through 2.6.32.  (One benefit of perfctr is out-of-the-box support for Red Hat kernels.)
-    <li>Use a kernel with perf events (n&eacute;e PCL).  As of kernel 2.6.32 (2.6.31), perf events is part of kernel distributions -- and even enabled by default.  Tested but still on the cutting edge.
+    <li><p>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch. As of this writing, supports kernels through 2.6.29. (Unfortunately, development has stopped because of perf events.)
+    <li><p>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch.  As of this writing, supports kernels through 2.6.32.  (One benefit of perfctr is out-of-the-box support for Red Hat kernels.)
+    <li><p>Use a kernel with perf events (n&eacute;e PCL).  As of kernel 2.6.32 (2.6.31), perf events is part of kernel distributions -- and even enabled by default.  Tested but still on the cutting edge.
   </ul>
 
 <p>Note: Beware of kernels 2.6.28 through 2.6.29.2
@@ -222,10 +223,10 @@ See the README file for more details.
   This is the directory HPCToolkit uses to build itself, so it is important to finish the externals build before configuring HPCToolkit.
 
 <p><ul>
-  <li>Note: it is possible, but unnecessary, to use the <code>--prefix=<i>&lt;externals-installation-path</i>&gt;</code> option for configure.
+  <li><p>Note: it is possible, but unnecessary, to use the <code>--prefix=<i>&lt;externals-installation-path</i>&gt;</code> option for configure.
     The externals's install directory (prefix) is only a staging area, used as a build dependency for HPCToolkit and is not the same as HPCToolkit's prefix.
 
-  <li>Note: the externals tree is designed to be a one-time build step.
+  <li><p>Note: the externals tree is designed to be a one-time build step.
     After building the external packages, then its tree can be cleaned (with make distclean) and HPCToolkit can be configured and built several times with the same externals tree.
     That is, reconfiguring or rebuilding HPCToolkit does not require rebuilding the externals tree.
 </ul>
@@ -349,7 +350,7 @@ See the README file for more details.
 
 </ul>
 
-<p class="lastupdated">Page last updated: 2010/07/19</p>
+<p class="lastupdated">Page last updated: 2010/07/24</p>
 
 <!-- ********************************************************************** -->
 
