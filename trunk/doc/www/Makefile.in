@@ -280,7 +280,7 @@ MYSOURCES = \
 	fig/spacer.gif \
 	\
 	style/index.html \
-	style/styles.css \
+	style/style.css \
 	style/footer-hpctoolkit.js \
 	style/header-hpctoolkit.js \
 	style/header.gif
