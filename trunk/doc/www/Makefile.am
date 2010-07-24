@@ -67,13 +67,12 @@ MYSOURCES = \
 	documentation.html \
 	examples.html \
 	overview.html \
-	papers.html \
+	publications.html \
 	software.html \
 	software-instructions.html \
 	\
 	info-acks.html \
 	info-contact.html \
-	info-people.html \
 	\
 	fig/index.html \
 	fig/hpctoolkit-workflow.png \
