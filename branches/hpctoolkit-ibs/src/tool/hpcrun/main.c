@@ -146,6 +146,7 @@ static volatile int DEBUGGER_WAIT = 1;
 
 static hpcrun_options_t opts;
 static bool hpcrun_is_initialized_private = false;
+static bool in_hpcrun_init_thread = false;//add by Xu
 
 static sigset_t prof_sigset;
 
@@ -159,6 +160,13 @@ bool
 hpcrun_is_initialized() //Xu Liu: I remove static because I want to build it into shared lib
 {
   return hpcrun_is_initialized_private;
+}
+
+//add by Xu
+bool
+hpcrun_is_in_init_thread()
+{
+  return in_hpcrun_init_thread;
 }
 
 //***************************************************************************
@@ -307,6 +315,7 @@ hpcrun_init_thread_support()
 void*
 hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
 {
+  in_hpcrun_init_thread = true;//add by Xu
   thread_data_t *td = hpcrun_allocate_thread_data();
   td->suspend_sampling = 1; // begin: protect against spurious signals
 
@@ -333,6 +342,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   if (ret){
     EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
   }
+  in_hpcrun_init_thread = false; //add by Xu
   return (void *)epoch;
 }
 

@@ -48,6 +48,7 @@
 #include <stdbool.h>
 
 bool hpcrun_is_initialized();
+bool hpcrun_is_in_init_thread();
 
 typedef void siglongjmp_fcn(sigjmp_buf, int);
 

@@ -217,6 +217,7 @@ METHOD_FN(start)
   memset(ov,0,sizeof(struct over_args));
 
   ov->inp_mod.ibsop.maxcnt=period;
+  ov->inp_mod.ibsop.options = IBS_OPTIONS_UOPS;
   ov->inp_mod.flags |= PFMLIB_AMD64_USE_IBSOP;
 
   ret=pfm_dispatch_events(NULL, &ov->inp_mod, &ov->outp, &ov->outp_mod);

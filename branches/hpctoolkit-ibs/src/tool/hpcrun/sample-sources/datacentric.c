@@ -235,7 +235,7 @@ METHOD_FN(display_events)
 int
 hpcrun_datacentric_active()
 {
-  if (hpcrun_is_initialized()) {
+  if (hpcrun_is_initialized()&&!hpcrun_is_in_init_thread()) {
     return (TD_GET(ss_state)[obj_name().evset_idx] == START);
   } else {
     return 0;
