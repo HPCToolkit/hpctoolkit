@@ -737,7 +737,7 @@ coalesceStmts(Prof::CCT::ANode* node)
 	Prof::CCT::Stmt* n_stmtOrig = (*it).second;
 
 	//if ( !Prof::CCT::ADynNode::hasMergeEffects(*n_stmtOrig, *n_stmt) ) {}
-	Prof::CCT::ANode::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt);
+	Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt);
 	DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost: " << effct.toString());
 	
 	// remove 'n_stmt' from tree
