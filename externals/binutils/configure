@@ -1,0 +1,36 @@
+#!/bin/sh
+#
+#  Binutils configure.
+#
+#  $Id: configure 2894 2010-06-28 05:56:52Z krentel $
+#
+
+PKG_NAME=binutils
+src=version-binutils-2.20.1/binutils-2.20.1
+
+. ../build-utils/configure.inc
+pre_configure
+prefix="$binutils_prefix"
+
+targets='mips64-sgi-irix6, alpha-*-linux-gnu, alpha-*-osf, sparc32-*-elf, sparc64-*-solaris2, i386-*-linux-gnu, x86_64-*-linux-gnu, ia64-*-linux-gnu, powerpc64-*-linux-gnu'
+
+
+export CC="$CC"
+export CFLAGS="$CFLAGS"
+export AR="$AR"
+set -- \
+    --prefix="$prefix" \
+    --enable-targets="${targets}" \
+    "$@"
+if test -n "${is_cross_compile}" ; then
+    set -- --host="${host}" "$@"
+fi
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+echo configure "$@"
+../${src}/configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure
