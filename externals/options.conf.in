@@ -7,6 +7,7 @@ CC="@CC@"
 CFLAGS="@CFLAGS@"
 CXX="@CXX@"
 CXXFLAGS="@CXXFLAGS@"
+AR="@AR@"
 
 gnu_make="@gnu_make@"
 
