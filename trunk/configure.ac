@@ -251,6 +251,8 @@ HPC_CHECK_CXX_STDC_HEADERS()
 AC_CHECK_SIZEOF([void*])
 AC_CHECK_TYPES([ushort, uint, ulong])
 
+host_sizeof_voidp="${host_sizeof_voidp}"
+
 # Check pthread.h
 HPC_CHECK_COMPILE_PTHREAD_H()
 
@@ -323,7 +325,7 @@ case "${host}" in
   x86_64*-*-linux*)
     # __x86_64 && __linux
     HOST_OS="Linux"
-    if test "${ac_cv_sizeof_voidp}" = "4"; then
+    if test "${host_sizeof_voidp}" = "4"; then
       HOST_CPU_X86=yes
       AC_DEFINE([HOST_CPU_x86], [1], [])
     else
@@ -377,7 +379,7 @@ case "${host}" in
 
   x86_64*-*-darwin*)
     HOST_OS="MacOS"
-    if test "${ac_cv_sizeof_voidp}" = "4"; then
+    if test "${host_sizeof_voidp}" = "4"; then
       HOST_CPU_X86=yes
       AC_DEFINE([HOST_CPU_x86], [1], [])
     else
@@ -475,12 +477,12 @@ case "${host}" in
   i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux*)
     # GCC
     if HPCcxxcmp([g++ c++]) ; then
-      if test "${ac_cv_sizeof_voidp}" = "4"; then
+      if test "${host_sizeof_voidp}" = "4"; then
         HOST_CXXFLAGS="-march=i486"
       fi
     fi
     if HPCcccmp([gcc cc]) ; then
-      if test "${ac_cv_sizeof_voidp}" = "4"; then
+      if test "${host_sizeof_voidp}" = "4"; then
         HOST_CFLAGS="-march=i486"
       fi
     fi
@@ -715,13 +717,18 @@ AC_ARG_WITH([binutils],
    fi],
   [])
 
-# The binutils installer (2.16.1, 2.17) creates libbfd.la and
-# libopcodes.la but only libiberty.a.  Apparently, not having
-# libiberty.la can cause libtool (1.5.20, 1.5.22) to prefer a system
-# library (without a .la!) -- thus ignoring the -L directive.  So we
-# provide an absolute reference.
+# Note: With binutils 2.20.1, libiberty may be installed in a
+# different lib than libbfd and libopcodes (e.g., lib64 vs. lib).
+#
+# Note: With prior versions of binutils and libtool, we had to supply
+# an absolute path for libiberty.  Will this suffice?
 GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
-GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes ${GNUBINUTILS}/lib/libiberty.a"
+GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes"
+if test "${host_sizeof_voidp}" = "8"; then
+  GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} -L${GNUBINUTILS}/lib64 -liberty"
+else
+  GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} -L${GNUBINUTILS}/lib -liberty"
+fi
 
 # on non-Linux systems we build libintl
 if test "${HOST_OS}" != "Linux"; then
