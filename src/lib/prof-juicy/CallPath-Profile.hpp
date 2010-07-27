@@ -328,7 +328,7 @@ private:
   merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects);
  
   void
-  merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects);
+  merge_fixTrace(const CCT::MergeEffectList* mrgEffects);
 
 
 private:

@@ -222,12 +222,12 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
     mrgFlag |= CCT::Tree::MrgFlg_PropagateEffects;
   }
 
-  CCT::ANode::MergeEffectList* mrgEffects2 =
+  CCT::MergeEffectList* mrgEffects2 =
     x.cct()->merge(y.cct(), x_newMetricBegIdx, mrgFlag);
 
   DIAG_Assert(Logic::implies(mrgEffects2 && !mrgEffects2->empty(),
 			     mrgFlag & CCT::Tree::MrgFlg_NormalizeTraceFileY),
-	      "CallPath::Profile::merge: there should only be CCT::ANode::MergeEffects when MrgFlg_NormalizeTraceFileY is passed");
+	      "CallPath::Profile::merge: there should only be CCT::MergeEffects when MrgFlg_NormalizeTraceFileY is passed");
 
   y.merge_fixTrace(mrgEffects2);
   delete mrgEffects2;
@@ -336,7 +336,7 @@ Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
 
 
 void
-Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
+Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
 {
   typedef std::map<uint, uint> UIntToUIntMap;
 
@@ -353,9 +353,9 @@ Profile::merge_fixTrace(const CCT::ANode::MergeEffectList* mrgEffects)
   // extensible.  There are no asymptotic problems with building the
   // following map for local use.
   UIntToUIntMap cpIdMap;
-  for (CCT::ANode::MergeEffectList::const_iterator it = mrgEffects->begin();
+  for (CCT::MergeEffectList::const_iterator it = mrgEffects->begin();
        it != mrgEffects->end(); ++it) {
-    const CCT::ANode::MergeEffect& effct = *it;
+    const CCT::MergeEffect& effct = *it;
     cpIdMap.insert(std::make_pair(effct.old_cpId, effct.new_cpId));
   }
 

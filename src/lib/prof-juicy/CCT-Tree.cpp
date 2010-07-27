@@ -116,7 +116,7 @@ Tree::~Tree()
 }
 
 
-ANode::MergeEffectList*
+MergeEffectList*
 Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 {
   CCT::ANode* x_root = root();
@@ -153,7 +153,7 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
     fillCpIdSet();
   }
   
-  ANode::MergeEffectList* mrgEffects =
+  MergeEffectList* mrgEffects =
     x_root->mergeDeep(y_root, x_newMetricBegIdx, m_cpIdSet, mrgFlag, oFlag);
 
   DIAG_If(0) {
@@ -292,54 +292,6 @@ ANode::IntToANodeType(long i)
 }
 
 uint ANode::s_nextUniqueId = 2;
-
-
-//***************************************************************************
-// ANode::MergeEffect
-//***************************************************************************
-
-string
-ANode::MergeEffect::toString(const char* pfx) const
-{
-  std::ostringstream os;
-  dump(os, pfx);
-  return os.str();
-}
-
-
-std::ostream&
-ANode::MergeEffect::dump(std::ostream& os, const char* pfx) const
-{
-  os << old_cpId << " => " << new_cpId;
-  return os;
-}
-
-
-string
-ANode::MergeEffect::toString(const ANode::MergeEffectList& effctLst,
-			     const char* pfx)
-{
-  std::ostringstream os;
-  dump(effctLst, os, pfx);
-  return os.str();
-}
-
-
-std::ostream&
-ANode::MergeEffect::dump(const ANode::MergeEffectList& effctLst,
-			 std::ostream& os, const char* pfx)
-{
-  os << "{ ";
-  for (MergeEffectList::const_iterator it = effctLst.begin();
-       it != effctLst.end(); ++it) {
-    const CCT::ANode::MergeEffect& effct = *it;
-    os << "[ ";
-    effct.dump(os, pfx);
-    os << "] ";
-  }
-  os << "}";
-  return os;
-}
 
 
 //***************************************************************************
@@ -752,7 +704,7 @@ ANode::deleteChaff(ANode* x, uint8_t* deletedNodes)
 // Merging
 //**********************************************************************
 
-ANode::MergeEffectList*
+MergeEffectList*
 ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, set<uint>& cpIdSet,
 		 uint mrgFlag, uint oFlag)
 {
@@ -795,7 +747,6 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, set<uint>& cpIdSet,
 		   << y_child->toStringMe(Tree::OFlg_Debug));
 	y_child->unlink();
   
-	//cpId conflicts
 	effctLst1 = y_child->mergeDeep_fixup(x_newMetricBegIdx, cpIdSet);
 
 	y_child->link(x);
@@ -828,7 +779,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, set<uint>& cpIdSet,
 }
 
 
-ANode::MergeEffect
+MergeEffect
 ANode::merge(ANode* y)
 {
   ANode* x = this;
@@ -851,7 +802,7 @@ ANode::merge(ANode* y)
 }
 
 
-ANode::MergeEffect
+MergeEffect
 ANode::mergeMe(const ANode& y, uint metricBegIdx)
 {
   ANode* x = this;
@@ -870,7 +821,7 @@ ANode::mergeMe(const ANode& y, uint metricBegIdx)
 }
 
 
-ANode::MergeEffect
+MergeEffect
 ADynNode::mergeMe(const ANode& y, uint metricBegIdx)
 {
   // N.B.: Assumes ADynNode::isMergable() holds
@@ -880,6 +831,8 @@ ADynNode::mergeMe(const ANode& y, uint metricBegIdx)
   DIAG_Assert(y_dyn, "ADynNode::mergeMe: " << DIAG_UnexpectedInput);
 
   MergeEffect effct = ANode::mergeMe(y, metricBegIdx);
+
+  // FIXME: If we do not keep x's cpId, must ensure new cpId does not conflict
 
   // merge cpIds:
   // 1. At most one of x and y have a cpId: adopt the non-NULL id
@@ -924,30 +877,31 @@ ANode::findDynChild(const ADynNode& y_dyn)
 }
 
 
-ANode::MergeEffectList*
+MergeEffectList*
 ANode::mergeDeep_fixup(int newMetrics, set<uint>& cpIdSet)
 {
   MergeEffectList* effctLst = new MergeEffectList();
+
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
-          
+
+    // check if there are any cpId conflicts in Tree y (*this)
+    // with respect to Tree x (using cpIdSet from x).
     if (!cpIdSet.empty()) {
-      //check if there are any cpId conflicts in Tree y (*this)
-      //with respect to Tree x (using cpIdSet from x).
       ADynNode* n_dyn = dynamic_cast<ADynNode*>(n);
-      
       if (n_dyn) {
 	uint old = n_dyn->cpId();  
 	if (old != HPCRUN_FMT_CCTNodeId_NULL 
 	    && cpIdSet.find(old) != cpIdSet.end()) {
 	  uint largestCpId = *(cpIdSet.rbegin()) + 2;
 	  n_dyn->cpId(largestCpId);
-	  
+
+	  // FIXME: if ((mrgFlag & Tree::MrgFlg_PropagateEffects) && !effct.isNoop()) {
 	  MergeEffect effct(old, largestCpId);
 	  effctLst->push_back(effct);
 	}
-	//inset cpId if a new cpId is given or it is not already in cpIdSet
-	//but only if it's not null
+	// insert cpId if a new cpId is given or it is not already in cpIdSet
+	// but only if it's not null
 	if (n_dyn->cpId() != HPCRUN_FMT_CCTNodeId_NULL) {
 	  cpIdSet.insert(n_dyn->cpId()); 
 	}

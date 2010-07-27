@@ -74,6 +74,8 @@
 
 #include <include/uint.h>
 
+#include "CCT-Merge.hpp"
+
 #include "Metric-Mgr.hpp"
 #include "Metric-ADesc.hpp"
 #include "Metric-IData.hpp"
@@ -105,6 +107,167 @@ operator<<(std::ostream& os, const hpcrun_metricVal_t x)
   os << "[" << x.i << " " << x.r << "]";
   return os;
 }
+
+
+//***************************************************************************
+// Tree
+//***************************************************************************
+
+namespace Prof {
+
+namespace CallPath {
+  class Profile;
+}
+
+
+namespace CCT {
+
+class ANode;
+
+
+class Tree
+  : public Unique
+{
+public:
+
+  enum {
+    // Output flags
+    OFlg_Compressed      = (1 << 0), // Write in compressed format
+    OFlg_LeafMetricsOnly = (1 << 1), // Write metrics only at leaves (outdated)
+    OFlg_Debug           = (1 << 2), // Debug: show xtra source line info
+    OFlg_DebugAll        = (1 << 3), // Debug: (may be invalid format)
+  };
+
+  enum {
+    // Merge flags
+    MrgFlg_NormalizeTraceFileY = (1 << 0),
+    MrgFlg_CCTMergeOnly        = (1 << 1), // Only perform merges (skip adds)
+    MrgFlg_AssertCCTMergeOnly  = (1 << 2), // Assert: only perform merges
+
+    // *private*
+    MrgFlg_PropagateEffects    = (1 << 3),
+  };
+
+
+public:
+  // -------------------------------------------------------
+  // Constructor/Destructor
+  // -------------------------------------------------------
+  
+  Tree(const CallPath::Profile* metadata);
+
+  virtual ~Tree();
+
+  // -------------------------------------------------------
+  // Tree data
+  // -------------------------------------------------------
+  ANode*
+  root() const
+  { return m_root; }
+
+  void
+  root(ANode* x)
+  { m_root = x; }
+
+  bool
+  empty() const
+  { return (m_root == NULL); }
+
+  const CallPath::Profile*
+  metadata() const
+  { return m_metadata; }
+  
+  // -------------------------------------------------------
+  // Given a Tree, merge into 'this'
+  // -------------------------------------------------------
+  MergeEffectList*
+  merge(const Tree* y, uint x_newMetricBegIdx,
+	uint mrgFlag = 0, uint oFlag = 0);
+
+  // -------------------------------------------------------
+  // dense ids (only used when explicitly requested)
+  // -------------------------------------------------------
+
+  // makeDensePreorderIds: deterministically creates dense ids,
+  // reserving 0 as a NULL (unused) id; returns maxDenseId()
+  uint
+  makeDensePreorderIds();
+  
+  // maxDenseId(): returns the maximum id actually used
+  uint
+  maxDenseId() const
+  { return m_maxDenseId; }
+ 
+  // -------------------------------------------------------
+  // nodeId -> ANode map (built on demand)
+  // -------------------------------------------------------
+
+  ANode*
+  findNode(uint nodeId) const;
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  // pruneCCTByNodeId
+  void
+  pruneCCTByNodeId(const uint8_t* prunedNodes);
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  // Fills 'm_cpIdSet' with all the cpIds in this Tree.
+  // Should be called to fill up 'm_cpIdSet' only once
+  void
+  fillCpIdSet();
+  
+  // Sanity check to make sure all the cpIds in the Tree are unique.
+  bool
+  verifyUniqueCPIds();
+
+  // -------------------------------------------------------
+  // Write contents
+  // -------------------------------------------------------
+  std::ostream& 
+  writeXML(std::ostream& os,
+	   uint metricBeg = Metric::IData::npos,
+	   uint metricEnd = Metric::IData::npos,
+	   uint oFlags = 0) const;
+
+  std::ostream&
+  dump(std::ostream& os = std::cerr, uint oFlags = 0) const;
+  
+  void
+  ddump() const;
+
+
+  // Given a set of flags 'flags', determines whether we need to
+  // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
+  // or xml::ESC_FALSE. 
+  static int
+  doXMLEscape(uint oFlags);
+
+public:
+  typedef std::map<uint, ANode*> NodeIdToANodeMap;
+
+  
+private:
+  ANode* m_root;
+
+  const CallPath::Profile* m_metadata; // does not own
+
+  uint m_maxDenseId;
+  
+  mutable NodeIdToANodeMap* m_nodeidMap;
+
+  std::set<uint> m_cpIdSet;
+};
+
+
+} // namespace CCT
+
+} // namespace Prof
 
 
 //***************************************************************************
@@ -397,42 +560,6 @@ public:
   // merging
   // --------------------------------------------------------
 
-  struct MergeEffect {
-    MergeEffect()
-      : old_cpId(HPCRUN_FMT_CCTNodeId_NULL), new_cpId(HPCRUN_FMT_CCTNodeId_NULL)
-    { }
-    
-    MergeEffect(uint old_, uint new_) : old_cpId(old_), new_cpId(new_)
-    { }
-    
-    bool
-    isNoop()
-    {
-      return (old_cpId == HPCRUN_FMT_CCTNodeId_NULL &&
-	      new_cpId == HPCRUN_FMT_CCTNodeId_NULL);
-    }
-
-    std::string
-    toString(const char* pfx = "") const;
-
-    std::ostream&
-    dump(std::ostream& os = std::cerr, const char* pfx = "") const;
-
-
-    static std::string
-    toString(const std::list<CCT::ANode::MergeEffect>& effctLst,
-	     const char* pfx = "");
-
-    static std::ostream&
-    dump(const std::list<CCT::ANode::MergeEffect>& effctLst,
-	 std::ostream& os, const char* pfx = "");
-
-    uint old_cpId /*within y*/, new_cpId /*within y*/;
-  };
-
-  typedef std::list<CCT::ANode::MergeEffect> MergeEffectList;
-
-
   // mergeDeep: Let 'this' = x and let y be a node corresponding to x
   //   in the sense that we may think of y as being locally merged
   //   with x (according to ADynNode::isMergable()).  Given y,
@@ -521,7 +648,7 @@ protected:
   // any cpId conflicts between 2 trees.
   // --------------------------------------------------------
 
-  ANode::MergeEffectList*
+  MergeEffectList*
   mergeDeep_fixup(int newMetrics, std::set<uint>& cpIdSet);
 
 
@@ -779,7 +906,7 @@ public:
 	    && y.cpId() != HPCRUN_FMT_CCTNodeId_NULL);
   }
 
-  virtual ANode::MergeEffect
+  virtual MergeEffect
   mergeMe(const ANode& y, uint metricBegIdx = 0);
   
 
@@ -1149,163 +1276,6 @@ class Stmt
   // Dump contents for inspection
   virtual std::string
   toStringMe(uint oFlags = 0) const;
-};
-
-
-} // namespace CCT
-
-} // namespace Prof
-
-
-//***************************************************************************
-// Tree
-//***************************************************************************
-
-namespace Prof {
-
-namespace CallPath {
-  class Profile;
-}
-
-
-namespace CCT {
-
-class Tree
-  : public Unique
-{
-public:
-
-  enum {
-    // Output flags
-    OFlg_Compressed      = (1 << 0), // Write in compressed format
-    OFlg_LeafMetricsOnly = (1 << 1), // Write metrics only at leaves (outdated)
-    OFlg_Debug           = (1 << 2), // Debug: show xtra source line info
-    OFlg_DebugAll        = (1 << 3), // Debug: (may be invalid format)
-  };
-
-  enum {
-    // Merge flags
-    MrgFlg_NormalizeTraceFileY = (1 << 0),
-    MrgFlg_CCTMergeOnly        = (1 << 1), // Only perform merges (skip adds)
-    MrgFlg_AssertCCTMergeOnly  = (1 << 2), // Assert: only perform merges
-
-    // *private*
-    MrgFlg_PropagateEffects    = (1 << 3),
-  };
-
-
-public:
-  // -------------------------------------------------------
-  // Constructor/Destructor
-  // -------------------------------------------------------
-  
-  Tree(const CallPath::Profile* metadata);
-
-  virtual ~Tree();
-
-  // -------------------------------------------------------
-  // Tree data
-  // -------------------------------------------------------
-  ANode*
-  root() const
-  { return m_root; }
-
-  void
-  root(ANode* x)
-  { m_root = x; }
-
-  bool
-  empty() const
-  { return (m_root == NULL); }
-
-  const CallPath::Profile*
-  metadata() const
-  { return m_metadata; }
-  
-  // -------------------------------------------------------
-  // Given a Tree, merge into 'this'
-  // -------------------------------------------------------
-  ANode::MergeEffectList*
-  merge(const Tree* y, uint x_newMetricBegIdx,
-	uint mrgFlag = 0, uint oFlag = 0);
-
-
-  // -------------------------------------------------------
-  // 
-  // -------------------------------------------------------
-
-  // pruneCCTByNodeId
-  void
-  pruneCCTByNodeId(const uint8_t* prunedNodes);
-
-  // -------------------------------------------------------
-  // dense ids (only used when explicitly requested)
-  // -------------------------------------------------------
-
-  // makeDensePreorderIds: deterministically creates dense ids,
-  // reserving 0 as a NULL (unused) id; returns maxDenseId()
-  uint
-  makeDensePreorderIds();
-  
-  // maxDenseId(): returns the maximum id actually used
-  uint
-  maxDenseId() const
-  { return m_maxDenseId; }
-
-
-  // -------------------------------------------------------
-  // nodeId -> ANode map (built on demand)
-  // -------------------------------------------------------
-
-  ANode*
-  findNode(uint nodeId) const;
-
-  // Fills 'm_cpIdSet' with all the cpIds in this Tree.
-  // Should be called to fill up 'm_cpIdSet' only once
-  void
-  fillCpIdSet();
-  
-  // Sanity check to make sure all the cpIds in the Tree are unique.
-  bool
-  verifyUniqueCPIds();
-
-
-  // -------------------------------------------------------
-  // Write contents
-  // -------------------------------------------------------
-  std::ostream& 
-  writeXML(std::ostream& os,
-	   uint metricBeg = Metric::IData::npos,
-	   uint metricEnd = Metric::IData::npos,
-	   uint oFlags = 0) const;
-
-  std::ostream&
-  dump(std::ostream& os = std::cerr, uint oFlags = 0) const;
-  
-  void
-  ddump() const;
-
-
-  // Given a set of flags 'flags', determines whether we need to
-  // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
-  // or xml::ESC_FALSE. 
-  static int
-  doXMLEscape(uint oFlags);
-
-public:
-  typedef std::map<uint, ANode*> NodeIdToANodeMap;
-
-  
-private:
-  ANode* m_root;
-
-  const CallPath::Profile* m_metadata; // does not own
-
-  uint m_maxDenseId;
-  
-  mutable NodeIdToANodeMap* m_nodeidMap;
-
-  std::set<uint> m_cpIdSet;
 };
 
 
