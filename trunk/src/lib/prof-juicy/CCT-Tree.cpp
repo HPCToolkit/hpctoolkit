@@ -164,7 +164,7 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
   m_mergeCtxt->flags(mrgFlag);
   
   MergeEffectList* mrgEffects =
-    x_root->mergeDeep(y_root, x_newMetricBegIdx, *m_mergeCtxt, mrgFlag, oFlag);
+    x_root->mergeDeep(y_root, x_newMetricBegIdx, *m_mergeCtxt, oFlag);
 
   DIAG_If(0) {
     verifyUniqueCPIds();
@@ -705,7 +705,7 @@ ANode::deleteChaff(ANode* x, uint8_t* deletedNodes)
 
 MergeEffectList*
 ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
-		 uint mrgFlag, uint oFlag)
+		 uint oFlag)
 {
   ANode* x = this;
 
@@ -738,15 +738,15 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
 
     if (!x_child_dyn) {
       // case 1: add/insert
-      DIAG_Assert( !(mrgFlag & MrgFlg_AssertCCTMergeOnly),
+      DIAG_Assert( !(mrgCtxt.flags() & MrgFlg_AssertCCTMergeOnly),
 		   "CCT::ANode::mergeDeep: adding not permitted");
-      if ( !(mrgFlag & MrgFlg_CCTMergeOnly) ) {
+      if ( !(mrgCtxt.flags() & MrgFlg_CCTMergeOnly) ) {
 	DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
 		   "CCT::ANode::mergeDeep: Adding:\n     "
 		   << y_child->toStringMe(Tree::OFlg_Debug));
 	y_child->unlink();
   
-	effctLst1 = y_child->mergeDeep_fixup(x_newMetricBegIdx, mrgCtxt);
+	effctLst1 = y_child->mergeDeep_fixInsert(x_newMetricBegIdx, mrgCtxt);
 
 	y_child->link(x);
       }
@@ -759,19 +759,19 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
 		 << "\n  y: " << y_child_dyn->toStringMe(Tree::OFlg_Debug));
       MergeEffect effct =
 	x_child_dyn->mergeMe(*y_child_dyn, x_newMetricBegIdx);
-      if ((mrgFlag & MrgFlg_PropagateEffects) && !effct.isNoop()) {
+      if (mrgCtxt.doPropagateEffects() && !effct.isNoop()) {
 	effctLst->push_back(effct);
       }
       
       effctLst1 = x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, mrgCtxt,
-					 mrgFlag, oFlag);
+					 oFlag);
     }
 
     if (effctLst1 && !effctLst1->empty()) {
       effctLst->splice(effctLst->end(), *effctLst1);
       DIAG_MsgIf(0, MergeEffect::toString(*effctLst));
-      delete effctLst1;
     }
+    delete effctLst1;
   }
 
   return effctLst;
@@ -877,7 +877,7 @@ ANode::findDynChild(const ADynNode& y_dyn)
 
 
 MergeEffectList*
-ANode::mergeDeep_fixup(int newMetrics, MergeContext& mrgCtxt)
+ANode::mergeDeep_fixInsert(int newMetrics, MergeContext& mrgCtxt)
 {
   // Assumes: While merging CCT::Tree y into CCT::Tree x, subtree
   // 'this', which used to live in 'y', has just been inserted into
@@ -900,10 +900,10 @@ ANode::mergeDeep_fixup(int newMetrics, MergeContext& mrgCtxt)
 	  uint newId = mrgCtxt.makeCPId();
 	  n_dyn->cpId(newId);
 
-	  //FIXME: if ((mrgFlag & MrgFlg_PropagateEffects) && !effct.isNoop()) {
-	  MergeEffect effct(curId, newId);
-	  effctLst->push_back(effct);
-	  //}
+	  if (mrgCtxt.doPropagateEffects()) {
+	    MergeEffect effct(curId, newId);
+	    effctLst->push_back(effct);
+	  }
 	}
 	else {
 	  mrgCtxt.noteCPId(curId);
