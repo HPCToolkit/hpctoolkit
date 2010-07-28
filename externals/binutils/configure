@@ -17,7 +17,7 @@ targets='mips64-sgi-irix6, alpha-*-linux-gnu, alpha-*-osf, sparc32-*-elf, sparc6
 
 export CC="$CC"
 export CFLAGS="$CFLAGS"
-if -n "${AR}"; then
+if test -n "${AR}"; then
     export AR="$AR"
 fi
 
