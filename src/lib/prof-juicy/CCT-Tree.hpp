@@ -553,8 +553,7 @@ public:
   // N.B.: assume we can destroy y.
   // N.B.: assume x already has space to store merged metrics
   std::list<MergeEffect>*
-  mergeDeep(ANode* y, uint x_numMetrics, MergeContext& mrgCtxt,
-	    uint mrgFlag = 0, uint oFlag = 0);
+  mergeDeep(ANode* y, uint x_numMetrics, MergeContext& mrgCtxt, uint oFlag = 0);
 
   
   // merge: Let 'this' = x and let y be a node corresponding to x.
@@ -635,7 +634,7 @@ protected:
   // --------------------------------------------------------
 
   MergeEffectList*
-  mergeDeep_fixup(int newMetrics, MergeContext& mrgCtxt);
+  mergeDeep_fixInsert(int newMetrics, MergeContext& mrgCtxt);
 
 
 private:
