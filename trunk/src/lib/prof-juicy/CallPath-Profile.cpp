@@ -218,15 +218,15 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   // merge CCTs
   // -------------------------------------------------------
 
-  if (mrgFlag & CCT::Tree::MrgFlg_NormalizeTraceFileY) {
-    mrgFlag |= CCT::Tree::MrgFlg_PropagateEffects;
+  if (mrgFlag & CCT::MrgFlg_NormalizeTraceFileY) {
+    mrgFlag |= CCT::MrgFlg_PropagateEffects;
   }
 
   CCT::MergeEffectList* mrgEffects2 =
     x.cct()->merge(y.cct(), x_newMetricBegIdx, mrgFlag);
 
   DIAG_Assert(Logic::implies(mrgEffects2 && !mrgEffects2->empty(),
-			     mrgFlag & CCT::Tree::MrgFlg_NormalizeTraceFileY),
+			     mrgFlag & CCT::MrgFlg_NormalizeTraceFileY),
 	      "CallPath::Profile::merge: there should only be CCT::MergeEffects when MrgFlg_NormalizeTraceFileY is passed");
 
   y.merge_fixTrace(mrgEffects2);

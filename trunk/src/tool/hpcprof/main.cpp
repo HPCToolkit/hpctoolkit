@@ -138,7 +138,7 @@ realmain(int argc, char* const* argv)
   Analysis::Util::UIntVec* groupMap =
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
-  uint mrgFlags = (Prof::CCT::Tree::MrgFlg_NormalizeTraceFileY);
+  uint mrgFlags = (Prof::CCT::MrgFlg_NormalizeTraceFileY);
 
   Prof::CallPath::Profile* prof =
     Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, 0, mrgFlags);

@@ -138,16 +138,6 @@ public:
     OFlg_DebugAll        = (1 << 3), // Debug: (may be invalid format)
   };
 
-  enum {
-    // Merge flags
-    MrgFlg_NormalizeTraceFileY = (1 << 0),
-    MrgFlg_CCTMergeOnly        = (1 << 1), // Only perform merges (skip adds)
-    MrgFlg_AssertCCTMergeOnly  = (1 << 2), // Assert: only perform merges
-
-    // *private*
-    MrgFlg_PropagateEffects    = (1 << 3),
-  };
-
 
 public:
   // -------------------------------------------------------
@@ -216,13 +206,8 @@ public:
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
-
-  // Fills 'm_cpIdSet' with all the cpIds in this Tree.
-  // Should be called to fill up 'm_cpIdSet' only once
-  void
-  fillCpIdSet();
   
-  // Sanity check to make sure all the cpIds in the Tree are unique.
+  // verifyUniqueCPIds: Ensure all the cpIds in the Tree are unique.
   bool
   verifyUniqueCPIds();
 
@@ -253,15 +238,16 @@ public:
 
   
 private:
+  // CCT and metadata for interpreting CCT (e.g., metrics)
   ANode* m_root;
-
   const CallPath::Profile* m_metadata; // does not own
 
+  // dense id
   uint m_maxDenseId;
-  
   mutable NodeIdToANodeMap* m_nodeidMap;
 
-  std::set<uint> m_cpIdSet;
+  // merge information, cached here for performance
+  MergeContext* m_mergeCtxt;
 };
 
 
@@ -567,7 +553,7 @@ public:
   // N.B.: assume we can destroy y.
   // N.B.: assume x already has space to store merged metrics
   std::list<MergeEffect>*
-  mergeDeep(ANode* y, uint x_numMetrics, std::set<uint>& cpIdSet, 
+  mergeDeep(ANode* y, uint x_numMetrics, MergeContext& mrgCtxt,
 	    uint mrgFlag = 0, uint oFlag = 0);
 
   
@@ -649,7 +635,7 @@ protected:
   // --------------------------------------------------------
 
   MergeEffectList*
-  mergeDeep_fixup(int newMetrics, std::set<uint>& cpIdSet);
+  mergeDeep_fixup(int newMetrics, MergeContext& mrgCtxt);
 
 
 private:

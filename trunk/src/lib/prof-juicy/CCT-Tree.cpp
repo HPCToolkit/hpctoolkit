@@ -103,27 +103,33 @@ namespace Prof {
 namespace CCT {
   
 Tree::Tree(const CallPath::Profile* metadata)
-  : m_root(NULL), m_metadata(metadata), m_maxDenseId(0), m_nodeidMap(NULL)
+  : m_root(NULL), m_metadata(metadata),
+    m_maxDenseId(0), m_nodeidMap(NULL),
+    m_mergeCtxt(NULL)
 {
 }
 
 
 Tree::~Tree()
 {
-  delete m_root; 
+  delete m_root;
   m_metadata = NULL;
-  delete m_nodeidMap; 
+  delete m_nodeidMap;
+  delete m_mergeCtxt;
 }
 
 
 MergeEffectList*
 Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 {
-  CCT::ANode* x_root = root();
-  CCT::ANode* y_root = y->root();
+  Tree* x = this;
+  ANode* x_root = root();
+  ANode* y_root = y->root();
   
+  // -------------------------------------------------------
   // Merge pre-condition: both x and y should be "locally merged",
   // i.e. they should be equal except for metrics and children.
+  // -------------------------------------------------------
   bool isPrecondition = false;
   if (typeid(*x_root) == typeid(CCT::Root)
       && typeid(*y_root) == typeid(CCT::Root)) {
@@ -147,14 +153,18 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
   }
   DIAG_Assert(isPrecondition, "Prof::CCT::Tree::merge: Merge precondition fails!");
 
-  // Fill cpIdSet if needed
-  bool doTrackCPIds = !metadata()->traceFileNameSet().empty();
-  if (doTrackCPIds && m_cpIdSet.empty()) {
-    fillCpIdSet();
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  if (!m_mergeCtxt) {
+    bool doTrackCPIds = !metadata()->traceFileNameSet().empty();
+    m_mergeCtxt = new MergeContext(x, doTrackCPIds);
   }
+  m_mergeCtxt->flags(mrgFlag);
   
   MergeEffectList* mrgEffects =
-    x_root->mergeDeep(y_root, x_newMetricBegIdx, m_cpIdSet, mrgFlag, oFlag);
+    x_root->mergeDeep(y_root, x_newMetricBegIdx, *m_mergeCtxt, mrgFlag, oFlag);
 
   DIAG_If(0) {
     verifyUniqueCPIds();
@@ -198,37 +208,26 @@ Tree::findNode(uint nodeId) const
 }
 
 
-void
-Tree::fillCpIdSet()
-{
-  for (ANodeIterator it(root()); it.Current(); ++it) {
-    ANode* n = it.current();
-    ADynNode* n_dyn = dynamic_cast<ADynNode*>(n);
-
-    if (n_dyn && n_dyn->cpId() != 0) {
-      m_cpIdSet.insert(n_dyn->cpId());
-    }
-  }
-}
-
-
 bool
 Tree::verifyUniqueCPIds()
 {
-  bool allUnique = true;
-  set<uint> cpId;
+  bool areAllUnique = true;
+  MergeContext::CPIdSet cpIdSet;
+
   for (ANodeIterator it(root()); it.Current(); ++it) {
     ANode* n = it.current();
+
     ADynNode* n_dyn = dynamic_cast<ADynNode*>(n);
-    
-    if (n_dyn && n_dyn->cpId() != 0) {
-      std::pair<set<uint>::iterator, bool> ret = cpId.insert(n_dyn->cpId());
+    if (n_dyn && n_dyn->cpId() != HPCRUN_FMT_CCTNodeId_NULL) {
+      std::pair<MergeContext::CPIdSet::iterator, bool> ret =
+	cpIdSet.insert(n_dyn->cpId());
       bool isInserted = ret.second;
-      allUnique = allUnique && isInserted;
+      areAllUnique = areAllUnique && isInserted;
       DIAG_MsgIf(!isInserted,  "CCT::Tree::verifyUniqueCPIds: Duplicate CPId: " << n_dyn->cpId());
     }
   }
-  return allUnique;
+
+  return areAllUnique;
 }
 
 
@@ -705,7 +704,7 @@ ANode::deleteChaff(ANode* x, uint8_t* deletedNodes)
 //**********************************************************************
 
 MergeEffectList*
-ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, set<uint>& cpIdSet,
+ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
 		 uint mrgFlag, uint oFlag)
 {
   ANode* x = this;
@@ -739,15 +738,15 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, set<uint>& cpIdSet,
 
     if (!x_child_dyn) {
       // case 1: add/insert
-      DIAG_Assert( !(mrgFlag & Tree::MrgFlg_AssertCCTMergeOnly),
+      DIAG_Assert( !(mrgFlag & MrgFlg_AssertCCTMergeOnly),
 		   "CCT::ANode::mergeDeep: adding not permitted");
-      if ( !(mrgFlag & Tree::MrgFlg_CCTMergeOnly) ) {
+      if ( !(mrgFlag & MrgFlg_CCTMergeOnly) ) {
 	DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
 		   "CCT::ANode::mergeDeep: Adding:\n     "
 		   << y_child->toStringMe(Tree::OFlg_Debug));
 	y_child->unlink();
   
-	effctLst1 = y_child->mergeDeep_fixup(x_newMetricBegIdx, cpIdSet);
+	effctLst1 = y_child->mergeDeep_fixup(x_newMetricBegIdx, mrgCtxt);
 
 	y_child->link(x);
       }
@@ -760,11 +759,11 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, set<uint>& cpIdSet,
 		 << "\n  y: " << y_child_dyn->toStringMe(Tree::OFlg_Debug));
       MergeEffect effct =
 	x_child_dyn->mergeMe(*y_child_dyn, x_newMetricBegIdx);
-      if ((mrgFlag & Tree::MrgFlg_PropagateEffects) && !effct.isNoop()) {
+      if ((mrgFlag & MrgFlg_PropagateEffects) && !effct.isNoop()) {
 	effctLst->push_back(effct);
       }
       
-      effctLst1 = x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, cpIdSet,
+      effctLst1 = x_child_dyn->mergeDeep(y_child, x_newMetricBegIdx, mrgCtxt,
 					 mrgFlag, oFlag);
     }
 
@@ -878,38 +877,46 @@ ANode::findDynChild(const ADynNode& y_dyn)
 
 
 MergeEffectList*
-ANode::mergeDeep_fixup(int newMetrics, set<uint>& cpIdSet)
+ANode::mergeDeep_fixup(int newMetrics, MergeContext& mrgCtxt)
 {
+  // Assumes: While merging CCT::Tree y into CCT::Tree x, subtree
+  // 'this', which used to live in 'y', has just been inserted into
+  // 'x'.
+
   MergeEffectList* effctLst = new MergeEffectList();
 
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
 
-    // check if there are any cpId conflicts in Tree y (*this)
-    // with respect to Tree x (using cpIdSet from x).
-    if (!cpIdSet.empty()) {
+    // -----------------------------------------------------
+    // 1. Ensure no cpId in subtree 'this' conflicts with an existing
+    // cpId in CCT::Tree x.
+    // -----------------------------------------------------
+    if (mrgCtxt.isTrackingCPIds()) {
       ADynNode* n_dyn = dynamic_cast<ADynNode*>(n);
       if (n_dyn) {
-	uint old = n_dyn->cpId();  
-	if (old != HPCRUN_FMT_CCTNodeId_NULL 
-	    && cpIdSet.find(old) != cpIdSet.end()) {
-	  uint largestCpId = *(cpIdSet.rbegin()) + 2;
-	  n_dyn->cpId(largestCpId);
+	uint curId = n_dyn->cpId();
+	if (mrgCtxt.isConflict_cpId(curId)) {
+	  uint newId = mrgCtxt.makeCPId();
+	  n_dyn->cpId(newId);
 
-	  // FIXME: if ((mrgFlag & Tree::MrgFlg_PropagateEffects) && !effct.isNoop()) {
-	  MergeEffect effct(old, largestCpId);
+	  //FIXME: if ((mrgFlag & MrgFlg_PropagateEffects) && !effct.isNoop()) {
+	  MergeEffect effct(curId, newId);
 	  effctLst->push_back(effct);
+	  //}
 	}
-	// insert cpId if a new cpId is given or it is not already in cpIdSet
-	// but only if it's not null
-	if (n_dyn->cpId() != HPCRUN_FMT_CCTNodeId_NULL) {
-	  cpIdSet.insert(n_dyn->cpId()); 
+	else {
+	  mrgCtxt.noteCPId(curId);
 	}
       }
     }
-    
+
+    // -----------------------------------------------------
+    // 2. Make space for the metrics of CCT::Tree x
+    // -----------------------------------------------------
     n->insertMetricsBefore(newMetrics);
   }
+  
   return effctLst;
 }
 
