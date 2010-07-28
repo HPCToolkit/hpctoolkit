@@ -77,6 +77,57 @@
 
 //*************************** Forward Declarations ***************************
 
+
+//***************************************************************************
+// MergeEffect, MergeEffectList
+//***************************************************************************
+
+namespace Prof {
+
+namespace CCT {
+
+struct MergeEffect {
+  MergeEffect()
+    : old_cpId(HPCRUN_FMT_CCTNodeId_NULL), new_cpId(HPCRUN_FMT_CCTNodeId_NULL)
+  { }
+  
+  MergeEffect(uint old_, uint new_) : old_cpId(old_), new_cpId(new_)
+  { }
+  
+  bool
+  isNoop()
+  {
+    return (old_cpId == HPCRUN_FMT_CCTNodeId_NULL &&
+	      new_cpId == HPCRUN_FMT_CCTNodeId_NULL);
+  }
+
+  std::string
+  toString(const char* pfx = "") const;
+
+  std::ostream&
+  dump(std::ostream& os = std::cerr, const char* pfx = "") const;
+
+
+  static std::string
+  toString(const std::list<MergeEffect>& effctLst,
+	   const char* pfx = "");
+
+  static std::ostream&
+  dump(const std::list<CCT::MergeEffect>& effctLst,
+       std::ostream& os, const char* pfx = "");
+
+  uint old_cpId /*within y*/, new_cpId /*within y*/;
+};
+
+
+typedef std::list<MergeEffect> MergeEffectList;
+
+
+} // namespace CCT
+
+} // namespace Prof
+
+
 //***************************************************************************
 // MergeContext
 //***************************************************************************
@@ -90,7 +141,7 @@ class Tree;
 enum {
   // CCT Merge flags
   MrgFlg_NormalizeTraceFileY = (1 << 0),
-  MrgFlg_CCTMergeOnly        = (1 << 1), // Only perform merges (skip adds)
+  MrgFlg_CCTMergeOnly        = (1 << 1), // Only perform merges (skip inserts)
   MrgFlg_AssertCCTMergeOnly  = (1 << 2), // Assert: only perform merges
   
   // *Private* CCT Merge flags
@@ -137,11 +188,46 @@ public:
   }
 
 
+  struct pair {
+    pair(uint cpId_, MergeEffect effect_) 
+      : cpId(cpId_), effect(effect_)
+    { }
+    
+    uint cpId;
+    MergeEffect effect;
+  };
+
+
+  // returns the (possibly) new CPId and a MergeEffect
+  MergeContext::pair
+  ensureUniqueCPId(uint curId)
+  {
+    uint newId = curId;
+    MergeEffect effct;
+
+    if (isConflict_cpId(curId)) {
+      newId = makeCPId();
+      
+      if (doPropagateEffects()) {
+	effct.old_cpId = curId;
+	effct.new_cpId = newId;
+      }
+    }
+    else {
+      noteCPId(curId);
+    }
+
+    return MergeContext::pair(newId, effct);
+  }
+
+
   void
   noteCPId(uint cpId)
   {
-    std::pair<CPIdSet::iterator, bool> ret = m_cpIdSet.insert(cpId);
-    DIAG_Assert(ret.second, "MergeContext::noteCPId: conflicting cp-ids!");
+    if (cpId != HPCRUN_FMT_CCTNodeId_NULL) {
+      std::pair<CPIdSet::iterator, bool> ret = m_cpIdSet.insert(cpId);
+      DIAG_Assert(ret.second, "MergeContext::noteCPId: conflicting cp-ids!");
+    }
   }
 
 
@@ -167,56 +253,6 @@ private:
   bool m_isTrackingCPIds;
   CPIdSet m_cpIdSet;
 };
-
-} // namespace CCT
-
-} // namespace Prof
-
-
-//***************************************************************************
-// MergeEffect, MergeEffectList
-//***************************************************************************
-
-namespace Prof {
-
-namespace CCT {
-
-struct MergeEffect {
-  MergeEffect()
-    : old_cpId(HPCRUN_FMT_CCTNodeId_NULL), new_cpId(HPCRUN_FMT_CCTNodeId_NULL)
-  { }
-  
-  MergeEffect(uint old_, uint new_) : old_cpId(old_), new_cpId(new_)
-  { }
-  
-  bool
-  isNoop()
-  {
-    return (old_cpId == HPCRUN_FMT_CCTNodeId_NULL &&
-	      new_cpId == HPCRUN_FMT_CCTNodeId_NULL);
-  }
-
-  std::string
-  toString(const char* pfx = "") const;
-
-  std::ostream&
-  dump(std::ostream& os = std::cerr, const char* pfx = "") const;
-
-
-  static std::string
-  toString(const std::list<MergeEffect>& effctLst,
-	   const char* pfx = "");
-
-  static std::ostream&
-  dump(const std::list<CCT::MergeEffect>& effctLst,
-       std::ostream& os, const char* pfx = "");
-
-  uint old_cpId /*within y*/, new_cpId /*within y*/;
-};
-
-
-typedef std::list<MergeEffect> MergeEffectList;
-
 
 } // namespace CCT
 

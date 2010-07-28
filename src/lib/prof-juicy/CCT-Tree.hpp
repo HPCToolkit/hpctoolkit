@@ -557,14 +557,14 @@ public:
 
   
   // merge: Let 'this' = x and let y be a node corresponding to x.
-  //   Merge y into x.  
+  //   Merge y into x.
   // N.B.: assume we can destroy y.
   MergeEffect
   merge(ANode* y);
 
   
   virtual MergeEffect
-  mergeMe(const ANode& y, uint metricBegIdx = 0);
+  mergeMe(const ANode& y, MergeContext* mrgCtxt = NULL, uint metricBegIdx = 0);
 
 
   // findDynChild: Let z = 'this' be an interior ADynNode (otherwise the
@@ -887,12 +887,16 @@ public:
   static bool
   hasMergeEffects(const ADynNode& x, const ADynNode& y)
   {
-    return (x.cpId() != HPCRUN_FMT_CCTNodeId_NULL
+    // form 1: !( (x == y) || (x == 0) || (y == 0) )
+    // form 2:    (x != y) && (x != 0) && (y != 0)
+    return (x.cpId() != y.cpId()
+	    && x.cpId() != HPCRUN_FMT_CCTNodeId_NULL
 	    && y.cpId() != HPCRUN_FMT_CCTNodeId_NULL);
   }
 
+
   virtual MergeEffect
-  mergeMe(const ANode& y, uint metricBegIdx = 0);
+  mergeMe(const ANode& y, MergeContext* mrgCtxt = NULL, uint metricBegIdx = 0);
   
 
   // -------------------------------------------------------

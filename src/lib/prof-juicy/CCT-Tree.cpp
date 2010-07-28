@@ -737,7 +737,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
     ADynNode* x_child_dyn = x->findDynChild(*y_child_dyn);
 
     if (!x_child_dyn) {
-      // case 1: add/insert
+      // case 1: insert nodes
       DIAG_Assert( !(mrgCtxt.flags() & MrgFlg_AssertCCTMergeOnly),
 		   "CCT::ANode::mergeDeep: adding not permitted");
       if ( !(mrgCtxt.flags() & MrgFlg_CCTMergeOnly) ) {
@@ -752,13 +752,13 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
       }
     }
     else {
-      // case 2: merge
+      // case 2: merge nodes
       DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
 		 "CCT::ANode::mergeDeep: Merging x <= y:\n"
 		 << "  x: " << x_child_dyn->toStringMe(Tree::OFlg_Debug)
 		 << "\n  y: " << y_child_dyn->toStringMe(Tree::OFlg_Debug));
       MergeEffect effct =
-	x_child_dyn->mergeMe(*y_child_dyn, x_newMetricBegIdx);
+	x_child_dyn->mergeMe(*y_child_dyn, &mrgCtxt, x_newMetricBegIdx);
       if (mrgCtxt.doPropagateEffects() && !effct.isNoop()) {
 	effctLst->push_back(effct);
       }
@@ -802,7 +802,7 @@ ANode::merge(ANode* y)
 
 
 MergeEffect
-ANode::mergeMe(const ANode& y, uint metricBegIdx)
+ANode::mergeMe(const ANode& y, MergeContext* mrgCtxt, uint metricBegIdx)
 {
   ANode* x = this;
   
@@ -821,7 +821,7 @@ ANode::mergeMe(const ANode& y, uint metricBegIdx)
 
 
 MergeEffect
-ADynNode::mergeMe(const ANode& y, uint metricBegIdx)
+ADynNode::mergeMe(const ANode& y, MergeContext* mrgCtxt, uint metricBegIdx)
 {
   // N.B.: Assumes ADynNode::isMergable() holds
   ADynNode* x = this;
@@ -829,22 +829,29 @@ ADynNode::mergeMe(const ANode& y, uint metricBegIdx)
   const ADynNode* y_dyn = dynamic_cast<const ADynNode*>(&y);
   DIAG_Assert(y_dyn, "ADynNode::mergeMe: " << DIAG_UnexpectedInput);
 
-  MergeEffect effct = ANode::mergeMe(y, metricBegIdx);
+  MergeEffect effct = ANode::mergeMe(y, mrgCtxt, metricBegIdx);
 
-  // FIXME: If we do not keep x's cpId, must ensure new cpId does not conflict
-
-  // merge cpIds:
-  // 1. At most one of x and y have a cpId: adopt the non-NULL id
-  // 2. Otherwise, merge conflicting ids
-  if ( !hasMergeEffects(*x, *y_dyn) ) {
-    if (m_cpId == HPCRUN_FMT_CCTNodeId_NULL) {
-      m_cpId = y_dyn->m_cpId;
-    }
-  }
-  else if (m_cpId != y_dyn->m_cpId) {
-    // within y, translate [y_dyn->m_cpId ==> m_cpId]
+  // merge cp-ids
+  if (hasMergeEffects(*x, *y_dyn)) {
+    // 1. Conflicting ids:
+    //    => keep x's cpId; within y, translate [y_dyn->m_cpId ==> m_cpId]
     effct.old_cpId = y_dyn->m_cpId;
     effct.new_cpId = m_cpId;
+  }
+  else if (y_dyn->cpId() == HPCRUN_FMT_CCTNodeId_NULL) {
+    // 2. Trivial conflict: y's cpId is NULL; x's may or may not be NULL:
+    //    => keep x's cpId.
+  }
+  else if (m_cpId == HPCRUN_FMT_CCTNodeId_NULL) {
+    // 3. Semi-trivial conflict: x's cpId is NULL, but y's is not
+    //     => use y's cpId *if* it does not conflict with one already
+    //        in x's tree.
+    DIAG_Assert(mrgCtxt, "ADynNode::mergeMe: potentially introducing cp-id conflicts; cannot verify with out MergeContext!");
+
+    MergeContext::pair ret = mrgCtxt->ensureUniqueCPId(y_dyn->cpId());
+    m_cpId = ret.cpId;
+    DIAG_Assert(effct.isNoop(), DIAG_UnexpectedInput);
+    effct = ret.effect;
   }
   
   return effct;
@@ -892,22 +899,12 @@ ANode::mergeDeep_fixInsert(int newMetrics, MergeContext& mrgCtxt)
     // 1. Ensure no cpId in subtree 'this' conflicts with an existing
     // cpId in CCT::Tree x.
     // -----------------------------------------------------
-    if (mrgCtxt.isTrackingCPIds()) {
-      ADynNode* n_dyn = dynamic_cast<ADynNode*>(n);
-      if (n_dyn) {
-	uint curId = n_dyn->cpId();
-	if (mrgCtxt.isConflict_cpId(curId)) {
-	  uint newId = mrgCtxt.makeCPId();
-	  n_dyn->cpId(newId);
-
-	  if (mrgCtxt.doPropagateEffects()) {
-	    MergeEffect effct(curId, newId);
-	    effctLst->push_back(effct);
-	  }
-	}
-	else {
-	  mrgCtxt.noteCPId(curId);
-	}
+    ADynNode* n_dyn = dynamic_cast<ADynNode*>(n);
+    if (n_dyn) {
+      MergeContext::pair ret = mrgCtxt.ensureUniqueCPId(n_dyn->cpId());
+      n_dyn->cpId(ret.cpId);
+      if (!ret.effect.isNoop()) {
+	effctLst->push_back(ret.effect);
       }
     }
 
