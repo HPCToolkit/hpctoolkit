@@ -754,7 +754,7 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
   // merge into canonical CCT
   // -------------------------------------------------------
   int mergeTy  = Prof::CallPath::Profile::Merge_MergeMetricByName;
-  int mergeFlg = (Prof::CCT::Tree::MrgFlg_AssertCCTMergeOnly);
+  int mergeFlg = (Prof::CCT::MrgFlg_AssertCCTMergeOnly);
 
   // Add *some* structure information to the leaves of 'prof' so that
   // it will be merged successfully with the structured canonical CCT
@@ -841,8 +841,8 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
   // merge into canonical CCT
   // -------------------------------------------------------
   int mergeTy  = Prof::CallPath::Profile::Merge_MergeMetricByName;
-  int mergeFlg = (Prof::CCT::Tree::MrgFlg_NormalizeTraceFileY
-		  | Prof::CCT::Tree::MrgFlg_CCTMergeOnly);
+  int mergeFlg = (Prof::CCT::MrgFlg_NormalizeTraceFileY
+		  | Prof::CCT::MrgFlg_CCTMergeOnly);
 
   // Add *some* structure information to the leaves of 'prof' so that
   // it will be merged successfully with the structured canonical CCT

@@ -68,6 +68,8 @@ using std::string;
 
 #include "CCT-Merge.hpp"
 
+#include "CCT-Tree.hpp"
+
 #include <lib/support/diagnostics.h>
 
 
@@ -81,7 +83,34 @@ namespace Prof {
 namespace CCT {
 
 //***************************************************************************
-// ANode::MergeEffect
+// MergeContext
+//***************************************************************************
+
+MergeContext::MergeContext(Tree* cct, bool doTrackCPIds)
+  : m_cct(cct), m_mrgFlag(0), m_isTrackingCPIds(doTrackCPIds)
+{
+  if (isTrackingCPIds()) {
+    fillCPIdSet(cct);
+  }
+}
+
+
+void
+MergeContext::fillCPIdSet(Tree* cct)
+{
+  for (ANodeIterator it(cct->root()); it.Current(); ++it) {
+    ANode* n = it.current();
+    ADynNode* n_dyn = dynamic_cast<ADynNode*>(n);
+
+    if (n_dyn && n_dyn->cpId() != 0) {
+      m_cpIdSet.insert(n_dyn->cpId());
+    }
+  }
+}
+
+
+//***************************************************************************
+// MergeEffect
 //***************************************************************************
 
 string
