@@ -2,7 +2,7 @@
 #
 #  Binutils configure.
 #
-#  $Id: configure 2894 2010-06-28 05:56:52Z krentel $
+#  $Id$
 #
 
 PKG_NAME=binutils
