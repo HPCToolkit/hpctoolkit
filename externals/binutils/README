@@ -5,7 +5,8 @@ Binutils Build Notes
 Home: http://sourceware.org/binutils/
       http://www.hpc.svn.rice.edu/
 
-Download: svn co http://hpc.svn.rice.edu/r/binutils/tags/version-binutils-2.17
+Download: 
+  svn co https://hpc.svn.rice.edu/r/binutils/tags/version-binutils-2.20.1
 
 License: GPL and LGPL
 
