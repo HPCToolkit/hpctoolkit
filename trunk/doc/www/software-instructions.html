@@ -227,7 +227,7 @@ See the README file for more details.
 
 
 <li>
-<p>Build and install HPCToolkit:
+<p>Build and install HPCToolkit using a command similar to the following:
 <div class="indent">
   <code>cd hpctoolkit</code><br>
   <code>./configure --prefix=<i>&lt;install-path</i>&gt; --with-externals=<i>&lt;externals-path</i>&gt; --with-papi=<i>&lt;papi-installation-path</i>&gt;</code><br>
@@ -235,7 +235,8 @@ See the README file for more details.
 </div>
 
 <p>The above command will build HPCToolkit using HPCToolkit's externals and PAPI and install it into <code><i>&lt;install-path</i>&gt;</code>.
-  Here, <code><i>&lt;externals-path</i>&gt;</code> is the path to the <code>hpctoolkit-externals</code> source tree (even if built with <code>--prefix=<i>&lt;externals-installation-path</i>&gt;</code>); and <code><i>&lt;papi-installation-path</i>&gt;</code> is the path to a PAPI installation.
+  Here, <code><i>&lt;externals-path</i>&gt;</code> is the path to the <code>hpctoolkit-externals</code> source tree (even if built with <code>--prefix=<i>&lt;externals-installation-path</i>&gt;</code>).
+  The last argument uses <code><i>&lt;papi-installation-path</i>&gt;</code>, which is the path to an optional PAPI installation; if PAPI is not available, simply remove this option.
 
 <p>Because the HPCToolkit installation is self-contained, it may be renamed or moved to another location.
   All HPCToolkit externals and HPCToolkit source code and build files may be removed.
@@ -334,7 +335,19 @@ See the README file for more details.
       <td><p><code>--with-xerces=PATH</code>
       <td><p>path to xerces/c install directory
     </tr>
+    <tr>
+    </tr>
+      <td><hrule>
+    <tr>
+      <td><p><code>--with-upc=PATH</code>
+      <td><p>path to IBM BlueGene/P UPC installation
+    </tr>
+    <tr>
+      <td><p><code>--with-upc-lib=LIBRARY</code>
+      <td><p>path to IBM BlueGene/P UPC library(s), absolute or relative to WITH_UPC/runtime/SPI
+    </tr>
   </table>
+
 
 <p>In all cases, the default is for HPCToolkit externals build the package itself, depending on platform.
 
@@ -344,7 +357,7 @@ See the README file for more details.
 
 </ul>
 
-<p class="lastupdated">Page last updated: 2010/07/24</p>
+<p class="lastupdated">Page last updated: 2010/08/04</p>
 
 <!-- ********************************************************************** -->
 
