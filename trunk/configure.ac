@@ -1242,7 +1242,15 @@ AC_ARG_WITH([xerces],
   [])
 
 XERCES_IFLAGS="-I${XERCES}/include"
-XERCES_LDFLAGS="-L${XERCES}/lib -lxerces-c"
+XERCES_LDFLAGS="-L${XERCES}/lib -lxerces-c -lpthread"
+
+# xerces (on Linux) uses pthreads
+case "${host}" in
+  *-*-linux*)
+    XERCES_LDFLAGS="${XERCES_LDFLAGS} -lpthread"
+    ;;
+esac
+
 
 if test "$XERCES" = no ; then
   XERCES_COPY=no
