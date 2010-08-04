@@ -14,7 +14,6 @@ prefix="$binutils_prefix"
 
 targets='mips64-sgi-irix6, alpha-*-linux-gnu, alpha-*-osf, sparc32-*-elf, sparc64-*-solaris2, i386-*-linux-gnu, x86_64-*-linux-gnu, ia64-*-linux-gnu, powerpc64-*-linux-gnu'
 
-
 export CC="$CC"
 export CFLAGS="$CFLAGS"
 if test -n "${AR}"; then
@@ -31,9 +30,29 @@ fi
 
 make_work_dir
 cd work || die "unable to cd: work"
+work_dir=`pwd`
 
-echo configure "$@"
-../${src}/configure "$@"
-test $? -eq 0 || die "configure failed"
+# NOTE: this must come after 'make_work_dir' or 'make_work_dir' breaks
+cd "../${src}" || die "unable to cd: ${src}"
+src=`pwd`
+
+# ----------------------------------------------------------
+# Simple version causes problems because it includes gas
+# ----------------------------------------------------------
+# echo configure "$@"
+# ../${src}/configure "$@"
+# test $? -eq 0 || die "configure failed"
+
+# ----------------------------------------------------------
+# Only configure what we need
+# ----------------------------------------------------------
+dirs="libiberty bfd opcodes intl binutils"
+for x in . ${dirs}; do
+    echo "=> ${x}/configure $@"
+    mkdir -p ${work_dir}/${x} || die "unable to mkdir: ${work_dir}/${x}"
+    cd ${work_dir}/${x}
+    ${src}/${x}/configure "$@"
+    test $? -eq 0 || die "configure in ${x} failed"
+done
 
 post_configure

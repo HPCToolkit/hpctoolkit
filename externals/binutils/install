@@ -19,7 +19,20 @@ work_dir=`pwd`
 cd "../${src}" || die "unable to cd: ${src}"
 src=`pwd`
 
-cd ${work_dir} && $MAKE install
+# ----------------------------------------------------------
+# Simple version causes problems because it includes gas
+# ----------------------------------------------------------
+# cd ${work_dir} && $MAKE install
+
+# ----------------------------------------------------------
+# Only install what we need
+# ----------------------------------------------------------
+dirs="libiberty bfd opcodes intl binutils"
+for x in ${dirs}; do
+    echo "=> ${x}/install"
+    cd ${work_dir}/${x}
+    $MAKE install || die "unable to install ${x}"
+done
 
 #
 # Copy extra headers: demangle.h plus its dependencies
