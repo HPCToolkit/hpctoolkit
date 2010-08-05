@@ -1245,7 +1245,7 @@ AC_ARG_WITH([xerces],
   [])
 
 XERCES_IFLAGS="-I${XERCES}/include"
-XERCES_LDFLAGS="-L${XERCES}/lib -lxerces-c -lpthread"
+XERCES_LDFLAGS="-L${XERCES}/lib -lxerces-c"
 
 # xerces (on Linux) uses pthreads
 case "${host}" in
