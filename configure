@@ -723,6 +723,10 @@ CXXDEPMODE
 ac_ct_CXX
 CXXFLAGS
 CXX
+OPT_ENABLE_DEVELOP_FALSE
+OPT_ENABLE_DEVELOP_TRUE
+HPCTOOLKIT_PLATFORM
+LIBTOOL_DEPS
 CPP
 OTOOL64
 OTOOL
@@ -757,10 +761,6 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
-LIBTOOL
-OPT_ENABLE_DEVELOP_FALSE
-OPT_ENABLE_DEVELOP_TRUE
-HPCTOOLKIT_PLATFORM
 host_os
 host_vendor
 host_cpu
@@ -769,6 +769,7 @@ build_os
 build_vendor
 build_cpu
 build
+LIBTOOL
 MAINT
 MAINTAINER_MODE_FALSE
 MAINTAINER_MODE_TRUE
@@ -837,7 +838,6 @@ ac_subst_files='export_hpctoolkit'
 ac_user_opts='
 enable_option_checking
 enable_maintainer_mode
-enable_develop
 enable_shared
 enable_static
 with_pic
@@ -845,6 +845,7 @@ enable_fast_install
 enable_dependency_tracking
 with_gnu_ld
 enable_libtool_lock
+enable_develop
 with_dummy_blank_line
 with_externals
 with_binutils
@@ -1508,7 +1509,6 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-maintainer-mode  enable make rules and dependencies not useful
 			  (and sometimes confusing) to the casual installer
-  --enable-develop        Build development version (enable debugging)
   --enable-shared[=PKGS]  build shared libraries [default=yes]
   --enable-static[=PKGS]  build static libraries [default=yes]
   --enable-fast-install[=PKGS]
@@ -1516,6 +1516,7 @@ Optional Features:
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-develop        Build development version (enable debugging)
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
@@ -3258,6 +3259,7 @@ am__tar='${AMTAR} chof - "$$tardir"'; am__untar='${AMTAR} xf -'
 
 
 
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable maintainer-specific portions of Makefiles" >&5
 $as_echo_n "checking whether to enable maintainer-specific portions of Makefiles... " >&6; }
     # Check whether --enable-maintainer-mode was given.
@@ -3280,6 +3282,31 @@ fi
   MAINT=$MAINTAINER_MODE_TRUE
 
 
+
+case `pwd` in
+  *\ * | *\	*)
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Libtool does not cope well with whitespace in \`pwd\`" >&5
+$as_echo "$as_me: WARNING: Libtool does not cope well with whitespace in \`pwd\`" >&2;} ;;
+esac
+
+
+
+macro_version='2.2.10'
+macro_revision='1.3175'
+
+
+
+
+
+
+
+
+
+
+
+
+
+ltmain="$ac_aux_dir/ltmain.sh"
 
 # Make sure we can run config.sub.
 $SHELL "$ac_aux_dir/config.sub" sun4 >/dev/null 2>&1 ||
@@ -3351,164 +3378,6 @@ host_os=$*
 IFS=$ac_save_IFS
 case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: on entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&5
-$as_echo "$as_me: INFO: on entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: on entry: CC=${CC} CFLAGS=${CFLAGS}" >&5
-$as_echo "$as_me: INFO: on entry: CC=${CC} CFLAGS=${CFLAGS}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: on entry: MPICXX=${MPICXX}" >&5
-$as_echo "$as_me: INFO: on entry: MPICXX=${MPICXX}" >&6;}
-
-MPICXX_ORIG=${MPICXX}
-
-#----------------------------------------------------------------------------
-# Setup
-#----------------------------------------------------------------------------
-
-# ${srcdir}, ${ac_top_srcdir}, ${ac_top_builddir}
-hpctoolkit_top=`cd ${srcdir} && pwd`
-hpctoolkit_build=`pwd`
-HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
-
-
-
-#-------------------------------------------------
-# SVN version
-#-------------------------------------------------
-
-# Append svn revision to PACKAGE_VERSION.
-#
-# If this directory is an svn sandbox, then use svn info (and store
-# the result in a file), else expect the answer to be in the file.
-# Note: svn update changes the revision number, so svn info must take
-# precedence over the file.
-#
-# *** N.B.: since PACKAGE_VERSION is also used in the 'dist' tarball,
-# it is better not to include spaces or special characters within. ***
-
-version_file="${srcdir}/.svn-revision"
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for svn revision" >&5
-$as_echo_n "checking for svn revision... " >&6; }
-
-svn_revision=`svn info $srcdir 2>/dev/null | grep -e '^Revision' | awk '{ print $2 }'`
-if test -n "${svn_revision}" ; then
-  PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
-  rm -f "$version_file"
-  echo "$svn_revision" > "$version_file"
-elif test -f "$version_file" ; then
-  svn_revision=`cat $version_file`
-  PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
-else
-  svn_revision=0
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $svn_revision" >&5
-$as_echo "$svn_revision" >&6; }
-
-if test "$svn_revision" = 0 ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find svn revision" >&5
-$as_echo "$as_me: WARNING: unable to find svn revision" >&2;}
-fi
-
-# NOTE (tallent): Setting PACKAGE_VERSION in this way does not affect
-# the corresponding -D that is automatically placed on the compilation
-# line!  We add our own because
-cat >>confdefs.h <<_ACEOF
-#define HPCTOOLKIT_VERSION "${PACKAGE_VERSION}"
-_ACEOF
-
-
-
-#-------------------------------------------------
-# is_cross_compile: non-empty string if cross-compiling
-#-------------------------------------------------
-
-is_cross_compile=""
-if test "${build}" != "${host}" ; then
-  is_cross_compile=${host}
-fi
-
-
-#----------------------------------------------------------------------------
-# Special Options that should be tested first
-#----------------------------------------------------------------------------
-
-#-------------------------------------------------
-# enable-develop
-#-------------------------------------------------
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether DEVELOP mode is enabled" >&5
-$as_echo_n "checking whether DEVELOP mode is enabled... " >&6; }
-
-OPT_ENABLE_DEVELOP=no
-
-# Check whether --enable-develop was given.
-if test "${enable_develop+set}" = set; then :
-  enableval=$enable_develop; case "${enableval}" in
-     yes) OPT_ENABLE_DEVELOP="yes" ;;
-     no)  OPT_ENABLE_DEVELOP="no" ;;
-     *) as_fn_error "bad value ${enableval} for --enable-develop" "$LINENO" 5 ;;
-   esac
-else
-  OPT_ENABLE_DEVELOP=no
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_DEVELOP}" >&5
-$as_echo "${OPT_ENABLE_DEVELOP}" >&6; }
- if test "${OPT_ENABLE_DEVELOP}" = "yes"; then
-  OPT_ENABLE_DEVELOP_TRUE=
-  OPT_ENABLE_DEVELOP_FALSE='#'
-else
-  OPT_ENABLE_DEVELOP_TRUE='#'
-  OPT_ENABLE_DEVELOP_FALSE=
-fi
-
-
-
-#----------------------------------------------------------------------------
-# Prerequisites: compilers, tools, system libraries
-#----------------------------------------------------------------------------
-
-# AC_PROG_CXX will set CXXFLAGS to something like -g -O2 if not
-# already defined.  We do not want this!
-if test -z "$CXXFLAGS" ; then
-     CXXFLAGS=""
-   fi
-
-if test -z "$CFLAGS" ; then
-     CFLAGS=""
-   fi
-
-
-# Check for programs.
-# Note: libtool makes PROG_RANLIB obsolete
-case `pwd` in
-  *\ * | *\	*)
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Libtool does not cope well with whitespace in \`pwd\`" >&5
-$as_echo "$as_me: WARNING: Libtool does not cope well with whitespace in \`pwd\`" >&2;} ;;
-esac
-
-
-
-macro_version='2.2.10'
-macro_revision='1.3175'
-
-
-
-
-
-
-
-
-
-
-
-
-
-ltmain="$ac_aux_dir/ltmain.sh"
 
 # Backslashify metacharacters that are still active within
 # double-quoted strings.
@@ -11275,6 +11144,143 @@ CC="$lt_save_CC"
 
 
 
+
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: on entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&5
+$as_echo "$as_me: INFO: on entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: on entry: CC=${CC} CFLAGS=${CFLAGS}" >&5
+$as_echo "$as_me: INFO: on entry: CC=${CC} CFLAGS=${CFLAGS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: on entry: MPICXX=${MPICXX}" >&5
+$as_echo "$as_me: INFO: on entry: MPICXX=${MPICXX}" >&6;}
+
+MPICXX_ORIG=${MPICXX}
+
+#----------------------------------------------------------------------------
+# Setup
+#----------------------------------------------------------------------------
+
+# ${srcdir}, ${ac_top_srcdir}, ${ac_top_builddir}
+hpctoolkit_top=`cd ${srcdir} && pwd`
+hpctoolkit_build=`pwd`
+HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
+
+
+
+#-------------------------------------------------
+# SVN version
+#-------------------------------------------------
+
+# Append svn revision to PACKAGE_VERSION.
+#
+# If this directory is an svn sandbox, then use svn info (and store
+# the result in a file), else expect the answer to be in the file.
+# Note: svn update changes the revision number, so svn info must take
+# precedence over the file.
+#
+# *** N.B.: since PACKAGE_VERSION is also used in the 'dist' tarball,
+# it is better not to include spaces or special characters within. ***
+
+version_file="${srcdir}/.svn-revision"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for svn revision" >&5
+$as_echo_n "checking for svn revision... " >&6; }
+
+svn_revision=`svn info $srcdir 2>/dev/null | grep -e '^Revision' | awk '{ print $2 }'`
+if test -n "${svn_revision}" ; then
+  PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
+  rm -f "$version_file"
+  echo "$svn_revision" > "$version_file"
+elif test -f "$version_file" ; then
+  svn_revision=`cat $version_file`
+  PACKAGE_VERSION="${PACKAGE_VERSION}-r${svn_revision}"
+else
+  svn_revision=0
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $svn_revision" >&5
+$as_echo "$svn_revision" >&6; }
+
+if test "$svn_revision" = 0 ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find svn revision" >&5
+$as_echo "$as_me: WARNING: unable to find svn revision" >&2;}
+fi
+
+# NOTE (tallent): Setting PACKAGE_VERSION in this way does not affect
+# the corresponding -D that is automatically placed on the compilation
+# line!  We add our own because
+cat >>confdefs.h <<_ACEOF
+#define HPCTOOLKIT_VERSION "${PACKAGE_VERSION}"
+_ACEOF
+
+
+
+#-------------------------------------------------
+# is_cross_compile: non-empty string if cross-compiling
+#-------------------------------------------------
+
+is_cross_compile=""
+if test "${build}" != "${host}" ; then
+  is_cross_compile=${host}
+fi
+
+
+#----------------------------------------------------------------------------
+# Special Options that should be tested first
+#----------------------------------------------------------------------------
+
+#-------------------------------------------------
+# enable-develop
+#-------------------------------------------------
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether DEVELOP mode is enabled" >&5
+$as_echo_n "checking whether DEVELOP mode is enabled... " >&6; }
+
+OPT_ENABLE_DEVELOP=no
+
+# Check whether --enable-develop was given.
+if test "${enable_develop+set}" = set; then :
+  enableval=$enable_develop; case "${enableval}" in
+     yes) OPT_ENABLE_DEVELOP="yes" ;;
+     no)  OPT_ENABLE_DEVELOP="no" ;;
+     *) as_fn_error "bad value ${enableval} for --enable-develop" "$LINENO" 5 ;;
+   esac
+else
+  OPT_ENABLE_DEVELOP=no
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_DEVELOP}" >&5
+$as_echo "${OPT_ENABLE_DEVELOP}" >&6; }
+ if test "${OPT_ENABLE_DEVELOP}" = "yes"; then
+  OPT_ENABLE_DEVELOP_TRUE=
+  OPT_ENABLE_DEVELOP_FALSE='#'
+else
+  OPT_ENABLE_DEVELOP_TRUE='#'
+  OPT_ENABLE_DEVELOP_FALSE=
+fi
+
+
+
+#----------------------------------------------------------------------------
+# Prerequisites: compilers, tools, system libraries
+#----------------------------------------------------------------------------
+
+# AC_PROG_CXX will set CXXFLAGS to something like -g -O2 if not
+# already defined.  We do not want this!
+if test -z "$CXXFLAGS" ; then
+     CXXFLAGS=""
+   fi
+
+if test -z "$CFLAGS" ; then
+     CFLAGS=""
+   fi
+
+
+# Check for programs.
+# Note: libtool makes PROG_RANLIB obsolete
+
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -18128,16 +18134,16 @@ if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
   as_fn_error "conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${OPT_ENABLE_DEVELOP_TRUE}" && test -z "${OPT_ENABLE_DEVELOP_FALSE}"; then
-  as_fn_error "conditional \"OPT_ENABLE_DEVELOP\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
   as_fn_error "conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCC_TRUE}" && test -z "${am__fastdepCC_FALSE}"; then
   as_fn_error "conditional \"am__fastdepCC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_DEVELOP_TRUE}" && test -z "${OPT_ENABLE_DEVELOP_FALSE}"; then
+  as_fn_error "conditional \"OPT_ENABLE_DEVELOP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCXX_TRUE}" && test -z "${am__fastdepCXX_FALSE}"; then
