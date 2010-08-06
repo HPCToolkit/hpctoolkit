@@ -355,7 +355,7 @@ case "${host}" in
     AC_DEFINE([HOST_OS_LINUX], [1], [])
     ;;
 
-  powerpc64*-*-linux*)
+  powerpc64*-*-linux* | powerpc-*-linux*)
     # []
     HOST_OS="Linux"
     HOST_CPU_PPC=yes

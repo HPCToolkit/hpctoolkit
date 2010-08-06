@@ -16299,7 +16299,7 @@ case "${host}" in
 
     ;;
 
-  powerpc64*-*-linux*)
+  powerpc64*-*-linux* | powerpc-*-linux*)
     # []
     HOST_OS="Linux"
     HOST_CPU_PPC=yes
