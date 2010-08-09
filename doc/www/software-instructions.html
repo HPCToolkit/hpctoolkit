@@ -71,8 +71,11 @@ The following prerequisites apply to our default source code distribution.
       <td><p>Linux + MIPS-le (64 and n32)
       <td><p>for SiCortex clusters (little endian MIPS)
     </tr>
+
     <tr>
+      <td><hrule>
     </tr>
+
     <tr>
       <td><p>Linux + x86
       <td><p>testing
@@ -129,7 +132,7 @@ Some vendor compilers that support GNU extensions also work.
   </ul>
 -->
 
-<p>Additionally, HPCToolkit requires a basic version of GNU make, not a vendor supplied make.  We have successfully used versions 3.70, 3.76, 3.77, 3.78, 3.79 3.80.
+<p>Additionally, HPCToolkit requires a basic version of GNU make, not a vendor supplied make.  We have successfully used versions 3.70, 3.76, 3.77, 3.78, 3.79, 3.80.
 </li>
 
 <li>
@@ -200,7 +203,9 @@ succssfully used versions 5.6.x, 5.8.x.
 In each case, more options are available by executing <code>./configure --help</code>.
 See the README file for more details.
 
-<p>The typical build is as follows:
+<p>The typical build is as follows.
+Please note that a table below provides special <code>configure</code> commands for selected platforms.
+
 <ol class="noindent">
 
 <li>
@@ -272,6 +277,35 @@ See the README file for more details.
 </ol>
 
 
+<p>Example HPCToolkit-externals and HPCToolkit <code>configure</code> commands (respectively) for selected platforms:
+  <ul>
+    <li><p>BlueGene/P front-end:
+	<ul>
+	  <li><code>CC=gcc CXX=g++ ./configure</code>
+	  <li><code>CC=gcc CXX=g++ ./configure 
+	      --prefix=&lt;<i>install-path-fe</i>&gt;
+	      --with-externals=&lt;<i>externals-path-fe</i>&gt;
+	      </code>
+	</ul>
+    <li><p>BlueGene/P back-end:
+	<ul>
+	  <li><code>
+	      CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br>
+              CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br>
+	      ./configure --host=powerpc-bgp-linux
+	    </code>
+	  <li><code>
+	      CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br>
+	      CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br>
+	      MPICXX="mpicxx -dynamic" \<br>
+	      ./configure --host=powerpc-bgp-linux
+              --prefix=&lt;<i>install-path-be</i>&gt;
+	      --with-externals=&lt;<i>externals-path-be</i>&gt; --enable-mpi
+	    </code>
+	</ul>
+  </ul>
+
+
 <!-- ********************************************************************** -->
 <!-- ********************************************************************** -->
 
@@ -336,9 +370,11 @@ See the README file for more details.
       <td><p>path to xerces/c install directory
     </tr>
     <tr>
+
     </tr>
       <td><hrule>
     <tr>
+
       <td><p><code>--with-upc=PATH</code>
       <td><p>path to IBM BlueGene/P UPC installation
     </tr>
@@ -357,7 +393,7 @@ See the README file for more details.
 
 </ul>
 
-<p class="lastupdated">Page last updated: 2010/08/04</p>
+<p class="lastupdated">Page last updated: 2010/08/09</p>
 
 <!-- ********************************************************************** -->
 
