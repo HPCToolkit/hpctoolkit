@@ -277,11 +277,37 @@ METHOD_FN(start)
     EMSG("cannot set ASYNC");
     hpcrun_ssfail_start("IBS");
   }
-  ret = fcntl(ov->fd, F_SETOWN, gettid());
-  if (ret == -1){
-    EMSG("cannot set ownership");
-    hpcrun_ssfail_start("IBS");
-  }
+//  ret = fcntl(ov->fd, F_SETOWN, gettid());
+//  if (ret == -1){
+//    EMSG("cannot set ownership");
+//    hpcrun_ssfail_start("IBS");
+//  }
+
+  #ifndef F_SETOWN_EX
+  #define F_SETOWN_EX     15
+  #define F_GETOWN_EX     16
+ 
+  #define F_OWNER_TID     0
+  #define F_OWNER_PID     1
+  #define F_OWNER_GID     2
+ 
+  struct f_owner_ex {
+       int     type;
+       pid_t   pid;
+  };
+  #endif
+ 
+  {
+    struct f_owner_ex fown_ex;
+    fown_ex.type = F_OWNER_TID;
+    fown_ex.pid  = gettid();
+    ret = fcntl(ov->fd, F_SETOWN_EX, &fown_ex);
+    if (ret == -1){
+      EMSG("cannot set ownership");
+      hpcrun_ssfail_start("IBS");
+    }
+  }  
+
   ret = fcntl(ov->fd, F_SETSIG, SIGIO);
   if (ret < 0){
     EMSG("cannot set SIGIO");
