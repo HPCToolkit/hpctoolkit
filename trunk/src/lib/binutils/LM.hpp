@@ -144,12 +144,14 @@ public:
   // open: If 'moduleName' is not already open, attempt to do so;
   // throw an exception on error.  If a file is already, do nothing.
   // (Segs, Procs and Insns are not constructed yet.)
-  virtual void open(const char* filenm);
+  virtual void
+  open(const char* filenm);
 
   // read: If module has not already been read, attempt to do so;
   // return an exception on error.  If a file has already been read do
   // nothing.
-  virtual void read(ReadFlg readflg/* = ReadFlg_Seg*/);
+  virtual void
+  read(ReadFlg readflg/* = ReadFlg_Seg*/);
 
 
   // -------------------------------------------------------
@@ -157,52 +159,81 @@ public:
   // -------------------------------------------------------
 
   // name: Return name of load module
-  const std::string& name() const { return m_name; }
+  const std::string&
+  name() const
+  { return m_name; }
 
   // type:  Return type of load module
-  Type type() const { return m_type; }
+  Type
+  type() const
+  { return m_type; }
 
-  ReadFlg readFlags() { return m_readFlags; }
+  ReadFlg
+  readFlags()
+  { return m_readFlags; }
 
   // textBeg, textEnd: (Unrelocated) Text begin and end.
   // FIXME: only guaranteed on alpha at present
-  VMA textBeg() const { return m_txtBeg; }
-  VMA textEnd() const { return m_txtEnd; }
+  VMA
+  textBeg() const
+  { return m_txtBeg; }
+
+  VMA
+  textEnd() const
+  { return m_txtEnd; }
 
   // FIXME: should be automatically set... (cf. Alpha/Tru64)
-  void textBeg(VMA x)  { m_txtBeg = x; }
-  void textEnd(VMA x)  { m_txtEnd = x; }
+  void
+  textBeg(VMA x)
+  { m_txtBeg = x; }
+
+  void
+  textEnd(VMA x)
+  { m_txtEnd = x; }
   
-  VMA  firstVMA() const { return m_begVMA; }
-  void firstVMA(VMA x) { m_begVMA = x; }
+  VMA
+  firstVMA() const
+  { return m_begVMA; }
+
+  void
+  firstVMA(VMA x)
+  { m_begVMA = x; }
 
 
   // after reading the binary, get the smallest begin VMA and largest end VMA
   // of all the text m_sections
-  void textBegEndVMA(VMA* begVMA, VMA* endVMA);
+  void
+  textBegEndVMA(VMA* begVMA, VMA* endVMA);
 
   // relocate: 'Relocate' the text section to the supplied text begin
   // address.  All member functions that take VMAs will assume they
   // receive *relocated* values.  A value of 0 unrelocates the module.
-  void relocate(VMA textBegReloc);
+  void
+  relocate(VMA textBegReloc);
 
-  bool isRelocated() const {
-    return (m_textBegReloc != 0);
-  }
+  bool
+  isRelocated() const
+  { return (m_textBegReloc != 0); }
 
   // doUnrelocate: is unrelocation necessary?
-  bool doUnrelocate(VMA loadAddr) const {
-    return ((type() == TypeDSO) && (textBeg() < loadAddr));
-  }
+  bool
+  doUnrelocate(VMA loadAddr) const
+  { return ((type() == TypeDSO) && (textBeg() < loadAddr)); }
+
 
   // -------------------------------------------------------
   // Segments: 
   // -------------------------------------------------------
 
-  SegMap&       segs()       { return m_segMap; }
-  const SegMap& segs() const { return m_segMap; }
+  SegMap&
+  segs()
+  { return m_segMap; }
 
-  Seg* 
+  const SegMap&
+  segs() const
+  { return m_segMap; }
+
+  Seg*
   findSeg(VMA vma) const
   {
     VMA vma_ur = unrelocate(vma);
@@ -213,8 +244,8 @@ public:
   }
 
   // returns false if an overlapping segment already exists
-  bool 
-  insertSeg(VMAInterval ival, Seg* seg) 
+  bool
+  insertSeg(VMAInterval ival, Seg* seg)
   {
     VMAInterval ival_ur(unrelocate(ival.beg()), unrelocate(ival.end()));
     std::pair<SegMap::iterator, bool> ret =
@@ -222,17 +253,24 @@ public:
     return ret.second;
   }
 
-  uint numSegs() const { return m_segMap.size(); }
+  uint
+  numSegs() const
+  { return m_segMap.size(); }
 
 
   // -------------------------------------------------------
   // Procedures: All procedures may be accessed here.
   // -------------------------------------------------------
 
-  ProcMap&       procs()       { return m_procMap; }
-  const ProcMap& procs() const { return m_procMap; }
+  ProcMap&
+  procs()
+  { return m_procMap; }
+  
+  const ProcMap&
+  procs() const
+  { return m_procMap; }
 
-  Proc* 
+  Proc*
   findProc(VMA vma) const
   {
     VMA vma_ur = unrelocate(vma);
@@ -243,7 +281,7 @@ public:
   }
 
   bool
-  insertProc(VMAInterval ival, Proc* proc) 
+  insertProc(VMAInterval ival, Proc* proc)
   {
     VMAInterval ival_ur(unrelocate(ival.beg()), unrelocate(ival.end()));
     std::pair<ProcMap::iterator, bool> ret =
@@ -278,8 +316,13 @@ public:
   MachInsn*
   findMachInsn(VMA vma, ushort &size) const;
   
-  InsnMap&       insns()       { return m_insnMap; }
-  const InsnMap& insns() const { return m_insnMap; }
+  InsnMap&
+  insns()
+  { return m_insnMap; }
+  
+  const InsnMap&
+  insns() const
+  { return m_insnMap; }
 
   Insn*
   findInsn(VMA vma, ushort opIndex) const
@@ -342,32 +385,40 @@ public:
   // The second version only returns true when all information is
   // found and no error is detected.
   // -------------------------------------------------------
-  bool 
+  bool
   GetSourceFileInfo(VMA vma, ushort opIndex,
-		    std::string& func, 
+		    std::string& func,
 		    std::string& file, SrcFile::ln& line) /*const*/;
 
-  bool 
+  bool
   GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 		    VMA endVMA, ushort eOpIndex,
 		    std::string& func, std::string& file,
 		    SrcFile::ln& begLine, SrcFile::ln& endLine,
 		    unsigned flags = 1) /*const*/;
 
-  bool 
+  bool
   GetProcFirstLineInfo(VMA vma, ushort opIndex, SrcFile::ln& line) const;
 
   // -------------------------------------------------------
   // BFD details
   // -------------------------------------------------------
-  bfd*      abfd()        const { return m_bfd; }
-  asymbol** bfdSymTab()   const { return m_bfdSymTabSort; }
-  uint      bfdSymTabSz() const { return m_bfdSymTabSz; }
+  bfd*
+  abfd() const
+  { return m_bfd; }
+
+  asymbol**
+  bfdSymTab() const
+  { return m_bfdSymTabSort; }
+
+  uint
+  bfdSymTabSz() const
+  { return m_bfdSymTabSz; }
 
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  enum DumpTy { 
+  enum DumpTy {
     // Shorthand notation
     DUMP_Short           = 0x00000000,
     DUMP_Mid             = 0x00000110,
@@ -382,24 +433,25 @@ public:
     DUMP_Flg_Sym         = 0x00000100  // print symbolic info
   };
 
-  std::string 
+  std::string
   toString(int flags = DUMP_Short, const char* pre = "") const;
 
-  virtual void 
-  dump(std::ostream& o = std::cerr, int flags = DUMP_Short, 
+  virtual void
+  dump(std::ostream& o = std::cerr, int flags = DUMP_Short,
        const char* pre = "") const;
 
-  void 
+  void
   ddump() const;
   
   // dump helpers
-  virtual void 
+  virtual void
   dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
 
-  virtual void 
-  dumpProcMap(std::ostream& o = std::cerr, unsigned flag = 0, const char* pre = "") const;
+  virtual void
+  dumpProcMap(std::ostream& o = std::cerr, unsigned flag = 0,
+	      const char* pre = "") const;
 
-  void 
+  void
   ddumpProcMap(unsigned flag) const;
 
   // -------------------------------------------------------
@@ -430,25 +482,26 @@ private:
   readSegs();
   
   // unrelocate: Given a relocated VMA, returns a non-relocated version.
-  VMA unrelocate(VMA relocVMA) const { return (relocVMA + m_unrelocDelta); }
+  VMA
+  unrelocate(VMA relocVMA) const
+  { return (relocVMA + m_unrelocDelta); }
   
   // Comparison routines for QuickSort.
-  static int 
+  static int
   SymCmpByVMAFunc(const void* s1, const void* s2);
 
   // Dump helper routines
-  void 
+  void
   dumpModuleInfo(std::ostream& o = std::cerr, const char* pre = "") const;
 
-  void 
+  void
   dumpSymTab(std::ostream& o = std::cerr, const char* pre = "") const;
 
   friend class TextSeg; // for TextSeg::Create_InitializeProcs();
 
-  BinUtil::dbg::LM* 
-  GetDebugInfo() { 
-    return &m_dbgInfo; 
-  }
+  BinUtil::dbg::LM*
+  GetDebugInfo()
+  { return &m_dbgInfo; }
     
 private:
   std::string m_name;
@@ -516,17 +569,22 @@ public:
   // -------------------------------------------------------
 
   // See LM::Open comments
-  virtual void open(const char* filenm);
+  virtual void
+  open(const char* filenm);
   
-  VMA GetStartVMA() const { return m_startVMA; }
+  VMA
+  GetStartVMA() const
+  { return m_startVMA; }
 
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  virtual void dump(std::ostream& o = std::cerr, 
-		    int flags = DUMP_Short, const char* pre = "") const;
+  virtual void
+  dump(std::ostream& o = std::cerr, 
+       int flags = DUMP_Short, const char* pre = "") const;
 
-  virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void
+  dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
 
 private:
   // Should not be used
@@ -555,9 +613,9 @@ public:
     : Diagnostics::Exception(x, filenm, lineno)
   { }
   
-  virtual std::string message() const { 
-    return "[BinUtil]: " + what();
-  }
+  virtual std::string
+  message() const
+  { return "[BinUtil]: " + what(); }
 
 private:
 };

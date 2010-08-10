@@ -124,10 +124,15 @@ realmain(int argc, char* argv[])
     lm->read(BinUtil::LM::ReadFlg_ALL);
   }
   catch (...) {
-    DIAG_EMsg("Exception encountered while reading " << args.in_filenm);
+    DIAG_EMsg("Exception encountered while reading '" << args.in_filenm << "'");
     throw;
   }
-  
+
+  if (lm->bfdSymTabSz() == 0) {
+    DIAG_WMsg(0, "Program structure is likely useless because no symbol table could be found.");
+  }
+
+
   // ------------------------------------------------------------
   // Build and print the program structure tree
   // ------------------------------------------------------------

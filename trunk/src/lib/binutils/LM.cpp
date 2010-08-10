@@ -261,8 +261,9 @@ BinUtil::LM::open(const char* filenm)
 void
 BinUtil::LM::read(LM::ReadFlg readflg)
 {
-  // If the file has not been opened...
+  // Internal sanity check.
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
+
   m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
 
   readSymbolTables();
@@ -577,10 +578,10 @@ BinUtil::LM::SymCmpByVMAFunc(const void* s1, const void* s2)
   // Primary sort key: Symbol's VMA (ascending).
   if (bfd_asymbol_value(a) < bfd_asymbol_value(b)) {
     return -1;
-  } 
+  }
   else if (bfd_asymbol_value(a) > bfd_asymbol_value(b)) {
     return 1; 
-  } 
+  }
   else {
     return 0;
   }
@@ -590,45 +591,39 @@ BinUtil::LM::SymCmpByVMAFunc(const void* s1, const void* s2)
 void
 BinUtil::LM::readSymbolTables()
 {
-  // First, attempt to get the normal symbol table.  If that fails,
-  // attempt to read the dynamic symbol table.
+  // -------------------------------------------------------
+  // Look for normal symbol table.
+  // -------------------------------------------------------
   long bytesNeeded = bfd_get_symtab_upper_bound(m_bfd);
   
-  // If we found a populated symbol table...
   if (bytesNeeded > 0) {
-    m_bfdSymTab = new asymbol*[bytesNeeded/sizeof(asymbol *)];
+    m_bfdSymTab = new asymbol*[bytesNeeded / sizeof(asymbol*)];
     m_bfdSymTabSz = bfd_canonicalize_symtab(m_bfd, m_bfdSymTab);
+
     if (m_bfdSymTabSz == 0) {
       delete[] m_bfdSymTab;
       m_bfdSymTab = NULL;
+      DIAG_Msg(2, "'" << name() << "': No regular symbols found.");
     }
   }
 
-  // If we found no symbols, or if there was an error reading symbolic info...
-  if (bytesNeeded <= 0 || m_bfdSymTabSz == 0) {
-
-    // Either there are no symbols or there is no normal symbol table.
-    // So try obtaining dynamic symbol table.  Unless this is a mips
-    // binary, we emit a user warning.  (For some reason, it seems
-    // that that standard mips symbol table is the dynamic one; and
-    // don't want this warning emitted for every single mips binary.)
-
-    if (bfd_get_arch(m_bfd) != bfd_arch_mips) {
-      DIAG_Msg(2, "'" << name() << "': No regular symbols found; consulting dynamic symbols.");
-    }
-
+  // -------------------------------------------------------
+  // Look for dynamic symbol table if there is no normal symbol table
+  // -------------------------------------------------------
+  if (!m_bfdSymTab) {
     bytesNeeded = bfd_get_dynamic_symtab_upper_bound(m_bfd);
-    if (bytesNeeded <= 0) {
-      // We can't find any symbols. 
-      DIAG_Msg(1, "Warning: '" << name() << "': No dynamic symbols found.");
-      return;
-    }
-    
-    m_bfdSymTab = new asymbol*[bytesNeeded/sizeof(asymbol *)];
-    m_bfdSymTabSz = bfd_canonicalize_dynamic_symtab(m_bfd, m_bfdSymTab);
-  }
-  DIAG_Assert(m_bfdSymTab && m_bfdSymTabSz >= 1, "");
 
+    if (bytesNeeded > 0) {
+      m_bfdSymTab = new asymbol*[bytesNeeded / sizeof(asymbol*)];
+      m_bfdSymTabSz = bfd_canonicalize_dynamic_symtab(m_bfd, m_bfdSymTab);
+    }
+
+    if (m_bfdSymTabSz == 0) {
+      DIAG_Msg(2, "'" << name() << "': No dynamic symbols found.");
+    }
+  }
+
+  // -------------------------------------------------------
   // Append the synthetic symbol table to our copy for sorting.
   // On many platforms this is empty, but it helps on powerpc.
   //
@@ -636,13 +631,18 @@ BinUtil::LM::readSymbolTables()
   // not an array of pointers, and not null-terminated.
   // Note: the sorted table may be larger than the original table,
   // and size is the size of the sorted table (regular + synthetic).
-
+  // -------------------------------------------------------
   m_bfdSynthTabSz = bfd_get_synthetic_symtab(m_bfd, m_bfdSymTabSz, m_bfdSymTab,
 					     0, NULL, &m_bfdSynthTab);
-  if (m_bfdSynthTabSz < 0)
+  if (m_bfdSynthTabSz < 0) {
     m_bfdSynthTabSz = 0;
+  }
 
-  m_bfdSymTabSort = new asymbol* [m_bfdSymTabSz + m_bfdSynthTabSz + 1];
+  if (m_bfdSynthTabSz == 0) {
+    DIAG_Msg(2, "'" << name() << "': No synthetic symbols found.");
+  }
+
+  m_bfdSymTabSort = new asymbol*[m_bfdSymTabSz + m_bfdSynthTabSz + 1];
   memcpy(m_bfdSymTabSort, m_bfdSymTab, m_bfdSymTabSz * sizeof(asymbol *));
   for (int i = 0; i < m_bfdSynthTabSz; i++) {
     m_bfdSymTabSort[m_bfdSymTabSz + i] = &m_bfdSynthTab[i];
@@ -650,7 +650,9 @@ BinUtil::LM::readSymbolTables()
   m_bfdSymTabSz += m_bfdSynthTabSz;
   m_bfdSymTabSort[m_bfdSymTabSz] = NULL;
 
-  // Sort scratch symbol table by VMA.
+  // -------------------------------------------------------
+  // Sort symbol table by VMA.
+  // -------------------------------------------------------
   QuickSort QSort;
   QSort.Create((void **)(m_bfdSymTabSort), LM::SymCmpByVMAFunc);
   QSort.Sort(0, m_bfdSymTabSz - 1);
@@ -663,8 +665,6 @@ BinUtil::LM::readSegs()
   // Create sections.
   // Pass symbol table and debug summary information for each section
   // into that section as it is created.
-  DIAG_Assert(m_bfdSymTab, "");
-
   m_dbgInfo.read(m_bfd, m_bfdSymTab);
 
   // Process each section in the object file.
@@ -842,14 +842,18 @@ BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
 
   o << p << "--------------- Symbol Table Dump (Unsorted) --------------\n";
 
-  for (uint i = 0; m_bfdSymTab[i] != NULL; i++) {
-    dumpASymbol(o, m_bfdSymTab[i], p1);
+  if (m_bfdSymTab) {
+    for (uint i = 0; m_bfdSymTab[i] != NULL; i++) {
+      dumpASymbol(o, m_bfdSymTab[i], p1);
+    }
   }
 
   o << p << "--------------- Symbol Table Dump (Synthetic) -------------\n";
 
-  for (int i = 0; i < m_bfdSynthTabSz; i++) {
-    dumpASymbol(o, &m_bfdSynthTab[i], p1);
+  if (m_bfdSynthTabSz) {
+    for (int i = 0; i < m_bfdSynthTabSz; i++) {
+      dumpASymbol(o, &m_bfdSynthTab[i], p1);
+    }
   }
 
   o << p << "-----------------------------------------------------------\n";
