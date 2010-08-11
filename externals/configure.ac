@@ -80,7 +80,7 @@ ext_warn_user_prefix=no
 if test "x$prefix" != xNONE ; then
     ext_warn_user_prefix=yes
 fi
-prefix="`pwd`/${host_cpu}-${host_os}"
+prefix="`pwd`/${host}"
 
 #------------------------------------------------------------
 # SVN revision
