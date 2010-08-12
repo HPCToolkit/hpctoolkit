@@ -208,7 +208,7 @@ fnbounds_enclosing_addr(void *pc, void **start, void **end)
   
   if (r && r->nsymbols > 0) { 
     void * relative_pc = pc;
-    if (r->relocate) { //this is the "delta" we want!!
+    if (r->relocate) {
       relative_pc =  
 	(void *) (((unsigned long) relative_pc) - r->start_to_ref_dist);
     }
@@ -254,11 +254,10 @@ fnbounds_unmap_closed_dsos()
 {
   FNBOUNDS_LOCK;
 
-  //dso_info_t *dso_info, *next;
   load_module_t *current = hpcrun_get_loadmap()->lm_head;
-  while (current && current->lm_info) {
-    if (!dylib_addr_is_mapped(current->lm_info->start_addr)) {
-      // remove from loadmodule and free it.
+  while (current && current->dso_info) {
+    if (!dylib_addr_is_mapped(current->dso_info->start_addr)) {
+      // remove from load map and free it.
       hpcrun_remove_dso(current);
     }
     current = current->next;
@@ -458,7 +457,7 @@ static dso_info_t *
 fnbounds_dso_info_get(void *pc)
 {
   load_module_t* lm = hpcrun_find_lm_by_addr(pc, pc);
-  dso_info_t* dso_open = (lm) ? lm->lm_info : NULL;
+  dso_info_t* dso_open = (lm) ? lm->dso_info : NULL;
   // We can't call dl_iterate_phdr() in general because catching a
   // sample at just the wrong point inside dlopen() will segfault or
   // deadlock.

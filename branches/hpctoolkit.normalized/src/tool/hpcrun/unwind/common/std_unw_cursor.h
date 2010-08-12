@@ -77,7 +77,7 @@ typedef struct hpcrun_unw_cursor_t {
   // ------------------------------------------------------------
   // common state
   // ------------------------------------------------------------
-  void *pc_unnorm;
+  void *pc_unnorm; //only place where un-normalized pc will exist
   void **bp;
   void **sp;
   void *ra;
@@ -86,6 +86,7 @@ typedef struct hpcrun_unw_cursor_t {
 
   UNW_CURSOR_INTERVAL_t intvl;
 
+  //NOTE: will fail if HPC_UWN_LITE defined
   ip_normalized_t pc_norm;
 
   // ------------------------------------------------------------

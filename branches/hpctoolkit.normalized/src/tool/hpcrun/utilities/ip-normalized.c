@@ -55,8 +55,6 @@ ip_normalized_t ip_normalized_NULL = { .lm_id = 0, .offset = 0 };
 
 ip_normalized_t
 hpcrun_normalize_ip(void *unnormalized_ip, load_module_t* lm)
-		    //uint16_t lm_id, void* start_addr, 
-		    //uintptr_t start_to_ref_dist)
 {
   ip_normalized_t ip_norm;
   
@@ -67,13 +65,12 @@ hpcrun_normalize_ip(void *unnormalized_ip, load_module_t* lm)
     }
   }
   
-  if (!lm->lm_info) {
+  if (!lm->dso_info) {
     return ip_normalized_NULL;
   }
 
   ip_norm.lm_id = lm->id;
-  ip_norm.offset = (uintptr_t) unnormalized_ip - 
-    (uintptr_t) lm->lm_info->start_addr - lm->lm_info->start_to_ref_dist;
+  ip_norm.offset = (uintptr_t) unnormalized_ip - lm->dso_info->start_to_ref_dist;
 
   return ip_norm;
 }

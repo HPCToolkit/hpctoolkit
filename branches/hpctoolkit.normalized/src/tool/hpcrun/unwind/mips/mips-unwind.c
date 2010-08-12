@@ -540,8 +540,8 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
     }
     else {
       if (nxt_intvl->lm) {
-	nxt_pc_norm = hpcrun_normalize_ip(nxt_pc, nxt_intvl->lm->lm_info->id,
-					  nxt_intvl->lm->lm_info->offset);
+	nxt_pc_norm = hpcrun_normalize_ip(nxt_pc, nxt_intvl->lm->dso_info->id,
+					  nxt_intvl->lm->dso_info->offset);
       }
       else {
 	nxt_pc_norm = ip_normalized_NULL;

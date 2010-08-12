@@ -100,11 +100,20 @@ hpcrun_static_loadmap()
   return &static_loadmap;
 }
 
+
+hpcrun_loadmap_t*
+hpcrun_get_loadmap()
+{
+  return current_loadmap;
+}
+
+
 void
 hpcrun_loadmap_lock() 
 {
   spinlock_lock(&loadmap_lock);
 }
+
 
 void
 hpcrun_loadmap_unlock()
@@ -112,32 +121,35 @@ hpcrun_loadmap_unlock()
   spinlock_unlock(&loadmap_lock);
 }
 
+
 int
 hpcrun_loadmap_is_locked()
 {
   return spinlock_is_locked(&loadmap_lock);
 }
 
+
 void
 hpcrun_loadmap_add_module(dso_info_t* dso)
 {
   TMSG(LOADMAP," loadmap_add_module('%s')", dso->name);
 
+  //check whether a load module with the same name as dso exists
   load_module_t *m = hpcrun_find_lm_by_name(dso->name);
-  if (m) {
+  if (m) { //if one already exists, just modify its dso_info field
     hpcrun_remove_dso(m); 
-    m->lm_info = dso;
+    m->dso_info = dso;
   }
-  else {
+  else { //otherwise, malloc a new load_module_t
     m =(load_module_t *) hpcrun_malloc(sizeof(load_module_t)); 
     //never delete the load modules
     
     int namelen = strlen(dso->name) + 1;
     // fill in the fields of the structure
-    m->id = ++current_loadmap->size;
-    m->name = (char *) hpcrun_malloc(namelen);
+    m->id = ++current_loadmap->size; //largest id = size
+    m->name = (char *) hpcrun_malloc(namelen); //create our own persistant copy
     strcpy(m->name, dso->name);
-    m->lm_info = dso;
+    m->dso_info = dso;
     
     TMSG(LOADMAP," loadmap_add_module: new size=%d", 
 	 current_loadmap->size);
@@ -158,7 +170,6 @@ hpcrun_loadmap_add_module(dso_info_t* dso)
 }
 
 
-
 void
 hpcrun_loadmap_init(hpcrun_loadmap_t* e)
 {
@@ -174,8 +185,6 @@ hpcrun_loadmap_init(hpcrun_loadmap_t* e)
   e->lm_end = NULL;
   e->size = 0;
   
-  /* make sure everything is up-to-date before setting the
-     current_loadmap */
   current_loadmap = e;
 }
 
@@ -200,19 +209,19 @@ hpcrun_find_lm_by_addr(void* begin, void* end)
 {
   load_module_t* lm_src = current_loadmap->lm_head;
   
-  while (lm_src && lm_src->lm_info && (begin < lm_src->lm_info->start_addr 
-				       || end > lm_src->lm_info->end_addr)) {
+  while (lm_src && lm_src->dso_info && (begin < lm_src->dso_info->start_addr 
+				       || end > lm_src->dso_info->end_addr)) {
     lm_src = lm_src->next;
   }
   
-  if (lm_src && lm_src->lm_info) {
+  if (lm_src && lm_src->dso_info) {
     return lm_src;
   }
   
   return NULL;
 }
 
-//finds regardless of whether or not lm_src has a non-NULL lm_info field.
+//finds regardless of whether or not lm_src has a non-NULL dso_info field.
 load_module_t*
 hpcrun_find_lm_by_name(char* name)
 {
@@ -244,12 +253,6 @@ hpcrun_move_to_back(load_module_t* lm)
   current_loadmap->lm_end = lm;
 }
 
-dso_info_t*
-hpcrun_free_list()
-{
-  return dso_free_list;
-}
-
 
 dso_info_t *
 new_dso_info_t(const char *name, void **table, struct fnbounds_file_header *fh,
@@ -270,7 +273,7 @@ new_dso_info_t(const char *name, void **table, struct fnbounds_file_header *fh,
   r->start_to_ref_dist = (unsigned long) startaddr - fh->reference_offset;
   r->next = NULL;
   r->prev = NULL;
-  // NOTE: offset = relocation offset
+  // NOTE: start_to_ref_dist = pointer to reference address
 
   hpcrun_loadmap_add_module(r); //add r to the loadmap
   TMSG(DSO, "new dso: start = %p, end = %p, name = %s",
@@ -307,11 +310,10 @@ hpcrun_remove_dso(load_module_t *module)
 {
   TMSG(LOADMAP,"load module %s: removing dso", module->name);
 
-  dso_info_t* unused = module->lm_info;
-  module->lm_info = NULL;
-  hpcrun_move_to_back(module); //by pushisng lm's with removed dso's
-                               //to the back don't have to search
-                               //entire list.
+  dso_info_t* unused = module->dso_info;
+  module->dso_info = NULL;
+  hpcrun_move_to_back(module);
+  
   if (unused) {
     //add unused to the head of the dso_free_list
     unused->next = dso_free_list;
@@ -346,8 +348,3 @@ dump_dso_list(dso_info_t *dl_list)
 }
 
 
-hpcrun_loadmap_t*
-hpcrun_get_loadmap()
-{
-  return current_loadmap;
-}
