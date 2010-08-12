@@ -1,0 +1,70 @@
+$Id: README 2856 2010-06-05 20:59:42Z tallent $
+
+=============================================================================
+=============================================================================
+
+HPCToolkit/README
+
+=============================================================================
+=============================================================================
+
+Contents:
+  0. What is HPCToolkit
+  1. Obtaining and Installing HPCToolkit
+  2. For More Information
+
+=============================================================================
+
+----------------------------------------
+0. What is HPCToolkit
+----------------------------------------
+
+HPCToolkit is an integrated suite of tools for measurement and
+analysis of program performance on computers ranging from multicore
+desktop systems to the nation's largest supercomputers. HPCToolkit
+provides accurate measurements of a program's work, resource
+consumption, and inefficiency, correlates these metrics with the
+program's source code, works with multilingual, fully optimized
+binaries, has very low measurement overhead, and scales to large
+parallel systems. HPCToolkit's measurements provide support for
+analyzing a program execution cost, inefficiency, and scaling
+characteristics both within and across nodes of a parallel system.
+
+More information can be found at
+  http://hpctoolkit.org.
+
+
+=============================================================================
+
+----------------------------------------
+1. Obtaining and Installing HPCToolkit
+----------------------------------------
+
+Basic information for obtaining and installing HPCToolkit may be found in
+  README.Install
+
+Detailed information about obtaining and installing HPCToolkit may be
+found at:
+  WWW:   http://www.hpctoolkit.org/software.html
+  Local: <hpctoolkit-source>/doc/www/software.html
+
+
+=============================================================================
+
+----------------------------------------
+2. For More Information
+----------------------------------------
+
+WWW Page:
+  http://hpctoolkit.org
+
+SciDAC WWW Page (including subversion repository and bug tracker):
+  https://outreach.scidac.gov/projects/hpctoolkit
+
+Locally installed documentation:
+  HTML: <hpctoolkit-install>/share/doc/hpctoolkit/index.html
+  Man : <hpctoolkit-install>/share/man
+
+Email (for compliments, complaints and cash):
+  hpc <at> cs.rice.edu
+

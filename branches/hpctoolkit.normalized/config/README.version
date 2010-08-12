@@ -1,0 +1,5 @@
+$Id: README.version 2935 2010-07-15 03:40:20Z tallent $
+
+autoconf 2.65 [2.66 is buggy]
+automake 1.11.1
+libtool  2.2.10
