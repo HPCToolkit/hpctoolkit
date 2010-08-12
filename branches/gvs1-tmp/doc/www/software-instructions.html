@@ -1,0 +1,418 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit: Building and Installing</title>
+
+  <link rel='stylesheet' type='text/css' href='style/style.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="style/header-hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<a name="toc"></a>
+<h1>Building and Installing HPCToolkit</h1>
+
+<h2>Contents</h2>
+<p>
+<ul>
+  <li><a href="#prerequisites">Prerequisites</a>
+
+  <li><a href="#downloading">Downloading Source Code</a>
+
+  <li><a href="#building-installing">Building and Installing</a>
+
+  <li><a href="#infrequent-options">Infrequently Used Build Options</a>
+</ul>
+
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="prerequisites"></a>
+
+<h2>Prerequisites</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>To reduce our maintenance efforts, we have opted to distribute HPCToolkit primarily in source form.
+The following prerequisites apply to our default source code distribution.
+
+<ol class="noindent">
+
+<li>HPCToolkit can be installed on the following platforms:
+
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+    <tr>
+      <td><p><b>Platform</b>
+      <td><p><b>Notes</b>
+    </tr>
+    <tr>
+      <td><p>Linux + x86_64
+      <td><p>
+    </tr>
+    <tr>
+      <td><p>Cray XT (CNL + x86_64)
+      <td><p>Compute Node Linux &ge; 2.1
+    </tr>
+    <tr>
+      <td><p>IBM Blue Gene/P (BG/P kernel + Power32)
+      <td><p>BG/P kernel &ge; V1R3M0
+    </tr>
+    <tr>
+      <td><p>Linux + MIPS-le (64 and n32)
+      <td><p>for SiCortex clusters (little endian MIPS)
+    </tr>
+
+    <tr>
+      <td><hrule>
+    </tr>
+
+    <tr>
+      <td><p>Linux + x86
+      <td><p>testing
+    </tr>
+    <tr>
+      <td><p>Linux + Power64
+      <td><p>testing
+    </tr>
+    <tr>
+      <td><p>Linux + IA64 
+      <td><p>testing (uses <a href="http://www.nongnu.org/libunwind/">libunwind</a>)
+    </tr>
+  </table>
+</li>
+
+<li>
+<p>Compiler: HPCToolkit requires an ANSI/ISO C/C++ compliant compiler that supports a few GNU extensions.
+Generally speaking, any recent GCC (4.x, 3.3+) should be fine.
+Some vendor compilers that support GNU extensions also work.
+
+<!--    
+  <ul class="noindent">
+    <li>Linux-x86_64, Cray XT:
+      <ul class="noindent">
+        <li>GCC C++/C 4.x, 3.4
+        <li>Intel C++/C 10.x, 9.x
+      </ul>
+
+    <li>Linux-ia64:
+      <ul class="noindent">
+        <li>GCC C++/C 4.x, 3.4
+        <li>Intel C++/C 9.x
+      </ul>
+
+    <li>Linux-MIPS:
+      <ul class="noindent">
+        <li>GCC C++/C 4.x
+      </ul>
+
+    <li>Linux-POWER, Blue Gene/P:
+      <ul class="noindent">
+        <li>GCC C++/C 4.x
+      </ul>
+    
+    <!--
+    <li>SunOS-sparc:
+      <ul class="noindent">
+        <li>Sun Forte C++/C 5.3 (WorkShop 6 update 2 with patch 111685-01
+            or greater (bug id 4466915))
+        <li>Sun Forte C++/C 5.1 (WorkShop 6)
+        <li>GCC C++/C 3.x
+      </ul>
+     --
+  </ul>
+-->
+
+<p>Additionally, HPCToolkit requires a basic version of GNU make, not a vendor supplied make.  We have successfully used versions 3.70, 3.76, 3.77, 3.78, 3.79, 3.80.
+</li>
+
+<li>
+<p>Highly recommended: To collect measurements based on hardware performance monitoring unit (PMU) information, <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> &ge; 3.5 is required.
+Without PAPI, HPCToolkit can only collect measurements based on an operating system timer.
+(Exception: On IBM Blue Gene/P, PAPI is not required.)
+
+<p>There are currently three ways to support PAPI on Linux-based OSs:
+  <ul>
+    <li><p>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch. As of this writing, supports kernels through 2.6.29. (Unfortunately, development has stopped because of perf events.)
+    <li><p>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch.  As of this writing, supports kernels through 2.6.32.  (One benefit of perfctr is out-of-the-box support for Red Hat kernels.)
+    <li><p>Use a kernel with perf events (n&eacute;e PCL).  As of kernel 2.6.32 (2.6.31), perf events is part of kernel distributions -- and even enabled by default.  Tested but still on the cutting edge.
+  </ul>
+
+<p>Note: Beware of kernels 2.6.28 through 2.6.29.2
+</li>
+
+<li>
+<p>Highly recommended: To use HPCToolkit's interactive presentation tool, <span class="hpctool">hpcviewer</span>, a Java runtime environment (JRE) &ge; 1.5 is required.
+To use <span class="hpctool">hpcviewer</span> on MacOS and Windows, nothing additional is required; to use <span class="hpctool">hpcviewer</span> on Linux, <a href="http://www.gtk.org">GTK+</a> is required.
+</li>
+
+<!--
+<li>
+<p>HPCToolkit contains some Perl-based tools which require that some
+variant of Perl 5 installed and that it is in your path.  We have
+succssfully used versions 5.6.x, 5.8.x.
+-->
+
+</ol>
+
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="downloading"></a>
+
+<h2>Downloading Source Code</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>
+<a href="software.html">Download</a> and extract the following:
+<ol>
+  <li><p>An HPCToolkit tarball
+
+  <li><p>An HPCToolkit externals tarball.  Think of this as a "package manager" that automatically configures and builds dependences not mentioned above.  It contains several external libraries.  (Some of these libraries, like libelf and libxml2 are commonly found on Linux systems, but not always.  Others, like OpenAnalysis and SymtabAPI are almost never available.  Finally, a few packages, like GNU binutils have been heavily patched.)  In some cases it may be possible to use versions of these packages that are already installed on your system.  However, we do not support such configurations.
+
+  <li><p>An <span class="hpctool">hpcviewer</span> build.
+
+  <p>Note: It is perfectly reasonable to install <span class="hpctool">hpcviewer</span> in multiple locations.  Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.
+</ol>
+
+<p>To extract the tarball <i>zoo.tar.gz</i>, execute:
+<div class="indent">
+  <code>tar zxvf <i>zoo.tar.gz</i></code>
+</div>
+
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="building-installing"></a>
+
+<h2>Building and Installing</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>The build and install follows autotools conventions (<code>./configure && make && make install</code>).
+In each case, more options are available by executing <code>./configure --help</code>.
+See the README file for more details.
+
+<p>The typical build is as follows.
+Please note that a list of examples below provides <code>configure</code> commands for selected platforms.
+
+<ol class="noindent">
+
+<li>
+<p>Build and install HPCToolkit's externals, which typically does not require any special options:
+<div class="indent">
+  <code>cd hpctoolkit-externals</code><br>
+  <code>./configure</code><br>
+  <code>make all</code><br>
+  <code>make distclean</code><br>
+</div>
+
+<p>The build creates a staging area in a subdirectory named after the target (Autoconf: host) platform.
+  The staging area is a development directory, that is, it contains the full installation of each package, including the header files needed to compile other programs.
+  This is the directory HPCToolkit uses to build itself, so it is important to finish the externals build before configuring HPCToolkit.
+
+<p><ul>
+  <li><p>Note: it is possible, but unnecessary, to use the <code>--prefix=<i>&lt;externals-installation-path</i>&gt;</code> option for configure.
+    The externals's install directory (prefix) is only a staging area, used as a build dependency for HPCToolkit and is not the same as HPCToolkit's prefix.
+
+  <li><p>Note: the externals tree is designed to be a one-time build step.
+    After building the external packages, then its tree can be cleaned (with make distclean) and HPCToolkit can be configured and built several times with the same externals tree.
+    That is, reconfiguring or rebuilding HPCToolkit does not require rebuilding the externals tree.
+</ul>
+
+
+<li>
+<p>Build and install HPCToolkit using a command similar to the following:
+<div class="indent">
+  <code>cd hpctoolkit</code><br>
+  <code>./configure --prefix=<i>&lt;install-path</i>&gt; --with-externals=<i>&lt;externals-path</i>&gt; --with-papi=<i>&lt;papi-installation-path</i>&gt;</code><br>
+  <code>make install</code><br>
+</div>
+
+<p>The above command will build HPCToolkit using HPCToolkit's externals and PAPI and install it into <code><i>&lt;install-path</i>&gt;</code>.
+  Here, <code><i>&lt;externals-path</i>&gt;</code> is the path to the <code>hpctoolkit-externals</code> source tree (even if built with <code>--prefix=<i>&lt;externals-installation-path</i>&gt;</code>).
+  The last argument uses <code><i>&lt;papi-installation-path</i>&gt;</code>, which is the path to an optional PAPI installation; if PAPI is not available, simply remove this option.
+
+<p>Because the HPCToolkit installation is self-contained, it may be renamed or moved to another location.
+  All HPCToolkit externals and HPCToolkit source code and build files may be removed.
+
+   <!-- &nbsp; -->
+
+   <!--
+   <ul class="noindent">
+     <li>Linux-*: <i>(using the GNU compiler and Intel compiler,
+                  respectively)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;PAPI=&lt;papi&gt;&nbsp;CXX=g++&nbsp;CC=gcc&nbsp;all</code>
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;PAPI=&lt;papi&gt;&nbsp;CXX=icc&nbsp;CC=icc&nbsp;all</code>
+       </ul>
+     <li>IRIX64-mips: <i>(using the SGI MIPSpro compiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=CC&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+    <li>SunOS-sparc: <i>(using the Sun compiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=CC&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+     <li>Tru64-alpha: <i>(using the Compaq comiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=cxx&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+   </ul>
+   -->
+
+<li>
+<p>Install <span class="hpctool">hpcviewer</span>.  Simply move the directory tree to the desired location.
+
+</ol>
+
+
+<h3>Examples</h3>
+
+<p>The list below gives example HPCToolkit-externals and HPCToolkit <code>configure</code> commands (respectively) for selected platforms:
+  <ul>
+    <li><p>BlueGene/P front-end:
+	<ul>
+	  <li><code>CC=gcc CXX=g++ ./configure</code>
+	  <li><code>CC=gcc CXX=g++ ./configure 
+	      --prefix=&lt;<i>install-path-fe</i>&gt;
+	      --with-externals=&lt;<i>externals-path-fe</i>&gt;
+	      </code>
+	</ul>
+    <li><p>BlueGene/P back-end:
+	<ul>
+	  <li><code>
+	      CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br>
+              CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br>
+	      ./configure --host=powerpc-bgp-linux
+	    </code>
+	  <li><code>
+	      CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br>
+	      CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br>
+	      MPICXX="mpicxx -dynamic" \<br>
+	      ./configure --host=powerpc-bgp-linux
+              --prefix=&lt;<i>install-path-be</i>&gt;
+	      --with-externals=&lt;<i>externals-path-be</i>&gt; --enable-mpi
+	    </code>
+	</ul>
+  </ul>
+
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="infrequent-options"></a>
+
+<h2>Infrequently Used Build Options</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>The following options may be useful in exceptional circumstances.
+
+<ul>
+
+<li>To request that HPCToolkit externals use an alternate user-supplied installation for a given package, the following options may be used.
+
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+    <tr>
+      <td><p><b>Option</b>
+      <td><p><b>Meaning</b>
+    </tr>
+    <tr>
+      <td><p><code>--with-binutils=PATH</code>
+      <td><p>path to binutils install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-libdwarf=PATH</code>
+      <td><p>path to libdwarf install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-libelf=PATH</code>
+      <td><p>path to libelf install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-libmonitor=PATH</code>
+      <td><p>path to libmonitor install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-libunwind=PATH</code>
+      <td><p>path to libunwind install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-libxml2=PATH</code>
+      <td><p>path to libxml2 install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-old-monitor=PATH</code>
+      <td><p>path to old monitor install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-open-analysis=PATH</code>
+      <td><p>path to open analysis install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-symtabAPI=PATH</code>
+      <td><p>path to symtabAPI install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-xed2=PATH</code>
+      <td><p>path to xed2 install directory
+    </tr>
+    <tr>
+      <td><p><code>--with-xerces=PATH</code>
+      <td><p>path to xerces/c install directory
+    </tr>
+    <tr>
+
+    </tr>
+      <td><hrule>
+    <tr>
+
+      <td><p><code>--with-upc=PATH</code>
+      <td><p>path to IBM BlueGene/P UPC installation
+    </tr>
+    <tr>
+      <td><p><code>--with-upc-lib=LIBRARY</code>
+      <td><p>path to IBM BlueGene/P UPC library(s), absolute or relative to WITH_UPC/runtime/SPI
+    </tr>
+  </table>
+
+
+<p>In all cases, the default is for HPCToolkit externals build the package itself, depending on platform.
+
+<li><p>To explicitly request that a package <code>x</code> <i>not</i> be built, use <code>--without-x</code>.
+
+<!-- <li><p>These same options, with the same names, may be used with either externals's or HPCToolkit's configure, except that old-monitor in externals is just called monitor in HPCToolkit.-->
+
+</ul>
+
+<p class="lastupdated">Page last updated: 2010/08/09</p>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="style/footer-hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: "<p class=\"lastupdated\">Page last updated: " -->
+<!-- time-stamp-format: "%:y/%02m/%02d" -->
+<!-- time-stamp-end: "</p>" -->
+<!-- time-stamp-line-limit: 10000 -->
+<!-- End: -->
