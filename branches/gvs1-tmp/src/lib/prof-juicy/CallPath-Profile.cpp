@@ -982,10 +982,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   for (uint i = 0; i < num_lm; ++i) {
     string nm = loadmap_tbl.lst[i].name;
     RealPathMgr::singleton().realpath(nm);
-    VMA loadAddr = loadmap_tbl.lst[i].mapaddr;
+    VMA vaddr = 0;
     size_t sz = 0;
 
-    LoadMap::LM* lm = new LoadMap::LM(nm, loadAddr, sz);
+    LoadMap::LM* lm = new LoadMap::LM(nm,vaddr, sz);
     loadmap.lm_insert(lm);
     
     DIAG_Assert(lm->id() == i + 1, "FIXME: Profile::fmt_epoch_fread: Expect lm id's to be in order to support dual-interpretations.");
@@ -1211,8 +1211,6 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     loadmap_entry_t lm_entry;
     lm_entry.id = lm->id();
     lm_entry.name = const_cast<char*>(lm->name().c_str());
-    lm_entry.vaddr = 0;
-    lm_entry.mapaddr = lm->id(); // avoid problems reading as a LoadMap!
     lm_entry.flags = 0; // TODO:flags
     
     hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
@@ -1380,7 +1378,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------
   ALoadMap::LM_id_t lmId = nodeFmt.lm_id;
 
-  VMA ip = (VMA)nodeFmt.ip; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
+  VMA ip = (VMA)nodeFmt.lm_offset; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
   if (loadmap && (nodeFmt.id_parent != HPCRUN_FMT_CCTNodeId_NULL)) {
@@ -1407,12 +1405,12 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
   if (lip) {
     if (loadmap) {
-      VMA lip_ip = lush_lip_getIP(lip);
+      VMA lip_ip = lush_lip_getLMOffset(lip);
 
       LoadMap::LM* lm = loadmap->lm_find(lip_ip);
       
       lush_lip_setLMId(lip, lm->id());
-      lush_lip_setIP(lip, lip_ip - lm->relocAmt()); // unrelocated ip
+      lush_lip_setLMOffset(lip, lip_ip - lm->relocAmt()); // unrelocated ip
     }
 
     ALoadMap::LM_id_t lip_lmId = lush_lip_getLMId(lip);
@@ -1530,7 +1528,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
     n_fmt.lm_id   = Prof::ALoadMap::LM_id_NULL;
-    n_fmt.ip      = 0;
+    n_fmt.lm_offset  = 0;
     lush_lip_init(&(n_fmt.lip));
     memset(n_fmt.metrics, 0, n_fmt.num_metrics * sizeof(hpcrun_metricVal_t));
   }
@@ -1543,7 +1541,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
     
     n_fmt.lm_id = n_dyn.lmId();
     
-    n_fmt.ip = n_dyn.Prof::CCT::ADynNode::ip();
+    n_fmt.lm_offset = n_dyn.Prof::CCT::ADynNode::lmOffset();
 
     if (flags.fields.isLogicalUnwind) {
       lush_lip_init(&(n_fmt.lip));

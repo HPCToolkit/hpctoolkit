@@ -382,7 +382,7 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
       const Prof::Struct::LM* lmStrct = rootStrct->findLM(lm_nm);
       DIAG_Assert(lmStrct, "failed to find Struct::LM: " << lm_nm);
 
-      VMA ip_ur = n_dyn->ip();
+      VMA ip_ur = n_dyn->lmOffset();
       const Prof::Struct::ACodeNode* strct = lmStrct->findByVMA(ip_ur);
       DIAG_Assert(strct, "failed to find structure: (" << n_dyn->lmId() << ", " << hex << ip_ur << dec << ")");
       
@@ -431,7 +431,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       using namespace Prof;
 
       // 1. Add symbolic information to 'n_dyn'
-      VMA ip_ur = n_dyn->ip();
+      VMA ip_ur = n_dyn->lmOffset();
       Struct::ACodeNode* strct = 
 	Analysis::Util::demandStructure(ip_ur, lmStrct, lm, useStruct);
       n->structure(strct);

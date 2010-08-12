@@ -50,6 +50,7 @@
 #define _UI_TREE_H_
 
 #include <sys/types.h>
+#include <hpcrun/utilities/ip-normalized.h>
 #include "splay-interval.h"
 #include "splay.h"
 
@@ -57,7 +58,8 @@ void hpcrun_interval_tree_init(void);
 void hpcrun_release_splay_lock(void);
 void *hpcrun_ui_malloc(size_t ui_size);
 
-splay_interval_t *hpcrun_addr_to_interval(void *addr);
+splay_interval_t *hpcrun_addr_to_interval(void *addr, 
+					  ip_normalized_t* norm_ip);
 splay_interval_t *hpcrun_addr_to_interval_locked(void *addr);
 void hpcrun_delete_ui_range(void *start, void *end);
 void free_ui_node_locked(interval_tree_node *node);

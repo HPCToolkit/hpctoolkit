@@ -154,13 +154,22 @@ hpcrun_ui_malloc(size_t ui_size)
  * Returns: pointer to unwind_interval struct if found, else NULL.
  */
 splay_interval_t *
-hpcrun_addr_to_interval(void *addr)
+hpcrun_addr_to_interval(void *addr, ip_normalized_t* ip_norm)
 {
   UI_TREE_LOCK;
-  splay_interval_t *retval = hpcrun_addr_to_interval_locked(addr);
+  splay_interval_t *intvl = hpcrun_addr_to_interval_locked(addr);
   UI_TREE_UNLOCK;
-
-  return retval;
+  
+  if (intvl && ip_norm) { 
+    if (intvl->lm) {
+      *ip_norm = hpcrun_normalize_ip(addr, intvl->lm);
+    }
+    else {
+      *ip_norm = ip_normalized_NULL;
+    }
+  }
+  
+  return intvl;
 }
 
 
@@ -246,6 +255,11 @@ hpcrun_addr_to_interval_locked(void *addr)
     if (START(p) <= addr && addr < END(p)) {
       ans = p;
     }
+  }
+
+  if (ans) {
+    //FIXME: Hack to link the interval to its load module to get the id
+    ans->lm = hpcrun_find_lm_by_addr(fcn_start, fcn_end);
   }
 
   if (ENABLED(UITREE_VERIFY)) {

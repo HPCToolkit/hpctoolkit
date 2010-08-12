@@ -96,7 +96,6 @@ struct dylib_fmca_s {
      ((info)->dlpi_phdr[seg].p_flags & PF_X))
 
 
-
 //*****************************************************************************
 // forward declarations
 //*****************************************************************************
@@ -245,7 +244,7 @@ void
 dylib_get_segment_bounds(struct dl_phdr_info *info, 
 			 struct dylib_seg_bounds_s *bounds)
 {
-  int j;
+ int j;
   char *start = (char *) -1;
   char *end   = NULL;
 

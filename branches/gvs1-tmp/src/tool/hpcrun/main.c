@@ -280,8 +280,6 @@ hpcrun_fini_internal()
 
     fnbounds_fini();
 
-    hpcrun_finalize_current_loadmap();
-
     hpcrun_write_profile_data(epoch);
 
     hpcrun_stats_print_summary();
@@ -345,7 +343,6 @@ hpcrun_thread_fini(epoch_t *epoch)
     TMSG(FINI,"thread finit stops sampling");
     SAMPLE_SOURCES(stop);
     lushPthr_thread_fini(&TD_GET(pthr_metrics));
-    hpcrun_finalize_current_loadmap();
 
     // FIXME: currently breaks the build.
 #if 0

@@ -173,9 +173,11 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
     while (lush_step_pnote(&cursor) != LUSH_STEP_END_CHORD) {
       hpcrun_ensure_btbuf_avail();
 
-      unw_word_t ip = lush_cursor_get_ip(&cursor);
-      TMSG(LUNW, "IP:  %p", ip);
-      td->unwind->ip = (void*) ip;
+      //unw_word_t ip = lush_cursor_get_ip(&cursor);
+      ip_normalized_t ip_norm = lush_cursor_get_ip_norm(&cursor);
+      TMSG(LUNW, "IP:  lm_id = %d and offset = %p", ip_norm.lm_id, 
+	   ip_norm.offset);
+      td->unwind->ip_norm = ip_norm;
 
       pchord_len++;
       td->unwind++;
@@ -271,11 +273,11 @@ canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
   frame_t* pchord_end = chord_beg + pchord_len;
   frame_t* lchord_end = chord_beg + lchord_len;
 
-  unw_word_t ip = 0;
+  ip_normalized_t ip_norm = ip_normalized_NULL;
   lush_lip_t* lip = NULL;
 
   if (as == LUSH_ASSOC_1_to_M) {
-    ip = (unw_word_t) chord_beg->ip;
+    ip_norm = chord_beg->ip_norm;
   }
   else if (as == LUSH_ASSOC_M_to_1) {
     lip = chord_beg->lip;
@@ -289,7 +291,7 @@ canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
     
     if (x >= pchord_end) {
       // INVARIANT: as must be 1-to-M
-      x->ip = (void*) ip;
+      x->ip_norm = ip_norm;
     }
     if (x >= lchord_end) {
       // INVARIANT: as is one of: M-to-1, a-to-0

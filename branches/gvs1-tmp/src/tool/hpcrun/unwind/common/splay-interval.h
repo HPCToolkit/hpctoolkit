@@ -44,12 +44,16 @@
 #ifndef SPLAY_INTERVAL_H
 #define SPLAY_INTERVAL_H
 
+#include <hpcrun/loadmap.h>
+
 struct splay_interval_s {
   struct splay_interval_s *next;
   struct splay_interval_s *prev;
 
   void *start;
   void *end;
+
+  load_module_t* lm;
 };
 typedef struct splay_interval_s splay_interval_t;
 

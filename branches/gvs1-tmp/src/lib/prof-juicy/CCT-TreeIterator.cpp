@@ -241,7 +241,7 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
     if (diff_lmId != 0) {
       return diff_lmId;
     }
-    return cmp(x_dyn->ip(), y_dyn->ip());
+    return cmp(x_dyn->lmOffset(), y_dyn->lmOffset());
   }
   else if (x_dyn) {
     return 1; // x_dyn > y_dyn=NULL

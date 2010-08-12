@@ -597,8 +597,6 @@ hpcrun_fmt_loadmapEntry_fread(loadmap_entry_t* x, FILE* fs,
 {
   HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(x->id), fs));
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->name), fs, alloc));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->vaddr), fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->mapaddr), fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags), fs));
   return HPCFMT_OK;
 }
@@ -609,8 +607,6 @@ hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, FILE* fs)
 {
   HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_str_fwrite(x->name, fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->vaddr, fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->mapaddr, fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->flags, fs));
   return HPCFMT_OK;
 }
@@ -619,8 +615,8 @@ hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, FILE* fs)
 int
 hpcrun_fmt_loadmapEntry_fprint(loadmap_entry_t* x, FILE* fs, const char* pre)
 {
-  fprintf(fs, "%s[(id: %"PRIu16") (nm: %s) (0x%"PRIx64" 0x%"PRIx64") (flg: 0x%"PRIx64")]\n",
-	  pre, x->id, x->name, x->vaddr, x->mapaddr, x->flags);
+  fprintf(fs, "%s[(id: %"PRIu16") (nm: %s) (flg: 0x%"PRIx64")]\n",
+	  pre, x->id, x->name, x->flags);
   return HPCFMT_OK;
 }
 
@@ -651,7 +647,7 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
 
   HPCFMT_ThrowIfError(hpcfmt_int2_fread(&x->lm_id, fs));
 
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->ip, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->lm_offset, fs));
 
   lush_lip_init(&x->lip);
   if (flags.fields.isLogicalUnwind) {
@@ -679,7 +675,7 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 
   hpcfmt_int2_fwrite(x->lm_id, fs);
 
-  hpcfmt_int8_fwrite(x->ip, fs);
+  hpcfmt_int8_fwrite(x->lm_offset, fs);
 
   if (flags.fields.isLogicalUnwind) {
     hpcrun_fmt_lip_fwrite(&x->lip, fs);
@@ -707,7 +703,7 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
     fprintf(fs, "(as: %s) ", as_str);
   }
 
-  fprintf(fs, "(lm-id: %"PRIu16") (ip: 0x%"PRIx64") ", x->lm_id, x->ip);
+  fprintf(fs, "(lm-id: %"PRIu16") (ip: 0x%"PRIx64") ", x->lm_id, x->lm_offset);
 
   if (flags.fields.isLogicalUnwind) {
     hpcrun_fmt_lip_fprint(&x->lip, fs, "");

@@ -257,14 +257,15 @@ lush_step_bichord(lush_cursor_t* cursor)
   lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_END_PCHORD);
   lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_END_LCHORD);
 
-  unw_word_t ip = lush_cursor_get_ip(cursor);
+  unw_word_t ip_unnorm = lush_cursor_get_ip_unnorm(cursor);
+  ip_normalized_t ip_norm = lush_cursor_get_ip_norm(cursor);
   lush_agentid_t first_aid = lush_agentid_NULL;
 
   // Attempt to find an agent
   lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = 1;
   for (aid = 1; aid <= 1; ++aid) { // FIXME: first in list, etc.
-    if (pool->LUSHI_ismycode[aid]((void*) ip)) {
+    if (pool->LUSHI_ismycode[aid]((void*) ip_unnorm)) { 
       ty = pool->LUSHI_step_bichord[aid](cursor);
       lush_cursor_set_aid_prev(cursor, aid);
       first_aid = aid;
@@ -277,8 +278,9 @@ lush_step_bichord(lush_cursor_t* cursor)
   if (first_aid == lush_agentid_NULL) {
     lush_lip_t* lip = lush_cursor_get_lip(cursor);
 
-    //lush_lip_setLMId(lip, ...); // FIXME
-    lush_lip_setIP(lip, (uint64_t)(uintptr_t)ip); // 32-bit warnings
+    // 32-bit warnings
+    lush_lip_setLMOffset(lip, (uint64_t)(uintptr_t)ip_norm.offset);
+    lush_lip_setLMId(lip, ip_norm.lm_id);
 
     ty = LUSH_STEP_CONT;
     lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);

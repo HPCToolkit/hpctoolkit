@@ -1,0 +1,61 @@
+
+
+
+	This version of HPCToolkit modifies hpcrun so that it uses a
+load module id and an offset to represent an instruction
+pointer. Although there are many changes when compared to the regular
+HPCToolkit trunk, most are just a switch from using the 'ip' to using
+the 'normalized ip'. The file containing the 'ip_normalized_t' struct
+and the conversion code is located in
+	(HPCToolkit)/src/tool/hpcrun/utilities/ip-normalized.h
+ 
+
+	To convert from an ip to its normalized version, the
+hpcrun_normalize_ip method requires a load_module_t object. To allow
+this, I have modified the splay_interval_t struct to hold a pointer to
+its load module, giving quick access to the correct load
+module. However,if the load module is not given, setting the
+load_module_t parameter to NULL causes the function to search for the
+load module containing the given unnormalized ip address.
+	
+
+
+	Most of the code should now only deal with the
+tuples. However, some code currently needs to use the un-normalized
+form of the ip, so both versions are stored. However, the only
+location where the un-normalized form of the ip can be found is in the
+'hpcrun_unw_cursor_t' struct, located in
+	/src/tool/hpcrun/unwind/std_unw_cursor.h
+Every other struct is only allowed to contain the normalized ip can
+only contain the normalized version of the ip.
+
+
+	An important change that was made to allow for normalized ip
+structure was a complete remodification in the way the load map, load
+modules, and epochs are handled. This directly resulted in major
+changes in the following files:
+ 	(HPCToolkit)/src/tool/hpcrun/loadmap.h
+	(HPCToolkit)/src/tool/hpcrun/fnbounds/fnbounds_dynamic.c 
+Now, the load map should never be finalized. This means there should
+only be 1 epoch and 1 load map. All the dso_info_t struct processing has
+been moved from fnbounds_dynamic.c into loadmap.h as the dso_info_t
+struct has now become an integral part of each load module. All the
+finalize methods have been removed from fnbounds_dynamic.c and
+fnbounds_interface.h
+
+//======================================================================
+
+TODO:
+
+	Currently, the modifications to hpcrun do not allow for
+complete compatibility with hpcprof and other upstream components of
+HPCToolkit. Since every ip is now normalized, starting addresses and
+the like are unneeded. However, upstream parts of HPCToolkit need the
+starting addresses as they currently attempt to normalize the ip's
+themselves. Since we only want the normalized ip's to be known, we
+give 0 as the starting address.Thus, warnings are thrown whenever
+hpcprof is run on hpcrun data and the source files cannot be found.
+
+	Also, although I made changes to the mips and ppc64 unwind
+files to account for the new tuple format, I have not been able to
+test them. So they may not even compile yet.

@@ -106,17 +106,6 @@
 // local types
 //*********************************************************************
 
-typedef struct dso_info_s {
-  char *name;
-  void *start_addr;
-  void *end_addr;
-  long offset;
-  void **table;
-  long map_size;
-  int  nsymbols;
-  int  relocate;
-  struct dso_info_s *next, *prev;
-} dso_info_t;
 
 #define PERFORM_RELOCATION(addr, offset) \
 	((void *) (((unsigned long) addr) + ((long) offset)))
@@ -133,10 +122,6 @@ typedef struct dso_info_s {
 static char *tmproot = "/tmp";
 
 static char fnbounds_tmpdir[PATH_MAX];
-
-static dso_info_t *dso_open_list = NULL;
-static dso_info_t *dso_closed_list = NULL;
-static dso_info_t *dso_free_list = NULL;
 
 // locking functions to ensure that dynamic bounds data structures 
 // are consistent.
@@ -165,25 +150,11 @@ static char *      fnbounds_tmpdir_get();
 static dso_info_t *fnbounds_dso_info_get(void *pc);
 static dso_info_t *fnbounds_compute(const char *filename,
 				    void *start, void *end);
-static dso_info_t *fnbounds_dso_info_query(void *pc, dso_info_t * dl_list);
-static dso_info_t *fnbounds_dso_handle_open(const char *module_name,
-					    void *start, void *end);
-static void        fnbounds_map_executable();
-static void        fnbounds_loadmap_finalize_locked();
 
-static dso_info_t *new_dso_info_t(const char *name, void **table,
-				  struct fnbounds_file_header *fh,
-				  void *startaddr, void *endaddr,
-				  long map_size);
+static void        fnbounds_map_executable();
+
 
 static const char *mybasename(const char *string);
-
-static dso_info_t *dso_list_head(dso_info_t *dso_list);
-static void        dso_list_add(dso_info_t **dso_list, dso_info_t *self);
-static void        dso_list_remove(dso_info_t **dso_list, dso_info_t *self);
-
-static dso_info_t *dso_info_allocate();
-static void        dso_info_free(dso_info_t *unused);
 
 static char *nm_command = 0;
 
@@ -237,17 +208,17 @@ fnbounds_enclosing_addr(void *pc, void **start, void **end)
   
   if (r && r->nsymbols > 0) { 
     void * relative_pc = pc;
-
     if (r->relocate) {
-      relative_pc =  (void *) (((unsigned long) relative_pc) - r->offset); 
+      relative_pc =  
+	(void *) (((unsigned long) relative_pc) - r->start_to_ref_dist);
     }
 
     ret =  fnbounds_table_lookup(r->table, r->nsymbols, relative_pc, 
 				 (void **) start, (void **) end);
 
     if (ret == 0 && r->relocate) {
-      *start = PERFORM_RELOCATION(*start, r->offset);
-      *end   = PERFORM_RELOCATION(*end  , r->offset);
+      *start = PERFORM_RELOCATION(*start, r->start_to_ref_dist);
+      *end   = PERFORM_RELOCATION(*end  , r->start_to_ref_dist);
     }
   }
 
@@ -283,17 +254,13 @@ fnbounds_unmap_closed_dsos()
 {
   FNBOUNDS_LOCK;
 
-  dso_info_t *dso_info, *next;
-  for (dso_info = dso_open_list; dso_info; dso_info = next) {
-    next = dso_info->next;
-    if (!dylib_addr_is_mapped(dso_info->start_addr)) {
-      
-      // remove from open list of DSOs
-      dso_list_remove(&dso_open_list, dso_info);
-
-      // add to closed list of DSOs 
-      dso_list_add(&dso_closed_list, dso_info);
+  load_module_t *current = hpcrun_get_loadmap()->lm_head;
+  while (current && current->dso_info) {
+    if (!dylib_addr_is_mapped(current->dso_info->start_addr)) {
+      // remove from load map and free it.
+      hpcrun_remove_dso(current);
     }
+    current = current->next;
   }
 
   FNBOUNDS_UNLOCK;
@@ -307,8 +274,10 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
 
   FNBOUNDS_LOCK;
 
-  success = fnbounds_dso_info_query(start, dso_open_list) != NULL
-      || fnbounds_dso_handle_open(module_name, start, end) != NULL;
+  //since hpcrun_find_lm_by_addr only returns a non-NULL value if its lm_info
+  //exists, only need to check if NULL is returned
+  success = hpcrun_find_lm_by_addr(start, end) != NULL
+    ||  fnbounds_compute(module_name, start, end) != NULL;
 
   FNBOUNDS_UNLOCK;
 
@@ -333,14 +302,6 @@ fnbounds_fini()
   fnbounds_tmpdir_remove();
 }
 
-
-void
-fnbounds_loadmap_finalize()
-{
-  FNBOUNDS_LOCK;
-  fnbounds_loadmap_finalize_locked();
-  FNBOUNDS_UNLOCK;
-}
 
 void
 fnbounds_release_lock(void)
@@ -489,133 +450,14 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
       end = nm_table[fh.num_entries - 1];
     }
   }
-  return new_dso_info_t(filename, nm_table, &fh, start, end, map_size);
+    return new_dso_info_t(filename, nm_table, &fh, start, end, map_size);
 }
-
-
-static void
-fnbounds_loadmap_finalize_locked()
-{
-  dso_info_t *dso_info, *next;
-
-  for (dso_info = dso_open_list; dso_info; dso_info = dso_info->next) {
-    hpcrun_loadmap_add_module(dso_info->name, NULL /* no vaddr */,
-			      dso_info->start_addr, 
-			      dso_info->end_addr - dso_info->start_addr);
-  }
-
-  // Purge the DSO closed list: munmap() the fnbounds array, delete
-  // the ranges from the interval tree, and move the node to the free
-  // list.
-  //
-  for (dso_info = dso_closed_list; dso_info;) {
-    hpcrun_loadmap_add_module(dso_info->name, NULL /* no vaddr */,
-                              dso_info->start_addr, 
-                              dso_info->end_addr - dso_info->start_addr);
-    munmap(dso_info->table, dso_info->map_size);
-    hpcrun_delete_ui_range(dso_info->start_addr, dso_info->end_addr);
-    next = dso_info->next;
-    dso_list_remove(&dso_closed_list, dso_info);
-    dso_info_free(dso_info);
-    dso_info = next;
-  }
-}
-
-
-static dso_info_t *
-fnbounds_dso_info_query(void *pc, dso_info_t * dl_list)
-{
-  dso_info_t *dso_info = dl_list;
-
-  //-------------------------------------------------------------------
-  // see if we already have function bounds information computed for a
-  // dso containing this pc
-  //-------------------------------------------------------------------
-
-  while (dso_info && (pc < dso_info->start_addr || pc > dso_info->end_addr)) 
-    dso_info = dso_info->next; 
-
-  return dso_info;
-}
-
-
-static dso_info_t *
-fnbounds_dso_handle_open(const char *module_name, void *start, void *end)
-{
-  static int first_warning = 1;
-  dso_info_t *dso_info = fnbounds_dso_info_query(start, dso_closed_list);
-
-  // the address range of the module, which does not have an open mapping
-  // was found to conflict with the address range of a module on the closed
-  // list. 
-  if (dso_info) {
-    if (strcmp(module_name, dso_info->name) == 0 && 
-        start == dso_info->start_addr && 
-        end == dso_info->end_addr) {
-      // reopening a closed module at the same spot in the address. 
-      // move the record from the closed list to the open list, 
-      // reopen the symbols, and we are done.
-
-      // remove from closed list of DSOs
-      dso_list_remove(&dso_closed_list, dso_info);
-
-      // place dso_info on the free list. it will immediately be reclaimed by 
-      // fnbounds_compute which will fill in the data and remap the fnbounds 
-      // information into memory.
-      dso_info_free(dso_info);
-
-      // NOTE: if we refactored fnbounds_compute, we could avoid some of the 
-      // costs since bounds information must already be computed on disk and 
-      // only needs to be mapped. however, this doesn't seem worth the effort 
-      // at present.
-    } else {
-      // the entry on the closed list was not the same module
-      fnbounds_loadmap_finalize_locked();
-      hpcrun_loadmap_new();
-      TMSG(LOADMAP, "new loadmap cause: start = %p, end = %p, name = %s", 
-	   start, end, module_name);
-
-
-      TMSG(WARN_MULTI_EPOCH, "WARNING [OVERLAPPING LOAD MODULES] \n"
-	   		     "    Load module %s with address range [%p,%p)\n"
-	   		     "    is being replaced with\n" 
-	   		     "    load module %s with address range [%p,%p).\n"
-	   		     "    This could affect attribution of %ld samples.\n"
-	   		     "    See 'CAUTION [OVERLAPPING MODULES]'.", 
-	   dso_info->name, dso_info->start_addr, dso_info->end_addr,
-	   module_name, start, end, hpcrun_stats_num_samples_total());
-
-      if (first_warning && ENABLED(WARN_MULTI_EPOCH)) { 
-	first_warning = 0;
-
-	STDERR_MSG("hpcrun: warning - load modules at overlapping"
-	   " addresses. Check your log files for the implications.");
-
-	EMSG("CAUTION [OVERLAPPING LOAD MODULES] All samples within load\n"
-	   "    modules that map to overlapping address ranges will currently\n"
-	   "    be incorrectly attributed by hpcrun to the last load module\n"
-	   "    mapped to the range. Some or all of the samples prior to the\n"
-	   "    remapping may involve procedure frames in the affected load\n"
-	   "    module.  Ongoing work in hpcrun is aimed at addressing this\n"
-	   "    shortcoming. This warning is provided to notify early users\n "
-	   "    about a limitation in HPCToolkit that affects the accuracy of\n"
-	   "    data reported. As long the load modules affected are not\n"
-	   "    the focus of your analysis, this error should not be of\n"
-	   "    concern.");
-      }
-    }
-  }
-  dso_info = fnbounds_compute(module_name, start, end);
-  
-  return dso_info;
-}
-
 
 static dso_info_t *
 fnbounds_dso_info_get(void *pc)
 {
-  dso_info_t *dso_open = fnbounds_dso_info_query(pc, dso_open_list);
-
+  load_module_t* lm = hpcrun_find_lm_by_addr(pc, pc);
+  dso_info_t* dso_open = (lm) ? lm->dso_info : NULL;
   // We can't call dl_iterate_phdr() in general because catching a
   // sample at just the wrong point inside dlopen() will segfault or
   // deadlock.
@@ -629,10 +471,11 @@ fnbounds_dso_info_get(void *pc)
     void *mstart, *mend;
       
     if (dylib_find_module_containing_addr(pc, module_name, &mstart, &mend)) {
-      dso_open = fnbounds_dso_handle_open(module_name, mstart, mend);
+      dso_open = fnbounds_compute(module_name, mstart, mend);
+      hpcrun_loadmap_add_module(dso_open);
     }
   }
-
+  
   return dso_open;
 }
 
@@ -641,32 +484,6 @@ static void
 fnbounds_map_executable()
 {
   dylib_map_executable();
-}
-
-
-static dso_info_t *
-new_dso_info_t(const char *name, void **table, struct fnbounds_file_header *fh,
-	       void *startaddr, void *endaddr, long map_size)
-{
-  int namelen = strlen(name) + 1;
-  dso_info_t *r  = dso_info_allocate();
-  
-  TMSG(DSO," new_dso_info_t for module %s", name);
-  r->name = (char *) hpcrun_malloc(namelen);
-  strcpy(r->name, name);
-  r->table = table;
-  r->map_size = map_size;
-  r->nsymbols = fh->num_entries;
-  r->relocate = fh->relocatable;
-  r->start_addr = startaddr;
-  r->end_addr = endaddr;
-  r->offset = (unsigned long) startaddr - fh->image_offset;
-
-  dso_list_add(&dso_open_list, r);
-  TMSG(DSO, "new dso: start = %p, end = %p, name = %s",
-       startaddr, endaddr, name);
-
-  return r;
 }
 
 
@@ -719,93 +536,3 @@ fnbounds_tmpdir_remove()
 }
 
 
-//*********************************************************************
-// list operations
-//*********************************************************************
-
-static dso_info_t * 
-dso_list_head(dso_info_t *dso_list)
-{
-  return dso_list;
-}
-
-static void
-dso_list_add(dso_info_t **dso_list, dso_info_t *self)
-{
-  // add self at head of list
-  self->next = *dso_list;
-  self->prev = NULL;
-  if (*dso_list != NULL) {
-    (*dso_list)->prev = self;
-  }
-  *dso_list = self;
-}
-
-static void
-dso_list_remove(dso_info_t **dso_list, dso_info_t *self)
-{
-  dso_info_t *prev = self->prev;
-  dso_info_t *next = self->next;
-
-  if (prev != NULL) {
-    // have a predecessor, skip over self
-    prev->next = next;
-  } else {
-    // no predecessor, at head of list
-    *dso_list = next;
-  }
-  if (next != NULL) {
-    // have a successor, skip over self
-    next->prev = prev; 
-  }
-
-  self->prev = NULL;
-  self->next = NULL;
-}
-
-
-//*********************************************************************
-// allocation/deallocation of dso_info_t records
-//*********************************************************************
-
-static dso_info_t *
-dso_info_allocate()
-{
-  dso_info_t *new = dso_list_head(dso_free_list);
-
-  if (new) {
-    dso_list_remove(&dso_free_list, new);
-  } else {
-    TMSG(DSO," dso_info_allocate");
-    new = (dso_info_t *) hpcrun_malloc(sizeof(dso_info_t));
-  }
-  return new;
-}
-
-
-static void
-dso_info_free(dso_info_t *unused)
-{
-  dso_list_add(&dso_free_list, unused);
-}
-
-
-//*********************************************************************
-// debugging support
-//*********************************************************************
-
-void 
-dump_dso_info_t(dso_info_t *r)
-{
-  printf("%p-%p %s [dso_info_t *%p, table=%p, nsymbols=%d, relocatable=%d]\n",
-	 r->start_addr, r->end_addr, r->name, 
-         r, r->table, r->nsymbols, r->relocate);
-}
-
-
-void 
-dump_dso_list(dso_info_t *dl_list)
-{
-  dso_info_t *r = dl_list;
-  for (; r; r = r->next) dump_dso_info_t(r);
-}
