@@ -2,7 +2,7 @@
 %% Project:     Documentation Tools
 %% Descr:       Latex -->  MAN-page (groff -man), LATEX documentation
 %% Author:      Dr. Jürgen Vollmer, Juergen.Vollmer@informatik-vollmer.de
-%% $Id: latex2man.tex,v 1.184 2007/04/24 18:31:56 vollmer Exp $
+%% $Id: latex2man.tex,v 1.187 2008/11/11 07:21:18 vollmer Exp $
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 %% Latex2man is a tool to translate UNIX manual pages written with LaTeX into a
@@ -52,15 +52,15 @@
 %% do we have the `rcsinfo' package?
 \IfFileExists{rcsinfo.sty}{
 \usepackage[nofancy]{rcsinfo}
-\rcsInfo $Id: latex2man.tex,v 1.184 2007/04/24 18:31:56 vollmer Exp $
+\rcsInfo $Id: latex2man.tex,v 1.187 2008/11/11 07:21:18 vollmer Exp $
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{2007/04/24}    %%%% must be manually set, if rcsinfo is not present
+\setDate{2008/11/11}    %%%% must be manually set, if rcsinfo is not present
 \message{package rcsinfo not present, discard it}
 }
 
 \setVersionWord{Version:}  %%% that's the default, no need to set it.
-\setVersion{1.20}
+\setVersion{1.23}
 
 \begin{document}
 
