@@ -477,7 +477,7 @@ LaTeX COMMANDS
 
        \item  inside a itemize, enumerate, or description environment.
 
-       \today 24 April 2007(see also the rcsinfo LaTeXpackage).
+       \today 11 November 2008(see also the rcsinfo LaTeXpackage).
 
        \ss,\"a, ...
               \ss = ß, \"a= ä, \"o= ö, \"u= ü, \"A= Ä, \"O= Ö, \"U= Ü.  It  is
@@ -722,7 +722,7 @@ CHANGES
 
 
 VERSION
-       Version: 1.20 of 2007/04/24.
+       Version: 1.23 of 2008/11/11.
 
 
 LICENSE AND COPYRIGHT
@@ -755,4 +755,4 @@ AUTHOR
 
 
 
-Documentation Tools               2007/04/24                      LATEX2MAN(1)
+Documentation Tools               2008/11/11                      LATEX2MAN(1)

@@ -2,7 +2,12 @@
                 Change history of the latex2man package
                 =======================================
 
-$Id: CHANGES,v 1.55 2007/04/24 18:25:49 vollmer Exp $
+$Id: CHANGES,v 1.60 2008/11/11 07:18:18 vollmer Exp $
+1.23   11 Nov  2008     - use /usr/bin/env to locate the perl interpreter
+       	                  Thanks to "J.R. Mauro" <jrm8005-at-gmail.com>
+1.22   05 Dec  2007     - Fixed TROFF code generation if none of -H -T -M -L
+                          is given.
+1.21   05 Jul  2007     - Fixed Makefile
 1.20   24 Apr  2007     - Added optional parameter to Table-environment
                         - Fixed generataion of tbl-tables.
 1.19   12 Sep  2005     - Thanks to Aleksey Nogin <nogin@cs.caltech.edu> for

@@ -1,8 +1,7 @@
-Dies ist latex2man.info, hergestellt von Makeinfo Version 4.8 aus
-latex2man.texi.
-
 INFO-DIR-SECTION Man-pages
 START-INFO-DIR-ENTRY
+This is latex2man.info, produced by makeinfo version 4.11 from latex2man.texi.
+
 * Latex2man: (latex2man). Its Man-Page
 END-INFO-DIR-ENTRY
 
@@ -590,7 +589,7 @@ The following standard LaTeX commands are accepted:
      inside a itemize, enumerate, or description environment.
 
 `\today'
-     24 April 2007(see also the rcsinfo LaTeXpackage).
+     11 November 2008(see also the rcsinfo LaTeXpackage).
 
 `\ss,\"a, ...'
      \ss = ss, \"a= a", \"o= o", \"u= u", \"A= A", \"O= O", \"U= U". It
@@ -867,7 +866,7 @@ File: latex2man.info,  Node: Version,  Next: License and Copyright,  Prev: Chang
 Version
 =======
 
-Version: 1.20 of 2007/04/24.
+Version: 1.23 of 2008/11/11.
 
 
 File: latex2man.info,  Node: License and Copyright,  Next: Author,  Prev: Version,  Up: Top
@@ -907,18 +906,18 @@ WWW: `http://www.informatik-vollmer.de'.
 
 
 Tag Table:
-Node: Top190
-Node: Description1257
-Node: Options1855
-Node: Files3560
-Node: See Also4248
-Node: LaTeX commands4404
-Node: Package Options4687
-Node: Package Specific Environments5139
-Node: Accepted LaTeX Environments7927
-Node: Package Specific Macros8459
-Node: Accepted Macros from the rcsinfo Package12034
-Node: Accepted LaTeX Macros12531
+Node: Top187
+Node: Description1254
+Node: Options1852
+Node: Files3557
+Node: See Also4245
+Node: LaTeX commands4401
+Node: Package Options4684
+Node: Package Specific Environments5136
+Node: Accepted LaTeX Environments7924
+Node: Package Specific Macros8456
+Node: Accepted Macros from the rcsinfo Package12031
+Node: Accepted LaTeX Macros12528
 Node: Conditional Text15597
 Node: Translation of User Defined Macros17635
 Node: Verbatim Environment19749

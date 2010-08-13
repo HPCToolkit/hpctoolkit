@@ -1,9 +1,9 @@
-#! /usr/bin/env perl
+#!/usr/bin/env perl
 # Project: 	Documentation Tools
 # Descr:	Latex -->  MAN-page (groff -man), HTML and TexInfo;
 # Language:	PERL (>= 5.0)
 # Author:	Dr. Jürgen Vollmer, Juergen.Vollmer@informatik-vollmer.de
-# $Id: latex2man,v 1.147 2007/04/24 18:31:56 vollmer Exp $
+# $Id: latex2man,v 1.151 2008/11/11 07:21:14 vollmer Exp $
 #
 # Copyright (C) 1998 Dr. Juergen Vollmer
 #                    Viktoriastrasse 15, D-76133 Karlsruhe, Germany
@@ -26,8 +26,8 @@ $CMD=`basename $0`; chop ($CMD);
 $gen_date = `date`; chomp $gen_date;       # date when the output was generated
 
 sub date2str;
-$VERSION = "1.20";
-$DATE    = date2str ('$Date: 2007/04/24 18:31:56 $' =~ m|(\d+/\d+/\d+)|);
+$VERSION = "1.23";
+$DATE    = date2str ('$Date: 2008/11/11 07:21:14 $' =~ m|(\d+/\d+/\d+)|);
 
 $tmp = "/tmp/$CMD.$$";
 
@@ -91,6 +91,20 @@ END
 ($opt_h)     && usage;
 ($opt_V)     && print "Version: $VERSION, $DATE\n";
 
+# check command line arguments
+$opt_cnt = 0;
+$opt_cnt++ if ($opt_H);
+$opt_cnt++ if ($opt_T);
+$opt_cnt++ if ($opt_M);
+$opt_cnt++ if ($opt_L);
+if ($opt_cnt == 0) {
+    # if no option -H, -T, -M, -L is given, -M is the default
+    $opt_M = 1;
+}
+die "$CMD: you may give only one of the -H -T -M -L options\n" if ($opt_cnt > 1);
+
+(@ARGV == 2) || die "$CMD: Expected two arguments: infile outfile. Try \`$CMD -h'.\n";
+
 my %cond_name;
 if ($opt_C) {
     my $name;
@@ -98,14 +112,11 @@ if ($opt_C) {
 	$cond_name{$name} = 1;
     }
 }
-$cond_name{MAN}   = 1 if ($opt_M || (!($opt_H || $opt_T || $opt_L)));
+$cond_name{MAN}   = 1 if ($opt_M);
 $cond_name{HTML}  = 1 if ($opt_H);
 $cond_name{TEXI}  = 1 if ($opt_T);
 $cond_name{LATEX} = 1 if ($opt_L);
 
-(@ARGV == 2) || die "$CMD: Expected two arguments: infile outfile. Try \`$CMD -h'.\n";
-
-$ManCode = $opt_M || (!($opt_H || $opt_T));
 
 $SrcFile  = $ARGV[0];
 $DestFile = $ARGV[1];
@@ -122,7 +133,7 @@ if ($opt_H || $opt_T) {
 # global variables
 
 # $Prefix is used to construct procedure and variable names
-if ($ManCode) {
+if ($opt_M) {
     $Prefix  = "man";
 }
 if ($opt_H) {
@@ -1184,6 +1195,7 @@ sub interpret_word
 					    last SWITCH;
 					};
        # LaTeX macros with two arguments
+       # tallent: hack to support 1-level nesting
        #   * \cmdA{}{ \cmdB{...}{...} }
        #   * \cmd{}{...}
        (/\\([a-zA-Z]+){([^}]*)}{([^{]*{[^}]*}{[^}]*}[^}{]*)}/ ||
@@ -1320,7 +1332,7 @@ sub interpret_word
 					    interpret_word "\\$r";
 					    last SWITCH;
 					};
-      ($ManCode == 1) && /((^\.|')+)/      && do {$s=$`;$m=$1;$r=$';
+      ($opt_M == 1) && /((^\.|')+)/  && do {$s=$`;$m=$1;$r=$';
 					    interpret_word $s;
 					    print DEST "\\&$m";
 					    $newline = 0;
@@ -1450,7 +1462,7 @@ sub Print
 	    $parts[$i] =~ s/^\s+//;
         }
 	if (length($parts[$i]) > 0) {
-	    if ($ManCode) {
+	    if ($opt_M) {
 	        $parts[$i] =~ s/\\/\\\\/g;
 	        $parts[$i] =~ s/-/\\-/g;
 	    }

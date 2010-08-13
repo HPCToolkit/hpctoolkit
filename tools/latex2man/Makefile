@@ -1,7 +1,7 @@
 # Project: 	Documentation Tools
 # Descr:	Latex -->  MAN-page (groff -man), Makefile
 # Author:	Dr. Jürgen Vollmer, Juergen.Vollmer@informatik-vollmer.de
-# $Id: Makefile,v 1.101 2007/04/24 18:32:30 vollmer Exp $
+# $Id: Makefile,v 1.106 2008/11/11 07:17:29 vollmer Exp $
 
 BASE		= latex2man
 
@@ -23,8 +23,8 @@ EX		= --exclude "*.o" --exclude core --exclude "*.tar.gz" --exclude "*~" \
 		  --exclude "*.a" --exclude "*.php"
 EXrcs		= $(EX) --exclude "*/RCS/*"  --exclude "*/RCS"
 
-VERSION		= 1.20
-V_DATE		= 2007/04/24
+VERSION		= 1.23
+V_DATE		= 2008/11/11
 latex2man	= ./latex2man
 
 D		= $
@@ -44,10 +44,10 @@ all: $(BASE).1 $(BASE).html  $(BASE).texi $(BASE).info $(BASE).txt \
 	dvips -o $*.ps $*.dvi
 
 %.pdf: %.tex
-	rm -f /tmp/$*.tex /tmp/$*.pdf /tmp/$*.aux  /tmp/$*.toc /tmp/$*.log
-	(cp $*.tex /tmp  && \
-	 cd /tmp         && \
-	 pdflatex $*.tex && \
+	rm -f /tmp/$*.tex /tmp/$*.pdf /tmp/$*.aux  /tmp/$*.toc /tmp/$*.log /tmp/$*.sty
+	(cp $*.tex $*.sty /tmp  && \
+	 cd /tmp         	&& \
+	 pdflatex $*.tex 	&& \
 	 pdflatex $*.tex);
 	mv /tmp/$*.pdf .
 
