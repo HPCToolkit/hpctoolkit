@@ -1,0 +1,199 @@
+% $HeadURL$
+% $Id$
+
+% ----------------------------------------------------------
+% 
+% ----------------------------------------------------------
+
+% A sane version of verb/texttt (requires url package)
+\newcommand{\mytt}{\begingroup \urlstyle{tt}\Url}
+\newcommand{\mysf}{\begingroup \urlstyle{sf}\Url}
+
+\newcommand{\myfiguretextsize}{small}
+
+\newcommand{\NIL}{\fnnm{NIL}}
+
+% Because the retarded tabbing environment limits you to about 12 tabs
+%\newcommand{\TB}{\hspace{.2in}}
+\newcommand{\TB}{\hbox to 3ex{\hfill}}
+
+% ----------------------------------------------------------
+% my common text commands
+% ----------------------------------------------------------
+
+\newcommand{\ie}{i.e.}         % followed by a comma
+\newcommand{\eg}{e.g.}         % followed by a comma
+\newcommand{\cf}{cf.\@}        % always followed by a space
+\newcommand{\Cf}{Cf.\@}        % always followed by a space
+\newcommand{\vs}{\emph{vs.}\@} % always followed by a space
+\newcommand{\etc}{etc.}        % 
+\newcommand{\etal}{et al.\@}
+\newcommand{\viz}{\emph{viz.}}
+\newcommand{\perse}{per se}
+\newcommand{\naive}{na\"{i}ve}
+\newcommand{\nee}{n\'{e}e}
+
+\newcommand{\textseparator}{%
+  \begin{center}{\textasteriskcentered \hspace{2em} \textasteriskcentered \hspace{2em} \textasteriskcentered}\end{center}} % \textbullet
+
+
+% ----------------------------------------------------------
+% tools
+% ----------------------------------------------------------
+
+\newcommand{\HPCToolkit}{\textsc{HPCToolkit}}
+\newcommand{\hpctoolkitorg}{\href{http://hpctoolkit.org}{\textsc{HPCToolkit}}}
+\newcommand{\hpcrun}{\texttt{hpcrun}}
+\newcommand{\hpclink}{\texttt{hpclink}}
+\newcommand{\hpcstruct}{\texttt{hpcstruct}}
+\newcommand{\hpcprof}{\texttt{hpcprof}}
+\newcommand{\hpcprofmpi}{\texttt{hpcprof-mpi}}
+\newcommand{\hpcprofAll}{\texttt{hpcprof/mpi}}
+\newcommand{\hpcviewer}{\texttt{hpcviewer}}
+
+% ----------------------------------------------------------
+% 
+% ----------------------------------------------------------
+
+% use textsf instead of mathsf
+\newcommand{\fnnm}[1]{\ensuremath{\textsf{#1}}}
+
+
+% ----------------------------------------------------------
+% theory of sampling-based measurement
+% ----------------------------------------------------------
+
+\newcommand{\population}[1]{\ensuremath{\mathcal{P}_{#1}}} % mathcal, mathfrak
+
+\newcommand{\populationmap}{\ensuremath{\mathcal{M}}}
+\newcommand{\contextmap}{\ensuremath{\mathcal{C}}}
+\newcommand{\instructionproj}{\ensuremath{\mathcal{I}}}
+
+\newcommand{\resourceReqSat}{\ensuremath{r_{\fnnm{sat}}}}
+\newcommand{\resourceReqMax}{\ensuremath{r_{\fnnm{max}}}}
+
+
+% ----------------------------------------------------------
+% measurement: hpcrun binary analysis algorithm
+% ----------------------------------------------------------
+
+\newcommand{\CanonFrmSym}{\ensuremath{\mathbf{C}}}
+
+
+% ----------------------------------------------------------
+% attribution: binary analysis algorithm
+% ----------------------------------------------------------
+
+\newcommand{\NonOverlapRef}{Non-overlapping Principle}
+\newtheorem*{thmnonoverlap}{Non-overlapping Principle}
+\newcommand{\nested}{\ensuremath{\sqsubset\!\!\!\prec}}
+%\newcommand{\nested}{\ensuremath{\ll}}
+%\newcommand{\nested}{\ensuremath{\Subset}}
+%\newcommand{\nested}{\ensuremath{\langle<}}
+
+\newcommand{\ProcThmRef}{Procedure Invariant}
+\newcommand{\LoopThmRef}{Loop Invariant}
+\newtheorem{thmproc}{\ProcThmRef{}}
+\newtheorem{thmloop}{\LoopThmRef{}}
+
+\newcommand{\minmax}{\textsf{min-max}}
+\newcommand{\bbranchmax}{\textsf{bbranch-max}}
+\newcommand{\bbranchmaxfuzzy}{\textsf{bbranch-max-fuzzy}}
+\newcommand{\bbranchmaxfuzzySAVE}{\textsf{bbranch-max-fuzzy}}
+
+
+\newcommand{\instantiateDWARFdescriptors}{\textsf{instantiate-DWARF-descriptors}}
+\newcommand{\coalesceduplicatestatements}{\textsf{coalesce-duplicate-statements}}
+\newcommand{\mergeperfectlynestedloops}{\textsf{merge-perfectly-nested-loops}}
+\newcommand{\partitionaliencontexts}{\textsf{partition-alien-contexts}}
+\newcommand{\removeemptyscopes}{\textsf{remove-empty-scopes}}
+
+
+% ----------------------------------------------------------
+% logical call path profiling
+% ----------------------------------------------------------
+
+\newcommand{\note}{note}
+\newcommand{\notes}{notes}
+\newcommand{\pnote}{\emph{p}-note}
+\newcommand{\lnote}{\emph{l}-note}
+\newcommand{\pnotes}{\emph{p}-notes}
+\newcommand{\lnotes}{\emph{l}-notes}
+
+%\newcommand{\pnotesym}[2]{\ensuremath{p_{#1,#2}}}
+
+\newcommand{\bichord}{bichord}
+\newcommand{\bichords}{bichords}
+\newcommand{\bichordsym}[1]{\ensuremath{\langle P_{#1}, L_{#1} \rangle}}
+\newcommand{\bichordnotessym}[3]{\ensuremath{\langle \pchordsym{#1}{#2}, \lchordsym{#1}{#3} \rangle}}
+\newcommand{\pchordsym}[2]{\ensuremath{(p_{#1,1}, \ldots, p_{#1,#2})}}
+\newcommand{\lchordsym}[2]{\ensuremath{(l_{#1,1}, \ldots, l_{#1,#2})}}
+
+\newcommand{\pchord}{\emph{p}-chord}
+\newcommand{\lchord}{\emph{l}-chord}
+\newcommand{\pchords}{\emph{p}-chords}
+\newcommand{\lchords}{\emph{l}-chords}
+
+\newcommand{\stepbichord}{\textsf{step-bichord}}
+\newcommand{\steppchord}{\textsf{step-pchord}}
+\newcommand{\steppnote}{\textsf{step-pnote}}
+\newcommand{\steplnote}{\textsf{step-lnote}}
+
+\newcommand{\assocM}{\ensuremath{\mathbf{M}}}
+\newcommand{\assocOneToOne}{\ensuremath{1 \leftrightarrow 1}}
+\newcommand{\assocOneToZero}{\ensuremath{1 \leftrightarrow 0}}
+\newcommand{\assocMToZero}{\ensuremath{\assocM{} \leftrightarrow 0}}
+\newcommand{\assocMToOne}{\ensuremath{\assocM{} \leftrightarrow 1}}
+\newcommand{\assocOneToM}{\ensuremath{1 \leftrightarrow \assocM{}}}
+
+\newcommand{\assocclassAToZero}{\ensuremath{\mathcal{A} \leftrightarrow 0}}
+\newcommand{\assocclassAToOne}{\ensuremath{\mathcal{A} \leftrightarrow 1}}
+\newcommand{\assocclassOneToA}{\ensuremath{1 \leftrightarrow \mathcal{A}}}
+
+\newcommand{\cctNodeStruct}{\texttt{Node}}
+\newcommand{\cctNodeStructFull}{\cctNodeStruct{}-structure}
+
+\newcommand{\fnAssoc}{\fnnm{assoc}}
+\newcommand{\fnAssocEq}{\fnnm{assoc}\ensuremath{\mathsf{=}}}
+\newcommand{\fnAssocNeq}{\fnnm{assoc}\ensuremath{\mathsf{\neq}}}
+
+\newcommand{\fnAssocClass}{\fnnm{assoc-class}}
+\newcommand{\fnAssocClassEq}{\fnnm{assoc-class}\ensuremath{\mathsf{=}}}
+\newcommand{\fnAssocClassNeq}{\fnnm{assoc-class}\ensuremath{\mathsf{\neq}}}
+
+\newcommand{\fnIp}{\fnnm{ip}}
+\newcommand{\fnIpEq}{\fnnm{ip}\ensuremath{\mathsf{=}}}
+
+\newcommand{\fnLip}{\fnnm{lip}}
+\newcommand{\fnLipEq}{\fnnm{lip}\ensuremath{\mathsf{=}}}
+
+\newcommand{\fnNoteId}{\fnnm{note-id}}
+\newcommand{\fnNoteIdEq}{\fnnm{note-id}\ensuremath{\mathsf{=}}}
+
+\newcommand{\fnSharable}{\fnnm{sharable?}}
+
+\newcommand{\CilkSpawn}{\texttt{spawn}}
+\newcommand{\CilkSync}{\texttt{sync}}
+
+% ----------------------------------------------------------
+% scalable analysis and presentation
+% ----------------------------------------------------------
+
+\newcommand{\metricFnInit}{\ensuremath{\text{\textbigcircle}}}  % \varbigcirc [bbding]
+\newcommand{\metricFnAccum}{\ensuremath{\bigodot}}
+\newcommand{\metricFnCombine}{\ensuremath{\bigoplus}}
+\newcommand{\metricFnFini}{\ensuremath{\text{\raisebox{-0.35ex}{\Large\CIRCLE}}}} % \textbullet
+
+
+%\newcommand{\metricFormula}{\text{{\it\Large f}{\scriptsize\ }}}
+\DeclareMathOperator*{\metricFormula}{\text{{\it\Large f}}}
+
+\newcommand{\cctProcFrm}{\textsf{ProcFrame}}
+\newcommand{\cctLoop}{\textsf{Loop}}
+\newcommand{\cctAlien}{\textsf{Alien}}
+
+\newcommand{\cctCallSite}{\textsf{CallSite}}
+\newcommand{\cctStmt}{\textsf{Stmt}}
+
+\newcommand{\fnDescStmt}{\fnnm{desc-}\cctStmt{}}
+\newcommand{\fnChildStmt}{\fnnm{child-}\cctStmt{}}
