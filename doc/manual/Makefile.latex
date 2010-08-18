@@ -30,7 +30,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
 
-# $Id: Makefile,v 1.18 2006-06-19 10:58:11 mairas Exp $
+# $Id$
 
 # ----------------------------------------------------------
 # local libraries 
