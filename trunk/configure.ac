@@ -1705,7 +1705,7 @@ AC_CONFIG_FILES([ \
   doc/Makefile \
   doc/man/Makefile \
   doc/man/HPCToolkitVersionInfo.tex \
-  doc/guides/Makefile \
+  doc/manual/Makefile \
   doc/www/Makefile \
   \
   lib/Makefile \

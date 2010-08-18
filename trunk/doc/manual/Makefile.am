@@ -61,15 +61,15 @@ AUTOMAKE_OPTIONS = foreign
 # Local settings
 #############################################################################
 
+MYMANUAL = \
+	HPCToolkit-users-manual.pdf
+
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS = \
-	www \
-	\
-	man \
-	manual
+wwwmanualdir = $(docdir)/manual
+dist_wwwmanual_DATA = $(MYMANUAL)
 
 #############################################################################
 # Other rules

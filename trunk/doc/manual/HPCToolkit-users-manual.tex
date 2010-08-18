@@ -62,6 +62,7 @@
 \ifpdf
   \usepackage[pdftex]{graphicx}
   \usepackage{epstopdf}
+  \usepackage{pdfpages}
 \else
   \usepackage[dvips]{graphicx}
   \usepackage{breakurl} % fix hyperref
@@ -120,7 +121,7 @@ Nathan Tallent\\
 \\
 Rice University\\
 \\
-(Revision $Revision$)
+($Revision$)
 }
 
 %\date{}
@@ -705,6 +706,15 @@ By computing both metrics, one can determine whether the application scales well
 If a node for a function in the CCT has comparable positive values for both inclusive excess work and exclusive excess work, then the loss of scaling is due to computation in the function itself.
 However, if the inclusive excess work for the function outweighs that accounted for by its exclusive costs, then one should explore the scalability of its callees.
 To isolate code that is an impediment to scalable performance, one can use the {\em hot path} button in \hpcviewer{} to trace a path down through the CCT to see where the cost is incurred.
+
+
+% ***************************************************************************
+% ***************************************************************************
+
+\chapter{\hpcviewer{}'s User Interface}
+\label{chpt:hpcviewer-interface}
+
+\includepdf[pages=1-12]{HPCToolkit-hpcviewer}
 
 
 % ***************************************************************************
