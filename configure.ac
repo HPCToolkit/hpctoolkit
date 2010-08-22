@@ -254,7 +254,7 @@ HPC_CHECK_CXX_STDC_HEADERS()
 AC_CHECK_SIZEOF([void*])
 AC_CHECK_TYPES([ushort, uint, ulong])
 
-host_sizeof_voidp="${host_sizeof_voidp}"
+host_sizeof_voidp="${ac_cv_sizeof_voidp}"
 
 # Check pthread.h
 HPC_CHECK_COMPILE_PTHREAD_H()
