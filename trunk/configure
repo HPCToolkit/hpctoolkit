@@ -16146,7 +16146,7 @@ _ACEOF
 fi
 
 
-host_sizeof_voidp="${host_sizeof_voidp}"
+host_sizeof_voidp="${ac_cv_sizeof_voidp}"
 
 # Check pthread.h
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CXX-CC} compiles pthread.h (__thread vs. __threadp)" >&5
