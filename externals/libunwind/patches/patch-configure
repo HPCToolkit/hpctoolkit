@@ -1,0 +1,28 @@
+On powerpc in 64-bit mode, libunwind resets libdir to lib64 (and fails
+to obey --libdir).  This causes problems when passing prereqs to
+symtabAPI.  The simplest solution is to undo this in configure.
+
+diff -Naurb libunwind-0.99.orig/configure libunwind-0.99/configure
+--- libunwind-0.99.orig/configure	2009-05-08 11:34:37.000000000 -0500
++++ libunwind-0.99/configure	2010-08-25 16:50:47.000000000 -0500
+@@ -21208,7 +21208,7 @@
+ 
+ 
+ if test x$target_arch = xppc64; then
+-        libdir='${exec_prefix}/lib64'
++        # libdir='${exec_prefix}/lib64'
+         { echo "$as_me:$LINENO: PowerPC64 detected, lib will be installed ${libdir}" >&5
+ echo "$as_me: PowerPC64 detected, lib will be installed ${libdir}" >&6;};
+ 
+diff -Naurb libunwind-0.99.orig/configure.in libunwind-0.99/configure.in
+--- libunwind-0.99.orig/configure.in	2009-05-08 11:34:10.000000000 -0500
++++ libunwind-0.99/configure.in	2010-08-25 16:51:12.000000000 -0500
+@@ -101,7 +101,7 @@
+ AM_CONDITIONAL(OS_HPUX, expr x$target_os : xhpux >/dev/null)
+ 
+ if test x$target_arch = xppc64; then
+-        libdir='${exec_prefix}/lib64'
++        # libdir='${exec_prefix}/lib64'
+         AC_MSG_NOTICE([PowerPC64 detected, lib will be installed ${libdir}]);
+         AC_SUBST([libdir])
+ fi

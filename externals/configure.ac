@@ -458,11 +458,24 @@ AC_SUBST([libmonitor_prefix])
 
 # Now used all platforms.
 
+# The 32-bit version of libunwind doesn't build correctly on x86-64
+# due to some cross-compile issues, so disable that choice for now.
+# This is only the default, you can reenable with --with-libunwind.
+
+default=build
+case "$host_cpu" in
+    *x86*64* )
+	if test "$wordsize" = 32 ; then
+	    default=no
+	fi
+	;;
+esac
+
 AC_ARG_WITH([libunwind],
     [AS_HELP_STRING([--with-libunwind=PATH],
 	[path to libunwind install directory (default build)])],
     [],
-    [with_libunwind=build])
+    [with_libunwind="$default"])
 
 AC_MSG_CHECKING([libunwind])
 
@@ -687,12 +700,17 @@ case "$with_symtabAPI" in
 	# handle a subset of those.  This is also why you should not
 	# invent non-standard platform names (yuck).
 	#
+	# On x86 and powerpc, choose the platform based on the object
+	# file's wordsize, not the host wordsize.  This allows
+	# building a 32-bit version for a 64-bit host.  On ia64 and
+	# mips, symtabAPI only has a 64-bit version.
+	#
 	case "$host_cpu" in
-	    *x86*64* )
-		symtabAPI_platform=x86_64-unknown-linux2.4
-		;;
 	    *i*86* | *x86* )
-		symtabAPI_platform=i386-unknown-linux2.4
+		case "$wordsize" in
+		    64 ) symtabAPI_platform=x86_64-unknown-linux2.4 ;;
+		    32 ) symtabAPI_platform=i386-unknown-linux2.4 ;;
+		esac
 		;;
 	    *ia64* )
 		symtabAPI_platform=ia64-unknown-linux2.4
@@ -700,11 +718,11 @@ case "$with_symtabAPI" in
 	    *mips64* )
 		symtabAPI_platform=mips64_linux
 		;;
-	    *power*64* | *ppc*64* )
-		symtabAPI_platform=ppc64_linux
-		;;
 	    *power* | *ppc* )
-		symtabAPI_platform=ppc32_linux
+		case "$wordsize" in
+		    64 ) symtabAPI_platform=ppc64_linux ;;
+		    32 ) symtabAPI_platform=ppc32_linux ;;
+		esac
 		;;
 	esac
 	if test "$symtabAPI_platform" != no ; then
