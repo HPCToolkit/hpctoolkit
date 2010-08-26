@@ -124,14 +124,20 @@ if test "x$build" != "x$host" ; then
    is_cross_compile=${host}
 fi
 
-# Warn if not using gcc, but give a pass if you're trying to cross
-# compile.  Some packages don't build well without gcc.  This is not a
-# great test, since autoconf identifies Intel icc as gcc, and binutils
-# barfs on icc. (grrr)
+# Warn if not using GNU gcc and g++.  Some packages don't build
+# cleanly without gcc.  For example, binutils fails with icc.
 
-ext_warn_non_gcc=no
-if test "x$GCC" != xyes && test "x$is_cross_compile" = x ; then
-    ext_warn_non_gcc=yes
+warn_non_gcc=no
+$CC --version 2>&1 | grep GCC >/dev/null 2>&1
+if test $? -ne 0 ; then
+    warn_non_gcc=yes
+    AC_MSG_WARN([Not using the GNU C compiler.])
+fi
+
+$CXX --version 2>&1 | grep GCC >/dev/null 2>&1
+if test $? -ne 0 ; then
+    warn_non_gcc=yes
+    AC_MSG_WARN([Not using the GNU C++ compiler.])
 fi
 
 #------------------------------------------------------------
@@ -891,6 +897,15 @@ rm -f "$failure_file"
 AC_MSG_NOTICE([------------------])
 AC_MSG_NOTICE([Externals summary])
 AC_MSG_NOTICE([------------------])
+
+if test "$warn_non_gcc" = yes ; then
+    AC_MSG_WARN([Not using the GNU C or C++ compiler.])
+    AC_MSG_WARN([This is not necessarily an error, but some packages may not])
+    AC_MSG_WARN([compile cleanly without gcc or g++.  If the build fails, try])
+    AC_MSG_WARN([using GNU gcc and g++ before reporting an error.])
+    AC_MSG_NOTICE([--------------------------])
+fi
+
 AC_MSG_NOTICE([svn revision: $svn_revision])
 AC_MSG_NOTICE([prefix: $prefix ($enable_subdirs_mesg)])
 AC_MSG_NOTICE([build: $build])
@@ -920,9 +935,3 @@ files that it needs to the real install directory.  Thus, the prefix
 option is not used for this build.])
 fi
 
-if test "$ext_warn_non_gcc" = yes ; then
-    AC_MSG_WARN([Not using the GNU C compiler.
-This is not necessarily an error, but some of these packages may not
-compile cleanly without gcc or g++.  If the build fails, try using the
-default values of CC and CXX before reporting an error.])
-fi
