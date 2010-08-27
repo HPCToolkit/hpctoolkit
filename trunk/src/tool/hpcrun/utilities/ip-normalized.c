@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/unwind/common/unwind-cfg.h $
+// $Id: unwind-cfg.h 2775 2010-03-09 03:24:31Z mfagan $
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -41,61 +41,37 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-//
-//
+//************************* System Include Files ****************************
 
-#include <assert.h>
-#include "loadmap.h"
-#include "files.h"
-#include "fnbounds_interface.h"
+//*************************** User Include Files ****************************
 
-//-------------------------------------------------------------------------
-// the external variables below will be defined in a 
-// machine-generated file
-//-------------------------------------------------------------------------
+#include "ip-normalized.h"
 
-extern void *hpcrun_nm_addrs[];
-extern int   hpcrun_nm_addrs_len;
+//*************************** Forward Declarations **************************
 
-int 
-fnbounds_init()
+//***************************************************************************
+
+ip_normalized_t ip_normalized_NULL = { .lm_id = 0, .lm_ip = 0 };
+
+ip_normalized_t
+hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
 {
-  return 0;
+  ip_normalized_t ip_norm;
+  
+  if (!lm) {
+    lm = hpcrun_find_lm_by_addr(unnormalized_ip, unnormalized_ip);
+    if (!lm) { 
+      return ip_normalized_NULL;
+    }
+  }
+  
+  if (!lm->dso_info) {
+    return ip_normalized_NULL;
+  }
+
+  ip_norm.lm_id = lm->id;
+  ip_norm.lm_ip = (uintptr_t)unnormalized_ip - lm->dso_info->start_to_ref_dist;
+
+  return ip_norm;
 }
 
-
-int 
-fnbounds_query(void *pc)
-{
-  assert(0);
-  return 0;
-}
-
-
-int 
-fnbounds_add(char *module_name, void *start, void *end)
-{
-  assert(0);
-  return 0;
-}
-
-
-int 
-fnbounds_enclosing_addr(void *addr, void **start, void **end)
-{
-  return
-    fnbounds_table_lookup(hpcrun_nm_addrs, hpcrun_nm_addrs_len,
-			  addr, start, end);
-}
-
-
-void 
-fnbounds_fini()
-{
-}
-
-
-void
-fnbounds_release_lock(void)
-{
-}

@@ -17654,9 +17654,15 @@ fi
 # enable-lush, enable-lush-pthreads, with-cilk
 #-------------------------------------------------
 
+opt_enable_lush=no
+
 # Check whether --enable-lush was given.
 if test "${enable_lush+set}" = set; then :
-  enableval=$enable_lush;
+  enableval=$enable_lush; case "${enableval}" in
+     yes) opt_enable_lush="yes" ;;
+     no)  opt_enable_lush="no" ;;
+     *) as_fn_error $? "bad value ${enableval} for --enable-lush" "$LINENO" 5 ;;
+   esac
 else
   opt_enable_lush=no
 fi

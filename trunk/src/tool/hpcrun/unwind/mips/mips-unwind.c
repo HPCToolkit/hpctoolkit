@@ -333,19 +333,35 @@ typedef enum {
 } unw_reg_code_t;
 
 static int 
-hpcrun_unw_get_reg(hpcrun_unw_cursor_t* cursor,
-		   unw_reg_code_t reg_id, void **reg_value)
+hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, 
+		   void **reg_value)
 {
   assert(reg_id == UNW_REG_IP);
-  *reg_value = cursor->pc;
+  *reg_value = cursor->pc_unnorm;
+  return 0;
+}
+
+static int 
+hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, 
+		    ip_normalized_t *reg_value)
+{
+  assert(reg_id == UNW_REG_IP);
+  *reg_value = cursor->pc_norm;
   return 0;
 }
 
 int
-hpcrun_unw_get_ip_reg(hpcrun_unw_cursor_t* c, void** v)
+hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
 {
-  return hpcrun_unw_get_reg(c, UNW_REG_IP, v);
+  return hpcrun_unw_get_norm_reg(c, UNW_REG_IP, reg_value);
 }
+
+int
+hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
+{
+  return hpcrun_unw_get_unnorm_reg(c, UNW_REG_IP, reg_value);
+}
+
 // unimplemented for now
 //  fix when trampoline support is added
 void*
@@ -360,14 +376,20 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   ucontext_t* ctxt = (ucontext_t*)context;
 
-  cursor->pc = ucontext_pc(ctxt);
+  cursor->pc_unnorm = ucontext_pc(ctxt);
   cursor->ra = ucontext_ra(ctxt);
   cursor->sp = ucontext_sp(ctxt);
   cursor->bp = ucontext_fp(ctxt);
 
-  UNW_INTERVAL_t intvl = demand_interval(cursor->pc, true/*isTopFrame*/);
+  UNW_INTERVAL_t intvl = demand_interval(cursor->pc_unnorm, true/*isTopFrame*/);
   cursor->intvl = CASTTO_UNW_CURSOR_INTERVAL_t(intvl);
-
+  if (intvl && intvl->lm) {
+    cursor->pc_norm = hprun_normalize_ip(cursor->pc_unnorm, intvl->lm);
+  }
+  else {
+    cursor->pc_norm = ip_normalized_NULL;
+  }
+  
   if (!UI_IS_NULL(intvl)) {
     if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg)) {
       cursor->ra = 
@@ -378,8 +400,9 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
     }
   }
 
-  TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
-       cursor->pc, cursor->ra, cursor->sp, cursor->bp);
+  TMSG(UNW, "init: pc=%p, pc_norm: id= %d offset=%p ra=%p, sp=%p, fp=%p", 
+       cursor->pc_unnorm, cursor->pc_norm->id, cursor->pc_norm->offset,
+       idcursor->ra, cursor->sp, cursor->bp);
   if (MYDBG) { ui_dump(UI_ARG(intvl)); }
 }
 
@@ -388,7 +411,7 @@ int
 hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   // current frame:
-  void*  pc = cursor->pc;
+  void*  pc = cursor->pc_unnorm;
   void** sp = cursor->sp;
   void** fp = cursor->bp;
   UNW_INTERVAL_t intvl = CASTTO_UNW_INTERVAL_t(cursor->intvl);
@@ -399,6 +422,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   void** nxt_fp = NULL;
   void*  nxt_ra = NULL; // always NULL unless we go through a signal handler
   UNW_INTERVAL_t nxt_intvl = UNW_INTERVAL_NULL;
+  ip_normalized_t nxt_pc_norm = ip_normalized_NULL;
 
   if (UI_IS_NULL(intvl)) {
     TMSG(UNW, "error: missing interval for pc=%p", pc);
@@ -487,6 +511,13 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   // try to obtain interval
   if (nxt_pc != pc_NULL) {
     nxt_intvl = demand_interval(getNxtPCFromRA(nxt_pc), isTopFrame);
+
+    if (nxt_intvl && nxt_intvl->lm) {
+      nxt_pc_norm = hpcrun_normalize_ip(nxt_pc, nxt_intvl->lm);
+    }
+    else {
+      nxt_pc_norm = ip_normalized_NULL;
+    }
   }
 
   // if nxt_pc is invalid for some reason, try trolling
@@ -506,6 +537,15 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
     if (UI_IS_NULL(nxt_intvl)) {
       TMSG(UNW, "error: troll_pc=%p failed", *troll_sp);
       return STEP_ERROR;
+    }
+    else {
+      if (nxt_intvl->lm) {
+	nxt_pc_norm = hpcrun_normalize_ip(nxt_pc, nxt_intvl->lm->dso_info->id,
+					  nxt_intvl->lm->dso_info->offset);
+      }
+      else {
+	nxt_pc_norm = ip_normalized_NULL;
+      }
     }
     didTroll = true;
 
@@ -548,11 +588,12 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   TMSG(UNW, "next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
   if (MYDBG) { ui_dump(UI_ARG(nxt_intvl)); }
 
-  cursor->pc = nxt_pc;
-  cursor->ra = nxt_ra;
-  cursor->sp = nxt_sp;
-  cursor->bp = nxt_fp;
-  cursor->intvl = CASTTO_UNW_CURSOR_INTERVAL_t(nxt_intvl);
+  cursor->pc_unnorm = nxt_pc;
+  cursor->ra        = nxt_ra;
+  cursor->sp        = nxt_sp;
+  cursor->bp        = nxt_fp;
+  cursor->intvl     = CASTTO_UNW_CURSOR_INTERVAL_t(nxt_intvl);
+  cursor->pc_norm   = nxt_pc_norm;
 
   return (didTroll) ? STEP_TROLL : STEP_OK;
 }

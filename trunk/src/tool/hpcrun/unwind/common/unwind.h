@@ -65,6 +65,7 @@
 //***************************************************************************
 
 #include <unwind/common/unw-datatypes.h> 
+#include <hpcrun/utilities/ip-normalized.h>
 
 //***************************************************************************
 //
@@ -89,7 +90,11 @@ hpcrun_unw_init();
 // ----------------------------------------------------------
 
 int
-hpcrun_unw_get_ip_reg(hpcrun_unw_cursor_t* c, unw_word_t* reg_value);
+hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, 
+			     ip_normalized_t* reg_value);
+
+int
+hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value);
 
 
 void*

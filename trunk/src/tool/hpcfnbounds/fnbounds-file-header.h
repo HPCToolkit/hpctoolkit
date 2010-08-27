@@ -64,7 +64,7 @@
 
 struct fnbounds_file_header {
     long zero_pad;
-    long image_offset;
+    long reference_offset;
     long magic;
     long num_entries;
     int  relocatable;

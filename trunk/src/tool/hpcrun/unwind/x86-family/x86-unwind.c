@@ -84,6 +84,7 @@
 #include "splay.h"
 #include "ui_tree.h"
 #include <utilities/arch/mcontext.h>
+#include <utilities/ip-normalized.h>
 
 #include <hpcrun/thread_data.h>
 #include "x86-unwind-interval.h"
@@ -165,7 +166,8 @@ typedef enum {
 } unw_reg_code_t;
 
 static int
-hpcrun_unw_get_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, void** reg_value)
+hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, 
+		   void** reg_value)
 {
   //
   // only implement 1 reg for the moment.
@@ -173,7 +175,25 @@ hpcrun_unw_get_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, void** re
   //
   switch (reg_id) {
     case UNW_REG_IP:
-      *reg_value = cursor->pc;
+      *reg_value = cursor->pc_unnorm;
+      break;
+    default:
+      return ~0;
+  }
+  return 0;
+}
+
+static int
+hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, 
+		   ip_normalized_t* reg_value)
+{
+  //
+  // only implement 1 reg for the moment.
+  //  add more if necessary
+  //
+  switch (reg_id) {
+    case UNW_REG_IP:
+      *reg_value = cursor->pc_norm;
       break;
     default:
       return ~0;
@@ -182,9 +202,15 @@ hpcrun_unw_get_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, void** re
 }
 
 int
-hpcrun_unw_get_ip_reg(hpcrun_unw_cursor_t* c, void** v)
+hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
 {
-  return hpcrun_unw_get_reg(c, UNW_REG_IP, v);
+  return hpcrun_unw_get_norm_reg(c, UNW_REG_IP, reg_value);
+}
+
+int
+hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
+{
+  return hpcrun_unw_get_unnorm_reg(c, UNW_REG_IP, reg_value);
 }
 
 void 
@@ -192,16 +218,18 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   mcontext_t *mc = GET_MCONTEXT(context);
 
-  cursor->pc 	 = MCONTEXT_PC(mc); 
-  cursor->bp 	 = MCONTEXT_BP(mc);
-  cursor->sp 	 = MCONTEXT_SP(mc);
-  cursor->ra_loc = NULL;
+  cursor->pc_unnorm = MCONTEXT_PC(mc); 
+  cursor->bp 	    = MCONTEXT_BP(mc);
+  cursor->sp 	    = MCONTEXT_SP(mc);
+  cursor->ra_loc    = NULL;
 
   TMSG(UNW, "init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
-       cursor->pc, cursor->ra_loc, cursor->sp, cursor->bp);
+       cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
 
   cursor->flags = 0; // trolling_used
-  cursor->intvl = hpcrun_addr_to_interval(cursor->pc);
+  ip_normalized_t ip_norm;
+  cursor->intvl = hpcrun_addr_to_interval(cursor->pc_unnorm, &ip_norm);
+  cursor->pc_norm = ip_norm;
 
   if (!cursor->intvl) {
     // TMSG(TROLL,"UNW INIT calls stack troll");
@@ -237,15 +265,15 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t *cursor)
   // check if we have reached the end of our unwind, which is
   // demarcated with a fence. 
   //-----------------------------------------------------------
-  if (hpcrun_check_fence(cursor->pc)){
-    TMSG(UNW,"current pc in monitor fence", cursor->pc);
+  if (hpcrun_check_fence(cursor->pc_unnorm)){
+    TMSG(UNW,"current pc in monitor fence", cursor->pc_unnorm);
     return STEP_STOP;
   }
 
   // current frame  
   void** bp = cursor->bp;
   void*  sp = cursor->sp;
-  void*  pc = cursor->pc;
+  void*  pc = cursor->pc_unnorm;
   unwind_interval* uw = (unwind_interval *)cursor->intvl;
 
   int unw_res;
@@ -307,8 +335,8 @@ hpcrun_validation_summary(void)
   AMSG("VALIDATION: Confirmed: %ld, Probable: %ld (indirect: %ld, tail: %ld, etc: %ld), Wrong: %ld",
        hpcrun_validation_counts[UNW_ADDR_CONFIRMED],
        hpcrun_validation_counts[UNW_ADDR_PROBABLE_INDIRECT] +
-         hpcrun_validation_counts[UNW_ADDR_PROBABLE_TAIL] +
-         hpcrun_validation_counts[UNW_ADDR_PROBABLE],
+       hpcrun_validation_counts[UNW_ADDR_PROBABLE_TAIL] +
+       hpcrun_validation_counts[UNW_ADDR_PROBABLE],
        hpcrun_validation_counts[UNW_ADDR_PROBABLE_INDIRECT],
        hpcrun_validation_counts[UNW_ADDR_PROBABLE_TAIL],
        hpcrun_validation_counts[UNW_ADDR_PROBABLE],
@@ -340,9 +368,10 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
     if (rv == STEP_OK) {
       // try to validate all calls, except the one at the base of the call stack from libmonitor.
       // rather than recording that as a valid call, it is preferable to ignore it.
-      if (!monitor_in_start_func_wide(cursor->pc)) {
-	validation_status vstat = deep_validate_return_addr(cursor->pc, (void *) &saved);
-	vrecord(saved.pc,cursor->pc,vstat);
+      if (!monitor_in_start_func_wide(cursor->pc_unnorm)) {
+	validation_status vstat = deep_validate_return_addr(cursor->pc_unnorm,
+							    (void *) &saved);
+	vrecord(saved.pc_unnorm,cursor->pc_unnorm,vstat);
       }
     }
   }
@@ -377,7 +406,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   // current frame
   void** bp = cursor->bp;
   void*  sp = cursor->sp;
-  void*  pc = cursor->pc;
+  void*  pc = cursor->pc_unnorm;
   unwind_interval* uw = (unwind_interval *)cursor->intvl;
   
   TMSG(UNW,"step_sp: bp=%p, sp=%p, pc=%p", bp, sp, pc);
@@ -426,7 +455,8 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     }
   }
   next_sp += 1;
-  cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) - 1);
+  ip_normalized_t next_pc_norm;
+  cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) - 1, &next_pc_norm);
 
   if (! cursor->intvl){
     if (((void *)next_sp) >= monitor_stack_bottom()){
@@ -441,13 +471,16 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     // sanity check to avoid infinite unwind loop
     if (next_sp <= cursor->sp){
       TMSG(INTV_ERR,"@ pc = %p. sp unwind does not advance stack." 
-	   " New sp = %p, old sp = %p", cursor->pc, next_sp, cursor->sp);
+	   " New sp = %p, old sp = %p", cursor->pc_unnorm, next_sp,
+	   cursor->sp);
+      
       return STEP_ERROR;
     }
-    cursor->pc 	   = next_pc;
-    cursor->bp 	   = next_bp;
-    cursor->sp 	   = next_sp;
-    cursor->ra_loc = ra_loc;
+    cursor->pc_unnorm = next_pc;
+    cursor->bp 	      = next_bp;
+    cursor->sp 	      = next_sp;
+    cursor->ra_loc    = ra_loc;
+    cursor->pc_norm   = next_pc_norm;
   }
 
   TMSG(UNW,"==== sp advance ok ===");
@@ -467,7 +500,7 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
   // current frame
   bp = cursor->bp;
   sp = cursor->sp;
-  pc = cursor->pc;
+  pc = cursor->pc_unnorm;
   uw = (unwind_interval *)cursor->intvl;
 
   TMSG(UNW,"cursor in ==> bp=%p, sp=%p, pc=%p", bp, sp, pc);
@@ -497,7 +530,9 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
   if ((void *)next_sp > sp) {
     // this condition is a weak correctness check. only
     // try building an interval for the return address again if it succeeds
-    uw = (unwind_interval *)hpcrun_addr_to_interval(((char *)next_pc) - 1);
+    ip_normalized_t next_pc_norm;
+    uw = (unwind_interval *)hpcrun_addr_to_interval(((char *)next_pc) - 1, 
+						    &next_pc_norm);
     if (! uw){
       if (((void *)next_sp) >= monitor_stack_bottom()) {
         TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom,"
@@ -508,11 +543,12 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
       return STEP_ERROR;
     }
     else {
-      cursor->pc     = next_pc;
-      cursor->bp     = next_bp;
-      cursor->sp     = next_sp;
-      cursor->ra_loc = ra_loc;
-
+      cursor->pc_unnorm = next_pc;
+      cursor->bp        = next_bp;
+      cursor->sp        = next_sp;
+      cursor->ra_loc    = ra_loc;
+      cursor->pc_norm   = next_pc_norm;
+      
       cursor->intvl = (splay_interval_t *)uw;
       TMSG(UNW,"cursor advances ==>has_intvl=%d, bp=%p, sp=%p, pc=%p",
 	   cursor->intvl != NULL, next_bp, next_sp, next_pc);
@@ -629,31 +665,34 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
     next_sp += 1;
     if ( next_sp <= cursor->sp){
       PMSG_LIMIT(PMSG(TROLL,"Something weird happened! trolling from %p"
-		      " resulted in sp not advancing", cursor->pc));
+		      " resulted in sp not advancing", cursor->pc_unnorm));
       hpcrun_unw_throw();
     }
 
-    cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) + offset);
+    ip_normalized_t next_pc_norm;
+    cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) + offset, 
+					    &next_pc_norm);
     if (cursor->intvl) {
       PMSG_LIMIT(PMSG(TROLL,"Trolling advances cursor to pc = %p, sp = %p", 
 		      next_pc, next_sp));
-      PMSG_LIMIT(PMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc));
+      PMSG_LIMIT(PMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc_unnorm));
 
-      cursor->pc     = next_pc;
-      cursor->bp     = next_bp;
-      cursor->sp     = next_sp;
-      cursor->ra_loc = ra_loc;
+      cursor->pc_unnorm = next_pc;
+      cursor->bp        = next_bp;
+      cursor->sp        = next_sp;
+      cursor->ra_loc    = ra_loc;
+      cursor->pc_norm   = next_pc_norm;
 
       cursor->flags = 1; // trolling_used
       return; // success!
     }
     PMSG_LIMIT(PMSG(TROLL, "No interval found for trolled pc, dropping sample,"
-		    " cursor pc = %p", cursor->pc));
+		    " cursor pc = %p", cursor->pc_unnorm));
     // fall through for error handling
   } else {
     PMSG_LIMIT(PMSG(TROLL, "Troll failed: dropping sample, cursor pc = %p", 
-		    cursor->pc));
-    PMSG_LIMIT(PMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc));
+		    cursor->pc_unnorm));
+    PMSG_LIMIT(PMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc_unnorm));
     // fall through for error handling
   }
   // assert(0);
@@ -681,9 +720,10 @@ dbg_init_cursor(void* context)
 
   mcontext_t *mc = GET_MCONTEXT(context);
 
-  _dbg_cursor.pc = MCONTEXT_PC(mc);
-  _dbg_cursor.bp = MCONTEXT_BP(mc);
-  _dbg_cursor.sp = MCONTEXT_SP(mc);
+  _dbg_cursor.pc_unnorm = MCONTEXT_PC(mc);
+  _dbg_cursor.bp        = MCONTEXT_BP(mc);
+  _dbg_cursor.sp        = MCONTEXT_SP(mc);
+  _dbg_cursor.pc_norm = hpcrun_normalize_ip(_dbg_cursor.pc_unnorm, NULL);
 
   DEBUG_NO_LONGJMP = 0;
 }

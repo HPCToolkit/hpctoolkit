@@ -106,7 +106,7 @@ UNW_COMMON_FILES = \
         unwind/common/unw-throw.c       \
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
-	unwind/common/ui_tree.c
+	unwind/common/ui_tree.c         
 
 UNW_X86_FILES = \
        $(UNW_COMMON_FILES) \
@@ -200,6 +200,7 @@ MY_BASE_FILES =			\
 	messages/fmt.c	                \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
 

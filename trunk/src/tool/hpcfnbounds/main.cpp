@@ -390,14 +390,14 @@ dump_file_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
 // We call it "header", even though it comes at end of file.
 //
 static void
-dump_header_info(int relocatable, long image_offset)
+dump_header_info(int relocatable, long ref_offset)
 {
   struct fnbounds_file_header fh;
 
   if (binary_fmt_fd() >= 0) {
     memset(&fh, 0, sizeof(fh));
     fh.zero_pad = 0;
-    fh.image_offset = image_offset;
+    fh.reference_offset = ref_offset;
     fh.magic = FNBOUNDS_MAGIC;
     fh.num_entries = num_function_entries();
     fh.relocatable = relocatable;
@@ -408,13 +408,13 @@ dump_header_info(int relocatable, long image_offset)
     fprintf(c_fmt_fp(), "unsigned int hpcrun_relocatable = %d;\n", relocatable);
     fprintf(c_fmt_fp(), "unsigned int hpcrun_stripped = %d;\n", 0);
     fprintf(c_fmt_fp(), "unsigned long hpcrun_image_offset = %ld;\n", 
-            image_offset);
+            ref_offset);
   }
 
   if (text_fmt_fp() != NULL) {
     fprintf(text_fmt_fp(), "num symbols = %ld, relocatable = %d," 
            " image_offset = 0x%lx\n",
-	    num_function_entries(), relocatable, image_offset);
+	    num_function_entries(), relocatable, ref_offset);
   }
 }
 

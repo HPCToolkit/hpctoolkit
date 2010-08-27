@@ -99,7 +99,7 @@
 /* cstree callbacks (CB) */
 static cct_node_t*
 cct_node_find_child(cct_node_t* x,
-		    lush_assoc_info_t as_info, void* ip,
+		    lush_assoc_info_t as_info, ip_normalized_t ip_norm,
 		    lush_lip_t* lip);
 
 static int
@@ -141,7 +141,7 @@ new_persistent_id()
 
 static cct_node_t*
 cct_node_create(lush_assoc_info_t as_info, 
-		void* ip,
+		ip_normalized_t ip_norm,
 		lush_lip_t* lip,
 		hpcrun_cct_t *x)
 {
@@ -160,7 +160,7 @@ cct_node_create(lush_assoc_info_t as_info,
   memset(node, 0, sz);
 
   node->as_info = as_info; // LUSH
-  node->ip = ip;
+  node->ip_norm = ip_norm;
   node->lip = lip;         // LUSH
 
   node->persistent_id = new_persistent_id();
@@ -289,7 +289,7 @@ cct_node_link(cct_node_t* x, cct_node_t* parent)
 //
 static cct_node_t*
 cct_node_find_child(cct_node_t* x,
-		    lush_assoc_info_t as_info, void* ip,
+		    lush_assoc_info_t as_info, ip_normalized_t ip_norm,
 		    lush_lip_t* lip)
 {
   cct_node_t* c, *first;
@@ -301,7 +301,7 @@ cct_node_find_child(cct_node_t* x,
       // LUSH
       // FIXME: abstract this and the test in Prof::CCT::ANode::findDynChild
       lush_assoc_t c_as = lush_assoc_info__get_assoc(c->as_info);
-      if (c->ip == ip 
+      if (ip_normalized_eq(&c->ip_norm, &ip_norm)
 	  && lush_lip_eq(c->lip, lip)
 	  && lush_assoc_class_eq(c_as, as) 
 	  && lush_assoc_info__path_len_eq(c->as_info, as_info)) {
@@ -352,7 +352,7 @@ void
 hpcrun_cct_make_root(hpcrun_cct_t* x, cct_ctxt_t* ctxt)
 {
   // introduce bogus root to handle possible forests
-  x->tree_root = cct_node_create(lush_assoc_info_NULL, 0, NULL, x);
+  x->tree_root = cct_node_create(lush_assoc_info_NULL, ip_normalized_NULL, NULL, x);
 
   x->tree_root->parent = (ctxt)? ctxt->context : NULL;
   x->num_nodes = 1;
@@ -383,10 +383,11 @@ hpcrun_cct_fini(hpcrun_cct_t *x)
 cct_node_t*
 hpcrun_cct_get_child(hpcrun_cct_t *cct, cct_node_t* parent, frame_t *frm)
 {
-  cct_node_t *c = cct_node_find_child(parent, frm->as_info, frm->ip, frm->lip);
+  cct_node_t *c = cct_node_find_child(parent, frm->as_info, frm->ip_norm,
+				      frm->lip);
 
   if (!c) {
-    c = cct_node_create(frm->as_info, frm->ip, frm->lip, cct);
+    c = cct_node_create(frm->as_info, frm->ip_norm, frm->lip, cct);
     cct_node_parent_insert(c, parent);
     cct->num_nodes++;
   }
@@ -423,15 +424,19 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
   }
   if (tn == NULL) {
     tn = cct->tree_root;
-
+    
     TMSG(CCT, "Starting tree node = (NULL), so begin search @ cct root");
-    if (frm->ip == tn->ip) {
-      TMSG(CCT,"beg ip == tn ip = %p", tn->ip);
+    if (ip_normalized_eq(&frm->ip_norm, &tn->ip_norm)) {
+      TMSG(CCT,"beg ip == tn ip ==> lm_id = %d and lm_ip = %p", 
+	   tn->ip_norm.lm_id, tn->ip_norm.lm_ip);
       MY_advancePathFrame(frm);
     }
-
-    TMSG(CCT, "beg ip %p", frm->ip);
+    
+    
+    TMSG(CCT, "beg ip ==> lm_id = %d and lm_ip = %p", frm->ip_norm.lm_id,
+	 frm->ip_norm.lm_ip);
   }
+	
 
   while (true) {
     if (MY_isPathFrameAtEnd(frm)) {
@@ -439,9 +444,11 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
     }
 
     // Attempt to find a child 'c' corresponding to 'frm'
-    TMSG(CCT,"looking for child in tree w ip = %p", frm->ip);
+    TMSG(CCT,"looking for child in tree w ip ==> lm_id = %d and lm_ip = %p", 
+	 frm->ip_norm.lm_id, frm->ip_norm.lm_ip);
 
-    cct_node_t* c = cct_node_find_child(tn, frm->as_info, frm->ip, frm->lip);
+    cct_node_t* c = cct_node_find_child(tn, frm->as_info, frm->ip_norm,
+					frm->lip);
     if (c) {
       // child exists; recur
       TMSG(CCT,"found child @ node %p", c);
@@ -461,8 +468,9 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
       TMSG(CCT,"No child found, inserting new tail");
       
       while (!MY_isPathFrameAtEnd(frm)) {
-	c = cct_node_create(frm->as_info, frm->ip, frm->lip, cct);
-	TMSG(CCT, "create node %p w ip = %p", c, frm->ip);
+	c = cct_node_create(frm->as_info, frm->ip_norm, frm->lip, cct);
+	TMSG(CCT, "create node %p w ip ==> lm_id = %d and offst = %p", c,
+	     frm->ip_norm.lm_id, frm->ip_norm.lm_ip);
 	cct_node_parent_insert(c, tn);
 	cct->num_nodes++;
 	
@@ -775,10 +783,10 @@ hpcrun_cctNode_fwrite_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags,
     tmp_node->as_info = node->as_info;
   }
   
-  tmp_node->lm_id = 0; // FIXME:tallent
+  tmp_node->lm_id = node->ip_norm.lm_id; // FIXME:tallent
 
   // double casts to avoid warnings when pointer is < 64 bits 
-  tmp_node->ip = (hpcfmt_vma_t) (uintptr_t) node->ip;
+  tmp_node->lm_ip = (hpcfmt_vma_t) (uintptr_t) node->ip_norm.lm_ip;
 
   if (flags.fields.isLogicalUnwind) {
     TMSG(LUSH, "settiong lip for node %d", tmp_node->id);

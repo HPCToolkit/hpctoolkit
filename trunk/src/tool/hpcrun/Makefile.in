@@ -226,6 +226,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	messages/debug-flag.c messages/messages-sync.c \
 	messages/messages-async.c messages/fmt.c \
 	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
 	utilities/unlink.c fnbounds/fnbounds_dynamic.c \
 	monitor-exts/openmp.c hpcrun_dlfns.c custom-init-dynamic.c \
@@ -270,7 +271,8 @@ am__objects_7 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-mem.lo libhpcrun_la-debug-flag.lo \
 	libhpcrun_la-messages-sync.lo libhpcrun_la-messages-async.lo \
 	libhpcrun_la-fmt.lo libhpcrun_la-executable-path.lo \
-	libhpcrun_la-tokenize.lo libhpcrun_la-unlink.lo
+	libhpcrun_la-ip-normalized.lo libhpcrun_la-tokenize.lo \
+	libhpcrun_la-unlink.lo
 am__objects_8 = libhpcrun_la-fnbounds_dynamic.lo \
 	libhpcrun_la-openmp.lo libhpcrun_la-hpcrun_dlfns.lo \
 	libhpcrun_la-custom-init-dynamic.lo
@@ -342,6 +344,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	messages/debug-flag.c messages/messages-sync.c \
 	messages/messages-async.c messages/fmt.c \
 	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
 	utilities/unlink.c fnbounds/fnbounds_static.c \
 	custom-init-static.c \
@@ -394,6 +397,7 @@ am__objects_25 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-messages-sync.$(OBJEXT) \
 	libhpcrun_o-messages-async.$(OBJEXT) libhpcrun_o-fmt.$(OBJEXT) \
 	libhpcrun_o-executable-path.$(OBJEXT) \
+	libhpcrun_o-ip-normalized.$(OBJEXT) \
 	libhpcrun_o-tokenize.$(OBJEXT) libhpcrun_o-unlink.$(OBJEXT)
 am__objects_26 = libhpcrun_o-fnbounds_static.$(OBJEXT) \
 	libhpcrun_o-custom-init-static.$(OBJEXT)
@@ -707,7 +711,7 @@ UNW_COMMON_FILES = \
         unwind/common/unw-throw.c       \
 	unwind/common/splay.c		\
 	unwind/common/stack_troll.c	\
-	unwind/common/ui_tree.c
+	unwind/common/ui_tree.c         
 
 UNW_X86_FILES = \
        $(UNW_COMMON_FILES) \
@@ -799,6 +803,7 @@ MY_BASE_FILES = \
 	messages/fmt.c	                \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
 
@@ -1233,6 +1238,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_dlfns.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_stats.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ip-normalized.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-itimer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-last_func.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-loadmap.Plo@am__quote@
@@ -1305,6 +1311,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-handling_sample.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_stats.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ip-normalized.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-itimer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-last_func.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-loadmap.Po@am__quote@
@@ -1777,6 +1784,13 @@ libhpcrun_la-executable-path.lo: utilities/executable-path.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/executable-path.c' object='libhpcrun_la-executable-path.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-executable-path.lo `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
+
+libhpcrun_la-ip-normalized.lo: utilities/ip-normalized.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-ip-normalized.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-ip-normalized.Tpo -c -o libhpcrun_la-ip-normalized.lo `test -f 'utilities/ip-normalized.c' || echo '$(srcdir)/'`utilities/ip-normalized.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-ip-normalized.Tpo $(DEPDIR)/libhpcrun_la-ip-normalized.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/ip-normalized.c' object='libhpcrun_la-ip-normalized.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-ip-normalized.lo `test -f 'utilities/ip-normalized.c' || echo '$(srcdir)/'`utilities/ip-normalized.c
 
 libhpcrun_la-tokenize.lo: utilities/tokenize.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-tokenize.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-tokenize.Tpo -c -o libhpcrun_la-tokenize.lo `test -f 'utilities/tokenize.c' || echo '$(srcdir)/'`utilities/tokenize.c
@@ -2568,6 +2582,20 @@ libhpcrun_o-executable-path.obj: utilities/executable-path.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/executable-path.c' object='libhpcrun_o-executable-path.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-executable-path.obj `if test -f 'utilities/executable-path.c'; then $(CYGPATH_W) 'utilities/executable-path.c'; else $(CYGPATH_W) '$(srcdir)/utilities/executable-path.c'; fi`
+
+libhpcrun_o-ip-normalized.o: utilities/ip-normalized.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ip-normalized.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-ip-normalized.Tpo -c -o libhpcrun_o-ip-normalized.o `test -f 'utilities/ip-normalized.c' || echo '$(srcdir)/'`utilities/ip-normalized.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ip-normalized.Tpo $(DEPDIR)/libhpcrun_o-ip-normalized.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/ip-normalized.c' object='libhpcrun_o-ip-normalized.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ip-normalized.o `test -f 'utilities/ip-normalized.c' || echo '$(srcdir)/'`utilities/ip-normalized.c
+
+libhpcrun_o-ip-normalized.obj: utilities/ip-normalized.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-ip-normalized.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-ip-normalized.Tpo -c -o libhpcrun_o-ip-normalized.obj `if test -f 'utilities/ip-normalized.c'; then $(CYGPATH_W) 'utilities/ip-normalized.c'; else $(CYGPATH_W) '$(srcdir)/utilities/ip-normalized.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-ip-normalized.Tpo $(DEPDIR)/libhpcrun_o-ip-normalized.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utilities/ip-normalized.c' object='libhpcrun_o-ip-normalized.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-ip-normalized.obj `if test -f 'utilities/ip-normalized.c'; then $(CYGPATH_W) 'utilities/ip-normalized.c'; else $(CYGPATH_W) '$(srcdir)/utilities/ip-normalized.c'; fi`
 
 libhpcrun_o-tokenize.o: utilities/tokenize.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-tokenize.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-tokenize.Tpo -c -o libhpcrun_o-tokenize.o `test -f 'utilities/tokenize.c' || echo '$(srcdir)/'`utilities/tokenize.c
