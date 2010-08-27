@@ -60,6 +60,9 @@
 #include <string>
 using std::string;
 
+#define __STDC_FORMAT_MACROS
+#include <stdint.h>
+
 //*************************** User Include Files ****************************
 
 #include "Raw.hpp"
@@ -194,7 +197,7 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
 	DIAG_Throw("error reading trace file '" << filenm << "'");
       }
 
-      fprintf(stdout, "(%lu, %u)\n", timestamp, cctId);
+      fprintf(stdout, "(%"PRIu64", %u)\n", timestamp, cctId);
     }
 
     hpcio_fclose(fs);
