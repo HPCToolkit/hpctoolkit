@@ -327,16 +327,16 @@ lush_lip_setLMId(lush_lip_t* x, uint16_t lmId)
 
 
 static inline uint64_t
-lush_lip_getLMOffset(const lush_lip_t* x)
+lush_lip_getLMIP(const lush_lip_t* x)
 {
   return (uint64_t)x->data8[1];
 }
 
 
 static inline void
-lush_lip_setLMOffset(lush_lip_t* x, uint64_t lm_offset)
+lush_lip_setLMIP(lush_lip_t* x, uint64_t lm_ip)
 {
-  x->data8[1] = lm_offset;
+  x->data8[1] = lm_ip;
 }
 
 

@@ -512,13 +512,13 @@ typedef struct hpcrun_fmt_cct_node_t {
   // load module id.  0 is reserved as a NULL value
   uint16_t lm_id;
 
-  // instruction pointer: more accurately, this is an 'operation
-  // pointer'.  The operation in the instruction packet is represented
-  // by adding 0, 1, or 2 to the instruction pointer for the first,
-  // second and third operation, respectively.
-  hpcfmt_vma_t lm_offset;
+  // static instruction pointer: more accurately, this is a static
+  // 'operation pointer'.  The operation in the instruction packet is
+  // represented by adding 0, 1, or 2 to the instruction pointer for
+  // the first, second and third operation, respectively.
+  hpcfmt_vma_t lm_ip;
 
-  // logical instruction pointer
+  // static logical instruction pointer
   lush_lip_t lip;
 
   hpcfmt_uint_t num_metrics;

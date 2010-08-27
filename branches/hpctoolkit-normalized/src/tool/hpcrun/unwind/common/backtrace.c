@@ -109,8 +109,8 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
     for (frame_t* x = td->btbuf; x < unwind; ++x) {
       lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
       lush_lip2str(lip_str, sizeof(lip_str), x->lip);
-       PMSG_LIMIT(EMSG("%s: ip.lm_id = %d | ip.offset = %p | lip %s", as_str,
-		      x->ip_norm.lm_id, x->ip_norm.offset, lip_str));
+       PMSG_LIMIT(EMSG("%s: ip.lm_id = %d | ip.lm_ip = %p | lip %s", as_str,
+		      x->ip_norm.lm_id, x->ip_norm.lm_ip, lip_str));
 
       msg_cnt++;
       if (msg_cnt > msg_limit) {
@@ -125,8 +125,8 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
     for (frame_t* x = td->bufstk; x < td->bufend; ++x) {
       lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
       lush_lip2str(lip_str, sizeof(lip_str), x->lip);
-      PMSG_LIMIT(EMSG("%s: ip.lm_id = %d | ip.offset = %p | lip %s", as_str,
-		      x->ip_norm.lm_id, x->ip_norm.offset, lip_str));
+      PMSG_LIMIT(EMSG("%s: ip.lm_id = %d | ip.lm_ip = %p | lip %s", as_str,
+		      x->ip_norm.lm_id, x->ip_norm.lm_ip, lip_str));
       msg_cnt++;
       if (msg_cnt > msg_limit) {
         PMSG_LIMIT(EMSG("!!! message limit !!!"));
@@ -224,8 +224,8 @@ void
 hpcrun_bt_add_leaf_child(backtrace_t* bt, ip_normalized_t ip_norm)
 {
   if (bt->cur > bt->end) {
-    TMSG(BT, "adding a leaf child of ip ==> lm_id = %d and offset = %p", 
-	 ip_norm.lm_id, ip_norm.offset);
+    TMSG(BT, "adding a leaf child of ip ==> lm_id = %d and lm_ip = %p", 
+	 ip_norm.lm_id, ip_norm.lm_ip);
   }
   if (bt->cur > bt->end) {
     
@@ -240,16 +240,16 @@ hpcrun_bt_add_leaf_child(backtrace_t* bt, ip_normalized_t ip_norm)
     bt->cur  = new + bt->len;
     bt->end  = new + (size - 1);
   }
-  TMSG(BT, "BEFORE copy, innermost ip ==> lm_id = %d and offset = %p", 
-       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.offset);
+  TMSG(BT, "BEFORE copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
+       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.lm_ip);
   memcpy((void*)(bt->beg + 1), (void*) bt->beg, bt->len * sizeof(frame_t));
-  TMSG(BT, "AFTER copy, innermost ip ==> lm_id = %d and offset = %p", 
-       (bt->beg + 1)->ip_norm.lm_id, (bt->beg + 1)->ip_norm.offset);
+  TMSG(BT, "AFTER copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
+       (bt->beg + 1)->ip_norm.lm_id, (bt->beg + 1)->ip_norm.lm_ip);
   bt->cur++;
   bt->len++;
   bt->beg->ip_norm = ip_norm;
-  TMSG(BT, "Leaf child added, new ip ==> lm_id = %d and offset = %p", 
-       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.offset);
+  TMSG(BT, "Leaf child added, new ip ==> lm_id = %d and lm_ip = %p", 
+       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.lm_ip);
 }
 
 void
@@ -263,8 +263,8 @@ void
 hpcrun_dump_bt(backtrace_t* bt)
 {
   for(frame_t* _f = bt->beg; _f < bt->beg + bt->len; _f++) {
-    TMSG(BT, "ip_norm.lm_id = %d, and ip_norm.offset = %p ", _f->ip_norm.lm_id,
-	 _f->ip_norm.offset);
+    TMSG(BT, "ip_norm.lm_id = %d, and ip_norm.lm_ip = %p ", _f->ip_norm.lm_id,
+	 _f->ip_norm.lm_ip);
   }
 }
 
@@ -434,7 +434,7 @@ hpcrun_generate_backtrace(ucontext_t* context, bool* has_tramp, int skipInner)
       TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
       frame_t *fr = beg_frame;
       for (int i = 0; i < num_frames; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] ==> lm_id = %d and offset = %p", i, fr->ip_norm.lm_id, fr->ip_norm.offset);
+	TMSG(SAMPLE_FILTER,"  frame ip[%d] ==> lm_id = %d and lm_ip = %p", i, fr->ip_norm.lm_id, fr->ip_norm.lm_ip);
       }
       hpcrun_stats_num_samples_filtered_inc();
 
@@ -575,7 +575,7 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
       TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
       frame_t *fr = beg_frame;
       for (int i = 0; i < num_frames; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] ==> lm_id = %d and offset = %p", i, fr->ip_norm.lm_id, fr->ip_norm.offset);
+	TMSG(SAMPLE_FILTER,"  frame ip[%d] ==> lm_id = %d and lm_ip = %p", i, fr->ip_norm.lm_id, fr->ip_norm.lm_ip);
       }
       hpcrun_stats_num_samples_filtered_inc();
       return false;

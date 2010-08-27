@@ -55,25 +55,22 @@
 //***************************************************************************
 
 // ---------------------------------------------------------
-// Tuple that keeps track of of an ip relative to which 
-// loadmodule it is located in. Since ip_normalized_t is 
-// a small struct, we always pass it by value instead of 
-// malloc-ing and using pointers.
+// ip_normalized_t: A normalized instruction pointer. Since this is a
+//   small struct, it can be passed by value.
 // ---------------------------------------------------------
 
 typedef struct ip_normalized_t {
   
   // ---------------------------------------------------------
-  // The load module that a node is from. The addess of the 
-  // base of the load module is used as a reference point.
+  // id of load module
   // ---------------------------------------------------------
   uint16_t lm_id;
 
   // ---------------------------------------------------------
-  // The offset from the address of 'lm' where the instruction
-  // is located at.
+  // static instruction pointer address within the load module
   // ---------------------------------------------------------
-  uintptr_t offset;
+  uintptr_t lm_ip;
+
 } ip_normalized_t;
 
 
@@ -84,16 +81,16 @@ ip_normalized_eq(const ip_normalized_t* a, const ip_normalized_t* b)
 {
   return ( (a == b) || (a && b
 			&& a->lm_id == b->lm_id
-			&& a->offset == b->offset) );
+			&& a->lm_ip == b->lm_ip) );
 }
 
-//Converts an ip into a normalized ip using 'lm'. If 'lm' is NULL 
-//the function attempts to find the load module that 'unnormalized_ip'
-//belongs to. If no load module is found or the load module does not
-//have a valid 'dso_info' field, ip_normalized_NULL is returned; 
-//otherwise, the properly normalized ip is returned.
+// Converts an ip into a normalized ip using 'lm'. If 'lm' is NULL 
+// the function attempts to find the load module that 'unnormalized_ip'
+// belongs to. If no load module is found or the load module does not
+// have a valid 'dso_info' field, ip_normalized_NULL is returned; 
+// otherwise, the properly normalized ip is returned.
 ip_normalized_t
-hpcrun_normalize_ip(void *unnormalized_ip, load_module_t* lm);
+hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm);
 
 //***************************************************************************
 

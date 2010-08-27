@@ -427,14 +427,14 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
     
     TMSG(CCT, "Starting tree node = (NULL), so begin search @ cct root");
     if (ip_normalized_eq(&frm->ip_norm, &tn->ip_norm)) {
-      TMSG(CCT,"beg ip == tn ip ==> lm_id = %d and offset = %p", 
-	   tn->ip_norm.lm_id, tn->ip_norm.offset);
+      TMSG(CCT,"beg ip == tn ip ==> lm_id = %d and lm_ip = %p", 
+	   tn->ip_norm.lm_id, tn->ip_norm.lm_ip);
       MY_advancePathFrame(frm);
     }
     
     
-    TMSG(CCT, "beg ip ==> lm_id = %d and offset = %p", frm->ip_norm.lm_id,
-	 frm->ip_norm.offset);
+    TMSG(CCT, "beg ip ==> lm_id = %d and lm_ip = %p", frm->ip_norm.lm_id,
+	 frm->ip_norm.lm_ip);
   }
 	
 
@@ -444,8 +444,8 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
     }
 
     // Attempt to find a child 'c' corresponding to 'frm'
-    TMSG(CCT,"looking for child in tree w ip ==> lm_id = %d and offset = %p", 
-	 frm->ip_norm.lm_id, frm->ip_norm.offset);
+    TMSG(CCT,"looking for child in tree w ip ==> lm_id = %d and lm_ip = %p", 
+	 frm->ip_norm.lm_id, frm->ip_norm.lm_ip);
 
     cct_node_t* c = cct_node_find_child(tn, frm->as_info, frm->ip_norm,
 					frm->lip);
@@ -470,7 +470,7 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
       while (!MY_isPathFrameAtEnd(frm)) {
 	c = cct_node_create(frm->as_info, frm->ip_norm, frm->lip, cct);
 	TMSG(CCT, "create node %p w ip ==> lm_id = %d and offst = %p", c,
-	     frm->ip_norm.lm_id, frm->ip_norm.offset);
+	     frm->ip_norm.lm_id, frm->ip_norm.lm_ip);
 	cct_node_parent_insert(c, tn);
 	cct->num_nodes++;
 	
@@ -786,7 +786,7 @@ hpcrun_cctNode_fwrite_hlp(bool is_ctxt_node, FILE* fs, epoch_flags_t flags,
   tmp_node->lm_id = node->ip_norm.lm_id; // FIXME:tallent
 
   // double casts to avoid warnings when pointer is < 64 bits 
-  tmp_node->lm_offset = (hpcfmt_vma_t) (uintptr_t) node->ip_norm.offset;
+  tmp_node->lm_ip = (hpcfmt_vma_t) (uintptr_t) node->ip_norm.lm_ip;
 
   if (flags.fields.isLogicalUnwind) {
     TMSG(LUSH, "settiong lip for node %d", tmp_node->id);

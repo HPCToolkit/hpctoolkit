@@ -1375,11 +1375,11 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   }
 
   // ----------------------------------------
-  // lmId and ip
+  // normalized ip (lmId and lmIP)
   // ----------------------------------------
   ALoadMap::LM_id_t lmId = nodeFmt.lm_id;
 
-  VMA ip = (VMA)nodeFmt.lm_offset; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
+  VMA ip = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
   if (loadmap && (nodeFmt.id_parent != HPCRUN_FMT_CCTNodeId_NULL)) {
@@ -1397,7 +1397,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   DIAG_MsgIf(0, "cct_makeNode(: " << hex << ip << dec << ", " << lmId << ")");
 
   // ----------------------------------------  
-  // lip
+  // normalized lip
   // ----------------------------------------
   lush_lip_t* lip = NULL;
   if (!lush_lip_eq(&nodeFmt.lip, &lush_lip_NULL)) {
@@ -1406,12 +1406,12 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
   if (lip) {
     if (loadmap) {
-      VMA lip_ip = lush_lip_getLMOffset(lip);
+      VMA lip_ip = lush_lip_getLMIP(lip);
 
       LoadMap::LM* lm = loadmap->lm_find(lip_ip);
       
       lush_lip_setLMId(lip, lm->id());
-      lush_lip_setLMOffset(lip, lip_ip - lm->relocAmt()); // unrelocated ip
+      lush_lip_setLMIP(lip, lip_ip - lm->relocAmt()); // unrelocated ip
     }
 
     ALoadMap::LM_id_t lip_lmId = lush_lip_getLMId(lip);
@@ -1529,7 +1529,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
     n_fmt.lm_id   = Prof::ALoadMap::LM_id_NULL;
-    n_fmt.lm_offset = 0;
+    n_fmt.lm_ip   = 0;
     lush_lip_init(&(n_fmt.lip));
     memset(n_fmt.metrics, 0, n_fmt.num_metrics * sizeof(hpcrun_metricVal_t));
   }
@@ -1541,8 +1541,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
     }
     
     n_fmt.lm_id = n_dyn.lmId();
-    
-    n_fmt.lm_offset = n_dyn.Prof::CCT::ADynNode::lmOffset();
+    n_fmt.lm_ip = n_dyn.Prof::CCT::ADynNode::lmIP();
 
     if (flags.fields.isLogicalUnwind) {
       lush_lip_init(&(n_fmt.lip));

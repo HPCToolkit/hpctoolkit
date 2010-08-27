@@ -175,8 +175,8 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 
       //unw_word_t ip = lush_cursor_get_ip(&cursor);
       ip_normalized_t ip_norm = lush_cursor_get_ip_norm(&cursor);
-      TMSG(LUNW, "IP:  lm_id = %d and offset = %p", ip_norm.lm_id, 
-	   ip_norm.offset);
+      TMSG(LUNW, "IP:  lm-id = %d and lm-ip = %p", ip_norm.lm_id, 
+	   ip_norm.lm_ip);
       td->unwind->ip_norm = ip_norm;
 
       pchord_len++;

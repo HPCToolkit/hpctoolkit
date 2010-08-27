@@ -51,10 +51,10 @@
 
 //***************************************************************************
 
-ip_normalized_t ip_normalized_NULL = { .lm_id = 0, .offset = 0 };
+ip_normalized_t ip_normalized_NULL = { .lm_id = 0, .lm_ip = 0 };
 
 ip_normalized_t
-hpcrun_normalize_ip(void *unnormalized_ip, load_module_t* lm)
+hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
 {
   ip_normalized_t ip_norm;
   
@@ -70,7 +70,7 @@ hpcrun_normalize_ip(void *unnormalized_ip, load_module_t* lm)
   }
 
   ip_norm.lm_id = lm->id;
-  ip_norm.offset = (uintptr_t) unnormalized_ip - lm->dso_info->start_to_ref_dist;
+  ip_norm.lm_ip = (uintptr_t)unnormalized_ip - lm->dso_info->start_to_ref_dist;
 
   return ip_norm;
 }

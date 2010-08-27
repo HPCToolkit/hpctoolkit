@@ -647,8 +647,7 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
   }
 
   HPCFMT_ThrowIfError(hpcfmt_int2_fread(&x->lm_id, fs));
-
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->lm_offset, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->lm_ip, fs));
 
   lush_lip_init(&x->lip);
   if (flags.fields.isLogicalUnwind) {
@@ -675,8 +674,7 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
   }
 
   hpcfmt_int2_fwrite(x->lm_id, fs);
-
-  hpcfmt_int8_fwrite(x->lm_offset, fs);
+  hpcfmt_int8_fwrite(x->lm_ip, fs);
 
   if (flags.fields.isLogicalUnwind) {
     hpcrun_fmt_lip_fwrite(&x->lip, fs);
@@ -704,7 +702,7 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
     fprintf(fs, "(as: %s) ", as_str);
   }
 
-  fprintf(fs, "(lm-id: %"PRIu16") (ip: 0x%"PRIx64") ", x->lm_id, x->lm_offset);
+  fprintf(fs, "(lm-id: %"PRIu16") (lm-ip: 0x%"PRIx64") ", x->lm_id, x->lm_ip);
 
   if (flags.fields.isLogicalUnwind) {
     hpcrun_fmt_lip_fprint(&x->lip, fs, "");

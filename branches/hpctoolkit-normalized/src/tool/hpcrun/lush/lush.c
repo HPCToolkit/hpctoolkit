@@ -279,8 +279,8 @@ lush_step_bichord(lush_cursor_t* cursor)
     lush_lip_t* lip = lush_cursor_get_lip(cursor);
 
     // 32-bit warnings
-    lush_lip_setLMOffset(lip, (uint64_t)(uintptr_t)ip_norm.offset);
     lush_lip_setLMId(lip, ip_norm.lm_id);
+    lush_lip_setLMIP(lip, (uint64_t)(uintptr_t)ip_norm.lm_ip);
 
     ty = LUSH_STEP_CONT;
     lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);

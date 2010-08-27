@@ -382,9 +382,9 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
       const Prof::Struct::LM* lmStrct = rootStrct->findLM(lm_nm);
       DIAG_Assert(lmStrct, "failed to find Struct::LM: " << lm_nm);
 
-      VMA ip_ur = n_dyn->lmOffset();
-      const Prof::Struct::ACodeNode* strct = lmStrct->findByVMA(ip_ur);
-      DIAG_Assert(strct, "failed to find structure: (" << n_dyn->lmId() << ", " << hex << ip_ur << dec << ")");
+      VMA lm_ip = n_dyn->lmIP();
+      const Prof::Struct::ACodeNode* strct = lmStrct->findByVMA(lm_ip);
+      DIAG_Assert(strct, "failed to find structure: (" << n_dyn->lmId() << ", " << hex << lm_ip << dec << ")");
       
       n->structure(strct);
     }
@@ -431,13 +431,13 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       using namespace Prof;
 
       // 1. Add symbolic information to 'n_dyn'
-      VMA ip_ur = n_dyn->lmOffset();
+      VMA lm_ip = n_dyn->lmIP();
       Struct::ACodeNode* strct = 
-	Analysis::Util::demandStructure(ip_ur, lmStrct, lm, useStruct);
+	Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct);
       n->structure(strct);
       strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
-      DIAG_MsgIf(0, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << ip_ur << ") --> struct " << strct << dec << " " << strct->toStringMe());
+      DIAG_MsgIf(0, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << lm_ip << ") --> struct " << strct << dec << " " << strct->toStringMe());
 
       // 2. Demand a procedure frame for 'n_dyn' and its scope within it
       Struct::ANode* scope_strct = strct->ancestor(Struct::ANode::TyLoop,
