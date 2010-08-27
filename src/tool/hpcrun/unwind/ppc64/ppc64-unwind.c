@@ -74,6 +74,8 @@
 #include "ui_tree.h"
 
 #include <messages/messages.h>
+
+#include <utilities/ip-normalized.h>
 #include <utilities/arch/mcontext.h>
 
 #include <lib/isa-lean/power/instruction-set.h>
@@ -163,7 +165,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t *cursor, void *context)
   cursor->bp        = NULL;
   cursor->flags     = UnwFlg_StackTop;
 
-  ip_normalize_t ip_norm;
+  ip_normalized_t ip_norm;
   unw_interval_t* intvl = (unw_interval_t*)
     hpcrun_addr_to_interval(cursor->pc_unnorm, &ip_norm);
 
@@ -290,7 +292,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
       if (isPossibleParentSP(nxt_sp, try_sp)) {
 	nxt_pc = getNxtPCFromSP(try_sp);
 	nxt_intvl = (unw_interval_t*)hpcrun_addr_to_interval(nxt_pc, 
-							     nxt_pc_norm);
+							     &nxt_pc_norm);
       }
     }
      
