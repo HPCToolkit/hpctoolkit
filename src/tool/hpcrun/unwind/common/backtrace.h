@@ -66,6 +66,7 @@
 // local include files 
 //***************************************************************************
 
+#include <hpcrun/utilities/ip-normalized.h>
 #include <unwind/common/unw-datatypes.h>
 #include <cct/frame.h>
 
@@ -122,9 +123,9 @@ bool     hpcrun_bt_empty(backtrace_t* bt);
 
 bool     hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
 
-void hpcrun_bt_modify_leaf_addr(backtrace_t* bt, void* addr);
+void hpcrun_bt_modify_leaf_addr(backtrace_t* bt, ip_normalized_t ip_norm);
 
-void hpcrun_bt_add_leaf_child(backtrace_t* bt, void* addr);
+void hpcrun_bt_add_leaf_child(backtrace_t* bt, ip_normalized_t ip_norm);
 
 void hpcrun_dump_bt(backtrace_t* bt);
 

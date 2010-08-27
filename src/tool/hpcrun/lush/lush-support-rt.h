@@ -240,14 +240,25 @@ lush_cursor_set_aid_prev(lush_cursor_t* cursor, lush_agentid_t aid)
 }
 
 
-static inline unw_word_t
-lush_cursor_get_ip(lush_cursor_t* cursor)
+static inline ip_normalized_t
+lush_cursor_get_ip_norm(lush_cursor_t* cursor)
 {
-  unw_word_t ip = 0;
-  if (hpcrun_unw_get_ip_reg(&cursor->pcursor, &ip) < 0) {
+  ip_normalized_t ip_norm;
+  if (hpcrun_unw_get_ip_norm_reg(&cursor->pcursor, &ip_norm) < 0) {
     // FIXME
   }
-  return ip;
+  return ip_norm;
+}
+
+
+static inline unw_word_t
+lush_cursor_get_ip_unnorm(lush_cursor_t* cursor)
+{
+  unw_word_t ip_unnorm;
+  if (hpcrun_unw_get_ip_unnorm_reg(&cursor->pcursor, &ip_unnorm) < 0) {
+    // FIXME
+  }
+  return ip_unnorm;
 }
 
 

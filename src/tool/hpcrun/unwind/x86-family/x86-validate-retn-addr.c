@@ -275,7 +275,7 @@ confirm_tail_call(void *addr, void *target_fn)
   }
 
   TMSG(VALIDATE_UNW,"Checking routine %p for possible tail calls", callee);
-  unwind_interval *ri = (unwind_interval *) hpcrun_addr_to_interval(callee);
+  unwind_interval *ri = (unwind_interval *) hpcrun_addr_to_interval(callee, NULL);
   bool rv = (ri && ri->has_tail_calls);
 
   if (rv) return contains_tail_call_to_f(callee, target_fn);
@@ -332,7 +332,7 @@ confirm_plt_call(void *addr, void *callee)
   void *plt_callee = x86_plt_branch_target(plt_ins, xptr);
   if (plt_callee == callee) return UNW_ADDR_CONFIRMED;
 
-  unwind_interval *plt_callee_ui = (unwind_interval *) hpcrun_addr_to_interval(plt_callee);
+  unwind_interval *plt_callee_ui = (unwind_interval *) hpcrun_addr_to_interval(plt_callee, NULL);
   if (plt_callee_ui && plt_callee_ui->has_tail_calls) return contains_tail_call_to_f(plt_callee, callee);
 
   return UNW_ADDR_WRONG;
@@ -346,7 +346,8 @@ deep_validate_return_addr(void *addr, void *generic)
 {
   hpcrun_unw_cursor_t *cursor = (hpcrun_unw_cursor_t *)generic;
 
-  TMSG(VALIDATE_UNW,"validating unwind step from %p ==> %p",cursor->pc, addr);
+  TMSG(VALIDATE_UNW,"validating unwind step from %p ==> %p",cursor->pc_unnorm,
+       addr);
   void *beg, *end;
   if (fnbounds_enclosing_addr(addr, &beg, &end)) {
     TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
@@ -357,9 +358,9 @@ deep_validate_return_addr(void *addr, void *generic)
   // this case causes unwinds from vdso to fail unnecessarily, so skip
   // it - bowden and johnmc
   // ----------------------------------------------------------------------
-  if (fnbounds_enclosing_addr(cursor->pc, &beg, &end)) {
+  if (fnbounds_enclosing_addr(cursor->pc_unnorm, &beg, &end)) {
     TMSG(VALIDATE_UNW,"***The pc in the unwind cursor (= %p) does not have function bounds\n"
-         "***INTERNAL ERROR: please check arguments",cursor->pc);
+         "***INTERNAL ERROR: please check arguments",cursor->pc_unnorm);
     return status_is_wrong();
   }
 #endif
@@ -397,7 +398,7 @@ dbg_val(void *addr, void *pc)
 {
   hpcrun_unw_cursor_t cursor;
 
-  cursor.pc = pc;
+  cursor.pc_unnorm = pc;
   return deep_validate_return_addr(addr, &cursor);
 }
 

@@ -671,7 +671,7 @@ public:
     : ANode(type, parent, strct),
       m_cpId(cpId),
       m_as_info(lush_assoc_info_NULL),
-      m_lmId(LoadMap::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL)
+      m_lmId(LoadMap::LM_id_NULL), m_lmIP(0), m_opIdx(0), m_lip(NULL)
   { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
@@ -680,7 +680,7 @@ public:
     : ANode(type, parent, strct),
       m_cpId(cpId),
       m_as_info(as_info), 
-      m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip)
+      m_lmId(lmId), m_lmIP(ip), m_opIdx(opIdx), m_lip(lip)
   { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
@@ -690,7 +690,7 @@ public:
     : ANode(type, parent, strct, metrics),
       m_cpId(cpId),
       m_as_info(as_info),
-      m_lmId(lmId), m_ip(ip), m_opIdx(opIdx), m_lip(lip)
+      m_lmId(lmId), m_lmIP(ip), m_opIdx(opIdx), m_lip(lip)
   { }
 
   virtual ~ADynNode()
@@ -702,7 +702,7 @@ public:
       m_cpId(x.m_cpId),
       m_as_info(x.m_as_info), 
       m_lmId(x.m_lmId),
-      m_ip(x.m_ip), m_opIdx(x.m_opIdx), 
+      m_lmIP(x.m_lmIP), m_opIdx(x.m_opIdx), 
       m_lip(clone_lip(x.m_lip))
   { }
 
@@ -715,7 +715,7 @@ public:
       m_cpId = x.m_cpId;
       m_as_info = x.m_as_info;
       m_lmId = x.m_lmId;
-      m_ip = x.m_ip;
+      m_lmIP = x.m_lmIP;
       m_opIdx = x.m_opIdx;
       delete m_lip;
       m_lip = clone_lip(x.m_lip);
@@ -786,21 +786,28 @@ public:
   { m_lmId = x; }
 
   virtual VMA
-  ip() const
+  lmIP() const
   {
-    if (isValid_lip()) { return lush_lip_getIP(m_lip); }
-    return m_ip; 
+    if (isValid_lip()) {
+      return lush_lip_getLMIP(m_lip);
+    }
+    return m_lmIP; 
   }
 
   VMA
-  ip_real() const
-  { return m_ip; }
+  lmIP_real() const
+  { return m_lmIP; }
 
   void
-  ip(VMA ip, ushort opIdx)
+  lmIP(VMA lmIP, ushort opIdx)
   {
-    if (isValid_lip()) { lush_lip_setIP(m_lip, ip); m_opIdx = 0; return; }
-    m_ip = ip; m_opIdx = opIdx;
+    if (isValid_lip()) { 
+      lush_lip_setLMIP(m_lip, lmIP); 
+      m_opIdx = 0;
+      return;
+    }
+    m_lmIP  = lmIP;
+    m_opIdx = opIdx;
   }
 
   ushort
@@ -842,7 +849,7 @@ public:
 
   bool
   isSyntheticRoot() const
-  { return (m_lmId == LoadMap::LM_id_NULL && m_ip == 0); }
+  { return (m_lmId == LoadMap::LM_id_NULL && m_lmIP == 0); }
 
 
   // -------------------------------------------------------
@@ -857,7 +864,7 @@ public:
 
       // 1. additional tests for standard merge condition (N.B.: order
       //    is based on early failure rather than conceptual grouping)
-      if (x.ip_real() == y.ip_real()
+      if (x.lmIP_real() == y.lmIP_real()
 	  && lush_lip_eq(x.lip(), y.lip())
 	  && lush_assoc_class_eq(x.assoc(), y.assoc())
 	  && lush_assoc_info__path_len_eq(x.assocInfo(), y.assocInfo())) {
@@ -922,7 +929,7 @@ private:
   lush_assoc_info_t m_as_info;
 
   LoadMap::LM_id_t m_lmId; // LoadMap::LM id
-  VMA m_ip;                // instruction pointer for this node
+  VMA    m_lmIP;           // static instruction pointer
   ushort m_opIdx;          // index in the instruction [OBSOLETE]
 
   lush_lip_t* m_lip; // logical ip
@@ -1210,16 +1217,16 @@ public:
   virtual VMA
   ip() const
   {
-    VMA ip = ADynNode::ip_real();
+    VMA ip = ADynNode::lmIP_real();
     if (isValid_lip()) {
-      ip = lush_lip_getIP(lip());
+      ip = lush_lip_getLMIP(lip());
     }
     return (ip != 0) ? (ip - s_raToCallsiteOfst) : 0;
   }
   
   VMA
   ra() const
-  { return ADynNode::ip_real(); }
+  { return ADynNode::lmIP_real(); }
     
   // Dump contents for inspection
   virtual std::string

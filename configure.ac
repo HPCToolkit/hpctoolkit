@@ -1453,10 +1453,16 @@ AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
 # enable-lush, enable-lush-pthreads, with-cilk
 #-------------------------------------------------
 
+opt_enable_lush=no
+
 AC_ARG_ENABLE([lush],
   [AS_HELP_STRING([--enable-lush],
                   [use lush backtrace in hpcrun])],
-  [],
+  [case "${enableval}" in
+     yes) opt_enable_lush="yes" ;;
+     no)  opt_enable_lush="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-lush]) ;;
+   esac],
   [opt_enable_lush=no])
 
 AC_MSG_CHECKING([whether to use lush])

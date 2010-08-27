@@ -45,6 +45,7 @@
 #define FRAME_H
 
 #include <unwind/common/unw-datatypes.h>
+#include <utilities/ip-normalized.h>
 #include <lib/prof-lean/lush/lush-support.h>
 
 // --------------------------------------------------------------------------
@@ -54,7 +55,7 @@
 typedef struct frame_t {
   hpcrun_unw_cursor_t cursor;       // hold a copy of the cursor for this frame
   lush_assoc_info_t as_info;
-  void* ip;
+  ip_normalized_t ip_norm;
   void* ra_loc;
   lush_lip_t* lip;
 } frame_t;

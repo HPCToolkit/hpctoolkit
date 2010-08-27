@@ -109,7 +109,8 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
     for (frame_t* x = td->btbuf; x < unwind; ++x) {
       lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
       lush_lip2str(lip_str, sizeof(lip_str), x->lip);
-      PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
+       PMSG_LIMIT(EMSG("%s: ip.lm_id = %d | ip.lm_ip = %p | lip %s", as_str,
+		      x->ip_norm.lm_id, x->ip_norm.lm_ip, lip_str));
 
       msg_cnt++;
       if (msg_cnt > msg_limit) {
@@ -124,8 +125,8 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
     for (frame_t* x = td->bufstk; x < td->bufend; ++x) {
       lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
       lush_lip2str(lip_str, sizeof(lip_str), x->lip);
-      PMSG_LIMIT(EMSG("%s: ip %p | lip %s", as_str, x->ip, lip_str));
-
+      PMSG_LIMIT(EMSG("%s: ip.lm_id = %d | ip.lm_ip = %p | lip %s", as_str,
+		      x->ip_norm.lm_id, x->ip_norm.lm_ip, lip_str));
       msg_cnt++;
       if (msg_cnt > msg_limit) {
         PMSG_LIMIT(EMSG("!!! message limit !!!"));
@@ -214,16 +215,17 @@ hpcrun_bt_cur(backtrace_t* bt)
 //
 
 void
-hpcrun_bt_modify_leaf_addr(backtrace_t* bt, void* addr)
+hpcrun_bt_modify_leaf_addr(backtrace_t* bt, ip_normalized_t ip_norm)
 {
-  bt->beg->ip = addr;
+  bt->beg->ip_norm = ip_norm;
 }
 
 void
-hpcrun_bt_add_leaf_child(backtrace_t* bt, void* addr)
+hpcrun_bt_add_leaf_child(backtrace_t* bt, ip_normalized_t ip_norm)
 {
   if (bt->cur > bt->end) {
-    TMSG(BT, "adding a leaf child of addr %p", addr);
+    TMSG(BT, "adding a leaf child of ip ==> lm_id = %d and lm_ip = %p", 
+	 ip_norm.lm_id, ip_norm.lm_ip);
   }
   if (bt->cur > bt->end) {
     
@@ -238,13 +240,16 @@ hpcrun_bt_add_leaf_child(backtrace_t* bt, void* addr)
     bt->cur  = new + bt->len;
     bt->end  = new + (size - 1);
   }
-  TMSG(BT, "BEFORE copy, innermost ip = %p", bt->beg->ip);
+  TMSG(BT, "BEFORE copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
+       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.lm_ip);
   memcpy((void*)(bt->beg + 1), (void*) bt->beg, bt->len * sizeof(frame_t));
-  TMSG(BT, "AFTER copy, innermost ip = %p", (bt->beg + 1)->ip);
+  TMSG(BT, "AFTER copy, innermost ip ==> lm_id = %d and lm_ip = %p", 
+       (bt->beg + 1)->ip_norm.lm_id, (bt->beg + 1)->ip_norm.lm_ip);
   bt->cur++;
   bt->len++;
-  bt->beg->ip = addr;
-  TMSG(BT, "Leaf child added, new addr = %p", bt->beg->ip);
+  bt->beg->ip_norm = ip_norm;
+  TMSG(BT, "Leaf child added, new ip ==> lm_id = %d and lm_ip = %p", 
+       bt->beg->ip_norm.lm_id, bt->beg->ip_norm.lm_ip);
 }
 
 void
@@ -258,7 +263,8 @@ void
 hpcrun_dump_bt(backtrace_t* bt)
 {
   for(frame_t* _f = bt->beg; _f < bt->beg + bt->len; _f++) {
-    TMSG(BT, "ip = %p", _f ->ip);
+    TMSG(BT, "ip_norm.lm_id = %d, and ip_norm.lm_ip = %p ", _f->ip_norm.lm_id,
+	 _f->ip_norm.lm_ip);
   }
 }
 
@@ -279,7 +285,10 @@ hpcrun_dump_bt(backtrace_t* bt)
 int
 hpcrun_filter_sample(int len, frame_t* start, frame_t* last)
 {
-  return ( !(monitor_in_start_func_narrow(last->ip) && (len > 1)) );
+  unw_word_t ip_unnorm;
+  hpcrun_unw_get_ip_unnorm_reg(&last->cursor, &ip_unnorm);
+  return ( !(monitor_in_start_func_narrow(ip_unnorm) 
+	     && (len > 1)) );
 }
 
 frame_t*
@@ -329,8 +338,8 @@ hpcrun_generate_backtrace(ucontext_t* context, bool* has_tramp, int skipInner)
   while (true) {
     int ret;
 
-    unw_word_t ip = 0;
-    hpcrun_unw_get_ip_reg(&cursor, &ip);
+    unw_word_t ip;
+    hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
 
     if (hpcrun_trampoline_interior((void*) ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
@@ -359,9 +368,10 @@ hpcrun_generate_backtrace(ucontext_t* context, bool* has_tramp, int skipInner)
     
     hpcrun_ensure_btbuf_avail();
 
-    td->unwind->cursor = cursor;
-    td->unwind->ip     = (void*) ip;
-    td->unwind->ra_loc = NULL;
+    td->unwind->cursor    = cursor;
+    //Broken if HPC_UNW_LITE defined
+    hpcrun_unw_get_ip_norm_reg(&td->unwind->cursor, &td->unwind->ip_norm);
+    td->unwind->ra_loc    = NULL;
     frame_t* prev = td->unwind;
     td->unwind++;
     unw_len++;
@@ -424,7 +434,7 @@ hpcrun_generate_backtrace(ucontext_t* context, bool* has_tramp, int skipInner)
       TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
       frame_t *fr = beg_frame;
       for (int i = 0; i < num_frames; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p", i, fr->ip);
+	TMSG(SAMPLE_FILTER,"  frame ip[%d] ==> lm_id = %d and lm_ip = %p", i, fr->ip_norm.lm_id, fr->ip_norm.lm_ip);
       }
       hpcrun_stats_num_samples_filtered_inc();
 
@@ -475,7 +485,7 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
     int ret;
 
     unw_word_t ip = 0;
-    hpcrun_unw_get_ip_reg(&cursor, &ip);
+    hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
 
     if (hpcrun_trampoline_interior((void*) ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
@@ -502,8 +512,12 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
       }
     }
     
+    ip_normalized_t temp_ip = hpcrun_normalize_ip((void*) ip, 
+						  cursor.intvl->lm);
     frame_t* prev = hpcrun_bt_push(bt,
-				   &((frame_t){.cursor = cursor, .ip = (void*)ip, .ra_loc = NULL}));
+				   &((frame_t){.cursor = cursor, 
+					 .ip_norm = temp_ip,
+					 .ra_loc = NULL}));
 
     ret = hpcrun_unw_step(&cursor);
     backtrace_trolled = backtrace_trolled || (ret == STEP_TROLL);
@@ -561,7 +575,7 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
       TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
       frame_t *fr = beg_frame;
       for (int i = 0; i < num_frames; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p", i, fr->ip);
+	TMSG(SAMPLE_FILTER,"  frame ip[%d] ==> lm_id = %d and lm_ip = %p", i, fr->ip_norm.lm_id, fr->ip_norm.lm_ip);
       }
       hpcrun_stats_num_samples_filtered_inc();
       return false;

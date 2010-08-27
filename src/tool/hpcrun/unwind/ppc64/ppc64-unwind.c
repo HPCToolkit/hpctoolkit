@@ -109,18 +109,37 @@ typedef enum {
 } unw_reg_code_t;
 
 static int 
-hpcrun_unw_get_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id, void **reg_value)
+hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id, 
+			  void** reg_value)
 {
   assert(reg_id == UNW_REG_IP);
-  *reg_value = cursor->pc;
+  *reg_value = cursor->pc_unnorm;
+  
+  return 0;
+}
+
+static int 
+hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id, 
+			ip_normalized_t* reg_value)
+{
+  assert(reg_id == UNW_REG_IP);
+  *reg_value = cursor->pc_norm;
+  
   return 0;
 }
 
 int
-hpcrun_unw_get_ip_reg(hpcrun_unw_cursor_t *cursor, void **reg_value)
+hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
 {
-  return hpcrun_unw_get_reg(cursor, UNW_REG_IP, reg_value);
+  return hpcrun_unw_get_norm_reg(c, UNW_REG_IP, reg_value);
 }
+
+int
+hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
+{
+  return hpcrun_unw_get_unnorm_reg(c, UNW_REG_IP, reg_value);
+}
+
 
 //
 // unimplemented for now
@@ -138,14 +157,18 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t *cursor, void *context)
 {
   ucontext_t* ctxt = (ucontext_t*)context;
 
-  cursor->pc = ucontext_pc(ctxt);
-  cursor->ra = NULL;
-  cursor->sp = ucontext_sp(ctxt);
-  cursor->bp = NULL;
-  cursor->flags = UnwFlg_StackTop;
+  cursor->pc_unnorm = ucontext_pc(ctxt);
+  cursor->ra        = NULL;
+  cursor->sp        = ucontext_sp(ctxt);
+  cursor->bp        = NULL;
+  cursor->flags     = UnwFlg_StackTop;
 
-  unw_interval_t* intvl = (unw_interval_t*)hpcrun_addr_to_interval(cursor->pc);
+  ip_normalize_t ip_norm;
+  unw_interval_t* intvl = (unw_interval_t*)
+    hpcrun_addr_to_interval(cursor->pc_unnorm, &ip_norm);
+
   cursor->intvl = (splay_interval_t*)intvl;
+  cursor->pc_norm = ip_norm;
   
   if (intvl && intvl->ra_ty == RATy_Reg) {
     if (intvl->ra_arg == PPC_REG_LR) {
@@ -157,7 +180,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t *cursor, void *context)
   }
   
   TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
-       cursor->pc, cursor->ra, cursor->sp, cursor->bp);
+       cursor->pc_unnorm, cursor->ra, cursor->sp, cursor->bp);
   if (MYDBG) { ui_dump(intvl); }
 }
 
@@ -166,7 +189,7 @@ int
 hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 {
   // current frame
-  void*  pc = cursor->pc;
+  void*  pc = cursor->pc_unnorm;
   void** sp = cursor->sp;
   void** fp = cursor->bp; // unused
   unw_interval_t* intvl = (unw_interval_t*)(cursor->intvl);
@@ -248,8 +271,9 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
-  nxt_intvl = (unw_interval_t*)hpcrun_addr_to_interval(nxt_pc);
-
+  ip_normalized_t nxt_pc_norm;
+  nxt_intvl = (unw_interval_t*)hpcrun_addr_to_interval(nxt_pc, &nxt_pc_norm);
+ 
   // if nxt_pc is invalid for some reason...
   if (!nxt_intvl) {
     TMSG(UNW, "warning: bad nxt pc=%p; sp=%p, fp=%p...", nxt_pc, sp, fp);
@@ -265,7 +289,8 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
       // Sanity check SP: Once in a while SP is clobbered.
       if (isPossibleParentSP(nxt_sp, try_sp)) {
 	nxt_pc = getNxtPCFromSP(try_sp);
-	nxt_intvl = (unw_interval_t*)hpcrun_addr_to_interval(nxt_pc);
+	nxt_intvl = (unw_interval_t*)hpcrun_addr_to_interval(nxt_pc, 
+							     nxt_pc_norm);
       }
     }
      
@@ -295,12 +320,13 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   TMSG(UNW, "next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
   if (MYDBG) { ui_dump(nxt_intvl); }
 
-  cursor->pc = nxt_pc;
-  cursor->ra = nxt_ra;
-  cursor->sp = nxt_sp;
-  cursor->bp = nxt_fp;
-  cursor->intvl = (splay_interval_t*)nxt_intvl;
-  cursor->flags = UnwFlg_NULL;
+  cursor->pc_unnorm = nxt_pc;
+  cursor->ra        = nxt_ra;
+  cursor->sp        = nxt_sp;
+  cursor->bp        = nxt_fp;
+  cursor->intvl     = (splay_interval_t*)nxt_intvl;
+  cursor->flags     = UnwFlg_NULL;
+  cursor->pc_norm   = nxt_pc_norm;
 
   return STEP_OK;
 }

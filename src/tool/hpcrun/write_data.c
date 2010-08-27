@@ -189,10 +189,11 @@ lazy_open_data_file(void)
                         HPCRUN_FMT_NV_tid, tidStr,
                         HPCRUN_FMT_NV_hostid, hostidStr,
                         HPCRUN_FMT_NV_pid, pidStr,
-                        "nasty-message", "Please support <lm-id, lm-offset>!",
+                        //"nasty-message", "Please support <lm-id, lm-offset>!",
                         NULL);
   return fs;
 }
+
 
 static int
 write_epochs(FILE* fs, epoch_t* epoch)
@@ -261,20 +262,19 @@ write_epochs(FILE* fs, epoch_t* epoch)
 
     hpcrun_loadmap_t* current_loadmap = s->loadmap;
     
-    hpcfmt_int4_fwrite(current_loadmap->num_modules, fs);
+    hpcfmt_int4_fwrite(current_loadmap->size, fs);
 
-    loadmap_src_t* lm_src = current_loadmap->loaded_modules;
-    for (uint32_t i = 0; i < current_loadmap->num_modules; i++) {
+    // N.B.: Write in reverse order to obtain nicely ascending LM ids.
+    load_module_t* lm_src = current_loadmap->lm_end;
+    while (lm_src) {
       loadmap_entry_t lm_entry;
       lm_entry.id = lm_src->id;
       lm_entry.name = lm_src->name;
-      lm_entry.vaddr = (uint64_t)(uintptr_t)lm_src->vaddr; // 32-bit warnings
-      lm_entry.mapaddr = (uint64_t)(uintptr_t)lm_src->mapaddr;
       lm_entry.flags = 0;
 
       hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
 
-      lm_src = lm_src->next;
+      lm_src = lm_src->prev;
     }
 
     TMSG(DATA_WRITE, "Done writing loadmap");
@@ -306,6 +306,7 @@ write_epochs(FILE* fs, epoch_t* epoch)
 
   return HPCRUN_OK;
 }
+
 
 void
 hpcrun_flush_epochs(void)

@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/unwind/common/std_unw_cursor.h $
-// $Id: std_unw_cursor.h 2775 2010-03-09 03:24:31Z mfagan $
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/unwind/common/unwind-cfg.h $
+// $Id: unwind-cfg.h 2775 2010-03-09 03:24:31Z mfagan $
 //
 // -----------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -41,62 +41,57 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef UNWIND_CURSOR_H
-#define UNWIND_CURSOR_H
+#ifndef ip_normalized_h
+#define ip_normalized_h
 
 //************************* System Include Files ****************************
 
-#include <inttypes.h>
-
 //*************************** User Include Files ****************************
 
-#include "unwind-cfg.h"
+#include <hpcrun/loadmap.h>
 
 //*************************** Forward Declarations **************************
 
-// HPC_UNW_LITE: It is not safe to have a pointer to the interval
-// since we cannot use dynamic storage.
-#if (HPC_UNW_LITE)
+//***************************************************************************
 
-   // there should probably have a check to ensure this is big enough
-   typedef struct { char data[128]; } unw_interval_opaque_t;
-#  define UNW_CURSOR_INTERVAL_t unw_interval_opaque_t
+// ---------------------------------------------------------
+// ip_normalized_t: A normalized instruction pointer. Since this is a
+//   small struct, it can be passed by value.
+// ---------------------------------------------------------
 
-#else
+typedef struct ip_normalized_t {
+  
+  // ---------------------------------------------------------
+  // id of load module
+  // ---------------------------------------------------------
+  uint16_t lm_id;
 
-#  include "splay-interval.h"
-#  include <hpcrun/utilities/ip-normalized.h>
-#  define UNW_CURSOR_INTERVAL_t splay_interval_t*
+  // ---------------------------------------------------------
+  // static instruction pointer address within the load module
+  // ---------------------------------------------------------
+  uintptr_t lm_ip;
 
-#endif
+} ip_normalized_t;
+
+
+extern ip_normalized_t ip_normalized_NULL;
+
+static inline bool
+ip_normalized_eq(const ip_normalized_t* a, const ip_normalized_t* b)
+{
+  return ( (a == b) || (a && b
+			&& a->lm_id == b->lm_id
+			&& a->lm_ip == b->lm_ip) );
+}
+
+// Converts an ip into a normalized ip using 'lm'. If 'lm' is NULL 
+// the function attempts to find the load module that 'unnormalized_ip'
+// belongs to. If no load module is found or the load module does not
+// have a valid 'dso_info' field, ip_normalized_NULL is returned; 
+// otherwise, the properly normalized ip is returned.
+ip_normalized_t
+hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm);
 
 //***************************************************************************
 
-typedef struct hpcrun_unw_cursor_t {
-
-  // ------------------------------------------------------------
-  // common state
-  // ------------------------------------------------------------
-  void *pc_unnorm; //only place where un-normalized pc will exist
-  void **bp;
-  void **sp;
-  void *ra;
-
-  void *ra_loc;  // for trampolines
-
-  UNW_CURSOR_INTERVAL_t intvl;
-
-  //NOTE: will fail if HPC_UWN_LITE defined
-  ip_normalized_t pc_norm;
-
-  // ------------------------------------------------------------
-  // unwind-provider-specific state
-  // ------------------------------------------------------------
-  int32_t flags;
-
-} hpcrun_unw_cursor_t;
-
-
-//***************************************************************************
-
-#endif
+#endif // ip_normalized_h

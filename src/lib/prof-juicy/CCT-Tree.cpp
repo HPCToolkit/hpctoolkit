@@ -1041,7 +1041,7 @@ string
 ADynNode::nameDyn() const
 {
   string nm = "[" + assocInfo_str() + ": ("
-    + StrUtil::toStr(m_lmId) + ", " + StrUtil::toStr(m_ip, 16) + ") ("
+    + StrUtil::toStr(m_lmId) + ", " + StrUtil::toStr(m_lmIP, 16) + ") ("
     + lip_str() + ")]";
   return nm;
 }
@@ -1055,7 +1055,7 @@ ADynNode::writeDyn(std::ostream& o, uint oFlags, const char* pfx) const
   o << std::showbase;
 
   o << p << assocInfo_str() 
-    << hex << " [ip " << m_ip << ", " << dec << m_opIdx << "] "
+    << hex << " [ip " << m_lmIP << ", " << dec << m_opIdx << "] "
     << hex << m_lip << " [lip " << lip_str() << "]" << dec;
 
   o << p << " [metrics";

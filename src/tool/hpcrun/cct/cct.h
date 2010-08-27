@@ -78,10 +78,13 @@
 
 #include <hpcrun/metrics.h>
 
+#include <hpcrun/unwind/common/backtrace.h>
+
+#include <hpcrun/utilities/ip-normalized.h>
+
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <unwind/common/backtrace.h>
 
 #include "frame.h"
 
@@ -133,7 +136,7 @@ typedef struct cct_node_t {
   // 'operation pointer'.  The operation in the instruction packet is
   // represented by adding 0, 1, or 2 to the instruction pointer for
   // the first, second and third operation, respectively.
-  void* ip;
+  ip_normalized_t ip_norm;
 
   // logical instruction pointer
   lush_lip_t* lip;

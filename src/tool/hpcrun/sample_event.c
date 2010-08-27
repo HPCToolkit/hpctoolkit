@@ -182,7 +182,9 @@ hpcrun_sample_callpath(void *context, int metricId,
 
 	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc);
 
-	frame_t frm = {.ip = func_start_pc};
+	ip_normalized_t temp_ip_norm = hpcrun_normalize_ip(pc, NULL);
+
+	frame_t frm = {.ip_norm = temp_ip_norm};
 	cct_node_t* func_proxy = hpcrun_cct_get_child(cct, node->parent, &frm);
 	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag;
 
@@ -199,7 +201,6 @@ hpcrun_sample_callpath(void *context, int metricId,
 
   hpcrun_clear_handling_sample(td);
   if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
-    hpcrun_finalize_current_loadmap();
     hpcrun_flush_epochs();
     hpcrun_reclaim_freeable_mem();
   }
