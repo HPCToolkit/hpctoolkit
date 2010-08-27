@@ -446,6 +446,7 @@ typedef struct loadmap_entry_t {
   uint16_t id;      // 0 is reserved as a NULL value
   char* name;
   uint64_t flags;
+  uint64_t mapaddr; // FIXME: obsolete
 } loadmap_entry_t;
 
 

@@ -982,10 +982,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   for (uint i = 0; i < num_lm; ++i) {
     string nm = loadmap_tbl.lst[i].name;
     RealPathMgr::singleton().realpath(nm);
-    VMA vaddr = 0;
+    VMA loadAddr = loadmap_tbl.lst[i].mapaddr;
     size_t sz = 0;
 
-    LoadMap::LM* lm = new LoadMap::LM(nm,vaddr, sz);
+    LoadMap::LM* lm = new LoadMap::LM(nm, loadAddr, sz);
     loadmap.lm_insert(lm);
     
     DIAG_Assert(lm->id() == i + 1, "FIXME: Profile::fmt_epoch_fread: Expect lm id's to be in order to support dual-interpretations.");
@@ -1211,6 +1211,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     loadmap_entry_t lm_entry;
     lm_entry.id = lm->id();
     lm_entry.name = const_cast<char*>(lm->name().c_str());
+    lm_entry.mapaddr = lm->id(); // avoid problems reading as a LoadMap!
     lm_entry.flags = 0; // TODO:flags
     
     hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
@@ -1528,7 +1529,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
     n_fmt.lm_id   = Prof::ALoadMap::LM_id_NULL;
-    n_fmt.lm_offset  = 0;
+    n_fmt.lm_offset = 0;
     lush_lip_init(&(n_fmt.lip));
     memset(n_fmt.metrics, 0, n_fmt.num_metrics * sizeof(hpcrun_metricVal_t));
   }

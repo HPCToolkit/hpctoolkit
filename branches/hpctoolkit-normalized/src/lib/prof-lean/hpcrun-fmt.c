@@ -597,6 +597,7 @@ hpcrun_fmt_loadmapEntry_fread(loadmap_entry_t* x, FILE* fs,
 {
   HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(x->id), fs));
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->name), fs, alloc));
+  x->mapaddr = x->id;
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags), fs));
   return HPCFMT_OK;
 }
