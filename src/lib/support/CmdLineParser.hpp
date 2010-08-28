@@ -66,7 +66,7 @@
 #include <vector>
 #include <string>
 
-#include <inttypes.h>
+#include <stdint.h>
 
 //*************************** User Include Files ****************************
 
@@ -175,12 +175,16 @@ public:
 
   struct OptArgDesc {
     
-    bool operator==(const OptArgDesc& x) const { 
-      return (swShort == x.swShort && swLong == x.swLong 
+    bool operator==(const OptArgDesc& x) const
+    { 
+      return (swShort == x.swShort && swLong == x.swLong
 	      && kind == x.kind && dupKind == x.dupKind
 	      && dupArgSep == x.dupArgSep);
     }
-    bool operator!=(const OptArgDesc& x) const { return !(*this == x); }
+
+    bool
+    operator!=(const OptArgDesc& x) const
+    { return !(*this == x); }
     
     // Data
     char swShort;       // 0 if n/a
@@ -271,7 +275,7 @@ public:
   // command line arguments, parses the argv/argc into switches,
   // optional and required arguments.
   void
-  parse(const OptArgDesc* optArgDescs, 
+  parse(const OptArgDesc* optArgDescs,
 	int argc, const char* const argv[]);
   
   // -------------------------------------------------------
@@ -279,7 +283,8 @@ public:
   // -------------------------------------------------------
 
   // GetCmd: The command (will be valid even after a parse error)
-  const std::string& getCmd() const;
+  const std::string&
+  getCmd() const;
   
   // -------------------------------------------------------
   // Parsed Data: Optional arguments
@@ -287,53 +292,81 @@ public:
   
   // isOpt: (isOption) Given a short or long switch, returns whether
   // the switch has been seen.
-  bool isOpt(const char swShort) const;
-  bool isOpt(const char* swLong) const;
-  bool isOpt(const std::string& sw) const;
+  bool
+  isOpt(const char swShort) const;
+  
+  bool
+  isOpt(const char* swLong) const;
+
+  bool
+  isOpt(const std::string& sw) const;
 
   // isOptArg: (isOptionArgument) Given a short or long switch,
   // returns whether an argument is associated with it.  Designed for
   // switches that optionally take arguments.
-  bool isOptArg(const char swShort) const;
-  bool isOptArg(const char* swLong) const;
-  bool isOptArg(const std::string& sw) const;  
+  bool
+  isOptArg(const char swShort) const;
+
+  bool
+  isOptArg(const char* swLong) const;
+
+  bool
+  isOptArg(const std::string& sw) const;
   
   // getOptArg: (GetOptionArgument) Given a short or long switch, get
   // the argument associated with it.  Assumes user has verified that
   // an argument *exists*.
-  const std::string& getOptArg(const char swShort) const;
-  const std::string& getOptArg(const char* swLong) const;
-  const std::string& getOptArg(const std::string& sw) const;
+  const std::string&
+  getOptArg(const char swShort) const;
+  
+  const std::string&
+  getOptArg(const char* swLong) const;
+  
+  const std::string&
+  getOptArg(const std::string& sw) const;
 
   // -------------------------------------------------------
   // Parsed Data: Arguments
   // -------------------------------------------------------
-  unsigned int getNumArgs() const;
-  const std::string& getArg(unsigned int i) const;
+  unsigned int
+  getNumArgs() const;
+  
+  const std::string&
+  getArg(unsigned int i) const;
 
   // -------------------------------------------------------
   // Convert strings into other formats
   // -------------------------------------------------------
   // The input should be non-empty
-  static long     toLong(const std::string& str);
-  static uint64_t toUInt64(const std::string& str);
-  static double   toDbl(const std::string& str);
+  static long
+  toLong(const std::string& str);
+  
+  static uint64_t
+  toUInt64(const std::string& str);
+  
+  static double
+  toDbl(const std::string& str);
 
   // ---------------------------------------------------------
   // Disambiguate optional arguments to a switch
   // ---------------------------------------------------------
-  static bool isOptArg_long(const char* option);
+  static bool
+  isOptArg_long(const char* option);
 
   // ---------------------------------------------------------
   // Convenience routines for interpreting the value of an option  
   // ---------------------------------------------------------
-  static bool parseArg_bool(const std::string& value, const char* err_note);
+  static bool
+  parseArg_bool(const std::string& value, const char* err_note);
 
   // -------------------------------------------------------
   // Misc
   // -------------------------------------------------------
-  void dump(std::ostream& os = std::cerr) const;
-  void ddump() const;
+  void
+  dump(std::ostream& os = std::cerr) const;
+  
+  void
+  ddump() const;
   
 private:
   // Should not be used 
@@ -369,30 +402,34 @@ private:
   };
 
 private:
-  void Ctor();
-  void Reset();
-  void CheckForErrors(const OptArgDesc* optArgDescs);
+  void
+  Ctor();
+  
+  void
+  reset();
 
-  const OptArgDesc* 
-  CreateSortedCopy(const OptArgDesc* optArgDescs);
+  void
+  checkForErrors(const OptArgDesc* optArgDescs);
+
+  const OptArgDesc*
+  createSortedCopy(const OptArgDesc* optArgDescs);
 
   // Parsing helpers
   SwDesc
-  MakeSwitchDesc(const char* str);
+  makeSwitchDesc(const char* str);
   
   const OptArgDesc*
-  FindOptDesc(const OptArgDesc* optArgDescs, const SwDesc& swdesc,
+  findOptDesc(const OptArgDesc* optArgDescs, const SwDesc& swdesc,
 	      bool errOnMultipleMatches = true);
   
   void
-  AddOption(const OptArgDesc& odesc, const SwDesc& swdesc);
+  addOption(const OptArgDesc& odesc, const SwDesc& swdesc);
   
   void
-  AddOption(const OptArgDesc& odesc, 
+  addOption(const OptArgDesc& odesc,
 	    const std::string& sw, const std::string& arg);
   
 private:
-  
   std::string command;           // comand name
   SwitchToArgMap switchToArgMap; // optional arguments
   ArgVec arguments;              // regular arguments
