@@ -258,7 +258,7 @@ fnbounds_unmap_closed_dsos()
   while (current && current->dso_info) {
     if (!dylib_addr_is_mapped(current->dso_info->start_addr)) {
       // remove from load map and free it.
-      hpcrun_remove_dso(current);
+      hpcrun_load_module_remove_dso(current);
     }
     current = current->next;
   }
@@ -274,10 +274,10 @@ fnbounds_note_module(const char *module_name, void *start, void *end)
 
   FNBOUNDS_LOCK;
 
-  //since hpcrun_find_lm_by_addr only returns a non-NULL value if its lm_info
-  //exists, only need to check if NULL is returned
-  success = hpcrun_find_lm_by_addr(start, end) != NULL
-    ||  fnbounds_compute(module_name, start, end) != NULL;
+  // since hpcrun_loadmap_findByAddr only returns a non-NULL value if
+  // its lm_info exists, only need to check if NULL is returned
+  success = (hpcrun_loadmap_findByAddr(start, end) != NULL
+	     ||  fnbounds_compute(module_name, start, end) != NULL);
 
   FNBOUNDS_UNLOCK;
 
@@ -450,13 +450,18 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
       end = nm_table[fh.num_entries - 1];
     }
   }
-    return new_dso_info_t(filename, nm_table, &fh, start, end, map_size);
+  
+  dso_info_t *dso = hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
+  hpcrun_loadmap_addModule(dso);
+
+  return dso;
 }
+
 
 static dso_info_t *
 fnbounds_dso_info_get(void *pc)
 {
-  load_module_t* lm = hpcrun_find_lm_by_addr(pc, pc);
+  load_module_t* lm = hpcrun_loadmap_findByAddr(pc, pc);
   dso_info_t* dso_open = (lm) ? lm->dso_info : NULL;
   // We can't call dl_iterate_phdr() in general because catching a
   // sample at just the wrong point inside dlopen() will segfault or
@@ -469,10 +474,10 @@ fnbounds_dso_info_get(void *pc)
   if (!dso_open && ENABLED(DLOPEN_RISKY) && hpcrun_dlopen_pending() > 0) {
     char module_name[PATH_MAX];
     void *mstart, *mend;
-      
+    
     if (dylib_find_module_containing_addr(pc, module_name, &mstart, &mend)) {
       dso_open = fnbounds_compute(module_name, mstart, mend);
-      hpcrun_loadmap_add_module(dso_open);
+      hpcrun_loadmap_addModule(dso_open);
     }
   }
   

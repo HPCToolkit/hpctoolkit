@@ -259,7 +259,7 @@ hpcrun_addr_to_interval_locked(void *addr)
 
   if (ans) {
     //FIXME: Hack to link the interval to its load module to get the id
-    ans->lm = hpcrun_find_lm_by_addr(fcn_start, fcn_end);
+    ans->lm = hpcrun_loadmap_findByAddr(fcn_start, fcn_end);
   }
 
   if (ENABLED(UITREE_VERIFY)) {

@@ -98,7 +98,7 @@ hpcrun_init_trampoline_info(void)
 bool
 hpcrun_trampoline_interior(void* addr)
 {
-    return (&hpcrun_trampoline < addr && addr <= &hpcrun_trampoline_end);
+  return (&hpcrun_trampoline < addr && addr <= &hpcrun_trampoline_end);
 }
 
 
