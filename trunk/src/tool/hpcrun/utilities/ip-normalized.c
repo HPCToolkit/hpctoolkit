@@ -59,7 +59,7 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
   ip_normalized_t ip_norm;
   
   if (!lm) {
-    lm = hpcrun_find_lm_by_addr(unnormalized_ip, unnormalized_ip);
+    lm = hpcrun_loadmap_findByAddr(unnormalized_ip, unnormalized_ip);
     if (!lm) { 
       return ip_normalized_NULL;
     }
