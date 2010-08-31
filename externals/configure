@@ -684,7 +684,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-enable_bits
+enable_wordsize
 enable_subdirs
 with_dummy_blank_line
 with_binutils
@@ -1328,8 +1328,8 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-bits=NUM       wordsize in bits: 32 or 64, (default is computed
-                          from CC), rarely needed
+  --enable-wordsize=NUM   host wordsize in bits, 32 or 64, only needed if
+                          autoconf computes the wrong value
   --enable-subdirs        install packages into separate subdirs (default yes)
 
 Optional Packages:
@@ -3448,7 +3448,7 @@ fi
 
 
 #------------------------------------------------------------
-# Wordsize: --enable-bits=NUM
+# Wordsize: --enable-wordsize=NUM
 #------------------------------------------------------------
 
 # Use sizeof(void *) to determine if CC produces 32- or 64-bit code.
@@ -3889,25 +3889,91 @@ _ACEOF
 
 default=`expr $ac_cv_sizeof_void_p '*' 8`
 
-# Check whether --enable-bits was given.
-if test "${enable_bits+set}" = set; then :
-  enableval=$enable_bits; wordsize="$enable_bits"
+# Check whether --enable-wordsize was given.
+if test "${enable_wordsize+set}" = set; then :
+  enableval=$enable_wordsize; wordsize="$enable_wordsize"
 else
   wordsize="$default"
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking wordsize" >&5
-$as_echo_n "checking wordsize... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking host wordsize" >&5
+$as_echo_n "checking host wordsize... " >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $wordsize bits" >&5
 $as_echo "$wordsize bits" >&6; }
 
+# The host wordsize also sets the multilib search path.  This only
+# applies to outside packages via --with-pkg (ie, not built here).
+
 case "$wordsize" in
-    32 | 64 ) ;;
+    64 ) multilib_path='lib64 lib' ;;
+    32 ) multilib_path='lib32 lib' ;;
     * ) as_fn_error $? "wordsize must be 32 or 64: $wordsize bits" "$LINENO" 5 ;;
 esac
 
 
+
+# Check that CC and CXX produce the same wordsize.  Also check that
+# CFLAGS doesn't change the wordsize.  This shouldn't be necessary,
+# but some packages can't handle -m64 in CFLAGS, they require
+# something like CC='gcc -m64'.
+
+srcfile="conftest.$$.c"
+objfile="conftest.$$.o"
+
+rm -f "$srcfile"
+cat >"$srcfile" <<EOF
+int foo(void)
+{ return 2; }
+EOF
+
+get_wordsize()
+{
+    output=`file $objfile`
+    case "$output" in
+	*64-bit* ) ans=64 ;;
+	*32-bit* ) ans=32 ;;
+	* ) ans=0 ;;
+    esac
+    echo $ans
+}
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking host wordsize from CC" >&5
+$as_echo_n "checking host wordsize from CC... " >&6; }
+rm -f "$objfile"
+$CC -c -o "$objfile" "$srcfile" >/dev/null
+wordsize_cc=`get_wordsize`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $wordsize_cc bits" >&5
+$as_echo "$wordsize_cc bits" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking host wordsize from CXX" >&5
+$as_echo_n "checking host wordsize from CXX... " >&6; }
+rm -f "$objfile"
+$CXX -c -o "$objfile" "$srcfile" >/dev/null
+wordsize_cxx=`get_wordsize`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $wordsize_cxx bits" >&5
+$as_echo "$wordsize_cxx bits" >&6; }
+
+rm -f "$objfile"
+$CC $CFLAGS -c -o "$objfile" "$srcfile" >/dev/null
+wordsize_cflags=`get_wordsize`
+
+rm -f "$objfile"
+$CXX $CXXFLAGS -c -o "$objfile" "$srcfile" >/dev/null
+wordsize_cxxflags=`get_wordsize`
+
+rm -f "$srcfile" "$objfile"
+
+warn_wordsize_mismatch=no
+if test "$wordsize" != "$wordsize_cc" \
+    || test "$wordsize" != "$wordsize_cxx" \
+    || test "$wordsize" != "$wordsize_cflags" \
+    || test "$wordsize" != "$wordsize_cxxflags"
+then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: CC or CXX generate inconsistent wordsizes" >&5
+$as_echo "$as_me: WARNING: CC or CXX generate inconsistent wordsizes" >&2;}
+    warn_wordsize_mismatch=yes
+fi
 
 #------------------------------------------------------------
 # Install directory: --enable-subdirs
@@ -4056,7 +4122,7 @@ case "$with_libdwarf" in
 	else
 	    as_fn_error $? "invalid libdwarf directory: $with_libdwarf" "$LINENO" 5
 	fi
-	for lib in lib64 lib32 lib fail ; do
+	for lib in $multilib_path fail ; do
 	    if test -f "${libdwarf_prefix}/${lib}/libdwarf.so" ; then
 		libdwarf_lib="${libdwarf_prefix}/${lib}"
 		break
@@ -4125,7 +4191,7 @@ case "$with_libelf" in
 	else
 	    as_fn_error $? "unable to find <libelf/libelf.h> in: $libelf_prefix" "$LINENO" 5
 	fi
-	for lib in lib64 lib32 lib fail ; do
+	for lib in $multilib_path fail ; do
 	    if test -f "${libelf_prefix}/${lib}/libelf.so" ; then
 		libelf_lib="${libelf_prefix}/${lib}"
 		break
@@ -4252,13 +4318,15 @@ case "$with_libunwind" in
 	else
 	    as_fn_error $? "invalid libunwind: $libunwind_prefix" "$LINENO" 5
 	fi
-	if test -f "${libunwind_prefix}/lib64/libunwind.so" ; then
-	    libunwind_lib="${libunwind_prefix}/lib64"
-	elif test -f "${libunwind_prefix}/lib/libunwind.so" ; then
-	    libunwind_lib="${libunwind_prefix}/lib"
-	else
-	    as_fn_error $? "invalid libunwind: $libunwind_prefix" "$LINENO" 5
-	fi
+	for lib in $multilib_path fail ; do
+	    if test -f "${libunwind_prefix}/${lib}/libunwind.so" ; then
+		libunwind_lib="${libunwind_prefix}/${lib}"
+		break
+	    fi
+	    if test "$lib" = fail ; then
+		as_fn_error $? "invalid libunwind directory: $with_libunwind" "$LINENO" 5
+	    fi
+	done
 	echo "installed in: $libunwind_avail" > "$cookie"
 	;;
     no )
@@ -4307,12 +4375,14 @@ case "$with_libxml2" in
 	libxml2_lib="${libxml2_prefix}/lib"
 	;;
     /* )
+	libxml2_avail="$with_libxml2"
+	libxml2_prefix="$with_libxml2"
 	if test -d "${with_libxml2}/include/libxml2" ; then
-	    libxml2_avail="$with_libxml2"
+	    libxml2_inc="${libxml2_prefix}/include/libxml2"
 	else
 	    as_fn_error $? "invalid libxml2 directory: $with_libxml2" "$LINENO" 5
 	fi
-	for lib in lib64 lib32 lib fail ; do
+	for lib in $multilib_path fail ; do
 	    if test -f "${libxml2_prefix}/${lib}/libxml2.so" ; then
 		libxml2_lib="${libxml2_prefix}/${lib}"
 		break
@@ -4416,7 +4486,7 @@ cookie="${srcdir}/open-analysis/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_open_analysis" in
-    build )
+    build | yes )
 	open_analysis_avail=build
 	open_analysis_prefix="$open_analysis_local_prefix"
 	;;
@@ -5842,6 +5912,23 @@ $as_echo "$as_me: WARNING: This is not necessarily an error, but some packages m
 $as_echo "$as_me: WARNING: compile cleanly without gcc or g++.  If the build fails, try" >&2;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using GNU gcc and g++ before reporting an error." >&5
 $as_echo "$as_me: WARNING: using GNU gcc and g++ before reporting an error." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: --------------------------" >&5
+$as_echo "$as_me: --------------------------" >&6;}
+fi
+
+if test "$warn_wordsize_mismatch" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Host wordsize mismatch." >&5
+$as_echo "$as_me: WARNING: Host wordsize mismatch." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes," >&5
+$as_echo "$as_me: WARNING: Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes," >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: or they do not match the host wordsize ($wordsize), or they generate" >&5
+$as_echo "$as_me: WARNING: or they do not match the host wordsize ($wordsize), or they generate" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: different wordsizes with and without CFLAGS.  If you are" >&5
+$as_echo "$as_me: WARNING: different wordsizes with and without CFLAGS.  If you are" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using a CFLAGS option to reset the wordsize, then put this" >&5
+$as_echo "$as_me: WARNING: using a CFLAGS option to reset the wordsize, then put this" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: option in CC with something like CC='gcc -m${wordsize}'." >&5
+$as_echo "$as_me: WARNING: option in CC with something like CC='gcc -m${wordsize}'." >&2;}
     { $as_echo "$as_me:${as_lineno-$LINENO}: --------------------------" >&5
 $as_echo "$as_me: --------------------------" >&6;}
 fi

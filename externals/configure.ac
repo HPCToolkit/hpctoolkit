@@ -170,7 +170,7 @@ fi
 AC_SUBST([gnu_make])
 
 #------------------------------------------------------------
-# Wordsize: --enable-bits=NUM
+# Wordsize: --enable-wordsize=NUM
 #------------------------------------------------------------
 
 # Use sizeof(void *) to determine if CC produces 32- or 64-bit code.
@@ -181,22 +181,83 @@ AC_CHECK_SIZEOF([void *])
 
 default=`expr $ac_cv_sizeof_void_p '*' 8`
 
-AC_ARG_ENABLE([bits],
-    [AS_HELP_STRING([--enable-bits=NUM],
-	[wordsize in bits: 32 or 64, (default is computed from CC),
-	 rarely needed])],
-    [wordsize="$enable_bits"],
+AC_ARG_ENABLE([wordsize],
+    [AS_HELP_STRING([--enable-wordsize=NUM],
+	[host wordsize in bits, 32 or 64, only needed if autoconf
+	 computes the wrong value])],
+    [wordsize="$enable_wordsize"],
     [wordsize="$default"])
 
-AC_MSG_CHECKING([wordsize])
+AC_MSG_CHECKING([host wordsize])
 AC_MSG_RESULT([$wordsize bits])
 
+# The host wordsize also sets the multilib search path.  This only
+# applies to outside packages via --with-pkg (ie, not built here).
+
 case "$wordsize" in
-    32 | 64 ) ;;
+    64 ) multilib_path='lib64 lib' ;;
+    32 ) multilib_path='lib32 lib' ;;
     * ) AC_MSG_ERROR([wordsize must be 32 or 64: $wordsize bits]) ;;
 esac
 
 AC_SUBST([wordsize])
+
+# Check that CC and CXX produce the same wordsize.  Also check that
+# CFLAGS doesn't change the wordsize.  This shouldn't be necessary,
+# but some packages can't handle -m64 in CFLAGS, they require
+# something like CC='gcc -m64'.
+
+srcfile="conftest.$$.c"
+objfile="conftest.$$.o"
+
+rm -f "$srcfile"
+cat >"$srcfile" <<EOF
+int foo(void)
+{ return 2; }
+EOF
+
+get_wordsize()
+{
+    output=`file $objfile`
+    case "$output" in
+	*64-bit* ) ans=64 ;;
+	*32-bit* ) ans=32 ;;
+	* ) ans=0 ;;
+    esac
+    echo $ans
+}
+
+AC_MSG_CHECKING([host wordsize from CC])
+rm -f "$objfile"
+$CC -c -o "$objfile" "$srcfile" >/dev/null
+wordsize_cc=`get_wordsize`
+AC_MSG_RESULT([$wordsize_cc bits])
+
+AC_MSG_CHECKING([host wordsize from CXX])
+rm -f "$objfile"
+$CXX -c -o "$objfile" "$srcfile" >/dev/null
+wordsize_cxx=`get_wordsize`
+AC_MSG_RESULT([$wordsize_cxx bits])
+
+rm -f "$objfile"
+$CC $CFLAGS -c -o "$objfile" "$srcfile" >/dev/null
+wordsize_cflags=`get_wordsize`
+
+rm -f "$objfile"
+$CXX $CXXFLAGS -c -o "$objfile" "$srcfile" >/dev/null
+wordsize_cxxflags=`get_wordsize`
+
+rm -f "$srcfile" "$objfile"
+
+warn_wordsize_mismatch=no
+if test "$wordsize" != "$wordsize_cc" \
+    || test "$wordsize" != "$wordsize_cxx" \
+    || test "$wordsize" != "$wordsize_cflags" \
+    || test "$wordsize" != "$wordsize_cxxflags"
+then
+    AC_MSG_WARN([CC or CXX generate inconsistent wordsizes])
+    warn_wordsize_mismatch=yes
+fi
 
 #------------------------------------------------------------
 # Install directory: --enable-subdirs
@@ -326,7 +387,7 @@ case "$with_libdwarf" in
 	else
 	    AC_MSG_ERROR([invalid libdwarf directory: $with_libdwarf])
 	fi
-	for lib in lib64 lib32 lib fail ; do
+	for lib in $multilib_path fail ; do
 	    if test -f "${libdwarf_prefix}/${lib}/libdwarf.so" ; then
 		libdwarf_lib="${libdwarf_prefix}/${lib}"
 		break
@@ -390,7 +451,7 @@ case "$with_libelf" in
 	else
 	    AC_MSG_ERROR([unable to find <libelf/libelf.h> in: $libelf_prefix])
 	fi
-	for lib in lib64 lib32 lib fail ; do
+	for lib in $multilib_path fail ; do
 	    if test -f "${libelf_prefix}/${lib}/libelf.so" ; then
 		libelf_lib="${libelf_prefix}/${lib}"
 		break
@@ -507,13 +568,15 @@ case "$with_libunwind" in
 	else
 	    AC_MSG_ERROR([invalid libunwind: $libunwind_prefix])
 	fi
-	if test -f "${libunwind_prefix}/lib64/libunwind.so" ; then
-	    libunwind_lib="${libunwind_prefix}/lib64"
-	elif test -f "${libunwind_prefix}/lib/libunwind.so" ; then
-	    libunwind_lib="${libunwind_prefix}/lib"
-	else
-	    AC_MSG_ERROR([invalid libunwind: $libunwind_prefix])
-	fi
+	for lib in $multilib_path fail ; do
+	    if test -f "${libunwind_prefix}/${lib}/libunwind.so" ; then
+		libunwind_lib="${libunwind_prefix}/${lib}"
+		break
+	    fi
+	    if test "$lib" = fail ; then
+		AC_MSG_ERROR([invalid libunwind directory: $with_libunwind])
+	    fi
+	done
 	echo "installed in: $libunwind_avail" > "$cookie"
 	;;
     no )
@@ -557,12 +620,14 @@ case "$with_libxml2" in
 	libxml2_lib="${libxml2_prefix}/lib"
 	;;
     /* )
+	libxml2_avail="$with_libxml2"
+	libxml2_prefix="$with_libxml2"
 	if test -d "${with_libxml2}/include/libxml2" ; then
-	    libxml2_avail="$with_libxml2"
+	    libxml2_inc="${libxml2_prefix}/include/libxml2"
 	else
 	    AC_MSG_ERROR([invalid libxml2 directory: $with_libxml2])
 	fi
-	for lib in lib64 lib32 lib fail ; do
+	for lib in $multilib_path fail ; do
 	    if test -f "${libxml2_prefix}/${lib}/libxml2.so" ; then
 		libxml2_lib="${libxml2_prefix}/${lib}"
 		break
@@ -656,7 +721,7 @@ cookie="${srcdir}/open-analysis/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_open_analysis" in
-    build )
+    build | yes )
 	open_analysis_avail=build
 	open_analysis_prefix="$open_analysis_local_prefix"
 	;;
@@ -903,6 +968,16 @@ if test "$warn_non_gcc" = yes ; then
     AC_MSG_WARN([This is not necessarily an error, but some packages may not])
     AC_MSG_WARN([compile cleanly without gcc or g++.  If the build fails, try])
     AC_MSG_WARN([using GNU gcc and g++ before reporting an error.])
+    AC_MSG_NOTICE([--------------------------])
+fi
+
+if test "$warn_wordsize_mismatch" = yes ; then
+    AC_MSG_WARN([Host wordsize mismatch.])
+    AC_MSG_WARN([Either CC ($wordsize_cc) and CXX ($wordsize_cxx) generate different wordsizes,])
+    AC_MSG_WARN([or they do not match the host wordsize ($wordsize), or they generate])
+    AC_MSG_WARN([different wordsizes with and without CFLAGS.  If you are])
+    AC_MSG_WARN([using a CFLAGS option to reset the wordsize, then put this])
+    AC_MSG_WARN([option in CC with something like CC='gcc -m${wordsize}'.])
     AC_MSG_NOTICE([--------------------------])
 fi
 
