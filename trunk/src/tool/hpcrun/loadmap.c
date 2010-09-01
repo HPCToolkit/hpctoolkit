@@ -145,6 +145,31 @@ hpcrun_dso_dump(dso_info_t* x)
 // 
 //***************************************************************************
 
+load_module_t*
+hpcrun_loadModule_new(const char* name)
+{
+  load_module_t* x = (load_module_t*) hpcrun_malloc(sizeof(load_module_t));
+
+  //memset(x, 0, sizeof(*x));
+
+  x->id = ++(s_loadmap_ptr->size); // largest id = size
+
+  int namelen = strlen(name) + 1;
+  x->name = (char *) hpcrun_malloc(namelen);
+  strcpy(x->name, name);
+
+  x->dso_info = NULL;
+  x->next = NULL;
+  x->prev = NULL;
+
+  return x;
+}
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
 void
 hpcrun_loadmap_lock() 
 {
@@ -210,19 +235,9 @@ hpcrun_loadmap_findByAddr(void* begin, void* end)
   return NULL;
 }
 
-char*
-hpcrun_find_load_name(char* name)
-{
-  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
-    if (strstr(x->name, name)) {
-      return x->name;
-    }
-  }
-  return NULL;
-}
 
 load_module_t*
-hpcrun_loadmap_findByName(char* name)
+hpcrun_loadmap_findByName(const char* name)
 {
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     if (/*TODO:tallent !x->dso_info &&*/ (strcmp(x->name, name) == 0)) {
@@ -234,12 +249,24 @@ hpcrun_loadmap_findByName(char* name)
 }
 
 
+const char*
+hpcrun_loadmap_findLoadName(const char* name)
+{
+  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
+    if (strstr(x->name, name)) {
+      return x->name;
+    }
+  }
+  return NULL;
+}
+
+
 //***************************************************************************
 
 void
 hpcrun_loadmap_map(dso_info_t* dso)
 {
-  TMSG(LOADMAP," loadmap_add_module('%s')", dso->name);
+  const char* msg = "";
 
   // -------------------------------------------------------
   // Find or create a load_module_t: if a load module exists
@@ -250,19 +277,12 @@ hpcrun_loadmap_map(dso_info_t* dso)
   if (lm) {
     hpcrun_loadmap_unmap(lm); // TODO:tallent
     lm->dso_info = dso;
+    msg = "(reuse)";
   }
   else {
-    lm = (load_module_t*) hpcrun_malloc(sizeof(load_module_t));
-    
-    int namelen = strlen(dso->name) + 1;
-
-    lm->id = ++(s_loadmap_ptr->size); // largest id = size
-    lm->name = (char *) hpcrun_malloc(namelen);
-    strcpy(lm->name, dso->name);
+    lm = hpcrun_loadModule_new(dso->name);
     lm->dso_info = dso;
     
-    TMSG(LOADMAP, " loadmap_add_module: new size=%d", s_loadmap_ptr->size);
-
     // link 'm' at the head of the list of loaded modules
     if (s_loadmap_ptr->lm_head) {
       s_loadmap_ptr->lm_head->prev = lm;
@@ -277,6 +297,9 @@ hpcrun_loadmap_map(dso_info_t* dso)
       lm->prev = NULL;
     }
   }
+
+  TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
+       dso->name, s_loadmap_ptr->size, msg);
 }
 
 
@@ -318,7 +341,7 @@ hpcrun_loadmap_moveToBack(load_module_t* lm)
 void
 hpcrun_loadmap_unmap(load_module_t* lm)
 {
-  TMSG(LOADMAP,"load module %s: removing dso", lm->name);
+  TMSG(LOADMAP,"hpcrun_loadmap_unmap: '%s'", lm->name);
 
   dso_info_t* old_dso = lm->dso_info;
   lm->dso_info = NULL;
@@ -338,7 +361,6 @@ hpcrun_loadmap_unmap(load_module_t* lm)
     }
     s_dso_free_list = old_dso;
   }
-  TMSG(LOADMAP,"load module %s: removed dso", lm->name);
 }
 
 

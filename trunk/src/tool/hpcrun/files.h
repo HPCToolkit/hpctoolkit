@@ -53,7 +53,7 @@ void files_trace_name(char *filename, unsigned int mpi_rank, int len);
 void files_profile_name(char *filename, unsigned int mpi_rank, int len);
 void files_log_name(char *filename, unsigned int mpi_rank, int len);
 
-char *files_executable_pathname(void);
+const char *files_executable_pathname();
 
 const char *files_executable_name();
 

@@ -128,6 +128,14 @@ typedef struct load_module_t
 } load_module_t;
 
 
+load_module_t*
+hpcrun_loadModule_new(const char* name);
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
 typedef struct hpcrun_loadmap_t
 {
   uint16_t size; //can also double as nextId (size + 1)
@@ -177,14 +185,14 @@ hpcrun_loadmap_findByAddr(void* begin, void* end);
 
 // hpcrun_loadmap_findByName: Find a load module by name.
 load_module_t*
-hpcrun_loadmap_findByName(char* name);
+hpcrun_loadmap_findByName(const char* name);
 
 
-//
-// Search loadmap for (full) name of entry that has "name"
-//  as its executable name
-//
-char* hpcrun_find_load_name(char* name);
+// hpcrun_loadmap_findLoadName: Search loadmap for (full) name of
+//   entry that has "name" as its executable name
+const char*
+hpcrun_loadmap_findLoadName(const char* name);
+
 
 // ---------------------------------------------------------
 // 
