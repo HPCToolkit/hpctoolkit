@@ -254,11 +254,11 @@ fnbounds_unmap_closed_dsos()
 {
   FNBOUNDS_LOCK;
 
-  load_module_t *current = hpcrun_get_loadmap()->lm_head;
+  load_module_t *current = hpcrun_getLoadmap()->lm_head;
   while (current && current->dso_info) {
     if (!dylib_addr_is_mapped(current->dso_info->start_addr)) {
       // remove from load map and free it.
-      hpcrun_load_module_remove_dso(current);
+      hpcrun_loadModule_removeDSO(current);
     }
     current = current->next;
   }

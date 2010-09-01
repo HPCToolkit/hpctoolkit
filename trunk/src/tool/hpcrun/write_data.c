@@ -265,16 +265,14 @@ write_epochs(FILE* fs, epoch_t* epoch)
     hpcfmt_int4_fwrite(current_loadmap->size, fs);
 
     // N.B.: Write in reverse order to obtain nicely ascending LM ids.
-    load_module_t* lm_src = current_loadmap->lm_end;
-    while (lm_src) {
+    for (load_module_t* lm_src = current_loadmap->lm_end;
+	 (lm_src); lm_src = lm_src->prev) {
       loadmap_entry_t lm_entry;
       lm_entry.id = lm_src->id;
       lm_entry.name = lm_src->name;
       lm_entry.flags = 0;
-
+      
       hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
-
-      lm_src = lm_src->prev;
     }
 
     TMSG(DATA_WRITE, "Done writing loadmap");

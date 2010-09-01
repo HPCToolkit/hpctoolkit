@@ -62,25 +62,61 @@
 
 #include <tool/hpcfnbounds/fnbounds-file-header.h>
 
+
 //***************************************************************************
 //
 //***************************************************************************
 
-
 typedef struct dso_info_s {
-  char *name;
-  void *start_addr;
-  void *end_addr;
+  char* name;
+  void* start_addr;
+  void* end_addr;
   uintptr_t start_to_ref_dist;
-  void **table;
+  void** table;
   long map_size;
   int  nsymbols;
   int  relocate;
 
-  struct dso_info_s *next; //to only be used with dso_free_list
-  struct dso_info_s *prev;
+  struct dso_info_s* next; //to only be used with dso_free_list
+  struct dso_info_s* prev;
 } dso_info_t;
 
+
+// ---------------------------------------------------------
+// 
+// ---------------------------------------------------------
+
+// Constructs a new dso_info_t by either pulling an unused one from
+// the free list or malloc-ing one.  If there are any on the free
+// list, will return a pointer to it, otherwise will malloc a new one.
+dso_info_t*
+hpcrun_dso_new();
+
+
+// Allocates and initializes a dso_info_t
+dso_info_t*
+hpcrun_dso_make(const char* name, void** table,
+		struct fnbounds_file_header* fh,
+		void* startaddr, void* endaddr, long map_size);
+
+
+// ---------------------------------------------------------
+// 
+// ---------------------------------------------------------
+
+// Use to dump the free list
+void
+hpcrun_dsoList_dump(dso_info_t* dl_list);
+
+
+// Use to dump a single dso_info_t struct.
+void
+hpcrun_dso_dump(dso_info_t* x);
+
+
+//***************************************************************************
+// 
+//***************************************************************************
 
 typedef struct load_module_t
 {
@@ -98,18 +134,6 @@ typedef struct hpcrun_loadmap_t
   load_module_t* lm_head;
   load_module_t* lm_end;
 } hpcrun_loadmap_t;
-
-
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
-
-hpcrun_loadmap_t*
-hpcrun_static_loadmap();
-
-
-hpcrun_loadmap_t*
-hpcrun_get_loadmap();
 
 
 // ---------------------------------------------------------
@@ -133,12 +157,12 @@ hpcrun_loadmap_isLocked();
 
 // Requests a new load map.
 hpcrun_loadmap_t*
-hpcrun_loadmap_new(void);
+hpcrun_loadmap_new();
 
 
 // Initializes the load map
 void
-hpcrun_loadmap_init(hpcrun_loadmap_t* e);
+hpcrun_loadmap_init(hpcrun_loadmap_t* x);
 
 
 // ---------------------------------------------------------
@@ -184,44 +208,20 @@ hpcrun_loadmap_addModule(dso_info_t* dso);
 // 
 // ---------------------------------------------------------
 
-// Constructs a new dso_info_t by either pulling an unused one from
-// the free list or malloc-ing one.  If there are any on the free
-// list, will return a pointer to it, otherwise will malloc a new one.
-dso_info_t*
-hpcrun_dso_new();
-
-
-// Allocates and initializes a dso_info_t
-dso_info_t*
-hpcrun_dso_make(const char* name, void** table,
-		struct fnbounds_file_header* fh,
-		void* startaddr, void* endaddr, long map_size);
-
-
-
 // Removes a dso_info_t struct by placing it into the free list.
 void
-hpcrun_load_module_remove_dso(load_module_t* module);
+hpcrun_loadModule_removeDSO(load_module_t* module);
 
-// Pushes 'lm' to the end of the current loadmap. Should only occur
-// when lm's dso_info field has become invalidated, thus creating a
-// sub-list of invalid load modules at the end of the loadmap.
+
+//***************************************************************************
+//
+//***************************************************************************
+
 void
-hpcrun_move_to_back(load_module_t* lm);
+hpcrun_initLoadmap();
 
-
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
-
-// Use to dump the free list
-void
-dump_dso_list(dso_info_t *dl_list);
-
-
-// Use to dump a single dso_info_t struct.
-void
-dump_dso_info_t(dso_info_t *r);
+hpcrun_loadmap_t*
+hpcrun_getLoadmap();
 
 
 //***************************************************************************

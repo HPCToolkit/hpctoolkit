@@ -187,7 +187,7 @@ hpcrun_is_initialized()
 void
 hpcrun_init_internal()
 {
-  hpcrun_loadmap_init(hpcrun_static_loadmap());
+  hpcrun_initLoadmap();
 
   hpcrun_thread_data_new();
   hpcrun_thread_memory_init();

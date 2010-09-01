@@ -55,186 +55,40 @@
 #include <lib/prof-lean/spinlock.h>
 
 
-static hpcrun_loadmap_t static_loadmap;
-static hpcrun_loadmap_t *current_loadmap = NULL;
-static dso_info_t *dso_free_list = NULL;
+static hpcrun_loadmap_t  s_loadmap;
+static hpcrun_loadmap_t* s_loadmap_ptr = NULL;
+
+static dso_info_t* s_dso_free_list = NULL;
 
 
 /* locking functions to ensure that loadmaps are consistent */
 static spinlock_t loadmap_lock = SPINLOCK_UNLOCKED;
 
 
-//***************************************************************************
-
-hpcrun_loadmap_t*
-hpcrun_static_loadmap() 
-{
-  return &static_loadmap;
-}
-
-
-hpcrun_loadmap_t*
-hpcrun_get_loadmap()
-{
-  return current_loadmap;
-}
-
 
 //***************************************************************************
-
-void
-hpcrun_loadmap_lock() 
-{
-  spinlock_lock(&loadmap_lock);
-}
-
-
-void
-hpcrun_loadmap_unlock()
-{
-  spinlock_unlock(&loadmap_lock);
-}
-
-
-int
-hpcrun_loadmap_isLocked()
-{
-  return spinlock_is_locked(&loadmap_lock);
-}
-
-
-//***************************************************************************
-
-hpcrun_loadmap_t*
-hpcrun_loadmap_new()
-{
-  TMSG(LOADMAP, " --NEW");
-  hpcrun_loadmap_t* e = hpcrun_malloc(sizeof(hpcrun_loadmap_t));
-  if (e == NULL) {
-    EMSG("New loadmap requested, but allocation failed!!");
-    return NULL;
-  }
-
-  hpcrun_loadmap_init(e);
-  
-  return e;
-}
-
-
-void
-hpcrun_loadmap_init(hpcrun_loadmap_t* e)
-{
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  TMSG(LOADMAP, "new loadmap created");
-  TMSG(LOADMAP, "new loadmap time: sec = %ld, usec = %d, samples = %ld",
-       (long)tv.tv_sec, (int)tv.tv_usec, hpcrun_stats_num_samples_total());
-  
-  memset(e, 0, sizeof(*e));
-  
-  e->lm_head = NULL;
-  e->lm_end = NULL;
-  e->size = 0;
-  
-  current_loadmap = e;
-}
-
-
-//***************************************************************************
-
-load_module_t*
-hpcrun_loadmap_findByAddr(void* begin, void* end)
-{
-  for (load_module_t* x = current_loadmap->lm_head; (x); x = x->next) {
-    if (x->dso_info
-	&& x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
-      return x;
-    }
-  }
-
-  return NULL;
-}
-
-
-load_module_t*
-hpcrun_loadmap_findByName(char* name)
-{
-  for (load_module_t* x = current_loadmap->lm_head; (x); x = x->next) {
-    if (strcmp(x->name, name) == 0) {
-      return x;
-    }
-  }
-
-  return NULL;
-}
-
-
-//***************************************************************************
-
-void
-hpcrun_loadmap_addModule(dso_info_t* dso)
-{
-  TMSG(LOADMAP," loadmap_add_module('%s')", dso->name);
-
-  // -------------------------------------------------------
-  // Find or create a load_module_t: if a load_module_t with same name
-  // exists, reuse that; otherwise create a new load_module_t
-  // -------------------------------------------------------
-  load_module_t* m = hpcrun_loadmap_findByName(dso->name);
-  if (m) {
-    hpcrun_load_module_remove_dso(m);
-    m->dso_info = dso;
-  }
-  else {
-    m = (load_module_t*) hpcrun_malloc(sizeof(load_module_t)); 
-    
-    int namelen = strlen(dso->name) + 1;
-
-    m->id = ++current_loadmap->size; // largest id = size
-    m->name = (char *) hpcrun_malloc(namelen);
-    strcpy(m->name, dso->name);
-    m->dso_info = dso;
-    
-    TMSG(LOADMAP, " loadmap_add_module: new size=%d", current_loadmap->size);
-
-    // link 'm' at the head of the list of loaded modules
-    if (current_loadmap->lm_head) {
-      current_loadmap->lm_head->prev = m;
-      m->next = current_loadmap->lm_head;
-      m->prev = NULL;
-      current_loadmap->lm_head = m;
-    }
-    else {
-      current_loadmap->lm_head = m;
-      current_loadmap->lm_end = m;
-      m->next = NULL;
-      m->prev = NULL;
-    }
-  }
-}
-
-
-//***************************************************************************
-// deallocation/allocation of dso_info_t records
+// 
 //***************************************************************************
 
 dso_info_t*
 hpcrun_dso_new()
 {
-  dso_info_t* new;
-  if (dso_free_list) {
-    new = dso_free_list; //new = head of dso_free_list
-    dso_free_list = dso_free_list->next;
-    if (dso_free_list) {
-      dso_free_list->prev = NULL;
+  dso_info_t* x = NULL;
+
+  if (s_dso_free_list) {
+    x = s_dso_free_list;
+    s_dso_free_list = s_dso_free_list->next;
+    if (s_dso_free_list) {
+      s_dso_free_list->prev = NULL;
     }
-    new->next = NULL; //prev should already be NULL
+    x->next = NULL; // prev should already be NULL
   }
   else {
     TMSG(DSO, " hpcrun_dso_new");
-    new = (dso_info_t*) hpcrun_malloc(sizeof(dso_info_t));
+    x = (dso_info_t*) hpcrun_malloc(sizeof(dso_info_t));
   }
-  return new;
+
+  return x;
 }
 
 
@@ -267,68 +121,235 @@ hpcrun_dso_make(const char* name, void** table,
 }
 
 
+//***************************************************************************
+
 void
-hpcrun_load_module_remove_dso(load_module_t* module)
-{
-  TMSG(LOADMAP,"load module %s: removing dso", module->name);
-
-  dso_info_t* unused = module->dso_info;
-  module->dso_info = NULL;
-  hpcrun_move_to_back(module);
-  
-  if (unused) {
-    // add unused to the head of the dso_free_list
-    unused->next = dso_free_list;
-    unused->prev = NULL;
-    if (dso_free_list) {
-      dso_free_list->prev = unused;
-    }
-    dso_free_list = unused;
-  }
-  TMSG(LOADMAP,"load module %s: removed dso", module->name);
-}
-
-
-void 
-hpcrun_move_to_back(load_module_t* lm)
-{
-  if (lm->prev) {
-    lm->prev->next = lm->next;
-  }
-  else { //if lm->prev == NULL => lm == current_loadmap->lm_head
-    current_loadmap->lm_head = lm->next;
-  }
-
-  if (lm->next) {
-    lm->next->prev = lm->prev;
-  }
-
-  lm->prev = current_loadmap->lm_end;
-  lm->prev->next = lm;
-  lm->next = NULL;
-  current_loadmap->lm_end = lm;
-}
-
-
-//***************************************************************************
-// debugging support
-//***************************************************************************
-
-void 
-dump_dso_list(dso_info_t* dl_list)
+hpcrun_dsoList_dump(dso_info_t* dl_list)
 {
   for (dso_info_t* x = dl_list; (x); x = x->next) {
-    dump_dso_info_t(x);
+    hpcrun_dso_dump(x);
   }
 }
 
 
-void 
-dump_dso_info_t(dso_info_t* x)
+void
+hpcrun_dso_dump(dso_info_t* x)
 {
   printf("%p-%p %s [dso_info_t *%p, table=%p, nsymbols=%d, relocatable=%d]\n",
 	 x->start_addr, x->end_addr, x->name, 
          x, x->table, x->nsymbols, x->relocate);
 }
 
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+void
+hpcrun_loadmap_lock() 
+{
+  spinlock_lock(&loadmap_lock);
+}
+
+
+void
+hpcrun_loadmap_unlock()
+{
+  spinlock_unlock(&loadmap_lock);
+}
+
+
+int
+hpcrun_loadmap_isLocked()
+{
+  return spinlock_is_locked(&loadmap_lock);
+}
+
+
+//***************************************************************************
+
+hpcrun_loadmap_t*
+hpcrun_loadmap_new()
+{
+  TMSG(LOADMAP, " --NEW");
+  hpcrun_loadmap_t* x = hpcrun_malloc(sizeof(hpcrun_loadmap_t));
+  if (x == NULL) {
+    EMSG("New loadmap requested, but allocation failed!!");
+    return NULL;
+  }
+
+  hpcrun_loadmap_init(x);
+  
+  return x;
+}
+
+
+void
+hpcrun_loadmap_init(hpcrun_loadmap_t* x)
+{
+  memset(x, 0, sizeof(*x));
+  
+  x->lm_head = NULL;
+  x->lm_end = NULL;
+  x->size = 0;
+}
+
+
+//***************************************************************************
+
+load_module_t*
+hpcrun_loadmap_findByAddr(void* begin, void* end)
+{
+  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
+    if (x->dso_info
+	&& x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
+      return x;
+    }
+  }
+
+  return NULL;
+}
+
+
+load_module_t*
+hpcrun_loadmap_findByName(char* name)
+{
+  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
+    if (strcmp(x->name, name) == 0) {
+      return x;
+    }
+  }
+
+  return NULL;
+}
+
+
+//***************************************************************************
+
+void
+hpcrun_loadmap_addModule(dso_info_t* dso)
+{
+  TMSG(LOADMAP," loadmap_add_module('%s')", dso->name);
+
+  // -------------------------------------------------------
+  // Find or create a load_module_t: if a load_module_t with same name
+  // exists, reuse that; otherwise create a new load_module_t
+  // -------------------------------------------------------
+  load_module_t* m = hpcrun_loadmap_findByName(dso->name);
+  if (m) {
+    hpcrun_loadModule_removeDSO(m);
+    m->dso_info = dso;
+  }
+  else {
+    m = (load_module_t*) hpcrun_malloc(sizeof(load_module_t)); 
+    
+    int namelen = strlen(dso->name) + 1;
+
+    m->id = ++(s_loadmap_ptr->size); // largest id = size
+    m->name = (char *) hpcrun_malloc(namelen);
+    strcpy(m->name, dso->name);
+    m->dso_info = dso;
+    
+    TMSG(LOADMAP, " loadmap_add_module: new size=%d", s_loadmap_ptr->size);
+
+    // link 'm' at the head of the list of loaded modules
+    if (s_loadmap_ptr->lm_head) {
+      s_loadmap_ptr->lm_head->prev = m;
+      m->next = s_loadmap_ptr->lm_head;
+      m->prev = NULL;
+      s_loadmap_ptr->lm_head = m;
+    }
+    else {
+      s_loadmap_ptr->lm_head = m;
+      s_loadmap_ptr->lm_end = m;
+      m->next = NULL;
+      m->prev = NULL;
+    }
+  }
+}
+
+
+//***************************************************************************
+
+#if 0
+// Pushes 'lm' to the end of the current loadmap. Should only occur
+// when lm's dso_info field has become invalidated, thus creating a
+// sub-list of invalid load modules at the end of the loadmap.
+static void
+hpcrun_loadmap_moveToBack(load_module_t* lm)
+{
+  // short-circuit if lm is already at end of list
+  if (lm == s_loadmap_ptr->lm_end) {
+    return;
+  }
+
+  // -------------------------------------------------------
+  // INVARIANT: lm is not at the end of the list
+  // -------------------------------------------------------
+
+  if (lm->prev) {
+    lm->prev->next = lm->next;
+  }
+  else { // if lm->prev == NULL => lm == s_loadmap_ptr->lm_head
+    s_loadmap_ptr->lm_head = lm->next;
+  }
+  
+  if (lm->next) {
+    lm->next->prev = lm->prev;
+  }
+  
+  lm->prev = s_loadmap_ptr->lm_end;
+  lm->prev->next = lm;
+  lm->next = NULL;
+  s_loadmap_ptr->lm_end = lm;
+}
+#endif
+
+
+void
+hpcrun_loadModule_removeDSO(load_module_t* lm)
+{
+  TMSG(LOADMAP,"load module %s: removing dso", lm->name);
+
+  dso_info_t* old_dso = lm->dso_info;
+  lm->dso_info = NULL;
+
+  // tallent: For now, do not move the loadmap to the back of the
+  //   list.  If we want to enable, this, we could have
+  //   hpcrun_loadmap_findByName() begin its search from the end of
+  //   the list.
+  //hpcrun_loadmap_moveToBack(lm);
+
+  // add old_dso to the head of the s_dso_free_list
+  if (old_dso) {
+    old_dso->next = s_dso_free_list;
+    old_dso->prev = NULL;
+    if (s_dso_free_list) {
+      s_dso_free_list->prev = old_dso;
+    }
+    s_dso_free_list = old_dso;
+  }
+  TMSG(LOADMAP,"load module %s: removed dso", lm->name);
+}
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+void
+hpcrun_initLoadmap()
+{
+  s_loadmap_ptr = &s_loadmap;
+  hpcrun_loadmap_init(s_loadmap_ptr);
+
+  s_dso_free_list = NULL;
+}
+
+
+hpcrun_loadmap_t*
+hpcrun_getLoadmap()
+{
+  return s_loadmap_ptr;
+}
 
