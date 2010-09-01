@@ -169,23 +169,13 @@ hpcrun_loadmap_init(hpcrun_loadmap_t* x);
 // 
 // ---------------------------------------------------------
 
-// Find a load module by its address. In order for a load module to
-// have an address range it must have a valid 'dso_info' field, meaning
-// it is not closed. NULL is returned if the load module corresponding
-// to the address range is found or if the closed part of the list is
-// encountered.
-//
-// NOTE: No need to give both a range of addresses. Any address that is
-// [start_addr, end_addr], where start_addr and end_addr are fields of
-// a load module, can be sent in as a parameter and be properly found.
+// Find the (currently mapped) load module that 'contains' the address
+//   range [begin, end]
 load_module_t*
 hpcrun_loadmap_findByAddr(void* begin, void* end);
 
 
-// Searches for a load module based on its name. Since a load module's
-// name is persistant whether or not it is closed, this method will
-// only return NULL if no module has a matching 'name' and will not
-// short-circuit once it reaches the closed part of the list.
+// Find a load module by name.
 load_module_t*
 hpcrun_loadmap_findByName(char* name);
 
@@ -194,23 +184,18 @@ hpcrun_loadmap_findByName(char* name);
 // 
 // ---------------------------------------------------------
 
-
 // Adds a new load module to the current load map. 'dso' is assumed to
 // be non-NULL. If a module with the same name as 'dso' is found, then
 // 'dso' is inserted into that load module, otherwise, a new load
 // module is created. Always places the modified load module to the
 // front of the load map
 void
-hpcrun_loadmap_addModule(dso_info_t* dso);
+hpcrun_loadmap_map(dso_info_t* dso);
 
-
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
 
 // Removes a dso_info_t struct by placing it into the free list.
 void
-hpcrun_loadModule_removeDSO(load_module_t* module);
+hpcrun_loadmap_unmap(load_module_t* module);
 
 
 //***************************************************************************

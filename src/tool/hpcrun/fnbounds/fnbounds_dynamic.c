@@ -258,7 +258,7 @@ fnbounds_unmap_closed_dsos()
   while (current && current->dso_info) {
     if (!dylib_addr_is_mapped(current->dso_info->start_addr)) {
       // remove from load map and free it.
-      hpcrun_loadModule_removeDSO(current);
+      hpcrun_loadmap_unmap(current);
     }
     current = current->next;
   }
@@ -452,7 +452,7 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
   }
   
   dso_info_t *dso = hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
-  hpcrun_loadmap_addModule(dso);
+  hpcrun_loadmap_map(dso);
 
   return dso;
 }
@@ -477,7 +477,7 @@ fnbounds_dso_info_get(void *pc)
     
     if (dylib_find_module_containing_addr(pc, module_name, &mstart, &mend)) {
       dso_open = fnbounds_compute(module_name, mstart, mend);
-      hpcrun_loadmap_addModule(dso_open);
+      hpcrun_loadmap_map(dso_open);
     }
   }
   
