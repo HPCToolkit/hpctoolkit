@@ -75,16 +75,16 @@
 void                                                                 \
 hpcrun_all_sources_ ##n(void)                                        \
 {								     \
-  TMSG(AS_MAP, "calling function _AS0(%s)", #n);                     \    
+  TMSG(AS_MAP, "calling function _AS0(%s)", #n);                     \
   for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
     TMSG(AS_MAP,"sample source (%s) method call: %s",	             \
 	 ss->name, #n);            				     \
     METHOD_CALL(ss, n);           				     \
-  }								     \    
+  }								     \
 }
 
 #define _AS1(n,t,arg) \
-void                                                                 \ 
+void                                                                 \
 hpcrun_all_sources_ ##n(t arg)                                       \
 {								     \
   for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
@@ -97,7 +97,7 @@ bool								     \
 hpcrun_all_sources_ ##n(void)					     \
 {								     \
   NMSG(AS_ ##n,"checking %d sources",n_sources);		     \
-  for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \      	
+  for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
     if (! METHOD_CALL(ss, n)) {			                     \
       NMSG(AS_ ##n,"%s not started",ss->name);                       \
       return false;						     \
@@ -117,7 +117,7 @@ hpcrun_all_sources_ ##n(void)					     \
 static sample_source_t* sample_sources = NULL;
 static sample_source_t** ss_insert     = &sample_sources;
 static int n_sources = 0;
-static int n_hardware_sources;
+
 
 //*******************************************************************
 // Interface functions
