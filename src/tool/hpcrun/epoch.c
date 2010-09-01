@@ -73,7 +73,7 @@ hpcrun_epoch_init(void)
   epoch_t*       epoch = td->epoch;
 
   hpcrun_cct_init(&(epoch->csdata), epoch->csdata_ctxt);
-  epoch->loadmap = hpcrun_get_loadmap();
+  epoch->loadmap = hpcrun_getLoadmap();
   epoch->next  = NULL;
 }
 
@@ -104,7 +104,7 @@ hpcrun_check_for_new_loadmap(epoch_t* epoch)
   and the simple fact that most programs are not frequent users
   of dl*). */
 
-  hpcrun_loadmap_t* current = hpcrun_get_loadmap();
+  hpcrun_loadmap_t* current = hpcrun_getLoadmap();
 
   if(epoch->loadmap != current) {
     TMSG(LOADMAP, "Need new loadmap!");
@@ -153,5 +153,5 @@ hpcrun_epoch_reset(void)
   TMSG(EPOCH_RESET, "check new loadmap = old loadmap = %d", newepoch->loadmap == epoch->loadmap);
   hpcrun_cct_init(&newepoch->csdata, newepoch->csdata_ctxt); // reset cct
   hpcrun_reset_epoch(newepoch);
-  TMSG(EPOCH_RESET," ==> no new epoch for next sample = %d", newepoch->loadmap == hpcrun_get_loadmap());
+  TMSG(EPOCH_RESET," ==> no new epoch for next sample = %d", newepoch->loadmap == hpcrun_getLoadmap());
 }
