@@ -89,11 +89,7 @@ hpcrun_options__getopts(hpcrun_options_t* x)
     x->lush_agent_paths[0] = '\0';
   }
 
-  // process event list
-  // HPCRUN_EVENT_LIST is the approved name, but accept CSPROF_OPT_EVENT
-  // for backwards compatibility for now.
-  
-  NMSG(OPTIONS,"--before init of registered sample sources");
+  NMSG(OPTIONS,"--at end of getopts");
 
   return HPCRUN_OK;
 }

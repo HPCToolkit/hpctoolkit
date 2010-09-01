@@ -97,11 +97,13 @@ typedef struct sample_source_t {
   VMETHOD_DEF(display_events);
 
   // data
-  evlist_t       evl;       // event list
-  int            evset_idx; // index of sample source
-  const char*    name;      // text name of sample source
-  source_state_t state;     // state of sample source: limited to UNINIT or INIT
-  ss_class_t     cls;       // kind of sample source: see ss_class_t typedef at top of file
+  evlist_t       	  evl;       	 // event list
+  int            	  evset_idx; 	 // index of sample source
+  const char*    	  name;      	 // text name of sample source
+  source_state_t 	  state;     	 // state of sample source: limited to UNINIT or INIT
+  ss_class_t     	  cls;       	 // kind of sample source: see ss_class_t typedef at top of file
+  struct sample_source_t* next_reg;      // simple linked list of REGISTERED sample source objects
+  struct sample_source_t* next_sel;      // simple linked list of SELECTED   sample source objects
   
 } sample_source_t;
 

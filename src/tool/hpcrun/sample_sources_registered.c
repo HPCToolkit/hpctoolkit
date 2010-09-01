@@ -51,7 +51,8 @@
 
 #include <messages/messages.h>
 
-static sample_source_t *registered_sample_sources[MAX_POSSIBLE_SAMPLE_SOURCES];
+static sample_source_t* registered_sample_sources         = NULL;
+static sample_source_t** registered_sample_sources_insert = &registered_sample_sources;
 
 static int nregs = 0;
 
@@ -62,17 +63,19 @@ hpcrun_ss_register(sample_source_t* src)
     EMSG("Sample source named %s NOT registered due to # sample sources exceeded",src->name);
     return;
   }
-  src->evset_idx                     = nregs;
-  registered_sample_sources[nregs++] = src;
+  src->evset_idx                     = nregs++;
+  *registered_sample_sources_insert  = src;
+  src->next_reg                      = NULL;
+  registered_sample_sources_insert   = &(src->next_reg);
 }
 
 
 sample_source_t*
 hpcrun_source_can_process(char *event)
 {
-  for (int i=0;i < nregs;i++){
-    if (METHOD_CALL(registered_sample_sources[i],supports_event,event)){
-      return registered_sample_sources[i];
+  for (sample_source_t* ss=registered_sample_sources; ss; ss = ss->next_reg){
+    if (METHOD_CALL(ss, supports_event, event)){
+      return ss;
     }
   }
   return NULL;
@@ -81,9 +84,9 @@ hpcrun_source_can_process(char *event)
 void
 hpcrun_registered_sources_init(void)
 {
-  for (int i=0;i<nregs;i++){
-    METHOD_CALL(registered_sample_sources[i],init);
-    NMSG(SS_COMMON,"sample source \"%s\": init",registered_sample_sources[i]->name);
+  for (sample_source_t* ss=registered_sample_sources; ss; ss = ss->next_reg){
+    METHOD_CALL(ss, init);
+    NMSG(SS_COMMON, "sample source \"%s\": init", ss->name);
   }
 }
 
@@ -91,14 +94,14 @@ void
 hpcrun_display_avail_events(void)
 {
   // Special hack to put WALLCLOCK first.
-  for (int i = 0; i < nregs; i++) {
-    if (strcasecmp(registered_sample_sources[i]->name, "itimer") == 0) {
-      METHOD_CALL(registered_sample_sources[i], display_events);
+  for (sample_source_t* ss=registered_sample_sources; ss; ss = ss->next_reg){
+    if (strcasecmp(ss->name, "itimer") == 0) {
+      METHOD_CALL(ss, display_events);
     }
   }
-  for (int i = 0; i < nregs; i++) {
-    if (strcasecmp(registered_sample_sources[i]->name, "itimer") != 0) {
-      METHOD_CALL(registered_sample_sources[i], display_events);
+  for (sample_source_t* ss=registered_sample_sources; ss; ss = ss->next_reg){
+    if (strcasecmp(ss->name, "itimer") != 0) {
+      METHOD_CALL(ss, display_events);
     }
   }
   exit(0);
