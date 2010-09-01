@@ -215,7 +215,7 @@ load_module_t*
 hpcrun_loadmap_findByName(char* name)
 {
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
-    if (strcmp(x->name, name) == 0) {
+    if (/*TODO:tallent !x->dso_info &&*/ (strcmp(x->name, name) == 0)) {
       return x;
     }
   }
@@ -227,49 +227,48 @@ hpcrun_loadmap_findByName(char* name)
 //***************************************************************************
 
 void
-hpcrun_loadmap_addModule(dso_info_t* dso)
+hpcrun_loadmap_map(dso_info_t* dso)
 {
   TMSG(LOADMAP," loadmap_add_module('%s')", dso->name);
 
   // -------------------------------------------------------
-  // Find or create a load_module_t: if a load_module_t with same name
-  // exists, reuse that; otherwise create a new load_module_t
+  // Find or create a load_module_t: if a load module exists
+  // with same name exists, reuse that; otherwise create a new load
+  // module
   // -------------------------------------------------------
-  load_module_t* m = hpcrun_loadmap_findByName(dso->name);
-  if (m) {
-    hpcrun_loadModule_removeDSO(m);
-    m->dso_info = dso;
+  load_module_t* lm = hpcrun_loadmap_findByName(dso->name);
+  if (lm) {
+    hpcrun_loadmap_unmap(lm); // TODO:tallent
+    lm->dso_info = dso;
   }
   else {
-    m = (load_module_t*) hpcrun_malloc(sizeof(load_module_t)); 
+    lm = (load_module_t*) hpcrun_malloc(sizeof(load_module_t)); 
     
     int namelen = strlen(dso->name) + 1;
 
-    m->id = ++(s_loadmap_ptr->size); // largest id = size
-    m->name = (char *) hpcrun_malloc(namelen);
-    strcpy(m->name, dso->name);
-    m->dso_info = dso;
+    lm->id = ++(s_loadmap_ptr->size); // largest id = size
+    lm->name = (char *) hpcrun_malloc(namelen);
+    strcpy(lm->name, dso->name);
+    lm->dso_info = dso;
     
     TMSG(LOADMAP, " loadmap_add_module: new size=%d", s_loadmap_ptr->size);
 
     // link 'm' at the head of the list of loaded modules
     if (s_loadmap_ptr->lm_head) {
-      s_loadmap_ptr->lm_head->prev = m;
-      m->next = s_loadmap_ptr->lm_head;
-      m->prev = NULL;
-      s_loadmap_ptr->lm_head = m;
+      s_loadmap_ptr->lm_head->prev = lm;
+      lm->next = s_loadmap_ptr->lm_head;
+      lm->prev = NULL;
+      s_loadmap_ptr->lm_head = lm;
     }
     else {
-      s_loadmap_ptr->lm_head = m;
-      s_loadmap_ptr->lm_end = m;
-      m->next = NULL;
-      m->prev = NULL;
+      s_loadmap_ptr->lm_head = lm;
+      s_loadmap_ptr->lm_end = lm;
+      lm->next = NULL;
+      lm->prev = NULL;
     }
   }
 }
 
-
-//***************************************************************************
 
 #if 0
 // Pushes 'lm' to the end of the current loadmap. Should only occur
@@ -307,7 +306,7 @@ hpcrun_loadmap_moveToBack(load_module_t* lm)
 
 
 void
-hpcrun_loadModule_removeDSO(load_module_t* lm)
+hpcrun_loadmap_unmap(load_module_t* lm)
 {
   TMSG(LOADMAP,"load module %s: removing dso", lm->name);
 
@@ -316,8 +315,8 @@ hpcrun_loadModule_removeDSO(load_module_t* lm)
 
   // tallent: For now, do not move the loadmap to the back of the
   //   list.  If we want to enable, this, we could have
-  //   hpcrun_loadmap_findByName() begin its search from the end of
-  //   the list.
+  //   hpcrun_loadmap_findByName() begin its search from the end
+  //   of the list.
   //hpcrun_loadmap_moveToBack(lm);
 
   // add old_dso to the head of the s_dso_free_list
