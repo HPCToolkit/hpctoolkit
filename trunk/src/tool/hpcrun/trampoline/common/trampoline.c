@@ -73,8 +73,8 @@
 // external declarations
 //******************************************************************************
 
-extern void hpcrun_trampoline;
-extern void hpcrun_trampoline_end;
+extern void hpcrun_trampoline();
+extern void hpcrun_trampoline_end();
 
 
 //******************************************************************************
@@ -98,7 +98,7 @@ hpcrun_init_trampoline_info(void)
 bool
 hpcrun_trampoline_interior(void* addr)
 {
-  return (&hpcrun_trampoline < addr && addr <= &hpcrun_trampoline_end);
+  return (hpcrun_trampoline < addr && addr <= hpcrun_trampoline_end);
 }
 
 
@@ -106,7 +106,7 @@ hpcrun_trampoline_interior(void* addr)
 bool
 hpcrun_trampoline_at_entry(void* addr)
 {
-  return (addr == &hpcrun_trampoline);
+  return (addr == hpcrun_trampoline);
 }
 
 
@@ -140,7 +140,7 @@ hpcrun_trampoline_insert(cct_node_t* node)
   // save the return address overwritten with trampoline address 
   td->tramp_retn_addr = *((void**) addr);
 
-  *((void**)addr) = &hpcrun_trampoline;
+  *((void**)addr) = hpcrun_trampoline;
   td->tramp_cct_node = node;
   td->tramp_present = true;
 }
