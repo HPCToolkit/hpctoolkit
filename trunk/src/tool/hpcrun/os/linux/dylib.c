@@ -131,7 +131,7 @@ void
 dylib_map_executable()
 {
   const char *executable_name = "/proc/self/exe";
-  fnbounds_note_module(executable_name, NULL, NULL);
+  fnbounds_ensure_mapped_dso(executable_name, NULL, NULL);
 }
 
 
@@ -272,7 +272,7 @@ dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size,
   if (strcmp(info->dlpi_name,"") != 0) {
     struct dylib_seg_bounds_s bounds;
     dylib_get_segment_bounds(info, &bounds);
-    fnbounds_note_module(info->dlpi_name, bounds.start, bounds.end);
+    fnbounds_ensure_mapped_dso(info->dlpi_name, bounds.start, bounds.end);
   }
 
   return 0;

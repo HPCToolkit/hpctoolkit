@@ -48,10 +48,10 @@ int fnbounds_init();
 
 int fnbounds_enclosing_addr(void *addr, void **start, void **end); 
 
-int fnbounds_note_module(const char *module_name, void *start, void *end); 
-
 void fnbounds_map_open_dsos();
 void fnbounds_unmap_closed_dsos();
+
+int fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end);
 
 void fnbounds_fini();
 

@@ -242,6 +242,30 @@ fnbounds_map_open_dsos()
 }
 
 
+int
+fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
+{
+  bool isOk = true;
+
+  FNBOUNDS_LOCK;
+
+  load_module_t *lm = hpcrun_loadmap_findByAddr(start, end);
+  if (!lm) {
+    dso_info_t *dso = fnbounds_compute(module_name, start, end);
+    if (dso) {
+      hpcrun_loadmap_map(dso);
+    }
+    else {
+      isOk = false;
+    }
+  }
+
+  FNBOUNDS_UNLOCK;
+
+  return isOk;
+}
+
+
 //---------------------------------------------------------------------
 // Function: fnbounds_unmap_closed_dsos
 // Purpose:  
@@ -257,7 +281,6 @@ fnbounds_unmap_closed_dsos()
   load_module_t *current = hpcrun_getLoadmap()->lm_head;
   while (current && current->dso_info) {
     if (!dylib_addr_is_mapped(current->dso_info->start_addr)) {
-      // remove from load map and free it.
       hpcrun_loadmap_unmap(current);
     }
     current = current->next;
@@ -266,23 +289,6 @@ fnbounds_unmap_closed_dsos()
   FNBOUNDS_UNLOCK;
 }
 
-
-int
-fnbounds_note_module(const char *module_name, void *start, void *end)
-{
-  int success;
-
-  FNBOUNDS_LOCK;
-
-  // since hpcrun_loadmap_findByAddr only returns a non-NULL value if
-  // its lm_info exists, only need to check if NULL is returned
-  success = (hpcrun_loadmap_findByAddr(start, end) != NULL
-	     ||  fnbounds_compute(module_name, start, end) != NULL);
-
-  FNBOUNDS_UNLOCK;
-
-  return success;
-}
 
 
 //---------------------------------------------------------------------
@@ -451,8 +457,8 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
     }
   }
   
-  dso_info_t *dso = hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
-  hpcrun_loadmap_map(dso);
+  dso_info_t *dso =
+    hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
 
   return dso;
 }
@@ -477,7 +483,9 @@ fnbounds_dso_info_get(void *pc)
     
     if (dylib_find_module_containing_addr(pc, module_name, &mstart, &mend)) {
       dso_open = fnbounds_compute(module_name, mstart, mend);
-      hpcrun_loadmap_map(dso_open);
+      if (dso_open) {
+	hpcrun_loadmap_map(dso_open);
+      }
     }
   }
   

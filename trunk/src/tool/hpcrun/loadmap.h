@@ -169,13 +169,13 @@ hpcrun_loadmap_init(hpcrun_loadmap_t* x);
 // 
 // ---------------------------------------------------------
 
-// Find the (currently mapped) load module that 'contains' the address
-//   range [begin, end]
+// hpcrun_loadmap_findByAddr: Find the (currently mapped) load module
+//   that 'contains' the address range [begin, end]
 load_module_t*
 hpcrun_loadmap_findByAddr(void* begin, void* end);
 
 
-// Find a load module by name.
+// hpcrun_loadmap_findByName: Find a load module by name.
 load_module_t*
 hpcrun_loadmap_findByName(char* name);
 
@@ -184,18 +184,19 @@ hpcrun_loadmap_findByName(char* name);
 // 
 // ---------------------------------------------------------
 
-// Adds a new load module to the current load map. 'dso' is assumed to
-// be non-NULL. If a module with the same name as 'dso' is found, then
-// 'dso' is inserted into that load module, otherwise, a new load
-// module is created. Always places the modified load module to the
-// front of the load map
+// hpcrun_loadmap_map: Add a load module based on 'dso' to the current
+//   load map. 'dso' is assumed to be non-NULL.  If a module with the
+//   same name as 'dso' is found, then 'dso' is inserted into that
+//   load module, otherwise, a new load module is created.  Locates
+//   the new load module at the front of the load map.
 void
 hpcrun_loadmap_map(dso_info_t* dso);
 
 
-// Removes a dso_info_t struct by placing it into the free list.
+// hpcrun_loadmap_unmap: Note that 'lm' has been unmapped but retain a
+//   reference to it within the load map.
 void
-hpcrun_loadmap_unmap(load_module_t* module);
+hpcrun_loadmap_unmap(load_module_t* lm);
 
 
 //***************************************************************************
