@@ -112,17 +112,17 @@ static char executable_pathname[PATH_MAX] = {'\0'};
 // interface operations
 //***************************************************************
 
-void 
+void
 files_trace_name(char *filename, unsigned int mpi, int len)
 {
   files_name(filename, mpi, HPCRUN_TraceFnmSfx);
 }
 
 
-char*
-files_executable_pathname(void)
+const char*
+files_executable_pathname()
 {
-  char* load_name = hpcrun_find_load_name(executable_name);
+  const char* load_name = hpcrun_loadmap_findLoadName(executable_name);
 
   return load_name ? load_name : executable_name;
 }
