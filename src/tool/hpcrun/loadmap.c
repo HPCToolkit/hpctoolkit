@@ -242,7 +242,7 @@ hpcrun_loadmap_map(dso_info_t* dso)
     lm->dso_info = dso;
   }
   else {
-    lm = (load_module_t*) hpcrun_malloc(sizeof(load_module_t)); 
+    lm = (load_module_t*) hpcrun_malloc(sizeof(load_module_t));
     
     int namelen = strlen(dso->name) + 1;
 
