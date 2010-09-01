@@ -64,6 +64,7 @@
 #include "files.h"
 #include "messages.h"
 #include "thread_data.h"
+#include "loadmap.h"
 
 
 
@@ -95,11 +96,17 @@ static char *files_name(char *filename, unsigned int mpi, const char *suffix);
 // local data 
 //***************************************************************
 
+// #define OLD_PNAME 1
+
 static char default_path[PATH_MAX];
 static char output_directory[PATH_MAX];
+#ifdef OLD_PNAME
 static char *executable_name = 0;
 static char *executable_pathname = 0;
-
+#else
+static char executable_name[PATH_MAX] = {'\0'};
+static char executable_pathname[PATH_MAX] = {'\0'};
+#endif
 
 //***************************************************************
 // interface operations
@@ -112,12 +119,13 @@ files_trace_name(char *filename, unsigned int mpi, int len)
 }
 
 
-const char *
+char*
 files_executable_pathname(void)
 {
-  return executable_pathname;
-}
+  char* load_name = hpcrun_find_load_name(executable_name);
 
+  return load_name ? load_name : executable_name;
+}
 
 const char * 
 files_executable_name()
@@ -172,6 +180,13 @@ files_set_directory()
 void 
 files_set_executable(char *execname)
 {
+#ifndef OLD_PNAME
+  strncpy(executable_name, basename(execname), sizeof(executable_name));
+
+  if ( ! realpath(execname, executable_pathname) ) {
+    strncpy(executable_pathname, execname, sizeof(executable_pathname));
+  }
+#else
   executable_name = strdup(basename(execname));
   if (executable_name[0] != '/') {
     char path[PATH_MAX];
@@ -182,8 +197,8 @@ files_set_executable(char *execname)
   else {
     executable_pathname = executable_name;
   }
+#endif
 }
-
 
 //*****************************************************************************
 

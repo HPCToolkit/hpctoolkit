@@ -180,6 +180,12 @@ load_module_t*
 hpcrun_loadmap_findByName(char* name);
 
 
+//
+// Search loadmap for (full) name of entry that has "name"
+//  as its executable name
+//
+char* hpcrun_find_load_name(char* name);
+
 // ---------------------------------------------------------
 // 
 // ---------------------------------------------------------

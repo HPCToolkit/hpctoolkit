@@ -222,13 +222,19 @@ hpcrun_init_internal()
 
 
   sigemptyset(&prof_sigset);
-  sigaddset(&prof_sigset,SIGPROF);
+  sigaddset(&prof_sigset, SIGPROF);
 
   hpcrun_setup_segv();
   hpcrun_unw_init();
 
   // sample source setup
-  SAMPLE_SOURCES(init);
+
+  TMSG(PROCESS, "Sample source setup");
+  //
+  // NOTE: init step no longer necessary.
+  //       -all- possible (e.g. registered) sample sources call their own init method
+  //       no need to do it twice.
+  //
   SAMPLE_SOURCES(process_event_list, lush_metrics);
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
 
@@ -405,6 +411,8 @@ monitor_init_process(int *argc, char **argv, void* data)
   if (!hpcrun_get_disabled()) {
     files_set_directory();
   }
+
+  TMSG(PROCESS,"files_set_executable called w process name = %s", process_name);
 
   TMSG(PROCESS,"init");
 

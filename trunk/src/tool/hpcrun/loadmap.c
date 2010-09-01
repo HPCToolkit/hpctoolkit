@@ -210,6 +210,16 @@ hpcrun_loadmap_findByAddr(void* begin, void* end)
   return NULL;
 }
 
+char*
+hpcrun_find_load_name(char* name)
+{
+  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
+    if (strstr(x->name, name)) {
+      return x->name;
+    }
+  }
+  return NULL;
+}
 
 load_module_t*
 hpcrun_loadmap_findByName(char* name)
