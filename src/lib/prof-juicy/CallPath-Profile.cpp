@@ -316,13 +316,13 @@ Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
 
       LoadMap::LM_id_t lmId1, lmId2;
       lmId1 = n_dyn->lmId_real();
-      lmId2 = (lip) ? lush_lip_getLMId(lip) : LoadMap::LM_id_NULL;
+      lmId2 = (lip) ? lush_lip_getLMId(lip) : ALoadMap::LM_id_NULL;
       
       for (uint i = 0; i < mrgEffects->size(); ++i) {
 	const LoadMap::MergeEffect& chg = (*mrgEffects)[i];
 	if (chg.old_id == lmId1) {
 	  n_dyn->lmId_real(chg.new_id);
-	  if (lmId2 == LoadMap::LM_id_NULL) {
+	  if (lmId2 == ALoadMap::LM_id_NULL) {
 	    break; // quick exit in the common case
 	  }
 	}
@@ -618,7 +618,7 @@ Profile::ddump() const
 // 
 //***************************************************************************
 
-static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
+static std::pair<Prof::CCT::ADynNode*, Prof::CCT::ADynNode*>
 cct_makeNode(Prof::CallPath::Profile& prof,
 	     const hpcrun_fmt_cct_node_t& nodeFmt,
 	     uint rFlags, Prof::LoadMap* loadmap);
@@ -1100,22 +1100,25 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // Create node and link to parent
     // ----------------------------------------------------------
 
-    std::pair<CCT::ANode*, CCT::ANode*> n2 = 
+    std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 = 
       cct_makeNode(prof, nodeFmt, rFlags, loadmap);
-    CCT::ANode* node = n2.first;
-    CCT::ANode* node_sib = n2.second;
+    CCT::ADynNode* node = n2.first;
+    CCT::ADynNode* node_sib = n2.second;
 
     DIAG_DevMsgIf(0, "fmt_cct_fread: " << hex << node << " -> " << node_parent << dec);
 
     if (node_parent) {
+      DIAG_AssertWarn(node->lmId_real() != ALoadMap::LM_id_NULL,
+		      ctxtStr << ": CCT (non-root) node has invalid normalized IP: " << node->toStringMe(CCT::Tree::OFlg_Debug));
+
       node->link(node_parent);
       if (node_sib) {
 	node_sib->link(node_parent);
       }
     }
     else {
-      DIAG_AssertWarn(cct->empty(), ctxtStr << ": must only have one root node!");
-      DIAG_AssertWarn(!node_sib, ctxtStr << ": root node cannot be split into interior and leaf!");
+      DIAG_AssertWarn(cct->empty(), ctxtStr << ": CCT must only have one root!");
+      DIAG_AssertWarn(!node_sib, ctxtStr << ": CCT root cannot be split into interior and leaf!");
       cct->root(node);
     }
 
@@ -1346,7 +1349,7 @@ Profile::canonicalize(uint rFlags)
 
 //***************************************************************************
 
-static std::pair<Prof::CCT::ANode*, Prof::CCT::ANode*>
+static std::pair<Prof::CCT::ADynNode*, Prof::CCT::ADynNode*>
 cct_makeNode(Prof::CallPath::Profile& prof,
 	     const hpcrun_fmt_cct_node_t& nodeFmt,
 	     uint rFlags,
@@ -1379,14 +1382,14 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------
   ALoadMap::LM_id_t lmId = nodeFmt.lm_id;
 
-  VMA ip = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
+  VMA lmIP = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
   if (loadmap && (nodeFmt.id_parent != HPCRUN_FMT_CCTNodeId_NULL)) {
-    VMA ip_orig = ip;
+    VMA ip_orig = lmIP;
     LoadMap::LM* lm = loadmap->lm_find(ip_orig);
 
-    ip = ip_orig - lm->relocAmt(); // unrelocated ip
+    lmIP = ip_orig - lm->relocAmt(); // unrelocated ip
     lmId = lm->id();
   }
 
@@ -1394,7 +1397,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     prof.loadMapMgr()->lm(lmId)->isUsed(true);
   }
 
-  DIAG_MsgIf(0, "cct_makeNode(: " << hex << ip << dec << ", " << lmId << ")");
+  DIAG_MsgIf(0, "cct_makeNode(: " << hex << lmIP << dec << ", " << lmId << ")");
 
   // ----------------------------------------  
   // normalized lip
@@ -1484,11 +1487,11 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // == 0 (that has cpId == NULL *and* that is the primary return node);
   // and 2) a leaf node with the metrics and the cpId.
   // ----------------------------------------------------------
-  Prof::CCT::ANode* n = NULL;
-  Prof::CCT::ANode* n_leaf = NULL;
+  Prof::CCT::ADynNode* n = NULL;
+  Prof::CCT::ADynNode* n_leaf = NULL;
 
   if (hasMetrics || isLeaf) {
-    n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, lmId, ip, opIdx, lip,
+    n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx, lip,
 		      metricData);
   }
 
@@ -1503,12 +1506,12 @@ cct_makeNode(Prof::CallPath::Profile& prof,
       
       lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
 
-      n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, ip, opIdx, lipCopy,
-			metricData0);
+      n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, lmIP, opIdx,
+			lipCopy, metricData0);
     }
     else {
-      n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, ip, opIdx, lip,
-			metricData);
+      n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx,
+			lip, metricData);
     }
   }
 

@@ -671,7 +671,7 @@ public:
     : ANode(type, parent, strct),
       m_cpId(cpId),
       m_as_info(lush_assoc_info_NULL),
-      m_lmId(LoadMap::LM_id_NULL), m_lmIP(0), m_opIdx(0), m_lip(NULL)
+      m_lmId(ALoadMap::LM_id_NULL), m_lmIP(0), m_opIdx(0), m_lip(NULL)
   { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
@@ -849,7 +849,7 @@ public:
 
   bool
   isSyntheticRoot() const
-  { return (m_lmId == LoadMap::LM_id_NULL && m_lmIP == 0); }
+  { return (m_lmId == ALoadMap::LM_id_NULL && m_lmIP == 0); }
 
 
   // -------------------------------------------------------
