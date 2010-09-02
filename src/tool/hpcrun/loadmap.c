@@ -101,7 +101,7 @@ hpcrun_dso_make(const char* name, void** table,
   
   TMSG(DSO," hpcrun_dso_make for module %s", name);
   int namelen = strlen(name) + 1;
-  x->name = (char *) hpcrun_malloc(namelen);
+  x->name = (char*) hpcrun_malloc(namelen);
   strcpy(x->name, name);
   x->table = table;
   x->map_size = map_size;
@@ -155,7 +155,7 @@ hpcrun_loadModule_new(const char* name)
   x->id = ++(s_loadmap_ptr->size); // largest id = size
 
   int namelen = strlen(name) + 1;
-  x->name = (char *) hpcrun_malloc(namelen);
+  x->name = (char*) hpcrun_malloc(namelen);
   strcpy(x->name, name);
 
   x->dso_info = NULL;
@@ -231,7 +231,6 @@ hpcrun_loadmap_findByAddr(void* begin, void* end)
       return x;
     }
   }
-
   return NULL;
 }
 
@@ -240,11 +239,10 @@ load_module_t*
 hpcrun_loadmap_findByName(const char* name)
 {
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
-    if (/*TODO:tallent !x->dso_info &&*/ (strcmp(x->name, name) == 0)) {
+    if (strcmp(x->name, name) == 0) {
       return x;
     }
   }
-
   return NULL;
 }
 
@@ -263,43 +261,22 @@ hpcrun_loadmap_findLoadName(const char* name)
 
 //***************************************************************************
 
-void
-hpcrun_loadmap_map(dso_info_t* dso)
+static void
+hpcrun_loadmap_pushFront(load_module_t* lm)
 {
-  const char* msg = "";
-
-  // -------------------------------------------------------
-  // Find or create a load_module_t: if a load module exists
-  // with same name exists, reuse that; otherwise create a new load
-  // module
-  // -------------------------------------------------------
-  load_module_t* lm = hpcrun_loadmap_findByName(dso->name);
-  if (lm) {
-    hpcrun_loadmap_unmap(lm); // TODO:tallent
-    lm->dso_info = dso;
-    msg = "(reuse)";
+  // link 'm' at the head of the list of loaded modules
+  if (s_loadmap_ptr->lm_head) {
+    s_loadmap_ptr->lm_head->prev = lm;
+    lm->next = s_loadmap_ptr->lm_head;
+    lm->prev = NULL;
+    s_loadmap_ptr->lm_head = lm;
   }
   else {
-    lm = hpcrun_loadModule_new(dso->name);
-    lm->dso_info = dso;
-    
-    // link 'm' at the head of the list of loaded modules
-    if (s_loadmap_ptr->lm_head) {
-      s_loadmap_ptr->lm_head->prev = lm;
-      lm->next = s_loadmap_ptr->lm_head;
-      lm->prev = NULL;
-      s_loadmap_ptr->lm_head = lm;
-    }
-    else {
-      s_loadmap_ptr->lm_head = lm;
-      s_loadmap_ptr->lm_end = lm;
-      lm->next = NULL;
-      lm->prev = NULL;
-    }
+    s_loadmap_ptr->lm_head = lm;
+    s_loadmap_ptr->lm_end = lm;
+    lm->next = NULL;
+    lm->prev = NULL;
   }
-
-  TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
-       dso->name, s_loadmap_ptr->size, msg);
 }
 
 
@@ -336,6 +313,38 @@ hpcrun_loadmap_moveToBack(load_module_t* lm)
   s_loadmap_ptr->lm_end = lm;
 }
 #endif
+
+
+void
+hpcrun_loadmap_map(dso_info_t* dso)
+{
+  const char* msg = "";
+
+  // -------------------------------------------------------
+  // Find or create a load_module_t: if a load module exists
+  // with same name, reuse it; otherwise create a new entry
+  // -------------------------------------------------------
+  load_module_t* lm = hpcrun_loadmap_findByName(dso->name);
+  if (lm) {
+    // sanity check to ensure internal consistency
+    if (lm->dso_info != dso) {
+      hpcrun_loadmap_unmap(lm);
+      lm->dso_info = dso;
+    }
+    else {
+      EMSG("hpcrun_loadmap_map(): attempt to both map dso '%s' and place it on the free list!", dso->name);
+    }
+    msg = "(reuse)";
+  }
+  else {
+    lm = hpcrun_loadModule_new(dso->name);
+    lm->dso_info = dso;
+    hpcrun_loadmap_pushFront(lm);
+  }
+
+  TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
+       dso->name, s_loadmap_ptr->size, msg);
+}
 
 
 void
