@@ -199,10 +199,9 @@ hpcrun_loadmap_findLoadName(const char* name);
 // ---------------------------------------------------------
 
 // hpcrun_loadmap_map: Add a load module based on 'dso' to the current
-//   load map. 'dso' is assumed to be non-NULL.  If a module with the
-//   same name as 'dso' is found, then 'dso' is inserted into that
-//   load module, otherwise, a new load module is created.  Locates
-//   the new load module at the front of the load map.
+//   load map, ensuring that dso's name appears exactly once in the
+//   load map. 'dso' is assumed to be non-NULL.  Locates the new load
+//   module at the front of the load map.
 void
 hpcrun_loadmap_map(dso_info_t* dso);
 
