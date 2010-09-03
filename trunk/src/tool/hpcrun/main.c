@@ -141,8 +141,6 @@ int lush_metrics = 0; // FIXME: global variable for now
 // local variables 
 //***************************************************************************
 
-static volatile int DEBUGGER_WAIT = 1;
-
 static hpcrun_options_t opts;
 static bool hpcrun_is_initialized_private = false;
 
@@ -372,8 +370,10 @@ monitor_init_process(int *argc, char **argv, void* data)
   char* process_name;
   char  buf[PROC_NAME_LEN];
 
-  if (getenv("CSPROF_WAIT")) {
-    while(DEBUGGER_WAIT);
+  const char* HPCRUN_WAIT = getenv("HPCRUN_WAIT");
+  if (HPCRUN_WAIT) {
+    volatile int DEBUGGER_WAIT = 1;
+    while (DEBUGGER_WAIT);
   }
 
   // FIXME: if the process fork()s before main, then argc and argv
