@@ -97,6 +97,10 @@ AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
 
+AC_MSG_NOTICE([INFO: from user: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'])
+AC_MSG_NOTICE([INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}'])
+AC_MSG_NOTICE([INFO: from user: MPICXX='${MPICXX}'])
+
 # NOTE: please update config/README.version
 AC_PREREQ(2.65)
 AM_INIT_AUTOMAKE(1.11.1)
@@ -104,15 +108,8 @@ LT_PREREQ([2.2.10])
 
 AM_MAINTAINER_MODE()
 
-LT_INIT()
-AC_SUBST([LIBTOOL_DEPS])
-
 AC_CANONICAL_BUILD()
 AC_CANONICAL_HOST()
-
-AC_MSG_NOTICE([INFO: on entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
-AC_MSG_NOTICE([INFO: on entry: CC=${CC} CFLAGS=${CFLAGS}])
-AC_MSG_NOTICE([INFO: on entry: MPICXX=${MPICXX}])
 
 MPICXX_ORIG=${MPICXX}
 
@@ -226,19 +223,22 @@ if test "${ac_cv_prog_cc_c99}" = "no" ; then
   AC_MSG_ERROR([${CC} ${CFLAGS} does not support C99 mode!])
 fi
 AM_PROG_CC_C_O()
+
+# Note: this will set CC and CFLAGS if not already set
+LT_INIT()
+AC_SUBST([LIBTOOL_DEPS])
+
 AM_PROG_AS()
 
 AC_PROG_CXXCPP()
 
+HPC_PROG_MPICXX(HPC_MPICXX_LIST)
 
 AC_PROG_INSTALL()
 
-HPC_PROG_MPICXX(HPC_MPICXX_LIST)
-
-
-AC_MSG_NOTICE([INFO: post ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
-AC_MSG_NOTICE([INFO: post ac_prog: CC=${CC} CFLAGS=${CFLAGS}])
-AC_MSG_NOTICE([INFO: post ac_prog: MPICXX=${MPICXX} ])
+AC_MSG_NOTICE([INFO: post autoconf tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: CC='${CC}' CFLAGS='${CFLAGS}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: MPICXX='${MPICXX}'])
 
 
 # Use C++ compiler for all checks
@@ -642,8 +642,9 @@ AC_SUBST([HOST_HPCPROF_FLAT_LDFLAGS])
 AC_SUBST([HOST_HPCPROFTT_LDFLAGS])
 AC_SUBST([HOST_XPROF_LDFLAGS])
 
-AC_MSG_NOTICE([INFO: final: CXX=${CXX} CXXFLAGS=${CXXFLAGS} HOST_CXXFLAGS=${HOST_CXXFLAGS}])
-AC_MSG_NOTICE([INFO: final: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}])
+AC_MSG_NOTICE([INFO: post hpc tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' HOST_CXXFLAGS='${HOST_CXXFLAGS}'])
+AC_MSG_NOTICE([INFO: post hpc tests: CC='${CC}' CFLAGS='${CFLAGS}' HOST_CFLAGS='${HOST_CFLAGS}'])
+AC_MSG_NOTICE([INFO: post hpc tests: MPICXX='${MPICXX}'])
 
 #----------------------------------------------------------------------------
 # Prerequisites: external libraries
@@ -1782,14 +1783,14 @@ AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([])
-AC_MSG_NOTICE([  CC:        ${CC}])
-AC_MSG_NOTICE([  CFLAGS:    ${CFLAGS} ${HOST_CFLAGS}])
-AC_MSG_NOTICE([  CXX:       ${CXX}])
-AC_MSG_NOTICE([  CXXFLAGS:  ${CXXFLAGS} ${HOST_CXXFLAGS}])
-AC_MSG_NOTICE([  CCAS:      ${CCAS}])
-AC_MSG_NOTICE([  CCASFLAGS: ${CCASFLAGS}])
-AC_MSG_NOTICE([  LDFLAGS:   ${LDFLAGS}])
-AC_MSG_NOTICE([  MPICXX:    ${MPICXX}])
+AC_MSG_NOTICE([  CC:        '${CC}'])
+AC_MSG_NOTICE([  CFLAGS:    '${CFLAGS} ${HOST_CFLAGS}'])
+AC_MSG_NOTICE([  CXX:       '${CXX}'])
+AC_MSG_NOTICE([  CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'])
+AC_MSG_NOTICE([  CCAS:      '${CCAS}'])
+AC_MSG_NOTICE([  CCASFLAGS: '${CCASFLAGS}'])
+AC_MSG_NOTICE([  LDFLAGS:   '${LDFLAGS}'])
+AC_MSG_NOTICE([  MPICXX:    '${MPICXX}'])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  binutils:     ${GNUBINUTILS}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
