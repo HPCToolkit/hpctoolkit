@@ -74,30 +74,38 @@
 #include <unistd.h>    // getpid
 #include <fcntl.h>
 
+//*********************************************************************
+// external libraries
+//*********************************************************************
+
+#include <monitor.h>
 
 //*********************************************************************
 // local includes
 //*********************************************************************
 
-#include "hpcrun_dlfns.h"
-#include "hpcrun_stats.h"
-#include "disabled.h"
-#include "dylib.h"
-#include "loadmap.h"
-#include "files.h"
-#include "fnbounds-file-header.h"
 #include "fnbounds_interface.h"
-#include "monitor.h"
 
-#include <hpcrun/epoch.h>
+#include "dylib.h"
 
-#include "sample_event.h"
-#include "system_server.h"
-#include "unlink.h"
-#include "thread_data.h"
-#include "ui_tree.h"
+#include <hpcrun_dlfns.h>
+#include <hpcrun_stats.h>
+#include <disabled.h>
+#include <loadmap.h>
+#include <files.h>
+#include <epoch.h>
+#include <sample_event.h>
+#include <system_server.h>
+#include <thread_data.h>
+
+#include <utilities/unlink.h>
+
+#include <unwind/common/ui_tree.h>
 
 #include <messages/messages.h>
+
+// FIXME:tallent: more spaghetti includes
+#include <hpcfnbounds/fnbounds-file-header.h>
 
 #include <lib/prof-lean/spinlock.h>
 
