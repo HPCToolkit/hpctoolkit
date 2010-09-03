@@ -161,12 +161,7 @@ hpcrun_addr_to_interval(void *addr, ip_normalized_t* ip_norm)
   UI_TREE_UNLOCK;
   
   if (intvl && ip_norm) { 
-    if (intvl->lm) {
-      *ip_norm = hpcrun_normalize_ip(addr, intvl->lm);
-    }
-    else {
-      *ip_norm = ip_normalized_NULL;
-    }
+    *ip_norm = hpcrun_normalize_ip(addr, intvl->lm);
   }
   
   return intvl;
@@ -257,9 +252,9 @@ hpcrun_addr_to_interval_locked(void *addr)
     }
   }
 
+  /* Memoize associated load module to benefit hpcrun_normalize_ip() */
   if (ans) {
-    //FIXME: Hack to link the interval to its load module to get the id
-    ans->lm = hpcrun_loadmap_findByAddr(fcn_start, fcn_end);
+    ans->lm = hpcrun_loadmap_findByAddr(addr, addr);
   }
 
   if (ENABLED(UITREE_VERIFY)) {

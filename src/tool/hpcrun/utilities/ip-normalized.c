@@ -56,22 +56,17 @@ ip_normalized_t ip_normalized_NULL = { .lm_id = 0, .lm_ip = 0 };
 ip_normalized_t
 hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
 {
-  ip_normalized_t ip_norm;
-  
   if (!lm) {
     lm = hpcrun_loadmap_findByAddr(unnormalized_ip, unnormalized_ip);
-    if (!lm) { 
-      return ip_normalized_NULL;
-    }
   }
   
-  if (!lm->dso_info) {
-    return ip_normalized_NULL;
+  if (lm && lm->dso_info) {
+    ip_normalized_t ip_norm = {
+      .lm_id = lm->id,
+      .lm_ip = (uintptr_t)unnormalized_ip - lm->dso_info->start_to_ref_dist };
+    return ip_norm;
   }
 
-  ip_norm.lm_id = lm->id;
-  ip_norm.lm_ip = (uintptr_t)unnormalized_ip - lm->dso_info->start_to_ref_dist;
-
-  return ip_norm;
+  return ip_normalized_NULL;
 }
 
