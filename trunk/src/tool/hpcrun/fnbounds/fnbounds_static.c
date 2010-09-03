@@ -41,13 +41,22 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-//
-//
+//*********************************************************************
+// system includes
+//*********************************************************************
 
 #include <assert.h>
-#include "loadmap.h"
-#include "files.h"
+
+//*********************************************************************
+// local includes
+//*********************************************************************
+
 #include "fnbounds_interface.h"
+
+#include <loadmap.h>
+#include <files.h>
+
+//*********************************************************************
 
 //-------------------------------------------------------------------------
 // the external variables below will be defined in a 
@@ -57,9 +66,28 @@
 extern void *hpcrun_nm_addrs[];
 extern int   hpcrun_nm_addrs_len;
 
-int 
+int
 fnbounds_init()
 {
+  void *lm_beg_fn = hpcrun_nm_addrs[0];
+  void *lm_end_fn = hpcrun_nm_addrs[hpcrun_nm_addrs_len - 1];
+  long lm_size = lm_end_fn - lm_beg_fn;
+
+  // TODO:tallent: abstract with hpcfnbounds (cf. dump_file_symbols())
+  // and fnbounds_read_nm_file()
+  struct fnbounds_file_header fh;
+
+  void *table_beg = &hpcrun_nm_addrs[0];
+  void *table_end = &hpcrun_nm_addrs[hpcrun_nm_addrs_len];
+  size_t table_sz = table_end - table_beg;
+
+  memcpy(&fh, hpcrun_nm_addrs + table_sz, sizeof(fh));
+
+  dso_info_t *dso =
+    hpcrun_dso_make(files_executable_pathname(), hpcrun_nm_addrs, 
+		    &fh, lm_beg_fn, lm_end_fn, lm_size);
+  hpcrun_loadmap_map(dso);
+
   return 0;
 }
 
