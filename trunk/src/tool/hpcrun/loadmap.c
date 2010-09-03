@@ -100,19 +100,29 @@ hpcrun_dso_make(const char* name, void** table,
   dso_info_t* x = hpcrun_dso_new();
   
   TMSG(DSO," hpcrun_dso_make for module %s", name);
+
   int namelen = strlen(name) + 1;
   x->name = (char*) hpcrun_malloc(namelen);
   strcpy(x->name, name);
+
   x->table = table;
   x->map_size = map_size;
   x->nsymbols = fh->num_entries;
   x->relocate = fh->relocatable;
   x->start_addr = startaddr;
   x->end_addr = endaddr;
-  x->start_to_ref_dist = (unsigned long) startaddr - fh->reference_offset;
+
+  // Cf. hpcrun_normalize_ip(): Given ip, compute lm_ip:
+  //   lm_ip = (ip - lm_mapped_start) + lm_ip_ref
+  //         = ip - (lm_mapped_start - lm_ip_ref)
+  //         = ip - start_to_ref_dist
+  x->start_to_ref_dist = 0;
+  if (fh->relocatable) {
+    x->start_to_ref_dist = (unsigned long)startaddr - fh->reference_offset;
+  }
+
   x->next = NULL;
   x->prev = NULL;
-  // NOTE: start_to_ref_dist = pointer to reference address
 
   TMSG(DSO, "new dso: start = %p, end = %p, name = %s",
        startaddr, endaddr, name);
