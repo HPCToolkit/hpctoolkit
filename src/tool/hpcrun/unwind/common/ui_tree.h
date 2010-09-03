@@ -58,9 +58,10 @@ void hpcrun_interval_tree_init(void);
 void hpcrun_release_splay_lock(void);
 void *hpcrun_ui_malloc(size_t ui_size);
 
-splay_interval_t *hpcrun_addr_to_interval(void *addr, 
-					  ip_normalized_t* norm_ip);
+splay_interval_t *hpcrun_addr_to_interval(void *addr,
+					  void *ip, ip_normalized_t* ip_norm);
 splay_interval_t *hpcrun_addr_to_interval_locked(void *addr);
+
 void hpcrun_delete_ui_range(void *start, void *end);
 void free_ui_node_locked(interval_tree_node *node);
 

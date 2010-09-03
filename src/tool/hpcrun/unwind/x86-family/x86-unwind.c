@@ -227,10 +227,8 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
 
   cursor->flags = 0; // trolling_used
-  ip_normalized_t ip_norm;
-  cursor->intvl = hpcrun_addr_to_interval(cursor->pc_unnorm, &ip_norm);
-  cursor->pc_norm = ip_norm;
-
+  cursor->intvl = hpcrun_addr_to_interval(cursor->pc_unnorm,
+					  cursor->pc_unnorm, &cursor->pc_norm);
   if (!cursor->intvl) {
     // TMSG(TROLL,"UNW INIT calls stack troll");
     update_cursor_with_troll(cursor, 0);
@@ -456,7 +454,8 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   }
   next_sp += 1;
   ip_normalized_t next_pc_norm;
-  cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) - 1, &next_pc_norm);
+  cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) - 1,
+					  next_pc, &next_pc_norm);
 
   if (! cursor->intvl){
     if (((void *)next_sp) >= monitor_stack_bottom()){
@@ -532,7 +531,7 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
     // try building an interval for the return address again if it succeeds
     ip_normalized_t next_pc_norm;
     uw = (unwind_interval *)hpcrun_addr_to_interval(((char *)next_pc) - 1, 
-						    &next_pc_norm);
+						    next_pc, &next_pc_norm);
     if (! uw){
       if (((void *)next_sp) >= monitor_stack_bottom()) {
         TMSG(UNW_STRATEGY,"BP advance reaches monitor_stack_bottom,"
@@ -670,8 +669,8 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
     }
 
     ip_normalized_t next_pc_norm;
-    cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) + offset, 
-					    &next_pc_norm);
+    cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) + offset,
+					    next_pc, &next_pc_norm);
     if (cursor->intvl) {
       PMSG_LIMIT(PMSG(TROLL,"Trolling advances cursor to pc = %p, sp = %p", 
 		      next_pc, next_sp));

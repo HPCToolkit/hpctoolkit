@@ -165,12 +165,11 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t *cursor, void *context)
   cursor->bp        = NULL;
   cursor->flags     = UnwFlg_StackTop;
 
-  ip_normalized_t ip_norm;
   unw_interval_t* intvl = (unw_interval_t*)
-    hpcrun_addr_to_interval(cursor->pc_unnorm, &ip_norm);
+    hpcrun_addr_to_interval(cursor->pc_unnorm, 
+			    cursor->pc_unnorm, &cursor->pc_norm);
 
   cursor->intvl = (splay_interval_t*)intvl;
-  cursor->pc_norm = ip_norm;
   
   if (intvl && intvl->ra_ty == RATy_Reg) {
     if (intvl->ra_arg == PPC_REG_LR) {
@@ -274,7 +273,8 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
   ip_normalized_t nxt_pc_norm;
-  nxt_intvl = (unw_interval_t*)hpcrun_addr_to_interval(nxt_pc, &nxt_pc_norm);
+  nxt_intvl = (unw_interval_t*)hpcrun_addr_to_interval(nxt_pc,
+						       nxt_pc, &nxt_pc_norm);
  
   // if nxt_pc is invalid for some reason...
   if (!nxt_intvl) {
@@ -291,7 +291,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
       // Sanity check SP: Once in a while SP is clobbered.
       if (isPossibleParentSP(nxt_sp, try_sp)) {
 	nxt_pc = getNxtPCFromSP(try_sp);
-	nxt_intvl = (unw_interval_t*)hpcrun_addr_to_interval(nxt_pc, 
+	nxt_intvl = (unw_interval_t*)hpcrun_addr_to_interval(nxt_pc, nxt_pc,
 							     &nxt_pc_norm);
       }
     }

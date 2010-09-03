@@ -147,21 +147,34 @@ hpcrun_ui_malloc(size_t ui_size)
 
 
 /*
- * Lookup the PC address in the interval tree and return a pointer to
- * the interval containing that address (the new root).  Grow the tree
- * lazily and memo-ize the answers.
+ * Lookup the instruction pointer 'addr' in the interval tree and
+ * return a pointer to the interval containing that address (the new
+ * root).  Grow the tree lazily and memo-ize the answers.
+ *
+ * Extension to support fast normalization of IPs: Given an (dynamic)
+ * IP 'ip', return the normalized (static) IP through the argument
+ * 'ip_norm'.  Both 'ip' and 'ip_norm' are optional and may be NULL.
+ * NOTE: typically 'addr' equals 'ip', but there are subtle use cases
+ * where they are different.  (In all cases, 'addr' and 'ip' should be
+ * in the same load module.)
+ *
+ * N.B.: tallent: The above extension is not as clean as I would like.
+ * An alternative is to write a separate function, but then the
+ * typical usage would require two back-to-back lock-protected
+ * lookups.  Thus for the time being, in this limited circumstance, I
+ * have chosen performance over a cleaner design.
  *
  * Returns: pointer to unwind_interval struct if found, else NULL.
  */
 splay_interval_t *
-hpcrun_addr_to_interval(void *addr, ip_normalized_t* ip_norm)
+hpcrun_addr_to_interval(void *addr, void *ip, ip_normalized_t* ip_norm)
 {
   UI_TREE_LOCK;
   splay_interval_t *intvl = hpcrun_addr_to_interval_locked(addr);
   UI_TREE_UNLOCK;
   
-  if (intvl && ip_norm) { 
-    *ip_norm = hpcrun_normalize_ip(addr, intvl->lm);
+  if (ip && ip_norm && intvl) {
+    *ip_norm = hpcrun_normalize_ip(ip, intvl->lm);
   }
   
   return intvl;

@@ -115,7 +115,7 @@ demand_interval(void* pc, bool isTopFrame)
   }
 #else
   // N.B.: calls build_intervals() if necessary
-  return (UNW_INTERVAL_t)hpcrun_addr_to_interval(pc);
+  return (UNW_INTERVAL_t)hpcrun_addr_to_interval(pc, NULL, NULL);
 #endif
 }
 
