@@ -376,7 +376,7 @@ hpc_prepareenv()
     export CSPROF_OPT_DEBUG
   fi
   if [ -n "${opt_debug_wait}" ]; then
-    export CSPROF_WAIT=1
+    export HPCRUN_WAIT=1
   fi
   if [ -n "$dd_list" ]; then
     export HPCRUN_DEBUG_FLAGS=$dd_list
