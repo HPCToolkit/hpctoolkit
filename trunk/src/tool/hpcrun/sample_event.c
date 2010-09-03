@@ -182,9 +182,9 @@ hpcrun_sample_callpath(void *context, int metricId,
 
 	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc);
 
-	ip_normalized_t temp_ip_norm = hpcrun_normalize_ip(pc, NULL);
+	ip_normalized_t pc_norm = hpcrun_normalize_ip(pc, NULL);
 
-	frame_t frm = {.ip_norm = temp_ip_norm};
+	frame_t frm = {.ip_norm = pc_norm};
 	cct_node_t* func_proxy = hpcrun_cct_get_child(cct, node->parent, &frm);
 	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag;
 

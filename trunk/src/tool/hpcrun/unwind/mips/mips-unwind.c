@@ -383,12 +383,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 
   UNW_INTERVAL_t intvl = demand_interval(cursor->pc_unnorm, true/*isTopFrame*/);
   cursor->intvl = CASTTO_UNW_CURSOR_INTERVAL_t(intvl);
-  if (intvl && intvl->lm) {
-    cursor->pc_norm = hprun_normalize_ip(cursor->pc_unnorm, intvl->lm);
-  }
-  else {
-    cursor->pc_norm = ip_normalized_NULL;
-  }
+  cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, UI_FLD(intvl,lm));
   
   if (!UI_IS_NULL(intvl)) {
     if (frameflg_isset(UI_FLD(intvl,flgs), FrmFlg_RAReg)) {
@@ -511,13 +506,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   // try to obtain interval
   if (nxt_pc != pc_NULL) {
     nxt_intvl = demand_interval(getNxtPCFromRA(nxt_pc), isTopFrame);
-
-    if (nxt_intvl && nxt_intvl->lm) {
-      nxt_pc_norm = hpcrun_normalize_ip(nxt_pc, nxt_intvl->lm);
-    }
-    else {
-      nxt_pc_norm = ip_normalized_NULL;
-    }
+    nxt_pc_norm = hpcrun_normalize_ip(nxt_pc, UI_FLD(nxt_intvl,lm));
   }
 
   // if nxt_pc is invalid for some reason, try trolling
@@ -539,13 +528,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
       return STEP_ERROR;
     }
     else {
-      if (nxt_intvl->lm) {
-	nxt_pc_norm = hpcrun_normalize_ip(nxt_pc, nxt_intvl->lm->dso_info->id,
-					  nxt_intvl->lm->dso_info->offset);
-      }
-      else {
-	nxt_pc_norm = ip_normalized_NULL;
-      }
+      nxt_pc_norm = hpcrun_normalize_ip(nxt_pc, UI_FLD(nxt_intvl,lm));
     }
     didTroll = true;
 

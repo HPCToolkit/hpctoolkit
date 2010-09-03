@@ -512,11 +512,11 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
       }
     }
     
-    ip_normalized_t temp_ip = hpcrun_normalize_ip((void*) ip, 
+    ip_normalized_t ip_norm = hpcrun_normalize_ip((void*) ip,
 						  cursor.intvl->lm);
     frame_t* prev = hpcrun_bt_push(bt,
 				   &((frame_t){.cursor = cursor, 
-					 .ip_norm = temp_ip,
+					 .ip_norm = ip_norm,
 					 .ra_loc = NULL}));
 
     ret = hpcrun_unw_step(&cursor);
