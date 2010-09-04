@@ -124,6 +124,7 @@ head {
 h1 {
   font-family: sans-serif;
   font-size: 1.8em;
+  text-decoration: underline;
   background-color: transparent;
 }
 
