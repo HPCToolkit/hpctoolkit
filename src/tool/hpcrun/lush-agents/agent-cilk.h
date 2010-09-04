@@ -101,17 +101,18 @@ union cilk_ip {
   // superimposed with:
   // ------------------------------------------------------------
   struct {
-    // NOTE: coordinate with lush_lip_getLMId() and lush_lip_getIP()
+    // NOTE: coordinate with lush_lip_getLMId() and lush_lip_getLMIP()
     uint64_t lm_id;
-    uint64_t ip;
+    uint64_t lm_ip;
   } u;
 };
 
+
 static inline void 
-cilk_ip_set(cilk_ip_t* x, void* ip /*uint32_t status*/)
+cilk_ip_set(cilk_ip_t* x, ip_normalized_t ip /*uint32_t status*/)
 {
-  //lush_lip_setLMId(lip, ...); // FIXME
-  x->u.ip = (uint64_t)ip;
+  lush_lip_setLMId(&(x->official_lip), (uint64_t)ip.lm_id);
+  lush_lip_setLMIP(&(x->official_lip), (uint64_t)ip.lm_ip);
   //x->u.status = status;
 }
 
@@ -204,7 +205,8 @@ union cilk_cursor {
     // ---------------------------------
     // intra-bichord data (valid for only one bichord)
     // ---------------------------------
-    void* ref_ip;          // reference physical ip
+    void* ref_ip;                // reference physical ip (unnormalized)
+    ip_normalized_t ref_ip_norm; // reference physical ip (normalized)
 
   } u;
 };
