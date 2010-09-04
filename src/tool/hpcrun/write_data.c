@@ -183,7 +183,7 @@ lazy_open_data_file(void)
   TMSG(DATA_WRITE,"writing file header");
   hpcrun_fmt_hdr_fwrite(fs,
                         HPCRUN_FMT_NV_prog, files_executable_name(),
-                        HPCRUN_FMT_NV_path, files_executable_pathname(),
+                        HPCRUN_FMT_NV_progPath, files_executable_pathname(),
                         HPCRUN_FMT_NV_jobId, jobIdStr,
                         HPCRUN_FMT_NV_mpiRank, mpiRankStr,
                         HPCRUN_FMT_NV_tid, tidStr,
