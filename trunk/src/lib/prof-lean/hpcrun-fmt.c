@@ -339,7 +339,7 @@ hpcrun_fmt_epochHdr_fprint(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs)
 {
   fprintf(fs, "%s\n", HPCRUN_FMT_EpochTag);
   fprintf(fs, "[epoch-hdr:\n");
-  fprintf(fs, "  (flags: %"PRIx64")\n", ehdr->flags.bits);
+  fprintf(fs, "  (flags: 0x%"PRIx64")\n", ehdr->flags.bits);
   fprintf(fs, "  (measurement-granularity: %"PRIu64")\n", 
 	  ehdr->measurementGranularity);
   fprintf(fs, "  (RA-to-callsite-offset: %"PRIu32")\n", ehdr->raToCallsiteOfst);
