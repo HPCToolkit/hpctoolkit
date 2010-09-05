@@ -97,65 +97,79 @@ public:
   typedef uint LM_id_t;
   static const LM_id_t LM_id_NULL = 0;
 
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
   class LM : public Unique {
   public:
-    LM(const std::string& name = "", VMA loadAddr = 0, size_t size = 0);
+    LM(const std::string& name = "");
     //LM(const char* name = NULL, VMA loadAddr = 0, size_t size = 0);
+
     virtual ~LM();
 
-    LM_id_t id() const 
-      { return m_id; }
     
-    const std::string& name() const
-      { return m_name; }
-    void name(std::string x)
-      { m_name = x; }
-    void name(const char* x) 
-      { m_name = (x) ? x: ""; }
+    LM_id_t
+    id() const
+    { return m_id; }
+    
 
-    VMA loadAddr() const 
-      { return m_loadAddr; }
-    void loadAddr(VMA x) 
-      { m_loadAddr = x; }
+    const std::string&
+    name() const
+    { return m_name; }
 
-    VMA size() const 
-      { return m_size; }
-    void size(size_t x) 
-      { m_size = x; }
+    void
+    name(std::string x)
+    { m_name = x; }
+
+    void
+    name(const char* x)
+    { m_name = (x) ? x: ""; }
+
 
     // isAvail: this ALoadMap::LM is active in the sense that the
     // associated load module is available and relocation information
     // is accurate.  NOTE: a module is not available, e.g., if system
     // libs changed or the user is executing on a different system.
-    bool isAvail() const
-      { return m_isAvail; }
-    void isAvail(bool x)
-      { m_isAvail = x; }
+    bool
+    isAvail() const
+    { return m_isAvail; }
 
-    // relocate_VMA - relocAmt() = unrelocated_VMA
-    VMA relocAmt() const
-      { return m_relocAmt; }
-    void relocAmt(VMA x)
-      { m_relocAmt = x; }
-    
-    void compute_relocAmt();
+    void
+    isAvail(bool x)
+    { m_isAvail = x; }
 
+
+    void
+    verify();
 
     // isUsed: does this ALoadMap::LM have data in the CCT
-    // tallent: FIXME: should not be located here
-    bool isUsed() const { return m_isUsed; }
-    void isUsed(bool x) { m_isUsed = x; }
-    void isUsedMrg(bool x) { m_isUsed = (m_isUsed || x); }
+    // FIXME:tallent: should not be located here
+    bool
+    isUsed() const
+    { return m_isUsed; }
+
+    void
+    isUsed(bool x)
+    { m_isUsed = x; }
+
+    void
+    isUsedMrg(bool x)
+    { m_isUsed = (m_isUsed || x); }
 
     
-    std::string toString() const;
+    std::string
+    toString() const;
 
-    void dump(std::ostream& os = std::cerr) const;
-    void ddump() const;
+    void
+    dump(std::ostream& os = std::cerr) const;
+    
+    void
+    ddump() const;
 
   private:
-    void id(LM_id_t x)
-      { m_id = x; }
+    void
+    id(LM_id_t x)
+    { m_id = x; }
 
     friend class LoadMap;
     friend class LoadMapMgr;
@@ -163,12 +177,8 @@ public:
   private: 
     LM_id_t m_id;
     std::string m_name;
-    VMA m_loadAddr;
-    size_t m_size;
-    size_t m_isAvail;
 
-    VMA m_relocAmt;
-    
+    size_t m_isAvail;
     bool m_isUsed;
   };
 
@@ -182,37 +192,40 @@ public:
   };
 
   
-public: 
-  ALoadMap(const uint i = 16);
+public:
+  ALoadMap(const uint i = 32);
+
   virtual ~ALoadMap();
 
   // assumes ownership
-  virtual void 
+  virtual void
   lm_insert(ALoadMap::LM* x) = 0;
 
   
   // ------------------------------------------------------------
   // Access by id (1-based!)
   // ------------------------------------------------------------
-  uint size() const
-  { return m_lm_byId.size(); } 
+  uint
+  size() const
+  { return m_lm_byId.size(); }
 
-  // N.B.: 1-based since 0 is a NULL value
-  LM* lm(LM_id_t i) const
-  { return m_lm_byId[(i - 1)]; }
+  // N.B.: LM_id_t's are 1-based since 0 is a NULL value
+  LM*
+  lm(LM_id_t id) const
+  { return m_lm_byId[(id - 1)]; }
 
 
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
 
-  std::string 
+  std::string
   toString() const;
 
-  virtual void 
+  virtual void
   dump(std::ostream& os = std::cerr) const = 0;
 
-  void 
+  void
   ddump() const;
 
 protected:
@@ -233,31 +246,22 @@ public:
 
   struct lt_LM_nm
   {
-    inline bool 
+    inline bool
     operator()(const ALoadMap::LM* x, const ALoadMap::LM* y) const
-    { 
-      return (x->name() < y->name()); 
+    {
+      return (x->name() < y->name());
     }
   };
 
-  struct lt_LM_vma
-  {
-    inline bool 
-    operator()(const ALoadMap::LM* x, const ALoadMap::LM* y) const
-    { 
-      return (x->loadAddr() < y->loadAddr()); 
-    }
-  };
-
+  // FIXME: this doesn't need to be a multiset!
   typedef std::multiset<ALoadMap::LM*, lt_LM_nm> LMSet_nm;
-  typedef std::set<ALoadMap::LM*, lt_LM_vma> LMSet;
   
-public: 
-  LoadMap(const uint i = 16);
+public:
+  LoadMap(const uint i = 32);
   virtual ~LoadMap();
 
   // assumes ownership
-  virtual void 
+  virtual void
   lm_insert(ALoadMap::LM* x);
   
   // ------------------------------------------------------------
@@ -273,54 +277,28 @@ public:
   std::pair<LMSet_nm::iterator, LMSet_nm::iterator>
   lm_find(const std::string& nm) const;
 
-  LMSet_nm::iterator lm_begin_nm() 
+  LMSet_nm::iterator
+  lm_begin_nm()
   { return m_lm_byName.begin(); }
 
-  LMSet_nm::const_iterator lm_begin_nm() const 
+  LMSet_nm::const_iterator
+  lm_begin_nm() const
   { return m_lm_byName.begin(); }
 
-  LMSet_nm::iterator lm_end_nm() 
+  LMSet_nm::iterator
+  lm_end_nm() 
   { return m_lm_byName.end(); }
 
-  LMSet_nm::const_iterator lm_end_nm() const 
+  LMSet_nm::const_iterator
+  lm_end_nm() const 
   { return m_lm_byName.end(); }
-
-
-  // ------------------------------------------------------------
-  // Access by VMA
-  // ------------------------------------------------------------
-  ALoadMap::LM* lm_find(VMA ip) const;
-
-  LMSet::iterator lm_begin() 
-  { return m_lm_byVMA.begin(); }
-
-  LMSet::const_iterator lm_begin() const 
-  { return m_lm_byVMA.begin(); }
-
-  LMSet::iterator lm_end() 
-  { return m_lm_byVMA.end(); }
-
-  LMSet::const_iterator lm_end() const 
-  { return m_lm_byVMA.end(); }
-
-
-  LMSet::reverse_iterator lm_rbegin()
-  { return m_lm_byVMA.rbegin(); }
-
-  LMSet::const_reverse_iterator lm_rbegin() const
-  { return m_lm_byVMA.rbegin(); }
-
-  LMSet::reverse_iterator lm_rend()
-  { return m_lm_byVMA.rend(); }
-
-  LMSet::const_reverse_iterator lm_rend() const
-  { return m_lm_byVMA.rend(); }
 
 
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
-  void compute_relocAmt();
+  void
+  verify();
 
 
   // merge: Given an LoadMap y, merge y into x = 'this'.  Returns a
@@ -342,7 +320,6 @@ public:
 
 private:
   LMSet_nm m_lm_byName;
-  LMSet    m_lm_byVMA;
 };
 
 } // namespace Prof
@@ -350,7 +327,7 @@ private:
 inline bool 
 operator<(const Prof::LoadMap::LM x, const Prof::LoadMap::LM y)
 {
-  return (x.loadAddr() < y.loadAddr());
+  return (x.id() < y.id());
 }
 
 //***************************************************************************

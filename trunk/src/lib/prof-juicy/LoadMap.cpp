@@ -86,7 +86,8 @@ ALoadMap::ALoadMap(uint sz)
 ALoadMap::~ALoadMap()
 {
   for (LM_id_t i = 1; i <= size(); ++i) {
-    delete lm(i); // ALoadMap::LM*
+    ALoadMap::LM* lm = this->lm(i);
+    delete lm;
   }
   m_lm_byId.clear();
 }
@@ -110,11 +111,9 @@ ALoadMap::ddump() const
 
 //****************************************************************************
 
-ALoadMap::LM::LM(const std::string& name, VMA loadAddr, size_t size)
+ALoadMap::LM::LM(const std::string& name)
   : m_id(LM_id_NULL), m_name(name), 
-    m_loadAddr(loadAddr), m_size(size), 
     m_isAvail(true),
-    m_relocAmt(0),
     m_isUsed(false)
 {
 }
@@ -125,15 +124,12 @@ ALoadMap::LM::~LM()
 }
 
 
-void 
-ALoadMap::LM::compute_relocAmt()
+void
+ALoadMap::LM::verify()
 {
   BinUtil::LM* lm = new BinUtil::LM();
   try {
     lm->open(m_name.c_str());
-    if (lm->doUnrelocate(m_loadAddr)) {
-      m_relocAmt = m_loadAddr;
-    }
     delete lm;
   }
   catch (...) {
@@ -156,14 +152,10 @@ ALoadMap::LM::toString() const
 void 
 ALoadMap::LM::dump(std::ostream& os) const
 { 
-  using namespace std;
-  os << "0x" << hex << m_loadAddr << dec 
-     << " (+" << m_relocAmt << " = " 
-     << hex << (m_loadAddr + m_relocAmt) << dec << "): " 
-     << m_name << " [" << m_id << "]";
+  os << m_id << ": " << m_name;
 }
 
-
+ 
 void 
 ALoadMap::LM::ddump() const
 {
@@ -190,7 +182,6 @@ LoadMap::LoadMap(uint sz)
 LoadMap::~LoadMap()
 {
   m_lm_byName.clear();
-  m_lm_byVMA.clear();
 }
 
 
@@ -202,17 +193,8 @@ LoadMap::lm_insert(ALoadMap::LM* x)
   m_lm_byId.push_back(x);
   x->id(m_lm_byId.size()); // 1-based id
   
-  m_lm_byName.insert(x); // multiset insert always successful 
-
-  std::pair<LMSet::iterator, bool> ret = m_lm_byVMA.insert(x);
-  if (!ret.second) {
-    const LoadMap::LM* y = *(ret.first);
-    if (x->name() != y->name()) {
-      // Possibly perform additional checking to see y can be folded into x
-      DIAG_WMsg(1, "New LoadMap::LM '" << x->toString()
-		<< "' conflicts with existing '" << y->toString() << "'");
-    }
-  }
+  m_lm_byName.insert(x); // multiset insert always successful
+  // std::pair<LMSet::iterator, bool> ret // FIXME: ensure no duplicate
 }
 
 
@@ -228,37 +210,14 @@ LoadMap::lm_find(const std::string& nm) const
 }
 
 
-ALoadMap::LM* 
-LoadMap::lm_find(VMA ip) const
-{
-  static ALoadMap::LM key;
-
-  if (m_lm_byVMA.empty()) {
-    return NULL;
-  }
-
-  // NOTE: lower_bound(y) returns first z : ((z > y) || (z = y))
-  // NOTE: upper_bound(y) returns first z : (z > y)
-  key.loadAddr(ip);
-  LMSet::iterator it = m_lm_byVMA.upper_bound(&key);
-  if (it != m_lm_byVMA.begin()) {
-    --it;
-    return *it;
-  }
-  else {
-    return *it;
-  }
-}
-
-
-void 
-LoadMap::compute_relocAmt()
+void
+LoadMap::verify()
 {
   std::string errors;
 
   for (LM_id_t i = 1; i <= size(); ++i) {
     try {
-      lm(i)->compute_relocAmt();
+      lm(i)->verify();
     }
     catch (const Diagnostics::Exception& x) {
       errors += "  " + x.what() + "\n";
@@ -300,7 +259,7 @@ LoadMap::merge(const LoadMap& y)
       // y_lm matches zero or greater than one x_lm
 
       // Create x_lm for y_lm.  y_lm->id() is replaced by x_lm->id().
-      x_lm = new LoadMap::LM(y_lm->name(), y_lm->loadAddr(), y_lm->size());
+      x_lm = new LoadMap::LM(y_lm->name());
       lm_insert(x_lm);
       mrgEffect->push_back(MergeEffect(y_lm->id(), x_lm->id()));
     }
@@ -321,16 +280,8 @@ LoadMap::dump(std::ostream& os) const
 
   os << "{ Prof::LoadMap\n";
   for (LM_id_t i = 1; i <= size(); ++i) {
-    os << pre << i << " : ";
-    lm(i)->dump(os);
-    os << std::endl;
-  }
-
-  os << "-----------------------------\n";
-
-  for (LMSet::const_iterator it = lm_begin(); it != lm_end(); ++it) {
-    LM* lm = *it;
-    os << pre << lm->toString() << std::endl;
+    LM* lm = this->lm(i);
+    os << pre << i << " : " << lm->toString() << std::endl;
   }
   os << "}\n";
 }
