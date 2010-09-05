@@ -454,33 +454,13 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->name), fs, alloc));
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->description), fs, alloc));
 
-  if (fmtVersion >= HPCRUN_FMT_Version_20) {
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits[0]), fs));
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits[1]), fs));
-  }
-  else {
-    // TODO: deprecate old file version
-    uint64_t flags_19A;
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&flags_19A, fs));
-
-    x->flags = hpcrun_metricFlags_NULL;
-    x->flags.fields.ty = MetricFlags_Ty_Raw;
-    x->flags.fields.valFmt = ((flags_19A & MetricFlags_ValFmt_Real_19A)
-			      ? MetricFlags_ValFmt_Real 
-			      : MetricFlags_ValFmt_Int);
-  }
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits[0]), fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits[1]), fs));
 
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->period), fs));
 
-  if (fmtVersion >= HPCRUN_FMT_Version_20) {
-    HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->formula), fs, alloc));
-    HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->format), fs, alloc));
-  }
-  else {
-    // TODO: deprecate old file version
-    x->formula = NULL;
-    x->format = NULL;
-  }
+  HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->formula), fs, alloc));
+  HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->format), fs, alloc));
 
   return HPCFMT_OK;
 }

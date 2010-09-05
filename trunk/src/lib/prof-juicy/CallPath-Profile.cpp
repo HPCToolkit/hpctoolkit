@@ -685,8 +685,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'fmt-hdr'");
   }
-  if ( !(hdr.version >= HPCRUN_FMT_Version_19A) ) {
-    // TODO: deprecate old file version: ratchet this to 2.0x
+  if ( !(hdr.version >= HPCRUN_FMT_Version_20) ) {
     DIAG_Throw("unsupported file version '" << hdr.versionStr << "'");
   }
 
