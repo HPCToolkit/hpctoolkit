@@ -620,8 +620,7 @@ Profile::ddump() const
 
 static std::pair<Prof::CCT::ADynNode*, Prof::CCT::ADynNode*>
 cct_makeNode(Prof::CallPath::Profile& prof,
-	     const hpcrun_fmt_cct_node_t& nodeFmt,
-	     uint rFlags, Prof::LoadMap* loadmap);
+	     const hpcrun_fmt_cct_node_t& nodeFmt, uint rFlags);
 
 static void
 fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
@@ -827,7 +826,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   string mpiRankStr, tidStr;
   long   mpiRank = -1, tid = -1;
-  //const char* jobid = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_jobId);
+
+  // hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_jobId);
   val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_mpiRank);
   if (val) {
     mpiRankStr = val;
@@ -839,13 +839,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     tidStr = val;
     if (val[0] != '\0') { tid = StrUtil::toLong(tidStr); }
   }
-
-  // FIXME: temporary for dual-interpretations
-  bool isNewFormat = true; 
-  val = hpcfmt_nvpairList_search(&hdr->nvps, "nasty-message");
-  if (val) { isNewFormat = false; }
-
-  //val = hpcfmt_nvpairList_search(ehdr.&nvps, "to-find");
 
   bool isVirtualMetrics = false;
   val = hpcfmt_nvpairList_search(&(ehdr.nvps), FmtEpoch_NV_virtualMetrics);
@@ -1011,9 +1004,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
   // cct
   // ------------------------------------------------------------
-
-  LoadMap* loadmap_p = (isNewFormat) ? NULL : &loadmap; // FIXME:temporary
-  fmt_cct_fread(*prof, infs, rFlags, loadmap_p, numMetricsSrc, ctxtStr, outfs);
+  fmt_cct_fread(*prof, infs, rFlags, numMetricsSrc, ctxtStr, outfs);
 
 
   hpcrun_fmt_epochHdr_free(&ehdr, free);
@@ -1024,8 +1015,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
 int
 Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
-		       LoadMap* loadmap, uint numMetricsSrc,
-		       std::string ctxtStr, FILE* outfs)
+		       uint numMetricsSrc, std::string ctxtStr, FILE* outfs)
 {
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
 
@@ -1100,8 +1090,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // Create node and link to parent
     // ----------------------------------------------------------
 
-    std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 = 
-      cct_makeNode(prof, nodeFmt, rFlags, loadmap);
+    std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 =
+      cct_makeNode(prof, nodeFmt, rFlags);
     CCT::ADynNode* node = n2.first;
     CCT::ADynNode* node_sib = n2.second;
 
@@ -1351,9 +1341,7 @@ Profile::canonicalize(uint rFlags)
 
 static std::pair<Prof::CCT::ADynNode*, Prof::CCT::ADynNode*>
 cct_makeNode(Prof::CallPath::Profile& prof,
-	     const hpcrun_fmt_cct_node_t& nodeFmt,
-	     uint rFlags,
-	     Prof::LoadMap* loadmap /*FIXME:temp*/)
+	     const hpcrun_fmt_cct_node_t& nodeFmt, uint rFlags)
 {
   using namespace Prof;
 
@@ -1385,14 +1373,6 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   VMA lmIP = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
-  if (loadmap && (nodeFmt.id_parent != HPCRUN_FMT_CCTNodeId_NULL)) {
-    VMA ip_orig = lmIP;
-    LoadMap::LM* lm = loadmap->lm_find(ip_orig);
-
-    lmIP = ip_orig - lm->relocAmt(); // unrelocated ip
-    lmId = lm->id();
-  }
-
   if (lmId != ALoadMap::LM_id_NULL) {
     prof.loadMapMgr()->lm(lmId)->isUsed(true);
   }
@@ -1408,15 +1388,6 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   }
 
   if (lip) {
-    if (loadmap) {
-      VMA lip_ip = lush_lip_getLMIP(lip);
-
-      LoadMap::LM* lm = loadmap->lm_find(lip_ip);
-      
-      lush_lip_setLMId(lip, lm->id());
-      lush_lip_setLMIP(lip, lip_ip - lm->relocAmt()); // unrelocated ip
-    }
-
     ALoadMap::LM_id_t lip_lmId = lush_lip_getLMId(lip);
     if (lip_lmId != ALoadMap::LM_id_NULL) {
       prof.loadMapMgr()->lm(lip_lmId)->isUsed(true);

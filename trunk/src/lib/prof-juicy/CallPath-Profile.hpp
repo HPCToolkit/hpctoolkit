@@ -271,8 +271,7 @@ public:
 		  std::string ctxtStr, const char* filename, FILE* outfs);
 
   static int
-  fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
-		LoadMap* loadmap, uint numMetricsSrc,
+  fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,	uint numMetricsSrc,
 		std::string ctxtStr, FILE* outfs);
 
 

@@ -189,7 +189,6 @@ lazy_open_data_file(void)
                         HPCRUN_FMT_NV_tid, tidStr,
                         HPCRUN_FMT_NV_hostid, hostidStr,
                         HPCRUN_FMT_NV_pid, pidStr,
-                        //"nasty-message", "Please support <lm-id, lm-offset>!",
                         NULL);
   return fs;
 }
