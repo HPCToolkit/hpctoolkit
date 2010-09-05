@@ -113,8 +113,7 @@ static const int HPCRUN_FMT_EndianLen  = (sizeof(HPCRUN_FMT_Endian) - 1);
 
 
 // currently supported versions
-static const double HPCRUN_FMT_Version_20  = 2.0;
-static const double HPCRUN_FMT_Version_19A = 1.9;
+static const double HPCRUN_FMT_Version_20 = 2.0;
 
 
 typedef struct hpcrun_fmt_hdr_t {
