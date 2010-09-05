@@ -88,11 +88,12 @@ public:
   typedef std::set<ALoadMap::LM*, LoadMap::lt_LM_nm> LMSet_nm;
 
 public: 
-  LoadMapMgr(const uint i = 16);
+  LoadMapMgr(const uint i = 32);
+
   virtual ~LoadMapMgr();
 
   // assumes ownership
-  virtual void 
+  virtual void
   lm_insert(ALoadMap::LM* x);
 
   // ------------------------------------------------------------
@@ -105,16 +106,20 @@ public:
   LMSet_nm::iterator
   lm_find(const std::string& nm) const;
 
-  LMSet_nm::iterator lm_begin_nm() 
+  LMSet_nm::iterator
+  lm_begin_nm()
   { return m_lm_byName.begin(); }
 
-  LMSet_nm::const_iterator lm_begin_nm() const 
+  LMSet_nm::const_iterator
+  lm_begin_nm() const
   { return m_lm_byName.begin(); }
 
-  LMSet_nm::iterator lm_end_nm() 
+  LMSet_nm::iterator
+  lm_end_nm()
   { return m_lm_byName.end(); }
 
-  LMSet_nm::const_iterator lm_end_nm() const 
+  LMSet_nm::const_iterator
+  lm_end_nm() const
   { return m_lm_byName.end(); }
 
 
@@ -133,7 +138,7 @@ public:
   // 
   // ------------------------------------------------------------
 
-  virtual void 
+  virtual void
   dump(std::ostream& os = std::cerr) const;
 
 private:

@@ -975,10 +975,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   for (uint i = 0; i < num_lm; ++i) {
     string nm = loadmap_tbl.lst[i].name;
     RealPathMgr::singleton().realpath(nm);
-    VMA loadAddr = loadmap_tbl.lst[i].mapaddr;
-    size_t sz = 0;
 
-    LoadMap::LM* lm = new LoadMap::LM(nm, loadAddr, sz);
+    LoadMap::LM* lm = new LoadMap::LM(nm);
     loadmap.lm_insert(lm);
     
     DIAG_Assert(lm->id() == i + 1, "FIXME: Profile::fmt_epoch_fread: Expect lm id's to be in order to support dual-interpretations.");
@@ -987,7 +985,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   DIAG_MsgIf(DBG, loadmap.toString());
 
   try {
-    loadmap.compute_relocAmt();
+    // FIXME: move to Analysis::CallPath::overlayStaticStructureMain()
+    loadmap.verify();
   }
   catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(ctxtStr << ": Cannot fully process samples from unavailable load modules:\n" << x.what());
@@ -1204,7 +1203,6 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     loadmap_entry_t lm_entry;
     lm_entry.id = lm->id();
     lm_entry.name = const_cast<char*>(lm->name().c_str());
-    lm_entry.mapaddr = lm->id(); // avoid problems reading as a LoadMap!
     lm_entry.flags = 0; // TODO:flags
     
     hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
