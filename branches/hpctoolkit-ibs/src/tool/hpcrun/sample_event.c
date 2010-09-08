@@ -236,6 +236,14 @@ _hpcrun_sample_callpath_w_bt(epoch_t* epoch, void *context,
   return n;
 }
 
+// noop for backtraces -- used to make hpcrun_sample_callpath compatible w backtrace_t
+static void
+noop_bt(backtrace_t* bt, void* ibs_addr)
+{
+  ;
+}
+
+
 static cct_node_t*
 _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			int metricId,
@@ -249,8 +257,11 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
   /* check to see if shared library loadmap (of current epoch) has changed out from under us */
   epoch = hpcrun_check_for_new_loadmap(epoch);
 
+  cct_node_t* n = hpcrun_bt2cct(&(epoch->csdata), context, metricId, metricIncr, noop_bt, NULL, isSync);
+#if 0
   cct_node_t* n =
     hpcrun_backtrace2cct(&(epoch->csdata), context, metricId, metricIncr, skipInner, isSync);
+#endif
 
   // FIXME: n == -1 if sample is filtered
 

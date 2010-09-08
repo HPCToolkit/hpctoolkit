@@ -89,7 +89,13 @@
 #include <trampoline/common/trampoline.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/hpcrun_stats.h>
+#ifdef USE_OLD_BACKTRACE
 #include <lush/lush-backtrace.h>
+#else
+#define hpcrun_isLogicalUnwind() 0
+#endif // USE_OLD_BACKTRACE
+
+
 
 //***************************** Local Macros ********************************
 
@@ -112,10 +118,12 @@ cct_node_link(cct_node_t *, cct_node_t *);
 static inline bool
 implies(bool p, bool q) { return (!p || q); }
 
+#ifdef USE_OLD_BACKTRACE
 static cct_node_t*
 _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 		      int metricId, uint64_t metricIncr,
 		      int skipInner);
+#endif // USE_OLD_BACKTRACE
 
 static cct_node_t*
 _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
@@ -403,7 +411,6 @@ hpcrun_cct_get_child(hpcrun_cct_t *cct, cct_node_t* parent, frame_t *frm)
   return c;
 } 
 
-
 // See usage in header.
 cct_node_t*
 hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
@@ -505,6 +512,7 @@ hpcrun_cct_insert_bt(hpcrun_cct_t* cct, cct_node_t* node,
 //     otherwise, returns NULL.
 //-----------------------------------------------------------------------------
 
+#ifdef USE_OLD_BACKTRACE
 //
 // TODO: one more flag:
 //   backtrace needs to either:
@@ -532,6 +540,7 @@ hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 
   return n;
 }
+#endif // USE_OLD_BACKTRACE
 
 //
 // utility routine that does 3 things:
@@ -873,6 +882,7 @@ node_child_count(hpcrun_cct_t* tree, cct_node_t* node)
 #endif
 
 
+#ifdef USE_OLD_BACKTRACE
 static cct_node_t*
 _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 		      int metricId,
@@ -965,7 +975,10 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
     frame_t* prefix = td->tramp_frame + 1; // skip top frame
     size_t old_frame_count = td->cached_bt_end - prefix;
 
+    TMSG(BACKTRACE, "1: prefix=%p, old_frame_count=%d, new_frame_count=%d", prefix, old_frame_count, new_frame_count);
     hpcrun_cached_bt_adjust_size(new_frame_count + old_frame_count);
+    
+    TMSG(BACKTRACE, "2: prefix=%p, old_frame_count=%d, new_frame_count=%d", prefix, old_frame_count, new_frame_count);
 
     // put the old prefix in place
     memmove(td->cached_bt + new_frame_count, prefix, 
@@ -1026,6 +1039,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 
   return n;
 }
+#endif // USE_OLD_BACKTRACE
 
 static cct_node_t*
 _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
@@ -1103,7 +1117,7 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
   cct_node_t* cct_cursor = NULL;
 
   if (tramp_found) {
-    TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
+    TMSG(BACKTRACE, "*BT* tramp stop: conjoining backtraces");
     //
     // join current backtrace fragment to previous trampoline-marked prefix
     // and make this new conjoined backtrace the cached-backtrace
@@ -1111,7 +1125,19 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
     frame_t* prefix = td->tramp_frame + 1; // skip top frame
     size_t old_frame_count = td->cached_bt_end - prefix;
 
+    TMSG(BACKTRACE, "1: cached_bt loc=%p, prefix=%p, old_frame_count=%d, new_fr_cnt=%d",
+	 td->cached_bt + new_frame_count,
+	 prefix,
+	 old_frame_count,
+	 new_frame_count);
+
     hpcrun_cached_bt_adjust_size(new_frame_count + old_frame_count);
+
+    TMSG(BACKTRACE, "2: cached_bt loc=%p, prefix=%p, old_frame_count=%d, new_fr_cnt=%d",
+	 td->cached_bt + new_frame_count,
+	 prefix,
+	 old_frame_count,
+	 new_frame_count);
 
     // put the old prefix in place
     memmove(td->cached_bt + new_frame_count, prefix, 

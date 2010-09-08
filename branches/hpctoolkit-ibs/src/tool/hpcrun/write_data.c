@@ -69,7 +69,11 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#if 0
 #include <lush/lush-backtrace.h>
+#else
+#define hpcrun_isLogicalUnwind() 0
+#endif
 
 //*****************************************************************************
 // structs and types

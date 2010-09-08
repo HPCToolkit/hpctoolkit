@@ -325,7 +325,7 @@ hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
   thread_data_t* td    = hpcrun_get_thread_data();
 
   if (tramp_found) {
-    TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
+    TMSG(BACKTRACE, "*UNW COMMON* tramp stop: conjoining backtraces");
     //
     // join current backtrace fragment to previous trampoline-marked prefix
     // and make this new conjoined backtrace the cached-backtrace
