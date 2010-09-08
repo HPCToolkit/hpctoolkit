@@ -145,6 +145,7 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 // char*" variable in a cross-compiler way.
 #define HPCRUN_FMT_NV_prog     "program-name"
 #define HPCRUN_FMT_NV_progPath "program-path"
+#define HPCRUN_FMT_NV_envPath  "env-path"
 #define HPCRUN_FMT_NV_jobId    "job-id"
 #define HPCRUN_FMT_NV_mpiRank  "mpi-rank"
 #define HPCRUN_FMT_NV_tid      "thread-id"
