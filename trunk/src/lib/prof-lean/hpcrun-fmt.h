@@ -141,8 +141,8 @@ extern void
 hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 
 
-// Note: use #defines to avoid warnings about unused "static const
-// char*" variable in a cross-compiler way.
+// Note: use #defines to (portably) avoid warnings about unused
+// "static const char*" variables.
 #define HPCRUN_FMT_NV_prog     "program-name"
 #define HPCRUN_FMT_NV_progPath "program-path"
 #define HPCRUN_FMT_NV_envPath  "env-path"
@@ -151,6 +151,9 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 #define HPCRUN_FMT_NV_tid      "thread-id"
 #define HPCRUN_FMT_NV_hostid   "host-id"
 #define HPCRUN_FMT_NV_pid      "process-id"
+
+#define HPCRUN_FMT_NV_traceMinTime "trace-min-time"
+#define HPCRUN_FMT_NV_traceMaxTime "trace-max-time"
 
 
 //***************************************************************************

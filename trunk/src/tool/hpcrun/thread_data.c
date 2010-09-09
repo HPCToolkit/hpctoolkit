@@ -202,6 +202,12 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt)
   lushPthr_thread_init(&td->pthr_metrics);
 
   // ----------------------------------------
+  // tracing
+  // ----------------------------------------
+  td->trace_min_time_us = 0;
+  td->trace_max_time_us = 0;
+
+  // ----------------------------------------
   // IO support
   // ----------------------------------------
   td->hpcrun_file = NULL;
