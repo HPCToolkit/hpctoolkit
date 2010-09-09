@@ -66,6 +66,7 @@ AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
 failure_file=BUILD-FAILURE
+externs_file=externs.conf
 nobuild_cookie=.dont-build
 version_file="${srcdir}/.svn-revision"
 
@@ -73,14 +74,13 @@ version_file="${srcdir}/.svn-revision"
 # Prefix
 #------------------------------------------------------------
 
-# Ignore the user's prefix and always use our own.  It wouldn't work
-# as you might think and it just causes confusion.
+# Allow the user to set the prefix, but change the default to a subdir
+# of the build directory.  Autoconf requires this to be an absolute
+# path.
 
-ext_warn_user_prefix=no
-if test "x$prefix" != xNONE ; then
-    ext_warn_user_prefix=yes
+if test "x$prefix" = xNONE ; then
+    prefix="`pwd`/${host}"
 fi
-prefix="`pwd`/${host}"
 
 #------------------------------------------------------------
 # SVN revision
@@ -307,6 +307,58 @@ fi
 AC_MSG_RESULT([$enable_subdirs_mesg])
 
 #------------------------------------------------------------
+# Copy skeleton directories
+#------------------------------------------------------------
+
+# Support a separate build directory by copying the package skeleton
+# directories.  Just copy regular files and the patches subdir, don't
+# copy other subdirs.
+
+packages='binutils libdwarf libelf libmonitor libunwind libxml2
+old-monitor open-analysis symtabAPI xed2 xerces'
+
+if test "x$srcdir" != x.
+then
+    AC_MSG_CHECKING([copying package directories])
+    for pkg in $packages build-utils
+    do
+        if mkdir -p "$pkg" ; then : ; else
+	    AC_MSG_ERROR([unable to mkdir $pkg])
+	fi
+	for file in "${srcdir}/${pkg}/"*
+	do
+	    if test -f "$file" ; then
+		if cp -f "$file" "$pkg" ; then : ; else
+		    AC_MSG_ERROR([unable to copy $file])
+		fi
+	    fi
+	done
+	if test -d "${srcdir}/${pkg}/patches" ; then
+	    if mkdir -p "${pkg}/patches" ; then : ; else
+		AC_MSG_ERROR([unable to mkdir ${pkg}/patches])
+	    fi
+	    for file in "${srcdir}/${pkg}/patches/patch-"*
+	    do
+	        if test -f "$file" ; then
+		    if cp -f "$file" "${pkg}/patches" ; then : ; else
+			AC_MSG_ERROR([unable to copy $file])
+		    fi
+		fi
+	    done
+	fi
+    done
+
+    # Symlink the distfiles directory.
+    if test ! -d distfiles ; then
+	if ln -s "${srcdir}/distfiles" distfiles ; then : ; else
+	    AC_MSG_ERROR([unable to symlink distfiles])
+	fi
+    fi
+
+    AC_MSG_RESULT([done])
+fi
+
+#------------------------------------------------------------
 # Binutils: --with-binutils=PATH
 #------------------------------------------------------------
 
@@ -321,7 +373,7 @@ AC_MSG_CHECKING([binutils])
 
 binutils_avail=no
 binutils_prefix=no
-cookie="${srcdir}/binutils/${nobuild_cookie}"
+cookie="binutils/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_binutils" in
@@ -369,7 +421,7 @@ libdwarf_avail=no
 libdwarf_prefix=no
 libdwarf_inc=no
 libdwarf_lib=no
-cookie="${srcdir}/libdwarf/${nobuild_cookie}"
+cookie="libdwarf/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_libdwarf" in
@@ -433,7 +485,7 @@ libelf_avail=no
 libelf_prefix=no
 libelf_inc=no
 libelf_lib=no
-cookie="${srcdir}/libelf/${nobuild_cookie}"
+cookie="libelf/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_libelf" in
@@ -490,7 +542,7 @@ AC_MSG_CHECKING([libmonitor])
 
 libmonitor_avail=no
 libmonitor_prefix=no
-cookie="${srcdir}/libmonitor/${nobuild_cookie}"
+cookie="libmonitor/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_libmonitor" in
@@ -550,7 +602,7 @@ libunwind_avail=no
 libunwind_prefix=no
 libunwind_inc=no
 libunwind_lib=no
-cookie="${srcdir}/libunwind/${nobuild_cookie}"
+cookie="libunwind/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_libunwind" in
@@ -609,7 +661,7 @@ libxml2_avail=no
 libxml2_prefix=no
 libxml2_inc=no
 libxml2_lib=no
-cookie="${srcdir}/libxml2/${nobuild_cookie}"
+cookie="libxml2/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_libxml2" in
@@ -674,7 +726,7 @@ AC_MSG_CHECKING([old-monitor])
 
 old_monitor_avail=no
 old_monitor_prefix=no
-cookie="${srcdir}/old-monitor/${nobuild_cookie}"
+cookie="old-monitor/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_old_monitor" in
@@ -717,7 +769,7 @@ AC_MSG_CHECKING([open-analysis])
 
 open_analysis_avail=no
 open_analysis_prefix=no
-cookie="${srcdir}/open-analysis/${nobuild_cookie}"
+cookie="open-analysis/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_open_analysis" in
@@ -761,7 +813,7 @@ AC_MSG_CHECKING([symtabAPI])
 symtabAPI_avail=no
 symtabAPI_prefix=no
 symtabAPI_platform=no
-cookie="${srcdir}/symtabAPI/${nobuild_cookie}"
+cookie="symtabAPI/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_symtabAPI" in
@@ -848,7 +900,7 @@ AC_MSG_CHECKING([xed2])
 
 xed2_avail=no
 xed2_prefix=no
-cookie="${srcdir}/xed2/${nobuild_cookie}"
+cookie="xed2/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_xed2" in
@@ -891,7 +943,7 @@ AC_MSG_CHECKING([xerces])
 
 xerces_avail=no
 xerces_prefix=no
-cookie="${srcdir}/xerces/${nobuild_cookie}"
+cookie="xerces/${nobuild_cookie}"
 rm -f "$cookie"
 
 case "$with_xerces" in
@@ -957,6 +1009,14 @@ AC_SUBST([with_mpi])
 
 AC_OUTPUT
 
+# Copy externs.conf into prefix dir, this must come after AC_OUTPUT.
+if mkdir -p "$prefix" ; then : ; else
+    AC_MSG_ERROR([unable to mkdir $prefix])
+fi
+if cp -f "$externs_file" "$prefix" ; then : ; else
+    AC_MSG_ERROR([unable to copy $externs_file])
+fi
+
 rm -f "$failure_file"
 
 AC_MSG_NOTICE([------------------])
@@ -1001,12 +1061,4 @@ AC_MSG_NOTICE([symtabAPI: $symtabAPI_avail])
 AC_MSG_NOTICE([xed2: $xed2_avail])
 AC_MSG_NOTICE([xerces: $xerces_avail])
 AC_MSG_NOTICE([mpi: $with_mpi])
-
-if test "$ext_warn_user_prefix" = yes ; then
-    AC_MSG_WARN([The prefix option is not used.
-Externals builds various packages needed by HPCToolkit and installs
-them to its own intermediate directory.  Then, HPCToolkit copies the
-files that it needs to the real install directory.  Thus, the prefix
-option is not used for this build.])
-fi
 
