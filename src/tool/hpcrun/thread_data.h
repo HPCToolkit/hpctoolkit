@@ -185,6 +185,12 @@ typedef struct thread_data_t {
   lushPthr_t     pthr_metrics;
 
   // ----------------------------------------
+  // tracing
+  // ----------------------------------------
+  uint64_t trace_min_time_us;
+  uint64_t trace_max_time_us;
+
+  // ----------------------------------------
   // IO support
   // ----------------------------------------
   FILE* hpcrun_file;

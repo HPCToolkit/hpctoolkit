@@ -153,7 +153,7 @@ lazy_open_data_file(void)
 
   td->hpcrun_file = fs;
 
-  const uint bufSZ = 32;
+  const uint bufSZ = 32; // sufficient to hold a 64-bit integer in base 10
 
   const char* jobIdStr = os_job_id();
   if (!jobIdStr) {
@@ -175,6 +175,13 @@ lazy_open_data_file(void)
   char pidStr[bufSZ];
   snprintf(pidStr, bufSZ, "%u", os_pid());
 
+  char traceMinTimeStr[bufSZ];
+  snprintf(traceMinTimeStr, bufSZ, "%"PRIu64, td->trace_min_time_us);
+
+  char traceMaxTimeStr[bufSZ];
+  snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, td->trace_max_time_us);
+
+
 
   //
   // ==== file hdr =====
@@ -189,6 +196,8 @@ lazy_open_data_file(void)
                         HPCRUN_FMT_NV_tid, tidStr,
                         HPCRUN_FMT_NV_hostid, hostidStr,
                         HPCRUN_FMT_NV_pid, pidStr,
+			HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr,
+			HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr,
                         NULL);
   return fs;
 }

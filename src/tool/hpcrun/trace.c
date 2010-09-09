@@ -141,6 +141,11 @@ trace_append(unsigned int call_path_id)
 
     thread_data_t *td = hpcrun_get_thread_data();
 
+    if (td->trace_min_time_us == 0) {
+      td->trace_min_time_us = microtime;
+    }
+    td->trace_max_time_us = microtime;
+
     int ret1 = hpcfmt_int8_fwrite(microtime, td->trace_file);
     int ret2 = hpcfmt_int4_fwrite((uint32_t)call_path_id, td->trace_file);
     trace_file_validate(ret1 == HPCFMT_OK && ret2 == HPCFMT_OK, "append");
@@ -161,11 +166,11 @@ trace_close()
     trace_file_validate(ret == 0, "close");
     int rank = monitor_mpi_comm_rank();
     if (rank >= 0) {
-      char old[PATH_MAX];
-      char new[PATH_MAX];
-      files_trace_name(old, 0, PATH_MAX);
-      files_trace_name(new, rank, PATH_MAX);
-      rename(old, new);
+      char old_fnm[PATH_MAX];
+      char new_fnm[PATH_MAX];
+      files_trace_name(old_fnm, 0, PATH_MAX);
+      files_trace_name(new_fnm, rank, PATH_MAX);
+      rename(old_fnm, new_fnm);
     }
   }
 }
