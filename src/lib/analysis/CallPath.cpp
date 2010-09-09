@@ -290,21 +290,27 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 {
   const Prof::LoadMapMgr* loadmap = prof.loadMapMgr();
   Prof::Struct::Root* rootStrct = prof.structure()->root();
+
+  std::string errors;
   
-  for (Prof::LoadMapMgr::LMSet_nm::const_iterator it = loadmap->lm_begin_nm();
-       it != loadmap->lm_end_nm(); ++it) {
-    Prof::ALoadMap::LM* loadmap_lm = *it;
-    
-    // tallent:TODO: The call to LoadMap::compute_relocAmt() in
-    // Profile::hpcrun_fmt_epoch_fread has emitted a warning if a
-    // load module is unavailable.  Probably should be here...
-    if (loadmap_lm->isAvail() && loadmap_lm->isUsed()) {
-      const string& lm_nm = loadmap_lm->name();
-      
-      Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
-      Analysis::CallPath::overlayStaticStructureMain(prof, loadmap_lm, 
-						     lmStrct);
+  for (Prof::ALoadMap::LM_id_t i = 1; i < loadmap->size(); ++i) {
+    Prof::ALoadMap::LM* lm = loadmap->lm(i);
+
+    if (lm->isUsed()) {
+      try {
+	const string& lm_nm = lm->name();
+	
+	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
+	Analysis::CallPath::overlayStaticStructureMain(prof, lm, lmStrct);
+      }
+      catch (const Diagnostics::Exception& x) {
+	errors += "  " + x.what() + "\n";
+      }
     }
+  }
+
+  if (!errors.empty()) {
+    DIAG_EMsg("Cannot fully process samples because of errors reading load modules:\n" << errors);
   }
 
   Analysis::CallPath::normalize(prof, agent, doNormalizeTy);
@@ -317,7 +323,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
 void
 Analysis::CallPath::
-overlayStaticStructureMain(Prof::CallPath::Profile& prof, 
+overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 			   Prof::LoadMap::LM* loadmap_lm,
 			   Prof::Struct::LM* lmStrct)
 {
@@ -337,7 +343,12 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
       lm->open(lm_nm.c_str());
       lm->read(BinUtil::LM::ReadFlg_Proc);
     }
+    catch (const Diagnostics::Exception& x) {
+      delete lm;
+      DIAG_Throw(/*"While reading '" << lm_nm << "': " <<*/ x.what());
+    }
     catch (...) {
+      delete lm;
       DIAG_EMsg("While reading '" << lm_nm << "'...");
       throw;
     }

@@ -126,24 +126,7 @@ public:
     { m_name = (x) ? x: ""; }
 
 
-    // isAvail: this ALoadMap::LM is active in the sense that the
-    // associated load module is available and relocation information
-    // is accurate.  NOTE: a module is not available, e.g., if system
-    // libs changed or the user is executing on a different system.
-    bool
-    isAvail() const
-    { return m_isAvail; }
-
-    void
-    isAvail(bool x)
-    { m_isAvail = x; }
-
-
-    void
-    verify();
-
-    // isUsed: does this ALoadMap::LM have data in the CCT
-    // FIXME:tallent: should not be located here
+    // isUsed: e.g., does this ALoadMap::LM have associated measurement data
     bool
     isUsed() const
     { return m_isUsed; }
@@ -177,8 +160,6 @@ public:
   private: 
     LM_id_t m_id;
     std::string m_name;
-
-    size_t m_isAvail;
     bool m_isUsed;
   };
 
@@ -205,7 +186,7 @@ public:
   // ------------------------------------------------------------
   // Access by id (1-based!)
   // ------------------------------------------------------------
-  uint
+  LM_id_t
   size() const
   { return m_lm_byId.size(); }
 
@@ -297,10 +278,6 @@ public:
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
-  void
-  verify();
-
-
   // merge: Given an LoadMap y, merge y into x = 'this'.  Returns a
   // vector of MergeEffect describing changes that were made.  The
   // vector contains at most one MergeEffect for each LM_id_t (old_id)

@@ -123,7 +123,6 @@ LoadMapMgr::merge(const ALoadMap& y)
     if (!x_lm) {
       // Create x_lm for y_lm.
       x_lm = new ALoadMap::LM(y_lm->name());
-      x_lm->isAvail(y_lm->isAvail());
       lm_insert(x_lm);
     }
 
@@ -132,8 +131,6 @@ LoadMapMgr::merge(const ALoadMap& y)
       mrgEffect->push_back(LoadMap::MergeEffect(y_lm->id(), x_lm->id()));
     }
     
-    DIAG_Assert(x_lm->isAvail() == y_lm->isAvail(), "LoadMapMgr::merge: two LoadMapMgr::LM of the same name must both be (un)available: " << x_lm->name());
-
     x_lm->isUsedMrg(y_lm->isUsed());
   }
   
