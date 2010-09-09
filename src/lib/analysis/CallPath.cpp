@@ -748,7 +748,10 @@ coalesceStmts(Prof::CCT::ANode* node)
 	Prof::CCT::Stmt* n_stmtOrig = (*it).second;
 
 	Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt);
-	DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost: " << effct.toString());
+	DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost (" << effct.toString() << ") when merging y into x:\n"
+		    << "\tx: " << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
+		    << "\ty: " << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
+		    << "(Note: This should not happen because trace records contain a function's represenative IP.  Therefore, two traces that contain samples from the same function should have their conflict resolved in Prof::CallPath::Profile::merge())");
 	
 	// remove 'n_stmt' from tree
 	n_stmt->unlink();
