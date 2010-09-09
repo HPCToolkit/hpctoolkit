@@ -77,11 +77,13 @@ local_td(void)
   return &_local_td;
 }
 
+
 static bool
 local_true(void)
 {
   return true;
 }
+
 
 thread_data_t* (*hpcrun_get_thread_data)(void)  = &local_td;
 bool           (*hpcrun_td_avail)(void)         = &local_true;
@@ -101,7 +103,7 @@ hpcrun_thread_data_new(void)
   NMSG(THREAD_SPECIFIC,"new thread specific data");
   thread_data_t *td = hpcrun_get_thread_data();
 
-  td->suspend_sampling            = 1; // protect against spurious signals
+  td->suspend_sampling = 1; // protect against spurious signals
 
   // initialize thread_data with known bogus bit pattern so that missing
   // initializations will be apparent.
@@ -110,67 +112,102 @@ hpcrun_thread_data_new(void)
   return td;
 }
 
+
 void
 hpcrun_thread_memory_init(void)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   td->memstore.mi_start = NULL;
   hpcrun_make_memstore(&td->memstore);
+  td->mem_low = 0;
 }
 
+
 enum _local_int_const {
-  BACKTRACE_INIT_SZ      = 32,
+  BACKTRACE_INIT_SZ     = 32,
   NEW_BACKTRACE_INIT_SZ = 32
 };
+
 
 void
 hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt)
 {
+  // INVARIANT: hpcrun_thread_memory_init() has been called
+  // INVARIANT: suspend_sampling is already set
+
   thread_data_t* td = hpcrun_get_thread_data();
-  hpcrun_init_handling_sample(td, 0, id);
 
-  td->id                          = id;
-  td->mem_low                     = 0;
-  td->epoch                       = NULL;
+  // ----------------------------------------
+  // normalized thread id (monitor-generated)
+  // ----------------------------------------
+  td->id = id;
 
+  // ----------------------------------------
+  // hpcrun_malloc() memory data structures
+  // ----------------------------------------
+  // handled by hpcrun_thread_memory_init()
+
+  // ----------------------------------------
+  // sample sources
+  // ----------------------------------------
+  memset(&td->eventSet, 0, sizeof(td->eventSet));
+  memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
+
+  td->last_time_us = 0;
+
+  // ----------------------------------------
+  // epoch: loadmap + cct + cct_ctxt
+  // ----------------------------------------
+  td->epoch = hpcrun_malloc(sizeof(epoch_t));
+  td->epoch->csdata_ctxt = copy_thr_ctxt(thr_ctxt);
+
+  // ----------------------------------------
   // backtrace buffer
+  // ----------------------------------------
+  td->unwind = NULL;
   td->btbuf = hpcrun_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
   td->bufend = td->btbuf + BACKTRACE_INIT_SZ;
   td->bufstk = td->bufend;  // FIXME: is this needed?
 
   hpcrun_bt_init(&(td->bt), NEW_BACKTRACE_INIT_SZ);
 
-  // hpcrun file
-  td->hpcrun_file                 = NULL;
+  // ----------------------------------------
+  // trampoline
+  // ----------------------------------------
+  td->tramp_present     = false;
+  td->tramp_retn_addr   = NULL;
+  td->tramp_loc         = NULL;
+  td->cached_bt         = hpcrun_malloc(sizeof(frame_t)
+					* CACHED_BACKTRACE_SIZE);
+  td->cached_bt_end     = td->cached_bt;          
+  td->cached_bt_buf_end = td->cached_bt + CACHED_BACKTRACE_SIZE;
+  td->tramp_frame       = NULL;
+  td->tramp_cct_node    = NULL;
 
-  // locks
-  td->fnbounds_lock               = 0;
-  td->splay_lock                  = 0;
+  // ----------------------------------------
+  // exception stuff
+  // ----------------------------------------
+  memset(&td->bad_unwind, 0, sizeof(td->bad_unwind));
+  memset(&td->mem_error, 0, sizeof(td->mem_error));
+  hpcrun_init_handling_sample(td, 0, id);
+  td->splay_lock    = 0;
+  td->fnbounds_lock = 0;
 
-  // trampolines
-  td->tramp_present               = false;
-  td->tramp_retn_addr             = NULL;
-  td->tramp_loc                   = NULL;
-  td->cached_bt                   = hpcrun_malloc(sizeof(frame_t) * CACHED_BACKTRACE_SIZE);
-  td->cached_bt_end               = td->cached_bt;          
-  td->cached_bt_buf_end           = td->cached_bt + CACHED_BACKTRACE_SIZE;
-  td->tramp_frame                 = NULL;
-  td->tramp_cct_node              = NULL;
+  // N.B.: suspend_sampling is already set!
 
-  td->trace_file                  = NULL;
-  td->last_time_us                = 0;
-
+  // ----------------------------------------
+  // Logical unwinding
+  // ----------------------------------------
   lushPthr_init(&td->pthr_metrics);
   lushPthr_thread_init(&td->pthr_metrics);
 
-  memset(&td->bad_unwind, 0, sizeof(td->bad_unwind));
-  memset(&td->mem_error, 0, sizeof(td->mem_error));
-  memset(&td->eventSet, 0, sizeof(td->eventSet));
-  memset(&td->ss_state, UNINIT, sizeof(td->ss_state));
-
-  td->epoch              = hpcrun_malloc(sizeof(epoch_t));
-  td->epoch->csdata_ctxt = copy_thr_ctxt(thr_ctxt);
+  // ----------------------------------------
+  // IO support
+  // ----------------------------------------
+  td->hpcrun_file = NULL;
+  td->trace_file  = NULL;
 }
+
 
 void
 hpcrun_cached_bt_adjust_size(size_t n)
@@ -188,8 +225,10 @@ hpcrun_cached_bt_adjust_size(size_t n)
   td->cached_bt_end     = newbuf + idx;
 }
 
+
 frame_t*
-hpcrun_expand_btbuf(void){
+hpcrun_expand_btbuf(void)
+{
   thread_data_t* td = hpcrun_get_thread_data();
   frame_t* unwind = td->unwind;
 
@@ -221,6 +260,7 @@ hpcrun_expand_btbuf(void){
   /* return new unwind pointer */
   return newbt+recsz;
 }
+
 
 void
 hpcrun_ensure_btbuf_avail(void)
@@ -261,6 +301,7 @@ hpcrun_set_thread0_data(void)
   hpcrun_set_thread_data(&_local_td);
 }
 
+
 // FIXME: use hpcrun_malloc ??
 thread_data_t *
 hpcrun_allocate_thread_data(void)
@@ -269,12 +310,14 @@ hpcrun_allocate_thread_data(void)
   return malloc(sizeof(thread_data_t));
 }
 
+
 static bool
 thread_specific_td_avail(void)
 {
   thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
   return !(ret == NULL);
 }
+
 
 thread_data_t *
 thread_specific_td(void)
@@ -285,6 +328,7 @@ thread_specific_td(void)
   }
   return ret;
 }
+
 
 void
 hpcrun_threaded_data(void)

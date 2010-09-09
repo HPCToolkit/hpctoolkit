@@ -109,15 +109,33 @@ typedef struct {
 
 
 typedef struct thread_data_t {
-  // monitor-generated thread id
+  // ----------------------------------------
+  // normalized thread id (monitor-generated)
+  // ----------------------------------------
   int id;
 
-  // hpcrun_malloc memory data structures
-
+  // ----------------------------------------
+  // hpcrun_malloc() memory data structures
+  // ----------------------------------------
   hpcrun_meminfo_t memstore;
   int              mem_low;
 
+  // ----------------------------------------
+  // sample sources
+  // ----------------------------------------
+  int            eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
+  source_state_t ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
+
+  uint64_t       last_time_us; // microseconds
+
+  // ----------------------------------------
+  // epoch: loadmap + cct + cct_ctxt
+  // ----------------------------------------
+  epoch_t* epoch;
+
+  // ----------------------------------------
   // backtrace buffer
+  // ----------------------------------------
 
   // btbuf                                                      bufend
   // |                                                            |
@@ -129,50 +147,49 @@ typedef struct thread_data_t {
   //                        |              |
   //                      unwind         bufstk
   
-  frame_t*       unwind;    // current frame
-  frame_t*       btbuf; 	   // innermost frame in new backtrace
-  frame_t*       bufend;	   // 
-  frame_t*       bufstk;	   // innermost frame in cached backtrace
+  frame_t* unwind;    // current frame
+  frame_t* btbuf;     // innermost frame in new backtrace
+  frame_t* bufend;
+  frame_t* bufstk;    // innermost frame in cached backtrace
 
-  backtrace_t    bt;        // backtrace used for unwinding
+  backtrace_t bt;     // backtrace used for unwinding
 
-  // the loadmap + cct + cct_ctxt = epoch
-  epoch_t*         epoch;
+  // ----------------------------------------
+  // trampoline
+  // ----------------------------------------
+  bool    tramp_present;   // TRUE if a trampoline installed; FALSE otherwise
+  void*   tramp_retn_addr; // return address that the trampoline replaced
+  void*   tramp_loc;       // current (stack) location of the trampoline
+  frame_t* cached_bt;         // the latest backtrace (start)
+  frame_t* cached_bt_end;     // the latest backtrace (end)
+  frame_t* cached_bt_buf_end; // the end of the cached backtrace buffer
+  frame_t* tramp_frame;       // (cached) frame assoc. w/ cur. trampoline loc.
+  cct_node_t* tramp_cct_node; // cct node associated with the trampoline
 
+  // ----------------------------------------
   // exception stuff
+  // ----------------------------------------
   sigjmp_buf_t     bad_unwind;
   sigjmp_buf_t     mem_error;
   int              handling_sample;
   int              splay_lock;
   int              fnbounds_lock;
 
-  // sample sources
-  int              eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
-  source_state_t   ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
-
-  // stand-alone flag to suspend sampling during some synchronous calls to an hpcrun
-  // mechanism
-  //
+  // stand-alone flag to suspend sampling during some synchronous
+  // calls to an hpcrun mechanism
   int              suspend_sampling;
-  //
-  // trampoline related storage
-  //
-  bool               tramp_present;      // TRUE if there is a trampoline installed, FALSE otherwise
-  void*              tramp_retn_addr;    // the return address that the trampoline replaced
-  void*              tramp_loc;          // current (stack) location of the trampoline
-  frame_t*    cached_bt;          // the latest backtrace (start)
-  frame_t*    cached_bt_end;      // the latest backtrace (end)
-  frame_t*    cached_bt_buf_end;  // the end of the cached backtrace buffer
-  frame_t*    tramp_frame;        // (cached) frame associated with current trampoline location
-  cct_node_t* tramp_cct_node;     //  cct node associated with the trampoline
 
+  // ----------------------------------------
+  // Logical unwinding
+  // ----------------------------------------
+  lushPthr_t     pthr_metrics;
+
+  // ----------------------------------------
   // IO support
-  FILE*            hpcrun_file;
-  FILE*            trace_file;
+  // ----------------------------------------
+  FILE* hpcrun_file;
+  FILE* trace_file;
 
-  uint64_t         last_time_us; // microseconds
-
-  lushPthr_t      pthr_metrics;
 } thread_data_t;
 
 #define TD_GET(field) hpcrun_get_thread_data()->field
