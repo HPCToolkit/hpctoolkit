@@ -983,14 +983,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   DIAG_MsgIf(DBG, loadmap.toString());
 
-  try {
-    // FIXME: move to Analysis::CallPath::overlayStaticStructureMain()
-    loadmap.verify();
-  }
-  catch (const Diagnostics::Exception& x) {
-    DIAG_EMsg(ctxtStr << ": Cannot fully process samples from unavailable load modules:\n" << x.what());
-  }
-
   std::vector<ALoadMap::MergeEffect>* mrgEffect =
     prof->loadMapMgr()->merge(loadmap);
   DIAG_Assert(mrgEffect->empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);

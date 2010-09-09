@@ -112,31 +112,13 @@ ALoadMap::ddump() const
 //****************************************************************************
 
 ALoadMap::LM::LM(const std::string& name)
-  : m_id(LM_id_NULL), m_name(name), 
-    m_isAvail(true),
-    m_isUsed(false)
+  : m_id(LM_id_NULL), m_name(name), m_isUsed(false)
 {
 }
 
 
 ALoadMap::LM::~LM()
 {
-}
-
-
-void
-ALoadMap::LM::verify()
-{
-  BinUtil::LM* lm = new BinUtil::LM();
-  try {
-    lm->open(m_name.c_str());
-    delete lm;
-  }
-  catch (...) {
-    delete lm;
-    m_isAvail = false;
-    DIAG_Throw("Cannot open '" << m_name << "'");
-  }
 }
 
 
@@ -210,26 +192,6 @@ LoadMap::lm_find(const std::string& nm) const
 }
 
 
-void
-LoadMap::verify()
-{
-  std::string errors;
-
-  for (LM_id_t i = 1; i <= size(); ++i) {
-    try {
-      lm(i)->verify();
-    }
-    catch (const Diagnostics::Exception& x) {
-      errors += "  " + x.what() + "\n";
-    }
-  }
-  
-  if (!errors.empty()) {
-    DIAG_Throw(errors);
-  }
-}
-
-
 std::vector<LoadMap::MergeEffect>*
 LoadMap::merge(const LoadMap& y)
 {
@@ -263,8 +225,6 @@ LoadMap::merge(const LoadMap& y)
       lm_insert(x_lm);
       mrgEffect->push_back(MergeEffect(y_lm->id(), x_lm->id()));
     }
-
-    DIAG_Assert(x_lm->isAvail() == y_lm->isAvail(), "LoadMap::merge: two LoadMap::LM of the same name must both be (un)available: " << x_lm->name());
 
     x_lm->isUsedMrg(y_lm->isUsed());
   }
