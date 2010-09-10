@@ -817,12 +817,18 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   const char* val;
 
+  // -------------------------
+  // program name
+  // -------------------------
   string progNm;
   val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_prog);
   if (val && strlen(val) > 0) {
     progNm = val;
   }
 
+  // -------------------------
+  // parallelism context (mpi rank, thread id)
+  // -------------------------
   string mpiRankStr, tidStr;
   long   mpiRank = -1, tid = -1;
 
@@ -839,6 +845,48 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     if (val[0] != '\0') { tid = StrUtil::toLong(tidStr); }
   }
 
+  // -------------------------
+  // trace information
+  // -------------------------
+
+  bool     haveTrace = false;
+  string   traceFileName;
+
+  string   traceMinTimeStr, traceMaxTimeStr;
+  uint64_t traceMinTime = 0, traceMaxTime = 0;
+
+  val = hpcfmt_nvpairList_search(&(ehdr.nvps), HPCRUN_FMT_NV_traceMinTime);
+  if (val) {
+    traceMinTimeStr = val;
+    if (val[0] != '\0') { traceMinTime = StrUtil::toLong(traceMinTimeStr); }
+  }
+
+  val = hpcfmt_nvpairList_search(&(ehdr.nvps), HPCRUN_FMT_NV_traceMaxTime);
+  if (val) {
+    traceMaxTimeStr = val;
+    if (val[0] != '\0') { traceMaxTime = StrUtil::toLong(traceMaxTimeStr); }
+  }
+
+  haveTrace = (traceMinTime != 0 && traceMaxTime != 0);
+
+  if (haveTrace) {
+    // TODO: extract trace file name from profile
+    static const string ext_prof = string(".") + HPCRUN_ProfileFnmSfx;
+    static const string ext_trace = string(".") + HPCRUN_TraceFnmSfx;
+
+    traceFileName = profFileName;
+    size_t ext_pos = traceFileName.find(ext_prof);
+    if (ext_pos != string::npos) {
+      traceFileName.replace(traceFileName.begin() + ext_pos,
+			    traceFileName.end(), ext_trace);
+      // DIAG_Assert(FileUtil::isReadable(traceFileName));
+    }
+  }
+
+  // -------------------------
+  // 
+  // -------------------------
+
   bool isVirtualMetrics = false;
   val = hpcfmt_nvpairList_search(&(ehdr.nvps), FmtEpoch_NV_virtualMetrics);
   if (val && strcmp(val, "0") != 0) {
@@ -848,7 +896,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
 
   // ----------------------------------------
-  // 
+  // make CallPath::Profile
   // ----------------------------------------
   
   prof = new Profile(progNm);
@@ -862,19 +910,9 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   prof->m_profileFileName = profFileName;
 
-  // TODO: extract trace file name from profile
-  string t_fnm = profFileName;
-  static const string ext_prof = string(".") + HPCRUN_ProfileFnmSfx;
-  static const string ext_trace = string(".") + HPCRUN_TraceFnmSfx;
-  
-  size_t ext_pos = t_fnm.find(ext_prof);
-
-  if (ext_pos != string::npos) {
-    t_fnm.replace(t_fnm.begin() + ext_pos, t_fnm.end(), ext_trace);
-    if (FileUtil::isReadable(t_fnm)) {
-      prof->m_traceFileName = t_fnm;
-      prof->m_traceFileNameSet.insert(t_fnm);
-    }
+  if (haveTrace) {
+    prof->m_traceFileName = traceFileName;
+    prof->m_traceFileNameSet.insert(traceFileName);
   }
 
 
