@@ -180,10 +180,10 @@ hpcrun_sample_callpath(void *context, int metricId,
 	hpcrun_cct_t* cct = &(td->epoch->csdata);
 
 	void *func_start_pc = NULL, *func_end_pc = NULL;
-	//load_module_t* lm = NULL;
-	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc);
+	load_module_t* lm = NULL;
+	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc, &lm);
 
-	ip_normalized_t pc_proxy = hpcrun_normalize_ip(func_start_pc, NULL);
+	ip_normalized_t pc_proxy = hpcrun_normalize_ip(func_start_pc, lm);
 
 	frame_t frm = { .ip_norm = pc_proxy };
 	cct_node_t* func_proxy = hpcrun_cct_get_child(cct, node->parent, &frm);

@@ -296,7 +296,7 @@ validateTroll(void* addr, void* arg)
   isInCode = (mod_beg || proc_beg);
 #else
   void *proc_beg = NULL, *proc_end = NULL;
-  int ret = fnbounds_enclosing_addr(addr, &proc_beg, &proc_end);
+  int ret = fnbounds_enclosing_addr(addr, &proc_beg, &proc_end, NULL);
   isInCode = (ret == 0) && proc_beg;
 #endif
   

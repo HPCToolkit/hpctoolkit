@@ -59,7 +59,7 @@ void x86_dump_intervals(char  *addr)
   unwind_interval *u;
   interval_status intervals;
 
-  fnbounds_enclosing_addr(addr, &s, &e);
+  fnbounds_enclosing_addr(addr, &s, &e, NULL);
 
   intervals = x86_build_intervals(s, e - s, 0);
 

@@ -92,7 +92,7 @@ fnbounds_init()
 }
 
 
-int 
+int
 fnbounds_query(void *pc)
 {
   assert(0);
@@ -100,7 +100,7 @@ fnbounds_query(void *pc)
 }
 
 
-int 
+int
 fnbounds_add(char *module_name, void *start, void *end)
 {
   assert(0);
@@ -108,12 +108,16 @@ fnbounds_add(char *module_name, void *start, void *end)
 }
 
 
-int 
-fnbounds_enclosing_addr(void *addr, void **start, void **end)
+int
+fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
 {
-  return
-    fnbounds_table_lookup(hpcrun_nm_addrs, hpcrun_nm_addrs_len,
-			  addr, start, end);
+  load_module_t* lm_ = hpcrun_getLoadmap()->lm_head;
+  int ret = fnbounds_table_lookup(hpcrun_nm_addrs, hpcrun_nm_addrs_len,
+				  ip, start, end);
+  if (lm) {
+    *lm = lm_;
+  }
+  return ret;
 }
 
 

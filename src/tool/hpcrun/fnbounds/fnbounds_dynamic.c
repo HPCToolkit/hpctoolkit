@@ -151,18 +151,27 @@ static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
 // forward declarations
 //*********************************************************************
 
-static void        fnbounds_tmpdir_remove();
-static int         fnbounds_tmpdir_create();
-static char *      fnbounds_tmpdir_get();
+static void
+fnbounds_tmpdir_remove();
 
-static dso_info_t *fnbounds_dso_info_get(void *pc);
-static dso_info_t *fnbounds_compute(const char *filename,
-				    void *start, void *end);
+static int
+fnbounds_tmpdir_create();
 
-static void        fnbounds_map_executable();
+static char *
+fnbounds_tmpdir_get();
+
+static load_module_t *
+fnbounds_get_loadModule(void *pc);
+
+static dso_info_t *
+fnbounds_compute(const char *filename, void *start, void *end);
+
+static void
+fnbounds_map_executable();
 
 
-static const char *mybasename(const char *string);
+static const char *
+mybasename(const char *string);
 
 static char *nm_command = 0;
 
@@ -206,28 +215,35 @@ fnbounds_init()
 
 
 int
-fnbounds_enclosing_addr(void *pc, void **start, void **end)
+fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
 {
   FNBOUNDS_LOCK;
 
   int ret = 1; // failure unless otherwise reset to 0 below
-
-  dso_info_t *r = fnbounds_dso_info_get(pc);
   
-  if (r && r->nsymbols > 0) { 
-    void * relative_pc = pc;
-    if (r->relocate) {
-      relative_pc =  
-	(void *) (((unsigned long) relative_pc) - r->start_to_ref_dist);
+  load_module_t *lm_ = fnbounds_get_loadModule(ip);
+  dso_info_t *dso = lm_->dso_info;
+  
+  if (dso && dso->nsymbols > 0) {
+    void *ip_norm = ip;
+    if (dso->relocate) {
+      ip_norm = (void *) (((unsigned long) ip_norm) - dso->start_to_ref_dist);
     }
 
-    ret =  fnbounds_table_lookup(r->table, r->nsymbols, relative_pc, 
-				 (void **) start, (void **) end);
+    // N.B.: works on normalized IPs
+    ret = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm, 
+				(void **) start, (void **) end);
 
-    if (ret == 0 && r->relocate) {
-      *start = PERFORM_RELOCATION(*start, r->start_to_ref_dist);
-      *end   = PERFORM_RELOCATION(*end  , r->start_to_ref_dist);
+    // Convert 'start' and 'end' into unnormalized IPs since they are
+    // currently normalized.
+    if (ret == 0 && dso->relocate) {
+      *start = PERFORM_RELOCATION(*start, dso->start_to_ref_dist);
+      *end   = PERFORM_RELOCATION(*end  , dso->start_to_ref_dist);
     }
+  }
+
+  if (lm) {
+    *lm = lm_;
   }
 
   FNBOUNDS_UNLOCK;
@@ -472,11 +488,12 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
 }
 
 
-static dso_info_t *
-fnbounds_dso_info_get(void *pc)
+static load_module_t *
+fnbounds_get_loadModule(void *pc)
 {
   load_module_t* lm = hpcrun_loadmap_findByAddr(pc, pc);
-  dso_info_t* dso_open = (lm) ? lm->dso_info : NULL;
+  dso_info_t* dso = (lm) ? lm->dso_info : NULL;
+
   // We can't call dl_iterate_phdr() in general because catching a
   // sample at just the wrong point inside dlopen() will segfault or
   // deadlock.
@@ -484,20 +501,19 @@ fnbounds_dso_info_get(void *pc)
   // However, the risk is small, and if we're willing to take the
   // risk, then analyzing the new DSO here allows us to sample inside
   // an init constructor.
-  //
-  if (!dso_open && ENABLED(DLOPEN_RISKY) && hpcrun_dlopen_pending() > 0) {
+  if (!dso && ENABLED(DLOPEN_RISKY) && hpcrun_dlopen_pending() > 0) {
     char module_name[PATH_MAX];
     void *mstart, *mend;
     
     if (dylib_find_module_containing_addr(pc, module_name, &mstart, &mend)) {
-      dso_open = fnbounds_compute(module_name, mstart, mend);
-      if (dso_open) {
-	hpcrun_loadmap_map(dso_open);
+      dso = fnbounds_compute(module_name, mstart, mend);
+      if (dso) {
+	lm = hpcrun_loadmap_map(dso);
       }
     }
   }
   
-  return dso_open;
+  return lm;
 }
 
 

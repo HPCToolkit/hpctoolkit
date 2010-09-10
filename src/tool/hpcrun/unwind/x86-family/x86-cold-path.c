@@ -126,12 +126,12 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
       TMSG(COLD_CODE,"potential cold code jmp detected in routine starting @"
 	   " %p (location in routine = %p)",iarg->beg,ins);
       void *beg, *end;
-      if (fnbounds_enclosing_addr(branch_target, &beg, &end)){
+      if (fnbounds_enclosing_addr(branch_target, &beg, &end, NULL)) {
 	EMSG("Weird result! jmp @ %p branch_target %p has no function bounds",
 	      ins, branch_target);
 	return false;
       }
-      if (branch_target == beg){
+      if (branch_target == beg) {
 	TMSG(COLD_CODE,"  --jump is a regular tail call,"
 	     " NOT a cold code return");
 	return false;
