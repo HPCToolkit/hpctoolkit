@@ -67,13 +67,15 @@
     <!--   db-glob:        file glob describing files in metric db -->
     <!--   db-id:          id within metric db -->
     <!--   db-num-metrics: number of metrics in db -->
+    <!--   db-header-sz:   size (in bytes) of a db file header -->
     <!ELEMENT MetricDB EMPTY>
     <!ATTLIST MetricDB
 	      i              CDATA #REQUIRED
 	      n              CDATA #REQUIRED
 	      db-glob        CDATA #IMPLIED
 	      db-id          CDATA #IMPLIED
-	      db-num-metrics CDATA #IMPLIED>
+	      db-num-metrics CDATA #IMPLIED
+	      db-header-sz   CDATA #IMPLIED>
 
     <!-- LoadModuleTable assigns a short name to a load module -->
     <!ELEMENT LoadModuleTable (LoadModule)*>

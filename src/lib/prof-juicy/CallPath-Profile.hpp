@@ -338,8 +338,10 @@ private:
   uint32_t m_raToCallsiteOfst;
 
   std::string m_profileFileName; // non-empty, if relevant
+
   std::string m_traceFileName;   // non-empty, if relevant
   std::set<std::string> m_traceFileNameSet;
+  uint64_t m_traceMinTime, m_traceMaxTime;
 
   //typedef std::map<std::string, std::string> StrToStrMap;
   //StrToStrMap m_nvPairMap;

@@ -164,9 +164,16 @@ static const char HPCTRACE_FMT_Magic[]   = "HPCRUN-trace______"; // 18 bytes
 static const char HPCTRACE_FMT_Version[] = "01.00";              // 5 bytes
 static const char HPCTRACE_FMT_Endian[]  = "b";                  // 1 byte
 
-static const int HPCTRACE_FMT_MagicLen   = (sizeof(HPCTRACE_FMT_Magic) - 1);
-static const int HPCTRACE_FMT_VersionLen = (sizeof(HPCTRACE_FMT_Version) - 1);
-static const int HPCTRACE_FMT_EndianLen  = (sizeof(HPCTRACE_FMT_Endian) - 1);
+#define HPCTRACE_FMT_MagicLenX   (sizeof(HPCTRACE_FMT_Magic) - 1)
+#define HPCTRACE_FMT_VersionLenX (sizeof(HPCTRACE_FMT_Version) - 1)
+#define HPCTRACE_FMT_EndianLenX  (sizeof(HPCTRACE_FMT_Endian) - 1)
+
+static const int HPCTRACE_FMT_MagicLen   = HPCTRACE_FMT_MagicLenX;
+static const int HPCTRACE_FMT_VersionLen = HPCTRACE_FMT_VersionLenX;
+static const int HPCTRACE_FMT_EndianLen  = HPCTRACE_FMT_EndianLenX;
+
+static const int HPCTRACE_FMT_HeaderLen = 
+  (HPCTRACE_FMT_MagicLenX + HPCTRACE_FMT_VersionLenX + HPCTRACE_FMT_EndianLenX);
 
 
 int
@@ -187,12 +194,18 @@ static const char HPCMETRICDB_FMT_Magic[]   = "HPCPROF-metricdb__"; // 18 bytes
 static const char HPCMETRICDB_FMT_Version[] = "00.10";              // 5 bytes
 static const char HPCMETRICDB_FMT_Endian[]  = "b";                  // 1 byte
 
-static const int HPCMETRICDB_FMT_MagicLen = 
-  (sizeof(HPCMETRICDB_FMT_Magic) - 1);
-static const int HPCMETRICDB_FMT_VersionLen =
-  (sizeof(HPCMETRICDB_FMT_Version) - 1);
-static const int HPCMETRICDB_FMT_EndianLen =
-  (sizeof(HPCMETRICDB_FMT_Endian) - 1);
+#define HPCMETRICDB_FMT_MagicLenX   (sizeof(HPCMETRICDB_FMT_Magic) - 1)
+#define HPCMETRICDB_FMT_VersionLenX (sizeof(HPCMETRICDB_FMT_Version) - 1)
+#define HPCMETRICDB_FMT_EndianLenX  (sizeof(HPCMETRICDB_FMT_Endian) - 1)
+
+static const int HPCMETRICDB_FMT_MagicLen   = HPCMETRICDB_FMT_MagicLenX;
+static const int HPCMETRICDB_FMT_VersionLen = HPCMETRICDB_FMT_VersionLenX;
+static const int HPCMETRICDB_FMT_EndianLen  = HPCMETRICDB_FMT_EndianLenX;
+
+static const int HPCMETRICDB_FMT_HeaderLen = 
+  (HPCMETRICDB_FMT_MagicLenX + HPCMETRICDB_FMT_VersionLenX
+   + HPCMETRICDB_FMT_EndianLenX);
+
 
 
 typedef struct hpcmetricDB_fmt_hdr_t {
