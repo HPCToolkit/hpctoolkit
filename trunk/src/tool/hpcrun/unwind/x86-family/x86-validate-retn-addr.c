@@ -198,7 +198,7 @@ static validation_status
 contains_tail_call_to_f(void *callee, void *target_fn)
 {
   void *routine_start, *routine_end;
-  if (fnbounds_enclosing_addr(callee, &routine_start, &routine_end)) {
+  if (fnbounds_enclosing_addr(callee, &routine_start, &routine_end, NULL)) {
     TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid",callee);
     return status_is_wrong(); // hard error: callee is nonsense
   }
@@ -351,7 +351,7 @@ deep_validate_return_addr(void *addr, void *generic)
   TMSG(VALIDATE_UNW,"validating unwind step from %p ==> %p",cursor->pc_unnorm,
        addr);
   void *beg, *end;
-  if (fnbounds_enclosing_addr(addr, &beg, &end)) {
+  if (fnbounds_enclosing_addr(addr, &beg, &end, NULL)) {
     TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
     return status_is_wrong();
   }
@@ -360,7 +360,7 @@ deep_validate_return_addr(void *addr, void *generic)
   // this case causes unwinds from vdso to fail unnecessarily, so skip
   // it - bowden and johnmc
   // ----------------------------------------------------------------------
-  if (fnbounds_enclosing_addr(cursor->pc_unnorm, &beg, &end)) {
+  if (fnbounds_enclosing_addr(cursor->pc_unnorm, &beg, &end, NULL)) {
     TMSG(VALIDATE_UNW,"***The pc in the unwind cursor (= %p) does not have function bounds\n"
          "***INTERNAL ERROR: please check arguments",cursor->pc_unnorm);
     return status_is_wrong();
@@ -409,7 +409,7 @@ validation_status
 validate_return_addr(void *addr, void *generic)
 {
   void *beg, *end;
-  if (fnbounds_enclosing_addr(addr, &beg, &end)) {
+  if (fnbounds_enclosing_addr(addr, &beg, &end, NULL)) {
     return UNW_ADDR_WRONG;
   }
 

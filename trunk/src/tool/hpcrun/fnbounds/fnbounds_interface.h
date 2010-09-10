@@ -41,21 +41,44 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-//
-//
 
-int fnbounds_init();
+//*********************************************************************
+// local includes
+//*********************************************************************
 
-int fnbounds_enclosing_addr(void *addr, void **start, void **end); 
+#include <loadmap.h>
 
-void fnbounds_map_open_dsos();
-void fnbounds_unmap_closed_dsos();
+//*********************************************************************
 
-int fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end);
+int
+fnbounds_init();
 
-void fnbounds_fini();
+// fnbounds_enclosing_addr(): Given an instruction pointer (IP) 'ip',
+// return the bounds [start, end) of the function that contains 'ip'.
+// Also return the load module that contains 'ip' to make
+// normalization easy.  All IPs are *unnormalized.*
+int
+fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm);
 
-void fnbounds_release_lock(void);
+void
+fnbounds_map_open_dsos();
 
-// support routine
-int fnbounds_table_lookup(void **table, int length, void *pc, void **start, void **end);
+void
+fnbounds_unmap_closed_dsos();
+
+int
+fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end);
+
+void
+fnbounds_fini();
+
+void
+fnbounds_release_lock(void);
+
+
+// fnbounds_table_lookup(): Given an instruction pointer (IP) 'ip',
+// return the bounds [start, end) of the function that contains 'ip'.
+// All IPs are *normalized.*
+int
+fnbounds_table_lookup(void **table, int length, void *ip,
+		      void **start, void **end);

@@ -193,6 +193,7 @@ splay_interval_t *
 hpcrun_addr_to_interval_locked(void *addr)
 {
   void *fcn_start, *fcn_end;
+  load_module_t *lm;
   interval_status istat;
   interval_tree_node *p, *q;
   splay_interval_t *ans;
@@ -214,7 +215,7 @@ hpcrun_addr_to_interval_locked(void *addr)
    * the insert first, but in that case, it's not really a failure.
    */
   UI_TREE_UNLOCK;
-  ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end);
+  ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end, &lm);
   UI_TREE_LOCK;
   if (ret != SUCCESS) {
     TMSG(UITREE, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
@@ -267,7 +268,7 @@ hpcrun_addr_to_interval_locked(void *addr)
 
   /* Memoize associated load module to benefit hpcrun_normalize_ip() */
   if (ans) {
-    ans->lm = hpcrun_loadmap_findByAddr(addr, addr);
+    ans->lm = lm;
   }
 
   if (ENABLED(UITREE_VERIFY)) {

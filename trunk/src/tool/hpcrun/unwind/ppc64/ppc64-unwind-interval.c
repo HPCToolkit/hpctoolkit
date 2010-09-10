@@ -576,7 +576,7 @@ ppc64_dump_intervals(char  *addr)
   void *s, *e;
   interval_status intervals;
 
-  fnbounds_enclosing_addr(addr, &s, &e);
+  fnbounds_enclosing_addr(addr, &s, &e, NULL);
 
   uintptr_t llen = ((uintptr_t)e) - (uintptr_t)s;
 
