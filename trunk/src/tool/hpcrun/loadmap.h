@@ -79,6 +79,7 @@ typedef struct dso_info_s {
 
   struct dso_info_s* next; //to only be used with dso_free_list
   struct dso_info_s* prev;
+
 } dso_info_t;
 
 
@@ -125,6 +126,7 @@ typedef struct load_module_t
   dso_info_t* dso_info;
   struct load_module_t* next;
   struct load_module_t* prev;
+
 } load_module_t;
 
 
@@ -138,9 +140,10 @@ hpcrun_loadModule_new(const char* name);
 
 typedef struct hpcrun_loadmap_t
 {
-  uint16_t size; //can also double as nextId (size + 1)
+  uint16_t size; // implies the next load_module_t id (size + 1)
   load_module_t* lm_head;
   load_module_t* lm_end;
+
 } hpcrun_loadmap_t;
 
 
@@ -202,7 +205,7 @@ hpcrun_loadmap_findLoadName(const char* name);
 //   load map, ensuring that dso's name appears exactly once in the
 //   load map. 'dso' is assumed to be non-NULL.  Locates the new load
 //   module at the front of the load map.
-void
+load_module_t*
 hpcrun_loadmap_map(dso_info_t* dso);
 
 
