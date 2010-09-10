@@ -325,7 +325,7 @@ hpcrun_loadmap_moveToBack(load_module_t* lm)
 #endif
 
 
-void
+load_module_t*
 hpcrun_loadmap_map(dso_info_t* dso)
 {
   const char* msg = "";
@@ -354,6 +354,8 @@ hpcrun_loadmap_map(dso_info_t* dso)
 
   TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
        dso->name, s_loadmap_ptr->size, msg);
+
+  return lm;
 }
 
 
