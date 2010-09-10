@@ -60,15 +60,15 @@
 using std::hex;
 using std::dec;
 
+#include <typeinfo>
+
 #include <string>
 using std::string;
 
 #include <map>
-
-#include <typeinfo>
+#include <algorithm>
 
 #include <cstdio>
-
 #include <cstring> // strcmp
 
 #include <alloca.h>
@@ -119,6 +119,9 @@ Profile::Profile(const std::string name)
   m_flags.bits = 0;
   m_measurementGranularity = 0;
   m_raToCallsiteOfst = 0;
+
+  m_traceMinTime = 0;
+  m_traceMaxTime = 0;
 
   m_mMgr = new Metric::Mgr;
   m_isMetricMgrVirtual = false;
@@ -194,9 +197,13 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
 	      "CallPath::Profile::merge(): ignoring incompatible RA-to-callsite-offset" << x.m_raToCallsiteOfst << " vs. " << y.m_raToCallsiteOfst);
 
   x.m_profileFileName = "";
+
   x.m_traceFileName = "";
   x.m_traceFileNameSet.insert(y.m_traceFileNameSet.begin(),
 			      y.m_traceFileNameSet.end());
+  x.m_traceMinTime = std::min(x.m_traceMinTime, y.m_traceMinTime);
+  x.m_traceMaxTime = std::max(x.m_traceMaxTime, y.m_traceMaxTime);
+
 
   // -------------------------------------------------------
   // merge metrics
@@ -551,10 +558,24 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 	 << " n" << MakeAttrStr(m->name())
 	 << " db-glob=\"" << m->dbFileGlob() << "\""
 	 << " db-id=\"" << m->dbId() << "\""
-	 << " db-num-metrics=\"" << m->dbNumMetrics() << "\"/>\n";
+	 << " db-num-metrics=\"" << m->dbNumMetrics() << "\"" 
+	 << " db-header-sz=\"" << HPCMETRICDB_FMT_HeaderLen << "\""
+	 << "/>\n";
     }
   }
   os << "  </MetricDBTable>\n";
+
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
+  os << "  <TraceDBTable>\n";
+  if (!traceFileNameSet().empty()) {
+    os << "    <TraceDB i" << MakeAttrNum(0) 
+       << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
+       << " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
+       << "/>\n";
+  }
+  os << "  </TraceDBTable>\n";
 
   // -------------------------------------------------------
   //
@@ -821,7 +842,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // program name
   // -------------------------
   string progNm;
-  val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_prog);
+  val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_prog);
   if (val && strlen(val) > 0) {
     progNm = val;
   }
@@ -832,14 +853,15 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   string mpiRankStr, tidStr;
   long   mpiRank = -1, tid = -1;
 
-  // hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_jobId);
-  val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_mpiRank);
+  // val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_jobId);
+  
+  val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_mpiRank);
   if (val) {
     mpiRankStr = val;
     if (val[0] != '\0') { mpiRank = StrUtil::toLong(mpiRankStr); }
   }
 
-  val = hpcfmt_nvpairList_search(&hdr->nvps, HPCRUN_FMT_NV_tid);
+  val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_tid);
   if (val) {
     tidStr = val;
     if (val[0] != '\0') { tid = StrUtil::toLong(tidStr); }
@@ -855,13 +877,13 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   string   traceMinTimeStr, traceMaxTimeStr;
   uint64_t traceMinTime = 0, traceMaxTime = 0;
 
-  val = hpcfmt_nvpairList_search(&(ehdr.nvps), HPCRUN_FMT_NV_traceMinTime);
+  val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_traceMinTime);
   if (val) {
     traceMinTimeStr = val;
     if (val[0] != '\0') { traceMinTime = StrUtil::toLong(traceMinTimeStr); }
   }
 
-  val = hpcfmt_nvpairList_search(&(ehdr.nvps), HPCRUN_FMT_NV_traceMaxTime);
+  val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_traceMaxTime);
   if (val) {
     traceMaxTimeStr = val;
     if (val[0] != '\0') { traceMaxTime = StrUtil::toLong(traceMaxTimeStr); }
@@ -913,6 +935,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   if (haveTrace) {
     prof->m_traceFileName = traceFileName;
     prof->m_traceFileNameSet.insert(traceFileName);
+    prof->m_traceMinTime = traceMinTime;
+    prof->m_traceMaxTime = traceMaxTime;
   }
 
 
@@ -1159,8 +1183,14 @@ Profile::fmt_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   // ------------------------------------------------------------
   // header
   // ------------------------------------------------------------
+
+  string traceMinTimeStr = StrUtil::toStr(prof.m_traceMinTime);
+  string traceMaxTimeStr = StrUtil::toStr(prof.m_traceMaxTime);
+
   hpcrun_fmt_hdr_fwrite(fs, 
 			"TODO:hdr-name","TODO:hdr-value",
+			HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr.c_str(),
+			HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr.c_str(),
 			NULL);
 
   // ------------------------------------------------------------
