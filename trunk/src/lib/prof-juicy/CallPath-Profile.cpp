@@ -572,6 +572,8 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   if (!traceFileNameSet().empty()) {
     os << "    <TraceDB i" << MakeAttrNum(0) 
        << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
+       << " db-min-time=\"" << m_traceMinTime << "\""
+       << " db-max-time=\"" << m_traceMaxTime << "\""
        << " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
        << "/>\n";
   }
