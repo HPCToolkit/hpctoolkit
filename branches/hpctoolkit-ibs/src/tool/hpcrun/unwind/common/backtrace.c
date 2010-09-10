@@ -94,6 +94,10 @@ static void lush_lip2str(char* buf, size_t len, lush_lip_t* lip);
 void 
 hpcrun_bt_dump(frame_t* unwind, const char* tag)
 {
+#ifndef DO_DUMP  // TEMPORARY disable !!!
+  return;
+#endif
+
   static const int msg_limit = 100;
   int msg_cnt = 0;
 

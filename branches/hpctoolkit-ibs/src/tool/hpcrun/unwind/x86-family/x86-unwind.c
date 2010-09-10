@@ -236,7 +236,7 @@ hpcrun_unw_init_cursor(unw_cursor_t* cursor, void* context)
   cursor->intvl = hpcrun_addr_to_interval(cursor->pc);
 
   if (!cursor->intvl) {
-    // TMSG(TROLL,"UNW INIT calls stack troll");
+    TMSG(UNW,"UNW INIT calls stack troll");
     update_cursor_with_troll(cursor, 0);
   }
 
@@ -385,7 +385,7 @@ hpcrun_unw_step(unw_cursor_t *cursor)
 void
 hpcrun_unw_throw(void)
 {
-  _drop_sample(true);
+  _drop_sample(false);
 }
 
 
@@ -629,17 +629,23 @@ t2_dbg_unw_step(unw_cursor_t *cursor)
 static void 
 _drop_sample(bool no_backtrace)
 {
-  if (DEBUG_NO_LONGJMP) return;
-
-  if (no_backtrace) {
+  if (DEBUG_NO_LONGJMP) {
+    TMSG(UNW, "_drop_sample DEBUG_NO_LONGJMP return");
     return;
   }
+
+  if (no_backtrace) {
+    TMSG(UNW, "_drop_sample no backtrace return");
+    return;
+  }
+  TMSG(UNW, "_drop sample normal -DROP-");
   if (hpcrun_below_pmsg_threshold()) {
     hpcrun_bt_dump(TD_GET(unwind), "DROP");
   }
 
   hpcrun_up_pmsg_count();
 
+  TMSG(UNW, "About to longjump f drop");
   sigjmp_buf_t *it = &(TD_GET(bad_unwind));
   (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }

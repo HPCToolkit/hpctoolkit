@@ -1151,6 +1151,8 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
 
     // start insertion below caller's frame, which is marked with the trampoline
     cct_cursor   = td->tramp_cct_node->parent;
+
+    TMSG(BACKTRACE, "Finished tramp conjoin");
   }
   else {
     hpcrun_cached_bt_adjust_size(new_frame_count);
@@ -1165,12 +1167,13 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
     int num_frames      = last_frame - beg_frame + 1;
 	
     if (hpcrun_filter_sample(num_frames, beg_frame, last_frame)){
-      TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
+      TMSG(SAMPLE_FILTER, "*BT* filter sample of length %d", num_frames);
       frame_t *fr = beg_frame;
       for (int i = 0; i < num_frames; i++, fr++){
-	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p", i, fr->ip);
+	TMSG(SAMPLE_FILTER,"*BT*  frame ip[%d] = %p", i, fr->ip);
       }
       hpcrun_stats_num_samples_filtered_inc();
+      TMSG(SAMPLE, "About to return NULL cct node due to sample filtering");
       return 0;
     }
   }
@@ -1195,6 +1198,8 @@ _hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
 			   bt,
 			   (cct_metric_data_t){.i = metricIncr});
 
+  TMSG(SAMPLE, "cct node returned by normal insert BT op = %p", n);
+  
   if (ENABLED(USE_TRAMP)){
     hpcrun_trampoline_remove();
     td->tramp_frame = td->cached_bt;

@@ -126,6 +126,11 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
     hpcrun_async_block();
     cct_node_t* cct_node = 
       hpcrun_sample_callpath(&uc, hpcrun_dc_malloc_id(), 0, 0, 1);
+    if (! cct_node ) {
+      EMSG("cct node in malloc (datacentric-overrides.c) is NULL -- skipping the sample");
+      return h;
+    }
+
     TMSG(IBS_SAMPLE, "malloc %d bytes (ptr %p)", bytes, h); 
     interval_tree_node* node = hpcrun_malloc(sizeof(interval_tree_node));
     if(node == NULL)

@@ -308,6 +308,7 @@ hpcrun_sample_callpath_w_bt(void *context,
 
   hpcrun_set_handling_sample(td);
 
+  TMSG(SAMPLE, "At sigsetjmp for sampling code BT");
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
 
@@ -315,6 +316,7 @@ hpcrun_sample_callpath_w_bt(void *context,
       node = _hpcrun_sample_callpath_w_bt(epoch, context, metricId, metricIncr,
 					  bt_fn, arg, isSync);
 
+      TMSG(SAMPLE, "Back from sample callpath w bt");
       if (trace_isactive()) {
 	void *pc = hpcrun_context_pc(context);
 	hpcrun_cct_t *cct = &(td->epoch->csdata); 
@@ -337,6 +339,9 @@ hpcrun_sample_callpath_w_bt(void *context,
     // ------------------------------------------------------------
     // recover from SEGVs and dropped samples
     // ------------------------------------------------------------
+
+    TMSG(SAMPLE, "Current sample is dropped");
+
     memset((void *)it->jb, '\0', sizeof(it->jb));
     hpcrun_bt_dump(td->unwind, "SEGV");
 
@@ -361,5 +366,6 @@ hpcrun_sample_callpath_w_bt(void *context,
   hpcrun_dlopen_read_unlock();
 #endif
   
+  TMSG(SAMPLE,"Done w sample, returning node %p", node);
   return node;
 }
