@@ -6,7 +6,7 @@ document.write('\
 
 // 2. Menu and horizontal rule
 document.write('\
-  <div style="position: absolute; top: 60px; right: 2em;"> \
+  <div style="position: relative; margin-top: 60px; width: 100%; text-align: right;"> \
   <p style="margin: 0px; font-size: small;"> \
     [ <a href="index.html">Home</a> \
     | <a href="overview.html">Overview</a> \
@@ -19,7 +19,7 @@ document.write('\
       <a href="info-acks.html">Acks</a> ] \
   </p> \
   </div> \
-  <div style="position: absolute; top: 75px; width: 100%;"> \
+  <div style="width: 100%;"> \
     <hr /> \
   </div> \
 ');

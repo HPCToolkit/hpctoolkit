@@ -1,6 +1,6 @@
 // Footer
 document.write('\
-  <div style="font-size: small;"> \
+  <div style="width: 100%; font-size: small;"> \
     <hr /> \
     <p style="margin: 0px; font-size: small;"> \
       &copy;2000-2010 <a href="http://www.rice.edu">Rice University</a> \
