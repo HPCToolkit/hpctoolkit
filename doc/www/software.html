@@ -1,19 +1,26 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- -*- coding: utf-8 -*- -->
 
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!-- ********************************************************************** -->
+
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <!-- meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> -->
 
   <title>HPCToolkit Software</title>
 
-  <link rel='stylesheet' type='text/css' href='style/style.css'>
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
 </head>
 
 <body>
 
 <!-- ********************************************************************** -->
 
-<script language="JavaScript" src="style/header-hpctoolkit.js"></script>
+<script language="JavaScript" type="text/javascript" src="style/header-hpctoolkit.js"></script>
 
 <!-- ********************************************************************** -->
 
@@ -29,25 +36,21 @@
 
 <li>Snapshots.  For a complete installation, all three tarballs are necessary.
 
-<table cellpadding="2" cellspacing="2" border="1" width="100%">
-<tr>
-<td width="50%">
-  <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-4.9.9-r2954.tar.gz</a> (source)
-  <br>
-  <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-4.9.9-r2954.tar.gz</a> (source)
-  <br>
-  <a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer</a> (platform-specific build)
-<td>nu <!--xi--> (after, of course, mu, lambda, kappa, iota, theta, eta, etc.!) Not an official release but the recommended snapshot.
-</tr>
-
-<!--
-<tr>
-<td><a href="http://hipersoft.rice.edu/hpctoolkit/SERVER/downloads/HPCToolkit-OneStopShopping-4.2.1.tar.gz">HPCToolkit-OneStopShopping-4.2.1.tar.gz</a>
-<td> *** add comment about tarball here ***
-</tr>
--->
-
-</table>
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+  <tr>
+    <td width="50%">
+      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-4.9.9-r2954.tar.gz</a> (source)
+      <br />
+      <a href="https://outreach.scidac.gov/frs/?group_id=87">hpctoolkit-externals-4.9.9-r2954.tar.gz</a> (source)
+      <br />
+      <a href="https://outreach.scidac.gov/frs/?group_id=22">hpcviewer</a> (platform-specific build)
+    </td>
+    <td>
+      <!--&xi;--> &nu; (after, of course, &mu;, &lambda;, &kappa;, &iota;, &theta;, &eta;, &zeta;, &epsilon;, &delta;, &gamma;, &beta;, &alpha;); not an official release but the recommended snapshot.
+    </td>
+  </tr>
+  </table>
+</li>
 
 </ul>
 
@@ -55,47 +58,58 @@
 <h2>Subversion Repository</h2>
 
 <ul>
-<li><p>Moral equivalent of a release/snapshot tarball:
+<li>Moral equivalent of a release/snapshot tarball:
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+  <tr>
+  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/trunk/?root=hpctoolkit">hpctoolkit</a> (trunk)
+  </td>
+  <td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit/trunk hpctoolkit</code>
+  </td>
+  </tr>
 
-<table cellpadding="2" cellspacing="2" border="1" width="100%">
-<tr>
-<td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/trunk/?root=hpctoolkit">hpctoolkit</a> (trunk)
-<td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit/trunk hpctoolkit</code>
-</tr>
+  <tr>
+  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/externals/?root=hpctoolkit">hpctoolkit-externals</a>
+  </td>
+  <td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit/externals hpctoolkit-externals</code>
+  </td>
+  </tr>
 
-<tr>
-<td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/externals/?root=hpctoolkit">hpctoolkit-externals</a>
-<td><code>svn co https://outreach.scidac.gov/svn/hpctoolkit/externals hpctoolkit-externals</code>
-</tr>
+  <tr>
+  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a> (trunk)
+  </td>
+  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk hpcviewer</code>
+  </td>
+  </tr>
+  </table>
 
-<tr>
-<td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a> (trunk)
-<td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk hpcviewer</code>
-</tr>
+  <br />
+</li>
 
-</tr>
-</table>
+<li><a href="https://outreach.scidac.gov/projects/libmonitor/">libmonitor</a> (included within HPCToolkit's externals)
 
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+  <tr>
+  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=libmonitor">libmonitor</a> (trunk)
+  </td>
+  <td><code>svn co https://outreach.scidac.gov/svn/libmonitor/trunk libmonitor</code>
+  </td>
+  </tr>
+  </table>
 
-<li><p><a href="https://outreach.scidac.gov/projects/libmonitor/">libmonitor</a> (included within HPCToolkit's externals)
+  <br />
+</li>
 
-<table cellpadding="2" cellspacing="2" border="1" width="100%">
-<tr>
-<td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=libmonitor">libmonitor</a> (trunk)
-<td><code>svn co https://outreach.scidac.gov/svn/libmonitor/trunk libmonitor</code>
+<li><a href="https://outreach.scidac.gov/projects/hpcviewer/">hpcviewer</a>
 
-</tr>
-</table>
-
-
-<li><p><a href="https://outreach.scidac.gov/projects/hpcviewer/">hpcviewer</a>
-
-<table cellpadding="2" cellspacing="2" border="1" width="100%">
-<tr>
-<td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a> (trunk)
-<td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk hpcviewer</code>
-</tr>
-</table>
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+  <tr>
+  <td><a href="https://outreach.scidac.gov/plugins/scmsvn/viewcvs.php/?root=hpcviewer">hpcviewer</a> (trunk)
+  </td>
+  <td><code>svn co https://outreach.scidac.gov/svn/hpcviewer/trunk hpcviewer</code>
+  </td>
+  </tr>
+  </table>
+</li>
 
 </ul>
 
@@ -108,11 +122,12 @@
 
 
 
-<p>[<span class="lastupdated">Page last updated: 2010/09/04</span>]
+<p>[<span class="lastupdated">Page last updated: 2010/09/10</span>]
+</p>
 
 <!-- ********************************************************************** -->
 
-<script language="JavaScript" src="style/footer-hpctoolkit.js"></script>
+<script language="JavaScript" type="text/javascript" src="style/footer-hpctoolkit.js"></script>
 
 <!-- ********************************************************************** -->
 
