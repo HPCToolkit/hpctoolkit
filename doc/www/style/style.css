@@ -8,17 +8,6 @@
  * Coordination with header/menu
  ****************************************************************************/
 
-/* main id: Id for the main text pane.
- */
-
-#main {
-  position: absolute;
-  top: 85px;
-  width: 97%;
-  /* margin-right: 15px; */
-  /* padding-right: 3em; */
-}
-
 
 /****************************************************************************
  * Classes and Id styles
