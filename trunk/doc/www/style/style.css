@@ -2,21 +2,62 @@
  * 
  * HPCToolkit style sheet
  *
- * Notes:
- *   - search for 'BasicFontSize' to consistently set basic font size
- *
  ****************************************************************************/
 
 /****************************************************************************
- * Classes and Id styles
+ * Coordination with header/menu
  ****************************************************************************/
 
 /* main id: Id for the main text pane.
  */
 
 #main {
-  /* position: absolute; Phooey on Netscape 4*/
-  top: 95px;
+  position: absolute;
+  top: 85px;
+  width: 97%;
+  /* margin-right: 15px; */
+  /* padding-right: 3em; */
+}
+
+
+/****************************************************************************
+ * Classes and Id styles
+ ****************************************************************************/
+
+.indent {
+  margin-left: 4%; /* these can be nested */
+}
+
+
+ol.noindent {
+  margin-left: 1ex;
+  padding-left: 2ex;
+  border-width: 0ex;
+  text-align: left;
+}
+
+ul.noindent {
+  margin-left: 2ex;
+  padding-left: 0ex;
+  border-width: 0ex;
+  list-style: disc outside;
+  text-align: left;
+}
+
+/*
+ul.noindent > li:before {
+  display: marker;
+  marker-offset: 2ex;
+  border-width: 0ex;
+}
+*/
+
+/* (Pseudo) href class: used for examples
+ */
+.hrefPs {
+  color: blue;
+  text-decoration: underline;
+  background-color: transparent;
 }
 
 /* lastupdated class: For "Last Updated text"
@@ -72,54 +113,58 @@
   background-color: transparent;
 }
 
-/* (Pseudo) href class: used for examples
- */
-.hrefPs {
-  color: blue;
-  text-decoration: underline;
-  background-color: transparent;
-}
-
-
-.indent {
-  margin-left: 4%; /* these can be nested */
-}
-
-
-ol.noindent {
-  margin-left: 1ex;
-  padding-left: 2ex;
-  border-width: 0ex;
-  text-align: left;
-}
-
-ul.noindent {
-  margin-left: 2ex;
-  padding-left: 0ex;
-  border-width: 0ex;
-  list-style: disc outside;
-  text-align: left;
-}
-
-ul.noindent > li:before {
-  display: marker;
-  marker-offset: 2ex;
-  border-width: 0ex;
-}
 
 /****************************************************************************
- * Element styles
+ * Block Element styles
  ****************************************************************************/
-  
+
+head {
+  font-size:100%;
+}
+
 body {
   font-size: 90%;
   color: black;
   background-color: white;
 }
 
-head {
-  font-size:100%;
+p {
+  font-family: sans-serif;
+  font-size: 1em;
+  background-color: transparent;
 }
+
+blockquote {
+  font-family: sans-serif;
+  font-size: 1em;
+  background-color: transparent;
+}
+
+dl {
+  font-family: sans-serif;
+  font-size: 1em;
+  background-color: transparent;
+}
+
+ul {
+  font-family: sans-serif;
+  font-size: 1em;
+  background-color: transparent;
+}
+
+ol {
+  font-family: sans-serif;
+  font-size: 1em;
+}
+
+table {
+  font-family: sans-serif;
+  font-size: 1em;
+}
+
+/****************************************************************************
+ * Inline Element styles
+ ****************************************************************************/
 
 h1 {
   font-family: sans-serif;
@@ -150,12 +195,6 @@ h4 {
   list-style-position: outside;
 }
 
-p {
-  font-family: sans-serif;
-  font-size: 1em;
-  background-color: transparent;
-}
-
 a {
   text-decoration: none; /* underline */
   color: blue;
@@ -166,34 +205,6 @@ pre, code {
   font-family: monospace;
   font-size: 1em;
   background-color: transparent; 
-}
-
-blockquote {
-  font-family: sans-serif;
-  font-size: 1em;
-  background-color: transparent;
-}
-
-dl {
-  font-family: sans-serif;
-  font-size: 1em;
-  background-color: transparent;
-}
-
-ul {
-  font-family: sans-serif;
-  font-size: 1em;
-  background-color: transparent;
-}
-
-ol {
-  font-family: sans-serif;
-  font-size: 1em; 
-}
-
-table {
-  font-family: sans-serif;
-  font-size: 1em;
 }
 
 img {
