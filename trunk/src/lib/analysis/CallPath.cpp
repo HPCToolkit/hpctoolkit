@@ -395,8 +395,8 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
 
       VMA lm_ip = n_dyn->lmIP();
       const Prof::Struct::ACodeNode* strct = lmStrct->findByVMA(lm_ip);
-      DIAG_Assert(strct, "failed to find structure: (" << n_dyn->lmId() << ", " << hex << lm_ip << dec << ")");
-      
+      DIAG_Assert(strct, "Analysis::CallPath::noteStaticStructureOnLeaves: failed to find structure for: " << n_dyn->toStringMe(Prof::CCT::Tree::OFlg_DebugAll));
+
       n->structure(strct);
     }
   }
