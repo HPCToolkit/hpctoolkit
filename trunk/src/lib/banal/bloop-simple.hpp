@@ -64,7 +64,11 @@
 #include <include/uint.h> 
 
 #include <lib/prof-juicy/Struct-Tree.hpp>
+
 #include <lib/binutils/LM.hpp>
+
+#include <lib/support/SrcFile.hpp>
+
 
 //*************************** Forward Declarations ***************************
 
@@ -78,6 +82,10 @@ namespace bloop {
 
   Prof::Struct::Stmt*
   makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
+
+  Prof::Struct::Stmt*
+  demandStmtStructure(Prof::Struct::LM* lmStrct, Prof::Struct::Proc* procStrct,
+		      SrcFile::ln line, VMA begVMA, VMA endVMA);
 
 } // namespace bloop
 

@@ -296,20 +296,24 @@ parseReplacePath(const std::string& arg)
 namespace Analysis {
 namespace Util {
 
-// Always consult the load module's structure information
-// (Struct::LM) and perform a lookup by VMA first.  If this fails:
+// Always consult the load module's structure information (Struct::LM)
+// and perform a lookup by VMA first.  If this fails:
 //
 //   - If the structure was seeded by full structure by
 //     bloop::makeStructure (useStruct), then use the "unknown" file
-//     and procedures.
+//     procedures and
 //
-//   - Otherwise, create structure using banal::bloop::makeStructureSimple
+//   - Otherwise, create structure using banal::bloop::makeStructureSimple.
 //
-// This policy assumes that when full structure has been provided,
-// banal::bloop::makeStructureSimple could have undesirable effects.  One
-// example of a problem is that for simple structure, a line ->
-// Struct::Stmt map is consulted which is ambiguous in the presence of
-// inlinine (Struct::Alien).
+// In either case, return a Struct::Stmt.  This is important because
+// it ensures that every sample maps to a Stmt, a fact that is
+// exploited by Analysis::CallPath::noteStaticStructureOnLeaves().
+//
+// The above policy assumes that when full structure has been
+// provided, banal::bloop::makeStructureSimple could have undesirable
+// effects.  One example of a problem is that for simple structure, a
+// line -> Struct::Stmt map is consulted which is ambiguous in the
+// presence of inline (Struct::Alien).
 Prof::Struct::ACodeNode*
 demandStructure(VMA vma, Prof::Struct::LM* lmStrct, 
 		BinUtil::LM* lm, bool useStruct)
@@ -318,9 +322,13 @@ demandStructure(VMA vma, Prof::Struct::LM* lmStrct,
   Struct::ACodeNode* strct = lmStrct->findByVMA(vma);
   if (!strct) {
     if (useStruct) {
-      Struct::File* fileStrct = 
+      Struct::File* fileStrct =
 	Struct::File::demand(lmStrct, Struct::Tree::UnknownFileNm);
-      strct = Struct::Proc::demand(fileStrct, Struct::Tree::UnknownProcNm);
+      Struct::Proc* procStrct =
+	Struct::Proc::demand(fileStrct, Struct::Tree::UnknownProcNm);
+      strct = banal::bloop::demandStmtStructure(lmStrct, procStrct,
+						Struct::Tree::UnknownLine,
+						vma, vma + 1);
     }
     else {
       strct = banal::bloop::makeStructureSimple(lmStrct, lm, vma);
