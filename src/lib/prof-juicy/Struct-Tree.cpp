@@ -108,6 +108,8 @@ const std::string Tree::UnknownFileNm = "~unknown-file~";
 
 const std::string Tree::UnknownProcNm = "~unknown-proc~";
 
+const SrcFile::ln Tree::UnknownLine = SrcFile::ln_NULL;
+
 
 Tree::Tree(const char* name, Root* root)
   : m_root(root)

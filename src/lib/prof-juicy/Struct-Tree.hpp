@@ -149,6 +149,7 @@ public:
 
   static const std::string UnknownFileNm;
   static const std::string UnknownProcNm;
+  static const SrcFile::ln UnknownLine;
   
 public:
   // -------------------------------------------------------
@@ -580,7 +581,7 @@ protected:
     : ANode(ty, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
   { 
     setLineRange(begLn, endLn);
-    if (begVMA != 0 && endVMA != 0) {
+    if (!VMAInterval::empty(begVMA, endVMA)) {
       m_vmaSet.insert(begVMA, endVMA);
     }
   }
