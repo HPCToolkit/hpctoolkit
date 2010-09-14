@@ -109,8 +109,11 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
     for (frame_t* x = td->btbuf; x < unwind; ++x) {
       lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
       lush_lip2str(lip_str, sizeof(lip_str), x->lip);
-       PMSG_LIMIT(EMSG("%s: ip.lm_id = %d | ip.lm_ip = %p | lip %s", as_str,
-		      x->ip_norm.lm_id, x->ip_norm.lm_ip, lip_str));
+
+      unw_word_t ip;
+      hpcrun_unw_get_ip_unnorm_reg(&(x->cursor), &ip);
+
+      PMSG_LIMIT(EMSG("%s: ip = %p, | lip %s", as_str, ip, lip_str));
 
       msg_cnt++;
       if (msg_cnt > msg_limit) {
