@@ -102,7 +102,7 @@ banal::bloop::makeStructureSimple(Struct::LM* lmStrct,
 				  BinUtil::LM* lm, VMA vma)
 {
   string procnm, filenm;
-  SrcFile::ln line;
+  SrcFile::ln line = Struct::Tree::UnknownLine;
   lm->GetSourceFileInfo(vma, 0 /*opIdx*/, procnm, filenm, line);
   procnm = BinUtil::canonicalizeProcName(procnm);
   
@@ -116,13 +116,25 @@ banal::bloop::makeStructureSimple(Struct::LM* lmStrct,
   Struct::File* fileStrct = Struct::File::demand(lmStrct, filenm);
   Struct::Proc* procStrct = Struct::Proc::demand(fileStrct, procnm, "",
 						 line, line);
-  Struct::Stmt* stmtStrct = procStrct->findStmt(line);
 
   VMA begVMA = vma, endVMA = vma + 1;
   BinUtil::Insn* insn = lm->findInsn(vma, 0 /*opIdx*/);
   if (insn) {
     endVMA = insn->endVMA();
   }
+  Struct::Stmt* stmtStrct = demandStmtStructure(lmStrct, procStrct, line, 
+						begVMA, endVMA);
+  
+  return stmtStrct;
+}
+
+
+Struct::Stmt*
+banal::bloop::demandStmtStructure(Prof::Struct::LM* lmStrct,
+				  Struct::Proc* procStrct,
+				  SrcFile::ln line, VMA begVMA, VMA endVMA)
+{
+  Struct::Stmt* stmtStrct = procStrct->findStmt(line);
 
   if (stmtStrct) {
     if (0) {
