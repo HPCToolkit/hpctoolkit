@@ -175,6 +175,10 @@ realmain(int argc, char* const* argv)
   // Generate Experiment database
   // ------------------------------------------------------------
 
+  if (args.title.empty()) {
+    args.title = prof->name();
+  }
+
   // Currently we do not generate thread-level metric db
   Prof::Metric::Mgr* mMgr = prof->metricMgr();
   for (uint i = 0; i < mMgr->size(); i++) {

@@ -85,18 +85,26 @@ public:
   virtual ~ArgsHPCProf();
 
   // Parse the command line
-  void parse(int argc, const char* const argv[]);
+  void
+  parse(int argc, const char* const argv[]);
 
   // Version and Usage information
-  void printVersion(std::ostream& os) const;
-  void printUsage(std::ostream& os) const;
+  void
+  printVersion(std::ostream& os) const;
+
+  void
+  printUsage(std::ostream& os) const;
   
   // Error
-  void printError(std::ostream& os, const char* msg) const;
-  void printError(std::ostream& os, const std::string& msg) const;
+  void
+  printError(std::ostream& os, const char* msg) const;
+
+  void
+  printError(std::ostream& os, const std::string& msg) const;
 
   // Dump
-  virtual void dump(std::ostream& os = std::cerr) const;
+  virtual void
+  dump(std::ostream& os = std::cerr) const;
 
 public:
   // Parsed Data: Command
@@ -106,6 +114,9 @@ public:
 private:
   bool
   parseArg_norm(const std::string& value, const char* err_note);
+  
+  static std::string
+  makeDBDirName(const std::string& profileArg);
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];

@@ -375,37 +375,13 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     }
 
 
-    // TEMPORARY: parse first file name to determine name of database
-    string mynm;
+    // For now, parse first file name to determine name of database
     if (!isDbDirSet) {
-      // hpctoolkit-<nm>-measurements[-sfx]/<nm>-000000-tid-hostid-pid.hpcrun
-      const string& fnm = profileFiles[0];
-      size_t pos1 = fnm.find("hpctoolkit-");
-      size_t pos2 = fnm.find("-measurements");
-      if (pos1 == 0 && pos2 != string::npos) {
-	size_t nm_beg = fnm.find_first_of('-') + 1; 
-	size_t nm_end = pos2 - 1;
-	mynm = fnm.substr(nm_beg, nm_end - nm_beg + 1);
-	
-	string sfx;
-	size_t sfx_beg = fnm.find_first_of('-', pos2 + 1); // [inclusive
-	size_t sfx_end = fnm.find_first_of('/', pos2 + 1); // exclusive)
-	if (sfx_end == string::npos) {
-	  sfx_end = fnm.size();
-	}
-	if (sfx_beg < sfx_end) {
-	  sfx = fnm.substr(sfx_beg, sfx_end - sfx_beg);
-	}
-	
-	db_dir = Analysis_DB_DIR_pfx "-" + mynm + "-" Analysis_DB_DIR_nm + sfx;
+      std::string nm = makeDBDirName(profileFiles[0]);
+      if (!nm.empty()) {
+	db_dir = nm;
       }
     }
-
-    // TEMPORARY: 
-    if (title.empty() && !mynm.empty()) {
-      title = mynm;
-    }
-
   }
   catch (const CmdLineParser::ParseError& x) {
     ARG_ERROR(x.what());
@@ -439,6 +415,42 @@ ArgsHPCProf::parseArg_norm(const string& value, const char* err_note)
   else {
     ARG_ERROR(err_note << ": Unexpected value received: " << value);
   }
+}
+
+
+std::string
+ArgsHPCProf::makeDBDirName(const std::string& profileArg)
+{
+  static const string str1 = "hpctoolkit-";
+  static const string str2 = "-measurements";
+
+  string db_dir = "";
+  
+  // 'profileArg' has the following structure:
+  //   <path>/hpctoolkit-<nm>-measurements[sfx]/<file>.hpcrun
+
+  const string& fnm = profileArg;
+  size_t pos1 = fnm.find(str1);
+  size_t pos2 = fnm.find(str2);
+  if (pos1 < pos2 && pos2 != string::npos) {
+    size_t nm_beg = str1.length(); // [inclusive
+    size_t nm_end = pos2;          // exclusive)
+    string nm = fnm.substr(nm_beg, nm_end - nm_beg);
+    
+    string sfx;
+    size_t sfx_beg = pos2 + str2.length();            // [inclusive
+    size_t sfx_end = fnm.find_first_of('/', sfx_beg); // exclusive)
+    if (sfx_end == string::npos) {
+      sfx_end = fnm.size();
+    }
+    if (sfx_beg < sfx_end) {
+      sfx = fnm.substr(sfx_beg, sfx_end - sfx_beg);
+    }
+    
+    db_dir = Analysis_DB_DIR_pfx "-" + nm + "-" Analysis_DB_DIR_nm + sfx;
+  }
+
+  return db_dir;
 }
 
 

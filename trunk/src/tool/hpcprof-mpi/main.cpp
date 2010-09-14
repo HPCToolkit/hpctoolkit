@@ -298,6 +298,10 @@ realmain(int argc, char* const* argv)
   MPI_Bcast((void*)dbDirBuf, PATH_MAX, MPI_CHAR, rootRank, MPI_COMM_WORLD);
   args.db_dir = dbDirBuf;
 
+  if (args.title.empty()) {
+    args.title = profGbl->name();
+  }
+
   // -------------------------------------------------------
   // 2. Create *pruned* canonical CCT with summary metrics
   //
