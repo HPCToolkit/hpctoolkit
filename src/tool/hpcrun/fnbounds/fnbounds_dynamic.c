@@ -161,7 +161,7 @@ static char *
 fnbounds_tmpdir_get();
 
 static load_module_t *
-fnbounds_get_loadModule(void *pc);
+fnbounds_get_loadModule(void *ip);
 
 static dso_info_t *
 fnbounds_compute(const char *filename, void *start, void *end);
@@ -222,7 +222,7 @@ fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
   int ret = 1; // failure unless otherwise reset to 0 below
   
   load_module_t *lm_ = fnbounds_get_loadModule(ip);
-  dso_info_t *dso = lm_->dso_info;
+  dso_info_t *dso = (lm_) ? lm_->dso_info : NULL;
   
   if (dso && dso->nsymbols > 0) {
     void *ip_norm = ip;
@@ -488,10 +488,13 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
 }
 
 
+// fnbounds_get_loadModule(): Given the (unnormalized) IP 'ip',
+// attempt to return the enclosing load module.  Note that the
+// function may fail.
 static load_module_t *
-fnbounds_get_loadModule(void *pc)
+fnbounds_get_loadModule(void *ip)
 {
-  load_module_t* lm = hpcrun_loadmap_findByAddr(pc, pc);
+  load_module_t* lm = hpcrun_loadmap_findByAddr(ip, ip);
   dso_info_t* dso = (lm) ? lm->dso_info : NULL;
 
   // We can't call dl_iterate_phdr() in general because catching a
@@ -505,7 +508,7 @@ fnbounds_get_loadModule(void *pc)
     char module_name[PATH_MAX];
     void *mstart, *mend;
     
-    if (dylib_find_module_containing_addr(pc, module_name, &mstart, &mend)) {
+    if (dylib_find_module_containing_addr(ip, module_name, &mstart, &mend)) {
       dso = fnbounds_compute(module_name, mstart, mend);
       if (dso) {
 	lm = hpcrun_loadmap_map(dso);
