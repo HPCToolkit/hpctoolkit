@@ -293,7 +293,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
   std::string errors;
   
-  for (Prof::ALoadMap::LM_id_t i = 1; i < loadmap->size(); ++i) {
+  for (Prof::ALoadMap::LM_id_t i = 1; i <= loadmap->size(); ++i) {
     Prof::ALoadMap::LM* lm = loadmap->lm(i);
 
     if (lm->isUsed()) {
