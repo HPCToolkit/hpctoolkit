@@ -46,6 +46,7 @@
 //*****************************************************************************
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <setjmp.h>
 
 //*****************************************************************************
@@ -191,6 +192,7 @@ lazy_open_data_file(void)
   hpcrun_fmt_hdr_fwrite(fs,
                         HPCRUN_FMT_NV_prog, files_executable_name(),
                         HPCRUN_FMT_NV_progPath, files_executable_pathname(),
+			HPCRUN_FMT_NV_envPath, getenv("PATH"),
                         HPCRUN_FMT_NV_jobId, jobIdStr,
                         HPCRUN_FMT_NV_mpiRank, mpiRankStr,
                         HPCRUN_FMT_NV_tid, tidStr,
