@@ -134,6 +134,9 @@ public:
   empty() const
   { return m_beg >= m_end; }
 
+  static bool
+  empty(VMA beg, VMA end)
+  { return beg >= end; }
 
   // -------------------------------------------------------
   // interval comparison
