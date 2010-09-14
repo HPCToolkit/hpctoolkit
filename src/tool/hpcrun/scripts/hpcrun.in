@@ -244,7 +244,9 @@ hpc_opt_check()
   # parse argument list
   while [ $# -ge 1 ]; do
     case $1 in
-      # special options
+      # --------------------------------
+      # special (short-circuiting) options
+      # --------------------------------
       -h | --help)
         hpc_usage; exit 0;
         ;;
@@ -253,22 +255,32 @@ hpc_opt_check()
         hpc_version; exit 0;
         ;;
 
-      -md)  opt_monitor_debug=1 ;;
-      -dd)  shift; 
-            dd_list="$L2$1"
-	    L2="$dd_list "
-            ;;
-      -d)  opt_debug_wait=1;
-            ;;
+      # --------------------------------
+      # debug options
+      # --------------------------------
+      -md | --monitor-debug)
+	opt_monitor_debug=1 ;;
 
-       # general options
-      -a) 
+      -dd | --dynamic-debug)
+        shift; 
+        dd_list="$L2$1"
+	L2="$dd_list "
+        ;;
+
+      -d | --debug)
+        opt_debug_wait=1;
+        ;;
+	
+      # --------------------------------
+      # general options
+      # --------------------------------
+      -a | --agent) 
         shift; opt_lush_agents="$1";
         hpc_opt_check "-a" "${opt_lush_agents}";
         ;;
 
       -e | --event) 
-        shift; 
+        shift;
 	# Please FIXME: dynamically scoped LLL and LL variables???
         # BUG!: replace : separator with @ to retain support for old syntax
 	#LLL=`echo $1 | tr ':' '@'`
