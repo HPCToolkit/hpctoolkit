@@ -893,7 +893,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   haveTrace = (traceMinTime != 0 && traceMaxTime != 0);
 
-  if (haveTrace) {
+  // Note: 'profFileName' can be empty when reading from a memory stream
+  if (haveTrace && !profFileName.empty()) {
     // TODO: extract trace file name from profile
     static const string ext_prof = string(".") + HPCRUN_ProfileFnmSfx;
     static const string ext_trace = string(".") + HPCRUN_TraceFnmSfx;
@@ -936,7 +937,9 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   if (haveTrace) {
     prof->m_traceFileName = traceFileName;
-    prof->m_traceFileNameSet.insert(traceFileName);
+    if (!traceFileName.empty()) {
+      prof->m_traceFileNameSet.insert(traceFileName);
+    }
     prof->m_traceMinTime = traceMinTime;
     prof->m_traceMaxTime = traceMaxTime;
   }
