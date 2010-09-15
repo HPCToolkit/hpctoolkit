@@ -583,16 +583,17 @@ copyTraceFiles(const std::string& dstDir, const std::set<string>& srcFiles)
     const string  dstFnm = dstDir + "/" + FileUtil::basename(x);
     try {
       if (FileUtil::isReadable(srcFnm1)) {
+	DIAG_Msg(2, "trace (mv): '" << srcFnm1 << "' -> '" << dstFnm << "'");
 	FileUtil::move(dstFnm, srcFnm1);
-	DIAG_Msg(2, "trace: " << srcFnm1 << " -> " << dstFnm);
       }
       else {
+	DIAG_Msg(2, "trace (cp): '" << srcFnm2 << "' -> '" << dstFnm << "'");
 	FileUtil::copy(dstFnm, srcFnm2);
-	DIAG_Msg(2, "trace: " << srcFnm2 << " -> " << dstFnm);
       }
     }
     catch (const Diagnostics::Exception& x) {
-      DIAG_EMsg(x.message());
+      DIAG_EMsg("While copying trace files ['"
+		<< srcFnm2 << "' -> '" << dstFnm << "']:" << x.message());
     }
   }
 }
