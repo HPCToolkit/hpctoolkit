@@ -235,8 +235,8 @@ copy(const char* dst, ...)
   int dstFd = open(dst, O_WRONLY | O_CREAT | O_TRUNC,
 		   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (dstFd < 0) {
-    DIAG_Throw("could not open destination '" << dst << "' ("
-	       << strerror(errno) << ")");
+    DIAG_Throw("[FileUtil::copy] could not open destination file '"
+	       << dst << "' (" << strerror(errno) << ")");
   }
 
   string errorMsg;
@@ -258,7 +258,7 @@ copy(const char* dst, ...)
   close(dstFd);
 
   if (!errorMsg.empty()) {
-    DIAG_Throw("could not open source files: " << errorMsg);
+    DIAG_Throw("[FileUtil::copy] could not open source files: " << errorMsg);
   }
 }
 
@@ -268,7 +268,7 @@ move(const char* dst, const char* src)
 {
   int ret = rename(src, dst);
   if (ret != 0) {
-    DIAG_Throw("moving '" << src << "' -> '" << dst << "'");
+    DIAG_Throw("[FileUtil::move] '" << src << "' -> '" << dst << "'");
   }
 }
 
@@ -346,7 +346,7 @@ mkdir(const char* dir)
 
     int ret = ::mkdir(x.c_str(), mode);
     if (ret != 0) {
-      DIAG_Throw("While mkdir-ing '" << pathStr << "': Could not mkdir '"
+      DIAG_Throw("[FileUtil::mkdir] '" << pathStr << "': Could not mkdir '"
 		 << x << "' (" << strerror(errno) << ")");
     }
   }
