@@ -427,16 +427,30 @@ ArgsHPCProf::makeDBDirName(const std::string& profileArg)
   string db_dir = "";
   
   // 'profileArg' has the following structure:
-  //   <path>/hpctoolkit-<nm>-measurements[sfx]/<file>.hpcrun
+  //   <path>/[pfx]hpctoolkit-<nm>-measurements[sfx]/<file>.hpcrun
 
   const string& fnm = profileArg;
   size_t pos1 = fnm.find(str1);
   size_t pos2 = fnm.find(str2);
   if (pos1 < pos2 && pos2 != string::npos) {
+    // ---------------------------------
+    // prefix
+    // ---------------------------------
+    size_t pfx_a   = fnm.find_last_of('/', pos1);
+    size_t pfx_beg = (pfx_a == string::npos) ? 0 : pfx_a + 1;  // [inclusive
+    size_t pfx_end = pos1;                                     // exclusive)
+    string pfx = fnm.substr(pfx_beg, pfx_end - pfx_beg);
+
+    // ---------------------------------
+    // nm
+    // ---------------------------------
     size_t nm_beg = str1.length(); // [inclusive
     size_t nm_end = pos2;          // exclusive)
     string nm = fnm.substr(nm_beg, nm_end - nm_beg);
     
+    // ---------------------------------
+    // suffix
+    // ---------------------------------
     string sfx;
     size_t sfx_beg = pos2 + str2.length();            // [inclusive
     size_t sfx_end = fnm.find_first_of('/', sfx_beg); // exclusive)
@@ -447,7 +461,7 @@ ArgsHPCProf::makeDBDirName(const std::string& profileArg)
       sfx = fnm.substr(sfx_beg, sfx_end - sfx_beg);
     }
     
-    db_dir = Analysis_DB_DIR_pfx "-" + nm + "-" Analysis_DB_DIR_nm + sfx;
+    db_dir = pfx + Analysis_DB_DIR_pfx "-" + nm + "-" Analysis_DB_DIR_nm + sfx;
   }
 
   return db_dir;
