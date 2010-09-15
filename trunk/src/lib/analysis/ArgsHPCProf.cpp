@@ -437,15 +437,15 @@ ArgsHPCProf::makeDBDirName(const std::string& profileArg)
     // prefix
     // ---------------------------------
     size_t pfx_a   = fnm.find_last_of('/', pos1);
-    size_t pfx_beg = (pfx_a == string::npos) ? 0 : pfx_a + 1;  // [inclusive
-    size_t pfx_end = pos1;                                     // exclusive)
+    size_t pfx_beg = (pfx_a == string::npos) ? 0 : pfx_a + 1; // [inclusive
+    size_t pfx_end = pos1;                                    // exclusive)
     string pfx = fnm.substr(pfx_beg, pfx_end - pfx_beg);
 
     // ---------------------------------
     // nm
     // ---------------------------------
-    size_t nm_beg = str1.length(); // [inclusive
-    size_t nm_end = pos2;          // exclusive)
+    size_t nm_beg = pos1 + str1.length(); // [inclusive
+    size_t nm_end = pos2;                 // exclusive)
     string nm = fnm.substr(nm_beg, nm_end - nm_beg);
     
     // ---------------------------------
