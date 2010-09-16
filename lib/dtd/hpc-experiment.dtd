@@ -28,7 +28,7 @@
   <!-- ****************************************************************** -->
   <!-- Section Header							  -->
   <!-- ****************************************************************** -->
-  <!ELEMENT SecHeader (MetricTable?, MetricDBTable?, LoadModuleTable?, FileTable?, ProcedureTable?, Info*)>
+  <!ELEMENT SecHeader (MetricTable?, MetricDBTable?, TraceDBTable?, LoadModuleTable?, FileTable?, ProcedureTable?, Info*)>
 
     <!-- MetricTable: -->
     <!ELEMENT MetricTable (Metric)*>
@@ -39,11 +39,12 @@
     <!--   fmt: format; show; -->
     <!ELEMENT Metric (MetricFormula*, Info?)>
     <!ATTLIST Metric
-	      i    CDATA #REQUIRED
-	      n    CDATA #REQUIRED
-	      v    (raw|final|derived-incr|derived) "raw"
-	      t    (inclusive|exclusive|nil) "nil"
-	      fmt  CDATA #IMPLIED
+	      i            CDATA #REQUIRED
+	      n            CDATA #REQUIRED
+	      v            (raw|final|derived-incr|derived) "raw"
+	      t            (inclusive|exclusive|nil) "nil"
+	      partner      CDATA #IMPLIED
+	      fmt          CDATA #IMPLIED
 	      show         (1|0) "1"
 	      show-percent (1|0) "1">
 
@@ -76,6 +77,20 @@
 	      db-id          CDATA #IMPLIED
 	      db-num-metrics CDATA #IMPLIED
 	      db-header-sz   CDATA #IMPLIED>
+
+    <!-- TraceDBTable: -->
+    <!ELEMENT TraceDBTable (TraceDB)>
+
+    <!-- TraceDB: (i)d -->
+    <!--   db-min-time: min beginning time stamp (global) -->
+    <!--   db-max-time: max ending time stamp (global) -->
+    <!ELEMENT TraceDB EMPTY>
+    <!ATTLIST TraceDB
+	      i            CDATA #REQUIRED
+	      db-glob      CDATA #IMPLIED
+	      db-min-time  CDATA #IMPLIED
+	      db-max-time  CDATA #IMPLIED
+	      db-header-sz CDATA #IMPLIED>
 
     <!-- LoadModuleTable assigns a short name to a load module -->
     <!ELEMENT LoadModuleTable (LoadModule)*>
@@ -183,18 +198,20 @@
                 l CDATA #IMPLIED
 		v CDATA #IMPLIED>
       <!-- Loop (Note 1,2) -->
-      <!ELEMENT L (A|L|S|C|M)*>
+      <!ELEMENT L (A|Pr|L|S|C|M)*>
       <!ATTLIST L
 		i CDATA #IMPLIED
 		s CDATA #IMPLIED
 		l CDATA #IMPLIED
 		v CDATA #IMPLIED>
       <!-- Statement (Note 2) -->
+      <!--   (it): trace record identifier -->
       <!ELEMENT S (S|M)*>
       <!ATTLIST S
-		i CDATA #IMPLIED
-		s CDATA #IMPLIED
-		l CDATA #IMPLIED
-		v CDATA #IMPLIED>
+		i  CDATA #IMPLIED
+		it CDATA #IMPLIED
+		s  CDATA #IMPLIED
+		l  CDATA #IMPLIED
+		v  CDATA #IMPLIED>
       <!-- Note 1: Contained Cs may not contain PFs -->
       <!-- Note 2: The 's' attribute is not used for flat profiles -->
