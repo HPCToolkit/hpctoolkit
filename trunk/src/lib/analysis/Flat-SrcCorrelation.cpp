@@ -229,7 +229,8 @@ Driver::write_experiment(std::ostream &os) const
 #include <lib/xml/hpc-experiment.dtd.h>
   
   os << "<?xml version=\"1.0\"?>" << std::endl;
-  os << "<!DOCTYPE hpc-experiment [\n" << experimentDTD << "]>" << std::endl;
+  os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>"
+     << std::endl;
   os << "<HPCToolkitExperiment version=\"2.0\">\n";
   os << "<Header n" << MakeAttrStr(m_args.title) << ">\n";
   os << "  <Info/>\n";
