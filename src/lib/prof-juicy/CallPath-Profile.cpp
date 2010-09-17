@@ -568,16 +568,16 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   // -------------------------------------------------------
   //
   // -------------------------------------------------------
-  os << "  <TraceDBTable>\n";
   if (!traceFileNameSet().empty()) {
+    os << "  <TraceDBTable>\n";
     os << "    <TraceDB i" << MakeAttrNum(0) 
        << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
        << " db-min-time=\"" << m_traceMinTime << "\""
        << " db-max-time=\"" << m_traceMaxTime << "\""
        << " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
        << "/>\n";
+    os << "  </TraceDBTable>\n";
   }
-  os << "  </TraceDBTable>\n";
 
   // -------------------------------------------------------
   //
