@@ -139,9 +139,11 @@ void NonUniformDegreeTreeNode::linkBefore(NonUniformDegreeTreeNode *sibling)
   }
 }
 
+
 //-----------------------------------------------
 // unlinks a node from a parent and siblings
 //-----------------------------------------------
+
 void NonUniformDegreeTreeNode::unlink()
 {
   if (m_parent != 0) {
@@ -172,7 +174,7 @@ void NonUniformDegreeTreeNode::unlink()
 }
 
 
-unsigned int
+uint
 NonUniformDegreeTreeNode::ancestorCount() const
 {
   unsigned int ancestorCount = 0;
@@ -184,11 +186,33 @@ NonUniformDegreeTreeNode::ancestorCount() const
   return ancestorCount;
 }
 
+
+uint
+NonUniformDegreeTreeNode::maxDepth(uint parentDepth)
+{
+  uint depth = parentDepth + 1;
+
+  if (isLeaf()) {
+    return depth;
+  }
+  else {
+    uint max_depth = 0;
+    NonUniformDegreeTreeNodeChildIterator it(this);
+    for (NonUniformDegreeTreeNode* x = NULL; (x = it.Current()); ++it) {
+      uint x_depth = x->maxDepth(depth);
+      max_depth = std::max(max_depth, x_depth);
+    }
+    return max_depth;
+  }
+}
+
+
 std::string
 NonUniformDegreeTreeNode::toString() const
 {
   return "NonUniformDegreeTreeNode: " + StrUtil::toStr((void*)this);
 }
+
 
 //****************************************************************************
 // class NonUniformDegreeTreeNodeChildIterator interface operations
