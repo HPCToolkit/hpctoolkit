@@ -103,7 +103,8 @@ public:
     link(parent); // link to parent and siblings if any
   }
   
-  NonUniformDegreeTreeNode(const NonUniformDegreeTreeNode& other) {
+  NonUniformDegreeTreeNode(const NonUniformDegreeTreeNode& other)
+  {
     *this = other;
   }
   
@@ -146,24 +147,42 @@ public:
   uint ancestorCount() const;
   
   // functions for inspecting links to other nodes
-  uint childCount() const { return m_child_count; };
+  uint childCount() const
+  { return m_child_count; };
 
-  bool isLeaf() const { return (m_child_count == 0); }
+  bool isLeaf() const
+  { return (m_child_count == 0); }
 
-  virtual std::string toString() const; 
+  
+  uint maxDepth()
+  { return maxDepth(0); }
+  
+  uint maxDepth(uint parentDepth);
+
+public:
+  virtual std::string toString() const;
 
 public:
   // N.B.: For derived classes, these may get in the way...
-  NonUniformDegreeTreeNode *Parent() const { return m_parent; };
-  NonUniformDegreeTreeNode *NextSibling() const { return m_next_sibling; };
-  NonUniformDegreeTreeNode *PrevSibling() const { return m_prev_sibling; };
-  NonUniformDegreeTreeNode *FirstChild() const { return m_children; };
+  NonUniformDegreeTreeNode *Parent() const
+  { return m_parent; };
+
+  NonUniformDegreeTreeNode *NextSibling() const
+  { return m_next_sibling; };
+
+  NonUniformDegreeTreeNode *PrevSibling() const
+  { return m_prev_sibling; };
+
+  NonUniformDegreeTreeNode *FirstChild() const
+  { return m_children; };
+
   NonUniformDegreeTreeNode *LastChild() const
-    { return m_children ? m_children->m_prev_sibling : 0; };
+  { return m_children ? m_children->m_prev_sibling : 0; };
 
 protected:
   // useful for resetting parent/child/etc links after cloning
-  void zeroLinks() {
+  void zeroLinks()
+  {
     // no parent
     m_parent = NULL;
 
@@ -274,22 +293,25 @@ public:
   }
 
 
-  virtual NonUniformDegreeTreeNode* 
+  virtual NonUniformDegreeTreeNode*
   Current() const
   {
     return (NonUniformDegreeTreeNode *) IteratorStack::CurrentUpCall();
   }
 
-  virtual void DumpAndReset(std::ostream &os = std::cerr); 
+  virtual void DumpAndReset(std::ostream &os = std::cerr);
+
 private:
   // upcall interface for StackableIterator
-  void *CurrentUpCall() const
+  void *
+  CurrentUpCall() const
   {
     return Current();
   }
 
   // upcall for IteratorStack
-  StackableIterator *IteratorToPushIfAny(void *current); 
+  StackableIterator *
+  IteratorToPushIfAny(void *current);
 };
 
 #endif /* NonUniformDegreeTree_hpp */
