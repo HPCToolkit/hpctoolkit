@@ -445,13 +445,15 @@ hpcrun_generate_backtrace(ucontext_t* context, bool* has_tramp, int skipInner)
     }
   }
 
-  //
-  // FIXME: For the moment, ignore skipInner issues with trampolines.
-  //        Eventually, this will need to be addressed
-  //
   if (skipInner) {
-    EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
-	 skipInner);
+    if (ENABLED(USE_TRAMP)){
+      //
+      // FIXME: For the moment, ignore skipInner issues with trampolines.
+      //        Eventually, this will need to be addressed
+      //
+      EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
+	   skipInner);
+    }
     td->btbuf = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
   }
 
