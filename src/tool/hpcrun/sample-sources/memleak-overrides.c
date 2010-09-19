@@ -48,8 +48,20 @@
  *****************************************************************************/
 
 #include <assert.h>
-#include <stdlib.h>
 #include <ucontext.h>
+
+/* definition for posix memalign */
+#define _XOPEN_SOURCE 600
+#include <stdlib.h>
+
+/* definition for valloc, memalign */
+#include <malloc.h>
+
+/* definition for sysconf */
+#include <unistd.h>
+
+/* definition for _SC_PAGESIZE */
+#include <sys/mman.h>
 
 
 
@@ -61,6 +73,8 @@
 #include <messages/messages.h>
 #include <sample_event.h>
 #include <monitor-exts/monitor_ext.h>
+#include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/splay-macros.h>
 
 
 
@@ -68,14 +82,20 @@
  * type definitions
  *****************************************************************************/
 
-typedef struct {
+typedef struct leakfooter_s {
   long magic;
   cct_node_t *context;
   size_t bytes;
-} leakhdr_t;
+  void *memblock;
+  struct leakfooter_s *left;
+  struct leakfooter_s *right;
+} leakfooter_t;
 
-leakhdr_t leakhdr_NULL = { .magic = 0, .context = NULL, .bytes = 0 };
+leakfooter_t leakfooter_NULL = { .magic = 0, .context = NULL, .bytes = 0 };
 
+typedef int posix_memalign_fcn(void **, size_t, size_t);
+typedef void *memalign_fcn(size_t, size_t);
+typedef void *valloc_fcn(size_t);
 typedef void *calloc_fcn(size_t, size_t);
 typedef void  free_fcn(void *);
 typedef void *malloc_fcn(size_t);
@@ -89,32 +109,138 @@ typedef void *realloc_fcn(void *, size_t);
 #define MEMLEAK_MAGIC 0x68706374
 
 #define SKIP_MEM_FRAME 0
+#define SKIP_MEMALIGN_HELPER_FRAME 1
+
+#define DEBUG_WITH_CLEAR 1
+#define NOSTUB 1
 
 #ifdef HPCRUN_STATIC_LINK
+#define real_posix_memalign   __real_posix_memalign
+#define real_memalign   __real_memalign
+#define real_valloc   __real_valloc
 #define real_calloc   __real_calloc
 #define real_free     __real_free
 #define real_malloc   __real_malloc
 #define real_realloc  __real_realloc
 #else
+#define real_posix_memalign   __libc_posix_memalign
+#define real_memalign   __libc_memalign
+#define real_valloc   __libc_valloc
 #define real_calloc   __libc_calloc
 #define real_free     __libc_free
 #define real_malloc   __libc_malloc
 #define real_realloc  __libc_realloc
 #endif
 
-extern calloc_fcn  real_calloc;
-extern free_fcn    real_free;
-extern malloc_fcn  real_malloc;
-extern realloc_fcn real_realloc;
+extern posix_memalign_fcn real_posix_memalign;
+extern memalign_fcn       real_memalign;
+extern valloc_fcn         real_valloc;
+extern calloc_fcn         real_calloc;
+extern free_fcn           real_free;
+extern malloc_fcn         real_malloc;
+extern realloc_fcn        real_realloc;
 
 
 static int leak_detection_enabled = 0; // default is off
 static int leak_detection_uninit = 1;  // default is uninitialized
 
 
+
+/******************************************************************************
+ * private data
+ *****************************************************************************/
+
+
+static struct leakfooter_s *memleak_tree_root = NULL;
+static spinlock_t memtree_lock = SPINLOCK_UNLOCKED;
+
+
+
+
+/******************************************************************************
+ * splay operations
+ *****************************************************************************/
+
+
+static struct leakfooter_s *
+splay(struct leakfooter_s *root, void *key)
+{
+  REGULAR_SPLAY_TREE(leakfooter_s, root, key, memblock, left, right);
+  return root;
+}
+
+
+static void
+splay_insert(struct leakfooter_s *node)
+{
+  void *memblock = node->memblock;
+
+  node->left = node->right = NULL;
+
+  spinlock_lock(&memtree_lock);  
+  if (memleak_tree_root != NULL) {
+    memleak_tree_root = splay(memleak_tree_root, memblock);
+
+    if (memblock < memleak_tree_root->memblock) {
+      node->left = memleak_tree_root->left;
+      node->right = memleak_tree_root;
+      memleak_tree_root->left = NULL;
+    } else if (memblock > memleak_tree_root->memblock) {
+      node->left = memleak_tree_root;
+      node->right = memleak_tree_root->right;
+      memleak_tree_root->right = NULL;
+    } else {
+      TMSG(MEMLEAK, "memleak splay tree: unable to insert %p (already present)\n", 
+	   node->memblock);
+      assert(0);
+    }
+  }
+  memleak_tree_root = node;
+  spinlock_unlock(&memtree_lock);  
+}
+
+
+static struct leakfooter_s *
+splay_delete(void *memblock)
+{
+  struct leakfooter_s *result = NULL;
+
+  spinlock_lock(&memtree_lock);  
+  if (memleak_tree_root == NULL) {
+    spinlock_unlock(&memtree_lock);  
+    TMSG(MEMLEAK, "memleak splay tree empty: unable to delete %p\n", memblock);
+    return NULL;
+  }
+
+  memleak_tree_root = splay(memleak_tree_root, memblock);
+
+  if (memblock != memleak_tree_root->memblock) {
+    spinlock_unlock(&memtree_lock);  
+    TMSG(MEMLEAK, "memleak splay tree: %p not in tree\n", memblock);
+    return NULL;
+  }
+
+  result = memleak_tree_root;
+
+  if (memleak_tree_root->left == NULL) {
+    memleak_tree_root = memleak_tree_root->right;
+    spinlock_unlock(&memtree_lock);  
+    return result;
+  }
+
+  memleak_tree_root->left = splay(memleak_tree_root->left, memblock);
+  memleak_tree_root->left->right = memleak_tree_root->right;
+  memleak_tree_root =  memleak_tree_root->left;
+  spinlock_unlock(&memtree_lock);  
+  return result;
+}
+
+
+
 /******************************************************************************
  * private operations
  *****************************************************************************/
+
 
 static void 
 memleak_initialize(void)
@@ -124,6 +250,89 @@ memleak_initialize(void)
 }
 
 
+static int
+set_footer(char *memptr, size_t bytes, char *routine_name, int frames_to_skip)
+{
+  int use_callpath = hpcrun_memleak_active();
+
+  // footer at end of memory block
+  leakfooter_t *foot = (leakfooter_t *) (memptr + bytes);
+      
+  foot->magic   = MEMLEAK_MAGIC;
+  foot->memblock     = memptr;
+  foot->bytes   = bytes;
+  foot->context = NULL;
+
+  if (use_callpath) {
+    ucontext_t uc;
+    getcontext(&uc);
+    hpcrun_async_block();
+    foot->context = hpcrun_sample_callpath(&uc, hpcrun_memleak_alloc_id(), bytes, 
+					   frames_to_skip, 1);
+    hpcrun_async_unblock();
+
+    TMSG(MEMLEAK, "%s %d bytes (cct node %p) -> %p", 
+	 routine_name, bytes, foot->context, memptr); 
+
+    splay_insert(foot);
+  }
+
+  return use_callpath;
+}
+
+
+static int 
+posix_memalign_helper(void **memptr, size_t alignment, 
+	              size_t bytes, 
+		      char *routine_name, uint32_t frames_to_skip)
+{
+  int footer_size;
+  int success;
+
+  if (leak_detection_uninit) {
+    memleak_initialize();
+  }
+
+  footer_size = (leak_detection_enabled) ? sizeof(leakfooter_t) : 0;
+
+  success = real_posix_memalign(memptr, alignment, bytes + footer_size);
+
+  if (!(leak_detection_enabled && success == 0 && 
+	set_footer(*memptr, bytes, routine_name, frames_to_skip + 1))) {
+
+    TMSG(MEMLEAK, "%s %d bytes (call path not logged) -> %p", 
+	 routine_name, bytes, *memptr); 
+  }
+
+#ifdef DEBUG_WITH_CLEAR
+  memset(*memptr, 0, bytes);
+#endif
+
+  return success;
+}
+
+
+void * 
+malloc_helper(size_t bytes, char *routine_name, uint32_t frames_to_skip)
+{
+  int footer_size;
+  void *memptr;
+
+  if (leak_detection_uninit) {
+    memleak_initialize();
+  }
+
+  footer_size = (leak_detection_enabled) ? sizeof(leakfooter_t) : 0;
+  memptr = real_malloc(bytes + footer_size);
+
+  if (!(leak_detection_enabled && memptr && set_footer(memptr, bytes, routine_name,
+						       frames_to_skip + 1))) {
+    TMSG(MEMLEAK, "%s %d bytes (call path not logged) -> %p", routine_name, bytes, memptr); 
+  }
+
+  return memptr;
+}
+
 
 /******************************************************************************
  * interface operations
@@ -131,178 +340,148 @@ memleak_initialize(void)
 
 
 void *
+MONITOR_EXT_WRAP_NAME(valloc)(size_t bytes)
+{
+  static size_t alignment;
+  int success;
+  void *memptr;
+
+  if (alignment == 0) {
+    alignment = sysconf(_SC_PAGESIZE);
+  }
+
+  success = posix_memalign_helper(&memptr, alignment, bytes, "valloc", SKIP_MEM_FRAME + 1);
+
+  if (success != 0) memptr = NULL;
+
+  return memptr;
+}
+
+
+int
+MONITOR_EXT_WRAP_NAME(posix_memalign)(void **memptr, size_t alignment, size_t bytes)
+{
+  int success = posix_memalign_helper(memptr, alignment, bytes, "posix_memalign", 
+				      SKIP_MEM_FRAME + 1);
+  return success;
+}
+
+
+void *
+MONITOR_EXT_WRAP_NAME(memalign)(size_t boundary, size_t bytes)
+{
+  void *memptr;
+
+  int success = 
+    posix_memalign_helper(&memptr, boundary, bytes, "memalign", SKIP_MEM_FRAME + 1);
+
+  if (success != 0) memptr = NULL;
+
+  return memptr;
+}
+
+
+void *
 MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 {
-  if (leak_detection_uninit) {
-    memleak_initialize();
-  }
-
-  if (leak_detection_enabled) {
-    leakhdr_t *h = (leakhdr_t *)real_malloc(bytes + sizeof(leakhdr_t));
-
-    if (h == NULL) return h; // handle out of memory case
-
-    h->bytes = bytes;
-
-    if (hpcrun_memleak_active()) {
-      ucontext_t uc;
-      getcontext(&uc);
-
-      h->magic = MEMLEAK_MAGIC;
-
-      // attribute malloc to call path 
-      hpcrun_async_block();
-      h->context = 
-	hpcrun_sample_callpath(&uc, hpcrun_memleak_alloc_id(), bytes, SKIP_MEM_FRAME, 1);
-      hpcrun_async_unblock();
-
-      TMSG(MEMLEAK, "malloc %d bytes (cct node %p) -> %p", h->bytes, h->context, h+1); 
-    } else {
-      h->magic = MEMLEAK_MAGIC;
-      h->context = 0;
-      TMSG(MEMLEAK, "malloc %d bytes (call path not logged) -> %p", h->bytes, h+1); 
-    }
-    return h+1;
-  } else {
-    return real_malloc(bytes);
-  }
+#ifdef NOSTUB 
+  void *memptr = malloc_helper(bytes, "malloc", SKIP_MEM_FRAME + 1);
+#ifdef DEBUG_WITH_CLEAR
+  memset(memptr, 0, bytes);
+#endif
+#else
+  void *memptr = real_malloc(bytes);
+#endif
+  return memptr;
 }
 
 
 void *
 MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 {
-  if (leak_detection_uninit) {
-    memleak_initialize();
-  }
-
-  if (leak_detection_enabled) {
-
-    leakhdr_t *h = (leakhdr_t *)real_calloc(1, nmemb * bytes + sizeof(leakhdr_t));
-
-    if (h == NULL) return h; // handle out of memory case
-
-    h->bytes = nmemb * bytes;
-    h->magic = MEMLEAK_MAGIC;
-
-    if (hpcrun_memleak_active()) {
-      ucontext_t uc;
-      getcontext(&uc);
-
-      // attribute calloc to call path 
-      hpcrun_async_block();
-      h->context = 
-	hpcrun_sample_callpath(&uc, hpcrun_memleak_alloc_id(), 
-			       nmemb * bytes, SKIP_MEM_FRAME, 1);
-      hpcrun_async_unblock();
-      TMSG(MEMLEAK, "calloc %d bytes (cct node %p) -> %p", h->bytes, h->context, h+1); 
-    } else {
-      h->context = 0;
-      TMSG(MEMLEAK, "calloc %d bytes (call path not logged) -> %p", h->bytes, h+1); 
-    }
-    return h+1;
-  } else {
-    return real_calloc(nmemb, bytes);
-  }
-}
-
-
-void *
-MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
-{
-  if (leak_detection_uninit) {
-    memleak_initialize();
-  }
-
-  if (leak_detection_enabled) {
-    int notnull = (ptr != 0);
-    leakhdr_t *h = NULL;
-    leakhdr_t old_h = leakhdr_NULL;
-
-    if (notnull) {
-      h = ((leakhdr_t *) ptr) - 1;
-      old_h = *h;
-      h->context = NULL; 
-      h->magic = 0; 
-    }
-      
-    int hdr_size = (bytes != 0) ? sizeof(leakhdr_t) : 0;
-
-    h = (leakhdr_t *)real_realloc(h, bytes + hdr_size);
-
-    if (bytes && h == NULL) return h; // handle out of memory case
-
-    if (hpcrun_memleak_active()) {
-      ucontext_t uc;
-
-      // attribute free of old data (if any) to call path
-      if (notnull) {
-        TMSG(MEMLEAK, "free(%p) %d bytes (cct node %p) [realloc]", ptr, old_h.bytes, old_h.context); 
-	if (old_h.magic == MEMLEAK_MAGIC) hpcrun_free_inc(old_h.context, old_h.bytes); 
-      }
-
-      if (bytes == 0) return h; // handle realloc to 0 size case
-
-      h->magic = MEMLEAK_MAGIC;
-
-      getcontext(&uc);
-
-      // attribute realloc to call path 
-      hpcrun_async_block();
-      h->context = 
-	hpcrun_sample_callpath(&uc, hpcrun_memleak_alloc_id(), bytes, SKIP_MEM_FRAME, 1);
-      hpcrun_async_unblock();
-      h->bytes = bytes;
-      TMSG(MEMLEAK, "realloc(%p) %d bytes (cct node %p) -> %p", ptr, h->bytes, h->context, h+1); 
-    } else {
-      if (bytes == 0) return h; // handle realloc to 0 size case
-
-      h->magic = MEMLEAK_MAGIC;
-      h->context = 0;
-      h->bytes = bytes;
-      TMSG(MEMLEAK, "realloc(%p) %d bytes (call path not logged) -> %p", ptr, h->bytes, h+1); 
-    }
-    return h+1;
-  } else {
-    return real_realloc(ptr, bytes);
-  }
+#ifdef NOSTUB
+  void *memptr = malloc_helper(nmemb * bytes, "calloc", SKIP_MEM_FRAME + 1);
+#else
+  void *memptr = real_malloc(nmemb * bytes);
+#endif
+  memset(memptr, 0, nmemb * bytes);
+  return memptr;
 }
 
 
 void
 MONITOR_EXT_WRAP_NAME(free)(void *ptr)
 {
+#ifdef NOSTUB
   if (ptr == 0) return;
 
   if (leak_detection_uninit) {
     memleak_initialize();
   }
 
-  if (leak_detection_enabled) {
-
-    leakhdr_t *h = ((leakhdr_t *) ptr) - 1;
-
-    if (hpcrun_memleak_active()) {
-      // attribute free to call path 
-      TMSG(MEMLEAK, "free(%p) %d bytes (cct node %p)", ptr, h->bytes, h->context); 
-      if (h->magic == MEMLEAK_MAGIC) {
-         hpcrun_free_inc(h->context, h->bytes);
-         h->magic = 0;
-      } else {
-        // apparently no header; let's free the original pointer instead
-        // and take no destructive actions
-        TMSG(MEMLEAK, "free(%p) without matching allocate!", ptr); 
-        h = ptr;
-      }
+  if (leak_detection_enabled && hpcrun_memleak_active()) {
+    leakfooter_t *f = splay_delete(ptr);
+    // attribute free to call path 
+    if (f && f->magic == MEMLEAK_MAGIC) {
+      TMSG(MEMLEAK, "free(%p) %d bytes (cct node %p)", ptr, f->bytes, f->context); 
+      if (f->context) hpcrun_free_inc(f->context, f->bytes);
+      f->context = NULL;
+      f->magic = 0;
     } else {
-      if (h->magic == MEMLEAK_MAGIC) {
-        TMSG(MEMLEAK, "free(%p) %d bytes (call path not logged)", ptr, h->bytes); 
-      } else {
-        TMSG(MEMLEAK, "free(%p) without matching allocate!", ptr); 
+      // apparently no footer; let's free the original pointer instead
+      // and take no destructive actions
+      TMSG(MEMLEAK, "free(%p) without matching allocate!", ptr); 
+    }
+  } else {
+    TMSG(MEMLEAK, "free(%p) (call path not logged)", ptr); 
+  }
+#endif
+  real_free(ptr);
+}
+
+
+void *
+MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
+{
+#ifdef NOSTUB
+  if (leak_detection_uninit) {
+    memleak_initialize();
+  }
+
+  if (leak_detection_enabled) {
+    int notnull = (ptr != 0);
+    leakfooter_t *f = NULL;
+    leakfooter_t old_f = leakfooter_NULL;
+
+    if (notnull) {
+      f = splay_delete(ptr);
+      old_f = *f;
+      f->context = NULL; 
+      f->magic = 0; 
+
+      if (old_f.context) {
+        TMSG(MEMLEAK, "free(%p) %d bytes (cct node %p) [realloc]", ptr, 
+	     old_f.bytes, old_f.context); 
+
+	hpcrun_free_inc(old_f.context, old_f.bytes); 
       }
     }
-    real_free(h);
+      
+    int footer_size = (bytes != 0) ? sizeof(leakfooter_t) : 0;
+
+    ptr = (leakfooter_t *)real_realloc(ptr, bytes + footer_size);
+
+    if (bytes && ptr == NULL) return ptr; // handle out of memory case
+
+    if (bytes == 0) return ptr; // handle realloc to 0 size case
+
+    set_footer(ptr, bytes, "realloc", SKIP_MEM_FRAME + 1);
   } else {
-    real_free(ptr);
+    return real_realloc(ptr, bytes);
   }
+  return ptr;
+#else
+  return real_realloc(ptr, bytes);
+#endif
 }
+
