@@ -1,0 +1,600 @@
+This is the updated patch for dwarf2.c in binutils-2.20.1 to replace
+the linear search in lookup_address_in_function_table() and
+comp_unit_contains_address() with splay trees.
+
+I'm leaving the patch as a separate file for further testing.  If all
+goes well, then apply the patch the hpc-binutils repository and delete
+this file.
+
+If something goes wrong, then delete or rename this file to something
+that doesn't begin with 'patch-'.
+
+
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c	2010-07-08 14:34:32.000000000 -0500
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c	2010-09-21 14:51:16.000000000 -0500
+@@ -36,6 +36,7 @@
+ #include "libbfd.h"
+ #include "elf-bfd.h"
+ #include "dwarf2.h"
++#include "splay-macros.h"
+ #include <stdio.h>
+ #include <inttypes.h>
+ 
+@@ -181,6 +182,16 @@
+   bfd_vma high;
+ };
+ 
++struct arange_node
++{
++  bfd_vma low;
++  bfd_vma high;
++  struct arange_node *left;
++  struct arange_node *right;
++  struct funcinfo *func;
++  unsigned long orig_len;
++};
++
+ /* A minimal decoding of DWARF2 compilation units.  We only decode
+    what's needed to get to the line number information.  */
+ 
+@@ -258,6 +269,10 @@
+ 
+   /* TRUE if symbols are cached in hash table for faster lookup by name.  */
+   bfd_boolean cached;
++
++  /* Roots of the splay trees for the comp_unit and funcinfo ranges. */
++  struct arange_node *unit_splay_tree;
++  struct arange_node *func_splay_tree;
+ };
+ 
+ /* This data structure holds the information of an abbrev.  */
+@@ -1610,23 +1625,175 @@
+                        &stash->dwarf_ranges_buffer, &stash->dwarf_ranges_size);
+ }
+ 
+-/* Function table functions.  */
++/*----------------  Begin Splay Trees  ----------------*/
+ 
+-/* If ADDR is within TABLE, set FUNCTIONNAME_PTR, and return TRUE.
+-   Note that we need to find the function that has the smallest
+-   range that contains ADDR, to handle inlined functions without
+-   depending upon them being ordered in TABLE by increasing range. */
++#define USE_BROKEN_BEST_FIT_HACK  1
+ 
+-static bfd_boolean
+-lookup_address_in_function_table (struct comp_unit *unit,
+-                                  bfd_vma addr,
+-                                  struct funcinfo **function_ptr,
+-                                  const char **functionname_ptr)
++static struct arange_node *
++arange_tree_splay(struct arange_node *root, bfd_vma addr)
+ {
+-  struct funcinfo* each_func;
+-  struct funcinfo* best_fit = NULL;
++  INTERVAL_SPLAY_TREE(arange_node, root, addr, low, high, left, right);
++  return root;
++}
++
++/*
++ * Add the range [low, high) for the function "new_func" to the tree
++ * "root" and return the new root.
++ *
++ * The original binutils code compares each arange with its own
++ * length, but then treats it as the length of the first function in
++ * the func list.  We emulate the original (broken?) behavior when
++ * USE_BROKEN_BEST_FIT_HACK is set.
++ *
++ * Note: we use this function to add ranges to both the function tree
++ * and the comp-unit tree, so we can't assume new_func != NULL.
++ */
++static struct arange_node *
++arange_tree_add_range(struct arange_node *root,
++		      struct funcinfo *new_func,
++		      bfd_vma low, bfd_vma high)
++{
++  unsigned long new_len = high - low;
++  unsigned long first_func_len = new_len;
++  struct arange_node *tmp, *ltree;
++
++#if USE_BROKEN_BEST_FIT_HACK
++  if (new_func != NULL)
++    first_func_len = new_func->arange.high - new_func->arange.low;
++#endif
++
++  /* Binutils generates many intervals with low == high, but those
++   * don't belong in the tree.
++   */
++  if (low >= high)
++    return root;
++
++  if (root == NULL)
++    {
++      root = bfd_malloc(sizeof(struct arange_node));
++      root->low = low;
++      root->high = high;
++      root->left = NULL;
++      root->right = NULL;
++      root->func = new_func;
++      root->orig_len = first_func_len;
++      return root;
++    }
++
++  /*
++   * Advance low from left to right, break original range into
++   * subranges at every endpoint, and update each range as needed.
++   *
++   * Technically, this could be O(n^2) to build the tree from
++   * scratch, but only if most intervals overlap most other
++   * intervals, and that never happens in practice.  Mergesort,
++   * would build a tree from scratch in total time O(nlog n).
++   */
++  while (low < high)
++    {
++      root = arange_tree_splay(root, low);
++      if (root->low == low && high < root->high)
++        {
++	  /*
++	   * Case 1: break off left side of root.
++	   *
++	   *   |----- new -----|
++	   *   |----- tmp -----+----- root -----|
++	   */
++	  root->low = high;
++	  tmp = bfd_malloc(sizeof(struct arange_node));
++	  tmp->low = low;
++	  tmp->high = high;
++	  if (new_len < root->orig_len) {
++	      tmp->func = new_func;
++	      tmp->orig_len = first_func_len;
++	  } else {
++	      tmp->func = root->func;
++	      tmp->orig_len = root->orig_len;
++	  }
++	  tmp->left = root->left;
++	  tmp->right = NULL;
++	  root->left = tmp;
++	  low = high;
++	}
++      else if (root->low == low)
++        {
++	  /*
++	   * Case 2: update root if needed.
++	   *
++	   *   |----- new ------+--------------|
++	   *   |----- root -----|
++	   */
++	  if (new_len < root->orig_len) {
++	      root->func = new_func;
++	      root->orig_len = first_func_len;
++	  }
++	  low = root->high;
++	}
++      else if (root->low < low && low < root->high)
++        {
++	  /*
++	   * Case 3: break off left side of root.  Low doesn't advance
++	   * in this case.
++	   *
++	   *                 |------- new -------|
++	   *   |---- tmp ----+---- root ----|
++	   */
++	  tmp = bfd_malloc(sizeof(struct arange_node));
++	  *tmp = *root;
++	  tmp->high = low;
++	  root->low = low;
++	  tmp->right = NULL;
++	  root->left = tmp;
++	}
++      else
++        {
++	  /*
++	   * Case 4: low is not within an existing range.  Split the
++	   * tree on either side of low so that root (if nonempty)
++	   * is the first range right of low.  Then, split off the
++	   * left side of the new range.
++	   *
++	   *                     |--- tmp ---+--- new ---|
++	   *   |-- ltree --|                 |------ root ------|
++	   */
++	  if (low < root->low) {
++	      ltree = root->left;
++	      root->left = NULL;
++	  } else {
++	      ltree = root;
++	      root = arange_tree_splay(root->right, low);
++	      ltree->right = NULL;
++	  }
++	  tmp = bfd_malloc(sizeof(struct arange_node));
++	  tmp->low = low;
++	  tmp->high = (root == NULL || high < root->low) ? high : root->low;
++	  tmp->func = new_func;
++	  tmp->orig_len = first_func_len;
++	  tmp->left = ltree;
++	  tmp->right = root;
++	  root = tmp;
++	  low = tmp->high;
++	}
++    }
++
++  return root;
++}
++
++/*
++ * Build the function ranges splay tree from scratch.
++ *
++ * This and make_unit_splay_tree() assume that we add all of the
++ * aranges before doing any lookups.
++ */
++static struct arange_node *
++make_func_splay_tree(struct comp_unit *unit)
++{
++  struct arange_node *root;
++  struct funcinfo *each_func;
+   struct arange *arange;
+ 
++  root = NULL;
+   for (each_func = unit->function_table;
+        each_func;
+        each_func = each_func->prev_func)
+@@ -1635,25 +1802,72 @@
+            arange;
+            arange = arange->next)
+         {
+-          if (addr >= arange->low && addr < arange->high)
+-            {
+-              if (!best_fit ||
+-                  ((arange->high - arange->low) < (best_fit->arange.high - best_fit->arange.low)))
+-                best_fit = each_func;
++	  root = arange_tree_add_range(root, each_func,
++					 arange->low, arange->high);
+             }
+         }
++  return root;
++}
++
++/*
++ * Build the comp_unit ranges splay tree from scratch.
++ */
++static struct arange_node *
++make_unit_splay_tree(struct comp_unit *unit)
++{
++  struct arange_node *root;
++  struct arange *arange;
++
++  root = NULL;
++  for (arange = &unit->arange; arange != NULL; arange = arange->next)
++    {
++      root = arange_tree_add_range(root, NULL, arange->low, arange->high);
+     }
+ 
+-  if (best_fit)
++  return root;
++}
++
++/*-----------------  End Splay Trees  -----------------*/
++
++/* Function table functions.  */
++
++/* If ADDR is within TABLE, set FUNCTIONNAME_PTR, and return TRUE.
++   Note that we need to find the function that has the smallest
++   range that contains ADDR, to handle inlined functions without
++   depending upon them being ordered in TABLE by increasing range. */
++
++static bfd_boolean
++lookup_address_in_function_table (struct comp_unit *unit,
++                                  bfd_vma addr,
++                                  struct funcinfo **function_ptr,
++                                  const char **functionname_ptr)
++{
++  bfd_boolean ans;
++
++  /* Note: this assumes that we add all of the aranges before doing
++   * any lookups.
++   */
++  if (unit->func_splay_tree == NULL)
+     {
+-      *functionname_ptr = best_fit->name;
+-      *function_ptr = best_fit;
+-      return TRUE;
++      unit->func_splay_tree = make_func_splay_tree(unit);
++    }
++
++  unit->func_splay_tree = arange_tree_splay(unit->func_splay_tree, addr);
++  if (unit->func_splay_tree != NULL
++      && unit->func_splay_tree->func != NULL
++      && unit->func_splay_tree->low <= addr
++      && addr < unit->func_splay_tree->high)
++    {
++      *function_ptr = unit->func_splay_tree->func;
++      *functionname_ptr = (*function_ptr)->name;
++      ans = TRUE;
+     }
+   else
+     {
+-      return FALSE;
++      ans = FALSE;
+     }
++
++  return ans;
+ }
+ 
+ /* If SYM at ADDR is within function table of UNIT, set FILENAME_PTR
+@@ -2278,22 +2492,29 @@
+ static bfd_boolean
+ comp_unit_contains_address (struct comp_unit *unit, bfd_vma addr)
+ {
+-  struct arange *arange;
++  bfd_boolean ans;
+ 
+   if (unit->error)
+     return FALSE;
+ 
+-  arange = &unit->arange;
+-  do
++  /* Note: this assumes that we add all of the aranges before doing
++   * any lookups.
++   */
++  if (unit->unit_splay_tree == NULL)
+     {
+-      if (addr >= arange->low && addr < arange->high) {
+-        return TRUE;
++      unit->unit_splay_tree = make_unit_splay_tree(unit);
+       }
+-      arange = arange->next;
++
++  ans = FALSE;
++  unit->unit_splay_tree = arange_tree_splay(unit->unit_splay_tree, addr);
++  if (unit->unit_splay_tree != NULL
++      && unit->unit_splay_tree->low <= addr
++      && addr < unit->unit_splay_tree->high)
++    {
++      ans = TRUE;
+     }
+-  while (arange);
+ 
+-  return FALSE;
++  return ans;
+ }
+ 
+ /* HPCToolkit: additional refactoring */
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/elf.c version-binutils-2.20.1/binutils-2.20.1/bfd/elf.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/elf.c	2010-07-26 22:49:39.000000000 -0500
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/elf.c	2010-09-21 13:54:17.000000000 -0500
+@@ -44,6 +44,7 @@
+ #include "elf-bfd.h"
+ #include "libiberty.h"
+ #include "safe-ctype.h"
++#include "splay-macros.h"
+ 
+ static int elf_sort_sections (const void *, const void *);
+ static bfd_boolean assign_file_positions_except_relocs (bfd *, struct bfd_link_info *);
+@@ -7143,64 +7144,6 @@
+ }
+ 
+ 
+-/*
+- *  The Sleator-Tarjan top-down splay algorithm.
+- *
+- *  This macro is the body of the splay function.  It rotates the node
+- *  containing "key" to the root, if there is one, else the new root
+- *  will be an adjacent node (left or right).
+- *
+- *  Nodes in the tree should be a struct with name "type" containing
+- *  at least these three field names with these types:
+- *
+- *    value : same type as key,
+- *    left  : struct type *,
+- *    right : struct type *.
+- *
+- *  "root" is a struct type * and is reset to the new root.
+- */
+-
+-#define REGULAR_SPLAY_TREE(type, root, key, value, left, right)	\
+-    struct type dummy_node;					\
+-    struct type *ltree_max, *rtree_min, *y;			\
+-    if ((root) != NULL) {					\
+-	ltree_max = rtree_min = &dummy_node;			\
+-	for (;;) {						\
+-	    if ((key) < (root)->value) {			\
+-		if ((y = (root)->left) == NULL)			\
+-		    break;					\
+-		if ((key) < y->value) {				\
+-		    (root)->left = y->right;			\
+-		    y->right = (root);				\
+-		    (root) = y;					\
+-		    if ((y = (root)->left) == NULL)		\
+-			break;					\
+-		}						\
+-		rtree_min->left = (root);			\
+-		rtree_min = (root);				\
+-	    } else if ((key) > (root)->value) {			\
+-		if ((y = (root)->right) == NULL)		\
+-		    break;					\
+-		if ((key) > y->value) {				\
+-		    (root)->right = y->left;			\
+-		    y->left = (root);				\
+-		    (root) = y;					\
+-		    if ((y = (root)->right) == NULL)		\
+-			break;					\
+-		}						\
+-		ltree_max->right = (root);			\
+-		ltree_max = (root);				\
+-	    } else						\
+-		break;						\
+-	    (root) = y;						\
+-	}							\
+-	ltree_max->right = (root)->left;			\
+-	rtree_min->left = (root)->right;			\
+-	(root)->left = dummy_node.right;			\
+-	(root)->right = dummy_node.left;			\
+-    }
+-
+-
+ struct splay_node_s *
+ splay(struct splay_node_s *root, bfd_vma key)
+ {
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/splay-macros.h version-binutils-2.20.1/binutils-2.20.1/bfd/splay-macros.h
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/splay-macros.h	1969-12-31 18:00:00.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/splay-macros.h	2010-09-20 17:13:32.000000000 -0500
+@@ -0,0 +1,160 @@
++/*
++ *  Splay Tree Macros for regular and interval trees.
++ *
++ *  Copyright (c) 2010, Rice University.
++ *  All rights reserved.
++ *
++ *  Redistribution and use in source and binary forms, with or without
++ *  modification, are permitted provided that the following conditions are
++ *  met:
++ *
++ *  * Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ *
++ *  * Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ *
++ *  * Neither the name of Rice University (RICE) nor the names of its
++ *    contributors may be used to endorse or promote products derived from
++ *    this software without specific prior written permission.
++ *
++ *  This software is provided by RICE and contributors "as is" and any
++ *  express or implied warranties, including, but not limited to, the
++ *  implied warranties of merchantability and fitness for a particular
++ *  purpose are disclaimed. In no event shall RICE or contributors be
++ *  liable for any direct, indirect, incidental, special, exemplary, or
++ *  consequential damages (including, but not limited to, procurement of
++ *  substitute goods or services; loss of use, data, or profits; or
++ *  business interruption) however caused and on any theory of liability,
++ *  whether in contract, strict liability, or tort (including negligence
++ *  or otherwise) arising in any way out of the use of this software, even
++ *  if advised of the possibility of such damage.
++ *
++ *  $Id: splay-macros.h 207 2010-03-03 00:44:44Z krentel $
++ */
++
++#ifndef  _SPLAY_TREE_MACROS_
++#define  _SPLAY_TREE_MACROS_
++
++#include <stdio.h>
++
++/*
++ *  The Sleator-Tarjan top-down splay algorithm for regular,
++ *  single-key trees.
++ *
++ *  This macro is the body of the splay function.  It rotates the node
++ *  containing "key" to the root, if there is one, else the new root
++ *  will be an adjacent node (left or right).
++ *
++ *  Nodes in the tree should be a struct with name "type" containing
++ *  at least these three field names with these types:
++ *
++ *    value : same type as key,
++ *    left  : struct type *,
++ *    right : struct type *.
++ *
++ *  "root" is a struct type * and is reset to the new root.
++ */
++
++#define REGULAR_SPLAY_TREE(type, root, key, value, left, right)	\
++    struct type dummy_node;					\
++    struct type *ltree_max, *rtree_min, *yy;			\
++    if ((root) != NULL) {					\
++	ltree_max = rtree_min = &dummy_node;			\
++	for (;;) {						\
++	    if ((key) < (root)->value) {			\
++		if ((yy = (root)->left) == NULL)		\
++		    break;					\
++		if ((key) < yy->value) {			\
++		    (root)->left = yy->right;			\
++		    yy->right = (root);				\
++		    (root) = yy;				\
++		    if ((yy = (root)->left) == NULL)		\
++			break;					\
++		}						\
++		rtree_min->left = (root);			\
++		rtree_min = (root);				\
++	    } else if ((key) > (root)->value) {			\
++		if ((yy = (root)->right) == NULL)		\
++		    break;					\
++		if ((key) > yy->value) {			\
++		    (root)->right = yy->left;			\
++		    yy->left = (root);				\
++		    (root) = yy;				\
++		    if ((yy = (root)->right) == NULL)		\
++			break;					\
++		}						\
++		ltree_max->right = (root);			\
++		ltree_max = (root);				\
++	    } else						\
++		break;						\
++	    (root) = yy;					\
++	}							\
++	ltree_max->right = (root)->left;			\
++	rtree_min->left = (root)->right;			\
++	(root)->left = dummy_node.right;			\
++	(root)->right = dummy_node.left;			\
++    }
++
++/*
++ *  The Sleator-Tarjan top-down splay algorithm for interval trees.
++ *
++ *  This macro is the body of the splay function.  It rotates the
++ *  interval containing "key" to the root, if there is one, else the
++ *  new root will be an adjacent interval (left or right).
++ *
++ *  Nodes in the tree should be a struct with name "type" containing
++ *  at least these four field names with these types:
++ *
++ *    start : same type as key,
++ *    end   : same type as key,
++ *    left  : struct type *,
++ *    right : struct type *.
++ *
++ *  "root" is a struct type * and is reset to the new root.
++ *
++ *  Intervals are semi-inclusive: [start, end).
++ */
++
++#define INTERVAL_SPLAY_TREE(type, root, key, start, end, left, right)	\
++    struct type dummy_node;						\
++    struct type *ltree_max, *rtree_min, *yy;				\
++    if ((root) != NULL) {						\
++	ltree_max = rtree_min = &dummy_node;				\
++	for (;;) {							\
++	    if ((key) < (root)->start) {				\
++		if ((yy = (root)->left) == NULL)			\
++		    break;						\
++		if ((key) < yy->start) {				\
++		    (root)->left = yy->right;				\
++		    yy->right = (root);					\
++		    (root) = yy;					\
++		    if ((yy = (root)->left) == NULL)			\
++			break;						\
++		}							\
++		rtree_min->left = (root);				\
++		rtree_min = (root);					\
++	    } else if ((key) >= (root)->end) {				\
++		if ((yy = (root)->right) == NULL)			\
++		    break;						\
++		if ((key) >= yy->end) {					\
++		    (root)->right = yy->left;				\
++		    yy->left = (root);					\
++		    (root) = yy;					\
++		    if ((yy = (root)->right) == NULL)			\
++			break;						\
++		}							\
++		ltree_max->right = (root);				\
++		ltree_max = (root);					\
++	    } else							\
++		break;							\
++	    (root) = yy;						\
++	}								\
++	ltree_max->right = (root)->left;				\
++	rtree_min->left = (root)->right;				\
++	(root)->left = dummy_node.right;				\
++	(root)->right = dummy_node.left;				\
++    }
++
++#endif  /* ! _SPLAY_TREE_MACROS_ */
