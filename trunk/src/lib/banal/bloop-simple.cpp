@@ -97,44 +97,44 @@ using namespace Prof;
 //****************************************************************************
 
 // makeStructureSimple: Uses the line map to make structure
-Struct::Stmt*
-banal::bloop::makeStructureSimple(Struct::LM* lmStrct,
-				  BinUtil::LM* lm, VMA vma)
+Prof::Struct::Stmt*
+BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStrct,
+				   BinUtil::LM* lm, VMA vma)
 {
   string procnm, filenm;
-  SrcFile::ln line = Struct::Tree::UnknownLine;
+  SrcFile::ln line = Prof::Struct::Tree::UnknownLine;
   lm->GetSourceFileInfo(vma, 0 /*opIdx*/, procnm, filenm, line);
   procnm = BinUtil::canonicalizeProcName(procnm);
   
   if (filenm.empty()) {
-    filenm = Struct::Tree::UnknownFileNm;
+    filenm = Prof::Struct::Tree::UnknownFileNm;
   }
   if (procnm.empty()) {
-    procnm = Struct::Tree::UnknownProcNm;
+    procnm = Prof::Struct::Tree::UnknownProcNm;
   }
   
-  Struct::File* fileStrct = Struct::File::demand(lmStrct, filenm);
-  Struct::Proc* procStrct = Struct::Proc::demand(fileStrct, procnm, "",
-						 line, line);
+  Prof::Struct::File* fileStrct = Prof::Struct::File::demand(lmStrct, filenm);
+  Prof::Struct::Proc* procStrct = Prof::Struct::Proc::demand(fileStrct, procnm,
+							     "", line, line);
 
   VMA begVMA = vma, endVMA = vma + 1;
   BinUtil::Insn* insn = lm->findInsn(vma, 0 /*opIdx*/);
   if (insn) {
     endVMA = insn->endVMA();
   }
-  Struct::Stmt* stmtStrct = demandStmtStructure(lmStrct, procStrct, line, 
-						begVMA, endVMA);
+  Prof::Struct::Stmt* stmtStrct = demandStmtStructure(lmStrct, procStrct, line, 
+						      begVMA, endVMA);
   
   return stmtStrct;
 }
 
 
 Struct::Stmt*
-banal::bloop::demandStmtStructure(Prof::Struct::LM* lmStrct,
-				  Struct::Proc* procStrct,
-				  SrcFile::ln line, VMA begVMA, VMA endVMA)
+BAnal::Struct::demandStmtStructure(Prof::Struct::LM* lmStrct,
+				   Prof::Struct::Proc* procStrct,
+				   SrcFile::ln line, VMA begVMA, VMA endVMA)
 {
-  Struct::Stmt* stmtStrct = procStrct->findStmt(line);
+  Prof::Struct::Stmt* stmtStrct = procStrct->findStmt(line);
 
   if (stmtStrct) {
     if (0) {
@@ -149,7 +149,7 @@ banal::bloop::demandStmtStructure(Prof::Struct::LM* lmStrct,
   }
   else {
     // N.B.: calls lmStrct->insertStmtIf()
-    stmtStrct = new Struct::Stmt(procStrct, line, line, begVMA, endVMA);
+    stmtStrct = new Prof::Struct::Stmt(procStrct, line, line, begVMA, endVMA);
   }
 
   return stmtStrct;

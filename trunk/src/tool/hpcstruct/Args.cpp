@@ -219,7 +219,7 @@ Args::Ctor()
   searchPathStr = ".";
   isIrreducibleIntervalLoop = true;
   isForwardSubstitution = true;
-  doNormalizeTy = banal::bloop::NormTy_All;
+  doNormalizeTy = BAnal::Struct::NormTy_All;
   prettyPrintOutput = true;
 }
 
@@ -399,17 +399,17 @@ Args::ddump() const
 
 //***************************************************************************
 
-banal::bloop::NormTy
+BAnal::Struct::NormTy
 Args::parseArg_norm(const string& value, const char* err_note)
 {
   if (value == "all") {
-    return banal::bloop::NormTy_All;
+    return BAnal::Struct::NormTy_All;
   }
   else if (value == "safe") {
-    return banal::bloop::NormTy_Safe;
+    return BAnal::Struct::NormTy_Safe;
   }
   else if (value == "none") {
-    return banal::bloop::NormTy_None;
+    return BAnal::Struct::NormTy_None;
   }
   else {
     ARG_ERROR(err_note << ": Unexpected value received: " << value);

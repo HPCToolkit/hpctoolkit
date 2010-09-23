@@ -151,7 +151,7 @@ realmain(int argc, char* argv[])
   Prof::Struct::Root* rootStrct = new Prof::Struct::Root("");
   Prof::Struct::Tree* strctTree = new Prof::Struct::Tree("", rootStrct);
   
-  using namespace banal::bloop;
+  using namespace BAnal::Struct;
   Prof::Struct::LM* lmStrct = makeStructure(lm, args.doNormalizeTy, 
 					    args.isIrreducibleIntervalLoop,
 					    args.isForwardSubstitution,

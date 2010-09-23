@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef banal_bloop_hpp
-#define banal_bloop_hpp
+#ifndef BAnal_Struct_hpp
+#define BAnal_Struct_hpp
 
 //************************* System Include Files ****************************
 
@@ -72,9 +72,9 @@
 
 //***************************************************************************
 
-namespace banal {
+namespace BAnal {
 
-namespace bloop {
+namespace Struct {
 
   enum NormTy {
     // TODO: redo along the lines of BinUtil::LM::ReadFlg
@@ -102,10 +102,10 @@ namespace bloop {
   writeStructure(std::ostream& os, Prof::Struct::Tree* strctTree,
 		 bool prettyPrint = true);
 
-} // namespace bloop
+} // namespace Struct
 
-} // namespace banal
+} // namespace BAnal
 
 //****************************************************************************
 
-#endif // banal_bloop_hpp
+#endif // BAnal_Struct_hpp

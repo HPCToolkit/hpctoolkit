@@ -356,7 +356,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
   Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
   
-  // account for new structure inserted by banal::bloop::makeStructureSimple()
+  // account for new structure inserted by BAnal::Struct::makeStructureSimple()
   lmStrct->computeVMAMaps();
 
   delete lm;
