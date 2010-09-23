@@ -104,7 +104,7 @@ public:
   std::string searchPathStr;          // default: "."
   bool isIrreducibleIntervalLoop;     // default: true
   bool isForwardSubstitution;         // default: false
-  banal::bloop::NormTy doNormalizeTy; // default: NormTy_All
+  BAnal::Struct::NormTy doNormalizeTy; // default: NormTy_All
   std::string dbgProcGlob;
 
   std::string out_filenm;
@@ -117,7 +117,7 @@ private:
   void
   Ctor();
 
-  banal::bloop::NormTy
+  BAnal::Struct::NormTy
   parseArg_norm(const std::string& value, const char* err_note);
 
 private:

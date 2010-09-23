@@ -48,7 +48,6 @@
 //
 // Purpose:
 //   A derivation of the IR interface for the ISA (disassembler) class
-//   of bloop.
 //
 //   Note: many stubs still exist.
 //
@@ -98,7 +97,7 @@ using namespace BinUtil;
 // OAInterface: We assume each instantiation of the IRInterface
 // represents one procedure.  We then need to find all the possible
 // branch targets.
-banal::OAInterface::OAInterface (Proc* proc)
+BAnal::OAInterface::OAInterface (Proc* proc)
   : m_proc(proc)
 {
   m_branchTargetSet.clear();
@@ -116,7 +115,7 @@ banal::OAInterface::OAInterface (Proc* proc)
 }
 
 
-banal::OAInterface::~OAInterface()
+BAnal::OAInterface::~OAInterface()
 { 
   m_branchTargetSet.clear();
 }
@@ -127,7 +126,7 @@ banal::OAInterface::~OAInterface()
 //-------------------------------------------------------------------------
 
 string 
-banal::OAInterface::toString(const OA::ProcHandle h)
+BAnal::OAInterface::toString(const OA::ProcHandle h)
 { 
   std::ostringstream oss;
   oss << h.hval();
@@ -136,7 +135,7 @@ banal::OAInterface::toString(const OA::ProcHandle h)
 
 
 string
-banal::OAInterface::toString(const OA::CallHandle h)
+BAnal::OAInterface::toString(const OA::CallHandle h)
 {
   std::ostringstream oss;
   oss << h.hval();
@@ -145,7 +144,7 @@ banal::OAInterface::toString(const OA::CallHandle h)
 
 
 string 
-banal::OAInterface::toString(const OA::StmtHandle h)
+BAnal::OAInterface::toString(const OA::StmtHandle h)
 { 
   std::ostringstream oss;
   if (h.hval() == 0) {
@@ -159,7 +158,7 @@ banal::OAInterface::toString(const OA::StmtHandle h)
 
 
 string 
-banal::OAInterface::toString(const OA::ExprHandle h) 
+BAnal::OAInterface::toString(const OA::ExprHandle h) 
 {
   std::ostringstream oss;
   oss << h.hval();
@@ -168,7 +167,7 @@ banal::OAInterface::toString(const OA::ExprHandle h)
 
 
 string 
-banal::OAInterface::toString(const OA::OpHandle h) 
+BAnal::OAInterface::toString(const OA::OpHandle h) 
 {
   std::ostringstream oss;
   oss << h.hval();
@@ -177,7 +176,7 @@ banal::OAInterface::toString(const OA::OpHandle h)
 
 
 string 
-banal::OAInterface::toString(const OA::MemRefHandle h)
+BAnal::OAInterface::toString(const OA::MemRefHandle h)
 {
   std::ostringstream oss;
   oss << h.hval();
@@ -186,7 +185,7 @@ banal::OAInterface::toString(const OA::MemRefHandle h)
 
 
 string 
-banal::OAInterface::toString(const OA::SymHandle h) 
+BAnal::OAInterface::toString(const OA::SymHandle h) 
 {
   const char* sym = IRHNDL_TO_TY(h, const char*);
   string s(sym);
@@ -195,7 +194,7 @@ banal::OAInterface::toString(const OA::SymHandle h)
 
 
 string 
-banal::OAInterface::toString(const OA::ConstSymHandle h) 
+BAnal::OAInterface::toString(const OA::ConstSymHandle h) 
 {
   std::ostringstream oss;
   oss << h.hval();
@@ -204,7 +203,7 @@ banal::OAInterface::toString(const OA::ConstSymHandle h)
 
 
 string 
-banal::OAInterface::toString(const OA::ConstValHandle h) 
+BAnal::OAInterface::toString(const OA::ConstValHandle h) 
 {
   std::ostringstream oss;
   oss << h.hval();
@@ -213,7 +212,7 @@ banal::OAInterface::toString(const OA::ConstValHandle h)
 
 
 void 
-banal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
+BAnal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
 {
   Insn* insn = IRHNDL_TO_TY(stmt, Insn*);
  
@@ -245,14 +244,14 @@ banal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
 
 
 void 
-banal::OAInterface::dump(OA::MemRefHandle h, std::ostream& os)
+BAnal::OAInterface::dump(OA::MemRefHandle h, std::ostream& os)
 {
   DIAG_Die(DIAG_Unimplemented);
 }
 
 
 void 
-banal::OAInterface::currentProc(OA::ProcHandle p)
+BAnal::OAInterface::currentProc(OA::ProcHandle p)
 {
   DIAG_Die(DIAG_Unimplemented);
 }
@@ -263,7 +262,7 @@ banal::OAInterface::currentProc(OA::ProcHandle p)
 //---------------------------------------------------------------------------
 
 OA::OA_ptr<OA::IRRegionStmtIterator> 
-banal::OAInterface::procBody(OA::ProcHandle h)
+BAnal::OAInterface::procBody(OA::ProcHandle h)
 {
   Proc* p = IRHNDL_TO_TY(h, Proc*);
   DIAG_Assert(p == m_proc, "");
@@ -279,7 +278,7 @@ banal::OAInterface::procBody(OA::ProcHandle h)
 
 // Translate a ISA statement type into a IRStmtType.
 OA::CFG::IRStmtType
-banal::OAInterface::getCFGStmtType(OA::StmtHandle h) 
+BAnal::OAInterface::getCFGStmtType(OA::StmtHandle h) 
 {
   OA::CFG::IRStmtType ty;
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
@@ -288,7 +287,7 @@ banal::OAInterface::getCFGStmtType(OA::StmtHandle h)
   ISA::InsnDesc d = insn->desc();
   if (d.IsBrUnCondRel()) {
     // Unconditional jump. If the branch targets a PC outside of its
-    // procedure, then we just ignore it.  For bloop this is fine
+    // procedure, then we just ignore it.  For hpcstruct this is fine
     // since the branch won't create any loops.
     br_targ = insn->targetVMA(insn->vma());
     if (m_proc->isIn(br_targ)) {
@@ -305,7 +304,7 @@ banal::OAInterface::getCFGStmtType(OA::StmtHandle h)
   } 
   else if (d.IsBrCondRel()) {
     // Unstructured two-way branches. If the branch targets a PC
-    // outside of its procedure, then we just ignore it.  For bloop
+    // outside of its procedure, then we just ignore it.  For hpcstruct
     // this is fine since the branch won't create any loops.
     br_targ = insn->targetVMA(insn->vma());
     if (m_proc->isIn(br_targ)) {
@@ -338,7 +337,7 @@ banal::OAInterface::getCFGStmtType(OA::StmtHandle h)
 
 
 OA::StmtLabel
-banal::OAInterface::getLabel(OA::StmtHandle h)
+BAnal::OAInterface::getLabel(OA::StmtHandle h)
 {
   OA::StmtLabel lbl = 0;
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
@@ -350,7 +349,7 @@ banal::OAInterface::getLabel(OA::StmtHandle h)
 
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-banal::OAInterface::getFirstInCompound(OA::StmtHandle h)
+BAnal::OAInterface::getFirstInCompound(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<RegionStmtIterator>();
@@ -362,7 +361,7 @@ banal::OAInterface::getFirstInCompound(OA::StmtHandle h)
 //--------------------------------------------------------
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-banal::OAInterface::loopBody(OA::StmtHandle h)
+BAnal::OAInterface::loopBody(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<OA::IRRegionStmtIterator>();
@@ -370,7 +369,7 @@ banal::OAInterface::loopBody(OA::StmtHandle h)
 
 
 OA::StmtHandle
-banal::OAInterface::loopHeader(OA::StmtHandle h)
+BAnal::OAInterface::loopHeader(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::StmtHandle(0);
@@ -378,7 +377,7 @@ banal::OAInterface::loopHeader(OA::StmtHandle h)
 
 
 OA::StmtHandle
-banal::OAInterface::getLoopIncrement(OA::StmtHandle h)
+BAnal::OAInterface::getLoopIncrement(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::StmtHandle(0);
@@ -386,7 +385,7 @@ banal::OAInterface::getLoopIncrement(OA::StmtHandle h)
 
 
 bool
-banal::OAInterface::loopIterationsDefinedAtEntry(OA::StmtHandle h)
+BAnal::OAInterface::loopIterationsDefinedAtEntry(OA::StmtHandle h)
 {
   return false;
 }
@@ -397,7 +396,7 @@ banal::OAInterface::loopIterationsDefinedAtEntry(OA::StmtHandle h)
 //--------------------------------------------------------
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-banal::OAInterface::trueBody(OA::StmtHandle h)
+BAnal::OAInterface::trueBody(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<RegionStmtIterator>();
@@ -405,7 +404,7 @@ banal::OAInterface::trueBody(OA::StmtHandle h)
 
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-banal::OAInterface::elseBody(OA::StmtHandle h)
+BAnal::OAInterface::elseBody(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<RegionStmtIterator>();
@@ -417,7 +416,7 @@ banal::OAInterface::elseBody(OA::StmtHandle h)
 //--------------------------------------------------------
 
 int
-banal::OAInterface::numMultiCases(OA::StmtHandle h)
+BAnal::OAInterface::numMultiCases(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return -1;
@@ -425,7 +424,7 @@ banal::OAInterface::numMultiCases(OA::StmtHandle h)
 
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-banal::OAInterface::multiBody(OA::StmtHandle h, int bodyIndex)
+BAnal::OAInterface::multiBody(OA::StmtHandle h, int bodyIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<RegionStmtIterator>();
@@ -433,7 +432,7 @@ banal::OAInterface::multiBody(OA::StmtHandle h, int bodyIndex)
 
 
 bool
-banal::OAInterface::isBreakImplied(OA::StmtHandle h)
+BAnal::OAInterface::isBreakImplied(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return false;
@@ -441,7 +440,7 @@ banal::OAInterface::isBreakImplied(OA::StmtHandle h)
 
 
 bool
-banal::OAInterface::isCatchAll(OA::StmtHandle h, int bodyIndex)
+BAnal::OAInterface::isCatchAll(OA::StmtHandle h, int bodyIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
   return false;
@@ -449,7 +448,7 @@ banal::OAInterface::isCatchAll(OA::StmtHandle h, int bodyIndex)
 
 
 OA::OA_ptr<OA::IRRegionStmtIterator>
-banal::OAInterface::getMultiCatchall(OA::StmtHandle h)
+BAnal::OAInterface::getMultiCatchall(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<RegionStmtIterator>();
@@ -457,7 +456,7 @@ banal::OAInterface::getMultiCatchall(OA::StmtHandle h)
 
 
 OA::ExprHandle
-banal::OAInterface::getSMultiCondition(OA::StmtHandle h, int bodyIndex)
+BAnal::OAInterface::getSMultiCondition(OA::StmtHandle h, int bodyIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::ExprHandle(0);
@@ -469,7 +468,7 @@ banal::OAInterface::getSMultiCondition(OA::StmtHandle h, int bodyIndex)
 //--------------------------------------------------------
 
 OA::StmtLabel
-banal::OAInterface::getTargetLabel(OA::StmtHandle h, int n)
+BAnal::OAInterface::getTargetLabel(OA::StmtHandle h, int n)
 {
   OA::StmtLabel lbl = 0;
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
@@ -489,7 +488,7 @@ banal::OAInterface::getTargetLabel(OA::StmtHandle h, int n)
 //--------------------------------------------------------
 
 int
-banal::OAInterface::numUMultiTargets(OA::StmtHandle h)
+BAnal::OAInterface::numUMultiTargets(OA::StmtHandle h)
 { 
   DIAG_Die(DIAG_Unimplemented);
   return -1;
@@ -497,7 +496,7 @@ banal::OAInterface::numUMultiTargets(OA::StmtHandle h)
 
 
 OA::StmtLabel
-banal::OAInterface::getUMultiTargetLabel(OA::StmtHandle h, int targetIndex)
+BAnal::OAInterface::getUMultiTargetLabel(OA::StmtHandle h, int targetIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::StmtLabel(0);
@@ -505,7 +504,7 @@ banal::OAInterface::getUMultiTargetLabel(OA::StmtHandle h, int targetIndex)
 
 
 OA::StmtLabel
-banal::OAInterface::getUMultiCatchallLabel(OA::StmtHandle h)
+BAnal::OAInterface::getUMultiCatchallLabel(OA::StmtHandle h)
 { 
   DIAG_Die(DIAG_Unimplemented);
   return OA::StmtLabel(0);
@@ -513,7 +512,7 @@ banal::OAInterface::getUMultiCatchallLabel(OA::StmtHandle h)
 
 
 OA::ExprHandle
-banal::OAInterface::getUMultiCondition(OA::StmtHandle h, int targetIndex)
+BAnal::OAInterface::getUMultiCondition(OA::StmtHandle h, int targetIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
   return OA::ExprHandle(0);
@@ -525,7 +524,7 @@ banal::OAInterface::getUMultiCondition(OA::StmtHandle h, int targetIndex)
 //--------------------------------------------------------
 
 int
-banal::OAInterface::numberOfDelaySlots(OA::StmtHandle h)
+BAnal::OAInterface::numberOfDelaySlots(OA::StmtHandle h)
 {
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
   return insn->numDelaySlots();
@@ -536,8 +535,8 @@ banal::OAInterface::numberOfDelaySlots(OA::StmtHandle h)
 // Symbol Handles
 //--------------------------------------------------------
 
-OA::SymHandle 
-banal::OAInterface::getProcSymHandle(OA::ProcHandle h)
+OA::SymHandle
+BAnal::OAInterface::getProcSymHandle(OA::ProcHandle h)
 { 
   Proc* p = IRHNDL_TO_TY(h, Proc*);
   DIAG_Assert(p == m_proc, "");

@@ -111,7 +111,7 @@ RELOCATEDcmp(const string& x)
 // When Alien contexts are nested, there may be many at the top of the
 // stack at one time; in the opposite case, only one is on the top of
 // the stack at any time.
-#define BLOOP_NEST_ALIEN_CONTEXTS 0
+#define STRUCT_NEST_ALIEN_CONTEXTS 0
 
 //***************************************************************************
 
@@ -119,11 +119,11 @@ RELOCATEDcmp(const string& x)
 // LocationMgr
 //***************************************************************************
 
-namespace banal {
+namespace BAnal {
 
-namespace bloop {
+namespace Struct {
 
-LocationMgr::LocationMgr(Struct::LM* lm)
+LocationMgr::LocationMgr(Prof::Struct::LM* lm)
 {
   init(lm);
 }
@@ -135,7 +135,7 @@ LocationMgr::~LocationMgr()
 
 
 void
-LocationMgr::init(Struct::LM* lm)
+LocationMgr::init(Prof::Struct::LM* lm)
 {
   m_loadMod = lm;
   mDBG = 0;
@@ -144,7 +144,7 @@ LocationMgr::init(Struct::LM* lm)
 
 
 void
-LocationMgr::begSeq(Struct::Proc* enclosingProc, bool isFwdSubst)
+LocationMgr::begSeq(Prof::Struct::Proc* enclosingProc, bool isFwdSubst)
 {
   DIAG_Assert(m_ctxtStack.empty() && m_alienMap.empty(), 
 	      "LocationMgr contains leftover crud!");
@@ -154,7 +154,8 @@ LocationMgr::begSeq(Struct::Proc* enclosingProc, bool isFwdSubst)
 
 
 void
-LocationMgr::locate(Struct::Loop* loop, Struct::ACodeNode* proposed_scope,
+LocationMgr::locate(Prof::Struct::Loop* loop,
+		    Prof::Struct::ACodeNode* proposed_scope,
 		    string& filenm, string& procnm, SrcFile::ln line)
 {
   DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << loop->toXML() << "\n"
@@ -167,7 +168,8 @@ LocationMgr::locate(Struct::Loop* loop, Struct::ACodeNode* proposed_scope,
 
 
 void
-LocationMgr::locate(Struct::Stmt* stmt, Struct::ACodeNode* proposed_scope,
+LocationMgr::locate(Prof::Struct::Stmt* stmt,
+		    Prof::Struct::ACodeNode* proposed_scope,
 		    string& filenm, string& procnm, SrcFile::ln line)
 {
   DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << stmt->toXML() << "\n"
@@ -189,7 +191,8 @@ LocationMgr::endSeq()
 
 
 bool
-LocationMgr::containsLineFzy(Struct::ACodeNode* x, SrcFile::ln line, bool loopIsAlien)
+LocationMgr::containsLineFzy(Prof::Struct::ACodeNode* x, SrcFile::ln line,
+			     bool loopIsAlien)
 {
   int beg_epsilon = 0, end_epsilon = 0;
   
@@ -198,26 +201,26 @@ LocationMgr::containsLineFzy(Struct::ACodeNode* x, SrcFile::ln line, bool loopIs
     // procedure end lines are not very accurate
     // loop begin lines are somewhat accurate
     // loop end line are not very accurate
-    case Struct::ANode::TyProc:
+    case Prof::Struct::ANode::TyProc:
       { 
-	beg_epsilon = 2;  end_epsilon = 100;
+        beg_epsilon = 2;  end_epsilon = 100;
 
 	// Procedure specialization (e.g. template instantiation)
-	// violates non-overlapping principle.
-	Struct::ACodeNode* next = x->nextSiblingNonOverlapping(); // sorted
+	// violates non-overlapping principle.  [sorted!]
+	Prof::Struct::ACodeNode* next = x->nextSiblingNonOverlapping();
 	if (next) {
 	  end_epsilon = (int)(next->begLine() - 1 - x->endLine());
 	}
-	else if (dynamic_cast<Struct::Proc*>(x)->hasSymbolic()) {
+	else if (dynamic_cast<Prof::Struct::Proc*>(x)->hasSymbolic()) {
 	  // the last procedure in a file
 	  end_epsilon = INT_MAX;
 	}
       }
       break;
-    case Struct::ANode::TyAlien:
+    case Prof::Struct::ANode::TyAlien:
       beg_epsilon = 25; end_epsilon = INT_MAX; 
       break;
-    case Struct::ANode::TyLoop:
+    case Prof::Struct::ANode::TyLoop:
       beg_epsilon = 5;  end_epsilon = INT_MAX;
       if (loopIsAlien) { end_epsilon = 20; }   
       break;
@@ -230,26 +233,26 @@ LocationMgr::containsLineFzy(Struct::ACodeNode* x, SrcFile::ln line, bool loopIs
 
 
 bool
-LocationMgr::containsIntervalFzy(Struct::ACodeNode* x, 
+LocationMgr::containsIntervalFzy(Prof::Struct::ACodeNode* x, 
 				 SrcFile::ln begLn, SrcFile::ln endLn)
 {
   int beg_epsilon = 0, end_epsilon = 0;
   
   switch (x->type()) {
     // see assumptions above.
-    case Struct::ANode::TyProc:
+    case Prof::Struct::ANode::TyProc:
       {
-	beg_epsilon = 2;  end_epsilon = 100;
-	Struct::ACodeNode* next = x->nextSiblingNonOverlapping(); // sorted
+	beg_epsilon = 2;  end_epsilon = 100;  // sorted (below)
+	Prof::Struct::ACodeNode* next = x->nextSiblingNonOverlapping();
 	if (next) {
 	  end_epsilon = (int)(next->begLine() - 1 - x->endLine());
 	}
       }
       break;
-    case Struct::ANode::TyAlien:
+    case Prof::Struct::ANode::TyAlien:
       beg_epsilon = 10; end_epsilon = 10; 
       break;
-    case Struct::ANode::TyLoop:
+    case Prof::Struct::ANode::TyLoop:
       beg_epsilon = 5;  end_epsilon = 5;
       break;
     default: 
@@ -272,7 +275,7 @@ LocationMgr::toString(int flags) const
 std::ostream&
 LocationMgr::dump(std::ostream& os, int flags) const
 {
-  os << "{ bloop::LocationMgr: Context Stack: [top ... bottom]\n";
+  os << "{ Struct::LocationMgr: Context Stack: [top ... bottom]\n";
   for (MyStack::const_iterator it = m_ctxtStack.begin();
        it != m_ctxtStack.end(); ++it) {
     it->dump(os, 0, "  ");
@@ -282,7 +285,7 @@ LocationMgr::dump(std::ostream& os, int flags) const
     for (AlienStrctMap::const_iterator it = m_alienMap.begin();
 	 (it != m_alienMap.end()); ++it) {
       const AlienStrctMapKey& key = it->first;
-      const Struct::Alien* a = it->second;
+      const Prof::Struct::Alien* a = it->second;
       os << "  " << hex << key.parent_scope << dec << " <" << key.filenm 
 	 << ">[" << key.procnm << "] --> " << a->toXML() << endl;
     }
@@ -306,17 +309,17 @@ LocationMgr::debug(int x)
   mDBG = x;
 }
 
-} // namespace bloop
+} // namespace Struct
 
-} // namespace banal
+} // namespace BAnal
 
 
 //***************************************************************************
 
 
-namespace banal {
+namespace BAnal {
 
-namespace bloop {
+namespace Struct {
 
 bool 
 LocationMgr::Ctxt::containsLine(SrcFile::ln line) const 
@@ -397,7 +400,7 @@ LocationMgr::toString(CtxtChange_t x)
 
 
 LocationMgr::CtxtChange_t
-LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
+LocationMgr::determineContext(Prof::Struct::ACodeNode* proposed_scope,
 			      string& filenm, string& procnm, SrcFile::ln line)
 {
   DIAG_DevMsgIf(mDBG, "LocationMgr::determineContext");
@@ -425,7 +428,8 @@ LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
   
   //const string& proposed_procnm = proposed_ctxt->ctxt()->name();
   //const string& proposed_filenm = proposed_ctxt->fileName();
-  Struct::Loop* proposed_loop = dynamic_cast<Struct::Loop*>(proposed_scope);
+  Prof::Struct::Loop* proposed_loop =
+    dynamic_cast<Prof::Struct::Loop*>(proposed_scope);
   
   // proposed loop lives within proposed context 
   proposed_ctxt->loop() = proposed_loop;
@@ -531,8 +535,8 @@ LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
     CtxtChange_set(change, CtxtChange_PUSH);
     
     // Find or create the alien scope
-    Struct::Alien* alien =
-#if (BLOOP_NEST_ALIEN_CONTEXTS)
+    Prof::Struct::Alien* alien =
+#if (STRUCT_NEST_ALIEN_CONTEXTS)
       demandAlienStrct(proposed_scope, filenm, procnm, line, true);
 #else
       demandAlienStrct(proposed_scope, filenm, procnm, line, false);
@@ -552,13 +556,13 @@ LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
 
 
 void
-LocationMgr::fixContextStack(const Struct::ACodeNode* proposed_scope)
+LocationMgr::fixContextStack(const Prof::Struct::ACodeNode* proposed_scope)
 {
   // FIXME: a big hack!
   m_ctxtStack.clear();
 
-  Struct::ACodeNode* x = proposed_scope->ancestorProcCtxt();
-  for ( ; typeid(*x) != typeid(Struct::Proc);
+  Prof::Struct::ACodeNode* x = proposed_scope->ancestorProcCtxt();
+  for ( ; typeid(*x) != typeid(Prof::Struct::Proc);
 	x = x->parent()->ancestorProcCtxt()) {
     m_ctxtStack.push_back(Ctxt(x));
   }
@@ -584,13 +588,15 @@ LocationMgr::fixContextStack(const Struct::ACodeNode* proposed_scope)
 // Note that this implies that if 'cur_scope' is a context (TyPROC or
 // ALIEN), cur_ctxt will be the *next* context up the ancestor chain.
 static void
-fixScopeTree_init(Struct::ACodeNode*& cur_ctxt, Struct::ACodeNode*& cur_scope)
+fixScopeTree_init(Prof::Struct::ACodeNode*& cur_ctxt,
+		  Prof::Struct::ACodeNode*& cur_scope)
 {
-  DIAG_Assert(typeid(*cur_scope) != typeid(Struct::Proc), DIAG_UnexpectedInput << "will return the wrong answer!");
+  DIAG_Assert(typeid(*cur_scope) != typeid(Prof::Struct::Proc),
+	      DIAG_UnexpectedInput << "will return the wrong answer!");
   while (true) {
-    Struct::ACodeNode* xxx = cur_scope->ACodeNodeParent();
-    if (typeid(*xxx) == typeid(Struct::Proc) 
-	|| typeid(*xxx) == typeid(Struct::Alien)) {
+    Prof::Struct::ACodeNode* xxx = cur_scope->ACodeNodeParent();
+    if (typeid(*xxx) == typeid(Prof::Struct::Proc) 
+	|| typeid(*xxx) == typeid(Prof::Struct::Alien)) {
       cur_ctxt = xxx;
       break;
     }
@@ -600,8 +606,8 @@ fixScopeTree_init(Struct::ACodeNode*& cur_ctxt, Struct::ACodeNode*& cur_scope)
 
 
 void
-LocationMgr::fixScopeTree(Struct::ACodeNode* from_scope, 
-			  Struct::ACodeNode* true_ctxt, 
+LocationMgr::fixScopeTree(Prof::Struct::ACodeNode* from_scope, 
+			  Prof::Struct::ACodeNode* true_ctxt, 
 			  SrcFile::ln begLn, SrcFile::ln endLn)
 {
   // INVARIANT: 'true_ctxt' is a Struct::Proc or Struct::Alien and an
@@ -612,8 +618,8 @@ LocationMgr::fixScopeTree(Struct::ACodeNode* from_scope,
     return;
   }
 
-  Struct::ACodeNode *cur1_scope = from_scope, *cur2_scope = from_scope;
-  Struct::ACodeNode* cur_ctxt = NULL;
+  Prof::Struct::ACodeNode *cur1_scope = from_scope, *cur2_scope = from_scope;
+  Prof::Struct::ACodeNode* cur_ctxt = NULL;
   fixScopeTree_init(cur_ctxt, cur2_scope);  
   while (cur_ctxt != true_ctxt) {
     
@@ -625,24 +631,25 @@ LocationMgr::fixScopeTree(Struct::ACodeNode* from_scope,
     //           ..                       ..
     //             cur1_scope               cur1_scope [bounds]
     DIAG_Assert(Logic::implies(cur_ctxt != true_ctxt, 
-			       typeid(*cur_ctxt) == typeid(Struct::Alien)), "");
+			       typeid(*cur_ctxt) == typeid(Prof::Struct::Alien)), "");
     
     // 1. cur2_scope becomes a sibling of cur_ctxt
     cur2_scope->unlink();
     cur2_scope->link(cur_ctxt->parent());
 
-    if (typeid(*cur_ctxt) == typeid(Struct::Alien)) {
+    if (typeid(*cur_ctxt) == typeid(Prof::Struct::Alien)) {
       // for [cur1_scope ... cur2_scope] (which we know is non-empty)
       //   adjust bounds of scope
       //   replicate cur_ctxt where necessary
-      for (Struct::ACodeNode *x = cur1_scope, *x_old = NULL;
+      for (Prof::Struct::ACodeNode *x = cur1_scope, *x_old = NULL;
 	   x != cur2_scope->ACodeNodeParent(); 
 	   x_old = x, x = x->ACodeNodeParent()) {
 	x->setLineRange(begLn, endLn, 0 /*propagate*/); // FIXME
 	
 	if ((x_old && x->childCount() >= 2) 
 	    || (!x_old && x->childCount() >= 1)) {
-	  alienateScopeTree(x, dynamic_cast<Struct::Alien*>(cur_ctxt), x_old);
+	  alienateScopeTree(x, dynamic_cast<Prof::Struct::Alien*>(cur_ctxt),
+			    x_old);
 	}
       }
     }
@@ -657,21 +664,22 @@ LocationMgr::fixScopeTree(Struct::ACodeNode* from_scope,
 
 
 void
-LocationMgr::alienateScopeTree(Struct::ACodeNode* scope, Struct::Alien* alien, 
-			       Struct::ACodeNode* exclude)
+LocationMgr::alienateScopeTree(Prof::Struct::ACodeNode* scope,
+			       Prof::Struct::Alien* alien, 
+			       Prof::Struct::ACodeNode* exclude)
 {
   // create new alien context based on 'alien'
-  Struct::ACodeNode* clone = 
+  Prof::Struct::ACodeNode* clone = 
     demandAlienStrct(scope, alien->fileName(), alien->name(), 
 		     alien->begLine(), /*tosOnCreate*/ false);
   clone->setLineRange(alien->begLine(), alien->endLine(), 0 /*propagate*/);
   
   // move non-alien children of 'scope' into 'clone'
-  for (Struct::ACodeNodeChildIterator it(scope); it.Current(); /* */) {
-    Struct::ACodeNode* child = it.current();
+  for (Prof::Struct::ACodeNodeChildIterator it(scope); it.Current(); /* */) {
+    Prof::Struct::ACodeNode* child = it.current();
     it++; // advance iterator -- it is pointing at 'child'
 
-    if (typeid(*child) != typeid(Struct::Alien) && child != exclude
+    if (typeid(*child) != typeid(Prof::Struct::Alien) && child != exclude
 	&& !scope->containsInterval(child->begLine(), child->endLine())) {
       child->unlink();
       child->link(clone);
@@ -774,7 +782,7 @@ LocationMgr::switch_findCtxt(const string& filenm, const string& procnm,
 
 
 LocationMgr::Ctxt*
-LocationMgr::findCtxt(Struct::ACodeNode* ctxt_scope) const
+LocationMgr::findCtxt(Prof::Struct::ACodeNode* ctxt_scope) const
 {
   for (MyStack::const_iterator it = m_ctxtStack.begin();
        it != m_ctxtStack.end(); ++it) {
@@ -812,8 +820,8 @@ LocationMgr::findCtxt(FindCtxt_MatchOp& op,
 }
 
 
-Struct::Alien* 
-LocationMgr::demandAlienStrct(Struct::ACodeNode* parent_scope,
+Prof::Struct::Alien* 
+LocationMgr::demandAlienStrct(Prof::Struct::ACodeNode* parent_scope,
 			      const std::string& filenm,
 			      const std::string& procnm, 
 			      SrcFile::ln line,
@@ -822,8 +830,8 @@ LocationMgr::demandAlienStrct(Struct::ACodeNode* parent_scope,
   // INVARIANT: 'parent_scope' should either be the top of the stack
   // or the first first enclosing LOOP or PROC of the top of the
   // stack.
-
-  Struct::Alien* alien = NULL;
+  
+  Prof::Struct::Alien* alien = NULL;
   AlienStrctMapKey key(parent_scope, filenm, procnm);
 
   pair<AlienStrctMap::const_iterator, AlienStrctMap::const_iterator> range = 
@@ -832,7 +840,7 @@ LocationMgr::demandAlienStrct(Struct::ACodeNode* parent_scope,
   for (AlienStrctMap::const_iterator it = range.first; 
        (it != range.second); ++it) {
     // we know that filenm and procnm match
-    Struct::Alien* a = it->second;
+    Prof::Struct::Alien* a = it->second;
     
     if ( (SrcFile::isValid(line) && containsLineFzy(a, line))
 	 || (!SrcFile::isValid(a->begLine())) ) {
@@ -842,14 +850,15 @@ LocationMgr::demandAlienStrct(Struct::ACodeNode* parent_scope,
   }
   
   if (!alien) {
-    Struct::ACodeNode* p = (tosOnCreate) ? topCtxtRef().scope() : parent_scope;
-    alien = new Struct::Alien(p, filenm, procnm, line, line);
+    Prof::Struct::ACodeNode* p =
+      (tosOnCreate) ? topCtxtRef().scope() : parent_scope;
+    alien = new Prof::Struct::Alien(p, filenm, procnm, line, line);
     m_alienMap.insert(std::make_pair(key, alien));
   }
 
   return alien;
 }
 
-} // namespace bloop
+} // namespace Struct
 
-} // namespace banal
+} // namespace BAnal

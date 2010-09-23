@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef bloop_LocationMgr_hpp 
-#define bloop_LocationMgr_hpp
+#ifndef Struct_LocationMgr_hpp 
+#define Struct_LocationMgr_hpp
 
 //************************* System Include Files ****************************
 
@@ -78,8 +78,8 @@
 
 //*************************** Forward Declarations **************************
 
-namespace banal {
-namespace bloop {
+namespace BAnal {
+namespace Struct {
 
   inline bool 
   ctxtNameEqFuzzy(const string& ctxtnm, const string& x) 
@@ -93,28 +93,28 @@ namespace bloop {
   inline bool 
   ctxtNameEqFuzzy(const Prof::Struct::ACodeNode* callCtxt, const string& x) 
   {
-    using namespace Prof;
     bool t1 = ctxtNameEqFuzzy(callCtxt->name(), x);
     bool t2 = false;
-    if (typeid(*callCtxt) == typeid(Struct::Proc)) {
-      const Struct::Proc* pStrct = dynamic_cast<const Struct::Proc*>(callCtxt);
+    if (typeid(*callCtxt) == typeid(Prof::Struct::Proc)) {
+      const Prof::Struct::Proc* pStrct =
+	dynamic_cast<const Prof::Struct::Proc*>(callCtxt);
       t2 = ctxtNameEqFuzzy(pStrct->linkName(), x);
     }
     return (t1 || t2);    
   }
 
 
-} // namespace bloop
-} // namespace banal
+} // namespace Struct
+} // namespace BAnal
 
 
 //***************************************************************************
 // LocationMgr
 //***************************************************************************
 
-namespace banal {
+namespace BAnal {
 
-namespace bloop {
+namespace Struct {
 
 // --------------------------------------------------------------------------
 // 'LocationMgr' manages the location of loops and statements by
@@ -578,10 +578,10 @@ private:
 };
   
 
-} // namespace bloop
+} // namespace Struct
 
-} // namespace banal
+} // namespace BAnal
 
 //***************************************************************************
 
-#endif // bloop_LocationMgr_hpp
+#endif // Struct_LocationMgr_hpp

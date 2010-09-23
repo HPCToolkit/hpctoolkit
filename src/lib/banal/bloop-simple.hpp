@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef banal_bloop_simple_hpp
-#define banal_bloop_simple_hpp
+#ifndef BAnal_Struct_simple_hpp
+#define BAnal_Struct_simple_hpp
 
 //************************* System Include Files ****************************
 
@@ -72,9 +72,9 @@
 
 //*************************** Forward Declarations ***************************
 
-namespace banal {
+namespace BAnal {
 
-namespace bloop {
+namespace Struct {
 
   // NOTE: Since hpcprof/hpcprof-flat only invoke this routine we keep
   // it separate.  Invoking the full structure recovery pulls in a
@@ -87,10 +87,10 @@ namespace bloop {
   demandStmtStructure(Prof::Struct::LM* lmStrct, Prof::Struct::Proc* procStrct,
 		      SrcFile::ln line, VMA begVMA, VMA endVMA);
 
-} // namespace bloop
+} // namespace Struct
 
-} // namespace banal
+} // namespace BAnal
 
 //****************************************************************************
 
-#endif // banal_bloop_simple_hpp
+#endif // BAnal_Struct_simple_hpp

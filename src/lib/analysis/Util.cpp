@@ -300,17 +300,17 @@ namespace Util {
 // and perform a lookup by VMA first.  If this fails:
 //
 //   - If the structure was seeded by full structure by
-//     bloop::makeStructure (useStruct), then use the "unknown" file
+//     Struct::makeStructure (useStruct), then use the "unknown" file
 //     procedures and
 //
-//   - Otherwise, create structure using banal::bloop::makeStructureSimple.
+//   - Otherwise, create structure using BAnal::Struct::makeStructureSimple.
 //
 // In either case, return a Struct::Stmt.  This is important because
 // it ensures that every sample maps to a Stmt, a fact that is
 // exploited by Analysis::CallPath::noteStaticStructureOnLeaves().
 //
 // The above policy assumes that when full structure has been
-// provided, banal::bloop::makeStructureSimple could have undesirable
+// provided, BAnal::Struct::makeStructureSimple could have undesirable
 // effects.  One example of a problem is that for simple structure, a
 // line -> Struct::Stmt map is consulted which is ambiguous in the
 // presence of inline (Struct::Alien).
@@ -326,12 +326,12 @@ demandStructure(VMA vma, Prof::Struct::LM* lmStrct,
 	Struct::File::demand(lmStrct, Struct::Tree::UnknownFileNm);
       Struct::Proc* procStrct =
 	Struct::Proc::demand(fileStrct, Struct::Tree::UnknownProcNm);
-      strct = banal::bloop::demandStmtStructure(lmStrct, procStrct,
+      strct = BAnal::Struct::demandStmtStructure(lmStrct, procStrct,
 						Struct::Tree::UnknownLine,
 						vma, vma + 1);
     }
     else {
-      strct = banal::bloop::makeStructureSimple(lmStrct, lm, vma);
+      strct = BAnal::Struct::makeStructureSimple(lmStrct, lm, vma);
     }
   }
   return strct;

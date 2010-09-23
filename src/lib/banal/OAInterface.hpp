@@ -48,7 +48,7 @@
 //
 // Purpose:
 //   A derivation of the IR interface for the ISA (disassembler) class
-//   of bloop.
+//   of Struct.
 //
 //   Note: many stubs still exist.
 //
@@ -57,8 +57,8 @@
 //
 //***************************************************************************
 
-#ifndef banal_OAInterface_hpp
-#define banal_OAInterface_hpp
+#ifndef BAnal_OAInterface_hpp
+#define BAnal_OAInterface_hpp
 
 //************************* System Include Files ****************************
 
@@ -110,7 +110,7 @@
 // 
 //***************************************************************************
 
-namespace banal {
+namespace BAnal {
 
 inline BinUtil::Insn*
 OA_CFG_getBegInsn(OA::OA_ptr<OA::CFG::NodeInterface> bb) 
@@ -138,14 +138,14 @@ OA_CFG_getEndInsn(OA::OA_ptr<OA::CFG::NodeInterface> bb)
   return stmt;
 }
 
-} // end namespace banal
+} // end namespace BAnal
 
 
 //***************************************************************************
 // Iterators
 //***************************************************************************
 
-namespace banal {
+namespace BAnal {
 
 class RegionStmtIterator: public OA::IRRegionStmtIterator {
 public:
@@ -170,7 +170,7 @@ private:
 // Abstract Interfaces
 //***************************************************************************
 
-namespace banal {
+namespace BAnal {
 
 class OAInterface 
   : public virtual OA::IRHandlesIRInterface,
@@ -305,6 +305,6 @@ private:
   std::set<VMA> m_branchTargetSet;
 };
 
-} // namespace banal
+} // namespace BAnal
 
-#endif // banal_OAInterface_hpp
+#endif // BAnal_OAInterface_hpp
