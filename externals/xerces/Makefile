@@ -5,11 +5,7 @@
 #
 
 PKG_NAME = xerces
-SRC_DIR = xerces-c-src_2_8_0
-BUILD_DIR = $(SRC_DIR)/src/xercesc
-
-XERCESCROOT = $(shell pwd)/$(SRC_DIR)
-export XERCESCROOT
+SRC_DIR = xerces-c-3.1.1
 
 FETCH_TARFILE = $(SRC_DIR).tar.gz
 
