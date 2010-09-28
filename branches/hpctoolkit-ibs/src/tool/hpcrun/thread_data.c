@@ -102,7 +102,7 @@ hpcrun_thread_data_new(void)
   thread_data_t *td = hpcrun_get_thread_data();
 
   td->suspend_sampling            = 1; // protect against spurious signals
-
+  
   // initialize thread_data with known bogus bit pattern so that missing
   // initializations will be apparent.
   memset(td, 0xfe, sizeof(thread_data_t));

@@ -642,7 +642,7 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
             if(cct_node==NULL)
             {
               /*when here, hpcrun_sample_callpath_w_bt return null. we drop this sample and restart IBS*/
-	      EEMSG("%x NULLLLLL\n",linear_addr);
+	      EMSG("%x NULLLLLL\n",linear_addr);
               if(pfm_restart(fd)){
                 EEMSG("Fail to restart IBS");
                 exit(1);

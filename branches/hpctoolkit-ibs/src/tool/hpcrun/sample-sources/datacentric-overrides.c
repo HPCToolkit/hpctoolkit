@@ -50,7 +50,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <ucontext.h>
-
+#include <sys/time.h>
 
 
 /******************************************************************************
@@ -117,7 +117,10 @@ void *
 MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 {
   void *h = real_malloc(bytes);
-
+//  if(hpcrun_sync_is_blocked())
+//  {
+//    return h;
+//  }
   if (hpcrun_datacentric_active()) {
     ucontext_t uc;
     getcontext(&uc);
@@ -126,6 +129,7 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
     hpcrun_async_block();
     cct_node_t* cct_node = 
       hpcrun_sample_callpath(&uc, hpcrun_dc_malloc_id(), 0, 0, 1);
+
     if (! cct_node ) {
       EMSG("cct node in malloc (datacentric-overrides.c) is NULL -- skipping the sample");
       return h;
@@ -155,6 +159,8 @@ void *
 MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 {
   void *h = real_calloc(1, nmemb*bytes);
+  if(hpcrun_sync_is_blocked())
+    return h;
 
   if (hpcrun_datacentric_active()) {
     ucontext_t uc;
@@ -189,6 +195,8 @@ void *
 MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 {
   void *h = real_realloc(ptr, bytes);
+  if(hpcrun_sync_is_blocked())
+    return h;
 
   if (hpcrun_datacentric_active()) {
     ucontext_t uc;

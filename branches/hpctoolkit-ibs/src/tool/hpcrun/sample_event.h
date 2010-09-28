@@ -70,13 +70,11 @@ hpcrun_async_block(void)
   TD_GET(suspend_sampling) = 1;
 }
 
-
 static inline void
 hpcrun_async_unblock(void)
 {
   TD_GET(suspend_sampling) = 0;
 }
-
 
 static inline int
 hpcrun_async_is_blocked(void* pc)
@@ -85,6 +83,13 @@ hpcrun_async_is_blocked(void* pc)
 	   || (TD_GET(suspend_sampling) && !ENABLED(ASYNC_RISKY))
 	   || hpcrun_trampoline_interior(pc)
 	   || hpcrun_trampoline_at_entry(pc) );
+}
+
+static inline int
+hpcrun_sync_is_blocked(void)
+{
+  return ( (! hpcrun_td_avail()) 
+	   || (TD_GET(suspend_sampling)));
 }
 
 
