@@ -170,10 +170,9 @@ toLong(const char* str, unsigned* endidx)
   }
   if (errno || (!endidx && endptr && strlen(endptr) > 0)) {
     string msg = "[StrUtil::toLong] Cannot convert `" + string(str) 
-      + "' to integral value.";
+      + "' to integral (long) value";
     if (errno) { // not always set
-      msg += ". ";
-      msg += strerror(errno);
+      msg += string(" (") + strerror(errno) + string(")");
     }
     DIAG_Throw(msg);
   }
@@ -189,19 +188,18 @@ toUInt64(const char* str, unsigned* endidx)
   
   errno = 0;
   char* endptr = NULL;
-  value = strtoul(str, &endptr, 0);
+  value = strtoull(str, &endptr, 0);
   if (endidx) {
     *endidx = (endptr - str) / sizeof(char);
   }
   if (errno || (!endidx && endptr && strlen(endptr) > 0)) {
     string msg = "[StrUtil::toUInt64] Cannot convert `" + string(str)
-      + "' to integral value.";
+      + "' to integral (uint64_t) value";
     if (errno) { // not always set
-      msg += ". ";
-      msg += strerror(errno);
+      msg += string(" (") + strerror(errno) + string(")");
     }
     DIAG_Throw(msg);
-  } 
+  }
   return value;
 }
 
@@ -220,13 +218,12 @@ toDbl(const char* str, unsigned* endidx)
   }
   if (errno || (!endidx && endptr && strlen(endptr) > 0)) {
     string msg = "[StrUtil::toDbl] Cannot convert `" + string(str)
-      + "' to real value.";
+      + "' to real (double) value.";
     if (errno) { // not always set
-      msg += ". ";
-      msg += strerror(errno);
+      msg += string(" (") + strerror(errno) + string(")");
     }
     DIAG_Throw(msg);
-  } 
+  }
   return value;
 }
 
