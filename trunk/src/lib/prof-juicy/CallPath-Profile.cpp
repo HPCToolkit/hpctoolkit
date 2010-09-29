@@ -56,6 +56,8 @@
 
 //************************* System Include Files ****************************
 
+#define __STDC_LIMIT_MACROS /* stdint; locate here for CentOS 5/gcc 4.1.2) */
+
 #include <iostream>
 using std::hex;
 using std::dec;
@@ -71,13 +73,12 @@ using std::string;
 #include <cstdio>
 #include <cstring> // strcmp
 
-#include <alloca.h>
-
-#define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+
+#include <alloca.h>
 
 //*************************** User Include Files ****************************
 
