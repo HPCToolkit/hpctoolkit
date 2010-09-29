@@ -73,6 +73,9 @@ using std::string;
 
 #include <alloca.h>
 
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
+
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
@@ -120,7 +123,7 @@ Profile::Profile(const std::string name)
   m_measurementGranularity = 0;
   m_raToCallsiteOfst = 0;
 
-  m_traceMinTime = 0;
+  m_traceMinTime = UINT64_MAX;
   m_traceMaxTime = 0;
 
   m_mMgr = new Metric::Mgr;
@@ -877,18 +880,18 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   string   traceFileName;
 
   string   traceMinTimeStr, traceMaxTimeStr;
-  uint64_t traceMinTime = 0, traceMaxTime = 0;
+  uint64_t traceMinTime = UINT64_MAX, traceMaxTime = 0;
 
   val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_traceMinTime);
   if (val) {
     traceMinTimeStr = val;
-    if (val[0] != '\0') { traceMinTime = StrUtil::toLong(traceMinTimeStr); }
+    if (val[0] != '\0') { traceMinTime = StrUtil::toUInt64(traceMinTimeStr); }
   }
 
   val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_traceMaxTime);
   if (val) {
     traceMaxTimeStr = val;
-    if (val[0] != '\0') { traceMaxTime = StrUtil::toLong(traceMaxTimeStr); }
+    if (val[0] != '\0') { traceMaxTime = StrUtil::toUInt64(traceMaxTimeStr); }
   }
 
   haveTrace = (traceMinTime != 0 && traceMaxTime != 0);
@@ -1135,7 +1138,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 	node_parent = it->second;
       }
       else {
-	DIAG_Throw("Cannot find parent for node " << nodeFmt.id);	
+	DIAG_Throw("Cannot find parent for node " << nodeFmt.id);
       }
     }
 
