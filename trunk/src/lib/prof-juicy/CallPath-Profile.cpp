@@ -92,6 +92,7 @@ using namespace xml;
 
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/hpcrun-metric.h>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileUtil.hpp>
@@ -971,11 +972,22 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   metric_desc_t* m_lst = metricTbl.lst;
   for (uint i = 0; i < numMetricsSrc; i++) {
     const metric_desc_t& mdesc = m_lst[i];
-    
+
+    // ----------------------------------------
+    // 
+    // ----------------------------------------
     string nm = mdesc.name;
     string desc = mdesc.description;
     string profRelId = StrUtil::toStr(i);
 
+    bool doMakeInclExcl = (rFlags & RFlg_MakeInclExcl);
+    
+
+    // Certain metrics do not have both incl/excl values
+    if (nm == HPCRUN_METRIC_RetCnt) {
+      doMakeInclExcl = false;
+    }
+     
     DIAG_Assert(mdesc.flags.fields.ty == MetricFlags_Ty_Raw
 		|| mdesc.flags.fields.ty == MetricFlags_Ty_Final,
 		DIAG_UnexpectedInput);
@@ -983,16 +995,24 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Assert(Logic::implies(mdesc.flags.fields.ty == MetricFlags_Ty_Final,
 			       !(rFlags & RFlg_MakeInclExcl)),
 		DIAG_UnexpectedInput);
-
+    
+    // ----------------------------------------
     // 1. Make 'regular'/'inclusive' metric descriptor
+    // ----------------------------------------
     Metric::SampledDesc* m =
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
 			      profFileName, profRelId, "HPCRUN");
-    if ((rFlags & RFlg_MakeInclExcl)) {
+
+    if (doMakeInclExcl) {
       m->type(Metric::ADesc::TyIncl);
     }
     else {
-      m->type(Metric::ADesc::fromHPCRunMetricValTy(mdesc.flags.fields.valTy));
+      if (nm == HPCRUN_METRIC_RetCnt) {
+	m->type(Metric::ADesc::TyExcl);
+      }
+      else {
+	m->type(Metric::ADesc::fromHPCRunMetricValTy(mdesc.flags.fields.valTy));
+      }
     }
     if (!m_sfx.empty()) {
       m->nameSfx(m_sfx);
@@ -1001,8 +1021,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     
     prof->metricMgr()->insert(m);
 
+    // ----------------------------------------
     // 2. Make associated 'exclusive' descriptor, if applicable
-    if ((rFlags & RFlg_MakeInclExcl)) {
+    // ----------------------------------------
+    if (doMakeInclExcl) {
       Metric::SampledDesc* mSmpl = 
 	new Metric::SampledDesc(nm, desc, mdesc.period,
 				true/*isUnitsEvents*/,
