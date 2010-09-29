@@ -591,7 +591,7 @@ Mgr::computePartners()
 		 << " [" << m->name() << "]");
       std::pair<StringToADescMap::iterator, bool> ret = 
 	metricsMap->insert(make_pair(nm, m));
-      DIAG_Assert(ret.second, "Found duplicate entry!");
+      DIAG_Assert(ret.second, "Metric::Mgr::computePartners: Found duplicate entry inserting:\n\t" << m->toString() << "\nOther entry:\n\t" << ret.first->second->toString());
     }
   }
 
