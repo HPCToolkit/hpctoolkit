@@ -5,7 +5,7 @@
 #
 
 PKG_NAME = libmonitor
-SRC_DIR = libmonitor-0.x-r114
+SRC_DIR = libmonitor-0.x-r115
 
 FETCH_TARFILE = $(SRC_DIR).tar.gz
 
