@@ -124,6 +124,7 @@ struct event_info { // Typical structure to hold event info
 static int n_events = 0;                               // # events for this sample source
 static const int MAX_EVENTS = SAMPLE_SOURCE_SPECIFIC;
 static struct event_info local_event[MAX_EVENTS];      // event codes (derived from event names usually)
+static const long DEFAULT_THRESHOLD = 1000000L;  // sample source specific
 
 //
 // Sample source events almost always get at least 1 metric slot.
@@ -318,7 +319,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     long thresh;
 
     // extract event threshold
-    extract_ev_thresh(event, sizeof(name), name, &thresh);
+    hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD);
 
     // process events, store whatever is needed for starting/stopping
     // the sample source in the file local variable

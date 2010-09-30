@@ -94,6 +94,7 @@
 
 #define OVERFLOW_MODE 0
 #define WEIGHT_METRIC 0
+#define DEFAULT_THRESHOLD  2000000L
 
 /******************************************************************************
  * forward declarations 
@@ -194,7 +195,7 @@ METHOD_FN(supports_event,const char *ev_str)
   int ec;
   long th;
 
-  extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th);
+  hpcrun_extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th, DEFAULT_THRESHOLD);
   return PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK;
 }
  
@@ -215,7 +216,10 @@ METHOD_FN(process_event_list, int lush_metrics)
     long thresh;
 
     TMSG(PAPI,"checking event spec = %s",event);
-    extract_ev_thresh(event, sizeof(name), name, &thresh);
+    if (! hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD)) {
+      AMSG("WARNING: %s using default threshold %ld, "
+	   "better to use an explicit threshold.", name, DEFAULT_THRESHOLD);
+    }
     ret = PAPI_event_name_to_code(name, &evcode);
     if (ret != PAPI_OK) {
       EMSG("unexpected failure in PAPI process_event_list(): "

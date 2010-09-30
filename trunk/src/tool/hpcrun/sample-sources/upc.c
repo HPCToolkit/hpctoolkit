@@ -114,6 +114,8 @@
 // FIXME: there is no good way for sighandler to find self.
 static sample_source_t *myself = NULL;
 
+#define DEFAULT_THRESHOLD  1000000L
+
 //----------------------------------------------------------------------
 // Helper functions
 //----------------------------------------------------------------------
@@ -229,7 +231,7 @@ METHOD_FN(supports_event, const char *ev_str)
     METHOD_CALL(self, init);
   }
 
-  extract_ev_thresh(ev_str, EVENT_NAME_SIZE, buf, &threshold);
+  hpcrun_extract_ev_thresh(ev_str, EVENT_NAME_SIZE, buf, &threshold, DEFAULT_THRESHOLD);
   return bgp_event_name_to_code(buf) != -1;
 }
 
@@ -242,7 +244,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   int k, code, metric_id, nevents;
 
   for (event = start_tok(self->evl.evl_spec); more_tok(); event = next_tok()) {
-    extract_ev_thresh(event, EVENT_NAME_SIZE, name, &threshold);
+    hpcrun_extract_ev_thresh(event, EVENT_NAME_SIZE, name, &threshold, DEFAULT_THRESHOLD);
     code = bgp_event_name_to_code(name);
     if (code < 0) {
       EMSG("unexpected failure in UPC process_event_list(): "

@@ -133,6 +133,8 @@
 
 #endif // !defined(RESET_ITIMER_EACH_SAMPLE)
 
+#define DEFAULT_PERIOD  5000L
+
 /******************************************************************************
  * local constants
  *****************************************************************************/
@@ -168,7 +170,7 @@ static const struct itimerval zerotimer = {
 
 };
 
-static long period = 5000L;
+static long period = DEFAULT_PERIOD;
 
 static sigset_t sigset_itimer;
 
@@ -263,7 +265,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   TMSG(ITIMER_CTL,"checking event spec = %s",event);
 
   // extract event threshold
-  extract_ev_thresh(event, sizeof(name), name, &period);
+  hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD);
 
   // store event threshold
   METHOD_CALL(self, store_event, ITIMER_EVENT, period);

@@ -51,7 +51,6 @@
 #include <string.h>
 #include "tokenize.h"
 
-#define DEFAULT_THRESHOLD  1000000L
 #define MIN(a,b)  (((a)<=(b))?(a):(b))
 
 static char *tmp;
@@ -84,8 +83,10 @@ next_tok(void)
   return tk;
 }
 
-void
-extract_ev_thresh_w_default(const char *in, int evlen, char *ev, long *th, long def)
+// Returns: 1 if event has explicit threshold, 0 if using default.
+//
+int
+hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def)
 {
   unsigned int len;
 
@@ -111,10 +112,6 @@ extract_ev_thresh_w_default(const char *in, int evlen, char *ev, long *th, long 
   }
   
   *th = dlm ? strtol(dlm+1,(char **)NULL,10) : def;
-}
 
-void
-extract_ev_thresh(const char *in, int evlen, char *ev, long *th)
-{
-  extract_ev_thresh_w_default(in, evlen, ev, th, DEFAULT_THRESHOLD);
+  return dlm != NULL;
 }
