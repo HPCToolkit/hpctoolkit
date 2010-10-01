@@ -112,8 +112,9 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
 
       unw_word_t ip;
       hpcrun_unw_get_ip_unnorm_reg(&(x->cursor), &ip);
+      char* name = hpcrun_loadmap_findById(x->ip_norm.lm_id)->name;
 
-      PMSG_LIMIT(EMSG("%s: ip = %p, | lip %s", as_str, ip, lip_str));
+      PMSG_LIMIT(EMSG("%s: ip = %p, load module = %s | lip %s", as_str, ip, name, lip_str));
 
       msg_cnt++;
       if (msg_cnt > msg_limit) {

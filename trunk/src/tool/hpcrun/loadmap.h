@@ -190,6 +190,10 @@ hpcrun_loadmap_findByAddr(void* begin, void* end);
 load_module_t*
 hpcrun_loadmap_findByName(const char* name);
 
+// find a load module, given the (previously determined) id
+load_module_t*
+hpcrun_loadmap_findById(uint16_t id);
+
 
 // hpcrun_loadmap_findLoadName: Search loadmap for (full) name of
 //   entry that has "name" as its executable name

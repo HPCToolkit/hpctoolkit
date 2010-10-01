@@ -52,8 +52,22 @@
 #include "x86-decoder.h"
 #include "fnbounds_interface.h"
 
+typedef struct {
+  void* begin;
+  void* end;
+} fnbounds_t;
 
-void x86_dump_intervals(char  *addr) 
+
+fnbounds_t
+x86_fnbounds(void* addr)
+{
+  fnbounds_t local;
+  fnbounds_enclosing_addr(addr, &local.begin, &local.end, NULL);
+  return local;
+}
+
+void
+x86_dump_intervals(char  *addr) 
 {
   void *s, *e;
   unwind_interval *u;

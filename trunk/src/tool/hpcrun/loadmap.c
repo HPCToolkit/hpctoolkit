@@ -256,6 +256,16 @@ hpcrun_loadmap_findByName(const char* name)
   return NULL;
 }
 
+load_module_t*
+hpcrun_loadmap_findById(uint16_t id)
+{
+  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
+    if (x->id == id) {
+      return x;
+    }
+  }
+  return NULL;
+}
 
 const char*
 hpcrun_loadmap_findLoadName(const char* name)
