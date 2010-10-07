@@ -61,7 +61,7 @@
 using std::string;
 
 #define __STDC_FORMAT_MACROS
-#include <stdint.h>
+#include <inttypes.h>
 
 //*************************** User Include Files ****************************
 

@@ -110,6 +110,7 @@ typedef enum {
   UNW_REG_IP
 } unw_reg_code_t;
 
+
 static int 
 hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id, 
 			  void** reg_value)
@@ -119,6 +120,7 @@ hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id,
   
   return 0;
 }
+
 
 static int 
 hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id, 
@@ -130,11 +132,13 @@ hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id,
   return 0;
 }
 
+
 int
 hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
 {
   return hpcrun_unw_get_norm_reg(c, UNW_REG_IP, reg_value);
 }
+
 
 int
 hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
