@@ -129,10 +129,9 @@ Options: Source Structure Correlation:\n\
                        instances of '=' within a path. May pass multiple\n\
                        times.\n\
 Options: Special:\n\
-  --force              Currently, hpcprof permits at most 32 profile-files\n\
-                       to prevent unmanageably large Experiment databases.\n\
-                       Use this option to remove this limit.  We are working\n\
-                       on solutions.\n\
+  --force              As a sanity check, hpcprof limits the number of\n\
+                       profile files it processes.  Use this option to\n\
+                       remove that limit.  Alternatively, use hpcprof-mpi.\n\
 \n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
