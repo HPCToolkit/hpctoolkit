@@ -95,7 +95,7 @@ hpcrun_dso_new()
 dso_info_t*
 hpcrun_dso_make(const char* name, void** table,
 		struct fnbounds_file_header* fh,
-		void* startaddr, void* endaddr, long map_size)
+		void* startaddr, void* endaddr, unsigned long map_size)
 {
   dso_info_t* x = hpcrun_dso_new();
   
@@ -107,8 +107,8 @@ hpcrun_dso_make(const char* name, void** table,
 
   x->table = table;
   x->map_size = map_size;
-  x->nsymbols = fh->num_entries;
-  x->relocate = fh->relocatable;
+  x->nsymbols = (unsigned long)fh->num_entries;
+  x->is_relocatable = fh->is_relocatable;
   x->start_addr = startaddr;
   x->end_addr = endaddr;
 
@@ -117,8 +117,8 @@ hpcrun_dso_make(const char* name, void** table,
   //         = ip - (lm_mapped_start - lm_ip_ref)
   //         = ip - start_to_ref_dist
   x->start_to_ref_dist = 0;
-  if (fh->relocatable) {
-    x->start_to_ref_dist = (unsigned long)startaddr - fh->reference_offset;
+  if (fh->is_relocatable) {
+    x->start_to_ref_dist = (uintptr_t)startaddr - fh->reference_offset;
   }
 
   x->next = NULL;
@@ -145,9 +145,9 @@ hpcrun_dsoList_dump(dso_info_t* dl_list)
 void
 hpcrun_dso_dump(dso_info_t* x)
 {
-  printf("%p-%p %s [dso_info_t *%p, table=%p, nsymbols=%d, relocatable=%d]\n",
+  printf("%p-%p %s [dso_info_t *%p, table=%p, nsymbols=%ld, relocatable=%d]\n",
 	 x->start_addr, x->end_addr, x->name, 
-         x, x->table, x->nsymbols, x->relocate);
+         x, x->table, x->nsymbols, x->is_relocatable);
 }
 
 

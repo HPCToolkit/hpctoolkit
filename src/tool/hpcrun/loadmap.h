@@ -73,9 +73,9 @@ typedef struct dso_info_s {
   void* end_addr;
   uintptr_t start_to_ref_dist;
   void** table;
-  long map_size;
-  int  nsymbols;
-  int  relocate;
+  unsigned long map_size;
+  unsigned long nsymbols;
+  int  is_relocatable;
 
   struct dso_info_s* next; //to only be used with dso_free_list
   struct dso_info_s* prev;
@@ -98,7 +98,7 @@ hpcrun_dso_new();
 dso_info_t*
 hpcrun_dso_make(const char* name, void** table,
 		struct fnbounds_file_header* fh,
-		void* startaddr, void* endaddr, long map_size);
+		void* startaddr, void* endaddr, unsigned long map_size);
 
 
 // ---------------------------------------------------------

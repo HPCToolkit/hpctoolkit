@@ -43,6 +43,8 @@
 
 //************************* System Include Files ****************************
 
+#include <stdint.h>
+
 //*************************** User Include Files ****************************
 
 #include "ip-normalized.h"

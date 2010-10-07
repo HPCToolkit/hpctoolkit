@@ -47,6 +47,8 @@
 #ifndef _FNBOUNDS_FILE_HEADER_
 #define _FNBOUNDS_FILE_HEADER_
 
+#include <stdint.h>
+
 //
 // Printf format strings for fnbounds file names and extensions.
 // The %s conversion args are directory and basename.
@@ -62,12 +64,13 @@
 //
 #define FNBOUNDS_MAGIC  0xf9f9f9f9
 
+// Note: this must be cross-platform compatible (E.g. static
 struct fnbounds_file_header {
-    long zero_pad;
-    long reference_offset;
-    long magic;
-    long num_entries;
-    int  relocatable;
+  uint64_t zero_pad;
+  uint64_t magic;
+  uint64_t num_entries;
+  uint64_t reference_offset;
+  int32_t  is_relocatable; // boolean
 };
 
 #endif

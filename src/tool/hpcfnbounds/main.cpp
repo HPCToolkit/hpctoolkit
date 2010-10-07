@@ -52,6 +52,9 @@
 #include <cstdio>
 #include <cstdlib>
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <err.h>
@@ -381,7 +384,7 @@ dump_file_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
   dump_symbols(syms, symvec, fn_discovery);
 
   if (c_fmt_fp() != NULL) {
-    fprintf(c_fmt_fp(), "};\nint hpcrun_nm_addrs_len = "
+    fprintf(c_fmt_fp(), "};\nunsigned long hpcrun_nm_addrs_len = "
 	   "sizeof(hpcrun_nm_addrs) / sizeof(hpcrun_nm_addrs[0]);\n");
   }
 }
@@ -390,7 +393,7 @@ dump_file_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
 // We call it "header", even though it comes at end of file.
 //
 static void
-dump_header_info(int relocatable, long ref_offset)
+dump_header_info(int is_relocatable, uintptr_t ref_offset)
 {
   struct fnbounds_file_header fh;
 
@@ -400,21 +403,21 @@ dump_header_info(int relocatable, long ref_offset)
     fh.reference_offset = ref_offset;
     fh.magic = FNBOUNDS_MAGIC;
     fh.num_entries = num_function_entries();
-    fh.relocatable = relocatable;
+    fh.is_relocatable = is_relocatable;
     write(binary_fmt_fd(), &fh, sizeof(fh));
   }
 
   if (c_fmt_fp() != NULL) {
-    fprintf(c_fmt_fp(), "unsigned int hpcrun_relocatable = %d;\n", relocatable);
-    fprintf(c_fmt_fp(), "unsigned int hpcrun_stripped = %d;\n", 0);
-    fprintf(c_fmt_fp(), "unsigned long hpcrun_image_offset = %ld;\n", 
+    fprintf(c_fmt_fp(), "unsigned long hpcrun_reference_offset = %"PRIuPTR";\n", 
             ref_offset);
+    fprintf(c_fmt_fp(), "int hpcrun_is_relocatable = %d;\n", is_relocatable);
+    fprintf(c_fmt_fp(), "int hpcrun_is_stripped = %d;\n", 0);
   }
 
   if (text_fmt_fp() != NULL) {
     fprintf(text_fmt_fp(), "num symbols = %ld, relocatable = %d," 
-           " image_offset = 0x%lx\n",
-	    num_function_entries(), relocatable, ref_offset);
+           " image_offset = 0x%"PRIxPTR"\n",
+	    num_function_entries(), is_relocatable, ref_offset);
   }
 }
 
@@ -436,7 +439,7 @@ dump_file_info(const char *filename, bool fn_discovery)
   Symtab *syms;
   string sfile(filename);
   vector<Symbol *> symvec;
-  long image_offset = 0;
+  uintptr_t image_offset = 0;
 
   assert_file_is_readable(filename);
 
