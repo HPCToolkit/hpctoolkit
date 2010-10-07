@@ -63,28 +63,29 @@
 // machine-generated file
 //-------------------------------------------------------------------------
 
-extern void *hpcrun_nm_addrs[];
-extern int   hpcrun_nm_addrs_len;
+// TODO:tallent: abstract with hpcfnbounds (cf. dump_file_symbols())
+// and fnbounds_read_nm_file()
+extern unsigned long hpcrun_nm_addrs[];
+extern unsigned long hpcrun_nm_addrs_len;
+extern unsigned long hpcrun_reference_offset;
+extern int           hpcrun_is_relocatable;
 
 int
 fnbounds_init()
 {
-  void *lm_beg_fn = hpcrun_nm_addrs[0];
-  void *lm_end_fn = hpcrun_nm_addrs[hpcrun_nm_addrs_len - 1];
+  void *lm_beg_fn = (void*)hpcrun_nm_addrs[0];
+  void *lm_end_fn = (void*)hpcrun_nm_addrs[hpcrun_nm_addrs_len - 1];
   long lm_size = lm_end_fn - lm_beg_fn;
 
-  // TODO:tallent: abstract with hpcfnbounds (cf. dump_file_symbols())
-  // and fnbounds_read_nm_file()
   struct fnbounds_file_header fh;
-
-  void *table_beg = &hpcrun_nm_addrs[0];
-  void *table_end = &hpcrun_nm_addrs[hpcrun_nm_addrs_len];
-  size_t table_sz = table_end - table_beg;
-
-  memcpy(&fh, hpcrun_nm_addrs + table_sz, sizeof(fh));
+  fh.zero_pad = 0;
+  fh.magic = FNBOUNDS_MAGIC;
+  fh.num_entries = hpcrun_nm_addrs_len;
+  fh.reference_offset = hpcrun_reference_offset;
+  fh.is_relocatable = hpcrun_is_relocatable;
 
   dso_info_t *dso =
-    hpcrun_dso_make(files_executable_pathname(), hpcrun_nm_addrs, 
+    hpcrun_dso_make(files_executable_pathname(), (void*)hpcrun_nm_addrs, 
 		    &fh, lm_beg_fn, lm_end_fn, lm_size);
   hpcrun_loadmap_map(dso);
 
@@ -112,7 +113,7 @@ int
 fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
 {
   load_module_t* lm_ = hpcrun_getLoadmap()->lm_head;
-  int ret = fnbounds_table_lookup(hpcrun_nm_addrs, hpcrun_nm_addrs_len,
+  int ret = fnbounds_table_lookup((void*)hpcrun_nm_addrs, hpcrun_nm_addrs_len,
 				  ip, start, end);
   if (lm) {
     *lm = lm_;

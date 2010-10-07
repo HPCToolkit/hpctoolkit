@@ -226,7 +226,7 @@ fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
   
   if (dso && dso->nsymbols > 0) {
     void *ip_norm = ip;
-    if (dso->relocate) {
+    if (dso->is_relocatable) {
       ip_norm = (void *) (((unsigned long) ip_norm) - dso->start_to_ref_dist);
     }
 
@@ -236,7 +236,7 @@ fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
 
     // Convert 'start' and 'end' into unnormalized IPs since they are
     // currently normalized.
-    if (ret == 0 && dso->relocate) {
+    if (ret == 0 && dso->is_relocatable) {
       *start = PERFORM_RELOCATION(*start, dso->start_to_ref_dist);
       *end   = PERFORM_RELOCATION(*end  , dso->start_to_ref_dist);
     }
@@ -462,10 +462,10 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
   //
   // Note: we no longer care if binary is stripped.
   //
-  if (fh.relocatable) {
+  if (fh.is_relocatable) {
     if (nm_table[0] >= start && nm_table[0] <= end) {
       // segment loaded at its preferred address
-      fh.relocatable = 0;
+      fh.is_relocatable = 0;
     }
   } else {
     char executable_name[PATH_MAX];
