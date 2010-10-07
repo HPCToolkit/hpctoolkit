@@ -131,7 +131,7 @@ realmain(int argc, char* const* argv)
     Analysis::Util::normalizeProfileArgs(args.profileFiles);
 
   if ( !(nArgs.paths->size() <= 32 || args.isHPCProfForce) ) {
-    DIAG_Throw("There are " << nArgs.paths->size() << " profile files to process. " << args.getCmd() << " currently limits the number of profile-files to prevent unmanageably large Experiment databases.  Use the --force option to remove this limit.");
+    DIAG_Throw("There are " << nArgs.paths->size() << " profile files to process. As a sanity check, " << args.getCmd() << " limits the number of profile files it processes.  Use the --force option to remove this limit or use hpcprof-mpi.");
   }
 
   int mergeTy = Prof::CallPath::Profile::Merge_CreateMetric;
