@@ -633,10 +633,10 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
             {
               TMSG(IBS_SAMPLE,"find %p in splay tree with interval %d [%p, %p)", (void*)linear_addr, result_node->cct_id, result_node->start, result_node->end);
             }
-#if NOTNOW
+//#if NOTNOW
             hpcrun_sample_callpath_w_bt(context, metrics[0], linear_addr,
                            update_bt, (void*)ip, 0/*isSync*/);
-#endif
+//#endif
             cct_node_t* cct_node = hpcrun_sample_callpath_w_bt(context, metrics[1], linear_addr,
                            update_bt, (void*)ip, 0/*isSync*/);
             if(cct_node==NULL)
