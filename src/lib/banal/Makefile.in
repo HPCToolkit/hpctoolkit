@@ -81,8 +81,9 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCbanal_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCbanal_la-bloop.lo libHPCbanal_la-bloop-simple.lo \
-	libHPCbanal_la-bloop_LocationMgr.lo \
+am__objects_1 = libHPCbanal_la-Struct.lo \
+	libHPCbanal_la-StructSimple.lo \
+	libHPCbanal_la-Struct-LocationMgr.lo \
 	libHPCbanal_la-OAInterface.lo
 am_libHPCbanal_la_OBJECTS = $(am__objects_1)
 libHPCbanal_la_OBJECTS = $(am_libHPCbanal_la_OBJECTS)
@@ -332,9 +333,9 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	bloop.hpp bloop.cpp \
-	bloop-simple.hpp bloop-simple.cpp \
-	bloop_LocationMgr.hpp bloop_LocationMgr.cpp \
+	Struct.hpp Struct.cpp \
+	StructSimple.hpp StructSimple.cpp \
+	Struct-LocationMgr.hpp Struct-LocationMgr.cpp \
 	\
 	OAInterface.hpp OAInterface.cpp
 
@@ -416,9 +417,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-OAInterface.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-bloop-simple.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-bloop.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-bloop_LocationMgr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Struct-LocationMgr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Struct.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-StructSimple.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -441,26 +442,26 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libHPCbanal_la-bloop.lo: bloop.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-bloop.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-bloop.Tpo -c -o libHPCbanal_la-bloop.lo `test -f 'bloop.cpp' || echo '$(srcdir)/'`bloop.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCbanal_la-bloop.Tpo $(DEPDIR)/libHPCbanal_la-bloop.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='bloop.cpp' object='libHPCbanal_la-bloop.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCbanal_la-Struct.lo: Struct.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-Struct.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-Struct.Tpo -c -o libHPCbanal_la-Struct.lo `test -f 'Struct.cpp' || echo '$(srcdir)/'`Struct.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCbanal_la-Struct.Tpo $(DEPDIR)/libHPCbanal_la-Struct.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Struct.cpp' object='libHPCbanal_la-Struct.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-bloop.lo `test -f 'bloop.cpp' || echo '$(srcdir)/'`bloop.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-Struct.lo `test -f 'Struct.cpp' || echo '$(srcdir)/'`Struct.cpp
 
-libHPCbanal_la-bloop-simple.lo: bloop-simple.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-bloop-simple.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-bloop-simple.Tpo -c -o libHPCbanal_la-bloop-simple.lo `test -f 'bloop-simple.cpp' || echo '$(srcdir)/'`bloop-simple.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCbanal_la-bloop-simple.Tpo $(DEPDIR)/libHPCbanal_la-bloop-simple.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='bloop-simple.cpp' object='libHPCbanal_la-bloop-simple.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCbanal_la-StructSimple.lo: StructSimple.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-StructSimple.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-StructSimple.Tpo -c -o libHPCbanal_la-StructSimple.lo `test -f 'StructSimple.cpp' || echo '$(srcdir)/'`StructSimple.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCbanal_la-StructSimple.Tpo $(DEPDIR)/libHPCbanal_la-StructSimple.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='StructSimple.cpp' object='libHPCbanal_la-StructSimple.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-bloop-simple.lo `test -f 'bloop-simple.cpp' || echo '$(srcdir)/'`bloop-simple.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-StructSimple.lo `test -f 'StructSimple.cpp' || echo '$(srcdir)/'`StructSimple.cpp
 
-libHPCbanal_la-bloop_LocationMgr.lo: bloop_LocationMgr.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-bloop_LocationMgr.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-bloop_LocationMgr.Tpo -c -o libHPCbanal_la-bloop_LocationMgr.lo `test -f 'bloop_LocationMgr.cpp' || echo '$(srcdir)/'`bloop_LocationMgr.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCbanal_la-bloop_LocationMgr.Tpo $(DEPDIR)/libHPCbanal_la-bloop_LocationMgr.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='bloop_LocationMgr.cpp' object='libHPCbanal_la-bloop_LocationMgr.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCbanal_la-Struct-LocationMgr.lo: Struct-LocationMgr.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-Struct-LocationMgr.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-Struct-LocationMgr.Tpo -c -o libHPCbanal_la-Struct-LocationMgr.lo `test -f 'Struct-LocationMgr.cpp' || echo '$(srcdir)/'`Struct-LocationMgr.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCbanal_la-Struct-LocationMgr.Tpo $(DEPDIR)/libHPCbanal_la-Struct-LocationMgr.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Struct-LocationMgr.cpp' object='libHPCbanal_la-Struct-LocationMgr.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-bloop_LocationMgr.lo `test -f 'bloop_LocationMgr.cpp' || echo '$(srcdir)/'`bloop_LocationMgr.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-Struct-LocationMgr.lo `test -f 'Struct-LocationMgr.cpp' || echo '$(srcdir)/'`Struct-LocationMgr.cpp
 
 libHPCbanal_la-OAInterface.lo: OAInterface.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-OAInterface.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-OAInterface.Tpo -c -o libHPCbanal_la-OAInterface.lo `test -f 'OAInterface.cpp' || echo '$(srcdir)/'`OAInterface.cpp

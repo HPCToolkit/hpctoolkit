@@ -88,8 +88,8 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "bloop.hpp"
-#include "bloop_LocationMgr.hpp"
+#include "Struct.hpp"
+#include "Struct-LocationMgr.hpp"
 #include "OAInterface.hpp"
 
 #include <lib/prof/Struct-Tree.hpp>

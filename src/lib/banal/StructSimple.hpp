@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef BAnal_Struct_simple_hpp
-#define BAnal_Struct_simple_hpp
+#ifndef BAnal_StructSimple_hpp
+#define BAnal_StructSimple_hpp
 
 //************************* System Include Files ****************************
 
@@ -93,4 +93,4 @@ namespace Struct {
 
 //****************************************************************************
 
-#endif // BAnal_Struct_simple_hpp
+#endif // BAnal_StructSimple_hpp

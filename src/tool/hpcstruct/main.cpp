@@ -67,7 +67,7 @@ using std::endl;
 
 #include "Args.hpp"
 
-#include <lib/banal/bloop.hpp>
+#include <lib/banal/Struct.hpp>
 
 #include <lib/binutils/LM.hpp>
 

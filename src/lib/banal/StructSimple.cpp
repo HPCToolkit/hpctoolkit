@@ -79,7 +79,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "bloop-simple.hpp"
+#include "StructSimple.hpp"
 
 #include <lib/prof/Struct-Tree.hpp>
 using namespace Prof;
