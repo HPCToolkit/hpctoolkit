@@ -62,8 +62,7 @@ using std::atoi;
 //************************* User Include Files *******************************
 
 #include "MathMLExprParser.hpp"
-
-#include <lib/prof-juicy-x/XercesUtil.hpp>
+#include "XercesUtil.hpp"
 
 #include <lib/prof/Metric-ADesc.hpp>
 

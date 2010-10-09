@@ -79,8 +79,8 @@ using std::string;
 #include "CallPath-MetricComponentsFact.hpp"
 #include "Util.hpp"
 
-#include <lib/prof-juicy-x/XercesUtil.hpp>
-#include <lib/prof-juicy-x/PGMReader.hpp>
+#include <lib/profxml/XercesUtil.hpp>
+#include <lib/profxml/PGMReader.hpp>
 
 #include <lib/prof-lean/hpcrun-metric.h>
 
