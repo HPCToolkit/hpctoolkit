@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_x_PGMDocHandler
-#define prof_juicy_x_PGMDocHandler
+#ifndef profxml_PGMDocHandler
+#define profxml_PGMDocHandler
 
 //************************ System Include Files ******************************
 
@@ -243,6 +243,6 @@ public:
 private:
 };
 
-#endif  // prof_juicy_x_PGMDocHandler
+#endif  // profxml_PGMDocHandler
 
 //  LocalWords:  PGMDocHandler

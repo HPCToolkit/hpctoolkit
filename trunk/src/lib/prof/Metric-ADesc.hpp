@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_MetricDesc 
-#define prof_juicy_MetricDesc
+#ifndef prof_MetricDesc 
+#define prof_MetricDesc
 
 //************************* System Include Files ****************************//
 
@@ -880,4 +880,4 @@ private:
 
 //***************************************************************************
 
-#endif /* prof_juicy_ADesc */
+#endif /* prof_ADesc */

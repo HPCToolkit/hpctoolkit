@@ -57,8 +57,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_Prof_Flat_ProfileData_hpp
-#define prof_juicy_Prof_Flat_ProfileData_hpp
+#ifndef prof_Prof_Flat_ProfileData_hpp
+#define prof_Prof_Flat_ProfileData_hpp
 
 //************************* System Include Files ****************************
 
@@ -287,4 +287,4 @@ private:
 
 //***************************************************************************
 
-#endif /* prof_juicy_Prof_Flat_ProfileData_hpp */
+#endif /* prof_Prof_Flat_ProfileData_hpp */

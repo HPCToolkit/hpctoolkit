@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_Prof_CCT_Merge_hpp 
-#define prof_juicy_Prof_CCT_Merge_hpp
+#ifndef prof_Prof_CCT_Merge_hpp 
+#define prof_Prof_CCT_Merge_hpp
 
 //************************* System Include Files ****************************
 
@@ -261,4 +261,4 @@ private:
 
 //***************************************************************************
 
-#endif /* prof_juicy_Prof_CCT_Merge_hpp */
+#endif /* prof_Prof_CCT_Merge_hpp */

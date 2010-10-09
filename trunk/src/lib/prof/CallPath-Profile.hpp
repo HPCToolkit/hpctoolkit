@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_Prof_CallPath_Profile_hpp 
-#define prof_juicy_Prof_CallPath_Profile_hpp
+#ifndef prof_Prof_CallPath_Profile_hpp 
+#define prof_Prof_CallPath_Profile_hpp
 
 //************************* System Include Files ****************************
 
@@ -366,5 +366,5 @@ private:
 
 //***************************************************************************
 
-#endif /* prof_juicy_Prof_CallPath_Profile_hpp */
+#endif /* prof_Prof_CallPath_Profile_hpp */
 
