@@ -72,6 +72,7 @@ using std::string;
 
 #include <cstdio>
 #include <cstring> // strcmp
+#include <cmath> // abs
 
 #include <stdint.h>
 
@@ -1141,7 +1142,6 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     : NULL;
 
   for (uint i = 0; i < numNodes; ++i) {
-
     // ----------------------------------------------------------
     // Read the node
     // ----------------------------------------------------------
@@ -1153,20 +1153,23 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags, "  ");
     }
 
+    int nodeId   = (int)nodeFmt.id;
+    int parentId = (int)nodeFmt.id_parent;
+
     // Find parent of node
     CCT::ANode* node_parent = NULL;
-    if (nodeFmt.id_parent != HPCRUN_FMT_CCTNodeId_NULL) {
-      CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(nodeFmt.id_parent);
+    if (parentId != HPCRUN_FMT_CCTNodeId_NULL) {
+      CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(parentId);
       if (it != cctNodeMap.end()) {
 	node_parent = it->second;
       }
       else {
-	DIAG_Throw("Cannot find parent for node " << nodeFmt.id);
+	DIAG_Throw("Cannot find parent for CCT node " << nodeId);
       }
     }
 
-    if ( !(nodeFmt.id_parent < nodeFmt.id) ) {
-      DIAG_Throw("Invalid parent " << nodeFmt.id_parent << " for node " << nodeFmt.id);
+    if (! (abs(parentId) < abs(nodeId))) {
+      DIAG_Throw("CCT node " << nodeId << " has invalid parent (" << parentId << ")");
     }
 
     // ----------------------------------------------------------
@@ -1182,7 +1185,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 
     if (node_parent) {
       DIAG_AssertWarn(node->lmId_real() != ALoadMap::LM_id_NULL,
-		      ctxtStr << ": CCT (non-root) node has invalid normalized IP: " << node->toStringMe(CCT::Tree::OFlg_Debug));
+		      ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
 
       node->link(node_parent);
       if (node_sib) {

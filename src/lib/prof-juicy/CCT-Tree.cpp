@@ -1040,8 +1040,8 @@ ADynNode::lip_str() const
 string 
 ADynNode::nameDyn() const
 {
-  string nm = "[" + assocInfo_str() + ": ("
-    + StrUtil::toStr(m_lmId) + ", " + StrUtil::toStr(m_lmIP, 16) + ") ("
+  string nm = "[assoc(" + assocInfo_str() + ") ip("
+    + StrUtil::toStr(m_lmId) + ", 0x" + StrUtil::toStr(m_lmIP, 16) + ") lip("
     + lip_str() + ")]";
   return nm;
 }
