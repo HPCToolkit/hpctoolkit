@@ -73,7 +73,7 @@ using std::vector;
 #include "TextUtil.hpp"
 using Analysis::TextUtil::ColumnFormatter;
 
-#include <lib/prof-juicy/Flat-ProfileData.hpp>
+#include <lib/prof/Flat-ProfileData.hpp>
 
 #include <lib/binutils/LM.hpp>
 #include <lib/binutils/Seg.hpp>

@@ -66,7 +66,7 @@
 #include "PGMDocHandler.hpp"
 #include "DocHandlerArgs.hpp"
 
-#include <lib/prof-juicy/Struct-Tree.hpp>
+#include <lib/prof/Struct-Tree.hpp>
 
 //************************ Forward Declarations ******************************
 

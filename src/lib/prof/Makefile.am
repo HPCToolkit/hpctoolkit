@@ -107,13 +107,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-noinst_LTLIBRARIES = libHPCprof-juicy.la
+noinst_LTLIBRARIES = libHPCprof.la
 
-libHPCprof_juicy_la_SOURCES  = $(MYSOURCES)
-libHPCprof_juicy_la_CFLAGS   = $(MYCFLAGS)
-libHPCprof_juicy_la_CXXFLAGS = $(MYCXXFLAGS)
-libHPCprof_juicy_la_AR       = $(MYAR)
-libHPCprof_juicy_la_LIBADD   = $(MYLIBADD)
+libHPCprof_la_SOURCES  = $(MYSOURCES)
+libHPCprof_la_CFLAGS   = $(MYCFLAGS)
+libHPCprof_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCprof_la_AR       = $(MYAR)
+libHPCprof_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

@@ -73,8 +73,8 @@
 
 #include <lib/binutils/LM.hpp>
 
-#include <lib/prof-juicy/CallPath-Profile.hpp>
-#include <lib/prof-juicy/Struct-Tree.hpp>
+#include <lib/prof/CallPath-Profile.hpp>
+#include <lib/prof/Struct-Tree.hpp>
 
 //*************************** Forward Declarations ***************************
 

@@ -63,8 +63,8 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
-#include <lib/prof-juicy/Metric-AExpr.hpp>
-#include <lib/prof-juicy/Metric-Mgr.hpp>
+#include <lib/prof/Metric-AExpr.hpp>
+#include <lib/prof/Metric-Mgr.hpp>
 
 //************************ Forward Declarations ******************************
 

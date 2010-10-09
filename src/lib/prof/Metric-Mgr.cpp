@@ -60,7 +60,7 @@ using std::vector;
 
 #include "Metric-Mgr.hpp"
 
-#include <lib/prof-juicy/Flat-ProfileData.hpp>
+#include "Flat-ProfileData.hpp"
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/StrUtil.hpp>

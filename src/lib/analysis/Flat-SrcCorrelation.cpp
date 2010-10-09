@@ -67,8 +67,8 @@ using std::vector;
 
 #include <lib/prof-juicy-x/PGMReader.hpp>
 
-#include <lib/prof-juicy/Struct-Tree.hpp>
-#include <lib/prof-juicy/Flat-ProfileData.hpp>
+#include <lib/prof/Struct-Tree.hpp>
+#include <lib/prof/Flat-ProfileData.hpp>
 
 #include <lib/binutils/LM.hpp>
 

@@ -60,7 +60,8 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 #include <lib/analysis/Args.hpp>
 
-#include <lib/prof-juicy/Metric-Mgr.hpp>
+#include <lib/prof/Metric-Mgr.hpp>
+
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 
 #include <lib/support/diagnostics.h>

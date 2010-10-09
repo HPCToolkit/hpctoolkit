@@ -1736,7 +1736,7 @@ AC_CONFIG_FILES([ \
   src/lib/binutils/Makefile \
   src/lib/isa/Makefile \
   src/lib/perl/Makefile \
-  src/lib/prof-juicy/Makefile \
+  src/lib/prof/Makefile \
   src/lib/prof-juicy-x/Makefile \
   src/lib/prof-lean/Makefile \
   src/lib/support/Makefile \

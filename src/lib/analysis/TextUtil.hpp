@@ -69,7 +69,7 @@
 
 #include <include/uint.h>
 
-#include <lib/prof-juicy/Metric-Mgr.hpp>
+#include <lib/prof/Metric-Mgr.hpp>
 
 //*************************** Forward Declarations ***************************
 
