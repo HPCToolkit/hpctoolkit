@@ -66,7 +66,6 @@ SUBDIRS = \
 	banal \
 	binutils \
 	isa \
-	perl \
 	prof \
 	profxml \
 	prof-lean \
