@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_x_DocHandlerArgs
-#define prof_juicy_x_DocHandlerArgs
+#ifndef profxml_DocHandlerArgs
+#define profxml_DocHandlerArgs
 
 //************************ System Include Files ******************************
 
@@ -87,4 +87,4 @@ private:
 
 //****************************************************************************
 
-#endif  // prof_juicy_x_DocHandlerArgs
+#endif  // profxml_DocHandlerArgs

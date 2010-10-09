@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef _prof_juicy_x_PGMReader_
-#define _prof_juicy_x_PGMReader_
+#ifndef _profxml_PGMReader_
+#define _profxml_PGMReader_
 
 //************************ System Include Files ******************************
 
@@ -92,4 +92,4 @@ read_PGM(Tree& structure,
 
 //****************************************************************************
 
-#endif  // _prof_juicy_x_PGMReader_
+#endif  // _profxml_PGMReader_

@@ -41,8 +41,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef prof_juicy_x_XercesErrorHandler_h
-#define prof_juicy_x_XercesErrorHandler_h
+#ifndef profxml_XercesErrorHandler_h
+#define profxml_XercesErrorHandler_h
 
 //************************ System Include Files ******************************
 
@@ -87,4 +87,4 @@ private:
   bool verbose;
 };
 
-#endif /* prof_juicy_x_XercesErrorHandler_h */
+#endif /* profxml_XercesErrorHandler_h */

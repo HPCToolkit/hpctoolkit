@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_Prof_LoadMap_hpp
-#define prof_juicy_Prof_LoadMap_hpp
+#ifndef prof_Prof_LoadMap_hpp
+#define prof_Prof_LoadMap_hpp
 
 //************************* System Include Files ****************************
 
@@ -309,4 +309,4 @@ operator<(const Prof::LoadMap::LM x, const Prof::LoadMap::LM y)
 
 //***************************************************************************
 
-#endif /* prof_juicy_Prof_LoadMap_hpp */
+#endif /* prof_Prof_LoadMap_hpp */

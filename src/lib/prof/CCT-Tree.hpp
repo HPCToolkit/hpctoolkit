@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_Prof_CCT_Tree_hpp 
-#define prof_juicy_Prof_CCT_Tree_hpp
+#ifndef prof_Prof_CCT_Tree_hpp 
+#define prof_Prof_CCT_Tree_hpp
 
 //************************* System Include Files ****************************
 
@@ -1287,4 +1287,4 @@ class Stmt
 //***************************************************************************
 
 
-#endif /* prof_juicy_Prof_CCT_Tree_hpp */
+#endif /* prof_Prof_CCT_Tree_hpp */

@@ -48,8 +48,8 @@
 //
 // ----------------------------------------------------------------------
 
-#ifndef prof_juicy_x_MathMLExprParser_hpp
-#define prof_juicy_x_MathMLExprParser_hpp
+#ifndef profxml_MathMLExprParser_hpp
+#define profxml_MathMLExprParser_hpp
 
 //************************ System Include Files ******************************
 
@@ -164,4 +164,4 @@ private:
 
 
 
-#endif /* prof_juicy_x_MathMLExprParser_hpp */
+#endif /* profxml_MathMLExprParser_hpp */

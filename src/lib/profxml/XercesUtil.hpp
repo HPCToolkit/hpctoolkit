@@ -41,8 +41,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _prof_juicy_x_XercesUtil_
-#define _prof_juicy_x_XercesUtil_
+#ifndef _profxml_XercesUtil_
+#define _profxml_XercesUtil_
 
 //************************ System Include Files ******************************
 

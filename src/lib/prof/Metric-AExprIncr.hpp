@@ -68,8 +68,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_Prof_Metric_AExprIncr_hpp
-#define prof_juicy_Prof_Metric_AExprIncr_hpp
+#ifndef prof_Prof_Metric_AExprIncr_hpp
+#define prof_Prof_Metric_AExprIncr_hpp
 
 //************************ System Include Files ******************************
 
@@ -1042,4 +1042,4 @@ private:
 
 //****************************************************************************
 
-#endif /* prof_juicy_Prof_Metric_AExprIncr_hpp */
+#endif /* prof_Prof_Metric_AExprIncr_hpp */

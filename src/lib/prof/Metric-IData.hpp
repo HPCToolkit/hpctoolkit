@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_Prof_Metric_IData_hpp 
-#define prof_juicy_Prof_Metric_IData_hpp
+#ifndef prof_Prof_Metric_IData_hpp 
+#define prof_Prof_Metric_IData_hpp
 
 //************************* System Include Files ****************************
 
@@ -279,4 +279,4 @@ private:
 } // namespace Prof
 
 
-#endif /* prof_juicy_Prof_Metric_IData_hpp */
+#endif /* prof_Prof_Metric_IData_hpp */

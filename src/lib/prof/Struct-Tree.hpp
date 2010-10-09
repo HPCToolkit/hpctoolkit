@@ -54,8 +54,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_Prof_Struct_Tree_hpp 
-#define prof_juicy_Prof_Struct_Tree_hpp
+#ifndef prof_Prof_Struct_Tree_hpp 
+#define prof_Prof_Struct_Tree_hpp
 
 //************************* System Include Files ****************************
 
@@ -1718,4 +1718,4 @@ private:
 #include "Struct-TreeIterator.hpp" 
 
 
-#endif /* prof_juicy_Prof_Struct_Tree_hpp */
+#endif /* prof_Prof_Struct_Tree_hpp */
