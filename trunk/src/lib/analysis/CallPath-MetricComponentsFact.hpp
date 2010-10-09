@@ -68,7 +68,7 @@
 
 #include <include/uint.h>
 
-#include <lib/prof-juicy/CallPath-Profile.hpp>
+#include <lib/prof/CallPath-Profile.hpp>
 
 //*************************** Forward Declarations ***************************
 

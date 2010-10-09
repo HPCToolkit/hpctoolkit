@@ -67,7 +67,7 @@ SUBDIRS = \
 	binutils \
 	isa \
 	perl \
-	prof-juicy \
+	prof \
 	prof-juicy-x \
 	prof-lean \
 	support \

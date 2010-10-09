@@ -68,8 +68,9 @@ using std::string;
 #include "Raw.hpp"
 #include "Util.hpp"
 
-#include <lib/prof-juicy/CallPath-Profile.hpp>
-#include <lib/prof-juicy/Flat-ProfileData.hpp>
+#include <lib/prof/CallPath-Profile.hpp>
+#include <lib/prof/Flat-ProfileData.hpp>
+
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>

@@ -63,7 +63,7 @@
 
 #include <include/uint.h> 
 
-#include <lib/prof-juicy/Struct-Tree.hpp>
+#include <lib/prof/Struct-Tree.hpp>
 
 #include <lib/binutils/LM.hpp>
 

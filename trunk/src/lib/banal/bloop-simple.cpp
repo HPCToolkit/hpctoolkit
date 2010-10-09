@@ -81,7 +81,7 @@ using std::string;
 
 #include "bloop-simple.hpp"
 
-#include <lib/prof-juicy/Struct-Tree.hpp>
+#include <lib/prof/Struct-Tree.hpp>
 using namespace Prof;
 
 #include <lib/binutils/LM.hpp>

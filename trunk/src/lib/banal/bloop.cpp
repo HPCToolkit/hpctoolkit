@@ -92,7 +92,7 @@ using std::string;
 #include "bloop_LocationMgr.hpp"
 #include "OAInterface.hpp"
 
-#include <lib/prof-juicy/Struct-Tree.hpp>
+#include <lib/prof/Struct-Tree.hpp>
 using namespace Prof;
 
 #include <lib/binutils/LM.hpp>
@@ -281,7 +281,7 @@ static string OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 // Set of routines to write a structure tree
 //****************************************************************************
 
-// FIXME (minor): move to prof-juicy library for experiment writer
+// FIXME (minor): move to prof library for experiment writer
 void
 BAnal::Struct::writeStructure(std::ostream& os, Prof::Struct::Tree* strctTree, 
 			     bool prettyPrint)

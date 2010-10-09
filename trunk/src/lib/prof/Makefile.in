@@ -68,7 +68,7 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-subdir = src/lib/prof-juicy
+subdir = src/lib/prof
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/config/hpc-mpiutils.m4 \
@@ -80,27 +80,21 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libHPCprof_juicy_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCprof_juicy_la-Metric-Mgr.lo \
-	libHPCprof_juicy_la-Metric-ADesc.lo \
-	libHPCprof_juicy_la-Metric-IData.lo \
-	libHPCprof_juicy_la-Metric-AExpr.lo \
-	libHPCprof_juicy_la-Metric-AExprIncr.lo \
-	libHPCprof_juicy_la-LoadMapMgr.lo \
-	libHPCprof_juicy_la-LoadMap.lo \
-	libHPCprof_juicy_la-Struct-Tree.lo \
-	libHPCprof_juicy_la-Struct-TreeIterator.lo \
-	libHPCprof_juicy_la-CCT-Tree.lo \
-	libHPCprof_juicy_la-CCT-TreeIterator.lo \
-	libHPCprof_juicy_la-CCT-Merge.lo \
-	libHPCprof_juicy_la-Flat-ProfileData.lo \
-	libHPCprof_juicy_la-CallPath-Profile.lo
-am_libHPCprof_juicy_la_OBJECTS = $(am__objects_1)
-libHPCprof_juicy_la_OBJECTS = $(am_libHPCprof_juicy_la_OBJECTS)
-libHPCprof_juicy_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
+libHPCprof_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__objects_1 = libHPCprof_la-Metric-Mgr.lo \
+	libHPCprof_la-Metric-ADesc.lo libHPCprof_la-Metric-IData.lo \
+	libHPCprof_la-Metric-AExpr.lo \
+	libHPCprof_la-Metric-AExprIncr.lo libHPCprof_la-LoadMapMgr.lo \
+	libHPCprof_la-LoadMap.lo libHPCprof_la-Struct-Tree.lo \
+	libHPCprof_la-Struct-TreeIterator.lo libHPCprof_la-CCT-Tree.lo \
+	libHPCprof_la-CCT-TreeIterator.lo libHPCprof_la-CCT-Merge.lo \
+	libHPCprof_la-Flat-ProfileData.lo \
+	libHPCprof_la-CallPath-Profile.lo
+am_libHPCprof_la_OBJECTS = $(am__objects_1)
+libHPCprof_la_OBJECTS = $(am_libHPCprof_la_OBJECTS)
+libHPCprof_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(libHPCprof_la_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -123,8 +117,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libHPCprof_juicy_la_SOURCES)
-DIST_SOURCES = $(libHPCprof_juicy_la_SOURCES)
+SOURCES = $(libHPCprof_la_SOURCES)
+DIST_SOURCES = $(libHPCprof_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -317,9 +311,9 @@ HPC_IFLAGS = -I@abs_top_srcdir@/src
 
 # Linking dependencies:
 #   HPC_LIBBANALYSIS  : HPC_LIBPROFJUICYX...
-#   HPC_LIBBANAL      : HPC_LIBPROFJUICY HPC_LIBBINUTILS
-#   HPC_LIBPROFJUICY  : HPC_LIBBINUTILS HPC_LIBSUPPORT
-#   HPC_LIBPROFJUICYX : HPC_LIBPROFJUICY HPC_LIBBINUTILS HPC_LIBSUPPORT
+#   HPC_LIBBANAL      : HPC_LIBPROF HPC_LIBBINUTILS
+#   HPC_LIBPROF       : HPC_LIBBINUTILS HPC_LIBSUPPORT
+#   HPC_LIBPROFJUICYX : HPC_LIBPROF HPC_LIBBINUTILS HPC_LIBSUPPORT
 #   HPC_LIBPROFLEAN   :
 #   HPC_LIBBINUTILS   : HPC_LIBISA HPC_LIBSUPPORT
 #   HPC_LIBISA        : HPC_LIBSUPPORT
@@ -327,7 +321,7 @@ HPC_IFLAGS = -I@abs_top_srcdir@/src
 #   HPC_LIBSUPPORT    :
 HPC_LIBANALYSIS = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
 HPC_LIBBANAL = $(top_builddir)/src/lib/banal/libHPCbanal.la
-HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
+HPC_LIBPROF = $(top_builddir)/src/lib/prof/libHPCprof.la
 HPC_LIBPROFJUICYX = $(top_builddir)/src/lib/prof-juicy-x/libHPCprof-juicy-x.la
 HPC_LIBPROFLEAN = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
@@ -375,12 +369,12 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 # Automake rules
 #############################################################################
-noinst_LTLIBRARIES = libHPCprof-juicy.la
-libHPCprof_juicy_la_SOURCES = $(MYSOURCES)
-libHPCprof_juicy_la_CFLAGS = $(MYCFLAGS)
-libHPCprof_juicy_la_CXXFLAGS = $(MYCXXFLAGS)
-libHPCprof_juicy_la_AR = $(MYAR)
-libHPCprof_juicy_la_LIBADD = $(MYLIBADD)
+noinst_LTLIBRARIES = libHPCprof.la
+libHPCprof_la_SOURCES = $(MYSOURCES)
+libHPCprof_la_CFLAGS = $(MYCFLAGS)
+libHPCprof_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCprof_la_AR = $(MYAR)
+libHPCprof_la_LIBADD = $(MYLIBADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
@@ -403,9 +397,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/lib/prof-juicy/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/lib/prof/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/lib/prof-juicy/Makefile
+	  $(AUTOMAKE) --foreign src/lib/prof/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -433,8 +427,8 @@ clean-noinstLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libHPCprof-juicy.la: $(libHPCprof_juicy_la_OBJECTS) $(libHPCprof_juicy_la_DEPENDENCIES) 
-	$(libHPCprof_juicy_la_LINK)  $(libHPCprof_juicy_la_OBJECTS) $(libHPCprof_juicy_la_LIBADD) $(LIBS)
+libHPCprof.la: $(libHPCprof_la_OBJECTS) $(libHPCprof_la_DEPENDENCIES) 
+	$(libHPCprof_la_LINK)  $(libHPCprof_la_OBJECTS) $(libHPCprof_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -442,20 +436,20 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CCT-Merge.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CCT-Tree.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CCT-TreeIterator.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CallPath-Profile.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Flat-ProfileData.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-LoadMap.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-LoadMapMgr.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-ADesc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-AExpr.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-AExprIncr.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-IData.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-Mgr.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Struct-Tree.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Struct-TreeIterator.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-CCT-Merge.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-CCT-Tree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-CCT-TreeIterator.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-CallPath-Profile.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Flat-ProfileData.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-LoadMap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-LoadMapMgr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Metric-ADesc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Metric-AExpr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Metric-AExprIncr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Metric-IData.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Metric-Mgr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Struct-Tree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Struct-TreeIterator.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -478,103 +472,103 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libHPCprof_juicy_la-Metric-Mgr.lo: Metric-Mgr.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Metric-Mgr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Metric-Mgr.Tpo -c -o libHPCprof_juicy_la-Metric-Mgr.lo `test -f 'Metric-Mgr.cpp' || echo '$(srcdir)/'`Metric-Mgr.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-Metric-Mgr.Tpo $(DEPDIR)/libHPCprof_juicy_la-Metric-Mgr.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-Mgr.cpp' object='libHPCprof_juicy_la-Metric-Mgr.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-Metric-Mgr.lo: Metric-Mgr.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-Metric-Mgr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-Metric-Mgr.Tpo -c -o libHPCprof_la-Metric-Mgr.lo `test -f 'Metric-Mgr.cpp' || echo '$(srcdir)/'`Metric-Mgr.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-Metric-Mgr.Tpo $(DEPDIR)/libHPCprof_la-Metric-Mgr.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-Mgr.cpp' object='libHPCprof_la-Metric-Mgr.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Metric-Mgr.lo `test -f 'Metric-Mgr.cpp' || echo '$(srcdir)/'`Metric-Mgr.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-Metric-Mgr.lo `test -f 'Metric-Mgr.cpp' || echo '$(srcdir)/'`Metric-Mgr.cpp
 
-libHPCprof_juicy_la-Metric-ADesc.lo: Metric-ADesc.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Metric-ADesc.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Metric-ADesc.Tpo -c -o libHPCprof_juicy_la-Metric-ADesc.lo `test -f 'Metric-ADesc.cpp' || echo '$(srcdir)/'`Metric-ADesc.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-Metric-ADesc.Tpo $(DEPDIR)/libHPCprof_juicy_la-Metric-ADesc.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-ADesc.cpp' object='libHPCprof_juicy_la-Metric-ADesc.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-Metric-ADesc.lo: Metric-ADesc.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-Metric-ADesc.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-Metric-ADesc.Tpo -c -o libHPCprof_la-Metric-ADesc.lo `test -f 'Metric-ADesc.cpp' || echo '$(srcdir)/'`Metric-ADesc.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-Metric-ADesc.Tpo $(DEPDIR)/libHPCprof_la-Metric-ADesc.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-ADesc.cpp' object='libHPCprof_la-Metric-ADesc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Metric-ADesc.lo `test -f 'Metric-ADesc.cpp' || echo '$(srcdir)/'`Metric-ADesc.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-Metric-ADesc.lo `test -f 'Metric-ADesc.cpp' || echo '$(srcdir)/'`Metric-ADesc.cpp
 
-libHPCprof_juicy_la-Metric-IData.lo: Metric-IData.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Metric-IData.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Metric-IData.Tpo -c -o libHPCprof_juicy_la-Metric-IData.lo `test -f 'Metric-IData.cpp' || echo '$(srcdir)/'`Metric-IData.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-Metric-IData.Tpo $(DEPDIR)/libHPCprof_juicy_la-Metric-IData.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-IData.cpp' object='libHPCprof_juicy_la-Metric-IData.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-Metric-IData.lo: Metric-IData.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-Metric-IData.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-Metric-IData.Tpo -c -o libHPCprof_la-Metric-IData.lo `test -f 'Metric-IData.cpp' || echo '$(srcdir)/'`Metric-IData.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-Metric-IData.Tpo $(DEPDIR)/libHPCprof_la-Metric-IData.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-IData.cpp' object='libHPCprof_la-Metric-IData.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Metric-IData.lo `test -f 'Metric-IData.cpp' || echo '$(srcdir)/'`Metric-IData.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-Metric-IData.lo `test -f 'Metric-IData.cpp' || echo '$(srcdir)/'`Metric-IData.cpp
 
-libHPCprof_juicy_la-Metric-AExpr.lo: Metric-AExpr.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Metric-AExpr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Metric-AExpr.Tpo -c -o libHPCprof_juicy_la-Metric-AExpr.lo `test -f 'Metric-AExpr.cpp' || echo '$(srcdir)/'`Metric-AExpr.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-Metric-AExpr.Tpo $(DEPDIR)/libHPCprof_juicy_la-Metric-AExpr.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-AExpr.cpp' object='libHPCprof_juicy_la-Metric-AExpr.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-Metric-AExpr.lo: Metric-AExpr.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-Metric-AExpr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-Metric-AExpr.Tpo -c -o libHPCprof_la-Metric-AExpr.lo `test -f 'Metric-AExpr.cpp' || echo '$(srcdir)/'`Metric-AExpr.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-Metric-AExpr.Tpo $(DEPDIR)/libHPCprof_la-Metric-AExpr.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-AExpr.cpp' object='libHPCprof_la-Metric-AExpr.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Metric-AExpr.lo `test -f 'Metric-AExpr.cpp' || echo '$(srcdir)/'`Metric-AExpr.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-Metric-AExpr.lo `test -f 'Metric-AExpr.cpp' || echo '$(srcdir)/'`Metric-AExpr.cpp
 
-libHPCprof_juicy_la-Metric-AExprIncr.lo: Metric-AExprIncr.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Metric-AExprIncr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Metric-AExprIncr.Tpo -c -o libHPCprof_juicy_la-Metric-AExprIncr.lo `test -f 'Metric-AExprIncr.cpp' || echo '$(srcdir)/'`Metric-AExprIncr.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-Metric-AExprIncr.Tpo $(DEPDIR)/libHPCprof_juicy_la-Metric-AExprIncr.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-AExprIncr.cpp' object='libHPCprof_juicy_la-Metric-AExprIncr.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-Metric-AExprIncr.lo: Metric-AExprIncr.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-Metric-AExprIncr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-Metric-AExprIncr.Tpo -c -o libHPCprof_la-Metric-AExprIncr.lo `test -f 'Metric-AExprIncr.cpp' || echo '$(srcdir)/'`Metric-AExprIncr.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-Metric-AExprIncr.Tpo $(DEPDIR)/libHPCprof_la-Metric-AExprIncr.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-AExprIncr.cpp' object='libHPCprof_la-Metric-AExprIncr.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Metric-AExprIncr.lo `test -f 'Metric-AExprIncr.cpp' || echo '$(srcdir)/'`Metric-AExprIncr.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-Metric-AExprIncr.lo `test -f 'Metric-AExprIncr.cpp' || echo '$(srcdir)/'`Metric-AExprIncr.cpp
 
-libHPCprof_juicy_la-LoadMapMgr.lo: LoadMapMgr.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-LoadMapMgr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-LoadMapMgr.Tpo -c -o libHPCprof_juicy_la-LoadMapMgr.lo `test -f 'LoadMapMgr.cpp' || echo '$(srcdir)/'`LoadMapMgr.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-LoadMapMgr.Tpo $(DEPDIR)/libHPCprof_juicy_la-LoadMapMgr.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='LoadMapMgr.cpp' object='libHPCprof_juicy_la-LoadMapMgr.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-LoadMapMgr.lo: LoadMapMgr.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-LoadMapMgr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-LoadMapMgr.Tpo -c -o libHPCprof_la-LoadMapMgr.lo `test -f 'LoadMapMgr.cpp' || echo '$(srcdir)/'`LoadMapMgr.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-LoadMapMgr.Tpo $(DEPDIR)/libHPCprof_la-LoadMapMgr.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='LoadMapMgr.cpp' object='libHPCprof_la-LoadMapMgr.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-LoadMapMgr.lo `test -f 'LoadMapMgr.cpp' || echo '$(srcdir)/'`LoadMapMgr.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-LoadMapMgr.lo `test -f 'LoadMapMgr.cpp' || echo '$(srcdir)/'`LoadMapMgr.cpp
 
-libHPCprof_juicy_la-LoadMap.lo: LoadMap.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-LoadMap.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-LoadMap.Tpo -c -o libHPCprof_juicy_la-LoadMap.lo `test -f 'LoadMap.cpp' || echo '$(srcdir)/'`LoadMap.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-LoadMap.Tpo $(DEPDIR)/libHPCprof_juicy_la-LoadMap.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='LoadMap.cpp' object='libHPCprof_juicy_la-LoadMap.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-LoadMap.lo: LoadMap.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-LoadMap.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-LoadMap.Tpo -c -o libHPCprof_la-LoadMap.lo `test -f 'LoadMap.cpp' || echo '$(srcdir)/'`LoadMap.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-LoadMap.Tpo $(DEPDIR)/libHPCprof_la-LoadMap.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='LoadMap.cpp' object='libHPCprof_la-LoadMap.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-LoadMap.lo `test -f 'LoadMap.cpp' || echo '$(srcdir)/'`LoadMap.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-LoadMap.lo `test -f 'LoadMap.cpp' || echo '$(srcdir)/'`LoadMap.cpp
 
-libHPCprof_juicy_la-Struct-Tree.lo: Struct-Tree.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Struct-Tree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Struct-Tree.Tpo -c -o libHPCprof_juicy_la-Struct-Tree.lo `test -f 'Struct-Tree.cpp' || echo '$(srcdir)/'`Struct-Tree.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-Struct-Tree.Tpo $(DEPDIR)/libHPCprof_juicy_la-Struct-Tree.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Struct-Tree.cpp' object='libHPCprof_juicy_la-Struct-Tree.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-Struct-Tree.lo: Struct-Tree.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-Struct-Tree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-Struct-Tree.Tpo -c -o libHPCprof_la-Struct-Tree.lo `test -f 'Struct-Tree.cpp' || echo '$(srcdir)/'`Struct-Tree.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-Struct-Tree.Tpo $(DEPDIR)/libHPCprof_la-Struct-Tree.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Struct-Tree.cpp' object='libHPCprof_la-Struct-Tree.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Struct-Tree.lo `test -f 'Struct-Tree.cpp' || echo '$(srcdir)/'`Struct-Tree.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-Struct-Tree.lo `test -f 'Struct-Tree.cpp' || echo '$(srcdir)/'`Struct-Tree.cpp
 
-libHPCprof_juicy_la-Struct-TreeIterator.lo: Struct-TreeIterator.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Struct-TreeIterator.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Struct-TreeIterator.Tpo -c -o libHPCprof_juicy_la-Struct-TreeIterator.lo `test -f 'Struct-TreeIterator.cpp' || echo '$(srcdir)/'`Struct-TreeIterator.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-Struct-TreeIterator.Tpo $(DEPDIR)/libHPCprof_juicy_la-Struct-TreeIterator.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Struct-TreeIterator.cpp' object='libHPCprof_juicy_la-Struct-TreeIterator.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-Struct-TreeIterator.lo: Struct-TreeIterator.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-Struct-TreeIterator.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-Struct-TreeIterator.Tpo -c -o libHPCprof_la-Struct-TreeIterator.lo `test -f 'Struct-TreeIterator.cpp' || echo '$(srcdir)/'`Struct-TreeIterator.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-Struct-TreeIterator.Tpo $(DEPDIR)/libHPCprof_la-Struct-TreeIterator.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Struct-TreeIterator.cpp' object='libHPCprof_la-Struct-TreeIterator.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Struct-TreeIterator.lo `test -f 'Struct-TreeIterator.cpp' || echo '$(srcdir)/'`Struct-TreeIterator.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-Struct-TreeIterator.lo `test -f 'Struct-TreeIterator.cpp' || echo '$(srcdir)/'`Struct-TreeIterator.cpp
 
-libHPCprof_juicy_la-CCT-Tree.lo: CCT-Tree.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-CCT-Tree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-CCT-Tree.Tpo -c -o libHPCprof_juicy_la-CCT-Tree.lo `test -f 'CCT-Tree.cpp' || echo '$(srcdir)/'`CCT-Tree.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-CCT-Tree.Tpo $(DEPDIR)/libHPCprof_juicy_la-CCT-Tree.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CCT-Tree.cpp' object='libHPCprof_juicy_la-CCT-Tree.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-CCT-Tree.lo: CCT-Tree.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-CCT-Tree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-CCT-Tree.Tpo -c -o libHPCprof_la-CCT-Tree.lo `test -f 'CCT-Tree.cpp' || echo '$(srcdir)/'`CCT-Tree.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-CCT-Tree.Tpo $(DEPDIR)/libHPCprof_la-CCT-Tree.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CCT-Tree.cpp' object='libHPCprof_la-CCT-Tree.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-CCT-Tree.lo `test -f 'CCT-Tree.cpp' || echo '$(srcdir)/'`CCT-Tree.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-CCT-Tree.lo `test -f 'CCT-Tree.cpp' || echo '$(srcdir)/'`CCT-Tree.cpp
 
-libHPCprof_juicy_la-CCT-TreeIterator.lo: CCT-TreeIterator.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-CCT-TreeIterator.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-CCT-TreeIterator.Tpo -c -o libHPCprof_juicy_la-CCT-TreeIterator.lo `test -f 'CCT-TreeIterator.cpp' || echo '$(srcdir)/'`CCT-TreeIterator.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-CCT-TreeIterator.Tpo $(DEPDIR)/libHPCprof_juicy_la-CCT-TreeIterator.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CCT-TreeIterator.cpp' object='libHPCprof_juicy_la-CCT-TreeIterator.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-CCT-TreeIterator.lo: CCT-TreeIterator.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-CCT-TreeIterator.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-CCT-TreeIterator.Tpo -c -o libHPCprof_la-CCT-TreeIterator.lo `test -f 'CCT-TreeIterator.cpp' || echo '$(srcdir)/'`CCT-TreeIterator.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-CCT-TreeIterator.Tpo $(DEPDIR)/libHPCprof_la-CCT-TreeIterator.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CCT-TreeIterator.cpp' object='libHPCprof_la-CCT-TreeIterator.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-CCT-TreeIterator.lo `test -f 'CCT-TreeIterator.cpp' || echo '$(srcdir)/'`CCT-TreeIterator.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-CCT-TreeIterator.lo `test -f 'CCT-TreeIterator.cpp' || echo '$(srcdir)/'`CCT-TreeIterator.cpp
 
-libHPCprof_juicy_la-CCT-Merge.lo: CCT-Merge.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-CCT-Merge.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-CCT-Merge.Tpo -c -o libHPCprof_juicy_la-CCT-Merge.lo `test -f 'CCT-Merge.cpp' || echo '$(srcdir)/'`CCT-Merge.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-CCT-Merge.Tpo $(DEPDIR)/libHPCprof_juicy_la-CCT-Merge.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CCT-Merge.cpp' object='libHPCprof_juicy_la-CCT-Merge.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-CCT-Merge.lo: CCT-Merge.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-CCT-Merge.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-CCT-Merge.Tpo -c -o libHPCprof_la-CCT-Merge.lo `test -f 'CCT-Merge.cpp' || echo '$(srcdir)/'`CCT-Merge.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-CCT-Merge.Tpo $(DEPDIR)/libHPCprof_la-CCT-Merge.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CCT-Merge.cpp' object='libHPCprof_la-CCT-Merge.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-CCT-Merge.lo `test -f 'CCT-Merge.cpp' || echo '$(srcdir)/'`CCT-Merge.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-CCT-Merge.lo `test -f 'CCT-Merge.cpp' || echo '$(srcdir)/'`CCT-Merge.cpp
 
-libHPCprof_juicy_la-Flat-ProfileData.lo: Flat-ProfileData.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Flat-ProfileData.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Flat-ProfileData.Tpo -c -o libHPCprof_juicy_la-Flat-ProfileData.lo `test -f 'Flat-ProfileData.cpp' || echo '$(srcdir)/'`Flat-ProfileData.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-Flat-ProfileData.Tpo $(DEPDIR)/libHPCprof_juicy_la-Flat-ProfileData.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Flat-ProfileData.cpp' object='libHPCprof_juicy_la-Flat-ProfileData.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-Flat-ProfileData.lo: Flat-ProfileData.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-Flat-ProfileData.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-Flat-ProfileData.Tpo -c -o libHPCprof_la-Flat-ProfileData.lo `test -f 'Flat-ProfileData.cpp' || echo '$(srcdir)/'`Flat-ProfileData.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-Flat-ProfileData.Tpo $(DEPDIR)/libHPCprof_la-Flat-ProfileData.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Flat-ProfileData.cpp' object='libHPCprof_la-Flat-ProfileData.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Flat-ProfileData.lo `test -f 'Flat-ProfileData.cpp' || echo '$(srcdir)/'`Flat-ProfileData.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-Flat-ProfileData.lo `test -f 'Flat-ProfileData.cpp' || echo '$(srcdir)/'`Flat-ProfileData.cpp
 
-libHPCprof_juicy_la-CallPath-Profile.lo: CallPath-Profile.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-CallPath-Profile.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-CallPath-Profile.Tpo -c -o libHPCprof_juicy_la-CallPath-Profile.lo `test -f 'CallPath-Profile.cpp' || echo '$(srcdir)/'`CallPath-Profile.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_juicy_la-CallPath-Profile.Tpo $(DEPDIR)/libHPCprof_juicy_la-CallPath-Profile.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CallPath-Profile.cpp' object='libHPCprof_juicy_la-CallPath-Profile.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_la-CallPath-Profile.lo: CallPath-Profile.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-CallPath-Profile.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-CallPath-Profile.Tpo -c -o libHPCprof_la-CallPath-Profile.lo `test -f 'CallPath-Profile.cpp' || echo '$(srcdir)/'`CallPath-Profile.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-CallPath-Profile.Tpo $(DEPDIR)/libHPCprof_la-CallPath-Profile.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CallPath-Profile.cpp' object='libHPCprof_la-CallPath-Profile.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-CallPath-Profile.lo `test -f 'CallPath-Profile.cpp' || echo '$(srcdir)/'`CallPath-Profile.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-CallPath-Profile.lo `test -f 'CallPath-Profile.cpp' || echo '$(srcdir)/'`CallPath-Profile.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

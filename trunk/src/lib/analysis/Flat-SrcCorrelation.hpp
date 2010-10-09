@@ -61,9 +61,9 @@
 #include <lib/prof-juicy-x/PGMDocHandler.hpp>
 #include <lib/prof-juicy-x/DocHandlerArgs.hpp>
 
-#include <lib/prof-juicy/Flat-ProfileData.hpp>
-#include <lib/prof-juicy/Metric-Mgr.hpp>
-#include <lib/prof-juicy/Struct-Tree.hpp>
+#include <lib/prof/Flat-ProfileData.hpp>
+#include <lib/prof/Metric-Mgr.hpp>
+#include <lib/prof/Struct-Tree.hpp>
 
 #include <lib/binutils/LM.hpp>
 

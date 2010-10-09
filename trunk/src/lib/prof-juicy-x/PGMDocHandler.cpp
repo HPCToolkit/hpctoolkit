@@ -79,7 +79,7 @@ using XERCES_CPP_NAMESPACE::XMLString;
 #include "XercesUtil.hpp"
 #include "XercesErrorHandler.hpp"
 
-#include <lib/prof-juicy/Struct-Tree.hpp>
+#include <lib/prof/Struct-Tree.hpp>
 using namespace Prof;
 
 #include <lib/support/diagnostics.h>
