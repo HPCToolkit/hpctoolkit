@@ -78,7 +78,7 @@ using std::pair;
 
 //*************************** User Include Files ****************************
 
-#include "bloop_LocationMgr.hpp"
+#include "Struct-LocationMgr.hpp"
 
 #include <lib/prof/Struct-Tree.hpp>
 using namespace Prof;

@@ -74,7 +74,7 @@ using std::string;
 
 #include <include/uint.h>
 
-#include <lib/banal/bloop-simple.hpp>
+#include <lib/banal/StructSimple.hpp>
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>

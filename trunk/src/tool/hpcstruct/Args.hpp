@@ -66,7 +66,7 @@
 
 #include <include/uint.h>
 
-#include <lib/banal/bloop.hpp>
+#include <lib/banal/Struct.hpp>
 
 #include <lib/support/CmdLineParser.hpp>
 
