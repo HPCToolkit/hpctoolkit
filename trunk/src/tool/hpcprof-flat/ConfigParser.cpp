@@ -75,10 +75,10 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 #include "ConfigParser.hpp"
 
-#include <lib/prof-juicy-x/MathMLExprParser.hpp>
-#include <lib/prof-juicy-x/XercesUtil.hpp>
-
 #include <lib/prof/Metric-ADesc.hpp>
+
+#include <lib/profxml/MathMLExprParser.hpp>
+#include <lib/profxml/XercesUtil.hpp>
 
 #include <lib/support/Trace.hpp>
 

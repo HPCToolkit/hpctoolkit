@@ -62,8 +62,8 @@ using std::string;
 
 #include <lib/analysis/Flat-SrcCorrelation.hpp>
 
-#include <lib/prof-juicy-x/XercesUtil.hpp>
-#include <lib/prof-juicy-x/XercesErrorHandler.hpp>
+#include <lib/profxml/XercesUtil.hpp>
+#include <lib/profxml/XercesErrorHandler.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/NaN.h>

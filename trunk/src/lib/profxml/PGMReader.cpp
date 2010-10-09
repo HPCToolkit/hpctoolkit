@@ -66,8 +66,7 @@ using std::string;
 //************************* User Include Files *******************************
 
 #include "PGMReader.hpp"
-
-#include <lib/prof-juicy-x/XercesUtil.hpp>
+#include "XercesUtil.hpp"
 
 #include <lib/support/pathfind.h>
 

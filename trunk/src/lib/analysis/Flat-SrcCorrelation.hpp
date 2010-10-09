@@ -58,8 +58,8 @@
 #include "Args.hpp"
 #include "TextUtil.hpp"
 
-#include <lib/prof-juicy-x/PGMDocHandler.hpp>
-#include <lib/prof-juicy-x/DocHandlerArgs.hpp>
+#include <lib/profxml/PGMDocHandler.hpp>
+#include <lib/profxml/DocHandlerArgs.hpp>
 
 #include <lib/prof/Flat-ProfileData.hpp>
 #include <lib/prof/Metric-Mgr.hpp>

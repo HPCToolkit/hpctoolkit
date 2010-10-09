@@ -65,7 +65,7 @@ using std::vector;
 #include "TextUtil.hpp"
 #include "Util.hpp"
 
-#include <lib/prof-juicy-x/PGMReader.hpp>
+#include <lib/profxml/PGMReader.hpp>
 
 #include <lib/prof/Struct-Tree.hpp>
 #include <lib/prof/Flat-ProfileData.hpp>
