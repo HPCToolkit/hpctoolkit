@@ -80,9 +80,12 @@
 //************************* User Include Files *******************************
 
 #include "Metric-IData.hpp"
+#include "Metric-IDBExpr.hpp"
 
 #include <lib/support/NaN.h>
 #include <lib/support/Unique.hpp>
+#include <lib/support/StrUtil.hpp>
+
 
 //************************ Forward Declarations ******************************
 
@@ -97,8 +100,9 @@ namespace Metric {
 //   The base class for all concrete evaluation classes
 // ----------------------------------------------------------------------
 
-class AExpr 
-  : public Unique // disable copying, for now
+class AExpr
+  : public IDBExpr,
+    public Unique // disable copying, for now
 {
   // TODO: replace AExpr** with AExprVec
 public:
@@ -113,12 +117,63 @@ public:
   virtual ~AExpr()
   { }
 
+  // ------------------------------------------------------------
+  //
+  // ------------------------------------------------------------
+
+  void
+  accumId(uint x)
+  { m_accumId = x; }
+
+  std::string
+  accumStr() const
+  { return "$"+ StrUtil::toStr(m_accumId); }
+
+  void
+  accum2Id(uint x)
+  { m_accum2Id = x; }
+
+  std::string
+  accum2Str() const
+  { return "$"+ StrUtil::toStr(m_accum2Id); }
+  
+
+  // ------------------------------------------------------------
+  //
+  // ------------------------------------------------------------
+
   virtual double
   eval(const Metric::IData& mdata) const = 0;
 
   static bool
   isok(double x)
   { return !(c_isnan_d(x) || c_isinf_d(x)); }
+
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
+  virtual bool
+  hasAccum2() const
+  { return false; }
+
+  virtual std::string
+  combineString1() const
+  { return ""; }
+
+  virtual std::string
+  combineString2() const
+  { DIAG_Die(DIAG_Unimplemented); }
+
+  virtual std::string
+  finalizeString() const
+  { return ""; }
+
+
+  // ------------------------------------------------------------
+  //
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const = 0;
@@ -127,12 +182,6 @@ public:
   toString() const;
 
 protected:
-
-  // ------------------------------------------------------------
-  // exported functions for computing flat and callers views
-  // ------------------------------------------------------------
-
-  // TODO:
 
   // ------------------------------------------------------------
   //
@@ -187,6 +236,10 @@ protected:
   static void 
   dump_opands(std::ostream& os, AExpr** opands, int sz, const char* sep = ", ");
   
+protected:
+  uint m_accumId;  // used only for Metric::IDBExpr routines
+  uint m_accum2Id; // used only for Metric::IDBExpr routines
+
 };
 
 
