@@ -342,6 +342,7 @@ MYSOURCES = \
 	Metric-IData.hpp Metric-IData.cpp \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
 	Metric-AExprIncr.hpp Metric-AExprIncr.cpp \
+	Metric-IDBExpr.hpp \
 	\
 	LoadMapMgr.hpp LoadMapMgr.cpp \
 	LoadMap.hpp LoadMap.cpp \
@@ -355,7 +356,7 @@ MYSOURCES = \
 	\
 	Flat-ProfileData.hpp Flat-ProfileData.cpp \
 	\
-	CallPath-Profile.hpp CallPath-Profile.cpp 
+	CallPath-Profile.hpp CallPath-Profile.cpp
 
 
 # GNU binutils flags are needed for HPC_LIBISA.

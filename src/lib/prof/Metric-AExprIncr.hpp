@@ -82,6 +82,7 @@
 //************************* User Include Files *******************************
 
 #include "Metric-IData.hpp"
+#include "Metric-IDBExpr.hpp"
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/NaN.h>
@@ -103,7 +104,8 @@ namespace Metric {
 // ----------------------------------------------------------------------
 
 class AExprIncr
-  : public Unique // disable copying, for now
+  : public IDBExpr,
+    public Unique // disable copying, for now
 {
 public:
   static const double epsilon = 0.000001;
@@ -146,10 +148,6 @@ public:
   accumStr() const
   { return "$"+ StrUtil::toStr(m_accumId); }
 
-
-  virtual bool
-  hasAccum2() const
-  { return false; }
 
   bool
   isSetAccum2() const
@@ -297,23 +295,16 @@ public:
 
 
   // ------------------------------------------------------------
-  // exported functions for computing flat and callers view
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
-  // initialize: [flat|callers]-accum is initialized from CCT-accum
+  virtual bool
+  hasAccum2() const
+  { return false; }
 
-  // combineString1: [flat|callers]-accum x cct-accum -> [flat|callers]-accum
-  virtual std::string
-  combineString1() const = 0;
-
-  // combineString2: [flat|callers]-accum x cct-accum -> [flat|callers]-accum
   virtual std::string
   combineString2() const
   { DIAG_Die(DIAG_Unimplemented); }
-
-  // finalizeString: accumulator-list -> output
-  virtual std::string
-  finalizeString() const = 0;
 
 
   // ------------------------------------------------------------
@@ -497,6 +488,10 @@ public:
   { }
 
 
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
   virtual double
   initialize(Metric::IData& mdata) const
   { return (accumVar(mdata) = DBL_MAX); }
@@ -526,6 +521,10 @@ public:
   finalize(Metric::IData& mdata) const
   { return accumVar(mdata); }
 
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
 
   virtual std::string
   combineString1() const
@@ -562,6 +561,10 @@ public:
   { }
 
 
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
   virtual double
   initialize(Metric::IData& mdata) const
   { return (accumVar(mdata) = 0.0); }
@@ -588,6 +591,10 @@ public:
   finalize(Metric::IData& mdata) const
   { return accumVar(mdata); }
 
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
 
   virtual std::string
   combineString1() const
@@ -624,6 +631,10 @@ public:
   { }
 
 
+  // ------------------------------------------------------------
+  //
+  // ------------------------------------------------------------
+
   virtual double
   initialize(Metric::IData& mdata) const
   { return (accumVar(mdata) = 0.0); }
@@ -650,6 +661,10 @@ public:
   finalize(Metric::IData& mdata) const
   { return accumVar(mdata); }
 
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
 
   virtual std::string
   combineString1() const
@@ -685,6 +700,10 @@ public:
   virtual ~MeanIncr()
   { }
 
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual bool
   hasNumSrcVar() const
@@ -727,6 +746,10 @@ public:
   }
 
 
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
   virtual std::string
   combineString1() const
   {
@@ -767,9 +790,9 @@ public:
   { }
 
 
-  virtual bool
-  hasAccum2() const
-  { return true; }
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual bool
   hasNumSrcVar() const
@@ -797,6 +820,14 @@ public:
   { return finalizeStdDev(mdata); }
 
 
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
+  virtual bool
+  hasAccum2() const
+  { return true; }
+
   virtual std::string
   combineString1() const
   { return combineString1StdDev(); }
@@ -808,6 +839,11 @@ public:
   virtual std::string
   finalizeString() const
   { return finalizeStringStdDev(); }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -832,9 +868,9 @@ public:
   { }
 
 
-  virtual bool
-  hasAccum2() const
-  { return true; }
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual bool
   hasNumSrcVar() const
@@ -870,6 +906,14 @@ public:
     return z;
   }
 
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
+  virtual bool
+  hasAccum2() const
+  { return true; }
 
   virtual std::string
   combineString1() const
@@ -912,9 +956,9 @@ public:
   { }
 
 
-  virtual bool
-  hasAccum2() const
-  { return true; }
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual bool
   hasNumSrcVar() const
@@ -950,6 +994,14 @@ public:
     return z;
   }
 
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
+  virtual bool
+  hasAccum2() const
+  { return true; }
 
   virtual std::string
   combineString1() const
@@ -992,6 +1044,10 @@ public:
   { }
 
 
+  // ------------------------------------------------------------
+  //
+  // ------------------------------------------------------------
+
   virtual double
   initialize(Metric::IData& mdata) const
   {
@@ -1015,6 +1071,10 @@ public:
   finalize(Metric::IData& mdata) const
   { return accumVar(mdata); }
 
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
 
   virtual std::string
   combineString1() const
