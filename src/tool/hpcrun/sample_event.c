@@ -167,7 +167,7 @@ hpcrun_sample_callpath(void *context, int metricId,
 
   hpcrun_set_handling_sample(td);
 
-  td->unwind = NULL;
+  td->btbuf_cur = NULL;
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
 
@@ -192,7 +192,7 @@ hpcrun_sample_callpath(void *context, int metricId,
 	trace_append(func_proxy->persistent_id);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
-	hpcrun_bt_dump(td->unwind, "UNWIND");
+	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
       }
     }
   }
@@ -303,7 +303,7 @@ hpcrun_sample_callpath_w_bt(void *context,
 	trace_append(func_proxy->persistent_id);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
-	hpcrun_bt_dump(td->unwind, "UNWIND");
+	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
       }
     }
   }
@@ -312,7 +312,7 @@ hpcrun_sample_callpath_w_bt(void *context,
     // recover from SEGVs and dropped samples
     // ------------------------------------------------------------
     memset((void *)it->jb, '\0', sizeof(it->jb));
-    hpcrun_bt_dump(td->unwind, "SEGV");
+    hpcrun_bt_dump(td->btbuf_cur, "SEGV");
 
     hpcrun_stats_num_samples_dropped_inc();
 

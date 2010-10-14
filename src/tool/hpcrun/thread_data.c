@@ -164,10 +164,10 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt)
   // ----------------------------------------
   // backtrace buffer
   // ----------------------------------------
-  td->unwind = NULL;
-  td->btbuf = hpcrun_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
-  td->bufend = td->btbuf + BACKTRACE_INIT_SZ;
-  td->bufstk = td->bufend;  // FIXME: is this needed?
+  td->btbuf_cur = NULL;
+  td->btbuf_beg = hpcrun_malloc(sizeof(frame_t) * BACKTRACE_INIT_SZ);
+  td->btbuf_end = td->btbuf_beg + BACKTRACE_INIT_SZ;
+  td->btbuf_sav = td->btbuf_end;  // FIXME: is this needed?
 
   hpcrun_bt_init(&(td->bt), NEW_BACKTRACE_INIT_SZ);
 
@@ -236,32 +236,32 @@ frame_t*
 hpcrun_expand_btbuf(void)
 {
   thread_data_t* td = hpcrun_get_thread_data();
-  frame_t* unwind = td->unwind;
+  frame_t* unwind = td->btbuf_cur;
 
   /* how big is the current buffer? */
-  size_t sz = td->bufend - td->btbuf;
+  size_t sz = td->btbuf_end - td->btbuf_beg;
   size_t newsz = sz*2;
   /* how big is the current backtrace? */
-  size_t btsz = td->bufend - td->bufstk;
+  size_t btsz = td->btbuf_end - td->btbuf_sav;
   /* how big is the backtrace we're recording? */
-  size_t recsz = unwind - td->btbuf;
+  size_t recsz = unwind - td->btbuf_beg;
   /* get new buffer */
   TMSG(EPOCH," epoch_expand_buffer");
   frame_t *newbt = hpcrun_malloc(newsz*sizeof(frame_t));
 
-  if(td->bufstk > td->bufend) {
-    EMSG("Invariant bufstk > bufend violated");
+  if(td->btbuf_sav > td->btbuf_end) {
+    EMSG("Invariant btbuf_sav > btbuf_end violated");
     monitor_real_abort();
   }
 
   /* copy frames from old to new */
-  memcpy(newbt, td->btbuf, recsz*sizeof(frame_t));
-  memcpy(newbt+newsz-btsz, td->bufend-btsz, btsz*sizeof(frame_t));
+  memcpy(newbt, td->btbuf_beg, recsz*sizeof(frame_t));
+  memcpy(newbt+newsz-btsz, td->btbuf_end-btsz, btsz*sizeof(frame_t));
 
   /* setup new pointers */
-  td->btbuf = newbt;
-  td->bufend = newbt+newsz;
-  td->bufstk = newbt+newsz-btsz;
+  td->btbuf_beg = newbt;
+  td->btbuf_end = newbt+newsz;
+  td->btbuf_sav = newbt+newsz-btsz;
 
   /* return new unwind pointer */
   return newbt+recsz;
@@ -272,9 +272,9 @@ void
 hpcrun_ensure_btbuf_avail(void)
 {
   thread_data_t* td = hpcrun_get_thread_data();
-  if (td->unwind == td->bufend) {
-    td->unwind = hpcrun_expand_btbuf();
-    td->bufstk = td->bufend;
+  if (td->btbuf_cur == td->btbuf_end) {
+    td->btbuf_cur = hpcrun_expand_btbuf();
+    td->btbuf_sav = td->btbuf_end;
   }
 }
 

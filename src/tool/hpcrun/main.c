@@ -351,7 +351,7 @@ hpcrun_thread_fini(epoch_t *epoch)
     // FIXME: currently breaks the build.
 #if 0
     EMSG("Backtrace for last sample event:\n");
-    dump_backtrace(epoch, epoch->unwind);
+    dump_backtrace(epoch, epoch->btbuf_cur);
 #endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
 
     hpcrun_write_profile_data(epoch);
