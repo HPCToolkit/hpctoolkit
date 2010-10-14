@@ -849,8 +849,12 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 		      int skipInner)
 {
   bool tramp_found;
+  frame_t* bt_beg;
+  frame_t* bt_last;
 
-  if (! hpcrun_generate_backtrace(context, &tramp_found, skipInner)) {
+  if (! hpcrun_generate_backtrace(context,
+				  &bt_beg, &bt_last, &tramp_found,
+				  skipInner)) {
     return NULL;
   }
 
@@ -862,8 +866,6 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
     cct_cursor   = td->tramp_cct_node->parent;
   }
 
-  frame_t* bt_beg  = td->btbuf;      // innermost, inclusive
-  frame_t *bt_last = td->unwind - 1; // outermost, inclusive
   cct_node_t* n;
 
   n = hpcrun_cct_insert_backtrace(cct, cct_cursor, metricId,

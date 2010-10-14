@@ -145,8 +145,8 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   
   // FIXME: unwind/common/backtrace.c
   thread_data_t* td = hpcrun_get_thread_data();
-  td->unwind   = td->btbuf;  // innermost
-  td->bufstk   = td->bufend;
+  td->btbuf_cur   = td->btbuf_beg;  // innermost
+  td->btbuf_sav   = td->btbuf_end;
 
   // ---------------------------------------------------------
   // Step through bichords
@@ -164,7 +164,7 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
     // FIXME: short circuit unwind if we hit the 'active return'
 
     hpcrun_ensure_btbuf_avail();
-    frame_t* chord_beg = td->unwind; // innermost note
+    frame_t* chord_beg = td->btbuf_cur; // innermost note
     uint pchord_len = 0, lchord_len = 0;
 
     // ---------------------------------------------------------
@@ -177,13 +177,13 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
       ip_normalized_t ip_norm = lush_cursor_get_ip_norm(&cursor);
       TMSG(LUNW, "IP:  lm-id = %d and lm-ip = %p", ip_norm.lm_id, 
 	   ip_norm.lm_ip);
-      td->unwind->ip_norm = ip_norm;
+      td->btbuf_cur->ip_norm = ip_norm;
 
       pchord_len++;
-      td->unwind++;
+      td->btbuf_cur++;
     }
 
-    td->unwind = chord_beg;
+    td->btbuf_cur = chord_beg;
 
     // ---------------------------------------------------------
     // Step through l-notes of l-chord
@@ -205,10 +205,10 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 	// INVARIANT: as must be 1-to-M
 	lip_persistent = lush_lip_clone(lip);
       }
-      td->unwind->lip = lip_persistent;
+      td->btbuf_cur->lip = lip_persistent;
 
       lchord_len++;
-      td->unwind++;
+      td->btbuf_cur++;
     }
 
     // ---------------------------------------------------------
@@ -218,7 +218,7 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
     chord_end = canonicalize_chord(chord_beg, as, pchord_len, lchord_len);
     unw_len++;
 
-    td->unwind = chord_end;
+    td->btbuf_cur = chord_end;
   }
 
   if (ty == LUSH_STEP_ERROR) {
@@ -229,11 +229,11 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   // insert backtrace into calling context tree (if sensible)
   // ---------------------------------------------------------
   if (MYDBG) {
-    hpcrun_bt_dump(td->unwind, "LUSH");
+    hpcrun_bt_dump(td->btbuf_cur, "LUSH");
   }
 
-  frame_t* bt_beg = td->btbuf;      // innermost, inclusive 
-  frame_t* bt_end = td->unwind - 1; // outermost, inclusive
+  frame_t* bt_beg = td->btbuf_beg;      // innermost, inclusive 
+  frame_t* bt_end = td->btbuf_cur - 1; // outermost, inclusive
   cct_node_t* cct_cursor = NULL;
 
   if (skipInner) {

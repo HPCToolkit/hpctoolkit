@@ -106,7 +106,7 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
 
   thread_data_t* td = hpcrun_get_thread_data();
   if (unwind) {
-    for (frame_t* x = td->btbuf; x < unwind; ++x) {
+    for (frame_t* x = td->btbuf_beg; x < unwind; ++x) {
       lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
       lush_lip2str(lip_str, sizeof(lip_str), x->lip);
 
@@ -124,9 +124,9 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
     }
   }
 
-  if (msg_cnt <= msg_limit && td->bufstk != td->bufend) {
+  if (msg_cnt <= msg_limit && td->btbuf_sav != td->btbuf_end) {
     PMSG_LIMIT(EMSG("-- begin cached backtrace ---------------------------"));
-    for (frame_t* x = td->bufstk; x < td->bufend; ++x) {
+    for (frame_t* x = td->btbuf_sav; x < td->btbuf_end; ++x) {
       lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
       lush_lip2str(lip_str, sizeof(lip_str), x->lip);
       PMSG_LIMIT(EMSG("%s: ip.lm_id = %d | ip.lm_ip = %p | lip %s", as_str,
@@ -317,9 +317,14 @@ hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
 //
 // Generate a backtrace, store it in the thread local data
 // Return true/false success code
+// Also, return (via reference params) backtrace beginning, backtrace end,
+//  and whether or not a trampoline was found.
 //
 bool
-hpcrun_generate_backtrace(ucontext_t* context, bool* has_tramp, int skipInner)
+hpcrun_generate_backtrace(ucontext_t* context,
+			  frame_t** retn_bt_beg, frame_t** retn_bt_end,
+			  bool* has_tramp,
+			  int skipInner)
 {
   int  backtrace_trolled = 0;
   bool tramp_found       = false;
@@ -335,8 +340,8 @@ hpcrun_generate_backtrace(ucontext_t* context, bool* has_tramp, int skipInner)
   //--------------------------------------------------------------------
 
   thread_data_t* td = hpcrun_get_thread_data();
-  td->unwind   = td->btbuf; // innermost
-  td->bufstk   = td->bufend;
+  td->btbuf_cur   = td->btbuf_beg; // innermost
+  td->btbuf_sav   = td->btbuf_end;
 
   int unw_len = 0;
   while (true) {
@@ -372,12 +377,12 @@ hpcrun_generate_backtrace(ucontext_t* context, bool* has_tramp, int skipInner)
     
     hpcrun_ensure_btbuf_avail();
 
-    td->unwind->cursor    = cursor;
+    td->btbuf_cur->cursor    = cursor;
     //Broken if HPC_UNW_LITE defined
-    hpcrun_unw_get_ip_norm_reg(&td->unwind->cursor, &td->unwind->ip_norm);
-    td->unwind->ra_loc    = NULL;
-    frame_t* prev = td->unwind;
-    td->unwind++;
+    hpcrun_unw_get_ip_norm_reg(&td->btbuf_cur->cursor, &td->btbuf_cur->ip_norm);
+    td->btbuf_cur->ra_loc    = NULL;
+    frame_t* prev = td->btbuf_cur;
+    td->btbuf_cur++;
     unw_len++;
 
     ret = hpcrun_unw_step(&cursor);
@@ -392,8 +397,13 @@ hpcrun_generate_backtrace(ucontext_t* context, bool* has_tramp, int skipInner)
     hpcrun_up_pmsg_count();
   }
   
-  frame_t* bt_beg  = td->btbuf;      // innermost, inclusive
-  frame_t* bt_last = td->unwind - 1; // outermost, inclusive
+  frame_t* bt_beg  = td->btbuf_beg;      // innermost, inclusive
+  frame_t* bt_last = td->btbuf_cur - 1; // outermost, inclusive
+
+  *retn_bt_beg     = bt_beg;         // returned backtrace begin
+                                     // is buffer beginning
+  *retn_bt_end     = bt_last;        // returned backtrace end is
+                                     // last recorded element
 
   frame_t* bt_end  = bt_last + 1;    // outermost, exclusive
   size_t new_frame_count = bt_end - bt_beg;
@@ -455,7 +465,8 @@ hpcrun_generate_backtrace(ucontext_t* context, bool* has_tramp, int skipInner)
       EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
 	   skipInner);
     }
-    td->btbuf = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
+    // adjust the returned backtrace according to the skipInner
+    *retn_bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
   }
 
   return true;

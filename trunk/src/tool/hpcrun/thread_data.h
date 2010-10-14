@@ -137,7 +137,7 @@ typedef struct thread_data_t {
   // backtrace buffer
   // ----------------------------------------
 
-  // btbuf                                                      bufend
+  // btbuf_beg                                                  btbuf_end
   // |                                                            |
   // v low VMAs                                                   v
   // +------------------------------------------------------------+
@@ -145,12 +145,16 @@ typedef struct thread_data_t {
   // +------------------------------------------------------------+
   //                        ^              ^ 
   //                        |              |
-  //                      unwind         bufstk
+  //                    btbuf_cur       btbuf_sav
   
-  frame_t* unwind;    // current frame
-  frame_t* btbuf;     // innermost frame in new backtrace
-  frame_t* bufend;
-  frame_t* bufstk;    // innermost frame in cached backtrace
+  frame_t* btbuf_cur;  // current frame when actively constructing a backtrace
+  frame_t* btbuf_beg;  // beginning of the backtrace buffer 
+                       // also, location of the innermost frame in
+                       // newly recorded backtrace (although skipInner may
+                       // adjust the portion of the backtrace that is recorded)
+  frame_t* btbuf_end;  // end of the current backtrace buffer
+  frame_t* btbuf_sav;  // innermost frame in cached backtrace
+
 
   backtrace_t bt;     // backtrace used for unwinding
 
