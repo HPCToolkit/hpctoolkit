@@ -151,6 +151,10 @@ lazy_open_data_file(void)
 
   /* Open file for writing; fail if the file already exists. */
   fs = hpcio_fopen_w(fnm, /* overwrite */ 0);
+  if (fs == NULL) {
+    EEMSG("HPCToolkit: %s: unable to open: %s", __func__, fnm);
+    return NULL;
+  }
 
   td->hpcrun_file = fs;
 
@@ -181,8 +185,6 @@ lazy_open_data_file(void)
 
   char traceMaxTimeStr[bufSZ];
   snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, td->trace_max_time_us);
-
-
 
   //
   // ==== file hdr =====
@@ -320,6 +322,9 @@ void
 hpcrun_flush_epochs(void)
 {
   FILE *fs = lazy_open_data_file();
+  if (fs == NULL)
+    return;
+
   write_epochs(fs, TD_GET(epoch));
   hpcrun_epoch_reset();
 }
@@ -327,9 +332,11 @@ hpcrun_flush_epochs(void)
 int
 hpcrun_write_profile_data(epoch_t *epoch)
 {
-
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
   FILE* fs = lazy_open_data_file();
+  if (fs == NULL)
+    return HPCRUN_ERR;
+
   write_epochs(fs, epoch);
 
   TMSG(DATA_WRITE,"closing file");

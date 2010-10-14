@@ -73,7 +73,6 @@
 //***************************************************************
 
 #define NO_HOST_ID      (-1)
-#define NO_PID          (~0)
 
 
 
@@ -200,11 +199,7 @@ os_hostid()
 unsigned int
 os_pid()
 {
-  static unsigned int pid = NO_PID;
-
-  if (pid == NO_PID) pid = getpid();
-
-  return pid;
+  return getpid();
 }
 
 const char* 
