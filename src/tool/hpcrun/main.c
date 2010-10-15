@@ -183,7 +183,7 @@ hpcrun_is_initialized()
 //------------------------------------
 
 void
-hpcrun_init_internal()
+hpcrun_init_internal(bool is_child)
 {
   hpcrun_initLoadmap();
 
@@ -233,7 +233,9 @@ hpcrun_init_internal()
   //       -all- possible (e.g. registered) sample sources call their own init method
   //       no need to do it twice.
   //
-  SAMPLE_SOURCES(process_event_list, lush_metrics);
+  if (! is_child) {
+    SAMPLE_SOURCES(process_event_list, lush_metrics);
+  }
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
 
   // set up initial 'epoch' 
@@ -358,7 +360,10 @@ hpcrun_thread_fini(epoch_t *epoch)
   }
 }
 
-
+typedef struct fork_data_t {
+  int flag;
+  bool is_child;
+} fork_data_t;
 
 //***************************************************************************
 // process control (via libmonitor)
@@ -369,6 +374,9 @@ monitor_init_process(int *argc, char **argv, void* data)
 {
   char* process_name;
   char  buf[PROC_NAME_LEN];
+
+  fork_data_t* fork_data = (fork_data_t*) data;
+  bool is_child = data && fork_data->is_child;
 
   const char* HPCRUN_WAIT = getenv("HPCRUN_WAIT");
   if (HPCRUN_WAIT) {
@@ -404,7 +412,10 @@ monitor_init_process(int *argc, char **argv, void* data)
   if (s == NULL){
     s = getenv("CSPROF_OPT_EVENT");
   }
-  hpcrun_sample_sources_from_eventlist(s);
+  
+  if (! is_child) {
+    hpcrun_sample_sources_from_eventlist(s);
+  }
 
   hpcrun_process_sample_source_none();
 
@@ -418,7 +429,8 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   messages_logfile_create();
 
-  hpcrun_init_internal();
+  TMSG(PROCESS, "I am a %s process", is_child ? "child" : "parent");
+  hpcrun_init_internal(is_child);
   if (ENABLED(TST)){
     EEMSG("TST debug ctl is active!");
     STDERR_MSG("Std Err message appears");
@@ -442,10 +454,7 @@ monitor_fini_process(int how, void* data)
 }
 
 
-static struct _ff {
-  int flag;
-} from_fork;
-
+static fork_data_t from_fork;
 
 void*
 monitor_pre_fork(void)
@@ -466,6 +475,7 @@ monitor_pre_fork(void)
   NMSG(PRE_FORK,"finished pre_fork call");
   hpcrun_async_unblock();
 
+  from_fork.is_child = true;
   return (void *)(&from_fork);
 }
 
