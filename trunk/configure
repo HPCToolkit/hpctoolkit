@@ -16957,11 +16957,8 @@ else
 fi
 
 
-# tallent: FIXME: for now require an explicit request to enable MPI.
-# Once hpcprof-mpi is ready, the second test should be replaced with:
-#   "${OPT_REQ_ENABLE_MPI}" != "no"
 OPT_ENABLE_MPI=no
-if test -n "${MPICXX}" -a "${OPT_REQ_ENABLE_MPI}" = "yes" ; then
+if test -n "${MPICXX}" -a "${OPT_REQ_ENABLE_MPI}" != "no" ; then
   OPT_ENABLE_MPI=yes
 fi
 
