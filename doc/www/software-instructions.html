@@ -199,12 +199,21 @@ succssfully used versions 5.6.x, 5.8.x.
   <li><p>An HPCToolkit tarball</p>
   </li>
 
-  <li><p>An HPCToolkit externals tarball.  Think of this as a "package manager" that automatically configures and builds dependences not mentioned above.  It contains several external libraries.  (Some of these libraries, like libelf and libxml2 are commonly found on Linux systems, but not always.  Others, like OpenAnalysis and SymtabAPI are almost never available.  Finally, a few packages, like GNU binutils have been heavily patched.)  In some cases it may be possible to use versions of these packages that are already installed on your system.  However, we do not support such configurations.</p>
+  <li><p>An HPCToolkit externals tarball.
+      Think of this as a "package manager" that automatically configures and builds dependences not mentioned above.
+      It contains several external libraries.
+      (Some of these libraries, like libelf and libxml2 are commonly found on Linux systems, but not always.
+      Others, like OpenAnalysis and SymtabAPI are almost never available.
+      Finally, a few packages, like GNU binutils have been heavily patched.)
+      In some cases it may be possible to use versions of these packages that are already installed on your system.
+      However, we do not support such configurations.
+    </p>
   </li>
 
   <li><p>An <span class="hpctool">hpcviewer</span> build.</p>
 
-  <p>Note: It is perfectly reasonable to install <span class="hpctool">hpcviewer</span> in multiple locations.  Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.</p>
+  <p>Note: It is perfectly reasonable to install <span class="hpctool">hpcviewer</span> in multiple locations.
+    Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.</p>
   </li>
 
 </ol>
@@ -234,51 +243,44 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 <ol class="noindent">
 
-<li>
-<p>Build and install HPCToolkit's externals, which typically does not require any special options:
-</p>
+<li><p>Build and install HPCToolkit's Externals, which typically does not require any special options:
+  </p>
 <div class="indent">
   <code>cd hpctoolkit-externals</code><br />
-  <code>./configure</code><br />
-  <code>make all</code><br />
+  <code>mkdir BUILD && cd BUILD</code><br />
+  <code>../configure [--prefix=<i>&lt;externals-install-path</i>&gt;</code>]<br />
+  <code>make install</code><br />
   <code>make distclean</code><br />
 </div>
 
-<p>The build creates a staging area in a subdirectory named after the target (Autoconf: host) platform.
-  The staging area is a development directory, that is, it contains the full installation of each package, including the header files needed to compile other programs.
-  This is the directory HPCToolkit uses to build itself, so it is important to finish the externals build before configuring HPCToolkit.
+<p>Externals is <i>not</i> persistent as HPCToolkit will copy everything it needs from the installation.
+  Thus, the installation path <code>&lt;externals-install-path&gt;</code> should be a local path and not something like <code>/usr</code>.
+  If <code>--prefix</code> is not supplied it will automatically be set to <code>./&lt;Autoconf-host&gt;</code>.
 </p>
 
-  <ul>
-    <li><p>Note: it is possible, but unnecessary, to use the <code>--prefix=<i>&lt;externals-installation-path</i>&gt;</code> option for configure.
-    The externals's install directory (prefix) is only a staging area, used as a build dependency for HPCToolkit and is not the same as HPCToolkit's prefix.
+<p>Please be sure the Externals build completes before configuring HPCToolkit.
+  (Note: After building Externals once, HPCToolkit can be configured and built several times using the same Externals installation.)
 </p>
-    </li>
 
-    <li><p>Note: the externals tree is designed to be a one-time build step.
-    After building the external packages, then its tree can be cleaned (with make distclean) and HPCToolkit can be configured and built several times with the same externals tree.
-    That is, reconfiguring or rebuilding HPCToolkit does not require rebuilding the externals tree.
-      </p>
-    </li>
-  </ul>
-</li>
 
 <li>
-<p>Build and install HPCToolkit using a command similar to the following:
+<p>Build and install HPCToolkit using commands similar to the following:
 </p>
 <div class="indent">
   <code>cd hpctoolkit</code><br />
-  <code>./configure --prefix=<i>&lt;install-path</i>&gt; --with-externals=<i>&lt;externals-path</i>&gt; --with-papi=<i>&lt;papi-installation-path</i>&gt;</code><br />
+  <code>mkdir BUILD && cd BUILD</code><br />
+  <code>../configure --prefix=<i>&lt;install-path</i>&gt;
+                     --with-externals=<i>&lt;externals-install-path</i>&gt;
+                     [--with-papi=<i>&lt;papi-install-path</i>&gt;]</code><br />
   <code>make install</code><br />
 </div>
 
-<p>The above command will build HPCToolkit using HPCToolkit's externals and PAPI and install it into <code><i>&lt;install-path</i>&gt;</code>.
-  Here, <code><i>&lt;externals-path</i>&gt;</code> is the path to the <code>hpctoolkit-externals</code> source tree (even if built with <code>--prefix=<i>&lt;externals-installation-path</i>&gt;</code>).
-  The last argument uses <code><i>&lt;papi-installation-path</i>&gt;</code>, which is the path to an optional PAPI installation; if PAPI is not available, simply remove this option.
+<p>The above commands will build HPCToolkit and install it into <code><i>&lt;install-path</i>&gt;</code>.
+  The optional <code>--with-papi</code> takes the path to an optional PAPI installation <code><i>&lt;papi-install-path</i>&gt;</code>.
 </p>
 
 <p>Because the HPCToolkit installation is self-contained, it may be renamed or moved to another location.
-  All HPCToolkit externals and HPCToolkit source code and build files may be removed.
+  All HPCToolkit Externals source code, build files and installations may be removed; all HPCToolkit source code and build files may be removed.
 </p>
 </li>
 
@@ -292,35 +294,67 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 <h3>Selected Examples</h3>
 
-<p>The list below gives example HPCToolkit-externals and HPCToolkit <code>configure</code> commands (respectively) for selected platforms:</p>
+<p>The list below gives example HPCToolkit Externals and HPCToolkit <code>configure</code> commands (respectively) for selected platforms:</p>
   <ul>
-    <li><p>BlueGene/P front-end:</p>
+    <li><p>BlueGene/P front end:</p>
 	<ul>
-	  <li><code>CC=gcc CXX=g++ ./configure</code></li>
-	  <li><code>CC=gcc CXX=g++ ./configure 
-	      --prefix=&lt;<i>install-path-fe</i>&gt;
-	      --with-externals=&lt;<i>externals-path-fe</i>&gt;
+	  <li><code>../configure CC=gcc CXX=g++ \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=`pwd`/../powerpc64-linux
+	  </code></li>
+	  <li><code>
+	      ../configure CC=gcc CXX=g++ \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path-fe</i>&gt; \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;hpctoolkit-externals&gt;/powerpc64-linux
 	      </code>
           </li>
 	</ul>
     </li>
-    <li><p>BlueGene/P back-end:</p>
+
+    <li><p>BlueGene/P back end:</p>
 	<ul>
 	  <li><code>
-	      CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br />
-              CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br />
-	      ./configure --host=powerpc-bgp-linux
+	      ../configure \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --host=powerpc-bgp-linux --prefix=`pwd`/../powerpc-bgp-linux
 	    </code>
 	  </li>
 	  <li><code>
-	      CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br />
-	      CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br />
-	      MPICXX="mpicxx -dynamic" \<br />
-	      ./configure --host=powerpc-bgp-linux
-              --prefix=&lt;<i>install-path-be</i>&gt;
-	      --with-externals=&lt;<i>externals-path-be</i>&gt; --enable-mpi
+	      ../configure \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; MPICXX="mpicxx -dynamic" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --host=powerpc-bgp-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;hpctoolkit-externals&gt;/powerpc-bgp-linux
 	    </code>
 	  </li>
+	</ul>
+    </li>
+
+    <li><p>Cray XT front end (use default programming environment):</p>
+	<ul>
+	  <li><code>../configure --prefix=`pwd`/../x86_64-linux</code></li>
+	  <li><code>../configure --prefix=&lt;<i>install-path-fe</i>&gt; \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;hpctoolkit-externals&gt;/x86_64-linux \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23
+	      </code>
+          </li>
+	</ul>
+    </li>
+
+    <li><p>Cray XT back end (use GNU programming environment):</p>
+	<ul>
+	  <li><code>
+	      export XTPE_INFO_MESSAGE_OFF=1 # breaks GNU binutils' configure! <br />
+	      
+	      ../configure CC="cc" CXX="CC" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp;--host=x86_64-suse-linux --prefix=`pwd`/../x86_64-crayxt</code></li>
+	  <li><code>../configure CC="cc -static" CXX="CC -static" MPICXX="CC -static" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-suse-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;hpctoolkit-externals&gt;/x86_64-crayxt \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23
+	      </code>
+          </li>
 	</ul>
     </li>
 
@@ -338,8 +372,33 @@ Please note that a list of examples below provides <code>configure</code> comman
 <p>The following options may be useful in exceptional circumstances.</p>
 
 <ul>
+<li><p>To enable/disable HPCToolkit features, the following options may be used.</p>
 
-<li>To request that HPCToolkit externals use an alternate user-supplied installation for a given package, the following options may be used.
+  <table cellpadding="2" cellspacing="2" border="1" width="100%">
+    <tr>
+      <th>Option</th>
+      <th>Meaning</th>
+    </tr>
+    <tr>
+      <td><code>--enable-mpi</code></td>
+      <td>enable/disable build of hpcprof-mpi</td>
+    </tr>
+    <tr>
+      <td colspan="2"><hr /></td>
+    </tr>
+
+    <tr>
+      <td><code>--with-upc=PATH</code></td>
+      <td>path to IBM BlueGene/P UPC installation</td>
+    </tr>
+    <tr>
+      <td><code>--with-upc-lib=LIBRARY</code></td>
+      <td>path to IBM BlueGene/P UPC library(s), absolute or relative to WITH_UPC/runtime/SPI</td>
+    </tr>
+  </table>
+</li>
+
+<li><p>To request that HPCToolkit Externals use an alternate user-supplied installation for a given package, the following options may be used.</p>
 
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
     <tr>
@@ -390,19 +449,6 @@ Please note that a list of examples below provides <code>configure</code> comman
       <td><code>--with-xerces=PATH</code></td>
       <td>path to xerces/c install directory</td>
     </tr>
-
-    <tr>
-      <td colspan="2"><hr /></td>
-    </tr>
-
-    <tr>
-      <td><code>--with-upc=PATH</code></td>
-      <td>path to IBM BlueGene/P UPC installation</td>
-    </tr>
-    <tr>
-      <td><code>--with-upc-lib=LIBRARY</code></td>
-      <td>path to IBM BlueGene/P UPC library(s), absolute or relative to WITH_UPC/runtime/SPI</td>
-    </tr>
   </table>
 
 
@@ -417,7 +463,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2010/09/11</span>]
+<p>[<span class="lastupdated">Page last updated: 2010/10/16</span>]
 </p>
 
 <!-- ********************************************************************** -->
