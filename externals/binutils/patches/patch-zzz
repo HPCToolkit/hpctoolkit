@@ -1,0 +1,12 @@
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c	2010-10-18 01:42:13.000000000 -0500
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c	2010-10-18 01:43:28.000000000 -0500
+@@ -2494,7 +2494,7 @@
+ {
+   bfd_boolean ans;
+ 
+-  if (unit->error)
++  if (unit->error || addr == 0)
+     return FALSE;
+ 
+   /* Note: this assumes that we add all of the aranges before doing
