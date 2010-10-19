@@ -299,7 +299,8 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 <h3>Selected Examples</h3>
 
-<p>The list below gives example HPCToolkit Externals and HPCToolkit <code>configure</code> commands (respectively) for selected platforms:</p>
+<p>The list below gives example HPCToolkit Externals and HPCToolkit <code>configure</code> commands (respectively) for selected platforms.
+The commands are designed to replace the respective commands in the above build instructions:</p>
   <ul>
     <li><p>BlueGene/P front end:</p>
 	<ul>
@@ -354,7 +355,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 	  <li><code>
 	      export XTPE_INFO_MESSAGE_OFF=1 # breaks GNU binutils' configure! <br />
 	      
-	      ../configure CC="cc" CXX="CC" \<br />
+	      ../configure CC="cc -static" CXX="CC -static" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-suse-linux --prefix=`pwd`/../x86_64-crayxt \ <br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --without-symtabAPI \ <br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libelf \ <br />
