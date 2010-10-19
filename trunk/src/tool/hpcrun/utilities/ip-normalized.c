@@ -44,20 +44,28 @@
 //************************* System Include Files ****************************
 
 #include <stdint.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <string.h>
 
 //*************************** User Include Files ****************************
 
 #include "ip-normalized.h"
+#include <messages/messages.h>
 
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
+
+#define NULL_OR_NAME(v) ((v) ? (v)->name : "(NULL)")
 
 ip_normalized_t ip_normalized_NULL = { .lm_id = 0, .lm_ip = 0 };
 
 ip_normalized_t
 hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
 {
+  TMSG(NORM_IP, "normalizing %p, w load_module %s", unnormalized_ip, NULL_OR_NAME(lm));
   if (!lm) {
     lm = hpcrun_loadmap_findByAddr(unnormalized_ip, unnormalized_ip);
   }
@@ -69,6 +77,23 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
     return ip_norm;
   }
 
-  return ip_normalized_NULL;
+  EMSG("%p not normalizable", unnormalized_ip);
+
+  if (ENABLED(NORM_IP_DBG)){
+    EMSG("/proc/maps below");
+    char tmp[1024 * 1024];
+    snprintf(tmp, sizeof(tmp), "/proc/%u/maps", getpid());
+    FILE* loadmap = fopen(tmp, "r");
+    char linebuf[1024 + 1];
+    for (;;){
+      char* l = fgets(linebuf, sizeof(linebuf), loadmap);
+      if (feof(loadmap)) {
+	break;
+      }
+      EMSG("  %s", l);
+    }
+    fclose(loadmap);
+  }
+  return (ip_normalized_t) {.lm_id = 0, .lm_ip = (uintptr_t) unnormalized_ip};
 }
 
