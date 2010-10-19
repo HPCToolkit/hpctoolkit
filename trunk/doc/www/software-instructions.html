@@ -243,12 +243,14 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 <ol class="noindent">
 
-<li><p>Build and install HPCToolkit's Externals, which typically does not require any special options:
+<li><p>Build and install HPCToolkit's Externals, which typically does not require any special options; we recommend using the GCC compilers:
   </p>
 <div class="indent">
   <code>cd hpctoolkit-externals</code><br />
   <code>mkdir BUILD &amp;&amp; cd BUILD</code><br />
-  <code>../configure [--prefix=<i>&lt;externals-install-path</i>&gt;</code>]<br />
+  <code>../configure [CC=&lt;<i>c-compiler</i>&gt;] 
+                     [CXX=&lt;<i>c++-compiler</i>&gt;] \ <br />
+  &nbsp;&nbsp;&nbsp;&nbsp; [--prefix=&lt;<i>externals-install-path</i>&gt;</code>] <br />
   <code>make install</code><br />
   <code>make distclean</code><br />
 </div>
@@ -264,19 +266,22 @@ Please note that a list of examples below provides <code>configure</code> comman
 </li>
 
 <li>
-<p>Build and install HPCToolkit using commands similar to the following:
+<p>Build and install HPCToolkit using commands similar to the following; we recommend using the GCC compilers:
 </p>
 <div class="indent">
   <code>cd hpctoolkit</code><br />
   <code>mkdir BUILD &amp;&amp; cd BUILD</code><br />
-  <code>../configure --prefix=<i>&lt;install-path</i>&gt;
-                     --with-externals=<i>&lt;externals-install-path</i>&gt;
-                     [--with-papi=<i>&lt;papi-install-path</i>&gt;]</code><br />
+  <code>../configure [CC=&lt;<i>c-compiler</i>&gt;]
+                     [CXX=&lt;<i>c++-compiler</i>&gt;]
+                     [MPICXX=&lt;<i>mpi-c++-compiler</i>&gt;] \ <br />
+  &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \ <br />
+  &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>externals-install-path</i>&gt;  \ <br />
+   &nbsp;&nbsp;&nbsp;&nbsp; [--with-papi=&lt;<i>papi-install-path</i>&gt;]</code><br />
   <code>make install</code><br />
 </div>
 
-<p>The above commands will build HPCToolkit and install it into <code><i>&lt;install-path</i>&gt;</code>.
-  The optional <code>--with-papi</code> takes the path to an optional PAPI installation <code><i>&lt;papi-install-path</i>&gt;</code>.
+<p>The above commands will build HPCToolkit and install it into <code>&lt;<i>install-path</i>&gt;</code>.
+  The optional <code>--with-papi</code> takes the path to an optional PAPI installation <code>&lt;<i>papi-install-path</i>&gt;</code>.
 </p>
 
 <p>Because the HPCToolkit installation is self-contained, it may be renamed or moved to another location.
@@ -333,7 +338,9 @@ Please note that a list of examples below provides <code>configure</code> comman
 
     <li><p>Cray XT front end (use default programming environment):</p>
 	<ul>
-	  <li><code>../configure --prefix=`pwd`/../x86_64-linux</code></li>
+	  <li><code>../configure --prefix=`pwd`/../x86_64-linux</code>
+	  </li>
+
 	  <li><code>../configure --prefix=&lt;<i>install-path-fe</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;hpctoolkit-externals&gt;/x86_64-linux \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23
@@ -348,11 +355,20 @@ Please note that a list of examples below provides <code>configure</code> comman
 	      export XTPE_INFO_MESSAGE_OFF=1 # breaks GNU binutils' configure! <br />
 	      
 	      ../configure CC="cc" CXX="CC" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp;--host=x86_64-suse-linux --prefix=`pwd`/../x86_64-crayxt</code></li>
+	      &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-suse-linux --prefix=`pwd`/../x86_64-crayxt \ <br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --without-symtabAPI \ <br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libelf \ <br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libdwarf \ <br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libunwind \ <br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --without-old-monitor
+	      </code>
+	      </li>
+
 	  <li><code>../configure CC="cc -static" CXX="CC -static" MPICXX="CC -static" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-suse-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;hpctoolkit-externals&gt;/x86_64-crayxt \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23
+	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23 \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --disable-hpcrun
 	      </code>
           </li>
 	</ul>
@@ -463,7 +479,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2010/10/18</span>]
+<p>[<span class="lastupdated">Page last updated: 2010/10/19</span>]
 </p>
 
 <!-- ********************************************************************** -->
