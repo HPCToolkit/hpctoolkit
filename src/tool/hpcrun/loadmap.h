@@ -67,7 +67,7 @@
 //
 //***************************************************************************
 
-typedef struct dso_info_s {
+typedef struct dso_info_t {
   char* name;
   void* start_addr;
   void* end_addr;

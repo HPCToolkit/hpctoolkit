@@ -150,7 +150,8 @@ static pmsg_category all_list_entries [] = {
  E(MMAP),
  E(MALLOC),
  E(CSP_MALLOC),
- E(MEM__ALLOC)
+ E(MEM__ALLOC),
+ E(NORM_IP)
 };
 
 

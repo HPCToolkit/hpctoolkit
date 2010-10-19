@@ -231,7 +231,7 @@ os_realpath(const char *inpath, char *outpath)
 
 
 static char *
-files_name(char *filename, unsigned int mpi, const char *suffix)
+files_name(char* filename, unsigned int mpi, const char* suffix)
 {
   thread_data_t *td = hpcrun_get_thread_data();
 

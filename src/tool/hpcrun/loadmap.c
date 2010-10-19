@@ -48,6 +48,7 @@
 #include "hpcrun_stats.h"
 #include "sample_event.h"
 #include "epoch.h"
+#include <unwind/common/ui_tree.h>
 
 #include <messages/messages.h>
 
@@ -391,6 +392,7 @@ hpcrun_loadmap_unmap(load_module_t* lm)
       s_dso_free_list->prev = old_dso;
     }
     s_dso_free_list = old_dso;
+    hpcrun_delete_ui_range(old_dso->start_addr, old_dso->end_addr+1);
   }
 }
 
@@ -414,4 +416,3 @@ hpcrun_getLoadmap()
 {
   return s_loadmap_ptr;
 }
-
