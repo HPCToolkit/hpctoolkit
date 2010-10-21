@@ -77,8 +77,8 @@ typedef struct dso_info_t {
   unsigned long nsymbols;
   int  is_relocatable;
 
-  struct dso_info_s* next; //to only be used with dso_free_list
-  struct dso_info_s* prev;
+  struct dso_info_t* next; //to only be used with dso_free_list
+  struct dso_info_t* prev;
 
 } dso_info_t;
 
