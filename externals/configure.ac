@@ -76,11 +76,16 @@ version_file="${srcdir}/.svn-revision"
 
 # Allow the user to set the prefix, but change the default to a subdir
 # of the build directory.  Autoconf requires this to be an absolute
-# path.
+# path.  Normalize the path and mkdir the directory so we can write
+# externs.conf into it.
 
 if test "x$prefix" = xNONE ; then
     prefix="`pwd`/${host}"
 fi
+if mkdir -p "$prefix" ; then : ; else
+    AC_MSG_ERROR([unable to mkdir $prefix])
+fi
+prefix=`( cd "$prefix" && pwd )`
 
 #------------------------------------------------------------
 # SVN revision
@@ -126,15 +131,17 @@ fi
 
 # Warn if not using GNU gcc and g++.  Some packages don't build
 # cleanly without gcc.  For example, binutils fails with icc.
+# It's a pain to robustly identify GNU gcc/g++: Intel icc defines
+# __GNUC__ and Ubuntu g++ --version doesn't display "GCC".
 
 warn_non_gcc=no
-$CC --version 2>&1 | grep GCC >/dev/null 2>&1
+$CC --version 2>&1 | grep -i 'free software found' >/dev/null 2>&1
 if test $? -ne 0 ; then
     warn_non_gcc=yes
     AC_MSG_WARN([Not using the GNU C compiler.])
 fi
 
-$CXX --version 2>&1 | grep GCC >/dev/null 2>&1
+$CXX --version 2>&1 | grep -i 'free software found' >/dev/null 2>&1
 if test $? -ne 0 ; then
     warn_non_gcc=yes
     AC_MSG_WARN([Not using the GNU C++ compiler.])
@@ -1010,9 +1017,6 @@ AC_SUBST([with_mpi])
 AC_OUTPUT
 
 # Copy externs.conf into prefix dir, this must come after AC_OUTPUT.
-if mkdir -p "$prefix" ; then : ; else
-    AC_MSG_ERROR([unable to mkdir $prefix])
-fi
 if cp -f "$externs_file" "$prefix" ; then : ; else
     AC_MSG_ERROR([unable to copy $externs_file])
 fi
