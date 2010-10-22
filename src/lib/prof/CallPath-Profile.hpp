@@ -267,11 +267,12 @@ public:
 
   static int
   fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
-		  const hpcrun_fmt_hdr_t* hdr,
+		  const hpcrun_fmt_hdr_t& hdr,
 		  std::string ctxtStr, const char* filename, FILE* outfs);
 
   static int
-  fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,	uint numMetricsSrc,
+  fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
+		const metric_tbl_t& metricTbl,
 		std::string ctxtStr, FILE* outfs);
 
 
