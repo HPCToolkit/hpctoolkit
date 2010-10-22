@@ -737,7 +737,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
     string myCtxtStr = "epoch " + StrUtil::toStr(num_epochs + 1);
     try {
       ctxtStr += ": " + myCtxtStr;
-      ret = fmt_epoch_fread(myprof, infs, rFlags, &hdr,
+      ret = fmt_epoch_fread(myprof, infs, rFlags, hdr,
 			    ctxtStr, filename, outfs);
       if (ret == HPCFMT_EOF) {
 	break;
@@ -781,7 +781,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
 
 int
 Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
-			 const hpcrun_fmt_hdr_t* hdr,
+			 const hpcrun_fmt_hdr_t& hdr,
 			 std::string ctxtStr, const char* filename,
 			 FILE* outfs)
 {
@@ -814,7 +814,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // metric-tbl
   // ----------------------------------------
   metric_tbl_t metricTbl;
-  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, infs, hdr->version, malloc);
+  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, infs, hdr.version, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
   }
@@ -822,7 +822,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     hpcrun_fmt_metricTbl_fprint(&metricTbl, outfs);
   }
 
-  uint numMetricsSrc = metricTbl.len;
+  const uint numMetricsSrc = metricTbl.len;
   
   // ----------------------------------------
   // loadmap
@@ -850,7 +850,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // program name
   // -------------------------
   string progNm;
-  val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_prog);
+  val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_prog);
   if (val && strlen(val) > 0) {
     progNm = val;
   }
@@ -861,15 +861,15 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   string mpiRankStr, tidStr;
   long   mpiRank = -1, tid = -1;
 
-  // val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_jobId);
+  // val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_jobId);
   
-  val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_mpiRank);
+  val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_mpiRank);
   if (val) {
     mpiRankStr = val;
     if (val[0] != '\0') { mpiRank = StrUtil::toLong(mpiRankStr); }
   }
 
-  val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_tid);
+  val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_tid);
   if (val) {
     tidStr = val;
     if (val[0] != '\0') { tid = StrUtil::toLong(tidStr); }
@@ -885,13 +885,13 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   string   traceMinTimeStr, traceMaxTimeStr;
   uint64_t traceMinTime = UINT64_MAX, traceMaxTime = 0;
 
-  val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_traceMinTime);
+  val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_traceMinTime);
   if (val) {
     traceMinTimeStr = val;
     if (val[0] != '\0') { traceMinTime = StrUtil::toUInt64(traceMinTimeStr); }
   }
 
-  val = hpcfmt_nvpairList_search(&(hdr->nvps), HPCRUN_FMT_NV_traceMaxTime);
+  val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_traceMaxTime);
   if (val) {
     traceMaxTimeStr = val;
     if (val[0] != '\0') { traceMaxTime = StrUtil::toUInt64(traceMaxTimeStr); }
@@ -932,7 +932,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   
   prof = new Profile(progNm);
 
-  prof->m_fmtVersion = hdr->version;
+  prof->m_fmtVersion = hdr.version;
   prof->m_flags = ehdr.flags;
   prof->m_measurementGranularity = ehdr.measurementGranularity;
   prof->m_raToCallsiteOfst = ehdr.raToCallsiteOfst;
@@ -1044,7 +1044,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     prof->isMetricMgrVirtual(true);
   }
 
-  hpcrun_fmt_metricTbl_free(&metricTbl, free);
 
   // ----------------------------------------
   // make metric DB info
@@ -1088,10 +1087,11 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
   // cct
   // ------------------------------------------------------------
-  fmt_cct_fread(*prof, infs, rFlags, numMetricsSrc, ctxtStr, outfs);
+  fmt_cct_fread(*prof, infs, rFlags, metricTbl, ctxtStr, outfs);
 
 
   hpcrun_fmt_epochHdr_free(&ehdr, free);
+  hpcrun_fmt_metricTbl_free(&metricTbl, free);
   
   return HPCFMT_OK;
 }
@@ -1099,7 +1099,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
 int
 Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
-		       uint numMetricsSrc, std::string ctxtStr, FILE* outfs)
+		       const metric_tbl_t& metricTbl, 
+		       std::string ctxtStr, FILE* outfs)
 {
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
 
@@ -1131,13 +1132,15 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   }
 
   // N.B.: numMetricsSrc <= [numMetricsDst = prof.metricMgr()->size()]
+  uint numMetricsSrc = metricTbl.len;
+
   if (rFlags & RFlg_NoMetricValues) {
     numMetricsSrc = 0;
   }
 
   hpcrun_fmt_cct_node_t nodeFmt;
   nodeFmt.num_metrics = numMetricsSrc;
-  nodeFmt.metrics = (numMetricsSrc > 0) ? 
+  nodeFmt.metrics = (numMetricsSrc > 0) ?
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
     : NULL;
 
@@ -1150,7 +1153,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       DIAG_Throw("Error reading CCT node " << nodeFmt.id);
     }
     if (outfs) {
-      hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags, "  ");
+      hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
+				 &metricTbl, "  ");
     }
 
     int nodeId   = (int)nodeFmt.id;

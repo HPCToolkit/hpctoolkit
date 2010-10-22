@@ -550,17 +550,18 @@ hpcrun_fmt_cct_node_init(hpcrun_fmt_cct_node_t* x)
 
 
 // N.B.: assumes space for metrics has been allocated
-extern int 
-hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x, 
+extern int
+hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
 			  epoch_flags_t flags, FILE* fs);
 
-extern int 
-hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x, 
+extern int
+hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 			   epoch_flags_t flags, FILE* fs);
 
-extern int 
-hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs, 
-			   epoch_flags_t flags, const char* pre);
+extern int
+hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
+			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
+			   const char* pre);
 
 
 // --------------------------------------------------------------------------

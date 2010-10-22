@@ -668,8 +668,9 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 
 
 int 
-hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs, 
-			   epoch_flags_t flags, const char* pre)
+hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
+			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
+			   const char* pre)
 {
   fprintf(fs, "%s[node: (id: %d) (id-parent: %d) ",
 	  pre, x->id, x->id_parent);
@@ -690,8 +691,23 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
   fprintf(fs, "\n");
 
   fprintf(fs, "%s(metrics:", pre);
-  for (int i = 0; i < x->num_metrics; ++i) {
-    fprintf(fs, " %"PRIu64, x->metrics[i].bits);
+  for (uint i = 0; i < x->num_metrics; ++i) {
+    hpcrun_metricFlags_t mflags = hpcrun_metricFlags_NULL;
+    if (metricTbl) {
+      const metric_desc_t* mdesc = &(metricTbl->lst[i]);
+      mflags = mdesc->flags;
+    }
+
+    switch (mflags.fields.valFmt) {
+      default:
+      case MetricFlags_ValFmt_Int:
+	fprintf(fs, " %"PRIu64, x->metrics[i].i);
+	break;
+      case MetricFlags_ValFmt_Real:
+	fprintf(fs, " %g", x->metrics[i].r);
+	break;
+    }
+
     if (i + 1 < x->num_metrics) {
       fprintf(fs, " ");
     }
