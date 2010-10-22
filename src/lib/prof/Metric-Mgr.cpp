@@ -5,9 +5,12 @@
 // $HeadURL$
 // $Id$
 //
-// -----------------------------------
+// --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
-// -----------------------------------
+// 
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
 // 
 // Copyright ((c)) 2002-2010, Rice University 
 // All rights reserved.
@@ -239,8 +242,8 @@ Mgr::makeSummaryMetric(const string& mNm, const Metric::ADescVec& mOpands)
   bool isPercent = false;
 
   // This is a a cheesy way of creating the metrics, but it is good
-  // enough for now.  Perhaps, this can be pushed into a metric parser
-  // as mathxml is retired.
+  // enough for now. 
+
   Metric::AExpr* expr = NULL;
   if (mNm.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());

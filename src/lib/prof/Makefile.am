@@ -5,9 +5,12 @@
 ## $HeadURL$
 ## $Id$
 ##
-## -----------------------------------
+## --------------------------------------------------------------------------
 ## Part of HPCToolkit (hpctoolkit.org)
-## -----------------------------------
+## 
+## Information about sources of support for research and development of
+## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+## --------------------------------------------------------------------------
 ## 
 ## Copyright ((c)) 2002-2010, Rice University 
 ## All rights reserved.

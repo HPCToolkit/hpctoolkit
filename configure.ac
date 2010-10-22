@@ -5,9 +5,12 @@ dnl
 dnl $HeadURL$
 dnl $Id$
 dnl
-dnl -----------------------------------
+dnl --------------------------------------------------------------------------
 dnl Part of HPCToolkit (hpctoolkit.org)
-dnl -----------------------------------
+dnl 
+dnl Information about sources of support for research and development of
+dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+dnl --------------------------------------------------------------------------
 dnl 
 dnl Copyright ((c)) 2002-2010, Rice University 
 dnl All rights reserved.

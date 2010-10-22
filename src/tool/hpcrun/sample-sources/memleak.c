@@ -2,12 +2,15 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample-sources/sync.c $
-// $Id: sync.c 2770 2010-03-06 02:54:44Z tallent $
+// $HeadURL$
+// $Id$
 //
-// -----------------------------------
+// --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
-// -----------------------------------
+// 
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
 // 
 // Copyright ((c)) 2002-2010, Rice University 
 // All rights reserved.
