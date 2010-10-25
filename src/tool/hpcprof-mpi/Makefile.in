@@ -46,11 +46,11 @@
 # C Preprocessor
 ############################################################
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
-pkglibexecdir = $(libexecdir)/@PACKAGE@
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
 install_sh_PROGRAM = $(install_sh) -c
@@ -66,9 +66,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(top_srcdir)/src/Makeinclude.config \
+	$(srcdir)/hpcprof-mpi.in $(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-bin_PROGRAMS = hpcprof-mpi$(EXEEXT)
+pkglibexec_PROGRAMS = hpcprof-mpi-bin$(EXEEXT)
 subdir = src/tool/hpcprof-mpi
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -77,22 +77,46 @@ am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = hpcprof-mpi
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
-PROGRAMS = $(bin_PROGRAMS)
-am__objects_1 = hpcprof_mpi-main.$(OBJEXT) hpcprof_mpi-Args.$(OBJEXT) \
-	hpcprof_mpi-ParallelAnalysis.$(OBJEXT)
-am_hpcprof_mpi_OBJECTS = $(am__objects_1)
-hpcprof_mpi_OBJECTS = $(am_hpcprof_mpi_OBJECTS)
+am__installdirs = "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(bindir)"
+PROGRAMS = $(pkglibexec_PROGRAMS)
+am__objects_1 = hpcprof_mpi_bin-main.$(OBJEXT) \
+	hpcprof_mpi_bin-Args.$(OBJEXT) \
+	hpcprof_mpi_bin-ParallelAnalysis.$(OBJEXT)
+am_hpcprof_mpi_bin_OBJECTS = $(am__objects_1)
+hpcprof_mpi_bin_OBJECTS = $(am_hpcprof_mpi_bin_OBJECTS)
 am__DEPENDENCIES_1 = $(HPC_LIBANALYSIS) $(HPC_LIBBANAL) \
 	$(HPC_LIBPROFXML) $(HPC_LIBPROF) $(HPC_LIBPROFLEAN) \
 	$(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) \
 	$(HPC_LIBSUPPORT)
-hpcprof_mpi_DEPENDENCIES = $(am__DEPENDENCIES_1)
-hpcprof_mpi_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcprof_mpi_CXXFLAGS) \
-	$(CXXFLAGS) $(hpcprof_mpi_LDFLAGS) $(LDFLAGS) -o $@
+hpcprof_mpi_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
+hpcprof_mpi_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) \
+	$(hpcprof_mpi_bin_LDFLAGS) $(LDFLAGS) -o $@
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+SCRIPTS = $(bin_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -115,11 +139,12 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(hpcprof_mpi_SOURCES)
-DIST_SOURCES = $(hpcprof_mpi_SOURCES)
+SOURCES = $(hpcprof_mpi_bin_SOURCES)
+DIST_SOURCES = $(hpcprof_mpi_bin_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
@@ -363,13 +388,12 @@ MYLDADD = \
 	-lm
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
-
-#hpcprof_mpi_LINK
-hpcprof_mpi_SOURCES = $(MYSOURCES)
-hpcprof_mpi_CFLAGS = $(MYCFLAGS)
-hpcprof_mpi_CXXFLAGS = $(MYCXXFLAGS)
-hpcprof_mpi_LDFLAGS = $(MYLDFLAGS)
-hpcprof_mpi_LDADD = $(MYLDADD)
+bin_SCRIPTS = hpcprof-mpi
+hpcprof_mpi_bin_SOURCES = $(MYSOURCES)
+hpcprof_mpi_bin_CFLAGS = $(MYCFLAGS)
+hpcprof_mpi_bin_CXXFLAGS = $(MYCXXFLAGS)
+hpcprof_mpi_bin_LDFLAGS = $(MYLDFLAGS)
+hpcprof_mpi_bin_LDADD = $(MYLDADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
@@ -413,10 +437,12 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-install-binPROGRAMS: $(bin_PROGRAMS)
+hpcprof-mpi: $(top_builddir)/config.status $(srcdir)/hpcprof-mpi.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+install-pkglibexecPROGRAMS: $(pkglibexec_PROGRAMS)
 	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
-	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+	test -z "$(pkglibexecdir)" || $(MKDIR_P) "$(DESTDIR)$(pkglibexecdir)"
+	@list='$(pkglibexec_PROGRAMS)'; test -n "$(pkglibexecdir)" || list=; \
 	for p in $$list; do echo "$$p $$p"; done | \
 	sed 's/$(EXEEXT)$$//' | \
 	while read p p1; do if test -f $$p || test -f $$p1; \
@@ -433,32 +459,66 @@ install-binPROGRAMS: $(bin_PROGRAMS)
 	while read type dir files; do \
 	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
 	    test -z "$$files" || { \
-	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
-	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
+	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(pkglibexecdir)$$dir'"; \
+	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(pkglibexecdir)$$dir" || exit $$?; \
 	    } \
 	; done
 
-uninstall-binPROGRAMS:
+uninstall-pkglibexecPROGRAMS:
 	@$(NORMAL_UNINSTALL)
-	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+	@list='$(pkglibexec_PROGRAMS)'; test -n "$(pkglibexecdir)" || list=; \
 	files=`for p in $$list; do echo "$$p"; done | \
 	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
 	      -e 's/$$/$(EXEEXT)/' `; \
 	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(bindir)" && rm -f $$files
+	echo " ( cd '$(DESTDIR)$(pkglibexecdir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(pkglibexecdir)" && rm -f $$files
 
-clean-binPROGRAMS:
-	@list='$(bin_PROGRAMS)'; test -n "$$list" || exit 0; \
+clean-pkglibexecPROGRAMS:
+	@list='$(pkglibexec_PROGRAMS)'; test -n "$$list" || exit 0; \
 	echo " rm -f" $$list; \
 	rm -f $$list || exit $$?; \
 	test -n "$(EXEEXT)" || exit 0; \
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
-hpcprof-mpi$(EXEEXT): $(hpcprof_mpi_OBJECTS) $(hpcprof_mpi_DEPENDENCIES) 
-	@rm -f hpcprof-mpi$(EXEEXT)
-	$(hpcprof_mpi_LINK) $(hpcprof_mpi_OBJECTS) $(hpcprof_mpi_LDADD) $(LIBS)
+hpcprof-mpi-bin$(EXEEXT): $(hpcprof_mpi_bin_OBJECTS) $(hpcprof_mpi_bin_DEPENDENCIES) 
+	@rm -f hpcprof-mpi-bin$(EXEEXT)
+	$(hpcprof_mpi_bin_LINK) $(hpcprof_mpi_bin_OBJECTS) $(hpcprof_mpi_bin_LDADD) $(LIBS)
+install-binSCRIPTS: $(bin_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
+	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  if test -f "$$d$$p"; then echo "$$d$$p"; echo "$$p"; else :; fi; \
+	done | \
+	sed -e 'p;s,.*/,,;n' \
+	    -e 'h;s|.*|.|' \
+	    -e 'p;x;s,.*/,,;$(transform)' | sed 'N;N;N;s,\n, ,g' | \
+	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1; } \
+	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
+	    if ($$2 == $$4) { files[d] = files[d] " " $$1; \
+	      if (++n[d] == $(am__install_max)) { \
+		print "f", d, files[d]; n[d] = 0; files[d] = "" } } \
+	    else { print "f", d "/" $$4, $$1 } } \
+	  END { for (d in files) print "f", d, files[d] }' | \
+	while read type dir files; do \
+	     if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
+	     test -z "$$files" || { \
+	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(bindir)$$dir'"; \
+	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
+	     } \
+	; done
+
+uninstall-binSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || exit 0; \
+	files=`for p in $$list; do echo "$$p"; done | \
+	       sed -e 's,.*/,,;$(transform)'`; \
+	test -n "$$list" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(bindir)" && rm -f $$files
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -466,9 +526,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi-Args.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi-ParallelAnalysis.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi_bin-Args.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi_bin-ParallelAnalysis.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi_bin-main.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -491,47 +551,47 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-hpcprof_mpi-main.o: main.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-main.o -MD -MP -MF $(DEPDIR)/hpcprof_mpi-main.Tpo -c -o hpcprof_mpi-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi-main.Tpo $(DEPDIR)/hpcprof_mpi-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpcprof_mpi-main.o' libtool=no @AMDEPBACKSLASH@
+hpcprof_mpi_bin-main.o: main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi_bin-main.o -MD -MP -MF $(DEPDIR)/hpcprof_mpi_bin-main.Tpo -c -o hpcprof_mpi_bin-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi_bin-main.Tpo $(DEPDIR)/hpcprof_mpi_bin-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpcprof_mpi_bin-main.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi_bin-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
 
-hpcprof_mpi-main.obj: main.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-main.obj -MD -MP -MF $(DEPDIR)/hpcprof_mpi-main.Tpo -c -o hpcprof_mpi-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi-main.Tpo $(DEPDIR)/hpcprof_mpi-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpcprof_mpi-main.obj' libtool=no @AMDEPBACKSLASH@
+hpcprof_mpi_bin-main.obj: main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi_bin-main.obj -MD -MP -MF $(DEPDIR)/hpcprof_mpi_bin-main.Tpo -c -o hpcprof_mpi_bin-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi_bin-main.Tpo $(DEPDIR)/hpcprof_mpi_bin-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpcprof_mpi_bin-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi_bin-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
 
-hpcprof_mpi-Args.o: Args.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-Args.o -MD -MP -MF $(DEPDIR)/hpcprof_mpi-Args.Tpo -c -o hpcprof_mpi-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi-Args.Tpo $(DEPDIR)/hpcprof_mpi-Args.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcprof_mpi-Args.o' libtool=no @AMDEPBACKSLASH@
+hpcprof_mpi_bin-Args.o: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi_bin-Args.o -MD -MP -MF $(DEPDIR)/hpcprof_mpi_bin-Args.Tpo -c -o hpcprof_mpi_bin-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi_bin-Args.Tpo $(DEPDIR)/hpcprof_mpi_bin-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcprof_mpi_bin-Args.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi_bin-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
 
-hpcprof_mpi-Args.obj: Args.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-Args.obj -MD -MP -MF $(DEPDIR)/hpcprof_mpi-Args.Tpo -c -o hpcprof_mpi-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi-Args.Tpo $(DEPDIR)/hpcprof_mpi-Args.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcprof_mpi-Args.obj' libtool=no @AMDEPBACKSLASH@
+hpcprof_mpi_bin-Args.obj: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi_bin-Args.obj -MD -MP -MF $(DEPDIR)/hpcprof_mpi_bin-Args.Tpo -c -o hpcprof_mpi_bin-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi_bin-Args.Tpo $(DEPDIR)/hpcprof_mpi_bin-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcprof_mpi_bin-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi_bin-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
 
-hpcprof_mpi-ParallelAnalysis.o: ParallelAnalysis.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-ParallelAnalysis.o -MD -MP -MF $(DEPDIR)/hpcprof_mpi-ParallelAnalysis.Tpo -c -o hpcprof_mpi-ParallelAnalysis.o `test -f 'ParallelAnalysis.cpp' || echo '$(srcdir)/'`ParallelAnalysis.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi-ParallelAnalysis.Tpo $(DEPDIR)/hpcprof_mpi-ParallelAnalysis.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ParallelAnalysis.cpp' object='hpcprof_mpi-ParallelAnalysis.o' libtool=no @AMDEPBACKSLASH@
+hpcprof_mpi_bin-ParallelAnalysis.o: ParallelAnalysis.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi_bin-ParallelAnalysis.o -MD -MP -MF $(DEPDIR)/hpcprof_mpi_bin-ParallelAnalysis.Tpo -c -o hpcprof_mpi_bin-ParallelAnalysis.o `test -f 'ParallelAnalysis.cpp' || echo '$(srcdir)/'`ParallelAnalysis.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi_bin-ParallelAnalysis.Tpo $(DEPDIR)/hpcprof_mpi_bin-ParallelAnalysis.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ParallelAnalysis.cpp' object='hpcprof_mpi_bin-ParallelAnalysis.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-ParallelAnalysis.o `test -f 'ParallelAnalysis.cpp' || echo '$(srcdir)/'`ParallelAnalysis.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi_bin-ParallelAnalysis.o `test -f 'ParallelAnalysis.cpp' || echo '$(srcdir)/'`ParallelAnalysis.cpp
 
-hpcprof_mpi-ParallelAnalysis.obj: ParallelAnalysis.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-ParallelAnalysis.obj -MD -MP -MF $(DEPDIR)/hpcprof_mpi-ParallelAnalysis.Tpo -c -o hpcprof_mpi-ParallelAnalysis.obj `if test -f 'ParallelAnalysis.cpp'; then $(CYGPATH_W) 'ParallelAnalysis.cpp'; else $(CYGPATH_W) '$(srcdir)/ParallelAnalysis.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi-ParallelAnalysis.Tpo $(DEPDIR)/hpcprof_mpi-ParallelAnalysis.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ParallelAnalysis.cpp' object='hpcprof_mpi-ParallelAnalysis.obj' libtool=no @AMDEPBACKSLASH@
+hpcprof_mpi_bin-ParallelAnalysis.obj: ParallelAnalysis.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi_bin-ParallelAnalysis.obj -MD -MP -MF $(DEPDIR)/hpcprof_mpi_bin-ParallelAnalysis.Tpo -c -o hpcprof_mpi_bin-ParallelAnalysis.obj `if test -f 'ParallelAnalysis.cpp'; then $(CYGPATH_W) 'ParallelAnalysis.cpp'; else $(CYGPATH_W) '$(srcdir)/ParallelAnalysis.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/hpcprof_mpi_bin-ParallelAnalysis.Tpo $(DEPDIR)/hpcprof_mpi_bin-ParallelAnalysis.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ParallelAnalysis.cpp' object='hpcprof_mpi_bin-ParallelAnalysis.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-ParallelAnalysis.obj `if test -f 'ParallelAnalysis.cpp'; then $(CYGPATH_W) 'ParallelAnalysis.cpp'; else $(CYGPATH_W) '$(srcdir)/ParallelAnalysis.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi_bin-ParallelAnalysis.obj `if test -f 'ParallelAnalysis.cpp'; then $(CYGPATH_W) 'ParallelAnalysis.cpp'; else $(CYGPATH_W) '$(srcdir)/ParallelAnalysis.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -623,9 +683,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS)
+all-am: Makefile $(PROGRAMS) $(SCRIPTS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -656,7 +716,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-generic clean-libtool clean-pkglibexecPROGRAMS \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -682,7 +743,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binPROGRAMS
+install-exec-am: install-binSCRIPTS install-pkglibexecPROGRAMS
 
 install-html: install-html-am
 
@@ -722,23 +783,24 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS
+uninstall-am: uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
 
 .MAKE: install-am install-strip
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-generic clean-libtool ctags distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-binPROGRAMS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
+.PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
+	clean-libtool clean-pkglibexecPROGRAMS ctags distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-binSCRIPTS install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-pkglibexecPROGRAMS install-ps install-ps-am \
 	install-strip installcheck installcheck-am installdirs \
 	maintainer-clean maintainer-clean-generic mostlyclean \
 	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
 	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binPROGRAMS
+	uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
 
 
 #############################################################################

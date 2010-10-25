@@ -1750,6 +1750,8 @@ AC_CONFIG_FILES([src/tool/hpcfnbounds/hpcfnbounds],
   [chmod +x src/tool/hpcfnbounds/hpcfnbounds])
 AC_CONFIG_FILES([src/tool/hpcprof/hpcprof],
   [chmod +x src/tool/hpcprof/hpcprof])
+AC_CONFIG_FILES([src/tool/hpcprof-mpi/hpcprof-mpi],
+  [chmod +x src/tool/hpcprof-mpi/hpcprof-mpi])
 AC_CONFIG_FILES([src/tool/hpcprof-flat/hpcprof-flat],
   [chmod +x src/tool/hpcprof-flat/hpcprof-flat])
 AC_CONFIG_FILES([src/tool/hpcproftt/hpcproftt],
