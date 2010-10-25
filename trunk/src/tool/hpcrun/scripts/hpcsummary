@@ -3,7 +3,7 @@
 # Summarize the .log and .hpcrun files in an HPCToolkit measurements
 # directory.
 #
-# Usage: ./hpclist [-ah] [directory]
+# Usage: ./hpcsummary [-ah] [directory]
 #
 #  -a adds summary info for blocks and errors
 #  -h displays the help message
@@ -58,23 +58,36 @@ or else the current directory if omitted.''' % sys.argv[0]
 
 #
 # Hpcrun and log file names:
-#   <program-name>-<mpi-rank>-<thread-id>-<machine-id>-<pid>.hpcrun
-#   <program-name>-<mpi-rank>-<thread-id>-<machine-id>-<pid>.log
+#   <program-name>-<mpi-rank>-<thread-id>-<machine-id>-<pid>-<gen>.hpcrun
+#   <program-name>-<mpi-rank>-<thread-id>-<machine-id>-<pid>-<gen>.log
+#
+# The '-<gen>' part is optional, and we accept both for backward
+# compatibility.  If present, <gen> should be a single digit number.
+#
+# Note: need to be careful if <program-name> contains dashes.
 #
 def parse_name(fname, ext):
-    l = fname[0 : len(fname) - len(ext)].rsplit('-', 4)
-    if len(l) != 5:
-        return (None, None)
-    base = '-'.join([l[0], l[1], l[3], l[4]])
-    tid = int(l[2])
+    l = fname[0 : len(fname) - len(ext)].rsplit('-', 5)
+    if len(l) < 5:
+        raise 'parse-name-error'
+    elif len(l) == 5:
+        base = '-'.join([l[0], l[1], l[3], l[4]])
+        tid = int(l[2])
+    elif len(l) == 6 and len(l[5]) == 1:
+        base = '-'.join([l[0], l[1], l[3], l[4], l[5]])
+        tid = int(l[2])
+    else:
+        base = '-'.join([l[0], l[1], l[2], l[4], l[5]])
+        tid = int(l[3])
     return (base, tid)
 
 
 def do_log_file(fname):
     global DATA, BASE2INDEX
 
-    (base, tid) = parse_name(fname, '.log')
-    if not base:
+    try:
+        (base, tid) = parse_name(fname, '.log')
+    except:
         warn('bad .log file name: %s' % fname)
         return
     try:
@@ -110,8 +123,9 @@ def do_log_file(fname):
 def do_hpcrun_file(fname):
     global DATA, BASE2INDEX, MAX_TID
 
-    (base, tid) = parse_name(fname, '.hpcrun')
-    if not base:
+    try:
+        (base, tid) = parse_name(fname, '.hpcrun')
+    except:
         warn('bad .hpcrun file name: %s' % fname)
         return
     try:

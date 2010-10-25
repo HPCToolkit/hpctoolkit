@@ -68,6 +68,7 @@
 #include "messages.h"
 #include "thread_data.h"
 #include "loadmap.h"
+#include <lib/prof-lean/spinlock.h>
 
 
 
@@ -91,7 +92,8 @@
 
 static char *os_realpath(const char *inpath, char *outpath);
 
-static char *files_name(char *filename, unsigned int mpi, const char *suffix);
+static char *files_name(char *filename, unsigned int mpi,
+			const char *suffix, int len);
 
 
 //***************************************************************
@@ -110,7 +112,7 @@ static char executable_pathname[PATH_MAX] = {'\0'};
 void
 files_trace_name(char *filename, unsigned int mpi, int len)
 {
-  files_name(filename, mpi, HPCRUN_TraceFnmSfx);
+  files_name(filename, mpi, HPCRUN_TraceFnmSfx, len);
 }
 
 
@@ -132,14 +134,14 @@ files_executable_name()
 void
 files_profile_name(char *filename, unsigned int mpi, int len)
 {
-  files_name(filename, mpi, HPCRUN_ProfileFnmSfx);
+  files_name(filename, mpi, HPCRUN_ProfileFnmSfx, len);
 }
 
 
 void
 files_log_name(char *filename, unsigned int mpi, int len)
 {
-  files_name(filename, mpi, HPCRUN_LogFnmSfx);
+  files_name(filename, mpi, HPCRUN_LogFnmSfx, len);
 }
 
 
@@ -233,15 +235,42 @@ os_realpath(const char *inpath, char *outpath)
 }
 
 
+// Add a generation number to the file name pid to handle processes
+// that exec (same pid).  The first file for the current pid sets the
+// gen number, then all later files use the same number.
+
+#define FILENAME_TEMPLATE  "%s/%s-%06u-%03d-%lx-%u-%d.%s"
+
 static char *
-files_name(char* filename, unsigned int mpi, const char* suffix)
+files_name(char* filename, unsigned int mpi, const char* suffix, int len)
 {
   thread_data_t *td = hpcrun_get_thread_data();
+  static spinlock_t gen_lock = SPINLOCK_UNLOCKED;
+  static pid_t cur_pid, last_pid = 0;
+  static int gen, ret;
 
-  sprintf(filename, "%s/%s-%06u-%03d-%lx-%u.%s",
-          output_directory, executable_name, mpi,
-          td->id,
-          os_hostid(), os_pid(), suffix); 
+  spinlock_lock(&gen_lock);
+
+  cur_pid = getpid();
+  if (last_pid != cur_pid) {
+    for (gen = 0; gen < 9; gen++) {
+      snprintf(filename, len, FILENAME_TEMPLATE,
+	       output_directory, executable_name, mpi,
+	       td->id, os_hostid(), cur_pid, gen, suffix);
+      if (access(filename, F_OK) != 0)
+	break;
+    }
+    last_pid = cur_pid;
+  }
+
+  spinlock_unlock(&gen_lock);
+
+  ret = snprintf(filename, len, FILENAME_TEMPLATE,
+		 output_directory, executable_name, mpi,
+		 td->id, os_hostid(), cur_pid, gen, suffix);
+  if (ret > len) {
+    EMSG("%s: filename truncated: %s", __func__, filename);
+  }
 
   return filename;
 }
