@@ -17317,6 +17317,8 @@ ac_config_files="$ac_config_files src/tool/hpcfnbounds/hpcfnbounds"
 
 ac_config_files="$ac_config_files src/tool/hpcprof/hpcprof"
 
+ac_config_files="$ac_config_files src/tool/hpcprof-mpi/hpcprof-mpi"
+
 ac_config_files="$ac_config_files src/tool/hpcprof-flat/hpcprof-flat"
 
 ac_config_files="$ac_config_files src/tool/hpcproftt/hpcproftt"
@@ -18565,6 +18567,7 @@ do
     "src/tool/hpcrun/scripts/hpclink") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpclink" ;;
     "src/tool/hpcfnbounds/hpcfnbounds") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds/hpcfnbounds" ;;
     "src/tool/hpcprof/hpcprof") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/hpcprof" ;;
+    "src/tool/hpcprof-mpi/hpcprof-mpi") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-mpi/hpcprof-mpi" ;;
     "src/tool/hpcprof-flat/hpcprof-flat") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/hpcprof-flat" ;;
     "src/tool/hpcproftt/hpcproftt") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/hpcproftt" ;;
 
@@ -19942,6 +19945,7 @@ _LT_EOF
     "src/tool/hpcrun/scripts/hpclink":F) chmod +x src/tool/hpcrun/scripts/hpclink ;;
     "src/tool/hpcfnbounds/hpcfnbounds":F) chmod +x src/tool/hpcfnbounds/hpcfnbounds ;;
     "src/tool/hpcprof/hpcprof":F) chmod +x src/tool/hpcprof/hpcprof ;;
+    "src/tool/hpcprof-mpi/hpcprof-mpi":F) chmod +x src/tool/hpcprof-mpi/hpcprof-mpi ;;
     "src/tool/hpcprof-flat/hpcprof-flat":F) chmod +x src/tool/hpcprof-flat/hpcprof-flat ;;
     "src/tool/hpcproftt/hpcproftt":F) chmod +x src/tool/hpcproftt/hpcproftt ;;
 

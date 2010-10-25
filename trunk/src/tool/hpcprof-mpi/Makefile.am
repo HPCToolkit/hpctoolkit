@@ -104,14 +104,18 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 
 CXX = $(MPICXX)
 
-bin_PROGRAMS = hpcprof-mpi
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
-#hpcprof_mpi_LINK
-hpcprof_mpi_SOURCES  = $(MYSOURCES)
-hpcprof_mpi_CFLAGS   = $(MYCFLAGS)
-hpcprof_mpi_CXXFLAGS = $(MYCXXFLAGS)
-hpcprof_mpi_LDFLAGS  = $(MYLDFLAGS)
-hpcprof_mpi_LDADD    = $(MYLDADD)
+bin_SCRIPTS = hpcprof-mpi
+
+#bin_PROGRAMS = hpcprof-mpi-bin
+pkglibexec_PROGRAMS = hpcprof-mpi-bin
+
+hpcprof_mpi_bin_SOURCES  = $(MYSOURCES)
+hpcprof_mpi_bin_CFLAGS   = $(MYCFLAGS)
+hpcprof_mpi_bin_CXXFLAGS = $(MYCXXFLAGS)
+hpcprof_mpi_bin_LDFLAGS  = $(MYLDFLAGS)
+hpcprof_mpi_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
