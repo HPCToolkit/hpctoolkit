@@ -247,10 +247,6 @@ public:
   { return StrUtil::toStr(m_numSrcFxd); }
 
 
-  virtual bool
-  hasNumSrcVar() const
-  { return false; }
-
   bool
   isSetNumSrcVar() const
   { return (m_numSrcVarId != Metric::IData::npos); }
@@ -303,6 +299,10 @@ public:
 
   virtual bool
   hasAccum2() const
+  { return false; }
+
+  virtual bool
+  hasNumSrcVar() const
   { return false; }
 
   virtual std::string
@@ -708,11 +708,6 @@ public:
   // 
   // ------------------------------------------------------------
 
-  virtual bool
-  hasNumSrcVar() const
-  { return true; }
-
-
   virtual double
   initialize(Metric::IData& mdata) const
   { return (accumVar(mdata) = 0.0); }
@@ -753,6 +748,10 @@ public:
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
+  virtual bool
+  hasNumSrcVar() const
+  { return true; }
+
   virtual std::string
   combineString1() const
   {
@@ -769,6 +768,10 @@ public:
     std::string z = a + " / " + n;
     return z;
   }
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -797,11 +800,6 @@ public:
   // 
   // ------------------------------------------------------------
 
-  virtual bool
-  hasNumSrcVar() const
-  { return true; }
-
-
   virtual double
   initialize(Metric::IData& mdata) const
   { return initializeStdDev(mdata); }
@@ -829,6 +827,10 @@ public:
 
   virtual bool
   hasAccum2() const
+  { return true; }
+
+  virtual bool
+  hasNumSrcVar() const
   { return true; }
 
   virtual std::string
@@ -875,11 +877,6 @@ public:
   // 
   // ------------------------------------------------------------
 
-  virtual bool
-  hasNumSrcVar() const
-  { return true; }
-
-
   virtual double
   initialize(Metric::IData& mdata) const
   { return initializeStdDev(mdata); }
@@ -918,6 +915,10 @@ public:
   hasAccum2() const
   { return true; }
 
+  virtual bool
+  hasNumSrcVar() const
+  { return true; }
+
   virtual std::string
   combineString1() const
   { return combineString1StdDev(); }
@@ -935,6 +936,9 @@ public:
     return z;
   }
 
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -962,11 +966,6 @@ public:
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
-
-  virtual bool
-  hasNumSrcVar() const
-  { return true; }
-
 
   virtual double
   initialize(Metric::IData& mdata) const
@@ -1006,6 +1005,10 @@ public:
   hasAccum2() const
   { return true; }
 
+  virtual bool
+  hasNumSrcVar() const
+  { return true; }
+
   virtual std::string
   combineString1() const
   { return combineString1StdDev(); }
@@ -1022,6 +1025,11 @@ public:
     std::string z = sdev + "* 100 / (" + mean + ")";
     return z;
   }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;

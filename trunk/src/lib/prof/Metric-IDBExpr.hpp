@@ -113,6 +113,9 @@ public:
   virtual bool
   hasAccum2() const = 0;
 
+  virtual bool
+  hasNumSrcVar() const = 0;
+
   // --------------------------------------------------------
   // Formulas to compute Flat and Callers view
   // --------------------------------------------------------
