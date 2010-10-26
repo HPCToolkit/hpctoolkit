@@ -181,8 +181,6 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
   // Special options for now
   {  0 , "force",           CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
-  {  0 , "metric",          CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
 
   // General
   { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
@@ -349,9 +347,6 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     // Check for special hpcprof options:
     if (parser.isOpt("force")) {
       isHPCProfForce = true;
-    }
-    if (parser.isOpt("metric")) {
-      isHPCProfMetric = true;
     }
     
     // Check for other options: Output options

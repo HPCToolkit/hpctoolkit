@@ -212,11 +212,22 @@ public:
   //
   // ------------------------------------------------------------
 
-  virtual std::ostream&
-  dump(std::ostream& os = std::cout) const = 0;
-  
   virtual std::string
   toString() const;
+
+
+  std::ostream&
+  dump(std::ostream& os = std::cout) const
+  {
+    dumpMe(os);
+    return os;
+  }
+
+  virtual std::ostream&
+  dumpMe(std::ostream& os = std::cout) const = 0;
+
+  void
+  ddump() const;
 
 protected:
 
@@ -315,7 +326,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
   
 private:
   double m_c;
@@ -356,7 +367,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
   
 private:
   AExpr* m_expr;
@@ -398,7 +409,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
   
 private:
   std::string m_name;
@@ -444,7 +455,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
   AExpr* m_base;
@@ -490,7 +501,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
   AExpr* m_numerator;
@@ -535,7 +546,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
   AExpr* m_minuend;
@@ -585,7 +596,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -629,7 +640,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -678,7 +689,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -727,7 +738,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -776,7 +787,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -834,7 +845,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -881,7 +892,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -929,7 +940,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
@@ -980,7 +991,7 @@ public:
   // ------------------------------------------------------------
 
   virtual std::ostream&
-  dump(std::ostream& os = std::cout) const;
+  dumpMe(std::ostream& os = std::cout) const;
 
 private:
 };
