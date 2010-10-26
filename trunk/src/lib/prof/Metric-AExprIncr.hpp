@@ -406,7 +406,7 @@ public:
 
 
   std::ostream&
-  dump(std::ostream& os = std::cerr) const
+  dump(std::ostream& os = std::cout) const
   {
     dumpMe(os);
     return os;

@@ -141,10 +141,11 @@ realmain(int argc, char* const* argv)
   Analysis::Util::UIntVec* groupMap =
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
+  uint rFlags = 0; //Prof::CallPath::Profile::RFlg_MakeInclExcl;
   uint mrgFlags = (Prof::CCT::MrgFlg_NormalizeTraceFileY);
 
   Prof::CallPath::Profile* prof =
-    Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, 0, mrgFlags);
+    Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags, mrgFlags);
 
   // ------------------------------------------------------------
   // Overlay static structure with CCT's dynamic call paths
@@ -164,12 +165,11 @@ realmain(int argc, char* const* argv)
   // Create summary metrics
   // -------------------------------------------------------
 
-  if (args.isHPCProfMetric) {
-    // TODO: generate non-finalized metrics & formulas for flat & callers view
+  // TODO: generate non-finalized metrics
+  if (0) { 
     makeMetrics(nArgs, *prof);
-
-    // TODO:
-    //Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
+    
+    Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
   }
   
   nArgs.destroy();
@@ -224,22 +224,33 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
     numDrvd = (mDrvdEnd - mDrvdBeg);
   }
 
-#if 0
-  for (uint i = mSrcBeg; i < mSrcEnd; ++i) {
-    Prof::Metric::ADesc* m = mMgr.metric(i);
+  for (uint mId = mSrcBeg; mId < mSrcEnd; ++mId) {
+    Prof::Metric::ADesc* m = mMgr.metric(mId);
     m->isVisible(false);
   }
-#endif
+
 
   // -------------------------------------------------------
-  // aggregate metrics
+  // aggregate sampled metrics (in batch)
   // -------------------------------------------------------
-  cctRoot->aggregateMetricsIncl(mSrcBeg, mSrcEnd);
 
-  for (uint i = mSrcBeg; i < mSrcEnd; ++i) {
-    Prof::Metric::ADesc* m = mMgr.metric(i);
-    m->isComputed(true);
+  VMAIntervalSet ivalsetIncl;
+  VMAIntervalSet ivalsetExcl;
+
+  for (uint mId = mSrcBeg; mId < mSrcEnd; ++mId) {
+    Prof::Metric::ADesc* m = mMgr.metric(mId);
+    if (m->type() == Prof::Metric::ADesc::TyIncl) {
+      ivalsetIncl.insert(VMAInterval(mId, mId + 1)); // [ )
+    }
+    else if (m->type() == Prof::Metric::ADesc::TyExcl) {
+      ivalsetExcl.insert(VMAInterval(mId, mId + 1)); // [ )
+    }
+    m->isComputed(true); // slightly proleptic
   }
+
+  cctRoot->aggregateMetricsIncl(ivalsetIncl);
+  cctRoot->aggregateMetricsExcl(ivalsetExcl);
+
 
   // -------------------------------------------------------
   // compute derived metrics
