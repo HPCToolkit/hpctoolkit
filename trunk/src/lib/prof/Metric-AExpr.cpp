@@ -539,7 +539,7 @@ RStdDev::dump(std::ostream& os) const
 std::ostream& 
 NumSource::dump(std::ostream& os) const
 {
-  os << "num-src(" << m_sz << ")";
+  os << "num-src()";
   return os;
 }
 

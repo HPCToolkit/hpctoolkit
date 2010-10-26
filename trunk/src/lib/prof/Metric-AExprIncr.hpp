@@ -131,12 +131,50 @@ public:
 
 
   // ------------------------------------------------------------
-  // cf. Metric::IDBExpr
-  //
+  // functions for computing a metric incrementally
+  // ------------------------------------------------------------
+
+  enum FnTy { FnInit, FnInitSrc, FnAccum, FnCombine, FnFini };
+
+  // initialize: initializes destination metrics (accumVar() & accum2Var())
+  virtual double
+  initialize(Metric::IData& mdata) const = 0;
+
+  // initializeSrc: initializes source metrics (srcVar() & srcVar2())
+  virtual double
+  initializeSrc(Metric::IData& mdata) const = 0;
+
+  // accumulate: updates accumulators using an individual source, srcVar().
+  virtual double
+  accumulate(Metric::IData& mdata) const = 0;
+
+  // combine: updates accumulators with sources that themselves
+  // represent accumulators.  There is one source for each accumulator
+  // (srcVar() & srcVar2()).
+  virtual double
+  combine(Metric::IData& mdata) const = 0;
+
+  // finalize: finalizes destination metrics using numSrc()
+  virtual double
+  finalize(Metric::IData& mdata) const = 0;
+
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  //   (other functions are distributed below)
+  // ------------------------------------------------------------
+
+  virtual std::string
+  combineString2() const
+  { DIAG_Die(DIAG_Unimplemented); }
+
+
+  // ------------------------------------------------------------
   // accum:  accumulator
   // accum2: accumulator2 (if needed)
   // ------------------------------------------------------------
 
+  // Metric::IDBExpr
   virtual uint
   accumId() const
   { return m_accumId; }
@@ -158,6 +196,12 @@ public:
   isSetAccum2() const
   { return (m_accum2Id != Metric::IData::npos); }
 
+  // Metric::IDBExpr
+  virtual bool
+  hasAccum2() const
+  { return false; }
+
+  // Metric::IDBExpr
   virtual uint
   accum2Id() const
   { return m_accum2Id; }
@@ -223,16 +267,18 @@ public:
   // numSrcVar: number of inputs, which can be variable
   // ------------------------------------------------------------
 
+  // Metric::IDBExpr
+  virtual bool
+  hasNumSrcVar() const
+  { return false; }
+
   uint
   numSrc(const Metric::IData& mdata) const
   { return (hasNumSrcVar()) ? numSrcVarVar(mdata) : m_numSrcFxd; }
 
-  virtual std::string
-  numSrcStr() const
-  { return (hasNumSrcVar()) ? numSrcVarStr() : numSrcFxdStr(); }
 
-
-  uint
+  // Metric::IDBExpr
+  virtual uint
   numSrcFxd() const
   { return m_numSrcFxd; }
 
@@ -240,15 +286,12 @@ public:
   numSrcFxd(uint x)
   { m_numSrcFxd = x; }
 
-  std::string
-  numSrcFxdStr() const
-  { return StrUtil::toStr(m_numSrcFxd); }
-
 
   bool
   isSetNumSrcVar() const
   { return (m_numSrcVarId != Metric::IData::npos); }
 
+  // Metric::IDBExpr
   virtual uint
   numSrcVarId() const
   { return m_numSrcVarId; }
@@ -260,52 +303,6 @@ public:
   uint
   numSrcVarVar(const Metric::IData& mdata) const
   { return (uint)var(mdata, m_numSrcVarId); }
-
-
-  // ------------------------------------------------------------
-  // functions for computing a metric incrementally
-  // ------------------------------------------------------------
-
-  enum FnTy { FnInit, FnInitSrc, FnAccum, FnCombine, FnFini };
-
-  // initialize: initializes destination metrics (accumVar() & accum2Var())
-  virtual double
-  initialize(Metric::IData& mdata) const = 0;
-
-  // initializeSrc: initializes source metrics (srcVar() & srcVar2())
-  virtual double
-  initializeSrc(Metric::IData& mdata) const = 0;
-
-  // accumulate: updates accumulators using an individual source, srcVar().
-  virtual double
-  accumulate(Metric::IData& mdata) const = 0;
-
-  // combine: updates accumulators with sources that themselves
-  // represent accumulators.  There is one source for each accumulator
-  // (srcVar() & srcVar2()).
-  virtual double
-  combine(Metric::IData& mdata) const = 0;
-
-  // finalize: finalizes destination metrics using numSrc()
-  virtual double
-  finalize(Metric::IData& mdata) const = 0;
-
-
-  // ------------------------------------------------------------
-  // Metric::IDBExpr: exported formulas for Flat and Callers view
-  // ------------------------------------------------------------
-
-  virtual bool
-  hasAccum2() const
-  { return false; }
-
-  virtual bool
-  hasNumSrcVar() const
-  { return false; }
-
-  virtual std::string
-  combineString2() const
-  { DIAG_Die(DIAG_Unimplemented); }
 
 
   // ------------------------------------------------------------
@@ -489,15 +486,16 @@ public:
 
   virtual std::string
   combineString1() const
-  {
-    std::string a = accumStr();
-    std::string z = "min(" + a + ", " + a + ")";
-    return z;
-  }
+  { return combineString1Min(); }
 
   virtual std::string
   finalizeString() const
-  { return accumStr(); }
+  { return finalizeStringMin(); }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -559,15 +557,16 @@ public:
 
   virtual std::string
   combineString1() const
-  {
-    std::string a = accumStr();
-    std::string z = "max(" + a + ", " + a + ")";
-    return z;
-  }
+  { return combineString1Max(); }
 
   virtual std::string
   finalizeString() const
-  { return accumStr(); }
+  { return finalizeStringMax(); }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -629,15 +628,16 @@ public:
 
   virtual std::string
   combineString1() const
-  {
-    std::string a = accumStr();
-    std::string z = "sum(" + a + ", " + a + ")";
-    return z;
-  }
+  { return combineString1Sum(); }
 
   virtual std::string
   finalizeString() const
-  { return accumStr(); }
+  { return finalizeStringSum(); }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
@@ -712,20 +712,12 @@ public:
 
   virtual std::string
   combineString1() const
-  {
-    std::string a = accumStr();
-    std::string z = "sum(" + a + ", " + a + ")";
-    return z;
-  }
+  { return combineString1Mean(); }
 
   virtual std::string
   finalizeString() const
-  {
-    std::string n = numSrcStr();
-    std::string a = accumStr();
-    std::string z = a + " / " + n;
-    return z;
-  }
+  { return finalizeStringMean(); }
+
 
   // ------------------------------------------------------------
   // 
@@ -1047,15 +1039,16 @@ public:
 
   virtual std::string
   combineString1() const
-  {
-    std::string a = accumStr();
-    std::string z = "sum(" + a + ", " + a + ")"; // a + numSrcFix()
-    return z;
-  }
+  { return combineString1NumSource(); }
 
   virtual std::string
   finalizeString() const
-  { return accumStr(); }
+  { return finalizeStringNumSource(); }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const;
