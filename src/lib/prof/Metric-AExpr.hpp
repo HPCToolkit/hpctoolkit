@@ -115,31 +115,12 @@ public:
   
 public:
   AExpr()
+    : m_accumId(Metric::IData::npos), m_accum2Id(Metric::IData::npos),
+      m_numSrcVarId(Metric::IData::npos)
   { }
 
   virtual ~AExpr()
   { }
-
-  // ------------------------------------------------------------
-  //
-  // ------------------------------------------------------------
-
-  void
-  accumId(uint x)
-  { m_accumId = x; }
-
-  std::string
-  accumStr() const
-  { return "$"+ StrUtil::toStr(m_accumId); }
-
-  void
-  accum2Id(uint x)
-  { m_accum2Id = x; }
-
-  std::string
-  accum2Str() const
-  { return "$"+ StrUtil::toStr(m_accum2Id); }
-  
 
   // ------------------------------------------------------------
   //
@@ -157,13 +138,49 @@ public:
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
+  virtual uint
+  accumId() const
+  { return m_accumId; }
+
+  void
+  accumId(uint x)
+  { m_accumId = x; }
+
+
+  bool
+  isSetAccum2() const
+  { return (m_accum2Id != Metric::IData::npos); }
+
   virtual bool
   hasAccum2() const
   { return false; }
 
+  virtual uint
+  accum2Id() const
+  { return m_accum2Id; }
+
+  void
+  accum2Id(uint x)
+  { m_accum2Id = x; }
+
+
+  virtual std::string
+  numSrcStr() const
+  { return (hasNumSrcVar()) ? numSrcVarStr() : "FIXME"; }
+
+
   virtual bool
   hasNumSrcVar() const
   { return false; }
+
+  virtual uint
+  numSrcVarId() const
+  { return m_numSrcVarId; }
+
+  void
+  numSrcVarId(uint x)
+  { m_numSrcVarId = x; }
+
 
   virtual std::string
   combineString1() const
@@ -244,9 +261,9 @@ protected:
   dump_opands(std::ostream& os, AExpr** opands, int sz, const char* sep = ", ");
   
 protected:
-  uint m_accumId;  // used only for Metric::IDBExpr routines
-  uint m_accum2Id; // used only for Metric::IDBExpr routines
-
+  uint m_accumId;     // used only for Metric::IDBExpr routines
+  uint m_accum2Id;    // used only for Metric::IDBExpr routines
+  uint m_numSrcVarId; // used only for Metric::IDBExpr routines
 };
 
 

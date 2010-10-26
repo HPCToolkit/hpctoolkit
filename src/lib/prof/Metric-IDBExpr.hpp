@@ -71,6 +71,7 @@
 #include <include/uint.h>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/StrUtil.hpp>
 
 
 //*************************** Forward Declarations **************************
@@ -106,15 +107,6 @@ public:
   operator=(const IDBExpr& x)
   { return *this; }
 
-  // --------------------------------------------------------
-  // 
-  // --------------------------------------------------------
-
-  virtual bool
-  hasAccum2() const = 0;
-
-  virtual bool
-  hasNumSrcVar() const = 0;
 
   // --------------------------------------------------------
   // Formulas to compute Flat and Callers view
@@ -133,6 +125,91 @@ public:
   // finalizeString: accumulator-list -> output
   virtual std::string
   finalizeString() const = 0;
+
+  // --------------------------------------------------------
+  // Commonly used standard deviation formulas
+  // --------------------------------------------------------
+
+  std::string
+  combineString1StdDev() const
+  {
+    std::string a1 = accumStr();
+    std::string z1 = "sum(" + a1 + ", " + a1 + ")"; // running sum
+    return z1;
+  }
+
+  std::string
+  combineString2StdDev() const
+  {
+    std::string a2 = accum2Str();
+    std::string z2 = "sum(" + a2 + ", " + a2 + ")"; // running sum of squares
+    return z2;
+  }
+
+
+  std::string
+  finalizeStringStdDev(std::string* meanRet = NULL) const
+  {
+    std::string n = numSrcStr();
+    std::string a1 = accumStr();  // running sum
+    std::string a2 = accum2Str(); // running sum of squares
+
+    std::string mean = a1 + " / " + n;
+    std::string z1 = "pow(" + mean + ", 2)"; // (mean)^2
+    std::string z2 = "(" + a2 + " / " + n  + ")";      // (sum of squares)/n
+    std::string sdev = "sqrt(" + z2 + " - " + z1 + ")";
+
+    if (meanRet) {
+      *meanRet = mean;
+    }
+    return sdev;
+  }
+
+
+  // --------------------------------------------------------
+  // Primitives for building formulas
+  // --------------------------------------------------------
+
+  virtual uint
+  accumId() const = 0;
+
+  std::string
+  accumStr() const
+  { return "$"+ StrUtil::toStr(accumId()); }
+
+
+  // --------------------------------------------------------
+  // Primitives for building formulas
+  // --------------------------------------------------------
+
+  virtual bool
+  hasAccum2() const = 0;
+
+  virtual uint
+  accum2Id() const = 0;
+
+  std::string
+  accum2Str() const
+  { return "$"+ StrUtil::toStr(accum2Id()); }
+
+
+  // --------------------------------------------------------
+  // Primitives for building formulas
+  // --------------------------------------------------------
+
+  virtual std::string
+  numSrcStr() const = 0;
+
+  virtual uint
+  numSrcVarId() const = 0;
+
+  virtual bool
+  hasNumSrcVar() const = 0;
+
+  std::string
+  numSrcVarStr() const
+  { return "$" + StrUtil::toStr(numSrcVarId()); }
+
   
 private:
 };

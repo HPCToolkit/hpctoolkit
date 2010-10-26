@@ -131,9 +131,15 @@ public:
 
 
   // ------------------------------------------------------------
+  // cf. Metric::IDBExpr
+  //
   // accum:  accumulator
   // accum2: accumulator2 (if needed)
   // ------------------------------------------------------------
+
+  virtual uint
+  accumId() const
+  { return m_accumId; }
 
   void
   accumId(uint x)
@@ -147,17 +153,13 @@ public:
   accumVar(Metric::IData& mdata) const
   { return var(mdata, m_accumId); }
 
-  std::string
-  accumStr() const
-  { return "$"+ StrUtil::toStr(m_accumId); }
-
 
   bool
   isSetAccum2() const
   { return (m_accum2Id != Metric::IData::npos); }
 
-  uint
-  accum2Id()
+  virtual uint
+  accum2Id() const
   { return m_accum2Id; }
 
   void
@@ -171,10 +173,6 @@ public:
   double&
   accum2Var(Metric::IData& mdata) const
   { return var(mdata, m_accum2Id); }
-
-  std::string
-  accum2Str() const
-  { return "$"+ StrUtil::toStr(m_accum2Id); }
 
 
   // ------------------------------------------------------------
@@ -229,7 +227,7 @@ public:
   numSrc(const Metric::IData& mdata) const
   { return (hasNumSrcVar()) ? numSrcVarVar(mdata) : m_numSrcFxd; }
 
-  std::string
+  virtual std::string
   numSrcStr() const
   { return (hasNumSrcVar()) ? numSrcVarStr() : numSrcFxdStr(); }
 
@@ -251,6 +249,10 @@ public:
   isSetNumSrcVar() const
   { return (m_numSrcVarId != Metric::IData::npos); }
 
+  virtual uint
+  numSrcVarId() const
+  { return m_numSrcVarId; }
+
   void
   numSrcVarId(uint x)
   { m_numSrcVarId = x; }
@@ -258,10 +260,6 @@ public:
   uint
   numSrcVarVar(const Metric::IData& mdata) const
   { return (uint)var(mdata, m_numSrcVarId); }
-
-  std::string
-  numSrcVarStr() const
-  { return "$" + StrUtil::toStr(m_numSrcVarId); }
 
 
   // ------------------------------------------------------------
@@ -397,46 +395,6 @@ public:
 
       accumVar(mdata) = sdev;
       accum2Var(mdata) = mean;
-    }
-    return sdev;
-  }
-
-
-  // ------------------------------------------------------------
-  // common exported functions for standard deviation
-  // ------------------------------------------------------------
-
-  std::string
-  combineString1StdDev() const
-  {
-    std::string a1 = accumStr();
-    std::string z1 = "sum(" + a1 + ", " + a1 + ")"; // running sum
-    return z1;
-  }
-
-  std::string
-  combineString2StdDev() const
-  {
-    std::string a2 = accum2Str();
-    std::string z2 = "sum(" + a2 + ", " + a2 + ")"; // running sum of squares
-    return z2;
-  }
-
-
-  std::string
-  finalizeStringStdDev(std::string* meanRet = NULL) const
-  {
-    std::string n = numSrcStr();
-    std::string a1 = accumStr();  // running sum
-    std::string a2 = accum2Str(); // running sum of squares
-
-    std::string mean = a1 + " / " + n;
-    std::string z1 = "pow(" + mean + ", 2)"; // (mean)^2
-    std::string z2 = "(" + a2 + " / " + n  + ")";      // (sum of squares)/n
-    std::string sdev = "sqrt(" + z2 + " - " + z1 + ")";
-
-    if (meanRet) {
-      *meanRet = mean;
     }
     return sdev;
   }

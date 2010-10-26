@@ -494,10 +494,20 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   os << "  <MetricTable>\n";
   for (uint i = metricBeg; i < metricEnd; i++) {
     const Metric::ADesc* m = m_mMgr->metric(i);
+
     const Metric::SampledDesc* mSmpl =
       dynamic_cast<const Metric::SampledDesc*>(m);
-    const Metric::DerivedIncrDesc* mDrvd1 =
-      dynamic_cast<const Metric::DerivedIncrDesc*>(m);
+
+    bool isDrvd = false;
+    Metric::IDBExpr* mDrvdExpr = NULL;
+    if (typeid(*m) == typeid(Metric::DerivedDesc)) {
+      isDrvd = true;
+      mDrvdExpr = static_cast<const Metric::DerivedDesc*>(m)->expr();
+    }
+    else if (typeid(*m) == typeid(Metric::DerivedIncrDesc)) {
+      isDrvd = true;
+      mDrvdExpr = static_cast<const Metric::DerivedIncrDesc*>(m)->expr();
+    }
 
     // Metric
     os << "    <Metric i" << MakeAttrNum(i)
@@ -512,23 +522,23 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
        << ">\n";
 
     // MetricFormula
-    if (mDrvd1) {
+    if (isDrvd) {
 
       // 0. retrieve combine formula (each DerivedIncrDesc corresponds
       // to an 'accumulator')
       string combineFrm;
-      if (mDrvd1->expr()) {
-	combineFrm = mDrvd1->expr()->combineString1();
+      if (mDrvdExpr) {
+	combineFrm = mDrvdExpr->combineString1();
 
-	if (mDrvd1->expr()->hasAccum2()) {
-	  uint mId = mDrvd1->expr()->accum2Id();
-	  string frm = mDrvd1->expr()->combineString2();
+	if (mDrvdExpr->hasAccum2()) {
+	  uint mId = mDrvdExpr->accum2Id();
+	  string frm = mDrvdExpr->combineString2();
 	  metricIdToFormula.insert(std::make_pair(mId, frm));
 	}
       }
       else {
 	// must represent accumulator 2
-	uint mId = mDrvd1->id();
+	uint mId = m->id();
 	UIntToStringMap::iterator it = metricIdToFormula.find(mId);
 	DIAG_Assert((it != metricIdToFormula.end()), DIAG_UnexpectedInput);
 	combineFrm = it->second;
@@ -539,9 +549,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 	 << " frm=\"" << combineFrm << "\"/>\n";
 
       // 2. MetricFormula: finalize
-      if (mDrvd1->expr()) {
+      if (mDrvdExpr) {
 	os << "      <MetricFormula t=\"finalize\""
-	   << " frm=\"" << mDrvd1->expr()->finalizeString() << "\"/>\n";
+	   << " frm=\"" << mDrvdExpr->finalizeString() << "\"/>\n";
       }
     }
     
