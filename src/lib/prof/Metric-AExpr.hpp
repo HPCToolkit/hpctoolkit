@@ -161,6 +161,10 @@ public:
   hasAccum2() const
   { return false; }
 
+  virtual bool
+  hasNumSrcVar() const
+  { return false; }
+
   virtual std::string
   combineString1() const
   { return ""; }
@@ -582,6 +586,20 @@ public:
   virtual double
   eval(const Metric::IData& mdata) const;
 
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
+  virtual bool
+  hasAccum2() const
+  { return true; }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
@@ -609,6 +627,18 @@ public:
   virtual double
   eval(const Metric::IData& mdata) const;
 
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
+  virtual bool
+  hasAccum2() const
+  { return true; }
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
@@ -628,7 +658,7 @@ class RStdDev
 public:
   // Assumes ownership of AExpr
   RStdDev(AExpr** oprnds, int numOprnds)
-    : m_opands(oprnds), m_sz(numOprnds) 
+    : m_opands(oprnds), m_sz(numOprnds)
   { }
 
   ~RStdDev();
@@ -636,11 +666,63 @@ public:
   virtual double
   eval(const Metric::IData& mdata) const;
 
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
+  virtual bool
+  hasAccum2() const
+  { return true; }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
 private:
   AExpr** m_opands;
+  int m_sz;
+};
+
+
+// ----------------------------------------------------------------------
+// NumSource
+// ----------------------------------------------------------------------
+
+class NumSource
+  : public AExpr
+{
+public:
+  // Assumes ownership of AExpr
+  NumSource(int numOprnds)
+    : m_sz(numOprnds)
+  { }
+
+  ~NumSource()
+  { }
+
+  virtual double
+  eval(const Metric::IData& mdata) const
+  { return m_sz; }
+
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
+  virtual std::ostream&
+  dump(std::ostream& os = std::cout) const;
+
+private:
   int m_sz;
 };
 

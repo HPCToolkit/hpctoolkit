@@ -907,7 +907,6 @@ Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr,
     if (mm) {
       ivalset.insert(VMAInterval(m->id(), m->id() + 1)); // [ )
       mExprVec[i] = mm->expr();
-      DIAG_Assert(mExprVec[i], DIAG_UnexpectedInput);
       mm->isComputed(true); // proleptic
       mm->type(Prof::Metric::ADesc::TyExcl);
     }
@@ -939,9 +938,11 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
   for (Prof::Struct::ANodeIterator it(strct); it.Current(); it++) {
     for (uint mId = mBegId; mId < mEndId; ++mId) {
       const Prof::Metric::AExpr* expr = mExprVec[mId];
-      double val = expr->eval(*it.current());
-      // if (!Prof::Metric::AExpr::isok(val)) ...
-      it.current()->demandMetric(mId, numMetrics/*size*/) = val;
+      if (expr) {
+	double val = expr->eval(*it.current());
+	// if (!Prof::Metric::AExpr::isok(val)) ...
+	it.current()->demandMetric(mId, numMetrics/*size*/) = val;
+      }
     }
   }
 }

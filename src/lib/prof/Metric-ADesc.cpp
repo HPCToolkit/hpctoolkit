@@ -253,7 +253,8 @@ SampledDesc::dumpMe(std::ostream& os) const
 std::string
 DerivedDesc::toString() const
 {
-  string str = ADesc::toString() + " {" + m_expr->toString() + "}";
+  string exprStr = (m_expr) ? m_expr->toString() : "";
+  string str = ADesc::toString() + " {" + exprStr + "}";
   return str;
 }
 
@@ -273,7 +274,8 @@ DerivedDesc::dumpMe(std::ostream& os) const
 std::string
 DerivedIncrDesc::toString() const
 {
-  string str = ADesc::toString() + " {" + m_expr->toString() + "}";
+  string exprStr = (m_expr) ? m_expr->toString() : "";
+  string str = ADesc::toString() + " {" + exprStr + "}";
   return str;
 }
 
