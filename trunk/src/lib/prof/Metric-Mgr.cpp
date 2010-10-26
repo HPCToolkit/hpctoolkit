@@ -282,6 +282,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 		    doDispPercent, isPercent);
   m->nameBase(mNmBase);
   insert(m);
+  expr->accumId(m->id());
 
   if (expr->hasAccum2()) {
     string m2NmBase = mNmBase + ":accum2";
@@ -291,6 +292,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 		      false/*isPercent*/);
     m2->nameBase(m2NmBase);
     insert(m2);
+
+    expr->accum2Id(m2->id());
   }
 
   if (expr->hasNumSrcVar()) {
@@ -302,6 +305,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 		      false/*isPercent*/);
     m3->nameBase(m3NmBase);
     insert(m3);
+
+    expr->numSrcVarId(m3->id());
   }
 
   return m;
@@ -368,6 +373,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 			  false/*isPercent*/);
     m2->nameBase(m2NmBase);
     insert(m2);
+
     expr->accum2Id(m2->id());
   }
 
