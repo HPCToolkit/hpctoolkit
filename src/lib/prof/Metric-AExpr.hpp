@@ -138,6 +138,23 @@ public:
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
+  virtual std::string
+  combineString1() const
+  { DIAG_Die(DIAG_Unimplemented); return ""; }
+
+  virtual std::string
+  combineString2() const
+  { DIAG_Die(DIAG_Unimplemented); return ""; }
+
+  virtual std::string
+  finalizeString() const
+  { DIAG_Die(DIAG_Unimplemented); return ""; }
+
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: primitives
+  // ------------------------------------------------------------
+
   virtual uint
   accumId() const
   { return m_accumId; }
@@ -146,6 +163,10 @@ public:
   accumId(uint x)
   { m_accumId = x; }
 
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: primitives
+  // ------------------------------------------------------------
 
   bool
   isSetAccum2() const
@@ -164,14 +185,19 @@ public:
   { m_accum2Id = x; }
 
 
-  virtual std::string
-  numSrcStr() const
-  { return (hasNumSrcVar()) ? numSrcVarStr() : "FIXME"; }
-
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: primitives
+  // ------------------------------------------------------------
 
   virtual bool
   hasNumSrcVar() const
   { return false; }
+
+
+  virtual uint
+  numSrcFxd() const
+  { DIAG_Die(DIAG_Unimplemented); return 0; }
+
 
   virtual uint
   numSrcVarId() const
@@ -180,19 +206,6 @@ public:
   void
   numSrcVarId(uint x)
   { m_numSrcVarId = x; }
-
-
-  virtual std::string
-  combineString1() const
-  { return ""; }
-
-  virtual std::string
-  combineString2() const
-  { DIAG_Die(DIAG_Unimplemented); }
-
-  virtual std::string
-  finalizeString() const
-  { return ""; }
 
 
   // ------------------------------------------------------------
@@ -287,6 +300,20 @@ public:
   eval(const Metric::IData& mdata) const
   { return m_c; }
 
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { return 1; }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
   
@@ -313,6 +340,20 @@ public:
 
   virtual double
   eval(const Metric::IData& mdata) const;
+
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { return 1; }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
@@ -341,7 +382,21 @@ public:
   virtual double
   eval(const Metric::IData& mdata) const
   { return mdata.demandMetric(m_metricId); }
+
   
+  // ------------------------------------------------------------
+  // Metric::IDBExpr: exported formulas for Flat and Callers view
+  // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { return 1; }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
   
@@ -373,6 +428,20 @@ public:
 
   virtual double
   eval(const Metric::IData& mdata) const;
+
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr:
+  // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { return 2; }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
@@ -407,6 +476,19 @@ public:
   virtual double
   eval(const Metric::IData& mdata) const;
 
+  // ------------------------------------------------------------
+  // Metric::IDBExpr:
+  // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { return 2; }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
@@ -439,6 +521,19 @@ public:
   virtual double
   eval(const Metric::IData& mdata) const;
 
+  // ------------------------------------------------------------
+  // Metric::IDBExpr:
+  // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { return 2; }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
@@ -466,6 +561,28 @@ public:
   
   virtual double
   eval(const Metric::IData& mdata) const;
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr:
+  // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { return m_sz; }
+
+
+  virtual std::string
+  combineString1() const
+  { return combineString1Sum(); }
+
+  virtual std::string
+  finalizeString() const
+  { return finalizeStringSum(); }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
@@ -495,6 +612,22 @@ public:
   virtual double
   eval(const Metric::IData& mdata) const;
 
+  // ------------------------------------------------------------
+  // Metric::IDBExpr:
+  // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { return m_sz; }
+
+
+  // TODO: combineString1(), finalizeString()
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
@@ -521,6 +654,28 @@ public:
 
   virtual double
   eval(const Metric::IData& mdata) const;
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr:
+  // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { return m_sz; }
+
+
+  virtual std::string
+  combineString1() const
+  { return combineString1Min(); }
+
+  virtual std::string
+  finalizeString() const
+  { return finalizeStringMin(); }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
@@ -549,6 +704,28 @@ public:
   virtual double
   eval(const Metric::IData& mdata) const;
 
+  // ------------------------------------------------------------
+  // Metric::IDBExpr:
+  // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { return m_sz; }
+
+
+  virtual std::string
+  combineString1() const
+  { return combineString1Max(); }
+
+  virtual std::string
+  finalizeString() const
+  { return finalizeStringMax(); }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
 
@@ -575,6 +752,28 @@ public:
 
   virtual double
   eval(const Metric::IData& mdata) const;
+
+  // ------------------------------------------------------------
+  // Metric::IDBExpr:
+  // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { return m_sz; }
+
+
+  virtual std::string
+  combineString1() const
+  { return combineString1Mean(); }
+
+  virtual std::string
+  finalizeString() const
+  { return finalizeStringMean(); }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
 
   virtual std::ostream&
   dump(std::ostream& os = std::cout) const;
@@ -611,6 +810,23 @@ public:
   virtual bool
   hasAccum2() const
   { return true; }
+
+  virtual uint
+  numSrcFxd() const
+  { return m_sz; }
+
+
+  virtual std::string
+  combineString1() const
+  { return combineString1StdDev(); }
+
+  virtual std::string
+  combineString2() const
+  { return combineString2StdDev(); }
+
+  virtual std::string
+  finalizeString() const
+  { return finalizeStringStdDev(); }
 
 
   // ------------------------------------------------------------
@@ -652,6 +868,14 @@ public:
   hasAccum2() const
   { return true; }
 
+  virtual uint
+  numSrcFxd() const
+  { return m_sz; }
+
+
+  // TODO: combineString1(), combineString2(), finalizeString()
+
+
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
@@ -692,6 +916,13 @@ public:
   hasAccum2() const
   { return true; }
 
+  virtual uint
+  numSrcFxd() const
+  { return m_sz; }
+
+
+  // TODO: combineString1(), combineString2(), finalizeString()
+
 
   // ------------------------------------------------------------
   // 
@@ -715,8 +946,7 @@ class NumSource
 {
 public:
   // Assumes ownership of AExpr
-  NumSource(int numOprnds)
-    : m_sz(numOprnds)
+  NumSource()
   { }
 
   ~NumSource()
@@ -724,12 +954,25 @@ public:
 
   virtual double
   eval(const Metric::IData& mdata) const
-  { return m_sz; }
+  { DIAG_Die(DIAG_Unimplemented); return 0.0; }
 
 
   // ------------------------------------------------------------
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
+
+  virtual uint
+  numSrcFxd() const
+  { DIAG_Die(DIAG_Unimplemented); return 0; }
+
+
+  virtual std::string
+  combineString1() const
+  { return combineString1NumSource(); }
+
+  virtual std::string
+  finalizeString() const
+  { return finalizeStringNumSource(); }
 
 
   // ------------------------------------------------------------
@@ -740,7 +983,6 @@ public:
   dump(std::ostream& os = std::cout) const;
 
 private:
-  int m_sz;
 };
 
 

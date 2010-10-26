@@ -298,7 +298,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 
   if (expr->hasNumSrcVar()) {
     string m3NmBase = mNmBase + ":num-src";
-    Metric::NumSource* m3Expr = new Metric::NumSource(mOpands.size());
+    Metric::NumSource* m3Expr = new Metric::NumSource();
     DerivedDesc* m3 =
       new DerivedDesc(mNmFmt, mDesc, m3Expr, false/*isVisible*/,
 		      false/*isSortKey*/, false/*doDispPercent*/,

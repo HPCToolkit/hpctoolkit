@@ -126,9 +126,36 @@ public:
   virtual std::string
   finalizeString() const = 0;
 
+
   // --------------------------------------------------------
   // Commonly used standard deviation formulas
   // --------------------------------------------------------
+
+  std::string
+  combineString1Min() const
+  {
+    std::string a = accumStr();
+    std::string z = "min(" + a + ", " + a + ")";
+    return z;
+  }
+
+  std::string
+  finalizeStringMin() const
+  { return accumStr(); }
+
+
+  std::string
+  combineString1Max() const
+  {
+    std::string a = accumStr();
+    std::string z = "max(" + a + ", " + a + ")";
+    return z;
+  }
+
+  std::string
+  finalizeStringMax() const
+  { return accumStr(); }
+
 
   std::string
   combineString1StdDev() const
@@ -144,6 +171,37 @@ public:
     std::string a2 = accum2Str();
     std::string z2 = "sum(" + a2 + ", " + a2 + ")"; // running sum of squares
     return z2;
+  }
+
+
+  std::string
+  combineString1Sum() const
+  {
+    std::string a = accumStr();
+    std::string z = "sum(" + a + ", " + a + ")";
+    return z;
+  }
+
+  std::string
+  finalizeStringSum() const
+  { return accumStr(); }
+
+
+  std::string
+  combineString1Mean() const
+  {
+    std::string a = accumStr();
+    std::string z = "sum(" + a + ", " + a + ")";
+    return z;
+  }
+
+  std::string
+  finalizeStringMean() const
+  {
+    std::string n = numSrcStr();
+    std::string a = accumStr();
+    std::string z = a + " / " + n;
+    return z;
   }
 
 
@@ -164,6 +222,19 @@ public:
     }
     return sdev;
   }
+
+
+  std::string
+  combineString1NumSource() const
+  {
+    std::string a = accumStr();
+    std::string z = "sum(" + a + ", " + a + ")"; // a + numSrcFix()
+    return z;
+  }
+
+  std::string
+  finalizeStringNumSource() const
+  { return accumStr(); }
 
 
   // --------------------------------------------------------
@@ -197,14 +268,24 @@ public:
   // Primitives for building formulas
   // --------------------------------------------------------
 
-  virtual std::string
-  numSrcStr() const = 0;
+  virtual bool
+  hasNumSrcVar() const = 0;
+
+  std::string
+  numSrcStr() const
+  { return (hasNumSrcVar()) ? numSrcVarStr() : numSrcFxdStr(); }
+
+
+  virtual uint
+  numSrcFxd() const = 0;
+
+  std::string
+  numSrcFxdStr() const
+  { return StrUtil::toStr(numSrcFxd()); }
+
 
   virtual uint
   numSrcVarId() const = 0;
-
-  virtual bool
-  hasNumSrcVar() const = 0;
 
   std::string
   numSrcVarStr() const
