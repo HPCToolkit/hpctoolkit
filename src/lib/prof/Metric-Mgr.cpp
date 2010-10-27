@@ -136,6 +136,8 @@ Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
 {
   StringToADescVecMap nmToMetricMap;
 
+  std::vector<Metric::ADescVec*> metricGroups;
+
   if (srcBegId == Mgr::npos) {
     srcBegId = 0;
   }
@@ -156,7 +158,10 @@ Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
       mvec.push_back(m);
     }
     else {
-      nmToMetricMap.insert(make_pair(nm, Metric::ADescVec(1, m)));
+      std::pair<StringToADescVecMap::iterator, bool> ret =
+	nmToMetricMap.insert(make_pair(nm, Metric::ADescVec(1, m)));
+      Metric::ADescVec* grp = &(ret.first->second);
+      metricGroups.push_back(grp);
     }
   }
 
@@ -165,13 +170,10 @@ Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
   // -------------------------------------------------------
   uint firstId = Mgr::npos;
 
-  StringToADescVecMap::iterator it = nmToMetricMap.begin();
-  for ( ; it != nmToMetricMap.end(); ++it) {
-    const string& mNm = it->first;
-    Metric::ADescVec& mVec = it->second;
+  for (uint i = 0; i < metricGroups.size(); ++i) {
+    const Metric::ADescVec& mVec = *(metricGroups[i]);
     if (mVec.size() > 1) {
       const Metric::ADesc* m = mVec[0];
-      DIAG_Assert(mNm == m->nameGeneric(), DIAG_UnexpectedInput);
 
       Metric::ADesc* mNew =
 	makeSummaryMetric("Mean", m, mVec);
@@ -281,6 +283,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     new DerivedDesc(mNmFmt, mDesc, expr, true/*isVisible*/, true/*isSortKey*/,
 		    doDispPercent, isPercent);
   m->nameBase(mNmBase);
+  m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
   insert(m);
   expr->accumId(m->id());
 
