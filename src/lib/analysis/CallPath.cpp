@@ -886,10 +886,11 @@ void
 makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
 {
   const string& db_dir = args.db_dir;
+
+  DIAG_Msg(1, "Populating Experiment database: " << db_dir);
   
   // 1. Copy source files.  
   //    NOTE: makes file names in 'prof.structure' relative to database
-  DIAG_Msg(1, "Copying source files reached by PATH option to " << db_dir);
   Analysis::Util::copySourceFiles(prof.structure()->root(),
 				  args.searchPathTpls, db_dir);
 
