@@ -16058,12 +16058,17 @@ if test "${with_externals}" != "no"; then
 $as_echo "$as_me: using externals tree: $with_externals" >&6;}
   externals_root=`( cd "$with_externals" && pwd )`
   . "$ext_file"
-  if test "$ext_version" -ge "$EXTERNALS_MIN_REV" ; then :
-  else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: externals svn revision: $ext_version" >&5
+$as_echo "$as_me: externals svn revision: $ext_version" >&6;}
+  if test "$ext_version" -eq 0 ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: missing externals svn revision number" >&5
+$as_echo "$as_me: WARNING: missing externals svn revision number" >&2;}
+    ext_warning=' (warning: missing externals svn revision)'
+  elif test "$ext_version" -lt "$EXTERNALS_MIN_REV" ; then
     as_fn_error $? "externals tree too old, update to revision $EXTERNALS_MIN_REV or later" "$LINENO" 5
   fi
   use_externals=yes
-  externals_mesg="$ext_version"
+  externals_mesg="${ext_version}${ext_warning}"
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: not using --with-externals" >&5
 $as_echo "$as_me: WARNING: not using --with-externals" >&2;}

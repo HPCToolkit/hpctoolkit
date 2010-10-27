@@ -691,12 +691,15 @@ if test "${with_externals}" != "no"; then
   AC_MSG_NOTICE([using externals tree: $with_externals])
   externals_root=`( cd "$with_externals" && pwd )`
   . "$ext_file"
-  if test "$ext_version" -ge "$EXTERNALS_MIN_REV" ; then :
-  else
+  AC_MSG_NOTICE([externals svn revision: $ext_version])
+  if test "$ext_version" -eq 0 ; then
+    AC_MSG_WARN([missing externals svn revision number])
+    ext_warning=' (warning: missing externals svn revision)'
+  elif test "$ext_version" -lt "$EXTERNALS_MIN_REV" ; then
     AC_MSG_ERROR([externals tree too old, update to revision $EXTERNALS_MIN_REV or later])
   fi
   use_externals=yes
-  externals_mesg="$ext_version"
+  externals_mesg="${ext_version}${ext_warning}"
 else
   AC_MSG_WARN([not using --with-externals])
   use_externals=no
