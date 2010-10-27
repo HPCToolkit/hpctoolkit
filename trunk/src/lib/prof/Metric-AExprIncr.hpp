@@ -405,7 +405,7 @@ public:
   toString() const;
 
 
-  std::ostream&
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const
   {
     dumpMe(os);
@@ -414,9 +414,8 @@ public:
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const = 0;
-  
-  void
-  ddump() const;
+
+  // Metric::IDBExpr::ddump()  
 
 protected:
   uint m_accumId;  // accumulator 1
@@ -879,12 +878,8 @@ public:
 
   virtual std::string
   finalizeString() const
-  {
-    std::string mean;
-    std::string sdev = finalizeStringStdDev(&mean);
-    std::string z = sdev + " / (" + mean + ")";
-    return z;
-  }
+  { return finalizeStringCoefVar(); }
+
 
   // ------------------------------------------------------------
   // 
@@ -969,12 +964,7 @@ public:
 
   virtual std::string
   finalizeString() const
-  {
-    std::string mean;
-    std::string sdev = finalizeStringStdDev(&mean);
-    std::string z = sdev + "* 100 / (" + mean + ")";
-    return z;
-  }
+  { return finalizeStringRStdDev(); }
 
 
   // ------------------------------------------------------------

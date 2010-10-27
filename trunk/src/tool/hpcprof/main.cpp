@@ -166,7 +166,7 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
 
   // TODO: generate non-finalized metrics
-  if (0) { 
+  if (0) {
     makeMetrics(nArgs, *prof);
     
     Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);

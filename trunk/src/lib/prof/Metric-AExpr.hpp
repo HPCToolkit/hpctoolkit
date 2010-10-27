@@ -216,7 +216,7 @@ public:
   toString() const;
 
 
-  std::ostream&
+  virtual std::ostream&
   dump(std::ostream& os = std::cout) const
   {
     dumpMe(os);
@@ -226,8 +226,7 @@ public:
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cout) const = 0;
 
-  void
-  ddump() const;
+  // Metric::IDBExpr::ddump()
 
 protected:
 
@@ -884,7 +883,17 @@ public:
   { return m_sz; }
 
 
-  // TODO: combineString1(), combineString2(), finalizeString()
+  virtual std::string
+  combineString1() const
+  { return combineString1StdDev(); }
+
+  virtual std::string
+  combineString2() const
+  { return combineString2StdDev(); }
+
+  virtual std::string
+  finalizeString() const
+  { return finalizeStringCoefVar(); }
 
 
   // ------------------------------------------------------------
@@ -932,7 +941,17 @@ public:
   { return m_sz; }
 
 
-  // TODO: combineString1(), combineString2(), finalizeString()
+  virtual std::string
+  combineString1() const
+  { return combineString1StdDev(); }
+
+  virtual std::string
+  combineString2() const
+  { return combineString2StdDev(); }
+
+  virtual std::string
+  finalizeString() const
+  { return finalizeStringRStdDev(); }
 
 
   // ------------------------------------------------------------
