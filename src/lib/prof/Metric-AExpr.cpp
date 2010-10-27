@@ -101,14 +101,6 @@ AExpr::toString() const
 
 
 void
-AExpr::ddump() const
-{
-  dump(std::cerr);
-  std::cerr.flush();
-}
-
-
-void
 AExpr::dump_opands(std::ostream& os, AExpr** opands, int sz, const char* sep)
 {
   for (int i = 0; i < sz; ++i) {

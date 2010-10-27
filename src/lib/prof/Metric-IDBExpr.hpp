@@ -225,6 +225,26 @@ public:
 
 
   std::string
+  finalizeStringCoefVar() const
+  {
+    std::string mean;
+    std::string sdev = finalizeStringStdDev(&mean);
+    std::string z = sdev + " / (" + mean + ")";
+    return z;
+  }
+
+
+  std::string
+  finalizeStringRStdDev() const
+  {
+    std::string mean;
+    std::string sdev = finalizeStringStdDev(&mean);
+    std::string z = sdev + "* 100 / (" + mean + ")";
+    return z;
+  }
+
+
+  std::string
   combineString1NumSource() const
   {
     std::string a = accumStr();
@@ -291,6 +311,21 @@ public:
   numSrcVarStr() const
   { return "$" + StrUtil::toStr(numSrcVarId()); }
 
+
+  // --------------------------------------------------------
+  // 
+  // --------------------------------------------------------
+
+  virtual std::string
+  toString() const;
+
+
+  virtual std::ostream&
+  dump(std::ostream& os = std::cout) const
+  { return os; }
+
+  void
+  ddump() const;
   
 private:
 };
