@@ -96,7 +96,7 @@ public:
     : m_id(id_NULL), m_type(TyNULL), m_partner(NULL),
       m_isVisible(true), m_isSortKey(false),
       m_doDispPercent(true), m_isPercent(false),
-      m_isComputed(false),
+      m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0)
   { }
 
@@ -107,7 +107,7 @@ public:
       m_description((description) ? description : ""),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
-      m_isComputed(false),
+      m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0)
   {
     std::string nm = (nameBase) ? nameBase : "";
@@ -121,7 +121,7 @@ public:
       m_description(description),
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
-      m_isComputed(false),
+      m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0)
   {
     nameFromString(nameBase);
@@ -136,7 +136,7 @@ public:
       m_description(x.m_description),
       m_isVisible(x.m_isVisible), m_isSortKey(x.m_isSortKey),
       m_doDispPercent(x.m_doDispPercent), m_isPercent(x.m_isPercent),
-      m_isComputed(x.m_isComputed),
+      m_computedTy(x.m_computedTy),
       m_dbId(x.m_dbId), m_dbNumMetrics(x.m_dbNumMetrics)
   { }
 
@@ -155,7 +155,7 @@ public:
       m_isSortKey     = x.m_isSortKey;
       m_doDispPercent = x.m_doDispPercent;
       m_isPercent     = x.m_isPercent;
-      m_isComputed    = x.m_isComputed;
+      m_computedTy    = x.m_computedTy;
       m_dbId          = x.m_dbId;
       m_dbNumMetrics  = x.m_dbNumMetrics;
     }
@@ -404,16 +404,23 @@ public:
   { return m_isPercent; }
 
 
-  // has the metric been fully computed (e.g., have value been
-  // aggregated from leaves to interior nodes) [we may want to split
-  // this into isAggregated and isComputed]
-  bool
-  isComputed() const
-  { return m_isComputed; }
+  // ------------------------------------------------------------
+  // computed type
+  // ------------------------------------------------------------
+
+  enum ComputedTy {
+    ComputedTy_NULL = 0, // no aggregegation from leaves to interior nodes
+    ComputedTy_NonFinal, // non-finalized values
+    ComputedTy_Final     // finalized values
+  };
+
+  ComputedTy
+  computedType() const
+  { return m_computedTy; }
 
   void
-  isComputed(bool x)
-  { m_isComputed = x; }
+  computedType(ComputedTy x)
+  { m_computedTy = x; }
 
 
   // -------------------------------------------------------
@@ -509,7 +516,8 @@ private:
   bool m_isSortKey;
   bool m_doDispPercent;
   bool m_isPercent;
-  bool m_isComputed;
+
+  ComputedTy m_computedTy;
 
   uint m_dbId;
   uint m_dbNumMetrics;
@@ -669,16 +677,7 @@ public:
   toString() const;
 
   virtual std::string
-  toValueTyStringXML() const
-  { 
-    if (isComputed()) {
-      DIAG_Assert(type() != TyNULL, "");
-      return "final";
-    }
-    else {
-      return "raw";
-    }
-  }
+  toValueTyStringXML() const;
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cerr) const;
@@ -775,11 +774,7 @@ public:
   toString() const;
 
   virtual std::string
-  toValueTyStringXML() const
-  { 
-    DIAG_Assert(isComputed(), "");
-    return "derived";
-  }
+  toValueTyStringXML() const;
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cerr) const;
@@ -862,11 +857,7 @@ public:
   toString() const;
 
   virtual std::string
-  toValueTyStringXML() const
-  { 
-    DIAG_Assert(isComputed(), "");
-    return "derived-incr";
-  }
+  toValueTyStringXML() const;
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cerr) const;

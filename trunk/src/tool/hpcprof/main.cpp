@@ -141,7 +141,7 @@ realmain(int argc, char* const* argv)
   Analysis::Util::UIntVec* groupMap =
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
-  uint rFlags = 0; //Prof::CallPath::Profile::RFlg_MakeInclExcl;
+  uint rFlags = 0; // Prof::CallPath::Profile::RFlg_MakeInclExcl;
   uint mrgFlags = (Prof::CCT::MrgFlg_NormalizeTraceFileY);
 
   Prof::CallPath::Profile* prof =
@@ -165,11 +165,11 @@ realmain(int argc, char* const* argv)
   // Create summary metrics
   // -------------------------------------------------------
 
-  // TODO: generate non-finalized metrics
   if (0) {
     makeMetrics(nArgs, *prof);
     
-    Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
+    // FIXME: CallPath-MetricComponentsFact.cpp must support Metric::DerivedDesc
+    //Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
   }
   
   nArgs.destroy();
@@ -224,10 +224,12 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
     numDrvd = (mDrvdEnd - mDrvdBeg);
   }
 
+#if 0
   for (uint mId = mSrcBeg; mId < mSrcEnd; ++mId) {
     Prof::Metric::ADesc* m = mMgr.metric(mId);
     m->isVisible(false);
   }
+#endif
 
 
   // -------------------------------------------------------
@@ -245,7 +247,7 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
     else if (m->type() == Prof::Metric::ADesc::TyExcl) {
       ivalsetExcl.insert(VMAInterval(mId, mId + 1)); // [ )
     }
-    m->isComputed(true); // slightly proleptic
+    m->computedType(Prof::Metric::ADesc::ComputedTy_Final); // proleptic
   }
 
   cctRoot->aggregateMetricsIncl(ivalsetIncl);
@@ -259,6 +261,6 @@ makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
 
   for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgr.metric(i);
-    m->isComputed(true);
+    m->computedType(Prof::Metric::ADesc::ComputedTy_NonFinal);
   }
 }

@@ -622,7 +622,7 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
 
     for (uint i = 0; i < mMgrGbl.size(); ++i) {
       Prof::Metric::ADesc* m = mMgrGbl.metric(i);
-      m->isComputed(true);
+      m->computedType(Prof::Metric::ADesc::ComputedTy_NonFinal);
     }
   }
 

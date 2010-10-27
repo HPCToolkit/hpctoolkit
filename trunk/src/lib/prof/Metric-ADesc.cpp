@@ -238,6 +238,26 @@ SampledDesc::toString() const
 }
 
 
+std::string
+SampledDesc::toValueTyStringXML() const
+{ 
+  switch (computedType()) {
+    case ComputedTy_NULL:
+      return "raw";
+
+    default:
+    case ComputedTy_NonFinal:
+      DIAG_Die(DIAG_Unimplemented);
+      break;
+
+    case ComputedTy_Final:
+      DIAG_Assert(type() != TyNULL, "");
+      return "final";
+  }
+  DIAG_Die(DIAG_Unimplemented);
+}
+
+
 std::ostream&
 SampledDesc::dumpMe(std::ostream& os) const
 {
@@ -259,6 +279,25 @@ DerivedDesc::toString() const
 }
 
 
+std::string
+DerivedDesc::toValueTyStringXML() const
+{
+  switch (computedType()) {
+    default:
+    case ComputedTy_NULL:
+      DIAG_Die(DIAG_Unimplemented);
+      break;
+
+    case ComputedTy_NonFinal:
+      return "derived-incr";
+
+    case ComputedTy_Final:
+      return "derived";
+  }
+  DIAG_Die(DIAG_Unimplemented);
+}
+
+
 std::ostream&
 DerivedDesc::dumpMe(std::ostream& os) const
 {
@@ -277,6 +316,25 @@ DerivedIncrDesc::toString() const
   string exprStr = (m_expr) ? m_expr->toString() : "";
   string str = ADesc::toString() + " {" + exprStr + "}";
   return str;
+}
+
+
+std::string
+DerivedIncrDesc::toValueTyStringXML() const
+{
+  switch (computedType()) {
+    default:
+    case ComputedTy_NULL:
+      DIAG_Die(DIAG_Unimplemented);
+      break;
+
+    case ComputedTy_NonFinal:
+      return "derived-incr";
+      
+    case ComputedTy_Final:
+      return "derived";
+  }
+  DIAG_Die(DIAG_Unimplemented);
 }
 
 
