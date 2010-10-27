@@ -708,7 +708,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
 	dynamic_cast<Prof::Metric::SampledDesc*>(m);
       if (mm) {
 	ivalset.insert(VMAInterval(m->id(), m->id() + 1)); // [ )
-	mm->isComputed(true); // proleptic
+	mm->computedType(Prof::Metric::ADesc::ComputedTy_Final); // proleptic
 	mm->type(Prof::Metric::ADesc::TyExcl);
       }
     }
@@ -907,7 +907,7 @@ Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr,
     if (mm) {
       ivalset.insert(VMAInterval(m->id(), m->id() + 1)); // [ )
       mExprVec[i] = mm->expr();
-      mm->isComputed(true); // proleptic
+      mm->computedType(Prof::Metric::ADesc::ComputedTy_Final); // proleptic
       mm->type(Prof::Metric::ADesc::TyExcl);
     }
   }

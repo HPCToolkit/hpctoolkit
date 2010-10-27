@@ -804,7 +804,7 @@ makeReturnCountMetric(Prof::CallPath::Profile& prof)
     Prof::Metric::ADesc* m = metricMgr->metric(i);
     if (m->nameBase().find(HPCRUN_METRIC_RetCnt) != string::npos) {
       retCntId.push_back(m->id());
-      m->isComputed(true);
+      m->computedType(Prof::Metric::ADesc::ComputedTy_Final);
       m->type(Prof::Metric::ADesc::TyExcl);
     }
   }

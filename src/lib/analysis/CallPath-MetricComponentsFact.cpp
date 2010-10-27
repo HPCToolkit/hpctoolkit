@@ -258,7 +258,8 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
 	&& m->type() == Metric::ADesc::TyIncl
 	&& m->isVisible() /* not a temporary */) {
 
-      DIAG_Assert(m->isComputed(), DIAG_UnexpectedInput);
+      DIAG_Assert(m->computedType() == Prof::Metric::ADesc::ComputedTy_NonFinal,
+		  DIAG_UnexpectedInput);
       metricSrcIds.push_back(m->id());
 
       // FIXME: For now we use Metric::ADesc::DerivedIncrDesc()
@@ -305,7 +306,8 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
 	&& MetricComponentsFact::isDerivedMetric(m, s_cfvar)
 	&& m->type() == Metric::ADesc::TyIncl
 	&& m->isVisible() /* not a temporary */) {
-      DIAG_Assert(m->isComputed(), DIAG_UnexpectedInput);
+      DIAG_Assert(m->computedType() == Prof::Metric::ADesc::ComputedTy_NonFinal,
+		  DIAG_UnexpectedInput);
       metricBalanceIds.push_back(m->id());
     }
   }
@@ -322,7 +324,7 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
 
   DIAG_Assert(metricSrcIds.size() == 1, DIAG_UnexpectedInput); // FIXME
   
-  // metrics are non-finalized!
+  // Note that metrics are non-finalized!
   CCT::ANode* cctRoot = prof.cct()->root();
 
   uint metricBalancedId = metricBalanceIds[0];

@@ -131,7 +131,7 @@ public:
   virtual double
   eval(const Metric::IData& mdata) const = 0;
 
-  // evalNF: generate a non-finalized values and store results in accumulators
+  // evalNF: generate non-finalized values and store results in accumulators
   virtual double
   evalNF(Metric::IData& mdata) const
   {
