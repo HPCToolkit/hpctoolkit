@@ -537,15 +537,15 @@ ANode::computeMetrics(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
 void
 ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId)
 {
-  uint numMetrics = mMgr.size();
+  //uint numMetrics = mMgr.size();
 
   for (uint mId = mBegId; mId < mEndId; ++mId) {
     const Metric::ADesc* m = mMgr.metric(mId);
     const Metric::DerivedDesc* mm = dynamic_cast<const Metric::DerivedDesc*>(m);
     if (mm && mm->expr()) {
       const Metric::AExpr* expr = mm->expr();
-      double val = expr->eval(*this);
-      demandMetric(mId, numMetrics/*size*/) = val;
+      expr->evalNF(*this);
+      // double val = eval(); demandMetric(mId, numMetrics/*size*/) = val;
     }
   }
 }

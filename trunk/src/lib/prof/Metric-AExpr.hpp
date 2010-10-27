@@ -79,6 +79,7 @@
 
 #include <iostream> 
 #include <string>
+#include <algorithm>
 
 //************************* User Include Files *******************************
 
@@ -126,8 +127,19 @@ public:
   //
   // ------------------------------------------------------------
 
+  // eval: generate a finalized value and return result
   virtual double
   eval(const Metric::IData& mdata) const = 0;
+
+  // evalNF: generate a non-finalized values and store results in accumulators
+  virtual double
+  evalNF(Metric::IData& mdata) const
+  {
+    double z = eval(mdata);
+    accumVar(mdata) = z;
+    return z;
+  }
+
 
   static bool
   isok(double x)
@@ -212,6 +224,23 @@ public:
   //
   // ------------------------------------------------------------
 
+  static double&
+  var(Metric::IData& mdata, uint mId)
+  { return mdata.demandMetric(mId); }
+
+  double&
+  accumVar(Metric::IData& mdata) const
+  { return var(mdata, m_accumId); }
+
+  double&
+  accum2Var(Metric::IData& mdata) const
+  { return var(mdata, m_accum2Id); }
+
+
+  // ------------------------------------------------------------
+  //
+  // ------------------------------------------------------------
+
   virtual std::string
   toString() const;
 
@@ -235,7 +264,7 @@ protected:
   // ------------------------------------------------------------
 
   static double
-  evalSum(const Metric::IData& mdata, AExpr** opands, int sz) 
+  evalSum(const Metric::IData& mdata, AExpr** opands, int sz)
   {
     double result = 0.0;
     for (int i = 0; i < sz; ++i) {
@@ -245,8 +274,23 @@ protected:
     return result;
   }
 
+
+  static std::pair<double, double>
+  evalSumSquares(const Metric::IData& mdata, AExpr** opands, int sz)
+  {
+    double result1 = 0.0; // sum
+    double result2 = 0.0; // sum of squares
+    for (int i = 0; i < sz; ++i) {
+      double x = opands[i]->eval(mdata);
+      result1 += x;
+      result2 += (x * x);
+    }
+    return std::make_pair(result1, result2);
+  }
+
+
   static double
-  evalMean(const Metric::IData& mdata, AExpr** opands, int sz) 
+  evalMean(const Metric::IData& mdata, AExpr** opands, int sz)
   {
     double sum = evalSum(mdata, opands, sz);
     double result = sum / (double) sz;
@@ -256,7 +300,7 @@ protected:
   
   // returns <variance, mean>
   static std::pair<double, double>
-  evalVariance(const Metric::IData& mdata, AExpr** opands, int sz) 
+  evalVariance(const Metric::IData& mdata, AExpr** opands, int sz)
   {
     double* x = new double[sz];
     
@@ -279,6 +323,19 @@ protected:
     
     return std::make_pair(x_var, x_mean);
   }
+
+
+  double
+  evalStdDevNF(Metric::IData& mdata, AExpr** opands, int sz) const
+  {
+    std::pair<double, double> z = evalSumSquares(mdata, opands, sz);
+    double z1 = z.first;  // sum
+    double z2 = z.second; // sum of squares
+    accumVar(mdata) = z1;
+    accum2Var(mdata) = z2;
+    return z1;
+  }
+
 
   static void 
   dump_opands(std::ostream& os, AExpr** opands, int sz, const char* sep = ", ");
@@ -763,6 +820,15 @@ public:
   virtual double
   eval(const Metric::IData& mdata) const;
 
+  virtual double
+  evalNF(Metric::IData& mdata) const
+  {
+    double z = evalSum(mdata, m_opands, m_sz);
+    accumVar(mdata) = z;
+    return z;
+  }
+
+
   // ------------------------------------------------------------
   // Metric::IDBExpr:
   // ------------------------------------------------------------
@@ -811,6 +877,10 @@ public:
 
   virtual double
   eval(const Metric::IData& mdata) const;
+
+  virtual double
+  evalNF(Metric::IData& mdata) const
+  { return evalStdDevNF(mdata, m_opands, m_sz); }
 
 
   // ------------------------------------------------------------
@@ -870,6 +940,11 @@ public:
   virtual double
   eval(const Metric::IData& mdata) const;
 
+  virtual double
+  evalNF(Metric::IData& mdata) const
+  { return evalStdDevNF(mdata, m_opands, m_sz); }
+
+
   // ------------------------------------------------------------
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
@@ -926,6 +1001,10 @@ public:
 
   virtual double
   eval(const Metric::IData& mdata) const;
+
+  virtual double
+  evalNF(Metric::IData& mdata) const
+  { return evalStdDevNF(mdata, m_opands, m_sz); }
 
 
   // ------------------------------------------------------------
