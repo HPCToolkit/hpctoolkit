@@ -294,6 +294,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 		      false/*isSortKey*/, false/*doDispPercent*/,
 		      false/*isPercent*/);
     m2->nameBase(m2NmBase);
+    m2->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
     insert(m2);
 
     expr->accum2Id(m2->id());
@@ -301,13 +302,15 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 
   if (expr->hasNumSrcVar()) {
     string m3NmBase = mNmBase + ":num-src";
-    Metric::NumSource* m3Expr = new Metric::NumSource();
+    Metric::NumSource* m3Expr = new Metric::NumSource(mOpands.size());
     DerivedDesc* m3 =
       new DerivedDesc(mNmFmt, mDesc, m3Expr, false/*isVisible*/,
 		      false/*isSortKey*/, false/*doDispPercent*/,
 		      false/*isPercent*/);
     m3->nameBase(m3NmBase);
+    m3->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
     insert(m3);
+    m3Expr->accumId(m3->id());
 
     expr->numSrcVarId(m3->id());
   }
