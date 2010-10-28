@@ -125,6 +125,8 @@ realmain(int argc, char* const* argv)
   Args args;
   args.parse(argc, argv);
 
+  bool doDerivedMetrics = false; // true;
+
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   // ------------------------------------------------------------
@@ -133,7 +135,7 @@ realmain(int argc, char* const* argv)
   Analysis::Util::NormalizeProfileArgs_t nArgs = 
     Analysis::Util::normalizeProfileArgs(args.profileFiles);
 
-  if ( !(nArgs.paths->size() <= 32 || args.isHPCProfForce) ) {
+  if ( !(nArgs.paths->size() <= 32 || args.prof_forceReadProfiles) ) {
     DIAG_Throw("There are " << nArgs.paths->size() << " profile files to process. As a sanity check, " << args.getCmd() << " limits the number of profile files it processes.  Use the --force option to remove this limit or use hpcprof-mpi.");
   }
 
@@ -141,7 +143,10 @@ realmain(int argc, char* const* argv)
   Analysis::Util::UIntVec* groupMap =
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
-  uint rFlags = 0; // Prof::CallPath::Profile::RFlg_MakeInclExcl;
+  uint rFlags = 0;
+  if (doDerivedMetrics) {
+    rFlags |= Prof::CallPath::Profile::RFlg_MakeInclExcl;
+  }
   uint mrgFlags = (Prof::CCT::MrgFlg_NormalizeTraceFileY);
 
   Prof::CallPath::Profile* prof =
@@ -165,7 +170,7 @@ realmain(int argc, char* const* argv)
   // Create summary metrics
   // -------------------------------------------------------
 
-  if (0) {
+  if (doDerivedMetrics) {
     makeMetrics(nArgs, *prof);
     
     // FIXME: CallPath-MetricComponentsFact.cpp must support Metric::DerivedDesc

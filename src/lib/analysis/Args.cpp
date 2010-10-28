@@ -99,9 +99,11 @@ Args::Ctor()
   // Correlation arguments
   // -------------------------------------------------------
 
-  isHPCProfForce = false;
+  prof_forceReadProfiles = false;
 
-  flat_computeFinalMetricValues = false;
+  prof_doDerivedMetrics = true;
+
+  profflat_computeFinalMetricValues = true;
 
   doNormalizeTy = true;
 

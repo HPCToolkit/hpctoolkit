@@ -135,6 +135,11 @@ Options: Special:\n\
   --force              As a sanity check, hpcprof limits the number of\n\
                        profile files it processes.  Use this option to\n\
                        remove that limit.  Alternatively, use hpcprof-mpi.\n\
+  -M <metric>, --metric <metric>\n\
+                       Control whether hpcprof computes derived metrics.\n\
+                       <metric> may be one of the following:\n\
+                         yes, all: automatically compute derived metrics\n\
+                         no, none: do not compute derived metrics\n\
 \n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
@@ -181,6 +186,8 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
   // Special options for now
   {  0 , "force",           CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
+  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
 
   // General
   { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
@@ -206,6 +213,9 @@ namespace Analysis {
 ArgsHPCProf::ArgsHPCProf()
 {
   Diagnostics_SetDiagnosticFilterLevel(1);
+
+  // Analysis::Args
+  prof_doDerivedMetrics = true;
 }
 
 
@@ -322,7 +332,7 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("normalize")) { 
       const string& arg = parser.getOptArg("normalize");
-      doNormalizeTy = parseArg_norm(arg, "--normalize option");
+      doNormalizeTy = parseArg_norm(arg, "--normalize/-N option");
     }
 
     if (parser.isOpt("replace-path")) {
@@ -346,7 +356,11 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
 
     // Check for special hpcprof options:
     if (parser.isOpt("force")) {
-      isHPCProfForce = true;
+      prof_forceReadProfiles = true;
+    }
+    if (parser.isOpt("metric")) {
+      string opt = parser.getOptArg("metric");
+      prof_doDerivedMetrics = parseArg_metric(opt, "--metric/-M option");
     }
     
     // Check for other options: Output options
@@ -401,7 +415,7 @@ ArgsHPCProf::dump(std::ostream& os) const
 //***************************************************************************
 
 bool
-ArgsHPCProf::parseArg_norm(const string& value, const char* err_note)
+ArgsHPCProf::parseArg_norm(const string& value, const char* errTag)
 {
   if (value == "all") {
     return true;
@@ -410,7 +424,22 @@ ArgsHPCProf::parseArg_norm(const string& value, const char* err_note)
     return false;
   }
   else {
-    ARG_ERROR(err_note << ": Unexpected value received: " << value);
+    ARG_ERROR(errTag << ": Unexpected value received: " << value);
+  }
+}
+
+
+bool
+ArgsHPCProf::parseArg_metric(const std::string& value, const char* errTag)
+{
+  if (value == "no" || value == "none") {
+    return false;
+  }
+  else if (value == "yes" || value == "all") {
+    return true;
+  }
+  else {
+    ARG_ERROR(errTag << ": Unexpected value received: " << value);
   }
 }
 

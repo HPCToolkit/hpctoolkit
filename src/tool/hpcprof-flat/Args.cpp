@@ -254,9 +254,9 @@ Args::Ctor()
   Diagnostics_SetDiagnosticFilterLevel(1);
 
   configurationFileMode = false;
-
-  // override Analysis::Args defaults
-  flat_computeFinalMetricValues = true; // dump metrics on interior nodes
+  
+  // Analysis::ArgsA
+  profflat_computeFinalMetricValues = true;
 }
 
 

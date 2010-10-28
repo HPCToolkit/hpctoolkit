@@ -154,7 +154,7 @@ Options: Source Structure Correlation:\n\
                        May pass multiple times (e.g., for shared libraries).\n\
   -R '<old-path>=<new-path>', --replace-path '<old-path>=<new-path>'\n\
                        Substitute instances of <old-path> with <new-path>;\n\
-                       apply to all paths (profile's load map, source code)\n\
+                       apply to all paths (profile\'s load map, source code)\n\
                        for which <old-path> is a prefix.  Use '\\' to escape\n\
                        instances of '=' within a path. May pass multiple\n\
                        times.\n\
@@ -310,7 +310,7 @@ Args::Ctor()
   Diagnostics_SetDiagnosticFilterLevel(1);
 
 
-  // override Analysis::Args defaults
+  // Analysis::Args
   out_db_experiment = "";
   db_dir            = "";
   db_copySrcFiles   = false;
@@ -318,7 +318,7 @@ Args::Ctor()
   out_txt           = "-";
   txt_summary       = TxtSum_fPgm | TxtSum_fLM;
   txt_srcAnnotation = false;
-  flat_computeFinalMetricValues = true; // dump metrics on interior nodes
+  profflat_computeFinalMetricValues = true;
 }
 
 

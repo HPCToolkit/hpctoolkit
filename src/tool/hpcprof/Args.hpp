@@ -76,14 +76,16 @@
 
 //***************************************************************************
 
-class Args : public Analysis::ArgsHPCProf {
+class Args
+  : public Analysis::ArgsHPCProf {
 public: 
   Args();
   virtual ~Args();
 
 public:
   // Parsed Data: Command
-  virtual const std::string getCmd() const;
+  virtual const std::string
+  getCmd() const;
 }; 
 
 #endif // Args_hpp 

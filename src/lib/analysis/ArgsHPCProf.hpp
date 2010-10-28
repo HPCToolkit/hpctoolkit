@@ -116,7 +116,11 @@ public:
 
 private:
   bool
-  parseArg_norm(const std::string& value, const char* err_note);
+  parseArg_norm(const std::string& value, const char* errTag);
+
+  bool
+  parseArg_metric(const std::string& value, const char* errTag);
+
   
   static std::string
   makeDBDirName(const std::string& profileArg);
