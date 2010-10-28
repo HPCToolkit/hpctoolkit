@@ -105,32 +105,47 @@ public:
 
 
 public: 
-  Args(); 
+  Args();
   Args(int argc, const char* const argv[]);
-  virtual ~Args(); 
+  virtual ~Args();
 
   // Parse the command line
-  void parse(int argc, const char* const argv[]);
+  void
+  parse(int argc, const char* const argv[]);
 
   // Version and Usage information
-  void printVersion(std::ostream& os) const;
-  void printUsage(std::ostream& os) const;
+  void
+  printVersion(std::ostream& os) const;
+
+  void
+  printUsage(std::ostream& os) const;
   
   // Error
-  static void printError(std::ostream& os, const char* msg) /*const*/;
-  static void printError(std::ostream& os, const std::string& msg) /*const*/;
+  static void
+  printError(std::ostream& os, const char* msg) /*const*/;
+
+  static void
+  printError(std::ostream& os, const std::string& msg) /*const*/;
 
   // Dump
-  virtual void dump(std::ostream& os = std::cerr) const;
+  virtual void
+  dump(std::ostream& os = std::cerr) const;
 
 public:
   // Parsed Data: Command
-  static const std::string& getCmd() /*const*/;
+  static const std::string&
+  getCmd() /*const*/;
 
-  static void parse_sourceOpts(Args* args, const std::string& opts);
-  static void parse_objectOpts(Args* args, const std::string& opts);
-  static void parse_metricOpts(Args* args, const std::string& opts);
+  static void
+  parse_sourceOpts(Args* args, const std::string& opts);
 
+  static void
+  parse_objectOpts(Args* args, const std::string& opts);
+
+  static void
+  parse_metricOpts(Args* args, const std::string& opts);
+
+public:
   // Parsed Data
   Mode_t mode;
 

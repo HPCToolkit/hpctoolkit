@@ -84,19 +84,29 @@ public:
   ~Args(); 
 
   // Parse the command line
-  void parse(int argc, const char* const argv[]);
+  void
+  parse(int argc, const char* const argv[]);
 
   // Version and Usage information
-  void printVersion(std::ostream& os) const;
-  void printUsage(std::ostream& os) const;
+  void
+  printVersion(std::ostream& os) const;
+
+  void
+  printUsage(std::ostream& os) const;
   
   // Error
-  void printError(std::ostream& os, const char* msg) const;
-  void printError(std::ostream& os, const std::string& msg) const;
+  void
+  printError(std::ostream& os, const char* msg) const;
+
+  void
+  printError(std::ostream& os, const std::string& msg) const;
 
   // Dump
-  void dump(std::ostream& os = std::cerr) const;
-  void ddump() const;
+  void
+  dump(std::ostream& os = std::cerr) const;
+
+  void
+  ddump() const;
 
 public:
   // Parsed Data: Command

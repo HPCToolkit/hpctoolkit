@@ -143,13 +143,15 @@ public:
   // Attribution/Correlation arguments: special
   // -------------------------------------------------------
 
-  bool isHPCProfForce;
+  bool prof_forceReadProfiles;
+
+  bool prof_doDerivedMetrics;
 
   // TODO: Currently this is always true even though we only need to
   // compute final metric values for (1) hpcproftt (flat) and (2)
   // hpcprof-flat when it computes derived metrics.  However, at the
   // moment this is a sinking ship and not worth the time investment.
-  bool flat_computeFinalMetricValues;
+  bool profflat_computeFinalMetricValues;
 
   // -------------------------------------------------------
   // Output arguments: experiment database output
