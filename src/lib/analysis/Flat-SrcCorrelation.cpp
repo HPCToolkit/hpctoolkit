@@ -697,7 +697,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
   // Accumulate leaves to interior nodes, if necessary
   //-------------------------------------------------------
 
-  if (m_args.metrics_computeInteriorValues || mMgr.hasDerived()) {
+  if (m_args.flat_computeFinalMetricValues || mMgr.hasDerived()) {
     // 1. Compute batch jobs: all raw metrics are independent of each
     //    other and therefore may be computed en masse.
     VMAIntervalSet ivalset; // cheat using a VMAInterval set
