@@ -114,7 +114,7 @@ public:
   std::string agent;
 
   // -------------------------------------------------------
-  // Correlation arguments
+  // Attribution/Correlation arguments: general
   // -------------------------------------------------------
 
   // Title
@@ -136,13 +136,20 @@ public:
 
   // Profile files
   std::vector<std::string> profileFiles;
-  bool isHPCProfForce;
-
-  // FIXME: computed metrics require interior values (implications for
-  // hpcviewer?)... perhaps this should only be an output option.
-  bool metrics_computeInteriorValues;
 
   bool doNormalizeTy;
+
+  // -------------------------------------------------------
+  // Attribution/Correlation arguments: special
+  // -------------------------------------------------------
+
+  bool isHPCProfForce;
+
+  // TODO: Currently this is always true even though we only need to
+  // compute final metric values for (1) hpcproftt (flat) and (2)
+  // hpcprof-flat when it computes derived metrics.  However, at the
+  // moment this is a sinking ship and not worth the time investment.
+  bool flat_computeFinalMetricValues;
 
   // -------------------------------------------------------
   // Output arguments: experiment database output

@@ -256,7 +256,7 @@ Args::Ctor()
   configurationFileMode = false;
 
   // override Analysis::Args defaults
-  metrics_computeInteriorValues = true; // dump metrics on interior nodes
+  flat_computeFinalMetricValues = true; // dump metrics on interior nodes
 }
 
 

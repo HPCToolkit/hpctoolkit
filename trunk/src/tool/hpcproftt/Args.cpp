@@ -318,7 +318,7 @@ Args::Ctor()
   out_txt           = "-";
   txt_summary       = TxtSum_fPgm | TxtSum_fLM;
   txt_srcAnnotation = false;
-  metrics_computeInteriorValues = true; // dump metrics on interior nodes
+  flat_computeFinalMetricValues = true; // dump metrics on interior nodes
 }
 
 

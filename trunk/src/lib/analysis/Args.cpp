@@ -101,7 +101,7 @@ Args::Ctor()
 
   isHPCProfForce = false;
 
-  metrics_computeInteriorValues = false;
+  flat_computeFinalMetricValues = false;
 
   doNormalizeTy = true;
 
