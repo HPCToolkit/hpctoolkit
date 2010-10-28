@@ -662,6 +662,20 @@ Mgr::computePartners()
 
 //****************************************************************************
 
+void
+Mgr::zeroDBInfo() const
+{
+  for (uint i = 0; i < m_metrics.size(); ++i) {
+    Metric::ADesc* m = m_metrics[i];
+    if (m->hasDBInfo()) {
+      m->zeroDBInfo();
+    }
+  }
+}
+
+
+//****************************************************************************
+
 string
 Mgr::toString(const char* pre) const
 {

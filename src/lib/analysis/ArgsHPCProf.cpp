@@ -145,7 +145,11 @@ Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
                        {./"Analysis_DB_DIR"}\n\
-                       Experiment format {"Analysis_OUT_DB_EXPERIMENT"}\n";
+                       Experiment format {"Analysis_OUT_DB_EXPERIMENT"}\n\
+  --metric-db <yes|no>\n\
+                       Control whether to generate a thread-level metric\n\
+                       value database for hpcviewer scatter plots. {yes}\n\
+";
 
 
 
@@ -182,6 +186,8 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
      NULL },
   {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
      NULL },
+  {  0 , "metric-db",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
 
   // Special options for now
   {  0 , "force",           CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
@@ -216,6 +222,7 @@ ArgsHPCProf::ArgsHPCProf()
 
   // Analysis::Args
   prof_doDerivedMetrics = true;
+  db_makeMetricDB       = true;
 }
 
 
@@ -372,6 +379,10 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     if (parser.isOpt("db")) {
       db_dir = parser.getOptArg("db");
       isDbDirSet = true;
+    }
+    if (parser.isOpt("metric-db")) {
+      const string& arg = parser.getOptArg("metric-db");
+      db_makeMetricDB = CmdLineParser::parseArg_bool(arg, "--metric-db option");
     }
 
     // Check for required arguments

@@ -301,10 +301,6 @@ realmain(int argc, char* const* argv)
   MPI_Bcast((void*)dbDirBuf, PATH_MAX, MPI_CHAR, rootRank, MPI_COMM_WORLD);
   args.db_dir = dbDirBuf;
 
-  if (args.title.empty()) {
-    args.title = profGbl->name();
-  }
-
   // -------------------------------------------------------
   // 2. Create *pruned* canonical CCT with summary metrics
   //
@@ -345,7 +341,16 @@ realmain(int argc, char* const* argv)
   // Generate Experiment database
   //   INVARIANT: database dir already exists
   // ------------------------------------------------------------
+
   if (myRank == rootRank) {
+    if (args.title.empty()) {
+      args.title = profGbl->name();
+    }
+
+    if (!args.db_makeMetricDB) {
+      profGbl->metricMgr()->zeroDBInfo();
+    }
+
     Analysis::CallPath::makeDatabase(*profGbl, args);
   }
   else {
@@ -891,13 +896,15 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
   // -------------------------------------------------------
   // write local sampled metric values into database
   // -------------------------------------------------------
-  string dbFnm = makeDBFileName(args.db_dir, groupId, profileFile);
-  writeMetricsDB(profGbl, mBeg, mEnd, dbFnm);
+  if (args.db_makeMetricDB) {
+    string dbFnm = makeDBFileName(args.db_dir, groupId, profileFile);
+    writeMetricsDB(profGbl, mBeg, mEnd, dbFnm);
+  }
 
   // -------------------------------------------------------
   // reinitialize metric values since space may be used again
   // -------------------------------------------------------
-  cctRoot->zeroMetricsDeep(mBeg, mEnd); // FIXME: hackish
+  cctRoot->zeroMetricsDeep(mBeg, mEnd); // FIXME: should be FnInitSrc
 
   delete prof;
 }

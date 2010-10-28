@@ -127,6 +127,9 @@ realmain(int argc, char* const* argv)
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
+  // Currently we do not generate thread-level metric db
+  args.db_makeMetricDB = false;
+
   // ------------------------------------------------------------
   // Form one CCT from profile data
   // ------------------------------------------------------------
@@ -185,13 +188,8 @@ realmain(int argc, char* const* argv)
     args.title = prof->name();
   }
 
-  // Currently we do not generate thread-level metric db
-  Prof::Metric::Mgr* mMgr = prof->metricMgr();
-  for (uint i = 0; i < mMgr->size(); i++) {
-    Prof::Metric::ADesc* m = mMgr->metric(i);
-    if (m->hasDBInfo()) {
-      m->zeroDBInfo();
-    }
+  if (!args.db_makeMetricDB) {
+    prof->metricMgr()->zeroDBInfo();
   }
 
   args.makeDatabaseDir();

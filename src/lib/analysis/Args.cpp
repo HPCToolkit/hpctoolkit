@@ -116,6 +116,7 @@ Args::Ctor()
   db_dir            = Analysis_DB_DIR_pfx "-" Analysis_DB_DIR_nm;
   db_copySrcFiles   = true;
   out_db_config     = "";
+  db_makeMetricDB   = true;
 
   out_txt           = Analysis_OUT_TXT;
   txt_summary       = TxtSum_NULL;
