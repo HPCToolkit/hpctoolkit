@@ -60,6 +60,7 @@ using std::endl;
 #include <algorithm>
 
 #include <cmath>
+#include <cfloat>
 
 //************************* User Include Files *******************************
 
@@ -101,9 +102,9 @@ AExpr::toString() const
 
 
 void
-AExpr::dump_opands(std::ostream& os, AExpr** opands, int sz, const char* sep)
+AExpr::dump_opands(std::ostream& os, AExpr** opands, uint sz, const char* sep)
 {
-  for (int i = 0; i < sz; ++i) {
+  for (uint i = 0; i < sz; ++i) {
     opands[i]->dumpMe(os);
     if (i < (sz - 1)) {
       os << sep;
@@ -131,10 +132,10 @@ Const::dumpMe(std::ostream& os) const
 double
 Neg::eval(const Metric::IData& mdata) const
 {
-  double result = m_expr->eval(mdata);
+  double z = m_expr->eval(mdata);
 
-  AEXPR_CHECK(result);
-  return -result;
+  AEXPR_CHECK(z);
+  return -z;
 }
 
 
@@ -169,10 +170,10 @@ Power::eval(const Metric::IData& mdata) const
 {
   double b = m_base->eval(mdata);
   double e = m_exponent->eval(mdata);
-  double result = pow(b, e);
+  double z = pow(b, e);
 
-  AEXPR_CHECK(result);
-  return result;
+  AEXPR_CHECK(z);
+  return z;
 }
 
 
@@ -197,10 +198,10 @@ Divide::eval(const Metric::IData& mdata) const
 {
   double n = m_numerator->eval(mdata);
   double d = m_denominator->eval(mdata);
-  double result = n / d;
+  double z = n / d;
 
-  AEXPR_CHECK(result);
-  return result;
+  AEXPR_CHECK(z);
+  return z;
 }
 
 
@@ -225,10 +226,10 @@ Minus::eval(const Metric::IData& mdata) const
 {
   double m = m_minuend->eval(mdata);
   double s = m_subtrahend->eval(mdata);
-  double result = (m - s);
+  double z = (m - s);
 
-  AEXPR_CHECK(result);
-  return result;
+  AEXPR_CHECK(z);
+  return z;
 }
 
 
@@ -249,7 +250,7 @@ Minus::dumpMe(std::ostream& os) const
 
 Plus::~Plus()
 {
-  for (int i = 0; i < m_sz; ++i) {
+  for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
@@ -259,10 +260,10 @@ Plus::~Plus()
 double
 Plus::eval(const Metric::IData& mdata) const
 {
-  double result = evalSum(mdata, m_opands, m_sz);
+  double z = evalSum(mdata, m_opands, m_sz);
 
-  AEXPR_CHECK(result);
-  return result;
+  AEXPR_CHECK(z);
+  return z;
 }
 
 
@@ -282,7 +283,7 @@ Plus::dumpMe(std::ostream& os) const
 
 Times::~Times()
 {
-  for (int i = 0; i < m_sz; ++i) {
+  for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
@@ -292,14 +293,14 @@ Times::~Times()
 double
 Times::eval(const Metric::IData& mdata) const
 {
-  double result = 1.0;
-  for (int i = 0; i < m_sz; ++i) {
+  double z = 1.0;
+  for (uint i = 0; i < m_sz; ++i) {
     double x = m_opands[i]->eval(mdata);
-    result *= x;
+    z *= x;
   }
 
-  AEXPR_CHECK(result);
-  return result;
+  AEXPR_CHECK(z);
+  return z;
 }
 
 
@@ -319,7 +320,7 @@ Times::dumpMe(std::ostream& os) const
 
 Max::~Max()
 {
-  for (int i = 0; i < m_sz; ++i) {
+  for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
@@ -329,14 +330,14 @@ Max::~Max()
 double
 Max::eval(const Metric::IData& mdata) const
 {
-  double result = m_opands[0]->eval(mdata);
-  for (int i = 1; i < m_sz; ++i) {
+  double z = m_opands[0]->eval(mdata);
+  for (uint i = 1; i < m_sz; ++i) {
     double x = m_opands[i]->eval(mdata);
-    result = std::max(result, x);
+    z = std::max(z, x);
   }
 
-  AEXPR_CHECK(result);
-  return result;
+  AEXPR_CHECK(z);
+  return z;
 }
 
 
@@ -356,7 +357,7 @@ Max::dumpMe(std::ostream& os) const
 
 Min::~Min()
 {
-  for (int i = 0; i < m_sz; ++i) {
+  for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
@@ -366,14 +367,16 @@ Min::~Min()
 double
 Min::eval(const Metric::IData& mdata) const
 {
-  double result = m_opands[0]->eval(mdata);
-  for (int i = 1; i < m_sz; ++i) {
+  double z = DBL_MAX;
+  for (uint i = 0; i < m_sz; ++i) {
     double x = m_opands[i]->eval(mdata);
-    result = std::min(result, x);
+    if (x != 0.0) {
+      z = std::min(z, x);
+    }
   }
 
-  AEXPR_CHECK(result);
-  return result;
+  AEXPR_CHECK(z);
+  return z;
 }
 
 
@@ -393,7 +396,7 @@ Min::dumpMe(std::ostream& os) const
 
 Mean::~Mean()
 {
-  for (int i = 0; i < m_sz; ++i) {
+  for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
@@ -403,10 +406,10 @@ Mean::~Mean()
 double
 Mean::eval(const Metric::IData& mdata) const
 {
-  double result = evalMean(mdata, m_opands, m_sz);
+  double z = evalMean(mdata, m_opands, m_sz);
 
-  AEXPR_CHECK(result);
-  return result;
+  AEXPR_CHECK(z);
+  return z;
 }
 
 
@@ -426,7 +429,7 @@ Mean::dumpMe(std::ostream& os) const
 
 StdDev::~StdDev()
 {
-  for (int i = 0; i < m_sz; ++i) {
+  for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
@@ -437,10 +440,10 @@ double
 StdDev::eval(const Metric::IData& mdata) const
 {
   std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
-  double result = sqrt(v_m.first);
+  double z = sqrt(v_m.first);
 
-  AEXPR_CHECK(result);
-  return result;
+  AEXPR_CHECK(z);
+  return z;
 }
 
 
@@ -460,7 +463,7 @@ StdDev::dumpMe(std::ostream& os) const
 
 CoefVar::~CoefVar()
 {
-  for (int i = 0; i < m_sz; ++i) {
+  for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
@@ -473,13 +476,13 @@ CoefVar::eval(const Metric::IData& mdata) const
   std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
   double sdev = sqrt(v_m.first); // always non-negative
   double mean = v_m.second;
-  double result = 0.0;
+  double z = 0.0;
   if (mean > epsilon) {
-    result = sdev / mean;
+    z = sdev / mean;
   }
 
-  AEXPR_CHECK(result);
-  return result;
+  AEXPR_CHECK(z);
+  return z;
 }
 
 
@@ -499,7 +502,7 @@ CoefVar::dumpMe(std::ostream& os) const
 
 RStdDev::~RStdDev()
 {
-  for (int i = 0; i < m_sz; ++i) {
+  for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
@@ -512,13 +515,13 @@ RStdDev::eval(const Metric::IData& mdata) const
   std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
   double sdev = sqrt(v_m.first); // always non-negative
   double mean = v_m.second;
-  double result = 0.0;
+  double z = 0.0;
   if (mean > epsilon) {
-    result = (sdev / mean) * 100;
+    z = (sdev / mean) * 100;
   }
 
-  AEXPR_CHECK(result);
-  return result;
+  AEXPR_CHECK(z);
+  return z;
 }
 
 

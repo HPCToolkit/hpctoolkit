@@ -264,48 +264,48 @@ protected:
   // ------------------------------------------------------------
 
   static double
-  evalSum(const Metric::IData& mdata, AExpr** opands, int sz)
+  evalSum(const Metric::IData& mdata, AExpr** opands, uint sz)
   {
-    double result = 0.0;
-    for (int i = 0; i < sz; ++i) {
+    double z = 0.0;
+    for (uint i = 0; i < sz; ++i) {
       double x = opands[i]->eval(mdata);
-      result += x;
+      z += x;
     }
-    return result;
+    return z;
   }
 
 
   static std::pair<double, double>
-  evalSumSquares(const Metric::IData& mdata, AExpr** opands, int sz)
+  evalSumSquares(const Metric::IData& mdata, AExpr** opands, uint sz)
   {
-    double result1 = 0.0; // sum
-    double result2 = 0.0; // sum of squares
-    for (int i = 0; i < sz; ++i) {
+    double z1 = 0.0; // sum
+    double z2 = 0.0; // sum of squares
+    for (uint i = 0; i < sz; ++i) {
       double x = opands[i]->eval(mdata);
-      result1 += x;
-      result2 += (x * x);
+      z1 += x;
+      z2 += (x * x);
     }
-    return std::make_pair(result1, result2);
+    return std::make_pair(z1, z2);
   }
 
 
   static double
-  evalMean(const Metric::IData& mdata, AExpr** opands, int sz)
+  evalMean(const Metric::IData& mdata, AExpr** opands, uint sz)
   {
     double sum = evalSum(mdata, opands, sz);
-    double result = sum / (double) sz;
-    return result;
+    double z = sum / (double) sz;
+    return z;
   }
 
   
   // returns <variance, mean>
   static std::pair<double, double>
-  evalVariance(const Metric::IData& mdata, AExpr** opands, int sz)
+  evalVariance(const Metric::IData& mdata, AExpr** opands, uint sz)
   {
     double* x = new double[sz];
     
     double x_mean = 0.0; // mean
-    for (int i = 0; i < sz; ++i) {
+    for (uint i = 0; i < sz; ++i) {
       double t = opands[i]->eval(mdata);
       x[i] = t;
       x_mean += t;
@@ -313,7 +313,7 @@ protected:
     x_mean = x_mean / sz;
     
     double x_var = 0.0; // variance
-    for (int i = 0; i < sz; ++i) {
+    for (uint i = 0; i < sz; ++i) {
       double t = (x[i] - x_mean);
       t = t * t;
       x_var += t;
@@ -326,7 +326,7 @@ protected:
 
 
   double
-  evalStdDevNF(Metric::IData& mdata, AExpr** opands, int sz) const
+  evalStdDevNF(Metric::IData& mdata, AExpr** opands, uint sz) const
   {
     std::pair<double, double> z = evalSumSquares(mdata, opands, sz);
     double z1 = z.first;  // sum
@@ -338,7 +338,8 @@ protected:
 
 
   static void 
-  dump_opands(std::ostream& os, AExpr** opands, int sz, const char* sep = ", ");
+  dump_opands(std::ostream& os, AExpr** opands, uint sz,
+	      const char* sep = ", ");
   
 protected:
   uint m_accumId;     // used only for Metric::IDBExpr routines
@@ -620,7 +621,7 @@ class Plus
 {
 public:
   // Assumes ownership of AExpr
-  Plus(AExpr** oprnds, int numOprnds)
+  Plus(AExpr** oprnds, uint numOprnds)
     : m_opands(oprnds), m_sz(numOprnds) 
   { }
 
@@ -656,7 +657,7 @@ public:
 
 private:
   AExpr** m_opands;
-  int m_sz;
+  uint m_sz;
 };
 
 
@@ -670,7 +671,7 @@ class Times
 {
 public:
   // Assumes ownership of AExpr
-  Times(AExpr** oprnds, int numOprnds)
+  Times(AExpr** oprnds, uint numOprnds)
     : m_opands(oprnds), m_sz(numOprnds) 
   { }
 
@@ -700,7 +701,7 @@ public:
 
 private:
   AExpr** m_opands;
-  int m_sz;
+  uint m_sz;
 };
 
 
@@ -713,7 +714,7 @@ class Min
 {
 public:
   // Assumes ownership of AExpr
-  Min(AExpr** oprnds, int numOprnds)
+  Min(AExpr** oprnds, uint numOprnds)
     : m_opands(oprnds), m_sz(numOprnds) 
   { }
 
@@ -749,7 +750,7 @@ public:
 
 private:
   AExpr** m_opands;
-  int m_sz;
+  uint m_sz;
 };
 
 
@@ -762,7 +763,7 @@ class Max
 {
 public:
   // Assumes ownership of AExpr
-  Max(AExpr** oprnds, int numOprnds)
+  Max(AExpr** oprnds, uint numOprnds)
     : m_opands(oprnds), m_sz(numOprnds) 
   { }
 
@@ -798,7 +799,7 @@ public:
 
 private:
   AExpr** m_opands;
-  int m_sz;
+  uint m_sz;
 };
 
 
@@ -811,7 +812,7 @@ class Mean
 {
 public:
   // Assumes ownership of AExpr
-  Mean(AExpr** oprnds, int numOprnds)
+  Mean(AExpr** oprnds, uint numOprnds)
     : m_opands(oprnds), m_sz(numOprnds) 
   { }
 
@@ -833,10 +834,13 @@ public:
   // Metric::IDBExpr:
   // ------------------------------------------------------------
 
+  virtual bool
+  hasNumSrcVar() const
+  { return true; }
+
   virtual uint
   numSrcFxd() const
   { return m_sz; }
-
 
   virtual std::string
   combineString1() const
@@ -856,7 +860,7 @@ public:
 
 private:
   AExpr** m_opands;
-  int m_sz;
+  uint m_sz;
 };
 
 
@@ -869,7 +873,7 @@ class StdDev
 {
 public:
   // Assumes ownership of AExpr
-  StdDev(AExpr** oprnds, int numOprnds)
+  StdDev(AExpr** oprnds, uint numOprnds)
     : m_opands(oprnds), m_sz(numOprnds) 
   { }
 
@@ -889,6 +893,10 @@ public:
 
   virtual bool
   hasAccum2() const
+  { return true; }
+
+  virtual bool
+  hasNumSrcVar() const
   { return true; }
 
   virtual uint
@@ -918,7 +926,7 @@ public:
 
 private:
   AExpr** m_opands;
-  int m_sz;
+  uint m_sz;
 };
 
 
@@ -931,7 +939,7 @@ class CoefVar
 {
 public:
   // Assumes ownership of AExpr
-  CoefVar(AExpr** oprnds, int numOprnds)
+  CoefVar(AExpr** oprnds, uint numOprnds)
     : m_opands(oprnds), m_sz(numOprnds) 
   { }
 
@@ -951,6 +959,10 @@ public:
 
   virtual bool
   hasAccum2() const
+  { return true; }
+
+  virtual bool
+  hasNumSrcVar() const
   { return true; }
 
   virtual uint
@@ -980,7 +992,7 @@ public:
 
 private:
   AExpr** m_opands;
-  int m_sz;
+  uint m_sz;
 };
 
 
@@ -993,7 +1005,7 @@ class RStdDev
 {
 public:
   // Assumes ownership of AExpr
-  RStdDev(AExpr** oprnds, int numOprnds)
+  RStdDev(AExpr** oprnds, uint numOprnds)
     : m_opands(oprnds), m_sz(numOprnds)
   { }
 
@@ -1013,6 +1025,10 @@ public:
 
   virtual bool
   hasAccum2() const
+  { return true; }
+
+  virtual bool
+  hasNumSrcVar() const
   { return true; }
 
   virtual uint
@@ -1042,7 +1058,7 @@ public:
 
 private:
   AExpr** m_opands;
-  int m_sz;
+  uint m_sz;
 };
 
 
@@ -1055,7 +1071,8 @@ class NumSource
 {
 public:
   // Assumes ownership of AExpr
-  NumSource()
+  NumSource(uint numSrc)
+    : m_numSrc(numSrc)
   { }
 
   ~NumSource()
@@ -1063,7 +1080,7 @@ public:
 
   virtual double
   eval(const Metric::IData& mdata) const
-  { DIAG_Die(DIAG_Unimplemented); return 0.0; }
+  { return (double)m_numSrc; }
 
 
   // ------------------------------------------------------------
@@ -1092,6 +1109,7 @@ public:
   dumpMe(std::ostream& os = std::cout) const;
 
 private:
+  uint m_numSrc;
 };
 
 
