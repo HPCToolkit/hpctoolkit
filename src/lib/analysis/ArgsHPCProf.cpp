@@ -137,7 +137,7 @@ Options: Special:\n\
                        remove that limit.  Alternatively, use hpcprof-mpi.\n\
   -M <metric>, --metric <metric>\n\
                        Control whether hpcprof computes derived metrics.\n\
-                       <metric> may be one of the following:\n\
+                       <metric> may be one of the following. {yes}\n\
                          yes, all: automatically compute derived metrics\n\
                          no, none: do not compute derived metrics\n\
 \n\
@@ -432,11 +432,11 @@ ArgsHPCProf::parseArg_norm(const string& value, const char* errTag)
 bool
 ArgsHPCProf::parseArg_metric(const std::string& value, const char* errTag)
 {
-  if (value == "no" || value == "none") {
-    return false;
-  }
-  else if (value == "yes" || value == "all") {
+  if (value == "yes" || value == "all") {
     return true;
+  }
+  else if (value == "no" || value == "none") {
+    return false;
   }
   else {
     ARG_ERROR(errTag << ": Unexpected value received: " << value);

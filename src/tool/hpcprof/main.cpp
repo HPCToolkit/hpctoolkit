@@ -125,14 +125,12 @@ realmain(int argc, char* const* argv)
   Args args;
   args.parse(argc, argv);
 
-  bool doDerivedMetrics = false; // true;
-
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   // ------------------------------------------------------------
   // Form one CCT from profile data
   // ------------------------------------------------------------
-  Analysis::Util::NormalizeProfileArgs_t nArgs = 
+  Analysis::Util::NormalizeProfileArgs_t nArgs =
     Analysis::Util::normalizeProfileArgs(args.profileFiles);
 
   if ( !(nArgs.paths->size() <= 32 || args.prof_forceReadProfiles) ) {
@@ -144,7 +142,7 @@ realmain(int argc, char* const* argv)
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
   uint rFlags = 0;
-  if (doDerivedMetrics) {
+  if (args.prof_doDerivedMetrics) {
     rFlags |= Prof::CallPath::Profile::RFlg_MakeInclExcl;
   }
   uint mrgFlags = (Prof::CCT::MrgFlg_NormalizeTraceFileY);
@@ -170,7 +168,7 @@ realmain(int argc, char* const* argv)
   // Create summary metrics
   // -------------------------------------------------------
 
-  if (doDerivedMetrics) {
+  if (args.prof_doDerivedMetrics) {
     makeMetrics(nArgs, *prof);
     
     // FIXME: CallPath-MetricComponentsFact.cpp must support Metric::DerivedDesc
