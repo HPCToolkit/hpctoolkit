@@ -462,9 +462,10 @@ hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc);
 
 typedef struct loadmap_entry_t {
 
-  uint16_t id;      // 0 is reserved as a NULL value
+  uint16_t id; // HPCRUN_FMT_LMId_NULL is the NULL value
   char* name;
   uint64_t flags;
+
 } loadmap_entry_t;
 
 
@@ -519,6 +520,15 @@ hpcrun_fmt_doRetainId(uint32_t id)
 // hpcrun_fmt_cct_node_t
 // --------------------------------------------------------------------------
 
+#define HPCRUN_FMT_LMId_NULL (0)
+
+#define HPCRUN_FMT_LMIp_NULL  (0)
+#define HPCRUN_FMT_LMIp_Flag1 (1)
+
+// Primary syntethic root:   <lm-id: NULL, lm-ip: NULL>
+// Secondary synthetic root: <lm-id: NULL, lm-ip: Flag1>
+
+
 typedef struct hpcrun_fmt_cct_node_t {
 
   // id and parent id.  0 is reserved as a NULL value
@@ -527,7 +537,7 @@ typedef struct hpcrun_fmt_cct_node_t {
 
   lush_assoc_info_t as_info;
 
-  // load module id.  0 is reserved as a NULL value
+  // load module id. Use HPCRUN_FMT_LMId_NULL as a NULL value.
   uint16_t lm_id;
 
   // static instruction pointer: more accurately, this is a static
