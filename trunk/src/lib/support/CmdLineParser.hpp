@@ -360,7 +360,7 @@ public:
   // Convenience routines for interpreting the value of an option  
   // ---------------------------------------------------------
   static bool
-  parseArg_bool(const std::string& value, const char* err_note);
+  parseArg_bool(const std::string& value, const char* errTag);
 
   // -------------------------------------------------------
   // Misc
