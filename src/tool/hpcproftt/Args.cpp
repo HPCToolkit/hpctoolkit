@@ -124,7 +124,7 @@ Options: Source Structure Correlation:\n\
   --source[=all,sum,pgm,lm,f,p,l,s,src]\n\
   --src[=all,sum,pgm,lm,f,p,l,s,src]\n\
                        Correlate metrics to source code structure. Without\n\
-                       --source, default is {pgm,lm}; with, it is {sum}\n\
+                       --source, default is {pgm,lm}; with, it is {sum}.\n\
                          all: all summaries plus annotated source files\n\
                          sum: all summaries\n\
                          pgm: program summary\n\
@@ -160,8 +160,9 @@ Options: Source Structure Correlation:\n\
                        times.\n\
 \n\
 Options: Object Correlation:\n\
-  --object[=s]         Correlate metrics with object code by annotating\n\
-  --obj[=s]            object code procedures and instructions. {}\n\
+  --object[=s], --obj[=s]\n\
+                       Correlate metrics with object code by annotating\n \
+                       object code procedures and instructions. {}\n\
                          s: intermingle source line info with object code\n\
   --objannot <glob>    Annotate object procedures with (unmangled) names that\n\
                        match glob <glob>. (Protect glob characters from the\n\
