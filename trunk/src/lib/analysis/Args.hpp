@@ -173,6 +173,8 @@ public:
 
   std::string out_db_config;     // disable: "", stdout: "-"
 
+  bool db_makeMetricDB;
+
   // -------------------------------------------------------
   // Output arguments: textual output
   // -------------------------------------------------------
