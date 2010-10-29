@@ -114,7 +114,7 @@ trace_isactive()
 void 
 trace_init()
 {
-  if (getenv(HPCRUN_OPT_TRACE)) {
+  if (getenv(HPCRUN_TRACE)) {
     tracing = 1;
   }
 }

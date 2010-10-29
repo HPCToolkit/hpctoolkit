@@ -81,9 +81,9 @@
 // Names for option environment variables
 extern const char* HPCRUN_OPT_LUSH_AGENTS;
 
-extern const char* HPCRUN_OPT_OUT_PATH;
+extern const char* HPCRUN_OUT_PATH;
 
-extern const char* HPCRUN_OPT_TRACE;
+extern const char* HPCRUN_TRACE;
 
 extern const char* HPCRUN_EVENT_LIST;
 extern const char* HPCRUN_MEMSIZE;

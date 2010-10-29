@@ -80,26 +80,36 @@ die()
 usage()
 {
     cat <<EOF
-Usage: $0 [options] compiler file ...
+Usage: hpclink [options] <link-command>
 
-   -h, --help
-       Displays this usage message.
+hpclink links HPCToolkit's performance measurement library into a
+statically linked application.  (hpcrun's method for injecting its library
+into a dynamically linked application will not work with a statically
+linked applications.)
 
-   --memleak
-       Add the HPC libraries needed for memory leak detection.
+To link with hpclink, supply your application's normal link line as
+<link-command>, which typically has the following form:
+  <compiler> [link-options] <object-files> <libraries>
 
-   -u  <symbol>
-   --undefined  <symbol>
-       Pass <symbol> to the linker as an undefined symbol.  This is to
-       force the linker to pull in a reference for that symbol.  May
-       be used multiple times.
+To control HPCToolkit's performance measurement library during an
+application's execution, use the following environment variables:
+  HPCRUN_EVENT_LIST=<event1>[@<period1>]:...:<eventN>[@<periodN>]
+  HPCRUN_TRACE=1
+  HPCRUN_OUT_PATH=<path>
 
-   -v, --verbose
-       Displays the original and modified command lines.
+Options: Informational
+  -v, --verbose        Verbose. Displays the original and modified command
+                       lines.
+  -V, --version        Print version information.
+  -h, --help           Print help.
 
-   -V, --version
-       Display HPCToolkit version.
+Options: Linking
+  --memleak            Include HPCToolkit's memory leak detection libraries.
 
+  -u <symbol>, --undefined <symbol>
+                       Pass <symbol> to the linker as an undefined symbol.
+                       This is to force the linker to pull in a reference
+                       for that symbol.  May be used multiple times.
 EOF
     exit 0
 }
