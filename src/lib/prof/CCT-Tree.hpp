@@ -429,7 +429,7 @@ public:
   nextSibling() const
   {
     // siblings are linked in a circular list
-    if ((parent()->lastChild() != this)) {
+    if (parent()->lastChild() != this) {
       return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::NextSibling()); 
     }
     return NULL;  
@@ -439,7 +439,7 @@ public:
   prevSibling() const
   {
     // siblings are linked in a circular list
-    if ((parent()->firstChild() != this)) {
+    if (parent()->firstChild() != this) {
       return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::PrevSibling()); 
     }
     return NULL;
@@ -851,8 +851,17 @@ public:
   // -------------------------------------------------------
 
   bool
-  isSyntheticRoot() const
-  { return (m_lmId == ALoadMap::LM_id_NULL && m_lmIP == 0); }
+  isPrimarySynthRoot() const
+  {
+    return (m_lmId == ALoadMap::LM_id_NULL && m_lmIP == HPCRUN_FMT_LMIp_NULL);
+  }
+
+
+  bool
+  isSecondarySynthRoot() const
+  {
+    return (m_lmId == ALoadMap::LM_id_NULL && m_lmIP == HPCRUN_FMT_LMIp_Flag1);
+  }
 
 
   // -------------------------------------------------------
