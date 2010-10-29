@@ -375,6 +375,8 @@ Min::eval(const Metric::IData& mdata) const
     }
   }
 
+  if (z == DBL_MAX) { z = DBL_MIN; }
+
   AEXPR_CHECK(z);
   return z;
 }
