@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //
-// The new memory allocator.  We mmap() a large, single region (6 Meg)
+// The new memory allocator.  We mmap() a large, single region (4 Meg)
 // per thread and dole out pieces via hpcrun_malloc().  Pieces are
 // either freeable (CCT nodes) or not freeable (everything else).
 // When memory gets low, we write out an epoch and reclaim the CCT
@@ -200,6 +200,18 @@ hpcrun_mmap_anon(size_t size)
 //   +------------------+------------+----------------+
 //   mi_start           mi_low       mi_high
 //
+
+// After fork(), the parent's memstores are still allocated in the
+// child, so don't reset num_segments.
+void
+hpcrun_memory_reinit(void)
+{
+  num_reclaims = 0;
+  num_failures = 0;
+  total_freeable = 0;
+  total_non_freeable = 0;
+  out_of_mem_mesg = 0;
+}
 
 // Allocate space and init a thread's memstore.
 // If failure, shutdown sampling and leave old memstore in place.

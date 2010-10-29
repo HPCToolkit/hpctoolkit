@@ -94,6 +94,7 @@ void* hpcrun_malloc_freeable(size_t size);
 
 #endif // VALGRIND
 
+void hpcrun_memory_reinit(void);
 void hpcrun_reclaim_freeable_mem(void);
 void hpcrun_memory_summary(void);
 
