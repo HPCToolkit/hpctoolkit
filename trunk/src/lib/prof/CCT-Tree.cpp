@@ -147,10 +147,10 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
       isPrecondition = true;
     }
     else if ((x_dyn->childCount() == 0 || y_dyn->childCount() == 0)
-	     && x_dyn->isSyntheticRoot() && y_dyn->isSyntheticRoot()) {
-      // Case 2b (A special condition of Case 1): Neither tree x nor y
-      // have been canonicalized (and therefore do not have a
-      // CCT::Root node), but either x or y has only one node.
+	     && x_dyn->isPrimarySynthRoot() && y_dyn->isPrimarySynthRoot()) {
+      // Case 2b (A special sub-case of Case 1): (a) Neither tree x
+      // nor y have been canonicalized (and therefore do not have a
+      // CCT::Root node); and (b) one of x or y is a single-node tree.
       isPrecondition = true;
     }
   }
