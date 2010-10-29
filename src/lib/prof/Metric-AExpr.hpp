@@ -706,8 +706,11 @@ private:
 
 
 // ----------------------------------------------------------------------
-// Min
+// Min: (observational min instead of absolute min)
 // ----------------------------------------------------------------------
+
+// Computes observational min instead of absolute min.  Reports
+// DBL_MIN when there have been no obervations.
 
 class Min
   : public AExpr

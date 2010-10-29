@@ -430,8 +430,26 @@ protected:
 
 
 // ----------------------------------------------------------------------
-// MinIncr
+// MinIncr: (observational min instead of absolute min)
 // ----------------------------------------------------------------------
+
+// Computes observational min instead of absolute min.  Reports
+// DBL_MIN when there have been no obervations.
+
+// In the abstract, we could could use initialize()/initializeSrc() to
+// make DBL_MAX the one non-obervational value.  However there are two
+// artificial problems with this.  First there are difficulties in
+// hpcprof-mpi (see comments associated with 'FnInitSrc' in
+// src/tool/hpcprof-mpi/main.cpp).  Second, it requires a finalize
+// function string that converts DBL_MAX to DBL_MIN (the preferred
+// reported value), which is difficult to generate.
+//
+// Our solution is to (a) use DBL_MIN and 0.0 as the two
+// non-observational values and (b) maintain the accumulator so that
+// no conversion at finalization from DBL_MAX to DBL_MIN is required.
+// This requires some additional tests within accumulate() and
+// combine().
+
 
 class MinIncr
   : public AExprIncr
@@ -451,11 +469,11 @@ public:
 
   virtual double
   initialize(Metric::IData& mdata) const
-  { return (accumVar(mdata) = DBL_MAX); }
+  { return (accumVar(mdata) = DBL_MIN /* sic; see above */); }
 
   virtual double
   initializeSrc(Metric::IData& mdata) const
-  { return (srcVar(mdata) = DBL_MAX); }
+  { return (srcVar(mdata) = DBL_MIN /* sic; see above */); }
 
   virtual double
   accumulate(Metric::IData& mdata) const
@@ -463,15 +481,13 @@ public:
     double a = accumVar(mdata), s = srcVar(mdata);
     double z = a;
 
-    // In the abstract, initializeSrc() makes the following test
-    // unnecessary.  However, we must keep it for now.  See comments
-    // associated with 'FnInitSrc' in src/tool/hpcprof-mpi/main.cpp.
-    if (s != 0.0) {
-      z = std::min(a, s);
+    // See comments above
+    if (s != DBL_MIN && s != 0.0) {
+      z = (a == DBL_MIN) ? s : std::min(a, s);
+      accumVar(mdata) = z;
     }
     DIAG_MsgIf(0, "MinIncr: min("<< a << ", " << s << ") = " << z);
 
-    accumVar(mdata) = z;
     return z;
   }
 
@@ -481,12 +497,7 @@ public:
 
   virtual double
   finalize(Metric::IData& mdata) const
-  {
-    double a = accumVar(mdata);
-    double z = (a == DBL_MAX) ? DBL_MIN : a;
-    accumVar(mdata) = z;
-    return z;
-  }
+  { return accumVar(mdata); }
 
 
   // ------------------------------------------------------------
