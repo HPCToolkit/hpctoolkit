@@ -11,12 +11,15 @@
 #     --memleak
 #     -u, --undefined  <symbol>
 #     -v, --verbose
+#     -V, --version
 #
 #  where <symbol> is a symbol name passed to the linker (may be used
 #  multiple times).
 #
 #  $Id$
 #
+
+VERSION='@PACKAGE_VERSION@'
 
 # If this script can't find its own install prefix, or if the script
 # is moved elsewhere, then set HPCTOOLKIT here.
@@ -94,6 +97,9 @@ Usage: $0 [options] compiler file ...
    -v, --verbose
        Displays the original and modified command lines.
 
+   -V, --version
+       Display HPCToolkit version.
+
 EOF
     exit 0
 }
@@ -155,6 +161,10 @@ do
 	-v | --verbose )
 	    verbose=yes
 	    shift
+	    ;;
+	-V | --version )
+	    echo "hpclink: A member of HPCToolkit, version $VERSION"
+	    exit 0
 	    ;;
 	-- )
 	    shift
