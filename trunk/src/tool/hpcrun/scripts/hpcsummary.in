@@ -3,13 +3,16 @@
 # Summarize the .log and .hpcrun files in an HPCToolkit measurements
 # directory.
 #
-# Usage: ./hpcsummary [-ah] [directory]
+# Usage: ./hpcsummary [-ahV] [directory]
 #
 #  -a adds summary info for blocks and errors
 #  -h displays the help message
+#  -V displays hpctoolkit version
 #
 # $Id$
 #
+
+VERSION = '@PACKAGE_VERSION@'
 
 import getopt
 import os
@@ -43,13 +46,16 @@ def warn(mesg):
 
 
 def usage():
-    print '''usage: %s [-ah] [directory]
+    print '''usage: %s [-ahV] [directory]
 
   -a, --all
     include summary info for blocked and errant samples
 
   -h, --help
     display this message
+
+  -V, --version
+    display HPCToolkit version
 
 The directory is an HPCToolkit measurements directory,
 or else the current directory if omitted.''' % sys.argv[0]
@@ -182,7 +188,7 @@ def display_metric(title, label, metric):
 # Main program.
 #
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 'ah', ['all', 'help'])
+    opts, args = getopt.getopt(sys.argv[1:], 'ahV', ['all', 'help', 'version'])
 except getopt.GetoptError:
     usage()
 
@@ -192,6 +198,9 @@ for opt, arg in opts:
         opt_display_all = True
     elif opt in ('-h', '--help'):
         usage()
+    elif opt in ('-V', '--version'):
+        print 'hpcsummary: A member of HPCToolkit, version %s' % VERSION
+        sys.exit(0)
     else:
         sys.exit('unknown option: %s' % opt)
 

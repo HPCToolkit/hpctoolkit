@@ -45,6 +45,7 @@ DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	config/mkinstalldirs config/mkinstalldirs \
 	$(top_srcdir)/src/tool/hpcrun/scripts/hpcrun.in \
 	$(top_srcdir)/src/tool/hpcrun/scripts/hpclink.in \
+	$(top_srcdir)/src/tool/hpcrun/scripts/hpcsummary.in \
 	$(dist_doc_DATA)
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -56,7 +57,8 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES = src/tool/hpcrun/scripts/hpcrun \
-	src/tool/hpcrun/scripts/hpclink
+	src/tool/hpcrun/scripts/hpclink \
+	src/tool/hpcrun/scripts/hpcsummary
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -380,6 +382,8 @@ $(am__aclocal_m4_deps):
 src/tool/hpcrun/scripts/hpcrun: $(top_builddir)/config.status $(top_srcdir)/src/tool/hpcrun/scripts/hpcrun.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 src/tool/hpcrun/scripts/hpclink: $(top_builddir)/config.status $(top_srcdir)/src/tool/hpcrun/scripts/hpclink.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+src/tool/hpcrun/scripts/hpcsummary: $(top_builddir)/config.status $(top_srcdir)/src/tool/hpcrun/scripts/hpcsummary.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-pkglibexecSCRIPTS: $(pkglibexec_SCRIPTS)
 	@$(NORMAL_INSTALL)
