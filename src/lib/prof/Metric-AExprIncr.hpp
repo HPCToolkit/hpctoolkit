@@ -462,10 +462,15 @@ public:
   {
     double a = accumVar(mdata), s = srcVar(mdata);
     double z = a;
+
+    // In the abstract, initializeSrc() makes the following test
+    // unnecessary.  However, we must keep it for now.  See comments
+    // associated with 'FnInitSrc' in src/tool/hpcprof-mpi/main.cpp.
     if (s != 0.0) {
       z = std::min(a, s);
     }
     DIAG_MsgIf(0, "MinIncr: min("<< a << ", " << s << ") = " << z);
+
     accumVar(mdata) = z;
     return z;
   }
@@ -476,7 +481,12 @@ public:
 
   virtual double
   finalize(Metric::IData& mdata) const
-  { return accumVar(mdata); }
+  {
+    double a = accumVar(mdata);
+    double z = (a == DBL_MAX) ? DBL_MIN : a;
+    accumVar(mdata) = z;
+    return z;
+  }
 
 
   // ------------------------------------------------------------

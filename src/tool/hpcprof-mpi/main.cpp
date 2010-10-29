@@ -737,10 +737,11 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   return numDrvd;
 }
 
-
 // makeSummaryMetrics_Lcl: Assumes 'profGbl' is the canonical CCT (with
 // structure and with canonical ids).  Assumes the 'args' contains the
 // correct final experiment database.
+//
+// FIXME: abstract between makeSummaryMetrics_Lcl() & makeThreadMetrics_Lcl()
 static void
 makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 		       const string& profileFile,
@@ -750,7 +751,7 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 {
   Prof::Metric::Mgr* mMgrGbl = profGbl.metricMgr();
   Prof::CCT::Tree* cctGbl = profGbl.cct();
-  Prof::CCT::ANode* cctRoot = cctGbl->root();
+  Prof::CCT::ANode* cctRootGbl = cctGbl->root();
 
   // -------------------------------------------------------
   // read profile file
@@ -803,8 +804,8 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
     }
   }
 
-  cctRoot->aggregateMetricsIncl(ivalsetIncl);
-  cctRoot->aggregateMetricsExcl(ivalsetExcl);
+  cctRootGbl->aggregateMetricsIncl(ivalsetIncl);
+  cctRootGbl->aggregateMetricsExcl(ivalsetExcl);
 
 
   // 2. Batch compute local derived metrics
@@ -816,14 +817,21 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
     uint mDrvdEnd = (uint)ival.end();
 
     DIAG_MsgIf(0, "[" << myRank << "] grp " << groupId << ": [" << mDrvdBeg << ", " << mDrvdEnd << ")");
-    cctRoot->computeMetricsIncr(*mMgrGbl, mDrvdBeg, mDrvdEnd,
-				Prof::Metric::AExprIncr::FnAccum);
+    cctRootGbl->computeMetricsIncr(*mMgrGbl, mDrvdBeg, mDrvdEnd,
+				   Prof::Metric::AExprIncr::FnAccum);
   }
 
   // -------------------------------------------------------
-  // reinitialize metric values since space may be used again
+  // reinitialize metric values for next time
   // -------------------------------------------------------
-  cctRoot->zeroMetricsDeep(mBeg, mEnd); // FIXME: hackish
+
+  // TODO: This really should (a) come immediately after the MetricMgr
+  // merge above and (b) use FnInitSrc (not 0).  However, to do this
+  // we would need to (a) split the MetricMgr merge and CCT merge into
+  // two; and (b) use a CCT init (which whould initialize using
+  // assignment) instead of CCT::merge() (which initializes based on
+  // addition against 0).
+  cctRootGbl->zeroMetricsDeep(mBeg, mEnd); // cf. FnInitSrc
   
   delete prof;
 }
@@ -837,7 +845,7 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 {
   Prof::Metric::Mgr* mMgrGbl = profGbl.metricMgr();
   Prof::CCT::Tree* cctGbl = profGbl.cct();
-  Prof::CCT::ANode* cctRoot = cctGbl->root();
+  Prof::CCT::ANode* cctRootGbl = cctGbl->root();
 
   // -------------------------------------------------------
   // read profile file
@@ -890,8 +898,8 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
     }
   }
 
-  cctRoot->aggregateMetricsIncl(ivalsetIncl);
-  cctRoot->aggregateMetricsExcl(ivalsetExcl);
+  cctRootGbl->aggregateMetricsIncl(ivalsetIncl);
+  cctRootGbl->aggregateMetricsExcl(ivalsetExcl);
 
   // -------------------------------------------------------
   // write local sampled metric values into database
@@ -902,9 +910,11 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
   }
 
   // -------------------------------------------------------
-  // reinitialize metric values since space may be used again
+  // reinitialize metric values for next time
   // -------------------------------------------------------
-  cctRoot->zeroMetricsDeep(mBeg, mEnd); // FIXME: should be FnInitSrc
+  
+  // TODO: see corresponding comments in makeSummaryMetrics_Lcl()
+  cctRootGbl->zeroMetricsDeep(mBeg, mEnd); // cf. FnInitSrc
 
   delete prof;
 }
