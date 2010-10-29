@@ -65,6 +65,8 @@
 #include "trace.h"
 #include "thread_data.h"
 
+#include <memory/hpcrun-malloc.h>
+
 #include <messages/messages.h>
 
 #include <lib/prof-lean/hpcfmt.h>
@@ -124,9 +126,14 @@ trace_open()
   if (tracing) {
     char trace_file[PATH_MAX];
     files_trace_name(trace_file, 0, PATH_MAX);
+
     thread_data_t *td = hpcrun_get_thread_data();
     td->trace_file = hpcio_fopen_w(trace_file, 0);
     trace_file_validate(td->trace_file != 0, "open");
+
+    td->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
+    setbuffer(td->trace_file, td->trace_buffer, HPCRUN_TraceBufferSz);
+
     hpctrace_fmt_hdr_fwrite(td->trace_file);
   }
 }
