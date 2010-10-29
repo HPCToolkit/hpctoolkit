@@ -148,7 +148,7 @@ files_log_name(char *filename, unsigned int mpi, int len)
 void 
 files_set_directory()
 {  
-  char *path = getenv(HPCRUN_OPT_OUT_PATH);
+  char *path = getenv(HPCRUN_OUT_PATH);
 
   // compute path for default measurement directory
   if (path == NULL || strlen(path) == 0) {

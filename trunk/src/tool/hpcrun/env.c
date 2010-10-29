@@ -45,13 +45,13 @@
 // ******************************************************* EndRiceCopyright *
 
 // Names for option environment variables
-const char* HPCRUN_OPT_LUSH_AGENTS   = "HPCRUN_OPT_LUSH_AGENTS";
+const char* HPCRUN_OPT_LUSH_AGENTS = "HPCRUN_OPT_LUSH_AGENTS";
 
-const char* HPCRUN_OPT_OUT_PATH      = "HPCRUN_OPT_OUT_PATH";
-const char* HPCRUN_OPT_TRACE         = "HPCRUN_OPT_TRACE";
+const char* HPCRUN_OUT_PATH        = "HPCRUN_OUT_PATH";
+const char* HPCRUN_TRACE           = "HPCRUN_TRACE";
 
-const char* PAPI_EVENT_LIST          = "PAPI_EVENT_LIST";
+const char* PAPI_EVENT_LIST        = "PAPI_EVENT_LIST";
 
-const char* HPCRUN_EVENT_LIST        = "HPCRUN_EVENT_LIST";
-const char* HPCRUN_MEMSIZE           = "HPCRUN_MEMSIZE";
-const char* HPCRUN_LOW_MEMSIZE       = "HPCRUN_LOW_MEMSIZE";
+const char* HPCRUN_EVENT_LIST      = "HPCRUN_EVENT_LIST";
+const char* HPCRUN_MEMSIZE         = "HPCRUN_MEMSIZE";
+const char* HPCRUN_LOW_MEMSIZE     = "HPCRUN_LOW_MEMSIZE";

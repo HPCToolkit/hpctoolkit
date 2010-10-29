@@ -144,8 +144,8 @@ the directory:
 where <jobid> is a PBS or Sun Grid Engine job identifier.
 
 hpcrun enables a user to abort a process and write the partial profiling
-data to disk by sending the Interrupt signal (INT or Ctrl-C).  This can be
-extremely useful on long-running or misbehaving applications.
+data to disk by sending the Interrupt signal (SIGINT or Ctrl-C).  This can
+be extremely useful on long-running or misbehaving applications.
 
 Options: Informational
   -l, -L --list-events List available events. (N.B.: some may not be
@@ -160,8 +160,11 @@ Options: Profiling (Defaults shown in curly brackets {})
                        processor event or WALLCLOCK (microseconds).  May pass
                        multiple times as implementations permit.
                        {WALLCLOCK@5000}.
-
                        N.B.: WALLCLOCK and hardware events cannot be mixed.
+
+  -t, --trace          Generate a call path trace (in addition to a call
+                       path profile).
+
   -o <outpath>, --output <outpath>
                        Directory for output data.
                        {hpctoolkit-<command>-measurements[-<jobid>]}
@@ -177,14 +180,6 @@ NOTES:
 
 EOF
 }
-
-
-#  -t 
-#
-#      Record a call path trace in addition to call path profile. Each trace
-#      record is 12 bytes in length (4 bytes to hold the identify of a call path, and
-#      8 bytes to hold a time stamp). [ 1 Dec 2008  - Recording and visualizing 
-#      call path traces is an experimental capability. ] 
 
 
 hpc_version()
@@ -230,132 +225,142 @@ hpc_opt_check()
 }
 
 
-# Parse the command-line arguments outside a function.
+# ***************************************************************************
+# Parse arguments
+# ***************************************************************************
+
+# N.B. Parse the command-line arguments outside a function.
 # This is necessary to handle args with special chars in them.
 
-  # We can't easily use 'getopt' or 'getopts' because we have to
-  # protect options given to the command to profile.
+# We can't easily use 'getopt' or 'getopts' because we have to
+# protect options given to the command to profile.
 
-  if [ -z "$1" ]; then
-    hpc_usage
-    exit 0
-  fi
 
-  # parse argument list
-  while [ $# -ge 1 ]; do
-    case $1 in
-      # --------------------------------
-      # special (short-circuiting) options
-      # --------------------------------
-      -h | --help)
-        hpc_usage; exit 0;
-        ;;
+if [ -z "$1" ]; then
+  hpc_usage
+  exit 0
+fi
 
-      -V | --version)
-        hpc_version; exit 0;
-        ;;
+# parse arguments
+while [ $# -ge 1 ]; do
+  case $1 in
+    # --------------------------------
+    # special (short-circuiting) options
+    # --------------------------------
+    -h | --help)
+      hpc_usage; exit 0;
+      ;;
 
-      # --------------------------------
-      # debug options
-      # --------------------------------
-      -md | --monitor-debug)
+    -V | --version)
+      hpc_version; exit 0;
+      ;;
+
+    # --------------------------------
+    # debug options
+    # --------------------------------
+    -md | --monitor-debug)
 	opt_monitor_debug=1 ;;
 
-      -dd | --dynamic-debug)
-        shift; 
-        dd_list="$L2$1"
+    -dd | --dynamic-debug)
+      shift; 
+      dd_list="$L2$1"
 	L2="$dd_list "
-        ;;
+      ;;
 
-      -d | --debug)
-        opt_debug_wait=1;
-        ;;
+    -d | --debug)
+      opt_debug_wait=1;
+      ;;
 	
-      # --------------------------------
-      # general options
-      # --------------------------------
-      -a | --agent) 
-        shift; opt_lush_agents="$1";
-        hpc_opt_check "-a" "${opt_lush_agents}";
-        ;;
+    # --------------------------------
+    # general options
+    # --------------------------------
+    -a | --agent) 
+      shift; opt_lush_agents="$1";
+      hpc_opt_check "-a" "${opt_lush_agents}";
+      ;;
 
-      -e | --event) 
-        shift;
+    -e | --event) 
+      shift;
 	# Please FIXME: dynamically scoped LLL and LL variables???
-        # BUG!: replace : separator with @ to retain support for old syntax
+      # BUG!: replace : separator with @ to retain support for old syntax
 	#LLL=`echo $1 | tr ':' '@'`
 	LLL="$1"
-        if test $LLL = "MEMLEAK" ; then
-          memleak_preload=${hpcrun_dir}/libhpcrun_memleak.so 
-        fi
-        opt_ev_list="$LL$LLL";
+      if test $LLL = "MEMLEAK" ; then
+        memleak_preload=${hpcrun_dir}/libhpcrun_memleak.so 
+      fi
+      opt_ev_list="$LL$LLL";
 	LL="$opt_ev_list "
-        ;;
+      ;;
 
-      -L | -l | --list-events)
+    -L | -l | --list-events)
 	opt_ev_list=LIST
 	LL="$opt_ev_list "
 	add_cmd_if_empty=yes
-        ;;
+      ;;
 
-      -lm | --low-memsize )
+    -lm | --low-memsize )
 	shift
 	export HPCRUN_LOW_MEMSIZE="$1"
 	;;
 
-      -ms | --memsize )
+    -ms | --memsize )
 	shift
 	export HPCRUN_MEMSIZE="$1"
 	;;
 
-      -o | --output)
-        shift; opt_out_path="$1"; 
-        hpc_opt_check "-o" "${opt_out_path}";
-        ;;
+    -o | --output)
+      shift; opt_out_path="$1"; 
+      hpc_opt_check "-o" "${opt_out_path}";
+      ;;
 
-      -t | --trace)
-        opt_trace=1
-        ;;
+    -t | --trace)
+      opt_trace=1
+      ;;
 
-      -q)
-        opt_quiet=1
+    -q)
+      opt_quiet=1
 	;;
-      -*)
-        hpc_erroneous_option $1;
-        exit 1;
-        ;;
+    -*)
+      hpc_erroneous_option $1;
+      exit 1;
+      ;;
 
-      *) break ;;
-    esac
-    shift
-  done
+    *) break ;;
+  esac
+  shift
+done
+
 
 # get the executable from the list of (remaining) args
 # Look for the executable on PATH and return full path if there.
 # The file tests don't look for programs on PATH.
 
-  if test -z "$1" && test "x$add_cmd_if_empty" = xyes ; then
-    set -- /bin/ls
-  fi
-  _EXEC="$1"
-  hpc_error_on_nil "$_EXEC" "** no command to profile\n";
+if test -z "$1" && test "x$add_cmd_if_empty" = xyes ; then
+  set -- /bin/ls
+fi
+_EXEC="$1"
+hpc_error_on_nil "$_EXEC" "** no command to profile\n";
 
-  case "$_EXEC" in
-    */* )
-      ;;
-    * )
-      OLDIFS="$IFS"
-      IFS=:
-      for dir in $PATH ; do
-	if test -x "$dir/$_EXEC" ; then
-	  _EXEC="$dir/$_EXEC"
-	  break
-	fi
-      done
-      IFS="$OLDIFS"
-      ;;
-  esac
+case "$_EXEC" in
+  */* )
+    ;;
+  * )
+    OLDIFS="$IFS"
+    IFS=:
+    for dir in $PATH ; do
+      if test -x "$dir/$_EXEC" ; then
+	_EXEC="$dir/$_EXEC"
+	break
+      fi
+    done
+    IFS="$OLDIFS"
+    ;;
+esac
 
+
+# ***************************************************************************
+#
+# ***************************************************************************
 
 hpc_prepareenv()
 {
@@ -370,8 +375,8 @@ hpc_prepareenv()
     export HPCRUN_OPT_LUSH_AGENTS
   fi
   if [ -n "${opt_out_path}" ]; then
-    HPCRUN_OPT_OUT_PATH="${opt_out_path}"
-    export HPCRUN_OPT_OUT_PATH
+    HPCRUN_OUT_PATH="${opt_out_path}"
+    export HPCRUN_OUT_PATH
   fi
   if [ -n "${opt_ev_list}" ]; then
     if [ "${opt_ev_list}" = "RETCNT" ]; then
@@ -397,7 +402,7 @@ hpc_prepareenv()
     export MONITOR_DEBUG=1
   fi
   if [ -n "${opt_trace}" ]; then
-    export HPCRUN_OPT_TRACE=1
+    export HPCRUN_TRACE=1
   fi
   if [ -n "${opt_quiet}" ]; then
     export HPCRUN_QUIET=1
