@@ -111,7 +111,8 @@ public:
     *this = other;
   }
   
-  NonUniformDegreeTreeNode& operator=(const NonUniformDegreeTreeNode& other)
+  NonUniformDegreeTreeNode&
+  operator=(const NonUniformDegreeTreeNode& other)
   {
     // shallow copy
     if (&other != this) {
@@ -141,50 +142,68 @@ public:
   }
   
   // link/unlink a node to a parent and siblings 
-  void link(NonUniformDegreeTreeNode *parent);
-  void linkBefore(NonUniformDegreeTreeNode *sibling);
-  void linkAfter(NonUniformDegreeTreeNode *sibling);
-  void unlink();
+  void
+  link(NonUniformDegreeTreeNode *parent);
+  
+  void
+  linkBefore(NonUniformDegreeTreeNode *sibling);
+  
+  void
+  linkAfter(NonUniformDegreeTreeNode *sibling);
+  
+  void
+  unlink();
 
   // returns the number of ancestors walking up the tree
-  uint ancestorCount() const;
+  uint
+  ancestorCount() const;
   
   // functions for inspecting links to other nodes
-  uint childCount() const
+  uint
+  childCount() const
   { return m_child_count; };
 
-  bool isLeaf() const
+  bool
+  isLeaf() const
   { return (m_child_count == 0); }
 
   
-  uint maxDepth()
+  uint
+  maxDepth()
   { return maxDepth(0); }
   
-  uint maxDepth(uint parentDepth);
+  uint
+  maxDepth(uint parentDepth);
 
 public:
   virtual std::string toString() const;
 
 public:
   // N.B.: For derived classes, these may get in the way...
-  NonUniformDegreeTreeNode *Parent() const
+  NonUniformDegreeTreeNode*
+  Parent() const
   { return m_parent; };
 
-  NonUniformDegreeTreeNode *NextSibling() const
+  NonUniformDegreeTreeNode*
+  NextSibling() const
   { return m_next_sibling; };
 
-  NonUniformDegreeTreeNode *PrevSibling() const
+  NonUniformDegreeTreeNode*
+  PrevSibling() const
   { return m_prev_sibling; };
 
-  NonUniformDegreeTreeNode *FirstChild() const
+  NonUniformDegreeTreeNode*
+  FirstChild() const
   { return m_children; };
 
-  NonUniformDegreeTreeNode *LastChild() const
+  NonUniformDegreeTreeNode*
+  LastChild() const
   { return m_children ? m_children->m_prev_sibling : 0; };
 
 protected:
   // useful for resetting parent/child/etc links after cloning
-  void zeroLinks()
+  void
+  zeroLinks()
   {
     // no parent
     m_parent = NULL;
@@ -233,7 +252,8 @@ public:
   }
 
   // prefix increment
-  void operator++()
+  void
+  operator++()
   {
     if (currentChild) {
       currentChild = (forward ? currentChild->NextSibling() 
@@ -247,22 +267,25 @@ public:
   }
 
   // postfix increment
-  void operator++(int)
+  void
+  operator++(int)
   {
     operator++();
   }
 
-  virtual NonUniformDegreeTreeNode* 
+  virtual NonUniformDegreeTreeNode*
   Current() const
   {
     return currentChild;
   }
 
-  virtual void DumpAndReset(std::ostream &os = std::cerr);
+  virtual void
+  DumpAndReset(std::ostream &os = std::cerr);
 
 private:
   // interface for StackableIterator
-  void *CurrentUpCall() const
+  void*
+  CurrentUpCall() const
   {
     return Current();
   }
@@ -306,7 +329,7 @@ public:
 
 private:
   // upcall interface for StackableIterator
-  void *
+  void*
   CurrentUpCall() const
   {
     return Current();
