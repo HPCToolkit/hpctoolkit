@@ -79,6 +79,20 @@ static long num_unwind_intervals_suspicious = 0;
 // interface operations
 //***************************************************************************
 
+void
+hpcrun_stats_reinit(void)
+{
+  num_samples_total = 0;
+  num_samples_attempted = 0;
+  num_samples_blocked_async = 0;
+  num_samples_blocked_dlopen = 0;
+  num_samples_dropped = 0;
+  num_samples_filtered = 0;
+  num_samples_segv = 0;
+  num_unwind_intervals_total = 0;
+  num_unwind_intervals_suspicious = 0;
+}
+
 
 //-----------------------------
 // samples total 

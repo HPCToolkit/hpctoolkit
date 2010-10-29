@@ -190,6 +190,7 @@ hpcrun_init_internal(bool is_child)
 {
   hpcrun_initLoadmap();
 
+  hpcrun_memory_reinit();
   hpcrun_thread_data_new();
   hpcrun_thread_memory_init();
   hpcrun_thread_data_init(0, NULL);
@@ -227,6 +228,8 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_setup_segv();
   hpcrun_unw_init();
+
+  hpcrun_stats_reinit();
 
   // sample source setup
 
