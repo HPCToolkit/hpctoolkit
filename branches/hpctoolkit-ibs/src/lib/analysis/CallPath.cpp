@@ -1023,9 +1023,10 @@ useReuseData(Prof::CallPath::Profile& prof, const Analysis::Args& args)
         parnode=parnode->parent();
     }
     /*find PF for mallocnode*/
-    bool level = true;//find the PF containing malloc
+/*    bool level = true;//find the PF containing malloc
     while (mallocnode->parent() != NULL)//the highest level is main
     {
+      mallocnode = mallocnode->parent();
       if (mallocnode->type() == Prof::CCT::ANode::TyProcFrm)
       {
         const Prof::CCT::ProcFrm* fr = dynamic_cast<const Prof::CCT::ProcFrm*>(mallocnode);
@@ -1044,7 +1045,7 @@ useReuseData(Prof::CallPath::Profile& prof, const Analysis::Args& args)
       }
       else
         mallocnode=mallocnode->parent();
-    }
+    }*/
 
     parnode->useReuseWriteXML(*useReuseOs, XMLdeq, metricBegId, metricEndId, oFlags, mallocnode);
     LCAdeq.clear();//clear the deque

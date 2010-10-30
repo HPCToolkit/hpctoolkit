@@ -1051,7 +1051,7 @@ ANode::useReuseWriteXML(ostream& os, std::deque<Prof::CCT::ANode*> XMLdeq, uint 
     tmpdeq.push_back(mallocnode);
 //    mallocnode->parent()->writeXML_pre(os, 0, 0, oFlags, pfx);
     parMalloc = mallocnode->parent();
-    bool level = false;//The first PF is malloc in IBS SYNC. We want the second PF
+/*    bool level = false;//The first PF is malloc in IBS SYNC. We want the second PF
     while (parMalloc->parent()->parent() != NULL)//we do not want to write malloc node from main()
     {
       if (parMalloc->type() == Prof::CCT::ANode::TyProcFrm)
@@ -1073,6 +1073,10 @@ ANode::useReuseWriteXML(ostream& os, std::deque<Prof::CCT::ANode*> XMLdeq, uint 
       else
         parMalloc=parMalloc->parent();
     }
+*/
+    //find the root but one. Begin writing XML from this point. 
+    while (parMalloc->parent()->parent() != NULL)
+      parMalloc = parMalloc->parent();
 
     parMalloc->writeXML_pre(os, 0, 0, oFlags, pfx);
     for (ANodeSortedChildIterator it(parMalloc, ANodeSortedIterator::cmpByDynInfo);
@@ -1088,7 +1092,7 @@ ANode::useReuseWriteXML(ostream& os, std::deque<Prof::CCT::ANode*> XMLdeq, uint 
   }
 
   bool doPost = false;
-  if(this != parMalloc)//only write when it is not the same as parMollco
+  if(this != parMalloc)//only write when it is not the same as parMollcoc
   {
     if(parMalloc != NULL)
     {
