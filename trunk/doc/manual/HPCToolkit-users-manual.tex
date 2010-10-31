@@ -1103,7 +1103,6 @@ For any functions whose source code is not found (such as functions within syste
 
 % Replace paths
 
-
 % ===========================================================================
 % ===========================================================================
 
@@ -1233,6 +1232,13 @@ If the compiler duplicated calls as it replicated code during optimization, mult
 No hpcstruct = 
   really crazy procedure & loop bounds
   no inlining detection!
+
+
+  Note: Beware of kernels 2.6.28 through 2.6.29.2.  These kernels have a rare asynchronous signal race condition where floating point registers are not restored correctly.
+
+  Perf-events kernels 2.6.32-2.6.?? + PAPI = bug where you get a SIGIO in the
+  middle of a signal handler.
+
 \end{comment}
 
 
@@ -1259,6 +1265,95 @@ No hpcstruct =
 % \begin{appendices}
 
 % \end{appendices}
+
+
+% ***************************************************************************
+% ***************************************************************************
+
+%% Using HPCToolkit to Analyze Cilk Applications
+
+%% --------------------------------------------------
+%% Build modified MIT cilk:
+%% --------------------------------------------------
+
+%% ../configure --prefix=<cilk-install>
+
+%% After install, copy 
+%%   <cilk-src>/runtime/cilk-internal.h
+%% to 
+%%   <cilk-install>/include/cilk/cilk-internal.h
+
+%% --------------------------------------------------
+%% Configure HPCToolkit as follows:
+%% --------------------------------------------------
+
+%% ../configure --prefix=<hpctoolkit-install> \
+%%   --with-externals=<eternals-install> \
+%%   [--with-papi=<papi-install>] \
+%%   --enable-lush --with-cilk=<cilk-install>
+
+%% --------------------------------------------------
+%% Using HPCToolkit:
+%% --------------------------------------------------
+
+%% export PATH=<hpctoolkit-install>/src/tool/misc:${PATH}
+
+%% hpcrun --agent <hpctoolkit-install>/lib/hpctoolkit/libagent-cilk.so \
+%%        -e WALLCLOCK@5000 \
+%%        <app>
+
+%% hpcstruct --agent-cilk <app>
+
+%% hpcprof/mpi --agent-cilk -I ... -S ... <hpctoolkit-measurements>
+
+%% hpcviewer <hpctoolkit-database>
+
+%% =============================================================================
+
+%% Using HPCToolkit To Analyze Lock Contention
+
+%% --------------------------------------------------
+%% Modify one source file
+%% --------------------------------------------------
+
+%% Open the file
+%%   hpctoolkit.trunk/src/tool/hpcrun/lush/lush-pthread.h
+
+%% Find LUSH_PTHR_FN_TY and set it to 3:
+%%   #define LUSH_PTHR_FN_TY 3
+
+%% --------------------------------------------------
+%% Build HPCToolkit as follows:
+%% --------------------------------------------------
+
+%% ../configure --prefix=<hpctoolkit-install> \
+%%   --with-externals=<externals-install> \
+%%   [--with-papi=<papi-install>] \
+%%   --enable-lush --enable-lush-pthreads
+
+%% --------------------------------------------------
+%% Using HPCToolkit:
+%% --------------------------------------------------
+
+%% hpcrun --agent <hpctoolkit-install>/lib/hpctoolkit/libagent-pthread.so \
+%%        -e WALLCLOCK@5000 \
+%%        <app>
+
+%% hpcstruct <app>
+
+%% hpcprof/mpi --agent-pthread -I ... -S ... <hpctoolkit-measurements>
+
+%% hpcviewer <hpctoolkit-database>
+
+%% =============================================================================
+
+%% Using HPCToolkit To Analyze MPI Load Imbalance
+
+%% --------------------------------------------------
+%% Using HPCToolkit:
+%% --------------------------------------------------
+
+%% hpcprof-mpi --agent-mpi ...
 
 
 % ***************************************************************************

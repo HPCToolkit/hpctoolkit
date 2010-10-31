@@ -75,8 +75,9 @@ MYSOURCES = \
 	\
 	hpcprof.tex \
 	hpcprof-mpi.tex \
-	hpcproftt.tex \
 	hpcprof-flat.tex \
+	hpcproftt.tex \
+	hpcsummary.tex \
 	\
 	hpcviewer.tex
 
@@ -103,6 +104,7 @@ man_MANS = \
 	hpcprof.1hpctoolkit \
 	hpcprof-flat.1hpctoolkit \
 	hpcproftt.1hpctoolkit \
+	hpcsummary.1hpctoolkit \
 	hpcviewer.1hpctoolkit
 
 wwwmandir = $(docdir)/man

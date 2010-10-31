@@ -66,6 +66,10 @@ The following prerequisites apply to our default source code distribution.
       <td></td>
     </tr>
     <tr>
+      <td>Linux + x86</td>
+      <td></td>
+    </tr>
+    <tr>
       <td>Cray XT (CNL + x86_64)</td>
       <td>Compute Node Linux &ge; 2.1</td>
     </tr>
@@ -82,10 +86,6 @@ The following prerequisites apply to our default source code distribution.
       <td colspan="2"><hr /></td>
     </tr>
 
-    <tr>
-      <td>Linux + x86</td>
-      <td>testing</td>
-    </tr>
     <tr>
       <td>Linux + Power64</td>
       <td>testing</td>
@@ -153,18 +153,24 @@ Without PAPI, HPCToolkit can only collect measurements based on an operating sys
 
 <p>There are currently three ways to support PAPI on Linux-based OSs:</p>
   <ul>
-    <li><p>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch. As of this writing, supports kernels through 2.6.29. (Unfortunately, development has stopped because of perf events.)
-       </p>
-     </li>
-    <li><p>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch.  As of this writing, supports kernels through 2.6.32.  (One benefit of perfctr is out-of-the-box support for Red Hat kernels.)
+    <li><p>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch (x86_64-based systems only).
+	One benefit of perfctr is that it includes out-of-the-box support for many Red Hat kernels.
+	As of this writing, perfctr supports vanilla kernels through 2.6.32.
        </p>
     </li>
-    <li><p>Use a kernel with perf events (n&eacute;e PCL).  As of kernel 2.6.32 (2.6.31), perf events is part of kernel distributions -- and even enabled by default.  Tested but still on the cutting edge.
+
+    <li><p>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch.
+         As of this writing, supports vanilla kernels through 2.6.29.
+	 (Unfortunately, development has stopped because of perf events.)
+       </p>
+     </li>
+
+    <li><p>Use a kernel with <a href="https://perf.wiki.kernel.org">perf events</a>, which was introduced with kernel 2.6.32 (n&eacute;e PCL in kernel 2.6.31).
+	Perf events is still on the cutting edge, but is expected to become part of standard distributions -- and even enabled by default.
        </p>
     </li>
   </ul>
-
-<p>Note: Beware of kernels 2.6.28 through 2.6.29.2</p>
+  
 </li>
 
 <li>
@@ -173,13 +179,16 @@ To use <span class="hpctool">hpcviewer</span> on MacOS and Windows, nothing addi
 </p>
 </li>
 
-<!--
 <li>
-<p>HPCToolkit contains some Perl-based tools which require that some
-variant of Perl 5 installed and that it is in your path.  We have
-succssfully used versions 5.6.x, 5.8.x.
+<p>Minor requirement: To use <span class="hpctool">hpcsummary</span> (a relatively minor tool), Python 2.x is required.
 </p>
--->
+</li>
+
+<li>
+<p>Minor requirement: To build HPCToolkit's man pages, a variant of Perl 5 is required.
+We have succssfully used versions 5.6.x, 5.8.x.
+</p>
+</li>
 
 </ol>
 
@@ -275,7 +284,7 @@ Please note that a list of examples below provides <code>configure</code> comman
                      [CXX=&lt;<i>c++-compiler</i>&gt;]
                      [MPICXX=&lt;<i>mpi-c++-compiler</i>&gt;] \ <br />
   &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \ <br />
-  &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>externals-install-path</i>&gt;  \ <br />
+  &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>externals-install-path</i>&gt; \ <br />
    &nbsp;&nbsp;&nbsp;&nbsp; [--with-papi=&lt;<i>papi-install-path</i>&gt;]</code><br />
   <code>make install</code><br />
 </div>
@@ -310,7 +319,7 @@ The commands are designed to replace the respective commands in the above build 
 	  <li><code>
 	      ../configure CC=gcc CXX=g++ \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path-fe</i>&gt; \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;hpctoolkit-externals&gt;/powerpc64-linux
+	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc64-linux
 	      </code>
           </li>
 	</ul>
@@ -331,7 +340,7 @@ The commands are designed to replace the respective commands in the above build 
 	      &nbsp;&nbsp;&nbsp;&nbsp; CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; MPICXX="mpicxx -dynamic" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=powerpc-bgp-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;hpctoolkit-externals&gt;/powerpc-bgp-linux
+	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc-bgp-linux
 	    </code>
 	  </li>
 	</ul>
@@ -343,7 +352,7 @@ The commands are designed to replace the respective commands in the above build 
 	  </li>
 
 	  <li><code>../configure --prefix=&lt;<i>install-path-fe</i>&gt; \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;hpctoolkit-externals&gt;/x86_64-linux \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/x86_64-linux \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23
 	      </code>
           </li>
@@ -367,13 +376,33 @@ The commands are designed to replace the respective commands in the above build 
 
 	  <li><code>../configure CC="cc -static" CXX="CC -static" MPICXX="CC -static" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-suse-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;hpctoolkit-externals&gt;/x86_64-crayxt \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/x86_64-crayxt \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23 \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --disable-hpcrun
 	      </code>
           </li>
 	</ul>
     </li>
+
+    <li><p>Linux-x86 (32-bit) on Linux-x86_64:</p>
+	<ul>
+	  <li><code>
+              ../configure CC="gcc -m32" CXX="g++ -m32" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=`pwd`/../i686-linux \ <br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libunwind
+	      </code>
+	      </li>
+
+	  <li><code>../configure CC="gcc -m32" CXX="g++ -m32" MPICXX="mpicxx -m32" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
+              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/i686-linux \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=&lt;<i>papi-install-path</i>&gt; \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --disable-hpcrun-static
+	      </code>
+          </li>
+	</ul>
+    </li>
+
 
   </ul>
 
@@ -398,7 +427,7 @@ The commands are designed to replace the respective commands in the above build 
     </tr>
     <tr>
       <td><code>--enable-mpi</code></td>
-      <td>enable/disable build of hpcprof-mpi</td>
+      <td>enable/disable build of hpcprof-mpi [default: yes]</td>
     </tr>
     <tr>
       <td colspan="2"><hr /></td>
@@ -411,6 +440,14 @@ The commands are designed to replace the respective commands in the above build 
     <tr>
       <td><code>--with-upc-lib=LIBRARY</code></td>
       <td>path to IBM BlueGene/P UPC library(s), absolute or relative to WITH_UPC/runtime/SPI</td>
+    </tr>
+    <tr>
+      <td colspan="2"><hr /></td>
+    </tr>
+
+    <tr>
+      <td><code>--enable-develop</code></td>
+      <td>enable/disable build for development (sane debugging) [default: no]</td>
     </tr>
   </table>
 </li>
@@ -480,7 +517,7 @@ The commands are designed to replace the respective commands in the above build 
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2010/10/19</span>]
+<p>[<span class="lastupdated">Page last updated: 2010/10/29</span>]
 </p>
 
 <!-- ********************************************************************** -->

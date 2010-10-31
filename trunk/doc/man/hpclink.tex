@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2010/07/19}
+\setDate{ 2010/10/30}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -44,55 +44,82 @@
 
 \begin{Name}{1}{hpclink}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpclink}
 
-\Prog{hpclink} - statically link an application with the \Prog{hpcrun}
-profiling code
+\Prog{hpclink} is used to link \textbf{HPCToolkit}'s performance measurement library (\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}) into a  statically linked application.
 
 \end{Name}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpclink} \oOpt{options} \Arg{compiler} arg ...
+\Prog{hpclink} \oOpt{options} \Arg{link-command}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpclink} statically links an application with the \Prog{hpcrun}
-profiling code.  Dynamically linked binaries can be run directly with
-the \Prog{hpcrun} command, but this method does not work with
-statically linked programs.  Instead, the \Prog{hpcrun} code must be
-linked into the application at build time.
+\Prog{hpclink} links HPCToolkit's performance measurement library into a statically linked application.
+(\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s method for injecting its library into a dynamically linked application will not work with a statically linked applications.)
+Although \Prog{hpclink} does require a special link step, it requires neither source code modifications nor changes to compiling individual object files and libraries.
 
-This approach does not require source code modifications, and you
-continue to compile your object files as before.  In the application's
-Makefile, locate the last step in the build, that is, the command that
-produces the final, statically linked binary.  Edit that line to put
-the \Prog{hpclink} command at the front of the command line.
+To link with \Prog{hpclink}, first locate the last step in your application's build, that is, the command that produces the final, statically linked binary.
+Then, use this command as \Arg{link-command}.
+One simple way of accomplishing this is to simply prepend the \Prog{hpclink} command to the front of a Makefile's link line.
+You may also wish to rename the binary name (\texttt{-o app-hpclink}).
 
-The argument list passed to \Prog{hpclink} (\texttt{compiler arg ...})
-should be the same command line used to build the application
-natively, except that you may wish to rename the binary name
-(\texttt{-o output-file}).
+To control HPCToolkit's performance measurement library during an application's execution, use the following environment variables:
 
-See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of
-\textbf{HPCToolkit}.
+\begin{itemize}
+\item \verb+HPCRUN_EVENT_LIST=<event1>[@<period1>];...;<eventN>[@<periodN>]+\\
+  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -e/--event option.
+  Sample using \Arg{event1} through \Arg{eventN} using the respective periods.
+
+\item \verb+HPCRUN_TRACE=1+\\
+  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -t/--trace option.
+  Enable tracing.
+
+\item \verb+HPCRUN_OUT_PATH=<outpath>+\\
+  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -o/--output option.
+
+\end{itemize}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Options}
+
+\section{Arguments}
 
 \begin{Description}
+\item[\Arg{link-command}] The link command for producing a statically linked application binary.
+It typically has the following form:\\
+\SP\SP\SP \Arg{compiler} \Arg{[link-options]} \Arg{object-files} \Arg{libraries}
+\end{Description}
+
+
+\subsection{Options: Informational}
+
+\begin{Description}
+\item[\Opt{-v}, \Opt{--verbose}]
+Verbose. Displays the original and modified command lines.
+
+\item[\Opt{-V}, \Opt{--version}]
+Print version information.
+
 \item[\Opt{-h}, \Opt{--help}]
 Print help.
-%
-\item[\Opt{-u}, \Opt{--undefined} symbol]
-Pass ``symbol'' to the linker as an undefined symbol.  This option is
-rarely needed, but if \Prog{hpclink} fails with an undefined reference
-to \texttt{\_\_real\_foo}, then the option ``\texttt{-u foo}'' may
-induce the linker to correctly link this symbol.  May be used multiple
-times.
-%
-\item[\Opt{-v}, \Opt{--verbose}]
-Verbose output.
+\end{Description}
+
+
+\subsection{Options: Linking}
+
+\begin{Description}
+
+\item[\Opt{--memleak}]
+Include HPCToolkit's memory leak detection libraries.
+
+\item[\OptArg{-u}{symbol}, \OptArg{--undefined}{symbol}]
+Pass \Arg{symbol} to the linker as an undefined symbol.
+This option is rarely needed, but if \Prog{hpclink} fails with an undefined reference to \texttt{\_\_real\_foo}, then the option ``\texttt{-u foo}'' may induce the linker to correctly link this symbol.
+May be used multiple times.
+
 \end{Description}
 
 
@@ -113,11 +140,8 @@ math library.
     hpclink gcc -o myprog -static main.o foo.o ... -lm
 \end{verbatim}
 %
-Make both native and \Prog{hpcrun}-enabled versions of an application
-from object files and system libraries with the \Prog{mpixlc}
-compiler.  Note that the argument list to the \Prog{hpclink} command
-is exactly the command to build the native version except for the name
-of the output file.
+Make both native and \Prog{hpcrun}-enabled versions of an application from object files and system libraries with the \Prog{mpixlc} compiler.
+Note that the argument list to the \Prog{hpclink} command is exactly the command to build the native version except for the name of the output file.
 
 \begin{verbatim}
     mpixlc -o myprog main.o foo.o ... -lm -lpthread
@@ -128,11 +152,8 @@ of the output file.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Launching Static Programs}
 
-For dynamically linked binaries, the \Prog{hpcrun} script is used to
-launch programs and set environment variables, but on systems with
-separate compute nodes, this is often not available.  In this case, the
-\texttt{HPCRUN\_EVENT\_LIST} environment variable is used to pass the
-profiling events to the \Prog{hpcrun} code.
+For dynamically linked binaries, the \Prog{hpcrun} script is used to launch programs and set environment variables, but on systems with separate compute nodes, this is often not available.
+In this case, the \texttt{HPCRUN\_EVENT\_LIST} environment variable is used to pass the profiling events to the \Prog{hpcrun} code.
 
 \begin{verbatim}
     export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000000"
@@ -165,22 +186,18 @@ such as the following.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Notes}
 
-The command line passed to \Prog{hpclink} must produce a statically
-linked binary and the \Prog{hpclink} script will fail if it does not.
+The command line passed to \Prog{hpclink} must produce a statically linked binary and the \Prog{hpclink} script will fail if it does not.
 
-With some compilers, eg, IBM's XL compilers and the Pathscale
-compilers, interprocedural optimization interferes with
-\Prog{hpclink}'s ability to link, causing \Prog{hpclink} to fail.  In
-this case, it is necessary to disable interprocedural optimization.
-It is not necessary to disable all optimization, just interprocedural
-analysis.
+With some compilers, eg, IBM's XL compilers and the Pathscale compilers, interprocedural optimization interferes with \Prog{hpclink}'s ability to link, causing \Prog{hpclink} to fail.
+In this case, it is necessary to disable interprocedural optimization.
+It is not necessary to disable all optimization, just interprocedural analysis.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{See Also}
 
-\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}},
-\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.
+\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.\\
+\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Version}
@@ -202,7 +219,7 @@ Version: \Version\ of \Date.
 Mark Krentel \\
 Rice HPCToolkit Research Group \\
 Email: \Email{hpc =at= cs.rice.edu} \\
-WWW: \URL{http://hpctoolkit.org}/
+WWW: \URL{http://hpctoolkit.org}.
 
 \LatexManEnd
 
@@ -215,4 +232,3 @@ WWW: \URL{http://hpctoolkit.org}/
 %% time-stamp-end: "}\n"
 %% time-stamp-line-limit: 50
 %% End:
-
