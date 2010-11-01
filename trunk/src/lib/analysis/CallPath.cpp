@@ -343,7 +343,9 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 		    || (loadmap_lm->id() == Prof::ALoadMap::LM_id_NULL));
 
   if (useStruct) {
-    DIAG_Msg(1, "STRUCTURE: " << lm_nm);
+    if (loadmap_lm->id() != Prof::ALoadMap::LM_id_NULL) {
+      DIAG_Msg(1, "STRUCTURE: " << lm_nm);
+    }
   }
   else {
     DIAG_Msg(1, "Line map : " << lm_nm);
