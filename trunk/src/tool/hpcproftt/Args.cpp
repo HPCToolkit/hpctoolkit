@@ -141,8 +141,10 @@ Options: Source Structure Correlation:\n\
   -M <metric>, --metric <metric>\n\
                        Show a supplemental or different metric set. <metric>\n\
                        is one of the following:\n\
-                         sum:      Show also Mean, CoefVar, Min, Max, Sum\n\
-                         sum-only: Show only Mean, CoefVar, Min, Max, Sum\n\
+                         sum:      Show also Sum, Mean, StdDev, CoefVar,\n\
+                                             Min, Max\n\
+                         sum-only: Show only Sum, Mean, StdDev, CoefVar,\n\
+                                             Min, Max,\n\
 \n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. For a\n\
