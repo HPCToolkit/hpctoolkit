@@ -1141,7 +1141,7 @@ Call::toStringMe(uint oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
-    self += " " + nameDyn();
+    self += " n=\"" + nameDyn() + "\"";
   }
   return self;
 }
@@ -1152,7 +1152,7 @@ Stmt::toStringMe(uint oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
-    self += " " + nameDyn();
+    self += " n=\"" + nameDyn() + "\"";
   }
   if (hpcrun_fmt_doRetainId(cpId())) {
     self += " it" + xml::MakeAttrNum(cpId());
