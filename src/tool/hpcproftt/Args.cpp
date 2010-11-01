@@ -163,7 +163,7 @@ Options: Source Structure Correlation:\n\
 \n\
 Options: Object Correlation:\n\
   --object[=s], --obj[=s]\n\
-                       Correlate metrics with object code by annotating\n \
+                       Correlate metrics with object code by annotating\n\
                        object code procedures and instructions. {}\n\
                          s: intermingle source line info with object code\n\
   --objannot <glob>    Annotate object procedures with (unmangled) names that\n\

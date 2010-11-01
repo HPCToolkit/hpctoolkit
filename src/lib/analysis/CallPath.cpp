@@ -295,9 +295,15 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   Prof::Struct::Root* rootStrct = prof.structure()->root();
 
   std::string errors;
+
+  // Create a "null" load module for spurious samples with lm-id's of 0
+  Prof::ALoadMap::LM nullLM(Prof::Struct::Tree::UnknownLMNm);
+  nullLM.isUsed(true);
   
-  for (Prof::ALoadMap::LM_id_t i = 1; i <= loadmap->size(); ++i) {
-    Prof::ALoadMap::LM* lm = loadmap->lm(i);
+  // N.B. iteration includes LM_id_NULL to include spurious samples
+  for (Prof::ALoadMap::LM_id_t i = 0 /*sic*/; i <= loadmap->size(); ++i) {
+    Prof::ALoadMap::LM* lm =
+      (i == Prof::ALoadMap::LM_id_NULL) ? &nullLM : loadmap->lm(i);
 
     if (lm->isUsed()) {
       try {
@@ -333,7 +339,8 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   const string& lm_nm = loadmap_lm->name();
   BinUtil::LM* lm = NULL;
 
-  bool useStruct = (lmStrct->childCount() > 0);
+  bool useStruct = ((lmStrct->childCount() > 0)
+		    || (loadmap_lm->id() == Prof::ALoadMap::LM_id_NULL));
 
   if (useStruct) {
     DIAG_Msg(1, "STRUCTURE: " << lm_nm);
@@ -446,7 +453,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
 
       // 1. Add symbolic information to 'n_dyn'
       VMA lm_ip = n_dyn->lmIP();
-      Struct::ACodeNode* strct = 
+      Struct::ACodeNode* strct =
 	Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct);
       n->structure(strct);
       strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
