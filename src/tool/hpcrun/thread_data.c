@@ -100,32 +100,6 @@ hpcrun_unthreaded_data(void)
 }
 
 
-thread_data_t*
-hpcrun_thread_data_new(void)
-{
-  NMSG(THREAD_SPECIFIC,"new thread specific data");
-  thread_data_t *td = hpcrun_get_thread_data();
-
-  td->suspend_sampling = 1; // protect against spurious signals
-
-  // initialize thread_data with known bogus bit pattern so that missing
-  // initializations will be apparent.
-  memset(td, 0xfe, sizeof(thread_data_t));
-
-  return td;
-}
-
-
-void
-hpcrun_thread_memory_init(void)
-{
-  thread_data_t* td = hpcrun_get_thread_data();
-  td->memstore.mi_start = NULL;
-  hpcrun_make_memstore(&td->memstore);
-  td->mem_low = 0;
-}
-
-
 enum _local_int_const {
   BACKTRACE_INIT_SZ     = 32,
   NEW_BACKTRACE_INIT_SZ = 32
@@ -133,22 +107,29 @@ enum _local_int_const {
 
 
 void
-hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt)
+hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child)
 {
-  // INVARIANT: hpcrun_thread_memory_init() has been called
-  // INVARIANT: suspend_sampling is already set
-
+  hpcrun_meminfo_t memstore;
   thread_data_t* td = hpcrun_get_thread_data();
+
+  // ----------------------------------------
+  // memstore for hpcrun_malloc()
+  // ----------------------------------------
+
+  // Wipe the thread data with a bogus bit pattern, but save the
+  // memstore so we can reuse it in the child after fork.  This must
+  // come first.
+  td->suspend_sampling = 1;
+  memstore = td->memstore;
+  memset(td, 0xfe, sizeof(thread_data_t));
+  td->memstore = memstore;
+  hpcrun_make_memstore(&td->memstore, is_child);
+  td->mem_low = 0;
 
   // ----------------------------------------
   // normalized thread id (monitor-generated)
   // ----------------------------------------
   td->id = id;
-
-  // ----------------------------------------
-  // hpcrun_malloc() memory data structures
-  // ----------------------------------------
-  // handled by hpcrun_thread_memory_init()
 
   // ----------------------------------------
   // sample sources

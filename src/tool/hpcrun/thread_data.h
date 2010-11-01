@@ -223,9 +223,7 @@ void           	hpcrun_set_thread0_data(void);
 void           	hpcrun_unthreaded_data(void);
 void           	hpcrun_threaded_data(void);
 
-thread_data_t* hpcrun_thread_data_new(void);
-void           hpcrun_thread_memory_init(void);
-void           hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt);
+void           hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child);
 void           hpcrun_cached_bt_adjust_size(size_t n);
 
 // utilities to match previous api

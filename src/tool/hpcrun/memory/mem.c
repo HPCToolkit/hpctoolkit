@@ -203,6 +203,7 @@ hpcrun_mmap_anon(size_t size)
 
 // After fork(), the parent's memstores are still allocated in the
 // child, so don't reset num_segments.
+// FIXME: it's not clear which stats should be reset here.
 void
 hpcrun_memory_reinit(void)
 {
@@ -216,11 +217,21 @@ hpcrun_memory_reinit(void)
 // Allocate space and init a thread's memstore.
 // If failure, shutdown sampling and leave old memstore in place.
 void
-hpcrun_make_memstore(hpcrun_meminfo_t *mi)
+hpcrun_make_memstore(hpcrun_meminfo_t *mi, int is_child)
 {
   void *addr;
 
   hpcrun_mem_init();
+
+  // If in the child after fork(), then continue to use the parent's
+  // memstore if it looks ok, else mmap a new one.  Note: we can't
+  // reset the memstore to empty unless we delete everything that was
+  // created via hpcrun_malloc() (cct, ui_tree, ...).
+  if (is_child && mi->mi_start != NULL
+      && mi->mi_start <= mi->mi_low && mi->mi_low <= mi->mi_high
+      && mi->mi_high <= mi->mi_start + mi->mi_size) {
+    return;
+  }
 
   addr = hpcrun_mmap_anon(memsize);
   if (addr == NULL) {
@@ -276,7 +287,7 @@ hpcrun_malloc(size_t size)
       || mi->mi_high - mi->mi_low < low_memsize
       || mi->mi_high - mi->mi_low < size) {
     if (allow_extra_mmap) {
-      hpcrun_make_memstore(mi);
+      hpcrun_make_memstore(mi, 0);
     } else {
       if (! out_of_mem_mesg) {
 	EMSG("%s: out of memory, shutting down sampling", __func__);
