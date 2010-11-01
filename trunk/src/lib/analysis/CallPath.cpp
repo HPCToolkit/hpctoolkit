@@ -451,10 +451,17 @@ overlayStaticStructure(Prof::CCT::ANode* node,
     if (n_dyn && (n_dyn->lmId() == loadmap_lm->id())) {
       using namespace Prof;
 
+      const string* unkProcNm = NULL;
+      if (n_dyn->isSecondarySynthRoot()) {
+	unkProcNm = &Struct::Tree::PartialUnwindProcNm;
+      }
+
       // 1. Add symbolic information to 'n_dyn'
       VMA lm_ip = n_dyn->lmIP();
       Struct::ACodeNode* strct =
-	Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct);
+	Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct,
+					unkProcNm);
+      
       n->structure(strct);
       strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
@@ -689,13 +696,19 @@ pruneTrivialNodes(Prof::CCT::ANode* node)
     pruneTrivialNodes(x);
 
     // 2. Trim this node if necessary
-    bool isTy = (typeid(*x) == typeid(CCT::ProcFrm) ||
-		 typeid(*x) == typeid(CCT::Proc) ||
-		 typeid(*x) == typeid(CCT::Loop));
-    if (x->isLeaf() && isTy) {
-      x->unlink(); // unlink 'x' from tree
-      DIAG_DevMsgIf(0, "pruneTrivialNodes: " << hex << x << dec << " (sid: " << x->structureId() << ")");
-      delete x;
+    if (x->isLeaf()) {
+      bool isPrunableTy = (typeid(*x) == typeid(CCT::ProcFrm) ||
+			   typeid(*x) == typeid(CCT::Proc) ||
+			   typeid(*x) == typeid(CCT::Loop));
+      bool isSynthetic =
+	(dynamic_cast<Prof::CCT::ADynNode*>(x)
+	 && static_cast<Prof::CCT::ADynNode*>(x)->isSecondarySynthRoot());
+	
+      if (isPrunableTy || isSynthetic) {
+	x->unlink(); // unlink 'x' from tree
+	DIAG_DevMsgIf(0, "pruneTrivialNodes: " << hex << x << dec << " (sid: " << x->structureId() << ")");
+	delete x;
+      }
     }
     else {
       // We are keeping the node -- set the static structure flag
