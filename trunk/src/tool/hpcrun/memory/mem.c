@@ -85,6 +85,7 @@ static size_t pagesize = DEFAULT_PAGESIZE;
 static int allow_extra_mmap = 1;
 
 static long num_segments = 0;
+static long total_allocation = 0;
 static long num_reclaims = 0;
 static long num_failures = 0;
 static long total_freeable = 0;
@@ -181,6 +182,9 @@ hpcrun_mmap_anon(size_t size)
     str = strerror(errno);
     EMSG("%s: mmap failed: %s", __func__, str);
     addr = NULL;
+  } else {
+    num_segments++;
+    total_allocation += size;
   }
 
   NMSG(MALLOC, "%s: size = %ld, fd = %d, addr = %p",
@@ -247,7 +251,6 @@ hpcrun_make_memstore(hpcrun_meminfo_t *mi, int is_child)
   mi->mi_size = memsize;
   mi->mi_low = mi->mi_start;
   mi->mi_high = mi->mi_start + memsize;
-  num_segments++;
 
   NMSG(MALLOC, "new memstore: [%p, %p)", mi->mi_start, mi->mi_high);
 }
@@ -281,6 +284,25 @@ hpcrun_malloc(size_t size)
 
   mi = &TD_GET(memstore);
   size = round_up(size);
+
+  // For a large request that doesn't fit within the existing
+  // memstore, mmap a separate region for it.
+  if (size > memsize/5 && allow_extra_mmap
+      && (mi->mi_start == NULL || size > mi->mi_high - mi->mi_low)) {
+    addr = hpcrun_mmap_anon(size);
+    if (addr == NULL) {
+      if (! out_of_mem_mesg) {
+	EMSG("%s: out of memory, shutting down sampling", __func__);
+	out_of_mem_mesg = 1;
+      }
+      hpcrun_disable_sampling();
+      num_failures++;
+      return NULL;
+    }
+    TMSG(MALLOC, "%s: size = %ld, addr = %p", __func__, size, addr);
+    total_non_freeable += size;
+    return addr;
+  }
 
   // See if we need to allocate a new memstore.
   if (mi->mi_start == NULL
@@ -368,8 +390,7 @@ hpcrun_memory_summary(void)
 
   AMSG("MEMORY: segment size: %.1f meg, num segments: %ld, "
        "total allocation: %.1f meg, reclaims: %ld",
-       memsize/meg, num_segments,
-       (num_segments * memsize)/meg, num_reclaims);
+       memsize/meg, num_segments, total_allocation/meg, num_reclaims);
 
   AMSG("MEMORY: total freeable: %.1f meg, total non-freeable: %.1f meg, "
        "malloc failures: %ld",
