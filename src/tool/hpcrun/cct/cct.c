@@ -117,7 +117,7 @@ static inline bool
 implies(bool p, bool q) { return (!p || q); }
 
 static cct_node_t*
-_hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
+help_hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 		      int metricId, uint64_t metricIncr,
 		      int skipInner);
 
@@ -145,8 +145,7 @@ new_persistent_id()
 static cct_node_t*
 cct_node_create(lush_assoc_info_t as_info, 
 		ip_normalized_t ip_norm,
-		lush_lip_t* lip,
-		hpcrun_cct_t *x)
+		lush_lip_t* lip)
 {
   size_t sz = (sizeof(cct_node_t)
 	       + sizeof(cct_metric_data_t)*hpcrun_get_num_metrics());
@@ -355,20 +354,41 @@ void
 hpcrun_cct_make_root(hpcrun_cct_t* x, cct_ctxt_t* ctxt)
 {
   // introduce bogus root to handle possible forests
-  x->tree_root = cct_node_create(lush_assoc_info_NULL, ip_normalized_NULL, NULL, x);
+  x->tree_root = cct_node_create(lush_assoc_info_NULL, ip_normalized_NULL, NULL);
 
   x->tree_root->parent = (ctxt)? ctxt->context : NULL;
   x->num_nodes = 1;
 }
 
 
+static const ip_normalized_t ip_normalized_PARTIAL = { .lm_id = HPCRUN_FMT_LMId_NULL,
+						       .lm_ip = HPCRUN_FMT_LMIp_Flag1};
+void
+hpcrun_cct_attach_partial_unw_root(hpcrun_cct_t* cct)
+{
+#ifndef NO_SPECIAL_UNW_ROOT
+  TMSG(PARTIAL_UNW, "Attaching partial unw_root");
+  cct_node_t* partial_unw_root = cct_node_create(lush_assoc_info_NULL,
+						 ip_normalized_PARTIAL,
+						 NULL);
+  cct_node_t* parent = cct->tree_root;
+  cct_node_parent_insert(partial_unw_root, parent);
+  cct->num_nodes++;
+  cct->partial_unw_root = partial_unw_root;
+#else
+  TMSG(PARTIAL_UNW, "FAKING partial unw root");
+  cct->partial_unw_root = cct->tree_root;
+#endif
+}
+
 int
 hpcrun_cct_init(hpcrun_cct_t* x, cct_ctxt_t* ctxt)
 {
-  TMSG(CCT_TYPE,"--Init");
+  TMSG(CCT,"--Init");
   memset(x, 0, sizeof(*x));
-
+ 
   hpcrun_cct_make_root(x, ctxt);
+  hpcrun_cct_attach_partial_unw_root(x);
 
   return HPCRUN_OK;
 }
@@ -377,7 +397,7 @@ hpcrun_cct_init(hpcrun_cct_t* x, cct_ctxt_t* ctxt)
 int
 hpcrun_cct_fini(hpcrun_cct_t *x)
 {
-  TMSG(CCT_TYPE,"--Fini");
+  TMSG(CCT,"--Fini");
   return HPCRUN_OK;
 }
 
@@ -390,7 +410,7 @@ hpcrun_cct_get_child(hpcrun_cct_t *cct, cct_node_t* parent, frame_t *frm)
 				      frm->lip);
 
   if (!c) {
-    c = cct_node_create(frm->as_info, frm->ip_norm, frm->lip, cct);
+    c = cct_node_create(frm->as_info, frm->ip_norm, frm->lip);
     cct_node_parent_insert(c, parent);
     cct->num_nodes++;
   }
@@ -471,7 +491,7 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
       TMSG(CCT,"No child found, inserting new tail");
       
       while (!MY_isPathFrameAtEnd(frm)) {
-	c = cct_node_create(frm->as_info, frm->ip_norm, frm->lip, cct);
+	c = cct_node_create(frm->as_info, frm->ip_norm, frm->lip);
 	TMSG(CCT, "create node %p w ip ==> lm_id = %d and offst = %p", c,
 	     frm->ip_norm.lm_id, frm->ip_norm.lm_ip);
 	cct_node_parent_insert(c, tn);
@@ -533,7 +553,7 @@ hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   }
   else {
     TMSG(LUSH,"regular (NON-lush) backtrace2cct invoked");
-    n = _hpcrun_backtrace2cct(cct, context, metricId, metricIncr, skipInner);
+    n = help_hpcrun_backtrace2cct(cct, context, metricId, metricIncr, skipInner);
   }
 
   // N.B.: for lush_backtrace() it may be that n = NULL
@@ -545,7 +565,7 @@ hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 #if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
 
 static cct_node_t*
-_hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
+help_hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       bt_mut_fn bt_fn, bt_fn_arg bt_arg);
 
@@ -570,7 +590,7 @@ hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
   }
   else {
     TMSG(LUSH,"regular (NON-lush) bt2cct invoked");
-    n = _hpcrun_bt2cct(cct, context, metricId, metricIncr, bt_fn, arg);
+    n = help_hpcrun_bt2cct(cct, context, metricId, metricIncr, bt_fn, arg);
   }
 
   // N.B.: for lush_backtrace() it may be that n = NULL
@@ -632,6 +652,26 @@ hpcrun_cct_countSkippedNodes(hpcrun_cct_t* tree, cct_node_t* node,
 			     int lvl_to_skip);
 
 
+static int cct_count_nodes(cct_node_t* n);
+
+static int
+cct_count_sibs(cct_node_t* node)
+{
+  int rv = 0;
+  for (cct_node_t* n = node->children; n; n = n->next_sibling) {
+    rv += cct_count_nodes(n);
+  }
+  return rv;
+}
+
+static int
+cct_count_nodes(cct_node_t* node)
+{
+  if (! node) {
+    return 0;
+  }
+  return 1 + cct_count_sibs(node);
+}
 
 
 // hpcrun_cct_fwrite_hlp: Writes all nodes of the tree 'tree' and its
@@ -676,7 +716,13 @@ hpcrun_cct_fwrite_hlp(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   if (num_nodes > 0 && lvl_to_skip > 0) { // FIXME: better way...
     int skipped = hpcrun_cct_countSkippedNodes(tree, root, lvl_to_skip);
     num_nodes -= skipped;
+    //
+    // HACK: need to add back # nodes in the partial unwind, as they got skipped ...
+    //
+    num_nodes += cct_count_nodes(tree->partial_unw_root);
   }
+
+  
   hpcfmt_int8_fwrite(num_nodes, fs);
 
   // -------------------------------------------------------
@@ -686,13 +732,27 @@ hpcrun_cct_fwrite_hlp(FILE* fs, epoch_flags_t flags, hpcrun_cct_t* tree,
   cct_ctxt_write(fs, flags, tree_ctxt);
 
   // -------------------------------------------------------
-  // Write each node, beginning with root
+  // Prepare a "scratch" node for output
   // -------------------------------------------------------
   hpcrun_fmt_cct_node_t tmp_node;
 
   hpcrun_fmt_cct_node_init(&tmp_node);
   tmp_node.num_metrics = num_metrics;
   tmp_node.metrics = alloca(num_metrics * sizeof(hpcrun_metricVal_t));
+
+  //
+  // For nodes with non-null ctxt (== pthread cct), write out the partial unwinds
+  //
+  
+  if (tree_ctxt && tree_ctxt->context) {
+    hpcrun_cctNode_fwrite(fs, flags, tree,
+			  tree->partial_unw_root, &tmp_node,
+			  0 /* no skipping */, tree_parent_id);
+  }
+  
+  // -------------------------------------------------------
+  // Write each fully-unwound node, beginning with root, and skipping appropriate # of levels
+  // -------------------------------------------------------
 
   ret = hpcrun_cctNode_fwrite(fs, flags, tree, root, &tmp_node,
 			      lvl_to_skip, tree_parent_id);
@@ -844,9 +904,65 @@ hpcrun_cct_countSkippedNodes(hpcrun_cct_t* tree, cct_node_t* node,
   return numSkippedNodes;
 }
 
+cct_node_t*
+hpcrun_cct_record_backtrace(hpcrun_cct_t* cct, bool partial,
+			    frame_t* bt_beg, frame_t* bt_last, bool tramp_found,
+			    int metricId, uint64_t metricIncr)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+  cct_node_t* cct_cursor = NULL;
+  if (tramp_found) {
+    // start insertion below caller's frame, which is marked with the trampoline
+    cct_cursor = td->tramp_cct_node->parent;
+  }
+  if (partial) {
+    cct_cursor = cct->partial_unw_root;
+  }
+
+  return hpcrun_cct_insert_backtrace(cct, cct_cursor, metricId,
+				     bt_last, bt_beg,
+				     (cct_metric_data_t){.i = metricIncr});
+
+}
+
+cct_node_t*
+hpcrun_dbg_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
+			 int metricId,
+			 uint64_t metricIncr,
+			 int skipInner)
+{
+  bool tramp_found;
+  frame_t* bt_beg;
+  frame_t* bt_last;
+  thread_data_t* td = hpcrun_get_thread_data();
+
+  if (! hpcrun_dbg_generate_graceful_backtrace(context,
+					       &bt_beg, &bt_last, &tramp_found,
+					       skipInner)) {
+    if (DISABLED(RECORD_PARTIAL_UNW)){
+      return NULL;
+    }
+    else {
+      TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure");
+      hpcrun_stats_num_samples_partial_inc();
+    }
+  }
+
+  cct_node_t* n = hpcrun_cct_record_backtrace(cct, true,
+					      bt_beg, bt_last, tramp_found,
+					      metricId, metricIncr);
+
+  if (ENABLED(USE_TRAMP)){
+    hpcrun_trampoline_remove();
+    td->tramp_frame = td->cached_bt;
+    hpcrun_trampoline_insert(n);
+  }
+
+  return n;
+}
 
 static cct_node_t*
-_hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
+help_hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 		      int metricId,
 		      uint64_t metricIncr,
 		      int skipInner)
@@ -854,26 +970,25 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   bool tramp_found;
   frame_t* bt_beg;
   frame_t* bt_last;
+  thread_data_t* td = hpcrun_get_thread_data();
 
+  bool partial_unw = false;
   if (! hpcrun_generate_backtrace(context,
 				  &bt_beg, &bt_last, &tramp_found,
 				  skipInner)) {
-    return NULL;
+    if (DISABLED(RECORD_PARTIAL_UNW)){
+      return NULL;
+    }
+    else {
+      TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure");
+      hpcrun_stats_num_samples_partial_inc();
+      partial_unw = true;
+    }
   }
 
-  thread_data_t* td = hpcrun_get_thread_data();
-
-  cct_node_t* cct_cursor = NULL;
-  if (tramp_found) {
-    // start insertion below caller's frame, which is marked with the trampoline
-    cct_cursor   = td->tramp_cct_node->parent;
-  }
-
-  cct_node_t* n;
-
-  n = hpcrun_cct_insert_backtrace(cct, cct_cursor, metricId,
-				  bt_last, bt_beg,
-				  (cct_metric_data_t){.i = metricIncr});
+  cct_node_t* n = hpcrun_cct_record_backtrace(cct, partial_unw,
+					      bt_beg, bt_last, tramp_found,
+					      metricId, metricIncr);
 
   if (ENABLED(USE_TRAMP)){
     hpcrun_trampoline_remove();
@@ -887,7 +1002,7 @@ _hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 
 #if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
 static cct_node_t*
-_hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
+help_hpcrun_bt2cct(hpcrun_cct_t *cct, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       bt_mut_fn bt_fn, bt_fn_arg bt_arg)
 {

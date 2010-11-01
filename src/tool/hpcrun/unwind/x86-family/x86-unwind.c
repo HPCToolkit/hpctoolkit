@@ -132,10 +132,10 @@ static int
 hpcrun_check_fence(void* ip);
 
 static void 
-drop_sample(void);
+simulate_segv(void);
 
 static void 
-_drop_sample(bool no_backtrace);
+help_simulate_segv(bool no_backtrace);
 
 static int
 unw_step_prefer_sp(void);
@@ -279,7 +279,10 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t *cursor)
 
   int unw_res;
 
-  if (!uw) return STEP_ERROR;
+  if (!uw){
+    TMSG(UNW, "Invalid unw interval for cursor");
+    return STEP_ERROR;
+  }
 
   switch (uw->ra_status){
   case RA_SP_RELATIVE:
@@ -595,7 +598,7 @@ unw_step_std(hpcrun_unw_cursor_t* cursor)
 static step_state
 t1_dbg_unw_step(hpcrun_unw_cursor_t* cursor)
 {
-  drop_sample();
+  simulate_segv();
 
   return STEP_ERROR;
 }
@@ -623,7 +626,7 @@ t2_dbg_unw_step(hpcrun_unw_cursor_t* cursor)
 //****************************************************************************
 
 static void 
-_drop_sample(bool no_backtrace)
+help_simulate_segv(bool no_backtrace)
 {
   if (DEBUG_NO_LONGJMP) return;
 
@@ -642,15 +645,20 @@ _drop_sample(bool no_backtrace)
 
 
 static void
-drop_sample(void)
+simulate_segv(void)
 {
-  _drop_sample(false);
+  help_simulate_segv(false);
 }
 
 
 static void
 update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
 {
+  if (ENABLED(NO_TROLLING)){
+    TMSG(TROLL, "Trolling disabled");
+    hpcrun_unw_throw();
+  }
+
   unsigned int tmp_ra_offset;
 
   int ret = stack_troll(cursor->sp, &tmp_ra_offset, &deep_validate_return_addr,

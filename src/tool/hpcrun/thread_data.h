@@ -83,10 +83,11 @@ typedef struct {
        loadmap   (currently called epoch)
        cct       (the main sample data container)
        cct_ctxt  (pthread creation context)
-    exceptions package (items used when somethign goes wrong)
+    exceptions package (items used when something goes wrong)
         bad_unwind
         mem_error
         handling_sample (used to distinguish a sample-based segv from a user segv)
+    thread_locks package
         (each of the 'lock' elements is true if this thread owns the lock.
          locks must be released in an exceptional situation)
 	fnbounds_lock   
@@ -107,7 +108,10 @@ typedef struct {
        Stands on its own
 
     lushPthr_t
-       lush items can stand along
+       lush items can stand alone
+
+    debug
+       a few bools & integers. General purpose. Used for simulating error conditions.
  */
 
 
@@ -203,6 +207,11 @@ typedef struct thread_data_t {
   FILE* hpcrun_file;
   FILE* trace_file;
   void* trace_buffer;
+
+  // ----------------------------------------
+  // debug stuff
+  // ----------------------------------------
+  bool debug1;
 
 } thread_data_t;
 

@@ -88,12 +88,17 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 			int metricId, uint64_t metricIncr,
 			int skipInner, int isSync);
 
+static cct_node_t*
+hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
+			   int metricId, uint64_t metricIncr,
+			   int skipInner, int isSync);
+
 // ------------------------------------------------------------
-// recover from SEGVs and dropped samples
+// recover from SEGVs and partial unwinds
 // ------------------------------------------------------------
 
 static void
-_drop_sample(void)
+hpcrun_cleanup_partial_unwind(void)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   sigjmp_buf_t* it = &(td->bad_unwind);
@@ -111,6 +116,21 @@ _drop_sample(void)
   }
 }
 
+
+static cct_node_t*
+record_partial_unwind(hpcrun_cct_t* cct,
+		      frame_t* bt_beg, frame_t* bt_last,
+		      int metricId, uint64_t metricIncr)
+{
+  if (ENABLED(RECORD_PARTIAL_UNW)){
+    TMSG(PARTIAL_UNW, "recording partial unwind from segv");
+    hpcrun_stats_num_samples_partial_inc();
+    return hpcrun_cct_record_backtrace(cct, true,
+				       bt_beg, bt_last, false,
+				       metricId, metricIncr);
+  }
+  return NULL;
+}
 
 //***************************************************************************
 
@@ -175,8 +195,15 @@ hpcrun_sample_callpath(void *context, int metricId,
   if (ljmp == 0) {
 
     if (epoch != NULL) {
-      node = _hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
-				     skipInner, isSync);
+      if (ENABLED(DEBUG_PARTIAL_UNW) && (3 <= hpcrun_stats_num_samples_attempted())){
+	EMSG("PARTIAL UNW debug sampler invoked @ sample %d", hpcrun_stats_num_samples_attempted());
+	node = hpcrun_dbg_sample_callpath(epoch, context, metricId, metricIncr,
+					    skipInner, isSync);
+      }
+      else {
+	node = _hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
+				       skipInner, isSync);
+      }
 
       if (trace_isactive()) {
 	void* pc = hpcrun_context_pc(context);
@@ -200,7 +227,10 @@ hpcrun_sample_callpath(void *context, int metricId,
     }
   }
   else {
-    _drop_sample();
+    hpcrun_cct_t* cct = &(td->epoch->csdata);
+    node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
+				 metricId, metricIncr);
+    hpcrun_cleanup_partial_unwind();
   }
 
   hpcrun_clear_handling_sample(td);
@@ -213,6 +243,29 @@ hpcrun_sample_callpath(void *context, int metricId,
 #endif
   
   return node;
+}
+
+static cct_node_t*
+hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
+			   int metricId,
+			   uint64_t metricIncr, 
+			   int skipInner, int isSync)
+{
+  void* pc = hpcrun_context_pc(context);
+
+  TMSG(DEBUG_PARTIAL_UNW, "csprof take profile sample @ %p",pc);
+
+  /* check to see if shared library loadmap (of current epoch) has changed out from under us */
+  epoch = hpcrun_check_for_new_loadmap(epoch);
+
+  cct_node_t* n = hpcrun_dbg_backtrace2cct(&(epoch->csdata),
+					   context,
+					   metricId, metricIncr,
+					   skipInner);
+
+  // FIXME: n == -1 if sample is filtered
+
+  return n;
 }
 
 
@@ -311,21 +364,7 @@ hpcrun_sample_callpath_w_bt(void *context,
     }
   }
   else {
-    // ------------------------------------------------------------
-    // recover from SEGVs and dropped samples
-    // ------------------------------------------------------------
-    memset((void *)it->jb, '\0', sizeof(it->jb));
-    hpcrun_bt_dump(td->btbuf_cur, "SEGV");
-
-    hpcrun_stats_num_samples_dropped_inc();
-
-    hpcrun_up_pmsg_count();
-    if (TD_GET(splay_lock)) {
-      hpcrun_release_splay_lock();
-    }
-    if (TD_GET(fnbounds_lock)) {
-      fnbounds_release_lock();
-    }
+    hpcrun_cleanup_partial_unwind();
   }
 
   hpcrun_clear_handling_sample(td);

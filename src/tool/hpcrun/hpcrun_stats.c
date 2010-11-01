@@ -69,6 +69,7 @@ static long num_samples_blocked_dlopen = 0;
 static long num_samples_dropped = 0;
 static long num_samples_filtered = 0;
 static long num_samples_segv = 0;
+static long num_samples_partial = 0;
 
 static long num_unwind_intervals_total = 0;
 static long num_unwind_intervals_suspicious = 0;
@@ -183,15 +184,27 @@ hpcrun_stats_num_samples_dropped_inc(void)
   atomic_add_i64(&num_samples_dropped, 1L);
 }
 
-
 long
 hpcrun_stats_num_samples_dropped(void)
 {
   return num_samples_dropped;
 }
 
+//----------------------------
+// partial unwinds
+//----------------------------
 
+void
+hpcrun_stats_num_samples_partial_inc(void)
+{
+  atomic_add_i64(&num_samples_partial, 1L);
+}
 
+long
+hpcrun_stats_num_samples_partial(void)
+{
+  return num_samples_partial;
+}
 
 //-----------------------------
 // samples filtered
