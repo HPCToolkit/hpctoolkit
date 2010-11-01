@@ -1202,7 +1202,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 
     if (node_parent) {
       // If 'node' is not the secondary root, perform sanity check
-      if (! (node_parent == cct->root() && node->isSecondarySynthRoot()) ) {
+      if (!node->isSecondarySynthRoot()) {
 	DIAG_AssertWarn(node->lmId_real() != ALoadMap::LM_id_NULL,
 			ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
       }
