@@ -191,9 +191,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_initLoadmap();
 
   hpcrun_memory_reinit();
-  hpcrun_thread_data_new();
-  hpcrun_thread_memory_init();
-  hpcrun_thread_data_init(0, NULL);
+  hpcrun_thread_data_init(0, NULL, is_child);
 
   // WARNING: a perfmon bug requires us to fork off the fnbounds
   // server before we call PAPI_init, which is done in argument
@@ -320,12 +318,8 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   thread_data_t *td = hpcrun_allocate_thread_data();
   td->suspend_sampling = 1; // begin: protect against spurious signals
 
-
   hpcrun_set_thread_data(td);
-
-  hpcrun_thread_data_new();
-  hpcrun_thread_memory_init();
-  hpcrun_thread_data_init(id, thr_ctxt);
+  hpcrun_thread_data_init(id, thr_ctxt, 0);
 
   epoch_t* epoch = TD_GET(epoch);
 
