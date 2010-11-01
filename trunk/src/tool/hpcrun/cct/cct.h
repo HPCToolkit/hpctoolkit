@@ -215,6 +215,7 @@ cct_ctxt_write(FILE* fs, epoch_flags_t flags, cct_ctxt_t* cct_ctxt);
 typedef struct hpcrun_cct_t {
 
   cct_node_t* tree_root;
+  cct_node_t* partial_unw_root;
   unsigned long num_nodes;
 
 } hpcrun_cct_t;
@@ -246,6 +247,15 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
 			    cct_metric_data_t sample_count);
 
 //
+// Given a backtrace defined by bt_beg, bt_last and whether or not a trampoline
+// was involved, record the metric data associated with the backtrace into the
+// cct (given as 1st argument).
+//
+cct_node_t*
+hpcrun_cct_record_backtrace(hpcrun_cct_t* cct, bool partial,
+			    frame_t* bt_beg, frame_t* bt_last, bool tramp_found,
+			    int metricId, uint64_t metricIncr);
+//
 // utility routine that does 2 things:
 //   1) Generate a std backtrace
 //   2) enters the generated backtrace in the cct
@@ -253,6 +263,14 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
 cct_node_t* hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 				 int metricId, uint64_t metricIncr,
 				 int skipInner, int isSync);
+
+//
+// debug variant of hpcrun_backtrace2cct -- useful for testing error conditions
+//
+//
+cct_node_t* hpcrun_dbg_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
+				     int metricId, uint64_t metricIncr,
+				     int skipInner);
 
 //
 // utility routine that does 3 things:

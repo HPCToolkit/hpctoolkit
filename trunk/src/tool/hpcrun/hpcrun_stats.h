@@ -92,6 +92,14 @@ long hpcrun_stats_num_samples_dropped(void);
 
 
 //-----------------------------
+// partial unwind samples
+//-----------------------------
+
+void hpcrun_stats_num_samples_partial_inc(void);
+long hpcrun_stats_num_samples_partial(void);
+
+
+//-----------------------------
 // samples filtered
 //-----------------------------
 

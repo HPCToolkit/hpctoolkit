@@ -475,6 +475,39 @@ hpcrun_generate_backtrace(ucontext_t* context,
   return true;
 }
 
+// debug variant of above routine
+//
+//
+// Generate a backtrace, store it in the thread local data
+// Return true/false success code
+// Also, return (via reference params) backtrace beginning, backtrace end,
+//  and whether or not a trampoline was found.
+//
+bool
+hpcrun_dbg_generate_graceful_backtrace(ucontext_t* context,
+				       frame_t** retn_bt_beg, frame_t** retn_bt_end,
+				       bool* has_tramp,
+				       int skipInner)
+{
+  thread_data_t* td = hpcrun_get_thread_data();
+
+  if (td->debug1) {
+    EMSG("2nd call to generated failing backtrace causes exit");
+    exit(0);
+  }
+  EMSG("Failing backtrace simulated");
+  td->debug1 = true;
+
+  bool rv = hpcrun_generate_backtrace(context, retn_bt_beg, retn_bt_end, has_tramp, skipInner);
+  if (!rv) return false;
+
+  size_t len = *retn_bt_end - *retn_bt_beg;
+  EMSG("Length of recorded backtrace = %d", len);
+  *retn_bt_end -= (len > 2) ? 2 : 1;
+  *has_tramp   = false;
+  return false;
+}
+
 //
 // generate a backtrace, store it in thread-local data
 // return success/failure

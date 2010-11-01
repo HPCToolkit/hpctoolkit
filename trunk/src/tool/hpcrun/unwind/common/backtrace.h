@@ -137,6 +137,11 @@ bool hpcrun_generate_backtrace(ucontext_t* context,
 			       bool* has_tramp,
 			       int skipInner);
 
+bool hpcrun_dbg_generate_graceful_backtrace(ucontext_t* context,
+					    frame_t** retn_bt_beg, frame_t** retn_bt_end,
+					    bool* has_tramp,
+					    int skipInner);
+
 bool hpcrun_gen_bt(ucontext_t* context, bool* has_tramp, bt_mut_fn bt_fn, bt_fn_arg bt_arg);
 
 #endif // hpcrun_backtrace_h
