@@ -318,17 +318,24 @@ namespace Util {
 // line -> Struct::Stmt map is consulted which is ambiguous in the
 // presence of inline (Struct::Alien).
 Prof::Struct::ACodeNode*
-demandStructure(VMA vma, Prof::Struct::LM* lmStrct, 
-		BinUtil::LM* lm, bool useStruct)
+demandStructure(VMA vma, Prof::Struct::LM* lmStrct,
+		BinUtil::LM* lm, bool useStruct,
+		const string* unknownProcNm)
 {
   using namespace Prof;
+
   Struct::ACodeNode* strct = lmStrct->findByVMA(vma);
   if (!strct) {
     if (useStruct) {
       Struct::File* fileStrct =
 	Struct::File::demand(lmStrct, Struct::Tree::UnknownFileNm);
+
+      const string* unkProcNm =
+	(unknownProcNm) ? unknownProcNm : &Struct::Tree::UnknownProcNm;
+
       Struct::Proc* procStrct =
-	Struct::Proc::demand(fileStrct, Struct::Tree::UnknownProcNm);
+	Struct::Proc::demand(fileStrct, *unkProcNm);
+
       strct = BAnal::Struct::demandStmtStructure(lmStrct, procStrct,
 						Struct::Tree::UnknownLine,
 						vma, vma + 1);

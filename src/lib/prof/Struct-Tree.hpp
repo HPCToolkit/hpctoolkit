@@ -154,6 +154,8 @@ public:
   static const std::string UnknownFileNm;
   static const std::string UnknownProcNm;
   static const SrcFile::ln UnknownLine;
+
+  static const std::string PartialUnwindProcNm;
   
 public:
   // -------------------------------------------------------

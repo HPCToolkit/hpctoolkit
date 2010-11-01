@@ -113,6 +113,8 @@ const std::string Tree::UnknownFileNm = "~unknown-file~";
 
 const std::string Tree::UnknownProcNm = "~unknown-proc~";
 
+const std::string Tree::PartialUnwindProcNm = "Partial Call Paths";
+
 const SrcFile::ln Tree::UnknownLine = SrcFile::ln_NULL;
 
 
