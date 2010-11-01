@@ -206,7 +206,7 @@ typedef struct thread_data_t {
 
 } thread_data_t;
 
-static const size_t HPCRUN_TraceBufferSz = (6 * 1024 * 1024);
+static const size_t HPCRUN_TraceBufferSz = (3 * 1024 * 1024);
 
 #define TD_GET(field) hpcrun_get_thread_data()->field
 
