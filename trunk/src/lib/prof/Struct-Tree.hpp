@@ -150,6 +150,7 @@ public:
     OFlg_Debug           = (1 << 3), // Debug: show xtra source line info
   };
 
+  static const std::string UnknownLMNm;
   static const std::string UnknownFileNm;
   static const std::string UnknownProcNm;
   static const SrcFile::ln UnknownLine;

@@ -107,6 +107,8 @@ namespace Struct {
 
 uint ANode::s_nextUniqueId = 1;
 
+const std::string Tree::UnknownLMNm   = "~unknown-load-module~";
+
 const std::string Tree::UnknownFileNm = "~unknown-file~";
 
 const std::string Tree::UnknownProcNm = "~unknown-proc~";
