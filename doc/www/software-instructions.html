@@ -308,33 +308,41 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 <h3>Selected Examples</h3>
 
-<p>The list below gives example HPCToolkit Externals and HPCToolkit <code>configure</code> commands (respectively) for selected platforms.
-The commands are designed to replace the respective commands in the above build instructions:</p>
+<p>The list below gives example HPCToolkit Externals and HPCToolkit <code>configure</code> commands (respectively) for selected platforms.</p>
+
+<p><strong>N.B.:</strong> The commands are designed to replace the respective commands in the <a href="#building-installing">above build instructions</a>.</p>
   <ul>
     <li><p>BlueGene/P front end:</p>
-	<ul>
-	  <li><code>../configure CC=gcc CXX=g++ \<br />
+	<dl class="indent">
+          <dt>HPCToolkit's Externals</dt>
+	  <dd><code>../configure CC=gcc CXX=g++ \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=`pwd`/../powerpc64-linux
-	  </code></li>
-	  <li><code>
+	      </code>
+	  </dd>
+
+          <dt>HPCToolkit</dt>
+	  <dd><code>
 	      ../configure CC=gcc CXX=g++ \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path-fe</i>&gt; \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc64-linux
 	      </code>
-          </li>
-	</ul>
+          </dd>
+	</dl>
     </li>
 
     <li><p>BlueGene/P back end:</p>
-	<ul>
-	  <li><code>
+	<dl class="indent">
+          <dt>HPCToolkit's Externals</dt>
+	  <dd><code>
 	      ../configure \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=powerpc-bgp-linux --prefix=`pwd`/../powerpc-bgp-linux
 	    </code>
-	  </li>
-	  <li><code>
+	  </dd>
+
+          <dt>HPCToolkit</dt>
+	  <dd><code>
 	      ../configure \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br />
@@ -342,26 +350,29 @@ The commands are designed to replace the respective commands in the above build 
 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=powerpc-bgp-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc-bgp-linux
 	    </code>
-	  </li>
-	</ul>
+	  </dd>
+	</dl>
     </li>
 
     <li><p>Cray XT front end (use default programming environment):</p>
-	<ul>
-	  <li><code>../configure --prefix=`pwd`/../x86_64-linux</code>
-	  </li>
+	<dl class="indent">
+          <dt>HPCToolkit's Externals</dt>
+	  <dd><code>../configure --prefix=`pwd`/../x86_64-linux</code>
+	  </dd>
 
-	  <li><code>../configure --prefix=&lt;<i>install-path-fe</i>&gt; \<br />
+          <dt>HPCToolkit</dt>
+	  <dd><code>../configure --prefix=&lt;<i>install-path-fe</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/x86_64-linux \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23
 	      </code>
-          </li>
-	</ul>
+          </dd>
+	</dl>
     </li>
 
     <li><p>Cray XT back end (use GNU programming environment):</p>
-	<ul>
-	  <li><code>
+	<dl class="indent">
+          <dt>HPCToolkit's Externals</dt>
+	  <dd><code>
 	      export XTPE_INFO_MESSAGE_OFF=1 # breaks GNU binutils' configure! <br />
 	      
 	      ../configure CC="cc -static" CXX="CC -static" \<br />
@@ -372,35 +383,38 @@ The commands are designed to replace the respective commands in the above build 
 	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libunwind \ <br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --without-old-monitor
 	      </code>
-	      </li>
+	  </dd>
 
-	  <li><code>../configure CC="cc -static" CXX="CC -static" MPICXX="CC -static" \<br />
+          <dt>HPCToolkit</dt>
+	  <dd><code>../configure CC="cc -static" CXX="CC -static" MPICXX="CC -static" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-suse-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/x86_64-crayxt \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23 \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --disable-hpcrun
 	      </code>
-          </li>
-	</ul>
+          </dd>
+	</dl>
     </li>
 
     <li><p>Linux-x86 (32-bit) on Linux-x86_64:</p>
-	<ul>
-	  <li><code>
+	<dl class="indent">
+          <dt>HPCToolkit's Externals</dt>
+	  <dd><code>
               ../configure CC="gcc -m32" CXX="g++ -m32" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=`pwd`/../i686-linux \ <br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libunwind
 	      </code>
-	      </li>
+	  </dd>
 
-	  <li><code>../configure CC="gcc -m32" CXX="g++ -m32" MPICXX="mpicxx -m32" \<br />
+          <dt>HPCToolkit</dt>
+	  <dd><code>../configure CC="gcc -m32" CXX="g++ -m32" MPICXX="mpicxx -m32" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/i686-linux \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=&lt;<i>papi-install-path</i>&gt; \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --disable-hpcrun-static
 	      </code>
-          </li>
-	</ul>
+          </dd>
+	</dl>
     </li>
 
 
@@ -517,7 +531,7 @@ The commands are designed to replace the respective commands in the above build 
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2010/10/29</span>]
+<p>[<span class="lastupdated">Page last updated: 2010/11/01</span>]
 </p>
 
 <!-- ********************************************************************** -->
