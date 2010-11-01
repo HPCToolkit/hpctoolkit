@@ -132,7 +132,11 @@ trace_open()
     trace_file_validate(td->trace_file != 0, "open");
 
     td->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
-    setbuffer(td->trace_file, td->trace_buffer, HPCRUN_TraceBufferSz);
+    int ret = setvbuf(td->trace_file, td->trace_buffer, _IOFBF,
+		      HPCRUN_TraceBufferSz);
+    if (ret != 0) {
+      EMSG("Error setting buffer for trace file");
+    }
 
     hpctrace_fmt_hdr_fwrite(td->trace_file);
   }
