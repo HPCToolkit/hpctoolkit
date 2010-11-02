@@ -977,7 +977,7 @@ ProcFrm::procNameDbg() const
 
   CCT::Call* caller = ancestorCall();
   if (caller) {
-    nm += " <=" + caller->nameDyn();
+    nm += " <= " + caller->nameDyn();
   }
 
   return nm;
@@ -1013,10 +1013,10 @@ ANode::toStringMe(uint oFlags) const
   uint sId = (m_strct) ? m_strct->id() : 0;
 
   self += " i" + xml::MakeAttrNum(m_id);
+  self += " s" + xml::MakeAttrNum(sId) + " l" + xml::MakeAttrStr(line);
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
     self += " strct" + xml::MakeAttrNum((uintptr_t)m_strct, 16);
   }
-  self += " s" + xml::MakeAttrNum(sId) + " l" + xml::MakeAttrStr(line);
 
   return self;
 }
@@ -1044,7 +1044,7 @@ string
 ADynNode::nameDyn() const
 {
   string nm = "[assoc(" + assocInfo_str() + ") ip("
-    + StrUtil::toStr(m_lmId) + ", 0x" + StrUtil::toStr(m_lmIP, 16) + ") lip("
+    + StrUtil::toStr(m_lmId) + ", " + StrUtil::toStr(m_lmIP, 16) + ") lip("
     + lip_str() + ")]";
   return nm;
 }
