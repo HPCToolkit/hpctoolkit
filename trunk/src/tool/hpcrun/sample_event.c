@@ -122,14 +122,14 @@ record_partial_unwind(hpcrun_cct_t* cct,
 		      frame_t* bt_beg, frame_t* bt_last,
 		      int metricId, uint64_t metricIncr)
 {
-  if (ENABLED(RECORD_PARTIAL_UNW)){
-    TMSG(PARTIAL_UNW, "recording partial unwind from segv");
-    hpcrun_stats_num_samples_partial_inc();
-    return hpcrun_cct_record_backtrace(cct, true,
-				       bt_beg, bt_last, false,
-				       metricId, metricIncr);
+  if (ENABLED(NO_PARTIAL_UNW)){
+    return NULL;
   }
-  return NULL;
+  TMSG(PARTIAL_UNW, "recording partial unwind from segv");
+  hpcrun_stats_num_samples_partial_inc();
+  return hpcrun_cct_record_backtrace(cct, true,
+				     bt_beg, bt_last, false,
+				     metricId, metricIncr);
 }
 
 //***************************************************************************

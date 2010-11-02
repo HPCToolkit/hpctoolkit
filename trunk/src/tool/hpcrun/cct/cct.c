@@ -939,7 +939,7 @@ hpcrun_dbg_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   if (! hpcrun_dbg_generate_graceful_backtrace(context,
 					       &bt_beg, &bt_last, &tramp_found,
 					       skipInner)) {
-    if (DISABLED(RECORD_PARTIAL_UNW)){
+    if (ENABLED(NO_PARTIAL_UNW)){
       return NULL;
     }
     else {
@@ -976,14 +976,12 @@ help_hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   if (! hpcrun_generate_backtrace(context,
 				  &bt_beg, &bt_last, &tramp_found,
 				  skipInner)) {
-    if (DISABLED(RECORD_PARTIAL_UNW)){
+    if (ENABLED(NO_PARTIAL_UNW)){
       return NULL;
     }
-    else {
-      TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure");
-      hpcrun_stats_num_samples_partial_inc();
-      partial_unw = true;
-    }
+    TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure");
+    hpcrun_stats_num_samples_partial_inc();
+    partial_unw = true;
   }
 
   cct_node_t* n = hpcrun_cct_record_backtrace(cct, partial_unw,

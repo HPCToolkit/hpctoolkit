@@ -294,7 +294,10 @@ hpcrun_stats_print_summary(void)
   long blocked = num_samples_blocked_async + num_samples_blocked_dlopen;
   long errant = num_samples_dropped + num_samples_filtered;
   long other = num_samples_dropped - num_samples_segv;
-  long valid = num_samples_attempted - errant;
+  long valid = num_samples_attempted;
+  if (ENABLED(NO_PARTIAL_UNW)) {
+    valid = num_samples_attempted - errant;
+  }
 
   hpcrun_memory_summary();
 
