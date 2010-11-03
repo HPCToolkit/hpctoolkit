@@ -226,6 +226,7 @@ hpcrun_loadmap_new()
 void
 hpcrun_loadmap_init(hpcrun_loadmap_t* x)
 {
+  TMSG(LOADMAP, "init");
   memset(x, 0, sizeof(*x));
   
   x->lm_head = NULL;
@@ -239,12 +240,15 @@ hpcrun_loadmap_init(hpcrun_loadmap_t* x)
 load_module_t*
 hpcrun_loadmap_findByAddr(void* begin, void* end)
 {
+  TMSG(LOADMAP, "find by address %p -- %p", begin, end);
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     if (x->dso_info
 	&& x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
+      TMSG(LOADMAP, "       --->%s", x->name);
       return x;
     }
   }
+  TMSG(LOADMAP, "       --->(NOT FOUND)");
   return NULL;
 }
 
@@ -252,33 +256,42 @@ hpcrun_loadmap_findByAddr(void* begin, void* end)
 load_module_t*
 hpcrun_loadmap_findByName(const char* name)
 {
+  TMSG(LOADMAP, "find by name: %s", name);
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     if (strcmp(x->name, name) == 0) {
+      TMSG(LOADMAP, "       --->FOUND", x->name);
       return x;
     }
   }
+  TMSG(LOADMAP, "       --->(NOT FOUND)");
   return NULL;
 }
 
 load_module_t*
 hpcrun_loadmap_findById(uint16_t id)
 {
+  TMSG(LOADMAP, "find by id %d", id);
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     if (x->id == id) {
+      TMSG(LOADMAP, "       --->%s", x->name);
       return x;
     }
   }
+  TMSG(LOADMAP, "       --->(NOT FOUND)");
   return NULL;
 }
 
 const char*
 hpcrun_loadmap_findLoadName(const char* name)
 {
+  TMSG(LOADMAP, "find load name: %s", name);
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     if (strstr(x->name, name)) {
+      TMSG(LOADMAP, "       --->%s", x->name);
       return x->name;
     }
   }
+  TMSG(LOADMAP, "       --->(NOT FOUND)");
   return NULL;
 }
 
@@ -288,14 +301,17 @@ hpcrun_loadmap_findLoadName(const char* name)
 static void
 hpcrun_loadmap_pushFront(load_module_t* lm)
 {
+  TMSG(LOADMAP, "push front: %s", lm->name);
   // link 'm' at the head of the list of loaded modules
   if (s_loadmap_ptr->lm_head) {
+    TMSG(LOADMAP, "previous front = %s", s_loadmap_ptr->lm_head->name);
     s_loadmap_ptr->lm_head->prev = lm;
     lm->next = s_loadmap_ptr->lm_head;
     lm->prev = NULL;
     s_loadmap_ptr->lm_head = lm;
   }
   else {
+    TMSG(LOADMAP, " ->First entry");
     s_loadmap_ptr->lm_head = lm;
     s_loadmap_ptr->lm_end = lm;
     lm->next = NULL;
@@ -344,6 +360,7 @@ hpcrun_loadmap_map(dso_info_t* dso)
 {
   const char* msg = "";
 
+  TMSG(LOADMAP, "map in dso %s", dso->name);
   // -------------------------------------------------------
   // Find or create a load_module_t: if a load module exists
   // with same name, reuse it; otherwise create a new entry
@@ -352,6 +369,7 @@ hpcrun_loadmap_map(dso_info_t* dso)
   if (lm) {
     // sanity check to ensure internal consistency
     if (lm->dso_info != dso) {
+      TMSG(LOADMAP, " !! Internal consistency check fires !!");
       hpcrun_loadmap_unmap(lm);
       lm->dso_info = dso;
     }
@@ -395,6 +413,7 @@ hpcrun_loadmap_unmap(load_module_t* lm)
       s_dso_free_list->prev = old_dso;
     }
     s_dso_free_list = old_dso;
+    TMSG(LOADMAP, "Deleting unw intervals");
     hpcrun_delete_ui_range(old_dso->start_addr, old_dso->end_addr+1);
   }
 }
