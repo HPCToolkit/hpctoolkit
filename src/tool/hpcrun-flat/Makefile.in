@@ -943,6 +943,25 @@ uninstall-am: uninstall-binPROGRAMS uninstall-pkglibLTLIBRARIES
 	uninstall-pkglibLTLIBRARIES
 
 
+############################################################
+# 
+############################################################
+
+# arguments: ($1: binary)
+define HPC_isBinaryStaticallyLinked =
+  if ldd "$1" | ${GREP} ".so" >/dev/null 2>&1 ; then \
+    true ; \
+  fi ; \
+  false
+endef
+
+# arguments: ($1: from) ($2: to)
+define HPC_moveIfStaticallyLinked =
+  if $(call HPC_isBinaryStaticallyLinked,"$1") ; then \
+    mv -f "$1" "$2" ; \
+  fi
+endef
+
 #############################################################################
 
 # Note: *-local and *-hook are special automake versions of the
