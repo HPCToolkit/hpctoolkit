@@ -262,7 +262,11 @@ host_sizeof_voidp="${ac_cv_sizeof_voidp}"
 # Check pthread.h
 HPC_CHECK_COMPILE_PTHREAD_H()
 
+
+#-------------------------------------------------
 # Check for multilib
+#-------------------------------------------------
+
 # NOTE: can this be made more elegant?  This value should be used to
 # automatically add/exclude lib32/lib64 paths below.
 HAVE_OS_MULTILIB="no"
@@ -631,6 +635,7 @@ HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 #-------------------------------------------------
 # Distribute these settings into makefiles
 #-------------------------------------------------
+
 AC_SUBST([HOST_CFLAGS])
 AC_SUBST([HOST_CXXFLAGS])
 AC_SUBST([HOST_AR])
@@ -1031,7 +1036,7 @@ AC_SUBST([OA_LDFLAGS])
 
 AC_MSG_CHECKING([whether configured with PAPI])
 
-HPC_DEF_CHECK_CXX_PAPI_LINK
+#HPC_DEF_CHECK_CXX_PAPI_LINK
 
 OPT_HAVE_PAPI=no
 OPT_PAPI_DYNAMIC=no
@@ -1703,6 +1708,31 @@ AC_ARG_ENABLE([devtools],
 
 AC_MSG_RESULT([${OPT_ENABLE_DEVTOOLS}])
 AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
+
+
+#----------------------------------------------------------------------------
+# Should we expect statically linked binaries
+#----------------------------------------------------------------------------
+
+
+#HPC_DEF_IS_COMPILER_MAKING_STATIC_BINARIES()
+
+#CXX_MAKES_STATIC_BINARIES="no"
+#if HPC_isCompilerMakingStaticBinaries(${CXX} ${CXXFLAGS} ${HOST_CXXFLAGS}) ; then
+#  CXX_MAKES_STATIC_BINARIES="yes"
+#fi
+
+#AM_CONDITIONAL(CXX_MAKES_STATIC_BINARIES,
+#               test "${CXX_MAKES_STATIC_BINARIES}" = "yes")
+
+
+#MPICXX_MAKES_STATIC_BINARIES="no"
+#if test "${OPT_ENABLE_MPI}" = "yes" && HPC_isCompilerMakingStaticBinaries(${MPICXX} ${CXXFLAGS} ${HOST_CXXFLAGS}) ; then
+#  MPICXX_MAKES_STATIC_BINARIES="yes"
+#fi
+
+#AM_CONDITIONAL(MPICXX_MAKES_STATIC_BINARIES,
+#               test "${MPICXX_MAKES_STATIC_BINARIES}" = "yes")
 
 
 #----------------------------------------------------------------------------

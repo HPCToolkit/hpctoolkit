@@ -744,7 +744,8 @@ install-dvi: install-dvi-am
 install-dvi-am:
 
 install-exec-am: install-binSCRIPTS install-pkglibexecPROGRAMS
-
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
 install-html: install-html-am
 
 install-html-am:
@@ -785,7 +786,7 @@ ps-am:
 
 uninstall-am: uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
 
-.MAKE: install-am install-strip
+.MAKE: install-am install-exec-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
 	clean-libtool clean-pkglibexecPROGRAMS ctags distclean \
@@ -793,17 +794,39 @@ uninstall-am: uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-binSCRIPTS install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-pkglibexecPROGRAMS install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
+	install-exec-am install-exec-hook install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-pkglibexecPROGRAMS install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
 
+
+############################################################
+# 
+############################################################
+
+# arguments: ($1: binary)
+define HPC_isBinaryStaticallyLinked =
+  if ldd "$1" | ${GREP} ".so" >/dev/null 2>&1 ; then \
+    true ; \
+  fi ; \
+  false
+endef
+
+# arguments: ($1: from) ($2: to)
+define HPC_moveIfStaticallyLinked =
+  if $(call HPC_isBinaryStaticallyLinked,"$1") ; then \
+    mv -f "$1" "$2" ; \
+  fi
+endef
 
 #############################################################################
+
+install-exec-hook:
+	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(pkglibexecdir)/hpcprof-mpi-bin$(EXEEXT),$(DESTDIR)$(bindir)/hpcprof-mpi$(EXEEXT))
 
 %.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_0_CXX) $< > $@

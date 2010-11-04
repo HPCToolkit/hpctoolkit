@@ -108,7 +108,6 @@ pkglibexecdir = $(libexecdir)/$(PACKAGE)
 
 bin_SCRIPTS = hpcprof-mpi
 
-#bin_PROGRAMS = hpcprof-mpi-bin
 pkglibexec_PROGRAMS = hpcprof-mpi-bin
 
 hpcprof_mpi_bin_SOURCES  = $(MYSOURCES)
@@ -118,6 +117,10 @@ hpcprof_mpi_bin_LDFLAGS  = $(MYLDFLAGS)
 hpcprof_mpi_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
+
+install-exec-hook:
+	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(pkglibexecdir)/hpcprof-mpi-bin$(EXEEXT),$(DESTDIR)$(bindir)/hpcprof-mpi$(EXEEXT))
+
 
 #############################################################################
 # Common rules

@@ -108,6 +108,10 @@ hpcproftt_bin_LDADD     = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
+install-exec-hook:
+	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(pkglibexecdir)/hpcproftt-bin$(EXEEXT),$(DESTDIR)$(bindir)/hpcproftt$(EXEEXT))
+
+
 #############################################################################
 # Common rules
 #############################################################################

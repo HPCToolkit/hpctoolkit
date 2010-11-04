@@ -714,6 +714,25 @@ uninstall-am:
 	pdf pdf-am ps ps-am tags uninstall uninstall-am
 
 
+############################################################
+# 
+############################################################
+
+# arguments: ($1: binary)
+define HPC_isBinaryStaticallyLinked =
+  if ldd "$1" | ${GREP} ".so" >/dev/null 2>&1 ; then \
+    true ; \
+  fi ; \
+  false
+endef
+
+# arguments: ($1: from) ($2: to)
+define HPC_moveIfStaticallyLinked =
+  if $(call HPC_isBinaryStaticallyLinked,"$1") ; then \
+    mv -f "$1" "$2" ; \
+  fi
+endef
+
 #############################################################################
 
 %.cpp.pp : %.cpp

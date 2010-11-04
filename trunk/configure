@@ -15514,7 +15514,11 @@ $as_echo "#define __thread __threadp" >>confdefs.h
 
    fi
 
+
+#-------------------------------------------------
 # Check for multilib
+#-------------------------------------------------
+
 # NOTE: can this be made more elegant?  This value should be used to
 # automatically add/exclude lib32/lib64 paths below.
 HAVE_OS_MULTILIB="no"
@@ -15552,7 +15556,7 @@ MYcxxcmp()
      shift
 
      while test $# -ge 1 ; do
-       if ( echo "$mycxx" | grep "$1\$" >/dev/null 2>&1 ); then
+       if ( echo "${mycxx}" | ${GREP} "$1\$" >/dev/null 2>&1 ); then
          return 0
        fi
        shift
@@ -15979,6 +15983,7 @@ HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 #-------------------------------------------------
 # Distribute these settings into makefiles
 #-------------------------------------------------
+
 
 
 
@@ -16434,56 +16439,7 @@ $as_echo "${OA}" >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether configured with PAPI" >&5
 $as_echo_n "checking whether configured with PAPI... " >&6; }
 
-HPC_check_cxx_papi_link()
-   {
-     myincflg="$1"
-     mylibpath="$2"
-     CXXFLAGS_ORIG=${CXXFLAGS}
-     CXXFLAGS="${CXXFLAGS} ${myincflg}"
-     LDFLAGS_ORIG=${LDFLAGS}
-     LIBS_ORIG=${LIBS}
-     LIBS="${LIBS} ${mylibpath}/libpapi.a"
-     #LIBS="${LIBS} -L${mylibpath} -lpapi"
-
-     # NOTE: do not cache (AC_CACHE_CHECK) b/c this may be called
-     # multiple times!
-     CAN_PAPI_LINK="no"
-     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CXX-CC} can link with PAPI using path ${mylibpath}" >&5
-$as_echo_n "checking whether ${CXX-CC} can link with PAPI using path ${mylibpath}... " >&6; }
-     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <papi.h>
-
-int
-main ()
-{
-PAPI_is_initialized()
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  CAN_PAPI_LINK="yes"
-else
-  CAN_PAPI_LINK="no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-     { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${CAN_PAPI_LINK}" >&5
-$as_echo "${CAN_PAPI_LINK}" >&6; }
-
-     CXXFLAGS="${CXXFLAGS_ORIG}"
-     LDFLAGS="${LDFLAGS_ORIG}"
-     LIBS="${LIBS_ORIG}"
-
-     if test "$CAN_PAPI_LINK" = "yes" ; then
-       return 0
-     else
-       return 1
-     fi
-   }
+#HPC_DEF_CHECK_CXX_PAPI_LINK
 
 OPT_HAVE_PAPI=no
 OPT_PAPI_DYNAMIC=no
@@ -17305,6 +17261,31 @@ else
   OPT_ENABLE_DEVTOOLS_FALSE=
 fi
 
+
+
+#----------------------------------------------------------------------------
+# Should we expect statically linked binaries
+#----------------------------------------------------------------------------
+
+
+#HPC_DEF_IS_COMPILER_MAKING_STATIC_BINARIES()
+
+#CXX_MAKES_STATIC_BINARIES="no"
+#if HPC_isCompilerMakingStaticBinaries(${CXX} ${CXXFLAGS} ${HOST_CXXFLAGS}) ; then
+#  CXX_MAKES_STATIC_BINARIES="yes"
+#fi
+
+#AM_CONDITIONAL(CXX_MAKES_STATIC_BINARIES,
+#               test "${CXX_MAKES_STATIC_BINARIES}" = "yes")
+
+
+#MPICXX_MAKES_STATIC_BINARIES="no"
+#if test "${OPT_ENABLE_MPI}" = "yes" && HPC_isCompilerMakingStaticBinaries(${MPICXX} ${CXXFLAGS} ${HOST_CXXFLAGS}) ; then
+#  MPICXX_MAKES_STATIC_BINARIES="yes"
+#fi
+
+#AM_CONDITIONAL(MPICXX_MAKES_STATIC_BINARIES,
+#               test "${MPICXX_MAKES_STATIC_BINARIES}" = "yes")
 
 
 #----------------------------------------------------------------------------

@@ -96,6 +96,81 @@ AC_DEFUN([HPC_ENSURE_DEFINED_CFLAGS],
 
 
 #---------------------------------------------------------------
+# HPC_DEF_IS_COMPILER_MAKING_STATIC_BINARIES()
+#---------------------------------------------------------------
+
+define([HPC_isCompilerMakingStaticBinaries],
+       [MY_isCompilerMakingStaticBinaries $@])dnl
+
+# HPC_is_statically_linked(): 
+#   args: ($@: compiler + flags)
+#   return 0 for yes, 1 otherwise
+
+AC_DEFUN([HPC_DEF_IS_COMPILER_MAKING_STATIC_BINARIES],
+  [HPC_DEF_IS_BINARY_STATICALLY_LINKED()
+   MY_isCompilerMakingStaticBinaries()
+   {
+     my_compiler="$[]@"
+
+     AC_LANG_PUSH([C++])
+     CXX_ORIG="${CXX}"
+     CXX="${my_compiler}"
+
+     # should account for CXXFLAGS...
+
+     # NOTE: do not cache (AC_CACHE_CHECK) b/c this may be called
+     # multiple times!
+     isStaticallyLinked="no"
+     AC_MSG_CHECKING([whether '${CXX}' makes statically linked binaries])
+     AC_LINK_IFELSE([AC_LANG_PROGRAM(
+                      [
+/*no includes needed*/
+],
+                      [char* hpctoolkit = "hpctoolkit;"])],
+                    [if HPC_isBinaryStaticallyLinked conftest$EXEEXT ; then
+		       isStaticallyLinked=yes
+		     fi],
+                    [isStaticallyLinked="no"])
+
+     AC_MSG_RESULT([${isStaticallyLinked}])
+
+     CXX="${CXX_ORIG}"
+     AC_LANG_POP([C++])
+
+     if test "${isStaticallyLinked}" = "yes" ; then
+       return 0
+     else
+       return 1
+     fi
+   }])dnl
+
+
+#---------------------------------------------------------------
+# HPC_isBinaryStaticallyLinked
+#---------------------------------------------------------------
+
+# Given a binary, test whether it is statically linked.
+# return 0 if it is, 1 otherwise
+# args: ($1):
+
+# Methods for checking whether a file is statically linked
+#   'ldd'
+#   'file'
+#   'readelf -d' | grep NEEDED
+
+AC_DEFUN([HPC_DEF_IS_BINARY_STATICALLY_LINKED],
+  [HPC_isBinaryStaticallyLinked()
+   {
+     fnm=$[]1
+  
+     if ( ldd "$fnm" | ${GREP} ".so" >/dev/null 2>&1 ); then
+       return 1 # false
+     fi
+     return 0 # true
+   }])dnl
+
+
+#---------------------------------------------------------------
 # Check C++ standards-conforming access to C headers: #include <cheader>
 #---------------------------------------------------------------
 
@@ -177,7 +252,7 @@ AC_DEFUN([HPC_DEF_CXXCMP],
      shift
   
      while test $[]# -ge 1 ; do
-       if ( echo "$mycxx" | grep "$[]1\$" >/dev/null 2>&1 ); then
+       if ( echo "${mycxx}" | ${GREP} "$[]1\$" >/dev/null 2>&1 ); then
          return 0
        fi
        shift
