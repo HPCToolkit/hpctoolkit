@@ -294,7 +294,6 @@ public:
   static int
   fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags);
 
-
   // -------------------------------------------------------
   // Output
   // -------------------------------------------------------

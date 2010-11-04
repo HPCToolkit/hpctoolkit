@@ -79,6 +79,12 @@ extern "C" {
 
 //***************************************************************************
 
+// Note: use #defines to (portably) avoid warnings about unused
+// "static const char*" variables.
+#define HPCIO_RWBufferSz (4 * 1024 * 1024)
+
+//***************************************************************************
+
 // Open and close a file stream for use with the library's read/write
 // routines. 
 //

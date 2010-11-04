@@ -65,6 +65,8 @@
 #include <lush/lush-pthread.i>
 #include <unwind/common/backtrace.h>
 
+#include <lib/prof-lean/hpcio.h>
+
 typedef struct {
   sigjmp_buf jb;
 } sigjmp_buf_t;
@@ -215,7 +217,7 @@ typedef struct thread_data_t {
 
 } thread_data_t;
 
-static const size_t HPCRUN_TraceBufferSz = (3 * 1024 * 1024);
+static const size_t HPCRUN_TraceBufferSz = HPCIO_RWBufferSz;
 
 #define TD_GET(field) hpcrun_get_thread_data()->field
 
