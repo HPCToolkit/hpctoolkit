@@ -133,6 +133,7 @@ void
 messages_init()
 {
   debug_flag_init();
+  global_msg_count = 0;
 
   spinlock_unlock(&pmsg_lock); // initialize lock for async operations
 
