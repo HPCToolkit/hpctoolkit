@@ -36,18 +36,11 @@ work_dir=`pwd`
 cd "../${src}" || die "unable to cd: ${src}"
 src=`pwd`
 
-# ----------------------------------------------------------
-# Simple version causes problems because it includes gas
-# ----------------------------------------------------------
-# echo configure "$@"
-# ../${src}/configure "$@"
-# test $? -eq 0 || die "configure failed"
-
-# ----------------------------------------------------------
-# Only configure what we need
-# ----------------------------------------------------------
+#
+# Only configure what we need.
+#
 dirs="libiberty bfd opcodes intl binutils"
-for x in . ${dirs}; do
+for x in . $dirs ; do
     echo "=> ${x}/configure $@"
     mkdir -p ${work_dir}/${x} || die "unable to mkdir: ${work_dir}/${x}"
     cd ${work_dir}/${x}

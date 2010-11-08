@@ -19,16 +19,11 @@ work_dir=`pwd`
 cd "../${src}" || die "unable to cd: ${src}"
 src=`pwd`
 
-# ----------------------------------------------------------
-# Simple version causes problems because it includes gas
-# ----------------------------------------------------------
-# cd ${work_dir} && $MAKE install
-
-# ----------------------------------------------------------
-# Only install what we need
-# ----------------------------------------------------------
+#
+# Only install what we need.
+#
 dirs="libiberty bfd opcodes intl binutils"
-for x in ${dirs}; do
+for x in $dirs ; do
     echo "=> ${x}/install"
     cd ${work_dir}/${x}
     $MAKE install || die "unable to install ${x}"

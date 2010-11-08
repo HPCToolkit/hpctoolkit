@@ -4,9 +4,8 @@
 #
 #  $Id$
 #
-
-# NOTE: this file is necessary only becuase we selectively build
-# subdirs (see configure)
+#  Note: this file is necessary only becuase we selectively build
+#  subdirs (see configure).
 
 PKG_NAME=binutils
 src=version-binutils-2.20.1/binutils-2.20.1
@@ -17,11 +16,11 @@ pre_build
 cd work || die "unable to cd: work"
 work_dir=`pwd`
 
-# ----------------------------------------------------------
-# Only build what we need
-# ----------------------------------------------------------
+#
+# Only build what we need.
+#
 dirs="libiberty bfd opcodes intl binutils"
-for x in ${dirs}; do
+for x in $dirs ; do
     echo "=> ${x}/build"
     cd ${work_dir}/${x}
     $MAKE || die "unable to build ${x}"
