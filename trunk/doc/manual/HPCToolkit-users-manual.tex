@@ -1012,6 +1012,21 @@ Even so, the performance attribution is usually very informative.
 % ===========================================================================
 % ===========================================================================
 
+\section{\hpcviewer{} fails to open a large database}
+
+There is a startup file hpcviewer.ini that can be adjusted to increase the memory allocated to hpcviewer. 
+You can locate the config file in your hpcviewer installation by running a "find" command at the root of your hpcviewer installation.  
+The default Java settings used for hpcviewer are -Xms400m and -Xmx1024m. 
+You should be able to increase to -Xms800m and -Xmx1800m.
+
+Another solution is by disabling callers view in hpcviewer by using the "-n" option as follows:
+\begin{quote}
+  \verb,hpcviewer -n database_directory,
+\end{quote}
+
+% ===========================================================================
+% ===========================================================================
+
 \section{\hpcviewer{} runs glacially slowly! Why?}
 
 There are three likely reasons why \hpcviewer{} might run slowly.
