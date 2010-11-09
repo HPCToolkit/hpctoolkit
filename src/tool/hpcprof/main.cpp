@@ -84,8 +84,9 @@ static int
 realmain(int argc, char* const* argv);
 
 static void
-makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
-	    Prof::CallPath::Profile& prof);
+makeMetrics(Prof::CallPath::Profile& prof,
+	    const Analysis::Args& args,
+	    const Analysis::Util::NormalizeProfileArgs_t& nArgs);
 
 
 //****************************************************************************
@@ -172,7 +173,7 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
 
   if (args.prof_doDerivedMetrics) {
-    makeMetrics(nArgs, *prof);
+    makeMetrics(*prof, args, nArgs);
     
     // FIXME: CallPath-MetricComponentsFact.cpp must support Metric::DerivedDesc
     //Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
@@ -199,12 +200,13 @@ realmain(int argc, char* const* argv)
   return 0;
 }
 
+
 //****************************************************************************
 
-
 static void
-makeMetrics(const Analysis::Util::NormalizeProfileArgs_t& nArgs,
-	    Prof::CallPath::Profile& prof)
+makeMetrics(Prof::CallPath::Profile& prof,
+	    const Analysis::Args& args,
+	    const Analysis::Util::NormalizeProfileArgs_t& nArgs)
 {
   Prof::Metric::Mgr& mMgr = *prof.metricMgr();
 
