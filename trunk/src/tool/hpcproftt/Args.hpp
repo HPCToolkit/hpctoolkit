@@ -137,13 +137,13 @@ public:
   getCmd() /*const*/;
 
   static void
-  parse_sourceOpts(Args* args, const std::string& opts);
+  parseArg_source(Args* args, const std::string& opts);
 
   static void
-  parse_objectOpts(Args* args, const std::string& opts);
+  parseArg_object(Args* args, const std::string& opts);
 
   static void
-  parse_metricOpts(Args* args, const std::string& opts);
+  parseArg_metric(Args* args, const std::string& opts);
 
 public:
   // Parsed Data

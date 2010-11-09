@@ -194,12 +194,14 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      isOptArg_src },
   {  0 , "srcannot",        CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
+
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
   { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
   { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL},
+
   { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
@@ -214,13 +216,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      NULL },
   {  0 , "obj-threshold",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
-
-  // OBSOLETE Options
-  { 'e', NULL, CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL}, // everything
-  { 'f', NULL, CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL}, // files
-  { 'r', NULL, CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL}, // routines
-  { 'l', NULL, CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL}, // lines
-  { 'o', NULL, CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL}, // object
 
   // Raw profile data
   {  0 , "dump",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
@@ -247,7 +242,7 @@ isOptArg_src(const char* x)
   string opt(x);
   bool ret = true;
   try {
-    Args::parse_sourceOpts(NULL, opt);
+    Args::parseArg_source(NULL, opt);
   }
   catch (const Args::Exception& x) {
     // To enable good error messages, consider strings with a ratio of
@@ -274,7 +269,7 @@ isOptArg_obj(const char* x)
   string opt(x);
   bool ret = true;
   try {
-    Args::parse_objectOpts(NULL, opt);
+    Args::parseArg_object(NULL, opt);
   }
   catch (const Args::Exception& x) {
     // To enable good error messages, consider strings of size 1
@@ -422,7 +417,7 @@ Args::parse(int argc, const char* const argv[])
 
       if (!opt.empty()) {
 	txt_summary = Analysis::Args::TxtSum_NULL;
-	parse_sourceOpts(this, opt);
+	parseArg_source(this, opt);
       }
     }
     if (parser.isOpt("srcannot")) {
@@ -467,7 +462,7 @@ Args::parse(int argc, const char* const argv[])
 
     if (parser.isOpt("metric")) {
       string opt = parser.getOptArg("metric");
-      parse_metricOpts(this, opt);
+      parseArg_metric(this, opt);
     }
     
     // Check for other options: Object correlation options
@@ -479,7 +474,7 @@ Args::parse(int argc, const char* const argv[])
       else if (parser.isOptArg("obj")) { opt = parser.getOptArg("obj"); }
 
       if (!opt.empty()) {
-	parse_objectOpts(this, opt);
+	parseArg_object(this, opt);
       }
     }
     if (parser.isOpt("objannot")) {
@@ -497,35 +492,6 @@ Args::parse(int argc, const char* const argv[])
     // Check for other options: Dump raw profile data
     if (parser.isOpt("dump")) {
       mode = Mode_RawDataDump;
-    }
-
-    // -------------------------------------------------------
-    // OBSOLETE Options [FIXME: remove as soon as SiCortex says ok]
-    // -------------------------------------------------------
-    if (parser.isOpt('e')) {
-      DIAG_WMsg(0, "Deprecated option '-e': use --src=all or --src=sum");
-      mode = Mode_SourceCorrelation;
-      txt_summary = TxtSum_ALL;
-      txt_srcAnnotation = true;
-    }
-    if (parser.isOpt('f')) {
-      DIAG_WMsg(0, "Deprecated option '-f': use --src=f");
-      mode = Mode_SourceCorrelation;
-      txt_summary = txt_summary | TxtSum_fFile;
-    }
-    if (parser.isOpt('r')) {
-      DIAG_WMsg(0, "Deprecated option '-r': use --src=p");
-      mode = Mode_SourceCorrelation;
-      txt_summary = txt_summary | TxtSum_fProc;
-    }
-    if (parser.isOpt('l')) {
-      DIAG_WMsg(0, "Deprecated option '-l': use --src=s");
-      mode = Mode_SourceCorrelation;
-      txt_summary = txt_summary | TxtSum_fStmt;
-    }
-    if (parser.isOpt('o')) {
-      DIAG_WMsg(0, "Deprecated option '-o': use --obj");
-      mode = Mode_ObjectCorrelation;
     }
 
     // FIXME: sanity check that options correspond to mode
@@ -555,7 +521,7 @@ Args::parse(int argc, const char* const argv[])
 
 
 void
-Args::parse_sourceOpts(Args* args, const string& opts)
+Args::parseArg_source(Args* args, const string& opts)
 {
   std::vector<std::string> srcOptVec;
   StrUtil::tokenize_char(opts, ",", srcOptVec);
@@ -588,7 +554,7 @@ Args::parse_sourceOpts(Args* args, const string& opts)
 
 
 void
-Args::parse_objectOpts(Args* args, const string& opts)
+Args::parseArg_object(Args* args, const string& opts)
 {
   if (opts == "s") {
     if (args) {
@@ -602,15 +568,15 @@ Args::parse_objectOpts(Args* args, const string& opts)
 
 
 void
-Args::parse_metricOpts(Args* args, const string& opts)
+Args::parseArg_metric(Args* args, const string& value)
 {
-  if (opts == "sum" || opts == "sum-only") {
+  if (value == "sum" || value == "sum-only") {
     if (args) {
-      args->txt_metrics = opts;
+      args->txt_metrics = value;
     }
   }
   else {
-    ARG_Throw("Unknown argument to -M,--metric: '" << opts << "'");
+    ARG_Throw("Unknown argument to -M,--metric: '" << value << "'");
   }
 }
 
