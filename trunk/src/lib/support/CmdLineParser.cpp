@@ -462,7 +462,7 @@ CmdLineParser::parseArg_bool(const string& value, const char* errTag)
     return false;
   }
   else {
-    string msg = "Expected boolean value but received: " + x;
+    string msg = "Expected boolean value but received: '" + x + "'";
     if (errTag) {
       msg = string(errTag) + ": " + msg;
     }

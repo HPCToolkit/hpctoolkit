@@ -178,6 +178,9 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
   { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL},
 
+  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
   { 'N', "normalize",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
@@ -191,8 +194,6 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
 
   // Special options for now
   {  0 , "force",           CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // General
@@ -361,13 +362,14 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
       }
     }
 
-    // Check for special hpcprof options:
-    if (parser.isOpt("force")) {
-      prof_forceReadProfiles = true;
-    }
     if (parser.isOpt("metric")) {
       string opt = parser.getOptArg("metric");
       prof_doDerivedMetrics = parseArg_metric(opt, "--metric/-M option");
+    }
+
+    // Check for special hpcprof options:
+    if (parser.isOpt("force")) {
+      prof_forceReadProfiles = true;
     }
     
     // Check for other options: Output options
@@ -435,7 +437,7 @@ ArgsHPCProf::parseArg_norm(const string& value, const char* errTag)
     return false;
   }
   else {
-    ARG_ERROR(errTag << ": Unexpected value received: " << value);
+    ARG_ERROR(errTag << ": Unexpected value received: '" << value << "'");
   }
 }
 
@@ -450,7 +452,7 @@ ArgsHPCProf::parseArg_metric(const std::string& value, const char* errTag)
     return false;
   }
   else {
-    ARG_ERROR(errTag << ": Unexpected value received: " << value);
+    ARG_ERROR(errTag << ": Unexpected value received: '" << value << "'");
   }
 }
 
