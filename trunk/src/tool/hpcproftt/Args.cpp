@@ -242,7 +242,7 @@ isOptArg_src(const char* x)
   string opt(x);
   bool ret = true;
   try {
-    Args::parseArg_source(NULL, opt);
+    Args::parseArg_source(NULL, opt, "");
   }
   catch (const Args::Exception& x) {
     // To enable good error messages, consider strings with a ratio of
@@ -269,7 +269,7 @@ isOptArg_obj(const char* x)
   string opt(x);
   bool ret = true;
   try {
-    Args::parseArg_object(NULL, opt);
+    Args::parseArg_object(NULL, opt, "");
   }
   catch (const Args::Exception& x) {
     // To enable good error messages, consider strings of size 1
@@ -309,6 +309,9 @@ Args::Ctor()
 
 
   // Analysis::Args
+  prof_metrics = Analysis::Args::MetricSet_ThreadOnly;
+  profflat_computeFinalMetricValues = true;
+
   out_db_experiment = "";
   db_dir            = "";
   db_copySrcFiles   = false;
@@ -316,7 +319,6 @@ Args::Ctor()
   out_txt           = "-";
   txt_summary       = TxtSum_fPgm | TxtSum_fLM;
   txt_srcAnnotation = false;
-  profflat_computeFinalMetricValues = true;
 }
 
 
@@ -417,7 +419,7 @@ Args::parse(int argc, const char* const argv[])
 
       if (!opt.empty()) {
 	txt_summary = Analysis::Args::TxtSum_NULL;
-	parseArg_source(this, opt);
+	parseArg_source(this, opt, "--source/--src option");
       }
     }
     if (parser.isOpt("srcannot")) {
@@ -462,7 +464,7 @@ Args::parse(int argc, const char* const argv[])
 
     if (parser.isOpt("metric")) {
       string opt = parser.getOptArg("metric");
-      parseArg_metric(this, opt);
+      parseArg_metric(this, opt, "--metric/-M option");
     }
     
     // Check for other options: Object correlation options
@@ -474,7 +476,7 @@ Args::parse(int argc, const char* const argv[])
       else if (parser.isOptArg("obj")) { opt = parser.getOptArg("obj"); }
 
       if (!opt.empty()) {
-	parseArg_object(this, opt);
+	parseArg_object(this, opt, "--object/--obj option");
       }
     }
     if (parser.isOpt("objannot")) {
@@ -521,10 +523,10 @@ Args::parse(int argc, const char* const argv[])
 
 
 void
-Args::parseArg_source(Args* args, const string& opts)
+Args::parseArg_source(Args* args, const string& value, const char* errTag)
 {
   std::vector<std::string> srcOptVec;
-  StrUtil::tokenize_char(opts, ",", srcOptVec);
+  StrUtil::tokenize_char(value, ",", srcOptVec);
 
   for (uint i = 0; i < srcOptVec.size(); ++i) {
     const string& opt = srcOptVec[i];
@@ -540,7 +542,7 @@ Args::parseArg_source(Args* args, const string& opts)
     else if (opt == "s")   { flg = TxtSum_fStmt; }
     else if (opt == "src") { ; }
     else {
-      ARG_Throw("Unknown argument to --src,--source: '" << opt << "'");
+      ARG_Throw(errTag << ": Unexpected value received: '" << opt << "'");
     }
 
     if (args) {
@@ -554,29 +556,34 @@ Args::parseArg_source(Args* args, const string& opts)
 
 
 void
-Args::parseArg_object(Args* args, const string& opts)
+Args::parseArg_object(Args* args, const string& value, const char* errTag)
 {
-  if (opts == "s") {
+  if (value == "s") {
     if (args) {
       args->obj_showSourceCode = true;
     }
   }
   else {
-    ARG_Throw("Unknown argument to --obj,--object: '" << opts << "'");
+    ARG_Throw(errTag << ": Unexpected value received: '" << value << "'");
   }
 }
 
 
 void
-Args::parseArg_metric(Args* args, const string& value)
+Args::parseArg_metric(Args* args, const string& value, const char* errTag)
 {
-  if (value == "sum" || value == "sum-only") {
+  if (value == "sum") {
     if (args) {
-      args->txt_metrics = value;
+      args->prof_metrics = Analysis::Args::MetricSet_ThreadAndSum;
+    }
+  }
+  else if (value == "sum-only") {
+    if (args) {
+      args->prof_metrics = Analysis::Args::MetricSet_SumOnly;
     }
   }
   else {
-    ARG_Throw("Unknown argument to -M,--metric: '" << value << "'");
+    ARG_Throw(errTag << ": Unexpected value received: '" << value << "'");
   }
 }
 

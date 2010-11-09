@@ -118,7 +118,7 @@ private:
   bool
   parseArg_norm(const std::string& value, const char* errTag);
 
-  bool
+  void
   parseArg_metric(const std::string& value, const char* errTag);
 
   
