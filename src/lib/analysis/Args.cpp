@@ -99,13 +99,13 @@ Args::Ctor()
   // Correlation arguments
   // -------------------------------------------------------
 
+  doNormalizeTy = true;
+
+  prof_metrics = Analysis::Args::MetricSet_NULL;
+
   prof_forceReadProfiles = false;
 
-  prof_doDerivedMetrics = true;
-
   profflat_computeFinalMetricValues = true;
-
-  doNormalizeTy = true;
 
   // -------------------------------------------------------
   // Output arguments

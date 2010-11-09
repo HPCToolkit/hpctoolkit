@@ -137,20 +137,17 @@ public:
   getCmd() /*const*/;
 
   static void
-  parseArg_source(Args* args, const std::string& opts);
+  parseArg_source(Args* args, const std::string& opts, const char* errTag);
 
   static void
-  parseArg_object(Args* args, const std::string& opts);
+  parseArg_object(Args* args, const std::string& opts, const char* errTag);
 
   static void
-  parseArg_metric(Args* args, const std::string& opts);
+  parseArg_metric(Args* args, const std::string& opts, const char* errTag);
 
 public:
   // Parsed Data
   Mode_t mode;
-
-  // Define additional metrics
-  string txt_metrics;
 
   // Object Correlation args
   std::vector<std::string> obj_procGlobs;

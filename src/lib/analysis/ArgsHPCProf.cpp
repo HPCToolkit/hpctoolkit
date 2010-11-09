@@ -222,8 +222,9 @@ ArgsHPCProf::ArgsHPCProf()
   Diagnostics_SetDiagnosticFilterLevel(1);
 
   // Analysis::Args
-  prof_doDerivedMetrics = true;
-  db_makeMetricDB       = true;
+  prof_metrics = MetricSet_NULL; // set in derived class
+
+  db_makeMetricDB = true;
 }
 
 
@@ -364,7 +365,7 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
 
     if (parser.isOpt("metric")) {
       string opt = parser.getOptArg("metric");
-      prof_doDerivedMetrics = parseArg_metric(opt, "--metric/-M option");
+      parseArg_metric(opt, "--metric/-M option");
     }
 
     // Check for special hpcprof options:
@@ -442,14 +443,16 @@ ArgsHPCProf::parseArg_norm(const string& value, const char* errTag)
 }
 
 
-bool
+// Cf. hpcproftt/Args::parseArg_metric()
+void
 ArgsHPCProf::parseArg_metric(const std::string& value, const char* errTag)
 {
   if (value == "yes" || value == "all") {
-    return true;
+    prof_metrics = Analysis::Args::MetricSet_ThreadAndSum;
+    // FIXME: or Analysis::Args::MetricSet_SumOnly
   }
   else if (value == "no" || value == "none") {
-    return false;
+    prof_metrics = Analysis::Args::MetricSet_ThreadOnly;
   }
   else {
     ARG_ERROR(errTag << ": Unexpected value received: '" << value << "'");

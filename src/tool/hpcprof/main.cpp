@@ -146,7 +146,8 @@ realmain(int argc, char* const* argv)
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
   uint rFlags = 0;
-  if (args.prof_doDerivedMetrics) {
+  if (args.prof_metrics == Analysis::Args::MetricSet_ThreadAndSum
+      || args.prof_metrics == Analysis::Args::MetricSet_SumOnly) {
     rFlags |= Prof::CallPath::Profile::RFlg_MakeInclExcl;
   }
   uint mrgFlags = (Prof::CCT::MrgFlg_NormalizeTraceFileY);
@@ -172,7 +173,8 @@ realmain(int argc, char* const* argv)
   // Create summary metrics
   // -------------------------------------------------------
 
-  if (args.prof_doDerivedMetrics) {
+  if (args.prof_metrics == Analysis::Args::MetricSet_ThreadAndSum
+      || args.prof_metrics == Analysis::Args::MetricSet_SumOnly) {
     makeMetrics(*prof, args, nArgs);
     
     // FIXME: CallPath-MetricComponentsFact.cpp must support Metric::DerivedDesc
@@ -227,13 +229,12 @@ makeMetrics(Prof::CallPath::Profile& prof,
     numDrvd = (mDrvdEnd - mDrvdBeg);
   }
 
-#if 0
-  for (uint mId = mSrcBeg; mId < mSrcEnd; ++mId) {
-    Prof::Metric::ADesc* m = mMgr.metric(mId);
-    m->isVisible(false);
+  if (args.prof_metrics == Analysis::Args::MetricSet_SumOnly) {
+    for (uint mId = mSrcBeg; mId < mSrcEnd; ++mId) {
+      Prof::Metric::ADesc* m = mMgr.metric(mId);
+      m->isVisible(false);
+    }
   }
-#endif
-
 
   // -------------------------------------------------------
   // aggregate sampled metrics (in batch)

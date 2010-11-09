@@ -143,9 +143,17 @@ public:
   // Attribution/Correlation arguments: special
   // -------------------------------------------------------
 
-  bool prof_forceReadProfiles;
+  // TODO: Flag for ThreadMetrics; flag for SummaryMetrics; name of Sum Set
+  enum MetricSet {
+    MetricSet_NULL,
+    MetricSet_ThreadOnly,
+    MetricSet_ThreadAndSum,
+    MetricSet_SumOnly
+  };
 
-  bool prof_doDerivedMetrics;
+  MetricSet prof_metrics;
+
+  bool prof_forceReadProfiles;
 
   // TODO: Currently this is always true even though we only need to
   // compute final metric values for (1) hpcproftt (flat) and (2)
