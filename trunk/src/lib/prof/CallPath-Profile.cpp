@@ -887,6 +887,18 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   }
 
   // -------------------------
+  // environment
+  // -------------------------
+
+#if 0
+  string envPath;
+  val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_envPath);
+  if (val && strlen(val) > 0) {
+    envPath = val;
+  }
+#endif
+
+  // -------------------------
   // parallelism context (mpi rank, thread id)
   // -------------------------
   string mpiRankStr, tidStr;
@@ -1102,7 +1114,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     LoadMap::LM* lm = new LoadMap::LM(nm);
     loadmap.lm_insert(lm);
     
-    DIAG_Assert(lm->id() == i + 1, "FIXME: Profile::fmt_epoch_fread: Expect lm id's to be in order to support dual-interpretations.");
+    DIAG_Assert(lm->id() == i + 1, "Profile::fmt_epoch_fread: Currently expect load module id's to be in dense ascending order.");
   }
 
   DIAG_MsgIf(DBG, loadmap.toString());
