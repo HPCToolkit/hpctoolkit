@@ -141,8 +141,8 @@ Options: Source Structure Correlation:\n\
                        times.\n\
 \n\
 Options: Special:\n\
-  --force              Force hpcprof to show all thread-level metrics,\n\
-                       regardless of the number.\n\
+  --force-metric       Force hpcprof to show all thread-level metrics,\n\
+                       regardless of their number.\n\
 \n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
@@ -188,7 +188,7 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
      NULL },
 
   // Special options
-  {  0 , "force",           CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+  {  0 , "force-metric",    CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // Output options
@@ -369,11 +369,6 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     if (parser.isOpt("metric")) {
       string opt = parser.getOptArg("metric");
       parseArg_metric(opt, "--metric/-M option");
-    }
-
-    // Check for special hpcprof options:
-    if (parser.isOpt("force")) {
-      prof_forceReadProfiles = true;
     }
     
     // Check for other options: Output options

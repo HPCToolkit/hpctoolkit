@@ -88,11 +88,31 @@ using std::string;
 
 Args::Args()
 {
+  hpcprof_isMetricArg = false;
+  hpcprof_forceMetrics = false;
 }
 
 
 Args::~Args()
 {
+}
+
+
+void
+Args::parse(int argc, const char* const argv[])
+{
+  ArgsHPCProf::parse(argc, argv);
+
+  if (parser.isOpt("metric")) {
+    hpcprof_isMetricArg = true;
+  }
+
+  if (parser.isOpt("force-metric")) {
+    hpcprof_forceMetrics = true;
+  }
+
+  // Currently, hpcprof does not generate thread-level metric db
+  db_makeMetricDB = false;
 }
 
 

@@ -159,10 +159,7 @@ public:
   doSummaryMetrics(MetricSet x)
   { return (x == MetricSet_ThreadAndSum || x == MetricSet_SumOnly); }
 
-
   MetricSet prof_metrics;
-
-  bool prof_forceReadProfiles;
 
   // TODO: Currently this is always true even though we only need to
   // compute final metric values for (1) hpcproftt (flat) and (2)
