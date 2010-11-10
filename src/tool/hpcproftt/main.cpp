@@ -223,13 +223,14 @@ main_rawData(const std::vector<string>& profileFiles)
 
 static void
 makeDerivedMetrics(Prof::Metric::Mgr& metricMgr,
-		   Analysis::Args::MetricSet metrics)
+		   Analysis::Args::MetricSet metricSet)
 {
-  if (Analysis::Args::doSummaryMetrics(metrics)) {
-    metricMgr.makeSummaryMetrics();
+  if (Analysis::Args::doSummaryMetrics(metricSet)) {
+    bool needMultiOccurance = (Analysis::Args::doThreadMetrics(metricSet));
+    metricMgr.makeSummaryMetrics(needMultiOccurance);
   }
   
-  if (metrics == Analysis::Args::MetricSet_SumOnly) {
+  if (metricSet == Analysis::Args::MetricSet_SumOnly) {
     using namespace Prof;
 
     for (uint i = 0; i < metricMgr.size(); i++) {

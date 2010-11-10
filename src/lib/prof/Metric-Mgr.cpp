@@ -132,7 +132,7 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
 
 
 uint 
-Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
+Mgr::makeSummaryMetrics(bool needMultiOccurance, uint srcBegId, uint srcEndId)
 {
   StringToADescVecMap nmToMetricMap;
 
@@ -144,6 +144,8 @@ Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
   if (srcEndId == Mgr::npos) {
     srcEndId = m_metrics.size();
   }
+
+  uint threshold = (needMultiOccurance) ? 2 : 1;
 
   // -------------------------------------------------------
   // collect like metrics
@@ -172,7 +174,7 @@ Mgr::makeSummaryMetrics(uint srcBegId, uint srcEndId)
 
   for (uint i = 0; i < metricGroups.size(); ++i) {
     const Metric::ADescVec& mVec = *(metricGroups[i]);
-    if (mVec.size() > 1) {
+    if (mVec.size() >= threshold) {
       const Metric::ADesc* m = mVec[0];
 
       Metric::ADesc* mNew =
