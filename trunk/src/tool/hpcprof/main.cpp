@@ -137,8 +137,10 @@ realmain(int argc, char* const* argv)
   Analysis::Util::NormalizeProfileArgs_t nArgs =
     Analysis::Util::normalizeProfileArgs(args.profileFiles);
 
-  if ( !(nArgs.paths->size() <= 32 || args.prof_forceReadProfiles) ) {
-    DIAG_Throw("There are " << nArgs.paths->size() << " profile files to process. As a sanity check, " << args.getCmd() << " limits the number of profile files it processes.  Use the --force option to remove this limit or use hpcprof-mpi.");
+  if (Analysis::Args::doThreadMetrics(args.prof_metrics)
+      && nArgs.paths->size() > 16
+      && !args.prof_forceReadProfiles) {
+    DIAG_Throw("You have requested thread-level metrics for " << nArgs.paths->size() << " profile files.  Because this may result in an unusable database, to continue you must use the --force option.");
   }
 
   int mergeTy = Prof::CallPath::Profile::Merge_CreateMetric;
@@ -146,8 +148,7 @@ realmain(int argc, char* const* argv)
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
   uint rFlags = 0;
-  if (args.prof_metrics == Analysis::Args::MetricSet_ThreadAndSum
-      || args.prof_metrics == Analysis::Args::MetricSet_SumOnly) {
+  if (Analysis::Args::doSummaryMetrics(args.prof_metrics)) {
     rFlags |= Prof::CallPath::Profile::RFlg_MakeInclExcl;
   }
   uint mrgFlags = (Prof::CCT::MrgFlg_NormalizeTraceFileY);
@@ -173,8 +174,7 @@ realmain(int argc, char* const* argv)
   // Create summary metrics
   // -------------------------------------------------------
 
-  if (args.prof_metrics == Analysis::Args::MetricSet_ThreadAndSum
-      || args.prof_metrics == Analysis::Args::MetricSet_SumOnly) {
+  if (Analysis::Args::doSummaryMetrics(args.prof_metrics)) {
     makeMetrics(*prof, args, nArgs);
     
     // FIXME: CallPath-MetricComponentsFact.cpp must support Metric::DerivedDesc

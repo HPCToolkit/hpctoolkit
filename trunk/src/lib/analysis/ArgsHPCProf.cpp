@@ -117,6 +117,14 @@ Options: General:\n\
 Options: Source Structure Correlation:\n\
   --name <name>, --title <name>\n\
                        Set the database's name (title) to <name>.\n\
+  -M <metric>, --metric <metric>\n\
+                       Specify the set of metrics computed by hpcprof.\n\
+                       <metric> is one of the following:\n\
+                         sum:    Show (only) summary metrics\n\
+                                 (Sum, Mean, StdDev, CoefVar, Min, Max)\n\
+                         sum+:   Show thread and summary metrics\n\
+                         thread: Show only thread metrics\n\
+                       Default is 'sum'; hpcprof-mpi always computes 'sum'.\n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. For a\n\
                        recursive search, append a '*' after the last slash,\n\
@@ -132,14 +140,8 @@ Options: Source Structure Correlation:\n\
                        instances of '=' within a path. May pass multiple\n\
                        times.\n\
 Options: Special:\n\
-  --force              As a sanity check, hpcprof limits the number of\n\
-                       profile files it processes.  Use this option to\n\
-                       remove that limit.  Alternatively, use hpcprof-mpi.\n\
-  -M <metric>, --metric <metric>\n\
-                       Control whether hpcprof computes derived metrics.\n\
-                       <metric> may be one of the following. {yes}\n\
-                         yes, all: automatically compute derived metrics\n\
-                         no, none: do not compute derived metrics\n\
+  --force              Force hpcprof to show all thread-level metrics,\n\
+                       regardless of the number.\n\
 \n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
@@ -171,6 +173,9 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
   {  0 , "title",           CLP::ARG_REQ,  CLP::DUPOPT_CLOB, CLP_SEPARATOR,
      NULL },
 
+  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
   { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
@@ -178,10 +183,11 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
   { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL},
 
-  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+  { 'N', "normalize",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
-  { 'N', "normalize",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+  // Special options
+  {  0 , "force",           CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // Output options
@@ -190,10 +196,6 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
   {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
      NULL },
   {  0 , "metric-db",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
-
-  // Special options for now
-  {  0 , "force",           CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // General
@@ -222,7 +224,7 @@ ArgsHPCProf::ArgsHPCProf()
   Diagnostics_SetDiagnosticFilterLevel(1);
 
   // Analysis::Args
-  prof_metrics = MetricSet_NULL; // set in derived class
+  prof_metrics = Analysis::Args::MetricSet_SumOnly;
 
   db_makeMetricDB = true;
 }
@@ -447,11 +449,15 @@ ArgsHPCProf::parseArg_norm(const string& value, const char* errTag)
 void
 ArgsHPCProf::parseArg_metric(const std::string& value, const char* errTag)
 {
-  if (value == "yes" || value == "all") {
-    prof_metrics = Analysis::Args::MetricSet_ThreadAndSum;
-    // FIXME: or Analysis::Args::MetricSet_SumOnly
+  if (value == "sum") {
+    prof_metrics = Analysis::Args::MetricSet_SumOnly;
   }
-  else if (value == "no" || value == "none") {
+  else if (value == "sum+") {
+    // TODO: issue error with hpcprof-mpi
+    prof_metrics = Analysis::Args::MetricSet_ThreadAndSum;
+  }
+  else if (value == "thread") {
+    // TODO: issue error with hpcprof-mpi
     prof_metrics = Analysis::Args::MetricSet_ThreadOnly;
   }
   else {

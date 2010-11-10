@@ -139,13 +139,11 @@ Options: Source Structure Correlation:\n\
                        with single quotes or backslash.) May pass multiple\n\
                        times to logically OR additional globs.\n\
   -M <metric>, --metric <metric>\n\
-                       Show a supplemental or different metric set. <metric>\n\
-                       is one of the following:\n\
-                         sum:      Show also Sum, Mean, StdDev, CoefVar,\n\
-                                             Min, Max\n\
-                         sum-only: Show only Sum, Mean, StdDev, CoefVar,\n\
-                                             Min, Max,\n\
-\n\
+                       Specify the set of metrics computed. <metric> is one\n\
+                       of the following:\n\
+                         sum:  Show (only) summary metrics\n\
+                               (Sum, Mean, StdDev, CoefVar, Min, Max)\n\
+                         sum+: Show thread and summary metrics\n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. For a\n\
                        recursive search, append a '*' after the last slash,\n\
@@ -195,15 +193,15 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "srcannot",        CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
 
+  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
   { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
   { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL},
-
-  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
 
   // Object correlation options
   {  0 , "object",          CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL,
@@ -574,12 +572,12 @@ Args::parseArg_metric(Args* args, const string& value, const char* errTag)
 {
   if (value == "sum") {
     if (args) {
-      args->prof_metrics = Analysis::Args::MetricSet_ThreadAndSum;
+      args->prof_metrics = Analysis::Args::MetricSet_SumOnly;
     }
   }
-  else if (value == "sum-only") {
+  else if (value == "sum+") {
     if (args) {
-      args->prof_metrics = Analysis::Args::MetricSet_SumOnly;
+      args->prof_metrics = Analysis::Args::MetricSet_ThreadAndSum;
     }
   }
   else {
