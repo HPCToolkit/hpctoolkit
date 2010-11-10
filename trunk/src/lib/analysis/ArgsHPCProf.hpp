@@ -88,7 +88,7 @@ public:
   virtual ~ArgsHPCProf();
 
   // Parse the command line
-  void
+  virtual void
   parse(int argc, const char* const argv[]);
 
   // Version and Usage information
@@ -114,7 +114,7 @@ public:
   virtual const std::string
   getCmd() const = 0;
 
-private:
+protected:
   bool
   parseArg_norm(const std::string& value, const char* errTag);
 
@@ -125,7 +125,7 @@ private:
   static std::string
   makeDBDirName(const std::string& profileArg);
 
-private:
+protected:
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
 };

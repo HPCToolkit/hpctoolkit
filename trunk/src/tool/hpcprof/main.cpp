@@ -128,20 +128,26 @@ realmain(int argc, char* const* argv)
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
-  // Currently we do not generate thread-level metric db
-  args.db_makeMetricDB = false;
+  Analysis::Util::NormalizeProfileArgs_t nArgs =
+    Analysis::Util::normalizeProfileArgs(args.profileFiles);
+
+  // ------------------------------------------------------------
+  // Special checks
+  // ------------------------------------------------------------
+
+  if (nArgs.paths->size() == 1 && !args.hpcprof_isMetricArg) {
+    args.prof_metrics = Analysis::Args::MetricSet_ThreadOnly;
+  }
+
+  if (Analysis::Args::doThreadMetrics(args.prof_metrics)
+      && nArgs.paths->size() > 16
+      && !args.hpcprof_forceMetrics) {
+    DIAG_Throw("You have requested thread-level metrics for " << nArgs.paths->size() << " profile files.  Because this may result in an unusable database, to continue you must use the --force-metric option.");
+  }
 
   // ------------------------------------------------------------
   // Form one CCT from profile data
   // ------------------------------------------------------------
-  Analysis::Util::NormalizeProfileArgs_t nArgs =
-    Analysis::Util::normalizeProfileArgs(args.profileFiles);
-
-  if (Analysis::Args::doThreadMetrics(args.prof_metrics)
-      && nArgs.paths->size() > 16
-      && !args.prof_forceReadProfiles) {
-    DIAG_Throw("You have requested thread-level metrics for " << nArgs.paths->size() << " profile files.  Because this may result in an unusable database, to continue you must use the --force option.");
-  }
 
   int mergeTy = Prof::CallPath::Profile::Merge_CreateMetric;
   Analysis::Util::UIntVec* groupMap =

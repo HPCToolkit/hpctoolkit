@@ -82,10 +82,20 @@ public:
   Args();
   virtual ~Args();
 
+  // Parse the command line
+  virtual void
+  parse(int argc, const char* const argv[]);
+
 public:
   // Parsed Data: Command
   virtual const std::string
   getCmd() const;
+
+public:
+  // Parsed Data
+  bool hpcprof_isMetricArg;
+  bool hpcprof_forceMetrics;
+
 }; 
 
 #endif // Args_hpp 
