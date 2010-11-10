@@ -88,7 +88,6 @@ using std::string;
 
 Args::Args()
 {
-  prof_metrics = Analysis::Args::MetricSet_SumOnly;
 }
 
 

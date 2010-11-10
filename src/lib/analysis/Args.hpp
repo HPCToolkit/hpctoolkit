@@ -151,6 +151,15 @@ public:
     MetricSet_SumOnly
   };
 
+  static bool
+  doThreadMetrics(MetricSet x)
+  { return (x == MetricSet_ThreadOnly || x == MetricSet_ThreadAndSum); }
+
+  static bool
+  doSummaryMetrics(MetricSet x)
+  { return (x == MetricSet_ThreadAndSum || x == MetricSet_SumOnly); }
+
+
   MetricSet prof_metrics;
 
   bool prof_forceReadProfiles;

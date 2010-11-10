@@ -225,8 +225,7 @@ static void
 makeDerivedMetrics(Prof::Metric::Mgr& metricMgr,
 		   Analysis::Args::MetricSet metrics)
 {
-  if (metrics == Analysis::Args::MetricSet_ThreadAndSum
-      || metrics == Analysis::Args::MetricSet_SumOnly) {
+  if (Analysis::Args::doSummaryMetrics(metrics)) {
     metricMgr.makeSummaryMetrics();
   }
   
