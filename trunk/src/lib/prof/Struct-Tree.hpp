@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef prof_Prof_Struct_Tree_hpp 
+#ifndef prof_Prof_Struct_Tree_hpp
 #define prof_Prof_Struct_Tree_hpp
 
 //************************* System Include Files ****************************
@@ -70,7 +70,7 @@
 #include <map>
 
 #include <typeinfo>
- 
+
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
@@ -191,14 +191,14 @@ public:
   // -------------------------------------------------------
   // Write contents
   // -------------------------------------------------------
-  std::ostream& 
+  std::ostream&
   writeXML(std::ostream& os = std::cerr, int oFlags = 0) const;
 
   // Dump contents for inspection (use flags from ANode)
-  std::ostream& 
+  std::ostream&
   dump(std::ostream& os = std::cerr, int oFlags = 0) const;
   
-  void 
+  void
   ddump() const;
  
 private:
@@ -274,7 +274,7 @@ public:
   // Create/Destroy
   // --------------------------------------------------------
   ANode(ANodeTy ty, ANode* parent = NULL)
-    : NonUniformDegreeTreeNode(parent), 
+    : NonUniformDegreeTreeNode(parent),
       Metric::IData(),
       m_type(ty)
   {
@@ -288,7 +288,7 @@ public:
   }
   
   // clone: return a shallow copy, unlinked from the tree
-  virtual ANode* 
+  virtual ANode*
   clone()
   { return new ANode(*this); }
 
@@ -299,7 +299,7 @@ protected:
   
   // deep copy of internals (but without children)
   ANode&
-  operator=(const ANode& x) 
+  operator=(const ANode& x)
   {
     if (this != &x) {
       NonUniformDegreeTreeNode::zeroLinks();
@@ -330,7 +330,7 @@ public:
   maxId()
   { return s_nextUniqueId - 1; }
 
-  // name: 
+  // name:
   // nameQual: qualified name [built dynamically]
   virtual const std::string&
   name() const
@@ -342,10 +342,10 @@ public:
 
 
   // --------------------------------------------------------
-  // Tree navigation 
+  // Tree navigation
   // --------------------------------------------------------
   ANode*
-  parent() const 
+  parent() const
   { return static_cast<ANode*>(NonUniformDegreeTreeNode::Parent()); }
 
   ANode*
@@ -361,17 +361,17 @@ public:
   {
     // siblings are linked in a circular list
     if ((parent()->lastChild() != this)) {
-      return static_cast<ANode*>(NonUniformDegreeTreeNode::NextSibling()); 
+      return static_cast<ANode*>(NonUniformDegreeTreeNode::NextSibling());
     }
-    return NULL;  
+    return NULL;
   }
   
   ANode*
   prevSibling() const
-  { 
+  {
     // siblings are linked in a circular list
     if ((parent()->firstChild() != this)) {
-      return static_cast<ANode*>(NonUniformDegreeTreeNode::PrevSibling()); 
+      return static_cast<ANode*>(NonUniformDegreeTreeNode::PrevSibling());
     }
     return NULL;
   }
@@ -472,7 +472,7 @@ public:
   // overlapping then d2 will be somewhere on the path between d1 and
   // lca.
   //
-  // Examples: 
+  // Examples:
   // 1. Overlapping: lca --- d2 --- ... --- d1
   //
   // 2. Divergent:   lca --- d1
@@ -525,8 +525,8 @@ public:
   CSV_DumpSelf(const Root &root, std::ostream& os = std::cout) const;
 
   virtual void
-  CSV_dump(const Root &root, std::ostream& os = std::cout, 
-	   const char* file_name = NULL, 
+  CSV_dump(const Root &root, std::ostream& os = std::cout,
+	   const char* file_name = NULL,
 	   const char* proc_name = NULL,
 	   int lLevel = 0) const;
 
@@ -545,7 +545,7 @@ public:
 
   // dump
   std::ostream&
-  dump(std::ostream& os = std::cerr, int oFlags = 0, 
+  dump(std::ostream& os = std::cerr, int oFlags = 0,
        const char* pre = "") const;
   
   void ddump() const;
@@ -563,8 +563,11 @@ protected:
   writeXML_post(std::ostream& os = std::cout, int oFlags = 0,
 		const char* prefix = "") const;
 private:
-  void ctorCheck() const;
-  void dtorCheck() const;
+  void
+  ctorCheck() const;
+
+  void
+  dtorCheck() const;
 
   static uint s_nextUniqueId;
   
@@ -579,13 +582,13 @@ protected:
 // Describes some kind of code, i.e. Files, Procedures, Loops...
 // --------------------------------------------------------------------------
 class ACodeNode : public ANode {
-protected: 
-  ACodeNode(ANodeTy ty, ANode* parent = NULL, 
+protected:
+  ACodeNode(ANodeTy ty, ANode* parent = NULL,
 	   SrcFile::ln begLn = ln_NULL,
 	   SrcFile::ln endLn = ln_NULL,
 	   VMA begVMA = 0, VMA endVMA = 0)
     : ANode(ty, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
-  { 
+  {
     setLineRange(begLn, endLn);
     if (!VMAInterval::empty(begVMA, endVMA)) {
       m_vmaSet.insert(begVMA, endVMA);
@@ -593,8 +596,8 @@ protected:
   }
 
 
-  ACodeNode(const ACodeNode& x) 
-    : ANode(x.m_type) 
+  ACodeNode(const ACodeNode& x)
+    : ANode(x.m_type)
   { *this = x; }
 
 
@@ -611,7 +614,7 @@ protected:
     return *this;
   }
 
-public: 
+public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
@@ -620,12 +623,12 @@ public:
   { }
 
   virtual ANode*
-  clone() 
+  clone()
   { return new ACodeNode(*this); }
 
 
   // --------------------------------------------------------
-  // 
+  //
   // --------------------------------------------------------
 
   // Line range in source code
@@ -659,7 +662,7 @@ public:
   {
     DIAG_Assert(Logic::equiv(begLn == ln_NULL, endLn == ln_NULL),
 		"ACodeNode::checkLineRange: b=" << begLn << " e=" << endLn);
-    DIAG_Assert(begLn <= endLn, 
+    DIAG_Assert(begLn <= endLn,
 		"ACodeNode::checkLineRange: b=" << begLn << " e=" << endLn);
     DIAG_Assert(Logic::equiv(m_begLn == ln_NULL, m_endLn == ln_NULL),
 		"ACodeNode::checkLineRange: b=" << m_begLn << " e=" << m_endLn);
@@ -704,7 +707,7 @@ public:
   bool
   containsInterval(SrcFile::ln begLn, SrcFile::ln endLn,
 		   int beg_epsilon, int end_epsilon) const
-  { return (containsLine(begLn, beg_epsilon, end_epsilon) 
+  { return (containsLine(begLn, beg_epsilon, end_epsilon)
 	    && containsLine(endLn, beg_epsilon, end_epsilon)); }
 
   ACodeNode*
@@ -714,7 +717,7 @@ public:
   // compare: Return negative if x < y; 0 if x == y; positive
   //   otherwise.  If x == y, break ties using VMAIntervalSet and then
   //   by name attributes.
-  static int 
+  static int
   compare(const ACodeNode* x, const ACodeNode* y);
 
   ACodeNode*
@@ -722,11 +725,12 @@ public:
 
 
   // --------------------------------------------------------
-  // 
+  //
   // --------------------------------------------------------
 
   virtual std::string
-  nameQual() const { return codeName(); }
+  nameQual() const
+  { return codeName(); }
 
   // returns a string representing the code name in the form:
   //  loadmodName
@@ -755,7 +759,7 @@ public:
   XMLVMAIntervals(int oFlags) const;
 
   virtual void
-  CSV_dump(const Root &root, std::ostream& os = std::cout, 
+  CSV_dump(const Root &root, std::ostream& os = std::cout,
 	   const char* file_name = NULL, const char* proc_name = NULL,
 	   int lLevel = 0) const;
 
@@ -767,15 +771,15 @@ public:
   dumpme(std::ostream& os = std::cerr, int oFlags = 0,
 	 const char* pre = "") const;
 
-protected: 
+protected:
   // NOTE: currently designed for PROCs
   void
   relocate();
   
   void
-  relocateIf() 
+  relocateIf()
   {
-    if (parent() && type() == ANode::TyProc) { 
+    if (parent() && type() == ANode::TyProc) {
                  // typeid(*this) == typeid(ANode::Proc)
       relocate();
     }
@@ -801,25 +805,25 @@ protected:
 // --------------------------------------------------------------------------
 class Root: public ANode {
 protected:
-  Root(const Root& x) 
+  Root(const Root& x)
     : ANode(x.m_type)
-  { 
-    *this = x; 
+  {
+    *this = x;
   }
   
   Root&
   operator=(const Root& x);
 
-public: 
+public:
   Root(const char* nm)
     : ANode(TyRoot, NULL)
-  { 
+  {
     Ctor(nm);
   }
   
   Root(const std::string& nm)
     : ANode(TyRoot, NULL)
-  { 
+  {
     Ctor(nm.c_str());
   }
 
@@ -829,11 +833,19 @@ public:
     delete lmMap;
   }
 
-  virtual const std::string& name() const { return m_name; }
-  void name(const char* n) { m_name = n; }
-  void name(const std::string& n) { m_name = n; }
+  virtual const std::string&
+  name() const
+  { return m_name; }
 
-  // --------------------------------------------------------  
+  void
+  name(const char* x)
+  { m_name = (x) ? x : ""; }
+
+  void
+  name(const std::string& x)
+  { m_name = x; }
+
+  // --------------------------------------------------------
   //
   // --------------------------------------------------------
 
@@ -842,7 +854,7 @@ public:
   findLM(const char* nm) const;
 
   LM*
-  findLM(const std::string& nm) const 
+  findLM(const std::string& nm) const
   { return findLM(nm.c_str()); }
 
   Group*
@@ -858,7 +870,7 @@ public:
   { return findGroup(nm.c_str()); }
 
   virtual ANode*
-  clone() 
+  clone()
   { return new Root(*this); }
 
 
@@ -870,7 +882,7 @@ public:
   toXML(int oFlags = 0) const;
 
   virtual std::ostream&
-  writeXML(std::ostream& os = std::cout, int oFlags = 0, 
+  writeXML(std::ostream& os = std::cout, int oFlags = 0,
 	   const char* pre = "") const;
 
   void
@@ -884,8 +896,8 @@ public:
   dumpme(std::ostream& os = std::cerr, int oFlags = 0,
 	 const char* pre = "") const;
    
-protected: 
-private: 
+protected:
+private:
   void
   Ctor(const char* nm);
 
@@ -909,7 +921,7 @@ private:
 
 
 // --------------------------------------------------------------------------
-// Groups are children of Root's, Group's, LMs's, 
+// Groups are children of Root's, Group's, LMs's,
 //   File's, Proc's, Loop's
 // children: Group's, LM's, File's, Proc's,
 //   Loop's, Stmts,
@@ -932,19 +944,21 @@ public:
     Ctor(nm.c_str(), parent);
   }
   
-  virtual ~Group() { }
+  virtual ~Group()
+  { }
   
-  static Group* 
+  static Group*
   demand(Root* pgm, const std::string& nm, ANode* parent);
 
   virtual const std::string&
-  name() const { return m_name; } // same as grpName
+  name() const
+  { return m_name; } // same as grpName
 
   virtual std::string
   codeName() const;
 
-  virtual ANode* 
-  clone() 
+  virtual ANode*
+  clone()
   { return new Group(*this); }
 
   virtual std::string
@@ -962,7 +976,7 @@ private:
   void
   Ctor(const char* nm, ANode* parent);
 
-private: 
+private:
   std::string m_name;
 };
 
@@ -973,17 +987,17 @@ private:
 // --------------------------------------------------------------------------
 class LM: public ACodeNode {
 protected:
-  LM& 
+  LM&
   operator=(const LM& x);
 
-public: 
+public:
 
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
   LM(const char* nm, ANode* parent)
     : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0)
-  { 
+  {
     Ctor(nm, parent);
   }
 
@@ -1001,7 +1015,7 @@ public:
   }
 
   virtual ANode*
-  clone() 
+  clone()
   { return new LM(*this); }
 
   static LM*
@@ -1009,7 +1023,7 @@ public:
 
 
   // --------------------------------------------------------
-  // 
+  //
   // --------------------------------------------------------
 
   virtual const std::string&
@@ -1062,7 +1076,7 @@ public:
     findStmt(0);
   }
 
-  
+ 
   Proc*
   findProc(VMA vma) const;
 
@@ -1109,7 +1123,7 @@ public:
   toXML(int oFlags = 0) const;
 
   virtual std::ostream&
-  writeXML(std::ostream& os = std::cout, int oFlags = 0, 
+  writeXML(std::ostream& os = std::cout, int oFlags = 0,
 	   const char* pre = "") const;
 
 
@@ -1193,26 +1207,26 @@ private:
 // --------------------------------------------------------------------------
 class File: public ACodeNode {
 protected:
-  File(const File& x) 
-    : ACodeNode(x.m_type) 
+  File(const File& x)
+    : ACodeNode(x.m_type)
   { *this = x; }
 
   File&
   operator=(const File& x);
 
-public: 
+public:
 
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
-  File(const char* filenm, ANode *parent, 
+  File(const char* filenm, ANode *parent,
        SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyFile, parent, begLn, endLn, 0, 0)
   {
     Ctor(filenm, parent);
   }
   
-  File(const std::string& filenm, ANode *parent, 
+  File(const std::string& filenm, ANode *parent,
        SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyFile, parent, begLn, endLn, 0, 0)
   {
@@ -1224,11 +1238,11 @@ public:
     delete m_procMap;
   }
 
-  virtual ANode* 
-  clone() 
+  virtual ANode*
+  clone()
   { return new File(*this); }
 
-  static File* 
+  static File*
   demand(LM* lm, const std::string& filenm);
 
 
@@ -1245,10 +1259,12 @@ public:
 
 
   void
-  name(const char* fname) { m_name = fname; }
+  name(const char* fname)
+  { m_name = fname; }
 
   void
-  name(const std::string& fname) { m_name = fname; }
+  name(const std::string& fname)
+  { m_name = fname; }
 
   std::string
   baseName() const
@@ -1268,24 +1284,24 @@ public:
   findProc(const std::string& name, const std::string& linkname = "") const
   { return findProc(name.c_str(), linkname.c_str()); }
 
-                                           
+  
   // --------------------------------------------------------
   // Output
   // --------------------------------------------------------
 
-  virtual std::string 
+  virtual std::string
   toXML(int oFlags = 0) const;
 
-  virtual void 
-  CSV_dump(const Root &root, std::ostream& os = std::cout, 
+  virtual void
+  CSV_dump(const Root &root, std::ostream& os = std::cout,
 	   const char* file_name = NULL, const char* proc_name = NULL,
 	   int lLevel = 0) const;
   
-  virtual std::ostream& 
+  virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, int oFlags = 0,
 	 const char* pre = "") const;
   
-private: 
+private:
   void
   Ctor(const char* filenm, ANode* parent);
 
@@ -1295,7 +1311,7 @@ private:
   friend class Proc;
 
 private:
-  std::string m_name; // the file name including the path 
+  std::string m_name; // the file name including the path
   ProcMap*    m_procMap;
 
   static RealPathMgr& s_realpathMgr;
@@ -1305,7 +1321,7 @@ private:
 // --------------------------------------------------------------------------
 // Procs are children of Group's or File's
 // children: Group's, Loop's, Stmt's
-// 
+//
 //   (begLn == 0) <==> (endLn == 0)
 //   (begLn != 0) <==> (endLn != 0)
 // --------------------------------------------------------------------------
@@ -1318,7 +1334,7 @@ protected:
   Proc&
   operator=(const Proc& x);
 
-public: 
+public:
 
   // --------------------------------------------------------
   // Create/Destroy
@@ -1329,7 +1345,7 @@ public:
   {
     Ctor(name, parent, linkname, hasSym);
   }
-  
+ 
   Proc(const std::string& name, ACodeNode* parent, const std::string& linkname,
        bool hasSym, SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyProc, parent, begLn, endLn, 0, 0)
@@ -1360,7 +1376,7 @@ public:
 
 
   // --------------------------------------------------------
-  // 
+  //
   // --------------------------------------------------------
 
   virtual const std::string&
@@ -1372,12 +1388,12 @@ public:
 
 
   void
-  name(const char* n)
-  { m_name = n; }
+  name(const char* x)
+  { m_name = (x) ? x : ""; }
 
   void
-  name(const std::string& n)
-  { m_name = n; }
+  name(const std::string& x)
+  { m_name = x; }
 
   const std::string&
   linkName() const
@@ -1386,7 +1402,7 @@ public:
   bool
   hasSymbolic() const
   { return m_hasSym; }
-  
+ 
   void
   hasSymbolic(bool x)
   { m_hasSym = x; }
@@ -1414,14 +1430,14 @@ public:
   toXML(int oFlags = 0) const;
 
   virtual void
-  CSV_dump(const Root &root, std::ostream& os = std::cout, 
+  CSV_dump(const Root &root, std::ostream& os = std::cout,
 	   const char* file_name = NULL, const char* proc_name = NULL,
 	   int lLevel = 0) const;
-  
+ 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, int oFlags = 0,
 	 const char* pre = "") const;
-  
+ 
 private:
   void
   Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym);
@@ -1445,7 +1461,7 @@ private:
 // Aliens are children of Group's, Alien's, Proc's
 //   or Loop's
 // children: Group's, Alien's, Loop's, Stmt's
-// 
+//
 //   (begLn == 0) <==> (endLn == 0)
 //   (begLn != 0) <==> (endLn != 0)
 // --------------------------------------------------------------------------
@@ -1458,7 +1474,7 @@ protected:
   Alien&
   operator=(const Alien& x);
 
-public: 
+public:
 
   // --------------------------------------------------------
   // Create/Destroy
@@ -1470,7 +1486,7 @@ public:
     Ctor(parent, filenm, procnm);
   }
 
-  Alien(ACodeNode* parent, 
+  Alien(ACodeNode* parent,
 	     const std::string& filenm, const std::string& procnm,
 	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyAlien, parent, begLn, endLn, 0, 0)
@@ -1487,7 +1503,7 @@ public:
 
   
   // --------------------------------------------------------
-  // 
+  //
   // --------------------------------------------------------
 
   const std::string&
@@ -1553,20 +1569,20 @@ public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
-  Loop(ACodeNode* parent, 
+  Loop(ACodeNode* parent,
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyLoop, parent, begLn, endLn, 0, 0)
   {
     ANodeTy t = (parent) ? parent->type() : TyANY;
-    DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile) || 
+    DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile) ||
 		(t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
   }
 
   virtual ~Loop()
   { }
   
-  virtual ANode* 
-  clone() 
+  virtual ANode*
+  clone()
   { return new Loop(*this); }
 
 
@@ -1582,10 +1598,10 @@ public:
   // Output
   // --------------------------------------------------------
 
-  virtual std::string 
+  virtual std::string
   toXML(int oFlags = 0) const;
 
-  virtual std::ostream& 
+  virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, int oFlags = 0,
 	 const char* pre = "") const;
 
@@ -1598,7 +1614,7 @@ public:
 // children: none
 // --------------------------------------------------------------------------
 class Stmt: public ACodeNode {
-public: 
+public:
 
   // --------------------------------------------------------
   // Create/Destroy
@@ -1628,8 +1644,8 @@ public:
   virtual ~Stmt()
   { }
 
-  virtual ANode* 
-  clone() 
+  virtual ANode*
+  clone()
   { return new Stmt(*this); }
 
 
@@ -1666,14 +1682,14 @@ private:
 
 
 // ----------------------------------------------------------------------
-// Refs are chldren of LineScopes 
+// Refs are chldren of LineScopes
 // They are used to describe a reference in source code.
 // Refs are build only iff we have preprocessing information.
 // ----------------------------------------------------------------------
 class Ref: public ACodeNode {
-public: 
+public:
   Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName);
-  // parent->type() == TyStmt 
+  // parent->type() == TyStmt
   
   uint
   BegPos() const
@@ -1682,7 +1698,7 @@ public:
   uint
   EndPos() const
   { return endPos; };
-  
+ 
   virtual const std::string&
   name() const
   { return m_name; }
@@ -1701,11 +1717,11 @@ public:
   // debugging
   // --------------------------------------------------------
   
-  virtual std::ostream& 
+  virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, int oFlags = 0,
 	 const char* pre = "") const;
 
-private: 
+private:
   void RelocateRef();
   uint begPos;
   uint endPos;
@@ -1721,7 +1737,7 @@ private:
 // Iterators
 /************************************************************************/
 
-#include "Struct-TreeIterator.hpp" 
+#include "Struct-TreeIterator.hpp"
 
 
 #endif /* prof_Prof_Struct_Tree_hpp */
