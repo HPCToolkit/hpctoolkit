@@ -222,8 +222,11 @@ makeMetrics(Prof::CallPath::Profile& prof,
 
   uint numDrvd = 0;
   uint mDrvdBeg = 0, mDrvdEnd = 0; // [ )
+  
+  bool needMultiOccurance =
+    (Analysis::Args::doThreadMetrics(args.prof_metrics));
 
-  mDrvdBeg = mMgr.makeSummaryMetrics(mSrcBeg, mSrcEnd);
+  mDrvdBeg = mMgr.makeSummaryMetrics(needMultiOccurance, mSrcBeg, mSrcEnd);
   if (mDrvdBeg != Prof::Metric::Mgr::npos) {
     mDrvdEnd = mMgr.size();
     numDrvd = (mDrvdEnd - mDrvdBeg);
