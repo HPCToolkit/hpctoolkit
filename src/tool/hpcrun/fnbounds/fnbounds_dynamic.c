@@ -307,10 +307,12 @@ fnbounds_unmap_closed_dsos()
 
   TMSG(LOADMAP, "Unmapping closed dsos");
   load_module_t *current = hpcrun_getLoadmap()->lm_head;
-  while (current && current->dso_info) {
-    if (!dylib_addr_is_mapped(current->dso_info->start_addr)) {
-      TMSG(LOADMAP, "Unmapping %s", current->name);
-      hpcrun_loadmap_unmap(current);
+  while (current) {
+    if (current->dso_info) {
+      if (!dylib_addr_is_mapped(current->dso_info->start_addr)) {
+        TMSG(LOADMAP, "Unmapping %s", current->name);
+        hpcrun_loadmap_unmap(current);
+      }
     }
     current = current->next;
   }
