@@ -139,6 +139,7 @@ Options: Source Structure Correlation:\n\
                        for which <old-path> is a prefix.  Use '\\' to escape\n\
                        instances of '=' within a path. May pass multiple\n\
                        times.\n\
+\n\
 Options: Special:\n\
   --force              Force hpcprof to show all thread-level metrics,\n\
                        regardless of the number.\n\

@@ -132,15 +132,15 @@ Tree::~Tree()
   delete m_root;
 }
 
-string 
-Tree::name() const 
+string
+Tree::name() const
 {
   string nm = (m_root) ? std::string(m_root->name()) : "";
   return nm;
 }
 
 
-ostream& 
+ostream&
 Tree::writeXML(ostream& os, int oFlags) const
 {
   if (m_root) {
@@ -150,7 +150,7 @@ Tree::writeXML(ostream& os, int oFlags) const
 }
 
 
-ostream& 
+ostream&
 Tree::dump(ostream& os, int oFlags) const
 {
   writeXML(os, oFlags);
@@ -158,7 +158,7 @@ Tree::dump(ostream& os, int oFlags) const
 }
 
 
-void 
+void
 Tree::ddump() const
 {
   dump();
@@ -175,13 +175,13 @@ const string ANode::ScopeNames[ANode::TyNUMBER] = {
 
 
 const string&
-ANode::ANodeTyToName(ANodeTy tp) 
+ANode::ANodeTyToName(ANodeTy tp)
 {
   return ScopeNames[tp];
 }
 
 
-ANode::ANodeTy 
+ANode::ANodeTy
 ANode::IntToANodeTy(long i)
 {
   DIAG_Assert((i >= 0) && (i < TyNUMBER), "");
@@ -193,7 +193,7 @@ ANode::IntToANodeTy(long i)
 // ANode, etc: constructors/destructors
 //***************************************************************************
 
-void 
+void
 ACodeNode::linkAndSetLineRange(ACodeNode* parent)
 {
   this->link(parent);
@@ -217,8 +217,8 @@ Root::Ctor(const char* nm)
 }
 
 
-Root& 
-Root::operator=(const Root& x) 
+Root&
+Root::operator=(const Root& x)
 {
   // shallow copy
   if (&x != this) {
@@ -230,7 +230,7 @@ Root::operator=(const Root& x)
 }
 
 
-LM* 
+LM*
 Root::findLM(const char* nm) const
 {
   // FIXME: if the map is empty but we have children, we should construct it
@@ -247,15 +247,15 @@ Group::Ctor(const char* nm, ANode* parent)
 {
   DIAG_Assert(nm, "");
   ANodeTy t = (parent) ? parent->type() : TyANY;
-  DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGroup) || (t == TyLM) 
-	      || (t == TyFile) || (t == TyProc) || (t == TyAlien) 
+  DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGroup) || (t == TyLM)
+	      || (t == TyFile) || (t == TyProc) || (t == TyAlien)
 	      || (t == TyLoop), "");
   m_name = nm;
   ancestorRoot()->AddToGroupMap(this);
 }
 
 
-Group* 
+Group*
 Group::demand(Root* pgm, const string& nm, ANode* parent)
 {
   Group* grp = pgm->findGroup(nm);
@@ -287,7 +287,7 @@ LM::Ctor(const char* nm, ANode* parent)
 }
 
 
-LM& 
+LM&
 LM::operator=(const LM& x)
 {
   // shallow copy
@@ -301,7 +301,7 @@ LM::operator=(const LM& x)
 }
 
 
-LM* 
+LM*
 LM::demand(Root* pgm, const string& lm_nm)
 {
   LM* lm = pgm->findLM(lm_nm);
@@ -327,8 +327,8 @@ File::Ctor(const char* fname, ANode* parent)
 }
 
 
-File& 
-File::operator=(const File& x) 
+File&
+File::operator=(const File& x)
 {
   // shallow copy
   if (&x != this) {
@@ -339,7 +339,7 @@ File::operator=(const File& x)
 }
 
 
-File* 
+File*
 File::demand(LM* lm, const string& filenm)
 {
   const char* note = "(found)";
@@ -352,7 +352,7 @@ File::demand(LM* lm, const string& filenm)
     note = "(created)";
     file = new File(nm_real, lm);
   }
-  DIAG_DevMsgIf(DBG_FILE, "Struct::File::demand: " << note << endl 
+  DIAG_DevMsgIf(DBG_FILE, "Struct::File::demand: " << note << endl
 		<< "\tin : " << filenm << endl
 		<< "\tout: " << file->name());
   return file;
@@ -375,14 +375,14 @@ Proc::Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym)
   }
 
   File* fileStrct = ancestorFile();
-  if (fileStrct) { 
-    fileStrct->AddToProcMap(this); 
+  if (fileStrct) {
+    fileStrct->AddToProcMap(this);
   }
 }
 
 
-Proc& 
-Proc::operator=(const Proc& x) 
+Proc&
+Proc::operator=(const Proc& x)
 {
   // shallow copy
   if (&x != this) {
@@ -396,7 +396,7 @@ Proc::operator=(const Proc& x)
 
 
 Proc*
-Proc::demand(File* file, const string& name, const std::string& linkname, 
+Proc::demand(File* file, const string& name, const std::string& linkname,
 	     SrcFile::ln begLn, SrcFile::ln endLn, bool* didCreate)
 {
   Proc* proc = file->findProc(name, linkname);
@@ -419,7 +419,7 @@ void
 Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm)
 {
   ANodeTy t = (parent) ? parent->type() : TyANY;
-  DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyAlien) 
+  DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyAlien)
 	      || (t == TyProc) || (t == TyLoop), "");
 
   m_filenm = (filenm) ? filenm : "";
@@ -429,8 +429,8 @@ Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm)
 }
 
 
-Alien& 
-Alien::operator=(const Alien& x) 
+Alien&
+Alien::operator=(const Alien& x)
 {
   // shallow copy
   if (&x != this) {
@@ -441,7 +441,7 @@ Alien::operator=(const Alien& x)
 }
 
 
-Ref::Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName) 
+Ref::Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName)
   : ACodeNode(TyRef, parent, parent->begLine(), parent->begLine(), 0, 0)
 {
   DIAG_Assert(parent->type() == TyStmt, "");
@@ -468,10 +468,10 @@ Ref::Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName)
       } \
     }
 
-ACodeNode* 
+ACodeNode*
 ANode::ACodeNodeParent() const
-{ 
-  return dynamic_cast<ACodeNode*>(parent()); 
+{
+  return dynamic_cast<ACodeNode*>(parent());
 }
 
 
@@ -523,7 +523,7 @@ int IsAncestorOf(ANode *parent, ANode *son, int difference)
 #endif
 
 
-ANode* 
+ANode*
 ANode::leastCommonAncestor(ANode* n1, ANode* n2)
 {
   // Collect all ancestors of n1 and n2.  The root will be at the front
@@ -549,9 +549,9 @@ ANode::leastCommonAncestor(ANode* n1, ANode* n2)
 
 
 Root*
-ANode::ancestorRoot() const 
+ANode::ancestorRoot() const
 {
-  // iff this is called during ANode construction within the Root 
+  // iff this is called during ANode construction within the Root
   // construction dyn_cast does not do the correct thing
   if (Parent() == NULL) {
     // eraxxon: This cannot be a good thing to do!  Root() was being
@@ -560,63 +560,63 @@ ANode::ancestorRoot() const
     // eraxxon: return (Root*) this;
     return NULL;
   }
-  else { 
+  else {
     dyn_cast_return(ANode, Root, ancestor(TyRoot));
   }
 }
 
 
 Group*
-ANode::ancestorGroup() const 
+ANode::ancestorGroup() const
 {
   dyn_cast_return(ANode, Group, ancestor(TyGroup));
 }
 
 
 LM*
-ANode::ancestorLM() const 
+ANode::ancestorLM() const
 {
   dyn_cast_return(ANode, LM, ancestor(TyLM));
 }
 
 
 File*
-ANode::ancestorFile() const 
+ANode::ancestorFile() const
 {
   dyn_cast_return(ANode, File, ancestor(TyFile));
 }
 
 
 Proc*
-ANode::ancestorProc() const 
+ANode::ancestorProc() const
 {
   dyn_cast_return(ANode, Proc, ancestor(TyProc));
 }
 
 
 Alien*
-ANode::ancestorAlien() const 
+ANode::ancestorAlien() const
 {
   dyn_cast_return(ANode, Alien, ancestor(TyAlien));
 }
 
 
 Loop*
-ANode::ancestorLoop() const 
+ANode::ancestorLoop() const
 {
   dyn_cast_return(ANode, Loop, ancestor(TyLoop));
 }
 
 
 Stmt*
-ANode::ancestorStmt() const 
+ANode::ancestorStmt() const
 {
   dyn_cast_return(ANode, Stmt, ancestor(TyStmt));
 }
 
 
 ACodeNode*
-ANode::ancestorProcCtxt() const 
+ANode::ancestorProcCtxt() const
 {
   return dynamic_cast<ACodeNode*>(ancestor(TyProc, TyAlien));
 }
@@ -702,7 +702,7 @@ ANode::arePathsOverlapping(ANode* lca, ANode* desc1, ANode* desc2)
   // Iterate over the longest path (d1 -> lca) searching for d2.  Stop
   // when x is NULL or lca.
   for (ANode* x = d1; (x && x != lca); x = x->parent()) {
-    if (x == d2) { 
+    if (x == d2) {
       return true;
     }
   }
@@ -730,7 +730,7 @@ ANode::mergePaths(ANode* lca, ANode* toDesc, ANode* fromDesc)
   DIAG_Assert(toPath.size() > 0 && fromPath.size() > 0, "");
   
   // We merge from the deepest _common_ level of nesting out to lca
-  // (shallowest).  
+  // (shallowest).
   ANodeList::reverse_iterator toPathIt = toPath.rbegin();
   ANodeList::reverse_iterator fromPathIt = fromPath.rbegin();
   
@@ -809,7 +809,7 @@ ANode::isMergable(ANode* toNode, ANode* fromNode)
   if (goodTy) {
     ACodeNode* toCI = dynamic_cast<ACodeNode*>(toNode);
     ACodeNode* fromCI = dynamic_cast<ACodeNode*>(fromNode);
-    goodBnds = 
+    goodBnds =
       Logic::equiv(SrcFile::isValid(toCI->begLine(), toCI->endLine()),
 		   SrcFile::isValid(fromCI->begLine(), fromCI->endLine()));
   }
@@ -823,9 +823,9 @@ ANode::isMergable(ANode* toNode, ANode* fromNode)
 //***************************************************************************
 
 void
-Root::AddToGroupMap(Group* grp) 
+Root::AddToGroupMap(Group* grp)
 {
-  std::pair<GroupMap::iterator, bool> ret = 
+  std::pair<GroupMap::iterator, bool> ret =
     groupMap->insert(std::make_pair(grp->name(), grp));
   DIAG_Assert(ret.second, "Duplicate!");
 }
@@ -836,7 +836,7 @@ Root::AddToLoadModMap(LM* lm)
 {
   string nm_real = lm->name();
   s_realpathMgr.realpath(nm_real);
-  std::pair<LMMap::iterator, bool> ret = 
+  std::pair<LMMap::iterator, bool> ret =
     lmMap->insert(std::make_pair(nm_real, lm));
   DIAG_Assert(ret.second, "Duplicate!");
 }
@@ -848,14 +848,14 @@ LM::AddToFileMap(File* f)
   string nm_real = f->name();
   s_realpathMgr.realpath(nm_real);
   DIAG_DevMsg(2, "LM: mapping file name '" << nm_real << "' to File* " << f);
-  std::pair<FileMap::iterator, bool> ret = 
+  std::pair<FileMap::iterator, bool> ret =
     m_fileMap->insert(std::make_pair(nm_real, f));
   DIAG_Assert(ret.second, "Duplicate instance: " << f->name() << "\n" << toStringXML());
 }
 
 
 void
-File::AddToProcMap(Proc* p) 
+File::AddToProcMap(Proc* p)
 {
   DIAG_DevMsg(2, "File (" << this << "): mapping proc name '" << p->name()
 	      << "' to Proc* " << p);
@@ -935,12 +935,12 @@ LM::buildMap(VMAIntervalMap<T>*& mp, ANode::ANodeTy ty) const
 
 
 template<typename T>
-bool 
+bool
 LM::verifyMap(VMAIntervalMap<T>* m, const char* map_nm)
 {
   if (!m) { return true; }
 
-  for (typename VMAIntervalMap<T>::const_iterator it = m->begin(); 
+  for (typename VMAIntervalMap<T>::const_iterator it = m->begin();
        it != m->end(); ) {
     const VMAInterval& x = it->first;
     ++it;
@@ -954,18 +954,18 @@ LM::verifyMap(VMAIntervalMap<T>* m, const char* map_nm)
 }
 
 
-bool 
+bool
 LM::verifyStmtMap() const
-{ 
+{
   if (!m_stmtMap) {
     VMAToStmtRangeMap* mp;
     buildMap(mp, ANode::TyStmt);
-    verifyMap(mp, "stmtMap"); 
+    verifyMap(mp, "stmtMap");
     delete mp;
-    return true; 
+    return true;
  }
   else {
-    return verifyMap(m_stmtMap, "stmtMap"); 
+    return verifyMap(m_stmtMap, "stmtMap");
   }
 }
 
@@ -996,11 +996,11 @@ File::findProc(const char* name, const char* linkname) const
 
 
 //***************************************************************************
-// ACodeNode methods 
+// ACodeNode methods
 //***************************************************************************
 
-void 
-ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate) 
+void
+ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
   checkLineRange(begLn, endLn);
   
@@ -1010,9 +1010,9 @@ ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
   relocateIf();
 
   // never propagate changes outside an Alien
-  if (propagate && SrcFile::isValid(begLn) 
-      && ACodeNodeParent() 
-      && type() != ANode::TyAlien 
+  if (propagate && SrcFile::isValid(begLn)
+      && ACodeNodeParent()
+      && type() != ANode::TyAlien
       // tallent: for some reason this is not equivalent to the above...
       /* typeid(*this) != typeid(Struct::Alien)*/) {
     ACodeNodeParent()->expandLineRange(m_begLn, m_endLn);
@@ -1020,14 +1020,14 @@ ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 }
 
 
-void 
+void
 ACodeNode::expandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
   checkLineRange(begLn, endLn);
 
   if (begLn == ln_NULL) {
     DIAG_Assert(m_begLn == ln_NULL, "");
-    // simply relocate at beginning of sibling list 
+    // simply relocate at beginning of sibling list
     relocateIf();
   }
   else {
@@ -1054,13 +1054,13 @@ ACodeNode::expandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 
 
 void
-ACodeNode::relocate() 
+ACodeNode::relocate()
 {
   ACodeNode* prev = dynamic_cast<ACodeNode*>(prevSibling());
   ACodeNode* next = dynamic_cast<ACodeNode*>(nextSibling());
 
   // NOTE: Technically should check for ln_NULL
-  if ((!prev || (prev->begLine() <= m_begLn)) 
+  if ((!prev || (prev->begLine() <= m_begLn))
       && (!next || (m_begLn <= next->begLine()))) {
     return;
   }
@@ -1079,7 +1079,7 @@ ACodeNode::relocate()
     linkBefore(prnt->firstChild());
   }
   else {
-    // insert after sibling with sibling->begLine() <= begLine() 
+    // insert after sibling with sibling->begLine() <= begLine()
     // or iff that does not exist insert as first in sibling list
     ACodeNode* sibling = NULL;
     for (sibling = dynamic_cast<ACodeNode*>(prnt->lastChild()); sibling;
@@ -1118,7 +1118,7 @@ ACodeNode::containsLine(SrcFile::ln ln, int beg_epsilon, int end_epsilon) const
 }
 
 
-ACodeNode* 
+ACodeNode*
 ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
 {
   DIAG_Assert(ln != ln_NULL, "ACodeNode::ACodeNodeWithLine: invalid line");
@@ -1129,12 +1129,12 @@ ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
       fnd = dynamic_cast<ACodeNode*>(it.Current());
       DIAG_Assert(fnd, "");
       if  (fnd->containsLine(ln)) {
-	if (fnd->type() == TyStmt) {  
-	  return fnd; // never look inside LINE_SCOPEs 
+	if (fnd->type() == TyStmt) {
+	  return fnd; // never look inside LINE_SCOPEs
 	}
 	
 	// desired line might be in inner scope; however, it might be
-	// elsewhere because optimization left procedure with 
+	// elsewhere because optimization left procedure with
 	// non-contiguous line ranges in scopes at various levels.
 	ACodeNode* inner = fnd->ACodeNodeWithLine(ln);
 	if (inner) return inner;
@@ -1150,7 +1150,7 @@ ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
 }
 
 
-int 
+int
 ACodeNode::compare(const ACodeNode* x, const ACodeNode* y)
 {
   if (x->begLine() == y->begLine()) {
@@ -1239,7 +1239,7 @@ ACodeNode::codeName() const
 
 
 string
-ACodeNode::codeName_LM_F() const 
+ACodeNode::codeName_LM_F() const
 {
   File* fileStrct = ancestorFile();
   LM* lmStrct = (fileStrct) ? fileStrct->ancestorLM() : NULL;
@@ -1252,7 +1252,7 @@ ACodeNode::codeName_LM_F() const
 
 
 string
-Group::codeName() const 
+Group::codeName() const
 {
   string self = ANodeTyToName(type()) + " " + ACodeNode::codeName();
   return self;
@@ -1260,7 +1260,7 @@ Group::codeName() const
 
 
 string
-File::codeName() const 
+File::codeName() const
 {
   string nm;
   LM* lmStrct = ancestorLM();
@@ -1273,7 +1273,7 @@ File::codeName() const
 
 
 string
-Proc::codeName() const 
+Proc::codeName() const
 {
   string nm = codeName_LM_F();
   nm += name();
@@ -1282,7 +1282,7 @@ Proc::codeName() const
 
 
 string
-Alien::codeName() const 
+Alien::codeName() const
 {
   string nm = "<" + m_filenm + ">[" + m_name + "]:";
   nm += StrUtil::toStr(m_begLn);
@@ -1291,7 +1291,7 @@ Alien::codeName() const
 
 
 string
-Loop::codeName() const 
+Loop::codeName() const
 {
   string nm = codeName_LM_F();
   nm += ACodeNode::codeName();
@@ -1300,7 +1300,7 @@ Loop::codeName() const
 
 
 string
-Stmt::codeName() const 
+Stmt::codeName() const
 {
   string nm = codeName_LM_F();
   nm += ACodeNode::codeName();
@@ -1309,7 +1309,7 @@ Stmt::codeName() const
 
 
 string
-Ref::codeName() const 
+Ref::codeName() const
 {
   return m_name + " " + ACodeNode::codeName();
 }
@@ -1330,16 +1330,16 @@ ANode::ANodeTyToXMLelement(ANodeTy tp)
 }
 
 
-string 
+string
 ANode::toStringXML(int oFlags, const char* pre) const
-{ 
+{
   std::ostringstream os;
   writeXML(os, oFlags, pre);
   return os.str();
 }
 
 
-string 
+string
 ANode::toXML(int oFlags) const
 {
   string self = ANodeTyToXMLelement(type()) + " i" + MakeAttrNum(id());
@@ -1349,8 +1349,8 @@ ANode::toXML(int oFlags) const
 
 string
 ACodeNode::toXML(int oFlags) const
-{ 
-  string self = ANode::toXML(oFlags) 
+{
+  string self = ANode::toXML(oFlags)
     + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
   return self;
 }
@@ -1385,7 +1385,7 @@ Root::toXML(int oFlags) const
 }
 
 
-string 
+string
 Group::toXML(int oFlags) const
 {
   string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
@@ -1393,10 +1393,10 @@ Group::toXML(int oFlags) const
 }
 
 
-string 
+string
 LM::toXML(int oFlags) const
 {
-  string self = ANode::toXML(oFlags) 
+  string self = ANode::toXML(oFlags)
     + " n" + MakeAttrStr(m_name) + " " + XMLVMAIntervals(oFlags);
   return self;
 }
@@ -1410,9 +1410,9 @@ File::toXML(int oFlags) const
 }
 
 
-string 
+string
 Proc::toXML(int oFlags) const
-{ 
+{
   string self = ANode::toXML(oFlags) + " n" + MakeAttrStr(m_name);
   if (!m_linkname.empty() && m_name != m_linkname) { // print if different
     self = self + " ln" + MakeAttrStr(m_linkname);
@@ -1422,17 +1422,17 @@ Proc::toXML(int oFlags) const
 }
 
 
-string 
+string
 Alien::toXML(int oFlags) const
-{ 
-  string self = ANode::toXML(oFlags) 
+{
+  string self = ANode::toXML(oFlags)
     + " f" + MakeAttrStr(m_filenm) + " n" + MakeAttrStr(m_name);
   self = self + " " + XMLLineRange(oFlags) + " " + XMLVMAIntervals(oFlags);
   return self;
 }
 
 
-string 
+string
 Loop::toXML(int oFlags) const
 {
   string self = ACodeNode::toXML(oFlags);
@@ -1450,8 +1450,8 @@ Stmt::toXML(int oFlags) const
 
 string
 Ref::toXML(int oFlags) const
-{ 
-  string self = ACodeNode::toXML(oFlags) 
+{
+  string self = ACodeNode::toXML(oFlags)
     + " b" + MakeAttrNum(begPos) + " e" + MakeAttrNum(endPos);
   return self;
 }
@@ -1461,7 +1461,7 @@ bool
 ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
 {
   bool doTag = (type() != TyRoot);
-  bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ? 
+  bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ?
 		    isLeaf() && hasMetrics() : hasMetrics());
   bool isXMLLeaf = isLeaf() && !doMetrics;
 
@@ -1480,7 +1480,7 @@ ANode::writeXML_pre(ostream& os, int oFlags, const char* pfx) const
     writeMetricsXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
     os << endl;
   }
-  
+ 
   return !isXMLLeaf; // whether to execute writeXML_post()
 }
 
@@ -1496,15 +1496,15 @@ ANode::writeXML_post(ostream& os, int oFlags, const char* pfx) const
 }
 
 
-ostream& 
-ANode::writeXML(ostream& os, int oFlags, const char* pfx) const 
+ostream&
+ANode::writeXML(ostream& os, int oFlags, const char* pfx) const
 {
   string indent = "  ";
-  if (oFlags & Tree::OFlg_Compressed) { 
-    pfx = ""; 
-    indent = ""; 
+  if (oFlags & Tree::OFlg_Compressed) {
+    pfx = "";
+    indent = "";
   }
-  
+ 
   bool doPost = writeXML_pre(os, oFlags, pfx);
   string pfx_new = pfx + indent;
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
@@ -1525,11 +1525,11 @@ ANode::ddumpXML() const
 }
 
 
-ostream& 
+ostream&
 Root::writeXML(ostream& os, int oFlags, const char* pfx) const
 {
-  if (oFlags & Tree::OFlg_Compressed) { 
-    pfx = ""; 
+  if (oFlags & Tree::OFlg_Compressed) {
+    pfx = "";
   }
 
   // N.B.: Assume that my children are LM's
@@ -1546,13 +1546,13 @@ Root::writeXML(ostream& os, int oFlags, const char* pfx) const
 }
 
 
-ostream& 
+ostream&
 LM::writeXML(ostream& os, int oFlags, const char* pre) const
 {
   string indent = "  ";
-  if (oFlags & Tree::OFlg_Compressed) { 
-    pre = ""; 
-    indent = ""; 
+  if (oFlags & Tree::OFlg_Compressed) {
+    pre = "";
+    indent = "";
   }
 
   // N.B.: Assume my children are Files
@@ -1574,9 +1574,9 @@ LM::writeXML(ostream& os, int oFlags, const char* pre) const
 // ANode, etc: CSV output
 //***************************************************************************
 
-void 
+void
 ANode::CSV_DumpSelf(const Root& root, ostream& os) const
-{ 
+{
   char temp[32];
   for (uint i = 0; i < numMetrics(); i++) {
     double val = (hasMetric(i) ? metric(i) : 0);
@@ -1600,9 +1600,9 @@ ANode::CSV_DumpSelf(const Root& root, ostream& os) const
 
 
 void
-ANode::CSV_dump(const Root& root, ostream& os, 
+ANode::CSV_dump(const Root& root, ostream& os,
 		const char* file_name, const char* proc_name,
-		int lLevel) const 
+		int lLevel) const
 {
   // print file name, routine name, start and end line, loop level
   os << name() << ",,,,";
@@ -1615,9 +1615,9 @@ ANode::CSV_dump(const Root& root, ostream& os,
 
 
 void
-File::CSV_dump(const Root& root, ostream& os, 
+File::CSV_dump(const Root& root, ostream& os,
 	       const char* file_name, const char* proc_name,
-	       int lLevel) const 
+	       int lLevel) const
 {
   // print file name, routine name, start and end line, loop level
   os << baseName() << ",," << m_begLn << "," << m_endLn << ",";
@@ -1630,12 +1630,12 @@ File::CSV_dump(const Root& root, ostream& os,
 
 
 void
-Proc::CSV_dump(const Root& root, ostream& os, 
+Proc::CSV_dump(const Root& root, ostream& os,
 	       const char* file_name, const char* proc_name,
-	       int lLevel) const 
+	       int lLevel) const
 {
   // print file name, routine name, start and end line, loop level
-  os << file_name << "," << name() << "," << m_begLn << "," << m_endLn 
+  os << file_name << "," << name() << "," << m_begLn << "," << m_endLn
      << ",0";
   CSV_DumpSelf(root, os);
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
@@ -1646,26 +1646,26 @@ Proc::CSV_dump(const Root& root, ostream& os,
 
 
 void
-Alien::CSV_dump(const Root& root, ostream& os, 
+Alien::CSV_dump(const Root& root, ostream& os,
 		const char* file_name, const char* proc_name,
-		int lLevel) const 
+		int lLevel) const
 {
   DIAG_Die(DIAG_Unimplemented);
 }
 
 
 void
-ACodeNode::CSV_dump(const Root& root, ostream& os, 
+ACodeNode::CSV_dump(const Root& root, ostream& os,
 		    const char* file_name, const char* proc_name,
-		    int lLevel) const 
+		    int lLevel) const
 {
   ANodeTy myANodeTy = this->type();
   // do not display info for single lines
   if (myANodeTy == TyStmt)
     return;
   // print file name, routine name, start and end line, loop level
-  os << (file_name ? file_name : name().c_str()) << "," 
-     << (proc_name ? proc_name : "") << "," 
+  os << (file_name ? file_name : name().c_str()) << ","
+     << (proc_name ? proc_name : "") << ","
      << m_begLn << "," << m_endLn << ",";
   if (lLevel)
     os << lLevel;
@@ -1685,12 +1685,12 @@ Root::CSV_TreeDump(ostream& os) const
 
 
 //***************************************************************************
-// ANode, etc: Output and Debugging support 
+// ANode, etc: Output and Debugging support
 //***************************************************************************
 
-string 
+string
 ANode::toString(int oFlags, const char* pre) const
-{ 
+{
   std::ostringstream os;
   dump(os, oFlags, pre);
   return os.str();
@@ -1699,8 +1699,8 @@ ANode::toString(int oFlags, const char* pre) const
 
 string
 ANode::toString_id(int oFlags) const
-{ 
-  string str = "<" + ANodeTyToName(type()) + " uid=" 
+{
+  string str = "<" + ANodeTyToName(type()) + " uid="
     + StrUtil::toStr(id()) + ">";
   return str;
 }
@@ -1708,7 +1708,7 @@ ANode::toString_id(int oFlags) const
 
 string
 ANode::toStringMe(int oFlags, const char* prefix) const
-{ 
+{
   std::ostringstream os;
   dumpme(os, oFlags, prefix);
   return os.str();
@@ -1716,7 +1716,7 @@ ANode::toStringMe(int oFlags, const char* prefix) const
 
 
 std::ostream&
-ANode::dump(ostream& os, int oFlags, const char* pre) const 
+ANode::dump(ostream& os, int oFlags, const char* pre) const
 {
   string prefix = string(pre) + "  ";
 
@@ -1732,7 +1732,7 @@ ANode::dump(ostream& os, int oFlags, const char* pre) const
     }
     os << "; ";
   }
-  
+ 
   for (ANodeChildIterator it(this); it.Current(); it++) {
     it.current()->dump(os, oFlags, prefix.c_str());
   }
@@ -1742,7 +1742,7 @@ ANode::dump(ostream& os, int oFlags, const char* pre) const
 
 void
 ANode::ddump() const
-{ 
+{
   //writeXML(std::cerr, 0, "");
   dump(std::cerr, 0, "");
 }
@@ -1750,7 +1750,7 @@ ANode::ddump() const
 
 ostream&
 ANode::dumpme(ostream& os, int oFlags, const char* prefix) const
-{ 
+{
   os << prefix << toString_id(oFlags) << endl;
   return os;
 }
@@ -1758,8 +1758,8 @@ ANode::dumpme(ostream& os, int oFlags, const char* prefix) const
 
 ostream&
 ACodeNode::dumpme(ostream& os, int oFlags, const char* prefix) const
-{ 
-  os << prefix << toString_id(oFlags) << " " 
+{
+  os << prefix << toString_id(oFlags) << " "
      << lineRange() << " " << m_vmaSet.toString();
   return os;
 }
@@ -1767,13 +1767,13 @@ ACodeNode::dumpme(ostream& os, int oFlags, const char* prefix) const
 
 ostream&
 Root::dumpme(ostream& os, int oFlags, const char* prefix) const
-{ 
+{
   os << prefix << toString_id(oFlags) << " n=" << m_name;
   return os;
 }
 
 
-ostream& 
+ostream&
 Group::dumpme(ostream& os, int oFlags, const char* prefix) const
 {
   os << prefix << toString_id(oFlags) << " n=" << m_name;
@@ -1781,7 +1781,7 @@ Group::dumpme(ostream& os, int oFlags, const char* prefix) const
 }
 
 
-ostream& 
+ostream&
 LM::dumpme(ostream& os, int oFlags, const char* prefix) const
 {
   os << prefix << toString_id(oFlags) << " n=" << m_name;
@@ -1791,29 +1791,29 @@ LM::dumpme(ostream& os, int oFlags, const char* prefix) const
 
 ostream&
 File::dumpme(ostream& os, int oFlags, const char* prefix) const
-{ 
+{
   ACodeNode::dumpme(os, oFlags, prefix) << " n=" <<  m_name;
   return os;
 }
 
 
-ostream& 
+ostream&
 Proc::dumpme(ostream& os, int oFlags, const char* prefix) const
-{ 
+{
   ACodeNode::dumpme(os, oFlags, prefix) << " n=" << m_name;
   return os;
 }
 
 
-ostream& 
+ostream&
 Alien::dumpme(ostream& os, int oFlags, const char* prefix) const
-{ 
+{
   ACodeNode::dumpme(os, oFlags, prefix);
   return os;
 }
 
 
-ostream& 
+ostream&
 Loop::dumpme(ostream& os, int oFlags, const char* prefix) const
 {
   ACodeNode::dumpme(os, oFlags, prefix);
@@ -1831,7 +1831,7 @@ Stmt::dumpme(ostream& os, int oFlags, const char* prefix) const
 
 ostream&
 Ref::dumpme(ostream& os, int oFlags, const char* prefix) const
-{ 
+{
   ACodeNode::dumpme(os, oFlags, prefix);
   os << " pos:"  << begPos << "-" << endPos;
   return os;
@@ -1839,12 +1839,12 @@ Ref::dumpme(ostream& os, int oFlags, const char* prefix) const
 
 
 void
-LM::dumpmaps() const 
+LM::dumpmaps() const
 {
   ostream& os = std::cerr;
-  
+ 
   os << "Procedure map\n";
-  for (VMAToProcMap::const_iterator it = m_procMap->begin(); 
+  for (VMAToProcMap::const_iterator it = m_procMap->begin();
        it != m_procMap->end(); ++it) {
     it->first.dump(os);
     os << " --> " << hex << "Ox" << it->second << dec << endl;
@@ -1853,7 +1853,7 @@ LM::dumpmaps() const
   os << endl;
 
   os << "Statement map\n";
-  for (VMAToStmtRangeMap::const_iterator it = m_stmtMap->begin(); 
+  for (VMAToStmtRangeMap::const_iterator it = m_stmtMap->begin();
        it != m_stmtMap->end(); ++it) {
     it->first.dump(os);
     os << " --> " << hex << "Ox" << it->second << dec << endl;
@@ -1862,16 +1862,16 @@ LM::dumpmaps() const
 
 
 //***************************************************************************
-// Ref specific methods 
+// Ref specific methods
 //***************************************************************************
 
 void
-Ref::RelocateRef() 
+Ref::RelocateRef()
 {
   Ref* prev = dynamic_cast<Ref*>(prevSibling());
   Ref* next = dynamic_cast<Ref*>(nextSibling());
   DIAG_Assert((prevSibling() == prev) && (nextSibling() == next), "");
-  if (((!prev) || (prev->endPos <= begPos)) && 
+  if (((!prev) || (prev->endPos <= begPos)) &&
       ((!next) || (next->begPos >= endPos))) {
     return;
   }
@@ -1881,16 +1881,17 @@ Ref::RelocateRef()
     link(prnt);
   }
   else {
-    // insert after sibling with sibling->endPos < begPos 
+    // insert after sibling with sibling->endPos < begPos
     // or iff that does not exist insert as first in sibling list
     ACodeNode* sibling;
     for (sibling = dynamic_cast<ACodeNode*>(prnt->lastChild());
 	 sibling; sibling = dynamic_cast<ACodeNode*>(sibling->prevSibling())) {
       Ref *ref = dynamic_cast<Ref*>(sibling);
       DIAG_Assert(ref == sibling, "");
-      if (ref->endPos < begPos)  
+      if (ref->endPos < begPos) {
 	break;
       }
+    }
     if (sibling != NULL) {
       Ref *nxt = dynamic_cast<Ref*>(sibling->nextSibling());
       DIAG_Assert((nxt == NULL) || (nxt->begPos > endPos), "");
