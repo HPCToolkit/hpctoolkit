@@ -399,8 +399,12 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
   for (Prof::CCT::ANode* n = NULL; (n = it.current()); ++it) {
     Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
     if (n_dyn) {
-      Prof::LoadMap::LM* loadmap_lm = prof.loadMapMgr()->lm(n_dyn->lmId());
-      const string& lm_nm = loadmap_lm->name();
+      Prof::ALoadMap::LM_id_t lmId = n_dyn->lmId();
+      Prof::LoadMap::LM* loadmap_lm = ((lmId != Prof::ALoadMap::LM_id_NULL)
+				       ? prof.loadMapMgr()->lm(lmId) : NULL);
+
+      const string& lm_nm = ((loadmap_lm) ? loadmap_lm->name()
+			     : Prof::Struct::Tree::UnknownLMNm);
 
       const Prof::Struct::LM* lmStrct = rootStrct->findLM(lm_nm);
       DIAG_Assert(lmStrct, "failed to find Struct::LM: " << lm_nm);
