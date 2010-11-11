@@ -830,7 +830,8 @@ public:
   virtual ~Root()
   {
     delete groupMap;
-    delete lmMap;
+    delete lmMap_realpath;
+    delete lmMap_basename;
   }
 
   virtual const std::string&
@@ -849,7 +850,9 @@ public:
   //
   // --------------------------------------------------------
 
-  // find by RealPathMgr
+  // findLM: First, try to find by nm_real = realpath(nm).  If that is
+  // unsuccesful, try to find by nm_base = basename(nm_real) if
+  // nm_base == nm_real.
   LM*
   findLM(const char* nm) const;
 
@@ -902,10 +905,10 @@ private:
   Ctor(const char* nm);
 
   void
-  AddToGroupMap(Group* grp);
+  insertGroupMap(Group* grp);
 
   void
-  AddToLoadModMap(LM* lm);
+  insertLMMap(LM* lm);
  
   friend class Group;
   friend class LM;
@@ -914,7 +917,9 @@ private:
   std::string m_name; // the program name
 
   GroupMap* groupMap;
-  LMMap*    lmMap; // mapped by 'realpath'
+
+  LMMap* lmMap_realpath; // mapped by 'realpath'
+  LMMap* lmMap_basename;
 
   static RealPathMgr& s_realpathMgr;
 };
@@ -1146,7 +1151,7 @@ protected:
   Ctor(const char* nm, ANode* parent);
 
   void
-  AddToFileMap(File* file);
+  insertFileMap(File* file);
 
 
   template<typename T>
@@ -1306,7 +1311,7 @@ private:
   Ctor(const char* filenm, ANode* parent);
 
   void
-  AddToProcMap(Proc* proc);
+  insertProcMap(Proc* proc);
 
   friend class Proc;
 
@@ -1443,7 +1448,7 @@ private:
   Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym);
 
   void
-  AddToStmtMap(Stmt* stmt);
+  insertStmtMap(Stmt* stmt);
 
   friend class Stmt;
 
@@ -1631,7 +1636,7 @@ public:
     LM* lmStrct = NULL;
     Proc* pStrct = ancestorProc();
     if (pStrct) {
-      pStrct->AddToStmtMap(this);
+      pStrct->insertStmtMap(this);
       lmStrct = pStrct->ancestorLM();
     }
     if (lmStrct && begVMA) {

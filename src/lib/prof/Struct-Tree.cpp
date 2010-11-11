@@ -84,6 +84,7 @@ using std::string;
 #include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/FileUtil.hpp>
 #include <lib/support/Logic.hpp>
 #include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
@@ -213,7 +214,8 @@ Root::Ctor(const char* nm)
   DIAG_Assert(nm, "");
   m_name = nm;
   groupMap = new GroupMap();
-  lmMap = new LMMap();
+  lmMap_realpath = new LMMap();
+  lmMap_basename = new LMMap();
 }
 
 
@@ -222,9 +224,10 @@ Root::operator=(const Root& x)
 {
   // shallow copy
   if (&x != this) {
-    m_name   = x.m_name;
+    m_name = x.m_name;
     groupMap = NULL;
-    lmMap    = NULL;
+    lmMap_realpath = NULL;
+    lmMap_basename = NULL;
   }
   return *this;
 }
@@ -233,11 +236,28 @@ Root::operator=(const Root& x)
 LM*
 Root::findLM(const char* nm) const
 {
-  // FIXME: if the map is empty but we have children, we should construct it
-  std::string nm_real = nm;
+  // TODO: if the map is empty and Root has LM children, we should
+  // populate the map
+
+  string nm_real = nm;
   s_realpathMgr.realpath(nm_real);
-  LMMap::iterator it = lmMap->find(nm_real);
-  LM* x = (it != lmMap->end()) ? it->second : NULL;
+
+  LMMap::iterator it1 = lmMap_realpath->find(nm_real);
+  LM* x = (it1 != lmMap_realpath->end()) ? it1->second : NULL;
+
+  if (!x) {
+    string nm_base = FileUtil::basename(nm_real);
+
+    // N.B. Must be careful about simply searching by nm_base.  If we have
+    //    nm = <path1>/base
+    // then we could mistakenly find <path2>/base.
+    if (nm_real == nm_base) {
+      LMMap::iterator it2 = lmMap_basename->find(nm_base);
+      // N.B. it2->second is NULL if nm_base was inserted multiple times
+      x = (it2 != lmMap_basename->end()) ? it2->second : NULL;
+    }
+  }
+
   return x;
 }
 
@@ -251,7 +271,7 @@ Group::Ctor(const char* nm, ANode* parent)
 	      || (t == TyFile) || (t == TyProc) || (t == TyAlien)
 	      || (t == TyLoop), "");
   m_name = nm;
-  ancestorRoot()->AddToGroupMap(this);
+  ancestorRoot()->insertGroupMap(this);
 }
 
 
@@ -282,7 +302,7 @@ LM::Ctor(const char* nm, ANode* parent)
 
   Root* root = ancestorRoot();
   if (root) {
-    root->AddToLoadModMap(this);
+    root->insertLMMap(this);
   }
 }
 
@@ -323,7 +343,7 @@ File::Ctor(const char* fname, ANode* parent)
   m_name = (fname) ? fname : "";
   m_procMap = new ProcMap();
 
-  ancestorLM()->AddToFileMap(this);
+  ancestorLM()->insertFileMap(this);
 }
 
 
@@ -376,7 +396,7 @@ Proc::Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym)
 
   File* fileStrct = ancestorFile();
   if (fileStrct) {
-    fileStrct->AddToProcMap(this);
+    fileStrct->insertProcMap(this);
   }
 }
 
@@ -823,7 +843,7 @@ ANode::isMergable(ANode* toNode, ANode* fromNode)
 //***************************************************************************
 
 void
-Root::AddToGroupMap(Group* grp)
+Root::insertGroupMap(Group* grp)
 {
   std::pair<GroupMap::iterator, bool> ret =
     groupMap->insert(std::make_pair(grp->name(), grp));
@@ -832,18 +852,28 @@ Root::AddToGroupMap(Group* grp)
 
 
 void
-Root::AddToLoadModMap(LM* lm)
+Root::insertLMMap(LM* lm)
 {
   string nm_real = lm->name();
   s_realpathMgr.realpath(nm_real);
-  std::pair<LMMap::iterator, bool> ret =
-    lmMap->insert(std::make_pair(nm_real, lm));
-  DIAG_Assert(ret.second, "Duplicate!");
+
+  std::pair<LMMap::iterator, bool> ret1 =
+    lmMap_realpath->insert(std::make_pair(nm_real, lm));
+  DIAG_Assert(ret1.second, "Root::insertLMMap: Duplicate!");
+
+  string nm_base = FileUtil::basename(nm_real);
+  std::pair<LMMap::iterator, bool> ret2 =
+    lmMap_basename->insert(std::make_pair(nm_base, lm));
+  if (ret2.second) {
+    // Set target to NULL to indicate 'nm_base' appears more than once
+    LMMap::iterator entry = ret2.first;
+    entry->second = NULL;
+  }
 }
 
 
 void
-LM::AddToFileMap(File* f)
+LM::insertFileMap(File* f)
 {
   string nm_real = f->name();
   s_realpathMgr.realpath(nm_real);
@@ -855,7 +885,7 @@ LM::AddToFileMap(File* f)
 
 
 void
-File::AddToProcMap(Proc* p)
+File::insertProcMap(Proc* p)
 {
   DIAG_DevMsg(2, "File (" << this << "): mapping proc name '" << p->name()
 	      << "' to Proc* " << p);
@@ -864,7 +894,7 @@ File::AddToProcMap(Proc* p)
 
 
 void
-Proc::AddToStmtMap(Stmt* stmt)
+Proc::insertStmtMap(Stmt* stmt)
 {
   // FIXME: confusion between native and alien statements
   (*m_stmtMap)[stmt->begLine()] = stmt;
