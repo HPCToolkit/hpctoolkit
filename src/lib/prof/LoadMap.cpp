@@ -72,89 +72,6 @@
 
 //****************************************************************************
 
-//****************************************************************************
-// ALoadMap
-//****************************************************************************
-
-
-namespace Prof {
-
-
-ALoadMap::ALoadMap(uint sz)
-{
-  m_lm_byId.reserve(sz);
-  // Automatically add the 'null LM'
-  // support normal lm() indexing
-  // cleanup Analysis::CallPath::overlayStaticStructureMain()
-  // cleanup Analysis::CallPath::noteStaticStructureOnLeaves()
-}
-
-
-ALoadMap::~ALoadMap()
-{
-  for (LM_id_t i = 1; i <= size(); ++i) {
-    ALoadMap::LM* lm = this->lm(i);
-    delete lm;
-  }
-  m_lm_byId.clear();
-}
-
-
-std::string
-ALoadMap::toString() const
-{
-  std::ostringstream os;
-  dump(os);
-  return os.str();
-}
-
-
-void 
-ALoadMap::ddump() const
-{
-  dump(std::cerr);
-}
-
-
-//****************************************************************************
-
-ALoadMap::LM::LM(const std::string& name)
-  : m_id(LM_id_NULL), m_name(name), m_isUsed(false)
-{
-}
-
-
-ALoadMap::LM::~LM()
-{
-}
-
-
-std::string
-ALoadMap::LM::toString() const
-{
-  std::ostringstream os;
-  dump(os);
-  return os.str();
-}
-
-
-void 
-ALoadMap::LM::dump(std::ostream& os) const
-{ 
-  os << m_id << ": " << m_name;
-}
-
- 
-void 
-ALoadMap::LM::ddump() const
-{
-  dump(std::cerr);
-}
-
-
-} // namespace Prof
-
-
 
 //****************************************************************************
 // LoadMap
@@ -164,19 +81,28 @@ namespace Prof {
 
 
 LoadMap::LoadMap(uint sz)
-  : ALoadMap(sz)
 {
+  m_lm_byId.reserve(sz);
+  // Automatically add the 'null LM'
+  // support normal lm() indexing
+  // cleanup Analysis::CallPath::overlayStaticStructureMain()
+  // cleanup Analysis::CallPath::noteStaticStructureOnLeaves()
 }
 
 
 LoadMap::~LoadMap()
 {
+  for (LM_id_t i = 1; i <= size(); ++i) {
+    LoadMap::LM* lm = this->lm(i);
+    delete lm;
+  }
+  m_lm_byId.clear();
   m_lm_byName.clear();
 }
 
 
 void 
-LoadMap::lm_insert(ALoadMap::LM* x)
+LoadMap::lm_insert(LoadMap::LM* x)
 { 
   m_lm_byId.push_back(x);
   x->id(m_lm_byId.size()); // 1-based id
@@ -190,7 +116,7 @@ LoadMap::lm_insert(ALoadMap::LM* x)
 LoadMap::LMSet_nm::iterator
 LoadMap::lm_find(const std::string& nm) const
 {
-  static ALoadMap::LM key;
+  static LoadMap::LM key;
   key.name(nm);
 
   LMSet_nm::iterator fnd = m_lm_byName.find(&key);
@@ -198,36 +124,45 @@ LoadMap::lm_find(const std::string& nm) const
 }
 
 
-std::vector<ALoadMap::MergeEffect>*
-LoadMap::merge(const ALoadMap& y)
+std::vector<LoadMap::MergeEffect>*
+LoadMap::merge(const LoadMap& y)
 {
-  std::vector<ALoadMap::MergeEffect>* mrgEffect =
-    new std::vector<ALoadMap::MergeEffect>;
+  std::vector<LoadMap::MergeEffect>* mrgEffect =
+    new std::vector<LoadMap::MergeEffect>;
   
   LoadMap& x = *this;
 
   for (LM_id_t i = 1; i <= y.size(); ++i) { 
-    ALoadMap::LM* y_lm = y.lm(i);
+    LoadMap::LM* y_lm = y.lm(i);
     
     LMSet_nm::iterator x_fnd = x.lm_find(y_lm->name());
-    ALoadMap::LM* x_lm = (x_fnd != x.lm_end_nm()) ? *x_fnd : NULL;
+    LoadMap::LM* x_lm = (x_fnd != x.lm_end_nm()) ? *x_fnd : NULL;
 
     // Post-INVARIANT: A corresponding x_lm exists
     if (!x_lm) {
       // Create x_lm for y_lm.
-      x_lm = new ALoadMap::LM(y_lm->name());
+      x_lm = new LoadMap::LM(y_lm->name());
       lm_insert(x_lm);
     }
 
     if (x_lm->id() != y_lm->id()) {
       // y_lm->id() is replaced by x_lm->id()
-      mrgEffect->push_back(ALoadMap::MergeEffect(y_lm->id(), x_lm->id()));
+      mrgEffect->push_back(LoadMap::MergeEffect(y_lm->id(), x_lm->id()));
     }
     
     x_lm->isUsedMrg(y_lm->isUsed());
   }
   
   return mrgEffect;
+}
+
+
+std::string
+LoadMap::toString() const
+{
+  std::ostringstream os;
+  dump(os);
+  return os.str();
 }
 
 
@@ -238,11 +173,57 @@ LoadMap::dump(std::ostream& os) const
 
   os << "{ Prof::LoadMap\n";
   for (LM_id_t i = 1; i <= size(); ++i) {
-    ALoadMap::LM* lm = this->lm(i);
+    LoadMap::LM* lm = this->lm(i);
     os << pre << i << " : " << lm->toString() << std::endl;
   }
   os << "}\n";
 }
 
 
+void 
+LoadMap::ddump() const
+{
+  dump(std::cerr);
+}
+
+
+//****************************************************************************
+// LoadMap::LM
+//****************************************************************************
+
+LoadMap::LM::LM(const std::string& name)
+  : m_id(LM_id_NULL), m_name(name), m_isUsed(false)
+{
+}
+
+
+LoadMap::LM::~LM()
+{
+}
+
+
+std::string
+LoadMap::LM::toString() const
+{
+  std::ostringstream os;
+  dump(os);
+  return os.str();
+}
+
+
+void 
+LoadMap::LM::dump(std::ostream& os) const
+{ 
+  os << m_id << ": " << m_name;
+}
+
+ 
+void 
+LoadMap::LM::ddump() const
+{
+  dump(std::cerr);
+}
+
+
 } // namespace Prof
+

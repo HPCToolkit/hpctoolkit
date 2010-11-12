@@ -327,7 +327,7 @@ private:
 
   // apply MergeEffects after merging two profiles
   void
-  merge_fixCCT(const std::vector<ALoadMap::MergeEffect>* mrgEffects);
+  merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects);
  
   void
   merge_fixTrace(const CCT::MergeEffectList* mrgEffects);
