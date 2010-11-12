@@ -221,103 +221,15 @@ protected:
 } // namespace Prof
 
 
-//****************************************************************************
-// LoadMap
-//****************************************************************************
-
-namespace Prof {
-
-#if 0
-
-class LoadMap : public ALoadMap {
-public:
-
-  struct lt_LM_nm
-  {
-    inline bool
-    operator()(const ALoadMap::LM* x, const ALoadMap::LM* y) const
-    {
-      return (x->name() < y->name());
-    }
-  };
-
-  // FIXME: this doesn't need to be a multiset!
-  typedef std::multiset<ALoadMap::LM*, lt_LM_nm> LMSet_nm;
-  
-public:
-  LoadMap(const uint i = 32);
-  virtual ~LoadMap();
-
-  // assumes ownership
-  virtual void
-  lm_insert(ALoadMap::LM* x);
-  
-  // ------------------------------------------------------------
-  // Access by id: from ALoadMap
-  // ------------------------------------------------------------
-
-  // ------------------------------------------------------------
-  // Access by name
-  // 
-  // NOTE: this is a multiset since different portions of the same
-  // load module may be loaded at different places
-  // ------------------------------------------------------------
-  std::pair<LMSet_nm::iterator, LMSet_nm::iterator>
-  lm_find(const std::string& nm) const;
-
-  LMSet_nm::iterator
-  lm_begin_nm()
-  { return m_lm_byName.begin(); }
-
-  LMSet_nm::const_iterator
-  lm_begin_nm() const
-  { return m_lm_byName.begin(); }
-
-  LMSet_nm::iterator
-  lm_end_nm() 
-  { return m_lm_byName.end(); }
-
-  LMSet_nm::const_iterator
-  lm_end_nm() const 
-  { return m_lm_byName.end(); }
-
-
-  // ------------------------------------------------------------
-  // 
-  // ------------------------------------------------------------
-  // merge: Given an LoadMap y, merge y into x = 'this'.  Returns a
-  // vector of MergeEffect describing changes that were made.  The
-  // vector contains at most one MergeEffect for each LM_id_t (old_id)
-  // in y.
-  //
-  // NOTE: x and y must not conflict! (See lm_insert().)
-  std::vector<MergeEffect>*
-  merge(const LoadMap& y);
-
-
-  // ------------------------------------------------------------
-  // 
-  // ------------------------------------------------------------
-
-  virtual void 
-  dump(std::ostream& os = std::cerr) const;
-
-private:
-  LMSet_nm m_lm_byName;
-};
-
-#endif
-
-} // namespace Prof
-
-#if 0
-inline bool 
-operator<(const Prof::LoadMap::LM x, const Prof::LoadMap::LM y)
+inline bool
+operator<(const Prof::ALoadMap::LM x, const Prof::ALoadMap::LM y)
 {
   return (x.id() < y.id());
 }
 
-#endif
+//****************************************************************************
+// LoadMap
+//****************************************************************************
 
 //***************************************************************************
 
