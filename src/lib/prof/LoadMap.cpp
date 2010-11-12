@@ -63,6 +63,8 @@
 
 #include "LoadMap.hpp"
 
+#include "Struct-Tree.hpp" // TODO: Prof::Struct::Tree::UnknownLMNm
+
 #include <lib/binutils/LM.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -83,8 +85,10 @@ namespace Prof {
 LoadMap::LoadMap(uint sz)
 {
   m_lm_byId.reserve(sz);
-  // Automatically add the 'null LM'
-  // support normal lm() indexing
+
+  LM* nullLM = new LM(Prof::Struct::Tree::UnknownLMNm);
+  lm_insert(nullLM);
+
   // cleanup Analysis::CallPath::overlayStaticStructureMain()
   // cleanup Analysis::CallPath::noteStaticStructureOnLeaves()
 }
@@ -92,7 +96,7 @@ LoadMap::LoadMap(uint sz)
 
 LoadMap::~LoadMap()
 {
-  for (LM_id_t i = 1; i <= size(); ++i) {
+  for (LMId_t i = 0 /* sic */; i <= size(); ++i) {
     LoadMap::LM* lm = this->lm(i);
     delete lm;
   }
@@ -105,7 +109,7 @@ void
 LoadMap::lm_insert(LoadMap::LM* x)
 { 
   m_lm_byId.push_back(x);
-  x->id(m_lm_byId.size()); // 1-based id
+  x->id(m_lm_byId.size() - 1); // id is the last slot used
   
   std::pair<LMSet_nm::iterator, bool> ret = m_lm_byName.insert(x);
   DIAG_Assert(ret.second, "LoadMap::lm_insert(): conflict inserting: " 
@@ -132,7 +136,7 @@ LoadMap::merge(const LoadMap& y)
   
   LoadMap& x = *this;
 
-  for (LM_id_t i = 1; i <= y.size(); ++i) { 
+  for (LMId_t i = 1; i <= y.size(); ++i) { 
     LoadMap::LM* y_lm = y.lm(i);
     
     LMSet_nm::iterator x_fnd = x.lm_find(y_lm->name());
@@ -172,7 +176,7 @@ LoadMap::dump(std::ostream& os) const
   std::string pre = "  ";
 
   os << "{ Prof::LoadMap\n";
-  for (LM_id_t i = 1; i <= size(); ++i) {
+  for (LMId_t i = 1; i <= size(); ++i) {
     LoadMap::LM* lm = this->lm(i);
     os << pre << i << " : " << lm->toString() << std::endl;
   }
@@ -192,7 +196,7 @@ LoadMap::ddump() const
 //****************************************************************************
 
 LoadMap::LM::LM(const std::string& name)
-  : m_id(LM_id_NULL), m_name(name), m_isUsed(false)
+  : m_id(LMId_NULL), m_name(name), m_isUsed(false)
 {
 }
 
@@ -226,4 +230,3 @@ LoadMap::LM::ddump() const
 
 
 } // namespace Prof
-

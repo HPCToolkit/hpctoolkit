@@ -330,15 +330,15 @@ Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
     if (n_dyn) {
       lush_lip_t* lip = n_dyn->lip();
 
-      LoadMap::LM_id_t lmId1, lmId2;
+      LoadMap::LMId_t lmId1, lmId2;
       lmId1 = n_dyn->lmId_real();
-      lmId2 = (lip) ? lush_lip_getLMId(lip) : LoadMap::LM_id_NULL;
+      lmId2 = (lip) ? lush_lip_getLMId(lip) : LoadMap::LMId_NULL;
       
       for (uint i = 0; i < mrgEffects->size(); ++i) {
 	const LoadMap::MergeEffect& chg = (*mrgEffects)[i];
 	if (chg.old_id == lmId1) {
 	  n_dyn->lmId_real(chg.new_id);
-	  if (lmId2 == LoadMap::LM_id_NULL) {
+	  if (lmId2 == LoadMap::LMId_NULL) {
 	    break; // quick exit in the common case
 	  }
 	}
@@ -1233,7 +1233,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     if (node_parent) {
       // If 'node' is not the secondary root, perform sanity check
       if (!node->isSecondarySynthRoot()) {
-	DIAG_AssertWarn(node->lmId_real() != LoadMap::LM_id_NULL,
+	DIAG_AssertWarn(node->lmId_real() != LoadMap::LMId_NULL,
 			ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
       }
 
@@ -1340,7 +1340,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   const LoadMap& loadmap = *(prof.loadmap());
 
   hpcfmt_int4_fwrite(loadmap.size(), fs);
-  for (LoadMap::LM_id_t i = 1; i <= loadmap.size(); i++) {
+  for (LoadMap::LMId_t i = 1; i <= loadmap.size(); i++) {
     const LoadMap::LM* lm = loadmap.lm(i);
 
     loadmap_entry_t lm_entry;
@@ -1560,14 +1560,12 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------
   // normalized ip (lmId and lmIP)
   // ----------------------------------------
-  LoadMap::LM_id_t lmId = nodeFmt.lm_id;
+  LoadMap::LMId_t lmId = nodeFmt.lm_id;
 
   VMA lmIP = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
-  if (lmId != LoadMap::LM_id_NULL) {
-    prof.loadmap()->lm(lmId)->isUsed(true);
-  }
+  prof.loadmap()->lm(lmId)->isUsed(true); // valid for LoadMap::LMId_NULL
 
   DIAG_MsgIf(0, "cct_makeNode(: " << hex << lmIP << dec << ", " << lmId << ")");
 
@@ -1580,10 +1578,8 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   }
 
   if (lip) {
-    LoadMap::LM_id_t lip_lmId = lush_lip_getLMId(lip);
-    if (lip_lmId != LoadMap::LM_id_NULL) {
-      prof.loadmap()->lm(lip_lmId)->isUsed(true);
-    }
+    LoadMap::LMId_t lip_lmId = lush_lip_getLMId(lip);
+    prof.loadmap()->lm(lip_lmId)->isUsed(true); // valid for LoadMap::LMId_NULL
   }
 
   // ----------------------------------------  
@@ -1694,7 +1690,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
     dynamic_cast<const Prof::CCT::ADynNode*>(&n);
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
-    n_fmt.lm_id   = Prof::LoadMap::LM_id_NULL;
+    n_fmt.lm_id   = Prof::LoadMap::LMId_NULL;
     n_fmt.lm_ip   = 0;
     lush_lip_init(&(n_fmt.lip));
     memset(n_fmt.metrics, 0, n_fmt.num_metrics * sizeof(hpcrun_metricVal_t));
