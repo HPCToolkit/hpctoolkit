@@ -291,7 +291,7 @@ Analysis::CallPath::
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 			   string agent, bool doNormalizeTy)
 {
-  const Prof::LoadMapMgr* loadmap = prof.loadMapMgr();
+  const Prof::LoadMap* loadmap = prof.loadmap();
   Prof::Struct::Root* rootStrct = prof.structure()->root();
 
   std::string errors;
@@ -401,7 +401,7 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
     if (n_dyn) {
       Prof::ALoadMap::LM_id_t lmId = n_dyn->lmId();
       Prof::ALoadMap::LM* loadmap_lm = ((lmId != Prof::ALoadMap::LM_id_NULL)
-				       ? prof.loadMapMgr()->lm(lmId) : NULL);
+				       ? prof.loadmap()->lm(lmId) : NULL);
 
       const string& lm_nm = ((loadmap_lm) ? loadmap_lm->name()
 			     : Prof::Struct::Tree::UnknownLMNm);

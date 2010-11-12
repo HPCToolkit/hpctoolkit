@@ -80,85 +80,9 @@
 
 //*************************** Forward Declarations ***************************
 
-namespace Prof {
-
 //****************************************************************************
 // LoadMapMgr
 //****************************************************************************
-
-class LoadMapMgr : public ALoadMap {
-public:
-
-  struct lt_LM_nm
-  {
-    inline bool
-    operator()(const ALoadMap::LM* x, const ALoadMap::LM* y) const
-    {
-      return (x->name() < y->name());
-    }
-  };
-
-  typedef std::set<ALoadMap::LM*, LoadMapMgr::lt_LM_nm> LMSet_nm;
-
-public: 
-  LoadMapMgr(const uint i = 32);
-
-  virtual ~LoadMapMgr();
-
-  // assumes ownership
-  virtual void
-  lm_insert(ALoadMap::LM* x);
-
-  // ------------------------------------------------------------
-  // Access by id: ALoadMap
-  // ------------------------------------------------------------
-
-  // ------------------------------------------------------------
-  // Access by name
-  // ------------------------------------------------------------
-  LMSet_nm::iterator
-  lm_find(const std::string& nm) const;
-
-  LMSet_nm::iterator
-  lm_begin_nm()
-  { return m_lm_byName.begin(); }
-
-  LMSet_nm::const_iterator
-  lm_begin_nm() const
-  { return m_lm_byName.begin(); }
-
-  LMSet_nm::iterator
-  lm_end_nm()
-  { return m_lm_byName.end(); }
-
-  LMSet_nm::const_iterator
-  lm_end_nm() const
-  { return m_lm_byName.end(); }
-
-
-  // ------------------------------------------------------------
-  // 
-  // ------------------------------------------------------------
-
-  // merge: Given a LoadMap y, merge y into x = 'this'.  Returns a
-  // vector of MergeEffect describing changes that were made.  The
-  // vector contains at most one MergeEffect for each LM_id_t (old_id)
-  // in y.
-  std::vector<ALoadMap::MergeEffect>*
-  merge(const ALoadMap& y);
-
-  // ------------------------------------------------------------
-  // 
-  // ------------------------------------------------------------
-
-  virtual void
-  dump(std::ostream& os = std::cerr) const;
-
-private:
-  LMSet_nm m_lm_byName;
-};
-
-} // namespace Prof
 
 
 //***************************************************************************

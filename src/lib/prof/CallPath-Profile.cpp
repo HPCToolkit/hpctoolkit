@@ -135,7 +135,7 @@ Profile::Profile(const std::string name)
   m_mMgr = new Metric::Mgr;
   m_isMetricMgrVirtual = false;
 
-  m_loadmapMgr = new LoadMapMgr;
+  m_loadmap = new LoadMap;
 
   m_cct = new CCT::Tree(this);
 
@@ -148,7 +148,7 @@ Profile::Profile(const std::string name)
 Profile::~Profile()
 {
   delete m_mMgr;
-  delete m_loadmapMgr;
+  delete m_loadmap;
   delete m_cct;
   delete m_structure;
 }
@@ -223,10 +223,10 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   // -------------------------------------------------------
   // merge LoadMaps
   //
-  // Post-INVARIANT: y's cct refers to x's LoadMapMgr
+  // Post-INVARIANT: y's cct refers to x's LoadMap
   // -------------------------------------------------------
   std::vector<ALoadMap::MergeEffect>* mrgEffects1 =
-    x.m_loadmapMgr->merge(*y.loadMapMgr());
+    x.m_loadmap->merge(*y.loadmap());
   y.merge_fixCCT(mrgEffects1);
   delete mrgEffects1;
 
@@ -647,7 +647,7 @@ Profile::dump(std::ostream& os) const
 
   m_mMgr->dump(os);
 
-  m_loadmapMgr->dump(os);
+  m_loadmap->dump(os);
 
   if (m_cct) {
     m_cct->dump(os, CCT::Tree::OFlg_DebugAll);
@@ -1105,7 +1105,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   uint num_lm = loadmap_tbl.len;
 
-  LoadMapMgr loadmap(num_lm);
+  LoadMap loadmap(num_lm);
 
   for (uint i = 0; i < num_lm; ++i) {
     string nm = loadmap_tbl.lst[i].name;
@@ -1120,7 +1120,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   DIAG_MsgIf(DBG, loadmap.toString());
 
   std::vector<ALoadMap::MergeEffect>* mrgEffect =
-    prof->loadMapMgr()->merge(loadmap);
+    prof->loadmap()->merge(loadmap);
   DIAG_Assert(mrgEffect->empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);
 
   hpcrun_fmt_loadmap_free(&loadmap_tbl, free);
@@ -1337,11 +1337,11 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   // loadmap
   // ------------------------------------------------------------
 
-  const LoadMapMgr& loadMapMgr = *(prof.loadMapMgr());
+  const LoadMap& loadmap = *(prof.loadmap());
 
-  hpcfmt_int4_fwrite(loadMapMgr.size(), fs);
-  for (ALoadMap::LM_id_t i = 1; i <= loadMapMgr.size(); i++) {
-    const ALoadMap::LM* lm = loadMapMgr.lm(i);
+  hpcfmt_int4_fwrite(loadmap.size(), fs);
+  for (ALoadMap::LM_id_t i = 1; i <= loadmap.size(); i++) {
+    const ALoadMap::LM* lm = loadmap.lm(i);
 
     loadmap_entry_t lm_entry;
     lm_entry.id = lm->id();
@@ -1566,7 +1566,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   ushort opIdx = 0;
 
   if (lmId != ALoadMap::LM_id_NULL) {
-    prof.loadMapMgr()->lm(lmId)->isUsed(true);
+    prof.loadmap()->lm(lmId)->isUsed(true);
   }
 
   DIAG_MsgIf(0, "cct_makeNode(: " << hex << lmIP << dec << ", " << lmId << ")");
@@ -1582,7 +1582,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   if (lip) {
     ALoadMap::LM_id_t lip_lmId = lush_lip_getLMId(lip);
     if (lip_lmId != ALoadMap::LM_id_NULL) {
-      prof.loadMapMgr()->lm(lip_lmId)->isUsed(true);
+      prof.loadmap()->lm(lip_lmId)->isUsed(true);
     }
   }
 
