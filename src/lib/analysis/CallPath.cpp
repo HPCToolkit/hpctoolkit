@@ -296,15 +296,10 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
   std::string errors;
 
-  // Create a "null" load module for spurious samples with lm-id's of 0
-  Prof::LoadMap::LM nullLM(Prof::Struct::Tree::UnknownLMNm);
-  nullLM.isUsed(true);
-  
-  // N.B. iteration includes LMId_NULL to include spurious samples
-  for (Prof::LoadMap::LMId_t i = 0 /*sic*/; i <= loadmap->size(); ++i) {
-    Prof::LoadMap::LM* lm =
-      (i == Prof::LoadMap::LMId_NULL) ? &nullLM : loadmap->lm(i);
-
+  // N.B. To process spurious samples, iteration includes LoadMap::LMId_NULL
+  for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
+       i <= loadmap->size(); ++i) {
+    Prof::LoadMap::LM* lm = loadmap->lm(i);
     if (lm->isUsed()) {
       try {
 	const string& lm_nm = lm->name();
@@ -399,12 +394,9 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
   for (Prof::CCT::ANode* n = NULL; (n = it.current()); ++it) {
     Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
     if (n_dyn) {
-      Prof::LoadMap::LMId_t lmId = n_dyn->lmId();
-      Prof::LoadMap::LM* loadmap_lm = ((lmId != Prof::LoadMap::LMId_NULL)
-				       ? prof.loadmap()->lm(lmId) : NULL);
-
-      const string& lm_nm = ((loadmap_lm) ? loadmap_lm->name()
-			     : Prof::Struct::Tree::UnknownLMNm);
+      Prof::LoadMap::LMId_t lmId = n_dyn->lmId(); // ok if LoadMap::LMId_NULL
+      Prof::LoadMap::LM* loadmap_lm = prof.loadmap()->lm(lmId);
+      const string& lm_nm = loadmap_lm->name();
 
       const Prof::Struct::LM* lmStrct = rootStrct->findLM(lm_nm);
       DIAG_Assert(lmStrct, "failed to find Struct::LM: " << lm_nm);

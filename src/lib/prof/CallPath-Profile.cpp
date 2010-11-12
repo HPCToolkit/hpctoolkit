@@ -1565,7 +1565,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   VMA lmIP = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
-  prof.loadmap()->lm(lmId)->isUsed(true); // valid for LoadMap::LMId_NULL
+  prof.loadmap()->lm(lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
 
   DIAG_MsgIf(0, "cct_makeNode(: " << hex << lmIP << dec << ", " << lmId << ")");
 
@@ -1579,7 +1579,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
   if (lip) {
     LoadMap::LMId_t lip_lmId = lush_lip_getLMId(lip);
-    prof.loadmap()->lm(lip_lmId)->isUsed(true); // valid for LoadMap::LMId_NULL
+    prof.loadmap()->lm(lip_lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
   }
 
   // ----------------------------------------  

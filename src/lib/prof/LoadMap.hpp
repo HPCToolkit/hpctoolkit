@@ -212,8 +212,11 @@ public:
   // ------------------------------------------------------------
   // Access by id (1-based)
   //
-  // LM with id x is stored in slot x.  Thus 0 points to a 'NULL'
-  // LoadModule.
+  // The typical iteration idiom for a LoadMap 'loadmap' is:
+  //   for (LoadMap::LMId_t i = 1; i <= loadmap.size(); ++i) { ... }
+  //
+  // (A LoadMap::LM with id x is stored in slot x.  Thus 0 points to a
+  // 'NULL' LoadMap::LM.)
   // ------------------------------------------------------------
 
   LMId_t
