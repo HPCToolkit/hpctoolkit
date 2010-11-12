@@ -88,15 +88,13 @@ LoadMap::LoadMap(uint sz)
 
   LM* nullLM = new LM(Prof::Struct::Tree::UnknownLMNm);
   lm_insert(nullLM);
-
-  // cleanup Analysis::CallPath::overlayStaticStructureMain()
-  // cleanup Analysis::CallPath::noteStaticStructureOnLeaves()
+  DIAG_Assert(nullLM->id() == LoadMap::LMId_NULL, "LoadMap::LoadMap");
 }
 
 
 LoadMap::~LoadMap()
 {
-  for (LMId_t i = 0 /* sic */; i <= size(); ++i) {
+  for (LMId_t i = LoadMap::LMId_NULL; i <= size(); ++i) {
     LoadMap::LM* lm = this->lm(i);
     delete lm;
   }
@@ -105,14 +103,14 @@ LoadMap::~LoadMap()
 }
 
 
-void 
+void
 LoadMap::lm_insert(LoadMap::LM* x)
-{ 
+{
   m_lm_byId.push_back(x);
   x->id(m_lm_byId.size() - 1); // id is the last slot used
-  
+ 
   std::pair<LMSet_nm::iterator, bool> ret = m_lm_byName.insert(x);
-  DIAG_Assert(ret.second, "LoadMap::lm_insert(): conflict inserting: " 
+  DIAG_Assert(ret.second, "LoadMap::lm_insert(): conflict inserting: "
 	      << x->toString());
 }
 
@@ -136,7 +134,7 @@ LoadMap::merge(const LoadMap& y)
   
   LoadMap& x = *this;
 
-  for (LMId_t i = 1; i <= y.size(); ++i) { 
+  for (LMId_t i = LoadMap::LMId_NULL; i <= y.size(); ++i) {
     LoadMap::LM* y_lm = y.lm(i);
     
     LMSet_nm::iterator x_fnd = x.lm_find(y_lm->name());
@@ -170,13 +168,13 @@ LoadMap::toString() const
 }
 
 
-void 
+void
 LoadMap::dump(std::ostream& os) const
 {
   std::string pre = "  ";
 
   os << "{ Prof::LoadMap\n";
-  for (LMId_t i = 1; i <= size(); ++i) {
+  for (LMId_t i = LoadMap::LMId_NULL; i <= size(); ++i) {
     LoadMap::LM* lm = this->lm(i);
     os << pre << i << " : " << lm->toString() << std::endl;
   }
@@ -184,7 +182,7 @@ LoadMap::dump(std::ostream& os) const
 }
 
 
-void 
+void
 LoadMap::ddump() const
 {
   dump(std::cerr);
@@ -215,14 +213,14 @@ LoadMap::LM::toString() const
 }
 
 
-void 
+void
 LoadMap::LM::dump(std::ostream& os) const
-{ 
+{
   os << m_id << ": " << m_name;
 }
 
- 
-void 
+
+void
 LoadMap::LM::ddump() const
 {
   dump(std::cerr);
