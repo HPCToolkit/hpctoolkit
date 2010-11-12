@@ -136,14 +136,14 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
 void
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
-			   Prof::LoadMap::LM* loadmap_lm,
+			   Prof::ALoadMap::LM* loadmap_lm,
 			   Prof::Struct::LM* lmStrct);
 
 
 // lm is optional and may be NULL
 void 
 overlayStaticStructure(Prof::CallPath::Profile& prof,
-		       Prof::LoadMap::LM* loadmap_lm,
+		       Prof::ALoadMap::LM* loadmap_lm,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
 
 // specialty function for hpcprof-mpi

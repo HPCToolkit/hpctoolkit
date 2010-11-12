@@ -88,7 +88,17 @@ namespace Prof {
 
 class LoadMapMgr : public ALoadMap {
 public:
-  typedef std::set<ALoadMap::LM*, LoadMap::lt_LM_nm> LMSet_nm;
+
+  struct lt_LM_nm
+  {
+    inline bool
+    operator()(const ALoadMap::LM* x, const ALoadMap::LM* y) const
+    {
+      return (x->name() < y->name());
+    }
+  };
+
+  typedef std::set<ALoadMap::LM*, LoadMapMgr::lt_LM_nm> LMSet_nm;
 
 public: 
   LoadMapMgr(const uint i = 32);

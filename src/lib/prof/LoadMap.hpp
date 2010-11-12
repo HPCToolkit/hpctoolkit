@@ -227,6 +227,8 @@ protected:
 
 namespace Prof {
 
+#if 0
+
 class LoadMap : public ALoadMap {
 public:
 
@@ -304,13 +306,18 @@ private:
   LMSet_nm m_lm_byName;
 };
 
+#endif
+
 } // namespace Prof
 
+#if 0
 inline bool 
 operator<(const Prof::LoadMap::LM x, const Prof::LoadMap::LM y)
 {
   return (x.id() < y.id());
 }
+
+#endif
 
 //***************************************************************************
 

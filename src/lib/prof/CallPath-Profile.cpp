@@ -225,7 +225,7 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   //
   // Post-INVARIANT: y's cct refers to x's LoadMapMgr
   // -------------------------------------------------------
-  std::vector<LoadMap::MergeEffect>* mrgEffects1 =
+  std::vector<ALoadMap::MergeEffect>* mrgEffects1 =
     x.m_loadmapMgr->merge(*y.loadMapMgr());
   y.merge_fixCCT(mrgEffects1);
   delete mrgEffects1;
@@ -314,7 +314,7 @@ Profile::mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx)
 
 
 void
-Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
+Profile::merge_fixCCT(const std::vector<ALoadMap::MergeEffect>* mrgEffects)
 {
   // early exit for trivial case
   if (!mrgEffects || mrgEffects->empty()) {
@@ -330,12 +330,12 @@ Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
     if (n_dyn) {
       lush_lip_t* lip = n_dyn->lip();
 
-      LoadMap::LM_id_t lmId1, lmId2;
+      ALoadMap::LM_id_t lmId1, lmId2;
       lmId1 = n_dyn->lmId_real();
       lmId2 = (lip) ? lush_lip_getLMId(lip) : ALoadMap::LM_id_NULL;
       
       for (uint i = 0; i < mrgEffects->size(); ++i) {
-	const LoadMap::MergeEffect& chg = (*mrgEffects)[i];
+	const ALoadMap::MergeEffect& chg = (*mrgEffects)[i];
 	if (chg.old_id == lmId1) {
 	  n_dyn->lmId_real(chg.new_id);
 	  if (lmId2 == ALoadMap::LM_id_NULL) {
@@ -1105,13 +1105,13 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   uint num_lm = loadmap_tbl.len;
 
-  LoadMap loadmap(num_lm);
+  LoadMapMgr loadmap(num_lm);
 
   for (uint i = 0; i < num_lm; ++i) {
     string nm = loadmap_tbl.lst[i].name;
     RealPathMgr::singleton().realpath(nm);
 
-    LoadMap::LM* lm = new LoadMap::LM(nm);
+    ALoadMap::LM* lm = new ALoadMap::LM(nm);
     loadmap.lm_insert(lm);
     
     DIAG_Assert(lm->id() == i + 1, "Profile::fmt_epoch_fread: Currently expect load module id's to be in dense ascending order.");
