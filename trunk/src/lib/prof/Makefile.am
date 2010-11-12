@@ -78,7 +78,6 @@ MYSOURCES = \
 	Metric-AExprIncr.hpp Metric-AExprIncr.cpp \
 	Metric-IDBExpr.hpp Metric-IDBExpr.cpp \
 	\
-	LoadMapMgr.hpp LoadMapMgr.cpp \
 	LoadMap.hpp LoadMap.cpp \
 	\
 	Struct-Tree.hpp Struct-Tree.cpp \

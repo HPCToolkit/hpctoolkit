@@ -75,7 +75,7 @@
 #include <include/uint.h>
 
 #include "Metric-Mgr.hpp"
-#include "LoadMapMgr.hpp"
+#include "LoadMap.hpp"
 #include "CCT-Tree.hpp"
 
 //*************************** Forward Declarations ***************************
