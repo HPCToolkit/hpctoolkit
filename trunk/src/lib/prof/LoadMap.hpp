@@ -104,8 +104,8 @@ public:
   //*************************************************************************
 
   // N.B.: Life is much easier if this is consistent with hpcrun-fmt
-  typedef uint LM_id_t;
-  static const LM_id_t LM_id_NULL = HPCRUN_FMT_LMId_NULL;
+  typedef uint LMId_t;
+  static const LMId_t LMId_NULL = HPCRUN_FMT_LMId_NULL;
 
   //*************************************************************************
 
@@ -117,7 +117,7 @@ public:
     virtual ~LM();
 
     
-    LM_id_t
+    LMId_t
     id() const
     { return m_id; }
     
@@ -160,14 +160,14 @@ public:
 
   private:
     void
-    id(LM_id_t x)
+    id(LMId_t x)
     { m_id = x; }
 
     friend class LoadMap;
     friend class LoadMapMgr;
     
   private: 
-    LM_id_t m_id;
+    LMId_t m_id;
     std::string m_name;
     bool m_isUsed;
   };
@@ -175,8 +175,8 @@ public:
   //*************************************************************************
 
   struct MergeEffect {
-    MergeEffect(LM_id_t old_, LM_id_t new_) : old_id(old_), new_id(new_) { }
-    LM_id_t old_id /*in y*/, new_id /*in x */;
+    MergeEffect(LMId_t old_, LMId_t new_) : old_id(old_), new_id(new_) { }
+    LMId_t old_id /*in y*/, new_id /*in x */;
   };
 
 
@@ -210,16 +210,20 @@ public:
 
   
   // ------------------------------------------------------------
-  // Access by id (1-based!)
+  // Access by id (1-based)
+  //
+  // LM with id x is stored in slot x.  Thus 0 points to a 'NULL'
+  // LoadModule.
   // ------------------------------------------------------------
-  LM_id_t
-  size() const
-  { return m_lm_byId.size(); }
 
-  // N.B.: LM_id_t's are 1-based since 0 is a NULL value
+  LMId_t
+  size() const
+  { return m_lm_byId.size() - 1; }
+
+  // N.B.: LMId_t's are 1-based since 0 is a NULL value
   LM*
-  lm(LM_id_t id) const
-  { return m_lm_byId[(id - 1)]; }
+  lm(LMId_t id) const
+  { return m_lm_byId[id]; }
 
 
   // ------------------------------------------------------------
@@ -251,7 +255,7 @@ public:
 
   // merge: Given a LoadMap y, merge y into x = 'this'.  Returns a
   // vector of MergeEffect describing changes that were made.  The
-  // vector contains at most one MergeEffect for each LM_id_t (old_id)
+  // vector contains at most one MergeEffect for each LMId_t (old_id)
   // in y.
   std::vector<LoadMap::MergeEffect>*
   merge(const LoadMap& y);
