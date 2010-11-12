@@ -90,21 +90,25 @@
 
 
 //****************************************************************************
-// ALoadMap
+// LoadMap
 //****************************************************************************
 
 namespace Prof {
 
-class ALoadMap : public Unique {
+
+class LoadMap
+  : public Unique {
+
 public:
+
+  //*************************************************************************
 
   // N.B.: Life is much easier if this is consistent with hpcrun-fmt
   typedef uint LM_id_t;
   static const LM_id_t LM_id_NULL = HPCRUN_FMT_LMId_NULL;
 
-  // ------------------------------------------------------------
-  // 
-  // ------------------------------------------------------------
+  //*************************************************************************
+
   class LM : public Unique {
   public:
     LM(const std::string& name = "");
@@ -131,7 +135,7 @@ public:
     { m_name = (x) ? x: ""; }
 
 
-    // isUsed: e.g., does this ALoadMap::LM have associated measurement data
+    // isUsed: e.g., does this LoadMap::LM have associated measurement data
     bool
     isUsed() const
     { return m_isUsed; }
@@ -168,24 +172,41 @@ public:
     bool m_isUsed;
   };
 
-
-  typedef std::vector<LM*> LMVec;
-
+  //*************************************************************************
 
   struct MergeEffect {
     MergeEffect(LM_id_t old_, LM_id_t new_) : old_id(old_), new_id(new_) { }
     LM_id_t old_id /*in y*/, new_id /*in x */;
   };
 
+
+  //*************************************************************************
+
+  typedef std::vector<LM*> LMVec;
+
+  struct lt_LM_nm
+  {
+    inline bool
+    operator()(const LoadMap::LM* x, const LoadMap::LM* y) const
+    {
+      return (x->name() < y->name());
+    }
+  };
+
+  typedef std::set<LoadMap::LM*, LoadMap::lt_LM_nm> LMSet_nm;
+
   
 public:
-  ALoadMap(const uint i = 32);
 
-  virtual ~ALoadMap();
+  //*************************************************************************
+
+  LoadMap(const uint i = 32);
+
+  ~LoadMap();
 
   // assumes ownership
-  virtual void
-  lm_insert(ALoadMap::LM* x) = 0;
+  void
+  lm_insert(LoadMap::LM* x);
 
   
   // ------------------------------------------------------------
@@ -200,67 +221,6 @@ public:
   lm(LM_id_t id) const
   { return m_lm_byId[(id - 1)]; }
 
-
-  // ------------------------------------------------------------
-  // 
-  // ------------------------------------------------------------
-
-  std::string
-  toString() const;
-
-  virtual void
-  dump(std::ostream& os = std::cerr) const = 0;
-
-  void
-  ddump() const;
-
-protected:
-  LMVec m_lm_byId;
-};
-
-} // namespace Prof
-
-
-inline bool
-operator<(const Prof::ALoadMap::LM x, const Prof::ALoadMap::LM y)
-{
-  return (x.id() < y.id());
-}
-
-
-//****************************************************************************
-// LoadMap
-//****************************************************************************
-
-
-namespace Prof {
-
-class LoadMap : public ALoadMap {
-public:
-
-  struct lt_LM_nm
-  {
-    inline bool
-    operator()(const ALoadMap::LM* x, const ALoadMap::LM* y) const
-    {
-      return (x->name() < y->name());
-    }
-  };
-
-  typedef std::set<ALoadMap::LM*, LoadMap::lt_LM_nm> LMSet_nm;
-
-public: 
-  LoadMap(const uint i = 32);
-
-  virtual ~LoadMap();
-
-  // assumes ownership
-  virtual void
-  lm_insert(ALoadMap::LM* x);
-
-  // ------------------------------------------------------------
-  // Access by id: ALoadMap
-  // ------------------------------------------------------------
 
   // ------------------------------------------------------------
   // Access by name
@@ -293,21 +253,37 @@ public:
   // vector of MergeEffect describing changes that were made.  The
   // vector contains at most one MergeEffect for each LM_id_t (old_id)
   // in y.
-  std::vector<ALoadMap::MergeEffect>*
-  merge(const ALoadMap& y);
+  std::vector<LoadMap::MergeEffect>*
+  merge(const LoadMap& y);
+
 
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
 
-  virtual void
+  std::string
+  toString() const;
+
+  void
   dump(std::ostream& os = std::cerr) const;
 
-private:
+  void
+  ddump() const;
+
+protected:
+  LMVec m_lm_byId;
   LMSet_nm m_lm_byName;
 };
 
+
 } // namespace Prof
+
+
+inline bool
+operator<(const Prof::LoadMap::LM x, const Prof::LoadMap::LM y)
+{
+  return (x.id() < y.id());
+}
 
 
 //***************************************************************************

@@ -225,7 +225,7 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   //
   // Post-INVARIANT: y's cct refers to x's LoadMap
   // -------------------------------------------------------
-  std::vector<ALoadMap::MergeEffect>* mrgEffects1 =
+  std::vector<LoadMap::MergeEffect>* mrgEffects1 =
     x.m_loadmap->merge(*y.loadmap());
   y.merge_fixCCT(mrgEffects1);
   delete mrgEffects1;
@@ -314,7 +314,7 @@ Profile::mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx)
 
 
 void
-Profile::merge_fixCCT(const std::vector<ALoadMap::MergeEffect>* mrgEffects)
+Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
 {
   // early exit for trivial case
   if (!mrgEffects || mrgEffects->empty()) {
@@ -330,15 +330,15 @@ Profile::merge_fixCCT(const std::vector<ALoadMap::MergeEffect>* mrgEffects)
     if (n_dyn) {
       lush_lip_t* lip = n_dyn->lip();
 
-      ALoadMap::LM_id_t lmId1, lmId2;
+      LoadMap::LM_id_t lmId1, lmId2;
       lmId1 = n_dyn->lmId_real();
-      lmId2 = (lip) ? lush_lip_getLMId(lip) : ALoadMap::LM_id_NULL;
+      lmId2 = (lip) ? lush_lip_getLMId(lip) : LoadMap::LM_id_NULL;
       
       for (uint i = 0; i < mrgEffects->size(); ++i) {
-	const ALoadMap::MergeEffect& chg = (*mrgEffects)[i];
+	const LoadMap::MergeEffect& chg = (*mrgEffects)[i];
 	if (chg.old_id == lmId1) {
 	  n_dyn->lmId_real(chg.new_id);
-	  if (lmId2 == ALoadMap::LM_id_NULL) {
+	  if (lmId2 == LoadMap::LM_id_NULL) {
 	    break; // quick exit in the common case
 	  }
 	}
@@ -1111,7 +1111,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     string nm = loadmap_tbl.lst[i].name;
     RealPathMgr::singleton().realpath(nm);
 
-    ALoadMap::LM* lm = new ALoadMap::LM(nm);
+    LoadMap::LM* lm = new LoadMap::LM(nm);
     loadmap.lm_insert(lm);
     
     DIAG_Assert(lm->id() == i + 1, "Profile::fmt_epoch_fread: Currently expect load module id's to be in dense ascending order.");
@@ -1119,7 +1119,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   DIAG_MsgIf(DBG, loadmap.toString());
 
-  std::vector<ALoadMap::MergeEffect>* mrgEffect =
+  std::vector<LoadMap::MergeEffect>* mrgEffect =
     prof->loadmap()->merge(loadmap);
   DIAG_Assert(mrgEffect->empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);
 
@@ -1233,7 +1233,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     if (node_parent) {
       // If 'node' is not the secondary root, perform sanity check
       if (!node->isSecondarySynthRoot()) {
-	DIAG_AssertWarn(node->lmId_real() != ALoadMap::LM_id_NULL,
+	DIAG_AssertWarn(node->lmId_real() != LoadMap::LM_id_NULL,
 			ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
       }
 
@@ -1340,8 +1340,8 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   const LoadMap& loadmap = *(prof.loadmap());
 
   hpcfmt_int4_fwrite(loadmap.size(), fs);
-  for (ALoadMap::LM_id_t i = 1; i <= loadmap.size(); i++) {
-    const ALoadMap::LM* lm = loadmap.lm(i);
+  for (LoadMap::LM_id_t i = 1; i <= loadmap.size(); i++) {
+    const LoadMap::LM* lm = loadmap.lm(i);
 
     loadmap_entry_t lm_entry;
     lm_entry.id = lm->id();
@@ -1560,12 +1560,12 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------
   // normalized ip (lmId and lmIP)
   // ----------------------------------------
-  ALoadMap::LM_id_t lmId = nodeFmt.lm_id;
+  LoadMap::LM_id_t lmId = nodeFmt.lm_id;
 
   VMA lmIP = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
-  if (lmId != ALoadMap::LM_id_NULL) {
+  if (lmId != LoadMap::LM_id_NULL) {
     prof.loadmap()->lm(lmId)->isUsed(true);
   }
 
@@ -1580,8 +1580,8 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   }
 
   if (lip) {
-    ALoadMap::LM_id_t lip_lmId = lush_lip_getLMId(lip);
-    if (lip_lmId != ALoadMap::LM_id_NULL) {
+    LoadMap::LM_id_t lip_lmId = lush_lip_getLMId(lip);
+    if (lip_lmId != LoadMap::LM_id_NULL) {
       prof.loadmap()->lm(lip_lmId)->isUsed(true);
     }
   }
@@ -1694,7 +1694,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
     dynamic_cast<const Prof::CCT::ADynNode*>(&n);
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
-    n_fmt.lm_id   = Prof::ALoadMap::LM_id_NULL;
+    n_fmt.lm_id   = Prof::LoadMap::LM_id_NULL;
     n_fmt.lm_ip   = 0;
     lush_lip_init(&(n_fmt.lip));
     memset(n_fmt.metrics, 0, n_fmt.num_metrics * sizeof(hpcrun_metricVal_t));
