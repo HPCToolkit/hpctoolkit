@@ -679,16 +679,16 @@ public:
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
 	   uint cpId, lush_assoc_info_t as_info, 
-	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip)
+	   ALoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip)
     : ANode(type, parent, strct),
       m_cpId(cpId),
-      m_as_info(as_info), 
+      m_as_info(as_info),
       m_lmId(lmId), m_lmIP(ip), m_opIdx(opIdx), m_lip(lip)
   { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
 	   uint cpId, lush_assoc_info_t as_info, 
-	   LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
+	   ALoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const Metric::IData& metrics)
     : ANode(type, parent, strct, metrics),
       m_cpId(cpId),
@@ -766,26 +766,26 @@ public:
   // load-module id, ip
   // -------------------------------------------------------
 
-  LoadMap::LM_id_t
+  ALoadMap::LM_id_t
   lmId() const
   {
     if (isValid_lip()) { return lush_lip_getLMId(m_lip); }
     return m_lmId; 
   }
 
-  LoadMap::LM_id_t
+  ALoadMap::LM_id_t
   lmId_real() const
   { return m_lmId; }
 
   void
-  lmId(LoadMap::LM_id_t x)
+  lmId(ALoadMap::LM_id_t x)
   { 
     if (isValid_lip()) { lush_lip_setLMId(m_lip, x); return; }
     m_lmId = x; 
   }
 
   void
-  lmId_real(LoadMap::LM_id_t x)
+  lmId_real(ALoadMap::LM_id_t x)
   { m_lmId = x; }
 
   virtual VMA
@@ -940,7 +940,7 @@ private:
 
   lush_assoc_info_t m_as_info;
 
-  LoadMap::LM_id_t m_lmId; // LoadMap::LM id
+  ALoadMap::LM_id_t m_lmId; // LoadMap::LM id
   VMA    m_lmIP;           // static instruction pointer
   ushort m_opIdx;          // index in the instruction [OBSOLETE]
 
@@ -1215,7 +1215,7 @@ public:
 
   Call(ANode* parent,
        uint cpId, lush_assoc_info_t as_info,
-       LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
+       ALoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
        const Metric::IData& metrics)
     : ADynNode(TyCall, parent, NULL,
 	       cpId, as_info, lmId, ip, opIdx, lip,
@@ -1262,7 +1262,7 @@ class Stmt
 
   Stmt(ANode* parent,
        uint cpId, lush_assoc_info_t as_info,
-       LoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
+       ALoadMap::LM_id_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
        const Metric::IData& metrics)
     : ADynNode(TyStmt, parent, NULL,
 	       cpId, as_info, lmId, ip, opIdx, lip,

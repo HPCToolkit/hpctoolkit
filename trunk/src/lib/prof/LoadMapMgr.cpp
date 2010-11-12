@@ -86,7 +86,7 @@ LoadMapMgr::~LoadMapMgr()
 
 
 void 
-LoadMapMgr::lm_insert(LoadMap::LM* x)
+LoadMapMgr::lm_insert(ALoadMap::LM* x)
 { 
   m_lm_byId.push_back(x);
   x->id(m_lm_byId.size()); // 1-based id
@@ -100,7 +100,7 @@ LoadMapMgr::lm_insert(LoadMap::LM* x)
 LoadMapMgr::LMSet_nm::iterator
 LoadMapMgr::lm_find(const std::string& nm) const
 {
-  static LoadMap::LM key;
+  static ALoadMap::LM key;
   key.name(nm);
 
   LMSet_nm::iterator fnd = m_lm_byName.find(&key);
@@ -108,19 +108,19 @@ LoadMapMgr::lm_find(const std::string& nm) const
 }
 
 
-std::vector<LoadMap::MergeEffect>*
+std::vector<ALoadMap::MergeEffect>*
 LoadMapMgr::merge(const ALoadMap& y)
 {
-  std::vector<LoadMap::MergeEffect>* mrgEffect =
-    new std::vector<LoadMap::MergeEffect>;
+  std::vector<ALoadMap::MergeEffect>* mrgEffect =
+    new std::vector<ALoadMap::MergeEffect>;
   
   LoadMapMgr& x = *this;
 
   for (LM_id_t i = 1; i <= y.size(); ++i) { 
-    LoadMap::LM* y_lm = y.lm(i);
+    ALoadMap::LM* y_lm = y.lm(i);
     
     LMSet_nm::iterator x_fnd = x.lm_find(y_lm->name());
-    LoadMap::LM* x_lm = (x_fnd != x.lm_end_nm()) ? *x_fnd : NULL;
+    ALoadMap::LM* x_lm = (x_fnd != x.lm_end_nm()) ? *x_fnd : NULL;
 
     // Post-INVARIANT: A corresponding x_lm exists
     if (!x_lm) {
@@ -131,7 +131,7 @@ LoadMapMgr::merge(const ALoadMap& y)
 
     if (x_lm->id() != y_lm->id()) {
       // y_lm->id() is replaced by x_lm->id()
-      mrgEffect->push_back(LoadMap::MergeEffect(y_lm->id(), x_lm->id()));
+      mrgEffect->push_back(ALoadMap::MergeEffect(y_lm->id(), x_lm->id()));
     }
     
     x_lm->isUsedMrg(y_lm->isUsed());
@@ -148,9 +148,8 @@ LoadMapMgr::dump(std::ostream& os) const
 
   os << "{ Prof::LoadMapMgr\n";
   for (LM_id_t i = 1; i <= size(); ++i) {
-    os << pre << i << " : ";
-    lm(i)->dump(os);
-    os << std::endl;
+    ALoadMap::LM* lm = this->lm(i);
+    os << pre << i << " : " << lm->toString() << std::endl;
   }
   os << "}\n";
 }

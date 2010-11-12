@@ -267,7 +267,7 @@ typedef std::map<Prof::Struct::ANode*, Prof::CCT::ANode*> StructToCCTMap;
 
 static void
 overlayStaticStructure(Prof::CCT::ANode* node,
-		       Prof::LoadMap::LM* loadmap_lm, 
+		       Prof::ALoadMap::LM* loadmap_lm,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
 
 static Prof::CCT::ANode*
@@ -333,7 +333,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 void
 Analysis::CallPath::
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
-			   Prof::LoadMap::LM* loadmap_lm,
+			   Prof::ALoadMap::LM* loadmap_lm,
 			   Prof::Struct::LM* lmStrct)
 {
   const string& lm_nm = loadmap_lm->name();
@@ -380,7 +380,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 void
 Analysis::CallPath::
 overlayStaticStructure(Prof::CallPath::Profile& prof,
-		       Prof::LoadMap::LM* loadmap_lm,
+		       Prof::ALoadMap::LM* loadmap_lm,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
   overlayStaticStructure(prof.cct()->root(), loadmap_lm, lmStrct, lm);
@@ -400,7 +400,7 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
     Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
     if (n_dyn) {
       Prof::ALoadMap::LM_id_t lmId = n_dyn->lmId();
-      Prof::LoadMap::LM* loadmap_lm = ((lmId != Prof::ALoadMap::LM_id_NULL)
+      Prof::ALoadMap::LM* loadmap_lm = ((lmId != Prof::ALoadMap::LM_id_NULL)
 				       ? prof.loadMapMgr()->lm(lmId) : NULL);
 
       const string& lm_nm = ((loadmap_lm) ? loadmap_lm->name()
@@ -423,7 +423,7 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
 
 static void
 overlayStaticStructure(Prof::CCT::ANode* node,
-		       Prof::LoadMap::LM* loadmap_lm,
+		       Prof::ALoadMap::LM* loadmap_lm,
 		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
   // INVARIANT: The parent of 'node' has been fully processed

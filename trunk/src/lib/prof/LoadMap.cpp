@@ -83,6 +83,10 @@ namespace Prof {
 ALoadMap::ALoadMap(uint sz)
 {
   m_lm_byId.reserve(sz);
+  // Automatically add the 'null LM'
+  // support normal lm() indexing
+  // cleanup Analysis::CallPath::overlayStaticStructureMain()
+  // cleanup Analysis::CallPath::noteStaticStructureOnLeaves()
 }
 
 
@@ -157,7 +161,7 @@ ALoadMap::LM::ddump() const
 
 namespace Prof {
 
-
+#if 0
 LoadMap::LoadMap(uint sz)
   : ALoadMap(sz)
 {
@@ -248,6 +252,6 @@ LoadMap::dump(std::ostream& os) const
   }
   os << "}\n";
 }
-
+#endif
 
 } // namespace Prof
