@@ -161,15 +161,15 @@ public:
   { m_isMetricMgrVirtual = x; }
 
   // -------------------------------------------------------
-  // LoadMapMgr
+  // LoadMap
   // -------------------------------------------------------
-  const LoadMapMgr*
-  loadMapMgr() const
-  { return m_loadmapMgr; }
+  const LoadMap*
+  loadmap() const
+  { return m_loadmap; }
 
-  LoadMapMgr*
-  loadMapMgr()
-  { return m_loadmapMgr; }
+  LoadMap*
+  loadmap()
+  { return m_loadmap; }
 
   
   // -------------------------------------------------------
@@ -352,7 +352,7 @@ private:
   Metric::Mgr* m_mMgr;
   bool m_isMetricMgrVirtual;
 
-  LoadMapMgr* m_loadmapMgr;
+  LoadMap* m_loadmap;
 
   CCT::Tree* m_cct;
 

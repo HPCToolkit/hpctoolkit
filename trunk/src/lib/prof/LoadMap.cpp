@@ -155,7 +155,94 @@ ALoadMap::LM::ddump() const
 } // namespace Prof
 
 
+
 //****************************************************************************
 // LoadMap
 //****************************************************************************
 
+namespace Prof {
+
+
+LoadMap::LoadMap(uint sz)
+  : ALoadMap(sz)
+{
+}
+
+
+LoadMap::~LoadMap()
+{
+  m_lm_byName.clear();
+}
+
+
+void 
+LoadMap::lm_insert(ALoadMap::LM* x)
+{ 
+  m_lm_byId.push_back(x);
+  x->id(m_lm_byId.size()); // 1-based id
+  
+  std::pair<LMSet_nm::iterator, bool> ret = m_lm_byName.insert(x);
+  DIAG_Assert(ret.second, "LoadMap::lm_insert(): conflict inserting: " 
+	      << x->toString());
+}
+
+
+LoadMap::LMSet_nm::iterator
+LoadMap::lm_find(const std::string& nm) const
+{
+  static ALoadMap::LM key;
+  key.name(nm);
+
+  LMSet_nm::iterator fnd = m_lm_byName.find(&key);
+  return fnd;
+}
+
+
+std::vector<ALoadMap::MergeEffect>*
+LoadMap::merge(const ALoadMap& y)
+{
+  std::vector<ALoadMap::MergeEffect>* mrgEffect =
+    new std::vector<ALoadMap::MergeEffect>;
+  
+  LoadMap& x = *this;
+
+  for (LM_id_t i = 1; i <= y.size(); ++i) { 
+    ALoadMap::LM* y_lm = y.lm(i);
+    
+    LMSet_nm::iterator x_fnd = x.lm_find(y_lm->name());
+    ALoadMap::LM* x_lm = (x_fnd != x.lm_end_nm()) ? *x_fnd : NULL;
+
+    // Post-INVARIANT: A corresponding x_lm exists
+    if (!x_lm) {
+      // Create x_lm for y_lm.
+      x_lm = new ALoadMap::LM(y_lm->name());
+      lm_insert(x_lm);
+    }
+
+    if (x_lm->id() != y_lm->id()) {
+      // y_lm->id() is replaced by x_lm->id()
+      mrgEffect->push_back(ALoadMap::MergeEffect(y_lm->id(), x_lm->id()));
+    }
+    
+    x_lm->isUsedMrg(y_lm->isUsed());
+  }
+  
+  return mrgEffect;
+}
+
+
+void 
+LoadMap::dump(std::ostream& os) const
+{
+  std::string pre = "  ";
+
+  os << "{ Prof::LoadMap\n";
+  for (LM_id_t i = 1; i <= size(); ++i) {
+    ALoadMap::LM* lm = this->lm(i);
+    os << pre << i << " : " << lm->toString() << std::endl;
+  }
+  os << "}\n";
+}
+
+
+} // namespace Prof
