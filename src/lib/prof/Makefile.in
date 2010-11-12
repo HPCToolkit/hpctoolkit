@@ -85,8 +85,8 @@ am__objects_1 = libHPCprof_la-Metric-Mgr.lo \
 	libHPCprof_la-Metric-ADesc.lo libHPCprof_la-Metric-IData.lo \
 	libHPCprof_la-Metric-AExpr.lo \
 	libHPCprof_la-Metric-AExprIncr.lo \
-	libHPCprof_la-Metric-IDBExpr.lo libHPCprof_la-LoadMapMgr.lo \
-	libHPCprof_la-LoadMap.lo libHPCprof_la-Struct-Tree.lo \
+	libHPCprof_la-Metric-IDBExpr.lo libHPCprof_la-LoadMap.lo \
+	libHPCprof_la-Struct-Tree.lo \
 	libHPCprof_la-Struct-TreeIterator.lo libHPCprof_la-CCT-Tree.lo \
 	libHPCprof_la-CCT-TreeIterator.lo libHPCprof_la-CCT-Merge.lo \
 	libHPCprof_la-Flat-ProfileData.lo \
@@ -345,7 +345,6 @@ MYSOURCES = \
 	Metric-AExprIncr.hpp Metric-AExprIncr.cpp \
 	Metric-IDBExpr.hpp Metric-IDBExpr.cpp \
 	\
-	LoadMapMgr.hpp LoadMapMgr.cpp \
 	LoadMap.hpp LoadMap.cpp \
 	\
 	Struct-Tree.hpp Struct-Tree.cpp \
@@ -444,7 +443,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-CallPath-Profile.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Flat-ProfileData.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-LoadMap.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-LoadMapMgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Metric-ADesc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Metric-AExpr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Metric-AExprIncr.Plo@am__quote@
@@ -516,13 +514,6 @@ libHPCprof_la-Metric-IDBExpr.lo: Metric-IDBExpr.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-IDBExpr.cpp' object='libHPCprof_la-Metric-IDBExpr.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-Metric-IDBExpr.lo `test -f 'Metric-IDBExpr.cpp' || echo '$(srcdir)/'`Metric-IDBExpr.cpp
-
-libHPCprof_la-LoadMapMgr.lo: LoadMapMgr.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-LoadMapMgr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-LoadMapMgr.Tpo -c -o libHPCprof_la-LoadMapMgr.lo `test -f 'LoadMapMgr.cpp' || echo '$(srcdir)/'`LoadMapMgr.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libHPCprof_la-LoadMapMgr.Tpo $(DEPDIR)/libHPCprof_la-LoadMapMgr.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='LoadMapMgr.cpp' object='libHPCprof_la-LoadMapMgr.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-LoadMapMgr.lo `test -f 'LoadMapMgr.cpp' || echo '$(srcdir)/'`LoadMapMgr.cpp
 
 libHPCprof_la-LoadMap.lo: LoadMap.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-LoadMap.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-LoadMap.Tpo -c -o libHPCprof_la-LoadMap.lo `test -f 'LoadMap.cpp' || echo '$(srcdir)/'`LoadMap.cpp
