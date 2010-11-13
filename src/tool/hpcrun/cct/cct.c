@@ -300,8 +300,7 @@ cct_node_find_child(cct_node_t* x,
   first = c = cct_node_firstChild(x);
   if (c) {
     do {
-      // LUSH
-      // FIXME: abstract this and the test in Prof::CCT::ANode::findDynChild
+      // FIXME: abstract this an Prof::CCT::ANode::findDynChild
       lush_assoc_t c_as = lush_assoc_info__get_assoc(c->as_info);
       if (ip_normalized_eq(&c->ip_norm, &ip_norm)
 	  && lush_lip_eq(c->lip, lip)
@@ -473,15 +472,18 @@ hpcrun_cct_insert_backtrace(hpcrun_cct_t* cct, cct_node_t* treenode,
     cct_node_t* c = cct_node_find_child(tn, frm->as_info, frm->ip_norm,
 					frm->lip);
     if (c) {
-      // child exists; recur
+      // 'c' represents 'frm'
       TMSG(CCT,"found child @ node %p", c);
       tn = c;
 
-      // If as_frm is 1-to-1 and as_c is not, update the latter
+      // N.B. If 'frm' is a 1-to-1 bichord and 'c' is not (i.e., 'c'
+      // is M-to-1 or 1-to-M), then update the association of 'c' to
+      // reflect that 'c' is now a proxy for two bichord types (1-to-1
+      // and M-to-1 or 1-to-M)
       lush_assoc_t as_frm = lush_assoc_info__get_assoc(frm->as_info);
-      lush_assoc_t as_c = lush_assoc_info__get_assoc(c->as_info);
+      lush_assoc_t as_c   = lush_assoc_info__get_assoc(c->as_info);
       if (as_frm == LUSH_ASSOC_1_to_1 && as_c != LUSH_ASSOC_1_to_1) {
-	// INVARIANT: c->as_info must be either M-to-1 or 1-to-M
+	// INVARIANT: c->as_info should be either M-to-1 or 1-to-M
 	lush_assoc_info__set_assoc(c->as_info, LUSH_ASSOC_1_to_1);
       }
       MY_advancePathFrame(frm);
