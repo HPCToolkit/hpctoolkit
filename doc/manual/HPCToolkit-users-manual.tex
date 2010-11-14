@@ -590,7 +590,7 @@ On today's systems fashioned out of multicore processors, two kinds of scalabili
 Using call path profiles collected by \hpcrun{}, it is possible to quantify and pinpoint scalability bottlenecks of any kind, {\em regardless of cause}.
 
 To pinpoint scalability bottlenecks in parallel programs, we use {\em differential profiling} --- mathematically combining corresponding buckets of two or more execution profiles.
-Differential profiling was first described by McKenney~\cite{mckenney98}; he used differential profiling to compare two {\em flat} execution profiles.
+Differential profiling was first described by McKenney~\cite{McKenney:1999:differential}; he used differential profiling to compare two {\em flat} execution profiles.
 Differencing of flat profiles is useful for identifying what parts of a program  incur different costs in two executions.
 Building upon McKenney's idea of differential profiling, we  compare call path profiles of parallel executions at different scales to pinpoint scalability bottlenecks.
 Differential analysis of call path profiles pinpoints not only differences  between two executions (in this case scalability losses), but the contexts in which those differences occur.
@@ -637,7 +637,7 @@ However, if the loss of scalability attributed to a function invocation's inclus
 
 Given CCTs for an ensemble of executions, the next step to analyzing the scalability of their performance is to clearly define our expectations.
 Next, we describe performance expectations for weak scaling and intuitive metrics that represent how much performance deviates from our expectations.
-More information about our scalability analysis technique can be found elsewhere~\cite{coarfa:ICS07}.
+More information about our scalability analysis technique can be found elsewhere~\cite{Coarfa-MC:2007:ICS-scalability}.
 
 \begin{figure}[t]
 \center{\includegraphics{fig/scaling-loss.png}}
@@ -1012,16 +1012,22 @@ Even so, the performance attribution is usually very informative.
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} fails to open a large database}
+\section{\hpcviewer{} hangs trying to open a large database! Why?}
 
-There is a startup file hpcviewer.ini that can be adjusted to increase the memory allocated to hpcviewer. 
-You can locate the config file in your hpcviewer installation by running a "find" command at the root of your hpcviewer installation.  
-The default Java settings used for hpcviewer are -Xms400m and -Xmx1024m. 
-You should be able to increase to -Xms800m and -Xmx1800m.
+The most likely problem is that the Java virtual machine is low on memory and thrashing.
+There are three ways to address this problem.
 
-Another solution is by disabling callers view in hpcviewer by using the "-n" option as follows:
+First, make sure you are \emph{not} using \hpcprof{}'s \texttt{--force-metric} option to create a very large number of metrics.
+
+Second, increase the resources available to Java.
+\hpcviewer{} uses the initialization file \texttt{hpcviewer.ini} to determine how much memory is allocated to the Java virtual machine.
+To increase this allocation, locate the \texttt{hpcviewer.ini} file within your \hpcviewer{} installation.
+The default maximum sizes for the Java stack and heap, respectively, are given by \texttt{-Xms400m} and \texttt{-Xmx1024m}.
+You should be able to increase these values to \texttt{-Xms800m} and \texttt{-Xmx1800m}.
+
+Third, you can disable \hpcviewer{}'s Callers View by using the \texttt{-n} option as follows:
 \begin{quote}
-  \verb,hpcviewer -n database_directory,
+  \verb|hpcviewer -n hpctoolkit-database|
 \end{quote}
 
 % ===========================================================================
@@ -1222,7 +1228,7 @@ This technique is used only when truly desperate.
 % ===========================================================================
 % ===========================================================================
 
-\section{ \hpcviewer{} claims that there are several calls to a function within a particular source code scope, but my source code only has one!  Why?}
+\section{\hpcviewer{} claims that there are several calls to a function within a particular source code scope, but my source code only has one!  Why?}
 
 In a word: no.
 In the course of code optimization, compilers often replicate code blocks.
@@ -1233,6 +1239,34 @@ When analyzing applications at the binary level, it is difficult to determine wh
 Even if both calls map to the same source line, it may be wrong to coalesce them; the source code might contain multiple calls to the same function on the same line.
 By design, \HPCToolkit{} does not attempt to coalesce distinct calls to the same function because it might be incorrect to do so; instead, it independently reports each call site that appears in the machine code.
 If the compiler duplicated calls as it replicated code during optimization, multiple call sites may be reported by \hpcviewer{} when only one appeared in the source code.
+
+
+% ===========================================================================
+% ===========================================================================
+
+\begin{comment}
+
+\section{How do I debug collection of measurements?}
+
+Static binary:
+
+1. link and run using monitor-link 
+
+<externals-install>/libmonitor/bin/monitor-link
+
+use the following:
+ export MONITOR_DEBUG=1
+
+
+2. use the hpclink binary with 
+
+  export HPCRUN_EVENT_LIST="WALLCLOCK@0"
+  export MONITOR_DEBUG=1
+  export HPCRUN_DEBUG_FLAGS="ALL"
+
+  hpcrun --monitor-debug --dynamic-debug ALL --event WALLCLOCK@0
+
+\end{comment}
 
 
 % ===========================================================================
@@ -1376,7 +1410,7 @@ No hpcstruct =
 
 \bibliographystyle{abbrv}
 %\bibliographystyle{acm}
-\bibliography{texmf/bibtex/bib/refs}
+\bibliography{texmf/bibtex/bib/refs,texmf/bibtex/bib/pubs}
 
 %\thispagestyle{plain}
 
