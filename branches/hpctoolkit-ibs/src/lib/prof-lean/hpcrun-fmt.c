@@ -494,6 +494,7 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
         HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&x->malloc_id_list[i], fs));
       }
     }
+    HPCFMT_ThrowIfError(hpcfmt_byte8_fread(&x->ass_set, fs));
   }
 
   for (int i = 0; i < x->num_metrics; ++i) {
@@ -530,6 +531,7 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
     for (int i = 0; i< x->num_malloc_id; i++){
       hpcfmt_byte8_fwrite(x->malloc_id_list[i], fs);
     }
+    hpcfmt_byte8_fwrite(x->ass_set, fs);
   }
 
   for (int i = 0; i < x->num_metrics; ++i) {

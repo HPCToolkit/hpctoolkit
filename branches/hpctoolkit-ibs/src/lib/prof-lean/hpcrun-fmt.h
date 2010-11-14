@@ -388,6 +388,7 @@ typedef struct hpcrun_fmt_cct_node_t {
   //use-reuse list
   hpcfmt_uint_t num_malloc_id; //add by Xu Liu
   hpcfmt_uint_t* malloc_id_list; //correlate node to malloc node. Add by Xu Liu
+  int64_t ass_set; //associatice sets. Add by Xu Liu
 
   hpcfmt_uint_t num_metrics;
   hpcrun_metricVal_t* metrics;

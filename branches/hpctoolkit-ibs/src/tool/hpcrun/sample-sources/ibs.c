@@ -520,6 +520,7 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
   void *ip;
   uint64_t data3;
   uint64_t linear_addr = 0;
+  uint64_t physical_addr = 0;
   pfarg_msg_t msg;
   ibsopdata3_t *opdata3;
   ibsopdata2_t *opdata2;
@@ -622,6 +623,12 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
           ov->pd[0].reg_num=12;
           pfm_read_pmds(fd,ov->pd,1);
           linear_addr=ov->pd[0].reg_value;
+          if(opdata3->reg.ibsdcphyaddrvalid)//Physical address is ready
+          {
+            ov->pd[0].reg_num=13;
+            pfm_read_pmds(fd,ov->pd,1);
+            physical_addr=ov->pd[0].reg_value;
+          }
           //latency is invalid for prefetch
           if((opdata3->reg.ibsldop == 1)&&(opdata3->reg.ibsdcmiss == 1)&&(!is_kernel(ip)))//&&(strstr(xed_iclass_enum_t2str(iclass(xptr)),"PREFETCH")==NULL))
             lat=opdata3->reg.ibsdcmisslat;
@@ -631,7 +638,7 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
             interval_tree_node* result_node = splaytree_lookup((void*)linear_addr);//find the address in splay tree
             if(result_node != NULL)
             {
-              TMSG(IBS_SAMPLE,"find %p in splay tree with interval %d [%p, %p)", (void*)linear_addr, result_node->cct_id, result_node->start, result_node->end);
+              TMSG(IBS_SAMPLE,"find %p in splay tree with interval %d [%p, %p), phy=%p", (void*)linear_addr, result_node->cct_id, result_node->start, result_node->end, (void*)physical_addr);
             }
 //#if NOTNOW
             hpcrun_sample_callpath_w_bt(context, metrics[0], linear_addr,
@@ -659,6 +666,12 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
               }
             }
             TMSG(IBS_SAMPLE,"relate to %d malloc nodes\n", cct_node->num_malloc_id);//cct_node->current->malloc_id);
+            if(lat>20)//lat>20 means L2 cache miss, this is just an experimental value.
+            {
+              cct_node->ass_set = (physical_addr>>6)&0xff; //which set this address is in.
+              TMSG(IBS_SAMPLE, "I am in set %d", cct_node->ass_set);
+            }
+
           }
           else
             TMSG(IBS_SAMPLE,"this is kernel address");
@@ -683,7 +696,6 @@ ibs_signal_handler(int sig, siginfo_t* siginfo, void* context)
     if(lat>0)
       hpcrun_sample_callpath_w_bt(context, metrics[4], lat,
                            update_bt, (void*)ip, 0/*isSync*/);
-
     TMSG(IBS_SAMPLE, "ip=%p, pc=%p, linear_addr=%p latency=%d",ip, hpcrun_context_pc(context),linear_addr,lat);
   }
   if (hpcrun_is_sampling_disabled()) {

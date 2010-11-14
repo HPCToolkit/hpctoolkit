@@ -179,6 +179,7 @@ cct_node_create(lush_assoc_info_t as_info,
   node->next_sibling = NULL;
   //init add by Xu Liu
   node->malloc_list = NULL;
+  node->ass_set = -1;
 
   return node;
 }
@@ -817,6 +818,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, epoch_flags_t flags,
       }
     }
   }
+  tmp_node->ass_set = node->ass_set;
 
   memcpy(tmp_node->metrics, node->metrics, 
 	 tmp_node->num_metrics * sizeof(cct_metric_data_t));

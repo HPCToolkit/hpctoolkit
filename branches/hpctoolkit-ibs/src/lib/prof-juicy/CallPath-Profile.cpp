@@ -918,6 +918,9 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     if (node_parent) {
       node->link(node_parent);
       if (node_sib) {
+        node_sib->setAssSet(nodeFmt.ass_set);
+        if(nodeFmt.ass_set>=0)
+          printf("ass_set = %d\n", nodeFmt.ass_set);
 	node_sib->link(node_parent);
         if(nodeFmt.num_malloc_id>0) {
           node_sib->setMallocNodeNum(nodeFmt.num_malloc_id);
@@ -931,6 +934,9 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
         }
       }
       else {
+        node->setAssSet(nodeFmt.ass_set);
+        if(nodeFmt.ass_set >= 0)
+          printf("ass_set = %d\n", nodeFmt.ass_set);
         if(nodeFmt.num_malloc_id>0) {
           node->setMallocNodeNum(nodeFmt.num_malloc_id);
           node->mallocLinks(nodeFmt.num_malloc_id);
@@ -957,7 +963,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // Create links to malloc nodes
     // ----------------------------------------------------------
 
-  // Traverse all nodes with malloc info on tree
+  // Traverse all nodes with malloc info on tree Xu Liu
   CCTIdToMallocIdMap::iterator itMalloc;
   for (itMalloc = mallocNodeMap.begin(); itMalloc != mallocNodeMap.end(); itMalloc++) {
     if ((*itMalloc).first->getMallocNodeNum() > 0) {

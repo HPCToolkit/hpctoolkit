@@ -10,7 +10,7 @@ static struct splay_interval_s *root;
 
 int insert_splay_tree(interval_tree_node* node,  void* start, size_t size, int32_t id)
 {
-  interval_tree_node* dummy;
+  interval_tree_node* dummy = NULL;
  
   memset(node, 0, sizeof(interval_tree_node));
   node->start = start;
@@ -26,8 +26,16 @@ int insert_splay_tree(interval_tree_node* node,  void* start, size_t size, int32
  
 interval_tree_node* splaytree_lookup(void* p)
 {
-  interval_tree_node* result_node = hpcrun_malloc(sizeof(interval_tree_node));
+  interval_tree_node* result_node;
+  if (root == NULL) return NULL;
   result_node = interval_tree_lookup(&root, p);
   return result_node;
 }
-                                                     
+ 
+interval_tree_node* delete_splay_tree(void* ptr)
+{
+  interval_tree_node* dummy=NULL;
+  interval_tree_delete(&root, &dummy, ptr, ptr+1);
+  return dummy;
+}  
+                                                

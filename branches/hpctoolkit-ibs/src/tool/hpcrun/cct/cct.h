@@ -154,6 +154,7 @@ typedef struct cct_node_t {
   //use-reuse info
   hpcfmt_uint_t num_malloc_id; //add by Xu Liu
   malloc_list_s *malloc_list; //correlate node to malloc node. Add by Xu Liu
+  int ass_set;//associative set. add by Xu Liu
   // ---------------------------------------------------------
   // metrics (variable-sized array N.B.: MUST APPEAR AT END OF STRUCTURE!)
   // ---------------------------------------------------------

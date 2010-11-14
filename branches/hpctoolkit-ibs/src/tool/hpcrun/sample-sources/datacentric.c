@@ -436,7 +436,7 @@ void compute_var(int fd)
         interval_tree_node* node = hpcrun_malloc(sizeof(interval_tree_node));
         TMSG(IBS_SAMPLE, "static data %d", count);
         if(insert_splay_tree(node, (void*)sym.st_value, (size_t)sym.st_size, count)<0)
-          EMSG("insert_splay_tree error");
+          EMSG("datacentrc: insert_splay_tree error");
         count-=2;
       }
     }

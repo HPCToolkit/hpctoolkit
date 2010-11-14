@@ -72,11 +72,17 @@ typedef void  free_fcn(void *);
 typedef void *malloc_fcn(size_t);
 typedef void *realloc_fcn(void *, size_t);
 
+typedef struct footer_s{
+  long magic;
+  interval_tree_node node;
+} footer_t;
+
 
 
 /******************************************************************************
  * macros
  *****************************************************************************/
+#define DATACENTRIC_MAGIC 0x68706374
 
 #ifdef HPCRUN_STATIC_LINK
 #define real_calloc   __real_calloc
@@ -102,6 +108,7 @@ pthread_mutex_t mutex_splay = PTHREAD_MUTEX_INITIALIZER;//lock for splay tree
 
 int insert_splay_tree(interval_tree_node*, void*, size_t, int32_t);
 interval_tree_node* splaytree_lookup(void*);
+interval_tree_node* delete_splay_tree(void*);
 /******************************************************************************
  * interface operations
  *****************************************************************************/
@@ -113,10 +120,26 @@ datacentric_initialize(void)
   datacentric_enabled = 1; // unconditionally enable leak detection for now
 }
 
+void
+MONITOR_EXT_WRAP_NAME(free)(void* ptr)
+{
+  interval_tree_node *delete_node;
+  footer_t* foot;
+  if (ptr == 0) return;
+
+  if(hpcrun_datacentric_active()) {
+    delete_node = delete_splay_tree(ptr);
+  }
+  real_free(ptr);
+}
+
 void *
 MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 {
-  void *h = real_malloc(bytes);
+  /* We allocate a footer attching the bytes in the end. It is used to record the splay tree node 
+  so it won't take any space of hpctoolkit*/
+  interval_tree_node* footer;
+  void *h;// = real_malloc(bytes);
 //  if(hpcrun_sync_is_blocked())
 //  {
 //    return h;
@@ -132,11 +155,17 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 
     if (! cct_node ) {
       EMSG("cct node in malloc (datacentric-overrides.c) is NULL -- skipping the sample");
+      h = real_malloc(bytes);
       return h;
     }
 
+    h = real_malloc(bytes + sizeof(interval_tree_node));
     TMSG(IBS_SAMPLE, "malloc %d bytes (ptr %p)", bytes, h); 
-    interval_tree_node* node = hpcrun_malloc(sizeof(interval_tree_node));
+    footer = (interval_tree_node *)(h + bytes);
+//    footer->magic = DATACENTRIC_MAGIC;
+    interval_tree_node* node = footer;
+//    interval_tree_node* node = hpcrun_malloc(sizeof(interval_tree_node));
+    memset(node, 0, sizeof(interval_tree_node));
     if(node == NULL)
     {
       EMSG("unbelievable, node is NULL");
@@ -144,12 +173,13 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
     }
     pthread_mutex_lock(&mutex_splay);
     if(insert_splay_tree(node, h, bytes, cct_node->persistent_id)<0)
-      EMSG("insert_splay_tree error");
+      EMSG("malloc:insert_splay_tree error");
     /*unblock async sampling*/
     pthread_mutex_unlock(&mutex_splay);
     hpcrun_async_unblock();
   } else {
     TMSG(IBS_SAMPLE, "malloc %d bytes (call path not logged)", bytes); 
+    h = real_malloc(bytes);
   }
   return h;
 }
@@ -158,9 +188,14 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 void *
 MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 {
-  void *h = real_calloc(1, nmemb*bytes);
+  interval_tree_node* footer;
+
+  void *h;// = real_calloc(1, nmemb*bytes);
   if(hpcrun_sync_is_blocked())
+  {
+    h = real_calloc(1, nmemb*bytes);
     return h;
+  }
 
   if (hpcrun_datacentric_active()) {
     ucontext_t uc;
@@ -171,8 +206,11 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
     cct_node_t* cct_node = 
       hpcrun_sample_callpath(&uc, hpcrun_dc_calloc_id(), 
 			     0, 0, 1);
+    h = real_calloc(1, nmemb*bytes + sizeof(interval_tree_node));
     TMSG(IBS_SAMPLE, "calloc %d bytes (ptr %p)", nmemb*bytes, h); 
-    interval_tree_node* node = hpcrun_malloc(sizeof(interval_tree_node));
+    footer = (interval_tree_node*) (h+nmemb*bytes);
+    interval_tree_node* node = footer; 
+//    interval_tree_node* node = hpcrun_malloc(sizeof(interval_tree_node));
     if(node == NULL)
     {
       TMSG(IBS_SAMPLE, "unbelievable, node is NULL");
@@ -180,11 +218,12 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
     }
     pthread_mutex_lock(&mutex_splay);
     if(insert_splay_tree(node, h, nmemb*bytes, cct_node->persistent_id)<0)
-      TMSG(IBS_SAMPLE, "insert_splay_tree error");
+      TMSG(IBS_SAMPLE, "calloc:insert_splay_tree error");
     /*unblock async sampling*/
     pthread_mutex_unlock(&mutex_splay);
     hpcrun_async_unblock();
   } else {
+    h = real_calloc(1, nmemb*bytes);
     TMSG(IBS_SAMPLE, "calloc %d bytes (call path not logged)", nmemb*bytes); 
   }
   return h;
@@ -194,9 +233,13 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 void *
 MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 {
-  void *h = real_realloc(ptr, bytes);
+  interval_tree_node* footer;
+  void *h; // = real_realloc(ptr, bytes);
   if(hpcrun_sync_is_blocked())
+  {
+    h = real_realloc(ptr, bytes);
     return h;
+  }
 
   if (hpcrun_datacentric_active()) {
     ucontext_t uc;
@@ -206,8 +249,12 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
     hpcrun_async_block();
     cct_node_t* cct_node = 
       hpcrun_sample_callpath(&uc, hpcrun_dc_realloc_id(), 0, 0, 1);
+    h = real_realloc(ptr, bytes+sizeof(interval_tree_node));
     TMSG(IBS_SAMPLE, "realloc %d bytes (ptr %p)", bytes, h); 
-    interval_tree_node* node = hpcrun_malloc(sizeof(interval_tree_node));
+    delete_splay_tree(ptr);//remove the ptr interval in the splay tree
+    footer = (interval_tree_node*)(h+bytes);
+    interval_tree_node* node = footer;
+//    interval_tree_node* node = hpcrun_malloc(sizeof(interval_tree_node));
     if(node == NULL)
     {
       TMSG(IBS_SAMPLE, "unbelievable, node is NULL");
@@ -215,15 +262,17 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
     }
     pthread_mutex_lock(&mutex_splay);
     if(insert_splay_tree(node, h, bytes, cct_node->persistent_id)<0)
-      TMSG(IBS_SAMPLE, "insert_splay_tree error");
+      TMSG(IBS_SAMPLE, "realloc:insert_splay_tree error");
     /*unblock async sampling*/
     pthread_mutex_unlock(&mutex_splay);
     hpcrun_async_unblock();
   } else {
+    h = real_realloc(ptr, bytes);
     TMSG(IBS_SAMPLE, "realloc %d bytes (call path not logged)", bytes); 
   }
   return h;
 }
+
 
 /*int insert_splay_tree(interval_tree_node* node,  void* start, size_t size, int32_t id)
 { 

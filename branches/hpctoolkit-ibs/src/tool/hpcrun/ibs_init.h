@@ -16,9 +16,10 @@ int hpcrun_dc_realloc_id();
 int hpcrun_datacentric_active();
 
 /*this is used to lookup addr in addr splay tree*/
-struct splay_interval_s* splaytree_lookup(void*); //cannot use interval_tree_node* type (error generated)
+//struct splay_interval_s* splaytree_lookup(void*); //cannot use interval_tree_node* type (error generated)
+interval_tree_node* splaytree_lookup(void*); //cannot use interval_tree_node* type (error generated)
 int insert_splay_tree(interval_tree_node* node,  void* start, size_t size, int32_t id);
-
+interval_tree_node* delete_splay_tree(void*);
 /*global variable*/
 //static struct splay_interval_s *root;
 
