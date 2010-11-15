@@ -128,7 +128,11 @@ MONITOR_EXT_WRAP_NAME(free)(void* ptr)
   if (ptr == 0) return;
 
   if(hpcrun_datacentric_active()) {
+    hpcrun_async_block();
+    pthread_mutex_lock(&mutex_splay);
     delete_node = delete_splay_tree(ptr);
+    pthread_mutex_unlock(&mutex_splay);
+    hpcrun_async_unblock();
   }
   real_free(ptr);
 }
