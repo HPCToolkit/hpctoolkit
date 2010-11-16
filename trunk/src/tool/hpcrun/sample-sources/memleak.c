@@ -169,11 +169,11 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available MEMLEAK events\n");
+  printf("Available memory leak detection events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("\t  MEMLEAK: tracks bytes allocated and freed per dynamic context\n");
+  printf("MEMLEAK\t\tThe number of bytes allocated and freed per dynamic context\n");
   printf("\n");
 }
 

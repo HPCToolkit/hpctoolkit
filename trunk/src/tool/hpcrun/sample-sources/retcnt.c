@@ -172,7 +172,8 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf(HPCRUN_METRIC_RetCnt "\teach time a procedure returns, the return count for that procedure is incremented\n");
+  printf("%s\t\tEach time a procedure returns, the return count for that\n"
+	 "\t\tprocedure is incremented\n", HPCRUN_METRIC_RetCnt);
   printf("\n");
 }
 

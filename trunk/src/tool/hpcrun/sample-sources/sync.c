@@ -133,7 +133,6 @@ METHOD_FN(supports_event,const char *ev_str)
 // Special SYNC protocol:
 //  if event is SYNC@xxx, then create xxx events
 //  if event is just plain SYNC, then default to 1 event
-//  
 //
 static void
 METHOD_FN(process_event_list,int lush_metrics)
@@ -165,19 +164,16 @@ METHOD_FN(gen_event_set,int lush_metrics)
 }
 
 
-//
-//
-//
 static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available sync events\n");
+  printf("Available synchronous events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("SYNC\t# of synchronous metric slots needed for the app\n");
-  printf("\t  Example: SYNC@3 would generate 3 metric slots ");
+  printf("SYNC\t\tThe number of synchronous metric slots allocated,\n"
+	 "\t\teg, SYNC@3 would generate 3 slots\n");
   printf("\n");
 }
 
