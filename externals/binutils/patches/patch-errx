@@ -1,0 +1,28 @@
+Replace errx with fprintf and exit.  binutils/dwarf.h defines their
+own warn and this dies on multiply defined symbol on Cray XT.
+
+diff -Naurb version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c
+--- version-binutils-2.20.1.orig/binutils-2.20.1/bfd/dwarf2.c	2010-11-08 01:31:01.000000000 -0600
++++ version-binutils-2.20.1/binutils-2.20.1/bfd/dwarf2.c	2010-11-16 17:13:32.421317373 -0600
+@@ -37,8 +37,8 @@
+ #include "elf-bfd.h"
+ #include "dwarf2.h"
+ #include "splay-macros.h"
+-#include <err.h>
+ #include <stdio.h>
++#include <stdlib.h>
+ #include <string.h>
+ #include <inttypes.h>
+ 
+@@ -401,7 +401,10 @@
+       node = bfd_malloc(sizeof(struct arange_node));
+     }
+   if (node == NULL)
+-    errx(1, "out of memory");
++    {
++      fprintf(stderr, "%s: out of memory\n", __func__);
++      exit(1);
++    }
+ 
+   memset(node, 0, sizeof(struct arange_node));
+   node->low = low;
