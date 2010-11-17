@@ -114,10 +114,11 @@ distclean-plus: distclean-all
 #
 MY_DIST_DIR = $(TARNAME)-$(VERSION)
 MY_TAR_FILE = $(TARNAME)-$(VERSION).tar
+SRCDIR = @srcdir@
 
 dist: distclean
 	rm -f "$(MY_DIST_DIR)" "$(MY_TAR_FILE)" "$(MY_TAR_FILE).gz"
-	ln -s . "$(MY_DIST_DIR)"
+	ln -s "$(SRCDIR)" "$(MY_DIST_DIR)"
 	tar cf "$(MY_TAR_FILE)"  \
 		--exclude .svn  \
 		--exclude $(NOBUILD_COOKIE)  \
