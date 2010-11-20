@@ -15,6 +15,9 @@ Now fully Autoconf and Automake, parallel make, vpath builds.
 
 ../configure  --prefix=PATH
     CC=  CFLAGS=  CXX=  CXXFLAGS=
+    --enable-transcoder-iconv
 make -j 4
 make install
 
+The default transcoder changed from iconv in 2.8 to gnuiconv in 3.1.1.
+Gnuiconv causes problems on the Cray XT, so use iconv instead.
