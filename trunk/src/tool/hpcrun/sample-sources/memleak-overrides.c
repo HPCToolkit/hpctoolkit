@@ -114,8 +114,8 @@ typedef void *realloc_fcn(void *, size_t);
 #define SKIP_MEM_FRAME 0
 #define SKIP_MEMALIGN_HELPER_FRAME 1
 
-#define DEBUG_WITH_CLEAR 1
-#define NOSTUB 1
+#define DEBUG_WITH_CLEAR 0
+#define ENABLE_MEMLEAK_CHECKING 1
 
 #ifdef HPCRUN_STATIC_LINK
 #define real_posix_memalign   __real_posix_memalign
@@ -253,8 +253,9 @@ memleak_initialize(void)
 }
 
 
-static int
-set_footer(char *memptr, size_t bytes, char *routine_name, int frames_to_skip)
+int
+hpcrun_memleak_set_footer(char *memptr, size_t bytes, char *routine_name, 
+                          int frames_to_skip)
 {
   int use_callpath = hpcrun_memleak_active();
 
@@ -265,13 +266,20 @@ set_footer(char *memptr, size_t bytes, char *routine_name, int frames_to_skip)
   foot->memblock     = memptr;
   foot->bytes   = bytes;
   foot->context = NULL;
+  foot->left = foot->right = NULL;
 
   if (use_callpath) {
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_async_block();
-    foot->context = hpcrun_sample_callpath(&uc, hpcrun_memleak_alloc_id(), bytes, 
-					   frames_to_skip, 1);
+    foot->context = 
+#define RETCNT_SKIP_FRAME_BUG_FIXED 0 // broken at present -- johnmc
+#if RETCNT_SKIP_FRAME_BUG_FIXED
+       hpcrun_sample_callpath(&uc, hpcrun_memleak_alloc_id(), bytes, 
+			      frames_to_skip, 1);
+#else
+       hpcrun_sample_callpath(&uc, hpcrun_memleak_alloc_id(), bytes, 0, 1);
+#endif
     hpcrun_async_unblock();
 
     TMSG(MEMLEAK, "%s %d bytes (cct node %p) -> %p", 
@@ -284,10 +292,10 @@ set_footer(char *memptr, size_t bytes, char *routine_name, int frames_to_skip)
 }
 
 
-static int 
-posix_memalign_helper(void **memptr, size_t alignment, 
-	              size_t bytes, 
-		      char *routine_name, uint32_t frames_to_skip)
+int 
+hpcrun_memleak_posix_memalign_helper(void **memptr, size_t alignment, 
+	                             size_t bytes, char *routine_name, 
+                                     uint32_t frames_to_skip)
 {
   int footer_size;
   int success;
@@ -301,13 +309,14 @@ posix_memalign_helper(void **memptr, size_t alignment,
   success = real_posix_memalign(memptr, alignment, bytes + footer_size);
 
   if (!(leak_detection_enabled && success == 0 && 
-	set_footer(*memptr, bytes, routine_name, frames_to_skip + 1))) {
+	hpcrun_memleak_set_footer(*memptr, bytes, routine_name, 
+                                  frames_to_skip + 1))) {
 
     TMSG(MEMLEAK, "%s %d bytes (call path not logged) -> %p", 
 	 routine_name, bytes, *memptr); 
   }
 
-#ifdef DEBUG_WITH_CLEAR
+#if DEBUG_WITH_CLEAR
   memset(*memptr, 0, bytes);
 #endif
 
@@ -316,7 +325,8 @@ posix_memalign_helper(void **memptr, size_t alignment,
 
 
 void * 
-malloc_helper(size_t bytes, char *routine_name, uint32_t frames_to_skip)
+hpcrun_memleak_malloc_helper(size_t bytes, char *routine_name, 
+                             uint32_t frames_to_skip)
 {
   int footer_size;
   void *memptr;
@@ -328,9 +338,11 @@ malloc_helper(size_t bytes, char *routine_name, uint32_t frames_to_skip)
   footer_size = (leak_detection_enabled) ? sizeof(leakfooter_t) : 0;
   memptr = real_malloc(bytes + footer_size);
 
-  if (!(leak_detection_enabled && memptr && set_footer(memptr, bytes, routine_name,
-						       frames_to_skip + 1))) {
-    TMSG(MEMLEAK, "%s %d bytes (call path not logged) -> %p", routine_name, bytes, memptr); 
+  if (!(leak_detection_enabled && memptr && 
+        hpcrun_memleak_set_footer(memptr, bytes, routine_name, 
+                                  frames_to_skip + 1))) {
+    TMSG(MEMLEAK, "%s %d bytes (call path not logged) -> %p", 
+         routine_name, bytes, memptr); 
   }
 
   return memptr;
@@ -353,7 +365,8 @@ MONITOR_EXT_WRAP_NAME(valloc)(size_t bytes)
     alignment = sysconf(_SC_PAGESIZE);
   }
 
-  success = posix_memalign_helper(&memptr, alignment, bytes, "valloc", SKIP_MEM_FRAME + 1);
+  success = hpcrun_memleak_posix_memalign_helper(&memptr, alignment, bytes, 
+                                                 "valloc", SKIP_MEM_FRAME + 1);
 
   if (success != 0) memptr = NULL;
 
@@ -362,10 +375,12 @@ MONITOR_EXT_WRAP_NAME(valloc)(size_t bytes)
 
 
 int
-MONITOR_EXT_WRAP_NAME(posix_memalign)(void **memptr, size_t alignment, size_t bytes)
+MONITOR_EXT_WRAP_NAME(posix_memalign)(void **memptr, size_t alignment, 
+                                      size_t bytes)
 {
-  int success = posix_memalign_helper(memptr, alignment, bytes, "posix_memalign", 
-				      SKIP_MEM_FRAME + 1);
+  int success = 
+    hpcrun_memleak_posix_memalign_helper(memptr, alignment, bytes, 
+                                         "posix_memalign", SKIP_MEM_FRAME + 1);
   return success;
 }
 
@@ -376,7 +391,8 @@ MONITOR_EXT_WRAP_NAME(memalign)(size_t boundary, size_t bytes)
   void *memptr;
 
   int success = 
-    posix_memalign_helper(&memptr, boundary, bytes, "memalign", SKIP_MEM_FRAME + 1);
+    hpcrun_memleak_posix_memalign_helper(&memptr, boundary, bytes, 
+                                         "memalign", SKIP_MEM_FRAME + 1);
 
   if (success != 0) memptr = NULL;
 
@@ -387,9 +403,9 @@ MONITOR_EXT_WRAP_NAME(memalign)(size_t boundary, size_t bytes)
 void *
 MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 {
-#ifdef NOSTUB 
-  void *memptr = malloc_helper(bytes, "malloc", SKIP_MEM_FRAME + 1);
-#ifdef DEBUG_WITH_CLEAR
+#if ENABLE_MEMLEAK_CHECKING 
+  void *memptr = hpcrun_memleak_malloc_helper(bytes, "malloc", SKIP_MEM_FRAME + 1);
+#if DEBUG_WITH_CLEAR
   memset(memptr, 0, bytes);
 #endif
 #else
@@ -402,10 +418,12 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 void *
 MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 {
-#ifdef NOSTUB
-  void *memptr = malloc_helper(nmemb * bytes, "calloc", SKIP_MEM_FRAME + 1);
+  void *memptr; 
+#if ENABLE_MEMLEAK_CHECKING
+  memptr = hpcrun_memleak_malloc_helper(nmemb * bytes, "calloc", 
+                                        SKIP_MEM_FRAME + 1);
 #else
-  void *memptr = real_malloc(nmemb * bytes);
+  memptr = real_malloc(nmemb * bytes);
 #endif
   memset(memptr, 0, nmemb * bytes);
   return memptr;
@@ -415,7 +433,7 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 void
 MONITOR_EXT_WRAP_NAME(free)(void *ptr)
 {
-#ifdef NOSTUB
+#if ENABLE_MEMLEAK_CHECKING
   if (ptr == 0) return;
 
   if (leak_detection_uninit) {
@@ -446,7 +464,7 @@ MONITOR_EXT_WRAP_NAME(free)(void *ptr)
 void *
 MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 {
-#ifdef NOSTUB
+#if ENABLE_MEMLEAK_CHECKING
   if (leak_detection_uninit) {
     memleak_initialize();
   }
@@ -478,7 +496,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 
     if (bytes == 0) return ptr; // handle realloc to 0 size case
 
-    set_footer(ptr, bytes, "realloc", SKIP_MEM_FRAME + 1);
+    hpcrun_memleak_set_footer(ptr, bytes, "realloc", SKIP_MEM_FRAME + 1);
   } else {
     return real_realloc(ptr, bytes);
   }
