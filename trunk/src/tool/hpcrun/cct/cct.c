@@ -992,7 +992,16 @@ help_hpcrun_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
 
   if (ENABLED(USE_TRAMP)){
     hpcrun_trampoline_remove();
+
+#define IGNORE_SKIP_INNER_UNTIL_IT_DOESNT_BREAK_TRAMPOLINE 1
+#if IGNORE_SKIP_INNER_UNTIL_IT_DOESNT_BREAK_TRAMPOLINE
     td->tramp_frame = td->cached_bt;
+#else
+    // I don't understand why this isn't the correct way to handle skipping
+    // of inner frames. Perhaps another change is needed in 
+    // hpcrun_trampoline_insert or in the cursor representation (e.g. ra_loc).
+    td->tramp_frame = bt_beg;
+#endif
     hpcrun_trampoline_insert(n);
   }
 
