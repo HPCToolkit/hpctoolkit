@@ -694,7 +694,7 @@ pruneTrivialNodes(Prof::CCT::ANode* node)
     pruneTrivialNodes(x);
 
     // 2. Trim this node if necessary
-    if (x->isLeaf()) {
+    if (false && /*FIXME*/ x->isLeaf()) {
       bool isPrunableTy = (typeid(*x) == typeid(CCT::ProcFrm) ||
 			   typeid(*x) == typeid(CCT::Proc) ||
 			   typeid(*x) == typeid(CCT::Loop));
