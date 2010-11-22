@@ -146,6 +146,15 @@ Some vendor compilers that support GNU extensions also work.
 </li>
 
 <li>
+<p>To use <span class="hpctool">hpcviewer</span> (HPCToolkit's interactive presentation tool) on MacOS, Windows, or Linux, a Java runtime environment (JRE) &ge; 1.5 is required.
+To use <span class="hpctool">hpcviewer</span> on Linux, <a href="http://www.gtk.org">GTK+</a> is also required.
+</p>
+
+<p>Note: Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.
+</p>
+</li>
+
+<li>
 <p>Highly recommended: To collect measurements based on hardware performance monitoring unit (PMU) information, <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> &ge; 3.5 is required.
 Without PAPI, HPCToolkit can only collect measurements based on an operating system timer.
 (Exception: On IBM Blue Gene/P, PAPI is not required.)
@@ -166,17 +175,11 @@ Without PAPI, HPCToolkit can only collect measurements based on an operating sys
      </li>
 
     <li><p>Use a kernel with <a href="https://perf.wiki.kernel.org">perf events</a>, which was introduced with kernel 2.6.32 (n&eacute;e PCL in kernel 2.6.31).
-	Perf events is still on the cutting edge, but is expected to become part of standard distributions -- and even enabled by default.
+	Perf events is still on the cutting edge, but is expected to become part of standard distributions &mdash; and even enabled by default.
        </p>
     </li>
   </ul>
   
-</li>
-
-<li>
-<p>Highly recommended: To use HPCToolkit's interactive presentation tool, <span class="hpctool">hpcviewer</span>, a Java runtime environment (JRE) &ge; 1.5 is required.
-To use <span class="hpctool">hpcviewer</span> on MacOS and Windows, nothing additional is required; to use <span class="hpctool">hpcviewer</span> on Linux, <a href="http://www.gtk.org">GTK+</a> is required.
-</p>
 </li>
 
 <li>
@@ -531,7 +534,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2010/11/01</span>]
+<p>[<span class="lastupdated">Page last updated: 2010/11/22</span>]
 </p>
 
 <!-- ********************************************************************** -->
