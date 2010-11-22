@@ -592,7 +592,7 @@ monitor_thread_pre_create(void)
   //       pthread_create for the resulting innermost frame.
   ENABLE(IN_THREAD_CTXT);
   cct_node_t* n = hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/,
-					 0/*skipInner*/, 1/*isSync*/);
+					 1/*skipInner*/, 1/*isSync*/);
 
   // MFAGAN: NEED TO COPY CONTEXT BTRACE TO NON-FREEABLE MEM
   n = hpcrun_copy_btrace(n);
@@ -609,7 +609,7 @@ monitor_thread_pre_create(void)
   if (ENABLED(THREAD_CTXT)) {
     TMSG(THREAD_CTXT,"Dumping context node %d", hpcrun_get_persistent_id(thr_ctxt->context));
     cct_dump_path(thr_ctxt->context);
-  DISABLE(IN_THREAD_CTXT);
+    DISABLE(IN_THREAD_CTXT);
   }
 
  fini:
