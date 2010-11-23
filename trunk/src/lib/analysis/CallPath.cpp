@@ -286,6 +286,14 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 
 //****************************************************************************
 
+// FIXME
+static void
+coalesceStmts(Prof::CallPath::Profile& prof);
+
+static void
+noteStaticStructure(Prof::CallPath::Profile& prof);
+
+
 void
 Analysis::CallPath::
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
@@ -296,7 +304,10 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
   std::string errors;
 
-  // N.B. To process spurious samples, iteration includes LoadMap::LMId_NULL
+  // -------------------------------------------------------
+  // Overlay static structure. N.B. To process spurious samples,
+  // iteration includes LoadMap::LMId_NULL
+  // -------------------------------------------------------
   for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
        i <= loadmap->size(); ++i) {
     Prof::LoadMap::LM* lm = loadmap->lm(i);
@@ -317,9 +328,19 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     DIAG_EMsg("Cannot fully process samples because of errors reading load modules:\n" << errors);
   }
 
+
+  // -------------------------------------------------------
+  // Basic normalization (could push this)
+  // -------------------------------------------------------
+  if (doNormalizeTy) {
+    coalesceStmts(prof);
+  }
+
   Analysis::CallPath::normalize(prof, agent, doNormalizeTy);
   
   // Note: Use StructMetricIdFlg to flag that static structure is used
+  //   FIXME: is this necessary?
+  noteStaticStructure(prof);
   rootStrct->aggregateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
   rootStrct->pruneByMetrics();
 }
@@ -599,12 +620,7 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
 {
   // N.B.: cannot assume summary metrics have been computed
   
-  // N.B.: sets CallPath::Profile::StructMetricIdFlg
   pruneTrivialNodes(prof);
-
-  if (doNormalizeTy) {
-    coalesceStmts(prof);
-  }
 
   makeReturnCountMetric(prof);
 
@@ -648,6 +664,26 @@ Analysis::CallPath::applySummaryMetricAgents(Prof::CallPath::Profile& prof,
     if (metricComponentsFact) {
       metricComponentsFact->make(prof);
       delete metricComponentsFact;
+    }
+  }
+}
+
+
+//***************************************************************************
+
+static void
+noteStaticStructure(Prof::CallPath::Profile& prof)
+{
+  using namespace Prof;
+
+  const Prof::CCT::ANode* cct_root = prof.cct()->root();
+
+  for (CCT::ANodeIterator it(cct_root); it.Current(); ++it) {
+    CCT::ANode* x = it.current();
+
+    Prof::Struct::ACodeNode* strct = x->structure();
+    if (strct) {
+      strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
     }
   }
 }
@@ -706,13 +742,6 @@ pruneTrivialNodes(Prof::CCT::ANode* node)
 	x->unlink(); // unlink 'x' from tree
 	DIAG_DevMsgIf(0, "pruneTrivialNodes: " << hex << x << dec << " (sid: " << x->structureId() << ")");
 	delete x;
-      }
-    }
-    else {
-      // We are keeping the node -- set the static structure flag
-      Struct::ACodeNode* strct = x->structure();
-      if (strct) {
-	strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
       }
     }
   }
