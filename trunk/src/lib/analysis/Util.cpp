@@ -231,7 +231,6 @@ normalizeProfileArgs(const StringVec& inPaths)
 namespace Analysis {
 namespace Util {
 
-//
 // Parses a string to get 2 values, 'oldVal' and 'newVal', which are 
 // syntatically separated by a '=' character. To avoid confusions with '=' 
 // characters in the path name, convention is for the user to escape all '=',
@@ -240,7 +239,6 @@ namespace Util {
 // @param arg: A string with only '=' characters escaped
 // @return: How many occurances of unescaped '=' characters there are.
 //          A value other than 1 indicates an error
-//
 int
 parseReplacePath(const std::string& arg)
 {
@@ -284,7 +282,6 @@ parseReplacePath(const std::string& arg)
   }
   
   return numEquals;
-  
 }
 
 
