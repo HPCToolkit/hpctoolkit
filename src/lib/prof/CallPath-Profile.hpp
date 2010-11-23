@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef prof_Prof_CallPath_Profile_hpp 
+#ifndef prof_Prof_CallPath_Profile_hpp
 #define prof_Prof_CallPath_Profile_hpp
 
 //************************* System Include Files ****************************
@@ -89,9 +89,9 @@ namespace Prof {
 namespace CallPath {
 
 
-class Profile 
+class Profile
   : public Unique // non copyable
-{ 
+{
 public:
   Profile(const std::string name);
   virtual ~Profile();
@@ -193,7 +193,7 @@ public:
 
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
   enum {
     // merge y's metrics into x's by name: the group of names in y
@@ -218,7 +218,7 @@ public:
   merge(Profile& y, int mergeTy, uint mrgFlag = 0);
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
   enum {
     // only read metric table, even if CCT nodes have metrics
@@ -298,7 +298,7 @@ public:
   // Output
   // -------------------------------------------------------
 
-  std::ostream& 
+  std::ostream&
   writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 	       uint oFlags, const char* pfx = "") const;
   
@@ -328,7 +328,7 @@ private:
   // apply MergeEffects after merging two profiles
   void
   merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects);
- 
+
   void
   merge_fixTrace(const CCT::MergeEffectList* mrgEffects);
 

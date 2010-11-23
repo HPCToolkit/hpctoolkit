@@ -445,10 +445,10 @@ Args::parse(int argc, const char* const argv[])
       string arg = parser.getOptArg("replace-path");
       
       std::vector<std::string> replacePaths;
-      StrUtil::tokenize_str(arg,CLP_SEPARATOR, replacePaths);
+      StrUtil::tokenize_str(arg, CLP_SEPARATOR, replacePaths);
       
       for (uint i = 0; i < replacePaths.size(); ++i) {
-	int occurancesOfEquals = 
+	int occurancesOfEquals =
 	  Analysis::Util::parseReplacePath(replacePaths[i]);
 	
 	if (occurancesOfEquals > 1) {

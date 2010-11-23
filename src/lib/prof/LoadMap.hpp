@@ -109,7 +109,9 @@ public:
 
   //*************************************************************************
 
-  class LM : public Unique {
+  class LM
+    : public Unique {
+
   public:
     LM(const std::string& name = "");
     //LM(const char* name = NULL);

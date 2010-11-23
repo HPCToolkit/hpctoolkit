@@ -266,30 +266,30 @@ ProfileData::read_header(FILE* fs)
   size_t sz;
 
   sz = fread((char*)magic_str, 1, HPCRUNFLAT_FMT_MagicLen, fs);
-  if (sz != HPCRUNFLAT_FMT_MagicLen) { 
+  if (sz != HPCRUNFLAT_FMT_MagicLen) {
     PROFFLAT_Throw("Error reading <header>.");
   }
   
   sz = fread((char*)version, 1, HPCRUNFLAT_VersionLen, fs);
-  if (sz != HPCRUNFLAT_VersionLen) { 
+  if (sz != HPCRUNFLAT_VersionLen) {
     PROFFLAT_Throw("Error reading <header>.");
   }
   
-  if ((c = fgetc(fs)) == EOF) { 
+  if ((c = fgetc(fs)) == EOF) {
     PROFFLAT_Throw("Error reading <header>.");
   }
   endian = (char)c;
   
 
   // sanity check header
-  if (strncmp(magic_str, HPCRUNFLAT_FMT_Magic, 
-	      HPCRUNFLAT_FMT_MagicLen) != 0) { 
+  if (strncmp(magic_str, HPCRUNFLAT_FMT_Magic,
+	      HPCRUNFLAT_FMT_MagicLen) != 0) {
     PROFFLAT_Throw("Error reading <header>: bad magic string.");
   }
-  if (strncmp(version, HPCRUNFLAT_Version, HPCRUNFLAT_VersionLen) != 0) { 
+  if (strncmp(version, HPCRUNFLAT_Version, HPCRUNFLAT_VersionLen) != 0) {
     PROFFLAT_Throw("Error reading <header>: bad version.");
   }
-  if (endian != HPCRUNFLAT_FMT_Endian) { 
+  if (endian != HPCRUNFLAT_FMT_Endian) {
     PROFFLAT_Throw("Error reading <header>: bad endianness.");
   }
 }
@@ -301,10 +301,10 @@ ProfileData::read_lm_count(FILE* fs)
   uint32_t count;
 
   size_t sz = hpcio_le4_fread(&count, fs);
-  if (sz != sizeof(count)) { 
+  if (sz != sizeof(count)) {
     PROFFLAT_Throw("Error reading <loadmodule_list>.");
   }
-  
+ 
   return count;
 }
 
@@ -346,24 +346,24 @@ LM::read(FILE *fs, const char* filename)
   // -------------------------------------------------------
   // <loadmodule_name>, <loadmodule_loadoffset>
   // -------------------------------------------------------
-  if (read_string(fs, m_name) != 0) { 
+  if (read_string(fs, m_name) != 0) {
     PROFFLAT_Throw("Error reading <loadmodule_name>.");
   }
   
   sz = hpcio_le8_fread(&m_load_addr, fs);
-  if (sz != sizeof(m_load_addr)) { 
+  if (sz != sizeof(m_load_addr)) {
     PROFFLAT_Throw("Error reading <loadmodule_loadoffset>.");
   }
 
-  DIAG_Msg(5, "Reading: " << m_name << " loaded at 0x" 
+  DIAG_Msg(5, "Reading: " << m_name << " loaded at 0x"
 	   << hex << m_load_addr << dec);
 
-  // -------------------------------------------------------  
+  // -------------------------------------------------------
   // <loadmodule_eventcount>
   // -------------------------------------------------------
   uint count = 1;
   sz = hpcio_le4_fread(&count, fs);
-  if (sz != sizeof(count)) { 
+  if (sz != sizeof(count)) {
     PROFFLAT_Throw("Error reading <loadmodule_eventcount>.");
   }
   m_eventvec.resize(count);
@@ -391,7 +391,7 @@ LM::dump(std::ostream& o, const char* pre) const
   string p = pre;
   string p1 = p + "  ";
 
-  o << p << "{ LM: " << m_name << ", loadAddr: 0x" << hex 
+  o << p << "{ LM: " << m_name << ", loadAddr: 0x" << hex
     << m_load_addr << dec << " }" << endl;
   
   for (uint i = 0; i < num_events(); ++i) {
@@ -425,15 +425,15 @@ EventData::read(FILE *fs, uint64_t load_addr)
   // -------------------------------------------------------
   // <event_x_name> <event_x_description> <event_x_period>
   // -------------------------------------------------------
-  if (read_string(fs, name) != 0) { 
+  if (read_string(fs, name) != 0) {
     PROFFLAT_Throw("Error reading <event_x_name>.");
   }
-  if (read_string(fs, desc) != 0) { 
+  if (read_string(fs, desc) != 0) {
     PROFFLAT_Throw("Error reading <event_x_description>.");
   }
   
   sz = hpcio_le8_fread(&period, fs);
-  if (sz != sizeof(period)) { 
+  if (sz != sizeof(period)) {
     PROFFLAT_Throw("Error reading <event_x_period>.");
   }
   
@@ -453,25 +453,25 @@ EventData::read(FILE *fs, uint64_t load_addr)
   // <histogram_non_zero_bucket_count>
   uint64_t ndat;    // number of profile entries
   sz = hpcio_le8_fread(&ndat, fs);
-  if (sz != sizeof(ndat)) { 
+  if (sz != sizeof(ndat)) {
     PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_count>.");
   }
   m_sparsevec.resize(ndat);
 
   DIAG_Msg(6, "  EventData: " << name << ": " << ndat << " entries (cnt,offset)");
 
-  // <histogram_non_zero_bucket_x_value> 
+  // <histogram_non_zero_bucket_x_value>
   // <histogram_non_zero_bucket_x_offset>
   uint32_t count;   // profile count
   uint64_t offset;  // offset from load address
   for (uint i = 0; i < ndat; ++i) {
     sz = hpcio_le4_fread(&count, fs);        // count
-    if (sz != sizeof(count)) { 
+    if (sz != sizeof(count)) {
       PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_x_value>.");
     }
 
     sz = hpcio_le8_fread(&offset, fs);       // offset
-    if (sz != sizeof(offset)) { 
+    if (sz != sizeof(offset)) {
       PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_x_offset>.");
     }
     DIAG_Msg(7, "    " << i << ": (" << count << ", " << offset << ")");
@@ -488,9 +488,9 @@ EventData::dump(std::ostream& o, const char* pre) const
   string p = pre;
   string p1 = p + "  ";
 
-  o << p << "{ EventData: " << mdesc().name() 
-    << ", period: " << mdesc().period() 
-    << ", outofrange: " << outofrange() 
+  o << p << "{ EventData: " << mdesc().name()
+    << ", period: " << mdesc().period()
+    << ", outofrange: " << outofrange()
     << ", overflow: " << overflow()
     << " }" << endl;
   
@@ -512,22 +512,22 @@ static int
 read_string(FILE *fs, std::string& str)
 {
   size_t sz;
-  uint32_t len; // string length  
+  uint32_t len; // string length
   int c;
 
   // <string_length> <string_without_terminator>
   sz = hpcio_le4_fread(&len, fs);
-  if (sz != sizeof(len)) { 
+  if (sz != sizeof(len)) {
     return 1;
   }
   
   str.resize(len);
-  for (uint n = 0; n < len; ++n) { 
-    if ((c = fgetc(fs)) == EOF) { 
+  for (uint n = 0; n < len; ++n) {
+    if ((c = fgetc(fs)) == EOF) {
       return 1;
     }
     str[n] = (char)c;
-  } 
+  }
 
   return 0;
 }
@@ -546,7 +546,7 @@ int main(int argc, char **argv)
 
   if (ret == 0) {
     cerr << "successfully read file!";
-  } 
+  }
   else {
     cerr << "error reading file!";
   }
