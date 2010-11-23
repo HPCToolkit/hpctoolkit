@@ -382,27 +382,30 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
 
   DIAG_MsgIf(0, "Profile::merge_fixTrace: " << m_traceFileName);
 
+  string traceFileNameTmp = m_traceFileName + "." + HPCPROF_TmpFnmSfx;
+
   char* infsBuf = new char[HPCIO_RWBufferSz];
   char* outfsBuf = new char[HPCIO_RWBufferSz];
 
-  FILE* infs = hpcio_fopen_r(m_traceFileName.c_str());
+  const string& inFnm = m_traceFileName;
+  FILE* infs = hpcio_fopen_r(inFnm.c_str());
   if (!infs) {
     DIAG_Throw("error opening trace file '" << m_traceFileName << "'");
   }
   ret = setvbuf(infs, infsBuf, _IOFBF, HPCIO_RWBufferSz);
-  DIAG_AssertWarn(ret == 0, "Profile::merge_fixTrace: setvbuf!");
+  DIAG_AssertWarn(ret == 0, inFnm << ": Profile::merge_fixTrace: setvbuf!");
   ret = hpctrace_fmt_hdr_fread(infs);
-  DIAG_AssertWarn(ret == 0, "Profile::merge_fixTrace: hpctrace_fmt_hdr_fread!");
+  DIAG_AssertWarn(ret == HPCFMT_OK, inFnm << ": Profile::merge_fixTrace: hpctrace_fmt_hdr_fread!");
 
-  string traceFileNameTmp = m_traceFileName + "." + HPCPROF_TmpFnmSfx;
-  FILE* outfs = hpcio_fopen_w(traceFileNameTmp.c_str(), 1/*overwrite*/);
+  const string& outFnm = traceFileNameTmp;
+  FILE* outfs = hpcio_fopen_w(outFnm.c_str(), 1/*overwrite*/);
   if (!outfs) {
-    DIAG_Throw("error opening trace file '" << traceFileNameTmp << "'");
+    DIAG_Throw("error opening trace file '" << outFnm << "'");
   }
   ret = setvbuf(outfs, outfsBuf, _IOFBF, HPCIO_RWBufferSz);
-  DIAG_AssertWarn(ret == 0, "Profile::merge_fixTrace: setvbuf!");
+  DIAG_AssertWarn(ret == 0, outFnm << ": Profile::merge_fixTrace: setvbuf!");
   ret = hpctrace_fmt_hdr_fwrite(outfs);
-  DIAG_AssertWarn(ret == 0, "Profile::merge_fixTrace: hpctrace_fmt_hdr_fwrite!");
+  DIAG_AssertWarn(ret == HPCFMT_OK, outFnm << ": Profile::merge_fixTrace: hpctrace_fmt_hdr_fwrite!");
 
   while ( !feof(infs) ) {
     // 1. Read trace record (exit on EOF)
