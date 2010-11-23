@@ -769,8 +769,9 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
     Profile* myprof = NULL;
     
     string myCtxtStr = "epoch " + StrUtil::toStr(num_epochs + 1);
+    ctxtStr += ": " + myCtxtStr;
+
     try {
-      ctxtStr += ": " + myCtxtStr;
       ret = fmt_epoch_fread(myprof, infs, rFlags, hdr,
 			    ctxtStr, filename, outfs);
       if (ret == HPCFMT_EOF) {
@@ -779,7 +780,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
     }
     catch (const Diagnostics::Exception& x) {
       delete myprof;
-      DIAG_Throw("error reading " << myCtxtStr << ": " << x.what());
+      DIAG_Throw("error reading " << ctxtStr << ": " << x.what());
     }
 
     if (! prof) {
@@ -1218,9 +1219,15 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       }
     }
 
+    // Disable the preorder id requirement for CCT nodes.  It is hard
+    // for Profile::fmt_cct_fwrite to guarantee preorder ids when it
+    // is also forced to preserve some trace ids.  This also makes it
+    // easier for hpcrun to handle thread thread creation contexts.
+#if 0
     if (! (abs(parentId) < abs(nodeId))) {
       DIAG_Throw("CCT node " << nodeId << " has invalid parent (" << parentId << ")");
     }
+#endif
 
     // ----------------------------------------------------------
     // Create node and link to parent
@@ -1372,6 +1379,8 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   // Ensure CCT node ids follow conventions
   // ------------------------------------------------------------
 
+  // N.B.: This may not generate preorder ids because it is necessary
+  // to retain certain trace ids.
   uint64_t numNodes = 0;
   uint nodeId_next = 2; // cf. s_nextUniqueId
   for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
