@@ -110,10 +110,6 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
 		       int myRank, int numRanks, int rootRank = 0);
 
 static void
-pruneCanonicalProfile(Prof::CallPath::Profile& profGbl,
-		      uint8_t* prunedNodes);
-
-static void
 writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank);
 
 
@@ -318,7 +314,7 @@ realmain(int argc, char* const* argv)
   memset(prunedNodes, 0, prunedNodesSz * sizeof(uint8_t));
 
   if (myRank == rootRank) {
-    pruneCanonicalProfile(*profGbl, prunedNodes);
+    Analysis::CallPath::pruneBySummaryMetrics(*profGbl, prunedNodes);
   }
   
   MPI_Bcast(prunedNodes, prunedNodesSz, MPI_BYTE, rootRank, MPI_COMM_WORLD);
@@ -331,6 +327,7 @@ realmain(int argc, char* const* argv)
   Analysis::CallPath::normalize(*profGbl, args.agent, args.doNormalizeTy);
 
   if (myRank == rootRank) {
+    // Apply after all CCT pruning/normalization is completed.
     Analysis::CallPath::applySummaryMetricAgents(*profGbl, args.agent);
   }
 
@@ -490,28 +487,6 @@ myNormalizeProfileArgs(const Analysis::Util::StringVec& profileFiles,
   }
 
   return out;
-}
-
-
-static void
-pruneCanonicalProfile(Prof::CallPath::Profile& profGbl,
-		      uint8_t* prunedNodes)
-{
-  VMAIntervalSet ivalset;
-  
-  const Prof::Metric::Mgr& mMgrGbl = *(profGbl.metricMgr());
-  for (uint mId = 0; mId < mMgrGbl.size(); ++mId) {
-    const Prof::Metric::ADesc* m = mMgrGbl.metric(mId);
-    if (m->isVisible()
-	&& m->type() == Prof::Metric::ADesc::TyIncl
-	&& (m->nameBase().find("Sum") != string::npos)) {
-      ivalset.insert(VMAInterval(mId, mId + 1)); // [ )
-    }
-  }
-  
-  profGbl.cct()->root()->pruneByMetrics(*profGbl.metricMgr(), ivalset,
-					profGbl.cct()->root(), 0.001,
-					prunedNodes);
 }
 
 

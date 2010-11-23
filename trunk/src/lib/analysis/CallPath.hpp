@@ -150,6 +150,8 @@ overlayStaticStructure(Prof::CallPath::Profile& prof,
 void
 noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof);
 
+void
+pruneBySummaryMetrics(Prof::CallPath::Profile& prof, uint8_t* prunedNodes);
 
 void
 normalize(Prof::CallPath::Profile& prof, string agent, bool doNormalizeTy);
