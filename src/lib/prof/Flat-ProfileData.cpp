@@ -79,6 +79,7 @@
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
+#include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StrUtil.hpp>
 
 //*************************** Forward Declarations **************************
@@ -349,6 +350,7 @@ LM::read(FILE *fs, const char* filename)
   if (read_string(fs, m_name) != 0) {
     PROFFLAT_Throw("Error reading <loadmodule_name>.");
   }
+  RealPathMgr::singleton().realpath(m_name);
   
   sz = hpcio_le8_fread(&m_load_addr, fs);
   if (sz != sizeof(m_load_addr)) {
