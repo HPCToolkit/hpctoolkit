@@ -283,12 +283,11 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 		   Prof::Struct::ACodeNode* node_strct,
 		   StructToCCTMap& strctToCCTMap);
 
-
-//****************************************************************************
-
-// FIXME
 static void
 coalesceStmts(Prof::CallPath::Profile& prof);
+
+
+//****************************************************************************
 
 
 void
@@ -327,7 +326,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
 
   // -------------------------------------------------------
-  // Basic normalization (could push this)
+  // Basic normalization (should we move to normalization?)
   // -------------------------------------------------------
   if (doNormalizeTy) {
     coalesceStmts(prof);
@@ -587,170 +586,6 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 
 
 //***************************************************************************
-// Normaling the CCT
-//***************************************************************************
-
-static void
-pruneTrivialNodes(Prof::CallPath::Profile& prof);
-
-static void
-coalesceStmts(Prof::CallPath::Profile& prof);
-
-static void
-makeReturnCountMetric(Prof::CallPath::Profile& prof);
-
-static void
-mergeCilkMain(Prof::CallPath::Profile& prof);
-
-static void
-noteStaticStructure(Prof::CallPath::Profile& prof);
-
-
-void
-Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
-			      string agent, bool doNormalizeTy)
-{
-  // N.B.: cannot assume summary metrics have been computed
-  
-  pruneTrivialNodes(prof);
-
-  makeReturnCountMetric(prof);
-
-  if (!agent.empty()) {
-    MetricComponentsFact* metricComponentsFact = NULL;
-    if (agent == "agent-cilk") {
-      metricComponentsFact = new CilkOverheadMetricFact;
-    }
-    else if (agent == "agent-mpi") {
-      // nothing: (cannot assume summary metrics have been computed)
-    }
-    else if (agent == "agent-pthread") {
-      metricComponentsFact = new PthreadOverheadMetricFact;
-    }
-    else {
-      DIAG_Die("Bad value for 'agent': " << agent);
-    }
-
-    if (metricComponentsFact) {
-      metricComponentsFact->make(prof);
-      delete metricComponentsFact;
-    }
-  }
-
-  if (agent == "agent-cilk") {
-    mergeCilkMain(prof);
-  }
-
-  // -------------------------------------------------------
-  // Prune Struct::Tree based on StructMetricIdFlg
-  // -------------------------------------------------------
-
-  noteStaticStructure(prof); // FIXME: is this necessary
-
-  Prof::Struct::Root* rootStrct = prof.structure()->root();
-  rootStrct->aggregateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
-  rootStrct->pruneByMetrics();
-}
-
-
-void
-Analysis::CallPath::applySummaryMetricAgents(Prof::CallPath::Profile& prof,
-					     string agent)
-{
-  if (!agent.empty()) {
-    MetricComponentsFact* metricComponentsFact = NULL;
-    if (agent == "agent-mpi") {
-      metricComponentsFact = new MPIBlameShiftIdlenessFact;
-    }
-
-    if (metricComponentsFact) {
-      metricComponentsFact->make(prof);
-      delete metricComponentsFact;
-    }
-  }
-}
-
-
-//***************************************************************************
-
-static void
-noteStaticStructure(Prof::CallPath::Profile& prof)
-{
-  using namespace Prof;
-
-  const Prof::CCT::ANode* cct_root = prof.cct()->root();
-
-  for (CCT::ANodeIterator it(cct_root); it.Current(); ++it) {
-    CCT::ANode* x = it.current();
-
-    Prof::Struct::ACodeNode* strct = x->structure();
-    if (strct) {
-      strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
-    }
-  }
-}
-
-
-//***************************************************************************
-
-// pruneTrivialNodes: 
-// 
-// Without static structure, the CCT is sparse in the sense that
-// *every* node must have some non-zero inclusive metric value.  To
-// see this, note that every leaf node represents a sample point;
-// therefore all interior metric values must be greater than zero.
-//
-//  However, when static structure is added, the CCT may contain
-// 'spurious' static scopes in the sense that their metric values are
-// zero.  Since such scopes will not have CCT::Stmt nodes as children,
-// we can prune them by removing empty scopes rather than computing
-// inclusive values and pruning nodes whose metric values are all
-// zero.
-
-static void
-pruneTrivialNodes(Prof::CCT::ANode* node);
-
-static void
-pruneTrivialNodes(Prof::CallPath::Profile& prof)
-{
-  pruneTrivialNodes(prof.cct()->root());
-}
-
-
-static void
-pruneTrivialNodes(Prof::CCT::ANode* node)
-{
-  using namespace Prof;
-
-  if (!node) { return; }
-
-  for (CCT::ANodeChildIterator it(node); it.Current(); /* */) {
-    CCT::ANode* x = it.current();
-    it++; // advance iterator -- it is pointing at 'x'
-
-    // 1. Recursively do any trimming for this tree's children
-    pruneTrivialNodes(x);
-
-    // 2. Trim this node if necessary
-    if (false && /*FIXME*/ x->isLeaf()) {
-      bool isPrunableTy = (typeid(*x) == typeid(CCT::ProcFrm) ||
-			   typeid(*x) == typeid(CCT::Proc) ||
-			   typeid(*x) == typeid(CCT::Loop));
-      bool isSynthetic =
-	(dynamic_cast<Prof::CCT::ADynNode*>(x)
-	 && static_cast<Prof::CCT::ADynNode*>(x)->isSecondarySynthRoot());
-	
-      if (isPrunableTy || isSynthetic) {
-	x->unlink(); // unlink 'x' from tree
-	DIAG_DevMsgIf(0, "pruneTrivialNodes: " << hex << x << dec << " (sid: " << x->structureId() << ")");
-	delete x;
-      }
-    }
-  }
-}
-
-
-//***************************************************************************
 
 static void
 coalesceStmts(Prof::CCT::ANode* node);
@@ -817,6 +652,155 @@ coalesceStmts(Prof::CCT::ANode* node)
     else if (!n->isLeaf()) {
       // Recur
       coalesceStmts(n);
+    }
+  }
+}
+
+
+//***************************************************************************
+// Normalizing the CCT
+//***************************************************************************
+
+static void
+pruneTrivialNodes(Prof::CallPath::Profile& prof);
+
+static void
+makeReturnCountMetric(Prof::CallPath::Profile& prof);
+
+static void
+mergeCilkMain(Prof::CallPath::Profile& prof);
+
+static void
+noteStaticStructure(Prof::CallPath::Profile& prof);
+
+
+// N.B.: Assumes metric agents can be applied (IOW, expects that
+// summary metrics have been computed)
+void
+Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
+			      string agent, bool doNormalizeTy)
+{
+  // -------------------------------------------------------
+  // Prune CCT
+  // -------------------------------------------------------
+
+  pruneTrivialNodes(prof);
+
+  // -------------------------------------------------------
+  // Make special metrics
+  // -------------------------------------------------------
+
+  makeReturnCountMetric(prof);
+
+  if (!agent.empty()) {
+    MetricComponentsFact* metricComponentsFact = NULL;
+    if (agent == "agent-cilk") {
+      metricComponentsFact = new CilkOverheadMetricFact;
+    }
+    else if (agent == "agent-mpi") {
+      // nothing: (cannot assume summary metrics have been computed)
+    }
+    else if (agent == "agent-pthread") {
+      metricComponentsFact = new PthreadOverheadMetricFact;
+    }
+    else {
+      DIAG_Die("Bad value for 'agent': " << agent);
+    }
+
+    if (metricComponentsFact) {
+      metricComponentsFact->make(prof);
+      delete metricComponentsFact;
+    }
+  }
+
+  if (agent == "agent-cilk") {
+    mergeCilkMain(prof);
+  }
+
+  // -------------------------------------------------------
+  // Prune Struct::Tree based on CallPath::Profile::StructMetricIdFlg
+  // -------------------------------------------------------
+
+  noteStaticStructure(prof); // FIXME: is this necessary?
+
+  Prof::Struct::Root* rootStrct = prof.structure()->root();
+  rootStrct->aggregateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
+  rootStrct->pruneByMetrics();
+}
+
+
+void
+Analysis::CallPath::applySummaryMetricAgents(Prof::CallPath::Profile& prof,
+					     string agent)
+{
+  if (!agent.empty()) {
+    MetricComponentsFact* metricComponentsFact = NULL;
+    if (agent == "agent-mpi") {
+      metricComponentsFact = new MPIBlameShiftIdlenessFact;
+    }
+
+    if (metricComponentsFact) {
+      metricComponentsFact->make(prof);
+      delete metricComponentsFact;
+    }
+  }
+}
+
+
+//***************************************************************************
+
+// pruneTrivialNodes: 
+// 
+// Without static structure, the CCT is sparse in the sense that
+// *every* node must have some non-zero inclusive metric value.  To
+// see this, note that every leaf node represents a sample point;
+// therefore all interior metric values must be greater than zero.
+//
+//  However, when static structure is added, the CCT may contain
+// 'spurious' static scopes in the sense that their metric values are
+// zero.  Since such scopes will not have CCT::Stmt nodes as children,
+// we can prune them by removing empty scopes rather than computing
+// inclusive values and pruning nodes whose metric values are all
+// zero.
+
+static void
+pruneTrivialNodes(Prof::CCT::ANode* node);
+
+static void
+pruneTrivialNodes(Prof::CallPath::Profile& prof)
+{
+  pruneTrivialNodes(prof.cct()->root());
+}
+
+
+static void
+pruneTrivialNodes(Prof::CCT::ANode* node)
+{
+  using namespace Prof;
+
+  if (!node) { return; }
+
+  for (CCT::ANodeChildIterator it(node); it.Current(); /* */) {
+    CCT::ANode* x = it.current();
+    it++; // advance iterator -- it is pointing at 'x'
+
+    // 1. Recursively do any trimming for this tree's children
+    pruneTrivialNodes(x);
+
+    // 2. Trim this node if necessary
+    if (x->isLeaf()) {
+      bool isPrunableTy = (typeid(*x) == typeid(CCT::ProcFrm) ||
+			   typeid(*x) == typeid(CCT::Proc) ||
+			   typeid(*x) == typeid(CCT::Loop));
+      bool isSynthetic =
+	(dynamic_cast<Prof::CCT::ADynNode*>(x)
+	 && static_cast<Prof::CCT::ADynNode*>(x)->isSecondarySynthRoot());
+	
+      if (isPrunableTy || isSynthetic) {
+	x->unlink(); // unlink 'x' from tree
+	DIAG_DevMsgIf(0, "pruneTrivialNodes: " << hex << x << dec << " (sid: " << x->structureId() << ")");
+	delete x;
+      }
     }
   }
 }
@@ -916,6 +900,26 @@ mergeCilkMain(Prof::CallPath::Profile& prof)
       if (x->procName() == CilkNameMgr::cilkmain) {
 	mainFrm->merge(x); // deletes 'x'
       }
+    }
+  }
+}
+
+
+//***************************************************************************
+
+static void
+noteStaticStructure(Prof::CallPath::Profile& prof)
+{
+  using namespace Prof;
+
+  const Prof::CCT::ANode* cct_root = prof.cct()->root();
+
+  for (CCT::ANodeIterator it(cct_root); it.Current(); ++it) {
+    CCT::ANode* x = it.current();
+
+    Prof::Struct::ACodeNode* strct = x->structure();
+    if (strct) {
+      strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
     }
   }
 }
