@@ -193,11 +193,16 @@ realmain(int argc, char* const* argv)
   // 2b. Prune and normalize canonical CCT
   // -------------------------------------------------------
 
-  //pruneCanonicalProfile()
+  if (Analysis::Args::doSummaryMetrics(args.prof_metrics)) {
+    Analysis::CallPath::pruneBySummaryMetrics(*prof, NULL);
+  }
 
   Analysis::CallPath::normalize(*prof, args.agent, args.doNormalizeTy);
 
-  //TODO: Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
+  if (Analysis::Args::doSummaryMetrics(args.prof_metrics)) {
+    // Apply after all CCT pruning/normalization is completed.
+    //TODO: Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
+  }
 
   prof->cct()->makeDensePreorderIds();
 

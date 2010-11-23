@@ -88,6 +88,7 @@ using std::string;
 #include <lib/prof-lean/hpcrun-metric.h>
 
 #include <lib/binutils/LM.hpp>
+#include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/xml/xml.hpp>
 using namespace xml;
@@ -671,6 +672,28 @@ mergeCilkMain(Prof::CallPath::Profile& prof);
 
 static void
 noteStaticStructure(Prof::CallPath::Profile& prof);
+
+
+void
+Analysis::CallPath::pruneBySummaryMetrics(Prof::CallPath::Profile& prof,
+					  uint8_t* prunedNodes)
+{
+  VMAIntervalSet ivalset;
+  
+  const Prof::Metric::Mgr& mMgrGbl = *(prof.metricMgr());
+  for (uint mId = 0; mId < mMgrGbl.size(); ++mId) {
+    const Prof::Metric::ADesc* m = mMgrGbl.metric(mId);
+    if (m->isVisible()
+	&& m->type() == Prof::Metric::ADesc::TyIncl
+	&& (m->nameBase().find("Sum") != string::npos)) {
+      ivalset.insert(VMAInterval(mId, mId + 1)); // [ )
+    }
+  }
+  
+  prof.cct()->root()->pruneByMetrics(*prof.metricMgr(), ivalset,
+				     prof.cct()->root(), 0.001,
+				     prunedNodes);
+}
 
 
 void
