@@ -193,10 +193,11 @@ realmain(int argc, char* const* argv)
   // 2b. Prune and normalize canonical CCT
   // -------------------------------------------------------
 
-  Analysis::CallPath::normalize(*prof, args.agent, args.doNormalizeTy);
   //pruneCanonicalProfile()
-  //Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
-  //  FIXME: CallPath-MetricComponentsFact.cpp must support Metric::DerivedDesc
+
+  Analysis::CallPath::normalize(*prof, args.agent, args.doNormalizeTy);
+
+  //TODO: Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
 
   prof->cct()->makeDensePreorderIds();
 

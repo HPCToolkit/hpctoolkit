@@ -160,6 +160,9 @@ normalize(Prof::CallPath::Profile& prof, string agent, bool doNormalizeTy);
 // ---------------------------------------------------------
 
 void
+applyThreadMetricAgents(Prof::CallPath::Profile& prof, string agent);
+
+void
 applySummaryMetricAgents(Prof::CallPath::Profile& prof, string agent);
 
 

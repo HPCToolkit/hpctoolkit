@@ -313,15 +313,12 @@ realmain(int argc, char* const* argv)
   // 2b. Prune and normalize canonical CCT
   // -------------------------------------------------------
 
-  Analysis::CallPath::normalize(*profGbl, args.agent, args.doNormalizeTy);
-
   uint prunedNodesSz = profGbl->cct()->maxDenseId() + 1;
   uint8_t* prunedNodes = new uint8_t[prunedNodesSz];
   memset(prunedNodes, 0, prunedNodesSz * sizeof(uint8_t));
 
   if (myRank == rootRank) {
     pruneCanonicalProfile(*profGbl, prunedNodes);
-    Analysis::CallPath::applySummaryMetricAgents(*profGbl, args.agent);
   }
   
   MPI_Bcast(prunedNodes, prunedNodesSz, MPI_BYTE, rootRank, MPI_COMM_WORLD);
@@ -330,6 +327,12 @@ realmain(int argc, char* const* argv)
     profGbl->cct()->pruneCCTByNodeId(prunedNodes);
   }
   delete[] prunedNodes;
+
+  Analysis::CallPath::normalize(*profGbl, args.agent, args.doNormalizeTy);
+
+  if (myRank == rootRank) {
+    Analysis::CallPath::applySummaryMetricAgents(*profGbl, args.agent);
+  }
 
   // N.B.: Dense ids are assigned w.r.t. relative magnitude of structure ids
   profGbl->cct()->makeDensePreorderIds();
