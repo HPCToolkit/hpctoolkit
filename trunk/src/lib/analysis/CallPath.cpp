@@ -326,11 +326,13 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
 
   // -------------------------------------------------------
-  // Basic normalization (should we move to normalization?)
+  // Basic normalization
   // -------------------------------------------------------
   if (doNormalizeTy) {
     coalesceStmts(prof);
   }
+  
+  applyThreadMetricAgents(prof, agent);
 }
 
 
@@ -665,17 +667,12 @@ static void
 pruneTrivialNodes(Prof::CallPath::Profile& prof);
 
 static void
-makeReturnCountMetric(Prof::CallPath::Profile& prof);
-
-static void
 mergeCilkMain(Prof::CallPath::Profile& prof);
 
 static void
 noteStaticStructure(Prof::CallPath::Profile& prof);
 
 
-// N.B.: Assumes metric agents can be applied (IOW, expects that
-// summary metrics have been computed)
 void
 Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
 			      string agent, bool doNormalizeTy)
@@ -686,35 +683,8 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
 
   pruneTrivialNodes(prof);
 
-  // -------------------------------------------------------
-  // Make special metrics
-  // -------------------------------------------------------
-
-  makeReturnCountMetric(prof);
-
-  if (!agent.empty()) {
-    MetricComponentsFact* metricComponentsFact = NULL;
-    if (agent == "agent-cilk") {
-      metricComponentsFact = new CilkOverheadMetricFact;
-    }
-    else if (agent == "agent-mpi") {
-      // nothing: (cannot assume summary metrics have been computed)
-    }
-    else if (agent == "agent-pthread") {
-      metricComponentsFact = new PthreadOverheadMetricFact;
-    }
-    else {
-      DIAG_Die("Bad value for 'agent': " << agent);
-    }
-
-    if (metricComponentsFact) {
-      metricComponentsFact->make(prof);
-      delete metricComponentsFact;
-    }
-  }
-
   if (agent == "agent-cilk") {
-    mergeCilkMain(prof);
+    mergeCilkMain(prof); // may delete CCT:ProcFrm
   }
 
   // -------------------------------------------------------
@@ -726,24 +696,6 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
   Prof::Struct::Root* rootStrct = prof.structure()->root();
   rootStrct->aggregateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
   rootStrct->pruneByMetrics();
-}
-
-
-void
-Analysis::CallPath::applySummaryMetricAgents(Prof::CallPath::Profile& prof,
-					     string agent)
-{
-  if (!agent.empty()) {
-    MetricComponentsFact* metricComponentsFact = NULL;
-    if (agent == "agent-mpi") {
-      metricComponentsFact = new MPIBlameShiftIdlenessFact;
-    }
-
-    if (metricComponentsFact) {
-      metricComponentsFact->make(prof);
-      delete metricComponentsFact;
-    }
-  }
 }
 
 
@@ -808,65 +760,6 @@ pruneTrivialNodes(Prof::CCT::ANode* node)
 
 //***************************************************************************
 
-// makeReturnCountMetric: A return count refers to the number of times
-// a given CCT node is called by its parent context.  However, when
-// hpcrun records return counts, there is no structure (e.g. procedure
-// frames) in the CCT.  An an example, in the CCT fragment below, the
-// return count [3] at 0xc means that 0xc returned to 0xbeef 3 times.
-// Simlarly, 0xbeef returned to its caller 5 times.
-//
-//              |               |
-//       ip: 0xbeef [5]         |
-//       /      |      \        |
-//   0xa [1]  0xb [2]  0xc [3]  |
-//      |       |       |       |
-//
-// To be able to say procedure F is called by procedure G x times
-// within this context, it is necessary to aggregate these counts at
-// the newly added procedure frames (Struct::ProcFrm).
-static void
-makeReturnCountMetric(Prof::CallPath::Profile& prof)
-{
-  std::vector<uint> retCntId;
-
-  // -------------------------------------------------------
-  // find return count metrics, if any
-  // -------------------------------------------------------
-  Prof::Metric::Mgr* metricMgr = prof.metricMgr();
-  for (uint i = 0; i < metricMgr->size(); ++i) {
-    Prof::Metric::ADesc* m = metricMgr->metric(i);
-    if (m->nameBase().find(HPCRUN_METRIC_RetCnt) != string::npos) {
-      retCntId.push_back(m->id());
-      m->computedType(Prof::Metric::ADesc::ComputedTy_Final);
-      m->type(Prof::Metric::ADesc::TyExcl);
-    }
-  }
-
-  if (retCntId.empty()) {
-    return;
-  }
-
-  // -------------------------------------------------------
-  // propagate and aggregate return counts
-  // -------------------------------------------------------
-  Prof::CCT::ANode* cct_root = prof.cct()->root();
-  Prof::CCT::ANodeIterator it(cct_root, NULL/*filter*/, false/*leavesOnly*/,
-			      IteratorStack::PostOrder);
-  for (Prof::CCT::ANode* n = NULL; (n = it.current()); ++it) {
-    if (typeid(*n) != typeid(Prof::CCT::ProcFrm) && n != cct_root) {
-      Prof::CCT::ANode* n_parent = n->parent();
-      for (uint i = 0; i < retCntId.size(); ++i) {
-	uint mId = retCntId[i];
-	n_parent->demandMetric(mId) += n->demandMetric(mId);
-	n->metric(mId) = 0.0;
-      }
-    }
-  }
-}
-
-
-//***************************************************************************
-
 // mergeCilkMain: cilk_main is called from two distinct call sites
 // within the runtime, resulting in an undesirable bifurcation within
 // the CCT.  The easiest way to fix this is to use a normalization
@@ -920,6 +813,121 @@ noteStaticStructure(Prof::CallPath::Profile& prof)
     Prof::Struct::ACodeNode* strct = x->structure();
     if (strct) {
       strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
+    }
+  }
+}
+
+
+//***************************************************************************
+// Making special CCT metrics
+//***************************************************************************
+
+static void
+makeReturnCountMetric(Prof::CallPath::Profile& prof);
+
+// N.B.: Expects that thread-level metrics are available.
+void
+Analysis::CallPath::applyThreadMetricAgents(Prof::CallPath::Profile& prof,
+					    string agent)
+{
+  makeReturnCountMetric(prof);
+
+  if (!agent.empty()) {
+    MetricComponentsFact* metricComponentsFact = NULL;
+    if (agent == "agent-cilk") {
+      metricComponentsFact = new CilkOverheadMetricFact;
+    }
+    else if (agent == "agent-mpi") {
+      // *** applySummaryMetricAgents() ***
+    }
+    else if (agent == "agent-pthread") {
+      metricComponentsFact = new PthreadOverheadMetricFact;
+    }
+    else {
+      DIAG_Die("Bad value for 'agent': " << agent);
+    }
+
+    if (metricComponentsFact) {
+      metricComponentsFact->make(prof);
+      delete metricComponentsFact;
+    }
+  }
+}
+
+
+// N.B.: Expects that summary metrics have been computed.
+void
+Analysis::CallPath::applySummaryMetricAgents(Prof::CallPath::Profile& prof,
+					     string agent)
+{
+  if (!agent.empty()) {
+    MetricComponentsFact* metricComponentsFact = NULL;
+    if (agent == "agent-mpi") {
+      metricComponentsFact = new MPIBlameShiftIdlenessFact;
+    }
+
+    if (metricComponentsFact) {
+      metricComponentsFact->make(prof);
+      delete metricComponentsFact;
+    }
+  }
+}
+
+
+//***************************************************************************
+
+// makeReturnCountMetric: A return count refers to the number of times
+// a given CCT node is called by its parent context.  However, when
+// hpcrun records return counts, there is no structure (e.g. procedure
+// frames) in the CCT.  An an example, in the CCT fragment below, the
+// return count [3] at 0xc means that 0xc returned to 0xbeef 3 times.
+// Simlarly, 0xbeef returned to its caller 5 times.
+//
+//              |               |
+//       ip: 0xbeef [5]         |
+//       /      |      \        |
+//   0xa [1]  0xb [2]  0xc [3]  |
+//      |       |       |       |
+//
+// To be able to say procedure F is called by procedure G x times
+// within this context, it is necessary to aggregate these counts at
+// the newly added procedure frames (Struct::ProcFrm).
+static void
+makeReturnCountMetric(Prof::CallPath::Profile& prof)
+{
+  std::vector<uint> retCntId;
+
+  // -------------------------------------------------------
+  // find return count metrics, if any
+  // -------------------------------------------------------
+  Prof::Metric::Mgr* metricMgr = prof.metricMgr();
+  for (uint i = 0; i < metricMgr->size(); ++i) {
+    Prof::Metric::ADesc* m = metricMgr->metric(i);
+    if (m->nameBase().find(HPCRUN_METRIC_RetCnt) != string::npos) {
+      retCntId.push_back(m->id());
+      m->computedType(Prof::Metric::ADesc::ComputedTy_Final);
+      m->type(Prof::Metric::ADesc::TyExcl);
+    }
+  }
+
+  if (retCntId.empty()) {
+    return;
+  }
+
+  // -------------------------------------------------------
+  // propagate and aggregate return counts
+  // -------------------------------------------------------
+  Prof::CCT::ANode* cct_root = prof.cct()->root();
+  Prof::CCT::ANodeIterator it(cct_root, NULL/*filter*/, false/*leavesOnly*/,
+			      IteratorStack::PostOrder);
+  for (Prof::CCT::ANode* n = NULL; (n = it.current()); ++it) {
+    if (typeid(*n) != typeid(Prof::CCT::ProcFrm) && n != cct_root) {
+      Prof::CCT::ANode* n_parent = n->parent();
+      for (uint i = 0; i < retCntId.size(); ++i) {
+	uint mId = retCntId[i];
+	n_parent->demandMetric(mId) += n->demandMetric(mId);
+	n->metric(mId) = 0.0;
+      }
     }
   }
 }
