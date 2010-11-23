@@ -132,7 +132,7 @@ realmain(int argc, char* const* argv)
     Analysis::Util::normalizeProfileArgs(args.profileFiles);
 
   // ------------------------------------------------------------
-  // Special checks
+  // 0. Special checks
   // ------------------------------------------------------------
 
   if (nArgs.paths->size() == 1 && !args.hpcprof_isMetricArg) {
@@ -145,8 +145,14 @@ realmain(int argc, char* const* argv)
     DIAG_Throw("You have requested thread-level metrics for " << nArgs.paths->size() << " profile files.  Because this may result in an unusable database, to continue you must use the --force-metric option.");
   }
 
+  // -------------------------------------------------------
+  // 0. Make empty Experiment database (ensure file system works)
+  // -------------------------------------------------------
+
+  args.makeDatabaseDir();
+
   // ------------------------------------------------------------
-  // Form one CCT from profile data
+  // 1a. Create canonical CCT // Normalize trace files
   // ------------------------------------------------------------
 
   int mergeTy = Prof::CallPath::Profile::Merge_CreateMetric;
@@ -163,8 +169,9 @@ realmain(int argc, char* const* argv)
     Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags, mrgFlags);
 
   // ------------------------------------------------------------
-  // Overlay static structure with CCT's dynamic call paths
+  // 1b. Add static structure to canonical CCT
   // ------------------------------------------------------------
+
   Prof::Struct::Tree* structure = new Prof::Struct::Tree("");
   if (!args.structureFiles.empty()) {
     Analysis::CallPath::readStructure(structure, args);
@@ -174,23 +181,33 @@ realmain(int argc, char* const* argv)
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
 						 args.doNormalizeTy);
   
-  prof->cct()->makeDensePreorderIds();
-
   // -------------------------------------------------------
-  // Create summary metrics
+  // 2a. Create summary metrics for canonical CCT
   // -------------------------------------------------------
 
   if (Analysis::Args::doSummaryMetrics(args.prof_metrics)) {
     makeMetrics(*prof, args, nArgs);
-    
-    // FIXME: CallPath-MetricComponentsFact.cpp must support Metric::DerivedDesc
-    //Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
   }
-  
-  nArgs.destroy();
+
+  // -------------------------------------------------------
+  // 2b. Prune and normalize canonical CCT
+  // -------------------------------------------------------
+
+  Analysis::CallPath::normalize(*prof, args.agent, args.doNormalizeTy);
+  //pruneCanonicalProfile()
+  //Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
+  //  FIXME: CallPath-MetricComponentsFact.cpp must support Metric::DerivedDesc
+
+  prof->cct()->makeDensePreorderIds();
+
+  // -------------------------------------------------------
+  // 2c. Create thread-level metric DB
+  // -------------------------------------------------------
+  // Currently we use --metric=thread as a proxy for the metric database
 
   // ------------------------------------------------------------
-  // Generate Experiment database
+  // 3. Generate Experiment database
+  //    INVARIANT: database dir already exists
   // ------------------------------------------------------------
 
   if (args.title.empty()) {
@@ -201,10 +218,16 @@ realmain(int argc, char* const* argv)
     prof->metricMgr()->zeroDBInfo();
   }
 
-  args.makeDatabaseDir();
   Analysis::CallPath::makeDatabase(*prof, args);
 
+
+  // -------------------------------------------------------
+  // Cleanup
+  // -------------------------------------------------------
+  nArgs.destroy();
+
   delete prof;
+
   return 0;
 }
 

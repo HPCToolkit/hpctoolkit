@@ -290,9 +290,6 @@ makeFrameStructure(Prof::CCT::ANode* node_frame,
 static void
 coalesceStmts(Prof::CallPath::Profile& prof);
 
-static void
-noteStaticStructure(Prof::CallPath::Profile& prof);
-
 
 void
 Analysis::CallPath::
@@ -335,14 +332,6 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   if (doNormalizeTy) {
     coalesceStmts(prof);
   }
-
-  Analysis::CallPath::normalize(prof, agent, doNormalizeTy);
-  
-  // Note: Use StructMetricIdFlg to flag that static structure is used
-  //   FIXME: is this necessary?
-  noteStaticStructure(prof);
-  rootStrct->aggregateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
-  rootStrct->pruneByMetrics();
 }
 
 
@@ -613,6 +602,9 @@ makeReturnCountMetric(Prof::CallPath::Profile& prof);
 static void
 mergeCilkMain(Prof::CallPath::Profile& prof);
 
+static void
+noteStaticStructure(Prof::CallPath::Profile& prof);
+
 
 void
 Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
@@ -648,6 +640,16 @@ Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
   if (agent == "agent-cilk") {
     mergeCilkMain(prof);
   }
+
+  // -------------------------------------------------------
+  // Prune Struct::Tree based on StructMetricIdFlg
+  // -------------------------------------------------------
+
+  noteStaticStructure(prof); // FIXME: is this necessary
+
+  Prof::Struct::Root* rootStrct = prof.structure()->root();
+  rootStrct->aggregateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
+  rootStrct->pruneByMetrics();
 }
 
 

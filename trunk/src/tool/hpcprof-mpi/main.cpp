@@ -200,7 +200,7 @@ realmain(int argc, char* const* argv)
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   // -------------------------------------------------------
-  // MPI initialize
+  // 0. MPI initialize
   // -------------------------------------------------------
   MPI_Init(&argc, (char***)&argv);
 
@@ -210,7 +210,7 @@ realmain(int argc, char* const* argv)
   MPI_Comm_size(MPI_COMM_WORLD, &numRanks);
 
   // -------------------------------------------------------
-  // Debugging hook
+  // 0. Debugging hook
   // -------------------------------------------------------
   const char* HPCPROF_WAIT = getenv("HPCPROF_WAIT");
   if (HPCPROF_WAIT) {
@@ -226,7 +226,21 @@ realmain(int argc, char* const* argv)
   }
 
   // -------------------------------------------------------
-  // 1a. Form local CCT from my set of profile files
+  // 0. Make empty Experiment database (ensure file system works)
+  // -------------------------------------------------------
+  char dbDirBuf[PATH_MAX];
+  if (myRank == rootRank) {
+    args.makeDatabaseDir();
+
+    strncpy(dbDirBuf, args.db_dir.c_str(), PATH_MAX);
+    dbDirBuf[PATH_MAX - 1] = '\0';
+  }
+
+  MPI_Bcast((void*)dbDirBuf, PATH_MAX, MPI_CHAR, rootRank, MPI_COMM_WORLD);
+  args.db_dir = dbDirBuf;
+
+  // -------------------------------------------------------
+  // 1a. Create local CCT (from local set of profile files)
   // -------------------------------------------------------
   Prof::CallPath::Profile* profLcl = NULL;
 
@@ -288,34 +302,26 @@ realmain(int argc, char* const* argv)
   profGbl->cct()->makeDensePreorderIds();
 
   // -------------------------------------------------------
-  // Claim namespace for Experiment database
-  // -------------------------------------------------------
-  char dbDirBuf[PATH_MAX];
-  if (myRank == rootRank) {
-    args.makeDatabaseDir();
-
-    strncpy(dbDirBuf, args.db_dir.c_str(), PATH_MAX);
-    dbDirBuf[PATH_MAX - 1] = '\0';
-  }
-
-  MPI_Bcast((void*)dbDirBuf, PATH_MAX, MPI_CHAR, rootRank, MPI_COMM_WORLD);
-  args.db_dir = dbDirBuf;
-
-  // -------------------------------------------------------
-  // 2. Create *pruned* canonical CCT with summary metrics
+  // 2a. Create summary metrics for canonical CCT
   //
   // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
   // -------------------------------------------------------
   makeSummaryMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
 		     myRank, numRanks, rootRank);
 
+  // -------------------------------------------------------
+  // 2b. Prune and normalize canonical CCT
+  // -------------------------------------------------------
+
+  Analysis::CallPath::normalize(*profGbl, args.agent, args.doNormalizeTy);
+
   uint prunedNodesSz = profGbl->cct()->maxDenseId() + 1;
   uint8_t* prunedNodes = new uint8_t[prunedNodesSz];
   memset(prunedNodes, 0, prunedNodesSz * sizeof(uint8_t));
 
   if (myRank == rootRank) {
-    // Analysis::CallPath::normalize() // prune, agents
     pruneCanonicalProfile(*profGbl, prunedNodes);
+    Analysis::CallPath::applySummaryMetricAgents(*profGbl, args.agent);
   }
   
   MPI_Bcast(prunedNodes, prunedNodesSz, MPI_BYTE, rootRank, MPI_COMM_WORLD);
@@ -329,18 +335,14 @@ realmain(int argc, char* const* argv)
   profGbl->cct()->makeDensePreorderIds();
 
   // -------------------------------------------------------
-  // 3. Create thread-level metrics (normalize trace files)
+  // 2c. Create thread-level metric DB // Normalize trace files
   // -------------------------------------------------------
   makeThreadMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
 		    myRank, numRanks, rootRank);
   
-  if (myRank == rootRank) {
-    Analysis::CallPath::applySummaryMetricAgents(*profGbl, args.agent);
-  }
-
   // ------------------------------------------------------------
-  // Generate Experiment database
-  //   INVARIANT: database dir already exists
+  // 3. Generate Experiment database
+  //    INVARIANT: database dir already exists
   // ------------------------------------------------------------
 
   if (myRank == rootRank) {
