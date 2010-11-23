@@ -79,6 +79,10 @@ typedef struct ip_normalized_t {
 
 extern ip_normalized_t ip_normalized_NULL;
 
+//
+// comparison operations, mainly for cct sibling splay operations
+//
+
 static inline bool
 ip_normalized_eq(const ip_normalized_t* a, const ip_normalized_t* b)
 {
@@ -86,6 +90,29 @@ ip_normalized_eq(const ip_normalized_t* a, const ip_normalized_t* b)
 			&& a->lm_id == b->lm_id
 			&& a->lm_ip == b->lm_ip) );
 }
+
+static inline bool
+ip_normalized_lt(const ip_normalized_t* a, const ip_normalized_t* b)
+{
+  if (a == b) {
+    return false;
+  }
+  if (! a) a = &ip_normalized_NULL;
+  if (! b) b = &ip_normalized_NULL;
+
+  if (a->lm_id < b->lm_id) return true;
+  if (a->lm_id > b->lm_id) return false;
+  if (a->lm_ip < b->lm_ip) return true;
+  if (a->lm_ip > b->lm_ip) return false;
+  return false;
+}
+
+static inline bool
+ip_normalized_gt(const ip_normalized_t* a, const ip_normalized_t* b)
+{
+  return ip_normalized_lt(b, a);
+}
+
 
 // Converts an ip into a normalized ip using 'lm'. If 'lm' is NULL 
 // the function attempts to find the load module that 'unnormalized_ip'

@@ -245,7 +245,7 @@ hpcrun_init_internal(bool is_child)
   // set up initial 'epoch' 
   
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
-  hpcrun_epoch_init();
+  hpcrun_epoch_init(NULL);
 
   // start the sampling process
 
@@ -328,7 +328,7 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
 
   // set up initial 'epoch'
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
-  hpcrun_epoch_init();
+  hpcrun_epoch_init(thr_ctxt);
 
   // start the sample sources
   SAMPLE_SOURCES(start);
@@ -584,14 +584,10 @@ monitor_thread_pre_create(void)
     EMSG("error: monitor_thread_pre_create: getcontext = %d", ret);
     goto fini;
   }
-
   int metric_id = 0; // FIXME: obtain index of first metric
   ENABLE(IN_THREAD_CTXT);
   cct_node_t* n = hpcrun_sample_callpath(&context, metric_id, 0/*metricIncr*/,
 					 1/*skipInner*/, 1/*isSync*/);
-
-  // MFAGAN: NEED TO COPY CONTEXT BTRACE TO NON-FREEABLE MEM
-  n = hpcrun_copy_btrace(n);
 
   TMSG(THREAD,"before lush malloc");
   TMSG(MALLOC," -thread_precreate: lush malloc");
@@ -600,15 +596,19 @@ monitor_thread_pre_create(void)
   TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
   thr_ctxt->context = n;
   thr_ctxt->parent = epoch->csdata_ctxt;
-  TMSG(THREAD_CTXT, "context = %d, parent = %d", hpcrun_get_persistent_id(thr_ctxt->context),
-       thr_ctxt->parent ? hpcrun_get_persistent_id(thr_ctxt->parent->context) : -1);
+  TMSG(THREAD_CTXT, "context = %d, parent = %d", hpcrun_cct_persistent_id(thr_ctxt->context),
+       thr_ctxt->parent ? hpcrun_cct_persistent_id(thr_ctxt->parent->context) : -1);
+#if 0
   if (ENABLED(THREAD_CTXT)) {
     TMSG(THREAD_CTXT,"Dumping context node %d", hpcrun_get_persistent_id(thr_ctxt->context));
     cct_dump_path(thr_ctxt->context);
     DISABLE(IN_THREAD_CTXT);
   }
+#endif
+    DISABLE(IN_THREAD_CTXT);
 
  fini:
+
   TMSG(THREAD,"->finish pre create");
   hpcrun_async_unblock();
   return thr_ctxt;

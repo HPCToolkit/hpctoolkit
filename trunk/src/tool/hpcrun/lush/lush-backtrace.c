@@ -76,6 +76,7 @@
 
 #include "lush.h"
 #include "lush-backtrace.h"
+#include <hpcrun/cct_insert_backtrace.h>
 
 #include <epoch.h>
 #include <sample_event.h> // hpcrun_drop_sample()
@@ -104,7 +105,7 @@ bool is_lush_agent = false;
 //***************************************************************************
 
 cct_node_t*
-lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
+lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 		   int metricId, uint64_t metricIncr,
 		   int skipInner, int isSync)
 {
@@ -251,7 +252,7 @@ lush_backtrace2cct(hpcrun_cct_t* cct, ucontext_t* context,
   if (doMetricIdleness) {
     //lush_agentid_t aid = aidMetricIdleness;
     int mid = lush_agents->metric_idleness;
-    cct_metric_data_increment(mid, &(node->metrics[mid]),
+    cct_metric_data_increment(mid, hpcrun_cct_metrics(node) + mid,
 			      (cct_metric_data_t){.r = incrMetricIdleness});
   }
 

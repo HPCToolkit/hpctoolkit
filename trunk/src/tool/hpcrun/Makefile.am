@@ -156,6 +156,7 @@ MY_BASE_FILES =			\
 	\
 	main.h main.c			\
 	disabled.c			\
+        cct_insert_backtrace.c          \
 	env.c				\
 	epoch.c				\
 	files.c				\
@@ -181,7 +182,9 @@ MY_BASE_FILES =			\
 	trace.c				\
 	write_data.c		        \
 	\
-	cct/cct.c			\
+	cct/cct_bundle.c		\
+        cct/cct_ctxt.c			\
+	cct/cct.c               	\
 	\
         trampoline/common/trampoline.c \
         \
