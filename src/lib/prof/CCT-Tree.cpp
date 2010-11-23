@@ -676,19 +676,19 @@ ANode::deleteChaff(ANode* x, uint8_t* deletedNodes)
 {
   bool x_isLeaf = x->isLeaf(); // N.B. must perform before below
 
-  bool wereChildrenDeleted = true;
+  bool wereAllChildrenDeleted = true;
   for (ANodeChildIterator it(x); it.Current(); /* */) {
     ANode* x_child = it.current();
     it++; // advance iterator -- it is pointing at 'x_child'
     
-    wereChildrenDeleted = wereChildrenDeleted && deleteChaff(x_child);
+    wereAllChildrenDeleted = wereAllChildrenDeleted && deleteChaff(x_child);
   }
 
   bool wasDeleted = false;
-  if (wereChildrenDeleted) {
+  if (wereAllChildrenDeleted) {
     Prof::CCT::ADynNode* x_dyn = dynamic_cast<Prof::CCT::ADynNode*>(x);
-    if ( (x_isLeaf && !hpcrun_fmt_doRetainId(x_dyn->cpId()))
-	 || !x_isLeaf) {
+    bool mustRetain = (x_dyn && hpcrun_fmt_doRetainId(x_dyn->cpId()));
+    if ((x_isLeaf && !mustRetain) || !x_isLeaf) {
       x->unlink(); // unlink 'x' from tree
       delete x;
       if (deletedNodes) {
