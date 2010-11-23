@@ -52,6 +52,7 @@
 //*************************** User Include Files ****************************
 
 #include <cct/cct.h>
+#include <cct/cct_bundle.h>
 #include "loadmap.h"
 
 #include <lush/lush.h>
@@ -61,7 +62,7 @@
 //*************************** Datatypes **************************
 
 typedef struct epoch_t {
-  hpcrun_cct_t csdata;     // cct (call stack data)
+  cct_bundle_t csdata;     // cct (call stack data)
   cct_ctxt_t* csdata_ctxt; // creation context
   hpcrun_loadmap_t *loadmap;
   struct epoch_t* next;    // epochs gathererd into a (singly) linked list
@@ -75,7 +76,7 @@ typedef void epoch_t_setter(epoch_t* s);
 extern void hpcrun_reset_epoch(epoch_t* epoch);
 
 epoch_t* hpcrun_check_for_new_loadmap(epoch_t *);
-void hpcrun_epoch_init(void);
+void hpcrun_epoch_init(cct_ctxt_t* ctxt);
 void hpcrun_epoch_reset(void);
 
 #endif // EPOCH_H

@@ -59,6 +59,7 @@
 #include "monitor.h"
 #include <trampoline/common/trampoline.h>
 #include <messages/messages.h>
+#include <cct/cct_bundle.h>
 
 void
 hpcrun_reset_epoch(epoch_t* epoch)
@@ -67,19 +68,18 @@ hpcrun_reset_epoch(epoch_t* epoch)
   TD_GET(epoch) = epoch;
 }
 
-
 void
-hpcrun_epoch_init(void)
+hpcrun_epoch_init(cct_ctxt_t* ctxt)
 {
   TMSG(EPOCH,"init");
   thread_data_t* td    = hpcrun_get_thread_data();
   epoch_t*       epoch = td->epoch;
 
-  hpcrun_cct_init(&(epoch->csdata), epoch->csdata_ctxt);
+  hpcrun_cct_bundle_init(&(epoch->csdata), ctxt);
+
   epoch->loadmap = hpcrun_getLoadmap();
   epoch->next  = NULL;
 }
-
 
 epoch_t*
 hpcrun_check_for_new_loadmap(epoch_t* epoch)
@@ -117,7 +117,7 @@ hpcrun_check_for_new_loadmap(epoch_t* epoch)
     TMSG(EPOCH, "check_new_epoch creating new epoch (new loadmap/cct pair)...");
 
     memcpy(newepoch, epoch, sizeof(epoch_t));
-    hpcrun_cct_init(&newepoch->csdata, newepoch->csdata_ctxt);
+    hpcrun_cct_bundle_init(&(epoch->csdata), (epoch->csdata).ctxt);
 
     hpcrun_trampoline_remove();
 
@@ -131,7 +131,6 @@ hpcrun_check_for_new_loadmap(epoch_t* epoch)
     return epoch;
   }
 }
-
 
 int
 hpcrun_epoch_fini(epoch_t *x){
@@ -154,7 +153,7 @@ hpcrun_epoch_reset(void)
   epoch_t *newepoch = hpcrun_malloc(sizeof(epoch_t));
   memcpy(newepoch, epoch, sizeof(epoch_t));
   TMSG(EPOCH_RESET, "check new loadmap = old loadmap = %d", newepoch->loadmap == epoch->loadmap);
-  hpcrun_cct_init(&newepoch->csdata, newepoch->csdata_ctxt); // reset cct
+  hpcrun_cct_bundle_init(&(newepoch->csdata), newepoch->csdata_ctxt); // reset cct
   hpcrun_reset_epoch(newepoch);
   TMSG(EPOCH_RESET," ==> no new epoch for next sample = %d", newepoch->loadmap == hpcrun_getLoadmap());
 }

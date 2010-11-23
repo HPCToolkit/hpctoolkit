@@ -227,7 +227,7 @@ hpcrun_alloc_inc(cct_node_t* node, int incr)
     TMSG(MEMLEAK, "\talloc (cct node %p): metric[%d] += %d", 
 	 node, alloc_metric_id, incr);
     cct_metric_data_increment(alloc_metric_id,
-			      &node->metrics[alloc_metric_id],
+			      hpcrun_cct_metrics(node) + alloc_metric_id,
 			      (cct_metric_data_t){.i = incr});
   }
 }
@@ -241,7 +241,7 @@ hpcrun_free_inc(cct_node_t* node, int incr)
 	 node, free_metric_id, incr);
     
     cct_metric_data_increment(free_metric_id,
-			      &node->metrics[free_metric_id],
+			      hpcrun_cct_metrics(node) + free_metric_id,
 			      (cct_metric_data_t){.i = incr});
   }
 }

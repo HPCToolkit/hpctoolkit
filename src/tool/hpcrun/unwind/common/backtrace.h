@@ -71,7 +71,7 @@
 
 #include <hpcrun/utilities/ip-normalized.h>
 #include <unwind/common/unw-datatypes.h>
-#include <cct/frame.h>
+#include <hpcrun/frame.h>
 
 //
 // backtrace_t type is a struct holding begin, end, current ptrs

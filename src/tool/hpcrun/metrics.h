@@ -64,6 +64,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
@@ -108,5 +109,22 @@ void hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 void hpcrun_set_metric_info(int metric_id, const char* name);
 
 void hpcrun_set_metric_name(int metric_id, char* name);
+
+static inline void
+cct_metric_data_increment(int metric_id,
+			  cct_metric_data_t* x,
+			  cct_metric_data_t incr)
+{
+  metric_desc_t* minfo = hpcrun_id2metric(metric_id);
+  
+  switch (minfo->flags.fields.valFmt) {
+    case MetricFlags_ValFmt_Int:
+      x->i += incr.i; break;
+    case MetricFlags_ValFmt_Real:
+      x->r += incr.r; break;
+    default:
+      assert(false);
+  }
+}
 
 #endif // METRICS_H

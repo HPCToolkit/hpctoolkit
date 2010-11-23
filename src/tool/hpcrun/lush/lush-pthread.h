@@ -84,7 +84,7 @@
 #include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/BalancedTree.h>
 #include <lib/prof-lean/timer.h>
-
+#include <hpcrun/metrics.h>
 
 //*************************** Forward Declarations **************************
 
@@ -908,8 +908,8 @@ lushPthr_mutexLock_post_ty3(lushPthr_t* restrict x,
     cct_node_t* node = (cct_node_t*)syncData->cct_node;
     int mid = lush_agents->metric_idleness;
     double idleness = x->idleness;
-    cct_metric_data_increment(mid, &node->metrics[mid],
-			      (cct_metric_data_t){.r = idleness});
+    cct_metric_data_increment(mid, hpcrun_cct_metrics(node) + mid,
+                             (cct_metric_data_t){.r = idleness});
   }
 }
 

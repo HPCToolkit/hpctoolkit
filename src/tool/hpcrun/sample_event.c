@@ -74,6 +74,7 @@
 #include "ui_tree.h"
 #include "validate_return_addr.h"
 #include "write_data.h"
+#include "cct_insert_backtrace.h"
 
 #include <messages/messages.h>
 
@@ -118,7 +119,7 @@ hpcrun_cleanup_partial_unwind(void)
 
 
 static cct_node_t*
-record_partial_unwind(hpcrun_cct_t* cct,
+record_partial_unwind(cct_bundle_t* cct,
 		      frame_t* bt_beg, frame_t* bt_last,
 		      int metricId, uint64_t metricIncr)
 {
@@ -207,7 +208,6 @@ hpcrun_sample_callpath(void *context, int metricId,
 
       if (trace_isactive()) {
 	void* pc = hpcrun_context_pc(context);
-	hpcrun_cct_t* cct = &(td->epoch->csdata);
 
 	void *func_start_pc = NULL, *func_end_pc = NULL;
 	load_module_t* lm = NULL;
@@ -215,11 +215,12 @@ hpcrun_sample_callpath(void *context, int metricId,
 
 	ip_normalized_t pc_proxy = hpcrun_normalize_ip(func_start_pc, lm);
 
-	frame_t frm = { .ip_norm = pc_proxy };
-	cct_node_t* func_proxy = hpcrun_cct_get_child(cct, node->parent, &frm);
-	func_proxy->persistent_id |= HPCRUN_FMT_RetainIdFlag;
+	cct_addr_t frm = { .ip_norm = pc_proxy };
+	cct_node_t* func_proxy = hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
 
-	trace_append(func_proxy->persistent_id);
+	hpcrun_cct_persistent_id_trace_mutate(func_proxy); // modify the persistent id
+
+	trace_append(hpcrun_cct_persistent_id(func_proxy));
       }
       if (ENABLED(DUMP_BACKTRACES)) {
 	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
@@ -227,7 +228,7 @@ hpcrun_sample_callpath(void *context, int metricId,
     }
   }
   else {
-    hpcrun_cct_t* cct = &(td->epoch->csdata);
+    cct_bundle_t* cct = &(td->epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
 				 metricId, metricIncr);
     hpcrun_cleanup_partial_unwind();
@@ -242,6 +243,7 @@ hpcrun_sample_callpath(void *context, int metricId,
   hpcrun_dlopen_read_unlock();
 #endif
   
+  TMSG(SAMPLE,"done w sample");
   return node;
 }
 
@@ -253,7 +255,7 @@ hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
 {
   void* pc = hpcrun_context_pc(context);
 
-  TMSG(DEBUG_PARTIAL_UNW, "csprof take profile sample @ %p",pc);
+  TMSG(DEBUG_PARTIAL_UNW, "hpcrun take profile sample @ %p",pc);
 
   /* check to see if shared library loadmap (of current epoch) has changed out from under us */
   epoch = hpcrun_check_for_new_loadmap(epoch);
@@ -277,7 +279,8 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 {
   void* pc = hpcrun_context_pc(context);
 
-  TMSG(SAMPLE,"csprof take profile sample @ %p",pc);
+  TMSG(SAMPLE,"taking profile sample @ %p",pc);
+  TMSG(SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %"PRIu64"", metricIncr);
 
   /* check to see if shared library loadmap (of current epoch) has changed out from under us */
   epoch = hpcrun_check_for_new_loadmap(epoch);
@@ -346,9 +349,10 @@ hpcrun_sample_callpath_w_bt(void *context,
 					  bt_fn, arg, isSync);
 
       if (trace_isactive()) {
-	void *pc = hpcrun_context_pc(context);
-	hpcrun_cct_t *cct = &(td->epoch->csdata); 
-	void *func_start_pc, *func_end_pc;
+	void* pc = hpcrun_context_pc(context);
+	cct_bundle_t* cct = &(td->epoch->csdata); 
+	void* func_start_pc = NULL;
+	void* func_end_pc   = NULL;
 
 	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc); 
 

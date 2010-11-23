@@ -62,7 +62,7 @@
 #include "files.h"
 #include "epoch.h"
 #include "thread_data.h"
-#include "cct.h"
+#include "cct_bundle.h"
 #include "hpcrun_return_codes.h"
 #include "write_data.h"
 #include "loadmap.h"
@@ -234,12 +234,14 @@ write_epochs(FILE* fs, epoch_t* epoch)
 
   for(epoch_t* s = current_epoch; s; s = s->next) {
 
+#if 0
     if (ENABLED(SKIP_WRITE_EMPTY_EPOCH)){
-      if (hpcrun_empty_cct(&(s->csdata))){
+      if (hpcrun_empty_cct_bundle(&(s->csdata))){
 	EMSG("Empty cct encountered: it is not written out");
 	continue;
       }
     }
+#endif
     //
     //  == epoch header ==
     //
@@ -296,13 +298,8 @@ write_epochs(FILE* fs, epoch_t* epoch)
     // == cct ==
     //
 
-    hpcrun_cct_t* cct      = &(s->csdata);
-    cct_ctxt_t*   cct_ctxt = s->csdata_ctxt;
-
-    TMSG(DATA_WRITE, "Writing %ld nodes", cct->num_nodes + cct_ctxt_length(cct_ctxt));
-
-    int ret = hpcrun_cct_fwrite(fs, epoch_flags, cct, cct_ctxt);
-          
+    cct_bundle_t* cct      = &(s->csdata);
+    int ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct);
     if(ret != HPCRUN_OK) {
       TMSG(DATA_WRITE, "Error writing tree %#lx", cct);
       TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);

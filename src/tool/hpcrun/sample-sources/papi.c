@@ -457,19 +457,11 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   for (i = 0; i < my_event_count; i++) {
     // FIXME: SUBTLE ERROR: metric_id may not be same from hpcrun_new_metric()!
     // This means lush's 'time' metric should be *last*
+
     int metric_id = hpcrun_event2metric(&_papi_obj, my_events[i]);
-#if 0
-    struct event_metrics_map{
-      int num_metrics;
-      int* metric_ids;
-    }
-    event_metrics_map m = hpcrun_event2metric_map(YOUR_SAMPLE_SOURCE_OBJ, YOUR_EVENT);
-    for(int i = 0; i < m.num_metrics; i++) {
-      hpcrun_sample_callpath(context, m.metric_ids[i], (uint64_t) YOUR_DATA
-			     0/*skipInner*/, 0/*isSync*/);
-    }
-#endif
+
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
+
     hpcrun_sample_callpath(context, metric_id, 1/*metricIncr*/, 
 			   0/*skipInner*/, 0/*isSync*/);
   }

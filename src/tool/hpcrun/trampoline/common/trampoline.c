@@ -120,7 +120,7 @@ hpcrun_trampoline_advance(void)
   thread_data_t* td = hpcrun_get_thread_data();
   cct_node_t* node = td->tramp_cct_node;
   TMSG(TRAMP, "Advance from node %p...", node);
-  node = node->parent;
+  node = hpcrun_cct_parent(node);
   TMSG(TRAMP, " ... to node %p", node);
   td->tramp_frame++;
   return node;
