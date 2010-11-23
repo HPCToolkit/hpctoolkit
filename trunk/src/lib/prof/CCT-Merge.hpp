@@ -142,12 +142,22 @@ namespace CCT {
 class Tree;
 
 enum {
+  // -------------------------------------------------------
   // CCT Merge flags
+  // -------------------------------------------------------
   MrgFlg_NormalizeTraceFileY = (1 << 0),
-  MrgFlg_CCTMergeOnly        = (1 << 1), // Only perform merges (skip inserts)
-  MrgFlg_AssertCCTMergeOnly  = (1 << 2), // Assert: only perform merges
+
+  // Instruct a merge function to only perform tree merges; tree
+  // inserts are simply skipped and considered benign operations.
+  MrgFlg_CCTMergeOnly        = (1 << 1),
+
+  // Instruct a merge function to only perform tree merges; tree
+  // inserts are considered errors and throw an exception.
+  MrgFlg_AssertCCTMergeOnly  = (1 << 2),
   
+  // -------------------------------------------------------
   // *Private* CCT Merge flags
+  // -------------------------------------------------------
   MrgFlg_PropagateEffects    = (1 << 3),
 };
 

@@ -314,6 +314,7 @@ realmain(int argc, char* const* argv)
   memset(prunedNodes, 0, prunedNodesSz * sizeof(uint8_t));
 
   if (myRank == rootRank) {
+    // Analysis::CallPath::normalize() // prune, agents
     pruneCanonicalProfile(*profGbl, prunedNodes);
   }
   
@@ -737,9 +738,15 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   return numDrvd;
 }
 
-// makeSummaryMetrics_Lcl: Assumes 'profGbl' is the canonical CCT (with
-// structure and with canonical ids).  Assumes the 'args' contains the
-// correct final experiment database.
+// makeSummaryMetrics_Lcl: Make summary metrics.
+//
+// Assumes:
+// - 'profGbl' is the canonical CCT (with structure and with
+//   canonical ids)
+// - each thread-level CCT is always a subset of 'profGbl' (the
+//   canonical CCT); in other words, 'profGbl' should not be pruned
+//   in any way!
+// - 'args' contains the correct final experiment database.
 //
 // FIXME: abstract between makeSummaryMetrics_Lcl() & makeThreadMetrics_Lcl()
 static void
@@ -837,6 +844,12 @@ makeSummaryMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 }
 
 
+// makeThreadMetrics_Lcl: Make thread-level metric database.
+//
+// Makes same assumptions as makeSummaryMetrics_Lcl but with one key
+// exception: Each thread-level CCT does not have to be a subset of
+// 'profGbl' (the canonical CCT); in other words, 'profGbl' may be
+// pruned.
 static void
 makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
 		      const string& profileFile,
