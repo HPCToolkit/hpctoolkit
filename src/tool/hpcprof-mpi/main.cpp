@@ -345,6 +345,8 @@ realmain(int argc, char* const* argv)
   //    INVARIANT: database dir already exists
   // ------------------------------------------------------------
 
+  Analysis::CallPath::pruneStructTree(*profGbl);
+
   if (myRank == rootRank) {
     if (args.title.empty()) {
       args.title = profGbl->name();

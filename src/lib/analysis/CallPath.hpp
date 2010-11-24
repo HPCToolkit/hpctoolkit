@@ -156,6 +156,9 @@ pruneBySummaryMetrics(Prof::CallPath::Profile& prof, uint8_t* prunedNodes);
 void
 normalize(Prof::CallPath::Profile& prof, string agent, bool doNormalizeTy);
 
+void
+pruneStructTree(Prof::CallPath::Profile& prof);
+
 
 // ---------------------------------------------------------
 // 
