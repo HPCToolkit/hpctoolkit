@@ -13,25 +13,16 @@
 #include <trampoline/common/trampoline.h>
 #include "frame.h"
 
-#define _FLG BT_THREAD
-#include <cct/cct_dump.h>
-#undef _FLG
-
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
                             frame_t* path_beg, frame_t* path_end)
 {
   if ( (path_beg < path_end) || (!cct)) {
-    TMSG(BT_THREAD, "Raw backtrace returns null");
     return NULL;
   }
   for(; path_beg >= path_end; path_beg--){
     cct_addr_t tmp = (cct_addr_t) {.as_info = path_beg->as_info, .ip_norm = path_beg->ip_norm, .lip = path_beg->lip};
     cct = hpcrun_cct_insert_addr(cct, &tmp);
-  }
-  if (ENABLED(BT_THREAD)) {
-    TMSG(BT_THREAD, "cct after backtrace insertion");
-    dump_cct(cct);
   }
   return cct;
 }
@@ -241,6 +232,13 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     partial_unw = true;
   }
 
+  //
+  // If this backtrace is generated from sampling in a thread,
+  // take off the top 'monitor_pthread_main' node
+  //
+  if (cct->ctxt) {
+      bt_last--;
+  }
   cct_node_t* n = hpcrun_cct_record_backtrace(cct, partial_unw,
 					      bt_beg, bt_last, tramp_found,
 					      metricId, metricIncr);

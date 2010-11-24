@@ -9,6 +9,18 @@
 #include <cct/cct.h>
 #include <messages/messages.h>
 
+#define TLIM 1
+
+#ifndef TLIM
+#define TL(E)  E
+#define TLS(S) S
+#else
+#include <hpcrun/thread_data.h>
+#define TL(E) ((TD_GET(id) == TLIM) && (E))
+#define TLS(S) if (TD_GET(id) == TLIM) S
+#endif
+
+
 #define TF(_FLG, ...) TMSG(_FLG, __VA_ARGS__)
 
 static void
@@ -24,7 +36,7 @@ l_dump(cct_node_t* node, cct_op_arg_t arg, size_t level)
   int32_t id = hpcrun_cct_persistent_id(node);
   cct_addr_t* adr = hpcrun_cct_addr(node);
 
-  TF(_FLG, "%s[%d: (%d, %p)]\n", &p[0], id,
+  TF(_FLG, "%s[%d: (%d, %p)]", &p[0], id,
      adr->ip_norm.lm_id, adr->ip_norm.lm_ip);
 }
 
