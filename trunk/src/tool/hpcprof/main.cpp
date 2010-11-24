@@ -216,6 +216,8 @@ realmain(int argc, char* const* argv)
   //    INVARIANT: database dir already exists
   // ------------------------------------------------------------
 
+  Analysis::CallPath::pruneStructTree(*prof);
+
   if (args.title.empty()) {
     args.title = prof->name();
   }

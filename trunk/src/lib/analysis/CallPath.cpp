@@ -473,7 +473,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
 					unkProcNm);
       
       n->structure(strct);
-      strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
+      //strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
       DIAG_MsgIf(0, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << lm_ip << ") --> struct " << strct << dec << " " << strct->toStringMe());
 
@@ -481,7 +481,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       Struct::ANode* scope_strct = strct->ancestor(Struct::ANode::TyLoop,
 						   Struct::ANode::TyAlien,
 						   Struct::ANode::TyProc);
-      scope_strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
+      //scope_strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
       Prof::CCT::ANode* scope_frame = 
 	demandScopeInFrame(n_dyn, scope_strct, strctToCCTMap);
@@ -700,21 +700,26 @@ void
 Analysis::CallPath::normalize(Prof::CallPath::Profile& prof,
 			      string agent, bool doNormalizeTy)
 {
-  // -------------------------------------------------------
-  // Prune CCT
-  // -------------------------------------------------------
-
   pruneTrivialNodes(prof);
 
   if (agent == "agent-cilk") {
     mergeCilkMain(prof); // may delete CCT:ProcFrm
   }
+}
 
+
+void
+Analysis::CallPath::pruneStructTree(Prof::CallPath::Profile& prof)
+{
   // -------------------------------------------------------
   // Prune Struct::Tree based on CallPath::Profile::StructMetricIdFlg
+  //
+  // Defer this until the end so that we keep the minimal
+  // Struct::Tree.  Note that this should almost certainly come after
+  // all uses of noteStaticStructureOnLeaves().
   // -------------------------------------------------------
-
-  noteStaticStructure(prof); // FIXME: is this necessary?
+  
+  noteStaticStructure(prof);
 
   Prof::Struct::Root* rootStrct = prof.structure()->root();
   rootStrct->aggregateMetrics(Prof::CallPath::Profile::StructMetricIdFlg);
