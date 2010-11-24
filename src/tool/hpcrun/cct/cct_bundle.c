@@ -60,16 +60,6 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
   cct_node_t* partial_insert = final;
 
   //
-  // TODO: backtrace recording change should obviate the need for this kludge
-  //
-
-  // If this bundle comes from sampling a pthread, then the special "skip pthread create"
-  // mutation procedure is executed.
-  //
-  if (bndl->ctxt) {
-    hpcrun_ctxt_special_skip(final);
-  }
-  //
   // attach partial unwinds at appointed slot
   //
   hpcrun_cct_insert_node(partial_insert, bndl->partial_unw_root);

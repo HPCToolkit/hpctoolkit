@@ -151,14 +151,6 @@ extern cct_node_t* hpcrun_cct_insert_node(cct_node_t* target, cct_node_t* src);
 // special mutator to support tracing
 extern void hpcrun_cct_persistent_id_trace_mutate(cct_node_t* x);
 
-// !! TEMPORARY OP to support output of creation context. FIXME: Remove soon
-extern void hpcrun_cct_clone_id(cct_node_t* node, int32_t id);
-
-//
-// Special purpose 'skip' mutation for cct's coming from threaded programs
-//
-extern void hpcrun_ctxt_special_skip(cct_node_t* tree);
-
 // Walking functions section:
 //
 //     typedefs for walking functions

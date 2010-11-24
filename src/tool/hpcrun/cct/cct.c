@@ -280,23 +280,6 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 }
 
 //
-// Helper routines for special context skip mutator
-//
-
-static void
-attach(cct_node_t* node, cct_op_arg_t arg, size_t level)
-{
-  cct_node_t* tree = (cct_node_t*) arg;
-  hpcrun_cct_insert_node(tree, node);
-}
-
-static void
-apply(cct_node_t* node, cct_op_t op, cct_op_arg_t arg, size_t level)
-{
-  op(node, arg, level);
-}
-
-//
 // ********************* Interface procedures **********************
 //
 
@@ -440,18 +423,6 @@ void
 hpcrun_cct_persistent_id_trace_mutate(cct_node_t* x)
 {
   x->persistent_id |= HPCRUN_FMT_RetainIdFlag;
-}
-
-//
-// Special purpose 'skip' mutation for cct's coming from threaded programs
-//
-void
-hpcrun_ctxt_special_skip(cct_node_t* tree)
-{
-  if (! tree->children ) return;
-  cct_node_t* new_children = tree->children->children;
-  tree->children = NULL;
-  walk_child_lrs(new_children, attach, (cct_op_arg_t) tree, 0, apply);
 }
 
 //
