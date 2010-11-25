@@ -259,7 +259,7 @@ One can sample metrics that reflect work (\eg{}, instructions, floating-point op
 For reasonable sampling frequencies, the overhead and distortion introduced by sampling-based measurement is typically much lower than that introduced by instrumentation~\cite{Froyd-MC-Fo:2005:ICS-csprof}.
 
 
-\section{Call path profiling}
+\section{Call Path Profiling}
 
 For all but the most trivially structured programs, it is important to associate the costs incurred by each procedure with the contexts in which the procedure is called.
 Knowing the context in which each cost is incurred is essential for understanding why the code performs as it does.
@@ -279,7 +279,7 @@ This post-mortem analysis of an executable recovers its program structure and re
 \end{comment}
 
 
-\section{Recovering static program structure}
+\section{Recovering Static Program Structure}
 
 To enable effective analysis, call path profiles for executions of optimized programs must be correlated with important source code abstractions.
 Since measurements refer only to instruction addresses within an executable, it is necessary to map measurements back to the program source.
@@ -300,7 +300,7 @@ Second, we combine (post-mortem) the recovered static program structure with dyn
 This enables us to attribute the performance of samples in their full static and dynamic context and correlate it with source code.
 
 
-\section{Presenting performance measurements}
+\section{Presenting Performance Measurements}
 
 To enable an analyst to rapidly pinpoint and quantify performance bottlenecks, tools must present the performance measurements in a way that engages the analyst, focuses attention on what is important, and automates common analysis subtasks to reduce the mental effort and frustration of sifting through a sea of measurement details.
 
