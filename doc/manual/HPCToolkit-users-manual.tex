@@ -177,19 +177,19 @@ Rice University\\
 
 \chapter{Introduction}
 
-\HPCToolkit{} is an integrated suite of tools for measurement and analysis of program performance on computers ranging from multicore desktop systems to the nation's largest supercomputers.
+\HPCToolkit{}~\cite{Adhianto-etal:2010:CPE-hpctoolkit,hpctoolkit-www} is an integrated suite of tools for measurement and analysis of program performance on computers ranging from multicore desktop systems to the nation's largest supercomputers.
 \HPCToolkit{} provides accurate measurements of a program's work, resource consumption, and inefficiency, correlates these metrics with the program's source code, works with multilingual, fully optimized binaries, has very low measurement overhead, and scales to large parallel systems.
 \HPCToolkit{}'s measurements provide support for analyzing a program execution cost, inefficiency, and scaling characteristics both within and across nodes of a parallel system.
 
 \HPCToolkit{} works by sampling an execution of a multithreaded and/or multiprocess program using hardware performance counters, unwinding thread call stacks, and attributing the metric value associated with a sample event in a thread to the calling context of the thread/process in which the event occurred.
 Sampling has several advantages over instrumentation for measuring program performance: it requires no modification of source code, it avoids potential blind spots (such as code available in only binary form), and it has lower overhead.
-\HPCToolkit{} typically adds only 1\% to 3\% measurement overhead to an execution for reasonable sampling rates.
+\HPCToolkit{} typically adds only 1\% to 3\% measurement overhead to an execution for reasonable sampling rates~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}.
 Sampling using performance counters enables fine-grain measurement and attribution of detailed costs including metrics such as operation counts, pipeline stalls, cache misses, and inter-cache communication in multicore and multisocket configurations.
 Such detailed measurements are essential for understanding the performance characteristics of applications on modern multicore microprocessors that employ instruction-level parallelism, out-of-order execution, and complex memory hierarchies.
 \HPCToolkit{} also supports computing derived metrics such as cycles per instruction, waste, and relative efficiency to provide insight into a program's shortcomings.
 
 A unique capability of \HPCToolkit{} is its nearly flawless ability to unwind a thread's call stack.
-Unwinding is often a difficult and error-prone task with highly optimized code.
+Unwinding is often a difficult and error-prone task with highly optimized code~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}.
 
 \HPCToolkit{} assembles performance measurements into a call path profile that associates the costs of each function call with its full calling context.
 In addition, \HPCToolkit{} uses binary analysis to attribute program performance metrics with uniquely detailed precision -- full dynamic calling contexts augmented with information about call sites, source lines, loops and inlined code.
@@ -201,11 +201,115 @@ By working at the machine-code level, \HPCToolkit{} accurately measures and attr
 The low overhead of \HPCToolkit{}'s sampling-based measurement is particularly important for parallel programs because measurement overhead can distort program behavior.
 
 \HPCToolkit{} is also especially good at pinpointing scaling losses in parallel codes, both within multicore nodes and across the nodes in a parallel system.
-Using differential analysis of call path profiles collected on different numbers of threads or processes enables one to quantify scalability losses and pinpoint their causes to individual lines of code executed in particular calling contexts.
-We have used this technique to quantify scaling losses in leading science applications (\eg{}, FLASH, MILC, and PFLOTRAN) across thousands of processor cores on Cray XT and IBM Blue Gene/P systems and associate them with individual lines of source code in full calling context, as well as to quantify scaling losses in science applications (\eg{}, S3D) within nodes at the loop nest level due to competition for memory bandwidth in multicore processors.
+Using differential analysis of call path profiles collected on different numbers of threads or processes enables one to quantify scalability losses and pinpoint their causes to individual lines of code executed in particular calling contexts~\cite{Coarfa-MC:2007:ICS-scalability}.
+We have used this technique to quantify scaling losses in leading science applications (\eg{}, FLASH, MILC, and PFLOTRAN) across thousands of processor cores on Cray XT and IBM Blue Gene/P systems and associate them with individual lines of source code in full calling context~\cite{Tallent-MC-etal:2009:SC-hpctoolkit-petascale,Tallent-MC-etal:2010:SC-hpctoolkit-load-imbalance}, as well as to quantify scaling losses in science applications (\eg{}, S3D) within nodes at the loop nest level due to competition for memory bandwidth in multicore processors~\cite{Tallent-etal:2008:SciDAC-hpctoolkit}.
+We have also developed techniques for efficiently attributing the idleness in one thread to its cause in another thread~\cite{Tallent-MC:2009:PPoPP-hpctoolkit-work-stealing,Tallent-MC-Porterfield:2010:PPoPP-hpctoolkit-lock-contention}.
 
 \HPCToolkit{} is deployed on several DOE leadership class machines, including Blue Gene/P (Intrepid) at Argonne's Leadership Computing Facility and Cray XT systems at ORNL and NERSC (Jaguar, JaguarPF, and Franklin).
 It is also deployed on the NSF TeraGrid system at TACC (Ranger).
+
+
+% ***************************************************************************
+% ***************************************************************************
+
+\chapter{\HPCToolkit{} Overview}
+
+\begin{figure}[t]
+\centering{\includegraphics[width=.8\textwidth]{fig/hpctoolkit-workflow}}
+\caption{Overview of \HPCToolkit{} tool's work flow.}
+\label{fig:hpctoolkit-overview}
+\end{figure}
+
+\HPCToolkit{}'s work flow is organized around four principal capabilities, as shown in Figure~\ref{fig:hpctoolkit-overview}:
+\begin{enumerate}
+  \item \emph{measurement} of context-sensitive performance metrics while an application executes;
+  \item \emph{binary analysis} to recover program structure from application binaries;
+  \item \emph{attribution} of performance metrics by correlating dynamic performance metrics with static program structure; and
+  \item \emph{presentation} of performance metrics and associated source code.
+\end{enumerate}
+
+To use \HPCToolkit{} to measure and analyze an application's performance, one first compiles and links the application for a production run, using \emph{full} optimization and including debugging symbols.%
+\footnote{%
+For the most detailed attribution of application performance data using \HPCToolkit{}, one should ensure that the compiler includes line map information in the object code it generates. While \HPCToolkit{} does not need this information to function, it can be helpful to users trying to interpret the results. Since compilers can usually provide line map information for fully optimized code, this requirement need not require a special build process. For instance, with the Intel compiler we recommend using \texttt{-g -debug inline\_debug\_info}.}
+Second, one launches an application with \HPCToolkit{}'s measurement tool, \hpcrun{}, which uses statistical sampling to collect a performance profile.
+Third, one invokes \hpcstruct{}, \HPCToolkit{}'s tool for analyzing an application binary to recover information about files, procedures, loops, and inlined code.
+Fourth, one uses \hpcprof{} to combine information about an application's structure with dynamic performance measurements to produce a performance database.
+Finally, one explores a performance database with \HPCToolkit{}'s \hpcviewer{} graphical presentation tool.
+
+The rest of this chapter briefly discusses unique aspects of \HPCToolkit{}'s measurement, analysis and presentation capabilities.
+
+
+\section{Asynchronous Sampling}
+
+Without accurate measurement, performance analysis results may be of questionable value.
+As a result, a principal focus of work on \HPCToolkit{} has been the design and implementation of techniques for providing accurate fine-grain measurements of production applications running at scale.
+For tools to be useful on production applications on large-scale parallel systems, large measurement overhead is unacceptable.
+For measurements to be accurate, performance tools must avoid introducing measurement error.
+Both source-level and binary instrumentation can distort application performance through a variety of mechanisms. %~\cite{Mytkowicz-Diwan-etal:2009:ASPLOS-reproducibility}.
+In addition, source-level instrumentation can distort application performance by interfering with inlining and template optimization.
+To avoid these effects, many instrumentation-based tools intentionally refrain from instrumenting certain procedures.
+Ironically, the more this approach reduces overhead, the more it introduces \emph{blind spots}, \ie{}, portions of unmonitored execution.
+For example, a common selective instrumentation technique is to ignore small frequently executed procedures --- but these may be just the thread synchronization library routines that are critical.
+Sometimes, a tool unintentionally introduces a blind spot.
+A typical example is that source code instrumentation necessarily introduces blind spots when source code is unavailable, a common condition for math and communication libraries.
+
+To avoid these problems, \HPCToolkit{} eschews instrumentation and favors the use of \emph{asynchronous sampling} to measure and attribute performance metrics.
+During a program execution, sample events are triggered by periodic interrupts induced by an interval timer or overflow of hardware performance counters.
+One can sample metrics that reflect work (\eg{}, instructions, floating-point operations), consumption of resources (\eg{}, cycles, memory bus transactions), or inefficiency (\eg{}, stall cycles).
+For reasonable sampling frequencies, the overhead and distortion introduced by sampling-based measurement is typically much lower than that introduced by instrumentation~\cite{Froyd-MC-Fo:2005:ICS-csprof}.
+
+
+\section{Call path profiling}
+
+For all but the most trivially structured programs, it is important to associate the costs incurred by each procedure with the contexts in which the procedure is called.
+Knowing the context in which each cost is incurred is essential for understanding why the code performs as it does.
+This is particularly important for code based on application frameworks and libraries.
+For instance, costs incurred for calls to communication primitives (\eg{}, \mytt{MPI_Wait}) or code that results from instantiating C++ templates for data structures can vary widely depending how they are used in a particular context.
+Because there are often layered implementations within applications and libraries, it is insufficient either to insert instrumentation at any one level or to distinguish costs based only upon the immediate caller.
+For this reason, \HPCToolkit{} uses call path profiling to attribute costs to the full calling contexts in which they are incurred.
+
+\HPCToolkit{}'s \hpcrun{} call path profiler uses call stack unwinding to attribute execution costs of optimized executables to the full calling context in which they occur.
+Unlike other tools, to support asynchronous call stack unwinding during execution of optimized code, \hpcrun{} uses on-line binary analysis to locate procedure bounds and compute an unwind recipe for each code range within each procedure~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}.
+These analyses enable \hpcrun{} to unwind call stacks for optimized code with little or no information other than an application's machine code. 
+
+\begin{comment}
+To attribute performance back to source code, \HPCToolkit{} combines a call path profile with information gleaned through post-mortem analysis of an application's object code and its debugging sections.
+This post-mortem analysis of an executable recovers its program structure and reconstructs a mapping from instructions back to source lines, loops, inlined functions, and procedures.
+\HPCToolkit{}'s ability to attribute costs to dynamic call paths, including loops and inlined functions, for optimized code without a special-purpose compiler is unique.
+\end{comment}
+
+
+\section{Recovering static program structure}
+
+To enable effective analysis, call path profiles for executions of optimized programs must be correlated with important source code abstractions.
+Since measurements refer only to instruction addresses within an executable, it is necessary to map measurements back to the program source.
+To associate measurement data with the static structure of fully-optimized executables, we need a mapping between object code and its associated source code structure.%
+\footnote{This object to source code mapping should be contrasted with the binary's line map, which (if present) is typically fundamentally line based.}
+\HPCToolkit{} constructs this mapping using binary analysis; we call this process \emph{recovering program structure}~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}.
+
+\HPCToolkit{} focuses its efforts on recovering procedures and loop nests, the most important elements of source code structure.
+To recover program structure, \HPCToolkit's \hpcstruct{} utility parses a load module's machine instructions, reconstructs a control flow graph, combines line map information with interval analysis on the control flow graph in a way that enables it to identify transformations to procedures such as inlining and account for loop transformations~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}.
+%\footnote{Without line map information, \hpcstruct{} can still identify procedures and loops, but is not able to account for inlining or loop transformations.}
+
+Two important benefits naturally accrue from this approach.
+First, \HPCToolkit{} can expose the structure of and assign metrics to what is actually executed, \emph{even if source code is unavailable}.
+For example, \hpcstruct{}'s program structure naturally reveals transformations such as loop fusion and scalarization loops that arise from compilation of Fortran 90 array notation.
+Similarly, it exposes calls to compiler support routines and wait loops in communication libraries of which one would otherwise be unaware.
+%\hpcrun{}'s function discovery heuristics expose distinct logical procedures within stripped binaries.
+Second, we combine (post-mortem) the recovered static program structure with dynamic call paths to expose inlined frames and loop nests.
+This enables us to attribute the performance of samples in their full static and dynamic context and correlate it with source code.
+
+
+\section{Presenting performance measurements}
+
+To enable an analyst to rapidly pinpoint and quantify performance bottlenecks, tools must present the performance measurements in a way that engages the analyst, focuses attention on what is important, and automates common analysis subtasks to reduce the mental effort and frustration of sifting through a sea of measurement details.
+
+To enable rapid analysis of an execution's performance bottlenecks, we have carefully designed the \hpcviewer{} presentation tool~\cite{Adhianto-MC-Ta:2010:PSTI-hpcviewer}.
+\hpcviewer{} combines a relatively small set of complementary presentation techniques that, taken together, rapidly focus an analyst's attention on performance bottlenecks rather than on unimportant information.
+
+To facilitate the goal of rapidly focusing an analyst's attention on performance bottlenecks \hpcviewer{} extends several existing presentation techniques.
+In particular, \hpcviewer{} (1) synthesizes and presents three complementary views of calling-context-sensitive metrics; (2) treats a procedure's static structure as first-class information with respect to both performance metrics and constructing views; (3) enables a large variety of user-defined metrics to describe performance inefficiency; and (4) automatically expands hot paths based on arbitrary performance metrics --- through calling contexts and static structure --- to rapidly highlight important performance data.
+
 
 
 % ***************************************************************************
@@ -460,9 +564,9 @@ Values of individual metrics are of limited use by themselves.
 For instance, knowing the count of cache misses for a loop or routine is of little value by itself; only when combined with other information such as the number of instructions executed or the total number of cache accesses does the data become informative.
 While a developer might not mind using mental arithmetic to evaluate the relationship between a pair of metrics for a particular program scope (\eg, a loop or a procedure), doing this for many program scopes is exhausting.
 To address this problem, \hpcviewer{} supports calculation of derived metrics.
-\hpcviewer{} provides an interface that enables a user to specify  spreadsheet-like formula that can be used to calculate a derived metric for every program scope. 
+\hpcviewer{} provides an interface that enables a user to specify spreadsheet-like formula that can be used to calculate a derived metric for every program scope. 
 
-% For instance, if one wants to compute the cache miss rate in a scope, one could divide the total number of cache misses in a scope by the sum of counts of loads and stores in the scope. On the other hand, if one wanted to compute the  fraction of a program's cache misses that occurred in a particular scope, one could divide the number of misses in the scope by the total number of misses in the program.
+% For instance, if one wants to compute the cache miss rate in a scope, one could divide the total number of cache misses in a scope by the sum of counts of loads and stores in the scope. On the other hand, if one wanted to compute the fraction of a program's cache misses that occurred in a particular scope, one could divide the number of misses in the scope by the total number of misses in the program.
 
 \begin{figure}[t]
 \center{\includegraphics{fig/cycles-per-inst.png}}
@@ -484,7 +588,7 @@ If you select your metric of choice using the pull-down, you can insert its posi
 \begin{figure}[t]
 \center{\includegraphics{fig/cycles-per-inst-2.png}}
 %Two possible representations for the call path fragment $\ldots s_1 \rightarrow s_2 \ldots$, where $s_1$ and $s_2$ are call sites and where $s_1$ represents a call from $p$ to $q$ and $s_2$ a call from $q'$ to $r$.
-\caption{Displaying the new {\em cycles/ instruction} derived metric  in \hpcviewer{}.}
+\caption{Displaying the new {\em cycles/ instruction} derived metric in \hpcviewer{}.}
 \label{fig:cycles-per-inst-2}
 \end{figure}
 
@@ -535,7 +639,7 @@ Depending upon what one expects as the rate-limiting resource (\eg, floating-poi
 For instance, in a floating-point intensive code, one might consider keeping the floating point pipeline full as a metric of success.
 One can directly quantify and pinpoint losses from failing to keep the floating point pipeline full {\em regardless of why this occurs}.
 One can pinpoint and quantify losses of this nature by computing a {\em floating-point waste} metric that is calculated as the difference between the potential number of calculations that could have been performed if the computation was running at its peak rate minus the actual number that were performed.
-To compute the number of calculations that could have been completed in each scope, multiply  the total number of cycles spent in the scope by the peak rate of operations per cycle.
+To compute the number of calculations that could have been completed in each scope, multiply the total number of cycles spent in the scope by the peak rate of operations per cycle.
 Using \hpcviewer{}, one can specify a formula to compute such a derived metric and it will compute the value of the derived metric for every scope.
 Figure~\ref{fig:fpwaste} shows the specification of this floating-point waste metric for a code.
 
@@ -556,7 +660,7 @@ A waste metric will typically highlight loops where
 \end{figure}
 
 Beyond identifying and quantifying opportunities for tuning with a waste metric, one can compute a companion derived metric {\em relative efficiency} metric to help understand how easy it might be to improve performance.
-A scope running  at very high efficiency will typically be much harder to tune than running at low efficiency.
+A scope running at very high efficiency will typically be much harder to tune than running at low efficiency.
 For our floating-point waste metric, we one can compute the floating point efficiency metric by dividing measured FLOPs by potential peak FLOPS and multiplying the quantity by 100.
 Figure~\ref{fig:fpefficiency} shows the specification of this floating-point efficiency metric for a code.
 
@@ -580,7 +684,7 @@ While the overall floating point efficiency for \mytt{ratt} is at 6.6\% of peak 
 
 \section{Pinpointing and Quantifying Scalability Bottlenecks}
 
-On large-scale parallel systems,  identifying impediments to scalability is of paramount importance.
+On large-scale parallel systems, identifying impediments to scalability is of paramount importance.
 On today's systems fashioned out of multicore processors, two kinds of scalability are of particular interest: 
 \begin{itemize}
 \item scaling within nodes, and
@@ -591,9 +695,9 @@ Using call path profiles collected by \hpcrun{}, it is possible to quantify and 
 
 To pinpoint scalability bottlenecks in parallel programs, we use {\em differential profiling} --- mathematically combining corresponding buckets of two or more execution profiles.
 Differential profiling was first described by McKenney~\cite{McKenney:1999:differential}; he used differential profiling to compare two {\em flat} execution profiles.
-Differencing of flat profiles is useful for identifying what parts of a program  incur different costs in two executions.
-Building upon McKenney's idea of differential profiling, we  compare call path profiles of parallel executions at different scales to pinpoint scalability bottlenecks.
-Differential analysis of call path profiles pinpoints not only differences  between two executions (in this case scalability losses), but the contexts in which those differences occur.
+Differencing of flat profiles is useful for identifying what parts of a program incur different costs in two executions.
+Building upon McKenney's idea of differential profiling, we compare call path profiles of parallel executions at different scales to pinpoint scalability bottlenecks.
+Differential analysis of call path profiles pinpoints not only differences between two executions (in this case scalability losses), but the contexts in which those differences occur.
 Associating changes in cost with full calling contexts is particularly important for pinpointing context-dependent behavior.
 Context-dependent behavior is common in parallel programs.
 For instance, in message passing programs, the time spent by a call to \mytt{MPI_Wait} depends upon the context in which it is called.
@@ -637,7 +741,7 @@ However, if the loss of scalability attributed to a function invocation's inclus
 
 Given CCTs for an ensemble of executions, the next step to analyzing the scalability of their performance is to clearly define our expectations.
 Next, we describe performance expectations for weak scaling and intuitive metrics that represent how much performance deviates from our expectations.
-More information about our scalability analysis technique can be found elsewhere~\cite{Coarfa-MC:2007:ICS-scalability}.
+More information about our scalability analysis technique can be found elsewhere~\cite{Coarfa-MC:2007:ICS-scalability,Tallent-MC-etal:2009:SC-hpctoolkit-petascale}.
 
 \begin{figure}[t]
 \center{\includegraphics{fig/scaling-loss.png}}
@@ -685,12 +789,12 @@ Scaling losses can be explored in \hpcviewer{} using any of its three views.
 \begin{itemize}
 \item {\em Calling context view.} This top-down view represents the dynamic calling contexts (call paths) in which costs were incurred. 
 
-\item {\em Callers view.}  This bottom up view enables one to look upward along call paths. This view is particularly useful for understanding the performance of software components or procedures that are used in more than one context, such as communication library routines.
+\item {\em Callers view.} This bottom up view enables one to look upward along call paths. This view is particularly useful for understanding the performance of software components or procedures that are used in more than one context, such as communication library routines.
 
 \item {\em Flat view.} This view organizes performance measurement data according to the static structure of an application. All costs incurred in {\em any} calling context by a procedure are aggregated together in the flat view. 
 \end{itemize}
 
-\hpcviewer{} enables developers to explore top-down, bottom-up, and flat views of  CCTs annotated with costs, helping to quickly pinpoint performance bottlenecks.
+\hpcviewer{} enables developers to explore top-down, bottom-up, and flat views of CCTs annotated with costs, helping to quickly pinpoint performance bottlenecks.
 Typically, one begins analyzing an application's scalability and performance using the top-down calling context tree view.
 Using this view, one can readily see how costs and scalability losses are associated with different calling contexts.
 If costs or scalability losses are associated with only a few calling contexts, then this view suffices for identifying the bottlenecks.
@@ -713,6 +817,88 @@ To isolate code that is an impediment to scalable performance, one can use the {
 
 \chapter{\hpcviewer{}'s User Interface}
 \label{chpt:hpcviewer-interface}
+
+%This section describes \hpcviewer{}, \HPCToolkit{}'s presentation tool.
+
+%% \begin{figure}[p!] %[t]
+%% \centering{\includegraphics[width=1.0\textwidth]{fig/smva-2d-cct-tlb}}
+%% \caption{\hpcviewer{}'s Calling Context View of TLB misses.}
+%% \label{fig:hpcviewer-calling-context}
+%% \end{figure}
+
+
+%% \begin{figure}[p!] %[t]
+%% \centering{\includegraphics[width=1.0\textwidth]{{fig/smva-2d-callers-stalls}}}
+%% \caption{\hpcviewer{}'s Callers View of pipeline resource stalls.}
+%% \label{fig:hpcviewer-callers}
+%% \end{figure}
+
+%% \begin{figure}[p!] %[t]
+%% \centering{\includegraphics[width=1.0\textwidth]{{fig/smva-2d-flat-l2miss}}}
+%% \caption{\hpcviewer{}'s Flat View of L2 cache misses.}
+%% \label{fig:hpcviewer-flat}
+%% \end{figure}
+
+
+\HPCToolkit{}'s presentation tool, \hpcviewer{}~\cite{Adhianto-MC-Ta:2010:PSTI-hpcviewer}, interactively presents context-sensitive performance metrics correlated to program structure and mapped to a program's source code, if available.
+Figure~\ref{fig:hpcviewer-calling-context} shows a snapshot of \hpcviewer{}'s user interface presenting a call path profile.
+The user interface is composed of two principal panes.
+The top pane displays program source code.
+The bottom pane associates a table of performance metrics with static or dynamic program structure.
+\hpcviewer{} provides three different views of performance measurements collected using call path profiling.
+We briefly describe the three views and their corresponding purposes.
+
+\begin{itemize}
+  \item \textbf{Calling Context view}.
+  Figure~\ref{fig:hpcviewer-calling-context} shows a Calling Context view.
+  This top-down view associates metrics with the full calling context in which they were incurred.
+  Indentation in the lower pane shows dynamic nesting of calls, loops and inlined code.
+  Using this view, one can readily see how much of the application's cost was incurred by a procedure when called from a particular context.
+  If finer detail is of interest, one can explore how the costs incurred by a call in a particular context are divided between the callee itself and the procedures it calls.
+  \HPCToolkit{} distinguishes calling context precisely by individual call sites; this means that if a procedure $f$ contains calls to procedure $g$ in different places, each call represents a separate calling context.
+  The Calling Context view is created by integrating dynamic calling contexts gathered by \hpcrun{} with static program structure (\eg, loops) gathered by \hpcstruct{}.
+  Loops appear explicitly in the call chains shown in Figure~\ref{fig:hpcviewer-calling-context}.
+
+ \item \textbf{Callers view}.
+  This bottom-up view enables one to look upward along call paths.
+  Because the Callers view apportions metrics of a callee on behalf of its caller, this view is particularly useful for understanding the performance of software components or procedures that are called in more than one context.
+  For instance, a message-passing program may call \mytt{MPI_Wait} in many different calling contexts.
+  The cost of any particular call will depend upon its context.
+  Serialization or load imbalance may cause long waits in some calling contexts but not others.
+  Figure~\ref{fig:hpcviewer-callers} shows \hpcviewer{} presenting a Callers view of a call path profile.
+
+  When several levels of the Callers view are expanded, saying that the Callers view apportions metrics of a callee on behalf of its caller can be ambiguous: what is the caller and what is the callee?
+  To resolve this ambiguity we can say that the Callers view apportions the metrics of a particular procedure \emph{in its various calling contexts} on behalf of that context's caller.
+  Alternatively but equivalently, the Callers view apportions the metrics of a particular procedure on behalf of its various \emph{calling contexts}.
+  %For example, notice that the highlighted line in Figure~\ref{fig:hpcviewer-callers} shows a (partially collapsed) callers chain ending with \mytt{ffd_shot_cluster} that is four levels deep.
+  %The metrics at \mytt{ffd_shot_cluster} are actually formed by attributing the metrics at the chain's root (\mytt{compute_image_shot}) up its call chain to \mytt{ffd_shot_cluster}.
+
+ \item \textbf{Flat view}.
+  Figure~\ref{fig:hpcviewer-flat} shows \hpcviewer{}'s Flat View.
+  This view organizes performance data according to an application's static structure.
+  That is, all costs incurred by a procedure, in any calling context, are aggregated together to form the Flat view.
+  This view complements the Calling Context view, in which the costs incurred by a particular procedure are represented separately for each call to the procedure from a different calling context.
+\end{itemize}
+
+\hpcviewer{} can present an arbitrary collection of performance metrics gathered during one or more runs, or compute derived metrics expressed as formulae with existing metrics as terms.
+
+For any given scope in these three views, \hpcviewer{} computes both \emph{inclusive} and \emph{exclusive} metric values.
+For the moment, consider the Calling Context view.
+Inclusive metrics reflect costs for the entire subtree rooted at that scope.
+Exclusive metrics are of two flavors, depending on the scope.
+For a procedure, exclusive metrics reflect all costs within that procedure but excluding callees.
+In other words, for a procedure, costs are exclusive with respect to dynamic call chains.
+For all other scopes, exclusive metrics reflect costs for the scope itself; \ie{}, costs are exclusive with respect to static structure.
+The Callers and Flat views contain inclusive and exclusive metric values that are relative to the Calling Context view.
+This means, \eg{}, that inclusive metrics for a particular scope in the Callers or Flat view are with respect to that scope's subtree in the Calling Context view.
+
+Within a view, a user may order program scopes by sorting them using any performance metric.
+\hpcviewer{} supports several convenient operations to facilitate analysis: revealing a \emph{hot path} within the hierarchy below a scope; \emph{flattening} one or more levels of the static hierarchy, \eg, to facilitate comparison of costs between loops in different procedures; and \emph{zooming} to focus on a particular scope and its children.
+
+
+% ===========================================================================
+% ===========================================================================
+
 
 \includepdf[pages=1-12]{HPCToolkit-hpcviewer}
 
@@ -963,7 +1149,7 @@ qsub -t 60 -n 64 --env HPCRUN_EVENT_LIST="WALLCLOCK@1000" \
 \section{Troubleshooting}
 
 With some compilers you need to disable interprocedural optimization to use \hpclink{}.
-To instrument your statically linked executable at link time, \hpclink{} uses the \texttt{ld} option \texttt{--wrap} (see the ld(1) man page) to interpose monitoring code between your application and various process, thread, and signal control operations, \eg{}, \mytt{fork},  \mytt{pthread_create}, and \mytt{sigprocmask} to name a few.
+To instrument your statically linked executable at link time, \hpclink{} uses the \texttt{ld} option \texttt{--wrap} (see the ld(1) man page) to interpose monitoring code between your application and various process, thread, and signal control operations, \eg{}, \mytt{fork}, \mytt{pthread_create}, and \mytt{sigprocmask} to name a few.
 For some compilers, \eg{}, IBM's XL compilers and Pathscale's compilers, interprocedural optimization interferes with the \texttt{--wrap} option and prevents \hpclink{} from working properly.
 If this is the case, \hpclink{} will emit error messages and fail.
 If you want to use \hpclink{} with such compilers, sadly, you must turn off interprocedural optimization.
