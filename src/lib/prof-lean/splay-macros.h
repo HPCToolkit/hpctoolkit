@@ -49,8 +49,8 @@
  *
  *  The general macro takes 2 comparisons as arguments
  *   [ Frequently, only 1 is necessary, but occasionally, when the keys are
- *   not a primitive data type, the lt and gt operations do not show the
- *   same symmetry that the purely mathematical operations
+ *   not a primitive data type, the lt and gt operations may not show the
+ *   same symmetry as the purely mathematical operations.
  *
  *     lt(a, b)  // defines the "less than" comparison
  *     gt(a, b)  // defines the "greater than" comparison
