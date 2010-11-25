@@ -78,6 +78,7 @@
 #include <memory/hpcrun-malloc.h>
 #include <hpcrun/metrics.h>
 #include <messages/messages.h>
+#include <lib/prof-lean/splay-macros.h>
 #include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -85,7 +86,6 @@
 
 #include "cct.h"
 #include "cct_addr.h"
-#include "splay-macros.h"
 
 //***************************** concrete data structure definition **********
 
