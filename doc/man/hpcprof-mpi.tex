@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2010/10/30}
+\setDate{ 2010/11/24}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -44,7 +44,8 @@
 
 \begin{Name}{1}{hpcprof-mpi}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcprof-mpi:\\ Analysis and Attribution of Call Path Performance Measurements}
 
-\Prog{hpcprof-mpi} \emph{scalably} analyzes call path profile performance measurements and attributes them to static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
+\Prog{hpcprof-mpi} \emph{scalably} analyzes call path profile performance measurements (in parallel) and attributes them to static source code structure.
+See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
 \end{Name}
 
@@ -108,7 +109,7 @@ May pass multiple times (e.g., for shared libraries).
 
 \item[\OptArg{-R}{'old-path=new-path'}, \OptArg{--replace-path}{'old-path=new-path'}]
 Substitute instances of \Arg{old-path} with \Arg{new-path}; apply to all paths (e.g., a profile's load map and source code) for which \Arg{old-path} is a prefix.
-Use '\\' to escape instances of '=' within a path. May pass multiple times.
+Use '\Bs'\ to escape instances of '=' within a path. May pass multiple times.
   
 Use this option when a profile or binary contains references to files that have been relocated, such as might occur with a file system change.
 \end{Description}
@@ -116,7 +117,15 @@ Use this option when a profile or binary contains references to files that have 
 \subsection{Options: Output}
 
 \begin{Description}
-  \item[\OptArg{-o}{db-path}, \OptArg{--db}{db-path}, \OptArg{--output}{db-path}] Specify Experiment database name \Arg{db-path}.  \{\File{./hpctoolkit-$<$application$>$-database}\}
+
+\item[\OptArg{-o}{db-path}, \OptArg{--db}{db-path}, \OptArg{--output}{db-path}]
+Specify Experiment database name \Arg{db-path}.
+\{\File{./hpctoolkit-$<$application$>$-database}\}
+
+\item[\OptArg{--metric-db}{yes|no}]
+Control whether to generate a thread-level metric value database for \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}} scatter plots.
+\{yes\}
+
 \end{Description}
 
 

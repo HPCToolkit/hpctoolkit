@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2010/10/30}
+\setDate{ 2010/11/24}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -44,7 +44,8 @@
 
 \begin{Name}{1}{hpcprof}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcprof:\\ Analysis and Attribution of Call Path Performance Measurements}
 
-\Prog{hpcprof} analyzes call path profile performance measurements and attributes them to static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
+\Prog{hpcprof} analyzes call path profile performance measurements and attributes them to static source code structure.
+See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
 \end{Name}
 
@@ -102,13 +103,24 @@ May pass multiple times.
 Note: With multiple search-directory arguments, it may be the case that file \Arg{f} exists within more than one search directory.
 In this case, the ambiguity is resolved in favor of the search directory that appears first on the command line.
 
+\item[\OptArg{-M}{metric}, \OptArg{--metric}{metric}]
+Specify the set of metrics to compute.
+\Arg{metric} is one of the following:
+  \begin{itemize}
+  \item[sum]    Show (only) summary metrics: Sum, Mean, StdDev (standard deviation), CoefVar (coefficient of variation), Min, Max
+  \item[sum+]   Show thread and summary metrics
+  \item[thread] Show only thread metrics
+  \end{itemize}
+Default is 'sum'.
+(\Cmd{hpcprof-mpi}{1} always computes 'sum'.)
+
 \item[\OptArg{-S}{file}, \OptArg{--structure}{file}]
 Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.
 May pass multiple times (e.g., for shared libraries).
 
 \item[\OptArg{-R}{'old-path=new-path'}, \OptArg{--replace-path}{'old-path=new-path'}]
 Substitute instances of \Arg{old-path} with \Arg{new-path}; apply to all paths (e.g., a profile's load map and source code) for which \Arg{old-path} is a prefix.
-Use '\\' to escape instances of '=' within a path. May pass multiple times.
+Use '\Bs'\ to escape instances of '=' within a path. May pass multiple times.
   
 Use this option when a profile or binary contains references to files that have been relocated, such as might occur with a file system change.
 \end{Description}
@@ -116,7 +128,11 @@ Use this option when a profile or binary contains references to files that have 
 \subsection{Options: Output}
 
 \begin{Description}
-  \item[\OptArg{-o}{db-path}, \OptArg{--db}{db-path}, \OptArg{--output}{db-path}] Specify Experiment database name \Arg{db-path}.  \{\File{./hpctoolkit-$<$application$>$-database}\}
+
+\item[\OptArg{-o}{db-path}, \OptArg{--db}{db-path}, \OptArg{--output}{db-path}]
+Specify Experiment database name \Arg{db-path}.
+\{\File{./hpctoolkit-$<$application$>$-database}\}
+
 \end{Description}
 
 
