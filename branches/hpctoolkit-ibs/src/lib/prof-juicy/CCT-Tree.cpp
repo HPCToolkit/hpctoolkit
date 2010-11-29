@@ -1096,10 +1096,15 @@ ANode::useReuseWriteXML(ostream& os, std::deque<Prof::CCT::ANode*> XMLdeq, uint 
   {
     if(parMalloc != NULL)
     {
-      if(parMalloc->structure()->id() != m_strct->id())//different ANode ids may have same structure id (same function in different call paths)
+      if(m_strct != NULL)
       {
-        doPost = writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
+        if(parMalloc->structure()->id() != m_strct->id())//different ANode ids may have same structure id (same function in different call paths)
+        {
+          doPost = writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
+        }
       }
+      else
+        doPost = writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
     }
     else
       doPost = writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);

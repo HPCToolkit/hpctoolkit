@@ -126,7 +126,7 @@ struct {
  *****************************************************************************/
 
 
-#ifdef CYCLE_GETTID
+#ifndef CYCLE_GETTID
 inline pid_t
 gettid(void)
 {
