@@ -62,12 +62,24 @@ WWW Page:
 Documentation:
   [www]   http://hpctoolkit.org/documentation.html
   [local] <hpctoolkit-install>/share/doc/hpctoolkit/documentation.html
-  [local] <hpctoolkit-install>/share/man
+
+  N.B.: See especially the "Quick Start" chapter of the Users Manual.
+
+Man pages:
+  <hpctoolkit-install>/share/man
+
+Command-line help:
+  Pass -h or --help to any of HPCToolkit's command-line tools for a
+  help message.
 
 Email (for compliments, complaints and cash):
   hpc <at> cs.rice.edu
 
-  N.B. If you contact us, please tell us about your system (operating
-  system, architecture, PAPI version, compiler), your application, and
-  your HPCToolkit (version, config.log build information) and the
-  commands you used.
+  N.B.: When contacting us or submitting a bug report, please tell us
+  about:
+  - your system (operating system, architecture, PAPI, compiler);
+  - your HPCToolkit (version, build information from
+    <BUILD>/config.log);
+  - your application (language, whether dynamically or statically
+    linked); and
+  - the commands you used.

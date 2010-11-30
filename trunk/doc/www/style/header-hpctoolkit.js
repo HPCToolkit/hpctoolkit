@@ -13,7 +13,7 @@ document.write('\
     | <a href="publications.html">Publications</a> ] \
     &bull; \
     [ <a href="software.html">Software</a> \
-    | <a href="documentation.html">Documentation</a> ] \
+    | <a href="documentation.html">Documentation/Questions</a> ] \
     &bull; \
     [ <a href="info-contact.html">Contacts</a> | \
       <a href="info-acks.html">Acks</a> ] \
