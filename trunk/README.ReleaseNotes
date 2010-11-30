@@ -15,66 +15,56 @@ Contents:
 
 =============================================================================
 
-----------------------------------------
+------------------------------------------------------------
 0. General Notes
+------------------------------------------------------------
+
+----------------------------------------
+0.1
 ----------------------------------------
 
-HPCToolkit is currently in a pre-release state.  While researchers at
-Rice University use it regularly for analysis of program performance,
-there are several known issues that might cause problems for others
-when using it on large-scale parallel systems. The scale of the
-parallelism makes it increasingly likely that one of several known
-bugs (that are the focus of ongoing development efforts) may cause
-problems.
+- If you are having problems, please see "For More Information" in the
+  README file.
 
-Summary of "Best Practices" from the 'hpctoolkit(1)' man page:
 
-1. Compile your application with full optimization and debugging
-   symbols.  See the 'hpcstruct(1)' man page for recommendations.
+----------------------------------------
+0.2
+----------------------------------------
 
-2. Profile it with *hpcrun*.
+- We are not yet supporting measurement and analysis of Cilk
+  applications, though you are free to try it out.  (PPoPP '09)
 
-3. Compute static structure for the main binary using *hpcstruct*.
+- We are not yet supporting measurement and analysis of Pthreads lock
+  contention, though you are free to try it out.  (PPoPP '10)
 
-4. Interpret measurements and correlate them with source code using
-   *hpcprof*.  Perform either a node-based study or a scaling study.  (In
-   other words, do not pass 1000s of data files to hpcprof.)
-
-   Pass static structure files with -S.  Pass a recursive
-   search path using -I.
-
-5. Use *hpcviewer* to interactively browse the results.
+- We do not yet support MPI blame shifting on IBM BG/P. (SC '10)
 
 
 =============================================================================
 
-----------------------------------------
+------------------------------------------------------------
 1. Tool Notes
-----------------------------------------
+------------------------------------------------------------
 
 ----------------------------------------
 1.1. hpcrun
 ----------------------------------------
 
-1.1.1. Usage bugs:
+1.1.1. Usage limitations:
 
-- hpcrun's option parsing is not consistent with the rest of
-  HPCToolkit's tools. 
+- The user should choose a sampling peiod so that the total number of
+  samples is statistically significant, but so that the overhead is
+  not too high.  Typically, this means targeting a sampling frequency
+  of hundreds of samples per second; thousands for short runs; tens
+  for longer runs.
 
-- Even worse, to list hardware performance counter events it is
-  necessary to use hpcrun-flat, e.g., "hpcrun-flat -L".
-
-- Unlike hpcprof, hpcrun will not choose a unique directory name in
-  which to place its profiling data.  Therefore, when re-profiling an
-  application, it is advisable to rename any prior data directory.
-
-
-1.1.2. Usage limitations:
-
-- Now in the man page for hpcrun.
+- Warning: To support MPI jobs, hpcrun will not choose a unique
+  directory name in which to place its profiling data.  Therefore,
+  when re-profiling an application, it is advisable to rename any
+  prior data directory.
 
 
-1.1.3. Measurement limitations:
+1.1.2. Measurement limitations:
 
 - Tail calls and inlining.  Both of these compiler optimizations avoid
   creating procedure frames and thus generate run-time stacks that do
@@ -85,36 +75,7 @@ Summary of "Best Practices" from the 'hpctoolkit(1)' man page:
 
 - There are currently two blind spots in hpcrun.  First, static
   initializers are not profiled because sampling begins just before
-  "main" is called.  Second, sampling is turned off during dlopen's
-  and dlclose's to ensure internal data structures remain consistent.
-
-
-1.1.4. Rarely encountered measurement bugs:
-
-- Dynamic linking. When dynamic loading is used extensively, it is
-  possible that multiple load modules will map to the same place in a
-  program's address space over the course of a program's
-  execution. Additional support in HPCToolkit is needed to correctly
-  distinguish when the same addresses may map to different load
-  modules at different times during an execution. Presently, all
-  samples that involve addresses that map to more than one load module
-  are resolved by mapping them to the LAST load module that was
-  visible at a particular address range. While we have observed that
-  this problem occurs in practice with OpenMPI programs (the OpenMPI
-  implementation makes extensive use of dynamic libraries), typically
-  this problem affects the accuracy of attributing only a handful of
-  samples. If this problem occurs during execution, hpcrun writes a
-  message to stderr indicating that the problem has occurred, and then
-  records more detailed information to a log that indicates how many
-  samples whose attribution it might effect.
-
-- Threads and asynchronous signals. Because of the ill-defined
-  relationship between threads and asynchronous signals, it is possible
-  that a thread receives a sample signal before its profiling data
-  structures are fully initialized.  We have attempted to make the
-  window as small as possible.  If a thread does receive such a signal
-  while the window is open, it will generate a SEGV.  It should,
-  however, automatically recover and continue profiling.
+  "main" is called.  Second, sampling is turned off for OS calls.
 
 - Debugging messages. When hpcrun is invoked with debugging options
   turned on, it may print log messages not only when processing
@@ -159,64 +120,81 @@ Summary of "Best Practices" from the 'hpctoolkit(1)' man page:
   statements and indirect jumps.  This is very rarely a problem.
 
 
-1.2.2. Performance
- 
-- hpcstruct can be slow on large binaries, especially if the binaries
-  have limited debugging information.  The bulk of the problem has to
-  do with inefficiencies in GNU binutils.  (We have resolved the worst
-  of them.)
-
-
 ----------------------------------------
-1.3. hpcprof
+1.3. hpcprof/hpcprof-mpi
 ----------------------------------------
 
 1.3.1. Limitations
 
-- Few profile files. Be very careful about passing hpcprof a large
-  number of profile files.  There are two reasons or this.  First, the
-  resulting database would be unmanageable because of the number of
-  metric columns.  (We have plans to address this with summary
-  metrics.)  Second, hpcviewer will consume vast amounts of memory.
-  hpcprof itself would use far less memory than hpcviewer, but the
-  first reason still remains.
+- Experiment databases can still be quite large.
 
-- Experiment databases can be large, especially if your compiler
-  performed aggressive inlining.
-
-
-1.3.2 Bugs
-
-- Recursive search paths (-I).  If a recursive search path is used
-  that contains a cycle (e.g., by symbolic links), the search
-  algorithm may enter an infinite loop.
-
+- hpcprof currently does not generate 'metric databases' for hpcviewer
+  scatter plots.
 
 ----------------------------------------
 1.4. hpcviewer
 ----------------------------------------
 
-1.4.1. Usage Limitations
+1.4.1. Bugs
 
-- See 1.3.1.
-
-- Ensure that the total number of samples is statistically
-  significant. Be careful about making conclusions if there are only a
-  handful of samples
-
-- Derived metric computations can become rather cumbersome when
-  working with a large number of columns.
+- For recursive programs, hpcviewer may compute invalid metric values
+  for Callers View paths that are of length two and greater.
 
 
 =============================================================================
 
-----------------------------------------
+------------------------------------------------------------
 2. Revision History
+------------------------------------------------------------
+
+----------------------------------------
+HPCToolkit Version 5.0.0: [2010.12.15]
 ----------------------------------------
 
+- HPCToolkit supports Cray XT, IBM BG/P, generic Linux-x86_64 and Linux-86
+
+- Major overhaul of hpcrun:
+  - fully support dynamic loading
+  - fully support gathering thread creation contexts
+  - reenable support on x86 for tracking return counts
+  - use a CCT where a node keeps its children in a splay tree
+
+- Rework post-mortem analysis tool, hpcprof:
+  - create scalable tool (hpcprof-mpi)
+  - unify hpcprof and hpcprof-mpi interface (and, when possible, internals)
+  - automatically compute summary metrics in both hpcprof/mpi
+    (using both incremental and 'standard' methods)
+  - rework how hpcprof/mpi searches for source files to 1) find files
+    more frequently; and 2) perform much more rapidly when multiple
+    source files must be found (the common case).  No longer enter an
+    infinite loop if symbolic links create a cycle.
+  - support for --replace-path
+
+- Rework hpcviewer:
+  - incrementally construct Callers View
+  - correctly construct Callers and Flat Views, even with summary
+    metrics (and without thread-level metrics)
+  - generate scatter plots of out-of-core thread-level metrics
+  - correctly expand hot path
+
+- Rewrite hpcsummary
+
+- Create (and recreate) a Users Manual
+
+- Updates to HPCToolkit's externals
+  - full support for configuring/building from an arbitrary directory
+    and installing to an arbitrary --prefix.
+  - performance-patched binutils 2.20.1 (from 2.17)
+  - xerces 3.1.1 (from 2.8)
+  - libmonitor r116
+
+
+----------------------------------------
 HPCToolkit Version 4.9.9: [2009.08.29]
 ----------------------------------------
+
 - Rewrite hpcrun (nee csprof)
+- Support monitoring statically linked applications using hpclink
 - Rename hpcrun to hpcrun-flat
 - Rewrite hpcstruct (nee bloop) 
 - Rewrite hpcprof (nee xcsprof)
@@ -226,34 +204,50 @@ HPCToolkit Version 4.9.9: [2009.08.29]
 - Move source code to SciDAC Outreach
 - Web page: www.hpctoolkit.org
 
+----------------------------------------
 HPCToolkit Version 4.2.1: [2006.06.17]
 ----------------------------------------
+
 - Use binutils 2.16.1
 
+
+----------------------------------------
 HPCToolkit Version 4.2.0: [2006.04.07]
 ----------------------------------------
+
 - Add csprof to source tree
 - Integrate separate version of xcsprof into source tree
 - Integrate csprof viewer into source tree
 
+----------------------------------------
 HPCToolkit Version 4.1.3: [2006.01.09]
 ----------------------------------------
+
 - Split code for hpcrun and hpcprof.
 - Automake 1.9.5; Libtool 1.5.20 (still Autoconf 2.59)
 
+
+----------------------------------------
 HPCToolkit Version 4.1.2: [2005.08.15]
 ----------------------------------------
+
 - Merge 'lump' (load module dumper) into source tree.  Build when
   configured with --enable-devtools.
 - Automake 1.9.5; Libtool 1.5.18 (still Autoconf 2.59)
 
+
+----------------------------------------
 HPCToolkit Version 4.1.1: [2005.04.21]
 ----------------------------------------
+
 - Add support for Group scopes
 - hpcquick produces hpcviewer output by default
 
+
+----------------------------------------
 HPCToolkit Version 4.1.0: [2005.03.18]
 ----------------------------------------
+
 - HPCToolkitRoot
   - Improve sub-repository checkout
   - Improve building by determining and propagating compiler
@@ -261,8 +255,11 @@ HPCToolkit Version 4.1.0: [2005.03.18]
     repositories (OA, xerces, binutils)
 - OpenAnalysis is now 'NewOA'
 
+
+----------------------------------------
 HPCToolkit Version 4.0.5: [2005.01.20]
 ----------------------------------------
+
 - Binutils performance tuning: 
   - Replace binutils' DWARF2 linear-time line-lookup algorithm with
     binary search.
@@ -273,9 +270,12 @@ HPCToolkit Version 4.0.5: [2005.01.20]
   archives), and Linux (missing .so).
 - Upgrade xercesc from 2.3.0 to 2.6.0
 - hpcrun/hpcquick: minor fixes
-  
+
+
+----------------------------------------  
 HPCToolkit Version 4.0.0: [2004.11.06]
 ----------------------------------------
+
 - Create HPCToolkitRoot, a shell repository to make obtaining sources,
   building and installation easier.
 - Autoconf HPCToolkitRoot and hpcviewer. 
@@ -310,8 +310,11 @@ HPCToolkit Version 4.0.0: [2004.11.06]
 - Port HPCToolkit to opteron-Linux.
 - Update documentation accordingly.
 
+
+----------------------------------------
 HPCToolkit Version 3.7.0: [2004.03.12]
 ----------------------------------------
+
 - Replace make system with Autoconf/Automake make system
 - Update code so it can be compiled by GCC 3.3.2
 - hpcview:
@@ -327,8 +330,10 @@ HPCToolkit Version 3.7.0: [2004.03.12]
     - Add basic support for processing Alpha relocated shared libraries
     - Enable support of long option switches; improve option parsing.
 
+----------------------------------------
 HPCToolkit Version 3.6.0: [2003.07.05]
 ----------------------------------------
+
 - Extend xprof to compute derived metrics from DCPI profiles.  In the 
   process, significantly revise/rewrite most existing xprof code and
   extend ISA and AlphaISA class.
@@ -343,14 +348,20 @@ HPCToolkit Version 3.6.0: [2003.07.05]
 - Update to binutils 2.13.92 (snapshot) and then 2.14 (official release).
 - Update to xercesc 2.3.0.
 
+
+----------------------------------------
 HPCToolkit Version 3.5.2: [2003.03.28]
 ----------------------------------------
+
 - Rename from HPCTools to HPCToolkit to distinguish from others' use of 
   the name.
 - Convert from RCS to CVS.
 
+
+----------------------------------------
 HPCTools Version 3.5.1: [2003.03.07]
 ----------------------------------------
+
 - Update PGM and PROFILE formats to support load modules; other minor
   tweaks.  Update hpcview, bloop, xprof and ptran to use the new formats.
 - Add initial DSO support to LoadModule classes.
@@ -367,8 +378,11 @@ HPCTools Version 3.5.1: [2003.03.07]
   - Update alpha macros to support alpha GCC compiler
   - hpcquick now supports recursive paths to option -I.
 
+
+----------------------------------------
 HPCTools Version 3.5.0: [2003.02.24]
 ----------------------------------------
+
 - Merge HPCView 3.1 and HPCTools 1.20 into one distribution
   - eliminate code duplication (support library, DTDs)
   - port HPCView to ANSI/ISO style C includes (<cheader>; all functions in 
@@ -382,8 +396,11 @@ HPCTools Version 3.5.0: [2003.02.24]
 
 [see below for HPCView revision history]
 
+
+----------------------------------------
 HPCTools Version 1.20: (bloop 1.20, xprof 1.20) [2002.10.11]
 ----------------------------------------
+
 - Add xprof test suite.
 - Make minor changes to support GCC 3.2.
 - Rewrite GNU binutils patch (for dwarf2.c) that handles the
@@ -391,24 +408,33 @@ HPCTools Version 1.20: (bloop 1.20, xprof 1.20) [2002.10.11]
   faster, slightly more accurate, and makes GNU happy.)
 - Change the method of preventing conflict between GNU and Sun's demangler.
 
+
+----------------------------------------
 HPCTools Version 1.10: (bloop 1.10, xprof 1.10) [2002.08.30]
 ----------------------------------------
+
 - Allow for use of either old-style C headers (<header.h>) or new
   ANSI/ISO style (<cheader>; all functions are in std namespace).  The
   new style is now default.
 - Improve error and exception handling.  Detect memory allocation errors.
 - Fix bug in GNU-binutils ECOFF reader.
 
+
+----------------------------------------
 HPCTools Version 1.05: (bloop 1.05, xprof 1.05) [2002.08.23]
 ----------------------------------------
+
 - Update to use binutils-2.13
 - Extend VLIW interface throughout HPCTools. (Impose explicit pc +
   operation index interface for instructions.  Now, many comments are
   not lies!)
 - Miscellaneous fixes and cleanup.
 
+
+----------------------------------------
 HPCTools Version 1.00: (bloop 1.00, xprof 1.00) [2002.08.16]
 ----------------------------------------
+
 - Major revisions:
   - Replace EEL binary support with new binutils library (uses GNU's
     binutils) and new ISA library
@@ -429,8 +455,11 @@ HPCTools Version 1.00: (bloop 1.00, xprof 1.00) [2002.08.16]
 
 - Add hvprof to HPCTools/tools/hvprof
 
+
+----------------------------------------
 HPCTools Version 0.90 (bloop 0.90, xprof 0.90) [2001.09]
 ----------------------------------------
+
 - Port to alpha-OSF1
   - Port EEL to alpha
   - Fix binutils 2.10 ECOFF support
@@ -441,23 +470,29 @@ HPCTools Version 0.90 (bloop 0.90, xprof 0.90) [2001.09]
   - Remove STLPort and use standard STL
 - Bug fixes
 
+
+----------------------------------------
 HPCTools Version 0.80 [2001.02]
 ----------------------------------------
+
 - Port to mips-IRIX64
   - Port EEL to IRIX64
   - Fix binutils 2.10 DWARF2 support
 - Bug fixes  
 
+
+----------------------------------------
 HPCTools Initial Version 
 ----------------------------------------
 - Support for processing sparc-SunOS binaries compiled with GCC
   - Use EEL to read binaries and find loops
 - Update EEL to use binutils 2.10
   
------------------------------------------------------------------------------------------------------------------------------------------
 
+----------------------------------------
 HPCView Version 3.1: [2003.01]
 ----------------------------------------
+
 - Port to ia64-Linux
 - Generated HTML/CSS and JavaScript now works with 
   Internet Explorer 5.0+, Netscape 4.x, Netscape 6.2+, or Mozilla 1.0+.  
@@ -466,8 +501,11 @@ HPCView Version 3.1: [2003.01]
   sheets.
 - Update to use Xerces 2.1.0
 
+
+----------------------------------------
 HPCView Version 3.0 []
 ----------------------------------------
+
 - This is a major revision to add the option of emitting a compact, 
   XML-formatted representation of internal data representation 
   ("scope tree") so that it can be efficiently processed by 
@@ -482,8 +520,11 @@ HPCView Version 3.0 []
   error messages.
 - Update to use Xerces 1.7.0
 
+
+----------------------------------------
 HPCView Version 2.01 []
 ----------------------------------------
+
 - Fixed bugs in support for flattening that caused some files to be omitted.
 - Regularized error handling for metrics so that file and computed metric
   errors are reported uniformly.
@@ -494,8 +535,11 @@ HPCView Version 2.01 []
   an error message to be printed and execution to halt.
 - Separated out and removed dead code.
 
+
+----------------------------------------
 HPCView Version 2.0 []
 ----------------------------------------
+
 - Added support for incorporating program structure information
   generated by a binary analyzer. This enables the hierarchial scopes
   display to show loop-level information. The binary analyzer is
