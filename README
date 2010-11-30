@@ -56,15 +56,18 @@ found at:
 ----------------------------------------
 
 WWW Page:
-  http://hpctoolkit.org
+  [www]   http://hpctoolkit.org
+  [local] <hpctoolkit-install>/share/doc/hpctoolkit/index.html
 
-SciDAC WWW Page (including subversion repository and bug tracker):
-  https://outreach.scidac.gov/projects/hpctoolkit
-
-Locally installed documentation:
-  HTML: <hpctoolkit-install>/share/doc/hpctoolkit/index.html
-  Man : <hpctoolkit-install>/share/man
+Documentation:
+  [www]   http://hpctoolkit.org/documentation.html
+  [local] <hpctoolkit-install>/share/doc/hpctoolkit/documentation.html
+  [local] <hpctoolkit-install>/share/man
 
 Email (for compliments, complaints and cash):
   hpc <at> cs.rice.edu
 
+  N.B. If you contact us, please tell us about your system (operating
+  system, architecture, PAPI version, compiler), your application, and
+  your HPCToolkit (version, config.log build information) and the
+  commands you used.
