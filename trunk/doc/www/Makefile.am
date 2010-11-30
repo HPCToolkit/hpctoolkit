@@ -77,6 +77,8 @@ MYSOURCES = \
 	info-acks.html \
 	info-contact.html \
 	\
+	googleeeb6a75d4102e1ef.html \
+	\
 	fig/index.html \
 	fig/hpctoolkit-workflow.png \
 	fig/hpcviewer-annotated-screenshot.jpg \
