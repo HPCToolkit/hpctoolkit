@@ -217,10 +217,10 @@ It is also deployed on the NSF TeraGrid system at TACC (Ranger).
 \begin{figure}[t]
 \centering{\includegraphics[width=.8\textwidth]{fig/hpctoolkit-workflow}}
 \caption{Overview of \HPCToolkit{} tool's work flow.}
-\label{fig:hpctoolkit-overview}
+\label{fig:hpctoolkit-overview:a}
 \end{figure}
 
-\HPCToolkit{}'s work flow is organized around four principal capabilities, as shown in Figure~\ref{fig:hpctoolkit-overview}:
+\HPCToolkit{}'s work flow is organized around four principal capabilities, as shown in Figure~\ref{fig:hpctoolkit-overview:a}:
 \begin{enumerate}
   \item \emph{measurement} of context-sensitive performance metrics while an application executes;
   \item \emph{binary analysis} to recover program structure from application binaries;
@@ -330,10 +330,10 @@ It assumes an operational installation of \HPCToolkit{}.
 \begin{figure}[t]
 \centering{\includegraphics[width=.8\textwidth]{fig/hpctoolkit-workflow}}
 \caption{Overview of \HPCToolkit{} tool's work flow.}
-\label{fig:hpctoolkit-overview}
+\label{fig:hpctoolkit-overview:b}
 \end{figure}
 
-\HPCToolkit{}'s work flow is summarized in Figure~\ref{fig:hpctoolkit-overview} (on page~\pageref{fig:hpctoolkit-overview}) and is organized around four principal capabilities:
+\HPCToolkit{}'s work flow is summarized in Figure~\ref{fig:hpctoolkit-overview:b} (on page~\pageref{fig:hpctoolkit-overview:b}) and is organized around four principal capabilities:
 \begin{enumerate}
   \item \emph{measurement} of context-sensitive performance metrics while an application executes;
   \item \emph{binary analysis} to recover program structure from application binaries;
@@ -554,6 +554,20 @@ They can be found at \url{http://hpctoolkit.org/publications.html}.
 \label{chpt:effective-performance-analysis}
 
 This chapter describes some proven strategies for using performance measurements to identify performance bottlenecks in both serial and parallel codes.
+
+
+% ===========================================================================
+% ===========================================================================
+
+\section{Monitoring High-Latency Penalty Events}
+
+A very simple and often effective methodology is to profile with respect to cycles and high-latency penalty events.
+If \HPCToolkit{} attributes a large number of penalty events with a particular source-code statement, there is an extremely high likelihood of significant exposed stalling.
+This is true even though (1) modern out-of-order processors can overlap the stall latency of one instruction with nearby independent instructions and (2) some penalty events ``over count''.%
+\footnote{For example, performance monitoring units often categorize a prefetch as a cache miss.}
+If a source-code statement incurs a large number of penalty events and it also consumes a non-trivial amount of cycles, then this region of code is an opportunity for optimization.
+Examples of good penalty events are last-level cache misses and TLB misses.
+
 
 % ===========================================================================
 % ===========================================================================
@@ -1166,6 +1180,69 @@ In cases such as this, you can often specify \texttt{-fast} along with an option
 
 \chapter{Troubleshooting}
 \label{chpt:troubleshooting}
+
+% ===========================================================================
+% ===========================================================================
+
+\section{How do I choose \hpcrun{} sampling periods?}
+\label{sec:troubleshooting:hpcrun-sample-periods}
+
+Statisticians use samples sizes of approximately 3500 to make accurate projections about the voting preferences of millions of people.
+In an analogous way, rather than collect unnecessary large amounts of performance information, sampling-based performance measurement collects ``just enough'' representative performance data.
+You can control \hpcrun{}'s sampling periods to collect ``just enough'' representative data even for very long executions and, to a lesser degree, for very short executions.
+
+For reasonable accuracy ($\pm 5\%$), there should be at least 20 samples in each context that is important with respect to performance.
+Since unimportant contexts are irrelevant to performance, as long as this condition is met (and as long as samples are not correlated, etc.), \HPCToolkit{}'s performance data should be accurate.
+
+We typically recommend targeting a frequency of hundreds of samples per second.
+For very short runs, you may need to try thousands of samples per second.
+For very long runs, tens of samples per second can be quite reasonable.
+
+Choosing sampling periods for some events, such as wallclock, cycles and instructions, is easy given a target sampling frequency.
+Choosing sampling periods for other events such as cache misses is harder.
+In principle, an architectural expert can easily derive reasonable sampling periods by working backwards from (a) a maximum target sampling frequency and (b) hardware resource saturation points.
+In practice, this may require some experimentation.
+
+See also the \hpcrun{} \href{http://hpctoolkit.org/man/hpcrun.html}{man page}.
+
+
+% ===========================================================================
+% ===========================================================================
+
+\section{\hpcrun{} incurs high overhead! Why?}
+
+For reasonable sampling periods, we expect \hpcrun{}'s overhead percentage to be in the low single digits, \eg{}, less than 5\%.
+The most common causes for unusually high overhead are the following:
+\begin{itemize}
+
+\item Your sampling frequency is too high.
+  Recall that the goal is to obtain a representative set of performance data.
+  For this, we typically recommend targeting a frequency of hundreds of samples per second.
+  For very short runs, you may need to try thousands of samples per second.
+  For very long runs, tens of samples per second can be quite reasonable.
+  See also Section~\ref{sec:troubleshooting:hpcrun-sample-periods}.
+
+\item \hpcrun{} has a problem unwinding.
+  This causes overhead in two forms.
+  First, \hpcrun{} will resort to more expensive unwind heuristics and possibly have to recover from self-generated segmentation faults.
+  Second, when these exceptional behaviors occur, \hpcrun{} writes some information to a log file.
+  In the context of a parallel application and overloaded parallel file system, this can pertrub the execution significantly.
+  To diagnose this, execute the following commmand and look for ``Errant Samples'':
+  \begin{quote}
+  \verb|hpcsummary --all <hpctoolkit-measurements>|
+  \end{quote}
+  Please let us know if there are problems.
+
+\item You have very long call paths where long is in the hundreds or thousands.
+  On x86-based architectures, try additionally using \hpcrun{}'s \texttt{RETCNT} event.
+  This has two effects: It causes \hpcrun{} to collect function return counts and to memoize common unwind prefixes between samples.
+
+\item Currently, on very large runs the process of writing profile data can take a long time.
+  However, because this occurs after the application has finished executing, it is relatively benign overhead.
+  (We plan to address this issue in a future release.)
+
+\end{itemize}
+
 
 
 % ===========================================================================
