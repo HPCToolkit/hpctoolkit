@@ -75,7 +75,7 @@ MYSOURCES = \
 	software-instructions.html \
 	\
 	info-acks.html \
-	info-contact.html \
+	info-people.html \
 	\
 	googleeeb6a75d4102e1ef.html \
 	\

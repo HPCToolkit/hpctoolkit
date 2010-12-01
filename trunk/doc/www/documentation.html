@@ -90,19 +90,23 @@ User's Manual [<a href="manual/HPCToolkit-users-manual.pdf">pdf</a>]
 
 <div class="indent">
 <div class="xmlcomment">
-<p>N.B.: When contacting us or submitting a bug report, please tell us about:</p>
+<p>N.B.: When contacting us or submitting a bug report, please tell us about the following:</p>
 <ul>
   <li>
-    your system (operating system, architecture, PAPI, compiler);
+    System. E.g., operating system, architecture, PAPI, compiler.
   </li>
   <li>
-    your HPCToolkit (version, build information from <code>&lt;BUILD&gt;/config.log</code>);
+    HPCToolkit. E.g., version; build information from <code>&lt;hpctoolkit-build&gt;/config.log</code>, which is generated after running <code>configure</code>.
   </li>
   <li>
-    your application (language, whether dynamically or statically linked); and
+    Profiled application: E.g., language, whether dynamically or statically linked.
   </li>
   <li>
-    the commands you used.
+    Relevant profiling/analysis commands.
+    If you have used <span class="hpctool">hpcrun</span>, please include the results of executing:
+    <div class="indent">
+      <code>hpcsummary --all &lt;hpctoolkit-measurements&gt;</code>
+    </div>
   </li>
 </ul>
 </div>
@@ -129,7 +133,7 @@ You must be subscribed to post to the list. <a href="https://mailman.rice.edu/ma
 
 
 
-<p>[<span class="lastupdated">Page last updated: 2010/11/30</span>]
+<p>[<span class="lastupdated">Page last updated: 2010/12/01</span>]
 </p>
 
 <!-- ********************************************************************** -->
