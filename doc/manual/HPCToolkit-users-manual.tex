@@ -479,6 +479,10 @@ Either option can be passed multiple times.
 
 Another potentially important option, especially for machines that require executing from special file systems, is the \texttt{-R/--replace-path} option for substituting instances of \emph{old-path} with \emph{new-path}: \texttt{-R 'old-path=new-path'}.
 
+A possibly important detail about the above command is that source code should be considered an \hpcprofAll{} input.
+This is critical when using a machine that restricts executions to a scratch parallel file system.
+In such cases, not only must you copy \hpcprofmpi{} into the scratch file system, but also all source code that you want \hpcprofmpi{} to find and copy into the resulting Experiment database.
+
 
 % ==========================================================
 % ==========================================================
@@ -818,6 +822,10 @@ To isolate code that is an impediment to scalable performance, one can use the {
 \chapter{\hpcviewer{}'s User Interface}
 \label{chpt:hpcviewer-interface}
 
+\input{hpcviewer}
+%\includepdf[pages=1-12]{HPCToolkit-hpcviewer}
+
+\begin{comment}
 %This section describes \hpcviewer{}, \HPCToolkit{}'s presentation tool.
 
 %% \begin{figure}[p!] %[t]
@@ -895,12 +903,7 @@ This means, \eg{}, that inclusive metrics for a particular scope in the Callers 
 Within a view, a user may order program scopes by sorting them using any performance metric.
 \hpcviewer{} supports several convenient operations to facilitate analysis: revealing a \emph{hot path} within the hierarchy below a scope; \emph{flattening} one or more levels of the static hierarchy, \eg, to facilitate comparison of costs between loops in different procedures; and \emph{zooming} to focus on a particular scope and its children.
 
-
-% ===========================================================================
-% ===========================================================================
-
-
-\includepdf[pages=1-12]{HPCToolkit-hpcviewer}
+\end{comment}
 
 
 % ***************************************************************************
