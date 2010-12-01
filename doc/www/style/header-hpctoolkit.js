@@ -12,10 +12,10 @@ document.write('\
     | <a href="overview.html">Overview</a> \
     | <a href="publications.html">Publications</a> ] \
     &bull; \
-    [ <a href="software.html">Software</a> \
+    [ <a href="software.html">Software/Downloads</a> \
     | <a href="documentation.html">Documentation/Questions</a> ] \
     &bull; \
-    [ <a href="info-contact.html">Contacts</a> | \
+    [ <a href="info-people.html">People</a> | \
       <a href="info-acks.html">Acks</a> ] \
   </p> \
   </div> \

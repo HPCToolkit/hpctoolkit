@@ -76,10 +76,13 @@ Email (for compliments, complaints and cash):
   hpc <at> cs.rice.edu
 
   N.B.: When contacting us or submitting a bug report, please tell us
-  about:
-  - your system (operating system, architecture, PAPI, compiler);
-  - your HPCToolkit (version, build information from
-    <BUILD>/config.log);
-  - your application (language, whether dynamically or statically
-    linked); and
-  - the commands you used.
+  about the following:
+  - System. E.g., operating system, architecture, PAPI, compiler.
+  - HPCToolkit. E.g., version; build information from
+    <hpctoolkit-build>/config.log, which is generated after running
+    configure.
+  - Profiled application: E.g., language, whether dynamically or
+    statically linked.
+  - Relevant profiling/analysis commands. If you have used hpcrun,
+    please include the results of executing:
+      hpcsummary --all <hpctoolkit-measurements>
