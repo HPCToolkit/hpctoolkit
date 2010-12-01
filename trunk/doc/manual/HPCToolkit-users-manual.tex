@@ -587,7 +587,7 @@ To address this problem, \hpcviewer{} supports calculation of derived metrics.
 % For instance, if one wants to compute the cache miss rate in a scope, one could divide the total number of cache misses in a scope by the sum of counts of loads and stores in the scope. On the other hand, if one wanted to compute the fraction of a program's cache misses that occurred in a particular scope, one could divide the number of misses in the scope by the total number of misses in the program.
 
 \begin{figure}[t]
-\center{\includegraphics{fig/cycles-per-inst.png}}
+\center{\includegraphics[width=1.0\textwidth]{fig/cycles-per-inst.png}}
 %Two possible representations for the call path fragment $\ldots s_1 \rightarrow s_2 \ldots$, where $s_1$ and $s_2$ are call sites and where $s_1$ represents a call from $p$ to $q$ and $s_2$ a call from $q'$ to $r$.
 \caption{Computing a derived metric (cycles per instruction) in \hpcviewer{}.}
 \label{fig:cycles-per-inst}
@@ -604,7 +604,7 @@ Positional names for metrics you use in your formula can be determined using the
 If you select your metric of choice using the pull-down, you can insert its positional name into the formula using the {\em insert metric} button, or you can simply type the positional name directly into the formula.
 
 \begin{figure}[t]
-\center{\includegraphics{fig/cycles-per-inst-2.png}}
+\center{\includegraphics[width=1.0\textwidth]{fig/cycles-per-inst-2}}
 %Two possible representations for the call path fragment $\ldots s_1 \rightarrow s_2 \ldots$, where $s_1$ and $s_2$ are call sites and where $s_1$ represents a call from $p$ to $q$ and $s_2$ a call from $q'$ to $r$.
 \caption{Displaying the new {\em cycles/ instruction} derived metric in \hpcviewer{}.}
 \label{fig:cycles-per-inst-2}
@@ -648,7 +648,7 @@ Depending upon what one expects as the rate-limiting resource (\eg, floating-poi
 
 
 \begin{figure}[t]
-\center{\includegraphics{fig/fpwaste.png}}
+\center{\includegraphics[width=1.0\textwidth]{fig/fpwaste.png}}
 %Two possible representations for the call path fragment $\ldots s_1 \rightarrow s_2 \ldots$, where $s_1$ and $s_2$ are call sites and where $s_1$ represents a call from $p$ to $q$ and $s_2$ a call from $q'$ to $r$.
 \caption{Computing a floating point waste metric in \hpcviewer{}.}
 \label{fig:fpwaste}
@@ -671,7 +671,7 @@ A waste metric will typically highlight loops where
 \end{itemize}
 
 \begin{figure}[t]
-\center{\includegraphics{fig/fp-efficiency.png}}
+\center{\includegraphics[width=1.0\textwidth]{fig/fp-efficiency.png}}
 %Two possible representations for the call path fragment $\ldots s_1 \rightarrow s_2 \ldots$, where $s_1$ and $s_2$ are call sites and where $s_1$ represents a call from $p$ to $q$ and $s_2$ a call from $q'$ to $r$.
 \caption{Computing floating point efficiency in percent using \hpcviewer{}.}
 \label{fig:fpefficiency}
@@ -683,7 +683,7 @@ For our floating-point waste metric, we one can compute the floating point effic
 Figure~\ref{fig:fpefficiency} shows the specification of this floating-point efficiency metric for a code.
 
 \begin{figure}[t]
-\center{\includegraphics{fig/fp-efficiency-loop.png}}
+\center{\includegraphics[width=1.0\textwidth]{fig/fp-efficiency-loop.png}}
 %Two possible representations for the call path fragment $\ldots s_1 \rightarrow s_2 \ldots$, where $s_1$ and $s_2$ are call sites and where $s_1$ represents a call from $p$ to $q$ and $s_2$ a call from $q'$ to $r$.
 \caption{Using floating point waste and the percent of floating point efficiency to evaluate opportunities for optimization.}
 \label{fig:fpefficiency-loop}
@@ -762,14 +762,14 @@ Next, we describe performance expectations for weak scaling and intuitive metric
 More information about our scalability analysis technique can be found elsewhere~\cite{Coarfa-MC:2007:ICS-scalability,Tallent-MC-etal:2009:SC-hpctoolkit-petascale}.
 
 \begin{figure}[t]
-\center{\includegraphics{fig/scaling-loss.png}}
+\center{\includegraphics[width=1.0\textwidth]{fig/scaling-loss.png}}
 %Two possible representations for the call path fragment $\ldots s_1 \rightarrow s_2 \ldots$, where $s_1$ and $s_2$ are call sites and where $s_1$ represents a call from $p$ to $q$ and $s_2$ a call from $q'$ to $r$.
 \caption{Computing the fraction of excess work in each program scope when applying weak scaling to go from simulating a $30^3$ domain on one core to simulating a $60^3$ domain on eight cores of an AMD Barcelona. The fraction of excess work is a quantitative measure of scalability loss.}
 \label{fig:scaling-loss}
 \end{figure}
 
 \begin{figure}[t]
-\center{\includegraphics{fig/scaling-loss-2.png}}
+\center{\includegraphics[width=1.0\textwidth]{fig/scaling-loss-2.png}}
 %Two possible representations for the call path fragment $\ldots s_1 \rightarrow s_2 \ldots$, where $s_1$ and $s_2$ are call sites and where $s_1$ represents a call from $p$ to $q$ and $s_2$ a call from $q'$ to $r$.
 \caption{Using the fraction the scalability loss metric of Figure~\ref{fig:scaling-loss} to rank order loop nests by their scaling loss.}
 \label{fig:scaling-loss-2}
