@@ -129,7 +129,7 @@ To control HPCToolkit's performance measurement library during an
 application's execution, use the following environment variables:
   HPCRUN_EVENT_LIST=<event1>[@<period1>];...;<eventN>[@<periodN>]
                             : Sampling event list; hpcrun -e/--event
-  HPCRUN_TRACE=1            : Enable tracing; hpcrun -e/--trace
+  HPCRUN_TRACE=1            : Enable tracing; hpcrun -t/--trace
   HPCRUN_OUT_PATH=<outpath> : Set output directory; hpcrun -o/--output
 
 Options: Informational
