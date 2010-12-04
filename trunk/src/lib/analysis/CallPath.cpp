@@ -182,11 +182,23 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args)
   Prof::Struct::readStructure(*structure, args.structureFiles,
 			      PGMDocHandler::Doc_STRUCT, docargs);
 
-  // TODO:tallent: An elegant idea but somewhat pointless unless
-  // Analysis::Util::demandStructure() enforces Non-Overlapping
-  // Principle and overlayStaticStructure() both creates frames and
-  // merges nodes that map to the same structure.
-  coalesceStmts(*structure);
+  // TODO:tallent: An elegant idea but problematic on two counts.
+  // Originally motivated by
+  // Analysis::CallPath::noteStaticStructureOnLeaves() and
+  // Prof::CCT::ADynNode::isMergable().
+  // 
+  // First, it is somewhat pointless unless (1)
+  // Analysis::Util::demandStructure() enforces the Non-Overlapping
+  // Principle and (2) overlayStaticStructureMain(), in addition to
+  // creating frames, merges nodes (Stmts and Calls) that map to the
+  // same structure.
+  // 
+  // Second, for constructing hpcviewer's Callers view, we
+  // static-structure ids to maintain call site distinctions, even if
+  // several call sites map to the same line.
+  if (0) {
+    coalesceStmts(*structure);
+  }
 }
 
 
@@ -211,8 +223,8 @@ coalesceStmts(Prof::Struct::Tree& structure)
 
 // coalesceStmts: Maintain Non-Overlapping Principle of source code
 // for static struture.  Structure information currently distinguishes
-// callsites from statements, even if they are within the same scope
-// and on the same source line.
+// non-callsite statements from callsite statements, even if they are
+// within the same scope and on the same source line.
 void
 coalesceStmts(Prof::Struct::ANode* node)
 {
