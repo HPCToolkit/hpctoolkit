@@ -105,7 +105,7 @@ AC_MSG_NOTICE([INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}'])
 AC_MSG_NOTICE([INFO: from user: MPICXX='${MPICXX}'])
 
 # NOTE: please update config/README.version
-AC_PREREQ(2.65)
+AC_PREREQ(2.67)
 AM_INIT_AUTOMAKE(1.11.1)
 LT_PREREQ([2.2.10])
 
