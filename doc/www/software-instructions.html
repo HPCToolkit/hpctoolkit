@@ -261,7 +261,7 @@ Please note that a list of examples below provides <code>configure</code> comman
   <code>cd hpctoolkit-externals</code><br />
   <code>mkdir BUILD &amp;&amp; cd BUILD</code><br />
   <code>../configure [CC=&lt;<i>c-compiler</i>&gt;] 
-                     [CXX=&lt;<i>c++-compiler</i>&gt;] \ <br />
+                     [CXX=&lt;<i>c++-compiler</i>&gt;] \<br />
   &nbsp;&nbsp;&nbsp;&nbsp; [--prefix=&lt;<i>externals-install-path</i>&gt;</code>] <br />
   <code>make install</code><br />
   <code>make distclean</code><br />
@@ -285,9 +285,9 @@ Please note that a list of examples below provides <code>configure</code> comman
   <code>mkdir BUILD &amp;&amp; cd BUILD</code><br />
   <code>../configure [CC=&lt;<i>c-compiler</i>&gt;]
                      [CXX=&lt;<i>c++-compiler</i>&gt;]
-                     [MPICXX=&lt;<i>mpi-c++-compiler</i>&gt;] \ <br />
-  &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \ <br />
-  &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>externals-install-path</i>&gt; \ <br />
+                     [MPICXX=&lt;<i>mpi-c++-compiler</i>&gt;] \<br />
+  &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \<br />
+  &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>externals-install-path</i>&gt; \<br />
    &nbsp;&nbsp;&nbsp;&nbsp; [--with-papi=&lt;<i>papi-install-path</i>&gt;]</code><br />
   <code>make install</code><br />
 </div>
@@ -380,11 +380,11 @@ Please note that a list of examples below provides <code>configure</code> comman
 	      export XTPE_INFO_MESSAGE_OFF=1 # breaks GNU binutils' configure! <br />
 	      
 	      ../configure CC="cc -static" CXX="CC -static" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-suse-linux --prefix=`pwd`/../x86_64-crayxt \ <br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --without-symtabAPI \ <br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libelf \ <br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libdwarf \ <br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libunwind \ <br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-suse-linux --prefix=`pwd`/../x86_64-crayxt \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --without-symtabAPI \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libelf \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libdwarf \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libunwind \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --without-old-monitor
 	      </code>
 	  </dd>
@@ -393,7 +393,6 @@ Please note that a list of examples below provides <code>configure</code> comman
 	  <dd><code>../configure CC="cc -static" CXX="CC -static" MPICXX="CC -static" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-suse-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/x86_64-crayxt \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23 \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --disable-hpcrun
 	      </code>
           </dd>
@@ -405,7 +404,7 @@ Please note that a list of examples below provides <code>configure</code> comman
           <dt>HPCToolkit's Externals</dt>
 	  <dd><code>
               ../configure CC="gcc -m32" CXX="g++ -m32" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=`pwd`/../i686-linux \ <br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=`pwd`/../i686-linux \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libunwind
 	      </code>
 	  </dd>
