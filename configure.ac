@@ -185,6 +185,15 @@ fi
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
+# HPC_LTLDFLAGS: pass flags to libtool for link mode 
+#-------------------------------------------------
+
+AC_ARG_VAR([HPC_LTLDFLAGS],
+  AS_HELP_STRING([HPC_LTLDFLAGS],
+                 [pass flags to libtool for link mode]))
+
+
+#-------------------------------------------------
 # enable-develop
 #-------------------------------------------------
 
@@ -1771,9 +1780,11 @@ AC_CONFIG_FILES([ \
   src/lib/prof/Makefile \
   src/lib/profxml/Makefile \
   src/lib/prof-lean/Makefile \
+  src/lib/stubs-gcc_s/Makefile \
   src/lib/support/Makefile \
   src/lib/xml/Makefile \
 ])
+
 
 AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcrun],
   [chmod +x src/tool/hpcrun/scripts/hpcrun])
