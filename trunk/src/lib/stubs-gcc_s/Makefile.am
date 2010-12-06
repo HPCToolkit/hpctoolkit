@@ -2,8 +2,8 @@
 
 ## * BeginRiceCopyright *****************************************************
 ##
-## $HeadURL$
-## $Id$
+## $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/lib/gcc_s/Makefile.am $
+## $Id: Makefile.am 3142 2010-10-22 19:53:16Z tallent $
 ##
 ## --------------------------------------------------------------------------
 ## Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +47,7 @@
 #############################################################################
 ##
 ## File:
-##   $HeadURL$
+##   $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/lib/gcc_s/Makefile.am $
 ##
 ## Description:
 ##   *Process with automake to produce Makefile.in*
@@ -61,21 +61,49 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
+# Local settings
+#############################################################################
+
+MYSOURCES = \
+	empty.c 
+
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
+
+if IS_HOST_AR
+  MYAR = @HOST_AR@
+else
+  MYAR = $(AR) cru
+endif
+
+MYLIBADD = @HOST_LIBTREPOSITORY@
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
+
+#############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS = \
-	analysis \
-	banal \
-	binutils \
-	isa \
-	prof \
-	profxml \
-	prof-lean \
-	stubs-gcc_s \
-	support \
-	xml
+noinst_LIBRARIES = libgcc_s.a
+#noinst_LTLIBRARIES = libgcc_s.la
+
+libgcc_s_a_SOURCES  = $(MYSOURCES)
+libgcc_s_a_CFLAGS   = $(MYCFLAGS)
+libgcc_s_a_CXXFLAGS = $(MYCXXFLAGS)
+libgcc_s_a_AR       = $(MYAR)
+libgcc_s_a_LIBADD   = $(MYLIBADD)
+
+MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
-# Other rules
+# Common rules
 #############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules
+
