@@ -18,6 +18,46 @@ Without this option, \hpcviewer{} will prompt for the location of a database.
 
 % ===========================================================================
 % ===========================================================================
+\section{Installing \hpcviewer{}}
+
+\subsection{Requirements}
+For all platforms:
+\begin{itemize}
+ \item Java 1.5 (at least). GCC's gcj is not supported. Sun's JDK or IBM's Icetea is supported.
+\end{itemize}
+For Linux/Unix platforms:
+\begin{itemize}
+ \item GTK+ 
+\end{itemize}
+
+\subsection{For all platforms}
+\begin{enumerate}
+  \item Download hpcviewer package that is suitable for your platform from 
+\begin{quote}
+	\texttt{https://outreach.scidac.gov/frs/?group\_id=22} 
+\end{quote}
+  \item Untar the file into a temporary directory (for Linux/Unix plarforms) or an installation directory (for Windows and Mac platforms).
+\end{enumerate}
+
+
+\subsection{Linux/Unix platforms specific}
+
+To install hpcviewer, unpack the tar file, cd into "\hpcviewer{}" directory (the
+directory containing README file) and run:
+\begin{verbatim}
+   ./install dir
+\end{verbatim}
+where "\texttt{dir}" is the top-level hpctoolkit install directory, the same
+directory specified as --prefix in hpctoolkit's configure.
+
+Note: the normal procedure is first to compile and install hpctoolkit,
+and then install hpcviewer into the same prefix directory.  It is not
+necessary to install hpctoolkit first, but in that case, the hpcviewer
+install script will issue a warning and ask for confirmation.
+
+
+% ===========================================================================
+% ===========================================================================
 
 \section{Views}
 
