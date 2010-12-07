@@ -107,6 +107,10 @@ hpcprof_flat_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
+install-exec-hook:
+	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(pkglibexecdir)/hpcprof-flat-bin$(EXEEXT),$(DESTDIR)$(bindir)/hpcprof-flat$(EXEEXT))
+
+
 #############################################################################
 # Common rules
 #############################################################################
