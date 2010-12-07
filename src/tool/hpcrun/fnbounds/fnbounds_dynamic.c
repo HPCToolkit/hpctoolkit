@@ -205,7 +205,7 @@ fnbounds_init()
   if (result == 0) {
     result = fnbounds_tmpdir_create();
     if (result == 0) {
-      nm_command = getenv("CSPROF_NM_COMMAND"); 
+      nm_command = getenv("HPCRUN_FNBOUNDS_CMD");
   
       fnbounds_map_executable();
       fnbounds_map_open_dsos();
