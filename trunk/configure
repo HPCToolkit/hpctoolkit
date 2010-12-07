@@ -20041,6 +20041,8 @@ $as_echo "$as_me:   CCASFLAGS: '${CCASFLAGS}'" >&6;}
 $as_echo "$as_me:   LDFLAGS:   '${LDFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   MPICXX:    '${MPICXX}'" >&5
 $as_echo "$as_me:   MPICXX:    '${MPICXX}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   HPC_LT_LDFLAGS: '${HPC_LT_LDFLAGS}'" >&5
+$as_echo "$as_me:   HPC_LT_LDFLAGS: '${HPC_LT_LDFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   binutils:     ${GNUBINUTILS}" >&5
