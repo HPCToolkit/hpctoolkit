@@ -185,12 +185,11 @@ fi
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
-# HPC_LTLDFLAGS: pass flags to libtool for link mode 
+# HPC_LT_LDFLAGS: pass flags to libtool for link mode 
 #-------------------------------------------------
 
-AC_ARG_VAR([HPC_LTLDFLAGS],
-  AS_HELP_STRING([HPC_LTLDFLAGS],
-                 [pass flags to libtool for link mode]))
+AC_ARG_VAR([HPC_LT_LDFLAGS],
+           [pass flags to libtool for link mode])
 
 
 #-------------------------------------------------
