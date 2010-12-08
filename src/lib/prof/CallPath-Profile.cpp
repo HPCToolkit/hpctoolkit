@@ -677,7 +677,8 @@ Profile::ddump() const
 
 static std::pair<Prof::CCT::ADynNode*, Prof::CCT::ADynNode*>
 cct_makeNode(Prof::CallPath::Profile& prof,
-	     const hpcrun_fmt_cct_node_t& nodeFmt, uint rFlags);
+	     const hpcrun_fmt_cct_node_t& nodeFmt, uint rFlags,
+	     const std::string& ctxtStr);
 
 static void
 fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
@@ -1234,7 +1235,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // ----------------------------------------------------------
 
     std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 =
-      cct_makeNode(prof, nodeFmt, rFlags);
+      cct_makeNode(prof, nodeFmt, rFlags, ctxtStr);
     CCT::ADynNode* node = n2.first;
     CCT::ADynNode* node_sib = n2.second;
 
@@ -1545,9 +1546,12 @@ Profile::canonicalize(uint rFlags)
 
 static std::pair<Prof::CCT::ADynNode*, Prof::CCT::ADynNode*>
 cct_makeNode(Prof::CallPath::Profile& prof,
-	     const hpcrun_fmt_cct_node_t& nodeFmt, uint rFlags)
+	     const hpcrun_fmt_cct_node_t& nodeFmt, uint rFlags,
+	     const std::string& ctxtStr)
 {
   using namespace Prof;
+
+  const LoadMap& loadmap = *(prof.loadmap());
 
   // ----------------------------------------------------------
   // Gather node parameters
@@ -1577,9 +1581,14 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   VMA lmIP = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
   ushort opIdx = 0;
 
-  prof.loadmap()->lm(lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
+  if (! (lmId <= loadmap.size() /*1-based*/) ) {
+    DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId 
+	      << " has invalid load module: " << lmId);
+    lmId = LoadMap::LMId_NULL;
+  }
+  loadmap.lm(lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
 
-  DIAG_MsgIf(0, "cct_makeNode(: " << hex << lmIP << dec << ", " << lmId << ")");
+  DIAG_MsgIf(0, "cct_makeNode(: "<< hex << lmIP << dec << ", " << lmId << ")");
 
   // ----------------------------------------  
   // normalized lip
@@ -1591,7 +1600,13 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
   if (lip) {
     LoadMap::LMId_t lip_lmId = lush_lip_getLMId(lip);
-    prof.loadmap()->lm(lip_lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
+
+    if (! (lip_lmId <= loadmap.size() /*1-based*/) ) {
+      DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId 
+		<< " has invalid (logical) load module: " << lip_lmId);
+      lip_lmId = LoadMap::LMId_NULL;
+    }
+    loadmap.lm(lip_lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
   }
 
   // ----------------------------------------  
