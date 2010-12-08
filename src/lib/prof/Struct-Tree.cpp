@@ -864,7 +864,7 @@ Root::insertLMMap(LM* lm)
   string nm_base = FileUtil::basename(nm_real);
   std::pair<LMMap::iterator, bool> ret2 =
     lmMap_basename->insert(std::make_pair(nm_base, lm));
-  if (ret2.second) {
+  if (!ret2.second /* no insertion performed */) {
     // Set target to NULL to indicate 'nm_base' appears more than once
     LMMap::iterator entry = ret2.first;
     entry->second = NULL;
