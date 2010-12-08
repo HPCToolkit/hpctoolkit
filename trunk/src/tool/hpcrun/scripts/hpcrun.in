@@ -312,20 +312,35 @@ case "$command" in
 	;;
 esac
 
-# For dynamic binaries, verify that the application and libhpcrun are
-# either both 32-bit or both 64-bit.  This doesn't apply to scripts or
-# static binaries.
+# Sanity checks before launch.
 
 if test -x "$command" ; then
-    file_out=`file -L "$command"`
-    echo "$file_out" | grep -E -i -e 'elf.*dynamic' >/dev/null 2>&1
+    #
+    # For dynamic binaries, verify that the application and libhpcrun
+    # have the same wordsize, both 32-bit or both 64-bit.
+    #
+    cmd_file_out=`file -L "$command"`
+    echo "$cmd_file_out" | grep -E -i -e 'elf.*dynamic' >/dev/null 2>&1
     if test $? -eq 0 ; then
-	appl_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
+	appl_bit=`expr "$cmd_file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
 	file_out=`file -L "${hpcrun_dir}/libhpcrun.so"`
 	hpcrun_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
 	if test "$appl_bit" != "$hpcrun_bit" ; then
-	    echo "cannot run application $command" 1>&2
+	    echo "hpcrun: cannot profile application: $command" 1>&2
 	    echo "application is $appl_bit but hpctoolkit is $hpcrun_bit" 1>&2
+	    exit 1
+	fi
+    fi
+    #
+    # For static binaries, verify that hpcrun is linked in.  Use
+    # strings instead of nm to handle stripped binaries.
+    #
+    echo "$cmd_file_out" | grep -E -i -e 'elf.*static' >/dev/null 2>&1
+    if test $? -eq 0 ; then
+	strings "$command" 2>&1 | grep -e hpcrun >/dev/null 2>&1
+	if test $? -ne 0 ; then
+	    echo "hpcrun: static binary is missing libhpcrun: $command" 1>&2
+	    echo "rebuild the application with hpclink" 1>&2
 	    exit 1
 	fi
     fi
