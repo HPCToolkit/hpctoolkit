@@ -185,11 +185,14 @@ fi
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
-# HPC_LT_LDFLAGS: pass flags to libtool for link mode 
+# HPC_LT_LDFLAGS, HPCPROFMPI_LT_LDFLAGS: pass libtool link mode flags
 #-------------------------------------------------
 
 AC_ARG_VAR([HPC_LT_LDFLAGS],
-           [pass flags to libtool for link mode])
+           [pass libtool link mode flags to hpcstruct, hpcprof*, hpclump])
+
+AC_ARG_VAR([HPCPROFMPI_LT_LDFLAGS],
+           [pass libtool link mode flags to hpcprof-mpi (before HPC_LT_LDFLAGS)])
 
 
 #-------------------------------------------------

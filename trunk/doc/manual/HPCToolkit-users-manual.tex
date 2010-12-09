@@ -1585,6 +1585,102 @@ No hpcstruct =
 % ***************************************************************************
 % ***************************************************************************
 
+%% Build instructions:
+
+
+%% Old build instructions:
+
+%%     <li><p>BlueGene/P front end:</p>
+%% 	<dl class="indent">
+%%           <dt>HPCToolkit's Externals</dt>
+%% 	  <dd><code>../configure CC=gcc CXX=g++ \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=`pwd`/../powerpc64-linux
+%% 	      </code>
+%% 	  </dd>
+
+%%           <dt>HPCToolkit</dt>
+%% 	  <dd><code>
+%% 	      ../configure CC=gcc CXX=g++ \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path-fe</i>&gt; \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc64-linux \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; --disable-mpi
+%% 	      </code>
+%%           </dd>
+%% 	</dl>
+%%     </li>
+
+%%     <li><p>BlueGene/P back end:</p>
+%% 	<dl class="indent">
+%%           <dt>HPCToolkit's Externals</dt>
+%% 	  <dd><code>
+%% 	      ../configure \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=powerpc-bgp-linux --prefix=`pwd`/../powerpc-bgp-linux
+%% 	    </code>
+%% 	  </dd>
+
+%%           <dt>HPCToolkit</dt>
+%% 	  <dd><code>
+%% 	      ../configure \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; CC="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -dynamic" \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; CXX="/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-g++ -dynamic" \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; MPICXX="mpicxx -dynamic" \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; --host=powerpc-bgp-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
+%% 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc-bgp-linux
+%% 	    </code>
+%% 	  </dd>
+%% 	</dl>
+%%     </li>
+
+
+%% <li><p>Cray XT front end (use default programming environment):</p>
+%%     <dl class="indent">
+%%       <dt>HPCToolkit's Externals</dt>
+%%       <dd><code>../configure --prefix=`pwd`/../x86_64-linux</code>
+%%       </dd>
+
+%%       <dt>HPCToolkit</dt>
+%%       <dd><code>../configure --prefix=&lt;<i>install-path-fe</i>&gt; \<br />
+%%           &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/x86_64-linux \<br />
+%%           &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/xt-tools/papi/3.7.2/v23
+%%           </code>
+%%       </dd>
+%%     </dl>
+%% </li>
+
+%% <li><p>Cray XT back end (use GNU programming environment):</p>
+%%     <dl class="indent">
+%%       <dt>HPCToolkit's Externals</dt>
+%%       <dd><code>
+%%           export XTPE_INFO_MESSAGE_OFF=1 # breaks GNU binutils' configure! <br />
+	      
+%%           ../configure CC="cc -static" CXX="CC -static" \<br />
+%%           &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-suse-linux --prefix=`pwd`/../x86_64-crayxt \<br />
+%%           &nbsp;&nbsp;&nbsp;&nbsp; --without-symtabAPI \<br />
+%%           &nbsp;&nbsp;&nbsp;&nbsp; --without-libelf \<br />
+%%           &nbsp;&nbsp;&nbsp;&nbsp; --without-libdwarf \<br />
+%%           &nbsp;&nbsp;&nbsp;&nbsp; --without-libunwind \<br />
+%%           &nbsp;&nbsp;&nbsp;&nbsp; --without-old-monitor
+%%           </code>
+%%       </dd>
+
+%%       <dt>HPCToolkit</dt>
+%%       <dd><code>../configure CC="cc -static" CXX="CC -static" MPICXX="CC -static" \<br />
+%%           &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-suse-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
+%%           &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/x86_64-crayxt \<br />
+%%           &nbsp;&nbsp;&nbsp;&nbsp; --disable-hpcrun
+%%           </code>
+%%       </dd>
+%%     </dl>
+%% </li>
+
+
+
+% ***************************************************************************
+% ***************************************************************************
+
+
 %% Using HPCToolkit to Analyze Cilk Applications
 
 %% --------------------------------------------------
