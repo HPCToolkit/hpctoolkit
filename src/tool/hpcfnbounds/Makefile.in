@@ -69,10 +69,10 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/hpcfnbounds.in $(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
 pkglibexec_PROGRAMS = hpcfnbounds-bin$(EXEEXT)
-@HOST_CPU_X86_TRUE@am__append_1 = x86-process-ranges.cpp
-@HOST_CPU_X86_TRUE@am__append_2 = -I$(XED2_INC)
-@HOST_CPU_X86_TRUE@am__append_3 = $(XED2_LIB)/libxed.a
-@HOST_CPU_X86_FALSE@am__append_4 = generic-process-ranges.cpp
+@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = x86-process-ranges.cpp
+@HOST_CPU_X86_FAMILY_TRUE@am__append_2 = -I$(XED2_INC)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_3 = $(XED2_LIB)/libxed.a
+@HOST_CPU_X86_FAMILY_FALSE@am__append_4 = generic-process-ranges.cpp
 subdir = src/tool/hpcfnbounds
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -93,8 +93,8 @@ am__objects_1 = hpcfnbounds_bin-main.$(OBJEXT) \
 	hpcfnbounds_bin-code-ranges.$(OBJEXT) \
 	hpcfnbounds_bin-function-entries.$(OBJEXT) \
 	hpcfnbounds_bin-intervals.$(OBJEXT)
-@HOST_CPU_X86_TRUE@am__objects_2 = hpcfnbounds_bin-x86-process-ranges.$(OBJEXT)
-@HOST_CPU_X86_FALSE@am__objects_3 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_2 = hpcfnbounds_bin-x86-process-ranges.$(OBJEXT)
+@HOST_CPU_X86_FAMILY_FALSE@am__objects_3 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
 am_hpcfnbounds_bin_OBJECTS = $(am__objects_1) $(am__objects_2) \
 	$(am__objects_3)
 hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
