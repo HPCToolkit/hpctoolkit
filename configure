@@ -761,6 +761,7 @@ CXXFLAGS
 CXX
 OPT_ENABLE_DEVELOP_FALSE
 OPT_ENABLE_DEVELOP_TRUE
+HPCPROFMPI_LT_LDFLAGS
 HPC_LT_LDFLAGS
 HPCTOOLKIT_PLATFORM
 host_os
@@ -877,6 +878,7 @@ enable_devtools
 host_alias
 target_alias
 HPC_LT_LDFLAGS
+HPCPROFMPI_LT_LDFLAGS
 CXX
 CXXFLAGS
 LDFLAGS
@@ -1561,7 +1563,10 @@ Optional Packages:
 
 Some influential environment variables:
   HPC_LT_LDFLAGS
-              pass flags to libtool for link mode
+              pass libtool link mode flags to hpcstruct, hpcprof*, hpclump
+  HPCPROFMPI_LT_LDFLAGS
+              pass libtool link mode flags to hpcprof-mpi (before
+              HPC_LT_LDFLAGS)
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -3448,8 +3453,10 @@ fi
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
-# HPC_LT_LDFLAGS: pass flags to libtool for link mode
+# HPC_LT_LDFLAGS, HPCPROFMPI_LT_LDFLAGS: pass libtool link mode flags
 #-------------------------------------------------
+
+
 
 
 
