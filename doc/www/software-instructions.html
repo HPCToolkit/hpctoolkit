@@ -319,14 +319,15 @@ Please note that a list of examples below provides <code>configure</code> comman
     <li><p>BlueGene/P:</p>
 	<dl class="indent">
           <dt>HPCToolkit's Externals</dt>
-	  <dd><code>../configure CC="gcc -m32" CXX="g++ -m32" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=`pwd`/../powerpc32-linux
+	  <dd><code>../configure --prefix=`pwd`/../powerpc32-linux
 	      </code>
   	  </dd>
 
           <dt>HPCToolkit</dt>
-	  <dd><code>../configure CC="gcc -m32" CXX="g++ -m32" MPICXX="mpicxx" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; HPC_LT_LDFLAGS="-all-static -L../../lib/stubs-gcc_s -L/usr/lib/gcc/powerpc64-suse-linux/4.1.2/" \<br />
+	  <!-- Explanation: Must link against backend libstdc++ and libc. -->
+	  <dd><code>../configure \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; HPC_LT_LDFLAGS="-all-static -L../../lib/stubs-gcc_s" \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; HPCPROFMPI_LT_LDFLAGS="-L/bgsys/drivers/ppcfloor/gnu-linux/powerpc-bgp-linux/lib -lstdc++" \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc32-linux
 	      </code>
@@ -372,7 +373,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
           <dt>HPCToolkit</dt>
 	  <dd><code>../configure CC="gcc -m32" CXX="g++ -m32" MPICXX="mpicxx -m32" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=&lt;<i>install-path-be</i>&gt; \<br />
+	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=&lt;<i>install-path</i>&gt; \<br />
               &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/i686-linux \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=&lt;<i>papi-install-path</i>&gt; \<br />
 	      &nbsp;&nbsp;&nbsp;&nbsp; --disable-hpcrun-static
@@ -495,7 +496,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2010/12/07</span>]
+<p>[<span class="lastupdated">Page last updated: 2010/12/08</span>]
 </p>
 
 <!-- ********************************************************************** -->
