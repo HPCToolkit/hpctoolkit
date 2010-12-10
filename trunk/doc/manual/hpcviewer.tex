@@ -9,12 +9,18 @@
 The command line syntax is as follows:
 \begin{quote}
 \begin{verbatim}
-  hpcviewer [<hpctoolkit-database>]
+  hpcviewer [flags] [<hpctoolkit-database>]
 \end{verbatim}
 \end{quote}
 Here, \texttt{<database-directory>} is an optional argument to load a database automatically.
 Without this option, \hpcviewer{} will prompt for the location of a database.
 
+The \texttt{flags} are:
+\begin{itemize}
+ \item \texttt{-n} not to display callers view to safe memory space and time
+ \item \texttt{-consolelog} causes any log entries to be sent to the console as well (to get a console window, be sure to use java as the VM instead of javaw).
+ \item \texttt{-debug} causes to log extra information about plug-in dependency problems
+\end{itemize}
 
 % ===========================================================================
 % ===========================================================================
