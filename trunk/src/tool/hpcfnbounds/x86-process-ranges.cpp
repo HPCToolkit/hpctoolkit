@@ -70,7 +70,7 @@ extern "C" {
 static void process_call(char *ins, long offset, xed_decoded_inst_t *xptr,
 			 void *start, void *end);
 
-static void process_branch(char *ins, long offset, xed_decoded_inst_t *xptr);
+static void process_branch(char *ins, long offset, xed_decoded_inst_t *xptr, char* vstart, char* vend);
 
 static void after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr);
 
@@ -258,13 +258,13 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
     case XED_ICLASS_JRCXZ:
     case XED_ICLASS_JS:
     case XED_ICLASS_JZ:
-      if (fn_discovery) process_branch(ins, offset , xptr);
+      if (fn_discovery) process_branch(ins, offset , xptr, (char*) vstart, (char*) vend);
       break;
 
     case XED_ICLASS_LOOP:
     case XED_ICLASS_LOOPE:
     case XED_ICLASS_LOOPNE:
-      if (fn_discovery) process_branch(ins, offset , xptr);
+      if (fn_discovery) process_branch(ins, offset , xptr, (char*) vstart, (char*) vend);
       break;
 
     case XED_ICLASS_PUSH: 
@@ -706,7 +706,7 @@ nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
 
 
 static void 
-process_branch(char *ins, long offset, xed_decoded_inst_t *xptr)
+process_branch(char *ins, long offset, xed_decoded_inst_t *xptr, char* vstart, char* vend)
 { 
   char *relocated_ins = ins + offset; 
   const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
@@ -720,6 +720,12 @@ process_branch(char *ins, long offset, xed_decoded_inst_t *xptr)
 
     if (xed_operand_values_has_branch_displacement(vals)) {
       char *target = (char *) get_branch_target(relocated_ins, xptr, vals);
+      //
+      // if branch target is not within bounds, then this branch instruction is bogus ....
+      //
+      if (! (((vstart + offset) <= target) && (target <= (vend + offset)))) {
+	return;
+      }
       void *start, *end;
       if (target < relocated_ins) {
         unsigned char *tloc = (unsigned char *) target - offset;
