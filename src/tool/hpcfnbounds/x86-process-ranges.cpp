@@ -70,6 +70,8 @@ extern "C" {
 static void process_call(char *ins, long offset, xed_decoded_inst_t *xptr,
 			 void *start, void *end);
 
+static bool is_push_bp(char* ins);
+
 static void process_branch(char *ins, long offset, xed_decoded_inst_t *xptr, char* vstart, char* vend);
 
 static void after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr);
@@ -409,6 +411,56 @@ get_branch_target(char *ins, xed_decoded_inst_t *xptr,
 }
 
 
+//
+// special purpose check for some flavor of 'push bp' instruction
+//
+static bool
+is_push_bp(char* ins)
+{
+
+  xed_decoded_inst_t xedd_tmp;
+  xed_decoded_inst_t *xptr = &xedd_tmp;
+  xed_error_enum_t xed_error;
+
+
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+  xed_decoded_inst_zero_keep_mode(xptr);
+
+  xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+
+  if (xed_error != XED_ERROR_NONE) return false;
+
+  xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+
+  switch(xiclass) {
+  case XED_ICLASS_PUSH: 
+  case XED_ICLASS_PUSHFQ: 
+  case XED_ICLASS_PUSHFD: 
+  case XED_ICLASS_PUSHF:
+    {
+      //
+      // return true if push argument == some kind of bp
+      //
+      const xed_inst_t* xi = xed_decoded_inst_inst(xptr);
+      const xed_operand_t* op0 =  xed_inst_operand(xi, 0);
+      xed_operand_enum_t op0_name = xed_operand_name(op0);
+
+      if (op0_name == XED_OPERAND_REG0) {
+	xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
+	return x86_isReg_BP(regname);
+      }
+      else {
+	return false;
+      }
+    }
+    break;
+  default:
+    return false;
+    break;
+  }
+}
+
+
 static void 
 process_call(char *ins, long offset, xed_decoded_inst_t *xptr, 
 	     void *start, void *end)
@@ -423,9 +475,22 @@ process_call(char *ins, long offset, xed_decoded_inst_t *xptr,
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
 
     if (xed_operand_values_has_branch_displacement(vals)) {
-      void *vaddr = get_branch_target(ins + offset,xptr,vals);
+      void* vaddr = get_branch_target(ins + offset, xptr, vals);
       if (consider_possible_fn_address(vaddr)) {
-	add_stripped_function_entry(vaddr, 1 /* call count */);
+	//
+	// if called address is a 'push bp' instruction, then the target address of
+        // this call is considered a legitimate function start,
+	// and the function entry has the 'isvisible' fields set to true
+	//
+	if ( is_push_bp((char*)vaddr - offset) ) {
+	  add_function_entry(vaddr, NULL, true /* isvisible */, 1 /* call count */);
+	}
+	//
+	// otherwise, called address is weak function start, subject to later filtering
+	//
+	else {
+	  add_stripped_function_entry(vaddr, 1 /* call count */);
+	}
       }
     }
 
