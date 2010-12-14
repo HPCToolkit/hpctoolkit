@@ -356,6 +356,10 @@ hpcrun_thread_fini(epoch_t *epoch)
     dump_backtrace(epoch, epoch->btbuf_cur);
 #endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
 
+    if (hpcrun_get_disabled()) {
+      return;
+    }
+
     hpcrun_write_profile_data(epoch);
   }
 }
@@ -562,7 +566,7 @@ monitor_thread_pre_create(void)
 {
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
-  if (! hpcrun_is_initialized()) {
+  if (! hpcrun_is_initialized() || hpcrun_get_disabled()) {
     return NULL;
   }
 
