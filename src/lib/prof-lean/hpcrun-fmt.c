@@ -490,7 +490,8 @@ hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* fs, const char* pre)
 	  "((ty: %d) (val-ty: %d) (val-fmt: %d) (partner: %u) (show: %d) (showPercent: %d)) "
 	  "(period: %"PRIu64") (formula: %s) (format: %s)]\n",
 	  pre, hpcfmt_str_ensure(x->name), hpcfmt_str_ensure(x->description),
-	  x->flags.fields.ty, x->flags.fields.valTy, x->flags.fields.valFmt,
+	  (int)x->flags.fields.ty, (int)x->flags.fields.valTy, 
+	  (int)x->flags.fields.valFmt,
 	  x->flags.fields.partner, x->flags.fields.show, x->flags.fields.showPercent,
 	  x->period,
 	  hpcfmt_str_ensure(x->formula), hpcfmt_str_ensure(x->format));
@@ -675,8 +676,10 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
 			   const char* pre)
 {
+  // N.B.: convert 'id' and 'id_parent' to ints so leaf flag
+  // (negative) is apparent
   fprintf(fs, "%s[node: (id: %d) (id-parent: %d) ",
-	  pre, x->id, x->id_parent);
+	  pre, (int)x->id, (int)x->id_parent);
 
   if (flags.fields.isLogicalUnwind) {
     char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];

@@ -72,6 +72,8 @@
 
 //*************************** User Include Files ****************************
 
+#include <include/uint.h>
+
 #include "hpcio.h"
 #include "hpcfmt.h"
 
