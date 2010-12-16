@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2010/07/19}
+\setDate{ 2010/12/16}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -51,22 +51,45 @@ The Java-based \Prog{hpcviewer} interactively presents program performance in a 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcviewer} \oOpt{-n} \oOpt{hpctoolkit-database}
-
 Command-line usage:\\
-\Prog{hpcviewer} \File{hpctoolkit-database}
-
-\Prog{hpcviewer} -n \File{hpctoolkit-database}\\
-Opening \File{hpctoolkit-database} with no callers view. 
+\SP\SP\SP\Prog{hpcviewer} \oOpt{options} \oOpt{hpctoolkit-database}
 
 GUI usage:\\
-Launch \File{hpcviewer} and open \File{hpctoolkit-database}.
+\SP\SP\SP Launch \File{hpcviewer} and open the Experiment database \oOpt{hpctoolkit-database}.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
 The Java-based \Prog{hpcviewer} interactively presents program-performance Experiment databases in a top-down fashion.
 Since Experiment databases are self-contained, they may be relocated from a cluster for visulization on a laptop or workstation.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Arguments}
+
+\begin{Description}
+\item[\Arg{hpctoolkit-database}] An HPCToolkit Experiment database, which is the result of executing \Prog{hpcprof}, \Prog{hpcprof-mpi} or \Prog{hpcprof-flat}.
+\end{Description}
+
+%Default values for an option's optional arguments are shown in \{\}.
+
+\subsection{Options}
+
+\begin{Description}
+\item[\Opt{-n}]
+Do not display the Callers View.  (Saves memory and time.)
+
+\item[\Opt{-consolelog}]
+Send log entries to a console in addition to a log file.
+
+\item[\Opt{-debug}]
+Log additional information about plug-in dependency problems.
+
+\end{Description}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Detailed Description}
 
 \subsection{Views}
 
@@ -78,7 +101,8 @@ A top-down view that represents the dynamic calling contexts (call paths) in whi
 Using this view, one can explore performance measurements of an application in a top-down fashion to understand the costs incurred by calls to a procedure in a particular calling context.
 
   \item \textbf{Callers view.}
-This bottom up view enables one to look upward along call paths.
+This bottom-up view enables one to look upward along call paths.
+The view apportions a procedure's costs to its caller and, more generally, its calling contexts.
 This view is particularly useful for understanding the performance of software components or procedures that are used in more than one context.
 
   \item \textbf{Flat view.}
@@ -87,7 +111,7 @@ All costs incurred in \emph{any} calling context by a procedure are aggregated t
 \end{itemize}
 
 
-\subsection{Panes.}
+\subsection{Panes}
 
 The browser window is divided into three panes:
 

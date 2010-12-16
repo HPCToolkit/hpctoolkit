@@ -9,57 +9,59 @@
 The command line syntax is as follows:
 \begin{quote}
 \begin{verbatim}
-  hpcviewer [flags] [<hpctoolkit-database>]
+  hpcviewer [options] [<hpctoolkit-database>]
 \end{verbatim}
 \end{quote}
 Here, \texttt{<database-directory>} is an optional argument to load a database automatically.
-Without this option, \hpcviewer{} will prompt for the location of a database.
+Without this argument, \hpcviewer{} will prompt for the location of a database.
 
-The \texttt{flags} are:
+The possible options are as follows:
 \begin{itemize}
- \item \texttt{-n} not to display callers view to safe memory space and time
- \item \texttt{-consolelog} causes any log entries to be sent to the console as well (to get a console window, be sure to use java as the VM instead of javaw).
- \item \texttt{-debug} causes to log extra information about plug-in dependency problems
+ \item \texttt{-n}: Do not display the Callers View.  (Saves memory and time.)
+
+ \item \texttt{-consolelog}: Send log entries to a console in addition to a log file.
+   (To get a console window, be sure to use java as the VM instead of javaw.)
+
+ \item \texttt{-debug}: Log additional information about plug-in dependency problems.
 \end{itemize}
 
 % ===========================================================================
 % ===========================================================================
-\section{Installing \hpcviewer{}}
 
-\subsection{Requirements}
-For all platforms:
-\begin{itemize}
- \item Java 1.5 (at least). GCC's gcj is not supported. Sun's JDK or IBM's Icetea is supported.
-\end{itemize}
-For Linux/Unix platforms:
-\begin{itemize}
- \item GTK+ 
-\end{itemize}
+%% \section{Installing \hpcviewer{}}
 
-\subsection{For all platforms}
-\begin{enumerate}
-  \item Download hpcviewer package that is suitable for your platform from 
-\begin{quote}
-	\texttt{https://outreach.scidac.gov/frs/?group\_id=22} 
-\end{quote}
-  \item Untar the file into a temporary directory (for Linux/Unix plarforms) or an installation directory (for Windows and Mac platforms).
-\end{enumerate}
+%% \subsection{Requirements}
+%% \begin{itemize}
+%%  \item Java Runtime Environment (JRE) 1.5 or greater.
+%%    Use the Sun or IBM version; we have had problems with OpenJDK.
+
+%%  \item On Linux, GTK+ is required.
+%% \end{itemize}
 
 
-\subsection{Linux/Unix platforms specific}
+%% \subsection{Generic Instructions}
+%% \begin{enumerate}
+%%   \item Download \hpcviewer{} package that is suitable for your platform from 
+%%     \begin{quote}
+%%       \url{https://outreach.scidac.gov/frs/?group\_id=22} 
+%%     \end{quote}
+%%   \item Untar the tarball into a temporary directory (Linux) or an installation directory (Windows and Mac).
+%% \end{enumerate}
 
-To install hpcviewer, unpack the tar file, cd into "\hpcviewer{}" directory (the
-directory containing README file) and run:
-\begin{verbatim}
-   ./install dir
-\end{verbatim}
-where "\texttt{dir}" is the top-level hpctoolkit install directory, the same
-directory specified as --prefix in hpctoolkit's configure.
 
-Note: the normal procedure is first to compile and install hpctoolkit,
-and then install hpcviewer into the same prefix directory.  It is not
-necessary to install hpctoolkit first, but in that case, the hpcviewer
-install script will issue a warning and ask for confirmation.
+%% \subsection{Linux-specific Instructions}
+
+%% To install \hpcviewer{} in an \HPCToolkit{} installation, unpack the tarball and execute the following command:
+%% \begin{quote}
+%% \begin{verbatim}
+%%   ./<hpcviewer>/install <install-path>
+%% \end{verbatim}
+%% \end{quote}
+%% Here, \mytt{<hpcviewer>} is the directory created by unpacking the tarball; and 
+%% \mytt{<install-path>} is the same directory passed to the \texttt{--prefix} option of \HPCToolkit{}'s \texttt{configure} script.
+
+%% Typically one compiles and installs \HPCToolkit{} before installing \hpcviewer{}, but this is not necessary.
+%% Note, however, that if \hpcviewer{} is installed first, the \mytt{install} script will issue a warning and request confirmation.
 
 
 % ===========================================================================
