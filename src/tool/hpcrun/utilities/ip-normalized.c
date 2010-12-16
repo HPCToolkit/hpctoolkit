@@ -81,10 +81,9 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
   }
 
   EMSG("%p not normalizable", unnormalized_ip);
-
   if (ENABLED(NORM_IP_DBG)){
     EMSG("/proc/maps below");
-    char tmp[1024 * 1024];
+    char tmp[128];
     snprintf(tmp, sizeof(tmp), "/proc/%u/maps", getpid());
     FILE* loadmap = fopen(tmp, "r");
     char linebuf[1024 + 1];
@@ -97,6 +96,6 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
     }
     fclose(loadmap);
   }
+
   return (ip_normalized_t) {.lm_id = 0, .lm_ip = (uintptr_t) unnormalized_ip};
 }
-

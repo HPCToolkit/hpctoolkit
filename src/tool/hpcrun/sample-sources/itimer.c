@@ -186,6 +186,18 @@ METHOD_FN(init)
 }
 
 static void
+METHOD_FN(thread_init)
+{
+  TMSG(ITIMER_CTL, "thread init (no action needed)");
+}
+
+static void
+METHOD_FN(thread_init_action)
+{
+  TMSG(ITIMER_CTL, "thread action (noop)");
+}
+
+static void
 METHOD_FN(start)
 {
   if (! hpcrun_td_avail()){
@@ -213,6 +225,12 @@ METHOD_FN(start)
 #endif
 
   TD_GET(ss_state)[self->evset_idx] = START;
+}
+
+static void
+METHOD_FN(thread_fini_action)
+{
+  TMSG(ITIMER_CTL, "thread action (noop)");
 }
 
 static void
@@ -303,7 +321,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 # define sample_period period
 #endif
 
-  TMSG(ITIMER_CTL, "setting metric ITIMER, period = %ld", sample_period);
+  TMSG(ITIMER_CTL, "setting metric itimer period = %ld", sample_period);
   hpcrun_set_metric_info_and_period(metric_id, "WALLCLOCK (us)",
 				    MetricFlags_ValFmt_Int,
 				    sample_period);

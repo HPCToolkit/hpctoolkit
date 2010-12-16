@@ -98,6 +98,18 @@ METHOD_FN(init)
 
 
 static void
+METHOD_FN(thread_init)
+{
+  TMSG(NONE_CTL, "thread init (no action needed)");
+}
+
+static void
+METHOD_FN(thread_init_action)
+{
+  TMSG(NONE_CTL, "thread init action (noop)");
+}
+
+static void
 METHOD_FN(start)
 {
   TMSG(NONE_CTL,"starting NONE");
@@ -105,6 +117,11 @@ METHOD_FN(start)
   TD_GET(ss_state)[self->evset_idx] = START;
 }
 
+static void
+METHOD_FN(thread_fini_action)
+{
+  TMSG(NONE_CTL, "thread fini action (noop)");
+}
 
 static void
 METHOD_FN(stop)
@@ -113,14 +130,12 @@ METHOD_FN(stop)
   TD_GET(ss_state)[self->evset_idx] = STOP;
 }
 
-
 static void
 METHOD_FN(shutdown)
 {
   METHOD_CALL(self,stop); // make sure stop has been called
   self->state = UNINIT;
 }
-
 
 static bool
 METHOD_FN(supports_event,const char *ev_str)

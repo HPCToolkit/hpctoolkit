@@ -91,7 +91,10 @@ typedef struct sample_source_t {
   // specific methods
 
   VMETHOD_DEF(init);
+  VMETHOD_DEF(thread_init);
+  VMETHOD_DEF(thread_init_action);
   VMETHOD_DEF(start);
+  VMETHOD_DEF(thread_fini_action);
   VMETHOD_DEF(stop);
   VMETHOD_DEF(shutdown);
   METHOD_DEF(bool, supports_event, const char* ev_str);

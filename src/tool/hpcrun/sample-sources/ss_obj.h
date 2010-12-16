@@ -77,7 +77,10 @@ sample_source_t obj_name() = {
   // specific methods
 
   .init = init,
+  .thread_init = thread_init,
+  .thread_init_action = thread_init_action,
   .start = start,
+  .thread_fini_action = thread_fini_action,
   .stop  = stop,
   .shutdown = shutdown,
   .supports_event = supports_event,

@@ -186,6 +186,16 @@ METHOD_FN(init)
 }
 
 static void
+METHOD_FN(thread_init)
+{
+}
+
+static void
+METHOD_FN(thread_init_action)
+{
+}
+
+static void
 METHOD_FN(start)
 {
   if (! hpcrun_td_avail()){
@@ -213,6 +223,11 @@ METHOD_FN(start)
 #endif
 
   TD_GET(ss_state)[self->evset_idx] = START;
+}
+
+static void
+METHOD_FN(thread_fini_action)
+{
 }
 
 static void
