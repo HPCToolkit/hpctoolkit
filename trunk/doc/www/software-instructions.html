@@ -147,6 +147,10 @@ Some vendor compilers that support GNU extensions also work.
 
 <li>
 <p>To use <span class="hpctool">hpcviewer</span> (HPCToolkit's interactive presentation tool) on MacOS, Windows, or Linux, a Java runtime environment (JRE) &ge; 1.5 is required.
+Use the Sun or IBM version; we have had problems with OpenJDK.
+</p>
+
+<p>
 To use <span class="hpctool">hpcviewer</span> on Linux, <a href="http://www.gtk.org">GTK+</a> is also required.
 </p>
 
@@ -302,8 +306,24 @@ Please note that a list of examples below provides <code>configure</code> comman
 </li>
 
 <li>
-<p>Install <span class="hpctool">hpcviewer</span>.  Simply move the directory tree to the desired location.
+<p>Install <span class="hpctool">hpcviewer</span>.
 </p>
+
+  <ul class="noindent">
+  
+  <li> To install <span class="hpctool">hpcviewer</span> as a stand-alone package, simply unpack and move the directory tree to the desired location.
+  (This is the only option on Windows or MacOS.)
+  </li>
+
+  <li> To install <span class="hpctool">hpcviewer</span> in an HPCToolkit installation, unpack the tarball and execute the following command:
+    <div class="indent">
+      <code>./&lt;<i>hpcviewer</i>&gt;/install &lt;<i>install-path</i>&gt;</code>
+    </div>
+    Here, <code>&lt;<i>hpcviewer</i>&gt;</code> is the directory created by unpacking the tarball; and <code>&lt;<i>install-path</i>&gt;</code> is the above HPCToolkit installation directory.
+  </li>
+
+  </ul>
+
 </li>
 
 </ol>
@@ -345,8 +365,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
           <dt>HPCToolkit's Externals</dt>
 	  <dd><code>
-	      ../configure \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=`pwd`/../x86_64-linux<br />
+	      ../configure --prefix=`pwd`/../x86_64-linux<br />
 	      </code>
 	  </dd>
 
@@ -496,7 +515,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2010/12/08</span>]
+<p>[<span class="lastupdated">Page last updated: 2010/12/16</span>]
 </p>
 
 <!-- ********************************************************************** -->
