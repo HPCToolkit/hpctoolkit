@@ -63,6 +63,8 @@
 #include <ucontext.h>
 #include <stdbool.h>
 
+#include <pthread.h>
+
 /******************************************************************************
  * libmonitor
  *****************************************************************************/
@@ -130,6 +132,30 @@ METHOD_FN(init)
 }
 
 static void
+METHOD_FN(thread_init)
+{
+  TMSG(PAPI, "thread init");
+  int retval = PAPI_thread_init(pthread_self);
+  if (retval != PAPI_OK) {
+    EEMSG("PAPI_thread_init NOT ok, retval = %d", retval);
+    monitor_real_abort();
+  }
+  TMSG(PAPI, "thread init OK");
+}
+
+static void
+METHOD_FN(thread_init_action)
+{
+  TMSG(PAPI, "register thread");
+  int retval = PAPI_register_thread();
+  if (retval != PAPI_OK) {
+    EEMSG("PAPI_register_thread NOT ok, retval = %d", retval);
+    monitor_real_abort();
+  }
+  TMSG(PAPI, "register thread ok");
+}
+
+static void
 METHOD_FN(start)
 {
   thread_data_t *td = hpcrun_get_thread_data();
@@ -143,6 +169,17 @@ METHOD_FN(start)
   }
 
   TD_GET(ss_state)[self->evset_idx] = START;
+}
+
+static void
+METHOD_FN(thread_fini_action)
+{
+  TMSG(PAPI, "unregister thread");
+  return;
+  int retval = PAPI_unregister_thread();
+  char msg[1000] = {'\0'};
+  snprintf(msg, sizeof(msg)-1, "!!NOT PAPI_OK!! (code = %d)", retval);
+  TMSG(PAPI, "unregister thread returns %s", retval == PAPI_OK, "PAPI_OK", msg);
 }
 
 static void

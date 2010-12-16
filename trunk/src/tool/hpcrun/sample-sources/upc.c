@@ -224,6 +224,17 @@ METHOD_FN(init)
   TMSG(UPC, "BGP_UPC_Initialize");
 }
 
+static void
+METHOD_FN(thread_init)
+{
+}
+
+static void
+METHOD_FN(thread_init_action)
+{
+}
+
+
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
@@ -331,6 +342,11 @@ METHOD_FN(start)
 
   TD_GET(ss_state)[self->evset_idx] = START;
   TMSG(UPC, "BGP_UPC_Start on core 0");
+}
+
+static void
+METHOD_FN(thread_fini_action)
+{
 }
 
 static void

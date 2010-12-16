@@ -309,6 +309,7 @@ hpcrun_init_thread_support()
   hpcrun_init_pthread_key();
   hpcrun_set_thread0_data();
   hpcrun_threaded_data();
+  SAMPLE_SOURCES(thread_init);
 }
 
 
@@ -330,6 +331,9 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
   hpcrun_epoch_init(thr_ctxt);
 
+  // sample sources take thread specific action prior to start (often is a 'registration' action);
+  SAMPLE_SOURCES(thread_init_action);
+
   // start the sample sources
   SAMPLE_SOURCES(start);
 
@@ -347,6 +351,7 @@ hpcrun_thread_fini(epoch_t *epoch)
   TMSG(FINI,"thread fini");
   if (hpcrun_is_initialized()) {
     TMSG(FINI,"thread finit stops sampling");
+    SAMPLE_SOURCES(thread_fini_action);
     SAMPLE_SOURCES(stop);
     lushPthr_thread_fini(&TD_GET(pthr_metrics));
 

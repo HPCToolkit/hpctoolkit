@@ -103,6 +103,18 @@ METHOD_FN(init)
 
 
 static void
+METHOD_FN(thread_init)
+{
+  TMSG(MEMLEAK, "thread init (no action needed)");
+}
+
+static void
+METHOD_FN(thread_init_action)
+{
+  TMSG(MEMLEAK, "thread action (noop)");
+}
+
+static void
 METHOD_FN(start)
 {
   TMSG(MEMLEAK,"starting MEMLEAK");
@@ -110,6 +122,11 @@ METHOD_FN(start)
   TD_GET(ss_state)[self->evset_idx] = START;
 }
 
+static void
+METHOD_FN(thread_fini_action)
+{
+  TMSG(MEMLEAK, "thread fini (noop)");
+}
 
 static void
 METHOD_FN(stop)

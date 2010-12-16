@@ -110,11 +110,29 @@ METHOD_FN(init)
 }
 
 static void
+METHOD_FN(thread_init)
+{
+  TMSG(RETCNT_CTL, "thread init (no action needed)");
+}
+
+static void
+METHOD_FN(thread_init_action)
+{
+  TMSG(RETCNT_CTL, "thread action (noop)");
+}
+
+static void
 METHOD_FN(start)
 {
   TMSG(RETCNT_CTL,"starting " HPCRUN_METRIC_RetCnt);
 
   TD_GET(ss_state)[self->evset_idx] = START;
+}
+
+static void
+METHOD_FN(thread_fini_action)
+{
+  TMSG(RETCNT_CTL, "thread fini (no action needed");
 }
 
 static void

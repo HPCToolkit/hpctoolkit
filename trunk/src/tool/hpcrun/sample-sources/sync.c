@@ -96,6 +96,18 @@ METHOD_FN(init)
   self->state = INIT; // no actual init actions necessary for sync events
 }
 
+static void
+METHOD_FN(thread_init)
+{
+  TMSG(SYNC_CTL, "thread init (no action needed)");
+}
+
+static void
+METHOD_FN(thread_init_action)
+{
+  TMSG(SYNC_CTL, "thread action (noop)");
+}
+
 
 static void
 METHOD_FN(start)
@@ -105,6 +117,11 @@ METHOD_FN(start)
   TD_GET(ss_state)[self->evset_idx] = START;
 }
 
+static void
+METHOD_FN(thread_fini_action)
+{
+  TMSG(SYNC_CTL, "thread fini (no action needed");
+}
 
 static void
 METHOD_FN(stop)

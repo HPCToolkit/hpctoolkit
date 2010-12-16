@@ -178,6 +178,28 @@ METHOD_FN(init)
   self->state = INIT;
 }
 
+//
+// Many sample sources require additional initialization when employed in
+// threaded programs.
+// The 'thread_init' method is the hook to supply the additional initialization
+//
+
+static void
+METHOD_FN(thread_init)
+{
+  // sample source thread init code here
+}
+
+//
+// Some sample sources may require each thread function to take some 'thread_init_action'
+// whenever a thread is started
+// [ For example, PAPI source uses 'PAPI_register_thread' function ]
+//
+
+static void
+METHOD_FN(thread_init_action)
+{
+}
 
 static void
 METHOD_FN(start)
@@ -219,6 +241,17 @@ METHOD_FN(start)
 
   // This line must always appear at the end of a start method
   TD_GET(ss_state)[self->evset_idx] = START;
+}
+
+//
+// Some sample sources may require each thread function to take some 'thread_fini_action'
+// whenever the thread is shut down.
+// [ For example, PAPI source uses 'PAPI_unregister_thread' function ]
+//
+
+static void
+METHOD_FN(thread_fini_action)
+{
 }
 
 static void
