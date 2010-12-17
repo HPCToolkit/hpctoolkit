@@ -351,12 +351,12 @@ hpcrun_thread_fini(epoch_t *epoch)
   TMSG(FINI,"thread fini");
   if (hpcrun_is_initialized()) {
     TMSG(FINI,"thread finit stops sampling");
-    SAMPLE_SOURCES(thread_fini_action);
     SAMPLE_SOURCES(stop);
+    SAMPLE_SOURCES(thread_fini_action);
     lushPthr_thread_fini(&TD_GET(pthr_metrics));
 
     // FIXME: currently breaks the build.
-#if 0
+#if 0 // defined(HOST_SYSTEM_IBM_BLUEGENE)
     EMSG("Backtrace for last sample event:\n");
     dump_backtrace(epoch, epoch->btbuf_cur);
 #endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
