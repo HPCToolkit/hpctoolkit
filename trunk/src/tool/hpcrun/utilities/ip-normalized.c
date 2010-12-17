@@ -63,7 +63,8 @@
 
 #define NULL_OR_NAME(v) ((v) ? (v)->name : "(NULL)")
 
-ip_normalized_t ip_normalized_NULL = { .lm_id = 0, .lm_ip = 0 };
+const ip_normalized_t ip_normalized_NULL_lval = ip_normalized_NULL;
+
 
 ip_normalized_t
 hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
@@ -74,7 +75,7 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
   }
   
   if (lm && lm->dso_info) {
-    ip_normalized_t ip_norm = {
+    ip_normalized_t ip_norm = (ip_normalized_t) {
       .lm_id = lm->id,
       .lm_ip = (uintptr_t)unnormalized_ip - lm->dso_info->start_to_ref_dist };
     return ip_norm;
@@ -97,5 +98,6 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
     fclose(loadmap);
   }
 
-  return (ip_normalized_t) {.lm_id = 0, .lm_ip = (uintptr_t) unnormalized_ip};
+  return (ip_normalized_t) {.lm_id = HPCRUN_FMT_LMId_NULL,
+			    .lm_ip = (uintptr_t) unnormalized_ip};
 }

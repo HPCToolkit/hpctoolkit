@@ -188,7 +188,7 @@ hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
 
 static int
 hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, 
-		   ip_normalized_t* reg_value)
+			ip_normalized_t* reg_value)
 {
   //
   // only implement 1 reg for the moment.
@@ -459,7 +459,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     }
   }
   next_sp += 1;
-  ip_normalized_t next_pc_norm;
+  ip_normalized_t next_pc_norm = ip_normalized_NULL;
   cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) - 1,
 					  next_pc, &next_pc_norm);
 
@@ -535,7 +535,7 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
   if ((void *)next_sp > sp) {
     // this condition is a weak correctness check. only
     // try building an interval for the return address again if it succeeds
-    ip_normalized_t next_pc_norm;
+    ip_normalized_t next_pc_norm = ip_normalized_NULL;
     uw = (unwind_interval *)hpcrun_addr_to_interval(((char *)next_pc) - 1, 
 						    next_pc, &next_pc_norm);
     if (! uw){
@@ -679,7 +679,7 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
       hpcrun_unw_throw();
     }
 
-    ip_normalized_t next_pc_norm;
+    ip_normalized_t next_pc_norm = ip_normalized_NULL;
     cursor->intvl = hpcrun_addr_to_interval(((char *)next_pc) + offset,
 					    next_pc, &next_pc_norm);
     if (cursor->intvl) {

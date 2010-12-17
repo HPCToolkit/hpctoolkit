@@ -337,16 +337,17 @@ typedef enum {
 
 static int 
 hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, 
-		   void **reg_value)
+			  void** reg_value)
 {
   assert(reg_id == UNW_REG_IP);
   *reg_value = cursor->pc_unnorm;
   return 0;
 }
 
+
 static int 
 hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, 
-		    ip_normalized_t *reg_value)
+		    ip_normalized_t* reg_value)
 {
   assert(reg_id == UNW_REG_IP);
   *reg_value = cursor->pc_norm;
@@ -415,12 +416,12 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   UNW_INTERVAL_t intvl = CASTTO_UNW_INTERVAL_t(cursor->intvl);
 
   // next (parent) frame
-  void*  nxt_pc = pc_NULL;
+  void*           nxt_pc = pc_NULL;
+  ip_normalized_t nxt_pc_norm = ip_normalized_NULL;
   void** nxt_sp = NULL;
   void** nxt_fp = NULL;
   void*  nxt_ra = NULL; // always NULL unless we go through a signal handler
   UNW_INTERVAL_t nxt_intvl = UNW_INTERVAL_NULL;
-  ip_normalized_t nxt_pc_norm = ip_normalized_NULL;
 
   if (UI_IS_NULL(intvl)) {
     TMSG(UNW, "error: missing interval for pc=%p", pc);
@@ -575,11 +576,11 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   if (MYDBG) { ui_dump(UI_ARG(nxt_intvl)); }
 
   cursor->pc_unnorm = nxt_pc;
+  cursor->pc_norm   = nxt_pc_norm;
   cursor->ra        = nxt_ra;
   cursor->sp        = nxt_sp;
   cursor->bp        = nxt_fp;
   cursor->intvl     = CASTTO_UNW_CURSOR_INTERVAL_t(nxt_intvl);
-  cursor->pc_norm   = nxt_pc_norm;
 
   return (didTroll) ? STEP_TROLL : STEP_OK;
 }
