@@ -53,6 +53,9 @@
 
 #include <hpcrun/loadmap.h>
 
+#include <lib/prof-lean/hpcrun-fmt.h>
+
+
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
@@ -77,11 +80,15 @@ typedef struct ip_normalized_t {
 } ip_normalized_t;
 
 
-extern ip_normalized_t ip_normalized_NULL;
+#define ip_normalized_NULL \
+  { .lm_id = HPCRUN_FMT_LMId_NULL, .lm_ip = HPCRUN_FMT_LMIp_NULL }
 
-//
+extern const ip_normalized_t ip_normalized_NULL_lval;
+
+
+// ---------------------------------------------------------
 // comparison operations, mainly for cct sibling splay operations
-//
+// ---------------------------------------------------------
 
 static inline bool
 ip_normalized_eq(const ip_normalized_t* a, const ip_normalized_t* b)
@@ -91,14 +98,15 @@ ip_normalized_eq(const ip_normalized_t* a, const ip_normalized_t* b)
 			&& a->lm_ip == b->lm_ip) );
 }
 
+
 static inline bool
 ip_normalized_lt(const ip_normalized_t* a, const ip_normalized_t* b)
 {
   if (a == b) {
     return false;
   }
-  if (! a) a = &ip_normalized_NULL;
-  if (! b) b = &ip_normalized_NULL;
+  if (! a) a = &ip_normalized_NULL_lval;
+  if (! b) b = &ip_normalized_NULL_lval;
 
   if (a->lm_id < b->lm_id) return true;
   if (a->lm_id > b->lm_id) return false;
@@ -106,6 +114,7 @@ ip_normalized_lt(const ip_normalized_t* a, const ip_normalized_t* b)
   if (a->lm_ip > b->lm_ip) return false;
   return false;
 }
+
 
 static inline bool
 ip_normalized_gt(const ip_normalized_t* a, const ip_normalized_t* b)

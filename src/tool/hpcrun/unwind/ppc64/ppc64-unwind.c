@@ -115,7 +115,7 @@ typedef enum {
 
 
 static int 
-hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id, 
+hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
 			  void** reg_value)
 {
   assert(reg_id == UNW_REG_IP);
@@ -126,7 +126,7 @@ hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id,
 
 
 static int 
-hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t *cursor, unw_reg_code_t reg_id, 
+hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
 			ip_normalized_t* reg_value)
 {
   assert(reg_id == UNW_REG_IP);
@@ -162,18 +162,25 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
 
 
 void 
-hpcrun_unw_init_cursor(hpcrun_unw_cursor_t *cursor, void *context)
+hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   ucontext_t* ctxt = (ucontext_t*)context;
 
   cursor->pc_unnorm = ucontext_pc(ctxt);
+  cursor->pc_norm   = (ip_normalized_t) ip_normalized_NULL;
   cursor->ra        = NULL;
   cursor->sp        = ucontext_sp(ctxt);
   cursor->bp        = NULL;
   cursor->flags     = UnwFlg_StackTop;
 
+  // Capture unnormalized ip here b/c hpcrun_addr_to_interval() will
+  // not call hpcrun_normalize_ip() in exceptional cases.
+  cursor->pc_norm = ((ip_normalized_t)
+                     { .lm_id = HPCRUN_FMT_LMId_NULL,
+		       .lm_ip = (uintptr_t) cursor->pc_unnorm });
+
   unw_interval_t* intvl = (unw_interval_t*)
-    hpcrun_addr_to_interval(cursor->pc_unnorm, 
+    hpcrun_addr_to_interval(cursor->pc_unnorm,
 			    cursor->pc_unnorm, &cursor->pc_norm);
 
   cursor->intvl = (splay_interval_t*)intvl;
@@ -194,7 +201,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t *cursor, void *context)
 
 
 int 
-hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
+hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   // current frame
   void*  pc = cursor->pc_unnorm;
@@ -205,7 +212,8 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   bool isInteriorFrm = (cursor->flags != UnwFlg_StackTop);
   
   // next (parent) frame
-  void*  nxt_pc = NULL;
+  void*           nxt_pc = NULL;
+  ip_normalized_t nxt_pc_norm = ip_normalized_NULL;
   void** nxt_sp = NULL;
   void** nxt_fp = NULL; // unused
   void*  nxt_ra = NULL; // always NULL unless we go through a signal handler
@@ -279,7 +287,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
-  ip_normalized_t nxt_pc_norm;
   nxt_intvl = (unw_interval_t*)hpcrun_addr_to_interval(nxt_pc,
 						       nxt_pc, &nxt_pc_norm);
  
@@ -330,12 +337,12 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   if (MYDBG) { ui_dump(nxt_intvl); }
 
   cursor->pc_unnorm = nxt_pc;
+  cursor->pc_norm   = nxt_pc_norm;
   cursor->ra        = nxt_ra;
   cursor->sp        = nxt_sp;
   cursor->bp        = nxt_fp;
   cursor->intvl     = (splay_interval_t*)nxt_intvl;
   cursor->flags     = UnwFlg_NULL;
-  cursor->pc_norm   = nxt_pc_norm;
 
   return STEP_OK;
 }

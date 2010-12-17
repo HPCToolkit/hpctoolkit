@@ -311,7 +311,7 @@ LUSHI_step_pnote(lush_cursor_t* cursor)
 
 #define SET_LIP_AND_TY(cl, lip, ty)					\
   if (!cl) {								\
-    cilk_ip_set(lip, ip_normalized_NULL);				\
+    cilk_ip_set(lip, ip_normalized_NULL_lval);				\
     ty = LUSH_STEP_END_CHORD;						\
   }									\
   else {								\

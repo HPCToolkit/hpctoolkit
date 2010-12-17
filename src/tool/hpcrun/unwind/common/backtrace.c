@@ -380,10 +380,11 @@ hpcrun_generate_backtrace(ucontext_t* context,
     
     hpcrun_ensure_btbuf_avail();
 
-    td->btbuf_cur->cursor    = cursor;
+    td->btbuf_cur->cursor = cursor;
     //Broken if HPC_UNW_LITE defined
-    hpcrun_unw_get_ip_norm_reg(&td->btbuf_cur->cursor, &td->btbuf_cur->ip_norm);
-    td->btbuf_cur->ra_loc    = NULL;
+    hpcrun_unw_get_ip_norm_reg(&td->btbuf_cur->cursor,
+			       &td->btbuf_cur->ip_norm);
+    td->btbuf_cur->ra_loc = NULL;
     frame_t* prev = td->btbuf_cur;
     td->btbuf_cur++;
     unw_len++;
@@ -569,9 +570,9 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
 						  cursor.intvl->lm);
     frame_t* prev = hpcrun_bt_push(bt,
 				   &((frame_t){.cursor = cursor, 
-					 .ip_norm = ip_norm,
-					 .ra_loc = NULL}));
-
+					       .ip_norm = ip_norm,
+					       .ra_loc = NULL}));
+    
     ret = hpcrun_unw_step(&cursor);
     backtrace_trolled = backtrace_trolled || (ret == STEP_TROLL);
     if (ret <= 0) {
