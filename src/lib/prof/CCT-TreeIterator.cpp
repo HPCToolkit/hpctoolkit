@@ -139,6 +139,19 @@ cmp(uint64_t x, uint64_t y)
 }
 
 
+static int
+cmpByDynInfoSpecial(const ADynNode* x_dyn, const ADynNode* y_dyn)
+{
+  // INVARIANT: x and y are non-NULL
+
+  int diff_lmId = x_dyn->lmId() - y_dyn->lmId();
+  if (diff_lmId != 0) {
+    return diff_lmId;
+  }
+  return cmp(x_dyn->lmIP(), y_dyn->lmIP());
+}
+
+
 ANodeSortedIterator::
 ANodeSortedIterator(const ANode* node,
 		    ANodeSortedIterator::cmp_fptr_t compare_fn,
@@ -190,33 +203,53 @@ ANodeSortedIterator::cmpByStructureInfo(const void* a, const void* b)
   ANode* y = (*(ANode**)b);
 
   if (x && y) {
+    // 0. test for equality
+    if (x == y) {
+      return 0;
+    }
+
+    // INVARIANT: x != y, so never return 0
+    
+    // 1. distinguish by structure ids
     uint x_id = x->structureId();
     uint y_id = y->structureId();
-    
     int cmp_id = cmp(x_id, y_id);
-    int cmp_ty = (int)x->type() - (int)y->type();
-    if (cmp_id == 0 && cmp_ty == 0 && x != y) {
-      // hard case: cannot return 0!
-      ANode* x_parent = x->parent();
-      ANode* y_parent = y->parent();
-      if (x_parent == y_parent) {
-	// This should be sufficient for the CCTs that we see.
-	// Could compare childCount() and other aspects of children.
-	return cmpByDynInfo(a, b);
-      }
-      else {
-	// if parents are different, compare by context
-	ANode* x_parent = x->parent();
-	ANode* y_parent = y->parent();
-	return cmpByStructureInfo(&x_parent, &y_parent);
-      }
-    }
-    else if (cmp_id == 0) {
-      return cmp_ty;
-    }
-    else {
+    if (cmp_id != 0) {
       return cmp_id;
     }
+
+    // 2. distinguish by types
+    int cmp_ty = (int)x->type() - (int)y->type();
+    if (cmp_ty != 0) {
+      return cmp_ty;
+    }
+
+    // 3. distinguish by dynamic info (unnormalized CCTs)
+    //    (for determinism, ensure x and y are both ADynNodes)
+    ADynNode* x_dyn = dynamic_cast<ADynNode*>(x);
+    ADynNode* y_dyn = dynamic_cast<ADynNode*>(y);
+    if (x_dyn && y_dyn) {
+      int cmp_dyn = cmpByDynInfoSpecial(x_dyn, y_dyn);
+      if (cmp_dyn != 0) {
+	return cmp_dyn;
+      }
+    }
+    
+    // 4. distinguish by tree context
+    ANode* x_parent = x->parent();
+    ANode* y_parent = y->parent();
+    if (x_parent != y_parent) {
+      int cmp_ctxt = cmpByStructureInfo(&x_parent, &y_parent);
+      if (cmp_ctxt != 0) {
+	return cmp_ctxt;
+      }
+    }
+    
+    // *. Could compare childCount() and other aspects of children.
+    DIAG_Die("Prof::CCT::ANodeSortedIterator::cmpByStructureInfo: cannot compare:"
+		<< "\n\tx: " << x->toStringMe(Prof::CCT::Tree::OFlg_Debug)
+		<< "\n\ty: " << y->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+    return 0;
   }
   else if (x) {
     return 1; // x > y=NULL (only used for recursive case)
@@ -240,11 +273,7 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
   ADynNode* y_dyn = dynamic_cast<ADynNode*>(y);
 
   if (x_dyn && y_dyn) {
-    int diff_lmId = x_dyn->lmId() - y_dyn->lmId();
-    if (diff_lmId != 0) {
-      return diff_lmId;
-    }
-    return cmp(x_dyn->lmIP(), y_dyn->lmIP());
+    return cmpByDynInfoSpecial(x_dyn, y_dyn);
   }
   else if (x_dyn) {
     return 1; // x_dyn > y_dyn=NULL
