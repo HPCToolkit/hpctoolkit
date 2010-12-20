@@ -1416,7 +1416,6 @@ This technique is used only when truly desperate.
 
 \section{\hpcviewer{} claims that there are several calls to a function within a particular source code scope, but my source code only has one!  Why?}
 
-In a word: no.
 In the course of code optimization, compilers often replicate code blocks.
 For instance, as it generates code, a compiler may peel iterations from a loop or split the iteration space of a loop into two or more loops.
 In such cases, one call in the source code may be transformed into multiple distinct calls that reside at different code addresses in the executable.
