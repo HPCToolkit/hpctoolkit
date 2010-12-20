@@ -34,6 +34,9 @@ Contents:
 - We are not yet supporting measurement and analysis of Cilk
   applications, though you are free to try it out.  (PPoPP '09)
 
+- We are don't yet support Cilk++. It violates our assumption that
+  profile interrupts can be processed on a thread's stack.
+ 
 - We are not yet supporting measurement and analysis of Pthreads lock
   contention, though you are free to try it out.  (PPoPP '10)
 
