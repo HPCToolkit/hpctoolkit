@@ -71,7 +71,7 @@ ul.noindent > li:before {
  */
 .hpctool {
   font-weight: bold;
-  color: maroon;
+  /* color: maroon; */
   /* text-decoration: none; */
   background-color: transparent;
 }
@@ -190,9 +190,9 @@ a {
   background-color: transparent;
 }
 
-pre, code { 
+pre, code {
   font-family: monospace;
-  font-size: 1em;
+  font-size: 1.1em;
   background-color: transparent; 
 }
 
