@@ -28,7 +28,7 @@ Contents:
 
 
 ----------------------------------------
-0.2
+0.2. Unsupported experimental features
 ----------------------------------------
 
 - We are not yet supporting measurement and analysis of Cilk
@@ -45,11 +45,7 @@ Contents:
 - We have added prototype support for memory leak detection to hpcrun.
   You can invoke this using the hpcrun options "-e MEMLEAK". The core
   functionality is operational, but it will be faster and have
-  better user interface in a forthcoming release.
-
-- hpcviewer's attribution of inclusive costs in the caller's view
-  works for programs with simple recursion; however, costs can
-  be incorrect in the presence of mutual recursion.
+  a better user interface in a forthcoming release.
 
 
 =============================================================================
@@ -150,8 +146,9 @@ Contents:
 
 1.4.1. Bugs
 
-- For recursive programs, hpcviewer may compute invalid metric values
-  for Callers View paths that are of length two and greater.
+- hpcviewer's attribution of inclusive costs in the caller's view
+  works for programs with simple recursion; however, costs can
+  be incorrect in the presence of mutual recursion.
 
 
 =============================================================================
