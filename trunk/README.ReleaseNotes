@@ -39,6 +39,11 @@ Contents:
 
 - We do not yet support MPI blame shifting on IBM BG/P. (SC '10)
 
+- We have added prototype support for memory leak detection to hpcrun.
+  You can invoke this using the hpcrun options "-e MEMLEAK". The core
+  functionality is operational, but it will be faster and have
+  better user interface in a forthcoming release.
+
 
 =============================================================================
 
