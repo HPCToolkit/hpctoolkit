@@ -173,8 +173,8 @@ The header above the navigation pane contains some controls for the navigation a
 In Figure~\ref{fig:hpcviewer-legend}, they are labeled as ``navigation/metric control.''
 \begin{itemize}
 
-\item \textbf{Flatten} \includegraphics[scale=.8]{fig/hpcviewer-button-flatten} /
-      \textbf{Unflatten} \includegraphics[scale=.8]{fig/hpcviewer-button-unflatten}
+\item \textbf{Flatten} \includegraphics[scale=.8]{fig/hpcviewer-button-flatten.png} /
+      \textbf{Unflatten} \includegraphics[scale=.8]{fig/hpcviewer-button-unflatten.png}
       (available for the Flat View):
 
 Enabling to flatten and unflatten the navigation hierarchy.
@@ -184,37 +184,37 @@ This flattening operation is useful for relaxing the strict hierarchical view so
 For instance, this can be used to hide procedures in the Flat View so that outer loops can be ranked and compared to one another.
 The inverse of the flatten operation is the unflatten operation, which causes an elided node in the tree to be made visible once again.
 
-\item \textbf{Zoom-in} \includegraphics[scale=.8]{fig/hpcviewer-button-zoomin} /
-      \textbf{Zoom-out} \includegraphics[scale=.8]{fig/hpcviewer-button-zoomout} :
+\item \textbf{Zoom-in} \includegraphics[scale=.8]{fig/hpcviewer-button-zoomin.png} /
+      \textbf{Zoom-out} \includegraphics[scale=.8]{fig/hpcviewer-button-zoomout.png} :
 
 Depressing the up arrow button will zoom in to show only information for the selected line and its descendants.
 One can zoom out (reversing a prior zoom operation) by depressing the down arrow button.
 
-\item \textbf{Hot call path} \includegraphics[scale=.8]{fig/hpcviewer-button-hotpath} :
+\item \textbf{Hot call path} \includegraphics[scale=.8]{fig/hpcviewer-button-hotpath.png} :
 
 This button is used to automatically find hot call paths with respect to the currently selected metric column.
 The hot path is computed by comparing parent and child metric values, and showing the chain where the difference is greater than a threshold (by default is \texttt{50\%}).
 It is also possible to change the threshold value by clicking the menu File|Preference.
 
-\item \textbf{Derived metric} \includegraphics[scale=.8]{fig/hpcviewer-button-derivedmetric} :
+\item \textbf{Derived metric} \includegraphics[scale=.8]{fig/hpcviewer-button-derivedmetric.png} :
 
 Creating a new metric based on mathematical formula.
 See Section~\ref{sec:hpcviewer:derived-metrics} for more details.
 
-\item \textbf{Hide/show metrics} \includegraphics[scale=.8]{fig/hpcviewer-button-checkcolumns} :
+\item \textbf{Hide/show metrics} \includegraphics[scale=.8]{fig/hpcviewer-button-checkcolumns.png} :
 
 Showing and hiding metric columns.
 A dialog box will appear, and user can select which columns to show or hide.
 See Section~\ref{sec:hpcviewer:metric-pane} section for more details.
 
-\item \textbf{Export into a CSV format file} \includegraphics[scale=.8]{fig/hpcviewer-button-csv} :
+\item \textbf{Export into a CSV format file} \includegraphics[scale=.8]{fig/hpcviewer-button-csv.png} :
 
 Exporting the current metric table into a comma separated value (CSV) format file.
 This feature only exports all metrics that are currently shown.
 Metrics that are not shown in the view (whose scopes are not expanded) will not be exported (we assume these metrics are not significant).
 
-\item \textbf{Increase font size} \includegraphics[scale=.8]{fig/hpcviewer-button-fontplus} /
-      \textbf{Decrease font size} \includegraphics[scale=.8]{fig/hpcviewer-button-fontminus} :
+\item \textbf{Increase font size} \includegraphics[scale=.8]{fig/hpcviewer-button-fontplus.png} /
+      \textbf{Decrease font size} \includegraphics[scale=.8]{fig/hpcviewer-button-fontminus.png} :
 
 Increasing or decreasing the size of the navigation and metric panes.
 
@@ -314,19 +314,19 @@ h () {
 
 
 \begin{figure}[t]
-\centering{\includegraphics[scale=0.5]{fig/metrics-cct}}
+\centering{\includegraphics[scale=0.5]{fig/metrics-cct.png}}
 \caption{Calling Context View}
 \label{fig:cct}
 \end{figure}
 
 \begin{figure}
-\centering{\includegraphics[scale=0.5]{fig/metrics-callers}}
+\centering{\includegraphics[scale=0.5]{fig/metrics-callers.png}}
 \caption{Caller View}
 \label{fig:metrics-callers}
 \end{figure}
 
 \begin{figure}
-\centering{\includegraphics[scale=0.5]{fig/metrics-flat}}
+\centering{\includegraphics[scale=0.5]{fig/metrics-flat.png}}
 \caption{Flat View}
 \label{fig:metrics-flat}
 \end{figure}
@@ -414,7 +414,7 @@ avg($0, $2, $4. $6. $8) / avg($1, $3, $5, $7, $9)
 \subsection{Derived metric dialog box}
 
 \begin{figure}[t]
-\centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-dialog-derived-metric}}
+\centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-dialog-derived-metric.png}}
 \caption{Derived metric dialog box}
 \label{fig:hpcviewer-derived-dialog-box}
 \end{figure}
@@ -468,6 +468,29 @@ One can then review again the formula (or metric name) by clicking the small tri
 % ===========================================================================
 % ===========================================================================
 
+\section{Plot and histogram graphs}
+
+When the profile database is generated by \hpcprofmpi{}, it also contains sampling result for each thread (for multithreaded applications) or each process (for SPMD applications) or both (for hybrid SPMD and multithreaded applications).
+\hpcviewer{} provides a feature to show a scattered plot graph on a specific scope which can be useful to see visually load imbalance in an application as shown in Figure~\ref{fig:hpcviewer-view-rawmetrics}.
+
+\begin{figure}[t]
+\centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-view-rawmetrics.png}}
+\caption{Plot graph view of main procedure in a Coarray Fortran application.}
+\label{fig:hpcviewer-view-rawmetrics}
+\end{figure}
+
+In order to show the plot graph, the user needs to first select a scope (in our example it is the procedure \texttt{main}) and then right click the mouse to show the pull-up menu in the \emph{Calling context view}.
+The menu contains some operations supported in the viewer such as zoom-in and zoom-out. In the bottom of the menu, the user can see the list of sampled metrics and each metric contains sub-menus \emph{plot graph}, \emph{sorted plot graph} and \emph{histogram graph}. 
+A click on one of the sub-menus will display a corresponding graph on the source pane.
+
+% ===========================================================================
+% ===========================================================================
+
+
+
+% ===========================================================================
+% ===========================================================================
+
 \section{For Convenience Sake}
 
 In this section we describe some features of \hpcviewer{} that help improve productivity.
@@ -493,7 +516,7 @@ Thanks to built-in capabilities in Eclipse, \hpcviewer{} supports some useful sh
   The new font will take effect when you next launch \hpcviewer{}.
 
 \item \textbf{Minimize/Maximize window}.
-  Icons in the upper right corner of the window enable you to minimize (\includegraphics[scale=.8]{fig/hpcviewer-button-minimize.png}) or maximize (\includegraphics[scale=.8]{fig/hpcviewer-button-maximize}) the \hpcviewer{} window.
+  Icons in the upper right corner of the window enable you to minimize (\includegraphics[scale=.8]{fig/hpcviewer-button-minimize.png}) or maximize (\includegraphics[scale=.8]{fig/hpcviewer-button-maximize.png}) the \hpcviewer{} window.
 \end{itemize}
 
 
@@ -532,10 +555,10 @@ For the metric pane, \hpcviewer{} has some convenient features:
 \item \textbf{Hiding or showing metric columns}.
   Sometimes, it may be more convenient to suppress the display of metrics that are not of current interest.
   When there are too many metrics to fit on the screen at once, it is often useful to suppress the display of some.
-  The icon \includegraphics[scale=.7]{fig/hpcviewer-button-checkcolumns} above the metric pane will bring up the column selection dialog shown in Figure~\ref{fig:hpcviewer-hide-show-columns}.
+  The icon \includegraphics[scale=.7]{fig/hpcviewer-button-checkcolumns.png} above the metric pane will bring up the column selection dialog shown in Figure~\ref{fig:hpcviewer-hide-show-columns}.
 
 \begin{figure}[t]
-\centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-dialog-checkcolumns}}
+\centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-dialog-checkcolumns.png}}
 \caption{Hide/Show columns dialog box}
 \label{fig:hpcviewer-hide-show-columns}
 \end{figure}
