@@ -191,7 +191,8 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("%s\t\tEach time a procedure returns, the return count for that\n"
-	 "\t\tprocedure is incremented\n", HPCRUN_METRIC_RetCnt);
+	 "\t\tprocedure is incremented\n" 
+         "(experimental feature, x86 only)\n", HPCRUN_METRIC_RetCnt);
   printf("\n");
 }
 
