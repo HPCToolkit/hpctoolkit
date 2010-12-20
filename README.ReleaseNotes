@@ -57,16 +57,17 @@ Contents:
 
 1.1.1. Usage limitations:
 
-- The user should choose a sampling peiod so that the total number of
+- The user should choose a sampling period so that the total number of
   samples is statistically significant, but so that the overhead is
   not too high.  Typically, this means targeting a sampling frequency
   of hundreds of samples per second; thousands for short runs; tens
   for longer runs.
 
-- Warning: To support MPI jobs, hpcrun will not choose a unique
-  directory name in which to place its profiling data.  Therefore,
+- Unless you are using HPCToolkit to measure the performance of a
+  an application running as a Cobalt or PBS batch job, HPCToolkit 
+  will not place measurement data in a unique directory. Therefore,
   when re-profiling an application, it is advisable to rename any
-  prior data directory.
+  prior measurement directory.
 
 
 1.1.2. Measurement limitations:
