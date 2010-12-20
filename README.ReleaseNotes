@@ -44,6 +44,10 @@ Contents:
   functionality is operational, but it will be faster and have
   better user interface in a forthcoming release.
 
+- hpcviewer's attribution of inclusive costs in the caller's view
+  works for programs with simple recursion; however, costs can
+  be incorrect in the presence of mutual recursion.
+
 
 =============================================================================
 
