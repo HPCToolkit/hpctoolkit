@@ -3,7 +3,15 @@
 % $Id$
 
 
-\HPCToolkit{} provides the \hpcviewer{} performance presentation tool for interactive examination of performance databases.
+\HPCToolkit{} provides the \hpcviewer{}~\cite{Adhianto-MC-Ta:2010:PSTI-hpcviewer} performance presentation tool for interactive examination of performance databases.
+\hpcviewer{} interactively presents context-sensitive performance metrics correlated to program structure and mapped to a program's source code, if available.
+It can present an arbitrary collection of performance metrics gathered during one or more runs or compute derived metrics.
+
+
+% ===========================================================================
+% ===========================================================================
+
+\section{Launching}
 
 \hpcviewer{} can either be launched from a command line (Linux/Unix platform) or by clicking the \hpcviewer{} icon (for Windows, Mac OS X and Linux/Unix platform).
 The command line syntax is as follows:
@@ -12,7 +20,7 @@ The command line syntax is as follows:
   hpcviewer [options] [<hpctoolkit-database>]
 \end{verbatim}
 \end{quote}
-Here, \texttt{<database-directory>} is an optional argument to load a database automatically.
+Here, \texttt{<hpctoolkit-database>} is an optional argument to load a database automatically.
 Without this argument, \hpcviewer{} will prompt for the location of a database.
 
 The possible options are as follows:
@@ -75,13 +83,14 @@ The possible options are as follows:
 \label{fig:hpcviewer-legend}
 \end{figure}
 
-Figure~\ref{fig:hpcviewer-legend} shows a screenshot of an \hpcviewer{} brower window with panes and key controls labeled.
-The browser supports three different views of performance data.
+Figure~\ref{fig:hpcviewer-legend} shows an annotated screenshot of \hpcviewer{}'s user interface presenting a call path profile.
+The annotations highlight \hpcviewer{}'s principal window panes and key controls.
 The browser window is divided into three panes.
-We first explain the views of performance data and then the role of the different panes.
+The Source pane (top) displays program source code.
+The Navigation and Metric panes (bottom) associate a table of performance metrics with static or dynamic program structure.
+These panes are discussed in more detail in Section~\ref{sec:hpcviewer:panes}.
 
-
-\hpcviewer{} supports three principal views of an application's performance data: a top-down Calling Context View, a bottom-up caller's view, and a Flat View.
+\hpcviewer{} displays calling-context-sensitive performance data in three different views: a top-down \emph{Calling Context View}, a bottom-up \emph{Callers View}, and a \emph{Flat View}.
 One selects the desired view by clicking on the corresponding view control tab.
 We briefly describe the three views and their corresponding purposes.
 
@@ -97,11 +106,16 @@ We briefly describe the three views and their corresponding purposes.
   \HPCToolkit{}'s call path profiler \hpcrun{} and the \hpcviewer{} user interface distinguish calling context precisely by individual call sites; this means that if a procedure \fnnm{g} contains calls to procedure \fnnm{f} in different places, these represent separate calling contexts.
 
 \item \textbf{Callers View}.
-  This bottom up view enables one to look upward along call paths.
+  This bottom-up view enables one to look upward along call paths.
+  The view apportions a procedure's costs to its caller and, more generally, its calling contexts.
   This view is particularly useful for understanding the performance of software components or procedures that are used in more than one context.
   For instance, a message-passing program may call \mytt{MPI_Wait} in many different calling contexts.
   The cost of any particular call will depend upon the structure of the parallelization in which the call is made.
   Serialization or load imbalance may cause long waits in some calling contexts while other parts of the program may have short waits because computation is balanced and communication is overlapped with computation.
+
+  When several levels of the Callers View are expanded, saying that the Callers View apportions metrics of a callee on behalf of its caller can be confusing: what is the caller and what is the callee?
+  In this situation, we can say that the Callers View apportions the metrics of a particular procedure \emph{in its various calling contexts} on behalf of that context's caller.
+  Alternatively but equivalently, the Callers View apportions the metrics of a particular procedure on behalf of its various \emph{calling contexts}.
 
 \item \textbf{Flat View}.
   This view organizes performance measurement data according to the static structure of an application.
@@ -115,8 +129,9 @@ We briefly describe the three views and their corresponding purposes.
 % ===========================================================================
 
 \section{Panes}
+\label{sec:hpcviewer:panes}
 
-The browser window is divided into three panes: the \textbf{navigation} pane, the \textbf{source} pane, and the \textbf{metrics} pane.
+\hpcviewer{}'s browser window is divided into three panes: the \emph{Navigation pane}, \emph{Source pane}, and the \emph{Metrics pane}.
 We briefly describe the role of each pane.
 
 % ==========================================================
@@ -133,10 +148,14 @@ Switching the source pane to view to a different source file is accomplished by 
 % ==========================================================
 
 \subsection{Navigation pane}
+
 The navigation pane presents a hierarchical tree-based structure that is used to organize the presentation of an applications's performance data.
 Entities that occur in the navigation pane's tree include load modules, files, procedures, procedure activations, inlined code, loops, and source lines.
 Selecting any of these entities will cause its corresponding source code (if any) to be displayed in the source pane.
 One can reveal or conceal children in this hierarchy by `opening' or `closing' any non-leaf (\ie{}, individual source line) entry in this view.
+
+%% Within a view, a user may order program scopes by sorting them using any performance metric.
+%% \hpcviewer{} supports several convenient operations to facilitate analysis: revealing a \emph{hot path} within the hierarchy below a scope; \emph{flattening} one or more levels of the static hierarchy, \eg, to facilitate comparison of costs between loops in different procedures; and \emph{zooming} to focus on a particular scope and its children.
 
 The nature of the entities in the navigation pane's tree structure depends upon whether one is exploring the Calling Context View, the Callers View, or the Flat View of the performance data.
 \begin{itemize}
@@ -212,7 +231,7 @@ When \hpcviewer{} is launched, the leftmost metric column is the default selecti
 One can change the selected metric by clicking on a column header.
 Clicking on the header of the selected column toggles the sort order between descending and ascending.
 
- During analysis, one often wants to consider the relationship between two metrics.
+During analysis, one often wants to consider the relationship between two metrics.
 This is easier when the metrics of interest are in adjacent columns of the metric pane.
 One can change the order of columns in the metric pane by selecting the column header for a metric and then dragging it left or right to its desired position.
 The metric pane also includes scroll bars for horizontal scrolling (to reveal other metrics) and vertical scrolling (to reveal other scopes).
@@ -224,9 +243,18 @@ Vertical scrolling of the metric and navigation panes is synchronized.
 
 \section{Understanding Metrics}
 
-The data gathered by the profiler attributes the cost for each scope (a file, procedure, loop, or inlined function) exclusively.
-\hpcviewer{} presents inclusive values for each cost metric associated with a program scope as well.
-Exclusive costs are those incurred by scope itself; whereas inclusive costs include costs incurred by any calls it makes.
+\hpcviewer{} can present an arbitrary collection of performance metrics gathered during one or more runs, or compute derived metrics expressed as formulae with existing metrics as terms.
+
+For any given scope in \hpcviewer{}'s three views, \hpcviewer{} computes both \emph{inclusive} and \emph{exclusive} metric values.
+For the moment, consider the Calling Context View.
+Inclusive metrics reflect costs for the entire subtree rooted at that scope.
+Exclusive metrics are of two flavors, depending on the scope.
+For a procedure, exclusive metrics reflect all costs within that procedure but excluding callees.
+In other words, for a procedure, costs are exclusive with respect to dynamic call chains.
+For all other scopes, exclusive metrics reflect costs for the scope itself; \ie{}, costs are exclusive with respect to static structure.
+The Callers and Flat Views contain inclusive and exclusive metric values that are relative to the Calling Context View.
+This means, \eg{}, that inclusive metrics for a particular scope in the Callers or Flat View are with respect to that scope's subtree in the Calling Context View.
+
 
 % ==========================================================
 % ==========================================================
@@ -235,7 +263,7 @@ Exclusive costs are those incurred by scope itself; whereas inclusive costs incl
 
 Call path profile measurements collected by \hpcrun{} correspond directly to the Calling Context View.
 \hpcviewer{} derives all other views from exclusive metric costs in the Calling Context View.
-For the caller view, \hpcviewer{} collects the cost of all samples in each function and attribute that to a top-level entry in the caller view.
+For the Caller View, \hpcviewer{} collects the cost of all samples in each function and attribute that to a top-level entry in the Caller View.
 Under each top-level function, \hpcviewer{} can look up the call chain at all of the context in which the function is called.
 For each function, \hpcviewer{} apportions its costs among each of the calling contexts in which they were incurred.
 \hpcviewer{} computes the Flat View by traversing the calling context tree and attributing all costs for a scope to the scope within its static source code structure.
@@ -317,7 +345,7 @@ In this figure, we can see that on the right path of the routine \texttt{m}, rou
 Although \texttt{g$_1$}, \texttt{g$_2$} and \texttt{g$_3$} are all instances from the same routine (\ie{}, \texttt{g}), we attribute a different cost for each instance.
 This separation of cost can be critical to identify which instance has a performance problem.
 
-Figure~\ref{fig:metrics-callers} shows the corresponding scope structure for the caller view and the costs we compute for this recursive program.
+Figure~\ref{fig:metrics-callers} shows the corresponding scope structure for the Caller View and the costs we compute for this recursive program.
 The procedure \texttt{g} noted as \texttt{g$_a$} (which is a root node in the diagram), has different cost to \texttt{g} as a callsite as noted as \texttt{g$_b$}, \texttt{g$_c$} and \texttt{g$_d$}.
 For instance, on the first tree of this figure, the inclusive cost of \texttt{g$_a$} is \texttt{9}, which is the sum of the highest cost for each branch in calling context tree (Figure~\ref{fig:cct}): the inclusive cost of \texttt{g$_3$} (which is \texttt{3}) and \texttt{g$_1$} (which is \texttt{6}).
 We do not attribute the cost of \texttt{g$_2$} here since it is a descendant of \texttt{g$_1$} (in other term, the cost of \texttt{g$_2$} is included in \texttt{g$_1$}).
