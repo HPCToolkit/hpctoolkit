@@ -80,6 +80,7 @@ MYSOURCES = \
 	hpcio.h hpcio.c \
 	\
 	timer.h timer.c \
+	OSUtil.h OSUtil.c \
 	\
 	atomic.h \
 	atomic-op.h atomic-op.i \

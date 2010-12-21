@@ -69,10 +69,13 @@
 
 #include <messages/messages.h>
 
+#include <lush/lush-backtrace.h>
+
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <lush/lush-backtrace.h>
+#include <lib/prof-lean/OSUtil.h>
+
 
 //*****************************************************************************
 // structs and types
@@ -163,7 +166,7 @@ lazy_open_data_file(void)
 
   const uint bufSZ = 32; // sufficient to hold a 64-bit integer in base 10
 
-  const char* jobIdStr = os_job_id();
+  const char* jobIdStr = OSUtil_jobid();
   if (!jobIdStr) {
     jobIdStr = "";
   }
@@ -178,10 +181,10 @@ lazy_open_data_file(void)
   snprintf(tidStr, bufSZ, "%d", td->id);
 
   char hostidStr[bufSZ];
-  snprintf(hostidStr, bufSZ, "%lx", os_hostid());
+  snprintf(hostidStr, bufSZ, "%lx", OSUtil_hostid());
 
   char pidStr[bufSZ];
-  snprintf(pidStr, bufSZ, "%u", os_pid());
+  snprintf(pidStr, bufSZ, "%u", OSUtil_pid());
 
   char traceMinTimeStr[bufSZ];
   snprintf(traceMinTimeStr, bufSZ, "%"PRIu64, td->trace_min_time_us);

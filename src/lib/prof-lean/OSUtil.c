@@ -44,24 +44,84 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef files_h
-#define files_h
+//***************************************************************************
+//
+// File: 
+//   $HeadURL$
+//
+// Purpose:
+//   OS Utilities
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//   Nathan Tallent, John Mellor-Crummey, Rice University.
+//
+//***************************************************************************
 
-//*****************************************************************************
+//************************* System Include Files ****************************
 
-void files_set_directory();                   // location from environment variable
-void files_set_executable(char *execname);   
+#include <stdlib.h>
 
-void files_trace_name(char *filename, unsigned int mpi_rank, int len);
-void files_profile_name(char *filename, unsigned int mpi_rank, int len);
-void files_log_name(char *filename, unsigned int mpi_rank, int len);
+#include <sys/types.h> // getpid()
+#include <unistd.h>
 
-const char *files_executable_pathname();
+//*************************** User Include Files ****************************
 
-const char *files_executable_name();
+#include "OSUtil.h"
 
-//*****************************************************************************
+//*************************** Forward Declarations **************************
 
-#endif // files_h
+//***************************************************************************
+// 
+//***************************************************************************
 
+uint
+OSUtil_pid()
+{
+  pid_t pid = getpid();
+  return (uint)pid;
+}
+
+
+const char* 
+OSUtil_jobid()
+{
+  char* jid = NULL;
+
+  jid = getenv("COBALT_JOBID"); /* check for Cobalt job id */
+  if (jid) {
+    return jid;
+  }
+
+  jid = getenv("PBS_JOBID"); /* check for PBS job id */
+  if (jid) {
+    return jid;
+  }
+
+  jid = getenv("JOB_ID"); /* check for Sun Grid Engine job id */
+  if (jid) {
+    return jid;
+  }
+
+  return jid;
+}
+
+
+static const long OSUtil_hostid_NULL = (-1);
+
+long
+OSUtil_hostid()
+{
+  static long hostid = OSUtil_hostid_NULL;
+
+  if (hostid == OSUtil_hostid_NULL) {
+    // gethostid returns a 32-bit id.  treat it as unsigned 
+    // to prevent useless sign extension
+    hostid = (uint32_t) gethostid();
+  }
+
+  return hostid;
+}
 
