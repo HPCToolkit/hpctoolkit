@@ -109,7 +109,7 @@ OSUtil_jobid()
 }
 
 
-static const long OSUtil_hostid_NULL = (-1);
+#define OSUtil_hostid_NULL (-1)
 
 long
 OSUtil_hostid()
