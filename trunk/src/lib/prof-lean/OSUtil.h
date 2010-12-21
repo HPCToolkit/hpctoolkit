@@ -44,24 +44,49 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef files_h
-#define files_h
+//***************************************************************************
+//
+// File: 
+//   $HeadURL$
+//
+// Purpose:
+//   OS Utilities
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//   Nathan Tallent, John Mellor-Crummey, Rice University.
+//
+//***************************************************************************
 
-//*****************************************************************************
+#ifndef prof_lean_OSUtil_h
+#define prof_lean_OSUtil_h
 
-void files_set_directory();                   // location from environment variable
-void files_set_executable(char *execname);   
+//************************* System Include Files ****************************
 
-void files_trace_name(char *filename, unsigned int mpi_rank, int len);
-void files_profile_name(char *filename, unsigned int mpi_rank, int len);
-void files_log_name(char *filename, unsigned int mpi_rank, int len);
+#include <stddef.h>
 
-const char *files_executable_pathname();
+//*************************** User Include Files ****************************
 
-const char *files_executable_name();
+#include <include/uint.h>
 
-//*****************************************************************************
+//*************************** Forward Declarations **************************
 
-#endif // files_h
+//***************************************************************************
+// 
+//***************************************************************************
+
+extern uint
+OSUtil_pid();
+
+extern const char*
+OSUtil_jobid();
+
+extern long
+OSUtil_hostid();
 
 
+//***************************************************************************
+
+#endif /* prof_lean_QueuingRWLock_h */

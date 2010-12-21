@@ -68,15 +68,14 @@
 #include "messages.h"
 #include "thread_data.h"
 #include "loadmap.h"
-#include <lib/prof-lean/spinlock.h>
 
+#include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/OSUtil.h>
 
 
 //***************************************************************
 // macros
 //***************************************************************
-
-#define NO_HOST_ID      (-1)
 
 
 
@@ -152,7 +151,7 @@ files_set_directory()
 
   // compute path for default measurement directory
   if (path == NULL || strlen(path) == 0) {
-    const char *jid = os_job_id();
+    const char *jid = OSUtil_jobid();
     if (jid == NULL) {
       sprintf(default_path, "./hpctoolkit-%s-measurements", executable_name);
     } else {
@@ -185,43 +184,6 @@ files_set_executable(char *execname)
 }
 
 //*****************************************************************************
-
-long
-os_hostid()
-{
-  static long hostid = NO_HOST_ID;
-
-  if (hostid == NO_HOST_ID) {
-    // gethostid returns a 32-bit id.  treat it as unsigned 
-    // to prevent useless sign extension
-    hostid = (uint32_t) gethostid();
-  }
-
-  return hostid;
-}
-
-
-unsigned int
-os_pid()
-{
-  return getpid();
-}
-
-const char* 
-os_job_id()
-{
-  char *jid = NULL;
-  if (jid == NULL) {
-    jid = getenv("COBALT_JOBID"); /* check for Cobalt job id */
-  }
-  if (jid == NULL) {
-    jid = getenv("PBS_JOBID"); /* check for PBS job id */
-  }
-  if (jid == NULL) {
-    jid = getenv("JOB_ID"); /* check for Sun Grid Engine job id */
-  }
-  return jid;
-}
 
 
 //***************************************************************
@@ -256,7 +218,7 @@ files_name(char* filename, unsigned int mpi, const char* suffix, int len)
     for (gen = 0; gen < 9; gen++) {
       snprintf(filename, len, FILENAME_TEMPLATE,
 	       output_directory, executable_name, mpi,
-	       td->id, os_hostid(), cur_pid, gen, suffix);
+	       td->id, OSUtil_hostid(), cur_pid, gen, suffix);
       if (access(filename, F_OK) != 0)
 	break;
     }
@@ -267,7 +229,7 @@ files_name(char* filename, unsigned int mpi, const char* suffix, int len)
 
   ret = snprintf(filename, len, FILENAME_TEMPLATE,
 		 output_directory, executable_name, mpi,
-		 td->id, os_hostid(), cur_pid, gen, suffix);
+		 td->id, OSUtil_hostid(), cur_pid, gen, suffix);
   if (ret > len) {
     EMSG("%s: filename truncated: %s", __func__, filename);
   }
