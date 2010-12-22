@@ -88,6 +88,7 @@ MYLDADD = \
 	$(HPCLIB_ISA) \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) \
 	@OA_LDFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@ \

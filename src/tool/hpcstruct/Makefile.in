@@ -86,7 +86,7 @@ am_hpcstruct_OBJECTS = $(am__objects_1)
 hpcstruct_OBJECTS = $(am_hpcstruct_OBJECTS)
 am__DEPENDENCIES_1 = $(HPCLIB_Analysis) $(HPCLIB_Banal) $(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support)
+	$(HPCLIB_Support) $(HPCLIB_SupportLean)
 hpcstruct_DEPENDENCIES = $(am__DEPENDENCIES_1)
 hpcstruct_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcstruct_CXXFLAGS) \
@@ -352,6 +352,7 @@ MYLDADD = \
 	$(HPCLIB_ISA) \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) \
 	@OA_LDFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@ \

@@ -84,7 +84,7 @@ am__objects_1 = hpclump-main.$(OBJEXT) hpclump-Args.$(OBJEXT)
 am_hpclump_OBJECTS = $(am__objects_1)
 hpclump_OBJECTS = $(am_hpclump_OBJECTS)
 am__DEPENDENCIES_1 = $(HPCLIB_Binutils) $(HPCLIB_ISA) \
-	$(HPCLIB_Support)
+	$(HPCLIB_Support) $(HPCLIB_SupportLean)
 hpclump_DEPENDENCIES = $(am__DEPENDENCIES_1)
 hpclump_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(hpclump_CXXFLAGS) $(CXXFLAGS) \
@@ -348,7 +348,10 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYLDFLAGS = @HPC_LT_LDFLAGS@ @HOST_CXXFLAGS@
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_Support) \
+	$(HPCLIB_Binutils) \
+	$(HPCLIB_ISA) \
+	$(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) \
 	@GNUBINUTILS_LDFLAGS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@ \
 	-lm
