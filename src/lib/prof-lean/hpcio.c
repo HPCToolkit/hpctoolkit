@@ -307,6 +307,24 @@ hpcio_be8_fread(uint64_t* val, FILE* fs)
 }
 
 
+size_t
+hpcio_beX_fread(uint8_t* val, size_t size, FILE* fs)
+{
+  size_t num_read = 0;
+
+  for (uint i = 0; i < size; ++i) {
+    int c = fgetc(fs);
+    if (c == EOF) {
+      break;
+    }
+    val[i] = c;
+    num_read++;
+  }
+
+  return num_read;
+}
+
+
 //***************************************************************************
 
 size_t
@@ -350,6 +368,23 @@ hpcio_be8_fwrite(uint64_t* val, FILE* fs)
     if (c == EOF) { break; }
     num_write++;
   }
+  return num_write;
+}
+
+
+size_t
+hpcio_beX_fwrite(uint8_t* val, size_t size, FILE* fs)
+{
+  size_t num_write = 0;
+  
+  for (uint i = 0; i < size; ++i) {
+    int c = fputc(val[i], fs);
+    if (c == EOF) {
+      break;
+    }
+    num_write++;
+  }
+
   return num_write;
 }
 
