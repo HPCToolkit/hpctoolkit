@@ -74,6 +74,8 @@ using std::string;
 #include "StrUtil.hpp"
 #include "Trace.hpp"
 
+#include <lib/support-lean/OSUtil.h>
+
 //*************************** Forward Declarations **************************
 
 using std::endl;
@@ -367,22 +369,42 @@ mkdirUnique(const char* dirnm)
   mode_t mkmode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
 
   int ret = ::mkdir(dirnm, mkmode);
-  if (ret == -1) {
+  if (ret != 0) {
     if (errno == EEXIST) {
-      // attempt to create dirnm+pid;
-      pid_t pid = getpid();
+
+      std::vector<string> dirnmVec;
+
+      // qualifier 1: jobid
+      const char* jobid_cstr = OSUtil_jobid();
+      if (jobid_cstr) {
+	string dirnm1 = string(dirnm) + "-" + string(jobid_cstr);
+	dirnmVec.push_back(dirnm1);
+      }
+
+      // qualifier 2: pid
+      uint pid = OSUtil_pid();
       string pid_str = StrUtil::toStr(pid);
-      dirnm_new = dirnm_new + "-" + pid_str;
-      DIAG_Msg(1, "Directory '" << dirnm << "' already exists. Trying " << dirnm_new);
-      ret = ::mkdir(dirnm_new.c_str(), mkmode);
-      if (ret == -1) {
-	DIAG_Die("Could not create alternate directory " << dirnm_new);
+      string dirnm2 = string(dirnm) + "-" + pid_str;
+      dirnmVec.push_back(dirnm2);
+
+      // attempt to create alternative directories
+      for (uint i = 0; i < dirnmVec.size(); ++i) {
+	dirnm_new = dirnmVec[i];
+	DIAG_Msg(1, "Directory '" << dirnm << "' already exists. Trying " << dirnm_new);
+	ret = ::mkdir(dirnm_new.c_str(), mkmode);
+	if (ret == 0) {
+	  is_done = true;
+	  break;
+	}
+      }
+      
+      if (is_done) {
+	DIAG_Msg(1, "Created directory: " << dirnm_new);
       }
       else {
-	DIAG_Msg(1, "Created directory: " << dirnm_new);
-	is_done = true;
+	DIAG_Die("Could not create an alternative to directory " << dirnm);
       }
-    } 
+    }
     else {
       DIAG_Die("Could not create database directory " << dirnm);
     }
