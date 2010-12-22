@@ -81,8 +81,18 @@ MYLDFLAGS = @HPC_LT_LDFLAGS@ @HOST_CXXFLAGS@
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Analysis) $(HPCLIB_Banal) $(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) $(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) $(HPCLIB_Support) \
-	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
+	$(HPCLIB_Analysis) \
+	$(HPCLIB_Banal) \
+	$(HPCLIB_ProfXML) \
+	$(HPCLIB_Prof) \
+	$(HPCLIB_ProfLean) \
+	$(HPCLIB_Binutils) \
+	$(HPCLIB_ISA) \
+	$(HPCLIB_XML) \
+	$(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) \
+	@XERCES_LDFLAGS@ \
+	@GNUBINUTILS_LDFLAGS@ \
 	@HOST_HPCPROFTT_LDFLAGS@ \
 	-lm
 
