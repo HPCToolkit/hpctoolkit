@@ -87,7 +87,7 @@ hpcprof_bin_OBJECTS = $(am_hpcprof_bin_OBJECTS)
 am__DEPENDENCIES_1 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
 	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support)
+	$(HPCLIB_Support) $(HPCLIB_SupportLean)
 hpcprof_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
 hpcprof_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcprof_bin_CXXFLAGS) \
@@ -382,6 +382,7 @@ MYLDADD = \
 	$(HPCLIB_ISA) \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) \
 	@XERCES_LDFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@ \
 	@HOST_HPCPROF_LDFLAGS@ \
