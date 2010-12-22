@@ -74,7 +74,8 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/OSUtil.h>
+
+#include <lib/support-lean/OSUtil.h>
 
 
 //*****************************************************************************

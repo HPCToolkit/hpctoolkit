@@ -81,10 +81,13 @@
 #include <sample_event.h>
 #include <cct/cct.h>
 
+#include <metrics.h>
+
 #include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/BalancedTree.h>
-#include <lib/prof-lean/timer.h>
-#include <hpcrun/metrics.h>
+
+#include <lib/support-lean/timer.h>
+
 
 //*************************** Forward Declarations **************************
 
