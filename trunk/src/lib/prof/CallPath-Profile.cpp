@@ -1036,7 +1036,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     if (nm == HPCRUN_METRIC_RetCnt) {
       doMakeInclExcl = false;
     }
-     
+    
     DIAG_Assert(mdesc.flags.fields.ty == MetricFlags_Ty_Raw
 		|| mdesc.flags.fields.ty == MetricFlags_Ty_Final,
 		DIAG_UnexpectedInput);

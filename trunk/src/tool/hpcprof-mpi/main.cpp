@@ -720,6 +720,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   return numDrvd;
 }
 
+
 // makeSummaryMetrics_Lcl: Make summary metrics.
 //
 // Assumes:
