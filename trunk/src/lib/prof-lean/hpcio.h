@@ -152,6 +152,9 @@ hpcio_be4_fread(uint32_t* val, FILE* fs);
 size_t
 hpcio_be8_fread(uint64_t* val, FILE* fs);
 
+size_t
+hpcio_beX_fread(uint8_t* val, size_t size, FILE* fs);
+
 
 size_t
 hpcio_be2_fwrite(uint16_t* val, FILE* fs);
@@ -161,6 +164,9 @@ hpcio_be4_fwrite(uint32_t* val, FILE* fs);
 
 size_t
 hpcio_be8_fwrite(uint64_t* val, FILE* fs);
+
+size_t
+hpcio_beX_fwrite(uint8_t* val, size_t size, FILE* fs);
 
 
 //***************************************************************************
