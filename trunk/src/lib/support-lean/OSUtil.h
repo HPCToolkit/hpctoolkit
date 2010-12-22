@@ -60,8 +60,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_lean_OSUtil_h
-#define prof_lean_OSUtil_h
+#ifndef support_lean_OSUtil_h
+#define support_lean_OSUtil_h
 
 //************************* System Include Files ****************************
 
@@ -77,14 +77,22 @@
 // 
 //***************************************************************************
 
-extern uint
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+uint
 OSUtil_pid();
 
-extern const char*
+const char*
 OSUtil_jobid();
 
-extern long
+long
 OSUtil_hostid();
+
+#ifdef __cplusplus
+}
+#endif
 
 
 //***************************************************************************
