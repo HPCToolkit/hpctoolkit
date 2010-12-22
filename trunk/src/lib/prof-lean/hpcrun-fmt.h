@@ -337,7 +337,9 @@ typedef union hpcrun_metricFlags_t {
 
   hpcrun_metricFlags_bitfield fields;
 
-  uint64_t bits[2]; // for reading/writing
+  uint8_t bits[sizeof(uint64_t) * 2]; // for reading/writing
+
+  uint64_t bits_old[2]; // FIXME
 
 } hpcrun_metricFlags_t;
 
