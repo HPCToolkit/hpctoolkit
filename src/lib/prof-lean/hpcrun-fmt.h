@@ -315,8 +315,6 @@ typedef enum {
   MetricFlags_ValFmt_Int,
   MetricFlags_ValFmt_Real,
 
-  MetricFlags_ValFmt_Real_19A = (1 << 2) // TODO: deprecate old file version
-
 } MetricFlags_ValFmt_t;
 
 
@@ -339,7 +337,7 @@ typedef union hpcrun_metricFlags_t {
 
   uint8_t bits[sizeof(uint64_t) * 2]; // for reading/writing
 
-  uint64_t bits_old[2]; // FIXME
+  uint64_t bits_big[2]; // for easy initialization
 
 } hpcrun_metricFlags_t;
 

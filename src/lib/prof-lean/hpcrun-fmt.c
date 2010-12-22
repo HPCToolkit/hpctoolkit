@@ -369,8 +369,8 @@ hpcrun_fmt_epochHdr_free(hpcrun_fmt_epochHdr_t* ehdr, hpcfmt_free_fn dealloc)
 metric_desc_t metricDesc_NULL = {
   .name          = NULL,
   .description   = NULL,
-  .flags.bits[0] = 0,
-  .flags.bits[1] = 0,
+  .flags.bits_big[0] = 0,
+  .flags.bits_big[1] = 0,
   .period        = 0,
   .formula       = NULL,
   .format        = NULL,
@@ -462,8 +462,8 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
   if ( !(x->flags.fields.ty == MetricFlags_Ty_Raw 
 	 || x->flags.fields.ty == MetricFlags_Ty_Final) ) {
     fseek(fs, -sizeof(x->flags), SEEK_CUR);
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits_old[0]), fs));
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits_old[1]), fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits_big[0]), fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits_big[1]), fs));
   }
 
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->period), fs));
