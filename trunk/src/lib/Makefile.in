@@ -281,15 +281,23 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 SUBDIRS = \
 	analysis \
+	\
 	banal \
+	\
 	binutils \
+	\
 	isa \
+	\
 	prof \
 	profxml \
 	prof-lean \
-	stubs-gcc_s \
+	\
+	xml \
+	\
 	support \
-	xml
+	support-lean \
+	\
+	stubs-gcc_s
 
 all: all-recursive
 

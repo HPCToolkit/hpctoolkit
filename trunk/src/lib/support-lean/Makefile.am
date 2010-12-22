@@ -61,30 +61,47 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
+# Local settings
+#############################################################################
+
+MYSOURCES = \
+	timer.h timer.c \
+	OSUtil.h OSUtil.c
+
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
+
+if IS_HOST_AR
+  MYAR = @HOST_AR@
+else
+  MYAR = $(AR) cru
+endif
+
+MYLIBADD = 
+
+MYCLEAN = 
+
+#############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS = \
-	analysis \
-	\
-	banal \
-	\
-	binutils \
-	\
-	isa \
-	\
-	prof \
-	profxml \
-	prof-lean \
-	\
-	xml \
-	\
-	support \
-	support-lean \
-	\
-	stubs-gcc_s
+noinst_LTLIBRARIES = libHPCsupport-lean.la
 
+libHPCsupport_lean_la_SOURCES  = $(MYSOURCES)
+libHPCsupport_lean_la_CFLAGS   = $(MYCFLAGS)
+libHPCsupport_lean_la_AR       = $(MYAR)
+libHPCsupport_lean_la_LIBADD   = $(MYLIBADD)
+
+MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
-# Other rules
+# Common rules
 #############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules
+

@@ -90,8 +90,9 @@
 #include <utilities/tokenize.h>
 #include <utilities/arch/context-pc.h>
 
-#include <lib/prof-lean/timer.h>
 #include <unwind/common/unwind.h>
+
+#include <lib/support-lean/timer.h>
 
 /******************************************************************************
  * macros

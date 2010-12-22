@@ -85,7 +85,7 @@ MYSOURCES = \
 	Util.hpp Util.cpp \
 	TextUtil.hpp TextUtil.cpp
 
-# GNU binutils flags are needed for HPC_LIBISA.
+# GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
 

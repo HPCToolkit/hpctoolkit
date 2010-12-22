@@ -79,9 +79,6 @@ MYSOURCES = \
 	hpcfmt.h hpcfmt.c \
 	hpcio.h hpcio.c \
 	\
-	timer.h timer.c \
-	OSUtil.h OSUtil.c \
-	\
 	atomic.h \
 	atomic-op.h atomic-op.i \
 	QueuingRWLock.h QueuingRWLock.c \
@@ -91,8 +88,7 @@ MYSOURCES = \
 	\
 	lush/lush-support.h lush/lush-support.c
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -112,7 +108,6 @@ noinst_LTLIBRARIES = libHPCprof-lean.la
 
 libHPCprof_lean_la_SOURCES  = $(MYSOURCES)
 libHPCprof_lean_la_CFLAGS   = $(MYCFLAGS)
-libHPCprof_lean_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCprof_lean_la_AR       = $(MYAR)
 libHPCprof_lean_la_LIBADD   = $(MYLIBADD)
 

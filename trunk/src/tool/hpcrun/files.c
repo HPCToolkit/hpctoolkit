@@ -70,7 +70,8 @@
 #include "loadmap.h"
 
 #include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/OSUtil.h>
+
+#include <lib/support-lean/OSUtil.h>
 
 
 //***************************************************************
