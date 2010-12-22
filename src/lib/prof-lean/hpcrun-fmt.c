@@ -414,7 +414,7 @@ int
 hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* fs)
 {
   hpcfmt_int4_fwrite(metric_tbl->len, fs);
-  for (uint32_t i = 0; i < metric_tbl->len; i++){
+  for (uint32_t i = 0; i < metric_tbl->len; i++) {
     hpcrun_fmt_metricDesc_fwrite(metric_tbl->lst[i], fs);
   }
 
@@ -456,12 +456,17 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
 {
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->name), fs, alloc));
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->description), fs, alloc));
+  HPCFMT_ThrowIfError(hpcfmt_intX_fread(x->flags.bits, sizeof(x->flags), fs));
 
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits[0]), fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits[1]), fs));
+  // tallent: temporarily support old non-portable convention
+  if ( !(x->flags.fields.ty == MetricFlags_Ty_Raw 
+	 || x->flags.fields.ty == MetricFlags_Ty_Final) ) {
+    fseek(fs, -sizeof(x->flags), SEEK_CUR);
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits_old[0]), fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits_old[1]), fs));
+  }
 
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->period), fs));
-
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->formula), fs, alloc));
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->format), fs, alloc));
 
@@ -474,8 +479,7 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* fs)
 {
   hpcfmt_str_fwrite(x->name, fs);
   hpcfmt_str_fwrite(x->description, fs);
-  hpcfmt_int8_fwrite(x->flags.bits[0], fs);
-  hpcfmt_int8_fwrite(x->flags.bits[1], fs);
+  hpcfmt_intX_fwrite(x->flags.bits, sizeof(x->flags), fs);
   hpcfmt_int8_fwrite(x->period, fs);
   hpcfmt_str_fwrite(x->formula, fs);
   hpcfmt_str_fwrite(x->format, fs);
