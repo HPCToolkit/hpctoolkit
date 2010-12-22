@@ -175,6 +175,17 @@ hpcfmt_int8_fread(uint64_t* val, FILE* infs)
 
 
 static inline int
+hpcfmt_intX_fread(uint8_t* val, size_t size, FILE* infs)
+{
+  size_t sz = hpcio_beX_fread(val, size, infs);
+  if (sz != size) {
+    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
+  }
+  return HPCFMT_OK;
+}
+
+
+static inline int
 hpcfmt_real8_fread(double* val, FILE* infs)
 {
   size_t sz = hpcio_be8_fread((uint64_t*)val, infs);
@@ -211,6 +222,16 @@ static inline int
 hpcfmt_int8_fwrite(uint64_t val, FILE* outfs)
 {
   if ( sizeof(uint64_t) != hpcio_be8_fwrite(&val, outfs) ) {
+    return HPCFMT_ERR;
+  }
+  return HPCFMT_OK;
+}
+
+
+static inline int
+hpcfmt_intX_fwrite(uint8_t* val, size_t size, FILE* outfs)
+{
+  if (size != hpcio_beX_fwrite(val, size, outfs)) {
     return HPCFMT_ERR;
   }
   return HPCFMT_OK;
