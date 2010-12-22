@@ -1039,7 +1039,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     
     DIAG_Assert(mdesc.flags.fields.ty == MetricFlags_Ty_Raw
 		|| mdesc.flags.fields.ty == MetricFlags_Ty_Final,
-		DIAG_UnexpectedInput);
+		"Prof::CallPath::Profile::fmt_epoch_fread: unexpected metric type '"
+		<< mdesc.flags.fields.ty << "'");
 
     DIAG_Assert(Logic::implies(mdesc.flags.fields.ty == MetricFlags_Ty_Final,
 			       !(rFlags & RFlg_MakeInclExcl)),

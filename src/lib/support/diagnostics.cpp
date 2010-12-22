@@ -78,11 +78,13 @@ Diagnostics_SetDiagnosticFilterLevel(int lvl)
   DIAG_DBG_LVL_PUB = lvl;
 }
 
+
 int
 Diagnostics_GetDiagnosticFilterLevel()
 {
   return DIAG_DBG_LVL_PUB;
 }
+
 
 void
 Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm, 
