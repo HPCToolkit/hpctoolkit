@@ -635,7 +635,10 @@ coalesceStmts(Prof::CCT::ANode* node)
 
   // A <line> -> <stmt> is sufficient because procedure frames
   // identify a unique load module and source file.
-  LineToStmtMap stmtMap;
+  // 
+  // N.B.: dynamically allocate to better handle the deep recursion
+  // required for very deep CCTs.
+  LineToStmtMap* stmtMap = new LineToStmtMap;
   
   // ---------------------------------------------------
   // For each immediate child of this node...
@@ -651,8 +654,8 @@ coalesceStmts(Prof::CCT::ANode* node)
       // Test for duplicate source line info.
       Prof::CCT::Stmt* n_stmt = static_cast<Prof::CCT::Stmt*>(n);
       SrcFile::ln line = n_stmt->begLine();
-      LineToStmtMap::iterator it = stmtMap.find(line);
-      if (it != stmtMap.end()) {
+      LineToStmtMap::iterator it = stmtMap->find(line);
+      if (it != stmtMap->end()) {
 	// found -- we have a duplicate
 	Prof::CCT::Stmt* n_stmtOrig = (*it).second;
 
@@ -668,7 +671,7 @@ coalesceStmts(Prof::CCT::ANode* node)
       }
       else {
 	// no entry found -- add
-	stmtMap.insert(std::make_pair(line, n_stmt));
+	stmtMap->insert(std::make_pair(line, n_stmt));
       }
     }
     else if (!n->isLeaf()) {
@@ -676,6 +679,8 @@ coalesceStmts(Prof::CCT::ANode* node)
       coalesceStmts(n);
     }
   }
+
+  delete stmtMap;
 }
 
 
