@@ -380,10 +380,11 @@ hpcrun_metricFlags_t hpcrun_metricFlags_NULL = {
   .fields.ty          = MetricFlags_Ty_NULL,
   .fields.valTy       = MetricFlags_ValTy_NULL,
   .fields.valFmt      = MetricFlags_ValFmt_NULL,
-  .fields.partner     = 0,
-  .fields.show        = true,
-  .fields.showPercent = true,
   .fields.unused0     = 0,
+
+  .fields.partner     = 0,
+  .fields.show        = (uint8_t)true,
+  .fields.showPercent = (uint8_t)true,
   .fields.unused1     = 0,
 };
 
@@ -458,12 +459,26 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->description), fs, alloc));
   HPCFMT_ThrowIfError(hpcfmt_intX_fread(x->flags.bits, sizeof(x->flags), fs));
 
-  // tallent: temporarily support old non-portable convention
-  if ( !(x->flags.fields.ty == MetricFlags_Ty_Raw 
-	 || x->flags.fields.ty == MetricFlags_Ty_Final) ) {
+  // FIXME: tallent: temporarily support old non-portable convention
+  if ( !(x->flags.fields.ty == MetricFlags_Ty_Raw
+	 || x->flags.fields.ty == MetricFlags_Ty_Final)
+       || x->flags.fields.unused0 != 0
+       || x->flags.fields.unused1 != 0) {
     fseek(fs, -sizeof(x->flags), SEEK_CUR);
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits_big[0]), fs));
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags.bits_big[1]), fs));
+    
+    hpcrun_metricFlags_XXX_t x_flags_old;
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x_flags_old.bits[0]), fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x_flags_old.bits[1]), fs));
+    
+    x->flags.bits_big[0] = 0;
+    x->flags.bits_big[1] = 0;
+
+    x->flags.fields.ty          = x_flags_old.fields.ty;
+    x->flags.fields.valTy       = x_flags_old.fields.valTy;
+    x->flags.fields.valFmt      = x_flags_old.fields.valFmt;
+    x->flags.fields.partner     = x_flags_old.fields.partner;
+    x->flags.fields.show        = x_flags_old.fields.show;
+    x->flags.fields.showPercent = x_flags_old.fields.showPercent;
   }
 
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->period), fs));
