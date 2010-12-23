@@ -31,7 +31,7 @@
  *  or otherwise) arising in any way out of the use of this software, even
  *  if advised of the possibility of such damage.
  *
- *  $Id: splay-macros.h 207 2010-03-03 00:44:44Z krentel $
+ *  $Id$
  */
 
 #ifndef  _SPLAY_TREE_MACROS_
