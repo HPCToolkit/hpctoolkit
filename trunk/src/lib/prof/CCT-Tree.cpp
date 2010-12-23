@@ -708,7 +708,8 @@ ANode::deleteChaff(ANode* x, uint8_t* deletedNodes)
     ANode* x_child = it.current();
     it++; // advance iterator -- it is pointing at 'x_child'
     
-    wereAllChildrenDeleted = wereAllChildrenDeleted && deleteChaff(x_child);
+    wereAllChildrenDeleted = (wereAllChildrenDeleted 
+			      && deleteChaff(x_child, deletedNodes));
   }
 
   bool wasDeleted = false;
