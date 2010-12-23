@@ -294,7 +294,7 @@ realmain(int argc, char* const* argv)
   Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.agent,
 						 args.doNormalizeTy);
 
-  // N.B.: Dense ids are assigned w.r.t. relative magnitude of structure ids
+  // N.B.: Dense ids are assigned w.r.t. Prof::CCT::...::cmpByStructureInfo()
   profGbl->cct()->makeDensePreorderIds();
 
   // -------------------------------------------------------
@@ -331,7 +331,7 @@ realmain(int argc, char* const* argv)
     Analysis::CallPath::applySummaryMetricAgents(*profGbl, args.agent);
   }
 
-  // N.B.: Dense ids are assigned w.r.t. relative magnitude of structure ids
+  // N.B.: Dense ids are assigned w.r.t. Prof::CCT::...::cmpByStructureInfo()
   profGbl->cct()->makeDensePreorderIds();
 
   // -------------------------------------------------------
@@ -499,9 +499,10 @@ writeProfile(Prof::CallPath::Profile& prof, const char* baseNm, int myRank)
   string fnm_hpcrun = fnm_base + ".txt";
   string fnm_xml    = fnm_base + ".xml";
 
-  FILE* fs = hpcio_fopen_w(fnm_hpcrun.c_str(), 1);
-  Prof::CallPath::Profile::fmt_fwrite(prof, fs, 0);
-  hpcio_fclose(fs);
+  // Only safe if static structure has not been added
+  //FILE* fs = hpcio_fopen_w(fnm_hpcrun.c_str(), 1);
+  //Prof::CallPath::Profile::fmt_fwrite(prof, fs, 0);
+  //hpcio_fclose(fs);
 
   std::ostream* os = IOUtil::OpenOStream(fnm_xml.c_str());
   prof.cct()->writeXML(*os, 0, 0, Prof::CCT::Tree::OFlg_Debug);
