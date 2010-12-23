@@ -532,6 +532,10 @@ public:
 		 const ANode* root, double thresholdPct,
 		 uint8_t* prunedNodes = NULL);
 
+  // pruneChildrenByNodeId:
+  void
+  pruneChildrenByNodeId(const uint8_t* prunedNodes);
+
   // pruneByNodeId: Note that 'x' may be deleted
   static void
   pruneByNodeId(ANode*& x, const uint8_t* prunedNodes);

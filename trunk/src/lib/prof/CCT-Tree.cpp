@@ -180,8 +180,11 @@ Tree::merge(const Tree* y, uint x_newMetricBegIdx, uint mrgFlag, uint oFlag)
 void
 Tree::pruneCCTByNodeId(const uint8_t* prunedNodes)
 {
-  Prof::CCT::ANode::pruneByNodeId(m_root, prunedNodes);
-  DIAG_Assert(m_root, DIAG_UnexpectedInput);
+  m_root->pruneChildrenByNodeId(prunedNodes);
+  DIAG_Assert(!prunedNodes[m_root->id()], "Prof::CCT::Tree::pruneCCTByNodeId(): cannot delete root!");
+  
+  //Prof::CCT::ANode::pruneByNodeId(m_root, prunedNodes);
+  //DIAG_Assert(m_root, "Prof::CCT::Tree::pruneCCTByNodeId(): cannot delete root!");
 }
 
 
@@ -650,12 +653,12 @@ ANode::pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
 }
 
 
+#if 0
 void
 ANode::pruneByNodeId(ANode*& x, const uint8_t* prunedNodes)
 {
   // Visiting in preorder can save a little work since a whole subtree
-  // can be deleted (factoring out the destructor's traversing a
-  // subtree)
+  // can be deleted (factoring out the destructor's recursion)
   if (prunedNodes[x->id()]) {
     x->unlink(); // unlink 'x' from tree
     delete x;
@@ -669,12 +672,36 @@ ANode::pruneByNodeId(ANode*& x, const uint8_t* prunedNodes)
     }
   }
 }
+#endif
+
+
+void
+ANode::pruneChildrenByNodeId(const uint8_t* prunedNodes)
+{
+  ANode* x = this;
+
+  for (ANodeChildIterator it(x); it.Current(); /* */) {
+    ANode* x_child = it.current();
+    it++; // advance iterator -- it is pointing at 'x_child'
+
+    // Visiting in preorder can save a little work since a whole subtree
+    // can be deleted (factoring out the destructor's recursion)
+    if (prunedNodes[x_child->id()]) {
+      x_child->unlink(); // unlink 'x_child' from tree
+      delete x_child;
+    }
+    else {
+      x_child->pruneChildrenByNodeId(prunedNodes);
+    }
+  }
+}
 
 
 bool
 ANode::deleteChaff(ANode* x, uint8_t* deletedNodes)
 {
   bool x_isLeaf = x->isLeaf(); // N.B. must perform before below
+  uint x_id = x->id();
 
   bool wereAllChildrenDeleted = true;
   for (ANodeChildIterator it(x); it.Current(); /* */) {
@@ -692,7 +719,7 @@ ANode::deleteChaff(ANode* x, uint8_t* deletedNodes)
       x->unlink(); // unlink 'x' from tree
       delete x;
       if (deletedNodes) {
-	deletedNodes[x->id()] = 1;
+	deletedNodes[x_id] = 1;
       }
       wasDeleted = true;
     }
