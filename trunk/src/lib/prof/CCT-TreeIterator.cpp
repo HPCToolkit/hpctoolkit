@@ -144,11 +144,21 @@ cmpByDynInfoSpecial(const ADynNode* x_dyn, const ADynNode* y_dyn)
 {
   // INVARIANT: x and y are non-NULL
 
-  int diff_lmId = x_dyn->lmId() - y_dyn->lmId();
-  if (diff_lmId != 0) {
-    return diff_lmId;
+  // 1. lm-id for physical or logical frames
+  int cmp_lmId = x_dyn->lmId() - y_dyn->lmId();
+  if (cmp_lmId != 0) {
+    return cmp_lmId;
   }
-  return cmp(x_dyn->lmIP(), y_dyn->lmIP());
+
+  // 2. physical ip
+  int cmp_ip_real = cmp(x_dyn->lmIP_real(), y_dyn->lmIP_real());
+  if (cmp_ip_real != 0) {
+    return cmp_ip_real;
+  }
+
+  // 3. logical ip (if available)
+  int cmp_ip = cmp(x_dyn->lmIP(), y_dyn->lmIP());
+  return cmp_ip;
 }
 
 
