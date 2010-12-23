@@ -7,29 +7,29 @@ dnl $Id$
 dnl
 dnl --------------------------------------------------------------------------
 dnl Part of HPCToolkit (hpctoolkit.org)
-dnl 
+dnl
 dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
-dnl 
-dnl Copyright ((c)) 2002-2010, Rice University 
+dnl
+dnl Copyright ((c)) 2002-2011, Rice University
 dnl All rights reserved.
-dnl 
+dnl
 dnl Redistribution and use in source and binary forms, with or without
 dnl modification, are permitted provided that the following conditions are
 dnl met:
-dnl 
+dnl
 dnl * Redistributions of source code must retain the above copyright
 dnl   notice, this list of conditions and the following disclaimer.
-dnl 
+dnl
 dnl * Redistributions in binary form must reproduce the above copyright
 dnl   notice, this list of conditions and the following disclaimer in the
 dnl   documentation and/or other materials provided with the distribution.
-dnl 
+dnl
 dnl * Neither the name of Rice University (RICE) nor the names of its
 dnl   contributors may be used to endorse or promote products derived from
 dnl   this software without specific prior written permission.
-dnl 
+dnl
 dnl This software is provided by RICE and contributors "as is" and any
 dnl express or implied warranties, including, but not limited to, the
 dnl implied warranties of merchantability and fitness for a particular
@@ -40,8 +40,8 @@ dnl substitute goods or services; loss of use, data, or profits; or
 dnl business interruption) however caused and on any theory of liability,
 dnl whether in contract, strict liability, or tort (including negligence
 dnl or otherwise) arising in any way out of the use of this software, even
-dnl if advised of the possibility of such damage. 
-dnl 
+dnl if advised of the possibility of such damage.
+dnl
 dnl ******************************************************* EndRiceCopyright *
 
 dnl ##########################################################################
