@@ -318,7 +318,35 @@ typedef enum {
 } MetricFlags_ValFmt_t;
 
 
-typedef struct hpcrun_metricFlags_bitfield {
+// N.B. do *not* use sub-byte bit fields since compilers are free to
+// reorder them within the byte.
+typedef struct hpcrun_metricFlags_fields {
+  MetricFlags_Ty_t     ty     : 8;
+  MetricFlags_ValTy_t  valTy  : 8;
+  MetricFlags_ValFmt_t valFmt : 8;
+  uint8_t              unused0;
+
+  uint16_t             partner;
+  uint8_t /*bool*/     show;
+  uint8_t /*bool*/     showPercent;
+
+  uint64_t unused1;
+} hpcrun_metricFlags_fields;
+
+
+typedef union hpcrun_metricFlags_t {
+
+  hpcrun_metricFlags_fields fields;
+
+  uint8_t bits[2 * 8]; // for reading/writing
+
+  uint64_t bits_big[2]; // for easy initialization
+
+} hpcrun_metricFlags_t;
+
+
+// FIXME: tallent: temporarily support old non-portable convention
+typedef struct hpcrun_metricFlags_bitfield_XXX {
   MetricFlags_Ty_t     ty     : 4;
   MetricFlags_ValTy_t  valTy  : 4;
   MetricFlags_ValFmt_t valFmt : 4;
@@ -328,18 +356,17 @@ typedef struct hpcrun_metricFlags_bitfield {
 
   uint64_t unused0 : 34;
   uint64_t unused1;
-} hpcrun_metricFlags_bitfield;
+} hpcrun_metricFlags_bitfield_XXX;
 
 
-typedef union hpcrun_metricFlags_t {
+// FIXME: tallent: temporarily support old non-portable convention
+typedef union hpcrun_metricFlags_XXX_t {
 
-  hpcrun_metricFlags_bitfield fields;
+  hpcrun_metricFlags_bitfield_XXX fields;
 
-  uint8_t bits[sizeof(uint64_t) * 2]; // for reading/writing
+  uint64_t bits[2]; // for reading/writing
 
-  uint64_t bits_big[2]; // for easy initialization
-
-} hpcrun_metricFlags_t;
+} hpcrun_metricFlags_XXX_t;
 
 
 extern hpcrun_metricFlags_t hpcrun_metricFlags_NULL;
