@@ -276,6 +276,10 @@ Please note that a list of examples below provides <code>configure</code> comman
   If <code>--prefix</code> is not supplied it will automatically be set to <code>./&lt;Autoconf-host&gt;</code>.
 </p>
 
+<p>To specify a C and C++ compiler other than <code>gcc</code> and <code>g++</code>, use <code>CC</code> and <code>CXX</code>.
+</p>
+
+
 <p>Please be sure the Externals build completes before configuring HPCToolkit.
   (Note: After building Externals once, HPCToolkit can be configured and built several times using the same Externals installation.)
 </p>
@@ -297,7 +301,11 @@ Please note that a list of examples below provides <code>configure</code> comman
 </div>
 
 <p>The above commands will build HPCToolkit and install it into <code>&lt;<i>install-path</i>&gt;</code>.
-  The optional <code>--with-papi</code> takes the path to an optional PAPI installation <code>&lt;<i>papi-install-path</i>&gt;</code>.
+</p>
+
+<p>To specify a C and C++ compiler other than <code>gcc</code> and <code>g++</code>, use <code>CC</code> and <code>CXX</code>.
+  To enable MPI support, (1) ensure a working <code>mpicxx</code> or <code>mpiCC</code> is in your shell's path; or (2) use <code>MPICXX</code>.
+  To enable PAPI-based measurements, use the <code>--with-papi</code> option; it takes as an argument the path of your PAPI installation, <code>&lt;<i>papi-install-path</i>&gt;</code>.
 </p>
 
 <p>Because the HPCToolkit installation is self-contained, it may be renamed or moved to another location.
@@ -515,7 +523,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2010/12/16</span>]
+<p>[<span class="lastupdated">Page last updated: 2010/12/23</span>]
 </p>
 
 <!-- ********************************************************************** -->
