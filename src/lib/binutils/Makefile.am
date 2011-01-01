@@ -76,8 +76,8 @@ MYSOURCES = \
 	Proc.hpp Proc.cpp \
 	Insn.hpp Insn.cpp \
 	\
-	dbg_LM.hpp dbg_LM.cpp \
-	dbg_Proc.hpp dbg_Proc.cpp \
+	Dbg-LM.hpp Dbg-LM.cpp \
+	Dbg-Proc.hpp Dbg-Proc.cpp \
 	\
 	BinUtils.hpp BinUtils.cpp \
 	VMAInterval.hpp VMAInterval.cpp

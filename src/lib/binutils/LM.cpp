@@ -82,7 +82,7 @@ using std::endl;
 #include "Insn.hpp"
 #include "Proc.hpp"
 
-#include "dbg_LM.hpp"
+#include "Dbg-LM.hpp"
 
 #include <lib/isa/AlphaISA.hpp>
 #include <lib/isa/IA64ISA.hpp>

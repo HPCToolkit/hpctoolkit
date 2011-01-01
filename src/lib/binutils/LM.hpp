@@ -72,7 +72,7 @@
 #include <include/uint.h>
 #include <include/gnu_bfd.h>
 
-#include "dbg_LM.hpp"
+#include "Dbg-LM.hpp"
 #include "VMAInterval.hpp"
 #include "BinUtils.hpp"
 
