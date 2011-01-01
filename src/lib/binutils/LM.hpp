@@ -505,7 +505,7 @@ private:
 
   friend class TextSeg; // for TextSeg::Create_InitializeProcs();
 
-  BinUtil::dbg::LM*
+  BinUtil::Dbg::LM*
   getDebugInfo()
   { return &m_dbgInfo; }
     
@@ -532,7 +532,7 @@ private:
   InsnMap m_insnMap; // owns all Insn*
 
   // symbolic info used in building procedures
-  BinUtil::dbg::LM m_dbgInfo;
+  BinUtil::Dbg::LM m_dbgInfo;
 
   // Note: the sorted table includes both regular and synthetic
   // symbols and thus may be larger than m_bfdSymTab.  Size is the

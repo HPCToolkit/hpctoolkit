@@ -88,7 +88,7 @@ using std::dec;
 //***************************************************************************
 
 std::string
-BinUtil::dbg::Proc::toString() const
+BinUtil::Dbg::Proc::toString() const
 {
   std::ostringstream os;
   dump(os);
@@ -97,9 +97,9 @@ BinUtil::dbg::Proc::toString() const
 
 
 std::ostream&
-BinUtil::dbg::Proc::dump(std::ostream& os) const
+BinUtil::Dbg::Proc::dump(std::ostream& os) const
 {
-  os << "{dbg::Proc: \n";
+  os << "{Dbg::Proc: \n";
   os << "  " << name 
      << " [0x" << hex << begVMA << "-0x" << endVMA << dec << "]" 
      << " --> parentVMA: 0x" 
@@ -112,7 +112,7 @@ BinUtil::dbg::Proc::dump(std::ostream& os) const
 
 
 void
-BinUtil::dbg::Proc::ddump() const
+BinUtil::Dbg::Proc::ddump() const
 {
   dump(std::cerr);
 }

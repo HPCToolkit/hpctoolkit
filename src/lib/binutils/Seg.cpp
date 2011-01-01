@@ -206,7 +206,7 @@ BinUtil::TextSeg::dump(std::ostream& o, int flags, const char* pre) const
 void
 BinUtil::TextSeg::ctor_initProcs()
 {
-  dbg::LM* dbgInfo = m_lm->getDebugInfo();
+  Dbg::LM* dbgInfo = m_lm->getDebugInfo();
 
   // Any procedure with a parent has a <Proc*, parentVMA> entry
   std::map<Proc*, VMA> parentMap;
@@ -265,18 +265,18 @@ BinUtil::TextSeg::ctor_initProcs()
       string procNm;
       string symNm = bfd_asymbol_name(sym);
 
-      dbg::LM::iterator it = dbgInfo->find(begVMA);
-      dbg::Proc* dbg = (it != dbgInfo->end()) ? it->second : NULL;
+      Dbg::LM::iterator it = dbgInfo->find(begVMA);
+      Dbg::Proc* dbg = (it != dbgInfo->end()) ? it->second : NULL;
 
       if (!dbg) {
 	procNm = findProcName(abfd, sym);
 	string pnm = BinUtil::canonicalizeProcName(procNm);
 	
-	dbg::LM::iterator1 it1 = dbgInfo->find1(pnm);
+	Dbg::LM::iterator1 it1 = dbgInfo->find1(pnm);
 	dbg = (it1 != dbgInfo->end1()) ? it1->second : NULL;
       }
       if (!dbg) {
-	dbg::LM::iterator1 it1 = dbgInfo->find1(symNm);
+	Dbg::LM::iterator1 it1 = dbgInfo->find1(symNm);
 	dbg = (it1 != dbgInfo->end1()) ? it1->second : NULL;
       }
       

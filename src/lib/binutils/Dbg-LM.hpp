@@ -57,8 +57,8 @@
 //
 //***************************************************************************
 
-#ifndef BinUtil_dbg_LM_hpp 
-#define BinUtil_dbg_LM_hpp
+#ifndef BinUtil_Dbg_LM_hpp 
+#define BinUtil_Dbg_LM_hpp
 
 //************************* System Include Files ****************************
 
@@ -83,7 +83,7 @@
 
 namespace BinUtil {
 
-namespace dbg {
+namespace Dbg {
 
 class Proc;
 
@@ -96,9 +96,9 @@ class Proc;
 
 class LM {
 public:
-  // A VMA -> dbg::Proc map (could use VMAInterval -> dbg::Proc)
+  // A VMA -> Dbg::Proc map (could use VMAInterval -> Dbg::Proc)
   typedef VMA                                               key_type;
-  typedef dbg::Proc*                                        mapped_type;
+  typedef Dbg::Proc*                                        mapped_type;
   
   typedef std::map<key_type, mapped_type>                   My_t;
   typedef std::pair<const key_type, mapped_type>            value_type;
@@ -110,7 +110,7 @@ public:
   typedef My_t::const_iterator                              const_iterator;
   typedef My_t::size_type                                   size_type;
 
-  // A string -> dbg::Proc map (could use VMAInterval -> dbg::Proc)
+  // A string -> Dbg::Proc map (could use VMAInterval -> Dbg::Proc)
   typedef std::string                                       key_type1;
 
   typedef std::map<key_type1, mapped_type>                  My1_t;
@@ -248,10 +248,10 @@ private:
 };
   
 
-} // namespace dbg
+} // namespace Dbg
 
 } // namespace BinUtil
 
 //***************************************************************************
 
-#endif // BinUtil_dbg_LM_hpp
+#endif // BinUtil_Dbg_LM_hpp

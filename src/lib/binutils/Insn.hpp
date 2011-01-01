@@ -252,11 +252,11 @@ public:
 
   // Given a target or branch instruction, returns the target address.
   virtual VMA
-  GetTargetVMA(VMA vma) const
+  getTargetVMA(VMA vma) const
   { return LM::isa->GetInsnTargetVMA(m_minsn, vma, m_size); }
 
   virtual ushort
-  GetNumDelaySlots() const
+  getNumDelaySlots() const
   { return LM::isa->GetInsnNumDelaySlots(m_minsn, m_size); }
 
   // -------------------------------------------------------
