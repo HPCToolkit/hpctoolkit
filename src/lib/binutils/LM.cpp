@@ -308,9 +308,9 @@ BinUtil::LM::findMachInsn(VMA vma, ushort &size) const
 
 
 bool
-BinUtil::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
-			       string& func, 
-			       string& file, SrcFile::ln& line) /*const*/
+BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
+			     string& func,
+			     string& file, SrcFile::ln& line) /*const*/
 {
   bool STATUS = false;
   func = file = "";
@@ -361,11 +361,11 @@ BinUtil::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
 
 
 bool
-BinUtil::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
-			       VMA endVMA, ushort eOpIndex,
-			       string& func, string& file,
-			       SrcFile::ln& begLine, SrcFile::ln& endLine,
-			       unsigned flags) /*const*/
+BinUtil::LM::findSrcCodeInfo(VMA begVMA, ushort bOpIndex,
+			     VMA endVMA, ushort eOpIndex,
+			     string& func, string& file,
+			     SrcFile::ln& begLine, SrcFile::ln& endLine,
+			     unsigned flags) /*const*/
 {
   bool STATUS = false;
   func = file = "";
@@ -385,8 +385,8 @@ BinUtil::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 
   // Attempt to find source file info
   string func1, func2, file1, file2;
-  bool call1 = GetSourceFileInfo(begVMA, bOpIndex, func1, file1, begLine);
-  bool call2 = GetSourceFileInfo(endVMA, eOpIndex, func2, file2, endLine);
+  bool call1 = findSrcCodeInfo(begVMA, bOpIndex, func1, file1, begLine);
+  bool call2 = findSrcCodeInfo(endVMA, eOpIndex, func2, file2, endLine);
   STATUS = (call1 && call2);
 
   // Error checking and processing: 'func'
@@ -437,8 +437,8 @@ BinUtil::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 
 
 bool 
-BinUtil::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, 
-				  SrcFile::ln &line) const
+BinUtil::LM::findProcSrcCodeInfo(VMA vma, ushort opIndex, 
+				 SrcFile::ln &line) const
 {
   bool isfound = false;
   line = 0;
@@ -454,7 +454,7 @@ BinUtil::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex,
     line = proc->begLine();
     isfound = true;
   }
-  DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo " 
+  DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::findProcSrcCodeInfo " 
 	     << ival.toString() << " = " << line);
 
   return isfound;
@@ -573,7 +573,7 @@ BinUtil::LM::ddumpProcMap(unsigned flag) const
 //***************************************************************************
 
 int
-BinUtil::LM::SymCmpByVMAFunc(const void* s1, const void* s2)
+BinUtil::LM::cmpBFDSymByVMA(const void* s1, const void* s2)
 {
   asymbol *a = (asymbol *)s1;
   asymbol *b = (asymbol *)s2;
@@ -657,7 +657,7 @@ BinUtil::LM::readSymbolTables()
   // Sort symbol table by VMA.
   // -------------------------------------------------------
   QuickSort QSort;
-  QSort.Create((void **)(m_bfdSymTabSort), LM::SymCmpByVMAFunc);
+  QSort.Create((void **)(m_bfdSymTabSort), LM::cmpBFDSymByVMA);
   QSort.Sort(0, m_bfdSymTabSz - 1);
 }
 
@@ -914,7 +914,7 @@ BinUtil::Exe::dump(std::ostream& o, int flags, const char* pre) const
 void
 BinUtil::Exe::dumpme(std::ostream& o, const char* pre) const
 {
-  o << pre << "Program start address: " << std::hex << GetStartVMA()
+  o << pre << "Program start address: " << std::hex << getStartVMA()
     << std::dec << endl;
 }
 

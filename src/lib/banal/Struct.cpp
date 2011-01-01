@@ -464,7 +464,7 @@ demandFileNode(Prof::Struct::LM* lmStrct, BinUtil::Proc* p)
   if (filenm.empty()) {
     string procnm;
     SrcFile::ln line;
-    p->GetSourceFileInfo(p->begVMA(), 0, procnm, filenm, line);
+    p->findSrcCodeInfo(p->begVMA(), 0, procnm, filenm, line);
   }
   if (filenm.empty()) { 
     filenm = OrphanedProcedureFile; 
@@ -496,8 +496,8 @@ demandProcNode(Prof::Struct::File* fStrct, BinUtil::Proc* p,
   SrcFile::ln begLn1, endLn1;
   BinUtil::Insn* eInsn = p->endInsn();
   ushort endOp = (eInsn) ? eInsn->opIndex() : 0;
-  p->GetSourceFileInfo(p->begVMA(), 0, p->endVMA(), endOp, 
-		       proc, file, begLn1, endLn1, 0 /*no swapping*/);
+  p->findSrcCodeInfo(p->begVMA(), 0, p->endVMA(), endOp, 
+		     proc, file, begLn1, endLn1, 0 /*no swapping*/);
   
   // Compute source line bounds to uphold invariant:
   //   (begLn == 0) <==> (endLn == 0)
@@ -889,7 +889,7 @@ buildStmts(Struct::LocationMgr& locMgr,
     // 1. gather source code info
     string filenm, procnm;
     SrcFile::ln line;
-    p->GetSourceFileInfo(vma, opIdx, procnm, filenm, line); 
+    p->findSrcCodeInfo(vma, opIdx, procnm, filenm, line); 
     procnm = BinUtil::canonicalizeProcName(procnm, procNmMgr);
 
     // 2. create a VMA interval
@@ -1048,7 +1048,7 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
     if (e->getType() == BACK_EDGE || vma >= headVMA) {
       SrcFile::ln line;
       string filenm, procnm;
-      p->GetSourceFileInfo(vma, opIdx, procnm, filenm, line); 
+      p->findSrcCodeInfo(vma, opIdx, procnm, filenm, line); 
       if (SrcFile::isValid(line) 
 	  && (!SrcFile::isValid(begLn) || line < begLn)) {
 	begLn = line;
@@ -1063,7 +1063,7 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
   // ------------------------------------------------------------  
   if (!SrcFile::isValid(begLn)) {
     // Fall through: consult the first instruction in the loop
-    p->GetSourceFileInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
+    p->findSrcCodeInfo(headVMA, headOpIdx, begProcNm, begFileNm, begLn);
   }
 
 #if 0 
@@ -1083,7 +1083,7 @@ findLoopBegLineInfo(/* Prof::Struct::ACodeNode* procCtxt,*/ BinUtil::Proc* p,
     // source information.
     SrcFile::ln line;
     string filenm, procnm;
-    p->GetSourceFileInfo(headVMA, headOpIdx, procnm, filenm, line);
+    p->findSrcCodeInfo(headVMA, headOpIdx, procnm, filenm, line);
     
     if (filenm == begFileNm && ctxtNameEqFuzzy(procnm, begProcNm)
 	&& procCtxt->begLine() < line && line < procCtxt->endLine()) {

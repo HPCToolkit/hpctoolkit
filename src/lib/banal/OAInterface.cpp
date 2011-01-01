@@ -104,9 +104,9 @@ BAnal::OAInterface::OAInterface (Proc* proc)
   : m_proc(proc)
 {
   m_branchTargetSet.clear();
-  for (ProcInsnIterator pii(*m_proc); pii.IsValid(); ++pii) {
-    Insn* insn = pii.Current();
-    //VMA curr_oppc = pii.CurrentVMA(); // the 'operation VMA'
+  for (ProcInsnIterator pii(*m_proc); pii.isValid(); ++pii) {
+    Insn* insn = pii.current();
+    //VMA curr_oppc = pii.currentVMA(); // the 'operation VMA'
     
     // If this insn is a branch, record its target address in
     // the branch target set.

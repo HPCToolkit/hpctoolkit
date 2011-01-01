@@ -183,7 +183,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     // --------------------------------------------------
     string func, file;
     SrcFile::ln line;
-    lm->GetSourceFileInfo(pc, opIndex, func, file, line);
+    lm->findSrcCodeInfo(pc, opIndex, func, file, line);
     func = GetBestFuncName(func);
     
     // Bad line info: cannot fix and cannot report; advance iteration
