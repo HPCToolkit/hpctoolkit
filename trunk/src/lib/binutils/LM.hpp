@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef BinUtil_LM_hpp 
+#ifndef BinUtil_LM_hpp
 #define BinUtil_LM_hpp
 
 //************************* System Include Files ****************************
@@ -96,7 +96,7 @@ namespace BinUtil {
 class Seg;
 class Proc;
 class Insn;
-class LMImpl; 
+class LMImpl;
 
 // --------------------------------------------------------------------------
 // 'LM' represents a load module, a binary loaded into memory
@@ -113,7 +113,7 @@ public:
   // Read flags: forms an inverse hierarchy where a smaller scope
   // implies all the larger scopes.  E.g. ReadFlg_Insn implies
   // ReadFlg_Proc and ReadFlg_Seg.
-  enum ReadFlg { 
+  enum ReadFlg {
     ReadFlg_NULL  = 0,
 
     // individual flags
@@ -132,15 +132,16 @@ public:
   typedef std::map<VMA, Insn*>  InsnMap;
   
 public:
-  // -------------------------------------------------------  
+  // -------------------------------------------------------
   // Constructor/Destructor
   // -------------------------------------------------------
 
   // Constructor allocates an empty data structure
   LM();
+
   virtual ~LM();
 
-  // -------------------------------------------------------  
+  // -------------------------------------------------------
   // open/read (cf. istreams)
   // -------------------------------------------------------
 
@@ -158,7 +159,7 @@ public:
 
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
 
   // name: Return name of load module
@@ -225,7 +226,7 @@ public:
 
 
   // -------------------------------------------------------
-  // Segments: 
+  // Segments:
   // -------------------------------------------------------
 
   SegMap&
@@ -301,7 +302,7 @@ public:
   // (potentially) variable sized instruction packets.  VLIW
   // instructions are 'unpacked' so that each operation is an
   // 'Insn' that may be accessed by the combination of its vma and
-  // operation index.  
+  // operation index.
   //
   // findMachInsn: Return a pointer to beginning of the instrution
   // bits at virtual memory address 'vma'; NULL if invalid instruction
@@ -360,7 +361,7 @@ public:
 
   
   // -------------------------------------------------------
-  // GetSourceFileInfo: If possible, find the source file, function
+  // findSrcCodeInfo: If possible, find the source file, function
   // name and line number that corresponds to the operation at
   // 'vma + opIndex'.  If it is possible to find all information without
   // errors, return true; otherwise false.
@@ -382,26 +383,27 @@ public:
   //   - It is an error for either the file or function to be
   //     different accross the individual calls.  In this case
   //     information from 'begVMA' is used.
-  // 
+  //
   // If 'flags' is set to 1, then beg/end line swapping is performed.
-  // 
+  //
   // The second version only returns true when all information is
   // found and no error is detected.
   // -------------------------------------------------------
   bool
-  GetSourceFileInfo(VMA vma, ushort opIndex,
-		    std::string& func,
-		    std::string& file, SrcFile::ln& line) /*const*/;
+  findSrcCodeInfo(VMA vma, ushort opIndex,
+		  std::string& func,
+		  std::string& file, SrcFile::ln& line) /*const*/;
 
   bool
-  GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
-		    VMA endVMA, ushort eOpIndex,
-		    std::string& func, std::string& file,
-		    SrcFile::ln& begLine, SrcFile::ln& endLine,
-		    unsigned flags = 1) /*const*/;
+  findSrcCodeInfo(VMA begVMA, ushort bOpIndex,
+		  VMA endVMA, ushort eOpIndex,
+		  std::string& func, std::string& file,
+		  SrcFile::ln& begLine, SrcFile::ln& endLine,
+		  unsigned flags = 1) /*const*/;
 
   bool
-  GetProcFirstLineInfo(VMA vma, ushort opIndex, SrcFile::ln& line) const;
+  findProcSrcCodeInfo(VMA vma, ushort opIndex, SrcFile::ln& line) const;
+
 
   // -------------------------------------------------------
   // BFD details
@@ -417,6 +419,7 @@ public:
   uint
   bfdSymTabSz() const
   { return m_bfdSymTabSz; }
+
 
   // -------------------------------------------------------
   // debugging
@@ -476,7 +479,7 @@ protected:
   LM(const LM& lm) : m_realpathMgr(RealPathMgr::singleton()) { }
   LM& operator=(const LM& lm) { return *this; }
 
-private: 
+private:
   // Constructing routines: return true on success; false on error
   void
   readSymbolTables();
@@ -491,7 +494,7 @@ private:
   
   // Comparison routines for QuickSort.
   static int
-  SymCmpByVMAFunc(const void* s1, const void* s2);
+  cmpBFDSymByVMA(const void* s1, const void* s2);
 
   // Dump helper routines
   void
@@ -503,7 +506,7 @@ private:
   friend class TextSeg; // for TextSeg::Create_InitializeProcs();
 
   BinUtil::dbg::LM*
-  GetDebugInfo()
+  getDebugInfo()
   { return &m_dbgInfo; }
     
 private:
@@ -561,14 +564,15 @@ namespace BinUtil {
 
 class Exe : public LM {
 public:
-  // -------------------------------------------------------  
+  // -------------------------------------------------------
   // Constructor/Destructor
   // -------------------------------------------------------
   Exe();
+
   virtual ~Exe();
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
 
   // See LM::Open comments
@@ -576,14 +580,14 @@ public:
   open(const char* filenm);
   
   VMA
-  GetStartVMA() const
+  getStartVMA() const
   { return m_startVMA; }
 
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
   virtual void
-  dump(std::ostream& o = std::cerr, 
+  dump(std::ostream& o = std::cerr,
        int flags = DUMP_Short, const char* pre = "") const;
 
   virtual void

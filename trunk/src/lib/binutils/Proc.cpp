@@ -141,12 +141,12 @@ BinUtil::Proc::dump(std::ostream& os, int flags, const char* pre) const
   ushort endOp = (eInsn) ? eInsn->opIndex() : 0;
 
   // This call performs some consistency checking
-  m_seg->GetSourceFileInfo(begVMA(), 0, endVMA(), endOp,
+  m_seg->findSrcCodeInfo(begVMA(), 0, endVMA(), endOp,
 			   proc, file, begLn, endLn);
 
   // These calls perform no consistency checking
-  m_seg->GetSourceFileInfo(begVMA(), 0, b_proc, b_file, b_begLn);
-  m_seg->GetSourceFileInfo(endVMA(), endOp, e_proc, e_file, e_endLn2);
+  m_seg->findSrcCodeInfo(begVMA(), 0, b_proc, b_file, b_begLn);
+  m_seg->findSrcCodeInfo(endVMA(), endOp, e_proc, e_file, e_endLn2);
 
   string nm = BinUtil::canonicalizeProcName(name());
   string ln_nm = BinUtil::canonicalizeProcName(linkName());
@@ -178,8 +178,8 @@ BinUtil::Proc::dump(std::ostream& os, int flags, const char* pre) const
   if ((flags & LM::DUMP_Flg_Insn_ty) 
       || (flags & LM::DUMP_Flg_Insn_decode)) {
     os << p1 << "----- Instruction Dump -----\n";
-    for (ProcInsnIterator it(*this); it.IsValid(); ++it) {
-      Insn* insn = it.Current();
+    for (ProcInsnIterator it(*this); it.isValid(); ++it) {
+      Insn* insn = it.current();
 
       if (flags & LM::DUMP_Flg_Insn_decode) {
 	os << p2 << hex << insn->vma() << dec << ": ";
@@ -196,7 +196,7 @@ BinUtil::Proc::dump(std::ostream& os, int flags, const char* pre) const
 
 	string proc, file;
 	SrcFile::ln line;
-    	m_seg->GetSourceFileInfo(vma, opIdx, proc, file, line);
+    	m_seg->findSrcCodeInfo(vma, opIdx, proc, file, line);
 	proc = BinUtil::canonicalizeProcName(proc);
 	
 	os << p2 << "  ";
@@ -234,7 +234,7 @@ BinUtil::Proc::ddump() const
 BinUtil::ProcInsnIterator::ProcInsnIterator(const Proc& _p)
   : p(_p), lm(*(p.lm()))
 {
-  Reset();
+  reset();
 }
 
 
@@ -244,7 +244,7 @@ BinUtil::ProcInsnIterator::~ProcInsnIterator()
 
 
 void
-BinUtil::ProcInsnIterator::Reset()
+BinUtil::ProcInsnIterator::reset()
 {
   it    = lm.m_insnMap.find(p.m_begVMA);
   endIt = lm.m_insnMap.find(p.m_endVMA); 

@@ -246,15 +246,15 @@ DumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm)
     string theFunc = pName, theFile;
     LineToVMAListMap map;
 
-    for (BinUtil::ProcInsnIterator it(*p); it.IsValid(); ++it) {
-      BinUtil::Insn* inst = it.Current();
+    for (BinUtil::ProcInsnIterator it(*p); it.isValid(); ++it) {
+      BinUtil::Insn* inst = it.current();
       VMA vma = inst->vma();
       VMA opVMA = BinUtil::LM::isa->ConvertVMAToOpVMA(vma, inst->opIndex());
 	
       // 1. Attempt to find symbolic information
       string func, file;
       SrcFile::ln line;
-      p->GetSourceFileInfo(vma, inst->opIndex(), func, file, line);
+      p->findSrcCodeInfo(vma, inst->opIndex(), func, file, line);
       func = BinUtil::canonicalizeProcName(func);
 	
       // Bad line number: cannot fix; advance iteration

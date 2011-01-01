@@ -152,16 +152,27 @@ namespace BAnal {
 
 class RegionStmtIterator: public OA::IRRegionStmtIterator {
 public:
-  RegionStmtIterator(BinUtil::Proc& _p) : pii(_p) { }
-  virtual ~RegionStmtIterator() { }
+  RegionStmtIterator(BinUtil::Proc& _p)
+    : pii(_p)
+  { }
 
-  virtual OA::StmtHandle current () const 
-    { return TY_TO_IRHNDL(pii.Current(), OA::StmtHandle); }
+  virtual ~RegionStmtIterator()
+  { }
 
-  virtual bool isValid () const { return pii.IsValid(); }
-  virtual void operator++ () { ++pii; }
+  virtual OA::StmtHandle
+  current () const
+  { return TY_TO_IRHNDL(pii.current(), OA::StmtHandle); }
 
-  virtual void reset() { pii.Reset(); }
+  virtual bool
+  isValid () const
+  { return pii.isValid(); }
+  
+  virtual void
+  operator++ ()
+  { ++pii; }
+
+  virtual void
+  reset() { pii.reset(); }
 
 private:
   BinUtil::ProcInsnIterator pii;

@@ -206,7 +206,7 @@ BinUtil::TextSeg::dump(std::ostream& o, int flags, const char* pre) const
 void
 BinUtil::TextSeg::ctor_initProcs()
 {
-  dbg::LM* dbgInfo = m_lm->GetDebugInfo();
+  dbg::LM* dbgInfo = m_lm->getDebugInfo();
 
   // Any procedure with a parent has a <Proc*, parentVMA> entry
   std::map<Proc*, VMA> parentMap;
@@ -453,7 +453,7 @@ BinUtil::TextSeg::findProcName(bfd* abfd, asymbol* procSym) const
 {
   string procName;
 
-  // cf. LM::GetSourceFileInfo()
+  // cf. LM::findSrcCodeInfo()
   asection* bfdSeg = bfd_get_section_by_name(abfd, name().c_str());
 
   bfd_boolean bfd_fnd = false;

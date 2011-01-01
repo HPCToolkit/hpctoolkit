@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef BinUtil_Seg_hpp 
+#ifndef BinUtil_Seg_hpp
 #define BinUtil_Seg_hpp
 
 //************************* System Include Files ****************************
@@ -73,7 +73,7 @@
 
 #include "LM.hpp"
 
-#include <lib/isa/ISATypes.hpp> 
+#include <lib/isa/ISATypes.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -92,61 +92,74 @@ class Insn;
 // --------------------------------------------------------------------------
 
 class Seg {
-public: 
+public:
   enum Type { TypeNULL = 0, TypeBSS, TypeText, TypeData };
   
-  Seg(LM* lm, const std::string& name, Type type, 
+  Seg(LM* lm, const std::string& name, Type type,
       VMA beg, VMA end, uint64_t size);
+
   virtual ~Seg();
 
-  LM* lm() const { return m_lm; }
+  LM*
+  lm() const
+  { return m_lm; }
 
   // Return name and type of section
-  const std::string& name() const { return m_name; }
+  const std::string&
+  name() const
+  { return m_name; }
   
-  Type type()  const { return m_type; }
+  Type
+  type() const
+  { return m_type; }
   
   // Return begin/end virtual memory address for section: [begVMA, endVMA).
   // Note that the end of a section is equal to the begin address of
   // the next section (or the end of the file) which is different than
   // the convention used for a 'Proc'.
-  VMA begVMA() const { return m_begVMA; }
-  VMA endVMA() const { return m_endVMA; }
+  VMA
+  begVMA() const
+  { return m_begVMA; }
+
+  VMA
+  endVMA() const
+  { return m_endVMA; }
 
   // Return size of section
-  uint64_t size() const { return m_size; }
+  uint64_t
+  size() const
+  { return m_size; }
 
   // Return true if virtual memory address 'vma' is within the section
   // WARNING: vma must be unrelocated
-  bool 
-  isIn(VMA vma) const { return (m_begVMA <= vma && vma < m_endVMA); }
+  bool
+  isIn(VMA vma) const
+  { return (m_begVMA <= vma && vma < m_endVMA); }
 
   // Convenient wrappers for the 'LM' versions of the same.
-  MachInsn* 
-  findMachInsn(VMA vma, ushort &sz) const {
-    return m_lm->findMachInsn(vma, sz);
-  }
+  MachInsn*
+  findMachInsn(VMA vma, ushort &sz) const
+  { return m_lm->findMachInsn(vma, sz); }
   
-  Insn* 
-  findInsn(VMA vma, ushort opIndex) const {
-    return m_lm->findInsn(vma, opIndex);
-  }
+  Insn*
+  findInsn(VMA vma, ushort opIndex) const
+  { return m_lm->findInsn(vma, opIndex); }
 
-  bool 
-  GetSourceFileInfo(VMA vma, ushort opIndex,
-		    std::string& func, std::string& file, 
-		    SrcFile::ln& line) const {
-    return m_lm->GetSourceFileInfo(vma, opIndex, func, file, line);
-  }
+  bool
+  findSrcCodeInfo(VMA vma, ushort opIndex,
+		  std::string& func, std::string& file,
+		  SrcFile::ln& line) const
+  { return m_lm->findSrcCodeInfo(vma, opIndex, func, file, line); }
 
-  bool 
-  GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
+  bool
+  findSrcCodeInfo(VMA begVMA, ushort bOpIndex,
 		    VMA endVMA, ushort eOpIndex,
 		    std::string& func, std::string& file,
 		    SrcFile::ln& begLine, SrcFile::ln& endLine,
-		    uint flags = 1) const {
-    return m_lm->GetSourceFileInfo(begVMA, bOpIndex, endVMA, eOpIndex,
-				   func, file, begLine, endLine, flags);
+		    uint flags = 1) const
+  {
+    return m_lm->findSrcCodeInfo(begVMA, bOpIndex, endVMA, eOpIndex,
+				 func, file, begLine, endLine, flags);
   }
 
   // -------------------------------------------------------
@@ -156,21 +169,27 @@ public:
   //   0 : short dump (without instructions)
   //   1 : full dump
 
-  std::string 
+  std::string
   toString(int flags = LM::DUMP_Short, const char* pre = "") const;
 
-  virtual void 
-  dump(std::ostream& o = std::cerr, 
+  virtual void
+  dump(std::ostream& o = std::cerr,
        int flags = LM::DUMP_Short, const char* pre = "") const;
   
-  void 
+  void
   ddump() const;
   
 protected:
   // Should not be used
-  Seg() { } 
-  Seg(const Seg& s) { }
-  Seg& operator=(const Seg& s) { return *this; }
+  Seg()
+  { }
+
+  Seg(const Seg& s)
+  { }
+
+  Seg&
+  operator=(const Seg& s)
+  { return *this; }
   
 protected:
   LM* m_lm; // do not own
@@ -178,7 +197,7 @@ protected:
 private:
   std::string m_name;
   Type m_type;
-  VMA  m_begVMA; // beginning of section 
+  VMA  m_begVMA; // beginning of section
   VMA  m_endVMA; // end of section [equal to the beginning of next section]
   uint64_t m_size; // size in bytes
 };
@@ -198,12 +217,12 @@ namespace BinUtil {
 // implements special functionality pertaining to it.
 // --------------------------------------------------------------------------
 
-class TextSeg : public Seg { 
+class TextSeg : public Seg {
 public:
   typedef std::vector<Proc*> ProcVec;
 
 public:
-  TextSeg(LM* lm, const std::string& name, 
+  TextSeg(LM* lm, const std::string& name,
 	  VMA beg, VMA end, uint64_t size);
   virtual ~TextSeg();
 
@@ -211,11 +230,13 @@ public:
   // Procedures
   // -------------------------------------------------------
   
-  uint numProcs() const { return m_procs.size(); }
+  uint
+  numProcs() const
+  { return m_procs.size(); }
   
 #if 0
   LM::ProcMap::iterator
-  begin() { 
+  begin() {
     if (size() > 0) {
       return m_lm->procs().find(VMAInterval(begVMA(), begVMA() + 1));
     }
@@ -225,11 +246,11 @@ public:
   }
 
   LM::ProcMap::const_iterator
-  begin() const { 
+  begin() const {
     return const_cast<TextSeg*>(this)->begin();
   }
   
-  LM::ProcMap::iterator 
+  LM::ProcMap::iterator
   end() {
     if (size() > 0) {
       return m_lm->procs().find(VMAInterval(endVMA() - 1, endVMA()));
@@ -239,7 +260,7 @@ public:
     }
   }
 
-  LM::ProcMap::const_iterator 
+  LM::ProcMap::const_iterator
   end() const {
     return const_cast<TextSeg*>(this)->end();
   }
@@ -249,24 +270,41 @@ public:
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  virtual void dump(std::ostream& o = std::cerr, 
-		    int flags = LM::DUMP_Short, const char* pre = "") const;
+  virtual void
+  dump(std::ostream& o = std::cerr,
+       int flags = LM::DUMP_Short, const char* pre = "") const;
   
 private:
   // Should not be used
-  TextSeg() { }
-  TextSeg(const TextSeg& s) { }
-  TextSeg& operator=(const TextSeg& s) { return *this; }
+  TextSeg()
+  { }
+  
+  TextSeg(const TextSeg& s)
+  { }
 
-  void ctor_initProcs();
-  void ctor_readSegment();
-  void ctor_disassembleProcs();
+  TextSeg&
+  operator=(const TextSeg& s)
+  { return *this; }
+
+  void
+  ctor_initProcs();
+
+  void
+  ctor_readSegment();
+
+  void
+  ctor_disassembleProcs();
 
   // Construction helpers
-  std::string findProcName(bfd* abfd, asymbol* procSym) const;
-  VMA findProcEnd(int funcSymIndex) const;
-  Insn* makeInsn(bfd* abfd, MachInsn* mi, VMA vma, 
-		 ushort opIndex, ushort sz) const;
+  std::string
+  findProcName(bfd* abfd, asymbol* procSym) const;
+
+  VMA
+  findProcEnd(int funcSymIndex) const;
+
+  Insn*
+  makeInsn(bfd* abfd, MachInsn* mi, VMA vma,
+	   ushort opIndex, ushort sz) const;
 
 protected:
 private:

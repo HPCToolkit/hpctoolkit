@@ -447,8 +447,8 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
     string the_file;
     SrcFile::ln the_line = SrcFile::ln_NULL;
 
-    for (BinUtil::ProcInsnIterator it(*p); it.IsValid(); ++it) {
-      BinUtil::Insn* insn = it.Current();
+    for (BinUtil::ProcInsnIterator it(*p); it.isValid(); ++it) {
+      BinUtil::Insn* insn = it.current();
       VMA vma = insn->vma();
       VMA opVMA = BinUtil::LM::isa->ConvertVMAToOpVMA(vma, insn->opIndex());
 
@@ -460,7 +460,7 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
       if (srcCode) {
 	string func, file;
 	SrcFile::ln line;
-	p->GetSourceFileInfo(vma, insn->opIndex(), func, file, line);
+	p->findSrcCodeInfo(vma, insn->opIndex(), func, file, line);
 	
 	if (file != the_file || line != the_line) {
 	  the_file = file;
