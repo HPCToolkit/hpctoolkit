@@ -85,8 +85,8 @@ using std::string;
 #include "Proc.hpp"
 #include "Insn.hpp"
 
-#include "dbg_LM.hpp"
-#include "dbg_Proc.hpp"
+#include "Dbg-LM.hpp"
+#include "Dbg-Proc.hpp"
 
 #include "BinUtils.hpp"
 

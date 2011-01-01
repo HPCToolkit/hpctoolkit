@@ -75,7 +75,7 @@ using std::dec;
 
 #include <include/gnu_bfd.h>
 
-#include "dbg_Proc.hpp"
+#include "Dbg-Proc.hpp"
 
 #include <lib/support/diagnostics.h>
 

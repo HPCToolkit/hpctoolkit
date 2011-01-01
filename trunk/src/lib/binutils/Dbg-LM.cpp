@@ -76,8 +76,8 @@ using std::dec;
 
 #include <include/gnu_bfd.h>
 
-#include "dbg_LM.hpp"
-#include "dbg_Proc.hpp"
+#include "Dbg-LM.hpp"
+#include "Dbg-Proc.hpp"
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.hpp>
