@@ -91,12 +91,12 @@ using std::dec;
 // LM
 //***************************************************************************
 
-BinUtil::dbg::LM::LM()
+BinUtil::Dbg::LM::LM()
 {
 }
 
 
-BinUtil::dbg::LM::~LM()
+BinUtil::Dbg::LM::~LM()
 {
   clear();
   clear1();
@@ -104,7 +104,7 @@ BinUtil::dbg::LM::~LM()
 
 
 void
-BinUtil::dbg::LM::read(bfd* abfd, asymbol** bfdSymTab)
+BinUtil::Dbg::LM::read(bfd* abfd, asymbol** bfdSymTab)
 {
 #if defined(HAVE_HPC_GNUBINUTILS)
   if (!bfdSymTab) { return; }
@@ -125,7 +125,7 @@ BinUtil::dbg::LM::read(bfd* abfd, asymbol** bfdSymTab)
 
 
 void
-BinUtil::dbg::LM::clear()
+BinUtil::Dbg::LM::clear()
 {
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
     delete it->second;
@@ -135,7 +135,7 @@ BinUtil::dbg::LM::clear()
 
 
 void
-BinUtil::dbg::LM::clear1()
+BinUtil::Dbg::LM::clear1()
 {
   for (const_iterator1 it = this->begin1(); it != this->end1(); ++it) {
     delete it->second;
@@ -145,7 +145,7 @@ BinUtil::dbg::LM::clear1()
 
 
 std::string
-BinUtil::dbg::LM::toString() const
+BinUtil::Dbg::LM::toString() const
 {
   std::ostringstream os;
   dump(os);
@@ -154,9 +154,9 @@ BinUtil::dbg::LM::toString() const
 
 
 std::ostream&
-BinUtil::dbg::LM::dump(std::ostream& os) const
+BinUtil::Dbg::LM::dump(std::ostream& os) const
 {
-  os << "{ dbg::LM: \n";
+  os << "{ Dbg::LM: \n";
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
     os << "(" << hex << it->first << dec << " --> " << it->second << ") ";
     it->second->dump(os);
@@ -172,7 +172,7 @@ BinUtil::dbg::LM::dump(std::ostream& os) const
 
 
 void
-BinUtil::dbg::LM::ddump() const
+BinUtil::Dbg::LM::ddump() const
 {
   dump(std::cerr);
 }
@@ -182,13 +182,13 @@ BinUtil::dbg::LM::ddump() const
 
 // Should have function type of 'bfd_forall_dbg_funcinfo_fn_t'
 int 
-BinUtil::dbg::LM::bfd_dbgInfoCallback(void* callback_obj, 
+BinUtil::Dbg::LM::bfd_dbgInfoCallback(void* callback_obj, 
 				       void* parent, void* funcinfo)
 {
 #if defined(HAVE_HPC_GNUBINUTILS)
-  dbg::LM* lminfo = (dbg::LM*)callback_obj;
+  Dbg::LM* lminfo = (Dbg::LM*)callback_obj;
   
-  dbg::Proc* pinfo = new dbg::Proc;
+  Dbg::Proc* pinfo = new Dbg::Proc;
 
   // Collect information for 'funcinfo'
   bfd_vma begVMA, endVMA;
@@ -217,7 +217,7 @@ BinUtil::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
   }
   pinfo->parentVMA = begVMA;
 
-  DIAG_DevMsg(10, "BinUtil::dbg::LM::bfd_dbgInfoCallback:\n"
+  DIAG_DevMsg(10, "BinUtil::Dbg::LM::bfd_dbgInfoCallback:\n"
 	      << pinfo->toString());
 
 
@@ -248,9 +248,9 @@ BinUtil::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
     std::pair<iterator, bool> fnd = 
       lminfo->insert(std::make_pair(pinfo->begVMA, pinfo));
     if (!fnd.second) {
-      dbg::Proc* map_pinfo = fnd.first->second;
-      dbg::Proc* tokeep = map_pinfo;
-      dbg::Proc* todel = pinfo;
+      Dbg::Proc* map_pinfo = fnd.first->second;
+      Dbg::Proc* tokeep = map_pinfo;
+      Dbg::Proc* todel = pinfo;
       if (pinfo->endVMA > map_pinfo->endVMA) {
 	tokeep = pinfo;
 	todel = map_pinfo;
@@ -264,9 +264,9 @@ BinUtil::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
     std::pair<iterator1, bool> fnd = 
       lminfo->insert1(std::make_pair(pinfo->name, pinfo));
     if (!fnd.second) {
-      dbg::Proc* map_pinfo = fnd.first->second;
-      dbg::Proc* tokeep = map_pinfo;
-      dbg::Proc* todel = pinfo;
+      Dbg::Proc* map_pinfo = fnd.first->second;
+      Dbg::Proc* tokeep = map_pinfo;
+      Dbg::Proc* todel = pinfo;
       if (pinfo->begVMA < map_pinfo->begVMA 
 	  || pinfo->endVMA > map_pinfo->endVMA) {
 	tokeep = pinfo;
@@ -289,13 +289,13 @@ BinUtil::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
 
 
 void 
-BinUtil::dbg::LM::setParentPointers()
+BinUtil::Dbg::LM::setParentPointers()
 {
   // Set parent pointers assuming begVMA has been set.
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
-    dbg::Proc* x = it->second;
+    Dbg::Proc* x = it->second;
     if (x->parentVMA != 0) {
-      dbg::Proc* parent = (*this)[x->parentVMA];
+      Dbg::Proc* parent = (*this)[x->parentVMA];
       if (x != parent) {
 	x->parent = parent; // sanity check
       }

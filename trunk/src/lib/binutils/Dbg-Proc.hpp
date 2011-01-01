@@ -57,8 +57,8 @@
 //
 //***************************************************************************
 
-#ifndef BinUtil_dbg_Proc_hpp
-#define BinUtil_dbg_Proc_hpp
+#ifndef BinUtil_Dbg_Proc_hpp
+#define BinUtil_Dbg_Proc_hpp
 
 //************************* System Include Files ****************************
 
@@ -85,7 +85,7 @@
 
 namespace BinUtil {
 
-namespace dbg {
+namespace Dbg {
 
 // --------------------------------------------------------------------------
 // 'Proc' represents debug information for a procedure
@@ -137,10 +137,10 @@ private:
 };
 
   
-} // namespace dbg
+} // namespace Dbg
 
 } // namespace BinUtil
 
 //***************************************************************************
 
-#endif // BinUtil_dbg_Proc_hpp
+#endif // BinUtil_Dbg_Proc_hpp
