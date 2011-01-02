@@ -105,7 +105,7 @@ public:
 
   // Returns a classification of the instruction
   ISA::InsnDesc desc() const
-  { return LM::isa->GetInsnDesc(m_minsn, opIndex(), size()); }
+  { return LM::isa->getInsnDesc(m_minsn, opIndex(), size()); }
 
   // 'bits' returns a pointer to the bits of the instruction;
   // 'size' returns the size of the machine instruction.
@@ -136,7 +136,7 @@ public:
   // Returns the operation VMA for the beginning of this instruction
   VMA
   opVMA() const
-  { return LM::isa->ConvertVMAToOpVMA(vma(), opIndex()); }
+  { return LM::isa->convertVMAToOpVMA(vma(), opIndex()); }
   
   // Viewing each object code instruction as an instruction packet,
   // and recalling that all packets are "unpacked" in a 'LM',
@@ -156,14 +156,14 @@ public:
   // jumps).  'vma' is used only to calculate PC-relative targets.
   virtual VMA
   targetVMA(VMA vma) const
-  { return LM::isa->GetInsnTargetVMA(m_minsn, vma, opIndex(), size()); }
+  { return LM::isa->getInsnTargetVMA(m_minsn, vma, opIndex(), size()); }
   
   // Returns the number of delay slots that must be observed by
   // schedulers before the effect of instruction 'mi' can be
   // assumed to be fully obtained (e.g., RISC braches).
   virtual ushort
   numDelaySlots() const
-  { return LM::isa->GetInsnNumDelaySlots(m_minsn, opIndex(), size()); }
+  { return LM::isa->getInsnNumDelaySlots(m_minsn, opIndex(), size()); }
 
   // Returns whether or not the instruction "explicitly" executes in
   // parallel with its successor 'mi2' (successor in the sequential
@@ -172,7 +172,7 @@ public:
   virtual bool
   isParallelWithSuccessor(Insn* x) const
   {
-    return LM::isa->IsParallelWithSuccessor(m_minsn, opIndex(), size(),
+    return LM::isa->isParallelWithSuccessor(m_minsn, opIndex(), size(),
 					    x->bits(), x->opIndex(),
 					    x->size());
   }
@@ -253,11 +253,11 @@ public:
   // Given a target or branch instruction, returns the target address.
   virtual VMA
   getTargetVMA(VMA vma) const
-  { return LM::isa->GetInsnTargetVMA(m_minsn, vma, m_size); }
+  { return LM::isa->getInsnTargetVMA(m_minsn, vma, m_size); }
 
   virtual ushort
   getNumDelaySlots() const
-  { return LM::isa->GetInsnNumDelaySlots(m_minsn, m_size); }
+  { return LM::isa->getInsnNumDelaySlots(m_minsn, m_size); }
 
   // -------------------------------------------------------
   // debugging
@@ -305,7 +305,7 @@ public:
   
   virtual ushort
   size() const
-  { return LM::isa->GetInsnSize(m_minsn); }
+  { return LM::isa->getInsnSize(m_minsn); }
 
   virtual ushort
   opIndex() const
@@ -359,7 +359,7 @@ public:
   
   virtual ushort
   size() const
-  { return LM::isa->GetInsnSize(m_minsn); }
+  { return LM::isa->getInsnSize(m_minsn); }
 
   virtual ushort
   opIndex() const
@@ -367,7 +367,7 @@ public:
 
   virtual ushort
   numOps() const
-  { return LM::isa->GetInsnNumOps(m_minsn); }
+  { return LM::isa->getInsnNumOps(m_minsn); }
 
   // -------------------------------------------------------
   // debugging

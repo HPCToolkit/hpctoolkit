@@ -111,7 +111,7 @@ BAnal::OAInterface::OAInterface (Proc* proc)
     // If this insn is a branch, record its target address in
     // the branch target set.
     ISA::InsnDesc d = insn->desc();
-    if (d.IsBrRel()) {
+    if (d.isBrRel()) {
       m_branchTargetSet.insert(normalizeTarget(insn->targetVMA(insn->vma())));
     }
   }
@@ -227,20 +227,20 @@ BAnal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
   ISA::InsnDesc d = insn->desc();
 
   // Output pc and descriptor
-  os << showbase << hex << pc << dec << ": " << d.ToString();
+  os << showbase << hex << pc << dec << ": " << d.toString();
   
   // Output other qualifiers
   if (m_branchTargetSet.find(pc) != m_branchTargetSet.end()) {
     os << " [branch target]";
   }
-  if (d.IsBrRel()) {
+  if (d.isBrRel()) {
     VMA targ = insn->targetVMA(pc);
     os << " <" << hex << targ << dec << ">";
     if (m_proc->isIn(targ) == false) {
       os << " [out of procedure -- treated as SIMPLE]";
     }
   } 
-  else if (d.IsBrInd()) {
+  else if (d.isBrInd()) {
     os << " <register>";
   }
 }
@@ -288,7 +288,7 @@ BAnal::OAInterface::getCFGStmtType(OA::StmtHandle h)
   VMA br_targ = 0;
 
   ISA::InsnDesc d = insn->desc();
-  if (d.IsBrUnCondRel()) {
+  if (d.isBrUnCondRel()) {
     // Unconditional jump. If the branch targets a PC outside of its
     // procedure, then we just ignore it.  For hpcstruct this is fine
     // since the branch won't create any loops.
@@ -300,12 +300,12 @@ BAnal::OAInterface::getCFGStmtType(OA::StmtHandle h)
       ty = OA::CFG::SIMPLE;
     }
   } 
-  else if (d.IsBrUnCondInd()) {
+  else if (d.isBrUnCondInd()) {
     // Unconditional jump (indirect).
     //ty = OA::CFG::UNCONDITIONAL_JUMP_I; // FIXME: Turbo hack, temporary. 
     ty = OA::CFG::SIMPLE;
   } 
-  else if (d.IsBrCondRel()) {
+  else if (d.isBrCondRel()) {
     // Unstructured two-way branches. If the branch targets a PC
     // outside of its procedure, then we just ignore it.  For hpcstruct
     // this is fine since the branch won't create any loops.
@@ -323,10 +323,10 @@ BAnal::OAInterface::getCFGStmtType(OA::StmtHandle h)
     ty = OA::CFG::USTRUCT_TWOWAY_CONDITIONAL_F;
   }
 #endif
-  else if (d.IsBrCondInd()) {
+  else if (d.isBrCondInd()) {
     ty = OA::CFG::SIMPLE; // FIXME: Turbo hack, temporary. 
   } 
-  else if (d.IsSubrRet()) {
+  else if (d.isSubrRet()) {
     // Return statement.
     ty = OA::CFG::RETURN;
   }
@@ -476,7 +476,7 @@ BAnal::OAInterface::getTargetLabel(OA::StmtHandle h, int n)
   OA::StmtLabel lbl = 0;
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
   ISA::InsnDesc d = insn->desc();
-  if (d.IsBrRel()) {
+  if (d.isBrRel()) {
     lbl = normalizeTarget(insn->targetVMA(insn->vma()));
   }
   else {

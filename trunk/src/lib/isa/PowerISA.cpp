@@ -75,9 +75,9 @@ using std::ostream;
 
 //*************************** Forward Declarations ***************************
 
-static VMA 
+static VMA
 GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
-{ 
+{
   // N.B.: The GNU decoders assume that the address of 'insn_addr' is
   // the actual the VMA in order to calculate VMA-relative targets.
   VMA x = (di_vma - PTR_TO_BFDVMA(insn_addr)) + insn_vma;
@@ -85,7 +85,7 @@ GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
 }
 
 
-static void 
+static void
 GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
 {
   GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
@@ -106,7 +106,7 @@ GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
 //     BD-form: conditional branches
 //     I-form: unconditional branches
 //     XL-form: indirect branches, among other things
-// 
+//
 // unconditional branch:
 //   - relative [I]  {b:  branch}
 //   - absolute [I]  {ba: branch, absolute}
@@ -164,60 +164,60 @@ PowerISA::~PowerISA()
 
 
 ISA::InsnDesc
-PowerISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
+PowerISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 {
   ISA::InsnDesc d;
 
-  if (CacheLookup(mi) == NULL) {
+  if (cacheLookup(mi) == NULL) {
     ushort size = print_insn_big_powerpc(PTR_TO_BFDVMA(mi), m_di);
-    CacheSet(mi, size);
+    cacheSet(mi, size);
   }
 
-  // NOTE: 
+  // NOTE:
   //   m_di->target  is set for relative branch/subroutine targets
   //   m_di->target2 is set for absolute branch/subroutine targets
   bool isIndirect = (m_di->target == 0) && (m_di->target2 == 0);
 
   switch (m_di->insn_type) {
     case dis_noninsn:
-      d.Set(InsnDesc::INVALID);
+      d.set(InsnDesc::INVALID);
       break;
     case dis_branch:
       if (isIndirect) {
-	d.Set(InsnDesc::BR_UN_COND_IND);
+	d.set(InsnDesc::BR_UN_COND_IND);
       }
       else {
-	d.Set(InsnDesc::BR_UN_COND_REL);
+	d.set(InsnDesc::BR_UN_COND_REL);
       }
       break;
     case dis_condbranch:
       if (isIndirect) {
-	d.Set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
+	d.set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
       }
       else {
-	d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
+	d.set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
       }
       break;
     case dis_jsr:
       if (isIndirect) {
-	d.Set(InsnDesc::SUBR_IND);
+	d.set(InsnDesc::SUBR_IND);
       }
       else {
-	d.Set(InsnDesc::SUBR_REL);
+	d.set(InsnDesc::SUBR_REL);
       }
       break;
     case dis_condjsr:
-      d.Set(InsnDesc::OTHER);
+      d.set(InsnDesc::OTHER);
       break;
     case dis_return:
-      d.Set(InsnDesc::SUBR_RET);
+      d.set(InsnDesc::SUBR_RET);
       break;
     case dis_dref:
     case dis_dref2:
-      d.Set(InsnDesc::MEM_OTHER);
+      d.set(InsnDesc::MEM_OTHER);
       break;
     default:
-      d.Set(InsnDesc::OTHER);
+      d.set(InsnDesc::OTHER);
       break;
   }
   return d;
@@ -225,19 +225,19 @@ PowerISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 
 
 VMA
-PowerISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
+PowerISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
 {
   // N.B.: The GNU decoders assume that the address of 'mi' is
   // actually the VMA in order to calculate VMA-relative targets.
 
-  if (CacheLookup(mi) == NULL) {
+  if (cacheLookup(mi) == NULL) {
     ushort size = print_insn_big_powerpc(PTR_TO_BFDVMA(mi), m_di);
-    CacheSet(mi, size);
+    cacheSet(mi, size);
   }
-  
-  ISA::InsnDesc d = GetInsnDesc(mi, opIndex, sz);
-  if (d.IsBrRel() || d.IsSubrRel()) {
-    // NOTE: 
+
+  ISA::InsnDesc d = getInsnDesc(mi, opIndex, sz);
+  if (d.isBrRel() || d.isSubrRel()) {
+    // NOTE:
     //   m_di->target  is set to the displacement for relative targets
     //   m_di->target2 is set to the absolute value for absolute targets
     if (m_di->target != 0) {
@@ -254,8 +254,8 @@ PowerISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
 
 
 ushort
-PowerISA::GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
-{ 
+PowerISA::getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
+{
   // POWER does not have an architectural delay slot
   return 0;
 }

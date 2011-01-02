@@ -306,7 +306,7 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& is)
   
   // Create 'PCProfile' object and add all events
   profData = new DCPIProfile(isa, metricCount);
-  isa->Detach(); // Remove our reference
+  isa->detach(); // Remove our reference
   profData->SetHdrInfo( (hdr.str()).c_str() );
   if (!profiledFilePath.empty()) {
     profData->SetProfiledFile(profiledFilePath);

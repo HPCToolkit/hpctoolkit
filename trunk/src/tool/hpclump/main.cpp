@@ -249,7 +249,7 @@ DumpSymbolicInfoOld(std::ostream& os, BinUtil::LM* lm)
     for (BinUtil::ProcInsnIterator it(*p); it.isValid(); ++it) {
       BinUtil::Insn* inst = it.current();
       VMA vma = inst->vma();
-      VMA opVMA = BinUtil::LM::isa->ConvertVMAToOpVMA(vma, inst->opIndex());
+      VMA opVMA = BinUtil::LM::isa->convertVMAToOpVMA(vma, inst->opIndex());
 	
       // 1. Attempt to find symbolic information
       string func, file;

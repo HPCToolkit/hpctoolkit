@@ -411,14 +411,14 @@ BinUtil::TextSeg::ctor_disassembleProcs()
     // Iterate over each vma at which an instruction might begin
     for (VMA vma = procBeg; vma < procEnd; ) {
       MachInsn *mi = &(m_contents[vma - sectionBase]);
-      insnSz = LM::isa->GetInsnSize(mi);
+      insnSz = LM::isa->getInsnSize(mi);
       if (insnSz == 0) {
 	// This is not a recognized instruction (cf. data on CISC ISAs).
 	++vma; // Increment the VMA, and try to decode again.
 	continue;
       }
 
-      int num_ops = LM::isa->GetInsnNumOps(mi);
+      int num_ops = LM::isa->getInsnNumOps(mi);
       if (num_ops == 0) {
 	// This instruction contains data.  No need to decode.
 	vma += insnSz;

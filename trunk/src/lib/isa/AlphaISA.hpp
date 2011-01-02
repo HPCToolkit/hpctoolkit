@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef isa_AlphaISA_hpp 
+#ifndef isa_AlphaISA_hpp
 #define isa_AlphaISA_hpp
 
 //************************* System Include Files ****************************
@@ -79,41 +79,50 @@
 
 class AlphaISA : public ISA {
 public:
-  AlphaISA() { }
-  virtual ~AlphaISA() { }
-  
+  AlphaISA()
+  { }
+
+  virtual ~AlphaISA()
+  { }
+
   // --------------------------------------------------------
   // Instructions:
-  // --------------------------------------------------------  
-  
-  virtual ushort 
-  GetInsnSize(MachInsn* mi) { return MINSN_SIZE; } 
-  
-  virtual ushort 
-  GetInsnNumOps(MachInsn* mi) { return 1; }
+  // --------------------------------------------------------
 
-  virtual InsnDesc 
-  GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  virtual ushort
+  getInsnSize(MachInsn* mi)
+  { return MINSN_SIZE; }
 
-  virtual VMA 
-  GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
-  
-  virtual ushort 
-  GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0)
+  virtual ushort
+  getInsnNumOps(MachInsn* mi)
+  { return 1; }
+
+  virtual InsnDesc
+  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+
+  virtual VMA
+  getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
+
+  virtual ushort
+  getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0)
   { return 0; /* The Alpha has no instruction-specified delay slots. */ }
 
-  virtual bool 
-  IsParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
+  virtual bool
+  isParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
 			  MachInsn* mi2, ushort opIndex2, ushort sz2) const
   { return false; }
 
-  virtual void 
+  virtual void
   decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
 
-private: 
+private:
   // Should not be used
-  AlphaISA(const AlphaISA& i) { }
-  AlphaISA& operator=(const AlphaISA& i) { return *this; }
+  AlphaISA(const AlphaISA& i)
+  { }
+  
+  AlphaISA&
+  operator=(const AlphaISA& i)
+  { return *this; }
 
 protected:
 private:

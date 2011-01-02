@@ -75,9 +75,9 @@ using std::ostream;
 
 //*************************** Forward Declarations ***************************
 
-static VMA 
+static VMA
 GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
-{ 
+{
   // N.B.: The GNU decoders expect that the address of the 'mi' is
   // actually the VMA.  Furthermore for 32-bit x86 decoding, only
   // the lower 32 bits of 'mi' are valid.
@@ -91,7 +91,7 @@ GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
 }
 
 
-static void 
+static void
 GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
 {
   GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
@@ -142,14 +142,14 @@ x86ISA::~x86ISA()
 
 
 ushort
-x86ISA::GetInsnSize(MachInsn* mi)
+x86ISA::getInsnSize(MachInsn* mi)
 {
   ushort size;
   DecodingCache *cache;
 
-  if ((cache = CacheLookup(mi)) == NULL) {
+  if ((cache = cacheLookup(mi)) == NULL) {
     size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
-    CacheSet(mi, size);
+    cacheSet(mi, size);
   }
   else {
     size = cache->insnSize;
@@ -159,55 +159,55 @@ x86ISA::GetInsnSize(MachInsn* mi)
 
 
 ISA::InsnDesc
-x86ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
+x86ISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
 {
   ISA::InsnDesc d;
 
-  if (CacheLookup(mi) == NULL) {
+  if (cacheLookup(mi) == NULL) {
     ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
-    CacheSet(mi, size);
+    cacheSet(mi, size);
   }
 
   switch(m_di->insn_type) {
     case dis_noninsn:
-      d.Set(InsnDesc::INVALID);
+      d.set(InsnDesc::INVALID);
       break;
     case dis_branch:
       if (m_di->target != 0) {
-	d.Set(InsnDesc::BR_UN_COND_REL);
+	d.set(InsnDesc::BR_UN_COND_REL);
       }
       else {
-	d.Set(InsnDesc::BR_UN_COND_IND);
+	d.set(InsnDesc::BR_UN_COND_IND);
       }
       break;
     case dis_condbranch:
       if (m_di->target != 0) {
-	d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
+	d.set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
       }
       else {
-	d.Set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
+	d.set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
       }
       break;
     case dis_jsr:
       if (m_di->target != 0) {
-	d.Set(InsnDesc::SUBR_REL);
+	d.set(InsnDesc::SUBR_REL);
       }
       else {
-	d.Set(InsnDesc::SUBR_IND);
+	d.set(InsnDesc::SUBR_IND);
       }
       break;
     case dis_condjsr:
-      d.Set(InsnDesc::OTHER);
+      d.set(InsnDesc::OTHER);
       break;
     case dis_return:
-      d.Set(InsnDesc::SUBR_RET);
+      d.set(InsnDesc::SUBR_RET);
       break;
     case dis_dref:
     case dis_dref2:
-      d.Set(InsnDesc::MEM_OTHER);
+      d.set(InsnDesc::MEM_OTHER);
       break;
     default:
-      d.Set(InsnDesc::OTHER);
+      d.set(InsnDesc::OTHER);
       break;
   }
   return d;
@@ -215,17 +215,17 @@ x86ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
 
 
 VMA
-x86ISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
+x86ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
 {
-  if (CacheLookup(mi) == NULL) {
+  if (cacheLookup(mi) == NULL) {
     ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
-    CacheSet(mi, size);
+    cacheSet(mi, size);
   }
 
   // The target field is only set on instructions with targets.
   if (m_di->target != 0) {
     return GNUvma2vma(m_di->target, mi, vma);
-  } 
+  }
   else {
     return 0;
   }
@@ -237,7 +237,7 @@ x86ISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
 {
   m_dis_data.insn_addr = mi;
   m_dis_data.insn_vma = vma;
-  
+
   m_di_dis->stream = (void*)&os;
   print_insn_i386(PTR_TO_BFDVMA(mi), m_di_dis);
 }

@@ -88,7 +88,7 @@ BinUtil::Insn::dump(std::ostream& o, int flags, const char* pre) const
   VMA target = targetVMA(m_vma);
 
   o << showbase 
-    << p << hex << m_vma << dec << ": " << desc().ToString();
+    << p << hex << m_vma << dec << ": " << desc().toString();
 
   if (target != 0 || opIndex() != 0) { 
     o << " <" << hex << target << dec << "> "; 

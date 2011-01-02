@@ -81,41 +81,46 @@ struct disassemble_info;
 // 'PowerISA': Implements the SPARC Instruction Set Architecture.
 
 class PowerISA : public ISA {
-public:  
+public:
   PowerISA();
   virtual ~PowerISA();
-  
+
   // --------------------------------------------------------
   // Instructions:
-  // --------------------------------------------------------  
-  
+  // --------------------------------------------------------
+
   virtual ushort
-  GetInsnSize(MachInsn* mi) { return MINSN_SIZE; } 
-  
+  getInsnSize(MachInsn* mi)
+  { return MINSN_SIZE; }
+
   virtual ushort
-  GetInsnNumOps(MachInsn* mi) { return 1; }
+  getInsnNumOps(MachInsn* mi)
+  { return 1; }
 
   virtual InsnDesc
-  GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
   virtual VMA
-  GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
-  
+  getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
+
   virtual ushort
-  GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
   virtual bool
-  IsParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
+  isParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
 			  MachInsn* mi2, ushort opIndex2, ushort sz2) const
   { return false; }
 
-  virtual void 
+  virtual void
   decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
 
-private: 
+private:
   // Should not be used
-  PowerISA(const PowerISA& i) { }
-  PowerISA& operator=(const PowerISA& i) { return *this; }
+  PowerISA(const PowerISA& i)
+  { }
+
+  PowerISA& operator=(const PowerISA& i)
+  { return *this; }
 
 protected:
 private:

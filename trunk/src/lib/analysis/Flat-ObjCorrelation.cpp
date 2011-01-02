@@ -450,7 +450,7 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
     for (BinUtil::ProcInsnIterator it(*p); it.isValid(); ++it) {
       BinUtil::Insn* insn = it.current();
       VMA vma = insn->vma();
-      VMA opVMA = BinUtil::LM::isa->ConvertVMAToOpVMA(vma, insn->opIndex());
+      VMA opVMA = BinUtil::LM::isa->convertVMAToOpVMA(vma, insn->opIndex());
 
       // 1. Collect metric annotations
       const vector<uint64_t>& metricValVMA = 

@@ -321,7 +321,7 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   }
   
   VMA unrelocVMA = unrelocate(vma);
-  VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
+  VMA opVMA = isa->convertVMAToOpVMA(unrelocVMA, opIndex);
   
   // Find the Seg where this vma lives.
   asection* bfdSeg = NULL;
@@ -372,8 +372,8 @@ BinUtil::LM::findSrcCodeInfo(VMA begVMA, ushort bOpIndex,
   begLine = endLine = 0;
 
   // Enforce condition that 'begVMA' <= 'endVMA'. (No need to unrelocate!)
-  VMA begOpVMA = isa->ConvertVMAToOpVMA(begVMA, bOpIndex);
-  VMA endOpVMA = isa->ConvertVMAToOpVMA(endVMA, eOpIndex);
+  VMA begOpVMA = isa->convertVMAToOpVMA(begVMA, bOpIndex);
+  VMA endOpVMA = isa->convertVMAToOpVMA(endVMA, eOpIndex);
   if (! (begOpVMA <= endOpVMA) ) {
     VMA tmpVMA = begVMA;       // swap 'begVMA' with 'endVMA'
     begVMA = endVMA; 
@@ -444,7 +444,7 @@ BinUtil::LM::findProcSrcCodeInfo(VMA vma, ushort opIndex,
   line = 0;
 
   VMA vma_ur = unrelocate(vma);
-  VMA opVMA = isa->ConvertVMAToOpVMA(vma_ur, opIndex);
+  VMA opVMA = isa->convertVMAToOpVMA(vma_ur, opIndex);
 
   VMAInterval ival(opVMA, opVMA + 1); // [opVMA, opVMA + 1)
 

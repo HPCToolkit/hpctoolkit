@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef isa_IA64ISA_hpp 
+#ifndef isa_IA64ISA_hpp
 #define isa_IA64ISA_hpp
 
 //************************* System Include Files ****************************
@@ -79,38 +79,39 @@
 // 'IA64ISA': Implements the IA-64 Instruction Set Architecture.
 
 class IA64ISA : public ISA {
-public:  
+public:
   IA64ISA();
+
   virtual ~IA64ISA();
-  
+
   // --------------------------------------------------------
   // Instructions:
-  // --------------------------------------------------------  
-  
+  // --------------------------------------------------------
+
   virtual ushort
-  GetInsnSize(MachInsn* mi)
+  getInsnSize(MachInsn* mi)
   { return 16; /* Each IA64 VLIW packet is 16 bytes long. */ }
-  
+
   virtual ushort
-  GetInsnNumOps(MachInsn *mi);
+  getInsnNumOps(MachInsn *mi);
 
   virtual InsnDesc
-  GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
   virtual VMA
-  GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
-  
-  virtual ushort 
-  GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0)
+  getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
+
+  virtual ushort
+  getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0)
   { return 0; }
 
-  virtual bool 
-  IsParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
+  virtual bool
+  isParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
 			  MachInsn* mi2, ushort opIndex2, ushort sz2) const
   { return false; /* FIXME */ }
 
-  virtual VMA 
-  ConvertVMAToOpVMA(VMA vma, ushort opIndex) const
+  virtual VMA
+  convertVMAToOpVMA(VMA vma, ushort opIndex) const
   {
     // This is identical to the GNU scheme for now.  Note that the
     // offsets do not actually match the IA64 template [5,41,41,41].
@@ -118,8 +119,8 @@ public:
     return (vma + 6 * opIndex); // 0, 6, 12
   }
 
-  virtual VMA 
-  ConvertOpVMAToVMA(VMA opvma, ushort& opIndex) const
+  virtual VMA
+  convertOpVMAToVMA(VMA opvma, ushort& opIndex) const
   {
     // See above comments
     ushort offset = (opvma & 0xf); // 0, 6, 12
@@ -127,13 +128,16 @@ public:
     return (opvma - offset);
   }
 
-  virtual void 
+  virtual void
   decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
 
-private: 
+private:
   // Should not be used
-  IA64ISA(const IA64ISA& i) { }
-  IA64ISA& operator=(const IA64ISA& i) { return *this; }
+  IA64ISA(const IA64ISA& i)
+  { }
+  
+  IA64ISA& operator=(const IA64ISA& i)
+  { return *this; }
 
 protected:
 private:
