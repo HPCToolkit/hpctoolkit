@@ -166,7 +166,7 @@ DerivedProfile::Create(const PCProfile* pcprof_,
       
       VMA opvma = it.Current(); // an 'operation vma'
       ushort opIndex;
-      VMA vma = binutils::LM::isa->ConvertOpVMAToVMA(opvma, opIndex);
+      VMA vma = binutils::LM::isa->convertOpVMAToVMA(opvma, opIndex);
       
       // For each derived metric and its insn filter
       PCProfileFilterList::const_iterator fIt = filtlist->begin();

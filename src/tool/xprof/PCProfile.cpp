@@ -79,7 +79,7 @@ PCProfileMetricSet::PCProfileMetricSet(ISA* isa_, unsigned sz)
   : isa(isa_)
 {
   metricVec.reserve(16);
-  isa->Attach();
+  isa->attach();
 }
 
 PCProfileMetricSet::~PCProfileMetricSet()
@@ -88,7 +88,7 @@ PCProfileMetricSet::~PCProfileMetricSet()
     delete metricVec[i];
   }
   metricVec.clear();
-  isa->Detach();
+  isa->detach();
 }
 
 int
@@ -155,7 +155,7 @@ PCProfile::AddPC(VMA pc, ushort opIndex)
   if (pcVec.size() == pcVec.capacity()) {
     pcVec.reserve(pcVec.capacity() * 2);
   }
-  VMA oppc = GetISA()->ConvertVMAToOpVMA(pc, opIndex);
+  VMA oppc = GetISA()->convertVMAToOpVMA(pc, opIndex);
   pcVec.push_back(oppc);
 }
 

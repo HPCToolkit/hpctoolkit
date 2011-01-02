@@ -81,12 +81,12 @@ PCProfileMetric::PCProfileMetric(ISA* isa_)
   : total(0), period (0), txtStart(0), txtSz(0), isa(isa_)
 { 
   /* map does not need to be initialized */ 
-  isa->Attach();
+  isa->attach();
 }
 
 PCProfileMetric::~PCProfileMetric() 
 { 
-  isa->Detach();
+  isa->detach();
 }
 
 void 

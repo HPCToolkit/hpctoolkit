@@ -97,8 +97,8 @@ ISA::~ISA()
 // ISA::InstDesc
 //****************************************************************************
 
-const char* 
-ISA::InsnDesc::ToString() const
+const char*
+ISA::InsnDesc::toString() const
 {
   switch(ty) {
   case MEM_LOAD:        return "MEM_LOAD";
@@ -112,11 +112,11 @@ ISA::InsnDesc::ToString() const
 
   case BR_UN_COND_REL:  return "BR_UN_COND_REL";
   case BR_UN_COND_IND:  return "BR_UN_COND_IND";
-      
+
   case SUBR_REL:        return "SUBR_REL";
   case SUBR_IND:        return "SUBR_IND";
   case SUBR_RET:        return "SUBR_RET";
-      
+
   case INT_ADD:         return "INT_ADD";
   case INT_SUB:         return "INT_SUB";
   case INT_MUL:         return "INT_MUL";
@@ -125,7 +125,7 @@ ISA::InsnDesc::ToString() const
   case INT_SHIFT:       return "INT_SHIFT";
   case INT_MOV:         return "INT_MOV";
   case INT_OTHER:       return "INT_OTHER";
-  
+
   case FP_ADD:          return "FP_ADD";
   case FP_SUB:          return "FP_SUB";
   case FP_MUL:          return "FP_MUL";
@@ -146,17 +146,17 @@ ISA::InsnDesc::ToString() const
 }
 
 
-void 
-ISA::InsnDesc::Dump(std::ostream& o)
+void
+ISA::InsnDesc::dump(std::ostream& o)
 {
-  o << ToString();
+  o << toString();
 }
 
 
-void 
-ISA::InsnDesc::DDump()
+void
+ISA::InsnDesc::ddump()
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
@@ -165,9 +165,9 @@ ISA::InsnDesc::DDump()
 //***************************************************************************
 
 
-extern "C" { 
+extern "C" {
 
-int 
+int
 GNUbu_fprintf(void* stream, const char* format, ...)
 {
 #define BUF_SZ 512
@@ -180,25 +180,25 @@ GNUbu_fprintf(void* stream, const char* format, ...)
 
   ostream* os = (ostream*)stream;
   *os << BUF;
-  
+
   return n;
 }
 
 
-int 
+int
 GNUbu_fprintf_stub(void* stream, const char* format, ...)
 {
   return 0;
 }
 
 
-void 
+void
 GNUbu_print_addr_stub(bfd_vma di_vma, struct disassemble_info* di)
 {
 }
 
 
-int 
+int
 GNUbu_read_memory(bfd_vma vma, bfd_byte* myaddr, unsigned int len,
 		  struct disassemble_info* di)
 {

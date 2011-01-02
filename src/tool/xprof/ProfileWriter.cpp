@@ -128,7 +128,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
   
   const PCProfile* rawprofData = profData->GetPCProfile();
   ISA* isa = rawprofData->GetISA();
-  isa->Attach(); // ensure longevity
+  isa->attach(); // ensure longevity
   
   // ------------------------------------------------------------------------
   // Dump header info
@@ -176,7 +176,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     
     VMA oppc = it.Current(); // an 'operation pc'
     ushort opIndex;
-    VMA pc = isa->ConvertOpVMAToVMA(oppc, opIndex);
+    VMA pc = isa->convertOpVMAToVMA(oppc, opIndex);
     
     // --------------------------------------------------
     // 1. Attempt to find symbolic information
@@ -259,7 +259,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
   os << "</PROFILE>\n"; 
   ProfileWriter::DumpProfileFooter(os);
   
-  isa->Detach();
+  isa->detach();
 }
 
 //****************************************************************************

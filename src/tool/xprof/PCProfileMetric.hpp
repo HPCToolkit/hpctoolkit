@@ -104,7 +104,7 @@ typedef PCSet::const_iterator PCSetCIt;
 // an offset identifying the operation within the VLIW packet.  The
 // 'operation PC' should follow ISA class conventions.  Because of
 // this, a metric contains a pointer to an appropriate ISA.  (Creaters
-// of a 'PCProfileMetric' should therefore use ISA::ConvertVMAToOpVMA to
+// of a 'PCProfileMetric' should therefore use ISA::convertVMAToOpVMA to
 // generate the 'operation VMAs'.)  see: 'PCProfileMetric_MapIterator'
 class PCProfileMetric
 {
@@ -146,7 +146,7 @@ public:
   // number of instructions or PC values in the text segment).
   unsigned int GetSz() const { return map.size(); }
   
-  // 'GetISA': Note: A user must call ISA::Attach() if this is more
+  // 'GetISA': Note: A user must call ISA::attach() if this is more
   // than a momentary reference!
   ISA* GetISA() const { return isa; }
   
@@ -157,13 +157,13 @@ public:
   // insertion was performed for the same pc.  However, this should
   // not be a problem.)
   PCProfileDatum Find(VMA pc, ushort opIndex) const {
-    VMA oppc = isa->ConvertVMAToOpVMA(pc, opIndex);
+    VMA oppc = isa->convertVMAToOpVMA(pc, opIndex);
     PCToPCProfileDatumMapCIt it = map.find(oppc);
     if (it == map.end()) { return PCProfileDatum_NIL; } 
     else { return ((*it).second); }
   }
   void Insert(VMA pc, ushort opIndex, PCProfileDatum& d) {
-    VMA oppc = isa->ConvertVMAToOpVMA(pc, opIndex);
+    VMA oppc = isa->convertVMAToOpVMA(pc, opIndex);
     if (d != PCProfileDatum_NIL) {
       map.insert(PCToPCProfileDatumMapVal(oppc, d)); // do not add duplicates!
     }

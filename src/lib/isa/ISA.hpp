@@ -57,8 +57,8 @@
 //
 //***************************************************************************
 
-#ifndef ISA_H 
-#define ISA_H
+#ifndef isa_ISA_hpp
+#define isa_ISA_hpp
 
 //************************* System Include Files ****************************
 
@@ -77,7 +77,8 @@
 // of multiple calls to the disassemblers (especially the GNU ones).
 class DecodingCache {
 public:
-  DecodingCache() { tag = NULL; insnSize = 0; }
+  DecodingCache()
+  { tag = NULL; insnSize = 0; }
 
   // Cache `tag' (Currently, this is just the MachInsn*.  Later,
   // we may need secondary tags, such as opIndex).
@@ -86,8 +87,8 @@ public:
   // Cached data.
   // Note, Non-GNU decoders may need more data members (the previous
   // `disassemble_info' struct is used as an implicit cache for the GNU
-  // decoders). 
-  ushort insnSize; 
+  // decoders).
+  ushort insnSize;
 };
 
 //*************************** Forward Declarations ***************************
@@ -99,7 +100,7 @@ public:
 
 // 'ISA': An abstract base class for an Instruction Set Architecture.
 // It can classify and return certain information about the actual
-// bits of a machine instruction. 
+// bits of a machine instruction.
 class ISA {
 
   // ------------------------------------------------------------------------
@@ -114,7 +115,7 @@ public:
   // passed around by value.
   class InsnDesc {
   public:
-  
+
     // Used to implement InsnDesc.  These are mutually exclusive
     // instruction classes.  They are not intended for general use!
     enum IType {
@@ -129,7 +130,7 @@ public:
       INT_BR_COND_REL,          // PC-relative conditional branch (int compare)
       INT_BR_COND_IND,          // Register/Indirect conditional branch
       FP_BR_COND_REL,           // PC-relative conditional branch (FP compare)
-      FP_BR_COND_IND,           // Register/Indirect conditional branch 
+      FP_BR_COND_IND,           // Register/Indirect conditional branch
       
       BR_UN_COND_REL,           // PC-relative unconditional branch
       BR_UN_COND_IND,           // Register/Indirect unconditional branch
@@ -140,164 +141,235 @@ public:
 
       // ----------------
       // The Alpha ISA classifies OTHER instructions into the
-      // following subdivisions. 
-      INT_ADD,      // Integer operations 
+      // following subdivisions.
+      INT_ADD,      // Integer operations
       INT_SUB,
       INT_MUL,
       INT_CMP,
       INT_LOGIC,
       INT_SHIFT,
       INT_MOV,
-      INT_OTHER, 
+      INT_OTHER,
       
-      FP_ADD,       // FP operation 
+      FP_ADD,       // FP operation
       FP_SUB,
       FP_MUL,
       FP_DIV,
       FP_CMP,
-      FP_CVT, 
+      FP_CVT,
       FP_SQRT,
       FP_MOV,
       FP_OTHER,
 
       // OTHER: a non-integer, non-fp instruction
       // ----------------
-      
-      SYS_CALL,	                // System call      
+
+      SYS_CALL,	                // System call
       OTHER,                    // Any other valid instruction
       INVALID                   // An invalid instruction
     };
-    
+
   public:
     // A 'InsnDesc' can be created using the bit definitions above.
-    InsnDesc(IType t = INVALID) : ty(t) { }
-    ~InsnDesc() { }
+    InsnDesc(IType t = INVALID)
+      : ty(t)
+    { }
     
-    InsnDesc(const InsnDesc& x) { *this = x; }
-    InsnDesc& operator=(const InsnDesc& x) { 
-      ty = x.ty; 
+    ~InsnDesc()
+    { }
+
+    InsnDesc(const InsnDesc& x)
+    { *this = x; }
+    
+    InsnDesc&
+    operator=(const InsnDesc& x)
+    {
+      ty = x.ty;
       return *this;
     }
-        
+
     // -----------------------------------------------------
-    
+
     // IsValid: A valid instruction
-    bool IsValid() const { return ty != INVALID; }
+    bool
+    isValid() const
+    { return ty != INVALID; }
+
     // An invalid instruction
-    bool IsInvalid() const { return ty == INVALID; }
-    
+    bool
+    isInvalid() const
+    { return ty == INVALID; }
+
     // -----------------------------------------------------
-    
+
     // Memory load
-    bool IsMemLoad() const { return ty == MEM_LOAD; }
+    bool
+    isMemLoad() const
+    { return ty == MEM_LOAD; }
+
     // Memory store
-    bool IsMemStore() const { return ty == MEM_STORE; }
+    bool
+    isMemStore() const
+    { return ty == MEM_STORE; }
+
     // Memory ref not categorized as load or store
-    bool IsMemOther() const { return ty == MEM_OTHER; }
+    bool
+    isMemOther() const
+    { return ty == MEM_OTHER; }
 
     // Any memory operation
-    bool IsMemOp() { return IsMemLoad() || IsMemStore() || IsMemOther(); }
-    
+    bool
+    isMemOp()
+    { return isMemLoad() || isMemStore() || isMemOther(); }
+
     // -----------------------------------------------------
-    
+
     // Some sort of branch
-    bool IsBr() const { return IsBrRel() || IsBrInd(); }
-    
+    bool
+    isBr() const
+    { return isBrRel() || isBrInd(); }
+
     // Some sort of PC-relative branch
-    bool IsBrRel() const { return IsBrCondRel() || IsBrUnCondRel(); }
+    bool
+    isBrRel() const
+    { return isBrCondRel() || isBrUnCondRel(); }
+
     // Some sort of Register/Indirect branch
-    bool IsBrInd() const { return IsBrCondInd() || IsBrUnCondInd(); }
-    
+    bool
+    isBrInd() const
+    { return isBrCondInd() || isBrUnCondInd(); }
+
     // PC-relative conditional branch
-    bool IsBrCondRel() const { 
-      return ty == INT_BR_COND_REL || ty == FP_BR_COND_REL; 
-    }
+    bool
+    isBrCondRel() const
+    { return ty == INT_BR_COND_REL || ty == FP_BR_COND_REL; }
+
     // Register/Indirect conditional branch
-    bool IsBrCondInd() const { 
-      return ty == INT_BR_COND_IND || ty == FP_BR_COND_IND; 
-    }
+    bool
+    isBrCondInd() const
+    { return ty == INT_BR_COND_IND || ty == FP_BR_COND_IND; }
+
     // PC-relative unconditional branch
-    bool IsBrUnCondRel() const { return ty == BR_UN_COND_REL; }
+    bool
+    isBrUnCondRel() const
+    { return ty == BR_UN_COND_REL; }
+
     // Register/Indirect unconditional branch
-    bool IsBrUnCondInd() const { return ty == BR_UN_COND_IND; }
+    bool
+    isBrUnCondInd() const
+    { return ty == BR_UN_COND_IND; }
 
     // A branch with floating point comparison
-    bool IsFPBr() const { 
-      return ty == FP_BR_COND_REL || ty == FP_BR_COND_IND; 
-    }
-    
+    bool
+    isFPBr() const
+    { return ty == FP_BR_COND_REL || ty == FP_BR_COND_IND; }
+
     // -----------------------------------------------------
-    
+
     // Some subroutine call (but not a system call)
-    bool IsSubr() const { return IsSubrRel() || IsSubrInd(); }
+    bool
+    isSubr() const
+    { return isSubrRel() || isSubrInd(); }
 
     // Relative subroutine call
-    bool IsSubrRel() const { return ty == SUBR_REL; }
+    bool
+    isSubrRel() const
+    { return ty == SUBR_REL; }
+
     // Register/Indirect subroutine call
-    bool IsSubrInd() const { return ty == SUBR_IND; }
+    bool
+    isSubrInd() const
+    { return ty == SUBR_IND; }
+
     // Subroutine return
-    bool IsSubrRet() const { return ty == SUBR_RET; }
-    
+    bool
+    isSubrRet() const
+    { return ty == SUBR_RET; }
+
     // -----------------------------------------------------
 
     // A floating point instruction
-    bool IsFP() const { return IsFPBr() || IsFPArith() || IsFPOther(); }
+    bool
+    isFP() const
+    { return isFPBr() || isFPArith() || isFPOther(); }
 
     // A floating point arithmetic instruction (excludes fp branches,
     // moves, other)
-    bool IsFPArith() const { 
+    bool
+    isFPArith() const
+    {
       return (ty == FP_ADD || ty == FP_ADD || ty == FP_SUB || ty == FP_MUL
-	      || ty == FP_DIV || ty == FP_CMP || ty == FP_CVT 
+	      || ty == FP_DIV || ty == FP_CMP || ty == FP_CVT
 	      || ty == FP_SQRT);
     }
-    
+
     // Any other floating point instruction
-    bool IsFPOther() const { return ty == FP_MOV || ty == FP_OTHER; }
+    bool
+    isFPOther() const
+    { return ty == FP_MOV || ty == FP_OTHER; }
 
     // -----------------------------------------------------
-    
+
     // An integer arithmetic instruction (excludes branches, moves, other)
-    bool IsIntArith() const { 
-      return (ty == INT_ADD || ty == INT_SUB || ty == INT_MUL 
+    bool
+    isIntArith() const
+    {
+      return (ty == INT_ADD || ty == INT_SUB || ty == INT_MUL
 	      || ty == INT_CMP || ty == INT_LOGIC || ty == INT_SHIFT);
     }
-    
+
     // Any other integer instruction
-    bool IsIntOther() const { return ty == INT_MOV || ty == INT_OTHER; }
+    bool
+    isIntOther() const
+    { return ty == INT_MOV || ty == INT_OTHER; }
 
     // Any integer instruction
-    bool IsIntOp() const { return IsIntArith() || IsIntOther(); }
+    bool
+    isIntOp() const
+    { return isIntArith() || isIntOther(); }
 
     // -----------------------------------------------------
-    
+
     // System call
-    bool IsSysCall() const { return ty == SYS_CALL; }
-    // Any other valid instruction
-    bool IsOther() const { return ty == OTHER; }
-    
-    // -----------------------------------------------------
-    
-    void Set(IType t) { ty = t; }
-    
-    const char* ToString() const;
-    void Dump(std::ostream& o = std::cerr);
-    void DDump();
+    bool
+    isSysCall() const
+    { return ty == SYS_CALL; }
 
-  private:  
+    // Any other valid instruction
+    bool
+    isOther() const
+    { return ty == OTHER; }
+
+    // -----------------------------------------------------
+
+    void
+    set(IType t)
+    { ty = t; }
+
+    const char*
+    toString() const;
+
+    void
+    dump(std::ostream& o = std::cerr);
+    
+    void
+    ddump();
+
+  private:
     IType ty;
   };
-  
+
   // ------------------------------------------------------------------------
 
 public:
-  
+
   ISA();
   virtual ~ISA();
-  
+
   // --------------------------------------------------------
   // Reference Counting:
-  // --------------------------------------------------------  
-  
+  // --------------------------------------------------------
+
   // Because the only real member data an ISA has is a decoding cache,
   // one typically does not really want to make copies of an ISA
   // object.  However, there are times when it may be convenient to
@@ -306,12 +378,21 @@ public:
   // therefore provide an optional basic reference counting mechanism,
   // a slightly less ghoulish solution.
 
-  void Attach() { ++refcount; }
-  void Detach() { if (--refcount == 0) { delete this; } }
+  void
+  attach()
+  { ++refcount; }
+  
+  void
+  detach()
+  {
+    if (--refcount == 0) {
+      delete this;
+    }
+  }
 
   // --------------------------------------------------------
   // Instructions:
-  // --------------------------------------------------------  
+  // --------------------------------------------------------
 
   // Notes:
   //   - Functions with an 'opIndex' parameter: Since instructions are
@@ -319,61 +400,64 @@ public:
   //     operation we are currently interested in (0-based).  For
   //     non-VLIW instructions, this argument should typically be 0.
   //   - Functions with an optional 'sz' parameter: If already available,
-  //     'sz' should be supplied to save an extra call to 'GetInsnSize'.
-  
-  
+  //     'sz' should be supplied to save an extra call to 'getInsnSize'.
+
+
   // Returns the size (in bytes) of the instruction.  In the case of
   // VLIW instructions, returns the size not of the individual
   // operation but the whole "packet".  For CISC ISAs, if the return
   // value is 0, 'mi' is not a valid instruction.
-  virtual ushort GetInsnSize(MachInsn* mi) = 0;
+  virtual ushort
+  getInsnSize(MachInsn* mi) = 0;
 
   // Viewing this instruction as a VLIW packet, return the maximum
   // number of operations within the packet.  For non-VLIW
   // instructions, the return value will typically be 1.  A return
   // value of 0 indicates the 'packet' contains data.
-  virtual ushort GetInsnNumOps(MachInsn* mi) = 0;
-  
+  virtual ushort
+  getInsnNumOps(MachInsn* mi) = 0;
+
   // Returns an instruction descriptor which provides a high level
   // classifications of the operation performed
-  virtual InsnDesc GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0)
-    = 0;
-  
+  virtual InsnDesc
+  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0) = 0;
+
   // Given a jump or branch instruction 'mi', return the target address.
   // If a target cannot be computed, return 0.  Note that a target is
   // not computed when it depends on values in registers
   // (e.g. indirect jumps).  'vma' is used only to calculate
   // PC-relative targets.
-  virtual VMA GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex,
-			       ushort sz = 0) = 0;
+  virtual VMA
+  getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0) = 0;
 
   // Returns the number of delay slots that must be observed by
   // schedulers before the effect of instruction 'mi' can be
   // assumed to be fully obtained (e.g., RISC braches).
-  virtual ushort GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex,
-				      ushort sz = 0) = 0;
-  
+  virtual ushort
+  getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0) = 0;
+
   // Returns whether or not the instruction 'mi1' "explicitly"
   // executes in parallel with its successor 'mi2' (successor in the
   // sequential sense).  IOW, this has special reference to
   // "explicitly parallel" architecture, not superscalar design.
-  virtual bool IsParallelWithSuccessor(MachInsn* mi1, ushort opIndex1,
-				       ushort sz1,
-				       MachInsn* mi2, ushort opIndex2,
-				       ushort sz2) const = 0;
+  virtual bool
+  isParallelWithSuccessor(MachInsn* mi1, ushort opIndex1,
+			  ushort sz1,
+			  MachInsn* mi2, ushort opIndex2,
+			  ushort sz2) const = 0;
 
-  // decode: 
-  virtual void 
+  // decode:
+  virtual void
   decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex) = 0;
-  
-  // ConvertVMAToOpVMA: Given a vma at the beginning of an instruction
+
+  // convertVMAToOpVMA: Given a vma at the beginning of an instruction
   // and an opIndex, returns one value -- an 'operation vma' --
-  // representing both. 
+  // representing both.
   //
-  // ConvertOpVMAToVMA: Given an 'operation vma', returns the individual
+  // convertOpVMAToVMA: Given an 'operation vma', returns the individual
   // vma and opIndex components. (The latter is returned as a
   // pass-by-reference parameter.)  N.B.: The 'operation vma' must
-  // follow the convetions of 'ConvertVMAToOpVMA'.
+  // follow the convetions of 'convertVMAToOpVMA'.
   //
   // Sometimes users need to pretend that the individual operations in
   // VLIW instructions are addressable.  This is, of course not true,
@@ -381,29 +465,39 @@ public:
   // information is stored in this manner).
   //
   // The default function assumes non-VLIW architecture
-  virtual VMA ConvertVMAToOpVMA(VMA vma, ushort opIndex) const
+  virtual VMA
+  convertVMAToOpVMA(VMA vma, ushort opIndex) const
   { return vma; }
 
-  virtual VMA ConvertOpVMAToVMA(VMA opvma, ushort& opIndex) const
+  virtual VMA
+  convertOpVMAToVMA(VMA opvma, ushort& opIndex) const
   { opIndex = 0; return opvma; }
-  
+
 private:
   // Should not be used
-  ISA(const ISA& i) { }
-  ISA& operator=(const ISA& i) { return *this; }
+  ISA(const ISA& i)
+  { }
+
+  ISA&
+  operator=(const ISA& i)
+  { return *this; }
 
 protected:
-  DecodingCache *CacheLookup(MachInsn* cmi) {
+  DecodingCache*
+  cacheLookup(MachInsn* cmi)
+  {
     if (cmi == _cache->tag) {
       return _cache;
-    } else {
+    }
+    else {
       _cache->tag = NULL;
       return NULL;
     }
   }
-  void CacheSet(MachInsn* cmi, ushort size) {
-    _cache->tag = cmi; _cache->insnSize = size;
-  }
+
+  void
+  cacheSet(MachInsn* cmi, ushort size)
+  { _cache->tag = cmi; _cache->insnSize = size; }
 
 private:
   DecodingCache *_cache;
@@ -422,17 +516,18 @@ public:
 };
 
 
-extern "C" { 
+extern "C" {
 
   int
   GNUbu_fprintf(void* stream, const char* format, ...);
+
   int
   GNUbu_fprintf_stub(void* stream, const char* format, ...);
-  
+
   void
   GNUbu_print_addr_stub(bfd_vma di_vma, struct disassemble_info* di);
-  
-  int 
+
+  int
   GNUbu_read_memory(bfd_vma vma, bfd_byte* myaddr, unsigned int len,
 		    struct disassemble_info* di);
 
@@ -443,4 +538,4 @@ extern "C" {
 
 
 
-#endif 
+#endif // isa_ISA_hpp

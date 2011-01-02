@@ -332,7 +332,7 @@ public:
   findInsn(VMA vma, ushort opIndex) const
   {
     VMA vma_ur = unrelocate(vma);
-    VMA opvma = isa->ConvertVMAToOpVMA(vma_ur, opIndex);
+    VMA opvma = isa->convertVMAToOpVMA(vma_ur, opIndex);
     
     InsnMap::const_iterator it = m_insnMap.find(opvma);
     Insn* insn = (it != m_insnMap.end()) ? it->second : NULL;
@@ -343,7 +343,7 @@ public:
   findInsnNear(VMA vma, ushort opIndex) const
   {
     VMA vma_ur = unrelocate(vma);
-    VMA opvma = isa->ConvertVMAToOpVMA(vma_ur, opIndex);
+    VMA opvma = isa->convertVMAToOpVMA(vma_ur, opIndex);
     
     InsnMap::const_iterator it = m_insnMap.lower_bound(opvma);
     Insn* insn = (it != m_insnMap.end()) ? it->second : NULL;
@@ -355,7 +355,7 @@ public:
   insertInsn(VMA vma, ushort opIndex, Insn* insn)
   {
     VMA vma_ur = unrelocate(vma);
-    VMA opvma = isa->ConvertVMAToOpVMA(vma_ur, opIndex);
+    VMA opvma = isa->convertVMAToOpVMA(vma_ur, opIndex);
     m_insnMap.insert(InsnMap::value_type(opvma, insn));
   }
 
@@ -526,7 +526,7 @@ private:
   //
   // - m_insnMap: note that 'VMA' is not necessarily the true vma
   //   value; rather, it is the address of the individual operation
-  //   (ISA::ConvertVMAToOpVMA).
+  //   (ISA::convertVMAToOpVMA).
   SegMap  m_segMap;  // owns all Seg*
   ProcMap m_procMap;
   InsnMap m_insnMap; // owns all Insn*

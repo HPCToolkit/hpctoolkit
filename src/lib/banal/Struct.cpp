@@ -911,7 +911,7 @@ buildStmts(Struct::LocationMgr& locMgr,
     // 4. locate stmt
     Prof::Struct::Stmt* stmt = 
       new Prof::Struct::Stmt(NULL, line, line, vmaint.beg(), vmaint.end());
-    if (idesc.IsSubr()) {
+    if (idesc.isSubr()) {
       stmt->sortId(--call_sortId);
     }
     locMgr.locate(stmt, enclosingStrct, filenm, procnm, line);

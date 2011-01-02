@@ -131,7 +131,7 @@ public:
   void Clear() { metricVec.clear(); }
 
 
-  // 'GetISA': Note: A user must call ISA::Attach() if this is more
+  // 'GetISA': Note: A user must call ISA::attach() if this is more
   // than a momentary reference!
   ISA* GetISA() const { return isa; }
   

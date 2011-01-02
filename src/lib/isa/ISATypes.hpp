@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef isa_ISATypes_hpp 
+#ifndef isa_ISATypes_hpp
 #define isa_ISATypes_hpp
 
 //************************* System Include Files ****************************
@@ -71,7 +71,7 @@
 
 //****************************************************************************
 
-// Architectural datatypes: 
+// Architectural datatypes:
 
 // A virtual memory address for an arbitrary target machine.  Take
 // advantage of 'bfd_vma' so we don't have to mess with differently

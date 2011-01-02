@@ -1579,7 +1579,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------
   LoadMap::LMId_t lmId = nodeFmt.lm_id;
 
-  VMA lmIP = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::ConvertVMAToOpVMA
+  VMA lmIP = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
   ushort opIdx = 0;
 
   if (! (lmId <= loadmap.size() /*1-based*/) ) {

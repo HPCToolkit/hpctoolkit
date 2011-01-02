@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef isa_x86ISA_hpp 
+#ifndef isa_x86ISA_hpp
 #define isa_x86ISA_hpp
 
 //************************* System Include Files ****************************
@@ -82,42 +82,47 @@ struct disassemble_info;
 // See comments in 'ISA.h'
 
 class x86ISA : public ISA {
-public:  
+public:
   x86ISA(bool is_x86_64 = false);
   virtual ~x86ISA();
-  
+
   // --------------------------------------------------------
   // Instructions:
-  // --------------------------------------------------------  
-  
-  virtual ushort 
-  GetInsnSize(MachInsn* mi);
-  
-  virtual ushort 
-  GetInsnNumOps(MachInsn* mi) { return 1; }
+  // --------------------------------------------------------
 
-  virtual InsnDesc 
-  GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  virtual ushort
+  getInsnSize(MachInsn* mi);
 
-  virtual VMA 
-  GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0);
-  
-  virtual ushort 
-  GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0)
+  virtual ushort
+  getInsnNumOps(MachInsn* mi)
+  { return 1; }
+
+  virtual InsnDesc
+  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+
+  virtual VMA
+  getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0);
+
+  virtual ushort
+  getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0)
   { return 0; }
 
-  virtual bool 
-  IsParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
+  virtual bool
+  isParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
 			  MachInsn* mi2, ushort opIndex2, ushort sz2) const
   { return false; }
 
-  virtual void 
+  virtual void
   decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
 
-private: 
+private:
   // Should not be used
-  x86ISA(const x86ISA& i) { }
-  x86ISA& operator=(const x86ISA& i) { return *this; }
+  x86ISA(const x86ISA& i)
+  { }
+
+  x86ISA&
+  operator=(const x86ISA& i)
+  { return *this; }
 
 protected:
 private:
