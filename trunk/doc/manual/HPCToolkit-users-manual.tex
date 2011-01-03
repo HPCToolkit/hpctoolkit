@@ -401,7 +401,8 @@ export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000001"
 <mpi-launcher> app [app-arguments]
 \end{verbatim}
 \end{quote}
-(See Chapter~\ref{chpt:statically-linked-apps} for more information.)
+\hpclink{}'s \mytt{--help} option gives a list of variables that affect monitoring.
+See Chapter~\ref{chpt:statically-linked-apps} for more information.
 
 \end{description}
 %
@@ -458,8 +459,10 @@ To analyze \HPCToolkit{}'s measurements and attribute them to the application's 
 In most respects, \hpcprof{} and \hpcprofmpi{} are semantically idential.
 Both generate the same set of summary metrics over all threads and processes in an execution.
 The difference between the two is that the latter is designed to process (in parallel) measurements from large-scale executions.
-Consequently, while the former can optionally generate separate metrics for each thread (see the \texttt{--metric/-M} option), the latter only generates summary metrics.
-However, the latter can also generate additional information for plotting thread-level metric values (see Sections~\ref{sec:effective-performance-analysis:load-imbalance} and~\ref{sec:hpcviewer:plots}).
+Consequently, while the former can optionally generate separate metrics for each thread (see the \mytt{--metric/-M} option), the latter only generates summary metrics.
+However, the latter can also generate additional information for plotting thread-level metric values (see Section~\ref{sec:hpcviewer:plots}%
+%s~\ref{sec:effective-performance-analysis:load-imbalance} and
+).
 
 \hpcprof{} is typically used as follows:
 \begin{quote}
@@ -605,8 +608,8 @@ Next, one types in the formula for the metric of interest.
 When specifying a formula, existing columns of metric data are referred to using a positional name \$$n$ to refer to the $n^{th}$ column, where the first column is written as \$0.
 The metric pane shows the formula $\$1/\$3$.
 Here, \$1 refers to the column of data representing the exclusive value for \mytt{PAPI_TOT_CYC} and \$3 refers to the column of data representing the exclusive value for \mytt{PAPI_TOT_INS}.%
-\footnote{An {\em exclusive} metric for a scope refers to the quantity of the metric measured for that scope alone; an {\em inclusive} metric for a scope represents the value measured for that scope as well as costs incurred by any functions it calls. In \hpcviewer{}, inclusive metric columns are marked with ``(I)'' and exclusive metric columns are marked with ``(E)." }
-Positional names for metrics you use in your formula can be determined using the {\em Metric} pull-down menu in the pane.
+\footnote{An {\em exclusive} metric for a scope refers to the quantity of the metric measured for that scope alone; an \emph{inclusive} metric for a scope represents the value measured for that scope as well as costs incurred by any functions it calls. In \hpcviewer{}, inclusive metric columns are marked with ``(I)'' and exclusive metric columns are marked with ``(E).''}
+Positional names for metrics you use in your formula can be determined using the \emph{Metric} pull-down menu in the pane.
 If you select your metric of choice using the pull-down, you can insert its positional name into the formula using the {\em insert metric} button, or you can simply type the positional name directly into the formula.
 
 \begin{figure}[t]
@@ -841,8 +844,8 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ===========================================================================
 % ===========================================================================
 
-\section{Identifying Load Imbalance}
-\label{sec:effective-performance-analysis:load-imbalance}
+%\section{Identifying Load Imbalance}
+%\label{sec:effective-performance-analysis:load-imbalance}
 
 
 
@@ -1162,8 +1165,8 @@ The most common causes for unusually high overhead are the following:
   This causes overhead in two forms.
   First, \hpcrun{} will resort to more expensive unwind heuristics and possibly have to recover from self-generated segmentation faults.
   Second, when these exceptional behaviors occur, \hpcrun{} writes some information to a log file.
-  In the context of a parallel application and overloaded parallel file system, this can pertrub the execution significantly.
-  To diagnose this, execute the following commmand and look for ``Errant Samples'':
+  In the context of a parallel application and overloaded parallel file system, this can perturb the execution significantly.
+  To diagnose this, execute the following command and look for ``Errant Samples'':
   \begin{quote}
   \verb|hpcsummary --all <hpctoolkit-measurements>|
   \end{quote}
