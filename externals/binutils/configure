@@ -28,6 +28,11 @@ if test -n "${is_cross_compile}" ; then
     set -- --host="${host}" "$@"
 fi
 
+# If makeinfo doesn't exist, then supply an empty stub.
+if makeinfo --version >/dev/null 2>&1 ; then : ; else
+    set -- MAKEINFO=echo "$@"
+fi
+
 make_work_dir
 cd work || die "unable to cd: work"
 work_dir=`pwd`
