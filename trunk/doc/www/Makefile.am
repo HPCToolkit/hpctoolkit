@@ -77,6 +77,8 @@ MYSOURCES = \
 	info-acks.html \
 	info-people.html \
 	\
+	hpctoolkit.org.sitemap.txt \
+	\
 	googleeeb6a75d4102e1ef.html \
 	\
 	fig/index.html \
