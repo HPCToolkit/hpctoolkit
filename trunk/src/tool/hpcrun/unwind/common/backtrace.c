@@ -449,6 +449,7 @@ hpcrun_generate_backtrace(ucontext_t* context,
     int num_frames      = last_frame - beg_frame + 1;
 	
     if (hpcrun_filter_sample(num_frames, beg_frame, last_frame)){
+      TMSG(PARTIAL_UNW, "PRE_FILTER frame count = %d", (*retn_bt_end - *retn_bt_beg) + 1);
       TMSG(SAMPLE_FILTER, "filter sample of length %d", num_frames);
       frame_t *fr = beg_frame;
       for (int i = 0; i < num_frames; i++, fr++){

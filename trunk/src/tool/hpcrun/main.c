@@ -439,7 +439,9 @@ monitor_init_process(int *argc, char **argv, void* data)
   messages_logfile_create();
 
   TMSG(PROCESS, "I am a %s process", is_child ? "child" : "parent");
+
   hpcrun_init_internal(is_child);
+
   if (ENABLED(TST)){
     EEMSG("TST debug ctl is active!");
     STDERR_MSG("Std Err message appears");
