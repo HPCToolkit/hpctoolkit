@@ -66,9 +66,6 @@ cct_insert_raw_backtrace(cct_node_t* cct,
   if ( (path_beg < path_end) || (!cct)) {
     return NULL;
   }
-  if (ENABLED(GENERIC1)) {
-    TMSG(PARTIAL_UNW, "raw backtrace insert len = %d", (path_beg - path_end) + 1);
-  }
   for(; path_beg >= path_end; path_beg--){
     cct_addr_t tmp = (cct_addr_t) {.as_info = path_beg->as_info, .ip_norm = path_beg->ip_norm, .lip = path_beg->lip};
     cct = hpcrun_cct_insert_addr(cct, &tmp);
@@ -90,9 +87,6 @@ hpcrun_cct_insert_backtrace(cct_bundle_t* cct, cct_node_t* treenode,
 {
   if (! treenode) treenode = cct->tree_root;
 
-  if (ENABLED(GENERIC1)) {
-    TMSG(PARTIAL_UNW, "Insert backtrace sees len = %d", (path_beg - path_end)+1);
-  }
   cct_node_t* path = cct_insert_raw_backtrace(treenode, path_beg, path_end);
 
   // Put lush as_info class correction here
@@ -111,7 +105,6 @@ hpcrun_cct_insert_backtrace(cct_bundle_t* cct, cct_node_t* treenode,
     // INVARIANT: path->as_info should be either M-to-1 or 1-to-M
     lush_assoc_info__set_assoc(hpcrun_cct_addr(path)->as_info, LUSH_ASSOC_1_to_1);
   }
-  DISABLE(GENERIC1);
   hpcrun_get_metric_proc(metric_id)(metric_id, &(hpcrun_cct_metrics(path)[metric_id]), datum);
   return path;
 }
@@ -217,7 +210,6 @@ hpcrun_cct_record_backtrace(cct_bundle_t* cct, bool partial,
   }
   if (partial) {
     cct_cursor = cct->partial_unw_root;
-    ENABLE(GENERIC1);
   }
 
   return hpcrun_cct_insert_backtrace(cct, cct_cursor, metricId,
