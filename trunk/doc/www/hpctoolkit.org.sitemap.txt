@@ -1,4 +1,3 @@
-http://hpctoolkit.org/index.html
 http://hpctoolkit.org/man/hpcrun-flat.html
 http://hpctoolkit.org/man/hpcproftt.html
 http://hpctoolkit.org/man/hpctoolkit.html
@@ -27,12 +26,6 @@ http://hpctoolkit.org/papers.html
 http://hpctoolkit.org/README.Acknowledgments
 http://hpctoolkit.org/index.html
 http://hpctoolkit.org/info-acks.html
-http://hpctoolkit.org/style/header-hpctoolkit.js
-http://hpctoolkit.org/style/header.gif
-http://hpctoolkit.org/style/footer-hpctoolkit.js
-http://hpctoolkit.org/style/index.html
-http://hpctoolkit.org/style/styles.css
-http://hpctoolkit.org/style/style.css
 http://hpctoolkit.org/software.html
 http://hpctoolkit.org/overview.html
 http://hpctoolkit.org/examples.html
