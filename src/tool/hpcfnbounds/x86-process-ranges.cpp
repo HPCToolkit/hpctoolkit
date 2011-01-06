@@ -72,6 +72,12 @@ static void process_call(char *ins, long offset, xed_decoded_inst_t *xptr,
 
 static bool is_push_bp(char* ins);
 
+static bool is_sub_immed_sp(char* ins, char** next);
+static bool is_2step_push_bp(char* ins);
+static bool contains_bp_save(char* ins);
+
+static bool is_push_bp_seq(char* ins);
+
 static void process_branch(char *ins, long offset, xed_decoded_inst_t *xptr, char* vstart, char* vend);
 
 static void after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr);
@@ -417,7 +423,6 @@ get_branch_target(char *ins, xed_decoded_inst_t *xptr,
 static bool
 is_push_bp(char* ins)
 {
-
   xed_decoded_inst_t xedd_tmp;
   xed_decoded_inst_t *xptr = &xedd_tmp;
   xed_error_enum_t xed_error;
@@ -460,6 +465,110 @@ is_push_bp(char* ins)
   }
 }
 
+//
+// check to see if there is a 'mov bp, OFFSET[sp]' within the following WINDOW instructions
+//
+
+static const size_t WINDOW = 16; // 16 instruction window
+
+static bool
+contains_bp_save(char* ins)
+{
+  for (size_t n = 0; n < WINDOW; n++) {
+    xed_decoded_inst_t xedd_tmp;
+    xed_decoded_inst_t *xptr = &xedd_tmp;
+    xed_error_enum_t xed_error;
+
+    xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+    xed_decoded_inst_zero_keep_mode(xptr);
+
+    xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+
+    if (xed_error != XED_ERROR_NONE) return false;
+
+    xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+
+    if (xiclass == XED_ICLASS_MOV) {
+      const xed_inst_t* xi = xed_decoded_inst_inst(xptr);
+      const xed_operand_t* op0 =  xed_inst_operand(xi, 0);
+      xed_operand_enum_t op0_name = xed_operand_name(op0);
+      const xed_operand_t* op1 = xed_inst_operand(xi,1);
+      xed_operand_enum_t op1_name = xed_operand_name(op1);
+
+      if ((op0_name == XED_OPERAND_MEM0) && (op1_name == XED_OPERAND_REG0)) { 
+
+	xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, 0);
+	if (x86_isReg_SP(basereg)) {
+	  xed_reg_enum_t reg1 = xed_decoded_inst_get_reg(xptr, op1_name);
+	  if (x86_isReg_BP(reg1)) return true;
+	}
+      }     
+    }
+    ins += xed_decoded_inst_get_length(xptr);
+  }
+  return false;
+}
+
+//
+// check for subtract from sp:
+//  SIDE EFFECT: return the address of the next instruction
+//
+static bool
+is_sub_immed_sp(char* ins, char** next)
+{
+  xed_decoded_inst_t xedd_tmp;
+  xed_decoded_inst_t *xptr = &xedd_tmp;
+  xed_error_enum_t xed_error;
+
+
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+  xed_decoded_inst_zero_keep_mode(xptr);
+
+  xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+
+  if (xed_error != XED_ERROR_NONE) return false;
+
+  xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
+
+  if (xiclass != XED_ICLASS_SUB) return false;
+  //
+  // return true if const amt subtracted f sp
+  //
+  const xed_inst_t* xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t* op0 =  xed_inst_operand(xi, 0);
+  xed_operand_enum_t op0_name = xed_operand_name(op0);
+
+  if (op0_name != XED_OPERAND_REG0) return false;
+
+  xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
+  const xed_operand_t* op1 = xed_inst_operand(xi,1);
+  *next = ins + xed_decoded_inst_get_length(xptr);
+
+  return (x86_isReg_SP(regname) && (xed_operand_name(op1) == XED_OPERAND_IMM0));
+}
+
+//
+// 2-step-push-bp ==
+//     sub SOMETHING, %sp
+//      .... MAYBE SOME OTHER INSTRUCTIONS ...
+//     mov bp, SOME_OFFSET[%sp]
+//
+
+static bool
+is_2step_push_bp(char* ins)
+{
+  char* next = NULL;
+  if (is_sub_immed_sp(ins, &next)) {
+    return contains_bp_save(next);
+  }
+  return false;
+}
+
+static bool
+is_push_bp_seq(char* ins)
+{
+  return is_push_bp(ins) || is_2step_push_bp(ins);
+}
 
 static void 
 process_call(char *ins, long offset, xed_decoded_inst_t *xptr, 
@@ -478,11 +587,14 @@ process_call(char *ins, long offset, xed_decoded_inst_t *xptr,
       void* vaddr = get_branch_target(ins + offset, xptr, vals);
       if (consider_possible_fn_address(vaddr)) {
 	//
-	// if called address is a 'push bp' instruction, then the target address of
+	// if called address is a 'push bp' sequence of instructions,
+	// [ ie, either a single 'push bp', or a 'sub NNN, sp', followed by
+        //   a 'mov bp, MMM[sp] ]
+        // then the target address of
         // this call is considered a legitimate function start,
 	// and the function entry has the 'isvisible' fields set to true
 	//
-	if ( is_push_bp((char*)vaddr - offset) ) {
+	if ( is_push_bp_seq((char*)vaddr - offset) ) {
 	  add_function_entry(vaddr, NULL, true /* isvisible */, 1 /* call count */);
 	}
 	//
