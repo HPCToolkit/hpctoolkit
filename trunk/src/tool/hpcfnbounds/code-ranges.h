@@ -44,15 +44,23 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef code_ranges_hpp
+#define code_ranges_hpp
+
 #include <stdio.h>
 
-#define MAYBE_DISCOVER_FUNCTIONS false 
-#define ALWAYS_DISCOVER_FUNCTIONS true
+enum DiscoverFnTy {
+  DiscoverFnTy_NULL = 0,
+  DiscoverFnTy_Aggressive,
+  DiscoverFnTy_Conservative,
+  DiscoverFnTy_None
+};
 
 bool consider_possible_fn_address(void *addr);
 long offset_for_fn(void *addr);
 
-void new_code_range(void *start, void *end, long offset, bool discover);
+void new_code_range(void *start, void *end, long offset,
+		    DiscoverFnTy discover);
 
 void process_code_ranges();
 
@@ -61,3 +69,5 @@ long num_function_entries(void);
 int binary_fmt_fd(void);
 FILE *c_fmt_fp(void);
 FILE *text_fmt_fp(void);
+
+#endif // code_ranges_hpp
