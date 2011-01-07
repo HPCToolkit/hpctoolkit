@@ -144,8 +144,12 @@ process_range_init()
 
 
 void 
-process_range(long offset, void *vstart, void *vend, bool fn_discovery)
+process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
 {
+  if (fn_discovery == DiscoverFnTy_None) {
+    return;
+  }
+
   xed_decoded_inst_t xedd;
   xed_decoded_inst_t *xptr = &xedd;
   xed_error_enum_t xed_error;
@@ -211,7 +215,8 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
       break;
     case XED_ICLASS_CALL_FAR:
     case XED_ICLASS_CALL_NEAR:
-      /* if (fn_discovery) */ process_call(ins, offset, xptr, vstart, vend);
+      /* if (fn_discovery == DiscoverFnTy_Aggressive) */
+      process_call(ins, offset, xptr, vstart, vend);
       break;
 
     case XED_ICLASS_JMP: 
@@ -246,7 +251,9 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
       break;
     case XED_ICLASS_RET_FAR:
     case XED_ICLASS_RET_NEAR:
-      if (fn_discovery) after_unconditional(ins, offset, xptr);
+      if (fn_discovery == DiscoverFnTy_Aggressive) {
+	after_unconditional(ins, offset, xptr);
+      }
       break;
 
     case XED_ICLASS_JB:
@@ -266,13 +273,17 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
     case XED_ICLASS_JRCXZ:
     case XED_ICLASS_JS:
     case XED_ICLASS_JZ:
-      if (fn_discovery) process_branch(ins, offset , xptr, (char*) vstart, (char*) vend);
+      if (fn_discovery == DiscoverFnTy_Aggressive) {
+	process_branch(ins, offset , xptr, (char*) vstart, (char*) vend);
+      }
       break;
 
     case XED_ICLASS_LOOP:
     case XED_ICLASS_LOOPE:
     case XED_ICLASS_LOOPNE:
-      if (fn_discovery) process_branch(ins, offset , xptr, (char*) vstart, (char*) vend);
+      if (fn_discovery == DiscoverFnTy_Aggressive) {
+	process_branch(ins, offset , xptr, (char*) vstart, (char*) vend);
+      }
       break;
 
     case XED_ICLASS_PUSH: 

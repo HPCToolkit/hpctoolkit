@@ -61,17 +61,17 @@ using namespace std;
 
 class CodeRange {
 public:
-  CodeRange(void *_start, void *_end, long _offset, bool discover);
+  CodeRange(void *_start, void *_end, long _offset, DiscoverFnTy discover);
   void Process();
   bool Contains(void *addr);
-  bool Discover() { return discover; }
+  DiscoverFnTy Discover() { return discover; }
   void *Relocate(void *addr); 
   long Offset() { return offset; }
 private:
   void *start;
   void *end;
   long offset;
-  bool discover;
+  DiscoverFnTy discover;
 };
 
 
@@ -120,7 +120,7 @@ consider_possible_fn_address(void *addr)
 
 
 void 
-new_code_range(void *start, void *end, long offset, bool discover)
+new_code_range(void *start, void *end, long offset, DiscoverFnTy discover)
 {
   code_ranges.insert(pair<void*,CodeRange*>(start, 
 					    new CodeRange(start, end, offset, discover)));
@@ -142,7 +142,8 @@ process_code_ranges()
  * private operations 
  *****************************************************************************/
 
-CodeRange::CodeRange(void *_start, void *_end, long _offset, bool _discover) 
+CodeRange::CodeRange(void *_start, void *_end, long _offset,
+		     DiscoverFnTy _discover) 
 { 
   start = _start;
   end = _end; 

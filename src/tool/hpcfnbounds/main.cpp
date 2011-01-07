@@ -91,6 +91,7 @@ using namespace SymtabAPI;
 #define SECTION_FINI   ".fini"
 #define SECTION_TEXT   ".text"
 #define SECTION_PLT    ".plt"
+#define SECTION_GOT    ".got"
 
 #define PATHSCALE_EXCEPTION_HANDLER_PREFIX "Handler."
 #define USE_PATHSCALE_SYMBOL_FILTER
@@ -105,7 +106,7 @@ using namespace SymtabAPI;
 //*****************************************************************************
 
 static void usage(char *command, int status);
-static void dump_file_info(const char *filename, bool fn_discovery);
+static void dump_file_info(const char *filename, DiscoverFnTy fn_discovery);
 
 
 //*****************************************************************************
@@ -131,7 +132,7 @@ static FILE *the_text_fp = NULL;
 int 
 main(int argc, char **argv)
 {
-  bool fn_discovery = 1;
+  DiscoverFnTy fn_discovery = DiscoverFnTy_Aggressive;
   char buf[PATH_MAX], *object_file, *output_dir, *base;
   int num_fmts = 0, do_binary = 0, do_c = 0, do_text = 0;
   int n;
@@ -144,7 +145,7 @@ main(int argc, char **argv)
       do_c = 1;
     }
     else if (strcmp(argv[n], "-d") == 0) {
-      fn_discovery = 0;
+      fn_discovery = DiscoverFnTy_Conservative;
     }
     else if (strcmp(argv[n], "-h") == 0 || strcmp(argv[n], "--help") == 0) {
       usage(argv[0], 0);
@@ -316,7 +317,7 @@ code_range_comment(string &name, string section, const char *which)
 
 
 static void
-note_code_range(Section *s, long memaddr, bool discover)
+note_code_range(Section *s, long memaddr, DiscoverFnTy discover)
 {
   char *start = (char *) s->getSecAddr();
   char *end = start + s->getSecSize();
@@ -329,7 +330,7 @@ note_code_range(Section *s, long memaddr, bool discover)
 
 
 static void
-note_section(Symtab *syms, const char *sname, bool discover)
+note_section(Symtab *syms, const char *sname, DiscoverFnTy discover)
 {
   long memaddr = (long) syms->mem_image();
   Section *s;
@@ -339,17 +340,18 @@ note_section(Symtab *syms, const char *sname, bool discover)
 
 
 static void
-note_code_ranges(Symtab *syms, bool fn_discovery)
+note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
 {
   note_section(syms, SECTION_INIT, fn_discovery);
-  note_section(syms, SECTION_PLT, ALWAYS_DISCOVER_FUNCTIONS);
+  note_section(syms, SECTION_PLT,  DiscoverFnTy_Aggressive);
   note_section(syms, SECTION_TEXT, fn_discovery);
+  note_section(syms, SECTION_GOT,  DiscoverFnTy_None);
   note_section(syms, SECTION_FINI, fn_discovery);
 }
 
 
 static void 
-dump_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
+dump_symbols(Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
 {
   note_code_ranges(syms, fn_discovery);
 
@@ -378,7 +380,8 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
 
 
 static void 
-dump_file_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
+dump_file_symbols(Symtab *syms, vector<Symbol *> &symvec,
+		  DiscoverFnTy fn_discovery)
 {
   if (c_fmt_fp() != NULL) {
     fprintf(c_fmt_fp(), "unsigned long hpcrun_nm_addrs[] = {\n");
@@ -437,7 +440,7 @@ assert_file_is_readable(const char *filename)
 
 
 static void 
-dump_file_info(const char *filename, bool fn_discovery)
+dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 {
   Symtab *syms;
   string sfile(filename);

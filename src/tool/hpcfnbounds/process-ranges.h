@@ -47,9 +47,12 @@
 #ifndef process_ranges_hpp
 #define process_ranges_hpp
 
+#include "code-ranges.h"
+
 void process_range_init();
 
-void process_range(long offset, void *vstart, void *vend, bool fn_discovery);
+void process_range(long offset, void *vstart, void *vend,
+		   DiscoverFnTy fn_discovery);
 
 bool range_contains_control_flow(void *vstart, void *vend);
 

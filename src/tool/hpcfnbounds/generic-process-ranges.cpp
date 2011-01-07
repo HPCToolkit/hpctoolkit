@@ -50,6 +50,8 @@
 //***************************************************************************
 
 #include "process-ranges.h"
+#include "code-ranges.h"
+
 
 void
 process_range_init(void)
@@ -59,7 +61,7 @@ process_range_init(void)
 
 
 void 
-process_range(long offset, void *vstart, void *vend, bool fn_discovery)
+process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
 {
   return;
 }
