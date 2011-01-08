@@ -166,6 +166,11 @@ Without PAPI, HPCToolkit can only collect measurements based on an operating sys
 
 <p>There are currently three ways to support PAPI on Linux-based OSs:</p>
   <ul>
+    <li><p>Use a kernel with <a href="https://perf.wiki.kernel.org">perf_events</a>, which was introduced with kernel 2.6.32 (n&eacute;e PCL in kernel 2.6.31) and which is now becoming part of standard distributions.
+	<b>With perf_events, use PAPI &ge; 4.1.2</b>.
+       </p>
+    </li>
+
     <li><p>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch (x86_64-based systems only).
 	One benefit of perfctr is that it includes out-of-the-box support for many Red Hat kernels.
 	As of this writing, perfctr supports vanilla kernels through 2.6.32.
@@ -173,15 +178,10 @@ Without PAPI, HPCToolkit can only collect measurements based on an operating sys
     </li>
 
     <li><p>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch.
-         As of this writing, supports vanilla kernels through 2.6.29.
-	 (Unfortunately, development has stopped because of perf events.)
+         As of this writing, perfmon2 supports vanilla kernels through 2.6.29.
+	 (Unfortunately, development has stopped because of perf_events.)
        </p>
      </li>
-
-    <li><p>Use a kernel with <a href="https://perf.wiki.kernel.org">perf events</a>, which was introduced with kernel 2.6.32 (n&eacute;e PCL in kernel 2.6.31).
-	Perf events is still on the cutting edge, but is expected to become part of standard distributions &mdash; and even enabled by default.
-       </p>
-    </li>
   </ul>
   
 </li>
@@ -523,7 +523,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2010/12/23</span>]
+<p>[<span class="lastupdated">Page last updated: 2011/01/07</span>]
 </p>
 
 <!-- ********************************************************************** -->
