@@ -474,10 +474,10 @@ HOST_LINK_NO_START_FILES="-nostartfiles"
 
 # Specific settings for programs
 HOST_HPCRUN_LDFLAGS=""
-HOST_HPCSTRUCT_LDFLAGS=""
-HOST_HPCPROF_LDFLAGS=""
-HOST_HPCPROF_FLAT_LDFLAGS=""
-HOST_HPCPROFTT_LDFLAGS=""
+HOST_HPCSTRUCT_LDFLAGS="-lm"
+HOST_HPCPROF_LDFLAGS="-lm"
+HOST_HPCPROF_FLAT_LDFLAGS="-lm"
+HOST_HPCPROFTT_LDFLAGS="-lm"
 HOST_XPROF_LDFLAGS=""
 my_demangle_ldflags=""
 
@@ -749,21 +749,25 @@ AC_ARG_WITH([binutils],
 # Note: With prior versions of binutils and libtool, we had to supply
 # an absolute path for libiberty.  Will this suffice?
 GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
-GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes"
+
+GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib"
 if test "${host_sizeof_voidp}" = "8"; then
-  GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} -L${GNUBINUTILS}/lib64 -liberty"
-else
-  GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} -L${GNUBINUTILS}/lib -liberty"
+  # -lbfd -lopcodes are in lib; -liberty is in lib64
+  GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} -L${GNUBINUTILS}/lib64"
 fi
+
+GNUBINUTILS_LDLIBS="-lbfd -lopcodes -liberty"
 
 # on non-Linux systems we build libintl
 if test "${HOST_OS}" != "Linux"; then
-   GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} ${GNUBINUTILS}/lib/libintl.a"
+  GNUBINUTILS_LDLIBS="${GNUBINUTILS_LDLIBS} ${GNUBINUTILS}/lib/libintl.a"
 fi
+
 
 AC_MSG_RESULT([${GNUBINUTILS}])
 AC_SUBST([GNUBINUTILS_IFLAGS])
 AC_SUBST([GNUBINUTILS_LDFLAGS])
+AC_SUBST([GNUBINUTILS_LDLIBS])
 
 
 #-------------------------------------------------
@@ -1268,14 +1272,16 @@ AC_ARG_WITH([xerces],
   [])
 
 XERCES_IFLAGS="-I${XERCES}/include"
-XERCES_LDFLAGS="-L${XERCES}/lib -lxerces-c"
+XERCES_LDFLAGS="-L${XERCES}/lib"
+XERCES_LDLIBS="-lxerces-c"
 
+# tallent: should not need -- libtool should handle this
 # xerces (on Linux) uses pthreads
-case "${host}" in
-  *-*-linux*)
-    XERCES_LDFLAGS="${XERCES_LDFLAGS} -lpthread"
-    ;;
-esac
+#case "${host}" in
+#  *-*-linux*)
+#    XERCES_LDFLAGS="${XERCES_LDFLAGS} -lpthread"
+#    ;;
+#esac
 
 
 if test "$XERCES" = no ; then
@@ -1289,6 +1295,7 @@ AC_MSG_RESULT([${XERCES}])
 AC_SUBST([XERCES])
 AC_SUBST([XERCES_IFLAGS])
 AC_SUBST([XERCES_LDFLAGS])
+AC_SUBST([XERCES_LDLIBS])
 AC_SUBST([XERCES_COPY])
 AC_SUBST([XERCES_LIB])
 
