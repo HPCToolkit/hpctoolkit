@@ -4,7 +4,7 @@ runs the new thread.
 
 diff -Naurb libmonitor-0.x-r116.orig/src/pthread.c libmonitor-0.x-r116/src/pthread.c
 --- libmonitor-0.x-r116.orig/src/pthread.c	2010-11-22 17:57:48.000000000 -0600
-+++ libmonitor-0.x-r116/src/pthread.c	2011-01-09 22:02:51.000000000 -0600
++++ libmonitor-0.x-r116/src/pthread.c	2011-01-10 17:51:02.000000000 -0600
 @@ -380,7 +380,7 @@
  
      memset(tn, 0, sizeof(struct monitor_thread_node));
@@ -30,11 +30,37 @@ diff -Naurb libmonitor-0.x-r116.orig/src/pthread.c libmonitor-0.x-r116/src/pthre
  
      /*
       * Don't create any new threads after someone has called exit().
-@@ -798,6 +798,7 @@
+@@ -798,6 +798,8 @@
      if ((*real_pthread_setspecific)(monitor_pthread_key, tn) != 0) {
  	MONITOR_ERROR1("pthread_setspecific failed\n");
      }
-+    MONITOR_DEBUG("tid = %d\n", tn->tn_tid);
++    MONITOR_DEBUG("tid = %d, start_routine = %p\n",
++		  tn->tn_tid, tn->tn_start_routine);
  
      /*
       * Wait for monitor_init_thread_support() to finish in the main
+@@ -916,7 +918,8 @@
+     tn = monitor_make_thread_node();
+     tn->tn_start_routine = start_routine;
+     tn->tn_arg = arg;
+-    MONITOR_DEBUG1("calling monitor_thread_pre_create() ...\n");
++    MONITOR_DEBUG("calling monitor_thread_pre_create(start_routine = %p) ...\n",
++		  start_routine);
+     tn->tn_user_data = monitor_thread_pre_create();
+ 
+     /*
+@@ -935,8 +938,13 @@
+     if (destroy) {
+ 	(*real_pthread_attr_destroy)(&default_attr);
+     }
++    if (ret != 0) {
++	MONITOR_DEBUG("real_pthread_create failed: start_routine = %p, ret = %d\n",
++		      start_routine, ret);
++    }
+ 
+-    MONITOR_DEBUG1("calling monitor_thread_post_create() ...\n");
++    MONITOR_DEBUG("calling monitor_thread_post_create(start_routine = %p) ...\n",
++		  start_routine);
+     monitor_thread_post_create(tn->tn_user_data);
+ 
+     if (first) {
