@@ -1,0 +1,40 @@
+Increment tid in the new thread rather than in pthread_create in the
+old thread.  Sometimes OpenMP on BG/P calls pthread_create but never
+runs the new thread.
+
+diff -Naurb libmonitor-0.x-r116.orig/src/pthread.c libmonitor-0.x-r116/src/pthread.c
+--- libmonitor-0.x-r116.orig/src/pthread.c	2010-11-22 17:57:48.000000000 -0600
++++ libmonitor-0.x-r116/src/pthread.c	2011-01-09 22:02:51.000000000 -0600
+@@ -380,7 +380,7 @@
+ 
+     memset(tn, 0, sizeof(struct monitor_thread_node));
+     tn->tn_magic = MONITOR_TN_MAGIC;
+-    tn->tn_tid = ++monitor_thread_num;
++    tn->tn_tid = -1;
+ 
+     MONITOR_THREAD_UNLOCK;
+     return (tn);
+@@ -399,6 +399,7 @@
+ 	MONITOR_THREAD_UNLOCK;
+ 	return (1);
+     }
++    tn->tn_tid = ++monitor_thread_num;
+     LIST_INSERT_HEAD(&monitor_thread_list, tn, tn_links);
+ 
+     MONITOR_THREAD_UNLOCK;
+@@ -782,7 +783,6 @@
+     void *ret;
+ 
+     MONITOR_ASM_LABEL(monitor_thread_fence1);
+-    MONITOR_DEBUG("tid = %d\n", tn->tn_tid);
+ 
+     /*
+      * Don't create any new threads after someone has called exit().
+@@ -798,6 +798,7 @@
+     if ((*real_pthread_setspecific)(monitor_pthread_key, tn) != 0) {
+ 	MONITOR_ERROR1("pthread_setspecific failed\n");
+     }
++    MONITOR_DEBUG("tid = %d\n", tn->tn_tid);
+ 
+     /*
+      * Wait for monitor_init_thread_support() to finish in the main
