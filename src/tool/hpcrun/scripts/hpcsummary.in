@@ -60,6 +60,7 @@ DIRLIST = []
 BASE2INDEX = {}
 MAX_TID = 0
 NUM_ERRORS = 0
+WARNING_LIMIT = 50
 
 # Constants
 BLOCKS = 'blocks'
@@ -74,9 +75,10 @@ summary_re = re.compile(r'recorded:\s*(\d+).+blocked:\s*(\d+).+errant:\s*(\d+)')
 
 
 def warn(mesg):
-    global NUM_ERRORS
-    print >>sys.stderr, mesg
+    global NUM_ERRORS, WARNING_LIMIT
     NUM_ERRORS += 1
+    if NUM_ERRORS <= WARNING_LIMIT:
+        print >>sys.stderr, mesg
     return
 
 
@@ -190,11 +192,7 @@ def do_hpcrun_file(fname):
 
 
 def display_metric(title, label, metric):
-    global DATA
-
-    DATA.sort(lambda x, y : cmp(x[metric], y[metric]))
-    nproc = len(DATA)
-    total = sum([elt[metric] for elt in DATA])
+    global DATA, NUM_ERRORS
 
     print '=' * 72
     if isinstance(metric, tuple):
@@ -203,17 +201,42 @@ def display_metric(title, label, metric):
     else:
         tid = 0
         print title
+
+    # Copy the subset of processes in DATA that have a value for this
+    # metric.  This is awkward, but it's better than segfaulting if
+    # the directory is corrupt or has missing metrics.
+    
+    total_nproc = len(DATA)
+    COPY = []
+    for n in range(total_nproc):
+        if DATA[n].has_key(metric):
+            COPY.append(DATA[n])
+    nproc = len(COPY)
+
+    # Warn if some or all processes are missing this metric.
+    if nproc == 0:
+        print 'Warning: no processes have a value for this metric'
+        NUM_ERRORS += 1
+        return
+    if nproc < total_nproc:
+        print 'Warning: %d processes are missing a value for this metric' % (
+            total_nproc - nproc)
+        NUM_ERRORS += 1
+
+    COPY.sort(lambda x, y : cmp(x[metric], y[metric]))
+    total = sum([elt[metric] for elt in COPY])
+
     print
     print '%7s  %14s  %s' % ('rank', label, 'file')
     if nproc <= 16:
         for n in range(nproc):
             print '%7d  %14d  %s' % (
-                n, DATA[n][metric], DATA[n][(tid, NAME)])
+                n, COPY[n][metric], COPY[n][(tid, NAME)])
     else:
         for dec in range(11):
             n = (dec * (nproc - 1)) / 10
             print '%6d%%  %14d  %s' % (
-                (10 * dec), DATA[n][metric], DATA[n][(tid, NAME)])
+                (10 * dec), COPY[n][metric], COPY[n][(tid, NAME)])
     print
     print 'processes: %d, average: %0.1f' % (nproc, total / float(nproc))
     return
