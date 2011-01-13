@@ -58,6 +58,7 @@
 #include <hpcrun_stats.h>
 #include <trampoline/common/trampoline.h>
 #include "frame.h"
+#include <unwind/common/backtrace_info.h>
 
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
@@ -224,14 +225,10 @@ hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 			 uint64_t metricIncr,
 			 int skipInner)
 {
-  bool tramp_found;
-  frame_t* bt_beg;
-  frame_t* bt_last;
   thread_data_t* td = hpcrun_get_thread_data();
+  backtrace_info_t bt;
 
-  if (! hpcrun_dbg_generate_graceful_backtrace(context,
-					       &bt_beg, &bt_last, &tramp_found,
-					       skipInner)) {
+  if (! hpcrun_dbg_generate_backtrace(&bt, context, skipInner)) {
     if (ENABLED(NO_PARTIAL_UNW)){
       return NULL;
     }
@@ -242,8 +239,11 @@ hpcrun_dbg_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   }
 
   cct_node_t* n = hpcrun_cct_record_backtrace(cct, true,
-					      bt_beg, bt_last, tramp_found,
+					      bt.begin, bt.last, bt.has_tramp,
 					      metricId, metricIncr);
+
+  hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
+  hpcrun_stats_trolled_frames_inc((long) bt.n_trolls);
 
   if (ENABLED(USE_TRAMP)){
     hpcrun_trampoline_remove();
@@ -263,20 +263,25 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   bool tramp_found;
   frame_t* bt_beg;
   frame_t* bt_last;
+
   thread_data_t* td = hpcrun_get_thread_data();
+  backtrace_info_t bt;
 
   bool partial_unw = false;
-  if (! hpcrun_generate_backtrace(context,
-				  &bt_beg, &bt_last, &tramp_found,
-				  skipInner)) {
+  if (! hpcrun_generate_backtrace(&bt, context, skipInner)) {
     if (ENABLED(NO_PARTIAL_UNW)){
       return NULL;
     }
+
     TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure, "
 	 "len partial unw = %d", (bt_last - bt_beg)+1);
     hpcrun_stats_num_samples_partial_inc();
     partial_unw = true;
   }
+
+  bt_beg  = bt.begin;
+  bt_last = bt.last;
+  tramp_found = bt.has_tramp;
 
   //
   // If this backtrace is generated from sampling in a thread,
@@ -288,6 +293,10 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   cct_node_t* n = hpcrun_cct_record_backtrace(cct, partial_unw,
 					      bt_beg, bt_last, tramp_found,
 					      metricId, metricIncr);
+
+  if (bt.trolled) hpcrun_stats_trolled_inc();
+  hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
+  hpcrun_stats_trolled_frames_inc((long) bt.n_trolls);
 
   if (ENABLED(USE_TRAMP)){
     hpcrun_trampoline_remove();

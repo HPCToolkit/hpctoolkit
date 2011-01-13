@@ -67,14 +67,15 @@ static long num_samples_attempted = 0;
 static long num_samples_blocked_async = 0;
 static long num_samples_blocked_dlopen = 0;
 static long num_samples_dropped = 0;
-static long num_samples_filtered = 0;
 static long num_samples_segv = 0;
 static long num_samples_partial = 0;
 
 static long num_unwind_intervals_total = 0;
 static long num_unwind_intervals_suspicious = 0;
 
-
+static long trolled = 0;
+static long frames_total = 0;
+static long trolled_frames = 0;
 
 //***************************************************************************
 // interface operations
@@ -88,10 +89,12 @@ hpcrun_stats_reinit(void)
   num_samples_blocked_async = 0;
   num_samples_blocked_dlopen = 0;
   num_samples_dropped = 0;
-  num_samples_filtered = 0;
   num_samples_segv = 0;
   num_unwind_intervals_total = 0;
   num_unwind_intervals_suspicious = 0;
+  trolled = 0;
+  frames_total = 0;
+  trolled_frames = 0;
 }
 
 
@@ -207,26 +210,6 @@ hpcrun_stats_num_samples_partial(void)
 }
 
 //-----------------------------
-// samples filtered
-//-----------------------------
-
-void
-hpcrun_stats_num_samples_filtered_inc(void)
-{
-  atomic_add_i64(&num_samples_filtered, 1L);
-}
-
-
-long
-hpcrun_stats_num_samples_filtered(void)
-{
-  return num_samples_filtered;
-}
-
-
-
-
-//-----------------------------
 // samples segv
 //-----------------------------
 
@@ -282,7 +265,53 @@ hpcrun_stats_num_unwind_intervals_suspicious(void)
   return num_unwind_intervals_suspicious;
 }
 
+//------------------------------------------------------
+// samples that include 1 or more successful troll steps
+//------------------------------------------------------
 
+void
+hpcrun_stats_trolled_inc(void)
+{
+  atomic_add_i64(&trolled, 1L);
+}
+
+long
+hpcrun_stats_trolled(void)
+{
+  return trolled;
+}
+
+//------------------------------------------------------
+// total number of (unwind) frames in sample set
+//------------------------------------------------------
+
+void
+hpcrun_stats_frames_total_inc(long amt)
+{
+  atomic_add_i64(&frames_total, amt);
+}
+
+long
+hpcrun_stats_frames_total(void)
+{
+  return frames_total;
+}
+
+//---------------------------------------------------------------------
+// total number of (unwind) frames in sample set that employed trolling
+//---------------------------------------------------------------------
+
+void
+hpcrun_stats_trolled_frames_inc(long amt)
+{
+  atomic_add_i64(&trolled_frames, amt);
+}
+
+long
+hpcrun_stats_trolled_frames(void)
+{
+  return trolled_frames;
+}
 
 //-----------------------------
 // print summary
@@ -292,8 +321,8 @@ void
 hpcrun_stats_print_summary(void)
 {
   long blocked = num_samples_blocked_async + num_samples_blocked_dlopen;
-  long errant = num_samples_dropped + num_samples_filtered;
-  long other = num_samples_dropped - num_samples_segv;
+  long errant = num_samples_dropped;
+  long soft = num_samples_dropped - num_samples_segv;
   long valid = num_samples_attempted;
   if (ENABLED(NO_PARTIAL_UNW)) {
     valid = num_samples_attempted - errant;
@@ -302,13 +331,15 @@ hpcrun_stats_print_summary(void)
   hpcrun_memory_summary();
 
   AMSG("SAMPLE ANOMALIES: blocks: %ld (async: %ld, dlopen: %ld), "
-       "errors: %ld (filtered: %ld, segv: %d, other: %ld)",
+       "errors: %ld (segv: %d, soft: %ld)",
        blocked, num_samples_blocked_async, num_samples_blocked_dlopen,
-       errant, num_samples_filtered, num_samples_segv, other);
+       errant, num_samples_segv, soft);
 
-  AMSG("SUMMARY: samples: %ld (recorded: %ld, blocked: %ld, errant: %ld), "
-       "intervals: %ld (suspicious: %ld)",
-       num_samples_total, valid, blocked, errant,
+  AMSG("SUMMARY: samples: %ld (recorded: %ld, blocked: %ld, errant: %ld, trolled: %ld),\n"
+       "         frames: %ld (trolled: %ld)\n"
+       "         intervals: %ld (suspicious: %ld)",
+       num_samples_total, valid, blocked, errant, trolled,
+       frames_total, trolled_frames,
        num_unwind_intervals_total,  num_unwind_intervals_suspicious);
 
   if (hpcrun_is_sampling_disabled()) {

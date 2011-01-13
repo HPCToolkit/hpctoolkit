@@ -131,6 +131,27 @@ void hpcrun_stats_num_unwind_intervals_suspicious_inc(void);
 long hpcrun_stats_num_unwind_intervals_suspicious(void);
 
 
+//------------------------------------------------------
+// samples that include 1 or more successful troll steps
+//------------------------------------------------------
+
+void hpcrun_stats_trolled_inc(void);
+long hpcrun_stats_trolled(void);
+
+//------------------------------------------------------
+// total number of (unwind) frames in sample set
+//------------------------------------------------------
+
+void hpcrun_stats_frames_total_inc(long amt);
+long hpcrun_stats_frames_total(void);
+
+//---------------------------------------------------------------------
+// total number of (unwind) frames in sample set that employed trolling
+//---------------------------------------------------------------------
+
+void hpcrun_stats_trolled_frames_inc(long amt);
+long hpcrun_stats_trolled_frames(void);
+
 //-----------------------------
 // print summary
 //-----------------------------
