@@ -71,6 +71,7 @@
 
 #include <hpcrun/utilities/ip-normalized.h>
 #include <unwind/common/unw-datatypes.h>
+#include <unwind/common/backtrace_info.h>
 #include <hpcrun/frame.h>
 
 //
@@ -132,15 +133,11 @@ void hpcrun_bt_add_leaf_child(backtrace_t* bt, ip_normalized_t ip_norm);
 
 void hpcrun_dump_bt(backtrace_t* bt);
 
-bool hpcrun_generate_backtrace(ucontext_t* context,
-			       frame_t** retn_bt_beg, frame_t** retn_bt_end,
-			       bool* has_tramp,
-			       int skipInner);
+bool hpcrun_generate_backtrace(backtrace_info_t* bt,
+			       ucontext_t* context, int skipInner);
 
-bool hpcrun_dbg_generate_graceful_backtrace(ucontext_t* context,
-					    frame_t** retn_bt_beg, frame_t** retn_bt_end,
-					    bool* has_tramp,
-					    int skipInner);
+bool hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
+			       ucontext_t* context, int skipInner);
 
 bool hpcrun_gen_bt(ucontext_t* context, bool* has_tramp, bt_mut_fn bt_fn, bt_fn_arg bt_arg);
 

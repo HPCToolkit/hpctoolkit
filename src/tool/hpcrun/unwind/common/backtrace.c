@@ -324,13 +324,16 @@ hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
 //  and whether or not a trampoline was found.
 //
 bool
-hpcrun_generate_backtrace(ucontext_t* context,
-			  frame_t** retn_bt_beg, frame_t** retn_bt_end,
-			  bool* has_tramp,
-			  int skipInner)
+hpcrun_generate_backtrace(backtrace_info_t* bt,
+			  ucontext_t* context, int skipInner)
 {
-  int  backtrace_trolled = 0;
-  bool tramp_found       = false;
+  bt->has_tramp = false;
+  bt->trolled  = false;
+  bt->n_trolls = 0;
+
+  bool tramp_found = false;
+
+  step_state ret; // return value from stepper
 
   hpcrun_unw_cursor_t cursor;
   hpcrun_unw_init_cursor(&cursor, context);
@@ -348,8 +351,6 @@ hpcrun_generate_backtrace(ucontext_t* context,
 
   int unw_len = 0;
   while (true) {
-    int ret;
-
     unw_word_t ip;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
 
@@ -369,10 +370,11 @@ hpcrun_generate_backtrace(ucontext_t* context,
 	// FIXME: with a bit more effort, we could charge 
 	//        the sample to the return address in the caller. 
 	hpcrun_unw_throw();
-      } else {
+      }
+      else {
 	// we have encountered a trampoline in the middle of an unwind.
-	tramp_found = true;
-
+	bt->has_tramp = (tramp_found = true);
+	
 	// no need to unwind further. the outer frames are already known.
 	break;
       }
@@ -390,27 +392,31 @@ hpcrun_generate_backtrace(ucontext_t* context,
     unw_len++;
 
     ret = hpcrun_unw_step(&cursor);
-    backtrace_trolled = (ret == STEP_TROLL);
+    if (ret == STEP_TROLL) {
+      bt->trolled = true;
+      bt->n_trolls++;
+    }
     if (ret <= 0) {
       break;
     }
     prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
   }
 
-  if (backtrace_trolled) {
-    hpcrun_up_pmsg_count();
-  }
-  
   frame_t* bt_beg  = td->btbuf_beg;      // innermost, inclusive
   frame_t* bt_last = td->btbuf_cur - 1; // outermost, inclusive
 
-  *retn_bt_beg     = bt_beg;         // returned backtrace begin
+  bt->begin        = bt_beg;         // returned backtrace begin
                                      // is buffer beginning
-  *retn_bt_end     = bt_last;        // returned backtrace end is
+  bt->last         = bt_last;        // returned backtrace end is
                                      // last recorded element
 
   frame_t* bt_end  = bt_last + 1;    // outermost, exclusive
   size_t new_frame_count = bt_end - bt_beg;
+
+  // soft error mandates returning false
+  if (! (ret == STEP_STOP)) {
+    return false;
+  }
 
   if (tramp_found) {
     TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
@@ -440,9 +446,7 @@ hpcrun_generate_backtrace(ucontext_t* context,
     td->cached_bt_end = td->cached_bt + new_frame_count;
   }
 
-  // let clients know if a trampoline was found or not
-  *has_tramp = tramp_found;
-
+#if 0 // no more filtering samples
   if (! ENABLED(NO_SAMPLE_FILTERING)) {
     frame_t* beg_frame  = td->cached_bt;
     frame_t* last_frame = td->cached_bt_end - 1;
@@ -460,6 +464,7 @@ hpcrun_generate_backtrace(ucontext_t* context,
       return false; // filtered sample ==> no cct entry
     }
   }
+#endif // no filtering samples
 
   if (skipInner) {
     if (ENABLED(USE_TRAMP)){
@@ -471,7 +476,7 @@ hpcrun_generate_backtrace(ucontext_t* context,
 	   skipInner);
     }
     // adjust the returned backtrace according to the skipInner
-    *retn_bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
+    bt->begin = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
   }
 
   return true;
@@ -486,10 +491,8 @@ hpcrun_generate_backtrace(ucontext_t* context,
 //  and whether or not a trampoline was found.
 //
 bool
-hpcrun_dbg_generate_graceful_backtrace(ucontext_t* context,
-				       frame_t** retn_bt_beg, frame_t** retn_bt_end,
-				       bool* has_tramp,
-				       int skipInner)
+hpcrun_dbg_generate_backtrace(backtrace_info_t* bt,
+			      ucontext_t* context, int skipInner)
 {
   thread_data_t* td = hpcrun_get_thread_data();
 
@@ -500,13 +503,14 @@ hpcrun_dbg_generate_graceful_backtrace(ucontext_t* context,
   EMSG("Failing backtrace simulated");
   td->debug1 = true;
 
-  bool rv = hpcrun_generate_backtrace(context, retn_bt_beg, retn_bt_end, has_tramp, skipInner);
+  bool rv = hpcrun_generate_backtrace(bt, context, skipInner);
   if (!rv) return false;
 
-  size_t len = *retn_bt_end - *retn_bt_beg;
+  size_t len = bt->last - bt->begin + 1;
   EMSG("Length of recorded backtrace = %d", len);
-  *retn_bt_end -= (len > 2) ? 2 : 1;
-  *has_tramp   = false;
+  bt->last -= (len > 2) ? 2 : 1;
+  bt->has_tramp   = false;
+
   return false;
 }
 
