@@ -625,6 +625,7 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
   // let clients know if a trampoline was found or not
   *has_tramp = tramp_found;
 
+#if 0 // no sample filtering
   if (! ENABLED(NO_SAMPLE_FILTERING)) {
     frame_t* beg_frame  = td->cached_bt;
     frame_t* last_frame = td->cached_bt_end - 1;
@@ -640,7 +641,7 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
       return false;
     }
   }
-
+#endif // no sample filtering
   //
   // mutate the backtrace according to the passed in mutator function
   //  (bt_fn == NULL means no mutation is necessary)
