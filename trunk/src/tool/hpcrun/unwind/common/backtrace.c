@@ -333,7 +333,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
 
   bool tramp_found = false;
 
-  step_state ret; // return value from stepper
+  step_state ret = STEP_STOP; // return value from stepper
 
   hpcrun_unw_cursor_t cursor;
   hpcrun_unw_init_cursor(&cursor, context);
