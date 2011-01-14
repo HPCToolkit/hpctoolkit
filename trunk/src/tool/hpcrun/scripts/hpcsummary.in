@@ -42,7 +42,7 @@
 #
 # Usage: ./hpcsummary [-ahV] [directory]
 #
-#  -a adds summary info for blocks and errors
+#  -a adds summary info for blocks, errors and trolls
 #  -h displays the help message
 #  -V displays hpctoolkit version
 #
@@ -60,18 +60,21 @@ DIRLIST = []
 BASE2INDEX = {}
 MAX_TID = 0
 NUM_ERRORS = 0
-WARNING_LIMIT = 50
+HAS_TROLLS = False
 
 # Constants
 BLOCKS = 'blocks'
 ERRORS = 'errors'
 SAMPLES = 'samples'
+TROLLS = 'trolls'
 BASE = 'base'
 FILESIZE = 'filesize'
 NAME = 'name'
+WARNING_LIMIT = 50
 
 # Regular expressions
-summary_re = re.compile(r'recorded:\s*(\d+).+blocked:\s*(\d+).+errant:\s*(\d+)')
+old_sum_re = re.compile(r'recorded:\s*(\d+).+blocked:\s*(\d+).+errant:\s*(\d+)')
+new_sum_re = re.compile(r'recorded:\s*(\d+).+blocked:\s*(\d+).+errant:\s*(\d+).+trolled:\s*(\d+)')
 
 
 def warn(mesg):
@@ -86,7 +89,7 @@ def usage():
     print '''usage: %s [-ahV] [directory]
 
   -a, --all
-    include summary info for blocked and errant samples
+    include summary info for blocked, errant and trolled samples
 
   -h, --help
     display this message
@@ -126,7 +129,7 @@ def parse_name(fname, ext):
 
 
 def do_log_file(fname):
-    global DATA, BASE2INDEX
+    global DATA, BASE2INDEX, HAS_TROLLS
 
     try:
         (base, tid) = parse_name(fname, '.log')
@@ -139,25 +142,44 @@ def do_log_file(fname):
         warn('unable to open: %s' % fname)
         return
 
+    # Find the SUMMARY line.
     l = file.readline()
     while l:
         if l.startswith('SUMMARY'):
-            obj = re.search(summary_re, l)
-            if not obj:
-                warn('bad SUMMARY line in: %s' % fname)
-                file.close
-                return
-            samples, blocks, errors = map(int, obj.groups())
-            DATA.append(
-                { BLOCKS : blocks,
-                  ERRORS : errors,
-                  SAMPLES : samples,
-                  BASE : base })
-            BASE2INDEX[base] = len(DATA) - 1
             break
         l = file.readline()
     else:
         warn('unable to find SUMMARY line in: %s' % fname)
+        file.close
+        return
+
+    # New summary format with trolls.
+    obj = re.search(new_sum_re, l)
+    if obj:
+        samples, blocks, errors, trolls = map(int, obj.groups())
+        DATA.append(
+            { BLOCKS : blocks,
+              ERRORS : errors,
+              SAMPLES : samples,
+              TROLLS : trolls,
+              BASE : base })
+        BASE2INDEX[base] = len(DATA) - 1
+        HAS_TROLLS = True
+
+    # Old summary format without trolls.
+    elif re.search(old_sum_re, l):
+        obj = re.search(old_sum_re, l)
+        samples, blocks, errors = map(int, obj.groups())
+        DATA.append(
+            { BLOCKS : blocks,
+              ERRORS : errors,
+              SAMPLES : samples,
+              BASE : base })
+        BASE2INDEX[base] = len(DATA) - 1
+
+    # Unable to match summary line.
+    else:
+        warn('bad SUMMARY line in: %s' % fname)
 
     file.close
     return
@@ -284,6 +306,8 @@ for file in DIRLIST:
 if opt_display_all:
     display_metric('Blocked Samples', 'blocks', BLOCKS)
     display_metric('Errant Samples', 'errors', ERRORS)
+    if HAS_TROLLS:
+        display_metric('Samples with Trolls', 'trolls', TROLLS)
 display_metric('Recorded Samples', 'samples', SAMPLES)
 for t in range(MAX_TID + 1):
     display_metric('File Size', 'size', (t, FILESIZE))
