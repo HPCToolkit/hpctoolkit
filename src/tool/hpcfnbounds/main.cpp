@@ -80,6 +80,21 @@ using namespace std;
 using namespace Dyninst;
 using namespace SymtabAPI;
 
+//-----------------------------------------
+// Determine if using symtabAPI 6.1. If so, 
+// use defines to map old API to new one. 
+// NOTES: 
+//   version 6.1 defines __SYMTAB_H__
+//   version 2.1 defines Symtab_h
+//-----------------------------------------
+#ifdef __SYMTAB_H__
+#define Section Region
+#define findSection findRegion
+#define getSecSize getRegionSize
+#define getSecName getRegionName
+#define getSecAddr getRegionAddr
+#endif
+
 
 
 //*****************************************************************************
@@ -364,7 +379,7 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
   for (unsigned int i = 0; i < symvec.size(); i++) {
     Symbol *s = symvec[i];
     Symbol::SymbolLinkage sl = s->getLinkage();
-    if (report_symbol(s)) 
+    if (report_symbol(s) && s->getAddr() != 0) 
       add_function_entry((void *) s->getAddr(), &s->getName(), 
 			 ((sl & Symbol::SL_GLOBAL) ||
 			  (sl & Symbol::SL_WEAK)));
