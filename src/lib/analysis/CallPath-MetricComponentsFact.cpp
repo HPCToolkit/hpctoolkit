@@ -209,14 +209,21 @@ MetricComponentsFact::convertToWorkMetric(Prof::Metric::ADesc* mdesc)
 //
 //***************************************************************************
 
-const string MPIBlameShiftIdlenessFact::s_tag = "MPIDI_CRAY_Progress_wait";
+// Cray XT4, XT5
+const string MPIBlameShiftIdlenessFact::s_tag1 = "MPIDI_CRAY_Progress_wait";
+
+// IBM BG/P
+const string MPIBlameShiftIdlenessFact::s_tag2 = "MPID_Progress_wait";
+
 
 static bool
 isMPIFrame(const Prof::CCT::ProcFrm* x)
 {
-  static const string mpistr = "MPI";  // FIXME: also check for PMPI
+  static const string mpistr1 = "MPI";
+  static const string mpistr2 = "PMPI";
   const string& x_nm = x->procName();
-  return (x_nm.compare(0, mpistr.length(), mpistr) == 0);
+  return (x_nm.compare(0, mpistr1.length(), mpistr1) == 0 ||
+	  x_nm.compare(0, mpistr2.length(), mpistr2) == 0);
 }
 
 
@@ -224,10 +231,9 @@ bool
 MPIBlameShiftIdlenessFact::isSeparable(const Prof::CCT::AProcNode* x)
 {
   const string& x_nm = x->procName();
-  if (x_nm.length() >= s_tag.length()) {
-    return (x_nm.find(s_tag) != string::npos);
-  }
-  return false;
+  bool fnd = (x_nm.find(s_tag1) != string::npos ||
+	      x_nm.find(s_tag2) != string::npos);
+  return fnd;
 }
 
 
@@ -262,8 +268,8 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
 		  DIAG_UnexpectedInput);
       metricSrcIds.push_back(m->id());
 
-      // FIXME: For now we use Metric::ADesc::DerivedIncrDesc()
-      //   We should use Metric::ADesc::DerivedDesc()
+      // FIXME: For now we use only Metric::ADesc::DerivedIncrDesc()
+      //   We should also support Metric::ADesc::DerivedDesc()
       DIAG_Assert(typeid(*m) == typeid(Metric::DerivedIncrDesc), DIAG_UnexpectedInput);
 
       Metric::DerivedIncrDesc* m_imbalIncl =
@@ -335,10 +341,10 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
   
   double balancedThreshold = 1.2 * cctRoot_mdata.demandMetric(metricBalancedId);
 
-  makeIdleness(cctRoot, metricSrcIds,
-	       metricImbalInclIds, metricImbalExclIds, metricIdleInclIds,
-	       metricBalancedId, metricBalancedExpr, balancedThreshold,
-	       NULL, NULL);
+  makeMetrics(cctRoot, metricSrcIds,
+	      metricImbalInclIds, metricImbalExclIds, metricIdleInclIds,
+	      metricBalancedId, metricBalancedExpr, balancedThreshold,
+	      NULL, NULL);
 
 
   VMAIntervalSet metricDstInclIdSet;
@@ -355,16 +361,16 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
 
 
 void
-MPIBlameShiftIdlenessFact::makeIdleness(Prof::CCT::ANode* node,
-					const std::vector<uint>& m_src,
-					const std::vector<uint>& m_imbalIncl,
-					const std::vector<uint>& m_imbalExcl,
-					const std::vector<uint>& m_idleIncl,
-					uint mId_bal,
-					Prof::Metric::AExprIncr* balancedExpr,
-					double balancedThreshold,
-					Prof::CCT::ANode* balancedFrm,
-					Prof::CCT::ANode* balancedNode)
+MPIBlameShiftIdlenessFact::makeMetrics(Prof::CCT::ANode* node,
+				       const std::vector<uint>& m_src,
+				       const std::vector<uint>& m_imbalIncl,
+				       const std::vector<uint>& m_imbalExcl,
+				       const std::vector<uint>& m_idleIncl,
+				       uint mId_bal,
+				       Prof::Metric::AExprIncr* balancedExpr,
+				       double balancedThreshold,
+				       Prof::CCT::ANode* balancedFrm,
+				       Prof::CCT::ANode* balancedNode)
 {
   using namespace Prof;
 
@@ -407,9 +413,10 @@ MPIBlameShiftIdlenessFact::makeIdleness(Prof::CCT::ANode* node,
   // -------------------------------------------------------
   Metric::IData node_mdata(*node);
   balancedExpr->finalize(node_mdata);
-
-  // FIXME: avoid blame shifting blame to MPI routines
-  bool isComp = !isFrame || !isMPIFrame(static_cast<Prof::CCT::ProcFrm*>(node));
+  
+  bool isComp = (!isFrame ||
+		 (/*isFrame &&*/
+		  !isMPIFrame(static_cast<Prof::CCT::ProcFrm*>(node))));
   bool isBalanced = (node_mdata.demandMetric(mId_bal) <= balancedThreshold);
 
   CCT::ANode* balancedFrmNxt = ((isFrame && isBalanced && isComp) ?
@@ -421,9 +428,9 @@ MPIBlameShiftIdlenessFact::makeIdleness(Prof::CCT::ANode* node,
   // ------------------------------------------------------------
   for (Prof::CCT::ANodeChildIterator it(node); it.Current(); ++it) {
     Prof::CCT::ANode* x = it.current();
-    makeIdleness(x, m_src, m_imbalIncl, m_imbalExcl, m_idleIncl,
-		 mId_bal, balancedExpr, balancedThreshold,
-		 balancedFrmNxt, balancedNodeNxt);
+    makeMetrics(x, m_src, m_imbalIncl, m_imbalExcl, m_idleIncl,
+		mId_bal, balancedExpr, balancedThreshold,
+		balancedFrmNxt, balancedNodeNxt);
   }
 }
 
