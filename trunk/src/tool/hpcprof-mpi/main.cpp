@@ -314,7 +314,12 @@ realmain(int argc, char* const* argv)
   memset(prunedNodes, 0, prunedNodesSz * sizeof(uint8_t));
 
   if (myRank == rootRank) {
-    Analysis::CallPath::pruneBySummaryMetrics(*profGbl, prunedNodes);
+    // Disable pruning when making a metric database because it causes
+    // makeThreadMetrics_Lcl(), which uses CCT::MrgFlg_CCTMergeOnly,
+    // to under-compute values for thread-level metrics.
+    if (!args.db_makeMetricDB) {
+      Analysis::CallPath::pruneBySummaryMetrics(*profGbl, prunedNodes);
+    }
   }
   
   MPI_Bcast(prunedNodes, prunedNodesSz, MPI_BYTE, rootRank, MPI_COMM_WORLD);
@@ -876,42 +881,44 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
   prof->structure(NULL);
 
   uint mBeg = profGbl.merge(*prof, mergeTy, mergeFlg); // [closed begin
-  uint mEnd = mBeg + prof->metricMgr()->size();        //  open end)
 
-  // -------------------------------------------------------
-  // compute local incl/excl sampled metrics
-  // -------------------------------------------------------
-
-  VMAIntervalSet ivalsetIncl;
-  VMAIntervalSet ivalsetExcl;
-
-  for (uint mId = mBeg; mId < mEnd; ++mId) {
-    Prof::Metric::ADesc* m = mMgrGbl->metric(mId);
-    if (m->type() == Prof::Metric::ADesc::TyIncl) {
-      ivalsetIncl.insert(VMAInterval(mId, mId + 1)); // [ )
-    }
-    else if (m->type() == Prof::Metric::ADesc::TyExcl) {
-      ivalsetExcl.insert(VMAInterval(mId, mId + 1)); // [ )
-    }
-  }
-
-  cctRootGbl->aggregateMetricsIncl(ivalsetIncl);
-  cctRootGbl->aggregateMetricsExcl(ivalsetExcl);
-
-  // -------------------------------------------------------
-  // write local sampled metric values into database
-  // -------------------------------------------------------
   if (args.db_makeMetricDB) {
+    uint mEnd = mBeg + prof->metricMgr()->size(); //  open end)
+
+    // -------------------------------------------------------
+    // compute local incl/excl sampled metrics
+    // -------------------------------------------------------
+
+    VMAIntervalSet ivalsetIncl;
+    VMAIntervalSet ivalsetExcl;
+    
+    for (uint mId = mBeg; mId < mEnd; ++mId) {
+      Prof::Metric::ADesc* m = mMgrGbl->metric(mId);
+      if (m->type() == Prof::Metric::ADesc::TyIncl) {
+	ivalsetIncl.insert(VMAInterval(mId, mId + 1)); // [ )
+      }
+      else if (m->type() == Prof::Metric::ADesc::TyExcl) {
+	ivalsetExcl.insert(VMAInterval(mId, mId + 1)); // [ )
+      }
+    }
+    
+    cctRootGbl->aggregateMetricsIncl(ivalsetIncl);
+    cctRootGbl->aggregateMetricsExcl(ivalsetExcl);
+
+    // -------------------------------------------------------
+    // write local sampled metric values into database
+    // -------------------------------------------------------
+
     string dbFnm = makeDBFileName(args.db_dir, groupId, profileFile);
     writeMetricsDB(profGbl, mBeg, mEnd, dbFnm);
-  }
 
-  // -------------------------------------------------------
-  // reinitialize metric values for next time
-  // -------------------------------------------------------
-  
-  // TODO: see corresponding comments in makeSummaryMetrics_Lcl()
-  cctRootGbl->zeroMetricsDeep(mBeg, mEnd); // cf. FnInitSrc
+    // -------------------------------------------------------
+    // reinitialize metric values for next time
+    // -------------------------------------------------------
+    
+    // TODO: see corresponding comments in makeSummaryMetrics_Lcl()
+    cctRootGbl->zeroMetricsDeep(mBeg, mEnd); // cf. FnInitSrc
+  }
 
   delete prof;
 }
