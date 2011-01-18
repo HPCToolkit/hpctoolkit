@@ -215,8 +215,8 @@ Mgr::makeSummaryMetricsIncr(uint srcBegId, uint srcEndId)
     Metric::ADesc* mNew = 
       makeSummaryMetricIncr("Sum",  m);
     makeSummaryMetricIncr("Mean",   m);
-    makeSummaryMetricIncr("CfVar",  m);
     makeSummaryMetricIncr("StdDev", m);
+    makeSummaryMetricIncr("CfVar",  m);
     makeSummaryMetricIncr("Min",    m);
     makeSummaryMetricIncr("Max",    m);
     
