@@ -144,20 +144,22 @@ public:
   isSeparable(const Prof::CCT::AProcNode* x);
 
 private:
+  // make imbalance and idleness metrics
   void
-  makeIdleness(Prof::CCT::ANode* node,
-	       const std::vector<uint>& m_src,
-	       const std::vector<uint>& m_imbalIncl,
-	       const std::vector<uint>& m_imbalExcl,
-	       const std::vector<uint>& m_idleIncl,
-	       uint mId_bal,
-	       Prof::Metric::AExprIncr* balancedExpr,
-	       double balancedThreshold,
-	       Prof::CCT::ANode* balancedFrm,
-	       Prof::CCT::ANode* balancedNode);
+  makeMetrics(Prof::CCT::ANode* node,
+	      const std::vector<uint>& m_src,
+	      const std::vector<uint>& m_imbalIncl,
+	      const std::vector<uint>& m_imbalExcl,
+	      const std::vector<uint>& m_idleIncl,
+	      uint mId_bal,
+	      Prof::Metric::AExprIncr* balancedExpr,
+	      double balancedThreshold,
+	      Prof::CCT::ANode* balancedFrm,
+	      Prof::CCT::ANode* balancedNode);
   
 private:
-  static const std::string s_tag;
+  static const std::string s_tag1;
+  static const std::string s_tag2;
 
 };
 
