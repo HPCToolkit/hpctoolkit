@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef prof_Prof_CCT_Tree_hpp 
+#ifndef prof_Prof_CCT_Tree_hpp
 #define prof_Prof_CCT_Tree_hpp
 
 //************************* System Include Files ****************************
@@ -217,7 +217,7 @@ public:
   // -------------------------------------------------------
   // Write contents
   // -------------------------------------------------------
-  std::ostream& 
+  std::ostream&
   writeXML(std::ostream& os,
 	   uint metricBeg = Metric::IData::npos,
 	   uint metricEnd = Metric::IData::npos,
@@ -232,7 +232,7 @@ public:
 
   // Given a set of flags 'flags', determines whether we need to
   // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
-  // or xml::ESC_FALSE. 
+  // or xml::ESC_FALSE.
   static int
   doXMLEscape(uint oFlags);
 
@@ -283,7 +283,7 @@ class Stmt;
 // ANode: The base node for a call stack profile tree.
 // ---------------------------------------------------------
 class ANode
-  : public NonUniformDegreeTreeNode, 
+  : public NonUniformDegreeTreeNode,
     public Metric::IData,
     public Unique
 {
@@ -315,20 +315,20 @@ private:
 
 public:
   ANode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct = NULL)
-    : NonUniformDegreeTreeNode(parent), 
+    : NonUniformDegreeTreeNode(parent),
       Metric::IData(),
       m_type(type), m_id(s_nextUniqueId), m_strct(strct)
-  { 
+  {
     s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
   }
 
-  ANode(ANodeTy type, 
+  ANode(ANodeTy type,
 	ANode* parent, Struct::ACodeNode* strct, const Metric::IData& metrics)
     : NonUniformDegreeTreeNode(parent),
       Metric::IData(metrics),
       m_type(type), m_id(s_nextUniqueId), m_strct(strct)
-  { 
-    s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag 
+  {
+    s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
   }
 
   virtual ~ANode()
@@ -339,7 +339,7 @@ public:
     : NonUniformDegreeTreeNode(NULL),
       Metric::IData(x),
       m_type(x.m_type), /*m_id: skip*/ m_strct(x.m_strct)
-  { 
+  {
     zeroLinks();
     s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
   }
@@ -411,10 +411,10 @@ public:
   
 
   // --------------------------------------------------------
-  // Tree navigation 
+  // Tree navigation
   // --------------------------------------------------------
   ANode*
-  parent() const 
+  parent() const
   { return static_cast<ANode*>(NonUniformDegreeTreeNode::Parent()); }
 
   ANode*
@@ -430,9 +430,9 @@ public:
   {
     // siblings are linked in a circular list
     if (parent()->lastChild() != this) {
-      return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::NextSibling()); 
+      return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::NextSibling());
     }
-    return NULL;  
+    return NULL;
   }
 
   ANode*
@@ -440,7 +440,7 @@ public:
   {
     // siblings are linked in a circular list
     if (parent()->firstChild() != this) {
-      return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::PrevSibling()); 
+      return dynamic_cast<ANode*>(NonUniformDegreeTreeNode::PrevSibling());
     }
     return NULL;
   }
@@ -578,7 +578,7 @@ public:
   //   return value is trivially NULL).  Given an ADynNode y_dyn, finds
   //   the first direct ADynNode descendent x_dyn, if any, for which
   //   ADynNode::isMergable(x_dyn, y_dyn) holds.
-  // 
+  //
   // If the CCT does not have structure information, we only need to
   //   inspect the children of z.  Otherwise, it is necessary to find
   //   the collection of z's direct ADynNode descendents.
@@ -682,7 +682,7 @@ public:
   { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
-	   uint cpId, lush_assoc_info_t as_info, 
+	   uint cpId, lush_assoc_info_t as_info,
 	   LoadMap::LMId_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip)
     : ANode(type, parent, strct),
       m_cpId(cpId),
@@ -691,7 +691,7 @@ public:
   { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
-	   uint cpId, lush_assoc_info_t as_info, 
+	   uint cpId, lush_assoc_info_t as_info,
 	   LoadMap::LMId_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const Metric::IData& metrics)
     : ANode(type, parent, strct, metrics),
@@ -707,9 +707,9 @@ public:
   ADynNode(const ADynNode& x)
     : ANode(x),
       m_cpId(x.m_cpId),
-      m_as_info(x.m_as_info), 
+      m_as_info(x.m_as_info),
       m_lmId(x.m_lmId),
-      m_lmIP(x.m_lmIP), m_opIdx(x.m_opIdx), 
+      m_lmIP(x.m_lmIP), m_opIdx(x.m_opIdx),
       m_lip(clone_lip(x.m_lip))
   { }
 
@@ -739,7 +739,7 @@ public:
   // that it must be consistent with hpctrace).  0 is reserved as a
   // NULL value.
 
-  uint 
+  uint
   cpId() const
   { return m_cpId; }
 
@@ -753,16 +753,16 @@ public:
   // logical unwinding association
   // -------------------------------------------------------
 
-  lush_assoc_info_t 
-  assocInfo() const 
+  lush_assoc_info_t
+  assocInfo() const
   { return m_as_info; }
 
-  void 
-  assocInfo(lush_assoc_info_t x) 
+  void
+  assocInfo(lush_assoc_info_t x)
   { m_as_info = x; }
 
-  lush_assoc_t 
-  assoc() const 
+  lush_assoc_t
+  assoc() const
   { return lush_assoc_info__get_assoc(m_as_info); }
 
 
@@ -774,7 +774,7 @@ public:
   lmId() const
   {
     if (isValid_lip()) { return lush_lip_getLMId(m_lip); }
-    return m_lmId; 
+    return m_lmId;
   }
 
   LoadMap::LMId_t
@@ -783,9 +783,9 @@ public:
 
   void
   lmId(LoadMap::LMId_t x)
-  { 
+  {
     if (isValid_lip()) { lush_lip_setLMId(m_lip, x); return; }
-    m_lmId = x; 
+    m_lmId = x;
   }
 
   void
@@ -798,7 +798,7 @@ public:
     if (isValid_lip()) {
       return lush_lip_getLMIP(m_lip);
     }
-    return m_lmIP; 
+    return m_lmIP;
   }
 
   VMA
@@ -808,8 +808,8 @@ public:
   void
   lmIP(VMA lmIP, ushort opIdx)
   {
-    if (isValid_lip()) { 
-      lush_lip_setLMIP(m_lip, lmIP); 
+    if (isValid_lip()) {
+      lush_lip_setLMIP(m_lip, lmIP);
       m_opIdx = 0;
       return;
     }
@@ -935,7 +935,7 @@ public:
   std::string
   nameDyn() const;
 
-  void 
+  void
   writeDyn(std::ostream& os, uint oFlags = 0, const char* prefix = "") const;
 
 
@@ -1008,7 +1008,7 @@ public:
   fileName() const
   {
     if (m_strct) {
-      return (isAlien()) ? 
+      return (isAlien()) ?
 	static_cast<Struct::Alien*>(m_strct)->fileName() :
 	m_strct->ancestorFile()->name();
     }
@@ -1059,7 +1059,7 @@ private:
 class Root
   : public ANode
 {
-public: 
+public:
   // Constructor/Destructor
   Root(const std::string& nm)
     : ANode(TyRoot, NULL),
@@ -1081,10 +1081,10 @@ public:
   virtual std::string
   toStringMe(uint oFlags = 0) const;
   
-protected: 
-private: 
+protected:
+private:
   std::string m_name; // the program name
-}; 
+};
 
 
 // --------------------------------------------------------------------------
@@ -1150,7 +1150,7 @@ private:
 class Proc
   : public AProcNode
 {
-public: 
+public:
   // Constructor/Destructor
   Proc(ANode* parent, Struct::ACodeNode* strct = NULL)
     : AProcNode(TyProc, parent, strct)
@@ -1187,7 +1187,7 @@ private:
 class Loop
   : public ANode
 {
-public: 
+public:
   // Constructor/Destructor
   Loop(ANode* parent, Struct::ACodeNode* strct = NULL)
     : ANode(TyLoop, parent, strct)
@@ -1197,8 +1197,8 @@ public:
   { }
 
   // Dump contents for inspection
-  virtual std::string 
-  toStringMe(uint oFlags = 0) const; 
+  virtual std::string
+  toStringMe(uint oFlags = 0) const;
   
 private:
 };
@@ -1226,12 +1226,12 @@ public:
 	       metrics)
   { }
   
-  virtual ~Call() 
+  virtual ~Call()
   { }
   
   // Node data
   virtual VMA
-  ip() const
+  lmIP() const
   {
     VMA ip = ADynNode::lmIP_real();
     if (isValid_lip()) {
@@ -1243,7 +1243,7 @@ public:
   VMA
   ra() const
   { return ADynNode::lmIP_real(); }
-    
+  
   // Dump contents for inspection
   virtual std::string
   toStringMe(uint oFlags = 0) const;
