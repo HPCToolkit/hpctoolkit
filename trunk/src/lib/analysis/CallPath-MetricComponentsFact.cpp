@@ -284,11 +284,14 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
       m_imbalExcl->type(Metric::ADesc::TyExcl);
       m_imbalExcl->expr(new Metric::SumIncr(Metric::IData::npos,
 					    Metric::IData::npos));
-      
+      m_imbalIncl->partner(m_imbalExcl);
+      m_imbalExcl->partner(m_imbalIncl);
+
       Metric::DerivedIncrDesc* m_idleIncl =
 	static_cast<Metric::DerivedIncrDesc*>(m->clone());
       m_idleIncl->nameBase("idleness" + s_sum);
       m_idleIncl->description("idleness for MPI executions");
+      m_idleIncl->partner(NULL);
       m_idleIncl->expr(new Metric::SumIncr(Metric::IData::npos, // FIXME:Sum
 					   Metric::IData::npos));
 
@@ -395,14 +398,14 @@ MPIBlameShiftIdlenessFact::makeMetrics(Prof::CCT::ANode* node,
 
       double mval = node->demandMetric(mId_src);
 
-      // FIXME: use combine function
-      balancedNode->demandMetric(mId_imbalIncl) += mval;
-      balancedNode->demandMetric(mId_imbalExcl) += mval;
+      balancedNode->demandMetric(mId_imbalIncl) += mval; // FIXME: combine fn
+      balancedNode->demandMetric(mId_imbalExcl) += mval; // FIXME: combine fn
+
       if (balancedNode != balancedFrm && balancedNodeFrm == balancedFrm) {
-	balancedFrm->demandMetric(mId_imbalExcl) += mval;
+	balancedFrm->demandMetric(mId_imbalExcl) += mval; // FIXME: combine fn
       }
 
-      node->demandMetric(mId_idleIncl) += mval;
+      node->demandMetric(mId_idleIncl) += mval; // FIXME: combine fn
     }
     
     return; // do not recur down this subtree
