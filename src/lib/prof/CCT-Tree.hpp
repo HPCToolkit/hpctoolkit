@@ -767,7 +767,8 @@ public:
 
 
   // -------------------------------------------------------
-  // load-module id, ip
+  // load-module id, ip 
+  // (N.B.: a load-module-ip is a static ip as opposed to a run-time ip)
   // -------------------------------------------------------
 
   LoadMap::LMId_t
@@ -1239,9 +1240,10 @@ public:
     }
     return (ip != 0) ? (ip - s_raToCallsiteOfst) : 0;
   }
-  
+
+  // lmRA(): static (as opposed to run-time) return address
   VMA
-  ra() const
+  lmRA() const
   { return ADynNode::lmIP_real(); }
   
   // Dump contents for inspection
