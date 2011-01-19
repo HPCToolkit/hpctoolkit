@@ -94,8 +94,10 @@ dnl    the two library versions. automake 1.7.5 handles the specification
 dnl    correctly
 dnl--------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [4.9.9], 
-        [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([hpctoolkit], [4.9.9],
+        [hpc@cs.rice.edu],
+	[hpctoolkit],
+	[http://hpctoolkit.org/])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
@@ -126,7 +128,6 @@ hpctoolkit_build=`pwd`
 HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
 
-
 #-------------------------------------------------
 # SVN version
 #-------------------------------------------------
@@ -139,7 +140,7 @@ AC_SUBST([HPCTOOLKIT_PLATFORM])
 # precedence over the file.
 #
 # *** N.B.: since PACKAGE_VERSION is also used in the 'dist' tarball,
-# it is better not to include spaces or special characters within. ***
+# it is better not to use spaces or special characters ***
 
 version_file="${srcdir}/.svn-revision"
 
@@ -163,11 +164,25 @@ if test "$svn_revision" = 0 ; then
   AC_MSG_WARN([unable to find svn revision])
 fi
 
-# NOTE (tallent): Setting PACKAGE_VERSION in this way does not affect
-# the corresponding -D that is automatically placed on the compilation
-# line!  We add our own because 
+# N.B.: Autoconf does not currently provide any way to control or
+# redefine PACKAGE_* variables.  So, just create our own version.
 AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION], "${PACKAGE_VERSION}", [])
 dnl AC_SUBST([HPCTOOLKIT_VERSION])
+
+
+#-------------------------------------------------
+# Fix PACKAGE_STRING (which is unconditionally defined by AC_INIT)
+#-------------------------------------------------
+
+# With Intel's mpicxx wrapper, the space in
+#   -DPACKAGE_STRING=\"hpctoolkit\ 4.9.9\"
+# causes a command-line parse error.
+
+# *** N.B.: Autoconf does not currently provide any way to control or
+# redefine PACKAGE_* variables.  So, for now rely on autogen. ***
+
+dnl PACKAGE_STRING="${PACKAGE}-${PACKAGE_VERSION}"
+dnl AC_DEFINE_UNQUOTED([PACKAGE_STRING], "${PACKAGE_STRING}", [])
 
 
 #-------------------------------------------------

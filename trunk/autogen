@@ -15,4 +15,17 @@
 
 autoreconf --force --install --verbose
 
+
+#-------------------------------------------------
+# Redefine PACKAGE_STRING (see comments in ./configure)
+#-------------------------------------------------
+
+configure_fnm="./configure"
+if test -f "${configure_fnm}" ; then
+  sed -i -e "s/PACKAGE_STRING='hpctoolkit /PACKAGE_STRING='hpctoolkit-/" \
+    ${configure_fnm}
+else
+  echo "*** Warning: cannot find ${configure_fnm} ***"
+fi
+
 #############################################################################
