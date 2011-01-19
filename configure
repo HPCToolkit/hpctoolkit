@@ -563,9 +563,9 @@ MAKEFLAGS=
 PACKAGE_NAME='hpctoolkit'
 PACKAGE_TARNAME='hpctoolkit'
 PACKAGE_VERSION='4.9.9'
-PACKAGE_STRING='hpctoolkit 4.9.9'
+PACKAGE_STRING='hpctoolkit-4.9.9'
 PACKAGE_BUGREPORT='hpc@cs.rice.edu'
-PACKAGE_URL=''
+PACKAGE_URL='http://hpctoolkit.org/'
 
 ac_unique_file="src/include/HPCToolkitVersionInfo.h"
 # Factoring default headers for most tests.
@@ -1588,6 +1588,7 @@ Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
 
 Report bugs to <hpc@cs.rice.edu>.
+hpctoolkit home page: <http://hpctoolkit.org/>.
 _ACEOF
 ac_status=$?
 fi
@@ -3391,7 +3392,6 @@ hpctoolkit_build=`pwd`
 HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 
 
-
 #-------------------------------------------------
 # SVN version
 #-------------------------------------------------
@@ -3404,7 +3404,7 @@ HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 # precedence over the file.
 #
 # *** N.B.: since PACKAGE_VERSION is also used in the 'dist' tarball,
-# it is better not to include spaces or special characters within. ***
+# it is better not to use spaces or special characters ***
 
 version_file="${srcdir}/.svn-revision"
 
@@ -3431,12 +3431,24 @@ if test "$svn_revision" = 0 ; then
 $as_echo "$as_me: WARNING: unable to find svn revision" >&2;}
 fi
 
-# NOTE (tallent): Setting PACKAGE_VERSION in this way does not affect
-# the corresponding -D that is automatically placed on the compilation
-# line!  We add our own because
+# N.B.: Autoconf does not currently provide any way to control or
+# redefine PACKAGE_* variables.  So, just create our own version.
 cat >>confdefs.h <<_ACEOF
 #define HPCTOOLKIT_VERSION "${PACKAGE_VERSION}"
 _ACEOF
+
+
+
+#-------------------------------------------------
+# Fix PACKAGE_STRING (which is unconditionally defined by AC_INIT)
+#-------------------------------------------------
+
+# With Intel's mpicxx wrapper, the space in
+#   -DPACKAGE_STRING=\"hpctoolkit\ 4.9.9\"
+# causes a command-line parse error.
+
+# *** N.B.: Autoconf does not currently provide any way to control or
+# redefine PACKAGE_* variables.  So, for now rely on autogen. ***
 
 
 
@@ -18063,7 +18075,8 @@ $config_files
 Configuration commands:
 $config_commands
 
-Report bugs to <hpc@cs.rice.edu>."
+Report bugs to <hpc@cs.rice.edu>.
+hpctoolkit home page: <http://hpctoolkit.org/>."
 
 _ACEOF
 cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
