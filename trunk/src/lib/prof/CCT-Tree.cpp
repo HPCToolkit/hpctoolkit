@@ -1072,8 +1072,8 @@ string
 ADynNode::nameDyn() const
 {
   string nm = "[assoc(" + assocInfo_str() + ") ip("
-    + StrUtil::toStr(m_lmId) + ", " + StrUtil::toStr(m_lmIP, 16) + ") lip("
-    + lip_str() + ")]";
+    + StrUtil::toStr(lmId_real()) + ", " 
+    + StrUtil::toStr(lmIP_real(), 16) + ") lip(" + lip_str() + ")]";
   return nm;
 }
 
