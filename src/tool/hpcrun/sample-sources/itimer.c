@@ -179,7 +179,6 @@ static long period = DEFAULT_PERIOD;
 static sigset_t sigset_itimer;
 
 // ******* METHOD DEFINITIONS ***********
-
 static void
 METHOD_FN(init)
 {
@@ -202,17 +201,19 @@ static void
 METHOD_FN(start)
 {
   if (! hpcrun_td_avail()){
+    TMSG(ITIMER_CTL, "Thread data unavailable ==> sampling suspended");
     return; // in the unlikely event that we are trying to start, but thread data is unavailable,
             // assume that all sample source ops are suspended.
   }
 
   TMSG(ITIMER_CTL,"starting itimer w value = (%d,%d), interval = (%d,%d)",
-       itimer.it_interval.tv_sec,
-       itimer.it_interval.tv_usec,
        itimer.it_value.tv_sec,
-       itimer.it_value.tv_usec);
+       itimer.it_value.tv_usec,
+       itimer.it_interval.tv_sec,
+       itimer.it_interval.tv_usec);
 
   if (setitimer(HPCRUN_PROFILE_TIMER, &itimer, NULL) != 0) {
+    TMSG(ITIMER_CTL, "setitimer failed to start!!");
     EMSG("setitimer failed (%d): %s", errno, strerror(errno));
     hpcrun_ssfail_start("itimer");
   }
@@ -248,6 +249,7 @@ METHOD_FN(stop)
 static void
 METHOD_FN(shutdown)
 {
+  TMSG(ITIMER_CTL, "shutodown itimer");
   METHOD_CALL(self, stop); // make sure stop has been called
   self->state = UNINIT;
 }
@@ -262,18 +264,7 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
 
-#ifdef OLD_SS
-  char *_p = strchr(METHOD_CALL(self,get_event_str),'@');
-  if ( _p) {
-    period = strtol(_p+1,NULL,10);
-  }
-  else {
-    TMSG(OPTIONS,"WALLCLOCK event default period (5000) selected");
-  }
-  METHOD_CALL(self, store_event, ITIMER_EVENT, period);
-  TMSG(OPTIONS,"wallclock period set to %ld",period);
-#endif // OLD_SS
-
+  TMSG(ITIMER_CTL, "process event list, lush_metrics = %d", lush_metrics);
   // fetch the event string for the sample source
   char* _p = METHOD_CALL(self, get_event_str);
   
@@ -346,17 +337,17 @@ METHOD_FN(process_event_list, int lush_metrics)
 }
 
 //
-// Event "sets" not possible for this sample source.
-// It has only 1 event.
-// Initialize the sigset and installing the signal handler are
-// the only actions
+// There is only 1 event for itimer, hence the event "set" is always the same.
+// The signal setup, however, is done here.
 //
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
+  TMSG(ITIMER_CTL, "setting up itimer interrupt");
   sigemptyset(&sigset_itimer);
   sigaddset(&sigset_itimer, HPCRUN_PROFILE_SIGNAL);
   monitor_sigaction(HPCRUN_PROFILE_SIGNAL, &itimer_signal_handler, 0, NULL);
+  monitor_real_sigprocmask(SIG_UNBLOCK, &sigset_itimer, NULL);
 }
 
 static void
@@ -390,6 +381,9 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   // Must check for async block first and avoid any MSG if true.
   void* pc = hpcrun_context_pc(context);
   if (hpcrun_async_is_blocked(pc)) {
+    if (ENABLED(ITIMER_CTL)) {
+      ; // message to stderr here for debug
+    }
     hpcrun_stats_num_samples_blocked_async_inc();
   }
   else {

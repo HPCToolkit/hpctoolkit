@@ -107,7 +107,7 @@ static pmsg_category all_list_entries [] = {
  E(_TST_HANDLER),
  E(_TST_CTL),
  E(UNW),
- E(UITREE),
+ // E(UITREE),
  E(MPI),
  E(INTV2),
  E(INTV_ERR),
@@ -150,10 +150,10 @@ static pmsg_category all_list_entries [] = {
  E(UNW_STRATEGY),
  E(BACKTRACE),
  E(SUSPENDED_SAMPLE),
- E(MMAP),
- E(MALLOC),
- E(CSP_MALLOC),
- E(MEM__ALLOC),
+ // E(MMAP),
+ // E(MALLOC),
+ // E(CSP_MALLOC),
+ // E(MEM__ALLOC),
  E(NORM_IP),
  E(PARTIAL_UNW)
 };

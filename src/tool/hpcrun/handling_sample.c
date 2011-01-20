@@ -58,7 +58,7 @@
 void
 hpcrun_init_handling_sample(thread_data_t *td, int in, int id)
 {
-  NMSG(HANDLING_SAMPLE,"INIT called f thread %d", id);
+  TMSG(HANDLING_SAMPLE,"INIT called f thread %d", id);
   td->handling_sample = in;
 }
 

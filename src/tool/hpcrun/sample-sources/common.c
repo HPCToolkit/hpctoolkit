@@ -58,10 +58,10 @@ CMETHOD_FN(add_event, const char *ev)
 {
   char *evl = self->evl.evl_spec;
 
-  NMSG(SS_COMMON,"add event %s to evl |%s|", ev, evl);
+  TMSG(SS_COMMON,"add event %s to evl |%s|", ev, evl);
   strcat(evl, ev);
   strcat(evl," ");
-  NMSG(SS_COMMON,"evl after event added = |%s|",evl);
+  TMSG(SS_COMMON,"evl after event added = |%s|",evl);
 }
 
 void

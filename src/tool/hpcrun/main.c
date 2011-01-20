@@ -260,8 +260,8 @@ hpcrun_init_internal(bool is_child)
 void
 hpcrun_fini_internal()
 {
-  NMSG(FINI,"process");
-  int ret = monitor_real_sigprocmask(SIG_BLOCK,&prof_sigset,NULL);
+  TMSG(FINI, "process");
+  int ret = monitor_real_sigprocmask(SIG_BLOCK, &prof_sigset, NULL);
   if (ret){
     EMSG("WARNING: process fini could not block SIGPROF, ret = %d",ret);
   }
@@ -272,7 +272,7 @@ hpcrun_fini_internal()
   if (hpcrun_is_initialized()) {
     hpcrun_is_initialized_private = false;
 
-    NMSG(FINI,"process attempting sample shutdown");
+    TMSG(FINI, "process attempting sample shutdown");
 
     SAMPLE_SOURCES(stop);
     SAMPLE_SOURCES(shutdown);
@@ -475,15 +475,15 @@ monitor_pre_fork(void)
   }
   hpcrun_async_block();
 
-  NMSG(PRE_FORK,"pre_fork call");
+  TMSG(PRE_FORK,"pre_fork call");
 
   if (SAMPLE_SOURCES(started)) {
-    NMSG(PRE_FORK,"sources shutdown");
+    TMSG(PRE_FORK,"sources shutdown");
     SAMPLE_SOURCES(stop);
     SAMPLE_SOURCES(shutdown);
   }
 
-  NMSG(PRE_FORK,"finished pre_fork call");
+  TMSG(PRE_FORK,"finished pre_fork call");
   hpcrun_async_unblock();
 
   from_fork.is_child = true;
@@ -499,16 +499,16 @@ monitor_post_fork(pid_t child, void* data)
   }
   hpcrun_async_block();
 
-  NMSG(POST_FORK,"Post fork call");
+  TMSG(POST_FORK,"Post fork call");
 
   if (!SAMPLE_SOURCES(started)){
-    NMSG(POST_FORK,"sample sources re-init+re-start");
+    TMSG(POST_FORK,"sample sources re-init+re-start");
     SAMPLE_SOURCES(init);
     SAMPLE_SOURCES(gen_event_set,0); // FIXME: pass lush_metrics here somehow
     SAMPLE_SOURCES(start);
   }
 
-  NMSG(POST_FORK,"Finished post fork");
+  TMSG(POST_FORK,"Finished post fork");
   hpcrun_async_unblock();
 }
 
