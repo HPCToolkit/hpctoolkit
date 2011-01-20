@@ -248,13 +248,17 @@ create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag,
   if (add_thread_id) {
     if (hpcrun_using_threads_p()) {
       tmp_id = TD_GET(id);
-      hpcrun_msg_ns(fstr, sizeof(fstr), "[%d]: ", tmp_id);
+      hpcrun_msg_ns(fstr, sizeof(fstr), "[%d, %d]: ", getpid(), tmp_id);
+    }
+    else {
+      hpcrun_msg_ns(fstr, sizeof(fstr), "[%d, N]: ", getpid());
     }
   }
+#if 0
   if (ENABLED(PID)) {
     hpcrun_msg_ns(fstr, sizeof(fstr), "[%d]: ", getpid());
   }
-
+#endif
   if (tag) {
     char* fstr_end = fstr + strlen(fstr);
     hpcrun_msg_ns(fstr_end, sizeof(fstr) - strlen(fstr), "%-5s: ", tag);

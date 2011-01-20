@@ -89,7 +89,7 @@ hpcrun_registered_sources_init(void)
 {
   for (sample_source_t* ss=registered_sample_sources; ss; ss = ss->next_reg){
     METHOD_CALL(ss, init);
-    NMSG(SS_COMMON, "sample source \"%s\": init", ss->name);
+    TMSG(SS_COMMON, "sample source \"%s\": init", ss->name);
   }
 }
 

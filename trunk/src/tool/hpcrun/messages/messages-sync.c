@@ -152,6 +152,8 @@ messages_logfile_create()
   files_log_name(log_name, 0, PATH_MAX);
 
 
+  if (getenv("HPCRUN_LOG_STDERR")) return; // LOGSE variable set ==> log goes to stderr
+
   // open log file
 #if 1
   log_file_fd = open(log_name, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);

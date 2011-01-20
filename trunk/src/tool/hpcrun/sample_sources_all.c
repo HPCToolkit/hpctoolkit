@@ -99,10 +99,10 @@ hpcrun_all_sources_ ##n(t arg)                                       \
 bool								     \
 hpcrun_all_sources_ ##n(void)					     \
 {								     \
-  NMSG(AS_ ##n,"checking %d sources",n_sources);		     \
+  TMSG(AS_ ##n,"checking %d sources",n_sources);		     \
   for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
     if (! METHOD_CALL(ss, n)) {			                     \
-      NMSG(AS_ ##n,"%s not started",ss->name);                       \
+      TMSG(AS_ ##n,"%s not started",ss->name);                       \
       return false;						     \
     }								     \
   }								     \
@@ -163,7 +163,7 @@ in_sources(sample_source_t* ss_in)
 static void
 add_source(sample_source_t* ss)
 {
-  NMSG(AS_add_source,"%s",ss->name);
+  TMSG(AS_add_source,"%s",ss->name);
   if (in_sources(ss)) {
     return;
   }
@@ -171,7 +171,7 @@ add_source(sample_source_t* ss)
   ss->next_sel = NULL;
   ss_insert    = &(ss->next_sel);
   n_sources++;
-  NMSG(AS_add_source,"# sources now = %d",n_sources);
+  TMSG(AS_add_source,"# sources now = %d",n_sources);
 }
 
 
