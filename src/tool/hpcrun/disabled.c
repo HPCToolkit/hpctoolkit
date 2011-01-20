@@ -77,14 +77,14 @@ static bool hpcrun_is_disabled = false;
 //*****************************************************************************
 
 bool 
-hpcrun_get_disabled()
+hpcrun_get_disabled(void)
 {
   return hpcrun_is_disabled;
 }
 
 
 void 
-hpcrun_set_disabled()
+hpcrun_set_disabled(void)
 {
   hpcrun_is_disabled = true;
 }

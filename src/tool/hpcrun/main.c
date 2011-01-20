@@ -147,9 +147,6 @@ int lush_metrics = 0; // FIXME: global variable for now
 static hpcrun_options_t opts;
 static bool hpcrun_is_initialized_private = false;
 
-static sigset_t prof_sigset;
-
-
 
 //***************************************************************************
 // inline functions
@@ -221,9 +218,6 @@ hpcrun_init_internal(bool is_child)
   lushPthr_processInit();
 
 
-  sigemptyset(&prof_sigset);
-  sigaddset(&prof_sigset, SIGPROF);
-
   hpcrun_setup_segv();
   hpcrun_unw_init();
 
@@ -249,6 +243,7 @@ hpcrun_init_internal(bool is_child)
 
   // start the sampling process
 
+  hpcrun_enable_sampling();
   // NOTE: hack to ensure that sample source start can be delayed until mpi_init
   if (! getenv("HPCRUN_MPI_ONLY")) {
       SAMPLE_SOURCES(start);
@@ -260,11 +255,9 @@ hpcrun_init_internal(bool is_child)
 void
 hpcrun_fini_internal()
 {
+  hpcrun_disable_sampling();
+
   TMSG(FINI, "process");
-  int ret = monitor_real_sigprocmask(SIG_BLOCK, &prof_sigset, NULL);
-  if (ret){
-    EMSG("WARNING: process fini could not block SIGPROF, ret = %d",ret);
-  }
 
   hpcrun_unthreaded_data();
   epoch_t *epoch = TD_GET(epoch);
@@ -337,10 +330,6 @@ hpcrun_thread_init(int id, cct_ctxt_t* thr_ctxt)
   // start the sample sources
   SAMPLE_SOURCES(start);
 
-  int ret = monitor_real_pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
-  if (ret){
-    EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
-  }
   return (void *)epoch;
 }
 

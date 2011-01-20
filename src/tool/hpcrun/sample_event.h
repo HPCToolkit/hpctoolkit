@@ -54,6 +54,7 @@
 #include "thread_data.h"
 #include <trampoline/common/trampoline.h>
 #include <unwind/common/backtrace.h>
+#include <messages/messages.h>
 
 
 //***************************************************************************
@@ -93,20 +94,29 @@ hpcrun_async_is_blocked(void* pc)
 
 //***************************************************************************
 
-extern bool _hpcrun_sampling_disabled; // private!
+extern bool private_hpcrun_sampling_disabled; // private!
 
 static inline bool
-hpcrun_is_sampling_disabled()
+hpcrun_is_sampling_disabled(void)
 {
-  return _hpcrun_sampling_disabled;
+  return private_hpcrun_sampling_disabled;
 }
 
+static inline void
+hpcrun_disable_sampling(void)
+{
+  TMSG(SPECIAL,"Sampling disabled");
+  private_hpcrun_sampling_disabled = true;
+}
 
-void
-hpcrun_disable_sampling();
+static inline void
+hpcrun_enable_sampling(void)
+{
+  TMSG(SPECIAL,"Sampling disabled");
+  private_hpcrun_sampling_disabled = false;
+}
 
-void
-hpcrun_drop_sample();
+void hpcrun_drop_sample(void);
 
 cct_node_t* hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
 				   int skipInner, int isSync);
