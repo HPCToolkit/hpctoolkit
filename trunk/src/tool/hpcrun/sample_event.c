@@ -135,15 +135,7 @@ record_partial_unwind(cct_bundle_t* cct,
 
 //***************************************************************************
 
-bool _hpcrun_sampling_disabled = false;
-
-void
-hpcrun_disable_sampling(void)
-{
-  TMSG(SPECIAL,"Sampling disabled");
-  _hpcrun_sampling_disabled = true;
-}
-
+bool private_hpcrun_sampling_disabled = false;
 
 void
 hpcrun_drop_sample(void)

@@ -182,7 +182,16 @@ static sigset_t sigset_itimer;
 static void
 METHOD_FN(init)
 {
-  self->state = INIT; // no actual init actions necessary for itimer
+  TMSG(ITIMER_CTL, "setting up itimer interrupt");
+  sigemptyset(&sigset_itimer);
+  sigaddset(&sigset_itimer, HPCRUN_PROFILE_SIGNAL);
+
+  int ret = monitor_real_sigprocmask(SIG_UNBLOCK, &sigset_itimer, NULL);
+
+  if (ret){
+    EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
+  }
+  self->state = INIT;
 }
 
 static void
@@ -251,6 +260,12 @@ METHOD_FN(shutdown)
 {
   TMSG(ITIMER_CTL, "shutodown itimer");
   METHOD_CALL(self, stop); // make sure stop has been called
+
+  int ret = monitor_real_sigprocmask(SIG_BLOCK, &sigset_itimer, NULL);
+  if (ret){
+    EMSG("WARNING: process fini could not block SIGPROF, ret = %d",ret);
+  }
+
   self->state = UNINIT;
 }
 
@@ -343,11 +358,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
-  TMSG(ITIMER_CTL, "setting up itimer interrupt");
-  sigemptyset(&sigset_itimer);
-  sigaddset(&sigset_itimer, HPCRUN_PROFILE_SIGNAL);
   monitor_sigaction(HPCRUN_PROFILE_SIGNAL, &itimer_signal_handler, 0, NULL);
-  monitor_real_sigprocmask(SIG_UNBLOCK, &sigset_itimer, NULL);
 }
 
 static void

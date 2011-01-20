@@ -152,24 +152,13 @@ messages_logfile_create()
   files_log_name(log_name, 0, PATH_MAX);
 
 
-  if (getenv("HPCRUN_LOG_STDERR")) return; // LOGSE variable set ==> log goes to stderr
+  if (getenv("HPCRUN_LOG_STDERR")) return; // HPCRUN_LOG_STDERR variable set ==> log goes to stderr
 
   // open log file
-#if 1
   log_file_fd = open(log_name, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (log_file_fd == -1) {
     log_file_fd = 2; // cannot open log_file ==> revert to stderr
   }
-#else
-  log_file = fopen(log_name,"w");
-  if (!log_file) {
-    log_file = stderr; // reset to stderr
-    log_file_fd = 2;
-  }
-  else {
-    log_file_fd = fileno(log_file);
-  }
-#endif
 }
 
 
@@ -178,18 +167,12 @@ messages_fini(void)
 {
   if (hpcrun_get_disabled()) return;
 
-#if 1
   if (log_file_fd != 2) {
     int rv = close(log_file_fd);
     if (rv) {
       static char close_err[] = "An error occurred during the close of the log file! Be warned!\n";
       write(2, close_err, strlen(close_err));
     }
-#else
-  if (log_file != stderr){
-    fclose(log_file);
-#endif
-
     //----------------------------------------------------------------------
     // if this is an execution of an MPI program, we opened the log file 
     // before the MPI rank was known. thus, the name of the log file is 

@@ -342,7 +342,7 @@ hpcrun_stats_print_summary(void)
        frames_total, trolled_frames,
        num_unwind_intervals_total,  num_unwind_intervals_suspicious);
 
-  if (hpcrun_is_sampling_disabled()) {
+  if (hpcrun_get_disabled()) {
     AMSG("SAMPLING HAS BEEN DISABLED");
   }
 
