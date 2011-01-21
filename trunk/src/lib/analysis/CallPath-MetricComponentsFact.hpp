@@ -160,6 +160,7 @@ private:
 private:
   static const std::string s_tag1;
   static const std::string s_tag2;
+  static const std::string s_tag3;
 
 };
 
