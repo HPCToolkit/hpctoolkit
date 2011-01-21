@@ -215,6 +215,9 @@ const string MPIBlameShiftIdlenessFact::s_tag1 = "MPIDI_CRAY_Progress_wait";
 // IBM BG/P
 const string MPIBlameShiftIdlenessFact::s_tag2 = "MPID_Progress_wait";
 
+// Intel/Infiniband
+const string MPIBlameShiftIdlenessFact::s_tag3 = "MPIDI_CH3I_Progress";
+
 
 static bool
 isMPIFrame(const Prof::CCT::ProcFrm* x)
@@ -232,7 +235,8 @@ MPIBlameShiftIdlenessFact::isSeparable(const Prof::CCT::AProcNode* x)
 {
   const string& x_nm = x->procName();
   bool fnd = (x_nm.find(s_tag1) != string::npos ||
-	      x_nm.find(s_tag2) != string::npos);
+	      x_nm.find(s_tag2) != string::npos ||
+	      x_nm.find(s_tag3) != string::npos);
   return fnd;
 }
 
