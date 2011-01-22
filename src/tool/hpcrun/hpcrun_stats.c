@@ -49,6 +49,7 @@
 // local include files
 //***************************************************************************
 #include "sample_event.h"
+#include "disabled.h"
 
 #include <memory/hpcrun-malloc.h>
 #include <messages/messages.h>
