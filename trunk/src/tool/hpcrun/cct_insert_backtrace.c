@@ -261,8 +261,6 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 			  int skipInner)
 {
   bool tramp_found;
-  frame_t* bt_beg;
-  frame_t* bt_last;
 
   thread_data_t* td = hpcrun_get_thread_data();
   backtrace_info_t bt;
@@ -274,13 +272,14 @@ help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     }
 
     TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure, "
-	 "len partial unw = %d", (bt_last - bt_beg)+1);
+	 "len partial unw = %d", (bt.last - bt.begin)+1);
     hpcrun_stats_num_samples_partial_inc();
     partial_unw = true;
   }
 
-  bt_beg  = bt.begin;
-  bt_last = bt.last;
+  frame_t* bt_beg = bt.begin;
+  frame_t* bt_last = bt.last;
+
   tramp_found = bt.has_tramp;
 
   //
