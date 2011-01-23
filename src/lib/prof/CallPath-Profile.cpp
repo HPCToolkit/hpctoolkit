@@ -279,6 +279,7 @@ Profile::mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx)
   // -------------------------------------------------------
   // process primitive merge types
   // -------------------------------------------------------
+  // the index, within y, of the first new metric to add to x
   uint y_newMetricIdx = Metric::Mgr::npos;
 
   if (mergeTy == Merge_CreateMetric) {
@@ -290,8 +291,9 @@ Profile::mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx)
     yBeg_mapsTo_xIdx = (uint)mergeTy; // [
     
     uint yEnd_mapsTo_xIdx = yBeg_mapsTo_xIdx + y.metricMgr()->size(); // )
-    if (x.metricMgr()->size() < yEnd_mapsTo_xIdx) {
-      y_newMetricIdx = yEnd_mapsTo_xIdx - x.metricMgr()->size();
+    if (! (x.metricMgr()->size() >= yEnd_mapsTo_xIdx) ) {
+      uint overlapSz = x.metricMgr()->size() - yBeg_mapsTo_xIdx;
+      y_newMetricIdx = overlapSz;
     }
   }
   else {
@@ -446,7 +448,7 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
 
 
 void
-writeXML_help(std::ostream& os, const char* entry_nm, 
+writeXML_help(std::ostream& os, const char* entry_nm,
 	      Struct::Tree* structure, const Struct::ANodeFilter* filter,
 	      int type)
 {
@@ -476,7 +478,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       DIAG_Die(DIAG_UnexpectedInput);
     }
     
-    os << "    <" << entry_nm << " i" << MakeAttrNum(id) 
+    os << "    <" << entry_nm << " i" << MakeAttrNum(id)
        << " n" << MakeAttrStr(nm) << "/>\n";
   }
 }
@@ -588,11 +590,11 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   for (uint i = 0; i < m_mMgr->size(); i++) {
     const Metric::ADesc* m = m_mMgr->metric(i);
     if (m->hasDBInfo()) {
-      os << "    <MetricDB i" << MakeAttrNum(i) 
+      os << "    <MetricDB i" << MakeAttrNum(i)
 	 << " n" << MakeAttrStr(m->name())
 	 << " db-glob=\"" << m->dbFileGlob() << "\""
 	 << " db-id=\"" << m->dbId() << "\""
-	 << " db-num-metrics=\"" << m->dbNumMetrics() << "\"" 
+	 << " db-num-metrics=\"" << m->dbNumMetrics() << "\""
 	 << " db-header-sz=\"" << HPCMETRICDB_FMT_HeaderLen << "\""
 	 << "/>\n";
     }
@@ -604,7 +606,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   // -------------------------------------------------------
   if (!traceFileNameSet().empty()) {
     os << "  <TraceDBTable>\n";
-    os << "    <TraceDB i" << MakeAttrNum(0) 
+    os << "    <TraceDB i" << MakeAttrNum(0)
        << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
        << " db-min-time=\"" << m_traceMinTime << "\""
        << " db-max-time=\"" << m_traceMaxTime << "\""
@@ -617,7 +619,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   //
   // -------------------------------------------------------
   os << "  <LoadModuleTable>\n";
-  writeXML_help(os, "LoadModule", m_structure, 
+  writeXML_help(os, "LoadModule", m_structure,
 		&Struct::ANodeTyFilter[Struct::ANode::TyLM], 1);
   os << "  </LoadModuleTable>\n";
 
@@ -694,7 +696,7 @@ namespace CallPath {
 const char* Profile::FmtEpoch_NV_virtualMetrics = "is-virtual-metrics";
 
 
-Profile* 
+Profile*
 Profile::make(uint rFlags)
 {
   Profile* prof = new Profile("[program-name]");
@@ -708,7 +710,7 @@ Profile::make(uint rFlags)
 }
 
 
-Profile* 
+Profile*
 Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 {
   int ret;
@@ -802,7 +804,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   prof->metricMgr()->computePartners();
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   if (outfs) {
@@ -1075,7 +1077,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     // 2. Make associated 'exclusive' descriptor, if applicable
     // ----------------------------------------
     if (doMakeInclExcl) {
-      Metric::SampledDesc* mSmpl = 
+      Metric::SampledDesc* mSmpl =
 	new Metric::SampledDesc(nm, desc, mdesc.period,
 				true/*isUnitsEvents*/,
 				profFileName, profRelId, "HPCRUN");
@@ -1148,7 +1150,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
 int
 Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
-		       const metric_tbl_t& metricTbl, 
+		       const metric_tbl_t& metricTbl,
 		       std::string ctxtStr, FILE* outfs)
 {
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
@@ -1284,7 +1286,7 @@ Profile::fmt_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   string traceMinTimeStr = StrUtil::toStr(prof.m_traceMinTime);
   string traceMaxTimeStr = StrUtil::toStr(prof.m_traceMaxTime);
 
-  hpcrun_fmt_hdr_fwrite(fs, 
+  hpcrun_fmt_hdr_fwrite(fs,
 			"TODO:hdr-name","TODO:hdr-value",
 			HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr.c_str(),
 			HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr.c_str(),
@@ -1417,7 +1419,7 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 
   hpcrun_fmt_cct_node_t nodeFmt;
   nodeFmt.num_metrics = numMetrics;
-  nodeFmt.metrics = 
+  nodeFmt.metrics =
     (hpcrun_metricVal_t*) alloca(numMetrics * sizeof(hpcrun_metricVal_t));
 
   for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
@@ -1584,7 +1586,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   ushort opIdx = 0;
 
   if (! (lmId <= loadmap.size() /*1-based*/) ) {
-    DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId 
+    DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
 	      << " has invalid load module: " << lmId);
     lmId = LoadMap::LMId_NULL;
   }
@@ -1592,7 +1594,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
   DIAG_MsgIf(0, "cct_makeNode(: "<< hex << lmIP << dec << ", " << lmId << ")");
 
-  // ----------------------------------------  
+  // ----------------------------------------
   // normalized lip
   // ----------------------------------------
   lush_lip_t* lip = NULL;
@@ -1604,18 +1606,18 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     LoadMap::LMId_t lip_lmId = lush_lip_getLMId(lip);
 
     if (! (lip_lmId <= loadmap.size() /*1-based*/) ) {
-      DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId 
+      DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
 		<< " has invalid (logical) load module: " << lip_lmId);
       lip_lmId = LoadMap::LMId_NULL;
     }
     loadmap.lm(lip_lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
   }
 
-  // ----------------------------------------  
+  // ----------------------------------------
   // metrics
-  // ----------------------------------------  
+  // ----------------------------------------
 
-  bool doZeroMetrics = prof.isMetricMgrVirtual() 
+  bool doZeroMetrics = prof.isMetricMgrVirtual()
     || (rFlags & Prof::CallPath::Profile::RFlg_VirtualMetrics);
 
   bool hasMetrics = false;
@@ -1667,7 +1669,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   }
 
   // ----------------------------------------------------------
-  // Create nodes.  
+  // Create nodes.
   //
   // Note that it is possible for an interior node to have
   // a non-zero metric count.  If this is the case, the node should be
@@ -1715,7 +1717,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
 
   n_fmt.id_parent = (n.parent()) ? n.parent()->id() : HPCRUN_FMT_CCTNodeId_NULL;
 
-  const Prof::CCT::ADynNode* n_dyn_p = 
+  const Prof::CCT::ADynNode* n_dyn_p =
     dynamic_cast<const Prof::CCT::ADynNode*>(&n);
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
