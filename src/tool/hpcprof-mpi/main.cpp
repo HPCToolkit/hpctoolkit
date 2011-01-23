@@ -97,6 +97,7 @@ using std::vector;
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/Logic.hpp>
 #include <lib/support/RealPathMgr.hpp>
+#include <lib/support/StrUtil.hpp>
 
 
 //*************************** Forward Declarations ***************************
