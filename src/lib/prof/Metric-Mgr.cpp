@@ -82,7 +82,7 @@ namespace Metric {
 
 Mgr::Mgr()
 {
-} 
+}
 
 
 Mgr::~Mgr()
@@ -94,7 +94,7 @@ Mgr::~Mgr()
 
 //****************************************************************************
 
-void 
+void
 Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
 		    bool isUnitsEvents, bool doDispPercent)
 {
@@ -131,7 +131,7 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
 }
 
 
-uint 
+uint
 Mgr::makeSummaryMetrics(bool needMultiOccurance, uint srcBegId, uint srcEndId)
 {
   StringToADescVecMap nmToMetricMap;
@@ -212,7 +212,7 @@ Mgr::makeSummaryMetricsIncr(uint srcBegId, uint srcEndId)
   for (uint i = srcBegId; i < srcEndId; ++i) {
     Metric::ADesc* m = m_metrics[i];
 
-    Metric::ADesc* mNew = 
+    Metric::ADesc* mNew =
       makeSummaryMetricIncr("Sum",  m);
     makeSummaryMetricIncr("Mean",   m);
     makeSummaryMetricIncr("StdDev", m);
@@ -245,7 +245,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   bool isPercent = false;
 
   // This is a cheesy way of creating the metrics, but it is good
-  // enough for now. 
+  // enough for now.
 
   Metric::AExpr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
@@ -409,7 +409,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 
 bool
 Mgr::insert(Metric::ADesc* m)
-{ 
+{
   // 1. metric table
   uint id = m_metrics.size();
   m_metrics.push_back(m);
@@ -423,7 +423,7 @@ Mgr::insert(Metric::ADesc* m)
 
 bool
 Mgr::insertIf(Metric::ADesc* m)
-{ 
+{
   string nm = m->name();
   if (metric(nm)) {
     return false; // already exists
@@ -545,7 +545,9 @@ Mgr::findGroup(const Mgr& y) const
 
   uint y_grp_sz = 0; // open end boundary
   if (y.size() > 0) {
+    y_grp_sz = 1; // metric 0 is first entry in 'y_grp'
     const string& y_grp_pfx = y.metric(0)->namePfx();
+
     for (uint y_i = 1; y_i < y.size(); ++y_i) {
       const string& mPfx = y.metric(y_i)->namePfx();
       if (mPfx != y_grp_pfx) {
@@ -629,9 +631,9 @@ Mgr::computePartners()
     }
     
     if (metricsMap) {
-      DIAG_MsgIf(0, "Metric::Mgr::computePartners: insert: " << nm 
+      DIAG_MsgIf(0, "Metric::Mgr::computePartners: insert: " << nm
 		 << " [" << m->name() << "]");
-      std::pair<StringToADescMap::iterator, bool> ret = 
+      std::pair<StringToADescMap::iterator, bool> ret =
 	metricsMap->insert(make_pair(nm, m));
       DIAG_Assert(ret.second, "Metric::Mgr::computePartners: Found duplicate entry inserting:\n\t" << m->toString() << "\nOther entry:\n\t" << ret.first->second->toString());
     }
@@ -681,31 +683,32 @@ Mgr::zeroDBInfo() const
 //****************************************************************************
 
 string
-Mgr::toString(const char* pre) const
+Mgr::toString(const char* pfx) const
 {
   std::ostringstream os;
-  dump(os, pre);
+  dump(os, pfx);
   return os.str();
 }
 
 
 std::ostream&
-Mgr::dump(std::ostream& os, const char* pre) const
+Mgr::dump(std::ostream& os, const char* pfx) const
 {
-  os << "[ metric table:" << std::endl;
+  os << pfx << "[ metric table:" << std::endl;
   for (uint i = 0; i < m_metrics.size(); i++) {
-    os << "  " << m_metrics[i]->toString() << std::endl;
+    Metric::ADesc* m = m_metrics[i];
+    os << pfx << "  " << m->id() << ": " << m->toString() << std::endl;
   }
-  os << "]" << std::endl;
+  os << pfx << "]" << std::endl;
 
-  os << "[ unique-name-to-metric:" << std::endl;
+  os << pfx << "[ unique-name-to-metric:" << std::endl;
   for (StringToADescMap::const_iterator it = m_uniqnmToMetricMap.begin();
        it !=  m_uniqnmToMetricMap.end(); ++it) {
     const string& nm = it->first;
     Metric::ADesc* m = it->second;
-    os << "  " << nm << " -> " << m->toString() << std::endl;
+    os << pfx << "  " << nm << " -> " << m->toString() << std::endl;
   }
-  os << "]" << std::endl;
+  os << pfx << "]" << std::endl;
 
   return os;
 }
@@ -723,9 +726,9 @@ Mgr::ddump() const
 //
 //****************************************************************************
 
-bool 
+bool
 Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
-{ 
+{
   bool isChanged = false;
 
   // 1. metric name to Metric::ADescVec table
@@ -754,7 +757,7 @@ Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
   }
 
   // 2. unique name to Metric::ADesc table
-  std::pair<StringToADescMap::iterator, bool> ret = 
+  std::pair<StringToADescMap::iterator, bool> ret =
     m_uniqnmToMetricMap.insert(make_pair(nm, m));
   DIAG_Assert(ret.second, "Found duplicate entry; should be unique name!");
   

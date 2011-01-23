@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 #ifndef prof_Prof_Metric_Mgr_hpp
-#define prof_Prof_Metric_Mgr_hpp 
+#define prof_Prof_Metric_Mgr_hpp
 
 //************************ System Include Files ******************************
 
@@ -234,10 +234,10 @@ public:
   // ------------------------------------------------------------
 
   std::string
-  toString(const char* pre = "") const;
+  toString(const char* pfx = "") const;
 
   std::ostream&
-  dump(std::ostream& os = std::cerr, const char* pre = "") const;
+  dump(std::ostream& os = std::cerr, const char* pfx = "") const;
 
   void
   ddump() const;
