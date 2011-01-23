@@ -335,8 +335,6 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
   // Create values for metric components
   // ------------------------------------------------------------
 
-  DIAG_Assert(metricSrcIds.size() == 1, DIAG_UnexpectedInput); // FIXME
-  
   // Note that metrics are non-finalized!
   CCT::ANode* cctRoot = prof.cct()->root();
 
