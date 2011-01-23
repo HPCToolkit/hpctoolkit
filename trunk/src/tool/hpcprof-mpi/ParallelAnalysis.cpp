@@ -82,6 +82,8 @@ using std::string;
 #include <lib/analysis/Util.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/StrUtil.hpp>
+
 
 //*************************** Forward Declarations **************************
 
@@ -155,9 +157,22 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
 
     profile_y = unpackProfile(profileBuf, profileBufSz);
     delete[] profileBuf;
+
+    if (0) {
+      string pfx0 = "[" + StrUtil::toStr(rank_x) + "]";
+      string pfx1 = "[" + StrUtil::toStr(rank_y) + "]";
+      DIAG_DevMsgIf(1, profile_x->metricMgr()->toString(pfx0.c_str()));
+      DIAG_DevMsgIf(1, profile_y->metricMgr()->toString(pfx1.c_str()));
+    }
     
     int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
     profile_x->merge(*profile_y, mergeTy);
+
+    if (0) {
+      string pfx = ("[" + StrUtil::toStr(rank_y)
+		    + " => " + StrUtil::toStr(rank_x) + "]");
+      DIAG_DevMsgIf(1, profile_x->metricMgr()->toString(pfx.c_str()));
+    }
 
     delete profile_y;
   }
