@@ -197,23 +197,6 @@ hpcrun_sample_callpath(void *context, int metricId,
 	node = _hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
 				       skipInner, isSync);
       }
-
-      if (trace_isactive()) {
-	void* pc = hpcrun_context_pc(context);
-
-	void *func_start_pc = NULL, *func_end_pc = NULL;
-	load_module_t* lm = NULL;
-	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc, &lm);
-
-	ip_normalized_t pc_proxy = hpcrun_normalize_ip(func_start_pc, lm);
-
-	cct_addr_t frm = { .ip_norm = pc_proxy };
-	cct_node_t* func_proxy = hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
-
-	hpcrun_cct_persistent_id_trace_mutate(func_proxy); // modify the persistent id
-
-	trace_append(hpcrun_cct_persistent_id(func_proxy));
-      }
       if (ENABLED(DUMP_BACKTRACES)) {
 	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
       }
@@ -224,6 +207,26 @@ hpcrun_sample_callpath(void *context, int metricId,
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
 				 metricId, metricIncr);
     hpcrun_cleanup_partial_unwind();
+  }
+
+
+  if (trace_isactive()) {
+    void* pc = hpcrun_context_pc(context);
+
+    void *func_start_pc = NULL, *func_end_pc = NULL;
+    load_module_t* lm = NULL;
+    fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc, &lm);
+
+    ip_normalized_t pc_proxy = hpcrun_normalize_ip(func_start_pc, lm);
+
+    cct_addr_t frm = { .ip_norm = pc_proxy };
+    cct_node_t* func_proxy = 
+      hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
+
+    // modify the persistent id
+    hpcrun_cct_persistent_id_trace_mutate(func_proxy); 
+
+    trace_append(hpcrun_cct_persistent_id(func_proxy));
   }
 
   hpcrun_clear_handling_sample(td);
