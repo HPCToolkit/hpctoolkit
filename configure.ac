@@ -98,7 +98,7 @@ AC_INIT([hpctoolkit], [4.9.9],
         [hpc@cs.rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
-AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
+AC_CONFIG_SRCDIR([src/include/hpctoolkit-config.h.in])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
 
@@ -164,11 +164,14 @@ if test "$svn_revision" = 0 ; then
   AC_MSG_WARN([unable to find svn revision])
 fi
 
-# N.B.: Autoconf does not currently provide any way to control or
-# redefine PACKAGE_* variables.  So, just create our own version.
-AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION], "${PACKAGE_VERSION}", [HPCToolkit version])
-dnl AC_SUBST([HPCTOOLKIT_VERSION])
 
+AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION],
+	  ["${PACKAGE_VERSION}"],
+	  [HPCToolkit version])
+
+AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION_STRING],
+	  ["A member of HPCToolkit, version ${PACKAGE_VERSION}"],
+	  [HPCToolkit version string])
 
 #-------------------------------------------------
 # is_cross_compile: non-empty string if cross-compiling

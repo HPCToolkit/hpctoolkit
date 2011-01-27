@@ -94,8 +94,7 @@ using std::string;
 
 const string Args::HPCTOOLKIT = "HPCTOOLKIT"; 
 
-static const char* version_info =
-#include <include/HPCToolkitVersionInfo.h>
+static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary1 =
 "[output-options] [correlation-options] <profile-file>...";

@@ -93,8 +93,7 @@ using std::strtol; // For compatibility with non-std C headers
 
 //***************************************************************************
 
-static const char* version_info =
-#include <include/HPCToolkitVersionInfo.h>
+static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =
 "[options] <loadmodule>\n";
