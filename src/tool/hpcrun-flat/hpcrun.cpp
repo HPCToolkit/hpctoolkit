@@ -83,12 +83,13 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/hpctoolkit-config.h>
+#include <include/uint.h>
+
 #include "Args.hpp"
 #include "hpcpapi.h" /* <papi.h>, etc. */
 #include "dlpapi.h"
 #include "hpcrun.h"
-
-#include <include/uint.h>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/findinstall.h>

@@ -42,6 +42,7 @@ host_triplet = @host@
 subdir = .
 DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
+	$(top_srcdir)/src/include/hpctoolkit-config.h.in \
 	config/mkinstalldirs config/mkinstalldirs \
 	$(top_srcdir)/src/tool/hpcrun/scripts/hpcrun.in \
 	$(top_srcdir)/src/tool/hpcrun/scripts/hpclink.in \
@@ -56,6 +57,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
+CONFIG_HEADER = $(top_builddir)/src/include/hpctoolkit-config.h
 CONFIG_CLEAN_FILES = src/tool/hpcrun/scripts/hpcrun \
 	src/tool/hpcrun/scripts/hpclink \
 	src/tool/hpcrun/scripts/hpcsummary
@@ -383,6 +385,23 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	$(am__cd) $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 $(am__aclocal_m4_deps):
+
+src/include/hpctoolkit-config.h: src/include/stamp-h1
+	@if test ! -f $@; then \
+	  rm -f src/include/stamp-h1; \
+	  $(MAKE) $(AM_MAKEFLAGS) src/include/stamp-h1; \
+	else :; fi
+
+src/include/stamp-h1: $(top_srcdir)/src/include/hpctoolkit-config.h.in $(top_builddir)/config.status
+	@rm -f src/include/stamp-h1
+	cd $(top_builddir) && $(SHELL) ./config.status src/include/hpctoolkit-config.h
+$(top_srcdir)/src/include/hpctoolkit-config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps) 
+	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
+	rm -f src/include/stamp-h1
+	touch $@
+
+distclean-hdr:
+	-rm -f src/include/hpctoolkit-config.h src/include/stamp-h1
 src/tool/hpcrun/scripts/hpcrun: $(top_builddir)/config.status $(top_srcdir)/src/tool/hpcrun/scripts/hpcrun.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 src/tool/hpcrun/scripts/hpclink: $(top_builddir)/config.status $(top_srcdir)/src/tool/hpcrun/scripts/hpclink.in
@@ -627,8 +646,8 @@ clean-am: clean-generic clean-libtool mostlyclean-am
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -f Makefile
-distclean-am: clean-am distclean-generic distclean-libtool \
-	distclean-tags
+distclean-am: clean-am distclean-generic distclean-hdr \
+	distclean-libtool distclean-tags
 
 dvi: dvi-recursive
 
@@ -696,12 +715,12 @@ uninstall-am: uninstall-dist_docDATA uninstall-pkglibexecSCRIPTS
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
 	all all-am am--refresh check check-am clean clean-generic \
 	clean-libtool ctags ctags-recursive distclean \
-	distclean-generic distclean-libtool distclean-tags dvi dvi-am \
-	html html-am info info-am install install-am install-data \
-	install-data-am install-data-local install-dist_docDATA \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am \
+	distclean-generic distclean-hdr distclean-libtool \
+	distclean-tags dvi dvi-am html html-am info info-am install \
+	install-am install-data install-data-am install-data-local \
+	install-dist_docDATA install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
 	install-pkglibexecSCRIPTS install-ps install-ps-am \
 	install-strip installcheck installcheck-am installdirs \
 	installdirs-am maintainer-clean maintainer-clean-generic \

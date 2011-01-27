@@ -88,10 +88,11 @@
 
 /**************************** User Include Files ****************************/
 
-#include "monitor.h"
-
+#include <include/hpctoolkit-config.h>
 #include <include/uint.h>
 #include <include/min-max.h>
+
+#include "monitor.h"
 
 #ifdef HAVE_MONITOR  
 // FIXME: use libmonitor completely and include it

@@ -64,8 +64,8 @@
 //
 *****************************************************************************/
 
-#ifndef hpcrun_monitor_h
-#define hpcrun_monitor_h
+#ifndef hpcrun_flat_monitor_h
+#define hpcrun_flat_monitor_h
 
 /************************** System Include Files ****************************/
 
@@ -79,6 +79,7 @@
 
 /**************************** User Include Files ****************************/
 
+#include <include/hpctoolkit-config.h>
 #include <include/uint.h>
 
 #include "hpcrun.h"

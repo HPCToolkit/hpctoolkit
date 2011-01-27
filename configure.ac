@@ -166,23 +166,8 @@ fi
 
 # N.B.: Autoconf does not currently provide any way to control or
 # redefine PACKAGE_* variables.  So, just create our own version.
-AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION], "${PACKAGE_VERSION}", [])
+AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION], "${PACKAGE_VERSION}", [HPCToolkit version])
 dnl AC_SUBST([HPCTOOLKIT_VERSION])
-
-
-#-------------------------------------------------
-# Fix PACKAGE_STRING (which is unconditionally defined by AC_INIT)
-#-------------------------------------------------
-
-# With Intel's mpicxx wrapper, the space in
-#   -DPACKAGE_STRING=\"hpctoolkit\ 4.9.9\"
-# causes a command-line parse error.
-
-# *** N.B.: Autoconf does not currently provide any way to control or
-# redefine PACKAGE_* variables.  So, for now rely on autogen. ***
-
-dnl PACKAGE_STRING="${PACKAGE}-${PACKAGE_VERSION}"
-dnl AC_DEFINE_UNQUOTED([PACKAGE_STRING], "${PACKAGE_STRING}", [])
 
 
 #-------------------------------------------------
@@ -305,7 +290,7 @@ case "${host}" in
     ;;
 esac
 if test "${HAVE_OS_MULTILIB}" = "yes" ; then
-  AC_DEFINE([HAVE_OS_MULTILIB], [1], [])
+  AC_DEFINE([HAVE_OS_MULTILIB], [1], [HOST OS: 32 and 64 bit OS libraries])
 fi
 AC_MSG_RESULT([${HAVE_OS_MULTILIB} (searching: ${LIB_SEARCH_PATH})])
 
@@ -354,8 +339,8 @@ case "${host}" in
     HOST_CPU_X86=yes
     HOST_CPU_X86_FAMILY=yes
     UNWINDER=x86-family
-    AC_DEFINE([HOST_CPU_x86], [1], [])
-    AC_DEFINE([HOST_OS_LINUX], [1], [])
+    AC_DEFINE([HOST_CPU_x86], [1], [HOST CPU: x86 (32-bit)])
+    AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
     ;;
 
   x86_64*-*-linux*)
@@ -363,20 +348,20 @@ case "${host}" in
     HOST_OS="Linux"
     if test "${host_sizeof_voidp}" = "4"; then
       HOST_CPU_X86=yes
-      AC_DEFINE([HOST_CPU_x86], [1], [])
+      AC_DEFINE([HOST_CPU_x86], [1], [HOST CPU: x86 (32-bit)])
     else
       HOST_CPU_X86_64=yes
-      AC_DEFINE([HOST_CPU_x86_64], [1], [])
+      AC_DEFINE([HOST_CPU_x86_64], [1], [HOST CPU: x86-64])
     fi
     HOST_CPU_X86_FAMILY=yes
     UNWINDER=x86-family
-    AC_DEFINE([HOST_OS_LINUX], [1], [])
+    AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
     ;;
 
   ia64*-*-linux*)
     # __ia64 && __linux
     HOST_OS="Linux"
-    AC_DEFINE([HOST_OS_LINUX], [1], [])
+    AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
     ;;
 
   mips64*-*-linux*)
@@ -384,8 +369,8 @@ case "${host}" in
     HOST_OS="Linux"
     HOST_CPU_MIPS=yes
     UNWINDER=mips
-    AC_DEFINE([HOST_PLATFORM_MIPS64LE_LINUX], [1], [])
-    AC_DEFINE([HOST_OS_LINUX], [1], [])
+    AC_DEFINE([HOST_PLATFORM_MIPS64LE_LINUX], [1], [HOST platform: MIPS64LE_LINUX])
+    AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
     ;;
 
   powerpc64*-*-linux* | powerpc-*-linux*)
@@ -393,7 +378,7 @@ case "${host}" in
     HOST_OS="Linux"
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
-    AC_DEFINE([HOST_OS_LINUX], [1], [])
+    AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
     ;;
 
   # MacOS
@@ -402,29 +387,29 @@ case "${host}" in
     HOST_OS="MacOS"
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
-    AC_DEFINE([HOST_OS_MACOS], [1], [])
+    AC_DEFINE([HOST_OS_MACOS], [1], [HOST OS: MacOS])
     ;;
 
   i386*-*-darwin* | i686*-*-darwin*)
     HOST_OS="MacOS"
     HOST_CPU_X86=yes
     UNWINDER=x86-family
-    AC_DEFINE([HOST_CPU_x86], [1], [])
-    AC_DEFINE([HOST_OS_MACOS], [1], [])
+    AC_DEFINE([HOST_CPU_x86], [1], [HOST CPU: x86 (32-bit)])
+    AC_DEFINE([HOST_OS_MACOS], [1], [HOST OS: MacOS])
     ;;
 
   x86_64*-*-darwin*)
     HOST_OS="MacOS"
     if test "${host_sizeof_voidp}" = "4"; then
       HOST_CPU_X86=yes
-      AC_DEFINE([HOST_CPU_x86], [1], [])
+      AC_DEFINE([HOST_CPU_x86], [1], [HOST CPU: x86 (32-bit)])
     else
       HOST_CPU_X86_64=yes
-      AC_DEFINE([HOST_CPU_x86_64], [1], [])
+      AC_DEFINE([HOST_CPU_x86_64], [1], [HOST CPU: x86-64])
     fi
     HOST_CPU_X86_FAMILY=yes
     UNWINDER=x86-family
-    AC_DEFINE([HOST_OS_MACOS], [1], [])
+    AC_DEFINE([HOST_OS_MACOS], [1], [HOST OS: MacOS])
     ;;
 
   # IRIX
@@ -435,21 +420,21 @@ case "${host}" in
     HOST_OS="IRIX"
     HOST_CPU_MIPS=yes
     UNWINDER=mips
-    AC_DEFINE([HOST_OS_IRIX], [1], [])
+    AC_DEFINE([HOST_OS_IRIX], [1], [HOST OS: IRIX])
     ;;
 
   # Solaris
   sparc*-*-solaris*)
     # __sparc && __sun && __unix
     HOST_OS="Solaris"
-    AC_DEFINE([HOST_OS_SOLARIS], [1], [])
+    AC_DEFINE([HOST_OS_SOLARIS], [1], [HOST OS: Solaris])
     ;;
 
   # Tru64/OSF
   alpha*-*-osf*)
     # __alpha / __digital__ && __unix__
     HOST_OS="Tru64"
-    AC_DEFINE([HOST_OS_TRU64], [1], [])
+    AC_DEFINE([HOST_OS_TRU64], [1], [HOST OS: Tru64])
     ;;
 
   *)
@@ -1573,13 +1558,13 @@ AC_SUBST([hpclink_extra_wrap_names])
 # enable-bluegene: BG/* support
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether to enable IBM BlueGene/* support])
+AC_MSG_CHECKING([whether to enable IBM BlueGene/P support])
 
 OPT_ENABLE_IBM_BLUEGENE="no"
 
 AC_ARG_ENABLE([bluegene],
   AS_HELP_STRING([--enable-bluegene],
-                 [Enable BlueGene/* support]),
+                 [Enable BlueGene/P support]),
   [case "${enableval}" in
      yes) OPT_ENABLE_IBM_BLUEGENE="yes" ;;
      no)  OPT_ENABLE_IBM_BLUEGENE="no" ;;
@@ -1592,7 +1577,7 @@ AC_ARG_ENABLE([bluegene],
 AC_MSG_RESULT([${OPT_ENABLE_IBM_BLUEGENE}])
 
 if test "${OPT_ENABLE_IBM_BLUEGENE}" = "yes" ; then
-  AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [1], [IBM BlueGene/* support])
+  AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [1], [IBM BlueGene/P support])
 fi
 
 
@@ -1771,6 +1756,8 @@ AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
 #----------------------------------------------------------------------------
 # Makefiles to create
 #----------------------------------------------------------------------------
+
+AC_CONFIG_HEADERS([src/include/hpctoolkit-config.h])
 
 AC_CONFIG_FILES([ \
   Makefile \

@@ -74,6 +74,7 @@ using std::dec;
 
 //*************************** User Include Files ****************************
 
+#include <include/hpctoolkit-config.h>
 #include <include/gnu_bfd.h>
 
 #include "Dbg-LM.hpp"
