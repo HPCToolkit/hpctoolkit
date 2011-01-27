@@ -1,3 +1,4 @@
+#include <include/hpctoolkit-config.h>
 #if defined(HOST_CPU_x86_64)
 #  define x86_Reg_BP rbp
 #  define x86_Reg_DX rdx

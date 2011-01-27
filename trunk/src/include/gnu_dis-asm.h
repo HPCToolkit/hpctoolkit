@@ -44,23 +44,27 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/****************************************************************************
- *
- * File:
- *    gnu_dis-asm.h
- *
- * Purpose:
- *    [The purpose of this file]
- *
- * Description:
- *    [The set of functions, macros, etc. defined in the file]
- *
- ****************************************************************************/
+//***************************************************************************
+//
+// File:
+//   $HeadURL$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
-#ifndef gnu_dis_asm_H 
-#define gnu_dis_asm_H
+#ifndef include_gnu_dis_asm_h
+#define include_gnu_dis_asm_h
 
-/*****************************************************************************/
+//*************************** User Include Files ****************************
+
+#include <include/hpctoolkit-config.h>
+
+//***************************************************************************
 
 /* binutils/bfd/bfd.h only correctly tests for GNU compilers */
 #define TRUE_FALSE_ALREADY_DEFINED
@@ -74,6 +78,6 @@
 /* Undo possibly mischevious macros in binutils/include/ansidecl.h */
 #undef inline
 
-/*****************************************************************************/
+//***************************************************************************
 
-#endif 
+#endif /* include_gnu_dis_asm_h */

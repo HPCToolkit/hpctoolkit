@@ -63,6 +63,10 @@
 #ifndef include_uint_h
 #define include_uint_h
 
+//*************************** User Include Files ****************************
+
+#include <include/hpctoolkit-config.h>
+
 //****************************************************************************
 
 // A sanity check that should probably just be in configure (FIXME)
@@ -111,7 +115,6 @@
 
 #endif
 
-
-/****************************************************************************/
+//***************************************************************************
 
 #endif /* include_uint_h */

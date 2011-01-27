@@ -75,6 +75,7 @@ using std::endl;
 
 //*************************** User Include Files ****************************
 
+#include <include/hpctoolkit-config.h>
 #include <include/uint.h>
 
 #include "LM.hpp"
