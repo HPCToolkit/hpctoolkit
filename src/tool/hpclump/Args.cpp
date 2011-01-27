@@ -77,6 +77,8 @@ using std::strtol; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
+#include <include/hpctoolkit-config.h>
+
 #include "Args.hpp"
 
 #include <lib/support/diagnostics.h>

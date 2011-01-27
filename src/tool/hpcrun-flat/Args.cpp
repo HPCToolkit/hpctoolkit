@@ -68,6 +68,8 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include <include/hpctoolkit-config.h>
+
 #include "Args.hpp"
 
 #include <lib/support/diagnostics.h>
