@@ -85,9 +85,9 @@
 //*************************** Forward Declarations **************************
 
 static cct_node_t*
-_hpcrun_sample_callpath(epoch_t *epoch, void *context,
-			int metricId, uint64_t metricIncr,
-			int skipInner, int isSync);
+help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
+			    int metricId, uint64_t metricIncr,
+			    int skipInner, int isSync);
 
 static cct_node_t*
 hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
@@ -188,14 +188,14 @@ hpcrun_sample_callpath(void *context, int metricId,
   if (ljmp == 0) {
 
     if (epoch != NULL) {
-      if (ENABLED(DEBUG_PARTIAL_UNW) && (3 <= hpcrun_stats_num_samples_attempted())){
+      if (ENABLED(DEBUG_PARTIAL_UNW)){
 	EMSG("PARTIAL UNW debug sampler invoked @ sample %d", hpcrun_stats_num_samples_attempted());
 	node = hpcrun_dbg_sample_callpath(epoch, context, metricId, metricIncr,
-					    skipInner, isSync);
+					  skipInner, isSync);
       }
       else {
-	node = _hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
-				       skipInner, isSync);
+	node = help_hpcrun_sample_callpath(epoch, context, metricId, metricIncr,
+					   skipInner, isSync);
       }
       if (ENABLED(DUMP_BACKTRACES)) {
 	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
@@ -260,17 +260,15 @@ hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context,
 					   metricId, metricIncr,
 					   skipInner);
 
-  // FIXME: n == -1 if sample is filtered
-
   return n;
 }
 
 
 static cct_node_t*
-_hpcrun_sample_callpath(epoch_t *epoch, void *context,
-			int metricId,
-			uint64_t metricIncr, 
-			int skipInner, int isSync)
+help_hpcrun_sample_callpath(epoch_t *epoch, void *context,
+			    int metricId,
+			    uint64_t metricIncr, 
+			    int skipInner, int isSync)
 {
   void* pc = hpcrun_context_pc(context);
 
@@ -291,10 +289,10 @@ _hpcrun_sample_callpath(epoch_t *epoch, void *context,
 
 #if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
 static cct_node_t*
-_hpcrun_sample_callpath_w_bt(epoch_t *epoch, void *context,
-			     int metricId, uint64_t metricIncr,
-			     bt_mut_fn bt_fn, bt_fn_arg arg,
-			     int isSync);
+help_hpcrun_sample_callpath_w_bt(epoch_t *epoch, void *context,
+				 int metricId, uint64_t metricIncr,
+				 bt_mut_fn bt_fn, bt_fn_arg arg,
+				 int isSync);
 
 cct_node_t*
 hpcrun_sample_callpath_w_bt(void *context,
@@ -340,8 +338,8 @@ hpcrun_sample_callpath_w_bt(void *context,
   if (ljmp == 0) {
 
     if (epoch != NULL) {
-      node = _hpcrun_sample_callpath_w_bt(epoch, context, metricId, metricIncr,
-					  bt_fn, arg, isSync);
+      node = help_hpcrun_sample_callpath_w_bt(epoch, context, metricId, metricIncr,
+					      bt_fn, arg, isSync);
 
       if (trace_isactive()) {
 	void* pc = hpcrun_context_pc(context);
@@ -381,10 +379,10 @@ hpcrun_sample_callpath_w_bt(void *context,
 
 
 static cct_node_t*
-_hpcrun_sample_callpath_w_bt(epoch_t* epoch, void *context,
-			     int metricId, uint64_t metricIncr,
-			     bt_mut_fn bt_fn, bt_fn_arg arg,
-			     int isSync)
+help_hpcrun_sample_callpath_w_bt(epoch_t* epoch, void *context,
+				 int metricId, uint64_t metricIncr,
+				 bt_mut_fn bt_fn, bt_fn_arg arg,
+				 int isSync)
 {
   void* pc = hpcrun_context_pc(context);
 

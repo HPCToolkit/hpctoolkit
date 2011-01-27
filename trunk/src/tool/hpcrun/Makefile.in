@@ -250,6 +250,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
+	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	utilities/last_func.c
 am__objects_7 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-disabled.lo libhpcrun_la-cct_insert_backtrace.lo \
@@ -305,7 +306,8 @@ am__objects_23 = $(am__objects_21) libhpcrun_la-x86-all.lo \
 	libhpcrun_la-x86-unwind.lo libhpcrun_la-x86-unwind-support.lo \
 	libhpcrun_la-x86-linux-dlresolver.lo \
 	libhpcrun_la-x86-intel11-f90main.lo \
-	libhpcrun_la-x86-32bit-main.lo
+	libhpcrun_la-x86-32bit-main.lo \
+	libhpcrun_la-x86-32bit-icc-variant.lo
 @UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_24 = $(am__objects_23)
 @UNW_PPC64_TRUE@am__objects_24 = $(am__objects_22)
 am_libhpcrun_la_OBJECTS = $(am__objects_7) $(am__objects_8) \
@@ -370,6 +372,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
+	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	utilities/last_func.c
 am__objects_25 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-main.$(OBJEXT) libhpcrun_o-disabled.$(OBJEXT) \
@@ -435,7 +438,8 @@ am__objects_39 = $(am__objects_37) libhpcrun_o-x86-all.$(OBJEXT) \
 	libhpcrun_o-x86-unwind-support.$(OBJEXT) \
 	libhpcrun_o-x86-linux-dlresolver.$(OBJEXT) \
 	libhpcrun_o-x86-intel11-f90main.$(OBJEXT) \
-	libhpcrun_o-x86-32bit-main.$(OBJEXT)
+	libhpcrun_o-x86-32bit-main.$(OBJEXT) \
+	libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT)
 @UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_40 = $(am__objects_39)
 @UNW_PPC64_TRUE@am__objects_40 = $(am__objects_38)
 am_libhpcrun_o_OBJECTS = $(am__objects_25) $(am__objects_26) \
@@ -736,7 +740,8 @@ UNW_X86_FILES = \
 	unwind/x86-family/x86-unwind-support.c		\
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
-	unwind/x86-family/manual-intervals/x86-32bit-main.c
+	unwind/x86-family/manual-intervals/x86-32bit-main.c \
+	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
 
 UNW_X86_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/x86-family	\
@@ -1297,6 +1302,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-unw-throw.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-upc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-write_data.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-32bit-icc-variant.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-32bit-main.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-x86-cold-path.Plo@am__quote@
@@ -1372,6 +1378,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-unw-throw.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-upc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-write_data.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-32bit-icc-variant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-32bit-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-x86-cold-path.Po@am__quote@
@@ -2036,6 +2043,13 @@ libhpcrun_la-x86-32bit-main.lo: unwind/x86-family/manual-intervals/x86-32bit-mai
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-32bit-main.c' object='libhpcrun_la-x86-32bit-main.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-32bit-main.lo `test -f 'unwind/x86-family/manual-intervals/x86-32bit-main.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-32bit-main.c
+
+libhpcrun_la-x86-32bit-icc-variant.lo: unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-x86-32bit-icc-variant.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-x86-32bit-icc-variant.Tpo -c -o libhpcrun_la-x86-32bit-icc-variant.lo `test -f 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-x86-32bit-icc-variant.Tpo $(DEPDIR)/libhpcrun_la-x86-32bit-icc-variant.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c' object='libhpcrun_la-x86-32bit-icc-variant.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-x86-32bit-icc-variant.lo `test -f 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
 
 libhpcrun_la-last_func.lo: utilities/last_func.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-last_func.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-last_func.Tpo -c -o libhpcrun_la-last_func.lo `test -f 'utilities/last_func.c' || echo '$(srcdir)/'`utilities/last_func.c
@@ -3044,6 +3058,20 @@ libhpcrun_o-x86-32bit-main.obj: unwind/x86-family/manual-intervals/x86-32bit-mai
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-32bit-main.c' object='libhpcrun_o-x86-32bit-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-32bit-main.obj `if test -f 'unwind/x86-family/manual-intervals/x86-32bit-main.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-32bit-main.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-32bit-main.c'; fi`
+
+libhpcrun_o-x86-32bit-icc-variant.o: unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-32bit-icc-variant.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-32bit-icc-variant.Tpo -c -o libhpcrun_o-x86-32bit-icc-variant.o `test -f 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-32bit-icc-variant.Tpo $(DEPDIR)/libhpcrun_o-x86-32bit-icc-variant.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c' object='libhpcrun_o-x86-32bit-icc-variant.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-32bit-icc-variant.o `test -f 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
+
+libhpcrun_o-x86-32bit-icc-variant.obj: unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-x86-32bit-icc-variant.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-x86-32bit-icc-variant.Tpo -c -o libhpcrun_o-x86-32bit-icc-variant.obj `if test -f 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-x86-32bit-icc-variant.Tpo $(DEPDIR)/libhpcrun_o-x86-32bit-icc-variant.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c' object='libhpcrun_o-x86-32bit-icc-variant.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-x86-32bit-icc-variant.obj `if test -f 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c'; fi`
 
 libhpcrun_o-last_func.o: utilities/last_func.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-last_func.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-last_func.Tpo -c -o libhpcrun_o-last_func.o `test -f 'utilities/last_func.c' || echo '$(srcdir)/'`utilities/last_func.c
