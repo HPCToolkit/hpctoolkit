@@ -89,8 +89,7 @@ using std::string;
 
 //***************************************************************************
 
-static const char* version_info =
-#include <include/HPCToolkitVersionInfo.h>
+static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =
 "[options] <measurement-group>...\n";

@@ -78,6 +78,9 @@
 /* HPCToolkit version */
 #undef HPCTOOLKIT_VERSION
 
+/* HPCToolkit version string */
+#undef HPCTOOLKIT_VERSION_STRING
+
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
 #undef LT_OBJDIR

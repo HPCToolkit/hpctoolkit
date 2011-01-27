@@ -567,7 +567,7 @@ PACKAGE_STRING='hpctoolkit 4.9.9'
 PACKAGE_BUGREPORT='hpc@cs.rice.edu'
 PACKAGE_URL='http://hpctoolkit.org/'
 
-ac_unique_file="src/include/HPCToolkitVersionInfo.h"
+ac_unique_file="src/include/hpctoolkit-config.h.in"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -3431,13 +3431,17 @@ if test "$svn_revision" = 0 ; then
 $as_echo "$as_me: WARNING: unable to find svn revision" >&2;}
 fi
 
-# N.B.: Autoconf does not currently provide any way to control or
-# redefine PACKAGE_* variables.  So, just create our own version.
+
 
 cat >>confdefs.h <<_ACEOF
 #define HPCTOOLKIT_VERSION "${PACKAGE_VERSION}"
 _ACEOF
 
+
+
+cat >>confdefs.h <<_ACEOF
+#define HPCTOOLKIT_VERSION_STRING "A member of HPCToolkit, version ${PACKAGE_VERSION}"
+_ACEOF
 
 
 #-------------------------------------------------
