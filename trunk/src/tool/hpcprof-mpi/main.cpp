@@ -695,7 +695,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
       DIAG_Assert(mm, DIAG_UnexpectedInput);
     
       // N.B.: groupIdToGroupSizeMap is only initialized for rootRank  
-      uint numInputs = groupIdToGroupSizeMap[groupId] / 2; // FIXME
+      uint numInputs = groupIdToGroupSizeMap[groupId];
       if (mm->expr()) {
         mm->expr()->numSrcFxd(numInputs);
       }
