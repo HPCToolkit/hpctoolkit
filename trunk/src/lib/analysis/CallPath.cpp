@@ -177,7 +177,7 @@ read(const char* prof_fnm, uint groupId, uint rFlags)
 void
 readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args)
 {
-  DocHandlerArgs docargs; // NOTE: override for replacePath()
+  DocHandlerArgs docargs(&PathReplacementMgr::singleton());
 
   Prof::Struct::readStructure(*structure, args.structureFiles,
 			      PGMDocHandler::Doc_STRUCT, docargs);
