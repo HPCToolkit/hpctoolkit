@@ -99,7 +99,7 @@ Driver::Driver(const Analysis::Args& args,
 	       Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure)
   : Unique(), m_args(args), m_mMgr(mMgr), m_structure(structure)
 {
-} 
+}
 
 
 Driver::~Driver()
@@ -150,7 +150,7 @@ Driver::run()
   if (db_use && m_args.db_copySrcFiles) {
     DIAG_Msg(1, "Copying source files reached by PATH/REPLACE options to " << db_dir);
     // NOTE: makes file names in m_structure relative to database
-    Analysis::Util::copySourceFiles(m_structure.root(), m_args.searchPathTpls, 
+    Analysis::Util::copySourceFiles(m_structure.root(), m_args.searchPathTpls,
 				    db_dir);
   }
 
@@ -174,7 +174,7 @@ Driver::run()
     std::ostream* os = IOUtil::OpenOStream(osnm);
     write_csv(*os);
     IOUtil::CloseStream(os);
-  } 
+  }
 
   if (!m_args.out_txt.empty()) {
     const string& fnm = m_args.out_txt;
@@ -198,21 +198,21 @@ Driver::run()
   }
 
   return 0;
-} 
+}
 
 
-string 
+string
 Driver::replacePath(const char* oldpath)
 {
-  // TODO: move to RealPathMgr
+  // FIXME: Use PathReplacementMgr!
 
   DIAG_Assert(m_args.replaceInPath.size() == m_args.replaceOutPath.size(), "");
-  for (uint i = 0 ; i<m_args.replaceInPath.size() ; i++ ) {
+  for (uint i = 0 ; i < m_args.replaceInPath.size() ; i++ ) {
     uint length = m_args.replaceInPath[i].length();
     // it makes sense to test for matching only if 'oldpath' is strictly longer
     // than this replacement inPath.
-    if (strlen(oldpath) > length &&  
-	strncmp(oldpath, m_args.replaceInPath[i].c_str(), length) == 0 ) { 
+    if (strlen(oldpath) > length &&
+	strncmp(oldpath, m_args.replaceInPath[i].c_str(), length) == 0 ) {
       // it's a match
       string s = m_args.replaceOutPath[i] + &oldpath[length];
       DIAG_Msg(3, "replacePath: Found a match! New path: " << s);
@@ -255,7 +255,7 @@ Driver::write_experiment(std::ostream &os) const
        << " v=\"" << m->toValueTyStringXML() << "\""
        << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\""
        << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\">\n";
-    os << "      <Info>" 
+    os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>" // or "samples" m->isUnitsEvents()
        << "<NV n=\"percent\" v=\"" << ((m->doDispPercent()) ? "1" : "0") << "\"/>"
        << "</Info>\n";
@@ -294,7 +294,7 @@ Driver::write_csv(std::ostream &os) const
 {
   os << "File name,Routine name,Start line,End line,Loop level";
   for (uint i = 0; i < m_mMgr.size(); ++i) {
-    const Prof::Metric::ADesc* m = m_mMgr.metric(i); 
+    const Prof::Metric::ADesc* m = m_mMgr.metric(i);
     os << "," << m->name();
     if (m->doDispPercent()) {
       os << "," << m->name() << " (%)";
@@ -327,39 +327,39 @@ Driver::write_txt(std::ostream &os) const
   colFmt.genColHeaderSummary();
   os << std::endl;
 
-  if (m_args.txt_summary & Analysis::Args::TxtSum_fPgm) { 
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fPgm) {
     string nm = "Program summary (row 1: sample count for raw metrics): "
       + rootStrct->name();
     write_txt_secSummary(os, colFmt, nm, NULL);
   }
 
-  if (m_args.txt_summary & Analysis::Args::TxtSum_fLM) { 
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fLM) {
     string nm = "Load module summary:";
-    write_txt_secSummary(os, colFmt, nm, 
+    write_txt_secSummary(os, colFmt, nm,
 			 &ANodeTyFilter[Struct::ANode::TyLM]);
   }
 
-  if (m_args.txt_summary & Analysis::Args::TxtSum_fFile) { 
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fFile) {
     string nm = "File summary:";
-    write_txt_secSummary(os, colFmt, nm, 
+    write_txt_secSummary(os, colFmt, nm,
 			 &ANodeTyFilter[Struct::ANode::TyFile]);
   }
 
-  if (m_args.txt_summary & Analysis::Args::TxtSum_fProc) { 
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fProc) {
     string nm = "Procedure summary:";
-    write_txt_secSummary(os, colFmt, nm, 
+    write_txt_secSummary(os, colFmt, nm,
 			 &ANodeTyFilter[Struct::ANode::TyProc]);
   }
 
-  if (m_args.txt_summary & Analysis::Args::TxtSum_fLoop) { 
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fLoop) {
     string nm = "Loop summary (dependent on structure information):";
-    write_txt_secSummary(os, colFmt, nm, 
+    write_txt_secSummary(os, colFmt, nm,
 			 &ANodeTyFilter[Struct::ANode::TyLoop]);
   }
 
-  if (m_args.txt_summary & Analysis::Args::TxtSum_fStmt) { 
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fStmt) {
     string nm = "Statement summary:";
-    write_txt_secSummary(os, colFmt, nm, 
+    write_txt_secSummary(os, colFmt, nm,
 			 &ANodeTyFilter[Struct::ANode::TyStmt]);
   }
   
@@ -367,12 +367,12 @@ Driver::write_txt(std::ostream &os) const
     const std::vector<std::string>& fnmGlobs = m_args.txt_srcFileGlobs;
     bool hasFnmGlobs = !fnmGlobs.empty();
 
-    Struct::ANodeIterator 
+    Struct::ANodeIterator
       it(m_structure.root(), &ANodeTyFilter[Struct::ANode::TyFile]);
     for (Struct::ANode* strct = NULL; (strct = it.current()); it++) {
       Struct::File* fileStrct = dynamic_cast<Struct::File*>(strct);
       const string& fnm = fileStrct->name();
-      if (fnm != Struct::Tree::UnknownFileNm 
+      if (fnm != Struct::Tree::UnknownFileNm
 	  && (!hasFnmGlobs || FileUtil::fnmatch(fnmGlobs, fnm.c_str()))) {
 	write_txt_annotateFile(os, colFmt, fileStrct);
       }
@@ -382,7 +382,7 @@ Driver::write_txt(std::ostream &os) const
 
 
 void
-Driver::write_txt_secSummary(std::ostream& os, 
+Driver::write_txt_secSummary(std::ostream& os,
 			     Analysis::TextUtil::ColumnFormatter& colFmt,
 			     const std::string& title,
 			     const Prof::Struct::ANodeFilter* filter) const
@@ -425,14 +425,14 @@ Driver::write_txt_secSummary(std::ostream& os,
 	colFmt.genCol(i, strct->metric(i), rootStrct->metric(i));
       }
       os << " " << strct->nameQual() << std::endl;
-    } 
+    }
   }
   os << std::endl;
 }
 
 
 void
-Driver::write_txt_annotateFile(std::ostream& os, 
+Driver::write_txt_annotateFile(std::ostream& os,
 			       Analysis::TextUtil::ColumnFormatter& colFmt,
 			       const Prof::Struct::File* fileStrct) const
 {
@@ -460,12 +460,12 @@ Driver::write_txt_annotateFile(std::ostream& os,
   string linetxt;
   SrcFile::ln ln_file = 1; // line number *after* next getline
 
-  Prof::Struct::ANodeSortedIterator 
-    it(fileStrct, 
-       Prof::Struct::ANodeSortedIterator::cmpByLine, 
+  Prof::Struct::ANodeSortedIterator
+    it(fileStrct,
+       Prof::Struct::ANodeSortedIterator::cmpByLine,
        &Prof::Struct::ANodeTyFilter[Prof::Struct::ANode::TyStmt]);
   for (Prof::Struct::ANode* node = NULL; (node = it.current()); it++) {
-    Prof::Struct::ACodeNode* strct = 
+    Prof::Struct::ACodeNode* strct =
       dynamic_cast<Prof::Struct::ACodeNode*>(node); // always true
     SrcFile::ln ln_metric = strct->begLine();
 
@@ -512,7 +512,7 @@ Driver::write_txt_annotateFile(std::ostream& os,
 }
 
 
-void 
+void
 Driver::write_txt_hdr(std::ostream& os, const std::string& hdr) const
 {
   os << std::setfill('=') << std::setw(77) << "=" << std::endl
@@ -521,7 +521,7 @@ Driver::write_txt_hdr(std::ostream& os, const std::string& hdr) const
 }
 
 
-void 
+void
 Driver::write_config(std::ostream &os) const
 {
   os << "<HPCPROF>\n\n";
@@ -530,20 +530,20 @@ Driver::write_config(std::ostream &os) const
   os << "<TITLE name=\"" << m_args.title << "\"/>\n\n";
 
   // search paths
-  for (uint i = 0; i < m_args.searchPathTpls.size(); ++i) { 
+  for (uint i = 0; i < m_args.searchPathTpls.size(); ++i) {
     const Analysis::PathTuple& x = m_args.searchPathTpls[i];
     os << "<PATH name=\"" << x.first << "\" viewname=\"" << x.second <<"\"/>\n";
   }
   if (!m_args.searchPathTpls.empty()) { os << "\n"; }
   
   // structure files
-  for (uint i = 0; i < m_args.structureFiles.size(); ++i) { 
+  for (uint i = 0; i < m_args.structureFiles.size(); ++i) {
     os << "<STRUCTURE name=\"" << m_args.structureFiles[i] << "\"/>\n";
   }
   if (!m_args.structureFiles.empty()) { os << "\n"; }
 
   // group files
-  for (uint i = 0; i < m_args.groupFiles.size(); ++i) { 
+  for (uint i = 0; i < m_args.groupFiles.size(); ++i) {
     os << "<STRUCTURE name=\"" << m_args.groupFiles[i] << "\"/>\n";
   }
   if (!m_args.groupFiles.empty()) { os << "\n"; }
@@ -555,10 +555,10 @@ Driver::write_config(std::ostream &os) const
     const Metric::SampledDesc* mm = dynamic_cast<const Metric::SampledDesc*>(m);
     if (mm) {
       const char* sortbystr = ((i == 0) ? " sortBy=\"true\"" : "");
-      os << "<METRIC name=\"" << m->name() 
-	 << "\" displayName=\"" << m->name() << "\"" 
+      os << "<METRIC name=\"" << m->name()
+	 << "\" displayName=\"" << m->name() << "\""
 	 << sortbystr << ">\n";
-      os << "  <FILE name=\"" << mm->profileName() 
+      os << "  <FILE name=\"" << mm->profileName()
 	 << "\" select=\"" << mm->profileRelId()
 	 << "\" type=\"" << mm->profileType() << "\"/>\n";
       os << "</METRIC>\n\n";
@@ -571,20 +571,20 @@ Driver::write_config(std::ostream &os) const
 
 
 string
-Driver::toString() const 
+Driver::toString() const
 {
   string s =  string("Driver: " )
     + "title=" + m_args.title + " " // + "path=" + path;
     + "\nm_metrics::\n"
     + m_mMgr.toString();
-  return s; 
-} 
+  return s;
+}
 
 
-void 
-Driver::dump() const 
-{ 
-  std::cerr << toString() << std::endl; 
+void
+Driver::dump() const
+{
+  std::cerr << toString() << std::endl;
 }
 
 
@@ -614,7 +614,7 @@ Driver::populateStructure(Prof::Struct::Tree& structure)
   
   //-------------------------------------------------------
   // FIXME: OBSOLETE
-  // if a PGM/Group document has been provided, use it to form the 
+  // if a PGM/Group document has been provided, use it to form the
   // group partitions (as wall as initialize/extend the scope tree)
   //-------------------------------------------------------
   Prof::Struct::readStructure(structure, m_args.groupFiles,
@@ -644,11 +644,11 @@ Driver::correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
 //----------------------------------------------------------------------------
 
 void
-Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure) 
+Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure)
 {
   StringToBoolMap hasStructureTbl;
   
-  const Prof::Metric::Mgr::StringToADescVecMap& fnameToFMetricMap = 
+  const Prof::Metric::Mgr::StringToADescVecMap& fnameToFMetricMap =
     mMgr.fnameToFMetricMap();
 
   //-------------------------------------------------------
@@ -656,7 +656,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
   // profile files to one load module to amortize the overhead of
   // reading symbol tables and debugging information.
   //-------------------------------------------------------
-  Prof::Metric::Mgr::StringToADescVecMap::const_iterator it = 
+  Prof::Metric::Mgr::StringToADescVecMap::const_iterator it =
     fnameToFMetricMap.begin();
   
   ProfToMetricsTupleVec batchJob;
@@ -673,14 +673,14 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
     // process a group of profile files (and their associated metrics)
     // by load module.
     Prof::Flat::ProfileData* prof = batchJob[0].first;
-    for (Prof::Flat::ProfileData::const_iterator it = prof->begin(); 
+    for (Prof::Flat::ProfileData::const_iterator it = prof->begin();
 	 it != prof->end(); ++it) {
       
       const string lmname_orig = it->first;
       if (lmname_orig == prev_lmname_orig) {
 	// Skip multiple entries for same LM.  This is sufficient
 	// b/c iteration proceeds in sorted fashion.
-	continue; 
+	continue;
       }
       prev_lmname_orig = lmname_orig;
 
@@ -714,7 +714,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
     }
     
     // 2. Now execute the batch jobs
-    for (VMAIntervalSet::iterator it = ivalset.begin(); 
+    for (VMAIntervalSet::iterator it = ivalset.begin();
 	 it != ivalset.end(); ++it) {
       const VMAInterval& ival = *it;
       structure.root()->aggregateMetrics((uint)ival.beg(), (uint)ival.end());
@@ -738,7 +738,7 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
     lm->read(BinUtil::LM::ReadFlg_Seg);
   }
 
-  Prof::Struct::LM* lmStrct = 
+  Prof::Struct::LM* lmStrct =
     Prof::Struct::LM::demand(structure.root(), lmname);
 
   for (uint i = 0; i < profToMetricsVec.size(); ++i) {
@@ -751,7 +751,7 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
     std::pair<ProfileData::iterator, ProfileData::iterator> fnd =
       prof->equal_range(lmname_orig);
     if (fnd.first == prof->end()) {
-      DIAG_WMsg(1, "Cannot find LM " << lmname_orig << " within " 
+      DIAG_WMsg(1, "Cannot find LM " << lmname_orig << " within "
 		<< prof->name() << ".");
       continue;
     }
@@ -777,7 +777,7 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
 	  m->period(profevent.mdesc().period());
 	}
 	
-	correlateRaw(m, profevent, proflm->load_addr(), 
+	correlateRaw(m, profevent, proflm->load_addr(),
 		     structure, lmStrct, lm, useStruct);
       }
     }
@@ -814,13 +814,13 @@ Driver::correlateRaw(Prof::Metric::ADesc* metric,
     VMA vma_ur = (doUnrelocate) ? (vma - lm_load_addr) : vma;
 	
     // 2. Find associated scope and insert into scope tree
-    Prof::Struct::ANode* strct = 
+    Prof::Struct::ANode* strct =
       Util::demandStructure(vma_ur, lmStrct, lm, useStruct);
 
     strct->demandMetric(metric->id(), numMetrics/*size*/) += events;
-    DIAG_DevMsg(6, "Metric associate: " 
-		<< metric->name() << ":0x" << hex << vma_ur << dec 
-		<< " --> +" << events << "=" 
+    DIAG_DevMsg(6, "Metric associate: "
+		<< metric->name() << ":0x" << hex << vma_ur << dec
+		<< " --> +" << events << "="
 		<< strct->metric(metric->id()) << " :: " << strct->toXML());
   }
 }
@@ -830,13 +830,13 @@ Driver::correlateRaw(Prof::Metric::ADesc* metric,
 // A batch is a vector of [Prof::Flat::Profile, <metric-vector>] pairs
 bool
 Driver::getNextRawBatch(ProfToMetricsTupleVec& batchJob,
-			Prof::Metric::Mgr::StringToADescVecMap::const_iterator& it, 
+			Prof::Metric::Mgr::StringToADescVecMap::const_iterator& it,
 			const Prof::Metric::Mgr::StringToADescVecMap::const_iterator& it_end)
 {
   for (uint i = 0; i < profileBatchSz; ++i) {
     if (it != it_end) {
       const string& fnm = it->first;
-      Prof::Metric::ADescVec& metrics = 
+      Prof::Metric::ADescVec& metrics =
 	const_cast<Prof::Metric::ADescVec&>(it->second);
       Prof::Flat::ProfileData* prof = readProf(fnm);
       batchJob.push_back(make_pair(prof, &metrics));
@@ -873,7 +873,7 @@ Driver::hasStructure(const string& lmname, Prof::Struct::Tree& structure,
     return it->second; // memoized answer
   }
   else {
-    Prof::Struct::LM* lmStrct = 
+    Prof::Struct::LM* lmStrct =
       Prof::Struct::LM::demand(structure.root(), lmname);
     bool hasStruct = (!lmStrct->isLeaf());
     hasStructureTbl.insert(make_pair(lmname, hasStruct));
@@ -888,7 +888,7 @@ Driver::hasStructure(const string& lmname, Prof::Struct::Tree& structure,
 //----------------------------------------------------------------------------
 
 void
-Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr, 
+Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr,
 			      Prof::Struct::Tree& structure)
 {
   using namespace Prof;
@@ -913,7 +913,7 @@ Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr,
   }
   
   // 2. Now execute the batch jobs
-  for (VMAIntervalSet::iterator it = ivalset.begin(); 
+  for (VMAIntervalSet::iterator it = ivalset.begin();
        it != ivalset.end(); ++it) {
     const VMAInterval& ival = *it;
     computeDerivedBatch(structure, mExprVec,
@@ -925,7 +925,7 @@ Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr,
 
 
 void
-Driver::computeDerivedBatch(Prof::Struct::Tree& structure, 
+Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
 			    const Prof::Metric::AExpr** mExprVec,
 			    uint mBegId, uint mEndId)
 {
