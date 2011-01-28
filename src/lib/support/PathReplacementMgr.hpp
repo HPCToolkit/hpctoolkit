@@ -84,25 +84,25 @@ public:
   singleton();
 
 
-  //Searches through the list of paths to see if any portion of
-  //'original' needs to be replaced. If a substring of 'original' is
-  //found to be in 'pathReplacement', we update that portion of the
-  //string with the associated new path.
+  // Searches through the list of paths to see if any portion of
+  // 'original' needs to be replaced. If a substring of 'original' is
+  // found to be in 'pathReplacement', we update that portion of the
+  // string with the associated new path.
   //
-  //@param original: The file path we want to update
-  //@return: A new path that is the updated equivalent of 'original'
-  //         if any portion of it needed updating, otherwise we return
-  //         'original'.
+  // @param original: The file path we want to update
+  // @return: A new path that is the updated equivalent of 'original'
+  //          if any portion of it needed updating, otherwise we return
+  //          'original'.
   std::string
-  getReplacedPath(const std::string& original);
+  getReplacedPath(const std::string& original) const;
 
   
-  //Adds an old path and its associated new path as a pair to the
-  //pathReplacement vector and then sorts the list in descending
-  //order of size
-  // 
-  //@param originalPath: The original partial path
-  //@param newPath: The new partial path to replace originalPath.
+  // Adds an old path and its associated new path as a pair to the
+  // pathReplacement vector and then sorts the list in descending
+  // order of size
+  //  
+  // @param originalPath: The original partial path
+  // @param newPath: The new partial path to replace originalPath.
   //
   // **note** - "partial path" can mean any substring of a path, from
   //   a single file name to a full path.
