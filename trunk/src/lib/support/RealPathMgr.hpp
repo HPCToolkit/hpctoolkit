@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef RealPathMgr_hpp 
+#ifndef RealPathMgr_hpp
 #define RealPathMgr_hpp
 
 //************************* System Include Files ****************************
@@ -80,7 +80,7 @@
 
 
 // --------------------------------------------------------------------------
-// 'RealPathMgr' 
+// 'RealPathMgr'
 // --------------------------------------------------------------------------
 
 class RealPathMgr {
@@ -92,7 +92,7 @@ public:
   singleton();
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
 
   // realpath: Given 'fnm', convert it to its 'realpath' (if possible)
@@ -112,7 +112,7 @@ public:
   // 'm_searchPaths'. Recursive and non-recursive properties of each
   // search path is preserved.
   //
-  // @param sPaths: A string of search paths with each path having recursive 
+  // @param sPaths: A string of search paths with each path having recursive
   //                (meaning a '/*' is tacked on the end) or non-recursive
   //                properties and paths are separated by a ":"
   //

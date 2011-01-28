@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 #ifndef Analysis_Flat_SrcCorrelation_hpp
-#define Analysis_Flat_SrcCorrelation_hpp 
+#define Analysis_Flat_SrcCorrelation_hpp
 
 //************************ System Include Files ******************************
 
@@ -82,59 +82,72 @@ namespace Flat {
 
 
 class Driver : public Unique { // not copyable
-public: 
-  Driver(const Analysis::Args& args, 
+public:
+  Driver(const Analysis::Args& args,
 	 Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure);
-  ~Driver(); 
+  ~Driver();
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
-  int run();
+  int
+  run();
   
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
   // Test the specified path against each of the paths in the
   // database.  Replace with the pair of the first matching path.
-  std::string replacePath(const char* path);
-  std::string replacePath(const std::string& path)
-    { return replacePath(path.c_str()); }
+  std::string
+  replacePath(const char* path);
+
+  std::string
+  replacePath(const std::string& path)
+  { return replacePath(path.c_str()); }
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
-  void write_experiment(std::ostream &os) const;
-  void write_csv(std::ostream &os) const;
-  void write_txt(std::ostream &os) const;
+  void
+  write_experiment(std::ostream &os) const;
 
-  void write_config(std::ostream &os = std::cout) const;
+  void
+  write_csv(std::ostream &os) const;
+
+  void
+  write_txt(std::ostream &os) const;
+
+  void
+  write_config(std::ostream &os = std::cout) const;
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
-  std::string toString() const;
-  void dump() const;
+  std::string
+  toString() const;
+  
+  void
+  dump() const;
 
 public:
   typedef std::map<string, bool> StringToBoolMap;
 
-  typedef std::pair<Prof::Flat::ProfileData*, 
+  typedef std::pair<Prof::Flat::ProfileData*,
 		    Prof::Metric::ADescVec*> ProfToMetricsTuple;
   typedef std::vector<ProfToMetricsTuple> ProfToMetricsTupleVec;
 
 private:
-  void 
+  void
   populateStructure(Prof::Struct::Tree& structure);
 
-  void 
+  void
   correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
 				Prof::Struct::Tree& structure);
 
 
   // -------------------------------------------------------
 
-  void 
+  void
   computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure);
 
   void
@@ -166,12 +179,12 @@ private:
 
   // -------------------------------------------------------
 
-  void 
+  void
   computeDerivedMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure);
 
   // [mBegId, mEndId)
-  void 
-  computeDerivedBatch(Prof::Struct::Tree& structure, 
+  void
+  computeDerivedBatch(Prof::Struct::Tree& structure,
 		      const Prof::Metric::AExpr** mExprVec,
 		      uint mBegId, uint mEndId);
 
@@ -188,16 +201,19 @@ private:
 
   // -------------------------------------------------------
 
-  void write_txt_secSummary(std::ostream& os, 
-			    Analysis::TextUtil::ColumnFormatter& colFmt,
-			    const std::string& title,
-			    const Prof::Struct::ANodeFilter* filter) const;
+  void
+  write_txt_secSummary(std::ostream& os,
+		       Analysis::TextUtil::ColumnFormatter& colFmt,
+		       const std::string& title,
+		       const Prof::Struct::ANodeFilter* filter) const;
+  
+  void
+  write_txt_annotateFile(std::ostream& os,
+			 Analysis::TextUtil::ColumnFormatter& colFmt,
+			 const Prof::Struct::File* fileStrct) const;
 
-  void write_txt_annotateFile(std::ostream& os, 
-			      Analysis::TextUtil::ColumnFormatter& colFmt,
-			      const Prof::Struct::File* fileStrct) const;
-
-  void write_txt_hdr(std::ostream& os, const std::string& hdr) const;
+  void
+  write_txt_hdr(std::ostream& os, const std::string& hdr) const;
 
 
 private:
@@ -209,18 +225,27 @@ private:
   static uint profileBatchSz;
 };
 
+
 //****************************************************************************
 
-class DriverDocHandlerArgs : public DocHandlerArgs {
+class DriverDocHandlerArgs
+  : public DocHandlerArgs {
 public:
-  DriverDocHandlerArgs(Driver* driver) 
-    : m_driver(driver) { }
+  DriverDocHandlerArgs(Driver* driver)
+    : /* DocHandlerArgs(NULL), */ m_driver(driver)
+  { }
+
+  virtual
+  ~DriverDocHandlerArgs()
+  { }
   
-  virtual ~DriverDocHandlerArgs() { }
-  
-  virtual string replacePath(const char* oldpath) const { 
-    return m_driver->replacePath(oldpath);
-  };
+  virtual string
+  replacePath(const char* oldpath) const
+  { return m_driver->replacePath(oldpath); }
+
+  virtual string
+  replacePath(const std::string& oldpath) const
+  { return m_driver->replacePath(oldpath); }
   
 private:
   Driver* m_driver;

@@ -1018,6 +1018,9 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   if (rFlags & RFlg_NoMetricSfx) {
     m_sfx = "";
+    if (!tidStr.empty()) { // FIXME: hpcprof-mpi hack
+      m_sfx = "[" + tidStr + "]";
+    }
   }
 
   metric_desc_t* m_lst = metricTbl.lst;

@@ -208,7 +208,6 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
   
     // element names
     elemStructure(XMLString::transcode("HPCToolkitStructure")), 
-    elemRoot(XMLString::transcode("PGM")), // FIXME: obsolete
     elemLM(XMLString::transcode("LM")),
     elemFile(XMLString::transcode("F")),
     elemProc(XMLString::transcode("P")),
@@ -224,10 +223,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
     attrAlienFile(XMLString::transcode("f")),
     attrLnName(XMLString::transcode("ln")),
     attrLine(XMLString::transcode("l")),
-    attrBegin(XMLString::transcode("b")),      // FIXME:OBSOLETE
-    attrEnd(XMLString::transcode("e")),        // FIXME:OBSOLETE
-    attrVMA(XMLString::transcode("v")),
-    attrVMALong(XMLString::transcode("vma"))   // FIXME:OBSOLETE
+    attrVMA(XMLString::transcode("v"))
 {
   m_version = -1;
   
@@ -243,7 +239,6 @@ PGMDocHandler::~PGMDocHandler()
 {
   // element names
   XMLString::release((XMLCh**)&elemStructure);
-  XMLString::release((XMLCh**)&elemRoot);
   XMLString::release((XMLCh**)&elemLM);
   XMLString::release((XMLCh**)&elemFile);
   XMLString::release((XMLCh**)&elemProc);
@@ -259,10 +254,7 @@ PGMDocHandler::~PGMDocHandler()
   XMLString::release((XMLCh**)&attrAlienFile);
   XMLString::release((XMLCh**)&attrLnName);
   XMLString::release((XMLCh**)&attrLine);
-  XMLString::release((XMLCh**)&attrBegin);
-  XMLString::release((XMLCh**)&attrEnd);
   XMLString::release((XMLCh**)&attrVMA);
-  XMLString::release((XMLCh**)&attrVMALong);
 
   DIAG_Assert(scopeStack.Depth() == 0, "Invalid state reading HPCStructure.");
 }
@@ -277,8 +269,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
   Struct::ANode* curStrct = NULL;
   
   // Structure
-  if (XMLString::equals(name, elemStructure) 
-      || XMLString::equals(name, elemRoot)) {
+  if (XMLString::equals(name, elemStructure)) {
     string verStr = getAttr(attributes, attrVer);
     double ver = StrUtil::toDbl(verStr);
 
@@ -331,7 +322,6 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     getLineAttr(begLn, endLn, attributes);
 
     string vma = getAttr(attributes, attrVMA);
-    if (vma.empty()) { vma = getAttr(attributes, attrVMALong); }
 
     DIAG_Assert(m_curLM && m_curFile && !m_curProc, "Parse error: Support for nested procedures is disabled (cf. buildLMSkeleton())!");
     
@@ -381,7 +371,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     SrcFile::ln begLn, endLn;
     getLineAttr(begLn, endLn, attributes);
 
-    Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(GetCurrentScope());
+    Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
 
     Struct::ACodeNode* alien = new Struct::Alien(parent, fnm, nm, begLn, endLn);
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << alien->toStringMe());
@@ -401,7 +391,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     getLineAttr(begLn, endLn, attributes);
 
     // by now the file and function names should have been found
-    Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(GetCurrentScope());
+    Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
 
     Struct::ACodeNode* loopNode = new Struct::Loop(parent, begLn, endLn);
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << loopNode->toStringMe());
@@ -423,10 +413,9 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     DIAG_Assert(begLn == endLn, "S line range [" << begLn << ", " << endLn << "]");
     
     string vma = getAttr(attributes, attrVMA);
-    if (vma.empty()) { vma = getAttr(attributes, attrVMALong); }
 
     // by now the file and function names should have been found
-    Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(GetCurrentScope());
+    Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
     DIAG_Assert(m_curProc != NULL, "");
 
     Struct::Stmt* stmtNode = new Struct::Stmt(parent, begLn, endLn);
@@ -443,7 +432,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     string grpnm = getAttr(attributes, attrName); // must exist
     DIAG_Assert(!grpnm.empty(), "");
 
-    Struct::ANode* parent = GetCurrentScope(); // enclosing scope
+    Struct::ANode* parent = getCurrentScope(); // enclosing scope
     Struct::Group* grpStrct
       = Prof::Struct::Group::demand(m_curRoot, grpnm, parent);
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << grpStrct->toStringMe());
@@ -459,12 +448,12 @@ PGMDocHandler::startElement(const XMLCh* const uri,
 
   // The current top of the stack must be a non-leaf.  Since we are
   // using SAX parsing, we don't know this until now.
-  StackEntry_t* entry = GetStackEntry(0);
+  StackEntry_t* entry = getStackEntry(0);
   if (entry) {
     entry->SetLeaf(false);
   }
 
-  PushCurrentScope(curStrct);
+  pushCurrentScope(curStrct);
 }
 
 
@@ -475,29 +464,28 @@ PGMDocHandler::endElement(const XMLCh* const uri,
 {
 
   // Structure
-  if (XMLString::equals(name, elemStructure) 
-      || XMLString::equals(name, elemRoot)) {
+  if (XMLString::equals(name, elemStructure)) {
     m_curRoot = NULL;
   }
 
   // Load Module
   else if (XMLString::equals(name, elemLM)) {
     DIAG_Assert(scopeStack.Depth() >= 1, "");
-    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
     m_curLM = NULL;
   }
 
   // File
   else if (XMLString::equals(name, elemFile)) {
     DIAG_Assert(scopeStack.Depth() >= 2, ""); // at least has LM
-    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
     m_curFile = NULL;
   }
 
   // Proc
   else if (XMLString::equals(name, elemProc)) {
     DIAG_Assert(scopeStack.Depth() >= 3, ""); // at least has File, LM
-    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
     m_curProc = NULL;
   }
 
@@ -505,30 +493,30 @@ PGMDocHandler::endElement(const XMLCh* const uri,
   else if (XMLString::equals(name, elemAlien)) {
     // stack depth should be at least 4
     DIAG_Assert(scopeStack.Depth() >= 4, "");
-    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
   }
   
   // Loop
   else if (XMLString::equals(name, elemLoop)) {
     // stack depth should be at least 4
     DIAG_Assert(scopeStack.Depth() >= 4, "");
-    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
   }
   
   // Stmt
   else if (XMLString::equals(name, elemStmt)) {
-    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
   }
 
   // Group
   else if (XMLString::equals(name, elemGroup)) {
     DIAG_Assert(scopeStack.Depth() >= 1, "");
     DIAG_Assert(groupNestingLvl >= 1, "");
-    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
     groupNestingLvl--;
   }
 
-  PopCurrentScope();
+  popCurrentScope();
 }
 
 
@@ -552,11 +540,6 @@ PGMDocHandler::getLineAttr(SrcFile::ln& begLn, SrcFile::ln& endLn,
       begStr = lineStr.substr(0, dashpos);
       endStr = lineStr.substr(dashpos+1);
     }
-  }
-  else {
-    // old format
-    begStr = getAttr(attributes, attrBegin);
-    endStr = getAttr(attributes, attrEnd);
   }
 
   // 2. Parse begin and end line strings
@@ -621,10 +604,10 @@ PGMDocHandler::warning(const SAXParseException& e)
 // ---------------------------------------------------------------------------
 
 Struct::File* 
-PGMDocHandler::FindCurrentFile() 
+PGMDocHandler::findCurrentFile() 
 {
   for (unsigned int i = 0; i < scopeStack.Depth(); ++i) {
-    Struct::ANode* s = GetScope(i);
+    Struct::ANode* s = getScope(i);
     if (typeid(*s) == typeid(Struct::File)) {
       return dynamic_cast<Struct::File*>(s);
     }
@@ -634,10 +617,10 @@ PGMDocHandler::FindCurrentFile()
 
 
 uint
-PGMDocHandler::FindEnclosingGroupScopeDepth() 
+PGMDocHandler::findEnclosingGroupScopeDepth() 
 {
   for (uint i = 1; i < scopeStack.Depth(); ++i) {
-    Struct::ANode* x = GetScope(i);
+    Struct::ANode* x = getScope(i);
     if (typeid(*x) == typeid(Struct::Group)) {
       return i + 1; // depth is index + 1
     }
@@ -648,9 +631,9 @@ PGMDocHandler::FindEnclosingGroupScopeDepth()
 
 // For processing the GROUP file
 void 
-PGMDocHandler::ProcessGroupDocEndTag()
+PGMDocHandler::processGroupDocEndTag()
 {
-  StackEntry_t* top = GetStackEntry(0);
+  StackEntry_t* top = getStackEntry(0);
   
   // If the top of the stack is a non-group leaf node or a nested
   // group node... (Note 'groupNestingLvl' has not been decremented yet)
@@ -658,16 +641,16 @@ PGMDocHandler::ProcessGroupDocEndTag()
        (groupNestingLvl >= 2 && top->IsGroupScope()) ) {
     
     // 1. Find enclosing GROUP node g (excluding the top of the stack)
-    unsigned int enclGrpDepth = FindEnclosingGroupScopeDepth();
+    unsigned int enclGrpDepth = findEnclosingGroupScopeDepth();
     DIAG_Assert(enclGrpDepth >= 2, ""); // must be found && not at top
     unsigned int enclGrpIdx = enclGrpDepth - 1;
     
     // 2. For each node between g (excluding g) to the node before
     // top-of-stack, create a shadow node
-    Struct::ANode* parentNode = GetScope(enclGrpIdx);
+    Struct::ANode* parentNode = getScope(enclGrpIdx);
     for (unsigned int i = enclGrpIdx - 1; i >= 1; --i) {
-      StackEntry_t* entry = GetStackEntry(i);
-      Struct::ANode* curNode = entry->GetScope();
+      StackEntry_t* entry = getStackEntry(i);
+      Struct::ANode* curNode = entry->getScope();
       Struct::ANode* shadowNode = entry->GetShadow();
       if (!shadowNode) {
 	shadowNode = curNode->clone();
@@ -678,7 +661,7 @@ PGMDocHandler::ProcessGroupDocEndTag()
     }
     
     // 3. Make the top node a child of the most recent shadow node
-    Struct::ANode* topNode = GetScope(0);
+    Struct::ANode* topNode = getScope(0);
     topNode->unlink();
     topNode->link(parentNode);
   }
