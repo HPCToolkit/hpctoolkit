@@ -109,16 +109,16 @@ PathFindMgr::pathfind(const char* pathList, const char* name, const char* mode)
   // -------------------------------------------------------
   if (!m_filled) {
     m_filled = true;
-    std::vector<std::string> pathVec; //will contain all -I paths
+    std::vector<std::string> pathVec; // will contain all -I paths
     StrUtil::tokenize_str(std::string(pathList), ":", pathVec);
     
-    std::map<std::string, bool> seenPaths;
-    std::vector<std::string> resultPathVec;
-    while (m_cacheNotFull && !pathVec.empty()) { //Driver for scan()
-      if (pathVec.back() != ".") { //don't cache CWD
-	scan(pathVec.back(), seenPaths, &resultPathVec);
+    std::set<std::string> seenPaths;
+    std::vector<std::string> recursionStack;
+    while (m_cacheNotFull && !pathVec.empty()) {
+      if (pathVec.back() != ".") { // do not cache within CWD
+	scan(pathVec.back(), seenPaths, &recursionStack);
 	seenPaths.clear();
-	resultPathVec.clear();
+	recursionStack.clear();
       }
       pathVec.pop_back();
     }
@@ -133,7 +133,7 @@ PathFindMgr::pathfind(const char* pathList, const char* name, const char* mode)
   bool found = find(name_real);
  
   if (!found && !m_cacheNotFull) {
-    std::map<std::string, bool> seenPaths;
+    std::set<std::string> seenPaths;
     const char* temp = pathfind_slow(pathList, name, mode, seenPaths);
     if (temp) {
       found = true;
@@ -155,13 +155,13 @@ PathFindMgr::pathfind(const char* pathList, const char* name, const char* mode)
   else {
     return NULL; // failure
   }
-
 }
+
 
 const char*
 PathFindMgr::pathfind_slow(const char* pathList, const char* name,
-			   const char* mode, 
-			   std::map<std::string, bool>& seenPaths)
+			   const char* mode,
+			   std::set<std::string>& seenPaths)
 {
   // -------------------------------------------------------
   // *. Collect all recursive and non-recursive paths in separate lists
@@ -279,17 +279,17 @@ PathFindMgr::find(std::string& pathNm)
       
       size_t cTrailing = currentPath.length(); //trailing index
       // cIn points to first char after last '/'
-      size_t cIn = currentPath.find_last_of("/") + 1; 
+      size_t cIn = currentPath.find_last_of("/") + 1;
 
       // these number will be same for all iterations, consider caching.
       size_t fpTrailing = pathNm.length();
       size_t fpIn = pathNm.find_last_of("/") + 1;
       
-      int level = -1; //since the filename will always match
-      int totalLevels = 0; //total levels in currentPath
+      int level = -1; // since the filename will always match
+      int totalLevels = 0; // total levels in currentPath
       bool loopedOnce = false;
       while (cIn < cTrailing && cTrailing != currentPath.npos) {
-	// checks how deep the 2 strings are congruent 
+	// checks how deep the 2 strings are congruent
 	// also counts how many levels currentPath is
 	if (!loopedOnce) {
 	  std::string comp1 = currentPath.substr(cIn, cTrailing - cIn);
@@ -297,8 +297,8 @@ PathFindMgr::find(std::string& pathNm)
 
 	  if (comp1 == comp2) {
 	    level++;
-	    //b/c the fp vars change here, comp2 only changes once the segments
-	    //are equal
+	    // b/c the fp vars change here, comp2 only changes once
+	    // the segments are equal
 	    fpTrailing = fpIn - 1;
 	    fpIn = pathNm.find_last_of("/", fpTrailing - 1) + 1;
 	    
@@ -333,7 +333,7 @@ PathFindMgr::find(std::string& pathNm)
     return true;
   }
   
-  return false; 
+  return false;
 }
 
 
@@ -342,160 +342,195 @@ PathFindMgr::insert(const std::string& path)
 {
   std::string fnm = FileUtil::basename(path);
  
-  if (m_size < s_sizeLimit) { //if under cache limit
+  // -------------------------------------------------------
+  // Insert <fnm, path> in m_cache if there is still space
+  // -------------------------------------------------------
+  if (m_size < s_sizeLimit) {
     PathMap::iterator it = m_cache.find(fnm);
-
     if (it == m_cache.end()) {
-      std::vector<std::string> pathList;
-      pathList.push_back(path);
-      m_cache[fnm] = pathList;
+      // 0. There is no entry for 'fnm'
+      std::vector<std::string> pathVec;
+      pathVec.push_back(path);
+      m_cache.insert(std::make_pair(fnm, pathVec));
       
-      m_size += sizeof(pathList);
-      m_size += fnm.size() + 1;
+      m_size += sizeof(pathVec);
+      m_size += fnm.size() + 1 + path.size() + 1;
     }
     else {
-      std::vector<std::string>::iterator it;
-      for (it = m_cache[fnm].begin(); it != m_cache[fnm].end(); it++) {
-	std::string temp = *it;
-	if (temp == path) { //make sure no duplicates
+      // 1. There is already an entry for 'fnm'
+      std::vector<std::string>& pathVec = it->second;
+      
+      for (std::vector<std::string>::const_iterator it1 = pathVec.begin();
+	   it1 != pathVec.end(); ++it1) {
+	const std::string& x = *it1;
+	if (x == path) {
 	  return;
 	}
       }
+      pathVec.push_back(path);
+
       m_size += path.size() + 1;
-      m_cache[fnm].push_back(path);
     }
   }
   else {
-    //Not smart caching. We are not expecting there to be more data than can
-    //fit in the cache, but in case there is, this will prevent the program
-    //from crashing. 
-    
+    // Not smart caching. We are not expecting there to be more data
+    // than can fit in the cache, but in case there is, this will
+    // prevent the program from crashing.
     DIAG_WMsgIf(m_size >= s_sizeLimit,
 		"PathFindMgr::insert(): cache size limit reached");
     m_cacheNotFull = false;
   }
 }
 
+
 std::string
-PathFindMgr::scan(std::string& path, std::map<std::string, bool>& seenPaths,
-		  std::vector<std::string>* resultPathVec)
+PathFindMgr::scan(std::string& path, std::set<std::string>& seenPaths,
+		  std::vector<std::string>* recursionStack)
 {
-  if (path.empty()) {
-    return path; //will be empty
-  }
+  bool doCacheFiles = (recursionStack != NULL);
 
-  std::string resultPath; 
-
-  bool isRecursive = isRecursivePath(path.c_str());
-  if (isRecursive) {
+  bool doRecursiveScan = isRecursivePath(path.c_str());
+  if (doRecursiveScan) {
     path = path.substr(0, path.length() - RECURSIVE_PATH_SUFFIX_LN);
   }
 
-  // if this directory is referenced by a symlink and we
-  // have already looked at it, don't bother continuing 
-  std::map<std::string, bool>::iterator it = seenPaths.find(path);
-  if (it != seenPaths.end() && (it->second)) {
-    return resultPath; //will be empty
-  }
-  
-  if (it != seenPaths.end()) { //if this dire was reference by a symlink
-      it->second = true;        //set it to true in the map
+  std::string localPaths;
+
+  if (path.empty()) {
+    return localPaths;
   }
 
+  // -------------------------------------------------------
+  // ensure we have not already seen 'path' (e.g., through a symlink)
+  // -------------------------------------------------------
+
+  // 0. ensure we are using a canonical path by realpath-ing (a) the
+  //    root path and (b) symlink directories (below)
+  if ((recursionStack && recursionStack->empty())
+      || !recursionStack) {
+    path = RealPath(path.c_str());
+  }
+
+  // 1. check for a past occurance
+  std::set<std::string>::iterator it = seenPaths.find(path);
+  if (it != seenPaths.end()) {
+    return localPaths;
+  }
+
+  seenPaths.insert(path);
+
+
+  // -------------------------------------------------------
+  // Scan 'path'
+  // -------------------------------------------------------
   DIR* dir = opendir(path.c_str());
   if (!dir) {
-    return resultPath; //will be empty
+    return localPaths;
   }
 
-  bool isFirst = true;
+  bool isFirstDir = true;
   struct dirent* dire;
   while ( (dire = readdir(dir)) ) {
-    //skip ".", ".."
-    if (strcmp(dire->d_name, ".") == 0) { continue; }
-    if (strcmp(dire->d_name, "..") == 0) { continue; }
-    
-    //is either a subdir to be recursed on, or a file to cache
-    std::string file = path + "/" + dire->d_name;
-    
-    if (dire->d_type == DT_LNK) { //if its a file symlink,add to singleton
-      struct stat buf;
-      if ( (stat(file.c_str(), &buf) == 0) ) { //if valid
-	if (S_ISREG(buf.st_mode)) { //if file
-	  if (m_cacheNotFull && resultPathVec) { //if we want to cache it
-	    insert(file);
-	  }
-	  continue; //will continue when only searching for subdirs 
-	            //or after we have inserted the file.
-	}
-      }
-      else { //ONLY if the symlink isn't valid 
-	continue;
-      }
+    // skip "." and ".."
+    if (strcmp(dire->d_name, ".") == 0 || strcmp(dire->d_name, "..") == 0) {
+      continue;
     }
     
-    if ((isRecursive || !resultPathVec) //b/c always recursive in pathfind_slow
-	&& (dire->d_type == DT_DIR || dire->d_type == DT_LNK) ) {
-      if (dire->d_type == DT_LNK) { //check to avoid infinite loops
-	file = RealPath(file.c_str()); //search resolved dir only
-	if (seenPaths.find(file) != seenPaths.end()) {
-	  continue; //this subdir has already been added to be searched
-	}
-	seenPaths.insert(make_pair(file, false));
+    std::string next_fnm = path + "/" + dire->d_name;
+
+    // --------------------------------------------------
+    // symlink: resolve to regular file or directory (if possible)
+    // --------------------------------------------------
+    bool isLink_file = false;
+    bool isLink_dir = false;
+
+    if (dire->d_type == DT_LNK) {
+      struct stat buf;
+      int ret = stat(next_fnm.c_str(), &buf);
+      if (ret != 0) {
+	continue; // error
       }
       
-      file += "/*";
-
-      if (resultPathVec) {
-	resultPathVec->push_back(file);
+      if (S_ISREG(buf.st_mode)) {
+	isLink_file = true;
       }
-      else {
-	if (!isFirst) {
-	  resultPath += ":";
+      else if (S_ISDIR(buf.st_mode)) {
+	next_fnm = RealPath(next_fnm.c_str());
+	if (seenPaths.find(next_fnm) == seenPaths.end()) {
+	  isLink_dir = true; // must search
 	}
-	resultPath += file;
-	isFirst = false;
+	else {
+	  continue; // avoid cycles
+	}
       }
     }
-    else if (m_cacheNotFull && resultPathVec && dire->d_type == DT_REG) {
-      insert(file);
+
+    // --------------------------------------------------
+    // regular file
+    // --------------------------------------------------
+    if (dire->d_type == DT_REG || isLink_file) {
+      if (doCacheFiles && m_cacheNotFull) {
+	insert(next_fnm);
+      }
+    }
+
+    // --------------------------------------------------
+    // directory
+    // --------------------------------------------------
+    else if (dire->d_type == DT_DIR || isLink_dir) {
+      if (recursionStack) {
+	if (doRecursiveScan) {
+	  next_fnm += "/*";
+	  recursionStack->push_back(next_fnm);
+	}
+      }
+      else {
+	next_fnm += "/*";
+	if (!isFirstDir) {
+	  localPaths += ":";
+	}
+	localPaths += next_fnm;
+	isFirstDir = false;
+      }
     }
   }
   closedir(dir);
   
-  if (resultPathVec && !resultPathVec->empty()) {
-    std::string nextPath = resultPathVec->back();
-    resultPathVec->pop_back();
-    scan(nextPath, seenPaths, resultPathVec); 
+  if (recursionStack && !recursionStack->empty()) {
+    std::string nextPath = recursionStack->back();
+    recursionStack->pop_back();
+    scan(nextPath, seenPaths, recursionStack);
   }
-  return resultPath;
+
+  return localPaths;
 }
 
 
 int
 PathFindMgr::resolve(std::string& path)
 {
-  if (path[0] == '/') { //path in resolved form
+  if (path[0] == '/') { // path in resolved form
     return 0;
   }
   
   std::string result;
   int trailing = path.length();
-  int in = path.find_last_of("/") + 1; //add 1 to move past '/'
+  int in = path.find_last_of("/") + 1; // add 1 to move past '/'
   int levelsBack = 0;
   
   while (trailing != -1) {
     std::string section = path.substr(in, trailing - in + 1 );
     
-    if (section == "../") { //don't include it in result yet.
+    if (section == "../") { // don't include it in result yet.
       levelsBack++;
     }
-    else if (section != "./") { //here, section is some directory/file name
+    else if (section != "./") { // here, section is some directory/file name
       if (levelsBack == 0) {
-	result = section +  result; //append section to the beginning of result
+	result = section +  result; // append section to the beginning
       }
-      else { //here, have encountered at least 1 ".." so don't include section
-	levelsBack--; //since we didnt include section, we went back a level
-      } 
+      else { // here, have encountered at least 1 ".." so don't include section
+	levelsBack--; // since we didnt include section, we went back a level
+      }
     }
     
     trailing = in - 1;
@@ -514,14 +549,14 @@ PathFindMgr::isRecursivePath(const char* path)
 {
   int l = strlen(path);
   if (l > PathFindMgr::RECURSIVE_PATH_SUFFIX_LN && path[l - 1] == '*' &&
-      path[l - 2] == '/') { 
+      path[l - 2] == '/') {
     return 1;
   }
   return 0;
 }
 
 
-std::ostream& 
+std::ostream&
 PathFindMgr::dump(std::ostream& os, uint oFlags)
 {
   std::map<std::string, std::vector<std::string> >::iterator it;
@@ -538,7 +573,7 @@ PathFindMgr::dump(std::ostream& os, uint oFlags)
 }
 
 
-void 
+void
 PathFindMgr::ddump()
 {
   dump(std::cerr);
