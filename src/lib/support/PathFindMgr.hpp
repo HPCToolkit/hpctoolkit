@@ -83,8 +83,7 @@
 class PathFindMgr
 {
 public:
-  static const int RECURSIVE_PATH_SUFFIX_LN  = 2;
-
+  static const int RECURSIVE_PATH_SUFFIX_LN = 2;
 
 public:
   PathFindMgr();
@@ -98,7 +97,7 @@ public:
   // pathfind - (recursively) search for file 'name' in given
   //   colon-separated (possibly recursive) pathlist.  If found,
   //   returns the fully resolved 'real path', otherwise NULL.
-  // 
+  //
   // First searches for 'name' in the PathFindMgr::singleton member
   // 'm_cache'.  If that search is unsuccessful and the cache is full,
   // it then searches for a file named "name" in each directory in the
@@ -108,26 +107,26 @@ public:
   // recursively searches all of that paths descendents as well. An
   // empty path in the pathlist is interpreted as the current
   // directory.  Returns NULL if 'name' is not found.
-  // 
+  //
   // A 'recursive-path' is specified by appending a single '*' at the
   // end of the directory. /home/.../dir/\*
-  // 
+  //
   //  ** Note: the '*' is escaped with '\' so it does not look like a
   // C-style comment; in reality it should not be escaped! **
-  //    
-  // The following mode bits are understood: 
+  //
+  // The following mode bits are understood:
   //     "r" - read access
   //     "w" - write access
   //     "x" - execute access
-  // 
+  //
   // The returned pointer points to an area that will be reused on subsequent
   // calls to this function, and must not be freed by the caller.
   const char*
   pathfind(const char* pathList, const char* name, const char* mode);
   
-    
-  // Is this a valid recursive path of the form '.../path/\*' ? 
-  static int 
+  
+  // Is this a valid recursive path of the form '.../path/\*' ?
+  static int
   isRecursivePath(const char* path);
  
 
@@ -144,14 +143,13 @@ public:
 
 private:
 
-
   // Retreives the highest priority and closest matching real path to
   // "filePath" from 'm_cache', where priority is defined by how close
   // the real path is to the front of the vector of real paths.  If
   // the file name exists in 'm_cache', but none of the real paths
   // match it beyond the file name, the first path in the vector will
-  // be returned. 
-  // 
+  // be returned.
+  //
   // Notes:
   // * We cache all files in a recursive seach path such that:
   //   - the path portion of the file is fully resolved
@@ -173,7 +171,7 @@ private:
   //
   // * Ambiguous case 2:
   //     input: ../p5/zoo.c
-  //     cache: 
+  //     cache:
   //       0. p0/p1/zoo.c
   //       1. p0/p2/zoo.c
   //       2. p3/p4/zoo.c
@@ -185,7 +183,7 @@ private:
   // @param filePath: A partial path to the file we are searching for. Will be
   //                  altered to be its associated path.
   //       *note* - 'filePath' can range from a file name to a full path
-  //                            
+  //
   // @return:  A bool indicating whether 'filePath' was found in the list.
   //
   bool
@@ -196,37 +194,39 @@ private:
   // 'm_cache'.  Paths are store according to the file it is
   // associated with. 'path' is not added if it is already in the
   // vector associated with the file name.
-  // 
+  //
   // @param path: The path a file is located at.
-  void 
+  void
   insert(const std::string& path);
 
-  // Private helper method that scans through 'path' and does one of
-  // two things, depending on the value of 'resultPathVec'.  If
-  // 'resultPathVec' is valid it will cache all the files in the
-  // directory reached by 'path' while the cache is not full. Also, if
-  // 'path' is recursive, all sub-directories are added to
-  // 'resultPathVec' so they can be scanned also.
+
+  // Scans the directory designated by 'path' and does one of two
+  // things, depending on the value of 'recursionStack'.
+  // - If 'recursionStack' is non-NULL, cache all the files in 'path'
+  //   (until the cache is full).  If 'path' is recursive, scan
+  //   recursively.  (Use 'recursionStack' to implement recursion.)
+  // - Otherwise, ignore files and return a (non-recursive)
+  //   colon-separated list of all subdirectories within 'path'.  Each
+  //   path is suffixed with '*' (a recursive path).
   //
-  // Otherwise, if 'resultPathVec' is NULL it will return a list of all
-  // subdirectories of 'path', with paths separated by a ":".
-  // 
+  // Assumes that path has been real-pathed.
+  //
+  // ** N.B.: This is a confusing conflation of two functions that are
+  // similar; there should have been more abstraction. **
+  //
   // @param path:          The path to the directory whose contents are to
   //                       be cached. If it is recursive, a '*' will be
   //                       appended at the end.
   //
-  // @param seenPaths:     Map of the RealPath of symlinks to directories to 
-  //                       whether they have been searched already or not.
-  //                       Safeguard against infinite cycles caused by 
-  //                       symlinks Any symlinks to directories while in
-  //                       fill() must be added to this map.
+  // @param seenPaths:     Set of paths already seen.  Used to avoid 
+  //                       cycles caused by symlinks.
   //
-  // @param resultpathVec: If not NULL and 'path' is recursive, all
-  //                       sub-directories of 'path' will be added 
-  //                       to this vector, which is used in a LIFO manner.
+  // @param resultpathVec: If non-NULL and 'path' is recursive, all
+  //                       sub-directories of 'path' will be added to
+  //                       this vector, which is used in a LIFO manner.
   std::string
-  scan(std::string& path, std::map<std::string, bool>& seenPaths, 
-       std::vector<std::string>* resultPathVec = NULL);
+  scan(std::string& path, std::set<std::string>& seenPaths,
+       std::vector<std::string>* recursionStack = NULL);
 
  
   // If the cache is full and a path cannot be found from the cache,
@@ -244,35 +244,31 @@ private:
   //                  "w" - write access
   //                  "x" - execute access
   //
-  // @param seenPaths: Map of symlinks to directories that indicates
-  //                   which have been searched already, to avoid infinite
-  //                   cycles. Provided here to be common to all calls to
-  //                   fill().
+  // @param seenPaths: Set of paths already seen.  Used to avoid cycles caused
+  //                   by symlinks.
   const char*
   pathfind_slow(const char* pathList, const char* name, const char* mode,
-		std::map<std::string, bool>& seenPaths);
+		std::set<std::string>& seenPaths);
   
   
   // Resolves all '..' and '.' in 'path' in reference to itself. Does
   // NOT find the unique real path of 'path'. Returns how many '..'
   // are left in 'path'. Helps make sure more accurate results are
   // returned from find().
-  //  
+  //
   // Ex: if path = 'src/../../lib/src/./../ex.c' then resolve(path) would turn
   //     path into '../lib/ex.c'.
-  // 
+  //
   // @param path: The file path to resolve.
   // @return:     The number of '..' in 'path' after it has been resolved.
-  int 
+  int
   resolve(std::string& path);
   
 
-private: 
-  typedef
-  std::map<std::string, std::vector<std::string> > PathMap;
+private:
+  typedef std::map<std::string, std::vector<std::string> > PathMap;
 
   PathMap m_cache;
-  std::map<std::string, bool> directories;
   bool m_cacheNotFull;
   bool m_filled;
 
