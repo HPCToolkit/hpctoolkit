@@ -100,7 +100,7 @@ RealPathMgr& RealPathMgr::singleton()
 
 
 bool
-RealPathMgr::realpath(string& pathNm)
+RealPathMgr::realpath(string& pathNm) const
 {
   if (pathNm.empty()) {
     return false;
@@ -117,7 +117,7 @@ RealPathMgr::realpath(string& pathNm)
   if (it != m_realpath_map.end()) {
     // use cached value
     const string& pathNm_real = it->second;
-    if (pathNm_real[0] == '/') { // optimization to avoid copy
+    if (pathNm_real[0] == '/') { // optimization: only copy if fully resolved
       pathNm = pathNm_real;
     }
   }
@@ -125,20 +125,25 @@ RealPathMgr::realpath(string& pathNm)
     // -------------------------------------------------------
     // 2. Consult cache with path-replaced 'pathNm'
     // -------------------------------------------------------
+    string pathNm_orig = pathNm;
+
     pathNm = PathReplacementMgr::singleton().getReplacedPath(pathNm);
     it = m_realpath_map.find(pathNm);
+
     if (it != m_realpath_map.end()) {
       // use cached value
       const string& pathNm_real = it->second;
-      if (pathNm_real[0] == '/') { // optimization to avoid copy
+      if (pathNm_real[0] == '/') { // optimization: only copy if fully resolved
 	pathNm = pathNm_real;
       }
+
+      // since 'pathNm_orig' was not in map, ensure it is
+      m_realpath_map.insert(make_pair(pathNm_orig, pathNm_real));
     }
     else {
       // -------------------------------------------------------
       // 3. Resolve 'pathNm' using PathFindMgr or realpath
       // -------------------------------------------------------
-      string pathNm_orig = pathNm;
       string pathNm_real = pathNm;
       
       if (m_searchPaths.empty()) {
@@ -176,11 +181,11 @@ RealPathMgr::searchPaths(const string& sPaths)
       // if its recursive, need to strip off and add back on '/*'
       currentPath = currentPath.substr(0,currentPath.length() - 2);
       currentPath = RealPath(currentPath.c_str());
-      m_searchPaths+= (currentPath + "/*:");
+      m_searchPaths += (currentPath + "/*:");
     }
     else if (currentPath != ".") { // so we can exclude this from cache
       currentPath = RealPath(currentPath.c_str());
-      m_searchPaths+= (currentPath + ":");
+      m_searchPaths += (currentPath + ":");
     }
     
     trailingIn = in;
