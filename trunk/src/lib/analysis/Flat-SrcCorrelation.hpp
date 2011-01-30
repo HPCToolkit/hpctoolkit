@@ -232,18 +232,19 @@ class DriverDocHandlerArgs
   : public DocHandlerArgs {
 public:
   DriverDocHandlerArgs(Driver* driver)
-    : /* DocHandlerArgs(NULL), */ m_driver(driver)
+    : DocHandlerArgs(NULL), m_driver(driver)
   { }
 
   virtual
   ~DriverDocHandlerArgs()
   { }
-  
-  virtual string
+
+  // Would be better to use realpath() and RealPathMgr
+  string
   replacePath(const char* oldpath) const
   { return m_driver->replacePath(oldpath); }
 
-  virtual string
+  string
   replacePath(const std::string& oldpath) const
   { return m_driver->replacePath(oldpath); }
   
