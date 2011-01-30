@@ -289,7 +289,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     string nm = getAttr(attributes, attrName); // must exist
     DIAG_Assert(m_curRoot && !m_curLM, "Parse error!");
 
-    nm = m_args.replacePath(nm);
+    nm = m_args.realpath(nm);
     m_curLM = Prof::Struct::LM::demand(m_curRoot, nm);
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curLM->toStringMe());
 
@@ -304,7 +304,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     string nm = getAttr(attributes, attrName);
     DIAG_Assert(m_curLM && !m_curFile, "Parse error!");
     
-    nm = m_args.replacePath(nm);
+    nm = m_args.realpath(nm);
     m_curFile = Struct::File::demand(m_curLM, nm);
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curFile->toStringMe());
 
@@ -366,7 +366,7 @@ PGMDocHandler::startElement(const XMLCh* const uri,
     
     string nm = getAttr(attributes, attrName); 
     string fnm = getAttr(attributes, attrAlienFile);
-    fnm = m_args.replacePath(fnm);
+    fnm = m_args.realpath(fnm);
 
     SrcFile::ln begLn, endLn;
     getLineAttr(begLn, endLn, attributes);

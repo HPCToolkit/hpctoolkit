@@ -69,7 +69,7 @@
 #include "XercesSAX2.hpp"
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/PathReplacementMgr.hpp>
+#include <lib/support/RealPathMgr.hpp>
 
 
 //************************ Forward Declarations ******************************
@@ -78,22 +78,20 @@
 
 class DocHandlerArgs {
 public:
-  DocHandlerArgs(const PathReplacementMgr* replaceMgr = NULL)
-    : m_replaceMgr(replaceMgr)
+  DocHandlerArgs(const RealPathMgr* realpathMgr = NULL)
+    : m_realpathMgr(realpathMgr)
   { }
   
   virtual ~DocHandlerArgs()
   { }
   
   virtual std::string
-  replacePath(const char* oldpath) const
-  { DIAG_Die(DIAG_Unimplemented); return ""; }
-  
-  virtual std::string
-  replacePath(const std::string& oldpath) const
-  { 
-    if (m_replaceMgr) {
-      return m_replaceMgr->getReplacedPath(oldpath);
+  realpath(const std::string& oldpath) const
+  {
+    if (m_realpathMgr) {
+      std::string path = oldpath;
+      m_realpathMgr->realpath(path);
+      return path;
     }
     else {
       return oldpath;
@@ -101,7 +99,7 @@ public:
   }
   
 private:
-  const PathReplacementMgr* m_replaceMgr;
+  const RealPathMgr* m_realpathMgr;
 };
 
 //****************************************************************************
