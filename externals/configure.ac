@@ -1,7 +1,7 @@
 dnl
 dnl  Externals configure.
 dnl
-dnl  Copyright (c) 2008-2010, Rice University.
+dnl  Copyright (c) 2008-2011, Rice University.
 dnl  All rights reserved.
 dnl
 dnl  Redistribution and use in source and binary forms, with or without
@@ -34,8 +34,11 @@ dnl
 dnl  $Id$
 dnl
 
-AC_INIT([externals], [4.9.9],
-        [hpc@cs.rice.edu], [hpctoolkit-externals])
+AC_INIT([externals], [4.9.9], [hpc@cs.rice.edu],
+        [hpctoolkit-externals], [http://hpctoolkit.org/])
+AC_COPYRIGHT([Copyright (c) 2008-2011, Rice University.
+See the file LICENSE for details.])
+
 AC_CONFIG_AUX_DIR([config])
 AC_PREREQ(2.67)
 
@@ -332,7 +335,7 @@ then
         if mkdir -p "$pkg" ; then : ; else
 	    AC_MSG_ERROR([unable to mkdir $pkg])
 	fi
-	for file in "${srcdir}/${pkg}/"*
+	for file in "${srcdir}/${pkg}"/*
 	do
 	    if test -f "$file" ; then
 		if cp -f "$file" "$pkg" ; then : ; else
@@ -340,19 +343,23 @@ then
 		fi
 	    fi
 	done
-	if test -d "${srcdir}/${pkg}/patches" ; then
-	    if mkdir -p "${pkg}/patches" ; then : ; else
-		AC_MSG_ERROR([unable to mkdir ${pkg}/patches])
-	    fi
-	    for file in "${srcdir}/${pkg}/patches/patch-"*
-	    do
-	        if test -f "$file" ; then
-		    if cp -f "$file" "${pkg}/patches" ; then : ; else
-			AC_MSG_ERROR([unable to copy $file])
-		    fi
+	for dir in "${srcdir}/${pkg}"/patch*
+	do
+	    if test -d "$dir" ; then
+		base=`basename "$dir"`
+		if mkdir -p "${pkg}/${base}" ; then : ; else
+		    AC_MSG_ERROR([unable to mkdir $pkg/$base])
 		fi
-	    done
-	fi
+		for patch in "$dir"/patch-*
+		do
+		    if test -f "$patch" ; then
+			if cp -f "$patch" "${pkg}/${base}" ; then : ; else
+			    AC_MSG_ERROR([unable to copy $patch])
+			fi
+		    fi
+		done
+	    fi
+	done
     done
 
     # Symlink the distfiles directory.
@@ -1046,7 +1053,7 @@ if test "$warn_wordsize_mismatch" = yes ; then
 fi
 
 AC_MSG_NOTICE([svn revision: $svn_revision])
-AC_MSG_NOTICE([prefix: $prefix ($enable_subdirs_mesg)])
+AC_MSG_NOTICE([prefix: $prefix])
 AC_MSG_NOTICE([build: $build])
 AC_MSG_NOTICE([host:  $host])
 AC_MSG_NOTICE([CC:  '$CC',  CFLAGS:   '$CFLAGS'])
