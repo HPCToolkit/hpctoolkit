@@ -100,13 +100,14 @@ public:
   // can be (which does not necessarily mean it exists); otherwise
   // return false.
   bool
-  realpath(std::string& pathNm);
+  realpath(std::string& pathNm) const;
   
   
   const std::string&
-  searchPaths()
+  searchPaths() const
   { return m_searchPaths; }
   
+
   // Given 'sPaths', each individual search path is ripped from the
   // string and has RealPath() applied to it before it is added to
   // 'm_searchPaths'. Recursive and non-recursive properties of each
@@ -138,7 +139,7 @@ private:
   typedef std::map<std::string, std::string> MyMap;
 
   std::string m_searchPaths;
-  MyMap m_realpath_map;
+  mutable MyMap m_realpath_map;
 };
 
 
