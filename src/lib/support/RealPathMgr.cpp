@@ -109,12 +109,12 @@ RealPathMgr::realpath(string& pathNm) const
   // INVARIANT: 'pathNm' is not empty
 
   // INVARIANT: all entries in the map are non-empty
-  MyMap::iterator it = m_realpath_map.find(pathNm);
+  MyMap::iterator it = m_cache.find(pathNm);
 
   // -------------------------------------------------------
   // 1. Check cache for 'pathNm'
   // -------------------------------------------------------
-  if (it != m_realpath_map.end()) {
+  if (it != m_cache.end()) {
     // use cached value
     const string& pathNm_real = it->second;
     if (pathNm_real[0] == '/') { // optimization: only copy if fully resolved
@@ -128,9 +128,9 @@ RealPathMgr::realpath(string& pathNm) const
     string pathNm_orig = pathNm;
 
     pathNm = PathReplacementMgr::singleton().getReplacedPath(pathNm);
-    it = m_realpath_map.find(pathNm);
+    it = m_cache.find(pathNm);
 
-    if (it != m_realpath_map.end()) {
+    if (it != m_cache.end()) {
       // use cached value
       const string& pathNm_real = it->second;
       if (pathNm_real[0] == '/') { // optimization: only copy if fully resolved
@@ -138,7 +138,7 @@ RealPathMgr::realpath(string& pathNm) const
       }
 
       // since 'pathNm_orig' was not in map, ensure it is
-      m_realpath_map.insert(make_pair(pathNm_orig, pathNm_real));
+      m_cache.insert(make_pair(pathNm_orig, pathNm_real));
     }
     else {
       // -------------------------------------------------------
@@ -159,7 +159,7 @@ RealPathMgr::realpath(string& pathNm) const
       }
 
       pathNm = pathNm_real;
-      m_realpath_map.insert(make_pair(pathNm_orig, pathNm_real));
+      m_cache.insert(make_pair(pathNm_orig, pathNm_real));
     }
   }
   return (pathNm[0] == '/'); // fully resolved
@@ -202,22 +202,32 @@ RealPathMgr::searchPaths(const string& sPaths)
 //***************************************************************************
 
 string
-RealPathMgr::toString(int flags) const
+RealPathMgr::toString(uint flags) const
 {
-  return "";
+  std::ostringstream os;
+  dump(os, flags);
+  return os.str();
 }
 
 
 std::ostream&
-RealPathMgr::dump(std::ostream& os, int flags) const
+RealPathMgr::dump(std::ostream& os, uint flags, const char* pfx) const
 {
+  os << pfx << "[ RealPathMgr:" << std::endl;
+  for (MyMap::const_iterator it = m_cache.begin(); it != m_cache.end(); ++it) {
+    const string& x = it->first;
+    const string& y = it->second;
+    os << pfx << "  " << x << " => " << y << std::endl;
+  }
+  os << pfx << "]" << std::endl;
+
   os.flush();
   return os;
 }
 
 
 void
-RealPathMgr::ddump(int flags) const
+RealPathMgr::ddump(uint flags) const
 {
   dump(std::cerr, flags);
 }
