@@ -86,8 +86,8 @@ static PathFindMgr s_singleton;
 
 PathFindMgr::PathFindMgr()
 {
-  m_filled = false;
-  m_cacheNotFull = true;
+  m_isPopulated = false;
+  m_isFull = false;
   m_size = 0;
 }
 
@@ -110,14 +110,14 @@ PathFindMgr::pathfind(const char* pathList, const char* name, const char* mode)
   // -------------------------------------------------------
   // 0. Cache files found using 'pathList'
   // -------------------------------------------------------
-  if (!m_filled) {
-    m_filled = true;
+  if (!m_isPopulated) {
+    m_isPopulated = true;
     std::vector<std::string> pathVec; // will contain all -I paths
     StrUtil::tokenize_str(std::string(pathList), ":", pathVec);
     
     std::set<std::string> seenPaths;
     std::vector<std::string> recursionStack;
-    while (m_cacheNotFull && !pathVec.empty()) {
+    while (!m_isFull && !pathVec.empty()) {
       if (pathVec.back() != ".") { // do not cache within CWD
 	scan(pathVec.back(), seenPaths, &recursionStack);
 	seenPaths.clear();
@@ -135,7 +135,7 @@ PathFindMgr::pathfind(const char* pathList, const char* name, const char* mode)
 
   bool found = find(name_real);
  
-  if (!found && !m_cacheNotFull) {
+  if (!found && m_isFull) {
     std::set<std::string> seenPaths;
     const char* temp = pathfind_slow(pathList, name, mode, seenPaths);
     if (temp) {
@@ -188,7 +188,8 @@ PathFindMgr::pathfind_slow(const char* pathList, const char* name,
       int l = strlen(aPath);
       strncat(pathList_r, aPath, l - RECURSIVE_PATH_SUFFIX_LN);
       strcat(pathList_r, ":"); // will have a trailing ':' for 'strchr'
-    } else {
+    }
+    else {
       // copy to non-recurisve path list
       if (first_nr == 0) { strcat(pathList_nr, ":"); }
       strcat(pathList_nr, aPath);
@@ -348,7 +349,7 @@ PathFindMgr::insert(const std::string& path)
   // -------------------------------------------------------
   // Insert <fnm, path> in m_cache if there is still space
   // -------------------------------------------------------
-  if (m_size < s_sizeLimit) {
+  if (m_size < s_sizeMax) {
     PathMap::iterator it = m_cache.find(fnm);
     if (it == m_cache.end()) {
       // 0. There is no entry for 'fnm'
@@ -379,9 +380,9 @@ PathFindMgr::insert(const std::string& path)
     // Not smart caching. We are not expecting there to be more data
     // than can fit in the cache, but in case there is, this will
     // prevent the program from crashing.
-    DIAG_WMsgIf(m_size >= s_sizeLimit,
+    DIAG_WMsgIf(m_size >= s_sizeMax,
 		"PathFindMgr::insert(): cache size limit reached");
-    m_cacheNotFull = false;
+    m_isFull = true;
   }
 }
 
@@ -472,7 +473,7 @@ PathFindMgr::scan(std::string& path, std::set<std::string>& seenPaths,
     // regular file
     // --------------------------------------------------
     if (dire->d_type == DT_REG || isLink_file) {
-      if (doCacheFiles && m_cacheNotFull) {
+      if (doCacheFiles && !m_isFull) {
 	insert(next_fnm);
       }
     }
@@ -573,7 +574,12 @@ PathFindMgr::toString(uint flags) const
 std::ostream&
 PathFindMgr::dump(std::ostream& os, uint flags, const char* pfx) const
 {
-  os << pfx << "[ PathFindMgr:" << std::endl;
+  using std::endl;
+
+  os << pfx << "[ PathFindMgr: " << endl
+     << pfx << "  isPopulated: " << m_isPopulated << endl
+     << pfx << "  isFull: " << m_isFull << endl
+     << pfx << "  size: " << m_size << " (max: " << s_sizeMax << ")" << endl;
   for (PathMap::const_iterator it = m_cache.begin();
        it != m_cache.end(); ++it) {
     const string& x = it->first;
@@ -586,9 +592,9 @@ PathFindMgr::dump(std::ostream& os, uint flags, const char* pfx) const
       }
       os << y[i];
     }
-    os << "}" << std::endl;
+    os << "}" << endl;
   }
-  os << pfx << "]" << std::endl;
+  os << pfx << "]" << endl;
   return os;
 }
 
