@@ -442,28 +442,35 @@ PathFindMgr::scan(std::string& path, std::set<std::string>& seenPaths,
     
     std::string x_fnm = path + "/" + x->d_name;
 
-    unsigned char x_type = x->d_type;
+    // --------------------------------------------------
+    // compute type of 'x_fnm'
+    // --------------------------------------------------
+    unsigned char x_type = DT_UNKNOWN;
+#if defined(_DIRENT_HAVE_D_TYPE)
+    x_type = x->d_type;
+#endif
 
-    // If 'd_type' appears to be bogus -- it is not defined in POSIX --
-    // then try stat(). (N.B. stat resolves symlinks.)
-    // (We avoid unconditionally calling stat for performance.)
-    if (x_type == 0) {
+    // Even if 'd_type' is available, it may be bogus.  Try stat().
+    if (x_type == DT_UNKNOWN) {
       struct stat statbuf;
-      int ret = stat(x_fnm.c_str(), &statbuf); // 'stat' resolves symlinks
+      int ret = lstat(x_fnm.c_str(), &statbuf); // do not follow symlinks!
       if (ret != 0) {
 	continue; // error
       }
       
-      if (S_ISREG(statbuf.st_mode)) {
-	x_type = DT_REG;
+      if (S_ISLNK(statbuf.st_mode)) {
+	x_type = DT_LNK; // S_IFLNK
+      }
+      else if (S_ISREG(statbuf.st_mode)) {
+	x_type = DT_REG; // S_IFREG
       }
       else if (S_ISDIR(statbuf.st_mode)) {
-	x_type = DT_DIR;
+	x_type = DT_DIR; // S_IFDIR
       }
     }
 
     // --------------------------------------------------
-    // symlink: resolve to regular file or directory (if possible)
+    // special case: resolve symlink to regular file or directory
     // --------------------------------------------------
     if (x_type == DT_LNK) {
       struct stat statbuf;
@@ -476,7 +483,7 @@ PathFindMgr::scan(std::string& path, std::set<std::string>& seenPaths,
 	x_type = DT_REG;
       }
       else if (S_ISDIR(statbuf.st_mode)) {
-	x_type = DT_DIR; // must search
+	x_type = DT_DIR;
 	x_fnm = RealPath(x_fnm.c_str());
 	if (seenPaths.find(x_fnm) != seenPaths.end()) {
 	  continue; // avoid cycles
@@ -485,7 +492,7 @@ PathFindMgr::scan(std::string& path, std::set<std::string>& seenPaths,
     }
 
     // --------------------------------------------------
-    // regular file
+    // case 1: regular file
     // --------------------------------------------------
     if (x_type == DT_REG) {
       if (doCacheFiles && !m_isFull) {
@@ -494,7 +501,7 @@ PathFindMgr::scan(std::string& path, std::set<std::string>& seenPaths,
     }
 
     // --------------------------------------------------
-    // directory
+    // case 2: directory
     // --------------------------------------------------
     else if (x_type == DT_DIR) {
       if (recursionStack) {
