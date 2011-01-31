@@ -1,0 +1,43 @@
+#!/bin/sh
+#
+#  SymtabAPI configure.
+#
+#  $Id$
+#
+
+PKG_NAME=symtabAPI
+work=symtabAPI/src/dyninst
+
+. ../build-utils/configure.inc
+pre_configure
+prefix="$symtabAPI_prefix"
+
+set -- \
+    CC="$CC"  CFLAGS="$CFLAGS" \
+    CXX="$CXX"  CXXFLAGS="$CXXFLAGS" \
+    --prefix="$prefix" \
+    --bindir="${prefix}/bin" \
+    --includedir="${prefix}/include" \
+    --libdir="${prefix}/lib" \
+    --with-libdwarf-incdir="$libdwarf_inc" \
+    --with-libdwarf-libdir="$libdwarf_lib" \
+    --with-libelf-incdir="$libelf_inc" \
+    --with-libelf-libdir="$libelf_lib" \
+    --with-libunwind-incdir="$libunwind_inc" \
+    --with-libunwind-libdir="$libunwind_lib" \
+    --with-libxml2-incdir="$libxml2_inc" \
+    --with-libxml2-libdir="$libxml2_lib" \
+    --with-libiberty-libdir="${binutils_prefix}/lib64" \
+    "$@"
+
+if test -n "$is_cross_compile" ; then
+    set -- --host="$host" "$@"
+fi
+
+cd "$work" || die "unable to cd: $work"
+
+echo ./configure "$@"
+./configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure
