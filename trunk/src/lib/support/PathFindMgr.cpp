@@ -433,37 +433,52 @@ PathFindMgr::scan(std::string& path, std::set<std::string>& seenPaths,
   }
 
   bool isFirstDir = true;
-  struct dirent* dire;
-  while ( (dire = readdir(dir)) ) {
+  struct dirent* x;
+  while ( (x = readdir(dir)) ) {
     // skip "." and ".."
-    if (strcmp(dire->d_name, ".") == 0 || strcmp(dire->d_name, "..") == 0) {
+    if (strcmp(x->d_name, ".") == 0 || strcmp(x->d_name, "..") == 0) {
       continue;
     }
     
-    std::string next_fnm = path + "/" + dire->d_name;
+    std::string x_fnm = path + "/" + x->d_name;
 
-    // --------------------------------------------------
-    // symlink: resolve to regular file or directory (if possible)
-    // --------------------------------------------------
-    bool isLink_file = false;
-    bool isLink_dir = false;
+    unsigned char x_type = x->d_type;
 
-    if (dire->d_type == DT_LNK) {
-      struct stat buf;
-      int ret = stat(next_fnm.c_str(), &buf);
+    // If 'd_type' appears to be bogus -- it is not defined in POSIX --
+    // then try stat(). (N.B. stat resolves symlinks.)
+    // (We avoid unconditionally calling stat for performance.)
+    if (x_type == 0) {
+      struct stat statbuf;
+      int ret = stat(x_fnm.c_str(), &statbuf); // 'stat' resolves symlinks
       if (ret != 0) {
 	continue; // error
       }
       
-      if (S_ISREG(buf.st_mode)) {
-	isLink_file = true;
+      if (S_ISREG(statbuf.st_mode)) {
+	x_type = DT_REG;
       }
-      else if (S_ISDIR(buf.st_mode)) {
-	next_fnm = RealPath(next_fnm.c_str());
-	if (seenPaths.find(next_fnm) == seenPaths.end()) {
-	  isLink_dir = true; // must search
-	}
-	else {
+      else if (S_ISDIR(statbuf.st_mode)) {
+	x_type = DT_DIR;
+      }
+    }
+
+    // --------------------------------------------------
+    // symlink: resolve to regular file or directory (if possible)
+    // --------------------------------------------------
+    if (x_type == DT_LNK) {
+      struct stat statbuf;
+      int ret = stat(x_fnm.c_str(), &statbuf); // 'stat' resolves symlinks
+      if (ret != 0) {
+	continue; // error
+      }
+      
+      if (S_ISREG(statbuf.st_mode)) {
+	x_type = DT_REG;
+      }
+      else if (S_ISDIR(statbuf.st_mode)) {
+	x_type = DT_DIR; // must search
+	x_fnm = RealPath(x_fnm.c_str());
+	if (seenPaths.find(x_fnm) != seenPaths.end()) {
 	  continue; // avoid cycles
 	}
       }
@@ -472,28 +487,28 @@ PathFindMgr::scan(std::string& path, std::set<std::string>& seenPaths,
     // --------------------------------------------------
     // regular file
     // --------------------------------------------------
-    if (dire->d_type == DT_REG || isLink_file) {
+    if (x_type == DT_REG) {
       if (doCacheFiles && !m_isFull) {
-	insert(next_fnm);
+	insert(x_fnm);
       }
     }
 
     // --------------------------------------------------
     // directory
     // --------------------------------------------------
-    else if (dire->d_type == DT_DIR || isLink_dir) {
+    else if (x_type == DT_DIR) {
       if (recursionStack) {
 	if (doRecursiveScan) {
-	  next_fnm += "/*";
-	  recursionStack->push_back(next_fnm);
+	  x_fnm += "/*";
+	  recursionStack->push_back(x_fnm);
 	}
       }
       else {
-	next_fnm += "/*";
+	x_fnm += "/*";
 	if (!isFirstDir) {
 	  localPaths += ":";
 	}
-	localPaths += next_fnm;
+	localPaths += x_fnm;
 	isFirstDir = false;
       }
     }
