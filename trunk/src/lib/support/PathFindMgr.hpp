@@ -131,14 +131,16 @@ public:
  
 
   // -------------------------------------------------------
-  // Dump contents
+  // debugging
   // -------------------------------------------------------
+  std::string
+  toString(uint flags = 0) const;
   
   std::ostream&
-  dump(std::ostream& os = std::cerr, uint oFlags = 0);
+  dump(std::ostream& os, uint flags = 0, const char* pfx = "") const;
   
   void
-  ddump();
+  ddump(uint flags = 0) const;
   
 
 private:

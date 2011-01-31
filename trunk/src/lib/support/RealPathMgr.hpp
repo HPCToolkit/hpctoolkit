@@ -125,21 +125,21 @@ public:
   // debugging
   // -------------------------------------------------------
   std::string
-  toString(int flags = 0) const;
+  toString(uint flags = 0) const;
 
   // flags = -1: compressed dump / 0: normal dump / 1: extra info
   std::ostream&
-  dump(std::ostream& os, int flags = 0) const;
+  dump(std::ostream& os, uint flags = 0, const char* pfx = "") const;
 
   void
-  ddump(int flags = 0) const;
+  ddump(uint flags = 0) const;
 
 
 private:
   typedef std::map<std::string, std::string> MyMap;
 
   std::string m_searchPaths;
-  mutable MyMap m_realpath_map;
+  mutable MyMap m_cache;
 };
 
 

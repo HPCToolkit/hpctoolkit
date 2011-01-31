@@ -59,6 +59,9 @@
 
 //************************* System Include Files ****************************
 
+#include <string>
+using std::string;
+
 #include <cstring>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -556,25 +559,42 @@ PathFindMgr::isRecursivePath(const char* path)
 }
 
 
-std::ostream&
-PathFindMgr::dump(std::ostream& os, uint oFlags)
+//***************************************************************************
+
+string
+PathFindMgr::toString(uint flags) const
 {
-  std::map<std::string, std::vector<std::string> >::iterator it;
-  for (it = m_cache.begin(); it != m_cache.end(); it++) {
-    os << "File name ==> " << it->first << "\nAssociated paths:" << std::endl;
-    const std::vector<std::string>& paths = it->second;
-    
-    for (size_t in = 0; in < paths.size(); in++) {
-      os << in << ") " << paths[in] << std::endl;
+  std::ostringstream os;
+  dump(os, flags);
+  return os.str();
+}
+
+
+std::ostream&
+PathFindMgr::dump(std::ostream& os, uint flags, const char* pfx) const
+{
+  os << pfx << "[ PathFindMgr:" << std::endl;
+  for (PathMap::const_iterator it = m_cache.begin();
+       it != m_cache.end(); ++it) {
+    const string& x = it->first;
+    const std::vector<string>& y = it->second;
+
+    os << pfx << "  " << x << " => {";
+    for (size_t i = 0; i < y.size(); ++i) {
+      if (i != 0) {
+	os << ", ";
+      }
+      os << y[i];
     }
-    os << std::endl;
+    os << "}" << std::endl;
   }
+  os << pfx << "]" << std::endl;
   return os;
 }
 
 
 void
-PathFindMgr::ddump()
+PathFindMgr::ddump(uint flags) const
 {
-  dump(std::cerr);
+  dump(std::cerr, flags);
 }
