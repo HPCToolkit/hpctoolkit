@@ -68,8 +68,9 @@ call_is_push_next_addr_idiom(xed_decoded_inst_t* xptr, interval_arg_t* iarg)
 {
   void* ins = iarg->ins;
   void* call_addr = x86_get_branch_target(ins, xptr);
+  void* next_addr = ((char *) ins) + xed_decoded_inst_get_length(xptr);
   
-  return ( call_addr == ( ins + xed_decoded_inst_get_length(xptr) ) );
+  return (call_addr == next_addr);
 }
 
 /******************************************************************************
@@ -96,9 +97,9 @@ process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
   //
   if (call_is_push_next_addr_idiom(xptr, iarg)) {
     next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), iarg->current->ra_status,
-		  iarg->current->sp_ra_pos + sizeof(void*), iarg->current->bp_ra_pos, iarg->current->bp_status,
-		  iarg->current->sp_bp_pos, iarg->current->bp_bp_pos, iarg->current);
-
+		  iarg->current->sp_ra_pos + sizeof(void*), iarg->current->bp_ra_pos, 
+                  iarg->current->bp_status, iarg->current->sp_bp_pos + sizeof(void*), 
+                  iarg->current->bp_bp_pos, iarg->current);
   }
 #ifdef USE_CALL_LOOKAHEAD
   next = call_lookahead(xptr, iarg->current, iarg->ins);
