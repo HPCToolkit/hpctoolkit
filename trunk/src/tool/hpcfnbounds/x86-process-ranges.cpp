@@ -595,8 +595,10 @@ process_call(char *ins, long offset, xed_decoded_inst_t *xptr,
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
 
     if (xed_operand_values_has_branch_displacement(vals)) {
+      int call_inst_len = xed_decoded_inst_get_length(xptr);
+      void *next_inst_vaddr = ((char *)ins) + offset + call_inst_len;
       void* vaddr = get_branch_target(ins + offset, xptr, vals);
-      if (consider_possible_fn_address(vaddr)) {
+      if (vaddr != next_inst_vaddr && consider_possible_fn_address(vaddr)) {
 	//
 	// if called address is a 'push bp' sequence of instructions,
 	// [ ie, either a single 'push bp', or a 'sub NNN, sp', followed by
