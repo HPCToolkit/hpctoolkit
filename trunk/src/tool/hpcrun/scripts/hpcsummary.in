@@ -4,7 +4,7 @@
 # Part of HPCToolkit (hpctoolkit.org)
 #------------------------------------
 #
-# Copyright (c) 2002-2010, Rice University.
+# Copyright (c) 2002-2011, Rice University.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@
 # hpcsummary -- summarize the .log and .hpcrun files in an HPCToolkit
 # measurements directory.
 #
-# Usage: ./hpcsummary [-ahV] [directory]
+# Usage: ./hpcsummary [-ahV] [directory ...]
 #
 #  -a adds summary info for blocks, errors and trolls
 #  -h displays the help message
@@ -56,11 +56,10 @@ import sys
 
 # Global variables
 DATA = []
-DIRLIST = []
 BASE2INDEX = {}
 MAX_TID = 0
-NUM_ERRORS = 0
 HAS_TROLLS = False
+NUM_ERRORS = 0
 
 # Constants
 BLOCKS = 'blocks'
@@ -86,7 +85,7 @@ def warn(mesg):
 
 
 def usage():
-    print '''usage: %s [-ahV] [directory]
+    print '''usage: %s [-ahV] [directory ...]
 
   -a, --all
     include summary info for blocked, errant and trolled samples
@@ -97,7 +96,7 @@ def usage():
   -V, --version
     display HPCToolkit version
 
-The directory is an HPCToolkit measurements directory,
+The directories are HPCToolkit measurements directories,
 or else the current directory if omitted.''' % sys.argv[0]
     sys.exit(0)
 
@@ -213,10 +212,12 @@ def do_hpcrun_file(fname):
     return
 
 
-def display_metric(title, label, metric):
+def display_metric(dir, title, label, metric):
     global DATA, NUM_ERRORS
 
     print '=' * 72
+    if dir != '.':
+        print 'Directory: %s' % dir
     if isinstance(metric, tuple):
         tid = metric[0]
         print '%s, thread %d' % (title, tid)
@@ -260,13 +261,58 @@ def display_metric(title, label, metric):
             print '%6d%%  %14d  %s' % (
                 (10 * dec), COPY[n][metric], COPY[n][(tid, NAME)])
     print
-    print 'processes: %d, average: %0.1f' % (nproc, total / float(nproc))
+    print '%s: procs: %d, total: %d, avg: %0.1f, dir: %s' % (
+        label, nproc, total, total / float(nproc), dir)
     return
+
+
+def do_dir(dir):
+    global DATA, MAX_TID, HAS_TROLLS
+    global BLOCKS, ERRORS, SAMPLES, TROLLS
+    global origdir, opt_display_all
+
+    os.chdir(origdir)
+    try:
+        os.chdir(dir)
+    except OSError:
+        warn('unable to cd to %s' % (dir))
+        return
+
+    DATA = []
+    BASE2INDEX = {}
+    MAX_TID = 0
+    HAS_TROLLS = False
+
+    # Read and process .log and .hpcrun files.
+    DIRLIST = os.listdir('.')
+    for file in DIRLIST:
+        if file.endswith('.log'):
+            do_log_file(file)
+    if len(DATA) == 0:
+        warn('no valid .log files in directory %s' % (dir))
+        return
+
+    for file in DIRLIST:
+        if file.endswith('.hpcrun'):
+            do_hpcrun_file(file)
+
+    # Print the summaries.
+    if opt_display_all:
+        display_metric(dir, 'Blocked Samples', 'blocks', BLOCKS)
+        display_metric(dir, 'Errant Samples', 'errors', ERRORS)
+        if HAS_TROLLS:
+            display_metric(dir, 'Samples with Trolls', 'trolls', TROLLS)
+    display_metric(dir, 'Recorded Samples', 'samples', SAMPLES)
+    for t in range(MAX_TID + 1):
+        display_metric(dir, 'File Size', 'size', (t, FILESIZE))
 
 
 #
 # Main program.
 #
+if sys.version_info < (2, 4):
+    sys.exit('This script requires Python version 2.4 or later.')
+
 try:
     opts, args = getopt.getopt(sys.argv[1:], 'ahV', ['all', 'help', 'version'])
 except getopt.GetoptError:
@@ -284,33 +330,13 @@ for opt, arg in opts:
     else:
         sys.exit('unknown option: %s' % opt)
 
-# Read and process .log and .hpcrun files.
-if len(args) > 0:
-    try:
-        os.chdir(args[0])
-    except OSError:
-        sys.exit('unable to cd to: %s' % args[0])
+# Process each directory, or else '.'.
+if len(args) == 0:
+    args = ['.']
 
-DIRLIST = os.listdir('.')
-for file in DIRLIST:
-    if file.endswith('.log'):
-        do_log_file(file)
-if len(DATA) == 0:
-    sys.exit('no valid .log files')
-
-for file in DIRLIST:
-    if file.endswith('.hpcrun'):
-        do_hpcrun_file(file)
-
-# Print the summaries.
-if opt_display_all:
-    display_metric('Blocked Samples', 'blocks', BLOCKS)
-    display_metric('Errant Samples', 'errors', ERRORS)
-    if HAS_TROLLS:
-        display_metric('Samples with Trolls', 'trolls', TROLLS)
-display_metric('Recorded Samples', 'samples', SAMPLES)
-for t in range(MAX_TID + 1):
-    display_metric('File Size', 'size', (t, FILESIZE))
+origdir = os.getcwd()
+for dir in args:
+    do_dir(dir)
 
 print '=' * 72
 
