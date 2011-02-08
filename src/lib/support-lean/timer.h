@@ -88,7 +88,7 @@ inline static uint64_t
 time_cvtSecToMicrosecs(uint64_t x)
 {
   static const uint64_t microsecPerSec = 1000000;
-  return ((x) * microsecPerSec);
+  return (x * microsecPerSec);
 }
 
 
