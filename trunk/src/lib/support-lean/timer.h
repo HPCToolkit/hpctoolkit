@@ -87,7 +87,7 @@ extern "C" {
 inline static uint64_t
 time_cvtSecToMicrosecs(uint64_t x)
 {
-  static const uint microsecPerSec = 1000000;
+  static const uint64_t microsecPerSec = 1000000;
   return ((x) * microsecPerSec);
 }
 
@@ -95,8 +95,8 @@ time_cvtSecToMicrosecs(uint64_t x)
 inline static uint64_t
 time_cvtNanosecToMicrosecs(uint64_t x)
 {
-  static const uint nanosecPerMicrosec = 1000;
-  return (x/nanosecPerMicrosec);
+  static const uint64_t nanosecPerMicrosec = 1000;
+  return (x / nanosecPerMicrosec);
 }
 
 
