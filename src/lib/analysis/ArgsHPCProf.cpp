@@ -102,10 +102,12 @@ attribute them to static source code structure, and generate an Experiment\n\
 database for use with hpcviewer. hpcprof-mpi is a scalable (parallel)\n\
 version of hpcprof.\n\
 \n\
-Each tool expects a list of measurement-groups, where a group is a call path\n\
-profile directory or an individual profile file.  For best results, (a) pass\n\
-recursive search paths with the -I option; and (b) pass structure information\n\
-with the -S option.\n\
+Both hpcprof and hpcprof-mpi expect a list of measurement-groups, where a\n\
+group is a call path profile directory or an individual profile file.\n\
+\n\
+N.B.: For best results (a) compile your application with debugging\n\
+information (e.g., -g); (b) pass recursive search paths with the -I option;\n\
+and (c) pass structure information with the -S option.\n\
 \n\
 Options: General:\n\
   -v [<n>], --verbose [<n>]\n\
