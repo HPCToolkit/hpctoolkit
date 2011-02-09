@@ -208,6 +208,7 @@ MY_X86_FILES = \
 MY_PAPI_FILES = 			\
 	sample-sources/papi.c           \
         sample-sources/ibs.c            \
+        sample-sources/ibsfetch.c       \
         sample-sources/cycle.c
 
 MY_UPC_FILES = sample-sources/upc.c
