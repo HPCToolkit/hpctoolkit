@@ -133,6 +133,41 @@ static xed_reg_enum_t push_other_reg;
 
 
 /******************************************************************************
+ * Debugging Macros
+ *****************************************************************************/
+
+// Uncomment (e.g. activate) the following definition
+// to access instruction byte stream.
+// (Most routines taking the "ins" argument use a relocated address. Maintaining
+// the rel_offset variable permits access to the actual instruction byte stream)
+//
+
+// #define DBG_INST_STRM
+
+// Uncomment (e.g. activate) the following definition
+// to get diagnostic print out of instruction stream when branch target offset is
+// 2 bytes.
+//
+
+// #define DBG_BR_TARG_2
+
+#ifdef DBG_INST_STRM
+
+static size_t rel_offset = 0;
+
+#  define SAVE_REL_OFFSET(offset) rel_offset = offset
+#  define KILL_REL_OFFSET() rel_offset = 0
+
+#else
+#  define SAVE_REL_OFFSET(offset)
+#  define KILL_REL_OFFSET()
+
+#endif // DBG_INST_STRM
+
+
+
+
+/******************************************************************************
  * interface operations 
  *****************************************************************************/
 
@@ -404,14 +439,29 @@ after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr)
   }
 }
 
-
 static void *
 get_branch_target(char *ins, xed_decoded_inst_t *xptr, 
 		  xed_operand_values_t *vals)
 {
   int offset = xed_operand_values_get_branch_displacement_int32(vals);
-  char *insn_end = ins + xed_decoded_inst_get_length(xptr);
-  void *target = (void*)(insn_end + offset);
+  char* insn_end = ins + xed_decoded_inst_get_length(xptr);
+  void* target = (void*)(insn_end + offset);
+
+#if defined(DBG_BR_TARG_2) && defined(DBG_INST_STRM)
+  int bytes = xed_operand_values_get_branch_displacement_length(vals);
+  
+  if (bytes == 2) {
+    fprintf(stderr, "Reached case 2 @ location: %p, offset32 = %x\n", ins, offset);
+    fprintf(stderr, "byte seq @ %p = \n  ", ins);
+    for (struct {unsigned i; unsigned char* p;} l = {0, (unsigned char*)(ins - rel_offset)};
+	 l.i < xed_decoded_inst_get_length(xptr);
+	 l.i++, l.p++) {
+      fprintf(stderr, "%x  ", *l.p);
+    }
+    fprintf(stderr, "\n");
+  }
+#endif // DBG_BR_TARG_2 && DBG_INST_STRM
+
   return target;
 }
 
@@ -585,7 +635,13 @@ process_call(char *ins, long offset, xed_decoded_inst_t *xptr,
     if (xed_operand_values_has_branch_displacement(vals)) {
       int call_inst_len = xed_decoded_inst_get_length(xptr);
       void *next_inst_vaddr = ((char *)ins) + offset + call_inst_len;
+
+      SAVE_REL_OFFSET(offset);
+
       void* vaddr = get_branch_target(ins + offset, xptr, vals);
+
+      KILL_REL_OFFSET();
+
       if (vaddr != next_inst_vaddr && consider_possible_fn_address(vaddr)) {
 	//
 	// if called address is a 'push bp' sequence of instructions,
@@ -631,7 +687,13 @@ bkwd_jump_into_protected_range(char *ins, long offset, xed_decoded_inst_t *xptr)
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
 
     if (xed_operand_values_has_branch_displacement(vals)) {
+
+      SAVE_REL_OFFSET(offset);
+
       char *target = (char *) get_branch_target(relocated_ins, xptr, vals);
+
+      KILL_REL_OFFSET();
+
       void *start, *end;
       if (target < relocated_ins) {
 	start = target;
@@ -708,7 +770,13 @@ validate_tail_call_from_jump(char *ins, long offset, xed_decoded_inst_t *xptr)
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
 
     if (xed_operand_values_has_branch_displacement(vals)) {
+
+      SAVE_REL_OFFSET(offset);
+
       char *target = (char *) get_branch_target(relocated_ins, xptr, vals);
+
+      KILL_REL_OFFSET();
+
       if (target < relocated_ins) {
 	// backward jump; if this is a tail call, it should fall on a function
 	// entry already in the function entries table
@@ -897,7 +965,13 @@ process_branch(char *ins, long offset, xed_decoded_inst_t *xptr, char* vstart, c
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
 
     if (xed_operand_values_has_branch_displacement(vals)) {
+
+      SAVE_REL_OFFSET(offset);
+
       char *target = (char *) get_branch_target(relocated_ins, xptr, vals);
+
+      KILL_REL_OFFSET();
+
       //
       // if branch target is not within bounds, then this branch instruction is bogus ....
       //
