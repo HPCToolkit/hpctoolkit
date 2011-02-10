@@ -409,21 +409,9 @@ static void *
 get_branch_target(char *ins, xed_decoded_inst_t *xptr, 
 		  xed_operand_values_t *vals)
 {
-  int bytes = xed_operand_values_get_branch_displacement_length(vals);
-  int offset = 0;
-  switch(bytes) {
-  case 1:
-    offset = (signed char) 
-      xed_operand_values_get_branch_displacement_byte(vals,0);
-    break;
-  case 4:
-    offset = xed_operand_values_get_branch_displacement_int32(vals);
-    break;
-  default:
-    assert(0);
-  }
-  char *end_of_call_inst = ins + xed_decoded_inst_get_length(xptr);
-  char *target = end_of_call_inst + offset;
+  int offset = xed_operand_values_get_branch_displacement_int32(vals);
+  char *insn_end = ins + xed_decoded_inst_get_length(xptr);
+  void *target = (void*)(insn_end + offset);
   return target;
 }
 
