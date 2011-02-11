@@ -79,22 +79,11 @@ dnl--------------------------------------------------------------------------
 m4_include(config/hpc-cxxutils.m4)
 m4_include(config/hpc-mpiutils.m4)
 
-dnl--------------------------------------------------------------------------
-dnl Initialization: 
-dnl Careful: 
-dnl   - Libtool 1.5.18 has a bug interacting with Tru64's ksh.
-dnl Require libtool 1.5.10 and automake 1.9.3 to 1) correctly link
-dnl   templates with MIPSPro compiler on IRIX64, 2) link on alpha-Tru64
-dnl   and 3) fix missing .so problem on Linux.
-dnl Update to autoconf 2.59 and automake 1.8.3
-dnl Require autoconf 2.54 because automake 1.7.6 needs it.  
-dnl  - automake 1.7.6 is needed to generate Intel 7.1 dependencies correctly.
-dnl  - automake 1.6.1 failed to generate separate lists of object files for
-dnl    the two library versions. automake 1.7.5 handles the specification
-dnl    correctly
-dnl--------------------------------------------------------------------------
+#----------------------------------------------------------------------------
+# Initialization: 
+#----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [4.9.9],
+AC_INIT([hpctoolkit], [5.0.0],
         [hpc@cs.rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
