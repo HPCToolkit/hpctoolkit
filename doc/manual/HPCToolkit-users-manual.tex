@@ -1448,6 +1448,19 @@ If the compiler duplicated calls as it replicated code during optimization, mult
 % ===========================================================================
 % ===========================================================================
 
+\section{Some of my syscalls return EINTR when run under \hpcrun{}}
+
+When profiling a threaded program, there are times when it is
+necessary for \hpcrun{} to signal another thread to take some action.
+When this happens, if the thread receiving the signal is blocked in a
+syscall, the kernel may return EINTR from the syscall.  This would
+happen only in a threaded program and mainly with ``slow'' syscalls
+such as {\tt select()}, {\tt poll()} or {\tt sem\_wait()}.
+
+
+% ===========================================================================
+% ===========================================================================
+
 \begin{comment}
 
 \section{How do I debug collection of measurements?}

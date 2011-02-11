@@ -72,6 +72,10 @@ Contents:
   when re-profiling an application, it is advisable to rename any
   prior measurement directory.
 
+- In a threaded program, hpcrun may cause some syscalls to return
+  EINTR.  This happens only in a threaded program and mainly with
+  "slow" syscalls such as select(), poll() or sem_wait().
+
 
 1.1.2. Measurement limitations:
 
