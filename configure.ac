@@ -83,7 +83,7 @@ m4_include(config/hpc-mpiutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2011.1],
+AC_INIT([hpctoolkit], [5.0],
         [hpc@cs.rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
