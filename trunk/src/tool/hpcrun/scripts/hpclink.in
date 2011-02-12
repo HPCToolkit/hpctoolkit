@@ -174,7 +174,7 @@ case "$xed2_dir" in
     * )  xed2_dir="${HPCTOOLKIT}/${xed2_dir}" ;;
 esac
 
-hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds-bin"
+hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds"
 test -x "$hpcfnbounds" || die "missing hpcfnbounds: $hpcfnbounds"
 
 LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
