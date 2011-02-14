@@ -1,0 +1,133 @@
+$Id$
+
+=============================================================================
+hpcrun binary data format (see "Abbreviation notes" below)
+=============================================================================
+
+fmt-hdr {epoch}*
+  
+------------------------------------------------------------
+
+fmt-hdr = fmt-magicno-version{24b} [nv-pair]*
+
+fmt-magicno-version = "HPCRUN-profile____" "02.00" "b"
+
+  Possible nv-pairs
+  - program-name
+  - process-id
+  - mpi-rank
+  - canonical-thread-id
+  - topology
+
+------------------------------------------------------------
+
+epoch = epoch-hdr metric-tbl loadmap cct
+
+------------------------------------------------------------
+
+epoch-hdr = epoch-tag{8b}
+            epoch-flags{8b}
+            measurement-granularity{8b}
+            ra-to-callsite-offset{4b}
+            [nv-pair]*
+
+epoch-tag = "EPOCH___"
+
+  Possible flags: is-logical-unwinding
+
+  Possible nv-pairs: size of LIP
+
+----------------------------------------
+
+metric-tbl = [metric-desc]*
+metric-desc = name-str description-str metric-flags{16b} period{8b}
+              formula-str format-str
+
+metric-flags = type{raw,final,derived} val-type{I,E} val-fmt{real,int}
+               partner show show-percent
+
+----------------------------------------
+
+loadmap = [loadmap_entry]+
+loadmap_entry = id{2b} name-str flags{8b}
+
+----------------------------------------
+
+cct = [cct-node]*
+cct-node = node-id{4b}                 (neg if node is a leaf)
+           parent-id{4b}
+           lush-assoc{4b}?             (only with logical unwinding)
+           lm-id{2b}
+           ip{8b}                      (unrelocated instruction pointer)
+           lush-lip{16b}?              (only with logical unwinding)
+           (metric-data)*
+
+------------------------------------------------------------
+
+  nv-pair = str str
+
+  str = [char]+
+
+==============================================================================
+
+Abbreviation notes:
+
+  - x{4b} : indicates a size qualifier for x: item x has size 4 bytes
+
+  - [x]*  : a possibly empty list of x: #-of-x{4b} (x)*
+
+  - [x]+  : a non-empty list of x:      #-of-x{4b} (x)+
+
+  - {x}*  : a possibly empty list of x, BUT no preceding count!
+
+
+==============================================================================
+
+Primitives (where X = hpcrun_fmt):
+  X_hdr
+  X_epoch_hdr
+  X_metric_tbl
+  X_loadmap
+  X_cct_node
+  X_nv_pair
+  X_str
+
+All primitives have an associated structure, e.g.:
+  X_hdr_t
+
+All primitives have three functions, e.g.:
+  int X_hdr_fread(X_hdr_t*, environment, FILE* infs, alloc)
+  int X_hdr_fwrite(X_hdr_t*, environment, FILE* outfs)
+  int X_hdr_fprint(X_hdr_t*, FILE* outfs)
+
+Notes:
+
+  - if a primitive object contains lists, the last argument to its
+    fread operation will be a memory allocator function.  If the
+    passed allocator is NULL, then fread assumes appropriate space has
+    already been allocated.  (This is useful for reading CCT nodes,
+    since there is no need to repeatedly allocate and free space for
+    the metrics.)
+
+  - if a primimive needs an allocator for fread, then there should be
+    a corresponding free function.
+
+  - some primitives may need certain environment information.  For
+    example, reading a node requires knowing how many metrics there are.
+
+===================== Notes from Nathan 20 May 09 =======================
+
+Most fread routines will pass allocators. only the cct node reader might pass in
+fully allocated objects.
+
+Allocators will be used for -internal- components. The entire structure (1st argument)
+to a reader is presumed to be fully formed.
+   -- should memset all primitives to 0, however.
+The allocator will be used to allocate space for any variable length component of
+the type being read. No allocator means -all- space, including internal components
+have already been allocated.
+
+All primitives with variable length fields will represent that by a pointer to
+appropriate data type (e.g. std C array indentification).
+
+hdr_fwrite primitive can be variadic (so different sig)

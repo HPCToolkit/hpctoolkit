@@ -1,0 +1,67 @@
+#################################################################################
+# Project: 	Documentation Tools
+# Descr:	Latex -->  MAN-page (groff -man), and HTML; example of user macro
+#               translations
+# Author:	Dr. Jürgen Vollmer, Juergen.Vollmer@acm.org
+# $Id: latex2man.trans,v 1.2 1998/01/03 17:06:52 vollmer Exp $
+#################################################################################
+
+#################################################################################
+# translation for MAN
+#################################################################################
+
+# LaTeX macros without arguments
+$manMacro{'LaTeX'} 	= 'LaTeX';
+$manMacro{'LATEX'} 	= 'LaTeX';       # needed, since \LaTeX is contained in a
+                                         # section name (which are transposed
+					 # into uppercase
+
+# LaTeX macros with one argument
+$manMacro1a{'myEmph'} 	= '\n.IR "';	$manMacro1b{'myEmph'} 	= '"';
+
+# LaTeX macros with two arguments
+$manMacro2a{'myCmd'} 		= '\n.I "';
+	$manMacro2b{'myCmd'} 	= '"\n(';
+	$manMacro2c{'myCmd'} 	= ')';
+
+#################################################################################
+# translation for HTML
+#################################################################################
+
+# LaTeX macros without arguments
+$htmlMacro{'LaTeX'} 	= 'LaTeX';
+$htmlMacro{'LATEX'} 	= 'LaTeX';       # needed, since \LaTeX is contained in a
+                                         # section name (which are transposed
+					 # into uppercase
+
+# LaTeX macros with one argument
+$htmlMacro1a{'myEmph'} 	= '<em>';	$htmlMacro1b{'myEmph'} 	= '</em>';
+
+# LaTeX macros with two arguments
+$htmlMacro2a{'Cmymd'} 		= '<em>';
+	$htmlMacro2b{'myCmd'} 	= '</em>(';
+	$htmlMacro2c{'myCmd'} 	= ')';
+
+#################################################################################
+# translation for TexInfo
+#################################################################################
+
+# LaTeX macros without arguments
+$texiMacro{'LaTeX'} 	= 'LaTeX';
+$texiMacro{'LATEX'} 	= 'LaTeX';       # needed, since \LaTeX is contained in a
+                                         # section name (which are transposed
+					 # into uppercase
+
+# LaTeX macros with one argument
+$texiMacro1a{'myEmph'} 	= '@emph{';	$texiMacro1b{'myEmph'} 	= '}';
+
+# LaTeX macros with two arguments
+$texiMacro2a{'Cmymd'} 		= '';
+	$texiMacro2b{'myCmd'} 	= ' (';
+	$texiMacro2c{'myCmd'} 	= ')';
+
+#################################################################################
+## emacs variables
+## Local Variables: ***
+## mode: perl ***
+## End: ***
