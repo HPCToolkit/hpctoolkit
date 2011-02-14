@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+#  Libunwind configure.
+#
+#  $Id$
+#
+
+PKG_NAME=libunwind
+src=libunwind-0.99
+
+. ../build-utils/configure.inc
+pre_configure
+prefix="$libunwind_prefix"
+
+set -- CC="$CC"  \
+    CFLAGS="$CFLAGS"  \
+    --prefix="$prefix" "$@"
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+echo configure "$@"
+../${src}/configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure

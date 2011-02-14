@@ -1,0 +1,23 @@
+=====================
+Xerces-C Build Notes
+=====================
+
+Home: http://xerces.apache.org/xerces-c/index.html
+
+Download: ftp://mirror.anl.gov/pub/apache/xerces/c/3/sources/
+	  xerces-c-3.1.1.tar.gz
+
+License: Apache
+
+Build: http://xerces.apache.org/xerces-c/build-3.html
+
+Now fully Autoconf and Automake, parallel make, vpath builds.
+
+../configure  --prefix=PATH
+    CC=  CFLAGS=  CXX=  CXXFLAGS=
+    --enable-transcoder-iconv
+make -j 4
+make install
+
+The default transcoder changed from iconv in 2.8 to gnuiconv in 3.1.1.
+Gnuiconv causes problems on the Cray XT, so use iconv instead.

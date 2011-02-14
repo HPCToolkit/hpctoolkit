@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+#  Libmonitor configure.
+#
+#  $Id$
+#
+
+PKG_NAME=libmonitor
+src=libmonitor-0.x-r116
+
+. ../build-utils/configure.inc
+pre_configure
+prefix="$libmonitor_prefix"
+
+set -- CC="$CC"  \
+    CFLAGS="$CFLAGS"  \
+    --prefix="$prefix" "$@"
+if test -n "${is_cross_compile}" ; then
+    set -- --host="${host}" "$@"
+fi
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+echo configure "$@"
+../${src}/configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure
