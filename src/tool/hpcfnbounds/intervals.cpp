@@ -75,6 +75,8 @@ using namespace std;
 void 
 intervals::insert(void * start, void * end) 
 {
+  if (start >= end) return;
+
   map<void *, void *>::iterator lb;
   map<void *, void *>::iterator ub;
 

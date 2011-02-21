@@ -311,7 +311,9 @@ inside_protected_range(void *addr)
 void 
 add_protected_range(void *start, void *end)
 {
-  cbranges.insert(start,end);
+  if (start < end) {
+    cbranges.insert(start,end);
+  }
 }
 
 
