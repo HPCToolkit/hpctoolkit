@@ -84,7 +84,7 @@ m4_include(config/hpc-mpiutils.m4)
 #----------------------------------------------------------------------------
 
 AC_INIT([hpctoolkit], [5.0.0],
-        [hpctoolkit-team@mailman.rice.edu],
+        [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
 AC_CONFIG_SRCDIR([src/include/hpctoolkit-config.h.in])
