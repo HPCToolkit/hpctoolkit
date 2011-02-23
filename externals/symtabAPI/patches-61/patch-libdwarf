@@ -1,0 +1,15 @@
+Fix bug in configure's test for libdwarf.  Use -L for libdwarf
+and libelf libdirs, not the libdwarf libdir twice.
+
+diff -Narub symtabAPI.orig/src/dyninst/configure symtabAPI/src/dyninst/configure
+--- symtabAPI.orig/src/dyninst/configure	2011-02-23 17:10:44.569072231 -0600
++++ symtabAPI/src/dyninst/configure	2011-02-23 17:14:17.000000000 -0600
+@@ -3051,7 +3051,7 @@
+   else
+     LIBS_HOLD=$LIBS
+     if test "$LIBDWARF_LIB_DIR" != "" ; then
+-      LIBS="-L$LIBDWARF_LIB_DIR -L$LIBDWARF_LIB_DIR"
++      LIBS="-L$LIBDWARF_LIB_DIR -L$LIBELF_LIB_DIR"
+ 
+ echo "$as_me:$LINENO: checking for dwarf_add_arange in -ldwarf" >&5
+ echo $ECHO_N "checking for dwarf_add_arange in -ldwarf... $ECHO_C" >&6
