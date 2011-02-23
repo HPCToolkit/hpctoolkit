@@ -56,7 +56,7 @@ all install install-all: begin-build $(PACKAGES)
 	@echo "Externals build complete at `date`"
 
 libdwarf: libelf
-symtabAPI: binutils libdwarf libelf libunwind libxml2
+symtabAPI: libdwarf libelf libunwind libxml2
 
 #
 # Catch package failures and save them in FAILURE_FILE.  This allows

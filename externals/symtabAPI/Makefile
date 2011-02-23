@@ -7,7 +7,10 @@ include ../Makefile.conf
 
 PKG_NAME = symtabAPI
 SRC_DIR =  symtabAPI
-PREREQS = binutils libdwarf libelf libunwind libxml2
+PREREQS = libdwarf libelf libunwind libxml2
+
+PLATFORM := $(SYMTABAPI_PLATFORM)
+export PLATFORM
 
 USE_SYMTAB_61 = no
 
@@ -26,8 +29,7 @@ FETCH_TARFILE = symtab_src_2.1.tar.gz
 BUILD_DIR = symtabAPI/src/core
 
 DYNINST_ROOT := $(shell pwd)/symtabAPI/src
-PLATFORM := $(SYMTABAPI_PLATFORM)
-export DYNINST_ROOT PLATFORM
+export DYNINST_ROOT
 
 INSTALL_CMD = ./install
 

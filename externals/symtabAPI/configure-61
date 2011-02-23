@@ -49,7 +49,6 @@ set -- \
     --with-libunwind-libdir="$libunwind_lib" \
     --with-libxml2-incdir="$libxml2_inc" \
     --with-libxml2-libdir="$libxml2_lib" \
-    --with-libiberty-libdir="${binutils_prefix}/lib64" \
     "$@"
 
 if test -n "$is_cross_compile" ; then
