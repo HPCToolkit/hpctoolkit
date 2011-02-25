@@ -8,31 +8,11 @@
 PKG_NAME=symtabAPI
 work=symtabAPI/src/dyninst
 
-config=make.config
-config_orig="${config}.orig"
-
 . ../build-utils/configure.inc
 pre_configure
 prefix="$symtabAPI_prefix"
 
 cd "$work" || die "unable to cd: $work"
-
-# Configure doesn't substitute CC, CXX and flags, so we sed-edit
-# make.config instead.
-
-test -f "$config_orig" || mv -f "$config" "$config_orig"
-test -f "$config_orig" || die "missing config file: $config"
-rm -f "$config"
-
-cat "$config_orig" |
-    sed \
-	-e "s,^HPC_CC .*\$,HPC_CC = $CC," \
-	-e "s,^HPC_CXX .*\$,HPC_CXX = $CXX," \
-	-e "s,^HPC_CFLAGS .*\$,HPC_CFLAGS = $CFLAGS," \
-	-e "s,^HPC_CXXFLAGS .*\$,HPC_CXXFLAGS = $CXXFLAGS," \
-	> "$config"
-
-test $? -eq 0 || die "configure failed"
 
 set -- \
     CC="$CC"  CFLAGS="$CFLAGS" \
