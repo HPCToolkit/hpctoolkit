@@ -625,6 +625,7 @@ EGREP
 GREP
 CPP
 gnu_make
+have_tr1_map
 svn_revision
 host_vendor
 build_vendor
@@ -3430,6 +3431,46 @@ if test $? -ne 0 ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C++ compiler." >&5
 $as_echo "$as_me: WARNING: Not using the GNU C++ compiler." >&2;}
 fi
+
+# Test if CXX supports <tr1/unordered_map>.  SymtabAPI uses this with
+# gcc 4.3 and later, but some installations (biou) are missing this.
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if CXX supports tr1 unordered_map" >&5
+$as_echo_n "checking if CXX supports tr1 unordered_map... " >&6; }
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <functional>
+#include <tr1/unordered_map>
+#include <tr1/unordered_set>
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ans=yes
+else
+  ans=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
+$as_echo "$ans" >&6; }
+
+have_tr1_map="$ans"
+
 
 #------------------------------------------------------------
 # GNU make

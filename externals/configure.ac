@@ -150,6 +150,24 @@ if test $? -ne 0 ; then
     AC_MSG_WARN([Not using the GNU C++ compiler.])
 fi
 
+# Test if CXX supports <tr1/unordered_map>.  SymtabAPI uses this with
+# gcc 4.3 and later, but some installations (biou) are missing this.
+
+AC_MSG_CHECKING([if CXX supports tr1 unordered_map])
+
+AC_LANG_PUSH([C++])
+AC_COMPILE_IFELSE([
+#include <functional>
+#include <tr1/unordered_map>
+#include <tr1/unordered_set>
+], [ans=yes], [ans=no])
+AC_LANG_POP
+
+AC_MSG_RESULT([$ans])
+
+have_tr1_map="$ans"
+AC_SUBST([have_tr1_map])
+
 #------------------------------------------------------------
 # GNU make
 #------------------------------------------------------------

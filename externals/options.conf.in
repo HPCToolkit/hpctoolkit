@@ -50,6 +50,7 @@ libxml2_lib="@libxml2_lib@"
 
 symtabAPI_platform="@symtabAPI_platform@"
 xerces_platform="@xerces_platform@"
+have_tr1_map="@have_tr1_map@"
 
 opt_with_mpi="@with_mpi@"
 

@@ -12,6 +12,11 @@ work=symtabAPI/src/dyninst
 pre_configure
 prefix="$symtabAPI_prefix"
 
+if test "$have_tr1_map" = no ; then
+    CFLAGS="$CFLAGS -DDISABLE_TR1_MAP"
+    CXXFLAGS="$CXXFLAGS -DDISABLE_TR1_MAP"
+fi
+
 cd "$work" || die "unable to cd: $work"
 
 set -- \
