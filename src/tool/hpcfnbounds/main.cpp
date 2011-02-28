@@ -63,7 +63,8 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
-
+#include <setjmp.h>
+#include <signal.h>
 
 //*****************************************************************************
 // local includes
@@ -122,7 +123,7 @@ using namespace SymtabAPI;
 
 static void usage(char *command, int status);
 static void dump_file_info(const char *filename, DiscoverFnTy fn_discovery);
-
+static void setup_segv_handler(void);
 
 //*****************************************************************************
 // local variables
@@ -135,6 +136,11 @@ static int   the_binary_fd = -1;
 static FILE *the_c_fp = NULL;
 static FILE *the_text_fp = NULL;
 
+static jmp_buf segv_recover; // handle longjmp "restart" from segv
+
+//*****************************************************************
+// global variables
+//*****************************************************************
 
 //*****************************************************************
 // interface operations
@@ -145,7 +151,7 @@ static FILE *the_text_fp = NULL;
 // only one to stdout.
 //
 int 
-main(int argc, char **argv)
+main(int argc, char* argv[])
 {
   DiscoverFnTy fn_discovery = DiscoverFnTy_Aggressive;
   char buf[PATH_MAX], *object_file, *output_dir, *base;
@@ -228,7 +234,18 @@ main(int argc, char **argv)
       the_text_fp = stdout;
   }
 
-  dump_file_info(object_file, fn_discovery);
+  setup_segv_handler();
+  if ( ! setjmp(segv_recover) ) {
+    dump_file_info(object_file, fn_discovery);
+  }
+  else {
+    fprintf(stderr,
+	    "!!! INTERNAL hpcfnbounds-bin error !!!\n"
+	    "argument string = ");
+    for (int i = 0; i < argc; i++)
+      fprintf(stderr, "%s ", argv[i]);
+    fprintf(stderr, "\n");
+  }
   return 0;
 }
 
@@ -288,6 +305,28 @@ usage(char *command, int status)
     "If no format is specified, then text mode is used.\n");
 
   exit(status);
+}
+
+static void
+segv_handler(int sig)
+{
+  longjmp(segv_recover, 1);
+}
+
+static void
+setup_segv_handler(void)
+{
+#if 0
+  const struct sigaction segv_action= {
+    .sa_handler = segv_handler,
+    .sa_flags   = 0
+  };
+#endif
+  struct sigaction segv_action;
+  segv_action.sa_handler = segv_handler;
+  segv_action.sa_flags   = 0;
+
+  sigaction(SIGSEGV, &segv_action, NULL);
 }
 
 
@@ -474,13 +513,14 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   //-----------------------------------------------------------------
   vector<ExceptionBlock *> exvec;
   syms->getAllExceptions(exvec);
+  
   for (unsigned int i = 0; i < exvec.size(); i++) {
     ExceptionBlock *e = exvec[i];
 
 #ifdef DUMP_EXCEPTION_BLOCK_INFO
     printf("tryStart = %p tryEnd = %p, catchStart = %p\n", e->tryStart(), 
 	   e->tryEnd(), e->catchStart()); 
-#endif
+#endif // DUMP_EXCEPTION_BLOCK_INFO
     //-----------------------------------------------------------------
     // prevent inference of function starts within the try block
     //-----------------------------------------------------------------
@@ -493,7 +533,7 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
     long cs = e->catchStart(); 
     add_protected_range((void *) cs, (void *) (cs + 1));
   }
-#endif
+#endif // USE_SYMTABAPI_EXCEPTION_BLOCKS 
 
 
   syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);

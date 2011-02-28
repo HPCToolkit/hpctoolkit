@@ -146,7 +146,7 @@ system_server_start()
   // ---------------------------------------------------------------------------
   server_pid = monitor_real_fork();
   if (server_pid == 0) { /* child process */
-     NMSG(SYSTEM_SERVER,"in child");
+     TMSG(SYSTEM_SERVER,"in child");
 
      // -----------------------------------------------------------------------
      // avoid monitoring processes that we spawn with system
@@ -250,7 +250,8 @@ system_server_shutdown()
 int 
 system_server_execute_command(const char *command)  
 {
-  int ret, status;
+  int ret;
+  int status;
   int len = strlen(command) + 1;         // add 1 for terminating null
 
   // ---------------------------------------------------------------------------
@@ -258,23 +259,48 @@ system_server_execute_command(const char *command)
   // ---------------------------------------------------------------------------
   TMSG(SYSTEM_COMMAND,"system server: sending command size = %d bytes", len);
   ret = write(WRITE_FD(CLIENT_TO_SERVER), &len, sizeof(len));
+
+#define HARSH_SS_FAILURE 1
+#if HARSH_SS_FAILURE
   EXIT_ON_ERROR(ret, sizeof(len), 
 		"system server fatal error: write of command size failed");
+#else
+  if ( ret != len) {
+    EMSG("!! system server internal error: write of command size (tried %d, sent %d) failed", len, ret);
+    return 1;
+  }
+
+#endif // HARSH_SS_FAILURE
 
   // ---------------------------------------------------------------------------
   // send command string to server
   // ---------------------------------------------------------------------------
   ret = write(WRITE_FD(CLIENT_TO_SERVER), command, len);
+
+#if HARSH_SS_FAILURE
   EXIT_ON_ERROR(ret, len, "system server fatal error: write command failed");
+#else
+  if ( ret != len) {
+    EMSG("!! system server internal error: actual write of command command failed");
+    return 1;
+  }
+#endif // HARSH_SS_FAILURE
 
   // ---------------------------------------------------------------------------
   // receive command result from server 
   // ---------------------------------------------------------------------------
   ret = read(READ_FD(SERVER_TO_CLIENT), &status, sizeof(status));
+#if HARSH_SS_FAILURE
   EXIT_ON_ERROR(ret, sizeof(status), 
 		"system server fatal error: read status failed\n");
+#else
+  if ( ret != len) {
+    EMSG("!! system server internal error: read status failed");
+    return 1;
+  }
+#endif // HARSH_SS_FAILURE
 
-  return status;
+  return 0;
 }
 
 

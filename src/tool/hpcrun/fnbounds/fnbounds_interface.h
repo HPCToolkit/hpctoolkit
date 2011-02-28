@@ -69,7 +69,7 @@ fnbounds_map_open_dsos();
 void
 fnbounds_unmap_closed_dsos();
 
-int
+bool
 fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end);
 
 void

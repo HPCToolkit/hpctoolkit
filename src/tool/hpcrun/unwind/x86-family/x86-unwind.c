@@ -233,8 +233,9 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   cursor->intvl = hpcrun_addr_to_interval(cursor->pc_unnorm,
 					  cursor->pc_unnorm, &cursor->pc_norm);
   if (!cursor->intvl) {
-    // TMSG(TROLL,"UNW INIT calls stack troll");
-    update_cursor_with_troll(cursor, 0);
+    EMSG("!!Alert: init cursor could NOT build an interval for initial pc = %p",
+	 cursor->pc_unnorm);
+    cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, NULL);
   }
 
   if (MYDBG) { dump_ui((unwind_interval *)cursor->intvl, 0); }
@@ -259,7 +260,7 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
 
 
 static step_state
-hpcrun_unw_step_real(hpcrun_unw_cursor_t *cursor)
+hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
 
   //-----------------------------------------------------------

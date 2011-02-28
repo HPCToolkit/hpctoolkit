@@ -308,6 +308,9 @@ inside_protected_range(void *addr)
 }
 
 
+//
+// FIXME? add finer grained segv handling here?
+//
 void 
 add_protected_range(void *start, void *end)
 {
