@@ -39,7 +39,8 @@ unpack) both trees in side-by-side directories.
 
 Note that SciDAC uses https for anonymous checkout.
 
-The email address for HPCToolkit and Externals is hpc@cs.rice.edu.
+The email address for HPCToolkit and Externals is
+hpctoolkit-forum@rice.edu.
 
 ===================
 Building Externals
@@ -78,10 +79,6 @@ After building the external packages, then its tree can be cleaned up
 (with make distclean) and HPCToolkit can be configured and built
 several times with the same externals tree.  That is, reconfiguring or
 rebuilding HPCToolkit does not require rebuilding the externals tree.
-
-Note: After building HPCToolkit, do not delete the externals tree,
-there are still some parts of HPCToolkit that use the externals's
-staging area as a run dependency.  But make distclean is ok.
 
 ====================
 Building HPCToolkit
@@ -162,10 +159,4 @@ it is not possible to fix that in user land.
 =============
 Known Issues
 =============
-
-After building HPCToolkit, do not delete or even move the externals
-tree.  There are still some parts of HPCToolkit that use the
-externals's tree as a run dependency.  Eventually, this will be fixed,
-where HPCToolkit has no run dependency on externals, but for now,
-leave it intact.
 

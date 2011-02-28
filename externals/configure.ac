@@ -34,7 +34,7 @@ dnl
 dnl  $Id$
 dnl
 
-AC_INIT([externals], [5.0], [hpc@cs.rice.edu],
+AC_INIT([externals], [5.0.1], [hpctoolkit-forum@rice.edu],
         [hpctoolkit-externals], [http://hpctoolkit.org/])
 AC_COPYRIGHT([Copyright (c) 2008-2011, Rice University.
 See the file LICENSE for details.])
