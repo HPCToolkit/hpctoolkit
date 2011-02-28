@@ -209,7 +209,8 @@ fnbounds_init()
   
       fnbounds_map_executable();
       fnbounds_map_open_dsos();
-    } else {
+    }
+    else {
       system_server_shutdown();
     }
   }
@@ -233,15 +234,19 @@ fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
       ip_norm = (void *) (((unsigned long) ip_norm) - dso->start_to_ref_dist);
     }
 
-    // N.B.: works on normalized IPs
-    ret = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm, 
-				(void **) start, (void **) end);
+     // no dso table means no enclosing addr
 
-    // Convert 'start' and 'end' into unnormalized IPs since they are
-    // currently normalized.
-    if (ret == 0 && dso->is_relocatable) {
-      *start = PERFORM_RELOCATION(*start, dso->start_to_ref_dist);
-      *end   = PERFORM_RELOCATION(*end  , dso->start_to_ref_dist);
+    if (dso->table) {
+      // N.B.: works on normalized IPs
+      ret = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm, 
+				  (void **) start, (void **) end);
+
+      // Convert 'start' and 'end' into unnormalized IPs since they are
+      // currently normalized.
+      if (ret == 0 && dso->is_relocatable) {
+	*start = PERFORM_RELOCATION(*start, dso->start_to_ref_dist);
+	*end   = PERFORM_RELOCATION(*end  , dso->start_to_ref_dist);
+      }
     }
   }
 
@@ -253,7 +258,6 @@ fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
 
   return ret;
 }
-
 
 //---------------------------------------------------------------------
 // Function: fnbounds_map_open_dsos
@@ -269,7 +273,7 @@ fnbounds_map_open_dsos()
 }
 
 
-int
+bool
 fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
 {
   bool isOk = true;
@@ -283,6 +287,8 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
       hpcrun_loadmap_map(dso);
     }
     else {
+      EMSG("!! INTERNAL ERROR, not possible to map dso for %s (%p, %p)",
+	   module_name, start, end);
       isOk = false;
     }
   }
@@ -449,22 +455,33 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
 	  filename, fnbounds_tmpdir_get(), logfile_fd, logfile_fd);
   TMSG(DL_BOUND, "system command = %s", command);
 
-  int result = system_server_execute_command(command);
-  if (result) {
+  int failure = system_server_execute_command(command);
+  if (failure) {
     EMSG("fnbounds server command failed for file %s, aborting", filename);
+
+#if HARSH_SS_FAILURE
     monitor_real_exit(1);
+#endif // HARSH_SS_FAILURE
+    return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
   }
 
   long map_size = 0;
   struct fnbounds_file_header fh;
   void **nm_table = (void **)fnbounds_read_nm_file(dlname, &map_size, &fh);
   if (nm_table == NULL) {
-    EMSG("fnbounds computed bogus symbols for file %s, aborting",filename);
+    EMSG("fnbounds computed bogus symbols for file %s, (all intervals poisoned)", filename);
+
+#if HARSH_SS_FAILURE
     monitor_real_exit(1);
+#endif // HARSH_SS_FAILURE
+
+    return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
   }
 
-  if (fh.num_entries < 1)
-    return (NULL);
+  if (fh.num_entries < 1) {
+    EMSG("fnbounds returns no symbols for file %s, (all intervals poisoned)", filename);
+    return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
+  }
 
   //
   // Note: we no longer care if binary is stripped.

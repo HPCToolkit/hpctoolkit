@@ -111,20 +111,23 @@ hpcrun_dso_make(const char* name, void** table,
 
   x->table = table;
   x->map_size = map_size;
-  x->nsymbols = (unsigned long)fh->num_entries;
-  x->is_relocatable = fh->is_relocatable;
+  x->nsymbols = 0;
+  x->start_to_ref_dist = 0;
   x->start_addr = startaddr;
   x->end_addr = endaddr;
 
-  // Cf. hpcrun_normalize_ip(): Given ip, compute lm_ip:
-  //   lm_ip = (ip - lm_mapped_start) + lm_ip_ref
-  //         = ip - (lm_mapped_start - lm_ip_ref)
-  //         = ip - start_to_ref_dist
-  x->start_to_ref_dist = 0;
-  if (fh->is_relocatable) {
-    x->start_to_ref_dist = (uintptr_t)startaddr - fh->reference_offset;
-  }
+  if (fh) {
+    x->nsymbols = (unsigned long)fh->num_entries;
+    x->is_relocatable = fh->is_relocatable;
 
+    // Cf. hpcrun_normalize_ip(): Given ip, compute lm_ip:
+    //   lm_ip = (ip - lm_mapped_start) + lm_ip_ref
+    //         = ip - (lm_mapped_start - lm_ip_ref)
+    //         = ip - start_to_ref_dist
+    if (fh->is_relocatable) {
+      x->start_to_ref_dist = (uintptr_t)startaddr - fh->reference_offset;
+    }
+  }
   x->next = NULL;
   x->prev = NULL;
 

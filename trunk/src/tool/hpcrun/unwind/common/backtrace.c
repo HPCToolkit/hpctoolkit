@@ -398,6 +398,9 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       bt->n_trolls++;
     }
     if (ret <= 0) {
+      if (ret == STEP_ERROR) {
+	hpcrun_stats_num_samples_dropped_inc();
+      }
       break;
     }
     prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
@@ -683,8 +686,8 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
   backtrace_t* bt = &(td->bt);
   hpcrun_bt_reset(bt);
 
+  int ret = STEP_ERROR;
   while (true) {
-    int ret;
 
     unw_word_t ip = 0;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
@@ -705,7 +708,8 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
 	// FIXME: with a bit more effort, we could charge 
 	//        the sample to the return address in the caller. 
 	hpcrun_unw_throw();
-      } else {
+      }
+      else {
 	// we have encountered a trampoline in the middle of an unwind.
 	tramp_found = true;
 
@@ -729,7 +733,7 @@ hpcrun_gen_bt(ucontext_t* context, bool* has_tramp,
     prev->ra_loc = hpcrun_unw_get_ra_loc(&cursor);
   }
 
-  if (backtrace_trolled){
+  if (backtrace_trolled || (ret == STEP_ERROR)){
     hpcrun_up_pmsg_count();
   }
 				    
