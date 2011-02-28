@@ -233,7 +233,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   cursor->intvl = hpcrun_addr_to_interval(cursor->pc_unnorm,
 					  cursor->pc_unnorm, &cursor->pc_norm);
   if (!cursor->intvl) {
-    EMSG("!!Alert: init cursor could NOT build an interval for initial pc = %p",
+    EMSG("init cursor could NOT build an interval for initial pc = %p",
 	 cursor->pc_unnorm);
     cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, NULL);
   }
@@ -282,7 +282,8 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 
   if (!uw){
     TMSG(UNW, "Invalid unw interval for cursor");
-    return STEP_ERROR;
+    update_cursor_with_troll(cursor, 0);
+    return STEP_TROLL;
   }
 
   switch (uw->ra_status){
