@@ -25,10 +25,12 @@
 <!-- ********************************************************************** -->
 
 <p>HPCToolkit is an integrated suite of tools for measurement and analysis of program performance on computers ranging from multicore desktop systems to the nation's largest supercomputers.
-HPCToolkit provides accurate measurements of a program's work, resource consumption, and inefficiency, correlates these metrics with the program's source code, works with multilingual, fully optimized binaries, has very low measurement overhead, and scales to large parallel systems.
-HPCToolkit's measurements provide support for analyzing a program execution cost, inefficiency, and scaling characteristics both within and across nodes of a parallel system.
+By using statistical sampling of timers and hardware performance counters, HPCToolkit collects accurate measurements of a program's work, resource consumption, and inefficiency and attributes them to the full calling context in which they occur.
+HPCToolkit works with multilingual, fully optimized applications that are statically or dynamically linked.
+Since HPCToolkit uses sampling, measurement has low overhead (1-5%) and scales to large parallel systems.
+HPCToolkit's presentation tools enable rapid analysis of a program's execution costs, inefficiency, and scaling characteristics both within and across nodes of a parallel system.
+HPCToolkit supports measurement and analysis of serial codes, threaded codes (e.g. pthreads, OpenMP), MPI, and hybrid (MPI+threads) parallel codes.
 </p>
-
 
 <p>The figure below provides an overview of HPCToolkit's primary components and their relationships.
 </p>
@@ -39,7 +41,7 @@ HPCToolkit's measurements provide support for analyzing a program execution cost
 
 <ul>
 <li><p><span class="hpctool">hpcrun</span>: HPCToolkit is based on collecting both highly accurate and highly precise calling-context-sensitive performance measurements for unmodified fully optimized applications.
-To collect call path profiles for very low overhead (1-3%), hpcrun uses asynchronous sampling of system timers and performance monitoring unit events.
+To collect call path profiles for very low overhead (1-5%), hpcrun uses asynchronous sampling of system timers and performance monitoring unit events.
 </p>
 </li>
 
@@ -73,7 +75,7 @@ Highlighted platforms:
 <p>HPCToolkit is open-source software released with a BSD-like <a href="README.License">license</a>.
 </p>
 
-<p>[<span class="lastupdated">Page last updated: 2010/10/30</span>]
+<p>[<span class="lastupdated">Page last updated: 2011/03/02</span>]
 </p>
 
 <!-- ********************************************************************** -->
