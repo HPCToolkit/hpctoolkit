@@ -34,7 +34,7 @@ HPCToolkit's measurements provide support for analyzing a program execution cost
 
 <p>HPCToolkit works by sampling an execution of a multithreaded and/or multiprocess program using hardware performance counters, unwinding thread call stacks, and attributing the metric value associated with a sample event in a thread to the calling context of the thread/process in which the event occurred.
 Sampling has several advantages over instrumentation for measuring program performance: it requires no modification of source code, it avoids potential blind spots (such as code available in only binary form), and it has lower overhead.
-HPCToolkit typically adds only 1% to 3% measurement overhead to an execution for reasonable sampling rates.
+HPCToolkit typically adds only 1% to 5% measurement overhead to an execution for reasonable sampling rates.
 Sampling using performance counters enables fine-grain measurement and attribution of detailed costs including metrics such as operation counts, pipeline stalls, cache misses, and inter-cache communication in multicore and multisocket configurations.
 Such detailed measurements are essential for understanding the performance characteristics of applications on modern multicore microprocessors that employ instruction-level parallelism, out-of-order execution, and complex memory hierarchies.
 HPCToolkit also supports computing derived metrics such as cycles per instruction, waste, and relative efficiency to provide insight into a program's shortcomings.
@@ -72,7 +72,7 @@ It is also deployed on the NSF TeraGrid system at TACC (Ranger).
 
 <!-- ********************************************************************** -->
 
-<p>[<span class="lastupdated">Page last updated: 2010/09/11</span>]
+<p>[<span class="lastupdated">Page last updated: 2011/03/02</span>]
 </p>
 
 <!-- ********************************************************************** -->
