@@ -1,0 +1,17 @@
+=======================
+Libmonitor Build Notes
+=======================
+
+Home: https://outreach.scidac.gov/projects/libmonitor/
+
+Download: svn co https://outreach.scidac.gov/svn/libmonitor/trunk
+
+License: BSD
+
+Uses Autoconf and Automake.
+
+./configure --prefix=PATH
+make
+make install
+
+A Rice HPCToolkit project, one of ours.

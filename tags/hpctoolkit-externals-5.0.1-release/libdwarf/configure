@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+#  Libdwarf configure.
+#
+#  Note: libdwarf's configure has no --with-libelf option, so we pass
+#  the libelf dirs via CFLAGS, CPPFLAGS and LDFLAGS.  The autoconf
+#  tests use CPPFLAGS and LDFLAGS, and Makefile uses CFLAGS.
+#
+#  $Id$
+#
+
+PKG_NAME=libdwarf
+SRC=dwarf-20081119/libdwarf
+
+. ../build-utils/configure.inc
+pre_configure
+prefix="$libdwarf_prefix"
+
+elf_inc="${libelfdir}/include"
+
+# FIXME: tallent: libdwarf requires a gcc-compatible compiler.
+# However, it is dangerous to hardcode 'gcc'; e.g., it breaks
+# cross-compiling.  Rather, in the top-level configure, the compiler
+# should be tested to see if it is GCC-compatible (GCC, Intel...) and
+# if so left alone.  If not, then resort to the optionally specified
+# GCC compiler, which defaults to 'gcc'.
+# CC=gcc  \
+
+set -- \
+    CC="$CC" \
+    CFLAGS="-g -O2 -fPIC -I${elf_inc} $CFLAGS"  \
+    CPPFLAGS="-I${elf_inc}"  \
+    LDFLAGS="-L${libelf_lib}"  \
+    --prefix="$prefix"  \
+    --enable-shared  \
+    --disable-nonshared "$@"
+if test -n "${is_cross_compile}" ; then
+    set -- --host="${host}" "$@"
+fi
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+echo configure "$@"
+../${SRC}/configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure

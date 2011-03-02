@@ -1,0 +1,63 @@
+#!/bin/sh
+#
+#  SymtabAPI configure.
+#
+#  $Id$
+#
+
+PKG_NAME=symtabAPI
+work=symtabAPI/src/core
+
+config=make.config
+config_orig="${config}.orig"
+
+config_lcl=make.config.local
+config_lcl_orig="${config_lcl}.orig"
+
+. ../build-utils/configure.inc
+pre_configure
+
+cd "$work" || die "unable to cd: $work"
+
+
+test -f "$config_orig" || mv -f "$config" "$config_orig"
+test -f "$config_orig" || die "missing config file: $config"
+rm -f "$config"
+
+cat "$config_orig" |
+    sed -r \
+	-e "s,^GCC *=.*\$,GCC = $CC," \
+	-e "s,^GXX *=.*\$,GXX = $CXX," \
+	-e "s,^(CFLAGS\s*=.*)\$,\1 $CFLAGS," \
+	-e "s,^(CXXFLAGS\s*=.*)\$,\1 $CXXFLAGS," \
+	> "$config"
+
+# Note: tallent: the last two regexps above depend on GNU sed's -r
+# option.  Should be ok until SymTabAPI gets its house in order.
+
+test $? -eq 0 || die "configure failed"
+
+
+test -f "$config_lcl_orig" || mv -f "$config_lcl" "$config_lcl_orig"
+test -f "$config_lcl_orig" || die "missing config file: $config_lcl"
+rm -f "$config_lcl"
+
+cat "$config_lcl_orig" |
+    sed \
+	-e "s,^LIBELFDIR.*\$,LIBELFDIR = $libelfdir," \
+	-e "s,^LIBELF_LIB.*\$,LIBELF_LIB = $libelf_lib," \
+	-e "s,^LIBELF_INC.*\$,LIBELF_INC = $libelf_inc," \
+	-e "s,^LIBDWARFDIR.*\$,LIBDWARFDIR = $libdwarfdir,"  \
+	-e "s,^LIBDWARF_LIB.*\$,LIBDWARF_LIB = $libdwarf_lib,"  \
+	-e "s,^LIBDWARF_INC.*\$,LIBDWARF_INC = $libdwarf_inc,"  \
+	-e "s,^LIBXML2DIR.*\$,LIBXML2DIR = $libxml2dir," \
+	-e "s,^LIBXML2_LIB.*\$,LIBXML2_LIB = $libxml2_lib," \
+	-e "s,^LIBXML2_INC.*\$,LIBXML2_INC = $libxml2_inc," \
+	-e "s,^LIBUNWINDDIR.*\$,LIBUNWINDDIR = $libunwinddir," \
+	-e "s,^LIBUNWIND_LIB.*\$,LIBUNWIND_LIB = $libunwind_lib," \
+	-e "s,^LIBUNWIND_INC.*\$,LIBUNWIND_INC = $libunwind_inc," \
+	> "$config_lcl"
+
+test $? -eq 0 || die "configure failed"
+
+post_configure

@@ -1,0 +1,43 @@
+Change #include <libelf.h> to <libelf/libelf.h>.
+This matches the usage that libelf uses for itself.
+
+diff -Naurb symtabAPI.orig/src/core/symtabAPI/src/Elf_X.h symtabAPI/src/core/symtabAPI/src/Elf_X.h
+--- symtabAPI.orig/src/core/symtabAPI/src/Elf_X.h	2010-06-25 17:17:47.000000000 -0500
++++ symtabAPI/src/core/symtabAPI/src/Elf_X.h	2010-06-25 17:24:01.000000000 -0500
+@@ -33,7 +33,7 @@
+ #define __ELF_X_H__
+ 
+ #include <elf.h>
+-#include <libelf.h>
++#include <libelf/libelf.h>
+ #include "common/h/headers.h"
+ 
+ // Wrappers to allow word-independant use of libelf routines.
+diff -Naurb symtabAPI.orig/src/core/symtabAPI/src/Object-elf.h symtabAPI/src/core/symtabAPI/src/Object-elf.h
+--- symtabAPI.orig/src/core/symtabAPI/src/Object-elf.h	2008-03-05 15:41:50.000000000 -0600
++++ symtabAPI/src/core/symtabAPI/src/Object-elf.h	2010-06-25 17:24:53.000000000 -0500
+@@ -44,11 +44,10 @@
+ #include "common/h/headers.h"
+ #include "common/h/Types.h"
+ #include <elf.h>
+-#include <libelf.h>
++#include <libelf/libelf.h>
+ 
+ #include "Elf_X.h"
+ 
+-#include <libelf.h>
+ #include <fcntl.h>
+ #include <stdlib.h>
+ #include <unistd.h>
+diff -Naurb symtabAPI.orig/src/core/symtabAPI/src/parseDwarf.C symtabAPI/src/core/symtabAPI/src/parseDwarf.C
+--- symtabAPI.orig/src/core/symtabAPI/src/parseDwarf.C	2008-04-23 11:43:04.000000000 -0500
++++ symtabAPI/src/core/symtabAPI/src/parseDwarf.C	2010-06-25 17:25:20.000000000 -0500
+@@ -30,7 +30,7 @@
+  */
+ 			     
+ #include "elf.h"
+-#include "libelf.h"
++#include "libelf/libelf.h"
+ #include "dwarf.h"
+ #include "libdwarf.h"
+ 

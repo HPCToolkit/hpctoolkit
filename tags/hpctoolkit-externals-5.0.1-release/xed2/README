@@ -1,0 +1,16 @@
+=================
+Xed2 Build Notes
+=================
+
+Home: http://www.pintool.org/
+
+Download: pin-2.8-33586-gcc.3.4.6-ia32_intel64-linux.tar.gz
+
+License: BSD (Xed only, not Pin)
+
+Binary sub-package as part of Pin.
+Tar-copy include and lib subdirs to the install directory.
+
+Note: the Pin license restricts redistribution.  But Xed has a
+separate license (BSD), so we include only the 'extras' subdirectory
+containing Xed.

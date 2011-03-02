@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+#  Xerces-C configure.
+#
+#  $Id$
+#
+
+PKG_NAME=xerces
+src=xerces-c-3.1.1
+
+. ../build-utils/configure.inc
+pre_configure
+prefix="$xerces_prefix"
+
+set --  \
+    CC="$CC"  CFLAGS="$CFLAGS"  \
+    CXX="$CXX"  CXXFLAGS="$CXXFLAGS"  \
+    --enable-transcoder-iconv  \
+    --prefix="$prefix"  "$@"
+if test -n "$is_cross_compile" ; then
+    set -- --host="$host" "$@"
+fi
+
+make_work_dir
+cd work || die "unable to cd: work"
+
+echo configure "$@"
+../${src}/configure "$@"
+test $? -eq 0 || die "configure failed"
+
+post_configure
