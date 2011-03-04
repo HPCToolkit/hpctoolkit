@@ -759,7 +759,8 @@ Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
   // 2. unique name to Metric::ADesc table
   std::pair<StringToADescMap::iterator, bool> ret =
     m_uniqnmToMetricMap.insert(make_pair(nm, m));
-  DIAG_Assert(ret.second, "Found duplicate entry; should be unique name!");
+  DIAG_Assert(ret.second, "Metric::Mgr::insertInMapsAndMakeUniqueName: Found duplicate entry inserting:\n\t" << m->toString() << "\nOther entry:\n\t" << ret.first->second->toString());
+
   
   // 3. profile file name to Metric::SampledDesc table
   Metric::SampledDesc* mSmpl = dynamic_cast<Metric::SampledDesc*>(m);

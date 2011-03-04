@@ -87,6 +87,8 @@ using std::string;
 
 //*************************** Forward Declarations **************************
 
+#define DBG_CCT_MERGE 0
+
 //***************************************************************************
 
 
@@ -158,7 +160,7 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
     profile_y = unpackProfile(profileBuf, profileBufSz);
     delete[] profileBuf;
 
-    if (0) {
+    if (DBG_CCT_MERGE) {
       string pfx0 = "[" + StrUtil::toStr(rank_x) + "]";
       string pfx1 = "[" + StrUtil::toStr(rank_y) + "]";
       DIAG_DevMsgIf(1, profile_x->metricMgr()->toString(pfx0.c_str()));
@@ -168,7 +170,7 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
     int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
     profile_x->merge(*profile_y, mergeTy);
 
-    if (0) {
+    if (DBG_CCT_MERGE) {
       string pfx = ("[" + StrUtil::toStr(rank_y)
 		    + " => " + StrUtil::toStr(rank_x) + "]");
       DIAG_DevMsgIf(1, profile_x->metricMgr()->toString(pfx.c_str()));
