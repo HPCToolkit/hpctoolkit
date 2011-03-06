@@ -49,8 +49,7 @@ PATCH_CMD ?= 	default
 CONFIG_CMD ?=   ./configure
 BUILD_CMD ?=	$(MAKE) -C "$(BUILD_DIR)"
 INSTALL_CMD ?=  $(MAKE) -C "$(BUILD_DIR)" install
-CLEAN_CMD ?=    test ! -d "$(BUILD_DIR)" || $(MAKE) -C "$(BUILD_DIR)" clean
-DISTCLEAN_CMD ?=  default
+CLEAN_CMD ?=	rm -rf "$(SRC_DIR)" "$(BUILD_DIR)"
 
 FETCH_FTP =  ../build-utils/fetch-ftp.sh
 
@@ -60,7 +59,7 @@ export MAKE
 .PHONY: all prereqs fetch refetch config reconfig build rebuild
 .PHONY: install reinstall clean distclean
 
-all: build
+all: install
 
 prereqs:
 	@for pkg in $(PREREQS) ; do  \
@@ -164,17 +163,12 @@ clean:
 	@echo ; echo "===> ($(PKG_NAME)) make clean ..."
 	@test x != "x$(CLEAN_CMD)"
 	$(CLEAN_CMD)
+	@rm -f $(FETCH_COOKIE) $(CONFIG_COOKIE) $(BUILD_COOKIE)
 
 distclean:
 	@echo ; echo "===> ($(PKG_NAME)) make distclean ..."
-	@test x != "x$(DISTCLEAN_CMD)"
-	@if test xdefault = "x$(DISTCLEAN_CMD)" ; then  \
-		echo rm -rf "$(SRC_DIR)" "$(BUILD_DIR)" ;  \
-		rm -rf "$(SRC_DIR)" "$(BUILD_DIR)" ;  \
-		rm -f $(FETCH_COOKIE) $(CONFIG_COOKIE) ;  \
-		rm -f $(BUILD_COOKIE) $(INSTALL_COOKIE) ;  \
-	else  \
-		echo "$(DISTCLEAN_CMD)" ;  \
-		$(DISTCLEAN_CMD) ;  \
-	fi
+	@test x != "x$(CLEAN_CMD)"
+	$(CLEAN_CMD)
+	@rm -f $(FETCH_COOKIE) $(CONFIG_COOKIE)
+	@rm -f $(BUILD_COOKIE) $(INSTALL_COOKIE)
 

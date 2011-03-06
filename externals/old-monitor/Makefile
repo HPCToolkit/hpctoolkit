@@ -20,7 +20,6 @@ FETCH_TARFILE = monitor-080825.tar.gz
 
 BUILD_CMD =   cd $(SRC_DIR) && $(MAKE) PREFIX=$(TEMP_INSTALL) install
 INSTALL_CMD = ./install
-CLEAN_CMD =   cd $(SRC_DIR) && $(MAKE) clean
 
 include ../build-utils/Makefile.inc
 
