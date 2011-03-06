@@ -12,7 +12,7 @@ PREREQS = libdwarf libelf libunwind libxml2
 PLATFORM := $(SYMTABAPI_PLATFORM)
 export PLATFORM
 
-USE_SYMTAB_61 = no
+USE_SYMTAB_61 = yes
 
 ifeq ($(USE_SYMTAB_61),yes)
 
