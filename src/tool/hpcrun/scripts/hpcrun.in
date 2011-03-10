@@ -178,6 +178,7 @@ arg_ok()
 # LD_PRELOAD should be delayed until we launch the program, but the
 # others can be set now.
 
+mpi_preload=
 memleak_preload=
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
@@ -207,6 +208,7 @@ do
 	    arg_ok "$1" || die "missing argument for $arg"
 	    case "$1" in
 		MEMLEAK* ) memleak_preload="${hpcrun_dir}/libhpcrun_memleak.so" ;;
+		MPI* )     mpi_preload="${hpcrun_dir}/libhpcrun_mpi.so" ;;
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
 		'' ) HPCRUN_EVENT_LIST="$1" ;;
@@ -359,6 +361,7 @@ ulimit -S -c unlimited >/dev/null 2>&1
 
 hpc_ld_library_path="$papi_libdir"
 hpc_ld_preload="${memleak_preload} ${hpcrun_dir}/libhpcrun.so"
+hpc_ld_preload="${mpi_preload} ${hpcrun_dir}/libhpcrun.so"
 hpc_ld_preload="${hpc_ld_preload} ${libmonitor_dir}/libmonitor.so"
 
 export HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
