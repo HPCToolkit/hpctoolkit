@@ -112,7 +112,7 @@ fnbounds_add(char *module_name, void *start, void *end)
 }
 
 
-int
+bool
 fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
 {
   load_module_t* lm_ = hpcrun_getLoadmap()->lm_head;
@@ -121,7 +121,7 @@ fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
   if (lm) {
     *lm = lm_;
   }
-  return ret;
+  return (ret == 0);
 }
 
 

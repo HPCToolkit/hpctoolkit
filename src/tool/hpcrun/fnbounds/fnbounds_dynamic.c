@@ -70,6 +70,7 @@
 #include <string.h>    // for strcmp, strerror
 #include <stdlib.h>    // for getenv
 #include <errno.h>     // for errno
+#include <stdbool.h>   
 #include <sys/mman.h>
 #include <sys/param.h> // for PATH_MAX
 #include <sys/stat.h>  // mkdir
@@ -218,32 +219,33 @@ fnbounds_init()
 }
 
 
-int
-fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
+bool
+fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 {
   FNBOUNDS_LOCK;
 
-  int ret = 1; // failure unless otherwise reset to 0 below
+  bool ret = false; // failure unless otherwise reset to 0 below
   
-  load_module_t *lm_ = fnbounds_get_loadModule(ip);
-  dso_info_t *dso = (lm_) ? lm_->dso_info : NULL;
+  load_module_t* lm_ = fnbounds_get_loadModule(ip);
+  dso_info_t* dso = (lm_) ? lm_->dso_info : NULL;
   
   if (dso && dso->nsymbols > 0) {
-    void *ip_norm = ip;
+    void* ip_norm = ip;
     if (dso->is_relocatable) {
-      ip_norm = (void *) (((unsigned long) ip_norm) - dso->start_to_ref_dist);
+      ip_norm = (void*) (((unsigned long) ip_norm) - dso->start_to_ref_dist);
     }
 
      // no dso table means no enclosing addr
 
     if (dso->table) {
       // N.B.: works on normalized IPs
-      ret = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm, 
-				  (void **) start, (void **) end);
+      int rv = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm, 
+				     (void**) start, (void**) end);
 
+      ret = (rv == 0);
       // Convert 'start' and 'end' into unnormalized IPs since they are
       // currently normalized.
-      if (ret == 0 && dso->is_relocatable) {
+      if (rv == 0 && dso->is_relocatable) {
 	*start = PERFORM_RELOCATION(*start, dso->start_to_ref_dist);
 	*end   = PERFORM_RELOCATION(*end  , dso->start_to_ref_dist);
       }
