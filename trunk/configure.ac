@@ -93,6 +93,7 @@ AC_CONFIG_MACRO_DIR([config])
 
 AC_MSG_NOTICE([INFO: from user: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'])
 AC_MSG_NOTICE([INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}'])
+AC_MSG_NOTICE([INFO: from user: MPICC='${MPICC}'])
 AC_MSG_NOTICE([INFO: from user: MPICXX='${MPICXX}'])
 
 # NOTE: please update config/README.version
@@ -105,6 +106,7 @@ AM_MAINTAINER_MODE()
 AC_CANONICAL_BUILD()
 AC_CANONICAL_HOST()
 
+MPICC_ORIG=${MPICC}
 MPICXX_ORIG=${MPICXX}
 
 #----------------------------------------------------------------------------
@@ -244,6 +246,7 @@ AC_PROG_INSTALL()
 
 AC_MSG_NOTICE([INFO: post autoconf tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'])
 AC_MSG_NOTICE([INFO: post autoconf tests: CC='${CC}' CFLAGS='${CFLAGS}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: MPICC='${MPICC}'])
 AC_MSG_NOTICE([INFO: post autoconf tests: MPICXX='${MPICXX}'])
 
 
@@ -655,6 +658,7 @@ AC_SUBST([HOST_XPROF_LDFLAGS])
 
 AC_MSG_NOTICE([INFO: post hpc tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' HOST_CXXFLAGS='${HOST_CXXFLAGS}'])
 AC_MSG_NOTICE([INFO: post hpc tests: CC='${CC}' CFLAGS='${CFLAGS}' HOST_CFLAGS='${HOST_CFLAGS}'])
+AC_MSG_NOTICE([INFO: post hpc tests: MPICC='${MPICC}'])
 AC_MSG_NOTICE([INFO: post hpc tests: MPICXX='${MPICXX}'])
 
 #----------------------------------------------------------------------------
@@ -1469,6 +1473,42 @@ AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
 
 
 #-------------------------------------------------
+# enable-mpi-profile:
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether to build MPI versions (hpcprof-mpi)])
+
+OPT_REQ_ENABLE_MPI="no" # yes, no, auto
+
+AC_ARG_ENABLE([mpip],
+  AS_HELP_STRING([--enable-mpi-profile],
+                 [Enable MPI profiler support (uses MPICC variable)]),
+  [case "${enableval}" in
+     yes) OPT_REQ_ENABLE_MPIP="yes" ;;
+     no)  OPT_REQ_ENABLE_MPIP="no" ;;
+     *)   AC_MSG_ERROR([bad value ${enableval} for --enable-mpi-profile]) ;;
+   esac],
+  [if test -n "${MPICC_ORIG}" ; then
+     OPT_REQ_ENABLE_MPIP=yes
+   fi])
+
+OPT_ENABLE_MPIP=no
+if test -n "${MPICC}" -a "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
+  OPT_ENABLE_MPIP=yes
+fi
+
+AC_MSG_RESULT([${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})])
+
+
+if test "${OPT_REQ_ENABLE_MPIP}" = "yes" -a "${OPT_ENABLE_MPIP}" = no ; then
+  AC_MSG_ERROR([MPI support requested but MPI compiler is invalid!])
+fi
+
+AM_CONDITIONAL(OPT_ENABLE_MPIP, test "${OPT_ENABLE_MPIP}" = "yes")
+
+
+
+#-------------------------------------------------
 # enable-lush, enable-lush-pthreads, with-cilk
 #-------------------------------------------------
 
@@ -1832,6 +1872,7 @@ AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
+AC_MSG_NOTICE([  mpi profiler support?: ${OPT_ENABLE_MPIP}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  CC:        '${CC}'])
@@ -1841,6 +1882,7 @@ AC_MSG_NOTICE([  CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'])
 AC_MSG_NOTICE([  CCAS:      '${CCAS}'])
 AC_MSG_NOTICE([  CCASFLAGS: '${CCASFLAGS}'])
 AC_MSG_NOTICE([  LDFLAGS:   '${LDFLAGS}'])
+AC_MSG_NOTICE([  MPICC:     '${MPICC}'])
 AC_MSG_NOTICE([  MPICXX:    '${MPICXX}'])
 AC_MSG_NOTICE([  HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'])
 AC_MSG_NOTICE([  HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'])

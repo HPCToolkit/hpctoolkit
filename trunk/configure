@@ -623,6 +623,8 @@ OPT_WITH_CILK_FALSE
 OPT_WITH_CILK_TRUE
 OPT_ENABLE_LUSH_FALSE
 OPT_ENABLE_LUSH_TRUE
+OPT_ENABLE_MPIP_FALSE
+OPT_ENABLE_MPIP_TRUE
 OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
@@ -866,6 +868,7 @@ with_xerces
 enable_hpcrun
 enable_hpcrun_static
 enable_mpi
+enable_mpip
 enable_lush
 with_cilk
 enable_lush_pthreads
@@ -1528,6 +1531,7 @@ Optional Features:
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
+  --enable-mpi-profile    Enable MPI profiler support (uses MPICC variable)
   --enable-lush           use lush backtrace in hpcrun
   --enable-lush-pthreads  enable lush pthreads (temp)
   --enable-bluegene       Enable BlueGene/P support
@@ -2799,6 +2803,8 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 $as_echo "$as_me: INFO: from user: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}'" >&5
 $as_echo "$as_me: INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: from user: MPICC='${MPICC}'" >&5
+$as_echo "$as_me: INFO: from user: MPICC='${MPICC}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: INFO: from user: MPICXX='${MPICXX}'" >&5
 $as_echo "$as_me: INFO: from user: MPICXX='${MPICXX}'" >&6;}
 
@@ -3380,6 +3386,7 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 
+MPICC_ORIG=${MPICC}
 MPICXX_ORIG=${MPICXX}
 
 #----------------------------------------------------------------------------
@@ -15240,6 +15247,8 @@ $as_echo "$ac_cv_path_MPICXX" >&6; }
 $as_echo "$as_me: INFO: post autoconf tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post autoconf tests: CC='${CC}' CFLAGS='${CFLAGS}'" >&5
 $as_echo "$as_me: INFO: post autoconf tests: CC='${CC}' CFLAGS='${CFLAGS}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post autoconf tests: MPICC='${MPICC}'" >&5
+$as_echo "$as_me: INFO: post autoconf tests: MPICC='${MPICC}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post autoconf tests: MPICXX='${MPICXX}'" >&5
 $as_echo "$as_me: INFO: post autoconf tests: MPICXX='${MPICXX}'" >&6;}
 
@@ -16052,6 +16061,8 @@ fi
 $as_echo "$as_me: INFO: post hpc tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' HOST_CXXFLAGS='${HOST_CXXFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post hpc tests: CC='${CC}' CFLAGS='${CFLAGS}' HOST_CFLAGS='${HOST_CFLAGS}'" >&5
 $as_echo "$as_me: INFO: post hpc tests: CC='${CC}' CFLAGS='${CFLAGS}' HOST_CFLAGS='${HOST_CFLAGS}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post hpc tests: MPICC='${MPICC}'" >&5
+$as_echo "$as_me: INFO: post hpc tests: MPICC='${MPICC}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post hpc tests: MPICXX='${MPICXX}'" >&5
 $as_echo "$as_me: INFO: post hpc tests: MPICXX='${MPICXX}'" >&6;}
 
@@ -16992,6 +17003,53 @@ fi
 
 
 #-------------------------------------------------
+# enable-mpi-profile:
+#-------------------------------------------------
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI versions (hpcprof-mpi)" >&5
+$as_echo_n "checking whether to build MPI versions (hpcprof-mpi)... " >&6; }
+
+OPT_REQ_ENABLE_MPI="no" # yes, no, auto
+
+# Check whether --enable-mpip was given.
+if test "${enable_mpip+set}" = set; then :
+  enableval=$enable_mpip; case "${enableval}" in
+     yes) OPT_REQ_ENABLE_MPIP="yes" ;;
+     no)  OPT_REQ_ENABLE_MPIP="no" ;;
+     *)   as_fn_error $? "bad value ${enableval} for --enable-mpi-profile" "$LINENO" 5 ;;
+   esac
+else
+  if test -n "${MPICC_ORIG}" ; then
+     OPT_REQ_ENABLE_MPIP=yes
+   fi
+fi
+
+
+OPT_ENABLE_MPIP=no
+if test -n "${MPICC}" -a "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
+  OPT_ENABLE_MPIP=yes
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})" >&5
+$as_echo "${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})" >&6; }
+
+
+if test "${OPT_REQ_ENABLE_MPIP}" = "yes" -a "${OPT_ENABLE_MPIP}" = no ; then
+  as_fn_error $? "MPI support requested but MPI compiler is invalid!" "$LINENO" 5
+fi
+
+ if test "${OPT_ENABLE_MPIP}" = "yes"; then
+  OPT_ENABLE_MPIP_TRUE=
+  OPT_ENABLE_MPIP_FALSE='#'
+else
+  OPT_ENABLE_MPIP_TRUE='#'
+  OPT_ENABLE_MPIP_FALSE=
+fi
+
+
+
+
+#-------------------------------------------------
 # enable-lush, enable-lush-pthreads, with-cilk
 #-------------------------------------------------
 
@@ -17572,6 +17630,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_MPI_TRUE}" && test -z "${OPT_ENABLE_MPI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_MPI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_MPIP_TRUE}" && test -z "${OPT_ENABLE_MPIP_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_MPIP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_LUSH_TRUE}" && test -z "${OPT_ENABLE_LUSH_FALSE}"; then
@@ -20216,6 +20278,8 @@ $as_echo "$as_me:   hpcrun?:      ${enable_hpcrun_mesg}" >&6;}
 $as_echo "$as_me:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support?: ${OPT_ENABLE_MPI}" >&5
 $as_echo "$as_me:   mpi support?: ${OPT_ENABLE_MPI}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   mpi profiler support?: ${OPT_ENABLE_MPIP}" >&5
+$as_echo "$as_me:   mpi profiler support?: ${OPT_ENABLE_MPIP}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun/lush?: ${opt_enable_lush}" >&5
 $as_echo "$as_me:   hpcrun/lush?: ${opt_enable_lush}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
@@ -20234,6 +20298,8 @@ $as_echo "$as_me:   CCAS:      '${CCAS}'" >&6;}
 $as_echo "$as_me:   CCASFLAGS: '${CCASFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   LDFLAGS:   '${LDFLAGS}'" >&5
 $as_echo "$as_me:   LDFLAGS:   '${LDFLAGS}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   MPICC:     '${MPICC}'" >&5
+$as_echo "$as_me:   MPICC:     '${MPICC}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   MPICXX:    '${MPICXX}'" >&5
 $as_echo "$as_me:   MPICXX:    '${MPICXX}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'" >&5
