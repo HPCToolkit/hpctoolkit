@@ -4118,11 +4118,11 @@ $as_echo_n "checking copying package directories... " >&6; }
 		if mkdir -p "${pkg}/${base}" ; then : ; else
 		    as_fn_error $? "unable to mkdir $pkg/$base" "$LINENO" 5
 		fi
-		for patch in "$dir"/patch-*
+		for file in "$dir"/*
 		do
-		    if test -f "$patch" ; then
-			if cp -f "$patch" "${pkg}/${base}" ; then : ; else
-			    as_fn_error $? "unable to copy $patch" "$LINENO" 5
+		    if test -f "$file" ; then
+			if cp -f "$file" "${pkg}/${base}" ; then : ; else
+			    as_fn_error $? "unable to copy $file" "$LINENO" 5
 			fi
 		    fi
 		done

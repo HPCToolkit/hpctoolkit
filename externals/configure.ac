@@ -368,11 +368,11 @@ then
 		if mkdir -p "${pkg}/${base}" ; then : ; else
 		    AC_MSG_ERROR([unable to mkdir $pkg/$base])
 		fi
-		for patch in "$dir"/patch-*
+		for file in "$dir"/*
 		do
-		    if test -f "$patch" ; then
-			if cp -f "$patch" "${pkg}/${base}" ; then : ; else
-			    AC_MSG_ERROR([unable to copy $patch])
+		    if test -f "$file" ; then
+			if cp -f "$file" "${pkg}/${base}" ; then : ; else
+			    AC_MSG_ERROR([unable to copy $file])
 			fi
 		    fi
 		done
