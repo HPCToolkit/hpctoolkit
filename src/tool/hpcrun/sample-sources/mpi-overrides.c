@@ -257,6 +257,64 @@ MONITOR_EXT_WRAP_NAME(MPI_Allgather)(  void *sendbuf, int sendcount, MPI_Datatyp
 }
 
 
+int
+MONITOR_EXT_WRAP_NAME(MPI_Allgatherv)(  void *sendbuf, int sendcount, MPI_Datatype sendtype,
+        void *recvbuf, int *recvcount, int *displs, MPI_Datatype recvtype,
+        MPI_Comm comm  )
+{
+
+  int bytes = Get_Msg_size(sendcount, sendtype );
+  hpmpi_store_metric(bytes);
+
+  return PMPI_Allgatherv( sendbuf, sendcount, sendtype, recvbuf,
+          recvcount, displs, recvtype, comm );
+
+}
+
+
+int
+MONITOR_EXT_WRAP_NAME(MPI_Allreduce)( void *sendbuf, void *recvbuf, int count,
+        MPI_Datatype datatype, MPI_Op op, MPI_Comm comm )
+{
+
+  int bytes = Get_Msg_size(count, datatype );
+  hpmpi_store_metric(bytes);
+
+  return PMPI_Allreduce( sendbuf, recvbuf, count, datatype, op, comm );
+
+}
+
+
+int
+MONITOR_EXT_WRAP_NAME(MPI_Alltoall)( void *sendbuf, int sendcount, MPI_Datatype sendtype,
+		  void *recvbuf, int recvcnt, MPI_Datatype recvtype,
+		  MPI_Comm comm )
+{
+
+  int bytes = Get_Msg_size(sendcount, sendtype );
+  hpmpi_store_metric(bytes);
+
+  return PMPI_Alltoall( sendbuf, sendcount, sendtype, recvbuf,
+		     recvcnt, recvtype, comm );
+
+}
+
+
+int
+MONITOR_EXT_WRAP_NAME(MPI_Alltoallv)( void *sendbuf, int *sendcnts, int *sdispls,
+		   MPI_Datatype sendtype, void *recvbuf, int *recvcnts,
+		   int *rdispls, MPI_Datatype recvtype, MPI_Comm comm )
+{
+
+  int bytes = Get_Msg_size( *sendcnts, sendtype );
+  hpmpi_store_metric(bytes);
+
+  return PMPI_Alltoallv( sendbuf, sendcnts, sdispls, sendtype, recvbuf,
+	      recvcnts, rdispls, recvtype, comm );
+
+}
+
+
 
 int
 MONITOR_EXT_WRAP_NAME(MPI_Send)(  void *buf, int count, MPI_Datatype datatype, int dest,
