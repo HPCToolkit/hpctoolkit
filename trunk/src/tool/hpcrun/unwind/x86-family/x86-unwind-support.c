@@ -68,23 +68,8 @@ static void*
 actual_get_branch_target(void *ins, xed_decoded_inst_t *xptr,
 		   xed_operand_values_t *vals)
 {
-  int bytes = xed_operand_values_get_branch_displacement_length(vals);
+  int offset = xed_operand_values_get_branch_displacement_int32(vals);
 
-  // FIXME? use get_branch_displacement_int32 uniformly ?? (kill switch stmt?)
-  int offset = 0;
-  switch(bytes) {
-  case 1:
-    offset = (signed char) 
-      xed_operand_values_get_branch_displacement_byte(vals,0);
-    break;
-  case 2:
-  case 4:
-    offset = xed_operand_values_get_branch_displacement_int32(vals);
-    break;
-  default:
-    EMSG("Non std # bytes in actual_get_branch_target: %d", offset);
-    return NULL;
-  }
   void *end_of_call_inst = ins + xed_decoded_inst_get_length(xptr);
   void *target = end_of_call_inst + offset;
   return target;
