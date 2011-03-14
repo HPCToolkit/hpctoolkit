@@ -67,6 +67,8 @@ extern "C" {
 extern "C" {
 #endif
 
+#include <include/hpctoolkit-config.h>
+
 static inline bool
 x86_isReg_BP(xed_reg_enum_t reg)
 {
