@@ -1,7 +1,8 @@
 #!/usr/local/bin/python 
 # -*- python -*-
-#
-#   mpiP MPI Profiler ( http://mpip.sourceforge.net/ )
+#   
+#   HPCToolkit MPI Profiler
+#   this script is adapted from mpiP MPI Profiler ( http://mpip.sourceforge.net/ )
 #
 #   Please see COPYRIGHT AND LICENSE information at the end of this file.
 #
@@ -49,12 +50,16 @@ messParamDict = {
     ( "MPI_Gatherv", "sendtype"):2,
     ( "MPI_Ibsend", "count"):1,
     ( "MPI_Ibsend", "datatype"):2,
+    ( "MPI_Irecv", "count"):1,
+    ( "MPI_Irecv", "datatype"):2,
     ( "MPI_Irsend", "count"):1,
     ( "MPI_Irsend", "datatype"):2,
     ( "MPI_Isend", "count"):1,
     ( "MPI_Isend", "datatype"):2,
     ( "MPI_Issend", "count"):1,
     ( "MPI_Issend", "datatype"):2,
+    ( "MPI_Recv", "count"):1,
+    ( "MPI_Recv", "datatype"):2,
     ( "MPI_Reduce", "count"):1,
     ( "MPI_Reduce", "datatype"):2,
     ( "MPI_Rsend", "count"):1,
@@ -783,7 +788,7 @@ def CreateWrapper(funct, olist):
     if verbose:
 	print "Wrapping ",funct
 
-    olist.append("\n\n\n/* --------------- " + funct + " --------------- */\n" )
+    olist.append("\n\n\n/* --------------- " + funct + ": " + fdict[funct].recvCountPname + " --------------- */\n" )
 
     #####
     ##### C wrapper
@@ -793,18 +798,21 @@ def CreateWrapper(funct, olist):
     if fdict[funct].wrapperPreList:
 	olist.extend(fdict[funct].wrapperPreList)
 
-    olist.append("\nint rc;\nint bytes = 0;\n")
+    if ((fdict[funct].sendCountPname != "") or (fdict[funct].recvCountPname != "")):
+	buffcount = fdict[funct].sendCountPname
+	bufftype  = fdict[funct].sendTypePname
 
-    if fdict[funct].sendCountPname != "":
+	if (fdict[funct].sendCountPname == ""):
+		buffcount = fdict[funct].recvCountPname
+		bufftype  = fdict[funct].recvTypePname
+
         olist.append( "\n" 
                       + "if ( " + fdict[funct].sendTypePname + " != MPI_DATATYPE_NULL ) {\n" 
-		      + "  bytes = Get_Msg_size(" + fdict[funct].sendCountPname + ", "
-		      + fdict[funct].sendTypePname + ");\n"
-		      + "  hpmpi_store_metric(bytes);"
-                      + "}\nelse {\n  TMSG(MPI,\"MPI_DATATYPE_NULL encountered.  MPI_IN_PLACE not supported.\\n\");\n"
+		      + "  hpmpi_store_metric(Get_Msg_size(" +buffcount+ ", "+ bufftype + ") );\n"
+                      + "} else {\n  TMSG(MPI,\"MPI_DATATYPE_NULL encountered.  MPI_IN_PLACE not supported.\\n\");\n"
                       + "  TMSG(MPI,\"Values for %s may be invalid.\\n\", &(__func__)[7]);\n}\n")
 
-    olist.append("\nrc = P" + funct + "( " )
+    olist.append("\nreturn P" + funct + "( " )
 
     for i in fdict[funct].paramConciseList:
 	if (fdict[funct].paramDict[i].pointerLevel == 0) \
@@ -820,7 +828,7 @@ def CreateWrapper(funct, olist):
 	if fdict[funct].paramConciseList.index(i) < len(fdict[funct].paramConciseList) - 1:
 	    olist.append(", ")
 
-    olist.append(" );\n\n" + "return rc;\n" )
+    olist.append(" );\n\n" )
     olist.append("}" + " /* " + funct + " */\n")
 
 
@@ -829,7 +837,7 @@ def CreateWrapper(funct, olist):
     #####
 
     ##### funct decl
-    olist.append("\n\nextern void " + "F77_" + string.upper(funct) + "(" )
+    olist.append("\n\nvoid " + "F77_" + string.upper(funct) + "(" )
     
     #================================================================================
     # In the case where MPI_Fint and and opaque objects such as MPI_Request are not the same size,
@@ -1011,7 +1019,7 @@ def CreateWrapper(funct, olist):
         if fdict[funct].paramConciseList.index(i) < len(fdict[funct].paramConciseList) - 1:
             olist.append(", ")
 
-    olist.append(" );\n\n")
+    olist.append(" );\n")
     olist.append("*ierr = (MPI_Fint)rc;\n")
 
     #  Generate post-call translation code if necessary
@@ -1066,7 +1074,7 @@ def CreateWrapper(funct, olist):
     for freeSym in freelist:
         olist.append("free("+freeSym+");\n")
                 
-    olist.append("\n } /* " + string.lower(funct) + " */\n")
+    olist.append("} /* " + string.lower(funct) + " */\n")
 
     #if ( opaqueFound == 1 and xlateDone == 0 ):
     #    print "Function " + funct + " not translated!\n"
