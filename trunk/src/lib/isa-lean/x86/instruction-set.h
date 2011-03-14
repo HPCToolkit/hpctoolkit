@@ -47,17 +47,29 @@
 #ifndef isa_lean_x86_instruction_set_h
 #define isa_lean_x86_instruction_set_h
 
+//************************* System Include Files ****************************
+
 #include <stdbool.h>
+
+//************************** XED Include Files ******************************
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-# include "xed-interface.h"
+# include <xed-interface.h>
 
 #ifdef __cplusplus
 };
 #endif
+
+//*************************** User Include Files ****************************
+
+#include <include/hpctoolkit-config.h>
+
+//*************************** Forward Declarations **************************
+
+//***************************************************************************
 
 //***************************************************************************
 // 
@@ -66,8 +78,6 @@ extern "C" {
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <include/hpctoolkit-config.h>
 
 static inline bool
 x86_isReg_BP(xed_reg_enum_t reg)
@@ -91,6 +101,7 @@ x86_isReg_SP(xed_reg_enum_t reg)
 	  reg == XED_REG_ESP ||
 	  reg == XED_REG_SP);
 }
+
 
 static inline bool
 x86_isReg_IP(xed_reg_enum_t reg)
@@ -116,11 +127,11 @@ x86_isReg_AX(xed_reg_enum_t reg)
 }
 
 
+//***************************************************************************
 
 #ifdef __cplusplus
 };
 #endif
-
 
 
 #endif // isa_lean_x86_instruction_set_h
