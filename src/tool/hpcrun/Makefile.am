@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+PYTHON = python
+
 #############################################################################
 # Automake rules
 #############################################################################
@@ -301,7 +303,7 @@ libhpcrun_memleak_wrap_a_SOURCES = 	\
 	sample-sources/memleak-overrides.c
 
 libhpcrun_mpi_la_SOURCES = 		\
-	sample-sources/mpi-overrides.c
+	$(top_builddir)/src/tool/hpcrun/mpi-overrides.c
 
 libhpcrun_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
@@ -337,6 +339,9 @@ libhpcrun_wrap_a_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+$(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
+	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py $(srcdir)/sample-sources/mpi.protos
+	
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
