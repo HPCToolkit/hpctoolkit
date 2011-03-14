@@ -788,7 +788,7 @@ def CreateWrapper(funct, olist):
     if verbose:
 	print "Wrapping ",funct
 
-    olist.append("\n\n\n/* --------------- " + funct + ": " + fdict[funct].recvCountPname + " --------------- */\n" )
+    olist.append("\n\n\n/* --------------- " + funct + " --------------- */\n" )
 
     #####
     ##### C wrapper
