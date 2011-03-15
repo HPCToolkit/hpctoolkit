@@ -340,7 +340,8 @@ libhpcrun_wrap_a_CPPFLAGS =		\
 	$(MY_INCLUDE_DIRS)
 
 $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
-	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py $(srcdir)/sample-sources/mpi.protos
+	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
+		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
 	
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
