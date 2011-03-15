@@ -547,6 +547,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+F77 = @F77@
+F77_SYMBOLS = @F77_SYMBOLS@
 FGREP = @FGREP@
 GNUBINUTILS_IFLAGS = @GNUBINUTILS_IFLAGS@
 GNUBINUTILS_LDFLAGS = @GNUBINUTILS_LDFLAGS@
@@ -3375,7 +3377,8 @@ endef
 #############################################################################
 
 $(top_builddir)/src/tool/hpcrun/mpi-overrides.c: sample-sources/mpi.protos
-	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py $(srcdir)/sample-sources/mpi.protos
+	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
+		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/mpi.protos
 
 %.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_0_CXX) $< > $@
