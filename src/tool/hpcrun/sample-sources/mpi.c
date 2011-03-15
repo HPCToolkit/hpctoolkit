@@ -154,7 +154,7 @@ METHOD_FN(process_event_list,int lush_metrics)
 
   TMSG(MPI, "Setting up metrics for MPI: %d", hpmpi_metric_id);
 
-  hpcrun_set_metric_info(hpmpi_metric_id, "MPI_MSG_bytes");
+  hpcrun_set_metric_info(hpmpi_metric_id, "MPI_MSG(B)");
 }
 
 
