@@ -1473,20 +1473,20 @@ AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
 
 
 #-------------------------------------------------
-# enable-mpi-profile:
+# enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
 AC_MSG_CHECKING([whether to build MPI versions (hpcprof-mpi)])
 
 OPT_REQ_ENABLE_MPI="no" # yes, no, auto
 
-AC_ARG_ENABLE([mpip],
-  AS_HELP_STRING([--enable-mpi-profile],
-                 [Enable MPI profiler support (uses MPICC variable)]),
+AC_ARG_ENABLE([mpi-wrapper],
+  AS_HELP_STRING([--enable-mpi-wrapper],
+                 [Enable MPI wrapper support (uses MPICC variable)]),
   [case "${enableval}" in
      yes) OPT_REQ_ENABLE_MPIP="yes" ;;
      no)  OPT_REQ_ENABLE_MPIP="no" ;;
-     *)   AC_MSG_ERROR([bad value ${enableval} for --enable-mpi-profile]) ;;
+     *)   AC_MSG_ERROR([bad value ${enableval} for --enable-mpi-wrapper]) ;;
    esac],
   [if test -n "${MPICC_ORIG}" ; then
      OPT_REQ_ENABLE_MPIP=yes
@@ -1506,6 +1506,56 @@ fi
 
 AM_CONDITIONAL(OPT_ENABLE_MPIP, test "${OPT_ENABLE_MPIP}" = "yes")
 
+#-------------------------------------------------
+# enable-mpi-wrapper: check F77 symbols
+#-------------------------------------------------
+
+if test "${OPT_ENABLE_MPIP}" = "yes" ; then
+  AC_CHECK_PROGS(F77, mpif77)
+ 
+  if test -n "$F77" -a "$F77" != no ; then
+
+    AC_MSG_CHECKING(Whether fortran symbols have underscores)
+    /bin/rm -f ffunc.f flink.c
+    echo "      subroutine f_fun()" > ffunc.f
+    echo "      return" >> ffunc.f
+    echo "      end" >> ffunc.f
+    $F77 $FFLAGS -c ffunc.f 1>/dev/null 2>/dev/null
+    echo "main(){ FF(); return 0; }" > flink.c
+    if $CC -o flink -DFF=f_fun flink.c ffunc.o $LDFLAGS $LIBS 1>/dev/null 2>/dev/null; then
+      AC_MSG_RESULT(same as C)
+      F77_SYMBOLS=symbol
+    elif $CC -o flink -DFF=f_fun_ flink.c ffunc.o $LDFLAGS $LIBS 1>/dev/null 2>/dev/null; then
+      AC_MSG_RESULT(lowercase with underscore)
+      F77_SYMBOLS=symbol_
+    elif $CC -o flink -DFF=f_fun__ flink.c ffunc.o $LDFLAGS $LIBS 1>/dev/null 2>/dev/null; then
+      AC_MSG_RESULT(lowercase with 2 underscores)
+      F77_SYMBOLS=symbol__
+    elif $CC -o flink -DFF=F_FUN flink.c ffunc.o $LDFLAGS $LIBS 1>/dev/null 2>/dev/null; then
+      AC_MSG_RESULT(uppercase)
+      F77_SYMBOLS=SYMBOL
+    elif $CC -o flink -DFF=F_FUN_ flink.c ffunc.o $LDFLAGS $LIBS 1>/dev/null 2>/dev/null; then
+      AC_MSG_RESULT(uppercase with underscore)
+      F77_SYMBOLS=SYMBOL_
+    elif $CC -o flink -DFF=F_FUN__ flink.c ffunc.o $LDFLAGS $LIBS 1>/dev/null 2>/dev/null; then
+      AC_MSG_RESULT(uppercase with 2 underscores)
+      F77_SYMBOLS=SYMBOL__
+    else
+      AC_MSG_RESULT(giving up)
+      AC_MSG_ERROR(could not determine F77 symbol names)
+    fi
+    /bin/rm -f ffunc.f ffunc.o flink flink.c flink.o ffunc
+  else
+    F77_SYMBOLS=symbol_
+    AC_MSG_RESULT(Fortran compiler not found: guessing lowercase with underscore)
+
+  fi
+else
+  F77_SYMBOLS=symbol_
+  AC_MSG_RESULT(guessing lowercase with underscore)
+fi
+
+AC_SUBST(F77_SYMBOLS,$F77_SYMBOLS)
 
 
 #-------------------------------------------------
