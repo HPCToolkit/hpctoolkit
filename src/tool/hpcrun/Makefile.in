@@ -225,13 +225,13 @@ libhpcrun_la_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
 	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
-	metrics.c name.c sample_event.c sample_sources_all.c \
-	sample-sources/common.c sample-sources/itimer.c \
-	sample-sources/memleak.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c system_server.c \
-	thread_data.c thread_use.c trace.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	metrics.c name.c sample_event.c sample_prob.c \
+	sample_sources_all.c sample-sources/common.c \
+	sample-sources/itimer.c sample-sources/memleak.c \
+	sample-sources/none.c sample-sources/retcnt.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c system_server.c thread_data.c thread_use.c \
+	trace.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
 	trampoline/common/trampoline.c lush/lush-backtrace.h \
 	lush/lush-backtrace.c lush/lush.h lush/lush.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
@@ -274,10 +274,11 @@ am__objects_8 = libhpcrun_la-first_func.lo libhpcrun_la-main.lo \
 	libhpcrun_la-hpcrun_options.lo libhpcrun_la-hpcrun_stats.lo \
 	libhpcrun_la-loadmap.lo libhpcrun_la-metrics.lo \
 	libhpcrun_la-name.lo libhpcrun_la-sample_event.lo \
-	libhpcrun_la-sample_sources_all.lo libhpcrun_la-common.lo \
-	libhpcrun_la-itimer.lo libhpcrun_la-memleak.lo \
-	libhpcrun_la-none.lo libhpcrun_la-retcnt.lo \
-	libhpcrun_la-sync.lo libhpcrun_la-sample_sources_registered.lo \
+	libhpcrun_la-sample_prob.lo libhpcrun_la-sample_sources_all.lo \
+	libhpcrun_la-common.lo libhpcrun_la-itimer.lo \
+	libhpcrun_la-memleak.lo libhpcrun_la-none.lo \
+	libhpcrun_la-retcnt.lo libhpcrun_la-sync.lo \
+	libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-system_server.lo \
 	libhpcrun_la-thread_data.lo libhpcrun_la-thread_use.lo \
 	libhpcrun_la-trace.lo libhpcrun_la-write_data.lo \
@@ -356,13 +357,13 @@ PROGRAMS = $(pkglib_PROGRAMS)
 am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c cct_insert_backtrace.c env.c epoch.c files.c \
 	handling_sample.c hpcrun_options.c hpcrun_stats.c loadmap.c \
-	metrics.c name.c sample_event.c sample_sources_all.c \
-	sample-sources/common.c sample-sources/itimer.c \
-	sample-sources/memleak.c sample-sources/none.c \
-	sample-sources/retcnt.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c system_server.c \
-	thread_data.c thread_use.c trace.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	metrics.c name.c sample_event.c sample_prob.c \
+	sample_sources_all.c sample-sources/common.c \
+	sample-sources/itimer.c sample-sources/memleak.c \
+	sample-sources/none.c sample-sources/retcnt.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c system_server.c thread_data.c thread_use.c \
+	trace.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
 	trampoline/common/trampoline.c lush/lush-backtrace.h \
 	lush/lush-backtrace.c lush/lush.h lush/lush.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
@@ -407,6 +408,7 @@ am__objects_27 = libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-hpcrun_stats.$(OBJEXT) \
 	libhpcrun_o-loadmap.$(OBJEXT) libhpcrun_o-metrics.$(OBJEXT) \
 	libhpcrun_o-name.$(OBJEXT) libhpcrun_o-sample_event.$(OBJEXT) \
+	libhpcrun_o-sample_prob.$(OBJEXT) \
 	libhpcrun_o-sample_sources_all.$(OBJEXT) \
 	libhpcrun_o-common.$(OBJEXT) libhpcrun_o-itimer.$(OBJEXT) \
 	libhpcrun_o-memleak.$(OBJEXT) libhpcrun_o-none.$(OBJEXT) \
@@ -799,12 +801,13 @@ UNW_MIPS_LD_FLAGS =
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	cct_insert_backtrace.c env.c epoch.c files.c handling_sample.c \
 	hpcrun_options.c hpcrun_stats.c loadmap.c metrics.c name.c \
-	sample_event.c sample_sources_all.c sample-sources/common.c \
-	sample-sources/itimer.c sample-sources/memleak.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	segv_handler.c system_server.c thread_data.c thread_use.c \
-	trace.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	sample_event.c sample_prob.c sample_sources_all.c \
+	sample-sources/common.c sample-sources/itimer.c \
+	sample-sources/memleak.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c segv_handler.c system_server.c \
+	thread_data.c thread_use.c trace.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
 	trampoline/common/trampoline.c lush/lush-backtrace.h \
 	lush/lush-backtrace.c lush/lush.h lush/lush.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
@@ -1287,6 +1290,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-ppc64-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-retcnt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample_event.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample_prob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample_sources_all.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample_sources_registered.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-segv_handler.Plo@am__quote@
@@ -1365,6 +1369,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-ppc64-unwind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-retcnt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample_event.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample_prob.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample_sources_all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample_sources_registered.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-segv_handler.Po@am__quote@
@@ -1627,6 +1632,13 @@ libhpcrun_la-sample_event.lo: sample_event.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_event.c' object='libhpcrun_la-sample_event.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-sample_event.lo `test -f 'sample_event.c' || echo '$(srcdir)/'`sample_event.c
+
+libhpcrun_la-sample_prob.lo: sample_prob.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-sample_prob.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-sample_prob.Tpo -c -o libhpcrun_la-sample_prob.lo `test -f 'sample_prob.c' || echo '$(srcdir)/'`sample_prob.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_la-sample_prob.Tpo $(DEPDIR)/libhpcrun_la-sample_prob.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_prob.c' object='libhpcrun_la-sample_prob.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-sample_prob.lo `test -f 'sample_prob.c' || echo '$(srcdir)/'`sample_prob.c
 
 libhpcrun_la-sample_sources_all.lo: sample_sources_all.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-sample_sources_all.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-sample_sources_all.Tpo -c -o libhpcrun_la-sample_sources_all.lo `test -f 'sample_sources_all.c' || echo '$(srcdir)/'`sample_sources_all.c
@@ -2278,6 +2290,20 @@ libhpcrun_o-sample_event.obj: sample_event.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_event.c' object='libhpcrun_o-sample_event.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-sample_event.obj `if test -f 'sample_event.c'; then $(CYGPATH_W) 'sample_event.c'; else $(CYGPATH_W) '$(srcdir)/sample_event.c'; fi`
+
+libhpcrun_o-sample_prob.o: sample_prob.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-sample_prob.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-sample_prob.Tpo -c -o libhpcrun_o-sample_prob.o `test -f 'sample_prob.c' || echo '$(srcdir)/'`sample_prob.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-sample_prob.Tpo $(DEPDIR)/libhpcrun_o-sample_prob.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_prob.c' object='libhpcrun_o-sample_prob.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-sample_prob.o `test -f 'sample_prob.c' || echo '$(srcdir)/'`sample_prob.c
+
+libhpcrun_o-sample_prob.obj: sample_prob.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-sample_prob.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-sample_prob.Tpo -c -o libhpcrun_o-sample_prob.obj `if test -f 'sample_prob.c'; then $(CYGPATH_W) 'sample_prob.c'; else $(CYGPATH_W) '$(srcdir)/sample_prob.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libhpcrun_o-sample_prob.Tpo $(DEPDIR)/libhpcrun_o-sample_prob.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sample_prob.c' object='libhpcrun_o-sample_prob.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-sample_prob.obj `if test -f 'sample_prob.c'; then $(CYGPATH_W) 'sample_prob.c'; else $(CYGPATH_W) '$(srcdir)/sample_prob.c'; fi`
 
 libhpcrun_o-sample_sources_all.o: sample_sources_all.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-sample_sources_all.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-sample_sources_all.Tpo -c -o libhpcrun_o-sample_sources_all.o `test -f 'sample_sources_all.c' || echo '$(srcdir)/'`sample_sources_all.c

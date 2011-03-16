@@ -66,6 +66,7 @@
 #include "hpcrun_return_codes.h"
 #include "write_data.h"
 #include "loadmap.h"
+#include "sample_prob.h"
 
 #include <messages/messages.h>
 
@@ -157,7 +158,11 @@ lazy_open_data_file(void)
   TMSG(DATA_WRITE, "Filename = %s", fnm);
 
   /* Open file for writing; fail if the file already exists. */
-  fs = hpcio_fopen_w(fnm, /* overwrite */ 0);
+  if (hpcrun_sample_prob_active()) {
+    fs = hpcio_fopen_w(fnm, /* overwrite */ 0);
+  } else {
+    fs = hpcio_fopen_w("/dev/null", 2);
+  }
   if (fs == NULL) {
     EEMSG("HPCToolkit: %s: unable to open: %s", __func__, fnm);
     return NULL;

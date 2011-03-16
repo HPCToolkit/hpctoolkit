@@ -102,6 +102,10 @@ hpcio_fopen_w(const char* fnm, int overwrite)
     // Open file for writing; truncate file already exists.
     fd = open(fnm, O_WRONLY | O_CREAT | O_TRUNC, mode); 
   }
+  else if (overwrite == 2) {
+    // Options specific to /dev/null.
+    fd = open(fnm, O_WRONLY);
+  }
   else {
     return NULL; // blech
   }
