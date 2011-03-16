@@ -95,6 +95,7 @@
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 #include "segv_handler.h"
+#include "sample_prob.h"
 
 #include "epoch.h"
 #include "thread_data.h"
@@ -382,6 +383,8 @@ monitor_init_process(int *argc, char **argv, void* data)
     while (DEBUGGER_WAIT);
   }
 
+  hpcrun_sample_prob_init();
+
   // FIXME: if the process fork()s before main, then argc and argv
   // will be NULL in the child here.  MPT on CNL does this.
   process_name = "unknown";
@@ -426,6 +429,7 @@ monitor_init_process(int *argc, char **argv, void* data)
   TMSG(PROCESS,"init");
 
   messages_logfile_create();
+  hpcrun_sample_prob_mesg();
 
   TMSG(PROCESS, "I am a %s process", is_child ? "child" : "parent");
 

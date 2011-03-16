@@ -251,6 +251,12 @@ do
 	    export HPCRUN_QUIET=1
 	    ;;
 
+	-sp | --sample-prob )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_SAMPLE_PROB="$1"
+	    shift
+	    ;;
+
 	-t | --trace )
 	    export HPCRUN_TRACE=1
 	    ;;

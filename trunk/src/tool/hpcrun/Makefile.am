@@ -174,6 +174,7 @@ MY_BASE_FILES =			\
 	metrics.c			\
 	name.c				\
 	sample_event.c			\
+	sample_prob.c			\
 	sample_sources_all.c		\
         sample-sources/common.c         \
 	sample-sources/itimer.c		\
