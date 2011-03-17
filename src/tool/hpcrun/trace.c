@@ -64,6 +64,7 @@
 #include "monitor.h"
 #include "trace.h"
 #include "thread_data.h"
+#include "sample_prob.h"
 
 #include <memory/hpcrun-malloc.h>
 
@@ -128,7 +129,11 @@ trace_open()
     files_trace_name(trace_file, 0, PATH_MAX);
 
     thread_data_t *td = hpcrun_get_thread_data();
-    td->trace_file = hpcio_fopen_w(trace_file, 0);
+    if (hpcrun_sample_prob_active()) {
+      td->trace_file = hpcio_fopen_w(trace_file, 0);
+    } else {
+      td->trace_file = hpcio_fopen_w("/dev/null", 2);
+    }
     trace_file_validate(td->trace_file != 0, "open");
 
     td->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
