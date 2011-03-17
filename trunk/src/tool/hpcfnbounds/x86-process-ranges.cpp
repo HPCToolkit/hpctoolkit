@@ -58,7 +58,37 @@
  *****************************************************************************/
 
 extern "C" {
+#include <include/hpctoolkit-config.h>
 #include <xed-interface.h>
+
+// debug callable routines  -- only callable after xed_tables_init has been called
+// 
+
+  static xed_state_t dbg_xed_machine_state =
+#if defined (HOST_CPU_x86_64)
+    { XED_MACHINE_MODE_LONG_64, 
+      XED_ADDRESS_WIDTH_64b };
+#else
+      { XED_MACHINE_MODE_LONG_COMPAT_32,
+	  XED_ADDRESS_WIDTH_32b };
+#endif
+
+xed_iclass_enum_t
+xed_iclass(char* ins)
+{
+  xed_decoded_inst_t xedd;
+  xed_decoded_inst_t *xptr = &xedd;
+
+  xed_decoded_inst_zero_set_mode(xptr, &dbg_xed_machine_state);
+
+  xed_error_enum_t xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+  if (xed_error != XED_ERROR_NONE) {
+    fprintf(stderr, "!! XED decode failure of insruction @ %p", ins);
+    return XED_ICLASS_INVALID;
+  }
+  return xed_decoded_inst_get_iclass(xptr);
+}
+
 };
 
 
@@ -530,10 +560,12 @@ is_push_bp(char* ins)
 
 static const size_t WINDOW = 16; // 16 instruction window
 
+// true if save 'bp' on stack within next window instructions
+//
 static bool
-contains_bp_save(char* ins)
+contains_bp_save_window(char* ins, size_t window)
 {
-  for (size_t n = 0; n < WINDOW; n++) {
+  for (size_t n = 0; n < window; n++) {
     xed_decoded_inst_t xedd_tmp;
     xed_decoded_inst_t *xptr = &xedd_tmp;
     xed_error_enum_t xed_error;
@@ -566,6 +598,14 @@ contains_bp_save(char* ins)
     ins += xed_decoded_inst_get_length(xptr);
   }
   return false;
+}
+
+// Utility routine to check for a specific window for bp save
+//
+static bool
+contains_bp_save(char* ins)
+{
+  return contains_bp_save_window(ins, WINDOW);
 }
 
 //
@@ -626,7 +666,9 @@ is_2step_push_bp(char* ins)
 static bool
 is_push_bp_seq(char* ins)
 {
-  return is_push_bp(ins) || is_2step_push_bp(ins);
+  return is_push_bp(ins) ||
+    contains_bp_save_window(ins, 1) ||
+    is_2step_push_bp(ins);
 }
 
 static void 
@@ -1300,3 +1342,4 @@ process_leave(char *ins, long ins_offset)
   char *save_rbp = (set_rbp > push_rbp) ? set_rbp : push_rbp;
   add_protected_range(save_rbp + ins_offset + 1, ins + ins_offset + 1);
 }
+
