@@ -100,6 +100,7 @@ xed_iclass(char* ins)
 #include "function-entries.h"
 #include "process-ranges.h"
 
+#include <include/hpctoolkit-config.h>
 #include <lib/isa-lean/x86/instruction-set.h>
 
 
@@ -920,6 +921,118 @@ lea_has_zero_offset(xed_decoded_inst_t *xptr)
   return false;
 }
 
+//
+// utility to determine the address of the next instruction
+//
+static char*
+xed_next(char* ins)
+{
+  xed_decoded_inst_t xedd_tmp;
+  xed_decoded_inst_t* xptr = &xedd_tmp;
+  xed_error_enum_t xed_error;
+
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+  xed_decoded_inst_zero_keep_mode(xptr);
+
+  xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+  return ins + xed_decoded_inst_get_length(xptr);
+}
+
+static bool
+is_mov_sp_2_bp(char* ins)
+{
+  xed_decoded_inst_t xedd_tmp;
+  xed_decoded_inst_t* xptr = &xedd_tmp;
+  xed_error_enum_t xed_error;
+
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+  xed_decoded_inst_zero_keep_mode(xptr);
+
+  xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+  if (xed_error != XED_ERROR_NONE) return false;
+
+  if (xed_decoded_inst_get_iclass(xptr) != XED_ICLASS_MOV)
+    return false;
+
+  const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+  const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+  const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
+  
+  xed_operand_enum_t op0_name = xed_operand_name(op0);
+  xed_operand_enum_t op1_name = xed_operand_name(op1);
+  
+  if ((op0_name == XED_OPERAND_REG0) && (op1_name == XED_OPERAND_REG1)) { 
+    //-------------------------------------------------------------------------
+    // register-to-register move 
+    //-------------------------------------------------------------------------
+    xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
+    xed_reg_enum_t reg1 = xed_decoded_inst_get_reg(xptr, op1_name);
+    return x86_isReg_BP(reg0) && x86_isReg_SP(reg1);
+  }
+  return false;
+}
+
+static bool
+ins_seq_is_std_frame(char* ins)
+{
+  return is_push_bp(ins) && is_mov_sp_2_bp(xed_next(ins));
+}
+
+static const size_t FRAMELESS_PROC_WINDOW = 8;
+
+static bool
+ins_seq_has_reg_move_to_bp(char* ins)
+{
+  xed_decoded_inst_t xedd_tmp;
+  xed_decoded_inst_t* xptr = &xedd_tmp;
+  xed_error_enum_t xed_error;
+
+  xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state);
+  xed_decoded_inst_zero_keep_mode(xptr);
+
+  for (size_t i=0; i < FRAMELESS_PROC_WINDOW; i++) {
+    xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
+    if (xed_error != XED_ERROR_NONE) {
+      ins++;
+      continue;
+    }
+    if (xed_decoded_inst_get_iclass(xptr) == XED_ICLASS_MOV) {
+      const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+      const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
+      const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
+  
+      xed_operand_enum_t op0_name = xed_operand_name(op0);
+      xed_operand_enum_t op1_name = xed_operand_name(op1);
+  
+      if ((op0_name == XED_OPERAND_REG0) && (op1_name == XED_OPERAND_REG1)) { 
+	//-------------------------------------------------------------------------
+	// register-to-register move 
+	//-------------------------------------------------------------------------
+	xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
+	if (x86_isReg_BP(reg0))
+	  return true;
+      }
+    }
+    ins += xed_decoded_inst_get_length(xptr);
+  }
+  return false;
+}
+
+//
+//  Heuristic for identifying common frameless procedure pattern:
+//     push bp
+//     ...
+//     mov SOME_REG, bp
+//
+//  In other words, a push of bp followed by overwriting bp with some other register
+//  indicates a (probable) start of a procedure.
+//
+static bool
+ins_seq_is_common_frameless_proc(char* ins)
+{
+  return is_push_bp(ins) && ins_seq_has_reg_move_to_bp(xed_next(ins));
+}
+
 static bool 
 nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
 { 
@@ -956,17 +1069,9 @@ nextins_looks_like_fn_start(char *ins, long offset, xed_decoded_inst_t *xptrin)
     case XED_ICLASS_PUSHFQ: 
     case XED_ICLASS_PUSHFD: 
     case XED_ICLASS_PUSHF:  
-      {
-	const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
-	const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
-	xed_operand_enum_t   op0_name = xed_operand_name(op0);
+      return ins_seq_is_std_frame(ins) || ins_seq_is_common_frameless_proc(ins);
+      break;
 
-	if (op0_name == XED_OPERAND_REG0) { 
-	  add_stripped_function_entry(ins + offset, 1 /* support */); 
-	  return true;
-	}
-      }
-      return false;
     case XED_ICLASS_ADD:
     case XED_ICLASS_SUB:
       {
