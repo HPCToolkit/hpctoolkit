@@ -95,6 +95,7 @@ AC_MSG_NOTICE([INFO: from user: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'])
 AC_MSG_NOTICE([INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}'])
 AC_MSG_NOTICE([INFO: from user: MPICC='${MPICC}'])
 AC_MSG_NOTICE([INFO: from user: MPICXX='${MPICXX}'])
+AC_MSG_NOTICE([INFO: from user: MPIF77='${MPIF77}'])
 
 # NOTE: please update config/README.version
 AC_PREREQ(2.67)
@@ -108,6 +109,7 @@ AC_CANONICAL_HOST()
 
 MPICC_ORIG=${MPICC}
 MPICXX_ORIG=${MPICXX}
+MPIF77_ORIG=${MPIF77}
 
 #----------------------------------------------------------------------------
 # Setup
@@ -248,6 +250,7 @@ AC_MSG_NOTICE([INFO: post autoconf tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'])
 AC_MSG_NOTICE([INFO: post autoconf tests: CC='${CC}' CFLAGS='${CFLAGS}'])
 AC_MSG_NOTICE([INFO: post autoconf tests: MPICC='${MPICC}'])
 AC_MSG_NOTICE([INFO: post autoconf tests: MPICXX='${MPICXX}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: MPIF77='${MPIF77}'])
 
 
 # Use C++ compiler for all checks
@@ -660,6 +663,7 @@ AC_MSG_NOTICE([INFO: post hpc tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' HOST_CX
 AC_MSG_NOTICE([INFO: post hpc tests: CC='${CC}' CFLAGS='${CFLAGS}' HOST_CFLAGS='${HOST_CFLAGS}'])
 AC_MSG_NOTICE([INFO: post hpc tests: MPICC='${MPICC}'])
 AC_MSG_NOTICE([INFO: post hpc tests: MPICXX='${MPICXX}'])
+AC_MSG_NOTICE([INFO: post hpc tests: MPIF77='${MPIF77}'])
 
 #----------------------------------------------------------------------------
 # Prerequisites: external libraries
@@ -1487,13 +1491,10 @@ AC_ARG_ENABLE([mpi-wrapper],
      yes) OPT_REQ_ENABLE_MPIP="yes" ;;
      no)  OPT_REQ_ENABLE_MPIP="no" ;;
      *)   AC_MSG_ERROR([bad value ${enableval} for --enable-mpi-wrapper]) ;;
-   esac],
-  [if test -n "${MPICC_ORIG}" ; then
-     OPT_REQ_ENABLE_MPIP=yes
-   fi])
+   esac])
 
 OPT_ENABLE_MPIP=no
-if test -n "${MPICC}" -a "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
+if test -n "${MPIF77}" -a "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
   OPT_ENABLE_MPIP=yes
 fi
 
@@ -1511,16 +1512,16 @@ AM_CONDITIONAL(OPT_ENABLE_MPIP, test "${OPT_ENABLE_MPIP}" = "yes")
 #-------------------------------------------------
 
 if test "${OPT_ENABLE_MPIP}" = "yes" ; then
-  AC_CHECK_PROGS(F77, mpif77)
+  AC_CHECK_PROGS(MPIF77, mpif77)
  
-  if test -n "$F77" -a "$F77" != no ; then
+  if test -n "$MPIF77" -a "$MPIF77" != no ; then
 
     AC_MSG_CHECKING(Whether fortran symbols have underscores)
     /bin/rm -f ffunc.f flink.c
     echo "      subroutine f_fun()" > ffunc.f
     echo "      return" >> ffunc.f
     echo "      end" >> ffunc.f
-    $F77 $FFLAGS -c ffunc.f 1>/dev/null 2>/dev/null
+    $MPIF77 $FFLAGS -c ffunc.f 1>/dev/null 2>/dev/null
     echo "main(){ FF(); return 0; }" > flink.c
     if $CC -o flink -DFF=f_fun flink.c ffunc.o $LDFLAGS $LIBS 1>/dev/null 2>/dev/null; then
       AC_MSG_RESULT(same as C)
@@ -1922,7 +1923,7 @@ AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
-AC_MSG_NOTICE([  mpi profiler support?: ${OPT_ENABLE_MPIP}])
+AC_MSG_NOTICE([  mpi wrapper support?: ${OPT_ENABLE_MPIP}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  CC:        '${CC}'])
@@ -1934,6 +1935,7 @@ AC_MSG_NOTICE([  CCASFLAGS: '${CCASFLAGS}'])
 AC_MSG_NOTICE([  LDFLAGS:   '${LDFLAGS}'])
 AC_MSG_NOTICE([  MPICC:     '${MPICC}'])
 AC_MSG_NOTICE([  MPICXX:    '${MPICXX}'])
+AC_MSG_NOTICE([  MPIF77:    '${MPIF77}'])
 AC_MSG_NOTICE([  HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'])
 AC_MSG_NOTICE([  HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'])
 AC_MSG_NOTICE([])
