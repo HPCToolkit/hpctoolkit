@@ -1486,7 +1486,7 @@ OPT_REQ_ENABLE_MPI="no" # yes, no, auto
 
 AC_ARG_ENABLE([mpi-wrapper],
   AS_HELP_STRING([--enable-mpi-wrapper],
-                 [Enable MPI wrapper support (uses MPICC variable)]),
+                 [Enable MPI wrapper support (uses MPIF77 variable)]),
   [case "${enableval}" in
      yes) OPT_REQ_ENABLE_MPIP="yes" ;;
      no)  OPT_REQ_ENABLE_MPIP="no" ;;
