@@ -457,7 +457,9 @@ overlayStaticStructure(Prof::CCT::ANode* node,
 
   bool useStruct = (!lm);
 
-  StructToCCTMap strctToCCTMap;
+  // N.B.: dynamically allocate to better handle the deep recursion
+  // required for very deep CCTs.
+  StructToCCTMap* strctToCCTMap = new StructToCCTMap;
 
   // ---------------------------------------------------
   // For each immediate child of this node...
@@ -503,7 +505,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       //scope_strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
       Prof::CCT::ANode* scope_frame = 
-	demandScopeInFrame(n_dyn, scope_strct, strctToCCTMap);
+	demandScopeInFrame(n_dyn, scope_strct, *strctToCCTMap);
 
       // 3. Link 'n' to its parent
       n->unlink();
@@ -517,6 +519,8 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       overlayStaticStructure(n, loadmap_lm, lmStrct, lm);
     }
   }
+
+  delete strctToCCTMap;
 }
 
 
