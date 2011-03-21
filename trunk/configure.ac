@@ -1480,9 +1480,9 @@ AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
 # enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether to build MPI versions (hpcprof-mpi)])
+AC_MSG_CHECKING([whether to build MPI versions (MPI wrapper)])
 
-OPT_REQ_ENABLE_MPI="no" # yes, no, auto
+OPT_REQ_ENABLE_MPIP="no" # yes, no, auto
 
 AC_ARG_ENABLE([mpi-wrapper],
   AS_HELP_STRING([--enable-mpi-wrapper],
@@ -1494,7 +1494,7 @@ AC_ARG_ENABLE([mpi-wrapper],
    esac])
 
 OPT_ENABLE_MPIP=no
-if test -n "${MPIF77}" -a "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
+if test "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
   OPT_ENABLE_MPIP=yes
 fi
 
@@ -1512,8 +1512,11 @@ AM_CONDITIONAL(OPT_ENABLE_MPIP, test "${OPT_ENABLE_MPIP}" = "yes")
 #-------------------------------------------------
 
 if test "${OPT_ENABLE_MPIP}" = "yes" ; then
-  AC_CHECK_PROGS(MPIF77, mpif77)
- 
+
+  if test -z "${MPIF77}" ; then
+    AC_CHECK_PROGS(MPIF77, mpif77 mpxlf_r mpixlf77 mpxlf cmpifc xlf f77 g77 pgf77 fort ifc, mpif77)
+  fi
+
   if test -n "$MPIF77" -a "$MPIF77" != no ; then
 
     AC_MSG_CHECKING(Whether fortran symbols have underscores)

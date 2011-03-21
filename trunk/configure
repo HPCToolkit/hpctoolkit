@@ -17015,10 +17015,10 @@ fi
 # enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI versions (hpcprof-mpi)" >&5
-$as_echo_n "checking whether to build MPI versions (hpcprof-mpi)... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI versions (MPI wrapper)" >&5
+$as_echo_n "checking whether to build MPI versions (MPI wrapper)... " >&6; }
 
-OPT_REQ_ENABLE_MPI="no" # yes, no, auto
+OPT_REQ_ENABLE_MPIP="no" # yes, no, auto
 
 # Check whether --enable-mpi-wrapper was given.
 if test "${enable_mpi_wrapper+set}" = set; then :
@@ -17031,7 +17031,7 @@ fi
 
 
 OPT_ENABLE_MPIP=no
-if test -n "${MPIF77}" -a "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
+if test "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
   OPT_ENABLE_MPIP=yes
 fi
 
@@ -17057,7 +17057,9 @@ fi
 #-------------------------------------------------
 
 if test "${OPT_ENABLE_MPIP}" = "yes" ; then
-  for ac_prog in mpif77
+
+  if test -z "${MPIF77}" ; then
+    for ac_prog in mpif77 mpxlf_r mpixlf77 mpxlf cmpifc xlf f77 g77 pgf77 fort ifc
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -17098,7 +17100,9 @@ fi
 
   test -n "$MPIF77" && break
 done
+test -n "$MPIF77" || MPIF77="mpif77"
 
+  fi
 
   if test -n "$MPIF77" -a "$MPIF77" != no ; then
 
