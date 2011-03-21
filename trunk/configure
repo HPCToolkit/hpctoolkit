@@ -1533,7 +1533,7 @@ Optional Features:
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
-  --enable-mpi-wrapper    Enable MPI wrapper support (uses MPICC variable)
+  --enable-mpi-wrapper    Enable MPI wrapper support (uses MPIF77 variable)
   --enable-lush           use lush backtrace in hpcrun
   --enable-lush-pthreads  enable lush pthreads (temp)
   --enable-bluegene       Enable BlueGene/P support
