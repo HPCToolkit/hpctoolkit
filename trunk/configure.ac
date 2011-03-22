@@ -1495,14 +1495,23 @@ AC_ARG_ENABLE([mpi-wrapper],
 
 OPT_ENABLE_MPIP=no
 if test "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
-  OPT_ENABLE_MPIP=yes
+  AC_MSG_CHECKING([whether can compile MPI code with CFLAGS='$CFLAGS'])
+
+  AC_LANG_PUSH([C])
+  CFLAGS="$CFLAGS"
+  AC_COMPILE_IFELSE([#include <mpi.h>],
+        [ans=yes],
+        [ans=no])
+
+  OPT_ENABLE_MPIP=$ans
+  AC_LANG_POP
 fi
 
 AC_MSG_RESULT([${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})])
 
 
 if test "${OPT_REQ_ENABLE_MPIP}" = "yes" -a "${OPT_ENABLE_MPIP}" = no ; then
-  AC_MSG_ERROR([MPI support requested but MPI compiler is invalid!])
+  AC_MSG_ERROR([MPI wrapper support requested but MPI compiler is invalid!])
 fi
 
 AM_CONDITIONAL(OPT_ENABLE_MPIP, test "${OPT_ENABLE_MPIP}" = "yes")
@@ -1551,12 +1560,9 @@ if test "${OPT_ENABLE_MPIP}" = "yes" ; then
     /bin/rm -f ffunc.f ffunc.o flink flink.c flink.o ffunc
   else
     F77_SYMBOLS=symbol_
-    AC_MSG_RESULT(Fortran compiler not found: guessing lowercase with underscore)
+    AC_MSG_RESULT(Fortran compiler not found. Guessing lowercase with underscore)
 
   fi
-else
-  F77_SYMBOLS=symbol_
-  AC_MSG_RESULT(guessing lowercase with underscore)
 fi
 
 AC_SUBST(F77_SYMBOLS,$F77_SYMBOLS)

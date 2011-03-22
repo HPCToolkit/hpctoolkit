@@ -17032,7 +17032,34 @@ fi
 
 OPT_ENABLE_MPIP=no
 if test "${OPT_REQ_ENABLE_MPIP}" != "no" ; then
-  OPT_ENABLE_MPIP=yes
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether can compile MPI code with CFLAGS='$CFLAGS'" >&5
+$as_echo_n "checking whether can compile MPI code with CFLAGS='$CFLAGS'... " >&6; }
+
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+  CFLAGS="$CFLAGS"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <mpi.h>
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ans=yes
+else
+  ans=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  OPT_ENABLE_MPIP=$ans
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})" >&5
@@ -17040,7 +17067,7 @@ $as_echo "${OPT_ENABLE_MPIP} (request: ${OPT_REQ_ENABLE_MPIP})" >&6; }
 
 
 if test "${OPT_REQ_ENABLE_MPIP}" = "yes" -a "${OPT_ENABLE_MPIP}" = no ; then
-  as_fn_error $? "MPI support requested but MPI compiler is invalid!" "$LINENO" 5
+  as_fn_error $? "MPI wrapper support requested but MPI compiler is invalid!" "$LINENO" 5
 fi
 
  if test "${OPT_ENABLE_MPIP}" = "yes"; then
@@ -17146,14 +17173,10 @@ $as_echo "giving up" >&6; }
     /bin/rm -f ffunc.f ffunc.o flink flink.c flink.o ffunc
   else
     F77_SYMBOLS=symbol_
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: Fortran compiler not found: guessing lowercase with underscore" >&5
-$as_echo "Fortran compiler not found: guessing lowercase with underscore" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: Fortran compiler not found. Guessing lowercase with underscore" >&5
+$as_echo "Fortran compiler not found. Guessing lowercase with underscore" >&6; }
 
   fi
-else
-  F77_SYMBOLS=symbol_
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: guessing lowercase with underscore" >&5
-$as_echo "guessing lowercase with underscore" >&6; }
 fi
 
 F77_SYMBOLS=$F77_SYMBOLS
