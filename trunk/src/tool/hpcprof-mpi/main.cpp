@@ -884,7 +884,7 @@ makeThreadMetrics_Lcl(Prof::CallPath::Profile& profGbl,
   uint mBeg = profGbl.merge(*prof, mergeTy, mergeFlg); // [closed begin
 
   if (args.db_makeMetricDB) {
-    uint mEnd = mBeg + prof->metricMgr()->size(); //  open end)
+    uint mEnd = mBeg + prof->metricMgr()->size(); // open end)
 
     // -------------------------------------------------------
     // compute local incl/excl sampled metrics
@@ -982,7 +982,7 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 
   for (uint nodeId = 1; nodeId < numNodes + 1; ++nodeId) {
     for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
-      double mval = packedMetrics.idx(nodeId, mId2);
+      double mval = packedMetrics.idx(nodeId, mId1);
       DIAG_MsgIf(0,  "  " << nodeId << " -> " << mval);
       hpcfmt_real8_fwrite(mval, fs);
     }
