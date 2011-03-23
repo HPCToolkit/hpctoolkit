@@ -60,7 +60,7 @@
 //
 //****************************************************************************
 
-#ifndef support_StrUtil_hpp 
+#ifndef support_StrUtil_hpp
 #define support_StrUtil_hpp
 
 //************************** System Include Files ****************************
@@ -92,11 +92,11 @@ namespace StrUtil {
 //
 // --------------------------------------------------------------------------
 
-void 
+void
 tokenize_char(const std::string& tokenstr, const char* delim,
 	      std::vector<std::string>& tokenvec);
 
-void 
+void
 tokenize_str(const std::string& tokenstr, const char* delim,
 	      std::vector<std::string>& tokenvec);
 
@@ -120,7 +120,7 @@ join(const std::vector<std::string>& tokenvec, const char* delim,
 // character.  (Thus, the entire string is valid if endidx ==
 // length(str).)  If 'endidx' is NULL, an error is raised if any
 // 'junk' appears after the proposed string.
-// 
+//
 // --------------------------------------------------------------------------
 
 long
@@ -143,10 +143,10 @@ toUInt64(const std::string& str, unsigned* endidx = NULL)
 }
 
 
-double   
+double
 toDbl(const char* str, unsigned* endidx = NULL);
 
-inline double   
+inline double
 toDbl(const std::string& str, unsigned* endidx = NULL)
 {
   return toDbl(str.c_str(), endidx);
