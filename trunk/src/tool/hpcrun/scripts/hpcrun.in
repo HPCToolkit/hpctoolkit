@@ -367,7 +367,7 @@ ulimit -S -c unlimited >/dev/null 2>&1
 
 hpc_ld_library_path="$papi_libdir"
 hpc_ld_preload="${memleak_preload} ${hpcrun_dir}/libhpcrun.so"
-hpc_ld_preload="${hpc_ld_preload} ${mpi_preload} ${hpcrun_dir}/libhpcrun.so"
+hpc_ld_preload="${hpc_ld_preload} ${mpi_preload}"
 hpc_ld_preload="${hpc_ld_preload} ${libmonitor_dir}/libmonitor.so"
 
 export HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
