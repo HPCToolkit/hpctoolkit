@@ -968,6 +968,9 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // 
   // -------------------------
 
+  // N.B.: We currently assume FmtEpoch_NV_virtualMetrics is set iff
+  // we read from a memory buffer.  Possibly we need an explicit tag for this.
+
   bool isVirtualMetrics = false;
   val = hpcfmt_nvpairList_search(&(ehdr.nvps), FmtEpoch_NV_virtualMetrics);
   if (val && strcmp(val, "0") != 0) {
@@ -1100,11 +1103,17 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // make metric DB info
   // ----------------------------------------
 
-  Prof::Metric::Mgr* mMgr = prof->metricMgr();
-  for (uint mId = 0; mId < mMgr->size(); ++mId) {
-    Prof::Metric::ADesc* m = mMgr->metric(mId);
-    m->dbId(mId);
-    m->dbNumMetrics(mMgr->size());
+  // metric DB information:
+  //   1. create when reading an actual data file
+  //   2. preserve when reading a profile from a memory buffer
+  if ( !isVirtualMetrics ) {
+    // create metric db information
+    Prof::Metric::Mgr* mMgr = prof->metricMgr();
+    for (uint mId = 0; mId < mMgr->size(); ++mId) {
+      Prof::Metric::ADesc* m = mMgr->metric(mId);
+      m->dbId(mId);
+      m->dbNumMetrics(mMgr->size());
+    }
   }
 
   // ----------------------------------------

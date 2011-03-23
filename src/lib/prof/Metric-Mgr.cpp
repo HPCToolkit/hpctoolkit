@@ -288,6 +288,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 		    doDispPercent, isPercent);
   m->nameBase(mNmBase);
   m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
+  m->zeroDBInfo(); // clear
   insert(m);
   expr->accumId(m->id());
 
@@ -299,6 +300,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 		      false/*isPercent*/);
     m2->nameBase(m2NmBase);
     m2->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
+    m2->zeroDBInfo(); // clear
     insert(m2);
 
     expr->accum2Id(m2->id());
@@ -313,6 +315,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 		      false/*isPercent*/);
     m3->nameBase(m3NmBase);
     m3->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
+    m3->zeroDBInfo(); // clear
     insert(m3);
     m3Expr->accumId(m3->id());
 
@@ -372,6 +375,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
     new DerivedIncrDesc(mNmFmt, mDesc, expr, true/*isVisible*/,
 			true/*isSortKey*/, doDispPercent, isPercent);
   m->nameBase(mNmBase);
+  m->zeroDBInfo(); // clear
   insert(m);
   expr->accumId(m->id());
 
@@ -382,6 +386,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 			  false/*isSortKey*/, false/*doDispPercent*/,
 			  false/*isPercent*/);
     m2->nameBase(m2NmBase);
+    m2->zeroDBInfo(); // clear
     insert(m2);
 
     expr->accum2Id(m2->id());
@@ -395,6 +400,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 			  false/*isSortKey*/, false/*doDispPercent*/,
 			  false/*isPercent*/);
     m3->nameBase(m3NmBase);
+    m3->zeroDBInfo(); // clear
     insert(m3);
     m3Expr->accumId(m3->id());
 
