@@ -10,7 +10,7 @@
 #
 
 PKG_NAME=libdwarf
-SRC=dwarf-20081119/libdwarf
+SRC=dwarf-20110113/libdwarf
 
 . ../build-utils/configure.inc
 pre_configure

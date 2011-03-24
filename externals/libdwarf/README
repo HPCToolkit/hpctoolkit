@@ -4,13 +4,13 @@ Libdwarf Build Notes
 
 Home: http://reality.sgiweb.org/davea/dwarf.html
 
-Download: http://reality.sgiweb.org/davea/libdwarf-20080615.tar.gz
+Download: http://reality.sgiweb.org/davea/libdwarf-20110113.tar.gz
 
 License: LGPL (libdwarf), GPL (dwarfdump)
 
-Uses Autoconf, but not Automake.
+Uses Autoconf, but not Automake, does support VPATH.
 
-./configure CC=gcc CFLAGS='-g -O2 -fPIC'  \
+../configure CC=gcc CFLAGS='-g -O2 -fPIC'  \
     --enable-shared --disable-nonshared
 make
 manually copy files
