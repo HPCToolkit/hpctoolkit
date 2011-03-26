@@ -143,6 +143,9 @@ trace_open()
       EMSG("Error setting buffer for trace file");
     }
 
+    if (! hpcrun_sample_prob_active())
+      return;
+
     hpctrace_fmt_hdr_fwrite(td->trace_file);
   }
 }
@@ -151,7 +154,7 @@ trace_open()
 void
 trace_append(unsigned int call_path_id)
 {
-  if (tracing) {
+  if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
     int ret = gettimeofday(&tv, NULL);
     assert(ret == 0 && "in trace_append: gettimeofday failed!");
@@ -184,7 +187,7 @@ trace_close()
     ret = hpcio_fclose(td->trace_file);
     trace_file_validate(ret == 0, "close");
     int rank = monitor_mpi_comm_rank();
-    if (rank >= 0) {
+    if (rank >= 0 && hpcrun_sample_prob_active()) {
       char old_fnm[PATH_MAX];
       char new_fnm[PATH_MAX];
       files_trace_name(old_fnm, 0, PATH_MAX);

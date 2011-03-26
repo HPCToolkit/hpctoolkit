@@ -180,7 +180,9 @@ hpcrun_sample_prob_init(void)
 int
 hpcrun_sample_prob_active(void)
 {
-  hpcrun_sample_prob_init();
+  if (! is_init) {
+    hpcrun_sample_prob_init();
+  }
   return sample_prob_ans;
 }
 

@@ -167,8 +167,10 @@ lazy_open_data_file(void)
     EEMSG("HPCToolkit: %s: unable to open: %s", __func__, fnm);
     return NULL;
   }
-
   td->hpcrun_file = fs;
+
+  if (! hpcrun_sample_prob_active())
+    return fs;
 
   const uint bufSZ = 32; // sufficient to hold a 64-bit integer in base 10
 
@@ -223,6 +225,9 @@ static int
 write_epochs(FILE* fs, epoch_t* epoch)
 {
   uint32_t num_epochs = 0;
+
+  if (! hpcrun_sample_prob_active())
+    return HPCRUN_OK;
 
   //
   // === # epochs === 
