@@ -84,6 +84,7 @@
 #include "messages.i"
 #include "fmt.h"
 #include "sample_event.h"
+#include "sample_prob.h"
 #include "thread_data.h"
 #include "thread_use.h"
 
@@ -209,7 +210,8 @@ hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id, const char *tag,
 {
   char buf[MSG_BUF_SIZE];
 
-  if (hpcrun_get_disabled() && (! echo_stderr)){
+  if ((hpcrun_get_disabled() && (! echo_stderr))
+      || (! hpcrun_sample_prob_active())) {
     return;
   }
 
