@@ -130,10 +130,11 @@ dump_reachable_functions()
     ++i;
 
     const char *name;
-    if (!f->isvisible && !is_possible_fn(f->address)) continue;
+    if (!f->isvisible && !(f->call_count > 1) && !is_possible_fn(f->address)) continue;
     if (f->comment) {
       name = f->comment->c_str();
-    } else {
+    }
+    else {
       // inferred functions must be at least 16 bytes long
       if (i != function_entries.end()) {
         Function *nextf = (*i).second;
