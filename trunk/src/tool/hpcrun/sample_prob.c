@@ -44,8 +44,10 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -113,9 +115,9 @@ string_to_prob(char *str)
 }
 
 
-// Combine the hostid and time of day in microseconds, run it through
-// a hash function and produce a pseudo-random value in the range
-// [0.0, 1.0).
+// Combine the hostid, the time of day in microseconds and
+// /dev/urandom (if available), run it through a hash function and
+// produce a pseudo-random value in the range [0.0, 1.0).
 //
 // This is a simple hash function based on the exponential mod
 // function with good cryptographic properties.  MD5 or SHA-1 would
@@ -128,11 +130,20 @@ static float
 random_hash_prob(void)
 {
   struct timeval tv;
-  uint64_t a, b, x;
+  uint64_t a, b, x, rand;
+  int fd;
+
+  // Add /dev/urandom if available.
+  rand = 0;
+  fd = open("/dev/urandom", O_RDONLY);
+  if (fd >= 0) {
+    read(fd, &rand, sizeof(rand));
+    close(fd);
+  }
 
   gettimeofday(&tv, NULL);
-  x = gethostid() + (tv.tv_usec << 8);
-  x = (x & 0x07fffffff) % HASH_PRIME;
+  x = (((uint64_t)gethostid()) << 24) + (tv.tv_usec << 4) + rand;
+  x = (x & ~(((uint64_t) 15) << 60)) % HASH_PRIME;
 
   // Compute gen^x (mod prime).
   // Invariant: a * (b ^ x) = gen^(orig x) (mod prime).
