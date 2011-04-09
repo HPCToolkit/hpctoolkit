@@ -121,7 +121,7 @@ Nathan Tallent\\
 \\
 Rice University\\
 \\
-For \HPCToolkit{} 5.0.0 ($Revision$)
+For \HPCToolkit{} 5.1.0 ($Revision$)
 }
 
 %\date{}
@@ -349,6 +349,7 @@ Finally, one explores a performance database with \HPCToolkit{}'s \hpcviewer{} g
 
 The following subsections explain \HPCToolkit{}'s work flow in more detail.
 
+
 % ==========================================================
 % ==========================================================
 
@@ -360,9 +361,9 @@ This usually means compiling with options similar to `\texttt{-g -O3}' or `\text
 While \HPCToolkit{} does not need this information to function, it can be helpful to users trying to interpret the results.
 Since compilers can usually provide line map information for fully optimized code, this requirement need not require a special build process.
 
-% ==========================================================
-% ==========================================================
 
+% ==========================================================
+% ==========================================================
 
 \subsection{Measuring Application Performance}
 
@@ -414,7 +415,7 @@ The database is named according the form:
 If the application \texttt{app} is run under control of a recognized batch job scheduler (such as PBS or GridEngine), the name of the measurements directory will contain the corresponding job identifier \texttt{<jobid>}.
 Currently, the database contains measurements files for each thread that are named using the following template:
 \begin{quote}
-  \verb|app-<mpi-rank>-<thread-id>-<host-id>-<process-id>.hpcrun|
+  \verb|app-<mpi-rank>-<thread-id>-<host-id>-<process-id>.<generation-id>.hpcrun|
 \end{quote}
 
 \subsubsection{Specifying Sample Sources}
@@ -466,17 +467,24 @@ However, the latter can also generate additional information for plotting thread
 
 \hpcprof{} is typically used as follows:
 \begin{quote}
-  \verb|hpcprof -S app.hpcstruct -I <app-src>/'*' hpctoolkit-app-measurements|
+\begin{verbatim}
+hpcprof -S app.hpcstruct -I <app-src>/'*' \
+  hpctoolkit-app-measurements1 [hpctoolkit-app-measurements2 ...]
+\end{verbatim}
 \end{quote}
 and \hpcprofmpi{} is analogous:
 \begin{quote}
 \begin{verbatim}
 <mpi-launcher> hpcprof-mpi \
-  -S app.hpcstruct -I <app-src>/'*' hpctoolkit-app-measurements
+  -S app.hpcstruct -I <app-src>/'*' \
+  hpctoolkit-app-measurements1 [hpctoolkit-app-measurements2 ...]
 \end{verbatim}
 \end{quote}
 Either command will produce an \HPCToolkit{} performance database with the name \texttt{hpctoolkit-app-database}.
 If this database directory already exists, \hpcprofAll{} will form a unique name using a numerical qualifier.
+
+Both \hpcprofAll{} can collate multiple measurement databases, as long as they are gathered against the same binary.
+This capability is useful for (a) combining event sets gathered over multiple executions and (b) performing scalability studies (see Section~\ref{sec:effective-performance-analysis:scalability}).
 
 The above commands use two important options.
 The \texttt{-S/--structure} option takes a program structure file.
@@ -512,13 +520,23 @@ Additional help for \hpcviewer{} can be found in a help pane available from \hpc
 To effectively analyze application performance, consider using one of the following strategies, which are described in more detail in Chapter~\ref{chpt:effective-performance-analysis}.
 \begin{itemize}
 \item
-A waste metric, which represents the difference between achieved performance and potential peak performance is a good way of understanding the potential for tuning the node performance of codes.
+A waste metric, which represents the difference between achieved performance and potential peak performance is a good way of understanding the potential for tuning the node performance of codes (Section~\ref{sec:effective-performance-analysis:inefficiencies}).
 \hpcviewer{} supports synthesis of derived metrics to aid analysis.
 Derived metrics are specified within \hpcviewer{} using spreadsheet-like formula.
 See the \hpcviewer{} help pane for details about how to specify derived metrics.
 
 \item
-Scalability bottlenecks in parallel codes can be pinpointed by differential analysis of two profiles with different degrees of parallelism.
+Scalability bottlenecks in parallel codes can be pinpointed by differential anal
+ysis of two profiles with different degrees of parallelism (Section~\ref{sec:effective-performance-analysis:scalability}).
+
+The following sketches the mechanics of performing a simple scalability study between executions $x$ and $y$ of an application \texttt{app}:
+\begin{quote}
+  \verb|hpcrun [options-x] app [app-arguments-x]| \hfill (execution $x$) \\
+  \verb|hpcrun [options-y] app [app-arguments-y]| \hfill (execution $y$) \\
+  \verb|hpcstruct app| \\
+  \verb|hpcprof/mpi -S ... -I ... measurements-x measurements-y| \\
+  \verb|hpcviewer hpctoolkit-database|
+\end{quote}
 
 \end{itemize}
 
@@ -1117,8 +1135,8 @@ In cases such as this, you can often specify \texttt{-fast} along with an option
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{Troubleshooting}
-\label{chpt:troubleshooting}
+\chapter{FAQ and Troubleshooting}
+\label{chpt:faq-troubleshooting}
 
 % ===========================================================================
 % ===========================================================================
@@ -1181,7 +1199,6 @@ The most common causes for unusually high overhead are the following:
   (We plan to address this issue in a future release.)
 
 \end{itemize}
-
 
 
 % ===========================================================================
