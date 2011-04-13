@@ -3,6 +3,21 @@
 % $Id: hpcviewer.tex 3336 2011-01-03 23:29:25Z tallent $
 
 
+% ----------------------------------------------------------
+% traceviewer
+% ----------------------------------------------------------
+
+\newcommand{\traceview}{Trace view}
+\newcommand{\depthview}{Depth view}
+\newcommand{\miniview}{Mini map view}
+\newcommand{\callview}{Call path view}
+
+
+% ===========================================================================
+% ===========================================================================
+
+
+
 \HPCToolkit{} provides the \hpctraceviewer{}~\cite{Tallent-MC-etal:2011:hpctoolkit-scalable-tracing} performance presentation tool for interactive examination of performance-trace databases.
 \hpctraceviewer{} interactively presents a large-scale trace without concern for the scale of parallelism it represents.
 
@@ -24,51 +39,12 @@ Without this argument, \hpctraceviewer{} will prompt for the location of a datab
 
 The possible options are as follows:
 \begin{itemize}
- \item \texttt{-n}: Do not display the Callers View.  (Saves memory and time.)
 
  \item \texttt{-consolelog}: Send log entries to a console in addition to a log file.
    (To get a console window, be sure to use java as the VM instead of javaw.)
 
  \item \texttt{-debug}: Log additional information about plug-in dependency problems.
 \end{itemize}
-
-% ===========================================================================
-% ===========================================================================
-
-%% \section{Installing \hpcviewer{}}
-
-%% \subsection{Requirements}
-%% \begin{itemize}
-%%  \item Java Runtime Environment (JRE) 1.5 or greater.
-%%    Use the Sun or IBM version; we have had problems with OpenJDK.
-
-%%  \item On Linux, GTK+ is required.
-%% \end{itemize}
-
-
-%% \subsection{Generic Instructions}
-%% \begin{enumerate}
-%%   \item Download \hpcviewer{} package that is suitable for your platform from 
-%%     \begin{quote}
-%%       \url{https://outreach.scidac.gov/frs/?group\_id=22} 
-%%     \end{quote}
-%%   \item Untar the tarball into a temporary directory (Linux) or an installation directory (Windows and Mac).
-%% \end{enumerate}
-
-
-%% \subsection{Linux-specific Instructions}
-
-%% To install \hpcviewer{} in an \HPCToolkit{} installation, unpack the tarball and execute the following command:
-%% \begin{quote}
-%% \begin{verbatim}
-%%   ./<hpcviewer>/install <install-path>
-%% \end{verbatim}
-%% \end{quote}
-%% Here, \mytt{<hpcviewer>} is the directory created by unpacking the tarball; and 
-%% \mytt{<install-path>} is the same directory passed to the \texttt{--prefix} option of \HPCToolkit{}'s \texttt{configure} script.
-
-%% Typically one compiles and installs \HPCToolkit{} before installing \hpcviewer{}, but this is not necessary.
-%% Note, however, that if \hpcviewer{} is installed first, the \mytt{install} script will issue a warning and request confirmation.
 
 
 % ===========================================================================
@@ -83,20 +59,50 @@ The possible options are as follows:
 \end{figure}
 
 Figure~\ref{fig:hpctraceviewer-legend} shows an annotated screenshot of \hpctraceviewer{}'s user interface presenting a call path profile.
-The annotations highlight \hpctraceviewer{}'s principal window panes and key controls.
-The browser window is divided into three panes.
-The Source pane (top) displays program source code.
-The Navigation and Metric panes (bottom) associate a table of performance metrics with static or dynamic program structure.
+The annotations highlight \hpctraceviewer{}'s four principal window panes: \traceview, \depthview, \callview{} and \miniview.
 
+\begin{itemize}
+\item \textbf{\traceview} (left, top):
+  This is \hpctraceviewer{}'s primary view.
+  This view, which is similar to a conventional process/time (or space/time) view, shows time on the horizontal axis and process (or thread) rank on the vertical axis; time moves from left to right.
+  Compared to typical process/time views, there is one key difference.
+  To show call path hierarchy, the view is actually a user-controllable slice of the process/time/call-path space.
+  Given a call path depth, the view shows the color of the currently active procedure at a given time and process rank.
+  (If the requested depth is deeper than a particular call path, then \hpctraceviewer{} simply displays the deepest procedure frame and, space permitting, overlays an annotation indicating the fact that this frame represents a shallower depth.)
+
+  \hpctraceviewer{} assigns colors to procedures based on (static) source code procedures.
+  Although the color assignment is currently random, it is consistent across the different views.
+  Thus, the same color within the Trace and Depth Views refers to the same procedure.
+
+  The Trace View has a white crosshair that represents a selected point in time and process space.
+  For this selected point, the Call Path View shows the corresponding call path.
+  The Depth View shows the selected process.
+
+\item \textbf{\depthview} (left, bottom):
+  This is a call-path/time view for the process rank selected by the \traceview's crosshair.
+  Given a process rank, the view shows for each virtual time along the horizontal axis a stylized call path along the vertical axis, where `main' is at the top and leaves (samples) are at the bottom.
+  In other words, this view shows for the whole time range, in qualitative fashion, what the Call Path View shows for a selected point.
+  The horizontal time axis is exactly aligned with the Trace View's time axis; and the colors are consistent across both views.
+  This view has its own crosshair that corresponds to the currently selected time and call path depth.
+
+\item \textbf{\callview} (right, top):
+  This view shows two things: (1) the current call path depth that defines the hierarchical slice shown in the Trace View; and (2) the actual call path for the point selected by the Trace View's crosshair.
+  (To easily coordinate the call path depth value with the call path, the Call Path View currently suppresses details such as loop structure and call sites; we may use indentation or other techniques to display this in the future.)
+
+\item \textbf{\miniview} (right, bottom):
+  The Mini Map shows, relative to the process/time dimensions, the portion of the execution shown by the Trace View.
+  The Mini Map enables one to zoom and to move from one close-up to another quickly.
+
+\end{itemize}
 
 % ===========================================================================
 % ===========================================================================
 
-\section{Panes}
+\section{\traceview}
 \label{sec:hpcviewer:panes}
 
-\hpcviewer{}'s browser window is divided into three panes: the \emph{Navigation pane}, \emph{Source pane}, and the \emph{Metrics pane}.
-We briefly describe the role of each pane.
+\traceview{} is divided into two parts: the top part which contains \emph{action pane} and the \emph{information pane}, and the main view which displays the traces. 
+
 
 % ===========================================================================
 % ===========================================================================
