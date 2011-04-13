@@ -326,6 +326,7 @@ It assumes an operational installation of \HPCToolkit{}.
 % ===========================================================================
 
 \section{Guided Tour}
+\label{chpt:quickstart:tour}
 
 \begin{figure}[t]
 \centering{\includegraphics[width=.8\textwidth]{fig/hpctoolkit-workflow}}
@@ -366,46 +367,43 @@ Since compilers can usually provide line map information for fully optimized cod
 % ==========================================================
 
 \subsection{Measuring Application Performance}
+\label{chpt:quickstart:tour:measurement}
 
 Measurement of application performance takes two different forms depending on whether your application is dynamically or statically linked.
 To monitor a dynamically linked application, simply use \hpcrun{} to launch the application.
 To monitor a statically linked application (\eg{}, when using Compute Node Linux or BlueGene/P), link your application using \hpclink{}.
-
-The commands below give concrete examples for an application named \texttt{app}.
+In either case, the application may be sequential, multithreaded or based on MPI.
+The commands below give examples for an application named \texttt{app}.
 %
-\begin{description}
+\begin{itemize}
 
-\item[Dynamically linked binaries:]\hfill
+\item Dynamically linked applications:\hfill
 
-To monitor a sequential or multithreaded application, use:
+Simply launch your application with \hpcrun{}:
 \begin{quote}
-  \verb|hpcrun [options] app [app-arguments]|
+  \verb|[<mpi-launcher>] hpcrun [hpcrun-options] app [app-arguments]|
 \end{quote}
+Of course, \texttt{<mpi-launcher>} is only needed for MPI programs and is usually a program like \texttt{mpiexec} or \texttt{mpirun}.
 
-To monitor an MPI application, use:
-\begin{quote}
-  \verb|<mpi-launcher> hpcrun [options] app [app-arguments]|
-\end{quote}
-(\texttt{<mpi-launcher>} is usually a program like \texttt{mpiexec} or \texttt{mpirun}.)
+\item Statically linked applications:\hfill
 
-\item[Statically linked binaries:]\hfill
-
-To link \hpcrun{}'s monitoring code into \texttt{app}, use:
+First, link \hpcrun{}'s monitoring code into \texttt{app}, using \hpclink{}:
 \begin{quote}
   \verb|hpclink <linker> -o app <linker-arguments>|
 \end{quote}
 
-To monitor \texttt{app}, pass \hpcrun{} options through environment variables.  For instance:
+Then monitor \texttt{app} by passing \hpcrun{} options through environment variables.
+For instance:
 \begin{quote}
 \begin{verbatim}
 export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000001"
-<mpi-launcher> app [app-arguments]
+[<mpi-launcher>] app [app-arguments]
 \end{verbatim}
 \end{quote}
-\hpclink{}'s \mytt{--help} option gives a list of variables that affect monitoring.
+\hpclink{}'s \mytt{--help} option gives a list of environment variables that affect monitoring.
 See Chapter~\ref{chpt:statically-linked-apps} for more information.
 
-\end{description}
+\end{itemize}
 %
 Any of these commands will produce a measurements database that contains separate measurement information for each MPI rank and thread in the application.
 The database is named according the form:
@@ -526,8 +524,7 @@ Derived metrics are specified within \hpcviewer{} using spreadsheet-like formula
 See the \hpcviewer{} help pane for details about how to specify derived metrics.
 
 \item
-Scalability bottlenecks in parallel codes can be pinpointed by differential anal
-ysis of two profiles with different degrees of parallelism (Section~\ref{sec:effective-performance-analysis:scalability}).
+Scalability bottlenecks in parallel codes can be pinpointed by differential analysis of two profiles with different degrees of parallelism (Section~\ref{sec:effective-performance-analysis:scalability}).
 
 The following sketches the mechanics of performing a simple scalability study between executions $x$ and $y$ of an application \texttt{app}:
 \begin{quote}
@@ -535,7 +532,7 @@ The following sketches the mechanics of performing a simple scalability study be
   \verb|hpcrun [options-y] app [app-arguments-y]| \hfill (execution $y$) \\
   \verb|hpcstruct app| \\
   \verb|hpcprof/mpi -S ... -I ... measurements-x measurements-y| \\
-  \verb|hpcviewer hpctoolkit-database|
+  \verb|hpcviewer hpctoolkit-database| \hfill (compute a scaling-loss metric)
 \end{quote}
 
 \end{itemize}
@@ -1478,29 +1475,128 @@ such as {\tt select()}, {\tt poll()} or {\tt sem\_wait()}.
 % ===========================================================================
 % ===========================================================================
 
-\begin{comment}
+\section{How do I debug \hpcrun{}?}
 
-\section{How do I debug collection of measurements?}
+Assume you want to debug \hpcrun{} when collecting measurements for an application named \texttt{app}.
 
-Static binary:
+% ==========================================================
+% ==========================================================
 
-1. link and run using monitor-link 
+\subsection{Tracing \libmonitor{}}
 
-<externals-install>/libmonitor/bin/monitor-link
+\hpcrun{} uses \libmonitor{} for process/thread control.
+To collect a debug trace of \libmonitor{}, use either \texttt{monitor-run} or \texttt{monitor-link}, which are located within:
+%
+\begin{quote}
+  \verb|<externals-install>/libmonitor/bin|
+\end{quote}
+Launch your application as follows:
+%
+\begin{itemize}
 
-use the following:
- export MONITOR_DEBUG=1
+\item Dynamically linked applications:\hfill
+\begin{quote}
+  \verb|[<mpi-launcher>] monitor-run --debug app [app-arguments]|
+\end{quote}
+
+\item Statically linked applications:\hfill
+
+Link \libmonitor{} into \texttt{app}:
+\begin{quote}
+  \verb|monitor-link <linker> -o app <linker-arguments>|
+\end{quote}
+%
+Then execute \texttt{app} under special environment variables:
+\begin{quote}
+\begin{verbatim}
+export MONITOR_DEBUG=1
+[<mpi-launcher>] app [app-arguments]
+\end{verbatim}
+\end{quote}
+\end{itemize}
 
 
-2. use the hpclink binary with 
+% ==========================================================
+% ==========================================================
 
-  export HPCRUN_EVENT_LIST="WALLCLOCK@0" or HPCRUN_EVENT_LIST="NONE"
-  export MONITOR_DEBUG=1
-  export HPCRUN_DEBUG_FLAGS="ALL"
+\subsection{Tracing \hpcrun{}}
 
-  hpcrun --monitor-debug --dynamic-debug ALL --event WALLCLOCK@0
+Broadly speaking, there are two levels at which a user can test \hpcrun{}.
+The first level is tracing \hpcrun{}'s application control, that is, running \hpcrun{} without an asynchronous sample source.
+The second level is tracing \hpcrun{} with a sample source.
+The key difference between the two is that the former uses the \texttt{--event NONE} or \mytt{HPCRUN_EVENT_LIST="NONE"} option (shown below) whereas the latter does not (which enables the default WALLCLOCK sample source).
+With this in mind, to collect a debug trace for either of these levels, use commands similar to the following:
+%
+\begin{itemize}
 
-\end{comment}
+\item Dynamically linked applications:\hfill
+%
+\begin{quote}
+\begin{verbatim}
+[<mpi-launcher>] \
+  hpcrun --monitor-debug --dynamic-debug ALL --event NONE \
+    app [app-arguments]
+\end{verbatim}
+\end{quote}
+
+\item Statically linked applications:\hfill
+
+Link \hpcrun{} into \texttt{app} (see Section~\ref{chpt:quickstart:tour:measurement}).
+Then execute \texttt{app} under special environment variables:
+\begin{quote}
+\begin{verbatim}
+export MONITOR_DEBUG=1
+export HPCRUN_EVENT_LIST="NONE"
+export HPCRUN_DEBUG_FLAGS="ALL"
+[<mpi-launcher>] app [app-arguments]
+\end{verbatim}
+\end{quote}
+\end{itemize}
+%
+Note that the \texttt{*debug*} flags are optional.
+The \mytt{--monitor-debug/MONITOR_DEBUG} flag enables \libmonitor{} tracing.
+The \mytt{--dynamic-debug/HPCRUN_DEBUG_FLAGS} flag enables \hpcrun{} tracing.
+
+
+% ==========================================================
+% ==========================================================
+
+\subsection{Using \hpcrun{} with a debugger}
+
+To debug hpcrun within a debugger use the following instructions.
+Note that \hpcrun{} is easiest to debug if you configure and build \HPCToolkit{} with \texttt{configure}'s \texttt{--enable-develop} option.
+(It is not necessary to rebuild \HPCToolkit{}'s Externals.)
+%
+\begin{enumerate}
+
+\item Launch your application.
+  To debug \hpcrun{} without controlling sampling signals, launch normally.
+  To debug \hpcrun{} with controlled sampling signals, launch as follows:
+\begin{quote}
+\begin{verbatim}
+hpcrun --debug --event WALLCLOCK@0 app [app-arguments]
+\end{verbatim}
+\end{quote}
+or
+\begin{quote}
+\begin{verbatim}
+export HPCRUN_WAIT=1
+export HPCRUN_EVENT_LIST="WALLCLOCK@0"
+app [app-arguments]
+\end{verbatim}
+\end{quote}
+
+\item Attach a debugger.
+  The debugger should be spinning in a loop whose exit is conditioned by the \verb|DEBUGGER_WAIT| variable.
+
+\item Set any desired breakpoints.
+  To send a sampling signal at a particular point, make sure to stop at that point with a \emph{one-time} or \emph{temporary} breakpoint (\texttt{tbreak} in GDB).
+
+\item Set the \verb|DEBUGGER_WAIT| variable to 0 and continue.
+
+\item To raise a controlled sampling signal, raise a SIGPROF, \eg{}, using GDB's command \verb|signal SIGPROF|.
+
+\end{enumerate}
 
 
 % ===========================================================================
