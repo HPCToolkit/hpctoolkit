@@ -103,17 +103,36 @@ The annotations highlight \hpctraceviewer{}'s four principal window panes: \trac
 
 \traceview{} is divided into two parts: the top part which contains \emph{action pane} and the \emph{information pane}, and the main view which displays the traces. 
 
+\begin{itemize}
+
+\item \textbf{Open a view configuration} \includegraphics[scale=.5]{fig/hpctraceviewer-button-open.png}: Loading a saved view configuration. 
+A view configuration file contains the information of the current range of time and process, as well as the depth and the position of the cross hair. 
+\item \textbf{Save a view configuration} \includegraphics[scale=.5]{fig/hpctraceviewer-button-save.png}: Saving the current view configuration into a file. 
+It is recommended to store the view configuration file in the same directory as the database. 
+A view configuration file does not store the corresponding database, so it is possible to open 
+\item \textbf{Home} \includegraphics[scale=.5]{fig/hpctraceviewer-button-home-screen.png}: Resetting the view configuration into the original view, i.e., viewing traces for all times and processes.
+
+\item \textbf{Horiontal zoom-in} \includegraphics{fig/hpctraceviewer-button-zoom-in-time.png}: Zooming-in the time range of the traces.
+\item \textbf{Horiontal zoom-out} \includegraphics{fig/hpctraceviewer-button-zoom-out-time.png}: Zooming-out the time range of the traces.
+\item \textbf{Vertical zoom-in} \includegraphics[scale=.5]{fig/hpctraceviewer-button-zoom-in-process.png}: Zooming-in the process range of the traces.
+\item \textbf{Vertical zoom-out} \includegraphics[scale=.5]{fig/hpctraceviewer-button-zoom-out-process.png}: Zooming-out the process range of the traces.
+\item \textbf{Undo} \includegraphics[scale=.5]{fig/hpctraceviewer-button-undo.png}: Canceling the action of zoom or navigation and returning back to the previous view configuration.
+\item \textbf{Redo} \includegraphics[scale=.5]{fig/hpctraceviewer-button-redo.png}: Redoing of previously undo change of view configuration.
+\item \textbf{Navigation buttons} \includegraphics[scale=.5]{fig/hpctraceviewer-button-go-east.png}, \includegraphics[scale=.5]{fig/hpctraceviewer-button-go-west.png}, \includegraphics[scale=.5]{fig/hpctraceviewer-button-go-north.png}, \includegraphics[scale=.5]{fig/hpctraceviewer-button-go-south.png}: Navigating the trace view to the left, right, up and bottom, respectively. It is also possible to navigate with the arrow keys in the keyboard. Since the \traceview{} does not support scrool bars, the only way to navigate is through navigation buttons (or arrow keys).
+
+
+\end{itemize}
 
 % ===========================================================================
 % ===========================================================================
 
 \section{Limitations}
 
-Some important \hpcviewer{} limitations are listed below:
+Some important \hpctraceviewer{} limitations are listed below:
 \begin{itemize}
 
-\item \textbf{Limited number of metrics}.
-  With a large number of metric columns, \hpcviewer{}'s response time may become sluggish as this requires a large amount of memory.
+\item \textbf{No image save or print}.
+	At the moment \hpctraceviewer{} does not support saving and printing images of the traces.
 
 
 \end{itemize}
