@@ -325,6 +325,7 @@ setup_segv_handler(void)
   struct sigaction segv_action;
   segv_action.sa_handler = segv_handler;
   segv_action.sa_flags   = 0;
+  sigemptyset(&segv_action.sa_mask);
 
   sigaction(SIGSEGV, &segv_action, NULL);
 }
