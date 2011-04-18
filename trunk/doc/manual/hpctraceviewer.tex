@@ -16,10 +16,20 @@
 % ===========================================================================
 % ===========================================================================
 
+\section{\hpctraceviewer overview}
 
+\begin{figure}[t]
+\centering{\includegraphics[width=\textwidth]{fig/hpctraceviewer-callpath.png}}
+\caption{Logical view of trace callpath samples on three dimensions: time, process rank and call path depth.}
+\label{fig:hpctraceviewer-callpath}
+\end{figure}
 
 \HPCToolkit{} provides the \hpctraceviewer{}~\cite{Tallent-MC-etal:2011:hpctoolkit-scalable-tracing} performance presentation tool for interactive examination of performance-trace databases.
 \hpctraceviewer{} interactively presents a large-scale trace without concern for the scale of parallelism it represents.
+
+As shown in Figure~\ref{fig:hpctraceviewer-callpath}, trace callpath comprises samples from three dimensions: process rank (or thread rank if the application is multithreaded), time and callpath depth.
+\hpctraceviewer{} visualizes the samples for process and time dimesion (\emph{\traceview}), callpath depth and time dimension (\emph{\depthview}) and a callpath of a specific process and time (\emph{\callview}).
+Each view has its own use to pinpoint performance problem which will be described in the next section.
 
 
 % ===========================================================================
@@ -99,7 +109,7 @@ The annotations highlight \hpctraceviewer{}'s four principal window panes: \trac
 % ===========================================================================
 
 \subsection{\traceview}
-\label{sec:hpcviewer:panes}
+\label{sec:traceview}
 
 \traceview{} is divided into two parts: the top part which contains \emph{action pane} and the \emph{information pane}, and the main view which displays the traces. 
 
@@ -123,7 +133,7 @@ Although it is possible to open a view configuration file which is associated fr
 % ===========================================================================
 % ===========================================================================
 \subsection{\callview}
-\label{sec:hpcviewer:panes}
+\label{sec:callview}
 
 This view lists the call path from the main program to the depth indicated in the top part.
 
