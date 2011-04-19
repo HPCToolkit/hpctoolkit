@@ -20,18 +20,18 @@
 
 \begin{figure}[t]
 \centering{\includegraphics[width=\textwidth]{fig/hpctraceviewer-callpath.png}}
-\caption{Logical view of trace callpath samples on three dimensions: time, process rank and call path depth.}
+\caption{Logical view of trace call path samples on three dimensions: time, process rank and call path depth.}
 \label{fig:hpctraceviewer-callpath}
 \end{figure}
 
 \HPCToolkit{} provides \hpcviewer{}~\cite{Adhianto-MC-Ta:2010:PSTI-hpcviewer} for performance profile presentation tool, and \hpctraceviewer{}~\cite{Tallent-MC-etal:2011:hpctoolkit-scalable-tracing} for performance presentation tool for interactive examination of performance-trace databases.
 Here, we describe \hpctraceviewer{} which interactively presents a large-scale trace without concern for the scale of parallelism it represents.
 
-As shown in Figure~\ref{fig:hpctraceviewer-callpath}, trace callpath comprises samples from three dimensions: process rank (or thread rank if the application is multithreaded), time and callpath depth.
-\hpctraceviewer{} visualizes the samples for process and time dimesion (\emph{\traceview}), callpath depth and time dimension (\emph{\depthview}) and a callpath of a specific process and time (\emph{\callview}).
+As shown in Figure~\ref{fig:hpctraceviewer-callpath}, trace call path comprises samples from three dimensions: process rank (or thread rank if the application is multithreaded), time and call path depth.
+\hpctraceviewer{} visualizes the samples for process and time dimesion (\emph{\traceview}), call path depth and time dimension (\emph{\depthview}) and a call path of a specific process and time (\emph{\callview}).
 Each view has its own use to pinpoint performance problem which will be described in the next section.
 
-In \hpctraceviewer, each procedure is assigned specific color based on labeled nodes in \hpcviewer. Figure~\ref{fig:hpctraceviewer-callpath} shows that the top level (level 1) in the callpath is assigned the same color: blue, which is the main entry program in all process and all time.
+In \hpctraceviewer, each procedure is assigned specific color based on labeled nodes in \hpcviewer. Figure~\ref{fig:hpctraceviewer-callpath} shows that the top level (level 1) in the call path is assigned the same color: blue, which is the main entry program in all process and all time.
 The next depth (level 2), all processes have the same node color, i.e. green, which is another procedure. 
 In the following depth (level 3), all processes in the first time step have light yellow node and on the time steps, they have purple. This means that in the same depth and time, not all processes are in the same procedure.
 This color assignment is important to visually identify load imbalance in a program.
