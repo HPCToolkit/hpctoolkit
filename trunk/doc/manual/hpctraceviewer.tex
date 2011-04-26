@@ -122,6 +122,7 @@ The annotations highlight \hpctraceviewer{}'s four principal window panes: \trac
 
 \traceview{} is divided into two parts: the top part which contains \emph{action pane} and the \emph{information pane}, and the main view which displays the traces. 
 
+The buttons in the action pane are the following:
 \begin{itemize}
 
 \item \textbf{Open \includegraphics[scale=.7]{fig/hpctraceviewer-button-open.png} / save \includegraphics[scale=.5]{fig/hpctraceviewer-button-save.png} a view configuration} : Loading/saving a saved view configuration. 
@@ -136,7 +137,13 @@ Although it is possible to open a view configuration file which is associated fr
 \item \textbf{Redo} \includegraphics[scale=.5]{fig/hpctraceviewer-button-redo.png} : Redoing of previously undo change of view configuration.
 \item \textbf{Navigation buttons} \includegraphics[scale=.5]{fig/hpctraceviewer-button-go-east.png}, \includegraphics[scale=.5]{fig/hpctraceviewer-button-go-west.png}, \includegraphics[scale=.5]{fig/hpctraceviewer-button-go-north.png}, \includegraphics[scale=.5]{fig/hpctraceviewer-button-go-south.png} : Navigating the trace view to the left, right, up and bottom, respectively. It is also possible to navigate with the arrow keys in the keyboard. Since \traceview{} does not support scrool bars, the only way to navigate is through navigation buttons (or arrow keys).
 
+\end{itemize}
 
+The information pane contains some information concerning the range status of the current displayed data.
+\begin{itemize}
+ \item \textbf{Time Range}. The information of current time-range (horizontal) dimension. 
+ \item \textbf{Process Range}. The information of current process-range (vertical) dimension. 
+ \item \textbf{Cross Hair}. The information of current \crosshair{} position in time and process dimensions. 
 \end{itemize}
 
 % ===========================================================================
@@ -166,7 +173,19 @@ In \depthview{} a user can specify a new \crosshair{} time and a new time range.
 \label{fig:hpctraceviewer-callpath-legend}
 \end{figure}
 
-This view lists the call path of the specified process and time, from the main program (depth 1) to the depth indicated in the top part as shown in Figure~\ref{fig:hpctraceviewer-callpath-legend}.
+This view lists the call path of process $p$ and time $t$ specified in \traceview{} and \depthview.
+Figure~\ref{fig:hpctraceviewer-callpath-legend} shows a call path from depth $0$ to depth $14$, and the current depth is $9$ as shown in the depth editor (located on the top part of the view).
+
+In this view, the user can select the depth dimension of \traceview{} by either typing the depth in the depth editor or selecting a procedure in the table of call path.
+
+% ===========================================================================
+% ===========================================================================
+\subsection{\miniview}
+\label{sec:miniview}
+
+The \miniview{} shows, relative to the process/time dimensions, the portion of the execution shown by the \traceview.
+In \miniview{}, the user can select a new process/time $(p_a,t_a),(p_b,t_b)$ dimensions by clicking the first process/time position $(p_a,t_a)$ and then drag the cursor to the second position $(p_b,t_b)$.
+The user can also moving the current selected region to another region by clicking the white rectangle and drag it to the new place.
 
 
 % ===========================================================================
