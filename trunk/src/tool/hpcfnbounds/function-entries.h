@@ -62,7 +62,3 @@ void entries_in_range(void *start, void *end, vector<void *> &result);
 bool query_function_entry(void *addr);
 
 void dump_reachable_functions();
-
-
-
-

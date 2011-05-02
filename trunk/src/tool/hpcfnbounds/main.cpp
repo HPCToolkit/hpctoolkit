@@ -81,23 +81,6 @@ using namespace std;
 using namespace Dyninst;
 using namespace SymtabAPI;
 
-//-----------------------------------------
-// Determine if using symtabAPI 6.1. If so, 
-// use defines to map old API to new one. 
-// NOTES: 
-//   version 6.1 defines __SYMTAB_H__
-//   version 2.1 defines Symtab_h
-//-----------------------------------------
-#ifdef __SYMTAB_H__
-#define Section Region
-#define findSection findRegion
-#define getSecSize getRegionSize
-#define getSecName getRegionName
-#define getSecAddr getRegionAddr
-#endif
-
-
-
 //*****************************************************************************
 // macros
 //*****************************************************************************
@@ -372,15 +355,15 @@ code_range_comment(string &name, string section, const char *which)
 
 
 static void
-note_code_range(Section *s, long memaddr, DiscoverFnTy discover)
+note_code_range(Region *s, long memaddr, DiscoverFnTy discover)
 {
-  char *start = (char *) s->getSecAddr();
-  char *end = start + s->getSecSize();
+  char *start = (char *) s->getRegionAddr();
+  char *end = start + s->getRegionSize();
   string ntmp;
   new_code_range(start, end, memaddr, discover);
 
-  add_function_entry(start, code_range_comment(ntmp, s->getSecName(), "start"), true /* global */);
-  add_function_entry(end, code_range_comment(ntmp, s->getSecName(), "end"), true /* global */);
+  add_function_entry(start, code_range_comment(ntmp, s->getRegionName(), "start"), true /* global */);
+  add_function_entry(end, code_range_comment(ntmp, s->getRegionName(), "end"), true /* global */);
 }
 
 
@@ -388,8 +371,8 @@ static void
 note_section(Symtab *syms, const char *sname, DiscoverFnTy discover)
 {
   long memaddr = (long) syms->mem_image();
-  Section *s;
-  if (syms->findSection(s, sname) && s) 
+  Region *s;
+  if (syms->findRegion(s, sname) && s) 
     note_code_range(s, memaddr - syms->imageOffset(), discover);
 }
 
