@@ -642,6 +642,67 @@ HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 
 
 #-------------------------------------------------
+# Test if CXX and MPICXX are compatible
+#-------------------------------------------------
+
+# Test CXX and MPICXX compatibility by compiling a short program with
+# CXX and linking it with MPICXX.  Basically, we require that CXX is
+# the underlying compiler for MPICXX and this is how we test for that.
+# Note: the Autoconf macros would delete the object files, so we need
+# to run the compile and link steps ourself.
+
+base="hpc-conftest-$$"
+hello_src="$base".cpp
+hello_o="$base".o
+hello_bin="$base".bin
+hello_out="$base".out
+ACTUAL_CXXFLAGS="$CXXFLAGS $HOST_CXXFLAGS"
+
+if test -n "$MPICXX" ; then
+  AC_MSG_CHECKING([whether CXX and MPICXX are compatible])
+
+  rm -f "$hello_src" "$hello_o" "$hello_bin" "$hello_out"
+  cat <<EOF >"$hello_src"
+#include <iostream>
+#include <string>
+int main()
+{
+  std::cout << "hello, world\n";
+  return 0;
+}
+EOF
+  $CXX -c $ACTUAL_CXXFLAGS -o "$hello_o" "$hello_src" >/dev/null 2>&1
+  $MPICXX -o "$hello_bin" "$hello_o" >"$hello_out" 2>&1
+
+  if test $? -eq 0 && test -f "$hello_bin" ; then
+    AC_MSG_RESULT([yes])
+  else
+    AC_MSG_RESULT([no])
+    AC_MSG_WARN([MPICXX does not link with CXX (see config.log for details)])
+    AC_MSG_WARN([probably MPICXX does match CXX for compiler family or version])
+    cat <<EOF >&AS_MESSAGE_LOG_FD
+------------------------------------------------------------
+CXX:     $CXX $ACTUAL_CXXFLAGS
+MPICXX:  $MPICXX
+
+EOF
+    cat "$hello_src" >&AS_MESSAGE_LOG_FD
+    echo >&AS_MESSAGE_LOG_FD
+    cat "$hello_out" >&AS_MESSAGE_LOG_FD
+    cat <<EOF >&AS_MESSAGE_LOG_FD
+------------------------------------------------------------
+EOF
+  MPICXX=
+  fi
+
+  rm -f "$hello_src" "$hello_o" "$hello_bin" "$hello_out"
+
+else
+  AC_MSG_NOTICE([skipping MPICXX compatibility check (MPICXX not set)])
+fi
+
+
+#-------------------------------------------------
 # Distribute these settings into makefiles
 #-------------------------------------------------
 
