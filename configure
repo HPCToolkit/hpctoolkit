@@ -16040,6 +16040,73 @@ HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 
 
 #-------------------------------------------------
+# Test if CXX and MPICXX are compatible
+#-------------------------------------------------
+
+# Test CXX and MPICXX compatibility by compiling a short program with
+# CXX and linking it with MPICXX.  Basically, we require that CXX is
+# the underlying compiler for MPICXX and this is how we test for that.
+# Note: the Autoconf macros would delete the object files, so we need
+# to run the compile and link steps ourself.
+
+base="hpc-conftest-$$"
+hello_src="$base".cpp
+hello_o="$base".o
+hello_bin="$base".bin
+hello_out="$base".out
+ACTUAL_CXXFLAGS="$CXXFLAGS $HOST_CXXFLAGS"
+
+if test -n "$MPICXX" ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether CXX and MPICXX are compatible" >&5
+$as_echo_n "checking whether CXX and MPICXX are compatible... " >&6; }
+
+  rm -f "$hello_src" "$hello_o" "$hello_bin" "$hello_out"
+  cat <<EOF >"$hello_src"
+#include <iostream>
+#include <string>
+int main()
+{
+  std::cout << "hello, world\n";
+  return 0;
+}
+EOF
+  $CXX -c $ACTUAL_CXXFLAGS -o "$hello_o" "$hello_src" >/dev/null 2>&1
+  $MPICXX -o "$hello_bin" "$hello_o" >"$hello_out" 2>&1
+
+  if test $? -eq 0 && test -f "$hello_bin" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: MPICXX does not link with CXX (see config.log for details)" >&5
+$as_echo "$as_me: WARNING: MPICXX does not link with CXX (see config.log for details)" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: probably MPICXX does match CXX for compiler family or version" >&5
+$as_echo "$as_me: WARNING: probably MPICXX does match CXX for compiler family or version" >&2;}
+    cat <<EOF >&5
+------------------------------------------------------------
+CXX:     $CXX $ACTUAL_CXXFLAGS
+MPICXX:  $MPICXX
+
+EOF
+    cat "$hello_src" >&5
+    echo >&5
+    cat "$hello_out" >&5
+    cat <<EOF >&5
+------------------------------------------------------------
+EOF
+  MPICXX=
+  fi
+
+  rm -f "$hello_src" "$hello_o" "$hello_bin" "$hello_out"
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: skipping MPICXX compatibility check (MPICXX not set)" >&5
+$as_echo "$as_me: skipping MPICXX compatibility check (MPICXX not set)" >&6;}
+fi
+
+
+#-------------------------------------------------
 # Distribute these settings into makefiles
 #-------------------------------------------------
 
