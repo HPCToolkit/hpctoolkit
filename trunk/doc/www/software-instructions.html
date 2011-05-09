@@ -305,6 +305,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 <p>To specify a C and C++ compiler other than <code>gcc</code> and <code>g++</code>, use <code>CC</code> and <code>CXX</code>.
   To enable MPI support, (1) ensure a working <code>mpicxx</code> or <code>mpiCC</code> is in your shell's path; or (2) use <code>MPICXX</code>.
+  (Naturally, <code>CXX</code> and <code>MPICXX</code> should be compatible; typically <code>MPICXX</code> is a wrapper for <code>CXX</code>.)
   To enable PAPI-based measurements, use the <code>--with-papi</code> option; it takes as an argument the path of your PAPI installation, <code>&lt;<i>papi-install-path</i>&gt;</code>.
 </p>
 
@@ -523,7 +524,7 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2011/01/25</span>]
+<p>[<span class="lastupdated">Page last updated: 2011/05/09</span>]
 </p>
 
 <!-- ********************************************************************** -->
